@@ -855,7 +855,7 @@ let extract_expr loc modname name =
 
 (*
  * Define the resources for a rewrite.
- * The Tactic_type.pre_tactic is passed as an argument,
+ * The Tactic_type.pre_rewrite is passed as an argument,
  * along with the params, so that we can figure out its type.
  *)
 let define_rewrite_resources proc loc name redex contractum assums addrs params resources name_id_expr =
@@ -917,12 +917,12 @@ let define_rewrite want_checkpoint code proc loc rw expr =
       let $lid:redex_id$ = $expr_of_term proc loc rw.rw_redex$ in
       let $lid:contractum_id$ = $expr_of_term proc loc rw.rw_contractum$ in
       let $lid:rw_id$ =
-         $refiner_expr loc$.create_rewrite $lid:local_refiner_id$ $str:name$ $redex$ $contractum$ in
-      let _ = do {
+         $refiner_expr loc$.create_rewrite $lid:local_refiner_id$ $str:name$ $redex$ $contractum$
+      in do {
          $prim_expr$;
-         $define_rewrite_resources proc loc name redex contractum nil addrs nil rw.rw_resources rw_id_expr$
-      } in
+         $define_rewrite_resources proc loc name redex contractum nil addrs nil rw.rw_resources rw_id_expr$;
          $rewrite_of_pre_rewrite_expr loc$ $rw_id_expr$ $addrs$ $nil$
+      }
     >> in
        checkpoint_resources want_checkpoint loc name [
           <:str_item< value $lid:name$ = $wrap_exn proc loc name create_rw$ >>;
@@ -965,11 +965,11 @@ let define_cond_rewrite want_checkpoint code proc loc crw expr =
       let $rw_id_patt$ =
          $refiner_expr loc$.create_cond_rewrite $lid:local_refiner_id$ $str:name$ (**)
             $cvars_expr$ $params_expr$ $subgoals_expr$ $redex$ $contractum$
-      in let _ = do {
+      in do {
          $prim_expr$;
-         $define_rewrite_resources proc loc name redex contractum subgoals_expr cvars_expr params_expr crw.crw_resources rw_id_expr$
-      } in
+         $define_rewrite_resources proc loc name redex contractum subgoals_expr cvars_expr params_expr crw.crw_resources rw_id_expr$;
          $rw_id_expr$
+      }
     >> in
     let rw_fun_expr =
         fun_expr loc all_ids <:expr<
@@ -1021,25 +1021,19 @@ let interactive_cond_rewrite proc loc crw =
  * but the ML code computes the rewrite.
  *)
 let define_ml_rewrite proc loc mlrw rewrite_expr =
-   if mlrw.mlterm_resources.item_item <> [] then
-      Stdpp.raise_with_loc loc (Invalid_argument "Resource annotations on ML rewrites are not supported yet");
    let name = mlrw.mlterm_name in
    let rw_id = "_$" ^ name ^ "_rewrite" in
    let name_patt = <:patt< $lid:name$ >> in
    let lid_expr s = <:expr< $lid:s$ >> in
    let var_expr v = <:expr< Lm_symbol.add $str: string_of_symbol v$ >> in
+   let rewrite_id_expr = lid_expr rewrite_id in
+   let redex_id_expr = lid_expr redex_id in
+   let nil_term = <:expr< Refiner.Refiner.TermMan.xnil_term >> in (* XXX HACK *)
 
    let params = mlrw.mlterm_params in
    let cvars, tparams = split_params params in
-   let addrs =
-      if cvars = [] then
-         <:expr< [||] >>
-      else
-         Stdpp.raise_with_loc loc (Invalid_argument ("ML rewrites with context variables are not supported"));
-   in
    let all_ids, cvar_ids, tparam_ids = name_params params in
    let params_expr = list_expr loc (expr_of_term proc loc) tparams in
-   let redex_expr = expr_of_term proc loc mlrw.mlterm_term in
    let simple_flag = params = [] in
    let addrs, create_ml_rewrite_expr =
       if simple_flag then
@@ -1064,7 +1058,7 @@ let define_ml_rewrite proc loc mlrw rewrite_expr =
          <:expr< $lid:params_id$ >>
    in
    let rewrite_body = <:expr<
-      let $lid:stack_id$ = $apply_redex_expr loc$ $lid:redex_id$ $addrs$ $lid:goal_id$ $params_expr$ in $rewrite_body$
+      let $lid:stack_id$ = $apply_redex_expr loc$ $rewrite_id_expr$ $addrs$ $lid:goal_id$ $params_expr$ in $rewrite_body$
    >> in
    let args_ids =
       if simple_flag then
@@ -1073,12 +1067,17 @@ let define_ml_rewrite proc loc mlrw rewrite_expr =
          [names_id; bnames_id; params_id; goal_id]
    in
    let body = <:expr<
-      let $lid:redex_id$ =
+      let $lid:redex_id$ = $expr_of_term proc loc mlrw.mlterm_term$ in
+      let $lid:rewrite_id$ =
          Refiner.Refiner.Rewrite.compile_redices $strict_expr loc$ $addrs$ (**)
-            [ $expr_of_term proc loc mlrw.mlterm_term$ :: $params_expr$ ]
+            [ $redex_id_expr$ :: $params_expr$ ]
       in
       let $lid:rewrite_id$ = $bindings_let proc loc rewrite_expr (fun_expr loc args_ids rewrite_body)$ in
-         $create_ml_rewrite_expr$ $lid:local_refiner_id$ $str:name$ $lid:rewrite_id$
+      let $lid:rewrite_id$ = $create_ml_rewrite_expr$ $lid:local_refiner_id$ $str:name$ $rewrite_id_expr$ in
+      do {
+         $define_rewrite_resources proc loc name redex_id_expr nil_term (<:expr< [] >>) addrs params_expr mlrw.mlterm_resources rewrite_id_expr$;
+         $rewrite_id_expr$
+      }
    >> in
       [
          <:str_item< value $name_patt$ =

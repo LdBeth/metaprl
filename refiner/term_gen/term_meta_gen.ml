@@ -86,7 +86,10 @@ struct
             unfold_mlabeled "unzip_mimplies" a :: hyps, goal
     | MetaLabeled (_, t) ->
          unzip_mimplies t
-    | t -> REF_RAISE(RefineError ("unzip_mimplies", MetaTermMatchError t))
+    | MetaIff _ as t ->
+         REF_RAISE(RefineError ("unzip_mimplies got a rewrite where a rule was expected", MetaTermMatchError t))
+    | MetaFunction _ ->
+         raise (Invalid_argument "Term_meta_gen.unzip_mimplies: internal error: function was called w/o strip_mfunction applied first")
 
    let rec zip_mimplies assums goal =
       match assums with
