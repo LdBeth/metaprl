@@ -52,7 +52,7 @@ let rec mbparameter_of_param param =
 	    in loop vars [])
       in aux (dest_level p)
   | Var p -> mb_stringq p mbs_Variable
-  | ObId p -> mbnode mbs_ParmList (List.map mbparameter_of_param p)
+  | ObId p -> mbnode mbs_ObjectId (List.map mbparameter_of_param (dest_object_id p))
 	 (*mb_integerq (dest_object_id p) mbs_ObjectId*)
   | MNumber p -> mb_stringq p mbs_MLongInteger
   | MString p -> mb_stringq p mbs_MString
@@ -77,7 +77,7 @@ let rec print_param param =
  					loop tl  ((mb_string v)::((mb_integer i2)::nodes))
 					in aux2 (dest_level_var hd)) in loop vars []) in aux  (dest_level p)*)
   | Var p -> (print_string p ; print_string " ")
-  | ObId p -> (print_string "parm_list:" ;print_string "["; List.map print_param p; print_string "]"; ())
+  | ObId p -> (print_string "["; List.map print_param (dest_object_id p); print_string "]"; print_string ":obid"; ())
 	 (*print_int (dest_object_id p)*)
   | MNumber p -> print_string p
   | MString p -> print_string p
@@ -161,7 +161,7 @@ let rec param_of_mbparameter mbparameter =
       else match (mbnode_subtermq mbparameter i) with
 	Mnode n -> loop (i-1) ((param_of_mbparameter n)::l)
       |	Mbint b -> failwith "subterm should be a node" 
-	in make_param (ObId (loop (mbnode_nSubtermsq mbparameter) [])) (*LAL bigint*)
+	in make_param (ObId (make_object_id (loop (mbnode_nSubtermsq mbparameter) [])))
 
   else if bequal b mbs_Level then
     let nsubterms = (mbnode_nSubtermsq mbparameter) in
