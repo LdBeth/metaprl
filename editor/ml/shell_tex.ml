@@ -32,7 +32,7 @@ let tex_prologue = "% -*- Mode: fundamental -*-
 %
 % Ludica-Bright fonts
 %
-\\usepackage{lucidbry}
+%\\usepackage{lucidbry}
 %\\usepackage[ansinew]{texnansi}
 %\\usepackage[LY1]{fontenc}
 
