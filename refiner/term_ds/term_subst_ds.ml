@@ -560,26 +560,8 @@ struct
          Not_found ->
             v
 
-   let rec standardize_trim s i len =
-      if i = 0 then
-         s
-      else
-         let j = pred i in
-            match s.[j] with
-               '0'..'9'
-             | '_' ->
-                standardize_trim s j len
-             | _ ->
-                if i = len then
-                   s
-                else
-                   String.sub s 0 i
-
    let standardize_var index v =
-      let v_str = string_of_symbol v in
-      let len = String.length v_str in
-      let v_str = standardize_trim v_str len len in
-         Lm_symbol.make v_str index
+      Lm_symbol.make (Lm_symbol.to_string v) index
 
    let rec standardize_bterm index { bvars = bvars; bterm = t } =
       let bvars, subst, index =
