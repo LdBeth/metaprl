@@ -50,7 +50,7 @@ all: $(MAIN).run $(MAIN).cma
 opt: $(MAIN).cmxa
 
 install:: $(MAIN).cma
-	$(INSTALL) $(MAIN).cma $(NLLIB)
+	$(INSTALL) $(MAIN).cma registry.txt $(NLLIB)
 
 clean::
 	rm -f *.p4* *.pp*

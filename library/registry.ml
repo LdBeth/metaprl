@@ -1,4 +1,5 @@
- 
+open Printf 
+open Debug
  
 open Int32
 (* In this simple implementation, a registry is a collection of hash
@@ -19,13 +20,10 @@ let registry_types = ref []
 (*
  * Allow the registry file to be specified in an environment variable.
  *)
-let registry_file_ref = ref (*Env_arg.string 
-                           "registry"*)
-                           "/amd/noon/y/nuprl/nuprl4i/nuprl5L/nuprl-light/library/registry.txt"(*temp hack*)
-                          (* "The registry file defines the MathBus syntax"
-                           (fun _ s v -> s := v)*)
-
-let registry_file = !registry_file_ref
+let registry_file =
+   try Filename.concat (Sys.getenv "NLLIB") "registry.txt" with
+      Not_found ->
+         "/amd/noon/y/nuprl/nuprl4i/nuprl5L/nuprl-light/library/registry.txt"
 
 let define_registry_type label bidirectional = 
   if (List.mem label !registry_types) then ()
@@ -97,6 +95,7 @@ let read_string stream =
 			     
 let read_int32 stream =
   let s = read_string stream in
+  let _ = eprintf "Calling int_of_string: %s%t" s eflush in
   let value = (int_of_string s) in
  if value < -9 then (*LAL hack-subtypes can be neg...number too big to convert from string*)
   (print_int value; failwith "fg" )(*"not yet ready to read in int32s"*)
