@@ -95,7 +95,10 @@ val eval_args_to_term_with_callback	: environment
 					-> (term -> unit) -> term -> term list
 					-> term
 *)
+
 (*
 val request_loop	: environment -> unit
    (* only viable if the local eval hook supplied *)
 *)
+
+val orb_req_loop 	: environment -> unit

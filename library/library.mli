@@ -128,6 +128,7 @@
 			-> (term -> 'a)	(* local unmarshall function *)
 			-> transaction -> (term * term list) -> 'a
 
+ val server_loop		: library -> unit
 
 
  (*

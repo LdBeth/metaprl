@@ -270,6 +270,47 @@ let dtest connection =
   ; print_newline()
   ; print_endline "activate test successful."
 
+
+
+let looptest connection =
+  let lib = join connection ["NuprlLight"] in
+    (unwind_error
+      (function () -> 
+
+	(with_transaction lib
+	   (function t -> 
+		(eval t
+		 (null_ap (itext_term "\l. inform_message nil ``NuprlLight Loop Start`` nil")))))
+
+	; server_loop lib
+	; leave lib 
+	)
+
+     (function () -> leave lib))
+;;
+
+
+let toptestloop libhost remote_port local_port =
+ print_newline(); 
+ print_newline(); 
+ print_endline "TestLoop Called ";
+
+  (let connection = connect libhost remote_port local_port in
+
+    (unwind_error
+      (function () -> 
+	looptest connection
+	)
+      (function () -> disconnect connection))
+
+    ; disconnect connection)
+
+ ; print_string "TestLoop DONE" 
+ ; print_newline()
+ ; print_newline()
+;;
+
+
 let testall libhost remote_port local_port =
  print_newline(); 
  print_newline(); 
@@ -284,6 +325,7 @@ let testall libhost remote_port local_port =
         ; dtest connection
 	; cookie := seri connection !cookie
 	; ptest connection
+	; looptest connection
 	)
       (function () -> disconnect connection))
 
@@ -293,6 +335,8 @@ let testall libhost remote_port local_port =
  ; print_newline()
  ; print_newline()
 ;;
+
+
 
 
 
@@ -405,12 +449,14 @@ let jointest remote_port local_port =
  raise (Test "Join Test Successful") 
 ;;
 
-
-special_error_handler (function () -> testall "DENEB" 5289 2895)
+special_error_handler (function () -> toptestloop "LOCKE" 7289 2897)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 
 (*
+special_error_handler (function () -> testall "DENEB" 5289 2895)
+ (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
 special_error_handler (function () -> maybe_lib_open())
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 

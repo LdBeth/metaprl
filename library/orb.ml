@@ -182,6 +182,7 @@ let ivalue_term_p t =
     { term_op = vo; term_terms = bterms } when vo = ivalue_op -> true
   | _ -> false
 
+let ivalue_term t = mk_term ivalue_op [mk_bterm [] t]
 
 let iack_parameter = make_param (Token "!ack")
 let iack_op = mk_nuprl5_op [iack_parameter]
@@ -242,9 +243,18 @@ let orb_broadcast env t =
 	(broadcasts_of_ibroadcasts_term t)
 
     
+let icommand_parameter = make_param (Token "!command")
+let icommand_op = mk_nuprl5_op [icommand_parameter]
+let icommand_term t = mk_term icommand_op [mk_bterm [] t]
+
+let cmd_of_icommand_term t = 
+ match dest_term t with { term_op = o; term_terms = [cmd] } when o = icommand_op
+    -> term_of_unbound_term cmd
+ |_ -> error ["orb"; "command"; "not"] [] [t]
+
 let local_eval f t =
   unconditional_error_handler 
-    (function () -> (f t))
+    (function () -> (ivalue_term (f (cmd_of_icommand_term t))))
     (function term -> ifail_term term)
 
 
@@ -525,15 +535,6 @@ let iml_expression_term result_p expr args =
     else iexpression_term (iml_term result_p expr args)
 
 
-let icommand_parameter = make_param (Token "!command")
-let icommand_op = mk_nuprl5_op [icommand_parameter]
-let icommand_term t = mk_term icommand_op [mk_bterm [] t]
-
-let cmd_of_icommand_term t = 
- match dest_term t with { term_op = o; term_terms = [cmd] } when o = icommand_op
-    -> term_of_unbound_term cmd
- |_ -> error ["orb"; "command"; "not"] [] [t]
-
 
 
 (* evals in remote orb env. *)
@@ -778,7 +779,7 @@ let eval_callback checkpointp e tid f =
  orb_eval false e (icommand_term (itransaction_term checkpointp))
 	tid
 	(function term -> 
-		(f (cmd_of_icommand_term term))
+		(f term)
 		; iack_term)
  ; ()
 
@@ -848,7 +849,7 @@ let quit_hook ehook =
 
 let orb_req_loop env = 
   
-  while (oref_val quit_loop)
+  while (not (oref_val quit_loop))
   do bus_wait env.connection None
       (quit_hook env.ehook)
   done

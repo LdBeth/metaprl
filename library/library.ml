@@ -52,6 +52,17 @@ let disconnect c = Orb.disconnect (oref_val orbr) c
  *	  
  *	
  *)
+let faux_refine bterms =
+ let seq = term_of_unbound_term (hd bterms) in
+
+    print_newline();
+    Mbterm.print_term seq;
+    print_newline();
+
+   list_to_ilist [seq; seq]
+
+
+
 
 let test_do_add bterms =
  let r =
@@ -67,13 +78,17 @@ let test_do_add bterms =
     r
 
 let test_add_op = mk_nuprl5_op [ make_param (Token "!test_add")]
+let faux_refiner_op = mk_nuprl5_op [ make_param (Token "!faux_refine")]
 
 let test_ehook t = 
   match dest_term t with
     {term_op = op; term_terms = bterms } when op = test_add_op
       -> test_do_add bterms
+    | {term_op = op; term_terms = bterms } when op = faux_refiner_op
+      -> faux_refine bterms
     | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
  
+let error_ehook t = (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t])
 
 let lib_new c s =
 	{ transactions = []
@@ -81,7 +96,7 @@ let lib_new c s =
 	     open_library_environment
 		c
 		s	
-		(function t -> (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t]))
+		test_ehook
 	}
 
 
@@ -91,7 +106,7 @@ let join c tags =
 	     join_library_environment
 		c
 		tags	
-		(function t -> (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t]))
+		test_ehook
 	}
 
 
@@ -388,6 +403,7 @@ let make_eval remote_toterm termto =
 			       (fst m),
 		 (snd m))))
 
+let server_loop lib = orb_req_loop lib.environment
 
 
 let oid_export_ap = null_ap (itext_term "oid_export ")
@@ -560,7 +576,6 @@ let children t oid =
   Definition.directory_children (resource t "TERMS") t.tbegin oid
 
 let root t name = (assoc name (roots t))
-
 let child t oid name = 
   let l = (children t oid) in
   try assoc name l 
