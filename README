@@ -17,10 +17,10 @@ To run MetaPRL for the first time:
       you may need to set the variables for CAMLLIB and CAMLP4LIB directories.
       You can either set them in the mk/config.local file, for example:
       CAMLLIB=/usr/lib/ocaml
-      CAMLP4LIB=/usr/lib/ocaml/Camlp4
+      CAMLP4LIB=/usr/lib/ocaml/camlp4
       or in the environment. If a variable is set in both, mk/config.local
       takes precedence over the environment.
-      By default, /usr/lib/ocaml and /usr/lib/ocaml/Camlp4 are used
+      By default, /usr/lib/ocaml and /usr/lib/ocaml/camlp4 are used
 
    3. Edit mk/config (instructions are provided in the file itself).
 

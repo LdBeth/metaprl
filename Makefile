@@ -49,7 +49,7 @@ all: check_config
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	fi; done
 
-opt: check_config
+opt: check_config check_versions_opt
 	+@if (echo Making util...; $(MAKE) -C util -f Makefile $@); then true; else exit 1; fi
 	+@for i in $(DIRS); do if [ -f $$i/Makefile.prl ]; then\
 		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
@@ -72,7 +72,7 @@ filter: check_config
 		if (echo Making $$i...; $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
-filter_opt: check_config
+filter_opt: check_config check_versions_opt
 	+@for i in $(REFINER_DIRS) filter; do\
 		if (echo Making $$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
 	done
@@ -94,7 +94,7 @@ profile_mem: check_config
 	+@$(MAKE) filter
 	+@$(MAKE) profile_opt_mem
 
-profile_opt: check_config
+profile_opt: check_config check_versions_opt
 	+@for i in $(REFINER_DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
@@ -145,6 +145,28 @@ mk/config: mk/make_config.sh
 
 mk/config.local:
 	@touch mk/config.local
+
+check_versions:: mk/config mk/config.local
+	@if [ ! -r $(CAMLLIB)/parsetree.cmi ]; then \
+		echo '!!! The file $(CAMLLIB)/parsetree.cmi does not exist (or is not readable)!'; echo '!!!';\
+		echo '!!! Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)';\
+		echo '!!! for instructions on compiling OCaml and setting the CAMLLIB variable'; echo '!!!';\
+		exit 1;\
+	fi
+	@if [ ! -r $(CAMLP4LIB)/camlp4.cma ]; then \
+		echo '!!! The file $(CAMLP4LIB)/camlp4.cma does not exist (or is not readable)!'; echo '!!!';\
+		echo '!!! Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)';\
+		echo '!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable'; echo '!!!';\
+		exit 1;\
+	fi
+
+check_versions_opt:: mk/config mk/config.local
+	@if [ ! -r $(CAMLP4LIB)/camlp4.cmxa ]; then \
+		echo '!!! The file $(CAMLP4LIB)/camlp4.cmxa does not exist (or is not readable)!'; echo '!!!';\
+		echo '!!! Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)';\
+		echo '!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable'; echo '!!!';\
+		exit 1;\
+	fi
 
 check_config::check_versions mk/config mk/config.local
 	@if [ $(TERMS) != ds -a $(TERMS) != std ]; then\

@@ -152,7 +152,7 @@ ifndef MPLIB
    MPLIB=$(ROOT)/lib
 endif
 
-.PHONY: default check_versions all lib opt optlib clean depend install export import profile
+.PHONY: default check_versions check_versions_opt all lib opt optlib clean depend install export import profile
 
 default: all
 check_versions::
@@ -180,7 +180,7 @@ check_versions::
 endif
 ifndef OCAMLOPT
    OCAMLOPT = ocamlopt$(EXE)
-check_versions::
+check_versions_opt::
 	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(OCAMLOPT) "" OCAMLOPT "The Objective Caml native-code compiler, version"
 endif
 ifndef OCAMLLEX

@@ -17,15 +17,13 @@
 <OL>
   <LI>GNU make. Make 3.77 has a bug and may not work, but make 3.76.1 and 3.78.1 should work fine.
   <LI>Objective Caml: our version contains a small patch to CamlP4 to compile the
-      CamlP4 distribution in native code, a patch to install interface files
-      needed by MetaPRL to evaluate programs in the toploop, and a patch that
-      gives MetaPRL access to comments in <tt>.ml</tt> files.
+      CamlP4 distribution in native code.
   <LI>Ensemble: you need Ensemble only if you want to use the distributed prover.
   <LI>HTMLDOC: you will only need Htmldoc if you want to be able to convert MetaPRL documentation into Postscript or PDF format.
   <LI>MetaPRL sources.
 </OL>
 
-<P>OCaml and Htmldoc are available as source, and RedHat 5.x, 6.x and 7.x
+<P>OCaml and Htmldoc are available as source, and RedHat 6.x, 7.x, 8.x and 9
 <A HREF="http://www.rpm.org">RPM</A> files for Linux x86. You can get the
 <a href="http://rpmfind.net/linux/rpm2html/">rpm2html</a> listing of available RPMs and download them from <A
 HREF="http://rpm.nogin.org/ocaml.html">http://rpm.nogin.org/ocaml.html</A>
@@ -109,9 +107,22 @@ directory. More information on Ensemble is available at the
 <A HREF="http://www.cs.cornell.edu/Info/Projects/Ensemble/">Ensemble
 Home Page</A>.</P>
 
-<P>You may need to set your environment variables <TT>CAMLLIB</TT> and <TT>CAMLP4LIB</TT> to point to the directories where you have installed OCaml and Camlp4 files. The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/camlp4</TT> respectively. If you are using Ensemble, either set <TT>ENSROOT=&lt;root of the ensemble source tree&gt;</TT> or edit the <TT>mk/config</TT> file (this file
-will be created when you run <TT>make</TT> for the first time).
+<P>After you run <TT>make</tt> for the first time, it will create the
+<tt>mk/config</tt> file (as well as an empty <TT>mk/config.local</TT> file)
+that you will need to customize.
+
+<P> If you are using Ensemble, either set <TT>ENSROOT=&lt;root of the ensemble
+source tree&gt;</TT> in the <TT>mk/config</TT> file.
 </P>
+
+<P>You may need to set variables <TT>CAMLLIB</TT> and <TT>CAMLP4LIB</TT> to
+point to the directories where you have installed OCaml and Camlp4 files. You
+can either set them in the <TT>mk/config.local</TT> file, for example:<pre>
+CAMLLIB=/usr/lib/ocaml
+CAMLP4LIB=/usr/lib/ocaml/camlp4
+</pre> or in the environment. If a variable is set in both,
+<TT>mk/config.local</tt> takes precedence over the environment.
+The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/ocaml/camlp4</TT> respectively.
 
 <P> If you want to use Htmldoc, download it from
 <A HREF="http://www.easysw.com/htmldoc/">http://www.easysw.com/htmldoc/</A></P>
@@ -134,7 +145,6 @@ in some cases another font may work better. If you going to run MetaPRL in
 <TT>xterm</TT> (or Emacs), you can start <tt>xterm</tt> (Emacs) with the <tt>-fn
 -misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1</tt> to get it to
 use the right font.</P>
-
 
 <P>That's it. To navigate the MetaPRL logics and programs,
 you will need to read the <A TARGET="_top" HREF="user-guide/default.html">User Guide</A>.
