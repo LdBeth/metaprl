@@ -1,0 +1,11 @@
+#!/bin/csh -f
+
+#
+# Use the local copy of the library
+#
+setenv NLLIB ../../lib
+setenv TPTP ../../../TPTP
+if(-d $TPTP) then
+   setenv NL_TPTP `echo . $TPTP $TPTP/Problems/* | sed -e 's, ,:,g'`
+endif
+exec ./nl.top -I . -I ../../theories/tptp -I ../../theories/czf -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/tactic -I $CAMLP4LIB $*
