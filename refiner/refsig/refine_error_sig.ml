@@ -110,7 +110,6 @@ sig
     | MetaTermMatchError of meta_term
 
       (* Rewriter errors *)
-    | RewriteBoundSOVar of var
     | RewriteFreeSOVar of var
     | RewriteSOVarArity of var
     | RewriteBoundParamVar of var

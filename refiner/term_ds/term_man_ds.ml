@@ -291,8 +291,6 @@ struct
 
    let rec rename_hyps vars sub = function
       [] -> [], sub
-    | Context(c, _,_) :: _ when SymbolSet.mem vars c ->
-         invalid_arg "Term_man_ds.explode_sequent_and_rename: bound context encountered"
     | Context(c, cts, ts) :: hyps ->
          let hyps', sub' = rename_hyps (SymbolSet.add vars c) sub hyps in
             Context(c, cts, List.map (apply_subst sub) ts) :: hyps', sub'
@@ -790,35 +788,37 @@ struct
    (*
     * Meta term.
     *)
-   let rec free_meta_variables vars t = match get_core t with
-      FOVar _ -> vars
-    | SOVar(v, conts, ts) -> SymbolSet.add (List.fold_left free_meta_variables (SymbolSet.add_list vars conts) ts) v
-    | Term{term_terms = bts} -> List.fold_left free_meta_variables_bterm vars bts
-    | Sequent eseq ->
-         free_meta_variables (
-            free_meta_variables_hyps (
-               free_meta_variables vars eseq.sequent_concl
-            ) eseq.sequent_hyps (SeqHyp.length eseq.sequent_hyps)
-         ) eseq.sequent_args
-    | Hashed _ | Subst _ -> fail_core "free_meta_variables"
+   DEFINE FREE_VARS(sovar_case) =
+      let rec aux vars t = match get_core t with
+         FOVar _ -> vars
+       | SOVar(v, conts, ts) -> sovar_case
+       | Term{term_terms = bts} -> List.fold_left aux_bterm vars bts
+       | Sequent eseq ->
+            aux (
+               aux_hyps (
+                  aux vars eseq.sequent_concl
+               ) eseq.sequent_hyps (SeqHyp.length eseq.sequent_hyps)
+            ) eseq.sequent_args
+       | Hashed _ | Subst _ -> fail_core "free_meta_variables"
+      and aux_bterm vars bt = aux vars bt.bterm
+      and aux_hyps vars hyps i =
+         if i = 0 then
+            vars
+         else
+            let i = pred i in
+            let vars =
+               match SeqHyp.get hyps i with
+                  Hypothesis(_, t) ->
+                     aux vars t
+                | Context(v, conts, ts) ->
+                     List.fold_left aux (SymbolSet.add_list (SymbolSet.add vars v) conts) ts
+            in
+               aux_hyps vars hyps i
+      in
+         aux SymbolSet.empty
 
-   and free_meta_variables_bterm vars bt = free_meta_variables vars bt.bterm
-
-   and free_meta_variables_hyps vars hyps i =
-      if i = 0 then
-         vars
-      else
-         let i = pred i in
-         let vars =
-            match SeqHyp.get hyps i with
-               Hypothesis(_, t) ->
-                  free_meta_variables vars t
-             | Context(v, conts, ts) ->
-                  List.fold_left free_meta_variables (SymbolSet.add_list (SymbolSet.remove vars v) conts) ts
-         in
-            free_meta_variables_hyps vars hyps i
-
-   let free_meta_variables = free_meta_variables SymbolSet.empty
+   let all_meta_variables = FREE_VARS(SymbolSet.add (List.fold_left aux (SymbolSet.add_list vars conts) ts) v)
+   let all_contexts = FREE_VARS(List.fold_left aux (SymbolSet.add_list vars conts) ts)
 
    (************************************************************************
     * Rewrite rules                                                        *

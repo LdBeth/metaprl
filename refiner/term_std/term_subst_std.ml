@@ -79,8 +79,8 @@ struct
     * Check whether a term is closed.
     *)
    let rec is_closed_term bvars = function
-      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bterms } when Opname.eq opname var_opname ->
-         List.mem v bvars && is_closed_bterms bvars bterms
+      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = [] } when Opname.eq opname var_opname ->
+         List.mem v bvars
     | { term_terms = bterms } ->
          is_closed_bterms bvars bterms
 
@@ -101,15 +101,11 @@ struct
     * of bound variables.
     *)
    let rec free_vars_term gvars bvars = function
-      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bterms } when Opname.eq opname var_opname ->
-         (* This is a variable *)
-         let gvars' =
-            if List.mem v bvars || List.mem v gvars then
-               gvars
-            else
-               v::gvars
-         in
-            free_vars_bterms gvars' bvars bterms
+      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = [] } when Opname.eq opname var_opname ->
+         if List.mem v bvars || List.mem v gvars then
+            gvars
+         else
+            v::gvars
     | { term_terms = bterms } ->
          free_vars_bterms gvars bvars bterms
 
@@ -141,7 +137,7 @@ struct
     * See if a variable is free.
     *)
    let rec is_var_free v = function
-      { term_op = { op_name = opname; op_params = [Var v'] };
+      { term_op = { op_name = opname; op_params = [Var v']}; term_terms = []
       } when Opname.eq opname var_opname && v' = v ->
          true
     | { term_terms = bterms } ->
@@ -155,7 +151,7 @@ struct
     *)
    let is_some_var_free vars =
       let rec free_vars_term vars bvars = function
-         { term_op = { op_name = opname; op_params = [Var v'] };
+         { term_op = { op_name = opname; op_params = [Var v'] }; term_terms = []
          } when Opname.eq opname var_opname && List.mem v' vars ->
             true
        | { term_terms = bterms } ->

@@ -68,10 +68,11 @@ open File_type_base
  * Rev 15: tokens now use opnames instead of strings
  * Rev 16: removed "Opname" and "Definition" from the summary_item type
  * Rev 17: changed the Filter_grammar definition
+ * Rev 18: changed the mseq_vars field in the msequent type definition
  *)
-let raw_versions = List.map (pack_version 1 0) [17]
+let raw_versions = List.map (pack_version 1 0) [18]
 
-let term_versions = List.map (pack_version 1 0) [16]
+let term_versions = List.map (pack_version 1 0) [18;17;16]
 
 (*
  * ASCII IO format revision history:

@@ -184,7 +184,7 @@ struct
                         body
                      ENDIF
                 | SOVar (v, vs, ts) ->
-                     SymbolSet.add (SymbolSet.add_list (terms_free_vars ts) vs) v
+                     SymbolSet.add_list (terms_free_vars ts) vs
                 | Hashed d ->
                      free_vars_set (Weak_memo.TheWeakMemo.retrieve_hack d)
 

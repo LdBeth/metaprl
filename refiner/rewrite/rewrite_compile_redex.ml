@@ -193,16 +193,12 @@ struct
       else if is_so_var_term term then
          let v, conts, subterms = dest_so_var term in
          let so_mem = rstack_so_mem v stack in
-            if List.mem_assoc v st.st_bvars then
-               REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
-            else if st.st_patterns && are_bound_vars st.st_bvars subterms then
+            if st.st_patterns && are_bound_vars st.st_bvars subterms then
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)
                let () =
                   if so_mem then
                      rstack_check_arity v conts (List.length subterms) stack
-                  else if rstack_mem v stack then
-                     REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
                in
                let stack =
                   if so_mem then
@@ -261,9 +257,9 @@ struct
 
       else if is_context_term term then
          let v, term, conts, vars = dest_context term in
-            if rstack_mem v stack then
-               (* The context should have a unique name *)
-               REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
+            if rstack_c_mem v stack then
+               (* XXX: TODO *)
+               raise (Invalid_argument "Matching non-sequent context intances is not supported yet")
 
             else if Lm_array_util.mem v st.st_addrs then
                (* All the vars should be free variables *)
@@ -404,11 +400,6 @@ struct
          match SeqHyp.get hyps i with
             Context (v, conts, terms) ->
                let instance = rstack_c_mem v stack in
-               let () =
-                  if not instance && rstack_mem v stack then
-                     (* The context should have a unique name *)
-                     REF_RAISE (RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
-               in
                let stack, term, ind =
                   if instance then
                      begin
@@ -563,7 +554,7 @@ struct
               st_strict = (strict=Strict);
               st_ints = params.spec_ints;
               st_addrs = params.spec_addrs;
-              st_svars = free_vars_terms allargs;
+              st_svars = List.fold_left SymbolSet.union (free_vars_terms allargs) (List.map all_meta_variables allargs);
               st_bvars = [];
               st_bconts = [];
               st_arg = true;

@@ -149,14 +149,14 @@ struct
     *
     * Each hyp is labelled by its first argument.
     *)
-   type msequent_free_vars =
-      FreeVarsDelayed
-    | FreeVars of SymbolSet.t
+   type msequent_so_vars =
+      SOVarsDelayed
+    | SOVars of SymbolSet.t
 
    type msequent =
-      { mutable mseq_vars : msequent_free_vars;
+      { mseq_so_vars : msequent_so_vars ref;
         mseq_goal : term;
-        mseq_hyps : term list
+        mseq_assums : term list
       }
 
    (*
@@ -168,7 +168,7 @@ struct
    type ml_rewrite = term -> term
 
    type ml_cond_rewrite =
-      SymbolSet.t ->                                 (* Free vars in the msequent *)
+      SymbolSet.t ->                                 (* Meta-vars in the msequent *)
       term list ->                                   (* Params *)
       term ->                                        (* Term to rewrite *)
       term * term list * term_extract                (* Extractor is returned *)
@@ -445,36 +445,38 @@ struct
     ************************************************************************)
 
    let dest_msequent mseq =
-      mseq.mseq_goal, mseq.mseq_hyps
+      mseq.mseq_goal, mseq.mseq_assums
 
    let msequent_goal mseq = mseq.mseq_goal
 
-   let msequent_nth_assum mseq i = List.nth mseq.mseq_hyps (pred i)
+   let msequent_nth_assum mseq i = List.nth mseq.mseq_assums (pred i)
 
-   let msequent_num_assums mseq = List.length mseq.mseq_hyps
+   let msequent_num_assums mseq = List.length mseq.mseq_assums
 
-   let msequent_free_vars mseq =
-      match mseq.mseq_vars with
-         FreeVars vars ->
-            vars
-       | FreeVarsDelayed ->
-            let { mseq_goal = goal; mseq_hyps = hyps } = mseq in
-            let vars = free_vars_terms (goal :: hyps) in
-               mseq.mseq_vars <- FreeVars vars;
-               vars
+   let mseq_so_vars =
+      let join vs t =
+         SymbolSet.union vs (all_meta_variables t)
+      in fun mseq ->
+         match !(mseq.mseq_so_vars) with
+            SOVars vs ->
+               vs
+          | SOVarsDelayed ->
+               let vs = List.fold_left join (all_meta_variables mseq.mseq_goal) mseq.mseq_assums in
+                  mseq.mseq_so_vars := SOVars vs;
+                  vs
 
    let mk_msequent goal subgoals =
       { mseq_goal = goal;
-        mseq_hyps = subgoals;
-        mseq_vars = FreeVarsDelayed
+        mseq_assums = subgoals;
+        mseq_so_vars = ref SOVarsDelayed
       }
 
     (*
-     * Check that all the hyps in the list are equal.
+     * Check that all the assums in the list are equal.
      *)
-   let equal_hyps hyps t =
-      let check hyps' =
-         List.for_all2 alpha_equal hyps' hyps
+   let equal_assums assums t =
+      let check assums' =
+         List.for_all2 alpha_equal assums' assums
       in
          List.for_all check t
 
@@ -486,25 +488,25 @@ struct
          (* This is the common case *)
          true
       else
-         let { mseq_goal = goal1; mseq_hyps = hyps1 } = seq1 in
-         let { mseq_goal = goal2; mseq_hyps = hyps2 } = seq2 in
+         let { mseq_goal = goal1; mseq_assums = assums1 } = seq1 in
+         let { mseq_goal = goal2; mseq_assums = assums2 } = seq2 in
          let rec compare = function
-            hyp1::hyps1, hyp2::hyps2 ->
-               alpha_equal hyp1 hyp2 & compare (hyps1, hyps2)
+            hyp1::assums1, hyp2::assums2 ->
+               alpha_equal hyp1 hyp2 & compare (assums1, assums2)
           | [], [] ->
                true
           | _ ->
                false
          in
-            alpha_equal goal1 goal2 & compare (hyps1, hyps2)
+            alpha_equal goal1 goal2 & compare (assums1, assums2)
 
    (*
-    * Split the goals from the hyps.
+    * Split the goals from the assums.
     *)
    let rec split_msequent_list = function
-      { mseq_goal = goal; mseq_hyps = hyps }::t ->
-         let goals, hypsl = split_msequent_list t in
-            goal :: goals, hyps :: hypsl
+      { mseq_goal = goal; mseq_assums = assums }::t ->
+         let goals, assumsl = split_msequent_list t in
+            goal :: goals, assums :: assumsl
     | [] ->
          [], []
 
@@ -524,16 +526,16 @@ struct
    (*
     * The base tactic proves by assumption.
     *)
-   let rec get_nth hyps i =
-      match hyps, i with
+   let rec get_nth assums i =
+      match assums, i with
          h::_, 0 -> h
        | _::tl, _ -> get_nth tl (pred i)
        | _ -> REF_RAISE(RefineError ("nth_hyp", IntError i))
 
    let nth_hyp i _ seq =
-      let { mseq_goal = goal; mseq_hyps = hyps } = seq in
+      let { mseq_goal = goal; mseq_assums = assums } = seq in
          if i<0 then REF_RAISE(RefineError ("nth_hyp", IntError i)) else
-            if alpha_equal (get_nth hyps i) goal then
+            if alpha_equal (get_nth assums i) goal then
                [], NthHypJust (seq, i)
             else
                REF_RAISE(RefineError ("nth_hyp", StringError "hyp mismatch"))
@@ -542,9 +544,8 @@ struct
     * Cut rule.
     *)
    let cut t _ seq =
-      let { mseq_hyps = hyps; mseq_goal = goal } = seq in
-      let cut_lemma = { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t } in
-      let cut_then = { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps @ [t]; mseq_goal = goal } in
+      let cut_lemma = { seq with mseq_goal = t } in
+      let cut_then = { seq with mseq_assums = seq.mseq_assums @ [t] } in
       let cut_info = { cut_goal = seq; cut_hyp = t; cut_lemma = cut_lemma; cut_then = cut_then } in
          [cut_lemma; cut_then], CutJust cut_info
 
@@ -578,21 +579,20 @@ struct
     * Turn the rewrite into a tactic.
     *)
    let rwtactic i rw sent mseq =
-      let { mseq_hyps = hyps; mseq_goal = goal } = mseq in
       let t =
          if i = 0 then
-            goal
-         else if i <= List.length hyps then
-            List.nth hyps (pred i)
+            mseq.mseq_goal
+         else if i <= List.length mseq.mseq_assums then
+            List.nth mseq.mseq_assums (pred i)
          else
             REF_RAISE(RefineError ("rwtactic", StringIntError ("assum number is out of range", i)))
       in
       let t', just = rw sent t in
       let subgoal =
          if i = 0 then
-            { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t' }
+            { mseq with mseq_goal = t' }
          else
-            { mseq_vars = FreeVarsDelayed; mseq_hyps = Lm_list_util.replace_nth (pred i) t' hyps; mseq_goal = goal }
+            { mseq with mseq_assums = Lm_list_util.replace_nth (pred i) t' mseq.mseq_assums }
       in
          [subgoal], RewriteJust (mseq, just, subgoal)
 
@@ -648,26 +648,22 @@ struct
     * term in question, and then rename to avoid capture in the goal.
     *)
    let replace_subgoals mseq subgoals =
-      let { mseq_hyps = hyps; mseq_goal = seq } = mseq in
-
       (*
        * We have to rename sequent vars when we substitute into the goal.
        *)
       let replace_subgoal addr t' =
          (* Compute the extra binding variables in the clause *)
          let addr1, addr2 = TermAddr.split_clause_address addr in
-         let tst = term_subterm seq addr1 in
+         let tst = term_subterm mseq.mseq_goal addr1 in
          let f bvars t =
             if SymbolSet.intersectp bvars (free_vars_set t') then
-               REF_RAISE(RefineError ("Refine.replace_subgoals", StringWrapError("Invalid context for conditional rewrite application",AddressError(addr,seq))))
+               REF_RAISE(RefineError ("Refine.replace_subgoals",
+                  StringWrapError("Invalid context for conditional rewrite application",AddressError(addr,mseq.mseq_goal))))
             else t
          in
          ignore(TermAddr.apply_var_fun_at_addr f addr2 SymbolSet.empty tst);
          (* Now we can replace the goal without fear *)
-            { mseq_vars = FreeVarsDelayed;
-              mseq_hyps = hyps;
-              mseq_goal = replace_concl seq t';
-            }
+         { mseq with mseq_goal = replace_concl mseq.mseq_goal t' }
       in
 
       (*
@@ -688,12 +684,12 @@ struct
     * Apply a conditional rewrite.
     *)
    let crwtactic i (crw : cond_rewrite) (sent : sentinal) (seq : msequent) =
-      let { mseq_goal = goal; mseq_hyps = hyps } = seq in
+      let { mseq_goal = goal; mseq_assums = assums } = seq in
       let t =
          if i = 0 then
             goal
-         else if i <= List.length hyps then
-            List.nth hyps (pred i)
+         else if i <= List.length assums then
+            List.nth assums (pred i)
          else
             REF_RAISE(RefineError ("Refine.crwtactic", StringIntError ("assumption is out of range", i)))
       in
@@ -701,13 +697,13 @@ struct
          if !debug_rewrites then
             eprintf "crwtactic applied to %a%t" print_term t eflush;
       ENDIF;
-      let t', subgoals, just = crw sent (msequent_free_vars seq) t in
+      let t', subgoals, just = crw sent (mseq_so_vars seq) t in
       if t' == t then [seq], Identity else
       let subgoal =
          if i = 0 then
-            { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t' }
+            { seq with mseq_goal = t' }
          else
-            { mseq_vars = FreeVarsDelayed; mseq_hyps = Lm_list_util.replace_nth (pred i) t' hyps; mseq_goal = goal }
+            { seq with mseq_assums = Lm_list_util.replace_nth (pred i) t' assums }
       in
       let subgoals = subgoal :: replace_subgoals seq subgoals in
          subgoals, CondRewriteJust (seq, just, subgoals)
@@ -718,11 +714,11 @@ struct
    let crwaddr addr (crw: cond_rewrite) sent bvars t =
       DEFINE body =
          let t', (subgoals, just) =
-            let f bvars t =
+            let f t =
                let t, subgoals, just = crw sent bvars t in
                   t, (subgoals, just)
             in
-               apply_var_fun_arg_at_addr f addr bvars t
+               apply_fun_arg_at_addr f addr t
          in
             t', CondRewriteSubgoalsAddr (addr, subgoals), CondRewriteAddress (t, addr, just, t')
       IN
@@ -740,11 +736,11 @@ struct
     * XXX: This breacks current (incomplete) conditional variable scope checking.
    let crwhigher (crw: cond_rewrite) sent bvars t =
       let t', args =
-         let f bvars t =
+         let f t =
             let t, subgoals, just = crw sent bvars t in
                t, (subgoals, just)
          in
-            apply_var_fun_higher f bvars t
+            apply_fun_higher f t
       in
       let subgoals, just = List.split args in
          t', CondRewriteSubgoalsList subgoals, CondRewriteHigher (t, just, t')
@@ -963,7 +959,7 @@ struct
     *)
    let rec just_subgoal_count find = function
       RuleJust just ->
-         List.length (find.find_rule just.just_refiner).rule_info.mseq_hyps
+         List.length (find.find_rule just.just_refiner).rule_info.mseq_assums
     | MLJust (_, _, i) ->
          i
     | RewriteJust _ ->
@@ -996,7 +992,7 @@ struct
     * This will fail if some of the rules are not justified.
     *)
    let term_of_extract refiner ext (args : term list) =
-      if List.length ext.ext_goal.mseq_hyps <> List.length args then
+      if List.length ext.ext_goal.mseq_assums <> List.length args then
          raise (Invalid_argument "Refine.term_of_extract: number of term arguments differs from the number of assumptions");
       let find = find_of_refiner refiner in
       (* XXX HACK: this approach of building a closure on-the-fly is probably too inefficient *)
@@ -1190,18 +1186,17 @@ struct
       let rw = Rewrite.term_rewrite Strict addrs (goal :: params) subgoals in
       let opname = mk_opname name build.build_opname in
       let tac addrs params sent mseq =
-         let vars = msequent_free_vars mseq in
          IFDEF VERBOSE_EXN THEN
             if !debug_rules then
                eprintf "Applying rule %s to %a%t" (string_of_opname opname) print_term mseq.mseq_goal eflush;
          ENDIF;
-         let subgoals = apply_rewrite rw (addrs, vars) mseq.mseq_goal params in
+         let subgoals = apply_rewrite rw (addrs, mseq_so_vars mseq) mseq.mseq_goal params in
          IFDEF VERBOSE_EXN THEN
             if !debug_rules then
                eprintf "Applied rule %s, got %a%t" (string_of_opname opname) (print_any_list print_term) subgoals eflush;
          ENDIF;
          let make_subgoal subgoal =
-            { mseq_vars = FreeVars vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
+            { mseq with mseq_goal = subgoal }
          in
          let subgoals = List.map make_subgoal subgoals in
          let just =
@@ -1514,8 +1509,8 @@ struct
          try Hashtbl.find build.build_rules opname
          with Not_found -> REF_RAISE(RefineError (name, StringError "rule was not created"))
       in
-         if alpha_equal r.mseq_goal goal && (List.length r.mseq_hyps) = (List.length subgoals) &&
-            List.for_all2 alpha_equal r.mseq_hyps subgoals
+         if alpha_equal r.mseq_goal goal && (List.length r.mseq_assums) = (List.length subgoals) &&
+            List.for_all2 alpha_equal r.mseq_assums subgoals
          then
             build.build_refiner <-
                RuleRefiner {
@@ -1858,7 +1853,7 @@ struct
             eprintf "Refiner.delayed_rewrite: %s%t" name eflush
       ENDIF;
       let check_ext = function
-         { ext_goal = { mseq_goal = goal; mseq_hyps = [] }; ext_subgoals = []}
+         { ext_goal = { mseq_goal = goal; mseq_assums = [] }; ext_subgoals = []}
          when alpha_equal goal (mk_rewrite_hack (mk_xrewrite_term redex contractum)) -> ()
        | _ ->
             REF_RAISE(RefineError (name, StringError "extract does not match"))
@@ -1969,10 +1964,10 @@ struct
             eprintf "Refiner.add_delayed_cond_rewrite: %s%t" name eflush
       ENDIF;
       let check_ext = function
-         { ext_goal = {mseq_goal = goal; mseq_hyps = goal_hyps} ; ext_subgoals = [] }
+         { ext_goal = {mseq_goal = goal; mseq_assums = goal_assums} ; ext_subgoals = [] }
          when
             alpha_equal goal (mk_rewrite_hack (mk_xrewrite_term redex contractum)) &&
-            Lm_list_util.for_all2 alpha_equal goal_hyps (List.map mk_rewrite_hack subgoals) -> ()
+            Lm_list_util.for_all2 alpha_equal goal_assums (List.map mk_rewrite_hack subgoals) -> ()
        | _ ->
          REF_RAISE(RefineError(name, StringError "derivation does not match"))
       in

@@ -244,10 +244,6 @@ let format_refine_error db buf printers name error =
          printers.format_term db buf t2
     | MetaTermMatchError mt ->
          printers.format_mterm db buf mt
-    | RewriteBoundSOVar s ->
-         format_string buf "BoundSoVar:";
-         format_space buf;
-         format_string buf ("'" ^ string_of_symbol s)
     | RewriteFreeSOVar s ->
          format_szone buf;
          format_string buf "FreeSOVar:";

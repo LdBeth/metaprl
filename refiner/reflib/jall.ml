@@ -4227,8 +4227,8 @@ let rec renam_free_vars termlist =
    match termlist
    with [] -> [],[],SymbolSet.empty
     | f::r ->
-         let consts = free_meta_variables f in
-         let var_names = free_vars_list f consts in
+         let conts = all_contexts f in
+         let var_names = free_vars_list f conts in
          let string_terms =
             List.map (mk_string_term free_var_op) var_names
          in
@@ -4236,7 +4236,7 @@ let rec renam_free_vars termlist =
          and new_f = subst f var_names string_terms in
          let (rest_mapping,rest_renamed,rest_conts) = renam_free_vars r in
          let unique_mapping = remove_dups_list (mapping @ rest_mapping) in
-         (unique_mapping,(new_f::rest_renamed),SymbolSet.union consts rest_conts)
+         (unique_mapping,(new_f::rest_renamed),SymbolSet.union conts rest_conts)
 
 let rec apply_var_subst term = function
    [] -> term

@@ -546,7 +546,6 @@ struct
       let rec collect vars sub = function
          [] -> [], sub
        | Context(c, cts, ts) :: hyps ->
-            if SymbolSet.mem vars c then invalid_arg "Bound context in explode_sequent_and_rename";
             let hyps', sub' = collect (SymbolSet.add vars c) sub hyps in
                Context(c, cts, List.map (apply_subst sub) ts) :: hyps', sub'
        | Hypothesis (v,t) :: hyps ->
@@ -783,18 +782,23 @@ struct
 
    let context_vars = context_vars_term (SymbolSet.empty, SymbolSet.empty)
 
-   let rec free_meta_variables vars t =
-      if is_so_var_term t then
-         let v, conts, ts = dest_so_var t in
-            SymbolSet.add (List.fold_left free_meta_variables (SymbolSet.add_list vars conts) ts) v
-      else
-         List.fold_left free_meta_variables_bterm vars (dest_term t).term_terms
+   DEFINE FREE_VARS(sovar_case) =
+      let rec aux vars t =
+         if is_so_var_term t then
+            let v, conts, ts = dest_so_var t in
+               sovar_case
+         else if is_context_term t then
+            let v, t, conts, ts = dest_context t in
+               List.fold_left aux (SymbolSet.add_list (SymbolSet.add vars v) conts) ts
+         else
+            List.fold_left aux_bterm vars (dest_term t).term_terms
+      and aux_bterm vars bt =
+         aux vars (dest_bterm bt).bterm
+      in
+         aux SymbolSet.empty
 
-   and free_meta_variables_bterm vars bt =
-      let bt = dest_bterm bt in
-         free_meta_variables (SymbolSet.subtract_list vars bt.bvars) bt.bterm
-
-   let free_meta_variables = free_meta_variables SymbolSet.empty
+   let all_meta_variables = FREE_VARS(SymbolSet.add (List.fold_left aux (SymbolSet.add_list vars conts) ts) v)
+   let all_contexts = FREE_VARS(List.fold_left aux (SymbolSet.add_list vars conts) ts)
 
    (************************************************************************
     * Variable info.

@@ -202,7 +202,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
        | TermPairError of term * term
        | MetaTermMatchError of meta_term
 
-       | RewriteBoundSOVar of var
        | RewriteFreeSOVar of var
        | RewriteSOVarArity of var
        | RewriteBoundParamVar of var
@@ -415,7 +414,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
     | Err1.TermMatchError (t0, s1) -> TermMatchError (term_of_term1 t0, s1)
     | Err1.TermPairError (t0, t1) -> TermPairError (term_of_term1 t0, term_of_term1 t1)
     | Err1.MetaTermMatchError mt0 -> MetaTermMatchError (mterm_of_mterm1 mt0)
-    | Err1.RewriteBoundSOVar v0 -> RewriteBoundSOVar (v0)
     | Err1.RewriteFreeSOVar v0 -> RewriteFreeSOVar (v0)
     | Err1.RewriteSOVarArity v0 -> RewriteSOVarArity (v0)
     | Err1.RewriteBoundParamVar v0 -> RewriteBoundParamVar (v0)
@@ -2350,9 +2348,13 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p1_1, p1_2 = split p1 in
          merge merge_ss "TermMan.param_vars_info_list" (wrap2 TermMan1.param_vars_info_list p0 p1_1) (wrap2 TermMan2.param_vars_info_list p0 p1_2)
 
-      let free_meta_variables (p0 : term) =
+      let all_contexts (p0 : term) =
          let p0_1, p0_2 = p0 in
-         merge merge_ss "TermMan.free_meta_variables" (wrap1 TermMan1.free_meta_variables p0_1) (wrap1 TermMan2.free_meta_variables p0_2)
+         merge merge_ss "TermMan.all_contexts" (wrap1 TermMan1.all_contexts p0_1) (wrap1 TermMan2.all_contexts p0_2)
+
+      let all_meta_variables (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge merge_ss "TermMan.all_meta_variables" (wrap1 TermMan1.all_meta_variables p0_1) (wrap1 TermMan2.all_meta_variables p0_2)
 
       let context_vars (p0 : term) =
          let p0_1, p0_2 = p0 in
@@ -2440,9 +2442,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let xnil_term =
          merge_term "TermMan.xnil_term" (TermMan1.xnil_term) (TermMan2.xnil_term)
 
-      let xconcl_term =
-         merge_term "TermMan.xconcl_term" (TermMan1.xconcl_term) (TermMan2.xconcl_term)
-
       let is_xcons_term (p0 : term) =
          let p0_1, p0_2 = p0 in
          merge merge_bool "TermMan.is_xcons_term" (wrap1 TermMan1.is_xcons_term p0_1) (wrap1 TermMan2.is_xcons_term p0_2)
@@ -2471,6 +2470,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let mk_xlist_term (p0 : term list) =
          let p0_1, p0_2 = split p0 in
          merge merge_term "TermMan.mk_xlist_term" (wrap1 TermMan1.mk_xlist_term p0_1) (wrap1 TermMan2.mk_xlist_term p0_2)
+
+      let xconcl_term =
+         merge_term "TermMan.xconcl_term" (TermMan1.xconcl_term) (TermMan2.xconcl_term)
 
       let is_xstring_term (p0 : term) =
          let p0_1, p0_2 = p0 in
@@ -3027,10 +3029,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let msequent_nth_assum (p0 : msequent) (p1 : int) =
          let p0_1, p0_2 = p0 in
          merge merge_term "Refine.msequent_nth_assum" (wrap2 Refine1.msequent_nth_assum p0_1 p1) (wrap2 Refine2.msequent_nth_assum p0_2 p1)
-
-      let msequent_free_vars (p0 : msequent) =
-         let p0_1, p0_2 = p0 in
-         merge merge_ss "Refine.msequent_free_vars" (wrap1 Refine1.msequent_free_vars p0_1) (wrap1 Refine2.msequent_free_vars p0_2)
 
       let msequent_alpha_equal (p0 : msequent) (p1 : msequent) =
          let p0_1, p0_2 = p0 in

@@ -81,8 +81,8 @@ sig
    val so_vars_info_list :  (int * int) SymbolTable.t -> term list -> (int * int) SymbolTable.t
    val param_vars_info_list : SymbolSet.t -> term list -> SymbolSet.t
 
-   (* returns both free contexts and all SO variables *)
-   val free_meta_variables : term -> SymbolSet.t
+   val all_contexts : term -> SymbolSet.t
+   val all_meta_variables : term -> SymbolSet.t (* returns both free contexts and all SO variables *)
    val context_vars : term -> SymbolSet.t * SymbolSet.t (* sequent conts, normal conts *)
 
    (*

@@ -254,7 +254,6 @@ sig
    val msequent_goal : msequent -> term
    val msequent_num_assums : msequent -> int
    val msequent_nth_assum :  msequent -> int -> term
-   val msequent_free_vars : msequent -> SymbolSet.t
 
    (*
     * Alpha equality on sequent objects.

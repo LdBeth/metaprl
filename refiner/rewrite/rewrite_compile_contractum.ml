@@ -124,9 +124,7 @@ struct
                REF_RAISE(RefineError ("compile_so_redex_term", RewriteFreeSOVar v))
       else if is_so_var_term term then
          let v, conts, subterms = dest_so_var term in
-            if List.mem v bvars then
-               REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteBoundSOVar v))
-            else if array_rstack_so_mem v stack then begin
+            if array_rstack_so_mem v stack then begin
                (*
                 * This is a second order variable.
                 * The variable v should be bound, and we generate a

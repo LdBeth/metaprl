@@ -173,20 +173,20 @@ struct
                let vars = SymbolSet.add_list (SymbolSet.union (SymbolSet.remove vars var) (free_vars_terms terms)) conts in
                   hyp_free_vars vars hyps min i
 
-   let rec hyp_compute_sub hyps all_bvars i count sub =
+   let rec hyp_compute_sub hyps all_bvars vars i count sub =
       if count = 0 then
          sub
       else match SeqHyp.get hyps i with
          Hypothesis (v, _) ->
             if SymbolSet.mem all_bvars v then
                let v' = new_name v (SymbolSet.mem all_bvars) in
-                  hyp_compute_sub hyps (SymbolSet.add all_bvars v') (i+1) (count-1) ((v, mk_var_term v') ::sub)
+                  hyp_compute_sub hyps (SymbolSet.add all_bvars v') vars (i+1) (count-1) ((v, mk_var_term v') ::sub)
             else
-               hyp_compute_sub hyps (SymbolSet.add all_bvars v) (i+1) (count-1) sub
+               hyp_compute_sub hyps (SymbolSet.add all_bvars v) vars (i+1) (count-1) sub
        | Context (v, _, _) ->
-            if SymbolSet.mem all_bvars v then
+            if SymbolSet.mem vars v then
                REF_RAISE(RefineError("Rewrite_match_redex.hyp_compute_sub", StringVarError("Context variable occures freely where it is not allowed", v)));
-            hyp_compute_sub hyps (SymbolSet.add all_bvars v) (i+1) (count-1) sub
+            hyp_compute_sub hyps (SymbolSet.add all_bvars v) vars (i+1) (count-1) sub
 
    let check_instance_term vars t =
       if SymbolSet.intersectp vars (free_vars_set t) then
@@ -622,7 +622,7 @@ struct
                   match stack.(j) with
                      StackVoid -> []
                    | StackContextRestrict (vars) ->
-                        hyp_compute_sub hyps (SymbolSet.union vars all_bvars) i count []
+                        hyp_compute_sub hyps (SymbolSet.union vars all_bvars) vars i count []
                    | _ -> raise(Invalid_argument "Rewrite_match_redex.match_redex_sequent_hyps : internal error")
                in
                (* XXX: BUG? hyp_apply_and_rename_subst is not exactly right :-( *)
