@@ -46,7 +46,6 @@ module Tacticals
 : TacticalsSig
   with type tactic = Tactic.tactic
   with type tactic_arg = Tactic.tactic_arg
-  with type tactic_value = Tactic.tactic_value
   with type arglist = TacticType.arglist
 
 module Rewrite
@@ -67,7 +66,6 @@ module Sequent
   with type extract = Tacticals.extract
   with type tactic = Tactic.tactic
   with type tactic_arg = Tactic.tactic_arg
-  with type tactic_value = Tactic.tactic_value
   with type sentinal = Tactic.sentinal
   with type conv = Conversionals.conv
   with type raw_attribute = Tactic.raw_attribute

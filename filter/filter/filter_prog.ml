@@ -1095,9 +1095,9 @@ let define_rule want_checkpoint code proc loc
    let labels, avars, mterm = split_mfunction stmt in
    let name_rule_expr = lid_expr name_rule_id in
    let name_value =
-      fun_expr loc (all_ids @ [x_id]) <:expr<
+      fun_expr loc all_ids <:expr<
          $tactic_of_rule_expr loc$ $name_rule_expr$ (**)
-            [| $list:List.map lid_expr cvar_ids$ |] $list_expr loc lid_expr tparam_ids$ $lid:x_id$
+            [| $list:List.map lid_expr cvar_ids$ |] $list_expr loc lid_expr tparam_ids$
       >>
    in
    let rule_expr = <:expr<
@@ -1203,9 +1203,9 @@ let define_ml_rule want_checkpoint proc loc
       let tparams_ids_expr = list_expr loc lid_expr tparam_ids in
       let body = <:expr< $tactic_of_rule_expr loc$ $lid:name_rule_id$
                          [| $list:List.map lid_expr cvar_ids$ |]
-                         $tparams_ids_expr$ $lid:x_id$ >>
+                         $tparams_ids_expr$>>
       in
-         fun_expr loc (all_ids @ [x_id]) body
+         fun_expr loc all_ids body
    in
 
    let rule_patt = <:patt< $lid:name_rule_id$ >> in

@@ -145,8 +145,7 @@ sig
    and raw_attribute
    and raw_attributes = raw_attribute list
    and arglist
-   and tactic_value
-   and tactic = tactic_arg -> tactic_value
+   and tactic
    and attribute_info
 
    (*
@@ -264,14 +263,11 @@ sig
     * Here are all the different type of tactics.
     *    1. A tactic_arg contains all the info about the argument
     *    2. An extract contains the info to produce a Refine.extract
-    *    3. A tactic_value is the abstract result of a tactic,
-    *       which can be used to provide a (tactic_arg list * extract)
-    *    4. A pre_tactic is some precompiled info used to construct a tactic.
-    *    5. A tactic is a refinement
+    *    3. A pre_tactic is some precompiled info used to construct a tactic.
+    *    4. A tactic is a refinement
     *)
    type tactic_arg
-   type tactic_value
-   type tactic = tactic_arg -> tactic_value
+   type tactic
    type pre_tactic
    type sentinal
    type conv
@@ -350,7 +346,6 @@ sig
     ************************************************************************)
 
    type tactic_arg
-   type tactic_value
    type tactic
    type extract
    type conv
@@ -436,12 +431,16 @@ sig
    val nthAssumT : int -> tactic
    val cutT : term -> tactic
 
+   (* Wrap a tactic selection function *)
+   val funT : (tactic_arg -> tactic) -> tactic
+   val argfunT : ('a -> tactic_arg -> tactic) -> 'a -> tactic
+
    (*
     * Basic tacticals.
     *)
    val prefix_thenT : tactic -> tactic -> tactic
    val prefix_thenLT : tactic -> tactic list -> tactic
-   val prefix_thenFLT : tactic -> (tactic_arg list -> tactic_value list) -> tactic
+   val prefix_thenFLT : tactic -> (tactic_arg list -> tactic list) -> tactic
    val prefix_orelseT : tactic -> tactic -> tactic
 
    (*
@@ -787,7 +786,6 @@ sig
    type conv
    type tactic
    type tactic_arg
-   type tactic_value
    type sentinal
    type raw_attribute
 
@@ -851,7 +849,6 @@ module type TacticalsSig =
 sig
    type tactic
    type tactic_arg
-   type tactic_value
    type arglist
    type extract
 
@@ -861,6 +858,10 @@ sig
    val failWithT : string -> tactic
    val nthAssumT : int -> tactic
    val cutT : term -> tactic
+
+   (* Wrap a tactic selection function *)
+   val funT : (tactic_arg -> tactic) -> tactic
+   val argfunT : ('a -> tactic_arg -> tactic) -> 'a -> tactic
 
    (* Print timing information *)
    val timingT : tactic -> tactic
@@ -889,7 +890,7 @@ sig
 
    val prefix_thenT : tactic -> tactic -> tactic
    val prefix_thenLT : tactic -> tactic list -> tactic
-   val prefix_thenFLT : tactic -> (tactic_arg list -> tactic_value list) -> tactic
+   val prefix_thenFLT : tactic -> (tactic_arg list -> tactic list) -> tactic
    val prefix_then_OnFirstT : tactic -> tactic -> tactic
    val prefix_then_OnLastT : tactic -> tactic -> tactic
    val prefix_then_OnSameConclT : tactic -> tactic -> tactic

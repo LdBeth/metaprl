@@ -57,7 +57,6 @@ struct
 
    type tactic = TacticInternalType.tactic
    type tactic_arg = TacticInternalType.tactic_arg
-   type tactic_value = TacticInternalType.tactic_value
    type extract = TacticInternalType.extract
    type arglist = TacticType.arglist
 
@@ -66,26 +65,19 @@ struct
     ************************************************************************)
 
    (* Trivial tactics *)
-   let idT =
-      TacticInternal.idT
+   let idT = TacticInternal.idT
+   let timingT = TacticInternal.timingT
+   let finalT = TacticInternal.finalT
+   let nthAssumT = TacticInternal.nthAssumT
+   let cutT = TacticInternal.cutT
+   let funT = TacticInternal.funT
+   let argfunT = TacticInternal.argfunT
+   
+   let failT =
+      funT (fun _ -> raise (RefineError ("failT", StringError "Fail")))
 
-   let failT p =
-      raise (RefineError ("failT", StringError "Fail"))
-
-   let failWithT s p =
-      raise (RefineError ("failWithT", StringError s))
-
-   let timingT =
-      TacticInternal.timingT
-
-   let finalT =
-      TacticInternal.finalT
-
-   let nthAssumT =
-      TacticInternal.nthAssumT
-
-   let cutT =
-      TacticInternal.cutT
+   let failWithT s =
+      funT (fun _ -> raise (RefineError ("failWithT", StringError s)))
 
    (************************************************************************
     * SEQUENCING                                                           *
@@ -109,19 +101,18 @@ struct
     | tac :: tactl ->
          prefix_orelseT tac (firstT tactl)
     | [] ->
-         (fun p -> raise (RefineError ("firstT", StringError "no tactics")))
+         raise (RefineError ("firstT", StringError "no tactics"))
 
    let prefix_then_OnFirstT tac1 tac2 =
       let aux = function
          p::l ->
-            let tac2' = tac2 p in
             let rec dup_id = function
                x::t ->
-                  idT x :: dup_id t
+                  idT :: dup_id t
              | [] ->
                   []
             in
-               tac2' :: dup_id l
+               tac2 :: dup_id l
        | [] ->
             []
       in
@@ -130,9 +121,9 @@ struct
    let prefix_then_OnLastT tac1 tac2 =
       let rec aux = function
          [p] ->
-            [tac2 p]
+            [tac2]
        | p::t ->
-            idT p :: aux t
+            idT :: aux t
        | [] ->
             []
       in
@@ -142,14 +133,14 @@ struct
       let first p =
          let t = Sequent.concl p in
          let second p =
-            (if alpha_equal t (Sequent.concl p) then
+            if alpha_equal t (Sequent.concl p) then
                 tac2
              else
-                idT) p
+                idT
          in
-            prefix_thenT tac1 second p
+            prefix_thenT tac1 (funT second)
       in
-         first
+         funT first
 
    (************************************************************************
     * PROGRESS                                                             *
@@ -173,13 +164,13 @@ struct
                   if Sequent.tactic_arg_alpha_equal p' p then
                      raise (RefineError ("progressT", StringError "no progress"))
                   else
-                     [idT p']
+                     [idT]
              | _ ->
-                  List.map idT pp
+                  List.map (fun _ -> idT) pp
          in
-            prefix_thenFLT tac tac' p
+            prefix_thenFLT tac tac'
       in
-         aux
+         funT aux
    (*
     * Repeat, spreading out over subgoals.
     * Stop if there is no progress.
@@ -188,16 +179,15 @@ struct
       let rec aux t p =
          let t' = Sequent.goal p in
             if alpha_equal t t' then
-               idT p
+               idT
             else
-               prefix_thenT tac (aux t') p
+               prefix_thenT tac (funT (aux t'))
       in
       let start p =
          let t = Sequent.goal p in
-            prefix_thenT tac (aux t) p
+            prefix_thenT tac (funT (aux t))
       in
-         start
-
+         funT start
 
    (*
     * Repeat, spreading out over subgoals.
@@ -205,9 +195,9 @@ struct
     *)
    let untilFailT tac =
       let rec aux p =
-          (tryT (prefix_thenT tac aux)) p
+          tryT (prefix_thenT tac (funT aux))
       in
-         aux
+         funT aux
 
    (*
     * Repeat, spreading out over subgoals.
@@ -254,7 +244,8 @@ struct
          let start p =
             (* Save the first conclusion *)
             let t = Sequent.concl p in
-            let rec aux tacs p =
+            let rec aux tacs =
+               funT (fun p ->
                (* Recurse through the tactics *)
                (match tacs with
                    tac::tactl ->
@@ -263,11 +254,11 @@ struct
                             prefix_thenT tac (aux tactl)
                          else
                             idT
-                 | [] -> idT) p
+                 | [] -> idT))
             in
-               aux tacs p
+               aux tacs
          in
-            start
+            funT start
 
    (************************************************************************
     * CONDITIONALS                                                         *
@@ -276,20 +267,15 @@ struct
    (*
     * Conditionals.
     *)
-   let ifT pred tac1 tac2 p =
-      (if pred p then
-          tac1
-       else
-          tac2) p
+   let ifT pred tac1 tac2 =
+      funT (fun p -> if pred p then tac1 else tac2)
 
    let ifOnConclT pred =
       ifT (function p -> pred (Sequent.concl p))
 
-   let ifOnHypT pred tac1 tac2 i p =
-      (if pred (Sequent.nth_hyp p i) then
-          tac1
-       else
-          tac2) i p
+   let ifOnHypT pred tac1 tac2 i =
+      funT (fun p ->
+         (if pred (Sequent.nth_hyp p i) then tac1 else tac2) i)
 
    let ifThenT pred tac1 =
       ifT (function p -> pred (Sequent.goal p)) tac1 idT
@@ -304,9 +290,9 @@ struct
 
    let whileT pred tac =
       let rec aux p =
-         tryT (ifThenT pred (prefix_thenT (progressT tac) aux)) p
+         tryT (ifThenT pred (prefix_thenT (progressT tac) (funT aux)))
       in
-         aux
+         funT aux
 
    let untilT pred =
       whileT (function p -> not (pred p))
@@ -341,58 +327,39 @@ struct
    let removeHiddenLabelT =
       addHiddenLabelT "main"
 
-   let keepingLabelT tac p =
-      let label = Sequent.label p in
-         (prefix_thenT tac (addHiddenLabelT label)) p
+   let keepingLabelT tac =
+      funT (fun p -> prefix_thenT tac (addHiddenLabelT (Sequent.label p)))
 
    (*
     * Conditional on label.
     *)
-   let ifLabLT tacs p =
-      let lab = Sequent.label p in
-         try
-            let tac = List.assoc lab tacs in
-               tac p
-         with
-            Not_found ->
-               idT p
+   let ifLabLT tacs =
+      funT (fun p ->
+         let lab = Sequent.label p in
+            try
+               List.assoc lab tacs
+            with
+               Not_found ->
+                  idT
+      )
 
-   let ifLabT lab tac1 tac2 p =
-      let lab' = Sequent.label p in
-         (if lab = lab' then
-             tac1
-          else
-             tac2) p
+   let ifLabT lab tac1 tac2 =
+      funT (fun p -> if lab = Sequent.label p then tac1 else tac2)
 
-   let ifMT tac p =
-      (if List.mem (Sequent.label p) main_labels then
-          tac
-       else
-          idT) p
+   let ifMT tac =
+      funT (fun p -> if List.mem (Sequent.label p) main_labels then tac else idT)
 
-   let ifWT tac p =
-      (if (Sequent.label p) = "wf" then
-          tac
-       else
-          idT) p
+   let ifWT tac =
+      ifLabT "wf" tac idT
 
-   let ifET tac p =
-      (if Sequent.label p = "equality" then
-          tac
-       else
-          idT) p
+   let ifET tac =
+      ifLabT "equality" tac idT
 
-   let ifAT tac p =
-      (if List.mem (Sequent.label p) main_labels then
-          idT
-       else
-          tac) p
+   let ifAT tac =
+      funT (fun p -> if List.mem (Sequent.label p) main_labels then idT else tac)
 
-   let ifPT tac p =
-      (if List.mem (Sequent.label p) predicate_labels then
-          tac
-       else
-          idT) p
+   let ifPT tac =
+      funT (fun p -> if List.mem (Sequent.label p) predicate_labels then tac else idT)
 
    (*
     * Label tacticals.
@@ -424,11 +391,11 @@ struct
             if pred (Sequent.label p) then
                match ts with
                   tac::tactl ->
-                     (tac p)::(aux tactl ps)
+                     tac::(aux tactl ps)
                 | [] ->
                      raise (RefineError ("thenMLT", StringError "argument mismatch"))
             else
-               (idT p)::(aux ts ps)
+               idT::(aux ts ps)
        | [] ->
             match ts with
                [] -> []
@@ -451,26 +418,25 @@ struct
     * Repeat only on main subgoals.
     *)
    let whileProgressMT tac =
-      let rec aux t p =
-         let t' = Sequent.goal p in
-            if alpha_equal t t' then
-               idT p
-            else
-               prefix_thenMT tac (aux t') p
+      let rec aux t =
+         funT (fun p ->
+            let t' = Sequent.goal p in
+               if alpha_equal t t' then idT else prefix_thenMT tac (aux t')
+         )
       in
       let start p =
          let t = Sequent.goal p in
-            prefix_thenMT tac (aux t) p
+            prefix_thenMT tac (aux t)
       in
-         start
+         funT start
 
    let repeatMT tac =  whileProgressMT (tryT tac)
 
    let untilFailMT tac =
       let rec aux p =
-          (tryT (prefix_thenMT tac aux)) p
+          tryT (prefix_thenMT tac (funT aux))
       in
-         aux
+         funT aux
 
    (*
     * Repeat a fixed number of times on main subgoals.
@@ -519,13 +485,13 @@ struct
                      [(if alpha_equal t t' & lab = lab' then
                           idT
                        else
-                          failWithT "progressT") p'']
+                          failWithT "progressT")]
              | _ ->
-                  List.map idT p'
+                  List.map (fun _ -> idT) p'
          in
-            prefix_thenFLT tac aux' p
+            prefix_thenFLT tac aux'
       in
-         aux
+         funT aux
 
    (************************************************************************
     * HYP AND CLAUSE                                                       *
@@ -534,8 +500,8 @@ struct
    (*
     * Renumbering.
     *)
-   let onClauseT i tac p =
-      tac i p
+   let onClauseT i tac =
+      tac i
 
    let onHypT = onClauseT
 
@@ -584,8 +550,8 @@ struct
    (*
     * Work on all hyps.
     *)
-   let onAllHypsT tac p =
-      onAllT prefix_thenT tac (Sequent.hyp_count p) p
+   let onAllHypsT tac =
+      funT (fun p -> onAllT prefix_thenT tac (Sequent.hyp_count p))
 
    (*
     * Include conclusion.
@@ -610,64 +576,75 @@ struct
    (*
     * Labelled forms.
     *)
-   let onAllMHypsT tac p =
-      onAllT prefix_thenMT tac (Sequent.hyp_count p) p
+   let onAllMHypsT tac =
+      funT (fun p -> onAllT prefix_thenMT tac (Sequent.hyp_count p))
 
    let tryOnAllMHypsT tac =
       onAllMHypsT (function i -> tryT (tac i))
 
-   let tryOnAllMClausesT tac p =
-      prefix_thenMT (onAllT prefix_thenMT (function i -> tryT (tac i)) (Sequent.hyp_count p)) (tryT (onConclT tac)) p
+   let tryOnAllMClausesT tac =
+      funT (fun p ->
+         prefix_thenMT 
+            (onAllT prefix_thenMT (function i -> tryT (tac i)) (Sequent.hyp_count p)) 
+            (tryT (onConclT tac))
+      )
 
    (*
     * These tactics work with assumptions.
     *)
-   let onAllAssumT tac p =
-      let rec all i assums p =
-         match assums with
-          | _ :: assums ->
-               prefix_thenT (tac i) (all (succ i) assums) p
-          | [] ->
-               idT p
+   let onAllAssumT tac =
+      let rec all i assums =
+         funT (fun p -> 
+            match assums with
+               _ :: assums ->
+                  prefix_thenT (tac i) (all (succ i) assums)
+             | [] ->
+                  idT
+         )
       in
-      let _, assums = dest_msequent (Sequent.msequent p) in
-         all 1 assums p
+         funT (fun p -> all 1 (snd (dest_msequent (Sequent.msequent p))))
 
-   let onAllMClausesOfAssumT tac assum p =
-      prefix_thenMT (onAllT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum)) (onConclT (tac assum)) p
+   let onAllMClausesOfAssumT tac assum =
+      funT (fun p ->
+         prefix_thenMT 
+            (onAllT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum)) 
+            (onConclT (tac assum))
+      )
 
    (*
     * Labeled form
     *)
-   let onAllMAssumT tac p =
-      let rec all i assums p =
-         match assums with
-          | assum :: assums ->
-               prefix_thenMT (tac i) (all (succ i) assums) p
-          | [] ->
-               idT p
+   let onAllMAssumT tac =
+      let rec all i assums =
+         funT (fun p ->
+            match assums with
+               assum :: assums ->
+                  prefix_thenMT (tac i) (all (succ i) assums)
+             | [] ->
+                  idT
+         )
       in
-      let _, assums = dest_msequent (Sequent.msequent p) in
-         all 1 assums p
+         funT (fun p -> all 1 (snd (dest_msequent (Sequent.msequent p))))
 
    (*
     * These tactics are useful for trivial search.
     *)
-   let onSomeAssumT tac p =
+   let onSomeAssumT tac =
+      funT (fun p ->
       let num = Sequent.num_assums p in
       if (num<1) then
          raise (RefineError ("onSomeAssumT", StringError "no assumptions"));
-      let rec some i p =
-         if i = num then tac i p
-         else prefix_orelseT (tac i) (some (succ i)) p
+      let rec some i =
+         if i = num then tac i
+         else prefix_orelseT (tac i) (some (succ i))
       in
-         some 1 p
+         some 1)
 
    (*
     * Make sure one of the hyps works.
     *)
-   let onSomeHypT tac p =
-      onAllT prefix_orelseT tac (Sequent.hyp_count p) p
+   let onSomeHypT tac =
+      funT (fun p -> onAllT prefix_orelseT tac (Sequent.hyp_count p))
 
    (************************************************************************
     * ARGUMENTS                                                            *

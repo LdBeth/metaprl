@@ -44,7 +44,6 @@ module TacticInternalType
 module Tactic
 : TacticSig
   with type tactic_arg = TacticInternalType.tactic_arg
-  with type tactic_value = TacticInternalType.tactic_value
   with type tactic = TacticInternalType.tactic
   with type conv = TacticInternalType.conv
   with type sentinal = TacticInternalType.sentinal
@@ -55,7 +54,6 @@ module Tactic
 module TacticInternal
 : TacticInternalSig
   with type tactic_arg = TacticInternalType.tactic_arg
-  with type tactic_value = TacticInternalType.tactic_value
   with type tactic = TacticInternalType.tactic
   with type extract = TacticInternalType.extract
   with type conv = TacticInternalType.conv

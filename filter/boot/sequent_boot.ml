@@ -54,7 +54,6 @@ struct
    type conv = TacticInternalType.conv
    type tactic = TacticInternalType.tactic
    type tactic_arg = TacticInternalType.tactic_arg
-   type tactic_value = TacticInternalType.tactic_value
    type sentinal = TacticInternalType.sentinal
    type raw_attribute = TacticInternalType.raw_attribute
 

@@ -39,7 +39,6 @@ module Sequent
   with type conv = TacticInternalType.conv
   with type tactic = TacticInternalType.tactic
   with type tactic_arg = TacticInternalType.tactic_arg
-  with type tactic_value = TacticInternalType.tactic_value
   with type sentinal = TacticInternalType.sentinal
   with type raw_attribute = TacticInternalType.raw_attribute
 

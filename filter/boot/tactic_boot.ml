@@ -203,9 +203,7 @@ struct
 
    and parents = tactic_arg Term_eq_table.msequent_table
 
-   and tactic_value = (tactic_arg, arglist, extract) ThreadRefiner.t
-
-   and tactic = tactic_arg -> tactic_value
+   and tactic = tactic_arg -> (tactic_arg, arglist, extract) ThreadRefiner.t
 
    and pre_tactic = (tactic_arg -> Refiner.Refiner.Refine.msequent list -> tactic_arg list) * prim_tactic
 
@@ -1087,6 +1085,10 @@ struct
          let subgoals, ext = tactic_of_refine_tactic [] (Refine.nth_hyp i) p in
             ThreadRefinerTacticals.create_value subgoals ext
 
+   (* funT is just an application *)
+   let funT tac p = tac p p
+   let argfunT tac arg p = tac arg p p
+
    (*
     * Identity doesn't do anything.
     *)
@@ -1105,11 +1107,26 @@ struct
     *)
    let prefix_thenT = ThreadRefinerTacticals.compose1
    let prefix_thenLT = ThreadRefinerTacticals.compose2
-   let prefix_thenFLT = ThreadRefinerTacticals.composef
    let firstT = ThreadRefinerTacticals.first
    let wrapT = ThreadRefinerTacticals.wrap
+   
    let prefix_orelseT tac1 tac2 =
       firstT [tac1; tac2]
+
+   let prefix_thenFLT =
+      let rec join tacs args =
+         match (tacs, args) with
+            t::tacs, a::args ->
+               (t a) :: (join tacs args)
+          | [], [] ->
+               []
+          | _ ->
+               raise (RefineError("thenFLT", StringError "list length mismatch"))
+      in let wrap tacf args =
+         let tacs = tacf args in
+            join tacs args
+      in fun tac tacf ->
+         ThreadRefinerTacticals.composef tac (wrap tacf)
 
    (*
     * Modify the label.

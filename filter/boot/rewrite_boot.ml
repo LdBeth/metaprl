@@ -250,69 +250,70 @@ struct
    let cutC t =
       CutConv t
 
-   let rec apply assum addr conv p =
+   let rec apply assum addr conv =
       match conv with
          RewriteConv rw ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Rewrite%t" eflush;
-            Tactic.tactic_of_rewrite assum (rwaddr addr rw) p
+            Tactic.tactic_of_rewrite assum (rwaddr addr rw)
        | CondRewriteConv crw ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: CondRewrite%t" eflush;
-            Tactic.tactic_of_cond_rewrite assum (crwaddr addr crw) p
+            Tactic.tactic_of_cond_rewrite assum (crwaddr addr crw)
        | ComposeConv clist ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Compose%t" eflush;
-            composeT assum addr (Flist.tree_of_list clist) p
+            composeT assum addr (Flist.tree_of_list clist)
        | ChooseConv clist ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Choose%t" eflush;
-            chooseT assum addr (Flist.tree_of_list clist) p
+            chooseT assum addr (Flist.tree_of_list clist)
        | AddressConv (addr', conv) ->
             let addr = compose_address addr addr' in
                if !debug_rewrite then
                   eprintf "Rewrite_type.apply: Address %s%t" (string_of_address addr') eflush;
-               apply assum addr conv p
+               apply assum addr conv
        | IdentityConv ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Identity%t" eflush;
-            TacticInternal.idT p
+            TacticInternal.idT
        | FunConv f ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Fun%t" eflush;
-            apply assum addr (f (p, assum, addr)) p
+            funT (fun p -> apply assum addr (f (p, assum, addr)))
        | HigherConv conv ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Higher%t" eflush;
-            apply assum addr (higherLC conv) p
+            apply assum addr (higherLC conv)
        | FoldConv (t, conv) ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Fold%t" eflush;
-            (prefix_thenLT (rwcutT assum addr t) [addHiddenLabelT "main"; solveCutT addr conv]) p
+            (prefix_thenLT (rwcutT assum addr t) [addHiddenLabelT "main"; solveCutT addr conv])
        | CutConv t ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Cut%t" eflush;
-            rwcutT assum addr t p
+            rwcutT assum addr t
 
-   and composeT assum addr tree p =
+   and composeT assum addr tree =
       match tree with
          Flist.Empty ->
-            idT p
+            idT
        | Flist.Leaf conv ->
-            apply assum addr conv p
+            apply assum addr conv
        | Flist.Append (tree1, tree2) ->
-            (prefix_then_OnFirstT (composeT assum addr tree1) (composeT assum addr tree2)) p
+            (prefix_then_OnFirstT (composeT assum addr tree1) (composeT assum addr tree2))
 
-   and chooseT assum addr tree p =
+   and chooseT assum addr tree =
       match tree with
          Flist.Empty ->
-            idT p
+            idT
        | Flist.Leaf conv ->
-            apply assum addr conv p
+            apply assum addr conv
        | Flist.Append (tree1, tree2) ->
-            (prefix_orelseT (chooseT assum addr tree1) (chooseT assum addr tree2)) p
+            (prefix_orelseT (chooseT assum addr tree1) (chooseT assum addr tree2))
 
-   and rwcutT assum addr t p =
+   and rwcutT assum addr t =
+      funT (fun p ->
       let goal, hyps = Refine.dest_msequent (Sequent.msequent p) in
       let t' =
          if assum = 0 then
@@ -323,22 +324,18 @@ struct
             raise (RefineError ("rwcutT", StringIntError ("assum number is out of range", assum)))
       in
       let t' = TermAddr.replace_subterm t' addr t in
-         cutT t' p
+         cutT t')
 
-   and solveCutT addr conv p =
+   and solveCutT addr conv =
+      funT (fun p ->
       let len = List.length (snd (Refine.dest_msequent (Sequent.msequent p))) in
-         (prefix_thenMT (apply len addr conv) (nthAssumT len)) p
+         (prefix_thenMT (apply len addr conv) (nthAssumT len)))
 
    (*
     * Apply the rewrite.
     *)
-   let rw conv assum addr p =
-      if !debug_rewrite then
-         eprintf "Rewrite start%t" eflush;
-      let x = apply assum addr conv p in
-         if !debug_rewrite then
-            eprintf "Rewrite done%t" eflush;
-         x
+   let rw conv assum addr =
+      apply assum addr conv
 
    (*
     * Create an input form.

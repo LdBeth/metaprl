@@ -250,9 +250,9 @@ struct
             funC repeatForCE
 
 
-   let rwc conv assum clause p =
-      let addr = Sequent.assum_clause_addr p assum clause in
-         RewriteInternal.rw conv assum addr p
+   let rwc conv assum clause =
+      Tacticals.funT 
+         (fun p -> RewriteInternal.rw conv assum (Sequent.assum_clause_addr p assum clause))
 
    let rwcAll conv assum  =
 (*    RewriteInternal.rw conv assum (TermAddr.make_address []) *)
