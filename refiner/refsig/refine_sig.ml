@@ -281,8 +281,7 @@ sig
     * for the arguments are included.
     *)
    val term_of_extract : refiner -> extract -> term list -> term
-
-   val join_ext_arg_hack : term -> term -> term (* hack; will go away *)
+   val make_wildcard_ext_arg : int -> term -> term
 
    (*
     * Get a checker from the refiner.
@@ -325,21 +324,21 @@ sig
       string ->                    (* name *)
       var array ->                 (* addrs *)
       term list ->                 (* params *)
-      term list ->                 (* args (binding vars) *)
+      term list ->                 (* extract args (bindings) *)
       term ->                      (* extract *)
       unit
    val derived_rule : build ->
       string ->                    (* name *)
       var array ->                 (* addrs *)
       term list ->                 (* params *)
-      term list ->                 (* args (binding vars) *)
+      unit ->                      (* placeholder *)
       extract ->                   (* derived justification *)
       unit
    val delayed_rule : build ->
       string ->                    (* name *)
       var array ->                 (* addrs *)
       term list ->                 (* params *)
-      term list ->                 (* args (binding vars) *)
+      unit ->                      (* placeholder *)
       (unit -> extract) ->         (* derived justification *)
       unit
 

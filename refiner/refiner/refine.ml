@@ -138,9 +138,9 @@ struct
    open TermType
    open Term
    open TermMan
-   open TermSubst
    open TermAddr
    open TermMeta
+   open TermSubst
    open TermShape
    open Rewrite
    open RefineError
@@ -1364,6 +1364,33 @@ struct
     * RULE                                                                 *
     ************************************************************************)
 
+   let make_wildcard_ext_arg =
+      let v = Lm_symbol.make "v" 0 in
+      let fold (avoid, vars, conts, hyps) = function
+         Context (c, _, _) as hyp ->
+            (avoid, vars, c::conts, hyp::hyps)
+       | Hypothesis t ->
+            let v = Lm_symbol.new_name v (SymbolSet.mem avoid) in
+               (SymbolSet.add avoid v, mk_var_term v :: vars , conts, HypBinding(v,t) :: hyps)
+       | HypBinding (v,t) as hyp ->
+            (avoid, mk_var_term v :: vars , conts, hyp::hyps)
+      in fun i t ->
+         let v = Lm_symbol.make "ext_arg" i in
+            if is_sequent_term t then
+               let vars = (SymbolSet.add_list (free_vars_set t) (binding_vars t)) in
+               let eseq = explode_sequent t in
+               let _, vars, conts, hyps = List.fold_left fold (vars,[],[],[]) (SeqHyp.to_list eseq.sequent_hyps) in
+               let goal = mk_so_var_term v conts vars in
+                  mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list hyps; sequent_goals = SeqGoal.of_list [goal] }
+            else mk_so_var_term v [] []
+
+   let make_wildcard_ext_args =
+      let rec aux i = function
+         [] -> []
+       | t :: ts -> (make_wildcard_ext_arg i t) :: aux (succ i) ts
+      in
+         aux 1
+
    (*
     * Create a rule from a meta-term.
     * We allow first-order rules (T -> ... -> T)
@@ -1494,6 +1521,8 @@ struct
             RuleRefiner r ->
                (* XXX BUG TODO: in addition to doing join_ext_arg_hack,
                 * we need to make sure the args are "univeral" and will always match *)
+               if (List.length r.rule_rule.mseq_hyps) <> (List.length args) then
+                  raise (Invalid_argument "Refine.add_prim_rule: wrong number of term arguments");
                let args = List.map2 join_ext_arg_hack args r.rule_rule.mseq_hyps in
                let result = join_ext_arg_hack1 result r.rule_rule.mseq_goal in
                let compute_ext = compute_rule_ext name addrs params r.rule_rule.mseq_goal args result in
@@ -1504,7 +1533,7 @@ struct
           | _ ->
                REF_RAISE(RefineError (name, StringError "not a rule"))
 
-   let add_delayed_rule build name addrs params args ext =
+   let add_delayed_rule build name addrs params ext =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.delayed_rule: %s%t" name eflush
@@ -1518,7 +1547,8 @@ struct
                         eprintf "Rule:%t[%a] --> %a%tExtract%t[%a] --> %a%t" eflush (print_any_list print_term) r.rule_rule.mseq_hyps print_term r.rule_rule.mseq_goal eflush eflush (print_any_list print_term) ext.ext_goal.mseq_hyps  print_term ext.ext_goal.mseq_goal eflush;
                         REF_RAISE(RefineError (name, StringError "extract does not match"))
                      end;
-                     compute_rule_ext name addrs params r.rule_rule.mseq_goal args (term_of_extract_nocheck refiner ext args)
+                     let args = make_wildcard_ext_args r.rule_rule.mseq_hyps in
+                        compute_rule_ext name addrs params r.rule_rule.mseq_goal args (term_of_extract_nocheck refiner ext args)
                in
                   PrimRuleRefiner { prule_proof = Delayed compute_ext;
                                     prule_rule = r;
@@ -1897,12 +1927,12 @@ struct
    let prim_rule build name addrs params args result =
       build.build_refiner <-  add_prim_rule build name addrs params args result
 
-   let delayed_rule build name addrs params args extf =
-      build.build_refiner <- add_delayed_rule build name addrs params args extf
+   let delayed_rule build name addrs params _ extf =
+      build.build_refiner <- add_delayed_rule build name addrs params extf
 
-   let derived_rule build name addrs params args ext =
+   let derived_rule build name addrs params _ ext =
       let extf () = ext in
-      let refiner = add_delayed_rule build name addrs params args extf in
+      let refiner = add_delayed_rule build name addrs params extf in
          check refiner;
          build.build_refiner <- refiner
 

@@ -166,15 +166,6 @@ let dest_msequent_expr loc =
 (*
  * Rule.
  *)
-let prim_rule_expr loc =
-   <:expr< $refiner_expr loc$ . prim_rule >>
-
-let derived_rule_expr loc =
-   <:expr< $refiner_expr loc$ . derived_rule >>
-
-let delayed_rule_expr loc =
-   <:expr< $refiner_expr loc$ . delayed_rule >>
-
 let create_ml_rule_expr loc =
    <:expr< $refiner_expr loc$ . create_ml_rule >>
 
@@ -287,7 +278,6 @@ let params_id           = "_$params"
 let subgoals_id         = "_$subgoals"
 let term_id             = "_$term"
 let cvars_id            = "_$cvars"
-let avars_id            = "_$avars"
 let bnames_id           = "_$bnames"
 let info_id             = "_$info"
 let rewrite_id          = "_$rewrite"
@@ -1086,7 +1076,7 @@ let define_rule_resources proc loc name cvars_id params_id assums_id resources n
          >>
    in bindings_let proc loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
 
-let define_rule want_checkpoint code proc loc
+let define_rule prim_rule deffun proc loc
     { rule_name = name;
       rule_params = params;
       rule_stmt = stmt;
@@ -1102,7 +1092,7 @@ let define_rule want_checkpoint code proc loc
    let name_rule_id = "_$" ^ name ^ "_rule" in
    let cvars, tparams = split_params params in
    let all_ids, cvar_ids, tparam_ids = name_params params in
-   let labels, avars, mterm = split_mfunction stmt in
+   let labels, ext_args, mterm = split_mfunction stmt in
    let name_rule_expr = lid_expr name_rule_id in
    let name_value =
       fun_expr loc all_ids <:expr<
@@ -1110,9 +1100,9 @@ let define_rule want_checkpoint code proc loc
             [| $list:List.map lid_expr cvar_ids$ |] $list_expr loc lid_expr tparam_ids$
       >>
    in
+   let extract_args = if prim_rule then list_expr loc (expr_of_term proc loc) ext_args else <:expr< () >> in
    let rule_expr = <:expr<
       let $lid:cvars_id$ = [| $list: List.map var_expr cvars$ |] in
-      let $lid:avars_id$ = $list_expr loc (expr_of_term proc loc) avars$ in
       let $lid:params_id$ = $list_expr loc (expr_of_term proc loc) tparams$ in
       let $lid:assums_id$ = $expr_of_meta_term proc loc mterm$ in
       let $lid:rule_id$ =
@@ -1121,12 +1111,12 @@ let define_rule want_checkpoint code proc loc
       let $lid:name_rule_id$ =
          $tactic_type_expr loc$.compile_rule $lid:local_refiner_id$ ($list_expr loc (expr_of_label loc) labels$) $lid:rule_id$
       in let _ = do {
-         $code$ $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:avars_id$ $extract$;
+         $refiner_expr loc$.$lid:deffun$ $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $extract_args$ $extract$;
          $define_rule_resources proc loc name cvars_id params_id assums_id resources name_rule_expr$
       }
          in $name_rule_expr$
    >> in
-      checkpoint_resources want_checkpoint loc name [
+      checkpoint_resources (not prim_rule) loc name [
          <:str_item< value $lid:name_rule_id$ = $wrap_exn proc loc name rule_expr$ >>;
          <:str_item< value $lid:name$ = $name_value$ >>;
          refiner_let loc;
@@ -1134,17 +1124,14 @@ let define_rule want_checkpoint code proc loc
       ]
 
 let prim_rule proc loc ax extract =
-   let code = prim_rule_expr loc in
    let extract_expr = expr_of_term proc loc extract in
-      define_rule false code proc loc ax extract_expr
+      define_rule true "prim_rule" proc loc ax extract_expr
 
 let derived_rule proc loc ax tac =
-   let code = derived_rule_expr loc in
-      define_rule true code proc loc ax tac
+   define_rule false "derived_rule" proc loc ax tac
 
 let interactive_rule proc loc ax =
-   let code = delayed_rule_expr loc in
-      define_rule true code proc loc ax (extract_expr loc proc.imp_name ax.rule_name)
+   define_rule false "delayed_rule" proc loc ax (extract_expr loc proc.imp_name ax.rule_name)
 
 (*
  * An ML rule performs the same action as a normal one,
