@@ -32,9 +32,10 @@ OCAMLFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
 
 LIBDIRS :=\
 	base\
-	boot\
+	boot
 
 DIRS := $(LIBDIRS)\
+	phobos\
 	filter
 
 SUB_CMALIBS := $(addsuffix /filterlib.cma, $(LIBDIRS))
@@ -120,8 +121,8 @@ MFILES_PRLC =\
 MFILES_CONVERT =\
 	filter/filter_convert
 
-CMOFILES_CAMLP4 = $(addsuffix .cmo, $(MFILES_CAMLP4))
-CMXFILES_CAMLP4 = $(addsuffix .cmx, $(MFILES_CAMLP4))
+CMOFILES_CAMLP4 = $(CAMLLIB)/str.cma phobos/filterlib.cma $(addsuffix .cmo, $(MFILES_CAMLP4))
+CMXFILES_CAMLP4 = $(CAMLLIB)/str.cmxa phobos/filterlib.cmxa $(addsuffix .cmx, $(MFILES_CAMLP4))
 CMOFILES_PRLC = $(addsuffix .cmo, $(MFILES_PRLC))
 CMXFILES_PRLC = $(addsuffix .cmx, $(MFILES_PRLC))
 CMOFILES_CONVERT = $(addsuffix .cmo, $(MFILES_CONVERT))
