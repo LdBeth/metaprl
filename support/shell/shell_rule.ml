@@ -251,15 +251,6 @@ let rec edit pack parse_arg name window obj =
        | Interactive ped ->
             ped
    in
-   let edit_root () =
-      Proof_edit.root_ped (get_ped obj)
-   in
-   let edit_up i =
-      Proof_edit.up_ped (get_ped obj) i
-   in
-   let edit_down i =
-      Proof_edit.down_ped (get_ped obj) i
-   in
    let edit_undo () =
       Proof_edit.undo_ped (get_ped obj)
    in
@@ -339,9 +330,6 @@ let rec edit pack parse_arg name window obj =
         edit_get_extract = edit_get_extract;
         edit_save = save_ped;
         edit_check = edit_check;
-        edit_root = edit_root;
-        edit_up = edit_up;
-        edit_down = edit_down;
         edit_int_addr = edit_int_addr;
         edit_addr = edit_addr;
         edit_info = edit_info;

@@ -805,8 +805,8 @@ let view_packages info options =
 (*
  * Display a filesystem directory.
  *)
-let view_fs info options subdir =
-   let proof = Shell_fs.view packages (get_display_mode info) in
+let view_fs info options =
+   let proof = Shell_fs.view (get_display_mode info) in
       display_proof info proof options
 
 (*
@@ -832,8 +832,8 @@ let view parse_arg shell options name =
       match dir with
          DirRoot ->
             view_packages shell options
-       | DirFS subdir ->
-            view_fs shell options subdir
+       | DirFS _ ->
+            view_fs shell options
        | DirModule modname ->
             view_package parse_arg shell modname options
        | DirProof (modname, item, _) ->

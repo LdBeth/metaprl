@@ -150,15 +150,6 @@ let rec edit pack window =
    let edit_check _ =
       raise_edit_error "check the complete set of packages? Use check_all."
    in
-   let edit_root () =
-      ()
-   in
-   let edit_up i =
-      ()
-   in
-   let edit_down i =
-      ()
-   in
    let edit_undo () =
       ()
    in
@@ -192,9 +183,6 @@ let rec edit pack window =
         edit_get_extract = not_a_rule;
         edit_save = edit_save;
         edit_check = edit_check;
-        edit_root = edit_root;
-        edit_up = edit_up;
-        edit_down = edit_down;
         edit_addr = edit_addr;
         edit_int_addr = edit_addr;
         edit_info = edit_info;

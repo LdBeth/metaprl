@@ -35,12 +35,10 @@ open Shell_sig
  * Make a root object.
  *)
 val create :
-   Package_info.t ->
    display_mode ->
    edit_object
 
 val view :
-   Package_info.t ->
    display_mode ->
    edit_object
 

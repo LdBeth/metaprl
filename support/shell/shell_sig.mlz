@@ -181,9 +181,6 @@ type edit_object =
 
      (* Navigation if there is a proof *)
      edit_interpret : proof_command -> unit;
-     edit_root      : unit -> unit;
-     edit_up        : int -> unit;
-     edit_down      : int -> unit;
      edit_undo      : unit -> unit;
      edit_redo      : unit -> unit;
      edit_addr      : string list -> unit; (* This operation must be atomic: if it fails, the address is not modified *)

@@ -131,15 +131,13 @@ let raise_edit_error s =
 (*
  * Build the shell interface.
  *)
-let rec edit pack window =
+let rec edit window =
    let edit_display _ =
       (* Display the roots of the package *)
-      let packs = Package_info.packages pack in
-      let term = mk_packages_term (List.map (fun root -> mk_package_term (Package_info.name root)) packs) in
-         display_term window term
+      raise (Failure "Shell_fd.edit")
    in
    let edit_copy () =
-      edit pack (new_window window)
+      edit (new_window window)
    in
    let not_a_rule _ =
       raise_edit_error "this is not a rule or rewrite"
@@ -149,15 +147,6 @@ let rec edit pack window =
    in
    let edit_check _ =
       raise_edit_error "check the complete set of packages? Use check_all."
-   in
-   let edit_root () =
-      ()
-   in
-   let edit_up i =
-      ()
-   in
-   let edit_down i =
-      ()
    in
    let edit_undo () =
       ()
@@ -192,9 +181,6 @@ let rec edit pack window =
         edit_get_extract = not_a_rule;
         edit_save = edit_save;
         edit_check = edit_check;
-        edit_root = edit_root;
-        edit_up = edit_up;
-        edit_down = edit_down;
         edit_addr = edit_addr;
         edit_int_addr = edit_addr;
         edit_info = edit_info;
@@ -205,12 +191,11 @@ let rec edit pack window =
         edit_find = not_a_rule;
       }
 
-let create pack window =
-   let window = create_window window in
-      edit pack window
+let create window =
+   edit (create_window window)
 
-let view pack window =
-   edit pack (create_window window)
+let view window =
+   edit (create_window window)
 
 (*
  * -*-

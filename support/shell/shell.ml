@@ -450,7 +450,7 @@ struct
        *)
       let addr addr =
          synchronize (fun shell ->
-               shell.shell_proof.edit_down addr)
+               cd parse_arg shell (string_of_int addr))
 
       let node addr =
          synchronize (fun shell ->
@@ -735,9 +735,9 @@ let status item =
          "is a primitive axiom"
     | ObjDerived ->
          "is an internally derived object"
-    | ObjComplete(c1,c2) ->
+    | ObjComplete (c1, c2) ->
          sprintf "is a derived object with a complete proof (%i rule boxes, %i primitive steps)" c1 c2
-    | ObjIncomplete(c1,c2) ->
+    | ObjIncomplete (c1, c2) ->
          sprintf "is a derived object with an incomplete proof (%i rule boxes, %i primitive steps)" c1 c2
     | ObjBad ->
          "is a derived object with a broken proof"
@@ -767,11 +767,11 @@ let check_all () =
          match item.edit_check () with
             RefPrimitive ->
                "is a primitive axiom"
-          | RefIncomplete(c1,c2) ->
+          | RefIncomplete (c1, c2) ->
                sprintf "is a derived object with an %sincomplete%s proof (%i rule boxes, %i primitive steps)" bfs bfe c1 c2
-          | RefComplete(c1,c2,l) ->
+          | RefComplete (c1, c2, l) ->
                sprintf "is a derived object with a complete grounded proof (%i rule boxes, %i primitive steps, %i dependencies)" c1 c2 (List.length l)
-          | RefUngrounded(c1,c2,op) ->
+          | RefUngrounded (c1, c2, op) ->
                sprintf "is a derived object with a complete %sungrounded%s proof (%i rule boxes, %i primitive steps) that depends on an incomplete %s%s%s" bfs bfe c1 c2 bfs2 (mk_dep_name op) bfe2
       in
          eprintf "Refiner status: %s%s%s %s%t" bfs2 name bfe2 status eflush
