@@ -84,7 +84,8 @@ declare "meta_function"{'arg; 'A; 'B}
 declare "meta_iff"{'A; 'B}
 declare "meta_labeled"[label:s]{'meta}
 
-declare "context_param"[name:v]
+declare "int_param"[name:v]
+declare "addr_param"[name:v]
 declare "term_param"{'t}
 
 (* Proofs *)

@@ -256,7 +256,8 @@ declare "meta_iff"{'A; 'B}
 declare "meta_labeled"[label:s]{'meta}
 doc <:doc< @docoff >>
 
-declare "context_param"[name:v]
+declare "int_param"[name:v]
+declare "addr_param"[name:v]
 declare "term_param"{'t}
 
 declare addr_subterm[i:n]
@@ -441,13 +442,16 @@ dform rewrite_df : "rewrite"[name:s]{'redex; 'contractum; 'v; 'res} =
    popm ezone
    popm ezone
 
-(*
- * A conditional rewrite requires special handling of the params.
- *)
-dform context_param_df : except_mode[src] :: "context_param"[name:v] =
+dform int_param_df : except_mode[src] :: "int_param"[name:v] =
    df_context_var[name:v]
 
-dform context_param_df2 : mode[src] :: "context_param"[name:v] =
+dform int_param_df2 : mode[src] :: "int_param"[name:v] =
+   `"'" slot[name:v]
+
+dform addr_param_df : except_mode[src] :: "addr_param"[name:v] =
+   df_context_var[name:v]
+
+dform addr_param_df2 : mode[src] :: "addr_param"[name:v] =
    `"'" slot[name:v]
 
 dform term_param_df : "term_param"{'t} =
@@ -455,6 +459,9 @@ dform term_param_df : "term_param"{'t} =
    ensuremath{'t}
    popm ezone
 
+(*
+ * A conditional rewrite requires special handling of the params.
+ *)
 dform cond_rewrite_df : "cond_rewrite"[name:s]{'params; 'args; 'redex; 'contractum; 'proof; 'res} =
    szone pushm[4]
    ensuremath{'proof} info[" rewrite"] " " szone rewrite_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] ezone hspace ensuremath{'args} " " ensuremath{longrightarrow} hspace
