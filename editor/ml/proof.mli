@@ -191,6 +191,13 @@ val check : t -> extract
 val expand : dform_base -> t -> t
 
 (*
+ * "Kreitz" a proof:
+ * Take the entire subtree and reduce it to a single node with
+ * a sequence of tactics composed with thenLT.
+ *)
+val kreitz : t -> t
+
+(*
  * IO
  *)
 type io_proof = Refiner_std_verb.Refiner.TermType.term proof

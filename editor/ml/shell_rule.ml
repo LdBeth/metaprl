@@ -268,6 +268,9 @@ let edit pack sentinal arg name obj =
    let edit_fold_all () =
       Proof_edit.fold_all_ped (get_ped obj)
    in
+   let edit_kreitz () =
+      Proof_edit.kreitz_ped (get_ped obj)
+   in
    let get_ped () =
       match obj.rule_ped with
          Primitive _
@@ -331,7 +334,8 @@ let edit pack sentinal arg name obj =
         edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_fold = edit_fold;
-        edit_fold_all = edit_fold_all
+        edit_fold_all = edit_fold_all;
+        edit_kreitz = edit_kreitz
       }
 
 let create pack name =

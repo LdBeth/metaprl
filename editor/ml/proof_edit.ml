@@ -517,6 +517,8 @@ let fold_ped = fold Proof.fold
 
 let fold_all_ped = fold Proof.fold_all
 
+let kreitz_ped = fold Proof.kreitz
+
 (************************************************************************
  * NAVIGATION                                                           *
  ************************************************************************)

@@ -91,6 +91,7 @@ val undo_ped : t -> unit
 val nop_ped : t -> unit
 val fold_ped : t -> unit
 val fold_all_ped : t -> unit
+val kreitz_ped : t -> unit
 
 (*
  * Navigation.

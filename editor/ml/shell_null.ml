@@ -77,7 +77,8 @@ let null_object =
         edit_refine = three_errors;
         edit_undo = one_error;
         edit_fold = one_error;
-        edit_fold_all = one_error
+        edit_fold_all = one_error;
+        edit_kreitz = one_error
       }
 
 (*

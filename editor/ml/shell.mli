@@ -112,6 +112,7 @@ sig
    val undo : unit -> unit
    val fold : unit -> unit
    val fold_all : unit -> unit
+   val kreitz : unit -> unit
 
    (*
     * Nuprl5 interface.

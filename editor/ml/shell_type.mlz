@@ -63,7 +63,8 @@ type edit_object =
      edit_tactic : unit -> (string * MLast.expr * tactic) option;
      edit_undo : unit -> unit;
      edit_fold : unit -> unit;
-     edit_fold_all : unit -> unit
+     edit_fold_all : unit -> unit;
+     edit_kreitz : unit -> unit
    }
 
 (*

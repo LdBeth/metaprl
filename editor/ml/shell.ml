@@ -679,6 +679,14 @@ struct
       in
          print_exn set ()
 
+   let kreitz () =
+      let set () =
+         touch ();
+         info.proof.edit_kreitz ();
+         display_proof ()
+      in
+         print_exn set ()
+
    (*
     * Change directory.
     *)
@@ -781,7 +789,8 @@ struct
        "refine",           TacticFunExpr   (fun t  -> UnitExpr (refine t));
        "undo",             UnitFunExpr     (fun () -> UnitExpr (undo ()));
        "fold",             UnitFunExpr     (fun () -> UnitExpr (fold ()));
-       "fold_all",         UnitFunExpr     (fun () -> UnitExpr (fold_all ()))]
+       "fold_all",         UnitFunExpr     (fun () -> UnitExpr (fold_all ()));
+       "kreitz",           UnitFunExpr     (fun () -> UnitExpr (kreitz ()))]
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *

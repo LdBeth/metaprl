@@ -979,6 +979,78 @@ let node_count { pf_address = addr; pf_node = node } =
    in
       count_node 0 node
 
+(*
+ * Kreitz the tree into a single node.
+ *)
+let kreitz ({ pf_node = node } as proof) =
+   let loc = 0, 0 in
+   let compose (text, ast, tactic, _) = function
+      [] ->
+         text, ast, tactic, []
+    | subnodes ->
+         let rec concat_text = function
+            [text, _, _, _] ->
+               text
+          | (text, _, _, _) :: subnodes ->
+               text ^ "; " ^ concat_text subnodes
+          | [] ->
+               raise (Invalid_argument "Proof.kreitz")
+         in
+         let rec concat_ast = function
+            (_, e, _, _) :: tl ->
+               (<:expr< $lid:"::"$ $e$ $concat_ast tl$ >>)
+          | [] ->
+               (<:expr< [] >>)
+         in
+         let rec concat_subgoals = function
+            (_, _, _, subgoals) :: tl ->
+               subgoals @ concat_subgoals tl
+          | [] ->
+               []
+         in
+         let text' = concat_text subnodes in
+         let ast'= concat_ast subnodes in
+         let tactic' = List.map (fun (_, _, t, _) -> t) subnodes in
+         let subgoals = concat_subgoals subnodes in
+         let text = sprintf "%s thenLT [%s]" text text' in
+         let ast = (<:expr< $lid: "prefix_thenLT"$ $ast$ $ast'$ >>) in
+         let tactic = tactic thenLT tactic' in
+            text, ast, tactic, subgoals
+   in
+   let rec kreitz_node node =
+      let { node_item = item; node_children = children } = node in
+      let node =
+         match item with
+            Step step ->
+               Proof_step.text step,
+               Proof_step.ast step,
+               Proof_step.tactic step,
+               Proof_step.subgoals step
+          | Node node ->
+               kreitz_node node
+      in
+      let subnodes = List.map kreitz_child children in
+         compose node subnodes
+
+   and kreitz_child = function
+      ChildGoal goal ->
+         "idT", (<:expr< $lid: "idT"$ >>), idT, [goal]
+    | ChildNode node ->
+         kreitz_node node
+   in
+
+   let goal = node_goal node in
+   let text, ast, tactic, subgoals = kreitz_node node in
+   let step = Proof_step.create goal subgoals text ast tactic in
+   let node' =
+      { node_status = Partial;
+        node_item = Step step;
+        node_children = List.map (fun g -> ChildGoal g) subgoals;
+        node_extras = []
+      }
+   in
+      replace_node proof node'
+
 (************************************************************************
  * IO                                                                   *
  ************************************************************************)
