@@ -1,9 +1,5 @@
 % -*- Mode: fundamental -*-
-\documentclass{article}
-
-\usepackage{section-hack}
-
-\renewcommand{\refname}{Bibliography}
+\documentclass{report}
 
 \usepackage{makeidx}
 
@@ -30,13 +26,22 @@
 \input{metaprl}
 \makeindex
 
+%
+% Force Index and Bibliography to be added to toc
+% since we want them to show up in PDF bookmarks
+%
+\let\mptheindsave\theindex
+\def\theindex{\mptheindsave\addcontentsline{toc}{chapter}{\indexname}}
+\let\mpthebibsave\thebibliography
+\def\thebibliography#1{\mpthebibsave{#1}\addcontentsline{toc}{chapter}{\bibname}}
+
 \begin{document}
 \author{Jason Hickey\and Brian Aydemir\and Yegor Bryukhov\and Alexei
 Kopylov\and Aleksey Nogin\and Xin Yu}
 \title{A Listing of \MetaPRL{} Theories}
-\date{\today}
+\date{Last Updated: \today}
 \maketitle
-\section{Introduction}
+\chapter{Introduction}
 This document contains a listing of most of the \MetaPRL{}
 logical theories. It is generated automatically on a daily basis. To get the
 latest version, go to \url{http://metaprl.org/theories.pdf}. To learn more

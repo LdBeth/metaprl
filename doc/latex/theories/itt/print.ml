@@ -25,6 +25,7 @@
 
 set_tex_file "../../doc/latex/theories/itt/theory.tex";;
 
+print_theory "itt_theory";;
 print_theory "itt_equal";;
 print_theory "itt_struct";;
 print_theory "itt_squash";;
@@ -63,7 +64,6 @@ print_theory "itt_record_label";;
 print_theory "itt_record";;
 print_theory "itt_record_exm";;
 print_theory "itt_collection";;
-print_theory "itt_theory";;
 
 (*
  * -*-

@@ -20,7 +20,6 @@ opt: doc
 
 INPUTS = ../inputs/metaprl.bib\
 	../inputs/metaprl.tex\
-	../inputs/section-hack.sty\
 	$(NAME).tex
 
 TEXTHEORIES=\
