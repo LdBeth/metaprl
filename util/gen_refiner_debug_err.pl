@@ -12,7 +12,7 @@ $nm{"opname"}="o";
 $nm{"ty_param"}="tp";
 $nm{"(string ### refine_error) list"}="sre";
 
-$cnv{"opname"}=$cnv{"string"}=$cnv{"var"}=$cnv{"int"}="";
+$cnv{"opname"}=$cnv{"string"}=$cnv{"var"}=$cnv{"int"}=$cnv{"shape"}="";
 $cnv{"param"}="param_of_param1 ";
 $cnv{"term"}="term_of_term1 ";
 $cnv{"refine_error"}="re_of_re1 ";
@@ -20,7 +20,6 @@ $cnv{"address"}="addr_of_addr1 ";
 $cnv{"meta_term"}="mterm_of_mterm1 ";
 $cnv{"match_type"}="mtype_of_mtype1 ";
 $cnv{"ty_param"}="tp_of_tp1 ";
-$cnv{"shape"}="shape_of_shape1 ";
 $cnv{"(string ### refine_error) list"}="List.map sre_of_sre1 ";
 
 open IN, 'grep -A5000 refine_error refiner/refsig/refine_error_sig.ml | egrep -v \'type re|^ *\*|^ *(exception|val|end)|\(\*|^ *$\'|';

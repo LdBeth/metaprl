@@ -69,6 +69,7 @@ struct
          TyNumber  -> "TyNumber"
        | TyString  -> "TyString"
        | TyToken t -> "TyToken " ^ string_of_opname (opname_of_term t)
+       | TyShape -> "TyShape"
        | TyVar     -> "TyVar"
        | TyLevel   -> "TyLevel"
        | TyQuote   -> "TyQuote"
@@ -97,6 +98,7 @@ struct
        | TyString, TyString
        | TyLevel, TyLevel
        | TyVar, TyVar
+       | TyShape, TyShape
        | TyQuote, TyQuote ->
             true
        | TyToken t1, TyToken t2 ->

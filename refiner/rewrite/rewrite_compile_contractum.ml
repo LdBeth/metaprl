@@ -236,6 +236,16 @@ struct
                (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
 
+       | MShape v ->
+            if array_rstack_p_mem ShapeShape v stack then
+               (* New param *)
+               RWMShape (array_rstack_p_index ShapeShape v stack)
+            else if strict = Relaxed && array_rstack_mem v stack then
+               RWMShape (array_rstack_index v stack)
+            else
+               (* Free param *)
+               REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
+
        | MLevel l ->
             let { le_const = c; le_vars = vars } = dest_level l in
             let vars = List.map dest_level_var vars in
@@ -270,6 +280,7 @@ struct
        | Number i -> RWNumber i
        | String s -> RWString s
        | Token t -> RWToken t
+       | Shape s -> RWShape s
        | Quote -> RWQuote
 
        | ObId id ->

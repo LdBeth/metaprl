@@ -34,20 +34,12 @@
 open Lm_printf
 
 open Opname
-
-type shape_param =
-   ShapeNumber
- | ShapeString
- | ShapeToken
- | ShapeLevel
- | ShapeVar
- | ShapeQuote
+open Term_sig
 
 module type TermShapeSig =
 sig
    type term
    type param
-   type shape
 
    (*
     * shape_of_term will be == to sequent_shape on any sequent and == to
@@ -68,6 +60,8 @@ sig
    val short_string_of_shape : shape -> string
 
    val shape_compare : shape -> shape -> int
+
+   val canonical_term_of_shape : shape -> term
 
    module ShapeSet : Lm_set_sig.LmSet with type elt = shape;;
    module ShapeTable : Lm_map_sig.LmMap with type key = shape;;

@@ -38,8 +38,6 @@ open Term_base_sig
 open Term_man_sig
 open Term_shape_sig
 
-type term_shape
-
 module TermShape (**)
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
@@ -47,7 +45,6 @@ module TermShape (**)
 : TermShapeSig
   with type term = TermType.term
   with type param = TermType.param
-  with type shape = term_shape
 
 (*
  * -*-

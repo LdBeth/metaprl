@@ -113,7 +113,8 @@ let rec mbparameter_of_param param =
 	    in loop vars [])
       in aux (dest_level p)
   | ParamList p -> mbnode !mbs_ParamList (List.map mbparameter_of_param p)
-  | Quote -> raise(Invalid_argument "Mbterm.mbparameter_of_param: quote parameter not supported")
+  | Shape _ | MShape _ | Quote ->
+       raise(Invalid_argument "Mbterm.mbparameter_of_param: quote and shape parameters not supported")
 
 let mbbinding_of_binding binding = mb_stringq binding !mbs_Variable (* term in the future?*)
 
@@ -338,7 +339,8 @@ let rec print_param param =
          in aux (dest_level p)
     | ParamList p -> (print_string "["; List.iter print_param p; print_string "]";
                       print_string ":pl ")
-    | Quote -> raise(Invalid_argument "Mbterm.print_param: quote parameter not supported")
+    | Quote | Shape _ | MShape _ ->
+         raise(Invalid_argument "Mbterm.print_param: quote and shape parameters not supported")
 
 let rec print_term term =
   print_string "print_term";

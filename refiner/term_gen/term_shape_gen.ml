@@ -40,12 +40,6 @@ open Term_base_sig
 open Term_man_sig
 open Term_shape_sig
 
-type term_shape =
-   { shape_opname  : opname;
-     shape_params  : shape_param list;
-     shape_arities : int list
-   }
-
 module TermShape (**)
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
@@ -57,7 +51,6 @@ struct
 
    type term = TermType.term
    type param = TermType.param
-   type shape = term_shape
 
    let opname_of_shape { shape_opname = opname } =
       opname
@@ -90,6 +83,7 @@ struct
          Number _ | MNumber _ -> ShapeNumber
        | String _ | MString _ -> ShapeString
        | Token _ | MToken _ -> ShapeToken
+       | Shape _ | MShape _ -> ShapeShape
        | Var _ -> ShapeVar
        | MLevel _ -> ShapeLevel
        | Quote -> ShapeQuote
@@ -122,26 +116,46 @@ struct
       & (params1 = params2)
       & (arities1 = arities2)
 
+   let canonical_param ps =
+      make_param (**)
+         (match ps with
+            ShapeNumber -> MNumber (Lm_symbol.add "n")
+          | ShapeString -> MString (Lm_symbol.add "s")
+          | ShapeToken  -> MToken  (Lm_symbol.add "t")
+          | ShapeLevel  -> MLevel (mk_level 0 [mk_level_var (Lm_symbol.add "l") 0])
+          | ShapeShape  -> MShape (Lm_symbol.add "sh")
+          | ShapeVar    -> Var (Lm_symbol.add "v")
+          | ShapeQuote  -> Quote)
+
+   let canonical_subterm =
+      let x = Lm_symbol.add "x" in
+      let t = mk_so_var_term (Lm_symbol.add "t") [] [] in
+      let rec mk = function
+         0 -> []
+       | i -> x :: (mk (i - 1))
+      in
+         fun i -> mk_bterm (mk i) t
+
+   let canonical_term_of_shape sh =
+      mk_term (**)
+         (mk_op sh.shape_opname (List.map canonical_param sh.shape_params))
+         (List.map canonical_subterm sh.shape_arities)
+
+   let print_param buf param =
+      let s =
+         match param with
+            ShapeNumber -> "N"
+          | ShapeString -> "S"
+          | ShapeToken  -> "T"
+          | ShapeLevel  -> "L"
+          | ShapeVar    -> "V"
+          | ShapeQuote  -> "Q"
+          | ShapeShape  -> "Sh"
+      in
+         Buffer.add_string buf s
+
    let string_of_shape { shape_opname = name; shape_params = params; shape_arities = arities } =
       let buf = Buffer.create 32 in
-      let print_param param =
-         let s =
-            match param with
-               ShapeNumber ->
-                  "N"
-             | ShapeString ->
-                  "S"
-             | ShapeToken  ->
-                  "T"
-             | ShapeLevel  ->
-                  "L"
-             | ShapeVar    ->
-                  "V"
-             | ShapeQuote  ->
-                  "Q"
-         in
-            Buffer.add_string buf s
-      in
       let rec print_arity = function
          [i] ->
             Buffer.add_string buf (string_of_int i)
@@ -154,7 +168,7 @@ struct
       in
          Buffer.add_string buf (string_of_opname name);
          Buffer.add_char buf '[';
-         List.iter print_param params;
+         List.iter (print_param buf) params;
          Buffer.add_string buf "]{";
          print_arity arities;
          Buffer.add_string buf "}";
@@ -165,24 +179,6 @@ struct
     *)
    let short_string_of_shape { shape_opname = name; shape_params = params; shape_arities = arities } =
       let buf = Buffer.create 32 in
-      let print_param param =
-         let s =
-            match param with
-               ShapeNumber ->
-                  "N"
-             | ShapeString ->
-                  "S"
-             | ShapeToken  ->
-                  "T"
-             | ShapeLevel  ->
-                  "L"
-             | ShapeVar    ->
-                  "V"
-             | ShapeQuote  ->
-                  "Q"
-         in
-            Buffer.add_string buf s
-      in
       let rec print_arity = function
          [i] ->
             Buffer.add_string buf (string_of_int i)
@@ -199,7 +195,7 @@ struct
                 ()
            | _ ->
                 Buffer.add_char buf '[';
-                List.iter print_param params;
+                List.iter (print_param buf) params;
                 Buffer.add_string buf "]");
          (match arities with
              [] ->

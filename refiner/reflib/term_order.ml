@@ -168,6 +168,9 @@ struct
           | Var v1       , Var v2        -> Lm_symbol.compare v1 v2
           | Var _        , _             -> -1
           | _            , Var _         -> 1
+          | Shape s1     , Shape s2      -> Pervasives.compare s1 s2
+          | Shape _      , _             -> -1
+          | _            , Shape _       -> 1
           | Quote        , _             -> -1
           | _            , Quote         -> 1
           | MNumber v1   , MNumber v2    -> Lm_symbol.compare v1 v2
@@ -179,6 +182,9 @@ struct
           | MToken v1    , MToken v2     -> Lm_symbol.compare v1 v2
           | MToken _     , _             -> -1
           | _            , MToken _      -> 1
+          | MShape v1    , MShape v2     -> Lm_symbol.compare v1 v2
+          | MShape _     , _             -> -1
+          | _            , MShape _      -> 1
           | MLevel l1    , MLevel l2     -> compare_levels l1 l2
           | MLevel _     , _             -> -1
           | _            , MLevel _      -> 1

@@ -25,6 +25,7 @@
  * @end[license]
  *)
 open Opname
+open Term_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 

@@ -33,6 +33,7 @@
 open Lm_symbol
 
 open Opname
+open Term_sig
 
 (*
  * We use these modules to express sharing constraints.
@@ -40,7 +41,6 @@ open Opname
 module type ErrParamSig =
 sig
    type address
-   type shape
    type ty_param
    type ty_term
 end

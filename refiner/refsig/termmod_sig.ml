@@ -49,6 +49,11 @@ sig
    module TermMeta : sig  (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
       val term_of_parsed_term : TermType.term -> TermType.term
    end
+   module TermShape : sig
+      val shape_of_term : TermType.term -> shape
+      val canonical_term_of_shape : shape -> TermType.term
+   end
+
 
    (*
     * Refiner is included because it defines msequent.
@@ -68,6 +73,10 @@ sig
    module TermMan : TermManMinimalSig with module ManTypes = TermType
    module TermMeta : sig  (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
       val term_of_parsed_term : TermType.term -> TermType.term
+   end
+   module TermShape : sig
+      val shape_of_term : TermType.term -> shape
+      val canonical_term_of_shape : shape -> TermType.term
    end
 
    (*

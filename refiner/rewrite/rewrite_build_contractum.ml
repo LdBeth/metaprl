@@ -347,6 +347,8 @@ struct
          Token s
     | RWQuote ->
          Quote
+    | RWShape sh ->
+         Shape sh
     | RWMNumber i ->
          begin
              match stack.(i) with
@@ -370,9 +372,18 @@ struct
     | RWMToken i ->
          begin
              match stack.(i) with
-                StackOpname s -> Token s
+                StackOpname o -> Token o
               | StackString s -> MToken (Lm_symbol.add s)
               | StackVar v -> MToken v
+              | _ -> raise(build_con_exn)
+         end
+    | RWMShape i ->
+         begin
+             match stack.(i) with
+                StackShape s -> Shape s
+              | StackOpname o -> Shape {shape_opname = o; shape_params = []; shape_arities = [] }
+              | StackString s -> MShape (Lm_symbol.add s)
+              | StackVar v -> MShape v
               | _ -> raise(build_con_exn)
          end
     | RWMLevel1 i ->

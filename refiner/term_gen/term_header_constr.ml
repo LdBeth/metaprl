@@ -56,7 +56,7 @@ struct
       MLevel l1 ->            MLevel (make_level l1)
     | ObId oid1 ->            ObId (List.map make_param_aux oid1)
     | ParamList p1 ->         ParamList (List.map make_param_aux p1)
-    | (Number _ | String _ | Token _ | Var _ | Quote | MNumber _ | MString _ | MToken _) as param -> param
+    | (Number _ | String _ | Token _ | Var _ | Shape _ | Quote | MNumber _ | MString _ | MToken _ | MShape _) as param -> param
 
    and make_param_aux param = TTerm.make_param (make_param' (FTerm.dest_param param))
 

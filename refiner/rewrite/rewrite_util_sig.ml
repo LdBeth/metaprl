@@ -31,7 +31,7 @@
  *)
 open Lm_symbol
 
-open Term_shape_sig
+open Term_sig
 
 module type RewriteUtilSig =
 sig

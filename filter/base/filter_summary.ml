@@ -121,6 +121,8 @@ let print_ty_param out = function
       fprintf out "<T>"
  | TyLevel ->
       fprintf out "<L>"
+ | TyShape ->
+      fprintf out "<Sh>"
  | TyVar ->
       fprintf out "<V>"
  | TyQuote ->
@@ -579,6 +581,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
             TyToken (convert.term_f t)
        | TyNumber
        | TyString
+       | TyShape
        | TyLevel
        | TyVar
        | TyQuote as param ->
@@ -1110,6 +1113,8 @@ struct
                TyNumber
           | "s" ->
                TyString
+          | "sh" ->
+               TyShape
           | "t" ->
                TyToken (convert.term_f (one_subterm t))
           | "l" ->
@@ -1629,6 +1634,8 @@ struct
             mk_string_param_term ty_param_op "n" []
        | TyString ->
             mk_string_param_term ty_param_op "s" []
+       | TyShape ->
+            mk_string_param_term ty_param_op "sh" []
        | TyToken t ->
             mk_string_param_term ty_param_op "t" [convert.term_f t]
        | TyLevel ->
@@ -1988,7 +1995,7 @@ struct
                   if ToTerm.TermTy.eq_ty ty_term' ty_term then
                      items
                   else
-                     implem_error (sprintf "declare '%s' mismatch" (string_of_shape shape))
+                     implem_error (sprintf "declare '%s' type annotations mismatch" (string_of_shape shape))
                else
                   search t
        | _ :: t ->

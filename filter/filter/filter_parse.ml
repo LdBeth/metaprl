@@ -1180,6 +1180,7 @@ let expr_of_pcon loc = function
             ShapeString -> "MString"
           | ShapeNumber -> "MNumber"
           | ShapeToken -> "MToken"
+          | ShapeShape -> "MShape"
           | _ -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: unsupported meta-parameter")
       in
          <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:string_of_symbol s$) >>
@@ -1192,6 +1193,7 @@ let expr_of_pcon loc = function
           | ShapeLevel -> "Level"
           | ShapeVar -> "Var"
           | ShapeQuote -> "Quote"
+          | ShapeShape -> "Shape"
       in
          <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $e$) >>
  | ConPNum n, ShapeNumber ->
@@ -1310,6 +1312,7 @@ let parse_quote loc quote token_type bvar_type subterm_type term_type =
             TyToken (parse_quoted_term loc token_type bvar_type term_type t)
        | TyNumber
        | TyString
+       | TyShape
        | TyLevel
        | TyVar
        | TyQuote as param ->

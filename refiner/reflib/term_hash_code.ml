@@ -176,6 +176,8 @@ let hash_ty_param venv code p =
          hash_int code 0x158cabc4
     | TyVar ->
          hash_int code 0x0902bb25
+    | TyShape ->
+         hash_int code 0x211b22ae
     | TyQuote ->
          hash_int code 0x1c1b8520
 

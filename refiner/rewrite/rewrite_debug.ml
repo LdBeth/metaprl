@@ -39,6 +39,7 @@ open Opname
 open Term_sig
 open Term_base_sig
 open Term_addr_sig
+open Term_shape_sig
 open Refine_error_sig
 open Rewrite_sig
 
@@ -52,6 +53,7 @@ module MakeRewriteDebug
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
+   (TermShape : TermShapeSig with type term = TermType.term)
    (RefineError : RefineErrorSig with module Types = TermType)
    =
 struct
@@ -59,6 +61,7 @@ struct
    open TermType
    open Term
    open TermAddr
+   open TermShape
    open RewriteTypes
 
    type rwterm  = RewriteTypes.rwterm
@@ -90,8 +93,10 @@ struct
          fprintf out "Number %s" (Lm_num.string_of_num n)
     | StackString s ->
          fprintf out "String %s" s
-    | StackOpname s ->
-         fprintf out "Opname %s" (string_of_opname s)
+    | StackOpname o ->
+         fprintf out "Opname %s" (string_of_opname o)
+    | StackShape sh ->
+         fprintf out "Opname %s" (string_of_shape sh)
     | StackVar v ->
          fprintf out "Var %a" output_symbol v
     | StackLevel _ ->
@@ -162,8 +167,10 @@ struct
          fprintf out "%s:n" (Lm_num.string_of_num n)
     | RWString s ->
          fprintf out "%s:s" s
-    | RWToken s ->
-         fprintf out "%s:t" (string_of_opname s)
+    | RWToken o ->
+         fprintf out "%s:t" (string_of_opname o)
+    | RWShape sh ->
+         fprintf out "%s:sh" (string_of_shape sh)
     | RWQuote ->
          fprintf out "q"
     | RWMNumber i ->
@@ -172,6 +179,8 @@ struct
          fprintf out "@@%d:s" i
     | RWMToken i ->
          fprintf out "@@%d:t" i
+    | RWMShape i ->
+         fprintf out "@@%d:sh" i
     | RWMLevel1 i ->
          fprintf out "@@%d:l" i
     | RWMLevel2 { rw_le_const = c; rw_le_vars = vars } ->
@@ -196,6 +205,8 @@ struct
          fprintf out "%s:s" s
     | Token s ->
          fprintf out "%s:t" (string_of_opname s)
+    | Shape sh ->
+         fprintf out "%s:t" (string_of_shape sh)
     | Var s ->
          fprintf out "%s:v" (Lm_symbol.string_of_symbol s)
     | Quote ->

@@ -27,6 +27,7 @@
 open Lm_symbol
 
 open Opname
+open Term_sig
 
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
@@ -55,7 +56,7 @@ val mk_ty_constrain_term : term -> term -> term
  *   tenv_typeenv     : the typeclass of each type
  *   tenv_termenv     : the type of each term
  *)
-module Shape2Table : Lm_map_sig.LmMap with type key = shape * shape;;
+module Shape2Table : Lm_map_sig.LmMap with type key = shape * shape
 
 type typeclasses      = OpnameSet.t OpnameTable.t
 type typeenv          = opname ShapeTable.t

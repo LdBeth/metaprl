@@ -292,6 +292,8 @@ struct
                    TyString
               | "t" ->
                    TyToken Term_ty_infer.token_type
+              | "sh" ->
+                   TyShape
               | "v" ->
                    TyVar
               | "l" ->
@@ -337,6 +339,9 @@ struct
             TyLevel
        | Quote ->
             TyQuote
+       | Shape _
+       | MShape _ ->
+            TyShape
        | ObId _
        | ParamList _ ->
             raise (Invalid_argument "ty_param_of_param: unexpected Nuprl5 parameter")
@@ -412,6 +417,18 @@ struct
        | _ ->
             raise (BadParamCast (p, "v"))
 
+   let cast_shape loc p =
+      match dest_param p with
+         MString v ->
+            make_param (MShape v)
+       | Token t ->
+            make_param (Shape {shape_opname = t; shape_params = []; shape_arities = []})
+       | Shape _
+       | MShape _ ->
+            p
+       | _ ->
+            raise (BadParamCast (p, "sh"))
+
    (*
     * Parameter casting.
     *)
@@ -426,6 +443,8 @@ struct
          make_param (MLevel (cast_level p)), TyLevel
     | "t" ->
          cast_token loc p, TyToken Term_ty_infer.token_type
+    | "sh" ->
+         cast_shape loc p, TyShape
     | opname ->
          (*
           * By default, everything else is a token, and the name
@@ -1490,6 +1509,8 @@ struct
              w
            | w = param_const; ":"; t = opname_param ->
              cast_param loc w t
+           | "("; t = term; ")" ->
+             make_param (Shape (shape_of_term t))
           ]];
 
       param_const:
@@ -1820,6 +1841,7 @@ struct
                 | "l" -> ShapeLevel
                 | "t" -> ShapeToken
                 | "v" -> ShapeVar
+                | "sh" -> ShapeShape
                 |  s  -> raise (BadParamCast (make_param (String ""), s))
           ]];
 

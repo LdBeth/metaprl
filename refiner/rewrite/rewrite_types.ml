@@ -65,10 +65,12 @@ struct
       RWNumber of Lm_num.num
     | RWString of string
     | RWToken of opname
+    | RWShape of shape
     | RWQuote
     | RWMNumber of int
     | RWMString of int
     | RWMToken of int
+    | RWMShape of int
     | RWMVar of int
     | RWMLevel1 of int
     | RWMLevel2 of rw_level_exp
@@ -201,6 +203,7 @@ struct
     | StackString of string
     | StackOpname of opname
     | StackVar of var
+    | StackShape of shape
     | StackLevel of level_exp
     | StackBTerm of term * var list
     | StackITerm of (term * rwterm list) list

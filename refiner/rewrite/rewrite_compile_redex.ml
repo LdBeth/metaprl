@@ -373,13 +373,15 @@ struct
          MNumber v -> meta_param stack (fun i -> RWMNumber i) ShapeNumber v
        | MString v -> meta_param stack (fun s -> RWMString s) ShapeString v
        | MToken v -> meta_param stack (fun t -> RWMToken t) ShapeToken v
+       | MShape v -> meta_param stack (fun i -> RWMShape i) ShapeShape v
        | Var v when not st.st_strict -> meta_param stack (fun v -> RWMVar v) ShapeVar v
        | MLevel l -> meta_level stack l
        | Number i -> stack, RWNumber i
        | String s -> stack, RWString s
        | Token t -> stack, RWToken t
+       | Shape sh -> stack, RWShape sh
        | Quote -> stack, RWQuote
-       | _ -> REF_RAISE(RefineError ("compile_so_redex_param", RewriteBadMatch (ParamMatch param)))
+       | Var _ | ObId _ | ParamList _ -> REF_RAISE(RefineError ("compile_so_redex_param", RewriteBadMatch (ParamMatch param)))
 
    (*
     * In bterms, have to add these vars to the binding stack.

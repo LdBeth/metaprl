@@ -33,6 +33,7 @@
 open Term_sig
 open Term_base_sig
 open Term_addr_sig
+open Term_shape_sig
 open Refine_error_sig
 open Rewrite_debug_sig
 
@@ -40,6 +41,7 @@ module MakeRewriteDebug
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
+   (TermShape : TermShapeSig with type term = TermType.term)
    (RefineError : RefineErrorSig with module Types = TermType):
    RewriteDebugSig
    with type rwcontractum = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rwcontractum

@@ -68,6 +68,7 @@ struct
    open Refiner.TermType
    open Refiner.TermAddr
    open Refiner.TermMan
+   open Refiner.TermShape
 
    type term = TermType.term
    type level_exp = TermType.level_exp
@@ -178,10 +179,12 @@ struct
          Number n -> format_num buf n; format_string buf ":n"
        | String s -> format_char buf '"'; format_string buf (String.escaped s); format_char buf '"'; format_string buf ":s"
        | Token t -> format_char buf '"'; format_string buf (String.escaped (string_of_opname t)); format_char buf '"'; format_string buf ":t"
+       | Shape sh -> format_char buf '"'; format_string buf (String.escaped (string_of_shape sh)); format_char buf '"'; format_string buf ":sh"
        | Quote -> format_string buf "@"
        | MNumber v -> format_var buf v; format_string buf ":n"
        | MString v -> format_var buf v; format_string buf ":s"
        | MToken v -> format_var buf v; format_string buf ":t"
+       | MShape v -> format_var buf v; format_string buf ":v"
        | MLevel l -> format_level_exp buf l; format_string buf ":l"
        | Var v -> format_var buf v; format_string buf ":v"
        | ObId a -> format_string buf "<object-id>"

@@ -103,19 +103,9 @@ struct
     | VarsDelayed
 
    (*
-    * Define a type of parameters used in pattern matching.
-    * The main difference is lack of meta-variables, numbers
-    * have an optional constant representation for small numbers,
-    * and there are no Nuprl5 params.
+    * Define types used in pattern matching.
     *)
-   type match_param =
-      MatchNumber of Lm_num.num * int option
-    | MatchString of string
-    | MatchToken of opname * string list
-    | MatchVar of var
-    | MatchLevel of level_exp
-    | MatchUnsupported
-
+   type match_param = level_exp poly_match_param
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list
     | MatchSequent of string list * match_term * hypothesis list * term

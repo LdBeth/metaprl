@@ -58,6 +58,26 @@ type poly_level_exp_var = { le_var : var; le_offset : int }
 type 'le_var poly_level_exp = { le_const : int; le_vars : 'le_var list }
 
 (*
+ * Shape is the identifier of an operator in MetaPRL. Two operators are
+ * considered to be the same if they have the same shape and are considered
+ * to be unrelated otherwise.
+ *)
+type shape_param =
+   ShapeNumber
+ | ShapeString
+ | ShapeToken
+ | ShapeLevel
+ | ShapeVar
+ | ShapeShape
+ | ShapeQuote
+
+type shape = {
+   shape_opname  : opname;
+   shape_params  : shape_param list;
+   shape_arities : int list
+}
+
+(*
  * Parameters have a number of simple types.
  *)
 type ('level_exp, 'param) poly_param =
@@ -65,15 +85,32 @@ type ('level_exp, 'param) poly_param =
  | String of string
  | Token of opname
  | Var of var
+ | Shape of shape
  | MNumber of var
  | MString of var
  | MToken of var
+ | MShape of var
  | MLevel of 'level_exp
  | Quote
 
    (* Special Nuprl5 values *)
  | ObId of 'param list
  | ParamList of 'param list
+
+(*
+ * Define a type of parameters used in pattern matching.
+ * The main difference is lack of meta-variables, numbers
+ * have an optional constant representation for small numbers,
+ * and there are no Nuprl5 params.
+ *)
+type 'level_exp poly_match_param =
+   MatchNumber of Lm_num.num * int option
+ | MatchString of string
+ | MatchToken of opname * string list
+ | MatchShape of shape
+ | MatchVar of var
+ | MatchLevel of 'level_exp
+ | MatchUnsupported
 
 (*
  * Bound terms.
@@ -164,20 +201,7 @@ sig
    (************************************************************************
     * DESTRUCTION
     *)
-
-   (*
-    * Define a type of parameters used in pattern matching.
-    * The main difference is lack of meta-variables, numbers
-    * have an optional constant representation for small numbers,
-    * and there are no Nuprl5 params.
-    *)
-   type match_param =
-      MatchNumber of Lm_num.num * int option
-    | MatchString of string
-    | MatchToken of opname * string list
-    | MatchVar of var
-    | MatchLevel of level_exp
-    | MatchUnsupported
+   type match_param = level_exp poly_match_param
 
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list

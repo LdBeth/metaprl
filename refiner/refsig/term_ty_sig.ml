@@ -39,6 +39,7 @@ type 'term poly_ty_param =
    TyNumber
  | TyString
  | TyToken of 'term
+ | TyShape
  | TyLevel
  | TyVar
  | TyQuote

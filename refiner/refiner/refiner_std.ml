@@ -37,7 +37,6 @@ struct
    module ErrParamType =
    struct
       type address = Term_addr_sig.addr_item list
-      type shape = Term_shape_gen.term_shape
       type ty_param = TermType.term Term_ty_sig.poly_ty_param
       type ty_term  = (TermType.term, TermType.term) Term_ty_sig.poly_ty_term
    end
@@ -50,7 +49,7 @@ struct
    module TermShape = Term_shape_gen.TermShape (TermType) (Term) (TermMan)
    module TermTy = Term_ty_gen.TermTy (TermType) (Term) (TermMan) (TermSubst)
    module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (TermOp) (TermMan) (RefineError)
-   module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermOp) (TermMan) (TermAddr) (TermSubst) (RefineError)
+   module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermOp) (TermMan) (TermAddr) (TermSubst) (TermShape) (RefineError)
    module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (Rewrite) (RefineError)
    module TermMod =
    struct
@@ -59,6 +58,7 @@ struct
       module TermSubst = TermSubst
       module TermMan = TermMan
       module TermMeta = TermMeta (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
+      module TermShape = TermShape
       module Refine = Refine
    end
    module TermHash = Term_hash.TermHash (TermMod)

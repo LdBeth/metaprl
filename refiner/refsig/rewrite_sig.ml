@@ -32,8 +32,8 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 open Lm_symbol
-
 open Opname
+open Term_sig
 
 type out_channel = Lm_printf.out_channel
 
@@ -82,6 +82,7 @@ type rewrite_type =
  | RewriteStringType
  | RewriteNumType
  | RewriteTokenType
+ | RewriteShapeType
  | RewriteLevelType
  | RewriteVarType (* corresponds to RewriteString(RewriteMetaParam _) *)
  | RewriteUnsupportedType
@@ -89,6 +90,15 @@ type rewrite_type =
 type 'a rewrite_param =
    RewriteParam of 'a
  | RewriteMetaParam of var
+
+type ('term, 'level_exp) poly_rewrite_item =
+   RewriteTerm of 'term
+ | RewriteString of string rewrite_param
+ | RewriteToken of opname rewrite_param
+ | RewriteShape of shape rewrite_param
+ | RewriteNum of Lm_num.num rewrite_param
+ | RewriteLevel of 'level_exp
+ | RewriteUnsupported
 
 module type RwTypesSig =
 sig
@@ -110,13 +120,7 @@ sig
    (* Separated form *)
    type rewrite_redex
 
-   type rewrite_item =
-      RewriteTerm of term
-    | RewriteString of string rewrite_param
-    | RewriteToken of opname rewrite_param
-    | RewriteNum of Lm_num.num rewrite_param
-    | RewriteLevel of level_exp
-    | RewriteUnsupported
+   type rewrite_item = (term, level_exp) poly_rewrite_item
 
    (* Rewrites with no arguments *)
    val empty_args_spec : rewrite_args_spec

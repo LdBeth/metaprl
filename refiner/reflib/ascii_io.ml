@@ -61,6 +61,7 @@ struct
    open TM.Term
    open TM.TermMan
    open TM.TermHash
+   open TM.TermShape
 
    type term = TM.TermType.term
    type param = TM.TermType.param
@@ -249,6 +250,8 @@ struct
          hash_add_new r.io_params name (constr_param (String s))
     | (_, name, [["Token"; s]]) ->
          hash_add_new r.io_params name (constr_param (Token (Hashtbl.find r.io_opnames s)))
+    | (_, name, [["Shape"; s]]) ->
+         hash_add_new r.io_params name (constr_param (Shape (shape_of_term (retrieve (Hashtbl.find r.io_terms s)))))
     | (_, name, [["Var"; s]]) ->
          hash_add_new r.io_params name (constr_param (Var (Lm_symbol.add s)))
     | (_, name, [["Quote"]]) ->
@@ -259,6 +262,8 @@ struct
          hash_add_new r.io_params name (constr_param (MString (Lm_symbol.add s)))
     | (_, name, [["MToken"; s]]) ->
          hash_add_new r.io_params name (constr_param (MToken (Lm_symbol.add s)))
+    | (_, name, [["MShape"; s]]) ->
+         hash_add_new r.io_params name (constr_param (MShape (Lm_symbol.add s)))
     | (_, name, [["MVar"; s]]) (* XXX HACK: support file versions 1.0.5 and below *) ->
          hash_add_new r.io_params name (constr_param (Var (Lm_symbol.add s)))
     | (_, name, ["MLevel" :: n :: vars]) ->
@@ -454,6 +459,8 @@ struct
                   let terms' = Lm_list_util.smap rename terms in if terms' == terms then record else [var; conts; terms']
              | ('C' | 'V'), [var::rest] -> (* XXX HACK: format versions <= 1.0.7 compatibility *)
                   let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
+             | 'P', [[("Token"|"Shape" as knd); s]] ->
+                  let s' = rename s in if s == s' then record else [[knd; s]]
              | 'P', _ ->
                   record
              | _ ->
@@ -732,14 +739,16 @@ struct
           | String s  -> ["String"; s]
           | Token op  -> ["Token"; fst (out_name ctrl data op)]
           | Var s     -> ["Var"; string_of_symbol s]
+          | Shape sh  -> ["Shape"; fst (out_term ctrl data (canonical_term_of_shape sh))]
           | Quote     -> ["Quote"]
           | MNumber s -> ["MNumber"; string_of_symbol s]
           | MString s -> ["MString"; string_of_symbol s]
           | MToken s  -> ["MToken"; string_of_symbol s]
+          | MShape s  -> ["MShape"; string_of_symbol s]
           | MLevel le ->
                let le' = dest_level le in
                "MLevel" :: (string_of_int le'.le_const) :: (map_level_vars le'.le_vars)
-          | _ -> fail "out_param"]
+          | ParamList _ | ObId _ -> fail "out_param"]
       in try
          let name = Hashtbl.find data.out_params param' in
          check_old data name i_data;

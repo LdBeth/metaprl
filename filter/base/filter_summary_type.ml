@@ -36,6 +36,7 @@
  *)
 open Lm_symbol
 open Opname
+open Term_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.TermTy

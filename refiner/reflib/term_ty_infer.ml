@@ -872,6 +872,7 @@ let standardize_ty_term ty_term =
                   SymbolSet.union fv (free_vars_set t)
              | TyNumber
              | TyString
+             | TyShape
              | TyLevel
              | TyVar
              | TyQuote ->
@@ -898,6 +899,7 @@ let standardize_ty_term ty_term =
                      TyToken t ->
                         TyToken (apply_subst subst t)
                    | TyNumber
+                   | TyShape
                    | TyString
                    | TyLevel
                    | TyVar
@@ -1566,6 +1568,8 @@ and infer_params tenv venv info subst param ty_param =
     | MNumber _, TyNumber
     | String _, TyString
     | MString _, TyString
+    | Shape _, TyShape
+    | MShape _, TyShape
     | Var _, TyVar
     | Quote, TyQuote
     | MLevel _, TyLevel ->

@@ -68,11 +68,11 @@ $merges{"object_id"} = $merges{"param list"};
 #
 
 # Non-refiner types
-foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "unit", "strict", "rewrite_args_spec", "addr_item", "(int * int) SymbolTable.t", "(bool * int * int) SymbolTable.t") {
+foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "shape", "unit", "strict", "rewrite_args_spec", "addr_item", "(int * int) SymbolTable.t", "(bool * int * int) SymbolTable.t") {
     $splits{$ty} = $splits{"$ty list"} = $splits{"$ty array"} = "";
 };
 # Fully abstract types
-foreach my $ty ("term", "bound_term", "param", "operator", "level_exp", "level_exp_var", "address", "shape", "rewrite_rule", "rewrite_redex", "sentinal", "tactic", "msequent", "extract", "refiner", "build", "rw", "cond_rewrite") {
+foreach my $ty ("term", "bound_term", "param", "operator", "level_exp", "level_exp_var", "address", "rewrite_rule", "rewrite_redex", "sentinal", "tactic", "msequent", "extract", "refiner", "build", "rw", "cond_rewrite") {
     $splits{$ty} = "identity";
     $splits{"$ty list"} = "split";
     $splits{"$ty option"} = "split_opt";

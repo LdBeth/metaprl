@@ -69,7 +69,6 @@ sig
    module RefineError : RefineErrorSig
                         with module Types = TermType
                         with type Params.address = TermAddr.address
-                        with type Params.shape = TermShape.shape
                         with type Params.ty_param = TermType.term Term_ty_sig.poly_ty_param
                         with type Params.ty_term = (TermType.term, TermType.term) Term_ty_sig.poly_ty_term
 

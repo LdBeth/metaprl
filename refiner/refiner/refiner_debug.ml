@@ -92,7 +92,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       type level_exp_var = Type1.level_exp_var * Type2.level_exp_var
       type level_exp = Type1.level_exp * Type2.level_exp
       type seq_hyps = Type1.seq_hyps * Type2.seq_hyps
-      type shape = TermShape1.shape * TermShape2.shape
       type rewrite_rule = Rewrite1.rewrite_rule * Rewrite2.rewrite_rule
       type rewrite_redex = Rewrite1.rewrite_redex * Rewrite2.rewrite_redex
       type sentinal = Refine1.sentinal * Refine2.sentinal
@@ -117,22 +116,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       type ty_param = term poly_ty_param
       type ty_bterm = term poly_ty_bterm
       type ty_term  = (term, term) poly_ty_term
-
-      type rewrite_item =
-         RewriteTerm of term
-       | RewriteString of string rewrite_param
-       | RewriteToken of opname rewrite_param
-       | RewriteNum of Lm_num.num rewrite_param
-       | RewriteLevel of level_exp
-       | RewriteUnsupported
-
-      type match_param =
-         MatchNumber of Lm_num.num * int option
-       | MatchString of string
-       | MatchToken of opname * string list
-       | MatchVar of var
-       | MatchLevel of level_exp
-       | MatchUnsupported
+      type rewrite_item = (term, level_exp) poly_rewrite_item
+      type match_param = level_exp poly_match_param
 
       type match_term =
          MatchTerm of string list * match_param list * bound_term' list
@@ -158,11 +143,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       type prim_rewrite =
          PrimRW of rw
        | CondRW of (rw_args -> term list -> cond_rewrite)
-
-      (* Shapes are compared to these two by ==, so we need to define them early *)
-      let sequent_shape = TermShape1.sequent_shape, TermShape2.sequent_shape
-      let var_shape = TermShape1.var_shape, TermShape2.var_shape
-
    end
 
    open TermType
@@ -265,7 +245,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let rec param2_of_param1 p =
       let p =
          match Term1.dest_param p with
-            (Number _ | String _ | Token _ | Var _ | MNumber _ | MString _ | MToken _ | Quote) as p -> p
+            (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | Quote) as p -> p
           | MLevel l -> MLevel (levex2_of_levex1 l)
           | ObId pl -> ObId (List.map param2_of_param1 pl)
           | ParamList pl -> ParamList (List.map param2_of_param1 pl)
@@ -315,7 +295,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let rec param1_of_param2 p =
       let p =
          match Term2.dest_param p with
-            (Number _ | String _ | Token _ | Var _ | MNumber _ | MString _ | MToken _ | Quote) as p -> p
+            (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | Quote) as p -> p
           | MLevel l -> MLevel (levex1_of_levex2 l)
           | ObId pl -> ObId (List.map param1_of_param2 pl)
           | ParamList pl -> ParamList (List.map param1_of_param2 pl)
@@ -390,11 +370,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let tp_of_tp1 = function
       TyToken t -> TyToken (term_of_term1 t)
-    | (TyNumber | TyString | TyLevel | TyVar | TyQuote) as tp -> tp
-
-   let shape_of_shape1 _ =
-      (* XXX: HACK: this is fake *)
-      var_shape
+    | (TyNumber | TyString | TyShape | TyLevel | TyVar | TyQuote) as tp -> tp
 
    let rec re_of_re1 = function
     | Err1.GenericError  -> GenericError
@@ -433,8 +409,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
     | Err1.ParamError p0 -> ParamError (param_of_param1 p0)
     | Err1.Param2Error (p0, p1) -> Param2Error (param_of_param1 p0, param_of_param1 p1)
     | Err1.ParamTyParamError (p0, tp1) -> ParamTyParamError (param_of_param1 p0, tp_of_tp1 tp1)
-    | Err1.ShapeError s0 -> ShapeError (shape_of_shape1 s0)
-    | Err1.Shape2Error (s0, s1) -> Shape2Error (shape_of_shape1 s0, shape_of_shape1 s1)
+    | Err1.ShapeError s0 -> ShapeError s0
+    | Err1.Shape2Error (s0, s1) -> Shape2Error (s0, s1)
     | Err1.Term2Error (t0, t1) -> Term2Error (term_of_term1 t0, term_of_term1 t1)
     | Err1.VarTermError (v0, t1) -> VarTermError (v0, term_of_term1 t1)
     | Err1.IntTermError (i0, t1) -> IntTermError (i0, term_of_term1 t1)
@@ -443,7 +419,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
     | Err1.IntErrorError (i0, re1) -> IntErrorError (i0, re_of_re1 re1)
     | Err1.TermErrorError (t0, re1) -> TermErrorError (term_of_term1 t0, re_of_re1 re1)
     | Err1.OpnameErrorError (o0, re1) -> OpnameErrorError (o0, re_of_re1 re1)
-    | Err1.ShapeErrorError (s0, re1) -> ShapeErrorError (shape_of_shape1 s0, re_of_re1 re1)
+    | Err1.ShapeErrorError (s0, re1) -> ShapeErrorError (s0, re_of_re1 re1)
     | Err1.MetaTermErrorError (mt0, re1) -> MetaTermErrorError (mterm_of_mterm1 mt0, re_of_re1 re1)
 
    and sre_of_sre1 (s, re) =
@@ -543,7 +519,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          { le_const = c; le_vars = vs2 }
 
    let split_param' = function
-      (Number _ | String _ | Token _ | Var _ | MNumber _ | MString _ | MToken _ | Quote) as p -> p, p
+      (Number _ | String _ | Token _ | Var _ | Shape _ | MNumber _ | MString _ | MToken _ | MShape _ | Quote) as p -> p, p
     | MLevel (l1, l2) -> MLevel l1, MLevel l2
     | ObId pl -> let pl1, pl2 = split pl in ObId pl1, ObId pl2
     | ParamList pl -> let pl1, pl2 = split pl in ParamList pl1, ParamList pl2
@@ -595,7 +571,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let split_ty_param = function
       TyToken (t1, t2) -> TyToken t1, TyToken t2
-    | (TyNumber | TyString | TyLevel | TyVar | TyQuote) as tp -> tp, tp
+    | (TyNumber | TyString | TyShape | TyLevel | TyVar | TyQuote) as tp -> tp, tp
 
    let split_ty_params pl =
       split (List.map split_ty_param pl)
@@ -805,8 +781,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let merge_param' x p1 p2 =
       match p1, p2 with
-         (Number _ | String _ | Token _ | Var _ | MNumber _ | MString _ | MToken _ | Quote as p1),
-         (Number _ | String _ | Token _ | Var _ | MNumber _ | MString _ | MToken _ | Quote as p2)
+         (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | Quote as p1),
+         (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | Quote as p2)
          when p1 = p2 ->
             p1
        | MLevel l1, MLevel l2 -> MLevel (l1, l2)
@@ -871,14 +847,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
             report_error x "meta term kind mismatch"
 
    let merge_shape x s1 s2 =
-      if not (Opname.eq (TermShape1.opname_of_shape s1) (TermShape2.opname_of_shape s2)) then
-         report_error x "term shape opname mismatch"
+      if s1 <> s2 then
+         report_error x "shape mismatch"
       else
-      match s1 == TermShape1.sequent_shape, s2 == TermShape2.sequent_shape, s1 == TermShape1.var_shape, s2 == TermShape2.var_shape with
-         true, true, false, false -> sequent_shape
-       | false, false, true, true -> var_shape
-       | false, false, false, false -> (s1, s2)
-       | _ -> report_error x "Shape pointer equality mismatch"
+         s1
 
    let merge_tsub x (v1, t1) (v2, t2) =
       (merge_var x v1 v2), (merge_term x t1 t2)
@@ -961,13 +933,13 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let merge_match_param x p1 p2 =
       match p1, p2 with
-         Type1.MatchNumber (n1, None), Type2.MatchNumber (n2, None) -> MatchNumber (merge_num x n1 n2, None)
-       | Type1.MatchNumber (n1, Some i1), Type2.MatchNumber (n2, Some i2) -> MatchNumber (merge_num x n1 n2, Some (merge_int x i1 i2))
-       | Type1.MatchString s1, Type2.MatchString s2 -> MatchString (merge_string x s1 s2)
-       | Type1.MatchToken (o1, s1), Type2.MatchToken (o2, s2) -> MatchToken (merge_opname x o1 o2, merge_strings x s1 s2)
-       | Type1.MatchVar v1, Type2.MatchVar v2 -> MatchVar (merge_var x v1 v2)
-       | Type1.MatchLevel l1, Type2.MatchLevel l2 -> MatchLevel (merge_level_exp x l1 l2)
-       | Type1.MatchUnsupported, Type2.MatchUnsupported -> MatchUnsupported
+         MatchNumber (n1, None), MatchNumber (n2, None) -> MatchNumber (merge_num x n1 n2, None)
+       | MatchNumber (n1, Some i1), MatchNumber (n2, Some i2) -> MatchNumber (merge_num x n1 n2, Some (merge_int x i1 i2))
+       | MatchString s1, MatchString s2 -> MatchString (merge_string x s1 s2)
+       | MatchToken (o1, s1), MatchToken (o2, s2) -> MatchToken (merge_opname x o1 o2, merge_strings x s1 s2)
+       | MatchVar v1, MatchVar v2 -> MatchVar (merge_var x v1 v2)
+       | MatchLevel l1, MatchLevel l2 -> MatchLevel (merge_level_exp x l1 l2)
+       | MatchUnsupported, MatchUnsupported -> MatchUnsupported
        | _ -> report_error x "match_param kind mismatch"
 
    let merge_match_params = merge_list merge_match_param "match param"
@@ -1013,17 +985,17 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let merge_rewrite_item x i1 i2 =
       match i1, i2 with
-         Rewrite1.RewriteTerm t1, Rewrite2.RewriteTerm t2 ->
+         RewriteTerm t1, RewriteTerm t2 ->
              RewriteTerm (merge_term x t1 t2)
-       | Rewrite1.RewriteString s1, Rewrite2.RewriteString s2 ->
+       | RewriteString s1, RewriteString s2 ->
             RewriteString (merge_rwp merge_string x s1 s2)
-       | Rewrite1.RewriteToken t1, Rewrite2.RewriteToken t2 ->
+       | RewriteToken t1, RewriteToken t2 ->
             RewriteToken (merge_rwp merge_opname x t1 t2)
-       | Rewrite1.RewriteNum n1, Rewrite2.RewriteNum n2 ->
+       | RewriteNum n1, RewriteNum n2 ->
             RewriteNum (merge_rwp merge_num x n1 n2)
-       | Rewrite1.RewriteLevel le1, Rewrite2.RewriteLevel le2 ->
+       | RewriteLevel le1, RewriteLevel le2 ->
             RewriteLevel (merge_level_exp x le1 le2)
-       | Rewrite1.RewriteUnsupported, Rewrite2.RewriteUnsupported ->
+       | RewriteUnsupported, RewriteUnsupported ->
             RewriteUnsupported
        | _ ->
             report_error x "rewrite_item kind mismatch"
@@ -2621,12 +2593,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    module TermShape = struct
       include TermType
 
-      let string_of_shape (s1, s2) =
-         sprintf "Impl1 shape: %s; Impl2 shape: %s" (TermShape1.string_of_shape s1) (TermShape2.string_of_shape s2)
-
-      let short_string_of_shape (s1, s2) =
-         sprintf "Impl1 shape: %s; Impl2 shape: %s" (TermShape1.short_string_of_shape s1) (TermShape2.short_string_of_shape s2)
-
       (* XXX: BUG: we are reimplementing the modules instead of debugging the underlying implementation *)
       module ShapeCompare =
       struct
@@ -2642,7 +2608,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       (*
        * To generate the code for this module, run the following:
-       *   grep '^   [v ][a ][l ]' refiner/refsig/term_shape_sig.ml | sed -e 's/(\*.*//' | egrep -v 'end|string_of|(sequent|var)_shape' | util/gen_refiner_debug.pl TermShape > /tmp/code
+       *   grep '^   [v ][a ][l ]' refiner/refsig/term_shape_sig.ml | sed -e 's/(\*.*//' | egrep -v 'end' | util/gen_refiner_debug.pl TermShape > /tmp/code
        *)
 
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
@@ -2652,25 +2618,38 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          merge merge_shape "TermShape.shape_of_term" (wrap1 TermShape1.shape_of_term p0_1) (wrap1 TermShape2.shape_of_term p0_2)
 
       let eq (p0 : shape) (p1 : shape) =
-         let p0_1, p0_2 = p0 in
-         let p1_1, p1_2 = p1 in
-         merge merge_bool "TermShape.eq" (wrap2 TermShape1.eq p0_1 p1_1) (wrap2 TermShape2.eq p0_2 p1_2)
+         merge merge_bool "TermShape.eq" (wrap2 TermShape1.eq p0 p1) (wrap2 TermShape2.eq p0 p1)
 
       let param_type (p0 : param) =
          let p0_1, p0_2 = p0 in
          merge merge_shape_param "TermShape.param_type" (wrap1 TermShape1.param_type p0_1) (wrap1 TermShape2.param_type p0_2)
 
       let opname_of_shape (p0 : shape) =
-         let p0_1, p0_2 = p0 in
-         merge merge_opname "TermShape.opname_of_shape" (wrap1 TermShape1.opname_of_shape p0_1) (wrap1 TermShape2.opname_of_shape p0_2)
+         merge merge_opname "TermShape.opname_of_shape" (wrap1 TermShape1.opname_of_shape p0) (wrap1 TermShape2.opname_of_shape p0)
+
+      let sequent_shape =
+         merge_shape "TermShape.sequent_shape" (TermShape1.sequent_shape) (TermShape2.sequent_shape)
+
+      let var_shape =
+         merge_shape "TermShape.var_shape" (TermShape1.var_shape) (TermShape2.var_shape)
 
       let print_shape (p0 : out_channel) (p1 : shape) =
-         let p1_1, p1_2 = p1 in
-         merge merge_unit "TermShape.print_shape" (wrap2 TermShape1.print_shape p0 p1_1) (wrap2 TermShape2.print_shape p0 p1_2)
+         merge merge_unit "TermShape.print_shape" (wrap2 TermShape1.print_shape p0 p1) (wrap2 TermShape2.print_shape p0 p1)
 
       let pp_print_shape (p0 : formatter) (p1 : shape) =
-         let p1_1, p1_2 = p1 in
-         merge merge_unit "TermShape.pp_print_shape" (wrap2 TermShape1.pp_print_shape p0 p1_1) (wrap2 TermShape2.pp_print_shape p0 p1_2)
+         merge merge_unit "TermShape.pp_print_shape" (wrap2 TermShape1.pp_print_shape p0 p1) (wrap2 TermShape2.pp_print_shape p0 p1)
+
+      let string_of_shape (p0 : shape) =
+         merge merge_string "TermShape.string_of_shape" (wrap1 TermShape1.string_of_shape p0) (wrap1 TermShape2.string_of_shape p0)
+
+      let short_string_of_shape (p0 : shape) =
+         merge merge_string "TermShape.short_string_of_shape" (wrap1 TermShape1.short_string_of_shape p0) (wrap1 TermShape2.short_string_of_shape p0)
+
+      let shape_compare (p0 : shape) (p1 : shape) =
+         merge merge_int "TermShape.shape_compare" (wrap2 TermShape1.shape_compare p0 p1) (wrap2 TermShape2.shape_compare p0 p1)
+
+      let canonical_term_of_shape (p0 : shape) =
+         merge merge_term "TermShape.canonical_term_of_shape" (wrap1 TermShape1.canonical_term_of_shape p0) (wrap1 TermShape2.canonical_term_of_shape p0)
 
    end
 
@@ -3234,7 +3213,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    end
 
    module RewriteInt =
-      Rewrite.Rewrite (TermType) (Term) (TermOp) (TermMan) (TermAddr) (TermSubst) (RefineError)
+      Rewrite.Rewrite (TermType) (Term) (TermOp) (TermMan) (TermAddr) (TermSubst) (TermShape) (RefineError)
    module RefineInt =
       Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (RewriteInt) (RefineError)
 
@@ -3255,6 +3234,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       module TermSubst = TermSubst
       module TermMan = TermMan
       module TermMeta = TermMeta (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
+      module TermShape = TermShape
       module Refine = Refine
    end
    module TermHash = Term_hash.TermHash (TermMod)

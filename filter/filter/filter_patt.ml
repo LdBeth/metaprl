@@ -103,39 +103,44 @@ let build_term_patt loc term =
                   if not (Lm_num.is_integer_num n) then
                      raise (Invalid_argument "build_term_patt: number is not an integer");
                   let i = string_of_int (Lm_num.int_of_num n) in
-                     <:patt< Refiner.Refiner.TermType.MatchNumber ( _, Some $int:i$ ) >>
+                     <:patt< Term_sig.MatchNumber ( _, Some $int:i$ ) >>
 
              | String s ->
-                  <:patt< Refiner.Refiner.TermType.MatchString $str: String.escaped s$ >>
+                  <:patt< Term_sig.MatchString $str: String.escaped s$ >>
 
              | MNumber v ->
-                  <:patt< Refiner.Refiner.TermType.MatchNumber ( $patt_of_var v$, _ ) >>
+                  <:patt< Term_sig.MatchNumber ( $patt_of_var v$, _ ) >>
 
              | MString v ->
-                  <:patt< Refiner.Refiner.TermType.MatchString $patt_of_var v$ >>
+                  <:patt< Term_sig.MatchString $patt_of_var v$ >>
 
              | MToken v ->
-                  <:patt< Refiner.Refiner.TermType.MatchToken ($patt_of_var v$, _) >>
+                  <:patt< Term_sig.MatchToken ($patt_of_var v$, _) >>
+
+             | MShape v ->
+                  <:patt< Term_sig.MatchShape ($patt_of_var v$, _) >>
 
              | Var v ->
-                  <:patt< Refiner.Refiner.TermType.MatchVar $patt_of_var v$ >>
+                  <:patt< Term_sig.MatchVar $patt_of_var v$ >>
 
              | Token opname ->
                   let strings = Opname.dest_opname opname in
                   let patt = List.fold_right (fun x l -> <:patt< [$str:String.escaped x$ :: $l$] >>) strings <:patt< [] >> in
-                     <:patt< Refiner.Refiner.TermType.MatchToken (_, $patt$) >>
+                     <:patt< Term_sig.MatchToken (_, $patt$) >>
 
              | MLevel l ->
                   (match dest_level l with
                       { le_const = 0; le_vars = [v] } ->
                          (match dest_level_var v with
                              { le_var = v; le_offset = 0 } ->
-                                 <:patt< Refiner.Refiner.TermType.MatchLevel $patt_of_var v$ >>
+                                 <:patt< Term_sig.MatchLevel $patt_of_var v$ >>
                            | _ ->
                               raise (Invalid_argument "term_patt: complex level expressions not supported"))
                     | _ ->
                          raise (Invalid_argument "term_patt: complex level expressions not supported"))
 
+             | Shape _ ->
+                  raise (Invalid_argument "term_patt: shape constants not supported")
              | Quote ->
                   raise (Invalid_argument "term_patt: quotes not supported")
              | ObId _ ->

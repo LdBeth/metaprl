@@ -64,6 +64,7 @@
  *)
 open Lm_debug
 open Lm_symbol
+open Term_sig
 open Rewrite_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType

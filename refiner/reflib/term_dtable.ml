@@ -44,8 +44,8 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
 open Lm_debug
+open Term_sig
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 

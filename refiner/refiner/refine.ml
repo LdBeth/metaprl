@@ -119,8 +119,7 @@ module Refine (**)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermMeta : TermMetaSig with module MetaTypes = TermType)
-   (TermShape : TermShapeSig
-    with type term = TermType.term)
+   (TermShape : TermShapeSig with type term = TermType.term)
    (Rewrite : RewriteSig
     with type RwTypes.term = TermType.term
     with type RwTypes.address = TermAddr.address)

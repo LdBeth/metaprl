@@ -1313,17 +1313,19 @@ let rewrite_type_patt loc (kind, name) =
    let name = <:patt< $lid:string_of_symbol name$ >> in
       match kind with
          RewriteTermType ->
-            <:patt< $rewriter_patt loc$ . RewriteTerm $name$ >>
+            <:patt< Rewrite_sig.RewriteTerm $name$ >>
        | RewriteStringType ->
-            <:patt< $rewriter_patt loc$ . RewriteString $name$ >>
+            <:patt< Rewrite_sig.RewriteString $name$ >>
        | RewriteTokenType ->
-            <:patt< $rewriter_patt loc$ . RewriteToken $name$ >>
+            <:patt< Rewrite_sig.RewriteToken $name$ >>
        | RewriteVarType ->
-            <:patt< $rewriter_patt loc$ . RewriteString (Rewrite_sig.RewriteMetaParam $name$) >>
+            <:patt< Rewrite_sig.RewriteString (Rewrite_sig.RewriteMetaParam $name$) >>
        | RewriteNumType ->
-            <:patt< $rewriter_patt loc$ . RewriteNum $name$ >>
+            <:patt< Rewrite_sig.RewriteNum $name$ >>
+       | RewriteShapeType ->
+            <:patt< Rewrite_sig.RewriteShape $name$ >>
        | RewriteLevelType ->
-            <:patt< $rewriter_patt loc$ . RewriteLevel $name$ >>
+            <:patt< Rewrite_sig.RewriteLevel $name$ >>
        | RewriteUnsupportedType ->
             <:patt< _ >>
 

@@ -109,6 +109,7 @@ let string_of_op_shape shape =
           | ShapeVar    -> "V"
           | ShapeLevel  -> "L"
           | ShapeToken  -> "T"
+          | ShapeShape  -> "Sh"
           | ShapeQuote  -> "Q"
       in
          Buffer.add_string buf s
