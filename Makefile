@@ -23,7 +23,7 @@ REFINER_DIRS =\
 	mllib\
 	refiner\
 	library\
-        debug\
+	debug\
 	ensemble
 
 MP_DIRS = $(addprefix theories/, $(THEORIES))

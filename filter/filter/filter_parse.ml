@@ -1279,13 +1279,13 @@ EXTEND
            let f () =
               define_int_thm (StrFilter.get_proc loc) loc name params mt res
            in
-              f ();
+              print_exn f "interactive" loc;
               empty_str_item loc
         | "derived"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
               define_int_thm (StrFilter.get_proc loc) loc name params mt res
            in
-              f ();
+              print_exn f "derived" loc;
               empty_str_item loc
         | mlrule_keyword; name = LIDENT; res = optresources; args = optarglist; ":"; t = bound_term; "="; code = expr ->
            let f () =
@@ -1341,7 +1341,7 @@ EXTEND
            let f () =
               StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 EQRelation
            in
-              f ();
+              print_exn f "prec" loc;
               empty_str_item loc
         | "prec"; name1 = LIDENT; ">"; name2 = LIDENT ->
            let f () =
