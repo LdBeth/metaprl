@@ -192,6 +192,20 @@ struct
    let iter f (t1, t2) =
       Table1.iter f t1
 
+   let list_of (t1, t2) =
+      let l1=Table1.list_of t1 in
+      let l2=Table2.list_of t2 in
+		if l1=l2 then
+			l1
+		else
+			begin
+				open_vbox 3;
+				print_string "List_of made different lists:";
+				print_space ();
+				print (t1,t2);
+				raise(Invalid_argument "DebugTables.list_of - something funny")
+			end
+
    let map f (t1, t2) =
       try
          check(Table1.map f t1, Table2.map f t2)

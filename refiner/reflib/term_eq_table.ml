@@ -104,6 +104,10 @@ struct
          Table.iter (fun index data -> f (Extra.unhash index) data) table
       let map f table =
          Table.map (fun index data -> f (Extra.unhash index) data) table
+		let list_of table =
+			let aux (k,dl) =(Extra.unhash k,dl) in
+			let l=Table.list_of table in
+			List.map aux l
 		let deletemax table =
 			let index,data,table'=Table.deletemax table in
 			(Extra.unhash index, data, table')
