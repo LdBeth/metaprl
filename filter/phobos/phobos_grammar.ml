@@ -142,8 +142,24 @@ let rec check_productions terminals nonterminals = function
       ()
 
 and check_grammar gst =
-   List.iter (fun (_, _, prods, _, _) ->
-      check_productions gst.grammar_terminals gst.grammar_nonterminals prods) gst.grammar_grammar
+   let assoc_set =
+      List.fold_left (fun set directive ->
+         match directive with
+            Dir_nonassoc ids
+          | Dir_leftassoc ids
+          | Dir_rightassoc ids ->
+               List.fold_left (fun set (id, pos) ->
+                  string_set_add set id) set ids) string_set_empty gst.grammar_assocs
+   in
+   List.iter (fun (_, pos, prods, prec, _) ->
+      check_productions gst.grammar_terminals gst.grammar_nonterminals prods;
+      match prec with
+         Some (prec, pos) ->
+            if not (string_set_mem gst.grammar_terminals prec)
+            && not (string_set_mem assoc_set prec) then
+               print_warning pos ("undeclared precedence symbol: " ^ prec)
+       | None ->
+            ()) gst.grammar_grammar
 
 let grammar_table_of_grammar (grammar: grammar) =
    List.fold_left (fun grammar_table (psym, _, prods, prec_opt, rewrites) ->

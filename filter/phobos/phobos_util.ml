@@ -88,6 +88,10 @@ let psymbol_list_union lst1 lst2 =
 (*
  * String set utilities.
  *)
+let string_set_empty = StringSet.empty
+
+let string_set_add = StringSet.add
+
 let string_set_mem = StringSet.mem
 
 let string_set_union = StringSet.union

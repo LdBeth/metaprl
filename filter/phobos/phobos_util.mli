@@ -33,6 +33,10 @@ val psymbol_list_equal :
 val psymbol_list_union :
   PSymbolSet.elt list ->
   PSymbolSet.elt list -> PSymbolSet.elt list
+val string_set_add :
+  StringSet.t -> StringSet.elt -> StringSet.t
+val string_set_empty :
+  StringSet.t
 val string_set_mem :
   StringSet.t -> StringSet.elt -> bool
 val string_set_union :
