@@ -457,42 +457,19 @@ let rule_name_id        = "_$rule_name"
 (*
  * Convert between expressions and terms.
  *)
-let term_list = ref []
-let mterm_list = ref []
-
 let expr_of_term loc t =
-   let name = sprintf "_$static_term%d" (List.length !term_list) in
-      term_list := (loc, name, Ml_term.string_of_term t) :: !term_list;
-      <:expr< $lid:name$ >>
+   let s = Ml_term.string_of_term t in
+   <:expr< $uid: "Ml_term"$ . $lid: "term_of_string"$ $str: s$ >>
 
 let expr_of_mterm loc t =
-   let name = sprintf "_$static_meta_term%d" (List.length !mterm_list) in
-      mterm_list := (loc, name, Ml_term.string_of_mterm t) :: !mterm_list;
-      <:expr< $lid:name$ >>
+   let s = Ml_term.string_of_mterm t in
+   <:expr< $uid: "Ml_term"$ . $lid: "mterm_of_string"$ $str: s$ >>
 
 let expr_of_label loc = function
    [] ->
       <:expr< $uid:"None"$ >>
  | h :: _ ->
       <:expr< $uid:"Some"$ $str: h$ >>
-
-let collect_terms () =
-   let collect_term (loc, name, s) =
-      let loc = 0,0 in
-      let p = <:patt< $lid:name$ >> in
-      let e = <:expr< $uid: "Ml_term"$ . $lid: "term_of_string"$ $str: s$ >> in
-      <:str_item< value $rec:false$ $list:[p,e]$ >>
-   in
-   let collect_mterm (loc, name, s) =
-      let loc = 0,0 in
-      let p = <:patt< $lid:name$ >> in
-      let e = <:expr< $uid: "Ml_term"$ . $lid: "mterm_of_string"$ $str: s$ >> in
-      <:str_item< value $rec:false$ $list:[p,e]$ >>
-   in
-   let terms = (List.map collect_term !term_list) @ (List.map collect_mterm !mterm_list) in
-   term_list := [];
-   mterm_list := [];
-   terms
 
 let expr_of_contractum loc index =
    <:expr< $make_contractum_expr loc$ $lid:sprintf "%s%d" contractum_id index$ $lid:stack_id$ >>
@@ -2341,8 +2318,7 @@ struct
       let prolog = implem_prolog proc (0, 0) name in
       let items = List_util.flat_map (extract_str_item proc) (info_items info) in
       let postlog = implem_postlog proc (0, 0) name in
-      let terms = collect_terms () in
-         List.map (fun item -> item, (0, 0)) (terms @ prolog @ items @ postlog)
+         List.map (fun item -> item, (0, 0)) (prolog @ items @ postlog)
 end
 
 (*
