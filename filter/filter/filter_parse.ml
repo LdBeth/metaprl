@@ -219,41 +219,6 @@ let term_patt s =
    raise (Failure "Filter_parse.term_patt: not implemented yet")
 
 (*
- * Contractum terms.
- * This saves the term for future use in building a contractum,
- * and just returns a function to build the contractum.
- *
- * Contracta are kept in a global list, and are collected
- * only when the mode is on.
- *)
-let contracta = ref []
-let contract_flag = ref false
-
-let start_rewrite () =
-   contract_flag := true
-
-let end_rewrite () =
-   let cons = List.rev !contracta in
-      contract_flag := false;
-      contracta := [];
-      cons
-
-let stack_id = "rewrite_stack"
-
-let contractum_exp s =
-   if !contract_flag then
-      let cs = Stream.of_string s in
-      let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
-      let index = List.length !contracta in
-         contracta := t :: !contracta;
-         expr_of_contractum (0, 0) index
-   else
-      Stdpp.raise_with_loc (0, String.length s) (Failure "not in a rewrite block")
-
-let contractum_patt s =
-   raise (Failure "Filter_parse.term_patt: not implemented yet")
-
-(*
  * Documentation strings are converted to identifable ocaml code.
  *)
 let string_exp s =
@@ -265,7 +230,6 @@ let string_patt s =
       <:patt< $str: s$ >>
 
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
-let _ = Quotation.add "con" (Quotation.ExAst (contractum_exp, contractum_patt))
 let _ = Quotation.add "string" (Quotation.ExAst (string_exp, string_patt))
 let _ = Quotation.default := "term"
 
@@ -711,7 +675,6 @@ struct
          FilterCache.add_command proc.cache (MLRewrite { mlterm_name = mlname;
                                                          mlterm_params = params;
                                                          mlterm_term = t;
-                                                         mlterm_contracta = end_rewrite ();
                                                          mlterm_def = def;
                                                          mlterm_resources = resources
                                              }, loc)
@@ -723,7 +686,6 @@ struct
          FilterCache.add_command proc.cache (MLAxiom { mlterm_name = mlname;
                                                        mlterm_params = params;
                                                        mlterm_term = t;
-                                                       mlterm_contracta = end_rewrite ();
                                                        mlterm_def = def;
                                                        mlterm_resources = resources
                                              }, loc)
@@ -829,7 +791,6 @@ struct
       let ml_def =
          { dform_ml_printer = printer;
            dform_ml_buffer = buffer;
-           dform_ml_contracta = end_rewrite ();
            dform_ml_code = code
          }
       in
@@ -1460,11 +1421,7 @@ EXTEND
       [[ "rule" -> () ]];
 
    mlrule_keyword:
-      [[ "ml_rule" ->
-         start_rewrite ()
-       | "ml_axiom" ->
-         start_rewrite ()
-      ]];
+      [[ "ml_rule" | "ml_axiom" -> () ]];
 
    (*
     * DISPLAY FORMS.

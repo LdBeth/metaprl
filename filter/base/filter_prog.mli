@@ -42,7 +42,6 @@ open Filter_cache
  * Expression of a term.
  *)
 val expr_of_term : loc -> term -> MLast.expr
-val expr_of_contractum : loc -> int -> MLast.expr
 
 (*
  * Signature for extract module.

@@ -122,7 +122,6 @@ and ('term, 'expr) mlterm_info =
    { mlterm_name : string;
      mlterm_params : 'term param list;
      mlterm_term : 'term;
-     mlterm_contracta : 'term list;
      mlterm_def : 'expr option;
      mlterm_resources : 'expr resource_def
    }
@@ -173,7 +172,6 @@ and ('term, 'expr) dform_def =
 and ('term, 'expr) dform_ml_def =
    { dform_ml_printer : string;
      dform_ml_buffer : string;
-     dform_ml_contracta : 'term list;
      dform_ml_code : 'expr
    }
 

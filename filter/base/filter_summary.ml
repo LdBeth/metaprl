@@ -580,7 +580,6 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                let { mlterm_name = name;
                      mlterm_params = params;
                      mlterm_term = term;
-                     mlterm_contracta = cons;
                      mlterm_def = def;
                      mlterm_resources = res
                    } = t
@@ -588,7 +587,6 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                   MLRewrite { mlterm_name = name;
                               mlterm_params = List.map param_map params;
                               mlterm_term = convert.term_f term;
-                              mlterm_contracta = List.map convert.term_f cons;
                               mlterm_def = opt_apply convert.expr_f def;
                               mlterm_resources = res_map res
                   }
@@ -597,7 +595,6 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                let { mlterm_name = name;
                      mlterm_params = params;
                      mlterm_term = term;
-                     mlterm_contracta = cons;
                      mlterm_def = def;
                      mlterm_resources = res
                    } = t
@@ -605,7 +602,6 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                   MLAxiom { mlterm_name = name;
                             mlterm_params = List.map param_map params;
                             mlterm_term = convert.term_f term;
-                            mlterm_contracta = List.map convert.term_f cons;
                             mlterm_def = opt_apply convert.expr_f def;
                             mlterm_resources = res_map res
                   }
@@ -636,12 +632,10 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                         TermDForm (convert.term_f t)
                    | MLDForm { dform_ml_printer = printer;
                                dform_ml_buffer = buffer;
-                               dform_ml_contracta = cons;
                                dform_ml_code = code
                      } ->
                         MLDForm { dform_ml_printer = printer;
                                   dform_ml_buffer = buffer;
-                                  dform_ml_contracta = List.map convert.term_f cons;
                                   dform_ml_code = convert.expr_f code
                         }
                in
@@ -864,10 +858,9 @@ struct
          else if Opname.eq opname dform_term_op then
             TermDForm (convert.term_f (one_subterm t))
          else if Opname.eq opname dform_ml_op then
-            let printer, buffer, cons, expr = dest_string_string_dep0_dep0_any_term t in
+            let printer, buffer, expr = dest_string_string_dep0_any_term t in
                MLDForm { dform_ml_printer   = printer;
                          dform_ml_buffer    = buffer;
-                         dform_ml_contracta = List.map convert.term_f (dest_xlist cons);
                          dform_ml_code      = convert.expr_f expr
                        }
          else
@@ -1012,22 +1005,20 @@ struct
     *)
    and dest_mlrewrite convert t =
       let name = dest_string_param t in
-      let params, term, cons, expr, resources = five_subterms t in
+      let params, term, expr, resources = four_subterms t in
          MLRewrite { mlterm_name = name;
                      mlterm_params = dest_params convert params;
                      mlterm_term = convert.term_f term;
-                     mlterm_contracta = List.map convert.term_f (dest_xlist cons);
                      mlterm_def = dest_opt convert.expr_f expr;
                      mlterm_resources = dest_res convert resources
          }
 
    and dest_mlaxiom convert t =
       let name = dest_string_param t in
-      let params, term, cons, expr, resources = five_subterms t in
+      let params, term, expr, resources = four_subterms t in
          MLAxiom { mlterm_name = name;
                    mlterm_params = dest_params convert params;
                    mlterm_term = convert.term_f term;
-                   mlterm_contracta = List.map convert.term_f (dest_xlist cons);
                    mlterm_def = dest_opt convert.expr_f expr;
                    mlterm_resources = dest_res convert resources
          }
@@ -1314,12 +1305,10 @@ struct
          mk_simple_term dform_term_op [convert.term_f t]
     | MLDForm { dform_ml_printer = printer;
                 dform_ml_buffer = buffer;
-                dform_ml_contracta = cons;
                 dform_ml_code = expr
       } ->
-         let cons = mk_xlist_term (List.map convert.term_f cons) in
          let expr = convert.expr_f expr in
-            mk_string_string_dep0_dep0_term dform_ml_op printer buffer cons expr
+            mk_string_string_dep0_term dform_ml_op printer buffer expr
 
    (*
     * Precedence relation.
@@ -1402,28 +1391,24 @@ struct
    and term_of_mlrewrite convert { mlterm_name = name;
                                    mlterm_params = params;
                                    mlterm_term = term;
-                                   mlterm_contracta = cons;
                                    mlterm_def = expr_opt;
                                    mlterm_resources = res
        } =
       mk_string_param_term mlrewrite_op name (**)
          [mk_params convert params;
           convert.term_f term;
-          mk_xlist_term (List.map convert.term_f cons);
           mk_opt convert.expr_f expr_opt;
           term_of_resources convert res]
 
    and term_of_mlaxiom convert { mlterm_name = name;
                                  mlterm_params = params;
                                  mlterm_term = term;
-                                 mlterm_contracta = cons;
                                  mlterm_def = expr_opt;
                                  mlterm_resources = res
        } =
       mk_string_param_term mlaxiom_op name (**)
          [mk_params convert params;
           convert.term_f term;
-          mk_xlist_term (List.map convert.term_f cons);
           mk_opt convert.expr_f expr_opt;
           term_of_resources convert res]
 

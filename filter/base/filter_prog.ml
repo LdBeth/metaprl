@@ -230,9 +230,6 @@ let compile_redices_expr loc =
 let compile_contractum_expr loc =
    <:expr< $rewriter_expr loc$ . compile_contractum >>
 
-let make_contractum_expr loc =
-   <:expr< $rewriter_expr loc$ . make_contractum >>
-
 let strict_expr loc =
    <:expr< $rewriter_expr loc$ . Strict >>
 
@@ -411,9 +408,6 @@ let expr_of_label loc = function
       <:expr< None >>
  | h :: _ ->
       <:expr< Some $str: h$ >>
-
-let expr_of_contractum loc index =
-   <:expr< $make_contractum_expr loc$ $lid:sprintf "%s%d" contractum_id index$ $lid:stack_id$ >>
 
 (*
  * Curried function.
@@ -1088,12 +1082,9 @@ struct
     *    let bvars = [| $bvars$ |] in
     *    let args = [| redex :: List.map expr_of_term args$ |] in
     *    let redex = compile_redices bvars args in
-    *    let contractum_0_id = compile_contractum redex (expr_of_term contracta_0) in
-    *    ...
-    *    let contractum_n_id = compile_contractum redex (expr_of_term contracta_n) in
     *       code
     *)
-   let define_ml_program proc loc strict_expr bvars args tname redex contracta code =
+   let define_ml_program proc loc strict_expr bvars args tname redex code =
       (* Identifier names *)
       let term_patt = <:patt< $lid:term_id$ >> in
       let bvars_patt = <:patt< $lid:bvars_id$ >> in
@@ -1102,35 +1093,13 @@ struct
       let term_expr = expr_of_term loc redex in
       let string_expr s = <:expr< $str:s$ >> in
 
-      (* Build a contractum *)
-      let rec contracta_bind index = function
-         t::tl ->
-            let term_expr = expr_of_term loc t in
-            let name = sprintf "_$contractum%d" index in
-            let let_patt = <:patt< $lid:name$ >> in
-            let let_value =
-               <:expr< $compile_contractum_expr loc$ $strict_expr loc$ $lid:redex_id$ $term_expr$ >>
-            in
-               (let_patt, let_value) :: (contracta_bind (succ index) tl)
-       | [] ->
-            []
-      in
-
-      (* Build the program *)
-      let contracta_binding = contracta_bind 0 contracta in
-      let contracta_expr =
-         if contracta_binding = [] then
-            code
-         else
-            <:expr< let $rec:false$ $list:contracta_binding$ in $code$ >>
-      in
       let redex_expr =
          <:expr< $compile_redices_expr loc$ $strict_expr loc$ $lid:bvars_id$ $lid:args_id$ >>
       in
       let redex_let =
          <:expr< let $rec:false$ $list:[redex_patt,
                                         redex_expr]$
-                 in $contracta_expr$ >>
+                 in $code$ >>
       in
       let args_expr =
          <:expr< [ $lid:term_id$ :: $list_expr loc (expr_of_term loc) args$ ] >>
@@ -1419,7 +1388,6 @@ struct
        { mlterm_name       = name;
          mlterm_params     = params;
          mlterm_term       = redex;
-         mlterm_contracta  = contracta
        } rewrite_expr =
       let info_patt = <:patt< $lid:info_id$ >> in
       let rw_id = "_$" ^ name ^ "_rewrite" in
@@ -1482,7 +1450,7 @@ struct
             [names_id; bnames_id; params_id; seq_id; goal_id]
       in
       let rewrite_let  = <:expr< let $rec:false$ $list:[ rewrite_patt, curry loc args_id rewrite_body ]$ in $info_let$ >> in
-      let body = define_ml_program proc loc strict_expr bvars tparams name redex contracta rewrite_let in
+      let body = define_ml_program proc loc strict_expr bvars tparams name redex rewrite_let in
 
       let rw_fun_expr =
          let addr_expr id = <:expr< $lid:id$ >> in
@@ -1674,7 +1642,6 @@ struct
        { mlterm_name       = name;
          mlterm_params     = params;
          mlterm_term       = redex;
-         mlterm_contracta  = contracta
        } rule_expr =
       (* Names *)
       let info_patt = <:patt< $lid:info_id$ >> in
@@ -1729,7 +1696,7 @@ struct
       let rule_body = <:expr< let $rec:false$ $list:[ rule_patt, rule_expr ]$ in $rule_body$ >> in
       let rule_patt = <:patt< $lid:rule_id$ >> in
       let rule_let  = <:expr< let $rec:false$ $list:[ rule_patt, curry loc [addrs_id; names_id; goal_id; params_id] rule_body ]$ in $info_let$ >> in
-      let body = define_ml_program proc loc strict_expr cvars tparams name redex contracta rule_let in
+      let body = define_ml_program proc loc strict_expr cvars tparams name redex rule_let in
 
       let rule_fun_expr =
          let addr_expr id = <:expr< $lid:id$ >> in
@@ -1861,7 +1828,6 @@ struct
        }
        { dform_ml_printer = printer;
          dform_ml_buffer = buffer;
-         dform_ml_contracta = cons;
          dform_ml_code = code
        } =
       (* Dform info *)
@@ -1914,7 +1880,7 @@ struct
       let dprinter_let_expr =
          <:expr< let $rec:false$ $list:[ dprinter_patt, dprinter_fun_expr ]$ in $body_expr$ >>
       in
-      let expr = define_ml_program proc loc relaxed_expr [] [] name t cons dprinter_let_expr in
+      let expr = define_ml_program proc loc relaxed_expr [] [] name t dprinter_let_expr in
          [<:str_item< $exp:expr$ >>]
 
    let _ = ()
