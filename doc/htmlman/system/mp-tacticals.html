@@ -243,7 +243,7 @@ node, otherwise the second tactic is applied. The <TT>ifThenT</TT>
 tactic is similar, with the following equivalence:</P>
 
 <BLOCKQUOTE>
-  <PRE>ifThenT pred tac = ifT pred tac idT.</PRE>
+  <PRE>ifThenT pred tac = ifT (function p -> pred (goal p)) tac idT.</PRE>
 </BLOCKQUOTE>
 
 <P>The <TT>whileT</TT> and <TT>untilT</TT> tacticals perform the
