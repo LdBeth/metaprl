@@ -76,9 +76,10 @@ val refresh : t -> string list -> unit
 val create_package : t -> parse_arg -> string -> package
 val load   : t -> parse_arg -> string -> package
 val get    : t -> string -> package
-val backup : package -> unit
-val revert : package -> unit
+val backup : parse_arg -> package -> unit
 val save   : parse_arg -> package -> unit
+val export : parse_arg -> package -> unit
+val revert : package -> unit
 
 (*
  * Access.

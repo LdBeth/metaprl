@@ -436,12 +436,12 @@ let interpret_modifies = function
  | ProofKreitz
  | ProofRotate _
  | ProofPaste _
- | ProofMakeAssum ->
-      true
- | ProofCp _
+ | ProofMakeAssum
  | ProofExpand
  | ProofClean
- | ProofSquash
+ | ProofSquash ->
+      true
+ | ProofCp _
  | ProofCopy _
  | ProofAddr _
  | ProofUp _
@@ -732,8 +732,7 @@ let rec chdir parse_arg shell need_shell verbose path =
 let refresh parse_arg shell =
    let dir = shell.shell_dir in
       chdir parse_arg shell false false DirRoot;
-      chdir parse_arg shell true true dir;
-      Lm_printf.eprintf "Refreshing %s: %s@." shell.shell_df_mode (string_of_dir dir)
+      chdir parse_arg shell true true dir
 
 let cd parse_arg shell name =
    chdir parse_arg shell true true (parse_path shell name);
@@ -948,20 +947,11 @@ let create_pkg parse_arg shell name =
 (*
  * Save the current package.
  *)
-let backup shell =
+let backup parse_arg shell =
    match shell.shell_package with
       Some pack ->
          eprintf "Auto-saving %s@." (Package_info.name pack);
-         Package_info.backup pack
-    | None ->
-         ()
-
-let revert parse_arg shell =
-   match shell.shell_package with
-      Some pack ->
-         eprintf "Reverting %s@." (Package_info.name pack);
-         Package_info.revert pack;
-         refresh parse_arg shell
+         Package_info.backup parse_arg pack
     | None ->
          ()
 
@@ -974,18 +964,56 @@ let save parse_arg shell =
     | None ->
          ()
 
+let export parse_arg shell =
+   touch shell;
+   match shell.shell_package with
+      Some pack ->
+         eprintf "Exporting %s@." (Package_info.name pack);
+         Package_info.export parse_arg pack
+    | None ->
+         ()
+
+let revert parse_arg shell =
+   match shell.shell_package with
+      Some pack ->
+         eprintf "Reverting %s@." (Package_info.name pack);
+         Package_info.revert pack;
+         refresh parse_arg shell
+    | None ->
+         ()
+
 (*
  * Walk over all packages.
  *)
-let backup_all _ =
+let backup_all parse_arg _ =
    let backup pack =
       if Package_info.status pack = PackModified then
          begin
             eprintf "Auto-saving %s@." (Package_info.name pack);
-            Package_info.backup pack
+            Package_info.backup parse_arg pack
          end
    in
       List.iter backup (all_packages ())
+
+let save_all parse_arg _ =
+   let save pack =
+      if Package_info.status pack = PackModified then
+         begin
+            eprintf "Saving %s@." (Package_info.name pack);
+            Package_info.save parse_arg pack
+         end
+   in
+      List.iter save (all_packages ())
+
+let export_all parse_arg _ =
+   let save pack =
+      if Package_info.status pack = PackModified then
+         begin
+            eprintf "Exporting %s@." (Package_info.name pack);
+            Package_info.export parse_arg pack
+         end
+   in
+      List.iter save (all_packages ())
 
 let revert_all shell =
    let revert pack =
@@ -997,16 +1025,6 @@ let revert_all shell =
    in
       List.iter revert (all_packages ());
       refresh shell
-
-let save_all parse_arg _ =
-   let save pack =
-      if Package_info.status pack = PackModified then
-         begin
-            eprintf "Saving %s@." (Package_info.name pack);
-            Package_info.save parse_arg pack
-         end
-   in
-      List.iter save (all_packages ())
 
 (*!
  * @docoff

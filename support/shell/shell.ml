@@ -86,11 +86,13 @@ type commands =
      mutable set_dfmode : string -> unit;
      mutable create_pkg : string -> unit;
      mutable backup : unit -> unit;
-     mutable revert : unit -> unit;
-     mutable save   : unit -> unit;
      mutable backup_all : unit -> unit;
-     mutable revert_all : unit -> unit;
+     mutable save : unit -> unit;
      mutable save_all : unit -> unit;
+     mutable export : unit -> unit;
+     mutable export_all : unit -> unit;
+     mutable revert : unit -> unit;
+     mutable revert_all : unit -> unit;
      mutable view : LsOptionSet.t -> unit;
      mutable expand : unit -> unit;
      mutable expand_all : unit -> unit;
@@ -122,11 +124,13 @@ let commands =
      set_dfmode = uninitialized;
      create_pkg = uninitialized;
      backup = uninitialized;
-     revert = uninitialized;
-     save = uninitialized;
      backup_all = uninitialized;
-     revert_all = uninitialized;
+     save = uninitialized;
      save_all = uninitialized;
+     export = uninitialized;
+     export_all = uninitialized;
+     revert = uninitialized;
+     revert_all = uninitialized;
      view = uninitialized;
      check = uninitialized;
      apply_all = uninitialized;
@@ -568,7 +572,13 @@ struct
       let set_dfmode         = wrap      set_dfmode
       let set_window_width   = wrap      set_window_width
       let flush              = wrap_unit flush
-      let backup_all         = wrap_unit backup_all
+
+      let backup             = wrap_unit_arg backup
+      let backup_all         = wrap_unit_arg backup_all
+      let save               = wrap_unit_arg save
+      let save_all           = wrap_unit_arg save_all
+      let export             = wrap_unit_arg export
+      let export_all         = wrap_unit_arg export_all
 
       (*
        * Extraction (JYH: I think this is for testing).
@@ -581,7 +591,9 @@ struct
        *)
       let init () =
          refresh_packages ();
-         Shell_state.set_module "shell_theory"
+         Shell_state.set_module "shell_theory";
+         synchronize (fun shell ->
+               eprintf "Current directory: %s@." (string_of_dir shell.shell_dir))
 
       (*
        * External toploop.
@@ -596,12 +608,14 @@ struct
          commands.pwd                 <- pwd;
          commands.set_dfmode          <- set_dfmode;
          commands.create_pkg          <- wrap_arg create_pkg;
-         commands.backup              <- wrap_unit backup;
-         commands.revert              <- wrap_unit_arg revert;
-         commands.save                <- wrap_unit_arg save;
+         commands.backup              <- backup;
          commands.backup_all          <- backup_all;
+         commands.save                <- save;
+         commands.save_all            <- save_all;
+         commands.export              <- export;
+         commands.export_all          <- export_all;
+         commands.revert              <- wrap_unit_arg revert;
          commands.revert_all          <- wrap_unit_arg revert_all;
-         commands.save_all            <- wrap_unit_arg save_all;
          commands.view                <- wrap_arg view;
          commands.check               <- wrap_unit check;
          commands.expand              <- wrap_unit expand;
@@ -632,8 +646,6 @@ struct
          (*
           * Note! the main function will call Top.init.
           *)
-         refresh_packages ();
-         Shell_state.set_module "shell_theory";
          ShellP4.main ();
          Shell_current.flush ();
          Top.backup_all ()
@@ -670,11 +682,13 @@ let fs_cwd () = commands.fs_cwd ()
 let set_dfmode s = commands.set_dfmode s
 let create_pkg s = commands.create_pkg s
 let backup _ = commands.backup ()
-let revert _ = commands.revert ()
-let save _ = commands.save ()
 let backup_all _ = commands.backup_all ()
-let revert_all _ = commands.revert_all ()
+let save _ = commands.save ()
 let save_all _ = commands.save_all ()
+let export _ = commands.export ()
+let export_all _ = commands.export_all ()
+let revert _ = commands.revert ()
+let revert_all _ = commands.revert_all ()
 let check _ = commands.check ()
 let expand _ = commands.expand ()
 let expand_all _ = commands.expand_all ()

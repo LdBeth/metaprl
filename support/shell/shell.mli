@@ -82,11 +82,13 @@ topval find_subgoal : int -> string
 (* Module commands. *)
 topval create_pkg : string -> unit
 topval backup : unit -> unit
-topval revert : unit -> unit
-topval save : unit -> unit
 topval backup_all : unit -> unit
-topval revert_all : unit -> unit
+topval save : unit -> unit
 topval save_all : unit -> unit
+topval export : unit -> unit
+topval export_all : unit -> unit
+topval revert : unit -> unit
+topval revert_all : unit -> unit
 
 (* Display *)
 topval ls : string -> unit

@@ -500,26 +500,27 @@ let get pack name =
                raise (Invalid_argument("Package_info.get: package " ^ name ^ " is not loaded")))
 
 (*
- * Save a package.
- * This happens only if it is modified.
+ * Three versions of saving.
  *)
-let backup pack_info =
-   synchronize_node pack_info (fun package ->
+let save_aux code arg pack_info =
+   auto_loading_str arg pack_info (fun package ->
          match package with
             { pack_status = PackReadOnly; pack_name = name } ->
                raise (Failure (sprintf "Package_info.save: package '%s' is read-only" name))
-          | { pack_status = PackUnmodified } ->
-               ()
           | { pack_status = PackIncomplete; pack_name = name } ->
                raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
-          | { pack_status = PackModified; pack_str = Some { pack_str_info = info; pack_parse = arg } } ->
-               Cache.StrFilterCache.save info arg (OnlySuffixes ["prlb"]);
+          | { pack_str = Some { pack_str_info = info } } ->
+               Cache.StrFilterCache.save info arg (OnlySuffixes [code]);
                package.pack_status <- PackUnmodified
-          | { pack_status = PackModified; pack_str = None } ->
-               raise (Invalid_argument "Package_info.save"))
+          | { pack_str = None; pack_name = name } ->
+               raise (NotLoaded name))
+
+let export = save_aux "prla"
+let save   = save_aux "prlb"
+let backup = save_aux "cmoz"
 
 (*
- * Backup a file to the backup directory.
+ * Revert a file the the .prlb backup
  *)
 let revert pack_info =
    synchronize_node pack_info (fun package ->
@@ -532,22 +533,6 @@ let revert pack_info =
                   package.pack_status <- PackUnmodified
           | { pack_str = None } ->
                eprintf "File is already reverted@.")
-
-(*
- * Export the ASCII version of the package.
- *)
-let save arg pack_info =
-   auto_loading_str arg pack_info (fun package ->
-         match package with
-            { pack_status = PackReadOnly; pack_name = name } ->
-               raise (Failure (sprintf "Package_info.export: package '%s' is read-only" name))
-          | { pack_status = PackIncomplete; pack_name = name } ->
-               raise (Failure (sprintf "Package_info.export: package '%s' is incomplete" name))
-          | { pack_str = Some { pack_str_info = info } } ->
-               Cache.StrFilterCache.save info arg (OnlySuffixes ["prla"]);
-               package.pack_status <- PackUnmodified
-          | { pack_str = None; pack_name = name } ->
-               raise (NotLoaded name))
 
 (*
  * Create an empty package.

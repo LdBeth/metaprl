@@ -104,6 +104,7 @@ sig
    val find_match : t -> arg -> info -> select -> alt_suffix -> info
    val save : t -> arg -> info -> alt_suffix -> unit
    val save_if_newer : t -> arg -> info -> alt_suffix -> unit
+   val save_if_missing : t -> arg -> info -> alt_suffix -> unit
    val magic : t -> info -> int
    val set_magic : t -> info -> int -> unit
    val save_as : t -> arg -> cooked -> select -> dir_name -> file_name -> alt_suffix -> info

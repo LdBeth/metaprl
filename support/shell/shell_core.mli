@@ -85,12 +85,14 @@ val set_params : shell -> term Filter_type.param list -> unit
 
 val filename : parse_arg -> shell -> string option
 
-val backup : shell -> unit
-val backup_all : shell -> unit
-val revert : parse_arg -> shell -> unit
+val backup     : parse_arg -> shell -> unit
+val backup_all : parse_arg -> shell -> unit
+val save       : parse_arg -> shell -> unit
+val save_all   : parse_arg -> shell -> unit
+val export     : parse_arg -> shell -> unit
+val export_all : parse_arg -> shell -> unit
+val revert     : parse_arg -> shell -> unit
 val revert_all : parse_arg -> shell -> unit
-val save : parse_arg -> shell -> unit
-val save_all : parse_arg -> shell -> unit
 
 val create_pkg : parse_arg -> shell -> string -> unit
 val create_ax_statement : parse_arg -> shell -> term -> string -> unit

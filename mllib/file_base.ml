@@ -358,6 +358,16 @@ struct
             spec.info_marshal spec.info_magics info.info_magic spec.info_versions arg filename info.info_info
 
    (*
+    * Save a module specification.
+    * Try saving in all the valid formats until one of them succeeds.
+    *)
+   let save_if_missing base arg info suffix =
+      let spec = find_spec info.info_type suffix in
+      let filename = sprintf "%s/%s.%s" info.info_dir info.info_file spec.info_suffix in
+         if not (Sys.file_exists filename) then
+            spec.info_marshal spec.info_magics info.info_magic spec.info_versions arg filename info.info_info
+
+   (*
     * Inject a new module.
     * First, check that the module does not already exist.
     *)

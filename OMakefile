@@ -368,7 +368,7 @@ if $(SSL_ENABLED)
         export
     else
         OCAML_LINK_FLAGS += -cclib -lcrypto -cclib -lssl
-        CFLAGS += -I/usr/kerberos/include
+        CFLAGS += -DSSL_ENABLED -I/usr/kerberos/include
         export
 
     export

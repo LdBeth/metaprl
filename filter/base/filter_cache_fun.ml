@@ -862,14 +862,13 @@ struct
           } = cache
       in
       let path = [name] in
-      let info' = Base.find_file base.lib barg path my_select (OnlySuffixes ["prlb"; "prla"]) in
+      let info' = Base.find_file base.lib barg path my_select AnySuffix in
       let _ =
-         (* Save the .prlb if the loaded file is newer *)
+         (* Save the .prlb if it doesn't exist *)
          Base.set_magic base.lib info' 1;
-         Base.save_if_newer base.lib barg info' (OnlySuffixes ["prlb"])
+         Base.save_if_missing base.lib barg info' (OnlySuffixes ["prlb"])
       in
       let info' = StrMarshal.unmarshal (Base.info base.lib info') in
-         (* Copy the proofs *)
          cache.info <- FilterSummaryTerm.copy_proofs copy_proof info info'
 
    (*
@@ -881,39 +880,21 @@ struct
          proof
       in
       let { name = name;
-            base = base;
+            base = { lib = base };
+            self = self;
             info = info;
             select = my_select
           } = cache
       in
       let path = [name] in
-      let info' =
-         try Base.find_file base.lib barg path my_select (OnlySuffixes ["prla"]) with
-            Failure _ ->
-               Base.find_file base.lib barg path my_select (OnlySuffixes ["cmoz"])
-      in
-      let _ =
-         (* Save the .prla to the .prlb *)
-         Base.set_magic base.lib info' 1;
-         Base.save base.lib barg info' (OnlySuffixes ["prlb"])
-      in
-      let info' = StrMarshal.unmarshal (Base.info base.lib info') in
-         cache.info <- FilterSummaryTerm.copy_proofs revert_proof info info'
-
-   (*
-    * JYH: This is unnecessary (I believe).
-    *
-    * Revert to the saved version.
-   let revert base cache =
-      let { name = name; self = self } = cache in
-      let { lib = lib; str_summaries = str_summaries } = base in
-      let path = [name] in
-      let compare info =
-         Base.pathname lib info <> path
-      in
-         base.str_summaries <- List.filter compare str_summaries;
-         Base.remove_info lib self
-    *)
+      let info' = Base.find_file base barg path my_select (OnlySuffixes ["prlb"]) in
+      let info' = StrMarshal.unmarshal (Base.info base info') in
+      let info  = FilterSummaryTerm.copy_proofs revert_proof info info' in
+         (* Save the .prlb to the .cmoz *)
+         Base.set_info base self (StrMarshal.marshal info);
+         Base.set_magic base self 1;
+         Base.save base barg self (OnlySuffixes ["cmoz"]);
+         cache.info <- info
 
    (*
     * Upgrade the file mode.
