@@ -110,9 +110,13 @@ module Refine (**)
    (Term : TermBaseSig
     with type term' = TermType.term'
     with type term = TermType.term
+    with type seq_hyps = TermType.seq_hyps
+    with type seq_goals = TermType.seq_goals
     with type bound_term' = TermType.bound_term'
     with type bound_term = TermType.bound_term)
    (TermMan : TermManSig
+    with type hypothesis = Term.hypothesis
+    with type esequent = TermType.esequent
     with type term = TermType.term)
    (TermSubst : TermSubstSig
     with type term = TermType.term)
@@ -514,15 +518,6 @@ struct
     * SEQUENT OPERATIONS                                                   *
     ************************************************************************)
 
-   (*
-    * Free var calculations when the sequent is constructed.
-    *)
-   let mk_msequent goal subgoals =
-      { mseq_goal = goal;
-        mseq_hyps = subgoals;
-        mseq_vars = FreeVarsDelayed
-      }
-
    let dest_msequent mseq =
       mseq.mseq_goal, mseq.mseq_hyps
 
@@ -541,6 +536,28 @@ struct
             let vars = free_vars_terms (goal :: hyps) in
                mseq.mseq_vars <- FreeVars vars;
                vars
+   
+   let remove_red_hbs t =
+      if is_sequent_term t then
+         let eseq = explode_sequent t in
+         let hyps = SeqHyp.to_list eseq.sequent_hyps in
+         let hyps' = remove_redundant_hypbindings hyps (SeqGoal.to_list eseq.sequent_goals) in
+            if (hyps==hyps') then t else
+               mk_sequent_term {eseq with sequent_hyps = SeqHyp.of_list hyps' }
+      else
+         t
+
+   let msequent_remove_redundant_hypbindings mseq = {
+      mseq with
+      mseq_goal = remove_red_hbs mseq.mseq_goal;
+      mseq_hyps = List_util.smap remove_red_hbs mseq.mseq_hyps
+   }
+
+   let mk_msequent goal subgoals =
+      { mseq_goal = remove_red_hbs goal;
+        mseq_hyps = List_util.smap remove_red_hbs subgoals;
+        mseq_vars = FreeVarsDelayed
+      }
 
     (*
      * Check that all the hyps in the list are equal.

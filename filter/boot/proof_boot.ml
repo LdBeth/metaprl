@@ -2113,7 +2113,7 @@ struct
             replace_step_rule proof ext step
 
    let make_goal goal =
-      let mseq' = TermNorm.normalize_msequent goal.ref_goal in
+      let mseq' = TermNorm.normalize_msequent (msequent_remove_redundant_hypbindings goal.ref_goal) in
       if mseq' == goal.ref_goal then Goal goal
       else Goal {goal with ref_goal = mseq'}
 

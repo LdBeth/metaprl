@@ -347,18 +347,19 @@ struct
 
    let rec remove_redundant_hbs vars = function
       [] -> [], vars
-    | Context (_, ts) as hyp :: hyps ->
-         let hyps, vars = remove_redundant_hbs vars hyps in
-            (hyp :: hyps), StringSet.union (free_vars_terms ts) vars
-    | Hypothesis(t) as hyp :: hyps ->
-         let hyps, vars = remove_redundant_hbs vars hyps in
-            (hyp :: hyps), StringSet.union (free_vars_set t) vars
-    | HypBinding (v, t) as hyp :: hyps ->
-         let hyps, vars = remove_redundant_hbs vars hyps in
+    | (Context (_, ts) as hyp :: hyps) as ohyps ->
+         let hyps', vars = remove_redundant_hbs vars hyps in
+            (if hyps'==hyps then ohyps else hyp :: hyps'), StringSet.union (free_vars_terms ts) vars
+    | (Hypothesis(t) as hyp :: hyps) as ohyps ->
+         let hyps', vars = remove_redundant_hbs vars hyps in
+            (if hyps'==hyps then ohyps else hyp :: hyps'), StringSet.union (free_vars_set t) vars
+    | (HypBinding (v, t) as hyp :: hyps) as ohyps ->
+         let hyps', vars = remove_redundant_hbs vars hyps in
             if StringSet.mem vars v then
-               (hyp :: hyps), StringSet.union (free_vars_set t) (StringSet.remove vars v)
+               (if hyps'==hyps then ohyps else hyp :: hyps'),
+                  StringSet.union (free_vars_set t) (StringSet.remove vars v)
             else
-               Hypothesis t :: hyps, StringSet.union (free_vars_set t) vars
+               Hypothesis t :: hyps', StringSet.union (free_vars_set t) vars
 
    let remove_redundant_hypbindings hyps goals =
       fst (remove_redundant_hbs (free_vars_terms goals) hyps)

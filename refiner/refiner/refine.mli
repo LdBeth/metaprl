@@ -55,9 +55,13 @@ module Refine (**)
    (Term : TermBaseSig
     with type term' = TermType.term'
     with type term = TermType.term
+    with type seq_hyps = TermType.seq_hyps
+    with type seq_goals = TermType.seq_goals
     with type bound_term' = TermType.bound_term'
     with type bound_term = TermType.bound_term)
    (TermMan : TermManSig
+    with type hypothesis = Term.hypothesis
+    with type esequent = TermType.esequent
     with type term = TermType.term)
    (TermSubst : TermSubstSig
     with type term = TermType.term)
