@@ -308,16 +308,6 @@ infix.ml: infix.pre.ml
 	chmod 444 $@
 
 #
-# Compile a test file
-#
-.PHONY: test profile
-
-test: test.cmiz
-
-test.cmiz: test.mli prlcomp.run
-	prlcomp.run $(INCLUDE) -c test.mli
-
-#
 # More rules
 #
 lib:: $(RMLIFILES) $(RCMIFILES)	$(RCMAFILES)
