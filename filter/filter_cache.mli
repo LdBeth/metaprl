@@ -22,40 +22,57 @@ type select_type =
  *   2. tactics.
  *   3. inferred from interactive proofs
  *)
-type proof_type =
+type 'a proof_type =
    Primitive of term
  | Derived of MLast.expr
- | Interactive of proof
-   
+ | Interactive of proof * 'a
+
 (*
- * The summary_cache for interfaces and implementations.
+ * Proof conversion.
  *)
-module SigFilterCache :
-   SummaryCacheSig
-   with type sig_proof  = unit
-   with type sig_ctyp   = MLast.ctyp
-   with type sig_expr   = MLast.expr
-   with type sig_item   = MLast.sig_item
-   with type str_proof  = unit
-   with type str_ctyp   = MLast.ctyp
-   with type str_expr   = MLast.expr
-   with type str_item   = MLast.sig_item
-   with type select     = select_type
+module type ConvertProofSig =
+sig
+   type t
+   val to_expr : t -> proof -> MLast.expr
+   val to_term : t -> proof -> term
+   val of_term : proof -> term -> t
+end
+   
+module MakeCaches (Convert : ConvertProofSig) :
+sig
+   (*
+    * The summary_cache for interfaces and implementations.
+    *)
+   module SigFilterCache :
+      SummaryCacheSig
+      with type sig_proof  = unit
+      with type sig_ctyp   = MLast.ctyp
+      with type sig_expr   = MLast.expr
+      with type sig_item   = MLast.sig_item
+      with type str_proof  = unit
+      with type str_ctyp   = MLast.ctyp
+      with type str_expr   = MLast.expr
+      with type str_item   = MLast.sig_item
+      with type select     = select_type
       
-module StrFilterCache :
-   SummaryCacheSig
-   with type sig_proof  = unit
-   with type sig_ctyp   = MLast.ctyp
-   with type sig_expr   = MLast.expr
-   with type sig_item   = MLast.sig_item
-   with type str_proof  = proof_type
-   with type str_ctyp   = MLast.ctyp
-   with type str_expr   = MLast.expr
-   with type str_item   = MLast.str_item
-   with type select     = select_type
+   module StrFilterCache :
+      SummaryCacheSig
+      with type sig_proof  = unit
+      with type sig_ctyp   = MLast.ctyp
+      with type sig_expr   = MLast.expr
+      with type sig_item   = MLast.sig_item
+      with type str_proof  = Convert.t proof_type
+      with type str_ctyp   = MLast.ctyp
+      with type str_expr   = MLast.expr
+      with type str_item   = MLast.str_item
+      with type select     = select_type
+end
 
 (*
  * $Log$
+ * Revision 1.8  1998/05/07 16:02:36  jyh
+ * Adding interactive proofs.
+ *
  * Revision 1.7  1998/04/17 01:30:59  jyh
  * Editor is almost constructed.
  *

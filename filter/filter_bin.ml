@@ -83,6 +83,31 @@ struct
 end
 
 (*
+ * Proof conversions are always void, since
+ * we don't have any interactive proofs.
+ *)
+module Convert : ConvertProofSig =
+struct
+   type t = unit
+   let to_expr expr proof =
+      raise (Failure "Filter_parse.Convert.to_expr: interactive proofs can't be compiled")
+   let to_term expr proof =
+      raise (Failure "Filter_parse.Convert.to_term: interactive proofs can't be compiled")
+   let of_term proof term =
+      raise (Failure "Filter_parse.Convert.of_term: interactive proofs can't be compiled")
+end
+
+(*
+ * Extractors.
+ *)
+module Extract = MakeExtract (Convert)
+                 
+(*
+ * Caches.
+ *)
+module Cache = MakeCaches (Convert)
+
+(*
  * The two caches.
  *)
 module SigCompileInfo =
@@ -92,27 +117,27 @@ struct
    type ctyp  = MLast.ctyp
    type item  = MLast.sig_item
 
-   let extract = extract_sig
+   let extract = Extract.extract_sig
    let compile items =
       (!Pcaml.print_interf) items
 end
 
 module StrCompileInfo =
 struct
-   type proof = proof_type
+   type proof = Convert.t proof_type
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.str_item
 
-   let extract = extract_str
+   let extract = Extract.extract_str
    let compile items =
       (!Pcaml.print_implem) items;
       eprintf "Writing output file%t" eflush;
       flush stdout
 end
 
-module SigCompile = MakeCompile (SigCompileInfo) (SigFilterCache)
-module StrCompile = MakeCompile (StrCompileInfo) (StrFilterCache)
+module SigCompile = MakeCompile (SigCompileInfo) (Cache.SigFilterCache)
+module StrCompile = MakeCompile (StrCompileInfo) (Cache.StrFilterCache)
                     
 (*
  * Compile a file.
@@ -152,6 +177,9 @@ let _ = Printexc.catch main ()
 
 (*
  * $Log$
+ * Revision 1.7  1998/05/07 16:02:32  jyh
+ * Adding interactive proofs.
+ *
  * Revision 1.6  1998/04/24 19:38:14  jyh
  * Updated debugging.
  *

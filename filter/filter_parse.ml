@@ -37,9 +37,6 @@ open Filter_summary_util
 open Filter_cache
 open Filter_prog
 
-(* Force Argl to link *)
-let init = Dynlink.init
-
 (************************************************************************
  * PATHS                                                                *
  ************************************************************************)
@@ -664,6 +661,31 @@ struct
 end
 
 (*
+ * Proof conversions are always void, since
+ * we don't have any interactive proofs.
+ *)
+module Convert : ConvertProofSig =
+struct
+   type t = unit
+   let to_expr expr proof =
+      raise (Failure "Filter_parse.Convert.to_expr: interactive proofs can't be compiled")
+   let to_term expr proof =
+      raise (Failure "Filter_parse.Convert.to_term: interactive proofs can't be compiled")
+   let of_term proof term =
+      raise (Failure "Filter_parse.Convert.of_term: interactive proofs can't be compiled")
+end
+
+(*
+ * Extractors.
+ *)
+module Extract = MakeExtract (Convert)
+                 
+(*
+ * Caches.
+ *)
+module Cache = MakeCaches (Convert)
+
+(*
  * The two caches.
  *)
 module SigFilterInfo =
@@ -673,21 +695,21 @@ struct
    type ctyp  = MLast.ctyp
    type item  = MLast.sig_item
 
-   let extract = extract_sig
+   let extract = Extract.extract_sig
 end
 
 module StrFilterInfo =
 struct
-   type proof = proof_type
+   type proof = Convert.t proof_type
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.str_item
 
-   let extract = extract_str
+   let extract = Extract.extract_str
 end
 
-module SigFilter = MakeFilter (SigFilterInfo) (SigFilterCache)
-module StrFilter = MakeFilter (StrFilterInfo) (StrFilterCache)
+module SigFilter = MakeFilter (SigFilterInfo) (Cache.SigFilterCache)
+module StrFilter = MakeFilter (StrFilterInfo) (Cache.StrFilterCache)
                    
 (************************************************************************
  * DEFINITION COMMANDS                                                  *
@@ -700,7 +722,7 @@ let define_rule proc loc name
     (params : term list)
     (args : aterm list)
     (goal : term)
-    (extract : proof_type) =
+    (extract : Convert.t proof_type) =
    let avars = collect_anames args in
    let assums = List.map (function { aname = name; aterm = t } -> name, t) args in
    let mterm = zip_mfunction assums goal in
@@ -1018,6 +1040,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.22  1998/05/07 16:02:38  jyh
+ * Adding interactive proofs.
+ *
  * Revision 1.21  1998/04/29 20:53:20  jyh
  * Initial working display forms.
  *

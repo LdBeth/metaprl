@@ -218,11 +218,15 @@ let view_package name =
  *)
 let view_item modname name =
    (* Get the package and item *)
-   let pack = Package.get info.packages name in
+   let _ = eprintf "View item %s.%s%t" modname name eflush in
+   let pack = Package.get info.packages modname in
    let buf = new_buffer () in
    let mod_info = get_current_package info in
    let db = get_mode_base (Package.dforms mod_info) info.df_mode in
-      raise (Failure "Shell.view_item: not implemented")
+      match item with
+         Rewrite rw ->
+            
+         
 
 (*
  * General purpose displayer.
@@ -560,6 +564,9 @@ let init () =
 (*
  *
  * $Log$
+ * Revision 1.9  1998/05/07 16:02:24  jyh
+ * Adding interactive proofs.
+ *
  * Revision 1.8  1998/05/04 23:46:06  jyh
  * Most display forms now work.
  *

@@ -46,28 +46,30 @@ type select_type =
  * Proofs are either primitive terms,
  * or they are tactics.
  *)
-type proof_type =
+type 'a proof_type =
    Primitive of term
  | Derived of MLast.expr
- | Interactive of proof
+ | Interactive of proof * 'a
 
 (*
  * This is the common summary type for interface between IO
  * and marshalers.
  *)
-type summary_type =
+type 'a summary_type =
    Interface of (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
- | Implementation of (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+ | Implementation of ('a proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
 
 (*
- * Types of objects that are stored in the files.
+ * Proof conversion.
  *)
-module FileTypes =
-struct
-   type select = select_type
-   type cooked = summary_type
+module type ConvertProofSig =
+sig
+   type t
+   val to_expr : t -> proof -> MLast.expr
+   val to_term : t -> proof -> term
+   val of_term : proof -> term -> t
 end
-
+   
 (************************************************************************
  * CONFIG                                                               *
  ************************************************************************)
@@ -162,15 +164,15 @@ let prim_op        = mk_opname "prim"        summary_opname
 let derived_op     = mk_opname "derived"     summary_opname
 let interactive_op = mk_opname "interactive" summary_opname
 
-let marshal_proof = function
+let marshal_proof to_term = function
    Primitive t ->
       mk_simple_term prim_op [t]
  | Derived expr ->
       mk_simple_term derived_op [term_of_expr expr]
- | Interactive pf ->
-      mk_simple_term interactive_op [term_of_proof pf]
+ | Interactive (pf, expr) ->
+      mk_simple_term interactive_op [term_of_proof pf; to_term expr pf]
 
-let unmarshal_proof t =
+let unmarshal_proof of_term t =
    let opname = opname_of_term t in
    let expr = one_subterm t in
       if opname == prim_op then
@@ -178,18 +180,20 @@ let unmarshal_proof t =
       else if opname == derived_op then
          Derived (expr_of_term expr)
       else if opname == interactive_op then
-         Interactive (proof_of_term (one_subterm t))
+         let proof, expr = two_subterms t in
+         let proof = proof_of_term proof in
+            Interactive (proof, of_term proof expr)
       else
          raise (Failure "Filter_cache.unmarshal")
 
 (*
  * Term signatures.
  *)
-module TermSigInfo =
+module TermSigInfo (Convert : ConvertProofSig) =
 struct
    type select = select_type
    type raw    = term
-   type cooked = summary_type
+   type cooked = Convert.t summary_type
    
    let select   = InterfaceType
    let suffix   = "cmit"
@@ -225,11 +229,11 @@ end
 (*
  * Raw signatures.
  *)
-module RawSigInfo =
+module RawSigInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
    type raw     = (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
-   type cooked  = summary_type
+   type cooked  = Convert.t summary_type
    
    let select   = InterfaceType
    let suffix   = "cmiz"
@@ -248,11 +252,11 @@ end
 (*
  * Term implementations.
  *)
-module TermStrInfo =
+module TermStrInfo (Convert : ConvertProofSig) =
 struct
    type select = select_type
    type raw    = term
-   type cooked = summary_type
+   type cooked = Convert.t summary_type
    
    let select   = ImplementationType
    let suffix   = "cmot"
@@ -263,7 +267,7 @@ struct
       Implementation info ->
          let convert =
             { term_f = identity;
-              proof_f = marshal_proof;
+              proof_f = marshal_proof Convert.to_term;
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
               item_f = term_of_str_item
@@ -276,7 +280,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
-           proof_f = unmarshal_proof;
+           proof_f = unmarshal_proof Convert.of_term;
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
            item_f = str_item_of_term
@@ -288,11 +292,11 @@ end
 (*
  * Raw implementation.
  *)
-module RawStrInfo =
+module RawStrInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
-   type raw     = (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
-   type cooked  = summary_type
+   type raw     = (Convert.t proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   type cooked  = Convert.t summary_type
    
    let select   = ImplementationType
    let suffix   = "cmoz"
@@ -311,11 +315,11 @@ end
 (*
  * Library interfaces.
  *)
-module LibSigInfo =
+module LibSigInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
    type raw     = term
-   type cooked  = summary_type
+   type cooked  = Convert.t summary_type
    
    let select   = InterfaceType
    let suffix   = "cmit"
@@ -350,11 +354,11 @@ end
 (*
  * Library implementations.
  *)
-module LibStrInfo =
+module LibStrInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
    type raw     = term
-   type cooked  = summary_type
+   type cooked  = Convert.t summary_type
    
    let select   = ImplementationType
    let suffix   = "cmot"
@@ -365,7 +369,7 @@ struct
       Implementation info ->
          let convert =
             { term_f = identity;
-              proof_f = marshal_proof;
+              proof_f = marshal_proof Convert.to_term;
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
               item_f = term_of_str_item
@@ -378,7 +382,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
-           proof_f = unmarshal_proof;
+           proof_f = unmarshal_proof Convert.of_term;
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
            item_f = str_item_of_term
@@ -390,7 +394,7 @@ end
 (*
  * MArshaler to get interfaces.
  *)
-module SigMarshal =
+module SigMarshal (Convert : ConvertProofSig) =
 struct
    type proof = unit
    type ctyp  = MLast.ctyp
@@ -400,7 +404,7 @@ struct
    type select = select_type
    let select = InterfaceType
 
-   type cooked = summary_type
+   type cooked = Convert.t summary_type
 
    let marshal info =
       Interface info
@@ -414,9 +418,9 @@ end
 (*
  * Select a submodule.
  *)
-module SigAddress =
+module SigAddress (SigMarshal : MarshalSig) =
 struct
-   type t = summary_type
+   type t = SigMarshal.cooked
    let create () = Interface (new_module_info ())
    let find_sub_module info path =
       if path = [] then
@@ -428,9 +432,9 @@ end
 (*
  * Marshaler to get implementations.
  *)
-module StrMarshal =
+module StrMarshal (Convert : ConvertProofSig) =
 struct
-   type proof = proof_type
+   type proof = Convert.t proof_type
    type ctyp  = MLast.ctyp
    type expr  = MLast.expr
    type item  = MLast.str_item
@@ -438,7 +442,7 @@ struct
    type select = select_type
    let select = ImplementationType
 
-   type cooked = summary_type
+   type cooked = Convert.t summary_type
    let marshal info =
       Implementation info
    let unmarshal = function
@@ -451,26 +455,44 @@ end
 (*
  * Build up the cache.
  *)
-module RawSigCombo    = MakeSingletonCombo (RawSigInfo)
-module RawStrCombo    = MakeSingletonCombo (RawStrInfo)
-module TermSigCombo   = MakeSingletonCombo (TermSigInfo)
-module TermStrCombo   = MakeSingletonCombo (TermStrInfo)
-module LibSigCombo    = MakeIOSingletonCombo (Library_type_base.IO) (LibSigInfo)
-module LibStrCombo    = MakeIOSingletonCombo (Library_type_base.IO) (LibStrInfo)
-module RawCombo       = CombineCombo (FileTypes) (RawSigCombo)  (RawStrCombo)
-module TermCombo      = CombineCombo (FileTypes) (TermSigCombo) (TermStrCombo)
-module LibCombo       = CombineCombo (FileTypes) (LibSigCombo)  (LibStrCombo)
-module FileCombo      = CombineCombo (FileTypes) (RawCombo)     (TermCombo)
-module Combo          = CombineCombo (FileTypes) (FileCombo)    (LibCombo)
-
-module FileBase       = MakeFileBase    (FileTypes)  (Combo)
-module SummaryBase    = MakeSummaryBase (SigAddress) (FileBase)
-
-module SigFilterCache = MakeFilterCache (SigMarshal) (SigMarshal) (SummaryBase)
-module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
+module MakeCaches (Convert : ConvertProofSig) =
+struct
+   module FileTypes =
+   struct
+      type select = select_type
+      type cooked = Convert.t summary_type
+   end
+   module RawSigInfo1  = RawSigInfo  (Convert)
+   module TermSigInfo1 = TermSigInfo (Convert)
+   module LibSigInfo1  = LibSigInfo  (Convert)
+   module RawStrInfo1  = RawStrInfo  (Convert)
+   module TermStrInfo1 = TermStrInfo (Convert)
+   module LibStrInfo1  = LibStrInfo  (Convert)
+   module RawSigCombo  = MakeSingletonCombo   (RawSigInfo1)
+   module TermSigCombo = MakeSingletonCombo   (TermSigInfo1)
+   module LibSigCombo  = MakeIOSingletonCombo (Library_type_base.IO) (LibSigInfo1)
+   module RawStrCombo  = MakeSingletonCombo   (RawStrInfo1)
+   module TermStrCombo = MakeSingletonCombo   (TermStrInfo1)
+   module LibStrCombo  = MakeIOSingletonCombo (Library_type_base.IO) (LibStrInfo1)
+   module Combo1 = CombineCombo (FileTypes) (RawStrCombo) (RawSigCombo)
+   module Combo2 = CombineCombo (FileTypes) (TermStrCombo) (TermSigCombo)
+   module Combo3 = CombineCombo (FileTypes) (LibStrCombo)  (LibSigCombo)
+   module Combo4 = CombineCombo (FileTypes) (Combo1) (Combo2)
+   module Combo5 = CombineCombo (FileTypes) (Combo4) (Combo3)
+   module SigMarshal1 = SigMarshal (Convert)
+   module SigAddress1 = SigAddress (SigMarshal1)
+   module StrMarshal1 = StrMarshal (Convert)
+   module FileBase =  MakeFileBase (FileTypes) (Combo5)
+   module SummaryBase = MakeSummaryBase (SigAddress1) (FileBase)
+   module SigFilterCache = MakeFilterCache (SigMarshal1) (SigMarshal1) (SummaryBase)
+   module StrFilterCache = MakeFilterCache (SigMarshal1) (StrMarshal1) (SummaryBase)
+end
 
 (*
  * $Log$
+ * Revision 1.19  1998/05/07 16:02:34  jyh
+ * Adding interactive proofs.
+ *
  * Revision 1.18  1998/05/04 13:01:07  jyh
  * Ocaml display without let rec.
  *

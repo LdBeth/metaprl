@@ -235,6 +235,10 @@ val get_resources : ('proof, 'ctyp, 'expr, 'item) module_info ->
 val get_infixes : ('proof, 'ctyp, 'expr, 'item) module_info ->
    string list
 
+val find : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   string ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item
+
 val parents : ('proof, 'ctyp, 'expr, 'item) module_info ->
    module_path list
 
@@ -331,6 +335,9 @@ val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.12  1998/05/07 16:02:49  jyh
+ * Adding interactive proofs.
+ *
  * Revision 1.11  1998/04/29 20:53:29  jyh
  * Initial working display forms.
  *

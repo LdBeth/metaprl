@@ -473,6 +473,33 @@ let get_infixes { info_list = summary } =
    in
       search summary
 
+(*
+ * Find any item, by name.
+ *)
+let find { info_list = summary } name =
+   let test (item, _) =
+      match item with
+         Axiom { axiom_name = n } ->
+            n = name
+       | Rule { rule_name = n } ->
+            n = name
+       | Rewrite { rw_name = n } ->
+            n = name
+       | CondRewrite { crw_name = n } ->
+            n = name
+       | MLTerm { mlterm_term = t' } ->
+            flat_opname (opname_of_term t') = name
+       | Condition { mlterm_term = t' } ->
+            flat_opname (opname_of_term t') = name
+       | DForm { dform_name = name' } ->
+            name' = name
+       | Prec s ->
+            s = name
+       | _ ->
+            false
+   in
+      fst (List_util.find test summary)
+
 (************************************************************************
  * CREATION/MODIFICATION						*
  ************************************************************************)
@@ -491,8 +518,10 @@ let info_items { info_list = info } = List.rev info
  * Optional application.
  *)
 let opt_apply f = function
-   Some x -> Some (f x)
- | None -> None
+   Some x ->
+      Some (f x)
+ | None ->
+      None
 
 (* Convert a pair definition *)
 let convert_expr_pair convert (rw, ext) =
@@ -1778,6 +1807,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.21  1998/05/07 16:02:46  jyh
+ * Adding interactive proofs.
+ *
  * Revision 1.20  1998/04/30 14:20:19  jyh
  * Updating term_table.
  *

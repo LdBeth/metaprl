@@ -43,12 +43,12 @@ type rw =
  *)
 let seq = << sequent { 'H >- 'rw } >>
 
-let mk_goal resources redex contractum =
+let mk_goal resources cache redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
    let arg =
       { ref_label = "main";
         ref_args = [];
-        ref_fcache = extract (new_cache ());    (* BUG: this should be fixed *)
+        ref_fcache = extract cache;
         ref_rsrc = resources
       }
    in
@@ -57,13 +57,13 @@ let mk_goal resources redex contractum =
         tac_arg = arg
       }
 
-let mk_cond_goal resources assums redex contractum =
+let mk_cond_goal resources cache assums redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
    let assums = List.map (replace_goal seq) assums in
    let arg =
       { ref_label = "main";
         ref_args = [];
-        ref_fcache = extract (new_cache ());
+        ref_fcache = extract cache;
         ref_rsrc = resources
       }
    in
@@ -72,12 +72,12 @@ let mk_cond_goal resources assums redex contractum =
         tac_arg = arg
       }
 
-let mk_ped resources params assums redex contractum =
+let mk_ped resources cache params assums redex contractum =
    let goal =
       if assums = [] then
-         mk_goal resources redex contractum
+         mk_goal resources cache redex contractum
       else
-         mk_cond_goal resources assums redex contractum
+         mk_cond_goal resources cache assums redex contractum
    in
       Proof_edit.create params goal
    
@@ -86,15 +86,7 @@ let mk_ped resources params assums redex contractum =
  *)
 let unit_term = mk_simple_term nil_opname []
 
-let create pack prog resources name =
-   let obj =
-      { rw_assums = [];
-        rw_params = [];
-        rw_redex = unit_term;
-        rw_contractum = unit_term;
-        rw_ped = mk_ped resources [] [] unit_term unit_term
-      }
-   in
+let edit pack prog resources name obj =
    let update_ped () =
       let { rw_params = params;
             rw_assums = assums;
@@ -179,8 +171,60 @@ let create pack prog resources name =
         edit_fold_all = edit_fold_all
       }
 
+let create pack prog resources cache name =
+   let obj =
+      { rw_assums = [];
+        rw_params = [];
+        rw_redex = unit_term;
+        rw_contractum = unit_term;
+        rw_ped = mk_ped resources cache [] [] unit_term unit_term
+      }
+   in
+      edit pack prog resources name obj
+
+let view_rw pack prog resources cache tactics
+    { Filter_summary.rw_name = name;
+      Filter_summary.rw_redex = redex;
+      Filter_summary.rw_contractum = contractum;
+      Filter_summary.rw_proof = proof
+    } =
+   let proof = Proof.proof_of_io_proof resources cache tactics proof in
+   let ped = ped_of_proof proof in
+   let obj =
+      { rw_assums = [];
+        rw_params = [];
+        rw_redex = redex;
+        rw_contractum = contractum;
+        rw_ped = ped
+      }
+   in
+      edit pack prog resources name obj
+
+let view_crw pack prog resources cache tactics
+    { crw_name = name;
+      crw_params = params;
+      crw_args = args;
+      crw_redex = redex;
+      crw_contractum = contractum;
+      crw_proof = proof
+    } =
+   let proof = Proof.proof_of_io_proof resources cache tactics proof in
+   let ped = ped_of_proof proof in
+   let obj =
+      { rw_assums = args;
+        rw_params = params;
+        rw_redex = redex;
+        rw_contractum = contractum;
+        rw_ped = ped
+      }
+   in
+      edit pack prog resources name obj
+
 (*
  * $Log$
+ * Revision 1.7  1998/05/07 16:02:26  jyh
+ * Adding interactive proofs.
+ *
  * Revision 1.6  1998/04/28 18:29:58  jyh
  * ls() works, adding display.
  *
