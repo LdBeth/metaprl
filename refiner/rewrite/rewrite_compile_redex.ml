@@ -143,6 +143,10 @@ struct
       [] -> List.map bvar_ind bconts
     | v :: tl -> restricted_conts c (restrict_cont c v bconts) tl
 
+   let check_cont c bconts v =
+      if not (List.mem_assoc v bconts) then
+         REF_RAISE(RefineError("Rewrite_compile_redex",RewriteFreeContextVar(v,c)))
+
    let rec lastcontext hyps i =
       let i = pred i in
          if i < 0 then
@@ -200,8 +204,10 @@ struct
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)
                let () =
-                  if so_mem then
-                     rstack_check_arity v conts (List.length subterms) stack
+                  if so_mem then begin
+                     rstack_check_arity v conts (List.length subterms) stack;
+                     if not st.st_arg && st.st_strict then List.iter (check_cont v st.st_bconts) conts
+                  end
                in
                let stack =
                   if so_mem then
@@ -244,6 +250,7 @@ struct
             else if so_mem then
                begin
                   rstack_check_arity v conts (List.length subterms) stack;
+                  if not st.st_arg && st.st_strict then List.iter (check_cont v st.st_bconts) conts;
                   (*
                    * we set st_patterns to false here since the term that is going to
                    * match the SO variable v may have no free occurences of this argument
@@ -407,6 +414,7 @@ struct
                   if instance then
                      begin
                         rstack_check_arity v conts (List.length terms) stack;
+                        if not st.st_arg && st.st_strict then List.iter (check_cont v st.st_bconts) conts;
                         let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack terms in
                         let ind = rstack_c_index v stack in
                            stack, RWSeqContextInstance (ind, terms), ind
