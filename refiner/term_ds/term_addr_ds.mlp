@@ -7,21 +7,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Alexey Nogin, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Alexey Nogin
  *)
 
@@ -180,11 +180,63 @@ struct
                         ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
             else
                ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
-       | (FOVar _, Path []) -> 
+       | (FOVar _, Path []) ->
             term
        | (_, Compose (addr1, addr2)) ->
             term_subterm (term_subterm term addr1) addr2
        | _ -> ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
+
+   (*
+    * Just get the subterm count.
+    *)
+   let rec term_subterm_path_count ATERM t = function
+      [] ->
+         subterm_count t
+    | i::tl ->
+         term_subterm_path_count ATERM (dest_bterm (getnth ATERM (dest_term t).term_terms i)).bterm tl
+
+   let term_subterm_count_name = "Term_addr_ds.term_subterm_count"
+   let rec term_subterm_count term a =
+      match (get_core term), a with
+         (Term _, Path addr) ->
+            term_subterm_path_count ATERM term addr
+       | (Sequent s, ArgAddr) ->
+            subterm_count s.sequent_args
+       | (Sequent s, HypAddr i) ->
+            if i >= 0 && i < SeqHyp.length s.sequent_hyps then
+               match s.sequent_hyps.(i) with
+                  Hypothesis (_,t) ->
+                     subterm_count t
+                | Context (_, subterms) ->
+                     List.length subterms
+            else
+               ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
+       | (Sequent s, GoalAddr i) ->
+            if i >= 0 && i < SeqGoal.length s.sequent_goals then
+               subterm_count s.sequent_goals.(i)
+            else
+               ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
+       | (Sequent s, Compose (HypAddr i, ((Path (j :: path)) as addr2))) ->
+            (*
+             * Special case to address through contexts.
+             *)
+            if i >= 0 && i < SeqHyp.length s.sequent_hyps then
+               match s.sequent_hyps.(i) with
+                  Hypothesis (_, t) ->
+                     term_subterm_count t addr2
+                | Context (_, subterms) ->
+                     if j >= 0 && j < List.length subterms then
+                        term_subterm_count (List.nth subterms j) (Path path)
+                     else
+                        ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
+            else
+               ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
+       | (FOVar _, Path []) ->
+            subterm_count term
+       | (_, Compose (addr1, addr2)) ->
+            term_subterm_count (term_subterm term addr1) addr2
+       | _ ->
+            ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
 
    (*
     * Replace a subterm at the specified address.

@@ -42,6 +42,7 @@ open Pcaml
 open MLast
 
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Mp_resource
 open Rformat
@@ -183,7 +184,7 @@ struct
    let shell_get_term i =
       try List.assoc i !inline_terms with
          Not_found ->
-            raise (RefineError ("shell_get_term", StringIntError ("term is not found", i)))
+            xnil_term
 
    (*
     * String -> string translator.
@@ -669,6 +670,7 @@ struct
 
    let main () =
       install_debug_printer print_term_fp;
+      Sys.catch_break true;
       Tactic_type.main_loop ();
       main_loop_aux ()
 end

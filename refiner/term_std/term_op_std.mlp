@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -674,6 +674,55 @@ struct
                       { bvars = [v2]; bterm = t2 }]
       } ->
          t0, t1, v2, t2
+    | t ->
+         ref_raise(RefineError ("dest_dep0_dep0_dep1_any_term", TermMatchError (t, "bad arity")))
+   (*
+    * Three subterms.
+    *)
+   let is_dep0_dep0_dep2_term opname = function
+      { term_op = { op_name = opname'; op_params = [] };
+        term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_; _] }]
+      } when Opname.eq opname' opname ->
+         true
+    | _ ->
+         false
+
+   let mk_dep0_dep0_dep2_term opname = fun
+      t0 t1 v1 v2 t2 -> { term_op = { op_name = opname; op_params = [] };
+                          term_terms = [{ bvars = []; bterm = t0 };
+                                        { bvars = []; bterm = t1 };
+                                        { bvars = [v1; v2]; bterm = t2 }]
+                        }
+
+   let dest_dep0_dep0_dep2_term opname = function
+      { term_op = { op_name = opname'; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t0 };
+                      { bvars = []; bterm = t1 };
+                      { bvars = [v1; v2]; bterm = t2 }]
+      } when Opname.eq opname' opname ->
+         t0, t1, v1, v2, t2
+    | t ->
+         ref_raise(RefineError ("dest_dep0_dep0_dep1_term", TermMatchError (t, "bad arity")))
+
+   let is_dep0_dep0_dep2_any_term = function
+      { term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_; _] }] } ->
+         true
+    | _ ->
+         false
+
+   let mk_dep0_dep0_dep2_any_term op = fun
+      t0 t1 v1 v2 t2 -> { term_op = op;
+                       term_terms = [{ bvars = []; bterm = t0 };
+                                     { bvars = []; bterm = t1 };
+                                     { bvars = [v1; v2]; bterm = t2 }]
+                     }
+
+   let dest_dep0_dep0_dep2_any_term = function
+      { term_terms = [{ bvars = []; bterm = t0 };
+                      { bvars = []; bterm = t1 };
+                      { bvars = [v1; v2]; bterm = t2 }]
+      } ->
+         t0, t1, v1, v2, t2
     | t ->
          ref_raise(RefineError ("dest_dep0_dep0_dep1_any_term", TermMatchError (t, "bad arity")))
 

@@ -1,0 +1,19 @@
+<mojave:~/meta-prl/theories/fol 35>cd ../../editor/ml
+<mojave:~/meta-prl/editor/ml 36>make mp.run
+echo -n "let version = \"MetaPRL 0.5:\\n\\t\\tbuild [`date`]\\n\\t\\ton `hostname`\"" > mp_version.ml
+ocamlc -c -I . -I ../../theories/tactic -I ../../theories/ocaml -I ../../theories/base -I ../../theories/itt -I ../../theories/fol -I ../../theories/reflect_itt -I ../../theories/tptp -I ../../ensemble -I ../../lib -I ../../library -I /lib -I /usr/lib/camlp4 -I ../../lib   -thread mp_version.ml
+rm -f mp.run
+ocamlmktop -I . -I ../../theories/tactic -I ../../theories/ocaml -I ../../theories/base -I ../../theories/itt -I ../../theories/fol -I ../../theories/reflect_itt -I ../../theories/tptp -I ../../ensemble -I ../../lib -I ../../library -I /lib -I /usr/lib/camlp4 -I ../../lib   -thread -o mp.run -custom -linkall -thread /usr/lib/camlp4/odyl.cma /usr/lib/ocaml/unix.cma /usr/lib/ocaml/threads/threads.cma /usr/lib/camlp4/camlp4.cma /usr/lib/camlp4/camlp4_top.cma  ../../lib/util.cma ../../lib/refiner.cma ../../lib/library.cma ../../lib/prlc.cma ../../lib/trefiner_null.cma ../../theories/tactic/tactics.cma ../../theories/ocaml/ocaml_df.cma ../../theories/base/base.cma ../../theories/itt/itt.cma ../../theories/fol/fol.cma ../../theories/reflect_itt/reflect_itt.cma ../../theories/tptp/tptp.cma /usr/lib/camlp4/pa_o.cmo /usr/lib/camlp4/pa_op.cmo meta-prl.cma mp_version.cmo shell_p4.cmo test.cmo mp.cmo library_eval.cmo library_test.cmo -cclib ../../lib/clib.a  -ccopt -L../../lib -cclib -lthreads -cclib -lunix -cclib -lpthread
+<mojave:~/meta-prl/editor/ml 37>./mp
+        Objective Caml version 2.00
+
+	MetaPRL 0.5:
+		build [Thu Oct 15 14:39:09 EDT 1998]
+		on mojave.cs.cornell.edu
+
+	Camlp4 Parsing version 2.00--1
+
+# ls ();;
+Characters 0-2:
+Unbound value ls
+# 

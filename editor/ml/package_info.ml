@@ -12,21 +12,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -656,6 +656,10 @@ struct
       in
          Tactic_cache.extract cache
 
+   let lazy_reduce modname () =
+      let rsrc = Conversionals.get_resource modname in
+         rsrc.resource_extract rsrc
+
    let lazy_dtactic modname () =
       let rsrc = Base_dtactic.get_resource modname in
          rsrc.resource_extract rsrc
@@ -672,8 +676,12 @@ struct
       let rsrc = Itt_equal.get_resource modname in
          rsrc.resource_extract rsrc
 
+   let lazy_tsubst modname () =
+      let rsrc = Typeinf.get_typeinf_subst_resource modname in
+         rsrc.resource_extract rsrc
+
    let lazy_typeinf modname () =
-      let rsrc = Typeinf.get_resource modname in
+      let rsrc = Typeinf.get_typeinf_resource modname in
          rsrc.resource_extract rsrc
 
    let lazy_squash modname () =
@@ -692,7 +700,10 @@ struct
                attributes
       in
       let attributes =
-         add_attribute "d" Sequent.int_tactic_attribute lazy_dtactic []
+         add_attribute "reduce" Rewrite_type.conv_attribute lazy_reduce []
+      in
+      let attributes =
+         add_attribute "d" Sequent.int_tactic_attribute lazy_dtactic attributes
       in
       let attributes =
          add_attribute "trivial" Sequent.tactic_attribute lazy_trivial attributes
@@ -702,6 +713,9 @@ struct
       in
       let attributes =
          add_attribute "eqcd" Sequent.tactic_attribute lazy_eqcd attributes
+      in
+      let attributes =
+         add_attribute "typeinf_subst" Sequent.tsubst_attribute lazy_tsubst attributes
       in
       let attributes =
          add_attribute "typeinf" Sequent.typeinf_attribute lazy_typeinf attributes

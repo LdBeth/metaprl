@@ -52,14 +52,18 @@ open Itt_union
 open Itt_equal
 open Itt_struct
 open Itt_w
-open Itt_derive
+open Itt_bool
+open Itt_bisect
+open Itt_bunion
+open Itt_set
+open Itt_subtype
+
+open Refl_term
 
 open Mp
 
-open Ref_term
-
-let _ = load "ref_term"
-let _ = cd "ref_term/level_elim2"
+let _ = load "refl_term"
+let _ = cd "refl_term"
 
 (*
  * -*-

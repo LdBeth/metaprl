@@ -141,6 +141,9 @@ struct
        | Compose (addr1, addr2) ->
             term_subterm (term_subterm term addr1) addr2
 
+   let term_subterm_count term a =
+      subterm_count (term_subterm term a)
+
    (*
     * Replace a subterm at the specified address.
     * Capture is not taken into account.  This function

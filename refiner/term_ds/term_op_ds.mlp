@@ -10,21 +10,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Alexey Nogin, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Alexey Nogin
  *)
 
@@ -765,6 +765,71 @@ struct
     | _ ->
          ref_raise(RefineError ("dest_dep0_dep0_dep1_any_term", TermMatchError (t, "bad arity")))
 
+   (*
+    * Three subterms.
+    *)
+   let is_dep0_dep0_dep2_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2; bt3]
+           } when Opname.eq opname' opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+            ({ bvars = [] }, { bvars = [] }, { bvars = [_; _] }) -> true
+          | _ -> false
+         end
+    | _ -> false
+
+   let mk_dep0_dep0_dep2_term opname t0 t1 v1 v2 t2 =
+      { free_vars = VarsDelayed;
+        core = Term
+         { term_op = { op_name = opname; op_params = [] };
+           term_terms =
+            [mk_simple_bterm t0;
+             mk_simple_bterm t1;
+             { bfree_vars = VarsDelayed;
+               bcore = BTerm { bvars = [v1; v2]; bterm = t2 }}]}}
+
+   let dest_dep0_dep0_dep2_term opname t = match dest_term t with
+      { term_op = { op_name = opname'; op_params = [] };
+        term_terms = [bt1; bt2; bt3]
+      } when Opname.eq opname' opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+            ({ bvars = []; bterm = t0 },
+             { bvars = []; bterm = t1 },
+             { bvars = [v1; v2]; bterm = t2 }) -> t0, t1, v1, v2, t2
+          | _ -> ref_raise(RefineError ("dest_dep0_dep0_dep2_term", TermMatchError (t, "bad arity")))
+         end
+    | _ ->
+         ref_raise(RefineError ("dest_dep0_dep0_dep2_term", TermMatchError (t, "bad arity")))
+
+   let is_dep0_dep0_dep2_any_term t = match get_core t with
+      Term { term_terms = [bt1; bt2; bt3] } ->
+         begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+            ({ bvars = [] }, { bvars = [] }, { bvars = [_; _] }) -> true
+          | _ -> false
+         end
+    | _ -> false
+
+   let mk_dep0_dep0_dep2_any_term op t0 t1 v1 v2 t2 =
+      { free_vars = VarsDelayed;
+        core = Term
+         { term_op = op;
+           term_terms =
+            [mk_simple_bterm t0;
+             mk_simple_bterm t1;
+             { bfree_vars = VarsDelayed;
+               bcore = BTerm { bvars = [v1; v2]; bterm = t2 }}]}}
+
+   let dest_dep0_dep0_dep2_any_term t = match dest_term t with
+      { term_terms = [bt1; bt2; bt3] } ->
+         begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+            ({ bvars = []; bterm = t0 },
+             { bvars = []; bterm = t1 },
+             { bvars = [v1; v2]; bterm = t2 }) -> t0, t1, v1, v2, t2
+          | _ -> ref_raise(RefineError ("dest_dep0_dep0_dep2_any_term", TermMatchError (t, "bad arity")))
+         end
+    | _ ->
+         ref_raise(RefineError ("dest_dep0_dep0_dep2_any_term", TermMatchError (t, "bad arity")))
+
    let is_dep0_dep1_dep1_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
              term_terms = [bt1; bt2; bt3]
@@ -858,7 +923,7 @@ struct
    let rec bterm_down f btrm =
       let bterm = dest_bterm btrm in
       make_bterm { bvars = bterm.bvars; bterm = map_down f bterm.bterm }
-   
+
    and map_down f t =
       let t = f t in
       match get_core t with
@@ -871,7 +936,7 @@ struct
    let rec bterm_up f btrm =
       let bterm = dest_bterm btrm in
       make_bterm { bvars = bterm.bvars; bterm = map_up f bterm.bterm }
-   
+
    and map_up f t =
       match get_core t with
          Term trm ->

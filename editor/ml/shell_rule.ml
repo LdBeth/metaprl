@@ -273,7 +273,7 @@ let edit pack sentinal arg name obj =
          Primitive _
        | Derived _
        | Incomplete ->
-               (* Convert to a ped *)
+            (* Convert to a ped *)
             let { rule_params = params;
                   rule_assums = assums;
                   rule_goal = goal

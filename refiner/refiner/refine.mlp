@@ -204,7 +204,8 @@ struct
       }
 
    and rewrite_just =
-      RewriteHere of opname
+      RewriteCut of term
+    | RewriteHere of opname
     | RewriteAddr of address * rewrite_just
     | RewriteHigher of rewrite_just list
     | RewritePair of rewrite_just * rewrite_just
@@ -529,10 +530,8 @@ struct
     * Convert a rewrite to a tactic.
     *)
    let rwtactic (rw : rw) sent (seq : msequent) =
-      eprintf "Rwtactic: start%t" eflush;
       let { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } = seq in
       let goal, just = rw sent goal in
-         eprintf "Rwtactic: done%t" eflush;
          [{ mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps }], RewriteJust just
 
    (*
@@ -547,28 +546,8 @@ struct
     * does not fail.
     *)
    let rwhigher rw sent t =
-      eprintf "Rwhigher: start%t" eflush;
       let t, justs = apply_fun_higher (rw sent) t in
-         eprintf "Rwhigher: done%t" eflush;
          t, RewriteHigher justs
-
-    (*
-     * Invert the rewrite.
-     *)
-    let foldrw rw t' sent t =
-       let t'', refiner =
-#ifdef VERBOSE_EXN
-          try rw sent t' with
-             RefineError (name, x) ->
-                raise (RefineError ("foldrw", GoalError (name, x)))
-#else
-          rw sent t'
-#endif
-       in
-          if alpha_equal t'' t then
-             t', refiner
-          else
-             raise (RefineError ("foldrw", StringTermError ("fold operation does not match", t')))
 
    (*
     * Composition is supplied for efficiency.
@@ -616,6 +595,14 @@ struct
    let mk_cond_rewrite rw sent _ _ t =
       let arg, just = rw sent t in
          arg, [], RewriteJust just
+
+   (*
+    * Cut rule in a sequent calculus.
+    *)
+   let cutrw t' sent _ seq t =
+      let rw = mk_xrewrite_term t' t in
+      let seq = replace_goal seq rw in
+         t', [seq], RewriteJust (RewriteCut t')
 
    (*
     * Apply the rewrite to an addressed term.
@@ -1047,6 +1034,8 @@ struct
          check_rewrite_just check just2
     | RewriteHigher justs ->
          List.iter (check_rewrite_just check) justs
+    | RewriteCut _ ->
+         ()
 
    (*
     * Get the term from an extract.

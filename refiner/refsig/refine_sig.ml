@@ -153,11 +153,6 @@ sig
    val andthenrw : rw -> rw -> rw
    val orelserw : rw -> rw -> rw
 
-   (*
-    * Apply a rewrite in the reverse direction.
-    *)
-   val foldrw : rw -> term -> rw
-
    (************************************************************************
     * CONDITIONAL REWRITE                                                  *
     ************************************************************************)
@@ -174,6 +169,11 @@ sig
     * Inject a regular rewrite.
     *)
    val mk_cond_rewrite : rw -> cond_rewrite
+
+   (*
+    * Apply a rewrite in the reverse direction.
+    *)
+   val cutrw : term -> cond_rewrite
 
    (*
     * Ask for the current sequent, and for the term be rewritten.

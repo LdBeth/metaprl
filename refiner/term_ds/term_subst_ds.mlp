@@ -7,21 +7,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Alexey Nogin, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Alexey Nogin
  * Modified by: Jason Hickey
  *)
@@ -127,7 +127,7 @@ struct
             binding_vars_bterms (binding_vars_term bt.bterm (List.fold_right StringSet.add bt.bvars bvars)) l
     | [] -> bvars
 
-   let binding_vars t = 
+   let binding_vars t =
       StringSet.elements
          (match get_core t with
             Term t ->
@@ -174,7 +174,7 @@ struct
             let free_set = free_vars_set terms in
                List.exists (fun v -> StringSet.mem free_set v) vars
 
-   let context_vars t = 
+   let context_vars t =
       match get_core t with
          Sequent seq ->
             let hyps = seq.sequent_hyps in
@@ -230,7 +230,7 @@ struct
          Term { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             Opname.eq name1 name2
                     & List_util.for_all2 equal_params params1 params2
-                    & equal_bterms vars bterms1 bterms2 
+                    & equal_bterms vars bterms1 bterms2
        | _ -> false )
 
    and equal_bterms vars btrms1 btrms2 =
@@ -282,7 +282,7 @@ struct
                 Failure _ ->
                    false)
        | FOVar v1, FOVar v2 ->
-            (v1=v2) 
+            (v1=v2)
        | _ ->
             false
 
@@ -301,6 +301,7 @@ struct
               {core = Term { term_op = op; term_terms = bterms}} ->
                  let bterms' = var_subst_bterms bterms t' v in
                     if bterms == bterms' then t else mk_term op bterms'
+            | { core = FOVar v } -> t
             | _ -> raise (Failure "Term_ds.var_subst: this is not supposed to happen")
 
    and var_subst_bterms bterms t' v =
@@ -346,7 +347,7 @@ struct
                          false)
        | Term t1, Term t2 ->
             Opname.eq t1.term_op.op_name t2.term_op.op_name &&
-            List_util.for_all2 equal_params t1.term_op.op_params t2.term_op.op_params && 
+            List_util.for_all2 equal_params t1.term_op.op_params t2.term_op.op_params &&
             equal_comp_bterms vars' vars t1.term_terms t2.term_terms
        | _ -> false
 
@@ -472,7 +473,7 @@ struct
    let unify_empty = []
 
    let convert_subst_of_subst (v, t) = ([v], Some t)
-      
+
    let unify_subst_of_subst subst = List.map convert_subst_of_subst subst
 
    let add_unify_subst v t s =
@@ -518,8 +519,8 @@ struct
        | Term trm1, Term trm2 ->
             let op1 = trm1.term_op in
             let op2 = trm2.term_op in
-               if Opname.eq op1.op_name op2.op_name && 
-                  List_util.for_all2 equal_params op1.op_params op2.op_params 
+               if Opname.eq op1.op_name op2.op_name &&
+                  List_util.for_all2 equal_params op1.op_params op2.op_params
                then
                   unify_bterms subst constants bvars trm1.term_terms trm2.term_terms
                else
@@ -530,7 +531,7 @@ struct
    and unify_var_term subst constants bvars v term1 term2 =
       if String_set.StringSet.mem constants v then
          raise unify_exn
-      else 
+      else
          try unify_terms subst constants bvars (subst_assoc subst v) term2 with
             Not_found ->
                (* Bound vars occurs check goes here *)

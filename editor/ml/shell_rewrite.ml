@@ -72,7 +72,7 @@ type rw =
      mutable rw_assums : term list;
      mutable rw_redex : term;
      mutable rw_contractum : term;
-     rw_proof : Package.proof proof_type;
+     mutable rw_proof : Package.proof proof_type;
      mutable rw_ped : Proof_edit.t proof_type
    }
 
@@ -82,25 +82,24 @@ type rw =
  *)
 let seq = << sequent ['ext] { 'H >- 'rw } >>
 
-let mk_goal sentinal arg redex contractum =
+let mk_goal redex contractum =
    let rw = TermMan.replace_goal seq (mk_xrewrite_term redex contractum) in
-   let { ref_label = label; ref_fcache = cache; ref_args = args } = arg in
-      Sequent.create sentinal label (mk_msequent rw []) cache args
+      mk_msequent rw []
 
-let mk_cond_goal sentinal arg assums redex contractum =
+let mk_cond_goal assums redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
    let assums = List.map (replace_goal seq) assums in
-   let { ref_label = label; ref_fcache = cache; ref_args = args } = arg in
-      Sequent.create sentinal label (mk_msequent rw assums) cache args
+      mk_msequent rw assums
 
-let mk_rw_goal sentinal arg assums redex contractum =
+let mk_rw_goal assums redex contractum =
    if assums = [] then
-      mk_goal sentinal arg redex contractum
+      mk_goal redex contractum
    else
-      mk_cond_goal sentinal arg assums redex contractum
+      mk_cond_goal assums redex contractum
 
-let mk_ped arg sentinal params assums redex contractum =
-   Proof_edit.create params (mk_rw_goal sentinal arg assums redex contractum)
+let mk_goal sentinal arg assums redex contractum =
+   let { ref_label = label; ref_fcache = cache; ref_args = args } = arg in
+      Sequent.create sentinal label (mk_rw_goal assums redex contractum) cache args
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -133,7 +132,7 @@ let format_tac db buf arg =
  * A primtive rewrite.
  *)
 let format_rewrite_aux s db buf arg sentinal params assums redex contractum =
-   let tac = Refine_exn.print db (mk_rw_goal sentinal arg assums redex) contractum in
+   let tac = Refine_exn.print db (mk_goal sentinal arg assums redex) contractum in
       format_tac db buf tac;
       format_newline buf;
       format_string buf s;
@@ -143,7 +142,7 @@ let format_prim_rewrite = format_rewrite_aux "Primitive"
 let format_incomplete_rewrite = format_rewrite_aux "Incomplete"
 
 let format_cond_rewrite db buf arg sentinal params assums redex contractum expr =
-   let tac = Refine_exn.print db (mk_rw_goal sentinal arg assums redex) contractum in
+   let tac = Refine_exn.print db (mk_goal sentinal arg assums redex) contractum in
       format_tac db buf tac;
       format_newline buf;
       format_string buf "Derived> ";
@@ -159,7 +158,7 @@ let item_of_obj pack name
       rw_redex = redex;
       rw_contractum = contractum;
       rw_proof = proof
-    } ped =
+    } =
    if params = [] & assums = [] then
       Filter_summary.Rewrite (**)
          { Filter_summary.rw_name = name;
@@ -186,10 +185,9 @@ let edit pack sentinal arg name obj =
    let update_ped () =
       obj.rw_ped <- Primitive unit_term
    in
-   let save_ped ped =
-      let item = item_of_obj pack name obj ped in
-         Package.set pack item;
-         obj.rw_ped <- Interactive ped
+   let save_ped () =
+      let item = item_of_obj pack name obj in
+         Package.set pack item
    in
    let edit_format db buf =
       (* Convert to a term *)
@@ -232,7 +230,7 @@ let edit pack sentinal arg name obj =
    let edit_save () =
       match obj.rw_ped with
          Interactive ped ->
-            save_ped ped
+            save_ped ()
        | Incomplete
        | Primitive _
        | Derived _ ->
@@ -289,15 +287,21 @@ let edit pack sentinal arg name obj =
          Primitive _
        | Derived _
        | Incomplete ->
-               (* Convert to a ped *)
+            (* Convert to a ped *)
             let { rw_params = params;
                   rw_assums = assums;
                   rw_redex = redex;
                   rw_contractum = contractum
                 } = obj
             in
-            let ped = mk_ped arg sentinal params assums redex contractum in
-               save_ped ped;
+            let assums' = List.map (replace_goal seq) assums in
+            let goal' = replace_goal seq (mk_xrewrite_term redex contractum) in
+            let proof = Package.new_proof pack name assums goal' in
+            let ped = Package.ped_of_proof pack proof in
+               obj.rw_proof <- Interactive proof;
+               obj.rw_ped <- Interactive ped;
+               Proof_edit.set_params ped params;
+               save_ped ();
                ped
        | Interactive ped ->
             ped

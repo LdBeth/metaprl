@@ -696,7 +696,7 @@ struct
                      info.proof <- Shell_null.null_object
                   end else begin
                      (* select an item (if not there already), then go down the proof. *)
-                     if ((info.dir = []) or ((List.tl info.dir) = []) or
+                   if ((info.dir = []) or ((List.tl info.dir) = []) or
                          ((List.hd (List.tl info.dir)) <> (List.hd item))) then
                         set_item modname (List.hd item);
                      (* go down the proof with pf_path *)

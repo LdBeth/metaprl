@@ -51,6 +51,7 @@ open Itt_logic
 open Itt_dprod
 open Itt_prod
 open Itt_prop_decide
+open Itt_bool
 
 open Mp
 
