@@ -245,6 +245,27 @@ struct
     * UTILITIES                                                            *
     ************************************************************************)
 
+#ifdef VERBOSE_EXN
+   let iter2_exn = RefineError("Rewrite.iter2", StringError "length mismatch")
+   let rev_iter2_exn = RefineError("Rewrite.rev_iter2", StringError "length mismatch")
+   let redex_params_iter_exn = RefineError("Rewrite.match_redex_params_iter", StringError "length mismatch")
+#endif
+
+   let rec iter2 f al bl =
+      match (al, bl) with
+         h1::t1, h2::t2 ->
+            f h1 h2;
+            iter2 f t1 t2
+       | [], [] ->
+            ()
+       | _ ->
+            ref_raise(iter2_exn)
+
+   let rec rev_iter2 f a b =   match (a,b) with
+         ([], []) -> ()
+       | (ha::ta, hb::tb) -> rev_iter2 f ta tb; f ha hb
+       | _ -> ref_raise (rev_iter2_exn)
+
    (*
     * Upgrade a second-order instance to a pattern
     *)
@@ -1103,7 +1124,7 @@ struct
          if !debug_rewrite then
             eprintf "Rewrite.set_bvars %d/%d%t" (List.length vars) (List.length names) eflush;
 #endif
-         List.iter2 aux vars names
+         iter2 aux vars names
 
    (*
     * Check that two terms are equal under the given var equivalence
@@ -1124,25 +1145,126 @@ struct
     | [] ->
          ()
 
+    let match_redex_params stack p' p =
+        match p', dest_param p with
+           (* Literal matches *)
+           RWNumber i, Number j ->
+              if not (i = j) then
+                 ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
+         | RWString s', String s ->
+              if not (s' = s) then
+                 ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
+         | RWToken t', Token t ->
+              if not (t' = t) then
+                 ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
+         | RWLevel i', Level i ->
+              if not (i' = i) then
+                 ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
+         | RWVar v', Var v ->
+              if not (v' = v) then
+                 ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
+
+           (* Variable matches *)
+         | RWMNumber i, Number j ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) (Num.string_of_num j) eflush;
+#endif
+              stack.(i) <- StackNumber j
+         | RWMString i, String s ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) s eflush;
+#endif
+              stack.(i) <- StackString s
+         | RWMToken i, Token t ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) t eflush;
+#endif
+              stack.(i) <- StackString t
+         | RWMVar i, Var v ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) v eflush;
+#endif
+              stack.(i) <- StackString v
+         | RWMLevel i, Level l ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMLevel: stack(%d)/%d%t" (**)
+                    i (Array.length stack) eflush;
+#endif
+              stack.(i) <- StackLevel l
+         | RWMNumber i, MNumber s ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) s eflush;
+#endif
+              stack.(i) <- StackMString s
+         | RWMString i, MString s ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) s eflush;
+#endif
+              stack.(i) <- StackMString s
+         | RWMToken i, MToken s ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) s eflush;
+#endif
+              stack.(i) <- StackMString s
+         | RWMVar i, MVar v ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) v eflush;
+#endif
+              stack.(i) <- StackMString v
+         | RWMLevel i, MLevel s ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMLevel: stack(%d)/%d%t" (**)
+                    i (Array.length stack) eflush;
+#endif
+              stack.(i) <- StackMString s
+
+         | _ -> ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
+
+    let rec match_redex_params_iter stack pl1 pl2 =
+      match (pl1, pl2) with
+         p1::pl1, p2::pl2 ->
+            match_redex_params stack p1 p2;
+            match_redex_params_iter stack pl1 pl2
+       | [], [] -> ()
+       | _ -> ref_raise(redex_params_iter_exn)
+
    (*
     * Match a term against the redex.
     *)
     let rec match_redex_term addrs stack t' t =
         match t' with
            RWComposite { rw_op = { rw_name = name'; rw_params = params' }; rw_bterms = bterms' } ->
-              let { term_op = op; term_terms = bterms } = dest_term t in
-              let { op_name = name; op_params = params } = dest_op op in
+              let trm = dest_term t in
+              let op = dest_op trm.term_op in
 #ifdef VERBOSE_EXN
                  if !debug_rewrite then
                     eprintf "Rewrite.match_redex.RWComposite: %s[%d](%d)/%a[%d](%d)%t" (**)
                        (flat_opname name') (List.length params') (List.length bterms')
-                       debug_print t (List.length params) (List.length bterms)
+                       debug_print t (List.length op.op_params) (List.length trm.term_terms)
                        eflush;
 #endif
-                 if name == name' then
+                 if op.op_name == name' then
                     begin
-                       List.iter2 (match_redex_params stack) params' params;
-                       List_util.rev_iter2 (match_redex_bterms addrs stack) bterms' bterms;
+                       match_redex_params_iter stack params' op.op_params;
+                       rev_iter2 (match_redex_bterms addrs stack) bterms' trm.term_terms;
 #ifdef VERBOSE_EXN
                        if !debug_rewrite then
                           eprintf "Rewrite.match_redex.RWComposite done%t" eflush;
@@ -1245,99 +1367,6 @@ struct
          | _ ->
               ref_raise(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
 
-    and match_redex_params stack p' p =
-        match p', dest_param p with
-           (* Literal matches *)
-           RWNumber i, Number j ->
-              if not (i = j) then
-                 ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
-         | RWString s', String s ->
-              if not (s' = s) then
-                 ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
-         | RWToken t', Token t ->
-              if not (t' = t) then
-                 ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
-         | RWLevel i', Level i ->
-              if not (i' = i) then
-                 ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
-         | RWVar v', Var v ->
-              if not (v' = v) then
-                 ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
-
-           (* Variable matches *)
-         | RWMNumber i, Number j ->
-#ifdef VERBOSE_EXN
-              if !debug_rewrite then
-                 eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
-                    i (Array.length stack) (Num.string_of_num j) eflush;
-#endif
-              stack.(i) <- StackNumber j
-         | RWMString i, String s ->
-#ifdef VERBOSE_EXN
-              if !debug_rewrite then
-                 eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %s%t" (**)
-                    i (Array.length stack) s eflush;
-#endif
-              stack.(i) <- StackString s
-         | RWMToken i, Token t ->
-#ifdef VERBOSE_EXN
-              if !debug_rewrite then
-                 eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %s%t" (**)
-                    i (Array.length stack) t eflush;
-#endif
-              stack.(i) <- StackString t
-         | RWMVar i, Var v ->
-#ifdef VERBOSE_EXN
-              if !debug_rewrite then
-                 eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %s%t" (**)
-                    i (Array.length stack) v eflush;
-#endif
-              stack.(i) <- StackString v
-         | RWMLevel i, Level l ->
-#ifdef VERBOSE_EXN
-              if !debug_rewrite then
-                 eprintf "Rewrite.match_redex_params.RWMLevel: stack(%d)/%d%t" (**)
-                    i (Array.length stack) eflush;
-#endif
-              stack.(i) <- StackLevel l
-         | RWMNumber i, MNumber s ->
-#ifdef VERBOSE_EXN
-              if !debug_rewrite then
-                 eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
-                    i (Array.length stack) s eflush;
-#endif
-              stack.(i) <- StackMString s
-         | RWMString i, MString s ->
-#ifdef VERBOSE_EXN
-              if !debug_rewrite then
-                 eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %s%t" (**)
-                    i (Array.length stack) s eflush;
-#endif
-              stack.(i) <- StackMString s
-         | RWMToken i, MToken s ->
-#ifdef VERBOSE_EXN
-              if !debug_rewrite then
-                 eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %s%t" (**)
-                    i (Array.length stack) s eflush;
-#endif
-              stack.(i) <- StackMString s
-         | RWMVar i, MVar v ->
-#ifdef VERBOSE_EXN
-              if !debug_rewrite then
-                 eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %s%t" (**)
-                    i (Array.length stack) v eflush;
-#endif
-              stack.(i) <- StackMString v
-         | RWMLevel i, MLevel s ->
-#ifdef VERBOSE_EXN
-              if !debug_rewrite then
-                 eprintf "Rewrite.match_redex_params.RWMLevel: stack(%d)/%d%t" (**)
-                    i (Array.length stack) eflush;
-#endif
-              stack.(i) <- StackMString s
-
-         | _ -> ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
-
     and match_redex_bterms addrs stack bt' bt =
         match bt', dest_bterm bt with
             { rw_bvars = vars'; rw_bnames = names; rw_bterm = bterm' },
@@ -1360,7 +1389,7 @@ struct
          end;
 #endif
       match_redex_term addrs stack prg t;
-      if tl!=[] then List.iter2 (match_redex_term addrs stack) progs tl
+      iter2 (match_redex_term addrs stack) progs tl
 
    (*
     * The contractum is built as a second order substitution.
@@ -1431,7 +1460,7 @@ struct
                if !debug_subst then
                    begin
                       eprintf "RWSOSubst: %a%t" debug_print term eflush;
-                      List.iter2 (fun name term ->
+                      iter2 (fun name term ->
                             eprintf "\t%s: %a%t" name debug_print term eflush) (**)
                          vars terms
                    end;
@@ -1475,7 +1504,7 @@ struct
                       if !debug_subst then
                          begin
                             eprintf "RWSOContextSubst: %a%t" debug_print term eflush;
-                            List.iter2 (fun name term ->
+                            iter2 (fun name term ->
                                   eprintf "\t%s: %a%t" name debug_print term eflush) (**)
                                vars terms
                          end;
