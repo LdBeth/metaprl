@@ -12,7 +12,7 @@ if $(equal $(OSTYPE), Win32)
    export
 else
    SetEnv(v, x) =
-      return( $(v)=$(x) )
+      return( $(v)='$(x)' )
    export
 
 #
