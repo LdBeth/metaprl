@@ -143,10 +143,16 @@ sig
    val dest_simple_term : term -> (opname * term list)
    val is_simple_term_opname : opname -> term -> bool
    val dest_simple_term_opname : opname -> term -> term list
+
+   val mk_simple_bterm : term -> bound_term
+   val dest_simple_bterm : term -> bound_term -> term
 end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/03 15:23:59  jyh
+ * Generalized many the term_addr, term_man, and term_shape modules.
+ *
  * Revision 1.3  1998/06/01 19:53:52  jyh
  * Working addition proof.  Removing polymorphism from refiner(?)
  *

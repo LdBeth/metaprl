@@ -35,7 +35,6 @@ sig
 
    val is_sequent_term : term -> bool
    val dest_sequent : term -> term list
-   val goal_of_sequent : term -> term
    val mk_sequent_term : term list -> term
 
    val nth_hyp : term -> int -> string * term
@@ -88,6 +87,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/03 15:23:25  jyh
+ * Generalized many the term_addr, term_man, and term_shape modules.
+ *
  * Revision 1.2  1998/06/01 13:55:13  jyh
  * Proving twice one is two.
  *

@@ -6,10 +6,10 @@ module Refiner =
 struct
    module Term = Term_std.Term
    module TermOp = Term_op_std.TermOp
-   module TermMan = Term_man_std.TermMan
-   module TermAddr = Term_addr_std.TermAddr
    module TermSubst = Term_subst_std.TermSubst
-   module TermShape = Term_shape_std.TermShape
+   module TermMan = Term_man_gen.TermMan (Term) (TermOp) (TermSubst)
+   module TermAddr = Term_addr_gen.TermAddr (Term) (TermOp)
+   module TermShape = Term_shape_gen.TermShape (Term)
    module TermEval = Term_eval_std.TermEval
 
    module TermMeta = Term_meta_gen.TermMeta (Term) (TermSubst)
@@ -19,6 +19,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/03 15:23:19  jyh
+ * Generalized many the term_addr, term_man, and term_shape modules.
+ *
  * Revision 1.2  1998/05/29 02:29:17  nogin
  * Created refiner/term_gen directory
  * Moved renamed term_std/term_meta_std to term_gen/term_meta_gen

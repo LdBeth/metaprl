@@ -75,13 +75,7 @@ sig
       { mseq_goal : term;
         mseq_hyps : term list
       }
-
-   type 'a tactic_arg =
-      { tac_goal : term;
-        tac_hyps : term list;
-        tac_arg : 'a
-      }
-
+   
    (************************************************************************
     * PROOFS AND VALIDATIONS                                               *
     ************************************************************************)
@@ -108,12 +102,10 @@ sig
     * safe_tactic is a subtype of (term -> term list)
     * where the inference is always correct.
     *)
-   type 'a safe_tactic
-
-   type 'a tactic = 'a tactic_arg -> 'a safe_tactic
+   type tactic
 
    (* Tactic application *)
-   val refine : 'a tactic -> 'a tactic_arg -> 'a tactic_arg list * extract
+   val refine : tactic -> msequent -> msequent list * extract
 
    (* Compose extract tree *)
    val compose : extract -> extract list -> extract
@@ -121,24 +113,7 @@ sig
    (*
     * The base case tactic proves a goal by assumption.
     *)
-   val nth_hyp : int -> 'a tactic
-
-   (*
-    * The basic composition tacticals.
-    * All these tacticals are redundant.  Everything could
-    * be defined in terms of the compose function.
-    *
-    * orelse: try the first, if it fails try the second (same args)
-    * andthen: run the first then the second, passing args
-    * andthenL: run the first, then the list of tactics on each subgoal
-    * andthenFL: run the first, pass the subgoal list to the second
-    *)
-   val orelse : 'a tactic -> 'a tactic -> 'a tactic
-   val andthen : 'a tactic -> 'a tactic -> 'a tactic
-   val andthenL : 'a tactic -> 'a tactic list -> 'a tactic
-   val andthenFL : 'a tactic ->
-      ('a tactic_arg list -> 'a safe_tactic list) ->
-      'a tactic
+   val nth_hyp : int -> tactic
 
    (************************************************************************
     * REWRITES                                                             *
@@ -147,27 +122,23 @@ sig
    (*
     * A normal rewrite can be applied to a term to rewrite it.
     *)
-   type 'a safe_rewrite
-
-   type 'a rewrite_arg = term * 'a
-
-   type 'a rw = 'a rewrite_arg -> 'a safe_rewrite
+   type rw
 
    (*
     * Apply a rewrite to a subterm of the goal.
     *)
-   val rwaddr : address -> 'a rw -> 'a rw
+   val rwaddr : address -> rw -> rw
 
    (*
     * Convert a rewrite that likes to examine its argument.
     *)
-   val rwtactic : 'a rw -> 'a tactic
-
+   val rwtactic : rw -> tactic
+   
    (*
-    * Composition of rewrites.
+    * Composition is supplied for efficiency.
     *)
-   val andthenrw : 'a rw -> 'a rw -> 'a rw
-   val orelserw : 'a rw -> 'a rw -> 'a rw
+   val andthenrw : rw -> rw -> rw
+   val orelserw : rw -> rw -> rw
 
    (************************************************************************
     * CONDITIONAL REWRITE                                                  *
@@ -179,21 +150,17 @@ sig
     * be proved.  A conditional rewrite is valid only for a sequent
     * calculus.
     *)
-   type 'a safe_cond_rewrite
-
-   type 'a cond_rewrite_arg = term * term * 'a
-
-   type 'a cond_rewrite = 'a cond_rewrite_arg -> 'a safe_cond_rewrite
+   type cond_rewrite
 
    (*
     * Inject a regular rewrite.
     *)
-   val mk_cond_rewrite : 'a rw -> 'a cond_rewrite
+   val mk_cond_rewrite : rw -> cond_rewrite
 
    (*
     * Ask for the current sequent, and for the term be rewritten.
     *)
-   val crwaddr : address -> 'a cond_rewrite -> 'a cond_rewrite
+   val crwaddr : address -> cond_rewrite -> cond_rewrite
 
    (*
     * Application of a conditional rewrite.
@@ -201,13 +168,13 @@ sig
     * a sequent, and it returns the rewritten sequent
     * as the first subgoal.
     *)
-   val crwtactic : 'a cond_rewrite -> 'a tactic
-
+   val crwtactic : cond_rewrite -> tactic
+   
    (*
-    * Sequence two conditional rewrites.
+    * Composition is supplied for efficiency.
     *)
-   val candthenrw : 'a cond_rewrite -> 'a cond_rewrite -> 'a cond_rewrite
-   val corelserw : 'a cond_rewrite -> 'a cond_rewrite -> 'a cond_rewrite
+   val candthenrw : cond_rewrite -> cond_rewrite -> cond_rewrite
+   val corelserw : cond_rewrite -> cond_rewrite -> cond_rewrite
 
    (************************************************************************
     * UTILITIES                                                            *
@@ -217,13 +184,11 @@ sig
     * Tactic argument is ignored
     *)
    val msequent_alpha_equal : msequent -> msequent -> bool
-   val tactic_arg_alpha_equal : 'a tactic_arg -> 'b tactic_arg -> bool
 
    (*
     * Utils.
     *)
-   val msequent_of_tactic_arg : 'a tactic_arg -> msequent
-   val split_sequent_list : msequent list -> term list * term list list
+   val split_msequent_list : msequent list -> term list * term list list
 
    (************************************************************************
     * REFINER INTERFACE                                                    *
@@ -238,11 +203,12 @@ sig
    val null_refiner : refiner
 
    (*
-    * These are the forms created at compile time.
+    * These are the forms created at compile time with
+    * extra arguments.
     *)
-   type prim_tactic
-   type prim_rewrite
-   type prim_cond_rewrite
+   type prim_tactic = address array * string array -> term list -> tactic
+   type prim_rewrite = rw
+   type prim_cond_rewrite = string array * term list -> cond_rewrite
 
    (*
     * Get the term corresponding to an extract.
@@ -296,10 +262,6 @@ sig
       term ->                    (* term to be expanded *)
       ml_rule ->                 (* the rule definition *)
       prim_tactic
-   val tactic_of_rule : prim_tactic ->
-      address array * string array ->
-      term list ->
-      'a tactic
    val check_rule :
       string ->            (* name *)
       string array ->      (* addrs *)
@@ -338,7 +300,6 @@ sig
       term ->              (* redex *)
       term ->              (* contractum *)
       prim_rewrite
-   val rewrite_of_rewrite : prim_rewrite -> 'a rw
    val prim_rewrite : refiner ref ->
       string ->            (* name *)
       term ->              (* redex *)
@@ -369,9 +330,6 @@ sig
       term list ->         (* subgoals *)
       ml_rewrite ->        (* rewriter *)
       prim_cond_rewrite
-   val rewrite_of_cond_rewrite : prim_cond_rewrite ->
-      string array * term list ->
-      'a cond_rewrite
    val prim_cond_rewrite : refiner ref ->
       string ->            (* name *)
       string array ->      (* vars *)
@@ -470,6 +428,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/03 15:23:23  jyh
+ * Generalized many the term_addr, term_man, and term_shape modules.
+ *
  * Revision 1.2  1998/06/01 19:53:42  jyh
  * Working addition proof.  Removing polymorphism from refiner(?)
  *

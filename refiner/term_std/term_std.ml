@@ -294,7 +294,8 @@ struct
           | _ -> raise (TermMatch ("dest_simple_term", t, "binding vars exist"))
          in
             name, List.map aux bterms
-    | t -> raise (TermMatch ("dest_simple_term", t, "params exist"))
+    | t ->
+         raise (TermMatch ("dest_simple_term", t, "params exist"))
 
    let dest_simple_term_opname name = function
       ({ term_op = { op_name = name'; op_params = [] };
@@ -308,7 +309,20 @@ struct
                List.map aux bterms
          else
             raise (TermMatch ("dest_simple_term_opname", t, "opname mismatch"))
-    | t -> raise (TermMatch ("dest_simple_term_opname", t, "params exist"))
+    | t ->
+         raise (TermMatch ("dest_simple_term_opname", t, "params exist"))
+
+   (*
+    * Bound terms.
+    *)
+   let mk_simple_bterm bterm =
+      { bvars = []; bterm = bterm }
+   
+   let dest_simple_bterm t = function
+      { bvars = []; bterm = bterm } ->
+         bterm
+    | _ ->
+         raise (TermMatch ("dest_simple_bterm", t, "bterm is not simple"))
 
    (*
     * "Normalization" means producing a canonical version of the term,
@@ -329,6 +343,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/03 15:23:58  jyh
+ * Generalized many the term_addr, term_man, and term_shape modules.
+ *
  * Revision 1.5  1998/06/02 21:52:00  nogin
  * Use == for comparing opnames
  *

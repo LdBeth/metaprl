@@ -8,7 +8,7 @@ struct
    type param = Term.param
 
    type term_subst = (string * term) list
-
+   
    let subst t tl vl = do_term_subst (List.combine vl tl) t
 
    let is_free_var v t = StringSet.mem v t.free_vars

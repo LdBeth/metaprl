@@ -131,11 +131,7 @@ struct
         mseq_hyps : term list
       }
 
-   type 'a tactic_arg =
-      { tac_goal : term;
-        tac_hyps : term list;
-        tac_arg : 'a
-      }
+   type 'a tactic_arg = msequent * 'a
 
    (************************************************************************
     * TYPES                                                                *
@@ -298,42 +294,31 @@ struct
     * by composition.
     *
     * Note: the first argument should really be type msequent,
-    * but it is more efficient to use ('a tactic_arg) because
-    * the coercion ('a tactic_arg -> msequent) costs a needless
+    * but it is more efficient to use ('a msequent) because
+    * the coercion ('a msequent -> msequent) costs a needless
     * memory allocation.
     *)
-   and 'a safe_tactic = 'a tactic_arg -> 'a tactic_arg list * ext_just
+   and tactic = msequent -> msequent list * ext_just
 
    (*
-    * A rewrite is a function on terms (that can be reversed)
+    * A rewrite replaces a term with another term.
     *)
-   and 'a safe_rewrite = term -> 'a rewrite_arg * refiner
+   and rw = term -> term * refiner
 
    (*
     * A conditional rewrite takes a goal, then applies the rewrite
-    * and generates subgoals.
+    * and generates subgoals.  The first argument is the sequent
+    * the rewrite is being applied to, and the second is the
+    * particular subterm to be rewritted.
     *)
-   and 'a safe_cond_rewrite = term -> term -> 'a rewrite_arg * 'a rewrite_arg list * ext_just
-
-   (*
-    * Abbreviations.
-    *)
-   and 'a tactic = 'a tactic_arg -> 'a safe_tactic
-
-   and 'a rewrite_arg = term * 'a
-
-   and 'a rw = 'a rewrite_arg -> 'a safe_rewrite
-
-   and 'a cond_rewrite_arg = term * term * 'a
-
-   and 'a cond_rewrite = 'a cond_rewrite_arg -> 'a safe_cond_rewrite
+   and cond_rewrite = term -> term -> term * term list * ext_just
 
    (*
     * These are the forms created at compile time.
     *)
-   and prim_tactic = address array * string array -> term list -> term -> term list * ext_just
-   and prim_rewrite = term -> term * refiner
-   and prim_cond_rewrite = (string array * term list) -> term -> term -> term * term list * ext_just
+   and prim_tactic = address array * string array -> term list -> tactic
+   and prim_rewrite = rw
+   and prim_cond_rewrite = string array * term list -> cond_rewrite
 
    (*
     * For destruction.
@@ -395,68 +380,34 @@ struct
          List.for_all check t
 
    (*
-    * Collapse the two arguments to a tactic.
+    * Compare two sequents for alpha eqivalence.
     *)
-   let collapse_arg arg seq =
-      if arg == seq then
-         arg
+   let msequent_alpha_equal seq1 seq2 =
+      if seq1 == seq2 then
+         (* This is the common case *)
+         true
       else
-         let { tac_arg = args } = arg in
-         let { tac_goal = goal; tac_hyps = hyps } = seq in
-            { tac_goal = goal; tac_hyps = hyps; tac_arg = args }
-
-   (************************************************************************
-    * UTILITIES                                                            *
-    ************************************************************************)
-
-   (*
-    * Compare two sequents for alpha eqivalence.
-    *)
-   let msequent_alpha_equal
-       { mseq_goal = goal1; mseq_hyps = hyps1 }
-       { mseq_goal = goal2; mseq_hyps = hyps2 } =
-      let rec compare = function
-         hyp1::hyps1, hyp2::hyps2 ->
-            alpha_equal hyp1 hyp2 & compare (hyps1, hyps2)
-       | [], [] ->
-            true
-       | _ ->
-            false
-      in
-         alpha_equal goal1 goal2 & compare (hyps1, hyps2)
-
-   (*
-    * Compare two sequents for alpha eqivalence.
-    *)
-   let tactic_arg_alpha_equal
-       { tac_goal = goal1; tac_hyps = hyps1 }
-       { tac_goal = goal2; tac_hyps = hyps2 } =
-      let rec compare = function
-         hyp1::hyps1, hyp2::hyps2 ->
-            alpha_equal hyp1 hyp2 & compare (hyps1, hyps2)
-       | [], [] ->
-            true
-       | _ ->
-            false
-      in
-         alpha_equal goal1 goal2 & compare (hyps1, hyps2)
+         let { mseq_goal = goal1; mseq_hyps = hyps1 } = seq1 in
+         let { mseq_goal = goal2; mseq_hyps = hyps2 } = seq2 in
+            let rec compare = function
+               hyp1::hyps1, hyp2::hyps2 ->
+                  alpha_equal hyp1 hyp2 & compare (hyps1, hyps2)
+             | [], [] ->
+                  true
+             | _ ->
+                  false
+            in
+               alpha_equal goal1 goal2 & compare (hyps1, hyps2)
 
    (*
     * Split the goals from the hyps.
     *)
-   let rec split_sequent_list = function
+   let rec split_msequent_list = function
       { mseq_goal = goal; mseq_hyps = hyps }::t ->
-         let goals, hypsl = split_sequent_list t in
+         let goals, hypsl = split_msequent_list t in
             goal :: goals, hyps :: hypsl
     | [] ->
          [], []
-
-   (*
-    * Get the sequent from a tactic.
-    * If the compiler were smarter, this wouldn't have to do anything.
-    *)
-   let msequent_of_tactic_arg { tac_goal = goal; tac_hyps = hyps } =
-      { mseq_goal = goal; mseq_hyps = hyps }
 
    (************************************************************************
     * TACTICS                                                              *
@@ -467,11 +418,24 @@ struct
     * The application is doubled: the first argument is
     * for type tactic, and the second is for type safe_tactic.
     *)
-   let refine (tac : 'a tactic) (arg : 'a tactic_arg) =
-      let subgoals, just = tac arg arg in
-      let seq = msequent_of_tactic_arg arg in
-      let subgoals' = List.map msequent_of_tactic_arg subgoals in
-         subgoals, { ext_goal = seq; ext_just = just; ext_subgoals = subgoals' }
+   let refine (tac : tactic) (seq : msequent) =
+      let subgoals, just = tac seq in
+         subgoals, { ext_goal = seq; ext_just = just; ext_subgoals = subgoals }
+
+   (*
+    * NTH_HYP
+    * The base tactic proves by assumption.
+    *)
+   let nth_hyp i seq =
+      let { mseq_goal = goal; mseq_hyps = hyps } = seq in
+         try
+            if alpha_equal (List.nth hyps i) goal then
+               [], NthHypJust i
+            else
+               raise (RefineError (StringError "nth_hyp"))
+         with
+            Failure "nth" ->
+               raise (RefineError (StringIntError ("nth_hyp", i)))
 
    (*
     * COMPOSE
@@ -489,125 +453,7 @@ struct
       let just = ComposeJust (just, justl) in
       let subgoals'' = List_util.flat_map (fun ext -> ext.ext_subgoals) extl in
          { ext_goal = goal; ext_just = just; ext_subgoals = subgoals }
-
-   (*
-    * NTH_HYP
-    * The base tactic proves by assumption.
-    *)
-   let nth_hyp i _ seq =
-      let { tac_goal = goal; tac_hyps = hyps } = seq in
-         try
-            if alpha_equal (List.nth hyps i) goal then
-               [], NthHypJust i
-            else
-               raise (RefineError (StringError "Refine.nth_hyp: goal mistmatch"))
-         with
-            Failure "nth" ->
-               raise (RefineError (StringIntError ("Refine.nth_hyp: bad argument", i)))
-
-   (*
-    * ORELSE
-    * orelse tries the first tactic, and if it fails, then it
-    * tries the second tactic.
-    *)
-   let orelse tac1 tac2 arg seq =
-      let arg = collapse_arg arg seq in
-         try tac1 arg arg with
-            RefineError x ->
-               (try tac2 arg arg with
-                   RefineError y ->
-                      raise (RefineError (PairError ("orelse", x, y))))
-
-   (*
-    * ANDTHEN: do tac1, then
-    * do tac2 on all the subgoals,
-    * passing the subgoal index.
-    *)
-   let andthen tac1 tac2 arg seq =
-      let arg = collapse_arg arg seq in
-      let subgoals, just =
-         try tac1 arg arg with
-            RefineError x ->
-               raise (RefineError (GoalError ("andthen", x)))
-      in
-      let rec aux i = function
-         h::sgtl ->
-            let subgoals', just' =
-               try tac2 h h with
-                  RefineError x ->
-                     raise (RefineError (SubgoalError ("andthen", i, x)))
-            in
-            let subgoals'', justs = aux (i + 1) sgtl in
-               subgoals' @ subgoals'', just'::justs
-       | [] ->
-            [], []
-      in
-      let subgoals', justs = aux 0 subgoals in
-         subgoals', ComposeJust (just, justs)
-
-   (*
-    * ANDTHENL.
-    * Do tac1, then apply the list of tactics to the subgoals
-    * in order.  Fail if the list lengths don't match.
-    *)
-   let andthenL tac1 tac2list arg seq =
-      let rec thenlist i = function
-         tac::tactl, h::sgtl ->
-            let subgoals, just =
-               try tac h h with
-                  RefineError x ->
-                     raise (RefineError (SubgoalError ("andthenL", i, x)))
-            in
-            let subgoals', justs = thenlist (i + 1) (tactl, sgtl) in
-               subgoals @ subgoals', just::justs
-       | [], [] ->
-            [], []
-       | _ ->
-            raise (RefineError (StringError "andthenL: argument mismatch"))
-      in
-      let arg = collapse_arg arg seq in
-      let subgoals, just =
-         try tac1 arg arg with
-            RefineError x ->
-               raise (RefineError (GoalError ("andthenL", x)))
-      in
-      let subgoals', justs = thenlist 0 (tac2list, subgoals) in
-         subgoals', ComposeJust (just, justs)
-
-   (*
-    * ANDTHENFL.
-    * Do tac1, then apply the second tactic function to the
-    * subgoal list.
-    *)
-   let andthenFL tac f arg seq =
-      let rec apply_list i = function
-         stac::stactl, subgoal::sgtl ->
-            let subgoals, just =
-               try stac subgoal with
-                  RefineError x ->
-                     raise (RefineError (SubgoalError ("andthenFL", i, x)))
-            in
-            let subgoals', justs = apply_list (i + 1) (stactl, sgtl) in
-               subgoals @ subgoals', just::justs
-       | [], [] ->
-            [], []
-       | _ ->
-            raise (RefineError (StringError "andthenFL: argument mismatch"))
-      in
-      let arg = collapse_arg arg seq in
-      let subgoals, just =
-         try tac arg arg with
-            RefineError x ->
-               raise (RefineError (GoalError ("andthenFL", x)))
-      in
-      let stacs =
-         try f subgoals with
-            RefineError x ->
-               raise (RefineError (SubgoalError ("andthenFL", 0, x)))
-      in
-      let subgoals', justs' = apply_list 0 (stacs, subgoals) in
-         subgoals', ComposeJust (just, justs')
-
+   
    (************************************************************************
     * REGULAR REWRITES                                                     *
     ************************************************************************)
@@ -615,56 +461,40 @@ struct
    (*
     * Convert a rewrite to a tactic.
     *)
-   let rwtactic (rw : 'a rw) { tac_arg = args } (seq : 'a tactic_arg) =
-      let { tac_goal = goal; tac_hyps = hyps } = seq in
-      let (goal, arg), refiner = rw (goal, args) goal in
-         [{ tac_goal = goal; tac_hyps = hyps; tac_arg = args }],
+   let rwtactic (rw : rw) (seq : msequent) =
+      let { mseq_goal = goal; mseq_hyps = hyps } = seq in
+      let goal, refiner = rw goal in
+         [{ mseq_goal = goal; mseq_hyps = hyps }],
          SingleJust { ext_names = [||]; ext_params = []; ext_refiner = refiner }
 
    (*
-    * Apply a rewrite at an address. We use an imperative operation to
-    * capture the refiner.  This could be performed functionally, but it
-    * would require two applications of the rewrite (one to compute
-    * the refiner, and one to compute the result term).
+    * Apply a rewrite at an address.
     *)
-   let rwaddr addr rw (_, args) t =
-      let rval = ref None in
-      let rw' t =
-         let (t', args'), refiner' = rw (t, args) t in
-            rval := Some (args', refiner');
-            t'
-      in
-      let t' =
-         try apply_fun_at_addr rw' addr t with
-            RefineError x ->
-               raise (RefineError (RewriteAddressError ("rwaddr", addr, x)))
-      in
-         match !rval with
-            Some (args', refiner') ->
-               (t', args'), refiner'
-          | None ->
-               raise (RefineError (StringError "rwaddr: address out of range"))
+   let rwaddr addr rw t =
+      try apply_fun_arg_at_addr rw addr t with
+         RefineError x ->
+            raise (RefineError (RewriteAddressError ("rwaddr", addr, x)))
 
    (*
-    * Compose two rewrites.
+    * Composition is supplied for efficiency.
     *)
-   let andthenrw rw1 rw2 (_, args) t =
-      let ((t', args') as arg), refiner =
-         try rw1 (t, args) t with
+   let andthenrw rw1 rw2 t =
+      let t', refiner =
+         try rw1 t with
             RefineError x ->
                raise (RefineError (GoalError ("andthenrw", x)))
       in
       let t'', refiner' =
-         try rw2 arg t' with
+         try rw2 t' with
             RefineError x ->
                raise (RefineError (SecondError ("andthenrw", x)))
       in
          t'', PairRefiner (refiner, refiner')
 
-   let orelserw rw1 rw2 (_, args) t =
-      try rw1 (t, args) t with
+   let orelserw rw1 rw2 t =
+      try rw1 t with
          RefineError x ->
-            try rw2 (t, args) t with
+            try rw2 t with
                RefineError y ->
                   raise (RefineError (PairError ("orelserw", x, y)))
 
@@ -675,74 +505,61 @@ struct
    (*
     * Inject a regular rewrite as a conditional rewrite.
     *)
-   let mk_cond_rewrite rw (_, _, args) seq t =
-      let arg, refiner = rw (t, args) t in
+   let mk_cond_rewrite rw seq t =
+      let arg, refiner = rw t in
          arg, [], SingleJust { ext_names = [||]; ext_params = []; ext_refiner = refiner }
 
    (*
     * Apply the rewrite to an addressed term.
     *)
-   let crwaddr addr rw (_, _, args) seq t =
-      let tmp = ref None in
-      let rw' t =
-         let (t', args'), subgoals, just = rw (seq, t, args) seq t in
-            tmp := Some (args', subgoals, just);
-            t'
-      in
-      let t' =
-         try apply_fun_at_addr rw' addr t with
-            RefineError x ->
-               raise (RefineError (RewriteAddressError ("crwaddr", addr, x)))
-      in
-         match !tmp with
-            Some (args', subgoals, just) ->
-               (t', args'), subgoals, just
-          | None ->
-               raise (RefineError (StringError "crwaddr: tactic never applied"))
+   let crwaddr addr crw seq t =
+      try
+         let t, (subgoals, just) =
+            let f t =
+               let t, subgoals, just = crw seq t in
+                  t, (subgoals, just)
+            in
+               apply_fun_arg_at_addr f addr t
+         in
+            t, subgoals, just
+      with
+         RefineError x ->
+            raise (RefineError (RewriteAddressError ("crwaddr", addr, x)))
 
    (*
     * Apply a conditional rewrite.
     *)
-   let crwtactic (rw : 'a cond_rewrite) { tac_arg = args } (seq : 'a tactic_arg) =
-      let { tac_goal = goal; tac_hyps = hyps } = seq in
-      let t', subgoals, just = rw (goal, goal, args) goal goal in
-      let mk_subgoal (subgoal, arg) =
-         { tac_goal = subgoal; tac_hyps = hyps; tac_arg = arg }
+   let crwtactic (rw : cond_rewrite) (seq : msequent) =
+      let { mseq_goal = goal; mseq_hyps = hyps } = seq in
+      let t', subgoals, just = rw goal goal in
+      let mk_subgoal subgoal =
+         { mseq_goal = subgoal; mseq_hyps = hyps }
       in
       let subgoals' = List.map mk_subgoal (t' :: subgoals) in
          subgoals', just
-
+   
    (*
-    * Apply the rewrite, given the args.
+    * Composition is supplied for efficiency.
     *)
-   let apply_crw rw args seq t =
-      let srw, args' = rw (seq, t, args) in
-      let t', subgoals, just = srw seq t in
-         t', subgoals, just, args'
-
-   (*
-    * Compose conditional rewrites.
-    *)
-   let candthenrw rw1 rw2 (_, _, args) seq t =
-      let (t', args'), subgoals, just =
-         try rw1 (seq, t, args) seq t with
+   let candthenrw crw1 crw2 seq t =
+      let t', subgoals, just =
+         try crw1 seq t with
             RefineError x ->
                raise (RefineError (GoalError ("candthenrw", x)))
       in
       let t'', subgoals', just' =
-         try rw2 (seq, t', args') seq t' with
+         try crw2 seq t' with
             RefineError x ->
                raise (RefineError (SecondError ("candthenrw", x)))
       in
          t'', subgoals @ subgoals', PairJust (just, just')
 
-   let corelserw rw1 rw2 (_, _, args) seq t =
-      let arg = seq, t, args in
-         try rw1 arg seq t with
-            RefineError x ->
-               try rw2 arg seq t with
-                  RefineError y ->
-                     raise (RefineError (PairError ("candthenrw", x, y)))
+   let corelserw crw1 crw2 seq t =
+      try crw1 seq t with
+         RefineError x ->
+            try crw2 seq t with
+               RefineError y ->
+                  raise (RefineError (PairError ("corelserw", x, y)))
 
    (************************************************************************
     * UTILITIES                                                            *
@@ -1090,8 +907,6 @@ struct
       in
          fst (construct [] just)
 
-
-
    (************************************************************************
     * AXIOM                                                                *
     ************************************************************************)
@@ -1118,11 +933,11 @@ struct
                         axiom_refiner = refiner
          }
       in
-      let tac _ _ t =
-         if alpha_equal (nth_concl t 0) term then
+      let tac _ _ { mseq_goal = goal; mseq_hyps = hyps } =
+         if alpha_equal (nth_concl goal 0) term then
             [], SingleJust { ext_names = [||]; ext_params = []; ext_refiner = refiner' }
          else
-            raise (Term.TermMatch ("add_axiom_refine", t, ""))
+            raise (Term.TermMatch ("refine_axiom", goal, name))
       in
          check_axiom term;
          refiner', tac
@@ -1187,11 +1002,14 @@ struct
                        rule_refiner = refiner
          }
       in
-      let tac addrs_names params t =
+      let tac addrs_names params { mseq_goal = goal; mseq_hyps = hyps } =
          let subgoals, names' =
-            try Rewrite.apply_rewrite rw addrs_names (t :: params) with
+            try Rewrite.apply_rewrite rw addrs_names (goal :: params) with
                Rewrite.RewriteError error ->
                   raise (RefineError (RewriteError (name, error)))
+         in
+         let make_subgoal subgoal =
+            { mseq_goal = subgoal; mseq_hyps = hyps }
          in
          let just =
             SingleJust { ext_names = names';
@@ -1199,7 +1017,7 @@ struct
                          ext_refiner = refiner'
             }
          in
-            subgoals, just
+            List.map make_subgoal subgoals, just
       in
          refiner', tac
 
@@ -1290,28 +1108,20 @@ struct
          }
       in
       let { ml_rule_rewrite = rw } = rule in
-      let tac (_, names) params t =
-         let subgoals = rw (names, params) t in
+      let tac (_, names) params { mseq_goal = goal; mseq_hyps = hyps } =
+         let subgoals = rw (names, params) goal in
+         let make_subgoal subgoal =
+            { mseq_goal = subgoal; mseq_hyps = hyps }
+         in
          let just =
             SingleJust { ext_names = names;
                          ext_params = params;
                          ext_refiner = refiner'
             }
          in
-            subgoals, just
+            List.map make_subgoal subgoals, just
       in
          refiner', tac
-
-   (*
-    * Create a tactic from the rule.
-    *)
-   let tactic_of_rule (tac : prim_tactic) addrs_names params { tac_arg = args } seq =
-      let { tac_goal = goal; tac_hyps = hyps } = seq in
-      let subgoals, just = tac addrs_names params goal in
-      let subgoals =
-         List.map (function t -> { tac_goal = t; tac_hyps = hyps; tac_arg = args }) subgoals
-      in
-         subgoals, just
 
    (*
     * Just do the checking.
@@ -1421,13 +1231,6 @@ struct
        | _ ->
             raise (RefineError (StringStringError (name, "not a rewrite")))
 
-   (*
-    * Get a polymorphic rewrite.
-    *)
-   let rewrite_of_rewrite (rw : prim_rewrite) (_, args) t =
-      let t', refiner = rw t in
-         (t', args), refiner
-
    (************************************************************************
     * CONDITIONAL REWRITE                                                  *
     ************************************************************************)
@@ -1451,6 +1254,7 @@ struct
          }
       in
       let rw' (vars, params) seq t =
+         (* BUG: is alpha variance compute correctly by replace_goal? *)
          let subgoals' = List.map (replace_goal seq) subgoals in
             match
                try Rewrite.apply_rewrite rw ([||], vars) (t :: params) with
@@ -1498,7 +1302,7 @@ struct
                let ext = ext () in
                let { ext_goal = goal; ext_subgoals = subgoals' } = ext in
                let { mseq_goal = goal; mseq_hyps = goal_hyps } = goal in
-               let subgoals', sub_hyps = split_sequent_list subgoals' in
+               let subgoals', sub_hyps = split_msequent_list subgoals' in
                let { crw_rewrite = subgoals, redex, contractum } = crw in
                let redex = replace_goal goal redex in
                let contractum = replace_goal goal contractum in
@@ -1517,10 +1321,6 @@ struct
                }
        | _ ->
             raise (RefineError (StringStringError (name, "not a conditional rewrite")))
-
-   let rewrite_of_cond_rewrite (rw : prim_cond_rewrite) vars_params (_, _, args) seq t =
-      let t', subgoals', just = rw vars_params seq t in
-         (t', args), List.map (function t -> (t, args)) subgoals', just
 
    (*
     * An ML rewrite.
@@ -1696,6 +1496,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/03 15:23:16  jyh
+ * Generalized many the term_addr, term_man, and term_shape modules.
+ *
  * Revision 1.2  1998/06/01 19:53:37  jyh
  * Working addition proof.  Removing polymorphism from refiner(?)
  *

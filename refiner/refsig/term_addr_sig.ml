@@ -25,12 +25,17 @@ sig
    val term_subterm :  term -> address -> term
    val replace_subterm : term -> address -> term -> term
    val apply_fun_at_addr : (term -> term) -> address -> (term -> term)
-   val remove_addr_prefix : address -> address -> address
+   val apply_fun_arg_at_addr : (term -> term * 'a) -> address -> (term -> term * 'a)
+   val compose_addr : address -> address -> address
+   (* val remove_addr_prefix : address -> address -> address *)
    val subterm_arities : term -> int list
 end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/03 15:23:24  jyh
+ * Generalized many the term_addr, term_man, and term_shape modules.
+ *
  * Revision 1.2  1998/06/01 13:55:12  jyh
  * Proving twice one is two.
  *

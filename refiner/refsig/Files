@@ -1,4 +1,5 @@
 REFSIG_FILES :=\
+	term_simple_sig\
 	term_sig\
 	term_op_sig\
 	term_man_sig\

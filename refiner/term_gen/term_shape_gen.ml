@@ -1,5 +1,4 @@
 (*
- * Compute the "shape" of the term that can be used for reductions.
  * Terms are reduced to these templates for indexing
  * purposes.  Each template just contains information
  * about the opname, the order and types of params,
@@ -9,9 +8,9 @@
 open Printf
 
 open Opname
-open Term_std
+open Term_simple_sig
 
-module TermShape =
+module TermShape (Term : TermSimpleSig) =
 struct
    open Term
 
@@ -34,7 +33,10 @@ struct
     * When computing the shape, we don't allow meta-parameters.
     * Raises Invalid_argument if this happens.
     *)
-   let shape_of_term { term_op = { op_name = name; op_params = params }; term_terms = bterms } =
+
+   let shape_of_term trm =
+      let t = dest_term trm in
+      let op = t.term_op in
       let param_type = function
          Number _ -> ShapeNumber
        | String _ -> ShapeString
@@ -49,12 +51,12 @@ struct
        | _ ->
             raise (Invalid_argument "Term.shape_of_term")
       in
-      let bterm_type { bvars = vars } =
-         List.length vars
+      let bterm_type bt =
+         List.length (dest_bterm bt).bvars
       in
-         { shape_opname = name;
-           shape_params = List.map param_type params;
-           shape_arities = List.map bterm_type bterms
+         { shape_opname = op.op_name;
+           shape_params = List.map param_type op.op_params;
+           shape_arities = List.map bterm_type t.term_terms
          }
 
    let print_shape out { shape_opname = name; shape_params = params; shape_arities = arities } =
@@ -88,23 +90,5 @@ struct
          output_string out "]{";
          print_arity out arities;
          output_string out "}"
-end
 
-(*
- * $Log$
- * Revision 1.2  1998/05/30 19:18:48  nogin
- * Eliminated white space in empty lines.
- *
- * Revision 1.1  1998/05/28 15:02:38  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.1  1998/05/27 15:14:47  jyh
- * Functorized the refiner over the Term module.
- *
- *
- * -*-
- * Local Variables:
- * Caml-master: "refiner"
- * End:
- * -*-
- *)
+end

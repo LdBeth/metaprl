@@ -5,7 +5,7 @@
 
 open Opname
 
-module type TermSig =
+module type TermSimpleSig =
 sig
    (************************************************************************
     * Types                                                                *
@@ -14,17 +14,17 @@ sig
    (*
     * Operators have a name and parameters.
     *)
-   type level_exp_var
-   type level_exp
-   type param
-   type operator
+   type level_exp_var = level_exp_var'
+   and level_exp = level_exp'
+   and param = param'
+   and operator = operator'
 
    (*
     * A term has an operator, and a finite number of subterms
     * that may be bound.
     *)
-   type term
-   type bound_term
+   and term
+   and bound_term
 
    (************************************************************************
     * Interface types                                                      *
@@ -34,16 +34,16 @@ sig
     * Level expression have offsets from level expression
     * vars, plus a constant offset.
     *)
-   type level_exp_var' = { le_var : string; le_offset : int }
+   and level_exp_var' = { le_var : string; le_offset : int }
 
-   type level_exp' = { le_const : int; le_vars : level_exp_var list }
+   and level_exp' = { le_const : int; le_vars : level_exp_var list }
 
    (*
     * Parameters have a number of simple types.
     *)
-   type object_id = param list
+   and object_id = param list
 
-   type param' =
+   and param' =
       Number of Num.num
     | String of string
     | Token of string
@@ -75,14 +75,14 @@ sig
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
-   type operator' = { op_name : opname; op_params : param list }
+   and operator' = { op_name : opname; op_params : param list }
 
    (*
     * A term has an operator, and a finite number of subterms
     * that may be bound.
     *)
-   type term' = { term_op : operator; term_terms : bound_term list }
-   type bound_term' = { bvars : string list; bterm : term }
+   and term' = { term_op : operator; term_terms : bound_term list }
+   and bound_term' = { bvars : string list; bterm : term }
 
    (* Errors during matching *)
    exception TermMatch of string * term * string
@@ -149,10 +149,16 @@ sig
    val dest_simple_term : term -> (opname * term list)
    val is_simple_term_opname : opname -> term -> bool
    val dest_simple_term_opname : opname -> term -> term list
+
+   val mk_simple_bterm : term -> bound_term
+   val dest_simple_bterm : term -> bound_term -> term
 end
 
 (*
  * $Log$
+ * Revision 1.1  1998/06/03 15:23:28  jyh
+ * Generalized many the term_addr, term_man, and term_shape modules.
+ *
  * Revision 1.3  1998/06/01 19:53:44  jyh
  * Working addition proof.  Removing polymorphism from refiner(?)
  *
