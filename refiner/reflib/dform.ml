@@ -71,7 +71,7 @@ let debug_dform_depth =
 (*
  * Print to term tagged buffers.
  *)
-type buffer = term Rformat.buffer
+type buffer = Rformat.buffer
 
 (*
  * A display form printer knows about this term, and
@@ -507,8 +507,6 @@ let format_short_term base shortener =
       in
          if parenflag then
             format_string buf "(";
-         if is_external then
-            format_tzone buf t;
          begin
             match printer with
                DFPrinter f ->
@@ -531,8 +529,6 @@ let format_short_term base shortener =
                    | _ -> raise (Invalid_argument("Dform.format_short_term"))
                   end
          end;
-         if is_external then
-            format_ezone buf;
          if parenflag then
             format_string buf ")";
 

@@ -56,7 +56,7 @@
  * TYPES                                                                *
  ************************************************************************)
 
-type 'tag buffer
+type buffer
 
 (*
  * The BufferOverflow exception is raised when too much visible text is
@@ -72,8 +72,8 @@ exception BufferOverflow
 (*
  * Buffer creation.
  *)
-val new_buffer : unit -> 'tag buffer
-val clear_buffer : 'tag buffer -> unit
+val new_buffer : unit -> buffer
+val clear_buffer : buffer -> unit
 
 (*
  * Specify the max number of characters in the buffer.
@@ -81,59 +81,58 @@ val clear_buffer : 'tag buffer -> unit
  * is already too large.  You will get the exception
  * the next time you insert visible text.
  *)
-val format_bound : 'tag buffer -> int -> unit
+val format_bound : buffer -> int -> unit
 
 (*
  * Breaks.
  *)
-val format_cbreak : 'tag buffer -> string -> string -> unit
-val format_sbreak : 'tag buffer -> string -> string -> unit
-val format_hbreak : 'tag buffer -> string -> string -> unit
-val format_space : 'tag buffer -> unit
-val format_hspace : 'tag buffer -> unit
-val format_newline : 'tag buffer -> unit
+val format_cbreak : buffer -> string -> string -> unit
+val format_sbreak : buffer -> string -> string -> unit
+val format_hbreak : buffer -> string -> string -> unit
+val format_space : buffer -> unit
+val format_hspace : buffer -> unit
+val format_newline : buffer -> unit
 
 (*
  * Break zones.
  *)
-val zone_depth   : 'tag buffer -> int
-val format_lzone : 'tag buffer -> unit
-val format_szone : 'tag buffer -> unit
-val format_hzone : 'tag buffer -> unit
-val format_ezone : 'tag buffer -> unit
-val format_izone : 'tag buffer -> unit
-val format_tzone : 'tag buffer -> 'tag -> unit
+val zone_depth   : buffer -> int
+val format_lzone : buffer -> unit
+val format_szone : buffer -> unit
+val format_hzone : buffer -> unit
+val format_ezone : buffer -> unit
+val format_izone : buffer -> unit
 
 (*
  * Margins.
  *)
-val format_pushm : 'tag buffer -> int -> unit
-val format_pushm_str : 'tag buffer -> string -> unit
-val format_popm : 'tag buffer -> unit
+val format_pushm : buffer -> int -> unit
+val format_pushm_str : buffer -> string -> unit
+val format_popm : buffer -> unit
 
 (*
  * Printers.
  *)
-val format_char : 'tag buffer -> char -> unit
-val format_string : 'tag buffer -> string -> unit
-val format_raw_string : 'tag buffer -> string -> unit
-val format_quoted_string : 'tag buffer -> string -> unit
-val format_int : 'tag buffer -> int -> unit
-val format_num : 'tag buffer -> Mp_num.num -> unit
+val format_char : buffer -> char -> unit
+val format_string : buffer -> string -> unit
+val format_raw_string : buffer -> string -> unit
+val format_quoted_string : buffer -> string -> unit
+val format_int : buffer -> int -> unit
+val format_num : buffer -> Mp_num.num -> unit
 
 (*
  * Collecting output.
  *)
 val default_width : int (* 80 *)
-val print_to_channel : int -> 'tag buffer -> out_channel -> unit
-val print_to_string : int -> 'tag buffer -> string
-val print_to_html : int -> 'tag buffer -> out_channel -> (int * 'tag) list
-val print_to_tex : int -> 'tag buffer -> out_channel -> unit
+val print_to_channel : int -> buffer -> out_channel -> unit
+val print_to_string : int -> buffer -> string
+val print_to_html : int -> buffer -> out_channel -> unit
+val print_to_tex : int -> buffer -> out_channel -> unit
 
 (*
  * Special case: 1-line buffer.
  *)
-val line_format : int -> ('tag buffer -> unit) -> string
+val line_format : int -> (buffer -> unit) -> string
 
 (*
  * -*-

@@ -336,7 +336,7 @@ struct
    let standard_opnames = [
       (* No subterms, no params *)
       "lzone"  , [], []; "hzone"   , [], []; "szone"   , [], []; "izone"  , [], [];
-      "tzone"  , [], []; "ezone"   , [], []; "space"   , [], []; "hspace" , [], [];
+      "ezone"  , [], []; "space"   , [], []; "hspace" , [], [];
       "newline", [], []; "popm"    , [], []; "pushfont", [ShapeString], []; "popfont", [], [];
       "parens" , [], []; "internal", [], [];
       (* Some params *)

@@ -43,7 +43,7 @@ sig
    type meta_term
    type address
 
-   type buffer = term Rformat.buffer
+   type buffer = Rformat.buffer
 
    (************************************************************************
     * PRINTERS                                                             *

@@ -51,7 +51,7 @@ type dform_base
 (*
  * Print to term tagged buffers.
  *)
-type buffer = term Rformat.buffer
+type buffer = Rformat.buffer
 
 (*
  * A display form printer knows about this term, and

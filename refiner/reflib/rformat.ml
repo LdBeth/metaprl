@@ -81,12 +81,11 @@ let default_width = 80
 (*
  * Identify the zone types.
  *)
-type 'tag zone_tag =
+type zone_tag =
    LZoneTag
  | HZoneTag
  | SZoneTag
  | IZoneTag
- | TZoneTag of 'tag
  | MZoneTag of int * string
 
 (*
@@ -105,10 +104,9 @@ type 'tag zone_tag =
  *      HZone: all Breaks are takes in a hard zone
  *      SZone: either all Breaks are taken, or they are not
  *      IZone: no lines breaks or margin control
- *      TZone: tag the enclosing block
  *      MZone: push the left margin to the current column plus the offset
  *)
-type 'tag print_command =
+type print_command =
    (* Printing text, keep the length *)
    Text of int * string
 
@@ -123,14 +121,14 @@ type 'tag print_command =
    (*
     * Inlined buffer.
     *)
- | Inline of 'tag buffer
+ | Inline of buffer
 
 (*
  * This is the info that is computed once a buffer has
  * been formatted.
  *)
-and 'tag formatted_info =
-   { formatted_commands : 'tag print_command list;
+and formatted_info =
+   { formatted_commands : print_command list;
      formatted_breaks : bool array;     (* Flags for breaks that were taken *)
      formatted_col : int;               (* Starting column *)
      formatted_maxx : int;              (* Max layout column *)
@@ -144,46 +142,46 @@ and 'tag formatted_info =
  *   formatting_index: total number of breaks inserted so far
  *   formatting_buf: current buffer being inserted into
  *)
-and 'tag unformatted_info =
-   { unformatted_commands : 'tag print_command list;
+and unformatted_info =
+   { unformatted_commands : print_command list;
      unformatted_index : int
    }
 
-and 'tag formatting_info =
-   { mutable formatting_commands : 'tag print_command list;
+and formatting_info =
+   { mutable formatting_commands : print_command list;
      mutable formatting_index : int;
-     formatting_buf : 'tag buffer
+     formatting_buf : buffer
    }
 
-and 'tag formatting_stack =
-   { mutable formatting_stack : 'tag formatting_info list }
+and formatting_stack =
+   { mutable formatting_stack : formatting_info list }
 
 (*
  * This is the info collected for the buffer.
  *)
-and 'tag format_info =
-   Formatted of 'tag formatted_info
- | Unformatted of 'tag unformatted_info
- | Formatting of 'tag formatting_stack
+and format_info =
+   Formatted of formatted_info
+ | Unformatted of unformatted_info
+ | Formatting of formatting_stack
 
 (*
  * Input data is formatted on a stack.
  *)
-and 'tag buffer =
+and buffer =
    { (* What format is this zone *)
-     buf_tag : 'tag zone_tag;
+     buf_tag : zone_tag;
 
      (* Name of this zone *)
      buf_index : int;
 
      (* Compiled info about this buffer *)
-     mutable buf_info : 'tag format_info;
+     mutable buf_info : format_info;
 
      (* Parent buffer to notify when the format changes *)
-     buf_parent : 'tag buffer option;
+     buf_parent : buffer option;
 
      (* Save the root buffer *)
-     buf_root : 'tag root
+     buf_root : root
    }
 
 (*
@@ -193,7 +191,7 @@ and 'tag buffer =
  *    root_bound: max number of visible characters in the buffer
  *    root_count: number of visible characters in the buffer
  *)
-and 'tag root =
+and root =
    { mutable root_index : int;
      mutable root_bound : int;
      mutable root_count : int
@@ -204,14 +202,12 @@ and 'tag root =
  * a function to print to strings,
  * and a function to print tags.
  *)
-type 'tag printer =
+type printer =
    { print_string : string -> unit;
      print_invis : string -> unit;
      print_tab : int * string -> unit;
-     print_begin_block : 'tag buffer -> int -> unit;
-     print_end_block : 'tag buffer -> int -> unit;
-     print_begin_tag : 'tag buffer -> 'tag -> unit;
-     print_end_tag : 'tag buffer -> 'tag -> unit
+     print_begin_block : buffer -> int -> unit;
+     print_end_block : buffer -> int -> unit;
    }
 
 (*
@@ -366,9 +362,6 @@ let format_szone buf =
 let format_izone buf =
    push_zone buf IZoneTag
 
-let format_tzone buf tag =
-   push_zone buf (TZoneTag tag)
-
 let format_pushm buf off =
    let off =
       if off < 0 then
@@ -470,7 +463,6 @@ let rec get_soft_binder buf =
                      head.formatting_index <- index;
                      index
 
-             | TZoneTag _
              | MZoneTag _ ->
                   (* These zones are invisible to binders *)
                   search tl
@@ -498,7 +490,6 @@ let rec get_hard_binder buf =
                   (* Return the hard break binder *)
                   0
 
-             | TZoneTag _
              | MZoneTag _ ->
                   (* These zones are invisible to binders *)
                   search tl
@@ -913,9 +904,6 @@ and search_zone buf stack lmargin rmargin col maxx breaks search =
     | IZoneTag ->
          (* All text inside is invisible to margin calculations *)
          col, maxx
-    | TZoneTag _ ->
-         (* Tag doesn't affect the breaking *)
-         search_tzone buf stack lmargin rmargin col maxx breaks search
     | MZoneTag (off, str) ->
          (* Adjust the offset, so we don't go too far right *)
          let col' = col + off in
@@ -1109,8 +1097,6 @@ and print_zone buf rmargin col printer linear =
               print_tab = print_arg1_invis;
               print_begin_block = print_arg2_invis;
               print_end_block = print_arg2_invis;
-              print_begin_tag = print_arg2_invis;
-              print_end_tag = print_arg2_invis
             }
          in
             if linear then
@@ -1122,12 +1108,6 @@ and print_zone buf rmargin col printer linear =
          printer.print_begin_block buf (col + off);
          let col = print_tzone buf rmargin col printer in
             printer.print_end_block buf (col + off);
-            col
-
-    | TZoneTag tag ->
-         printer.print_begin_tag buf tag;
-         let col = print_tzone buf rmargin col printer in
-            printer.print_end_tag buf tag;
             col
 
 let print_buf buf rmargin printer =
@@ -1155,8 +1135,6 @@ let make_channel_printer out =
         print_tab = print_tab;
         print_begin_block = print_arg2_invis;
         print_end_block = print_arg2_invis;
-        print_begin_tag = print_arg2_invis;
-        print_end_tag = print_arg2_invis
       }
 
 (*
@@ -1176,8 +1154,6 @@ let make_string_printer () =
         print_tab = print_tab;
         print_begin_block = print_arg2_invis;
         print_end_block = print_arg2_invis;
-        print_begin_tag = print_arg2_invis;
-        print_end_tag = print_arg2_invis
       }
    in
    let get_string () =
@@ -1212,10 +1188,9 @@ let make_string_printer () =
  * The prefix is the white space that is inserted to
  * get the left margin right.
  *)
-type 'tag html_buffer =
+type html_buffer =
    { mutable html_current_line : (bool * string) list;
      mutable html_prefix : string;
-     mutable html_tags : (int * 'tag) list;
      html_out : out_channel
    }
 
@@ -1326,49 +1301,21 @@ let html_tab buf (col, _) =
             output_string buf.html_out spacer
 
 (*
- * Begin a tagged block.
- *)
-let html_begin_tag buf buffer _ =
-   match buffer.buf_tag with
-      TZoneTag t ->
-         let index = buffer.buf_index in
-            buf.html_tags <- (index, t) :: buf.html_tags;
-            (* buf.html_current_line <- (false, sprintf "<block id=term%d>" index) :: buf.html_current_line *)
-    | _ ->
-         raise (Invalid_argument "html_begin_tag")
-
-let html_end_tag buf _ _ =
-   (* buf.html_current_line <- (false, "</block>") :: buf.html_current_line *)
-   ()
-
-(*
  * An HTML printer.
  *)
 let make_html_printer out =
    let buf =
       { html_current_line = [];
         html_out = out;
-        html_tags = [];
         html_prefix = ""
       }
    in
-   let printer =
       { print_string = html_print_string buf;
         print_invis = html_print_invis buf;
         print_tab = html_tab buf;
         print_begin_block = print_arg2_invis;
         print_end_block = print_arg2_invis;
-        print_begin_tag = html_begin_tag buf;
-        print_end_tag = html_end_tag buf;
       }
-   in
-   let get_info () =
-      let tags = buf.html_tags in
-         buf.html_tags <- [];
-         buf.html_prefix <- "";
-         tags
-   in
-      get_info, printer
 
 (*
  * We hack the indentation in the HTML printer.
@@ -1378,10 +1325,9 @@ let make_html_printer out =
  * The prefix is the white space that is inserted to
  * get the left margin right.
  *)
-type 'tag tex_buffer =
+type tex_buffer =
    { mutable tex_current_line : (bool * string) list;
      mutable tex_prefix : string;
-     mutable tex_tags : (int * 'tag) list;
      tex_out : out_channel
    }
 
@@ -1549,47 +1495,21 @@ let tex_tab buf (col, _) =
             buf.tex_current_line <- (false, spacer) :: buf.tex_current_line
 
 (*
- * Begin a tagged block.
- *)
-let tex_begin_tag buf buffer _ =
-   match buffer.buf_tag with
-      TZoneTag t ->
-         let index = buffer.buf_index in
-            buf.tex_tags <- (index, t) :: buf.tex_tags
-    | _ ->
-         raise (Invalid_argument "tex_begin_tag")
-
-let tex_end_tag buf _ _ =
-   ()
-
-(*
  * A TeX printer.
  *)
 let make_tex_printer out =
    let buf =
       { tex_current_line = [];
         tex_out = out;
-        tex_tags = [];
         tex_prefix = ""
       }
    in
-   let printer =
       { print_string = tex_print_string buf;
         print_invis = tex_print_invis buf;
         print_tab = tex_tab buf;
         print_begin_block = print_arg2_invis;
         print_end_block = print_arg2_invis;
-        print_begin_tag = tex_begin_tag buf;
-        print_end_tag = tex_end_tag buf;
       }
-   in
-   let get_info () =
-      let tags = buf.tex_tags in
-         buf.tex_tags <- [];
-         buf.tex_prefix <- "";
-         tags
-   in
-      get_info, printer
 
 (*
  * Generic printer.
@@ -1614,18 +1534,15 @@ let print_to_string rmargin buf =
  * Print to HTML.
  *)
 let print_to_html rmargin buf out =
-   let get_info, printer = make_html_printer out in
-      print_to_printer buf rmargin printer;
-      get_info ()
+   print_to_printer buf rmargin (make_html_printer out)
 
 (*
  * TeX formatting.
  *)
 let print_to_tex rmargin buf out =
-   let get_info, printer = make_tex_printer out in
-      output_string out "\\iftex\\begin{tabbing}\n";
-      print_to_printer buf rmargin printer;
-      output_string out "\\end{tabbing}\\fi\n"
+   output_string out "\\iftex\\begin{tabbing}\n";
+   print_to_printer buf rmargin (make_tex_printer out);
+   output_string out "\\end{tabbing}\\fi\n"
 
 (*
  * Print to a single line.

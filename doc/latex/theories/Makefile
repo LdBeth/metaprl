@@ -16,7 +16,6 @@ DEFTEXTHEORIES=\
 	fol\
 	itt\
 	czf\
-	mc\
 	fir
 
 .PHONY: doc theories ocaml

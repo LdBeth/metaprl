@@ -67,7 +67,7 @@ struct
    type meta_term = TermMeta.meta_term
    type address = TermAddr.address
 
-   type buffer = term Rformat.buffer
+   type buffer = Rformat.buffer
 
    (************************************************************************
     * PRINTERS                                                             *
