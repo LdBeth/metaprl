@@ -125,7 +125,7 @@ if $(equal $(OSTYPE), Win32)
    #
    # CAMLLIB should be set in the environment
    #
-   CAMLLIB = $(dir $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT)))
+   CAMLLIB = $(dir $(string $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT))))
    CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
    export
 
@@ -343,6 +343,11 @@ LMINSTALL = $(MPINSTALL)
 # Always use -linkall on libraries
 #
 OCAML_LIB_FLAGS += -linkall
+
+# Bah, someone did something wrong here.
+SSL_WIN32 = c:\OpenSSL
+SSL_LIB_WIN32 = $(SSL_WIN32)/lib
+SSL_INC_WIN32 = $(SSL_WIN32)/include
 
 if $(SSL_ENABLED)
     if $(equal $(OSTYPE), Win32)
