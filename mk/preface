@@ -37,7 +37,6 @@ ifndef OCAMLC
 endif
 ifndef OCAMLCP
    OCAMLCP = $(OCAMLC)
-   OCAMLCPOPT =
 endif
 ifndef OCAMLMKTOP
    OCAMLMKTOP = ocamlmktop

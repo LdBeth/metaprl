@@ -56,7 +56,11 @@ profile_all:
 		if (echo Making $$i...; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
-profile_byte: clean all profile_clean profile_all
+profile_byte:
+	@$(MAKE) profile_clean
+	@$(MAKE) all
+	@$(MAKE) profile_clean
+	@$(MAKE) profile_all
 
 profile: 
 	@$(MAKE) filter

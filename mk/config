@@ -14,8 +14,13 @@ include $(ROOT)/mk/preface
 # Use this when compiling with threads.
 # This is tested only on Linux i386.
 #
-THREADS = -thread
-THREADSLIB = $(CAMLLIB)/threads/threads.cma
+ifndef OCAMLCPOPT
+	THREADS = -thread
+	THREADSLIB = $(CAMLLIB)/threads/threads.cma
+else
+	THREADS = -I $(CAMLLIB)/threads
+	THREADSLIB = $(CAMLLIB)/profiling.cmo $(CAMLLIB)/threads/threads.cma
+endif
 OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
 LIBTHREADS = -ccopt -L$(ROOT)/lib -cclib -lthreads -cclib -lunix -cclib -lpthread
 OPTTHREADS = -ccopt -L$(ROOT)/lib -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(EXT_PROF) -cclib -lpthread
