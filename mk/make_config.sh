@@ -53,6 +53,10 @@ CCC=$CCC
 # Recomended value - between #_of_processors and 2 * #_of_processors
 # On mojave.cs.cornell.edu and tulare.cs.cornell.edu use 4.
 #
+# WARNING: Their is some problem with make 3.77 that prevents it
+# from understanding our Makefiles correctly. If you have make 3.77
+# (run make -v to be sure), use MAKE_JOBS=1
+#
 MAKE_JOBS=$MAKE_JOBS
 
 #
