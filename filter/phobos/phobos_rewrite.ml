@@ -22,6 +22,12 @@
  * Email: granicz@cs.caltech.edu
  *)
 
+open Printf
+open Mp_debug
+open Mp_resource
+
+open Conversionals_boot.Conversionals
+
 open Phobos_type
 open Phobos_constants
 open Phobos_util
@@ -178,8 +184,25 @@ let apply_rewrite rw terms =
         | _ ->
             raise(Invalid_argument("apply_rewrite"))
 
+(*
+ * Conversionals.
+ *)
+let _ = recompute_top ()
+let apply_rw_top = Conversionals_boot.Conversionals.apply_rewrite top_bookmark
+
+let iforms_conv iforms =
+   let patterns =
+      List.map (fun ((redex, _), (contractum, _)) ->
+         create_iform "phobos" false redex contractum) iforms
+   in
+      match patterns with
+         [] ->
+            idC
+       | _ ->
+            repeatC (higherC (applyAllC patterns))
+
 (* Rewrite {terms} according to the first matching rule in rules. *)
-let apply_first_rewrite pos rules terms  =
+let apply_first_rewrite pos rules terms conversion =
    let result = ref (mk_term (token_operator_of "dummy_string_term") []) in
    try
       if List.length rules = 0 then
@@ -199,9 +222,13 @@ let apply_first_rewrite pos rules terms  =
       raise Failed_rewrite
    with
       Got_it ->
-(* ATN: removed conversion to be applied to resulting term 
-         Mp_mc_compile.apply_conversion conversion !result *)
-         !result
+         apply_rw_top conversion !result
     | Failed_rewrite ->
          raise (RewriteException (pos, "No matching rewrite rule found"))
 
+let apply_post_rewrites term iform_bunch =
+   let term =
+      List.fold_left (fun term iforms ->
+         apply_rw_top (iforms_conv iforms) term) term iform_bunch
+   in
+      term

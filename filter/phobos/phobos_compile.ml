@@ -22,8 +22,11 @@
  * Email: granicz@cs.caltech.edu
  *)
 
+open Printf
+open Mp_debug
 open Phobos_type
 open Phobos_exn
+open Phobos_rewrite
 
 (*
  * Parse Phobos file.
@@ -70,16 +73,17 @@ let compile_with_saved_grammar paths gfile str =
       gst.grammar_inline_forms,
       gst.grammar_local_rewrites
 
-(*
- * TEMP: no post-rewrites are applied.
- *)
 let term_of_string paths gfile s =
    let cgfile = Phobos_util.filename_of_compiled_grammar gfile in
-   let term, _, _, _ =
+   let term, post_rws, inline_forms, local_rws =
       if Sys.file_exists cgfile then
          compile_with_saved_grammar paths cgfile s
       else
          compile_with_source_grammar [] gfile s
    in
-      term
+   let post_rws =
+      List.map (fun iforms ->
+         local_rws @ iforms) post_rws
+   in
+      apply_post_rewrites term post_rws
    

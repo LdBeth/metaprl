@@ -29,6 +29,9 @@
  * Email: granicz@cs.caltech.edu
  *)
 
+open Printf
+open Mp_debug
+
 open Phobos_debug
 open Phobos_type
 open Phobos_parse_state
@@ -575,7 +578,7 @@ let create_parsing_table name gst penv =
  * Return new stack, and new position in the input string.
  *)
 
-let perform_action clenv penv ptable rewrites stack sym matched_string input_pos pos action =
+let perform_action clenv penv ptable rewrites stack sym matched_string input_pos pos action conv =
    match action with
       Shift i ->
          if !debug_phobos then begin
@@ -602,7 +605,7 @@ let perform_action clenv penv ptable rewrites stack sym matched_string input_pos
          (* Find all lexical rewrites for sym *)
          let lrw_rules = lex_rewrite_find_unsafe rewrites.rw_lexer sym in
          (* Choose the first rule that matches and apply it *)
-         let res_term = apply_first_rewrite pos lrw_rules [term] in
+         let res_term = apply_first_rewrite pos lrw_rules [term] conv in
          let stack = stack_push stack (Sta_term res_term) in
          let stack = stack_push stack (Sta_state i) in
             stack, input_pos + 1
@@ -660,7 +663,7 @@ let perform_action clenv penv ptable rewrites stack sym matched_string input_pos
          (* Fetch the rewrites that apply *)
          let rw_rules = rewrite_find_unsafe rewrites.rw_parser prod_id in
          (* Choose the first rule that matches and apply it *)
-         let res_term = apply_first_rewrite pos rw_rules terms in
+         let res_term = apply_first_rewrite pos rw_rules terms conv in
 
          let last_state = current_state_of_stack stack in
          (* Push result term on stack *)
@@ -700,6 +703,8 @@ let parse_source gst (clenv: clexer_env) penv ptable source =
          print_string "Local rewrites:\n";
          print_pre_term_rewrites gst.grammar_local_rewrites
       end;
+   (* Get the conversional that applies all local rewrites *)
+   let conv = iforms_conv gst.grammar_local_rewrites in
    (* We compile each terms->term pattern in penv.lexer/parser_rewrites *)
    let lexer_crewrites = compile_lexer_rewrites clenv.clexer_rewrites in
    let parser_crewrites = compile_parser_rewrites penv.parser_rewrites in
@@ -751,7 +756,7 @@ let parse_source gst (clenv: clexer_env) penv ptable source =
                 | _ ->
                      select_action actions
             in
-            let result = perform_action clenv penv ptable rewrites !stack psym matched_string !input_pos pos action in
+            let result = perform_action clenv penv ptable rewrites !stack psym matched_string !input_pos pos action conv in
                stack := fst result;
                input_pos := snd result
          done;

@@ -6,7 +6,7 @@ ROOT := ../..
 
 include $(ROOT)/mk/preface
 
-INCLUDE = -I . -I $(ROOT)/lib -I $(CAMLP4LIB)
+INCLUDE = -I . -I $(ROOT)/lib -I $(CAMLP4LIB) -I $(ROOT)/filter/boot
 
 OCAMLFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
 
