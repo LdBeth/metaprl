@@ -61,7 +61,7 @@ let stringbuf = Buffer.create 32
 let string_start = ref (0, 0)
 
 let string_add_char c =
-   Buffer.add_string stringbuf 
+   Buffer.add_string stringbuf
 
 let pop_string lexbuf =
    let s = Buffer.contents stringbuf in
@@ -103,7 +103,7 @@ let char_normal = [' '-'\255']
 (*
  * Main lexer.
  *)
-rule main = parse 
+rule main = parse
      [' ' '\t']+        { main lexbuf }
    | '\n'               { set_next_line lexbuf; main lexbuf }
    | '_'                { TokId ("_", set_lexeme_position lexbuf) }
@@ -129,7 +129,7 @@ rule main = parse
    | name               { let pos = set_lexeme_position lexbuf in
                           let old_id = Lexing.lexeme lexbuf in
                           let id = String.lowercase old_id in
-                          match id with 
+                          match id with
                              "module" ->
                               TokModule pos
                            | "include" ->
@@ -146,6 +146,8 @@ rule main = parse
                               TokTokens pos
                            | "rewrites" ->
                               TokRewrites pos
+                           | "sequent" ->
+                              TokSequent pos
                            | _ ->
                               TokId (old_id, pos)
                         }
@@ -153,7 +155,7 @@ rule main = parse
                           let old_id = Lexing.lexeme lexbuf in
                           let old_id = String.sub old_id 1 (String.length old_id - 1) in
                           let id = String.lowercase old_id in
-                          match id with 
+                          match id with
                            | "longest" ->
                               TokLongest pos
                            | "first" ->
@@ -174,7 +176,7 @@ rule main = parse
                           let old_id = Lexing.lexeme lexbuf in
                           let old_id = String.sub old_id 1 (String.length old_id - 1) in
                           let id = String.lowercase old_id in
-                          match id with 
+                          match id with
                            | "nonassoc" ->
                               TokNonAssoc pos
                            | "left" ->
@@ -210,6 +212,8 @@ rule main = parse
    | ","                { let pos = set_lexeme_position lexbuf in TokComma pos }
    | "{"                { let pos = set_lexeme_position lexbuf in TokLeftBrace pos }
    | "}"                { let pos = set_lexeme_position lexbuf in TokRightBrace pos }
+   | "("                { let pos = set_lexeme_position lexbuf in TokLeftParen pos }
+   | ")"                { let pos = set_lexeme_position lexbuf in TokRightParen pos }
    | "["                { let pos = set_lexeme_position lexbuf in TokLeftBrack pos }
    | "]"                { let pos = set_lexeme_position lexbuf in TokRightBrack pos }
    | "!"                { let pos = set_lexeme_position lexbuf in TokBang pos }
@@ -217,6 +221,7 @@ rule main = parse
    | "?"                { let pos = set_lexeme_position lexbuf in TokQuestionMark pos }
    | "<"                { let pos = set_lexeme_position lexbuf in TokLe pos }
    | ">"                { let pos = set_lexeme_position lexbuf in TokGe pos }
+   | ">-"               { let pos = set_lexeme_position lexbuf in TokTurnstyle pos }
 
    | eof                { TokEof }
    | _                  { let pos = set_lexeme_position lexbuf in
@@ -224,7 +229,7 @@ rule main = parse
                           (String.escaped (Lexing.lexeme lexbuf))))
                         }
 
-and string = parse 
+and string = parse
      "\"" | eof         { () }
    | '\n'               { set_next_line lexbuf; string lexbuf }
    | "\\n"              { Buffer.add_char stringbuf '\n'; string lexbuf }
@@ -234,8 +239,8 @@ and string = parse
    | _                  { Buffer.add_string stringbuf (Lexing.lexeme lexbuf);
                           string lexbuf
                         }
-   
-and comment = parse 
+
+and comment = parse
      "(*"               { comment lexbuf; comment lexbuf }
    | "/*"               { comment lexbuf; comment lexbuf }
    | "*)"               { () }

@@ -2,7 +2,7 @@
  * Parser for Phobos files.
  * ----------------------------------------------------------------
  *
- * Copyright (C) Adam Granicz, Caltech
+ * Copyright (C) ????-2004, MetaPRL Group
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,14 +18,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Adam Granicz
- * Email: granicz@cs.caltech.edu
+ * Author: Adam Granicz <granicz@cs.caltech.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  */
 
 %{
 open Phobos_debug
 open Opname
 open Lm_num
+open Term_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
@@ -125,6 +126,16 @@ let pho_make_number_term num =
    let param = make_param (Number (num_of_int (fst num))) in
       mk_term (mk_op (make_opname ["number"; "Itt_int_base"]) [param]) []
 
+let mk_sequent_arg terms pos =
+   mk_simple_term (make_opname (term_name_of ("sequent_arg", pos))) terms
+
+let pho_make_sequent arg hyps goal =
+   mk_sequent_term {
+      sequent_args = arg;
+      sequent_hyps = SeqHyp.of_list hyps;
+      sequent_goals = SeqGoal.of_list [goal];
+   }
+
 let rec make_rules (id, pos) = function
    head :: rest ->
       ((id, pos), head) :: make_rules (id, pos) rest
@@ -221,12 +232,17 @@ let include_built_in (s, pos) =
 %token <Phobos_type.pos> TokRightBrace
 %token <Phobos_type.pos> TokLeftBrack
 %token <Phobos_type.pos> TokRightBrack
+%token <Phobos_type.pos> TokLeftParen
+%token <Phobos_type.pos> TokRightParen
 %token <Phobos_type.pos> TokIgnore
 %token <Phobos_type.pos> TokBang
 %token <Phobos_type.pos> TokDot
 %token <Phobos_type.pos> TokQuestionMark
 %token <Phobos_type.pos> TokLe
 %token <Phobos_type.pos> TokGe
+
+%token <Phobos_type.pos> TokSequent
+%token <Phobos_type.pos> TokTurnstyle
 
 %token <Phobos_type.pos> TokStart
 %token <Phobos_type.pos> TokLongest
@@ -340,7 +356,7 @@ term_option:
                                 Term_extend (fst $2, $4)
                               }
  | TokOption                  { raise (ParseError (snd $1, string_add ["Invalid option \""; fst $1; "\""])) }
-     
+
 /*
  * Preamble.
  */
@@ -583,7 +599,7 @@ opt_simple_terms:
 
 simple_term_list_rev:
    simple_term                { [$1] }
- | simple_term_list_rev TokComma simple_term
+ | simple_term_list_rev TokSemi simple_term
                               { $3 :: $1 }
 
 simple_term:
@@ -596,6 +612,28 @@ simple_term:
                               { print_string "so_var["; print_string (fst $1); print_string "]\n"; pho_make_so_var_term $1 $3, union_pos (snd $1) $4 }
  | TokInt                     { pho_make_number_term $1, snd $1 }
  | TokQuestionMark            { pho_make_unique_var_term ("?", $1), $1 }
+ | TokSequent opt_seq_arg TokLeftBrace seq_hyps TokTurnstyle simple_term TokRightBrace
+                              { pho_make_sequent ($2 $1) $4 (fst $6), union_pos $1 $7 }
+
+opt_seq_arg:
+   /* empty */                { mk_sequent_arg [] }
+ | TokLeftBrack opt_simple_terms TokRightBrack
+                              { mk_sequent_arg (List.map fst $2) }
+ | TokLeftParen simple_term TokRightParen
+                              { fun _ -> fst $2 }
+
+seq_hyps :
+   /* empty */                { [] }
+ | seq_hyps_rev               { List.rev $1 }
+
+seq_hyps_rev:
+   seq_hyp                    { [$1] }
+ | seq_hyps_rev TokSemi seq_hyp
+                              { $3 :: $1 }
+
+seq_hyp:
+   identifier TokColon simple_term
+                              { Hypothesis (Lm_symbol.add (fst $1), fst $3) }
 
 /* Opname */
 /* REMARK: name parts are in reverse order */
