@@ -251,6 +251,7 @@ let spec =
     "-o", String (add_string_argv "-o"), "specify output file";
     "-a", Unit (add_argv "-a"), "produce archive file";
     "-S", Unit (add_argv "-S"), "do not remove the assembly file";
+    "-rectypes", Unit (add_argv "-rectypes"), "all arbitrary recursive definitions";
     "-export", Unit set_export, "create ASCII export file";
     "-compact", Unit (add_argv "-compact"), "produce a smaller but slower code";
     "-custom", Unit (add_argv "-custom"), "generate custom executable";

@@ -147,9 +147,10 @@ if true
     OCAMLOPT = MPLIB=$(LIB) $(PRLC) -opt
 
     # Add the extra dependency
-    %.cmi: $(MPINSTALL)
-    %.cmo: $(MPINSTALL)
-    %.cmx: $(MPINSTALL)
+    if $(not $(SLOPPY_DEPENDENCIES))
+        %.cmi: $(MPINSTALL)
+        %.cmo: $(MPINSTALL)
+        %.cmx: $(MPINSTALL)
 
     # Dependency analysis uses -prl flag by default
     OCAMLDEPFLAGS = -prl
