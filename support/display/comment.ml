@@ -155,17 +155,24 @@ dform comment_term_df1 : comment_term{'t} =
 doc <:doc<
    @begin[doc]
    The @code{@docoff} term disables display for text that
-   follows the structured comment.  The @code{@begin[doc]} command
+   follows the structured comment.  The @code{@docon} and @code{@begin[doc]} commands
    re-enables display.
    @end[doc]
 >>
 declare docoff
-doc <:doc< @docoff >>
+declare docon
+doc docoff
 
 dform docoff_df1 : mode[tex] :: docoff =
    izone `"\\texoff" ezone
 
 dform docoff_df2 : except_mode[tex] :: docoff =
+   bf["docoff"]
+
+dform docon_df1 : mode[tex] :: docon =
+   izone `"\\textrue" ezone
+
+dform docon_df1 : except_mode[tex] :: docon =
    bf["docoff"]
 
 (*
@@ -202,6 +209,9 @@ dform tex_comment_item_df5 : tex_comment_item{comment_term{"doc"{'t}}} =
    izone slot["raw", "%\n\\end{tabbing}\\fi\\textrue%\n"] ezone
    't
    izone slot["raw","\\iftex\\begin{tabbing}%\n"] ezone
+
+dform tex_comment_item_df6 : tex_comment_item{comment_term{docon}} =
+   tex_comment_item{comment_term{"doc"{Perv!nil}}}
 
 dform tex_comment_white_df1 : mode[tex] :: comment_white =
    izone slot["raw", " "] ezone
@@ -1055,7 +1065,7 @@ doc <:doc<
 >>
 declare item{'t}
 declare item{'label; 'body}
-doc <:doc< @docoff >>
+doc docoff
 
 dform item_df2 : except_mode[tex] :: item{'t} =
    com_hbreak pushm[3] `"o " 't popm
@@ -1069,9 +1079,9 @@ dform item_df1 : mode[tex] :: item{'t} =
 dform item_df1 : mode[tex] :: item{'t1; 't2} =
    izone `"\\item[" ezone 't1 izone `"]" ezone 't2
 
-doc <:doc< @doc{ } >>
+doc docon
 declare enumerate{'t}
-doc <:doc< @docoff >>
+doc docoff
 declare normal_enumerate{'count; 't}
 
 dform enumerate_df2 : except_mode[tex] :: enumerate{'t} =
@@ -1094,9 +1104,9 @@ dform normal_enumerate_df5 : normal_enumerate{'count; cons{comment_term{item{'t1
 dform enumerate_df1 : mode[tex] :: enumerate{'t} =
    izone `"\\begin{enumerate}" ezone 't izone `"\\end{enumerate}" ezone
 
-doc <:doc< @doc{ } >>
+doc docon
 declare itemize{'t}
-doc <:doc< @docoff >>
+doc docoff
 
 dform itemize_df1 : mode[tex] :: itemize{'t} =
    izone `"\\begin{itemize}" ezone 't izone `"\\end{itemize}" ezone
@@ -1104,9 +1114,9 @@ dform itemize_df1 : mode[tex] :: itemize{'t} =
 dform itemize_df2 : except_mode[tex] :: itemize{'t} =
    't
 
-doc <:doc< @doc{ } >>
+doc docon
 declare description{'t}
-doc <:doc< @docoff >>
+doc docoff
 
 dform description_df1 : mode[tex] :: description{'t} =
    izone `"\\begin{description}" ezone 't izone `"\\end{description}" ezone

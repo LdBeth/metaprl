@@ -168,6 +168,7 @@ declare "end"[name:s]
  * TeX control.
  *)
 declare docoff
+declare docon
 declare noindent
 declare cite[s:s]
 
