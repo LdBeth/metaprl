@@ -18,7 +18,7 @@ CAMLP4_VERSIONS=3.06
 # Theories to compile - default and all
 #
 THEORIES_DEFAULT = base itt
-THEORIES_ALL = base ocaml_doc itt ocaml_sos fol czf phobos sil tptp fir experimental/compile mojave mesa kat
+THEORIES_ALL = base ocaml_doc itt ocaml_sos fol czf phobos sil tptp fir experimental/compile mojave
 # Do not have too many proofs yet: mesa kat
 # Outdated and does not currently compile: lf
 
