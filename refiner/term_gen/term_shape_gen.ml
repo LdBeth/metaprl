@@ -104,6 +104,25 @@ struct
            shape_arities = List.map bterm_type t.term_terms
          }
 
+   (*
+    * Remove quotations.
+    *)
+   let unquote_shape =
+      let rec strip_quotes params =
+         match params with
+            ShapeQuote :: params ->
+               strip_quotes params
+          | _ ->
+               params
+      in
+         (fun shape ->
+               let params = shape.shape_params in
+               let params' = strip_quotes params in
+                  if params' == params then
+                     shape
+                  else
+                     { shape with shape_params = params' })
+
    let eq { shape_opname = name1;
             shape_params = params1;
             shape_arities = arities1

@@ -49,6 +49,7 @@ sig
    val eq : shape -> shape -> bool
    val param_type : param -> shape_param
 
+   val unquote_shape : shape -> shape
    val opname_of_shape : shape -> opname
 
    val sequent_shape : shape (* Any sequent *)

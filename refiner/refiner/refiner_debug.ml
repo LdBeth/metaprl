@@ -2630,6 +2630,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_shape_param "TermShape.param_type" (wrap1 TermShape1.param_type p0_1) (wrap1 TermShape2.param_type p0_2)
 
+      let unquote_shape (p0 : shape) =
+         merge merge_shape "TermShape.unquote_shape" (wrap1 TermShape1.unquote_shape p0) (wrap1 TermShape2.unquote_shape p0)
+
       let opname_of_shape (p0 : shape) =
          merge merge_opname "TermShape.opname_of_shape" (wrap1 TermShape1.opname_of_shape p0) (wrap1 TermShape2.opname_of_shape p0)
 

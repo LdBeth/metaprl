@@ -526,8 +526,10 @@ struct
       cache.opprefix
 
    let rec strip_quotations = function
-      ShapeQuote :: l -> strip_quotations l
-    | l -> l
+      ShapeQuote :: l ->
+         strip_quotations l
+    | l ->
+         l
 
    (*
     * Construct an opname assuming it is declared in the current module.
@@ -1050,7 +1052,7 @@ struct
       eprintf "%a@." Filter_grammar.pp_print_grammar cache.grammar
 
    (*
-    * Check that a term does not contain resudial input forms.
+    * Check that a term does not contain residual input forms.
     *)
    let check_input_term_error debug t1 t2 =
       raise (RefineError ("check_term", StringErrorError (debug,
@@ -1062,17 +1064,15 @@ struct
    let check_input_term cache loc t_root =
       let shapes = cache.shapes in
          iter_down (fun t ->
-               (* XXX: JYH: we should probably strip quotes and check that the original term is legal *)
-               if not (is_var_term t || is_so_var_term t || is_context_term t || is_sequent_term t || is_quoted_term t) then
+               if not (is_var_term t || is_so_var_term t || is_context_term t || is_sequent_term t) then
                   let info =
-                     try snd (ShapeTable.find shapes (shape_of_term t)) with
+                     try snd (ShapeTable.find shapes (unquote_shape (shape_of_term t))) with
                         Not_found ->
                            (* XXX: JYH: we should probably try to make sure *all* terms are declared *)
                            match opname_root (opname_of_term t) with
                               "$unknown" ->
                                  ShapeNormal
                             | _ ->
-
                                  check_input_term_error "undeclared term" t_root t
                   in
                      match info with
@@ -1082,7 +1082,7 @@ struct
                            check_input_term_error "unexpected iform term" t_root t) t_root
 
    let check_input_mterm cache loc mt =
-      iter_mterm (fun t -> check_input_term cache loc t) mt
+      iter_mterm (check_input_term cache loc) mt
 
    (*
     * Grammar.
