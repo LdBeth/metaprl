@@ -48,6 +48,13 @@ let debug_ascii_io =
 let eprintf = Lm_printf.eprintf
 let eflush  = Lm_printf.eflush
 
+(*
+ * When this file changes, we might need to update filter_magic.ml.
+ * The following line is a marker for the automated magic number computation,
+ * _do not delete_.
+ * %%MAGICBEGIN%%
+ *)
+
 module MakeAsciiIO (TM: TermModuleHashSig) =
 struct
    open TM

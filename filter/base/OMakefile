@@ -10,10 +10,80 @@ include Files
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), filterbase, $(BASE_FILES))
 
+########################################################################
+# Magic numbers
+#
+
+#
+# Generate magic numbers for a set of files.
+# The text for the magic numbers is delimited by lines
+# containing %%MAGICBEGIN%% and %%MAGICEND%%.
+#
+ExtractMagicLines(file, files) =
+   stdout = $(fopen $(file), w)
+
+   print = false
+
+   awk($(files))
+   case $'%%MAGICEND%%'
+      print = false
+      export
+   default
+      if $(print)
+         println($0)
+   case $'%%MAGICBEGIN%%'
+      print = true
+      export
+
+   close($(stdout))
+
+ExtractMagic(in, out) =
+   stdout = $(fopen $(out), w)
+   awk($(in))
+   case $'FILTER_MD5:'
+      print($4)
+   close($(stdout))
+
+#
+# The actual program to compute the MD5 digest
+#
+GENMAGIC = $(BIN)/genmagic
+
+#
+# Magic text for the grammars.
+#
+FILTER_MAGIC[] =
+    $(ROOT)/libmojave/util/lm_lexer.ml
+    $(ROOT)/libmojave/util/lm_parser.ml
+    $(ROOT)/refiner/rewrite/rewrite_types.ml
+    $(ROOT)/refiner/refsig/term_sig.mlz
+    $(ROOT)/refiner/term_ds/term_ds_sig.mlz
+    $(ROOT)/refiner/reflib/ascii_io.ml
+
+filter_magic.cmo: .magic
+filter_magic.cmx: .magic
+
+.magic.txt: $(FILTER_MAGIC)
+   ExtractMagicLines($@, $+)
+
+.magic: .magic.txt $(GENMAGIC) filter_magic.ml
+   section eval
+      NEW_MAGIC = $(shell $(GENMAGIC) .magic.txt)
+      ExtractMagic(filter_magic.ml, $@)
+      OLD_MAGIC = $(cat $@)
+      if $(not $(equal $(NEW_MAGIC), $(OLD_MAGIC)))
+         eprintln(!!! )
+         eprintln(!!! The FILTER_MD5 digest recorder in the filter/base/filter_magic.ml file)
+         eprintln(!!! does not match the computed one!)
+         eprintln(!!! The filter/base/filter_magic.ml file needs to be updated.)
+         eprintln(!!! )
+         eprintln(!!! Recorded hash - $(OLD_MAGIC); computed hash - $(NEW_MAGIC))
+         exit(1)
+
 #
 # Clean up
 #
 clean:
-    $(CLEAN)
+    $(CLEAN) .magic .magic.txt
 
 all: filterbase$(LIB_SUFFIX)

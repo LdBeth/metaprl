@@ -35,9 +35,15 @@ open File_type_base
 
 (************************************************************************
  * FILE FORMAT VERSIONS SUPPORTED                                       *
- ************************************************************************)
-(*
- * The arguments for pack_version are: major version number, minor sub-version number, revision number
+ ************************************************************************
+ *
+ * Current MD5 hash of the summary-related types (as computed by OMake):
+ * FILTER_MD5: 0x2ff10604
+ *
+ * The arguments for pack_version are:
+ *    major version number, minor sub-version number, revision number
+ * In the list of versions, the first version is the version number of what we write,
+ * and the full list gives the versions we are capable of reading.
  *)
 
 (*
