@@ -2,12 +2,15 @@
  * This is just a test file to see if the library works.
  *)
 
-open Term
+declare int
 
-val t : term
+axiom intFormation 'H : sequent ['ext] { 'H >- int }
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/08 17:56:48  jyh
+ * Add a sequent.
+ *
  * Revision 1.2  1998/04/06 21:39:55  jyh
  * Test program with a sequent.
  *
