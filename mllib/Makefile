@@ -113,3 +113,5 @@ opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES)
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MAIN).cma $(MLIFILES) $(CMIFILES) $(MPLIB)
 
+clean::
+	$(RM) comment_parse.ml
