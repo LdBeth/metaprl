@@ -68,7 +68,7 @@ let is_free_var v t = SymbolSet.mem (free_vars_set t) v
  * Special terms  *
  ******************)
 
-type fun_name = 
+type fun_name =
    FunOp of operator
  | FunSOVar of var * var list
  | FunSequent of operator
@@ -93,7 +93,7 @@ let my_mk_term op bterms =
       end
     | FunOp op ->
          mk_term op bterms
-         
+
 (******************
  * MM UNIFICATION *
  ******************)
@@ -183,7 +183,7 @@ let new_ts () = incr init_timestamp_ref;
 
 let opsymb_equal op1 op2 =
    match op1, op2 with
-      (FunOp op1, FunOp op2) | (FunSequent op1, FunSequent op2) -> 
+      (FunOp op1, FunOp op2) | (FunSequent op1, FunSequent op2) ->
          let op1 = dest_op op1 in
          let op2 = dest_op op2 in
             Opname.eq op1.op_name op2.op_name && op1.op_params = op2.op_params
@@ -548,55 +548,39 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
       let x = dest_var t0 in
       if is_var_term t1 then
          let y = dest_var t1 in
-            (try let vx=(List.assoc x b_asslist0) in
-                try let vy=(List.assoc y b_asslist1) in
-                 (let multit0 ={fsymb=Bvar vx;
-                                args=[]
-                               }
-                  and multit1 ={fsymb=Bvar vy;
-                                args=[]
-                               }
-                    in
+            if List.mem_assoc x b_asslist0 then
+               if List.mem_assoc y b_asslist1 then
+                  let vx = List.assoc x b_asslist0 in
+                  let vy = List.assoc y b_asslist1 in
+                  let multit0 = { fsymb=Bvar vx; args= [] } in
+                  let multit1 = { fsymb=Bvar vy; args= [] } in
                      check_header_equality multit0 multit1 (-1);
-                     { m_t = [multit0];
-                       s_t = Queue.create () }
-                 )
-                with Not_found -> raise(Clash(ClashTerms(t0,t1)))
-            with Not_found ->
-               ((if (List.mem_assoc y b_asslist1) then raise(Clash(ClashTerms(t0,t1))));
-                  match SymbolSet.mem consts x, SymbolSet.mem consts y with
-                  true,true ->
-                     if x=y then
-                      { m_t =
-                           [{ fsymb = (Cnst (V x));
-                              args = [] }];
-                        s_t = Queue.create () }
-                     else raise(Clash(ClashTerms(t0,t1)))
-                | true,false ->
-                     let q = Queue.create () in
-                     Queue.add (get_variable y u var_hashtbl) q;
-                     { m_t = [{fsymb = (Cnst (V x));
-                               args = [] }];
-                       s_t = q }
-                | false,true ->
-                     let q = Queue.create () in
-                     Queue.add (get_variable x u var_hashtbl) q;
-                     { m_t = [{fsymb = (Cnst (V y));
-                                args = [] }];
-                       s_t = q }
-                | false,false ->
-                    let q = Queue.create () in
-                    Queue.add (get_variable x u var_hashtbl) q;
-                    if not (x=y) then
-                    Queue.add (get_variable y u var_hashtbl) q;
+                     { m_t = [multit0]; s_t = Queue.create () }
+                else
+                  raise(Clash(ClashTerms(t0,t1)))
+            else begin
+               if (List.mem_assoc y b_asslist1) then raise(Clash(ClashTerms(t0,t1)));
+               let q = Queue.create () in
+               if SymbolSet.mem consts x then begin
+                  begin if SymbolSet.mem consts y then
+                     if x <> y then raise(Clash(ClashTerms(t0,t1))) else ()
+                  else
+                     Queue.add (get_variable y u var_hashtbl) q
+                  end;
+                  { m_t = [{ fsymb = Cnst (V x); args = [] }]; s_t = q }
+               end else begin
+                  Queue.add (get_variable x u var_hashtbl) q;
+                  if SymbolSet.mem consts y then
+                     { m_t = [{ fsymb = Cnst (V y); args = [] }]; s_t = q }
+                  else begin
+                    if x <> y then Queue.add (get_variable y u var_hashtbl) q;
                     { m_t = []; s_t = q }
-               )
-            )
+                  end
+               end
+         end
       else begin
          if (List.mem_assoc x b_asslist0)||(SymbolSet.mem consts x)
             then raise(Clash(ClashTerms(t0,t1)));
-           (* try let vx=(List.assoc x b_asslist0) in (raise Clash )
-              with Not_found -> *)
          let q = Queue.create () in
          Queue.add (get_variable x u var_hashtbl) q;
          { m_t = [cterm2multiterm t1 consts u var_hashtbl b_asslist1];
@@ -607,8 +591,6 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
          let y = dest_var t1 in
             if (List.mem_assoc y b_asslist1)||(SymbolSet.mem consts y)
                then raise(Clash(ClashTerms(t0,t1)));
-            (* try let vy=(List.assoc y b_asslist1) in (raise Clash)
-               with Not_found -> *)
             let q = Queue.create () in
                Queue.add (get_variable y u var_hashtbl) q;
                { m_t = [cterm2multiterm t0 consts u var_hashtbl b_asslist0];
@@ -1153,11 +1135,11 @@ let clash_error_aux =
       if i<=0 then [] else slot_bterm :: slot_bterms (i - 1)
    in
    let term_of_op = function
-      { opsymb = FunSequent _ } -> mk_xstring_term "sequent..."  
+      { opsymb = FunSequent _ } -> mk_xstring_term "sequent..."
     | op -> my_mk_term op.opsymb (slot_bterms op.oparity_n)
    in
    let term_of_multi = function
-      { fsymb = Op op } -> term_of_op op 
+      { fsymb = Op op } -> term_of_op op
     | { fsymb = Bvar bv } -> mk_var_term (var_name bv.name_bv)
     | { fsymb = Cnst c } -> mk_var_term (var_name c)
    in function
