@@ -656,10 +656,6 @@ struct
               op = sl_open_quantify; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
                   { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (Lm_symbol.add "self") t1.aterm t2.aterm }
             ]
-          | "neg"
-            [ op = sl_not; x = noncommaterm ->
-               { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) x.aterm }
-            ]
 
           (* Relations *)
           | "equal" NONA
@@ -1309,7 +1305,7 @@ struct
       (* Terminals *)
       sl_contexts_left: [[ "<|" -> () ]];
       sl_contexts_right: [[ "|>" -> () ]];
-      
+
       sl_meta_left_right_arrow:
          [[ "<-->" -> () ]];
 
@@ -1474,9 +1470,6 @@ struct
 
       sl_left_arrow:
          [[ "<-" -> "fun" ]];
-
-      sl_not:
-         [[ "neg" -> "not" ]];
 
       sl_or:
          [[ "or" -> "or" ]];

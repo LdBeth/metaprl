@@ -77,6 +77,7 @@ print_theory "itt_grouplikeobj";;
 print_theory "itt_group";;
 print_theory "itt_cyclic_group";;
 print_theory "itt_quotient_group";;
+print_theory "itt_ring2";;
 print_theory "itt_collection";;
 print_theory "itt_pointwise";;
 print_theory "itt_pointwise2";;
