@@ -66,21 +66,6 @@ let debug_ocaml =
 type loc = Lm_num.num * Lm_num.num
 
 (*
- * Argument to the comment function
- *)
-type term_type =
-   ExprTerm
- | PattTerm
- | TypeTerm
- | SigItemTerm
- | StrItemTerm
- | ModuleTypeTerm
- | ModuleExprTerm
- | ClassTerm
- | ClassFieldTerm
- | WithClauseTerm
-
-(*
  * Term parsing errors pass through here.
  *)
 exception FormatError of string * Refiner.Refiner.TermType.term
@@ -98,13 +83,6 @@ struct
 
    module SimplePrint = Simple_print.MakeSimplePrint (ToTerm)
    module TermCopy2 = Term_copy2_weak.TermCopy2Weak (Refiner.Refiner) (ToTerm)
-
-   (*
-    * A comment function takes a term,
-    * and it location and type, and returns
-    * another term.
-    *)
-   type comment = term_type -> loc -> term -> term
 
    (************************************************************************
     * BASIC TERM OPERATIONS                                                *
@@ -828,22 +806,21 @@ struct
        * Compute a hash value from the struct.
        * vars is a list of the bound variables.
        *)
-      in fun vars comment expr ->
+      in fun vars expr ->
          let loc = loc_of_expr expr in
-         let term =
             match expr with
                (<:expr< $e1$ . $e2$ >>) ->
-                  mk_simple_term expr_proj_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
+                  mk_simple_term expr_proj_op loc [mk_expr vars e1; mk_expr vars e2]
              | (<:expr< $anti: e$ >>) ->
-                  mk_simple_term expr_anti_op loc [mk_expr vars comment e]
+                  mk_simple_term expr_anti_op loc [mk_expr vars e]
              | (<:expr< $e1$ $e2$ >>) ->
-                  mk_simple_term expr_apply_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
+                  mk_simple_term expr_apply_op loc [mk_expr vars e1; mk_expr vars e2]
              | (<:expr< $e1$ .( $e2$ ) >>) ->
-                  mk_simple_term expr_array_subscript_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
+                  mk_simple_term expr_array_subscript_op loc [mk_expr vars e1; mk_expr vars e2]
              | (<:expr< [| $list:el$ |] >>) ->
-                  mk_simple_term expr_array_op loc [mk_xlist_term (List.map (mk_expr vars comment) el)]
+                  mk_simple_term expr_array_op loc [mk_xlist_term (List.map (mk_expr vars) el)]
              | (<:expr< $e1$ := $e2$ >>) ->
-                  mk_simple_term expr_assign_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
+                  mk_simple_term expr_assign_op loc [mk_expr vars e1; mk_expr vars e2]
              | (<:expr< $chr:c$ >>) ->
                   mk_loc_string expr_char_op loc c
              | (<:expr< $flo:s$ >>) ->
@@ -851,69 +828,67 @@ struct
              | (<:expr< for $s$ = $e1$ $to:b$ $e2$ do { $list:el$ } >>) ->
                   let op = if b then expr_upto_op else expr_downto_op in
                   let op_loc = mk_op_loc op loc in
-                  let el' = mk_list_term (List.map (mk_expr (s :: vars) comment) el) in
-                      mk_dep0_dep0_dep1_any_term op_loc (mk_expr vars comment e1) (mk_expr vars comment e2) (Lm_symbol.add s) el'
+                  let el' = mk_list_term (List.map (mk_expr (s :: vars)) el) in
+                      mk_dep0_dep0_dep1_any_term op_loc (mk_expr vars e1) (mk_expr vars e2) (Lm_symbol.add s) el'
              | (<:expr< fun [ $list:pwel$ ] >>) ->
-                  mk_fun vars comment loc pwel
+                  mk_fun vars loc pwel
              | (<:expr< if $e1$ then $e2$ else $e3$ >>) ->
-                  mk_simple_term expr_if_op loc [mk_expr vars comment e1;
-                                                 mk_expr vars comment e2;
-                                                 mk_expr vars comment e3]
+                  mk_simple_term expr_if_op loc [mk_expr vars e1;
+                                                 mk_expr vars e2;
+                                                 mk_expr vars e3]
              | (<:expr< $int:s$ >>) ->
                   mk_loc_int expr_int_op loc s
              | (<:expr< lazy $e$ >>) ->
-                  mk_simple_term expr_laz_op loc [mk_expr vars comment e]
+                  mk_simple_term expr_laz_op loc [mk_expr vars e]
              | (<:expr< let $rec:b$ $list:pel$ in $e$ >>) ->
                   if b then
-                     mk_fix vars comment loc pel e
+                     mk_fix vars loc pel e
                   else
-                     mk_let vars comment loc pel e
+                     mk_let vars loc pel e
              | (<:expr< $lid:s$ >>) ->
                   mk_var expr_lid_op vars loc s
              | ExLmd (_, s, me, e) ->
                   mk_simple_term expr_local_module_op loc [mk_string_term expr_local_module_op s;
-                                                           mk_module_expr vars comment me;
-                                                           mk_expr vars comment e]
+                                                           mk_module_expr vars me;
+                                                           mk_expr vars e]
              | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
-                  mk_match vars comment loc pwel e
+                  mk_match vars loc pwel e
              | (<:expr< new $list: sl$ >>) ->
                   mk_simple_term expr_new_op loc [mk_xlist_term (List.map (mk_string expr_new_op) sl)]
              | (<:expr< {< $list:sel$ >} >>) ->
-                  mk_simple_term expr_stream_op loc (List.map (mk_se vars comment) sel)
+                  mk_simple_term expr_stream_op loc (List.map (mk_se vars) sel)
       (*
              | (<:expr< { $list:eel$ } >>) ->
       *)
              | ExRec (_, pel, eo) ->
-                  mk_simple_term expr_record_op loc [mk_xlist_term (List.map (mk_ident_pe vars comment) pel);
-                                                     mk_expr_opt vars comment eo]
+                  mk_simple_term expr_record_op loc [mk_xlist_term (List.map (mk_ident_pe vars) pel);
+                                                     mk_expr_opt vars eo]
              | (<:expr< do { $list:el$ } >>) ->
-                  mk_simple_term expr_seq_op loc [mk_xlist_term (List.map (mk_expr vars comment) el)]
+                  mk_simple_term expr_seq_op loc [mk_xlist_term (List.map (mk_expr vars) el)]
              | (<:expr< $e$ # $i$ >>) ->
-                  mk_simple_term expr_select_op loc [mk_expr vars comment e; mk_string expr_string_op i]
+                  mk_simple_term expr_select_op loc [mk_expr vars e; mk_string expr_string_op i]
              | (<:expr< $e1$ .[ $e2$ ] >>) ->
-                  mk_simple_term expr_string_subscript_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
+                  mk_simple_term expr_string_subscript_op loc [mk_expr vars e1; mk_expr vars e2]
              | (<:expr< $str:s$ >>) ->
                   mk_loc_string expr_string_op loc s
              | (<:expr< try $e$ with [ $list:pwel$ ] >>) ->
-                  mk_try vars comment loc pwel e
+                  mk_try vars loc pwel e
              | (<:expr< ( $list:el$ ) >>) ->
-                  mk_simple_term expr_tuple_op loc [mk_xlist_term (List.map (mk_expr vars comment) el)]
+                  mk_simple_term expr_tuple_op loc [mk_xlist_term (List.map (mk_expr vars) el)]
              | (<:expr< ( $e$ : $t$ ) >>) ->
-                  mk_simple_term expr_cast_op loc [mk_expr vars comment e; mk_type comment t]
+                  mk_simple_term expr_cast_op loc [mk_expr vars e; mk_type t]
              | (<:expr< $uid:s$ >>) ->
                   mk_var expr_uid_op vars loc s
              | (<:expr< while $e$ do { $list:el$ } >>) ->
-                  mk_simple_term expr_while_op loc [mk_expr vars comment e; mk_list_term (List.map (mk_expr vars comment) el)]
+                  mk_simple_term expr_while_op loc [mk_expr vars e; mk_list_term (List.map (mk_expr vars) el)]
              | MLast.ExVrn (_, s) ->
                   mk_simple_named_term expr_vrn_op loc s []
              | MLast.ExLab (_, s, e) ->
-                  mk_simple_named_term expr_lab_op loc s [mk_expr vars comment e]
+                  mk_simple_named_term expr_lab_op loc s [mk_expr vars e]
              | MLast.ExOlb (_, s, e) ->
-                  mk_simple_named_term expr_olb_op loc s [mk_expr vars comment e]
+                  mk_simple_named_term expr_olb_op loc s [mk_expr vars e]
              | MLast.ExCoe (l, e, ot, t) ->
-                  mk_simple_term expr_coerce_class_op loc [mk_expr vars comment e; mk_opt (mk_type comment) ot; mk_type comment t]
-         in
-            comment ExprTerm loc term
+                  mk_simple_term expr_coerce_class_op loc [mk_expr vars e; mk_opt mk_type ot; mk_type t]
 
    (*
     * Patterns.
@@ -1079,20 +1054,19 @@ struct
             let sl = dest_sl sl in
                MLast.PaTyp (loc, sl), t
          in add_patt "patt_typ" dest_typ_patt
-      in fun vars comment patt tailf ->
+      in fun vars patt tailf ->
          let loc = loc_of_patt patt in
-         let term =
             match patt with
                (<:patt< $p1$ . $p2$ >>) ->
-                  mk_patt_triple vars comment loc patt_proj_op patt_proj_arg_op patt_proj_end_op p1 p2 tailf
+                  mk_patt_triple vars loc patt_proj_op patt_proj_arg_op patt_proj_end_op p1 p2 tailf
              | (<:patt< ( $p1$ as $p2$ ) >>) ->
-                  mk_patt_triple vars comment loc patt_as_op patt_as_arg_op patt_as_end_op p1 p2 tailf
+                  mk_patt_triple vars loc patt_as_op patt_as_arg_op patt_as_end_op p1 p2 tailf
              | (<:patt< _ >>) ->
                   mk_simple_term patt_wildcard_op loc [tailf vars]
              | (<:patt< $p1$ $p2$ >>) ->
-                  mk_patt_triple vars comment loc patt_apply_op patt_apply_arg_op patt_apply_end_op p1 p2 tailf
+                  mk_patt_triple vars loc patt_apply_op patt_apply_arg_op patt_apply_end_op p1 p2 tailf
              | (<:patt< [| $list:pl$ |] >>) ->
-                  mk_patt_list vars comment loc patt_array_op patt_array_arg_op patt_array_end_op pl tailf
+                  mk_patt_list vars loc patt_array_op patt_array_arg_op patt_array_end_op pl tailf
              | (<:patt< $chr:c$ >>) ->
                   mk_loc_string_term patt_char_op loc c (tailf vars)
              | (<:patt< $int:s$ >>) ->
@@ -1103,17 +1077,17 @@ struct
                   (* This is a binding occurrence *)
                   mk_patt_var patt_var_op loc (Lm_symbol.add v) (tailf (v :: vars))
              | (<:patt< $p1$ | $p2$ >>) ->
-                  mk_patt_triple vars comment loc patt_choice_op patt_choice_arg_op patt_choice_end_op p1 p2 tailf
+                  mk_patt_triple vars loc patt_choice_op patt_choice_arg_op patt_choice_end_op p1 p2 tailf
              | (<:patt< $p1$ .. $p2$ >>) ->
-                  mk_patt_triple vars comment loc patt_range_op patt_range_arg_op patt_range_end_op p1 p2 tailf
+                  mk_patt_triple vars loc patt_range_op patt_range_arg_op patt_range_end_op p1 p2 tailf
              | (<:patt< { $list:ppl$ } >>) ->
-                  mk_patt_record vars comment loc ppl tailf
+                  mk_patt_record vars loc ppl tailf
              | (<:patt< $str:s$ >>) ->
                   mk_loc_string_term patt_string_op loc s (tailf vars)
              | (<:patt< ( $list:pl$ ) >>) ->
-                  mk_patt_list vars comment loc patt_tuple_op patt_tuple_arg_op patt_tuple_end_op pl tailf
+                  mk_patt_list vars loc patt_tuple_op patt_tuple_arg_op patt_tuple_end_op pl tailf
              | (<:patt< ( $p$ : $t'$ ) >>) ->
-                  mk_simple_term patt_cast_op loc [mk_patt vars comment p tailf; mk_type comment t']
+                  mk_simple_term patt_cast_op loc [mk_patt vars p tailf; mk_type t']
              | (<:patt< $uid:s$ >>) ->
                   mk_var_term patt_uid_op vars loc s (tailf vars)
              | (<:patt< $anti: p$ >>) ->
@@ -1121,27 +1095,25 @@ struct
              | MLast.PaVrn (_, s) ->
                   mk_simple_named_term patt_vrn_op loc s []
              | MLast.PaLab (_, s, p) ->
-                  mk_simple_named_term patt_lab_op loc s [mk_patt vars comment p tailf]
+                  mk_simple_named_term patt_lab_op loc s [mk_patt vars p tailf]
              | MLast.PaOlb (_, s, p, oe) ->
-                  mk_simple_named_term patt_olb_op loc s [mk_patt vars comment p tailf;
-                                                          mk_expr_opt vars comment oe]
+                  mk_simple_named_term patt_olb_op loc s [mk_patt vars p tailf;
+                                                          mk_expr_opt vars oe]
              | MLast.PaTyp (_, sl) ->
                   mk_simple_term patt_typ_op loc [mk_string_list sl]
-         in
-            comment PattTerm loc term
 
-   and mk_patt_opt loc vars comment patt tailf =
+   and mk_patt_opt loc vars patt tailf =
       let loc = num_of_loc loc in
          match patt with
            Some patt ->
-              mk_simple_term pattern_op loc [mk_patt vars comment patt tailf]
+              mk_simple_term pattern_op loc [mk_patt vars patt tailf]
           | None ->
               mk_simple_term no_pattern_op loc [tailf vars]
 
-   and mk_patt_triple vars comment loc op1 op2 op3 p1 p2 tailf =
+   and mk_patt_triple vars loc op1 op2 op3 p1 p2 tailf =
       let tailf vars = mk_simple_term op3 loc [tailf vars] in
-      let tailf vars = mk_simple_term op2 loc [mk_patt vars comment p2 tailf] in
-         mk_simple_term op1 loc [mk_patt vars comment p1 tailf]
+      let tailf vars = mk_simple_term op2 loc [mk_patt vars p2 tailf] in
+         mk_simple_term op1 loc [mk_patt vars p1 tailf]
 
    and mk_patt_record =
       let patt_record_proj_op = mk_ocaml_op "patt_record_proj"
@@ -1161,19 +1133,19 @@ struct
             let ppl, t = dest_record (one_subterm "dest_record_patt" t) in
                <:patt< { $list: ppl$ } >>, t
          in add_patt "patt_record" dest_record_patt
-      in fun vars comment loc ppl tailf ->
+      in fun vars loc ppl tailf ->
          let tailf vars = mk_simple_term patt_record_end_op loc [tailf vars] in
          let rec make ppl vars =
             match ppl with
                (p1, p2)::ppl ->
-                  mk_simple_term patt_record_proj_op loc [mk_expr vars comment (expr_of_patt_ident p1);
-                                                          mk_patt vars comment p2 (make ppl)]
+                  mk_simple_term patt_record_proj_op loc [mk_expr vars (expr_of_patt_ident p1);
+                                                          mk_patt vars p2 (make ppl)]
              | [] ->
                   tailf vars
          in
             mk_simple_term patt_record_op loc [make ppl vars]
 
-   and mk_patt_list vars comment loc op1 op2 op3 pl tailf =
+   and mk_patt_list vars loc op1 op2 op3 pl tailf =
       let tailf vars =
          mk_simple_term op3 loc [tailf vars]
       in
@@ -1186,7 +1158,7 @@ struct
                   else
                      mk_simple_term op2 loc [make pl vars]
                in
-                  mk_patt vars comment p tailf'
+                  mk_patt vars p tailf'
           | [] ->
                tailf vars
       in
@@ -1339,20 +1311,19 @@ struct
             let t = one_subterm "dest_lab_type" t in
                MLast.TyLab (loc, s, dest_type t)
          in add_type "type_lab" dest_lab_type
-      in fun comment t ->
+      in fun t ->
          let loc = loc_of_ctyp t in
-         let term =
             match t with
                (<:ctyp< $t1$ . $t2$ >>) ->
-                  mk_simple_term type_proj_op loc [mk_type comment t1; mk_type comment t2]
+                  mk_simple_term type_proj_op loc [mk_type t1; mk_type t2]
              | (<:ctyp< $t1$ as $t2$ >>) ->
-                  mk_simple_term type_as_op loc [mk_type comment t1; mk_type comment t2]
+                  mk_simple_term type_as_op loc [mk_type t1; mk_type t2]
              | (<:ctyp< _ >>) ->
                   mk_simple_term type_wildcard_op loc []
              | (<:ctyp< $t1$ $t2$ >>) ->
-                  mk_simple_term type_apply_op loc [mk_type comment t1; mk_type comment t2]
+                  mk_simple_term type_apply_op loc [mk_type t1; mk_type t2]
              | (<:ctyp< $t1$ -> $t2$ >>) ->
-                  mk_simple_term type_fun_op loc [mk_type comment t1; mk_type comment t2]
+                  mk_simple_term type_fun_op loc [mk_type t1; mk_type t2]
              | (<:ctyp< # $list:i$ >>) ->
                   mk_simple_term type_class_id_op loc [mk_xlist_term (List.map (mk_string type_class_id_op) i)]
              | (<:ctyp< $lid:s$ >>) ->
@@ -1360,29 +1331,27 @@ struct
              | (<:ctyp< '$s$ >>) ->
                   mk_loc_string type_param_op loc s
              | (<:ctyp< $t1$ == $t2$ >>) ->
-                  mk_simple_term type_equal_op loc [mk_type comment t1; mk_type comment t2]
+                  mk_simple_term type_equal_op loc [mk_type t1; mk_type t2]
              | (<:ctyp< < $list:stl$ $b$ > >>) ->
                   let op = if b then type_object_tt_op else type_object_ff_op in
-                     mk_simple_term op loc (List.map (mk_st comment) stl)
+                     mk_simple_term op loc (List.map mk_st stl)
              | (<:ctyp< { $list:sbtl$ } >>) ->
-                  mk_simple_term type_record_op loc [mk_xlist_term (List.map (mk_sbt comment) sbtl)]
+                  mk_simple_term type_record_op loc [mk_xlist_term (List.map mk_sbt sbtl)]
              | (<:ctyp< [ $list:stll$ ] >>) ->
-                  mk_simple_term type_list_op loc [mk_xlist_term (List.map (mk_stl comment) stll)]
+                  mk_simple_term type_list_op loc [mk_xlist_term (List.map mk_stl stll)]
              | (<:ctyp< ( $list:tl$ ) >>) ->
-                  mk_simple_term type_prod_op loc [mk_xlist_term (List.map (mk_type comment) tl)]
+                  mk_simple_term type_prod_op loc [mk_xlist_term (List.map mk_type tl)]
              | (<:ctyp< $uid:s$ >>) ->
                   mk_var type_uid_op [] loc s
              | MLast.TyVrn (_, sbtll, sloo) ->
-                  mk_simple_term type_vrn_op loc [mk_xlist_term (List.map (mk_rf comment) sbtll);
+                  mk_simple_term type_vrn_op loc [mk_xlist_term (List.map mk_rf sbtll);
                                                   mk_opt (mk_opt mk_string_list) sloo]
              | MLast.TyOlb (_, s, t) ->
-                  mk_simple_named_term type_olb_op loc s [mk_type comment t]
+                  mk_simple_named_term type_olb_op loc s [mk_type t]
              | MLast.TyLab (_, s, t) ->
-                  mk_simple_named_term type_lab_op loc s [mk_type comment t]
+                  mk_simple_named_term type_lab_op loc s [mk_type t]
              | MLast.TyPol (_, strs, t) ->
-                  mk_simple_term type_pol_op loc [mk_xlist_term (List.map (mk_string type_class_id_op) strs); mk_type comment t]
-         in
-            comment TypeTerm loc term
+                  mk_simple_term type_pol_op loc [mk_xlist_term (List.map (mk_string type_class_id_op) strs); mk_type t]
 
    (*
     * Signatures.
@@ -1470,37 +1439,34 @@ struct
             let eo = dest_expr_opt eo in
                MLast.SgDir (loc, s, eo)
          in add_sig "sig_dir" dest_dir_sig
-   in fun comment si ->
+   in fun si ->
          let loc = loc_of_sig_item si in
-         let term =
             match si with
                SgCls (_, ctl) ->
-                  mk_simple_term sig_class_sig_op loc (List.map (mk_class_type_infos comment) ctl)
+                  mk_simple_term sig_class_sig_op loc (List.map mk_class_type_infos ctl)
              | SgClt (_, ctl) ->
-                  mk_simple_term sig_class_type_op loc (List.map (mk_class_type_infos comment) ctl)
+                  mk_simple_term sig_class_type_op loc (List.map mk_class_type_infos ctl)
              | (<:sig_item< declare $list:sil$ end >>) ->
-                  mk_simple_term sig_subsig_op loc (List.map (mk_sig_item comment) sil)
+                  mk_simple_term sig_subsig_op loc (List.map mk_sig_item sil)
              | (<:sig_item< exception $s$ of $list:tl$ >>) ->
-                  mk_simple_named_term sig_exception_op loc s [mk_xlist_term (List.map (mk_type comment) tl)]
+                  mk_simple_named_term sig_exception_op loc s [mk_xlist_term (List.map mk_type tl)]
              | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
                   mk_simple_named_term sig_external_op loc s
-                     (mk_type comment t :: List.map mk_simple_string sl)
+                     (mk_type t :: List.map mk_simple_string sl)
              | SgInc (_, mt) ->
-                  mk_simple_term sig_inc_op loc [mk_module_type comment mt]
+                  mk_simple_term sig_inc_op loc [mk_module_type mt]
              | (<:sig_item< module $s$ : $mt$ >>) ->
-                  mk_simple_named_term sig_module_op loc s [mk_module_type comment mt]
+                  mk_simple_named_term sig_module_op loc s [mk_module_type mt]
              | (<:sig_item< module type $s$ = $mt$ >>) ->
-                  mk_simple_named_term sig_module_type_op loc s [mk_module_type comment mt]
+                  mk_simple_named_term sig_module_type_op loc s [mk_module_type mt]
              | (<:sig_item< open $sl$ >>) ->
                   mk_simple_term sig_open_op loc [mk_xlist_term (List.map mk_simple_string sl)]
              | (<:sig_item< type $list:tdl$ >>) ->
-                  mk_simple_term sig_type_op loc [mk_xlist_term (List.map (mk_tdl comment) tdl)]
+                  mk_simple_term sig_type_op loc [mk_xlist_term (List.map mk_tdl tdl)]
              | (<:sig_item< value $s$ : $t$ >>) ->
-                  mk_simple_named_term sig_value_op loc s [mk_type comment t]
+                  mk_simple_named_term sig_value_op loc s [mk_type t]
              | SgDir (_, s, eo) ->
-                  mk_simple_named_term sig_dir_op loc s [mk_expr_opt [] comment eo]
-         in
-            comment SigItemTerm loc term
+                  mk_simple_named_term sig_dir_op loc s [mk_expr_opt [] eo]
 
    (*
     * Structure items.
@@ -1605,41 +1571,38 @@ struct
             let sl = List.map dest_string (dest_xlist sl) in
                MLast.StExc (loc, s, tl, sl)
          in add_str "str_exc" dest_exc_str
-      in fun vars comment si ->
+      in fun vars si ->
          let loc = loc_of_str_item si in
-         let term =
             match si with
                (<:str_item< class $list:cdl$ >>) ->
-                  mk_simple_term str_class_str_op loc (List.map (mk_class_expr_infos vars comment) cdl)
+                  mk_simple_term str_class_str_op loc (List.map (mk_class_expr_infos vars) cdl)
              | (<:str_item< class type $list:cdl$ >>) ->
-                  mk_simple_term str_class_type_op loc (List.map (mk_class_type_infos comment) cdl)
+                  mk_simple_term str_class_type_op loc (List.map mk_class_type_infos cdl)
              | (<:str_item< declare $list:stl$ end >>) ->
-                  mk_simple_term str_substruct_op loc (List.map (mk_str_item vars comment) stl)
+                  mk_simple_term str_substruct_op loc (List.map (mk_str_item vars) stl)
              | (<:str_item< exception $s$ of $list:tl$ >>) ->
-                  mk_simple_named_term str_exception_op loc s [mk_xlist_term (List.map (mk_type comment) tl)]
+                  mk_simple_named_term str_exception_op loc s [mk_xlist_term (List.map mk_type tl)]
              | (<:str_item< $exp:e$ >>) ->
-                  mk_simple_term str_expr_op loc [mk_expr [] comment e]
+                  mk_simple_term str_expr_op loc [mk_expr [] e]
              | (<:str_item< external $s$ : $t$ = $list:sl$ >>) ->
                   mk_simple_named_term str_external_op loc s
-                     (mk_type comment t :: List.map mk_simple_string sl)
+                     (mk_type t :: List.map mk_simple_string sl)
              | (<:str_item< module $s$ = $me$ >>) ->
-                  mk_simple_named_term str_module_op loc s [mk_module_expr vars comment me]
+                  mk_simple_named_term str_module_op loc s [mk_module_expr vars me]
              | (<:str_item< module type $s$ = $mt$ >>) ->
-                  mk_simple_named_term str_module_type_op loc s [mk_module_type comment mt]
+                  mk_simple_named_term str_module_type_op loc s [mk_module_type mt]
              | (<:str_item< open $sl$ >>) ->
                   mk_simple_term str_open_op loc [mk_xlist_term (List.map mk_simple_string sl)]
              | (<:str_item< type $list:tdl$ >>) ->
-                  mk_simple_term str_type_op loc [mk_xlist_term (List.map (mk_tdl comment) tdl)]
-             | (<:str_item< value $rec:b$ $list:pel$ >>) -> mk_str_fix comment loc b pel
+                  mk_simple_term str_type_op loc [mk_xlist_term (List.map mk_tdl tdl)]
+             | (<:str_item< value $rec:b$ $list:pel$ >>) -> mk_str_fix loc b pel
              | StInc (_, me) ->
-                  mk_simple_term str_inc_op loc [mk_module_expr vars comment me]
+                  mk_simple_term str_inc_op loc [mk_module_expr vars me]
              | StDir (_, s, eo) ->
-                  mk_simple_named_term str_dir_op loc s [mk_expr_opt [] comment eo]
+                  mk_simple_named_term str_dir_op loc s [mk_expr_opt [] eo]
              | StExc (_, s, tl, sl) ->
-                  mk_simple_named_term str_exc_op loc s [mk_xlist_term (List.map (mk_type comment) tl);
+                  mk_simple_named_term str_exc_op loc s [mk_xlist_term (List.map mk_type tl);
                                                          mk_string_list sl]
-         in
-            comment StrItemTerm loc term
 
    (*
     * Module types.
@@ -1691,30 +1654,27 @@ struct
                let wcl = dest_xlist wcl in
                   <:module_type< $dest_mt mt$ with $list: List.map dest_wc wcl$ >>
          in add_mt "mt_type_with" dest_with_mt
-      in fun comment mt ->
+      in fun mt ->
          let loc = loc_of_module_type mt in
-         let term =
             match mt with
                (<:module_type< $mt1$ . $mt2$ >>) ->
-                  mk_simple_term mt_proj_op loc [mk_module_type comment mt1; mk_module_type comment mt2]
+                  mk_simple_term mt_proj_op loc [mk_module_type mt1; mk_module_type mt2]
              | (<:module_type< $mt1$ $mt2$ >>) ->
-                  mk_simple_term mt_apply_op loc [mk_module_type comment mt1; mk_module_type comment mt2]
+                  mk_simple_term mt_apply_op loc [mk_module_type mt1; mk_module_type mt2]
              | (<:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >>) ->
                   let op_loc = mk_op_loc mt_functor_op loc in
-                     mk_dep0_dep1_any_term op_loc (Lm_symbol.add s) (mk_module_type comment mt1) (mk_module_type comment mt2)
+                     mk_dep0_dep1_any_term op_loc (Lm_symbol.add s) (mk_module_type mt1) (mk_module_type mt2)
              | (<:module_type< $lid:i$ >>) ->
                   mk_var mt_lid_op [] loc i
              | (<:module_type< ' $i$ >>) ->
                   mk_var mt_quot_op [] loc i
              | (<:module_type< sig $list:sil$ end >>) ->
-                  mk_simple_term mt_sig_op loc [mk_xlist_term (List.map (mk_sig_item comment) sil)]
+                  mk_simple_term mt_sig_op loc [mk_xlist_term (List.map mk_sig_item sil)]
              | (<:module_type< $uid:i$ >>) ->
                   mk_var mt_uid_op [] loc i
              | (<:module_type< $mt$ with $list:wcl$ >>) ->
                   mk_simple_term mt_type_with_op loc
-                     [mk_module_type comment mt; mk_xlist_term (List.map (mk_wc comment) wcl)]
-         in
-            comment ModuleTypeTerm loc term
+                     [mk_module_type mt; mk_xlist_term (List.map mk_wc wcl)]
 
    and mk_wc =
       let wc_type_op =
@@ -1731,16 +1691,16 @@ struct
             let sl1, mt = two_subterms t in
                WcMod (loc, List.map dest_string (dest_xlist sl1), dest_me mt)
          in add_wc "wc_module" dest_module_wc
-      in fun comment -> function
+      in function
          WcTyp (loc, sl1, sl2, t) ->
             let loc = num_of_loc loc in
             let sl1' = mk_xlist_term (List.map mk_simple_string sl1) in
             let sl2' = mk_xlist_term (List.map mk_sbb sl2) in
-               comment WithClauseTerm loc (mk_simple_term wc_type_op loc [sl1'; sl2'; mk_type comment t])
+              mk_simple_term wc_type_op loc [sl1'; sl2'; mk_type t]
        | WcMod (loc, sl1, mt) ->
             let loc = num_of_loc loc in
             let sl1' = mk_xlist_term (List.map mk_simple_string sl1) in
-               comment WithClauseTerm loc (mk_simple_term wc_module_op loc [sl1'; mk_module_expr [] comment mt])
+              mk_simple_term wc_module_op loc [sl1'; mk_module_expr [] mt]
 
    (*
     * Module expressions.
@@ -1781,43 +1741,40 @@ struct
             let me, mt = two_subterms t in
                <:module_expr< ( $dest_me me$ : $dest_mt mt$) >>
          in add_me "me_cast" dest_cast_me
-      in fun vars comment me ->
+      in fun vars me ->
          let loc = loc_of_module_expr me in
-         let term =
             match me with
                (<:module_expr< $me1$ . $me2$ >>) ->
-                  mk_simple_term me_proj_op loc [mk_module_expr vars comment me1;
-                                                 mk_module_expr vars comment me2]
+                  mk_simple_term me_proj_op loc [mk_module_expr vars me1;
+                                                 mk_module_expr vars me2]
              | (<:module_expr< $me1$ $me2$ >>) ->
-                  mk_simple_term me_apply_op loc [mk_module_expr vars comment me1;
-                                                  mk_module_expr vars comment me2]
+                  mk_simple_term me_apply_op loc [mk_module_expr vars me1;
+                                                  mk_module_expr vars me2]
              | (<:module_expr< functor ( $s$ : $mt$ ) -> $me$ >>) ->
                      mk_dep0_dep1_any_term (mk_op_loc me_functor_op loc) (Lm_symbol.add s)
-                        (mk_module_type comment mt) (mk_module_expr vars comment me)
+                        (mk_module_type mt) (mk_module_expr vars me)
              | (<:module_expr< struct $list:sil$ end >>) ->
-                  mk_simple_term me_struct_op loc (List.map (mk_str_item vars comment) sil)
+                  mk_simple_term me_struct_op loc (List.map (mk_str_item vars) sil)
              | (<:module_expr< ( $me$ : $mt$) >>) ->
-                  mk_simple_term me_cast_op loc [mk_module_expr vars comment me;
-                                                 mk_module_type comment mt]
+                  mk_simple_term me_cast_op loc [mk_module_expr vars me;
+                                                 mk_module_type mt]
              | (<:module_expr< $uid:i$ >>) ->
                   mk_var me_uid_op [] loc i
-         in
-            comment ModuleExprTerm loc term
 
-   and mk_class_type_infos comment
-     { ciLoc = loc;
-       ciNam = s;
-       ciPrm = _, sl;
-       ciVir = b;
-       ciExp = t
-     } =
+   and mk_class_type_infos {
+      ciLoc = loc;
+      ciNam = s;
+      ciPrm = _, sl;
+      ciVir = b;
+      ciExp = t
+   } =
       mk_simple_named_term class_type_infos_op (num_of_loc loc) s
          [ mk_list_term (List.map mk_sbb sl);
            mk_bool b;
-           mk_ct comment t
+           mk_ct t
          ]
 
-   and mk_class_expr_infos vars comment
+   and mk_class_expr_infos vars
      { ciLoc = loc;
        ciNam = s;
        ciPrm = _, sl;
@@ -1827,7 +1784,7 @@ struct
       mk_simple_named_term class_type_infos_op (num_of_loc loc) s
          [ mk_list_term (List.map mk_sbb sl);
            mk_bool b;
-           mk_ce vars comment t
+           mk_ce vars t
          ]
 
    (*
@@ -1879,32 +1836,32 @@ struct
             let ce, ct = two_subterms t in
                CeTyc (loc, dest_ce ce, dest_ct ct)
          in add_ce "class_expr_tyc" dest_tyc_ce
-      in fun vars comment -> function
+      in fun vars -> function
          MLast.CeApp (loc, ce, e) ->
             mk_simple_term ce_app_op (num_of_loc loc) (**)
-               [mk_ce vars comment ce;
-                mk_expr vars comment e]
+               [mk_ce vars ce;
+                mk_expr vars e]
        | MLast.CeCon (loc, sl, tl) ->
             mk_simple_term ce_con_op (num_of_loc loc) (**)
                [mk_xlist_term (List.map (mk_string ce_con_op) sl);
-                mk_xlist_term (List.map (mk_type comment) tl)]
+                mk_xlist_term (List.map mk_type tl)]
        | MLast.CeFun (loc, p, ce) ->
             mk_simple_term ce_fun_op (num_of_loc loc) (**)
-               [mk_patt vars comment p (fun vars -> mk_ce vars comment ce)]
+               [mk_patt vars p (fun vars -> mk_ce vars ce)]
        | MLast.CeLet (loc, b, pel, ce) ->
             mk_simple_term ce_let_op (num_of_loc loc) (**)
                [(if b then
                    mk_fix_tail
                 else
-                   mk_let_tail) vars comment (num_of_loc loc) pel (fun vars -> mk_ce vars comment ce)]
+                   mk_let_tail) vars (num_of_loc loc) pel (fun vars -> mk_ce vars ce)]
        | MLast.CeStr (loc, p, cfl) ->
             mk_simple_term ce_str_op (num_of_loc loc) (**)
-               [mk_patt_opt loc vars comment p (fun vars ->
-                   mk_xlist_term (List.map (mk_cf vars comment) cfl))]
+               [mk_patt_opt loc vars p (fun vars ->
+                   mk_xlist_term (List.map (mk_cf vars) cfl))]
        | MLast.CeTyc (loc, ce, ct) ->
             mk_simple_term ce_tyc_op (num_of_loc loc) (**)
-               [mk_ce vars comment ce;
-                mk_ct comment ct]
+               [mk_ce vars ce;
+                mk_ct ct]
 
    (*
     * Class types.
@@ -1930,19 +1887,16 @@ struct
             let t, ctfl = two_subterms t in
                CtSig (loc, dest_opt dest_type t, List.map dest_ctf (dest_xlist ctfl))
          in add_ct "class_type_sig" dest_sig_ct
-      in fun comment -> function
+      in function
          CtCon (loc, sl, tl) ->
             mk_simple_term ct_con_op (num_of_loc loc) (**)
                [mk_xlist_term (List.map (mk_string ct_con_op) sl);
-                mk_xlist_term (List.map (mk_type comment) tl)]
+                mk_xlist_term (List.map mk_type tl)]
        | CtFun (loc, t, ct) ->
-            mk_simple_term ct_fun_op (num_of_loc loc) (**)
-               [mk_type comment t;
-                mk_ct comment ct]
+            mk_simple_term ct_fun_op (num_of_loc loc) [mk_type t; mk_ct ct]
        | CtSig (loc, t, ctfl) ->
             mk_simple_term ct_sig_op (num_of_loc loc) (**)
-               [mk_type_opt comment t;
-                mk_xlist_term (List.map (mk_ctf comment) ctfl)]
+               [mk_type_opt t; mk_xlist_term (List.map mk_ctf ctfl)]
 
    and mk_ctf =
       let ctf_ctr_op =
@@ -1982,19 +1936,19 @@ struct
             let s, b, t = three_subterms t in
                CgVir (loc, dest_string s, dest_bool b, dest_type t)
          in add_ctf "class_type_vir" dest_vir_ctf
-      in fun comment -> function
+      in function
          CgCtr (loc, s, t) ->
-            mk_simple_term ctf_ctr_op (num_of_loc loc) [mk_type comment s; mk_type comment t]
+            mk_simple_term ctf_ctr_op (num_of_loc loc) [mk_type s; mk_type t]
        | CgDcl (loc, t) ->
-            mk_simple_term ctf_dcl_op (num_of_loc loc) [mk_xlist_term (List.map (mk_ctf comment) t)]
+            mk_simple_term ctf_dcl_op (num_of_loc loc) [mk_xlist_term (List.map mk_ctf t)]
        | CgInh (loc, ct) ->
-            mk_simple_term ctf_inh_op (num_of_loc loc) [mk_ct comment ct]
+            mk_simple_term ctf_inh_op (num_of_loc loc) [mk_ct ct]
        | CgMth (loc, s, b, t) ->
-            mk_simple_term ctf_mth_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type comment t]
+            mk_simple_term ctf_mth_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type t]
        | CgVal (loc, s, b, t) ->
-            mk_simple_term ctf_val_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type comment t]
+            mk_simple_term ctf_val_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type t]
        | CgVir (loc, s, b, t) ->
-            mk_simple_term ctf_vir_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type comment t]
+            mk_simple_term ctf_vir_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type t]
 
    and mk_cf =
       let cf_ctr_op =
@@ -2040,58 +1994,41 @@ struct
             let s, b, t = three_subterms t in
                CrVir (loc, dest_string s, dest_bool b, dest_type t)
          in add_cf "class_vir" dest_vir_cf
-      in fun vars comment cf ->
-         let loc, term = match cf with
-            CrCtr (loc, s, t) ->
-               let loc = num_of_loc loc in
-                  loc, mk_simple_term cf_ctr_op loc (**)
-                         [mk_type comment s; mk_type comment t]
-          | CrDcl (loc, t) ->
-               let loc = num_of_loc loc in
-                  loc, mk_simple_term cf_dcl_op loc (**)
-                         [mk_xlist_term (List.map (mk_cf vars comment) t)]
-          | CrInh (loc, ce, so) ->
-               let loc = num_of_loc loc in
-                  loc, mk_simple_term cf_inh_op loc (**)
-                          [mk_ce vars comment ce;
-                           mk_string_opt expr_string_op so]
-          | CrIni (loc, e) ->
-               let loc = num_of_loc loc in
-                  loc, mk_simple_term cf_ini_op loc (**)
-                          [mk_expr vars comment e]
-          | CrMth (loc, s, b, e, t) ->
-               let loc = num_of_loc loc in
-                  loc, mk_simple_term cf_mth_op loc (**)
-                          [mk_simple_string s;
-                           mk_bool b;
-                           mk_expr vars comment e;
-                           mk_opt (mk_type comment) t]
-          | CrVal (loc, s, b, e) ->
-               let loc = num_of_loc loc in
-                  loc, mk_simple_term cf_val_op loc (**)
-                          [mk_simple_string s;
-                           mk_bool b;
-                           mk_expr vars comment e]
-          | CrVir (loc, s, b, t) ->
-               let loc = num_of_loc loc in
-                  loc, mk_simple_term cf_vir_op loc (**)
-                          [mk_simple_string s;
-                           mk_bool b;
-                           mk_type comment t]
-      in
-         comment ClassFieldTerm loc term
+      in fun vars -> function
+         CrCtr (loc, s, t) ->
+            let loc = num_of_loc loc in
+               mk_simple_term cf_ctr_op loc [mk_type s; mk_type t]
+       | CrDcl (loc, t) ->
+            let loc = num_of_loc loc in
+               mk_simple_term cf_dcl_op loc [mk_xlist_term (List.map (mk_cf vars) t)]
+       | CrInh (loc, ce, so) ->
+            let loc = num_of_loc loc in
+               mk_simple_term cf_inh_op loc [mk_ce vars ce; mk_string_opt expr_string_op so]
+       | CrIni (loc, e) ->
+            let loc = num_of_loc loc in
+               mk_simple_term cf_ini_op loc [mk_expr vars e]
+       | CrMth (loc, s, b, e, t) ->
+            let loc = num_of_loc loc in
+               mk_simple_term cf_mth_op loc (**)
+                  [mk_simple_string s; mk_bool b; mk_expr vars e; mk_opt mk_type t]
+       | CrVal (loc, s, b, e) ->
+            let loc = num_of_loc loc in
+               mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b; mk_expr vars e]
+       | CrVir (loc, s, b, t) ->
+            let loc = num_of_loc loc in
+               mk_simple_term cf_vir_op loc [mk_simple_string s; mk_bool b; mk_type t]
 
    (*
     * Make a fix expression.
     *)
-   and mk_fix_aux vars comment loc pel tailf =
+   and mk_fix_aux vars loc pel tailf =
       let pl, el = List.split pel in
       let pl = List.rev pl in
       let el = List.rev el in
       let rec tailf' el vars =
          match el with
            e::el ->
-              mk_simple_term patt_fix_arg_op loc [mk_expr vars comment e; tailf' el vars]
+              mk_simple_term patt_fix_arg_op loc [mk_expr vars e; tailf' el vars]
           | [] ->
               tailf vars
       in
@@ -2104,7 +2041,7 @@ struct
                   else
                      mk_simple_term patt_fix_and_op loc [make pl vars]
                in
-                  mk_patt vars comment p tailf''
+                  mk_patt vars p tailf''
           | [] ->
              tailf' el vars
       in
@@ -2117,14 +2054,14 @@ struct
             let pel, e = dest_fix t in
                <:expr< let $rec:true$ $list: pel$ in $dest_expr e$ >>
          in add_expr "fix" dest_fix_expr
-      in fun vars comment loc pel tailf ->
+      in fun vars loc pel tailf ->
          let tailf vars =
             mk_simple_term patt_in_op loc [tailf vars]
          in
-            mk_simple_term expr_fix_op loc [mk_fix_aux vars comment loc pel tailf]
+            mk_simple_term expr_fix_op loc [mk_fix_aux vars loc pel tailf]
 
-   and mk_fix vars comment loc pel e =
-      mk_fix_tail vars comment loc pel (fun vars -> mk_expr vars comment e)
+   and mk_fix vars loc pel e =
+      mk_fix_tail vars loc pel (fun vars -> mk_expr vars e)
 
    and mk_let_tail =
       let patt_and_op = mk_ocaml_op "patt_and"
@@ -2134,9 +2071,9 @@ struct
             let pel, e = dest_let t in
                <:expr< let $rec:false$ $list: pel$ in $dest_expr e$ >>
          in add_expr "let" dest_let_expr
-      in fun vars comment loc pel tailf ->
+      in fun vars loc pel tailf ->
          let pl, el = List.split pel in
-         let el = List.map (mk_expr vars comment) el in
+         let el = List.map (mk_expr vars) el in
          let tailf vars =
             mk_simple_term patt_in_op loc [tailf vars]
          in
@@ -2149,14 +2086,14 @@ struct
                      else
                         mk_simple_term patt_and_op loc [make pl vars]
                   in
-                     mk_patt vars comment p tailf'
+                     mk_patt vars p tailf'
             | [] ->
                tailf vars
          in
             mk_simple_term expr_let_op loc [make pl vars; mk_xlist_term el]
 
-   and mk_let vars comment loc pel e =
-      mk_let_tail vars comment loc pel (fun vars -> mk_expr vars comment e)
+   and mk_let vars loc pel e =
+      mk_let_tail vars loc pel (fun vars -> mk_expr vars e)
 
    and mk_str_fix =
       let patt_done_op = mk_ocaml_op "patt_done"
@@ -2194,19 +2131,19 @@ struct
             let pel = List.map dest lets in
                <:str_item< value $rec:false$ $list: pel$ >>
          in add_str "str_let" dest_let_str
-      in fun comment loc b pel ->
+      in fun loc b pel ->
          if b then
             let tailf vars =
                mk_simple_term patt_done_op loc []
             in
-               mk_simple_term str_fix_op loc [mk_fix_aux [] comment loc pel tailf]
+               mk_simple_term str_fix_op loc [mk_fix_aux [] loc pel tailf]
          else
             let make (p, e) =
                let tailf vars =
                   mk_simple_term patt_done_op loc []
                in
-               let p = mk_patt [] comment p tailf in
-               let e = mk_expr [] comment e in
+               let p = mk_patt [] p tailf in
+               let e = mk_expr [] e in
                   mk_simple_term str_let_op loc [p; e]
             in
             let tl = List.map make pel in
@@ -2215,16 +2152,16 @@ struct
 
    and mk_fun_aux =
       let patt_body_op = mk_ocaml_op "patt_body"
-      in fun vars comment loc pwel ->
+      in fun vars loc pwel ->
          let make_pwe (p, w, e) =
             let tailf vars =
                match w with
                   Some w ->
-                     mk_simple_term patt_with_op loc [mk_expr vars comment w; mk_expr vars comment e]
+                     mk_simple_term patt_with_op loc [mk_expr vars w; mk_expr vars e]
                 | None ->
-                     mk_simple_term patt_body_op loc [mk_expr vars comment e]
+                     mk_simple_term patt_body_op loc [mk_expr vars e]
             in
-               mk_patt vars comment p tailf
+               mk_patt vars p tailf
          in
          let rec make = function
             [pwe] ->
@@ -2243,8 +2180,8 @@ struct
             let pwel = dest_fun_aux (one_subterm "dest_fun_expr" t) in
                <:expr< fun [ $list: pwel$ ] >>
          in add_expr "fun" dest_fun_expr
-      in fun vars comment loc pwel ->
-         mk_simple_term expr_fun_op loc [mk_fun_aux vars comment loc pwel]
+      in fun vars loc pwel ->
+         mk_simple_term expr_fun_op loc [mk_fun_aux vars loc pwel]
 
    and mk_match =
       let expr_match_op =
@@ -2254,8 +2191,8 @@ struct
             let pwel = dest_fun_aux pwel in
                <:expr< match $dest_expr e$ with [ $list: pwel$ ] >>
          in add_expr "match" dest_match_expr
-      in fun vars comment loc pwel e ->
-         mk_simple_term expr_match_op loc [mk_fun_aux vars comment loc pwel; mk_expr vars comment e]
+      in fun vars loc pwel e ->
+         mk_simple_term expr_match_op loc [mk_fun_aux vars loc pwel; mk_expr vars e]
 
    and mk_try =
       let expr_try_op =
@@ -2265,61 +2202,61 @@ struct
             let pwel = dest_fun_aux pwel in
                <:expr< try $dest_expr e$ with [ $list: pwel$ ] >>
          in add_expr "try" dest_try_expr
-      in fun vars comment loc pwel e ->
-         mk_simple_term expr_try_op loc [mk_fun_aux vars comment loc pwel; mk_expr vars comment e]
+      in fun vars loc pwel e ->
+         mk_simple_term expr_try_op loc [mk_fun_aux vars loc pwel; mk_expr vars e]
 
    (*
     * Combined forms.
     *)
-   and mk_expr_opt vars comment x = mk_opt (mk_expr vars comment) x
+   and mk_expr_opt vars x = mk_opt (mk_expr vars) x
 
-   and mk_type_opt comment x = mk_opt (mk_type comment) x
+   and mk_type_opt x = mk_opt mk_type x
 
    and mk_se =
       let se_op = mk_ocaml_op "se"
-      in fun vars comment (s, e) ->
-         ToTerm.Term.mk_simple_term se_op [mk_simple_string s; mk_expr vars comment e]
+      in fun vars (s, e) ->
+         ToTerm.Term.mk_simple_term se_op [mk_simple_string s; mk_expr vars e]
 
    and mk_ident_pe =
       let ee_op = mk_ocaml_op "ee"
-      in fun vars comment (p, e) ->
-         ToTerm.Term.mk_simple_term ee_op [mk_expr vars comment (expr_of_patt_ident p); mk_expr vars comment e]
+      in fun vars (p, e) ->
+         ToTerm.Term.mk_simple_term ee_op [mk_expr vars (expr_of_patt_ident p); mk_expr vars e]
 
    and mk_st =
       let st_op = mk_ocaml_op "st"
-      in fun comment (s, t) ->
-         ToTerm.Term.mk_simple_term st_op [mk_simple_string s; mk_type comment t]
+      in fun (s, t) ->
+         ToTerm.Term.mk_simple_term st_op [mk_simple_string s; mk_type t]
 
    and mk_sbt =
       let sbt_op = mk_ocaml_op "sbt"
-      in fun  comment (l, s, b, t) ->
+      in fun (l, s, b, t) ->
          let l = num_of_loc l in
-            mk_simple_named_term sbt_op l s [mk_bool b; mk_type comment t]
+            mk_simple_named_term sbt_op l s [mk_bool b; mk_type t]
 
-   and mk_rf comment rf =
+   and mk_rf rf =
       match rf with
          RfTag (s, b, tl) ->
-            ToTerm.Term.mk_simple_term row_field_tag_op [mk_simple_string s; mk_bool b; mk_xlist_term (List.map (mk_type comment) tl)]
+            ToTerm.Term.mk_simple_term row_field_tag_op [mk_simple_string s; mk_bool b; mk_xlist_term (List.map mk_type tl)]
        | RfInh t ->
-            ToTerm.Term.mk_simple_term row_field_inh_op [mk_type comment t]
+            ToTerm.Term.mk_simple_term row_field_inh_op [mk_type t]
 
    and mk_stl =
       let stl_op =  mk_ocaml_op "stl"
-      in fun comment (l, s, tl) ->
-         mk_simple_named_term stl_op (num_of_loc l) s [mk_xlist_term (List.map (mk_type comment) tl)]
+      in fun (l, s, tl) ->
+         mk_simple_named_term stl_op (num_of_loc l) s [mk_xlist_term (List.map mk_type tl)]
 
    and mk_tc =
       let tc_op = mk_ocaml_op "tc"
-      in fun comment (t1, t2) ->
-         ToTerm.Term.mk_simple_term tc_op [mk_type comment t1; mk_type comment t2]
+      in fun (t1, t2) ->
+         ToTerm.Term.mk_simple_term tc_op [mk_type t1; mk_type t2]
 
    and mk_tdl =
       let tdl_op = mk_ocaml_op "tdl"
-      in fun comment ((l, s), sl, t, tl) ->
+      in fun ((l, s), sl, t, tl) ->
          ToTerm.Term.mk_simple_term tdl_op [mk_loc_string tdl_op (num_of_loc l) s;
                                             mk_xlist_term (List.map mk_sbb sl);
-                                            mk_type comment t;
-                                            mk_xlist_term (List.map (mk_tc comment) tl) ]
+                                            mk_type t;
+                                            mk_xlist_term (List.map mk_tc tl) ]
 
    and mk_sbb =
       let sbb_op = mk_ocaml_op "sbb"
@@ -2389,12 +2326,6 @@ struct
    let term_of_str_item = mk_str_item
    let term_of_module_type = mk_module_type
    let term_of_module_expr = mk_module_expr
-
-   (*
-    * Extra functions for resource_sig
-    *)
-   let comment _ _ t = t
-   let mk_type = mk_type comment
 
    let term_of_resource_sig resource_op {
       resource_input = input;

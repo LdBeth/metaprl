@@ -284,6 +284,8 @@ struct
    module TSummary = Filter_summary.FilterSummaryTerm (ToTerm);;
    module TTermCopy = Term_copy2_weak.TermCopy2Weak (Refiner.Refiner) (ToTerm);;
 
+   open TOCaml
+
    (*
     * Identity used for term normalization.
     *)
@@ -294,19 +296,9 @@ struct
     *)
    let unit_term = TTerm.mk_simple_term nil_opname []
 
-   (*
-    * When a StrFilterCache or SigFilterCache is
-    * saved, comments are not saved.
-    *)
-   let comment _ _ t = t
-   let term_of_expr = TOCaml.term_of_expr [] comment
-   let term_of_type = TOCaml.term_of_type comment
-   let term_of_sig_item = TOCaml.term_of_sig_item comment
-   let term_of_str_item = TOCaml.term_of_str_item [] comment
+   let term_of_expr = TOCaml.term_of_expr []
+   let term_of_str_item = TOCaml.term_of_str_item []
 
-   let expr_of_term = TOCaml.expr_of_term
-   let type_of_term = TOCaml.type_of_term
-   let sig_item_of_term = TOCaml.sig_item_of_term
    let str_item_of_term = TOCaml.str_item_of_term_nofail
 
    (*

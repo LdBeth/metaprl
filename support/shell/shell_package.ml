@@ -155,17 +155,9 @@ module FilterSummaryTerm = FilterSummaryTerm (Refiner.Refiner)
 open FilterOCaml
 open FilterSummaryTerm
 
-(*
- * This comment function removes expressions.
- *)
-let comment _ _ t =
-   t
-
 let identity x       = x
-let term_of_expr     = term_of_expr [] comment
-let term_of_type     = term_of_type comment
-let term_of_sig_item = term_of_sig_item comment
-let term_of_str_item = term_of_str_item [] comment
+let term_of_expr     = term_of_expr []
+let term_of_str_item = term_of_str_item []
 let term_of_resource = FilterOCaml.term_of_resource_sig resource_op
 
 let convert_intf =

@@ -42,23 +42,6 @@ open Filter_type
 type loc = Lm_num.num * Lm_num.num
 
 (*
- * A comment function takes a term,
- * and it location and type, and returns
- * another term.
- *)
-type term_type =
-   ExprTerm
- | PattTerm
- | TypeTerm
- | SigItemTerm
- | StrItemTerm
- | ModuleTypeTerm
- | ModuleExprTerm
- | ClassTerm
- | ClassFieldTerm
- | WithClauseTerm
-
-(*
  * This is a parsing error when terms are converted to MLast.
  * FormatError (reason, term that failed)
  *)
@@ -70,13 +53,6 @@ exception FormatError of string * Refiner.Refiner.TermType.term
 module FilterOCaml (ToTerm : RefinerSig) :
 sig
    open ToTerm.TermType
-
-   (*
-    * A "comment" function should fetch the comment closest to
-    * the given location.  If a comment is found, it should
-    * wrap the argument term with a comment term.
-    *)
-   type comment = term_type -> loc -> term -> term
 
    (*
     * Parsing of terms.
@@ -96,17 +72,14 @@ sig
 
    (*
     * MLast to term.
-    *
-    * The comment argument is used to fetch comments for the terms.
-    * It is mapped over all terms postfix order.
     *)
-   val term_of_expr : string list -> comment -> expr -> term
-   val term_of_patt : string list -> comment -> patt -> (string list -> term) -> term
-   val term_of_type : comment -> ctyp -> term
-   val term_of_sig_item : comment -> sig_item -> term
-   val term_of_str_item : string list -> comment -> str_item -> term
-   val term_of_module_type : comment -> module_type -> term
-   val term_of_module_expr : string list -> comment -> module_expr -> term
+   val term_of_expr : string list -> expr -> term
+   val term_of_patt : string list -> patt -> (string list -> term) -> term
+   val term_of_type : ctyp -> term
+   val term_of_sig_item : sig_item -> term
+   val term_of_str_item : string list -> str_item -> term
+   val term_of_module_type : module_type -> term
+   val term_of_module_expr : string list -> module_expr -> term
 
    (*
     * Specific values useful for writing
