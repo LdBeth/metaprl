@@ -228,13 +228,23 @@ mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
 OCamlGeneratedFiles(mp_version.ml)
 
 #
-# Phony targets
+# Defaults
 #
 if $(NATIVE_ENABLED)
         .DEFAULT: $(MP).opt
 
 if $(BYTE_ENABLED)
         .DEFAULT: $(MP).top $(MP).run
+
+#
+# Profiling
+#
+if $(NATIVE_PROFILING_ENABLED)
+   gmon.out: mp.opt mpopt mpconfig
+      echo 'restart_gmon();; status_all();;' | ./mpopt >& /dev/null
+
+   native_profile.txt: mp.opt gmon.out
+      gprof $< > $@
 
 #
 # Clean up
