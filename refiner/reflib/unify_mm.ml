@@ -166,7 +166,7 @@ let header_equal multit0 multit1 current_ts =
           Op op0, Op op1 ->
            if not (
                    (opsymb_equal op0.opsymb op1.opsymb) &&
-                   (op0.oparity_n == op1.oparity_n ) &&
+                   (op0.oparity_n = op1.oparity_n ) &&
                    (op0.oparity_a = op1.oparity_a )
                   ) then false
            else
@@ -195,13 +195,13 @@ let header_equal multit0 multit1 current_ts =
         | Bvar bv0 , Bvar bv1 ->
             (
              (
-              ((bv0.fsymb_bv.opbinding).(bv0.arg_numb)).(bv0.binding_numb) ==
+              ((bv0.fsymb_bv.opbinding).(bv0.arg_numb)).(bv0.binding_numb) =
               ((bv1.fsymb_bv.opbinding).(bv1.arg_numb)).(bv1.binding_numb)
              )
              && (bv0.fsymb_bv.timestamp = current_ts )
              && (bv1.fsymb_bv.timestamp = current_ts )
             )
-        | Cnst c0, Cnst c1 -> c0 == c1
+        | Cnst c0, Cnst c1 -> c0 = c1
         | _ , _ -> false
     end
     else ( match multit0.fsymb with
