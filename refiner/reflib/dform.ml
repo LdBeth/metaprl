@@ -69,6 +69,8 @@ let debug_dform_depth =
         debug_value = false
       }
 
+let debug_rewrite = load_debug "rewrite"
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -625,8 +627,16 @@ let format_short_term (mode, table, state) (shortener : shortener) =
       List.iter (print_entry pprec buf eq) l
 
    in
-   let print buf = print_term max_prec buf NOParens in
-      print
+   fun buf t ->
+      let save_debug = !debug_rewrite in
+         if save_debug then debug_rewrite := false;
+         try
+            print_term max_prec buf NOParens t;
+            if save_debug then debug_rewrite := true
+         with
+            exn ->
+               if save_debug then debug_rewrite := true;
+               raise exn
 
 (************************************************************************
  * BASE                                                                 *
