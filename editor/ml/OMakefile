@@ -250,7 +250,7 @@ if $(NATIVE_PROFILING_ENABLED)
 # Clean up
 #
 clean:
-    $(CLEAN) $(MP).top mp_version.ml make_mp_version$(EXE)
+    $(CLEAN) $(MP).top mp_version.ml make_mp_version$(EXE) native_profile.txt
 
 #
 # All defaults
