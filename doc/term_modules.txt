@@ -1,3 +1,5 @@
+Nuprl-Light Term Modules and Types
+
 NL terms have an interface (type term') and internal (type term)   
 representations. The term' type is defined in
 refiner/refsig/term_simple_sig.mlz and is fixed while the term type may be

@@ -1,4 +1,6 @@
-Also, most files in refiner directory have a verbose (_verb) and a simple
+"Simple" and "Verbose" Versions of the Refiner
+
+Most files in refiner directory have a verbose (_verb) and a simple
 (_simp) versions. The verbose version tries to keep track and raise
 verbose exceptions while simple version usually raises a "generic"
 exception (take a look at ref_raise macro an
