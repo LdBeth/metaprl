@@ -109,14 +109,16 @@ let rl_history_length =
 let () = Lm_readline.initialize_readline ()
 
 let () =
-   try
-      Lm_readline.read_history rl_history_file
-   with
-      Not_found ->
-         ()
-    | Sys_error err ->
-         eprintf "Couldn't load readline history file: \"%s\"\n%s\n" rl_history_file err;
-         flush_all ()
+   if not !batch_flag then begin
+      try
+         Lm_readline.read_history rl_history_file
+      with
+         Not_found ->
+            ()
+       | Sys_error err ->
+            eprintf "Couldn't load readline history file: \"%s\"\n%s\n" rl_history_file err;
+            flush_all ()
+   end
 
 (*
  * Save the text in the input_buffers during each toplevel read.
@@ -864,7 +866,7 @@ let stdin_stream () =
                read loc
             with
                End_of_file ->
-                  save_readline_history ();
+                  if not !batch_flag then save_readline_history ();
                   None
          else
             let c = buffer.[index] in
