@@ -49,11 +49,13 @@ endif
 ifndef PRLC
    PRLC = $(ROOT)/bin/prlc$(EXE) -lib $(ROOT)/lib
 endif
+ifndef INLINE
+   INLINE=5
+endif
 
-# PROFILE = -p
 OCAMLDEP = $(ROOT)/bin/ocamldep
 OCAMLCFLAGS = $(INCLUDE) $(OCAMLFLAGS)
-OCAMLOPTFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(PROFILE) -inline 5
+OCAMLOPTFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(PROFILE) -inline $(INLINE)
 CAMLP4OFLAGS = $(INCLUDE)
 CFLAGS = -g -I$(CAMLLIB)
 CC = gcc
