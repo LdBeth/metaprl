@@ -17,7 +17,7 @@ MAIN := reflib
 CCLIBS := -cclib -lnums
 
 # Use C preprocessor
-OCAMLFLAGS = -pp "$(CPP)"
+OCAMLFLAGS = -pp "$(CAMLP4MACRO)"
 
 all: lib
 
