@@ -471,6 +471,7 @@ struct
              t, (arg::coll)
       with RefineError _ ->
             let dt = dest_term term in
+            if dt.term_terms == [] then (term,coll) else
             let (btrms, args) = apply_fun_higher_bterms f coll dt.term_terms in
                if args == coll
                then (term,coll)
@@ -479,6 +480,11 @@ struct
    and apply_fun_higher_bterms f coll = function
       [] ->
          ([],coll)
+    | [bt] as bterms ->
+         let (bt_new, args) = apply_fun_higher_term f coll bt.bterm in
+            if args == coll then (bterms, coll)
+            else
+               [mk_bterm bt.bvars bt_new],args
     | (bt::btrms) as bterms ->
          let (btrms_new, args) = apply_fun_higher_bterms f coll btrms in
          let (bt_new, args2) = apply_fun_higher_term f args bt.bterm in
