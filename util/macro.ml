@@ -30,6 +30,43 @@
  * eli@cs.cornell.edu
  *)
 
+
+(*
+ * DEFINE SYMBOL
+ * UNDEFINE SYMBOL
+ *   Define and undefine a symbol.
+ *   Also adds "-DSYM" & "-USYM" command-line options for these.
+ *
+ * IFDEF SYMBOL THEN ...
+ * IFDEF SYMBOL THEN ... ELSE ...
+ *   Works for top-level structure items and for expressions.
+ *
+ * DEFEXPRMACRO MAC ARG... = <expr>
+ *   Expand MAC ARG... using <expr> as a template.
+ *
+ * DEFMACRO MAC ARG... = <expr>
+ *   A shortcut for the previous.
+ *
+ * DEFPATTMACRO MAC ARG.. = <patt>
+ *   The same but for patterns.
+ *
+ * DEFEXPRPATTMACRO MAC ARG... = <expr&patt>
+ *   Defines two macro types, <expr&patt> should be parsed as both.
+ *
+ * LETMACRO MAC ARG... = <expr> IN <expr>
+ *   Defines and uses a local macro, it will be expanded as soon as seen,
+ *   before expansion of global macros.
+ *
+ * CONCAT SYM1 SYM2
+ *   The result of this macro will be the symbol made out of the concatenation
+ *   of SYM1 and SYM2, it's type (LIDENT or UIDENT) depends on SYM1.
+ *
+ * INCLUDE <string>
+ *   Parse the given file name at this point.
+ *   Also adds a "-Idir" command-line option for include search directories.
+ *)
+
+
 open Pcaml
 open MLast
 open Printf
@@ -37,14 +74,6 @@ open Printf
 
 (*****************************************************************************)
 (* DEFINE / UNDEFINE extensions *)
-
-(*
- * DEFINE   <UIDENT>
- * UNDEFINE <UIDENT>
- * IFDEF <UIDENT> THEN ...
- * IFDEF <UIDENT> THEN ... ELSE ...
- * works for top-level structure items and for expressions.
- *)
 
 let list_remove x l =
    List.fold_right (fun e l -> if e = x then l else e::l) l []
@@ -54,32 +83,34 @@ let define   x = defined := x :: !defined
 let undefine x = defined := list_remove x !defined
 
 type str_item_or_def =
-   SdStr of str_item | SdDef of string | SdUnd of string | SdNop
+   SdStrs of str_item list | SdDef of string | SdUnd of string | SdNop
 
 EXTEND
    GLOBAL: expr str_item;
    expr: LEVEL "top"
-      [[ "IFDEF"; c = UIDENT; "THEN"; e1 = expr; "ELSE"; e2 = expr ->
-            if List.mem c !defined then e1 else e2 ]];
+      [[ "IFDEF"; c = UIDENT; "THEN"; e1 = expr; "ELSE"; e2 = expr; "ENDIF" ->
+            if List.mem c !defined then e1 else e2
+       | "IFDEF"; c = UIDENT; "THEN"; e1 = expr; "ENDIF" ->
+            if List.mem c !defined then e1 else <:expr< () >> ]];
    str_item: FIRST
       [[ x = def_undef ->
             let nothing = <:str_item< declare end >> in
                match x with
-               | SdStr si -> si
+               | SdStrs sis -> <:str_item< declare $list:sis$ end >>
                | SdDef x -> define x;   nothing
                | SdUnd x -> undefine x; nothing
                | SdNop   ->             nothing ]];
    def_undef:
       [[ "IFDEF"; c = UIDENT; "THEN"; e1 = str_item_def_undef;
-         "ELSE"; e2 = str_item_def_undef ->
+         "ELSE"; e2 = str_item_def_undef; "ENDIF" ->
             if List.mem c !defined then e1 else e2
-       | "IFDEF"; c = UIDENT; "THEN"; e1 = str_item_def_undef ->
+       | "IFDEF"; c = UIDENT; "THEN"; e1 = str_item_def_undef; "ENDIF" ->
             if List.mem c !defined then e1 else SdNop
        | "DEFINE"; c = UIDENT -> SdDef c
        | "UNDEFINE"; c = UIDENT -> SdUnd c ]];
    str_item_def_undef:
       [[ d = def_undef -> d
-       | si = str_item -> SdStr si ]];
+       | sis = LIST1 str_item -> SdStrs sis ]];
 END
 
 let _ =
@@ -541,7 +572,7 @@ EXTEND
        | "INCLUDE"; file = STRING ->
             (* INCLUDE "file" will parse this file and insert the results in
              * the current AST using the StDcl that was added for such things
-             * exactly.  This is copied from camlp4/argl.ml's process. *)
+             * exactly.  This is copied from camlp4/argl.ml's `process'. *)
             let file =
                try (List.find (fun dir -> Sys.file_exists (dir ^ file))
                               !include_dirs)
@@ -561,6 +592,16 @@ EXTEND
                StDcl (loc, List.map fst phr)
        | (* This is where macros are expanded *)
          si = NEXT -> process_str_item si
+       ]];
+   expr: FIRST
+      [[ "LETMACRO"; name = UIDENT; args = LIST0 UIDENT; "="; body = expr;
+         "IN"; e = expr ->
+            let old_macros = !expr_macros in
+               expr_macros := [];
+               add_expr_macro name (make_simple_expr_macro args body);
+               let result = process_expr e in
+                  expr_macros := old_macros;
+                  result
        ]];
 END
 
