@@ -113,6 +113,15 @@ sig
    val unify : unify_subst -> String_set.StringSet.t -> term -> term -> unify_subst
    val match_terms : term_subst -> term -> term -> term_subst
 
+(* MM-unification interface only for ds *)
+  (* it is a variant of unify_subst type used by mm-unification *)
+   type unify_subst_mm
+ 
+   val unifiable : term -> term -> string list -> bool 
+   val unify_mm : term -> term -> string list -> term_subst 
+
+(***********************)
+
    (*
     * generalization: see if the first term generalizes the second term.
     * Return the alpha conversion if so, otherwise raise
@@ -131,3 +140,7 @@ end
  * End:
  * -*-
  *)
+
+
+
+

@@ -667,6 +667,43 @@ struct
          BODY
       ENDIF
 
+(************************************)
+(* MM-unification module            *)
+(************************************)
+
+open Term_unif_ds
+(*
+module TermType = Term_ds.TermType
+module AddressType = Term_addr_ds.AddressType
+module RefineError = Refine_error.MakeRefineError (TermType) (AddressType)
+module Term = Term_base_ds.Term (RefineError)
+*)
+
+module Unification = Term_unif_ds.TermSubstMm(Term)(RefineError)
+
+type unify_subst_mm = unify_subst 
+(* !!!! this type will be changed 
+* modified: meta-prl/refiner/term_ds/term_subst_ds.ml
+*           meta-prl/refiner/term_ds/Files
+*           meta-prl/refiner/refsig/term_subst_sig.mlz
+*           meta-prl/refiner/term_std/term_subst_std.ml     
+*)
+
+let unifiable = Unification.unifiable
+
+let unify_mm = Unification.unify
+
+
+
+
+
+
+
+
+
+
+
+
    (************************************************************************
     * Term generalization                                                  *
     ************************************************************************)

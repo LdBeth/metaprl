@@ -765,6 +765,15 @@ struct
          List.rev (match_terms subst [] t1 t2)
       ENDIF
 
+(* for compatibility  only; never used here *)  
+   type unify_subst_mm = unify_subst
+   let unifiable t1 t2 l=
+      raise (Failure "unifiable: not implemented")
+   let unify_mm t1 t2 l=
+      raise (Failure "unify_mm: not implemented")
+(* ------- *)
+
+
    (************************************************************************
     * Term generalization                                                  *
     ************************************************************************)
