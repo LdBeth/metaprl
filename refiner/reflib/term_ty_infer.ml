@@ -1868,7 +1868,8 @@ let check_rewrite tenv mt args =
       List.fold_left (fun subst cond ->
             infer_term_type tenv venv subst cond ty_term) subst subgoals
    in
-      ignore(solve_constraints tenv venv subst)
+   let _, subst = solve_constraints tenv venv subst in
+      ignore (subst_type subst ty1)
 
 (*
  * Check a type rewrite.
