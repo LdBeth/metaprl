@@ -788,6 +788,10 @@ struct
              | t = applyterm; l = applytermlist ->
                { aname = None; aterm = make_application loc (t.aterm :: l) }
             ]
+          | "type" NONA
+            [ t = noncommaterm; op = sl_type ->
+               { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) t.aterm }
+            ]
          ];
 
       (* Term that can be used in application lists *)
@@ -1369,6 +1373,9 @@ struct
 
       sl_tilde:
          [[ "~" -> () ]];
+
+      sl_type:
+         [[ "Type" -> "type" ]];
 
 (*
       sl_bind:
