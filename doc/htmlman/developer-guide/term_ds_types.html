@@ -1,50 +1,54 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <HTML>
 <HEAD>
+   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1251">
+   <META NAME="GENERATOR" CONTENT="Mozilla/4.07 [en] (X11; I; Linux 2.0.36 i586) [Netscape]">
    <TITLE>The Definition of Term Types in Term_ds Module</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
-<H3>The Definition of Term Types in <TT>Term_ds</TT> Module</H3>
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#000099" VLINK="#009900" ALINK="#FF0000">
 
-<P>type&nbsp;<A NAME="term_subst"><FONT COLOR="#008000">term_subst
-</FONT></A>=
+<H3>
+The Definition of Term Types in <TT>Term_ds</TT> Module</H3>
+type&nbsp;<A NAME="term_subst"></A><FONT COLOR="#008000">term_subst
+</FONT>=
 (string * <A HREF="#term">term</A>) list
-<P>and&nbsp;<A NAME="term"><FONT COLOR="#008000">term</FONT></A> = { mutable
+<P>and&nbsp;<A NAME="term"></A><FONT COLOR="#008000">term</FONT> = { mutable
 free_vars : lazy_vars; mutable core : <A HREF="#term_core">term_core</A>
 }
-<P>and&nbsp;<A NAME="term_core"><FONT COLOR="#008000">term_core</FONT></A>
+<P>and&nbsp;<A NAME="term_core"></A><FONT COLOR="#008000">term_core</FONT>
 =
 <BR>&nbsp;&nbsp;&nbsp; Term of <A HREF="#term'">term'</A>
 <BR>&nbsp; | Subst of <A HREF="#term">term</A> * <A HREF="#term_subst">term_subst</A>
 <BR>&nbsp; | Sequent of <A HREF="#esequent">esequent</A>
 <BR>&nbsp; | FOVar of string
-<P>and&nbsp;<A NAME="term'"><FONT COLOR="#008000">term' </FONT></A>= {
+<BR>&nbsp; | Hashed of term Weak_memo.TheWeakMemo.descriptor
+<P>and&nbsp;<A NAME="term'"></A><FONT COLOR="#008000">term' </FONT>= {
 term_op : <A HREF="#operator">operator</A>; term_terms : <A HREF="#bound_term">bound_term</A>
 list }
-<P>and&nbsp;<A NAME="bound_term"><FONT COLOR="#008000">bound_term</FONT></A>
+<P>and&nbsp;<A NAME="bound_term"></A><FONT COLOR="#008000">bound_term</FONT>
 = <A HREF="#bound_term'">bound_term'</A>
-<P>and&nbsp;<A NAME="bound_term'"><FONT COLOR="#008000">bound_term'</FONT></A>
+<P>and&nbsp;<A NAME="bound_term'"></A><FONT COLOR="#008000">bound_term'</FONT>
 = { bvars : string list; bterm : <A HREF="#term">term</A> }
-<P>and&nbsp;<A NAME="esequent"><FONT COLOR="#008000">esequent</FONT></A>
+<P>and&nbsp;<A NAME="esequent"></A><FONT COLOR="#008000">esequent</FONT>
 = { sequent_args : <A HREF="#term">term</A>; sequent_hyps : <A HREF="#seq_hyps">seq_hyps</A>;
 sequent_goals : <A HREF="#seq_goals">seq_goals</A> }
-<P>and&nbsp;<A NAME="hypothesis"><FONT COLOR="#008000">hypothesis</FONT></A>
+<P>and&nbsp;<A NAME="hypothesis"></A><FONT COLOR="#008000">hypothesis</FONT>
 =
 <BR>&nbsp;&nbsp;&nbsp; Hypothesis of string * <A HREF="#term">term</A>
 <BR>&nbsp; | Context of string * <A HREF="#term">term</A> list
-<P>and&nbsp;<A NAME="seq_hyps"><FONT COLOR="#008000">seq_hyps</FONT></A>
+<P>and&nbsp;<A NAME="seq_hyps"></A><FONT COLOR="#008000">seq_hyps</FONT>
 = <A HREF="#hypothesis">hypothesis</A> array
-<P>and&nbsp;<A NAME="seq_goals"><FONT COLOR="#008000">seq_goals</FONT></A>
+<P>and&nbsp;<A NAME="seq_goals"></A><FONT COLOR="#008000">seq_goals</FONT>
 = <A HREF="#term">term</A> array
 <P>
 <HR WIDTH="100%">
-<P>type&nbsp;<A NAME="operator"><FONT COLOR="#008000">operator </FONT></A>=
+<P>type&nbsp;<A NAME="operator"></A><FONT COLOR="#008000">operator </FONT>=
 <A HREF="#operator'">operator'</A>
-<P>type&nbsp;<A NAME="operator'"><FONT COLOR="#008000">operator'</FONT></A>
+<P>type&nbsp;<A NAME="operator'"></A><FONT COLOR="#008000">operator'</FONT>
 = { op_name : opname; op_params : <A HREF="#param">param</A> list }
 <P>
 <HR WIDTH="100%">
-<P>type&nbsp;<A NAME="param'"><FONT COLOR="#008000">param'</FONT></A> =
+<P>type&nbsp;<A NAME="param'"></A><FONT COLOR="#008000">param'</FONT> =
 <BR>&nbsp;&nbsp;&nbsp; Number of Num.num
 <BR>&nbsp; | String of string
 <BR>&nbsp; | Token of string
@@ -59,7 +63,7 @@ sequent_goals : <A HREF="#seq_goals">seq_goals</A> }
 <BR>&nbsp; | ObId of object_id
 <BR>&nbsp; | ParamList of <A HREF="#param">param</A> list
 <P>and object_id = <A HREF="#param">param</A> list
-<P>and&nbsp;<A NAME="param"><FONT COLOR="#008000">param</FONT></A> = <A HREF="#param'">param'</A>
+<P>and&nbsp;<A NAME="param"></A><FONT COLOR="#008000">param</FONT> = <A HREF="#param'">param'</A>
 <BR>&nbsp;
 </BODY>
 </HTML>
