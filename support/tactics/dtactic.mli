@@ -50,15 +50,17 @@ type elim_option =
    ThinOption of (int -> tactic)  (* Thin the eliminated hyp, unless overridden *)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
 
+type intro_item = string * int option * bool * tactic
+
 resource (term * (int -> tactic), int -> tactic) elim
-resource (term * (string * int option * tactic), tactic) intro
+resource (term * intro_item, tactic) intro
 
 val process_elim_resource_annotation :
    (Tactic.pre_tactic * elim_option list, term * (int -> tactic)) annotation_processor
 val process_intro_resource_annotation :
-   (Tactic.pre_tactic * intro_option list, term * (string * int option * tactic)) annotation_processor
+   (Tactic.pre_tactic * intro_option list, term * intro_item) annotation_processor
 
-val wrap_intro : tactic -> string * int option * tactic
+val wrap_intro : tactic -> intro_item
 
 (*
  * The inherited d tactic.

@@ -92,7 +92,8 @@ doc <:doc<
    @hreftactic[autoT] tactic should not use this rule unless it is capable
    of finishing the proof on its own. This option can be used to mark irreversible
    rules that may take a provable goal and produce potentially unprovable
-   subgoals.
+   subgoals. Setting AutoMustComplete is equivalent to setting the boolean flag when
+   manually adding items to the resource.
 
    The @tt[CondMustComplete] option is a conditional version of @tt[AutoMustComplete];
    it is used to pass in a predicate controlling when to activate the @tt[AutoMustComplete].
@@ -215,6 +216,8 @@ type elim_option =
    ThinOption of (int -> tactic)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
 
+type intro_item = string * int option * bool * tactic
+
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
@@ -242,25 +245,29 @@ let extract_elim_data =
                raise (RefineError ("extract_elim_data", StringTermError ("D tactic doesn't know about", t)))
       in firstiT i tacs))
 
+let in_auto p =
+   (Sequent.get_bool_arg p "d_auto") = (Some true)
+
 let extract_intro_data =
-   let select_intro sel (_, sel', _) =
+   let select_intro sel in_auto (_, sel', mst_complete, _) =
+      (not (mst_complete && in_auto)) &&
       match sel, sel' with
          _, None -> true
        | Some i, Some i' when i = i' -> true
        | _ -> false
    in
-   let extract (name, _, tac) =
+   let extract (name, _, _, tac) =
       if !debug_dtactic then eprintf "Dtactic: intro: found %s%t" name eflush; tac
    in
    (fun tbl ->
    funT (fun p ->
       let t = Sequent.concl p in
-      let sel_arg = get_sel_arg p in
       if !debug_dtactic then
          eprintf "Dtactic: intro: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
+      let sel_arg = get_sel_arg p in
       let tacs =
          try
-            lookup_bucket tbl (select_intro sel_arg) t
+            lookup_bucket tbl (select_intro sel_arg (in_auto p)) t
          with
             Not_found ->
                let sel_err =
@@ -294,9 +301,6 @@ let rec get_sel_arg = function
 (*
  * Improve the intro resource from a rule.
  *)
-let in_auto p =
-   (Sequent.get_bool_arg p "d_auto") = (Some true)
-
 let process_intro_resource_annotation name context_args term_args statement (pre_tactic, options) =
    let goal = TermMan.explode_sequent (snd (unzip_mfunction statement)) in
    let t =
@@ -340,14 +344,13 @@ let process_intro_resource_annotation name context_args term_args statement (pre
          [||] ->
             let auto_exn = RefineError("intro_annotation " ^ name, StringError("not appropriate in weakAutoT")) in
             let rec auto_aux = function
-               AutoMustComplete :: _ ->
-                  (fun p -> if in_auto p then raise auto_exn)
+               AutoMustComplete :: _ (* Will record into the table, no need to double-check *)
+             | [] ->
+                  (fun p -> ())
              | CondMustComplete f :: _ ->
                   (fun p -> if f p && in_auto p then raise auto_exn)
              | _ :: tl ->
                   auto_aux tl
-             | [] ->
-                    (fun p -> ())
             in
             let check_auto = auto_aux options
             in
@@ -357,7 +360,7 @@ let process_intro_resource_annotation name context_args term_args statement (pre
        | _ ->
             raise (Invalid_argument (sprintf "Dtactic.intro: %s: not an introduction rule" name))
    in
-      t, (name, get_sel_arg options, tac)
+      t, (name, get_sel_arg options, List.mem AutoMustComplete options, tac)
 
 (*
  * Compile an elimination tactic.
@@ -464,7 +467,7 @@ let process_elim_resource_annotation name context_args term_args statement (pre_
          raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: must be an elimination rule" name))
 
 let wrap_intro tac =
-   ("wrap_intro", None, tac)
+   ("wrap_intro", None, false, tac)
 
 (*
  * Resources
@@ -472,7 +475,7 @@ let wrap_intro tac =
 let resource (term * (int -> tactic), int -> tactic) elim =
    table_resource_info extract_elim_data
 
-let resource (term * (string * int option * tactic), tactic) intro =
+let resource (term * (string * int option * bool * tactic), tactic) intro =
    table_resource_info extract_intro_data
 
 let dT =
