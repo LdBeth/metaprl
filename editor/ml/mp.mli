@@ -43,7 +43,6 @@ open Proof_edit
 val create_rw : string -> unit
 val create_axiom : string -> unit
 val create_thm : string -> unit
-val create_ax_statement : term -> string -> unit
 val create_opname : string -> unit
 val create_condition : string -> unit
 val create_parent : string -> unit
