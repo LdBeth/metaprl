@@ -2742,9 +2742,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          (merge_terms "TermMeta.unzip_mimplies - 0" res0_1 res0_2),
          (merge_term "TermMeta.unzip_mimplies - 1" res1_1 res1_2)
 
-      let unzip_mrewrite (p1 : meta_term) =
-         raise (Invalid_argument "jyh")
-
       let zip_mimplies (p0 : term list) (p1 : term) =
          let p0_1, p0_2 = split p0 in
          let p1_1, p1_2 = p1 in
@@ -2763,6 +2760,15 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = split_meta_term p0 in
          merge merge_meta_term "TermMeta.strip_mfunction" (wrap1 TermMeta1.strip_mfunction p0_1) (wrap1 TermMeta2.strip_mfunction p0_2)
 
+      let unzip_mrewrite (p0 : meta_term) =
+         let p0_1, p0_2 = split_meta_term p0 in
+         let res1 = wrap1 TermMeta1.unzip_mrewrite p0_1 in
+         let res2 = wrap1 TermMeta2.unzip_mrewrite p0_2 in
+         let (res0_1, res1_1, res2_1), (res0_2, res1_2, res2_2) = merge merge_triv "TermMeta.unzip_mrewrite" res1 res2 in
+         (merge_terms "TermMeta.unzip_mrewrite - 0" res0_1 res0_2),
+         (merge_term "TermMeta.unzip_mrewrite - 1" res1_1 res1_2),
+         (merge_term "TermMeta.unzip_mrewrite - 2" res2_1 res2_2)
+
       let map_mterm (p0 : (term -> term)) (p1 : meta_term) =
          let p0_1, p0_2 = split_ttf p0 in
          let p1_1, p1_2 = split_meta_term p1 in
@@ -2775,16 +2781,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let term_of_parsed_term_with_vars (p0 : term) =
          let p0_1, p0_2 = p0 in
          merge merge_term "TermMeta.term_of_parsed_term_with_vars" (wrap1 TermMeta1.term_of_parsed_term_with_vars p0_1) (wrap1 TermMeta2.term_of_parsed_term_with_vars p0_2)
-
-      let display_term_of_term (p0 : term) =
-         let p0_1, p0_2 = p0 in
-         merge merge_term "TermMeta.display_term_of_term" (wrap1 TermMeta1.display_term_of_term p0_1) (wrap1 TermMeta2.display_term_of_term p0_2)
-
-      let rewrite_of_parsed_rewrite (redex : term) (contractum : term) =
-         raise (Invalid_argument "jyh gives up in despair")
-
-      let mrewrite_of_parsed_mrewrite (redex : term list) (contractum : term) =
-         raise (Invalid_argument "jyh gives up in despair")
 
       let mterms_of_parsed_mterms (p0 : meta_term) (p1 : term list) =
          let p0_1, p0_2 = split_meta_term p0 in
@@ -2805,6 +2801,15 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          (merge_term "TermMeta.rewrite_of_parsed_rewrite - 0" res0_1 res0_2),
          (merge_term "TermMeta.rewrite_of_parsed_rewrite - 1" res1_1 res1_2)
 
+      let mrewrite_of_parsed_mrewrite (p0 : term list) (p1 : term) =
+         let p0_1, p0_2 = split p0 in
+         let p1_1, p1_2 = p1 in
+         let res1 = wrap2 TermMeta1.mrewrite_of_parsed_mrewrite p0_1 p1_1 in
+         let res2 = wrap2 TermMeta2.mrewrite_of_parsed_mrewrite p0_2 p1_2 in
+         let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermMeta.mrewrite_of_parsed_mrewrite" res1 res2 in
+         (merge_terms "TermMeta.mrewrite_of_parsed_mrewrite - 0" res0_1 res0_2),
+         (merge_term "TermMeta.mrewrite_of_parsed_mrewrite - 1" res1_1 res1_2)
+
       let display_term_of_term (p0 : term) =
          let p0_1, p0_2 = p0 in
          merge merge_term "TermMeta.display_term_of_term" (wrap1 TermMeta1.display_term_of_term p0_1) (wrap1 TermMeta2.display_term_of_term p0_2)
@@ -2824,7 +2829,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_var "TermMeta.decode_free_var" (wrap1 TermMeta1.decode_free_var p0_1) (wrap1 TermMeta2.decode_free_var p0_2)
 
-  end
+   end
 
    module Rewrite = struct
       module RwTypes = TermType
