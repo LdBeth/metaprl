@@ -3052,16 +3052,14 @@ struct
             else
                pos_fset::(transitive_irreflexive_closure addset const r)
 
-   let rec search_set var ordering =
-(* print_endline var; *)
-      match ordering with
-         [] ->
-            raise (Invalid_argument "Jprover: element in ordering missing")
-       | (pos,fset)::r ->
-            if pos = var then
-               StringSet.add fset pos
-            else
-               search_set var r
+   let rec search_set var = function
+      [] ->
+         raise (Invalid_argument "Jprover: element in ordering missing")
+    | (pos,fset)::r ->
+         if pos = var then
+            StringSet.add fset pos
+         else
+            search_set var r
 
    let add_sets var const ordering =
       let addset =  search_set var ordering  in
@@ -3069,15 +3067,14 @@ struct
 
 (* ************* J ordering ********************************************** *)
 
-   let rec add_arrowsJ (v,vlist) ordering =
-      match vlist with
-         [] -> ordering
-       | f::r ->
-            if ((String.get f 0)='c') then
-               let new_ordering = add_sets v f ordering in
-               add_arrowsJ (v,r) new_ordering
-            else
-               add_arrowsJ (v,r) ordering
+   let rec add_arrowsJ v ordering = function
+      [] -> ordering
+    | f::r ->
+         if ((String.get f 0)='c') then
+            let new_ordering = add_sets v f ordering in
+            add_arrowsJ v new_ordering r
+         else
+            add_arrowsJ v ordering r
 
    let rec add_substJ replace_vars replace_string ordering atom_rel =
       match replace_vars with
@@ -3087,7 +3084,7 @@ struct
                   or (List.exists (fun (x,_,_) -> (x.aname = v)) atom_rel) then   (* no reduction ordering at atoms *)
                (add_substJ r replace_string ordering atom_rel)
             else
-               let next_ordering = add_arrowsJ (v,replace_string) ordering in
+               let next_ordering = add_arrowsJ v ordering replace_string in
                (add_substJ r replace_string next_ordering atom_rel)
 
    let build_orderingJ replace_vars replace_string ordering atom_rel =
@@ -3730,7 +3727,7 @@ let rec add_multiplicity ftree pos_n  mult logic =
 
 let rec get_alpha atom = function
    [] -> raise (Invalid_argument "Jprover bug: atom not found")
- | (a, alpha, _) :: _ when atom = a -> alpha
+ | (a, alpha, _) :: _ when a.aname = atom.aname -> alpha
  | _ :: r -> get_alpha atom r
 
 let rec get_connections a alpha tabulist =
@@ -3937,8 +3934,8 @@ let rec compute_atomlist_relations worklist ftree alist =  (* last version of al
          first_relations::(compute_atomlist_relations rest ftree alist)
 
 let atom_record position prefix =
-   let aname = (position.name) in
-   let aprefix = (List.append prefix [aname]) in (* atom position is last element in prefix *)
+   let aname = position.name in
+   let aprefix = prefix @ [aname] in (* atom position is last element in prefix *)
    let aop = (dest_term position.label).term_op in
    ({aname=aname; aaddress=(position.address); aprefix=aprefix; apredicate=aop;
      apol=(position.pol); ast=(position.st); alabel=(position.label)})
