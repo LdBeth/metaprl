@@ -136,7 +136,7 @@ let sub_map f a i len =
             [||]
        | 1 ->
             [| f (Array.unsafe_get a i) |]
-       | len ->
+       | _ ->
             let a' = Array.create len (f (Array.unsafe_get a i)) in
                for j = 1 to len - 1 do
                   Array.unsafe_set a' j (f (Array.unsafe_get a (i + j)))

@@ -376,10 +376,10 @@ struct
             ()
 
    and mem_any v term2 subst =
-      if is_free_var v term2 then
+      if StringSet.mem term2.free_vars v then
          raise unify_exn
       else
-         List.iter (find_closure subst v) (free_vars term2)
+         StringSet.iter (find_closure subst v) term2.free_vars
 
    let rec occurs_check v term2 subst =
       if is_var_term term2 then
@@ -390,6 +390,12 @@ struct
                       ())
       else
          mem_any v term2 subst
+
+   let rec bvars_occurs_check fvars = function
+      [] -> ()
+    | (v,_)::tl -> 
+         if StringSet.mem fvars v then raise unify_exn
+         else bvars_occurs_check fvars tl
 
    let rec unify_terms subst constants bvars term1 term2 =
       if term1 == term2 then subst else
@@ -415,6 +421,7 @@ struct
                      try unify_terms subst constants bvars (List.assoc v subst) term2 with
                         Not_found ->
                            occurs_check v term2 subst;
+                           bvars_occurs_check term2.free_vars subst;
                            if is_var_term term2 && dest_var term2 = v then
                               subst
                            else
@@ -441,17 +448,18 @@ struct
                      try unify_terms subst constants bvars term1 (List.assoc v subst) with
                         Not_found ->
                            occurs_check v term1 subst;
+                           bvars_occurs_check term1.free_vars subst;
                            if is_var_term term1 && dest_var term1 = v then
                               subst
                            else
                               (v, term1) :: subst
       else
-         let { term_op = op1; term_terms = bterms1 } = dest_term term1 in
-         let { term_op = op2; term_terms = bterms2 } = dest_term term2 in
-         let { op_name = opname1; op_params = params1 } = dest_op op1 in
-         let { op_name = opname2; op_params = params2 } = dest_op op2 in
+         let trm1 = dest_term term1 in
+         let trm2 = dest_term term2 in
+         let { op_name = opname1; op_params = params1 } = trm1.term_op in
+         let { op_name = opname2; op_params = params2 } = trm2.term_op in
             if Opname.eq opname1 opname2 & params1 = params2 then
-               unify_bterms subst constants bvars bterms1 bterms2
+               unify_bterms subst constants bvars trm1.term_terms trm2.term_terms
             else
                raise unify_exn
 

@@ -15,6 +15,7 @@ sig
    val remove : elt -> t -> t
    val union : t -> t -> t
    val elements : t -> elt list
+   val iter : (elt -> unit) -> t -> unit
    val cardinal : t -> int
    val mem_filt : t -> elt list -> elt list
    val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
@@ -195,6 +196,11 @@ struct
          x::(elements_aux (elements_aux coll l) r)
 
    let elements = elements_aux []
+
+   let rec iter f = function
+      (LEAF,_) -> ()
+    | (NODE {contents = (x,l,r)},_) ->
+         iter f l; f x; iter f r
 
    let rec mem_filt s = function
       [] -> []
