@@ -16,7 +16,10 @@ open Term
  *)
 
 
-val library_open_eval	: (term (*goal*) -> term (*tactic*) -> term list(*subgoals*) ) -> unit
+val library_open_eval	: string (* lib mnemonic *)
+				-> (term (*goal*) -> term (*tactic*) -> term list(*subgoals*) )
+				-> unit
+
 val library_close	: unit -> unit
 
 
@@ -34,7 +37,7 @@ val library_loop_eval	: unit -> unit
  *	library closed at loop quit.
  *)
 
-val library_open_and_loop_eval	: (term -> term -> term list) -> unit
+val library_open_and_loop_eval	: string -> (term -> term -> term list) -> unit
 
 
 val refine_req_p	: term -> bool

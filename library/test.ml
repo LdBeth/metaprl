@@ -489,7 +489,7 @@ let faux_refine g t =
 ;;
 
 
-special_error_handler (function () -> (library_open_and_loop_eval faux_refine))
+special_error_handler (function () -> (library_open_and_loop_eval "lNuprlLight" faux_refine))
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
  
 

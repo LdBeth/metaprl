@@ -62,13 +62,13 @@ let refine_ehook rhook =
 
 
 
-let library_open_eval rhook =
+let library_open_eval name rhook =
 
   (if not (oref_p library)
      then let host = Sys.getenv "NUPRLLIB_HOST"
 	  and port = int_of_string (Sys.getenv "NUPRLLIB_PORT")
 	  in
-	  lib_open_eval "NuprlLight" (refine_ehook rhook) host port (port+2))
+	  lib_open_eval name (refine_ehook rhook) host port (port+2))
  ; ()
 
 
@@ -85,12 +85,12 @@ let library_loop_eval () =
 
 
 
-let library_open_and_loop_eval rhook =
+let library_open_and_loop_eval name rhook =
 
-  library_open_eval rhook;
+  library_open_eval name rhook;
  
   (unwind_error	
-     (function () -> library_loop_eval ();  print_string "before closing ";
+     (function () -> library_loop_eval ();  
 	library_close ())
      (function () -> library_close ()))
 
