@@ -36,7 +36,7 @@ open Mp_num
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5
-
+open Lib_term  (* allows Lib_term.dest_term on special terms - I replaced all instances in this file *)
 
 
 let _ =
@@ -147,7 +147,7 @@ let ivoid_op = (mk_nuprl5_op [make_param (Token "!void")])
 let ivoid_term = mk_term ivoid_op []
 
 let ivoid_term_p t =
-  match dest_term t with
+  match Lib_term.dest_term t with
   { term_op = op; term_terms = []} when opeq op ivoid_op
      -> true
   |_ -> false
@@ -193,17 +193,17 @@ let unwind_error body unwind =
 
 
 let parameters_of_term t =
-  match dest_term t with
+  match Lib_term.dest_term t with
    { term_op = op; term_terms = _}
    -> match dest_op op with
     { op_name = _; op_params = parms } -> parms
 
 let operator_of_term t =
-  match dest_term t with
+  match Lib_term.dest_term t with
    { term_op = op; term_terms = _} -> op
 
 let bound_terms_of_term t =
-  match dest_term t with
+  match Lib_term.dest_term t with
    { term_op = _; term_terms = bterms} -> bterms
 
 let term_of_unbound_term bterm =
@@ -220,7 +220,7 @@ let unbound_bterm_p bterm =
 
 
 let parameter_of_carrier p t =
-  match dest_term t with
+  match Lib_term.dest_term t with
     { term_op = o; term_terms = []}
      -> (match dest_op o with
 	  { op_name = opname; op_params = [p'; c] } when (parmeq p p' & nuprl5_opname_p opname)
@@ -229,7 +229,7 @@ let parameter_of_carrier p t =
   |_ -> error ["term"; "carrier"; "subterms"] [] [t]
 
 let parameters_of_carrier p t =
-  match dest_term t with
+  match Lib_term.dest_term t with
     { term_op = o; term_terms = []}
      -> (match dest_op o with
 	  { op_name = opname; op_params = p':: r } when (parmeq p p' & nuprl5_opname_p opname)
@@ -340,7 +340,7 @@ let istamp_op parms = mk_nuprl5_op (istamp_parameter :: parms)
 exception InvalidStampTerm of term
 
 let term_to_stamp t =
-  match dest_term t with
+  match Lib_term.dest_term t with
    { term_op = op;
      term_terms = [] }
     -> (match dest_op op with
@@ -471,13 +471,13 @@ let icons_op = (mk_nuprl5_op [make_param (Token "!cons")])
 let icons_term op h t = mk_term op [mk_bterm [] h; mk_bterm [] t]
 
 let hd_of_icons_term iop t =
-  match dest_term t with
+  match Lib_term.dest_term t with
     { term_op = op; term_terms = [l; r] } when opeq op iop
        ->  term_of_unbound_term l
     |_ -> error ["icons"; "not"] [] [t]
 
 let tl_of_icons_term iop t =
-  match dest_term t with
+  match Lib_term.dest_term t with
     { term_op = op; term_terms = [l; r] } when opeq op iop
        ->  term_of_unbound_term r
     |_ -> error ["icons"; "not"] [] [t]
@@ -500,7 +500,7 @@ let list_to_ilist_map f l = list_to_ilist_by_op_map icons_op f l
 
 let map_isexpr_to_list_by_op iop f t =
  let rec aux t acc =
-  match dest_term t with
+  match Lib_term.dest_term t with
     { term_op = op; term_terms = [] } when opeq op iop
        -> acc
     | { term_op = op; term_terms = [] } when not (opeq op iop)
@@ -513,7 +513,7 @@ let map_isexpr_to_list_by_op iop f t =
 
 let map_isexpr_by_op iop f t =
  let rec aux t =
-  match dest_term t with
+  match Lib_term.dest_term t with
     { term_op = op; term_terms = [] } when opeq op iop
        -> ()
     | { term_op = op; term_terms = [] } when not (opeq op iop)
@@ -537,7 +537,7 @@ let ioption_term tt =
 let option_of_ioption_term t =
   if ivoid_term_p t
      then None
-     else  match dest_term t with
+     else  match Lib_term.dest_term t with
               { term_op = op; term_terms = [s] } when opeq op isome_op
                ->  Some (term_of_unbound_term s)
 	      |_ -> error ["isome"; "not"] [] [t]
@@ -554,7 +554,7 @@ let string_of_token_parameter p =
   |_ -> error ["parameter"; "token"; "not"; ""] [] []
 
 let property_of_iproperty_term pt =
-  match dest_term pt with
+  match Lib_term.dest_term pt with
     { term_op = pto; term_terms = [prop] }
     -> (match dest_op pto with
 	{ op_name = po; op_params = [iprop; name] } when (nuprl5_opname_p po

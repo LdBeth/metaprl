@@ -26,6 +26,7 @@
  *)
 
 open Refiner.Refiner.Term
+open Refiner.Refiner.Refine
 
 (*
  *	uses NUPRLLIB_PORT & NUPRLLIB_HOST environment variables.
@@ -89,3 +90,6 @@ val itt_bug : bool ref
  *	function is used.
  *)
 
+val msequent_to_term : msequent -> term 
+val term_to_msequent : term -> term list * term
+ 

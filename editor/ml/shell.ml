@@ -895,7 +895,7 @@ struct
    let edit_save name =
       Package.save info.packages (Package.get info.packages name)
 
-   let edit_list_module name =
+   let edit_list_module_all name =
       let info = edit_info name in
       let rec collect = function
          [] ->
@@ -907,6 +907,37 @@ struct
                 | CondRewrite { crw_name = name } -> name :: names
                 | Axiom { axiom_name = name } -> name :: names
                 | Rule { rule_name = name } -> name :: names
+                | _ -> names
+      in
+         collect (info_items info)
+
+   let edit_list_module name =
+      let info = edit_info name in
+      let (wnames : string list ref) = ref [] and (cnames : string list ref) = ref [] and (anames : string list ref) = ref [] and (rnames : string list ref) = ref [] in
+      let rec collect = function
+         [] -> (!wnames, !cnames, !anames, !rnames)
+       | (h, _) :: t ->
+               match h with
+                  Rewrite { rw_name = name } -> wnames := name :: !wnames; collect t
+                | CondRewrite { crw_name = name } -> cnames := name :: !cnames; collect t
+                | Axiom { axiom_name = name } -> anames := name :: !anames; collect t
+                | Rule { rule_name = name } -> rnames := name :: !rnames; collect t
+                | _ -> collect t
+      in
+         collect (info_items info)
+
+   let edit_list_module_rw name =
+      let info = edit_info name in
+      let rec collect = function
+         [] ->
+            []
+       | (h, _) :: t ->
+            let names = collect t in
+               match h with
+                  Rewrite { rw_name = name } -> name :: names
+               (* | CondRewrite { crw_name = name } -> name :: names
+                | Axiom { axiom_name = name } -> name :: names
+                | Rule { rule_name = name } -> name :: names *)
                 | _ -> names
       in
          collect (info_items info)
@@ -1042,6 +1073,18 @@ struct
       let create name =
          let package = get_current_package info in
          let item = Shell_rule.create package name in
+            item.edit_save ();
+            touch ()
+      in
+         print_exn create name;
+         edit_cd_thm mname name
+
+   let edit_create_rw mname name =
+      let _ = edit_info mname in
+      let _ = cd ("/" ^ mname) in
+      let create name =
+         let package = get_current_package info in
+         let item = Shell_rewrite.create package name in
             item.edit_save ();
             touch ()
       in

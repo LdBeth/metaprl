@@ -101,12 +101,15 @@ let fold_all = fold_all
  * Nuprl5 interface.
  *)
 let edit_list_modules = edit_list_modules
+let edit_list_module_all = edit_list_module_all
 let edit_list_module = edit_list_module
+let edit_list_module_rw = edit_list_module_rw
 let edit_list_parents = edit_list_parents
 let edit_list_dforms = edit_list_dforms
 let edit_list_precs = edit_list_precs
 let edit_list_prec_rels = edit_list_prec_rels
 let edit_create_thm = edit_create_thm
+let edit_create_rw = edit_create_rw
 let edit_cd_thm = edit_cd_thm
 let edit_set_goal = edit_set_goal
 let edit_set_redex = edit_set_redex
@@ -115,6 +118,7 @@ let edit_set_assumptions = edit_set_assumptions
 let edit_set_params = edit_set_params
 let edit_refine = edit_refine
 let edit_node = edit_node
+let edit_save = edit_save
 let edit_undo = edit_undo
 
 let _ = Shell.main ()
