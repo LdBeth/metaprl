@@ -61,6 +61,7 @@ SYSTEM =\
 	mp-base\
    mp-base-syntax\
    mp-auto-tactic\
+   mp-d-tactic\
    mp-type-inf-rsrc\
    mp-base-cache\
 	mp-editor-imp\
