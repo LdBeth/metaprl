@@ -91,6 +91,8 @@ Example:
 test{x.test{y.'C['x; 'y]}} <--> 'C[1; 2] 
 rewrites <<test{x.test{x.'x}}>> to 1 instead of 2.
 
+(3.4-3.5 - fixed)
+
 3.6) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
 
 3.7) Currently rewriter does not enforce building contractum to be against the same redex
