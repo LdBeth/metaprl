@@ -52,6 +52,9 @@ type param' =
  | MToken of string
  | MLevel of string
  | MVar of string
+ | ObId of object_id
+ | ParmList of param list
+   
    
    (* Num operations *)
  | MSum of param * param
@@ -65,11 +68,13 @@ type param' =
  | MEqual of param * param
  | MNotEqual of param * param
 
+and object_id = param list
 (*
  * An operator combines a name with a list of parameters.
  * The order of params is significant.
  *)
 type operator' = { op_name : opname; op_params : param list }
+
 
 (*
  * A term has an operator, and a finite number of subterms
@@ -110,6 +115,10 @@ val dest_level : level_exp -> level_exp'
 val mk_level_var : string -> int -> level_exp_var
 val make_level_var : level_exp_var' -> level_exp_var
 val dest_level_var : level_exp_var -> level_exp_var'
+
+
+val make_object_id :  param list -> object_id 
+val dest_object_id : object_id  ->  param list
 
 val normalize_term : term -> term
 
@@ -367,10 +376,13 @@ val shape_of_term : term -> shape
 
 (*
  * $Log$
- * Revision 1.2  1997/08/06 16:18:15  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
+ * Revision 1.3  1997/08/07 19:08:20  lolorigo
+ * added ObId and ParmList parameter types
  *
+# Revision 1.2  1997/08/06  16:18:15  jyh
+# This is an ocaml version with subtyping, type inference,
+# d and eqcd tactics.  It is a basic system, but not debugged.
+#
  * Revision 1.1  1997/04/28 15:51:44  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included
