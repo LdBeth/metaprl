@@ -56,11 +56,13 @@ let debug_shell =
 (*
  * We should skip the packages that do not have basic shell commands in them.
  *)
+let shell_package_name name =
+   try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd" with
+      Not_found ->
+         false
+
 let shell_package pkg =
-   let name = Package_info.name pkg in
-      try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd" with
-         Not_found ->
-            false
+   shell_package_name (Package_info.name pkg)
 
 (*
  * All loaded modules.
@@ -836,9 +838,8 @@ let rec apply_all parse_arg shell f (time : bool) (clean_res : bool) =
    in
    let rec apply_all_exn time =
       let display_mode = get_display_mode shell in
-         match shell.shell_package with
-            Some pack ->
-               let mod_name = Package_info.name pack in
+         match shell.shell_fs, shell.shell_subdir, shell.shell_package with
+            DirModule (_, mod_name), [], Some pack ->
                let apply_item = function
                   Rewrite rw, _ ->
                      if !debug_shell then eprintf "Rewrite %s%t" rw.rw_name eflush;
@@ -869,14 +870,29 @@ let rec apply_all parse_arg shell f (time : bool) (clean_res : bool) =
                   else
                      List.iter apply_item items
 
-          | None ->
-               let expand pack =
-                  let name = Package_info.name pack in
-                     eprintf "Entering %s%t" name eflush;
-                     chdir parse_arg shell false true (module_dir name);
-                     apply_all_exn false
+          | DirModule _, _, _ ->
+               raise (Invalid_argument "Shell_core.apply_all: internal error")
+
+          | DirRoot, subdir, _ ->
+               let expand name =
+                  eprintf "Entering %s%t" name eflush;
+                  chdir parse_arg shell false true (module_dir name);
+                  apply_all_exn false
                in
-                  List.iter expand (all_packages ())
+                  begin match subdir with
+                     [] ->
+                        List.iter expand (List.map Package_info.name (all_packages ()))
+                   | [group] ->
+                        List.iter expand (List.filter shell_package_name (snd (Package_info.group_packages packages group)))
+                   | _ ->
+                        raise (Invalid_argument "Shell_core.apply_all: internal error")
+                  end
+
+          | DirFS, _, _ ->
+               raise (Failure "Shell_core.apply_all: not applicable in a filesystem")
+
+          | DirProof _, _, _ ->
+               raise (Failure "Shell_core.apply_all: not applicable inside an individual proof")
    in
       apply_all_exn time;
       chdir_full parse_arg shell true false false dir
