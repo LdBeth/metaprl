@@ -4,11 +4,16 @@ ROOT := ..
 
 INCLUDE := -I .
 
+# C preprocessing
+OCAMLFLAGS = -pp "$(CPP)"
+
 # Types files
 MLZFILES :=\
 	mp_set\
 	file_base_type\
 	dag\
+	array_sig\
+	marshal_sig\
 	remote_queue_sig\
 	remote_lazy_queue_sig\
 	simplehash_sig\
@@ -24,12 +29,18 @@ LMFILES :=\
 	env_arg\
 	punix\
 	getrusage\
+	int_util\
 	array_util\
 	string_util\
 	list_util\
 	ref_util\
 	file_util\
 	filename_util\
+	mp_id\
+	large_array\
+	large_weak_array\
+	marshal_buf\
+	marshal_shared\
 	mp_big_int\
 	mp_num\
 	mp_ctype\

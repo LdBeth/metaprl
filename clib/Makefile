@@ -5,16 +5,9 @@ CFLAGS := -Wall
 
 include $(ROOT)/mk/preface
 
-# Library files
-ifneq ($(ENSROOT),undefined)
-ENSFILES :=\
-	intern\
-	extern
-endif
-
 LCFILES :=\
-	$(ENSFILES)\
 	print_symbols\
+	marshal_shared\
 	truncate\
 	putenv\
 	execvp\
