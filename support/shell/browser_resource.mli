@@ -68,7 +68,7 @@ type browser_state =
      browser_history     : string list;
      browser_options     : string;
      browser_id          : int;
-     browser_sessions    : int list
+     browser_sessions    : (int * string) list
    }
 
 (*

@@ -52,23 +52,6 @@ struct
       show_loading "Loading Shell_mp%t"
 
    (************************************************************************
-    * STATE FUNCTIONS                                                      *
-    ************************************************************************)
-
-   (*
-    * State for evaluating toploop expressions.
-    * BUG JYH: note that the shell handle is ignored.
-    * This code should be removed at some point.
-    *)
-   let current_state = ref (Shell_state.create ())
-
-   let get_current_state () =
-      !current_state
-
-   let set_current_state state =
-      current_state := state
-
-   (************************************************************************
     * SHELL GRAMMAR                                                        *
     ************************************************************************)
 
@@ -95,19 +78,19 @@ struct
    (*
     * Evaluate a tactic through the toploop resource.
     *)
-   let eval_tactic state =
-      Shell_state.synchronize state (tactic_of_ocaml_expr (Shell_state.get_toploop state))
+   let eval_tactic e =
+      Shell_state.synchronize (tactic_of_ocaml_expr (Shell_state.get_toploop ())) e
 
-   let parse_string state =
-      Shell_state.synchronize state (function str ->
+   let parse_string s =
+      Shell_state.synchronize (fun str ->
           let instream = Stream.of_string str in
-             Grammar.Entry.parse Pcaml.expr instream)
+             Grammar.Entry.parse Pcaml.expr instream) s
 
-   let eval_expr state =
-      Shell_state.synchronize state (function str ->
+   let eval_expr s =
+      Shell_state.synchronize (fun str ->
          let instream = Stream.of_string str in
          let expr = Grammar.Entry.parse Pcaml.expr instream in
-            ignore (evaluate_ocaml_expr (Shell_state.get_toploop state) expr))
+            ignore (evaluate_ocaml_expr (Shell_state.get_toploop ()) expr)) s
 
    (************************************************************************
     * TOPLOOP                                                              *
@@ -146,10 +129,10 @@ struct
     | [] ->
          ()
 
-   let print_expr state out (expr, typ) =
+   let print_expr out (expr, typ) =
       let buf = new_buffer () in
          format_szone buf;
-         format_expr buf (Shell_state.get_dfbase state) expr;
+         format_expr buf (Shell_state.get_dfbase ()) expr;
          format_space buf;
          format_ezone buf;
          format_string buf ": ";
@@ -160,29 +143,29 @@ struct
    (*
     * Evaluate a struct item.
     *)
-   let eval_str_item state item =
-      let expr = evaluate_ocaml_str_item (Shell_state.get_toploop state) item in
-         if Shell_state.is_interactive state then
+   let eval_str_item item =
+      let expr = evaluate_ocaml_str_item (Shell_state.get_toploop ()) item in
+         if Shell_state.is_interactive () then
             begin
-               print_expr state stdout expr;
+               print_expr stdout expr;
                flush stdout
             end
 
    (*
     * For now, this assumes we are in browser mode.
     *)
-   let eval_top state =
-      Shell_state.synchronize state (function str ->
-         let instream = Shell_state.stream_of_string state str in
+   let eval_top s =
+      Shell_state.synchronize (function str ->
+         let instream = Shell_state.stream_of_string str in
             match Grammar.Entry.parse Pcaml.top_phrase instream with
                Some item ->
-                  let expr = evaluate_ocaml_str_item (Shell_state.get_toploop state) item in
-                     print_expr state stdout expr;
+                  let expr = evaluate_ocaml_str_item (Shell_state.get_toploop ()) item in
+                     print_expr stdout expr;
                      flush stdout
              | None ->
-                  ())
+                  ()) s
 
-   let eval_opens _ _ =
+   let eval_opens _ =
       ()
 
    (*
@@ -190,29 +173,31 @@ struct
     *)
    external exit : int -> unit = "caml_exit"
 
-   let rec use state name =
+   let rec use name =
       let inx = open_in name in
-      let int_flag = Shell_state.is_interactive state in
-      let stream = Shell_state.stream_of_channel state inx in
+      let int_flag = Shell_state.is_interactive () in
+      let stream = Shell_state.stream_of_channel inx in
       let flush () = Stream.iter (fun _ -> ()) stream in
-         Shell_state.set_interactive state false;
-         toploop state false stream flush;
-         Shell_state.set_interactive state int_flag;
+         Shell_state.set_interactive false;
+         toploop false stream flush;
+         Shell_state.set_interactive int_flag;
          close_in inx
 
    (*
     * Toploop reads phrases, then prints errors.
     *)
-   and toploop state prompt instream inflush =
+   and toploop prompt instream inflush =
       let loop = ref true in
       let print_exn exn =
-         let df = Shell_state.get_dfbase state in
+         let df = Shell_state.get_dfbase () in
          let buf = new_buffer () in
             begin
                match exn with
                   Stdpp.Exc_located _
-                | Pcaml.Qerror _ -> inflush ()
-                | _ -> format_string buf "Uncaught exception: ";
+                | Pcaml.Qerror _ ->
+                     inflush ()
+                | _ ->
+                     format_string buf "Uncaught exception: "
             end;
             Filter_exn.format_exn df buf exn;
             output_rbuffer stderr buf;
@@ -246,19 +231,19 @@ struct
                    | exn ->
                         print_exn exn)
       in
+      let () =
+         (* Ignore initialization errors *)
+         try Shell.init () with
+            _ ->
+               ()
+      in
          while !loop do
-            let state =
-               if prompt then
-                  !current_state
-               else
-                  state
-            in
-               Shell_state.set_prompt state "# ";
-               Shell_state.reset_terms state;
-               catch (fun () ->
-                  match Shell_state.synchronize state (Grammar.Entry.parse Pcaml.top_phrase) instream with
+            Shell_state.set_prompt "# ";
+            Shell_state.reset_terms ();
+            catch (fun () ->
+                  match Shell_state.synchronize (Grammar.Entry.parse Pcaml.top_phrase) instream with
                      Some phrase ->
-                        eval_str_item state phrase
+                        eval_str_item phrase
                    | None ->
                         loop := false)
          done
@@ -266,27 +251,27 @@ struct
    (*
     * Process some input files.
     *)
-   let use_files state files =
-      List.iter (use state) files
+   let use_files files =
+      List.iter use files
 
    (*
     * We just loop on the input.  Evaluation is performed by
     * the toploop resource.
     *)
-   let main_loop_aux state =
+   let main_loop_aux () =
       match Shell_state.get_input_files () with
          [] ->
-            let instream, flush = Shell_state.stdin_stream state in
+            let instream, flush = Shell_state.stdin_stream () in
                printf "%s\n@." Mp_version.version;
-               toploop state true instream flush
+               toploop true instream flush
         | files ->
-            use_files state files
+            use_files files
 
-   let main state =
+   let main () =
       install_debug_printer Shell_state.print_term_fp;
       Sys.catch_break true;
       Tactic_type.Tactic.main_loop ();
-      main_loop_aux state
+      main_loop_aux ()
 end
 
 (*

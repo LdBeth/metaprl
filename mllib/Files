@@ -13,7 +13,7 @@ MLLIB_MLZFILES =\
 MLLIB_FILES =\
 	$(MLLIB_MLZFILES)\
 	ctime\
-   setup\
+   	setup\
 	env_arg\
 	punix\
 	list_neq_append\
@@ -33,4 +33,5 @@ MLLIB_FILES =\
 	http_server\
 	http_simple\
 	comment_parse\
-	mp_term
+	mp_term\
+	line_buffer

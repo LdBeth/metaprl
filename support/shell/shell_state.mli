@@ -37,14 +37,6 @@ open Dform
 
 open Filter_type
 
-type t
-
-(*
- * Create an instance of the shell.
- *)
-val create : unit -> t
-val fork : t -> t
-
 (*
  * Client functions called somewhere within a toploop.
  * Client functions are global, and they are only valid
@@ -61,57 +53,57 @@ val get_term : int -> term
  *)
 
 (* This is the opname function used when terms are built. *)
-val set_mk_opname : t -> opname_fun option -> unit
+val set_mk_opname : opname_fun option -> unit
 
 (* This is the set of grammar infix/suffix mods needed in this state *)
-val set_infixes : t -> Infix.Set.t option -> unit
+val set_infixes : Infix.Set.t option -> unit
 
 (* Scan (lazily) terms for SO variable contexts and use that for SO var parsing *)
-val set_so_var_context : t -> term list option -> unit
+val set_so_var_context : term list option -> unit
 
 (*
  * Set the current module.
  *)
-val set_module : t -> string -> unit
+val set_module : string -> unit
 
 (*
  * Current display form base.
  *)
-val set_dfbase : t -> dform_base option -> unit
-val get_dfbase : t -> dform_base
+val set_dfbase : dform_base option -> unit
+val get_dfbase : unit -> dform_base
 
 (*
  * Get the tactic used in the last refinement.
  *)
-val get_tactic : t -> string * MLast.expr
-val get_toploop : t -> Mptop.top_table
+val get_tactic : unit -> string * MLast.expr
+val get_toploop : unit -> Mptop.top_table
 
 (*
  * Printers.
  *)
-val print_term : t -> term -> unit
+val print_term : term -> unit
 
 (*
  * Flag for whether currently in interactive mode.
  *)
-val is_interactive : t -> bool
-val set_interactive : t -> bool -> unit
+val is_interactive : unit -> bool
+val set_interactive : bool -> unit
 
-val reset_terms : t -> unit
-val synchronize : t -> ('a -> 'b) -> 'a -> 'b
+val reset_terms : unit -> unit
+val synchronize : ('a -> 'b) -> 'a -> 'b
 
 (****************************************
  * FILE PARSING
  *)
 
-val stream_of_channel : t -> in_channel -> char Stream.t
-val stream_of_string : t -> string -> char Stream.t
-val set_prompt : t -> string -> unit
-val set_prompt2 : t -> string -> unit
-val stdin_stream : t -> char Stream.t * (unit -> unit)
+val stream_of_channel : in_channel -> char Stream.t
+val stream_of_string : string -> char Stream.t
+val set_prompt : string -> unit
+val set_prompt2 : string -> unit
+val stdin_stream : unit -> char Stream.t * (unit -> unit)
 val get_text : int * int -> string
-val wrap : t -> (Lexing.lexbuf -> 'a) -> Lexing.lexbuf -> 'a
-val set_file : t -> string -> unit
+val wrap : (Lexing.lexbuf -> 'a) -> Lexing.lexbuf -> 'a
+val set_file : string -> unit
 
 (****************************************
  * ADDITIONAL FUNCTIONS
@@ -122,6 +114,13 @@ val set_file : t -> string -> unit
  *)
 val get_includes : unit -> string list
 val get_input_files : unit -> string list
+
+(*
+ * We may start this as a web service.
+ *)
+val browser_flag : bool ref
+val browser_port : int ref
+val browser_string : string option ref
 
 (*
  * -*-

@@ -61,6 +61,13 @@ let debug_lock =
       }
 
 (*
+ * We may start this as a web service.
+ *)
+let browser_flag    = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool
+let browser_port    = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int
+let browser_string  = Env_arg.string "browser_command" None "browser to start on startup" Env_arg.set_string_option_string
+
+(*
  * Intialize readline package.
  *)
 let rl_history_file =
@@ -127,11 +134,6 @@ type state =
    }
 
 (*
- * We no longer use shell handles.
- *)
-type t = unit
-
-(*
  * Default values.
  *)
 let mk_opname_null _ =
@@ -172,15 +174,6 @@ let state_entry =
       { state with state_mk_opname = state.state_mk_opname }
    in
       State.private_val "Shell_state.state" default fork
-
-(*
- * The external functions are essentially no-ops.
- *)
-let create () =
-   ()
-
-let fork () =
-   ()
 
 (*
  * The infix/suffix mods that we currently have in the grammar.
@@ -312,7 +305,7 @@ let set_tactic s e =
  * since a print can occur in the refiner somewhere
  * outside the current invocation of the toploop.
  *)
-let print_term _ t =
+let print_term t =
    synchronize_state (fun state ->
          let db = state.state_df_base in
          let buf = Lm_rformat.new_buffer () in
@@ -365,13 +358,13 @@ let term_printer t =
 (*
  * Get the tactic for the last refinement.
  *)
-let get_tactic handle =
+let get_tactic () =
    synchronize_read (fun state -> state.state_tactic)
 
 (*
  * Set the opname function.
  *)
-let set_mk_opname handle op =
+let set_mk_opname op =
    synchronize_write (fun state ->
          match op with
             Some f ->
@@ -379,7 +372,7 @@ let set_mk_opname handle op =
           | None ->
                state.state_mk_opname <- mk_opname_null)
 
-let set_infixes handle infixes =
+let set_infixes infixes =
    synchronize_write (fun state ->
          match infixes with
             Some infs ->
@@ -387,7 +380,7 @@ let set_infixes handle infixes =
           | None ->
                state.state_infixes <- Infix.Set.empty)
 
-let set_so_var_context handle context =
+let set_so_var_context context =
    synchronize_write (fun state ->
          match context with
             Some ts ->
@@ -409,7 +402,7 @@ let set_so_var_context handle context =
 (*
  * Set the display base.
  *)
-let set_dfbase handle df =
+let set_dfbase df =
    synchronize_write (fun state ->
          let df =
             match df with
@@ -420,14 +413,14 @@ let set_dfbase handle df =
          in
             state.state_df_base <- df)
 
-let get_dfbase handle =
+let get_dfbase () =
    synchronize_read (fun state ->
          state.state_df_base)
 
 (*
  * Fetch terms after parsing.
  *)
-let reset_terms handle =
+let reset_terms () =
    synchronize_write (fun state ->
          state.state_inline_terms <- [])
 
@@ -435,7 +428,7 @@ let reset_terms handle =
  * Activate the toploop.
  * Take a write lock on all three data value.
  *)
-let synchronize handle f x =
+let synchronize f x =
    State.write state_entry   (fun state ->
    State.write infixes_entry (fun infixes ->
          state.state_active <- true;
@@ -449,7 +442,7 @@ let synchronize handle f x =
                state.state_active <- false;
                raise exn))
 
-let unsynchronize handle f x =
+let unsynchronize f x =
    let state   = State.get state_entry in
    let infixes = State.get infixes_entry in
       state.state_active <- false;
@@ -469,7 +462,7 @@ let unsynchronize handle f x =
  * Collect the toplevel commands to use.
  * Shell commands are always added in.
  *)
-let set_module handle name =
+let set_module name =
    synchronize_write (fun state ->
          let rsrc =
             try Mp_resource.find (Mp_resource.theory_bookmark name) with
@@ -482,16 +475,16 @@ let set_module handle name =
          let top = Mptop.get_toploop_resource rsrc ["", "shell_get_term", shell_expr, FunType (IntType, TermType)] in
             state.state_toploop <- top)
 
-let get_toploop handle =
+let get_toploop () =
    synchronize_read (fun state -> state.state_toploop)
 
 (*
  * Return interactive flag.
  *)
-let is_interactive handle =
+let is_interactive () =
    synchronize_read (fun state -> state.state_interactive)
 
-let set_interactive handle flag =
+let set_interactive flag =
    synchronize_write (fun state -> state.state_interactive <- flag)
 
 (************************************************************************
@@ -525,7 +518,7 @@ let reset_input state =
 (*
  * Set the file to read from.
  *)
-let set_file handle name =
+let set_file name =
    synchronize_write (fun state ->
          reset_input state;
          state.state_input_info <- Filename name)
@@ -617,7 +610,7 @@ let create_buffer () =
  * Wrap the input channel so that we can recover input.
  * Unblock the state while we are reading so other shells can make progress.
  *)
-let stream_of_string handle str =
+let stream_of_string str =
    synchronize_write (fun state ->
          let buf = { buf_index = 0; buf_buffer = str } in
          let rec read loc =
@@ -637,11 +630,11 @@ let stream_of_string handle str =
  * Wrap the input channel so that we can recover input.
  * Unblock the state while we are reading so other shells can make progress.
  *)
-let stream_of_channel handle inx =
+let stream_of_channel inx =
    let buf = create_buffer () in
    let refill loc =
       let state = State.get state_entry in
-      let str = unsynchronize handle input_line inx ^ "\n" in
+      let str = unsynchronize input_line inx ^ "\n" in
          buf.buf_index <- 0;
          buf.buf_buffer <- str;
          push_buffer state loc (String.length str) str
@@ -667,10 +660,10 @@ let stream_of_channel handle inx =
  * Wrap the input channel so that we can recover input.
  * Use the readline package.  Input is always from stdin.
  *)
-let set_prompt handle prompt =
+let set_prompt prompt =
    synchronize_write (fun state -> state.state_prompt1 <- prompt)
 
-let set_prompt2 handle prompt =
+let set_prompt2 prompt =
    synchronize_write (fun state -> state.state_prompt2 <- prompt)
 
 let save_readline_history () =
@@ -682,11 +675,11 @@ let save_readline_history () =
          eprintf "Couldn't save readline history file \"%s\"\n%s\n" rl_history_file err
 
 
-let stdin_stream handle =
+let stdin_stream () =
    let buf = create_buffer () in
    let refill loc =
       let state = State.get state_entry in
-      let str = unsynchronize handle Lm_readline.readline state.state_prompt1 ^ "\n" in
+      let str = unsynchronize Lm_readline.readline state.state_prompt1 ^ "\n" in
          state.state_prompt1 <- state.state_prompt2;
          buf.buf_index <- 0;
          buf.buf_buffer <- str;
@@ -718,12 +711,12 @@ let stdin_stream handle =
  * Wrap the toplevel input function.
  * Replace the buffer filler so that we record all the input.
  *)
-let rec wrap handle f lb =
+let rec wrap f lb =
    let refill = lb.refill_buff in
    let refill' lb =
       let state = State.get state_entry in
          lb.lex_buffer <- String.copy lb.lex_buffer;
-         unsynchronize handle refill lb;
+         unsynchronize refill lb;
          push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer
    in
    let lb = { lb with refill_buff = refill' } in

@@ -65,7 +65,10 @@ open Tactic_type.Tacticals
 
 open Shell_sig
 open Shell_p4_sig
+open Shell_internal_sig
 open Shell_util
+open Shell_core
+open Shell_current
 
 (*
  * Show that the file is loading.
@@ -74,16 +77,11 @@ let _ =
    show_loading "Loading Shell%t"
 
 let debug_refine = load_debug "refine"
-
-let debug_shell =
-   create_debug (**)
-      { debug_name = "shell";
-        debug_description = "Display shell operations";
-        debug_value = false
-      }
+let debug_shell  = load_debug "shell"
 
 type commands =
-   { mutable cd : string -> string;
+   { mutable init : unit -> unit;
+     mutable cd : string -> string;
      mutable pwd : unit -> string list;
      mutable set_dfmode : string -> unit;
      mutable create_pkg : string -> unit;
@@ -111,7 +109,8 @@ type commands =
 let uninitialized _ = raise (Invalid_argument "The Shell module has not been instantiated")
 
 let commands =
-   { cd = uninitialized;
+   { init = uninitialized;
+     cd = uninitialized;
      pwd = uninitialized;
      set_dfmode = uninitialized;
      create_pkg = uninitialized;
@@ -136,69 +135,6 @@ let commands =
      find_subgoal = uninitialized;
    }
 
-(************************************************************************
- * TYPES                                                                *
- ************************************************************************)
-
-(*
- * This is the info we need for each subshell.
- * The subshells can be threaded; we must make this shell
- * thread-safe.
- *)
-type info =
-   { (* Display *)
-      mutable shell_width   : int;
-      mutable shell_df_mode : string;
-
-      (* Current module and path and proof *)
-      mutable shell_dir     : string list;
-      mutable shell_package : Package_info.package option;
-      mutable shell_proof   : edit_object;
-
-      (* Display options *)
-      mutable shell_view_options : LsOptionSet.t;
-
-      (* Handle to current shell *)
-      shell_shell           : Shell_state.t
-   }
-
-(************************************************************************
- * GLOBAL VALUES                                                        *
- ************************************************************************)
-
-(*
- * We should skip the packages that do not have basic shell commands in them.
- *)
-let shell_package pkg =
-   let name = Package_info.name pkg in
-      try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd" with
-         Not_found ->
-            false
-
-(*
- * All loaded modules.
- *)
-let packages = Package_info.create (Shell_state.get_includes ())
-
-let all_packages () =
-   List.filter shell_package (Package_info.packages packages)
-
-let default_mode_base = Mp_resource.theory_bookmark "summary"
-
-(*
- * Turn a path to an absolute string.
- *)
-let rec string_of_path = function
-   [n] ->
-      "/" ^ n
- | h::t ->
-      "/" ^ h ^ string_of_path t
- | [] ->
-      "/"
-
-let mk_dep_name opname =
-   "/" ^ (String.concat "/" (List.rev (dest_opname opname)))
-
 (*
  * Shell takes input parser as an argument.
  *)
@@ -207,150 +143,14 @@ struct
    let _ =
       show_loading "Loading Shell module%t"
 
-   type t = info
+   type t = shell
    type pid = string
-
-   (************************************************************************
-    * IMPLEMENTATION                                                       *
-    ************************************************************************)
-
-   (*
-    * Get the current "prl" printing base.
-    *)
-   let get_dfbase info =
-      match info.shell_package with
-         Some mod_info ->
-            if !debug_shell then
-               eprintf "Selecting display forms from %s%t" (Package_info.name mod_info) eflush;
-            Mp_resource.theory_bookmark (Package_info.name mod_info)
-       | None ->
-            if !debug_shell then
-               eprintf "Restoring default display forms%t" eflush;
-            default_mode_base
-
-   let get_display_mode info =
-      let dfbase = get_dfbase info in
-         match info.shell_df_mode with
-            "tex" ->
-               DisplayTex dfbase
-          | "html" ->
-               DisplayBrowser dfbase
-          | mode ->
-               DisplayText (dfbase, mode)
-
-   let get_db info =
-      let dfbase = get_dfbase info in
-         get_mode_base dfbase info.shell_df_mode
-
-   let set_dfmode info mode =
-      info.shell_df_mode <- mode
-
-   (*
-    * Get the resource collection.
-    *)
-   let get_resource info =
-      match info.shell_package with
-         Some mod_info ->
-            Mp_resource.find (Mp_resource.theory_bookmark (Package_info.name mod_info))
-       | None ->
-            raise Not_found
-
-   (*
-    * Create a new sub-shell.
-    *)
-   let default_shell =
-      let port = None in
-      let shell = ShellP4.get_current_state () in
-      let dfmode = "prl" in
-      let display_mode = DisplayText (default_mode_base, dfmode) in
-      let proof = Shell_root.create packages display_mode in
-         { shell_width   = 80;
-           shell_df_mode = dfmode;
-           shell_dir     = [];
-           shell_package = None;
-           shell_proof   = proof;
-           shell_shell   = shell;
-           shell_view_options = ls_options_default
-         }
-
-   let fork_shell shell =
-      let { shell_proof = old_proof;
-            shell_shell = old_shell
-          } = shell
-      in
-      let new_proof = old_proof.edit_copy () in
-      let new_shell = Shell_state.fork old_shell in
-         { shell with shell_proof = new_proof;
-                      shell_shell = new_shell
-         }
-
-   let current = State.private_val "Shell.current" default_shell fork_shell
-
-   (*
-    * Get the current package.
-    *)
-   let get_current_package shell =
-      match shell.shell_package with
-         Some pack ->
-            pack
-       | None ->
-            raise (RefineError ("Shell.get_current_package", StringError "no current package"))
 
    (*
     * Parsing arguments come from the shell.
     *)
-   let get_parse_arg shell =
-      let shell = shell.shell_shell in
-      let parse = ShellP4.parse_string shell in
-      let eval = ShellP4.eval_tactic shell in
-         parse, eval
-
-   (*
-    * Update the timestamp.
-    *)
-   let touch shell =
-      let pack = get_current_package shell in
-         try Package_info.touch pack with
-            Failure _ ->
-               begin
-                  (* Change the status so that we can write to the file. *)
-                  Package_info.set_status pack PackModified;
-                  Package_info.touch pack
-               end
-
-   (************************************************************************
-    * VIEWING                                                              *
-    ************************************************************************)
-
-   (*
-    * Turn a string into a path, relative to info.dir.
-    * The string is "/"-separated; "." means current directory, ".." its
-    * parent, "..." its grandparent etc.
-    * Also, "~" refers to the second level from top, e.g. cd "~" goes to
-    * the current module.
-    *)
-   let parse_path info name =
-      let home =
-         match info.shell_dir with
-            [] ->
-               []
-          | modname :: _ ->
-               [modname]
-      in
-      let rec aux dir names =
-         match names with
-            [] -> dir
-          | ""::ns -> aux dir ns
-          | "~"::ns -> aux home ns
-          | n::ns when (Lm_string_util.for_all (fun c -> c = '.') n) ->
-               (* Remove |n| elements from dir's tail *)
-               let head = try (fst (Lm_list_util.split_list ((List.length dir) - (String.length n) + 1) dir))
-                          with Failure "split_list" -> []
-               in aux head ns
-          | n::ns -> aux (dir @ [n]) ns
-      in
-         aux (if String.length name <> 0 & name.[0] = '/' then [] else info.shell_dir)
-         (Lm_string_util.split "/" name)
+   let parse_arg =
+      ShellP4.parse_string, ShellP4.eval_tactic
 
    (*
     * Update the current item being edited.
@@ -362,10 +162,9 @@ struct
    let set_package info modname =
       let pack = Package_info.get packages modname in
          info.shell_proof.edit_addr [];
-         info.shell_proof <- Shell_package.view pack (get_parse_arg info) (get_display_mode info)
+         info.shell_proof <- Shell_package.view pack parse_arg (get_display_mode info)
 
    let get_item info modname name =
-      let parse_arg = get_parse_arg info in
       let display_mode = get_display_mode info in
       let pack =
          match info.shell_package with
@@ -457,7 +256,6 @@ struct
     *)
    let view_package info name options =
       let pack = Package_info.get packages name in
-      let parse_arg = get_parse_arg info in
       let display_mode = get_display_mode info in
       let proof = Shell_package.view pack parse_arg display_mode in
          display_proof info proof options
@@ -482,90 +280,21 @@ struct
                view_item shell modname item options
 
    (*
-    * Window width.
-    *)
-   let set_window_width shell i =
-      shell.shell_width <- max !Mp_term.min_screen_width i
-
-   (************************************************************************
-    * PROCESS CONTROL                                                      *
-    ************************************************************************)
-
-   (*
-    * Show current process id.
-    *)
-   let pid shell =
-      Lm_thread_shell.get_pid ()
-
-   (*
-    * Show all process names.
-    *)
-   let jobs shell =
-      let pids = Lm_thread_shell.get_pids () in
-      let buf = Buffer.create 32 in
-         ignore (List.fold_left (fun first i ->
-                       if not first then
-                          Buffer.add_string buf " ";
-                       Buffer.add_string buf (string_of_int i);
-                       false) true pids);
-         Buffer.contents buf
-
-   (*
-    * Switch jobs.
-    *)
-   let fg shell pid =
-      Lm_thread_shell.set_pid pid
-
-   (*
-    * Interface to the HTTP shell.
+    * Flush the output.
+    * This also saves the session.
     *)
    let flush shell =
-      view shell shell.shell_view_options "."
+      let options = Session.get_view_options () in
+         Shell_current.flush ();
+         view shell options "."
 
-   let get_ls_options shell =
-      shell.shell_view_options
-
-   let get_view_options shell =
-      string_of_ls_options shell.shell_view_options
-
-   let set_view_options shell s =
-      shell.shell_view_options <- ls_options_add shell.shell_view_options s
-
-   let clear_view_options shell s =
-      shell.shell_view_options <- ls_options_clear shell.shell_view_options s
-
-   let get_shortener shell =
-      match shell.shell_package with
-         Some pkg ->
-            let mk_opname = Package_info.mk_opname pkg in
-            let shortener opname params bterms =
-               match Opname.dest_opname opname with
-                  h :: _ ->
-                     let params = List.map param_type params in
-                     let arities = List.map (fun bterm -> List.length (dest_bterm bterm).bvars) bterms in
-                     let opname' = mk_opname [h] params arities in
-                        if Opname.eq opname' opname then
-                           h
-                        else
-                           Opname.string_of_opname opname
-                | [] ->
-                     "$"
-            in
-               shortener
-       | None ->
-            let shortener opname _ _ =
-               Opname.string_of_opname opname
-            in
-               shortener
-
-   let pwd shell =
-      string_of_path shell.shell_dir
-
+   (*
+    * Filename for the current shell.
+    *)
    let filename shell =
       match shell.shell_package with
          Some pack ->
-            let parse_arg = get_parse_arg shell in
-               Some (Package_info.filename pack parse_arg)
+            Some (Package_info.filename pack parse_arg)
        | None ->
             None
 
@@ -581,7 +310,7 @@ struct
       match parse_path shell name with
          [modname] ->
             (* Top level *)
-            let _ = Package_info.create_package packages (get_parse_arg shell) modname in
+            let _ = Package_info.create_package packages parse_arg modname in
                view shell LsOptionSet.empty name
        | [] ->
             raise (Failure "Shell.create_package: can't create root package")
@@ -602,7 +331,7 @@ struct
       touch shell;
       match shell.shell_package with
          Some pack ->
-            Package_info.export (get_parse_arg shell) pack
+            Package_info.export parse_arg pack
        | None ->
             ()
 
@@ -626,7 +355,6 @@ struct
       raise (RefineError ("Shell.create_thm", StringError "not implemented"))
 
    let create_ax_statement shell seq name =
-      let parse_arg = get_parse_arg shell in
       let display_mode = get_display_mode shell in
       let package = get_current_package shell in
       let item = Shell_rule.create package parse_arg display_mode name in
@@ -739,14 +467,14 @@ struct
             eflush
 
    let refine shell tac =
-      let str, ast = Shell_state.get_tactic shell.shell_shell in
+      let str, ast = Shell_state.get_tactic () in
          touch shell;
          if !debug_refine then
             eprintf "Starting refinement%t" eflush;
          shell.shell_proof.edit_refine str ast tac;
          if !debug_refine then
             eprintf "Displaying proof%t" eflush;
-         if Shell_state.is_interactive shell.shell_shell then
+         if Shell_state.is_interactive () then
             display_proof shell shell.shell_proof LsOptionSet.empty;
          if !debug_refine then
             eprintf "Proof displayed%t" eflush
@@ -773,6 +501,81 @@ struct
       shell.shell_proof.edit_interpret command;
       display_proof shell shell.shell_proof LsOptionSet.empty
 
+   (*
+    * Change directory.
+    *)
+   let rec chdir shell need_shell verbose path =
+      match path with
+         [] ->
+            (* go to toplevel *)
+            shell.shell_dir <- [];
+            shell.shell_package <- None;
+            set_packages shell;
+            Shell_state.set_dfbase None;
+            Shell_state.set_mk_opname None;
+            Shell_state.set_so_var_context None;
+            Shell_state.set_infixes None;
+            Shell_state.set_module "shell"
+
+       | (modname :: item) as dir ->
+            (* change module only if in another (or at top) *)
+            if shell.shell_dir = [] || List.hd shell.shell_dir <> modname then
+               begin
+                  if modname <> String.uncapitalize modname then
+                     raise (Failure "Shell.chdir: module name should not be capitalized");
+
+                  (* See if the theory exists *)
+                  ignore (Theory.get_theory modname);
+                  let pkg = Package_info.load packages parse_arg modname in
+                     if need_shell && not (shell_package pkg) then
+                        failwith ("Module " ^ modname ^ " does not contain shell commands");
+                     shell.shell_package <- Some pkg;
+                     Shell_state.set_dfbase (Some (get_db shell));
+                     Shell_state.set_mk_opname (Some (Package_info.mk_opname pkg));
+                     Shell_state.set_infixes (Some (Package_info.get_infixes pkg));
+                     Shell_state.set_module modname;
+                     if verbose then
+                        eprintf "Module: /%s%t" modname eflush
+               end;
+
+            if item = [] then
+               begin
+                  (* top of module *)
+                  shell.shell_dir <- dir;
+                  Shell_state.set_so_var_context None;
+                  set_package shell modname
+               end
+            else
+               begin
+                  (* select an item (if not there already), then go down the proof. *)
+                  begin
+                     match shell.shell_dir with
+                        old_modname::old_item::_ when old_modname = modname && old_item = List.hd item ->
+                           shell.shell_proof.edit_addr (List.map int_of_string (List.tl item))
+                      | _ ->
+                           try
+                                 (* Leave the old proof at the root *)
+                              shell.shell_proof.edit_addr [];
+                              let proof = get_item shell modname (List.hd item) in
+                                 Shell_state.set_so_var_context (Some (proof.edit_get_terms ()));
+                                 proof.edit_addr (List.map int_of_string (List.tl item));
+                                 shell.shell_proof <- proof
+                           with
+                              exn ->
+                                 begin
+                                       (* Bring things back to where they were *)
+                                    let dir = shell.shell_dir in
+                                       if (dir <> []) && (List.hd dir = modname) then
+                                          shell.shell_dir <- [modname]
+                                       else
+                                          shell.shell_dir <- [];
+                                       chdir shell false verbose dir;
+                                       raise exn
+                                 end;
+                  end;
+                  shell.shell_dir <- dir
+               end
+
    let rec apply_all shell f time clean_res =
       let dir = shell.shell_dir in
       let apply_it item mod_name name =
@@ -780,7 +583,7 @@ struct
           * Here we indeed want to ignore absolutely any kind of error.
           * Whatever went wrong, we just want to skip the bad item and continue to the next one.
           *)
-         (try Shell_state.set_so_var_context shell.shell_shell (Some (item.edit_get_terms ())) with
+         (try Shell_state.set_so_var_context (Some (item.edit_get_terms ())) with
              _ ->
                 ());
          (try f item (get_db shell) with
@@ -790,7 +593,6 @@ struct
             Mp_resource.clear_results (mod_name, name)
       in
       let rec apply_all_exn time =
-         let parse_arg = get_parse_arg shell in
          let display_mode = get_display_mode shell in
             match shell.shell_package with
                Some pack ->
@@ -833,7 +635,7 @@ struct
                         chdir shell false true [name];
                         apply_all_exn false
                   in
-                     List.iter expand (all_packages())
+                     List.iter expand (all_packages ())
       in
          apply_all_exn time;
          chdir shell false false [];
@@ -844,81 +646,6 @@ struct
          item.edit_interpret ProofExpand
       in
          apply_all shell f true true
-
-   (*
-    * Change directory.
-    *)
-   and chdir shell need_shell verbose path =
-      let shell' = shell.shell_shell in
-         match path with
-            [] ->
-               (* go to toplevel *)
-               shell.shell_dir <- [];
-               shell.shell_package <- None;
-               set_packages shell;
-               Shell_state.set_dfbase shell' None;
-               Shell_state.set_mk_opname shell' None;
-               Shell_state.set_so_var_context shell' None;
-               Shell_state.set_infixes shell' None;
-               Shell_state.set_module shell' "shell"
-          | (modname :: item) as dir ->
-               (* change module only if in another (or at top) *)
-               if shell.shell_dir = [] || List.hd shell.shell_dir <> modname then
-                  begin
-                     if modname <> String.uncapitalize modname then
-                        raise (Failure "Shell.chdir: module name should not be capitalized");
-
-                     (* See if the theory exists *)
-                     ignore (Theory.get_theory modname);
-                     let pkg = Package_info.load packages (get_parse_arg shell) modname in
-                        if need_shell && not (shell_package pkg) then
-                           failwith ("Module " ^ modname ^ " does not contain shell commands");
-                        shell.shell_package <- Some pkg;
-                        Shell_state.set_dfbase shell' (Some (get_db shell));
-                        Shell_state.set_mk_opname shell' (Some (Package_info.mk_opname pkg));
-                        Shell_state.set_infixes shell' (Some (Package_info.get_infixes pkg));
-                        Shell_state.set_module shell' modname;
-                        if verbose then
-                           eprintf "Module: /%s%t" modname eflush
-                  end;
-
-               if item = [] then
-                  begin
-                     (* top of module *)
-                     shell.shell_dir <- dir;
-                     Shell_state.set_so_var_context shell' None;
-                     set_package shell modname
-                  end
-               else
-                  begin
-                     (* select an item (if not there already), then go down the proof. *)
-                     begin
-                        match shell.shell_dir with
-                           old_modname::old_item::_ when old_modname = modname && old_item = List.hd item ->
-                              shell.shell_proof.edit_addr (List.map int_of_string (List.tl item))
-                         | _ ->
-                              try
-                                 (* Leave the old proof at the root *)
-                                 shell.shell_proof.edit_addr [];
-                                 let proof = get_item shell modname (List.hd item) in
-                                    Shell_state.set_so_var_context shell' (Some (proof.edit_get_terms ()));
-                                    proof.edit_addr (List.map int_of_string (List.tl item));
-                                    shell.shell_proof <- proof
-                              with
-                                 exn ->
-                                    begin
-                                       (* Bring things back to where they were *)
-                                       let dir = shell.shell_dir in
-                                          if (dir <> []) && (List.hd dir = modname) then
-                                             shell.shell_dir <- [modname]
-                                          else
-                                             shell.shell_dir <- [];
-                                          chdir shell false verbose dir;
-                                          raise exn
-                                    end;
-                     end;
-                     shell.shell_dir <- dir
-                  end
 
    and cd shell name =
       chdir shell true true (parse_path shell name);
@@ -978,7 +705,7 @@ struct
 
       let synchronize f =
          Lm_thread_shell.with_pid edit_pid (fun () ->
-               State.write current (fun shell ->
+               State.write shell_entry (fun shell ->
                      Filter_exn.print_exn (get_db shell) None f shell)) ()
 
       (*
@@ -988,12 +715,11 @@ struct
          List.map Package_info.name (all_packages ())
 
       let get_info shell name =
-         let parse_arg = get_parse_arg shell in
-            try Package_info.info (Package_info.get packages name) parse_arg with
-               NotLoaded _ ->
-                  eprintf "Loading package %s%t" name eflush;
-                  ignore (Package_info.load packages (get_parse_arg shell) name);
-                  Package_info.info (Package_info.get packages name) parse_arg
+         try Package_info.info (Package_info.get packages name) parse_arg with
+            NotLoaded _ ->
+               eprintf "Loading package %s%t" name eflush;
+               ignore (Package_info.load packages parse_arg name);
+               Package_info.info (Package_info.get packages name) parse_arg
 
       let save name =
          Package_info.save (Package_info.get packages name)
@@ -1186,14 +912,14 @@ struct
                in
                let opens = collect (info_items (get_info shell mname)) in
                   chdir shell false false [mname; name];
-                  ignore (ShellP4.eval_opens shell.shell_shell opens))
+                  ignore (ShellP4.eval_opens opens))
 
       let create_thm mname name =
          synchronize (fun shell ->
                ignore (get_info shell mname);
                chdir shell false false [mname];
                let package = get_current_package shell in
-               let item = Shell_rule.create package (get_parse_arg shell) (get_display_mode shell) name in
+               let item = Shell_rule.create package parse_arg (get_display_mode shell) name in
                   item.edit_save ();
                   touch shell;
                   cd_thm mname name)
@@ -1203,7 +929,7 @@ struct
                ignore (get_info shell mname);
                chdir shell false false [mname];
                let package = get_current_package shell in
-               let item = Shell_rule.create package (get_parse_arg shell) (get_display_mode shell) name in
+               let item = Shell_rule.create package parse_arg (get_display_mode shell) name in
                   item.edit_save ();
                   touch shell;
                   cd_thm mname name)
@@ -1265,8 +991,8 @@ struct
       let refine addr str =
          synchronize (fun shell ->
                let proof = shell.shell_proof in
-               let expr = ShellP4.parse_string shell.shell_shell str in
-               let tac = ShellP4.eval_tactic shell.shell_shell expr in
+               let expr = ShellP4.parse_string str in
+               let tac = ShellP4.eval_tactic expr in
                   proof.edit_addr addr;
                   proof.edit_refine str expr tac;
                   let { edit_goal = goal;
@@ -1300,13 +1026,15 @@ struct
        * Synchronize to the current shell.
        *)
       let synchronize f =
-         State.write current (fun shell ->
+         State.write shell_entry (fun shell ->
+               if shell.shell_needs_update then
+                  begin
+                     let dir = shell.shell_dir in
+                        shell.shell_dir <- [];
+                        chdir shell true true dir;
+                        shell.shell_needs_update <- false
+                  end;
                Filter_exn.print_exn (get_db shell) None f shell)
-
-      (*
-       * Refresh packages at startup.
-       *)
-      let refresh_packages = refresh_packages
 
       (*
        * Evaluate an expression in some shell.
@@ -1314,7 +1042,7 @@ struct
       let eval text =
          try
             synchronize (fun shell ->
-                  ShellP4.eval_top shell.shell_shell text)
+                  ShellP4.eval_top text)
          with
             End_of_file as exn ->
                raise exn
@@ -1331,7 +1059,7 @@ struct
                false
 
       let get_resource () =
-         State.write current get_resource
+         State.write shell_entry get_resource
 
       (*
        * Wrap the remaining commands.
@@ -1354,9 +1082,21 @@ struct
       let set_window_width   = wrap      set_window_width
       let flush              = wrap_unit flush
 
-      let _ =
+      (*
+       * Refresh packages at startup.
+       *)
+      let init () =
+         refresh_packages ();
+         Shell_state.set_module "shell";
+         synchronize (fun _ -> ())
+
+      (*
+       * External toploop.
+       *)
+      let () =
          if commands.cd != uninitialized then
             raise (Invalid_argument "The Shell module was initialized twice");
+         commands.init <- init;
          commands.cd <- wrap cd;
          commands.pwd <- (fun () -> synchronize (fun shell -> shell.shell_dir));
          commands.set_dfmode <- set_dfmode;
@@ -1386,17 +1126,16 @@ struct
    (************************************************************************
     * External Toploop.
     *)
-
    module Main : ShellMainSig =
    struct
       let main () =
+         (*
+          * Note! the main function will call Top.init.
+          *)
          refresh_packages ();
-         let state =
-            State.read current (fun shell ->
-                  Shell_state.set_module shell.shell_shell "shell";
-                  shell.shell_shell)
-         in
-            ShellP4.main state
+         Shell_state.set_module "shell";
+         ShellP4.main ();
+         Shell_current.flush ()
    end
 end
 
@@ -1415,10 +1154,11 @@ external stop_gmon : unit -> unit = "stop_gmon"
 let exit () = raise End_of_file
 let set_debug = set_debug
 let print_gc_stats () =
-   flush stdout;
+   Lm_rprintf.flush stdout;
    Gc.print_stat Pervasives.stdout;
    Pervasives.flush Pervasives.stdout
 
+let init () = commands.init ()
 let cd s = commands.cd s
 let pwd _ = string_of_path (commands.pwd ())
 let set_dfmode s = commands.set_dfmode s
@@ -1469,11 +1209,11 @@ let ls s =
    let options = ls_options_of_string s in
    let options =
       if LsOptionSet.is_empty options then
-         LsOptionSet.singleton LsDefault
+         ls_options_default
       else
          options
    in
-      commands.view (ls_options_of_string s) "."
+      commands.view options "."
 
 let view name =
    commands.view LsOptionSet.empty name

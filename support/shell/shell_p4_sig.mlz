@@ -38,23 +38,17 @@ open Tactic_type.Tactic
 module type ShellP4Sig =
 sig
    (*
-    * Current toploop state.
-    *)
-   val set_current_state : Shell_state.t -> unit
-   val get_current_state : unit -> Shell_state.t
-
-   (*
     * Expression evaluation.
     *)
-   val parse_string : Shell_state.t -> string -> MLast.expr
-   val eval_tactic : Shell_state.t -> MLast.expr -> tactic
-   val eval_expr : Shell_state.t -> string -> unit
-   val eval_top : Shell_state.t -> string -> unit
+   val parse_string : string -> MLast.expr
+   val eval_tactic : MLast.expr -> tactic
+   val eval_expr : string -> unit
+   val eval_top : string -> unit
 
    (*
     * Open all the obvious modules.
     *)
-   val eval_opens : Shell_state.t -> string list list -> unit
+   val eval_opens : string list list -> unit
 
    (*
     * Main loop.
@@ -62,7 +56,7 @@ sig
     * will exit.  Otherwise, it will only exit when the toploop
     * is finished.
     *)
-   val main : Shell_state.t -> unit
+   val main : unit -> unit
 end
 
 (*

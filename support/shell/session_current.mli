@@ -1,5 +1,5 @@
 (*
- * Buffered subprocesses.
+ * Current session.
  *
  * ----------------------------------------------------------------
  *
@@ -24,22 +24,10 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-type t
-type buffer
+open Lm_thread
+open Session_sig
 
-(*
- * Processes.
- *)
-val create   : string -> t
-val flush    : t -> unit
-val contents : t -> string
-val close    : t -> unit
-
-(*
- * Buffered input.
- *)
-val open_in  : t -> buffer
-val get_char : buffer -> char
+val session_entry : session State.entry
 
 (*!
  * @docoff

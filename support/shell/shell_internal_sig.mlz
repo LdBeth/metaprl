@@ -1,5 +1,5 @@
 (*
- * Buffered subprocesses.
+ * This data structure is used internally by the shell.
  *
  * ----------------------------------------------------------------
  *
@@ -24,22 +24,34 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-type t
-type buffer
+open Lm_string_set
+
+open Refiner.Refiner.Term
+
+open Shell_sig
+open Shell_util
 
 (*
- * Processes.
+ * This is the info we need for each subshell.
+ * The subshells can be threaded; we must make this shell
+ * thread-safe.
  *)
-val create   : string -> t
-val flush    : t -> unit
-val contents : t -> string
-val close    : t -> unit
+type shell =
+   { shell_label                : string;
+     mutable shell_id           : int;
 
-(*
- * Buffered input.
- *)
-val open_in  : t -> buffer
-val get_char : buffer -> char
+     (* Set if the shell directory is out of date *)
+     mutable shell_needs_update : bool;
+
+     (* Display *)
+     mutable shell_width        : int;
+     mutable shell_df_mode      : string;
+
+     (* Current module and path and proof *)
+     mutable shell_dir          : string list;
+     mutable shell_package      : Package_info.package option;
+     mutable shell_proof        : edit_object
+   }
 
 (*!
  * @docoff

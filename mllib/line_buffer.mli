@@ -1,5 +1,5 @@
 (*
- * Buffered subprocesses.
+ * Bounded buffers for the shell.
  *
  * ----------------------------------------------------------------
  *
@@ -24,22 +24,43 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-type t
-type buffer
 
 (*
- * Processes.
+ * A simple bounded buffer.
  *)
-val create   : string -> t
-val flush    : t -> unit
-val contents : t -> string
-val close    : t -> unit
+module type LineBufferSig =
+sig
+   type 'a t
+
+   val create      : unit -> 'a t
+   val clone       : 'a t -> ('a -> 'b) -> 'b t
+   val add         : 'a t -> 'a -> unit
+   val iter        : ('a -> unit) -> 'a t -> unit
+   val fold        : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
+   val last        : 'a t -> 'a option
+   val remove_last : 'a t -> unit
+   val length      : 'a t -> int
+end
 
 (*
- * Buffered input.
+ * A bounded table.
  *)
-val open_in  : t -> buffer
-val get_char : buffer -> char
+module type LineTableSig =
+sig
+   type 'a t
+
+   val empty  : 'a t
+   val mem    : 'a t -> string -> bool
+   val add    : 'a t -> string -> 'a -> 'a t
+   val iter   : (string -> 'a -> unit) -> 'a t -> unit
+   val fold   : ('a -> string -> 'b -> 'a) -> 'a -> 'b t -> 'a
+end
+
+(*
+ * The implementation.
+ *)
+module LineBuffer : LineBufferSig
+module LineTable : LineTableSig
 
 (*!
  * @docoff

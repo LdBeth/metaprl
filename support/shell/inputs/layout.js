@@ -215,6 +215,7 @@ function LoadRule(session)
 function Prompt(cmd)
 {
     parent.ruleframe.document.commandform.command.value = cmd;
+    ButtonFocus();
 }
 
 /*

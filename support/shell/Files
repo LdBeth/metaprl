@@ -1,6 +1,7 @@
 # Common files
 MLZFILES =\
 	shell_sig\
+	shell_internal_sig\
    	shell_syscall_sig\
 	shell_p4_sig\
 	browser_sig
@@ -8,13 +9,15 @@ MLZFILES =\
 # Library files
 MPFILES =\
 	shell_util\
-   	browser_sig\
 	browser_syscall\
-	browser_copy\
-	browser_session_io\
-	browser_state\
-	browser_resource\
+	session_sig\
+	session_io\
+	session_current\
+	session\
 	shell_sig\
+   	browser_sig\
+	browser_copy\
+	browser_resource\
 	proof_edit\
 	package_info\
    	shell_syscall_sig\
@@ -24,7 +27,10 @@ MPFILES =\
 	shell_root\
 	mptop\
 	shell_syscall\
-	shell_browser\
 	shell_state\
+	shell_browser\
+	shell_internal_sig\
 	shell_p4_sig\
+	shell_core\
+	shell_current\
 	shell

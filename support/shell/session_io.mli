@@ -1,5 +1,5 @@
 (*
- * Buffered subprocesses.
+ * Saving/loading sessions from files.
  *
  * ----------------------------------------------------------------
  *
@@ -24,22 +24,12 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-type t
-type buffer
+open Session_sig
 
-(*
- * Processes.
- *)
-val create   : string -> t
-val flush    : t -> unit
-val contents : t -> string
-val close    : t -> unit
-
-(*
- * Buffered input.
- *)
-val open_in  : t -> buffer
-val get_char : buffer -> char
+val new_session_id : unit -> int
+val read_session   : int -> session_info
+val read_sessions  : unit -> session_info list
+val write_session  : session_info -> unit
 
 (*!
  * @docoff

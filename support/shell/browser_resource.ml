@@ -100,7 +100,7 @@ type browser_state =
      browser_history     : string list;
      browser_options     : string;
      browser_id          : int;
-     browser_sessions    : int list
+     browser_sessions    : (int * string) list
    }
 
 (************************************************************************
@@ -293,22 +293,30 @@ let add_history info lines =
 (*
  * Add the sessions.
  *)
-let add_sessions info ids =
-   try
-      menu_replace info "session" (fun menu ->
-            let items =
-               List.fold_left (fun items j ->
-                     let item =
-                        { command_label = sprintf "Session %d" j;
-                          command_value = sprintf "Session(%d)" j
-                        }
-                     in
-                        item :: items) menu.menu_items ids
-            in
-               { menu with menu_items = items })
-   with
-      Not_found ->
-         info
+let add_sessions state info ids =
+   let id = state.browser_id in
+      try
+         menu_replace info "file" (fun menu ->
+               let items =
+                  List.fold_left (fun items (pid, cwd) ->
+                        let label = sprintf "Session %d (%s)" pid cwd in
+                        let label =
+                           if pid = id then
+                              "&#8227;" ^ label
+                           else
+                              label
+                        in
+                        let item =
+                           { command_label = label;
+                             command_value = sprintf "Session(%d)" pid
+                           }
+                        in
+                           item :: items) menu.menu_items ids
+               in
+                  { menu with menu_items = items })
+      with
+         Not_found ->
+            info
 
 (*
  * Add files for editing.
@@ -391,7 +399,7 @@ let extract info state =
    in
    let info = add_directories info directories in
    let info = add_history info history in
-   let info = add_sessions info sessions in
+   let info = add_sessions state info sessions in
    let info = add_edit state info in
    let info = add_view info options in
       extract info
@@ -423,10 +431,8 @@ let resource (term, browser_state -> browser_info) commandbar =
 let menubar_init =
    [<< menu["file", "File"] >>;
     << menuitem["file", "New Window", "NewWindow()"] >>;
-    << menuitem["file", "Quit", "Quit()"] >>;
+    << menuitem["file", "New Session", "NewSession()"] >>;
     << menu["edit", "Edit"] >>;
-    << menu["session", "Session"] >>;
-    << menuitem["session", "New", "NewSession()"] >>;
     << menu["view", "View"] >>;
     << menu["dir", "Directory"] >>;
     << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>;

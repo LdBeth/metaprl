@@ -328,7 +328,7 @@ let format_aux window proof =
          let () = Dform.format_term df buf proof in
          let terms = get_slot_terms df in
             Lm_rformat.format_newline buf;
-            Browser_state.set_main buf terms
+            Session.set_main buf terms
 
 (*
  * Display the error.

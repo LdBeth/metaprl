@@ -69,9 +69,9 @@ let debug_lock =
 (*
  * We may start this as a web service.
  *)
-let browser_flag    = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool
-let browser_port    = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int
-let browser_string  = Env_arg.string "browser_command" None "browser to start on startup" Env_arg.set_string_option_string
+let browser_flag    = Shell_state.browser_flag
+let browser_port    = Shell_state.browser_port
+let browser_string  = Shell_state.browser_string
 
 module ShellBrowser (Top : ShellTopSig) =
 struct
@@ -92,7 +92,6 @@ struct
 
    type session =
       { session_id                      : pid;
-        session_buffer                  : Browser_state.t;
 
         (*
          * If the directory is changed, invalidate:
@@ -415,8 +414,7 @@ struct
          let id = Lm_thread_shell.get_pid () in
          let empty_buffer = Buffer.create 1 in
             { session_id              = id;
-              session_buffer          = Browser_state.create ();
-              session_cwd             = Top.pwd ();
+              session_cwd             = "/";
               session_menu_version    = 1;
               session_content_version = 1;
               session_message_version = 1;
@@ -437,16 +435,11 @@ struct
             }
       in
       let fork session =
-         let { session_buffer = buffer;
-               session_menu_version = menu_version;
-               session_cwd = cwd
-             } = session
-         in
          let id = Lm_thread_shell.get_pid () in
+         let cwd = Top.pwd () in
          let clone =
-            { session_id              = id;
-              session_buffer          = Browser_state.create ();
-              session_cwd             = cwd;
+            { session_id              = Lm_thread_shell.get_pid ();
+              session_cwd             = Top.pwd ();
               session_menu_version    = 1;
               session_content_version = 1;
               session_message_version = 1;
@@ -466,7 +459,8 @@ struct
               session_edit_version    = 0
             }
          in
-            session.session_menu_version <- succ menu_version;
+            Top.set_dfmode "html";
+            session.session_menu_version <- succ session.session_menu_version;
             session.session_state        <- None;
             session.session_menubar_info <- None;
             session.session_menu         <- None;
@@ -509,28 +503,37 @@ struct
     *
     * Be sure to increment version numbers.
     *)
+   let invalidate_session_directories () =
+      let pids = Lm_thread_shell.get_pids () in
+         List.iter (fun pid ->
+               Lm_thread_shell.with_pid pid (fun () ->
+                     State.write session_entry (fun session ->
+                           let { session_menu_version = menu_version;
+                                 session_buttons_version = buttons_version;
+                                 session_content_version = content_version
+                               } = session
+                           in
+                              session.session_menu_version    <- succ menu_version;
+                              session.session_buttons_version <- succ buttons_version;
+                              session.session_content_version <- succ content_version;
+
+                              session.session_state           <- None;
+                              session.session_menubar_info    <- None;
+                              session.session_commandbar_info <- None;
+                              session.session_menu            <- None;
+                              session.session_buttons         <- None;
+                              session.session_styles          <- None)) ()) pids
+
    let invalidate_directory session cwd =
-      let { session_buffer          = state;
-            session_menu_version    = menu_version;
+      let { session_menu_version    = menu_version;
             session_buttons_version = buttons_version;
             session_content_version = content_version
           } = session
       in
-         Browser_state.add_directory state cwd;
-         Browser_state.add_file state (Top.filename ());
-
+         Session.add_directory cwd;
+         Session.add_file (Top.filename ());
          session.session_cwd <- cwd;
-
-         session.session_menu_version    <- succ menu_version;
-         session.session_buttons_version <- succ buttons_version;
-         session.session_content_version <- succ content_version;
-
-         session.session_state           <- None;
-         session.session_menubar_info    <- None;
-         session.session_commandbar_info <- None;
-         session.session_menu            <- None;
-         session.session_buttons         <- None;
-         session.session_styles          <- None
+         invalidate_session_directories ()
 
    let maybe_invalidate_directory session =
       let cwd = Top.pwd () in
@@ -573,8 +576,7 @@ struct
     * Get the current state if possible.
     *)
    let get_session_state state session =
-      let { session_buffer = buffer;
-            session_state = info;
+      let { session_state = info;
             session_id = id
           } = session
       in
@@ -582,13 +584,21 @@ struct
             Some state ->
                state
           | None ->
+               let sessions =
+                  List.fold_left (fun sessions pid ->
+                        let session =
+                           Lm_thread_shell.with_pid pid (fun () ->
+                                 pid, Top.pwd ()) ()
+                        in
+                           session :: sessions) [] (Lm_thread_shell.get_pids ())
+               in
                let info =
-                  { browser_directories = Browser_state.get_directories buffer;
-                    browser_files       = Browser_state.get_files buffer;
-                    browser_history     = Browser_state.get_history buffer;
-                    browser_options     = Top.get_view_options ();
+                  { browser_directories = Session.get_directories ();
+                    browser_files       = Session.get_files ();
+                    browser_history     = Session.get_history ();
+                    browser_options     = string_of_ls_options (Session.get_view_options ());
                     browser_id          = id;
-                    browser_sessions    = Lm_thread_shell.get_pids ()
+                    browser_sessions    = List.rev sessions
                   }
                in
                   session.session_state <- Some info;
@@ -738,8 +748,7 @@ struct
     * This is the default printer for each non-content pane.
     *)
    let print_page server state session out width frame =
-      let { session_buffer          = info;
-            session_cwd             = cwd;
+      let { session_cwd             = cwd;
             session_menu            = menu;
             session_buttons         = buttons;
             session_styles          = styles;
@@ -774,10 +783,10 @@ struct
       let table = BrowserTable.add_fun    table menu_macros_sym    (print_menu_macros get_menu) in
 
       (* Content *)
-      let table = BrowserTable.add_fun    table body_sym           (Browser_state.format_main info width) in
+      let table = BrowserTable.add_fun    table body_sym           (Session.format_main width) in
 
       (* Messages *)
-      let table = BrowserTable.add_fun    table message_sym        (Browser_state.format_message info width) in
+      let table = BrowserTable.add_fun    table message_sym        (Session.format_message width) in
 
       (* Buttons *)
       let table = BrowserTable.add_fun    table buttons_sym        (print_menu_buffer get_buttons) in
@@ -923,8 +932,7 @@ struct
     * directory).
     *)
    let flush state session =
-      let { session_buffer = buffer } = session in
-         Browser_state.synchronize buffer Top.flush ()
+      Session.synchronize Top.flush ()
 
    (************************************************************************
     * System calls.
@@ -953,7 +961,7 @@ struct
          let io = Browser_syscall.create command in
             session.session_io <- Some io;
             session.session_io_command <- command;
-            Browser_state.add_command session.session_buffer io;
+            Session.add_command io;
             Browser_syscall.close io
       with
          Unix.Unix_error _ ->
@@ -976,12 +984,9 @@ struct
     * For the editor, just set the info in the session.
     *)
    let start_edit_command session state outx target =
-      let { session_buffer = buffer;
-            session_edit_version = edit_version
-          } = session
-      in
+      let { session_edit_version = edit_version } = session in
       let flag = LsOptionSet.mem (Top.get_ls_options ()) LsExternalEditor in
-         Browser_state.add_edit buffer target;
+         Session.add_edit target;
          session.session_edit <- target;
          session.session_edit_flag <- flag;
          session.session_edit_version <- succ edit_version
@@ -1023,13 +1028,11 @@ struct
     * Send it to the shell, and get the result.
     *)
    let eval server state session outx command =
-      let { session_buffer = buffer } = session in
-         Shell_syscall.set_syscall_handler (handle_syscall server state session outx);
-         Browser_state.add_prompt  buffer command;
-         unsynchronize_session session (fun () ->
-               Browser_state.synchronize buffer Top.eval (command ^ ";;"));
-         Browser_state.set_options buffer (Top.get_ls_options ());
-         invalidate_eval session
+      Shell_syscall.set_syscall_handler (handle_syscall server state session outx);
+      Session.add_prompt command;
+      unsynchronize_session session (fun () ->
+            Session.synchronize Top.eval (command ^ ";;"));
+      invalidate_eval session
 
    (*
     * Set the current directory.
@@ -1037,10 +1040,9 @@ struct
    let chdir state session dir =
       if !debug_http then
          eprintf "Changing directory to %s@." dir;
-      let { session_buffer = buffer } = session in
       let success =
          unsynchronize_session session (fun () ->
-               Browser_state.synchronize buffer Top.chdir dir)
+               Session.synchronize Top.chdir dir)
       in
          invalidate_chdir session success;
          success
@@ -1060,7 +1062,7 @@ struct
                None
             else
                let id = String.sub name 2 (len - 4) in
-                  Some (command, Browser_state.get_term session.session_buffer id)
+                  Some (command, Session.get_term id)
       with
          Not_found ->
             None
@@ -1459,11 +1461,7 @@ struct
             }
          in
          let state = update_challenge state in
-         let pid = Lm_thread_shell.get_pid () in
-            synchronize_pid pid (fun session ->
-                  let options = string_of_ls_options (Browser_state.get_options session.session_buffer) in
-                     Top.set_view_options options);
-            Top.refresh_packages ();
+            Top.init ();
             Top.set_dfmode "html";
             serve_http http_start http_connect state !browser_port;
             eprintf "Browser service finished@."

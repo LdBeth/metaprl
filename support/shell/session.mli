@@ -37,13 +37,6 @@ open Refiner.Refiner.Term
 open Shell_util
 
 (*
- * We allow the output to be multiplexed.
- *)
-type t
-
-val create : unit -> t
-
-(*
  * The output goes into the "current" buffer.
  *)
 val set_main        : Lm_rformat.buffer -> term StringTable.t -> unit
@@ -51,46 +44,43 @@ val set_main        : Lm_rformat.buffer -> term StringTable.t -> unit
 (*
  * Add a prompt/directory to a specific buffer.
  *)
-val add_prompt      : t -> string -> unit
-val add_directory   : t -> string -> unit
-val add_file        : t -> string option -> unit
-val add_edit        : t -> string -> unit
+val add_prompt      : string -> unit
+val add_directory   : string -> unit
+val add_file        : string option -> unit
+val add_edit        : string -> unit
 
 (*
  * Get the output for display.
  *)
-val format_main     : t -> int -> Buffer.t -> unit
-val format_message  : t -> int -> Buffer.t -> unit
+val format_main     : int -> Buffer.t -> unit
+val format_message  : int -> Buffer.t -> unit
 
 (*
  * Get the saved components.
  *)
-val get_directories : t -> string list
-val get_history     : t -> string list
-val get_term        : t -> string -> term
-val get_files       : t -> string list
+val get_directories : unit -> string list
+val get_history     : unit -> string list
+val get_term        : string -> term
+val get_files       : unit -> string list
 
 (*
- * Set the current ls options.
+ * View options.
  *)
-val set_options     : t -> LsOptionSet.t -> unit
-val get_options     : t -> LsOptionSet.t
+val get_view_options : unit -> LsOptionSet.t
+val set_view_options : LsOptionSet.t -> unit
+val add_view_options : string -> unit
+val clear_view_options : string -> unit
 
 (*
  * This function should be used while output is begin diverted.
  *)
-val synchronize : t -> ('a -> 'b) -> 'a -> 'b
-
-(*
- * Flush the session before the program exits.
- *)
-val flush : t -> unit
+val synchronize : ('a -> 'b) -> 'a -> 'b
 
 (*
  * Perform a shell command and add the output to the message
  * window.
  *)
-val add_command : t -> Browser_syscall.t -> unit
+val add_command : Browser_syscall.t -> unit
 
 (*
  * -*-

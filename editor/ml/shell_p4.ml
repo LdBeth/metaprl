@@ -55,31 +55,12 @@ let install_tactic tac =
 module ShellP4 =
 struct
    (************************************************************************
-    * STATE FUNCTIONS                                                      *
-    ************************************************************************)
-
-   (*
-    * No notion of current state, since the toploop evaluates all
-    * shell calls relative to the Mp module.
-    *
-    * BUG JYH: note that the shell handle is ignored.
-    * This code should be removed at some point.
-    *)
-   let current_state = ref (Shell_state.create ())
-
-   let get_current_state () =
-      !current_state
-
-   let set_current_state state =
-      current_state := state
-
-   (************************************************************************
     * TOPLEVEL                                                             *
     ************************************************************************)
 
-   let wrap_once state f lb =
-      let x = Shell_state.wrap state f lb in
-         Toploop.parse_toplevel_phrase := Shell_state.wrap state !Toploop.parse_toplevel_phrase;
+   let wrap_once f lb =
+      let x = Shell_state.wrap f lb in
+         Toploop.parse_toplevel_phrase := Shell_state.wrap !Toploop.parse_toplevel_phrase;
          x
 
    (*
@@ -89,8 +70,8 @@ struct
     * Unfortunately, we don't close the file once we're done, because the
     * input hasn't been evaluated yet.
     *)
-   let wrap_file state f lb =
-      Shell_state.set_file state !Toploop.input_name;
+   let wrap_file f lb =
+      Shell_state.set_file !Toploop.input_name;
       f lb
 
    (*
@@ -100,7 +81,7 @@ struct
       let wrapped = !Toploop.parse_toplevel_phrase in
       let motd lb =
          eprintf "\t%s\n%t" Mp_version.version eflush;
-         Toploop.parse_toplevel_phrase := wrap_once !current_state wrapped;
+         Toploop.parse_toplevel_phrase := wrap_once wrapped;
          !Toploop.parse_toplevel_phrase lb
       in
          Toploop.parse_toplevel_phrase := motd
@@ -110,7 +91,7 @@ struct
     *)
    let _ =
       let wrapped = !Toploop.parse_use_file in
-         Toploop.parse_use_file := wrap_file !current_state wrapped
+         Toploop.parse_use_file := wrap_file wrapped
 
    (************************************************************************
     * COMPILING TACTICS                                                    *
@@ -164,52 +145,52 @@ struct
                   flush stdout;
                   raise (RefineError ("eval_tactic", StringError "evaluation failed"))
 
-   let eval_tactic state =
-      Shell_state.synchronize state (function expr ->
+   let eval_tactic e =
+      Shell_state.synchronize (fun expr ->
             let loc = 0, 0 in
             let expr = (<:expr< Shell_p4.install_tactic $expr$ >>) in
             let item = (<:str_item< $exp: expr$ >>) in
             let pt_item = Ast2pt.str_item item [] in
-               eval_tactic_once (ref (OnceInitial pt_item)))
+               eval_tactic_once (ref (OnceInitial pt_item))) e
 
-   let parse_string state =
-      Shell_state.synchronize state (function str ->
+   let parse_string s =
+      Shell_state.synchronize (fun str ->
           let instream = Stream.of_string str in
-             Grammar.Entry.parse Pcaml.expr instream)
+             Grammar.Entry.parse Pcaml.expr instream) s
 
-   let eval_expr state =
-      Shell_state.synchronize state (function str ->
+   let eval_expr s =
+      Shell_state.synchronize (fun str ->
             let instream = Stream.of_string str in
             let expr = Grammar.Entry.parse Pcaml.expr instream in
             let loc = 0, 0 in
-               eval_str_item loc <:str_item< $exp: expr$ >>)
+               eval_str_item loc <:str_item< $exp: expr$ >>) s
 
-   let eval_top state =
-      Shell_state.synchronize state (function str ->
+   let eval_top s =
+      Shell_state.synchronize (fun str ->
             let instream = Stream.of_string str in
             let expr = Grammar.Entry.parse Pcaml.expr instream in
             let loc = 0, 0 in
-               eval_str_item loc <:str_item< $exp: expr$ >>)
+               eval_str_item loc <:str_item< $exp: expr$ >>) s
 
-   let eval_opens state =
-      Shell_state.synchronize state (function opens ->
+   let eval_opens s =
+      Shell_state.synchronize (fun opens ->
             let eval_open path =
                let loc = 0, 0 in
                   eval_str_item loc (<:str_item< open $path$ >>)
             in
-               List.iter eval_open opens)
+               List.iter eval_open opens) s
 
    (*
     * Build a delayed-evaluation tactic.
     *)
-   let create_tactic state expr =
+   let create_tactic expr =
       let cell = ref (Delay expr) in
          funT (fun _ ->
                match !cell with
                   Tactic tac ->
                      tac
                 | Delay expr ->
-                     let tac = eval_tactic state expr in
+                     let tac = eval_tactic expr in
                         cell := Tactic tac;
                         tac)
 
@@ -255,7 +236,12 @@ struct
                (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp"); pstr_loc = Location.none }]))
          then
             invalid_arg "Shell_p4.main: opening Mp module failed";
-         Tactic.main_loop ()
+         Tactic.main_loop ();
+
+         (* Ignore initialization errors *)
+         try Shell.init () with
+            _ ->
+               ()
 end
 
 (*

@@ -1,5 +1,5 @@
 (*
- * Saving/loading sessions from files.
+ * The current shell, as well as initialization.
  *
  * ----------------------------------------------------------------
  *
@@ -24,10 +24,19 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Browser_sig
+open Lm_thread
 
-val read_session : string -> session_info
-val write_session : string -> session_info -> unit
+open Shell_internal_sig
+
+(*
+ * The current shell.
+ *)
+val shell_entry : shell State.entry
+
+(*
+ * Save the current shell to disk.
+ *)
+val flush : unit -> unit
 
 (*!
  * @docoff

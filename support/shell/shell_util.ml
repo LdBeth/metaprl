@@ -35,7 +35,6 @@ type ls_option =
  | LsRules
  | LsUnjustified
  | LsDisplay
- | LsDefault
  | LsFormal
  | LsInformal
  | LsParent
@@ -93,8 +92,6 @@ let option_of_char c =
          LsParent
     | 'a' ->
          LsAll
-    | 'D' ->
-         LsDefault
     | 'H' ->
          LsHandles
     | 'E' ->
@@ -115,7 +112,6 @@ let char_of_option option =
     | LsAll -> 'a'
     | LsDisplay -> 'd'
     | LsParent -> 'p'
-    | LsDefault -> 'D'
     | LsHandles -> 'H'
     | LsExternalEditor -> 'E'
 
@@ -169,8 +165,7 @@ let ls_options_add options s =
              | LsHandles
              | LsExternalEditor ->
                   LsOptionSet.add options option
-             | LsAll
-             | LsDefault ->
+             | LsAll ->
                   raise (RefineError ("ls", StringError (sprintf "can't set option '%s'" (Char.escaped c))))) options s
 
 (*
@@ -201,14 +196,14 @@ let ls_options_clear options s =
              | LsHandles
              | LsExternalEditor ->
                   LsOptionSet.remove options option
-             | LsAll
-             | LsDefault ->
+             | LsAll ->
                   options) options s
 
 (*
  * Default options.
  *)
-let ls_options_default = ls_options_of_string "prR"
+let ls_options_default =
+   List.fold_left LsOptionSet.add LsOptionSet.empty [LsParent; LsRules; LsRewrites]
 
 (*!
  * @docoff

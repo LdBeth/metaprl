@@ -117,7 +117,7 @@ let display_term window term =
          let df = save_slot_terms df in
          let () = Dform.format_term df buf term in
          let terms = get_slot_terms df in
-            Browser_state.set_main buf terms
+            Session.set_main buf terms
 
 (************************************************************************
  * SHELL INTERFACE                                                      *

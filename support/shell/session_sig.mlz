@@ -1,5 +1,5 @@
 (*
- * Buffered subprocesses.
+ * This data structure is used internally by the shell.
  *
  * ----------------------------------------------------------------
  *
@@ -24,22 +24,41 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-type t
-type buffer
+open Lm_string_set
+
+open Refiner.Refiner.Term
+
+open Line_buffer
+
+open Shell_util
 
 (*
- * Processes.
+ * Session info is separated from the shell
+ * to get the dependencies right.
  *)
-val create   : string -> t
-val flush    : t -> unit
-val contents : t -> string
-val close    : t -> unit
+type session =
+   { session_history                 : string LineBuffer.t;
+     mutable session_options         : LsOptionSet.t;
+     mutable session_directories     : string LineTable.t;
+     mutable session_files           : string LineTable.t;
+     session_messages                : Lm_rformat.buffer LineBuffer.t;
+     mutable session_content_buffer  : Lm_rformat.buffer;
+     mutable session_content_table   : term StringTable.t
+   }
 
 (*
- * Buffered input.
+ * IO format for a session.
  *)
-val open_in  : t -> buffer
-val get_char : buffer -> char
+type session_info =
+   { session_info_id       : int;
+     session_info_label    : string;
+     session_info_options  : string;
+     session_info_dir      : string list;
+     session_info_history  : string list;
+     session_info_edit     : string list;
+     session_info_dirs     : string list;
+     session_info_messages : string list
+   }
 
 (*!
  * @docoff

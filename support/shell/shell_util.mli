@@ -33,7 +33,6 @@ type ls_option =
  | LsRules
  | LsUnjustified
  | LsDisplay
- | LsDefault
  | LsFormal
  | LsInformal
  | LsParent

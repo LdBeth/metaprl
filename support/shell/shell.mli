@@ -112,6 +112,11 @@ val extract : string list -> unit -> Refine.extract
 topval term_of_extract : term list -> term
 
 (*
+ * Init function is called by toploop.
+ *)
+val init : unit -> unit
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"

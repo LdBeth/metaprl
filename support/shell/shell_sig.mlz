@@ -253,8 +253,8 @@ end
  *)
 module type ShellTopSig =
 sig
-   (* Refresh the package list at startup *)
-   val refresh_packages : unit -> unit
+   (* Intialize the shell and the display mode *)
+   val init : unit -> unit
 
    (* Navigation *)
    val chdir        : string -> bool

@@ -126,7 +126,7 @@ let display_term pack window term =
          let df = save_slot_terms df in
          let () = Dform.format_term df buf term in
          let terms = get_slot_terms df in
-            Browser_state.set_main buf terms
+            Session.set_main buf terms
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -206,21 +206,6 @@ let term_of_implementation pack filter parse_arg =
 (*
  * Filter the entries for ls.
  *)
-let default_filter = function
-   Rewrite _
- | CondRewrite _
- | MLRewrite _
- | Rule _
- | MLAxiom  _
- | Definition _
- | Parent _
- | Opname _
- | Comment _
- | Resource _ ->
-      true
- | _ ->
-      false
-
 let is_any_item _ =
    true
 
@@ -326,8 +311,6 @@ let mk_ls_filter options =
                   is_parent_item :: predicate
              | LsFormal ->
                   is_formal_item :: predicate
-             | LsDefault ->
-                  default_filter :: predicate
              | LsDisplay ->
                   is_display_item :: predicate
              | LsInformal ->

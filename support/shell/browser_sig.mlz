@@ -43,17 +43,6 @@ sig
    val add_fun    : t -> symbol -> (Buffer.t -> unit) -> t
 end
 
-(*
- * File information for a session.
- *)
-type session_info =
-   { session_dir     : string;
-     session_options : string;
-     session_history : string list;
-     session_edit    : string list;
-     session_dirs    : string list
-   }
-
 (*!
  * @docoff
  *

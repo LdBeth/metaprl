@@ -494,8 +494,9 @@ let get_infixes = function
 let get pack name =
    synchronize_pack pack (function
       pack ->
-         try ImpDag.node_value pack.pack_dag (get_package pack name)
-         with Not_found -> raise (Invalid_argument("Package_info.get: package " ^ name ^ " is not loaded")))
+         try ImpDag.node_value pack.pack_dag (get_package pack name) with
+            Not_found ->
+               raise (Invalid_argument("Package_info.get: package " ^ name ^ " is not loaded")))
 
 (*
  * Save a package.
