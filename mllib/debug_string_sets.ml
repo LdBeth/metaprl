@@ -1,10 +1,10 @@
 open Lm_debug
+open Lm_set_sig
 open Printf
-open Set_sig
 
 module Make
-   (Set1: SetSig with type elt = string)
-   (Set2: SetSig with type elt = string) =
+   (Set1: MinimalSetSig with type elt = string)
+   (Set2: MinimalSetSig with type elt = string) =
 
 struct
 
@@ -39,9 +39,9 @@ struct
        | m1,m2 ->
             eprintf "mem mismatch:\nElement: %s membership: %b %b\n" v m1 m2; error_sets s1 s2
 
-   let make v =
-      let s1 = Set1.make v in
-      let s2 = Set2.make v in
+   let singleton v =
+      let s1 = Set1.singleton v in
+      let s2 = Set2.singleton v in
       match Set1.cardinal s1, Set2.cardinal s2 with
          (1,1) -> (s1,s2)
        | _ ->
@@ -132,6 +132,8 @@ struct
             error_sets s1_2 s2_2
 
    let elements (s1,s2) = Set1.elements s1
+
+   let to_list = elements
 
    let of_list l =
       let s1=Set1.of_list l and s2=Set2.of_list l in

@@ -172,10 +172,10 @@ sig
 
    type term_subst
 
-   module SeqHyp : Linear_set.LinearSetSig
+   module SeqHyp : Lm_linear_set_sig.LinearSetSig
                    with type elt = hypothesis
                    with type t = seq_hyps
-   module SeqGoal : Linear_set.LinearSetSig
+   module SeqGoal : Lm_linear_set_sig.LinearSetSig
                     with type elt = term
                     with type t = seq_goals
 

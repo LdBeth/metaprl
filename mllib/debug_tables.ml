@@ -29,9 +29,9 @@
  *
  * Author: Alexey Nogin
  *)
-
 open Format
-open Set_sig
+
+open Lm_map_sig
 
 module MakeTable
    (Base : TableBaseSig)

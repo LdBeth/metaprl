@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Splay_table
+open Lm_splay_table
 open Term_norm
 open Termmod_hash_sig
 
@@ -52,11 +52,11 @@ struct
    (*
     * Build from splay tables.
     *)
-   type 'data term_table = (Term.TermNorm.term_index, 'data) Splay_table.table
-   type 'data meta_term_table = (Term.TermNorm.meta_term_index, 'data) Splay_table.table
-   type 'data msequent_table = (Term.TermNorm.msequent_index, 'data) Splay_table.table
+   type 'data term_table = (Term.TermNorm.term_index, 'data) Lm_splay_table.table
+   type 'data meta_term_table = (Term.TermNorm.meta_term_index, 'data) Lm_splay_table.table
+   type 'data msequent_table = (Term.TermNorm.msequent_index, 'data) Lm_splay_table.table
 
-   module MakeTable = Splay_table.MakeTable
+   module MakeTable = Lm_splay_table.MakeTable
 
    (*
     * Extra info we need to build the table.

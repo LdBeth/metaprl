@@ -162,8 +162,8 @@ sig
    type bound_term'
    type match_param
 
-   module SeqHyp : Linear_set.LinearSetSig with type elt = hypothesis with type t = seq_hyps
-   module SeqGoal : Linear_set.LinearSetSig with type elt = term with type t = seq_goals
+   module SeqHyp : Lm_linear_set_sig.LinearSetSig with type elt = hypothesis with type t = seq_hyps
+   module SeqGoal : Lm_linear_set_sig.LinearSetSig with type elt = term with type t = seq_goals
 
    (************************************************************************
     * De/Constructors                                                      *

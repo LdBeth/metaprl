@@ -371,7 +371,7 @@ struct
                begin
                   try check_sequent_hyps hyps all_bvars (SeqHyp.length hyps) 0
                   with (Invalid_argument _) as exn -> begin
-                     eprintf "Rewrite.match_redex.RWSequent: check_sequent_hyps failed on %a with bvars=%a%t" debug_print t print_symbol_list (SymbolSet.elements all_bvars) eflush;
+                     eprintf "Rewrite.match_redex.RWSequent: check_sequent_hyps failed on %a with bvars=%a%t" debug_print t print_symbol_list (SymbolSet.to_list all_bvars) eflush;
                      raise exn
                   end
                end;

@@ -1,6 +1,5 @@
 CFILES =\
 	print_symbols\
-	marshal_shared\
 	truncate\
 	putenv\
 	execvp\

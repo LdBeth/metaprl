@@ -33,8 +33,8 @@ TERMS=$TERMS
 
 #
 # What representation to use for hypothesis and conclusion lists
-# Possible values: Array, Splay (for splay trees)
-# If not sure, use Array
+# Possible values: Lm_array, Lm_splay (for splay trees)
+# If not sure, use Lm_array
 #
 SEQ_SET=$SEQ_SET
 

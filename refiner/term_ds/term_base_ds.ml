@@ -162,7 +162,7 @@ struct
                         in
                            if !debug_fv then begin
                               eprintf "Result: ";
-                              List.iter (eprintf "%s ") (List.map string_of_symbol (SymbolSet.elements res));
+                              List.iter (eprintf "%s ") (List.map string_of_symbol (SymbolSet.to_list res));
                               eprintf "%t" eflush;
                            end; res
                      ELSE
@@ -195,7 +195,7 @@ struct
                         in
                            if !debug_fv then begin
                               eprintf "Result: ";
-                              List.iter (eprintf "%s ") (List.map string_of_symbol (SymbolSet.elements res));
+                              List.iter (eprintf "%s ") (List.map string_of_symbol (SymbolSet.to_list res));
                               eprintf "%t" eflush;
                            end; res
                      ELSE
@@ -246,7 +246,7 @@ struct
                debug_subst := false;
                eprintf "do_term_subst: { %a\n" debug_print t;
                eprintf "\tfree_vars:";
-               List.iter (fun name -> eprintf " %s" name) (List.map string_of_symbol (SymbolSet.elements (free_vars_set t)));
+               List.iter (fun name -> eprintf " %s" name) (List.map string_of_symbol (SymbolSet.to_list (free_vars_set t)));
                eflush stderr;
                if sub == [] then eprintf "\t empty substitution\n" else
                List.iter (fun (v, t) -> eprintf "\t%a: %a\n" print_symbol v debug_print t) sub;

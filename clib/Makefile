@@ -7,7 +7,6 @@ include $(ROOT)/mk/preface
 
 LCFILES :=\
 	print_symbols\
-	marshal_shared\
 	truncate\
 	putenv\
 	execvp\
@@ -28,6 +27,9 @@ opt: $(ROOT)/lib/$(MAIN)-native$(EXT_LIB)
 install:: $(MAIN)-byte$(EXT_LIB) $(MAIN)-native$(EXT_LIB)
 	$(INSTALL) $(MAIN)-byte$(EXT_LIB) $(MPLIB)
 	$(INSTALL) $(MAIN)-native$(EXT_LIB) $(MPLIB)
+
+clean::
+	$(RM) *-byte.c *-native.c
 
 #
 # Installation

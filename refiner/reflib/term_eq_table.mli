@@ -50,21 +50,21 @@ sig
 
    module MakeTermTable
       (Base : TableBaseSig)
-   : Set_sig.TableSig
+   : Lm_map_sig.TableSig
      with type t = Base.data term_table
      with type elt = Term.TermNorm.term
      with type data = Base.data
 
    module MakeMetaTermTable
       (Base : TableBaseSig)
-   : Set_sig.TableSig
+   : Lm_map_sig.TableSig
      with type t = Base.data meta_term_table
      with type elt = Term.TermNorm.meta_term
      with type data = Base.data
 
    module MakeMsequentTable
       (Base : TableBaseSig)
-   : Set_sig.TableSig
+   : Lm_map_sig.TableSig
      with type t = Base.data msequent_table
      with type elt = Term.TermNorm.msequent
      with type data = Base.data
@@ -79,21 +79,21 @@ type 'data msequent_table
 
 module MakeTermTable
    (Base : TableBaseSig)
-: Set_sig.TableSig
+: Lm_map_sig.TableSig
   with type t = Base.data term_table
   with type elt = Refiner.Refiner.TermNorm.term
   with type data = Base.data
 
 module MakeMetaTermTable
    (Base : TableBaseSig)
-: Set_sig.TableSig
+: Lm_map_sig.TableSig
   with type t = Base.data meta_term_table
   with type elt = Refiner.Refiner.TermNorm.meta_term
   with type data = Base.data
 
 module MakeMsequentTable
    (Base : TableBaseSig)
-: Set_sig.TableSig
+: Lm_map_sig.TableSig
   with type t = Base.data msequent_table
   with type elt = Refiner.Refiner.TermNorm.msequent
   with type data = Base.data

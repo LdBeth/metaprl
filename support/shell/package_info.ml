@@ -38,7 +38,7 @@ open Parsetree
 open Printf
 
 open Lm_debug
-open Imp_dag
+open Lm_imp_dag
 open Lm_string_set
 
 open File_base_type
@@ -596,7 +596,7 @@ struct
    let packages pack =
       let res = ref [] in
       synchronize_pack pack (function
-         { pack_dag = dag; pack_packages = packs } -> 
+         { pack_dag = dag; pack_packages = packs } ->
          Hashtbl.iter (fun _ pack -> res := (ImpDag.node_value dag pack):: !res) packs;
             Sort.list compare !res)
 

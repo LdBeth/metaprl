@@ -207,7 +207,7 @@ sig
     | IdentityConv
 
    module ParentTable
-   : Set_sig.TableSig
+   : Lm_map_sig.TableSig
      with type t = parents
      with type elt = msequent
      with type data = tactic_arg

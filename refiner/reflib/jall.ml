@@ -67,7 +67,7 @@ let free_vars_list t =
    List.map string_of_symbol (free_vars_list t)
 
 let symbol_set_of_string_set set =
-   SymbolSet.of_list (List.map Lm_symbol.add (StringSet.elements set))
+   SymbolSet.of_list (List.map Lm_symbol.add (StringSet.to_list set))
 
 let unify t1 t2 vars =
    let subst = unify t1 t2 (symbol_set_of_string_set vars) in

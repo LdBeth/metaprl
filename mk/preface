@@ -36,7 +36,7 @@ ifndef MAKE_OPTS
    MAKE_OPTS=-s
 endif
 ifndef SEQ_SET
-   SEQ_SET=Array
+   SEQ_SET=Lm_array
 endif
 ifndef ENSROOT
    ENSROOT=undefined

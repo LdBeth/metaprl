@@ -484,7 +484,7 @@ struct
 
    let dest_bterm_and_rename bt avoid =
       if need_to_rename avoid bt.bvars then
-         let avoid' = [ free_vars_list bt.bterm; bt.bvars; SymbolSet.elements avoid ] in
+         let avoid' = [ free_vars_list bt.bterm; bt.bvars; SymbolSet.to_list avoid ] in
          let bvars, renames, terms = compute_renames avoid avoid' bt.bvars in
          {
             bvars = bvars;

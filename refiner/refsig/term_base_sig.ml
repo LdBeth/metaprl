@@ -30,9 +30,9 @@
  * jyh@cs.cornell.edu
  *)
 open Lm_symbol
+open Lm_linear_set_sig
 
 open Opname
-open Linear_set
 
 (*
  * We use read-only arrays for sequents.

@@ -174,7 +174,7 @@ check_config::check_versions mk/config mk/config.local
 		echo "ERROR: Invalid REFINER variable, edit mk/config file before running make"; \
 		exit 1; \
 	fi
-	@if [ $(SEQ_SET) != Array -a $(SEQ_SET) != Splay ]; then\
+	@if [ $(SEQ_SET) != Lm_array -a $(SEQ_SET) != Lm_splay ]; then\
 		echo "ERROR: Invalid SEQ_SET variable, edit mk/config file before running make"; \
 		exit 1; \
 	fi

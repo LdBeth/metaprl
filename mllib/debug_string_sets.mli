@@ -29,12 +29,12 @@
  *
  * Author: Alexey Nogin
  *)
-open Set_sig
+open Lm_set_sig
 
 module Make
-   (Set1: SetSig with type elt = string)
-   (Set2: SetSig with type elt = string)
-      : SetSig with type elt = string
+   (Set1: MinimalSetSig with type elt = string)
+   (Set2: MinimalSetSig with type elt = string)
+      : MinimalSetSig with type elt = string
 
 (*
  * -*-

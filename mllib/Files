@@ -1,17 +1,12 @@
 # Types files
 MLLIB_MLZFILES =\
-	set_sig\
 	file_base_type\
-	dag\
-	array_sig\
-	marshal_sig\
 	remote_queue_sig\
 	remote_lazy_queue_sig\
 	simplehash_sig\
 	hash_with_gc_sig\
 	memo_sig\
-	weak_memo_sig\
-	linear_set
+	weak_memo_sig
 
 # Library files
 MLLIB_FILES =\
@@ -19,30 +14,16 @@ MLLIB_FILES =\
 	env_arg\
 	punix\
 	list_neq_append\
-	large_array\
-	large_weak_array\
-	marshal_buf\
-	marshal_shared\
 	bitset\
-	imp_dag\
 	precedence\
 	file_base\
 	file_type_base\
-	table_util\
-	splay_table\
-	fun_splay_set\
-	hash_set\
-	small_set\
 	debug_string_sets\
 	debug_tables\
 	flist\
-	cycle_dag\
 	remote_queue_null\
 	remote_lazy_queue\
 	memo\
-	splay_linear_set\
-	array_linear_set\
-	simplehashtbl\
 	hash_with_gc\
 	weak_memo\
 	permutations\

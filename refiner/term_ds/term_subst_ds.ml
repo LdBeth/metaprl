@@ -150,7 +150,7 @@ struct
 
    let is_var_free v t = SymbolSet.mem (free_vars_set t) v
 
-   let free_vars_list t = SymbolSet.elements (free_vars_set t)
+   let free_vars_list t = SymbolSet.to_list (free_vars_set t)
    let free_vars_set = free_vars_set
 
    let rec need_to_rename avoid = function
@@ -238,7 +238,7 @@ struct
    and binding_vars_union t vars = SymbolSet.union (binding_vars_term t) vars
 
    let binding_vars t =
-      SymbolSet.elements (binding_vars_term t)
+      SymbolSet.to_list (binding_vars_term t)
 
    let add_vars vars term =
       SymbolSet.union vars (free_vars_set term)
