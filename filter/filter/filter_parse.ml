@@ -107,7 +107,7 @@ let set_include_path path =
 (*
  * Spelling.
  *)
-let mispelled = ref []
+let misspelled = ref []
 
 let init () =
    if !debug_spell then
@@ -136,11 +136,11 @@ let close () =
     | [] ->
          ()
    in
-   let l = Sort.list (<) !mispelled in
-      mispelled := [];
+   let l = Sort.list (<) !misspelled in
+      misspelled := [];
       if l <> [] then
          begin
-            eprintf "The following words may be mispelled:";
+            eprintf "The following words may be misspelled:";
             print 80 "" l;
             eflush stderr;
             raise (Failure "spelling")
@@ -352,7 +352,7 @@ let parse_comment loc t =
                      Filter_spell.add s
                 | SpellOn ->
                      if not (Filter_spell.check s) then
-                        mispelled := s :: !mispelled
+                        misspelled := s :: !misspelled
             end;
          mk_string_param_term comment_string_op s []
     | Comment_parse.Term (opname, params, args) ->

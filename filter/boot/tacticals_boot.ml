@@ -203,7 +203,7 @@ struct
     * Stop when the tactic fails.
     *)
    let untilFailT tac =
-      raise (RefineError ("untilFailT", StringError "untilFailT is not implemented"))
+      raise (Invalid_argument "untilFailT: not implemented")
 
    (*
     * Repeat, spreading out over subgoals.

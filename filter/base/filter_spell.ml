@@ -32,17 +32,15 @@ open Printf
  * that are correctly spelled.  The dictionary is saved
  * as a hashtable in /tmp/metaprl-spell.dat.
  *)
-let words_filename = "/usr/dict/words"
-
 let tmp_magic = 0x2557f3ed
 
 let tmp_filename =
-   let user =
-      try Sys.getenv "USER" with
+   let lib =
+      try Sys.getenv "MPLIB" with
          Not_found ->
-            "generic"
+            raise (Invalid_argument "MPLIB environment variable in undefined")
    in
-      "/tmp/metaprl-spell-" ^ user ^ ".dat"
+      lib ^ "/english_dictionary.dat"
 
 let ispell_filename =
    ".ispell_english"
@@ -54,6 +52,8 @@ let home_filename =
             "/etc"
    in
       home ^ "/" ^ ispell_filename
+
+let words_filenames = [ home_filename; "/usr/dict/words"; "/usr/dict/webster" ]
 
 (*
  * The loaded dictionary.
@@ -78,23 +78,21 @@ let check_magic () =
       _ ->
          false
 
+
 let check_dict () =
    if check_magic () then
       let tmp_stat = Unix.stat tmp_filename in
+      let check_magic' file =
          (try
-             let words_stat = Unix.stat words_filename in
-                words_stat.Unix.st_mtime > tmp_stat.Unix.st_mtime
-          with
-             Unix.Unix_error _ ->
-                false) ||
-         (try
-             let home_stat = Unix.stat home_filename in
-                home_stat.Unix.st_mtime > tmp_stat.Unix.st_mtime
+             let file_stat = Unix.stat file in
+                file_stat.Unix.st_mtime > tmp_stat.Unix.st_mtime
           with
              Unix.Unix_error _ ->
                 false)
+      in
+         List.exists check_magic' words_filenames
    else
-      false
+      true
 
 (*
  * Make the dictionary.
@@ -124,8 +122,7 @@ let add_file table filename =
 let make_dict () =
    eprintf "Building spelling dictionary %s...%t" tmp_filename flush;
    let table = Hashtbl.create 1037 in
-      add_file table words_filename;
-      add_file table home_filename;
+      List.iter (add_file table) words_filenames;
       dict := Some table;
 
       let out = open_out_bin tmp_filename in
