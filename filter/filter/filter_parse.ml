@@ -421,13 +421,29 @@ struct
        | None ->
             raise (Invalid_argument "Input grammar is not initialized")
 
-   let input_patt opname s =
-      raise (Invalid_argument "Input grammar does not support patterns")
+   let input_patt shape id s =
+      match !proc_ref with
+         Some proc ->
+            let pos =
+               { Lexing.pos_fname = proc.name;
+                 Lexing.pos_lnum  = 1;
+                 Lexing.pos_bol   = 0;
+                 Lexing.pos_cnum  = 0
+               }
+            in
+            let parse_quotation name s =
+               TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation dummy_loc id name s)
+            in
+            let t = FilterCache.parse parse_quotation proc.cache pos shape s in
+            let t = TermGrammar.unchecked_term_of_parsed_term (TermGrammar.mk_parsed_term t) in
+               Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
+       | None ->
+            raise (Invalid_argument "Input grammar is not initialized")
 
    let add_start shape =
       let name, _ = dst_opname (opname_of_shape shape) in
          Filter_grammar.set_start name shape;
-         Quotation.add name (Quotation.ExAst (input_exp shape name, input_patt shape))
+         Quotation.add name (Quotation.ExAst (input_exp shape name, input_patt shape name))
 
    let add_starts opnames =
       List.iter add_start opnames

@@ -51,6 +51,8 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 
+open Simple_print.SimplePrint
+
 open Filter_util
 
 (*
@@ -127,7 +129,7 @@ let build_term_patt loc t =
          let { bvars = bvars; bterm = t } = dest_bterm bterm in
          let _ =
             if not (is_fso_var_term t) then
-               raise (Invalid_argument "term_patt: subterms must be variables")
+               raise (Invalid_argument ("term_patt: subterms must be variables\n" ^ string_of_term t))
          in
          let v = dest_fso_var t in
          let bvars_rhs =
