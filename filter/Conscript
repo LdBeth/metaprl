@@ -1,9 +1,0 @@
-Import qw( env );
-
-Export qw( env );
-
-Build qw(
-   base/Conscript
-   boot/Conscript
-   filter/Conscript
-);

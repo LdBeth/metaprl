@@ -1,7 +1,0 @@
-Import qw( env );
-
-Export qw( env );
-
-Build qw(
-	ml/Conscript
-);
