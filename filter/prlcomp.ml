@@ -162,6 +162,9 @@ let set_includes () =
          eprintf "%s%t" var eflush;
       Punix.putenv var
 
+let set_export () =
+   Punix.putenv "MP_EXPORT=true"
+
 (*
  * Allow include path to be set from the environment.
  *)
@@ -249,6 +252,7 @@ let spec =
     "-o", String (add_string_argv "-o"), "specify output file";
     "-a", Unit (add_argv "-a"), "produce archive file";
     "-S", Unit (add_argv "-S"), "do not remove the assembly file";
+    "-export", Unit set_export, "create ASCII export file";
     "-compact", Unit (add_argv "-compact"), "produce a smaller but slower code";
     "-custom", Unit (add_argv "-custom"), "generate custom executable";
     "-ccopt", String (add_string_argv "-ccopt"), "C option";

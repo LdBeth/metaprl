@@ -143,7 +143,7 @@ struct
    let of_raw _ name proof =
       if !debug_package_info then
          eprintf "Converting io proof for %s%t" name eflush;
-      ref (ProofRaw (name, proof))
+      ref (ProofRaw (name, Proof.io_proof_hack proof))
 
    (*
     * Convert the proof to a term.
@@ -606,7 +606,7 @@ struct
             let info, infixes =
                Cache.StrFilterCache.load cache arg name (**)
                   ImplementationType InterfaceType
-                  (inline_hook pack path) StringSet.empty (NewerSuffix "prlb")
+                  (inline_hook pack path) StringSet.empty AnySuffix
             in
             let pack_str =
                { pack_str_info = info;
@@ -806,9 +806,16 @@ struct
        | { pack_status = Incomplete; pack_name = name } ->
             raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
        | { pack_status = Modified; pack_str = Some { pack_str_info = info; pack_parse = arg } } ->
-            Cache.StrFilterCache.save info arg (AlwaysSuffix "prlb")
+            Cache.StrFilterCache.save info arg (OnlySuffixes ["prlb"])
        | { pack_status = Modified; pack_str = None } ->
             raise (Invalid_argument "Package_info.save"))
+
+   let export arg pack_info =
+      auto_loading_str arg pack_info (function
+         { pack_str = Some { pack_str_info = info } } ->
+            Cache.StrFilterCache.save info arg (OnlySuffixes ["prla"])
+       | { pack_str = None; pack_name = name } ->
+            raise (NotLoaded name))
 
    (*
     * Create an empty package.

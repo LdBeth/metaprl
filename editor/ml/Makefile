@@ -7,18 +7,14 @@ ROOT = ../..
 include $(ROOT)/mk/preface
 
 INCLUDE = -I .\
-	-I $(ROOT)/theories/boot\
-	-I $(ROOT)/theories/tactic\
-	-I $(ROOT)/theories/ocaml\
-	-I $(ROOT)/theories/base\
-	-I $(ROOT)/theories/itt\
+	-I $(ROOT)/lib\
+	-I $(ROOT)/library\
+	-I $(CAMLP4LIB)\
 	-I $(ROOT)/ensemble\
+	$(addprefix -I $(ROOT)/theories/, $(THEORIES))\
 	-I $(ROOT)/library\
 	-I $(ROOT)/ocaml_debug\
 	-I $(CAMLP4LIB)
-#	-I $(ROOT)/theories/fol\
-#	-I $(ROOT)/theories/reflect_itt\
-#	-I $(ROOT)/theories/tptp\
 
 OCAMLDEPFLAGS = -prl
 
@@ -102,15 +98,12 @@ endif
 CMXDEPS =\
 	$(CAMLLIB)/unix.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
-	$(CMXADEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
+	$(CMXALIBS_ens)\
 	$(ROOT)/lib/prlc.cmxa\
-	$(CMXLIBS_ens)\
-	$(ROOT)/theories/tactic/tactics.cmxa\
-	$(ROOT)/theories/ocaml/ocaml_df.cmxa\
-	$(ROOT)/theories/base/base.cmxa\
+	$(addprefix $(ROOT)/theories/, $(addsuffix /theory.cmxa, $(THEORIES)))\
 	mp.cmxa
 
 CMXLIBS =\
@@ -121,23 +114,15 @@ CMXADEPS =\
 	$(OPTTHREADSLIB)\
 	$(CAMLP4LIB)/odyl.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
-	$(CMXADEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
-	$(ROOT)/lib/prlc.cmxa\
 	$(CMXALIBS_ens)\
-	$(ROOT)/theories/boot/boot.cmxa\
-	$(ROOT)/theories/tactic/tactics.cmxa\
-	$(ROOT)/theories/ocaml/ocaml_df.cmxa\
-	$(ROOT)/theories/base/base.cmxa\
-	$(ROOT)/theories/itt/itt.cmxa\
+	$(ROOT)/lib/prlc.cmxa\
+	$(addprefix $(ROOT)/theories/, $(addsuffix /theory.cmxa, $(THEORIES)))\
 	$(CAMLP4LIB)/pa_o.cmx\
 	$(CAMLP4LIB)/pa_op.cmx\
 	$(MAIN).cmxa
-#	$(ROOT)/theories/fol/fol.cmxa\
-#	$(ROOT)/theories/reflect_itt/reflect_itt.cmxa\
-#	$(ROOT)/theories/tptp/tptp.cmxa\
 
 CMXALIBS =\
 	$(CMXADEPS)
@@ -148,46 +133,30 @@ CMADEPS =\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CAMLP4LIB)/camlp4_top.cma\
-	$(CMADEPS_ens)\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
-	$(ROOT)/lib/prlc.cma\
 	$(CMALIBS_ens)\
-	$(ROOT)/theories/boot/boot.cma\
-	$(ROOT)/theories/tactic/tactics.cma\
-	$(ROOT)/theories/ocaml/ocaml_df.cma\
-	$(ROOT)/theories/base/base.cma\
-	$(ROOT)/theories/itt/itt.cma\
+	$(ROOT)/lib/prlc.cma\
+	$(addprefix $(ROOT)/theories/, $(addsuffix /theory.cma, $(THEORIES)))\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(MAIN).cma
-#	$(ROOT)/theories/fol/fol.cma\
-#	$(ROOT)/theories/reflect_itt/reflect_itt.cma\
-#	$(ROOT)/theories/tptp/tptp.cma\
 
 TCMADEPS =\
 	$(CAMLP4LIB)/odyl.cma\
 	$(CAMLLIB)/unix.cma\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
-	$(CMADEPS_ens)\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
-	$(ROOT)/lib/prlc.cma\
 	$(CMALIBS_ens)\
-	$(ROOT)/theories/boot/boot.cma\
-	$(ROOT)/theories/tactic/tactics.cma\
-	$(ROOT)/theories/ocaml/ocaml_df.cma\
-	$(ROOT)/theories/base/base.cma\
-	$(ROOT)/theories/itt/itt.cma\
+	$(ROOT)/lib/prlc.cma\
+	$(addprefix $(ROOT)/theories/, $(addsuffix /theory.cma, $(THEORIES)))\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(MAIN).cma
-#	$(ROOT)/theories/fol/fol.cma\
-#	$(ROOT)/theories/reflect_itt/reflect_itt.cma\
-#	$(ROOT)/theories/tptp/tptp.cma\
 
 CMALIBS =\
 	$(CMADEPS)

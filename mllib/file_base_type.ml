@@ -44,9 +44,8 @@ type file_name = string
  * never, always, or if the suffixed file is newer.
  *)
 type alt_suffix =
-   AlwaysSuffix of string
- | NewerSuffix of string
- | NeverSuffix
+   AnySuffix
+ | OnlySuffixes of string list
 
 (*
  * File type selection info.

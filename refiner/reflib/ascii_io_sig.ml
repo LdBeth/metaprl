@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Alexey Nogin
  * nogin@cs.cornell.edu
  *
@@ -54,7 +54,7 @@ Sequent:
 S<long_name> <short_name> <arg_term_short_name> [<hyp_1_short_name> ... <hyp_n_short_name>]
 G<long_name> <short_name> [<goal_1_short_name> ... <goal_n_short_name>]
 
-Operator: 
+Operator:
 O<long_name> <short_name> <opname_short_name> [<param_short_name_1> ... <param_short_name_n>]
 
 Opname:
@@ -68,11 +68,11 @@ P<long_name> <short_name> Var <string>
 P<long_name> <short_name> MNumber <string>
 P<long_name> <short_name> MString <string>
 P<long_name> <short_name> MToken <string>
-P<long_name> <short_name> MVar <string> 
+P<long_name> <short_name> MVar <string>
 P<long_name> <short_name> MLevel <int> [<var_1_string> <off_1_int> ... <var_1_string> <off_1_int>]
 
 Where "long name" is there only there to make the file more readable for the user,
-"short name" is probably several characters long, typically - a base short name 
+"short name" is probably several characters long, typically - a base short name
 and a serial number. If a string has non-printable characters or spaces, it would
 be printed quoted. For sequents the correspondent S and G lines have to have the same short
 name.
@@ -92,6 +92,12 @@ sig
 
    type io_item = string * string * string list
    type io_table
+
+   (*
+    * These are the functions that are useful.
+    *)
+   val read_table : in_channel -> io_table
+   val write_term : out_channel -> io_table -> term -> unit
 
    (*
     * INPUT

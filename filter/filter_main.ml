@@ -75,13 +75,17 @@ let set_lib s =
    let var = sprintf "MPLIB=%s" s in
       Punix.putenv var
 
+let set_export () =
+   Punix.putenv "MP_EXPORT=true"
+
 let add_anon_arg arg =
    ()
 
 let spec =
    ["-I", String add_include, "add an directory to the path for include files";
     "-o", String set_output_file, "specify output file";
-    "-lib", String set_lib, "specify MPLIB directory"]
+    "-lib", String set_lib, "specify MPLIB directory";
+    "-export", Unit set_export, "export an ASCII file"]
 
 (*
  * Add the include path.

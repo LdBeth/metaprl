@@ -663,6 +663,14 @@ struct
        | None ->
             ()
 
+   let export info =
+      touch info;
+      match info.package with
+         Some pack ->
+            Package.export (get_parse_arg info) pack
+       | None ->
+            ()
+
    let save_all info =
       let save pack =
          if Package.status pack = Modified then
@@ -923,6 +931,12 @@ struct
    let kreitz info =
       interpret info ProofKreitz
 
+   let clean info =
+      interpret info ProofClean
+
+   let squash info =
+      interpret info ProofSquash
+
    let copy info s =
       interpret info (ProofCopy s)
 
@@ -969,14 +983,15 @@ struct
       in
          print_exn info sync info
 
-   let expand_all info =
+   let apply_all f info =
+      touch info;
       let expand_all info =
          let parse_arg = get_parse_arg info in
          let display_mode = get_display_mode info in
          match info.package with
             Some pack ->
                let expand item =
-                  try item.edit_expand (get_db info) with
+                  try f item (get_db info) with
                      RefineError _ ->
                         ()
                in
@@ -1010,6 +1025,26 @@ struct
                eprintf "expand_all: no current package%t" eflush
       in
          print_exn info expand_all info
+
+   let expand_all info =
+      let f item db =
+         item.edit_expand db
+      in
+         apply_all f info
+
+   let check_all info =
+      let f item db =
+         ignore (item.edit_check ())
+      in
+         apply_all f info
+
+   let interpret_all command info =
+      let f item db =
+         item.edit_interpret command
+      in
+         apply_all f info
+
+   let clean_all = interpret_all ProofClean
 
    (*
     * Change directory.
@@ -1094,6 +1129,7 @@ struct
        "load",             StringFunExpr   (fun s  -> UnitExpr (load info s));
        "create_pkg",       StringFunExpr   (fun s  -> UnitExpr (create_pkg info s));
        "save",             UnitFunExpr     (fun () -> UnitExpr (save info));
+       "export",           UnitFunExpr     (fun () -> UnitExpr (export info));
        "save_all",         UnitFunExpr     (fun () -> UnitExpr (save_all info));
        "create_rw",        StringFunExpr   (fun s  -> UnitExpr (create_rw info s));
        "create_axiom",     StringFunExpr   (fun s  -> UnitExpr (create_axiom info s));
@@ -1129,11 +1165,15 @@ struct
        "nop",              UnitFunExpr     (fun () -> UnitExpr (nop info));
        "unfold",           UnitFunExpr     (fun () -> UnitExpr (unfold info));
        "kreitz",           UnitFunExpr     (fun () -> UnitExpr (kreitz info));
+       "clean",            UnitFunExpr     (fun () -> UnitExpr (clean info));
+       "squash",           UnitFunExpr     (fun () -> UnitExpr (squash info));
        "copy",             StringFunExpr   (fun s  -> UnitExpr (copy info s));
        "paste",            StringFunExpr   (fun s  -> UnitExpr (paste info s));
        "make_assum",       UnitFunExpr     (fun () -> UnitExpr (make_assum info));
        "sync",             UnitFunExpr     (fun () -> UnitExpr (sync info));
        "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all info));
+       "check_all",        UnitFunExpr     (fun () -> UnitExpr (check_all info));
+       "clean_all",        UnitFunExpr     (fun () -> UnitExpr (clean_all info));
        "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)));
        "stop_gmon",        UnitFunExpr     (fun () -> UnitExpr (stop_gmon ()));
        "restart_gmon",     UnitFunExpr     (fun () -> UnitExpr (restart_gmon ()));

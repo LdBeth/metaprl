@@ -610,7 +610,7 @@ struct
                   eprintf "FilterCache.inline_module': finding: %s%t" (string_of_path path) eflush;
                let { base = { lib = base } } = cache in
                let info =
-                  try Base.find base barg path SigMarshal.select NeverSuffix with
+                  try Base.find base barg path SigMarshal.select AnySuffix with
                      Not_found ->
                         eprintf "Can't find module %s%t" (string_of_path path) eflush;
                         raise Not_found
@@ -713,7 +713,7 @@ struct
       let info =
          try (find_summarized_sig_module cache [name]).sig_summary with
             Not_found ->
-               let info = Base.find_match lib barg self alt_select NeverSuffix in
+               let info = Base.find_match lib barg self alt_select AnySuffix in
                let sum = { sig_summary = info; sig_resources = List.map snd cache.resources } in
                   base.sig_summaries <- sum :: summaries;
                   info
@@ -741,7 +741,7 @@ struct
           } = cache
       in
       let path = [name] in
-      let info' = Base.find_file base.lib barg path my_select (AlwaysSuffix "prlb") in
+      let info' = Base.find_file base.lib barg path my_select (OnlySuffixes ["prlb"]) in
       let info' = StrMarshal.unmarshal (Base.info base.lib info') in
          cache.info <- FilterSummaryTerm.copy_proofs copy_proof info info'
 

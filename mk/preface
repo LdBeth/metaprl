@@ -5,7 +5,7 @@
 #
 
 #
-# User definitions - TERMS, REFINER, MAKE_JOBS, SEQ_SET, ENSROOT, OCAMLSRC, CCC
+# User definitions - TERMS, REFINER, MAKE_JOBS, SEQ_SET, ENSROOT, OCAMLSRC, CCC, THEORIES
 #
 include $(ROOT)/mk/config
 
@@ -46,6 +46,13 @@ endif
 ifeq ($(OSTYPE),solaris)
    OSTYPE=Solaris
 endif 
+
+#
+# Theory directories to compile
+#
+ifndef THEORIES
+   THEORIES = tactic ocaml base itt
+endif
 
 #
 # Options for simp and verb variations
@@ -119,4 +126,7 @@ ifndef OCAMLYACC
 endif
 ifndef PRLC
    PRLC = $(ROOT)/bin/prlc$(EXE) -lib $(ROOT)/lib
+endif
+ifndef CONVERT
+   CONVERT = $(ROOT)/bin/convert$(EXE)
 endif

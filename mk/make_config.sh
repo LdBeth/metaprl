@@ -71,4 +71,13 @@ OCAMLSRC=$OCAMLSRC
 # If you want to change anything except for the variable values, 
 # edit mk/make_config.sh instead.
 
+#
+# This is the list of theory directories theory/*
+# that you want to compile.  You want to include at least
+#    THEORIES = tactic ocaml base
+# Include itt if you want to use the Nuprl type theory,
+# and add any additional theory directories after that.
+#
+THEORIES=$THEORIES
+
 end_of_cat

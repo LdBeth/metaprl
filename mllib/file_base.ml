@@ -121,41 +121,63 @@ struct
                Hashtbl.add table name (ref [info])
 
    (*
-    * Load a file given the directory, the filename, and the spec.
+    * Filename for a spec.
     *)
-   let load_file_aux save_flag base (spec, alt_suffix) arg dir name =
+   let spec_filename spec dir name =
+      let { info_suffix = suffix } = spec in
+         sprintf "%s/%s.%s" dir name suffix
+
+   (*
+    * find the newest file in the spec list.
+    *)
+   let newest_spec specs dir name =
+      match specs with
+         [] ->
+            raise Not_found
+       | [spec] ->
+            spec
+       | spec :: specs ->
+            let rec search spec time = function
+               spec' :: specs ->
+                  let filename = spec_filename spec' dir name in
+                  let time' =
+                     try
+                        let stat = Unix.stat filename in
+                           stat.Unix.st_mtime
+                     with
+                        Unix.Unix_error _ ->
+                           0.0
+                  in
+                     if time' > time then
+                        search spec' time' specs
+                     else
+                        search spec time specs
+             | [] ->
+                  spec
+            in
+            let filename = spec_filename spec dir name in
+            let time =
+               try
+                  let stat = Unix.stat filename in
+                     stat.Unix.st_mtime
+               with
+                  Unix.Unix_error _ ->
+                     0.0
+            in
+               search spec time specs
+
+   (*
+    * Load a file given the directory, the filename, and a list
+    * of specs.
+    *)
+   let load_file save_flag base specs arg dir name =
+      let spec = newest_spec specs dir name in
       let { info_unmarshal = unmarshal;
-            info_suffix = suffix;
             info_magics = magics;
             info_select = select
           } = spec
       in
-      let filename =
-         let filename1 = sprintf "%s/%s.%s" dir name suffix in
-            if !debug_file_base then
-               eprintf "File_base.load_file: check %s%t" filename1 eflush;
-            match alt_suffix with
-               None ->
-                  filename1
-             | Some suffix' ->
-                  let filename2 = sprintf "%s/%s.%s" dir name suffix' in
-                     if !debug_file_base then
-                        eprintf "File_base.load_file: check against %s%t" filename2 eflush;
-                     try
-                        let stat2 = Unix.stat filename2 in
-                           try
-                              let stat1 = Unix.stat filename1 in
-                                 if stat1.Unix.st_mtime >= stat2.Unix.st_mtime then
-                                    filename1
-                                 else
-                                    filename2
-                           with
-                              Unix.Unix_error _ ->
-                                 filename2
-                     with
-                        Unix.Unix_error _ ->
-                           filename1
-      in
+      let filename = spec_filename spec dir name in
       let _ =
          if !debug_file_base then
             eprintf "File_base.load_file: trying to load file %s%t" filename eflush
@@ -176,20 +198,6 @@ struct
          if save_flag then
             add_info base info';
          info'
-
-   let rec load_file save_flag base specs arg dir name =
-      match specs with
-         [spec] ->
-            load_file_aux save_flag base spec arg dir name
-       | spec :: tl ->
-            begin
-               try load_file_aux save_flag base spec arg dir name with
-                  Sys_error _
-                | Not_found ->
-                     load_file save_flag base tl arg dir name
-            end
-       | [] ->
-            raise Not_found
 
    (*
     * Find an existing root module.
@@ -219,32 +227,19 @@ struct
    let find_specs select suffix =
       let rec search infos = function
          io::tl ->
-            let { info_select = select'; info_disabled = disabled } = io in
+            let { info_select = select'; info_suffix = suffix'; info_disabled = disabled } = io in
                if select' = select & not !disabled then
-                  let hd =
+                  let infos =
                      match suffix with
-                        NeverSuffix ->
-                           io, None
-                      | AlwaysSuffix suffix ->
-                           let { info_marshal = marshal;
-                                 info_unmarshal = unmarshal;
-                                 info_magics = magics
-                               } = io
-                           in
-                           let io =
-                              { info_marshal = marshal;
-                                info_unmarshal = unmarshal;
-                                info_disabled = disabled;
-                                info_select = select';
-                                info_suffix = suffix;
-                                info_magics = magics
-                              }
-                           in
-                              io, None
-                      | NewerSuffix suffix ->
-                           io, Some suffix
+                        AnySuffix ->
+                           io :: infos
+                      | OnlySuffixes suffixes ->
+                           if List.mem suffix' suffixes then
+                              io :: infos
+                           else
+                              infos
                   in
-                     search (hd :: infos) tl
+                     search infos tl
                else
                   search infos tl
        | [] ->
@@ -259,7 +254,7 @@ struct
 
    (*
     * Find a root module.
-    * Check if it exists, otherwise load it.
+    * Check if it has already been loaded, otherwise load it.
     *)
    let find base arg name select suffix =
       let { io_table = table } = base in
@@ -320,7 +315,7 @@ struct
 
    let set_magic _ info magic =
       let { info_type = select } = info in
-      let { info_magics = magics }, _ = find_spec select NeverSuffix in
+      let { info_magics = magics } = find_spec select AnySuffix in
          if magic < List.length magics then
             info.info_magic <- magic
          else
@@ -332,7 +327,7 @@ struct
     *)
    let save base arg info suffix =
       let { info_dir = dir; info_file = file; info_type = select; info_info = data; info_magic = magic } = info in
-      let { info_magics = magics; info_marshal = marshal; info_suffix = suffix }, _ = find_spec select suffix in
+      let { info_magics = magics; info_marshal = marshal; info_suffix = suffix } = find_spec select suffix in
       let filename =
          sprintf "%s/%s.%s" dir file suffix
       in
@@ -396,7 +391,7 @@ struct
    let file_name base { info_file = file } = file
 
    let full_name base { info_dir = dir; info_file = file; info_type = select } =
-      let { info_suffix = suffix }, _ = find_spec select NeverSuffix in
+      let { info_suffix = suffix } = find_spec select AnySuffix in
          sprintf "%s/%s.%s" dir file suffix
 
    let type_of base { info_type = select } = select

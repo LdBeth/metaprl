@@ -57,6 +57,7 @@ let load = load (get_current_shell ())
 let create_pkg = create_pkg (get_current_shell ())
 let set_writeable () = set_writeable (get_current_shell ())
 let save () = save (get_current_shell ())
+let export () = export (get_current_shell ())
 let save_all () = save_all (get_current_shell ())
 
 (*
@@ -108,6 +109,9 @@ let nop () = nop (get_current_shell ())
 let unfold () = unfold (get_current_shell ())
 let copy s = copy (get_current_shell ()) s
 let paste s = paste (get_current_shell ()) s
+let kreitz () = kreitz (get_current_shell ())
+let clean () = clean (get_current_shell ())
+let squash () = squash (get_current_shell ())
 let make_assum () = make_assum (get_current_shell ())
 
 (*
@@ -133,6 +137,8 @@ let edit_refine = edit_refine (get_current_shell ())
 let edit_node = edit_node (get_current_shell ())
 let edit_save = edit_save (get_current_shell ())
 let edit_undo () = edit_undo (get_current_shell ())
+
+let shell_get_term = Shell_state.ShellState.get_term
 
 let _ = ShellHTTP.main ()
 

@@ -23,18 +23,10 @@ REFINER_DIRS =\
 	mllib\
 	refiner\
 	library\
-        debug
+        debug\
+	ensemble
 
-MP_DIRS =\
-	ensemble\
-	theories/boot\
-	theories/tactic\
-	theories/ocaml\
-	theories/base\
-	theories/itt\
-	theories/tptp\
-	theories/reflect_itt\
-	theories/fol
+MP_DIRS = $(addprefix theories/, $(THEORIES))
 
 DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 

@@ -12,52 +12,92 @@ include $(ROOT)/mk/preface
 #
 # Name of main program
 #
-MAIN = prlc
+MAINLIB = prlc
+MAINPROG = prlc
 
-INSTALL_LIBS = prlc
+INSTALL_LIBS = $(MAINLIB)
 
 #
 # Flags
 #
 INCLUDE =\
-	-I $(ROOT)/mllib\
-	-I $(ROOT)/refiner/refbase\
-	-I $(ROOT)/refiner/refsig\
-	-I $(ROOT)/refiner/refiner\
-	-I $(ROOT)/refiner/reflib\
-	-I $(ROOT)/library\
+	-I $(ROOT)/lib\
 	-I $(CAMLP4LIB)
 
 OCAMLFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
 
-# Type files
-MLZFILES =\
-	filter_type\
-	filter_summary_type\
-	filter_proof_type
+########################################################################
+# Recursive make
+#########################################################################
 
-LMFILES =\
-	filter_buffer\
-	mLast_util\
-	free_vars\
-	filter_type\
-	infix\
-	filter_ast\
-	filter_hash\
-	filter_util\
-	filter_comment\
-	filter_ocaml\
-	filter_exn\
-	filter_summary\
-	filter_summary_type\
-	filter_summary_io\
-	filter_summary_util\
-	filter_cache_fun\
-	filter_magic\
-	filter_cache\
-	filter_prog\
-	term_grammar\
-	filter_grammar
+DIRS :=\
+	base\
+	boot
+
+SUB_CMALIBS := $(addsuffix /filterlib.cma, $(DIRS))
+SUB_CMXALIBS := $(addsuffix /filterlib.cmxa, $(DIRS))
+
+all: lib 
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cma
+
+opt:: optlib 
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa 
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB)$(EXT_LIB)
+
+
+include base/Files
+include boot/Files
+
+BASE_CMXFILES   := $(addprefix base/, $(addsuffix .cmx, $(BASE_FILES)))
+BOOT_CMXFILES   := $(addprefix base/, $(addsuffix .cmx, $(BOOT_FILES)))
+
+SUB_CMXFILES :=\
+	$(BASE_CMXFILES)\
+	$(BOOT_CMXFILES)
+
+#
+# Libraries
+#
+$(MAINLIB).cma: $(SUB_CMALIBS)
+	$(OCAMLC) $(OCAMLCFLAGS) -a -o $(MAINLIB).cma $(SUB_CMALIBS)
+
+$(MAINLIB)$(EXT_LIB): $(MAINLIB).cmxa
+
+$(MAINLIB).cmxa: $(SUB_CMXFILES)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $(MAINLIB).cmxa $(SUB_CMXFILES)
+
+#
+# Standard build rules
+#
+lib::
+	@for i in $(DIRS); do\
+		if (echo Making filter/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+	done
+
+optlib::
+	@for i in $(DIRS); do\
+		if (echo Making filter/$$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
+	done
+
+install::
+	@for i in $(DIRS); do\
+		if (echo Making filter/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+	done
+
+clean::
+	@for i in $(DIRS); do\
+		if (echo Cleaning filter/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+	done
+
+depend::
+	$(RM) Makefile.dep
+	@for i in $(DIRS); do\
+		if (echo Making filter/$$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
+	done
+
+########################################################################
+# MAIN PROGRAMS
+########################################################################
 
 MFILES_CAMLP4 =\
 	filter_parse\
@@ -66,25 +106,30 @@ MFILES_CAMLP4 =\
 MFILES_PRLC =\
 	filter_bin
 
+MFILES_CONVERT =\
+	convert
+
 MFILES =\
 	filter_parse\
 	filter_main\
-	filter_bin
+	filter_bin\
+	convert
 
 CMOFILES_CAMLP4 = $(addsuffix .cmo, $(MFILES_CAMLP4))
 CMXFILES_CAMLP4 = $(addsuffix .cmx, $(MFILES_CAMLP4))
 CMOFILES_PRLC = $(addsuffix .cmo, $(MFILES_PRLC))
 CMXFILES_PRLC = $(addsuffix .cmx, $(MFILES_PRLC))
+CMOFILES_CONVERT = $(addsuffix .cmo, $(MFILES_CONVERT))
+CMXFILES_CONVERT = $(addsuffix .cmx, $(MFILES_CONVERT))
 
 PFILES =\
-	filter_magic\
 	prlcomp
 
 #
 # Libraries for prlc
 #
 CMXADEPS =\
-	$(ROOT)/mllib/util.cmxa
+	$(ROOT)/lib/util.cmxa
 
 CMXLIBS =\
 	unix.cmxa\
@@ -92,7 +137,7 @@ CMXLIBS =\
 	$(CMXADEPS)
 
 CMADEPS =\
-	$(ROOT)/mllib/util.cma
+	$(ROOT)/lib/util.cma
 
 CMALIBS =\
 	unix.cma\
@@ -120,7 +165,8 @@ STANDARD_LIBS =\
 	$(CMADEPS)\
 	$(ROOT)/refiner/refiner.cma\
 	$(ROOT)/library/library.cma\
-	$(MAIN).cma
+	$(ROOT)/lib/trefiner_null.cma\
+	$(MAINLIB).cma
 
 STANDARDX_LIBS =\
 	$(CAMLLIB)/unix.cmxa\
@@ -129,7 +175,8 @@ STANDARDX_LIBS =\
 	$(CMXADEPS)\
 	$(ROOT)/refiner/refiner.cmxa\
 	$(ROOT)/library/library.cmxa\
-	$(MAIN).cmxa
+	$(ROOT)/lib/trefiner_null.cmxa\
+	$(MAINLIB).cmxa
 
 CAMLP4N_CMOBJS =\
 	$(CAMLP4LIB)/odyl.cma\
@@ -171,6 +218,22 @@ CAMLP4X_BYTE_CCLIBS = $(BYTE_CCLIBS)
 CAMLP4X_NATIVE_CCLIBS = $(NATIVE_CCLIBS)
 
 #
+# File format conversion
+#
+CONVERT = convert
+
+CONVERT_CMOBJS =\
+	$(STANDARD_LIBS)\
+	$(CMOFILES_CONVERT)
+
+CONVERT_CMXOBJS =\
+	$(STANDARD_LIBS)\
+	$(CMXFILES_CONVERT)
+
+CONVERT_BYTE_CCLIBS = $(BYTE_CCLIBS)
+CONVERT_NATIVE_CCLIBS = $(NATIVE_CCLIBS)
+
+#
 # Files for binary compiler.
 #
 PRLCN = prlcn
@@ -199,8 +262,6 @@ PRLCO_CMXOBJS =\
 PRLCX_BYTE_CCLIBS = $(BYTE_CCLIBS)
 PRLCX_NATIVE_CCLIBS = $(NATIVE_CCLIBS)
 
-all: lib
-
 #
 # Included files
 #
@@ -214,8 +275,14 @@ lib::	$(ROOT)/lib/$(CAMLP4N)$(EXE)\
 	$(ROOT)/lib/$(CAMLP4O)$(EXE)\
 	$(ROOT)/lib/$(PRLCN)$(EXE)\
 	$(ROOT)/lib/$(PRLCO)$(EXE)\
-	$(ROOT)/bin/$(MAIN)$(EXE)
+	$(ROOT)/bin/$(MAINPROG)$(EXE)\
+	$(ROOT)/bin/$(CONVERT)$(EXE)\
+	$(RMLIFILES) $(RCMIFILES) $(RCMAFILES)
 
+
+#
+# More rules
+#
 $(ROOT)/lib/$(CAMLP4N)$(EXE): $(CAMLP4N).run
 	$(LN) ../$(DIR)/$(CAMLP4N).run $@
 
@@ -228,20 +295,24 @@ $(ROOT)/lib/$(PRLCN)$(EXE): $(PRLCN).run
 $(ROOT)/lib/$(PRLCO)$(EXE): $(PRLCO).run
 	$(LN) ../$(DIR)/$(PRLCO).run $@
 
-$(ROOT)/bin/$(MAIN)$(EXE): $(MAIN).run
-	$(LN) ../$(DIR)/$(MAIN).run $@
+$(ROOT)/bin/$(MAINPROG)$(EXE): $(MAINPROG).run
+	$(LN) ../$(DIR)/$(MAINPROG).run $@
 
-opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAIN).opt
+$(ROOT)/bin/$(CONVERT)$(EXE): $(CONVERT).run
+	$(LN) ../$(DIR)/$(CONVERT).run $@
+
+opt:: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAINPROG).opt $(CONVERT).opt
 	$(LN) ../$(DIR)/$(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N)
 	$(LN) ../$(DIR)/$(CAMLP4O).opt $(ROOT)/lib/$(CAMLP4O)
 	$(LN) ../$(DIR)/$(PRLCN).opt $(ROOT)/lib/$(PRLCN)
 	$(LN) ../$(DIR)/$(PRLCO).opt $(ROOT)/lib/$(PRLCO)
-	$(LN) ../$(DIR)/$(MAIN).opt $(ROOT)/bin/$(MAIN)
+	$(LN) ../$(DIR)/$(MAINPROG).opt $(ROOT)/bin/$(MAINPROG)
+	$(LN) ../$(DIR)/$(CONVERT).opt $(ROOT)/bin/$(CONVERT)
 
 profile: $(RMLIFILES) $(RCMXAFILES) 
 
-install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAIN).run
-	$(INSTALL) $(MAIN).cma $(LMLIFILES) $(LCMIFILES) $(MPLIB)
+install:: $(MAINLIB).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAINPROG).run $(CONVERT).run
+	$(INSTALL) $(MAINLIB).cma $(LMLIFILES) $(LCMIFILES) $(MPLIB)
 	if [ $(CAMLP4N).opt -nt $(CAMLP4N).run ]; then\
 		$(LN) ../$(DIR)/$(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N);\
 	else\
@@ -262,7 +333,12 @@ install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(
 	else\
 		$(LN) ../$(DIR)/$(PRLCO).run $(ROOT)/lib/$(PRLCO);\
 	fi
-	$(INSTALL) $(MAIN).run $(MPBIN)/$(MAIN)
+	if [ $(CONVERT).opt -nt $(CONVERT).run ]; then\
+		$(LN) ../$(DIR)/$(CONVERT).opt $(ROOT)/lib/$(CONVERT);\
+	else\
+		$(LN) ../$(DIR)/$(CONVERT).run $(ROOT)/lib/$(CONVERT);\
+	fi
+	$(INSTALL) $(MAINPROG).run $(MPBIN)/$(MAINPROG)
 
 #
 # Compile a special camlp4 to run Nuprl.
@@ -283,6 +359,12 @@ $(PRLCO).run: $(PRLCO_CMOBJS) $(THREADSLIB)
 	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_BYTE_CCLIBS) $(LIBTHREADS)
 
 #
+# Format converter
+#
+$(CONVERT).run: $(CONVERT_CMOBJS) $(THREADSLIB)
+	$(OCAMLC) $(PROFILE) -o $@ -custom $(CONVERT_CMOBJS) $(CONVERT_BYTE_CCLIBS) $(LIBTHREADS)
+
+#
 # Compile a special camlp4 to run Nuprl.
 #
 $(CAMLP4N).opt: $(CAMLP4N_CMXOBJS) $(OPTTHREADSLIB)
@@ -301,18 +383,16 @@ $(PRLCO).opt: $(PRLCO_CMXOBJS) $(OPTTHREADSLIB)
 	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCO_CMXOBJS) $(PRLCX_NATIVE_CCLIBS) $(OPTTHREADS)
 
 #
-# Infix file is preprocessed.
+# Format converter
 #
-infix.ml: infix.pre.ml
-	$(RM) $@
-	camlp4$(EXE) pa_o.cmo pa_op.cmo pr_o.cmo pa_extend.cmo q_MLast.cmo ./infix.pre.ml |\
-		sed -e 's,"KEYWORD",keyword,' > infix.ml
-	chmod 444 $@
+$(CONVERT).opt: $(CONVERT_CMXOBJS) $(THREADSLIB)
+	$(OCAMLOPT) $(PROFILE) -o $@ $(CONVERT_CMXOBJS) $(CONVERT_NATIVE_CCLIBS) $(LIBTHREADS)
 
 #
-# More rules
+# Wrapper program
 #
-lib:: $(RMLIFILES) $(RCMIFILES)	$(RCMAFILES)
+$(MAINPROG).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES) $(ROOT)/mk/config $(THREADSLIB) $(MAINLIB).cma
+	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) base/filter_magic.cmo $(PCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 
-clean::
-	$(RM) *.opt infix.ml
+$(MAINPROG).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES) $(ROOT)/mk/config $(OPTTHREADSLIB) $(MAINLIB).cmxa
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) base/filter_magic.cmx $(PCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)

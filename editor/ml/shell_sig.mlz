@@ -131,6 +131,7 @@ sig
    val create_pkg : t -> string -> unit
    val set_writeable : t -> unit
    val save : t -> unit
+   val export : t -> unit
    val save_all : t -> unit
 
    (*
@@ -184,6 +185,8 @@ sig
    val paste : t -> string -> unit
    val make_assum : t -> unit
    val kreitz : t -> unit
+   val clean : t -> unit
+   val squash : t -> unit
    val sync : t -> unit
    val expand_all : t -> unit
 

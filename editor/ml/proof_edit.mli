@@ -111,6 +111,8 @@ val copy_ped : ped -> string -> unit
 val paste_ped : ped -> string -> unit
 val cp_ped : ped -> int list -> int list -> unit
 val make_assum_ped : ped -> unit
+val clean_ped : ped -> unit
+val squash_ped : ped -> unit
 
 (*
  * Check the proof and return its extract.
@@ -143,6 +145,8 @@ type proof_command =
  | ProofCp of int list * int list
  | ProofExpand of dform_base
  | ProofMakeAssum
+ | ProofClean
+ | ProofSquash
 
 val interpret : ped -> proof_command -> unit
 

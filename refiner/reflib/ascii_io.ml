@@ -31,6 +31,9 @@
  *
  *)
 
+open Printf
+open Mp_debug
+
 open Opname
 open String_set
 
@@ -86,7 +89,7 @@ struct
       r
 
    let fail s =
-      raise (Failure ("ASCII IO: invalid entry incountered by " ^ s ^ " function."))
+      raise (Failure ("ASCII IO: invalid entry encountered by " ^ s ^ " function."))
 
    let hash_add_new tbl key data =
       if Hashtbl.mem tbl key then fail "hash_add_new" else Hashtbl.add tbl key data
@@ -181,6 +184,8 @@ struct
          hash_add_new r.io_params name (constr_param (Var s))
     | (_, name, ["MNumber"; s]) ->
          hash_add_new r.io_params name (constr_param (MNumber s))
+    | (_, name, ["MString"; s]) ->
+         hash_add_new r.io_params name (constr_param (MString s))
     | (_, name, ["MToken"; s]) ->
          hash_add_new r.io_params name (constr_param (MToken s))
     | (_, name, ["MVar"; s]) ->
@@ -204,23 +209,51 @@ struct
           | 'O'|'o' -> add_op r item
           | 'N'|'n' -> add_name r item
           | 'P'|'p' -> add_param r item
-          | _ -> fail "add_items"
+          | _ -> fail ("add_items: " ^ long)
          end
     | [] -> ()
 
    let get_term t =
       try begin match !t with
-         (long,_,_) as item :: items ->
+         (long,short,_) as item :: items ->
             let r = new_record () in
             add_items r items;
             retrieve (
                match long.[0] with
                   'T'|'t' -> add_term r item
                 | 'G'|'g' -> add_goal r item
-                | _ -> fail "get_term"
+                | _ -> fail ("get_term: " ^ long)
             )
-       | [] -> fail "get_term"
-      end with Not_found -> fail "get_term"
+       | [] -> fail "get_term1"
+          end with Not_found -> fail "get_term2"
+
+   let read_table inx =
+      let table = initialize () in
+      let rec collect lineno =
+         let line = input_line inx in
+            if String.length line = 0 || line.[0] = '#' then
+               collect (succ lineno)
+            else
+               let args = String_util.parse_args line in
+               let _ =
+                  match args with
+                     arg1 :: arg2 :: args ->
+                        add_line table (arg1, arg2, args)
+                   | _ ->
+                        eprintf "Ascii_io: syntax error on line %d%t" lineno eflush
+               in
+                  collect (succ lineno)
+      in
+      let _ =
+         try collect 1 with
+            End_of_file ->
+               ()
+      in
+         table
+
+   (************************************************************************
+    * OUTPUT                                                               *
+    ************************************************************************)
 
    type out_control =
     { out_name_op : opname -> param list -> string * string;
@@ -241,6 +274,7 @@ struct
     { mutable io_names : StringSet.t; (* names of old items included in a new version *)
       mutable new_names : StringSet.t; (* names of items included in a new version *)
       mutable all_names : StringSet.t; (* names of all the available items (old and new) *)
+      mutable name_index : int;        (* index for the next name to be allocated *)
       mutable out_items : out_item list;
       out_terms : string HashTerm.t;
       out_ops : (opname * hashed_param list, string) Hashtbl.t;
@@ -254,6 +288,7 @@ struct
     { io_names = StringSet.empty;
       new_names = StringSet.empty;
       all_names = StringSet.empty;
+      name_index = 1;
       out_items = [];
       out_terms = HashTerm.create init_size;
       out_ops = Hashtbl.create init_size;
@@ -299,20 +334,24 @@ struct
 
    let rec do_rename name names i =
       let name' = name ^ (string_of_int i) in
-      if StringSet.mem names name' then
-         do_rename name names (succ i)
-      else name'
+         if StringSet.mem names name' then
+            do_rename name names (succ i)
+         else
+            name', i
 
    let rename name data =
       let names = data.all_names in
       let name' =
          if StringSet.mem names name then
-            do_rename name names 1
-         else name
+            let name, index = do_rename name names data.name_index in
+               data.name_index <- index;
+               name
+         else
+            name
       in
-      data.all_names <- StringSet.add name' names;
-      data.new_names <- StringSet.add name' data.new_names;
-      name'
+         data.all_names <- StringSet.add name' names;
+         data.new_names <- StringSet.add name' data.new_names;
+         name'
 
    let check_old data name =
       if not (StringSet.mem data.new_names name) then begin
@@ -470,6 +509,7 @@ struct
              | Token s -> ["Token"; s]
              | Var s -> ["Var"; s]
              | MNumber s -> ["MNumber"; s]
+             | MString s -> ["MString"; s]
              | MToken s -> ["MToken"; s]
              | MVar s -> ["Mvar"; s]
              | MLevel le ->
@@ -507,12 +547,12 @@ struct
       ignore (out_term ctrl data t);
       print_out ctrl.out_line data.io_names (List.rev !inputs) (List.rev data.out_items)
 
-   let simple_name_op _ _ = "",""
-   let simple_name_param _ = "",""
-   let simple_name_term _ = "",""
-   let simple_name_bterm _ = "",""
-   let simple_name_hyp _ = "",""
-   let simple_name_seq _ = "","",""
+   let simple_name_op _ _ = "","o"
+   let simple_name_param _ = "","p"
+   let simple_name_term _ = "","t"
+   let simple_name_bterm _ = "","b"
+   let simple_name_hyp _ = "","h"
+   let simple_name_seq _ = "","","s"
 
    let simple_output_line out (str1, str2, strs) =
       Printf.fprintf out "%s\t%s\t%s\n"
@@ -529,6 +569,8 @@ struct
       out_name_seq = simple_name_seq;
       out_line = simple_output_line out }
 
+   let write_term outx table term =
+      output_term table (make_simple_control outx) term
 end
 
-module AsciiIO=MakeAsciiIO (Refiner.Refiner)
+module AsciiIO = MakeAsciiIO (Refiner.Refiner)

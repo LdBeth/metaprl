@@ -117,7 +117,7 @@ struct
             raise (Failure "Filter_parse.compile: invalid suffix")
       in
       let cache = FilterCache.create !include_path in
-      let info, _ = FilterCache.load cache () path kind InterfaceType inline_hook () NeverSuffix in
+      let info, _ = FilterCache.load cache () path kind InterfaceType inline_hook () AnySuffix in
       let check () =
          FilterCache.check info () InterfaceType
       in
@@ -129,55 +129,7 @@ end
 (*
  * Interactive proofs are handled as raw objects.
  *)
-module Convert =
-struct
-   type t = unit
-   type raw = Obj.t
-   type cooked =
-      Term of term
-    | TermIO of Refiner_io.TermType.term
-    | Raw of Obj.t
-
-   let to_raw _ _ = function
-      Raw t ->
-         t
-    | Term _
-    | TermIO _ ->
-         raise (Failure "Filter_bin.Convert.to_raw: interactive term proof can't be converted to raw")
-
-   let of_raw _ _ t =
-      Raw t
-
-   let to_term _ _ = function
-      Raw _ ->
-         raise (Failure "Filter_bin.Convert.to_term: interactive raw proof can't be converted to term")
-    | Term t ->
-         t
-    | TermIO t ->
-         Term_io.normalize_term t
-
-   let of_term _ _ t =
-      Term t
-
-   let to_term_io _ _ = function
-      Raw _ ->
-         raise (Failure "Filter_bin.Convert.to_raw: interactive raw proof can't be converted to term")
-    | Term t ->
-         Term_io.denormalize_term t
-    | TermIO t ->
-         t
-
-   let of_term_io _ _ t =
-      TermIO t
-
-   let to_expr _ _ t =
-      let loc = 0, 0 in
-      let body =
-         <:expr< raise ( $uid: "Failure"$ $str: "Filter_bin.Convert.to_expr: not implemented"$ ) >>
-      in
-      let patt = <:patt< _ >> in
-         <:expr< fun [ $list: [ patt, None, body ]$ ] >>
-end
+module Convert = Proof_convert.Convert
 
 (*
  * Extractors.

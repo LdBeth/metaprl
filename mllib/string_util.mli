@@ -85,13 +85,13 @@ val concat : string -> string list -> string
 val unhex : char -> int
 val hexify : string -> string
 val unhexify : string -> string
-val quote: string -> string
-val unquote: string -> string
+val unhexify_int : string -> int
 
 (*
  * Get arguments from a command line.
  *)
 val parse_args : string -> string list
+val quote: string -> string
 
 (*
  * Find a new name (usually - for a variable) avoiding those where the predicate is true

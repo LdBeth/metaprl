@@ -109,6 +109,13 @@ sig
 end
 
 (*
+ * Force the output format.
+ *)
+val set_raw : unit -> unit
+val set_file : unit -> unit
+val set_lib : unit -> unit
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

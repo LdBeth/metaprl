@@ -238,7 +238,7 @@ struct
       let v = state.state_inline_var in
          state.state_inline_var <- succ v;
          state.state_inline_terms <- (v, t) :: state.state_inline_terms;
-         (<:expr< ($lid: "Shell_state"$ . $lid: "ShellState"$ . $lid: "get_term"$) $int: string_of_int v$ >>)
+         (<:expr< ($lid: "shell_get_term"$) $int: string_of_int v$ >>)
 
    let get_term_state state i =
       try List.assoc i state.state_inline_terms with

@@ -118,6 +118,7 @@ sig
    val load : t -> parse_arg -> string -> package
    val get : t -> string -> package
    val save : package -> unit
+   val export : parse_arg -> package -> unit
 
    (*
     * Access.

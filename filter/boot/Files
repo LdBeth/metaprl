@@ -1,0 +1,12 @@
+BOOT_FILES :=\
+	tactic_boot_sig\
+	tactic_boot\
+	sequent_boot\
+	tacticals_boot\
+	rewrite_boot\
+	conversionals_boot\
+	proof_term_boot\
+	proof_boot\
+	exn_boot\
+	tactic_type\
+	proof_convert

@@ -42,6 +42,7 @@ open File_type_base
 
 open Refiner_sig
 open Refiner_io
+open Refiner.Refiner
 open Refiner.Refiner.TermType
 
 open Filter_type
@@ -171,6 +172,21 @@ let _ = Env_arg.bool "raw"    false "Use the raw filesystem"  set_raw
 let _ = Env_arg.bool "file"   false "Use the term filesystem" set_file
 let _ = Env_arg.bool "lib"    true  "Use the Nuprl5 library"  set_lib
 
+let set_raw () =
+   nofile := true;
+   nolib := true;
+   noraw := false
+
+let set_file () =
+   nofile := false;
+   nolib := true;
+   noraw := true
+
+let set_lib () =
+   nofile := true;
+   nolib := false;
+   noraw := true
+
 (************************************************************************
  * IMPLEMTATION                                                         *
  ************************************************************************)
@@ -283,7 +299,13 @@ end
 (*
  * Save terms to files.
  *)
-module MakeInfo (ToTerm : RefinerSig) =
+module type MagicInfo =
+sig
+   val sig_magics : int list
+   val str_magics : int list
+end
+
+module MakeInfo (Magic : MagicInfo) (ToTerm : RefinerSig) =
 struct
    module TTerm = ToTerm.Term
    module TTermOp = ToTerm.TermOp
@@ -359,7 +381,7 @@ struct
 
       let select   = InterfaceType
       let suffix   = Convert.interface_suffix
-      let magics   = [0x73ac6be1; int_term_sig_magic]
+      let magics   = Magic.sig_magics
       let disabled = nofile
 
       let marshal arg = function
@@ -402,7 +424,7 @@ struct
 
       let select   = ImplementationType
       let suffix   = Convert.implementation_suffix
-      let magics   = [0x73ac6be3; int_term_str_magic]
+      let magics   = Magic.str_magics
       let disabled = nofile
 
       let marshal arg = function
@@ -434,6 +456,34 @@ struct
    end
 end
 
+module StandardMagic =
+struct
+   let sig_magics = [0x73ac6be1; int_term_sig_magic]
+   let str_magics = [0x73ac6be3; int_term_str_magic]
+end
+
+(*
+ * These magic numbers should be implemented in the Ascii_io module.
+ *)
+module AsciiMagic =
+struct
+   let magic_of_version major minor rev =
+      0x00000000 + (major lsl 8) + ((min minor 15) lsl 4) + (min rev 15)
+
+   let version_of_magic magic =
+      let major = (magic lsr 8) land 255 in
+      let minor = (magic lsr 4) land 15 in
+      let rev = magic land 15 in
+         major, minor, rev
+
+   let ascii_major = 1
+   let ascii_minor = 0
+   let ascii_rev   = 0
+
+   let sig_magics = [magic_of_version ascii_major ascii_minor ascii_rev]
+   let str_magics = [magic_of_version ascii_major ascii_minor ascii_rev]
+end
+
 (*
  * Marshaler to get interfaces.
  *)
@@ -443,7 +493,7 @@ struct
    type ctyp  = MLast.ctyp
    type expr  = MLast.expr
    type item  = MLast.sig_item
-   type arg    = Convert.t
+   type arg   = Convert.t
 
    type select = select_type
    let select = InterfaceType
@@ -498,6 +548,84 @@ struct
 end
 
 (*
+ * ASCII IO module.
+ *)
+module AsciiIO =
+struct
+   module PreAsciiIO = Ascii_io.AsciiIO
+
+   (*
+    * Terms are written in old format.
+    *)
+   type t = term
+
+   (*
+    * Read the term, checking the file format.
+    *)
+   let read_table magics filename =
+      let inx = open_in filename in
+      let magic =
+         try
+            match List.map String.uppercase (String_util.parse_args (input_line inx)) with
+               "#PRL" :: "VERSION" :: code :: _ ->
+                  let major, minor, rev =
+                     match List.map int_of_string (String_util.split '.' code) with
+                        [] ->
+                           raise (Failure "read_table")
+                      | [major] ->
+                           major, 0, 0
+                      | [major; minor] ->
+                           major, minor, 0
+                      | major :: minor :: rev :: _ ->
+                           major, minor, rev
+                  in
+                     AsciiMagic.magic_of_version major minor rev
+
+             | _ ->
+                  0
+         with
+            End_of_file
+          | Failure _ ->
+               0
+      in
+         if not (List.mem magic magics) then
+            raise (Failure (sprintf "Filter_cache: %s: file magic number is wrong: %08x" filename magic));
+         let table = PreAsciiIO.read_table inx in
+            close_in inx;
+            table, magic
+
+   (*
+    * Read a term from the file.
+    *)
+   let read magics filename =
+      let table, magic = read_table magics filename in
+         PreAsciiIO.get_term table, magic
+
+   (*
+    * Write a term to the file.
+    * First read the table, then write the new term.
+    *)
+   let write magics magic filename term =
+      (* First read the table *)
+      let table =
+         try fst (read_table magics filename) with
+            Failure _
+          | Sys_error _ ->
+               PreAsciiIO.initialize ()
+      in
+
+      (* Now write the term *)
+      let newname = filename ^ ".bak" in
+      let outx = open_out newname in
+      let magic = List.hd magics in
+      let major, minor, rev = AsciiMagic.version_of_magic magic in
+         fprintf outx "#PRL version %d.%d.%d ASCII term\n" major minor rev;
+         PreAsciiIO.write_term outx table term;
+         close_out outx;
+         Unix.rename newname filename
+end
+
+(*
  * Build up the cache.
  *)
 module MakeCaches (Convert : ConvertProofSig) =
@@ -542,8 +670,57 @@ struct
       let to_term = Convert.to_term
    end
 
-   module TermInfo     = MakeInfo (Refiner_io)
-   module LibInfo      = MakeInfo (Refiner.Refiner)
+   (*
+    * Allow reading of prlb from 4 formats: raw, term, term_io, and ASCII.
+    * Use raw format for writing.
+    *)
+   module ConvertPrlRaw =
+   struct
+      type t = Convert.t
+      type cooked = Convert.cooked
+      type term = Convert.raw
+      let interface_suffix = "prlbi"
+      let implementation_suffix = "prlb"
+      let of_term = Convert.of_raw
+      let to_term = Convert.to_raw
+   end
+
+   module ConvertPrlTerm =
+   struct
+      type t = Convert.t
+      type cooked = Convert.cooked
+      type term = Refine.term
+      let interface_suffix = "prlbi"
+      let implementation_suffix = "prlb"
+      let of_term = Convert.of_term
+      let to_term = Convert.to_term
+   end
+
+   module ConvertPrlTermIO =
+   struct
+      type t = Convert.t
+      type cooked = Convert.cooked
+      type term = term_io
+      let interface_suffix = "prlbi"
+      let implementation_suffix = "prlb"
+      let of_term = Convert.of_term_io
+      let to_term = Convert.to_term_io
+   end
+
+   module ConvertPrlASCII =
+   struct
+      type t = Convert.t
+      type cooked = Convert.cooked
+      type term = TermType.term
+      let interface_suffix = "prlai"
+      let implementation_suffix = "prla"
+      let of_term = Convert.of_term
+      let to_term = Convert.to_term
+   end
+
+   module TermInfo     = MakeInfo (StandardMagic) (Refiner_io)
+   module AsciiInfo    = MakeInfo (AsciiMagic) (Refiner.Refiner)
+   module LibInfo      = MakeInfo (StandardMagic) (Refiner.Refiner)
 
    module RawSigInfo1  = MakeRawSigInfo       (ConvertRaw)
    module RawStrInfo1  = MakeRawStrInfo       (ConvertRaw)
@@ -551,6 +728,10 @@ struct
    module TermStrInfo1 = TermInfo.MakeStrInfo (ConvertStd)
    module LibSigInfo1  = LibInfo.MakeSigInfo  (ConvertRef)
    module LibStrInfo1  = LibInfo.MakeStrInfo  (ConvertRef)
+   module PrlStrInfo1  = MakeRawStrInfo       (ConvertPrlRaw)
+   module PrlStrInfo2  = MakeRawStrInfo       (ConvertPrlTerm)
+   module PrlStrInfo3  = TermInfo.MakeStrInfo (ConvertPrlTermIO)
+   module PrlStrInfo4  = AsciiInfo.MakeStrInfo (ConvertPrlASCII)
 
    module RawSigCombo  = MakeSingletonCombo   (RawSigInfo1)
    module RawStrCombo  = MakeSingletonCombo   (RawStrInfo1)
@@ -558,15 +739,23 @@ struct
    module TermStrCombo = MakeSingletonCombo   (TermStrInfo1)
    module LibSigCombo  = MakeIOSingletonCombo (Library_type_base.IO) (LibSigInfo1)
    module LibStrCombo  = MakeIOSingletonCombo (Library_type_base.IO) (LibStrInfo1)
-   module Combo1 = CombineCombo (FileTypes) (RawStrCombo) (RawSigCombo)
-   module Combo2 = CombineCombo (FileTypes) (TermStrCombo) (TermSigCombo)
-   module Combo3 = CombineCombo (FileTypes) (LibStrCombo) (LibSigCombo)
-   module Combo4 = CombineCombo (FileTypes) (Combo1) (Combo2)
-   module Combo5 = CombineCombo (FileTypes) (Combo4) (Combo3)
+   module PrlStrCombo1 = MakeSingletonCombo   (PrlStrInfo1)
+   module PrlStrCombo2 = MakeSingletonCombo   (PrlStrInfo2)
+   module PrlStrCombo3 = MakeSingletonCombo   (PrlStrInfo3)
+   module PrlStrCombo4 = MakeIOSingletonCombo (AsciiIO) (PrlStrInfo4)
+   module Combo1  = CombineCombo (FileTypes) (RawStrCombo) (RawSigCombo)
+   module Combo2  = CombineCombo (FileTypes) (TermStrCombo) (TermSigCombo)
+   module Combo3  = CombineCombo (FileTypes) (LibStrCombo) (LibSigCombo)
+   module Combo4a = CombineCombo (FileTypes) (PrlStrCombo1) (PrlStrCombo2)
+   module Combo4b = CombineCombo (FileTypes) (PrlStrCombo3) (PrlStrCombo4)
+   module Combo4  = CombineCombo (FileTypes) (Combo4a) (Combo4b)
+   module Combo5  = CombineCombo (FileTypes) (Combo1) (Combo2)
+   module Combo6  = CombineCombo (FileTypes) (Combo3) (Combo4)
+   module Combo7  = CombineCombo (FileTypes) (Combo5) (Combo6)
    module SigMarshal1 = SigMarshal (Convert)
    module SigAddress1 = SigAddress (SigMarshal1)
    module StrMarshal1 = StrMarshal (Convert)
-   module FileBase =  MakeFileBase (FileTypes) (Combo5)
+   module FileBase =  MakeFileBase (FileTypes) (Combo7)
    module SummaryBase = MakeSummaryBase (SigAddress1) (FileBase)
    module SigFilterCache = MakeFilterCache (SigMarshal1) (SigMarshal1) (SummaryBase)
    module StrFilterCache = MakeFilterCache (SigMarshal1) (StrMarshal1) (SummaryBase)

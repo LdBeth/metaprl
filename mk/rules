@@ -93,17 +93,17 @@ MLIFILES     = $(sort $(addsuffix .mli,  $(MPFILES) $(MP2FILES) $(LMFILES) $(MFI
 
 MP_CMIFILES  = $(addsuffix .cmi,  $(MPFILES))
 MP_CMOFILES  = $(addsuffix .cmo,  $(MPFILES))
-MP_CMIZFILES = $(addsuffix .cmit, $(MPFILES))
-MP_CMOZFILES = $(addsuffix .cmot, $(MPFILES))
 MP_CMXFILES  = $(addsuffix .cmx,  $(MPFILES))
 MP_PPOFILES  = $(addsuffix .ppo,  $(MPFILES))
+MP_PRLAFILES = $(addsuffix .prla, $(MPFILES))
+MP_PRLBFILES = $(addsuffix .prlb, $(MPFILES))
 
 MP2_CMIFILES  = $(addsuffix .cmi,  $(MP2FILES))
 MP2_CMOFILES  = $(addsuffix .cmo,  $(MP2FILES))
-MP2_CMIZFILES = $(addsuffix .cmit, $(MP2FILES))
-MP2_CMOZFILES = $(addsuffix .cmot, $(MP2FILES))
 MP2_CMXFILES  = $(addsuffix .cmx,  $(MP2FILES))
 MP2_PPOFILES  = $(addsuffix .ppo,  $(MP2FILES))
+MP2_PRLAFILES = $(addsuffix .prla, $(MP2FILES))
+MP2_PRLBFILES = $(addsuffix .prlb, $(MP2FILES))
 
 LCMOFILES    = $(addsuffix .cmo,  $(LMFILES))
 LCMIFILES    = $(addsuffix .cmi,  $(LMFILES))
@@ -152,7 +152,7 @@ ZMLIFILES    = $(addsuffix .mli, $(MLZFILES))
 .PHONY:
 
 # Instructions to make
-.PHONY: all lib opt clean depend install
+.PHONY: all lib opt clean depend install export import
 .PRECIOUS: %.cmo %.cmi %.cmx %.ml %.mli
 
 .SUFFIXES: .cma .cmx .cmo .cmi .ml .mli .mll .mly
@@ -190,6 +190,9 @@ $(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES) $(ROOT)/mk/config $(OPTTHREADS
 #
 install::
 
+export:: $(MP_PRLAFILES) $(MP2_PRLAFILES)
+import:: $(MP_PRLBFILES) $(MP2_PRLBFILES)
+
 $(RMLIFILES): $(ROOT)/lib/%.mli: %.mli
 	$(LN) ../$(DIR)/$*.mli $(ROOT)/lib
 
@@ -211,6 +214,14 @@ $(MP_CMIFILES) $(MP2_CMIFILES): %.cmi: %.mli $(ROOT)/mk/config
 
 $(MP_PPOFILES) $(MP2_PPOFILES): %.ppo: %.cmi %.ml $(ROOT)/mk/config
 	MPLIB=$(MPLIB) $(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
+
+# For now, Ascii IO has a bug to prevent updates
+$(MP_PRLAFILES) $(MP2_PRLAFILES): %.prla: %.cmoz $(ROOT)/mk/config
+	rm -f $*.prla
+	MPLIB=$(MPLIB) $(CONVERT) $(INCLUDE) -impl $*.cmoz
+
+$(MP_PRLBFILES) $(MP2_PRLBFILES): %.prlb: %.prla $(ROOT)/mk/config
+	MPLIB=$(MPLIB) $(CONVERT) $(INCLUDE) -raw -impl $*.prla
 
 $(MP_CMOFILES) $(MP2_CMOFILES): %.cmo: %.ppo %.cmi $(ROOT)/mk/config
 	$(OCAMLC) $(OCAMLCFLAGS) -c -impl $*.ppo

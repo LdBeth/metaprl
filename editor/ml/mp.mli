@@ -49,6 +49,7 @@ val load : string -> unit
 val create_pkg : string -> unit
 val set_writeable : unit -> unit
 val save : unit -> unit
+val export : unit -> unit
 val save_all : unit -> unit
 
 (*
@@ -85,6 +86,9 @@ val set_assumptions : term list -> unit
 val set_params : term Filter_type.param list -> unit
 val check : unit -> unit
 val expand : unit -> unit
+val kreitz : unit -> unit
+val clean : unit -> unit
+val squash : unit -> unit
 
 (*
  * Proof editing.
@@ -125,6 +129,11 @@ val edit_refine : int list -> string -> msequent * msequent list * msequent list
 val edit_node : int list -> string option * msequent * msequent list * msequent list
 val edit_save : string -> unit
 val edit_undo : unit -> unit
+
+(*
+ * Need this for the standard toploop.
+ *)
+val shell_get_term : int -> term
 
 (*
  * -*-

@@ -118,6 +118,8 @@ type proof_command =
  | ProofCp of int list * int list
  | ProofExpand of dform_base
  | ProofMakeAssum
+ | ProofClean
+ | ProofSquash
 
 (************************************************************************
  * OPERATIONS                                                           *
@@ -350,6 +352,12 @@ let cp_ped ped from_addr to_addr =
 let make_assum_ped ped =
    push_proof ped (Proof.make_assum (update_fun ped) (proof_of_ped ped))
 
+let clean_ped ped =
+   push_proof ped (Proof.clean (update_fun ped) (proof_of_ped ped))
+
+let squash_ped ped =
+   push_proof ped (Proof.squash (update_fun ped) (proof_of_ped ped))
+
 (*
  * Command interpretation.
  *)
@@ -386,6 +394,10 @@ let interpret ped = function
       expand_ped dforms ped
  | ProofMakeAssum ->
       make_assum_ped ped
+ | ProofClean ->
+      clean_ped ped
+ | ProofSquash ->
+      squash_ped ped
 
 (************************************************************************
  * HTML DISPLAY                                                         *
