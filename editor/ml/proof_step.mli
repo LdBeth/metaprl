@@ -55,7 +55,7 @@ val create_norm :
    ('a -> term) ->                      (* normalizer *)
    tactic_argument ->                   (* Default attributes *)
    (MLast.expr -> tactic) ->            (* Tactic compiler *)
-   sentinal ->                          (* Sentinal to be used in the proof *)
+   Tactic_type.sentinal ->              (* Sentinal to be used in the proof *)
    'a norm
 
 val io_step_of_step : 'a denorm -> t -> 'a proof_step
@@ -65,9 +65,9 @@ val step_of_io_step : 'a norm -> 'a proof_step -> t
  * Other helper functions.
  *)
 val tactic_arg_of_aterm : 'a norm -> 'a aterm -> tactic_arg
-val term_attributes_of_attributes : 'a norm ->
+val raw_attributes_of_attributes : 'a norm ->
    'a Tactic_type.attributes ->
-   term Tactic_type.attributes
+   Tactic_type.raw_attributes
 
 val aterm_of_tactic_arg : 'a denorm -> tactic_arg -> 'a aterm
 val attributes_of_term_attributes : 'a denorm ->

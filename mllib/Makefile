@@ -2,12 +2,14 @@
 DIR := mllib
 ROOT := ..
 
-INCLUDE :=
+INCLUDE := -I .
 
 # Types files
 MLZFILES :=\
 	file_base_type\
-	dag
+	dag\
+	remote_queue_sig\
+	remote_lazy_queue_sig
 
 # Library files
 LMFILES :=\
@@ -41,7 +43,13 @@ LMFILES :=\
 	string_set\
 	flist\
 	cycle_dag\
-	memo
+	memo\
+	thread_util\
+	thread_event\
+	remote_queue_sig\
+	remote_queue_null\
+	remote_lazy_queue_sig\
+	remote_lazy_queue
 
 # Name of library
 MAIN := util

@@ -11,6 +11,8 @@
  *
  *)
 
+open Opname
+
 (************************************************************************
  * REFINER MODULE                                                       *
  ************************************************************************)
@@ -195,8 +197,10 @@ sig
     * and rewrites.
     *)
    type refiner
+   type build
 
-   val null_refiner : refiner
+   val null_refiner : string -> build
+   val refiner_of_build : build -> refiner
 
    (*
     * These are the forms created at compile time with
@@ -229,20 +233,20 @@ sig
     *    2. derived (an extract from a proof is given)
     *    3. delayed (an extract can be computed on request)
     *)
-   val create_axiom : refiner ref ->
+   val create_axiom : build ->
       string ->                 (* name *)
       term ->                   (* statement *)
       prim_tactic
    val check_axiom : term -> bool
-   val prim_axiom : refiner ref ->
+   val prim_axiom : build ->
       string ->                 (* name *)
       term ->                   (* extract *)
       unit
-   val derived_axiom : refiner ref ->
+   val derived_axiom : build ->
       string ->                 (* name *)
       extract ->                (* derivation *)
       unit
-   val delayed_axiom : refiner ref ->
+   val delayed_axiom : build ->
       string ->                 (* name *)
       (unit -> extract) ->      (* derivation *)
       unit
@@ -252,14 +256,14 @@ sig
     * is true if all the antecedents are).
     *     Args: refiner, name, addrs, params, rule
     *)
-   val create_rule : refiner ref ->
+   val create_rule : build ->
       string ->            (* name *)
       string array ->      (* addrs *)
       string array ->      (* vars *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       prim_tactic
-   val create_ml_rule : refiner ref ->
+   val create_ml_rule : build ->
       term ->                    (* term to be expanded *)
       ml_rule ->                 (* the rule definition *)
       prim_tactic
@@ -271,21 +275,21 @@ sig
       meta_term ->         (* rule definition *)
       bool
 
-   val prim_rule : refiner ref ->
+   val prim_rule : build ->
       string ->                    (* name *)
       string array ->              (* vars *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       term ->                      (* extract *)
       unit
-   val derived_rule : refiner ref ->
+   val derived_rule : build ->
       string ->                    (* name *)
       string array ->              (* vars *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       extract ->                   (* derived justification *)
       unit
-   val delayed_rule : refiner ref ->
+   val delayed_rule : build ->
       string ->                    (* name *)
       string array ->              (* vars *)
       term list ->                 (* params *)
@@ -296,30 +300,30 @@ sig
    (*
     * Rewrites.
     *)
-   val create_rewrite : refiner ref ->
+   val create_rewrite : build ->
       string ->            (* name *)
       term ->              (* redex *)
       term ->              (* contractum *)
       prim_rewrite
-   val prim_rewrite : refiner ref ->
+   val prim_rewrite : build ->
       string ->            (* name *)
       term ->              (* redex *)
       term ->              (* contractum *)
       unit
-   val derived_rewrite : refiner ref ->
+   val derived_rewrite : build ->
       string ->            (* name *)
       term ->              (* redex *)
       term ->              (* contractum *)
       extract ->           (* proof *)
       unit
-   val delayed_rewrite : refiner ref ->
+   val delayed_rewrite : build ->
       string ->            (* name *)
       term ->              (* redex *)
       term ->              (* contractum *)
       (unit -> extract) -> (* proof *)
       unit
 
-   val create_cond_rewrite : refiner ref ->
+   val create_cond_rewrite : build ->
       string ->            (* name *)
       string array ->      (* vars *)
       term list ->         (* params *)
@@ -327,11 +331,11 @@ sig
       term ->              (* redex *)
       term ->              (* contractum *)
       prim_cond_rewrite
-   val create_ml_rewrite : refiner ref -> string ->
+   val create_ml_rewrite : build -> string ->
       term list ->         (* subgoals *)
       ml_rewrite ->        (* rewriter *)
       prim_cond_rewrite
-   val prim_cond_rewrite : refiner ref ->
+   val prim_cond_rewrite : build ->
       string ->            (* name *)
       string array ->      (* vars *)
       term list ->         (* params *)
@@ -339,7 +343,7 @@ sig
       term ->              (* redex *)
       term ->              (* contractum *)
       unit
-   val derived_cond_rewrite : refiner ref ->
+   val derived_cond_rewrite : build ->
       string ->            (* name *)
       string array ->      (* vars *)
       term list ->         (* params *)
@@ -348,7 +352,7 @@ sig
       term ->              (* contractum *)
       extract ->           (* proof *)
       unit
-   val delayed_cond_rewrite : refiner ref ->
+   val delayed_cond_rewrite : build ->
       string ->            (* name *)
       string array ->      (* vars *)
       term list ->         (* params *)
@@ -369,8 +373,8 @@ sig
    (*
     * Merge refiners.
     *)
-   val label_refiner : refiner ref -> string -> unit
-   val join_refiner : refiner ref -> refiner -> unit
+   val label_refiner : build -> string -> refiner
+   val join_refiner : build -> refiner -> unit
 
    (************************************************************************
     * DESTRUCTION                                                          *
@@ -391,11 +395,11 @@ sig
     | RILabel of string
 
    and ri_axiom =
-      { ri_axiom_name : string;
+      { ri_axiom_name : opname;
         ri_axiom_term : term
       }
    and ri_rule =
-      { ri_rule_name : string;
+      { ri_rule_name : opname;
         ri_rule_rule : msequent
       }
    and ri_ml_rule =
@@ -404,12 +408,12 @@ sig
       { ri_pthm_axiom : refiner }
 
    and ri_rewrite =
-      { ri_rw_name : string;
+      { ri_rw_name : opname;
         ri_rw_redex : term;
         ri_rw_contractum : term
       }
    and ri_cond_rewrite =
-      { ri_crw_name : string;
+      { ri_crw_name : opname;
         ri_crw_conds : term list;
         ri_crw_redex : term;
         ri_crw_contractum : term
@@ -417,7 +421,7 @@ sig
    and ri_prim_rewrite =
       { ri_prw_rewrite : refiner }
    and ri_ml_rewrite =
-      { ri_ml_rw_name : string }
+      { ri_ml_rw_name : opname }
 
    (*
     * Destructors.
@@ -425,7 +429,7 @@ sig
     *)
    val is_null_refiner : refiner -> bool
    val dest_refiner : refiner -> refiner_item * refiner
-   val find_refiner : refiner -> string -> refiner
+   val find_refiner : refiner -> opname -> refiner
 end
 
 (*

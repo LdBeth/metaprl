@@ -20,6 +20,33 @@ type ('a, 'b) array_part =
  | ArrayArray of 'b * int * int
 
 (*
+ * Boolean values.
+ *)
+let all_true v =
+   let rec search i len v =
+      i = len || (v.(i) && search (succ i) len v)
+   in
+      search 0 (Array.length v) v
+
+let exists_true v =
+   let rec search i len v =
+      i <> len && (v.(i) || search (succ i) len v)
+   in
+      search 0 (Array.length v) v
+
+let for_all f v =
+   let rec search f i len v =
+      i = len || (f v.(i) && search f (succ i) len v)
+   in
+      search f 0 (Array.length v) v
+
+let exists f v =
+   let rec search f i len v =
+      i <> len && (f v.(i) || search f (succ i) len v)
+   in
+      search f 0 (Array.length v) v
+
+(*
  * Membership in an array.
  *)
 let mem i v =

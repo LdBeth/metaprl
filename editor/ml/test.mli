@@ -6,6 +6,8 @@ include Itt_prop_decide
 
 open Tacticals
 
+val f : unit -> unit
+
 (*
  * -*-
  * Local Variables:

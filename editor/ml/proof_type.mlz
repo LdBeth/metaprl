@@ -13,8 +13,8 @@ open Tactic_type
  *)
 type tactic_argument =
    { ref_label : string;
-     ref_args : term attributes;
-     ref_fcache : cache
+     ref_args : raw_attributes;
+     ref_fcache : raw_cache
    }
 
 (*

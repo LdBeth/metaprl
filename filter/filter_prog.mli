@@ -52,7 +52,7 @@ sig
    val define_parent : t -> loc -> MLast.ctyp parent_info -> MLast.str_item list
    val define_magic_block : t -> loc -> MLast.str_item magic_info -> MLast.str_item list
 
-   val implem_prolog : t -> loc -> MLast.str_item list
+   val implem_prolog : t -> loc -> string -> MLast.str_item list
    val implem_postlog : t -> loc -> string -> MLast.str_item list
 end
 

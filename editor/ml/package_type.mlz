@@ -76,10 +76,16 @@ sig
    (*
     * Access.
     *)
-   val refiner  : package -> Refine.refiner
    val dforms   : package -> dform_mode_base
    val name     : package -> string
    val filename : t -> package -> string
+
+   (*
+    * Refiners and sentinals.
+    *)
+   val refiner  : package -> Refine.refiner
+   val sentinal : package -> Sequent.sentinal
+   val sentinal_object : package -> string -> Sequent.sentinal
 
    (*
     * Navigation.

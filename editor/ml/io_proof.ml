@@ -386,24 +386,24 @@ let make_aterm info { aterm_goal = goal;
 (*
  * Attributes.
  *)
-let rec make_attributes info = function
-   [] ->
-      []
- | (name, arg) :: tl ->
-      let tl = make_attributes info tl in
+let rec make_attributes info attrs =
+   let make_attribute (name, arg) =
+      let arg =
          match arg with
             TermArg t ->
-               (name, TermArg (info.term_f t)) :: tl
+               TermArg (info.term_f t)
           | TypeArg t ->
-               (name, TypeArg (info.term_f t)) :: tl
+               TypeArg (info.term_f t)
           | IntArg i ->
-               (name, IntArg i) :: tl
+               IntArg i
           | BoolArg b ->
-               (name, BoolArg b) :: tl
+               BoolArg b
           | SubstArg t ->
-               (name, SubstArg (info.term_f t)) :: tl
-          | _ ->
-               tl
+               SubstArg (info.term_f t)
+      in
+         name, arg
+   in
+      List.map make_attribute attrs
 
 (*
  * Convert a proof to a term.
@@ -464,35 +464,26 @@ let term_of_aterm _
                                   mk_simple_string_term proof_aterm_op label []]
 
 let term_of_attributes _ attributes =
-   let rec collect = function
-      [] ->
-         []
-    | (name, att) :: tl ->
-         let tl = collect tl in
-            match att with
-               Tactic_type.TermArg t ->
-                  (mk_simple_string_term proof_term_arg_op name [t]) :: tl
-             | Tactic_type.TypeArg t ->
-                  (mk_simple_string_term proof_type_arg_op name [t]) :: tl
-             | Tactic_type.IntArg i ->
-                  (mk_string_int_term proof_int_arg_op name i) :: tl
-             | Tactic_type.BoolArg flag ->
-                  let s =
-                     if flag then
-                        "true"
-                     else
-                        "false"
-                  in
-                     (mk_string_string_term proof_bool_arg_op name s) :: tl
-             | Tactic_type.SubstArg t ->
-                  (mk_simple_string_term proof_subst_arg_op name [t]) :: tl
-             | Tactic_type.TacticArg _
-             | Tactic_type.IntTacticArg _
-             | Tactic_type.ArgTacticArg _
-             | Tactic_type.TypeinfArg _ ->
-                  tl
+   let term_of_attribute (name, att) =
+      match att with
+         Tactic_type.TermArg t ->
+            (mk_simple_string_term proof_term_arg_op name [t])
+       | Tactic_type.TypeArg t ->
+            (mk_simple_string_term proof_type_arg_op name [t])
+       | Tactic_type.IntArg i ->
+            (mk_string_int_term proof_int_arg_op name i)
+       | Tactic_type.BoolArg flag ->
+            let s =
+               if flag then
+                  "true"
+               else
+                  "false"
+            in
+               (mk_string_string_term proof_bool_arg_op name s)
+       | Tactic_type.SubstArg t ->
+            (mk_simple_string_term proof_subst_arg_op name [t])
    in
-      mk_xlist_term (collect attributes)
+      mk_xlist_term (List.map term_of_attribute attributes)
 
 let compare_attributes args1 args2 =
    args1 == args2

@@ -496,6 +496,7 @@ struct
             Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Nl");
                                                       pstr_loc = Location.none
                                                     }]);
+            Tactic_type.main_loop ();
             ()
       in
          install_debug_printer print_term_fp;

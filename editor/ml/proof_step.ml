@@ -73,13 +73,13 @@ type 'a denorm =
  *)
 type 'a norm =
    { norm : 'a -> term;
-     global_args : term attributes;
-     fcache : cache;
+     global_args : raw_attributes;
+     fcache : raw_cache;
      sentinal : sentinal;
      create_tactic : MLast.expr -> tactic;
      step_of_proof_step : ('a norm, 'a proof_step, 'a proof_step, t) Memo.t;
      tactic_arg_of_aterm : ('a norm, 'a aterm, 'a aterm, tactic_arg) Memo.t;
-     term_attributes_of_attributes : ('a norm, 'a attributes, 'a attributes, term attributes) Memo.t
+     raw_attributes_of_attributes : ('a norm, 'a attributes, 'a attributes, raw_attributes) Memo.t
    }
 
 (************************************************************************
@@ -223,24 +223,24 @@ let compare_step
 (*
  * Construction.
  *)
-let rec make_attributes info = function
-   [] ->
-      []
- | (name, arg) :: tl ->
-      let tl = make_attributes info tl in
+let make_attributes info attrs =
+   let make_attribute (name, arg) =
+      let arg =
          match arg with
             TermArg t ->
-               (name, TermArg (info.denorm t)) :: tl
+               TermArg (info.denorm t)
           | TypeArg t ->
-               (name, TypeArg (info.denorm t)) :: tl
+               TypeArg (info.denorm t)
           | IntArg i ->
-               (name, IntArg i) :: tl
+               IntArg i
           | BoolArg b ->
-               (name, BoolArg b) :: tl
+               BoolArg b
           | SubstArg t ->
-               (name, SubstArg (info.denorm t)) :: tl
-          | _ ->
-               tl
+               SubstArg (info.denorm t)
+      in
+         name, arg
+   in
+      List.map make_attribute attrs
 
 let make_aterm info goal =
    let seq = Sequent.msequent goal in
@@ -312,27 +312,27 @@ let make_tactic_arg info { aterm_goal = goal;
    let { norm = norm; fcache = fcache; sentinal = sentinal } = info in
    let goal = norm goal in
    let hyps = List.map norm hyps in
-   let args = Memo.apply info.term_attributes_of_attributes info args in
+   let args = Memo.apply info.raw_attributes_of_attributes info args in
       Sequent.create sentinal label (mk_msequent goal hyps) fcache args
 
-let rec make_term_attributes info = function
+let rec make_raw_attributes info = function
    [] ->
       info.global_args
  | (name, arg) :: tl ->
-      let tl = make_term_attributes info tl in
+      let arg =
          match arg with
             TermArg t ->
-               (name, TermArg (info.norm t)) :: tl
+               term_attribute name (info.norm t)
           | TypeArg t ->
-               (name, TypeArg (info.norm t)) :: tl
+               type_attribute name (info.norm t)
           | IntArg i ->
-               (name, IntArg i) :: tl
+               int_attribute name i
           | BoolArg b ->
-               (name, BoolArg b) :: tl
+               bool_attribute name b
           | SubstArg t ->
-               (name, SubstArg (info.norm t)) :: tl
-          | _ ->
-               tl
+               subst_attribute name (info.norm t)
+      in
+         arg :: make_raw_attributes info tl
 
 (*
  * Create the info.
@@ -345,7 +345,7 @@ let create_norm norm { ref_fcache = fcache; ref_args = args } create_tactic sent
      create_tactic = create_tactic;
      step_of_proof_step = Memo.create id make_step compare_step;
      tactic_arg_of_aterm = Memo.create id make_tactic_arg compare_aterm;
-     term_attributes_of_attributes = Memo.create id make_term_attributes compare_attributes
+     raw_attributes_of_attributes = Memo.create id make_raw_attributes compare_attributes
    }
 
 (*
@@ -357,8 +357,8 @@ let step_of_io_step info step =
 let tactic_arg_of_aterm info aterm =
    Memo.apply info.tactic_arg_of_aterm info aterm
 
-let term_attributes_of_attributes info args =
-   Memo.apply info.term_attributes_of_attributes info args
+let raw_attributes_of_attributes info args =
+   Memo.apply info.raw_attributes_of_attributes info args
 
 (*
  * -*-

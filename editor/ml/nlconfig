@@ -1,0 +1,24 @@
+#!/bin/csh -f
+
+#
+# Configure Ensemble
+#
+setenv ENS_PORT 7474
+setenv ENS_MODES "UDP"
+setenv ENS_GOSSIP_PORT 7470
+setenv ENS_GOSSIP_HOSTS mojave:jaoquin
+setenv ENS_ID $USER
+setenv ENS_DOMAIN_PORT 7473
+
+#
+# TPTP libraries
+#
+setenv TPTP ../../../TPTP
+if(-d $TPTP) then
+   setenv NL_TPTP `echo . $TPTP $TPTP/Problems/* | sed -e 's, ,:,g'`
+endif
+
+#
+# Use the local copy of the library
+#
+setenv NLLIB ../../lib

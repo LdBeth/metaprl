@@ -1,0 +1,11 @@
+#!/bin/csh -f
+
+#
+# Configure Ensemble
+#
+source nlconfig
+
+#
+# Run gossip server
+#
+exec $ENSROOT/demo/gossip

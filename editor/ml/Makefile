@@ -10,10 +10,15 @@ INCLUDE = -I .\
 	-I $(ROOT)/theories/base\
 	-I $(ROOT)/theories/itt\
 	-I $(ROOT)/theories/tptp\
+	-I $(ROOT)/ensemble\
 	-I $(ROOT)/lib\
 	-I $(CAMLP4LIB)
 
 OCAMLDEPFLAGS := -prl
+
+########################################################################
+# LOCAL FILES
+########################################################################
 
 # Common files
 MLZFILES :=\
@@ -61,14 +66,68 @@ RCMOFILES := $(addsuffix .cmo, $(RUNFILES))
 TCMOFILES := $(addsuffix .cmo, $(TOPFILES))
 TCMXFILES := $(addsuffix .cmx, $(TOPFILES))
 
+########################################################################
+# ENSEMBLE
+########################################################################
+
+ifdef ENSROOT
+    ifeq ($(OSTYPE), win32)
+        CMADEPS_ens =\
+            $(ENSROOT)/lib/socket-$(HOSTTYPE)-$(OSTYPE).cma\
+            $(ENSROOT)/lib/crypto-$(HOSTTYPE)-$(OSTYPE).cma\
+            $(ENSROOT)/lib/libens-$(HOSTTYPE)-$(OSTYPE).cma
+
+        CMXADEPS_ens =\
+            $(ENSROOT)/lib/socket-$(HOSTTYPE)-$(OSTYPE).cmxa\
+            $(ENSROOT)/lib/crypto-$(HOSTTYPE)-$(OSTYPE).cmxa\
+            $(ENSROOT)/lib/libens-$(HOSTTYPE)-$(OSTYPE).cmxa
+    else
+        CMADEPS_ens =\
+            $(ENSROOT)/lib/socket.cma\
+            $(ENSROOT)/lib/crypto.cma\
+            $(ENSROOT)/lib/libens.cma
+
+        CMXADEPS_ens =\
+            $(ENSROOT)/lib/socket.cmxa\
+            $(ENSROOT)/lib/crypto.cmxa\
+            $(ENSROOT)/lib/libens.cmxa
+    endif
+    
+    CMALIBS_ens =\
+        $(ROOT)/lib/trefiner_ens.cma
+
+    CMXALIBS_ens =\
+        $(ROOT)/lib/trefiner_ens.cmxa
+
+    CCLIBS_ens =\
+        -ccopt -L$(ENSROOT)/lib\
+        -cclib -lsock-$(HOSTTYPE)\
+        -cclib -lcryptoc-$(HOSTTYPE)
+else
+    #
+    # If Ensemble is not configured, use the null refiner.
+    #
+    CMALIBS_ens =\
+	$(ROOT)/lib/trefiner_null.cma
+
+    CMXALIBS_ens =\
+	$(ROOT)/lib/trefiner_null.cmxa
+endif
+
+########################################################################
+# LIBRARIES			
+########################################################################
+    
 CMXDEPS =\
 	$(CAMLLIB)/unix.cmxa\
         $(CAMLLIB)/nums.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
+	$(CMXDEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
 	$(ROOT)/lib/prlc.cmxa\
+	$(CMXLIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cmxa\
 	$(ROOT)/theories/ocaml/ocaml_df.cmxa\
 	$(ROOT)/theories/base/base.cmxa\
@@ -83,10 +142,12 @@ CMXADEPS =\
 	$(CAMLP4LIB)/odyl.cmxa\
         $(CAMLLIB)/nums.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
+	$(CMXDEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
 	$(ROOT)/lib/prlc.cmxa\
+	$(CMXALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cmxa\
 	$(ROOT)/theories/ocaml/ocaml_df.cmxa\
 	$(ROOT)/theories/base/base.cmxa\
@@ -106,10 +167,12 @@ CMADEPS =\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CAMLP4LIB)/camlp4_top.cma\
+	$(CMADEPS_ens)\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
 	$(ROOT)/lib/prlc.cma\
+	$(CMALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cma\
 	$(ROOT)/theories/ocaml/ocaml_df.cma\
 	$(ROOT)/theories/base/base.cma\
@@ -125,10 +188,12 @@ TCMADEPS =\
         $(CAMLLIB)/nums.cma\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
+	$(CMADEPS_ens)\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
 	$(ROOT)/lib/prlc.cma\
+	$(CMALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cma\
 	$(ROOT)/theories/ocaml/ocaml_df.cma\
 	$(ROOT)/theories/base/base.cma\
@@ -155,7 +220,8 @@ CMXOBJS =\
 
 CCLIBS =\
         -cclib -lnums\
-	-cclib $(ROOT)/lib/clib.a
+	-cclib $(ROOT)/lib/clib.a\
+	$(CCLIBS_ens)
 
 
 # Name of main libraris

@@ -11,9 +11,15 @@ val find_index : ('a -> bool) -> 'a array -> int
 (* Raises Failure *)
 val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
 
+(* Test boolean values *)
+val all_true : bool array -> bool
+val exists_true : bool array -> bool
+val for_all : ('a -> bool) -> 'a array -> bool
+val exists : ('a -> bool) -> 'a array -> bool
+
 (*
  * replace A i j B creates a copy of array A
- * where j elements with indeces from i to i + j - 1 are
+ * where j elements with indices from i to i + j - 1 are
  * replaced with B's elements (if B has length different from j,
  * new array will have length different from A).
  * Raises invalid_argument if numbers out of range.

@@ -620,6 +620,7 @@ struct
     *)
    let main () =
       install_debug_printer print_term_fp;
+      Tactic_type.main_loop ();
       match !input_files with
          [] ->
             let instream = stream_of_channel stdin in

@@ -27,6 +27,7 @@ INCLUDE =\
 	-I $(ROOT)/refiner/reflib\
 	-I $(ROOT)/library\
 	-I $(CAMLP4LIB)
+
 OCAMLFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
 
 # Type files
@@ -87,6 +88,7 @@ CMXADEPS =\
 
 CMXLIBS =\
 	unix.cmxa\
+	$(OPTTHREADSLIB)\
 	$(CMXADEPS)
 
 CMADEPS =\
@@ -94,6 +96,7 @@ CMADEPS =\
 
 CMALIBS =\
 	unix.cma\
+	$(THREADSLIB)\
 	$(CMADEPS)
 
 CCLIBS =\
@@ -110,6 +113,7 @@ CAMLP4O = camlp4o
 
 STANDARD_LIBS =\
 	$(CAMLLIB)/unix.cma\
+	$(THREADSLIB)\
         $(CAMLLIB)/nums.cma\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CMADEPS)\
@@ -119,6 +123,7 @@ STANDARD_LIBS =\
 
 STANDARDX_LIBS =\
 	$(CAMLLIB)/unix.cmxa\
+	$(OPTTHREADSLIB)\
         $(CAMLLIB)/nums.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
 	$(CMXADEPS)\
@@ -261,37 +266,37 @@ install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(
 # Compile a special camlp4 to run Nuprl.
 #
 $(CAMLP4N).run: $(CAMLP4N_CMOBJS)
-	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4N_CMOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4N_CMOBJS) $(CAMLP4X_CCLIBS) $(LIBTHREADS)
 
 $(CAMLP4O).run: $(CAMLP4O_CMOBJS)
-	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4O_CMOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4O_CMOBJS) $(CAMLP4X_CCLIBS) $(LIBTHREADS)
 
 #
 # Binary compiler
 #
 $(PRLCN).run: $(PRLCN_CMOBJS)
-	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCN_CMOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCN_CMOBJS) $(PRLCX_CCLIBS) $(LIBTHREADS)
 
 $(PRLCO).run: $(PRLCO_CMOBJS)
-	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_CCLIBS) $(LIBTHREADS)
 
 #
 # Compile a special camlp4 to run Nuprl.
 #
 $(CAMLP4N).opt: $(CAMLP4N_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4N_CMXOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4N_CMXOBJS) $(CAMLP4X_CCLIBS) $(OPTTHREADS)
 
 $(CAMLP4O).opt: $(CAMLP4O_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4O_CMXOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4O_CMXOBJS) $(CAMLP4X_CCLIBS) $(OPTTHREADS)
 
 #
 # Binary compiler
 #
 $(PRLCN).opt: $(PRLCN_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCN_CMXOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCN_CMXOBJS) $(PRLCX_CCLIBS) $(OPTTHREADS)
 
 $(PRLCO).opt: $(PRLCO_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCO_CMXOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCO_CMXOBJS) $(PRLCX_CCLIBS) $(OPTTHREADS)
 
 #
 # Infix file is preprocessed.

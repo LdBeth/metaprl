@@ -305,14 +305,7 @@ let create pack name =
         rule_ped = Incomplete
       }
    in
-   let sentinal =
-      let refiner =
-         try Package.refiner pack with
-            Not_found ->
-               raise (RefineError ("create_rule", StringStringError ("no refiner", name)))
-      in
-         sentinal_of_refiner refiner
-   in
+   let sentinal = Package.sentinal pack in
    let arg = Package.argument pack in
       (* Package.set pack (Filter_summary.Axiom rule); *)
       edit pack sentinal arg name obj
@@ -340,16 +333,7 @@ let view_axiom pack
         rule_ped = ped_of_proof pack proof
       }
    in
-   let sentinal =
-      let refiner =
-         let refiner = Package.refiner pack in
-            try snd (dest_refiner (find_refiner refiner name)) with
-               Not_found ->
-                  eprintf "Warning: using default refiner for %s%t" name eflush;
-                  refiner
-      in
-         sentinal_of_refiner refiner
-   in
+   let sentinal = Package.sentinal_object pack name in
    let arg = Package.argument pack in
       edit pack sentinal arg name obj
 
@@ -369,16 +353,7 @@ let view_rule pack
         rule_ped = ped_of_proof pack proof
       }
    in
-   let sentinal =
-      let refiner =
-         let refiner = Package.refiner pack in
-            try snd (dest_refiner (find_refiner refiner name)) with
-               Not_found ->
-                  eprintf "Warning: using default refiner for %s%t" name eflush;
-                  refiner
-      in
-         sentinal_of_refiner refiner
-   in
+   let sentinal = Package.sentinal_object pack name in
    let arg = Package.argument pack in
       edit pack sentinal arg name obj
 

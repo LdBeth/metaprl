@@ -83,7 +83,7 @@ sig
    val define_parent : t -> loc -> MLast.ctyp parent_info -> MLast.str_item list
    val define_magic_block : t -> loc -> MLast.str_item magic_info -> MLast.str_item list
 
-   val implem_prolog : t -> loc -> MLast.str_item list
+   val implem_prolog : t -> loc -> string -> MLast.str_item list
    val implem_postlog : t -> loc -> string -> MLast.str_item list
 end
 
@@ -318,8 +318,8 @@ let local_refiner_id = "dont_use_this_refiner_name"
 let local_dformer_id = "dont_use_this_dformer_name"
 let stack_id = "rewrite_stack"
 
-let null_refiner_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"null_refiner"$ >>
+let null_refiner_expr loc name =
+   <:expr< $refiner_expr loc$ . $lid:"null_refiner"$ $str: name$ >>
 
 let null_mode_base_expr loc =
    <:expr< $uid:"Dform_print"$ . $lid:"null_mode_base"$ >>
@@ -346,7 +346,7 @@ let add_eq_expr loc =
  * Each axiom gets a refiner associated with it, with the following name.
  *)
 let refiner_value loc =
-   <:expr< $lid: local_refiner_id$ . $lid: "val"$ >>
+   <:expr< $uid: "Refiner"$ . $uid: "Refiner"$ . $uid: "Refine"$ . $lid: "refiner_of_build"$ $lid: local_refiner_id$ >>
 
 let refiner_let loc =
    let patt = <:patt< $lid: refiner_id$ >> in
@@ -1132,7 +1132,7 @@ struct
                   let $rec:false$ $list:[ rule_patt, axiom_value;
                                           wild_patt, thm_value ]$
                   in
-                      $compile_rule_expr loc$ ( $lid:local_refiner_id$ . $lid:"val"$ ) $lid:"rule"$ >>)
+                      $compile_rule_expr loc$ $lid:local_refiner_id$ $lid:"rule"$ >>)
       in
       let rule_def = <:str_item< value $rec:false$ $list:[ name_rule_patt, wrap_exn loc name rule_expr ]$ >> in
       let tac_def = <:str_item< value $rec:false$ $list:[ name_patt, name_value ]$ >> in
@@ -1568,8 +1568,8 @@ struct
     * let refiner_name = ref Refine.Refiner.null_refiner
     * let dformer_name = ref Dform_print.null_mode_base
     *)
-   let implem_prolog proc loc =
-      let refiner_val = <:expr< $lid:"ref"$ $null_refiner_expr loc$ >> in
+   let implem_prolog proc loc name =
+      let refiner_val = <:expr< $null_refiner_expr loc name$ >> in
       let dformer_val = <:expr< $lid:"ref"$ $null_mode_base_expr loc$ >> in
       let refiner_patt = <:patt< $lid:local_refiner_id$ >> in
       let dformer_patt = <:patt< $lid:local_dformer_id$ >> in
@@ -1625,14 +1625,12 @@ struct
       let thy = <:expr< $record_theory_expr loc$ $thy_rec$ >> in
       let refiner_patt = <:patt< $lid:refiner_id$ >> in
       let dformer_patt = <:patt< $lid:dformer_id$ >> in
-      let refiner_val = <:expr< $lid:local_refiner_id$ . $lid:"val"$ >> in
       let dformer_val = <:expr< $lid:local_dformer_id$ . $lid:"val"$ >> in
       let label_expr = <:expr< $label_refiner_expr loc$ $lid:local_refiner_id$ $str:name$ >> in
           (implem_toploop proc) @
           [implem_resources proc.imp_resources name;
-          (<:str_item< $exp:label_expr$ >>);
           (<:str_item< value $rec:false$
-                              $list:[refiner_patt, refiner_val;
+                              $list:[refiner_patt, label_expr;
                                      dformer_patt, dformer_val]$ >>);
           (<:str_item< $exp:thy$ >>)]
 
@@ -1781,7 +1779,7 @@ struct
     *)
    let extract_str sig_info info resources name =
       let proc = { imp_resources = []; imp_sig_info = sig_info } in
-      let prolog = implem_prolog proc (0, 0) in
+      let prolog = implem_prolog proc (0, 0) name in
       let items = List_util.flat_map (extract_str_item proc) (info_items info) in
       let postlog = implem_postlog proc (0, 0) name in
          List.map (fun item -> item, (0, 0)) (prolog @ items @ postlog)

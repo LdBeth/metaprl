@@ -318,14 +318,7 @@ let create pack name =
         rw_ped = Interactive ped
       }
    in
-   let sentinal =
-      let refiner =
-         try Package.refiner pack with
-            Not_found ->
-               raise (RefineError ("create_rw", StringStringError ("no refiner", name)))
-      in
-         sentinal_of_refiner refiner
-   in
+   let sentinal = Package.sentinal pack in
    let arg = Package.argument pack in
       Package.set pack (Filter_summary.Rewrite rw);
       edit pack sentinal arg name obj
@@ -355,14 +348,7 @@ let view_rw pack
         rw_ped = ped_of_proof pack proof
       }
    in
-   let sentinal =
-      let refiner =
-         try find_refiner (Package.refiner pack) name with
-            Not_found ->
-               raise (RefineError ("view_rw", StringStringError ("no refiner", name)))
-      in
-         sentinal_of_refiner refiner
-   in
+   let sentinal = Package.sentinal_object pack name in
    let arg = Package.argument pack in
       edit pack sentinal arg name obj
 
@@ -383,14 +369,7 @@ let view_crw pack
         rw_ped = ped_of_proof pack proof
       }
    in
-   let sentinal =
-      let refiner =
-         try find_refiner (Package.refiner pack) name with
-            Not_found ->
-               raise (RefineError ("view_rw", StringStringError ("no refiner", name)))
-      in
-         sentinal_of_refiner refiner
-   in
+   let sentinal = Package.sentinal_object pack name in
    let arg = Package.argument pack in
       edit pack sentinal arg name obj
 

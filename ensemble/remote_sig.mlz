@@ -1,0 +1,155 @@
+(*
+ * A remote processor manages remote execution.
+ * Jobs can be taken from and submitted to the global queue.
+ *)
+
+module type RemoteSig =
+sig
+   (************************************************************************
+    * TYPES                                                                *
+    ************************************************************************)
+
+   (*
+    * A remote process manager.
+    *    'a: the argument type
+    *    'b: the result type
+    *)
+   type ('a, 'b, 'c) t
+
+   (*
+    * Each sub-job is identified by a handle.
+    *)
+   type ('a, 'b) handle
+
+   (*
+    * A handle to a job being served locally.
+    *)
+   type ('a, 'b) local
+
+   (*
+    * A handle to a shared memory value.
+    *)
+   type 'c key
+
+   (*
+    * We provide a new version of the scheduler
+    * on these events.
+    *)
+   type 'a event
+
+   (*
+    * These are the possible responses to
+    * a job.  The RemoteCanceled may be returned
+    * if the job was canceled, but it is not required.
+    * If the job was not canceled, the Cancel event is
+    * never returned.
+    *)
+   type 'b response =
+      RemoteCanceled
+    | RemoteSuccess of 'b
+
+   (************************************************************************
+    * REMOTE SCHEDULER                                                     *
+    ************************************************************************)
+
+   (*
+    * Create a new remote manager.
+    * At creation time it contains no pending jobs.
+    *)
+   val create : unit -> ('a, 'b, 'c) t
+
+   (*
+    * Submit a job to be run remotely.
+    *)
+   val submit : ('a, 'b, 'c) t -> 'a -> ('a, 'b) handle
+
+   (*
+    * Get the return event for the handle.
+    * This event returns at most one message.
+    *)
+   val event_of_handle : ('a, 'b, 'c) t -> ('a, 'b) handle -> 'b event
+
+   (*
+    * Cancel a remote job.  After this, the handle and
+    * it event can be discarded.
+    *)
+   val cancel_handle : ('a, 'b, 'c) t -> ('a, 'b) handle -> unit
+
+   (*
+    * Request a job from the server.
+    * This event can be used at any time
+    * to request a remote job.
+    *)
+   val request : ('a, 'b, 'c) t -> ('a, 'b) local event
+
+   (*
+    * Get the argument for the local job.
+    *)
+   val arg_of_local : ('a, 'b) local -> 'a
+
+   (*
+    * Event for a local job.  The event sends cancelation notices.
+    * Any value on this event should cancel the local job.
+    *)
+   val event_of_local : ('a, 'b, 'c) t -> ('a, 'b) local -> unit event
+
+   (*
+    * Cancel the service for a local job.
+    * The local job can be canceled at any time, and it
+    * will be restarted automatically.  After this,
+    * the local event can be discarded.
+    *)
+   val cancel_local : ('a, 'b, 'c) t -> ('a, 'b) local -> unit
+
+   (*
+    * Return a result for a local job.  After the result
+    * is returned, the local job can be discarded.
+    *)
+   val return_local : ('a, 'b, 'c) t -> ('a, 'b) local -> 'b -> unit
+
+   (************************************************************************
+    * SHARED MEMORY                                                        *
+    ************************************************************************)
+
+   (*
+    * Share a value.
+    *)
+   val share : ('a, 'b, 'c) t -> string -> (unit -> 'c) -> 'c key
+
+   (*
+    * Value of the share.
+    *)
+   val arg_of_key : ('a, 'b, 'c) t -> 'c key -> 'c
+
+   (************************************************************************
+    * SCHEDULING                                                           *
+    ************************************************************************)
+
+   (*
+    * Wrap an event.
+    *)
+   val wrap : 'a event -> ('a -> 'b) -> 'b event
+
+   (*
+    * Wrap a regular event.
+    *)
+   val wrap_event : 'a Thread_event.event -> 'a event
+
+   (*
+    * Scheduling.
+    *)
+   val select : ('a, 'b, 'c) t -> 'd event list -> 'd
+
+   (*
+    * Start the main loop.
+    *)
+   val main_loop : ('a, 'b, 'c) t -> unit
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

@@ -167,7 +167,7 @@ val expand : dform_base -> t -> t
 type io_proof = Refiner_std_verb.Refiner.TermType.term proof
 
 val io_proof_of_proof : t -> io_proof
-val proof_of_io_proof : tactic_argument -> (MLast.expr -> tactic) -> sentinal -> io_proof -> t
+val proof_of_io_proof : tactic_argument -> (MLast.expr -> tactic) -> Tactic_type.sentinal -> io_proof -> t
 
 (*
  * -*-

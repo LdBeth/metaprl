@@ -711,10 +711,7 @@ struct
        "refine", TacticFunExpr (fun t -> UnitExpr (refine t));
        "undo", UnitFunExpr (fun () -> UnitExpr (undo ()));
        "fold", UnitFunExpr (fun () -> UnitExpr (fold ()));
-       "fold_all", UnitFunExpr (fun () -> UnitExpr (fold_all ()));
-
-       (* This is for debugging *)
-       "test", UnitFunExpr (fun () -> UnitExpr (Itt_test.test ()))]
+       "fold_all", UnitFunExpr (fun () -> UnitExpr (fold_all ()))]
 
    (************************************************************************
     * INITIALIZATION                                                       *

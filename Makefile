@@ -18,6 +18,7 @@ REFINER_DIRS :=\
 	library
 
 NL_DIRS :=\
+	ensemble\
 	theories/tactic\
 	theories/ocaml\
 	theories/base\

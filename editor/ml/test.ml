@@ -25,6 +25,9 @@ interactive test1 'H : :
 interactive test2 'H : :
    sequent ['ext] { 'H >- (('A or 'B) => 'C) => (('A => 'C) & ('B => 'C)) }
 
+let f () =
+   raise Not_found
+
 (*
  * -*-
  * Local Variables:

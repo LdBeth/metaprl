@@ -79,7 +79,7 @@ type 'a proof_info =
 let null_tactic_argument =
    { ref_label = "main";
      ref_args = [];
-     ref_fcache = extract (new_cache ())
+     ref_fcache = Sequent.make_cache (fun () -> extract (new_cache ()))
    }
 
 (*
@@ -275,6 +275,12 @@ struct
     *)
    let refiner { pack_name = name } =
       (get_theory name).thy_refiner
+
+   let sentinal { pack_name = name } =
+      Sequent.sentinal_of_refiner name
+
+   let sentinal_object { pack_name = name } name' =
+      Sequent.sentinal_of_refiner_object name name'
 
    (*
     * Get the list of display forms.
@@ -565,16 +571,7 @@ struct
                    pack_arg = { ref_fcache = fcache; ref_label = label; ref_args = args }
        } name hyps goal =
       let loc = 0, 0 in
-      let refiner =
-         if !debug_sentinal then
-            eprintf "Find refiner for %s.%s%t" mod_name name eflush;
-         let refiner = (get_theory mod_name).thy_refiner in
-            try snd (dest_refiner (find_refiner refiner name)) with
-               Not_found ->
-                  eprintf "Warning: using default refiner for %s%t" name eflush;
-                  refiner
-      in
-      let sentinal = sentinal_of_refiner refiner in
+      let sentinal = Sequent.sentinal_of_refiner_object mod_name name in
       let seq = Sequent.create sentinal label (mk_msequent goal hyps) fcache args in
       let step = Proof_step.create seq [seq] "idT" (<:expr< $lid: "idT"$ >>) idT in
       let proof = Proof.of_step step in
@@ -607,24 +604,7 @@ struct
          ProofEdit ped ->
             ped
        | ProofRaw (name', proof') ->
-            let _ =
-               if !debug_package_info then
-                  begin
-                     eprintf "Attributes are:\n";
-                     List.iter (fun (name, _) -> eprintf "\t%s%t" name eflush) arg.ref_args;
-                     eflush stderr
-                  end
-            in
-            let refiner =
-               if !debug_sentinal then
-                  eprintf "Find refiner for %s.%s%t" name name' eflush;
-               let refiner = (get_theory name).thy_refiner in
-                  try snd (dest_refiner (find_refiner refiner name')) with
-                     Not_found ->
-                        eprintf "Warning: using default refiner for %s%t" name eflush;
-                        refiner
-            in
-            let sentinal = sentinal_of_refiner refiner in
+            let sentinal = Sequent.sentinal_of_refiner_object name name' in
             let proof' = Proof.proof_of_io_proof arg eval sentinal proof' in
             let ped = Proof_edit.ped_of_proof [] proof' in
                proof := ProofEdit ped;
@@ -637,55 +617,72 @@ struct
    (*
     * Get a tactic_arg for a module.
     *)
-   let get_tactic_arg modname =
+   let lazy_cache modname () =
       let cache =
-         let cache =
-            try
-               let rsrc = Base_cache.get_resource modname in
-                  rsrc.resource_extract rsrc
-            with
-               Not_found ->
-                  Tactic_cache.new_cache ()
-         in
-            Tactic_cache.extract cache
-      in
-      let add_attribute name con get_resource attributes =
          try
-            let rsrc = get_resource modname in
-               (name, con (rsrc.resource_extract rsrc)) :: attributes
+            let rsrc = Base_cache.get_resource modname in
+               rsrc.resource_extract rsrc
          with
+            Not_found ->
+               Tactic_cache.new_cache ()
+      in
+         Tactic_cache.extract cache
+
+   let lazy_dtactic modname () =
+      let rsrc = Base_dtactic.get_resource modname in
+         rsrc.resource_extract rsrc
+
+   let lazy_trivial modname () =
+      let rsrc = Base_auto_tactic.get_trivial_resource modname in
+         rsrc.resource_extract rsrc
+
+   let lazy_auto modname () =
+      let rsrc = Base_auto_tactic.get_auto_resource modname in
+         rsrc.resource_extract rsrc
+
+   let lazy_eqcd modname () =
+      let rsrc = Itt_equal.get_resource modname in
+         rsrc.resource_extract rsrc
+
+   let lazy_typeinf modname () =
+      let rsrc = Typeinf.get_resource modname in
+         rsrc.resource_extract rsrc
+
+   let lazy_squash modname () =
+      let rsrc = Itt_squash.get_resource modname in
+         rsrc.resource_extract rsrc
+
+   let lazy_subtype modname () =
+      let rsrc = Itt_subtype.get_resource modname in
+         rsrc.resource_extract rsrc
+
+   let get_tactic_arg modname =
+      let cache = Tactic_type.make_cache (lazy_cache modname) in
+      let add_attribute name con lazy attributes =
+         try con name (lazy modname) :: attributes with
             Not_found ->
                attributes
       in
-      let mk_int_tac_arg x =
-         Tactic_type.IntTacticArg x
-      in
-      let mk_tac_arg x =
-         Tactic_type.TacticArg x
-      in
-      let mk_typeinf_arg x =
-         Tactic_type.TypeinfArg x
+      let attributes =
+         add_attribute "d" Sequent.int_tactic_attribute lazy_dtactic []
       in
       let attributes =
-         add_attribute "d" mk_int_tac_arg Base_dtactic.get_resource []
+         add_attribute "trivial" Sequent.tactic_attribute lazy_trivial attributes
       in
       let attributes =
-         add_attribute "trivial" mk_tac_arg Base_auto_tactic.get_trivial_resource attributes
+         add_attribute "auto" Sequent.tactic_attribute lazy_auto attributes
       in
       let attributes =
-         add_attribute "auto" mk_tac_arg Base_auto_tactic.get_auto_resource attributes
+         add_attribute "eqcd" Sequent.tactic_attribute lazy_eqcd attributes
       in
       let attributes =
-         add_attribute "eqcd" mk_tac_arg Itt_equal.get_resource attributes
+         add_attribute "typeinf" Sequent.typeinf_attribute lazy_typeinf attributes
       in
       let attributes =
-         add_attribute "typeinf" mk_typeinf_arg Typeinf.get_resource attributes
+         add_attribute "squash" Sequent.tactic_attribute lazy_squash attributes
       in
       let attributes =
-         add_attribute "squash" mk_tac_arg Itt_squash.get_resource attributes
-      in
-      let attributes =
-         add_attribute "subtype" mk_tac_arg Itt_subtype.get_resource attributes
+         add_attribute "subtype" Sequent.tactic_attribute lazy_subtype attributes
       in
          { ref_label = "main";
            ref_args = attributes;
