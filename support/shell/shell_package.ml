@@ -286,7 +286,7 @@ let compile_ls_predicate = function
    [] ->
       (fun _ -> true)
  | predicate ->
-      (fun (item, _) -> Lm_list_util.allp (fun pred -> pred item) predicate)
+      (fun (item, _) -> List.for_all (fun pred -> pred item) predicate)
 
 let rec mk_ls_filter predicate = function
    LsAll :: tl ->
