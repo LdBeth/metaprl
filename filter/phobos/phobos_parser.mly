@@ -238,8 +238,8 @@ let include_built_in (s, pos) =
 %token <Phobos_type.pos> TokBang
 %token <Phobos_type.pos> TokDot
 %token <Phobos_type.pos> TokQuestionMark
-%token <Phobos_type.pos> TokLe
-%token <Phobos_type.pos> TokGe
+%token <Phobos_type.pos> TokLt
+%token <Phobos_type.pos> TokGt
 
 %token <Phobos_type.pos> TokSequent
 %token <Phobos_type.pos> TokTurnstyle
@@ -537,7 +537,7 @@ alt_prod_element_list:
                               { $2 :: $1 }
 
 alt_prod_element:
-   identifier TokLe simple_term TokGe
+   identifier TokLt simple_term TokGt
                               { $1, Some $3 }
  | identifier                 { $1, None }
 
@@ -601,6 +601,8 @@ simple_term_list_rev:
    simple_term                { [$1] }
  | simple_term_list_rev TokSemi simple_term
                               { $3 :: $1 }
+var:
+   TokId                      { Lm_symbol.add (fst $1) }
 
 simple_term:
    module_identifier opt_term_params subterms
@@ -632,8 +634,8 @@ seq_hyps_rev:
                               { $3 :: $1 }
 
 seq_hyp:
-   identifier TokColon simple_term
-                              { Hypothesis (Lm_symbol.add (fst $1), fst $3) }
+   var TokColon simple_term   { Hypothesis ($1, fst $3) }
+ | TokLt var TokGt            { Context ($2, [], []) }
 
 /* Opname */
 /* REMARK: name parts are in reverse order */
@@ -698,15 +700,15 @@ param_type_id:
 /* BUG: level parameters are not handled */
 term_param:
    /* Meta-parameter */
-   TokId TokColon TokId       { match fst $3 with
+   var TokColon TokId         { match fst $3 with
                                    "s" ->
-                                       make_param (MString (Lm_symbol.add (fst $1)))
+                                       make_param (MString $1)
                                  | "n" ->
-                                       make_param (MNumber (Lm_symbol.add (fst $1)))
+                                       make_param (MNumber $1)
                                  | "v" ->
-                                       make_param (Var (Lm_symbol.add (fst $1)))
+                                       make_param (Var $1)
                                  | "t" ->
-                                       make_param (MToken (Lm_symbol.add (fst $1)))
+                                       make_param (MToken $1)
                                  | _ ->
                                        raise (ParseError (snd $3, "unknown meta-parameter type"))
                               }
@@ -730,7 +732,7 @@ term_param:
  | TokString                  { make_param (String (fst $1)) }
  | TokInt                     { make_param (Number (num_of_int (fst $1))) }
    /* Meta-parameter without type is assumed to be meta-string */
- | TokId                      { make_param (MString (Lm_symbol.add (fst $1))) }
+ | var                        { make_param (MString $1) }
 
 /*
  * Term declarations (for the term set section).

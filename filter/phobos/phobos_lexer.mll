@@ -200,6 +200,7 @@ rule main = parse
    (*
     * Special chars.
     *)
+   | ">-"               { let pos = set_lexeme_position lexbuf in TokTurnstyle pos }
    | "@"                { let pos = set_lexeme_position lexbuf in TokAt pos }
    | "="                { let pos = set_lexeme_position lexbuf in TokEq pos }
    | "::="              { let pos = set_lexeme_position lexbuf in TokRuleEq pos }
@@ -219,9 +220,8 @@ rule main = parse
    | "!"                { let pos = set_lexeme_position lexbuf in TokBang pos }
    | "."                { let pos = set_lexeme_position lexbuf in TokDot pos }
    | "?"                { let pos = set_lexeme_position lexbuf in TokQuestionMark pos }
-   | "<"                { let pos = set_lexeme_position lexbuf in TokLe pos }
-   | ">"                { let pos = set_lexeme_position lexbuf in TokGe pos }
-   | ">-"               { let pos = set_lexeme_position lexbuf in TokTurnstyle pos }
+   | "<"                { let pos = set_lexeme_position lexbuf in TokLt pos }
+   | ">"                { let pos = set_lexeme_position lexbuf in TokGt pos }
 
    | eof                { TokEof }
    | _                  { let pos = set_lexeme_position lexbuf in

@@ -274,16 +274,13 @@ let file_dependencies source_file =
         else (([], []), []) in
       let (cmo_deps, cmx_deps) =
         StringSet.fold find_dependency_cmo_cmx !free_structures init_deps in
-      let (cmo_deps, cmx_deps) =
-        if !contains_source_quot then
-          syntaxdef_prereq :: cmo_deps, syntaxdef_prereq :: cmx_deps
-        else
-          cmo_deps, cmx_deps
-      in
       let ppo_deps =
          if !omake_flag then
             StringSet.fold find_dependency_cmiz !prl_structures (fst init_deps)
          else cmo_deps
+      in
+      let ppo_deps =
+         if !contains_source_quot then syntaxdef_prereq :: ppo_deps else ppo_deps
       in
       (* XXX HACK: since we can not check whether the corresponding .mli contains "topval",
          in prl mode we always assume dependencies - at least on the .cmi *)
