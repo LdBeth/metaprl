@@ -447,7 +447,10 @@ let format_short_term base shortener =
             else
                t
          in
-            lookup "format_short_term" base (fun entries -> entries) t
+            (* HACK! There used to be an identity instead of List.rev here, but I changed it
+               because for some reason (I have no idea why) the entries were going in the wrong
+               order *)
+            lookup "format_short_term" base List.rev t
       in
       let pr, parenflag =
          if pr' = inherit_prec then

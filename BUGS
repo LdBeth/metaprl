@@ -1,8 +1,8 @@
 Note - some non-critical bugs may be documented as TODO items.
-(You need to have MetaPRL CVS account to be able to access the TODO file.)
+(You need to have MetaPRL CVS account to be able to access the doc/private/TODO file.)
 
 Note - some files have small bugs documented in their comments, these can be found
-by rgrep'ing for string "BUG".
+by rgrep'ing for the string "BUG".
 
 DOCUMENTATION:
 
@@ -26,9 +26,11 @@ EDITOR
 
 2.1-2.3 are fixed
 
-2.4) (Confirmed on 1999.09.02 by jyh and nogin)
-There is no way to override display forms right now.
-Could be that term_match_table listing needs to be reversed.
+2.4) (Updated 2000.08.13 by nogin)
+Term_match_table listing is being reversed in order for new display forms to take
+precedence over old ones. But for some reason, the dT table works OK without
+reversing. Hopefully, after we reiplement term tables properly, this crazyness
+will go away.
 
 2.5) Display form mode generality is not working.
 
@@ -57,7 +59,7 @@ REWRITER
 
 3.2) If the same variable is bound several times in redex or contractum specification, rewriter
 may handle it incorrectly. We can not prohibit repeated bound variable in redeces
-specification because of two-way rewrites.
+specifications because of two-way rewrites.
 
 3.3) If the same variable is bound several times in the matched term, rewriter may handle
 it incorrectly.
