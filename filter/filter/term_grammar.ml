@@ -673,12 +673,6 @@ struct
            "ite" LEFTA
             [ "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
                wrap_term loc (mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "ifthenelse") (make_term e1) (make_term e2) (make_term e3))
-            | "let"; x = var; "="; e1 = SELF; "in"; e2 = SELF ->
-               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
-            | e2 = SELF; "where";  x = var; "="; e1 = SELF ->
-               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
-            | "open";  e1 =  SELF; "in"; e2 = SELF ->
-               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add "self") (make_term e1) (make_term e2))
             ]
 
           (* Logical operators *)
@@ -744,6 +738,14 @@ struct
             | (* t1 In t2  - membership for set theory *)
               t1 = SELF; op = sl_set_in; t2 = SELF ->
                wrap_term loc (mk_dep0_dep0_term (mk_dep0_dep0_opname loc op) (make_term t1) (make_term t2))
+            ]
+          | "let" LEFTA
+            [ "let"; x = var; "="; e1 = NEXT; "in"; e2 = SELF ->
+               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
+            | e2 = SELF; "where"; x = var; "="; e1 = SELF ->
+               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
+            | "open";  e1 = SELF; "in"; e2 = SELF ->
+               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add "self") (make_term e1) (make_term e2))
             ]
           | "compare" NONA
             [ (* t1 =@ t2, t1 <>@ t2, t1 <@ t2, t1 >@ t2, ...  - integer relations as booleans *)
