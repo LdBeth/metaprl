@@ -19,6 +19,7 @@ LCFILES :=\
 	truncate\
 	putenv\
 	execvp\
+	profile\
 	exit\
 	debug\
 	ml_debug\

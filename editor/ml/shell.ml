@@ -75,6 +75,9 @@ let _ =
 
 let debug_refine = load_debug "refine"
 
+external restart_gmon : unit -> unit = "restart_gmon"
+external stop_gmon : unit -> unit = "stop_gmon"
+
 let debug_shell =
    create_debug (**)
       { debug_name = "shell";
@@ -867,7 +870,9 @@ struct
        "kreitz",           UnitFunExpr     (fun () -> UnitExpr (kreitz ()));
        "sync",             UnitFunExpr     (fun () -> UnitExpr (sync ()));
        "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all ()));
-       "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)))]
+       "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)));
+       "stop_gmon",        UnitFunExpr     (fun () -> UnitExpr (stop_gmon ()));
+       "restart_gmon",     UnitFunExpr     (fun () -> UnitExpr (restart_gmon ()))]
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *
