@@ -80,6 +80,9 @@ declare monospaced[name:s] : Dform
 declare monospaced{'t : Dform} : Dform
 declare monospaced_begin : Dform
 declare monospaced_end : Dform
+declare underline_begin : Dform
+declare underline_end : Dform
+declare underline{'t : Dform} : Dform
 
 (*
  * HTML control.

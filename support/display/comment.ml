@@ -1291,6 +1291,8 @@ dform math_emph_df1 : mode[tex] :: math_emph{'t} =
 dform math_emph_df2 : except_mode[tex] :: math_emph{'t} =
    emph{'t}
 
+dform math_underline_df : math_underline{'t} = underline{'t}
+
 (*
  * Math symbols.
  *)

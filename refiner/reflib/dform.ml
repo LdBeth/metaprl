@@ -283,6 +283,7 @@ let translate_font s =
     | "rm" -> "snrmq" (* enter_normal_quality *)
     | "sub" -> "ssubm" (* enter_subscript_mode *)
     | "sup" -> "ssupm" (* enter_superscript_mode *)
+    | "ul" -> "smul" (* begin underline mode *)
     | _ -> Lm_terminfo.exit_attribute_mode
 
 let changefont buf s =

@@ -262,6 +262,7 @@ declare math_bf[text:s] : Dform
 declare math_i{'t : Dform} : Dform
 declare math_i[text:s] : Dform
 declare math_emph{'t : Dform} : Dform
+declare math_underline{'t : Dform} : Dform
 declare math_mathop{'t : Dform} : Dform
 declare math_mathrel[text:s] : Dform
 declare math_mathrel{'t : Dform} : Dform

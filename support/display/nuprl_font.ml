@@ -328,7 +328,6 @@ dform sub_df2 : sub{'t} =
 dform sub_df3 : sub[i:l] =
    sub_begin slot[i:l] sub_end
 
-
 dform sup_begin_df : mode[html] :: sup_begin =
    html["<sup>"]
 
@@ -340,7 +339,6 @@ dform sup_df1 : sup[text:s] =
 
 dform sup_df2 : sup{'t} =
    sup_begin 't sup_end
-
 
 dform sub_begin_df : mode[prl] :: sub_begin =
    `"_"
@@ -368,6 +366,23 @@ dform small_df2 : small{'t} =
 
 dform esquash_df : esquash{'t} =
    esq_l 't esq_r
+
+dform underline_df1 : underline{'t} =
+   underline_begin 't underline_end
+
+dform underline_begin_prl : mode[prl] :: underline_begin = pushfont["ul"]
+
+dform underline_end_prl : mode[prl] :: underline_end = popfont
+
+dform underline_begin_html : mode[html] :: underline_begin = html["<ul>"]
+
+dform underline_end_html : mode[html] :: underline_end = html["</ul>"]
+
+dform underline_begin_tex : mode[tex] :: underline_begin =
+   izone `"\\underline{" ezone
+
+dform underline_end_tex : mode[tex] :: underline_end =
+   izone `"}" ezone
 
 (************************************************************************
  * TEX HELPERS                                                          *

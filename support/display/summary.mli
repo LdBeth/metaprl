@@ -53,6 +53,8 @@ declare status_complete : Dform
 declare status_primitive{'extract : Dform} : Dform
 declare status_interactive[rules:n,nodes:n]{'status : Dform} : Dform
 
+declare rewrite_name[name:s] : Dform
+
 val term_of_proof_status : Tactic_type.Proof.status -> term
 
 (*

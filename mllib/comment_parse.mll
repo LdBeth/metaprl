@@ -296,7 +296,7 @@ rule main = parse
    }
  | "<:" name '<'
    { let buf = Lexing.lexeme lexbuf in
-        set_tag lexbuf (String.sub buf 2 (pred (String.length buf)));
+        set_tag lexbuf (String.sub buf 2 ((String.length buf) - 3));
         quotation lexbuf
    }
 

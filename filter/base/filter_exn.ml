@@ -227,7 +227,9 @@ let print_exn db s f x =
                raise (Refine_exn.ToploopIgnoreExn exn)
 
 let handle_exn db s loc f =
-   try f () with
+   if Refine_exn.backtrace then
+      f ()
+   else try f () with
       exn ->
          let exn =
             match exn with
