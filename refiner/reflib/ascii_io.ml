@@ -555,11 +555,21 @@ struct
    let simple_name_hyp _ = "","h"
    let simple_name_seq _ = "","","s"
 
+   let rec output_aux out = function
+      [] -> raise (Invalid_argument "Ascii_io.output_aux")
+    | [str] -> output_string out (String_util.quote str)
+    | str :: strs ->
+         output_string out (String_util.quote str);
+         output_char out ' ';
+         output_aux out strs
+
    let simple_output_line out (str1, str2, strs) =
-      Printf.fprintf out "%s\t%s\t%s\n"
-         (String_util.quote str1)
-         (String_util.quote str2)
-         (String.concat " " (List.map String_util.quote strs))
+      output_string out (String_util.quote str1);
+      output_char out '\t';
+      output_string out (String_util.quote str2);
+      output_char out '\t';
+      output_aux out strs;
+      output_char out '\n'
 
    let make_simple_control out =
     { out_name_op = simple_name_op;

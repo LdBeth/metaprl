@@ -127,42 +127,51 @@ struct
    (*
     * Collect all binding vars.
     *)
-   let rec binding_vars_term t bvars =
-      binding_vars_bterms bvars (dest_term t).term_terms
-
-   and binding_vars_bterms bvars = function
-      bt::l ->
-         binding_vars_bterms (binding_vars_term bt.bterm (List.fold_right StringSet.add bt.bvars bvars)) l
-    | [] -> bvars
-
-   let rec binding_vars_set t =
-      match get_core t with
+   let rec binding_vars_term t =
+      match t.core with
          Term t ->
-            binding_vars_bterms StringSet.empty t.term_terms
+            binding_vars_bterms t.term_terms
        | Sequent seq ->
             let hyps = seq.sequent_hyps in
             let len = SeqHyp.length hyps in
             let rec coll_hyps i =
-               if i = len then binding_vars_term seq.sequent_args StringSet.empty else
+               if i = len then binding_vars_term seq.sequent_args else
                   match SeqHyp.get hyps i with
                      Hypothesis (v,t) ->
-                        binding_vars_term t (StringSet.add v (coll_hyps (succ i)))
+                        binding_vars_union t (StringSet.add v (coll_hyps (succ i)))
+                   | Context (v,[]) ->
+                        coll_hyps (succ i)
                    | Context (v,ts) ->
-                        List.fold_right binding_vars_term ts (coll_hyps (succ i))
+                        List.fold_right binding_vars_union ts (coll_hyps (succ i))
             in
             let goals = seq.sequent_goals in
             let len = SeqGoal.length goals in
             let rec coll_goals i =
                if i = len then coll_hyps 0 else
-                  binding_vars_term (SeqGoal.get goals i) (coll_goals (succ i))
+                  binding_vars_union (SeqGoal.get goals i) (coll_goals (succ i))
             in coll_goals 0
        | FOVar _ -> StringSet.empty
-       | Subst _ -> fail_core "binding_vars"
+       | Subst _ -> ignore (get_core t); binding_vars_term t
        | Hashed d ->
-            binding_vars_set (Weak_memo.TheWeakMemo.retrieve_hack d)
+            binding_vars_term (Weak_memo.TheWeakMemo.retrieve_hack d)
+
+   and binding_vars_bterm bt =
+      let bv = binding_vars_term bt.bterm in
+      match bt.bvars with
+            [] -> bv
+          | [v] -> StringSet.add v bv
+          | vars -> List.fold_right StringSet.add vars bv
+
+   and binding_vars_bterms = function
+      [] -> StringSet.empty
+    | [bt] -> binding_vars_bterm bt
+    | bt::l ->
+         StringSet.union (binding_vars_bterm bt) (binding_vars_bterms l)
+
+   and binding_vars_union t vars = StringSet.union (binding_vars_term t) vars
 
    let binding_vars t =
-      StringSet.elements (binding_vars_set t)
+      StringSet.elements (binding_vars_term t)
 
    let add_vars vars term =
       StringSet.union vars (term_free_vars term)
