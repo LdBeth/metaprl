@@ -828,6 +828,13 @@ struct
       in
          raise (ProofRefineError ("replace", proof, StringIntError ("illegal address", i)))
 
+   let norm_mseq mseq =
+      TermNorm.normalize_msequent (msequent_remove_redundant_hypbindings mseq)
+
+   let norm_goal goal =
+      let mseq = norm_mseq goal.ref_goal in
+         if mseq == goal.ref_goal then goal else {goal with ref_goal = mseq}
+
    (*
     * Replace the current goal of a node.
     *)
@@ -875,6 +882,8 @@ struct
          (fun leaves subgoals extras ->
                collect leaves (filter_subgoals (subgoals @ extras)))
 
+   let make_goal goal = Goal (norm_goal goal)
+
    let rec find_leaf compare leaf = function
       (goal, subgoal) as h :: subgoals ->
          if compare goal leaf then
@@ -883,7 +892,7 @@ struct
             let subgoal, subgoals = find_leaf compare leaf subgoals in
                subgoal, h :: subgoals
     | [] ->
-         Goal leaf, []
+         make_goal leaf, []
 
    let match_subgoals = match_subgoals_general (find_leaf tactic_arg_alpha_equal)
 
@@ -912,7 +921,7 @@ struct
                 | answer -> answer
             with
                RuleBox _ as node , subgoals ->
-                  replace_goal_ext leaf node, subgoals
+                  replace_goal_ext (norm_goal leaf) node, subgoals
              | answer -> answer
             end
        | answer ->
@@ -1149,65 +1158,6 @@ struct
             postf proof
          else
             proof
-
-   (*
-    * Sweep a function up the proof tree.
-    *)
-   let rec sweep_up_ext proof (f : proof -> extract -> extract) node =
-      match node with
-         Goal _
-       | Identity _
-       | Unjustified _
-       | Extract _
-       | ExtractRewrite _
-       | ExtractCondRewrite _
-       | ExtractNthHyp _
-       | ExtractCut _ ->
-            f proof node
-       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            let goal = sweep_up_ext proof f goal in
-            let subgoals = List.map (sweep_up_ext proof f) subgoals in
-            let extras = List.map (sweep_up_ext proof f) extras in
-            let subgoals, extras = match_subgoals (leaves_ext goal) subgoals extras in
-               Compose {
-                  comp_status = LazyStatusDelayed;
-                  comp_goal = goal;
-                  comp_subgoals = subgoals;
-                  comp_extras = extras;
-                  comp_leaves = LazyLeavesDelayed
-               }
-       | Wrapped (label, goal) ->
-            Wrapped (label, sweep_up_ext proof f goal)
-       | RuleBox { rule_expr = expr;
-                   rule_string = text;
-                   rule_tactic = tac;
-                   rule_extract_normalized = normal;
-                   rule_extract = goal;
-                   rule_subgoals = subgoals;
-                   rule_extras = extras
-         } ->
-            let new_goal = sweep_up_ext proof f goal in
-            let subgoals = List.map (sweep_up_ext proof f) subgoals in
-            let extras = List.map (sweep_up_ext proof f) extras in
-            let subgoals, extras = match_subgoals (leaves_ext new_goal) subgoals extras in
-               RuleBox { rule_status = LazyStatusDelayed;
-                         rule_expr = expr;
-                         rule_string = text;
-                         rule_tactic = tac;
-                         rule_extract_normalized = normal && (goal==new_goal);
-                         rule_extract = new_goal;
-                         rule_subgoals = subgoals;
-                         rule_leaves = LazyLeavesDelayed;
-                         rule_extras = extras
-               }
-       | Pending g ->
-            sweep_up_ext proof f (g ())
-       | Locked ext ->
-            Locked (sweep_up_ext proof f ext)
-
-   let sweep_up postf f proof =
-      let node = sweep_up_ext proof f proof.pf_node in
-         fold_proof postf proof node
 
    (*
     * Sweep a function over the tactic_args in the tree.
@@ -2111,11 +2061,6 @@ struct
             replace_step_rule proof (f ()) step
        | Locked ext ->
             replace_step_rule proof ext step
-
-   let make_goal goal =
-      let mseq' = TermNorm.normalize_msequent (msequent_remove_redundant_hypbindings goal.ref_goal) in
-      if mseq' == goal.ref_goal then Goal goal
-      else Goal {goal with ref_goal = mseq'}
 
    let refine postf proof text expr tac =
       let subgoals, ext = TacticInternal.refine tac (goal proof) in
