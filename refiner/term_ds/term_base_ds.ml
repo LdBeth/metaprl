@@ -352,10 +352,8 @@ struct
                      let new_term = List.assoc v sub in
                         get_core (new_term)
                 | SOVar (v, conts, ts) ->
-                     if check_conts sub conts; List.mem_assoc v sub then
-                        raise(Invalid_argument("Term_base_ds.get_core: substitution clashed with SO var "^(string_of_symbol v)))
-                     else
-                        SOVar(v, conts, List.map (do_term_subst sub) ts)
+                     check_conts sub conts;
+                     SOVar(v, conts, List.map (do_term_subst sub) ts)
                 | Term ttt ->
                      Term { term_op = ttt.term_op;
                             term_terms = List.map (do_bterm_subst sub) ttt.term_terms }

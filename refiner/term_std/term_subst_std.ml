@@ -371,11 +371,9 @@ struct
     * First order simultaneous substitution.
     *)
    let rec subst_term terms fv vars = function
-      { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = bterms } as t
+      { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t
       when Opname.eq opname var_opname && List.mem v vars ->
          (* Var case *)
-         if bterms <> [] then
-            REF_RAISE(RefineError("Term_subst_std.subst_term", StringVarError("substitution captures SO var",v)));
          List.nth terms (Lm_list_util.find_index v vars)
     | { term_terms = [] } as t -> t (* Optimization *)
     | { term_op = op; term_terms = bterms } ->
