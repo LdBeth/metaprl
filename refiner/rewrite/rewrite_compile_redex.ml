@@ -140,6 +140,19 @@ struct
 
    let bvar_ind ((_:string),(i:int)) = i
 
+   (* Add an extra free variable restriction to a hypothesis *)
+   let restrict_free_in_hyp v = function
+      RWSeqContext (i, l, vs) -> RWSeqFreeVarsContext ([v], i, l, vs)
+    | RWSeqFreeVarsContext (rs, i, l, vs) -> RWSeqFreeVarsContext (v::rs, i, l, vs)
+    | RWSeqHypBnd (v', RWFreeVars(t, rs)) -> RWSeqHypBnd (v', RWFreeVars(t, v::rs))
+    | RWSeqHypBnd (v', t) -> RWSeqHypBnd (v', RWFreeVars(t, [v]))
+    | _ -> raise(Invalid_argument("Rewrite_compile_redex.restrict_free_hyp"))
+
+   (* Add an extra free variable restriction to a term *)
+   let restrict_free_in_term v = function
+      RWFreeVars(t, rs) -> RWFreeVars(t, v::rs)
+    | t -> RWFreeVars(t, [v])
+
    let rec compile_so_redex_term allow_so_patterns strict addrs stack bvars term =
       (* Check for variables and contexts *)
       if is_so_var_term term then
@@ -359,7 +372,7 @@ struct
                in
                   stack, term :: hyps, goals
 
-          | Hypothesis (v, term) ->
+          | HypBinding (v, term) ->
                if rstack_mem v stack then
                   REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringStringError ("repeated variable", v)));
                let stack, term = compile_so_redex_term true strict addrs stack bvars term in
@@ -369,7 +382,16 @@ struct
                let stack, hyps, goals =
                   compile_so_redex_sequent_inner strict addrs stack bvars (i + 1) len hyps goals
                in
-                  stack, RWSeqHyp (bname l v, term) :: hyps, goals
+                  stack, RWSeqHypBnd (bname l v, term) :: hyps, goals
+
+          | Hypothesis term ->
+               let stack, term = compile_so_redex_term true strict addrs stack bvars term in
+               let stack, hyps, goals =
+                  compile_so_redex_sequent_inner strict addrs stack bvars (i + 1) len hyps goals
+               in
+               let l = List.length stack in
+               let hyps = RWSeqHypBnd (bname l "", term) :: List.map (restrict_free_in_hyp l) hyps in
+                  stack @ [FOVar ""], hyps, List.map (restrict_free_in_term l) goals
 
    and compile_so_redex_goals strict addrs stack bvars i len goals =
       if i = len then

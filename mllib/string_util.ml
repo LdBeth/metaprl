@@ -366,7 +366,9 @@ let rec new_var v avoid i =
       then new_var v avoid (succ i)
       else v'
 
-let vnewname v avoid = new_var v avoid 1
+let vnewname v avoid =
+   let v = if String.contains v '_' then String.sub v 0 (String.rindex v '_') else v in
+      new_var v avoid 1
 
 (*
  * -*-

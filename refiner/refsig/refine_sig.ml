@@ -39,6 +39,7 @@
  *
  *)
 
+open String_set
 open Opname
 
 (************************************************************************
@@ -69,7 +70,7 @@ sig
 
    type ml_cond_rewrite =
       string array ->                                (* Names *)
-      string list list ->                            (* Free vars in the msequent *)
+      StringSet.t ->                                 (* Free vars in the msequent *)
       term list ->                                   (* Params *)
       term ->                                        (* Term to rewrite *)
       term * term list * string array * ml_extract   (* Extractor is returned *)
@@ -253,7 +254,7 @@ sig
    val msequent_goal : msequent -> term
    val msequent_num_assums : msequent -> int
    val msequent_nth_assum :  msequent -> int -> term
-   val msequent_free_vars : msequent -> string list
+   val msequent_free_vars : msequent -> StringSet.t
 
    (*
     * Alpha equality on sequent objects.

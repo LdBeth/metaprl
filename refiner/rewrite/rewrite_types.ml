@@ -27,8 +27,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Opname
@@ -41,6 +41,9 @@ ELSE
 ENDIF
 
 DEFTOPMACRO BODY =
+
+   (* See refsig/rewrite_sig.mlz for explanaition *)
+   type strict = Strict | Relaxed
 
    (*
     * For matching level expressions.
@@ -112,7 +115,8 @@ DEFTOPMACRO BODY =
     * Special forms for sequents.
     *)
    and rw_seq_term =
-      RWSeqHyp of varname * rwterm
+      RWSeqHypBnd of varname * rwterm
+    | RWSeqHyp of rwterm
     | RWSeqContext of int * int * int list
     | RWSeqContextSubst of int * rwterm list
     | RWSeqFreeVarsContext of int list * int * int * int list
@@ -175,7 +179,9 @@ DEFTOPMACRO BODY =
          rr_gstacksize : int;
 
          (* The contractum is a term or a function *)
-         rr_contractum : rwcontractum
+         rr_contractum : rwcontractum;
+
+         rr_strict : strict;
       }
 
    (*
@@ -190,8 +196,6 @@ DEFTOPMACRO BODY =
       { con_contractum : rwterm;
         con_new_vars : string array
       }
-
-   type strict = Strict | Relaxed
 
 END
 

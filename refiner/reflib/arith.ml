@@ -174,7 +174,7 @@ struct
 
     let collect f gl =
     let {sequent_hyps = sh} = TermMan.explode_sequent gl in
-    let aux' h = match h with Hypothesis (s,t) -> t
+    let aux' h = match h with HypBinding (_,t) | Hypothesis t -> t
        | Context (s,l) -> (mk_simple_term xperv []) in
     let shl = List.map aux' (SeqHyp.to_list sh) in
     let rec aux src i l =

@@ -34,6 +34,7 @@ INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
+open String_set
 
 open Opname
 open Refine_error_sig
@@ -87,6 +88,7 @@ struct
    type bound_term = Term.bound_term
    type operator = Term.operator
    type level_exp = Term.level_exp
+   type hypothesis = Term.hypothesis
 
    type esequent = Term.esequent
 
@@ -306,7 +308,7 @@ struct
    (* Sequent wrapper *)
    let is_sequent_term = is_simple_term_opname sequent_opname
 
-   (* Dependent hypotheses *)
+   (* Hypotheses *)
    let is_hyp_term = is_dep0_dep1_term hyp_opname
    let mk_hyp_term = mk_dep0_dep1_term hyp_opname
    let dest_hyp = dest_dep0_dep1_term hyp_opname
@@ -326,22 +328,59 @@ struct
       else
          mk_concl_term (SeqGoal.get goals i) (mk_goals goals (i + 1) len)
 
-   let rec mk_sequent_inner_term hyps goals i len =
+   let rec remove_redundant_hbs vars = function
+      [] -> [], vars
+    | Context (_, ts) as hyp :: hyps ->
+         let hyps, vars = remove_redundant_hbs vars hyps in
+            (hyp :: hyps), StringSet.union (free_vars_terms ts) vars
+    | Hypothesis(t) as hyp :: hyps ->
+         let hyps, vars = remove_redundant_hbs vars hyps in
+            (hyp :: hyps), StringSet.union (free_vars_set t) vars
+    | HypBinding (v, t) as hyp :: hyps ->
+         let hyps, vars = remove_redundant_hbs vars hyps in
+            if StringSet.mem vars v then
+               (hyp :: hyps), StringSet.union (free_vars_set t) (StringSet.remove v vars)
+            else
+               Hypothesis t :: hyps, StringSet.union (free_vars_set t) vars
+
+   let remove_redundant_hypbindings hyps goals =
+      fst (remove_redundant_hbs (free_vars_terms goals) hyps)
+
+   let fake_var = "bh"
+
+   let rec mk_sequent_inner_term hyps goals vars i len =
       if i = len then
          mk_goals goals 0 (SeqGoal.length goals)
       else
          match SeqHyp.get hyps i with
-            Hypothesis (v, t') ->
-               mk_hyp_term v t' (mk_sequent_inner_term hyps goals (i + 1) len)
+            HypBinding (v, t') ->
+               mk_hyp_term v t' (mk_sequent_inner_term hyps goals vars (i + 1) len)
+          | Hypothesis t' ->
+               let v =
+                  if StringSet.mem vars fake_var
+                  then String_util.vnewname fake_var (StringSet.mem vars)
+                  else fake_var
+               in mk_hyp_term v t' (mk_sequent_inner_term hyps goals vars (i + 1) len)
           | Context (v, subterms) ->
-               mk_context_term v (mk_sequent_inner_term hyps goals (i + 1) len) subterms
+               mk_context_term v (mk_sequent_inner_term hyps goals vars (i + 1) len) subterms
+
+   let rec hyp_vars vars = function
+      [] ->
+         vars
+    | Context (v, ts) :: hyps ->
+         hyp_vars (StringSet.add (StringSet.union (free_vars_terms ts) vars) v) hyps
+    | Hypothesis(t) :: hyps ->
+         hyp_vars (StringSet.union (free_vars_set t) vars) hyps
+    | HypBinding (v, t) :: hyps ->
+         hyp_vars (StringSet.add (StringSet.union (free_vars_set t) vars) v) hyps
 
    let mk_sequent_term
        { sequent_args = args;
          sequent_hyps = hyps;
          sequent_goals = goals
        } =
-      mk_sequent_outer_term (mk_sequent_inner_term hyps goals 0 (SeqHyp.length hyps)) args
+      let vars = hyp_vars (free_vars_terms (SeqGoal.to_list goals)) (SeqHyp.to_list hyps) in
+         mk_sequent_outer_term (mk_sequent_inner_term hyps goals vars 0 (SeqHyp.length hyps)) args
 
    let dest_sequent_outer_term seq =
       match dest_simple_term_opname sequent_opname seq with
@@ -439,15 +478,17 @@ struct
          let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
                let t, x, term = match_hyp_all explode_sequent_name t bterms in
-                  collect args (Hypothesis (x, t) :: hyps) concls term
+                  collect args (HypBinding (x, t) :: hyps) concls term
             else if Opname.eq opname context_opname then
                let name, term, args' = dest_context term in
                   collect args (Context (name, args') :: hyps) concls term
             else if Opname.eq opname concl_opname then
                if bterms = [] then
+                  let goals = List.rev concls in
+                  let hyps = remove_redundant_hypbindings (List.rev hyps) goals in
                   { sequent_args = args;
-                    sequent_hyps =  SeqHyp.of_list (List.rev hyps);
-                    sequent_goals = SeqGoal.of_list (List.rev concls)
+                    sequent_hyps =  SeqHyp.of_list hyps;
+                    sequent_goals = SeqGoal.of_list goals
                   }
                else
                   let goal, term = match_concl_all explode_sequent_name t bterms in
@@ -489,7 +530,7 @@ struct
          let { term_op = op; term_terms = bterms } = dest_term term in
          let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
-               let t, x, term = match_hyp_all nth_hyp_name t bterms in
+               let t, _, term = match_hyp_all nth_hyp_name t bterms in
                   if i = 0 then
                      t
                   else
@@ -512,7 +553,7 @@ struct
          let { term_op = op; term_terms = bterms } = dest_term term in
          let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
-               let t, x, term = match_hyp_all nth_hyp_name t bterms in
+               let _, x, term = match_hyp_all nth_hyp_name t bterms in
                   if i = 0 then
                      x
                   else

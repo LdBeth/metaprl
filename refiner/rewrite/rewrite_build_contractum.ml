@@ -27,14 +27,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
+open String_util
+open String_set
+
 open Opname
 open Term_sig
 open Term_base_sig
@@ -142,39 +145,37 @@ struct
       ArgName i ->
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
-               eprintf "ArgName %d%t" i eflush
+               eprintf "ArgName %d (%s, avoid [%a])%t" i names.(i) print_string_list (StringSet.elements bnames) eflush
          ENDIF;
          let v = names.(i) in
-         let rec check v = function
-            vars :: tl ->
-               if List.mem v vars then
-                  REF_RAISE(RefineError ("build_bname", RewriteBoundSOVar v))
-               else
-                  check v tl
-          | [] ->
-               ()
-         in
-            check v bnames;
-            v
+            if StringSet.mem bnames v then
+               let v = vnewname v (StringSet.mem bnames) in names.(i) <- v; v
+            else v
     | StackName i ->
          begin
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
-                  eprintf "StackName %d%t" i eflush
+                  eprintf "StackName %d (avoid [%a])%t" i print_string_list (StringSet.elements bnames) eflush
             ENDIF;
-            match stack.(i) with
-               StackString s
-             | StackMString s ->
-                  s
-             | x ->
-                  REF_RAISE(RefineError ("build_bname", RewriteStringError "stack entry is not a string"))
+            let v = match stack.(i) with
+               StackString s | StackMString s -> s
+             | StackVoid -> "v"
+             | _ ->
+                  raise(Invalid_argument("Rewrite_build_contractum.build_bname: stack entry is not a string"))
+            in
+               if StringSet.mem bnames v then
+                  let v = vnewname v (StringSet.mem bnames) in stack.(i) <- StackString v; v
+               else v
          end
     | SaveName i ->
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
-               eprintf "SaveName %d%t" i eflush
+               eprintf "SaveName %d (%s, avoid [%a])%t" i names.(i) print_string_list (StringSet.elements bnames) eflush
          ENDIF;
-         names.(i)
+         let v = names.(i) in
+            if StringSet.mem bnames v then
+               let v = vnewname v (StringSet.mem bnames) in names.(i) <- v; v
+            else v
 
    (*
     * Append the var array.
@@ -184,35 +185,12 @@ struct
 
    (*
     * Perform a substitution on a sequence of hyps.
-    * We explicitely avoid capture.
     *)
-   let rec collect_hyp_vars vars hyps i len =
-      if len = 0 then
-         vars
-      else
-         match SeqHyp.get hyps i with
-            Hypothesis (v, _) ->
-               collect_hyp_vars (v :: vars) hyps (i + 1) (len - 1)
-          | Context _ ->
-               collect_hyp_vars vars hyps (i + 1) (len - 1)
-
-   let avoid_capture hyps i len terms =
-      let hyp_vars = collect_hyp_vars [] hyps i len in
-         if is_some_var_free_list hyp_vars terms then
-            begin
-               IFDEF VERBOSE_EXN THEN
-                  if !debug_rewrite then
-                     eprintf "avoid_capture: capture occurred: %a/%a%t" (**)
-                        print_string_list hyp_vars
-                        print_string_list (String_set.StringSet.elements (free_vars_terms terms))
-                        eflush
-               ENDIF;
-               REF_RAISE(RefineError ("avoid_capture", StringError "invalid substituion"))
-            end
-
    let subst_hyp terms vars = function
-      Hypothesis (v, term) ->
-         Hypothesis (v, subst term vars terms)
+      HypBinding (v, term) ->
+         HypBinding (v, subst term vars terms)
+    | Hypothesis term ->
+         Hypothesis (subst term vars terms)
     | Context (v, subterms) ->
          Context (v, List.map (fun t -> subst t vars terms) subterms)
 
@@ -224,7 +202,6 @@ struct
             arg
        | _ ->
             let i, len, hyps = arg in
-               avoid_capture hyps i len terms;
                0, len, SeqHyp.lazy_sub_map (subst_hyp terms vars) hyps i len
 
    (*
@@ -259,7 +236,7 @@ struct
          begin
             match stack.(i) with
                StackBTerm(term, []) -> term
-             | _ -> REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+             | _ -> raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
          end
     | RWSOSubst(i, terms) ->
          begin
@@ -290,11 +267,11 @@ struct
                   StackBTerm(term, vars) ->
                      IFDEF VERBOSE_EXN THEN
                         if !debug_subst then
-                           eprintf "RWSOSubst: BTerm: %a: %a%t" debug_print term print_string_list vars eflush
+                           eprintf "RWSOSubst: BTerm: %a: [%a]%t" debug_print term print_string_list vars eflush
                      ENDIF;
                      subst term vars
                 | _ ->
-                     REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+                     raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
          end
 
     | RWSOContextSubst(i, t, terms) ->
@@ -320,7 +297,7 @@ struct
                       ENDIF;
                    subst term vars terms
               | _ ->
-                   REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+                   raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
          end
 
     | RWCheckVar i ->
@@ -347,16 +324,16 @@ struct
              | StackMString s ->
                   mk_var_term s
              | _ ->
-                  REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+                  raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
          end
 
     | t ->
-         REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "bad contractum"))
+         raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
 
-   and build_con_exn = RefineError ("build_contractum_param", RewriteStringError "stack entry is not valid")
+   and build_con_exn = Invalid_argument("Rewrite_build_contractum.build_contractum_param: stack entry is not valid")
 
-   and raise_param p =
-      REF_RAISE(RefineError ("build_contractum_param", RewriteBadMatch (ParamMatch (make_param p))))
+   and raise_param _ =
+      raise(Invalid_argument("Rewrite_build_contractum.build_contractum_param: parameter mismatch"))
 
    and build_contractum_level stack l = function
       { rw_le_var = v; rw_le_offset = o } :: t ->
@@ -364,7 +341,7 @@ struct
             match stack.(v) with
                StackLevel l' -> l'
              | StackMString s -> mk_var_level_exp s
-             | _ -> REF_RAISE(build_con_exn)
+             | _ -> raise(build_con_exn)
          in
             build_contractum_level stack (max_level_exp l l' o) t
     | [] ->
@@ -385,7 +362,7 @@ struct
                 StackNumber j -> Number j
               | StackString s -> Number (Mp_num.num_of_string s)
               | StackMString s -> MNumber s
-              | t -> REF_RAISE(build_con_exn)
+              | t -> raise(build_con_exn)
          end
     | RWMString i ->
          begin
@@ -393,21 +370,21 @@ struct
                 StackString s -> String s
               | StackMString s -> MString s
               | StackNumber j -> String (Mp_num.string_of_num j)
-              | t -> REF_RAISE(build_con_exn)
+              | t -> raise(build_con_exn)
          end
     | RWMToken i ->
          begin
              match stack.(i) with
                 StackString s -> Token s
               | StackMString s -> MToken s
-              | t -> REF_RAISE(build_con_exn)
+              | t -> raise(build_con_exn)
          end
     | RWMLevel1 i ->
          begin
              match stack.(i) with
                 StackLevel l -> MLevel l
               | StackMString s -> MLevel (mk_var_level_exp s)
-              | t -> REF_RAISE(build_con_exn)
+              | t -> raise(build_con_exn)
          end
     | RWMLevel2 { rw_le_const = c; rw_le_vars = vars } ->
          MLevel (build_contractum_level stack (mk_const_level_exp c) vars)
@@ -416,7 +393,7 @@ struct
              match stack.(i) with
                 StackString v -> Var v
               | StackMString s -> MVar s
-              | t -> REF_RAISE(build_con_exn)
+              | t -> raise(build_con_exn)
          end
     | RWObId id ->
          ObId id
@@ -430,9 +407,13 @@ struct
          List.map build_contractum_param' params
 
    and build_contractum_bterm names bnames stack bvars = function
-      { rw_bvars = vcount; rw_bnames = vars; rw_bterm = term } ->
+      { rw_bvars = vcount; rw_bnames = []; rw_bterm = term } ->
+            mk_bterm [] (build_contractum_term names bnames stack bvars term)
+    | { rw_bvars = vcount; rw_bnames = vars; rw_bterm = term } ->
          let vars' = List.map (build_bname names bnames stack) vars in
-            mk_bterm vars' (build_contractum_term names (vars' :: bnames) stack (append_vars bvars vars') term)
+         let bnames' = List.fold_left StringSet.add bnames vars' in
+         let bvars' = append_vars bvars vars' in
+            mk_bterm vars' (build_contractum_term names bnames' stack bvars' term)
 
    and build_contractum_bterms names bnames stack bvars =
       List.map (build_contractum_bterm names bnames stack bvars)
@@ -462,23 +443,37 @@ struct
                               let part = Array_util.ArrayArray (hyps', i, len) in
                                  build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
                       | _ ->
-                           REF_RAISE(RefineError
-                                     ("build_contractum_sequent_hyps",
-                                      RewriteStringError "stack entry is not valid"))
+                           raise(Invalid_argument("Rewrite_build_contractum.build_contractum_sequent_hyps: stack entry is not valid"))
                   end
-             | RWSeqHyp (v, hyp) ->
+             | RWSeqHypBnd (v, hyp) ->
                   IFDEF VERBOSE_EXN THEN
                      if !debug_rewrite then
-                        eprintf "RWSeqHyp: (%a)%t" print_varname v eflush
+                        eprintf "RWSeqHypBnd: (%a)%t" print_varname v eflush
+                  ENDIF;
+                  let v = build_bname names bnames stack v in
+                  let bnames = StringSet.add bnames v in
+                  (*
+                   * Strictly speaking, the build_contractum_term below should
+                   * use the old bvars, not the new bvars. But since the
+                   * the bvars arg only used to cause alpha-renaming of
+                   * bterms, it does not hurt to pass the v in there
+                   * as well and, possibly, avoid some potential name
+                   * clashes.
+                   *)
+                  let hyp = build_contractum_term names bnames stack bvars hyp in
+                  let bvars = append_vars bvars [v] in
+                  let part = Array_util.ArrayElement (HypBinding (v, hyp)) in
+                     build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
+             | RWSeqHyp hyp ->
+                  IFDEF VERBOSE_EXN THEN
+                     if !debug_rewrite then
+                        eprintf "RWSeqHyp: %t" eflush
                   ENDIF;
                   let hyp = build_contractum_term names bnames stack bvars hyp in
-                  let v = build_bname names bnames stack v in
-                  let bnames = [v] :: bnames in
-                  let bvars = append_vars bvars [v] in
-                  let part = Array_util.ArrayElement (Hypothesis (v, hyp)) in
+                  let part = Array_util.ArrayElement (Hypothesis hyp) in
                      build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
              | RWSeqContext _ | RWSeqFreeVarsContext _ ->
-                  raise(Invalid_argument "build_contractum_sequent_hyps: found an invalid context")
+                  raise(Invalid_argument "Rewrite_build_contractum.build_contractum_sequent_hyps: found an invalid context")
 
    let build_contractum names bnames stack prog =
       build_contractum_term names bnames stack [||] prog

@@ -26,9 +26,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+
+open String_set
 
 module type RewriteBuildContractumSig =
 sig
@@ -37,14 +39,11 @@ sig
    type rwterm
 
    (*
-    * New names for the contractum.
-    *)
-   val contracta_enames : string list -> string list list -> string array -> string array
-
-   (*
     * Main function to build the contractum.
+    *
+    * It should not ever raise any exceptions (unless it detects a bug).
     *)
-   val build_contractum : string array -> string list list -> stack array -> rwterm -> term
+   val build_contractum : string array -> StringSet.t -> stack array -> rwterm -> term
 end
 
 (*

@@ -31,8 +31,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 module type TermManSig =
@@ -41,6 +41,7 @@ sig
    type operator
    type level_exp
    type esequent
+   type hypothesis
 
    (************************************************************************
     * Simplified operations on manifest terms                              *
@@ -63,6 +64,7 @@ sig
    val mk_sequent_term : esequent -> term
    val explode_sequent : term -> esequent
    val args_of_sequent : term -> term
+   val remove_redundant_hypbindings : hypothesis list -> term list -> hypothesis list
 
    (* Indexing starts at 1 *)
    

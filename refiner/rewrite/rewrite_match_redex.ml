@@ -122,8 +122,18 @@ struct
       [] -> []
     | v::tl ->
          begin match stack.(v) with
-            StackString s -> s::(extract_bvars stack tl)
-          | _ -> REF_RAISE(RefineError ("extract_bvar", RewriteStringError "stack entry is not a string"))
+            StackString s -> s
+          | StackVoid -> "__@@extract_bvarsemptyvariableHACK@@__"
+          | _ -> raise(Invalid_argument("Rewrite_match_redex.extract_bvars: invalid stack entry"))
+         end ::(extract_bvars stack tl)
+
+   let rec extract_some_bvars stack = function
+      [] -> []
+    | v::tl ->
+         begin match stack.(v) with
+            StackString s -> s::(extract_some_bvars stack tl)
+          | StackVoid -> extract_some_bvars stack tl
+          | _ -> raise(Invalid_argument("Rewrite_match_redex.extract_some_bvars: invalid stack entry"))
          end
 
    (*
@@ -133,11 +143,11 @@ struct
       StackName i ->
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
-               eprintf "Rewrite.set_bvars: stack(%d)/%d%t" i (Array.length stack) eflush
+               eprintf "Rewrite.set_bvars: stack(%d)/%d with %s%t" i (Array.length stack) v eflush
          ENDIF;
          stack.(i) <- StackString v
     | _ ->
-         ()
+         raise(Invalid_argument("Rewrite_match_redex.set_bvar")) 
 
    let set_bvars stack names vars =
       IFDEF VERBOSE_EXN THEN
@@ -196,7 +206,6 @@ struct
             if (sp <> sp') then
                REF_RAISE(RefineError ("update_redex_params", RewriteBadMatch (ParamMatch PARAM_REASON)));
             ()
-
 
    let match_redex_params stack p' p =
       match p', dest_param p with
@@ -304,6 +313,21 @@ struct
          REF_RAISE(RefineError ("check_simple_match", RewriteBadMatch (TermMatch t)))
 
    (*
+    * XXX: Checks whether we can assume hyp vars are always OK.
+    *)
+   let rec check_sequent_hyps hyps all_bvars len i =
+      if (i<len) then
+         let all_bvars =
+            match SeqHyp.get hyps i with
+               HypBinding(v,_) | Context (v,_) ->
+                  if StringSet.mem all_bvars v then
+                     raise(Invalid_argument("Rewrite_match_redex.check_sequent_hyps: binding clash in a sequent. Please let Aleksey Nogin know if this happens to you."));
+                  StringSet.add all_bvars v
+             | Hypothesis _ -> all_bvars
+         in
+            check_sequent_hyps hyps all_bvars len (i+1)
+
+   (*
     * Check that the terms are all equivalent under the given instantiations
     *)
    let rec check_match addrs stack all_bvars t' vs = function
@@ -325,7 +349,7 @@ struct
    and match_redex_term addrs stack all_bvars t' t =
       match t' with
          RWFreeVars (t'', vars) ->
-            check_term_free_vars (extract_bvars stack vars) t;
+            check_term_free_vars (extract_some_bvars stack vars) t;
             match_redex_term addrs stack all_bvars t'' t
        | RWComposite { rw_op = op'; rw_bterms = bterms' } ->
             let term = dest_term t in
@@ -355,6 +379,13 @@ struct
                   sequent_goals = goals
                 } = explode_sequent t
             in
+               begin 
+                  try check_sequent_hyps hyps all_bvars (SeqHyp.length hyps) 0
+                  with (Invalid_argument _) as exn -> begin
+                     eprintf "Rewrite.match_redex.RWSequent: check_sequent_hyps failed on %a with bvars=%a%t" debug_print t print_string_list (StringSet.elements all_bvars) eflush;
+                     raise exn
+                  end
+               end;
                match_redex_term addrs stack all_bvars arg' arg;
                let new_bvars = match_redex_sequent_hyps addrs stack all_bvars hyps' hyps 0 (SeqHyp.length hyps) in
                match_redex_sequent_goals addrs stack new_bvars goals' goals 0 (SeqGoal.length goals)
@@ -477,58 +508,60 @@ struct
             if i <> len then
                REF_RAISE(RefineError ("match_redex_sequent_hyps", RewriteBadMatch (HypMatch hyps)));
             all_bvars
-       | hyp' :: hyps' ->
-            match hyp' with
-               RWSeqContext (addr, j, l) 
-             | RWSeqFreeVarsContext (_, addr, j, l) ->
-                  let count = if addr == -1 then len - i else 
-                     let count = addrs.(addr) - 1 in
-                     if (count < 0) then
-                        REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "hyp count argument must be positive"));
+       | (RWSeqContext (addr, j, l) | RWSeqFreeVarsContext (_, addr, j, l) as hyp') :: hyps' ->
+            let count = if addr == -1 then len - i else 
+               let count = addrs.(addr) - 1 in
+               if (count < 0) then
+                  REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "hyp count argument must be positive"));
                      count
-                  in
-                  IFDEF VERBOSE_EXN THEN
-                     if !debug_rewrite then
-                        eprintf "RWSeqContext/RWSeqFreeVarsContext (%d, %d, [%a])%t" count j print_int_list l eflush
-                  ENDIF;
-                  if count + i > len then
-                     REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
-                  else
-                     begin match hyp' with 
-                        RWSeqFreeVarsContext (non_free, _, _, _) ->
-                           check_hyp_free_vars (extract_bvars stack non_free) hyps i (i+count)
-                      | _ -> ()
-                     end;
-                     let bvars = extract_bvars stack l in
-                        stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
-                        match_redex_sequent_hyps addrs stack all_bvars hyps' hyps (i+count) len
+            in
+            IFDEF VERBOSE_EXN THEN
+               if !debug_rewrite then
+                  eprintf "RWSeqContext/RWSeqFreeVarsContext (%d, %d, [%a])%t" count j print_int_list l eflush
+            ENDIF;
+            if count + i > len then
+               REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
+            else
+               begin match hyp' with 
+                  RWSeqFreeVarsContext (non_free, _, _, _) ->
+                     check_hyp_free_vars (extract_some_bvars stack non_free) hyps i (i+count)
+                | _ -> ()
+               end;
+               let bvars = extract_bvars stack l in
+                  stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
+                  match_redex_sequent_hyps addrs stack all_bvars hyps' hyps (i+count) len
 
-             | RWSeqHyp (name, term') ->
-                  IFDEF VERBOSE_EXN THEN
-                     if !debug_rewrite then
-                        eprintf "RWSeqHyp (%a, )%t" print_varname name eflush
-                  ENDIF;
-                  if i = len then
-                     REF_RAISE(RefineError ("get_sequent_hyp", StringIntError ("hyp index is out of range", i)))
-                  else begin match SeqHyp.get hyps i with
-                     Hypothesis (var, term) ->
-                        set_bvar stack var name;
-                        let new_bvars = StringSet.add all_bvars var in
-                        (*
-                         * Strictly speaking, the match_redex_term below should
-                         * use the all_bvars, not the new_bvars. But since the
-                         * the bvars arg only used to cause alpha-renaming of
-                         * bterms, it does not hurt to pass the var in there
-                         * as well and, possibly, avoid some potential name
-                         * clashes.
-                         *)
-                        match_redex_term addrs stack new_bvars term' term;
-                        match_redex_sequent_hyps addrs stack new_bvars hyps' hyps (succ i) len
-                   | Context _ ->
-                        REF_RAISE(RefineError ("get_sequent_hyp", StringIntError ("hyp index refers to a context", i)))
-                  end
-             | RWSeqContextSubst _ ->
-                  REF_RAISE(RefineError ("match_redex_seq_hyps", RewriteBadMatch (HypMatch hyps)))
+       | RWSeqHypBnd (name, term') :: hyps' ->
+            IFDEF VERBOSE_EXN THEN
+               if !debug_rewrite then
+                  eprintf "RWSeqHyp%t" eflush
+            ENDIF;
+            if i = len then
+               REF_RAISE(RefineError ("get_sequent_hyp", StringIntError ("hyp index is out of range", i)))
+            else begin match SeqHyp.get hyps i with
+               HypBinding (v, term) ->
+                  set_bvar stack v name;
+                  let new_bvars = StringSet.add all_bvars v in
+                  (*
+                   * Strictly speaking, the match_redex_term below should
+                   * use the all_bvars, not the new_bvars. But since the
+                   * the bvars arg only used to cause alpha-renaming of
+                   * bterms, it does not hurt to pass the var in there
+                   * as well and, possibly, avoid some potential name
+                   * clashes.
+                   *)
+                  match_redex_term addrs stack new_bvars term' term;
+                  match_redex_sequent_hyps addrs stack new_bvars hyps' hyps (succ i) len
+             | Hypothesis term ->
+                  match_redex_term addrs stack all_bvars term' term;
+                  match_redex_sequent_hyps addrs stack all_bvars hyps' hyps (succ i) len
+             | Context _ ->
+                  REF_RAISE(RefineError ("get_sequent_hyp", StringIntError ("hyp index refers to a context", i)))
+            end
+       | RWSeqContextSubst _ :: _ ->
+            raise(Invalid_argument("RWSeqContextSubst in redex program"))
+       | RWSeqHyp _ :: _ ->
+            raise(Invalid_argument("RWSeqHyp in redex program"))
 
    and match_redex_sequent_goals addrs stack all_bvars goals' goals i len =
       match goals' with
@@ -544,11 +577,14 @@ struct
    and check_hyp_free_vars vars hyps i len =
       if (i=len) then () else
       match SeqHyp.get hyps i with
-         Hypothesis (var, term) ->
+         HypBinding (var, term) ->
             check_term_free_vars vars term;
             let vars = List_util.tryremove var vars in
             if vars != [] then check_hyp_free_vars vars hyps (succ i) len
-       | Context (var, terms) ->
+       | Hypothesis term ->
+            check_term_free_vars vars term;
+            check_hyp_free_vars vars hyps (succ i) len
+       | Context (_, terms) ->
             List.iter (check_term_free_vars vars) terms;
             check_hyp_free_vars vars hyps (succ i) len
 
@@ -556,7 +592,7 @@ struct
       if is_some_var_free vars t then
          REF_RAISE(RefineError ("Rewrite_match_redex.check_term_free_vars", RewriteBadMatch (TermMatch t)))
 
-   let match_redex addrs stack t tl = function
+   let match_redex addrs stack vars t tl = function
       [] ->
          REF_RAISE(RefineError ("match_redex", StringError "progs list is empty"))
     | prog::progs ->
@@ -567,8 +603,8 @@ struct
                   List.iter (print_prog stderr) (prog::progs)
                end
          ENDIF;
-         match_redex_term addrs stack StringSet.empty prog t;
-         iter2_3 match_redex_term addrs stack StringSet.empty progs tl
+         match_redex_term addrs stack vars prog t;
+         iter2_3 match_redex_term addrs stack vars progs tl
 end
 
 (*

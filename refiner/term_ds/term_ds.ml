@@ -107,7 +107,8 @@ struct
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : string list; bterm : term }
    and hypothesis =
-      Hypothesis of string * term
+      HypBinding of string * term
+    | Hypothesis of term
     | Context of string * term list
    and seq_hyps = hypothesis SEQ_SET.linear_set
    and seq_goals = term SEQ_SET.linear_set

@@ -88,6 +88,7 @@ val find : ('a -> bool) -> 'a list -> 'a
 val find_item : ('a -> bool) -> 'a list -> int
 (* By equality *)
 val find_index : 'a -> 'a list -> int
+val find_rindex : 'a -> 'a list -> int
 (* By pointer-equality *)
 val find_indexq : 'a -> 'a list -> int
 

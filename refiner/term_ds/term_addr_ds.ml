@@ -6,7 +6,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Alexey Nogin, Cornell University
+ * Copyright (C) 1998-2003 Aleksey Nogin, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Authors: Alexey Nogin
+ * Authors: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 (************************************************************************
@@ -33,6 +33,7 @@ INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
+open String_set
 
 open Refine_error_sig
 open Term_ds_sig
@@ -151,7 +152,7 @@ struct
        | (Sequent s, HypAddr i) ->
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
                match SeqHyp.get s.sequent_hyps i with
-                  Hypothesis (_,t) -> t
+                  HypBinding (_, t) | Hypothesis t -> t
                 | Context _ -> REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
             else REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
        | (Sequent s, GoalAddr i) ->
@@ -163,7 +164,7 @@ struct
              *)
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
                match SeqHyp.get s.sequent_hyps i with
-                  Hypothesis (_, t) ->
+                  HypBinding (_, t) | Hypothesis t ->
                      term_subterm t addr2
                 | Context (_, subterms) ->
                      if j >= 0 && j < List.length subterms then
@@ -197,7 +198,7 @@ struct
        | (Sequent s, HypAddr i) ->
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
                match SeqHyp.get s.sequent_hyps i with
-                  Hypothesis (_,t) ->
+                  HypBinding (_, t) | Hypothesis t ->
                      subterm_count t
                 | Context (_, subterms) ->
                      List.length subterms
@@ -214,7 +215,7 @@ struct
              *)
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
                match SeqHyp.get s.sequent_hyps i with
-                  Hypothesis (_, t) ->
+                  HypBinding (_, t) | Hypothesis t ->
                      term_subterm_count t addr2
                 | Context (_, subterms) ->
                      if j >= 0 && j < List.length subterms then
@@ -247,8 +248,8 @@ struct
    let rec collect_hyp_bvars i hyps bvars =
       if i < 0 then bvars
       else match SeqHyp.get hyps i with
-         Hypothesis (v,_) -> [v] :: collect_hyp_bvars (pred i) hyps bvars
-       | Context _ -> [] :: collect_hyp_bvars (pred i) hyps bvars
+         HypBinding (v,_) -> collect_hyp_bvars (pred i) hyps (StringSet.add bvars v)
+       | Hypothesis _ | Context _ -> collect_hyp_bvars (pred i) hyps bvars
 
    let collect_goal_bvars hyps = collect_hyp_bvars (SeqHyp.length hyps - 1) hyps
 
@@ -290,35 +291,30 @@ struct
                      }, arg
           | (Sequent s, HypAddr i) ->
                if i>=0 && i < SeqHyp.length s.sequent_hyps then
-                  match SeqHyp.get s.sequent_hyps i with
-                     Hypothesis (v,t) ->
+                  let hyp, arg = match SeqHyp.get s.sequent_hyps i with
+                     HypBinding (v,t) as hyp ->
                         let term, arg = f HYP_BVARS t in
-                        let aux i' t' =
-                          if i' = i then Hypothesis (v,term) else t'
-                        in
-                           mk_sequent_term (**)
-                              { sequent_args = s.sequent_args;
-                                sequent_hyps = SeqHyp.mapi aux s.sequent_hyps;
-                                sequent_goals = s.sequent_goals
-                              }, arg
+                           HypBinding (v,term), arg
+                   | Hypothesis t as hyp ->
+                        let term, arg = f HYP_BVARS t in
+                           Hypothesis term, arg
                    | Context (v, subterms) ->
                         let slot = mk_var_term v in
                         let t = mk_context_term v slot subterms in
                         let t, arg = f BVARS t in
                         let v1, term1, subterms = dest_context t in
                            if v1 = v && is_var_term term1 && dest_var term1 = v then
-                              let aux i' t' =
-                                 if i' = i then
-                                    Context (v, subterms)
-                                 else
-                                    t'
-                              in
-                                 mk_sequent_term (**)
-                                    { sequent_args = s.sequent_args;
-                                      sequent_hyps = SeqHyp.mapi aux s.sequent_hyps;
-                                      sequent_goals = s.sequent_goals
-                                    }, arg
+                              Context (v, subterms), arg
                            else DO_FAIL
+                  in
+                  let aux i' hyp' =
+                     if i' = i then hyp else hyp'
+                  in
+                     mk_sequent_term (**)
+                        { sequent_args = s.sequent_args;
+                          sequent_hyps = SeqHyp.mapi aux s.sequent_hyps;
+                          sequent_goals = s.sequent_goals
+                        }, arg
                else DO_FAIL
           | (Sequent s, GoalAddr i) ->
                if i>=0 && i < SeqGoal.length s.sequent_goals then
@@ -370,7 +366,7 @@ struct
    UNDEF VARS_BVARS
 
    DEFMACRO BVARS = bvars
-   DEFMACRO VARS_BVARS = vars :: bvars
+   DEFMACRO VARS_BVARS = List.fold_left StringSet.add bvars vars
    DEFMACRO HYP_BVARS = (collect_hyp_bvars (pred i) s.sequent_hyps BVARS)
    DEFMACRO GOAL_BVARS = (collect_goal_bvars s.sequent_hyps BVARS)
    DEFMACRO PATH_REPLACE_TERM = path_var_replace_term
@@ -497,7 +493,7 @@ struct
          [], coll
     | ({ bvars = bvars'; bterm = term } :: bterms) as bterms' ->
          let bterms_new, args = apply_var_fun_higher_bterms f bvars coll bterms in
-         let bterm_new, args = apply_var_fun_higher_term f (bvars' :: bvars) args term in
+         let bterm_new, args = apply_var_fun_higher_term f (List.fold_left StringSet.add bvars bvars') args term in
             if args == coll then
                bterms', coll
             else

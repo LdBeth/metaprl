@@ -311,9 +311,12 @@ struct
        | RWSeqContextSubst (i, tl) ->
             fprintf out "RWSeqContextSubst (%d)\n%a" (**)
                i (print_prog_list (tabstop + 3)) tl
-       | RWSeqHyp (v, t) ->
-            fprintf out "RWSeqTerm: %a\n%a" (**)
+       | RWSeqHypBnd (v, t) ->
+            fprintf out "RWSeqHypBnd: %a\n%a" (**)
                print_varname v
+               (print_prog (tabstop + 3)) t
+       | RWSeqHyp t ->
+            fprintf out "RWSeqHyp: \n%a" (**)
                (print_prog (tabstop + 3)) t
        | RWSeqFreeVarsContext (il', i, j, il) ->
             fprintf out "RWSeqFreeVarsContext (%a: %d, %d, [%a])\n"

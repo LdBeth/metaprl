@@ -37,6 +37,8 @@ INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
+open String_set
+
 open Opname
 open Term_sig
 open Term_base_sig
@@ -156,7 +158,7 @@ struct
    type rewrite_redex = RewriteTypes.rewrite_redex
 
    type rewrite_args_spec = string array * string array
-   type rewrite_args = int array * string array * string list list
+   type rewrite_args = int array * string array * StringSet.t
 
    (*
     * Types for redex matching.
@@ -194,20 +196,31 @@ struct
    let opname_exn = RefineError ("Rewrite.apply_rewrite", RewriteStringError "opnames do not match")
 
    let empty_args_spec = [||], [||]
-   let empty_args = [||], [||], []
+   let empty_args = [||], [||], StringSet.empty
+
+   let rec collect_hyp_bnames hyps bnames len i =
+      if (len=0) then bnames else 
+         let bnames =
+            match SeqHyp.get hyps i with
+               HypBinding (v, _) | Context (v, _) -> StringSet.add bnames v
+             | Hypothesis _ -> bnames
+         in
+            collect_hyp_bnames hyps bnames (len-1) (i+1)
+
+   let rec collect_bnames stack bnames len i =
+      if i = len then bnames else match stack.(i) with
+         StackSeqContext (_, (i', len', hyps)) ->
+            collect_bnames stack (collect_hyp_bnames hyps bnames len' i') len (i+1)
+       | _ -> collect_bnames stack bnames len (i+1)
 
    (*
     * To do the rewrite. match agaist the redex, then
     * instantiate the contractum.
     *)
-   let apply_rewrite
-       { rr_redex = redex;
-         rr_contractum = contractum;
-         rr_gstacksize = gstacksize
-       } (addrs, names, bnames) goal params =
+   let apply_rewrite rw (addrs, names, bnames) goal params =
       let _ =
          (* Check the opnames to short-circuit applications that quickly fail *)
-         match redex with
+         match rw.rr_redex with
             RWComposite { rw_op = { rw_name = opname1 } } :: _ ->
                let opname2 = opname_of_term goal in
                   if not (Opname.eq opname1 opname2) then
@@ -219,28 +232,28 @@ struct
           | _ ->
                ()
       in
-      let gstack = Array.create gstacksize StackVoid in
+      let bnames =
+         if (rw.rr_strict==Strict) then
+            StringSet.union bnames (free_vars_set goal)
+         else StringSet.empty
+      in
+      let gstack = Array.create rw.rr_gstacksize StackVoid in
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
-               eprintf "Rewrite.apply_rewrite: match_redex%t" eflush
+               eprintf "Rewrite.apply_rewrite: match_redex on %a%t" debug_print goal eflush
          ENDIF;
-         match_redex addrs gstack goal params redex;
+         match_redex addrs gstack bnames goal params rw.rr_redex;
          let result =
-            match contractum with
+            match rw.rr_contractum with
                RWCTerm (con, enames) ->
-                  let names =
-                     if Array.length enames = 0 then
-                        names
-                     else
-                        let vars = String_set.StringSet.elements (free_vars_terms (goal::params)) in
-                        let enames = contracta_enames vars bnames enames in
-                           Array.append names enames
-                  in
-                     IFDEF VERBOSE_EXN THEN
-                        if !debug_rewrite then
-                           eprintf "Rewrite.apply_rewrite: build_contractum%t" eflush
-                     ENDIF;
-                     List.map (build_contractum names bnames gstack) con
+                  IFDEF VERBOSE_EXN THEN
+                     if !debug_rewrite then
+                        eprintf "Rewrite.apply_rewrite: build_contractum%t" eflush
+                  ENDIF;
+                  let bnames = if (rw.rr_strict==Strict) then
+                     collect_bnames gstack bnames rw.rr_gstacksize 0
+                     else StringSet.empty
+                  in List.map (build_contractum (Array.append names enames) bnames gstack) con
              | RWCFunction f ->
                   if params == [] then
                      [f goal]
@@ -249,7 +262,7 @@ struct
          in
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
-                  eprintf "Rewrite.apply_rewrite: done%t" eflush
+                  eprintf "Rewrite.apply_rewrite: done, result: [%a]%t" (print_any_list debug_print) result eflush
             ENDIF;
             result
 
@@ -349,18 +362,18 @@ struct
     *)
    let test_redex_applicability { redex_stack = stack; redex_redex = redex } addrs term terms =
       let gstack = Array.create (Array.length stack) StackVoid in
-         match_redex addrs gstack term terms redex
+         match_redex addrs gstack StringSet.empty term terms redex
 
    let apply_redex { redex_stack = stack; redex_redex = redex } addrs term terms =
       let gstack = Array.create (Array.length stack) StackVoid in
-         match_redex addrs gstack term terms redex;
+         match_redex addrs gstack StringSet.empty term terms redex;
          extract_redex_values gstack stack
 
    (*
     * Build a contractum from the spec and a stack.
     *)
    let make_contractum { con_contractum = con } gstack =
-      build_contractum [||] [] gstack con
+      build_contractum [||] StringSet.empty gstack con
 
    (*
     * Compile redex and contractum, and form a rewrite rule.
@@ -370,7 +383,8 @@ struct
       let enames, contracta' = compile_so_contracta strict names stack contracta in
          { rr_redex = redex';
            rr_contractum = RWCTerm (contracta', enames);
-           rr_gstacksize = Array.length stack
+           rr_gstacksize = Array.length stack;
+           rr_strict = strict;
          }
 
    (*
@@ -380,7 +394,8 @@ struct
       let stack, redex' = compile_so_redex strict [||] [redex] in
          { rr_redex = redex';
            rr_contractum = RWCFunction f;
-           rr_gstacksize = Array.length stack
+           rr_gstacksize = Array.length stack;
+           rr_strict = strict;
          }
 
    (*
@@ -401,10 +416,10 @@ struct
    (*
     * Compile a contractum, given the previous redex.
     *)
-   let compile_contractum strict { redex_stack = stack } contractum =
-      let enames, contractum = compile_so_contractum strict [||] stack contractum in
+   let compile_contractum { redex_stack = stack } contractum =
+      let enames, contractum = compile_so_contractum Relaxed [||] stack contractum in
          { con_contractum = contractum;
-           con_new_vars = enames
+           con_new_vars = enames;
          }
 end
 

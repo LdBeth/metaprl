@@ -254,7 +254,7 @@ struct
 
    let select   = ImplementationType
    let suffix   = Convert.implementation_suffix
-   let magics   = [0x73ac6be4; int_raw_str_magic]
+   let magics   = [0x73ac6be5; int_raw_str_magic]
    let disabled = noraw
 
    let interactive_proof to_raw name proof =
@@ -484,10 +484,10 @@ struct
 
    let ascii_major = 1
    let ascii_minor = 0
-   let ascii_rev   = 0
+   let ascii_revs   = [1;0]
 
-   let sig_magics = [magic_of_version ascii_major ascii_minor ascii_rev]
-   let str_magics = [magic_of_version ascii_major ascii_minor ascii_rev]
+   let sig_magics = List.map (magic_of_version ascii_major ascii_minor) ascii_revs
+   let str_magics = List.map (magic_of_version ascii_major ascii_minor) ascii_revs
 end
 
 (*

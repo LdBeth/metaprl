@@ -887,7 +887,7 @@ struct
          [[ sl_sequent; args = optseqargs; sl_open_curly;
             hyps = LIST0 hyp SEP ";"; sl_turnstile;
             concl = LIST1 term SEP ";"; sl_close_curly ->
-             let mk_hyp_term v t = Hypothesis (v, t) in
+             let mk_hyp_term v t = HypBinding (v, t) in
              let mk_context_term v subterms = Context (v, subterms) in
              let rec proc_hyps = function
                 [] ->

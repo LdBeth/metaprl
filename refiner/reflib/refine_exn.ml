@@ -108,10 +108,15 @@ let format_hypothesis db buf printers = function
             format_newline buf) subterms;
       format_string buf ")"
 
- | Hypothesis (v, term) ->
-      format_string buf "Hypothesis(";
+ | HypBinding (v, term) ->
+      format_string buf "HypBinding(";
       format_string buf v;
       format_string buf ", ";
+      printers.format_term db buf term;
+      format_string buf ")"
+
+ | Hypothesis term ->
+      format_string buf "Hypothesis(";
       printers.format_term db buf term;
       format_string buf ")"
 

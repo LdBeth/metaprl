@@ -369,10 +369,14 @@ and format_sequent buf format_term term =
          in
          let _ =
             match SeqHyp.get hyps i with
-               Hypothesis (v, a) ->
+               HypBinding (v, a) ->
                   format_space buf;
                   format_string buf v;
                   format_string buf ". ";
+                  format_term a
+             | Hypothesis a ->
+                  format_space buf;
+                  format_string buf "_. ";
                   format_term a
              | Context (v, values) ->
                   format_space buf;

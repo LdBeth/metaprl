@@ -68,6 +68,7 @@ sig
    module TermMan : TermManMinimalSig
       with type term = TermType.term
       with type esequent = TermType.esequent
+      with type hypothesis = TermType.hypothesis
 
    (*
     * Refiner is included because it defines msequent.
@@ -106,6 +107,7 @@ sig
    module TermMan : TermManMinimalSig
       with type term = TermType.term
       with type esequent = TermType.esequent
+      with type hypothesis = TermType.hypothesis
 
    (*
     * Refiner is included because it defines msequent.

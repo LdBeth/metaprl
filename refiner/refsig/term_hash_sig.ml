@@ -59,10 +59,11 @@ sig
    *)
    
       (*
-       * HACK! jyh: these are here temporarily until Alexey gets rid of them.
+       * XXX HACK! jyh: these are here temporarily until Alexey gets rid of them.
        *)
       type hypothesis_header =
-         Hypothesis of string * term_index
+         Hypothesis of term_index
+       | HypBinding of string * term_index
        | Context of string * term_index list
    
       type bound_term_header =

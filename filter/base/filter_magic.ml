@@ -6,9 +6,9 @@ open Mp_pervasives
 let int_term_sig_magic = 0x63ac6be1
 let int_raw_sig_magic  = 0x63ac6be2
 let int_term_str_magic = 0x63ac6be3
-let int_raw_str_magic  = 0x63ac6be4
 let int_lib_sig_magic  = 0x63ac6be5
 let int_lib_str_magic  = 0x63ac6be6
+let int_raw_str_magic  = 0x63ac6be7
 let interactive_magics =
    [int_term_sig_magic;
     int_raw_sig_magic;

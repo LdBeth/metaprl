@@ -102,7 +102,8 @@ sig
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : string list; bterm : term }
    and hypothesis =
-      Hypothesis of string * term
+      HypBinding of string * term
+    | Hypothesis of term
     | Context of string * term list
    and esequent =
       { sequent_args : term;

@@ -311,6 +311,15 @@ let rec find_index_aux v i = function
 
 let find_index v l = find_index_aux v 0 l
 
+let rec fild_rindex_aux v i curr = function
+   [] -> i
+ | h :: t -> 
+      fild_rindex_aux v (if h=v then curr else i) (curr + 1) t
+
+let find_rindex v l =
+   let i = fild_rindex_aux v (-1) 0 l in
+      if i>=0 then i else raise Not_found
+
 let rec find_indexq_aux v i = function
    h::t ->
       if h == v then
@@ -448,7 +457,7 @@ let rec zip_list l l1 l2 = match (l1,l2) with
  | _ -> raise (Failure "List_util.zip")
 
 (*
- * Zip two lists. Sapme as List.combine, but rauses Failure instead of Invalid_argument
+ * Zip two lists. Same as List.combine, but raises Failure instead of Invalid_argument
  *)
 let rec zip a b = match (a,b) with
    (h1::t1), (h2::t2) ->

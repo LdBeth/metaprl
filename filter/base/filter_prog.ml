@@ -227,9 +227,6 @@ let compile_redex_expr loc =
 let compile_redices_expr loc =
    <:expr< $rewriter_expr loc$ . compile_redices >>
 
-let compile_contractum_expr loc =
-   <:expr< $rewriter_expr loc$ . compile_contractum >>
-
 let strict_expr loc =
    <:expr< $rewriter_expr loc$ . Strict >>
 

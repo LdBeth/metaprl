@@ -119,7 +119,8 @@ sig
     ************************************************************************)
 
    type hypothesis =
-      Hypothesis of string * term
+      HypBinding of string * term
+    | Hypothesis of term
     | Context of string * term list
 
    type seq_hyps

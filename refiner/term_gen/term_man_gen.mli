@@ -68,6 +68,7 @@ module TermMan (**)
   with type operator = Term.operator
   with type level_exp = Term.level_exp
   with type esequent = Term.esequent
+  with type hypothesis = Term.hypothesis
 
 (*
  * -*-

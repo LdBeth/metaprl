@@ -29,6 +29,7 @@
 
 open Printf
 open Mp_debug
+open String_set
 
 open List
 open Term_sig
@@ -83,8 +84,12 @@ struct
 
    and make_hyp_header info hyp =
       match hyp with
-         FType.Hypothesis (v, t) -> TermHash.Hypothesis (v, TermHash.p_lookup info (make_term_header info t))
+         FType.Hypothesis t -> TermHash.Hypothesis (TermHash.p_lookup info (make_term_header info t))
+       | FType.HypBinding (v, t) -> TermHash.HypBinding (v, TermHash.p_lookup info (make_term_header info t))
        | FType.Context (v, trms) -> TermHash.Context (v, List.map (make_context_header info) trms)
+
+   and make_goal_header info goal =
+      TermHash.p_lookup info (make_term_header info goal)
 
    and make_true_term_header info tterm =
       let { FType.term_op = term_op; FType.term_terms = term_terms } = FTerm.dest_term tterm in
@@ -104,10 +109,12 @@ struct
                FType.sequent_hyps = hyps;
                FType.sequent_goals = goals } = FromTerm.TermMan.explode_sequent t
          in
+         let goals = FTerm.SeqGoal.to_list goals in
+         let hyps = FromTerm.TermMan.remove_redundant_hypbindings (FTerm.SeqHyp.to_list hyps) goals in
             TermHash.Seq
             { TermHash.seq_arg = TermHash.p_lookup info (make_term_header info arg);
-              TermHash.seq_hyps = List.map (make_hyp_header info) (FTerm.SeqHyp.to_list hyps);
-              TermHash.seq_goals = List.map (fun x -> TermHash.p_lookup info (make_term_header info x)) (FTerm.SeqGoal.to_list goals)
+              TermHash.seq_hyps = List.map (make_hyp_header info) hyps;
+              TermHash.seq_goals = List.map (make_goal_header info) goals;
             }
       else
          TermHash.Term (make_true_term_header info t)

@@ -32,6 +32,7 @@ INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
+open String_set
 
 open Opname
 open Refine_error_sig
@@ -96,6 +97,7 @@ struct
    type operator = Term.operator
    type level_exp = Term.level_exp
    type esequent = TermType.esequent
+   type hypothesis = TermType.hypothesis
 
    (************************************************************************
     * Level expressions                                                    *
@@ -343,6 +345,24 @@ struct
        | _ ->
             REF_RAISE(RefineError ("Term_man_ds.args_of_sequent", TermMatchError (t, "not a sequent")))
 
+   let rec remove_redundant_hbs vars = function
+      [] -> [], vars
+    | Context (_, ts) as hyp :: hyps ->
+         let hyps, vars = remove_redundant_hbs vars hyps in
+            (hyp :: hyps), StringSet.union (free_vars_terms ts) vars
+    | Hypothesis(t) as hyp :: hyps ->
+         let hyps, vars = remove_redundant_hbs vars hyps in
+            (hyp :: hyps), StringSet.union (free_vars_set t) vars
+    | HypBinding (v, t) as hyp :: hyps ->
+         let hyps, vars = remove_redundant_hbs vars hyps in
+            if StringSet.mem vars v then
+               (hyp :: hyps), StringSet.union (free_vars_set t) (StringSet.remove v vars)
+            else
+               Hypothesis t :: hyps, StringSet.union (free_vars_set t) vars
+
+   let remove_redundant_hypbindings hyps goals =
+      fst (remove_redundant_hbs (free_vars_terms goals) hyps)
+
    (*
     * Count the hyps.
     *)
@@ -370,7 +390,7 @@ struct
                let i = pred i in
                   if i < SeqHyp.length s.sequent_hyps then
                      match SeqHyp.get s.sequent_hyps i with
-                        Hypothesis (v, t) -> t
+                        HypBinding (_, t) | Hypothesis t -> t
                       | Context _ ->
                            REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
                   else
@@ -390,7 +410,8 @@ struct
                let i = pred i in
                   if i < SeqHyp.length s.sequent_hyps then
                      match SeqHyp.get s.sequent_hyps i with
-                        Hypothesis (v, t) -> v
+                        HypBinding (v, _) -> v
+                      | Hypothesis _ -> "v"
                       | Context _ ->
                            REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
                   else
@@ -423,8 +444,8 @@ struct
       if i < 0 then [] else
          let rem = declared_vars_aux hyps (pred i) in
             match SeqHyp.get hyps i with
-               Hypothesis (v,_) -> v::rem
-             | Context _ -> rem
+               HypBinding (v,_) -> v::rem
+             | Hypothesis _ | Context _ -> rem
 
    let declared_vars_name = "Term_man_ds.declared_vars"
    let declared_vars t =
@@ -449,7 +470,7 @@ struct
                   REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
                else
                   match SeqHyp.get hyps i with
-                     Hypothesis (v',_) when v' = v ->
+                     HypBinding (v',_) when v' = v ->
                         succ i
                    | _ ->
                         aux (succ i)
@@ -479,7 +500,7 @@ struct
                      is_free_concl_var (SeqGoal.length goals - 1)
                else
                   (match SeqHyp.get hyps i with
-                     Hypothesis (v',t) ->
+                     HypBinding (_, t) | Hypothesis t ->
                         is_var_free v t
                    | Context (v,ts) ->
                         List.exists (is_var_free v) ts)

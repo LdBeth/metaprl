@@ -302,10 +302,17 @@ struct
                format_pushm buf 1;
                begin
                   match SeqHyp.get hyps i with
-                     Hypothesis (v,t) ->
+                     HypBinding (v,t) ->
                         begin
                            format_string buf v;
                            format_string buf " :";
+                           format_pushm buf 1;
+                           format_term buf t;
+                           format_popm buf
+                        end
+                   | Hypothesis t ->
+                        begin
+                           format_string buf "_ :";
                            format_pushm buf 1;
                            format_term buf t;
                            format_popm buf

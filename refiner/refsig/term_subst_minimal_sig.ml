@@ -32,6 +32,7 @@
 module type TermSubstMinimalSig =
 sig
    type param
+   type term
 
    val equal_params : param -> param -> bool
 end

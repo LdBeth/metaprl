@@ -225,8 +225,10 @@ struct
       if i < 0 then fvs else
       hyp_fv hyps (pred i) (
       match SeqHyp.get hyps i with
-         Hypothesis (v,t) ->
+         HypBinding (v,t) ->
             StringSet.union (free_vars_set t) (StringSet.remove v fvs)
+       | Hypothesis t ->
+            StringSet.union (free_vars_set t) fvs
        | Context (v,subterms) ->
             StringSet.union fvs (terms_free_vars subterms))
 
@@ -370,9 +372,12 @@ struct
        | core ->
             core
 
+   (* XXX BUG!!! This should avoid capture! *)
    and hyps_subst sub = function
-      Hypothesis (v,t) ->
-         Hypothesis (v,do_term_subst sub t)
+      HypBinding (v,t) ->
+         HypBinding (v,do_term_subst sub t)
+    | Hypothesis t ->
+         Hypothesis (do_term_subst sub t)
     | Context (v,ts) ->
          Context (v, List.map (do_term_subst sub) ts)
 

@@ -32,6 +32,8 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
+open String_set
+
 module type RewriteSig =
 sig
    (* Import the term types *)
@@ -69,13 +71,24 @@ sig
    type rewrite_args_spec = string array * string array
 
    (* Sizes (+1) for sequent contexts, strings for new variable names, bound variables *)
-   type rewrite_args = int array * string array * string list list
+   type rewrite_args = int array * string array * StringSet.t
 
    (*
-    * Specifies whether instances of bound variables should be explicitly mentioned
+    * In "Strict" mode the rewriter should behave as described in the
+    * "Sequent Schemata" paper @cite[NH02],@cite[Section 3]{Nog02}
+    * In "Strict" mode the rewriter is guaranteed to always preserve
+    * the binding structure on the terms, no matter what rules are being
+    * applied.
+    * (XXX Note: right now it does not behave quite that way, but it's
+    * a bug).
     *
-    * In "Strict" mode, <<lambda{x.'t}>> would only match a term where "t" does not have
-    * free instances of "x". In "Relaxed" mode there is no such restriction.
+    * The "Relaxed" mode is a hack that does not have an exact semantics.
+    *
+    * Basically, "Strict" mode means that whenever a pattern specifies a binding
+    * occurence explicitly, all the bound occurrences have to be also explicitly
+    * specified. In "Strict" mode, <<lambda{x.'t}>> would only match a term
+    * where "t" does not have * free instances of "x". In "Relaxed" mode there
+    * is no such restriction.
     *
     * By default, the rules and rewrites are compiled in "Strict" mode
     * and display forms - in "Relaxed" mode

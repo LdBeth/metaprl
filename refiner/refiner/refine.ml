@@ -56,14 +56,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
+open String_set
 
 open Opname
 open Term_sig
@@ -145,7 +146,7 @@ struct
     *)
    type msequent_free_vars =
       FreeVarsDelayed
-    | FreeVars of string list
+    | FreeVars of StringSet.t
 
    type msequent =
       { mutable mseq_vars : msequent_free_vars;
@@ -162,7 +163,7 @@ struct
 
    type ml_cond_rewrite =
       string array ->                                   (* Names *)
-         string list list ->                            (* Free vars in the msequent *)
+         StringSet.t ->                                 (* Free vars in the msequent *)
          term list ->                                   (* Params *)
          term ->                                        (* Term to rewrite *)
          term * term list * string array * ml_extract   (* Extractor is returned *)
@@ -448,7 +449,7 @@ struct
     * the rewrite is being applied to, and the second is the
     * particular subterm to be rewritted.
     *)
-   type crw_arg1 = sentinal and crw_arg2 = string list list and crw_arg3 = term
+   type crw_arg1 = sentinal and crw_arg2 = StringSet.t and crw_arg3 = term
    type crw_val = term * cond_rewrite_subgoals * cond_rewrite_just
    type cond_rewrite = crw_arg1 -> crw_arg2 -> crw_arg3 -> crw_val
 
@@ -529,7 +530,7 @@ struct
             vars
        | FreeVarsDelayed ->
             let { mseq_goal = goal; mseq_hyps = hyps } = mseq in
-            let vars = String_set.StringSet.elements (free_vars_terms (goal :: hyps)) in
+            let vars = free_vars_terms (goal :: hyps) in
                mseq.mseq_vars <- FreeVars vars;
                vars
 
@@ -814,7 +815,7 @@ struct
     * Apply a conditional rewrite.
     *)
    let crw_refine sent (crw : cond_rewrite) mseq t =
-      let t', subgoals, just = crw sent [msequent_free_vars mseq] t in
+      let t', subgoals, just = crw sent (msequent_free_vars mseq) t in
          t', { crw_goal = t;
                crw_just = just;
                crw_subgoal_term = t';
@@ -838,7 +839,7 @@ struct
          if !debug_rewrites then
             eprintf "crwtactic applied to %a%t" print_term t eflush;
       ENDIF;
-      let t', subgoals, just = crw sent [msequent_free_vars seq] t in
+      let t', subgoals, just = crw sent (msequent_free_vars seq) t in
       let subgoal =
          if i = 0 then
             { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t' }
@@ -924,7 +925,7 @@ struct
    (*
     * Apply the rewrite to an addressed term.
     *)
-   let crwaddr addr crw sent bvars t =
+   let crwaddr addr (crw: cond_rewrite) sent bvars t =
       LETMACRO BODY =
          let t', (subgoals, just) =
             let f sent bvars t =
@@ -947,7 +948,7 @@ struct
    (*
     * Apply the rewrite at the outermost terms where it does not fail.
     *)
-   let crwhigher crw sent bvars t =
+   let crwhigher (crw: cond_rewrite) sent bvars t =
       let t', args =
          let f sent bvars t =
             let t, subgoals, just = crw sent bvars t in
@@ -1816,7 +1817,7 @@ struct
       let refiner' = RuleRefiner ref_rule in
       let tac (addrs, names) params sent mseq =
          let vars = msequent_free_vars mseq in
-         let subgoals = apply_rewrite rw (addrs, names, [vars]) mseq.mseq_goal params in
+         let subgoals = apply_rewrite rw (addrs, names, vars) mseq.mseq_goal params in
          let make_subgoal subgoal =
             { mseq_vars = FreeVars vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
          in
@@ -2012,13 +2013,13 @@ struct
     * so they will fail if you every try to use
     * them in a proof.  Use any_sentinal for input_forms.
     *)
-   let add_input_form build name strictp redex contractum =
+   let add_input_form build name strict redex contractum =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.add_input_form: %s%t" name eflush
       ENDIF;
       let { build_opname = opname } = build in
-      let strictp = if strictp then Strict else Relaxed in
+      let strictp = if strict then Strict else Relaxed in
       let rw = Rewrite.term_rewrite strictp empty_args_spec [redex] [contractum] in
       let opname = mk_opname name opname in
       let rw sent t =
@@ -2137,10 +2138,10 @@ struct
          }
       in
       let refiner' = CondRewriteRefiner ref_crw in
-      let rw' (vars, params) (sent : sentinal) (bvars : string list list) t =
+      let rw' (vars, params) (sent : sentinal) (bvars : StringSet.t) t =
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
-               eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t (print_any_list print_string_list) bvars eflush;
+               eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t print_string_list (StringSet.elements bvars) eflush;
          ENDIF;
          match apply_rewrite rw ([||], vars, bvars) t params with
             (t' :: subgoals) ->
@@ -2228,7 +2229,7 @@ struct
          }
       in
       let refiner' = MLCondRewriteRefiner ref_crw in
-      let rw (vars, params) (sent : sentinal) (bvars : string list list) t =
+      let rw (vars, params) (sent : sentinal) (bvars : StringSet.t) t =
          let t', subgoals, names, ext = rw vars bvars params t in
             sent.sent_ml_cond_rewrite ref_crw;
             t',

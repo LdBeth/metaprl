@@ -114,9 +114,14 @@ struct
 
    let declared_vars arg =
       let seq = msequent arg in
-      let vars = msequent_free_vars seq in
+      (* XXX BUG!:
+       * we also should include
+       *    msequent_free_vars seq
+       * but the correct solutions would be to just get rid
+       * of this function altogether
+       *)
       let goal, _ = dest_msequent seq in
-         vars @ (TermMan.declared_vars goal)
+         TermMan.declared_vars goal
 
    let explode_sequent arg =
       TermMan.explode_sequent (goal arg)

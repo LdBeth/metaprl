@@ -1,3 +1,31 @@
+(*
+ * This file is part of MetaPRL, a modular, higher order
+ * logical framework that provides a logical programming
+ * environment for OCaml and other languages.
+ *
+ * See the file doc/index.html for information on Nuprl,
+ * OCaml, and more information about this system.
+ *
+ * Copyright (C) 1998 Jason Hickey, Cornell University
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
+ *)
+
 (************************************************************************
  * Subterm addressing                                                   *
  ************************************************************************)
@@ -6,6 +34,7 @@ INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
+open String_set
 
 open Refine_error_sig
 open Term_sig
@@ -280,7 +309,7 @@ struct
    UNDEF VARS_BVARS
 
    DEFMACRO BVARS = bvars
-   DEFMACRO VARS_BVARS = vars :: bvars
+   DEFMACRO VARS_BVARS = List.fold_left StringSet.add bvars vars
    DEFMACRO PATH_REPLACE_TERM = path_var_replace_term
    DEFMACRO PATH_REPLACE_BTERM = path_var_replace_bterm
    DEFMACRO NTHPATH_REPLACE_TERM = nthpath_var_replace_term
@@ -387,7 +416,7 @@ struct
    let rec apply_var_fun_higher_term f bvars coll term =
       try
          let t, arg = f bvars term in
-            t, arg :: coll
+            t, arg::coll
       with
          RefineError _ ->
             let dt = dest_term term in
@@ -403,7 +432,7 @@ struct
     | (bterm :: bterms) as bterms' ->
          let bterms_new, args = apply_var_fun_higher_bterms f bvars coll bterms in
          let { bvars = bvars'; bterm = term } = dest_bterm bterm in
-         let bterm_new, args = apply_var_fun_higher_term f (bvars' :: bvars) args term in
+         let bterm_new, args = apply_var_fun_higher_term f (List.fold_left StringSet.add bvars bvars') args term in
             if args == coll then
                bterms', coll
             else

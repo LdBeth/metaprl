@@ -71,6 +71,7 @@ sig
    module TermMan : TermManMinimalSig
       with type term = TermType.term
       with type esequent = TermType.esequent
+      with type hypothesis = TermType.hypothesis
 
    module Refine : RefineMinimalSig
       with type term = TermType.term

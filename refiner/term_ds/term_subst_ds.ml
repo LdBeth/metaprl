@@ -205,8 +205,10 @@ struct
             let rec coll_hyps i =
                if i = len then binding_vars_term seq.sequent_args else
                   match SeqHyp.get hyps i with
-                     Hypothesis (v,t) ->
+                     HypBinding (v,t) ->
                         binding_vars_union t (StringSet.add (coll_hyps (succ i)) v)
+                   | Hypothesis (t) ->
+                        binding_vars_union t (coll_hyps (succ i))
                    | Context (v,[]) ->
                         coll_hyps (succ i)
                    | Context (v,ts) ->
@@ -278,7 +280,7 @@ struct
             let rec hyp_context_vars i =
                if i = len then [] else
                match SeqHyp.get hyps i with
-                  Hypothesis (_, h) -> context_vars h @ hyp_context_vars (succ i)
+                  HypBinding (_,h) | Hypothesis h -> context_vars h @ hyp_context_vars (succ i)
                 | Context (v,ts) -> v :: (terms_context_vars ts @ hyp_context_vars (succ i))
             in let goals = seq.sequent_goals in
             let len = SeqGoal.length goals in
@@ -358,15 +360,17 @@ struct
             equal_term (join_vars vars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm))
        | _ -> false
 
+   let fake_var="__@@nosuchvarHACK@@__"
+
    let rec equal_hyps hyps1 hyps2 vars i =
       if i = SeqHyp.length hyps1 then Some vars else
          match SeqHyp.get hyps1 i, SeqHyp.get hyps2 i with
-            Hypothesis (v1,t1), Hypothesis (v2,t2) ->
+            (Hypothesis t1 | HypBinding (_,t1)) as h1, (Hypothesis t2 | HypBinding(_,t2) as h2) ->
                if equal_term vars t1 t2 then
-                  equal_hyps
-                     hyps1 hyps2
-                     (if v1=v2 then remove_var v1 vars else (v1,v2)::vars)
-                     (succ i)
+                  let v1 = match h1 with HypBinding(v,_) -> v | _ -> fake_var in
+                  let v2 = match h2 with HypBinding(v,_) -> v | _ -> fake_var in
+                  let vars = if v1=v2 then remove_var v1 vars else (v1,v2)::vars in
+                     equal_hyps hyps1 hyps2 vars (succ i)
                else None
           | Context (v1,ts1), Context (v2,ts2) ->
             if v1=v2 && List_util.for_all2 (equal_term vars) ts1 ts2 then

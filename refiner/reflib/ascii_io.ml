@@ -136,7 +136,10 @@ struct
    let add_hyp r = function
       (_, name, [var;term]) ->
          let term = Hashtbl.find r.io_terms term in
-         hash_add_new r.io_hyps name (Hypothesis(var,term))
+         hash_add_new r.io_hyps name (HypBinding(var,term))
+    | (_, name, [term]) ->
+         let term = Hashtbl.find r.io_terms term in
+         hash_add_new r.io_hyps name (Hypothesis term)
     | _ ->
          fail "add_hyp"
 
@@ -502,11 +505,13 @@ struct
             (name, ind)
 
    and out_hyp ctrl data = function
-      TermType.Hypothesis (v,t) as h -> begin
+      (TermType.HypBinding (_,t) | TermType.Hypothesis t as h) -> begin
          let (t_name, t_ind) = out_term ctrl data t in
-         let hyp = Hypothesis (v,t_ind) in
-         let i_data = [v; t_name] in
-         try
+         let hyp, i_data = match h with
+            TermType.HypBinding(v, _) ->
+               HypBinding (v,t_ind), [v; t_name] 
+          | _ -> Hypothesis t_ind, [t_name]
+         in try
             let name = HashHyp.find data.out_hyps hyp in
             check_old data name i_data;
             (name, hyp)

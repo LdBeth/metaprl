@@ -83,6 +83,7 @@ sig
                     with type operator = TermType.operator
                     with type level_exp = TermType.level_exp
                     with type esequent = TermType.esequent
+                    with type hypothesis = TermType.hypothesis
    module TermSubst : TermSubstSig
                       with type term = TermType.term
                       with type param = TermType.param
