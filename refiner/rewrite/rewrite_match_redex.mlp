@@ -187,7 +187,7 @@ struct
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
                eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
-                  i (Array.length stack) (Num.string_of_num j) eflush;
+                  i (Array.length stack) (Nl_num.string_of_num j) eflush;
 #endif
             stack.(i) <- StackNumber j
        | RWMString i, String s ->

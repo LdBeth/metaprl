@@ -1263,8 +1263,7 @@ struct
             unlock_printer ()
          end;
       Remote.return_local sched.sched_remote local.local_local (JobSuccess (args, ext));
-      sched.sched_locals <- removeq_error local sched.sched_locals;
-      eprintf "Thread_refiner.remote_success: done%t" eflush
+      sched.sched_locals <- removeq_error local sched.sched_locals
 
    let remote_failure sched local exn =
       if !debug_remote then
@@ -2117,11 +2116,12 @@ struct
    (*
     * Start the main loop.
     *)
+   let args = Remote.args
+
    let main_loop sched =
-      Remote.main_loop sched.sched_remote;
       sched.sched_idle <- create_procs sched.sched_printer thread_count;
       Thread.create sched_main_loop sched;
-      ()
+      Remote.main_loop sched.sched_remote
 end
 
 (*

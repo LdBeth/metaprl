@@ -9,7 +9,7 @@ open Printf
 open Nl_debug
 open Opname
 open Refiner.Refiner.TermType
-open Resource
+open Nl_resource
 open Simple_print
 
 open File_base_type

@@ -17,7 +17,7 @@ open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Precedence
 open Simple_print.SimplePrint
-open Resource
+open Nl_resource
 
 open File_base_type
 

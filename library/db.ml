@@ -1,5 +1,6 @@
 open Printf
 open Nl_debug
+open Nl_pervasives
 
 
 open Refiner.Refiner.Term
@@ -376,7 +377,7 @@ let scan_level_expression scanner =
        scan_numbers s;
        s)
     else if (scan_whitespace s; scan_at_digit_p s) then
-      (le := incr_level_exp_n (Num.int_of_num (scan_num s)) !le;
+      (le := incr_level_exp_n (Nl_num.int_of_num (scan_num s)) !le;
        scan_numbers s;
        s)
     else s in
@@ -386,7 +387,7 @@ let scan_level_expression scanner =
       (scan_char_delimited_list s scan_expression_q '[' ']' '|';
        scan_whitespace s; ())
     else if (scan_whitespace s; scan_at_digit_p s) then
-      (le := max_level_exp (mk_const_level_exp (Num.int_of_num (scan_num s))) !le; ())
+      (le := max_level_exp (mk_const_level_exp (Nl_num.int_of_num (scan_num s))) !le; ())
     else (let v = scan_string s in
     scan_whitespace s;
     le := max_level_exp (mk_var_level_exp v) !le); s
@@ -399,15 +400,15 @@ let scan_level_expression scanner =
 let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
 
 let mk_real_param_from_strings stp value ptype =
-  match ptype with "n" -> (Number (Num.num_of_string value))
+  match ptype with "n" -> (Number (Nl_num.num_of_string value))
   | "time" -> (ParamList [(make_param (Token "time"));
-			  (make_param (Number (Num.num_of_string value)))])
+			  (make_param (Number (Nl_num.num_of_string value)))])
   | "t" -> (Token value)
   | "s" -> (String value)
   | "q" -> (ParamList [(make_param (Token "quote")); (make_param (Token value))])
   | "b" -> ( ParamList [ ( make_param (Token "bool"))
-			; if stringeq value "false"	then make_param (Number (Num.num_of_int 0))
-			  else if stringeq value "true"	then make_param (Number (Num.num_of_int 1))
+			; if stringeq value "false"	then make_param (Number (Nl_num.num_of_int 0))
+			  else if stringeq value "true"	then make_param (Number (Nl_num.num_of_int 1))
 			  else error ["real_parameter_from_string"; value][][]
 		      ])
   | "v" -> (Var value)
@@ -423,7 +424,7 @@ let mk_meta_param_from_strings value ptype =
   | "t" -> (MToken value)
   | "s" -> (MString value)
   | "q" -> (ParamList [(make_param (Token "quote")); (make_param (Token value))])
-  | "b" -> (ParamList [(make_param (Token "bool")); (make_param (Number (Num.num_of_string value)))])
+  | "b" -> (ParamList [(make_param (Token "bool")); (make_param (Number (Nl_num.num_of_string value)))])
   | "v" -> (MVar value)
   | "l" -> (MLevel value)
   |  t -> failwith "unknown special meta op-param"
@@ -609,7 +610,7 @@ let index_of_il_term t =
    { term_op = op; term_terms = _ }
    -> (match dest_op op with  { op_name = opname; op_params = [id; index] }
       -> (match (dest_param index) with
-	  Number n -> Num.int_of_num n
+	  Number n -> Nl_num.int_of_num n
 	  |_ -> error ["!l_term" ; "not"][][t])
       |_ -> error ["!l_term" ; "not"][][t])
 
@@ -619,7 +620,7 @@ let index_of_ilevel_term t =
    { term_op = op; term_terms = _ }
    -> (match dest_op op with  { op_name = opname; op_params = [id; index; size] }
       -> (match (dest_param index) with
-	  Number n -> Num.int_of_num n
+	  Number n -> Nl_num.int_of_num n
 	  |_ -> error ["!level_term" ; "not"][][t])
       |_ -> error ["!level_term" ; "not"][][t])
 
@@ -628,7 +629,7 @@ let size_of_ilevel_term t =
    { term_op = op; term_terms = _ }
    -> (match dest_op op with { op_name = opname; op_params = [id; index; size] }
    -> (match (dest_param size) with
-	 Number n -> Num.int_of_num n
+	 Number n -> Nl_num.int_of_num n
 	 |_ -> error ["!level_term" ; "not"][][t])
      |_ -> error ["!level_term" ; "not"][][t])
 

@@ -7,7 +7,7 @@ open Printf
 open Nl_debug
 
 open Refiner.Refiner.Term
-open Resource
+open Nl_resource
 
 open Filter_summary
 

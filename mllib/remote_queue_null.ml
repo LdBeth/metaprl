@@ -46,6 +46,7 @@ struct
       UpcallCancel of ('a, 'b) lock
     | UpcallResult of ('a, 'b) handle * 'b
     | UpcallLock of ('a, 'b) lock
+    | UpcallPreLock of ('a, 'b) lock
     | UpcallView
 
    (*
@@ -205,6 +206,9 @@ struct
    (*
     * Nothing needed in main loop.
     *)
+   let args () =
+      []
+
    let main_loop queue =
       Thread.create thread_main_loop queue;
       ()

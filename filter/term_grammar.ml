@@ -109,7 +109,7 @@ struct
     *)
    let cast_level p =
       match dest_param p with
-         Number (Num.Int n) ->
+         Number (Nl_num.Int n) ->
            mk_const_level_exp n
        | String s -> mk_var_level_exp s
        | Token t -> mk_var_level_exp t
@@ -139,7 +139,7 @@ struct
     | "s" as x ->
          begin
             match dest_param p with
-               Number(n) -> make_param (String (Num.string_of_num n))
+               Number(n) -> make_param (String (Nl_num.string_of_num n))
              | String(s) -> p
              | Token(t) -> make_param (String t)
              | Var(v) -> make_param (String v)
@@ -149,7 +149,7 @@ struct
     | "t" as x ->
          begin
             match dest_param p with
-               Number(n) -> make_param (Token (Num.string_of_num n))
+               Number(n) -> make_param (Token (Nl_num.string_of_num n))
              | String(s) -> make_param (Token s)
              | Token(t) -> p
              | Var(v) -> make_param (Token v)
@@ -160,7 +160,7 @@ struct
     | "v" as x ->
          begin
             match dest_param p with
-               Number(n) -> make_param (Var (Num.string_of_num n))
+               Number(n) -> make_param (Var (Nl_num.string_of_num n))
              | String(s) -> make_param (Var s)
              | Token(t) -> make_param (Var t)
              | Var(v) -> p
@@ -884,7 +884,7 @@ struct
 
       sl_number:
          [[ n = INT ->
-             Num.num_of_string n
+             Nl_num.num_of_string n
           ]];
 
       (* Take a word or a string as an identifier *)

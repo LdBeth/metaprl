@@ -107,7 +107,7 @@ struct
       StackVoid ->
          fprintf out "Void"
     | StackNumber n ->
-         fprintf out "Number %s" (Num.string_of_num n)
+         fprintf out "Number %s" (Nl_num.string_of_num n)
     | StackString s ->
          fprintf out "String %s" s
     | StackMString s ->
@@ -174,7 +174,7 @@ struct
     *)
    let rec print_param out = function
       RWNumber n ->
-         fprintf out "%s:n" (Num.string_of_num n)
+         fprintf out "%s:n" (Nl_num.string_of_num n)
     | RWString s ->
          fprintf out "%s:s" s
     | RWToken s ->

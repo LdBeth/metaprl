@@ -143,6 +143,7 @@ sig
    (*
     * Start the main loop.
     *)
+   val args : unit -> (string * Arg.spec * string) list
    val main_loop : ('a, 'b, 'c) t -> unit
 end
 

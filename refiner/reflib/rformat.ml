@@ -409,7 +409,7 @@ let format_int buf i =
  * Num.num numbers.
  *)
 let format_num buf n =
-   let s = Num.string_of_num n in
+   let s = Nl_num.string_of_num n in
       push_command buf (Text (String.length s, s))
 
 (*

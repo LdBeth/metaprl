@@ -253,6 +253,9 @@ struct
    (*
     * Start the main loop.
     *)
+   let args () =
+      []
+
    let main_loop _ =
       ()
 end

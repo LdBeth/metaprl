@@ -1,7 +1,7 @@
 open Printf
 open Nl_debug
 
-open Num
+open Nl_num
 open Char
 open List
 open Stream

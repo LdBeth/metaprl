@@ -28,6 +28,7 @@ struct
       UpcallCancel of ('a, 'b) lock
     | UpcallResult of ('a, 'b) handle * 'b
     | UpcallLock of ('a, 'b) lock
+    | UpcallPreLock of ('a, 'b) lock
     | UpcallView
 
    let create = Queue.create
@@ -38,6 +39,7 @@ struct
    let arg_of_lock = Queue.arg_of_lock
    let cancel = Queue.cancel
    let unlock = Queue.unlock
+   let args = Queue.args
    let main_loop = Queue.main_loop
 
    (*

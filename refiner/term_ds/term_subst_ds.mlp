@@ -169,7 +169,7 @@ struct
    let equal_params p1 p2 =
       match p1, p2 with
          Number n1, Number n2 ->
-            Num.eq_num n1 n2
+            Nl_num.eq_num n1 n2
        | _ ->
             p1 = p2
 

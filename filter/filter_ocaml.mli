@@ -10,7 +10,7 @@ open Refiner.Refiner.Term
 (*
  * Location is a pair of bignums.
  *)
-type loc = Num.num * Num.num
+type loc = Nl_num.num * Nl_num.num
 
 (*
  * A comment function takes a term,

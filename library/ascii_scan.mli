@@ -1,5 +1,5 @@
 open Stream
-open Num
+open Nl_num
 
   type scanner		
 

@@ -4,6 +4,8 @@
 
 open Printf
 open Nl_debug
+open Nl_pervasives
+
 (*
  * Show the file loading.
  *)

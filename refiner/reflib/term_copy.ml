@@ -93,7 +93,7 @@ struct
    let compare_param param1 param2 =
       match param1, param2 with
          ToRefiner.TermType.Number n1, ToRefiner.TermType.Number n2 ->
-            Num.eq_num n1 n2
+            Nl_num.eq_num n1 n2
        | ToRefiner.TermType.String s1, ToRefiner.TermType.String s2 ->
             s1 = s2
        | ToRefiner.TermType.Token s1, ToRefiner.TermType.Token s2 ->

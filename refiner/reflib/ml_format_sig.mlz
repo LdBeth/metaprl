@@ -11,7 +11,7 @@ open Refiner.Refiner.TermMeta
 type ml_expr =
    ML_Var of string
  | ML_Int of int
- | ML_Num of Num.num
+ | ML_Num of Nl_num.num
  | ML_String of string
  | ML_List of ml_expr list
  | ML_Let of string * ml_expr * ml_expr

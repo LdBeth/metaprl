@@ -47,7 +47,7 @@ struct
             File.put ofile (sprintf " %d" i)
        | ML_Num n ->
             File.put ofile
-                     ("(Num.num_of_string \"" ^ (Num.string_of_num n) ^ "\")")
+                     ("(Nl_num.num_of_string \"" ^ (Nl_num.string_of_num n) ^ "\")")
        | ML_String s ->
             File.put ofile (sprintf " \"%s\"" (String.escaped s))
        | ML_List l ->

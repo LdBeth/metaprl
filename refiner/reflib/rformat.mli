@@ -71,7 +71,7 @@ val format_char : buffer -> char -> unit
 val format_string : buffer -> string -> unit
 val format_quoted_string : buffer -> string -> unit
 val format_int : buffer -> int -> unit
-val format_num : buffer -> Num.num -> unit
+val format_num : buffer -> Nl_num.num -> unit
 val format_buffer : buffer -> buffer -> unit
 
 (*

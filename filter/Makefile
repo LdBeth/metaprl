@@ -37,7 +37,7 @@ MLZFILES =\
 	filter_proof_type
 
 LMFILES =\
-	buffer\
+	filter_buffer\
 	mLast_util\
 	free_vars\
 	filter_type\
@@ -101,7 +101,6 @@ CMALIBS =\
 
 CCLIBS =\
 	-cclib -lunix\
-        -cclib -lnums\
 	-cclib $(ROOT)/clib/clib.a
 
 #
@@ -114,7 +113,6 @@ CAMLP4O = camlp4o
 STANDARD_LIBS =\
 	$(CAMLLIB)/unix.cma\
 	$(THREADSLIB)\
-        $(CAMLLIB)/nums.cma\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CMADEPS)\
 	$(ROOT)/refiner/refiner.cma\
@@ -124,7 +122,6 @@ STANDARD_LIBS =\
 STANDARDX_LIBS =\
 	$(CAMLLIB)/unix.cmxa\
 	$(OPTTHREADSLIB)\
-        $(CAMLLIB)/nums.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
 	$(CMXADEPS)\
 	$(ROOT)/refiner/refiner.cmxa\

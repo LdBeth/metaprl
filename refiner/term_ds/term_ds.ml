@@ -46,7 +46,7 @@ struct
     * Parameters have a number of simple types.
     *)
    type param' =
-      Number of Num.num
+      Number of Nl_num.num
     | String of string
     | Token of string
     | Level of level_exp

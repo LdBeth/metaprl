@@ -101,7 +101,7 @@ struct
     * Create a new empty queue.
     *)
    let create () =
-      let queue = Queue.create () in
+      let queue = Queue.create true in
       let event = Queue.event_of_queue queue in
       let queue =
          { queue_queue = queue;
@@ -306,6 +306,8 @@ struct
                         handle_result queue hand x
                    | Queue.UpcallLock lock ->
                         queue.queue_lock <- Some lock
+                   | Queue.UpcallPreLock lock ->
+                        queue.queue_lock <- Some lock
                    | Queue.UpcallView ->
                         ()
                end;
@@ -324,6 +326,8 @@ struct
    (*
     * Start the main loop.
     *)
+   let args = Queue.args
+
    let main_loop queue =
       Queue.main_loop queue.queue_queue
 end

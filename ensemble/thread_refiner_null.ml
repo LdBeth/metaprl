@@ -114,6 +114,9 @@ struct
    (*
     * Nothing in main loop.
     *)
+   let args () =
+      []
+
    let main_loop () =
       ()
 end

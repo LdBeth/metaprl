@@ -12,7 +12,7 @@ open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Precedence
 open Simple_print
-open Resource
+open Nl_resource
 
 open Free_vars
 open Filter_type
@@ -255,10 +255,10 @@ let dformer_ctyp loc =
    <:ctyp< $uid:"Dform_print"$ . $lid:"dform_mode_base"$ >>
 
 let resource_rsrc_ctyp loc =
-   <:ctyp< $uid:"Resource"$ . $lid:"rsrc"$ >>
+   <:ctyp< $uid:"Nl_resource"$ . $lid:"rsrc"$ >>
 
 let resource_join_expr loc =
-   <:expr< $uid:"Resource"$ . $lid:"resource_join"$ >>
+   <:expr< $uid:"Nl_resource"$ . $lid:"resource_join"$ >>
 
 let ext_resource_name name =
    "ext_" ^ name
@@ -500,7 +500,7 @@ let interactive_exn loc name =
  *)
 let toploop_rewrite loc name =
    let patt = <:patt< $lid: "toploop_resource"$ >> in
-   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Resource"$ . $lid: "resource_improve"$
+   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Nl_resource"$ . $lid: "resource_improve"$
                       $lid: "toploop_resource"$
                       ($str: name$, $uid: "Nltop"$ . $uid: "ConvExpr"$ $lid: name$) >>
    in
@@ -575,7 +575,7 @@ let add_toploop_item loc name ctyp =
    in
    let expr = collect 0 <:expr< $lid: name$ >> ctyp in
    let patt = <:patt< $lid: "toploop_resource"$ >> in
-   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Resource"$ . $lid: "resource_improve"$
+   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Nl_resource"$ . $lid: "resource_improve"$
                       $lid: "toploop_resource"$ ($str: name$, $expr$)
               >>
    in
@@ -669,9 +669,9 @@ let interf_resources resources loc =
        } as rsrc)::t ->
          if !debug_resource then
             if mname = [] then
-               eprintf "Resource: %s%t" name eflush
+               eprintf "Nl_resource: %s%t" name eflush
             else
-               eprintf "Resource: %s/%s%t" (string_of_path mname) name eflush;
+               eprintf "Nl_resource: %s/%s%t" (string_of_path mname) name eflush;
          if not (List.mem name names) then
             let ctyp =
                if mname = [] then
@@ -1596,7 +1596,7 @@ struct
       let loc = 0, 0 in
       let bind_of_resource { resource_name = name' } =
          let patt = <:patt< $lid: ext_resource_name name'$ >> in
-         let expr = <:expr< $lid: name'$ . $uid: "Resource"$ . $lid: "resource_close"$ $lid: name'$ $str:name$ >> in
+         let expr = <:expr< $lid: name'$ . $uid: "Nl_resource"$ . $lid: "resource_close"$ $lid: name'$ $str:name$ >> in
             patt, expr
       in
       let values = List.map bind_of_resource resources in

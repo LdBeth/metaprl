@@ -17,4 +17,4 @@ REFLIB_FILES :=\
 	dform_print\
 	refine_exn\
 	theory\
-	resource
+	nl_resource

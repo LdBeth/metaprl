@@ -50,6 +50,7 @@ sig
    val arg_of_key : ('term, 'share) server -> 'share key -> 'share
 
    (* Start the main loop *)
+   val args : unit -> (string * Arg.spec * string) list
    val main_loop : ('term, 'share) server -> unit
 end
 

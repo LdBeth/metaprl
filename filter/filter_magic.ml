@@ -1,3 +1,5 @@
+open Nl_pervasives
+
 (*
  * Magic numbers for interactive files.
  *)

@@ -23,7 +23,7 @@ struct
     * order variables.
     *)
    type rwparam =
-      RWNumber of Num.num
+      RWNumber of Nl_num.num
     | RWString of string
     | RWToken of string
     | RWLevel of level_exp
@@ -119,7 +119,7 @@ struct
     *)
    type stack =
       StackVoid
-    | StackNumber of Num.num
+    | StackNumber of Nl_num.num
     | StackString of string
     | StackMString of string
     | StackLevel of level_exp

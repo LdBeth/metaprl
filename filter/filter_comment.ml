@@ -11,6 +11,7 @@
 
 open Printf
 open Nl_debug
+open Nl_pervasives
 
 open MLast
 open MLast_util
@@ -49,7 +50,7 @@ let parse name =
     *   comments: list of all the comments.
     *   store: put another comment in the list.
     *)
-   let buf = Buffer.create () in
+   let buf = Filter_buffer.create () in
    let comments = ref [] in
    let store loc s =
       comments := (loc, s) :: !comments
@@ -83,18 +84,18 @@ let parse name =
    and maybe_comment2 = function
       '*' ->
          (* It is a comment, but it may also be a terminator *)
-         Buffer.puts buf "(**";
+         Filter_buffer.puts buf "(**";
          maybe_comment_end 1 (getc ())
     | ':' ->
          (* Nuprl comment leader is ignored *)
          read (getc ())
     | c ->
          (* It is certainly a comment *)
-         Buffer.puts buf "(*";
-         Buffer.putc buf c;
+         Filter_buffer.puts buf "(*";
+         Filter_buffer.putc buf c;
          comment 0 (getc ())
    and comment level c =
-      Buffer.putc buf c;
+      Filter_buffer.putc buf c;
       match c with
          '*' ->
             maybe_comment_end level (getc ())
@@ -103,7 +104,7 @@ let parse name =
        | _ ->
             comment level (getc ())
    and maybe_nested_comment level c =
-      Buffer.putc buf c;
+      Filter_buffer.putc buf c;
       match c with
          '*' ->
             (* Comment is nested *)
@@ -111,14 +112,14 @@ let parse name =
        | _ ->
             comment level (getc ())
    and maybe_comment_end level c =
-      Buffer.putc buf c;
+      Filter_buffer.putc buf c;
       match c with
          ')' ->
             if level = 1 then
                (* Comment is terminated *)
-               let s = Buffer.gets buf in
+               let s = Filter_buffer.gets buf in
                   store (!index - (String.length s)) s;
-                  Buffer.clear buf;
+                  Filter_buffer.clear buf;
                   read (getc ())
             else
                comment (level - 1) (getc ())

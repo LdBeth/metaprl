@@ -1,7 +1,7 @@
 
 open Refiner.Refiner.Term
 open Opname
-open Num
+open Nl_num
 
 (*
  * common terms

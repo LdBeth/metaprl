@@ -14,6 +14,7 @@ MLZFILES :=\
 # Library files
 LMFILES :=\
 	nl_debug\
+	nl_pervasives\
 	env_arg\
 	punix\
 	getrusage\
@@ -23,6 +24,8 @@ LMFILES :=\
 	ref_util\
 	file_util\
 	filename_util\
+	nl_big_int\
+	nl_num\
 	ctype\
 	nl_set\
 	debug_set\

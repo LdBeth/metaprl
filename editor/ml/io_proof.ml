@@ -134,7 +134,7 @@ let mk_simple_string_term opname s terms =
       mk_term op bterms
 
 let mk_simple_int_term opname i terms =
-   let param = make_param (Number (Num.Int i)) in
+   let param = make_param (Number (Nl_num.Int i)) in
    let op = mk_op opname [param] in
    let bterms = List.map (fun t -> mk_bterm [] t) terms in
       mk_term op bterms
@@ -147,7 +147,7 @@ let mk_string_string_term opname s1 s2 =
 
 let mk_string_int_term opname s i =
    let param1 = make_param (String s) in
-   let param2 = make_param (Number (Num.Int i)) in
+   let param2 = make_param (Number (Nl_num.Int i)) in
    let op = mk_op opname [param1; param2] in
       mk_term op []
 
@@ -165,7 +165,7 @@ let dest_string_int_term t =
    let { op_params = params } = dest_op op in
       match List.map dest_param params with
          [String s; Number n] ->
-            s, Num.int_of_num n
+            s, Nl_num.int_of_num n
        | _ ->
             raise (Failure "dest_string_string_term")
 

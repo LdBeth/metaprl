@@ -103,6 +103,7 @@ struct
       UpcallCancel of ('a, 'b) lock
     | UpcallResult of ('a, 'b) handle * 'b
     | UpcallLock of ('a, 'b) lock
+    | UpcallPreLock of ('a, 'b) lock
     | UpcallView
 
    (*
@@ -153,11 +154,13 @@ struct
 
         (*
          * Client info:
+         *   quick_lock: true if quick locking is eanbled
          *   pending_lock: the id of the unlocked event we want to lock
          *   upcalls: a list of messages to be sent as upcalls (in reverse order)
          *   upcall_chan: the channel for communicating the upcall
          *)
-        mutable nl_pending_lock : id option;
+        nl_quick_lock : bool;
+        mutable nl_pending_lock : ('a, 'b) lock option;
         mutable nl_upcalls : ('a, 'b) upcall list;
         nl_upcall_chan : ('a, 'b) upcall Thread_event.channel;
 
@@ -399,29 +402,33 @@ struct
          info.nl_unlocked <- entries;
          info.nl_local <- entry :: info.nl_local;
          info.nl_pending_lock <- None;
-         send_upcall info (UpcallLock entry)
+         if not info.nl_quick_lock then
+            send_upcall info (UpcallLock entry)
 
-   let cancel_lock info srchand id =
-      if !debug_ensemble then
-         begin
-            lock_printer ();
-            eprintf "Ensemble_queue.cancel_lock: %s:%d%t" (**)
-               (Endpt.string_of_id id.id_id) id.id_number eflush;
-            unlock_printer ()
-         end;
-      remote_lock info srchand id;
-      info.nl_pending_lock <- None
+   let cancel_lock info srchand entry =
+      let id = entry.entry_id in
+         if !debug_ensemble then
+            begin
+               lock_printer ();
+               eprintf "Ensemble_queue.cancel_lock: %s:%d%t" (**)
+                  (Endpt.string_of_id id.id_id) id.id_number eflush;
+               unlock_printer ()
+            end;
+         remote_lock info srchand id;
+         info.nl_pending_lock <- None;
+         if info.nl_quick_lock then
+            send_upcall info (UpcallCancel entry)
 
    let handle_lock info srchand id =
       match info.nl_pending_lock with
-         Some id' ->
-            if id' = id then
+         Some entry ->
+            if entry.entry_id = id then
                if endpt_of_handle srchand = info.nl_local_state.endpt then
                   (* We got the lock *)
                   install_lock info id
                else
                   (* Someone else got the lock before us *)
-                  cancel_lock info srchand id
+                  cancel_lock info srchand entry
             else
                (* Some other entry *)
                remote_lock info srchand id
@@ -507,7 +514,7 @@ struct
             eprintf "Ensemble_queue.handle_result%t" eflush;
             unlock_printer ()
          end;
-      if not (remote_result info id x) then
+      if (remote_result info id x) then
          local_result info id x
 
    (*
@@ -558,9 +565,13 @@ struct
           * The next lock request will restart it.
           *)
          match info.nl_pending_lock with
-            Some id' ->
-               if id' = id then
-                  info.nl_pending_lock <- None
+            Some entry ->
+               if entry.entry_id = id then
+                  begin
+                     info.nl_pending_lock <- None;
+                     if info.nl_quick_lock then
+                        send_upcall info (UpcallCancel entry)
+                  end
           | None ->
                ()
       in
@@ -714,9 +725,13 @@ struct
     *)
    let prune_lock info view =
       match info.nl_pending_lock with
-         Some id ->
-            if not (Arrayf.mem id.id_id view) then
-               info.nl_pending_lock <- None
+         Some entry ->
+            if not (Arrayf.mem entry.entry_id.id_id view) then
+               begin
+                  info.nl_pending_lock <- None;
+                  if info.nl_quick_lock then
+                     send_upcall info (UpcallCancel entry)
+               end
        | None ->
             ()
 
@@ -1006,13 +1021,13 @@ struct
             lock_printer ();
             eprintf "Nlapp.exit%t" eflush;
             unlock_printer ()
-            end;
+         end;
       ()
 
    (*
     * Create the initial state for the application.
     *)
-   let open_nl ls vs =
+   let open_nl quick ls vs =
       { nl_lock = Mutex.create ();
 
         nl_unlocked = [];
@@ -1025,6 +1040,7 @@ struct
         nl_key_numbers = [||];
         nl_values = [];
 
+        nl_quick_lock = quick;
         nl_pending_lock = None;
         nl_upcalls = [];
         nl_upcall_chan = Thread_event.new_channel ();
@@ -1043,21 +1059,23 @@ struct
     * Main loop is just the Appl main loop,
     * but we print exceptions.
     *)
-   let main_loop_aux () =
+   let main_loop _ =
       Printexc.catch (Unix.handle_unix_error Appl.main_loop) ()
-
-   let main_loop info =
-      Thread.create main_loop_aux ();
-      ()
 
    (************************************************************************
     * QUEUE IMPLEMENTATION                                                 *
     ************************************************************************)
 
    (*
-    * Startup code.
+    * Return the Ensemble arguments.
     *)
-   let create () =
+   let args = Arge.args
+
+   (*
+    * Startup code.
+    * The quick flag if PreLocks are to be delivered.
+    *)
+   let create quick =
       (*
        * Need total ordering of messages.
        * This also gives us local delivery.
@@ -1079,7 +1097,7 @@ struct
       (*
        * Initialize the application interface.
        *)
-      let info = open_nl ls vs in
+      let info = open_nl quick ls vs in
       let handlers = make_handlers info in
       let interface =
          { New.heartbeat_rate = Time.of_int 60;
@@ -1091,7 +1109,7 @@ struct
 
       (*
        * Initialize the protocol stack, using the interface and
-       * view state chosen above.  then enter the main loop.
+       * view state chosen above.
        *)
       let interface = Appl_intf.New.debug_view "NLSERVER" interface in
       let interface = Appl_closure.full interface in
@@ -1166,9 +1184,14 @@ struct
    let lock info =
       lock_queue info;
       begin
-         let { nl_pending_lock = pending; nl_unlocked = unlocked } = info in
+         let { nl_quick_lock = quick;
+               nl_pending_lock = pending;
+               nl_unlocked = unlocked
+             } = info
+         in
             if pending = None && unlocked <> [] then
-               let { entry_id = id } = List.nth unlocked (Random.int (List.length unlocked)) in
+               let entry = List.nth unlocked (Random.int (List.length unlocked)) in
+               let id = entry.entry_id in
                   if !debug_ensemble then
                      begin
                         lock_printer ();
@@ -1176,8 +1199,10 @@ struct
                            (Endpt.string_of_id id.id_id) id.id_number eflush;
                         unlock_printer ()
                      end;
-                  info.nl_pending_lock <- Some id;
+                  info.nl_pending_lock <- Some entry;
                   send_message info "lock" (Cast (CastLock id));
+                  if quick then
+                     send_upcall info (UpcallPreLock entry)
       end;
       unlock_queue info
 
@@ -1204,6 +1229,13 @@ struct
 
    (*
     * Unlock the entry, and send the value to the owner.
+    * If the lock was just pending, we can safely ignore the
+    * lock result, but the entry must be removed from the
+    * unlocked queue so we don't try to lock it again.
+    *
+    * The entry _must_ be on the unlocked queue, because the
+    * lock would have been removed if the entry was deleted
+    * or locked elsewhere.
     *)
    let unlock info lock x =
       lock_queue info;
@@ -1213,6 +1245,20 @@ struct
             eprintf "Ensemble_queue.unlock%t" eflush;
             unlock_printer ()
          end;
+      begin
+         match info.nl_pending_lock with
+            Some entry ->
+               if entry.entry_id = lock.entry_id then
+                  let _, entries = remove_entry entry.entry_id info.nl_unlocked in
+                     (*
+                      * Remove this entry from the lock and also
+                      * the unblocked queue.
+                      *)
+                     info.nl_pending_lock <- None;
+                     info.nl_unlocked <- entries
+          | None ->
+               ()
+      end;
       send_message info "result" (Cast (CastResult (lock.entry_id, x)));
       unlock_queue info
 

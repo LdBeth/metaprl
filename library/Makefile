@@ -25,13 +25,11 @@ MLLIBS :=\
 	library
 
 CMALIBS :=\
-	nums.cma\
 	unix.cma
 
 CCLIBS =\
 	-cclib $(ROOT)/lib/clib.a\
-	-cclib -lunix\
-	-cclib -lnums
+	-cclib -lunix
 
 # Library files
 LMFILES :=\

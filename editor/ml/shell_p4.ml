@@ -9,6 +9,7 @@ open Longident
 open Parsetree
 
 open Nl_debug
+open Nl_pervasives
 
 open Pcaml
 

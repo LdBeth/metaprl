@@ -12,6 +12,7 @@ INCLUDE = -I .\
 	-I $(ROOT)/theories/tptp\
 	-I $(ROOT)/ensemble\
 	-I $(ROOT)/lib\
+	-I $(ENSROOT)/lib\
 	-I $(CAMLP4LIB)
 
 OCAMLDEPFLAGS := -prl
@@ -88,11 +89,11 @@ ifdef ENSROOT
             $(ENSROOT)/lib/libens.cma
 
         CMXADEPS_ens =\
-            $(ENSROOT)/lib/socket.cmxa\
-            $(ENSROOT)/lib/crypto.cmxa\
-            $(ENSROOT)/lib/libens.cmxa
+            $(ENSROOT)/lib/socket-$(HOSTTYPE).cmxa\
+            $(ENSROOT)/lib/crypto-$(HOSTTYPE).cmxa\
+            $(ENSROOT)/lib/libens-$(HOSTTYPE).cmxa
     endif
-    
+
     CMALIBS_ens =\
         $(ROOT)/lib/trefiner_ens.cma
 
@@ -117,12 +118,11 @@ endif
 ########################################################################
 # LIBRARIES			
 ########################################################################
-    
+
 CMXDEPS =\
 	$(CAMLLIB)/unix.cmxa\
-        $(CAMLLIB)/nums.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
-	$(CMXDEPS_ens)\
+	$(CMXADEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
@@ -140,9 +140,8 @@ CMXADEPS =\
 	$(CAMLLIB)/unix.cmxa\
 	$(OPTTHREADSLIB)\
 	$(CAMLP4LIB)/odyl.cmxa\
-        $(CAMLLIB)/nums.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
-	$(CMXDEPS_ens)\
+	$(CMXADEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
@@ -163,7 +162,6 @@ CMXALIBS =\
 CMADEPS =\
 	$(CAMLP4LIB)/odyl.cma\
 	$(CAMLLIB)/unix.cma\
-        $(CAMLLIB)/nums.cma\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CAMLP4LIB)/camlp4_top.cma\
@@ -185,7 +183,6 @@ CMADEPS =\
 TCMADEPS =\
 	$(CAMLP4LIB)/odyl.cma\
 	$(CAMLLIB)/unix.cma\
-        $(CAMLLIB)/nums.cma\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CMADEPS_ens)\
@@ -219,7 +216,6 @@ CMXOBJS =\
 	$(CMXALIBS)
 
 CCLIBS =\
-        -cclib -lnums\
 	-cclib $(ROOT)/lib/clib.a\
 	$(CCLIBS_ens)
 

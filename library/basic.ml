@@ -5,7 +5,7 @@ open Unix
 open List
 open Utils
 open Opname
-open Num
+open Nl_num
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5
@@ -76,7 +76,7 @@ let imessage_op parms = mk_nuprl5_op (imessage_parameter :: parms)
 (* !natural{n} *)
 let inatural_parameter = make_param (Token "!natural")
 let inatural_op p = mk_nuprl5_op [inatural_parameter; p]
-let inatural_term i = mk_term (inatural_op (make_param (Number (Num.Int i)))) []
+let inatural_term i = mk_term (inatural_op (make_param (Number (Nl_num.Int i)))) []
 
 (* !token{t} *)
 let itoken_parameter = make_param (Token "!token")
@@ -212,7 +212,7 @@ let token_parameter_to_string p =
 
 let number_of_inatural_term t =
   match dest_param (parameter_of_carrier inatural_parameter t) with
-    Number (Num.Int n) -> n
+    Number (Nl_num.Int n) -> n
   |_ -> error ["term"; "!natural"; "parameter type"] [] [t]
 
 let num_of_inatural_term t =
@@ -266,7 +266,7 @@ let dest_token_param p =
 
 let dest_int_param p =
   match dest_param p with
-    Number (Num.Int n) -> n
+    Number (Nl_num.Int n) -> n
   |_ -> error ["parameter"; "int"] [] []
 
 let dest_num_param p =
@@ -316,8 +316,8 @@ let term_to_stamp t =
 	    when (nuprl5_opname_p opname & parmeq istamp istamp_parameter)
          ->
 	(match dest_param ppid with Token pid ->
-	(match dest_param ptseq with Number (Num.Int tseq) ->
-	(match dest_param pseq with Number (Num.Int seq) ->
+	(match dest_param ptseq with Number (Nl_num.Int tseq) ->
+	(match dest_param pseq with Number (Nl_num.Int seq) ->
 	       (* print_string "tts "; *)
            {term = t;
             process_id = pid;
@@ -377,9 +377,9 @@ let stamp_data =
 
 let make_stamp pid tseq seq time =
 	{ term = (mk_term (istamp_op
-				[ make_param (Number (Num.Int seq))
+				[ make_param (Number (Nl_num.Int seq))
    				; make_time_parameter time
-				; make_param (Number (Num.Int tseq))
+				; make_param (Number (Nl_num.Int tseq))
    				; make_param (Token pid)
    				])
 			[])
@@ -412,7 +412,7 @@ let itransaction_id_op pl = mk_nuprl5_op (itransaction_id_parameter :: pl)
 let tid () =
     (mk_term
       (itransaction_id_op
-		[ make_param (Number (Num.Int (sequence())))
+		[ make_param (Number (Nl_num.Int (sequence())))
 		; make_param (Token  stamp_data.pid)
 		])
      [])

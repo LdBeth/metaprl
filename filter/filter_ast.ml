@@ -55,7 +55,7 @@ let build_printed_term loc t =
          let i' = string_of_int i in
             <:expr< $int:i'$ >>
     | ML_Num n ->
-         <:expr< $uid:"Num"$ . $lid:"num_of_string"$ $str:Num.string_of_num n$ >>
+         <:expr< $uid:"Num"$ . $lid:"num_of_string"$ $str:Nl_num.string_of_num n$ >>
     | ML_String s ->
          <:expr< $str:s$ >>
     | ML_List l ->

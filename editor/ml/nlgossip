@@ -8,4 +8,4 @@ source nlconfig
 #
 # Run gossip server
 #
-exec $ENSROOT/demo/gossip
+exec $ENSROOT/demo/gossip $*

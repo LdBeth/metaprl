@@ -68,8 +68,11 @@ let main () =
             remove_output_file ();
             raise exn
 
+external exit : int -> unit = "caml_exit"
+
 let _ =
-   Filter_exn.print Dform.null_base main ()
+   Filter_exn.print Dform.null_base main ();
+   exit 0
 
 (*
  * -*-

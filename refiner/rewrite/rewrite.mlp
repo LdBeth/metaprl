@@ -294,7 +294,7 @@ struct
     | PIVar _ ->
          begin
             match gstack with
-               StackNumber i -> RewriteInt (Num.int_of_num i)
+               StackNumber i -> RewriteInt (Nl_num.int_of_num i)
              | StackMString s -> RewriteString s
              | _ -> ref_raise(extract_exn)
          end

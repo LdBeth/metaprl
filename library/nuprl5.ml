@@ -4,7 +4,7 @@ open Nl_debug
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Opname
-open Num
+open Nl_num
 
 let _ =
    if !debug_load then
@@ -16,7 +16,7 @@ let nuprl5_opname = mk_opname "!nuprl5_implementation!" nil_opname
 
 let make_bool_parameter b =
   make_param (ParamList
-		[(make_param (Token "bool")); (make_param (Number (Num.Int (if b then 1 else 0))))])
+		[(make_param (Token "bool")); (make_param (Number (Nl_num.Int (if b then 1 else 0))))])
 
 let make_time_parameter time =
   make_param (ParamList
@@ -37,7 +37,7 @@ let bool_parameter_p p =
   match (dest_param p) with
     ParamList [h; v] -> (match (dest_param h) with
       Token s -> if s = "bool" then (match (dest_param v) with
-	Number (Num.Int i) -> (i = 1) or (i = 0)
+	Number (Nl_num.Int i) -> (i = 1) or (i = 0)
       | _ -> false) else false
     | _ -> false)
   | _ -> false
@@ -57,7 +57,7 @@ let destruct_bool_parameter p =
   match (dest_param p) with
     ParamList [h; v] -> (match (dest_param h) with
       Token s -> if s = "bool" then (match (dest_param v) with
-	Number (Num.Int i) -> i = 1
+	Number (Nl_num.Int i) -> i = 1
       | _ -> raise (Invalid_argument "destruct_bool_parameter"))
       else raise (Invalid_argument "destruct_bool_parameter")
     | _ -> raise (Invalid_argument "destruct_bool_parameter"))

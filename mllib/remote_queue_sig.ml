@@ -34,7 +34,13 @@
  *    2. Return a value for an entry that was
  *       submitted.  The entry an its lock are
  *       deleted just before the upcall.
- *    3. Deliver a lock that was requested.
+ *    3. Deliver a lock that was requested (UpcallLock).
+ *    4. Deliver a lock before locking has
+ *       been fully negotiated.  This lock may
+ *       be followed by an UpcallCancel if the
+ *       negotiation fails.
+ *    5. Notify of a view event.  This just restarts
+ *       the upcall scheduler.
  *
  * In addition, we include a system for shared memory.
  * The client can broadcast an entry, which becomes available to
@@ -78,12 +84,14 @@ sig
       UpcallCancel of ('a, 'b) lock
     | UpcallResult of ('a, 'b) handle * 'b
     | UpcallLock of ('a, 'b) lock
+    | UpcallPreLock of ('a, 'b) lock
     | UpcallView
 
    (*
     * Connect to the shared Ensemble queue.
+    * The flag is for quick-locking.
     *)
-   val create : unit -> ('a, 'b, 'c) t
+   val create : bool -> ('a, 'b, 'c) t
 
    (*
     * Event for receiving upcalls.
@@ -145,6 +153,7 @@ sig
    (*
     * Start the main loop.
     *)
+   val args : unit -> (string * Arg.spec * string) list
    val main_loop : ('a, 'b, 'c) t -> unit
 end
 

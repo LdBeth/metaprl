@@ -60,13 +60,18 @@ ifdef ENSROOT
 ENS_LIB = $(LIB)_ens.cma
 OPT_ENS_LIB = $(LIB)_ens.cmxa
 RENS_LIB = $(ROOT)/lib/$(ENS_LIB)
-ROPT_ENS_LIB = $(ROOT)/lib/$(OPT_ENS_LIB)
+ROPT_ENS_LIB = $(ROOT)/lib/$(OPT_ENS_LIB) $(ROOT)/lib/$(LIB)_ens.a
 
 $(RENS_LIB): $(ENS_LIB)
 	ln -sf $(ROOT)/$(DIR)/$(ENS_LIB) $@
 
-$(ROPT_ENS_LIB): $(OPT_ENS_LIB)
+$(ROOT)/lib/$(OPT_ENS_LIB): $(OPT_ENS_LIB)
 	ln -sf $(ROOT)/$(DIR)/$(OPT_ENS_LIB) $@
+
+$(ROOT)/lib/$(LIB)_ens.a: $(LIB)_ens.a
+	ln -s $(ROOT)/$(DIR)/$(LIB)_ens.a $@
+
+$(LIB)_ens.a: $(OPT_ENS_LIB)
 
 $(ENS_LIB): $(CMOFILES_ens) thread_refiner.cmi thread_refiner_ens_mod.ml
 	rm -f thread_refiner.ml
@@ -101,7 +106,7 @@ $(NULL_LIB): $(CMOFILES_null) thread_refiner.cmi thread_refiner_null_mod.ml
 	$(OCAMLC) $(OCAMLCFLAGS) -c thread_refiner.ml
 	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(CMOFILES_null) thread_refiner.cmo
 
-$(OPT_NULL_LIB): $(CMXFILES_ens) thread_refiner.cmi thread_refiner_null_mod.ml
+$(OPT_NULL_LIB): $(CMXFILES_null) thread_refiner.cmi thread_refiner_null_mod.ml
 	rm -f thread_refiner.ml
 	ln -sf thread_refiner_null_mod.ml thread_refiner.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c thread_refiner.ml

@@ -345,7 +345,7 @@ struct
          begin
              match stack.(i) with
                 StackNumber j -> Number j
-              | StackString s -> Number (Num.num_of_string s)
+              | StackString s -> Number (Nl_num.num_of_string s)
               | StackMString s -> MNumber s
               | t -> ref_raise(build_con_exn)
          end
@@ -353,7 +353,7 @@ struct
          begin
              match stack.(i) with
                 StackString s -> String s
-              | StackNumber j -> String (Num.string_of_num j)
+              | StackNumber j -> String (Nl_num.string_of_num j)
               | StackMString s -> MString s
               | t -> ref_raise(build_con_exn)
          end
@@ -361,7 +361,7 @@ struct
          begin
              match stack.(i) with
                 StackString s -> Token s
-              | StackNumber j -> String (Num.string_of_num j)
+              | StackNumber j -> String (Nl_num.string_of_num j)
               | StackMString s -> MToken s
               | t -> ref_raise(build_con_exn)
          end
@@ -376,42 +376,42 @@ struct
          begin
              match stack.(i) with
                 StackString v -> Var v
-              | StackNumber j -> Var (Num.string_of_num j)
+              | StackNumber j -> Var (Nl_num.string_of_num j)
               | StackMString s -> MVar s
               | t -> ref_raise(build_con_exn)
          end
     | RWSum (p1, p2) ->
          begin
              match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Number (Num.add_num i j)
+                (Number i, Number j) -> Number (Nl_num.add_num i j)
               | (Number i, p) -> raise_param p
               | (p, _) -> raise_param p
          end
     | RWDiff (p1, p2) ->
          begin
              match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Number (Num.sub_num i j)
+                (Number i, Number j) -> Number (Nl_num.sub_num i j)
               | (Number i, p) -> raise_param p
               | (p, _) -> raise_param p
          end
     | RWProduct (p1, p2) ->
          begin
              match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Number (Num.mult_num i j)
+                (Number i, Number j) -> Number (Nl_num.mult_num i j)
               | (Number i, p) -> raise_param p
               | (p, _) -> raise_param p
          end
     | RWQuotient (p1, p2) ->
          begin
              match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Number (Num.quo_num i j)
+                (Number i, Number j) -> Number (Nl_num.quo_num i j)
               | (Number i, p) -> raise_param p
               | (p, _) -> raise_param p
          end
     | RWRem (p1, p2) ->
          begin
              match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Number (Num.mod_num i j)
+                (Number i, Number j) -> Number (Nl_num.mod_num i j)
               | (Number i, p) -> raise_param p
               | (p, _) -> raise_param p
          end

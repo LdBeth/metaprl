@@ -8,13 +8,14 @@ open Printf
 open Lexing
 
 open Nl_debug
+open Nl_pervasives
 
 open Pcaml
 open MLast
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
-open Resource
+open Nl_resource
 open Rformat
 
 open Filter_ast
@@ -618,9 +619,7 @@ struct
     * We just loop on the input.  Evaluation is performed by
     * the toploop resource.
     *)
-   let main () =
-      install_debug_printer print_term_fp;
-      Tactic_type.main_loop ();
+   let main_loop_aux () =
       match !input_files with
          [] ->
             let instream = stream_of_channel stdin in
@@ -628,6 +627,11 @@ struct
                toploop true instream
         | files ->
             use_files files
+
+   let main () =
+      install_debug_printer print_term_fp;
+      Thread.create main_loop_aux ();
+      Tactic_type.main_loop ()
 end
 
 (*

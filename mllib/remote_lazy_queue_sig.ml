@@ -17,9 +17,10 @@ sig
       UpcallCancel of ('a, 'b) lock
     | UpcallResult of ('a, 'b) handle * 'b
     | UpcallLock of ('a, 'b) lock
+    | UpcallPreLock of ('a, 'b) lock
     | UpcallView
 
-   val create : unit -> ('a, 'b, 'c) t
+   val create : bool -> ('a, 'b, 'c) t
    val event_of_queue : ('a, 'b, 'c) t -> ('a, 'b) upcall Thread_event.event
    val add : ('a, 'b, 'c) t -> 'a -> ('a, 'b) handle
    val delete : ('a, 'b, 'c) t -> ('a, 'b) handle -> unit
@@ -27,6 +28,7 @@ sig
    val arg_of_lock : ('a, 'b) lock -> 'a
    val cancel : ('a, 'b, 'c) t -> ('a, 'b) lock -> unit
    val unlock : ('a, 'b, 'c) t -> ('a, 'b) lock -> 'b -> unit
+   val args : unit -> (string * Arg.spec * string) list
    val main_loop : ('a, 'b, 'c) t -> unit
 
    (*

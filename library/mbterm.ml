@@ -2,9 +2,10 @@
 
 open Printf
 open Nl_debug
+open Nl_pervasives
 
 open Int32
-open Num
+open Nl_num
 open MathBus
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
