@@ -3845,10 +3845,9 @@ let rec ext_partners con path ext_atom (reduction_partners,extension_partners) a
       [] ->
          (reduction_partners,extension_partners)
     | (a,b)::r ->
-         if List.mem ext_atom [a;b] then
-            let ext_partner =
-               if ext_atom = a then b else a
-            in
+         let a_partner = (ext_atom = a) in
+         if a_partner || (ext_atom = b) then
+            let ext_partner = if a_partner then b else a in
             let (new_red_partners,new_ext_partners) =
 (* force reduction steps first *)
                if (AtomSet.mem path ext_partner) then
