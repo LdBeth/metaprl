@@ -242,11 +242,69 @@ val add_command : ('proof, 'ctyp, 'expr, 'item) module_info ->
    ('proof, 'ctyp, 'expr, 'item) summary_item_loc ->
    ('proof, 'ctyp, 'expr, 'item) module_info
 
+val replace_command : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc ->
+   ('proof, 'ctyp, 'expr, 'item) module_info
+
 (* Utilities *)
 val summary_map :
    ('proof1, 'ctyp1, 'expr1, 'item1, 'proof2, 'ctyp2, 'expr2, 'item2) convert ->
    ('proof1, 'ctyp1, 'expr1, 'item1) module_info ->
    ('proof2, 'ctyp2, 'expr2, 'item2) module_info
+
+(*
+ * Term conversion.
+ *)
+val term_of_rewrite :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'proof rewrite_info ->
+   term
+val term_of_cond_rewrite :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'proof cond_rewrite_info ->
+   term
+val term_of_axiom :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'proof axiom_info ->
+   term
+val term_of_rule :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'proof rule_info ->
+   term
+val term_of_opname : opname_info -> term
+val term_of_mlterm :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'expr mlterm_info ->
+   term
+val term_of_condition :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'expr mlterm_info ->
+   term
+val term_of_parent :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'ctyp parent_info ->
+   term
+val term_of_dform :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'expr dform_info ->
+   term
+val term_of_prec : string -> term
+val term_of_prec_rel : prec_rel_info -> term
+val term_of_id : int -> term
+val term_of_resource :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'ctyp resource_info ->
+   term
+val term_of_infix : string -> term
+val term_of_summary_item :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'item ->
+   term
+val term_of_magic_block :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   'item magic_info ->
+   term
 val term_list :
    ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
    ('proof, 'ctyp, 'expr, 'item) module_info ->
@@ -272,6 +330,9 @@ val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.9  1998/04/17 20:48:31  jyh
+ * Updating refiner for extraction.
+ *
  * Revision 1.8  1998/04/15 22:29:01  jyh
  * Converting packages from summaries.
  *

@@ -658,6 +658,9 @@ let summary_map convert =
 let add_command { info_list = info } item =
    { info_list = item::info }
 
+let replace_command { info_list = info } item1 item2 =
+   { info_list = List_util.replaceq info item1 item2 }
+
 (************************************************************************
  * TERMS                                                                *
  ************************************************************************)
@@ -1205,9 +1208,74 @@ let mk_prec_rel_term rel left right =
       mk_strings_term prec_rel_op [rel; left; right]
 
 (*
- * Convert a resource.
+ * Term conversions.
  *)
-let mk_resource_term convert
+let rec term_of_summary_item convert t =
+   mk_simple_term summary_item_op [convert.item_f t]
+
+and term_of_rewrite convert { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } =
+   mk_string_param_term rewrite_op name [redex; con; convert.proof_f pf]
+
+and term_of_cond_rewrite convert { crw_name = name;
+                                   crw_params = params;
+                                   crw_args = args;
+                                   crw_redex = redex;
+                                   crw_contractum = con;
+                                   crw_proof = pf
+    } =
+   mk_string_param_term cond_rewrite_op name [mk_params params;
+                                              mk_xlist_term args;
+                                              redex;
+                                              con;
+                                              convert.proof_f pf]
+
+and term_of_axiom convert { axiom_name = name; axiom_stmt = t; axiom_proof = pf } =
+   mk_string_param_term axiom_op name [t; convert.proof_f pf]
+
+and term_of_rule convert { rule_name = name;
+                              rule_params = params;
+                              rule_stmt = t;
+                              rule_proof = pf
+    } =
+   mk_string_param_term rule_op name [mk_params params; mk_meta_term t; convert.proof_f pf]
+
+and term_of_opname { opname_name = name; opname_term = term } =
+   mk_string_param_term opname_op name [term]
+
+and term_of_mlterm convert { mlterm_term = term; mlterm_contracta = cons; mlterm_def = expr_opt } =
+   mk_simple_term mlterm_op [term; mk_xlist_term cons; mk_opt convert.expr_f expr_opt ]
+
+and term_of_condition convert { mlterm_term = term; mlterm_contracta = cons; mlterm_def = expr_opt } =
+   mk_simple_term condition_op [term; mk_xlist_term cons; mk_opt convert.expr_f expr_opt ]
+
+and term_of_parent convert { parent_name = path; parent_opens = opens; parent_resources = resources } =
+   mk_simple_term parent_op (**)
+      [mk_strings_term parent_op path;
+       mk_xlist_term (List.map (mk_strings_term parent_op) opens);
+       mk_xlist_term (List.map (term_of_resource convert) resources)]
+
+and term_of_module convert name info =
+   mk_string_param_term module_op name [mk_xlist_term (term_list convert info)]
+
+and term_of_dform convert { dform_modes = modes;
+                            dform_options = options;
+                            dform_redex = redex;
+                            dform_def = def
+    } =
+   let modes = List.map mk_dform_mode modes in
+   let options = List.map mk_dform_opt options in
+      mk_simple_term dform_op [mk_xlist_term (modes @ options); redex; mk_dform_def convert def]
+
+and term_of_prec p =
+   mk_string_param_term prec_op p []
+
+and term_of_prec_rel { prec_rel = rel; prec_left = left; prec_right = right } =
+   mk_prec_rel_term rel left right
+
+and term_of_id id =
+   mk_number_term id_op (Num.Int id)
+
+and term_of_resource convert
     { resource_name = name;
       resource_extract_type = extract;
       resource_improve_type = improve;
@@ -1217,81 +1285,56 @@ let mk_resource_term convert
                                           convert.ctyp_f improve;
                                           convert.ctyp_f data]
 
+and term_of_infix op =
+   mk_string_param_term infix_op op []
+
+and term_of_magic_block convert { magic_name = name; magic_code = items } =
+   mk_string_param_term magic_block_op name [mk_xlist_term (List.map convert.item_f items)]
+
 (*
  * Convert the items to a term.
  *)
-let rec term_list_aux 
-   (convert : ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert)
-   = function
+and term_list_aux (convert : ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert) = function
    SummaryItem t ->
-      mk_simple_term summary_item_op [convert.item_f t]
-
- | Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
-      mk_string_param_term rewrite_op name [redex; con; convert.proof_f pf]
-
- | CondRewrite { crw_name = name;
-                 crw_params = params;
-                 crw_args = args;
-                 crw_redex = redex;
-                 crw_contractum = con;
-                 crw_proof = pf
-   } ->
-      mk_string_param_term cond_rewrite_op name [mk_params params;
-                                                 mk_xlist_term args;
-                                                 redex;
-                                                 con;
-                                                 convert.proof_f pf]
-
- | Axiom { axiom_name = name; axiom_stmt = t; axiom_proof = pf } ->
-      mk_string_param_term axiom_op name [t; convert.proof_f pf]
-
- | Rule { rule_name = name;
-          rule_params = params;
-          rule_stmt = t;
-          rule_proof = pf
-   } ->
-      mk_string_param_term rule_op name [mk_params params; mk_meta_term t; convert.proof_f pf]
-      
- | Opname { opname_name = name; opname_term = term } ->
-      mk_string_param_term opname_op name [term]
- | MLTerm { mlterm_term = term; mlterm_contracta = cons; mlterm_def = expr_opt } ->
-      mk_simple_term mlterm_op [term; mk_xlist_term cons; mk_opt convert.expr_f expr_opt ]
- | Condition { mlterm_term = term; mlterm_contracta = cons; mlterm_def = expr_opt } ->
-      mk_simple_term condition_op [term; mk_xlist_term cons; mk_opt convert.expr_f expr_opt ]
- | Parent { parent_name = path; parent_opens = opens; parent_resources = resources } ->
-      mk_simple_term parent_op (**)
-         [mk_strings_term parent_op path;
-          mk_xlist_term (List.map (mk_strings_term parent_op) opens);
-          mk_xlist_term (List.map (mk_resource_term convert) resources)]
+      term_of_summary_item convert t
+ | Rewrite rw ->
+      term_of_rewrite convert rw
+ | CondRewrite crw ->
+      term_of_cond_rewrite convert crw
+ | Axiom ax ->
+      term_of_axiom convert ax
+ | Rule rw ->
+      term_of_rule convert rw
+ | Opname opname ->
+      term_of_opname opname
+ | MLTerm t ->
+      term_of_mlterm convert t
+ | Condition cond ->
+      term_of_condition convert cond
+ | Parent par ->
+      term_of_parent convert par
  | Module (name, info) ->
-      mk_string_param_term module_op name [mk_xlist_term (term_list convert info)]
-      
- | DForm { dform_modes = modes;
-           dform_options = options;
-           dform_redex = redex;
-           dform_def = def
-   } ->
-      let modes = List.map mk_dform_mode modes in
-      let options = List.map mk_dform_opt options in
-         mk_simple_term dform_op [mk_xlist_term (modes @ options); redex; mk_dform_def convert def]
+      term_of_module convert name info
+ | DForm df ->
+      term_of_dform convert df
  | Prec p ->
-      mk_string_param_term prec_op p []
- | PrecRel { prec_rel = rel; prec_left = left; prec_right = right } ->
-      mk_prec_rel_term rel left right
+      term_of_prec p
+ | PrecRel rel ->
+      term_of_prec_rel rel
  | Id id ->
-      mk_number_term id_op (Num.Int id)
+      term_of_id id
  | Resource rsrc ->
-      mk_resource_term convert rsrc
+      term_of_resource convert rsrc
  | Infix op ->
-      mk_string_param_term infix_op op []
- | MagicBlock { magic_name = name; magic_code = items } ->
-      mk_string_param_term magic_block_op name [mk_xlist_term (List.map convert.item_f items)]
+      term_of_infix op
+ | MagicBlock magic ->
+      term_of_magic_block convert magic
    
 and term_list_loc convert (t, loc) =
    mk_loc loc (term_list_aux convert t)
 
 and term_list (convert : ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert)
-              ({ info_list = info } : ('proof, 'ctyp, 'expr, 'item) module_info) =
+    ({ info_list = info } : ('proof, 'ctyp, 'expr, 'item) module_info) =
    (List.map (term_list_loc convert) info : term list)
 
 (************************************************************************
@@ -1707,6 +1750,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.13  1998/04/17 20:48:29  jyh
+ * Updating refiner for extraction.
+ *
  * Revision 1.12  1998/04/17 01:31:08  jyh
  * Editor is almost constructed.
  *

@@ -186,11 +186,17 @@ sig
    type ml_rewrite = (string array * term list) -> term -> term
    type ml_rule = term -> term list
    type ml_condition = term -> term list
+   
+   (*
+    * Get the term corresponding to an extract.
+    * This will fail if some of the rules are not justified.
+   val term_of_extract : extract -> term
+    *)
 
    (*
     * An axiom is a term that is true.
     * This adds the theorem, and returns a tactic to prove a
-    * goal that is the theorem.  This is used in a sequent calculus.
+    * goal that is the theorem.  This is used only in a sequent calculus.
     *)
    val create_axiom : refiner ref ->
       string ->             (* name *)
@@ -221,6 +227,13 @@ sig
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       bool
+   
+   (*
+    * Once an axiom or rule is defined, it can be justified as
+    *    1. primitive (an extract is given)
+    *    2. derived (a tactic is given)
+    *    3. interactive (an extract can be computed)
+    *)
    val prim_theorem : refiner ref ->
       string ->                    (* name *)
       string array ->              (* vars *)
@@ -228,6 +241,15 @@ sig
       term list ->                 (* args (binding vars) *)
       term ->                      (* extract *)
       unit
+(*
+   val derived_theorem : refiner ref ->
+      string ->                    (* name *)
+      string array ->              (* vars *)
+      term list ->                 (* params *)
+      term list ->                 (* args (binding vars) *)
+      extract ->                   (* derived justification *)
+      unit
+*)
    val check_theorem :
       string ->                    (* name *)
       string array ->              (* vars *)
@@ -354,6 +376,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/17 20:48:40  jyh
+ * Updating refiner for extraction.
+ *
  * Revision 1.2  1997/08/07 19:43:46  jyh
  * Updated and added Lori's term modifications.
  * Need to update all pattern matchings.

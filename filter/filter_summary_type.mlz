@@ -20,7 +20,7 @@ open Filter_summary
  *)
 type module_name = string
 
-type loc = int * int
+type loc = MLast.loc
 
 (*
  * This module just provides subaddressing of its objects.
@@ -194,6 +194,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.9  1998/04/17 20:48:32  jyh
+ * Updating refiner for extraction.
+ *
  * Revision 1.8  1998/04/17 01:31:10  jyh
  * Editor is almost constructed.
  *

@@ -2,41 +2,69 @@
  * General purpose toploop.
  *)
 
+open Term
+
 (*
  * Navigation and display.
  *)
 val cd : string -> string
 val pwd : unit -> string
-val view : string -> unit
 val set_window_width : int -> unit
 
 (*
  * Module commands.
  *)
-val create : string -> unit
+val create_pkg : string -> unit
 val save : unit -> unit
-val save_as : string -> unit
 val save_all : unit -> unit
 
 (*
- * Interactive commands in the current module.
+ * The possible objects in a package.
  *)
-val add_parent : string -> unit
-val create_thm : string -> term -> unit
+val create_rw : string -> unit
+val create_axiom : string -> unit
+val create_thm : string -> unit
+val create_opname : string -> unit
+val create_condition : string -> unit
+val create_parent : string -> unit
+val create_dform : string -> unit
+val create_prec : string -> unit
+val create_prec_rul : string -> string -> string -> unit
+val create_resource : string -> unit
+val create_infix : string -> unit
+val create_ml : string -> unit
+
+(*
+ * View, close, check object.
+ * An object is not installed until it is checked.
+ *)
+val view : string -> unit
+val check : string -> MLast.str_item
+val close : unit -> unit
+
+(*
+ * Editing commands.
+ *)
+val set_goal : term -> unit
+val set_redex : term -> unit
+val set_contractum : term -> unit
+val set_assumptions : term list -> unit
+val set_params : param list -> unit
+
+(*
+ * Proof editing.
+ *)
 val move_up : unit -> unit
 val move_down : int -> unit
 val move_root : unit -> unit
-val refine : string -> tactic -> unit
+val refine : MLast.expr -> tactic -> string -> unit
 val undo : unit -> unit
 
 (*
- * Debugging.
- *)
-val pf : term ref
-val z : tactic
-
-(*
  * $Log$
+ * Revision 1.3  1998/04/17 20:48:15  jyh
+ * Updating refiner for extraction.
+ *
  * Revision 1.2  1998/04/17 01:30:50  jyh
  * Editor is almost constructed.
  *

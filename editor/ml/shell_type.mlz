@@ -1,0 +1,38 @@
+(*
+ * This is the generic editing interface.
+ *)
+
+open Term
+
+open Refiner
+
+type edit_object =
+   { (* Adjust the contents of the object *)
+     edit_format : buf -> unit;
+     edit_set_goal : term -> unit;
+     edit_set_redex : term -> unit;
+     edit_set_contractum : term -> unit;
+     edit_set_assumptions : term list -> unit;
+     edit_set_params : param list -> unit;
+     edit_check : unit -> MLast.str_item;
+     
+     (* Navigation of there is a proof *)
+     edit_root : unit -> unit;
+     edit_up : unit -> unit;
+     edit_down : int -> unit;
+     edit_refine : MLast.expr -> Refine.tactic -> string -> unit;
+     edit_undo : unit -> unit
+   }
+
+(*
+ * $Log$
+ * Revision 1.1  1998/04/17 20:48:20  jyh
+ * Updating refiner for extraction.
+ *
+ *
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

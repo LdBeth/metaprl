@@ -4,7 +4,8 @@ INCLUDE := -I . -I ../../theories/tactic -I ../../theories/base -I $(NLLIB) -I /
 # Common files
 MLZFILES :=\
 	edit_type\
-	package_type
+	package_type\
+	shell_type
 
 # Library files
 NLFILES :=\
@@ -15,6 +16,7 @@ NLFILES :=\
 	package_type\
 	package_info\
 	package_df\
+	shell_type\
 	shell
 
 MFILES :=\

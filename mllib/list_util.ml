@@ -87,7 +87,7 @@ let rec replacef_nth l i f =
 (*
  * Functional replacement.
  *)
-let rec replace_nth l i x =
+let replace_nth l i x =
    let rec aux i = function
       h::t ->
          if i = 0 then
@@ -98,6 +98,21 @@ let rec replace_nth l i x =
          raise (Invalid_argument "replace_nth")
    in
       aux i l
+
+(*
+ * Functional replacement.
+ *)
+let replaceq l x1 x2 =
+   let rec replace = function
+      h::t ->
+         if h == x1 then
+            x2 :: replace t
+         else
+            h :: replace t
+    | [] ->
+         []
+   in
+      replace l
 
 (*
  * Remove an element.
@@ -450,6 +465,9 @@ let fold_left f x l =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/17 20:48:35  jyh
+ * Updating refiner for extraction.
+ *
  * Revision 1.3  1998/02/21 20:58:13  jyh
  * Two phase parse/extract.
  *

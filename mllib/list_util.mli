@@ -18,6 +18,7 @@ val nth_tl : 'a list -> int -> 'a list
 (* Functional replacement *)
 val replacef_nth : 'a list -> int -> ('a -> 'a) -> 'a list
 val replace_nth : 'a list -> int -> 'a -> 'a list
+val replaceq : 'a list -> 'a -> 'a -> 'a list
 val remove_nth : 'a list -> int -> 'a list
 val insert_nth : 'a list -> int -> 'a -> 'a list
 val removeq : 'a list -> 'a -> 'a list
@@ -61,6 +62,9 @@ val last : 'a list -> 'a
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/17 20:48:36  jyh
+ * Updating refiner for extraction.
+ *
  * Revision 1.3  1998/02/21 20:58:14  jyh
  * Two phase parse/extract.
  *

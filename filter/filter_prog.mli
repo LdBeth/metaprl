@@ -2,6 +2,10 @@
  * Conversion form filter_summary to program text.
  *)
 
+open Term
+open Refine
+open Refiner
+
 open Filter_type
 open Filter_summary_type
 open Filter_summary
@@ -18,7 +22,32 @@ val extract_str :
    string -> (MLast.str_item * (int * int)) list
 
 (*
+ * Defining implementations.
+ *)
+type t
+
+val prim_rewrite : t -> loc -> 'proof rewrite_info -> MLast.str_item list
+val prim_cond_rewrite : t -> loc -> 'proof cond_rewrite_info -> MLast.str_item list
+val rewrite_theorem : t -> loc -> 'proof rewrite_info -> MLast.expr -> MLast.str_item list
+val cond_rewrite_theorem : t -> loc -> 'proof cond_rewrite_info -> MLast.expr -> MLast.str_item list
+val prim_axiom : t -> loc -> 'proof axiom_info -> term -> MLast.str_item list
+val thm_axiom : t -> loc -> 'proof axiom_info -> MLast.expr -> MLast.str_item list
+val prim_rule : t -> loc -> 'proof rule_info -> term -> MLast.str_item list
+val thm_rule : t -> loc -> 'proof rule_info -> MLast.expr -> MLast.str_item list
+val define_dform : t -> loc -> MLast.expr dform_info -> term -> MLast.str_item list
+val define_prec : t -> loc -> string -> MLast.str_item list
+val define_prec_rel : t -> loc -> prec_rel_info -> MLast.str_item list
+val define_resource : t -> loc -> MLast.ctyp resource_info -> MLast.str_item list
+val define_parent : t -> loc -> MLast.ctyp parent_info -> MLast.str_item list
+val define_magic_block : t -> loc -> MLast.str_item magic_info -> MLast.str_item list
+val implem_prolog : t -> loc -> MLast.str_item list
+val implem_postlog : t -> loc -> string -> MLast.str_item list
+
+(*
  * $Log$
+ * Revision 1.6  1998/04/17 20:48:28  jyh
+ * Updating refiner for extraction.
+ *
  * Revision 1.5  1998/04/15 12:40:01  jyh
  * Updating editor packages to Filter_summarys.
  *

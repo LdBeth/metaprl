@@ -147,7 +147,6 @@ struct
       { ml_cond_arg : term;
         ml_cond_refiner : refiner
       }
-   
    and prim_theorem_refiner_type =
       { pthm_proof : string array -> term list -> term list -> term;
         pthm_axiom : refiner;
@@ -543,6 +542,16 @@ struct
          aux refiner
    
    (*
+    * Get the term from an extract.
+    * This will fail if some of the rules are not justified.
+   let term_of_extract { ext_just = just } =
+      let rec construct = function
+         SingleJust { ext_names = names; ext_params = params; ext_refiner = refiner } ->
+            begin
+               match refiner with
+    *)
+   
+   (*
     * An theorem is a special case of a rule, where to
     * arity is 1, and there are no addrs or params.
     * Still get a tactic by this name (the equivalent
@@ -550,7 +559,8 @@ struct
     *)
    let check_axiom term =
       match Term.context_vars term with
-         [] -> true
+         [] ->
+            true
        | l ->
             raise (FreeContextVars l)
    
@@ -966,6 +976,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/17 20:48:39  jyh
+ * Updating refiner for extraction.
+ *
  * Revision 1.3  1997/08/07 19:43:45  jyh
  * Updated and added Lori's term modifications.
  * Need to update all pattern matchings.

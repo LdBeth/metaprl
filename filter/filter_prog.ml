@@ -492,7 +492,7 @@ let extract_sig info resources path =
  * For implementations, we maintain a state, which contains
  *    1. a list of the resources that have been defined
  *)
-type state =
+type t =
    { mutable imp_resources : MLast.ctyp resource_info list
    }
 
@@ -1321,6 +1321,9 @@ let extract_str info resources name =
    
 (*
  * $Log$
+ * Revision 1.6  1998/04/17 20:48:26  jyh
+ * Updating refiner for extraction.
+ *
  * Revision 1.5  1998/04/15 12:39:59  jyh
  * Updating editor packages to Filter_summarys.
  *
