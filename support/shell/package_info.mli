@@ -134,10 +134,41 @@ val get_grammar : package -> Filter_grammar.t
 (*
  * Collection of objects in the module.
  *)
-val info : package -> parse_arg -> (term, meta_term, proof proof_type, (MLast.ctyp, MLast.expr) resource_str, MLast.ctyp, MLast.expr, MLast.str_item) module_info
-val sig_info : package -> parse_arg -> (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
-val find : package -> parse_arg -> string -> (term, meta_term, proof proof_type, (MLast.ctyp, MLast.expr) resource_str, MLast.ctyp, MLast.expr, MLast.str_item) summary_item
-val set : package -> parse_arg -> (term, meta_term, proof proof_type, (MLast.ctyp, MLast.expr) resource_str, MLast.ctyp, MLast.expr, MLast.str_item) summary_item -> unit
+val info : package -> parse_arg ->
+   (term,
+    meta_term,
+    proof proof_type,
+    (MLast.ctyp, MLast.expr) resource_str,
+    MLast.ctyp,
+    MLast.expr,
+    MLast.str_item) module_info
+
+val sig_info : package -> parse_arg ->
+   (term,
+    meta_term,
+    unit,
+    MLast.ctyp resource_sig,
+    MLast.ctyp,
+    MLast.expr,
+    MLast.sig_item) module_info
+
+val find : package -> parse_arg -> string ->
+   (term,
+    meta_term,
+    proof proof_type,
+    (MLast.ctyp, MLast.expr) resource_str,
+    MLast.ctyp,
+    MLast.expr,
+    MLast.str_item) summary_item
+
+val set : package -> parse_arg ->
+   (term,
+    meta_term,
+    proof proof_type,
+    (MLast.ctyp, MLast.expr) resource_str,
+    MLast.ctyp,
+    MLast.expr,
+    MLast.str_item) summary_item -> unit
 
 (*
  * This is the starting info for new proofs.

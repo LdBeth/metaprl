@@ -26,6 +26,7 @@
  *)
 open Lm_debug
 open Lm_rprintf
+open Lm_string_set
 
 open Opname
 open Term_sig
@@ -34,7 +35,9 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.RefineError
+
 open Dform
+open Theory
 
 open Filter_type
 open Filter_summary
@@ -69,8 +72,28 @@ let shell_package pkg =
  *)
 let packages = Package_info.create (Shell_state.get_includes ())
 
-let all_packages () =
+let loaded_packages () =
    List.filter shell_package (Package_info.packages packages)
+
+let all_theories () =
+   let names = StringSet.empty in
+   let names =
+      List.fold_left (fun names pkg ->
+            let name = Package_info.name pkg in
+               if shell_package_name name then
+                  StringSet.add names name
+               else
+                  names) names (Package_info.packages packages)
+   in
+   let names =
+      List.fold_left (fun names thy ->
+            let name = thy.thy_name in
+               if shell_package_name name then
+                  StringSet.add names name
+               else
+                  names) names (get_theories ())
+   in
+      StringSet.to_list names
 
 let default_mode_base = Mp_resource.theory_bookmark "shell_theory"
 
@@ -885,7 +908,7 @@ let rec apply_all parse_arg shell f (time : bool) (clean_res : bool) =
                in
                   begin match subdir with
                      [] ->
-                        List.iter expand (List.map Package_info.name (all_packages ()))
+                        List.iter expand (all_theories ())
                    | [group] ->
                         List.iter expand (List.filter shell_package_name (snd (Package_info.group_packages packages group)))
                    | _ ->
@@ -1022,7 +1045,7 @@ let backup_all parse_arg _ =
             Package_info.backup parse_arg pack
          end
    in
-      List.iter backup (all_packages ())
+      List.iter backup (loaded_packages ())
 
 let save_all parse_arg _ =
    let save pack =
@@ -1032,7 +1055,7 @@ let save_all parse_arg _ =
             Package_info.save parse_arg pack
          end
    in
-      List.iter save (all_packages ())
+      List.iter save (loaded_packages ())
 
 let export_all parse_arg _ =
    let save pack =
@@ -1042,7 +1065,7 @@ let export_all parse_arg _ =
             Package_info.export parse_arg pack
          end
    in
-      List.iter save (all_packages ())
+      List.iter save (loaded_packages ())
 
 let revert_all shell =
    let revert pack =
@@ -1052,7 +1075,7 @@ let revert_all shell =
             Package_info.revert pack
          end
    in
-      List.iter revert (all_packages ());
+      List.iter revert (loaded_packages ());
       refresh shell
 
 (*!

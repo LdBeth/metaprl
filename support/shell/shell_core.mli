@@ -39,7 +39,8 @@ open Shell_internal_sig
 val get_resource : shell -> Mp_resource.global_resource
 
 val packages : Package_info.t
-val all_packages : unit -> Package_info.package list
+val loaded_packages : unit -> Package_info.package list
+val all_theories : unit -> string list
 val shell_package : Package_info.package -> bool
 val get_current_package : shell -> Package_info.package
 

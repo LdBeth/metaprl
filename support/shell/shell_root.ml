@@ -100,7 +100,8 @@ let rec edit pack get_dfm =
             let dsc, packs = Package_info.group_packages pack name in
             let packs = List.map (fun name -> <:con< package[$name$:s] >>) packs in
                Proof_edit.display_term (get_dfm ()) <:con< packages[$name$:s,$dsc$:s]{$mk_xlist_term packs$} >>
-       | _ -> raise (Invalid_argument "Shell_root.edit_display: internal error")
+       | _ ->
+            raise (Invalid_argument "Shell_root.edit_display: internal error")
    in
    let edit_copy () =
       edit pack get_dfm

@@ -47,6 +47,8 @@ open Opname
 open Precedence
 open Refiner.Refiner.Term
 
+open Theory
+
 open Filter_type
 open Filter_summary
 
@@ -110,8 +112,7 @@ struct
       (*
        * Return the list of all module names.
        *)
-      let list_modules () =
-         List.map Package_info.name (all_packages ())
+      let list_modules = all_theories
 
       let get_info shell name =
          try Package_info.info (Package_info.get packages name) parse_arg with

@@ -152,8 +152,10 @@ module Cache = MakeCaches (Convert)
  *)
 type info =
    { pack_cache    : Cache.StrFilterCache.t;
-     pack_packages : (string,package) Hashtbl.t;
-     pack_groups   : (string,(string*StringSet.t)) Hashtbl.t;
+     pack_groups   : (string, (string * StringSet.t)) Hashtbl.t;
+
+     (* NOTE: this is only the list of loaded packages *)
+     pack_packages : (string, package) Hashtbl.t
    }
 
 and t = info State.entry
@@ -193,46 +195,31 @@ type proof = Convert.cooked
  ************************************************************************)
 
 (*
- * Create the cache.
- * Add placeholders for all the theories.
+ * Load the list of theory descriptors.
  *)
 let refresh pack_entry path =
    State.write pack_entry (fun pack ->
-         let mk_package name =
-            { pack_info = pack_entry;
-              pack_name = name;
-              pack_status = PackIncomplete;
-              pack_sig_info = None;
-              pack_str = None;
-              pack_infixes = Infix.Set.empty;
-            }
-         in
-         let find_or_create name =
-            try Hashtbl.find pack.pack_packages name with
-               Not_found ->
-                  let node = mk_package name in
-                     Hashtbl.add pack.pack_packages name node;
-                     node
-         in
          let add_theory thy =
             let dsc, theories =
                try Hashtbl.find pack.pack_groups thy.thy_group with
-                  Not_found -> thy.thy_groupdesc, StringSet.empty
+                  Not_found ->
+                     thy.thy_groupdesc, StringSet.empty
             in
-            let node = find_or_create thy.thy_name in
                if thy.thy_groupdesc <> dsc then
                   raise (Failure (sprintf "Description mismatch:\n %s described %s as %s,\nbut %s describes it as %s" (**)
-                     (StringSet.choose theories) thy.thy_group dsc thy.thy_name thy.thy_groupdesc));
+                                     (StringSet.choose theories) thy.thy_group dsc thy.thy_name thy.thy_groupdesc));
                Hashtbl.replace pack.pack_groups thy.thy_group (dsc, StringSet.add theories thy.thy_name)
-
          in
             List.iter add_theory (get_theories ()))
 
+(*
+ * Create the cache.
+ *)
 let create path =
    let pack =
       { pack_cache = Cache.StrFilterCache.create path;
         pack_packages = Hashtbl.create 17;
-        pack_groups = Hashtbl.create 17;
+        pack_groups = Hashtbl.create 17
       }
    in
    let pack = State.shared_val "Package_info.pack" pack in
@@ -264,10 +251,24 @@ let get_refiner pack =
  ************************************************************************)
 
 (*
- * Get a node by its name.
+ * Load a package if not already loaded.
  *)
-let get_package pack name =
-   Hashtbl.find pack.pack_packages name
+let get_package pack_entry name =
+   State.write pack_entry (fun pack ->
+         let mk_package name =
+            { pack_info = pack_entry;
+              pack_name = name;
+              pack_status = PackIncomplete;
+              pack_sig_info = None;
+              pack_str = None;
+              pack_infixes = Infix.Set.empty;
+            }
+         in
+            try Hashtbl.find pack.pack_packages name with
+               Not_found ->
+                  let node = mk_package name in
+                     Hashtbl.add pack.pack_packages name node;
+                     node)
 
 (*
  * Add an implementation package.
@@ -325,7 +326,7 @@ let auto_load_str arg pack_info =
 let load pack_entry arg name =
    synchronize_pack pack_entry (fun pack ->
          let pack_info =
-            try get_package pack name with
+            try get_package pack_entry name with
                Not_found ->
                   { pack_info = pack_entry;
                     pack_status = PackUnmodified;
@@ -512,11 +513,9 @@ let get_grammar pack_info =
  * Get a loaded theory.
  *)
 let get pack name =
-   synchronize_pack pack (function
-      pack ->
-         try get_package pack name with
-            Not_found ->
-               raise (Invalid_argument("Package_info.get: package " ^ name ^ " is not loaded")))
+   try get_package pack name with
+      Not_found ->
+         raise (Invalid_argument("Package_info.get: package " ^ name ^ " is not loaded"))
 
 let groups pack =
    let res = ref [] in
@@ -529,7 +528,7 @@ let group_exists pack group =
 let group_packages pack group =
    synchronize_pack pack (fun pack ->
       let desc, thys = (Hashtbl.find pack.pack_groups group) in
-         desc, (StringSet.elements thys))
+         desc, StringSet.elements thys)
 
 let group_of_module pack name =
    let res = ref None in
