@@ -23,6 +23,42 @@ open Filter_summary_io
 open Filter_cache_fun
 
 (************************************************************************
+ * IO MODULES                                                           *
+ ************************************************************************)
+
+(*
+ * For this compiler, we only use two summaries.
+ *)
+type select_type =
+   InterfaceType
+ | ImplementationType
+
+(*
+ * Proofs are either primitive terms,
+ * or they are tactics.
+ *)
+type proof_type =
+   Primitive of term
+ | Derived of MLast.expr
+
+(*
+ * This is the common summary type for interface between IO
+ * and marshalers.
+ *)
+type summary_type =
+   Interface of (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+ | Implementation of (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+
+(*
+ * Types of objects that are stored in the files.
+ *)
+module FileTypes =
+struct
+   type select = select_type
+   type cooked = summary_type
+end
+
+(************************************************************************
  * CONFIG                                                               *
  ************************************************************************)
 
@@ -69,32 +105,8 @@ let _ = Env_arg.bool "file"   true  "Use the filesystem"      set_file
 let _ = Env_arg.bool "raw"    false "Use the raw filesystem"  set_raw
 
 (************************************************************************
- * IO MODULES                                                           *
+ * IMPLEMTATION                                                         *
  ************************************************************************)
-
-(*
- * For this compiler, we only use two summaries.
- *)
-type select_type =
-   InterfaceType
- | ImplementationType
-
-(*
- * This is the common summary type for interface between IO
- * and marshalers.
- *)
-type summary_type =
-   Interface of (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
- | Implementation of (MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info
-
-(*
- * Types of objects that are stored in the files.
- *)
-module FileTypes =
-struct
-   type select = select_type
-   type cooked = summary_type
-end
 
 (*
  * Identity used for term normalization.
@@ -115,6 +127,28 @@ let term_of_expr = Filter_ocaml.term_of_expr comment
 let term_of_type = Filter_ocaml.term_of_type comment
 let term_of_sig_item = Filter_ocaml.term_of_sig_item comment
 let term_of_str_item = Filter_ocaml.term_of_str_item comment
+
+(*
+ * Marshaling proofs.
+ *)
+let prim_op = mk_opname "prim" nil_opname
+let derived_op = mk_opname "derived" nil_opname
+
+let marshal_proof = function
+   Primitive t ->
+      mk_simple_term prim_op [t]
+ | Derived expr ->
+      mk_simple_term derived_op [term_of_expr expr]
+
+let unmarshal_proof t =
+   let opname = opname_of_term t in
+   let expr = one_subterm t in
+      if opname == prim_op then
+         Primitive expr
+      else if opname == derived_op then
+         Derived (expr_of_term expr)
+      else
+         raise (Failure "Filter_cache.unmarshal")
 
 (*
  * Term signatures.
@@ -192,12 +226,12 @@ struct
    let suffix   = "cmot"
    let magic    = 0x73ac6be3
    let disabled = nofile
-
+   
    let marshal = function
       Implementation info ->
          let convert =
             { term_f = identity;
-              proof_f = term_of_expr;
+              proof_f = marshal_proof;
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
               item_f = term_of_str_item
@@ -210,7 +244,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
-           proof_f = expr_of_term;
+           proof_f = unmarshal_proof;
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
            item_f = str_item_of_term
@@ -225,7 +259,7 @@ end
 module RawStrInfo =
 struct
    type select  = select_type
-   type raw     = (MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   type raw     = (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    type cooked  = summary_type
    
    let select   = ImplementationType
@@ -299,7 +333,7 @@ struct
       Implementation info ->
          let convert =
             { term_f = identity;
-              proof_f = term_of_expr;
+              proof_f = marshal_proof;
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
               item_f = term_of_str_item
@@ -312,7 +346,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
-           proof_f = expr_of_term;
+           proof_f = unmarshal_proof;
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
            item_f = str_item_of_term
@@ -361,7 +395,7 @@ end
  *)
 module StrMarshal =
 struct
-   type proof = MLast.expr
+   type proof = proof_type
    type ctyp  = MLast.ctyp
    type expr  = MLast.expr
    type item  = MLast.str_item
@@ -402,6 +436,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.6  1998/02/19 21:08:19  jyh
+ * Adjusted proof type to be primitive or derived.
+ *
  * Revision 1.5  1998/02/19 17:13:55  jyh
  * Splitting filter_parse.
  *

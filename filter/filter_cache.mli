@@ -16,6 +16,14 @@ type select_type =
  | ImplementationType
 
 (*
+ * Proofs are either primitive terms,
+ * or they are tactics.
+ *)
+type proof_type =
+   Primitive of term
+ | Derived of MLast.expr
+
+(*
  * The summary_cache for interfaces and implementations.
  *)
 module SigFilterCache :
@@ -36,7 +44,7 @@ module StrFilterCache :
    with type sig_ctyp   = MLast.ctyp
    with type sig_expr   = MLast.expr
    with type sig_item   = MLast.sig_item
-   with type str_proof  = MLast.expr
+   with type str_proof  = proof_type
    with type str_ctyp   = MLast.ctyp
    with type str_expr   = MLast.expr
    with type str_item   = MLast.str_item
@@ -44,6 +52,9 @@ module StrFilterCache :
    
 (*
  * $Log$
+ * Revision 1.4  1998/02/19 21:08:20  jyh
+ * Adjusted proof type to be primitive or derived.
+ *
  * Revision 1.3  1998/02/19 17:13:55  jyh
  * Splitting filter_parse.
  *

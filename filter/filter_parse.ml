@@ -623,7 +623,7 @@ end
 
 module StrFilterInfo =
 struct
-   type proof = MLast.expr
+   type proof = proof_type
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.str_item
@@ -645,7 +645,7 @@ let define_rule proc loc name
     (params : term list)
     (args : aterm list)
     (goal : term)
-    (extract : MLast.expr) =
+    (extract : proof_type) =
    let avars = collect_anames args in
    let assums = List.map (function { aterm = t } -> t) args in
    let mterm = zip_mimplies (assums @ [goal]) in
@@ -653,11 +653,10 @@ let define_rule proc loc name
       StrFilter.add_command proc cmd
    
 let define_prim proc loc name params args goal extract =
-   let extract_expr = build_ml_term loc extract in
-      define_rule proc loc name params args goal extract_expr
+   define_rule proc loc name params args goal (Primitive extract)
    
 let define_thm proc loc name params args goal tac =
-   define_rule proc loc name params args goal tac
+   define_rule proc loc name params args goal (Derived tac)
    
 (************************************************************************
  * GRAMMAR EXTENSION                                                    *
@@ -771,10 +770,10 @@ EXTEND
           StrFilter.declare_term (StrFilter.get_proc loc) loc t;
           empty_str_item loc
         | "primrw"; name = LIDENT; args = optarglist; ":"; t = mterm ->
-          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t <:expr< () >>;
+          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term);
           empty_str_item loc
         | "rwthm"; name = LIDENT; args = optarglist; ":"; t = mterm; "="; body = expr ->
-          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t body;
+          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body);
           empty_str_item loc
         | "prim"; name = LIDENT; params = optarglist; ":"; (**)
              (args, goal) = opt_binding_arglist; "="; (**)
@@ -950,6 +949,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.9  1998/02/19 21:08:22  jyh
+ * Adjusted proof type to be primitive or derived.
+ *
  * Revision 1.8  1998/02/19 17:13:59  jyh
  * Splitting filter_parse.
  *
