@@ -42,8 +42,9 @@
  *   Also adds "-DSYM" & "-USYM" command-line options for these.
  *
  * DEFINE SYMBOL = <expr>
- *   Same as above, but also define SYMBOL as an argumentless macro.
- *   Also makes "-DSYM=<expr>" available this.
+ *   Same as above, but also define SYMBOL as an argumentless macro, will also
+ *   try to define a pattern macro etc if possible.
+ *   Also makes "-DSYM=..." available this.
  *
  * IFDEF SYMBOL THEN ...
  * IFDEF SYMBOL THEN ...
@@ -51,25 +52,33 @@
  * IFNDEF SYMBOL THEN ... ELSE ...
  *   Works for top-level structure items and for expressions.
  *
+ * DEFMACRO MAC ARG... = <expr>
+ *   Similar to DEFINE (try to convert expr to other types), but allows
+ *   arguments.
+ *
  * DEFEXPRMACRO MAC ARG... = <expr>
  *   Expand MAC ARG... using <expr> as a template.
- *
- * DEFMACRO MAC ARG... = <expr>
- *   A shortcut for the previous.
  *
  * DEFPATTMACRO MAC ARG.. = <patt>
  *   The same but for patterns.
  *
- * DEFEXPRPATTMACRO MAC ARG... = <expr&patt>
- *   Defines two macro types, <expr&patt> should be parsed as both.
- *
  * LETMACRO MAC ARG... = <expr> IN <expr>
  *   Defines and uses a local macro, it will be expanded as soon as seen,
- *   before expansion of global macros.
+ *   before expansion of global macros.  Works like DEFINE.
  *
  * CONCAT SYM1 SYM2
  *   The result of this macro will be the symbol made out of the concatenation
  *   of SYM1 and SYM2, it's type (LIDENT or UIDENT) depends on SYM1.
+ *
+ * NOTHING
+ *   This is a special expression or pattern that will be eliminated in a final
+ *   scan, *after* macro expansion; currently it works only in applications and
+ *   curried arguments.
+ *   Note that care should be taken when using this, for example, in cases
+ *   where it cannot be eliminated, a bogus "!NOTHING" identifier will be left
+ *   instead, also, since infix operators are translated into function
+ *   applications, something like "NOTHING+1" will leave you with "(+) 1" which
+ *   is a function (so if this is wanted, specific care should be taken).
  *
  * INCLUDE <string>
  *   Parse the given file name at this point.
@@ -187,7 +196,8 @@ module Codewalk = struct
        | TyXnd (l, s, x)    -> TyXnd (!loc l, s, ctyp x)
 
    and patt x =
-      let x = match !patt_fun with None -> x | Some f -> f x in
+      let newx = (match !patt_fun with None -> x | Some f -> f x) in
+      if x <> newx then patt newx else
       match x with
        | PaAcc (l, x, y)    -> PaAcc (!loc l, patt x, patt y)
        | PaAli (l, x, y)    -> PaAli (!loc l, patt x, patt y)
@@ -220,7 +230,8 @@ module Codewalk = struct
               ciExp = class_expr z }
 
    and expr x =
-      let x = match !expr_fun with None -> x | Some f -> f x in
+      let newx = match !expr_fun with None -> x | Some f -> f x in
+      if x <> newx then expr newx else
       match x with
        | ExAcc (l, x, y)    -> ExAcc (!loc l, expr x, expr y)
        | ExAnt (l, x)       -> ExAnt (!loc l, expr x)
@@ -456,7 +467,7 @@ let _ =
  * return the original syntax if no macro was found.
  *)
 
-let rec apply_expr_macros expr =
+let apply_expr_macros expr =
    let rec aux expr =
       match expr with
        | <:expr< $e1$ $e2$ >> ->
@@ -468,10 +479,10 @@ let rec apply_expr_macros expr =
    try let ((name, mac), exprs) = (aux expr) in
       current_macname_loc := (let (b,e) = loc_of_expr expr in (name, b, e));
       Codewalk.changeloc (loc_of_expr expr) Codewalk.expr
-         (substitute_expr_macros (mac (List.rev exprs)))
+         (mac (List.rev exprs))
    with Not_found -> expr
 
-and apply_patt_macros patt =
+let apply_patt_macros patt =
    let rec aux patt =
       match patt with
        | <:patt< $p1$ $p2$ >> ->
@@ -482,8 +493,16 @@ and apply_patt_macros patt =
    try let ((name, mac), patts) = (aux patt) in
       current_macname_loc := (let (b,e) = loc_of_patt patt in (name, b, e));
       Codewalk.changeloc (loc_of_patt patt) Codewalk.patt
-         (substitute_patt_macros (mac (List.rev patts)))
+         (mac (List.rev patts))
    with Not_found -> patt
+
+(* The actual processing uses code-walk *)
+let macros_codewalk f =
+   Codewalk.walkwith
+      (Some apply_expr_macros)
+      (Some apply_patt_macros)
+      None
+      f
 
 (*
  * The next two functions create simple template macros;
@@ -491,7 +510,7 @@ and apply_patt_macros patt =
  * arguments and using the same substitution code again.
  *)
 
-and add_simple_expr_macro name args body =
+let rec add_simple_expr_macro name args body =
    add_expr_macro name
       (fun exprs ->
           let rec aux = function
@@ -501,7 +520,7 @@ and add_simple_expr_macro name args body =
                 aux (args, exprs)
            | ([], exprs) ->
                 (* Do the substitution, append extra exprs *)
-                append_exprs (substitute_expr_macros body) exprs
+                append_exprs (macros_codewalk Codewalk.expr body) exprs
            | (args, _) ->
                 (* Not enough expressions *)
                 macro_error "not enough arguments for simple macro";
@@ -512,7 +531,7 @@ and add_simple_expr_macro name args body =
                 expr_macros := old_macros;
                 result)
 
-and add_simple_patt_macro name args body =
+let rec add_simple_patt_macro name args body =
    add_patt_macro name
       (fun patts ->
           let rec aux = function
@@ -522,7 +541,7 @@ and add_simple_patt_macro name args body =
                 aux (args, patts)
            | ([], patts) ->
                 (* Do the substitution, append extra patts *)
-                append_patts (substitute_patt_macros body) patts
+                append_patts (macros_codewalk Codewalk.patt body) patts
            | (args, _) ->
                 (* Not enough expressions *)
                 macro_error "not enough arguments for simple macro";
@@ -533,101 +552,78 @@ and add_simple_patt_macro name args body =
                 patt_macros := old_macros;
                 result)
 
-(* The actual processing uses code-walk *)
-
-(*
- * This is cute but won't work in a let-rec...
- * and macros_codewalk =
- *    Codewalk.walkwith
- *       (Some apply_expr_macros)
- *       (Some apply_patt_macros)
- *       None
- *)
-
-and substitute_expr_macros x =
-   Codewalk.walkwith
-      (Some apply_expr_macros)
-      (Some apply_patt_macros)
-      None
-      Codewalk.expr x
-
-and substitute_patt_macros x =
-   Codewalk.walkwith
-      (Some apply_expr_macros)
-      (Some apply_patt_macros)
-      None
-      Codewalk.patt x
-
-and substitute_str_item_macros x =
-   Codewalk.walkwith
-      (Some apply_expr_macros)
-      (Some apply_patt_macros)
-      None
-      Codewalk.str_item x
-
 
 
 (*****************************************************************************)
 (* Utilities *)
 
-(* Parse a string as an expr - wrap it in parens to make sure it all parses. *)
-let parse_expr str =
-   let str = "(" ^ str ^ ")" in
-   let stream = Stream.of_string str in
-      try Grammar.Entry.parse expr stream
-      with exc ->
-         Format.set_formatter_out_channel stderr;
-         Format.open_vbox 0;
-         let exc =
-            match exc with
-             | Stdpp.Exc_located (bp, ep) exc ->
-                  Printf.eprintf
-                     "When processing -D for %s, at chars %d-%d of \"%s\"\n"
-                     !Pcaml.input_file bp ep str;
-                  exc
-             | _ -> exc
-         in
-            Pcaml.report_error exc;
-            Format.close_box ();
-            Format.print_newline ();
-            exit 2
-
-(* Define str, or if it "X=Y", then define X with Y parsed as an expression *)
+let remove_nothings =
+   Codewalk.walkwith
+      (Some (fun expr -> match expr with
+              | <:expr< $e1$ $lid:"!NOTHING"$ >> -> e1
+              | <:expr< $lid:"!NOTHING"$ $e2$ >> -> e2
+              | <:expr< fun $x$ $lid:"!NOTHING"$ -> $b$ >> ->
+                   let loc = loc_of_expr expr in <:expr< fun $x$ -> $b$ >>
+              | <:expr< fun $lid:"!NOTHING"$ $x$ -> $b$ >> ->
+                   let loc = loc_of_expr expr in <:expr< fun $x$ -> $b$ >>
+              | x -> x))
+      (Some (fun patt -> match patt with
+              | <:patt< $p1$ $lid:"!NOTHING"$ >> -> p1
+              | <:patt< $lid:"!NOTHING"$ $p2$ >> -> p2
+              | x -> x))
+      None
+      Codewalk.str_item
+      
+(* Define str; if it "X=Y", then define X with Y parsed as possible macros *)
 let define_str str =
-   try let i = String.index str '=' in
-          add_simple_expr_macro (String.sub str 0 i) []
-             (parse_expr (String.sub str (i+1) ((String.length str)-i-1)))
-   with Not_found ->
+   try begin
+      let i = String.index str '=' in
+      (* wrap it in parens to make sure it all parses. *)
+      let name = String.sub str 0 i in
+      let pstr = "("^ (String.sub str (i+1) ((String.length str)-i-1)) ^")" in
+      let parsed = ref false in
+         begin try
+            add_simple_expr_macro
+               name [] (Grammar.Entry.parse expr (Stream.of_string pstr));
+            parsed := true;
+         with _ -> () end;
+         begin try
+            add_simple_patt_macro
+               name [] (Grammar.Entry.parse patt (Stream.of_string pstr));
+            parsed := true;
+         with _ -> () end;
+         if not !parsed then begin
+            Printf.eprintf "Couldn't parse -D flag definition: \"%s\"\n" str;
+            exit 2;
+         end
+   end with Not_found ->
       add_simple_expr_macro str [] (let loc = (0,0) in <:expr< () >>)
 
 (* This function turns simple patterns to expressions for exprpatt macros. *)
-let rec patt2expr patt =
-   let loc = loc_of_patt patt in
-      match patt with
-       | <:patt< $chr:c$ >> -> <:expr< $chr:c$ >>
-       | <:patt< $str:s$ >> -> <:expr< $str:s$ >>
-       | <:patt< $int:s$ >> -> <:expr< $int:s$ >>
-       | <:patt< $lid:i$ >> -> <:expr< $lid:i$ >>
-       | <:patt< $uid:s$ >> -> <:expr< $uid:s$ >>
-       | <:patt< $p1$ . $p2$ >> ->
-            let e1 = patt2expr p1 and e2 = patt2expr p2
-            in <:expr< $e1$ . $e2$ >>
-       | <:patt< $p1$ $p2$ >> ->
-            let e1 = patt2expr p1 and e2 = patt2expr p2
-            in <:expr< $e1$ $e2$ >>
-       | <:patt< ( $list:pl$ ) >> ->
-            let el = List.map patt2expr pl in
-               <:expr< ( $list:el$ ) >>
-       | <:patt< { $list:ppl$ } >> ->
-            let eel =
+let rec expr2patt expr =
+   let loc = loc_of_expr expr in
+      match expr with
+       | <:expr< $chr:c$ >> -> <:patt< $chr:c$ >>
+       | <:expr< $str:s$ >> -> <:patt< $str:s$ >>
+       | <:expr< $int:s$ >> -> <:patt< $int:s$ >>
+       | <:expr< $lid:i$ >> -> <:patt< $lid:i$ >>
+       | <:expr< $uid:s$ >> -> <:patt< $uid:s$ >>
+       | <:expr< $e1$ . $e2$ >> ->
+            let p1 = expr2patt e1 and p2 = expr2patt e2
+            in <:patt< $p1$ . $p2$ >>
+       | <:expr< $e1$ $e2$ >> ->
+            let p1 = expr2patt e1 and p2 = expr2patt e2
+            in <:patt< $p1$ $p2$ >>
+       | <:expr< ( $list:el$ ) >> ->
+            let pl = List.map expr2patt el in
+               <:patt< ( $list:pl$ ) >>
+       | <:expr< { $list:eel$ } >> ->
+            let ppl =
                List.map
-                  (fun (p1, p2) -> ((patt2expr p1), (patt2expr p2)))
-                  ppl
-            in <:expr< { $list:eel$ } >>
-       | patt -> let (b, e) = loc in
-            Printf.eprintf
-               "could not convert pattern to expression at %d-%d.\n" b e;
-            exit 1
+                  (fun (e1, e2) -> ((expr2patt e1), (expr2patt e2)))
+                  eel
+            in <:patt< { $list:ppl$ } >>
+       | _ -> failwith "could not convert expression to pattern."
 
 (* This is a list of directories to search for INCLUDE statements. *)
 let include_dirs = ref ["./"]
@@ -648,7 +644,7 @@ type str_item_or_def =
    | MaStr of str_item                    (* normal str_item *)
    | MaDfe of string * string list * expr (* an expr macro def. statement *)
    | MaDfp of string * string list * patt (* a patt macro def. statement *)
-   | MaDfb of string * string list * patt (* both patt&expr (should convert) *)
+   | MaDfa of string * string list * expr (* all types (should convert expr) *)
    | MaUnd of string                      (* a macro undefine statement *)
    | MaIfd of string * str_item_or_def list * str_item_or_def list
                                           (* a conditional str_item *)
@@ -662,8 +658,9 @@ let handle_macstuff loc =
        | MaStr si  -> si
        | MaDfe n a e -> add_simple_expr_macro n a e; nothing
        | MaDfp n a p -> add_simple_patt_macro n a p; nothing
-       | MaDfb n a p -> add_simple_expr_macro n a (patt2expr p);
-                        add_simple_patt_macro n a p; nothing
+       | MaDfa n a e -> add_simple_expr_macro n a e;
+            (try add_simple_patt_macro n a (expr2patt e) with _ -> ());
+            nothing
        | MaUnd x -> undefine_macro x; nothing
        | MaIfd x e1 e2 -> aux (MaLst (if is_defined x then e1 else e2))
        | MaLst l ->
@@ -695,11 +692,14 @@ let handle_macstuff loc =
       aux
 
 EXTEND
-   GLOBAL: expr str_item;
+   GLOBAL: str_item expr patt;
+   (* Note: macstuff is macro definitions etc, in these cases, there is no
+    * substitutions done because we want them as they are. *)
    str_item: FIRST
-      [[ x = macstuff -> handle_macstuff loc x
-       | (* This is where macros are expanded *)
-         si = NEXT -> substitute_str_item_macros si
+      [[ x = macstuff -> (* macro directives etc *)
+            handle_macstuff loc x
+       | si = NEXT -> (* expand macros etc *)
+            remove_nothings (macros_codewalk Codewalk.str_item si)
        ]];
    macstuff:
       [[ "IFDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_macstuff;
@@ -720,17 +720,12 @@ EXTEND
        | ["UNDEFINE" | "UNDEF"]; c = UIDENT ->
             (* UNDEF is the same as UNDEFINE to mimic CPP *)
             MaUnd c
-       | [ "DEFEXPRMACRO" | "DEFMACRO" ];
-         name = UIDENT; args = LIST0 UIDENT; "="; body = expr ->
+       | "DEFMACRO";     name = UIDENT; args = LIST0 UIDENT; "="; body = expr ->
+            MaDfa name args body
+       | "DEFEXPRMACRO"; name = UIDENT; args = LIST0 UIDENT; "="; body = expr ->
             MaDfe name args body
-       | "DEFPATTMACRO";
-         name = UIDENT; args = LIST0 UIDENT; "="; body = patt ->
+       | "DEFPATTMACRO"; name = UIDENT; args = LIST0 UIDENT; "="; body = patt ->
             MaDfp name args body
-       | "DEFEXPRPATTMACRO";
-         name = UIDENT; args = LIST0 UIDENT; "="; body = patt ->
-         (* The above only forces body to be parsed as a pattern, then it is
-          * parsed as an expr as well and an error is raised if this fails. *)
-            MaDfb name args body
        | "INCLUDE"; file = STRING ->
             MaInc file
        ]];
@@ -752,10 +747,12 @@ EXTEND
             let old_macros = !expr_macros in
                expr_macros := [];
                add_simple_expr_macro name args body;
-               let result = substitute_expr_macros e in
+               let result = macros_codewalk Codewalk.expr e in
                   expr_macros := old_macros;
                   result
        ]];
+   expr: LEVEL "simple" [[ "NOTHING" -> <:expr< $lid:"!NOTHING"$ >> ]];
+   patt: LEVEL "simple" [[ "NOTHING" -> <:patt< $lid:"!NOTHING"$ >> ]];
 END
 
 
@@ -769,4 +766,4 @@ let _ =
    add_option "-U" (Arg.String undefine_macro)
       "<string>   Undefine for IFDEF's.";
    add_option "-I" (Arg.String add_include_dir)
-      "<string>   Add a path for INCLUDE." ;
+      "<string>   Add a path for INCLUDE."
