@@ -275,7 +275,8 @@ let dtest connection =
 
 
 let looptest connection =
-  let lib = join connection ["nltest"] in 
+  let lib = join connection ["nltestl"] in 
+
     (unwind_error
       (function () -> 
 
@@ -472,7 +473,7 @@ let jointest remote_port local_port =
 ;;
 
 
-special_error_handler (function () -> testascii "LOCKE" 5289 5289)
+special_error_handler (function () -> testascii "BOLVERK" 3448 4442)
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 

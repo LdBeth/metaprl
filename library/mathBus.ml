@@ -464,11 +464,15 @@ let pascii2num char=
          
 
 let write_base64_char char stream =
-  
-  if  !base64_char_count = 0  then
-    (output_char stream '\n';
-     base64_char_count := 64);
-         (* print_char char;*)  output_char stream char;
+  let rec try_out ch = 
+   try (output_char stream ch) with 
+   Sys_error e(*"Try again"*) -> 
+     (Unix.sleep 1; try_out ch) in
+  if !base64_char_count = 0  then
+    (try_out '\n';
+    base64_char_count := 64);
+         (* print_char char;*) 
+  try_out char;
   decr base64_char_count
 
 
@@ -498,6 +502,8 @@ let buffer = ref 0
 let cnt = ref 0
 
 let flush_buffer buffer stream cnt =
+  (*for i = 1 to 10000000
+      do (); done; flush stream;  *)
   match !cnt with
     0 -> ()
   | 1 ->
@@ -716,7 +722,7 @@ let trailer_num = lbor (lbsl (create 0XABCD) 16) (create 0XEF00)
 let rec rwrite_node node stream =
   let op =mbnode_labelq node in
   let
-      nSubterms = (create  (mbnode_nSubterms node)) in
+      nSubterms = (create (mbnode_nSubterms node)) in
   (
   write_32bit op stream;
   write_32bit nSubterms stream;

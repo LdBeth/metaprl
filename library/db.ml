@@ -396,8 +396,8 @@ let mk_real_param_from_strings stp value ptype =
 			  (make_param (Number (Num.num_of_string value)))])
   | "t" -> (Token value)
   | "s" -> (String value)
-  | "q" -> (ParmList [(make_param (String "quote")); (make_param (String value))])
-  | "b" -> ( ParmList [ ( make_param (String "bool"))
+  | "q" -> (ParmList [(make_param (Token "quote")); (make_param (Token value))])
+  | "b" -> ( ParmList [ ( make_param (Token "bool"))
 			; if value = "false"	 then make_param (Number (Num.num_of_int 0))
 			  else if value = "true" then make_param (Number (Num.num_of_int 1))
 			  else error ["real_parameter_from_string"; value][][]
@@ -407,28 +407,28 @@ let mk_real_param_from_strings stp value ptype =
     (ObId (stamp_to_object_id (term_to_stamp term)))
   | "l" -> let level = 
       scan_level_expression (make_le_scanner (Stream.of_string value)) in 
-    (ParmList [(make_param (Level level)); (make_param (String value))])
+    (ParmList [(make_param (Token "nuprl5_level_expression")); (make_param (Level level)); (make_param (String value))])
   | t -> failwith "unknown special op-param"
  
 let mk_meta_param_from_strings value ptype =
   match ptype with "n" -> (MNumber value)
   | "t" -> (MToken value)
   | "s" -> (MString value)
-  | "q" -> (ParmList [(make_param (String "quote")); (make_param (String value))])
-  | "b" -> (ParmList [(make_param (String "bool")); (make_param (Number (Num.num_of_string value)))])
+  | "q" -> (ParmList [(make_param (Token "quote")); (make_param (Token value))])
+  | "b" -> (ParmList [(make_param (Token "bool")); (make_param (Number (Num.num_of_string value)))])
   | "v" -> (MVar value)
   | "l" -> (MLevel value)
   |  t -> failwith "unknown special meta op-param"
  
 let extract_binding3 pl = 
   match pl with
-  (String "extended")::((String m)::((String v)::tl)) -> ["extended"; m; v]
+  (Token "extended")::((Token m)::((Token v)::tl)) -> ["extended"; m; v]
  | t  -> failwith "extract binding 3"
 
 let extract_binding2 pl = 
   match pl with
-  (String "extended")::((String v)::tl) -> ["extended"; v]
- |(String "display")::((String v)::tl) -> ["display"; v]
+  (Token "extended")::((Token v)::tl) -> ["extended"; v]
+ |(Token "display")::((String v)::tl) -> ["display"; v]
  | t  -> failwith "extract binding 2"
 
 let extract_binding1 pl = 
@@ -441,16 +441,15 @@ let string_to_bindings value =
   let l = String.length value in
   if l > ash_length then 
     let v = String.sub value 0 ash_length in
-    let l'= String.length v in 
     (if v = ascii_special_header then 
-      let c = String.sub v 0 1 and v' = String.sub v 1 (l' - 1) in
+      let c = String.sub value 1 1 and v' = String.sub value 2 (l - 2) in
       match c with 
 	"A" -> ["nuprl5_implementation3"; "extended"; "abstraction"; v']
       | "D" -> ["nuprl5_implementation3"; "extended"; "display"; v']
       | "S" -> ["nuprl5_implementation2"; "extended"; v']
       | "d" -> ["nuprl5_implementation2"; "display"; v']
       | "a" -> ["nuprl5_implementation1"; v']
-      | "%" -> [v']
+      | "%" -> [(String.sub value 1 (l - 1)) ]
       | t -> failwith "unknown special binding"
     else [value])
   else [value]
@@ -467,7 +466,7 @@ let rec string_to_parameter s ptype =
      let ss = (String.sub s 2 (len -2)) in
       make_param
        (match (String.get s 1) with
-	  '%' -> (mk_real_param_from_strings string_to_parameter ss ptype)
+	  '%' -> (mk_real_param_from_strings string_to_parameter (String.sub s 1 (len - 1)) ptype)
 
 	| 'A' -> (ParmList	[ make_param (Token "extended")
 				; make_param (Token "abstraction")

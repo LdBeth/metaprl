@@ -18,7 +18,7 @@ let mbs_ParmList = numeric_label "ParmList"
 let mbs_TermIndex = numeric_label "TermIndex"
 let mbs_MString = numeric_label "MString"
 let mbs_MLongInteger = numeric_label "MLongInteger"
-let mbs_MVariable = numeric_label "Variable"
+let mbs_MVariable = numeric_label "MVariable"
 let mbs_MLevel = numeric_label "MLevel"
 let mbs_MToken = numeric_label "MToken"
 
@@ -42,7 +42,7 @@ let rec mbparameter_of_param param =
 	  {le_const = i; le_vars = vars } ->
 	    (let rec loop l nodes=
 	      (match l with
-		[] -> mbnode mbs_Level [(mbnode mbs_Level ((mb_integer i)::nodes))]
+		[] -> mbnode mbs_Level ((mb_integer i)::nodes)
 	      | hd::tl -> let aux2 = function
 		    { le_var = v; le_offset = i2 } ->
 		      loop tl ((mb_string v)::((mb_integer i2)::nodes))
@@ -71,13 +71,13 @@ let append l p =
 let mbbindings_of_bvars bvars =
   let rec loop l1 l2 =
     match l1 with
-      "nuprl5_implementation1"::(h1::t1) -> loop t1 ((mb_stringq h1 mbs_MVariable)::l2)
+      "nuprl5_implementation1"::(h1::t1) -> loop t1 ((mbbinding_of_binding h1)::l2)
     | "nuprl5_implementation2"::(h1::(h2::t1)) -> 
-	loop t1 ((mbnode mbs_ParmList (List.map mb_string [h1; h2]))::l2)
+	loop t1 ((mbnode mbs_ParmList (List.map mbbinding_of_binding [h1; h2]))::l2)
     |  "nuprl5_implementation3"::(h1::(h2::(h3::t1))) -> 
-	loop t1 ((mbnode mbs_ParmList (List.map mb_string [h1; h2; h3]))::l2)
-    |  h1::t1 -> loop t1 ((mb_stringq h1 mbs_Variable)::l2)
-    | [] -> l2
+	loop t1 ((mbnode mbs_ParmList (List.map mbbinding_of_binding [h1; h2; h3]))::l2)
+    |  h1::t1 -> loop t1 ((mbbinding_of_binding h1)::l2)
+    | [] -> List.rev l2
   in loop bvars []
       
 let rec mbterm_of_term term =
@@ -126,15 +126,14 @@ let rec param_of_mbparameter mbparameter =
     in make_param (ObId (make_object_id (loop (mbnode_nSubtermsq mbparameter) [])))
 
   else if bequal b mbs_Level then
+    let nsubterms = (mbnode_nSubtermsq mbparameter) in
     match (mbnode_subtermq mbparameter 1) with
-      Mnode n1 -> let nsubterms = (mbnode_nSubtermsq n1) in
-      let l1 = (match (mbnode_subtermq n1 1) with
-        Mnode n -> let constant = integer_value n and
+      Mnode n1 -> let constant = integer_value n1 and
 	    le_vars = let rec loop i l =
 	      if i <= 1 then l
-	      else (match (mbnode_subtermq n1 i) with
+	      else (match (mbnode_subtermq mbparameter i) with
 	      	Mnode n -> let s = (string_value n) in
-	      	(match (mbnode_subtermq n1 (i-1)) with
+	      	(match (mbnode_subtermq mbparameter (i-1)) with
 	      	  Mnode n2-> loop (i-2) ((mk_level_var s (integer_value n2))::l)
 	      	| Mbint b -> failwith "subterm should be a node")
 	      | Mbint b -> failwith "subterm should be a node")
@@ -142,22 +141,14 @@ let rec param_of_mbparameter mbparameter =
 	    in loop nsubterms []
 	      
       	in make_param (Level (mk_level constant le_vars)) 
-      | Mbint b -> failwith "subterm should be a node") in
-      let nsubterms' = (mbnode_nSubtermsq mbparameter) in
-      if nsubterms' = 1 then l1 
-      else make_param (ParmList [l1; make_param (String (match (mbnode_subtermq mbparameter 2) with
-        Mnode n -> (match (mbnode_subtermq n 1) with
-          Mnode n1 -> (string_value n1)
-      	| Mbint b -> failwith "subterm should be a node")
-      | Mbint b -> failwith "subterm should be a node"))])
-    | Mbint b -> failwith "subterm should be a node" 
+      | Mbint b -> failwith "subterm should be a node"
 
   else if bequal b mbs_MString then make_param (MString (string_value mbparameter))
   else if bequal b mbs_MVariable then make_param (MVar (string_value mbparameter))
   else if bequal b mbs_MToken then make_param (MToken (string_value mbparameter))
   else if bequal b mbs_MLongInteger then make_param (MNumber (string_value mbparameter))
   else if bequal b mbs_MLevel then make_param (MLevel (string_value mbparameter))
-  else let ((x, y) as fg) = dest_int32 b in failwith "mbparameter_of_parameter1"(* ["mbparameter_of_parameter1"; "not"] [] [(inatural_term x); (inatural_term y)]*)
+  else let ((x, y) as fg) = dest_int32 b in failwith "param_of_mbparameter1"(* ["mbparameter_of_parameter1"; "not"] [] [(inatural_term x); (inatural_term y)]*)
  
 
 
@@ -317,3 +308,14 @@ let rec print_term term =
 (*LAL ok, done on nuprl side*)
 	
 
+let write_node_to_file node filename =
+  let out_channel = open_out filename in
+  write_node node out_channel;
+  close_out out_channel;
+  ()
+
+let read_node_from_file filename =
+  let in_channel = open_in filename in
+  let node = read_node in_channel in
+  close_in in_channel;
+  node

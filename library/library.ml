@@ -81,6 +81,20 @@ let faux_ascii_quick bterms =
     data
 
   
+let faux_ascii_file bterms =
+ let persist = term_of_unbound_term (hd bterms) in
+   let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
+   let data = Db.db_read s y in
+    print_newline();
+    print_string "faf";
+    print_newline();
+    let filename = "/amd/noon/y/nuprl/nuprll/nuprl-light/library/mbnode.txt" in
+    let rterm = Mbterm.write_node_to_file (Mbterm.mbterm_of_term data) filename in
+    print_newline();
+    print_string "aw";
+    print_newline();
+    itoken_term filename
+
 
 let faux_refine bterms =
  let seq = term_of_unbound_term (hd bterms) in
@@ -610,7 +624,10 @@ let directory_p t oid =
 let children t oid =
   Definition.directory_children (resource t "TERMS") t.tbegin oid
 
-let root t name = (assoc name (roots t))
+let root t name =
+ try (assoc name (roots t))
+ with Not_found -> error ["root";  "Not_found"; name] [][]
+
 let child t oid name = 
   let l = (children t oid) in
   try assoc name l 

@@ -24,3 +24,5 @@ val bvars_of_mbbindings: mbterm -> string list
 *)
 
 
+val write_node_to_file: mbterm -> string -> unit
+val read_node_from_file: string -> mbterm

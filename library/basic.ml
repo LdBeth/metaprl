@@ -270,7 +270,7 @@ let term_to_stamp t =
 
 let stamp_to_term stamp = stamp.term
 
-let stamp_to_object_id stamp = parameters_of_term stamp.term
+let stamp_to_object_id stamp = make_object_id (List.tl (parameters_of_term stamp.term))
 
 let in_transaction_p = fun
   { process_id = pid1; transaction_seq = tseq1 }
