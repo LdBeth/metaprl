@@ -7,19 +7,16 @@ VERSION=`$1 $2 -v 2>&1 | head -n1`
 OK=no
 for i in $VERSIONS; do
    if [ "$VERSION" = "$4 $i" ]; then
-      OK=yes
+      exit 0
    fi
 done
 
-if [ $OK = yes ]; then
-   exit 0
-else
-   cat << END_ECHO
+cat << END_ECHO
 ERROR: Wrong CAML version!
 
 "$1 $2 -v" produced the following version string:
 $VERSION
-   
+
 You are trying to compile the version of MetaPRL that is compatible
 with following Caml versions: $VERSIONS
 If you believe that this list of versions is incorrect, edit
@@ -28,5 +25,4 @@ the CAML_VERSIONS variable in mk/preface file.
 If you want to try to compile anyway, set your environment variable $3
 to point to the location of $1 program
 END_ECHO
-   exit 1
-fi
+exit 1
