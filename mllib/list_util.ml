@@ -47,7 +47,7 @@ let compare_lists cmp l1 l2 =
 let for_all2 f l1 l2 =
    let rec compare = function
       h1::t1, h2::t2 ->
-         f h1 h2 & compare (t1, t2)
+         compare (t1, t2) & f h1 h2
     | [], [] ->
          true
     | _ ->
@@ -560,6 +560,9 @@ let rec rev_iter2 f a b = match (a,b) with
 
 (*
  * $Log$
+ * Revision 1.16  1998/06/14 00:04:14  nogin
+ * "for_all2 f a b" should not call f when a and b have different length
+ *
  * Revision 1.15  1998/06/13 22:48:10  nogin
  * Added rev_iter2
  *
