@@ -91,16 +91,38 @@ struct
    (*
     * Collect all binding vars.
     *)
-   let rec binding_vars_term bvars = function t ->
-         binding_vars_bterms bvars (dest_term t).term_terms
+   let rec binding_vars_term t bvars =
+      binding_vars_bterms bvars (dest_term t).term_terms
 
    and binding_vars_bterms bvars = function
       btrm::l ->
          let bt = dest_bterm btrm in
-            binding_vars_bterms (binding_vars_term (List_util.union bt.bvars bvars) bt.bterm) l
+            binding_vars_bterms (binding_vars_term bt.bterm (List.fold_right StringSet.add bt.bvars bvars)) l
     | [] -> bvars
 
-   let binding_vars = binding_vars_term []
+   let binding_vars t = 
+      StringSet.elements
+         (match get_core t with
+            Term t ->
+               binding_vars_bterms StringSet.empty t.term_terms
+          | Sequent seq ->
+               let hyps = seq.sequent_hyps in
+               let len = SeqHyp.length hyps in
+               let rec coll_hyps i =
+                  if i = len then binding_vars_term seq.sequent_args StringSet.empty else
+                  match hyps.(i) with
+                     Hypothesis (v,t) ->
+                        binding_vars_term t (StringSet.add v (coll_hyps (succ i)))
+                   | Context (v,ts) ->
+                        List.fold_right binding_vars_term ts (coll_hyps (succ i))
+               in
+               let goals = seq.sequent_goals in
+               let len = SeqGoal.length goals in
+               let rec coll_goals i =
+                  if i = len then coll_hyps 0 else
+                  binding_vars_term goals.(i) (coll_goals (succ i))
+               in coll_goals 0
+          | _ -> fail_core "binding_vars")
 
    let add_vars vars term =
       StringSet.union vars (term_free_vars term)
@@ -124,26 +146,18 @@ struct
             let free_set = free_vars_set terms in
                List.exists (fun v -> StringSet.mem free_set v) vars
 
-   let rec context_vars_term cvars t = match dest_term t with
-                                          { term_op = { op_name = opname; op_params = [Var v] };
-                                            term_terms = bterms
-                                          } when Opname.eq opname context_opname ->
-                                             let cvars' =
-                                                if List.mem v cvars then
-                                                   cvars
-                                                else
-                                                   v::cvars
-                                             in
-                                                context_vars_bterms cvars' bterms
-                                        | { term_terms = bterms } ->
-                                             context_vars_bterms cvars bterms
-
-   and context_vars_bterms cvars = function
-      bt::l ->
-         context_vars_bterms (context_vars_term cvars (dest_bterm bt).bterm) l
-    | [] -> cvars
-
-   let context_vars = context_vars_term []
+   let context_vars t = 
+      match get_core t with
+         Sequent seq ->
+            let hyps = seq.sequent_hyps in
+            let len = SeqHyp.length hyps in
+            let rec context_vars i =
+               if i = len then [] else
+               match hyps.(i) with
+                  Hypothesis _ -> context_vars (succ i)
+                | Context (v,_) -> v::context_vars (succ i)
+            in context_vars 0
+       | _ -> []
 
    (************************************************************************
     * ALPHA EQUALITY                                                       *
