@@ -28,6 +28,7 @@ LMFILES :=\
 	term_dtable\
 	refine_sig\
 	refine\
+	refine_exn\
 	dform\
 	dform_print\
 	theory\

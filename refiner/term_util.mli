@@ -33,6 +33,7 @@ val unzip_mimplies : meta_term -> term list
 val zip_mimplies : term list -> meta_term
 val unzip_mfunction : meta_term -> (term option * term) list * term
 val zip_mfunction : (term option * term) list -> term -> meta_term
+val strip_mfunction : meta_term -> meta_term
 
 (************************************************************************
  * OTHER UTILITIES                                                      *
@@ -55,6 +56,9 @@ val construct_redex : string array -> term list -> term list -> term
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/09 15:26:48  jyh
+ * Added strip_mfunction.
+ *
  * Revision 1.2  1998/02/21 20:58:26  jyh
  * Two phase parse/extract.
  *

@@ -382,6 +382,16 @@ struct
     | [] ->
          flush stderr
    
+   let rec print_vterms out = function
+      (Some v, h)::t ->
+         eprintf "\t%s. %s\n" (string_of_term v) (string_of_term h);
+         print_vterms out t
+    | (None, h)::t ->
+         eprintf "\t%s\n" (string_of_term h);
+         print_vterms out t
+    | [] ->
+         flush stderr
+   
    let print_non_vars out params =
       print_terms out (collect_non_vars params)
       
@@ -393,16 +403,17 @@ struct
          (* Do some checking on the rule *)
          if debug_grammar then
             begin
-               eprintf "Checking rule: %s\n" name;
-               eprintf "Non vars:\n%a" print_non_vars params';
-               eprintf "Args:\n%a" print_terms (unzip_mimplies args)
+               let args, result = unzip_mfunction args in
+                  eprintf "Checking rule: %s\n" name;
+                  eprintf "Non vars:\n%a" print_non_vars params';
+                  eprintf "Args:\n%a --> %s\n" print_vterms args (string_of_term result)
             end;
          Refiner.check_rule (**)
             name
             (Array.of_list (collect_cvars params'))
             (Array.of_list (collect_vars params'))
             (collect_non_vars params')
-            args;
+            (strip_mfunction args);
          if debug_grammar then
             eprintf "Checked rule: %s%t" name eflush;
    
@@ -973,6 +984,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.12  1998/04/09 15:26:32  jyh
+ * Added strip_mfunction.
+ *
  * Revision 1.11  1998/02/23 14:46:09  jyh
  * First implementation of binary file compilation.
  *

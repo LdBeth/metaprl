@@ -2,6 +2,9 @@
  * Utilities on terms.
  *
  * $Log$
+ * Revision 1.4  1998/04/09 15:26:47  jyh
+ * Added strip_mfunction.
+ *
  * Revision 1.3  1998/02/21 20:58:25  jyh
  * Two phase parse/extract.
  *
@@ -96,6 +99,16 @@ let rec zip_mimplies = function
 (*
  * Implication with bindings.
  *)
+let rec strip_mfunction = function
+   MetaTheorem t ->
+      MetaTheorem t
+ | MetaImplies (a, t) ->
+      MetaImplies (a, strip_mfunction t)
+ | MetaFunction (v, a, t) ->
+      MetaImplies (a, strip_mfunction t)
+ | MetaIff (t1, t2) ->
+      MetaIff (strip_mfunction t1, strip_mfunction t2)
+
 let unzip_mfunction t =
    let rec collect l = function
       MetaTheorem t ->
