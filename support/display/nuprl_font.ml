@@ -315,7 +315,7 @@ dform cd_begin_df2_java : internal :: mode[java] :: cd_begin[name:s] =
    izone `"<a href=\"http://cd.metaprl.local/" slot[name:s] `"\">" ezone
 
 dform cd_begin_df2_html : internal :: mode[html] :: cd_begin[name:s] =
-   izone `"<a href=\"" slot[name:s] `"\">" ezone
+   izone `"<a href=\"" slot[name:s] `"/\">" ezone
 
 dform cd_end_df1 : internal :: except_mode[html] :: cd_end =
    `""

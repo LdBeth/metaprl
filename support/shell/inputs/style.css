@@ -58,6 +58,9 @@ SUB {
 A {
     font-weight: bold
 }
+A.rule_name {
+    font-family: monospace
+}
 A:link {
     color: #3333bb;
     background-color: transparent
@@ -77,36 +80,36 @@ A:hover {
     position: absolute;
     top: 0;
     left: 0;
-    width: 800;
-    height: 600;
+    width: 800px;
+    height: 600px;
     display: block;
     border: none;
-    padding: none;
+    padding: 0;
     overflow: auto
 }
 
 #messagebox {
     position: absolute;
-    top: 600;
+    top: 600px;
     left: 0;
-    width: 800;
-    height: 100;
+    width: 800px;
+    height: 100px;
     display: block;
     border: none;
-    padding: none;
+    padding: 0;
     overflow: auto;
     background-color: #f8f8ff
 }
 
 #rulebox {
     position: absolute;
-    top: 700;
+    top: 700px;
     left: 0;
-    width: 800;
-    height: 150;
+    width: 800px;
+    height: 150px;
     display: block;
     border: none;
-    padding: none;
+    padding: 0;
     overflow: auto
 }
 
@@ -114,5 +117,5 @@ A:hover {
     position: static;
     display: block;
     border: none;
-    padding: none
+    padding: 0
 }

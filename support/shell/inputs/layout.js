@@ -44,20 +44,20 @@ function ResizeBoxes(rulebox_height) {
     var message = document.getElementById('messagebox');
     var rule = document.getElementById('rulebox');
 
-    content.style.top = 0;
-    content.style.left = horizontal_border_size;
-    content.style.width = box_width;
-    content.style.height = content_height - vertical_border_size;
+    content.style.top = "0px";
+    content.style.left = horizontal_border_size + "px";
+    content.style.width = box_width + "px";
+    content.style.height = (content_height - vertical_border_size) + "px";
 
-    message.style.top = content_height;
-    message.style.left = horizontal_border_size;
-    message.style.width = box_width;
-    message.style.height = message_height - vertical_border_size;
+    message.style.top = content_height + "px";
+    message.style.left = horizontal_border_size + "px";
+    message.style.width = box_width + "px";
+    message.style.height = (message_height - vertical_border_size) + "px";
 
-    rule.style.top = rulebox_top;
-    rule.style.left = horizontal_border_size;
-    rule.style.width = box_width;
-    rule.style.height = rulebox_height;
+    rule.style.top = rulebox_top + "px";
+    rule.style.left = horizontal_border_size + "px";
+    rule.style.width = box_width + "px";
+    rule.style.height = rulebox_height + "px";
 }
 
 /*
@@ -78,7 +78,7 @@ function Long() {
     var inputbox = document.getElementById('inputbox');
     var text = document.commandform.command.value;
     document.commandform.togglebutton.value = 'Short';
-    inputbox.innerHTML = '# <textarea name="command" rows="4" cols="100" border="0">' + text + '</textarea>';
+    inputbox.innerHTML = '# <textarea name="command" rows="4" cols="100">' + text + '</textarea>';
     ResizeBoxes(150);
     input_is_short = false;
 }

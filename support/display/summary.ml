@@ -327,11 +327,14 @@ dform opname_name_df1 : except_mode[tex] :: opname_name[name:s] =
 
 declare rule_name[name:s]
 
+dform rule_name_df1 : except_mode[tex] :: except_mode[html] :: rule_name[name:s] =
+   slot[name:s]
+
 dform rule_name_df2 : mode[tex] :: rule_name[name:s] =
    izone `"\\labelrule{" slot[name:s] `"}{" ezone slot[name:s] izone `"}" ezone
 
-dform rule_name_df1 : except_mode[tex] :: rule_name[name:s] =
-   slot[name:s]
+dform rule_name_df3 : mode[html] :: rule_name[name:s] =
+   html["<span class=\"rule_name\">"] cd_begin[name] slot[name:s] cd_end html["</span>"]
 
 declare rewrite_name[name:s]
 
@@ -339,7 +342,7 @@ dform rewrite_name_df2 : mode[tex] :: rewrite_name[name:s] =
    izone `"\\labelrewrite{" slot[name:s] `"}{" ezone slot[name:s] izone `"}" ezone
 
 dform rewrite_name_df1 : except_mode[tex] :: rewrite_name[name:s] =
-   slot[name:s]
+   rule_name[name:s]
 
 declare resource_name[name:s]
 
@@ -506,22 +509,18 @@ dform mlrewrite_df1 : "mlrewrite"[name:s]{'params; 'redex; some{'body}; 'res} =
 (*
  * Parent path is separated by dots.
  *)
-declare path{'t}
 declare begin_cd{'t}
+declare path{'t}
 declare cdinternal{'t}
-declare end_cd
 
 dform begin_cd_df : internal :: except_mode[html] :: begin_cd{'path} =
-   `""
-
-dform end_cd_df : internal :: except_mode[html] :: end_cd =
    `""
 
 dform begin_cd_df1 : internal :: mode[java] :: begin_cd{'path} =
    izone `"<a href=\"http://cd.metaprl.local/" cdinternal{'path} `"\">" ezone
 
 dform begin_cd_df2 : internal :: mode[html] :: begin_cd{'path} =
-   izone `"<a href=\"" cdinternal{'path} `"\">" ezone
+   izone `"<a href=\"../" cdinternal{'path} `"/\">" ezone
 
 dform cd_internal_df1 : internal :: cdinternal{cons{."parent"[name:s]; cons{'n2; 'n3}}} =
    slot[name:s] `"/" cdinternal{cons{'n2; 'n3}}
@@ -534,9 +533,6 @@ dform cd_internal_df2 : internal :: except_mode[html] :: cdinternal{cons{."paren
 
 dform cd_internal_df3 : internal :: cdinternal{nil} = `""
 
-dform end_cd_df1 : internal :: mode[html] :: end_cd =
-   izone `"</a>" ezone
-
 dform path_parent_nil_df2 : internal :: mode[tex] :: path{cons{."parent"[name:s]; nil}} =
    slot[name:s]
 
@@ -547,7 +543,7 @@ dform path_parent_cons_df : internal :: path{cons{."parent"[name:s]; .cons{'n1; 
    slot[name:s] keyword["."] cons{'n1; 'n2}
 
 dform parent_df : except_mode[tex] :: "parent"{'path; 'resources} =
-   info["extends"] " " begin_cd{'path} path{'path} end_cd
+   info["extends"] " " begin_cd{'path} path{'path} cd_end
 
 dform parent_df2 : mode[tex] :: "parent"{'path; 'resources} =
    info["Extends"] " " cdinternal{'path}
@@ -645,7 +641,7 @@ dform packages_df1 : internal :: packages{'packages} =
    info["end"] popm ezone
 
 dform packages_df2 : internal :: packages_df{cons{package[name:s]; 'next}} =
-   info["module "] cd_begin[name:s] slot[name:s] cd_end hspace packages_df{'next}
+   info["module "] cd_begin[name] slot[name:s] cd_end hspace packages_df{'next}
 
 dform packages_df3 : internal :: packages_df{nil} =
    `""

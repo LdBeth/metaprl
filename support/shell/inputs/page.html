@@ -1,24 +1,26 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
         <title>%%TITLE%%: %%LOCATION%%</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<script type="text/javascript" src="/inputs/cookie.js"></script>
 	<script type="text/javascript" src="/inputs/layout.js"></script>
 	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
         %%STYLE%%
     </head>
 
-    <body onLoad="Load(110)" onResize="Resize(110)">
+    <body onLoad="Load(110)">
     <div id="contentbox">%%BODY%%</div>
     <div id="messagebox">%%MESSAGE%%</div>
     <div id="rulebox">
-        <form name="commandform" method="post">
+        <form name="commandform" method="post" action=".">
         <font style="visibility:hidden"># </font>
-        <input type=submit name="submit" value="Submit" border="0">
-        <input type=button name="togglebutton" value="Long" border="0" onClick="return Toggle()">
+        <input type=submit name="submit" value="Submit">
+        <input type=button name="togglebutton" value="Long" onClick="return Toggle()">
         %%BUTTONS%%
         <p>
         <div id="inputbox">
-	# <input type="text" name="command" size="100" border="0" value="">
+	# <input type="text" name="command" size="100" value="">
         </div>
         </form>
     </div>

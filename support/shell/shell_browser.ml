@@ -76,7 +76,7 @@ struct
     * Types of URIs.
     *)
    type uri =
-      SessionURI of Shell.t * string
+      SessionURI of Shell.t * string * bool  (* bool states whether the URL ends with a / *)
     | InputURI of string
     | LoginURI of string
     | UnknownURI of string
@@ -91,7 +91,7 @@ struct
             (try
                 let shell = Shell.find_shell id in
                 let dirname = Lm_string_util.prepend "/" rest in
-                   SessionURI (shell, dirname)
+                   SessionURI (shell, dirname, uri.[String.length uri - 1] = '/')
              with
                 Not_found ->
                    eprintf "Bad session: %s@." id;
@@ -260,6 +260,7 @@ struct
           } = http_info server
       in
       let uri = sprintf "http://%s:%d/session/%s%s" host port (Shell.pid shell) (Shell.pwd shell) in
+      let uri = if uri.[String.length uri - 1] = '/' then uri else (uri ^ "/") in
          if !debug_http then
             eprintf "Redirecting to %s@." uri;
          print_redirect_page outx SeeOtherCode uri;
@@ -306,17 +307,18 @@ struct
                print_access_granted_page outx state
             else
                print_login_page outx state
-       | SessionURI (shell, dirname) ->
+       | SessionURI (shell, dirname, is_dir) ->
             if is_valid_response state header then
                let width = get_window_width header in
-                  if chdir state shell dirname then
+                  (* To ensure relative links are correct, all URLs must end with a slash *)
+                  if chdir state shell dirname && is_dir then
                      begin
                         flush state shell;
                         print_page outx width state dirname;
                         state
                      end
                   else
-                     (* Directory changed failed *)
+                     (* Invalid directory or directory change failed *)
                      print_redisplay_page server state shell outx
             else
                print_login_page outx state
@@ -365,8 +367,9 @@ struct
                print_error_page outx BadRequestCode;
                eprintf "Shell_simple_http: bad POST command@.";
                state
-          | SessionURI (shell, dirname) ->
-               if chdir state shell dirname then
+          | SessionURI (shell, dirname, is_dir) ->
+               (* To ensure relative links are correct, all URLs must end with a slash *)
+               if chdir state shell dirname && is_dir then
                   match button with
                      None
                    | Some "Submit" ->
@@ -385,7 +388,7 @@ struct
                         Browser_display_term.add_prompt (sprintf "Unknown button %s" button);
                         print_redisplay_page server state shell outx
                   else
-                     (* Directory change failed *)
+                     (* Invalid directory or directory change failed *)
                      print_redisplay_page server state shell outx
 
    (*
