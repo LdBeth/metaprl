@@ -359,8 +359,6 @@ struct
                   REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", RewriteFreeSOVar v))
 
           | Hypothesis (v, term) ->
-               if List.mem v bvars then
-                  REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", StringVarError("double binding", v)));
                let enames, term = compile_so_contractum_term strict enames stack bconts bvars term in
                let enames, v' = compile_bname strict enames stack v in
                let enames, hyps, concl =
