@@ -1,3 +1,4 @@
+open Mp_debug
 open Printf
 open Set_sig
 
@@ -10,20 +11,12 @@ struct
    type t = Set1.t * Set2.t
    type elt = string
 
-   let rec print_list_aux = function
-      [] -> ()
-    | h::t -> eprintf ";%s" h; print_list_aux t
-
-   let print_list = function
-      [] -> ()
-    | h::t -> eprintf "%s" h; print_list_aux t
-
    let print_sets s1 s2 =
-      eprintf "MakeDebugSet.Set1 :\n[";
-      print_list (Set1.elements s1);
-      eprintf "] (%d)\nMakeDebugSet.Set2 :\n[" (Set1.cardinal s1);
-      print_list (Set2.elements s2);
-      eprintf "] (%d)\n" (Set2.cardinal s2)
+      eprintf "MakeDebugSet.Set1 :\n[%a] (%d)\nMakeDebugSet.Set2 :\n[%a] (%d)\n"
+              print_string_list (Set1.elements s1)
+              (Set1.cardinal s1)
+              print_string_list (Set2.elements s2)
+              (Set2.cardinal s2)
 
    let error_sets s1 s2 =
       print_sets s1 s2;

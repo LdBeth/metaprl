@@ -87,12 +87,6 @@ struct
    type varname = RewriteTypes.varname
 
    (*
-    * Print a term by printing its opname.
-    *)
-   let print_term out t =
-      debug_print out t
-
-   (*
     * Name in the stack.
     *)
    let print_varname out = function
@@ -102,28 +96,6 @@ struct
          fprintf out "arg:%d" i
     | SaveName i ->
          fprintf out "save:%d" i
-
-   (*
-    * List separated by semicolons.
-    *)
-   let rec print_any_list print out = function
-      [h] ->
-         print out h
-    | h::t ->
-         print out h;
-         output_string out "; ";
-         print_any_list print out t
-    | [] ->
-         ()
-
-   let print_string_list =
-      print_any_list output_string
-
-   let print_term_list =
-      print_any_list print_term
-
-   let print_int_list =
-      print_any_list (fun out i -> fprintf out "%d" i)
 
    let print_varname_list =
       print_any_list print_varname
