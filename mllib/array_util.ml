@@ -18,13 +18,8 @@ let _ =
 let mem i v =
    let l = Array.length v in
    let rec aux j =
-      if j < l then
-         if i = v.(j) then
-            true
-         else
-            aux (j + 1)
-      else
-         false
+      j < l & ( i = v.(j) or
+                aux (j + 1) )
    in
       aux 0
 
@@ -50,13 +45,8 @@ let index i v =
 let exists f v =
    let l = Array.length v in
    let rec aux j =
-      if j < l then
-         if f v.(j) then
-            true
-         else
-            aux (j + 1)
-      else
-         false
+      j < l & ( f v.(j) 
+                aux (j + 1) )
    in
       aux 0
 
@@ -75,6 +65,9 @@ let find_index f v =
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/14 01:29:37  nogin
+ * Make it faster
+ *
  * Revision 1.3  1998/04/24 19:38:45  jyh
  * Updated debugging.
  *
