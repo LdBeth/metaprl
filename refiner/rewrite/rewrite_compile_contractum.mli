@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Opname
@@ -86,6 +86,7 @@ module MakeRewriteCompileContractum
     with type term = TermType.term
     with type rstack = RewriteTypes.rstack
     with type rwterm = RewriteTypes.rwterm
+    with type strict = RewriteTypes.strict
 
 (*
  * -*-

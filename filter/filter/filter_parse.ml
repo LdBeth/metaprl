@@ -29,8 +29,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 open Printf
 open Pcaml
@@ -780,7 +780,7 @@ struct
          if (!debug_dform) && (modes=AllModes) then eprintf "Warning: display form %s - no modes specified%t" name eflush;
          try
             let redex, _ = compile_redex Relaxed [||] t in
-            ignore (compile_contractum redex expansion)
+            ignore (compile_contractum Relaxed redex expansion)
          with
             exn ->
                Stdpp.raise_with_loc loc exn;

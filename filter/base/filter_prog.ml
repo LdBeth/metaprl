@@ -1196,7 +1196,7 @@ struct
             let name = sprintf "_$contractum%d" index in
             let let_patt = <:patt< $lid:name$ >> in
             let let_value =
-               <:expr< $compile_contractum_expr loc$ $lid:redex_id$ $term_expr$ >>
+               <:expr< $compile_contractum_expr loc$ $strict_expr loc$ $lid:redex_id$ $term_expr$ >>
             in
                (let_patt, let_value) :: (contracta_bind (succ index) tl)
        | [] ->

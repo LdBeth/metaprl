@@ -28,9 +28,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
- *
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 module type RewriteSig =
@@ -70,7 +69,7 @@ sig
 
    type rewrite_namer = rewrite_stack -> string array -> string array
 
-   (* 
+   (*
     * Specifies whether instances of bound variables should be explicitly mentioned
     *
     * In "Strict" mode, <<lambda{x.'t}>> would only match a term where "t" does not have
@@ -86,7 +85,7 @@ sig
     *)
    val compile_redex : strict -> string array -> term -> rewrite_redex * rewrite_namer
    val compile_redices : strict -> string array -> term list -> rewrite_redex * rewrite_namer
-   val compile_contractum : rewrite_redex -> term -> rewrite_contractum
+   val compile_contractum : strict -> rewrite_redex -> term -> rewrite_contractum
    val extract_redex_types : rewrite_redex -> rewrite_type list
    val apply_redex :
       rewrite_redex -> address array ->

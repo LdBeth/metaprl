@@ -28,8 +28,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *
  *)
 
@@ -422,7 +422,7 @@ struct
    let term_rewrite strict (addrs, names) redex contracta =
       let stack, redex' = compile_so_redex strict addrs redex in
       let namer = compute_namer stack names in
-      let enames, contracta' = compile_so_contracta names stack contracta in
+      let enames, contracta' = compile_so_contracta strict names stack contracta in
          { rr_redex = redex';
            rr_namer = namer;
            rr_contractum = RWCTerm (contracta', enames);
@@ -459,8 +459,8 @@ struct
    (*
     * Compile a contractum, given the previous redex.
     *)
-   let compile_contractum { redex_stack = stack } contractum =
-      let enames, contractum = compile_so_contractum [||] stack contractum in
+   let compile_contractum strict { redex_stack = stack } contractum =
+      let enames, contractum = compile_so_contractum strict [||] stack contractum in
          { con_contractum = contractum;
            con_new_vars = enames
          }

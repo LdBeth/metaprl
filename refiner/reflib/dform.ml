@@ -26,9 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
- *
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Printf
@@ -177,7 +176,7 @@ let add_dform base { dform_name = name;
       match printer with
          DFormExpansion e ->
             let redex, _ = compile_redex Relaxed [||] t in
-            let contractum = compile_contractum redex e in
+            let contractum = compile_contractum Relaxed redex e in
                DFExpansion (redex, contractum)
        | DFormPrinter f ->
             DFPrinter f
