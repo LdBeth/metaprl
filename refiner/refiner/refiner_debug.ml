@@ -30,6 +30,7 @@
  *)
 
 open Term_sig
+open Term_shape_sig
 open Refiner_sig
 open Termmod_sig
 
@@ -39,15 +40,35 @@ open Lm_array_util
 open Opname
 
 module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
+   module Type1 = Refiner1.TermType
+   module Type2 = Refiner2.TermType
+   module Term1 = Refiner1.Term
+   module Term2 = Refiner2.Term
+   module TermAddr1 = Refiner1.TermAddr
+   module TermAddr2 = Refiner2.TermAddr
+   module TermOp1 = Refiner1.TermOp
+   module TermOp2 = Refiner2.TermOp
+   module TermMan1 = Refiner1.TermMan
+   module TermMan2 = Refiner2.TermMan
+   module TermMeta1 = Refiner1.TermMeta
+   module TermMeta2 = Refiner2.TermMeta
+   module TermSubst1 = Refiner1.TermSubst
+   module TermSubst2 = Refiner2.TermSubst
+   module TermShape1 = Refiner1.TermShape
+   module TermShape2 = Refiner2.TermShape
+   module SeqHyp1 = Refiner1.Term.SeqHyp
+   module SeqHyp2 = Refiner2.Term.SeqHyp
+
    module TermType = struct
-      type term = Refiner1.TermType.term * Refiner2.TermType.term
-      type bound_term = Refiner1.TermType.bound_term * Refiner2.TermType.bound_term
-      type operator = Refiner1.TermType.operator * Refiner2.TermType.operator
-      type param = Refiner1.TermType.param * Refiner2.TermType.param
-      type address = Refiner1.TermAddr.address * Refiner2.TermAddr.address
-      type level_exp_var = Refiner1.TermType.level_exp_var * Refiner2.TermType.level_exp_var
-      type level_exp = Refiner1.TermType.level_exp * Refiner2.TermType.level_exp
-      type seq_hyps = Refiner1.TermType.seq_hyps * Refiner2.TermType.seq_hyps
+      type term = Type1.term * Type2.term
+      type bound_term = Type1.bound_term * Type2.bound_term
+      type operator = Type1.operator * Type2.operator
+      type param = Type1.param * Type2.param
+      type address = TermAddr1.address * TermAddr2.address
+      type level_exp_var = Type1.level_exp_var * Type2.level_exp_var
+      type level_exp = Type1.level_exp * Type2.level_exp
+      type seq_hyps = Type1.seq_hyps * Type2.seq_hyps
+      type shape = TermShape1.shape * TermShape2.shape
 
       type level_exp_var' = { le_var : var; le_offset : int }
       type level_exp' = { le_const : int; le_vars : level_exp_var list }
@@ -77,21 +98,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    open TermType
 
    (* Helper functions *)
-   module Type1 = Refiner1.TermType
-   module Type2 = Refiner2.TermType
-   module Term1 = Refiner1.Term
-   module Term2 = Refiner2.Term
-   module TermAddr1 = Refiner1.TermAddr
-   module TermAddr2 = Refiner2.TermAddr
-   module TermOp1 = Refiner1.TermOp
-   module TermOp2 = Refiner2.TermOp
-   module TermMan1 = Refiner1.TermMan
-   module TermMan2 = Refiner2.TermMan
-   module TermSubst1 = Refiner1.TermSubst
-   module TermSubst2 = Refiner2.TermSubst
-   module SeqHyp1 = Refiner1.Term.SeqHyp
-   module SeqHyp2 = Refiner2.Term.SeqHyp
-
    let lev2_of_lev1 lev =
       let { Type1.le_var = v; Type1.le_offset = i } = Term1.dest_level_var lev in
          Term2.mk_level_var v i
@@ -179,6 +185,16 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let split = List.split
 
+   let split_opt = function
+      None -> None, None
+    | Some (a, b) -> Some a, Some b
+
+   let split_pop (po, (p1, p2)) =
+      let po1, po2 = split_opt po in ((po1, p1), (po2, p2))
+
+   let split_popl l =
+      split (List.map split_pop l)
+
    let split_term' { term_op = (op1, op2); term_terms = btl } =
       let btl1, btl2 = split btl in
          { Type1.term_op = op1; Type1.term_terms = btl1 },
@@ -226,6 +242,24 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let vars, terms = split sub in
       let ts1, ts2 = split terms in
          (List.combine vars ts1), (List.combine vars ts2)
+
+   let rec split_meta_term = function
+      MetaTheorem (t1, t2) ->
+         MetaTheorem t1, MetaTheorem t2
+    | MetaImplies (mta, mtb) ->
+         let mta1, mta2 = split_meta_term mta in
+         let mtb1, mtb2 = split_meta_term mtb in
+            MetaImplies (mta1, mtb1), MetaImplies (mta2, mtb2)
+    | MetaFunction ((t1, t2), mta, mtb) ->
+         let mta1, mta2 = split_meta_term mta in
+         let mtb1, mtb2 = split_meta_term mtb in
+            MetaFunction (t1, mta1, mtb1), MetaFunction (t2, mta2, mtb2)
+    | MetaIff (mta, mtb) ->
+         let mta1, mta2 = split_meta_term mta in
+         let mtb1, mtb2 = split_meta_term mtb in
+            MetaIff (mta1, mtb1), MetaIff (mta2, mtb2)
+    | MetaLabeled (s, mt) ->
+         let mt1, mt2 = split_meta_term mt in MetaLabeled (s, mt1), MetaLabeled (s, mt2)
 
    let split_taf f =
       (fun t1 -> f (term_of_term1 t1)), (fun t2 -> f (term_of_term2 t2))
@@ -279,6 +313,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
           report_error x "nums mismatch";
       n1
 
+   let merge_shape_param x (sp1 : shape_param) sp2 =
+      if sp1 <> sp2 then
+         report_error x "Shape_param mismatch";
+      sp1
+
    let merge_unit x () () = ()
 
    let merge_list merge name x l1 l2 =
@@ -286,9 +325,16 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          report_error x (name ^ " lists length mismatch");
       List.map2 (merge x) l1 l2
 
+   let merge_opt merge name x o1 o2 =
+      match o1, o2 with
+         None, None -> None
+       | Some v1, Some v2 -> Some (merge x v1 v2)
+       | _ -> report_error x (name ^ " option None/Some mismatch")
+
    let merge_ints = merge_list merge_int "integer"
    let merge_vars = merge_list merge_var "var"
    let merge_strings = merge_list merge_string "string"
+   let merge_var_lo = merge_opt merge_vars "var list"
 
    let merge_ss x (s1 : SymbolSet.t) s2 =
       if not (SymbolSet.equal s1 s2) then
@@ -362,11 +408,39 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       else
          (t1, t2)
 
+   let merge_ttf x f1 f2 =
+      fun (t1, t2) -> merge_term x (f1 t1) (f2 t2)
+
+   let rec merge_meta_term x mt1 mt2 =
+      match mt1, mt2 with
+         MetaTheorem t1, MetaTheorem t2 ->
+            MetaTheorem (merge_term x t1 t2)
+       | MetaImplies (mt1a, mt1b), MetaImplies (mt2a, mt2b) ->
+            MetaImplies (merge_meta_term x mt1a mt2a, merge_meta_term x mt1b mt2b)
+       | MetaFunction (t1, mt1a, mt1b), MetaFunction (t2, mt2a, mt2b) ->
+            MetaFunction (merge_term x t1 t2, merge_meta_term x mt1a mt2a, merge_meta_term x mt1b mt2b)
+       | MetaIff (mt1a, mt1b), MetaIff (mt2a, mt2b) ->
+            MetaIff (merge_meta_term x mt1a mt2a, merge_meta_term x mt1b mt2b)
+       | MetaLabeled (s1, mt1), MetaLabeled (s2, mt2) ->
+            MetaLabeled (merge_string x s1 s2, merge_meta_term x mt1 mt2)
+       | _ ->
+            report_error x "meta term kind mismatch"
+
+   let merge_shape x s1 s2 =
+      if not (Opname.eq (TermShape1.opname_of_shape s1) (TermShape2.opname_of_shape s2)) then
+         report_error x "term shape opname mismatch"
+      else
+         (s1, s2)
+
    let merge_tsub x (v1, t1) (v2, t2) =
       (merge_var x v1 v2), (merge_term x t1 t2)
 
    let merge_terms = merge_list merge_term "term"
+   let merge_term_opt = merge_opt merge_term "term"
    let merge_term_subst = merge_list merge_tsub "term_subst"
+
+   let merge_sltot x (sl1, to1, t1) (sl2, to2, t2) =
+      (merge_strings x sl1 sl2), (merge_term_opt x to1 to2), (merge_term x t1 t2)
 
    let merge_bterm' x { Type1.bvars = bv1; Type1.bterm = t1 } { Type2.bvars = bv2; Type2.bterm = t2 } =
       if not (List.length bv1 = List.length bv2) then
@@ -1791,10 +1865,134 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    module TermShape = struct
       include TermType
+
+      let string_of_shape (s1, s2) =
+         sprintf "Impl1 shape: %s; Impl2 shape: %s" (TermShape1.string_of_shape s1) (TermShape2.string_of_shape s2)
+
+      (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
+
+      let shape_of_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_shape "TermShape.shape_of_term" (TermShape1.shape_of_term p0_1) (TermShape2.shape_of_term p0_2)
+
+      let eq (p0 : shape) (p1 : shape) =
+         let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermShape.eq" (TermShape1.eq p0_1 p1_1) (TermShape2.eq p0_2 p1_2)
+
+      let param_type (p0 : param) =
+         let p0_1, p0_2 = p0 in
+         merge_shape_param "TermShape.param_type" (TermShape1.param_type p0_1) (TermShape2.param_type p0_2)
+
+      let opname_of_shape (p0 : shape) =
+         let p0_1, p0_2 = p0 in
+         merge_opname "TermShape.opname_of_shape" (TermShape1.opname_of_shape p0_1) (TermShape2.opname_of_shape p0_2)
+
+      let sequent_shape =
+         merge_shape "TermShape.sequent_shape" (TermShape1.sequent_shape) (TermShape2.sequent_shape)
+
+      let var_shape =
+         merge_shape "TermShape.var_shape" (TermShape1.var_shape) (TermShape2.var_shape)
+
+      let print_shape (p0 : out_channel) (p1 : shape) =
+         let p1_1, p1_2 = p1 in
+         merge_unit "TermShape.print_shape" (TermShape1.print_shape p0 p1_1) (TermShape2.print_shape p0 p1_2)
+
+      let pp_print_shape (p0 : formatter) (p1 : shape) =
+         let p1_1, p1_2 = p1 in
+         merge_unit "TermShape.pp_print_shape" (TermShape1.pp_print_shape p0 p1_1) (TermShape2.pp_print_shape p0 p1_2)
    end
 
    module TermMeta = struct
       module MetaTypes = TermType
+
+      let unzip_mfunction mt =
+         let mt1, mt2 = split_meta_term mt in
+         let l1, t1 = TermMeta1.unzip_mfunction mt1 in
+         let l2, t2 = TermMeta2.unzip_mfunction mt2 in
+         let x = "TermMeta.unzip_mfunction" in
+            (merge_list merge_sltot "meta_func" x l1 l2), (merge_term x t1 t2)
+
+      (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
+
+      let context_vars (p0 : meta_term) =
+         let p0_1, p0_2 = split_meta_term p0 in
+         merge_vars "TermMeta.context_vars" (TermMeta1.context_vars p0_1) (TermMeta2.context_vars p0_2)
+
+      let meta_alpha_equal (p0 : meta_term) (p1 : meta_term) =
+         let p0_1, p0_2 = split_meta_term p0 in
+         let p1_1, p1_2 = split_meta_term p1 in
+         merge_bool "TermMeta.meta_alpha_equal" (TermMeta1.meta_alpha_equal p0_1 p1_1) (TermMeta2.meta_alpha_equal p0_2 p1_2)
+
+      let unfold_mlabeled (p0 : string) (p1 : meta_term) =
+         let p1_1, p1_2 = split_meta_term p1 in
+         merge_term "TermMeta.unfold_mlabeled" (TermMeta1.unfold_mlabeled p0 p1_1) (TermMeta2.unfold_mlabeled p0 p1_2)
+
+      let unzip_mimplies (p0 : meta_term) =
+         let p0_1, p0_2 = split_meta_term p0 in
+         let res0_1, res1_1 = TermMeta1.unzip_mimplies p0_1 in
+         let res0_2, res1_2 = TermMeta2.unzip_mimplies p0_2 in
+         (merge_terms "TermMeta.unzip_mimplies - 0" res0_1 res0_2),
+         (merge_term "TermMeta.unzip_mimplies - 1" res1_1 res1_2)
+
+      let zip_mimplies (p0 : term list) (p1 : term) =
+         let p0_1, p0_2 = split p0 in
+         let p1_1, p1_2 = p1 in
+         merge_meta_term "TermMeta.zip_mimplies" (TermMeta1.zip_mimplies p0_1 p1_1) (TermMeta2.zip_mimplies p0_2 p1_2)
+
+      let zip_mfunction (p0 : (term option * term) list) (p1 : term) =
+         let p0_1, p0_2 = split_popl p0 in
+         let p1_1, p1_2 = p1 in
+         merge_meta_term "TermMeta.zip_mfunction" (TermMeta1.zip_mfunction p0_1 p1_1) (TermMeta2.zip_mfunction p0_2 p1_2)
+
+      let strip_mfunction (p0 : meta_term) =
+         let p0_1, p0_2 = split_meta_term p0 in
+         merge_meta_term "TermMeta.strip_mfunction" (TermMeta1.strip_mfunction p0_1) (TermMeta2.strip_mfunction p0_2)
+
+      let term_of_parsed_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_term "TermMeta.term_of_parsed_term" (TermMeta1.term_of_parsed_term p0_1) (TermMeta2.term_of_parsed_term p0_2)
+
+      let term_of_parsed_term_with_vars (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_term "TermMeta.term_of_parsed_term_with_vars" (TermMeta1.term_of_parsed_term_with_vars p0_1) (TermMeta2.term_of_parsed_term_with_vars p0_2)
+
+      let display_term_of_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_term "TermMeta.display_term_of_term" (TermMeta1.display_term_of_term p0_1) (TermMeta2.display_term_of_term p0_2)
+
+      let create_term_parser (p0 : unit) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_term "TermMeta.create_term_parser" (TermMeta1.create_term_parser p0 p1_1) (TermMeta2.create_term_parser p0 p1_2)
+
+      let mterm_of_parsed_mterm (p0 : meta_term) =
+         let p0_1, p0_2 = split_meta_term p0 in
+         merge_meta_term "TermMeta.mterm_of_parsed_mterm" (TermMeta1.mterm_of_parsed_mterm p0_1) (TermMeta2.mterm_of_parsed_mterm p0_2)
+
+      let mterms_of_parsed_mterms (p0 : meta_term) (p1 : term list) =
+         let p0_1, p0_2 = split_meta_term p0 in
+         let p1_1, p1_2 = split p1 in
+         let res0_1, res1_1, res2_1 = TermMeta1.mterms_of_parsed_mterms p0_1 p1_1 in
+         let res0_2, res1_2, res2_2 = TermMeta2.mterms_of_parsed_mterms p0_2 p1_2 in
+         (merge_meta_term "TermMeta.mterms_of_parsed_mterms - 0" res0_1 res0_2),
+         (merge_terms "TermMeta.mterms_of_parsed_mterms - 1" res1_1 res1_2),
+         (merge_ttf "TermMeta.mterms_of_parsed_mterms - 2" res2_1 res2_2)
+
+      let context_subst_of_terms (p0 : term list) (p1 : var) (p2 : int) =
+         let p0_1, p0_2 = split p0 in
+         merge_var_lo "TermMeta.context_subst_of_terms" (TermMeta1.context_subst_of_terms p0_1 p1 p2) (TermMeta2.context_subst_of_terms p0_2 p1 p2)
+
+      let encode_free_var (p0 : var) =
+         merge_term "TermMeta.encode_free_var" (TermMeta1.encode_free_var p0) (TermMeta2.encode_free_var p0)
+
+      let is_encoded_free_var (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_bool "TermMeta.is_encoded_free_var" (TermMeta1.is_encoded_free_var p0_1) (TermMeta2.is_encoded_free_var p0_2)
+
+      let decode_free_var (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_var "TermMeta.decode_free_var" (TermMeta1.decode_free_var p0_1) (TermMeta2.decode_free_var p0_2)
+
    end
 
    module TermEval = struct
