@@ -10,7 +10,7 @@ EDITOR
 1) Shell.cd function tries to expand proofs, it should not
 
 2) Currently there is no way to change the statement of a theorem once
-you started proving it. We ned to be able to do it without 
+you started proving it. We need to be able to do it without 
 erasing the proof. 
 
 3) 
@@ -20,6 +20,20 @@ erasing the proof.
 /itt_int : string
 # ls ();;
 uncaught exception: Invalid_argument("Term.shape_of_term")
+
+4) MetaPRL toploop does not produce any meaningful parsing errors. Compare
+
+# <<q>>;;
+chars 42-43: Pcaml.Qerror("", 0, _)
+# chars 45-47: Stream.Error("illegal begin of toplevel phrase")
+
+in mpopt with
+
+# <<q>>;;
+# While expanding quotation "term":
+Failure: undeclared name: q
+
+in mp.
 
 REFINER
 
@@ -49,4 +63,4 @@ PARSER
 4) The rules without parameters should not require : :, a single colon
 should be sufficient (it means that we should remove an alternative rule
 syntax of
-intaractive name: A1 A2 ... : An)
+interactive name: A1 A2 ... : An)
