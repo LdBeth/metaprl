@@ -1,19 +1,19 @@
 DOCUMENTATION:
 
-1) Documentation suggests to use mp and x.mp
+*) Documentation suggests to use mp and x.mp
 while mpopt and mptop should be used instead
 
-2) Make system is not documented
+*) Make system is not documented
 
 EDITOR
 
-1) Shell.cd function tries to expand proofs, it should not
+*) Shell.cd function tries to expand proofs, it should not
 
-2) Currently there is no way to change the statement of a theorem once
+*) Currently there is no way to change the statement of a theorem once
 you started proving it. We need to be able to do it without 
 erasing the proof. 
 
-3) 
+*) 
 # load "itt_int";;
 () : unit
 # cd "itt_int";;
@@ -21,7 +21,7 @@ erasing the proof.
 # ls ();;
 uncaught exception: Invalid_argument("Term.shape_of_term")
 
-4) MetaPRL toploop does not produce any meaningful parsing errors. Compare
+*) MetaPRL toploop does not produce any meaningful parsing errors. Compare
 
 # <<q>>;;
 chars 42-43: Pcaml.Qerror("", 0, _)
@@ -35,7 +35,7 @@ Failure: undeclared name: q
 
 in mp.
 
-5) Loading two theories that both include the same theory produces unexpected results.
+*) Loading two theories that both include the same theory produces unexpected results.
 For example,
 
         MetaPRL 0.5.2:
@@ -86,35 +86,32 @@ This error also raised when we cd <theory>, and then load <theory>:
 
 REFINER
 
-1) There is no clear semantics for the hidden hypothesis. As a result,
+*) There is no clear semantics for the hidden hypothesis. As a result,
 many rules deal with hidden hypothesis incorrectly. Currently, one
 can prove 0=1 using those unsound rules.
 
-2) We do not need both Level variables and Meta-Level variables. Once we
-figure out how to join them together, we no longer need @ for meta in parameters.
-
-3) Repeated bound variables (when the same variable is bound more than once) is
+*) Repeated bound variables (when the same variable is bound more than once) is
 handled incorrectly. For example, thinning rule does not check if the variable
 is bound only once (which may be used to prove incorrect results).
 
-4) rwh does not do matching correctly - for example, it allows to use reduceEta
+*) rwh does not do matching correctly - for example, it allows to use reduceEta
 on <<lambda{x.('x 'x)}>>
 
 PARSER
 
-1) Rules and rewrites should be added to toploop. 
+*) Rules and rewrites should be added to toploop. 
 
-2) When rule is added, the appropriate tactic should be added automatically
+*) When rule is added, the appropriate tactic should be added automatically
 (assuming sequent calculus).
 
-3) Some times parser requires too many brackets.
+*) Some times parser requires too many brackets.
 
-4) The rules without parameters should not require : :, a single colon
+*) The rules without parameters should not require : :, a single colon
 should be sufficient (it means that we should remove an alternative rule
 syntax of
 interactive name: A1 A2 ... : An)
 
-5) Parser should check display forms for correctness. Currently it accepts
+*) Parser should check display forms for correctness. Currently it accepts
 many incorrect display forms and later we get (in mp):
 
 # ls();;
@@ -126,3 +123,5 @@ subst: L () (r; l)
 <printer Shell_p4.print_term raised an exception>
 
 without even explaining which display form caused an error message.
+
+*) We no longer need @ for meta-parameters.
