@@ -12,8 +12,8 @@
   *)
 
  val connect	: string (* remote hostname *)
-			-> int (* remote socket *)
 			-> int (* local socket *)
+			-> int (* remote socket *)
 			-> connection
 
  val disconnect	: connection -> unit
@@ -227,6 +227,7 @@
 				-> string (* type *) -> term
 				-> object_id
 
+
  (* NB: cycle prevention not yet implemented. *)
  val insert		: transaction -> object_id -> string -> object_id -> unit
 
@@ -238,9 +239,6 @@
  val children		: transaction (* local *) -> object_id -> (string * object_id) list
  val child		: transaction (* local *) -> object_id -> string -> object_id
  val descendent		: transaction (* local *) -> object_id -> string list -> object_id
-
-
-
 
 
 

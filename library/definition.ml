@@ -51,8 +51,23 @@ class data (s : stamp) ft as self =
      | Some t -> t
 end
 
+exception InlineDataRead
+
+class inline_data (s : stamp) (inl : term) as self =
+ inherit data s ""
+
+ val inline = inl
+ 
+  method read_term = term_of_idata_term inline
+  method get_term =
+     match term with
+       None -> self#read_term
+     | Some t -> t
+
+end
 
 let idata_persist_param = make_param (Token "!data_persist")
+let idata_persist_inline_param = make_param (Token "!data_persist_inline")
 
 let term_to_data t =
  match dest_term t with
@@ -62,6 +77,13 @@ let term_to_data t =
 		-> new data (term_to_stamp (term_of_unbound_term istamp))
 			    (dest_token_param ftype)
 		|_ -> error  ["term"; "data_persist"; "op"] [] [t]
+	)
+   | { term_op = op; term_terms = [istamp; inline] } 
+      -> (match dest_op op with 
+	   { op_name = opname; op_params = [id; ftype] } when idata_persist_inline_param = id
+		-> new inline_data (term_to_stamp (term_of_unbound_term istamp))
+				   (term_of_unbound_term inline)
+		|_ -> error  ["term"; "data_persist_inline"; "op"] [] [t]
 	)
    |_ -> error ["term"; "data_persist"] [] [t]
 
@@ -76,7 +98,7 @@ let isubstance_op = mk_nuprl5_op [make_param (Token "!substance")]
 
 let term_of_isubstance_term t =
  match dest_term t with
-   { term_op = op; term_terms = [sub; refs; super] } when op = isubstance_op
+   { term_op = op; term_terms = [sub; refs; props; super] } when op = isubstance_op
 	-> term_of_unbound_term sub
    |_ -> error ["term"; "!substance"] [] [t]
     

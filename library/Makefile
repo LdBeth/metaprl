@@ -48,7 +48,7 @@ LMFILES :=\
 # Name of main libraris
 MAIN = library
 
-all: $(MAIN).cma
+all: $(MAIN).run $(MAIN).cma
 opt: $(MAIN).cmxa
 
 install:: $(MAIN).cma

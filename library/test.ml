@@ -15,6 +15,7 @@ open Utils
 open Basic
 open Library
 
+open Library_type_base
 
 exception Testfailed of int
 
@@ -269,13 +270,13 @@ let dtest connection =
   ; print_newline()
   ; print_endline "activate test successful."
 
-let testall remote_port local_port =
+let testall libhost remote_port local_port =
  print_newline(); 
  print_newline(); 
  print_endline "TestAll Called ";
 
   let cookie = ref "" in
-  (let connection = connect "ALFHEIM" remote_port local_port in
+  (let connection = connect libhost remote_port local_port in
 
     (unwind_error
       (function () -> 
@@ -334,7 +335,7 @@ let test remote_port local_port =
  print_string "Test called ";
  print_newline();
 
-  (let connection = connect "ALFHEIM" remote_port local_port in
+  (let connection = connect "LOCKE" remote_port local_port in
 
     unwind_error
       (function () ->
@@ -384,7 +385,7 @@ let jointest remote_port local_port =
  print_string "Test called ";
  print_newline();
 
-  (let connection = connect "ALFHEIM" remote_port local_port in
+  (let connection = connect "LOCKE" remote_port local_port in
 
     unwind_error
       (function () ->
@@ -404,10 +405,21 @@ let jointest remote_port local_port =
  raise (Test "Join Test Successful") 
 ;;
 
-special_error_handler (function () -> testall 5289 2895)
+
+special_error_handler (function () -> testall "DENEB" 3289 2893)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
+
 (*
+special_error_handler (function () -> maybe_lib_open())
+ (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
+
+special_error_handler (function () -> disconnect (connect "BOLVERK" 5289 5291); ())
+ (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
+special_error_handler (function () -> testall "ALFHEIM" 7289 2897)
+ (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 special_error_handler (function () -> jointest 5289 2895)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)

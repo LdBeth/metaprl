@@ -26,6 +26,7 @@ and transaction =
 	; tid		: term
 	; mutable cookie	: string
         ; mutable liveness	: bool
+        (* dependencies *)
 	}
 
 
@@ -393,7 +394,7 @@ let disallow_collection t oid = eval t (oid_ap disallow_ap oid)
 
 
 
-let create_ap = null_ap (itext_term "NL0_create ")
+let create_ap = null_ap (itext_term "create_with_some_term ")
 let create t ttype init_term init_props =
   eval_to_object_id t
     (term_ap 
