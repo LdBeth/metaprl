@@ -102,8 +102,9 @@ struct
       { session_id                      : pid;
 
         (*
-         * If the directory is changed, invalidate:
-         *    browser_info, menu, buttons, style
+         * This is the current browsewr directory.
+         * This is for updating the windows when
+         * the directory changes.
          *)
         mutable session_cwd             : string;
 
@@ -144,7 +145,7 @@ struct
         mutable session_styles          : Buffer.t option;
 
         (*
-         * Edit files.
+         * File editing.
          *)
         mutable session_edit            : string;
         mutable session_edit_flag       : bool;
@@ -156,11 +157,8 @@ struct
     * Keep track of the state.
     *)
    type state_shared =
-      { (* Validation *)
-         mutable shared_challenge : string;
-         mutable shared_response  : string;
-
-        (* Processes *)
+      { mutable shared_challenge : string;
+        mutable shared_response  : string;
         mutable shared_children  : int list
       }
 
@@ -214,7 +212,6 @@ struct
       match decode_uri uri with
          [] ->
             WelcomeURI
-       | ["session"; id]
        | ["session"; id; "frameset"] ->
             (try FrameURI (make_pid id, "frameset") with
                 Failure _
@@ -465,11 +462,11 @@ struct
          let empty_buffer = Buffer.create 1 in
             { session_id              = id;
               session_cwd             = "/";
-              session_menu_version    = 1;
-              session_content_version = 1;
-              session_message_version = 1;
-              session_buttons_version = 1;
-              session_rule_version    = 1;
+              session_menu_version    = 0;
+              session_content_version = 0;
+              session_message_version = 0;
+              session_buttons_version = 0;
+              session_rule_version    = 0;
               session_state           = None;
               session_menubar_info    = None;
               session_commandbar_info = None;
@@ -488,11 +485,11 @@ struct
          let clone =
             { session_id              = id;
               session_cwd             = cwd;
-              session_menu_version    = 1;
-              session_content_version = 1;
-              session_message_version = 1;
-              session_buttons_version = 1;
-              session_rule_version    = 1;
+              session_menu_version    = 0;
+              session_content_version = 0;
+              session_message_version = 0;
+              session_buttons_version = 0;
+              session_rule_version    = 0;
               session_state           = None;
               session_menubar_info    = None;
               session_commandbar_info = None;
@@ -822,13 +819,17 @@ struct
          let { menu_macros = macros } = flush state session in
             Buffer.add_buffer buf macros
       in
+      let print_cwd buf =
+         eprintf "CWD: %s: %s@." frame cwd;
+         Buffer.add_string buf cwd
+      in
 
       (* Current command *)
       let table = BrowserTable.add_string table command_sym        (Browser_syscall.command state.state_io) in
 
       (* General info *)
       let table = BrowserTable.add_string table title_sym          "MetaPRL" in
-      let table = BrowserTable.add_string table location_sym       cwd in
+      let table = BrowserTable.add_fun    table location_sym       print_cwd in
       let table = BrowserTable.add_fun    table session_sym        (print_session server state session) in
 
       (* Menubar *)
@@ -1053,6 +1054,7 @@ struct
             match command with
                SyscallRestart ->
                   Top.backup_all ();
+                  Shell_current.flush ();
                   save_browser server state;
                   (match outx with
                       Some outx ->

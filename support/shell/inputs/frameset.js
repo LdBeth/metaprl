@@ -102,4 +102,5 @@ function OnLoad()
 
     /* Resize the window */
     window.onresize = LoadFrame;
+    reloading = false;
 }

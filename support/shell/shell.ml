@@ -101,7 +101,6 @@ struct
     *)
    let flush shell =
       let options = Session.get_view_options () in
-         Shell_current.flush ();
          view parse_arg shell options
 
    (************************************************************************

@@ -531,9 +531,9 @@ let menubar_init =
     << menuitem["edit", "Redo", "Command('redo ()')"] >>,                  undo_is_enabled;
     << menuitem["edit", "-", ""] >>,                                       always_enabled;
     << menu["view", "View"] >>,                                            always_enabled;
-    << menuitem["view", "View Content", "ShowContent()"] >>,               always_enabled;
-    << menuitem["view", "View Command", "ShowSystem()"] >>,                always_enabled;
-    << menuitem["view", "View Editor", "ShowEdit()"] >>,                   always_enabled;
+    << menuitem["view", "View Session", "ShowContent()"] >>,               always_enabled;
+    << menuitem["view", "View Command Output", "ShowSystem()"] >>,         always_enabled;
+    << menuitem["view", "View Debug Messages", "ShowDebug()"] >>,          always_enabled;
     << menuitem["view", "-", ""] >>,                                       always_enabled;
     << menu["dir", "Directory"] >>,                                        always_enabled;
     << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>,                always_enabled;

@@ -1,4 +1,13 @@
 /*
+ * Add something to the debug box.
+ */
+function Debug(s)
+{
+    var debugframe = GetObject(parent, 'debugframe');
+    debugframe.innerHTML += '<br>' + s;
+}
+
+/*
  * Return focus to the input area.
  * Why oh why do we have to use a timeout?
  */
@@ -66,6 +75,7 @@ function ResizeBoxes()
     var contentframe = GetObject(self, 'contentframe');
     var systemframe  = GetObject(self, 'systemframe');
     var editframe    = GetObject(self, 'editframe');
+    var debugframe   = GetObject(self, 'debugframe');
     var messageframe = GetObject(self, 'messageframe');
     var buttonsframe = GetObject(self, 'buttonsframe');
     var ruleframe    = GetObject(self, 'ruleframe');
@@ -78,6 +88,8 @@ function ResizeBoxes()
     systemframe.style.height  = layout.contentheight + 'px';
     editframe.style.top       = layout.contenttop    + 'px';
     editframe.style.height    = layout.contentheight + 'px';
+    debugframe.style.top      = layout.contenttop    + 'px';
+    debugframe.style.height   = layout.contentheight + 'px';
     messageframe.style.top    = layout.messagetop    + 'px';
     messageframe.style.height = layout.messageheight + 'px';
     buttonsframe.style.top    = layout.buttonstop    + 'px';
@@ -146,7 +158,23 @@ function SetWindowCookie()
 /*
  * Versions.
  */
+var lock = false;
 var version = new Array();
+
+/*
+ * Take the lock.
+ */
+function Lock()
+{
+    if(lock)
+        Debug('Race condition');
+    lock = true;
+}
+
+function Unlock()
+{
+    lock = false;
+}
 
 /*
  * Make sure the windows are up-to-date.
@@ -158,10 +186,15 @@ function Update(session)
     if(version['menu'] != session['menu'])
         parent.menuframe.location.reload();
     if(version['content'] != session['content']) {
-        if(version['location'] != session['location'])
+        var commentbox = GetObject(parent, 'commentbox');
+        if(version['location'] != session['location']) {
+            Debug('Content location set to: ' + session['location']);
             parent.contentframe.location.href = session['location'];
-        else
+        }
+        else {
+            Debug('Reloading content window');
             parent.contentframe.location.reload();
+        }
     }
     if(version['message'] != session['message'])
         parent.messageframe.location.reload();
@@ -169,9 +202,9 @@ function Update(session)
         parent.buttonsframe.location.reload();
     if(version['rule'] != session['rule'])
         parent.ruleframe.location.reload();
-    if(session['io'] && version['io'] != session['io']) {
+    if(version['io'] != session['io']) {
         version['io'] = session['io'];
-        if(!reloading) {
+        if(session['io']) {
             LoadSystem();
             ShowSystem();
         }
@@ -190,42 +223,52 @@ function Update(session)
 }
 
 /*
- * Resize event.
+ * Add the frameset body.
  */
 function LoadFrame()
 {
    GetWindowSize();
    SetWindowCookie();
    ResizeBoxes();
-   reloading = false;
 }
 
 function LoadMenu(session)
 {
+    Lock();
     version['menu'] = session['menu'];
+    Unlock();
 }
 
 function LoadContent(session)
 {
+    Lock();
+    Debug('Loading ' + session['location']);
     version['location'] = session['location'];
     version['content'] = session['content'];
     Update(session);
+    Unlock();
 }
 
 function LoadMessage(session)
 {
+    Lock();
     version['message'] = session['message'];
+    Unlock();
 }
 
 function LoadButtons(session)
 {
+    Lock();
     version['buttons'] = session['buttons'];
+    Unlock();
 }
 
 function LoadRule(session)
 {
+    Lock();
     version['rule'] = session['rule'];
     Update(session);
+    Unlock();
 }
 
 /************************************************************************
@@ -356,10 +399,12 @@ function ShowContent()
     var contentframe = GetObject(self, 'contentframe');
     var systemframe  = GetObject(self, 'systemframe');
     var editframe    = GetObject(self, 'editframe');
+    var debugframe   = GetObject(self, 'debugframe');
 
     systemframe.style.visibility = 'hidden';
     editframe.style.visibility = 'hidden';
-    contentframe.style.visibilily = 'visible';
+    debugframe.style.visibility = 'hidden';
+    contentframe.style.visibility = 'visible';
 }
 
 function ShowSystem()
@@ -367,9 +412,11 @@ function ShowSystem()
     var contentframe = GetObject(self, 'contentframe');
     var systemframe  = GetObject(self, 'systemframe');
     var editframe    = GetObject(self, 'editframe');
+    var debugframe   = GetObject(self, 'debugframe');
 
     editframe.style.visibility = 'hidden';
-    contentframe.style.visibilily = 'hidden';
+    debugframe.style.visibility = 'hidden';
+    contentframe.style.visibility = 'hidden';
     systemframe.style.visibility = 'visible';
 }
 
@@ -383,10 +430,25 @@ function ShowEdit()
     var contentframe = GetObject(self, 'contentframe');
     var systemframe  = GetObject(self, 'systemframe');
     var editframe    = GetObject(self, 'editframe');
+    var debugframe   = GetObject(self, 'debugframe');
 
     systemframe.style.visibility = 'hidden';
-    contentframe.style.visibilily = 'hidden';
+    contentframe.style.visibility = 'hidden';
+    debugframe.style.visibility = 'hidden';
     editframe.style.visibility = 'visible';
+}
+
+function ShowDebug()
+{
+    var contentframe = GetObject(self, 'contentframe');
+    var systemframe  = GetObject(self, 'systemframe');
+    var editframe    = GetObject(self, 'editframe');
+    var debugframe   = GetObject(self, 'debugframe');
+
+    systemframe.style.visibility = 'hidden';
+    contentframe.style.visibility = 'hidden';
+    editframe.style.visibility = 'hidden';
+    debugframe.style.visibility = 'visible';
 }
 
 /************************************************************************
@@ -396,4 +458,28 @@ function Edit(ext, filename)
 {
     parent.editframe.location.href = filename;
     ShowEdit();
+}
+
+/************************************************************************
+ * Restart by reloading the outermost frame.
+ * Apparently parent.location.reload() tries
+ * to remember the locations in each of the
+ * subframes, so don't do that.
+ */
+function RestartDelayed()
+{
+    parent.location.href = parent.location.href;
+}
+
+function Restart()
+{
+    var dragbox = GetObject(parent, 'dragbox');
+    dragbox.style.background = 'white';
+    dragbox.innerHTML =
+        "<h2>Please wait, MetaPRL is restarting</h2>\
+        Your session should restart automatically.\
+        If it doesn't within a few seconds, press the Reload button in\
+        your browser.";
+    dragbox.style.visibility = 'visible';
+    setTimeout('RestartDelayed()', 1000);
 }

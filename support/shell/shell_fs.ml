@@ -94,14 +94,10 @@ declare "filelisting"[name:s]{'l}
 declare listing_df{'t}
 
 dform dirlisting_df : dirlisting[name:s]{'listing} =
-   hzone pushm[0] pushm[4] info["Directory listing:"] hspace
-       listing_df{'listing} popm hspace
-   info["end"] popm ezone
+   hzone listing_df{'listing} ezone
 
 dform filelisting_df : filelisting[name:s]{'listing} =
-   hzone pushm[0] pushm[4] info["File listing:"] hspace
-      monospaced_begin listing_df{'listing} monospaced_end popm hspace
-   info["end"] popm ezone
+   hzone monospaced_begin listing_df{'listing} monospaced_end ezone
 
 dform listing_df1 : listing_df{cons{'e1; cons{'e2; 'next}}} =
    'e1 hspace listing_df{cons{'e2; 'next}}
