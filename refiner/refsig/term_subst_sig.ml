@@ -115,8 +115,8 @@ sig
 
    (*
     * generalization: see if the first term generalizes the second term.
-    * Return the alpha conversion if so, otherwise fail with
-    * Invalid_argument "generalization"
+    * Return the alpha conversion if so, otherwise raise
+    * Failure "generalization"
     *
     * generalizes: boolean equivalent of the proceeding
     *)

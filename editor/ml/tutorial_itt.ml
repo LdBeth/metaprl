@@ -1,5 +1,5 @@
 (*
- * This file can be loaded with #use "tutorial.ml"
+ * This file can be loaded with #use "tutorial_itt.ml"
  * for setting up the environment for the tutorial.
  *
  * ----------------------------------------------------------------
