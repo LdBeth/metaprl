@@ -20,7 +20,8 @@ val mbparameter_of_param: param -> mbterm
 val mbbinding_of_binding: string -> mbterm
 
 val param_of_mbparameter: mbterm -> param
-val bvars_of_mbbindings: mbterm -> string list
 *)
+val bvars_of_mbbindings: mbterm -> string list
+
 
 

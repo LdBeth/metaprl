@@ -87,7 +87,7 @@ let rec print_param param =
   | ParmList p -> (print_string "parm_list:" ;print_string "["; List.map print_param p;print_string "]"; ())
   | _ -> failwith "unauthorized parameter type"
 
-let mbbinding_of_binding binding = mb_string binding ;; (*term in the future? yes, far*)
+let mbbinding_of_binding binding = mb_stringq binding mbs_Variable (*term in the future? yes, far*)
 
 let append l p =
   let rec aux l1 l2 =
@@ -96,6 +96,19 @@ let append l p =
     | [] -> l2
   in
   aux (List.rev l) p
+
+let mbbindings_of_bvars bvars =
+  let rec loop l1 l2 =
+    match l1 with
+      "nuprl5_implementation"::(h2::t1) -> (match t1 with
+      | h3::t2 -> (match t2 with
+	  h4::x -> loop x ((mbnode mbs_ParmList (List.map mb_string [h2; h3; h4]))::l2)
+ 	| [] -> ((mbnode mbs_ParmList (List.map mb_string [h2; h3]))::l2))
+      | [] -> ((mb_stringq h2 mbs_MVariable)::l2))
+    | h1::t1 -> loop t1 ((mb_stringq h1 mbs_Variable)::l2)
+    | [] -> l2
+  in
+  loop bvars []
       
 let rec mbterm_of_term term =
   let { term_op = operator; term_terms = bterms} = dest_term term
@@ -110,7 +123,8 @@ let rec mbterm_of_term term =
       { bvars = bvars; bterm = t } ->
 	match bvars with
 	  []-> [(mbterm_of_term t)]
-	| h::tl -> [(mbnode mbs_Bindings (List.map mbbinding_of_binding bvars));
+	| h::tl -> [(mbnode mbs_Bindings (mbbindings_of_bvars bvars));
+			    (* (List.map mbbinding_of_binding bvars)*)
 		     (mbterm_of_term t)]
   in
   let rec loop l blist =
@@ -237,11 +251,28 @@ let op_of_params params =
 
 let bvars_of_mbbindings mbterm =
   let b = (mbnode_label mbterm)
-  in if not (bequal b mbs_Bindings) then failwith " bindings label" else
+  in if not (bequal b mbs_Bindings) then failwith "bindings label" else
   let rec loop index bvars =
     if index = 0 then bvars
-    else match mbterm.(index)  with
-      Mnode n -> loop (index - 1) ((string_value n)::bvars)
+    else match mbterm.(index) with
+      Mnode n -> let b2 = (mbnode_label n) in
+      if (bequal b2 mbs_Variable) then loop (index - 1) ((string_value n)::bvars)
+      else if (bequal b2 mbs_MVariable) then
+      	loop (index - 1) ("nuprl5_implementation"::((string_value n)::bvars))
+      else
+ 	let s1 = (match n.(1) with
+	  Mnode n1 -> (string_value n1)
+	| Mbint b -> failwith "bvars_of_mbindings") and s2 =
+	  (match n.(2) with
+	    Mnode n2 -> (string_value n2)
+	  | Mbint b -> failwith "bvars_of_mbindings") in
+	if 2 = (mbnode_nSubtermsq n) then
+	  loop (index - 1) ("nuprl5_implementation"::(s1::(s2::bvars)))
+	else let s3 = (match n.(3) with
+	  Mnode n3 -> (string_value n3)
+	| Mbint b -> failwith "bvars_of_mbindings") in
+	loop (index - 1) ("nuprl5_implementation"::(s1::(s2::(s3::bvars))))
+	  
     | Mbint b -> failwith "bvars_of_mbindings"
   in loop (mbnode_nSubtermsq mbterm) []
 
