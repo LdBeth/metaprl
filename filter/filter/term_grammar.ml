@@ -443,28 +443,26 @@ struct
             let opname = mk_opname loc (List.map string_of_sw ty) [] [] in
                cast_token loc p
 
-   let cast_ty_param loc p ty =
-      match ty with
-         [SW_Word s] ->
-            cast_param_string loc p s
-       | _ ->
-            (* Check that the opname exists *)
-            let opname = mk_opname loc (List.map string_of_sw ty) [] [] in
-            let p = cast_token loc p in
-               p, TyToken (mk_term (mk_op opname []) [])
-
-   (*
-    * Constructors.
-    *)
-   let mk_pair_term loc a b =
-      mk_dep0_dep0_term (mk_dep0_dep0_opname loc "pair") a b
-
    let get_aterm loc = function
       { aname = Some v; aterm = t } ->
          Stdpp.raise_with_loc loc (Invalid_argument
             ("Syntax Error: Named term where unnamed one is expected:\n" ^ (string_of_term v) ^ " : " ^ (string_of_term t)))
     | { aname = None; aterm = t } ->
          t
+
+   let cast_ty_param loc p ty =
+      match ty with
+         ST_String (s, loc) ->
+            cast_param_string loc p s
+       | ST_Term (at, loc') ->
+            let p = cast_token loc p in
+               p, TyToken (get_aterm loc' at)
+
+   (*
+    * Constructors.
+    *)
+   let mk_pair_term loc a b =
+      mk_dep0_dep0_term (mk_dep0_dep0_opname loc "pair") a b
 
    let make_term = function
       ST_String (s, loc) ->
@@ -1616,7 +1614,7 @@ struct
       ty_param:
          [[ w = param_const ->
              w, ty_param_of_param w
-           | w = param_const; ":"; t = opname_param ->
+           | w = param_const; ":"; t = noncommaterm ->
              cast_ty_param loc w t
           ]];
 
