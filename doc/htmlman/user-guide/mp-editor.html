@@ -83,16 +83,20 @@ hierarchy:</P>
   <PRE><B>val</B> pwd : unit -&gt; string
 <B>val</B> save : unit -&gt; unit
 <B>val </B>cd : string -&gt; unit
-<B>val </B>ls : unit -&gt; unit</PRE>
+<B>val </B>ls : string -&gt; unit</PRE>
 </BLOCKQUOTE>
 
 <P>The <TT>pwd</TT> command prints the current module. The <TT>cd</TT>
 command changes the current module loading the module if necessary.
 Module names are separated
-by the <TT>'/'</TT> character as in the Unix filesystem. The <TT>ls</TT>
-command prints the contents of the current module or proof.
-Modified modules are saved with the <TT>save</TT>
-command</P>
+by the <TT>'/'</TT> character as in the Unix filesystem.
+Modified modules are saved with the <TT>save</TT>.  
+The <TT>ls "<I>flags</I>"</TT>
+command prints the contents of the current module or proof. When flags string
+is empty, <TT>ls</TT> lists everything; when <I>flags</I> string
+contains <TT>r</TT>, then only rewrites would be listed; when <I>flags</I> string
+contains <TT>R</TT>, then only rules would be listed; and when <I>flags</I> string
+contains <TT>u</TT>, then only unproven objects would be listed.</P>
 
 <P>The root of the hierarchy <TT>&quot;/&quot;</TT> is the module
 containing all loaded modules. Here is a script fragment showing
