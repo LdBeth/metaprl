@@ -54,6 +54,10 @@ doc <:doc<
    (through @hrefconv[higherC]) on all the assumptions and on the goal and then
    calls @hreftactic[autoT]. The @tactic[byDefsT] tactic that takes a @tt{conv list}
    is defined similarly.
+
+   The tactic @tt{repeatWithRwsT }@i{convs tac} tries to apply some conversional from
+   the @i{convs} list to the goal and in case of a progress applies the tactic @i{tac},
+   then repeats it as far as possible.
    @end[doc]
 
    ----------------------------------------------------------------
@@ -284,9 +288,11 @@ let tcaT = tryT (completeT strongAutoT)
 let tryAutoT tac =
    tac thenT tcaT
 
-let make_defT conv = rwhAllAll (conv thenC reduceC)
+let make_defT conv = rwhAllAll (conv thenC reduceC) (* BUG? : Should be reduceTopC ? *)
 let byDefT conv = make_defT conv thenT autoT
 let byDefsT convs = seqT (List.map make_defT convs) thenT autoT
+
+let repeatWithRwsT convs tac  = repeatT (firstT (List.map (fun conv-> progressT (rwh conv 0) thenT tac ) convs))
 
 (*
  * Trivial is in auto tactic.

@@ -487,6 +487,12 @@ macro "tac ttca" instead of "tryAutoT tac".
 * byDefT : conv -> tactic
 Applies conv everywhere, then runs autoT.
 
+* repeatWithRwsT : conv list -> tactic -> tactic
+Tries to apply some conversional from  the @i{convs} list to the goal
+and in case of a progress applies the tactic @i{tac},
+then repeats it as far as possible.
+
+
 ----------------------------------------
 base_rewrite:
 

@@ -631,7 +631,11 @@ let d_elim_prec = create_auto_prec [trivial_prec; d_prec] []
 let eq_exn = RefineError ("dT", StringError "elim rule not suitable for autoT")
 
 let not_equal t i =
-   funT (fun p -> if alpha_equal t (Sequent.nth_hyp p i) then raise eq_exn else idT)
+   funT (fun p ->
+    if i <= Sequent.hyp_count p then
+      if alpha_equal t (Sequent.nth_hyp p i) then raise eq_exn
+      else idT  else idT
+        )
 
 let auto_dT =
    argfunT (fun i p -> (dT i thenT not_equal (Sequent.nth_hyp p i) i))
