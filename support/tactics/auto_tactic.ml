@@ -172,8 +172,8 @@ let auto_tac tac = tac.auto_tac
 
 let sort_nodes = Sort.list compare
 
-let successT =
-   funT (fun p -> eprintf " -> succeded%t" eflush; idT)
+let successT s = funT (fun p ->
+   eprintf " -> succeded on -------------\n%s\n-------- and got ---------\n%s\n----------------%t" s (Simple_print.SimplePrint.string_of_term (Sequent.goal p)) eflush; idT)
 
 (*
  * Debugging firstT.
@@ -181,9 +181,9 @@ let successT =
 let debugT auto_tac =
    { auto_tac with
      auto_tac = funT (fun p ->
-        let s = Simple_print.SimplePrint.short_string_of_term (Sequent.concl p) in
-        eprintf "Auto: trying %s on %s%t" auto_tac.auto_name s eflush;
-        (progressT auto_tac.auto_tac) thenT successT)
+        let s = Simple_print.SimplePrint.string_of_term (Sequent.goal p) in
+        eprintf "Auto: trying %s%t" auto_tac.auto_name eflush;
+        (progressT auto_tac.auto_tac) thenT successT s)
    }
 
 let map_progressT tac =

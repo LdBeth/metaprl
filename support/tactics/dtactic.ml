@@ -630,14 +630,25 @@ let d_elim_prec = create_auto_prec [trivial_prec; d_prec] []
 
 let eq_exn = RefineError ("dT", StringError "elim rule not suitable for autoT")
 
-let not_equal t i =
-   funT (fun p ->
-            if (i <= Sequent.hyp_count p) && (alpha_equal t (Sequent.nth_hyp p i))
-            then raise eq_exn else idT
-        )
+let rec num_equal_aux t hyps i =
+   if i <= 0 then 0 else
+   let i = pred i in
+      (num_equal_aux t hyps i) +
+      match SeqHyp.get hyps i with
+         HypBinding (_, t') | Hypothesis t' when alpha_equal t t' -> 1
+       | _ -> 0
+
+let num_equal t p =
+   let hyps = (TermMan.explode_sequent (Sequent.goal p)).sequent_hyps in
+      num_equal_aux t hyps (SeqHyp.length hyps)
+
+let check_num_equalT n t = funT (fun p ->
+   if num_equal t p >= n then raise eq_exn else idT)
 
 let auto_dT =
-   argfunT (fun i p -> (dT i thenT not_equal (Sequent.nth_hyp p i) i))
+   argfunT (fun i p ->
+      let t = Sequent.nth_hyp p i in
+         dT i thenT check_num_equalT (num_equal t p) t)
 
 let resource auto += [ {
    auto_name = "dT";
