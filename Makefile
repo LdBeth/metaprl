@@ -18,14 +18,13 @@ REFINER_DIRS :=\
 	library
 
 NL_DIRS :=\
-	filter\
 	theories/tactic\
 	theories/ocaml\
 	theories/base\
 	theories/itt\
 	theories/czf
 
-DIRS := $(REFINER_DIRS) $(NL_DIRS) editor/ml
+DIRS := $(REFINER_DIRS) filter $(NL_DIRS) editor/ml
 
 .PHONY: all opt install depend clean profile_all profile_clean profile
 
@@ -35,7 +34,7 @@ all:
 	done
 
 opt:
-	@for i in $(DIRS); do\
+	@for i in $(REFINER_DIRS) $(NL_DIRS) editor/ml; do\
 		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
 	done
 
@@ -49,7 +48,7 @@ profile_all:
 		if (echo Making $$i...; cd $$i; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(MAKE) all); then true; else exit 1; fi;\
 	done
 
-profile: clean all profile_all
+profile: clean all profile_clean profile_all
 
 install:
 	@for i in $(DIRS); do\
