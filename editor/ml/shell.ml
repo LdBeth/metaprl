@@ -1045,6 +1045,7 @@ struct
          apply_all f info
 
    let clean_all = interpret_all ProofClean
+   let squash_all = interpret_all ProofSquash
 
    (*
     * Change directory.
@@ -1174,6 +1175,7 @@ struct
        "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all info));
        "check_all",        UnitFunExpr     (fun () -> UnitExpr (check_all info));
        "clean_all",        UnitFunExpr     (fun () -> UnitExpr (clean_all info));
+       "squash_all",       UnitFunExpr     (fun () -> UnitExpr (squash_all info));
        "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)));
        "stop_gmon",        UnitFunExpr     (fun () -> UnitExpr (stop_gmon ()));
        "restart_gmon",     UnitFunExpr     (fun () -> UnitExpr (restart_gmon ()));
