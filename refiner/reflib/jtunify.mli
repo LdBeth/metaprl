@@ -14,8 +14,9 @@ val do_stringunify : string list ->
                      string ->
                      string ->
                      (string list * (string list * string list)) list ->
+                     int -> 
                      (int * (string * string list) list) *                 (* unifier *)
-                     (string list * (string list * string list)) list    (* applied new eqlist *)
+                     (int * ((string list * (string list * string list)) list))    (* applied new eqlist *)
 
 
 

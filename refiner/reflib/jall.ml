@@ -3,8 +3,8 @@
 
 open Refiner.Refiner
 open Term
-open TermOp
 open TermType
+open TermOp
 open TermSubst
 open Opname
 
@@ -47,7 +47,7 @@ type atom  = {aname : string;
               apredicate :  operator;
               apol : polarity; 
               ast : stype;
-              aarguments : bound_term list}
+              alabel : term}
 
 
 
@@ -111,7 +111,76 @@ module StringSet = Set.Make(OrderedString);;
 
 (************ printing T-string unifiers ****************************)
 
-(* se unification module *)
+
+
+
+(* ******* printing ********** *)
+
+
+let rec list_to_string s = 
+ match s with 
+  [] -> "" 
+ |f::r -> 
+  f^"."^(list_to_string r)
+
+
+
+
+let rec print_eqlist eqlist = 
+ match eqlist with 
+  [] -> 
+   print_endline ""
+ |(atnames,f)::r -> 
+  let (s,t) = f in
+   let ls = list_to_string s 
+   and lt = list_to_string t in 
+  begin
+   print_endline ("Atom names: "^(list_to_string atnames));
+   print_endline (ls^" = "^lt); 
+   print_eqlist r
+  end
+
+
+
+let print_equations eqlist = 
+ begin
+  Format.open_box 0;
+  Format.force_newline ();
+  print_endline "Equations:";
+  print_eqlist eqlist;
+  Format.force_newline ();
+ end
+
+
+
+
+let rec print_subst sigma = 
+ match sigma with 
+  [] -> 
+   print_endline ""
+ |f::r -> 
+  let (v,s) = f in
+   let ls = list_to_string s in 
+  begin
+   print_endline (v^" = "^ls); 
+   print_subst r
+  end
+
+
+let print_tunify sigma = 
+ let (n,subst) = sigma in 
+ begin
+  print_endline " ";
+  print_endline ("MaxVar = "^(string_of_int (n-1)));
+  print_endline " ";
+  print_endline "Substitution:";
+  print_subst subst;
+  print_endline " "
+ end
+
+
+(*****************************************************)
+
 
 
 
@@ -166,7 +235,7 @@ let rec print_prefix prefix_list =
 
 
 let print_atom at tab = 
- let ({aname=x; aaddress=y; aprefix=z; apredicate=p; apol=a; ast=b; aarguments=tlist}) = at in 
+ let ({aname=x; aaddress=y; aprefix=z; apredicate=p; apol=a; ast=b; alabel=label}) = at in 
   begin
    Format.print_string ("{aname="^x^"; address=");
    print_address y;
@@ -365,6 +434,8 @@ let print_set  set =
 
 
 
+
+
 let rec print_stringlist slist = 
   match slist with 
     [] -> 
@@ -374,6 +445,17 @@ let rec print_stringlist slist =
       Format.print_string (f^".");
       print_stringlist r
      end 
+
+
+
+
+
+
+let print_string_set  set = 
+ let set_list = StringSet.elements set in 
+   print_stringlist set_list 
+
+
 
 
 let rec print_list_sets list_of_sets = 
@@ -531,15 +613,25 @@ let pp_rule (r,formula,term) tab =
    if List.mem rep ["Alll";"Allr";"Exl";"Exr"] then 
         begin
 	  Format.open_box 0;
-	  Format.force_newline (); 
+(*	  Format.force_newline (); *)
 	  Format.print_break tab 0;
 	  Format.print_string (rep^" ");
-	  Format.print_break tab 0;
+	  Format.print_flush ();
+(*	  Format.print_break tab 0; 
 	  Format.force_newline (); 
-	  Format.print_break tab 0;
+	  Format.print_break tab 0; 
+*)
+
+	  Format.open_box 0;
           print_term stdout formula;
+	  Format.print_flush ();
+	  Format.open_box 0;
+          Format.print_string "  ";
+	  Format.print_flush ();
+	  Format.open_box 0;
           print_term stdout term;
-    (*      Format.force_newline (); *)
+          Format.force_newline (); 
+          Format.force_newline (); 
 	  Format.print_flush ()
         end
       else
@@ -665,7 +757,7 @@ let build_unsolved ftree =
 
 
 
-
+(*
 let rec collect_variables tree_list = 
  match tree_list with  
   [] -> []
@@ -703,6 +795,7 @@ let build_sigmaQ sigmaQ ftree =
   let vlist = collect_variables [ftree] in 
     sigmaQ @ (extend_sigmaQ sigmaQ vlist)
 
+*)
 
  
 
@@ -748,7 +841,7 @@ let rec get_roots treelist =
 
 let rec comp_ps padd ftree = 
  match ftree with 
-  Empty -> raise (Failure "invalid argument") 
+  Empty -> raise (Failure "invalid argument: empty formula tree") 
  |NodeAt(pos) -> 
     []
  |NodeA(pos,strees) -> 
@@ -851,6 +944,7 @@ let rec collect_succ_sets sucs redord =
 
 let replace_ordering psucc_name sucs redord = 
   let new_psucc_set = collect_succ_sets sucs redord in 
+(*   print_string_set new_psucc_set; *)
    replace_element psucc_name new_psucc_set redord
 
 
@@ -868,34 +962,33 @@ let rec update pname redord =
 
 (*  rule construction *)
 
-let rec selectQ spos_var csigmaQ =
+let rec selectQ spos_name csigmaQ =
  match csigmaQ  with 
-  [] -> 
-   raise (Failure "Invalid argument") 
+  [] ->  mk_var_term spos_name   (* dynamic completion of csigmaQ *)
  |(var,term)::r -> 
-   if spos_var=var then 
+   if spos_name=var then 
      term
    else 
-     selectQ  spos_var r
+     selectQ  spos_name r
   
 
 
-let apply_sigmaQ term sigmaQ =    (* this has to be done *)
-   term
+let apply_sigmaQ term sigmaQ = 
+ let sigma_vars,sigma_terms = List.split sigmaQ in 
+   (subst term sigma_terms sigma_vars)
+
+
 
 
 
 let build_rule pos spos csigmaQ orr_flag calculus =  
+ let inst_label = apply_sigmaQ (pos.label) csigmaQ in 
   match pos.op,pos.pol with 
-    Null,_ -> raise (Failure "Invalid argument") 
-  | At,O -> 
-     let inst_atom = apply_sigmaQ pos.label csigmaQ in 
-        Ax,(inst_atom),(mk_string_term (make_opname []) "dummy") (* to give back a term *)
-  | At,I -> 
-      let inst_atom = apply_sigmaQ pos.label csigmaQ in 
-        Ax,(inst_atom),(mk_string_term (make_opname []) "dummy")
-  | And,O -> Andr,(pos.label),(mk_string_term (make_opname []) "dummy")
-  | And,I -> Andl,(pos.label),(mk_string_term (make_opname []) "dummy")
+    Null,_ -> raise (Failure "Invalid argument: no rule") 
+  | At,O -> Ax,(inst_label),(mk_string_term (make_opname []) "dummy") (* to give back a term *)
+  | At,I -> Ax,(inst_label),(mk_string_term (make_opname []) "dummy")
+  | And,O -> Andr,(inst_label),(mk_string_term (make_opname []) "dummy")
+  | And,I -> Andl,(inst_label),(mk_string_term (make_opname []) "dummy")
   | Or,O -> 
      if calculus = "LJ" then 
       let or_rule = 
@@ -904,18 +997,18 @@ let build_rule pos spos csigmaQ orr_flag calculus =
        else 
         Orr2
       in 
-       or_rule,(pos.label),(mk_string_term (make_opname [])"dummy")
+       or_rule,(inst_label),(mk_string_term (make_opname [])"dummy")
      else  
-       Orr,(pos.label),(mk_string_term (make_opname [])"dummy")
-  | Or,I -> Orl,(pos.label),(mk_string_term (make_opname [])"dummy")
-  | Neg,O -> Negr,(pos.label),(mk_string_term (make_opname [])"dummy")
-  | Neg,I -> Negl,(pos.label),(mk_string_term (make_opname [])"dummy")
-  | Imp,O -> Impr,(pos.label),(mk_string_term (make_opname [])"dummy")
-  | Imp,I -> Impl,(pos.label),(mk_string_term (make_opname [])"dummy")
-  | All,I -> Alll,(pos.label),(selectQ (mk_var_term (spos.name)) csigmaQ)
-  | Ex,O -> Exr,(pos.label), (selectQ  (mk_var_term (spos.name)) csigmaQ)
-  | All,O -> Allr,(pos.label),(mk_string_term (make_opname []) (spos.name)) (* must be a proper term *)
-  | Ex,I -> Exl,(pos.label),(mk_string_term (make_opname []) (spos.name)) (* must be a proper term *)
+       Orr,(inst_label),(mk_string_term (make_opname [])"dummy")
+  | Or,I -> Orl,(inst_label),(mk_string_term (make_opname [])"dummy")
+  | Neg,O -> Negr,(inst_label),(mk_string_term (make_opname [])"dummy")
+  | Neg,I -> Negl,(inst_label),(mk_string_term (make_opname [])"dummy")
+  | Imp,O -> Impr,(inst_label),(mk_string_term (make_opname [])"dummy")
+  | Imp,I -> Impl,(inst_label),(mk_string_term (make_opname [])"dummy")
+  | All,I -> Alll,(inst_label),(selectQ spos.name csigmaQ)  (* elements of csigmaQ is (string * term) *)
+  | Ex,O -> Exr,(inst_label), (selectQ  spos.name csigmaQ)
+  | All,O -> Allr,(inst_label),(mk_string_term (make_opname ["jprover";(spos.name)]) (spos.name)) (* must be a proper term *)
+  | Ex,I -> Exl,(inst_label),(mk_string_term (make_opname ["jprover";(spos.name)]) (spos.name)) (* must be a proper term *)
 
 
 
@@ -1065,6 +1158,150 @@ let update_relations deltree redord connections unsolved_list =
     end
   
 
+let rec collect_qpos ftreelist uslist = 
+  match ftreelist with 
+    [] -> [],[] 
+   |ftree::rest ->  
+     match ftree with 
+      Empty -> 
+	collect_qpos rest uslist 
+     |NodeAt(pos) -> 
+       let (rest_delta,rest_gamma) = collect_qpos rest uslist in 
+         if (pos.st = Gamma_0) & (List.mem pos.name uslist) then 
+           rest_delta,(pos.name::rest_gamma)
+        else
+         if (pos.st = Delta_0) & (List.mem pos.name uslist) then 
+          (pos.name::rest_delta),rest_gamma
+         else 
+          rest_delta,rest_gamma
+     |NodeA(pos,suctrees) -> 
+       let (rest_delta,rest_gamma) = collect_qpos ((Array.to_list suctrees) @ rest) uslist in 
+         if (pos.st = Gamma_0) & (List.mem pos.name uslist) then 
+           rest_delta,(pos.name::rest_gamma)
+        else
+         if (pos.st = Delta_0) & (List.mem pos.name uslist) then 
+          (pos.name::rest_delta),rest_gamma
+         else 
+          rest_delta,rest_gamma
+      
+
+
+let rec do_split gamma_diff sigmaQ = 
+  match sigmaQ with 
+    [] -> [] 
+   |(v,term)::r -> 
+     if List.mem v gamma_diff then 
+       do_split gamma_diff r 
+     else
+       (v,term)::(do_split gamma_diff r)
+
+
+
+
+
+
+(* make a term list out of a bterm list *)
+
+let rec collect_subterms tterms = 
+ match tterms with 
+   [] -> [] 
+  |bt::r -> 
+    let dbt = dest_bterm bt in 
+     (dbt.bterm)::(collect_subterms r)
+
+
+
+let rec collect_delta_terms termlist = 
+ match termlist with 
+   [] -> [] 
+  |t::r -> 
+   let dt = dest_term t in 
+     let top = dt.term_op 
+     and tterms = dt.term_terms in 
+      let dop = dest_op top in 
+        let don = dest_opname dop.op_name in 
+          match don with
+            [] -> 
+             let sub_terms = collect_subterms tterms in 
+               collect_delta_terms (sub_terms @ r)
+           |op1::opr -> 
+             if op1 = "jprover" then 
+              match opr with 
+                [] -> raise (Failure "Invalid argument: delta position missing")
+               |delta::_ -> 
+                 delta::(collect_delta_terms r)
+             else
+               let sub_terms = collect_subterms tterms in 
+                 collect_delta_terms (sub_terms @ r)
+
+
+
+
+
+let rec check_delta_terms (v,term) ass_delta_diff dterms = 
+  match ass_delta_diff with 
+   [] -> term,[]
+  |(var,dname)::r -> 
+    if List.mem dname dterms then 
+     let new_var = 
+      if var = "" then 
+       v
+      else 
+       var
+     in
+      let replace_term = mk_string_term (make_opname ["jprover";dname]) dname in 
+        let next_term = var_subst term replace_term new_var in 
+         let (new_term,next_diffs) = check_delta_terms (v,next_term) r dterms in 
+           (new_term,((new_var,dname)::next_diffs))
+    else
+      let (new_term,next_diffs) = check_delta_terms (v,term) r dterms in 
+        (new_term,((var,dname)::next_diffs))
+
+
+let rec localize_sigma zw_sigma ass_delta_diff = 
+  match zw_sigma with 
+    [] -> [] 
+   |(v,term)::r -> 
+     let dterms = collect_delta_terms [term] in 
+      let (new_term,new_ass_delta_diff) = check_delta_terms (v,term) ass_delta_diff dterms in 
+        (v,new_term)::(localize_sigma r new_ass_delta_diff)
+
+
+
+let rec list_diff old_free new_free = 
+ match old_free with 
+  [] -> []
+ |f::r -> 
+   if List.mem f new_free then 
+     list_diff r new_free
+   else
+     f::(list_diff r new_free)
+
+
+
+
+let subst_split ft1 ft2 ftree uslist1 uslist2 uslist sigmaQ = 
+   let delta,gamma = collect_qpos [ftree] uslist
+   and delta1,gamma1 = collect_qpos [ft1] uslist1 
+   and  delta2,gamma2 = collect_qpos [ft2] uslist2 in 
+    let delta_diff1 = list_diff delta delta1
+    and delta_diff2 = list_diff delta delta2 
+    and gamma_diff1 = list_diff gamma gamma1 
+    and gamma_diff2 = list_diff gamma gamma2 in 
+     let zw_sigma1 = do_split gamma_diff1 sigmaQ
+     and zw_sigma2 = do_split gamma_diff2 sigmaQ in 
+      let ass_delta_diff1 = List.map (fun x -> ("",x)) delta_diff1
+      and ass_delta_diff2 = List.map (fun x -> ("",x)) delta_diff2 in 
+        let sigmaQ1 = localize_sigma zw_sigma1 ass_delta_diff1 
+        and sigmaQ2 = localize_sigma zw_sigma2 ass_delta_diff2 in 
+         (sigmaQ1,sigmaQ2)
+
+
+
+
+
+
+
 
 
 
@@ -1170,10 +1407,10 @@ in
 let rec betasplit addr ftree redord connections unsolved_list =
    match ftree with 
      Empty  -> 
-(*       print_endline "bsplit Empty tree";*)
+       print_endline "bsplit Empty tree";
        raise (Failure "Invalid argument") 
     |NodeAt(_) -> 
-(*       print_endline "bsplit Atom tree";*)
+       print_endline "bsplit Atom tree";
        raise (Failure "Invalid argument")   (* the beta-node should actually occur! *)
     |NodeA(pos,strees) -> 
      match addr with 
@@ -1349,16 +1586,38 @@ let blocked f po redord ftree connections slist logic calculus =
         raise (Failure "Invalid argument: calculus should be LJmc or LJ")
 
 
-let rec select_pos search_po po redord ftree connections slist logic calculus = 
+let rec select_pos search_po po redord ftree connections slist logic calculus candidates = 
  match search_po with 
    [] -> 
-    failwith "deadlock" 
+    (match candidates with 
+     [] -> 
+      if calculus = "LJ" then 
+        failwith "gamma deadlock"   (* permutation may be necessary *)
+      else 
+       failwith "overall deadlock" (* this case should not occur *)
+    |c::rest -> 
+      c
+    )
   |f::r ->  (* there exist an open position *)
     let (bool,orr_flag) = (blocked f po redord ftree connections slist logic calculus) in 
     if (bool = true) then 
-     select_pos r po redord  ftree connections slist logic calculus
-    else 
-     (f,orr_flag)
+     select_pos r po redord  ftree connections slist logic calculus candidates 
+    else
+      if f.pt = Beta then 
+     (* search for non-splitting rules first *)
+(*      let beta_candidate = 
+       if candidates = [] 
+        then 
+          [(f,orr_flag)]
+        else 
+     (* but preserve first found candidate *) 
+         candidates
+       in 
+  !!!!!!! this strategy is not sure the best -- back to old !!!!!!!!!
+*)
+        select_pos r po redord  ftree connections slist logic calculus [(f,orr_flag)]
+     else 
+       (f,orr_flag)
 
 
 
@@ -1405,7 +1664,7 @@ let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
             else
              rback @ (tot  ftree redord connections pnew newslist)
          | PNull -> 
-	     let c = select_connection (p.name) connections slist in 
+	     let c = select_connection (p.name) connections newslist in 
 	       if c = ("none","none") then 
                  rback @ (tot  ftree redord connections pnew newslist) 
                else 
@@ -1419,15 +1678,17 @@ let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
 (*             print_endline "split_in"; *)
             let (ft1,red1,conn1,uslist1),(ft2,red2,conn2,uslist2) = 
                 split (p.address) ftree redord connections newslist in  
+                 let (sigmaQ1,sigmaQ2) = subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ in 
 (*           print_endline "split_out"; *)
-	     let p1 = total  ft1 red1 conn1 csigmaQ uslist1 logic calculus in 
+	     let p1 = total  ft1 red1 conn1 sigmaQ1 uslist1 logic calculus in 
 (*           print_endline "compute p1 out";	      *)
-              let p2 = total  ft2 red2 conn2 csigmaQ uslist2 logic calculus in 
+              let p2 = total  ft2 red2 conn2 sigmaQ2 uslist2 logic calculus in 
 (*           print_endline "compute p2 out";	      *)
 		 rback @ [(build_rule p p csigmaQ orr_flag calculus)] @ p1 @ p2  (* second possibility of recursion end *)
 in       
  (try 
-  let (p,orr_flag) = select_pos po po redord ftree connections slist logic calculus
+  let (p,orr_flag) = select_pos po po redord ftree connections slist logic calculus [] 
+    (* last argument for guiding selection strategy *)
    in 
 (*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
      let predsuccs = tpredsucc p ftree in 
@@ -1440,34 +1701,53 @@ in
            let ppsuccs = tpredsucc psucc ftree in  
              let pre = List.hd ppsuccs 
              and sucs = List.tl ppsuccs in 
-              replace_ordering (psucc.name) sucs redord (* union the succsets of psucc *)
+              replace_ordering (psucc.name) sucs redpo (* union the succsets of psucc *)
          else 
           redpo
      in
 (*      print_endline "update ok"; *)
      solve ftree rednew connections p po slist (pred,succs) orr_flag
    with
-    Failure("deadlock") -> 
-      failwith "not_reconstructible"  (* this possibility should of course be eliminated *)
-  )
+     Failure("gamma deadlock") -> 
+       failwith "permutation"
+    |Failure("overall deadlock") ->
+       failwith "redundancy"  (* this possibility should of course be eliminated *)
+   )
 
 in
 let po  = compute_open [ftree] slist in 
   tot ftree redord connections po slist;;
 
 
-
+let  permute_ljmc ljmc_proof = 
+(*  print_endline "!!!!!!!!!!!!!Permutation TO DO!!!!!!!!!"; *)
+   ljmc_proof
 
 
 let reconstruct ftree redord sigmaQ connections logic calculus =  
-  let complete_sigmaQ = build_sigmaQ sigmaQ ftree in 
+ (* let complete_sigmaQ = build_sigmaQ sigmaQ ftree in  --- is done dynamically during build_rule *)
    let  (newroot_name,unsolved_list) =  build_unsolved ftree in 
     let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
       let (init_tree,init_redord,init_connections,init_unsolved_list) = 
          purity ftree redord2 connections unsolved_list in 
-          total init_tree init_redord init_connections complete_sigmaQ 
-                init_unsolved_list logic calculus
-  
+      if calculus = "LJ" then 
+(* For LJ, permutation may become necessary in the FO-case *) 
+        (try 
+            total init_tree init_redord init_connections sigmaQ 
+                  init_unsolved_list logic calculus
+         with 
+           Failure("permutation") -> 
+             let ljmc_proof =  total init_tree init_redord init_connections sigmaQ 
+                                   init_unsolved_list logic "LJmc" 
+             in 
+              permute_ljmc ljmc_proof
+         | Failure("redundancy") ->     (* should not occur *)
+             failwith "not_reconstructible"
+         )
+       else 
+(* Othewise, no problem should occur *)
+         total init_tree init_redord init_connections sigmaQ 
+               init_unsolved_list logic calculus
  
 
 
@@ -1475,6 +1755,206 @@ let reconstruct ftree redord sigmaQ connections logic calculus =
 
 
 
+(* ***************** REDUCTION ORDERING -- both types **************************** *)
+
+
+  
+
+let rec transitive_irreflexive_closure addset const ordering =   
+  match ordering with 
+    [] -> 
+     []
+  |(pos,fset)::r -> 
+   if (pos = const) or (StringSet.mem const fset) then
+(* check reflexsivity during transitive closure wrt. addset ONLY!!! *)  
+     if StringSet.mem pos addset then 
+       failwith "reflexive"
+     else 
+      (pos,(StringSet.union fset addset))::(transitive_irreflexive_closure addset const r)
+   else
+    (pos,fset)::(transitive_irreflexive_closure addset const r)
+
+
+
+
+
+let rec search_set var ordering = 
+(* print_endline var; *)
+ match ordering with 
+  [] -> 
+   raise (Failure "Invalid argument: element in ordering missing")
+ |(pos,fset)::r -> 
+   if pos = var then 
+     StringSet.add pos fset
+   else
+     search_set var r
+
+
+let add_sets var const ordering = 
+ let addset =  search_set var ordering  in 
+  transitive_irreflexive_closure addset const ordering
+
+
+
+
+
+(* ************* J ordering ********************************************** *)
+
+
+
+
+let rec add_arrowsJ (v,vlist) ordering = 
+ match vlist with 
+  [] -> ordering 
+ |f::r -> 
+   if ((String.get f 0)='c') then   
+     let new_ordering = add_sets v f ordering in 
+       add_arrowsJ (v,r) new_ordering
+   else 
+     add_arrowsJ (v,r) ordering
+
+
+
+let rec add_substJ replace_vars replace_string ordering atom_rel = 
+ match replace_vars with 
+  [] -> ordering
+ |v::r -> 
+   if (String.get v 1 = 'n') (* don't integrate new variables *)
+      or (List.exists (fun (x,_,_) -> (x.aname = v)) atom_rel) then   (* no reduction ordering at atoms *)
+    (add_substJ r replace_string ordering atom_rel)
+   else
+    let next_ordering = add_arrowsJ (v,replace_string) ordering in 
+      (add_substJ r replace_string next_ordering atom_rel)
+    
+
+
+let build_orderingJ replace_vars replace_string ordering atom_rel = 
+ (try 
+    add_substJ replace_vars replace_string ordering atom_rel 
+  with 
+   Failure("reflexive") ->      (* only possible in the FO case *)
+    failwith "not_unifiable"    (*search for alternative string unifiers *)
+ )
+
+
+
+let rec build_orderingJ_list substJ ordering atom_rel =  
+  match substJ with 
+   [] -> ordering
+  |(v,vlist)::r -> 
+    let next_ordering = build_orderingJ [v] vlist ordering atom_rel in 
+     build_orderingJ_list r next_ordering atom_rel 
+     
+
+(* ************* J ordering  END ********************************************** *)
+
+
+
+(* ************* quantifier ordering ********************************************** *)
+
+
+let rec add_arrowsQ v clist ordering = 
+ match clist with 
+  [] -> ordering 
+ |f::r -> 
+    let new_ordering = add_sets v f ordering in 
+       add_arrowsQ v r new_ordering
+ 
+
+
+
+
+
+let rec print_sigmaQ sigmaQ = 
+  match sigmaQ with 
+   [] -> 
+     print_endline "."
+  |(v,term)::r -> 
+      begin
+       Format.open_box 0;
+        print_endline " ";
+        print_string (v^" = ");
+        print_term stdout term;
+        Format.force_newline ();
+        Format.print_flush ();
+        print_sigmaQ r
+      end
+
+
+
+
+
+
+let rec print_term_list tlist = 
+ match tlist with  
+   [] -> print_string "."
+  |t::r -> 
+   begin
+    print_term stdout t;
+    print_string "   ";
+    print_term_list r
+   end
+  
+
+
+
+let rec add_sigmaQ new_elements ordering  = 
+ match new_elements with 
+   [] -> ([],ordering)
+  |(v,termlist)::r -> 
+   let dterms = collect_delta_terms termlist in 
+      begin
+(*        Format.open_box 0;
+        print_endline " ";
+        print_endline "sigmaQ: ";
+        print_string (v^" = ");
+        print_term_list termlist;
+        Format.force_newline ();
+        print_stringlist dterms;
+        Format.force_newline ();
+        Format.print_flush ();
+*)
+    let new_ordering = add_arrowsQ  v dterms ordering in 
+     let (rest_pairs,rest_ordering) = add_sigmaQ r new_ordering in 
+       ((v,dterms)::rest_pairs),rest_ordering
+   end
+
+
+
+let build_orderingQ new_elements ordering = 
+(* new_elements is of type (string * term list) list, since one variable can receive more than *)
+(* a single term due to substitution multiplication *)
+ (try 
+(*   print_endline "build orderingQ in"; *)
+    add_sigmaQ new_elements ordering;
+  with 
+   Failure("reflexive") -> 
+    failwith "fail1"                (* new connection, please *)
+ )
+   
+
+
+(* ************* quantifier ordering  END ********************************************** *)
+
+
+
+
+
+(* ****** Quantifier unification ************** *)
+
+
+(* For multiplication we assume always idempotent substitutions sigma, tau! *)
+
+
+
+
+
+let rec collect_assoc inst_vars tauQ  = 
+  match inst_vars with 
+   [] -> []
+  |f::r -> 
+    let f_term = List.assoc f tauQ in 
+     f_term::(collect_assoc r tauQ)
 
 
 
@@ -1484,28 +1964,767 @@ let reconstruct ftree redord sigmaQ connections logic calculus =
 
 
 
-(************ T-STRING UNIFICATION *********************************)
+let rec rec_apply sigmaQ tauQ tau_vars tau_terms = 
+ match sigmaQ with 
+   [] -> [],[]
+  | (v,term)::r -> 
+   let app_term = subst term tau_terms tau_vars in 
+    let old_free = free_vars term 
+    and new_free = free_vars app_term  in 
+     let inst_vars = list_diff old_free new_free in 
+      let inst_terms = collect_assoc inst_vars tauQ in 
+    let (rest_sigma,rest_sigma_ordering) = rec_apply r tauQ tau_vars tau_terms in 
+     if inst_terms  = [] then 
+       ((v,app_term)::rest_sigma),rest_sigma_ordering
+     else 
+       ((v,app_term)::rest_sigma),((v,inst_terms)::rest_sigma_ordering)
 
 
 
-let stringunify ext_atom try_one eqlist logic = 
- if logic = "C" then 
-  ((0,[]),[])
+(* let multiply sigmaQ tauQ = 
+ let tau_vars,tau_terms = List.split tauQ 
+ and sigma_vars,sigma_terms = List.split sigmaQ in 
+  let apply_terms  = rec_apply sigma_terms tau_vars tau_terms in 
+   (List.combine sigma_vars apply_terms) @ tauQ
+*)
+
+
+let multiply sigmaQ tauQ = 
+ let (tau_vars,tau_terms) = List.split tauQ in
+   let (new_sigmaQ,sigma_ordering)  = rec_apply sigmaQ tauQ tau_vars tau_terms 
+   and tau_ordering_terms = (List.map (fun x -> [x]) tau_terms) (* for extending ordering_elements *) in 
+      let tau_ordering  = (List.combine tau_vars tau_ordering_terms) in 
+        ((new_sigmaQ @ tauQ),
+         (sigma_ordering @ tau_ordering)
+        )
+
+
+
+
+
+
+
+
+let make_eq_list term1 term2 = 
+ let dt1 = dest_term term1 
+ and dt2 = dest_term term2 in 
+  let tt1 = dt1.term_terms 
+  and tt2 = dt2.term_terms in 
+   let term1list = collect_subterms tt1 
+   and term2list = collect_subterms tt2 in 
+     eqnlist_append_eqns eqnlist_empty (List.combine term1list term2list)
+   
+ 
+
+let apply_2_sigmaQ term1 term2 sigmaQ = 
+ let sigma_vars,sigma_terms = List.split sigmaQ in 
+  (subst term1 sigma_terms sigma_vars),(subst term2 sigma_terms sigma_vars)
+
+
+
+let jqunify term1 term2 sigmaQ = 
+ let app_term1,app_term2 = apply_2_sigmaQ term1 term2 sigmaQ in 
+  let eqnlist = make_eq_list app_term1 app_term2 in 
+  (try
+   let tauQ = unify_mm_eqnl eqnlist [] in 
+     multiply sigmaQ tauQ
+   with 
+    _  ->  (* any unification failure, exceptions Cycle or Clash in unification module *)
+     failwith "fail1"   (* new connection, please *)
+  )
+
+
+
+
+
+(* ************ T-STRING UNIFICATION ******************************** *)
+
+
+
+
+
+let is_const name  = 
+  (String.get name 0) = 'c'
+
+
+let is_var name  = 
+  (String.get name 0) = 'v'
+
+
+
+let r_1 s ft rt = 
+  (s = []) & (ft = []) & (rt = []) 
+
+
+
+
+
+let r_2 s ft rt = 
+  (s = []) & (ft = []) & (List.length rt >= 1) 
+
+
+
+
+
+let r_3 s ft rt = 
+  if ft=[] then 
+    if (List.length s >= 1) &  (List.length rt >= 1) then 
+     let x = List.hd s 
+     and y = List.hd rt in 
+       x=y 
+    else 
+     false 
+  else 
+   false 
+
+
+
+
+let r_4 s ft rt = 
+  if ft=[] then 
+    if (List.length s >= 1) &  (List.length rt >= 1) then 
+     let c = List.hd s 
+     and v = List.hd rt in 
+       (is_const c) & (is_var v) 
+    else 
+     false 
+  else 
+   false
+
+
+
+ let r_5 s ft rt = 
+  if rt=[] then 
+    if (List.length s >= 1) then 
+     let v = List.hd s in 
+       (is_var v) 
+    else 
+     false
+  else 
+   false
+
+
+
+
+let r_6 s ft rt = 
+  if ft=[] then 
+    if (List.length s >= 1) &  (List.length rt >= 1) then 
+     let v = List.hd s 
+     and c1 = List.hd rt in 
+       (is_var v) & (is_const c1) 
+    else 
+     false
+  else 
+   false
+
+
+
+
+let r_7 s ft rt = 
+    if (List.length s >= 1) &  (List.length rt >= 2) then 
+     let v = List.hd s 
+     and c1 = List.hd rt 
+     and c2 = (List.hd (List.tl rt)) in 
+       (is_var v) & (is_const c1) & (is_const c2) 
+    else 
+     false
+
+
+
+
+
+
+let r_8 s ft rt = 
+  if ft=[] then 
+    if (List.length s >= 2) &  (List.length rt >= 1) then 
+     let v = List.hd s 
+     and v1 = List.hd rt in 
+       (is_var v) & (is_var v1) & (v <> v1)
+    else 
+     false
+  else 
+   false
+
+
+
+
+
+let r_9 s ft rt = 
+    if (List.length s >= 2) & (List.length ft >= 1) & (List.length rt >= 1) then 
+     let v = (List.hd s)
+     and v1 = (List.hd rt) in 
+       (is_var v) & (is_var v1) & (v <> v1)
+    else 
+      false
+
+
+
+let r_10 s ft rt = 
+    if (List.length s >= 1) &  (List.length rt >= 1) then 
+     let v = List.hd s 
+     and x = List.hd rt in 
+       (is_var v) & (v <> x) & 
+        (((List.tl s) =[]) or (is_const x) or ((List.tl rt) <> []))
+    else 
+     false
+
+ 
+
+
+
+
+let rec com_subst slist (ov,ovlist) = 
+ match slist with 
+  [] -> raise (Failure "Invalid argument")
+  |f::r -> 
+   if f = ov then 
+    (ovlist @ r) 
+   else 
+    f::(com_subst r (ov,ovlist))
+
+
+let rec combine subst (ov,oslist)  = 
+ match subst with 
+  [] -> [],[]
+ |f::r -> 
+  let (v,slist) = f in  
+   let rest_vlist,rest_combine = (combine r (ov,oslist)) in 
+   if (List.mem ov slist) then  (* subst assumed to be idemponent *)
+    let com_element = com_subst slist (ov,oslist) in
+     (v::rest_vlist),((v,com_element)::rest_combine)
+   else
+    (rest_vlist,(f::rest_combine))
+
+
+
+let compose sigma one_subst =  
+  let (n,subst)=sigma 
+  and (ov,oslist) = one_subst in 
+   let (trans_vars,com) = combine subst (ov,oslist) 
+    in
+(*    begin
+     print_endline "!!!!!!!!!test print!!!!!!!!!!";
+     print_subst [one_subst];
+     print_subst subst;
+     print_endline "!!!!!!!!! END test print!!!!!!!!!!";
+*)
+     if List.mem one_subst subst then 
+       (trans_vars,(n,com))
+     else 
+(* ov may multiply as variable in subst with DIFFERENT values *)
+(* in order to avoid explicit atom instances!!! *) 
+      (trans_vars,(n,(com @ [one_subst])))
+(*   end *)
+  
+
+
+
+
+let rec apply_element fs ft (v,slist) = 
+  match (fs,ft) with
+    ([],[]) ->
+      ([],[])
+   |([],(ft_first::ft_rest)) ->
+     let new_ft_first =      
+       if ft_first = v then 
+        slist
+       else
+        [ft_first]
+     in 
+     let (emptylist,new_ft_rest) = apply_element [] ft_rest (v,slist) in 
+      (emptylist,(new_ft_first @ new_ft_rest))
+   |((fs_first::fs_rest),[]) ->
+     let new_fs_first = 
+       if fs_first = v then 
+        slist
+       else
+        [fs_first]
+     in 
+     let (new_fs_rest,emptylist) = apply_element fs_rest [] (v,slist) in 
+       ((new_fs_first @ new_fs_rest),emptylist)
+   |((fs_first::fs_rest),(ft_first::ft_rest)) -> 
+     let new_fs_first = 
+       if fs_first = v then 
+        slist
+       else
+        [fs_first]
+     and new_ft_first = 
+       if ft_first = v then 
+        slist
+       else
+        [ft_first]
+     in
+     let (new_fs_rest,new_ft_rest) = apply_element fs_rest ft_rest (v,slist) in 
+        ((new_fs_first @ new_fs_rest),(new_ft_first @ new_ft_rest))
+
+
+
+
+
+let rec shorten us ut = 
+ match (us,ut) with 
+  ([],_) -> (us,ut)
+ |(_,[])  -> (us,ut)
+ |((fs::rs),(ft::rt)) -> 
+   if fs = ft then 
+      shorten rs rt
+   else 
+    (us,ut)
+
+
+
+
+let rec apply_subst_list eq_rest (v,slist) = 
+  
+ match eq_rest with 
+   [] -> 
+      (true,[])
+  |(atomnames,(fs,ft))::r -> 
+    let (n_fs,n_ft) = apply_element fs ft (v,slist) in 
+    let (new_fs,new_ft) = shorten n_fs n_ft in (* delete equal first elements *)
+    match (new_fs,new_ft) with 
+      [],[] ->          
+        let (bool,new_eq_rest) = apply_subst_list r (v,slist) in 
+          (bool,((atomnames,([],[]))::new_eq_rest))
+     |[],(fft::rft) -> 
+        if (is_const fft) then 
+          (false,[])
+        else 
+         let (bool,new_eq_rest) = apply_subst_list r (v,slist) in 
+            (bool,((atomnames,([],new_ft))::new_eq_rest))
+     |(ffs::rfs),[] -> 
+        if (is_const ffs) then 
+          (false,[])
+        else 
+         let (bool,new_eq_rest) = apply_subst_list r (v,slist) in 
+            (bool,((atomnames,(new_fs,[]))::new_eq_rest))
+     |(ffs::rfs),(fft::rft) -> 
+       if (is_const ffs) & (is_const fft) then 
+           (false,[])
+        (* different first constants cause local fail *)
+       else
+        (* at least one of firsts is a variable *)
+         let (bool,new_eq_rest) = apply_subst_list r (v,slist) in 
+           (bool,((atomnames,(new_fs,new_ft))::new_eq_rest))
+
+
+let apply_subst eq_rest (v,slist) atomnames =
+ if (List.mem v atomnames) then (* don't apply subst to atom variables !! *)
+   (true,eq_rest)
  else
-  let us  = ext_atom.aprefix
+   apply_subst_list eq_rest (v,slist) 
+
+
+
+let all_variable_check eqlist = false   (* needs some discussion with Jens! -- NOT done *)
+
+
+(*
+ let rec all_variable_check eqlist = 
+  match eqlist with 
+    [] -> true
+   |((_,(fs,ft))::rest_eq) -> 
+     if (fs <> []) & (ft <> []) then 
+      let fs_first = List.hd fs
+      and ft_first = List.hd ft
+      in 
+      if (is_const fs_first) or (is_const ft_first) then 
+        false
+      else
+        all_variable_check rest_eq
+     else 
+      false
+*)
+
+       
+
+
+let rec  tunify_list eqlist init_sigma orderingQ atom_rel = 
+
+let rec tunify atomnames fs ft rt rest_eq sigma ordering = 
+
+let apply_r1 fs ft rt rest_eq sigma = 
+(* print_endline "r1"; *)
+ tunify_list rest_eq sigma ordering atom_rel
+
+in
+let apply_r2 fs ft rt rest_eq sigma = 
+(* print_endline "r2"; *)
+  tunify atomnames rt fs ft rest_eq sigma ordering
+
+in
+let apply_r3 fs ft rt rest_eq sigma =
+(* print_endline "r3"; *)
+ let rfs =  (List.tl fs)
+ and rft =  (List.tl rt) in 
+  tunify atomnames rfs ft rft rest_eq sigma ordering 
+
+in
+let apply_r4 fs ft rt rest_eq sigma =
+(* print_endline "r4"; *)
+  tunify atomnames rt ft fs rest_eq sigma ordering 
+
+in
+let apply_r5 fs ft rt rest_eq sigma =
+(* print_endline "r5"; *)
+ let v = (List.hd fs) in 
+   let (compose_vars,new_sigma) = compose sigma (v,ft) in 
+    let (bool,new_rest_eq) = apply_subst rest_eq (v,ft) atomnames in 
+     if (bool=false) then 
+        failwith "not_unifiable"
+     else 
+       let new_ordering = build_orderingJ (v::compose_vars) ft ordering atom_rel in 
+         tunify atomnames (List.tl fs) rt rt new_rest_eq new_sigma new_ordering
+
+in
+let apply_r6 fs ft rt rest_eq sigma =
+(* print_endline "r6"; *)
+ let v = (List.hd fs) in 
+  let (_,new_sigma) = (compose sigma (v,[])) in 
+   let (bool,new_rest_eq) = apply_subst rest_eq (v,[]) atomnames in 
+    if (bool=false) then  
+      failwith "not_unifiable"
+    else
+     (* no relation update since [] has been replaced for v *)
+      tunify atomnames (List.tl fs) ft rt new_rest_eq new_sigma ordering
+
+in
+let apply_r7 fs ft rt rest_eq sigma =
+(* print_endline "r7"; *)
+ let v = (List.hd fs) 
+ and c1 = (List.hd rt) 
+ and c2t =(List.tl rt) in 
+  let (compose_vars,new_sigma) = (compose sigma (v,(ft @ [c1]))) in 
+   let (bool,new_rest_eq) = apply_subst rest_eq (v,(ft @ [c1])) atomnames in 
+    if bool=false then 
+      failwith "not_unifiable"
+    else
+     let new_ordering = build_orderingJ (v::compose_vars) (ft @ [c1]) ordering atom_rel in 
+      tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma new_ordering
+
+
+in
+let apply_r8 fs ft rt rest_eq sigma = 
+(* print_endline "r8"; *)
+   tunify atomnames  rt [(List.hd fs)] (List.tl fs) rest_eq sigma ordering
+
+in
+let apply_r9 fs ft rt rest_eq sigma =
+(* print_endline "r9"; *)
+ let v = (List.hd fs) 
+ and (max,subst) = sigma in 
+  let v_new = ("vnew"^(string_of_int max)) in 
+    let (compose_vars,new_sigma) = (compose ((max+1),subst) (v,(ft @ [v_new]))) in 
+      let (bool,new_rest_eq) = apply_subst rest_eq (v,(ft @ [v_new])) atomnames in 
+       if (bool=false) then 
+        failwith "not_unifiable"
+      else
+       let new_ordering = 
+        build_orderingJ (v::compose_vars) (ft @ [v_new]) ordering atom_rel in 
+  	 tunify atomnames rt [v_new] (List.tl fs) new_rest_eq new_sigma new_ordering
+
+in
+let apply_r10 fs ft rt rest_eq sigma = 
+(* print_endline "r10"; *)
+ let x = List.hd rt in 
+   tunify atomnames fs (ft @ [x]) (List.tl rt) rest_eq sigma ordering
+
+in
+  if r_1 fs ft rt then 
+     apply_r1 fs ft rt rest_eq sigma
+  else 
+
+  if r_2 fs ft rt then 
+    apply_r2 fs ft rt rest_eq sigma 
+  else 
+
+  if r_3 fs ft rt then 
+   (try 
+     apply_r3 fs ft rt rest_eq sigma 
+    with
+     Failure("not_unifiable") -> 
+       failwith "not_unifiable" 
+   )
+
+  else 
+  if r_4 fs ft rt then 
+   apply_r4 fs ft rt rest_eq sigma 
+
+  else 
+  if r_5 fs ft rt then 
+    apply_r5 fs ft rt rest_eq sigma 
+
+
+
+  else 
+  if r_6 fs ft rt then 
+   (try 
+     apply_r6 fs ft rt rest_eq sigma
+    with 
+      Failure("not_unifiable") ->            
+       if r_7 fs ft rt then (* r7 applicable if r6 was and tr6 = C2t' *)
+          (try
+            apply_r7 fs ft rt rest_eq sigma
+           with   
+	     Failure("not_unifiable") -> 
+              (try
+                apply_r10 fs ft rt rest_eq sigma (* r10 always applicable if r6 was *)
+               with   
+                Failure("not_unifiable") ->          
+                  failwith "not_unifiable" (* simply back propagation *)    
+              )
+          )
+       else
+(* r10 could be represented only once if we would try it before r7.*)
+(* but looking at the transformation rules, r10 should be tried at last in any case *)
+          (try
+            apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable r6 was *)
+           with   
+	    Failure("not_unifiable") -> 
+		failwith "not_unifiable" (* simply back propagation *)    
+          )
+   )
+
+  else
+  if r_7 fs ft rt then  (* not r6 and r7 possible if z <> [] *) 
+   (try
+     apply_r7 fs ft rt rest_eq sigma
+    with
+      Failure("not_unifiable") -> 
+       (try
+          apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable if r7 was *)
+        with   
+	  Failure("not_unifiable") ->
+            failwith "not_unifiable" (* simply back propagation *)    
+       )
+   )
+
+
+  else
+  if r_8 fs ft rt then  
+   (try 
+     apply_r8 fs ft rt rest_eq sigma 
+    with 
+     Failure("not_unifiable") -> 
+       if r_10 fs ft rt then (* r10 applicable if r8 was and tr8 <> [] *)
+         (try
+           apply_r10 fs ft rt rest_eq sigma 
+          with
+	   Failure("not_unifiable") -> 
+              failwith "not_unifiable" (* simply back propagation *)    
+         )
+       else 
+         failwith "not_unifiable" (* simply back propagation *)    
+   )
+
+  else
+  if r_9 fs ft rt then  
+   (try
+     apply_r9 fs ft rt rest_eq sigma 
+    with
+     Failure("not_unifiable") -> 
+       if r_10 fs ft rt then (* r10 applicable if r9 was and tr9 <> [] *)
+         (try 
+            apply_r10 fs ft rt rest_eq sigma 
+          with
+           Failure("not_unifiable") -> 
+              failwith "not_unifiable" (* simply back propagation *)    
+         )
+       else
+         failwith "not_unifiable" (* simply back propagation *)    
+  )
+
+  
+  else
+  if r_10 fs ft rt then  (* not ri, i<10, and r10 possible if for instance *)
+                         (* (s=[] and x=v1) or (z<>[] and xt=C1V1t') *)
+   (try
+     apply_r10 fs ft rt rest_eq sigma 
+    with
+     Failure("not_unifiable") -> 
+      failwith "not_unifiable" (* simply back propagation *)    
+   )
+  else  (* NO rule applicable *) 
+    failwith "not_unifiable"
+   
+
+
+in
+ match eqlist with 
+  [] -> 
+    init_sigma,orderingQ
+ |f::rest_eq -> 
+ begin
+(*  Format.open_box 0;
+  print_equations [f];
+  Format.print_flush ();
+*)
+  (try
+   let (atomnames,(fs,ft)) = f in 
+    tunify atomnames fs [] ft rest_eq init_sigma orderingQ 
+   with    
+     Failure("not_unifiable") -> 
+        failwith "not_unifiable"  (* search alternatives in former equations *)
+   )
+ end
+
+
+
+
+
+
+let rec test_apply_eq atomnames eqs eqt subst = 
+  match subst with 
+   [] -> (eqs,eqt)
+  |(f,flist)::r -> 
+   let (first_appl_eqs,first_appl_eqt) = 
+    if List.mem f atomnames then 
+     (eqs,eqt) 
+    else
+     (apply_element eqs eqt (f,flist))
+    in
+     test_apply_eq atomnames first_appl_eqs first_appl_eqt r
+   
+
+
+
+
+let rec test_apply_eqsubst eqlist subst = 
+ match eqlist with
+  [] -> [] 
+ |f::r -> 
+  let (atomnames,(eqs,eqt)) = f in 
+  let applied_element  = test_apply_eq atomnames eqs eqt subst in 
+   (atomnames,applied_element)::(test_apply_eqsubst r subst)
+  
+
+
+
+
+
+
+let ttest us ut ns nt eqlist orderingQ atom_rel = 
+  let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 *)
+                                           (* to eliminate common beginning *)
+   let new_element = ([ns;nt],(short_us,short_ut)) in 
+    let full_eqlist = 
+     if List.mem new_element eqlist then 
+      eqlist 
+     else 
+      new_element::eqlist 
+    in 
+     let (sigma,_) = tunify_list full_eqlist (1,[]) orderingQ atom_rel in 
+      let (n,subst) = sigma in 
+       let test_apply  = test_apply_eqsubst full_eqlist subst in 
+         begin
+          print_endline "";
+          print_endline "Final equations:";
+          print_equations full_eqlist;
+          print_endline "";
+          print_endline "Final substitution:";
+          print_tunify sigma;
+          print_endline "";
+          print_endline "Applied equations:";
+          print_equations test_apply
+
+       end
+
+
+let do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel qmax = 
+ let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 to eliminate common beginning *)
+  let new_element = ([ns;nt],(short_us,short_ut)) in 
+   let full_eqlist = 
+     if List.mem new_element equations then 
+      equations @ fo_eqlist
+     else 
+      (new_element::equations) @ fo_eqlist
+  in
+  (try
+(*  print_equations full_eqlist; *)
+(* max-1 new variables have been used for the domain equations *)
+    let (new_sigma,new_ordering) = tunify_list full_eqlist (1,[]) orderingQ atom_rel in 
+(* sigmaQ will not be returned in eqlist *)
+     (new_sigma,(qmax,full_eqlist),new_ordering)
+   with 
+    Failure("not_unifiable") -> 
+     failwith "fail1"            (* new connection please *)
+  )
+
+
+
+
+let rec one_equation gprefix dlist delta_0_prefixes n = 
+ match dlist with 
+  [] -> ([],n)
+ |f::r -> 
+  let fprefix = List.assoc f delta_0_prefixes  in 
+   let (sf1,sg) = shorten fprefix gprefix
+   and v_new = ("vnewq"^(string_of_int n)) in 
+    let fnew = sf1 @ [v_new] in 
+     let (rest_equations,new_n) = one_equation gprefix r delta_0_prefixes (n+1) in
+      (([],(fnew,sg))::rest_equations),new_n
+
+
+
+
+let rec make_domain_equations fo_pairs (gamma_0_prefixes,delta_0_prefixes) n = 
+  match fo_pairs with   
+   [] -> ([],n)
+  |(g,dlist)::r -> 
+    let gprefix = List.assoc g gamma_0_prefixes in 
+     let (gequations,max) = one_equation gprefix dlist delta_0_prefixes n in 
+      let (rest_equations,new_max) = 
+        make_domain_equations r (gamma_0_prefixes,delta_0_prefixes) max in 
+         (gequations @ rest_equations),new_max
+
+
+
+
+
+
+(* type of one unifier: int * ((string * string list) list)  *)
+(* global failure: (0,[]) *)
+
+
+
+let stringunify ext_atom try_one eqlist fo_pairs logic orderingQ atom_rel qprefixes = 
+ if logic = "C" then 
+  ((0,[]),(0,[]),orderingQ)
+ else
+  let (qmax,equations) = eqlist 
+  and us  = ext_atom.aprefix
   and ut  = try_one.aprefix
   and ns = ext_atom.aname 
   and nt = try_one.aname in 
-  Jtunify.do_stringunify us ut ns nt eqlist
+   if qprefixes = ([],[]) then  (* prop case *)
+    begin
+(*     print_endline "This is the prop case"; *)
+     let (new_sigma,new_eqlist)  = Jtunify.do_stringunify us ut ns nt equations 1
+       (* prop unification only *)
+     in 
+      (new_sigma,new_eqlist,[]) (* assume the empty reduction ordering during proof search *)
+   end
+  else
+    begin
+(*     print_endline "This is the FO case"; *)
+(* fo_eqlist encodes the domain condition on J quantifier substitutions *)
+(* Again, always computed for the whole substitution sigmaQ *)
+  let (fo_eqlist,new_max) = make_domain_equations fo_pairs qprefixes qmax in 
+   begin
+(*    Format.open_box 0;
+    print_string "domain equations in";
+    print_equations fo_eqlist;
+    print_string "domain equations out";
+    Format.print_flush ();
+*)
+    do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel new_max
+   end
+   end
 
 
 
 
-(* #use "/home/steph/meta-prl/refiner/reflib/jstring_unifyfy.ml" *)
 
-
-(* type of unifier: (int * (string,string) list) list *)
-(* global failure: 0,[] *)
 
 
 
@@ -1541,8 +2760,8 @@ let update_position position m replace_n subst_list mult =
          (vx,vnx)::subst_list 
       else
       if b=Delta_0 then 
-        let sx = mk_string_term (make_opname []) x
-        and snx = mk_string_term (make_opname []) nx in 
+        let sx = mk_string_term (make_opname ["jprover";x]) x
+        and snx = mk_string_term (make_opname ["jprover";nx]) nx in 
          (sx,snx)::subst_list 
       else
         subst_list
@@ -1612,7 +2831,7 @@ let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
 
  in
  match last_tree with  
-  Empty -> raise (Failure "Invalid argument")
+  Empty -> raise (Failure "Invalid argument: copy tree")
   |NodeAt(position) ->   (* can never be a Gamma_0 position -> no replacements *)
       let (nposition,npos_n,_) = update_position position (pos_n+1) replace_n subst_list mult in 
         ((NodeAt(nposition)),[(nposition.name,StringSet.empty)],npos_n)
@@ -1642,7 +2861,7 @@ let rec add_multiplicity ftree pos_n  mult logic =
      
   in
   match ftree with   
-   Empty -> raise (Failure "Invalid argument")
+   Empty -> raise (Failure "Invalid argument: add mult")
    |NodeAt(pos) -> (ftree,[(pos.name,StringSet.empty)],pos_n) 
    |NodeA(pos,suctrees) -> 
     let (new_suctrees, new_ordering_list, new_pos_n) = parse_subtrees (Array.to_list suctrees) pos_n in 
@@ -1666,7 +2885,7 @@ let rec add_multiplicity ftree pos_n  mult logic =
 
 
 
-(**************  Path checker   ******************************************************************************)
+(**************  Path checker   ****************************************************)
 
 
 
@@ -1767,69 +2986,17 @@ let rec ext_partners con path ext_atom (reduction_partners,extension_partners) a
      
 
 
-  
-
-let rec transitive_closure addset const ordering =   
-  match ordering with 
-    [] -> 
-     []
-  |(pos,fset)::r -> 
-   if (pos = const) or (StringSet.mem const fset) then
-    (pos,(StringSet.union fset addset)) :: (transitive_closure addset const r)
-   else
-    (pos,fset)::(transitive_closure addset const r)
-
-
-let rec search_set var ordering = 
- match ordering with 
-  [] -> 
-   raise (Failure "Invalid argument")
- |(pos,fset)::r -> 
-   if pos = var then 
-     StringSet.add pos fset
-   else
-     search_set var r
-
-
-let add_sets var const ordering = 
- let addset =  search_set var ordering  in 
-  transitive_closure addset const ordering
-
-
-
-let rec add_arrows (v,vlist) ordering = 
- match vlist with 
-  [] -> ordering 
- |f::r -> 
-   if ((String.get f 0)='c') then   
-     let new_ordering = add_sets v f ordering in 
-       add_arrows (v,r) new_ordering
-   else 
-     add_arrows (v,r) ordering
 
 
 
 
-let rec check_subst subst ordering atom_rel = 
- match subst with 
-  [] -> ordering
- |(v,vlist)::r -> 
-   if (String.get v 1 = 'n') (* don't integrate new variables *)
-      or (List.exists (fun (x,_,_) -> (x.aname = v)) atom_rel) then   (* no reduction ordering at atoms *)
-    (check_subst r ordering atom_rel)   
-   else
-    let next_ordering = add_arrows (v,vlist) ordering in 
-      check_subst r next_ordering atom_rel
-    
-
-
-let add_subst sigma ordering atom_rel = 
- let (n,subst) = sigma in 
-   check_subst subst ordering atom_rel
 
 
 
-let path_checker atom_rel atom_sets init_ordering logic =  
+
+
+
+let path_checker atom_rel atom_sets qprefixes init_ordering logic =  
 
   let con = connections atom_rel [] in 
 (*   print_endline "";
@@ -1837,7 +3004,7 @@ let path_checker atom_rel atom_sets init_ordering logic =
 *)
 
 
-   let rec provable path closed (ordering,reduction_ordering) eqlist sigma = 
+   let rec provable path closed (orderingQ,reduction_ordering) eqlist (sigmaQ,sigmaJ) = 
   
      let rec check_connections (reduction_partners,extension_partners) ext_atom = 
       let try_one = 
@@ -1854,25 +3021,31 @@ let path_checker atom_rel atom_sets init_ordering logic =
 (*       print_endline ("partner path "^(print_set path));
 *)
         (try 
-         let (new_sigma,new_eqlist) =  stringunify ext_atom try_one eqlist logic in 
-          let new_ordering = add_subst new_sigma ordering atom_rel in 
+         let (new_sigmaQ,new_ordering_elements) = jqunify (ext_atom.alabel) (try_one.alabel) sigmaQ in 
+(* build the orderingQ incrementally from the new added substitution tau of new_sigmaQ *)
+         let (relate_pairs,new_orderingQ) = build_orderingQ new_ordering_elements orderingQ in 
+(* we make in incremental reflexivity test during the string unification *)
+         let (new_sigmaJ,new_eqlist,new_red_ordering) =  
+(* new_red_ordering = [] in propositional case *)
+   stringunify ext_atom try_one eqlist relate_pairs logic new_orderingQ atom_rel qprefixes
+         in  
 (*           print_endline ("make reduction ordering "^((string_of_int (List.length new_ordering)))); *)
            let new_closed = AtomSet.add ext_atom closed in  
-            let (next_ordering,next_eqlist,next_sigma,subproof) = 
+            let ((next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),subproof) = 
              if AtomSet.mem try_one path then 
-                 provable path new_closed (ordering,new_ordering) new_eqlist new_sigma
-                     (* always use old tree ordering for recursion *) 
+                 provable path new_closed (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ)
+                     (* always use old first-order ordering for recursion *) 
              else 
               let new_path = AtomSet.add ext_atom path
               and extension = AtomSet.add try_one AtomSet.empty in 
-               let (nordering,neqlist,nsigma,p1) = 
-                 provable new_path extension (ordering,new_ordering) new_eqlist new_sigma in  
-                 let (nnordering,nneqlist,nnsigma,p2) = 
-                   provable path new_closed (ordering,nordering) neqlist nsigma in 
-                    (nnordering,nneqlist,nnsigma,(p1 @ p2))
+               let ((norderingQ,nredordering),neqlist,(nsigmaQ,nsigmaJ),p1) = 
+                 provable new_path extension (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ) in  
+                 let ((nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),p2) = 
+                   provable path new_closed (norderingQ,nredordering) neqlist (nsigmaQ,nsigmaJ) in 
+                    ((nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),(p1 @ p2))
       (* first the extension subgoals = depth first; then other subgoals in same clause *)
            in 
-            (next_ordering,next_eqlist,next_sigma,(((ext_atom.aname),(try_one.aname))::subproof))
+            ((next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),(((ext_atom.aname),(try_one.aname))::subproof)) 
          with Failure("fail1") -> 
 (*          print_endline ("new connection for "^(ext_atom.aname)); *)
 (*            print_endline ("fail1"); *)
@@ -1903,11 +3076,21 @@ let path_checker atom_rel atom_sets init_ordering logic =
      in 
      let extset = extset atom_sets path closed in 
       if extset = AtomSet.empty then 
-        (reduction_ordering,eqlist,sigma,[])
+        ((orderingQ,reduction_ordering),eqlist,(sigmaQ,sigmaJ),[]) 
       else 
         check_extension extset 
   in    
-   provable AtomSet.empty AtomSet.empty (init_ordering,[]) [] (1,[])
+  if qprefixes = ([],[]) then 
+   begin
+(*      print_endline "!!!!!!!!!!! prop prover !!!!!!!!!!!!!!!!!!"; *)
+(* in the propositional case, the reduction ordering will be computed AFTER proof search *) 
+   let (_,eqlist,(_,(n,substJ)),ext_proof) =   
+     provable AtomSet.empty AtomSet.empty ([],[]) (1,[]) ([],(1,[])) in 
+      let orderingJ = build_orderingJ_list substJ init_ordering atom_rel in 
+        ((init_ordering,orderingJ),eqlist,([],(n,substJ)),ext_proof) 
+    end
+  else
+     provable AtomSet.empty AtomSet.empty (init_ordering,[]) (1,[]) ([],(1,[]))
 
 
 
@@ -1944,8 +3127,8 @@ let rec predecessor address_1 address_2 ftree =
    |NodeAt(position) -> PNull (* should not occur as above *)
    |NodeA(position,suctrees) -> 
      match address_1,address_2 with 
-      [],_ -> raise (Failure "Invalid argument")
-     |_,[] -> raise (Failure "Invalid argument")
+      [],_ -> raise (Failure "Invalid argument: predecessors left")
+     |_,[] -> raise (Failure "Invalid argument: predecessors right")
      | (f1::r1),(f2::r2) -> 
       if f1 = f2 then 
         predecessor r1 r2 (suctrees.(f1-1)) 
@@ -1982,18 +3165,18 @@ let rec compute_atomlist_relations worklist ftree alist =  (* last version of al
  
 
 
-let dest_atom atom = 
+let atom_op atom = 
  let dat = dest_term atom in 
-   ((dat.term_op),(dat.term_terms))
+   (dat.term_op)
 
 
 
 let atom_record position prefix = 
  let aname = (position.name) in 
   let aprefix = (List.append prefix [aname]) in (* atom position is last element in prefix *)
-   let (aop,aterms) = (dest_atom (position.label)) in 
+   let aop = (atom_op  (position.label)) in 
      ({aname=aname; aaddress=(position.address); aprefix=aprefix; apredicate=aop;  
-       apol=(position.pol); ast=(position.st); aarguments=aterms})
+       apol=(position.pol); ast=(position.st); alabel=(position.label)})
   
   
 
@@ -2001,36 +3184,72 @@ let rec select_atoms_treelist treelist prefix =
 
  let rec select_atoms ftree prefix = 
   match ftree with 
-   Empty -> []
+   Empty -> [],[],[]
   |NodeAt(position) -> 
-   [(atom_record position prefix)]
+   [(atom_record position prefix)],[],[]
   |NodeA(position,suctrees) -> 
     let treelist = Array.to_list suctrees in 
-     let prefix_element = 
-      if List.mem (position.st) [Psi_0;Phi_0] then 
-       [(position.name)]
-      else
-       []
+     let new_prefix = 
+      let prefix_element = 
+       if List.mem (position.st) [Psi_0;Phi_0] then 
+        [(position.name)]
+       else
+        []
+      in
+       (List.append prefix prefix_element)
      in
-      select_atoms_treelist treelist (List.append prefix prefix_element)
+      let (gamma_0_element,delta_0_element) = 
+       if position.st = Gamma_0 then 
+ begin
+(*  Format.open_box 0;
+  print_endline "gamma_0 prefixes ";
+  print_string (position.name^" :");
+  print_stringlist prefix;
+  print_endline " ";
+  Format.force_newline ();
+  Format.print_flush ();
+*)
+         [(position.name,prefix)],[]
+ end
+       else 
+         if position.st = Delta_0 then 
+ begin
+(* Format.open_box 0;
+  print_endline "delta_0 prefixes ";
+  print_string (position.name^" :");
+  print_stringlist prefix;
+  print_endline " ";
+  Format.force_newline ();
+  Format.print_flush ();
+*)
+           [],[(position.name,prefix)]
+ end
+        else 
+           [],[]
+      in 
+       let (rest_alist,rest_gamma_0_prefixes,rest_delta_0_prefixes) = 
+          select_atoms_treelist treelist new_prefix in 
+        (rest_alist,(rest_gamma_0_prefixes @ gamma_0_element),
+                    (rest_delta_0_prefixes @ delta_0_element))
 
  in  
  match treelist with 
-  [] -> []
+  [] -> [],[],[]
  |first::rest -> 
-   List.append (select_atoms first prefix) (select_atoms_treelist rest prefix) 
+  let (first_alist,first_gprefixes,first_dprefixes) = select_atoms first prefix 
+  and (rest_alist,rest_gprefixes,rest_dprefixes) = select_atoms_treelist rest prefix in 
+    ((first_alist @ rest_alist),(first_gprefixes @ rest_gprefixes),
+                                (first_dprefixes @ rest_dprefixes))
 
 
 
 
 
 let prepare_prover ftree =  
-  let alist = select_atoms_treelist [ftree] [] in 
-    compute_atomlist_relations alist ftree alist
+  let alist,gamma_0_prefixes,delta_0_prefixes = select_atoms_treelist [ftree] [] in 
+   let atom_rel = compute_atomlist_relations alist ftree alist in 
+    (atom_rel,(gamma_0_prefixes,delta_0_prefixes))
 
-
-
-(* #use "/home/steph/meta-prl/refiner/reflib/jprepare.ml" *)
 
 
 
@@ -2067,7 +3286,7 @@ let check_subst_term (variable,old_term) pos_name stype =
      let new_variable = 
        if stype = Gamma_0 then (mk_var_term pos_name) 
          else
-          (mk_string_term (make_opname []) pos_name)
+          (mk_string_term (make_opname ["jprover";pos_name]) pos_name)
      in
       (subst old_term [new_variable] [variable]) (* replace variable (non-empty) in t by pos_name *)
          (* pos_name is either a variable term or a constant, f.i. a string term *)
@@ -2229,12 +3448,25 @@ let rec build_ftree (variable,old_term) pol stype address pos_n =
      )
 
 
+let rec construct_ftree termlist treelist orderinglist pos_n goal = 
+   match termlist with 
+     [] -> 
+      let new_root = {name="w"; address=[]; op=Null; pol=O; pt=Psi; st=PNull_0; label=goal} 
+      and treearray = Array.of_list treelist in 
+        NodeA(new_root,treearray),(("w",(union_orderings orderinglist))::orderinglist),pos_n
+    |ft::rest_terms -> 
+      let next_address = [((List.length treelist)+1)] 
+      and next_pol,next_goal = 
+       if rest_terms = []  then 
+        O,ft (* construct tree for the conclusion *)
+       else
+        I,goal
+      in
+       let new_tree,new_ordering,new_pos_n = 
+         build_ftree ("",ft) next_pol Alpha_1 next_address (pos_n+1) in 
+        construct_ftree rest_terms (treelist @ [new_tree]) 
+                                   (orderinglist @ new_ordering) new_pos_n next_goal
 
-let construct_ftree term = 
- let new_root = {name="w"; address=[]; op=Null; pol=O; pt=Psi; st=PNull_0; label=term} in 
-   let tree,ordering,pos_n = build_ftree ("",term) O Psi_0 [1] 1 in 
-     let (f,fset) = List.hd ordering in 
-        NodeA(new_root,[|tree|]),(("w",(StringSet.add f fset))::ordering),pos_n
 
 
 
@@ -2244,30 +3476,31 @@ let construct_ftree term =
 
 
 let init_prover ftree = 
-     let atom_relation = prepare_prover ftree in 
+     let atom_relation,qprefixes = prepare_prover ftree in 
 (*      print_atom_info atom_relation;  *)
         let atom_sets = make_atom_sets atom_relation in 
-         (atom_relation,atom_sets)
+         (atom_relation,atom_sets,qprefixes)
 
 
 let rec try_multiplicity ftree ordering pos_n mult logic = 
  (try 
-   let (atom_relation,atom_sets) = init_prover ftree in 
-      let (red_ordering,eqlist,unifier,ext_proof) = 
-       path_checker atom_relation atom_sets ordering logic in 
-         (ftree,red_ordering,eqlist,unifier,ext_proof) 
+   let (atom_relation,atom_sets,qprefixes) = init_prover ftree in 
+      let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =   
+       path_checker atom_relation atom_sets qprefixes ordering logic in 
+         (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
   with 
    Failure("fail1") -> 
-    let new_mult = mult+1 in 
+    let new_mult = mult+1 in  
      begin 
-     Format.open_box 0;
+(*     Format.open_box 0;
      Format.force_newline ();
      Format.print_string "Multiplicity Fail: ";
       Format.print_string ("Try new multiplicity "^(string_of_int new_mult));
      Format.force_newline ();
      Format.print_flush ();
-
-       let (new_ftree,new_ordering,new_pos_n) = add_multiplicity ftree pos_n new_mult logic in 
+*)
+       let (new_ftree,new_ordering,new_pos_n) = 
+         add_multiplicity ftree pos_n new_mult logic in    
         if (new_ftree = ftree) then 
          failwith "formula_invalid"
         else
@@ -2279,17 +3512,16 @@ let rec try_multiplicity ftree ordering pos_n mult logic =
 
 
 
-let prove term logic = 
- let (ftree,ordering,pos_n) = construct_ftree term in (* pos_n = number of positions without new root "w" *) 
+let prove termlist logic = 
+ let (ftree,ordering,pos_n) = construct_ftree termlist [] [] 0 (mk_var_term "dummy") in 
+  (* pos_n = number of positions without new root "w" *) 
 (*   print_formula_info ftree ordering pos_n;   *)
    (try 
      try_multiplicity ftree ordering pos_n 1 logic 
     with 
      Failure("formula_invalid") -> 
-      (Empty,[],[],(0,[]),[])
+      (Empty,[],(0,[]),([],(0,[])),[])
    )
-
-
 
 
 
@@ -2318,14 +3550,14 @@ let rec make_nuprl_interface rule_list =
      ((ruletable rule),term1,term2)::(make_nuprl_interface r)
 
 
-let prover term = 
- let (ftree,red_ordering,eqlist,unifier,ext_proof) = prove term "J" in
+let prover (hyps,concl) =    (* has to be modified for NuPRL interface *)
+ let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove (hyps @ [concl]) "J" in
    if ftree = Empty then 
     raise (Failure "Formula invalid")
    else
     let connections = remove_dups ext_proof in 
      (try 
-       let sequent_proof = reconstruct ftree red_ordering [] connections "J" "LJ" in 
+       let sequent_proof = reconstruct ftree red_ordering sigmaQ connections "J" "LJ" in 
          make_nuprl_interface sequent_proof  (* transform types *)
       with 
         Failure("not_reconstructible") -> (* this possibility should of course be eliminated *)
@@ -2365,8 +3597,9 @@ let rec count_axioms seq_list =
 
 
 
-let test term logic calculus =  (* calculus should be LJmc or LJ for J, and LK for C *)
-  let (ftree,red_ordering,eqlist,unifier,ext_proof) = prove term logic in 
+
+let do_prove termlist logic calculus =
+  let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove termlist logic in 
    if ftree = Empty then 
     begin
      Format.open_box 0;
@@ -2391,14 +3624,38 @@ let test term logic calculus =  (* calculus should be LJmc or LJ for J, and LK f
      Format.force_newline ();
      Format.force_newline ();
      Format.print_flush ();
+        Format.open_box 0;
+        print_ordering red_ordering;
+	Format.print_flush ();
      Format.open_box 0;
      Format.force_newline ();
+(* ----------------------------------------------- *)
+        Format.open_box 0;
+        print_tunify sigmaJ;
+	Format.print_flush ();
+        print_endline "";
+        print_endline "";
+        print_sigmaQ sigmaQ;
+        print_endline "";
+        print_endline "";
+        Format.open_box 0;
+        let (qmax,equations) = eqlist in 
+        print_endline ("number of quantifier domains :"^(string_of_int (qmax-1)));
+        print_endline "";
+	print_equations equations;
+	Format.print_flush ();
+        print_endline "";
+        print_endline "";
+        print_endline ("Length of equations : "^((string_of_int (List.length equations))));
+        print_endline "";
+        print_endline "";
+(* --------------------------------------------------------- *)
      Format.print_string "Break ... ";
      Format.print_flush ();
       let _ = input_char stdin in
     let connections = remove_dups ext_proof in 
     (try 
-      let sequent_proof = reconstruct ftree red_ordering [] connections logic calculus in 
+      let sequent_proof = reconstruct ftree red_ordering sigmaQ connections logic calculus in 
     begin
      Format.open_box 0;
      Format.force_newline ();
@@ -2435,67 +3692,21 @@ let test term logic calculus =  (* calculus should be LJmc or LJ for J, and LK f
 
 
 
+let test concl logic calculus =  (* calculus should be LJmc or LJ for J, and LK for C *) 
+  do_prove [concl] logic calculus
+
+
+
+(* for sequents *)
+
+let seqtest list_term logic calculus =  
+  let bterms = (dest_term list_term).term_terms in 
+    let termlist = collect_subterms bterms in 
+       do_prove termlist logic calculus
 
 
 
 (*****************************************************************)
-
-
-
-
-
-
-
-
-let test_old term logic = 
-  let (ftree,red_ordering,eqlist,unifier,ext_proof) = prove term logic in 
-   let connections = remove_dups ext_proof in 
-      begin
-        print_endline "";
-        print_endline "";
-        print_endline "Extension proof:";
-	Format.open_box 0;
-        print_pairlist ext_proof;       (* print list of type (string * string) list *) 
-	Format.print_flush ();
-        print_endline "";
-        print_endline "";
-        print_endline "Connections:";
-        print_pairlist connections;       (* print list of type (string * string) list *) 
-	Format.print_flush ();
-        print_endline "";
-        print_endline "";
-        print_endline "";
-        print_endline "";
-        print_endline ("Length of extension proof: "^((string_of_int (List.length ext_proof))));
-        print_endline ("Length of connections: "^((string_of_int (List.length connections))));
-        print_endline "";
-        print_endline "";
-        Format.open_box 0;
-        Jtunify.print_tunify unifier;
-	Format.print_flush ();
-        print_endline "";
-        print_endline "";
-        Format.open_box 0;
-	Jtunify.print_equations eqlist;
-	Format.print_flush ();
-        print_endline "";
-        print_endline "";
-        print_endline ("Length of equations : "^((string_of_int (List.length eqlist))));
-        print_endline "";
-        print_endline "";
-        Format.open_box 0;
-        print_ordering red_ordering;
-	Format.print_flush ();
-        print_endline "";
-        print_endline "";
-        print_endline ("Length of reduction ordering: "^((string_of_int (List.length red_ordering))))
-      end
-
-
-
-
-(* #use "/home/steph/meta-prl/refiner/reflib/jtree.ml" *)
-
 
 end (* of struct *)
  

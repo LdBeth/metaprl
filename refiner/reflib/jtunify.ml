@@ -215,10 +215,12 @@ let rec combine subst (ov,oslist)  =
   [] -> []
  |f::r -> 
   let (v,slist) = f in  
+   let rest_combine = (combine r (ov,oslist)) in 
    if (List.mem ov slist) then  (* subst assumed to be idemponent *)
-    (v,(com_subst slist (ov,oslist)))::(combine r (ov,oslist))
+    let com_element = com_subst slist (ov,oslist) in
+     ((v,com_element)::rest_combine)
    else
-    f::(combine r (ov,oslist))
+    (f::rest_combine)
 
 
 
@@ -284,29 +286,52 @@ let rec apply_element fs ft (v,slist) =
 
 
 
+
+
+let rec shorten us ut = 
+ match (us,ut) with 
+  ([],_) -> raise (Failure "Invalid argument") 
+ |(_,[])  -> raise (Failure "Invalid argument") 
+ |((fs::rs),(ft::rt)) -> 
+   if fs = ft then 
+      shorten rs rt
+   else 
+    (us,ut)
+
+
+
 let rec apply_subst_list eq_rest (v,slist) = 
+  
  match eq_rest with 
    [] -> 
       (true,[])
   |(atomnames,(fs,ft))::r -> 
-    let (new_fs,new_ft) = apply_element fs ft (v,slist) in 
-     let new_as = (List.hd new_fs)
-     and new_at = (List.hd new_ft) 
-     and new_rs = (List.tl new_fs)
-     and new_rt = (List.tl new_ft) 
-     in
-       if (is_const new_as) & (is_const new_at) then 
-        (* different first constants cause local fail *)
-	 if (new_as <> new_at) then 
+    let (n_fs,n_ft) = apply_element fs ft (v,slist) in 
+    let (new_fs,new_ft) = shorten n_fs n_ft in (* delete equal first elements *)
+    match (new_fs,new_ft) with 
+      [],[] ->          
+        let (bool,new_eq_rest) = apply_subst_list r (v,slist) in 
+          (bool,((atomnames,([],[]))::new_eq_rest))
+     |[],(fft::rft) -> 
+        if (is_const fft) then 
+          (false,[])
+        else 
+         let (bool,new_eq_rest) = apply_subst_list r (v,slist) in 
+            (bool,((atomnames,([],new_ft))::new_eq_rest))
+     |(ffs::rfs),[] -> 
+        if (is_const ffs) then 
+          (false,[])
+        else 
+         let (bool,new_eq_rest) = apply_subst_list r (v,slist) in 
+            (bool,((atomnames,(new_fs,[]))::new_eq_rest))
+     |(ffs::rfs),(fft::rft) -> 
+       if (is_const ffs) & (is_const fft) then 
            (false,[])
-         else   (* first are equal constants *)
-           let (bool,new_eq_rest) = apply_subst_list r (v,slist) in 
-            (bool,((atomnames,(new_rs,new_rt))::new_eq_rest))
+        (* different first constants cause local fail *)
        else
         (* at least one of firsts is a variable *)
          let (bool,new_eq_rest) = apply_subst_list r (v,slist) in 
            (bool,((atomnames,(new_fs,new_ft))::new_eq_rest))
-
 
 
 let apply_subst eq_rest (v,slist) atomnames =
@@ -317,7 +342,7 @@ let apply_subst eq_rest (v,slist) atomnames =
 
 
 
-let all_variable_check eqlist = false   (* needs some discussion with Jens! -- NOT done *)
+(* let all_variable_check eqlist = false   needs some discussion with Jens! -- NOT done *)
 
 
 (*
@@ -340,46 +365,30 @@ let all_variable_check eqlist = false   (* needs some discussion with Jens! -- N
        
 
 
-
-
 let rec  tunify_list eqlist init_sigma = 
 
-let rec tunify atomnames fs ft rt rest_eq sigma cut_flag = 
+let rec tunify atomnames fs ft rt rest_eq sigma = 
 
 let apply_r1 fs ft rt rest_eq sigma = 
 (* print_endline "r1"; *)
- tunify_list rest_eq sigma  
+ tunify_list rest_eq sigma 
 
 in
 let apply_r2 fs ft rt rest_eq sigma = 
 (* print_endline "r2"; *)
-  tunify atomnames rt fs ft rest_eq sigma false 
-  (* cut_flag after R2 remains false since actual new equation begins not with variables *)
+  tunify atomnames rt fs ft rest_eq sigma 
 
 in
 let apply_r3 fs ft rt rest_eq sigma =
 (* print_endline "r3"; *)
  let rfs =  (List.tl fs)
  and rft =  (List.tl rt) in 
-  let new_cut_flag = 
-   if (is_const (List.hd rfs)) or (is_const (List.hd rft))  then 
-    false 
-   else (* both new firsts are variables *)
-    if (cut_flag = true) then 
-     true
-    else 
-     all_variable_check rest_eq
-  in 
-  tunify atomnames rfs ft rft rest_eq sigma new_cut_flag 
-   (* cut_flag after R3 may change *)
-
+  tunify atomnames rfs ft rft rest_eq sigma 
 
 in
 let apply_r4 fs ft rt rest_eq sigma =
 (* print_endline "r4"; *)
-  tunify atomnames rt ft fs rest_eq sigma false 
-   (* cut_flag after R4 remains false since actual new equation begins not with variables *)
-
+  tunify atomnames rt ft fs rest_eq sigma 
 
 in
 let apply_r5 fs ft rt rest_eq sigma =
@@ -389,9 +398,8 @@ let apply_r5 fs ft rt rest_eq sigma =
     let (bool,new_rest_eq) = apply_subst rest_eq (v,ft) atomnames in 
      if (bool=false) then 
         failwith "not_unifiable"
-     else (* no failure, proceed with new cut_flag *)
-      tunify atomnames (List.tl fs) rt rt new_rest_eq new_sigma false 
-        (* cut_flag after R5 remains false since actual new equation begins not with variables *)
+     else 
+       tunify atomnames (List.tl fs) rt rt new_rest_eq new_sigma 
 
 in
 let apply_r6 fs ft rt rest_eq sigma =
@@ -402,8 +410,7 @@ let apply_r6 fs ft rt rest_eq sigma =
     if (bool=false) then  
       failwith "not_unifiable"
     else
-      tunify atomnames (List.tl fs) ft rt new_rest_eq new_sigma false 
-       (* cut_flag after R6 remains false since actual new equation begins not with variables *)
+      tunify atomnames (List.tl fs) ft rt new_rest_eq new_sigma 
 
 in
 let apply_r7 fs ft rt rest_eq sigma =
@@ -416,15 +423,13 @@ let apply_r7 fs ft rt rest_eq sigma =
     if bool=false then 
       failwith "not_unifiable"
     else
-     tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma false
-      (* cut_flag after R7 remains false since actual new equation begins not with variables *)
+      tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma 
 
 
 in
 let apply_r8 fs ft rt rest_eq sigma = 
 (* print_endline "r8"; *)
-   tunify atomnames  rt [(List.hd fs)] (List.tl fs) rest_eq sigma false 
-   (* cut_flag after R8 becomes false since epsilon is no longer empty *)
+   tunify atomnames  rt [(List.hd fs)] (List.tl fs) rest_eq sigma 
 
 in
 let apply_r9 fs ft rt rest_eq sigma =
@@ -436,20 +441,14 @@ let apply_r9 fs ft rt rest_eq sigma =
       let (bool,new_rest_eq) = apply_subst rest_eq (v,(ft @ [v_new])) atomnames in 
        if (bool=false) then 
         failwith "not_unifiable"
-       else
-  	 tunify atomnames rt [v_new] (List.tl fs) new_rest_eq new_sigma false
-     (* cut_flag after R9 remains false since epsilon cannot be empty *)
+      else
+  	 tunify atomnames rt [v_new] (List.tl fs) new_rest_eq new_sigma 
 
 in
 let apply_r10 fs ft rt rest_eq sigma = 
 (* print_endline "r10"; *)
  let x = List.hd rt in 
-   tunify atomnames fs (ft @ [x]) (List.tl rt) rest_eq sigma false
-      (* cut_flag after R10 becomes false since epsilon is does never change *)
-
-
-(* cut_flag = true only possible after r3,r8,r10 if z=[] *)
-
+   tunify atomnames fs (ft @ [x]) (List.tl rt) rest_eq sigma 
 
 in
   if r_1 fs ft rt then 
@@ -464,16 +463,8 @@ in
    (try 
      apply_r3 fs ft rt rest_eq sigma 
     with
-      Failure("globally_not_unifiable") ->      
-       failwith "globally_not_unifiable"     (* simply back propagation *)
-     |Failure("not_unifiable") -> 
-      if (cut_flag = true) then 
-       begin
-        print_endline "cut_flag true";
-        failwith "globally_not_unifiable"    (* set cut *) 
-       end
-      else 
-        failwith "not_unifiable" 
+     Failure("not_unifiable") -> 
+       failwith "not_unifiable" 
    )
 
   else 
@@ -491,23 +482,17 @@ in
    (try 
      apply_r6 fs ft rt rest_eq sigma
     with 
-      Failure("globally_not_unifiable") ->      
-       failwith "globally_not_unifiable"     (* simply back propagation *)
-     |Failure("not_unifiable") ->            (* cut impossible after r6 *)
+      Failure("not_unifiable") ->            
        if r_7 fs ft rt then (* r7 applicable if r6 was and tr6 = C2t' *)
           (try
             apply_r7 fs ft rt rest_eq sigma
            with   
-             Failure("globally_not_unifiable") ->      
-	       failwith "globally_not_unifiable" (* simply back propagation *)    
-	    |Failure("not_unifiable") -> 
+	     Failure("not_unifiable") -> 
               (try
                 apply_r10 fs ft rt rest_eq sigma (* r10 always applicable if r6 was *)
                with   
-                 Failure("globally_not_unifiable") ->      
-	            failwith "globally_not_unifiable" (* simply back propagation *)    
-	        |Failure("not_unifiable") ->          
-                    failwith "not_unifiable" (* simply back propagation *)    
+                Failure("not_unifiable") ->          
+                  failwith "not_unifiable" (* simply back propagation *)    
               )
           )
        else
@@ -516,9 +501,7 @@ in
           (try
             apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable r6 was *)
            with   
-             Failure("globally_not_unifiable") ->      
-               failwith "globally_not_unifiable" (* simply back propagation *)    
-	    |Failure("not_unifiable") -> 
+	    Failure("not_unifiable") -> 
 		failwith "not_unifiable" (* simply back propagation *)    
           )
    )
@@ -528,15 +511,11 @@ in
    (try
      apply_r7 fs ft rt rest_eq sigma
     with
-      Failure("globally_not_unifiable") ->      
-        failwith "globally_not_unifiable" (* simply back propagation *)    
-     |Failure("not_unifiable") -> 
+      Failure("not_unifiable") -> 
        (try
           apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable if r7 was *)
         with   
-           Failure("globally_not_unifiable") ->      
-	    failwith "globally_not_unifiable" (* simply back propagation *)    
-	  |Failure("not_unifiable") ->
+	  Failure("not_unifiable") ->
             failwith "not_unifiable" (* simply back propagation *)    
        )
    )
@@ -547,22 +526,12 @@ in
    (try 
      apply_r8 fs ft rt rest_eq sigma 
     with 
-      Failure("globally_not_unifiable") ->      
-        failwith "globally_not_unifiable" (* simply back propagation *)    
-     |Failure("not_unifiable") -> 
-      if (cut_flag = true) then 
-       begin
-        print_endline "cut_flag true";
-        failwith "globally_not_unifiable"    (* set cut *) 
-       end
-      else
+     Failure("not_unifiable") -> 
        if r_10 fs ft rt then (* r10 applicable if r8 was and tr8 <> [] *)
          (try
            apply_r10 fs ft rt rest_eq sigma 
           with
-            Failure("globally_not_unifiable") ->      
-              failwith "globally_not_unifiable" (* simply back propagation *)    
-	   |Failure("not_unifiable") -> 
+	   Failure("not_unifiable") -> 
               failwith "not_unifiable" (* simply back propagation *)    
          )
        else 
@@ -574,16 +543,12 @@ in
    (try
      apply_r9 fs ft rt rest_eq sigma 
     with
-      Failure("globally_not_unifiable") ->      
-        failwith "globally_not_unifiable" (* simply back propagation *)    
-     |Failure("not_unifiable") -> 
+     Failure("not_unifiable") -> 
        if r_10 fs ft rt then (* r10 applicable if r9 was and tr9 <> [] *)
          (try 
             apply_r10 fs ft rt rest_eq sigma 
           with
-            Failure("globally_not_unifiable") ->      
-              failwith "globally_not_unifiable" (* simply back propagation *)    
-           |Failure("not_unifiable") -> 
+           Failure("not_unifiable") -> 
               failwith "not_unifiable" (* simply back propagation *)    
          )
        else
@@ -597,25 +562,11 @@ in
    (try
      apply_r10 fs ft rt rest_eq sigma 
     with
-      Failure("globally_not_unifiable") ->      
-        failwith "globally_not_unifiable" (* simply back propagation *)    
-     |Failure("not_unifiable") -> 
-	if (cut_flag = true) then 
-       begin
-        print_endline "cut_flag true";
-        failwith "globally_not_unifiable"    (* set cut *) 
-       end
-        else 
-           failwith "not_unifiable" (* simply back propagation *)    
+     Failure("not_unifiable") -> 
+      failwith "not_unifiable" (* simply back propagation *)    
    )
   else  (* NO rule applicable *) 
-    if (cut_flag = true) then 
-       begin
-        print_endline "cut_flag true";
-        failwith "globally_not_unifiable"    (* set cut *) 
-       end
-    else
-      failwith "not_unifiable"
+    failwith "not_unifiable"
    
 
 
@@ -624,28 +575,15 @@ in
   [] -> 
     init_sigma
  |f::rest_eq -> 
-  let cut_flag = all_variable_check eqlist in 
   (try
    let (atomnames,(fs,ft)) = f in 
-    tunify atomnames fs [] ft rest_eq init_sigma cut_flag
+    tunify atomnames fs [] ft rest_eq init_sigma 
    with    
      Failure("not_unifiable") -> 
         failwith "not_unifiable"  (* search alternatives in former equations *)
-    |Failure("globally_not_unifiable") -> 
-        failwith "globally_not_unifiable" (* simply back propagation *)    
    )
 
 
-
-let rec shorten us ut = 
- match (us,ut) with 
-  ([],_) -> raise (Failure "Invalid argument") 
- |(_,[])  -> raise (Failure "Invalid argument") 
- |((fs::rs),(ft::rt)) -> 
-   if fs = ft then 
-      shorten rs rt
-   else 
-    (us,ut)
 
 
 
@@ -680,7 +618,7 @@ let rec test_apply_eqsubst eqlist subst =
 
 
 
-let ttest us ut ns nt eqlist = 
+let ttest us ut ns nt eqlist orderingQ atom_rel = 
   let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 *)
                                            (* to eliminate common beginning *)
    let new_element = ([ns;nt],(short_us,short_ut)) in 
@@ -706,23 +644,22 @@ let ttest us ut ns nt eqlist =
        end
 
 
-let do_stringunify us ut ns nt eqlist = 
+let do_stringunify us ut ns nt equations 1 =   (* the argument 1 does not matter in the prop case *)
   let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 to eliminate common beginning *)
    let new_element = ([ns;nt],(short_us,short_ut)) in 
     let full_eqlist = 
-     if List.mem new_element eqlist then 
-      eqlist 
+     if List.mem new_element equations then 
+      equations  
      else 
-      new_element::eqlist 
+      new_element::equations 
   in
 (*  print_equations full_eqlist; *)
   (try
-    ((tunify_list full_eqlist (1,[])),full_eqlist)
+    let new_sigma = tunify_list full_eqlist (1,[]) in 
+     (new_sigma,(1,full_eqlist))
    with 
-    |Failure("not_unifiable") -> 
-     failwith "fail1"
-    |Failure("globally_not_unifiable") -> 
-     failwith "fail1"
+    Failure("not_unifiable") -> 
+     failwith "fail1"            (* new connection please *)
   )
 
 

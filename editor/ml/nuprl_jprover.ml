@@ -49,7 +49,7 @@ end
 
 module Nuprl_JProver = Jall.JProver(Nuprl_JLogic) 
 
-let jprover t = Nuprl_JProver.prover t 
+let jprover (tlist,concl) = Nuprl_JProver.prover (tlist,concl)
 
 
 (* jprover fun returns string*term*term list, convert to term *)
