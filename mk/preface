@@ -20,6 +20,9 @@ endif
 ifndef MAKE_JOBS
    MAKE_JOBS=undefined
 endif
+ifndef MAKE_OPTS
+   MAKE_OPTS=-s
+endif
 ifndef SEQ_SET
    SEQ_SET=undefined
 endif
@@ -56,7 +59,7 @@ ifndef INLINE
    INLINE=5
 endif
 
-MAKE:=$(MAKE) -j$(MAKE_JOBS)
+MAKE:=$(MAKE) -j$(MAKE_JOBS) $(MAKE_OPTS)
 
 #
 # Config

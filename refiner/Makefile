@@ -90,28 +90,28 @@ $(MAINLIB).cmxa: $(CMXFILES)
 #
 lib:
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		if (echo Making refiner/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 optlib:
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
+		if (echo Making refiner/$$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
 	done
 
 install::
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		if (echo Making refiner/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 	$(INSTALL) $(MAINLIB).cma $(INSTALLLIB)
 
 clean::
 	@for i in $(DIRS); do\
-		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		if (echo Cleaning refiner/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 depend::
 	$(RM) Makefile.dep
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
+		if (echo Making refiner/$$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done
 

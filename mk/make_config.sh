@@ -47,6 +47,11 @@ CCC=$CCC
 MAKE_JOBS=$MAKE_JOBS
 
 #
+# Extra make options
+#
+MAKE_OPTS=$MAKE_OPTS
+
+#
 # If ENSROOT is defined, it should point
 # to the root of the Ensemble source tree
 # In this case Ensemble support would be compiled into Meta-PRL

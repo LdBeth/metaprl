@@ -117,9 +117,10 @@ depend: check_config
 	@$(MAKE) -C refiner depend
 
 mk/config: mk/make_config.sh
-	@TERMS=$(TERMS) REFINER=$(REFINER) MAKE_JOBS=$(MAKE_JOBS) SEQ_SET=$(SEQ_SET) CCC=$(CCC) ENSROOT=$(ENSROOT) OCAMLSRC=$(OCAMLSRC) mk/make_config.sh > mk/config
+	@echo Making mk/config...
+	@TERMS=$(TERMS) REFINER=$(REFINER) MAKE_JOBS=$(MAKE_JOBS) MAKE_OPTS=$(MAKE_OPTS) SEQ_SET=$(SEQ_SET) CCC=$(CCC) ENSROOT=$(ENSROOT) OCAMLSRC=$(OCAMLSRC) mk/make_config.sh > mk/config
 
-check_config::
+check_config::mk/config
 	@if [ $(TERMS) != ds -a $(TERMS) != std ]; then\
 		echo "ERROR: Invalid TERMS variable, edit mk/config file before running make"; \
 		exit 1; \
