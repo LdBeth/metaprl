@@ -46,9 +46,11 @@ let challenge_sym   = Lm_symbol.add "CHALLENGE"
 let response_sym    = Lm_symbol.add "RESPONSE"
 let message_sym     = Lm_symbol.add "MESSAGE"
 let style_sym       = Lm_symbol.add "STYLE"
-let macros_sym      = Lm_symbol.add "MACROS"
 let history_sym     = Lm_symbol.add "HISTORY"
 let menu_sym        = Lm_symbol.add "MENU"
+let session_sym     = Lm_symbol.add "SESSION"
+let menu_macros_sym = Lm_symbol.add "MENUMACROS"
+let buttons_macros_sym = Lm_symbol.add "BUTTONSMACROS"
 
 (*
  * Browser table.

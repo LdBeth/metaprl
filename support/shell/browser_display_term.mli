@@ -32,16 +32,33 @@
 open Lm_string_set
 
 (*
- * Parts of the output.
+ * We allow the output to be multiplexed.
  *)
-val set_main : Lm_rformat.buffer -> unit
-val format_main : int -> Buffer.t -> unit
+type t
 
-val add_prompt     : string -> unit
-val format_message : int -> Buffer.t -> unit
-val get_history    : string StringTable.t -> string * string
+val create : unit -> t
 
-val divert : unit -> unit
+(*
+ * The output goes into the "current" buffer.
+ *)
+val set_main        : Lm_rformat.buffer -> unit
+
+(*
+ * Add a prompt to a sepcific buffer.
+ *)
+val add_prompt      : t -> string -> unit
+
+(*
+ * Get the output for display.
+ *)
+val format_main     : t -> int -> Buffer.t -> unit
+val format_message  : t -> int -> Buffer.t -> unit
+val get_history     : t -> string StringTable.t -> Buffer.t * string StringTable.t
+
+(*
+ * This function should be used while output is begin diverted.
+ *)
+val synchronize : t -> ('a -> 'b) -> 'a -> 'b
 
 (*
  * -*-

@@ -34,9 +34,15 @@ INPUTS =\
 	start.html\
 	login.html\
 	page.html\
-	body.html\
 	layout.js\
 	md5.js\
 	cookie.js\
 	validate.js\
-	style.css
+	style.css\
+	frameset.html\
+	menu.html\
+	content.html\
+	message.html\
+	buttons.html\
+	rule.html
+

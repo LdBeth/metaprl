@@ -86,10 +86,11 @@ type info =
  * The resulting info.
  *)
 type browser_info =
-   { browser_styles  : string;
-     browser_menubar : string;
-     browser_buttons : string;
-     browser_macros  : string StringTable.t
+   { browser_styles  : Buffer.t;
+     browser_menubar : Buffer.t;
+     browser_buttons : Buffer.t;
+     browser_menu_macros : string StringTable.t;
+     browser_buttons_macros : string StringTable.t
    }
 
 (*
@@ -136,69 +137,68 @@ let extract info =
          info_styles  = styles
        } = info
    in
-   let buf = Buffer.create 32 in
 
    (* Collect the button text *)
-   let macros = StringTable.empty in
-   let macros =
+   let buttons_buf    = Buffer.create 32 in
+   let buttons_macros = StringTable.empty in
+   let buttons_macros =
       List.fold_left (fun macros (label, command) ->
             let sym = sprintf "id%d" (StringTable.cardinal macros) in
-               bprintf buf "<input type=button name=\"%s\" value=\"%s\" onclick=\"ButtonCommand(this);\">\n" sym label;
-               StringTable.add macros sym command) macros (List.rev buttons)
+               bprintf buttons_buf "<input type=button name=\"%s\" value=\"%s\" onclick=\"parent.ButtonCommand(macros, this);\">\n" sym label;
+               StringTable.add macros sym command) buttons_macros (List.rev buttons)
    in
 
    (* Collect the menu text *)
-   let macros =
+   let buttons_macros =
       StringTable.fold (fun macros _ menu ->
             let { menu_kind = kind; menu_label = label; menu_items = items } = menu in
                if items = [] || kind <> MenuButton then
                   macros
                else
                   let macros =
-                     bprintf buf "<select name=\"%s\" onChange=\"MenuCommand(this, true);\">\n" label;
+                     bprintf buttons_buf "<select name=\"%s\" onChange=\"parent.MenuCommand(macros, this, true);\">\n" label;
                      List.fold_left (fun macros (label, command) ->
                            let sym = sprintf "id%d" (StringTable.cardinal macros) in
-                              bprintf buf "<option value=\"%s\">%s</option>\n" sym label;
+                              bprintf buttons_buf "<option value=\"%s\">%s</option>\n" sym label;
                               StringTable.add macros sym command) macros (List.rev items)
                   in
-                     bprintf buf "</select>\n";
-                     macros) macros menus
+                     bprintf buttons_buf "</select>\n";
+                     macros) buttons_macros menus
    in
-   let buttons = Buffer.contents buf in
 
    (* Collect the menubar *)
-   let () = Buffer.clear buf in
-   let macros =
+   let menu_buf    = Buffer.create 32 in
+   let menu_macros = StringTable.empty in
+   let menu_macros =
       StringTable.fold (fun macros _ menu ->
             let { menu_kind = kind; menu_label = label; menu_items = items } = menu in
                if kind <> MenuBar then
                   macros
                else
                   let macros =
-                     bprintf buf "<select name=\"%s\" onChange=\"MenuCommand(this, true);\">\n" label;
-                     bprintf buf "<option value=\"\"><b>%s</b></option>\n" label;
+                     bprintf menu_buf "<select name=\"%s\" onChange=\"parent.MenuCommand(macros, this, true);\">\n" label;
+                     bprintf menu_buf "<option value=\"\"><b>%s</b></option>\n" label;
                      List.fold_left (fun macros (label, command) ->
                            let sym = sprintf "id%d" (StringTable.cardinal macros) in
-                              bprintf buf "<option value=\"%s\">%s</option>\n" sym label;
+                              bprintf menu_buf "<option value=\"%s\">%s</option>\n" sym label;
                               StringTable.add macros sym command) macros (List.rev items)
                   in
-                     bprintf buf "</select>\n";
-                     macros) macros menus
+                     bprintf menu_buf "</select>\n";
+                     macros) menu_macros menus
    in
-   let menubar = Buffer.contents buf in
 
    (* Collect the style sheets *)
-   let () = Buffer.clear buf in
+   let style_buf = Buffer.create 32 in
    let () =
       List.iter (fun s ->
-            Buffer.add_string buf s;
-            Buffer.add_char buf '\n') (List.rev styles)
+            Buffer.add_string style_buf s;
+            Buffer.add_char style_buf '\n') (List.rev styles)
    in
-   let styles = Buffer.contents buf in
-      { browser_menubar = menubar;
-        browser_buttons = buttons;
-        browser_styles = styles;
-        browser_macros = macros
+      { browser_menubar = menu_buf;
+        browser_buttons = buttons_buf;
+        browser_styles  = style_buf;
+        browser_menu_macros = menu_macros;
+        browser_buttons_macros = buttons_macros
       }
 
 (*
@@ -215,7 +215,7 @@ let resource (term, browser_info) browser =
    term_collection
 
 let resource browser +=
-    [<< menubar["file", "File"] >>;
+    [<< menubar["file", "--File--"] >>;
      << menuitem["file", "Save", "save ()"] >>]
 
 (*!

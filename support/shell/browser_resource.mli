@@ -55,10 +55,11 @@ declare menuitem[menuname:s, label:s, command:s]
  * The resulting info.
  *)
 type browser_info =
-   { browser_styles  : string;
-     browser_menubar : string;
-     browser_buttons : string;
-     browser_macros  : string StringTable.t
+   { browser_styles  : Buffer.t;
+     browser_menubar : Buffer.t;
+     browser_buttons : Buffer.t;
+     browser_menu_macros : string StringTable.t;
+     browser_buttons_macros : string StringTable.t
    }
 
 (*

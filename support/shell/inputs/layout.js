@@ -35,41 +35,7 @@ function GetWindowSize()
  */
 function ResizeBoxes(rulebox_height)
 {
-    var horizontal_border_size = 2;
-    var vertical_border_size = 2;
-    var box_width = window_width - 2 * horizontal_border_size - 4;
-
-    var menu_height = 30;
-    var message_height = 100;
-    var content_top = menu_height;
-    var content_height = window_height - menu_height - message_height - rulebox_height;
-    var message_top = content_top + content_height;
-    var rulebox_top = message_top + message_height;
-
-    var menu = document.getElementById('menubox');
-    var content = document.getElementById('contentbox');
-    var message = document.getElementById('messagebox');
-    var rule = document.getElementById('rulebox');
-
-    menu.style.top = "0px";
-    menu.style.left = horizontal_border_size + "px";
-    menu.style.width = box_width + "px";
-    menu.style.height = (menu_height - vertical_border_size) + "px";
-
-    content.style.top = menu_height + "px";
-    content.style.left = horizontal_border_size + "px";
-    content.style.width = box_width + "px";
-    content.style.height = (content_height - vertical_border_size) + "px";
-
-    message.style.top = message_top + "px";
-    message.style.left = horizontal_border_size + "px";
-    message.style.width = box_width + "px";
-    message.style.height = (message_height - vertical_border_size) + "px";
-
-    rule.style.top = rulebox_top + "px";
-    rule.style.left = horizontal_border_size + "px";
-    rule.style.width = box_width + "px";
-    rule.style.height = rulebox_height + "px";
+    parent.document.body.rows = '40,*,100,40,' + rulebox_height;
 }
 
 /*
@@ -82,45 +48,114 @@ function SetWindowCookie()
    SetCookie(window_width_name, '' + window_width, null, "/", null, false);
 }
 
+/************************************************************************
+ * Load events.
+ */
+
+/*
+ * Versions.
+ */
+var version = new Array();
+
+/*
+ * Make sure the windows are up-to-date.
+ */
+function Update(session)
+{
+    if(version['menu'] != session['menu'])
+        parent.menu.location.reload();
+    if(version['content'] != session['content']) {
+        if(version['location'] != session['location'])
+            parent.content.location.href = session['location'];
+        else
+            parent.content.location.reload();
+    }
+    if(version['message'] != session['message'])
+        parent.message.location.reload();
+    if(version['buttons'] != session['buttons'])
+        parent.buttons.location.reload();
+    if(version['rule'] != session['rule'])
+        parent.rule.location.reload();
+}
+
 /*
  * Resize event.
  */
-function Resize(rulebox_height)
+function LoadFrame()
 {
    GetWindowSize();
-   ResizeBoxes(rulebox_height);
    SetWindowCookie();
 }
 
-function Load(rulebox_height)
+function LoadMenu(session)
 {
-    input_is_short = true;
-    Resize(rulebox_height);
-    document.commandform.command.focus();
-    document.getElementById('messagebox').scrollTop += 10000;
+    version['menu'] = session['menu'];
 }
+
+function LoadContent(session)
+{
+    version['location'] = session['location'];
+    version['content'] = session['content'];
+
+    // Update the other windows
+    Update(session);
+}
+
+function LoadMessage(session)
+{
+    version['message'] = session['message'];
+    parent.message.scrollTo(0, 100000);
+}
+
+function LoadButtons(session)
+{
+    version['buttons'] = session['buttons'];
+
+    // Reset history button
+    parent.buttons.document.getElementById('historybox').selectedIndex = 0;
+}
+
+function LoadRule(session)
+{
+    version['rule'] = session['rule'];
+
+    // Focus on the rule box
+    parent.rule.document.commandform.command.focus();
+
+    // Update the other windows
+    Update(session);
+}
+
+/************************************************************************
+ * Handle events
+ */
 
 /*
  * The user selected a command from a menu.
  */
-function MenuCommand(menu, submit)
+function MenuCommand(macros, menu, submit)
 {
-    var id = menu.options[menu.selectedIndex].value;
-    var text = macros[id];
-    document.commandform.command.value = text;
-    if(submit)
-        document.commandform.submit();
+    if(menu.selectedIndex != 0) {
+        var id = menu.options[menu.selectedIndex].value;
+        var text = macros[id];
+        var ruledoc = parent.rule.document;
+        ruledoc.commandform.command.value = text;
+        if(submit)
+            parent.rule.document.commandform.submit();
+        menu.selectedIndex = 0;
+    }
 }
 
 /*
  * Press a button.
  */
-function ButtonCommand(button)
+function ButtonCommand(macros, button)
 {
     var id = button.name;
     var text = macros[id];
-    document.commandform.command.value = text;
-    document.commandform.submit();
+    var ruledoc = parent.rule.document;
+    ruledoc.commandform.command.value = text;
+    ruledoc.commandform.submit();
 }
 
 /*
@@ -128,7 +163,7 @@ function ButtonCommand(button)
  */
 function ButtonSubmit()
 {
-    document.commandform.submit();
+    parent.rule.document.commandform.submit();
 }
 
 /*
@@ -137,23 +172,56 @@ function ButtonSubmit()
 function ToggleInputArea(button)
 {
     // Get the current text
-    var inputbox = document.getElementById('inputbox');
-    var text = document.commandform.command.value;
+    var ruledoc = parent.rule.document;
+    var text = ruledoc.commandform.command.value;
 
     // Reset the input area
     if(button.value == 'Long') {
         button.value = 'Short';
-        inputbox.innerHTML = '# <textarea name="command" rows="4" cols="100">' + text + '</textarea>';
+        ruledoc.commandform.innerHTML = '# <textarea name="command" rows="4" cols="100">' + text + '</textarea>';
         ResizeBoxes(150);
     }
     else {
         button.value = 'Long';
-        inputbox.innerHTML = '# <input type="text" name="command" size="100" border="0" value="' + text + '">';
-        ResizeBoxes(100);
+        ruledoc.commandform.innerHTML = '# <input type="text" name="command" size="100" border="0" value="' + text + '">';
+        ResizeBoxes(70);
     }
 
     // For convenience, refocus the input area
-    document.commandform.command.focus();
+    ruledoc.commandform.command.focus();
 }
 
+/************************************************************************
+ * Low-level events.
+ */
+
+/*
+ * Scroll the history.
+ */
+function HistoryNavigate(amount)
+{
+    var history = parent.buttons.document.getElementById('historybox');
+    var length = history.options.length;
+    var index = history.selectedIndex + amount;
+    while(index < 0)
+        index += length;
+    while(index >= length)
+        index -= length;
+    var id = history.options[index].value;
+    history.selectedIndex = index;
+    var text = parent.buttons.macros[id];
+    parent.rule.document.commandform.command.value = text;
+}
+
+/*
+ * Rulebox received a key.
+ */
+function RuleKey(e)
+{
+    var code = e.keyCode;
+    if(code == 38)  // DownArrow
+        HistoryNavigate(-1);
+    else if(code == 40) // UpArrow
+        HistoryNavigate(1);
+}
 

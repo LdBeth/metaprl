@@ -46,9 +46,11 @@ val challenge_sym   : symbol
 val response_sym    : symbol
 val message_sym     : symbol
 val style_sym       : symbol
-val macros_sym      : symbol
 val history_sym     : symbol
 val menu_sym        : symbol
+val session_sym     : symbol
+val menu_macros_sym : symbol
+val buttons_macros_sym : symbol
 
 (*
  * Translate a file.

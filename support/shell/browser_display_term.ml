@@ -38,6 +38,8 @@ open Lm_format
  *)
 module LineBuffer =
 struct
+   type 'a t = 'a Queue.t
+
    let max_queue_length = 100
 
    let create = Queue.create
@@ -51,14 +53,35 @@ struct
    let fold = Queue.fold
 end
 
-let history = LineBuffer.create ()
-let message = LineBuffer.create ()
-
+(*
+ * For converting to buffers.
+ *)
 let add_to_buffer queue width buf =
    Queue.iter (fun buffer ->
          Lm_rformat_html.print_html_buffer width buffer buf) queue
 
-let message = LineBuffer.create ()
+(*
+ * The buffer.
+ *)
+type t =
+   { info_history : string LineBuffer.t;
+     info_message : buffer LineBuffer.t;
+     mutable info_content : buffer
+   }
+
+(*
+ * Term output is directed to the "current" buffer.
+ *)
+let current = ref None
+
+(*
+ * Empty buffer.
+ *)
+let create () =
+   { info_history = LineBuffer.create ();
+     info_message = LineBuffer.create ();
+     info_content = new_buffer ()
+   }
 
 (*
  * Simplify invis strings.
@@ -71,18 +94,18 @@ let format_invis buf s =
 (*
  * Add the prompt to the output box.
  *)
-let add_prompt str =
+let add_prompt info str =
    let buffer = new_buffer () in
       format_invis buffer "<b># ";
       format_string buffer str;
       format_invis buffer "</b><br>\n";
-      LineBuffer.add message buffer;
-      LineBuffer.add history str
+      LineBuffer.add info.info_message buffer;
+      LineBuffer.add info.info_history str
 
 (*
  * Capture output channels.
  *)
-let add_channel color =
+let add_channel message color =
    let font = Printf.sprintf "<span class=\"%s\">" color in
       (fun buf ->
             if not (Lm_rformat.buffer_is_empty buf) then
@@ -92,48 +115,66 @@ let add_channel color =
                   format_invis buffer "</span>";
                   LineBuffer.add message buffer)
 
-let divert () =
-   Lm_format.divert std_formatter (Some (add_channel "stdout"));
-   Lm_format.divert err_formatter (Some (add_channel "stderr"))
-
 (*
  * Format it.
  *)
-let format_message width buf =
+let format_message info width buf =
    LineBuffer.iter (fun buffer ->
-         Lm_rformat_html.print_html_buffer width buffer buf) message
+         Lm_rformat_html.print_html_buffer width buffer buf) info.info_message
 
 (*
  * Create history.
  *)
-let get_history macros =
-   let macros_buf = Buffer.create 1024 in
+let get_history info macros =
    let history_buf = Buffer.create 1024 in
-   let () =
-      Buffer.add_string history_buf "<option><b>History</b></option>\n"
+   let () = Buffer.add_string history_buf "<option>--History--</option>\n" in
+   let macros, _ =
+      LineBuffer.fold (fun (macros, last) s ->
+            if s = last then
+               macros, last
+            else
+               let id = Printf.sprintf "id%d" (StringTable.cardinal macros) in
+               let () =
+                  (* BUG JYH: probably need our own escape function *)
+                  Printf.bprintf history_buf "<option value=\"%s\">%s</option>\n" id s
+               in
+               let macros = StringTable.add macros id s in
+                  macros, s) (macros, "") info.info_history
    in
-   let macros =
-      LineBuffer.fold (fun macros s ->
-            let id = Printf.sprintf "id%d" (StringTable.cardinal macros) in
-               (* BUG JYH: probably need our own escape function *)
-               Printf.bprintf history_buf "<option value=\"%s\">%s</option>\n" id (String.escaped s);
-               StringTable.add macros id s) macros history
-   in
-      StringTable.iter (fun s v ->
-            (* BUG JYH: probably need our own escape function *)
-            Printf.bprintf macros_buf "\tmacros[\"%s\"] = \"%s\";\n" s (String.escaped v)) macros;
-      Buffer.contents macros_buf, Buffer.contents history_buf
+      history_buf, macros
 
 (*
  * Display a term in the window.
  *)
-let buffer = ref (new_buffer ())
-
 let set_main buf =
-   buffer := buf
+   match !current with
+      Some info ->
+         info.info_content <- buf
+    | None ->
+         eprintf "Browser_display_term.set_main: no current buffer@."
 
-let format_main width buf =
-   Lm_rformat_html.print_html_buffer width !buffer buf
+let format_main info width buf =
+   Lm_rformat_html.print_html_buffer width info.info_content buf
+
+(*
+ * Divert output during this call.
+ *)
+let synchronize info f x =
+   current := Some info;
+   Lm_format.divert std_formatter (Some (add_channel info.info_message "stdout"));
+   Lm_format.divert err_formatter (Some (add_channel info.info_message "stderr"));
+   let result =
+      try f x with
+         exn ->
+            current := None;
+            Lm_format.divert std_formatter None;
+            Lm_format.divert err_formatter None;
+            raise exn
+   in
+      current := None;
+      Lm_format.divert std_formatter None;
+      Lm_format.divert err_formatter None;
+      result
 
 (*
  * -*-
