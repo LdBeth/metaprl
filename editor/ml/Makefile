@@ -79,7 +79,7 @@ TCMOFILES = $(addsuffix .cmo, $(TOPFILES))
 TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 
 ########################################################################
-# ENSEMBLE, LIBMOJAVE
+# ENSEMBLE
 ########################################################################
 
 #

@@ -7,13 +7,6 @@ ROOT:=.
 include mk/preface
 
 #
-# If LIBMOJAVE is undefined, then use libmojave
-#
-ifeq ($(LIBMOJAVE),undefined)
-   LIBMOJAVE := libmojave
-endif
-
-#
 # Build all the parts of Nuprl-Light:
 #    refiner: logic engine
 #    filter: front end to the compiler
@@ -25,7 +18,7 @@ endif
 #    editor/ml: interactive proof editor
 #
 REFINER_DIRS :=\
-	$(LIBMOJAVE)\
+	libmojave\
 	clib\
 	mllib\
 	refiner\
@@ -34,7 +27,7 @@ REFINER_DIRS :=\
 	ensemble
 
 DEP_DIRS :=\
-	$(LIBMOJAVE)\
+	libmojave\
 	refiner\
 	filter\
 
@@ -145,7 +138,7 @@ depend: check_config
 
 mk/config: mk/make_config.sh
 	@echo Making mk/config...
-	@ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" READLINE="$(READLINE)" NCURSES="$(NCURSES)" LIBMOJAVE="$(LIBMOJAVE)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" mk/make_config.sh
+	@ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" READLINE="$(READLINE)" NCURSES="$(NCURSES)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" mk/make_config.sh
 
 mk/config.local:
 	@touch mk/config.local

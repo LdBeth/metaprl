@@ -70,13 +70,6 @@ else
 INCLUDES += -I$(CAMLLIB)
 
 #
-# We have a minimal version of libmojave in case it is not defined
-#
-if $(equal $(LIBMOJAVE), undefined)
-    LIBMOJAVE = $(dir libmojave)
-    export
-
-#
 # Generic phony targets
 #
 .PHONY: all opt install clean realclean depend
@@ -113,7 +106,7 @@ if $(not $(equal $(OSTYPE), Win32))
 #
 # Directories needing only the standard config
 #
-.SUBDIRS: util clib $(LIBMOJAVE)
+.SUBDIRS: util clib libmojave
 
 ########################################################################
 # Generic directories with no special options

@@ -84,13 +84,6 @@ MAKE_OPTS=$MAKE_OPTS
 TESTS=$TESTS
 
 #
-# If LIBMOJAVE is defined, it should point
-# to the directory where you have a copy of the lm_libmojave
-# (http://mojave.metaprl.org/cgi-bin/viewcvs.cgi/mcc/lm_libmojave/)
-#
-LIBMOJAVE=$LIBMOJAVE
-
-#
 # If ENSROOT is defined, it should point
 # to the root of the Ensemble source tree
 # In this case Ensemble support would be compiled into Meta-PRL

@@ -37,12 +37,17 @@ REFINER=VERBOSE
 #
 # Alternatively, use THEORIES = all, or THEORIES = default
 #
-THEORIES=base itt
+THEORIES=all
 
 #
 # Use GNU readline package (available on Linux at least) (yes/no).
 #
 READLINE=YES
+
+#
+# The GNU ncurses package (available in Linix at least) (yes/no)
+#
+NCURSES=
 
 #
 # C compiler
@@ -58,13 +63,6 @@ MAKE_OPTS=-s
 # Whether to compile in various test theories and files (yes/no)
 #
 TESTS=no
-
-#
-# If LIBMOJAVE is defined, it should point
-# to the directory where you have a copy of the lm_libmojave
-# (http://mojave.metaprl.org/cgi-bin/viewcvs.cgi/mcc/lm_libmojave/)
-#
-LIBMOJAVE=undefined
 
 #
 # If ENSROOT is defined, it should point

@@ -5,8 +5,8 @@ OCAMLINCLUDES =\
 	$(OCAMLINCLUDES)\
 	-I $(CAMLP4LIB)\
 	-I $(ROOT)/mllib\
-	-I $(LIBMOJAVE)/stdlib\
-	-I $(LIBMOJAVE)/util\
+	-I $(ROOT)/libmojave/stdlib\
+	-I $(ROOT)/libmojave/util\
 	-I $(ROOT)/refiner/refbase\
 	-I $(ROOT)/refiner/refsig\
 	-I $(ROOT)/refiner/refiner\
@@ -57,7 +57,7 @@ if true
 #
 # Other libraries that we always want to include
 #
-OCAML_CLIBS = $(ROOT)/clib/clib $(LIBMOJAVE)/cutil/liblmcutil
+OCAML_CLIBS = $(ROOT)/clib/clib $(ROOT)/libmojave/cutil/liblmcutil
 OCAML_OTHER_LIBS = unix $(THREADSLIB) str
 OCAML_LIBS =\
         $(LIB)/lm\

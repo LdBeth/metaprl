@@ -94,9 +94,6 @@ else
 # LIBRARIES
 ########################################################################
 
-#
-# If LIBMOJAVE is enabled, add the libraries
-#
 LMARDEPS = $(ROOT)/lib/lm$(EXT_LIB)
 LMXADEPS = $(ROOT)/lib/lm.cmxa
 LMADEPS  = $(ROOT)/lib/lm.cma

@@ -2,9 +2,9 @@
 OCAMLFLAGS = $(OCAMLFLAGS) -pp "$(CAMLP4MACRO)"
 
 OCAMLINCLUDES +=\
-	-I $(LIBMOJAVE)/stdlib\
-	-I $(LIBMOJAVE)/util\
-	-I $(LIBMOJAVE)/unix
+	-I $(ROOT)/libmojave/stdlib\
+	-I $(ROOT)/libmojave/util\
+	-I $(ROOT)/libmojave/unix
 
 include Files
 
