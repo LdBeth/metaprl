@@ -101,6 +101,8 @@ sub process ($) {
     print "      let $name ";
     for (my $i=0; $i<=$#types; $i++) { print "(p$i : $types[$i]) " };
     print "=\n";
+    my $wrap = ($#types>=0)?"wrap" . ($#types + 1) . " ": "";
+    my $merge = ($#types>=0)?"merge ": "";
     for (my $i=0; $i<=$#types; $i++) {
 	my ($arg1, $arg2) = do_split($types[$i], "p$i");
 	$args1 .= " $arg1";
@@ -108,11 +110,13 @@ sub process ($) {
     }
     if ($tyres =~ /^\([^()]*\)$/) { $tyres =~ s/^\([[:space:]]*//; $tyres =~ s/[[:space:]]*\)$// };
     if (defined $merges{$tyres}) {
-	print "         ", $merges{$tyres}, " \"$modname.$name\" (" , $modname, "1.$name$args1) (", $modname, "2.$name$args2)\n\n";
+	print "         ", $merge, $merges{$tyres}, " \"$modname.$name\" ($wrap" , $modname, "1.$name$args1) ($wrap", $modname, "2.$name$args2)\n\n";
     } else {
 	if ($tyres =~ /\*/) {
 	    my @tyress = split(/[[:space:]]*\*[[:space:]]*/,$tyres);
-	    my $let1 = $let2 = "         let ";
+	    print "         let res1 = " , $wrap, $modname, "1.$name$args1 in\n";
+	    print "         let res2 = " , $wrap, $modname, "2.$name$args2 in\n";
+	    my $let1 = $let2 = "(";
 	    for (my $i=0; $i<=$#tyress; $i++) {
 		if ($i > 0) {
 		    $let1 .= ", ";
@@ -121,8 +125,7 @@ sub process ($) {
 		$let1 .= "res$i" . "_1";
 		$let2 .= "res$i" . "_2";
 	    }
-	    print $let1, " = " , $modname, "1.$name$args1 in\n";
-	    print $let2, " = " , $modname, "2.$name$args2 in\n";
+	    print "         let $let1), $let2) = ", $merge, "merge_triv \"$modname.$name\" res1 res2 in\n";
 	    for (my $i=0; $i<=$#tyress; $i++) {
 		if ($tyress[$i] =~ /^\([^()]*\)$/) { $tyress[$i] =~ s/^\([[:space:]]*//; $tyress[$i] =~ s/[[:space:]]*\)$// };
 		if (defined $merges{$tyress[$i]}) {
