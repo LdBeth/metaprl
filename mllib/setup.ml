@@ -86,7 +86,7 @@ let home =
                   else
                      sprintf "/tmp/%s-%i" confname (getuid ())
                in
-                  eprintf "@[<v 3>WARNING!   Please set the HOME environment variable to point@WARNING!   to your home directory.@ WARNING!   Using %s in place of $(HOME)/.%s for now.@]@." home confname;
+                  eprintf "@[<v 3>@ WARNING!   Please set the HOME environment variable to point@ WARNING!   to your home directory.@ WARNING!   Using %s in place of $HOME/.%s for now.@]@." home confname;
                   home
       in
       let new_setup =
@@ -94,7 +94,7 @@ let home =
          try access home [F_OK]; false with
             Unix_error _ ->
                begin
-                  eprintf "@[<v 3>@WARNING!  MetaPRL state directory %s does not exist, creating.@@]@." home;
+                  eprintf "@[<v 3>@ WARNING!   MetaPRL state directory %s does not exist, creating.@ @]@." home;
                   try mkdir home 0o700 with
                      Unix_error _ -> ()
                end;
