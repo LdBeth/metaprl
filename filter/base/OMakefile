@@ -20,7 +20,7 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), filterbase, $(BASE_FILES))
 # containing %%MAGICBEGIN%% and %%MAGICEND%%.
 #
 ExtractMagicLines(file, files) =
-   stdout = $(fopen $(file), w)
+   stdout = $(fopen $(file), wb)
 
    print = false
 
