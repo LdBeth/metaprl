@@ -325,7 +325,7 @@ struct
 
    let rec get_core t =
       match t.core with
-         Subst (tt,sub) ->
+         Subst (tt, sub) ->
             let core =
                match get_core tt with
                   FOVar v ->
@@ -365,9 +365,11 @@ struct
             core
 
    and hyps_subst hyps len sub all_vars sub_vars new_hyps i =
-      if i = len then sub, new_hyps else
+      if i = len then
+         sub, new_hyps
+      else
       match SeqHyp.get hyps i with
-         Hypothesis (v,t) as hyp ->
+         Hypothesis (v, t) as hyp ->
             let t' = do_term_subst sub t in
             let sub = subst_remove v sub in
             (* Rename v if it might capture a free var in the subst *)
@@ -379,6 +381,16 @@ struct
                let all_vars = SymbolSet.add all_vars v' in
                   hyps_subst hyps len sub all_vars sub_vars (Hypothesis (v', t') :: new_hyps) (i + 1)
             else
+               (*
+                * XXX: JYH: I added the line below to avoid capture (bug #432),
+                * but I'm not sure if this is the right thing way to fix the
+                * problem.
+                *
+                * Also, if we add the variable to sub_vars, it will forcably
+                * rename all the hyp bindings to be distinct, but I'm not sure
+                * this is a good idea in general.
+                *)
+               let all_vars = SymbolSet.add all_vars v in
                let hyp = if t == t' then hyp else Hypothesis (v, t') in
                   hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
        | Context (v,conts,ts) as hyp ->

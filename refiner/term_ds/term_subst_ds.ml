@@ -96,13 +96,15 @@ struct
             raise (Invalid_argument "Term_subst_ds.combine_fst_flt_nodups")
 
    let subst t vl tl =
-      if vl=[] then t else
-      match combine_fst_flt_nodups (free_vars_set t) vl tl with
-         [] -> t
-       | sub -> core_term (Subst (t,sub))
+      if vl = [] then
+         t
+      else
+         match combine_fst_flt_nodups (free_vars_set t) vl tl with
+            [] -> t
+          | sub -> core_term (Subst (t,sub))
 
    let rec fst_flt_nodups fvs = function
-    | (v, { core = FOVar v' }) :: tl when Lm_symbol.eq v v' ->
+      (v, { core = FOVar v' }) :: tl when Lm_symbol.eq v v' ->
          if tl = [] then [] else fst_flt_nodups (SymbolSet.remove fvs v) tl
     | [v,t] as l ->
          if SymbolSet.mem fvs v then l else []
@@ -134,9 +136,8 @@ struct
 
    let rec need_to_rename avoid = function
       [] -> false
-    | v::vs ->
-         SymbolSet.mem avoid v or
-         need_to_rename (SymbolSet.add avoid v) vs
+    | v :: vs ->
+         SymbolSet.mem avoid v || need_to_rename (SymbolSet.add avoid v) vs
 
    let rec compute_renames avoid avoid' = function
       [] -> [], []
