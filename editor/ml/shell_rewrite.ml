@@ -80,7 +80,8 @@ type rw =
      mutable rw_contractum : term;
      mutable rw_proof : Package.proof proof_type;
      mutable rw_ped : Proof_edit.ped proof_type;
-     mutable rw_resources : MLast.expr resource_def
+     mutable rw_resources : MLast.expr resource_def;
+     mutable rw_name : string
    }
 
 (*
@@ -161,7 +162,8 @@ let rec edit pack parse_arg sentinal arg name window obj =
             rw_contractum = contractum;
             rw_proof = proof;
             rw_ped = ped;
-            rw_resources = resources
+            rw_resources = resources;
+            rw_name = name
           } = obj
       in
       let obj =
@@ -171,7 +173,8 @@ let rec edit pack parse_arg sentinal arg name window obj =
            rw_contractum = contractum;
            rw_proof = proof;
            rw_ped = ped;
-           rw_resources = resources
+           rw_resources = resources;
+           rw_name = name
          }
       in
          edit pack parse_arg sentinal arg name (Proof_edit.new_window window) obj
@@ -245,6 +248,9 @@ let rec edit pack parse_arg sentinal arg name window obj =
                RefineError (name', err) ->
                   raise (RefineError (name, GoalError (name', err)))
    in
+   let edit_status () =
+      (Proof_edit.ped_status obj.rw_ped), obj.rw_name
+   in
    let get_ped obj =
       match obj.rw_ped with
          Primitive _
@@ -313,6 +319,7 @@ let rec edit pack parse_arg sentinal arg name window obj =
       Proof_edit.interpret (get_ped ()) command
    in
       { edit_display = edit_display;
+        edit_status = edit_status;
         edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
         edit_set_redex = edit_set_redex;
@@ -359,7 +366,8 @@ let create pack parse_arg window name =
         rw_contractum = unit_term;
         rw_proof = Interactive proof;
         rw_ped = Interactive ped;
-        rw_resources = []
+        rw_resources = [];
+        rw_name = name
       }
    in
    let sentinal = Package.sentinal pack in
@@ -391,7 +399,8 @@ let view_rw pack parse_arg window
         rw_contractum = contractum;
         rw_proof = proof;
         rw_ped = ped_of_proof pack parse_arg (mk_rw_goal [] redex contractum) proof;
-        rw_resources = res
+        rw_resources = res;
+        rw_name = name
       }
    in
    let sentinal = Package.sentinal_object pack name in
@@ -414,7 +423,8 @@ let view_crw pack parse_arg window
         rw_contractum = contractum;
         rw_proof = proof;
         rw_ped = ped_of_proof pack parse_arg (mk_rw_goal args redex contractum) proof;
-        rw_resources = res
+        rw_resources = res;
+        rw_name = name
       }
    in
    let sentinal = Package.sentinal_object pack name in

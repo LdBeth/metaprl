@@ -75,7 +75,8 @@ type info =
      mutable rule_goal : term;
      mutable rule_proof : Package.proof proof_type;
      mutable rule_ped : Proof_edit.ped proof_type;
-     mutable rule_resources : MLast.expr resource_def
+     mutable rule_resources : MLast.expr resource_def;
+     mutable rule_name : string
    }
 
 (*
@@ -138,7 +139,8 @@ let rec edit pack parse_arg sentinal arg name window obj =
             rule_proof = proof;
             rule_ped = ped;
             rule_goal = goal;
-            rule_resources = res
+            rule_resources = res;
+            rule_name = name
           } = obj
       in
       let obj =
@@ -147,7 +149,8 @@ let rec edit pack parse_arg sentinal arg name window obj =
            rule_proof = proof;
            rule_ped = ped;
            rule_goal = goal;
-           rule_resources = res
+           rule_resources = res;
+           rule_name = name
          }
       in
          edit pack parse_arg sentinal arg name (Proof_edit.new_window window) obj
@@ -252,6 +255,9 @@ let rec edit pack parse_arg sentinal arg name window obj =
    let edit_nop () =
       Proof_edit.nop_ped (get_ped obj)
    in
+   let edit_status () =
+      (Proof_edit.ped_status obj.rule_ped), obj.rule_name
+   in
    let get_ped () =
       match obj.rule_ped with
          Primitive _ ->
@@ -291,6 +297,7 @@ let rec edit pack parse_arg sentinal arg name window obj =
       Proof_edit.interpret (get_ped ()) command
    in
       { edit_display = edit_display;
+        edit_status = edit_status;
         edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
         edit_set_redex = edit_set_redex;
@@ -333,7 +340,8 @@ let create pack parse_arg window name =
         rule_goal = unit_term;
         rule_proof = Incomplete;
         rule_ped = Incomplete;
-        rule_resources = []
+        rule_resources = [];
+        rule_name = name
       }
    in
    let sentinal = Package.sentinal pack in
@@ -362,7 +370,8 @@ let view_axiom pack parse_arg window
         rule_goal = goal;
         rule_proof = proof;
         rule_ped = ped_of_proof pack parse_arg (mk_msequent goal []) proof;
-        rule_resources = res
+        rule_resources = res;
+        rule_name = name
       }
    in
    let sentinal = Package.sentinal_object pack name in
@@ -384,7 +393,8 @@ let view_rule pack parse_arg window
         rule_goal = goal;
         rule_proof = proof;
         rule_ped = ped_of_proof pack parse_arg (mk_msequent goal assums) proof;
-        rule_resources = res
+        rule_resources = res;
+        rule_name = name
       }
    in
    let sentinal = Package.sentinal_object pack name in

@@ -65,6 +65,7 @@ type ls_option =
 type edit_object =
    { (* Display the object to the screen *)
      edit_display : ls_option list -> unit;
+     edit_status : unit -> obj_status * string; (* string is its name *)
 
      (* Copy the object *)
      edit_copy : unit -> edit_object;

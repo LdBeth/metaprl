@@ -127,6 +127,16 @@ type proof_command =
  | ProofClean
  | ProofSquash
 
+type obj_status =
+   ObjRoot
+ | ObjPackage
+ | ObjPrimitive
+ | ObjDerived
+ | ObjComplete
+ | ObjIncomplete
+ | ObjBad
+ | ObjUnknown
+
 (************************************************************************
  * OPERATIONS                                                           *
  ************************************************************************)
@@ -179,6 +189,25 @@ let proof_of_ped { ped_undo = undo } =
 
 let status_of_ped ped =
    Proof.status (proof_of_ped ped)
+
+let ped_status = function
+   Filter_cache.Primitive _ ->
+      ObjPrimitive
+ | Filter_cache.Derived _ ->
+      ObjDerived
+ | Filter_cache.Incomplete ->
+      ObjIncomplete
+ | Filter_cache.Interactive ped ->
+      begin match status_of_ped ped with
+         Proof.StatusBad ->
+            ObjBad
+       | Proof.StatusIncomplete ->
+            ObjIncomplete
+       | Proof.StatusPartial ->
+            ObjIncomplete
+       | Proof.StatusComplete ->
+            ObjComplete
+      end
 
 let node_count_of_ped ped =
    Proof.node_count (proof_of_ped ped)

@@ -376,7 +376,11 @@ let rec edit pack_info parse_arg window =
    let edit_interpret command =
       raise_edit_error "this is not a proof"
    in
+   let edit_status () =
+      Proof_edit.ObjPackage, ("/" ^ Package.name pack_info)
+   in
       { edit_display = edit_display;
+        edit_status = edit_status;
         edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
         edit_set_redex = edit_set_redex;

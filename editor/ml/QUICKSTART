@@ -64,8 +64,15 @@ Proof expansion:
    expand ();;
      -- re-runs the proof (that's at and under the current node you are at);
    expand_all ();;	
-     -- re-runs all proofs under the current node
-     -- in a module - re-runs all proofs in a module.
+     -- re-runs all proofs in the current node
+     -- from root - re-runs all proofs in MetaPRL
+
+Object status:
+   status ();;
+     -- tells the status of the current object
+   status_all ();;
+     -- re-runs all proofs in the current node and tells their status
+     -- from root - same for all the proofs in MetaPRL
 
 Proof checking:
 

@@ -62,6 +62,16 @@ type edit_info =
      edit_extras : tactic_arg list
    }
 
+type obj_status =
+   ObjRoot
+ | ObjPackage
+ | ObjPrimitive
+ | ObjDerived
+ | ObjComplete
+ | ObjIncomplete
+ | ObjBad
+ | ObjUnknown
+
 (*
  * Constructors.
  *)
@@ -124,6 +134,7 @@ val squash_ped : ped -> unit
  *)
 val check_ped : ped -> term
 val expand_ped : dform_base -> ped -> unit
+val ped_status : ped Filter_cache.proof_type -> obj_status
 
 (*
  * Put all the commands into a single argument for interpretation.

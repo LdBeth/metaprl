@@ -996,40 +996,41 @@ struct
       in
          print_exn info sync info
 
-   let apply_all f info =
-      touch info;
-      let expand_all info =
+   let rec apply_all f info time =
+      let apply_all_exn info =
          let parse_arg = get_parse_arg info in
          let display_mode = get_display_mode info in
          match info.package with
             Some pack ->
-               let expand item =
+               touch info;
+               let apply_it item =
                   try f item (get_db info) with
                      _ ->
                         ()
                in
-               let expand_item (item, _) =
+               let apply_item (item, _) =
                   match item with
                      Rewrite rw ->
                         if !debug_shell then eprintf "Rewrite %s%t" rw.rw_name eflush;
-                        expand (Shell_rewrite.view_rw pack parse_arg display_mode rw)
+                        apply_it (Shell_rewrite.view_rw pack parse_arg display_mode rw)
                    | CondRewrite crw ->
                         if !debug_shell then eprintf "CondRewrite %s%t" crw.crw_name eflush;
-                        expand (Shell_rewrite.view_crw pack parse_arg display_mode crw)
+                        apply_it (Shell_rewrite.view_crw pack parse_arg display_mode crw)
                    | Axiom ax ->
                         if !debug_shell then eprintf "Axiom %s%t" ax.axiom_name eflush;
-                        expand (Shell_rule.view_axiom pack parse_arg display_mode ax)
+                        apply_it (Shell_rule.view_axiom pack parse_arg display_mode ax)
                    | Rule rl ->
                         if !debug_shell then eprintf "Rule %s%t" rl.rule_name eflush;
-                        expand (Shell_rule.view_rule pack parse_arg display_mode rl)
+                        apply_it (Shell_rule.view_rule pack parse_arg display_mode rl)
                    | _ ->
                         ()
                in
                let start = Unix.times () in
                let start_time = Unix.gettimeofday () in
-               let _ = List.iter expand_item (info_items (Package.info pack parse_arg)) in
+               let _ = List.iter apply_item (info_items (Package.info pack parse_arg)) in
                let finish = Unix.times () in
                let finish_time = Unix.gettimeofday () in
+               if time then
                   eprintf "User time %f; System time %f; Real time %f%t" (**)
                      ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
                       -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
@@ -1037,39 +1038,78 @@ struct
                       -. (start.Unix.tms_stime +. finish.Unix.tms_cstime))
                      (finish_time -. start_time)
                      eflush
+               else
+                  ()
 
           | None ->
-               eprintf "expand_all: no current package%t" eflush
+               let expand pack =
+                  let name = Package.name pack in
+                     eprintf "Entering %s%t" name eflush;
+                     chdir info [name];
+                     apply_all f info false
+               in
+                  List.iter expand (Package.packages packages);
+                  chdir info []
       in
-         print_exn info expand_all info
+         print_exn info apply_all_exn info
 
-   let expand_all info =
+   and expand_all info =
       let f item db =
          item.edit_expand db
       in
-         apply_all f info
+         apply_all f info true
 
-   let check_all info =
+   and check_all info =
       let f item db =
          ignore (item.edit_check ())
       in
-         apply_all f info
+         apply_all f info true
 
-   let interpret_all command info =
+   and status item =
+      let status = item.edit_status () in
+      let str_status = match fst status with
+         ObjRoot ->
+            "is a root directory"
+       | ObjPackage ->
+            "is a theory module"
+       | ObjPrimitive ->
+            "is a primitive axiom"
+       | ObjDerived ->
+            "is an internally derived object"
+       | ObjComplete ->
+            "is a derived object with a complete proof"
+       | ObjIncomplete ->
+            "is a derived object with an incomplete proof"
+       | ObjBad ->
+            "is a derived object with a broken proof"
+       | ObjUnknown ->
+            "is an object with unknown status"
+      in
+         eprintf "Status: `%s' %s%t" (snd status) str_status eflush
+
+   and status_all info =
+      let f item db =
+         eprintf "Expanding `%s':%t" (snd (item.edit_status ())) eflush;
+         begin try item.edit_expand db with _ | Invalid_argument _ -> () end;
+         status item
+      in
+         apply_all f info true
+
+   and interpret_all command info =
       let f item db =
          item.edit_interpret command
       in
-         apply_all f info
+         apply_all f info true
 
-   let clean_all = interpret_all ProofClean
-   let squash_all = interpret_all ProofSquash
+   and clean_all info = interpret_all ProofClean info
+   and squash_all info = interpret_all ProofSquash info
 
    (*
     * Change directory.
     *)
-   let rec cd info name =
+   and chdir info path =
       let shell = info.shell in
-      let chdir = function
+      match path with
          [] ->
             (* go to toplevel *)
             info.dir <- [];
@@ -1116,9 +1156,10 @@ struct
                   info.proof <- proof;
                   info.dir <- dir
                end
-      in
-         print_exn info chdir (parse_path info name);
-         pwd info
+
+   and cd info name =
+      print_exn info (chdir info) (parse_path info name);
+      pwd info
 
    and root info =
       let set info =
@@ -1201,6 +1242,7 @@ struct
        "set_assumptions",  TermListFunExpr (fun tl -> UnitExpr (set_assumptions info tl));
        "check",            UnitFunExpr     (fun () -> UnitExpr (check info));
        "expand",           UnitFunExpr     (fun () -> UnitExpr (expand info));
+       "status",           UnitFunExpr     (fun () -> UnitExpr (status info.proof));
        "root",             UnitFunExpr     (fun () -> UnitExpr (root info));
        "up",               IntFunExpr      (fun i  -> UnitExpr (up info i));
        "down",             IntFunExpr      (fun i  -> UnitExpr (down info i));
@@ -1218,6 +1260,7 @@ struct
        "sync",             UnitFunExpr     (fun () -> UnitExpr (sync info));
        "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all info));
        "check_all",        UnitFunExpr     (fun () -> UnitExpr (check_all info));
+       "status_all",       UnitFunExpr     (fun () -> UnitExpr (status_all info));
        "clean_all",        UnitFunExpr     (fun () -> UnitExpr (clean_all info));
        "squash_all",       UnitFunExpr     (fun () -> UnitExpr (squash_all info));
        "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)));
