@@ -131,8 +131,9 @@ type venv = ty SymbolTable.t
  * is done.
  *)
 type unify_constraint =
-   ConstraintUnify of unify_info * term * term
- | ConstraintMemberType of unify_info * term * ty  (* type constraint *)
+   ConstraintSubtype of unify_info * term * term
+ | ConstraintEqual of unify_info * term * term
+ | ConstraintMember of unify_info * term * ty  (* type constraint *)
 
 type senv =
    { senv_subst       : ty SymbolTable.t;
@@ -671,7 +672,7 @@ let rec normalize_term info subst t =
       subst, TypeVar (dest_fso_var t)
    else if is_ty_constrain_term t then
       let t, ty = dest_ty_constrain_term t in
-      let subst = subst_add_constraint subst (ConstraintMemberType (info, t, TypeTerm ty)) in
+      let subst = subst_add_constraint subst (ConstraintMember (info, t, TypeTerm ty)) in
          normalize_term info subst t
    else if is_ty_sequent_term t then
       let ty_hyp, ty_concl, ty_seq = dest_ty_sequent_term t in
@@ -944,7 +945,7 @@ let standardize_ty_var info subst v1 ty_bound ty =
             TypeSequent (standardize ty_hyp, standardize ty_concl, standardize ty_seq)
    in
    let info = UnifyCompose (info, UnifyVar v2) in
-   let subst = subst_add_constraint subst (ConstraintMemberType (UnifyCompose (info, UnifyVar v2), t2, ty_bound)) in
+   let subst = subst_add_constraint subst (ConstraintMember (UnifyCompose (info, UnifyVar v2), t2, ty_bound)) in
       subst, standardize ty
 
 let standardize_ty_hyp info subst vars ty_var ty_hyp =
@@ -957,7 +958,7 @@ let standardize_ty_hyp info subst vars ty_var ty_hyp =
                let t = mk_var_term v' in
                let sub = (v, t) :: sub in
                let table = SymbolTable.add table v v' in
-               let subst = subst_add_constraint subst (ConstraintMemberType (UnifyCompose (info, UnifyVar v'), t, ty)) in
+               let subst = subst_add_constraint subst (ConstraintMember (UnifyCompose (info, UnifyVar v'), t, ty)) in
                   subst, sub, table) (subst, [], SymbolTable.empty) vars
       in
       let rec standardize ty =
@@ -1003,15 +1004,15 @@ let reduce_type tenv subst t =
             None
 
 (************************************************
- * Unification.
+ * Invariant unification.
  *)
 
 (*
- * Unification.
+ * The types must really be equal.
  *)
-let rec unify_types tenv info subst ty1 ty2 =
+let rec unify_equal_types tenv info subst ty1 ty2 =
    if !debug_infer then
-      eprintf "unify_types@.";
+      eprintf "unify_equal_types@.";
    let subst, ty1 = normalize_type info subst ty1 in
    let subst, ty2 = normalize_type info subst ty2 in
       match ty1, ty2 with
@@ -1021,106 +1022,85 @@ let rec unify_types tenv info subst ty1 ty2 =
             else
                (match subst_find_opt subst v1 with
                    Some ty1 ->
-                      unify_types tenv info subst ty1 ty2
+                      unify_equal_types tenv info subst ty1 ty2
                  | None ->
                       match subst_find_opt subst v2 with
                          Some ty2 ->
-                            unify_types tenv info subst ty1 ty2
+                            unify_equal_types tenv info subst ty1 ty2
                        | None ->
                             subst_add_var subst v1 ty2)
        | TypeVar v1, _ ->
             (match subst_find_opt subst v1 with
                 Some ty1 ->
-                   unify_types tenv info subst ty1 ty2
+                   unify_equal_types tenv info subst ty1 ty2
               | None ->
                    subst_add_var subst v1 ty2)
        | _, TypeVar v2 ->
             (match subst_find_opt subst v2 with
                 Some ty2 ->
-                   unify_types tenv info subst ty1 ty2
+                   unify_equal_types tenv info subst ty1 ty2
               | None ->
                    subst_add_var subst v2 ty1)
 
        | TypeTerm t1, TypeTerm t2 ->
-            unify_term_types_normalized tenv info subst t1 t2
-
-       | _, TypeTerm t2 ->
-            unify_typeclass_term tenv info subst ty1 t2
+            unify_equal_term_types_normalized tenv info subst t1 t2
 
        | TypeSoVar (ty_cvars1, ty_vars1, ty_res1), TypeSoVar (ty_cvars2, ty_vars2, ty_res2)
          when List.length ty_cvars1 = List.length ty_cvars2 && List.length ty_vars1 = List.length ty_vars2 ->
-            let subst = unify_type_lists tenv info subst ty_cvars2 ty_cvars1 in
-            let subst = unify_type_lists tenv info subst ty_vars2 ty_vars1 in
-               unify_types tenv info subst ty_res1 ty_res2
+            let subst = unify_equal_type_lists tenv info subst ty_cvars2 ty_cvars1 in
+            let subst = unify_equal_type_lists tenv info subst ty_vars2 ty_vars1 in
+               unify_equal_types tenv info subst ty_res1 ty_res2
 
        | TypeCVar (ty_cvars1, ty_vars1, ty_exp1, ty_res1), TypeCVar (ty_cvars2, ty_vars2, ty_exp2, ty_res2)
          when List.length ty_cvars1 = List.length ty_cvars2 && List.length ty_vars1 = List.length ty_vars2 ->
-            let subst = unify_type_lists tenv info subst ty_cvars2 ty_cvars1 in
-            let subst = unify_type_lists tenv info subst ty_vars2 ty_vars1 in
-            let subst = unify_types tenv info subst ty_exp2 ty_exp1 in
-               unify_types tenv info subst ty_res1 ty_res2
+            let subst = unify_equal_type_lists tenv info subst ty_cvars2 ty_cvars1 in
+            let subst = unify_equal_type_lists tenv info subst ty_vars2 ty_vars1 in
+            let subst = unify_equal_types tenv info subst ty_exp2 ty_exp1 in
+               unify_equal_types tenv info subst ty_res1 ty_res2
 
        | TypeSCVar (ty_cvars1, ty_vars1, ty_hyp1), TypeSCVar (ty_cvars2, ty_vars2, ty_hyp2)
          when List.length ty_cvars1 = List.length ty_cvars2 && List.length ty_vars1 = List.length ty_vars2 ->
-            let subst = unify_type_lists tenv info subst ty_cvars2 ty_cvars1 in
-            let subst = unify_type_lists tenv info subst ty_vars2 ty_vars1 in
-               unify_types tenv info subst ty_hyp1 ty_hyp2
+            let subst = unify_equal_type_lists tenv info subst ty_cvars2 ty_cvars1 in
+            let subst = unify_equal_type_lists tenv info subst ty_vars2 ty_vars1 in
+               unify_equal_types tenv info subst ty_hyp1 ty_hyp2
 
        | TypeSequent (ty_hyp1, ty_concl1, ty_seq1), TypeSequent (ty_hyp2, ty_concl2, ty_seq2) ->
-            let subst = unify_types tenv info subst ty_hyp1 ty_hyp2 in
-            let subst = unify_types tenv info subst ty_concl1 ty_concl2 in
-               unify_types tenv info subst ty_seq1 ty_seq2
+            let subst = unify_equal_types tenv info subst ty_hyp1 ty_hyp2 in
+            let subst = unify_equal_types tenv info subst ty_concl1 ty_concl2 in
+               unify_equal_types tenv info subst ty_seq1 ty_seq2
 
        | TypeHyp (ty_var1, ty_hyp1), TypeHyp (ty_var2, ty_hyp2) ->
-            let subst = unify_types tenv info subst ty_hyp1 ty_hyp2 in
-               unify_types tenv info subst ty_var1 ty_var2
+            let subst = unify_equal_types tenv info subst ty_hyp1 ty_hyp2 in
+               unify_equal_types tenv info subst ty_var1 ty_var2
 
-       | TypeExists (v, ty_var, ty1), _ ->
-            let subst, ty1 = instantiate_ty_var subst v ty_var ty1 in
-               unify_types tenv info subst ty1 ty2
-
-       | _, TypeExists (v, ty_var, ty2) ->
-            let subst, ty2 = standardize_ty_var info subst v ty_var ty2 in
-               unify_types tenv info subst ty1 ty2
+       | TypeExists (v1, ty_bound1, ty1), TypeExists (v2, ty_bound2, ty2) ->
+            let subst = unify_equal_types tenv info subst ty_bound1 ty_bound2 in
+            let v3 = new_symbol v1 in
+            let ty = mk_ty_constant_term v3 in
+            let subst = subst_add_type subst v3 ty_bound1 in
+            let ty1 = type_subst v1 ty ty1 in
+            let ty2 = type_subst v2 ty ty2 in
+               unify_equal_types tenv info subst ty1 ty2
 
        | _ ->
             raise_type2_error subst info ty1 ty2
 
-and unify_type_lists tenv info subst tl1 tl2 =
-   List.fold_left2 (unify_types tenv info) subst tl1 tl2
-
-(*
- * Unify with a term that defines a typeclass.
- *)
-and unify_typeclass_term tenv info subst ty1 t2 =
-   match reduce_type tenv subst t2 with
-      Some t2 ->
-         unify_types tenv info subst ty1 (TypeTerm t2)
-    | None ->
-         if is_typeclass_term tenv t2 then
-            let opname2 = opname_of_term t2 in
-            let shape = shape_of_type ty1 in
-            let typeclasses = tenv_find_typeclasses tenv shape in
-               if OpnameSet.mem typeclasses opname2 then
-                  subst
-               else
-                  raise_type2_error subst info ty1 (TypeTerm t2)
-         else
-            raise_type2_error subst info ty1 (TypeTerm t2)
+and unify_equal_type_lists tenv info subst tl1 tl2 =
+   List.fold_left2 (unify_equal_types tenv info) subst tl1 tl2
 
 (*
  * Two term types.
  *)
-and unify_term_types tenv info subst t1 t2 =
+and unify_equal_term_types tenv info subst t1 t2 =
    if !debug_infer then
-      eprintf "unify_term_types@.";
+      eprintf "unify_equal_term_types@.";
    let subst, t1 = normalize_term info subst t1 in
    let subst, t2 = normalize_term info subst t2 in
-      unify_types tenv info subst t1 t2
+      unify_equal_types tenv info subst t1 t2
 
-and unify_term_types_normalized tenv info subst t1 t2 =
+and unify_equal_term_types_normalized tenv info subst t1 t2 =
    if !debug_infer then
-      eprintf "@[<hv 3>unify_term_types_normalized:@ %s@ %s@]@." (**)
+      eprintf "@[<hv 3>unify_equal_term_types_normalized:@ %s@ %s@]@." (**)
          (string_of_term t1)
          (string_of_term t2);
    if is_fso_var_term t1 || not (is_fo_term t1) || is_so_var_term t1 || is_context_term t1 || is_sequent_term t1 then
@@ -1128,11 +1108,11 @@ and unify_term_types_normalized tenv info subst t1 t2 =
    else if is_fso_var_term t2 || not (is_fo_term t2) || is_so_var_term t2 || is_context_term t2 || is_sequent_term t2 then
       raise_illegal_term_error subst info t2
    else
-      unify_normal_term_types tenv info true subst t1 t2
+      unify_equal_normal_term_types tenv info true subst t1 t2
 
-and unify_normal_term_types tenv info delayed subst t1 t2 =
+and unify_equal_normal_term_types tenv info delayed subst t1 t2 =
    if !debug_infer then
-      eprintf "@[<hv 3>unify_normal_term_types:@ %s@ %s@]@." (string_of_term t1) (string_of_term t2);
+      eprintf "@[<hv 3>unify_equal_normal_term_types:@ %s@ %s@]@." (string_of_term t1) (string_of_term t2);
    let shape1 = shape_of_term t1 in
    let shape2 = shape_of_term t2 in
       if TermShape.eq shape1 shape2 then
@@ -1143,56 +1123,45 @@ and unify_normal_term_types tenv info delayed subst t1 t2 =
          let { op_name = opname2; op_params = params2 } = dest_op op2 in
          let () =
             if List.length params1 <> List.length params2 || List.length bterms1 <> List.length bterms2 then
-               raise_term2_error "unify_normal_term_types1" subst info t1 t2
+               raise_term2_error "unify_equal_normal_term_types1" subst info t1 t2
          in
-         let subst = unify_param_lists info subst params1 params2 in
-            unify_bterm_lists tenv info subst bterms1 bterms2
+         let subst = unify_equal_param_lists info subst params1 params2 in
+            unify_equal_bterm_lists tenv info subst bterms1 bterms2
 
       else
-         unify_reduction tenv info delayed subst t1 t2 shape1 shape2
+         unify_equal_reduction tenv info delayed subst t1 t2 shape1 shape2
 
 (* See if there is a reduction pair that matches the shapes *)
-and unify_reduction tenv info delayed subst t1 t2 shape1 shape2 =
+and unify_equal_reduction tenv info delayed subst t1 t2 shape1 shape2 =
    let t1 = subst_term subst t1 in
    let t2 = subst_term subst t2 in
       match tenv_find_reduction tenv shape1 shape2 with
          Some (ty1, ty2) ->
             let ty1, ty2 = standardize_reduction ty1 ty2 in
-            let subst = unify_normal_term_types tenv info delayed subst t1 ty1 in
-            let subst = unify_normal_term_types tenv info delayed subst t2 ty2 in
+            let subst = unify_equal_normal_term_types tenv info delayed subst t1 ty1 in
+            let subst = unify_equal_normal_term_types tenv info delayed subst t2 ty2 in
                subst
        | None ->
-            unify_reduce_term_types tenv info delayed subst t1 t2 shape1 shape2
+            unify_equal_reduce_term_types tenv info delayed subst t1 t2 shape1 shape2
 
 (* Try reducing one of the types *)
-and unify_reduce_term_types tenv info delayed subst t1 t2 shape1 shape2 =
+and unify_equal_reduce_term_types tenv info delayed subst t1 t2 shape1 shape2 =
    match reduce_type tenv subst t1 with
       Some t1 ->
-         unify_normal_term_types tenv info delayed subst t1 t2
+         unify_equal_normal_term_types tenv info delayed subst t1 t2
     | None ->
          match reduce_type tenv subst t2 with
             Some t2 ->
-               unify_normal_term_types tenv info delayed subst t1 t2
+               unify_equal_normal_term_types tenv info delayed subst t1 t2
           | None ->
-               unify_term_typeclass tenv info delayed subst t1 t2 shape1 shape2
+               if delayed then
+                  subst_add_constraint subst (ConstraintEqual (info, t1, t2))
+               else
+                  raise_term2_error "unify_equal_normal_term_types2" subst info t1 t2
 
-(* Try a typeclass typing *)
-and unify_term_typeclass tenv info delayed subst t1 t2 shape1 shape2 =
-   if is_typeclass_term tenv t2 then
-      let opname2 = opname_of_term t2 in
-      let typeclasses = tenv_find_typeclasses tenv shape1 in
-         if OpnameSet.mem typeclasses opname2 then
-            subst
-         else
-            raise_term2_error "unify_normal_term_types2" subst info t1 t2
-   else if delayed then
-      subst_add_constraint subst (ConstraintUnify (info, t1, t2))
-   else
-      raise_term2_error "unify_normal_term_types2" subst info t1 t2
-
-and unify_params info subst p1 p2 =
+and unify_equal_params info subst p1 p2 =
    if !debug_infer then
-      eprintf "unify_params@.";
+      eprintf "unify_equal_params@.";
    match dest_param p1, dest_param p2 with
       Number i1, Number i2 ->
          check (Lm_num.eq_num i1 i2) subst
@@ -1217,33 +1186,208 @@ and unify_params info subst p1 p2 =
          subst
     | ParamList pl1, ParamList pl2
       when List.length pl1 = List.length pl2 ->
-         unify_param_lists info subst pl1 pl2
+         unify_equal_param_lists info subst pl1 pl2
     | _ ->
          raise_param2_error subst info p1 p2
 
-and unify_param_lists info subst pl1 pl2 =
-   List.fold_left2 (unify_params info) subst pl1 pl2
+and unify_equal_param_lists info subst pl1 pl2 =
+   List.fold_left2 (unify_equal_params info) subst pl1 pl2
 
-and unify_bterms tenv info subst bterm1 bterm2 =
+and unify_equal_bterms tenv info subst bterm1 bterm2 =
    if !debug_infer then
-      eprintf "unify_bterms@.";
+      eprintf "unify_equal_bterms@.";
    let { bvars = bvars1; bterm = term1 } = dest_bterm bterm1 in
    let { bvars = bvars2; bterm = term2 } = dest_bterm bterm2 in
       assert (bvars1 = [] && bvars2 = []);
-      unify_term_types tenv info subst term1 term2
+      unify_equal_term_types tenv info subst term1 term2
 
-and unify_bterm_lists tenv info subst btl1 btl2 =
-   List.fold_left2 (unify_bterms tenv info) subst btl1 btl2
+and unify_equal_bterm_lists tenv info subst btl1 btl2 =
+   List.fold_left2 (unify_equal_bterms tenv info) subst btl1 btl2
+
+(************************************************
+ * Subtyping unification.
+ *)
+
+let rec unify_subtype_types tenv info subst ty1 ty2 =
+   if !debug_infer then
+      eprintf "unify_subtype_types@.";
+   let subst, ty1 = normalize_type info subst ty1 in
+   let subst, ty2 = normalize_type info subst ty2 in
+      match ty1, ty2 with
+         TypeVar v1, TypeVar v2 ->
+            if Lm_symbol.eq v1 v2 then
+               subst
+            else
+               (match subst_find_opt subst v1 with
+                   Some ty1 ->
+                      unify_subtype_types tenv info subst ty1 ty2
+                 | None ->
+                      match subst_find_opt subst v2 with
+                         Some ty2 ->
+                            unify_subtype_types tenv info subst ty1 ty2
+                       | None ->
+                            subst_add_var subst v1 ty2)
+       | TypeVar v1, _ ->
+            (match subst_find_opt subst v1 with
+                Some ty1 ->
+                   unify_subtype_types tenv info subst ty1 ty2
+              | None ->
+                   subst_add_var subst v1 ty2)
+       | _, TypeVar v2 ->
+            (match subst_find_opt subst v2 with
+                Some ty2 ->
+                   unify_subtype_types tenv info subst ty1 ty2
+              | None ->
+                   subst_add_var subst v2 ty1)
+
+       | TypeTerm t1, TypeTerm t2 ->
+            unify_subtype_term_types_normalized tenv info subst t1 t2
+
+       | _, TypeTerm t2 ->
+            unify_subtype_typeclass_term tenv info subst ty1 t2
+
+       | TypeSoVar (ty_cvars1, ty_vars1, ty_res1), TypeSoVar (ty_cvars2, ty_vars2, ty_res2)
+         when List.length ty_cvars1 = List.length ty_cvars2 && List.length ty_vars1 = List.length ty_vars2 ->
+            let subst = unify_subtype_type_lists tenv info subst ty_cvars2 ty_cvars1 in
+            let subst = unify_subtype_type_lists tenv info subst ty_vars2 ty_vars1 in
+               unify_subtype_types tenv info subst ty_res1 ty_res2
+
+       | TypeCVar (ty_cvars1, ty_vars1, ty_exp1, ty_res1), TypeCVar (ty_cvars2, ty_vars2, ty_exp2, ty_res2)
+         when List.length ty_cvars1 = List.length ty_cvars2 && List.length ty_vars1 = List.length ty_vars2 ->
+            let subst = unify_subtype_type_lists tenv info subst ty_cvars2 ty_cvars1 in
+            let subst = unify_subtype_type_lists tenv info subst ty_vars2 ty_vars1 in
+            let subst = unify_subtype_types tenv info subst ty_exp2 ty_exp1 in
+               unify_subtype_types tenv info subst ty_res1 ty_res2
+
+       | TypeSCVar (ty_cvars1, ty_vars1, ty_hyp1), TypeSCVar (ty_cvars2, ty_vars2, ty_hyp2)
+         when List.length ty_cvars1 = List.length ty_cvars2 && List.length ty_vars1 = List.length ty_vars2 ->
+            let subst = unify_subtype_type_lists tenv info subst ty_cvars2 ty_cvars1 in
+            let subst = unify_subtype_type_lists tenv info subst ty_vars2 ty_vars1 in
+               unify_subtype_types tenv info subst ty_hyp1 ty_hyp2
+
+       | TypeSequent (ty_hyp1, ty_concl1, ty_seq1), TypeSequent (ty_hyp2, ty_concl2, ty_seq2) ->
+            let subst = unify_subtype_types tenv info subst ty_hyp1 ty_hyp2 in
+            let subst = unify_subtype_types tenv info subst ty_concl1 ty_concl2 in
+               unify_subtype_types tenv info subst ty_seq1 ty_seq2
+
+       | TypeHyp (ty_var1, ty_hyp1), TypeHyp (ty_var2, ty_hyp2) ->
+            let subst = unify_subtype_types tenv info subst ty_hyp1 ty_hyp2 in
+               unify_subtype_types tenv info subst ty_var2 ty_var1
+
+       | TypeExists (v, ty_var, ty1), _ ->
+            let subst, ty1 = instantiate_ty_var subst v ty_var ty1 in
+               unify_subtype_types tenv info subst ty1 ty2
+
+       | _, TypeExists (v, ty_var, ty2) ->
+            let subst, ty2 = standardize_ty_var info subst v ty_var ty2 in
+               unify_subtype_types tenv info subst ty1 ty2
+
+       | _ ->
+            unify_equal_types tenv info subst ty1 ty2
+
+and unify_subtype_type_lists tenv info subst tl1 tl2 =
+   List.fold_left2 (unify_equal_types tenv info) subst tl1 tl2
 
 (*
- * Hypothesis cases.
+ * Unify with a term that defines a typeclass.
  *)
-and unify_hyp_cases tenv info subst (ty_hyp1, ty_var1) (ty_hyp2, ty_var2) =
-   let subst = unify_types tenv info subst ty_hyp1 ty_hyp2 in
-      unify_types tenv info subst ty_var1 ty_var2
+and unify_subtype_typeclass_term tenv info subst ty1 t2 =
+   match reduce_type tenv subst t2 with
+      Some t2 ->
+         unify_subtype_types tenv info subst ty1 (TypeTerm t2)
+    | None ->
+         if is_typeclass_term tenv t2 then
+            let opname2 = opname_of_term t2 in
+            let shape = shape_of_type ty1 in
+            let typeclasses = tenv_find_typeclasses tenv shape in
+               if OpnameSet.mem typeclasses opname2 then
+                  subst
+               else
+                  raise_type2_error subst info ty1 (TypeTerm t2)
+         else
+            raise_type2_error subst info ty1 (TypeTerm t2)
 
-and unify_hyp_case_list tenv info subst cases1 cases2 =
-   List.fold_left2 (unify_hyp_cases tenv info) subst cases1 cases2
+(*
+ * Two term types.
+ *)
+and unify_subtype_term_types tenv info subst t1 t2 =
+   if !debug_infer then
+      eprintf "unify_subtype_term_types@.";
+   let subst, t1 = normalize_term info subst t1 in
+   let subst, t2 = normalize_term info subst t2 in
+      unify_subtype_types tenv info subst t1 t2
+
+and unify_subtype_term_types_normalized tenv info subst t1 t2 =
+   if !debug_infer then
+      eprintf "@[<hv 3>unify_subtype_term_types_normalized:@ %s@ %s@]@." (**)
+         (string_of_term t1)
+         (string_of_term t2);
+   if is_fso_var_term t1 || not (is_fo_term t1) || is_so_var_term t1 || is_context_term t1 || is_sequent_term t1 then
+      raise_illegal_term_error subst info t1
+   else if is_fso_var_term t2 || not (is_fo_term t2) || is_so_var_term t2 || is_context_term t2 || is_sequent_term t2 then
+      raise_illegal_term_error subst info t2
+   else
+      unify_subtype_normal_term_types tenv info true subst t1 t2
+
+and unify_subtype_normal_term_types tenv info delayed subst t1 t2 =
+   if !debug_infer then
+      eprintf "@[<hv 3>unify_subtype_normal_term_types:@ %s@ %s@]@." (string_of_term t1) (string_of_term t2);
+   let shape1 = shape_of_term t1 in
+   let shape2 = shape_of_term t2 in
+      if TermShape.eq shape1 shape2 then
+         (* The types look the same *)
+         let { term_op = op1; term_terms = bterms1 } = dest_term t1 in
+         let { op_name = opname1; op_params = params1 } = dest_op op1 in
+         let { term_op = op2; term_terms = bterms2 } = dest_term t2 in
+         let { op_name = opname2; op_params = params2 } = dest_op op2 in
+         let () =
+            if List.length params1 <> List.length params2 || List.length bterms1 <> List.length bterms2 then
+               raise_term2_error "unify_subtype_normal_term_types1" subst info t1 t2
+         in
+         let subst = unify_equal_param_lists info subst params1 params2 in
+            unify_equal_bterm_lists tenv info subst bterms1 bterms2
+
+      else
+         unify_subtype_reduction tenv info delayed subst t1 t2 shape1 shape2
+
+(* See if there is a reduction pair that matches the shapes *)
+and unify_subtype_reduction tenv info delayed subst t1 t2 shape1 shape2 =
+   let t1 = subst_term subst t1 in
+   let t2 = subst_term subst t2 in
+      match tenv_find_reduction tenv shape1 shape2 with
+         Some (ty1, ty2) ->
+            let ty1, ty2 = standardize_reduction ty1 ty2 in
+            let subst = unify_subtype_normal_term_types tenv info delayed subst t1 ty1 in
+            let subst = unify_subtype_normal_term_types tenv info delayed subst t2 ty2 in
+               subst
+       | None ->
+            unify_subtype_reduce_term_types tenv info delayed subst t1 t2 shape1 shape2
+
+(* Try reducing one of the types *)
+and unify_subtype_reduce_term_types tenv info delayed subst t1 t2 shape1 shape2 =
+   match reduce_type tenv subst t1 with
+      Some t1 ->
+         unify_subtype_normal_term_types tenv info delayed subst t1 t2
+    | None ->
+         match reduce_type tenv subst t2 with
+            Some t2 ->
+               unify_subtype_normal_term_types tenv info delayed subst t1 t2
+          | None ->
+               unify_subtype_term_typeclass tenv info delayed subst t1 t2 shape1 shape2
+
+(* Try a typeclass typing *)
+and unify_subtype_term_typeclass tenv info delayed subst t1 t2 shape1 shape2 =
+   if is_typeclass_term tenv t2 then
+      let opname2 = opname_of_term t2 in
+      let typeclasses = tenv_find_typeclasses tenv shape1 in
+         if OpnameSet.mem typeclasses opname2 then
+            subst
+         else
+            raise_term2_error "unify_subtype_normal_term_types2" subst info t1 t2
+   else if delayed then
+      subst_add_constraint subst (ConstraintSubtype (info, t1, t2))
+   else
+      raise_term2_error "unify_subtype_normal_term_types3" subst info t1 t2
 
 (************************************************
  * Inference.
@@ -1256,7 +1400,7 @@ let infer_cvars_type_list tenv venv info subst cvars ty_cvars =
    List.fold_left2 (fun subst v ty_cvar' ->
          let ty_cvar = venv_find_var venv v in
          let info = UnifyCompose (info, UnifyContextVarType2 (v, ty_cvar, ty_cvar')) in
-            unify_types tenv info subst ty_cvar ty_cvar') subst cvars ty_cvars
+            unify_equal_types tenv info subst ty_cvar ty_cvar') subst cvars ty_cvars
 
 (*
  * Token types.
@@ -1266,7 +1410,7 @@ let infer_token_type tenv venv info subst opname ty =
    let ty_tok = tenv_find_type tenv tok in
    let ty_type = ty_tok.ty_type in
    let info = UnifyCompose (info, UnifyTermType2 (tok, TypeTerm ty_type, TypeTerm ty)) in
-      unify_term_types tenv info subst ty_type ty
+      unify_subtype_term_types tenv info subst ty_type ty
 
 (*
  * Typepe checking.
@@ -1292,7 +1436,7 @@ let rec infer_term tenv venv info subst e =
 and infer_term_type tenv venv info subst e ty =
    let subst, ty_term = infer_term tenv venv info subst e in
    let info = UnifyCompose (info, UnifyTermType2 (e, ty_term, ty)) in
-      unify_types tenv info subst ty_term ty
+      unify_subtype_types tenv info subst ty_term ty
 
 and infer_term_type_list tenv venv info subst el types =
    List.fold_left2 (infer_term_type tenv venv info) subst el types
@@ -1499,7 +1643,7 @@ and infer_sequent_hyps tenv venv info subst arg ty_hyp' hyps i len =
             let subst = infer_cvars_type_list tenv venv info subst cvars ty_cvars' in
             let subst = infer_term_type_list tenv venv info subst args ty_args' in
             let info' = UnifyCompose (info, UnifyContextVarType2 (v, ty_hyp, ty_hyp')) in
-            let subst = unify_types tenv info' subst ty_hyp ty_hyp' in
+            let subst = unify_subtype_types tenv info' subst ty_hyp ty_hyp' in
                infer_sequent_hyps tenv venv info subst arg ty_hyp' hyps (succ i) len
 
 (************************************************************************
@@ -1507,7 +1651,7 @@ and infer_sequent_hyps tenv venv info subst arg ty_hyp' hyps i len =
  *)
 let solve_constraint tenv venv subst con =
    match con with
-      ConstraintMemberType (info, t1, ty2) ->
+      ConstraintMember (info, t1, ty2) ->
          let t1 = subst_term subst t1 in
          let fv = free_vars_set t1 in
          let venv =
@@ -1519,10 +1663,13 @@ let solve_constraint tenv venv subst con =
          in
          let subst, ty1 = infer_term tenv venv info subst t1 in
          let info = UnifyCompose (info, UnifyTermType2 (t1, ty1, ty2)) in
-         let subst = unify_types tenv info subst ty1 ty2 in
+         let subst = unify_subtype_types tenv info subst ty1 ty2 in
             venv, subst
-    | ConstraintUnify (info, t1, t2) ->
-         let subst = unify_normal_term_types tenv info false subst t1 t2 in
+    | ConstraintSubtype (info, t1, t2) ->
+         let subst = unify_subtype_normal_term_types tenv info false subst t1 t2 in
+            venv, subst
+    | ConstraintEqual (info, t1, t2) ->
+         let subst = unify_equal_normal_term_types tenv info false subst t1 t2 in
             venv, subst
 
 let rec solve_constraints tenv venv subst =
@@ -1699,7 +1846,7 @@ let infer_rewrite tenv mt args =
    let _ =
       let subst, ty1 = infer_term tenv venv subst redex in
       let subst, ty2 = infer_term tenv venv subst contractum in
-      let subst = unify_types tenv (UnifyTermType2 (redex, ty1, ty2)) subst ty1 ty2 in
+      let subst = unify_subtype_types tenv (UnifyTermType2 (redex, ty1, ty2)) subst ty1 ty2 in
          solve_constraints tenv venv subst
    in
 
@@ -1716,7 +1863,7 @@ let infer_rewrite tenv mt args =
 
    (* The contractum must be a subtype of the redex *)
    let subst, ty2 = infer_term tenv venv subst contractum in
-   let subst = unify_types tenv (UnifyTermType2 (contractum, ty2, ty1)) subst ty2 ty1 in
+   let subst = unify_subtype_types tenv (UnifyTermType2 (contractum, ty2, ty1)) subst ty2 ty1 in
 
    (* The subgoals must have Term type *)
    let subst =
