@@ -62,7 +62,6 @@ val new_table : unit -> ('a, 'b) term_table
 (*
  * Table operations.
  *)
-val new_table : unit -> ('a, 'b) term_table
 val insert : ('a, 'b) term_table -> term -> 'a -> ('a, 'b) term_table
 val join_tables : ('a, 'b) term_table -> ('a, 'b) term_table -> ('a, 'b) term_table
 

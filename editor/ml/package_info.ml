@@ -544,6 +544,10 @@ struct
       let rsrc = Mp_resource.find Itt_subtype.ext_sub_resource modname in
          Mp_resource.extract rsrc itemname
 
+   let lazy_decide modname itemname () =
+      let rsrc = Mp_resource.find Itt_decidable.ext_decide_resource modname in
+         Mp_resource.extract rsrc itemname
+
    let get_tactic_arg modname itemname =
       let add_attribute name con xlazy attributes =
          try con name (xlazy modname itemname) :: attributes with
@@ -579,6 +583,9 @@ struct
       in
       let attributes =
          add_attribute "subtype" Tactic_type.Tactic.tactic_attribute lazy_subtype attributes
+      in
+      let attributes =
+         add_attribute "decide" Tactic_type.Tactic.tactic_attribute lazy_decide attributes
       in
          { ref_label = "main";
            ref_args = attributes
