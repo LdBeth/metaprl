@@ -592,7 +592,7 @@ struct
 
       (* Now write the term *)
       let newname = filename ^ ".new" in
-      let outx = open_out newname in
+      let outx = open_out_bin newname in
       let major, minor, rev = unpack_version (List.hd versions) in
          fprintf outx "#PRL version %d.%d.%d ASCII term\n" major minor rev;
          PreAsciiIO.write_term outx table term;

@@ -203,5 +203,38 @@ struct
             ignore(find_all t' key);
             raise(Invalid_argument "DebugTables.map - something funny")
 
+   let deletemax (t1,t2) =
+		let (k1,m1,t1')=Table1.deletemax t1 in
+		let (k2,m2,t2')=Table2.deletemax t2 in
+		if (compare k1 k2 =0) then
+			if Lm_list_util.compare_eq m1 m2 then
+				try
+					let t=check (t1',t2') in
+					(k1,m1,t)
+				with
+					Mismatch (t',key') ->
+						open_vbox 3;
+						print_string "Deletemax made different tables:";
+						print_space ();
+						ignore(find_all t' key');
+						raise(Invalid_argument "DebugTables.deletemax - something funny")
+			else
+				begin
+					open_vbox 3;
+					print_string "Deletemax returned different content of same maximum:";
+					print_space ();
+					ignore(find_all (t1',t2') k1);
+					raise(Invalid_argument "DebugTables.deletemax - something funny")
+				end
+		else
+			begin
+				open_vbox 3;
+				print_string "Deletemax returned different maximums:";
+				print_space ();
+				ignore(find_all (t1',t2') k1);
+				print_space ();
+				ignore(find_all (t1',t2') k2);
+				raise(Invalid_argument "DebugTables.deletemax - something funny")
+			end
 
 end
