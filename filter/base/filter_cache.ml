@@ -43,6 +43,7 @@ open Refiner_io
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 
+open Tactic_boot_sig
 open Filter_type
 open Filter_summary
 open Filter_summary_type

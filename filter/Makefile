@@ -32,7 +32,6 @@ OCAMLFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
 
 LIBDIRS :=\
 	base\
-	boot\
 	phobos
 
 DIRS := $(LIBDIRS)\
@@ -43,12 +42,10 @@ SUB_CMALIBS := \
 	filter/term_grammar.cmo\
 
 include base/Files
-include boot/Files
 include phobos/Files
 
 SUB_CMXFILES :=\
 	$(addprefix base/, $(addsuffix .cmx, $(BASE_FILES)))\
-	$(addprefix boot/, $(addsuffix .cmx, $(BOOT_FILES)))\
 	$(addprefix phobos/, $(addsuffix .cmx, $(PHOBOS_FILES)))\
 	filter/term_grammar.cmx\
 
@@ -185,7 +182,8 @@ STANDARD_LIBS =\
 	$(CMADEPS)\
 	$(ROOT)/refiner/refiner.cma\
 	$(ROOT)/library/library.cma\
-	$(ROOT)/lib/trefiner_null.cma\
+	$(ROOT)/lib/trefiner.cma\
+	$(ROOT)/lib/prooflib.cma\
 	$(MAINLIB).cma
 
 STANDARDX_LIBS =\
@@ -196,7 +194,8 @@ STANDARDX_LIBS =\
 	$(CMXADEPS)\
 	$(ROOT)/refiner/refiner.cmxa\
 	$(ROOT)/library/library.cmxa\
-	$(ROOT)/lib/trefiner_null.cmxa\
+	$(ROOT)/lib/trefiner.cmxa\
+	$(ROOT)/lib/prooflib.cmxa\
 	$(MAINLIB).cmxa
 
 CAMLP4N_CMOBJS =\

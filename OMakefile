@@ -92,6 +92,16 @@ else
    export
 
 #
+# Whether to compile a distributed version or not
+#
+if $(equal $(ENSROOT), undefined)
+   ENSEMBLE_DIR = tactics/null
+   export
+else
+   ENSEMBLE_DIR = tactics/ensemble
+   export
+
+#
 # Include the generic caml library
 #
 INCLUDES += -I$(CAMLLIB)
@@ -159,7 +169,7 @@ THREADSLIB = threads
 #
 # Directories using our custom scanner, but otherwise config is normal
 #
-.SUBDIRS: libmojave library debug ensemble filter
+.SUBDIRS: libmojave library debug $(ENSEMBLE_DIR) tactics/proof filter
 
 ########################################################################
 # Refiner building

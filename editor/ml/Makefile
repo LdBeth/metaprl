@@ -10,7 +10,7 @@ INCLUDE = -I .\
 	-I $(ROOT)/lib\
 	-I $(ROOT)/library\
 	-I $(CAMLP4LIB)\
-	-I $(ROOT)/ensemble\
+	-I $(ROOT)/$(ENSEMBLE_DIR)\
 	$(SUPPORT_INCL)\
 	$(addprefix -I , $(MP_DIRS))\
 	-I $(ROOT)/library\
@@ -79,34 +79,25 @@ TCMOFILES = $(addsuffix .cmo, $(TOPFILES))
 TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 
 ########################################################################
-# ENSEMBLE
-########################################################################
-
-#
-# If Ensemble is configured, used the Ensemble refiner.
-# Otherwise, use the null refiner.
-#
-ifneq ($(ENSROOT),undefined)
-	CMALIBS_ext := $(ROOT)/lib/trefiner_ens.cma
-	CMXALIBS_ext := $(ROOT)/lib/trefiner_ens.cmxa
-else
-	CMALIBS_ext := $(ROOT)/lib/trefiner_null.cma
-	CMXALIBS_ext := $(ROOT)/lib/trefiner_null.cmxa
-endif
-
-########################################################################
 # LIBRARIES
 ########################################################################
+
+BASE_LIBS =\
+	$(ROOT)/lib/lm\
+	$(ROOT)/lib/util\
+	$(ROOT)/lib/refiner\
+	$(ROOT)/lib/library\
+	$(ROOT)/lib/trefiner\
+	$(ROOT)/lib/prooflib\
+
+BASE_CMAS  = $(addsuffix .cma , $(BASE_LIBS))
+BASE_CMXAS = $(addsuffix .cmxa, $(BASE_LIBS))
 
 CMXDEPS =\
 	$(CAMLLIB)/unix.cmxa\
 	$(CAMLLIB)/str.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
-	$(ROOT)/lib/lm.cmxa\
-	$(ROOT)/lib/util.cmxa\
-	$(ROOT)/lib/refiner.cmxa\
-	$(ROOT)/lib/library.cmxa\
-	$(CMXALIBS_ext)\
+	$(BASE_CMXAS)\
 	$(ROOT)/lib/prlc.cmxa\
 	$(addsuffix /theory.cmxa, $(MP_DIRS))\
 	mp.cmxa
@@ -120,11 +111,7 @@ CMXADEPS =\
 	$(OPTTHREADSLIB)\
 	$(CAMLP4LIB)/odyl.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
-	$(ROOT)/lib/lm.cmxa\
-	$(ROOT)/lib/util.cmxa\
-	$(ROOT)/lib/refiner.cmxa\
-	$(ROOT)/lib/library.cmxa\
-	$(CMXALIBS_ext)\
+	$(BASE_CMXAS)\
 	$(CAMLP4LIB)/pa_o.cmx\
 	$(CAMLP4LIB)/pa_op.cmx\
 	$(ROOT)/lib/prlc.cmxa\
@@ -141,11 +128,7 @@ CMADEPS =\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CAMLP4LIB)/camlp4_top.cma\
-	$(ROOT)/lib/lm.cma\
-	$(ROOT)/lib/util.cma\
-	$(ROOT)/lib/refiner.cma\
-	$(ROOT)/lib/library.cma\
-	$(CMALIBS_ext)\
+	$(BASE_CMAS)\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(ROOT)/lib/prlc.cma\
@@ -158,11 +141,7 @@ TCMADEPS =\
 	$(CAMLLIB)/str.cma\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
-	$(ROOT)/lib/lm.cma\
-	$(ROOT)/lib/util.cma\
-	$(ROOT)/lib/refiner.cma\
-	$(ROOT)/lib/library.cma\
-	$(CMALIBS_ext)\
+	$(BASE_CMAS)\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(ROOT)/lib/prlc.cma\

@@ -72,7 +72,7 @@ struct
             format_popm buf;
             format_ezone buf
        | exn ->
-            Filter_exn.format_exn db buf exn
+            Refine_exn.format_exn db buf exn
       in
          format exn
 

@@ -1,3 +1,5 @@
+MLZFILES=$(REFSIG_FILES)
+
 OCAMLINCLUDES =\
 	$(OCAMLINCLUDES)\
 	-I $(ROOT)/libmojave/stdlib\

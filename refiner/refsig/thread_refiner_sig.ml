@@ -1,6 +1,10 @@
 (*
  * This is a module that threads refiner operations.
  *
+ * We provide two implementations of this signature:
+ * - a simple serial one (tactics/null directory)
+ * - a distributed one using Ensemble toolkit (tactics/ensemble directory)
+ *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order

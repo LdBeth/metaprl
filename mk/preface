@@ -211,3 +211,9 @@ endif
 OCAMLC := $(OCAMLC) -warn-error A -w A
 OCAMLOPT := $(OCAMLOPT) -warn-error A -w A
 SUPPORT_INCL := -I $(ROOT)/support/display -I $(ROOT)/support/shell -I $(ROOT)/support/tactics
+
+ifeq ($(ENSROOT),undefined)
+   ENSEMBLE_DIR=tactics/null
+else
+   ENSEMBLE_DIR=tactics/ensemble
+endif

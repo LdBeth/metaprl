@@ -1,4 +1,4 @@
-BOOT_FILES =\
+PROOF_FILES =\
 	tactic_boot_sig\
 	tactic_boot\
 	sequent_boot\

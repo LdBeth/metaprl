@@ -12,7 +12,7 @@ OCAMLINCLUDES =\
 	-I $(ROOT)/refiner/refiner\
 	-I $(ROOT)/refiner/reflib\
 	-I $(ROOT)/library\
-	-I $(ROOT)/ensemble
+   -I $(ROOT)/tactics/proof\
 
 #
 # Generic camlp4 preprocessing
@@ -29,18 +29,16 @@ MAINPROG = prlc
 # Recursive make
 #########################################################################
 
-.SUBDIRS: base boot phobos filter
+.SUBDIRS: base phobos filter
 
 #
 # Build combined libraries from subdirs
 #
 include base/Files
-include boot/Files
 include phobos/Files
 
 SUB_FILES =\
 	$(addprefix base/, $(BASE_FILES))\
-	$(addprefix boot/, $(BOOT_FILES))\
 	$(addprefix phobos/, $(PHOBOS_FILES))\
 	filter/term_grammar\
 
@@ -80,6 +78,7 @@ STANDARD_LIBS =\
 	$(LIB)/refiner\
 	$(LIB)/library\
 	$(LIB)/trefiner\
+	$(LIB)/prooflib\
 	$(MAINLIB)
 
 CAMLP4_LIBS =\

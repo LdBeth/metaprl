@@ -1,0 +1,19 @@
+OCAMLINCLUDES =\
+	$(OCAMLINCLUDES)\
+	-I $(ROOT)/refiner/refsig\
+	-I $(ROOT)/refiner/refiner
+
+#
+# Name of this library
+#
+LIBNAME = trefiner
+
+LMFILES = thread_refiner
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), $(LIBNAME), $(LMFILES))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

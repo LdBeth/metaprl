@@ -7,7 +7,7 @@ ROOT:=.
 include mk/preface
 
 #
-# Build all the parts of Nuprl-Light:
+# Build all the parts of MetaPRL:
 #    refiner: logic engine
 #    filter: front end to the compiler
 #    support: support library
@@ -24,7 +24,8 @@ REFINER_DIRS :=\
 	refiner\
 	library\
 	debug\
-	ensemble
+	$(ENSEMBLE_DIR)\
+	tactics/proof\
 
 DEP_DIRS :=\
 	libmojave\

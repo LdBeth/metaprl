@@ -1193,6 +1193,23 @@ sig
 end
 
 (*
+ * Proof conversion.
+ *)
+module type ConvertProofSig =
+sig
+   type t
+   type raw
+   type cooked
+
+   val to_raw  : t -> string -> cooked -> raw
+   val of_raw  : t -> string -> raw -> cooked
+   val to_term : t -> string -> cooked -> term
+   val of_term : t -> string -> term -> cooked
+   val to_term_io : t -> string -> cooked -> Refiner_io.TermType.term
+   val of_term_io : t -> string -> Refiner_io.TermType.term -> cooked
+end
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

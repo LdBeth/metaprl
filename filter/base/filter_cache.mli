@@ -32,6 +32,7 @@
  * Modified By: Aleksey Nogin: <nogin@cs.caltech.edu>
  *)
 
+open Tactic_boot_sig
 open Filter_summary_type
 
 (*

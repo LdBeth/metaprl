@@ -3,10 +3,10 @@
 #
 OCAMLINCLUDES =\
         -I .\
-        -I $(ROOT)/lib\
-        -I $(ROOT)/library\
+        -I $(LIB)\
+        -I $(LIB)rary\
         -I $(CAMLP4LIB)\
-        -I $(ROOT)/ensemble\
+        -I $(ROOT)/$(ENSEMBLE_DIR)\
         $(addprefix -I , $(MP_DIRS))
 
 # Name of main librariws
@@ -71,9 +71,17 @@ RCMOFILES = $(addsuffix .cmo, $(RUNFILES))
 TCMOFILES = $(addsuffix .cmo, $(TOPFILES))
 TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 
-# Disable ensemble for now
-CMALIBS_ens =  $(LIB)/trefiner.cma
-CMXALIBS_ens = $(LIB)/trefiner.cmxa
+BASE_LIBS = \
+   $(LIB)/lm\
+   $(LIB)/util\
+   $(LIB)/refiner\
+   $(LIB)/library\
+   $(LIB)/trefiner\
+   $(LIB)/prooflib\
+
+BASE_ARS   = $(addsuffix $(EXT_LIB), $(BASE_LIBS))
+BASE_CMAS  = $(addsuffix .cma      , $(BASE_LIBS))
+BASE_CMXAS = $(addsuffix .cmxa     , $(BASE_LIBS))
 
 # JYH: have to update these to match $(ROOT)/OMakefile
 THREADS = -thread
@@ -93,11 +101,11 @@ else
 # LIBRARIES
 ########################################################################
 
-LMARDEPS = $(ROOT)/lib/lm$(EXT_LIB)
-LMXADEPS = $(ROOT)/lib/lm.cmxa
-LMADEPS  = $(ROOT)/lib/lm.cma
-TLMADEPS = $(ROOT)/lib/lm.cma
-LIBS     = $(ROOT)/lib/liblmcutil$(EXT_LIB)
+LMARDEPS = $(LIB)/lm$(EXT_LIB)
+LMXADEPS = $(LIB)/lm.cmxa
+LMADEPS  = $(LIB)/lm.cma
+TLMADEPS = $(LIB)/lm.cma
+LIBS     = $(LIB)/liblmcutil$(EXT_LIB)
 
 #
 # If MCC is enabled, add the libraries
@@ -115,24 +123,16 @@ CMXADEPS =\
         $(OPTTHREADSLIB)\
         $(CAMLP4LIB)/odyl.cmxa\
         $(CAMLP4LIB)/camlp4.cmxa\
-        $(LMXADEPS)\
-        $(ROOT)/lib/util.cmxa\
-        $(ROOT)/lib/refiner.cmxa\
-        $(ROOT)/lib/library.cmxa\
-        $(CMXALIBS_ens)\
+        $(BASE_CMXAS)\
         $(CAMLP4LIB)/pa_o.cmx\
         $(CAMLP4LIB)/pa_op.cmx\
-        $(ROOT)/lib/prlc.cmxa\
+        $(LIB)/prlc.cmxa\
         $(addsuffix /theory.cmxa, $(MP_DIRS))\
         $(MAIN).cmxa
 
 ARDEPS =\
-        $(LMARDEPS)\
-        $(ROOT)/lib/util.a\
-        $(ROOT)/lib/refiner.a\
-        $(ROOT)/lib/library.a\
-        $(CMXALIBS_ens)\
-        $(ROOT)/lib/prlc.a\
+        $(BASE_ARS)\
+        $(LIB)/prlc.a\
         $(addsuffix /theory.a, $(MP_DIRS))\
         $(MAIN).a
 
@@ -146,14 +146,10 @@ CMADEPS =\
         $(THREADSLIB)\
         $(CAMLP4LIB)/camlp4.cma\
         $(CAMLP4LIB)/camlp4_top.cma\
-        $(LMADEPS)\
-        $(ROOT)/lib/util.cma\
-        $(ROOT)/lib/refiner.cma\
-        $(ROOT)/lib/library.cma\
-        $(CMALIBS_ens)\
+        $(BASE_CMAS)\
         $(CAMLP4LIB)/pa_o.cmo\
         $(CAMLP4LIB)/pa_op.cmo\
-        $(ROOT)/lib/prlc.cma\
+        $(LIB)/prlc.cma\
         $(addsuffix /theory.cma, $(MP_DIRS))\
         $(MAIN).cma
 
@@ -163,14 +159,10 @@ TCMADEPS =\
         $(CAMLLIB)/str.cma\
         $(THREADSLIB)\
         $(CAMLP4LIB)/camlp4.cma\
-        $(TLMADEPS)\
-        $(ROOT)/lib/util.cma\
-        $(ROOT)/lib/refiner.cma\
-        $(ROOT)/lib/library.cma\
-        $(CMALIBS_ens)\
+        $(BASE_CMAS)\
         $(CAMLP4LIB)/pa_o.cmo\
         $(CAMLP4LIB)/pa_op.cmo\
-        $(ROOT)/lib/prlc.cma\
+        $(LIB)/prlc.cma\
         $(addsuffix /theory.cma, $(MP_DIRS))\
         $(MAIN).cma
 
