@@ -148,14 +148,14 @@ let default_shell =
         shell_dir            = [];
         shell_package        = None;
         shell_proof          = proof;
-        shell_needs_update   = false
+        shell_needs_refresh  = false
       }
 
 let fork_shell shell =
    let { shell_proof = old_proof } = shell in
       { shell with shell_label = "subsession";
                    shell_proof = old_proof.edit_copy ();
-                   shell_needs_update = true;
+                   shell_needs_refresh = true;
                    shell_id = new_session_id ()
       }
 
@@ -178,7 +178,7 @@ let set_current_session session_info =
          in
             shell.shell_id              <- id;
             shell.shell_dir             <- dir;
-            shell.shell_needs_update    <- true;
+            shell.shell_needs_refresh   <- true;
             add_linebuffer_strings session.session_history history;
             add_linebuffer_buffers session.session_messages messages;
             session.session_directories <- linetable_of_strings dirs;

@@ -585,80 +585,135 @@ let interpret shell command =
    shell.shell_proof.edit_interpret command;
    display_proof shell shell.shell_proof LsOptionSet.empty
 
+(************************************************************************
+ * Directory management.
+ *)
+
+(*
+ * Mount descriptions.
+ *)
+type mount_info =
+   MountRoot
+ | MountModule of string
+ | MountProof of string * string
+
+(*
+ * Mount the root directory.
+ *)
+let mount_root parse_arg shell need_shell verbose =
+   shell.shell_package <- None;
+   set_packages shell;
+   Shell_state.set_dfbase None;
+   Shell_state.set_mk_opname None;
+   Shell_state.set_so_var_context None;
+   Shell_state.set_infixes None;
+   Shell_state.set_module "shell"
+
+(*
+ * Helper for mounting a module.
+ *)
+let mount_current_module modname parse_arg shell need_shell verbose =
+   if shell.shell_dir = [] || List.hd shell.shell_dir <> modname then
+      begin
+         (* Make sure the module name is well-formed *)
+         if modname <> String.uncapitalize modname then
+            raise (Failure "Shell.chdir: module name should not be capitalized");
+
+         (* See if the theory exists *)
+         let _ = Theory.get_theory modname in
+         let pkg = Package_info.load packages parse_arg modname in
+            if need_shell && not (shell_package pkg) then
+               failwith ("Module " ^ modname ^ " does not contain shell commands");
+            shell.shell_package <- Some pkg;
+            Shell_state.set_dfbase (Some (get_db shell));
+            Shell_state.set_mk_opname (Some (Package_info.mk_opname pkg));
+            Shell_state.set_infixes (Some (Package_info.get_infixes pkg));
+            Shell_state.set_module modname;
+            if verbose then
+               eprintf "Module: /%s%t" modname eflush
+      end
+
+(*
+ * Actually mount the module.
+ *)
+let mount_module modname parse_arg shell need_shell verbose =
+   (* Make sure the module is mounted *)
+   mount_current_module modname parse_arg shell need_shell verbose;
+
+   (* Set the state *)
+   Shell_state.set_so_var_context None;
+   set_package parse_arg shell modname
+
+(*
+ * Mount a specific proof.
+ *)
+let mount_proof modname itemname parse_arg shell need_shell verbose =
+   (* Make sure the module is mounted *)
+   mount_current_module modname parse_arg shell need_shell verbose;
+
+   (* Install the proof *)
+   let proof = get_item parse_arg shell modname itemname in
+      Shell_state.set_so_var_context (Some (proof.edit_get_terms ()));
+      shell.shell_proof <- proof
+
+(*
+ * We use "mount" points to decide what to edit.
+ * The mount function returns a description of the
+ * mount point, and the mount function.
+ *)
+let mount path =
+   match path with
+      [] ->
+         MountRoot, mount_root, []
+    | [modname] ->
+         MountModule modname, mount_module modname, []
+    | modname :: itemname :: rest ->
+         MountProof (modname, itemname), mount_proof modname itemname, rest
+
+(*
+ * When the mount point changes,
+ * the old mount point may need to be unmounted.
+ *)
+let umount shell info =
+   match info with
+      MountProof (modname, itemname) ->
+         (* When leaving a proof, cd to the root *)
+         shell.shell_proof.edit_addr []
+    | MountModule _
+    | MountRoot ->
+         ()
+
 (*
  * Change directory.
  *)
 let rec chdir parse_arg shell need_shell verbose path =
-   match path with
-      [] ->
-         (* go to toplevel *)
-         shell.shell_dir <- [];
-         shell.shell_package <- None;
-         set_packages shell;
-         Shell_state.set_dfbase None;
-         Shell_state.set_mk_opname None;
-         Shell_state.set_so_var_context None;
-         Shell_state.set_infixes None;
-         Shell_state.set_module "shell"
-
-    | (modname :: item) as dir ->
-         (* change module only if in another (or at top) *)
-         if shell.shell_dir = [] || List.hd shell.shell_dir <> modname then
+   let dir = shell.shell_dir in
+   let old_mount_name, _, _ = mount dir in
+   let new_mount_name, mount, subdir = mount path in
+      try
+         (* Change the mount point if needed *)
+         if new_mount_name <> old_mount_name then
             begin
-               if modname <> String.uncapitalize modname then
-                  raise (Failure "Shell.chdir: module name should not be capitalized");
-
-               (* See if the theory exists *)
-               ignore (Theory.get_theory modname);
-               let pkg = Package_info.load packages parse_arg modname in
-                  if need_shell && not (shell_package pkg) then
-                     failwith ("Module " ^ modname ^ " does not contain shell commands");
-                  shell.shell_package <- Some pkg;
-                  Shell_state.set_dfbase (Some (get_db shell));
-                  Shell_state.set_mk_opname (Some (Package_info.mk_opname pkg));
-                  Shell_state.set_infixes (Some (Package_info.get_infixes pkg));
-                  Shell_state.set_module modname;
-                  if verbose then
-                     eprintf "Module: /%s%t" modname eflush
+               umount shell old_mount_name;
+               mount parse_arg shell need_shell verbose
             end;
 
-         if item = [] then
-            begin
-               (* top of module *)
-               shell.shell_dir <- dir;
-               Shell_state.set_so_var_context None;
-               set_package parse_arg shell modname
-            end
-         else
-            begin
-               (* select an item (if not there already), then go down the proof. *)
-               begin
-                  match shell.shell_dir with
-                     old_modname :: old_item :: _ when old_modname = modname && old_item = List.hd item ->
-                        shell.shell_proof.edit_addr (List.map int_of_string (List.tl item))
-                   | _ ->
-                        try
-                           (* Leave the old proof at the root *)
-                           shell.shell_proof.edit_addr [];
-                           let proof = get_item parse_arg shell modname (List.hd item) in
-                              Shell_state.set_so_var_context (Some (proof.edit_get_terms ()));
-                              proof.edit_addr (List.map int_of_string (List.tl item));
-                              shell.shell_proof <- proof
-                        with
-                           exn ->
-                              begin
-                                 (* Bring things back to where they were *)
-                                 let dir = shell.shell_dir in
-                                    if (dir <> []) && (List.hd dir = modname) then
-                                       shell.shell_dir <- [modname]
-                                    else
-                                       shell.shell_dir <- [];
-                                    chdir parse_arg shell false verbose dir;
-                                    raise exn
-                              end;
-               end;
-               shell.shell_dir <- dir
-            end
+         (* Change to the subdirectory *)
+         shell.shell_proof.edit_addr subdir;
+
+         (* Save the directory *)
+         shell.shell_dir <- path;
+
+         (* Print directory *)
+         if verbose then
+            eprintf "CWD: %s@." (string_of_path path)
+      with
+         exn ->
+            (* Some kind of failure happened, so change back to where we came from *)
+            eprintf "Chdir failed: %s@." (string_of_path path);
+            eprintf "Current dir: %s@." (string_of_path dir);
+            chdir parse_arg shell false verbose dir;
+            raise exn
 
 (*
  * Refresh the current directory.

@@ -39,7 +39,6 @@ extends Shell_rule
 extends Shell_package
 extends Shell_root
 extends Shell_p4_sig
-extends Shell_syscall
 
 open Exn_boot
 
@@ -454,7 +453,7 @@ struct
       let node addr =
          synchronize (fun shell ->
                let proof = shell.shell_proof in
-                  proof.edit_addr addr;
+                  proof.edit_int_addr addr;
                   let { edit_goal = goal;
                         edit_expr = tac;
                         edit_subgoals = subgoals;
@@ -471,7 +470,7 @@ struct
                let proof = shell.shell_proof in
                let expr = ShellP4.parse_string str in
                let tac = ShellP4.eval_tactic expr in
-                  proof.edit_addr addr;
+                  proof.edit_int_addr addr;
                   proof.edit_refine str expr tac;
                   let { edit_goal = goal;
                         edit_subgoals = subgoals;
@@ -505,12 +504,10 @@ struct
        *)
       let synchronize f =
          State.write shell_entry (fun shell ->
-               if shell.shell_needs_update then
+               if shell.shell_needs_refresh then
                   begin
-                     let dir = shell.shell_dir in
-                        shell.shell_dir <- [];
-                        chdir parse_arg shell true true dir;
-                        shell.shell_needs_update <- false
+                     refresh parse_arg shell;
+                     shell.shell_needs_refresh <- false
                   end;
                Filter_exn.print_exn (get_db shell) None f shell)
 

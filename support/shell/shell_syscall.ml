@@ -75,13 +75,11 @@ let handle_syscall command =
    in
       match command with
          SyscallRestart ->
-            let code =
-               try Unix.execv Sys.argv.(0) Sys.argv; -1 with
-                  Unix.Unix_error _ ->
-                     -1
-            in
-               eprintf "System restart failed@.";
-               code
+            Shell.backup_all ();
+            (try Unix.execv Sys.argv.(0) Sys.argv; -1 with
+                Unix.Unix_error (errno, funinfo, arginfo) ->
+                   eprintf "Execv failed: %s %s(%s)@." (Unix.error_message errno) funinfo arginfo;
+                   -1)
        | SyscallOMake target ->
             perform_command (sprintf "omake %s" target)
        | SyscallCVS (cwd, command) ->

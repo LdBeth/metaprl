@@ -1,11 +1,12 @@
 # Common files
 MLZFILES =\
-   session_sig\
+   	session_sig\
 	shell_sig\
 	shell_internal_sig\
-   shell_syscall_sig\
+   	shell_syscall_sig\
 	shell_p4_sig\
-	browser_sig
+	browser_sig\
+	shell_theory
 
 # Library files
 MPFILES =\
@@ -21,17 +22,18 @@ MPFILES =\
 	browser_resource\
 	proof_edit\
 	package_info\
-   shell_syscall_sig\
+   	shell_syscall_sig\
 	shell_rule\
 	shell_tex\
 	shell_package\
 	shell_root\
 	mptop\
-	shell_syscall\
 	shell_state\
-	shell_browser\
 	shell_internal_sig\
 	shell_p4_sig\
 	shell_core\
 	shell_current\
-	shell
+	shell\
+	shell_syscall\
+	shell_browser\
+	shell_theory

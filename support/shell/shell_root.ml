@@ -197,6 +197,7 @@ let rec edit pack window =
         edit_up = edit_up;
         edit_down = edit_down;
         edit_addr = edit_addr;
+        edit_int_addr = edit_addr;
         edit_info = edit_info;
         edit_refine = edit_refine;
         edit_undo = edit_undo;

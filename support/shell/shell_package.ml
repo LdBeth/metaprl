@@ -373,6 +373,7 @@ let rec edit pack_info parse_arg window =
         edit_up = not_a_rule;
         edit_down = not_a_rule;
         edit_addr = edit_addr;
+        edit_int_addr = edit_addr;
         edit_info = raise_edit_error_fun "no info for the package";
         edit_refine = raise_edit_error_fun "can't refine the package";
         edit_undo = not_a_rule;

@@ -1,5 +1,5 @@
 (*
- * This data structure is used internally by the shell.
+ * Collect all the shell modules.
  *
  * ----------------------------------------------------------------
  *
@@ -24,34 +24,11 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_string_set
-
-open Refiner.Refiner.Term
-
-open Shell_sig
-open Shell_util
-
-(*
- * This is the info we need for each subshell.
- * The subshells can be threaded; we must make this shell
- * thread-safe.
- *)
-type shell =
-   { shell_label                 : string;
-     mutable shell_id            : int;
-
-     (* Set if the shell directory is out of date *)
-     mutable shell_needs_refresh : bool;
-
-     (* Display *)
-     mutable shell_width         : int;
-     mutable shell_df_mode       : string;
-
-     (* Current module and path and proof *)
-     mutable shell_dir           : string list;
-     mutable shell_package       : Package_info.package option;
-     mutable shell_proof         : edit_object
-   }
+extends Browser_resource
+extends Mptop
+extends Package_info
+extends Shell
+extends Shell_syscall
 
 (*!
  * @docoff

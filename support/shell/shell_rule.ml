@@ -305,8 +305,11 @@ let rec edit pack parse_arg name window obj =
    let edit_info () =
       Proof_edit.edit_info_of_ped (get_ped ())
    in
-   let edit_addr addr =
+   let edit_int_addr addr =
       Proof_edit.addr_ped (get_ped ()) addr
+   in
+   let edit_addr addr =
+      edit_int_addr (List.map int_of_string addr)
    in
    let edit_refine text ast tac =
       if !debug_refine then
@@ -339,6 +342,7 @@ let rec edit pack parse_arg name window obj =
         edit_root = edit_root;
         edit_up = edit_up;
         edit_down = edit_down;
+        edit_int_addr = edit_int_addr;
         edit_addr = edit_addr;
         edit_info = edit_info;
         edit_refine = edit_refine;
