@@ -458,10 +458,10 @@ let rec get_soft_binder buf =
          let buf = head.formatting_buf in
          let index =
             match buf.buf_tag with
-               LZoneTag
-             | IZoneTag ->
-                  (* No binders in these zones *)
+               LZoneTag ->
                   raise NoBinder
+             | IZoneTag ->
+                  raise(Invalid_argument "dform error: soft break in izone")
 
              | SZoneTag
              | HZoneTag ->
@@ -487,10 +487,10 @@ let rec get_hard_binder buf =
          let buf = head.formatting_buf in
          let index =
             match buf.buf_tag with
-               LZoneTag
-             | IZoneTag ->
-                  (* No binders in these zones *)
+               LZoneTag ->
                   raise NoBinder
+             | IZoneTag ->
+                  raise(Invalid_argument "dform error: hard break in izone")
 
              | HZoneTag
              | SZoneTag ->
@@ -508,6 +508,9 @@ let rec get_hard_binder buf =
    in
       search (get_formatting_stack buf).formatting_stack
 
+let format_raw_string buf s =
+   push_command buf (Text (String.length s, s))
+
 let format_cbreak buf str str' =
    let l = String.length str in
    let l' = String.length str' in
@@ -515,7 +518,7 @@ let format_cbreak buf str str' =
          push_command buf (CBreak (get_soft_binder buf, l, l', str, str'))
       with
          NoBinder ->
-            ()
+            format_raw_string buf " "
 
 let format_sbreak buf str str' =
    let l = String.length str in
@@ -524,7 +527,7 @@ let format_sbreak buf str str' =
          push_command buf (Break (get_soft_binder buf, l, l', str, str'))
       with
          NoBinder ->
-            ()
+            format_raw_string buf " "
 
 let format_hbreak buf str str' =
    let l = String.length str in
@@ -533,7 +536,7 @@ let format_hbreak buf str str' =
          push_command buf (Break (get_hard_binder buf, l, l', str, str'))
       with
          NoBinder ->
-            ()
+            format_raw_string buf " "
 
 let format_newline buf =
    push_command buf HBreak
@@ -556,9 +559,6 @@ let format_char buf c =
 (*
  * Check for newlines in the string.
  *)
-let format_raw_string buf s =
-   push_command buf (Text (String.length s, s))
-
 let rec format_string buf s =
    try
        let i = String.index s '\n' in
@@ -569,7 +569,7 @@ let rec format_string buf s =
                 format_string buf (String_util.sub "Rformat.format_string" s (i + 1) l)
    with
       Not_found ->
-         push_command buf (Text (String.length s, s))
+         format_raw_string buf s
 
 (*
  * Print a string, and quote it if necessary.
@@ -1001,8 +1001,7 @@ let rec print_lzone buf rmargin col printer tags =
     | [] ->
          col
    in
-   let { formatted_commands = commands } = get_formatted buf in
-      print col commands
+      print col (get_formatted buf).formatted_commands
 
 (*
  * Format a tagged zone.

@@ -94,7 +94,7 @@ let dict_inited = ref false
 let raise_spelling_error () =
    if !misspelled <> [] then begin
       let rec print col word = function
-         h :: t ->
+         (h, _) :: t ->
             if h = word then
                print col word t
             else
@@ -115,12 +115,13 @@ let raise_spelling_error () =
        | [] ->
             ()
       in
+      let (word, loc) = List_util.last !misspelled in
       let l = Sort.list (<) !misspelled in
          misspelled := [];
          eprintf "The following words may be misspelled:";
          print 80 "" l;
          eflush stderr;
-         raise (Failure "spelling")
+         Stdpp.raise_with_loc loc (Failure ("spelling (" ^ word ^ ")"))
       end
 
 (*
@@ -425,7 +426,7 @@ struct
                         Filter_spell.add s
                    | SpellOn ->
                         if not (Filter_spell.check s) then
-                           misspelled := s :: !misspelled
+                           misspelled := (s,(loc,0)) :: !misspelled
                end;
             mk_string_term comment_string_op s
        | Comment_parse.Term ((opname, (l1, l2)), params, args) ->
