@@ -36,11 +36,6 @@ if $(equal $(OSTYPE), Win32)
       copy mk\config.local.empty mk\config.local
 
    #
-   # System params
-   #
-   SEP = \
-
-   #
    # No native-code version of camlp4 on windows
    #
    NATIVE_ENABLED = false
@@ -65,11 +60,6 @@ else
 
    .INCLUDE: mk/config.local
       $(CP) mk/config.local.empty mk/config.local
-
-   #
-   # System parameters
-   #
-   SEP = /
 
    #
    # Location of OCaml root
@@ -163,7 +153,7 @@ MLZFILES =
 CLEAN = $'(RM) *.opt *.run *.o *.cm* *.a *~ .\#* $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES))
 
 clean:
-    $(CLEAN) bin$(SEP)ocamldep lib$(SEP)camlp4* lib$(SEP)convert lib$(SEP)*.cm* lib$(SEP)*.ml* lib$(SEP)*.txt lib$(SEP)*.dat lib$(SEP)*.a lib$(SEP)prlc*
+    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* lib/convert lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/prlc*)
 
 realclean: clean
     $'(RM) theories/*/*.prlb theories/*/*/*.prlb # This is a temporary HACK
