@@ -36,7 +36,6 @@ open Printf
 
 open Lm_debug
 
-open Splay_table
 open Lm_symbol
 
 open Refiner.Refiner.TermType
