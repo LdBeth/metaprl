@@ -97,6 +97,18 @@ Installation:
 
    You will get a list of all the fonts that emacs knows about.
 
+   You will also need to tell emacs to display output in UTF-* format.
+   To do this, include these lines in your .emacs:
+
+       (setq-default enable-multibyte-characters t)
+
+       ;;; Font encoding for meta-prl
+       (setq locale-coding-system 'utf-8)
+       (set-terminal-coding-system 'utf-8)
+       (set-keyboard-coding-system 'utf-8)
+       (set-selection-coding-system 'utf-8)
+       (prefer-coding-system 'utf-8)
+
    Next, you can run MetaPRL in a shell window in emacs.  First, make sure the
    environment variable SHELL is set to cmd.exe:
 
