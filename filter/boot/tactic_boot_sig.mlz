@@ -198,8 +198,7 @@ sig
     | Identity of tactic_arg
 
    and compose_info =
-      { mutable normalized : bool;
-        mutable comp_status : lazy_status;
+      { mutable comp_status : lazy_status;
         comp_goal : extract;
         comp_subgoals : extract list;
         mutable comp_leaves : lazy_leaves;
@@ -211,7 +210,8 @@ sig
         rule_string : string;
         rule_expr : (unit -> MLast.expr);
         rule_tactic : (unit -> tactic);
-        rule_extract : extract;
+        mutable rule_extract_normalized : bool;
+        mutable rule_extract : extract;
         rule_subgoals : extract list;
         mutable rule_leaves : lazy_leaves;
         rule_extras : extract list

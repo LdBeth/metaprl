@@ -55,8 +55,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Printf
@@ -255,7 +255,15 @@ struct
 
     | Wrapped (label, ext) ->
          format_pushm buf 2;
-         format_string buf "Wrapped:";
+         format_string buf "Wrapped";
+         begin match Tactic_boot.Tactic.expand_arglist label with
+            StringArg s :: _ -> 
+               format_hspace buf;
+               format_string buf ("["^s^"...]");
+               format_hspace buf;
+          | _ -> ()
+         end;
+         format_string buf ":";
          format_hspace buf;
          format_ext db buf ext;
          format_popm buf
@@ -404,7 +412,6 @@ struct
          let e' = normalize e in
          if (e == e') then ext else Wrapped (l,e')
     | (Compose ci) as ext ->
-         if ci.normalized then ext else
          let res =
             let c_goal = normalize ci.comp_goal in
             let c_subgs = normalize_list ci.comp_subgoals in begin
@@ -420,7 +427,6 @@ struct
                      c_goal
                 | Compose ci' ->
                      Compose {
-                        normalized = true;
                         comp_status = ci'.comp_status;
                         comp_goal = ci'.comp_goal;
                         comp_subgoals = join_subgoals ci'.comp_subgoals c_subgs;
@@ -431,11 +437,8 @@ struct
                      print_ext ext;
                      raise (Invalid_argument "Proof_boot.normalize - nogin: according to my understanding, this is not supposed to happen")
                 | _ ->
-                     if (c_goal==ci.comp_goal) && (c_subgs == ci.comp_subgoals) then begin
-                        ci.normalized <- true;
-                        ext
-                     end else Compose {
-                        normalized = true;
+                     if (c_goal==ci.comp_goal) && (c_subgs == ci.comp_subgoals) then ext else
+                     Compose {
                         comp_status = ci.comp_status;
                         comp_goal = c_goal;
                         comp_subgoals = c_subgs;
@@ -454,19 +457,11 @@ struct
                end
             end; res
     | (RuleBox ri) as ext ->
-         let r_ext = normalize ri.rule_extract in
-         let r_subgs = normalize_list ri.rule_subgoals in
-            if (r_ext == ri.rule_extract) && (r_subgs == ri.rule_subgoals) then ext
-            else RuleBox {
-               rule_status = ri.rule_status;
-               rule_string = ri.rule_string;
-               rule_expr = ri.rule_expr;
-               rule_tactic = ri.rule_tactic;
-               rule_extract = r_ext;
-               rule_subgoals = r_subgs;
-               rule_leaves = ri.rule_leaves;
-               rule_extras = ri.rule_extras
-           }
+         if not ri.rule_extract_normalized then begin
+            ri.rule_extract <- normalize ri.rule_extract;
+            ri.rule_extract_normalized <- true
+         end;
+         ext
     | ext -> ext
 
    and normalize_list l = List_util.smap normalize l
@@ -481,7 +476,6 @@ struct
     | hd :: tl ->
          let sghd,sgtl = split_subgoals (count_leaves hd) sgs in
          let c = Compose {
-            normalized = false;
             comp_status = LazyStatusDelayed;
             comp_goal = hd;
             comp_subgoals = sghd;
@@ -659,6 +653,24 @@ struct
           | Locked ext ->
                leaves_ext ext
       in
+         if !debug_proof then begin
+            let buf = Rformat.new_buffer () in
+            format_hzone buf;
+            format_string buf "Leaves of\n";
+            format_space buf;
+            format_szone buf;
+            format_ext !debug_dbase buf goal;
+            format_ezone buf;
+            format_space buf;
+            print_ext goal;
+            format_space buf;
+            format_string buf "are";
+            format_space buf;
+            List.iter (format_arg !debug_dbase buf) leaves;
+            format_ezone buf;
+            print_to_channel 80 buf stderr;
+            flush stderr
+         end;
          remove_duplicates [] leaves
 
    and collect_leaves = function
@@ -794,21 +806,17 @@ struct
        | Identity _
        | Unjustified _ ->
             raise_select_error proof node raddr i
-       | Compose { normalized = false} ->
-            select_child proof (normalize node) raddr i
-       | Compose { normalized = true; comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            if i = 0 then select_child proof goal raddr i
+       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
+            if i = 0 then select_child proof goal raddr 0
             else select_subgoal proof node raddr goal subgoals extras i
        | Wrapped (_, goal) ->
             if i = 0 then
                goal
             else
                raise_select_error proof node raddr i
-       | RuleBox { rule_extract = goal;
-                   rule_subgoals = subgoals;
-                   rule_extras = extras
-         } ->
-            select_subgoal proof node raddr goal subgoals extras i
+       | RuleBox ri ->
+            if (i=0) && (not ri.rule_extract_normalized) then ignore(normalize node);
+            select_subgoal proof node raddr ri.rule_extract ri.rule_subgoals ri.rule_extras i
        | Pending f ->
             select_child proof (f ()) raddr i
        | Locked ext ->
@@ -1011,7 +1019,6 @@ struct
                   node
                else
                   Compose {
-                     normalized = false;
                      comp_status = LazyStatusDelayed;
                      comp_goal = goal;
                      comp_subgoals = subgoals;
@@ -1034,11 +1041,12 @@ struct
        | RuleBox { rule_expr = expr;
                    rule_string = text;
                    rule_tactic = tac;
+                   rule_extract_normalized = normal;
                    rule_extract = goal;
                    rule_subgoals = subgoals;
                    rule_extras = extras
          } ->
-            let goal, subgoals, extras, unchanged = replace_subgoal proof node raddr goal subgoals extras i node' in
+            let new_goal, subgoals, extras, unchanged = replace_subgoal proof node raddr goal subgoals extras i node' in
             let node =
                if unchanged then
                   node
@@ -1047,7 +1055,8 @@ struct
                             rule_expr = expr;
                             rule_tactic = tac;
                             rule_string = text;
-                            rule_extract = goal;
+                            rule_extract_normalized = normal && (goal==new_goal);
+                            rule_extract = new_goal;
                             rule_subgoals = subgoals;
                             rule_leaves = LazyLeavesDelayed;
                             rule_extras = extras
@@ -1163,7 +1172,6 @@ struct
             let extras = List.map (sweep_up_ext proof f) extras in
             let subgoals, extras = match_subgoals (leaves_ext goal) subgoals extras in
                Compose {
-                  normalized = false;
                   comp_status = LazyStatusDelayed;
                   comp_goal = goal;
                   comp_subgoals = subgoals;
@@ -1175,19 +1183,21 @@ struct
        | RuleBox { rule_expr = expr;
                    rule_string = text;
                    rule_tactic = tac;
+                   rule_extract_normalized = normal;
                    rule_extract = goal;
                    rule_subgoals = subgoals;
                    rule_extras = extras
          } ->
-            let goal = sweep_up_ext proof f goal in
+            let new_goal = sweep_up_ext proof f goal in
             let subgoals = List.map (sweep_up_ext proof f) subgoals in
             let extras = List.map (sweep_up_ext proof f) extras in
-            let subgoals, extras = match_subgoals (leaves_ext goal) subgoals extras in
+            let subgoals, extras = match_subgoals (leaves_ext new_goal) subgoals extras in
                RuleBox { rule_status = LazyStatusDelayed;
                          rule_expr = expr;
                          rule_string = text;
                          rule_tactic = tac;
-                         rule_extract = goal;
+                         rule_extract_normalized = normal && (goal==new_goal);
+                         rule_extract = new_goal;
                          rule_subgoals = subgoals;
                          rule_leaves = LazyLeavesDelayed;
                          rule_extras = extras
@@ -1224,7 +1234,6 @@ struct
             ExtractCut (f goal, hyp, f cut_lemma, f cut_then)
        | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
             Compose {
-               normalized = false;
                comp_status = LazyStatusDelayed;
                comp_goal = map_tactic_arg_ext f goal;
                comp_subgoals = List.map (map_tactic_arg_ext f) subgoals;
@@ -1236,15 +1245,18 @@ struct
        | RuleBox { rule_expr = expr;
                    rule_string = text;
                    rule_tactic = tac;
+                   rule_extract_normalized = normal;
                    rule_extract = goal;
                    rule_subgoals = subgoals;
                    rule_extras = extras
          } ->
+            let new_goal = map_tactic_arg_ext f goal in
             RuleBox { rule_status = LazyStatusDelayed;
                       rule_expr = expr;
                       rule_string = text;
                       rule_tactic = tac;
-                      rule_extract = map_tactic_arg_ext f goal;
+                      rule_extract_normalized = normal && (new_goal==goal);
+                      rule_extract = new_goal;
                       rule_subgoals = List.map (map_tactic_arg_ext f) subgoals;
                       rule_leaves = LazyLeavesDelayed;
                       rule_extras = List.map (map_tactic_arg_ext f) extras
@@ -1365,6 +1377,7 @@ struct
    let extract_failure_exn = RefineError ("Proof_boot.unfold_extract", StringError "extract is atomic")
    let rw_extract_failure_exn = RefineError ("Proof_boot.unfold_rw_extract", StringError "extract is atomic")
    let crw_extract_failure_exn = RefineError ("Proof_boot.unfold_crw_extract", StringError "extract is atomic")
+   let index_exn = RefineError ("Proof_boot.index", StringError "there is no proof node with such address")
 
    (*
     * Unfold the Refine.extract into a normal extract.
@@ -1393,7 +1406,6 @@ struct
                                 ext)
        | ComposeExtract (ext, extl) ->
             Compose {
-               normalized = true;
                comp_status = LazyStatusDelayed;
                comp_goal = extract_of_refine_extract goal ext;
                comp_subgoals = List.map (extract_of_refine_extract goal) extl;
@@ -1471,7 +1483,6 @@ struct
             ext
        | ext :: exts ->
             Compose {
-               normalized = false;
                comp_status = LazyStatusDelayed;
                comp_goal = ext;
                comp_subgoals = [compose exts];
@@ -1504,7 +1515,6 @@ struct
       let ext_lemma = make_ext cut_lemma goal addr ext in
       let comp_lemma =
          Compose {
-            normalized = true;
             comp_status = LazyStatusDelayed;
             comp_goal = ext_cut;
             comp_subgoals = [ExtractNthHyp (goal, List.length hyps)];
@@ -1513,7 +1523,6 @@ struct
          }
       in
          Compose {
-            normalized = true;
             comp_status = LazyStatusDelayed;
             comp_goal = ext_cut;
             comp_subgoals = [Goal cut_lemma; comp_lemma];
@@ -1544,7 +1553,6 @@ struct
                if !debug_proof then
                   eprintf "Proof_boot.unfold_rw_extract: compose%t" eflush;
                Compose {
-                  normalized = true;
                   comp_status = LazyStatusDelayed;
                   comp_goal = extract_of_rewrite_extract goal addr ext1;
                   comp_subgoals = [extract_of_rewrite_extract goal addr ext2];
@@ -1589,7 +1597,6 @@ struct
             reverse_extract Refine.goal_of_crw_extract make_crw_extract goal subgoal addr ext
        | ComposeCondRewriteExtract (ext1, ext2) ->
             Compose {
-               normalized = true;
                comp_status = LazyStatusDelayed;
                comp_goal = extract_of_cond_rewrite_extract goal addr ext1;
                comp_subgoals = [extract_of_cond_rewrite_extract goal addr ext2];
@@ -1676,9 +1683,7 @@ struct
                  pf_address = addr @ path;
                  pf_node = node
                }
-         with
-            ProofRefineError _ ->
-               raise (RefineError ("Proof_boot.index", StringError "the proof node is atomic"))
+         with ProofRefineError _ -> raise index_exn
 
    (*
     * Child operation is a simplified index.
@@ -1732,6 +1737,7 @@ struct
                                rule_string = text;
                                rule_expr = expr;
                                rule_tactic = tac;
+                               rule_extract_normalized = true;
                                rule_extract = arg;
                                rule_subgoals = subgoals;
                                rule_leaves = LazyLeavesDelayed;
@@ -2035,7 +2041,7 @@ struct
    (*
     * Describe all the parts of this step.
     *)
-   let rec info_ext proof node =
+   let rec info_ext compose_flag proof node =
       match node with
          Goal goal ->
             { step_goal = proof :: get_cache proof;
@@ -2086,29 +2092,37 @@ struct
               step_subgoals = proof_subgoals proof [subgoal1; subgoal2];
               step_extras = []
             }
-       | Compose { normalized = false } ->
-            info_ext proof (normalize node)
-       | Compose { normalized = true; comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            let subgoals, extras = proof_subgoals_extras proof subgoals extras in
-            let goal = info_ext proof goal in
-               { step_goal = goal.step_goal;
-                 step_expr = ExprCompose goal.step_expr;
-                 step_subgoals = subgoals;
+       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
+            let new_subgoals, extras = proof_subgoals_extras proof subgoals extras in
+            if compose_flag then
+               let goal = info_ext false proof goal in
+                  { step_goal = goal.step_goal;
+                    step_expr = ExprCompose goal.step_expr;
+                    step_subgoals = new_subgoals;
+                    step_extras = extras
+                  }
+            else
+               { step_goal = proof_goal proof goal;
+                 step_expr = ExprCompose ExprIdentity;
+                 step_subgoals = List.flatten (List.map (fun goal -> (info_ext false proof goal).step_subgoals) subgoals);
                  step_extras = extras
                }
        | Wrapped (label, ext) ->
             let { step_goal = goal;
                   step_subgoals = subgoals;
                   step_extras = extras
-                } = info_ext proof ext
+                } = info_ext false proof ext
             in
                { step_goal = goal;
                  step_expr = ExprWrapped label;
                  step_subgoals = subgoals;
                  step_extras = extras
                }
+       | RuleBox { rule_extract_normalized = false } ->
+            info_ext compose_flag proof (normalize node)
        | RuleBox { rule_expr = expr;
                    rule_string = text;
+                   rule_extract_normalized = true;
                    rule_extract = goal;
                    rule_subgoals = subgoals;
                    rule_extras = extras
@@ -2120,12 +2134,12 @@ struct
                  step_extras = extras
                }
        | Pending f ->
-            info_ext proof (f ())
+            info_ext compose_flag proof (f ())
        | Locked ext ->
-            info_ext proof ext
+            info_ext compose_flag proof ext
 
    let info proof =
-      let info = info_ext proof proof.pf_node in
+      let info = info_ext true proof proof.pf_node in
          if !debug_proof then
             eprintf "Got info_ext%t" eflush;
          info
@@ -2141,6 +2155,7 @@ struct
       let { rule_expr = expr;
             rule_string = text;
             rule_tactic = tac;
+            rule_extract_normalized = normal;
             rule_extract = goal;
             rule_subgoals = subgoals;
             rule_extras = extras
@@ -2152,6 +2167,7 @@ struct
            rule_expr = expr;
            rule_string = text;
            rule_tactic = tac;
+           rule_extract_normalized = normal;
            rule_extract = goal;
            rule_subgoals = subgoals;
            rule_leaves = LazyLeavesDelayed;
@@ -2187,7 +2203,8 @@ struct
            rule_expr = (fun () -> expr);
            rule_string = text;
            rule_tactic = (fun () -> tac);
-           rule_extract = normalize ext;
+           rule_extract_normalized = false;
+           rule_extract = ext;
            rule_subgoals = List.map (fun goal -> Goal goal) subgoals;
            rule_leaves = LazyLeavesDelayed;
            rule_extras = []
@@ -2226,14 +2243,12 @@ struct
             node
        | Wrapped (label, node) ->
             Wrapped (label, clean_extras_ext node)
-       | Compose { normalized = norm;
-                   comp_status = status;
+       | Compose { comp_status = status;
                    comp_goal = goal;
                    comp_subgoals = subgoals;
                    comp_leaves = leaves
          } ->
-            Compose { normalized = norm;
-                      comp_status = status;
+            Compose { comp_status = status;
                       comp_goal = clean_extras_ext goal;
                       comp_subgoals = List.map clean_extras_ext subgoals;
                       comp_leaves = leaves;
@@ -2243,6 +2258,7 @@ struct
                    rule_string = text;
                    rule_expr = expr;
                    rule_tactic = tactic;
+                   rule_extract_normalized = normal;
                    rule_extract = goal;
                    rule_subgoals = subgoals;
                    rule_leaves = leaves
@@ -2251,6 +2267,7 @@ struct
                       rule_string = text;
                       rule_expr = expr;
                       rule_tactic = tactic;
+                      rule_extract_normalized = normal;
                       rule_extract = clean_extras_ext goal;
                       rule_subgoals = List.map clean_extras_ext subgoals;
                       rule_leaves = leaves;
@@ -2267,7 +2284,7 @@ struct
    (*
     * Squash the proof by removing all extracts.
     * Compositions also get squashed, but we take care to preserve
-    * any patchs that lead to rule boxes.
+    * any paths that lead to rule boxes.
     *)
    let rec squash_ext node =
       match node with
@@ -2286,8 +2303,7 @@ struct
        | Wrapped (label, node) ->
             let flag, node' = squash_ext node in
                flag, Wrapped (label, node')
-       | Compose { normalized = norm;
-                   comp_goal = goal;
+       | Compose { comp_goal = goal;
                    comp_subgoals = subgoals;
                    comp_extras = extras
          } ->
@@ -2298,8 +2314,7 @@ struct
             let flag = flag || extras' <> [] in
             let node' =
                if flag then
-                  Compose { normalized = norm;
-                            comp_status = LazyStatusDelayed;
+                  Compose { comp_status = LazyStatusDelayed;
                             comp_goal = goal';
                             comp_subgoals = subgoals';
                             comp_extras = extras';
@@ -2322,6 +2337,7 @@ struct
                             rule_string = text;
                             rule_expr = expr;
                             rule_tactic = tac;
+                            rule_extract_normalized = false;
                             rule_extract = snd (squash_ext goal);
                             rule_subgoals = List.map (fun goal -> snd (squash_ext goal)) subgoals;
                             rule_extras = List.map (fun goal -> snd (squash_ext goal)) extras;
@@ -2373,8 +2389,7 @@ struct
             let subgoals = List.map (expand_ext dforms proof) subgoals in
             let extras = List.map (expand_ext dforms proof) extras in
             let subgoals, extras = match_subgoals (leaves_ext goal) subgoals extras in
-               Compose { normalized = false;
-                         comp_status = LazyStatusDelayed;
+               Compose { comp_status = LazyStatusDelayed;
                          comp_goal = goal;
                          comp_subgoals = subgoals;
                          comp_extras = extras;
@@ -2384,25 +2399,27 @@ struct
             Wrapped (label, expand_ext dforms proof goal)
        | RuleBox { rule_expr = expr;
                    rule_string = text;
+                   rule_extract_normalized = normal;
                    rule_extract = goal;
                    rule_tactic = tac;
                    rule_subgoals = subgoals;
                    rule_extras = extras
          } ->
             let t = goal_ext goal in
-            let goal =
+            let new_goal =
                try Refine_exn.print dforms (fun () -> snd (TacticInternal.refine (tac ()) t)) () with
                   RefineError _ ->
                      goal
             in
             let subgoals = List.map (expand_ext dforms proof) subgoals in
             let extras = List.map (expand_ext dforms proof) extras in
-            let subgoals, extras = match_subgoals (leaves_ext goal) subgoals extras in
+            let subgoals, extras = match_subgoals (leaves_ext new_goal) subgoals extras in
                RuleBox { rule_status = LazyStatusDelayed;
                          rule_expr = expr;
                          rule_string = text;
                          rule_tactic = tac;
-                         rule_extract = goal;
+                         rule_extract_normalized = normal && (goal==new_goal);
+                         rule_extract = new_goal;
                          rule_subgoals = subgoals;
                          rule_leaves = LazyLeavesDelayed;
                          rule_extras = extras
@@ -2516,6 +2533,7 @@ struct
                             rule_expr = expr;
                             rule_string = text;
                             rule_tactic = tac;
+                            rule_extract_normalized = false;
                             rule_extract = ext;
                             rule_subgoals = children;
                             rule_leaves = LazyLeavesDelayed;
@@ -2526,6 +2544,7 @@ struct
                             rule_expr = id_expr;
                             rule_string = id_text;
                             rule_tactic = id_tac;
+                            rule_extract_normalized = false;
                             rule_extract = node;
                             rule_subgoals = children;
                             rule_leaves = LazyLeavesDelayed;
@@ -2556,6 +2575,7 @@ struct
                       rule_expr = (fun () -> ast);
                       rule_string = text;
                       rule_tactic = (fun () -> eval ast);
+                      rule_extract_normalized = true;
                       rule_extract = Unjustified (goal, subgoals);
                       rule_subgoals = List.map (fun t -> Goal t) subgoals;
                       rule_leaves = LazyLeavesDelayed;
@@ -2792,8 +2812,7 @@ struct
                      io_comp_subgoals = subgoals;
                      io_comp_extras = extras
          } ->
-            Compose { normalized = false;
-                      comp_status = LazyStatusDelayed;
+            Compose { comp_status = LazyStatusDelayed;
                       comp_goal = convert goal;
                       comp_subgoals = List.map convert subgoals;
                       comp_leaves = LazyLeavesDelayed;
@@ -2810,6 +2829,7 @@ struct
                          rule_string = text;
                          rule_expr = expr;
                          rule_tactic = tactic;
+                         rule_extract_normalized = false;
                          rule_extract = convert goal;
                          rule_subgoals = List.map convert subgoals;
                          rule_leaves = LazyLeavesDelayed;
@@ -3069,6 +3089,7 @@ struct
            rule_expr = (fun () -> expr);
            rule_string = text;
            rule_tactic = (fun () -> tac);
+           rule_extract_normalized = true;
            rule_extract = Unjustified (goal_ext proof.pf_node, subgoals);
            rule_subgoals = List.map (fun t -> Goal t) subgoals;
            rule_leaves = LazyLeavesDelayed;
