@@ -374,24 +374,25 @@ struct
                if not instance && rstack_mem v stack then
                   (* The context should have a unique name *)
                   REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
-               else let index =
-                  if i = mc then
-                     if Lm_array_util.mem v addrs then
-                        REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringVarError("Last context of the sequent does not need to be passed in as an argument",v)))
-                     else
-                        i - len
-                  else
-                     if Lm_array_util.mem v addrs then
-                        Lm_array_util.index v addrs
-                     else
-                        REF_RAISE(RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
-               in
+               else
                let stack, term, ind =
                   if instance then
                      let stack, terms = compile_so_redex_terms false restrict addrs stack svars bconts bvars terms in
                      let ind = rstack_c_index v stack in
                         stack, RWSeqContextInstance (ind, terms), ind
                   else
+                     let index =
+                        if i = mc then
+                           if Lm_array_util.mem v addrs then
+                              REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringVarError("Last context of the sequent does not need to be passed in as an argument",v)))
+                           else
+                              i - len
+                        else
+                           if Lm_array_util.mem v addrs then
+                              Lm_array_util.index v addrs
+                           else
+                              REF_RAISE(RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
+                     in
                      (* All the vars should be free variables *)
                      let vars' = List.map (var_index bvars) terms in
                      let stack = stack @ [CVar v] in
