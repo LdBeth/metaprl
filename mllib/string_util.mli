@@ -72,11 +72,6 @@ val split : char -> string -> string list
 val split_set : string -> string -> string list
 
 (*
- * Cat strings together.
- *)
-val concat : string -> string list -> string
-
-(*
  * Find a new name (usually - for a variable) avoiding those where the predicate is true
  *)
 val vnewname : string -> (string -> bool) -> string

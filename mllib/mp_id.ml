@@ -53,7 +53,7 @@ let create () =
                if addrs = [||] then
                   host.Unix.h_name
                else
-                  String_util.concat host.Unix.h_name (Array.to_list (Array.map Unix.string_of_inet_addr addrs))
+                  String.concat host.Unix.h_name (Array.to_list (Array.map Unix.string_of_inet_addr addrs))
          with
             Not_found ->
                name

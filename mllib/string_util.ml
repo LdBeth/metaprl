@@ -221,16 +221,6 @@ let split_set c s =
    in
       loop 0 0
 
-(*
- * Concatenate strings.
- *)
-let rec concat s = function
-   [h] -> h
- | h::t ->
-      h ^ s ^ (concat s t)
- | [] ->
-      ""
-
 let newname v i =
    v ^ "_" ^ (string_of_int i)
 
