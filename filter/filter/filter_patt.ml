@@ -57,13 +57,27 @@ open Simple_print.SimplePrint
 open Filter_util
 
 (*
- * Utilities.
+ * Wildcard conclusion.
  *)
-let dest_fso_var_string t =
-   string_of_symbol (dest_fso_var t)
-
 let xconcl_opname = mk_opname "xconcl" (mk_opname "Perv" nil_opname)
 let is_xconcl_term = is_no_subterms_term xconcl_opname
+
+(*
+ * Translate the "_" variable to the wildcard pattern,
+ *)
+let wild_sym = Lm_symbol.add "_"
+
+let patt_of_var loc v =
+   if Lm_symbol.eq v wild_sym then
+      <:patt< _ >>
+   else
+      <:patt< $lid: string_of_symbol v$ >>
+
+(*
+ * Utilities.
+ *)
+let patt_of_fso_var loc t =
+   patt_of_var loc (dest_fso_var t)
 
 (*
  * Turn a term into a pattern expression.
@@ -78,6 +92,7 @@ let build_term_patt loc term =
    let ops = List.fold_right (fun x l -> <:patt< [$str:String.escaped x$ :: $l$] >>) ops <:patt< [] >> in
 
    (* Parameter patterns *)
+   let patt_of_var = patt_of_var loc in
    let params =
       List.map (fun param ->
             match dest_param param with
@@ -91,16 +106,16 @@ let build_term_patt loc term =
                   <:patt< Refiner.Refiner.TermType.MatchString $str: String.escaped s$ >>
 
              | MNumber v ->
-                  <:patt< Refiner.Refiner.TermType.MatchNumber ( $lid: (string_of_symbol v)$, _ ) >>
+                  <:patt< Refiner.Refiner.TermType.MatchNumber ( $patt_of_var v$, _ ) >>
 
              | MString v ->
-                  <:patt< Refiner.Refiner.TermType.MatchString $lid: (string_of_symbol v)$ >>
+                  <:patt< Refiner.Refiner.TermType.MatchString $patt_of_var v$ >>
 
              | MToken v ->
-                  <:patt< Refiner.Refiner.TermType.MatchToken ($lid: (string_of_symbol v)$, _) >>
+                  <:patt< Refiner.Refiner.TermType.MatchToken ($patt_of_var v$, _) >>
 
              | Var v ->
-                  <:patt< Refiner.Refiner.TermType.MatchVar $lid: (string_of_symbol v)$ >>
+                  <:patt< Refiner.Refiner.TermType.MatchVar $patt_of_var v$ >>
 
              | Token opname ->
                   let strings = Opname.dest_opname opname in
@@ -112,7 +127,7 @@ let build_term_patt loc term =
                       { le_const = 0; le_vars = [v] } ->
                          (match dest_level_var v with
                              { le_var = v; le_offset = 0 } ->
-                                 <:patt< Refiner.Refiner.TermType.MatchLevel $lid: (string_of_symbol v)$ >>
+                                 <:patt< Refiner.Refiner.TermType.MatchLevel $patt_of_var v$ >>
                            | _ ->
                               raise (Invalid_argument "term_patt: complex level expressions not supported"))
                     | _ ->
@@ -135,10 +150,10 @@ let build_term_patt loc term =
                   let v = dest_fso_var t in
                   let bvars_rhs =
                      List.fold_right (fun v l ->
-                         <:patt< [$lid: string_of_symbol v$ :: $l$] >>) bvars <:patt< [] >>
+                         <:patt< [$patt_of_var v$ :: $l$] >>) bvars <:patt< [] >>
                   in
                      <:patt< { Term_sig.bvars = $bvars_rhs$;
-                               Term_sig.bterm = $lid: string_of_symbol v$
+                               Term_sig.bterm = $patt_of_var v$
                       } >>
                else if is_xconcl_term t then
                   <:patt< _ >>
@@ -183,12 +198,12 @@ let build_sequent_patt loc t =
          [] ->
             <:patt< [] >>
        | Hypothesis (v, t) :: hyps ->
-            let v = string_of_symbol v in
-            let t = dest_fso_var_string t in
-               <:patt< [Term_sig.Hypothesis ($lid:v$, $lid:t$) :: $build_hyps hyps$] >>
+            let v = patt_of_var loc v in
+            let p = patt_of_fso_var loc t in
+               <:patt< [Term_sig.Hypothesis ($v$, $p$) :: $build_hyps hyps$] >>
        | [Context (v, _, _)] ->
-            let v = string_of_symbol v in
-               <:patt< $lid:v$ >>
+            let v = patt_of_var loc v in
+               <:patt< $v$ >>
        | Context (v, _, _) :: _ ->
             raise (Invalid_argument ("Context var " ^ string_of_symbol v ^ " should be the final hyp"))
    in
@@ -197,7 +212,7 @@ let build_sequent_patt loc t =
    (* Collect the goals *)
    let concl =
       if is_fso_var_term concl then
-         <:patt< $lid: dest_fso_var_string concl$ >>
+         <:patt< $patt_of_fso_var loc concl$ >>
       else if is_xconcl_term concl then
          <:patt< _ >>
       else
