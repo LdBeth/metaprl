@@ -375,26 +375,20 @@ if $(NCURSES_ENABLED)
 # Collect the directories into configuration files.
 
 WriteLN(f, d) =
-	if $(equal $(OSTYPE), Win32)
-		d = \ -I $(in $(ROOT)/editor/ml, $(dir $d))
-		$f::
-			echo $d>> $f
-	else
-		d = \ -I $(in $(ROOT)/editor/ml, $(dir $d))\\
-		$f::
-			echo $d>> $f
+	d = \ -I $(in $(ROOT)/editor/ml, $(dir $d))
+	$f::
+		echo $d>> $f
 
 THEORIES_CONF = $(file editor/ml/theories.dir)
 MLDEBUG_CONF = $(file editor/ml/mldebug.dir)
 
 .DEFAULT: $(THEORIES_CONF) $(MLDEBUG_CONF)
 
-$(THEORIES_CONF) ::
-	if $(not $(equal $(OSTYPE), Win32))
+if $(not $(equal $(OSTYPE), Win32))
+	$(THEORIES_CONF) ::
 		echo $'INCLUDES=\"\'> $@
 
-$(MLDEBUG_CONF) ::
-	if $(not $(equal $(OSTYPE), Win32))
+	$(MLDEBUG_CONF) ::
 		echo $'DEBUGINCLUDES=\"\'> $@
 
 CamlDirs(names) =
@@ -679,10 +673,9 @@ if $(NATIVE_ENABLED)
 # Close the directory listing files
 #
 
-$(THEORIES_CONF) ::
-	if $(not $(equal $(OSTYPE), Win32))
+if $(not $(equal $(OSTYPE), Win32))
+	$(THEORIES_CONF) ::
 		echo $'\"'>> $@
 
-$(MLDEBUG_CONF) ::
-	if $(not $(equal $(OSTYPE), Win32))
+	$(MLDEBUG_CONF) ::
 		echo $'\"'>> $@
