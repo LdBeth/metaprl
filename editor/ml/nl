@@ -4,7 +4,7 @@
 # Use the local copy of the library
 #
 export NLLIB=../../lib
-./nl.run -I . -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/tactic -I /usr/local/lib/camlp4 $*
+./nl.run -I . -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/tactic -I $CAMLP4LIB $*
 
 #
 # Use these commands:
