@@ -1653,6 +1653,20 @@ EXTEND
              SigFilter.add_production (SigFilter.get_proc loc) loc args opt_prec t;
              empty_sig_item loc
 
+        | "production"; t = LIST0 term SEP ";"; opt_prec = OPT prec_term; "<--"; args = LIST0 term SEP ";" ->
+          let f () =
+             let t =
+                match t with
+                   [t] -> t
+                 | [] -> raise (Failure "null production")
+                 | _ :: _ :: _ -> raise (Failure "too many terms on the left-hand-side of the production")
+             in
+             let args, t = parse_production loc args t in
+                SigFilter.add_production (SigFilter.get_proc loc) loc args opt_prec t
+          in
+             handle_exn f "production" loc;
+             empty_sig_item loc
+
         | "lex_token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
           SigFilter.input_prec (SigFilter.get_proc loc) loc assoc args rel;
           empty_sig_item loc
@@ -1929,6 +1943,20 @@ EXTEND
         | "production"; args = LIST0 term SEP ";"; opt_prec = OPT prec_term; "-->"; t = term ->
           let args, t = parse_production loc args t in
              StrFilter.add_production (StrFilter.get_proc loc) loc args opt_prec t;
+             empty_str_item loc
+
+        | "production"; t = LIST0 term SEP ";"; opt_prec = OPT prec_term; "<--"; args = LIST0 term SEP ";" ->
+          let f () =
+             let t =
+                match t with
+                   [t] -> t
+                 | [] -> raise (Failure "null production")
+                 | _ :: _ :: _ -> raise (Failure "too many terms on the left-hand-side of the production")
+             in
+             let args, t = parse_production loc args t in
+                StrFilter.add_production (StrFilter.get_proc loc) loc args opt_prec t
+          in
+             handle_exn f "production" loc;
              empty_str_item loc
 
         | "lex_token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
