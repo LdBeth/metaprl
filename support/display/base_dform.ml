@@ -113,20 +113,27 @@ declare szone{'e}
  * term to avoid having to deal with argument lists of arbitrary length.
  *
  * The @tt[tex] mode display form for @tt[df_so_var] uses some heuristics to split
- * the variable name into the name and the subscript part and is omited from the
+ * the variable name into the name and the subscript part and is omitted from the
  * documentation.
  * @end[doc]
  *)
 declare var_list{'t}
 declare df_bconts{'conts}
 
-dform var_prl_df : df_so_var[v:v]{cons{df_context_var[v:v];nil};nil} = df_var[v:v]
+dform var_prl_df : df_so_var[v:v]{cons{df_context_var[v:v]; nil}; nil} =
+   df_var[v:v]
 
-dform var_prl_df : mode[prl] :: df_var[v:v] = slot[v:v]
-dform var_src_df : mode[src] :: df_var[v:v] = `"'" slot[v:v]
+dform var_prl_df : mode[prl] :: df_var[v:v] =
+   slot[v:v]
 
-dform free_var_src_df : mode[src] :: df_free_fo_var[v:v] = `"!" slot[v:v]
-dform free_var_df : except_mode[src] :: df_free_fo_var[v:v] = `"!" df_var[v:v]
+dform var_src_df : mode[src] :: df_var[v:v] =
+   `"'" slot[v:v]
+
+dform free_var_src_df : mode[src] :: df_free_fo_var[v:v] =
+   `"!" slot[v:v]
+
+dform free_var_df : except_mode[src] :: df_free_fo_var[v:v] =
+   `"!" df_var[v:v]
 
 dform so_var1 : df_so_var[v:v]{cons{df_context_var[v:v];nil};'t} =
    szone df_var[v:v] `"[" pushm[0] var_list{'t} popm `"]" ezone
@@ -169,36 +176,40 @@ let split_var v =
          raise (Invalid_argument "var_*_df: string has an empty name")
     | h::tl ->
          if List.for_all (Lm_string_util.for_all Lm_ctype.is_digit) tl then
-            let hn,hd = split_digits h in
-               if (hn <> "") && (hd <> "") then hn, hd::tl else h,tl
+            let hn, hd = split_digits h in
+               if hn <> "" && hd <> "" then
+                  hn, hd::tl
+               else
+                  h, tl
          else
-               h,tl
+               h, tl
 
 let print_html_var format_term buf header_fun v =
-   let h,tl = split_var v in
+   let h, tl = split_var v in
       format_izone buf;
       format_string buf "<span class=\"var\">";
       format_ezone buf;
       format_term buf NOParens (header_fun h);
       format_izone buf;
-      if tl <> [] then begin
-         format_string buf "<sub>";
-         format_ezone buf;
-         format_string buf (String.concat "," tl);
-         format_izone buf;
-         format_string buf "</sub>";
-      end;
+      if tl <> [] then
+         begin
+            format_string buf "<sub>";
+            format_ezone buf;
+            format_string buf (String.concat "," tl);
+            format_izone buf;
+            format_string buf "</sub>";
+         end;
       format_string buf "</span>";
       format_ezone buf
 
 let print_tex_var format_term buf header_fun v =
-   let h,tl = split_var v in
+   let h, tl = split_var v in
       format_izone buf;
       format_string buf "\\ensuremath{";
       format_ezone buf;
       format_term buf NOParens (header_fun h);
       format_izone buf;
-      if (tl<>[]) then begin
+      if tl <> [] then begin
          format_string buf "_{";
          format_ezone buf;
          format_string buf (String.concat "," tl);
@@ -217,7 +228,8 @@ ml_dform var_html_df : mode[html] :: df_var[v:v] format_term buf = fun _ ->
 ml_dform var_tex_df : mode[tex] :: df_var[v:v] format_term buf = fun _ ->
    print_tex_var format_term buf mk_mathit (string_of_symbol v)
 
-dform cvar_src_df : mode[src] :: df_context_var[v:v] = slot[v:v]
+dform cvar_src_df : mode[src] :: df_context_var[v:v] =
+   slot[v:v]
 
 ml_dform cvar_prl_df : mode[prl] :: df_context_var[v:v] format_term buf = fun
    term ->
@@ -261,7 +273,8 @@ dform rewrite_df2 : "rewrite"{'redex; 'contractum} =
    szone pushm[0] szone slot{'redex} ezone hspace longleftrightarrow hspace szone slot{'contractum} ezone popm ezone
 
 let rec fmt_term_lst format_term buf = function
-   [] -> raise(Invalid_argument("fmt_term_lst"))
+   [] ->
+      raise(Invalid_argument("fmt_term_lst"))
  | [t] ->
       format_term buf NOParens t
  | t::tl ->
@@ -335,9 +348,9 @@ ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- 'concl } format
       in
          format_szone buf;
          format_pushm buf 0;
-         format_string buf "sequent ";
+         format_string buf "sequent (";
          format_term buf NOParens arg;
-         format_string buf " {";
+         format_string buf ") {";
          format_hyp hyps 0 (SeqHyp.length hyps);
          format_goal goals 0 (SeqGoal.length goals);
          format_string buf " }";

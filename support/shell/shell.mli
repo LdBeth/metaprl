@@ -90,9 +90,9 @@ topval set_tex_file : string -> unit
 topval print_theory : string -> unit
 
 (* View options *)
-topval get_flush_options : unit -> string
-topval set_flush_options : string -> unit
-topval clear_flush_options : string -> unit
+topval get_view_options : unit -> string
+topval set_view_options : string -> unit
+topval clear_view_options : string -> unit
 
 (* Other utilities *)
 topval create_ax_statement : term -> string -> unit

@@ -30,8 +30,11 @@
  * jyh@cs.cornell.edu
  *)
 open Lm_string_set
+open Lm_rformat_html
 
 open Refiner.Refiner.Term
+
+open Shell_util
 
 (*
  * We allow the output to be multiplexed.
@@ -63,6 +66,11 @@ val format_message  : t -> int -> Buffer.t -> unit
 val get_directories : t -> string list
 val get_history     : t -> string list
 val get_term        : t -> string -> term
+
+(*
+ * Set the current ls options.
+ *)
+val set_options     : t -> LsOptionSet.t -> unit
 
 (*
  * This function should be used while output is begin diverted.

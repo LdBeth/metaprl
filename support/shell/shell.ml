@@ -30,12 +30,12 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
- * Modified by: Aleksey Nogin
- <nogin@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 extends Mptop
 extends Proof_edit
 extends Package_info
+extends Shell_util
 extends Shell_rule
 extends Shell_package
 extends Shell_root
@@ -49,6 +49,8 @@ open Opname
 open Precedence
 open Refiner.Refiner
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
+open Refiner.Refiner.TermShape
 open Refiner.Refiner.RefineError
 open Dform
 
@@ -63,6 +65,7 @@ open Package_info
 open Proof_edit
 open Shell_sig
 open Shell_p4_sig
+open Shell_util
 
 (*
  * Show that the file is loading.
@@ -86,7 +89,7 @@ type commands =
      mutable create_pkg : string -> unit;
      mutable save : unit -> unit;
      mutable export : unit -> unit;
-     mutable view : ls_option list -> string -> unit;
+     mutable view : LsOptionSet.t -> string -> unit;
      mutable expand : unit -> unit;
      mutable expand_all : unit -> unit;
      mutable apply_all : (edit_object -> dform_base -> unit) -> bool -> bool -> unit;
@@ -99,9 +102,9 @@ type commands =
      mutable extract : string list -> unit -> Refine.extract;
      mutable term_of_extract : term list -> term; (* XXX HACK: temporary interface *)
      mutable print_theory : string -> unit;
-     mutable get_flush_options : unit -> string;
-     mutable set_flush_options : string -> unit;
-     mutable clear_flush_options : string -> unit
+     mutable get_view_options : unit -> string;
+     mutable set_view_options : string -> unit;
+     mutable clear_view_options : string -> unit
    }
 
 let uninitialized _ = raise (Invalid_argument "The Shell module was not instantiated")
@@ -126,9 +129,9 @@ let commands =
      print_theory = uninitialized;
      extract = (fun _ -> uninitialized);
      term_of_extract = uninitialized;
-     get_flush_options = uninitialized;
-     set_flush_options = uninitialized;
-     clear_flush_options = uninitialized
+     get_view_options = uninitialized;
+     set_view_options = uninitialized;
+     clear_view_options = uninitialized
    }
 
 (************************************************************************
@@ -156,7 +159,7 @@ type info =
       mutable shell_proof   : edit_object;
 
       (* Display options *)
-      mutable shell_flush_options : string;
+      mutable shell_view_options : LsOptionSet.t;
 
       (* Process identifier *)
       shell_pid             : string;
@@ -209,44 +212,6 @@ let rec string_of_path = function
 
 let mk_dep_name opname =
    "/" ^ (String.concat "/" (List.rev (dest_opname opname)))
-
-(*
- * Translate string options to LS options.
- *)
-let ls_options s =
-   let len = String.length s in
-   let rec collect options i =
-      if i = len then
-         List.rev options
-      else
-         let options =
-            match s.[i] with
-               '-' ->
-                  options
-             | 'R' ->
-                  LsRules :: options
-             | 'r' ->
-                  LsRewrites :: options
-             | 'u' ->
-                  LsUnjustified :: options
-             | 'f' ->
-                  LsFormal :: options
-             | 'i' ->
-                  LsInformal :: options
-             | 'a' ->
-                  LsAll :: options
-             | 'd' ->
-                  LsDisplay :: options
-             | 'p' ->
-                  LsParent :: options
-             | '!' ->
-                  LsNone :: options
-             | _ ->
-                  raise (RefineError ("ls", StringStringError ("unrecognized option", s)))
-         in
-            collect options (succ i)
-   in
-      collect [] 0
 
 (*
  * Shell takes input parser as an argument.
@@ -332,7 +297,7 @@ struct
            shell_proof = proof;
            shell_shell = shell;
            shell_pid = create_pid ();
-           shell_flush_options = "prR!"
+           shell_view_options = ls_options_of_string "prR!"
          }
 
    (*
@@ -680,52 +645,49 @@ struct
       in
          global.shell_df_info <- port;
          try
-            print_exn global (fun info -> view info [] ".") global
+            print_exn global (fun info -> view info LsOptionSet.empty ".") global
          with
             exn ->
                ()
 
    let flush info =
-      let ls_flags = info.shell_flush_options in
-         view info (ls_options ls_flags) "."
+      view info info.shell_view_options "."
 
-   let get_flush_options info =
-      info.shell_flush_options
+   let get_ls_options info =
+      info.shell_view_options
 
-   let set_flush_options info s =
-      let ls_flags = info.shell_flush_options in
-      let buf = Buffer.create 10 in
-      let len = String.length s in
-      let rec set i =
-         if i = len then
-            Buffer.contents buf
-         else
-            let c = s.[i] in
-               if not (String.contains ls_flags c) then
-                  Buffer.add_char buf c;
-               set (succ i)
-      in
-      let ls_flags =
-         Buffer.add_string buf ls_flags;
-         set 0
-      in
-         info.shell_flush_options <- ls_flags
+   let get_view_options info =
+      string_of_ls_options info.shell_view_options
 
-   let clear_flush_options info s =
-      let ls_flags = info.shell_flush_options in
-      let buf = Buffer.create 10 in
-      let len = String.length ls_flags in
-      let rec set i =
-         if i = len then
-            Buffer.contents buf
-         else
-            let c = ls_flags.[i] in
-               if not (String.contains s c) then
-                  Buffer.add_char buf c;
-               set (succ i)
-      in
-      let ls_flags = set 0 in
-         info.shell_flush_options <- ls_flags
+   let set_view_options info s =
+      info.shell_view_options <- ls_options_add info.shell_view_options s
+
+   let clear_view_options info s =
+      info.shell_view_options <- ls_options_clear info.shell_view_options s
+
+   let get_shortener info =
+      match info.shell_package with
+         Some pkg ->
+            let mk_opname = Package.mk_opname pkg in
+            let shortener opname params bterms =
+               match Opname.dest_opname opname with
+                  h :: _ ->
+                     let params = List.map param_type params in
+                     let arities = List.map (fun bterm -> List.length (dest_bterm bterm).bvars) bterms in
+                     let opname' = mk_opname [h] params arities in
+                        if Opname.eq opname' opname then
+                           h
+                        else
+                           Opname.string_of_opname opname
+                | [] ->
+                     "$"
+            in
+               shortener
+       | None ->
+            let shortener opname _ _ =
+               Opname.string_of_opname opname
+            in
+               shortener
 
    let pwd shell =
       string_of_path shell.shell_dir
@@ -743,7 +705,7 @@ struct
          [modname] ->
             (* Top level *)
             let _ = Package.create_package packages (get_parse_arg info) modname in
-               view info [] name
+               view info LsOptionSet.empty name
        | [] ->
             raise (Failure "Shell.create_package: can't create root package")
        | _ ->
@@ -877,7 +839,7 @@ struct
       let set t =
          touch info;
          info.shell_proof.edit_set_goal t;
-         display_proof info info.shell_proof []
+         display_proof info info.shell_proof LsOptionSet.empty
       in
          print_exn info set t
 
@@ -885,7 +847,7 @@ struct
       let set t =
          touch info;
          info.shell_proof.edit_set_redex t;
-         display_proof info info.shell_proof []
+         display_proof info info.shell_proof LsOptionSet.empty
       in
          print_exn info set t
 
@@ -893,7 +855,7 @@ struct
       let set t =
          touch info;
          info.shell_proof.edit_set_contractum t;
-         display_proof info info.shell_proof []
+         display_proof info info.shell_proof LsOptionSet.empty
       in
          print_exn info set t
 
@@ -901,7 +863,7 @@ struct
       let set t =
          touch info;
          info.shell_proof.edit_set_assumptions tl;
-         display_proof info info.shell_proof []
+         display_proof info info.shell_proof LsOptionSet.empty
       in
          print_exn info set tl
 
@@ -909,7 +871,7 @@ struct
       let set t =
          touch info;
          info.shell_proof.edit_set_params pl;
-         display_proof info info.shell_proof []
+         display_proof info info.shell_proof LsOptionSet.empty
       in
          print_exn info set pl
 
@@ -947,7 +909,7 @@ struct
          let () = info.shell_proof.edit_interpret ProofExpand in
          let finish = Unix.times () in
          let finish_time = Unix.gettimeofday () in
-            display_proof info info.shell_proof [];
+            display_proof info info.shell_proof LsOptionSet.empty;
             eprintf "User time %f; System time %f; Real time %f%t" (**)
                ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
                 -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
@@ -968,7 +930,7 @@ struct
             if !debug_refine then
                eprintf "Displaying proof%t" eflush;
             if Shell_state.is_interactive info.shell_shell then
-               display_proof info info.shell_proof [];
+               display_proof info info.shell_proof LsOptionSet.empty;
             if !debug_refine then
                eprintf "Proof displayed%t" eflush
       in
@@ -988,7 +950,7 @@ struct
       let set info =
          touch info;
          info.shell_proof.edit_undo ();
-         display_proof info info.shell_proof []
+         display_proof info info.shell_proof LsOptionSet.empty
       in
          print_exn info set info
 
@@ -996,7 +958,7 @@ struct
       let set info =
          touch info;
          info.shell_proof.edit_redo ();
-         display_proof info info.shell_proof []
+         display_proof info info.shell_proof LsOptionSet.empty
       in
          print_exn info set info
 
@@ -1004,7 +966,7 @@ struct
       let set info =
          touch info;
          info.shell_proof.edit_interpret command;
-         display_proof info info.shell_proof []
+         display_proof info info.shell_proof LsOptionSet.empty
       in
          print_exn info set info
 
@@ -1191,7 +1153,7 @@ struct
             info.shell_df_mode <- "tex";
             chdir info false true [name];
             expand_all info;
-            view info [] ".";
+            view info LsOptionSet.empty ".";
             info.shell_df_mode <- mode;
             chdir info false false dir
       in
@@ -1606,9 +1568,9 @@ struct
       commands.print_theory <- wrap print_theory;
       commands.extract <- (fun path () -> extract !current_shell path ());
       commands.term_of_extract <- wrap term_of_extract;
-      commands.get_flush_options <- wrap_unit get_flush_options;
-      commands.set_flush_options <- wrap set_flush_options;
-      commands.clear_flush_options <- wrap clear_flush_options;
+      commands.get_view_options <- wrap_unit get_view_options;
+      commands.set_view_options <- wrap set_view_options;
+      commands.clear_view_options <- wrap clear_view_options;
       ()
 end
 
@@ -1646,9 +1608,9 @@ let redo _ = commands.redo ()
 let create_ax_statement t s = commands.create_ax_statement t s
 let refine t = commands.refine t
 let print_theory s = commands.print_theory s
-let get_flush_options _ = commands.get_flush_options ()
-let set_flush_options s = commands.set_flush_options s
-let clear_flush_options s = commands.clear_flush_options s
+let get_view_options _ = commands.get_view_options ()
+let set_view_options s = commands.set_view_options s
+let clear_view_options s = commands.clear_view_options s
 
 let nop _ = commands.interpret ProofNop
 let kreitz _ = commands.interpret ProofKreitz
@@ -1677,10 +1639,10 @@ let save_all _ =
       List.iter save (all_packages ())
 
 let ls s =
-   commands.view (ls_options s) "."
+   commands.view (ls_options_of_string s) "."
 
 let view name =
-   commands.view [] name
+   commands.view LsOptionSet.empty name
 
 let up i =
    ignore (cd (String.make (i + 1) '.'));

@@ -30,6 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 extends Shell_sig
+extends Shell_util
 extends Package_info
 extends Summary
 
@@ -45,6 +46,7 @@ open Tactic_type
 
 open Summary
 open Shell_sig
+open Shell_util
 open Package_info
 
 (************************************************************************
@@ -236,7 +238,10 @@ let default_filter = function
  | _ ->
       false
 
-let is_not_item _ =
+let is_any_item _ =
+   true
+
+let is_no_item _ =
    false
 
 let is_rewrite_item = function
@@ -325,30 +330,34 @@ let is_unjustified_item = function
 let compile_ls_predicate pred (item, _) =
    List.exists (fun pred -> pred item) pred
 
-let rec mk_ls_filter predicate preds =
-   match preds with
-      LsAll :: tl ->
-         mk_ls_filter [] tl
-    | LsRewrites :: tl ->
-         mk_ls_filter (is_rewrite_item :: predicate) tl
-    | LsRules :: tl ->
-         mk_ls_filter (is_rule_item :: predicate) tl
-    | LsParent :: tl ->
-         mk_ls_filter (is_parent_item :: predicate) tl
-    | LsUnjustified :: tl ->
-         mk_ls_filter (is_unjustified_item :: predicate) tl
-    | LsFormal :: tl ->
-         mk_ls_filter (is_formal_item :: predicate) tl
-    | LsDefault :: tl ->
-         mk_ls_filter (default_filter :: predicate) tl
-    | LsDisplay :: tl ->
-         mk_ls_filter (is_display_item :: predicate) tl
-    | LsInformal :: tl ->
-         mk_ls_filter (is_informal_item :: predicate) tl
-    | LsNone :: tl ->
-         mk_ls_filter (is_not_item :: predicate) tl
-    | [] ->
-         compile_ls_predicate predicate
+let mk_ls_filter options =
+   let predicate =
+      LsOptionSet.fold (fun predicate option ->
+            match option with
+               LsAll ->
+                  is_any_item :: predicate
+             | LsRewrites ->
+                  is_rewrite_item :: predicate
+             | LsRules ->
+                  is_rule_item :: predicate
+             | LsParent ->
+                  is_parent_item :: predicate
+             | LsUnjustified ->
+                  is_unjustified_item :: predicate
+             | LsFormal ->
+                  is_formal_item :: predicate
+             | LsDefault ->
+                  default_filter :: predicate
+             | LsDisplay ->
+                  is_display_item :: predicate
+             | LsInformal ->
+                  is_informal_item :: predicate
+             | LsNone ->
+                  is_no_item :: predicate
+             | LsHandles ->
+                  predicate) [] options
+   in
+      compile_ls_predicate predicate
 
 (************************************************************************
  * SHELL INTERFACE                                                      *
@@ -365,8 +374,13 @@ let raise_edit_error s =
  *)
 let rec edit pack_info parse_arg window =
    let edit_display options =
-      let options = if options = [] then [LsDefault] else options in
-         display_term pack_info window (term_of_implementation pack_info (mk_ls_filter [] options) parse_arg)
+      let options =
+         if LsOptionSet.is_empty options then
+            LsOptionSet.singleton LsDefault
+         else
+            options
+      in
+         display_term pack_info window (term_of_implementation pack_info (mk_ls_filter options) parse_arg)
    in
    let edit_copy () =
       edit pack_info parse_arg (new_window window)

@@ -7,6 +7,7 @@ MLZFILES =\
 
 # Library files
 MPFILES =\
+	shell_util\
 	java_mux_channel\
 	java_display_term\
 	browser_copy\

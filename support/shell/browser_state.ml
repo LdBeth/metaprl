@@ -32,8 +32,11 @@
 open Lm_string_set
 open Lm_rformat
 open Lm_format
+open Lm_rformat_html
 
 open Refiner.Refiner.Term
+
+open Shell_util
 
 (************************************************************************
  * A simple bounded buffer.
@@ -139,13 +142,6 @@ struct
       in
          collect x 0
 end
-
-(*
- * Add the contents of the (Rformat.buffer LineBuffer.t) to a Buffer.t
- *)
-let add_to_buffer queue width buf =
-   LineBuffer.iter (fun buffer ->
-         Lm_rformat_html.print_html_buffer width buffer buf) queue
 
 (*
  * Save the contents of a (string LineBuffer.t) to a file in the user's
@@ -355,7 +351,8 @@ type t =
      mutable info_directories    : string LineTable.t;
      info_message                : buffer LineBuffer.t;
      mutable info_content_buffer : buffer;
-     mutable info_content_table  : term StringTable.t
+     mutable info_content_table  : term StringTable.t;
+     mutable info_options        : LsOptionSet.t
    }
 
 (*
@@ -377,8 +374,29 @@ let create () =
      info_directories    = read_stringtable_from_home directories_filename;
      info_message        = LineBuffer.create ();
      info_content_buffer = new_buffer ();
-     info_content_table  = StringTable.empty
+     info_content_table  = StringTable.empty;
+     info_options        = LsOptionSet.empty
    }
+
+(*
+ * Set the options.
+ *)
+let set_options info options =
+   info.info_options <- options
+
+(*
+ * Get the HTML tagger from the current state.
+ *)
+let get_tagger info =
+   let tagger =
+      if LsOptionSet.mem info.info_options LsHandles then
+         (fun s -> Printf.sprintf "<span class=\"slot\" id=\"%s\" onmouseover=\"SlotMouseOver(event)\" onmouseout=\"SlotMouseOut(event)\" onclick=\"SlotMouseClick(event)\">&#8227;" s)
+      else
+         (fun s -> Printf.sprintf "<span class=\"slot\" id=\"%s\" onmouseover=\"SlotMouseOver(event)\" onmouseout=\"SlotMouseOut(event)\" onclick=\"SlotMouseClick(event)\">" s)
+   in
+      Some { html_tag_begin = FunTagger tagger;
+             html_tag_end = StringTagger "</span>"
+      }
 
 (*
  * Simplify invis strings.
@@ -452,8 +470,9 @@ let add_channel message color =
  * Format it.
  *)
 let format_message info width buf =
-   LineBuffer.iter (fun buffer ->
-         Lm_rformat_html.print_html_buffer width buffer buf) info.info_message
+   let tagger = get_tagger info in
+      LineBuffer.iter (fun buffer ->
+            Lm_rformat_html.print_html_buffer width tagger buffer buf) info.info_message
 
 (*
  * Get the history.
@@ -496,7 +515,8 @@ let set_main buf terms =
          eprintf "Browser_state.set_main: no current buffer@."
 
 let format_main info width buf =
-   Lm_rformat_html.print_html_buffer width info.info_content_buffer buf
+   let tagger = get_tagger info in
+      Lm_rformat_html.print_html_buffer width tagger info.info_content_buffer buf
 
 (*
  * Divert output during this call.

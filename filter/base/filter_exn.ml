@@ -76,7 +76,7 @@ let rec format_exn db buf exn =
          format_space buf;
          format_string buf name;
          format_space buf;
-         format_short_term db (fun _ -> Opname.nil_opname) buf t
+         format_term db buf t
     | BadParamCast (p, s) ->
          format_string buf "Bad param cast:";
          format_space buf;

@@ -44,6 +44,7 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 open Term_match_table
 open Simple_print.SimplePrint
@@ -118,6 +119,7 @@ type dform_modes =
    Modes of string list       (* include these modes *)
  | ExceptModes of string list (* exclude these modes *)
  | AllModes
+ | PrimitiveModes
 
 (*
  * This is the info needed for each display form.
@@ -149,6 +151,12 @@ type dform_item =
 type dform_table = dform_item term_table
 
 type dform_base = string * dform_table * dform_state
+
+(*
+ * Some functions define a "shortener:" a function to produce
+ * a string from a description of a term.
+ *)
+type shortener = opname -> param list -> bound_term list -> string
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -190,7 +198,8 @@ let add_dform tbl df =
     *)
    let modes =
       match df.dform_modes with
-         AllModes ->
+         AllModes
+       | PrimitiveModes ->
             ()
        | ExceptModes l
        | Modes l ->
@@ -426,7 +435,7 @@ and format_sequent buf format_term term =
  * This is the default top level print function.
  * Check for variables.
  *)
-and format_term buf shortener printer term =
+and format_term buf (shortener : shortener) printer term =
    if is_so_var_term term then
       format_simple_term buf term
    else if is_sequent_term term then
@@ -435,19 +444,10 @@ and format_term buf shortener printer term =
       (* Standard term *)
       let { term_op = op; term_terms = bterms } = dest_term term in
       let { op_name = name; op_params = params } = dest_op op in
+      let opname = shortener name params bterms in
          format_szone buf;
          format_pushm buf 4;
-         begin
-            match dest_opname name with
-               h :: _ ->
-                  if Opname.eq (shortener h) name then
-                     format_string buf h
-                  else
-                     format_quoted_string buf (string_of_opname name)
-             | [] ->
-                  format_string buf "$"
-                  (* raise (Invalid_argument "DForm.format_term") *)
-         end;
+         format_quoted_string buf opname;
          format_params buf params;
          format_bterms buf printer bterms;
          format_popm buf;
@@ -482,11 +482,12 @@ let mode_selector mode df =
       { df_modes = ExceptModes l } -> not (List.mem mode l) && not (List.mem mode special_modes)
     | { df_modes = Modes l } -> List.mem mode l
     | { df_modes = AllModes } -> not (List.mem mode special_modes)
+    | { df_modes = PrimitiveModes } -> true
 
 (*
  * Print a term to a buffer.
  *)
-let format_short_term (mode, table, state) shortener =
+let format_short_term (mode, table, state) (shortener : shortener) =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
       (* Convert a variable into a display_var *)
@@ -632,7 +633,8 @@ let format_short_term (mode, table, state) shortener =
  ************************************************************************)
 
 (* Terms *)
-let null_shortener _ = nil_opname
+let null_shortener opname _ _ =
+   Opname.string_of_opname opname
 
 (*
  * Saving slot terms.
@@ -671,34 +673,38 @@ let format_etag state buf =
 (*
  * The "slot" term is special because it has a subterm.
  *
- * XXX TODO: We should add a form that only accepts RewriteParam's and invokes
+ * BUG nogin: We should add a form that only accepts RewriteParam's and invokes
  * some fall-back mechanism on receiving RewriteMetaParam's
  *)
 let slot { dform_state = state; dform_items = items; dform_printer = printer; dform_buffer = buf } =
    match items with
       [RewriteString parens; RewriteTerm body] ->
-         (* Tag the term *)
-         format_tag state buf body;
-         (match string_of_param parens with
-             "le" ->
-                printer buf LEParens body
-           | "lt" ->
-                printer buf LTParens body
-           | "raw" ->
-                let rec format t =
-                   format_term buf null_shortener format t
-                in
-                   format body
-           | _ ->
-                printer buf NOParens body);
-         format_etag state buf
+         let parens = string_of_param parens in
+            if !debug_dform then
+               eprintf "Dform.slot: %s: %s%t" parens (string_of_term body) eflush;
+            (* Tag the term *)
+            format_tag state buf body;
+            (match parens with
+                "le" ->
+                   printer buf LEParens body
+              | "lt" ->
+                   printer buf LTParens body
+              | "raw" ->
+                   let rec format t =
+                      format_term buf null_shortener format t
+                   in
+                      format body
+              | _ ->
+                   printer buf NOParens body);
+            format_etag state buf
     | [RewriteTerm body] ->
          if !debug_dform then
-            eprintf "Dform.slot: term: %s%t" (short_string_of_term body) eflush;
+            eprintf "Dform.slot: term: %s%t" (string_of_term body) eflush;
          format_tag state buf body;
          printer buf LTParens body;
          format_etag state buf
-    | [RewriteString s | RewriteNum ((RewriteMetaParam _) as s)] ->
+    | [RewriteString s]
+    | [RewriteNum ((RewriteMetaParam _) as s)] ->
          if !debug_dform then
             eprintf "Dform.slot: str: %s%t" (string_of_param s) eflush;
          format_string buf (string_of_param s)
@@ -708,9 +714,9 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
          format_raw_string buf (string_of_param s)
     | [RewriteNum (RewriteParam n)] ->
          let s = Lm_num.string_of_num n in
-         if !debug_dform then
-             eprintf "Dform.slot: num: %s%t" s eflush;
-         format_string buf s
+            if !debug_dform then
+               eprintf "Dform.slot: num: %s%t" s eflush;
+            format_string buf s
     | [RewriteLevel l] ->
          if !debug_dform then
             eprintf "Dform.slot: level%t" eflush;
@@ -751,65 +757,64 @@ let s_sym = Lm_symbol.add "s"
 let i_sym = Lm_symbol.add "i"
 let l_sym = Lm_symbol.add "l"
 let v_sym = Lm_symbol.add "v"
-let raw_sym = Lm_symbol.add "raw"
+let raw_sym   = Lm_symbol.add "raw"
 let plain_sym = Lm_symbol.add "plain"
-let eq_sym = Lm_symbol.add "eq"
+let eq_sym    = Lm_symbol.add "eq"
 
 let init_list =
-   ["sbreak", [MString y_sym; MString n_sym], sbreak;
-    "cbreak", [MString y_sym; MString n_sym], cbreak;
-    "hbreak", [MString y_sym; MString n_sym], hbreak;
-    "space", [], space;
-    "hspace", [], hspace;
-    "newline", [], newline;
-    "lzone", [], lzone;
-    "szone", [], szone;
-    "hzone", [], hzone;
-    "izone", [], izone;
-    "azone", [], azone;
-    "ezone", [], ezone;
-    "tzone", [MString t_sym], tzone;
-    "pushm", [MNumber i_sym], pushm;
-    "pushm", [MString s_sym], pushm;
-    "pushm", [], pushm;
-    "popm", [], popm;
+   ["sbreak",   [MString y_sym; MString n_sym], sbreak;
+    "cbreak",   [MString y_sym; MString n_sym], cbreak;
+    "hbreak",   [MString y_sym; MString n_sym], hbreak;
+    "space",    [], space;
+    "hspace",   [], hspace;
+    "newline",  [], newline;
+    "lzone",    [], lzone;
+    "szone",    [], szone;
+    "hzone",    [], hzone;
+    "izone",    [], izone;
+    "azone",    [], azone;
+    "ezone",    [], ezone;
+    "tzone",    [MString t_sym], tzone;
+    "pushm",    [MNumber i_sym], pushm;
+    "pushm",    [MString s_sym], pushm;
+    "pushm",    [], pushm;
+    "popm",     [], popm;
     "pushfont", [MString plain_sym], pushfont;
-    "popfont", [MString plain_sym], popfont;
-    "slot", [MString raw_sym; MString s_sym], slot;
-    "slot", [MString s_sym], slot;
-    "slot", [MLevel (mk_var_level_exp l_sym)], slot;
-    "slot", [MToken t_sym], slot;
-    "slot", [MNumber n_sym], slot;
-    "slot", [Var v_sym], slot]
+    "popfont",  [MString plain_sym], popfont;
+    "slot",     [MString raw_sym; MString s_sym], slot;
+    "slot",     [MString s_sym], slot;
+    "slot",     [MLevel (mk_var_level_exp l_sym)], slot;
+    "slot",     [MToken t_sym], slot;
+    "slot",     [MNumber n_sym], slot;
+    "slot",     [Var v_sym], slot]
 
 let null_list =
-   let v_bterms = [mk_bterm [] (mk_so_var_term v_sym [] []) ] in
+   let v_bterms = [mk_bterm [] (mk_so_var_term v_sym [] [])] in
    let rec aux (name, params, f) =
-         let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in {
-            dform_modes = AllModes;
-            dform_name = name;
-            dform_pattern = term;
-            dform_options = [DFormInheritPrec];
-            dform_print = DFormPrinter f
+      let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in
+         { dform_modes = PrimitiveModes;
+           dform_name = name;
+           dform_pattern = term;
+           dform_options = [DFormInheritPrec];
+           dform_print = DFormPrinter f
          }
    in
-   let slot_entry1 = {
-      dform_name = "slot_entry1";
-      dform_pattern =
-         mk_term (mk_op slot_opname [make_param (MString eq_sym)]) v_bterms;
-      dform_options = [DFormInheritPrec];
-      dform_print = DFormPrinter slot;
-      dform_modes = AllModes;
-   }
+   let slot_entry1 =
+      { dform_name = "slot_entry1";
+        dform_pattern =
+           mk_term (mk_op slot_opname [make_param (MString eq_sym)]) v_bterms;
+        dform_options = [DFormInheritPrec];
+        dform_print = DFormPrinter slot;
+        dform_modes = PrimitiveModes;
+      }
    in
-   let slot_entry2 = {
-      dform_name = "slot_entry2";
-      dform_pattern =
-         mk_term (mk_op slot_opname []) v_bterms;
-      dform_options = [DFormInheritPrec];
-      dform_print = DFormPrinter slot;
-      dform_modes = AllModes;
-   }
+   let slot_entry2 =
+      { dform_name = "slot_entry2";
+        dform_pattern = mk_term (mk_op slot_opname []) v_bterms;
+        dform_options = [DFormInheritPrec];
+        dform_print = DFormPrinter slot;
+        dform_modes = PrimitiveModes;
+      }
    in
       slot_entry1 :: slot_entry2 :: (List.map aux init_list)
 
@@ -824,7 +829,7 @@ let null_base =
 
 (*
  * The display form tables for different theories are managed as a resource.
- * The resource interface is not fully type safe (normally filter insures the
+ * The resource interface is not fully type safe (normally filter ensures the
  * type safety by inserting appropriate checks), so we have to be very careful.
  *
  * XXX: TODO: The reason we are creating the resource manually (as opposed
@@ -854,7 +859,7 @@ let add_dform df =
    Mp_resource.improve "dform" (Obj.repr (df : dform_info))
 
 (*
- * XXX: Backwards compativility with the old API.
+ * XXX: Backwards compatibility with the old API.
  *)
 type dform_mode_base = Mp_resource.bookmark
 
@@ -892,6 +897,11 @@ let prerr_term base = print_term_fp base stderr
 let string_of_term base term =
    let buf = new_buffer () in
       format_term base buf term;
+      print_text_string default_width buf
+
+let string_of_short_term base shortener term =
+   let buf = new_buffer () in
+      format_short_term base shortener buf (display_term_of_term term);
       print_text_string default_width buf
 
 (* Terms *)

@@ -38,6 +38,10 @@ open Mp_resource
 open Proof_edit
 open MLast
 
+open Filter_type
+
+open Shell_util
+
 (*
  * Create either in text mode,
  * or in window mode.
@@ -47,21 +51,6 @@ type display_mode =
  | DisplayTex of dform_mode_base
  | DisplayJava of Java_mux_channel.session * dform_mode_base
  | DisplayBrowser of dform_mode_base
-
-(*
- * Options to the "ls" command.
- *)
-type ls_option =
-   LsRewrites
- | LsRules
- | LsUnjustified
- | LsDisplay
- | LsDefault
- | LsFormal
- | LsInformal
- | LsParent
- | LsAll
- | LsNone
 
 (*
  * These are the values that we recognize in MetaPRL toploop.
@@ -126,7 +115,7 @@ type top_type =
  *)
 type edit_object =
    { (* Display the object to the screen *)
-     edit_display      : ls_option list -> unit;
+     edit_display      : LsOptionSet.t -> unit;
      edit_get_contents : unit -> obj_contents;
      edit_get_terms    : unit -> term list;
 
@@ -192,9 +181,11 @@ sig
    val chdir_top : t -> string -> bool
 
    (* Viewing options for the flush function *)
-   val get_flush_options : t -> string
-   val set_flush_options : t -> string -> unit
-   val clear_flush_options : t -> string -> unit
+   val get_ls_options   : t -> LsOptionSet.t
+   val get_view_options : t -> string
+   val set_view_options : t -> string -> unit
+   val clear_view_options : t -> string -> unit
+   val get_shortener : t -> Dform.shortener
 
    (* Make sure all buffers are flushed *)
    val flush : t -> unit

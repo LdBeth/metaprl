@@ -1430,6 +1430,7 @@ struct
          Modes modes -> List.map mk_dform_mode modes
        | ExceptModes modes -> List.map mk_dform_except_mode modes
        | AllModes -> []
+       | PrimitiveModes -> []
       in
       let options = List.map mk_dform_opt options in
          mk_string_param_term dform_op name [mk_xlist_term (modes @ options);
@@ -1437,25 +1438,24 @@ struct
                                              mk_dform_def convert def]
 
    and term_of_resource_sig convert
-      (name, {
-         resource_input = input;
-         resource_output = output
-      }) =
+      (name, { resource_input = input;
+               resource_output = output
+       }) =
       mk_string_param_term resource_op name [
          convert.ctyp_f input;
          convert.ctyp_f output
       ]
 
-   and term_of_definition convert {
-      opdef_name = name;
-      opdef_term = redex;
-      opdef_definition = contractum;
-      opdef_resources = res;
-   } = mk_string_param_term definition_op name [
-      convert.term_f redex;
-      convert.term_f contractum;
-      term_of_resources convert res
-   ]
+   and term_of_definition convert
+       { opdef_name = name;
+         opdef_term = redex;
+         opdef_definition = contractum;
+         opdef_resources = res;
+       } =
+      mk_string_param_term definition_op name (**)
+         [convert.term_f redex;
+          convert.term_f contractum;
+          term_of_resources convert res]
 
    and term_of_item convert item =
       mk_simple_term summary_item_op [term_of_bindings convert (convert.item_f item.item_item) item.item_bindings]

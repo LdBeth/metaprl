@@ -58,8 +58,8 @@ let debug_http =
 (*
  * We may start this as a web service.
  *)
-let browser_flag = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool
-let browser_port = Env_arg.int "port" None "start browser services on this port" Env_arg.set_int_option_int
+let browser_flag   = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool
+let browser_port   = Env_arg.int "port" None "start browser services on this port" Env_arg.set_int_option_int
 let browser_string = Env_arg.string "browser_command" None "browser to start on startup" Env_arg.set_string_option_string
 
 module ShellBrowser (ShellArg : ShellSig) =
@@ -390,7 +390,7 @@ struct
                let info =
                   { browser_directories = Browser_state.get_directories buffer;
                     browser_history = Browser_state.get_history buffer;
-                    browser_options = ShellArg.get_flush_options shell;
+                    browser_options = ShellArg.get_view_options shell;
                     browser_sessions = session_count
                   }
                in
@@ -703,8 +703,9 @@ struct
             session_buffer = buffer
           } = session
       in
-         Browser_state.add_prompt buffer command;
+         Browser_state.add_prompt  buffer command;
          Browser_state.synchronize buffer (ShellArg.eval_top shell) (command ^ ";;");
+         Browser_state.set_options buffer (ShellArg.get_ls_options shell);
          invalidate_eval session
 
    (*
@@ -743,15 +744,13 @@ struct
 
    (*
     * Paste the term.
-    *
-    * BUG JYH: this should be printed in "src" mode, not "raw" mode.
     *)
    let paste server state session outx command term =
       let db = "src", Dform.find_dftable Mp_resource.top_bookmark, Dform.null_state in
-      let s = Dform.string_of_term db term in
+      let shortener = ShellArg.get_shortener session.session_shell in
+      let s = Dform.string_of_short_term db shortener term in
       let command = Printf.sprintf "%s << %s >>" command s in
       let state = { state with state_table = BrowserTable.add_string state.state_table rulebox_sym (String.escaped command) } in
-         eprintf "Hello: << %s >>@." s;
          print_page server state session outx 140 "rule"
 
    (************************************************************************

@@ -278,26 +278,27 @@ let add_sessions info i =
  * Add the options.
  *)
 let view_table =
-   ['R', "Rules";
-    'r', "Rewrites";
-    'd', "Display forms";
-    'u', "Unjustified content";
-    'f', "Formal content";
-    'i', "Informal content"]
+   ['H', "",  "term handles";
+    'f', "",  "Formal content";
+    'R', "-", "Rules";
+    'r', "-", "Rewrites";
+    'u', "-", "Unjustified content";
+    'i', "",  "Informal content";
+    'd', "-", "Display forms"]
 
 let add_view info view =
    try
       menu_replace info "view" (fun menu ->
             let items =
-               List.fold_left (fun items (flag, name) ->
+               List.fold_left (fun items (flag, pre, name) ->
                      let item =
                         if String.contains view flag then
-                           { command_label = sprintf "Hide %s" name;
-                             command_value = sprintf "Command('clear_flush_options \"%c\"')" flag
+                           { command_label = sprintf "%s Hide %s" pre name;
+                             command_value = sprintf "Command('clear_view_options \"%c\"')" flag
                            }
                         else
-                           { command_label = sprintf "View %s" name;
-                             command_value = sprintf "Command('set_flush_options \"%c\"')" flag
+                           { command_label = sprintf "%s View %s" pre name;
+                             command_value = sprintf "Command('set_view_options \"%c\"')" flag
                            }
                      in
                         item :: items) (List.rev menu.menu_items) view_table

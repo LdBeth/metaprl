@@ -186,7 +186,7 @@ let set window term =
       if dfmode = "html" then
          let out = open_out_bin (sprintf "cache/%s%d.html" host port) in
          let _ = fprintf out "<html>%s<body bgcolor=white face=\"Lucida Sans Unicode\"><table face=\"Lucida Sans Unicode\"><tr><td>" head_string in
-         let _ = Lm_rformat_html.print_html_channel width buf out in
+         let _ = Lm_rformat_html.print_html_channel width None buf out in
          let _ = fprintf out "</table></body></html>\n" in
          let _ = close_out out in
          let s =

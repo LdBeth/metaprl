@@ -33,8 +33,8 @@
 open Lm_printf
 open Lm_string_set
 
-open Precedence
 open Opname
+open Precedence
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
@@ -101,6 +101,7 @@ type dform_modes =
    Modes of string list       (* include these modes *)
  | ExceptModes of string list (* exclude these modes *)
  | AllModes
+ | PrimitiveModes
 
 (*
  * This is the info needed for each display form.
@@ -143,6 +144,12 @@ val get_mode_base : dform_mode_base -> string -> dform_base
 val save_slot_terms : dform_base -> dform_base
 val get_slot_terms  : dform_base -> term StringTable.t
 
+(*
+ * Some functions define a "shortener:" a function to produce
+ * a string from a description of a term.
+ *)
+type shortener = opname -> param list -> bound_term list -> string
+
 (************************************************************************
  * PRINTERS                                                             *
  ************************************************************************)
@@ -154,8 +161,9 @@ val print_term : dform_base -> term -> unit
 val prerr_term : dform_base -> term -> unit
 val string_of_term : dform_base -> term -> string
 
-val format_short_term : dform_base -> (string -> opname) -> buffer -> term -> unit
-val print_short_term_fp : dform_base -> (string -> opname) -> out_channel -> term -> unit
+val format_short_term : dform_base -> shortener -> buffer -> term -> unit
+val print_short_term_fp : dform_base -> shortener -> out_channel -> term -> unit
+val string_of_short_term : dform_base -> shortener -> term -> string
 
 val format_bterm : dform_base -> buffer -> bound_term -> unit
 val print_bterm_fp : dform_base -> out_channel -> bound_term -> unit

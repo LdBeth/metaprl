@@ -1268,6 +1268,7 @@ let create_dform_expr loc name modes options term expr =
          Dform.Modes modes -> <:expr< Dform.Modes $list_expr loc string_expr modes$ >>
        | Dform.ExceptModes modes -> <:expr< Dform.ExceptModes $list_expr loc string_expr modes$ >>
        | Dform.AllModes -> <:expr< Dform.AllModes >>
+       | Dform.PrimitiveModes -> <:expr< Dform.PrimitiveModes >>
    in
       <:expr< Dform.add_dform {
          Dform.dform_modes = $modes$;
@@ -1283,7 +1284,7 @@ let create_dform_expr loc name modes options term expr =
 let define_dform proc loc df expansion =
    let expr =
       create_dform_expr loc df.dform_name df.dform_modes df.dform_options (expr_of_term proc loc df.dform_redex)
-         <:expr< Dform.DFormExpansion $expr_of_term proc loc expansion$  >>
+         <:expr< Dform.DFormExpansion $expr_of_term proc loc expansion$ >>
    in
       [<:str_item< $exp: wrap_exn proc loc df.dform_name expr$ >>]
 
