@@ -80,6 +80,9 @@ THEORIES = $(THEORIES)
 MMC_EXTENSIONS = $(MMC_EXTENSIONS)
 MMC_BACKENDS = $(MMC_BACKENDS)
 
+PMC_EXTENSIONS = $(PMC_EXTENSIONS)
+PMC_BACKENDS = $(PMC_BACKENDS)
+
 #
 # The OpenSSL package (available in Linux at least) (true/false)
 # Note: the browser interface currently does not work without SSL.

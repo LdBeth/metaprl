@@ -56,6 +56,8 @@ NATIVE_PROFILING_ENABLED = false
 LATEX = latex
 MMC_EXTENSIONS = all
 MMC_BACKENDS = all
+PMC_EXTENSIONS = all
+PMC_BACKENDS = all
 
 #
 # Default -inline argument to ocamlopt
