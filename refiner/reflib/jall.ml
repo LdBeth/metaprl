@@ -1007,13 +1007,33 @@ end
 
 
 
+let rec list_del list_el el_list  = 
+  match el_list with 
+   [] -> raise (Failure "invalid argument")
+  |f::r -> 
+    if list_el = f then 
+      r
+    else
+     f::(list_del list_el r)
+
+
+
+
+let rec list_diff del_list check_list = 
+ match del_list with 
+  [] -> []
+ |f::r -> 
+   if List.mem f check_list then 
+     list_diff r check_list
+   else
+     f::(list_diff r check_list)
 
 
 
 
 
 
-let rec compute_alpha_layer ftree_list = 
+(* let rec compute_alpha_layer ftree_list = 
   match ftree_list with 
   [] -> [],[],[]
  |f::r -> 
@@ -1101,6 +1121,257 @@ let construct_beta_proof ftree connections =
    let beta_proof,beta_exp,closures = 
      build_beta_proof root_node root_atoms beta_orderings connections in       
         (RNode(root_node,beta_proof)),beta_exp,closures
+
+*)
+
+
+(* *********** New Version with direct computation from extension proof **** *)
+(* follows a DIRECT step from proof histories via pr-connection orderings to opt. beta-proofs *)
+
+
+
+
+let rec compute_alpha_layer ftree_list = 
+  match ftree_list with 
+  [] -> []
+ |f::r -> 
+   (match f with 
+       Empty -> raise (Failure "invalid argument") 
+      |NodeAt(pos) -> 
+        let rnode = compute_alpha_layer r in 
+         (pos.name::rnode)
+      |NodeA(pos,suctrees) -> 
+       if pos.pt = Beta then 
+         let rnode = compute_alpha_layer r in 
+           (pos.name::rnode)
+         else
+          let suclist = Array.to_list suctrees in 
+            compute_alpha_layer (suclist @ r) 
+   )
+
+
+
+let rec compute_beta_difference c1_context c2_context act_context = 
+  match c1_context,c2_context with 
+   ([],c2_context) -> (list_diff c2_context act_context)
+(* both connection partners in the same submatrix; c1 already isolated *)
+  |((fc1::rc1),[]) -> []  (* c2 is a reduction step, i.e. isolated before c1 *)
+  |((fc1::rc1),(fc2::rc2)) -> 
+     if fc1 = fc2 then    (* common initial beta-expansions *)
+       compute_beta_difference rc1 rc2 act_context
+     else
+       (list_diff c2_context act_context)
+ 
+
+
+
+
+let rec non_closed beta_proof_list = 
+  match beta_proof_list with 
+   [] -> false
+  |bpf::rbpf -> 
+    (match bpf with 
+     RNode(_,_) -> raise (Failure "invalid beta-proof argument")
+    |AtNode(_,_) -> raise (Failure "invalid beta-proof argument")
+    |BEmpty -> true
+    |CNode(_) -> non_closed rbpf
+    |BNode(pos,(_,bp1),(_,bp2)) -> non_closed ([bp1;bp2] @ rbpf)
+    )
+    
+
+
+
+let rec cut_context pos context = 
+   match context with  
+    [] -> raise (Failure "invalid context element")
+   |(f,num)::r -> 
+     if pos = f then 
+      context
+     else
+      cut_context pos r
+
+
+let compute_tree_difference beta_proof c1_context = 
+  match beta_proof with 
+  RNode(_,_) -> raise (Failure "invalid beta-proof argument")
+ |CNode(_) -> raise (Failure "invalid beta-proof argument")
+ |AtNode(_,_) -> raise (Failure "invalid beta-proof argument")
+ |BEmpty -> c1_context
+ |BNode(pos,_,_) -> 
+(*    print_endline ("actual root: "^pos); *)
+  cut_context pos c1_context 
+
+
+
+
+let print_context conn bcontext =    
+ begin 
+ Format.open_box 0;
+  Format.print_string conn;
+  Format.print_string ":    ";
+  List.iter (fun x -> let (pos,num) = x in Format.print_string (pos^" "^(string_of_int num)^"")) bcontext;
+  print_endline " ";
+  Format.print_flush ()
+ end
+
+
+
+let rec build_opt_beta_proof beta_proof ext_proof beta_atoms beta_layer_list act_context = 
+
+
+let rec add_c2_tree (c1,c2) c2_diff_context = 
+  match c2_diff_context with 
+    [] -> (CNode(c1,c2),0)
+   |(f,num)::c2_diff_r -> 
+     let next_beta_proof,next_exp = 
+       add_c2_tree (c1,c2) c2_diff_r in 
+      let (layer1,layer2) = List.assoc f beta_layer_list in 
+       let new_bproof = 
+         if num = 1 then 
+           BNode(f,(layer1,next_beta_proof),(layer2,BEmpty))
+         else (* num = 2*)
+          BNode(f,(layer1,BEmpty),(layer2,next_beta_proof))
+       in 
+        (new_bproof,(next_exp+1))
+
+
+
+in
+let rec add_beta_expansions (c1,c2) rest_ext_proof c1_diff_context c2_diff_context new_act_context = 
+  match c1_diff_context with 
+   [] -> 
+    let (n_c1,n_c2) = 
+      if c2_diff_context = [] then  (* make sure that leaf-connection is first element *)
+        (c1,c2)
+      else
+        (c2,c1)
+      in
+     let c2_bproof,c2_exp = add_c2_tree (n_c1,n_c2) c2_diff_context in 
+      if c2_exp <> 0 then (* at least one open branch was generated to isloate c2 *) 
+   begin
+(*   print_endline "start with new beta-proof"; *)
+       let new_bproof,new_exp,new_closures,new_rest_proof  = 
+         build_opt_beta_proof c2_bproof rest_ext_proof beta_atoms beta_layer_list (act_context @ new_act_context) in 
+          (new_bproof,(new_exp+c2_exp),(new_closures+1),new_rest_proof)
+   end
+      else
+   begin
+(*   print_endline "proceed with old beta-proof"; *)
+        (c2_bproof,c2_exp,1,rest_ext_proof)
+   end
+   |(f,num)::c1_diff_r -> 
+      let (layer1,layer2) = List.assoc f beta_layer_list in 
+        let next_beta_proof,next_exp,next_closures,next_ext_proof = 
+         add_beta_expansions (c1,c2) rest_ext_proof c1_diff_r c2_diff_context new_act_context in 
+          let new_bproof = 
+            if num = 1 then 
+              BNode(f,(layer1,next_beta_proof),(layer2,BEmpty))
+            else (* num = 2*)
+              BNode(f,(layer1,BEmpty),(layer2,next_beta_proof))
+          in 
+           (new_bproof,(next_exp+1),next_closures,next_ext_proof)
+   
+in
+let rec insert_connection beta_proof (c1,c2) rest_ext_proof c1_diff_context c2_diff_context act_context = 
+  begin 
+(*   print_context c1 c1_diff_context; 
+   print_endline "";
+   print_context c2 c2_diff_context;
+   print_endline "";
+*)
+ match beta_proof with 
+  RNode(_,_) -> raise (Failure "invalid beta-proof argument")
+ |CNode(_) -> raise (Failure "invalid beta-proof argument")
+ |AtNode(_,_) -> raise (Failure "invalid beta-proof argument")
+ |BEmpty -> 
+     add_beta_expansions (c1,c2) rest_ext_proof c1_diff_context c2_diff_context act_context
+ |BNode(pos,(layer1,sproof1),(layer2,sproof2)) -> 
+(*   print_endline (c1^" "^c2^" "^pos); *)
+    (match c1_diff_context with 
+        [] -> raise (Failure "invalid beta-proof argument")
+       |(f,num)::rest_context -> (* f = pos must hold!! *)
+        if num = 1 then 
+         let (next_bproof,next_exp,next_closure,next_ext_proof) = 
+           insert_connection sproof1 (c1,c2) rest_ext_proof rest_context c2_diff_context act_context in 
+            (BNode(pos,(layer1,next_bproof),(layer2,sproof2)),next_exp,next_closure,next_ext_proof)
+        else (* num = 2 *)
+         let (next_bproof,next_exp,next_closure,next_ext_proof) = 
+           insert_connection sproof2 (c1,c2) rest_ext_proof rest_context c2_diff_context act_context in
+            (BNode(pos,(layer1,sproof1),(layer2,next_bproof)),next_exp,next_closure,next_ext_proof)
+     )
+end
+
+in
+  match ext_proof with 
+   [] -> beta_proof,0,0,[]
+  |(c1,c2)::rproof -> 
+(*  print_endline ("actual connection: "^c1^" "^c2); *)
+    let c1_context = List.assoc c1 beta_atoms 
+    and c2_context = List.assoc c2 beta_atoms in 
+     let c2_diff_context = compute_beta_difference c1_context c2_context act_context 
+     and c1_diff_context = compute_tree_difference beta_proof c1_context in (* wrt. actual beta-proof *)
+       let (next_beta_proof,next_exp,next_closures,next_ext_proof) = 
+         insert_connection beta_proof (c1,c2) rproof c1_diff_context c2_diff_context c1_diff_context in 
+           if non_closed [next_beta_proof] then  (* at least one branch was generated to isolate c1 *)
+            let rest_beta_proof,rest_exp,rest_closures,rest_ext_proof = 
+                build_opt_beta_proof next_beta_proof next_ext_proof beta_atoms beta_layer_list act_context in 
+                  rest_beta_proof,(next_exp+rest_exp),(next_closures+rest_closures),rest_ext_proof
+           else
+              next_beta_proof,next_exp,next_closures,next_ext_proof
+
+
+
+
+let rec annotate_atoms beta_context atlist treelist = 
+
+
+let rec annotate_tree beta_context tree atlist = 
+  match tree with 
+   Empty -> (atlist,[],[])
+  |NodeAt(pos) -> 
+    if List.mem pos.name atlist then
+      let new_atlist = list_del pos.name atlist in 
+       (new_atlist,[(pos.name,beta_context)],[])
+    else
+      (atlist,[],[])
+  |NodeA(pos,suctrees) -> 
+    if pos.pt = Beta then 
+     let s1,s2 = suctrees.(0),suctrees.(1) in 
+      let alayer1 = compute_alpha_layer [s1]
+      and alayer2 = compute_alpha_layer [s2] 
+      and new_beta_context1 = beta_context @ [(pos.name,1)] 
+      and new_beta_context2 = beta_context @ [(pos.name,2)] in 
+       let atlist1,annotates1,blayer_list1 = 
+             annotate_atoms new_beta_context1 atlist [s1] in 
+       let atlist2,annotates2,blayer_list2 = 
+             annotate_atoms new_beta_context2 atlist1 [s2]
+       in  
+   (atlist2,(annotates1 @ annotates2),((pos.name,(alayer1,alayer2))::(blayer_list1 @ blayer_list2)))
+    else 
+      annotate_atoms beta_context atlist (Array.to_list suctrees)
+
+in
+match treelist with 
+ [] -> (atlist,[],[])
+|f::r -> 
+ let (next_atlist,f_annotates,f_beta_layers) = annotate_tree beta_context f atlist in 
+  let (rest_atlist,rest_annotates,rest_beta_layers) = (annotate_atoms beta_context next_atlist r)
+  in
+    (rest_atlist, (f_annotates  @ rest_annotates),(f_beta_layers @ rest_beta_layers))
+     
+
+
+
+
+
+let construct_opt_beta_proof ftree ext_proof = 
+ let con1,con2 = List.split ext_proof in 
+  let con_atoms = remove_dups_list (con1 @ con2) in 
+    let (empty_atoms,beta_atoms,beta_layer_list) = annotate_atoms [] con_atoms [ftree] in 
+  let root_node = compute_alpha_layer [ftree] in 
+    let (beta_proof,beta_exp,closures,_) = 
+      build_opt_beta_proof BEmpty ext_proof beta_atoms beta_layer_list [] in       
+       (RNode(root_node,beta_proof)),beta_exp,closures
 
 
 
@@ -1864,23 +2135,6 @@ let bproof nodelist =
 
 
 
-
-
-
-
-
-
-
-
-
-let rec list_diff del_list check_list = 
- match del_list with 
-  [] -> []
- |f::r -> 
-   if List.mem f check_list then 
-     list_diff r check_list
-   else
-     f::(list_diff r check_list)
 
 
 
@@ -3253,9 +3507,13 @@ let po  = compute_open [ftree] slist in
 
 
 
-let reconstruct ftree redord sigmaQ connections logic calculus =  
+let reconstruct ftree redord sigmaQ ext_proof logic calculus =  
+ let min_connections = remove_dups_connections ext_proof in 
+  let (opt_bproof,beta_exp,closures) = construct_opt_beta_proof ftree ext_proof in 
+(* let connections = remove_dups_connections ext_proof in 
   let bproof,beta_exp,closures = construct_beta_proof ftree connections in 
    let (opt_bproof,min_connections) = bproof_purity bproof in 
+*) 
 begin
    print_endline "";
    print_endline ("Beta proof with number of closures = "^(string_of_int closures)^" and number of beta expansions = "^(string_of_int beta_exp));
@@ -3292,7 +3550,7 @@ begin
    Format.print_flush();
    print_endline "";
    print_endline "";
-*)
+*) 
         (try 
 (* it should hold: min_connections = init_connections *)
             total init_tree init_redord init_connections sigmaQ 
@@ -3591,7 +3849,7 @@ let jqunify term1 term2 sigmaQ =
      (mult,oel)
    with 
     _  ->  (* any unification failure, exceptions Cycle or Clash in unification module *)
-    print_endline "fo-unification fail";
+(*    print_endline "fo-unification fail"; *)
      failwith "fail1"   (* new connection, please *)
   )
  end
@@ -5204,10 +5462,8 @@ let prover (hyps,concl) =    (* has to be modified for NuPRL interface *)
    if ftree = Empty then 
     raise (Failure "Formula invalid")
    else
-    let connections = remove_dups_connections ext_proof 
-    in
      (try 
-       let sequent_proof = reconstruct ftree red_ordering sigmaQ connections "J" "LJ" in 
+       let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof "J" "LJ" in 
             (* transform types and rename constants *)
         (* we can transform the eigenvariables AFTER proof reconstruction since *) 
         (* new delta_0 constants may have been constructed during rule permutation *) 
@@ -5317,9 +5573,8 @@ let do_prove termlist logic calculus =
      print_endline "";
      Format.print_flush ();
       let _ = input_char stdin in
-    let connections = remove_dups_connections ext_proof in 
     (try 
-      let reconstr_proof = reconstruct ftree red_ordering sigmaQ connections logic calculus in 
+      let reconstr_proof = reconstruct ftree red_ordering sigmaQ ext_proof logic calculus in 
        let sequent_proof = make_test_interface reconstr_proof nuprl_map in 
     begin
      Format.open_box 0;
