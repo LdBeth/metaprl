@@ -1,7 +1,7 @@
 # In order to use this Makefile, you need to have HTMLDOC utility
 # HTMLDOC utility can be downloaded from http://www.easysw.com/~mike/htmldoc/
 # HTMLDOC RPMs can be dowloaded from http://www.cs.cornell.edu/nogin/RPM/htmldoc.html
-# You should probably use htmldoc >= 1.7-2
+# You should probably use htmldoc >= 1.8.3
 
 # The "check" target uses weblint utility.
 # weblint can be downloaded from http://www.cre.canon.co.uk/~neilb/weblint/
