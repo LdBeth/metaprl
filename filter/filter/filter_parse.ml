@@ -433,6 +433,44 @@ struct
       }
 
    (*
+    * Our version of add_command - make sure there are no name clashes.
+    *
+    * XXX: We have a huge number of similarly named display forms, so the
+    * display form names are not being checked (after all they are only used in
+    * debug messages when debug_dform is enabled).
+    *)
+   let add_command proc cmd =
+      begin match fst(cmd) with
+         Rewrite { rw_name = name }
+       | InputForm { rw_name = name }
+       | CondRewrite { crw_name = name }
+       | Rule { rule_name = name }
+       | MLRewrite { mlterm_name = name }
+       | MLAxiom { mlterm_name = name }
+       | GramUpd (Infix name | Suffix name)
+       | Definition { opdef_name = name } ->
+       (* | DForm { dform_name = name } *)
+            if StringSet.mem proc.names name then
+               raise(Invalid_argument ("Filter_parse.add_command: duplicate name " ^ name));
+            proc.names <- StringSet.add proc.names name
+       | DForm _
+       | SummaryItem _
+       | ToploopItem _
+       | Opname _
+       | Parent _
+       | Module _
+       | Prec _
+       | PrecRel _
+       | Resource _
+       | Improve _
+       | Id _
+       | MagicBlock _
+       | Comment _ ->
+            ()
+      end;
+      FilterCache.add_command proc.cache cmd
+
+   (*
     * Include a parent.
     * This performs the following tasks:
     *    1. incorporates the parents:
@@ -452,7 +490,7 @@ struct
          parent_name = path;
          parent_resources = FilterCache.sig_resources proc.cache path;
       } in
-         FilterCache.add_command proc.cache (Parent info, loc)
+         add_command proc (Parent info, loc)
 
    (*
     * Declare a term.
@@ -471,7 +509,7 @@ struct
 
    let declare_term proc loc ((s, _, _) as term_spec) =
       let t = declare_term_opname proc loc term_spec in
-         FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t }, loc)
+         add_command proc (Opname { opname_name = s; opname_term = t }, loc)
 
    (*
     * Define a rewrite in an interface.
@@ -546,14 +584,14 @@ struct
    let declare_rewrite proc loc name params args pf res =
       try
          let cmd = rewrite_command proc name params args pf res in
-            FilterCache.add_command proc.cache (cmd, loc)
+            add_command proc (cmd, loc)
       with exn ->
          Stdpp.raise_with_loc loc exn
 
    let declare_input_form proc loc name params args pf res =
       try
          let cmd = input_form_command proc name params args pf res in
-            FilterCache.add_command proc.cache (cmd, loc)
+            add_command proc (cmd, loc)
       with exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -563,7 +601,7 @@ struct
    let define_term proc loc name ((s,_,_) as term_spec) contractum res =
       let t = declare_term_opname proc loc term_spec in
          Refine.check_definition name t contractum;
-         FilterCache.add_command proc.cache (Definition {
+         add_command proc (Definition {
             opdef_name = name;
             opdef_opname = s;
             opdef_term = t;
@@ -621,8 +659,7 @@ struct
 
    let declare_rule proc loc name args t pf res =
       try
-         let cmd = rule_command proc name args t pf res in
-            FilterCache.add_command proc.cache (cmd, loc)
+         add_command proc (rule_command proc name args t pf res, loc)
       with exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -630,7 +667,7 @@ struct
     * Infix directive.
     *)
    let declare_gupd proc loc upd =
-      FilterCache.add_command proc.cache (GramUpd upd, loc);
+      add_command proc (GramUpd upd, loc);
       Infix.add upd
 
    (*
@@ -640,22 +677,22 @@ struct
    let declare_mlrewrite proc loc mlname args t def resources =
       let cvars = context_vars (MetaTheorem t) in
       let params = extract_params cvars args in
-         FilterCache.add_command proc.cache (MLRewrite { mlterm_name = mlname;
-                                                         mlterm_params = params;
-                                                         mlterm_term = t;
-                                                         mlterm_def = def;
-                                                         mlterm_resources = resources
-                                             }, loc)
+         add_command proc (MLRewrite { mlterm_name = mlname;
+                                       mlterm_params = params;
+                                       mlterm_term = t;
+                                       mlterm_def = def;
+                                       mlterm_resources = resources
+                                     }, loc)
 
    let declare_mlaxiom proc loc mlname args t def resources =
       let cvars = context_vars (MetaTheorem t) in
       let params = extract_params cvars args in
-         FilterCache.add_command proc.cache (MLAxiom { mlterm_name = mlname;
-                                                       mlterm_params = params;
-                                                       mlterm_term = t;
-                                                       mlterm_def = def;
-                                                       mlterm_resources = resources
-                                             }, loc)
+         add_command proc (MLAxiom { mlterm_name = mlname;
+                                     mlterm_params = params;
+                                     mlterm_term = t;
+                                     mlterm_def = def;
+                                     mlterm_resources = resources
+                                   }, loc)
 
    (*
     * Record a resource.
@@ -666,10 +703,10 @@ struct
       FilterCache.add_resource proc.cache name r
 
    let define_resource proc loc name r =
-      FilterCache.add_command proc.cache (Resource (name, r), loc)
+      add_command proc (Resource (name, r), loc)
 
    let improve_resource proc loc i =
-      FilterCache.add_command proc.cache (Improve i, loc)
+      add_command proc (Improve i, loc)
 
    (*
     * Extract the options and return the mode paired with
@@ -731,7 +768,7 @@ struct
                  dform_def = NoDForm
          }
       in
-         FilterCache.add_command proc.cache (df, loc)
+         add_command proc (df, loc)
 
    (*
     * Define a display form expansion.
@@ -752,12 +789,12 @@ struct
             exn ->
                Stdpp.raise_with_loc loc exn
          end;
-         FilterCache.add_command proc.cache (DForm { dform_name = name;
-                                                     dform_modes = modes;
-                                                     dform_options = options';
-                                                     dform_redex = t;
-                                                     dform_def = TermDForm expansion
-                                             }, loc)
+         add_command proc (DForm { dform_name = name;
+                                   dform_modes = modes;
+                                   dform_options = options';
+                                   dform_redex = t;
+                                   dform_def = TermDForm expansion
+                                 }, loc)
 
    (*
     * An ml dterm is a display form that is computed in ML.
@@ -781,7 +818,7 @@ struct
            dform_def = MLDForm ml_def
          }
       in
-         FilterCache.add_command proc.cache (DForm info, loc)
+         add_command proc (DForm info, loc)
 
    (*
     * Precedence declaration.
@@ -791,7 +828,7 @@ struct
       if FilterCache.find_prec proc.cache s then
          Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' already declared" s));
 *)
-      FilterCache.add_command proc.cache (Prec s, loc);
+      add_command proc (Prec s, loc);
       FilterCache.add_prec proc.cache s
 
    (*
@@ -802,31 +839,29 @@ struct
          Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' not defined" s));
       if not (FilterCache.find_prec proc.cache s') then
          Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' not defined" s'));
-      FilterCache.add_command proc.cache (PrecRel { prec_rel = rel;
-                                                    prec_left = s;
-                                                    prec_right = s'
-                                          }, loc)
+      add_command proc (PrecRel { prec_rel = rel;
+                                  prec_left = s;
+                                  prec_right = s'
+                                }, loc)
 
    (*
     * A toplevel declaration.
     *)
    let declare_topval proc loc item =
-      FilterCache.add_command proc.cache (ToploopItem item, loc)
+      add_command proc (ToploopItem item, loc)
 
    (*
     * A toplevel structured comment is converted to a term.
     *)
    let declare_comment proc loc t =
-      FilterCache.add_command proc.cache (Comment t, loc)
+      add_command proc (Comment t, loc)
 
    (*
     * A magic block computes a hash value from the definitions
     * in the block.
     *)
    let define_magic_block proc loc name stmts =
-      FilterCache.add_command proc.cache (MagicBlock { magic_name = name;
-                                                       magic_code = stmts
-                                          }, loc)
+      add_command proc (MagicBlock { magic_name = name; magic_code = stmts }, loc)
 
    (*
     * Processor.
@@ -860,39 +895,6 @@ struct
                mk_opname_ref := FilterCache.mk_opname info;
                proc_ref := Some proc;
                proc
-
-   (*
-    * Our version of add_command.
-    *)
-   let add_command proc cmd =
-      begin match fst(cmd) with
-         Rewrite { rw_name = name }
-       | InputForm { rw_name = name }
-       | CondRewrite { crw_name = name }
-       | Rule { rule_name = name }
-       | MLRewrite { mlterm_name = name }
-       | MLAxiom { mlterm_name = name }
-       | DForm { dform_name = name }
-       | GramUpd (Infix name | Suffix name)
-       | Definition { opdef_name = name } ->
-            if StringSet.mem proc.names name then
-               raise(Invalid_argument ("Filter_parse.add_command: duplicate name " ^ name));
-            proc.names <- StringSet.add proc.names name
-       | SummaryItem _
-       | ToploopItem _
-       | Opname _
-       | Parent _
-       | Module _
-       | Prec _
-       | PrecRel _
-       | Resource _
-       | Improve _
-       | Id _
-       | MagicBlock _
-       | Comment _ ->
-            ()
-      end;
-      FilterCache.add_command proc.cache cmd
 
    let hash proc =
       FilterCache.hash proc.cache
