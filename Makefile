@@ -86,7 +86,7 @@ install: check_config
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
-clean:
+clean: check_config
 	@for i in lib bin $(DIRS); do\
 		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
