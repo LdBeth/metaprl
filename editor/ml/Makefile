@@ -72,6 +72,7 @@ RUNFILES =\
 TOPFILES =\
 	mp_version\
 	shell_mp\
+	test\
 	mp_top
 
 RCMOFILES = $(addsuffix .cmo, $(RUNFILES))

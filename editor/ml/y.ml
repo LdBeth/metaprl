@@ -30,41 +30,9 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
-open Mp_debug
-
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermAddr
-open Refiner.Refiner.Refine
-
-open Tacticals
-open Conversionals
-
-open Typeinf
-open Base_dtactic
-open Base_auto_tactic
-open Itt_rfun
-open Itt_fun
-open Itt_int
-open Itt_logic
-open Itt_dprod
-open Itt_union
-open Itt_equal
-open Itt_struct
-open Itt_w
-open Itt_bool
-open Itt_bisect
-open Itt_bunion
-open Itt_set
-open Itt_subtype
-open Itt_fset
-
-open Refl_term
-
-open Mp
-
-let _ = load "itt_fset";;
-let _ = cd "itt_fset";;
+load "test";;
+cd "test/pigeon2";;
+ls ();;
 
 (*
  * -*-

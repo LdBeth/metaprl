@@ -34,7 +34,7 @@ include Itt_theory
 
 open Tacticals
 
-val f : unit -> unit
+topval proveT : tactic
 
 (*
  * -*-
