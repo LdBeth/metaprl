@@ -120,7 +120,7 @@ endif
 #
 # Options for simp and verb variations
 #
-PPFLAGS=-D $(REFINER)_EXN -D SEQ_SET_$(SEQ_SET)_linear_set
+PPFLAGS=-D $(REFINER)_EXN -D SEQ_SET_$(SEQ_SET)_linear_set -D TERMS_$(TERMS)
 
 #
 # Parameters

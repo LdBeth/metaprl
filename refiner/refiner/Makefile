@@ -27,9 +27,6 @@ all: lib
 include $(ROOT)/mk/rules
 include Makefile.dep
 
-refiner.ml: $(ROOT)/mk/config
-	echo "module Refiner = Refiner_$(TERMS).Refiner" > refiner.ml
-
 #
 # Rules
 #
@@ -38,9 +35,6 @@ opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES) Files
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)
-
-clean::
-	rm -f refiner.ml
 
 Makefile.dep: Files
 
