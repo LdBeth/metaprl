@@ -310,7 +310,6 @@ let main () =
          let pid = Unix.create_process argv'.(0) argv' Unix.stdin Unix.stdout Unix.stderr in
             match snd (Unix.waitpid [] pid) with
                Unix.WEXITED code ->
-                  eprintf "Compiler exited with code %d%t" code eflush;
                   exit code
              | Unix.WSIGNALED _
              | Unix.WSTOPPED _ ->

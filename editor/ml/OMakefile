@@ -56,7 +56,7 @@ TOPFILES =\
         nuprl_run\
         mp_top
 
-OCAML_LINK_FLAGS = -linkall
+OCAML_LINK_FLAGS += -linkall
 
 OCamlLibrary($(MAIN), $(MPFILES))
 
@@ -98,7 +98,7 @@ LMARDEPS = $(ROOT)/lib/lm$(EXT_LIB)
 LMXADEPS = $(ROOT)/lib/lm.cmxa
 LMADEPS  = $(ROOT)/lib/lm.cma
 TLMADEPS = $(ROOT)/lib/lm.cma
-LIBS = $(ROOT)/lib/liblmcutil.a
+LIBS     = $(ROOT)/lib/liblmcutil$(EXT_LIB)
 
 #
 # If MCC is enabled, add the libraries
@@ -192,8 +192,8 @@ CMXOBJS =\
         $(CMXALIBS)
 
 CLIBS = $(LIB)/clib
-BYTE_CLIBS = $(addsuffix -byte$(EXT_LIB), $(CLIBS))
-NATIVE_CLIBS = $(addsuffix -native$(EXT_LIB), $(CLIBS))
+BYTE_CLIBS = $(addsuffix $(EXT_LIB), $(CLIBS))
+NATIVE_CLIBS = $(addsuffix $(EXT_LIB), $(CLIBS))
 
 BYTE_CCLIBS =\
         $(addprefix -cclib , $(BYTE_CLIBS))\
@@ -204,16 +204,16 @@ NATIVE_CCLIBS =\
         $(OTHER_CCLIBS)
 
 $(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS) $(THREADSLIB) $(BYTE_CLIBS) $(LIBS)
-        $(RM) -f $@
-        $(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS) $(LIBS)
+        $(RM) $@
+        $(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS) $(THREADSLIB) $(BYTE_CLIBS) $(LIBS)
-        $(RM) -f $@
-        $(OCAMLLINK) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS) $(LIBS)
+        $(RM) $@
+        $(OCAMLLINK) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(NATIVE_CLIBS) $(ARDEPS) $(LIBS)
-        $(RM) -f $@
-        $(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS) $(LIBS)
+        $(RM) $@
+        $(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 #
 # Dumb Windows doesnt know about quotes

@@ -19,18 +19,6 @@ if $(not $(defined VERBOSE))
 OCAMLFLAGS += -thread
 
 #
-# Library suffix
-#
-if $(NATIVE_ENABLED)
-   LIB_SUFFIX = .cmxa
-   OBJ_SUFFIX = .opt
-   export
-else
-   LIB_SUFFIX = .cma
-   OBJ_SUFFIX = .run
-   export
-
-#
 # Win32-specific config.
 # Read the config file.
 # If the config file does not exist, then create one.
@@ -44,7 +32,11 @@ if $(equal $(OSTYPE), Win32)
    #
    NATIVE_ENABLED = false
    BYTE_ENABLED = true
+   READLINE = NO
+   NCURSES = NO
    CFLAGS += /MT
+   WIN32LIB = h:\home\jyh\lib\win32
+   OCAML_LINK_FLAGS += -ccopt /link -ccopt /LIBPATH:$(WIN32LIB)
 
    #
    # CAMLLIB should be set in the environment
@@ -69,6 +61,18 @@ else
    #
    CC = $(CCC)
    CFLAGS = -Wall -g -O2
+   export
+
+#
+# Library suffix
+#
+if $(NATIVE_ENABLED)
+   LIB_SUFFIX = .cmxa
+   OBJ_SUFFIX = .opt
+   export
+else
+   LIB_SUFFIX = .cma
+   OBJ_SUFFIX = .run
    export
 
 #
