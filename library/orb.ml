@@ -54,9 +54,11 @@ and environment =
 						   when req received used to find appropriate eval hook  *)
 	; stamp		: stamp			(* local consumer stamp; for start/stop broadcasts *)
 
+	(*
 	; bhook 	: stamp (* transaction *)
 				-> stamp option (* auto-commit *)
 				-> bound_term list -> unit		(* broadcast hook *)
+	*)
 	; ehook 	: term -> term		(* eval hook *)
 
 	; resources 	: (string * termtable) list
@@ -247,6 +249,8 @@ let local_eval f t =
     (function term -> ifail_term term)
 
 
+let imsg_parameter = make_param (Token "!msg")
+
 let rec bus_wait c tid ehook = 
 
   let t = (Link.recv c.link) in
@@ -278,6 +282,10 @@ let rec bus_wait c tid ehook =
 		else irsp_term (hd ps)
 			   (local_eval ehook
 					(term_of_unbound_term (hd bterms))))
+	     ; bus_wait c tid ehook)
+	| { op_name = opn;
+	    op_params = imsg :: ps } when (opn = nuprl5_opname & imsg = imsg_parameter)
+	  -> ( print_term t
 	     ; bus_wait c tid ehook)
 	| _ -> t)
 
@@ -526,30 +534,38 @@ let connection_eval_args c t tl  =
 	  	; error ["orb"; "connection"; "eval"; "args"; "value"; "not"] [] [result])
 
 
-let nl0_open_library_environment c lib_id = 
+
+(* open/close save/restore join/leave *)
+
+(* open *)
+let library_environment_new c tag = 
   address_of_ienvironment_address_term
-    (connection_eval_string c ("NL0_open_library_environment \"" ^ lib_id ^ "\"") true)
+    (connection_eval_string c ("ienvironment_address_term (new_library `" ^ tag ^ "`)") true)
     
-let nl0_library_environment_join c tags = 
+(* join *)
+let library_environment_join c tags = 
   address_of_ienvironment_address_term
-    (* (connection_eval_string c ("environment_lookup \"" ^ lib_id ^ "\"") true) *)
     (connection_eval_args c 
 	(itext_term
 	  "\l. (ienvironment_address_term (orb_match_local_environment (tags_of_ienvironment_address_term (hd l))))")
+
 	[ienvironment_address_term tags]
 	)
     
-let nl0_close_library_environment c addr = 
-  string_of_istring_term (connection_eval_args c
-			(itext_term "NL0_close_library_environment") 
-			[ienvironment_address_term addr])
+(* restore *)
+let library_environment_restore c stamp_string = 
+  address_of_ienvironment_address_term
+    (connection_eval_string c ("open_environment \"" ^ stamp_string ^ "\"") true)
+
+
+
+let library_environment_close c addr = 
+  string_of_istring_term
+    (connection_eval_args c
+	(itext_term "\args. istring_term (hd (close_environment (tags_of_ienvironment_address_term (hd args))))")
+	[ienvironment_address_term addr])
     
-let nl0_leave_library_environment c addr = 
-  (connection_eval_args c
-			(itext_term "NL0_close_library_environment") 
-			[ienvironment_address_term addr])
-  ; ()
-    
+
 let nl0_description =
   mk_term (mk_nuprl5_op
 		 [make_param (Token "!description"); make_param (Token "NuprlLight")])
@@ -603,16 +619,13 @@ let stop_broadcasts e =
 			  (* nfg if we allow mulitple envs *)
 		     ivoid_term)) 
 
-
-
-let open_library_environment connection lib_id bhook ehook =
-  let lib_env_address = nl0_open_library_environment connection lib_id in
+let open_library_environment connection lib_id ehook =
+  let lib_env_address = library_environment_new connection lib_id in
     let env = 
 	{ connection = connection
 	; re_address = lib_env_address
 	; le_address = []	(* TODO: ?? :: orb_address *)
 	; stamp = new_stamp ()
-	; bhook = bhook
 	; ehook = ehook
 	; resources = [("TERMS", make_termtable())]
 	} in
@@ -620,14 +633,28 @@ let open_library_environment connection lib_id bhook ehook =
     start_broadcasts env;
     env
 
-let join_library_environment connection tags bhook ehook = 
-  let lib_env_address = nl0_library_environment_join connection tags in
+
+let join_library_environment connection tags ehook = 
+  let lib_env_address = library_environment_join connection tags in
     let env = 
 	{ connection = connection
 	; re_address = lib_env_address
 	; le_address = []	(* TODO: ?? :: orb_address *)
 	; stamp = new_stamp ()
-	; bhook = bhook
+	; ehook = ehook
+	; resources = [("TERMS", make_termtable())]
+	} in
+    (connection.orb).environments <- env :: connection.orb.environments;
+    start_broadcasts env;
+    env
+
+let restore_library_environment connection sstamp ehook =
+  let lib_env_address = library_environment_restore connection sstamp in
+    let env = 
+	{ connection = connection
+	; re_address = lib_env_address
+	; le_address = []	(* TODO: ?? :: orb_address *)
+	; stamp = new_stamp ()
 	; ehook = ehook
 	; resources = [("TERMS", make_termtable())]
 	} in
@@ -637,10 +664,10 @@ let join_library_environment connection tags bhook ehook =
 
 let close_library_environment e =
   stop_broadcasts e;
-  let s = nl0_close_library_environment e.connection e.re_address in
+  (let s = library_environment_close e.connection e.re_address in
     (let orb = e.connection.orb in
       orb.environments <- remove e orb.environments);
-    s
+    s)
  
 let leave_library_environment e =
   stop_broadcasts e;
@@ -711,7 +738,7 @@ let eval_args_to_term e tid t tl =
  *	... -> (term -> unit) -> ...
  *	
  *	Actually keep this and add another set of funcs if need to return a value.
- *	This keep result wrappers (eg !ack) in orb.
+ *	This keeps result wrappers (eg !ack) in orb.
  *)
 
 let eval_with_callback e tid f t =

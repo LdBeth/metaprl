@@ -42,86 +42,25 @@ let connect remote_host remote_port local_port =
 
 let disconnect c = Orb.disconnect (oref_val orbr) c
 
-let lib_open c =
-	{ transactions = []
-	; environment =
-	     open_library_environment
-		c
-		""
-		(fun ts acs b -> 
-		  match b with
-		      [] -> ()
-		      |_ -> (error ["library"; "BroadcastsNotCurrentlySupported"] [] [iterm_bterms b]))
-		(* todo ivoid_term is kludge. need to find a type for error that allows this??? *)
-		(function t -> (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t]))
-	}
-
-(*
- * NL0_save () -> <stamp-term{begin}>
- *)
-
-let temp_lib_open c s =
+let lib_open c s =
 	{ transactions = []
 	; environment =
 	     open_library_environment
 		c
 		s	
-		(fun ts acs b -> 
-		  match b with
-		      [] -> ()
-		      |_ -> (error ["library"; "BroadcastsNotCurrentlySupported"] [] [iterm_bterms b]))
-		(* todo ivoid_term is kludge. need to find a type for error that allows this??? *)
 		(function t -> (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t]))
 	}
 
-let lib_join c tags =
+
+let join c tags =
 	{ transactions = []
 	; environment =
 	     join_library_environment
 		c
 		tags	
-		(fun ts acs b -> 
-		  match b with
-		      [] -> ()
-		      |_ -> (error ["library"; "BroadcastsNotCurrentlySupported"] [] [iterm_bterms b]))
-		(* todo ivoid_term is kludge. need to find a type for error that allows this??? *)
 		(function t -> (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t]))
 	}
 
-
-let save l f =
-  let s = null_oref 
-  and e = l.environment
-  and tid = tid () in
-    string_of_itext_term
-      (eval_to_term_with_callback
-	e 
-	tid
-	(function term -> 
-          (let transaction = 
-		{ library = l
-		; tbegin = term_to_stamp term
-		; tent_collect = []
-		; ttype = SAVE
-		; tid = tid
-		} in
-            (f transaction)))
-	(itext_term "NL0_transaction ()"))    
-
-
-(* TODO: FTTB, this is a callback to lib, however oids should be cached locally, ie oid table 
- *  or lib-table with oids.
- *)
-
-let oid_export transaction oid =
-  (if not (transaction.ttype = SAVE)
-     then error ["library"; "OidExport"] [oid] []);
-
-  string_of_itext_term
-    (eval_args_to_term
-      transaction.library.environment
-      transaction.tid
-      (itext_term "NL0_oid_export") [(ioid_term oid)])
 
 (* TODO: FTTB this is done in two steps : 1st restore lib, second start a transaction
  *  to import oids. Later either do in one step or as for export second step is local.
@@ -132,12 +71,9 @@ let restore c checkpoint f =
   let lib = 
 	{ transactions = []
 	; environment = 
-	    open_library_environment
+	    restore_library_environment
 		c
 		checkpoint
-		(fun ts acs b -> 
-		  error ["library"; "restore"; "BroadcastsNotCurrentlySupported"]
-			[] [iterm_bterms b]) 
 		(function t -> 
 		  error ["library"; "restore"; "LocalEvalNotCurrentlySupported"] [] [t])
 	} 
@@ -162,22 +98,60 @@ let restore c checkpoint f =
 
 let oid_import transaction s =
   (if not (transaction.ttype = RESTORE)
-     then error ["library"; "OidImport"] [] [itext_term s]);
+     then error ["library"; "OidImport"; "restore"] [] [itext_term s]);
 
   oid_of_ioid_term
     (eval_args_to_term
       transaction.library.environment
       transaction.tid
-      (itext_term "NL0_oid_import") [(itext_term s)])
+      (itext_term "\args. ioid_term (string_to_object_id (TtoS (hd args)))") [(itext_term s)])
+
+let save l f =
+  let s = null_oref ()
+  and e = l.environment
+  and tid = tid () in
+      (eval_with_callback
+	e 
+	tid
+	(function term -> 
+          (let transaction = 
+		{ library = l
+		; tbegin = term_to_stamp term
+		; tent_collect = []
+		; ttype = SAVE
+		; tid = tid
+		} in
+ 	   ((f transaction)
+	    ; (oref_set s
+	   	(string_of_itext_term
+		    (eval_string_to_term
+		      transaction.library.environment
+		      transaction.tid
+		      "istring_term (checkpoint ())")))
+	     ; ())))
+	(itext_term "NL0_transaction ()"))
+	; oref_val s    
+
+
+(* TODO: FTTB, this is a callback to lib, however oids should be cached locally, ie oid table 
+ *  or lib-table with oids.
+ *)
+
+let oid_export transaction oid =
+  (if not (transaction.ttype = SAVE)
+     then error ["library"; "OidExport"] [oid] []);
+
+  string_of_itext_term
+    (eval_args_to_term
+      transaction.library.environment
+      transaction.tid
+      (itext_term "\args. istring_term (object_id_to_string (TtoO (hd args)))") [(ioid_term oid)])
 
 
 let lib_close lib =
  close_library_environment lib.environment
 
-let temp_lib_close lib =
- close_library_environment lib.environment
-
-let lib_leave lib =
+let leave lib =
  leave_library_environment lib.environment
 
 
@@ -216,10 +190,6 @@ let with_local_transaction lib f =
 let require_remote_transaction t =
  if not (t.ttype = REMOTE) then error ["library"; "transaction"; "local"] [] [];
  ()
- 
-let iml_cons_op = (mk_nuprl5_op [make_param (Token "!ml_text_cons")])
-let iml_cons_term = icons_term iml_cons_op
-
 
 
 (* 
@@ -251,6 +221,7 @@ let iml_cons_term = icons_term iml_cons_op
  val nuprl_string_ap	: term (* f *) -> string -> term (* f *)
 *)
 
+(* Marshall/Unmarshall *)
 
 (* there are several possible methodologies for calling nuprl5 functions. 
  *   - One is to code cororallies for each nuprl-light function which unmarshalls
@@ -269,6 +240,10 @@ let iml_cons_term = icons_term iml_cons_op
  *)
 
 (* todo : desire an iml_parens wrap then cons("String_ap"; wrap(f)) *)
+ 
+let iml_cons_op = (mk_nuprl5_op [make_param (Token "!ml_text_cons")])
+let iml_cons_term = icons_term iml_cons_op
+
 let lparen_itext = itext_term "("
 let rparen_itext = itext_term ")"
 let wrap_parens t = iml_cons_term lparen_itext (iml_cons_term t rparen_itext)
@@ -478,5 +453,5 @@ let children t oid =
   Definition.directory_children (resource t.library.environment "TERMS") t.tbegin oid
 
 let root t name = (assoc name (roots t))
-
+let child t oid name =  assoc name (children t oid)
 

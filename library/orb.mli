@@ -17,36 +17,28 @@ val disconnect	: orb -> connection -> unit
 
 val orb_close	: orb -> unit
 
+val resource			: environment -> string -> termtable
 
 val open_library_environment	: connection			
 				-> string			(* "" means new lib env, otherwise -> restore *)
-				(* broadcast hook *)
-				-> (stamp -> stamp option -> bound_term list -> unit)
 				-> (term -> term) 		(* local eval *)
 				-> environment
 
 val close_library_environment	: environment -> string
 
+
 val join_library_environment	: connection			
 				-> string list			
-				(* broadcast hook *)
-				-> (stamp -> stamp option -> bound_term list -> unit)
 				-> (term -> term) 		(* local eval *)
 				-> environment
 
 val leave_library_environment	: environment -> unit
 
-
-(*
-val open_library_environment	: connection		
-				-> string			(* "" means new lib env, otherwise -> restore *)
-				-> (term -> unit) 		(* broadcast hook *)
-				-> (term -> term) option	(* local eval *)
-				-> (environment -> term (* stamp *) -> unit)	(* start hook *)
+val restore_library_environment	: connection			
+				-> string
+				-> (term -> term) 		(* local eval *)
 				-> environment
-*)
 
-val resource			: environment -> string -> termtable
 
 
 val eval_string		: environment -> bound_term (* tid *) -> string -> unit

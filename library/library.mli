@@ -18,27 +18,40 @@
 
  val disconnect	: connection -> unit
 
- val temp_lib_open	: connection -> string -> library
- (* string must be string returned from a lib_close or "" *)
- val temp_lib_close	: library -> string
+ val lib_open	: connection -> string (* mnemonic *) -> library
+ val lib_close	: library -> string (* cookie *)
 
- val lib_join	: connection -> string list -> library
- val lib_leave	: library -> unit
+ val join	: connection -> string (* mnemonic *) list -> library
+ val leave	: library -> unit
 
-(*
- val lib_open	: connection -> library
+ (*	
+  *	save/restore allows one to synch local data with library state.
+  *	At the moment, Import/Export require remote eval, thus
+  *	slow. If this becomes an important feature than it can
+  *	be improved.
+  *	
+  *	oid_export only works in scope of callback from save.
+  *	oid_import only works in scope of callback from restore.
+  *	
+  *	It is expected that (function t -> ()) will be common callback.
+  *	
+  *	lib_close or leave must still be called after save if session is complete.
+  *	If not exports are required then lib_close can be called directly, ie the
+  *	cookie returned by close is acceptable as input to restore.	
+  *	OTOH, save may be called any number of times while a lib is open or joined.
+  *
+  *	Beware, At the moment there is no checking by import that the string being
+  *	imported was produced in a save producing the cookie passed to restore.
+  *	But, not that the issue has been raised it'd be a simple matter to implement
+  *	such a check.
+  *)
 
- val save	: library -> (transaction -> unit) -> string
+ val restore	: connection -> string (* cookie *) -> (transaction -> unit) -> library
+ val save	: library -> (transaction -> unit) -> string (* cookie *)
+
  val oid_export	: transaction -> object_id -> string
- (* only works in scope of save *)		
-
- val restore	: connection
-			-> string -> (transaction -> unit) -> library
  val oid_import	: transaction -> string -> object_id
- (* only works in scope of restore *)	
 
- val lib_close	: library -> unit
-	*)
 
  (*
   *	Transactions : all library functions must be called from within a
@@ -83,12 +96,6 @@
   *	   (String_ap (Oid_ap (Null_ap (itext_term "dag_make_directory ")) oid s))
   *)
 
- val eval			: transaction -> (term * term list) -> unit
-
- val eval_to_term		: transaction -> (term * term list) -> term
- val eval_to_token		: transaction -> (term * term list) -> string
- val eval_to_string		: transaction -> (term * term list) -> string
- val eval_to_object_id		: transaction -> (term * term list) -> object_id
 
  val null_ap			: term -> (term * term list)
  val string_ap			: (term * term list) -> string -> (term * term list)
@@ -99,9 +106,20 @@
 			-> ('a -> term)	(* local marshall function *)
 			-> ((term * term list) -> 'a -> (term * term list))
 
+
+ val eval			: transaction -> (term * term list) -> unit
+
+ val eval_to_term		: transaction -> (term * term list) -> term
+ val eval_to_token		: transaction -> (term * term list) -> string
+ val eval_to_string		: transaction -> (term * term list) -> string
+ val eval_to_object_id		: transaction -> (term * term list) -> object_id
+
  val make_eval	: string	 	(* remote marshall function name *)
 			-> (term -> 'a)	(* local unmarshall function *)
 			-> transaction -> (term * term list) -> 'a
+
+
+
 
 
  (*
@@ -187,16 +205,21 @@
  val make_leaf		: transaction -> object_id -> string -> object_id
  val remove_leaf	: transaction -> object_id -> string -> unit
 
- val insert_leaf	: transaction -> object_id -> string (* name *) -> string (* type *) -> term -> object_id
+ val insert_leaf	: transaction
+				-> object_id -> string (* name *) 
+				-> string (* type *) -> term
+				-> object_id
 
  (* cycle prevention not yet implemented. *)
  val insert		: transaction -> object_id -> string -> object_id -> unit
 
- val root		: transaction (* local *) -> string -> object_id
  val roots		: transaction (* local *) -> (string * object_id) list
+ val root		: transaction (* local *) -> string -> object_id
 
  val directory_p	: transaction (* local *) -> object_id -> bool
+
  val children		: transaction (* local *) -> object_id -> (string * object_id) list
+ val child		: transaction (* local *) -> object_id -> string -> object_id
 
 
 (*
@@ -204,7 +227,6 @@
  val find_root_path	: transaction (* local *) -> object_id -> string list
  val find_root_paths	: transaction (* local *) -> object_id -> (string list) list
 
- val child		: transaction (* local *) -> object_id -> string -> object_id
  val parents		: transaction (* local *) -> object_id -> object_id list
 
  val lookup		: transaction (* local *)
