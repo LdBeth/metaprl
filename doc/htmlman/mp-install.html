@@ -19,8 +19,12 @@
   <LI>Objective Caml: our version contains a small patch to CamlP4 to compile the
       CamlP4 distribution in native code.
   <LI>Ensemble: you need Ensemble only if you want to use the distributed prover.
-  <LI>HTMLDOC: you will only need Htmldoc if you want to be able to convert MetaPRL documentation into Postscript or PDF format.
   <LI>MetaPRL sources.
+  <LI>HTMLDOC: you will only need Htmldoc if you want to be able to convert
+  MetaPRL documentation into Postscript or PDF format yourself. (Note: <a
+  href="http://files.metaprl.org/doc/"><tt>http://files.metaprl.org/doc/</tt></a>
+  should already contain the latest version of documentation in Postscript and
+  PDF format, so you are unlikely to need Htmldoc).
 </OL>
 
 <P>OCaml and Htmldoc are available as source, and RedHat 6.x, 7.x, 8.x and 9
@@ -78,6 +82,8 @@ and from <A HREF="http://cvsbook.red-bean.com/">The CVS Book</A>.
 
 <H2>Installation and configuration</H2>
 
+<h3>OCaml</h3>
+
 <P>If your are not using
 <A HREF="http://rpmbin.nogin.org/MetaPRL/">the provided RPMs</A>, then in order
 to install OCaml and CamlP4 download and
@@ -97,6 +103,8 @@ After you have compiled and installed OCaml and Camlp4, go to the OCaml source t
 <LI><TT>typing/typecore.mli</TT>
 </UL> into the OCaml library directory.
 
+<h3>Ensemble</h3>
+
 <P>To install Ensemble, unpack the distribution, and edit the
 <TT>&lt;ensemble&gt;/mk/config.mk</TT> file. You will want to
 use the Ensemble socket library (not the Unix socket implementation),
@@ -107,48 +115,61 @@ directory. More information on Ensemble is available at the
 <A HREF="http://www.cs.cornell.edu/Info/Projects/Ensemble/">Ensemble
 Home Page</A>.</P>
 
-<P>After you run <TT>make</tt> for the first time, it will create the
-<tt>mk/config</tt> file (as well as an empty <TT>mk/config.local</TT> file)
-that you will need to customize.
-
-<P> If you are using Ensemble, either set <TT>ENSROOT=&lt;root of the ensemble
-source tree&gt;</TT> in the <TT>mk/config</TT> file.
-</P>
-
-<P>You may need to set variables <TT>CAMLLIB</TT> and <TT>CAMLP4LIB</TT> to
-point to the directories where you have installed OCaml and Camlp4 files. You
-can either set them in the <TT>mk/config.local</TT> file, for example:<pre>
-CAMLLIB=/usr/lib/ocaml
-CAMLP4LIB=/usr/lib/ocaml/camlp4
-</pre> or in the environment. If a variable is set in both,
-<TT>mk/config.local</tt> takes precedence over the environment.
-The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/ocaml/camlp4</TT> respectively.
-
-<P> If you want to use Htmldoc, download it from
-<A HREF="http://www.easysw.com/htmldoc/">http://www.easysw.com/htmldoc/</A></P>
+<h3>MetaPRL</h3>
 
 <P>To install MetaPRL, unpack the distribution into some directory
 <TT>&lt;meta-prl&gt;</TT> and build the distribution with these steps:</P>
 
 <BLOCKQUOTE>
-<TT>% cd &lt;meta-prl&gt;<BR>
-% make all</TT> &nbsp; (builds bytecode)<BR>
+<TT>% cd &lt;meta-prl&gt;</TT><BR>
+<TT>% make opt</TT> &nbsp; (builds native code, you need pthreads to be
+supported by your OS and compiled into OCaml)<BR>
 or<BR>
-<TT>% make opt</TT> &nbsp; (builds native code, you need pthreads to be supported by your OS and compiled into OCaml)
+<TT>% make all</TT> &nbsp; (builds bytecode)
 </BLOCKQUOTE>
 
-<P>The MetaPRL programs are <TT>&lt;meta-prl&gt;/editor/ml/mptop</TT> (bytecode) and  <TT>&lt;meta-prl&gt;/editor/ml/mpopt</TT> (native code).
-You will need to use a Unicode (<tt>iso10646-1</tt>) font to be able
-to interact with some sense. We currently recommend using the
-<TT>-misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1</TT> font, but
-in some cases another font may work better. If you going to run MetaPRL in
-<TT>xterm</TT> (or Emacs), you can start <tt>xterm</tt> (Emacs) with the <tt>-fn
--misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1</tt> to get it to
-use the right font.</P>
+<P>After you run <TT>make</tt> for the first time, it will create the
+<tt>mk/config</tt> file (as well as an empty <TT>mk/config.local</TT> file)
+that you will need to customize, before the rest of the <TT>make</TT> process
+can go through. The <tt>mk/config</tt> file is self-documenting.</P>
 
-<P>That's it. To navigate the MetaPRL logics and programs,
-you will need to read the <A TARGET="_top" HREF="user-guide/default.html">User Guide</A>.
-To start developing new code, read ther <A TARGET="_top" HREF="developer-guide/default.html">Developer Guide</A>.
+<P> If you are using Ensemble, set <TT>ENSROOT=&lt;root of the ensemble
+source tree&gt;</TT> in the <TT>mk/config</TT> file.
+</P>
+
+<P>You may need to set variables <TT>CAMLLIB</TT> and <TT>CAMLP4LIB</TT> to
+point to the directories where you have installed OCaml and Camlp4 files. You
+can either set them in the <TT>mk/config.local</TT> file, for example:<br>
+<code>CAMLLIB=/usr/lib/ocaml<br>
+CAMLP4LIB=/usr/lib/ocaml/camlp4</code><br>
+or in the environment. If a variable is set in both,
+<TT>mk/config.local</tt> takes precedence over the environment.
+The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/ocaml/camlp4</TT>
+respectively.</P>
+
+<P>To run the native code version of MetaPRL in an <tt>xterm</tt> with the correct fonts, use
+<TT>&lt;meta-prl&gt;/editor/ml/mpxterm</TT> (normal fonts) or
+<TT>&lt;meta-prl&gt;/editor/ml/mpxterm-large</TT> (larger font).</P>
+
+<P>If starting MetaPRL by hands (or from Emacs), the programs to use are
+<TT>&lt;meta-prl&gt;/editor/ml/mpopt</TT> (native code) and
+<TT>&lt;meta-prl&gt;/editor/ml/mptop</TT> (bytecode).  You will need to use a
+Unicode (<tt>iso10646-1</tt>) font to be able to interact with some sense. We
+currently recommend using the
+<TT>-misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1</TT> font
+(wihich is what <TT>mpxterm</TT> script uses), but in some cases another font
+may work better.</P>
+
+<P>That's it. To navigate the MetaPRL logics and programs, you will need to
+read the <TT>&lt;meta-prl&gt;/editor/ml/QUICKSTART</TT> file or the <A
+TARGET="_top" HREF="user-guide/default.html">User Guide</A>.  To start
+developing new code, read the <A TARGET="_top"
+HREF="developer-guide/default.html">Developer Guide</A>.</P>
+
+<h3>Htmldoc</h3>
+
+<P> If you want to use Htmldoc, download it from
+<A HREF="http://www.easysw.com/htmldoc/">http://www.easysw.com/htmldoc/</A></P>
 
 </BODY>
 </HTML>
