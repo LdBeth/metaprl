@@ -8,7 +8,7 @@ struct
    let compare = compare
 end
 
-module StringSet = Fun_splay_set.Make (StringOrd)
+module StringSet = Small_set.Make (Fun_splay_set.Make (StringOrd))
 
 (*
  * -*-
