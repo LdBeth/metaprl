@@ -215,7 +215,7 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 	$(CP) $*.mlz $@
 	chmod 444 $@
 
-%_verb.ml: %.mlp
+%_verb.ml: %.mlp $(ROOT)/refiner/refsig/refine_error.h
 	rm -f $@
 	$(CPP) $(INCLUDE) -DVERBOSE_EXN $*.mlp > $@
 	chmod 444 $@
@@ -225,7 +225,7 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 	$(CPP) $(INCLUDE) -DVERBOSE_EXN $*.mlip > $@
 	chmod 444 $@
 
-%_simp.ml: %.mlp
+%_simp.ml: %.mlp $(ROOT)/refiner/refsig/refine_error.h
 	rm -f $@
 	$(CPP) $(INCLUDE) $*.mlp > $@
 	chmod 444 $@
