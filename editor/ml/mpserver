@@ -1,5 +1,5 @@
-#!/bin/csh -f
+#!/bin/sh
 
-source mpconfig
+. ./mpconfig
 
 exec ../../ensemble/mpserver.run

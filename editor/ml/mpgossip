@@ -1,9 +1,11 @@
-#!/bin/csh -f
+#!/bin/sh
+
+chdir `dirname $0`
 
 #
 # Configure Ensemble
 #
-source mpconfig
+. ./mpconfig
 
 #
 # Run gossip server

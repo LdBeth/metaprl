@@ -1,39 +1,45 @@
 #
 # Configure Ensemble
 #
-setenv ENS_PORT 7474
-setenv ENS_MODES "DEERING:UDP"
-setenv ENS_DEERING_PORT 7472
-setenv ENS_GOSSIP_PORT 7470
-setenv ENS_GOSSIP_HOSTS tulare
-setenv ENS_ID $USER
-setenv ENS_DOMAIN_PORT 7473
+ENS_PORT=7474
+ENS_MODES="DEERING:UDP"
+ENS_DEERING_PORT=7472
+ENS_GOSSIP_PORT=7470
+ENS_GOSSIP_HOSTS=tulare
+ENS_ID=$USER
+ENS_DOMAIN_PORT=7473
+
+export ENS_PORT ENS_MODES ENS_DEERING_PORT ENS_GOSSIP_PORT ENS_GOSSIP_HOSTS ENS_ID ENS_DOMAIN_PORT
 
 #
 # TPTP libraries
 #
-setenv TPTP ../../../TPTP
-if (-d $TPTP) then
-   setenv MP_TPTP `echo . $TPTP $TPTP/Problems/* | sed -e 's, ,:,g'`
-endif
+TPTP=../../../TPTP
+if [ -d $TPTP ]; then
+   MP_TPTP=`echo . $TPTP $TPTP/Problems/* | sed -e 's, ,:,g'`
+   export MP_TPTP
+fi
+export TPTP
 
 #
 # Use the local copy of the library
 #
-setenv MPLIB ../../lib
+MPLIB=../../lib
+export MPLIB
 
 #
-# Nogin - I often work with LANG=ru_RU.KOI8_R which causes some cyrillic letters to appear
-# in funny places like the .prla files (since is_printable function used by String.escape is
-# locale-aware). To avoid these problems, we'd better work with LC_ALL=C
+# Work in Unicode locale.
 #
-setenv LC_ALL en_US.UTF-8
+LC_ALL=en_US.UTF-8
+export LC_ALL
 
 #
 # Camlp4 directory
 #
-if ( ! $?CAMLP4LIB ) then
-   setenv CAMLP4LIB /usr/lib/camlp4
-endif
+if [ -z "$CAMLP4LIB" ]; then
+   CAMLP4LIB=/usr/lib/camlp4
+fi
 
-setenv INCLUDES "-I . -I ../../theories/sil -I ../../theories/reflect_itt -I ../../theories/tutorial -I ../../theories/tptp -I ../../theories/fol -I ../../theories/czf -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/ocaml_sos -I ../../theories/tactic -I ../../theories/ocaml_doc -I ../../theories/mc -I ../../theories/fir -I ../../theories/phobos -I tests -I $CAMLP4LIB"
+INCLUDES="-I . -I ../../theories/sil -I ../../theories/reflect_itt -I ../../theories/tutorial -I ../../theories/tptp -I ../../theories/fol -I ../../theories/czf -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/ocaml_sos -I ../../theories/tactic -I ../../theories/ocaml_doc -I ../../theories/mc -I ../../theories/fir -I ../../theories/phobos -I tests -I $CAMLP4LIB"
+
+export INCLUDES

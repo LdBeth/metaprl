@@ -1,11 +1,11 @@
-#!/bin/csh -f
+#!/bin/sh
 
 cd `dirname $0`
 
 #
 # Configuration
 #
-source mpconfig
+. ./mpconfig
 
 #
 # Start the program

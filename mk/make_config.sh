@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 # If you want to add a new variable to this file (mk/make_config.sh),
 # make sure you add a default value to mk/preface
