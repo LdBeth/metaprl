@@ -296,7 +296,6 @@ THREADSLIB =
 # Macro preprocess
 MACROPP = $(file lib/macropp$(EXE))
 MACROPRINT = $(file lib/macroprint$(EXE))
-LINEARSET = $(file libmojave/stdlib/$(uncapitalize $(SEQ_SET)_linear_set.cmi))
 
 #
 # For the refiner and mllib directories,
@@ -304,9 +303,9 @@ LINEARSET = $(file libmojave/stdlib/$(uncapitalize $(SEQ_SET)_linear_set.cmi))
 #
 section
     # Add the extra dependency
-    %.cmi: $(MACROPP) $(LINEARSET)
-    %.cmo: $(MACROPP) $(LINEARSET)
-    %.cmx: $(MACROPP) $(LINEARSET)
+    %.cmi: $(MACROPP)
+    %.cmo: $(MACROPP)
+    %.cmx: $(MACROPP)
 
     # These directories use the macro preprocessor
     .SUBDIRS: mllib refiner
