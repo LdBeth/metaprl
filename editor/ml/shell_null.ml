@@ -49,7 +49,7 @@ let _ =
 
 let null_object =
    let edit_format _ buf =
-      format_string buf "There is no object to edit"
+      format_string buf "There is no object to edit\n"
    in
    let one_error _ =
       raise (RefineError ("Shell_null.null_object", StringError "no current object"))
