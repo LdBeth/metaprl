@@ -215,7 +215,7 @@ struct
          if are_sparams params then
                enames, RWCompositeSimple { rws_op = op; rws_bterms = bterms' }
          else
-            let params' = List.map (compile_so_contractum_param stack) params in
+            let params' = List.map (compile_so_contractum_param strict stack) params in
                enames, RWComposite { rw_op = { rw_name = name; rw_params = params' };
                                      rw_bterms = bterms'
                                    }
@@ -231,12 +231,14 @@ struct
    (*
     * We also compile parameters, and bind meta-variables.
     *)
-   and compile_so_contractum_param stack param =
+   and compile_so_contractum_param strict stack param =
       match dest_param param with
          MNumber v ->
             if array_rstack_p_mem ShapeNumber v stack then
                (* New param *)
                RWMNumber (array_rstack_p_index ShapeNumber v stack)
+            else if array_rstack_mem v stack && strict = Relaxed then
+               RWMNumber (array_rstack_index v stack)
             else
                (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
@@ -245,6 +247,8 @@ struct
             if array_rstack_p_mem ShapeString v stack then
                (* New param *)
                RWMString (array_rstack_p_index ShapeString v stack)
+            else if array_rstack_mem v stack && strict = Relaxed then
+               RWMString (array_rstack_index v stack)
             else
                (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
@@ -253,6 +257,8 @@ struct
             if array_rstack_p_mem ShapeToken v stack then
                (* New param *)
                RWMToken (array_rstack_p_index ShapeToken v stack)
+            else if array_rstack_mem v stack && strict = Relaxed then
+               RWMToken (array_rstack_index v stack)
             else
                (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
@@ -296,7 +302,7 @@ struct
             RWObId id
 
        | ParamList l ->
-            RWParamList (List.map (compile_so_contractum_param stack) l)
+            RWParamList (List.map (compile_so_contractum_param strict stack) l)
 
        | BackwardsCompatibleLevel _ ->
             REF_RAISE(RefineError (param_error, StringError "BackwardsCompatibleLevel"))
