@@ -9,6 +9,8 @@
 #
 include $(ROOT)/mk/config
 
+MP_VERSION=0.5.1
+
 ifndef TERMS
    TERMS=undefined
 endif
