@@ -228,7 +228,10 @@ struct
       in let rec make_hyppath_list i addr addrs =
          if i = 0 then addrs else make_hyppath_list (pred i) addr ([addr; Subterm i] :: addrs)
       in let rec make_hyp_list i hyps addrs =
-         if i = 0 then addrs else let i' = pred i in
+         if i = 0 then
+            addrs
+         else
+            let i' = pred i in
             make_hyp_list i' hyps (
                match SeqHyp.get hyps i' with
                   Hypothesis _ -> [ClauseAddr i] :: addrs
@@ -248,7 +251,6 @@ struct
     * Capture is not taken into account.  This function
     * allows the replacement to compute an extra value.
     *)
-
    IFDEF VERBOSE_EXN THEN
       DEFINE FAIL = fail
       DEFINE DO_FAIL = fail_addr fail
