@@ -46,6 +46,7 @@ if [ "$2" = "update" ]; then
    echo ""
 fi
 # cvs -q update 2>&1
+unset OMAKEFLAGS
 omake VERBOSE=1 -S editor/ml/mp.opt
 sleep 10
 if [ -f editor/ml/mp.opt ]; then

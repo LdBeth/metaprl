@@ -2,6 +2,7 @@
 OUT=`mktemp /tmp/clean-opens.XXXXXX`
 YES=0
 NO=0
+unset OMAKEFLAGS
 (
 omake clean
 cvs update

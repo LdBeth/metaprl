@@ -14,6 +14,7 @@ if [ "$2" = "update" ]; then
    ( cvs -n update 2>&1 ) | grep -v '^cvs server: New directory'
    echo ""
 fi
+unset OMAKEFLAGS
 omake VERBOSE=1 -S editor/ml/mp.opt
 sleep 10
 if [ -f editor/ml/mp.opt ]; then
