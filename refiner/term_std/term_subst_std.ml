@@ -527,7 +527,14 @@ struct
                }
 
       and subst_bterm { bvars = vars; bterm = term } =
-         { bvars = vars; bterm = subst_term term }
+         if List.mem v vars then
+            let av = vars @ (free_vars_list term) in
+            let v' = String_util.vnewname v (fun v -> List.mem v av) in
+            let rename var = if var = v then v' else var in
+            let term = subst1 term v (mk_var_term v') in
+               { bvars = List_util.smap rename vars; bterm = subst_term term }
+         else
+            { bvars = vars; bterm = subst_term term }
       in
          subst_term t
 
@@ -563,10 +570,8 @@ struct
                Not_found ->
                   try
                      let tm1 = List.assoc v subst in
-                        if is_var_term tm2 & dest_var tm1 = dest_var tm2 then
-                           subst
-                        else
-                           match_terms subst bvars (List.assoc v subst) tm2
+                        if equal_term bvars tm1 tm2 then subst
+                        else RAISE_GENERIC_EXN
                   with
                      Not_found ->
                         check_bvars (free_vars_list tm2) bvars;

@@ -498,10 +498,8 @@ struct
                Not_found ->
                   try
                      let tm1 = List.assoc v subst in
-                        if is_var_term tm2 & dest_var tm1 = dest_var tm2 then
-                           subst
-                        else
-                           match_terms subst bvars tm1 tm2
+                        if equal_term bvars tm1 tm2 then subst
+                        else RAISE_GENERIC_EXN
                   with
                      Not_found ->
                         check_bvars (free_vars_set tm2) bvars;
