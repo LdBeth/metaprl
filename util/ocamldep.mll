@@ -15,10 +15,14 @@
 module StringSet =
   Set.Make(struct type t = string let compare = compare end)
 
-let free_structure_names = ref StringSet.empty
+let free_structures = ref StringSet.empty
+let prl_structures = ref StringSet.empty
 
 let add_structure name =
-  free_structure_names := StringSet.add name !free_structure_names
+  free_structures := StringSet.add name !free_structures
+
+let add_prl_structure name =
+   prl_structures := StringSet.add name !prl_structures
 
 (* For nested comments *)
 
@@ -74,9 +78,11 @@ let source_quote = "<:ext<"
 let quotestart = '<' ':' (['a'-'z'])+ '<'
 
 rule main = parse
-    "open" white+ | "include" white+ | "derive" white+ | "extends" white+
+    "open" white+ | "include" white+
   | "module" white+ modname white+ '=' white+
       { struct_name lexbuf; main lexbuf }
+  | "derive" white+ | "extends" white+
+      { prl_struct_name lexbuf; main lexbuf }
   | "topval" white+
       { contains_topval := true; main lexbuf }
   (* Interactive rules and rewrites are justified via Shell *)
@@ -104,6 +110,12 @@ rule main = parse
 and struct_name = parse
     modname
       { add_structure(Lexing.lexeme lexbuf) }
+  | ""
+      { () }
+
+and prl_struct_name = parse
+    modname
+      { add_prl_structure(Lexing.lexeme lexbuf) }
   | ""
       { () }
 
@@ -153,7 +165,7 @@ and string = parse
 let load_path = ref [""]
 
 let prl_flag = ref false
-
+let omake_flag = ref false
 let modules_flag = ref false
 
 let syntaxdef_prereq = "syntax.pho"
@@ -176,6 +188,12 @@ let rec find_file name = function
 let find_dependency_cmi modname deps =
    try
       ((find_file modname [".mli"; ".cmi"; ".mlz"; ".ml"; ".cmo"; ".cmx"])^".cmi")::deps
+   with Not_found ->
+      deps
+
+let find_dependency_cmiz modname deps =
+   try
+      ((find_file modname [".mli"; ".cmiz"; ".mlz"; ".ml"; ".cmi"; ".cmo"; ".cmx"])^".cmiz")::deps
    with Not_found ->
       deps
 
@@ -231,7 +249,8 @@ let file_dependencies source_file =
   try
     contains_topval := false;
     contains_source_quot := false;
-    free_structure_names := StringSet.empty;
+    free_structures := StringSet.empty;
+    prl_structures := StringSet.empty;
     let ic =
        if source_file != "-" then
           open_in source_file
@@ -244,9 +263,11 @@ let file_dependencies source_file =
     main lb;
     if !modules_flag then begin
        StringSet.iter (fun s -> print_string s; print_char ' ')
-                      !free_structure_names;
+                      (StringSet.union !free_structures !prl_structures);
        print_newline ()
     end else begin
+    if not (!omake_flag) then
+      free_structures := StringSet.union !free_structures !prl_structures;
     if !prl_flag then
       List.iter add_structure prl_names;
     if !prl_flag && !contains_topval then
@@ -258,30 +279,37 @@ let file_dependencies source_file =
         then let cmi_name = basename ^ ".cmi" in ([cmi_name], [cmi_name])
         else ([], []) in
       let (cmo_deps, cmx_deps) =
-        StringSet.fold find_dependency_cmo_cmx !free_structure_names init_deps in
+        StringSet.fold find_dependency_cmo_cmx (StringSet.union !free_structures !prl_structures) init_deps in
       let (cmo_deps, cmx_deps) =
         if !contains_source_quot then
           syntaxdef_prereq :: cmo_deps, syntaxdef_prereq :: cmx_deps
         else
           cmo_deps, cmx_deps
       in
+      let ppo_deps =
+         if !omake_flag then
+            StringSet.fold find_dependency_cmiz !prl_structures []
+         else cmo_deps
+      in
       (* XXX HACK: since we can not check whether the corresponding .mli contains "topval",
          in prl mode we always assume dependencies - at least on the .cmi *)
-      let cmo_deps, ppo_deps, cmx_deps =
+      let cmo_deps, cmx_deps =
          if !prl_flag then
             let extra_deps = List.fold_right find_dependency_cmi topval_names [] in
-               (extra_deps @ cmo_deps), cmo_deps, (extra_deps @ cmx_deps)
-         else cmo_deps, cmo_deps, cmx_deps
+               (extra_deps @ cmo_deps), (extra_deps @ cmx_deps)
+         else cmo_deps, cmx_deps
       in
       print_dependencies (basename ^ ".cmo") cmo_deps;
-      print_dependencies (basename ^ ".ppo") cmo_deps;
+      print_dependencies (basename ^ ".ppo") ppo_deps;
       print_dependencies (basename ^ ".cmx") cmx_deps
     end else
     if Filename.check_suffix source_file ".mli" then begin
       let basename = Filename.chop_suffix source_file ".mli" in
-      print_dependencies (basename ^ ".cmi") (StringSet.fold find_dependency_cmi !free_structure_names [])
+      print_dependencies (basename ^ ".cmi") (StringSet.fold find_dependency_cmi !free_structures []);
+      if !omake_flag then
+         print_dependencies (basename ^ ".cmiz") (StringSet.fold find_dependency_cmiz !prl_structures [])
     end else
-      ();
+      raise(Invalid_argument("Unknown suffix in a file " ^ source_file))
     end;
     close_in ic
   with Sys_error msg ->
@@ -296,6 +324,7 @@ let _ =
      "-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
            "<dir>  Add <dir> to the list of include directories";
      "-prl", Arg.Set prl_flag, "add dependencies for PRL files";
+     "-omake", Arg.Set omake_flag, "add dependencies on PRL files";
      "-noprl", Arg.Clear prl_flag, "do not add dependencies for PRL files";
      "-modules", Arg.Set modules_flag, "print modules"
     ] file_dependencies usage;

@@ -405,8 +405,8 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
 #
 # Add dependency scanning for .ppo files
 #
-.SCANNER: %.ppo: %.ml $(OCAMLDEP) :exists: %.mli
-    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(replacesuffixes .ppo, .ml, $^)
+.SCANNER: %.ppo: %.ml $(OCAMLDEP)
+    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $<
 
 #
 # OCamlGeneratedFiles need to be redefined to include .ppo
@@ -451,7 +451,7 @@ SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 %.cmx: $(MPINSTALL) $(PRLC)
 
 # Dependency analysis uses -prl flag by default
-OCAMLDEPFLAGS = -prl
+OCAMLDEPFLAGS = -prl -omake
 
 # These directories use prlc
 THEORIES = $(if $(equal $(THEORIES), all), $(THEORIES_ALL), $(THEORIES))
