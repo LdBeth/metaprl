@@ -275,7 +275,6 @@ struct
             let _ = Toploop.execute_phrase false Format.std_formatter (Ptop_dir ("directory", Pdir_string inc)) in
                ()
          in
-            Debug_set.init ();
             eval_include mplib;
             List.iter eval_include (State.get_includes ());
             let _ = Toploop.execute_phrase false Format.std_formatter
