@@ -381,7 +381,7 @@ doc <:doc<
    defining @emph{evaluation}.  The @conv[reduceTopC] conversion
    can be used to apply this evaluator.
    The @conv[reduceC] conversion repeatedly applies @tt[reduceTopC] to any subterm.
-   The @tactic[reduceT] tectic applies @tt[reduceC] to the goal sequent.
+   The @tactic[reduceT] tactic applies @tt[reduceC] to the goal sequent.
 
    For example, the @Nuprl type theory describes several
    generic reductions:

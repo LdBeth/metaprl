@@ -53,8 +53,8 @@ doc <:doc<
    calls @hreftactic[autoT]. The @tactic[byDefsT] tactic that takes a @tt{conv list}
    is defined similarly.
 
-   The tactic @tt{repeatWithRwsT }@i{convs tac} tries to apply some conversional from
-   the @i{convs} list to the goal and in case of a progress applies the tactic @i{tac},
+   The tactic @tt[repeatWithRwsT] @i[convs] @i[tac] tries to apply some conversional from
+   the @i[convs] list to the goal and in case of a progress applies the tactic @i{tac},
    then repeats it as far as possible.
    @end[doc]
 

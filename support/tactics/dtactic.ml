@@ -92,7 +92,7 @@ doc <:doc<
    @hreftactic[autoT] tactic should not use this rule unless it is capable
    of finishing the proof on its own. This option can be used to mark irreversible
    rules that may take a provable goal and produce potentially unprovable
-   subgoals. Setting AutoMustComplete is equivalent to setting the boolean flag when
+   subgoals. Setting @tt[AutoMustComplete] is equivalent to setting the boolean flag when
    manually adding items to the resource.
 
    The @tt[CondMustComplete] option is a conditional version of @tt[AutoMustComplete];
