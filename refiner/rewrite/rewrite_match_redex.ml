@@ -110,6 +110,13 @@ struct
             StackVar v -> v :: extract_some_bvars stack tl
           | _ -> raise(Invalid_argument("Rewrite_match_redex.extract_some_bvars: invalid stack entry"))
 
+   let rec bvars_of_cont hyps vars i count =
+      if count = 0 then
+         vars
+      else
+         let vars = match SeqHyp.get hyps i with Context(v, _, _) | Hypothesis (v, _) -> SymbolSet.add vars v in
+            bvars_of_cont hyps vars (i + 1) (count - 1)
+
    let rec extract_cont_bvars_aux hyps vars i count =
       if count = 0 then
          vars
@@ -573,6 +580,7 @@ struct
                         ()
                end;
                let bvars = extract_bvars stack l in
+               let all_bvars = bvars_of_cont hyps all_bvars i count in
                   stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
                   match_redex_sequent_hyps addrs stack concl' concl all_bvars hyps' hyps (i+count) len
 
@@ -657,6 +665,7 @@ struct
           | Context (v, conts, ts1), Context(v', conts', ts2)
             when v=v' && conts=conts' && (List.length ts1 = List.length ts2) ->
                List.iter (check_instance_term vars) ts1;
+               let all_bvars = SymbolSet.add all_bvars v' in
                let ts1 = Lm_list_util.smap (apply_subst sub) ts1 in
                   List.iter2 (fun t1 t2 -> check_match addrs stack all_bvars t2 bvars t1 ts) ts1 ts2;
                   match_context_instance addrs stack all_bvars concl hyps (i+1) hyps' (k+1) bvars ts (SymbolSet.remove vars v) sub (count-1)
