@@ -762,10 +762,13 @@ struct
          Filter_grammar.apply_iforms parse_quotation t
 
    let apply_iforms loc t =
-      let parse_quotation name s =
-         parse_quotation loc "unknown" name s
-      in
-         Filter_grammar.apply_iforms parse_quotation t
+      if !debug_grammar then
+         eprintf "Term_grammar.apply_iforms <- %a%t" debug_print t eflush;
+      let parse_quotation name s = parse_quotation loc "unknown" name s in
+      let t = Filter_grammar.apply_iforms parse_quotation t in
+         if !debug_grammar then
+            eprintf "Term_grammar.apply_iforms -> %a%t" debug_print t eflush;
+         t
 
    let apply_iforms_mterm loc mt =
       let parse_quotation name s =
