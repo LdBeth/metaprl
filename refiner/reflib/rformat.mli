@@ -118,7 +118,7 @@ val print_to_tex : int -> 'tag buffer -> out_channel -> unit
 (*
  * Special case: 1-line buffer.
  *)
-val line_format : int -> ( 'tag buffer -> unit ) -> string
+val line_format : int -> ('tag buffer -> unit) -> string
 
 (*
  * -*-
