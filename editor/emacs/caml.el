@@ -48,11 +48,11 @@
 (if caml-mode-syntax-table
     ()
   (setq caml-mode-syntax-table (make-syntax-table))
-  (modify-syntax-entry ?_ "w" caml-mode-syntax-table)
-  (modify-syntax-entry ?\( "()1" caml-mode-syntax-table)
-  (modify-syntax-entry ?\) ")(4" caml-mode-syntax-table)
-  (modify-syntax-entry ?* ". 23" caml-mode-syntax-table)
-  (modify-syntax-entry ?\' "'" caml-mode-syntax-table)
+  (modify-syntax-entry ?_  "w"    caml-mode-syntax-table)
+  (modify-syntax-entry ?\( "()1"  caml-mode-syntax-table)
+  (modify-syntax-entry ?\) ")(4"  caml-mode-syntax-table)
+  (modify-syntax-entry ?*  ". 23" caml-mode-syntax-table)
+  (modify-syntax-entry ?\' "\""   caml-mode-syntax-table)
 
   ;; Make all these symbols part of punctuation class.
   ;; "Operators" are a sequence of punctuation chars.
@@ -69,8 +69,7 @@
   (modify-syntax-entry ?/ "." caml-mode-syntax-table)
   (modify-syntax-entry ?$ "." caml-mode-syntax-table)
   (modify-syntax-entry ?% "." caml-mode-syntax-table)
-  (modify-syntax-entry ?\; "." caml-mode-syntax-table)
-  (modify-syntax-entry ?\\ "." caml-mode-syntax-table))
+  (modify-syntax-entry ?\; "." caml-mode-syntax-table))
 
 ;;
 ;; No abbreviations in this mode.
@@ -323,11 +322,12 @@ point is outside the region."
   "End of a comment")
 
 (defconst caml-char-constant-pattern
-  "'\\(\\\\.\\|\\\\[0-9][0-9][0-9]|[^\\\\]\\)'"
-  "Pattern that matches all char constants")
+  "'\\(.'\\|\\\\\\)"
+  "Pattern that matches the beginning of character constants")
 
 ;;
 ;; Quotation syntax
+;;
 (defconst caml-quotation-start "<<\\|<:[A-z]+<"
   "Beginning of a quotation")
 
@@ -551,6 +551,9 @@ Return nil if there are no more tokens"
 	   (cond ((looking-at "\"")
 		  (forward-char 1)
 		  nil)
+		 ((looking-at "'")
+		  (forward-char 1)
+		  t)
 		 (t
 		  (forward-char 2)
 		  t))))

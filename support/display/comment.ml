@@ -1308,6 +1308,8 @@ declare math_vdash
 declare math_int
 declare math_lbrace
 declare math_rbrace
+declare math_lfloor
+declare math_rfloor
 declare math_quad
 declare math_qquad
 declare math_bullet
@@ -1507,6 +1509,18 @@ dform math_rbrace_df1 : mode[tex] :: math_rbrace =
 
 dform math_rbrace_df2 : except_mode[tex] :: math_rbrace =
    "}"
+
+dform math_lfloor_df1 : mode[tex] :: math_lfloor =
+   izone `"\\lfloor" ezone
+
+dform math_lfloor_df2 : except_mode[tex] :: math_lfloor =
+   `"|_"
+
+dform math_rfloor_df1 : mode[tex] :: math_rfloor =
+   izone `"\\rfloor" ezone
+
+dform math_rfloor_df2 : except_mode[tex] :: math_rfloor =
+   `"_|"
 
 dform math_left_df1 : mode[tex] :: math_left[s:s] =
    izone `"\\left" slot[s:s] `" " ezone

@@ -308,6 +308,8 @@ declare math_vdash
 declare math_int
 declare math_lbrace
 declare math_rbrace
+declare math_lfloor
+declare math_rfloor
 declare math_quad
 declare math_qquad
 declare math_bullet

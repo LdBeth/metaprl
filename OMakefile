@@ -1,15 +1,11 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.8.7)
+OMakeVersion(0.9.0)
 
 ########################################################################
 # Begin real makefile.
 #
-# Override the root directory
-#
-OLDROOT = $(ROOT)
-ROOT    = $(dir .)
 LIB     = $(dir lib)
 BIN     = $(dir bin)
 
@@ -43,17 +39,19 @@ OCAMLDEPFLAGS =
 #
 # Configuration defaults
 #
-.INCLUDE: mk/defaults
+include mk/defaults
 
 #
 # Configuration file
 #
-.INCLUDE: mk/make_config
+include mk/make_config
 
-# Create it if it doesn't exist
-.INCLUDE: mk/config
-    section eval
-       MakeConfig(mk/config)
+#
+# Create config file if it doesn't exist
+#
+if $(file-exists mk/config)
+    include mk/config
+    export
 
 #
 # Things that can not be enabled on Win32.
@@ -68,7 +66,7 @@ if $(equal $(OSTYPE), Win32)
 # This helps in keeping mk/config nice, but can be omited.
 #
 Bool(arg) =
-    return( $(not $(not $(arg))))
+    return $(not $(not $(arg)))
 
 NATIVE_ENABLED = $(Bool $(NATIVE_ENABLED))
 BYTE_ENABLED = $(Bool $(BYTE_ENABLED))
@@ -80,11 +78,16 @@ NATIVE_PROFILING_ENABLED = $(Bool $(NATIVE_PROFILING_ENABLED))
 TESTS_ENABLED = $(Bool $(TESTS_ENABLED))
 SLOPPY_DEPENDENCIES = $(Bool $(SLOPPY_DEPENDENCIES))
 
+#
 # Create a fresh copy if it is out-of-date
+#
 .INCLUDE: mk/config: mk/make_config
     section eval
        MakeConfig(mk/config)
 
+#
+# Local config
+#
 .INCLUDE: mk/config.local
     $(CP) $(file mk/config.local.empty) $(file mk/config.local)
 
@@ -325,13 +328,13 @@ INCLUDES += $(CAMLLIB)
 #
 MLZFILES =
 MLPFILES =
-CLEAN = $'(RM) $'(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES)) $'(addsuffix .ml, $(MLPFILES)))
+CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
 
 clean:
     $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config)
 
 realclean: clean
-    -$'(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb) # XXX: This is a temporary HACK
+    -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb) # XXX: This is a temporary HACK
     cvs_realclean -i .omakedb -i mk/config -i mk/config.local
 
 #
@@ -359,7 +362,6 @@ if $(SSL_ENABLED)
         CFLAGS += -DSSL_ENABLED
 	INCLUDES += /usr/kerberos/include
         export
-
     export
 
 if $(READLINE_ENABLED)
@@ -396,10 +398,7 @@ OCAMLDEPFLAGS += -omake
 #
 .SUBDIRS: libmojave
 
-OCAMLINCLUDES[] +=
-   $(dir libmojave/stdlib)
-   $(dir libmojave/util)
-   $(dir libmojave/unix)
+OCAMLINCLUDES += $(dir libmojave/stdlib libmojave/util libmojave/unix)
 
 ########################################################################
 # Refiner building
@@ -422,21 +421,15 @@ section
     # These directories use the macro preprocessor
     .SUBDIRS: mllib
 
-    OCAMLINCLUDES[] +=
-        $(dir mllib)
+    OCAMLINCLUDES += $(dir mllib)
 
     .SUBDIRS: refiner
 
-OCAMLINCLUDES[] +=
-    $(dir mllib)
+OCAMLINCLUDES += $(dir mllib)
 
 .SUBDIRS: proxyedit
 
-OCAMLINCLUDES[] +=
-    $(dir refiner/refsig)
-    $(dir refiner/refbase)
-    $(dir refiner/refiner)
-    $(dir refiner/reflib)
+OCAMLINCLUDES += $(dir refiner/refsig refiner/refbase refiner/refiner refiner/reflib)
 
 ########################################################################
 # Generic directories with no special options
@@ -445,16 +438,11 @@ OCAMLINCLUDES[] +=
 .SUBDIRS: library debug $(ENSEMBLE_DIR) tactics/proof
 
 # Add camlp4 library to include path
-OCAMLINCLUDES[] +=
-    $(CAMLP4LIB)
-    $(dir library)
-    $(dir tactics/proof)
+OCAMLINCLUDES += $(CAMLP4LIB) $(dir library tactics/proof)
 
 .SUBDIRS: filter
 
-OCAMLINCLUDES[] +=
-    $(dir filter/base)
-    $(dir filter/filter)
+OCAMLINCLUDES += $(dir filter/base filter/filter)
 
 ########################################################################
 # Theory building
@@ -473,8 +461,8 @@ if $(NATIVE_PROFILING_ENABLED)
 CAMLP4N = $(file $(LIB)/camlp4n$(EXE))
 CAMLP4O = $(file $(LIB)/camlp4o$(EXE))
 CONVERT = $(file $(BIN)/convert$(EXE))
-CAMLP4NFLAGS = $'(PREFIXED_OCAMLINCLUDES)
-CAMLP4OFLAGS = $'(PREFIXED_OCAMLINCLUDES)
+CAMLP4NFLAGS = $`(PREFIXED_OCAMLINCLUDES)
+CAMLP4OFLAGS = $`(PREFIXED_OCAMLINCLUDES)
 MPTIME =
 
 #
@@ -549,7 +537,6 @@ OCAMLDEPFLAGS += -prl
 THEORIES = $(split ' ', $(THEORIES))
 THEORIES = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all%, $(THEORIES)), $(THEORIES))
 THEORY_DIRS = $(dir $(addprefix theories/, $(THEORIES)))
-
 MP_DIRS[] =
    $(SUPPORT_DIRS)
    $(THEORY_DIRS)
@@ -595,7 +582,7 @@ TheoryDocument(docname, theories) =
     # Contents of the print.ml file
     #
     $(docname)_print.ml:
-        $(echo set_tex_file "$(docname).tex";; $(add-quoted-wrapper print_theory , ;;, $(THEORIES))) > $@
+        $(echo set_tex_file "$(docname).tex";; $(add-quoted-wrapper print_theory \", \";;, $(THEORIES))) > $@
 
     #
     # Get MetaPRL to generate the .tex files

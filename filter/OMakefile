@@ -27,10 +27,10 @@ include phobos/Files
 SUB_FILES =\
 	$(addprefix base/, $(BASE_FILES))\
 	$(addprefix phobos/, $(PHOBOS_FILES))\
-	filter/term_grammar\
+	filter/term_grammar
 
 section
-    OCAML_LINK_FLAGS = -linkall
+    OCAML_LINK_FLAGS += -linkall
 
     OCamlLibrary($(MAINLIB), $(SUB_FILES))
     OCamlLibraryCopy($(MPINSTALL), $(LIB), $(MAINLIB), $(EMPTY))
@@ -153,35 +153,35 @@ PRLCO_FILES =\
 #
 # Compile a special camlp4 to run Nuprl.
 #
-if true
-    OCAML_LIBS = $(OCAML_LIBS) $(CAMLP4N_LIBS)
-    OCAML_LINK_FLAGS = $(OCAML_LINK_FLAGS) -linkall
+section
+    OCAML_LIBS += $(CAMLP4N_LIBS)
+    OCAML_LINK_FLAGS += -linkall
 
     OCamlProgramInstall($(MPINSTALL), $(LIB), $(CAMLP4N), $(CAMLP4N_FILES))
 
-if true
-    OCAML_LIBS = $(OCAML_LIBS) $(CAMLP4O_LIBS)
-    OCAML_LINK_FLAGS = $(OCAML_LINK_FLAGS) -linkall
+section
+    OCAML_LIBS += $(CAMLP4O_LIBS)
+    OCAML_LINK_FLAGS += -linkall
 
     OCamlProgramInstall($(MPINSTALL), $(LIB), $(CAMLP4O), $(CAMLP4O_FILES))
 
-if true
-    OCAML_LIBS = $(OCAML_LIBS) $(PRLCN_LIBS)
+section
+    OCAML_LIBS += $(PRLCN_LIBS)
 
     OCamlProgramInstall($(MPINSTALL), $(BIN), $(PRLCN), $(PRLCN_FILES))
 
-if true
-    OCAML_LIBS = $(OCAML_LIBS) $(PRLCO_LIBS)
+section
+    OCAML_LIBS += $(PRLCO_LIBS)
 
     OCamlProgramInstall($(MPINSTALL), $(BIN), $(PRLCO), $(PRLCO_FILES))
 
-if true
-    OCAML_LIBS = $(OCAML_LIBS) $(CONVERT_LIBS)
+section
+    OCAML_LIBS += $(CONVERT_LIBS)
 
     OCamlProgramInstall($(MPINSTALL), $(BIN), $(CONVERT), $(CONVERT_FILES))
 
-if true
-    OCAML_LIBS = $(OCAML_LIBS) $(PRLCOMP_LIBS)
+section
+    OCAML_LIBS += $(PRLCOMP_LIBS)
 
     OCamlProgramInstall($(MPINSTALL), $(BIN), $(PRLCOMP), $(PRLCOMP_FILES))
 

@@ -5,7 +5,6 @@ OCAMLINCLUDES[] +=
    $(ROOT)/$(ENSEMBLE_DIR)
    $(MP_DIRS)
 
-
 # Name of main librariws
 MP = mp
 
@@ -68,17 +67,17 @@ TCMOFILES = $(addsuffix .cmo, $(TOPFILES))
 TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 TOBJFILES = $(addsuffix $(EXT_OBJ), $(TOPFILES))
 
-BASE_LIBS = \
-   $(LIB)/lm\
-   $(LIB)/util\
-   $(LIB)/refiner\
-   $(LIB)/library\
-   $(LIB)/trefiner\
-   $(LIB)/prooflib\
+BASE_LIBS[] =
+   $(LIB)/lm
+   $(LIB)/util
+   $(LIB)/refiner
+   $(LIB)/library
+   $(LIB)/trefiner
+   $(LIB)/prooflib
 
 BASE_ARS   = $(addsuffix $(EXT_LIB), $(BASE_LIBS))
-BASE_CMAS  = $(addsuffix .cma      , $(BASE_LIBS))
-BASE_CMXAS = $(addsuffix .cmxa     , $(BASE_LIBS))
+BASE_CMAS  = $(addsuffix .cma, $(BASE_LIBS))
+BASE_CMXAS = $(addsuffix .cmxa, $(BASE_LIBS))
 
 ########################################################################
 # LIBRARIES
@@ -182,11 +181,8 @@ CLIBS = $(LIB)/clib
 BYTE_CLIBS = $(addsuffix $(EXT_LIB), $(CLIBS))
 NATIVE_CLIBS = $(addsuffix $(EXT_LIB), $(CLIBS))
 
-BYTE_CCLIBS =\
-        $(addprefix -cclib , $(BYTE_CLIBS))\
-
-NATIVE_CCLIBS =\
-        $(addprefix -cclib , $(NATIVE_CLIBS))\
+BYTE_CCLIBS = $(mapprefix -cclib, $(BYTE_CLIBS))
+NATIVE_CCLIBS = $(mapprefix -cclib, $(NATIVE_CLIBS))
 
 #
 # Dependencies for the 3 versions of MetaPRL
@@ -206,15 +202,18 @@ if $(NATIVE_ENABLED)
 
 $(MP).run: $(BYTE_DEPS) $(RCMOFILES) $(OCAMLMKTOP_VERSION)
         $(RM) $@
-        $(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+        $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS)\
+		$(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).top: $(TOP_DEPS) $(TCMOFILES)
         $(RM) $@
-        $(OCAMLLINK) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+        $(OCAMLLINK) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS)\
+		$(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).opt: $(OPT_DEPS) $(TCMXFILES) $(TOBJFILES)
         $(RM) $@
-        $(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+        $(OCAMLOPTLINK) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS)\
+		$(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 #
 # Generate the mp_version.ml file
@@ -223,7 +222,7 @@ make_mp_version$(EXE): make_mp_version.ml
 	$(OCAMLC) $(OCAMLCFLAGS) -o $@ unix.cma $<
 
 mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
-	$(CURRENT_EXEC_DIR)make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
+	./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
 
 OCamlGeneratedFiles(mp_version.ml)
 

@@ -4,34 +4,24 @@
 #
 
 #
-# Add an environment variable to the command line
-#
-if $(equal $(OSTYPE), Win32)
-   SetEnv(v, x) =
-      return( set $(v)=$(x)&& )
-   export
-else
-   SetEnv(v, x) =
-      return( $(v)='$(x)' )
-   export
-
-#
 # Command without a preprocessor
 #
 WrapC(command) =
    #
    # Default environment
    #
-   ENV =\
-      $(SetEnv MP_ROOT, $(ROOT)) $(SetEnv MPLIB, $(LIB))\
-      $(SetEnv MP_GROUP, $(THEORYNAME)) $(SetEnv MP_DESCR, $(THEORYDESCR))
+   ENV[] =
+      MP_ROOT=$(ROOT)
+      MPLIB=$(LIB)
+      MP_GROUP=$(quote $(THEORYNAME))
+      MP_DESCR=$(quote $(THEORYDESCR))
 
    #
    # Put together the command
    #
-   COMMAND = $(command) -I $(LIB)
+   COMMAND = $(ENV) $(command) -I $(LIB)
 
-   return($(ENV) $(COMMAND))
+   return($(COMMAND))
 
 #
 # Command with a preprocessor
@@ -41,14 +31,17 @@ PrlC(command) =
    # Default environment
    # JYH: do we still need MP_INCLUDE?
    #
-   ENV = $(SetEnv MP_ROOT, $(ROOT)) $(SetEnv MPLIB, $(LIB))\
-      $(SetEnv MP_INCLUDE, $(concat :, $(filter-out -I%, $(OCAMLINCLUDES))))\
-      $(SetEnv MP_GROUP, $(THEORYNAME)) $(SetEnv MP_DESCR, $(THEORYDESCR))
+   ENV[] =
+      MP_ROOT=$(ROOT)
+      MPLIB=$(LIB)
+      MP_GROUP=$(quote $(THEORYNAME))
+      MP_DESCR=$(quote $(THEORYDESCR))
+      MP_INCLUDE=$(quote $(concat :, $(OCAMLINCLUDES)))
 
    #
    # Put together the command
    # JYH: not sure if this should be hardcoded as CAMLP4N.
    #
-   COMMAND = $(command) -I $(LIB) -pp "$(CAMLP4N) $(PREFIXED_OCAMLINCLUDES)"
+   COMMAND = $(ENV) $(command) -I $(LIB) -pp $(quote $(CAMLP4N) $(PREFIXED_OCAMLINCLUDES))
 
-   return($(ENV) $(COMMAND))
+   return($(COMMAND))
