@@ -117,7 +117,7 @@ let rec prove_negation pigeons i p =
  * Step 3: forward chain through the possible pigeon locations.
  *)
 let rec forward_chain pigeons i p =
-   let _, t = Sequent.nth_hyp p i in
+   let t = Sequent.nth_hyp p i in
       (if is_implies_term t then
          let t, _ = dest_implies t in
             try
@@ -135,7 +135,7 @@ let rec forward_chain pigeons i p =
  * Step 2: collect the pigeon placements.
  *)
 let rec collect_pigeons pigeons i p =
-   let _, t = Sequent.nth_hyp p i in
+   let  t = Sequent.nth_hyp p i in
       if is_var_term t then
          collect_pigeons (PigeonTable.add pigeons (dest_var t) i) (pred i) p
       else
@@ -145,7 +145,7 @@ let rec collect_pigeons pigeons i p =
  * Step 1: decompose all the disjunctions.
  *)
 let rec decompose_disjuncts i p =
-   let _, t = Sequent.nth_hyp p i in
+   let t = Sequent.nth_hyp p i in
       (if is_or_term t then
           dT i thenT decompose_disjuncts i
        else if is_var_term t then
@@ -225,7 +225,7 @@ let is_hyp_term p t =
          false
       else
          try
-            let _, t' = Sequent.nth_hyp p i in
+            let t' = Sequent.nth_hyp p i in
                if alpha_equal t t' then
                   true
                else
@@ -303,7 +303,7 @@ let d_imp_impT i p =
 
 (* Try to decompose a hypothesis *)
 let rec decompPropDecideHyp1T max_depth count i p =
-   let term = snd (Sequent.nth_hyp p i) in
+   let term = Sequent.nth_hyp p i in
       (if is_false_term term then
           dT i
        else if is_and_term term or is_or_term term then
@@ -319,7 +319,7 @@ let rec decompPropDecideHyp1T max_depth count i p =
           nthHypT i) p
 
 and decompPropDecideHyp2T max_depth count i p =
-   let term = snd (Sequent.nth_hyp p i) in
+   let term = Sequent.nth_hyp p i in
       (if is_imp_or_term term then
           (* {C or D => B} => {(C => B) & (D => B)} *)
           d_or_impT i thenT ifNotWT (internalPropDecideT max_depth count)
@@ -327,7 +327,7 @@ and decompPropDecideHyp2T max_depth count i p =
           failT) p
 
 and decompPropDecideHyp3T max_depth count i p =
-   let term = snd (Sequent.nth_hyp p i) in
+   let term = Sequent.nth_hyp p i in
       (if is_implies_term term then
           let t, _ = dest_implies term in
              if is_hyp_term p t then
