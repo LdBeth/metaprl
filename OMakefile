@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.7.7)
+OMakeVersion(0.7.9)
 
 #
 # Override the root directory
@@ -72,8 +72,8 @@ else
    OCAMLSRC = $(OCAMLSRC_DEFAULT)
    THEORIES = $(THEORIES_DEFAULT)
    TESTS_ENABLED = $(TESTS_ENABLED_DEFAULT)
-   READLINE_ENABLED=true
-   NCURSES_ENABLED=true
+   READLINE_ENABLED = true
+   NCURSES_ENABLED = true
    NATIVE_ENABLED = $(NATIVE_ENABLED_DEFAULT)
    BYTE_ENABLED = $(BYTE_ENABLED_DEFAULT)
    SLOPPY_DEPENDENCIES = false
@@ -115,48 +115,89 @@ else
 # Check the configuration
 #
 if $(not $(file-exists $(CAMLLIB)/parsetree.cmi))
-   eprint(!!! The file $(CAMLLIB)/parsetree.cmi does not exist \(or is not readable\))
-   eprint(!!!)
-   eprint(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
-   eprint(!!! for instructions on compiling OCaml and setting the CAMLLIB variable)
-   eprint(!!!)
+   eprintln(!!! The file $(CAMLLIB)/parsetree.cmi does not exist \(or is not readable\))
+   eprintln(!!!)
+   eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
+   eprintln(!!! for instructions on compiling OCaml and setting the CAMLLIB variable)
+   eprintln(!!!)
    exit(1)
 
 if $(BYTE_ENABLED)
    if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cma), $(file-exists $(CAMLP4LIB)/pa_op.cmo)))
-      eprint(!!! One of the files)
-      eprint(!!!    $(CAMLP4LIB)/camlp4.cma)
-      eprint(!!!    $(CAMLP4LIB)/pa_op.cmo)
-      eprint(!!! does not exist \(or is not readable\))
-      eprint(!!!)
-      eprint(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
-      eprint(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
-      eprint(!!!)
+      eprintln(!!! One of the files)
+      eprintln(!!!    $(CAMLP4LIB)/camlp4.cma)
+      eprintln(!!!    $(CAMLP4LIB)/pa_op.cmo)
+      eprintln(!!! does not exist \(or is not readable\))
+      eprintln(!!!)
+      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
+      eprintln(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
+      eprintln(!!!)
       exit(1)
 
 if $(NATIVE_ENABLED)
    if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cmxa), $(file-exists $(CAMLP4LIB)/pa_op.cmx)))
-      eprint(!!! One of the files)
-      eprint(!!!    $(CAMLP4LIB)/camlp4.cmxa)
-      eprint(!!!    $(CAMLP4LIB)/pa_op.cmx)
-      eprint(!!! does not exist \(or is not readable\))
-      eprint(!!!)
-      eprint(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
-      eprint(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
-      eprint(!!!)
+      eprintln(!!! One of the files)
+      eprintln(!!!    $(CAMLP4LIB)/camlp4.cmxa)
+      eprintln(!!!    $(CAMLP4LIB)/pa_op.cmx)
+      eprintln(!!! does not exist \(or is not readable\))
+      eprintln(!!!)
+      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
+      eprintln(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
+      eprintln(!!!)
       exit(1)
 
 if $(not $(or $(equal $(TERMS), ds), $(equal $(TERMS), std)))
-   eprint(ERROR: the TERMS variable is currently set to an invalid value "$(TERMS)"\, please fix it in the mk/config file)
+   eprintln(ERROR: the TERMS variable is currently set to an invalid value "$(TERMS)"\, please fix it in the mk/config file)
    exit(1)
 
 if $(not $(or $(equal $(REFINER), SIMPLE), $(equal $(REFINER), VERBOSE)))
-   eprint(ERROR: the REFINER variable is currently set to an invalid value "$(REFINER)"\, please fix it in the mk/config file)
+   eprintln(ERROR: the REFINER variable is currently set to an invalid value "$(REFINER)"\, please fix it in the mk/config file)
    exit(1)
 
 if $(not $(or $(equal $(SEQ_SET), Lm_array), $(equal $(SEQ_SET), Lm_splay)))
-   eprint(ERROR: the SEQ_SET variable is currently set to an invalid value "$(SEQ_SET)"\, please fix it in the mk/config file)
+   eprintln(ERROR: the SEQ_SET variable is currently set to an invalid value "$(SEQ_SET)"\, please fix it in the mk/config file)
    exit(1)
+
+#
+# Different version files
+#
+OCAMLC_VERSION     = $(file .version.ocamlc)
+OCAMLOPT_VERSION   = $(file .version.ocamlopt)
+CAMLP4_VERSION     = $(file .version.camlp4)
+OCAMLMKTOP_VERSION = $(file .version.ocamlmktop)
+
+#
+# Generate the rule for version checking.
+#
+VersionCheck(versionfile, command, pattern) =
+    fullcommand = $(which $(command))
+
+    $(versionfile): $(fullcommand)
+        section eval
+            version = $(shell $(command) -version)
+            if $(mem $(version), $(CAML_VERSIONS))
+                fd = $(fopen $(versionfile), w)
+		fprintln($(fd), $(version))
+		close($(fd))
+	    else
+                eprintln(!!! Wrong CAML version.)
+                eprintln(!!! $(command) -version produced the version string $(version))
+                eprintln(!!! You need this version to be compatible with MetaPRL\,)
+		eprintln(!!! which requires versions $(CAML_VERSIONS).)
+                eprintln(!!! If you believe that this list of versions is incorrect\, edit)
+                eprintln(!!! the CAML_VERSIONS variable in the mk/defaults file.)
+                exit(1)
+
+VersionCheck($(OCAMLC_VERSION),     $(OCAMLC),     The Objective Caml compiler\, version)
+VersionCheck($(OCAMLOPT_VERSION),   $(OCAMLOPT),   The Objective Caml native-code compiler\, version)
+VersionCheck($(OCAMLMKTOP_VERSION), $(OCAMLMKTOP), The Objective Caml compiler\, version)
+VersionCheck($(CAMLP4_VERSION),     $(CAMLP4),     Camlp4 version)
+
+#
+# Camlp4 -version doesn't work, so leave it out for now
+#
+%.cmo %.cmi: $(OCAMLC_VERSION)
+%.cmx: $(OCAMLOPT_VERSION)
 
 #
 # Library suffix
@@ -194,7 +235,7 @@ INCLUDES += -I$(CAMLLIB)
 # Default clean line
 #
 MLZFILES =
-CLEAN = $'(RM) *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .\#* *.ppo *.p4i *.p4o $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES))
+CLEAN = $'(RM) *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES))
 
 clean:
     $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc*)
@@ -261,7 +302,7 @@ LINEARSET = $(file libmojave/stdlib/$(uncapitalize $(SEQ_SET)_linear_set.cmi))
 # For the refiner and mllib directories,
 # add a dependency on the macro processor.
 #
-if true
+section
     # Add the extra dependency
     %.cmi: $(MACROPP) $(LINEARSET)
     %.cmo: $(MACROPP) $(LINEARSET)

@@ -16,12 +16,6 @@ OCAMLINCLUDES =\
 #
 OCamlLibraryInstall($(MPINSTALL), $(LIB), rewrite, $(REWRITE_FILES))
 
-#XXX HACK! This is a workaround for a bug in omake 0.7.7
-if $(BYTE_ENABLED)
-   rewrite_types.cmi: rewrite_types.cmo
-else
-   rewrite_types.cmi: rewrite_types.cmx
-
 #
 # Clean up
 #
