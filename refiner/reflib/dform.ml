@@ -182,7 +182,7 @@ let make_dform { dform_name = name;
    let printer' =
       match printer with
          DFormExpansion e ->
-            let redex, _ = compile_redex Relaxed [||] t in
+            let redex = compile_redex Relaxed [||] t in
             let contractum = compile_contractum Relaxed redex e in
                DFExpansion (redex, contractum)
        | DFormPrinter f ->

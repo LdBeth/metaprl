@@ -144,7 +144,7 @@ let simplify_term t =
  *)
 let make_info (t,v) =
    let t = simplify_term t in
-   let redex, _ = compile_redex Relaxed [||] t in
+   let redex = compile_redex Relaxed [||] t in
    { info_term = t;
      info_redex = redex;
      info_value = v

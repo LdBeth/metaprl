@@ -67,8 +67,6 @@ sig
     | RewriteNum of Mp_num.num
     | RewriteLevel of level_exp
 
-   type rewrite_namer = rewrite_stack -> string array -> string array
-
    (*
     * Specifies whether instances of bound variables should be explicitly mentioned
     *
@@ -83,8 +81,8 @@ sig
    (*
     * Separate analysis.
     *)
-   val compile_redex : strict -> string array -> term -> rewrite_redex * rewrite_namer
-   val compile_redices : strict -> string array -> term list -> rewrite_redex * rewrite_namer
+   val compile_redex : strict -> string array -> term -> rewrite_redex
+   val compile_redices : strict -> string array -> term list -> rewrite_redex
    val compile_contractum : strict -> rewrite_redex -> term -> rewrite_contractum
    val extract_redex_types : rewrite_redex -> rewrite_type list
    val apply_redex :
@@ -108,7 +106,7 @@ sig
       address array * string array * string list list ->
       term ->                           (* redex *)
       term list ->                      (* parameters *)
-      term list * string array          (* contracta, actual variable names that were matched *)
+      term list                         (* contracta, actual variable names that were matched *)
 
    (*
     * See if a rule may apply to a particular term

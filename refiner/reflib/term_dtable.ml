@@ -260,13 +260,7 @@ let find_entry
     (t : term)
     (tl : term list) =
    let match_entry { info_rw = rw; info_value = v } =
-      let t2, _ =
-         let debug = !debug_rewrite in
-         let _ = debug_rewrite := false in
-         let x = apply_rewrite rw ([||], [||], []) t tl in
-            debug_rewrite := debug;
-            x
-      in
+      let t2 = apply_rewrite rw ([||], [||], []) t tl in
       let t2', arg = f' (t2, t::tl) in
          v (map_pair f t2') arg
    in

@@ -175,10 +175,7 @@ DEFTOPMACRO BODY =
          rr_gstacksize : int;
 
          (* The contractum is a term or a function *)
-         rr_contractum : rwcontractum;
-
-         (* After a reduction, the namer function extracts variable names *)
-         rr_namer : stack array -> string array -> string array
+         rr_contractum : rwcontractum
       }
 
    (*

@@ -1816,7 +1816,7 @@ struct
       let refiner' = RuleRefiner ref_rule in
       let tac (addrs, names) params sent mseq =
          let vars = msequent_free_vars mseq in
-         let subgoals, names' = apply_rewrite rw (addrs, names, [vars]) mseq.mseq_goal params in
+         let subgoals = apply_rewrite rw (addrs, names, [vars]) mseq.mseq_goal params in
          let make_subgoal subgoal =
             { mseq_vars = FreeVars vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
          in
@@ -1824,7 +1824,7 @@ struct
          let just =
             SingleJust { just_goal = mseq;
                          just_addrs = addrs;
-                         just_names = names';
+                         just_names = names;
                          just_params = params;
                          just_refiner = opname;
                          just_subgoals = subgoals
@@ -1999,10 +1999,10 @@ struct
                eprintf "Refiner: applying simple rewrite %s to %a%t" name print_term t eflush;
          ENDIF;
          match apply_rewrite rw ar0_ar0_null t [] with
-            [t'], _ ->
+            [t'] ->
                sent.sent_rewrite ref_rewrite;
                t', RewriteHere (t, opname, t')
-          | [], _ ->
+          | [] ->
                raise (Failure "Refine.add_rewrite: no contracta")
           | _ ->
                raise (Failure "Refine.add_rewrite: multiple contracta")
@@ -2030,10 +2030,10 @@ struct
                eprintf "Refiner: applying input form %s to %a%t" name print_term t eflush;
          ENDIF;
          match apply_rewrite rw ar0_ar0_null t [] with
-            [t'], _ ->
+            [t'] ->
                sent.sent_input_form opname;
                t', RewriteHere (t, opname, t')
-          | [], _ ->
+          | [] ->
                raise (Failure "Refine.add_input_form: no contracta")
           | _ ->
                raise (Failure "Refine.add_input_form: multiple contracta")
@@ -2146,7 +2146,7 @@ struct
                eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t (print_any_list print_string_list) bvars eflush;
          ENDIF;
          match apply_rewrite rw ([||], vars, bvars) t params with
-            (t' :: subgoals), names ->
+            (t' :: subgoals) ->
                sent.sent_cond_rewrite ref_crw;
                   t',
                   CondRewriteSubgoals subgoals,
@@ -2157,7 +2157,7 @@ struct
                                     cjust_subgoal_term = t';
                                     cjust_subgoals = subgoals
                   }
-             | [], _ ->
+             | [] ->
                   raise (Failure "Refine.add_cond_rewrite: no contracta")
       in
          refiner', (rw' : prim_cond_rewrite)

@@ -242,7 +242,7 @@ struct
                         let rw' = term_rewrite Strict ([||], [||]) [redex] [contractum] in
                         let doCE env =
                            match apply_rewrite rw' ([||], [||], []) (env_term env) [] with
-                              [contractum], _ ->
+                              [contractum] ->
                                  FoldConv (contractum, conv)
                             | _ ->
                                  raise (RefineError ("Rewrite_type.fold", StringTermError ("rewrite failed", redex)))

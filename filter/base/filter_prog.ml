@@ -1087,7 +1087,7 @@ struct
     *    let term = $expr_of_term redex$ in
     *    let bvars = [| $bvars$ |] in
     *    let args = [| redex :: List.map expr_of_term args$ |] in
-    *    let redex, namer = compile_redices bvars args in
+    *    let redex = compile_redices bvars args in
     *    let contractum_0_id = compile_contractum redex (expr_of_term contracta_0) in
     *    ...
     *    let contractum_n_id = compile_contractum redex (expr_of_term contracta_n) in
@@ -1098,8 +1098,8 @@ struct
       let term_patt = <:patt< $lid:term_id$ >> in
       let bvars_patt = <:patt< $lid:bvars_id$ >> in
       let args_patt  = <:patt< $lid:args_id$ >> in
-      let redex_namer_patt= <:patt< ( $lid:redex_id$ , $lid:namer_id$ ) >> in
-      let redex_expr = expr_of_term loc redex in
+      let redex_patt= <:patt< $lid:redex_id$ >> in
+      let term_expr = expr_of_term loc redex in
       let string_expr s = <:expr< $str:s$ >> in
 
       (* Build a contractum *)
@@ -1124,19 +1124,19 @@ struct
          else
             <:expr< let $rec:false$ $list:contracta_binding$ in $code$ >>
       in
-      let redex_namer_expr =
+      let redex_expr =
          <:expr< $compile_redices_expr loc$ $strict_expr loc$ $lid:bvars_id$ $lid:args_id$ >>
       in
-      let redex_namer_let =
-         <:expr< let $rec:false$ $list:[redex_namer_patt,
-                                        redex_namer_expr]$
+      let redex_let =
+         <:expr< let $rec:false$ $list:[redex_patt,
+                                        redex_expr]$
                  in $contracta_expr$ >>
       in
       let args_expr =
          <:expr< [ $lid:term_id$ :: $list_expr loc (expr_of_term loc) args$ ] >>
       in
       let args_let =
-         <:expr< let $rec:false$ $list:[args_patt, args_expr]$ in $redex_namer_let$ >>
+         <:expr< let $rec:false$ $list:[args_patt, args_expr]$ in $redex_let$ >>
       in
       let bvars_expr =
          <:expr< [| $list: List.map string_expr bvars$ |] >>
@@ -1145,7 +1145,7 @@ struct
          <:expr< let $rec:false$ $list:[bvars_patt, bvars_expr]$ in $args_let$ >>
       in
       let term_let =
-         <:expr< let $rec:false$ $list:[term_patt, redex_expr]$ in $bvars_let$ >>
+         <:expr< let $rec:false$ $list:[term_patt, term_expr]$ in $bvars_let$ >>
       in
          term_let
 
@@ -1884,7 +1884,7 @@ struct
       let buffer_expr = <:expr< $lid:buffer$ >> in
 
       (* Items *)
-      let redex, _ = compile_redex Relaxed [||] t in
+      let redex = compile_redex Relaxed [||] t in
       let items = extract_redex_types redex in
       let items_patt = list_patt loc (rewrite_type_patt loc) items in
 

@@ -176,8 +176,6 @@ struct
     | RewriteNum of Mp_num.num
     | RewriteLevel of level_exp
 
-   type rewrite_namer = rewrite_stack -> string array -> string array
-
    type strict = RewriteTypes.strict = Strict | Relaxed
 
    (************************************************************************
@@ -201,7 +199,6 @@ struct
    let apply_rewrite
        { rr_redex = redex;
          rr_contractum = contractum;
-         rr_namer = namer;
          rr_gstacksize = gstacksize
        } (addrs, names, bnames) goal params =
       let _ =
@@ -219,11 +216,6 @@ struct
                eprintf "Rewrite.apply_rewrite: match_redex%t" eflush
          ENDIF;
          match_redex addrs gstack goal params redex;
-         (IFDEF VERBOSE_EXN THEN
-            if !debug_rewrite then
-               eprintf "Rewrite.apply_rewrite: namer%t" eflush
-         ENDIF);
-         let names' = namer gstack names in
          let result =
             match contractum with
                RWCTerm (con, enames) ->
@@ -239,10 +231,10 @@ struct
                         if !debug_rewrite then
                            eprintf "Rewrite.apply_rewrite: build_contractum%t" eflush
                      ENDIF;
-                     List.map (build_contractum names bnames gstack) con, names'
+                     List.map (build_contractum names bnames gstack) con
              | RWCFunction f ->
                   if params == [] then
-                     [f goal], names'
+                     [f goal]
                   else
                      REF_RAISE(RefineError ("apply_rewrite", RewriteBadMatch (TermMatch xnil_term)))
          in
@@ -363,64 +355,12 @@ struct
       build_contractum [||] [] gstack con
 
    (*
-    * Naming function.
-    *)
-   let compute_index stack v =
-      if array_rstack_fo_mem v stack then
-         Some (array_rstack_fo_index v stack)
-      else
-         None
-
-   let compute_namer stack names =
-      let indices = Array.map (compute_index stack) names in
-      let length = Array.length names in
-      let namer stack' names' =
-         (* Compute an array of names to change *)
-         let names' = Array.copy names' in
-            IFDEF VERBOSE_EXN THEN
-               if !debug_rewrite then
-                  begin
-                     print_rstack stderr stack;
-                     print_stack stderr stack';
-                     eprintf "Indices: %d:" length;
-                     Array_util.iter2 (fun name index ->
-                           match index with
-                              Some i -> eprintf " %s=%d" name i
-                            | None -> eprintf " %s=*" name) names indices;
-                     eflush stderr
-                  end
-            ENDIF;
-            for i = 0 to length - 1 do
-               match indices.(i) with
-                  Some j ->
-                     begin
-                        match stack'.(j) with
-                           StackString s ->
-                              IFDEF VERBOSE_EXN THEN
-                                 if !debug_rewrite then
-                                    eprintf "Rewrite.compute_namer: names(%d)/%d <- %s%t" (**)
-                                       i (Array.length names') s eflush
-                              ENDIF;
-                              names'.(i) <- s
-                         | x ->
-                              REF_RAISE(RefineError ("compute_namer", RewriteStringError "stack entry is not a string"))
-                     end
-                | None ->
-                     ()
-            done;
-            names'
-      in
-         namer
-
-   (*
     * Compile redex and contractum, and form a rewrite rule.
     *)
    let term_rewrite strict (addrs, names) redex contracta =
       let stack, redex' = compile_so_redex strict addrs redex in
-      let namer = compute_namer stack names in
       let enames, contracta' = compile_so_contracta strict names stack contracta in
          { rr_redex = redex';
-           rr_namer = namer;
            rr_contractum = RWCTerm (contracta', enames);
            rr_gstacksize = Array.length stack
          }
@@ -431,7 +371,6 @@ struct
    let fun_rewrite strict redex f =
       let stack, redex' = compile_so_redex strict [||] [redex] in
          { rr_redex = redex';
-           rr_namer = (fun stack names -> names);
            rr_contractum = RWCFunction f;
            rr_gstacksize = Array.length stack
          }
@@ -441,14 +380,13 @@ struct
     *)
    let compile_redices strict addrs redices =
       let stack, redices = compile_so_redex strict addrs redices in
-      let namer = compute_namer stack [||] in
-         { redex_stack = stack; redex_redex = redices }, namer
+         { redex_stack = stack; redex_redex = redices }
 
    let compile_redex strict addrs redex =
-      let redex, namer = compile_redices strict addrs [redex] in
+      let redex = compile_redices strict addrs [redex] in
          match redex.redex_redex with
             [_] ->
-               redex, namer
+               redex
           | _ ->
                failwith "compile_redex: too many redices"
 
