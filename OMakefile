@@ -1,7 +1,10 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.7.11)
+# The upper limit is there because old versions of omake did not do the comparison correctly.
+# Remove when we require omake >= 0.8
+#
+OMakeVersion(0.7.11,0.7.30)
 
 #
 # Override the root directory
@@ -198,12 +201,12 @@ OCAMLMKTOP_VERSION = $(file .version.ocamlmktop)
 #
 # Generate the rule for version checking.
 #
-VersionCheck(versionfile, command, pattern) =
+VersionCheck(versionfile, command) =
     fullcommand = $(which $(command))
 
     $(versionfile): $(fullcommand)
         section eval
-            version = $(shell $(command) -version)
+            version = $(concat _, $(shell $(command) -version))
             if $(mem $(version), $(CAML_VERSIONS))
                 fd = $(fopen $(versionfile), w)
 		fprintln($(fd), $(version))
@@ -212,15 +215,15 @@ VersionCheck(versionfile, command, pattern) =
                 eprintln(!!! Wrong CAML version.)
                 eprintln(!!! $(command) -version produced the version string $(version))
                 eprintln(!!! You need this version to be compatible with MetaPRL\,)
-		eprintln(!!! which requires versions $(CAML_VERSIONS).)
+                eprintln(!!! which is only known to work with versions $(CAML_VERSIONS).)
                 eprintln(!!! If you believe that this list of versions is incorrect\, edit)
                 eprintln(!!! the CAML_VERSIONS variable in the mk/defaults file.)
                 exit(1)
 
-VersionCheck($(OCAMLC_VERSION),     $(OCAMLC),     The Objective Caml compiler\, version)
-VersionCheck($(OCAMLOPT_VERSION),   $(OCAMLOPT),   The Objective Caml native-code compiler\, version)
-VersionCheck($(OCAMLMKTOP_VERSION), $(OCAMLMKTOP), The Objective Caml compiler\, version)
-VersionCheck($(CAMLP4_VERSION),     $(CAMLP4),     Camlp4 version)
+VersionCheck($(OCAMLC_VERSION),     $(OCAMLC))
+VersionCheck($(OCAMLOPT_VERSION),   $(OCAMLOPT))
+VersionCheck($(OCAMLMKTOP_VERSION), $(OCAMLMKTOP))
+VersionCheck($(CAMLP4_VERSION),     $(CAMLP4))
 
 #
 # Camlp4 -version doesn't work, so leave it out for now
