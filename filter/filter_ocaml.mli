@@ -34,7 +34,33 @@ val term_of_module_expr : module_expr -> term
 val term_of_class : class_decl -> term
 
 (*
+ * Specific values useful for writing
+ * term interpreters.
+ *)
+val some_op : opname
+val none_op : opname
+val true_op : opname
+val false_op : opname
+val list_op : opname
+val cons_op : opname
+val nil_op : opname
+
+(*
+ * Common destructors.
+ *)
+val dest_loc : term -> int * int
+val dest_loc_string : term -> int * int * string
+val dest_loc_int : term -> int * int * int
+val dest_opt : term -> term option
+val dest_string : term -> string
+val dest_string_opt : term -> string option
+val dest_var : term -> string
+
+(*
  * $Log$
+ * Revision 1.2  1998/01/27 23:04:15  jyh
+ * Adding OCaml1.07 syntax.
+ *
  * Revision 1.1  1997/09/12 17:21:37  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:

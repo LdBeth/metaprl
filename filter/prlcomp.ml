@@ -56,11 +56,7 @@ let camlp4 () =
 let ocamlc () =
    ["ocamlc";
     "-pp";
-    sprintf "camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_MLast.cmo \
-%s/mllib/util.cma \
-%s/refiner/refiner.cma \
-%s/filter/prlcomp.cma \
-%s/filter/filter_main.cmo"
+    sprintf "camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_MLast.cmo %s/mllib/util.cma %s/refiner/refiner.cma %s/filter/prlcomp.cma %s/filter/filter_main.cmo"
     !root !root !root !root]
 
 (*
@@ -95,7 +91,7 @@ let set_includes () =
     | [] ->
          ""
    in
-   let var = sprintf "REF_INCLUDE=%s" (squash !includes) in
+   let var = sprintf "NL_INCLUDE=%s" (squash !includes) in
       if !verbose_mode > 0 then
          eprintf "%s%t" var eflush;
       Punix.putenv var;
@@ -172,6 +168,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.5  1998/01/27 23:04:20  jyh
+ * Adding OCaml1.07 syntax.
+ *
  * Revision 1.4  1997/09/08 15:02:19  jyh
  * This version compiles Ensemble.
  *

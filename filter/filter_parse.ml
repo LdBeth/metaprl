@@ -277,6 +277,18 @@ let new_var loc v vars =
       find 0
 
 (************************************************************************
+ * TERM INTERPRETATION                                                  *
+ ************************************************************************)
+
+(*
+ * Interpretation on terms.
+ *)
+let interp = ref (function t ->
+                   raise (Failure "Filter_parse.interp: term interpretation is not bound"))
+
+let set_interp f = interp := f
+
+(************************************************************************
  * ITEM EMBEDDING                                                       *
  ************************************************************************)
 
@@ -1808,7 +1820,7 @@ open TermGrammar
  * String -> string translator.
  *)
 let term_exp s =
-   let cs = Gstream.of_string s in
+   let cs = Stream.of_string s in
    let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
       build_ml_term (0, 0) t
 
@@ -1817,7 +1829,7 @@ let term_patt s =
 
 let contractum_exp patt s =
    if !contract_flag then
-      let cs = Gstream.of_string s in
+      let cs = Stream.of_string s in
       let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
       let index = List.length !contracta in
          contracta := t :: !contracta;
@@ -2052,10 +2064,33 @@ EXTEND
         | t1 = expr; op = "thenPT"; t2 = expr ->
           make_infix loc op t1 t2
        ]];
+   
+   (*
+    * Add the ML parts of the terms.
+    *)
+   term:
+      [[ "ml_expr"; e = expr ->
+          !interp (term_of_expr e)
+        | "ml_patt"; p = patt ->
+          !interp (term_of_patt p)
+        | "ml_type"; t = ctyp ->
+          !interp (term_of_type t)
+        | "ml_sig_item"; si = sig_item ->
+          !interp (term_of_sig_item si)
+        | "ml_str_item"; si = str_item ->
+          !interp (term_of_str_item si)
+        | "ml_module_type"; mt = module_type ->
+          !interp (term_of_module_type mt)
+        | "ml_module_expr"; me = module_expr ->
+          !interp (term_of_module_expr me)
+       ]];
 END
 
 (*
  * $Log$
+ * Revision 1.5  1998/01/27 23:04:17  jyh
+ * Adding OCaml1.07 syntax.
+ *
  * Revision 1.4  1997/09/12 17:21:37  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:

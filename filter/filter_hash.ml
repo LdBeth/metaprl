@@ -148,7 +148,9 @@ and hash_type index = function
       hash_string (hash index 0x48872c13) s
 
 and hash_sig_item index = function
-   (<:sig_item< declare $list:sil$ end >>) ->
+   (<:sig_item< class $list:cdl$ >>) ->
+      List.fold_left hash_class_type (hash index 0x0629e079) cdl
+ | (<:sig_item< declare $list:sil$ end >>) ->
       List.fold_left hash_sig_item index sil
  | (<:sig_item< exception $s$ of $list:tl$ >>) ->
       List.fold_left hash_type (hash_string (hash index 0x6fd24af2) s) tl
@@ -216,8 +218,10 @@ and hash_module_expr index = function
       hash_module_expr (hash_module_expr (hash index 0x2bf161dc) me2) me1
  | (<:module_expr< functor ( $s$ : $mt$ ) -> $me$ >>) ->
       hash_string (hash_module_type (hash_module_expr (hash index 0x4a46293c) me) mt) s
+(*
  | (<:module_expr< $lid:i$ >>) ->
       hash_string (hash index 0x53a51eb4) i
+*)
  | (<:module_expr< struct $list:stl$ end >>) ->
       List.fold_left hash_str_item (hash index 0x771f6f7d) stl
  | (<:module_expr< ( $me$ : $mt$) >>) ->
@@ -257,12 +261,46 @@ and hash_class_field index = function
  | CfVir (_, s, t) ->
       hash_string (hash_type (hash index 0x60a53407) t) s
 
+and hash_class_type index
+  { ctNam = name;
+    ctPrm = sl1;
+    ctArg = pl1;
+    ctTyc = so1;
+    ctFld = cfl;
+    ctVir = b1;
+    ctCls = b2
+  } =
+   let index = hash index 0x7de2ab2c in
+   let index = List.fold_left hash_string index sl1 in
+   let index = List.fold_left hash_type index pl1 in
+   let index = hash_string_opt index so1 in
+   let index = List.fold_left hash_class_field_type index cfl in
+   let index = hash_bool index b1 in
+   let index = hash_bool index b2 in
+      index
+
+and hash_class_field_type index = function
+   CtCtr (_, s, t) ->
+      hash_string (hash_type (hash index 0x362be7cd) t) s
+ | CtInh (_, t) ->
+      hash_type (hash index 0x1779e662) t
+ | CtMth (_, s, t) ->
+      hash_string (hash_type (hash index 0x028b2e41) t) s
+ | CtVal (_, s, b1, b2, ot) ->
+      hash_string (hash_bool (hash_bool (hash_type_opt (hash index 0x3be81fa) ot) b2) b1) s
+ | CtVir (_, s, t) ->
+      hash_string (hash_type (hash index 0x2730112a) t) s
+
 (*
  * Combined forms.
  *)
 and hash_expr_opt index = function
    Some expr -> hash_expr (hash index 0x2a4e2fa2) expr
  | None -> hash index 0x3609fea2
+
+and hash_type_opt index = function
+   Some t -> hash_type (hash index 0x3bee38a) t
+ | None -> hash index 0x32bbe81a
 
 and hash_pwe index (patt, with_expr, expr) =
    hash_patt (hash_expr_opt (hash_expr (hash index 0x50777efa) expr) with_expr) patt
@@ -293,6 +331,9 @@ and hash_sslt index (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.3  1998/01/27 23:04:14  jyh
+ * Adding OCaml1.07 syntax.
+ *
  * Revision 1.2  1997/08/06 16:17:29  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

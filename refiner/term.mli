@@ -53,6 +53,7 @@ type param' =
  | MLevel of string
  | MVar of string
 
+   (* Special Nuprl5 values *)
  | ObId of object_id
  | ParmList of param list
    
@@ -117,8 +118,7 @@ val mk_level_var : string -> int -> level_exp_var
 val make_level_var : level_exp_var' -> level_exp_var
 val dest_level_var : level_exp_var -> level_exp_var'
 
-
-val make_object_id :  param list -> object_id 
+val make_object_id : param list -> object_id 
 val dest_object_id : object_id  ->  param list
 
 val normalize_term : term -> term
@@ -409,6 +409,9 @@ val make_2subst_term : term -> string -> string -> term -> term -> term
 
 (*
  * $Log$
+ * Revision 1.7  1998/01/27 23:04:26  jyh
+ * Adding OCaml1.07 syntax.
+ *
  * Revision 1.6  1997/09/12 17:21:46  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:
