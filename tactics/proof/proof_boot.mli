@@ -40,9 +40,7 @@ module Proof
   with type tactic = TacticInternalType.tactic
   with type extract = TacticInternalType.extract
   with type sentinal = TacticInternalType.sentinal
-  with type attribute = TacticInternalType.attribute
   with type raw_attribute = TacticInternalType.raw_attribute
-  with type arglist = TacticType.arglist
 
 (*
  * -*-

@@ -726,9 +726,9 @@ let wrap_tactic_expr loc =
 let wrap_optimized loc name arglist_name vars expr =
    let name = <:expr< $str:name$ >> in
       if vars = [] then
-         <:expr< $wrap_tactic_expr loc$ (Tactic_type.TacticType . $uid:arglist_name$ $name$ ) $expr$ >>
+         <:expr< $wrap_tactic_expr loc$ (Tactic_boot_sig . $uid:arglist_name$ $name$ ) $expr$ >>
       else
-         <:expr< $wrap_tactic_expr loc$ (Tactic_type.TacticType . $uid:arglist_name$ ( $list:name :: vars$ )) $expr$ >>
+         <:expr< $wrap_tactic_expr loc$ (Tactic_boot_sig . $uid:arglist_name$ ( $list:name :: vars$ )) $expr$ >>
 
 let wrap_arg loc arg v =
    let s =
@@ -744,10 +744,10 @@ let wrap_arg loc arg v =
        | TermListArg ->
             "TermListArg"
    in
-      <:expr< Tactic_type.TacticType. $uid:s$ $v$ >>
+      <:expr< Tactic_boot_sig. $uid:s$ $v$ >>
 
 let wrap_general loc name wrap vars expr =
-      <:expr< $wrap_tactic_expr loc$ (Tactic_type.TacticType.GeneralArgList
+      <:expr< $wrap_tactic_expr loc$ (Tactic_boot_sig.GeneralArgList
                                      [| $list:List.map2 (wrap_arg loc) wrap vars$ |])
               $expr$ >>
 

@@ -42,8 +42,8 @@ open Refiner.Refiner.RefineError
 
 open Term_copy2_weak
 
+open Tactic_boot_sig
 open Tactic_boot
-open Tactic_boot.TacticType
 open Tactic_boot.TacticInternalType
 open Tactic_boot.TacticInternal
 

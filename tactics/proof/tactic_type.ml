@@ -31,7 +31,6 @@
  * jyh@cs.cornell.edu
  *)
 
-module TacticType = Tactic_boot.TacticType
 module Tactic = Tactic_boot.Tactic
 module TacticTypes = Tactic
 module Sequent = Sequent_boot.Sequent

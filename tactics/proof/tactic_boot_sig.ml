@@ -42,53 +42,49 @@ open Refiner_sig
 open Refiner_io
 open Mp_resource
 
+(* Visible types.  *)
+
 (*
- * Visible types.
+ * These are the different types of normal arguments
+ * we can pass with the tactic.
  *)
-module type TacticTypeSig =
-sig
-   (*
-    * These are the different types of normal arguments
-    * we can pass with the tactic.
-    *)
-   type attribute =
-      TermArg of term
-    | TypeArg of term
-    | IntArg of int
-    | BoolArg of bool
-    | StringArg of string
-    | TermListArg of term list
+type attribute =
+   TermArg of term
+ | TypeArg of term
+ | IntArg of int
+ | BoolArg of bool
+ | StringArg of string
+ | TermListArg of term list
 
-   type attributes = (string * attribute) list
+type attributes = (string * attribute) list
 
-   (*
-    * For efficiency, we expand a few attribute lists,
-    * but we retain a general argument description.
-    *)
-   type arglist =
-      NoneArgList               of string
-    | IntArgList                of string * int
-    | BoolArgList               of string * bool
-    | StringArgList             of string * string
-    | TermArgList               of string * term
-    | IntIntArgList             of string * int * int
-    | IntBoolArgList            of string * int * bool
-    | IntStringArgList          of string * int * string
-    | IntTermArgList            of string * int * term
-    | BoolIntArgList            of string * bool * int
-    | BoolBoolArgList           of string * bool * bool
-    | BoolStringArgList         of string * bool * string
-    | BoolTermArgList           of string * bool * term
-    | StringIntArgList          of string * string * int
-    | StringBoolArgList         of string * string * bool
-    | StringStringArgList       of string * string * string
-    | StringTermArgList         of string * string * term
-    | TermIntArgList            of string * term * int
-    | TermBoolArgList           of string * term * bool
-    | TermStringArgList         of string * term * string
-    | TermTermArgList           of string * term * term
-    | GeneralArgList            of attribute array
-end
+(*
+ * For efficiency, we expand a few attribute lists,
+ * but we retain a general argument description.
+ *)
+type arglist =
+   NoneArgList               of string
+ | IntArgList                of string * int
+ | BoolArgList               of string * bool
+ | StringArgList             of string * string
+ | TermArgList               of string * term
+ | IntIntArgList             of string * int * int
+ | IntBoolArgList            of string * int * bool
+ | IntStringArgList          of string * int * string
+ | IntTermArgList            of string * int * term
+ | BoolIntArgList            of string * bool * int
+ | BoolBoolArgList           of string * bool * bool
+ | BoolStringArgList         of string * bool * string
+ | BoolTermArgList           of string * bool * term
+ | StringIntArgList          of string * string * int
+ | StringBoolArgList         of string * string * bool
+ | StringStringArgList       of string * string * string
+ | StringTermArgList         of string * string * term
+ | TermIntArgList            of string * term * int
+ | TermBoolArgList           of string * term * bool
+ | TermStringArgList         of string * term * string
+ | TermTermArgList           of string * term * term
+ | GeneralArgList            of attribute array
 
 (*
  * Internal type definitions.
@@ -101,11 +97,8 @@ sig
     * The values are stored in keys.
     *)
    type sentinal
-   and attribute
-   and attributes = (string * attribute) list
    and raw_attribute
    and raw_attributes = raw_attribute list
-   and arglist
    and tactic
    and attribute_info
 
@@ -212,11 +205,8 @@ module type TacticSigTypes = sig
    type pre_tactic
    type sentinal
    type conv
-   type attribute
-   type attributes = (string * attribute) list
    type raw_attribute
    type raw_attributes = raw_attribute list
-   type arglist
    type extract
 end
 
@@ -428,11 +418,8 @@ sig
    type tactic_arg
    type tactic
    type sentinal
-   type attribute
-   type attributes = (string * attribute) list
    type raw_attribute
    type raw_attributes = raw_attribute list
-   type arglist
 
    type status =
       StatusBad

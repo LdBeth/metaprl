@@ -33,13 +33,8 @@
 
 open Tactic_boot_sig
 
-module TacticType
-: TacticTypeSig
-
 module TacticInternalType
 : TacticInternalTypeSig
-  with type attribute = TacticType.attribute
-  with type arglist = TacticType.arglist
 
 module Tactic
 : TacticSig
@@ -47,9 +42,7 @@ module Tactic
   with type tactic = TacticInternalType.tactic
   with type conv = TacticInternalType.conv
   with type sentinal = TacticInternalType.sentinal
-  with type attribute = TacticType.attribute
   with type raw_attribute = TacticInternalType.raw_attribute
-  with type arglist = TacticType.arglist
   with type pre_tactic = TacticInternalType.pre_tactic
   with type extract = TacticInternalType.extract
 
@@ -61,8 +54,6 @@ module TacticInternal
   with type conv = TacticInternalType.conv
   with type attribute_info = TacticInternalType.attribute_info
   with type raw_attribute = TacticInternalType.raw_attribute
-  with type attribute = TacticType.attribute
-  with type arglist = TacticType.arglist
 
 (*
  * -*-

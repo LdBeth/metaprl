@@ -78,8 +78,8 @@ open Dform
 open Term_eq_table
 open Mp_resource
 
+open Tactic_boot_sig
 open Tactic_boot
-open Tactic_boot.TacticType
 open Tactic_boot.TacticInternalType
 open Tactic_boot.TacticInternal
 
@@ -122,9 +122,6 @@ struct
    type tactic = TacticInternalType.tactic
    type extract = TacticInternalType.extract
    type sentinal = TacticInternalType.sentinal
-   type attribute = TacticType.attribute
-   type attributes = (string * attribute) list
-   type arglist = TacticType.arglist
    type raw_attribute = TacticInternalType.raw_attribute
    type raw_attributes = raw_attribute list
 

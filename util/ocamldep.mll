@@ -51,6 +51,7 @@ let prl_names = [
    "Mp_resource";
    "Precedence";
    "Tactic_type";
+   "Tactic_boot_sig";
 ]
 
 (*

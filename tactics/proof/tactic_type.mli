@@ -33,15 +33,10 @@
 
 open Tactic_boot_sig
 
-module TacticType : TacticTypeSig
-
 module TacticTypes : TacticSigTypes
-  with type arglist = TacticType.arglist
 
 module Tactic
 : TacticSig
-  with type attribute = TacticType.attribute
-  with type arglist = TacticType.arglist
   with type conv = TacticTypes.conv
   with type tactic = TacticTypes.tactic
   with type tactic_arg = TacticTypes.tactic_arg
@@ -61,8 +56,6 @@ module Proof
   with type tactic = Tactic.tactic
   with type sentinal = Tactic.sentinal
   with type raw_attribute = Tactic.raw_attribute
-  with type attribute = Tactic.attribute
-  with type arglist = Tactic.arglist
 
 (*
  * -*-

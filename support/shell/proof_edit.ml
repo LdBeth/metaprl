@@ -50,8 +50,8 @@ open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Dform
 
+open Tactic_boot_sig
 open Tactic_type
-open Tactic_type.TacticType
 open Tactic_type.Tactic
 
 open Summary

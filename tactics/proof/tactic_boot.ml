@@ -59,6 +59,7 @@ open Refiner.Refiner.TermSubst
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 
+open Tactic_boot_sig
 open Theory
 
 (*
@@ -102,54 +103,12 @@ struct
    let append l1 l2 = l1 @ l2
 
    (*
-    * these are the different types of normal arguments
-    * we can pass with the tactic.
-    *)
-   type attribute =
-      TermArg of term
-    | TypeArg of term
-    | IntArg of int
-    | BoolArg of bool
-    | StringArg of string
-    | TermListArg of term list
-
-   type attributes = (string * attribute) list
-
-   (*
-    * For efficiency, we expand a few attribute lists,
-    * but we retain a general argument description.
-    *)
-   type arglist =
-      NoneArgList               of string
-    | IntArgList                of string * int
-    | BoolArgList               of string * bool
-    | StringArgList             of string * string
-    | TermArgList               of string * term
-    | IntIntArgList             of string * int * int
-    | IntBoolArgList            of string * int * bool
-    | IntStringArgList          of string * int * string
-    | IntTermArgList            of string * int * term
-    | BoolIntArgList            of string * bool * int
-    | BoolBoolArgList           of string * bool * bool
-    | BoolStringArgList         of string * bool * string
-    | BoolTermArgList           of string * bool * term
-    | StringIntArgList          of string * string * int
-    | StringBoolArgList         of string * string * bool
-    | StringStringArgList       of string * string * string
-    | StringTermArgList         of string * string * term
-    | TermIntArgList            of string * term * int
-    | TermBoolArgList           of string * term * bool
-    | TermStringArgList         of string * term * string
-    | TermTermArgList           of string * term * term
-    | GeneralArgList            of attribute array
-
-   (*
     * The attribute calculations are delayed to minimize communication
     * cost.  The tactic_arg uses keys to distribute the attributes.
     * The values are stored in keys.
     *)
 
-   and sentinal = Refine.sentinal ThreadRefiner.key
+   type sentinal = Refine.sentinal ThreadRefiner.key
 
    and raw_attribute_info =
       RawTerm of term
@@ -1162,7 +1121,6 @@ end
 (*
  * Type definitions.
  *)
-module TacticType = Tactic
 module TacticInternalType = Tactic
 
 (*
