@@ -25,6 +25,9 @@ endif
 ifndef REFINER
    REFINER=$(REFINER_DEFAULT)
 endif
+ifndef FORMAT
+   FORMAT=$(FORMAT_DEFAULT)
+endif
 ifndef MAKE_OPTS
    MAKE_OPTS=$(MAKE_OPTS_DEFAULT)
 endif
