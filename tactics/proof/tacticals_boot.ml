@@ -582,22 +582,6 @@ struct
 
    let onMHypsT = onMClausesT
 
-(*
-   let rec onAllT thenT tac = function
-      0 -> idT
-    | 1 -> tac 1
-    | count ->  thenT (tac count) (onAllT thenT tac (count - 1))
-
-   let onAllCumulativeT thenT tac =
-   	let rec aux i p =
-         if i <= (Sequent.hyp_count p) then
-            thenT (tac i) (funT (aux (succ i)))
-         else
-            idT
-      in
-         funT (aux 1)
-*)
-
 	let rec onAllT baseT thenT tac i = function
 	 | [hd] ->
 			let i' = pred i in
@@ -635,12 +619,6 @@ struct
    (*
     * Work on all hyps.
     *)
-(*
-   let onAllHypsT tac =
-      funT (fun p -> onAllT idT prefix_thenT tac (Sequent.hyp_count p))
-
-	let onAllCumulativeHypsT = onAllCumulativeT prefix_thenT
-*)
 
 	let onAllHypsT tac = funT (fun p ->
 		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
@@ -675,13 +653,6 @@ struct
    (*
     * Labelled forms.
     *)
-(*
-	let onAllMHypsT tac =
-      funT (fun p -> onAllT idT prefix_thenMT tac (Sequent.hyp_count p))
-
-	let onAllMCumulativeHypsT tac =
-		funT (fun p -> onAllCumulativeT prefix_thenMT tac)
-*)
 
 	let onAllMHypsT tac = funT (fun p ->
 		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
@@ -755,16 +726,6 @@ struct
    (*
     * Make sure one of the hyps works.
     *)
-(*
-   let onSomeHypT tac =
-      funT (fun p ->
-			let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
-         match Sequent.hyp_count p with
-            0 -> failT
-          | 1 -> tac 1
-          | count -> onAllT failT prefix_orelseT tac count (List.rev hyps))
-*)
-
    let onSomeHypT tac = funT (fun p ->
 		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
 		onAllT failT prefix_orelseT tac (Sequent.hyp_count p) (List.rev hyps)
