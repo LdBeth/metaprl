@@ -1,5 +1,6 @@
 
 open Utils
+open List
 open Term
 open Basic
 (*open Tent *)
@@ -79,8 +80,7 @@ let save l f =
 		; tid = tid
 		} in
             (f transaction)))
-	(itext_term "NL0_transaction ()")
-	[])    
+	(itext_term "NL0_transaction ()"))    
 
 
 (* TODO: FTTB, this is a callback to lib, however oids should be cached locally, ie oid table 
@@ -130,8 +130,7 @@ let restore c checkpoint f =
 		; tid = tid
 		} in
 	  (f transaction)))
-      (itext_term "NL0_transaction ()")
-      []);
+      (itext_term "NL0_transaction ()"));
       lib
 
 
@@ -158,16 +157,17 @@ let with_transaction lib f =
     lib.environment
     tid
     (function t -> 
-      (( oref_set result 
+      (
+	( oref_set result 
 	  (f	{ library = lib
 		; tbegin = term_to_stamp t
 		; tent_collect = []
 		; ttype = REMOTE
 		; tid = tid
 		}))
-      ; ()))
-    (itext_term "NL0_transaction")
-    []);
+	)
+      ; ())
+    (itext_term "NL0_transaction ()"));
 
   oref_val result)
 
@@ -186,54 +186,47 @@ let require_remote_transaction t =
  if not (t.ttype = REMOTE) then error ["library"; "transaction"; "local"] [] [];
  ()
  
-let create t ttype dir =
+let create t ttype init_term init_props =
  require_remote_transaction t;
  oid_of_ioid_term (eval_args_to_term t.library.environment t.tid
-				(itext_term "NL0_create")
-				[ (itext_term ttype)
-				; (ioid_term dir)
-				])
-
-let create_top t ttype =
- require_remote_transaction t;
- oid_of_ioid_term (eval_args_to_term t.library.environment t.tid
-				(itext_term "NL0_create_top")
-				[ (itext_term ttype)
-				])
+			 	(itext_term "NL0_create")
+				[ (itoken_term ttype)
+				; ioption_term init_term
+				; (list_to_ilist_map (function p ->
+							(iproperty_term p))
+						     init_props)
+				]) 
 
 
-let delete t oid =
+let delete_strong t oid =
   require_remote_transaction t;
-  (eval_args_to_term t.library.environment t.tid
-		(itext_term "NL0_delete")
-		[ (ioid_term oid) ]);
-  ()
+  (eval_args t.library.environment t.tid
+		(itext_term "NL0_delete_strong")
+		[ (ioid_term oid) ])
 
 let put_term t oid term =
   require_remote_transaction t;
-  (eval_args_to_term t.library.environment t.tid
-		(itext_term "NL0_put")
+  (eval_args t.library.environment t.tid
+		(itext_term "NL0_put_term")
 		[ (ioid_term oid)
 		; term
-		]);
-  ()
+		])
   
 let get_term t oid =
   require_remote_transaction t;
   (eval_args_to_term t.library.environment t.tid
-		(itext_term "NL0_get")
+		(itext_term "NL0_get_term")
 		[ (ioid_term oid)
 		])
   
 
 let put_property l oid s term =
-  (eval_args_to_term l.environment (tid ())
+  (eval_args l.environment (tid ())
 		(itext_term "NL0_put_prop")
 		[ (ioid_term oid)
 		; (itext_term s)
 		; term
-		]);
-  ()
+		])
   
 let get_property l oid s =
   (eval_args_to_term l.environment (tid ())
@@ -262,3 +255,14 @@ let get_property l oid s =
  *  we can prevent dup roots by locking all roots at make_root or equivalently by having
  *  special root object which contains all roots and locking that.
  *)
+
+
+
+let create_top t ttype =
+ require_remote_transaction t;
+ oid_of_ioid_term (eval_args_to_term t.library.environment t.tid
+				(itext_term "NL0_create_top")
+				[ (itext_term ttype)
+				])
+
+

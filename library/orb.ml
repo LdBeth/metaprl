@@ -193,7 +193,7 @@ let orb_broadcast env t =
 let local_eval f t =
   unconditional_error_handler 
     (function () -> (f t))
-    (function term -> term)
+    (function term -> ifail_term term)
 
 let rec bus_wait c tid ehook = 
 
@@ -411,7 +411,9 @@ let iexpression_term term =
 	 [mk_bterm [] term]
 
 let iml_expression_term result_p expr args =
- iexpression_term (iml_term result_p expr args)
+ if args = []
+    then iexpression_term (iml_woargs_term result_p expr)
+    else iexpression_term (iml_term result_p expr args)
 
 
 let icommand_parameter = make_param (Token "!command")
@@ -597,13 +599,24 @@ let eval_args_to_term e tid t tl =
  *	This keep result wrappers (eg !ack) in orb.
  *)
 
-let eval_with_callback e tid f t tl =
+let eval_with_callback e tid f t =
+  orb_eval false e (iml_expression_term false t []) 
+	   tid
+	   (function term -> (f (cmd_of_icommand_term term)); iack_term)
+ ; ()	
+
+let eval_to_term_with_callback e tid f t =
+ (orb_eval true e (iml_expression_term true t []) 
+	  tid
+	  (function term -> (f (cmd_of_icommand_term term)); iack_term))
+
+let eval_args_with_callback e tid f t tl =
   orb_eval false e (iml_expression_term false t tl) 
 	   tid
 	   (function term -> (f (cmd_of_icommand_term term)); iack_term)
  ; ()	
 
-let eval_to_term_with_callback e tid f t tl =
+let eval_args_to_term_with_callback e tid f t tl =
  (orb_eval true e (iml_expression_term true t tl) 
 	  tid
 	  (function term -> (f (cmd_of_icommand_term term)); iack_term))

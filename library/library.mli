@@ -1,6 +1,5 @@
 
  open Term
-  (*open Object_id*)
 
  type library
  and transaction
@@ -68,15 +67,19 @@
   *	Generic object manipulation 
   *)
 
-(*
  val create		: transaction
 				-> string		(* object type *)
 				-> term option		(* initial term or none *)
 				-> (string * term) list	(* initial property list *)
 				-> object_id
-*)
 
+ (* delete'd objects do not go away until unreferenced and garbage collected.
+  *  delete_strong'd objects go away immediately even if referenced.
+  *)
+(*
  val delete		: transaction -> object_id -> unit
+*)
+ val delete_strong	: transaction -> object_id -> unit
 
  val put_term		: transaction -> object_id -> term -> unit
  val get_term		: transaction -> object_id -> term
@@ -144,7 +147,7 @@
 *)
 
  (* We allow insertion of objects into the tree. The object inserted may be a dir.
-  * If an insertion would causea cycle, then an error is thrown. 
+  * If an insertion would cause a cycle, then an error is thrown. 
   *)
 (*
  val insert		: transaction -> object_id -> string -> object_id -> unit

@@ -24,6 +24,7 @@ val oid_of_ioid_term	: term -> object_id
 val parameters_of_term		: term -> param list
 val token_parameter_to_string	: param -> string
 
+
 (*
  * failure
  *)
@@ -37,6 +38,8 @@ val error_handler	: (unit -> 'b) -> (term -> 'b) -> 'b
 val unconditional_error_handler : (unit -> 'b) -> (term -> 'b) -> 'b
 
 val special_error_handler :  (unit -> 'b) -> (string -> term -> 'b) -> 'b
+
+val unwind_error	: (unit-> 'b) -> (unit -> 'c) -> 'b
 
 (*
  * stamps
@@ -75,3 +78,24 @@ val string_of_itext_term	: term -> string
 
 
 val mk_nuprl5_op	: param list -> operator
+
+
+
+val icons_term			: term -> term -> term
+val hd_of_icons_term		: term -> term
+val tl_of_icons_term		: term -> term
+
+
+val list_to_ilist_by_op_map	: operator -> ('a -> term) -> 'a list -> term
+val list_to_ilist_by_op		: operator -> term list -> term
+
+val list_to_ilist		: term list -> term
+val list_to_ilist_map		: ('a -> term) -> 'a list -> term
+
+
+val ioption_term		: term option -> term
+val option_of_ioption_term	: term -> term option
+
+val iproperty_term		: (string * term) -> term
+val property_of_iproperty_term	: term -> (string * term)
+

@@ -45,10 +45,20 @@ val eval_args_to_term		: environment -> bound_term (* tid *) -> term -> term lis
 
 val eval_with_callback		: environment
 					-> bound_term (* tid *)
+					-> (term -> unit) -> term
+					-> unit
+
+val eval_to_term_with_callback		: environment
+					-> bound_term (* tid *)
+					-> (term -> unit) -> term
+					-> term
+
+val eval_args_with_callback		: environment
+					-> bound_term (* tid *)
 					-> (term -> unit) -> term -> term list
 					-> unit
 
-val eval_to_term_with_callback	: environment
+val eval_args_to_term_with_callback	: environment
 					-> bound_term (* tid *)
 					-> (term -> unit) -> term -> term list
 					-> term

@@ -14,22 +14,47 @@ exception Test of string
 open Basic
 open Library
 
+let create_test lib = 
+   with_transaction lib
+	(function t ->
+	  create t "TERM" None []) 
+
+
+let put_get_test lib oid i =
+ (with_transaction lib
+	     (function t ->
+                 put_term t oid (inatural_term i)));
+ i = number_of_inatural_term
+       (with_transaction lib
+         (function t -> get_term t oid))
+    
+
 let test remote_port local_port =
  print_string "Test called ";
  print_newline();
 
- special_error_handler
- (function () -> (
  (let connection = connect "ALFHEIM" remote_port local_port in
+
+ (unwind_error
+ (function () -> (
 
  (let lib = lib_open connection in
      (* raise (Test "Ungraceful client failure"); *)
-  lib_close lib);
+	
+  unwind_error
+  (function () -> (
 
-  disconnect connection);
+    put_get_test lib (create_test lib) 1;
+    ))
+
+  (function () -> lib_close lib);
+  lib_close lib)
   ))
- (fun s t ->  raise (Test s));
+
+  (function nil -> disconnect connection));
+  disconnect connection);
+
  raise (Test "DONE") 
 ;;
 
-test 6289 7289 
+test 4289 5289 

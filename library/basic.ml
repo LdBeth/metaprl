@@ -73,9 +73,15 @@ let unconditional_error_handler body handler =
   try body ()
   with 
     Nuprl5_Exception (s,t) -> handler t
-  | _ -> 
+  |_ -> 
 	( () (* TODO dump error to stdout *)
 	; handler (itext_term "Unexpected Nuprl Light failure"))
+
+let unwind_error body unwind = 
+  try body ()
+  with 
+    e -> (unwind ()); raise e
+
 
 
 let parameters_of_term t =
@@ -116,10 +122,14 @@ let string_of_itext_term t =
     String s -> s
   |_ -> error ["term"; "!text"; "parameter type"] [] [t]
 
+open Mbterm
+
 let oid_of_ioid_term t =
   match dest_param (parameter_of_carrier ioid_parameter t) with
     ObId o -> o
-  |_ -> error ["term"; "!oid"; "parameter type"] [] [t]
+  |_ -> print_string "failing here"; print_term t;
+ print_newline(); error ["term"; "!oid"; "parameter type"] [] [t]
+
 
 
 (*
@@ -241,4 +251,73 @@ let test () =
       (transaction_less s1 s3) &
       (transaction_less s3 s2) 
 ;;
+
+
+
+let icons_op = (mk_nuprl5_op [make_param (Token "!cons")])
+let icons_term h t = mk_term icons_op [mk_bterm [] h; mk_bterm [] t]
+
+let hd_of_icons_term t =
+  match dest_term t with
+    { term_op = op; term_terms = [l; r] } when op = icons_op
+       ->  term_of_unbound_term l
+    |_ -> error ["icons"; "not"] [] [t]
+
+let tl_of_icons_term t =
+  match dest_term t with
+    { term_op = op; term_terms = [l; r] } when op = icons_op
+       ->  term_of_unbound_term r
+    |_ -> error ["icons"; "not"] [] [t]
+
+
+let list_to_ilist_by_op_map op f l =
+ let rec aux ll = 
+   if ll = [] 
+      then mk_term op []
+      else mk_term op [mk_bterm [] (f (hd ll)); mk_bterm [] (aux (tl ll))] in
+ aux l
+
+let list_to_ilist_by_op op l =
+ list_to_ilist_by_op_map op (function x -> x) l
+
+let list_to_ilist l = list_to_ilist_by_op icons_op l
+
+let list_to_ilist_map f l = list_to_ilist_by_op_map icons_op f l
+
+let isome_op = (mk_nuprl5_op [make_param (Token "!some")])
+let isome_term t = mk_term isome_op [mk_bterm [] t]
+
+let ioption_term tt =
+ match tt with
+   None -> ivoid_term
+ | Some t -> isome_term t
+
+let option_of_ioption_term t =
+  if t = ivoid_term
+     then None
+     else  match dest_term t with
+              { term_op = op; term_terms = [s] } when op = isome_op
+               ->  Some (term_of_unbound_term s)
+	      |_ -> error ["isome"; "not"] [] [t]
+
+
+let iproperty_parameter = make_param (Token "!property")
+let iproperty_term name_prop =
+  mk_term (mk_nuprl5_op [iproperty_parameter; make_param (Token (fst name_prop))])
+	  [mk_bterm [] (snd name_prop)]
+
+ 
+let string_of_token_parameter p =
+  match dest_param p with
+    Token s -> s
+  |_ -> error ["parameter"; "token"; "not"; ""] [] []
+
+let property_of_iproperty_term pt =
+  match dest_term pt with 
+    { term_op = pto; term_terms = [prop] } 
+    -> (match dest_op pto with
+	{ op_name = po; op_params = [iprop; name] } when (po = nuprl5_opname & iprop = iproperty_parameter)
+	  -> (string_of_token_parameter name, term_of_unbound_term prop)
+	|_ -> error ["iproperty"; "op"; "not"; ""] [] [pt])
+    |_ -> error ["iproperty"; "term"; "not"; ""] [] [pt]
 
