@@ -1,0 +1,275 @@
+  -------------
+ | THE PROBLEM |
+  -------------
+
+To be able describe the problem in most general terms, I am going to start
+with a simple picture and will gradually make it more complex.
+
+MODEL 1.
+
+We have a collection of "modules" each being a list with "directives" of one
+of the following kinds:
+- "add <data>" (corresponds to "improve_resource" or a resource annotation)
+- "include <theory-name>"
+- "bookmark <name>"
+
+Goal: we want to have a _preprocessor_ that would create some code for each of
+the theories such that when the code is executes (in some order that agrees
+with "include" directives) it would produce a data structure that would allow
+us to have a function of the type "string -> data list" that would take a
+bookmark name and return all the data that was added "above" that bookmark in
+an "appropriate order".
+
+Note that this model describes the situation with
+- resources, where data would be a resource improvement (or annotation) and we
+  want to "bookmark" right before each interactive rules (and rewrites).
+- refiner sentinels that keep track of the rules that can be allowed in a
+  proof (so that we disallow using the rules that go "after" the current one).
+- display forms, but with "bookmarking" only at the end of each module
+- opnames, but there we need the answer at parse-time, not at run-time, so
+  it's a separate (but very similar) problem.
+
+PROBLEM 1.1:
+
+If we have
+A: add a
+B: include A; add b
+C: include A; add c
+D: include B; include C; add d; bookmark "d"
+
+we want "d" to point to ``a; b; c; d''. A naive code would return ``a; b; a;
+c; d'' which is not only inefficient, but is also incorrect since it allows a
+to shadow b which is clearly wrong. If fact, with opnames we used to have the
+problem that Nuprl_font could shadow some of Itt modules in some cases which
+lead to incorrect parsing. This particular problem was fixed last summer (by
+Jason and me)  - see
+http://cvs.cs.cornell.edu:12000/commitlogs/meta-prl/2000-07.html#00/07/25.13:24:20
+and
+http://cvs.cs.cornell.edu:12000/commitlogs/meta-prl/2000-07.html#00/07/25.19:10:51
+
+There are currently 4 separate pieces of code that solve this problem for
+resources, sentinel, display forms and opnames. It may be reasonable for the
+opname code to stay separate (especially since it seems to work correctly),
+but I hope to unify the other 3. I am not sure if dform and sentinel code
+suffer from "Problem 1" (I suspect they do), but I know the the resources code
+suffers from it, also it seems that resources code is currently capable of
+losing data as well.
+
+PROBLEM 1.2:
+We want our function to to some caching and in case we keep requesting the
+same bookmark repeatedly.
+
+PROBLEM 1.3
+When a theory has several bookmarks, we want caching to be able to reuse the
+data collected for a previous bookmark when computing data for future
+bookmarks.
+
+PROBLEM 1.4
+We want to be able to provide function "data list -> result_type" and have the
+bookmark function cache not just "data list", but the "result_type" object.
+
+PROBLEM 1.5
+If two bookmarks have no "add" directives between them, we want the caching
+bookmarking function to return the same result_type object for both of them.
+
+PROBLEM 1.6
+Some resources process their data imperaively, but some process it
+functionally. For the functional ones it would be nice if for
+
+bookmark a
+add d
+bookmark b
+
+we could have the bookmark code build the result_type for b using whatever was
+already done for a.
+
+MODEL 2:
+Same as Model 1, but now instead of "add <data>" imagine we have "add
+<resource-name> <data>", but the bookmarking is supposed to bookmark _all_
+resources.
+
+PROBLEM 2.1:
+Currently preprocessor creates a piece of bookmarking code for each resource
+for each bookmark. It makes preprocessed theories huge, it also makes
+compilation slow and it also affects start-up time. We want to have some
+"global resource" that would take care of all bookmarking of all the resources
+(and sentinel) data. We do not want any (#bookmarks * #resources) complexity
+in parsing/compiling/start-up (although it's OK if the time to retrieve the
+bookmark is proportional to #data + #resources).
+
+MODEL 3:
+Same as Model 2, but now each theory can also declare a new resource and then
+it (and others that include it) can use it.
+
+PROBLEM 3.1
+We do not know the complete list of resources in advance. More importantly,
+each resource can have it's own type of data and it's own type of result.
+Therefore, it's not clear how to give an appropriate type to object that the
+global resource is going to manipulate. We may restrict the result type to a
+list of a few predefined one (current code only allows tactic and (int ->
+tactic) results), but we can not restrict the type of data.
+
+PROBLEM 3.2
+For a functional resource, the intermediate object that it constcucts
+functionally  would normally have a typoe different from the result_type. The
+types of these intermediate objects range wildly and we want the code that
+does not need to know these types.
+
+MODEL 4:
+Same as model 3, but now we have a notion of resource annotations. Resource
+annotation function is a function that takes an object of a "rule description
+type" (predefined elsewhere), an object of "resource annotation type" (defined
+in a theory that defined this resource) and returns a data object of the type
+appropriate for the particular resource.
+
+PROBLEM 4.1
+Allow user to provide a resource annotation function and resource annotation
+type when resource is defined.
+
+PROBLEM 4.2
+Allow user to provide a new resource annotation function for any resource in
+any theory. That resource annotation function will be used for all annotations
+"below" that change. Note, that we still require the resource annotation type
+to be provided upfront and stay the same.
+
+  -----------------------
+ | THE PROPOSED SOLUTION |
+  -----------------------
+
+We assume that all theories and all bookmarks have distinct names.
+
+Module 1: Collecting data of type 'data for a single resource.
+
+(* Solves (at least partially) Problem 1.6 *)
+(* Note that in this module each theory is processed separately, only the
+   global_data is global *)
+
+type 'data data =
+   DatInclude of string
+ | DatData of 'data
+ | DatBookmark of string list (* each string in the list is a "local part" of
+a bookmark name *)
+
+type 'data global_data = (string, ('data data) list) Hashtbl.t (* Here the
+string is a theory name, we'll have a single entry for each theory *)
+
+val x_global_data = x_data global_data
+val create: unit -> 'data data
+val add_data: 'data data -> 'data -> 'data data
+val bookmark: 'data data -> string -> 'data data
+val include: 'data data -> string -> 'data data
+val x_finish_theory: x_data data -> string -> unit (* adds to x_global_data *)
+
+Module 2: Avoiding repeatedly including theories.
+
+(* Solves Problems 1.1 & 1.2, partially solves Problems 1.3, 1.4 & 1.5*)
+
+type bookmark = string * string (* theory name + local name *)
+
+(* We assume that x_finish_theory bookmarks the theory end by using an empty
+local name *)
+
+type 'data increment = bookmark option * 'data list (* option will be None in
+case the bookmark is the first one *)
+
+val x_global_bookmarker: (bookmark, x_data increment) Hashtbl.t
+val x_compute_bookmarks: string -> unit (* Gets theory data from
+x_global_data, computes all bookmark increments for that theory and stores
+them in the x_global_bookmarker *)
+
+(* x_compute_bookmarks needs some compilcated processing to make sure that no
+theory is included twice, but that can be done relatively easy *)
+
+Module 3: Creating results.
+
+(* Solves Problem 3.2 and the rest of Problem 1.3, 1.4 & 1.5 *)
+
+('data, 'result) processor = {
+   proc_add: 'data -> unit;
+   proc_retrieve: unit -> 'result
+   proc_clone: ('data, 'result) processor option (* None for imperative, Some
+      for functional *)
+}
+
+type ('data, 'intermediate, 'result) funct_processor = {
+   fp_empty: 'intermediate:
+   fp_add: 'itermediate -> 'data -> 'intermediate;
+   fp_retr: 'intermediate -> 'result
+}
+
+type ('data, 'intermediate, 'result) imper_processor = {
+   imp_create: unit -> 'intermediate;
+   imp_add: 'intermediate -> 'data -> unit;
+   imp_retr: 'intermediate -> 'result
+}
+
+(* The following two functions help solving Problem 3.2 by hiding the
+   'intermediate type *)
+
+(* Creates a 'intermediate ref (with fp_empty initially) to keep the
+   'intermediate in it. proc_clone will copy the ref. *)
+val make_fun_proc:
+   ('data, 'intermediate, 'result) funct_processor -> ('data, 'result) processor
+
+(* Runs imp_create and makes closures for proc_add and proc_retrieve *)
+val make_imp_proc:
+   ('data, 'intermediate, 'result) imper_processor -> ('data, 'result) processor
+
+(* combining the above two: *)
+
+type ('data, 'intermediate, 'result) resource_info =
+   Imperative of ('data, 'intermediate, 'result) imperative_processor
+ | Functional of ('data, 'intermediate, 'result) functional_processor
+
+val make_processor:
+   ('data, 'intermediate, 'result) resource_info -> ('data, 'result) processor
+
+val x_global_procesed_data:
+   (bookmark, x_result * (x_data, x_result) processor option) Hashtbl.t
+
+Module 4: Dealing with multiple resources with the same 'data and 'result
+types.
+
+type ('data, 'intermediate, 'result) resource_info =
+   Imperative of ('data, 'intermediate, 'result) imperative_processor
+ | Functional of ('data, 'intermediate, 'result) functional_processor
+
+val make_processor:
+   ('data, 'intermediate, 'result) resource_info -> ('data, 'result) processor
+
+Module 5: Dealing with multiple resources with different 'data types.
+
+I propose to handle the multitude of 'data types by marshalling all the data
+to strings and keeping it internally as a string.
+
+-------------------------------------------------------------------------------
+
+Parsing (using the syntax I presented in the newsgroup - see
+news://news.metaprl.org/3B2773C6.3000403@CS.Cornell.EDU ):
+
+1. Resource declaration in implementation.
+
+resource (<data>, <result>) <name> = expr
+
+Will expand to
+
+let _$<name>_resource = (Mp_resource.create expr) : ('info, 'result, 'data )
+Mp_resource.info
+
+2. Resource improvement:
+
+improve_resource <name> with <exp>
+
+Will expand to
+let _$<name>_resource = Mp_resource.improve _$<name>_resource (<expr> :
+<data>)
+
+3. Bookmarking at a rule:
+
+rule xx will create
+
+4. Resource annotation functions.
+
+a. Interface:
+
+resource_arg
