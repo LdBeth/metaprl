@@ -278,7 +278,7 @@ struct
        | "manual" :: rest ->
             HtmlmanURI (Lm_string_util.prepend "/" rest)
        | ["favicon.ico"] ->
-            HtmlmanURI "/images/metaprl.png"
+            HtmlmanURI "/images/metaprl.ico"
        | uri ->
             UnknownURI (Lm_string_util.prepend "/" uri)
 
