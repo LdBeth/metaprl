@@ -521,8 +521,8 @@ MPTIME =
 # OCamlGeneratedFiles need to be redefined to include .ppo
 #
 OCamlGeneratedFiles(files) =
-   .SCANNER: %.cmi: $(files)
-   .SCANNER: %.ppo: $(files)
+   .SCANNER: %.cmi %.cmiz: $(files)
+   .SCANNER: %.ppo %.cmoz: $(files)
    .SCANNER: %.cmo %.cmx: $(files)
    export
 
