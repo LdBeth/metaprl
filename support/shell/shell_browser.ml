@@ -54,6 +54,7 @@ let debug_http =
         debug_description = "HTTP server operations";
         debug_value = false
       }
+
 (*
  * We may start this as a web service.
  *)
@@ -61,7 +62,7 @@ let browser_flag = Env_arg.bool "browser" false "start a browser service" Env_ar
 let browser_port = Env_arg.int "port" None "start browser services on this port" Env_arg.set_int_option_int
 let browser_string = Env_arg.string "browser_command" None "browser to start on startup" Env_arg.set_string_option_string
 
-module ShellBrowser (Shell : ShellSig) =
+module ShellBrowser (ShellArg : ShellSig) =
 struct
    (*
     * Menu info contains a string to for the text, and
@@ -78,7 +79,7 @@ struct
    type session =
       { session_id                      : int;
         session_buffer                  : Browser_state.t;
-        session_shell                   : Shell.t;
+        session_shell                   : ShellArg.t;
 
         (*
          * If the directory is changed, invalidate:
@@ -336,27 +337,30 @@ struct
          session.session_styles          <- None
 
    let maybe_invalidate_directory session =
-      let cwd = Shell.pwd session.session_shell in
+      let cwd = ShellArg.pwd session.session_shell in
          if cwd <> session.session_cwd then
             invalidate_directory session cwd
 
    (*
-    * Invalidate the session.  This means: assume there has been output,
-    * and invalidate the directory.
+    * Invalidate the session.  This basically invalidates everything.
     *)
    let invalidate_eval session =
       let { session_buttons_version = buttons_version;
             session_message_version = message_version;
-            session_content_version = content_version
+            session_content_version = content_version;
+            session_menu_version    = menu_version
           } = session
       in
          session.session_message_version <- succ message_version;
          session.session_buttons_version <- succ buttons_version;
          session.session_content_version <- succ content_version;
+         session.session_menu_version    <- succ menu_version;
          session.session_state           <- None;
+         session.session_menubar_info    <- None;
          session.session_commandbar_info <- None;
          session.session_buttons         <- None;
          session.session_styles          <- None;
+         session.session_menu            <- None;
          maybe_invalidate_directory session
 
    (*
@@ -375,7 +379,8 @@ struct
    let get_session_state state session =
       let { state_id = session_count } = state in
       let { session_buffer = buffer;
-            session_state = info
+            session_state = info;
+            session_shell = shell
           } = session
       in
          match info with
@@ -385,6 +390,7 @@ struct
                let info =
                   { browser_directories = Browser_state.get_directories buffer;
                     browser_history = Browser_state.get_history buffer;
+                    browser_options = ShellArg.get_flush_options shell;
                     browser_sessions = session_count
                   }
                in
@@ -402,7 +408,7 @@ struct
           | None ->
                let state = get_session_state state session in
                let f =
-                  try get_menubar_resource (Shell.get_resource session.session_shell) with
+                  try get_menubar_resource (ShellArg.get_resource session.session_shell) with
                      Not_found ->
                         default_menubar_info
                in
@@ -418,7 +424,7 @@ struct
           | None ->
                let state = get_session_state state session in
                let f =
-                  try get_commandbar_resource (Shell.get_resource session.session_shell) with
+                  try get_commandbar_resource (ShellArg.get_resource session.session_shell) with
                      Not_found ->
                         default_commandbar_info
                in
@@ -645,7 +651,7 @@ struct
             session_shell  = shell
           } = session
       in
-         Browser_state.synchronize buffer Shell.flush shell
+         Browser_state.synchronize buffer ShellArg.flush shell
 
    (*
     * Clone the current command.
@@ -664,7 +670,7 @@ struct
       let id = succ id in
       let clone =
          { session_id              = id;
-           session_shell           = Shell.fork shell;
+           session_shell           = ShellArg.fork shell;
            session_buffer          = Browser_state.create ();
            session_cwd             = cwd;
            session_menu_version    = 1;
@@ -698,7 +704,7 @@ struct
           } = session
       in
          Browser_state.add_prompt buffer command;
-         Browser_state.synchronize buffer (Shell.eval_top shell) (command ^ ";;");
+         Browser_state.synchronize buffer (ShellArg.eval_top shell) (command ^ ";;");
          invalidate_eval session
 
    (*
@@ -711,7 +717,7 @@ struct
             session_shell = shell
           } = session
       in
-      let success = Browser_state.synchronize buffer (Shell.chdir_top shell) dir in
+      let success = Browser_state.synchronize buffer (ShellArg.chdir_top shell) dir in
          invalidate_chdir session success;
          success
 
@@ -1046,13 +1052,13 @@ struct
       if !browser_flag then
          let mp_dir, password = init_password () in
          let id = 1 in
-         let shell = Shell.get_current_shell () in
+         let shell = ShellArg.get_current_shell () in
          let empty_buffer = Buffer.create 1 in
          let session =
             { session_id              = id;
               session_shell           = shell;
               session_buffer          = Browser_state.create ();
-              session_cwd             = Shell.pwd shell;
+              session_cwd             = ShellArg.pwd shell;
               session_menu_version    = 1;
               session_content_version = 1;
               session_message_version = 1;
@@ -1078,8 +1084,8 @@ struct
             }
          in
          let state = update_challenge state in
-            Shell.refresh_packages ();
-            Shell.set_dfmode shell "html";
+            ShellArg.refresh_packages ();
+            ShellArg.set_dfmode shell "html";
             serve_http http_start http_connect state !browser_port
 end
 

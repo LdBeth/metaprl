@@ -52,7 +52,7 @@ let debug_http =
 let http_port = Env_arg.int "port" None "start web service on this port" Env_arg.set_int_option_int
 let http_enabled = Env_arg.bool "http" false "whether to start a web service" Env_arg.set_bool_bool
 
-module ShellJava (Shell : ShellSig) =
+module ShellJava (ShellArg : ShellSig) =
 struct
    (*
     * Serve a client.
@@ -67,8 +67,8 @@ struct
                      let port = Java_mux_channel.id_of_session port in
                         raise (Invalid_argument "Not implemented: ShellJava.serve_client")
 (*
-                     let shell = Shell.find_shell port in
-                        ignore (Shell.eval_top shell command)
+                     let shell = ShellArg.find_shell port in
+                        ignore (ShellArg.eval_top shell command)
 *)
                 | [] ->
                      ()
@@ -77,7 +77,7 @@ struct
          Unix.Unix_error _
        | Sys_error _ ->
             eprintf "Shell: client closed connection%t" eflush;
-            Shell.set_port None;
+            ShellArg.set_port None;
             Unix.close fd
 
    (*
@@ -97,7 +97,7 @@ struct
       in
       let port = Java_mux_channel.create fd (Some url) in
       let session = Java_mux_channel.create_session port in
-      let _ = Shell.set_port (Some session) in
+      let _ = ShellArg.set_port (Some session) in
          ignore (Thread.create (serve_client fd) port)
 
    (*

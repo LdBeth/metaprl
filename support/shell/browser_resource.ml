@@ -97,6 +97,7 @@ type browser_info =
 type browser_state =
    { browser_directories : string list;
      browser_history     : string list;
+     browser_options     : string;
      browser_sessions    : int
    }
 
@@ -180,7 +181,7 @@ let extract info =
             let { menu_name = name; menu_label = label; menu_items = items } = menu in
             let macros =
                bprintf buf "<select id=\"%s\" class=\"menu\" onChange=\"parent.MenuCommand(macros, this);\">\n" name;
-               bprintf buf "<option value=\"nop\">%s</option>\n" label;
+               bprintf buf "<option value=\"nop\"><span>%s</span></option>\n" label;
                List.fold_left (fun macros { command_label = label; command_value = command } ->
                      let sym = sprintf "id%d" (StringTable.cardinal macros) in
                      let macros = StringTable.add macros sym command in
@@ -273,15 +274,50 @@ let add_sessions info i =
       Not_found ->
          info
 
+(*
+ * Add the options.
+ *)
+let view_table =
+   ['R', "Rules";
+    'r', "Rewrites";
+    'd', "Display forms";
+    'u', "Unjustified content";
+    'f', "Formal content";
+    'i', "Informal content"]
+
+let add_view info view =
+   try
+      menu_replace info "view" (fun menu ->
+            let items =
+               List.fold_left (fun items (flag, name) ->
+                     let item =
+                        if String.contains view flag then
+                           { command_label = sprintf "Hide %s" name;
+                             command_value = sprintf "Command('clear_flush_options \"%c\"')" flag
+                           }
+                        else
+                           { command_label = sprintf "View %s" name;
+                             command_value = sprintf "Command('set_flush_options \"%c\"')" flag
+                           }
+                     in
+                        item :: items) (List.rev menu.menu_items) view_table
+            in
+               { menu with menu_items = items })
+   with
+      Not_found ->
+         info
+
 let extract info state =
    let { browser_directories = directories;
          browser_history = history;
-         browser_sessions = sessions
+         browser_sessions = sessions;
+         browser_options = options
        } = state
    in
    let info = add_directories info directories in
    let info = add_history info history in
    let info = add_sessions info sessions in
+   let info = add_view info options in
       extract info
 
 (************************************************************************
@@ -312,9 +348,9 @@ let menubar_init =
    [<< menu["file", "File"] >>;
     << menuitem["file", "New Window", "NewWindow()"] >>;
     << menuitem["file", "Quit", "Quit()"] >>;
-    << menu["edit", "Edit"] >>;
     << menu["session", "Session"] >>;
     << menuitem["session", "New", "NewSession()"] >>;
+    << menu["view", "View"] >>;
     << menu["dir", "Directory"] >>;
     << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>;
     << menu["help", "Help"] >>;

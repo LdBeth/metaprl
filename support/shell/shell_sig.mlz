@@ -58,7 +58,10 @@ type ls_option =
  | LsDisplay
  | LsDefault
  | LsFormal
+ | LsInformal
+ | LsParent
  | LsAll
+ | LsNone
 
 (*
  * These are the values that we recognize in MetaPRL toploop.
@@ -187,6 +190,11 @@ sig
 
    (* Returns false iff the directory command failed *)
    val chdir_top : t -> string -> bool
+
+   (* Viewing options for the flush function *)
+   val get_flush_options : t -> string
+   val set_flush_options : t -> string -> unit
+   val clear_flush_options : t -> string -> unit
 
    (* Make sure all buffers are flushed *)
    val flush : t -> unit

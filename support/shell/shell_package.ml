@@ -222,27 +222,82 @@ let term_of_implementation pack filter parse_arg =
  * Filter the entries for ls.
  *)
 let default_filter = function
-   Rewrite _ | CondRewrite _ | MLRewrite _ | Rule _ | MLAxiom  _ | Definition _ | Parent _ | Opname _ | Comment _ | Resource _ -> true
- | _ -> false
-
-let is_rewrite_item = function
-   Rewrite _ | CondRewrite _ | MLRewrite _ | Definition _ -> true
- | _ -> false
-
-let is_rule_item = function
-   Rule _ | MLAxiom  _ -> true
- | _ -> false
-
-let is_formal_item = function
-   Rewrite _ | CondRewrite _ | MLRewrite _ | Rule _ | MLAxiom  _ | Definition _ | Parent _ | Opname _ ->
+   Rewrite _
+ | CondRewrite _
+ | MLRewrite _
+ | Rule _
+ | MLAxiom  _
+ | Definition _
+ | Parent _
+ | Opname _
+ | Comment _
+ | Resource _ ->
       true
- | SummaryItem _ | Improve _ | Resource _ | InputForm _ | Comment _ | MagicBlock _
- | ToploopItem _ | GramUpd _ | Prec _ | DForm _ | Module _ | Id _ | PrecRel _ ->
+ | _ ->
       false
 
+let is_not_item _ =
+   false
+
+let is_rewrite_item = function
+   Rewrite _
+ | CondRewrite _
+ | MLRewrite _
+ | Definition _ ->
+      true
+ | _ ->
+      false
+
+let is_rule_item = function
+   Rule _
+ | MLAxiom  _ ->
+      true
+ | _ ->
+      false
+
+let is_parent_item = function
+   Parent _ ->
+      true
+ | _ ->
+      false
+
+let is_formal_item = function
+   Rewrite _
+ | CondRewrite _
+ | MLRewrite _
+ | Rule _
+ | MLAxiom  _
+ | Definition _
+ | Parent _
+ | Opname _ ->
+      true
+ | SummaryItem _
+ | Improve _
+ | Resource _
+ | InputForm _
+ | Comment _
+ | MagicBlock _
+ | ToploopItem _
+ | GramUpd _
+ | Prec _
+ | DForm _
+ | Module _
+ | Id _
+ | PrecRel _ ->
+      false
+
+let is_informal_item item =
+   not (is_formal_item item)
+
 let is_display_item = function
-   Opname _ | GramUpd _ | Prec _ | DForm _ | InputForm _ -> true
- | _ -> false
+   Opname _
+ | GramUpd _
+ | Prec _
+ | DForm _
+ | InputForm _ ->
+      true
+ | _ ->
+      false
 
 let is_unjustified_item = function
    Rewrite { rw_proof = proof }
@@ -267,29 +322,33 @@ let is_unjustified_item = function
 (*
  * Conjoin all the predicates.
  *)
-let compile_ls_predicate = function
-   [] ->
-      (fun _ -> true)
- | predicate ->
-      (fun (item, _) -> List.for_all (fun pred -> pred item) predicate)
+let compile_ls_predicate pred (item, _) =
+   List.exists (fun pred -> pred item) pred
 
-let rec mk_ls_filter predicate = function
-   LsAll :: tl ->
-      mk_ls_filter [] tl
- | LsRewrites :: tl ->
-      mk_ls_filter (is_rewrite_item :: predicate) tl
- | LsRules :: tl ->
-      mk_ls_filter (is_rule_item :: predicate) tl
- | LsUnjustified :: tl ->
-      mk_ls_filter (is_unjustified_item :: predicate) tl
- | LsFormal :: tl ->
-      mk_ls_filter (is_formal_item :: predicate) tl
- | LsDefault :: tl ->
-      mk_ls_filter (default_filter :: predicate) tl
- | LsDisplay :: tl ->
-      mk_ls_filter (is_display_item :: predicate) tl
- | [] ->
-      compile_ls_predicate predicate
+let rec mk_ls_filter predicate preds =
+   match preds with
+      LsAll :: tl ->
+         mk_ls_filter [] tl
+    | LsRewrites :: tl ->
+         mk_ls_filter (is_rewrite_item :: predicate) tl
+    | LsRules :: tl ->
+         mk_ls_filter (is_rule_item :: predicate) tl
+    | LsParent :: tl ->
+         mk_ls_filter (is_parent_item :: predicate) tl
+    | LsUnjustified :: tl ->
+         mk_ls_filter (is_unjustified_item :: predicate) tl
+    | LsFormal :: tl ->
+         mk_ls_filter (is_formal_item :: predicate) tl
+    | LsDefault :: tl ->
+         mk_ls_filter (default_filter :: predicate) tl
+    | LsDisplay :: tl ->
+         mk_ls_filter (is_display_item :: predicate) tl
+    | LsInformal :: tl ->
+         mk_ls_filter (is_informal_item :: predicate) tl
+    | LsNone :: tl ->
+         mk_ls_filter (is_not_item :: predicate) tl
+    | [] ->
+         compile_ls_predicate predicate
 
 (************************************************************************
  * SHELL INTERFACE                                                      *

@@ -99,6 +99,9 @@ type commands =
      mutable extract : string list -> unit -> Refine.extract;
      mutable term_of_extract : term list -> term; (* XXX HACK: temporary interface *)
      mutable print_theory : string -> unit;
+     mutable get_flush_options : unit -> string;
+     mutable set_flush_options : string -> unit;
+     mutable clear_flush_options : string -> unit
    }
 
 let uninitialized _ = raise (Invalid_argument "The Shell module was not instantiated")
@@ -122,7 +125,10 @@ let commands =
      refine = uninitialized;
      print_theory = uninitialized;
      extract = (fun _ -> uninitialized);
-     term_of_extract = uninitialized
+     term_of_extract = uninitialized;
+     get_flush_options = uninitialized;
+     set_flush_options = uninitialized;
+     clear_flush_options = uninitialized
    }
 
 (************************************************************************
@@ -148,6 +154,9 @@ type info =
       mutable shell_dir     : string list;
       mutable shell_package : Package.package option;
       mutable shell_proof   : edit_object;
+
+      (* Display options *)
+      mutable shell_flush_options : string;
 
       (* Process identifier *)
       shell_pid             : string;
@@ -200,6 +209,44 @@ let rec string_of_path = function
 
 let mk_dep_name opname =
    "/" ^ (String.concat "/" (List.rev (dest_opname opname)))
+
+(*
+ * Translate string options to LS options.
+ *)
+let ls_options s =
+   let len = String.length s in
+   let rec collect options i =
+      if i = len then
+         List.rev options
+      else
+         let options =
+            match s.[i] with
+               '-' ->
+                  options
+             | 'R' ->
+                  LsRules :: options
+             | 'r' ->
+                  LsRewrites :: options
+             | 'u' ->
+                  LsUnjustified :: options
+             | 'f' ->
+                  LsFormal :: options
+             | 'i' ->
+                  LsInformal :: options
+             | 'a' ->
+                  LsAll :: options
+             | 'd' ->
+                  LsDisplay :: options
+             | 'p' ->
+                  LsParent :: options
+             | '!' ->
+                  LsNone :: options
+             | _ ->
+                  raise (RefineError ("ls", StringStringError ("unrecognized option", s)))
+         in
+            collect options (succ i)
+   in
+      collect [] 0
 
 (*
  * Shell takes input parser as an argument.
@@ -284,7 +331,8 @@ struct
            shell_df_info = port;
            shell_proof = proof;
            shell_shell = shell;
-           shell_pid = create_pid ()
+           shell_pid = create_pid ();
+           shell_flush_options = "prR!"
          }
 
    (*
@@ -637,8 +685,47 @@ struct
             exn ->
                ()
 
-   let flush shell =
-      view shell [] "."
+   let flush info =
+      let ls_flags = info.shell_flush_options in
+         view info (ls_options ls_flags) "."
+
+   let get_flush_options info =
+      info.shell_flush_options
+
+   let set_flush_options info s =
+      let ls_flags = info.shell_flush_options in
+      let buf = Buffer.create 10 in
+      let len = String.length s in
+      let rec set i =
+         if i = len then
+            Buffer.contents buf
+         else
+            let c = s.[i] in
+               if not (String.contains ls_flags c) then
+                  Buffer.add_char buf c;
+               set (succ i)
+      in
+      let ls_flags =
+         Buffer.add_string buf ls_flags;
+         set 0
+      in
+         info.shell_flush_options <- ls_flags
+
+   let clear_flush_options info s =
+      let ls_flags = info.shell_flush_options in
+      let buf = Buffer.create 10 in
+      let len = String.length ls_flags in
+      let rec set i =
+         if i = len then
+            Buffer.contents buf
+         else
+            let c = ls_flags.[i] in
+               if not (String.contains s c) then
+                  Buffer.add_char buf c;
+               set (succ i)
+      in
+      let ls_flags = set 0 in
+         info.shell_flush_options <- ls_flags
 
    let pwd shell =
       string_of_path shell.shell_dir
@@ -1519,6 +1606,9 @@ struct
       commands.print_theory <- wrap print_theory;
       commands.extract <- (fun path () -> extract !current_shell path ());
       commands.term_of_extract <- wrap term_of_extract;
+      commands.get_flush_options <- wrap_unit get_flush_options;
+      commands.set_flush_options <- wrap set_flush_options;
+      commands.clear_flush_options <- wrap clear_flush_options;
       ()
 end
 
@@ -1556,6 +1646,9 @@ let redo _ = commands.redo ()
 let create_ax_statement t s = commands.create_ax_statement t s
 let refine t = commands.refine t
 let print_theory s = commands.print_theory s
+let get_flush_options _ = commands.get_flush_options ()
+let set_flush_options s = commands.set_flush_options s
+let clear_flush_options s = commands.clear_flush_options s
 
 let nop _ = commands.interpret ProofNop
 let kreitz _ = commands.interpret ProofKreitz
@@ -1584,33 +1677,7 @@ let save_all _ =
       List.iter save (all_packages ())
 
 let ls s =
-   let len = String.length s in
-   let rec collect options i =
-      if i = len then
-         List.rev options
-      else
-         let options =
-            match s.[i] with
-               '-' ->
-                  options
-             | 'R' ->
-                  LsRules :: options
-             | 'r' ->
-                  LsRewrites :: options
-             | 'u' ->
-                  LsUnjustified :: options
-             | 'f' ->
-                  LsFormal :: options
-             | 'a' ->
-                  LsAll :: options
-             | 'd' ->
-                  LsDisplay :: options
-             | _ ->
-                  raise (RefineError ("ls", StringStringError ("unrecognized option", s)))
-         in
-            collect options (succ i)
-   in
-      commands.view (collect [] 0) "."
+   commands.view (ls_options s) "."
 
 let view name =
    commands.view [] name

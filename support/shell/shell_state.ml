@@ -122,7 +122,7 @@ type t =
      mutable state_toploop : Mptop.top_table;
      mutable state_input_info : info;
      mutable state_interactive : bool;
-     mutable state_infixes : Infix.Set.t;
+     mutable state_infixes : Infix.Set.t
    }
 
 (*
@@ -150,7 +150,10 @@ let mk_opname_null _ =
    raise (Failure "Shell_mp.mk_opname: no current package")
 
 let mk_var_contexts_null v i =
-   if i=0 then None else raise(Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
+   if i = 0 then
+      None
+   else
+      raise (Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
 
 let default_saved_tactic =
    let loc = 0, 0 in
@@ -170,7 +173,7 @@ let create () =
      state_toploop = Mptop.get_toploop_resource (Mp_resource.find Mp_resource.top_bookmark) [];
      state_input_info = Buffered [];
      state_interactive = true;
-     state_infixes = Infix.Set.empty;
+     state_infixes = Infix.Set.empty
    }
 
 let fork state =

@@ -89,6 +89,11 @@ topval set_dfmode : string -> unit
 topval set_tex_file : string -> unit
 topval print_theory : string -> unit
 
+(* View options *)
+topval get_flush_options : unit -> string
+topval set_flush_options : string -> unit
+topval clear_flush_options : string -> unit
+
 (* Other utilities *)
 topval create_ax_statement : term -> string -> unit
 topval set_debug : string -> bool -> unit
