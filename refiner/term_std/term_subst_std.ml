@@ -122,7 +122,8 @@ struct
          gvars
 
    (* Actual function *)
-   let free_vars = free_vars_term [] []
+   let free_vars_list = free_vars_term [] []
+   let free_vars_set t = StringSet.of_list (free_vars_list t)
 
    (* Collect over a list of terms *)
    let free_vars_terms =
@@ -133,7 +134,7 @@ struct
          aux []
 
    let free_vars_equal t1 t2 =
-      (Sort.list (<) (free_vars t1)) = (Sort.list (<) (free_vars t2))
+      (Sort.list (<) (free_vars_list t1)) = (Sort.list (<) (free_vars_list t2))
 
    (*
     * See if a variable is free.
@@ -363,7 +364,7 @@ struct
            term_terms = []
          }, t' when Opname.eq opname var_opname ->
             not (List.mem_assoc v bvars) &&
-            not (List_util.assoc_in_range rev_mem (free_vars t') bvars) &&
+            not (List_util.assoc_in_range rev_mem (free_vars_list t') bvars) &&
             f t' (List.assoc v sub)
        | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
@@ -471,7 +472,7 @@ struct
                (* If any of the binding variables are free, rename them *)
                let renames = List_util.subtract bvars (fsubtract bvars fv') in
                   if renames <> [] then
-                     let fv'' = (free_vars term)::fv' in
+                     let fv'' = (free_vars_list term)::fv' in
                      let renames' = new_vars fv'' renames in
                         { bvars = subst_bvars renames' renames bvars;
                           bterm = subst_term
@@ -495,7 +496,7 @@ struct
             List.map subst_bvar bvars
 
       in
-         subst_term terms (List.map free_vars terms) vars term
+         subst_term terms (List.map free_vars_list terms) vars term
 
    (*
     * Inverse substitution.
@@ -558,7 +559,7 @@ struct
                            match_terms subst bvars (List.assoc v subst) tm2
                   with
                      Not_found ->
-                        check_bvars (free_vars tm2) bvars;
+                        check_bvars (free_vars_list tm2) bvars;
                         (v, tm2) :: subst
       else
          let { term_op = { op_name = opname1; op_params = params1 };

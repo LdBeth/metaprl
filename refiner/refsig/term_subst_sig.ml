@@ -93,7 +93,8 @@ sig
    val is_var_free : string -> term -> bool
    val is_some_var_free : string list -> term -> bool
    val is_some_var_free_list : string list -> term list -> bool
-   val free_vars : term -> string list
+   val free_vars_list : term -> string list
+   val free_vars_set : term -> StringSet.t
    val free_vars_terms : term list -> string list
    val context_vars : term -> string list
    val binding_vars : term -> string list

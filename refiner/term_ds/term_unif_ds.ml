@@ -95,16 +95,11 @@ struct
     *)
    let rec collect_vars = function
       [] -> StringSet.empty
-    | (t1,t2) :: eqs -> StringSet.union (term_free_vars t1) (StringSet.union (term_free_vars t2) (collect_vars eqs))
+    | (t1,t2) :: eqs -> StringSet.union (free_vars_set t1) (StringSet.union (free_vars_set t2) (collect_vars eqs))
 
    let new_eqns_var eqs v = String_util.vnewname v (StringSet.mem (collect_vars eqs))
 
-   let subst t tl vl =
-      do_term_subst (List.combine vl tl) t
-
-   let is_free_var v t = StringSet.mem (term_free_vars t) v
-
-   let free_vars t = StringSet.elements (term_free_vars t)
+   let is_free_var v t = StringSet.mem (free_vars_set t) v
 
    (*
     * Collect all binding vars.
@@ -145,39 +140,7 @@ struct
       StringSet.elements (binding_vars_set t)
 
    let add_vars vars term =
-      StringSet.union vars (term_free_vars term)
-
-   let free_vars_set = function
-      [hd] ->
-         term_free_vars hd
-    | hd :: tl ->
-         List.fold_left add_vars (term_free_vars hd) tl
-    | [] ->
-         StringSet.empty
-
-   let free_vars_terms terms =
-      StringSet.elements (free_vars_set terms)
-
-   let is_free_var_list vars terms =
-      match vars with
-         [] ->
-            false
-       | _ ->
-            let free_set = free_vars_set terms in
-               List.exists (fun v -> StringSet.mem free_set v) vars
-
-   let context_vars t =
-      match get_core t with
-         Sequent seq ->
-            let hyps = seq.sequent_hyps in
-            let len = SeqHyp.length hyps in
-            let rec context_vars i =
-               if i = len then [] else
-               match SeqHyp.get hyps i with
-                  Hypothesis _ -> context_vars (succ i)
-                | Context (v,_) -> v::context_vars (succ i)
-            in context_vars 0
-       | _ -> []
+      StringSet.union vars (free_vars_set term)
 
 module Names =
 struct
@@ -869,7 +832,7 @@ let unifiable_eqnl l consts =
        unifiable (mk_term opL (fofeqnlist l)) (mk_term opL (sofeqnlist l)) consts
 
 let alpha_equal_my term0 term1 =
-   unifiable term0 term1 (StringSet.union (term_free_vars term0) (term_free_vars term1))
+   unifiable term0 term1 (StringSet.union (free_vars_set term0) (free_vars_set term1))
 
 (*********************************************************)
 (* Conversion from Mm-unif types to Term                 *)

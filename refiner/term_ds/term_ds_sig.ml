@@ -168,12 +168,12 @@ sig
     * De/Constructors                                                      *
     ************************************************************************)
 
+   val free_vars_set: term -> StringSet.t
+   val bterm_free_vars: bound_term -> StringSet.t
+
    (*
     * simultaneous delayed substitution
     *)
-   val term_free_vars: term -> StringSet.t
-   val bterm_free_vars: bound_term -> StringSet.t
-
    val do_term_subst : term_subst -> term -> term
    val do_bterm_subst : term_subst -> bound_term -> bound_term
 

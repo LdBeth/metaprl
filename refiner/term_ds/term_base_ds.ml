@@ -142,7 +142,7 @@ struct
     * Free variables, substitution                                         *
     ************************************************************************)
 
-   let rec term_free_vars t =
+   let rec free_vars_set t =
       match t.free_vars with
          Vars vars -> vars
        | VarsDelayed ->
@@ -168,7 +168,7 @@ struct
                      ENDIF
                 | Sequent seq ->
                      StringSet.union
-                        (term_free_vars seq.sequent_args)
+                        (free_vars_set seq.sequent_args)
                         (hyp_fv
                            seq.sequent_hyps
                            (SeqHyp.length seq.sequent_hyps - 1)
@@ -179,7 +179,7 @@ struct
                            (List.fold_right
                               StringSet.remove
                               (List_util.fst_split sub)
-                              (term_free_vars t))
+                              (free_vars_set t))
                            (subst_free_vars sub)
                      IN
                      IFDEF VERBOSE_EXN THEN
@@ -200,12 +200,12 @@ struct
                         BODY
                      ENDIF
                 | Hashed d ->
-                     term_free_vars (Weak_memo.TheWeakMemo.retrieve_hack d)
+                     free_vars_set (Weak_memo.TheWeakMemo.retrieve_hack d)
 
             in t.free_vars <- Vars vars; vars
 
    and bterm_free_vars bt =
-      List.fold_right StringSet.remove bt.bvars (term_free_vars bt.bterm)
+      List.fold_right StringSet.remove bt.bvars (free_vars_set bt.bterm)
 
    and bterms_free_vars = function
       [] -> StringSet.empty
@@ -214,26 +214,26 @@ struct
 
    and goal_fv goals i =
       if i < 0 then StringSet.empty else
-      StringSet.union (term_free_vars (SeqGoal.get goals i)) (goal_fv goals (pred i))
+      StringSet.union (free_vars_set (SeqGoal.get goals i)) (goal_fv goals (pred i))
 
    and terms_free_vars = function
       [] -> StringSet.empty
-    | [t] -> term_free_vars t
-    | t::tl -> StringSet.union (terms_free_vars tl) (term_free_vars t)
+    | [t] -> free_vars_set t
+    | t::tl -> StringSet.union (terms_free_vars tl) (free_vars_set t)
 
    and hyp_fv hyps i fvs =
       if i < 0 then fvs else
       hyp_fv hyps (pred i) (
       match SeqHyp.get hyps i with
          Hypothesis (v,t) ->
-            StringSet.union (term_free_vars t) (StringSet.remove v fvs)
+            StringSet.union (free_vars_set t) (StringSet.remove v fvs)
        | Context (v,subterms) ->
             StringSet.union fvs (terms_free_vars subterms))
 
    and subst_free_vars = function
       [] -> StringSet.empty
-    | [(v,t)] -> term_free_vars t
-    | (v,t)::tl -> StringSet.union (subst_free_vars tl) (term_free_vars t)
+    | [(v,t)] -> free_vars_set t
+    | (v,t)::tl -> StringSet.union (subst_free_vars tl) (free_vars_set t)
 
    let do_term_subst sub t =
       IFDEF VERBOSE_EXN THEN
@@ -242,7 +242,7 @@ struct
                debug_subst := false;
                eprintf "do_term_subst: { %a\n" debug_print t;
                eprintf "\tfree_vars:";
-               List.iter (fun name -> eprintf " %s" name) (StringSet.elements (term_free_vars t));
+               List.iter (fun name -> eprintf " %s" name) (StringSet.elements (free_vars_set t));
                eflush stderr;
                if sub == [] then eprintf "\t empty substitution\n" else
                List.iter (fun (v, t) -> eprintf "\t%s: %a\n" v debug_print t) sub;
@@ -250,7 +250,7 @@ struct
                debug_subst := true
             end
       ENDIF;
-      match StringSet.fst_mem_filt (term_free_vars t) sub with
+      match StringSet.fst_mem_filt (free_vars_set t) sub with
          [] -> t
        | sub' ->
             {free_vars = VarsDelayed; core = Subst (t,sub')}
@@ -291,13 +291,13 @@ struct
       let btrm = bt.bterm in
       match bt.bvars with
          [] ->
-            begin match StringSet.fst_mem_filt (term_free_vars btrm) sub with
+            begin match StringSet.fst_mem_filt (free_vars_set btrm) sub with
                [] -> bt
              | sub ->
                   { bvars = []; bterm = {free_vars = VarsDelayed; core = Subst (btrm,sub)}}
             end
        | bvrs ->
-            begin match StringSet.fst_mem_filt (term_free_vars btrm)
+            begin match StringSet.fst_mem_filt (free_vars_set btrm)
                                                (filter_sub_vars bt.bvars sub) with
                [] -> bt
              | sub ->
@@ -307,7 +307,7 @@ struct
                         { bvars = bvrs;
                           bterm = { free_vars = VarsDelayed; core = Subst (btrm,sub) }}
                    | capt_vars ->
-                        let avoidvars = StringSet.union sub_fvars (term_free_vars btrm) in
+                        let avoidvars = StringSet.union sub_fvars (free_vars_set btrm) in
                         let (vs,ts) = new_vars avoidvars capt_vars in
                         let new_t = do_term_subst ts btrm in
                         { bvars = rename_bvars vs bvrs;

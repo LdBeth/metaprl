@@ -37,6 +37,7 @@
 
 INCLUDE "refine_error.mlh"
 
+open String_set
 open Printf
 open Mp_debug
 open Opname
@@ -286,8 +287,8 @@ struct
     | v::vs ->
          let v',term' =
             if rstack_mem v stack then
-               let fvs = free_vars term in
-               let v' = String_util.vnewname v (fun v -> (rstack_mem v stack) || (List.mem v fvs)) in
+               let fvs = free_vars_set term in
+               let v' = String_util.vnewname v (fun v -> (rstack_mem v stack) || (StringSet.mem fvs v)) in
                v', subst term [mk_var_term v'] [v]
             else v,term
          in

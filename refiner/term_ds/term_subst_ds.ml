@@ -110,9 +110,10 @@ struct
       ENDIF;
       do_term_subst (List.combine vl tl) t
 
-   let is_var_free v t = StringSet.mem (term_free_vars t) v
+   let is_var_free v t = StringSet.mem (free_vars_set t) v
 
-   let free_vars t = StringSet.elements (term_free_vars t)
+   let free_vars_list t = StringSet.elements (free_vars_set t)
+   let free_vars_set = free_vars_set
 
    (*
     * Collect all binding vars.
@@ -164,32 +165,32 @@ struct
       StringSet.elements (binding_vars_term t)
 
    let add_vars vars term =
-      StringSet.union vars (term_free_vars term)
+      StringSet.union vars (free_vars_set term)
 
-   let free_vars_set = function
+   let terms_free_vars_set = function
       [hd] ->
-         term_free_vars hd
+         free_vars_set hd
     | hd :: tl ->
-         List.fold_left add_vars (term_free_vars hd) tl
+         List.fold_left add_vars (free_vars_set hd) tl
     | [] ->
          StringSet.empty
 
    let free_vars_terms terms =
-      StringSet.elements (free_vars_set terms)
+      StringSet.elements (terms_free_vars_set terms)
 
    let is_some_var_free vars term =
       match vars with
          [] ->
             false
        | _ ->
-            List.exists (StringSet.mem (term_free_vars term)) vars
+            List.exists (StringSet.mem (free_vars_set term)) vars
 
    let is_some_var_free_list vars terms =
       match vars with
          [] ->
             false
        | _ ->
-            List.exists (StringSet.mem (free_vars_set terms)) vars
+            List.exists (StringSet.mem (terms_free_vars_set terms)) vars
 
    let context_vars t =
       match get_core t with
@@ -251,7 +252,7 @@ struct
             else res
 
    let rec equal_term vars t t' =
-      let vars = eq_filt_vars (term_free_vars t) (term_free_vars t') vars in
+      let vars = eq_filt_vars (free_vars_set t) (free_vars_set t') vars in
       (vars == [] && t==t') || (
       match (get_core t, get_core t') with
          FOVar v, FOVar v' ->
@@ -392,7 +393,7 @@ struct
             ))
        | FOVar v,_ ->
             not (List.mem_assoc v bvars) &&
-            not (List_util.assoc_in_range StringSet.mem (term_free_vars t') bvars) &&
+            not (List_util.assoc_in_range StringSet.mem (free_vars_set t') bvars) &&
             f t' (List.assoc v sub)
        | Term t1, Term t2 ->
             Opname.eq t1.term_op.op_name t2.term_op.op_name &&
@@ -461,7 +462,7 @@ struct
                            match_terms subst bvars tm1 tm2
                   with
                      Not_found ->
-                        check_bvars (term_free_vars tm2) bvars;
+                        check_bvars (free_vars_set tm2) bvars;
                         (v, tm2) :: subst
       else
          let { term_op = { op_name = opname1; op_params = params1 };

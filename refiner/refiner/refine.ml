@@ -821,7 +821,7 @@ struct
          let bound_vars = List_util.subtract_multiset bound_vars allowed_vars in
 
          (* Intersect the bound_vars with the free vars in the term replacement *)
-         let bound_vars = List_util.intersect (free_vars t') bound_vars in
+         let bound_vars = List_util.intersect (free_vars_list t') bound_vars in
 
          (* Substitute a placeholder into the sequent to rename other binding vars *)
          let bvars_term = mk_xlist_term (List.map mk_var_term bound_vars) in

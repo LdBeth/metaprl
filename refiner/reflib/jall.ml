@@ -3781,8 +3781,8 @@ let rec rec_apply sigmaQ tauQ tau_vars tau_terms =
    [] -> [],[]
   | (v,term)::r -> 
    let app_term = subst term tau_terms tau_vars in 
-    let old_free = free_vars term 
-    and new_free = free_vars app_term  in 
+    let old_free = free_vars_list term 
+    and new_free = free_vars_list app_term  in 
      let inst_vars = list_diff old_free new_free in 
       let inst_terms = collect_assoc inst_vars tauQ in 
     let (rest_sigma,rest_sigma_ordering) = rec_apply r tauQ tau_vars tau_terms in 
@@ -5356,7 +5356,7 @@ let rec renam_free_vars termlist =
   match termlist 
    with [] -> [],[]
   |f::r -> 
-    let var_names = free_vars f in  
+    let var_names = free_vars_list f in  
       let string_terms = 
        List.map (fun x -> (mk_string_term (make_opname ["free_variable";x]) x)) var_names
       in 
@@ -5399,8 +5399,8 @@ let rec make_nuprl_interface rule_list nuprl_map =
           let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in 
           let delta_map = List.combine delta_vars delta_terms in 
           let var_mapping = (nuprl_map @ delta_map) in 
-let frees1 = free_vars term1
-and frees2 = free_vars term2 in 
+let frees1 = free_vars_list term1
+and frees2 = free_vars_list term2 in 
  let unique_object = mk_var_term "v0_jprover" in 
    let unique_list1 = make_equal_list (List.length frees1) unique_object
    and unique_list2 = make_equal_list (List.length frees2) unique_object
@@ -5427,8 +5427,8 @@ let rec make_test_interface rule_list nuprl_map =
           let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in 
           let delta_map = List.combine delta_vars delta_terms in 
           let var_mapping = (nuprl_map @ delta_map) in 
-let frees1 = free_vars term1
-and frees2 = free_vars term2 in 
+let frees1 = free_vars_list term1
+and frees2 = free_vars_list term2 in 
  let unique_object = mk_var_term "v0_jprover" in 
    let unique_list1 = make_equal_list (List.length frees1) unique_object
    and unique_list2 = make_equal_list (List.length frees2) unique_object
