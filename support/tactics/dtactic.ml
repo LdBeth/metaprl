@@ -464,7 +464,7 @@ let process_intro_resource_annotation name context_args term_args _ statement (p
    let tac =
       match context_args with
          [||] ->
-            let auto_exn = RefineError("intro_annotation " ^ name, StringError("not appropriate in autoT")) in
+            let auto_exn = RefineError("intro_annotation " ^ name, StringError("not appropriate in weakAutoT")) in
             let rec auto_aux = function
                AutoMustComplete :: _ ->
                   (fun p -> if in_auto p then raise auto_exn)

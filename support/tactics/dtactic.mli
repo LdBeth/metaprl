@@ -68,6 +68,8 @@ val d_prec : auto_prec
 
 topval dT : int -> tactic
 
+val in_auto : tactic_arg -> bool (* Returns true what we are in weakAutoT, but not strongAutoT *)
+
 (*
  * Run dT 0 so many times.
  *)
