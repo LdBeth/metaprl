@@ -39,7 +39,8 @@ struct
     *)
    let word_size = 4
 
-#ifdef ENSEMBLE
+IFDEF ENSEMBLE THEN
+
    open Ensemble
 
    (*
@@ -148,7 +149,8 @@ struct
    let free { rbuf_buffers = vecl } =
       Iovecl.free "Shared_buf.Buf.free" vecl
 
-#else
+ELSE (* ENSEMBLE undefined *)
+
    (*
     * If not Ensemble, then we just create a simplified
     * form of the buffers.
@@ -225,7 +227,8 @@ struct
     *)
    let free _ =
       ()
-#endif
+
+ENDIF
 
    (*
     * Write a string to the buffer.
