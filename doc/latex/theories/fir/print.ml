@@ -35,8 +35,9 @@ set_tex_file "../../doc/latex/theories/fir/theory.tex";;
 
 print_theory "mfir_theory";;
 print_theory "mfir_option";;
-print_theory "mfir_record";;
 print_theory "mfir_bool";;
+print_theory "mfir_token";;
+print_theory "mfir_record";;
 print_theory "mfir_int";;
 print_theory "mfir_list";;
 print_theory "mfir_int_set";;
