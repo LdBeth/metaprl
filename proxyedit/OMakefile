@@ -8,9 +8,9 @@ if $(SSL_ENABLED)
        proxyedit_lex\
        proxyedit_main
 
-   LIBS += $(LIB)/liblmcutil $(LIB)/clib
+   LIBS += $(LIBMOJAVE_CLIB) $(file $(ROOT)/clib/clib)
 
-   OCAML_LIBS += $(LIB)/lm
+   OCAML_LIBS += $(LIBMOJAVE)
 
    OCamlProgramInstall(.DEFAULT, $(BIN), proxyedit, $(PROXYEDIT_FILES))
 

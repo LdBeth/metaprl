@@ -446,6 +446,9 @@ CamlSubDirs(libmojave)
 
 OCAMLINCLUDES += $(dir libmojave/stdlib libmojave/util libmojave/unix)
 
+LIBMOJAVE = $(file libmojave/lm)
+LIBMOJAVE_CLIB = $(file libmojave/cutil/liblmcutil)
+
 ########################################################################
 # Refiner building
 #

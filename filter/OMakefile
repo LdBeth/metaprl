@@ -49,11 +49,15 @@ if $(NATIVE_PROFILING_ENABLED)
 #
 # Other libraries that we always want to include
 #
-OCAML_CLIBS = $(file $(ROOT)/clib/clib) $(file $(ROOT)/libmojave/cutil/liblmcutil)
+OCAML_CLIBS[] =
+   $(file $(ROOT)/clib/clib)
+   $(LIBMOJAVE_CLIB)
+
 OCAML_OTHER_LIBS += str
-OCAML_LIBS =\
-        $(LIB)/lm\
-	$(LIB)/util
+
+OCAML_LIBS[] =
+   $(LIBMOJAVE)
+   $(file $(ROOT)/mllib/util)
 
 #
 # Libraries for camlp4n
@@ -67,12 +71,12 @@ CAMLP4_FILES =\
 	filter/filter_parse\
 	filter/filter_main
 
-STANDARD_LIBS =\
-	$(CAMLP4LIB)/camlp4\
-	$(LIB)/refiner\
-	$(LIB)/library\
-	$(LIB)/trefiner\
-	$(LIB)/prooflib\
+STANDARD_LIBS[] =
+	$(CAMLP4LIB)/camlp4
+	$(file $(ROOT)/refiner/refiner)
+	$(file $(ROOT)/library/library)
+	$(file $(ROOT)/$(ENSEMBLE_DIR)/trefiner)
+	$(file $(ROOT)/tactics/proof/prooflib)
 	$(MAINLIB)
 
 CAMLP4_LIBS =\
