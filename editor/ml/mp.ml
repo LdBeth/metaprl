@@ -31,7 +31,6 @@
  *)
 
 module Shell = Shell.Shell (Shell_p4.ShellP4)
-module ShellHTTP = Shell_http.ShellHTTP (Shell)
 
 open Shell
 open Printf
@@ -100,7 +99,7 @@ let edit_undo () = edit_undo (get_current_shell ())
 
 let shell_get_term = Shell_state.get_term
 
-let _ = ShellHTTP.main ()
+let _ = Shell.main ()
 
 let _ = eprintf "\n!!                     ***************                           !!\n!!                     *** WARNING ***                           !!\n!!                     ***************                           !!\n!!                                                               !!\n!! This version of MetaPRL with OCaml toploop is only meant      !!\n!! to be used as a tactic development aid.                       !!\n!! Proofs developed in such toploop might not replay later       !!\n!! due to the differences in namespace management between        !!\n!! the different toploops.                                       !!\n!! Please always use MetaPRL with MetaPRL toploop                !!\n!!   (run mpopt for native code version, mptop for bytecode one) !!\n!! for proof development.                                        !!\n\n%t" eflush
 
