@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.8)
+OMakeVersion(0.8.1)
 
 ########################################################################
 # Begin real makefile.
