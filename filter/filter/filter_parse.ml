@@ -556,11 +556,9 @@ struct
            term_def_resources = res
          }
       in
-         Refine.check_definition name redex contractum;
          add_command proc (DefineTerm (ty_term, term_def), loc)
 
    let declare_type_rewrite proc loc redex contractum =
-      Refine.check_rewrite "type" empty_args_spec [] [] redex contractum;
       FilterCache.declare_type_rewrite proc.cache redex contractum;
       add_command proc (DeclareTypeRewrite (redex, contractum), loc)
 
@@ -573,40 +571,37 @@ struct
     * The params are supplied terms, and the conditions are terms that
     * must be provable _in the current context_.  In a sequent calculus,
     * the current context would be the assumption list.
+    *
+    * Note that Refine.check_rewrite has already been called at
+    * this point.
     *)
    let simple_rewrite proc name redex contractum pf res =
-      (* Check that rewrite will succeed *)
-      Refine.check_rewrite name empty_args_spec [] [] redex contractum;
-
-      (* Construct the command *)
-      Rewrite { rw_name = name;
-                rw_redex = redex;
+      Rewrite { rw_name       = name;
+                rw_redex      = redex;
                 rw_contractum = contractum;
-                rw_proof = pf;
-                rw_resources = res
+                rw_proof      = pf;
+                rw_resources  = res
       }
 
    let simple_input_form proc name redex contractum pf res =
-      Refine.check_rewrite name empty_args_spec [] [] redex contractum;
-      InputForm { rw_name = name;
-                  rw_redex = redex;
+      InputForm { rw_name       = name;
+                  rw_redex      = redex;
                   rw_contractum = contractum;
-                  rw_proof = pf;
-                  rw_resources = res
+                  rw_proof      = pf;
+                  rw_resources  = res
       }
 
    let cond_rewrite proc name params args pf res =
       let cvars = context_vars args in
-      let params' = extract_params cvars params in
-      let args', redex, contractum = unzip_rewrite name args in
-         Refine.check_rewrite name (collect_cvars params') (collect_terms params') args' redex contractum;
-         CondRewrite { crw_name = name;
-                       crw_params = params';
-                       crw_args = args';
-                       crw_redex = redex;
+      let params = extract_params cvars params in
+      let args, redex, contractum = unzip_rewrite name args in
+         CondRewrite { crw_name       = name;
+                       crw_params     = params;
+                       crw_args       = args;
+                       crw_redex      = redex;
                        crw_contractum = contractum;
-                       crw_proof = pf;
-                       crw_resources = res
+                       crw_proof      = pf;
+                       crw_resources  = res
          }
 
    (*
@@ -648,39 +643,24 @@ struct
       with exn ->
          Stdpp.raise_with_loc loc exn
 
-   let rule_command proc name params t pf res =
+   (* Note that Refine.check_rule has already been issued *)
+   let rule_command proc name params mt pf res =
       (* Extract context names *)
-      let _ =
-         if !debug_grammar then
-            eprintf "Conditional rule: %s%t" name eflush
-      in
-      let cvars = context_vars t in
-      let params' = extract_params cvars params in
-         (* Do some checking on the rule *)
-         if !debug_grammar then
-            begin
-               let t, result = unzip_mfunction t in
-                  eprintf "Checking rule: %s\n" name;
-                  eprintf "Non vars:\n%a" print_non_vars params';
-                  eprintf "Args:\n%a --> %s\n" print_vterms t (string_of_term result)
-            end;
-         Refine.check_rule name (collect_cvars params') (collect_terms params') (strip_mfunction t);
-         if !debug_grammar then
-            eprintf "Checked rule: %s%t" name eflush;
-
-         (* If checking completes, add the rule *)
-         Rule { rule_name = name;
-                rule_params = params';
-                rule_stmt = t;
-                rule_proof = pf;
+      let cvars = context_vars mt in
+      let params = extract_params cvars params in
+         Rule { rule_name      = name;
+                rule_params    = params;
+                rule_stmt      = mt;
+                rule_proof     = pf;
                 rule_resources = res
          }
 
    let declare_rule proc loc name args t pf res =
       try
          add_command proc (rule_command proc name args t pf res, loc)
-      with exn ->
-         Stdpp.raise_with_loc loc exn
+      with
+         exn ->
+            Stdpp.raise_with_loc loc exn
 
    (*
     * Infix directive.
@@ -1294,7 +1274,7 @@ let parse_quote loc quote token_type bvar_type subterm_type term_type =
    let parse_param param =
       match param with
          TyToken t ->
-            TyToken (quote_term_of_parsed_term loc token_type bvar_type term_type t)
+            TyToken (parse_quoted_term loc token_type bvar_type term_type t)
        | TyNumber
        | TyString
        | TyLevel
@@ -1303,33 +1283,40 @@ let parse_quote loc quote token_type bvar_type subterm_type term_type =
             param
    in
    let parse_bterm { ty_bvars = bvars; ty_bterm = term } =
-      { ty_bvars = List.map (quote_term_of_parsed_term loc token_type bvar_type term_type) bvars;
-        ty_bterm = quote_term_of_parsed_term loc token_type bvar_type subterm_type term
+      { ty_bvars = List.map (parse_quoted_term loc token_type bvar_type term_type) bvars;
+        ty_bterm = parse_quoted_term loc token_type bvar_type subterm_type term
       }
    in
       { quote with ty_params = List.map parse_param params;
                    ty_bterms = List.map parse_bterm bterms;
-                   ty_type   = quote_term_of_parsed_term loc token_type bvar_type term_type ty
+                   ty_type   = parse_quoted_term loc token_type bvar_type term_type ty
       }
 
-(* Convert the term in the quotation *)
-let parse_quote_term loc quote =
-   { quote with ty_term = quoted_term_of_parsed_term loc quote.ty_term }
+(* For term definitions, the default type is Term *)
+let parse_declare_term loc quote =
+   let quote = parse_quote loc quote term_type term_type term_type term_type in
+      { quote with ty_term = quoted_term_of_parsed_term loc quote.ty_term }
 
 (* For type definitions, the default type is Ty *)
-let parse_declare_term loc quote =
-   parse_quote_term loc (parse_quote loc quote term_type term_type term_type term_type)
-
 let parse_declare_type loc quote =
-   parse_quote_term loc (parse_quote loc quote term_type term_type term_type type_type)
+   let quote = parse_quote loc quote term_type term_type term_type type_type in
+      { quote with ty_term = quoted_term_of_parsed_term loc quote.ty_term }
 
 (* For term definitions, the default type is Term *)
-let parse_define_term loc quote =
+let parse_define_quote loc quote =
    parse_quote loc quote term_type term_type term_type term_type
 
+let parse_define_redex loc quote =
+   { quote with ty_term = quoted_term_of_parsed_term loc quote.ty_term }
+
+let parse_define_term loc name quote contractum =
+   let redex, contractum = parse_define loc name quote.ty_term contractum in
+   let quote = { quote with ty_term = redex } in
+      quote, contractum
+
 (* Parse and check a rewrite definition *)
-let parse_rewrite loc mt tl rs =
-   let mt, tl, f = TermGrammar.parse_rewrite loc mt tl in
+let parse_rewrite loc name mt tl rs =
+   let mt, tl, f = TermGrammar.parse_rewrite loc name mt tl in
    let conv = function
       v, BindTerm t ->
          v, BindTerm (f t)
@@ -1342,8 +1329,8 @@ let parse_type_rewrite loc redex contractum =
    TermGrammar.parse_type_rewrite loc redex contractum
 
 (* Don't require the two sides to have the same type *)
-let parse_iform loc mt tl rs =
-   let mt, tl, f = TermGrammar.parse_iform loc mt tl in
+let parse_iform loc name mt tl rs =
+   let mt, tl, f = TermGrammar.parse_iform loc name mt tl in
    let conv = function
       v, BindTerm t ->
          v, BindTerm (f t)
@@ -1352,17 +1339,9 @@ let parse_iform loc mt tl rs =
    in
       mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
 
-(*
- * A new term definition.
- *)
-let parse_define loc quote contractum =
-   let redex, contractum = TermGrammar.parse_dform loc quote.ty_term contractum in
-   let quote = { quote with ty_term = redex } in
-      quote, contractum
-
 (* Convert contexts in meta-terms, terms args and resource term bindings *)
-let parse_rule loc mt tl rs =
-   let mt, tl, f = TermGrammar.parse_rule loc mt tl in
+let parse_rule loc name mt tl rs =
+   let mt, tl, f = TermGrammar.parse_rule loc name mt tl in
    let conv = function
       v, BindTerm t ->
          v, BindTerm (f t)
@@ -1372,8 +1351,8 @@ let parse_rule loc mt tl rs =
       mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
 
 (* Same as parse_rule, but with extract term as well *)
-let parse_rule_with_extract loc mt tl rs extract =
-   let mt, tl, f = TermGrammar.parse_rule loc mt tl in
+let parse_rule_with_extract loc name mt tl rs extract =
+   let mt, tl, f = TermGrammar.parse_rule loc name mt tl in
    let conv = function
       v, BindTerm t ->
          v, BindTerm (f t)
@@ -1552,9 +1531,9 @@ EXTEND
         | "define"; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
           let f () =
              let proc = SigFilter.get_proc loc in
-             let quote = parse_define_term loc quote in
-             let () = SigFilter.declare_define_term proc (parse_quote_term loc quote) in
-             let quote, def = parse_define loc quote def in
+             let quote = parse_define_quote loc quote in
+             let () = SigFilter.declare_define_term proc (parse_define_redex loc quote) in
+             let quote, def = parse_define_term loc name quote def in
                 SigFilter.define_term proc loc name quote def res
            in
               handle_exn f ("define " ^ name) loc;
@@ -1573,7 +1552,7 @@ EXTEND
         | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
            let f () =
               let proc = SigFilter.get_proc loc in
-              let t, args, _ = TermGrammar.parse_rewrite loc t args in
+              let t, args, _ = TermGrammar.parse_rewrite loc name t args in
                  SigFilter.declare_rewrite proc loc name args t () no_resources
            in
              handle_exn f ("rewrite " ^ name) loc;
@@ -1581,7 +1560,7 @@ EXTEND
         | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               let proc = SigFilter.get_proc loc in
-              let t, args, res = parse_iform loc t args res in
+              let t, args, res = parse_iform loc name t args res in
               let redex, contractum = SigFilter.declare_input_form proc loc name args t () res in
                  SigFilter.add_iform proc loc redex contractum
            in
@@ -1598,7 +1577,7 @@ EXTEND
         | rule_keyword; name = LIDENT; args = optarglist; ":"; mt = mterm ->
            let f () =
               let proc = SigFilter.get_proc loc in
-              let t, args, _ = TermGrammar.parse_rule loc mt args in
+              let t, args, _ = TermGrammar.parse_rule loc name mt args in
                  SigFilter.declare_rule proc loc name args t () no_resources
            in
               handle_exn f ("rule " ^ name) loc;
@@ -1751,9 +1730,9 @@ EXTEND
         | "define"; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
           let f () =
              let proc = StrFilter.get_proc loc in
-             let quote = parse_define_term loc quote in
-             let () = StrFilter.declare_define_term proc (parse_quote_term loc quote) in
-             let quote, def = parse_define loc quote def in
+             let quote = parse_define_quote loc quote in
+             let () = StrFilter.declare_define_term proc (parse_define_redex loc quote) in
+             let quote, def = parse_define_term loc name quote def in
                 StrFilter.define_term proc loc name quote def res
            in
               handle_exn f ("define " ^ name) loc;
@@ -1772,7 +1751,7 @@ EXTEND
         | "prim_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               let proc = StrFilter.get_proc loc in
-              let t, args, res = parse_rewrite loc t args res in
+              let t, args, res = parse_rewrite loc name t args res in
                  StrFilter.declare_rewrite proc loc name args t (Primitive xnil_term) res
            in
               handle_exn f ("prim_rw " ^ name) loc;
@@ -1780,7 +1759,7 @@ EXTEND
         | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
           let f () =
               let proc = StrFilter.get_proc loc in
-              let t, args, res = parse_iform loc t args res in
+              let t, args, res = parse_iform loc name t args res in
               let redex, contractum =
                  StrFilter.declare_input_form (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
               in
@@ -1791,7 +1770,7 @@ EXTEND
         | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               let proc = StrFilter.get_proc loc in
-              let t, args, res = parse_rewrite loc t args res in
+              let t, args, res = parse_rewrite loc name t args res in
                  StrFilter.declare_rewrite proc loc name args t Incomplete res
            in
               handle_exn f ("interactive_rw " ^ name) loc;
@@ -1799,7 +1778,7 @@ EXTEND
         | "derived_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               let proc = StrFilter.get_proc loc in
-              let t, args, res = parse_rewrite loc t args res in
+              let t, args, res = parse_rewrite loc name t args res in
                  StrFilter.declare_rewrite proc loc name args t Incomplete res
            in
               handle_exn f ("derived_rw " ^ name) loc;
@@ -1807,7 +1786,7 @@ EXTEND
         | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
            let f () =
               let proc = StrFilter.get_proc loc in
-              let t, args, res = parse_rewrite loc t args res in
+              let t, args, res = parse_rewrite loc name t args res in
                  StrFilter.declare_rewrite proc loc name args t (Derived body) res
            in
               handle_exn f ("thm_rw " ^ name) loc;
@@ -1825,7 +1804,7 @@ EXTEND
            let f () =
               let proc = StrFilter.get_proc loc in
               let mt, extract = body in
-              let mt, params, res, extract = parse_rule_with_extract loc mt params res extract in
+              let mt, params, res, extract = parse_rule_with_extract loc name mt params res extract in
                  define_prim proc loc name params mt extract res
            in
               handle_exn f ("prim " ^ name) loc;
@@ -1833,7 +1812,7 @@ EXTEND
         | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = expr ->
            let f () =
               let proc = StrFilter.get_proc loc in
-              let mt, params, res = parse_rule loc mt params res in
+              let mt, params, res = parse_rule loc name mt params res in
                  define_thm proc loc name params mt tac res
            in
               handle_exn f ("thm " ^ name) loc;
@@ -1841,7 +1820,7 @@ EXTEND
         | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
               let proc = StrFilter.get_proc loc in
-              let mt, params, res = parse_rule loc mt params res in
+              let mt, params, res = parse_rule loc name mt params res in
                  define_int_thm proc loc name params mt res
            in
               handle_exn f ("interactive " ^ name) loc;
@@ -1849,7 +1828,7 @@ EXTEND
         | "derived"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
               let proc = StrFilter.get_proc loc in
-              let mt, params, res = parse_rule loc mt params res in
+              let mt, params, res = parse_rule loc name mt params res in
                  define_int_thm proc loc name params mt res
            in
               handle_exn f ("derived " ^ name) loc;

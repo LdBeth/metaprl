@@ -400,12 +400,13 @@ sig
 
    (* Term conversion *)
    val parse_term           : MLast.loc -> parsed_term -> term
-   val parse_rule           : MLast.loc -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
-   val parse_rewrite        : MLast.loc -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
+   val parse_rule           : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
+   val parse_rewrite        : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
    val parse_type_rewrite   : MLast.loc -> parsed_term -> parsed_term -> term * term
-   val parse_iform          : MLast.loc -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
+   val parse_iform          : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
    val parse_dform          : MLast.loc -> parsed_term -> parsed_term -> term * term
    val parse_production     : MLast.loc -> parsed_term list -> parsed_term -> term list * term
+   val parse_define         : MLast.loc -> string -> parsed_term -> parsed_term -> term * term
 
    (* For input terms from other parsers *)
    val mk_parsed_term : term -> parsed_term
@@ -445,7 +446,7 @@ sig
    val quoted_term_of_parsed_term : MLast.loc -> parsed_term -> term
 
    (* Bypass the parser, but do typechecking *)
-   val quote_term_of_parsed_term : MLast.loc ->
+   val parse_quoted_term : MLast.loc ->
       term ->           (* token type *)
       term ->           (* bvar type *)
       term ->           (* term type *)

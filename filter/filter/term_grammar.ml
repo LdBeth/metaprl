@@ -46,6 +46,7 @@ open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
+open Refiner.Refiner.Rewrite
 
 open Lexing
 open Filter_type
@@ -209,22 +210,50 @@ struct
    let parse_bound_term loc bt =
       { bt with aterm = parse_term loc bt.aterm }
 
-   let parse_rule loc mt args =
+   let parse_rule loc name mt args =
       let mt, args = Filter_grammar.apply_iforms_mterm mt args in
       let mt, args, f = mterms_of_parsed_mterms mt args in
+
+      (* Check with the refiner first for rewrite errors *)
+      let cvars = context_vars mt in
+      let params = extract_params cvars args in
+         Refine.check_rule name (collect_cvars params) (collect_terms params) (strip_mfunction mt);
+
+         (* Then check for type errors *)
          check_rule loc mt args;
          mt, List.map erase_arg_term args, f
 
-   let parse_rewrite loc mt args =
+   let parse_rewrite loc name mt args =
       let mt, args = Filter_grammar.apply_iforms_mterm mt args in
       let mt, args, f = mterms_of_parsed_mterms mt args in
+
+      (* Check with the refiner first for rewrite errors *)
+      let cvars = context_vars mt in
+      let params = extract_params cvars args in
+      let args', redex, contractum = unzip_rewrite name mt in
+      let () = Refine.check_rewrite name (collect_cvars params) (collect_terms params) args' redex contractum in
+
+      (* Then check for type errors *)
       let _ = infer_rewrite loc mt args in
          mt, List.map erase_arg_term args, f
+
+   let parse_define loc name redex contractum =
+      let redex = Filter_grammar.apply_iforms redex in
+      let contractum = Filter_grammar.apply_iforms contractum in
+      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+
+      (* Check with the rewriter first *)
+      let () = Refine.check_definition name redex contractum in
+
+      (* Check the types of both parts *)
+      let _ = infer_rewrite loc (MetaIff (MetaTheorem redex, MetaTheorem contractum)) [] in
+         redex, contractum
 
    let parse_type_rewrite loc redex contractum =
       let redex = Filter_grammar.apply_iforms redex in
       let contractum = Filter_grammar.apply_iforms contractum in
       let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+         Refine.check_rewrite "type" empty_args_spec [] [] redex contractum;
          check_type_rewrite loc redex contractum;
          redex, contractum
 
@@ -233,8 +262,16 @@ struct
     * are erased after inference.  In the informal
     * code, constraints are legal.
     *)
-   let parse_iform loc mt args =
+   let parse_iform loc name mt args =
       let mt, args, f = mterms_of_parsed_mterms mt args in
+
+      (* Check with the refiner for rewrite errors *)
+      let cvars = context_vars mt in
+      let params = extract_params cvars args in
+      let args', redex, contractum = unzip_rewrite name mt in
+      let () = Refine.check_rewrite name (collect_cvars params) (collect_terms params) args' redex contractum in
+
+      (* Check for type errors *)
       let () = check_iform loc mt args in
       let mt = erase_meta_term mt in
       let args = List.map erase_term args in
@@ -295,10 +332,10 @@ struct
    let unknown_opname = mk_opname "$unknown" nil_opname
 
    let unknown_token_opname = mk_opname "token" unknown_opname
-   let unknown_bvar_opname = mk_opname "bvar" unknown_opname
-   let unknown_type_opname = mk_opname "type" unknown_opname
+   let unknown_bvar_opname  = mk_opname "bvar" unknown_opname
+   let unknown_type_opname  = mk_opname "type" unknown_opname
 
-   let unknown_token  = mk_term (mk_op unknown_token_opname []) []
+   let unknown_token = mk_term (mk_op unknown_token_opname []) []
    let unknown_bvar  = mk_term (mk_op unknown_bvar_opname []) []
    let unknown_type  = mk_term (mk_op unknown_type_opname []) []
 
@@ -319,7 +356,8 @@ struct
       in
          map_up subst t
 
-   let quote_term_of_parsed_term loc token_type bvar_type term_type t =
+   (* Make sure the declared term has a type *)
+   let parse_quoted_term loc token_type bvar_type term_type t =
       let t = Filter_grammar.apply_iforms t in
       let t = subst_unknown token_type bvar_type term_type t in
       let _ = infer_term loc t in
