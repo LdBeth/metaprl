@@ -581,8 +581,6 @@ struct
             ]
          ];
 
-
-
       (* Term that can be used in application lists *)
       applyterm:
          [ [ op = opname ->
@@ -887,29 +885,9 @@ struct
          [[ sl_sequent; args = optseqargs; sl_open_curly;
             hyps = LIST0 hyp SEP ";"; sl_turnstile;
             concl = LIST1 term SEP ";"; sl_close_curly ->
-             let mk_hyp_term v t = HypBinding (v, t) in
-             let mk_context_term v subterms = Context (v, subterms) in
-             let rec proc_hyps = function
-                [] ->
-                   []
-              | h::tl ->
-                   if !debug_grammar then
-                      eprintf "Got hyp: %s%t" (SimplePrint.string_of_term h.aterm) eflush;
-                   match h with
-                      { aname = Some v; aterm = t } ->
-                         mk_hyp_term (dest_var v) t :: proc_hyps tl
-                    | { aname = None; aterm = t } ->
-                         try
-                            let v, subterms = dest_so_var t in
-                               mk_context_term v subterms :: proc_hyps tl
-                         with
-                            RefineError (_, TermMatchError _) ->
-                               Stdpp.raise_with_loc loc (**)
-                                  (Failure (sprintf "Not a variable: %s" (SimplePrint.string_of_term t)))
-             in
              let esequent =
                 { sequent_args = mk_xlist_term args;
-                  sequent_hyps = SeqHyp.of_list (proc_hyps hyps);
+                  sequent_hyps = SeqHyp.of_list hyps;
                   sequent_goals = SeqGoal.of_list concl
                 }
              in
@@ -919,17 +897,15 @@ struct
           ]];
 
       hyp:
-         [[ bvar = OPT [ name = word_or_string; sl_colon -> name]; t = aterm ->
-             let v =
-                match bvar with
-                   Some v' ->
-                      Some (mk_var_term v')
-                 | None ->
-                      None
-             in
-                { aname = v; aterm = t.aterm }
+         [[ "<"; name = word_or_string; args=optseqargs; ">" ->
+             Context(name,args)
+          | bvar = OPT [ name = word_or_string; sl_colon -> name]; t = aterm ->
+             match bvar with
+                Some v ->
+                   HypBinding (v, t.aterm)      
+              | None ->
+                   Hypothesis t.aterm
           ]];
-
 
       optseqargs:
          [[ args = OPT seqargs ->
