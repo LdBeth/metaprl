@@ -11,7 +11,7 @@ WrapC(command) =
    # Default environment
    #
    ENV[] =
-      MP_ROOT=$(ROOT)
+      MP_ROOT=$(quote $(ROOT))
       MPLIB=$(LIB)
       MP_GROUP=$(quote $(THEORYNAME))
       MP_DESCR=$(quote $(THEORYDESCR))
@@ -32,7 +32,7 @@ PrlC(command) =
    # JYH: do we still need MP_INCLUDE?
    #
    ENV[] =
-      MP_ROOT=$(ROOT)
+      MP_ROOT=$(quote $(ROOT))
       MPLIB=$(LIB)
       MP_GROUP=$(quote $(THEORYNAME))
       MP_DESCR=$(quote $(THEORYDESCR))

@@ -1,16 +1,7 @@
 #
 # Includes
 #
-OCAMLINCLUDES[] +=
-   $(CAMLP4LIB)
-   $(ROOT)/libmojave/stdlib
-   $(ROOT)/libmojave/util
-   $(ROOT)/mllib
-   $(ROOT)/refiner/refbase
-   $(ROOT)/refiner/refsig
-   $(ROOT)/refiner/refiner
-   $(ROOT)/refiner/reflib
-   $(ROOT)/$(ENSEMBLE_DIR)
+OCAMLINCLUDES += $(dir $(ROOT)/$(ENSEMBLE_DIR))
 
 #
 # Basic camlp4 preprocessing

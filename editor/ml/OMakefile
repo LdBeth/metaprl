@@ -2,7 +2,7 @@
 # MetaPRL editor.
 #
 OCAMLINCLUDES[] +=
-   $(ROOT)/$(ENSEMBLE_DIR)
+   $(dir $(ROOT)/$(ENSEMBLE_DIR))
    $(MP_DIRS)
 
 # Name of main librariws

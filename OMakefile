@@ -475,7 +475,7 @@ OCAMLINCLUDES += $(dir mllib)
 
 .SUBDIRS: proxyedit
 
-OCAMLINCLUDES += $(dir refiner/refsig refiner/refbase refiner/refiner refiner/reflib)
+OCAMLINCLUDES += $(dir refiner/refsig refiner/refbase refiner/refiner refiner/reflib $(CAMLP4LIB))
 
 ########################################################################
 # Generic directories with no special options
@@ -484,7 +484,7 @@ OCAMLINCLUDES += $(dir refiner/refsig refiner/refbase refiner/refiner refiner/re
 CamlSubDirs(library debug $(ENSEMBLE_DIR) tactics/proof)
 
 # Add camlp4 library to include path
-OCAMLINCLUDES += $(CAMLP4LIB) $(dir library tactics/proof)
+OCAMLINCLUDES += $(dir library tactics/proof)
 
 CamlSubDirs(filter)
 
