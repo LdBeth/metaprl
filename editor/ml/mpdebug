@@ -10,4 +10,4 @@ cd `dirname $0`
 #
 # Start the executable.
 #
-exec ocamldebug $INCLUDES -I ../../refiner/reflib ./mp.top $INCLUDES $*
+exec ocamldebug $INCLUDES -I ../../mllib -I ../../refiner/refbase -I ../../refiner/refsig -I ../../refiner/term_std -I ../../refiner/term_ds -I ../../refiner/rewrite -I ../../refiner/refiner -I ../../refiner/reflib ./mp.run $INCLUDES $*

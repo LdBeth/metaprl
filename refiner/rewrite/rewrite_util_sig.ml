@@ -52,6 +52,7 @@ sig
    (*
     * Membership in the stack.
     *)
+   val rstack_var : rstack -> string
    val rstack_mem : string -> rstack list -> bool
    val rstack_so_mem : string -> rstack list -> bool
    val rstack_pattern_mem : string -> rstack list -> bool

@@ -168,14 +168,17 @@ struct
    (*
     * Membership functions.
     *)
-   let rstack_mem_prop v = function
-      FOVarPattern v'
-    | SOVarPattern (v', _)
-    | SOVarInstance (v', _)
-    | FOVar v'
-    | CVar v'
-    | PVar (v', _) ->
-         v = v'
+   let rstack_var = function
+      FOVarPattern v
+    | SOVarPattern (v, _)
+    | SOVarInstance (v, _)
+    | FOVar v
+    | CVar v
+    | PVar (v, _) ->
+         v
+
+   let rstack_mem_prop v rs =
+      rstack_var (rs) = v
 
    let rstack_so_mem_prop v = function
       FOVarPattern v'

@@ -84,7 +84,9 @@ module MakeRewriteCompileRedex
    (TermAddr : TermAddrSig
     with type term = TermType.term)
    (TermSubst : TermSubstSig
-    with type term = TermType.term)
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term
+    with type bound_term' = TermType.bound_term')
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param
@@ -284,26 +286,19 @@ struct
          let stack'', bterms' = compile_so_redex_bterms allow_so_patterns strict addrs stack' bvars bterms in
             stack'', bterm'::bterms'
 
-   (* HACK! This is not absolutely safe - we may accidentally "capture" an SO variable *)
-   and rename_repeated_vars i stack bnames bvars term = function
+   and rename_repeated_vars i stack bnames bvars = function
       [] ->
-         stack,bnames,bvars,term
+         stack,bnames,bvars
     | v::vs ->
-         let v',term' =
-            if rstack_mem v stack then
-               let fvs = free_vars_set term in
-               let v' = String_util.vnewname v (fun v -> (rstack_mem v stack) || (StringSet.mem fvs v)) in
-               v', subst1 term v (mk_var_term v')
-            else v,term
-         in
-         rename_repeated_vars (succ i) (stack @ [FOVar v']) (bnames @ [bname i v']) (bvars @ [new_bvar_item i v']) term' vs
+         rename_repeated_vars (succ i) (stack @ [FOVar v]) (bnames @ [bname i v]) (bvars @ [new_bvar_item i v]) vs
 
    and compile_so_redex_bterm allow_so_patterns strict addrs stack bvars bterm =
-      let { bvars = vars; bterm = term } = dest_bterm bterm in
-      let stack', bnames, bvars', term' = rename_repeated_vars (List.length stack) stack [] bvars term vars in
+      let svars = StringSet.of_list (List.map rstack_var stack) in
+      let { bvars = vars; bterm = term } = dest_bterm_and_rename bterm svars in
+      let stack', bnames, bvars' = rename_repeated_vars (List.length stack) stack [] bvars vars in
       (* Compile the term *)
-      let stack'', term'' = compile_so_redex_term allow_so_patterns strict addrs stack' bvars' term' in
-         stack'', { rw_bvars = List.length vars; rw_bnames = bnames; rw_bterm = term'' }
+      let stack'', term' = compile_so_redex_term allow_so_patterns strict addrs stack' bvars' term in
+         stack'', { rw_bvars = List.length vars; rw_bnames = bnames; rw_bterm = term' }
 
    (*
     * The contexts are handled differently within sequents.

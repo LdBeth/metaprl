@@ -500,7 +500,7 @@ struct
          subst_term terms (List.map free_vars_list terms) vars term
 
    let subst1 t var term =
-      let fv = free_vars_list term in
+      let fv = free_vars_list t in
       if List.mem var fv then
          subst_term [term] [fv] [var] t
       else
@@ -510,17 +510,36 @@ struct
       let vs,ts = List.split s in
       subst t vs ts
 
+   let rec need_to_rename avoid = function
+      [] -> false
+    | v::vs ->
+         StringSet.mem avoid v or
+         need_to_rename (StringSet.add avoid v) vs
+   
+   let rec compute_renames avoid avoid' = function 
+      [] -> [], [], []
+    | v::vs ->
+         if List.mem v vs then
+            let v' = String_util.vnewname v (fv_mem avoid') in
+            let vs', renames, terms = compute_renames avoid ([v']::avoid') vs in
+               (v'::vs'), renames, terms
+         else if StringSet.mem avoid v then
+            let v' = String_util.vnewname v (fv_mem avoid') in
+            let vs', renames, terms = compute_renames avoid ([v']::avoid') vs in
+               (v'::vs'), (v::renames), ((mk_var_term v') :: terms)
+         else
+            let vs', renames, terms = compute_renames avoid avoid' vs in
+            (v::vs'), renames, terms
+
    let dest_bterm_and_rename bt avoid =
-      let renames = List.filter (StringSet.mem avoid) bt.bvars in
-         if renames <> [] then
-            let avoid =
-               [ free_vars_list bt.bterm; bt.bvars; StringSet.elements avoid ]
-            in let renames' = new_vars avoid renames in
-            {
-               bvars = subst_bvars renames' renames bt.bvars;
-               bterm = subst bt.bterm renames (List.map mk_var_term renames')
-            }
-         else bt
+      if need_to_rename avoid bt.bvars then
+         let avoid' = [ free_vars_list bt.bterm; bt.bvars; StringSet.elements avoid ] in
+         let bvars, renames, terms = compute_renames avoid avoid' bt.bvars in
+         {
+            bvars = bvars;
+            bterm = subst bt.bterm renames terms
+         }
+      else bt
 
    (*
     * Inverse substitution.

@@ -152,19 +152,45 @@ struct
    let free_vars_list t = StringSet.elements (free_vars_set t)
    let free_vars_set = free_vars_set
 
+   let rec need_to_rename avoid = function
+      [] -> false
+    | v::vs ->
+         StringSet.mem avoid v or
+         need_to_rename (StringSet.add avoid v) vs
+
+   let rec compute_renames avoid avoid' = function
+      [] -> [], []
+    | [v] ->
+         if StringSet.mem avoid v then
+            let v' = String_util.vnewname v (StringSet.mem avoid')
+            in [v'], [v, (mk_var_term v')]
+         else [v], []
+    | v::vs ->
+         if List.mem v vs then
+            let v' = String_util.vnewname v (StringSet.mem avoid') in
+            let vs', ts = compute_renames avoid (StringSet.add avoid' v') vs in
+               (v'::vs'), ts
+         else if StringSet.mem avoid v then
+            let v' = String_util.vnewname v (StringSet.mem avoid') in
+            let vs', ts = compute_renames avoid (StringSet.add avoid' v') vs in
+               (v'::vs'), ((v, (mk_var_term v')) :: ts)
+         else 
+            let vs', ts = compute_renames avoid avoid' vs in
+            (v::vs'), ts
+
    let dest_bterm_and_rename bt avoid =
-      let renames = List.filter (StringSet.mem avoid) bt.bvars in
-         if renames <> [] then
-            let avoid =
-               List.fold_left StringSet.add (**)
-                  (StringSet.union avoid (free_vars_set bt.bterm))
-                  bt.bvars
-            in let (vs,ts) = new_vars avoid renames in
-            {
-               bvars = rename_bvars vs bt.bvars;
-               bterm = apply_subst bt.bterm ts
-            }
-         else bt
+      if need_to_rename avoid bt.bvars then
+         let avoid' =
+            List.fold_left StringSet.add (**)
+               (StringSet.union avoid (free_vars_set bt.bterm))
+               bt.bvars
+         in
+         let bvars, ts = compute_renames avoid avoid' bt.bvars in
+         {
+            bvars = bvars;
+            bterm = apply_subst bt.bterm ts
+         }
+      else bt
 
    (*
     * Collect all binding vars.
