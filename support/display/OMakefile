@@ -20,6 +20,7 @@ MPFILES =\
 	ocaml_str_df\
 	ocaml_df\
 	summary\
+	base_parser
 
 Theory($(MPFILES))
 

@@ -304,9 +304,23 @@ let con_exp s =
       expr_of_term_con dummy_loc con
 
 let con_patt _ =
-   raise(Invalid_argument "<:con< >> quotation can not be used where pattern is expected")
+   raise (Invalid_argument "<:con< >> quotation can not be used where pattern is expected")
 
 let _ = Quotation.add "con" (Quotation.ExAst (con_exp, con_patt))
+
+(*
+ * <:action< s >> is like <:con< s >>, but it is wrapped in
+ * a (fun argv -> ...)
+ *)
+let action_exp s =
+   let e = con_exp s in
+   let loc = dummy_loc in
+      <:expr< fun argv -> $e$ >>
+
+let action_patt _ =
+   raise (Invalid_argument "<:action< >> quotation can not be used where pattern is expected")
+
+let _ = Quotation.add "action" (Quotation.ExAst (action_exp, action_patt))
 
 let bind_item i =
    { item_item = i;
