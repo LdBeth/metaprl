@@ -285,7 +285,7 @@ sig
     * These functions are required by the Filter_prog module.
     *)
    val compile_rule : build -> string option list -> prim_tactic -> pre_tactic
-   val compile_labeled_rule : build -> prim_tactic -> pre_tactic
+   val compile_ml_rule : build -> prim_tactic -> pre_tactic
    val tactic_of_rule : pre_tactic -> int array -> term list -> tactic
 
    (*

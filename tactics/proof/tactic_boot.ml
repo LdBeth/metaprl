@@ -884,7 +884,7 @@ struct
     * Utility for reconstructing the subgoals
     * in a tactic application.
     *)
-   let make_subgoals labels arg goals =
+   let make_labeled_subgoals labels arg goals =
       let parent_lazy = ParentLazy arg in
       let rec collect labels goals =
          match labels, goals with
@@ -910,26 +910,17 @@ struct
       in
          collect labels goals
 
-   let rec make_labeled_subgoals arg goals =
+   let make_subgoals arg goals =
       let parent_lazy = ParentLazy arg in
       let rec collect = function
          goal :: t ->
-            let goal', assums = dest_msequent goal in
-            let goal =
-               if is_xstring_dep0_term goal' then
-                  let label, goal' = dest_xstring_dep0_term goal' in {
-                     arg with
-                     ref_label = label;
-                     ref_goal = mk_msequent goal' assums;
-                     ref_parent = ParentLazy arg;
-                  }
-               else {
+            let goal = {
                   arg with
                   ref_goal = goal;
-                  ref_parent = ParentLazy arg;
+                  ref_parent = parent_lazy;
                }
             in
-               goal :: make_labeled_subgoals arg t
+               goal :: collect t
        | [] ->
             []
       in
@@ -940,10 +931,10 @@ struct
     * special here.
     *)
    let compile_rule refiner labels tac =
-      (make_subgoals labels, tac)
+      (make_labeled_subgoals labels, tac)
 
-   let compile_labeled_rule refiner tac =
-      (make_labeled_subgoals, tac)
+   let compile_ml_rule refiner tac =
+      (make_subgoals, tac)
 
    (*
     * Construct polymorphic tactic.
@@ -964,7 +955,7 @@ struct
       in
       let { ref_goal = goal; ref_sentinal = sentinal } = arg in
       let subgoals, ext = Refine.refine (get_sentinal sentinal) rl goal in
-      let subgoals = make_subgoals labels arg subgoals in
+      let subgoals = make_labeled_subgoals labels arg subgoals in
          if !debug_tactic then
             eprintf "tactic_of_rule done%t" eflush;
          subgoals, Extract (arg, subgoals, ext)

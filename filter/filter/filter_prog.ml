@@ -1163,7 +1163,7 @@ let define_ml_rule want_checkpoint proc loc
    let redex_expr = expr_of_term proc loc redex in
 
    let create_expr =
-      <:expr< $tactic_type_expr loc$.compile_labeled_rule $lid:local_refiner_id$ (**)
+      <:expr< $tactic_type_expr loc$.compile_ml_rule $lid:local_refiner_id$ (**)
                ($create_ml_rule_expr loc$ $lid:local_refiner_id$ $str:name$ $lid:info_id$) >>
    in
    let info_let =
