@@ -39,6 +39,7 @@ open Refiner.Refiner
 open Refiner.Refiner.TermMeta
 open Filter_type
 open Lexing
+open Simple_print.SimplePrint
 
 (*
  * Show the file loading.
@@ -98,8 +99,8 @@ let unzip_rewrite name =
             a::args, redex, contractum
     | MetaIff (MetaTheorem redex, MetaTheorem contractum) ->
          [], redex, contractum
-    | _ ->
-         raise (BadCommand (name ^ ": illegal specification"))
+    | mt ->
+         raise (BadCommand (name ^ ": illegal specification: " ^ string_of_mterm mt))
    in
       aux
 
