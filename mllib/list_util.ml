@@ -434,12 +434,25 @@ let rec assoc_in_range eq y = function
  | [] ->
       false
 
+let rec assoc_append_replace_snd l v = function
+   [] -> l
+ | (v', _) :: tl -> (v', v) :: (assoc_append_replace_snd l v tl)
+
 let rec check_assoc v v' = function
    [] -> v=v'
  | (v1,v2)::tl ->
       begin match v=v1, v'=v2 with
          true, true -> true
        | false, false -> check_assoc v v' tl
+       | _ -> false
+      end
+
+let rec try_check_assoc v v' = function
+   [] -> raise Not_found
+ | (v1,v2)::tl ->
+      begin match v=v1, v'=v2 with
+         true, true -> true
+       | false, false -> try_check_assoc v v' tl
        | _ -> false
       end
 

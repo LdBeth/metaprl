@@ -107,14 +107,20 @@ val assoc_replace : ('a * 'b) list -> 'a -> 'b -> ('a * 'b) list
 val add_assoc : 'a * 'b -> ('a * 'b) list -> ('a * 'b) list
 val assoc_in_dom : ('b -> 'a -> bool) -> 'b -> ('a * 'c) list -> bool
 val assoc_in_range : ('b -> 'c -> bool) -> 'b -> ('a * 'c) list -> bool
+(* assoc_append_replace_snd l1 b l2 replaces the second element of all pairs in l2 with b 
+   and appends l1 at the end of the result *)
+val assoc_append_replace_snd : ('a * 'b) list -> 'b -> ('a * 'c) list -> ('a * 'b) list
 
 (*
  * if either of the assoc list sides has duplicate entires, only the first entry is used
  * and the duplicate entry forces all second component matches to return false
  *
  * i.e. check_assoc v1 v2 [1,2; 3,2; 3,4] = (v1<>3) && (v2<>4) && check_assoc v1 v2 [1,2]
+ *
+ * try_check_assoc is the same as check_assoc, but raises an exception if an entry is not found
  *)
 val check_assoc : 'a -> 'a -> ('a *'a) list -> bool
+val try_check_assoc : 'a -> 'b -> ('a * 'b) list -> bool
 
 (* if left side has duplicate entires, only the first entry is used *)
 val try_assoc: 'a -> ('a * 'a) list -> 'a

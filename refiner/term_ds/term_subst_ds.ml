@@ -367,31 +367,34 @@ struct
             v' = v
        | _ ->
             false
+
    (*
     * Check the following:
-    * subst t' =alpha subst t (subst_in_snd vars' vars)
+    * subst t' =alpha subst t (subst_in_snd vars' vars) in a context of bound variables vars''
     * where subst_in_snd vars' = List.map (v,t -> v, subst t vars')
     *)
-   let rec equal_comp (vars' : (string*string) list) (vars : (string*term) list) t t' =
+   let rec equal_comp vars'' vars' vars t t' =
       match get_core t, get_core t' with
-         FOVar v,_ ->
-            (try equal_term vars' t' (List.assoc v vars) with
-                Not_found ->
-                   match get_core t' with
-                      FOVar v' ->
-                         not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
-                    | _ ->
-                         false)
+         FOVar v, FOVar v' ->
+            ( try List_util.try_check_assoc v v' vars'' with Not_found ->
+               ( try equal_term vars' t' (List.assoc v vars) with Not_found ->
+                  not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
+            ))
+       | FOVar v,_ ->
+            not (List.mem_assoc v vars'') &&
+            not (List_util.assoc_in_range StringSet.mem (term_free_vars t') vars'') &&
+            equal_term vars' t' (List.assoc v vars)
        | Term t1, Term t2 ->
             Opname.eq t1.term_op.op_name t2.term_op.op_name &&
             List_util.for_all2 equal_params t1.term_op.op_params t2.term_op.op_params &&
-            equal_comp_bterms vars' vars t1.term_terms t2.term_terms
+            equal_comp_bterms vars'' vars' vars t1.term_terms t2.term_terms
        | _ -> false
 
-   and equal_comp_bterms vars' vars bterms1 bterms2 =
+   and equal_comp_bterms vars'' vars' vars bterms1 bterms2 =
       let equal_comp_bterm bt1 bt2 =
-         equal_comp vars' (**)
-            (List_util.zip_list vars bt1.bvars (List.map mk_var_term bt2.bvars))
+         equal_comp
+            (List_util.zip_list vars'' bt1.bvars bt2.bvars)
+            vars' vars
             bt1.bterm bt2.bterm
       in
          List_util.for_all2 equal_comp_bterm bterms1 bterms2
@@ -413,9 +416,9 @@ struct
             eprintf "\tterms: %a%t" (print_any_list debug_print) terms eflush
          end;
 #endif
-      try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) t t'  with
-         Failure _ ->
-            false
+      try equal_comp [] (List_util.zip v''' v'') (List_util.zip v terms) t t'  with
+         Failure _ -> false
+       | Not_found -> false
 
    (************************************************************************
     * UNIFICATION                                                          *
