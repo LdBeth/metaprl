@@ -73,32 +73,32 @@ val create_norm : unit -> normalize
 val create_denorm : unit -> denormalize
 
 val normalize_term : normalize ->
-   Refiner_std.Refiner.TermType.term ->
+   Refiner_std_verb.Refiner.TermType.term ->
    Refiner.Refiner.TermType.term
 
 val normalize_meta_term : normalize ->
-   Refiner_std.Refiner.TermType.meta_term ->
+   Refiner_std_verb.Refiner.TermType.meta_term ->
    Refiner.Refiner.TermType.meta_term
 
 val denormalize_term : denormalize ->
    Refiner.Refiner.TermType.term ->
-   Refiner_std.Refiner.TermType.term
+   Refiner_std_verb.Refiner.TermType.term
 
 val denormalize_meta_term : denormalize ->
    Refiner.Refiner.TermType.meta_term ->
-   Refiner_std.Refiner.TermType.meta_term
+   Refiner_std_verb.Refiner.TermType.meta_term
 
-val normalize_term_single : Refiner_std.Refiner.TermType.term ->
+val normalize_term_single : Refiner_std_verb.Refiner.TermType.term ->
    Refiner.Refiner.TermType.term
 
-val normalize_meta_term_single : Refiner_std.Refiner.TermType.meta_term ->
+val normalize_meta_term_single : Refiner_std_verb.Refiner.TermType.meta_term ->
    Refiner.Refiner.TermType.meta_term
 
 val denormalize_term_single : Refiner.Refiner.TermType.term ->
-   Refiner_std.Refiner.TermType.term
+   Refiner_std_verb.Refiner.TermType.term
 
 val denormalize_meta_term_single : Refiner.Refiner.TermType.meta_term ->
-   Refiner_std.Refiner.TermType.meta_term
+   Refiner_std_verb.Refiner.TermType.meta_term
 
 (*
  * -*-

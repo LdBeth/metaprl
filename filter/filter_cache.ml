@@ -269,8 +269,8 @@ end
 module RawSigInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
-   type raw     = (Refiner_std.Refiner.TermType.term,
-                   Refiner_std.Refiner.TermType.meta_term,
+   type raw     = (Refiner_std_verb.Refiner.TermType.term,
+                   Refiner_std_verb.Refiner.TermType.meta_term,
                    unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
    type cooked  = Convert.t summary_type
 
@@ -336,8 +336,8 @@ end
 module RawStrInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
-   type raw     = (Refiner_std.Refiner.TermType.term,
-                   Refiner_std.Refiner.TermType.meta_term,
+   type raw     = (Refiner_std_verb.Refiner.TermType.term,
+                   Refiner_std_verb.Refiner.TermType.meta_term,
                    Convert.raw proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    type cooked  = Convert.t summary_type
 

@@ -6,8 +6,8 @@ REFINER_FILES :=\
 	$(addsuffix _verb, $(REFINER_PFILES))\
 	$(addsuffix _simp, $(REFINER_PFILES))\
 	refine_error\
-	refiner_std\
+	refiner_std_verb\
 	refiner_std_simp\
-	refiner_ds\
+	refiner_ds_verb\
 	refiner_ds_simp\
 	refiner

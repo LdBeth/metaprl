@@ -396,9 +396,9 @@ end
  *)
 module NormalizeTerm =
    MakeTermCopy (**)
-      (Refiner_std.Refiner.TermType)
-      (Refiner_std.Refiner.Term)
-      (Refiner_std.Refiner.TermMan)
+      (Refiner_std_verb.Refiner.TermType)
+      (Refiner_std_verb.Refiner.Term)
+      (Refiner_std_verb.Refiner.TermMan)
       (Refiner.Refiner.TermType)
       (Refiner.Refiner.Term)
       (Refiner.Refiner.TermMan)
@@ -408,9 +408,9 @@ module DenormalizeTerm =
       (Refiner.Refiner.TermType)
       (Refiner.Refiner.Term)
       (Refiner.Refiner.TermMan)
-      (Refiner_std.Refiner.TermType)
-      (Refiner_std.Refiner.Term)
-      (Refiner_std.Refiner.TermMan)
+      (Refiner_std_verb.Refiner.TermType)
+      (Refiner_std_verb.Refiner.Term)
+      (Refiner_std_verb.Refiner.TermMan)
 
 type normalize = NormalizeTerm.t
 type denormalize = DenormalizeTerm.t
