@@ -117,7 +117,7 @@ endif
 
 ifneq ($(LIBMOJAVE),undefined)
 	CMALIBS_ext := $(ROOT)/lib/lm.cma $(CMALIBS_ext)
-	CMXALIBS_ext := $(ROOT)/lib/lm.cxma $(CMXALIBS_ext)
+	CMXALIBS_ext := $(ROOT)/lib/lm.cmxa $(CMXALIBS_ext)
 	BYTE_CCLIBS := -cclib $(ROOT)/lib/cutil-byte$(EXT_LIB)
 	NATIVE_CCLIBS := -cclib $(ROOT)/lib/cutil-native$(EXT_LIB)
 endif
