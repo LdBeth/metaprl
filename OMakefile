@@ -488,13 +488,19 @@ CAMLP4OFLAGS = $'(OCAMLINCLUDES)
 MPTIME =
 
 #
+# Theory name and description
+#
+THEORYNAME = other
+THEORYDESCR = Miscelaneous Theories
+
+#
 # Commands for running MetaPRL
 #
 if $(equal $(OSTYPE), Win32)
-    SET_ENV = set MP_ROOT=$(ROOT) && set MPLIB=$(LIB) &&
+    SET_ENV = set MP_ROOT=$(ROOT) && set MPLIB=$(LIB) && set MP_GROUP=$'(THEORYNAME) && set MP_DESCR=$'(THEORYDESCR)
     export
 else
-    SET_ENV = MP_ROOT=$(ROOT) MPLIB=$(LIB) LC_ALL=C $(MPTIME)
+    SET_ENV = MP_ROOT=$(ROOT) MPLIB=$(LIB) LC_ALL=C MP_GROUP=$'(THEORYNAME) MP_DESCR="$'(THEORYDESCR)" $(MPTIME)
     export
 
 PRLCC     = $(SET_ENV) $(PRLC)

@@ -60,10 +60,8 @@ let rec edit pack get_dfm =
    let edit_display addr _ =
       edit_check_addr addr;
       (* Display the roots of the package *)
-      let packs = Package_info.packages pack in
-      let terms = List.map (fun root -> mk_package_term (Package_info.name root)) packs in
-      let terms = mk_package_term "fs" :: terms in
-      let term = mk_packages_term terms in
+      let packs = List.map Package_info.name (Package_info.packages pack) in
+      let term = mk_packages_term (List.map mk_package_term ("fs" :: packs)) in
          Proof_edit.display_term (get_dfm ()) term
    in
    let edit_copy () =

@@ -52,6 +52,11 @@ val string_of_path : module_path -> string
 val output_path : out_channel -> module_path -> unit
 
 (*
+ * Command-line options for group and description of the theory
+ *)
+val make_groupdsc_opts : unit -> (unit -> string) * (unit -> string)
+
+(*
  * MetaPRL bindings in str items
  *)
 val add_binding : term prl_binding -> MLast.expr

@@ -37,7 +37,9 @@ open Refiner.Refiner.Refine
  * Info is saved in this format.
  *)
 type theory =
-   { thy_name : string;
+   { thy_name : string;      (* e.g. "itt_list" *)
+     thy_group : string;     (* e.g. "itt" *)
+     thy_groupdesc : string; (* e.g. "Constructive Type Theory" *)
      thy_refiner : refiner;
    }
 

@@ -375,6 +375,8 @@ let wrap_code loc v body =
  * GENERIC CONSTRUCTION                                                 *
  ************************************************************************)
 
+let theory_group, theory_groupdsc = make_groupdsc_opts ()
+
 (*
  * We may be able to do better sometime, but for now
  * we print the terms using the default display forms.
@@ -406,7 +408,7 @@ sig
       sig_info ->
       (term, meta_term, proof, resource, ctyp, expr, item) module_info ->
       (module_path * string * ctyp resource_sig) list ->
-      string -> (item * MLast.loc) list
+      string -> string -> string -> (item * MLast.loc) list
 end
 
 module StrLSet = Lm_set.LmMake (struct
@@ -435,7 +437,9 @@ struct
    type t =
       { cache : FilterCache.info;
         select : FilterCache.select;
-        name : string;
+        name : string; (* Filename *)
+        group : string; (* e.g. "itt" *)
+        groupdsc : string; (* e.g. "Constructive Type Theory" *)
         mutable names : StringSet.t;
         mutable parents : StrLSet.t;
         mutable infixes: Infix.Set.t;
@@ -884,6 +888,8 @@ struct
             let proc = { cache = info;
                          select = select;
                          name = module_name;
+                         group = theory_group ();
+                         groupdsc = theory_groupdsc ();
                          names = StringSet.empty;
                          parents = StrLSet.empty;
                          infixes = Infix.Set.empty;
@@ -910,7 +916,7 @@ struct
     *)
    let extract sig_info proc =
       (Info.extract sig_info (FilterCache.info proc.cache) (**)
-          (FilterCache.resources proc.cache)) (Filename.basename proc.name)
+          (FilterCache.resources proc.cache)) (Filename.basename proc.name) proc.group proc.groupdsc
 
    (*
     * Check the implementation with its interface.

@@ -152,6 +152,29 @@ let output_path oport =
       aux
 
 (************************************************************************
+ * THEORY GROUPS AND DESCRIPTIONS                                       *
+ ************************************************************************)
+
+let make_groupdsc_opts () =
+   let set s r v =
+      match !r with
+         Some v' when v <> v' ->
+            raise (Invalid_argument ("Option \"" ^ s ^ "\" was set twice!"))
+       | _ ->
+            r := Some v
+   in
+   let get short long =
+      let ref = Env_arg.string short None long set in
+         fun () ->
+            match !ref with
+               Some v -> v
+             | None -> raise (Invalid_argument ("Option \"" ^ short ^ "\" was not provided!"))
+   in
+      get "group" "The short name of the group of modules",
+      get "descr" "The description of the group of modules"
+
+
+(************************************************************************
  * BINDINGS IN STR ITEMS                                                *
  ************************************************************************)
 

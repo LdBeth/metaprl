@@ -73,6 +73,8 @@ type t = {
    mutable imp_toploop : (string * MLast.ctyp) list;
    imp_arg : Convert.t;
    imp_name : string;
+   imp_group : string;
+   imp_groupdesc : string;
    mutable imp_resources : (string * (MLast.ctyp * string)) list; (* The second string is the FQN *)
    imp_all_resources : (module_path * string * MLast.ctyp resource_sig) list;
    mutable imp_terms : term list;
@@ -612,7 +614,7 @@ let extract_sig_item (item, loc) =
 (*
  * Extract a signature.
  *)
-let extract_sig _ info resources path =
+let extract_sig _ info resources _ _ _ =
    let _ =
       if !debug_filter_prog then
          eprintf "Filter_prog.extract_sig: begin%t" eflush
@@ -1543,6 +1545,8 @@ let implem_postlog proc loc =
             <:str_item<
                Theory.record_theory {
                   Theory.thy_name = $name$;
+                  Theory.thy_group = $str:proc.imp_group$;
+                  Theory.thy_groupdesc = $str:proc.imp_groupdesc$;
                   Theory.thy_refiner = $lid:refiner_id$
                }>>]
 
@@ -1663,12 +1667,14 @@ let extract_str_item proc (item, loc) =
 (*
  * Extract a signature.
  *)
-let extract_str arg sig_info info resources name =
+let extract_str arg sig_info info resources name group groupdesc =
    let proc = { imp_sig_info = sig_info;
                 imp_resources = [];
                 imp_toploop = implem_toploop sig_info;
                 imp_arg = arg;
                 imp_name = name;
+                imp_group = group;
+                imp_groupdesc = groupdesc;
                 imp_all_resources = resources;
                 imp_terms = [];
                 imp_num_terms = 0;

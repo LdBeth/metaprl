@@ -194,6 +194,8 @@ let camlp4n_exe  = exe_name "camlp4n"
 let prlcn_exe    = exe_name "prlcn"
 let prlco_exe    = exe_name "prlco"
 
+let theory_group, theory_groupdsc = Filter_util.make_groupdsc_opts ()
+
 (*
  * Commands are constructed from argument list.
  *)
@@ -224,6 +226,8 @@ let mk_prlco argv includes =
    Filename.concat !lib prlco_exe :: argv
 
 let mk_command () =
+   Punix.putenv ("MP_GROUP=" ^ (theory_group ()));
+   Punix.putenv ("MP_DESCR=" ^ (theory_groupdsc ()));
    let f =
       if !preprocess_flag then
          if !binary_flag then
@@ -294,7 +298,6 @@ let print_command_line argv =
  * Main function parses arguments, then issues command.
  *)
 let main () =
-   let spec = spec @ Env_arg.args () in
    let _ = Env_arg.parse spec add_anon_arg "MetaPRL compiler" in
    let _ = set_includes () in
    let argv = mk_command () in
