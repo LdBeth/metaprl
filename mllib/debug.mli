@@ -42,7 +42,9 @@ val check_debug : unit -> unit
 (*
  * Print a list of strings.
  *)
-val print_strings : string -> out_channel -> string list -> unit
+val print_any_list : (out_channel -> 'a -> unit) -> out_channel -> 'a list -> unit
+val print_string_list :  out_channel -> string list -> unit
+val print_int_list :  out_channel -> int list -> unit
 
 (*
  * Flush output.
@@ -51,6 +53,10 @@ val eflush : out_channel -> unit
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/22 19:45:27  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.6  1998/06/12 13:46:47  jyh
  * D tactic works, added itt_bool.
  *

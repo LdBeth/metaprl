@@ -8,8 +8,15 @@ val index : 'a -> 'a array -> int
 val exists : ('a -> bool) -> 'a array -> bool
 val find_index : ('a -> bool) -> 'a array -> int
 
+(* Raises Failure *)
+val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
+
 (*
  * $Log$
+ * Revision 1.3  1998/06/22 19:45:25  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.2  1998/04/21 19:53:51  jyh
  * Upgraded refiner for program extraction.
  *

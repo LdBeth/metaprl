@@ -102,6 +102,21 @@ struct
    exception BadMatch of term * term
 
    (************************************************************************
+    * DEBUGGING                                                            *
+    ************************************************************************)
+
+   (*
+    * Printer is installed by client.
+    *)
+   let print_term = ref (fun _ _ -> raise (Failure "Term_ds.print_term: printer not installed"))
+
+   let debug_print out t =
+      !print_term out t
+
+   let install_debug_printer f =
+      print_term := f
+
+   (************************************************************************
     * Term de/constructors                                                 *
     ************************************************************************)
 
@@ -249,25 +264,31 @@ struct
 
    let dest_context = function
       ({ term_op = { imp_op_name = opname; imp_op_params = [Var v] };
-         term_terms = { bvars = []; bterm = term' } :: bterms
+         term_terms = bterms
        } : term) as term when opname == context_opname ->
-         let dest_bterm = function
-            { bvars = []; bterm = t } ->
-               t
+         let rec collect = function
+            [{ bvars = []; bterm = t }] ->
+               [], t
+          | { bvars = []; bterm = t } :: tl ->
+               let args, term = collect tl in
+                  t :: args, term
           | _ ->
                raise (TermMatch ("dest_context", term, "bvars exist"))
          in
-            v, term', List.map dest_bterm bterms
+         let args, term = collect bterms in
+            v, term, args
     | term ->
          raise (TermMatch ("dest_context", term, "not a context"))
 
    let mk_context_term v term terms =
-      let mk_bterm term =
-         { bvars = []; bterm = term }
+      let rec collect term = function
+         [] ->
+            [{ bvars = []; bterm = term }]
+       | h::t ->
+            { bvars = []; bterm = h } :: collect term t
       in
-      let bterm = mk_bterm term in
          { term_op = { imp_op_name = context_opname; imp_op_params = [Var v] };
-           term_terms = bterm :: List.map mk_bterm terms
+           term_terms = collect term terms
          }
 
    (************************************************************************
@@ -352,6 +373,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/22 19:45:57  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.10  1998/06/15 22:53:56  nogin
  * Use == for comparing opnames
  *

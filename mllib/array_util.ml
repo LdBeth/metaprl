@@ -64,7 +64,28 @@ let find_index f v =
       aux 0
 
 (*
+ * Iterate over two arrays.
+ *)
+let iter2 f a1 a2 =
+   let len = Array.length a1 in
+      if Array.length a2 <> len then
+         raise (Failure "Array.iter2")
+      else
+         let rec apply f a1 a2 i len =
+            if i < len then
+               begin
+                  f a1.(i) a2.(i);
+                  apply f a1 a2 (i + 1) len
+               end
+         in
+            apply f a1 a2 0 len
+
+(*
  * $Log$
+ * Revision 1.6  1998/06/22 19:45:24  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.5  1998/06/14 01:31:47  nogin
  * Fixed a typo
  *

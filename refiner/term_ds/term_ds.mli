@@ -178,5 +178,10 @@ sig
    val dest_simple_term : term -> (opname * term list)
    val is_simple_term_opname : opname -> term -> bool
    val dest_simple_term_opname : opname -> term -> term list
-end
 
+   (*
+    * We allow a term printer to be injected.
+    *)
+   val debug_print : out_channel -> term -> unit
+   val install_debug_printer : (out_channel -> term -> unit) -> unit
+end

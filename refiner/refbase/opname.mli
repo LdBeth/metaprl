@@ -15,6 +15,7 @@ val normalize_opname : opname -> opname
 (* Destructors *)
 val dest_opname : opname -> string list
 val flat_opname : opname -> string
+val string_of_opname : opname -> string
 
 (*
  * Debugging.
@@ -24,6 +25,10 @@ val debug_opname : bool ref
 (*
  *
  * $Log$
+ * Revision 1.3  1998/06/22 19:45:35  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.2  1998/06/12 18:36:30  jyh
  * Working factorial proof.
  *

@@ -11,6 +11,19 @@ let _ =
    if !debug_load then
       eprintf "Loading List_util%t" eflush
 
+(*
+ * Get the nth item.
+ *)
+let rec nth l i =
+   if i <= 0 then
+      raise (Failure "nth")
+   else
+      match l with
+         _::t ->
+            nth t (i - 1)
+       | [] ->
+            raise (Failure "nth")
+
 (* Filter items out of a list *)
 let rec filter f = function
    [] -> []
@@ -345,6 +358,18 @@ let add_assoc (v1, v2) l =
       Not_found -> (v1, v2)::l
 
 (*
+ * See if a value is in range.
+ *)
+let rec assoc_in_range eq y = function
+   (_, y')::tl ->
+      if eq y y' then
+         true
+      else
+         assoc_in_range eq y tl
+ | [] ->
+      false
+
+(*
  * Split a list.
  *)
 let rec split_list i l = match (i,l) with
@@ -512,6 +537,10 @@ let rec fold_left2 f x al bl =
 
 (*
  * $Log$
+ * Revision 1.20  1998/06/22 19:45:28  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.19  1998/06/15 22:57:57  nogin
  * .
  *

@@ -109,6 +109,21 @@ struct
    exception TermMatch of string * term * string
 
    (************************************************************************
+    * DEBUGGING                                                            *
+    ************************************************************************)
+
+   (*
+    * Printer is installed by client.
+    *)
+   let print_term = ref (fun _ _ -> raise (Failure "Term_ds.print_term: printer not installed"))
+
+   let debug_print out t =
+      !print_term out t
+
+   let install_debug_printer f =
+      print_term := f
+
+   (************************************************************************
     * Free variables, substitution                                         *
     ************************************************************************)
 
@@ -397,23 +412,43 @@ struct
     *)
    let context_opname = make_opname ["context"]
 
-   let is_context_term t = match dest_term t with
-      { term_op = { imp_op_name = opname; imp_op_params = [Var _] }; term_terms = bterms }
-      when opname == context_opname -> no_bvars bterms
-    | _ -> false
+   let is_context_term t =
+      match dest_term t with
+         { term_op = { imp_op_name = opname; imp_op_params = [Var _] };
+           term_terms = bterms
+         } when opname == context_opname ->
+            bterms <> [] & no_bvars bterms
+       | _ ->
+            false
 
-   let dest_context term = match dest_term term with
-      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
-         term_terms = bterm :: bterms
-       } when opname == context_opname ->
-         v, dest_simple_bterm term bterm,
-            dest_simple_bterms term bterms
-    | _ -> raise (TermMatch ("dest_context", term, "not a context"))
+   let dest_context term =
+      match dest_term term with
+         { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+           term_terms = bterms
+         } when opname == context_opname ->
+            let rec collect term = function
+               [bterm] ->
+                  [], dest_simple_bterm term bterm
+             | bterm::bterms ->
+                  let args, term = collect term bterms in
+                     dest_simple_bterm term bterm :: args, term
+             | _ ->
+                  raise (TermMatch ("dest_context", term, "not a context"))
+            in
+            let args, term = collect term bterms in
+               v, term, args
+       | _ ->
+            raise (TermMatch ("dest_context", term, "not a context"))
 
    let mk_context_term v term terms =
-      mk_term
-         { imp_op_name = context_opname; imp_op_params = [Var v] }
-         ((mk_simple_bterm term)::(List.map mk_simple_bterm terms))
+      let rec collect term = function
+         [] ->
+            [mk_simple_bterm term]
+       | h::t ->
+            mk_simple_bterm h :: collect term t
+      in
+      let op = { imp_op_name = context_opname; imp_op_params = [Var v] } in
+         mk_term op (collect term terms)
 
    (************************************************************************
     * NORMALIZATION                                                        *

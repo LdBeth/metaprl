@@ -51,7 +51,7 @@ sig
     | TermPairMatchError of term * term
     | AddressError of address * term
     | MetaTermMatchError of meta_term
-   
+
    and refine_error = string * refine_error_info
 
    exception RefineError of refine_error
@@ -435,6 +435,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/22 19:45:44  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.5  1998/06/12 13:47:04  jyh
  * D tactic works, added itt_bool.
  *

@@ -9,8 +9,10 @@ val filter : ('a -> bool) -> 'a list -> 'a list
 val compare_lists : ('a -> 'b -> int) -> 'a list -> 'b list -> int
 
 (*
- * These function raise Failure, not Invalid_argument.
+ * These functions are just liek the List functions
+ * but they raise Failure, not Invalid_argument.
  *)
+val nth : 'a list -> int -> 'a
 val allp : ('a -> bool) -> 'a list -> bool
 val existsp : ('a -> bool) -> 'a list -> bool
 val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
@@ -70,6 +72,7 @@ val zip : 'a list -> 'b list -> ('a * 'b) list
 val assoc_index : ('a * 'b) list -> 'a -> int
 val assoc_replace : ('a * 'b) list -> 'a -> 'b -> ('a * 'b) list
 val add_assoc : 'a * 'b -> ('a * 'b) list -> ('a * 'b) list
+val assoc_in_range : ('b -> 'c -> bool) -> 'b -> ('a * 'c) list -> bool
 
 (*
  * List splitting.
@@ -81,6 +84,10 @@ val fst_split : ('a * 'b) list -> 'a list
 
 (*
  * $Log$
+ * Revision 1.12  1998/06/22 19:45:29  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.11  1998/06/15 22:32:25  jyh
  * Added CZF.
  *

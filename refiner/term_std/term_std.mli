@@ -147,10 +147,20 @@ sig
 
    val mk_simple_bterm : term -> bound_term
    val dest_simple_bterm : term -> bound_term -> term
+
+   (*
+    * We allow a term printer to be injected.
+    *)
+   val debug_print : out_channel -> term -> unit
+   val install_debug_printer : (out_channel -> term -> unit) -> unit
 end
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/22 19:45:58  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.6  1998/06/15 21:57:22  jyh
  * Added a few new functions.
  *

@@ -31,17 +31,23 @@ type info =
  ************************************************************************)
 
 (*
- * Print some strings.
+ * List separated by semicolons.
  *)
-let rec print_strings sep out = function
+let rec print_any_list print out = function
    [h] ->
-      output_string out h
+      print out h
  | h::t ->
-      output_string out h;
-      output_string out sep;
-      print_strings sep out t
+      print out h;
+      output_string out "; ";
+      print_any_list print out t
  | [] ->
       ()
+
+let print_string_list =
+   print_any_list output_string
+
+let print_int_list =
+   print_any_list (fun out i -> fprintf out "%d" i)
 
 (*
  * Print a newline and flush.
@@ -251,6 +257,10 @@ let debug_load = create_debug (**)
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/22 19:45:26  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.8  1998/06/12 18:36:26  jyh
  * Working factorial proof.
  *

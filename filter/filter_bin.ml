@@ -165,19 +165,36 @@ module SigCompile = MakeCompile (SigCompileInfo) (Cache.SigFilterCache)
 module StrCompile = MakeCompile (StrCompileInfo) (Cache.StrFilterCache)
 
 (*
+ * Utility to replace a suffix.
+ *)
+let replace_suffix name suffix =
+   let i = String.rindex name '.' in
+   let j = String.length suffix in
+   let s = String.create (i + j) in
+      String.blit name 0 s 0 i;
+      String.blit suffix 0 s i j;
+      s
+
+(*
  * Compile a file.
  *)
 let process_file file =
    if Filename.check_suffix file ".cmiz" or
       Filename.check_suffix file ".cmit"
    then
-      (* An interface file *)
-      SigCompile.compile file
+      begin
+         (* An interface file *)
+         (* Pcaml.input_file := replace_suffix file ".ppi"; *)
+         SigCompile.compile file
+      end
    else if Filename.check_suffix file ".cmoz" or
            Filename.check_suffix file ".cmot"
    then
-      (* An implementation file *)
-      StrCompile.compile file
+      begin
+         (* An implementation file *)
+         (* Pcaml.input_file := replace_suffix file ".ppo"; *)
+         StrCompile.compile file
+      end
    else
       raise (Bad "Filter_bin.main: file has a bogus suffix")
 
@@ -195,13 +212,17 @@ let spec =
  * process it.
  *)
 let main () =
-   Pcaml.input_file := "-";
+   Pcaml.input_file := "/dev/null";
    Arg.parse spec process_file "Compile a Nuprl-Light binary file"
 
 let _ = Printexc.catch main ()
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/22 19:45:17  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.10  1998/06/15 22:32:02  jyh
  * Added CZF.
  *

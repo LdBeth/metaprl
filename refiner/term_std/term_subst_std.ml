@@ -146,8 +146,8 @@ struct
        | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 },
          { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
             name1 == name2
-                    & List_util.for_all2 equal_params params1 params2
-                    & equal_bterms vars bterms1 bterms2
+                     & List_util.for_all2 equal_params params1 params2
+                     & equal_bterms vars bterms1 bterms2
 
    and equal_bterms vars bterms1 bterms2 =
       let equal_bterm = fun
@@ -169,6 +169,15 @@ struct
     * Check the following:
     *   that t' = t[terms[v''/v''']/v]
     *)
+   let eq_comp_var v t =
+      match dest_term t with
+         { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
+           term_terms = []
+         } when opname == var_opname ->
+            v' = v
+       | _ ->
+            false
+
    let equal_comp vars' =
       let rec equal_comp_term vars = function
          { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
@@ -177,13 +186,13 @@ struct
             begin
                try equal_term vars' t' (List.assoc v vars) with
                   Not_found ->
-                     begin
-                        match t' with
-                           { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
-                             term_terms = []
-                           } when opname == var_opname -> v = v'
-                         | _ -> false
-                     end
+                     match t' with
+                        { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
+                          term_terms = []
+                        } when opname == var_opname ->
+                           not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
+                      | _ ->
+                           false
             end
        | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 },
          { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
@@ -197,11 +206,12 @@ struct
          in
             List_util.for_all2 equal_comp_bterm bterms1 bterms2
       in
-          equal_comp_term
+         equal_comp_term
 
    let alpha_equal_match (t, v) (t', v'', v''', terms) =
       try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) (t, t') with
-         Invalid_argument _ -> false
+         Failure _ ->
+            false
 
    (************************************************************************
     * Substitution                                                         *
@@ -302,10 +312,10 @@ struct
                      let renames' = new_vars renames fv'' in
                         { bvars = subst_bvars renames' renames bvars;
                           bterm = subst_term
-                              (add_renames_terms renames' terms')
-                              (add_renames_fv renames' fv')
-                              (renames @ vars')
-                              term
+                                  (add_renames_terms renames' terms')
+                                  (add_renames_fv renames' fv')
+                                  (renames @ vars')
+                                  term
                         }
                   else
                      { bvars = bvars;
@@ -520,6 +530,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/22 19:45:59  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.5  1998/06/15 22:53:56  nogin
  * Use == for comparing opnames
  *

@@ -609,8 +609,10 @@ struct
     * Precedence declaration.
     *)
    let declare_prec proc loc s =
+(*
       if FilterCache.find_prec proc.cache s then
          Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' already declared" s));
+*)
       FilterCache.add_command proc.cache (Prec s, loc);
       FilterCache.add_prec proc.cache s
 
@@ -1037,6 +1039,10 @@ END
 
 (*
  * $Log$
+ * Revision 1.29  1998/06/22 19:45:19  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.28  1998/06/15 22:32:08  jyh
  * Added CZF.
  *

@@ -3,6 +3,10 @@
  * they may be hash-consed.
  *
  * $Log$
+ * Revision 1.5  1998/06/22 19:45:34  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.4  1998/06/15 22:32:27  jyh
  * Added CZF.
  *
@@ -105,6 +109,24 @@ let rec flat_opname = function
    [h] -> h
  | h::t -> h ^ "!" ^ (flat_opname t)
  | [] -> "<null-opname>"
+
+(*
+ * Print as a string.
+ * The opname has to be reversed.
+ * This function is overly long,
+ * but it is efficient.
+ *)
+let string_of_opname = function
+   [] ->
+      ""
+ | h::t ->
+      let rec collect s = function
+         h::t ->
+            collect (h ^ "!" ^ s) t
+       | [] ->
+            s
+      in
+         collect h t
 
 (*
  * -*-

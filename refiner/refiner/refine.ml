@@ -490,6 +490,22 @@ struct
             raise (RefineError ("rwaddr", RewriteAddressError (addr, x)))
 
    (*
+    * Invert the rewrite.
+    * jyh: we don't really need thi, because
+    * we can make use of rewrite subgoals.
+   let foldrw rw t' t =
+      let t'', refiner =
+         try rw t' with
+            RefineError x ->
+               raise (RefineError ("foldrw", GoalError x))
+      in
+         if alpha_equal t'' t then
+            t', refiner
+         else
+            raise (RefineError ("foldrw", StringTermError ("fold operation does not match", t')))
+    *)
+
+   (*
     * Composition is supplied for efficiency.
     *)
    let andthenrw rw1 rw2 t =
@@ -1510,6 +1526,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/22 19:45:37  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.5  1998/06/15 22:32:29  jyh
  * Added CZF.
  *

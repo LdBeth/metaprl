@@ -20,7 +20,7 @@ struct
     *)
    type address =
       Path of int list
-    | NthPath of int * bool
+    | NthClause of int * bool
     | Compose of address * address
 
    exception IncorrectAddress of address * term
@@ -31,8 +31,11 @@ struct
    let make_address l =
       Path l
 
-   let nth_address i flag =
-      NthPath (i, flag)
+   let nth_hd_address i =
+      NthClause (i, true)
+
+   let nth_tl_address i =
+      NthClause (i, false)
 
    let compose_address path1 path2 =
       Compose (path1, path2)
@@ -41,39 +44,55 @@ struct
     * Get a subterm.
     *)
    let rec getnth a term terms i =
-      match (terms,i) with
-         (hd::_,0) -> hd
-       | (hd::tl,_) -> getnth a term tl (pred i)
-       | _ -> raise (IncorrectAddress (a,term))
-    
+      match (terms, i) with
+         (hd::_, 0) ->
+            hd
+       | (hd::tl, _) ->
+            getnth a term tl (pred i)
+       | ([], _) ->
+            raise (IncorrectAddress (a, term))
+
+   (*
+    * Follow an explicit path.
+    *)
    let rec term_subterm_path a term t = function
-      [] -> t
+      [] ->
+         t
     | i::tl ->
-      term_subterm_path a term (dest_bterm (getnth a term (dest_term t).term_terms i)).bterm tl
-   
+         term_subterm_path a term (dest_bterm (getnth a term (dest_term t).term_terms i)).bterm tl
+
+   (*
+    * Follow a sequent path to a clause.
+    *)
    let rec term_subterm_nthpath a term flag t = function
       0 ->
          if flag then
             match dest_term t with
-               { term_terms = bterm::_ } -> (dest_bterm bterm).bterm
-             | _ -> raise (IncorrectAddress (a,term))
+               { term_op = op; term_terms = bterm :: _ } ->
+                  if (dest_op op).op_name == context_opname then
+                     t
+                  else
+                     (dest_bterm bterm).bterm
+             | _ ->
+                  raise (IncorrectAddress (a, term))
          else
             t
     | i ->
          let { term_op = op; term_terms = bterms } = dest_term t in
-         begin
             match (dest_term t).term_terms with
                [bterm] ->
                   term_subterm_nthpath a term flag (dest_bterm bterm).bterm (i - 1)
-             | bterm1::bterm2::_ ->
+             | ((_ :: bterm2 :: _) as bterms) ->
                   if (dest_op op).op_name == context_opname then
-                     term_subterm_nthpath a term flag (dest_bterm bterm1).bterm (i - 1)
+                     term_subterm_nthpath a term flag (dest_bterm (List_util.last bterms)).bterm (i - 1)
                   else
                      term_subterm_nthpath a term flag (dest_bterm bterm2).bterm (i - 1)
              | _ ->
-               raise (IncorrectAddress (a,term))
-         end
-   
+               raise (IncorrectAddress (a, term))
+
+   (*
+    * Get the subterm for any type of path.
+    *)
    let rec term_subterm term a =
       match a with
          Path addr ->
@@ -98,24 +117,28 @@ struct
 
    and path_replace_bterm a term f tl i = function
       bterm::bterms ->
-         if (i=0) then
+         if i = 0 then
             let { bvars = vars; bterm = trm } = dest_bterm bterm in
             let term, arg = path_replace_term a term f trm tl in
                mk_bterm vars term :: bterms, arg
          else
             let bterms, arg = path_replace_bterm a term f tl (i - 1) bterms in
                bterm :: bterms, arg
-    | [] -> raise (IncorrectAddress (a,term))
+    | [] ->
+         raise (IncorrectAddress (a,term))
 
    let rec nthpath_replace_term a term flag f t i =
       if i = 0 then
          if flag then
             match dest_term t with
                { term_op = op; term_terms = bterm :: bterms } ->
-                  let { bvars = vars; bterm = term } = dest_bterm bterm in
-                  let term, arg = f term in
-                  let bterm = mk_bterm vars term in
-                     mk_term op (bterm :: bterms), arg
+                  if (dest_op op).op_name == contexT_opname then
+                     f t
+                  else
+                     let { bvars = vars; bterm = term } = dest_bterm bterm in
+                     let term, arg = f term in
+                     let bterm = mk_bterm vars term in
+                        mk_term op (bterm :: bterms), arg
              | _ ->
                   raise (IncorrectAddress (a, term))
          else
@@ -128,23 +151,24 @@ struct
                let term, arg = nthpath_replace_term a term flag f trm (i - 1) in
                let bterm = mk_bterm vars term in
                   mk_term op [bterm], arg
-          | { term_op = op; term_terms = bterm1 :: bterm2 :: bterms } ->
+          | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms') } ->
                if (dest_op op).op_name == context_opname then
-                  let { bvars = vars; bterm = trm } = dest_bterm bterm1 in
+                  let args, bterm = List_util.split_last bterms' in
+                  let { bvars = vars; bterm = trm } = dest_bterm bterm in
                   let term, arg = nthpath_replace_term a term flag f trm (i - 1) in
                   let bterm = mk_bterm vars term in
-                     mk_term op (bterm :: bterm2 :: bterms), arg
+                     mk_term op (args @ [bterm]), arg
                else
-                  let { bvars = vars; bterm = trm } = dest_bterm bterm2 in
-                  let term, arg = nthpath_replace_term a term flag f trm (i - 1) in
+                  let { bvars = vars; bterm = term' } = dest_bterm bterm2 in
+                  let term, arg = nthpath_replace_term a term flag f term' (i - 1) in
                   let bterm = mk_bterm vars term in
                      mk_term op (bterm1 :: bterm :: bterms), arg
           | _ ->
                raise (IncorrectAddress (a, term))
-    
+
    let rec apply_fun_arg_at_addr f a term =
       match a with
-         Path addr -> 
+         Path addr ->
             path_replace_term a term f term addr
        | NthPath (addr, flag) ->
             nthpath_replace_term a term flag f term addr
@@ -163,7 +187,7 @@ struct
          apply_fun_at_addr (replace_subterm_aux subterm) a term
 
    (*
-    * Print a string.
+    * Print address as a string.
     *)
    let rec collect_string_of_path_address = function
       [] ->
@@ -175,24 +199,26 @@ struct
 
    let rec collect_string_of_nthpath_address_true = function
       0 ->
-         "0" 
-    | i -> 
+         "0"
+    | i ->
          "@; " ^ (collect_string_of_nthpath_address_true (i - 1))
 
    let rec collect_string_of_nthpath_address_false = function
       0 ->
          ""
-    | i -> 
+    | 1 ->
+         "@"
+    | i ->
          "@; " ^ (collect_string_of_nthpath_address_false (i - 1))
 
    let rec collect_string_of_address = function
       Path addr ->
          collect_string_of_path_address addr
     | NthPath (addr, flag) ->
-         (if flag 
-            then collect_string_of_nthpath_address_true
-            else collect_string_of_nthpath_address_false
-         ) addr
+         (if flag then
+            collect_string_of_nthpath_address_true
+         else
+            collect_string_of_nthpath_address_false) addr
     | Compose (addr1, addr2) ->
          let addr1 = collect_string_of_address addr1 in
          let addr2 = collect_string_of_address addr2 in
@@ -205,5 +231,4 @@ struct
 
    let string_of_address addr =
       "[" ^ collect_string_of_address addr ^ "]"
-
 end

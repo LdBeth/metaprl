@@ -1,4 +1,21 @@
+open Printf
+open Debug
+
 open Term_ds
+
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Term_ds_subst%t" eflush
+
+let debug_subst_ds =
+   create_debug (**)
+      { debug_name = "subst_ds";
+        debug_description = "display term_ds substitution operations";
+        debug_value = false
+      }
 
 module TermSubst =
 struct
@@ -140,38 +157,84 @@ struct
     * Check the following:
     *   that t' = t[terms[v''/v''']/v]
     *)
-   let rec equal_comp vars' vars t t' = match dest_term t with
-      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
-        term_terms = []
-      } when opname == var_opname ->
-         (try equal_term vars' t' (List.assoc v vars) with
-            Not_found ->
+   let print_string_pair out (v1, v2) =
+      fprintf out "%s:%a" v1 debug_print v2
+
+   let print_string_pair_list =
+      print_any_list print_string_pair
+
+   let eq_comp_var v t =
+      match dest_term t with
+         { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
+           term_terms = []
+         } when opname == var_opname ->
+            v' = v
+       | _ ->
+            false
+
+   let rec equal_comp vars' vars t t' =
+      match dest_term t with
+         { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+           term_terms = []
+         } when opname == var_opname ->
+            assert (**)
                begin
-                  match dest_term t' with
-                     { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
-                       term_terms = []
-                     } when opname == var_opname -> v = v'
-                   | _ -> false
-               end)
-    | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 } ->
-         (function
-            { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
-            name1 == name2 & params1 = params2 & equal_comp_bterms vars' vars bterms1 bterms2)
-         (dest_term t')
+                  if !debug_subst_ds then
+                     eprintf "Term_subst_ds.equal_comp: check var %s: (%a)%t" (**)
+                        v print_string_pair_list vars eflush;
+                  true
+               end;
+            (try equal_term vars' t' (List.assoc v vars) with
+                Not_found ->
+                   match dest_term t' with
+                      { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
+                        term_terms = []
+                      } when opname == var_opname ->
+                         assert (**)
+                            begin
+                               if !debug_subst_ds then
+                                  eprintf "\tCheck with %s%t" v' eflush;
+                               true
+                            end;
+                         not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
+                    | _ ->
+                         false)
+       | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 } ->
+            let { term_op = { imp_op_name = name2; imp_op_params = params2 };
+                  term_terms = bterms2
+                } = dest_term t'
+            in
+               name1 == name2 & params1 = params2 & equal_comp_bterms vars' vars bterms1 bterms2
 
    and equal_comp_bterms vars' vars bterms1 bterms2 =
       let equal_comp_bterm btrm1 btrm2 =
-         let bt1 = dest_bterm btrm1 and
-             bt2 = dest_bterm btrm2 in
-         equal_comp vars'
-            (List_util.zip_list vars bt1.bvars (List.map mk_var_term bt2.bvars))
-            bt1.bterm bt2.bterm
+         let bt1 = dest_bterm btrm1
+         and bt2 = dest_bterm btrm2
+         in
+            equal_comp vars' (**)
+               (List_util.zip_list vars bt1.bvars (List.map mk_var_term bt2.bvars))
+               bt1.bterm bt2.bterm
       in
          List_util.for_all2 equal_comp_bterm bterms1 bterms2
 
    let alpha_equal_match (t, v) (t', v'', v''', terms) =
+      assert (**)
+         begin
+            if !debug_subst_ds then
+               begin
+                  eprintf "Term_subst_ds.alpha_equal_match:\n\t";
+                  eprintf "\tt: %a\n" debug_print t;
+                  eprintf "\tv: %a\n" print_string_list v;
+                  eprintf "\tt': %a\n" debug_print t';
+                  eprintf "\tv'': %a\n" print_string_list v'';
+                  eprintf "\tv''': %a\n" print_string_list v''';
+                  eprintf "\tterms: %a%t" (print_any_list debug_print) terms eflush
+               end;
+            true
+         end;
       try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) t t'  with
-         Invalid_argument _ -> false
+         Failure _ ->
+            false
 
    (************************************************************************
     * UNIFICATION                                                          *

@@ -421,7 +421,16 @@ let print_simple_address = print_simple_address_fp stdout
 let prerr_simple_address = print_simple_address_fp stderr
 
 (*
+ * Install simple printer as default printer.
+ *)
+let _ = install_debug_printer print_simple_term_fp
+
+(*
  * $Log$
+ * Revision 1.2  1998/06/22 19:45:42  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.1  1998/05/28 15:01:13  jyh
  * Partitioned refiner into subdirectories.
  *

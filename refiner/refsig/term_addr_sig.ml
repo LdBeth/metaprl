@@ -14,8 +14,15 @@ sig
     * Constructors.
     *)
    val make_address : int list -> address
-   val nth_address : int -> bool -> address
    val compose_address : address -> address -> address
+
+   (*
+    * These constructors are specifically for sequents.
+    *   nth_hd_address n: address of the nth clause
+    *   nth_tl_address n: address of all clauses n and larger
+    *)
+   val nth_hd_address : int -> address
+   val nth_tl_address : int -> address
 
    (*
     * Destructors.
@@ -33,6 +40,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/22 19:45:45  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.5  1998/06/12 13:47:05  jyh
  * D tactic works, added itt_bool.
  *

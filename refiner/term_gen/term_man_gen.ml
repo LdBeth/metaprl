@@ -2,12 +2,32 @@
  * Manifest terms.
  *)
 
+open Printf
+open Debug
+
 open Opname
 open Term_simple_sig
 open Term_op_sig
 open Term_addr_sig
 open Term_subst_sig
 
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Term_man_gen%t" eflush
+
+let debug_address =
+   create_debug (**)
+      { debug_name = "address";
+        debug_description = "show term addressing operations";
+        debug_value = false
+      }
+
+(*
+ * Module builds on term implementation.
+ *)
 module TermMan (**)
    (Term : TermSimpleSig)
    (TermOp : TermOpSig
@@ -287,16 +307,14 @@ struct
          raise (TermMatch (name, t, "malformed hypothesis"))
 
    let match_context name t = function
-      bterm :: _ ->
-         begin
-            match dest_bterm bterm with
-               { bvars = []; bterm = term } ->
-                  term
-             | _ ->
-                  raise (TermMatch (name, t, "malformed context"))
-         end
-    | _ ->
+      [] ->
          raise (TermMatch (name, t, "malformed context"))
+    | bterms ->
+         match dest_bterm (List_util.last bterms) with
+            { bvars = []; bterm = term } ->
+               term
+          | _ ->
+               raise (TermMatch (name, t, "malformed context"))
 
    let match_concl name t = function
       [bterm1; bterm2] ->
@@ -356,7 +374,7 @@ struct
     *)
    let nth_hyp_addr_name = "nth_hyp_addr"
    let nth_hyp_addr t n =
-      let addr = nth_address n true in
+      let addr = nth_hd_address n in
       let rec skip_hyps i term =
          let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term term in
             if opname = hyp_opname then
@@ -385,7 +403,7 @@ struct
    let nth_concl_addr t n =
       let rec skip_concl i n term =
          if n = 0 then
-            nth_address i false
+            nth_tl_address i
          else
             match dest_term term with
                { term_op = { imp_op_name = opname };
@@ -438,19 +456,31 @@ struct
       in
          aux 1 (goal_of_sequent t)
 
-   let make_nth_clause_addr flag count i =
+   let make_nth_clause_addr nth_address count i =
       if i < 0 then
-         nth_address (count + i) flag
+         nth_address (count + i)
       else if i = 0 then
-         nth_address count flag
+         nth_address count
       else
-         nth_address i flag
+         nth_address i
 
    let nth_clause_addr t i =
-      nth_clause_addr_aux (fun count -> make_nth_clause_addr true count i) t
+      nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
 
    let nth_clause_addrs t il =
+      if !debug_address then
+         begin
+            eprintf "Nth_clause_addrs:";
+            Array.iter (fun count -> eprintf " %d" count) il;
+            eflush stderr
+         end;
+(*
+ * jyh: I had assumed that we could push negative addressing
+ * down into the address module, but it turns out to be pretty hard because
+ * addresses are relative.
       nth_clause_addr_aux (fun count -> Array.map (make_nth_clause_addr false count) il) t
+ *)
+      Array.map (fun i -> nth_tl_address i) il
 
    (*
     * Fast access to hyp and concl.
@@ -640,6 +670,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/22 19:45:54  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.5  1998/06/15 21:57:37  jyh
  * Added a few new functions.
  *

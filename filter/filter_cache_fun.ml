@@ -259,7 +259,7 @@ struct
        "break"; "sbreak"; "space"; "hspace"; "newline";
        "pushm"; "popm"; "pushfont"; "popfont";
        "parens"; "prec"; "mode"; "slot";
-       "sequent"; "hyp"; "concl"; "var"]
+       "sequent"; "hyp"; "concl"; "var"; "context"]
 
    (*
     * Make a new hashtable for mapping opnames.
@@ -312,7 +312,13 @@ struct
     | [str] ->
          (* Name in this module *)
          begin
-            try optable cache str with
+            try
+               let opname = optable cache str in
+                  if !debug_opname then
+                     eprintf "Filter_cache_fun.mk_opname: %s%t" (**)
+                        (Simple_print.string_of_opname opname) eflush;
+                  opname
+            with
                Not_found ->
                   raise (Failure (sprintf "undeclared name: %s" str))
          end
@@ -324,7 +330,11 @@ struct
                Not_found ->
                   raise (BadCommand ("no object with name: " ^ (string_of_opname_list path)))
          in
-            make_opname (List.rev path')
+         let opname = make_opname (List.rev path') in
+            if !debug_opname then
+               eprintf "Filter_cache_fun.mk_opname: path: %s%t" (**)
+                  (Simple_print.string_of_opname opname) eflush;
+            opname
 
    (************************************************************************
     * ACCESS                                                               *
@@ -484,8 +494,8 @@ struct
                (* Hash this name to the full opname *)
                let opname = Opname.mk_opname str opprefix in
                   if !debug_opname then
-                     eprintf "Filter_cache_fun.inline_sig_components: add opname %s.%s%t" (**)
-                        str (Simple_print.string_of_opname opprefix) eflush;
+                     eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
+                        (Simple_print.string_of_opname opname) eflush;
                   Hashtbl.add cache.optable str opname;
                   resources
 
@@ -500,6 +510,12 @@ struct
                   if not (resource_member rsrc cache.resources) then
                      cache.resources <- (path, rsrc) :: cache.resources;
                   rsrc :: this_resources, par_resources
+
+          | Prec p ->
+               let precs = cache.precs in
+                  if not (List.mem p precs) then
+                     cache.precs <- p :: precs;
+                  resources
 
           | _ ->
                resources
@@ -527,6 +543,9 @@ struct
           | Opname { opname_name = str; opname_term = t } ->
                (* Hash this name to the full opname *)
                let opname = Opname.mk_opname str opprefix in
+                  if !debug_opname then
+                     eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
+                        (Simple_print.string_of_opname opname) eflush;
                   Hashtbl.add cache.optable str opname
 
           | Parent { parent_name = path } ->
@@ -630,7 +649,7 @@ struct
                eprintf "Filter_cache.load: loaded %s%t" name eflush;
                eprint_info info'
             end;
-         inline_str_components (cache, hook, vals) path info (info_items info');
+         inline_str_components (cache, hook, vals) [String.capitalize name] info (info_items info');
          cache, !vals (* hook cache (path, info') !vals *)
 
    (*
@@ -705,6 +724,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.18  1998/06/22 19:45:18  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.17  1998/06/15 22:32:06  jyh
  * Added CZF.
  *

@@ -70,7 +70,7 @@ struct
     *)
    let find base name select =
       if !debug_summary then
-         eprintf "Filter_summary_io.find: %a%t" (print_strings "/") name eflush;
+         eprintf "Filter_summary_io.find: %a%t" print_string_list name eflush;
       match name with
          [] ->
             raise (EmptyModulePath "Filter_summary_io.find")
@@ -164,6 +164,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/22 19:45:20  jyh
+ * Rewriting in contexts.  This required a change in addressing,
+ * and the body of the context is the _last_ subterm, not the first.
+ *
  * Revision 1.9  1998/06/15 22:32:13  jyh
  * Added CZF.
  *
