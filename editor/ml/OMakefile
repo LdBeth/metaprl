@@ -228,7 +228,7 @@ make_mp_version$(EXE): make_mp_version.ml
 mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
 	./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
 
-OCamlGeneratedFiles(mp_version.ml)
+LocalOCamlGeneratedFiles(mp_version.ml)
 
 #
 # Defaults

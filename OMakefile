@@ -449,8 +449,8 @@ OCAMLDEP = $(file bin/ocamldep$(EXE))
 
 OCAMLDEPFLAGS += -omake
 
-.SCANNER: %.cmi: %.mli $(OCAMLDEP)
-.SCANNER: %.cmo %.cmx: %.ml $(OCAMLDEP) :exists: %.mli
+.SCANNER: %.cmi: %.mli $(OCAMLDEP) OCamlGeneratedFilesTarget
+.SCANNER: %.cmo %.cmx: %.ml $(OCAMLDEP) OCamlGeneratedFilesTarget :exists: %.mli
 
 #
 # Libmojave is using our custom scanner, but otherwise config is normal
@@ -528,26 +528,17 @@ CAMLP4OFLAGS = $`(PREFIXED_OCAMLINCLUDES)
 MPTIME =
 
 #
-# OCamlGeneratedFiles need to be redefined to include .ppo
+# Add dependency scanning for .ppo files
 #
-OCamlGeneratedFiles(files) =
-   .SCANNER: %.cmi %.cmiz: $(files)
-   .SCANNER: %.ppo %.cmoz: $(files)
-   .SCANNER: %.cmo %.cmx: $(files)
-   export
+.SCANNER: %.ppo %.cmoz: %.ml $(OCAMLDEP) OCamlGeneratedFilesTarget
+    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
+
+.SCANNER: %.cmiz: %.mli $(OCAMLDEP) OCamlGeneratedFilesTarget
+    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
 
 PRLEnv() =
    # Dependency analysis uses -prl flag by default
    OCAMLDEPFLAGS += -prl
-
-   #
-   # Add dependency scanning for .ppo files
-   #
-   .SCANNER: %.ppo %.cmoz: %.ml $(OCAMLDEP)
-       $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
-
-   .SCANNER: %.cmi %.cmiz: %.mli $(OCAMLDEP)
-       $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
 
    #
    # For theory files, generate intermediate .ppo files
