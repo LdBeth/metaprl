@@ -113,10 +113,13 @@ depend::
 
 MFILES_CAMLP4 =\
 	filter/filter_parse\
-	filter/filter_main
+	filter/filter_main\
 
-MFILES_PRLC =\
-	filter/filter_bin
+PFILES =\
+	filter/prlcomp\
+
+MFILES_PRLC = $(PFILES)\
+	filter/filter_bin\
 
 MFILES_CONVERT =\
 	filter/filter_convert
@@ -131,8 +134,6 @@ CMXFILES_CONVERT = $(addsuffix .cmx, $(MFILES_CONVERT))
 #
 # Libraries for prlc
 #
-PRLCOMP = filter/prlcomp
-
 CMXADEPS =\
 	$(ROOT)/lib/util.cmxa
 
@@ -149,12 +150,12 @@ CMALIBS =\
 	$(THREADSLIB)\
 	$(CMADEPS)
 
-BYTE_CCLIBS = $(PRLCOMP).cmo \
+BYTE_CCLIBS =\
 	-cclib -lunix\
 	-cclib $(ROOT)/clib/clib-byte$(EXT_LIB)\
 	$(OTHER_CCLIBS)
 
-NATIVE_CCLIBS = $(PRLCOMP).cmx \
+NATIVE_CCLIBS =\
 	-cclib -lunix\
 	-cclib $(ROOT)/clib/clib-native$(EXT_LIB)\
 	$(OTHER_CCLIBS)
