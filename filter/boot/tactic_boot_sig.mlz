@@ -1019,13 +1019,12 @@ sig
     * Create a conversion from a basic rewrite.
     * This function is required by filter_prog.
     *)
-   val rewrite_of_rewrite : prim_rewrite -> conv
+   val rewrite_of_pre_rewrite : prim_rewrite -> term list -> conv
 
    (*
-    * Create a conversion from a conditional rewrite.
-    * This function is required by filter_prog.
+    * Standard rewrite annotatetion processor: return a pair of the redex and the conv
     *)
-   val rewrite_of_cond_rewrite : prim_cond_rewrite -> term list -> conv
+   val redex_and_conv_of_rw_annotation: string -> (prim_rewrite, term * conv) Mp_resource.rw_annotation_processor
 end
 
 module type RewriteInternalSig =

@@ -113,6 +113,15 @@ type ('annotation, 'input) annotation_processor =
    'annotation ->     (* Extra arguments, will include Tactic.pre_tactic *)
    'input
 
+type ('annotation, 'input) rw_annotation_processor =
+   string ->          (* Name of the new rewrite *)
+   term ->            (* Redex *)
+   term ->            (* Contractum *)
+   term list ->       (* Assumptions *)
+   term list ->       (* Arguments *)
+   'annotation ->     (* Extra arguments, will include Refine.prim_rewrite *)
+   'input
+
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)

@@ -283,8 +283,9 @@ sig
     * extra arguments.
     *)
    type prim_tactic = int array -> term list -> tactic
-   type prim_rewrite = rw
-   type prim_cond_rewrite = term list -> cond_rewrite
+   type prim_rewrite = 
+      PrimRW of rw
+    | CondRW of (term list -> cond_rewrite)
 
    (*
     * Get the term corresponding to an extract.
@@ -385,10 +386,10 @@ sig
       term list ->         (* subgoals *)
       term ->              (* redex *)
       term ->              (* contractum *)
-      prim_cond_rewrite
+      prim_rewrite
    val create_ml_cond_rewrite : build -> string ->
       ml_cond_rewrite ->   (* rewriter *)
-      prim_cond_rewrite
+      prim_rewrite
    val prim_cond_rewrite : build ->
       string ->            (* name *)
       term list ->         (* params *)

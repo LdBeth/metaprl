@@ -453,8 +453,10 @@ struct
     * These are the forms created at compile time.
     *)
    type prim_tactic = int array -> term list -> tactic
-   type prim_rewrite = rw
-   type prim_cond_rewrite = term list -> cond_rewrite
+   type prim_cond_rw = term list -> cond_rewrite
+   type prim_rewrite =
+      PrimRW of rw
+    | CondRW of prim_cond_rw
 
    (*
     * For destruction.
@@ -2005,7 +2007,7 @@ struct
           | _ ->
                raise (Failure "Refine.add_rewrite: multiple contracta")
       in
-         refiner', (rw : prim_rewrite)
+         refiner', (rw : rw)
 
    (*
     * Input forms are like rewrites,
@@ -2036,7 +2038,7 @@ struct
           | _ ->
                raise (Failure "Refine.add_input_form: multiple contracta")
       in
-         (rw : prim_rewrite)
+         PrimRW rw
 
    let add_prim_rewrite build name redex contractum =
       IFDEF VERBOSE_EXN THEN
@@ -2113,7 +2115,7 @@ struct
             sent.sent_ml_rewrite ref_rw;
             t', RewriteML (t, opname, t')
       in
-         refiner', (rw : prim_rewrite)
+         refiner', (rw : rw)
 
    (************************************************************************
     * CONDITIONAL REWRITE                                                  *
@@ -2157,7 +2159,7 @@ struct
              | [] ->
                   raise (Failure "Refine.add_cond_rewrite: no contracta")
       in
-         refiner', (rw' : prim_cond_rewrite)
+         refiner', (rw' : prim_cond_rw)
 
    let add_prim_cond_rewrite build name params subgoals redex contractum =
       IFDEF VERBOSE_EXN THEN
@@ -2240,7 +2242,7 @@ struct
                              cjust_subgoals = subgoals
                            }, ext)
       in
-         refiner', (rw : prim_cond_rewrite)
+         refiner', (rw : prim_cond_rw)
 
    (************************************************************************
     * API FUNCTIONS                                                        *
@@ -2277,7 +2279,7 @@ struct
    let create_rewrite build name redex contractum =
       let refiner, rw = add_rewrite build name redex contractum in
          build.build_refiner <- refiner;
-         rw
+         PrimRW rw
 
    let create_input_form = add_input_form
 
@@ -2296,7 +2298,7 @@ struct
    let create_ml_rewrite build name rw =
       let refiner, rw' = add_ml_rewrite build name rw in
          build.build_refiner <- refiner;
-         (rw' : prim_rewrite)
+         PrimRW rw'
 
    (*
     * Condiitional rewrites.
@@ -2304,7 +2306,7 @@ struct
    let create_cond_rewrite build name params args redex contractum =
       let refiner, rw = add_cond_rewrite build name params args redex contractum in
          build.build_refiner <- refiner;
-         (rw : prim_cond_rewrite)
+         CondRW rw
 
    let prim_cond_rewrite build name params args redex contractum =
       build.build_refiner <- add_prim_cond_rewrite build name params args redex contractum
@@ -2321,7 +2323,7 @@ struct
    let create_ml_cond_rewrite build name rw =
       let refiner, rw' = add_ml_cond_rewrite build name rw in
          build.build_refiner <- refiner;
-         (rw' : prim_cond_rewrite)
+         CondRW rw'
 
    (************************************************************************
     * DESTRUCTORS                                                          *
