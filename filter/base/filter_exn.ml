@@ -156,9 +156,11 @@ let rec format_exn db buf = function
 (*
  * Print an exception if it occurs, then reraise it.
  *)
-let print db s f x =
-   try f x with
-      exn ->
+let print =
+   if Exn_boot.backtrace then
+      fun _ _ f x -> f x
+   else
+      fun db s f x -> try f x with exn ->
          begin match s with
             None -> ()
           | Some s -> output_string stderr s;
@@ -169,7 +171,6 @@ let print db s f x =
             print_to_channel default_width buf stderr;
             flush stderr;
             raise exn
-
 
 (*
  * -*-

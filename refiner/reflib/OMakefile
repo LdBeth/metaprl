@@ -1,3 +1,5 @@
+OCAMLPPFLAGS =
+
 OCAMLINCLUDES +=\
 	-I ../refbase\
 	-I ../refsig\
