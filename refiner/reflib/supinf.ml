@@ -139,6 +139,8 @@ sig
    val split: af -> (bfield * vars * af)
    val isNumber: af -> bool
    val isInfinite: af -> bool
+   val isMinusInfinity: af -> bool
+   val isPlusInfinity: af -> bool
 
    val minusInfinity : af
    val plusInfinity : af
@@ -168,7 +170,7 @@ struct
       let aux key data =
          fprintf out "+"; Monom.print out key [data]
       in
-      (*printf "(";*) Table.iter aux f; (*printf")";*) flush stdout
+      fprintf out "("; Table.iter aux f; fprintf out ")%t" eflush
 
    let mk_number k = Table.add Table.empty constvar k
    let mk_var v = Table.add Table.empty v BField.fieldUnit
@@ -189,15 +191,21 @@ struct
 
    let remove = Table.remove
 
-   let split f =
+   let rec split f =
       if !debug_supinf_trace then
-         eprintf "split %a@." print f;
+			begin
+				eprintf "split"; Table.print stderr f;
+				eprintf "@.split %a@.%t" print f eflush;
+			end;
       let (v,coefs,rest)=Table.deletemax f in
       match coefs with
          [c] ->
             if !debug_supinf_trace then
                (Monom.print stderr v coefs; eprintf " %a@." print rest);
-            (c,v,rest)
+				if v!=constvar && (BField.compare c BField.fieldZero =0) then
+					split rest
+				else
+					(c,v,rest)
        | _ -> raise (Invalid_argument "More than one coefficient associated with a variable")
 
    let isNumber f =
@@ -214,6 +222,12 @@ struct
 
    let isInfinite f =
       BField.isInfinite (coef f constvar)
+
+   let isMinusInfinity f =
+      BField.compare BField.minusInfinity (coef f constvar) =0
+
+   let isPlusInfinity f =
+      BField.compare BField.plusInfinity (coef f constvar) =0
 
    let term_of_monom info k v =
       if v=constvar then
@@ -258,6 +272,8 @@ sig
 
    val occurs: vars -> saf -> bool
    val isInfinite: saf -> bool
+   val isMinusInfinity: saf -> bool
+   val isPlusInfinity: saf -> bool
    val isAffine: saf -> bool
 
    val term_of: (term array) -> saf -> term
@@ -370,6 +386,16 @@ struct
    let isInfinite = function
       Affine f ->
          AF.isInfinite f
+    | _ -> false
+
+   let isMinusInfinity = function
+      Affine f ->
+         AF.isMinusInfinity f
+    | _ -> false
+
+   let isPlusInfinity = function
+      Affine f ->
+         AF.isPlusInfinity f
     | _ -> false
 
    let isAffine = function

@@ -58,6 +58,8 @@ sig
    val split: af -> (bfield * vars * af)
    val isNumber: af -> bool
    val isInfinite: af -> bool
+   val isMinusInfinity: af -> bool
+   val isPlusInfinity: af -> bool
 
    val minusInfinity : af
    val plusInfinity : af
@@ -91,6 +93,8 @@ sig
 
    val occurs: vars -> saf -> bool
    val isInfinite: saf -> bool
+   val isMinusInfinity: saf -> bool
+   val isPlusInfinity: saf -> bool
    val isAffine: saf -> bool
 
    val term_of: (term array) -> saf -> term
