@@ -149,28 +149,30 @@ let inherit_prec = new_prec ()
 (*
  * Display form installation.
  *)
+let rec process_options precedence parens internal = function
+   [] ->
+      if parens then
+         precedence, internal
+      else
+         max_prec, internal
+ | h::t ->
+      match h with
+         DFormInheritPrec ->
+            process_options inherit_prec true internal t
+       | DFormPrec p ->
+            process_options p true internal t
+       | DFormParens ->
+            process_options precedence true internal t
+       | DFormInternal ->
+            process_options precedence parens true t
+
 let add_dform base { dform_name = name;
                      dform_pattern = t;
                      dform_options = options;
                      dform_print = printer
                    } =
-   let rec process_options precedence parens internal = function
-      [] ->
-         if parens then
-            precedence, internal
-         else
-            max_prec, internal
-    | h::t ->
-         match h with
-            DFormInheritPrec ->
-               process_options inherit_prec true internal t
-          | DFormPrec p ->
-               process_options p true internal t
-          | DFormParens ->
-               process_options precedence true internal t
-          | DFormInternal ->
-               process_options precedence parens true t
-   in
+   if (!debug_dform) then
+      eprintf "Adding DForm %s%t" name eflush;
    let precedence, internal = process_options min_prec false false options in
    let printer' =
       match printer with

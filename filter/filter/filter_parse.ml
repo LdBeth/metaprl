@@ -784,13 +784,15 @@ struct
     *)
    let define_dform proc loc name options t expansion =
       let modes, options' = get_dform_options proc loc options in
-         if (!debug_dform) && (modes=AllModes) then eprintf "Warning: display form %s - no modes specified%t" name eflush;
-         try
+         if (!debug_dform) && (modes=AllModes) then
+            eprintf "Warning: display form %s - no modes specified%t" name eflush;
+         begin try
             let redex, _ = compile_redex Relaxed [||] t in
             ignore (compile_contractum Relaxed redex expansion)
          with
             exn ->
-               Stdpp.raise_with_loc loc exn;
+               Stdpp.raise_with_loc loc exn
+         end;
          FilterCache.add_command proc.cache (DForm { dform_name = name;
                                                      dform_modes = modes;
                                                      dform_options = options';

@@ -272,6 +272,9 @@ let make_contractum_expr loc =
 let strict_expr loc =
    <:expr< $rewriter_expr loc$ . $uid:"Strict"$ >>
 
+let relaxed_expr loc =
+   <:expr< $rewriter_expr loc$ . $uid:"Relaxed"$ >>
+
 (*
  * Other expressions.
  *)
@@ -1180,7 +1183,7 @@ struct
     *    let contractum_n_id = compile_contractum redex (expr_of_term contracta_n) in
     *       code
     *)
-   let define_ml_program proc loc bvars args tname redex contracta code =
+   let define_ml_program proc loc strict_expr bvars args tname redex contracta code =
       (* Identifier names *)
       let term_patt = <:patt< $lid:term_id$ >> in
       let bvars_patt = <:patt< $lid:bvars_id$ >> in
@@ -1520,7 +1523,7 @@ struct
             [names_id; bnames_id; params_id; seq_id; goal_id]
       in
       let rewrite_let  = <:expr< let $rec:false$ $list:[ rewrite_patt, curry loc args_id rewrite_body ]$ in $info_let$ >> in
-      let body = define_ml_program proc loc bvars tparams name redex contracta rewrite_let in
+      let body = define_ml_program proc loc strict_expr bvars tparams name redex contracta rewrite_let in
 
       let rw_fun_expr =
          let addr_expr id = <:expr< $lid:id$ >> in
@@ -1810,7 +1813,7 @@ struct
       let rule_body = <:expr< let $rec:false$ $list:[ rule_patt, rule_expr ]$ in $rule_body$ >> in
       let rule_patt = <:patt< $lid:rule_id$ >> in
       let rule_let  = <:expr< let $rec:false$ $list:[ rule_patt, curry loc [addrs_id; names_id; goal_id; params_id] rule_body ]$ in $info_let$ >> in
-      let body = define_ml_program proc loc cvars tparams name redex contracta rule_let in
+      let body = define_ml_program proc loc strict_expr cvars tparams name redex contracta rule_let in
 
       let rule_fun_expr =
          let addr_expr id = <:expr< $lid:id$ >> in
@@ -1995,7 +1998,7 @@ struct
       let dprinter_let_expr =
          <:expr< let $rec:false$ $list:[ dprinter_patt, dprinter_fun_expr ]$ in $body_expr$ >>
       in
-      let expr = define_ml_program proc loc [] [] name t cons dprinter_let_expr in
+      let expr = define_ml_program proc loc relaxed_expr [] [] name t cons dprinter_let_expr in
          [<:str_item< $exp:expr$ >>]
 
    let _ = ()
