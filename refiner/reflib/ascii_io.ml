@@ -419,6 +419,11 @@ struct
     }
 
    let init_data (inputs : io_item list ref) =
+      (*
+       * First, we want to make sure that every value occurs at most once in the list.
+       * Duplicate names for the same value (which could have only been introduced
+       * by manual editing) need to be detected and standardized.
+       *)
       let h_reverse = Hashtbl.create 19 in
       let h_rename = Hashtbl.create 19 in
       let rename name =
@@ -432,27 +437,27 @@ struct
        | ((comment,name,record) as item :: tail) as original ->
             let tail' = clean_inputs tail in
             let c = Char.uppercase comment.[0] in
-            let record' = match c with
-               'T' | 'O' | 'G' -> smap_rename record
-             | 'B' -> begin match record with
-                  [(term :: vars)] -> let term' = rename term in if term == term' then record else [(term'::vars)]
-                | _ -> smap_rename record
-               end
-             | 'H' -> begin match record with
-                  [[var;name]] -> let name' = rename name in if name == name' then record else [[var;name']]
-                | _ -> smap_rename record
-               end
-             | 'N' -> begin match record with
-                  [[_;"NIL"]] -> record
-                | [var::rest] -> let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
-                | _ -> record
-               end
-             | 'C' | 'V' -> begin match record with
-                  [var; conts; terms] -> let terms' = Lm_list_util.smap rename terms in if terms' == terms then record else [var; conts; terms']
-                | [var::rest] -> let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest'] (* XXX HACK: format versions <= 1.0.7 compatibility *)
-                | _ -> record
-               end
-             | _ -> record
+            let record' = match c, record with
+               ('T' | 'O' | 'G' | 'S'), _ ->
+                  smap_rename record
+             | 'B', [term :: vars] ->
+                  let term' = rename term in if term == term' then record else [term'::vars]
+             | 'H', [[var;name]] ->
+                  let name' = rename name in if name == name' then record else [[var;name']]
+             | 'H', [[_]] -> (* XXX HACK: format versions <= 1.0.10 compatibility *)
+                  smap_rename record
+             | 'N', [[_;"NIL"]] ->
+                  record
+             | 'N', [var::rest] ->
+                  let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
+             | ('C' | 'V'), [var; conts; terms] ->
+                  let terms' = Lm_list_util.smap rename terms in if terms' == terms then record else [var; conts; terms']
+             | ('C' | 'V'), [var::rest] -> (* XXX HACK: format versions <= 1.0.7 compatibility *)
+                  let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
+             | 'P', _ ->
+                  record
+             | _ ->
+                  raise (Invalid_argument ("ASCII IO: internal error: clean_inputs does not know what to do with "^comment))
             in begin match Hashtbl.find_all h_reverse (c, record'), c with
                [], _ | _, ('S'| 'G' ) -> (* XXX HACK: S/G exception only needed for format version <= 1.0.6??? *)
                   begin match c with

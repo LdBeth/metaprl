@@ -1,5 +1,6 @@
 (*
- * This module defines functions used to read and write terms in a robust ASCII-based format
+ * This module defines a signature for functions used to read and write
+ * terms in a robust ASCII-based format
  *
  * ----------------------------------------------------------------
  *
@@ -26,7 +27,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Alexey Nogin
+ * Author: Aleksey Nogin
  * nogin@cs.cornell.edu
  *
  *)
@@ -39,45 +40,43 @@ or a hypothesis or a context hypothesis. Sequents are printed on two lines.
 The lines should be in the following format:
 
 Term:
-T<long_name> <short_name> <operator_short_name> [<bterm_short_name_1> ... <bterm_short_name_n>]
+T<comment> <name> <operator_name> [<bterm_name_1> ... <bterm_name_n>]
 
 Bound term:
-B<long_name> <short_name> <term_or_sequent_short_name> [<var_1> ... <var_n>]
+B<comment> <name> <term_or_sequent_name> [<var_1> ... <var_n>]
 
 Hypothesis:
-H<long_name> <short_name> <variable> <term_short_name>
+H<comment> <name> <variable> <term_name>
 
 Context hyp:
-C<long_name> <short_name> <variable>\\ [<var_1> ... <var_n>]\\ [<term_short_name_1> ... <term_short_name_n>]
+C<comment> <name> <variable>\\ [<var_1> ... <var_n>]\\ [<term_name_1> ... <term_name_n>]
 
 Sequent:
-S<long_name> <short_name> <arg_term_short_name>\\ [<hyp_1_short_name> ... <hyp_n_short_name>]\\ [<goal_1_short_name> ... <goal_n_short_name>]
+S<comment> <name> <arg_term_name>\\ [<hyp_1_name> ... <hyp_n_name>]\\ <concl_name>
 
 SO Variable:
-V<long_name> <short_name> <variable>\\ [<var_1> ... <var_n>]\\ [<term_short_name_1> ... <term_short_name_n>]
+V<comment> <name> <variable>\\ [<var_1> ... <var_n>]\\ [<term_name_1> ... <term_name_n>]
 
 Operator:
-O<long_name> <short_name> <opname_short_name> [<param_short_name_1> ... <param_short_name_n>]
+O<comment> <name> <opname_name> [<param_name_1> ... <param_name_n>]
 
 Opname:
-N<long_name> <short_name> <main_part_of_opname> <short_name_for_the_rest_of_opname>|NIL
+N<comment> <name> <main_part_of_opname> <name_for_the_rest_of_opname>|NIL
 
 Param - either of:
-P<long_name> <short_name> Number <number>
-P<long_name> <short_name> String <string>
-P<long_name> <short_name> Token <string>
-P<long_name> <short_name> Var <string>
-P<long_name> <short_name> MNumber <string>
-P<long_name> <short_name> MString <string>
-P<long_name> <short_name> MToken <string>
-P<long_name> <short_name> MLevel <int> [<var_1_string> <off_1_int> ... <var_1_string> <off_1_int>]
-P<long_name> <short_name> Quote <string>
+P<comment> <name> Number <number>
+P<comment> <name> String <string>
+P<comment> <name> Token <string>
+P<comment> <name> Var <string>
+P<comment> <name> MNumber <string>
+P<comment> <name> MString <string>
+P<comment> <name> MToken <string>
+P<comment> <name> MLevel <int> [<var_1_string> <off_1_int> ... <var_1_string> <off_1_int>]
+P<comment> <name> Quote <string>
 
-Where "long name" is there only to make the file more readable for the user,
-"short name" is probably several characters long, typically - a base short name
+The "name" is typically several characters long, usually - a base short name
 and a serial number. If a string has non-printable characters or spaces, it would
-be printed quoted. For sequents the correspondent S and G lines have to have the same short
-name.
+be printed quoted.
 
 ******************************************************************)
 
