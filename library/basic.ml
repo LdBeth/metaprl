@@ -181,7 +181,7 @@ type stamp_data = {mutable count : int; pid : string}
 (* TODO pid should include inet addr and time as well as process id to insure uniqueness *)
 let stamp_data = 
 	{ count = 0
-	; pid = String.concat "::"
+	; pid = String.concat "_"
 			[ string_of_inet_addr inet_addr_any
 			; string_of_int (getpid())
 			; string_of_int (time ())
