@@ -872,7 +872,8 @@ struct
        "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all ()));
        "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)));
        "stop_gmon",        UnitFunExpr     (fun () -> UnitExpr (stop_gmon ()));
-       "restart_gmon",     UnitFunExpr     (fun () -> UnitExpr (restart_gmon ()))]
+       "restart_gmon",     UnitFunExpr     (fun () -> UnitExpr (restart_gmon ()));
+       "print_gc_stats",   UnitFunExpr     (fun () -> UnitExpr (Gc.print_stat stdout))]
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *
