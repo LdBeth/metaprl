@@ -283,7 +283,7 @@ module TermGrammar = MakeTermGrammar (TermGrammarBefore);;
  * Extend the grammar.
  *)
 let save_term state t =
-   let loc = 0, 0 in
+   let loc = dummy_loc in
    let v = state.state_inline_var in
       state.state_inline_var <- succ v;
       state.state_inline_terms <- (v, t) :: state.state_inline_terms;

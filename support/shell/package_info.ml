@@ -612,7 +612,6 @@ let arg_resource pack_info arg name =
 let new_proof pack_info arg name hyps goal =
    auto_loading_str arg pack_info (function
       { pack_name = mod_name } ->
-         let loc = 0, 0 in
          let sentinal = Tactic_type.Tactic.sentinal_of_refiner_object mod_name name in
          let bookmark = find_bookmark mod_name name in
          let seq = Tactic_type.Tactic.create sentinal (mk_msequent goal hyps) bookmark in
