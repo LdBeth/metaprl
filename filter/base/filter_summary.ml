@@ -1068,14 +1068,7 @@ struct
       let path, opens, resources = three_subterms t in
          Parent { parent_name = dest_string_param_list path;
                   parent_opens = List.map dest_string_param_list (dest_xlist opens);
-                  parent_resources =
-                     try
-                        List.map (dest_resource_sig convert) (dest_xlist resources)
-                     with RefineError _ -> begin
-                        (* HACK!!! This will only happen with an old .prla file *)
-                        (* eprintf "Warning: old syntax for a Summary!resource%t" eflush; *)
-                        []
-                     end
+                  parent_resources = List.map (dest_resource_sig convert) (dest_xlist resources)
          }
 
    (*
