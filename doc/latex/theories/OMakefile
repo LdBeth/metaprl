@@ -1,0 +1,23 @@
+#
+# Format a document containing all of the theories
+#
+DEF_ALL_THEORIES =\
+    base\
+    fol\
+    itt\
+    czf\
+    fir
+
+ALL_THEORIES = $(intersection $(DEF_ALL_THEORIES), $(THEORIES))
+
+ALL_BODIES = $(file $(add-wrapper $(ROOT)/theories/, /theory-body.tex, $(ALL_THEORIES)))
+
+print(ALL_BODIES: $(ALL_BODIES))
+
+all-bodies.tex: $(ALL_BODIES)
+    cat $^ > $@
+
+#
+# Format the document
+#
+LaTeXDocumentInstall(tex, $(DOCDIR), theories, all-theories, all-bodies)

@@ -340,29 +340,31 @@ TEXDEPS += $(file $(INPUTSDIR)/rc.bib $(INPUTSDIR)/metaprl.tex)
 MP = $(file $(ROOT)/editor/ml/mp$(OBJ_SUFFIX))
 
 #
-# Build a theory document.
+# Build a theory document locally.
 # The main goal is to get MetaPRL to generate the TeX files.
 #
-TheoryDocument(name, theories) =
+TheoryDocument(docname, theories) =
     CMOZFILES = $(file $(addsuffix .cmoz, $(theories)))
     THEORIES = $(tail $(theories))
 
     #
     # Contents of the print.ml file
     #
-    $(name)_print.ml:
-	echo 'set_tex_file "$(name).tex";; $(add-quoted-wrapper print_theory , ;;, $(THEORIES))' > $@
+    $(docname)_print.ml:
+	echo 'set_tex_file "$(docname).tex";; $(add-quoted-wrapper print_theory , ;;, $(THEORIES))' > $@
 
     #
     # Get MetaPRL to generate the .tex files
     #
-    $(name).tex $(name)-body.tex: $(MP) $(CMOZFILES) $(name)_print.ml
-	$(SET_MPLIB) $(MP) $(OCAMLINCLUDES) $(name)_print.ml
+    $(docname).tex $(docname)-body.tex: $(MP) $(CMOZFILES) $(docname)_print.ml
+	$(SET_MPLIB) $(MP) $(OCAMLINCLUDES) $(docname)_print.ml
 
-    #
-    # Build the LaTeX document from the .tex files
-    #
-    LaTeXDocumentInstall(tex, $(DOCDIR), $(name), $(name)-body)
+#
+# Format the document and copy it to the DOCDIR directory.
+#
+TheoryDocumentInstall(name, theories) =
+    TheoryDocument(theory, $(theories))
+    LaTeXDocumentInstall(tex, $(DOCDIR), $(name), theory, theory-body)
 
 #
 # Also clean up the TeX files in the subdirectories
@@ -372,4 +374,4 @@ CLEAN += *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc
 ########################################################################
 # Subdirectories to build
 #
-.SUBDIRS: $(MP_DIRS) editor/ml
+.SUBDIRS: $(MP_DIRS) editor/ml doc/latex/theories
