@@ -44,7 +44,7 @@ open Base_rewrite
 open Base_dtactic
 open Base_auto_tactic
 open Itt_rfun
-open Itt_int
+open Itt_int_base
 open Itt_equal
 open Itt_struct
 open Itt_logic

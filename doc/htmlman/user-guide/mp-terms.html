@@ -266,19 +266,7 @@ declared,as in the following sequence:</P>
     </TR>
     <TR>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> /\ <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>and{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
       &nbsp;<I><TT>t1</TT></I><TT> <B>or</B> <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>or{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> \/ <I>t2</I></TT></TD>
       <TD WIDTH="50%">
       &nbsp;<TT>or{<I>t1; t2</I>}</TT></TD>
     </TR>
@@ -345,6 +333,12 @@ declared,as in the following sequence:</P>
     </TR>
     <TR>
       <TD WIDTH="50%">
+      &nbsp;<B><TT>isect</TT></B><TT> <I>x: t1. t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>isect{<I>t1; x. t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
       &nbsp;<TT><I>t1</I><B> IN </B><I>t2</I></TT></TD>
       <TD WIDTH="50%">
       &nbsp;<TT>equal{<I>t2; t1; t1</I>}</TT></TD>
@@ -360,6 +354,12 @@ declared,as in the following sequence:</P>
       &nbsp;<TT><I>t1 </I> &lt;&gt; <I>t2 </I><B>in</B> <I>t3</I></TT></TD>
       <TD WIDTH="50%">
       &nbsp;<TT>nequal{<I>t3; t2; t1</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<TT><I>t1 </I> <I>t2 </I></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>apply{<I>t1; t2</I>}</TT></TD>
     </TR>
   </TABLE></P>
 </BLOCKQUOTE>
@@ -388,15 +388,15 @@ declared,as in the following sequence:</P>
     </TR>
     <TR>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1 </TT></I><TT><B>div</B> <I>t2</I></TT></TD>
+      &nbsp;<I><TT>t1 </TT></I><TT><B>/@</B> <I>t2</I></TT></TD>
       <TD WIDTH="50%">
       &nbsp;<TT>div{<I>t1; t2</I>}</TT></TD>
     </TR>
     <TR>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1 </TT></I><TT><B>mod </B><I>t2</I></TT></TD>
+      &nbsp;<I><TT>t1</TT></I> <TT><B>%@</B> <I>t2</I></TT></TD>
       <TD WIDTH="50%">
-      &nbsp;<TT>mod{<I>t1; t2</I>}</TT></TD>
+      &nbsp;<TT>rem{<I>t1; t2</I>}</TT></TD>
     </TR>
     <TR>
       <TD WIDTH="50%">
