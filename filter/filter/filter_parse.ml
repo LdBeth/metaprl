@@ -133,7 +133,7 @@ let mk_opname loc l p a =
          Stdpp.raise_with_loc loc exn
 
 (*
- * Base term grammar.
+ * Base term grammar
  *)
 module TermGrammarBefore : TermGrammarSig =
 struct
@@ -152,12 +152,14 @@ struct
    let applytermlist = Grammar.Entry.create gram "applytermlist"
    let bound_term = Grammar.Entry.create gram "bound_term"
    let xdform = Grammar.Entry.create gram "xdform"
+   let term_con_eoi = Grammar.Entry.create gram "term_con_eoi"
 end
 
 (*
  * Extended term grammar.
  *)
 module TermGrammar = MakeTermGrammar (TermGrammarBefore)
+open TermGrammarBefore
 open TermGrammar
 
 (************************************************************************
@@ -166,16 +168,106 @@ open TermGrammar
 
 let term_exp s =
    let cs = Stream.of_string s in
-   let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
+   let t = Grammar.Entry.parse term_eoi cs in
       add_binding (BindTerm t)
 
 let term_patt s =
    let cs = Stream.of_string s in
-   let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
+   let t = Grammar.Entry.parse term_eoi cs in
       Filter_patt.build_term_patt t
 
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
 let _ = Quotation.default := "term"
+
+let rec mk_list_expr loc = function
+   [] -> <:expr< [] >>
+ | hd :: tl -> <:expr< $uid:"::"$ $hd$ $mk_list_expr loc tl$ >>
+
+let expr_of_bvar_con loc = function
+   ConBVarConst s -> <:expr< $str: s$ >>
+ | ConBVarExpr e -> e
+
+let expr_of_pcon loc = function
+   ConPStr s, shape ->
+      let shape =
+         match shape with
+            ShapeString -> "String"
+          | ShapeToken -> "Token"
+          | _ -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: string constant parameter must
+ be of string or token kind")
+      in
+         <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.$uid:shape$ $str:s$) >>
+ | ConPMeta l, ShapeLevel ->
+      <:expr<
+         Refiner.Refiner.Term.make_param
+            (Refiner.Refiner.TermType.MLevel
+               (Refiner.Refiner.Term.mk_level 0 ( $uid:"::"$
+                  (Refiner.Refiner.Term.mk_level_var $str:l$)
+                  [])))
+      >>
+ | ConPMeta s, shape ->
+      let shape =
+         match shape with
+            ShapeString -> "MString"
+          | ShapeNumber -> "MNumber"
+          | ShapeToken -> "MToken"
+          | _ -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: unsupported meta-parameter")
+      in
+         <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.$uid:shape$ $str:s$) >>
+  | ConPExpr e, shape ->
+      let shape =
+         match shape with
+            ShapeString -> "String"
+          | ShapeToken -> "Token"
+          | ShapeNumber -> "Number"
+          | ShapeLevel -> "Level"
+          | ShapeVar -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: variable parameters sho
+uld not be explicit")
+      in
+         <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.$uid:shape$ $e$) >>
+  | ConPNum n, ShapeNumber ->
+      <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.Number $add_binding (BindNum n)$) >>
+  | ConPNum _, _ ->
+      Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: numeric parameter of non-numeric kind?")
+
+let is_simp_bterm = function
+   [], _ -> true
+ | _ -> false
+
+let rec expr_of_term_con loc = function
+   ConTerm t ->
+      add_binding (BindTerm t)
+ | ConExpr e ->
+      e
+ | ConVar e ->
+      let loc = (0,0) in <:expr< Refiner.Refiner.Term.mk_var_term $e$ >>
+ | ConConstruct (op, params, bterms) ->
+      let op = add_binding (BindOpname op) in
+         if params = [] && List.for_all is_simp_bterm bterms then
+            let bterms = mk_list_expr loc (List.map (fun (_, bt) -> expr_of_term_con loc bt) bterms) in
+               <:expr< Refiner.Refiner.Term.mk_simple_term $op$ $bterms$ >>
+         else
+            let bterms = mk_list_expr loc (List.map (expr_of_bterm_con loc) bterms) in
+            let params = mk_list_expr loc (List.map (expr_of_pcon loc) params) in
+               <:expr< Refiner.Refiner.Term.mk_term (Refiner.Refiner.Term.mk_op $op$ $params$) $bterms$ >>
+
+and expr_of_bterm_con loc (bvars, bt) =
+   let bt = expr_of_term_con loc bt in
+   if bvars = [] then
+      <:expr< Refiner.Refiner.Term.mk_simple_bterm $bt$ >>
+   else
+      let bvars = mk_list_expr loc (List.map (expr_of_bvar_con loc) bvars) in
+         <:expr< Refiner.Refiner.Term.mk_bterm $bvars$ $bt$ >>
+
+let con_exp s =
+   let cs = Stream.of_string s in
+   let con = Grammar.Entry.parse term_con_eoi cs in
+      expr_of_term_con (0,0) con
+
+let con_patt _ =
+   raise(Invalid_argument "<:con< >> quotation can not be used where pattern is expected") 
+
+let _ = Quotation.add "con" (Quotation.ExAst (con_exp, con_patt))
 
 let bind_item i = {
    item_item = i;

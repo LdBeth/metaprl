@@ -82,8 +82,6 @@ sig
    val make_param : param' -> param
    val dest_param : param -> param'
    val dest_params : param list -> param' list
-   val dest_match_param : param -> match_param
-   val dest_match_params : param list -> match_param list
    val mk_level : int -> level_exp_var list -> level_exp
    val make_level : level_exp' -> level_exp
    val dest_level : level_exp -> level_exp'
@@ -133,6 +131,16 @@ sig
 
    val mk_simple_bterm : term -> bound_term
    val dest_simple_bterm : bound_term -> term
+
+   (*
+    * Destruct a term for easy pattern-matching.
+    *
+    * For variables (both FO and SO) we use the "standard"
+    * form with opname ["var"] and a MatchVar parameter.
+    *
+    * Sequents are not handled yet.
+    *)
+   val explode_term : term -> string list * match_param list * bound_term' list
 
    (*
     * We allow a term printer to be injected.

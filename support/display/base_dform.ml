@@ -195,10 +195,9 @@ let print_tex_var format_term buf header_fun v =
       end;
       format_string buf "}";
       format_ezone buf
-         
-let mathit_op = opname_of_term <<math_it[v:s]>>
-let mk_mathit = mk_string_term mathit_op
 
+let mk_mathit s = <:con< math_it[$s$:s] >>
+         
 ml_dform var_html_df : mode[html] :: display_var[v:v]{nil} format_term buf = fun
    term ->
       print_html_var format_term buf mk_mathit (really_dest_var term)
@@ -225,7 +224,7 @@ let context_term = function
    "H" -> <<Gamma>>
  | "J" -> <<Delta>>
  | "K" -> <<Sigma>>
- |  v  -> mk_string_term mathit_op v
+ |  v  -> mk_mathit v
 
 ml_dform cvar_html_df : mode[html] :: df_context_var[s:s] format_term buf = fun
    term ->
@@ -334,10 +333,8 @@ ml_dform sequent_src_df : mode["src"] :: "sequent"{'ext; 'seq} format_term buf =
    in
       format
 
-let context_op = opname_of_term <<df_context_var[s:s]>>
-
 let format_context format_term buf v values =
-   format_term buf NOParens (mk_string_term context_op v);
+   format_term buf NOParens <:con< df_context_var[$v$:s] >>;
    format_term_list format_term buf values
 
 (*

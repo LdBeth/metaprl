@@ -115,7 +115,6 @@ declare "packages"{'pl}
 
 (* PRL Bindings *)
 declare term_binding{'t;v.'t2['v]}
-declare opname_binding{'t;v.'t2['v]}
 
 (************************************************************************
  * ML ACCESS                                                            *
@@ -153,7 +152,6 @@ val mk_arglist_term : term list -> term
 
 val mk_goal_label_term : string -> term
 val mk_goal_term : term -> term -> term list -> term -> term
-val mk_labeled_goal_term : term -> term -> term
 val mk_goal_list_term : term list -> term
 val mk_subgoals_term : term list -> term list -> term
 val mk_rule_box_string_term : string -> term

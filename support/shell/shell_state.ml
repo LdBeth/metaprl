@@ -199,6 +199,7 @@ struct
    let applytermlist = Grammar.Entry.create gram "applytermlist"
    let bound_term = Grammar.Entry.create gram "bound_term"
    let xdform = Grammar.Entry.create gram "xdform"
+   let term_con_eoi = Grammar.Entry.create gram "term_con_eoi"
 end
 
 module TermGrammar = MakeTermGrammar (TermGrammarBefore);;
@@ -229,7 +230,7 @@ let get_term i =
 let term_exp s =
    synchronize_state (fun state ->
          let cs = Stream.of_string s in
-         let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
+         let t = Grammar.Entry.parse TermGrammarBefore.term_eoi cs in
             save_term state t)
 
 let term_patt s =

@@ -823,148 +823,67 @@ dform comment_df2 : mode["prl"] :: comment{'t} =
 
 (*
  * PRL Bindings
+ *
+ * XXX TODO: display forms for term constructor bindings.
  *)
 declare term_binding{'t;v.'t2['v]}
-declare opname_binding{'t;v.'t2['v]}
 declare bound_term{'t}
-declare bound_opname{'t}
 
 dform term_binding : internal :: term_binding{'t;v.'t2['v]} = 't2[bound_term{'t}]
-dform opname_binding : internal :: opname_binding{'t;v.'t2['v]} = 't2[bound_opname{'t}]
 
 dform bound_term : internal :: bound_term{'t} =
    szone pushm[3] `"<<" hspace slot{'t} popm hspace `">>" ezone
-
-(*
- * XXX TODO: the opname bindings are not used yet; once we start using them,
- * we should have a better idea of how to display them.
- *)
-dform bound_opname : internal :: bound_opname{'t} = 
-   `"opname_of_term" space bound_term{'t}
 
 (************************************************************************
  * ML INTERFACE                                                         *
  ************************************************************************)
 
-let interface_term = << "interface"{'intf} >>
-let interface_opname = opname_of_term interface_term
-let mk_interface_term tl =
-   mk_dep0_term interface_opname (mk_xlist_term tl)
-
-let implementation_term = << "implementation"{'impl} >>
-let implementation_opname = opname_of_term implementation_term
-let mk_implementation_term tl =
-   mk_dep0_term implementation_opname (mk_xlist_term tl)
-
-let package_term = << "package"[name:s] >>
-let package_opname = opname_of_term package_term
-let mk_package_term = mk_string_term package_opname
-
-let packages_term = << "packages"{'pl} >>
-let packages_opname = opname_of_term packages_term
-let mk_packages_term tl =
-   mk_simple_term packages_opname [mk_xlist_term tl]
-
-let href_term = << "href"[s:s]{'t} >>
-let href_opname = opname_of_term href_term
-let mk_href_term = mk_string_dep0_term href_opname
+let mk_interface_term tl = <:con< "interface"{ $mk_xlist_term tl$ } >>
+let mk_implementation_term tl = <:con< "implementation"{ $mk_xlist_term tl$ } >>
+let mk_package_term name = <:con< "package"[$name$:s] >>
+let mk_packages_term tl = <:con< "packages"{$mk_xlist_term tl$} >>
+let mk_href_term s t = <:con< "href"[$s$:s]{$t$} >>
 
 let status_bad_term = << "status_bad" >>
 let status_partial_term = << "status_partial" >>
 let status_asserted_term = << "status_asserted" >>
 let status_complete_term = << "status_complete" >>
 
-let status_term = << "goal_status"{'sl} >>
-let status_opname = opname_of_term status_term
-let mk_status_term tl =
-   mk_simple_term status_opname [mk_xlist_term tl]
+let mk_status_term tl = <:con< "goal_status"{$mk_xlist_term tl$} >>
 
-let goal_label_term = << "goal_label"[s:s] >>
-let goal_label_opname = opname_of_term goal_label_term
-let mk_goal_label_term s =
-   mk_string_term goal_label_opname s
-
-let mk_labeled_goal_term label goal =
-   mk_simple_term goal_label_opname [label; goal]
-
-let goal_term = << "goal"{'status; 'label; 'assums; 'goal} >>
-let goal_opname = opname_of_term goal_term
+let mk_goal_label_term s = <:con< "goal_label"[$s$:s] >>
+let mk_goal_list_term goals = <:con< "goal_list"{$mk_xlist_term goals$} >>
 let mk_goal_term status label assums goal =
-   mk_simple_term goal_opname [status; label; mk_xlist_term assums; goal]
+   <:con< "goal"{$status$; $label$; $mk_xlist_term assums$; $goal$} >>
 
-let goal_list_term = << "goal_list"{'goals} >>
-let goal_list_opname = opname_of_term goal_list_term
-let mk_goal_list_term goals =
-   mk_simple_term goal_list_opname [mk_xlist_term goals]
-
-let subgoals_term = << "subgoals"{'subgoals; 'extras} >>
-let subgoals_opname = opname_of_term subgoals_term
 let mk_subgoals_term subgoals extras =
-   mk_simple_term subgoals_opname [mk_xlist_term subgoals; mk_xlist_term extras]
+   <:con< "subgoals"{$mk_xlist_term subgoals$; $mk_xlist_term extras$} >>
 
-let rule_box_term = << "rule_box"[s:s] >>
-let rule_box_opname = opname_of_term rule_box_term
-let mk_rule_box_string_term s =
-   mk_string_term rule_box_opname s
-let mk_rule_box_term t =
-   mk_dep0_term rule_box_opname t
+let mk_rule_box_string_term s = <:con< "rule_box"[$s$:s] >>
+let mk_rule_box_term t = <:con< "rule_box"{$t$} >>
+
 let append_rule_box t s =
-   if is_dep0_term rule_box_opname t then
-      let t = one_subterm t in
-      mk_string_dep0_term rule_box_opname s t
-   else if is_string_term rule_box_opname t then
-      let s' = dest_string_term rule_box_opname t in
-      let s = if s'="" then s else s' ^ " " ^ s in
-      mk_string_term rule_box_opname s
-   else let s',t = dest_string_dep0_term rule_box_opname t in
-      let s = if s'="" then s else s' ^ " " ^ s in
-      mk_string_dep0_term rule_box_opname s t
+   match explode_term t with
+      << "rule_box"{'t} >> ->
+         <:con< "rule_box"[$s$:s]{$t$} >>
+    | << "rule_box"[s':s] >> ->
+            <:con< "rule_box"[$if s'="" then s else s' ^ " " ^ s$:s] >>
+    | << "rule_box"[s':s]{'t} >> ->
+            <:con< "rule_box"[$if s'="" then s else s' ^ " " ^ s$:s]{$t$} >>
+    | _ ->
+         raise(Invalid_argument "Summary.append_rule_box")
 
-let proof_term = << "proof"{'main; 'goal; 'text; 'subgoals} >>
-let proof_opname = opname_of_term proof_term
-let mk_proof_term main goal text subgoals =
-   mk_simple_term proof_opname [main; goal; text; subgoals]
+let mk_proof_term main goal text subgoals = <:con< "proof"{$main$; $goal$; $text$; $subgoals$} >>
 let dest_proof = four_subterms
 
-let int_arg_term = << "int_arg"[i:n] >>
-let int_arg_opname = opname_of_term int_arg_term
-let mk_int_arg_term i =
-   mk_number_term int_arg_opname (Mp_num.num_of_int i)
-
-let term_arg_term = << "term_arg"{'t} >>
-let term_arg_opname = opname_of_term term_arg_term
-let mk_term_arg_term t =
-   mk_simple_term term_arg_opname [t]
-
-let type_arg_term = << "type_arg"{'t} >>
-let type_arg_opname = opname_of_term type_arg_term
-let mk_type_arg_term t =
-   mk_simple_term type_arg_opname [t]
-
-let bool_arg_term = << "bool_arg"[s:t] >>
-let bool_arg_opname = opname_of_term bool_arg_term
-let mk_bool_arg_term b =
-   mk_string_term bool_arg_opname (if b then "true" else "false")
-
-let string_arg_term = << "string_arg"[s:s] >>
-let string_arg_opname = opname_of_term string_arg_term
-let mk_string_arg_term s =
-   mk_string_term string_arg_opname s
-
-let subst_arg_term = << "subst_arg"{'t} >>
-let subst_arg_opname = opname_of_term subst_arg_term
-let mk_subst_arg_term t =
-   mk_simple_term subst_arg_opname [t]
-
-let term_list_arg_term = << "term_list_arg"{'t} >>
-let term_list_arg_opname = opname_of_term term_list_arg_term
-let mk_term_list_arg_term tl =
-   mk_simple_term term_list_arg_opname [mk_xlist_term tl]
-
-let arglist_term = << "arglist"{'t} >>
-let arglist_opname = opname_of_term arglist_term
-let mk_arglist_term tl =
-   mk_simple_term arglist_opname [mk_xlist_term tl]
+let mk_int_arg_term i = <:con< int_arg[$Mp_num.num_of_int i$:n] >>
+let mk_term_arg_term t = <:con< term_arg{$t$} >>
+let mk_type_arg_term t = <:con< type_arg{$t$} >>
+let mk_bool_arg_term b = if b then << bool_arg["true":t] >> else << bool_arg["false":t] >>
+let mk_string_arg_term s = <:con< string_arg[$s$:s] >>
+let mk_subst_arg_term t = <:con< subst_arg{$t$} >>
+let mk_term_list_arg_term tl = <:con< term_list_arg{$mk_xlist_term tl$} >>
+let mk_arglist_term tl = <:con< arglist{$mk_xlist_term tl$} >>
 
 (*
  * -*-

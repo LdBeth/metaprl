@@ -139,6 +139,7 @@ sig
    val applytermlist : (term list) Grammar.Entry.e
    val bound_term : aterm Grammar.Entry.e
    val xdform : term Grammar.Entry.e
+   val term_con_eoi : (term, MLast.expr) term_constructor Grammar.Entry.e
 end
 
 (*
@@ -387,6 +388,12 @@ struct
    let string_params =
       List.map ( fun _ -> ShapeString)
 
+   let expr_of_anti (loc, _) s =
+      try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
+         Stdpp.Exc_located ((l1, l2), exn) ->
+            let offset = loc + String.length "$" in
+               Stdpp.raise_with_loc (offset+l1, offset+l2) exn
+
    let rec parse_quotation loc curr = function
       nm, _ when nm = curr ->
          Stdpp.raise_with_loc loc (Failure (nm ^ " quotation inside a " ^ curr ^ " quotation"))
@@ -486,7 +493,7 @@ struct
     ************************************************************************)
 
    EXTEND
-      GLOBAL: term_eoi term quote_term mterm bmterm singleterm applytermlist bound_term xdform;
+      GLOBAL: term_eoi term quote_term mterm bmterm singleterm applytermlist bound_term xdform term_con_eoi;
 
       (*
        * Meta-terms include meta arrows.
@@ -599,7 +606,7 @@ struct
       term:
          [[ x = aterm ->
                x.aterm
-          ]|[ "$"; s = STRING; "$" ->
+          ]|[ s = ANTIQUOT ->
                Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
           ]|[ x = QUOTATION ->
             parse_quotation loc "term" (dest_quot x)
@@ -857,7 +864,7 @@ struct
           | [ t = nonwordterm ->
                t
             ]
-          | [ "$"; s = STRING; "$" ->
+          | [ s = ANTIQUOT ->
                { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s}
             ]
           | [ x = QUOTATION ->
@@ -1167,6 +1174,76 @@ struct
            | sl_back_quote; name = STRING ->
              mk_xstring_term (Token.eval_string name)
           ]];
+      
+      (* Term constructor "programs" *)
+      term_con_eoi:
+         [[ con = term_con; EOI -> con ]];
+
+      term_con:
+         [[ sl_exclamation; t = term; sl_exclamation -> ConTerm t
+          | e = ANTIQUOT -> ConExpr (expr_of_anti loc e)
+          | sl_single_quote; v = ANTIQUOT -> ConVar (expr_of_anti loc v)
+          | op = opname -> ConConstruct (mk_opname loc op [] [], [], [])
+          | op = opname; (params, bterms) = term_con_suffix ->
+               let param_types = List.map snd params in
+               let bterm_arities = List.map (fun (bvars, _) -> List.length bvars) bterms in
+                  ConConstruct (mk_opname loc op param_types bterm_arities, params, bterms)
+         ]];
+      
+      term_con_suffix:
+         [[ p = con_params ->
+             p, []
+           | p = con_params; sl_open_curly; bterms = con_btermslist; sl_close_curly ->
+             p, bterms
+           | sl_open_curly; bterms = con_btermslist; sl_close_curly ->
+             [], bterms
+          ]];
+
+      con_params:
+         [[ sl_open_brack; params = LIST0 con_param SEP ","; sl_close_brack ->
+             params
+          ]];
+
+      con_param:
+         [[ s = STRING    -> ConPStr s, ShapeString
+          | s = sl_word   -> ConPMeta s, ShapeString
+          | n = sl_number -> ConPNum n, ShapeNumber
+          | s = STRING  ; sl_colon; shape = con_param_shape -> ConPStr s, shape
+          | s = sl_word ; sl_colon; shape = con_param_shape -> ConPMeta s, shape
+          | e = ANTIQUOT; sl_colon; shape = con_param_shape -> ConPExpr (expr_of_anti loc e), shape
+          ]];
+
+      con_param_shape:
+         [[ s = LIDENT ->
+               match s with
+                  "n" -> ShapeNumber
+                | "s" -> ShapeString
+                | "l" -> ShapeLevel
+                | "t" -> ShapeToken
+                |  s  -> raise (BadParamCast (make_param (String ""), s))
+          ]];
+
+      con_btermslist:
+         [[ l = LIST0 con_bterm SEP ";" -> l ]];
+
+      con_bterm:
+         [[ v = LIDENT; b = con_bterm_suffix ->
+               let bv, bt = b in (ConBVarConst v :: bv), bt
+          | e = ANTIQUOT; suff = OPT con_bterm_suffix ->
+               let e = expr_of_anti loc e in
+               match suff with
+                  Some (bv, bt) ->
+                     (ConBVarExpr e :: bv), bt
+                | None ->
+                     [], ConExpr e
+          ] | [ t = term_con -> [], t 
+          ]];
+
+      con_bterm_suffix:
+         [[ ","; bt = con_bterm -> bt
+          | "."; t = term_con -> [], t
+          ]];
+           
 
       (* Terminals *)
       sl_meta_left_right_arrow:
@@ -1402,18 +1479,6 @@ struct
            | s = UIDENT -> s
           ]];
    END
-
-   (* Implementation *)
-   let mterm = mterm
-   let bmterm = bmterm
-   let quote_term = quote_term
-   let term = term
-   let term_eoi = term_eoi
-   let singleterm = singleterm
-   let applytermlist = applytermlist
-   let bound_term = bound_term
-   let mk_opname = mk_opname
-   let xdform = xdform
 end
 
 (*

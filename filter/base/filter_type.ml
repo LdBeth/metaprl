@@ -43,12 +43,7 @@ open Opname
 (*
  * Input exceptions.
  *)
-exception NotANumber of string         (* Int param is not a number *)
-exception BadParam of string           (* Bogus parameter format *)
-exception BadLevelExp of level_exp     (* Level bnd_expression has wrong type *)
 exception BadParamCast of param * string
-exception BadArgList of (string list * term) list
-exception BadBinder of term
 exception ParseError of string
 
 (*
@@ -76,6 +71,31 @@ type module_path = string list
  * Annotated terms may have a name.
  *)
 type aterm = { aname : term option; aterm : term }
+
+(************************************************************************
+ * A "bytecode" description of how to construct a term                  *
+ ************************************************************************)
+
+type 'expr param_constr =
+   ConPStr of string
+ | ConPMeta of string
+ | ConPNum of Mp_num.num
+ | ConPExpr of 'expr
+
+type 'expr param_constructor = 'expr param_constr * shape_param
+
+type 'expr bvar_constructor =
+   ConBVarConst of string
+ | ConBVarExpr of 'expr
+
+type ('term, 'expr) term_constructor =
+   ConTerm of 'term     (* a constant term *)
+ | ConExpr of 'expr
+ | ConVar of 'expr
+ | ConConstruct of opname * 'expr param_constructor list * ('term, 'expr) bterm_constructor list
+
+and ('term, 'expr) bterm_constructor =
+   'expr bvar_constructor list * ('term, 'expr) term_constructor
 
 (************************************************************************
  * Summary (filtyer_summary) TYPES                                      *

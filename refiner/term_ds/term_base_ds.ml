@@ -494,9 +494,19 @@ struct
        | ParamList _ ->
             raise (Invalid_argument "Term_base_std.dest_match_param")
 
-   let dest_match_params params =
-      List.map dest_match_param params
-
+   let explode_term t =
+      match get_core t with
+         Term t ->
+            let op = dest_opname t.term_op.op_name in
+            let params = List.map dest_match_param t.term_op.op_params in
+               op, params, t.term_terms
+       | FOVar v ->
+            ["var"], [MatchVar v], []
+       | Sequent _ ->
+            raise(Invalid_argument "Term_base_ds.explode_term: sequents not supported")
+       | Subst _ | Hashed _ ->
+            fail_core "explode_term"
+   
    (*
     * Descriptor operations.
     *)

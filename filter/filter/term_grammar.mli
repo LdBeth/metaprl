@@ -52,13 +52,13 @@ sig
    val applytermlist : (term list) Grammar.Entry.e
    val bound_term : aterm Grammar.Entry.e
    val xdform : term Grammar.Entry.e
+   val term_con_eoi : (term, MLast.expr) term_constructor Grammar.Entry.e
 end
 
 val comment_string_op : opname
 val raise_spelling_error: unit -> unit
 
 module MakeTermGrammar (TermGrammar : TermGrammarSig) : sig
-   include TermGrammarSig
    val dest_quot : string -> string * string
    val parse_quotation: MLast.loc -> string -> string * string -> term
    val mk_comment_term : term list -> term

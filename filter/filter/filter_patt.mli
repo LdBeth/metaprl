@@ -7,7 +7,7 @@
  *
  * The usage to match against a term t is this:
  *
- *     match explode t with
+ *     match explode_term t with
  *        << lambda{v. 'e} >> ->
  *            (*
  *             * v and e are binding occurrences.
@@ -46,7 +46,6 @@ open MLast
 open Opname
 open Refiner.Refiner.TermType
 
-val explode_term : term -> string list * match_param list * bound_term' list
 val build_term_patt : term -> patt
 
 (*!

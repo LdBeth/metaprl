@@ -187,8 +187,10 @@ struct
        | ParamList _ ->
             raise (Invalid_argument "Term_base_std.dest_match_param")
 
-   let dest_match_params params =
-      List.map dest_match_param params
+   let explode_term t =
+      let op = dest_opname t.term_op.op_name in
+      let params = List.map dest_match_param t.term_op.op_params in
+         op, params, t.term_terms
 
    let mk_level_var v i =
       { le_var = v; le_offset = i }

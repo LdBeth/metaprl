@@ -80,18 +80,6 @@ let rec format_exn db buf = function
       format_string buf name;
       format_space buf;
       format_short_term db (fun _ -> Opname.nil_opname) buf t
- | NotANumber name ->
-      format_string buf "Not a number:";
-      format_space buf;
-      format_string buf name
- | BadParam name ->
-      format_string buf "Bad parameter:";
-      format_space buf;
-      format_string buf name
- | BadLevelExp l ->
-      format_string buf "Bad level expression:";
-      format_space buf;
-      format_simple_level_exp buf l
  | BadParamCast (p, s) ->
       format_string buf "Bad param cast:";
       format_space buf;
@@ -100,14 +88,6 @@ let rec format_exn db buf = function
       format_string buf "to";
       format_space buf;
       format_string buf s
- | BadArgList l ->
-      format_string buf "Bad argument list:";
-      format_space buf;
-      format_arg_list db buf l
- | BadBinder t ->
-      format_string buf "Bad binder:";
-      format_space buf;
-      format_term db buf t
  | ParseError s ->
       format_string buf "Parse error:";
       format_space buf;

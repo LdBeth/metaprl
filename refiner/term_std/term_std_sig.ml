@@ -183,8 +183,6 @@ sig
    val make_param : param' -> param
    val dest_param : param -> param'
    val dest_params : param list -> param' list
-   val dest_match_param : param -> match_param
-   val dest_match_params : param list -> match_param list
    val mk_level : int -> level_exp_var list -> level_exp
    val make_level : level_exp' -> level_exp
    val dest_level : level_exp -> level_exp'
@@ -242,6 +240,11 @@ sig
    val print_term : out_channel -> term -> unit
    val print_term_list : out_channel -> term list -> unit
    val install_debug_printer : (out_channel -> term -> unit) -> unit
+
+   (*
+    * Destruct a term for easy pattern-matching
+    *)
+   val explode_term : term -> string list * match_param list * bound_term' list
 
    (*
     * This function is not implemented, and it always returns the

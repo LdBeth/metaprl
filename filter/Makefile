@@ -41,7 +41,6 @@ DIRS := $(LIBDIRS)\
 SUB_CMALIBS := \
 	$(addsuffix /filterlib.cma, $(LIBDIRS))\
 	filter/term_grammar.cmo\
-	filter/filter_patt.cmo
 
 include base/Files
 include boot/Files
@@ -52,7 +51,6 @@ SUB_CMXFILES :=\
 	$(addprefix boot/, $(addsuffix .cmx, $(BOOT_FILES)))\
 	$(addprefix phobos/, $(addsuffix .cmx, $(PHOBOS_FILES)))\
 	filter/term_grammar.cmx\
-	filter/filter_patt.cmx
 
 .PHONY: allbin optbin
 
