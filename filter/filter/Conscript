@@ -4,32 +4,32 @@ $env = $env->clone(
    INCPATH     => [@{$env->{INCPATH}},
                    "$env->{MP}/filter/base",
                    "$env->{MP}/filter/boot"],
-   OCAMLC      => "$env->{OCAMLC} -I /usr/lib/camlp4",
-   OCAMLLINK   => "$env->{OCAMLLINK} -I /usr/lib/camlp4",
+   OCAMLC      => "$env->{OCAMLC} -I /usr/lib/ocaml/camlp4",
+   OCAMLLINK   => "$env->{OCAMLLINK} -I /usr/lib/ocaml/camlp4",
    OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -linkall -pp '%CAMLP4MACRO'",
    PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}",
-   MLLIBS      => "unix.cmxa threads.cmxa",
+   MLLIBS      => "unix$env->{SUFLIB} threads$env->{SUFLIB}",
    CCLIBS      => "-cclib $env->{MP}/clib/clib.a"
 );
 
 $nenv = $env->clone(
-	MLLIBS => "$env->{MLLIBS} odyl.cmxa camlp4.cmxa pa_o.cmx pr_dump.cmx pa_extend.cmx q_MLast.cmx"
+	MLLIBS => "$env->{MLLIBS} odyl$env->{SUFLIB} camlp4$env->{SUFLIB} pa_o$env->{SUFOBJ} pr_dump$env->{SUFOBJ} pa_extend$env->{SUFOBJ} q_MLast$env->{SUFOBJ}"
 );
 
 $oenv = $env->clone(
-	MLLIBS => "$env->{MLLIBS} odyl.cmxa camlp4.cmxa pa_o.cmx pr_o.cmx pa_extend.cmx q_MLast.cmx"
+	MLLIBS => "$env->{MLLIBS} odyl$env->{SUFLIB} camlp4$env->{SUFLIB} pa_o$env->{SUFOBJ} pr_o$env->{SUFOBJ} pa_extend$env->{SUFOBJ} q_MLast$env->{SUFOBJ}"
 );
 
 $poenv = $env->clone(
-	MLLIBS => "$env->{MLLIBS} odyl.cmxa camlp4.cmxa pr_dump.cmx"
+	MLLIBS => "$env->{MLLIBS} odyl$env->{SUFLIB} camlp4$env->{SUFLIB} pr_dump$env->{SUFOBJ}"
 );
 
 $pnenv = $env->clone(
-	MLLIBS => "$env->{MLLIBS} odyl.cmxa camlp4.cmxa pr_o.cmx"
+	MLLIBS => "$env->{MLLIBS} odyl$env->{SUFLIB} camlp4$env->{SUFLIB} pr_o$env->{SUFOBJ}"
 );
 
 $penv = $env->clone(
-	MLLIBS => "unix.cmxa",
+	MLLIBS => "unix$env->{SUFLIB}",
 	OCAMLCFLAGS => ""
 );
 
@@ -40,8 +40,8 @@ OCamlSources $env
 	'filter_convert.ml',
 	'prlcomp.ml';
 
-# filter_mail.ml uses external symbols from clib.a
-Depends $env 'filter_main'.$env->{SUFOBJ}, "$env->{MP}/clib/clib.a";
+# filter_main.ml uses external symbols from clib.a
+Depends $env "filter_main$env->{SUFOBJ}", "$env->{MP}/clib/clib.a";
 
 OCamlLibrary $env 'filter',
 	'filter_parse',
@@ -58,4 +58,4 @@ OCamlProgram $env   'convert', 'filter_convert';
 OCamlProgram $penv  'prlc', 'prlcomp';
 
 ## Add the library to the default target list
-Default qw( filter.cmxa camlp4n camlp4o prlcn prlco prlc );
+Default ( "filter$env->{SUFLIB}", "camlp4n", "camlp4o", "prlcn", "prlco", "prlc" );

@@ -381,6 +381,11 @@ sig
       term ->              (* redex *)
       term ->              (* contractum *)
       prim_rewrite
+   val create_input_form : build ->
+      string ->            (* name *)
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      prim_rewrite
    val create_ml_rewrite : build -> string ->
       ml_rewrite ->        (* rewriter *)
       prim_rewrite

@@ -270,6 +270,7 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  | ToploopItem of 'item
  | MagicBlock of 'item magic_info
  | Comment of 'term
+ | InputForm of ('term, 'proof, 'expr) rewrite_info
 
 (*
  * This type defines what info do we need during parsing to identify an opname

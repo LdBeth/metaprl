@@ -49,4 +49,4 @@ OCamlLibrary $env 'library',
 	'library_type_base';
 
 ## Add the library to the default target list
-Default qw( library.cmxa );
+Default "library$env->{SUFLIB}";

@@ -59,4 +59,4 @@ OCamlLibrary $env 'refsig',
 	'refiner_sig';
 
 ## Add the library to the default target list
-Default qw( refsig.cmxa );
+Default "refsig$env->{SUFLIB}";

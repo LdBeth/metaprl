@@ -43,7 +43,7 @@ open Precedence
 
 open Filter_util
 open Filter_type
-open Filter_ocaml
+(* open Filter_ocaml *)
 
 (*
  * Show the file loading.
@@ -121,6 +121,8 @@ let eprint_entry print_info = function
       eprintf "ToploopItem\n"
  | Rewrite { rw_name = name } ->
       eprintf "Rewrite: %s\n" name
+ | InputForm { rw_name = name } ->
+      eprintf "IForm: %s\n" name
  | CondRewrite { crw_name = name } ->
       eprintf "CondRewrite: %s\n" name
  | Axiom { axiom_name = name } ->
@@ -266,6 +268,21 @@ let test_rewrite name (item, _) =
 
 let find_rewrite { info_list = summary } name =
    try Some (List_util.find (test_rewrite name) summary) with
+      Not_found ->
+         None
+
+(*
+ * Find a input form rewrite in the summary.
+ *)
+let test_iform name (item, _) =
+   match item with
+      InputForm { rw_name = n } ->
+         n = name
+    | _ ->
+         false
+
+let find_iform { info_list = summary } name =
+   try Some (List_util.find (test_iform name) summary) with
       Not_found ->
          None
 
@@ -416,6 +433,7 @@ let find { info_list = summary } name =
        | Rewrite { rw_name = n }
        | CondRewrite { crw_name = n }
        | MLRewrite { mlterm_name = n }
+       | InputForm { rw_name = n }
        | MLAxiom { mlterm_name = n }
        | DForm { dform_name = n }
        | Prec n ->
@@ -437,6 +455,8 @@ let set_command info item =
        | Rewrite { rw_name = name }
        | CondRewrite { crw_name = name } ->
             test_rewrite name
+       | InputForm { rw_name = name } ->
+            test_iform name
        | MLRewrite { mlterm_name = name } ->
             test_mlrewrite name
        | MLAxiom { mlterm_name = name } ->
@@ -524,6 +544,14 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                          rw_resources = res_map res;
                }
 
+          | InputForm { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf ; rw_resources = res } ->
+               InputForm { rw_name = name;
+                           rw_redex = convert.term_f redex;
+                           rw_contractum = convert.term_f con;
+                           rw_proof = convert.proof_f name pf;
+                           rw_resources = res_map res;
+               }
+
           | CondRewrite { crw_name = name;
                           crw_params = params;
                           crw_args = args;
@@ -565,20 +593,6 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                Opname { opname_name = name; opname_term = convert.term_f t }
 
           | MLRewrite t ->
-               (* HACK! remove this when we start using ASCII theory files *)
-               let t =
-                  if Obj.size (Obj.repr t) = 3 then
-                     let (term, contracta, def) = Obj.magic t in
-                        { mlterm_name = "unknown";
-                          mlterm_params = [];
-                          mlterm_term = term;
-                          mlterm_contracta = contracta;
-                          mlterm_def = def;
-                          mlterm_resources = []
-                        }
-                  else
-                     t
-               in
                let { mlterm_name = name;
                      mlterm_params = params;
                      mlterm_term = term;
@@ -596,20 +610,6 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                   }
 
           | MLAxiom t ->
-               (* HACK! remove this when we start using ASCII theory files *)
-               let t =
-                  if Obj.size (Obj.repr t) = 3 then
-                     let (term, contracta, def) = Obj.magic t in
-                        { mlterm_name = "unknown";
-                          mlterm_params = [];
-                          mlterm_term = term;
-                          mlterm_contracta = contracta;
-                          mlterm_def = def;
-                          mlterm_resources = []
-                        }
-                  else
-                     t
-               in
                let { mlterm_name = name;
                      mlterm_params = params;
                      mlterm_term = term;
@@ -721,6 +721,7 @@ let mk_opname =
       fun s -> Opname.mk_opname s op
 
 let rewrite_op                 = mk_opname "rewrite"
+let input_form_op              = mk_opname "input_form"
 let cond_rewrite_op            = mk_opname "cond_rewrite"
 let axiom_op                   = mk_opname "axiom"
 let rule_op                    = mk_opname "rule"
@@ -969,15 +970,21 @@ struct
    (*
     * Collect a rewrite.
     *)
-   let rec dest_rewrite convert t =
+   let rec dest_rewrite_aux convert t =
       let name = dest_string_param t in
       let redex, contractum, proof, res = four_subterms t in
-         Rewrite { rw_name = name;
-                   rw_redex = convert.term_f redex;
-                   rw_contractum = convert.term_f contractum;
-                   rw_proof = convert.proof_f name proof;
-                   rw_resources = dest_res convert res
+         { rw_name = name;
+           rw_redex = convert.term_f redex;
+           rw_contractum = convert.term_f contractum;
+           rw_proof = convert.proof_f name proof;
+           rw_resources = dest_res convert res
          }
+
+   and dest_rewrite convert t =
+      Rewrite (dest_rewrite_aux convert t)
+
+   and dest_iform convert t =
+      InputForm (dest_rewrite_aux convert t)
 
    (*
     * Conditional rewrite.
@@ -1384,16 +1391,22 @@ struct
    and term_of_resources convert res =
       mk_xlist_term (List.map (term_of_res convert.expr_f) res)
 
-   and term_of_rewrite convert { rw_name = name;
-                                 rw_redex = redex;
-                                 rw_contractum = con;
-                                 rw_proof = pf;
-                                 rw_resources = res
+   and term_of_rewrite_aux op convert { rw_name = name;
+                                        rw_redex = redex;
+                                        rw_contractum = con;
+                                        rw_proof = pf;
+                                        rw_resources = res
        } =
-      mk_string_param_term rewrite_op name [convert.term_f redex;
-                                            convert.term_f con;
-                                            convert.proof_f name pf;
-                                            term_of_resources convert res]
+      mk_string_param_term op name [convert.term_f redex;
+                                    convert.term_f con;
+                                    convert.proof_f name pf;
+                                    term_of_resources convert res]
+
+   and term_of_rewrite convert rw =
+      term_of_rewrite_aux rewrite_op convert rw
+
+   and term_of_input_form convert rw =
+      term_of_rewrite_aux input_form_op convert rw
 
    and term_of_cond_rewrite convert { crw_name = name;
                                       crw_params = params;
@@ -1534,6 +1547,8 @@ struct
          term_of_toploop_item convert t
     | Rewrite rw ->
          term_of_rewrite convert rw
+    | InputForm rw ->
+         term_of_input_form convert rw
     | CondRewrite crw ->
          term_of_cond_rewrite convert crw
     | Axiom ax ->
@@ -1630,6 +1645,33 @@ struct
                                             name (string_of_term con') (string_of_term con))
                      else
                         implem_error (sprintf "Rewrite %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
+                                         name (string_of_term redex') (string_of_term redex))
+                  else
+                     search t
+             | _ ->
+                  search t
+      in
+         search implem
+
+   let check_iform
+       (info : ('term1, 'proof1, 'expr1) rewrite_info)
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+      let { rw_name = name; rw_redex = redex; rw_contractum = con } = info in
+      let rec search = function
+         [] ->
+            implem_error (sprintf "Rewrite %s: not implemented" name)
+       | h::t ->
+            match h with
+               InputForm { rw_name = name'; rw_redex = redex'; rw_contractum = con' } ->
+                  if name = name' then
+                     if alpha_equal redex' redex then
+                        if alpha_equal con' con then
+                           ()
+                        else
+                           implem_error (sprintf "InputForm %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
+                                            name (string_of_term con') (string_of_term con))
+                     else
+                        implem_error (sprintf "InputForm %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
                                          name (string_of_term redex') (string_of_term redex))
                   else
                      search t
@@ -1942,6 +1984,8 @@ struct
       match interf with
          Rewrite info ->
             check_rewrite info implem
+       | InputForm info ->
+            check_iform info implem
        | CondRewrite info ->
             check_cond_rewrite info implem
        | Axiom info ->
@@ -2138,7 +2182,7 @@ struct
              | Opname _ | MLRewrite _ | MLAxiom _ | Parent _ | DForm _
              | Prec _ | PrecRel _ | Id _ | Comment _ | Resource _
              | Improve _ | Infix _ | SummaryItem _ | ToploopItem _
-             | MagicBlock _ ->
+             | MagicBlock _ | InputForm _ ->
                   item
          in
             item, loc

@@ -114,21 +114,16 @@ struct
          ("\"no saved tactic\"", <:expr< $str: "no saved tactic"$ >>)
 
    (*
-    * Default command set.
-    *)
-   let default_toploop =
-      Mptop.get_toploop_resource (Mp_resource.extract_top ())
-
-   (*
     * Default state.
     *)
    let create () =
+      Mp_resource.recompute_top ();
       { state_mk_opname = default_mk_opname;
         state_df_base = Dform.null_base;
         state_inline_terms = [];
         state_inline_var = 0;
         state_tactic = default_saved_tactic;
-        state_toploop = default_toploop;
+        state_toploop = Mptop.get_toploop_resource (Mp_resource.find Mp_resource.top_bookmark);
         state_input_info = Buffered [];
         state_interactive = true
       }
@@ -419,7 +414,8 @@ struct
          try Mp_resource.find (Mp_resource.theory_bookmark name) with
             Not_found ->
                eprintf "Module %s: resources not found%t" name eflush;
-               Mp_resource.extract_top ()
+               Mp_resource.recompute_top ();
+               Mp_resource.find Mp_resource.top_bookmark
       in
       let top = Mptop.get_toploop_resource rsrc in
       let shell_expr = IntFunExpr (fun i -> TermExpr (get_term_state state i)) in

@@ -103,7 +103,7 @@ let free_vars expr =
 (*
     | <:expr< ( $e1$ :> $_$ ) >> ->
 *)
-    | MLast.ExCoe (_, e, _)
+    | MLast.ExCoe (_, e, _, _)
     | <:expr< $e$ # $_$ >>
     | MLast.ExLmd (_, _, _, e)
     | <:expr< ( $e$ : $_$ ) >> ->

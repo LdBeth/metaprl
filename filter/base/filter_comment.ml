@@ -203,19 +203,24 @@ let fold_class_expr locs = function
  | MLast.CeFun (loc, _, _)
  | MLast.CeLet (loc, _, _, _)
  | MLast.CeStr (loc, _, _)
- | MLast.CeTyc (loc, _, _)
- | MLast.CeXnd (loc, _, _) ->
+ | MLast.CeTyc (loc, _, _) ->
+(* 3.02
+ | MLast.CeXnd (loc, _, _)
+ *)
       loc :: locs
 
 let fold_class_type locs = function
    MLast.CtCon (loc, _, _)
  | MLast.CtFun (loc, _, _)
- | MLast.CtSig (loc, _, _)
+ | MLast.CtSig (loc, _, _) ->
+(* 3.02
  | MLast.CtXnd (loc, _, _) ->
+ *)
     loc :: locs
 
 let fold_class_sig_item locs = function
    CgCtr (loc, _, _)
+ | CgDcl (loc, _)
  | CgInh (loc, _)
  | CgMth (loc, _, _, _)
  | CgVal (loc, _, _, _)
@@ -224,6 +229,7 @@ let fold_class_sig_item locs = function
 
 let fold_class_str_item locs = function
    CrCtr (loc, _, _)
+ | CrDcl (loc, _)
  | CrInh (loc, _, _)
  | CrIni (loc, _)
  | CrMth (loc, _, _, _)

@@ -129,7 +129,8 @@ end
 
 module Table = UseTable.MakeTable(TableBase)
 
-let global_data = Hashtbl.create 19
+(* Theory name  ->  theory resources (local + includes names) *)
+let (global_data : (Table.elt * Table.data) global_data) = Hashtbl.create 19 
 
 let local_data = ref []
 
@@ -152,7 +153,12 @@ let include_theory name =
    else
       eprintf "Mp_resource: warning: included theory %s does not have resources%t" name eflush
 
+let empty_bookmark = "",""
+let theory_bookmark name = name, ""
+
 let top_data = ref []
+let top_name = "_$top_resource$_"
+let top_bookmark = theory_bookmark top_name
 
 let close_theory name =
    let name = String.capitalize name in
@@ -160,12 +166,9 @@ let close_theory name =
    top_data := DatInclude name :: !top_data;
    local_data := []
 
-let empty_bookmark = "",""
-let theory_bookmark name = name, ""
-
-let global_bookmarker = Hashtbl.create 19
-
-let theory_includes = Hashtbl.create 19
+(* Theory name -> names of included theories *)
+let (theory_includes : (string, StringSet.t) Hashtbl.t) = Hashtbl.create 19
+let (global_bookmarker : (bookmark, Obj.t increment) Hashtbl.t) = Hashtbl.create 19
 
 let add_data (name, data) incr =
    Table.add incr name data
@@ -246,7 +249,9 @@ let make_processor = function
    Functional fp -> make_fun_proc fp
  | Imperative imp -> make_fun_proc (make_proc_functional imp)
 
-let global_processed_data = Hashtbl.create 19
+(* Resource name -> (bookmark -> processed resource) *)
+let (global_processed_data : (string, (bookmark, (Obj.t,Obj.t) proc_result) Hashtbl.t) Hashtbl.t) =
+   Hashtbl.create 19
 
 let obj_processor (proc : ('input, 'output) processor) =
    (Obj.obj (Obj.repr proc) : (Obj.t, Obj.t) processor)
@@ -269,15 +274,10 @@ let get_result = function
          res
 
 let find ((name, _) as bookmark) =
-   if not (Hashtbl.mem theory_includes name) then compute_data name;
+   if not (Hashtbl.mem theory_includes name) then
+      compute_data name;
    ignore(Hashtbl.find global_bookmarker bookmark);
    bookmark
-
-let top_name = "_$top_resource$_"
-let top_bk = theory_bookmark top_name
-let extract_top () =
-   Hashtbl.add global_data top_name !top_data;
-   find top_bk
 
 let get_resource bookmark resource_name =
    let data = Hashtbl.find global_processed_data resource_name in
@@ -303,3 +303,13 @@ let get_resource bookmark resource_name =
 let create_resource name proc =
    make_resource name proc;
    (fun bookmark -> Obj.obj (get_resource bookmark name))
+
+let recompute_top () =
+   if Hashtbl.mem global_data top_name then begin
+      Hashtbl.remove global_data top_name;
+      Hashtbl.remove global_bookmarker top_bookmark;
+      Hashtbl.remove theory_includes top_name;
+      Hashtbl.iter (fun _ t -> Hashtbl.remove t top_bookmark) global_processed_data
+   end;
+   Hashtbl.add global_data top_name !top_data;
+   ignore(find(top_bookmark))

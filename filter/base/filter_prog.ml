@@ -178,6 +178,9 @@ let rewrite_ctyp loc =
 let create_rewrite_expr loc =
    <:expr< $refiner_expr loc$ . create_rewrite >>
 
+let create_input_form_expr loc =
+   <:expr< $refiner_expr loc$ . create_input_form >>
+
 let prim_rewrite_expr loc =
    <:expr< $refiner_expr loc$ . prim_rewrite >>
 
@@ -621,6 +624,11 @@ let declare_rewrite loc { rw_name = name } =
       [<:sig_item< value $name$ : $ctyp$ >>]
       (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >> *)
 
+let declare_input_form loc { rw_name = name } =
+   let ctyp = rewrite_ctyp loc in
+      [<:sig_item< value $name$ : $ctyp$ >>]
+      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >> *)
+
 let declare_cond_rewrite loc { crw_name = name; crw_params = params } =
    let ctyp = params_ctyp loc (cond_rewrite_ctyp loc) params in
       [<:sig_item< value $name$ : $ctyp$ >>]
@@ -711,6 +719,10 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: rewrite: %s%t" name eflush;
          declare_rewrite loc rw
+    | InputForm ({ rw_name = name } as rw) ->
+         if !debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: input form: %s%t" name eflush;
+         declare_input_form loc rw
     | CondRewrite ({ crw_name = name } as crw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: cond rewrite: %s%t" name eflush;
@@ -1161,6 +1173,60 @@ struct
    (************************************************************************
     * REWRITES                                                             *
     ************************************************************************)
+
+   (*
+    * An input form is a rewrite, but we don't add it to the
+    * refiner (input forms have no formal justification).
+    *
+    * let name_rewrite =
+    *    let redex_id = redex in
+    *    let contractum_id = contractum in
+    *       create_rewrite refiner name redex contractum
+    * let name x = rewrite_of_rewrite name_rewrite x
+    *)
+   let define_input_form proc loc
+       { rw_name = name;
+         rw_redex = redex;
+         rw_contractum = contractum
+       } =
+      (* Names *)
+      let rw_id      = "_$" ^ name ^ "_rewrite" in
+      let rw_expr    = <:expr< $lid:rw_id$ >> in
+      let rw_patt    = <:patt< $lid:rw_id$ >> in
+      let x_patt     = <:patt< $lid:x_id$ >> in
+      let name_patt  = <:patt< $lid:name$ >> in
+      let wild_patt  = <:patt< _ >> in
+      let redex_expr = <:expr< $lid:redex_id$ >> in
+      let con_expr   = <:expr< $lid:contractum_id$ >> in
+      let redex_patt = <:patt< $lid:redex_id$ >> in
+      let con_patt   = <:patt< $lid:contractum_id$ >> in
+
+      (* Expressions *)
+      let redex_term = expr_of_term loc redex in
+      let con_term = expr_of_term loc contractum in
+      let create_expr =
+         <:expr< $create_input_form_expr loc$ $lid:local_refiner_id$ $str:name$ $lid:redex_id$ $lid:contractum_id$ >>
+      in
+      let rw_body_expr = <:expr< $rewrite_of_rewrite_expr loc$ $lid:rw_id$ >> in
+
+      (* Let expressions *)
+      let body =
+         <:expr< let $rec:false$ $list:[ redex_patt, redex_term;
+                                         con_patt, con_term ]$
+                 in
+                 let $rec:false$ $list:[ name_patt, create_expr]$
+                 in
+                    $lid:name$ >>
+       in
+       let name_rewrite_let =
+          <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc rw_id body ]$ >>
+       in
+       let name_let =
+          <:str_item< value $rec:false$ $list:[ name_patt, rw_body_expr ]$ >>
+       in
+          [checkpoint_resources loc name; name_rewrite_let; name_let; toploop_rewrite proc loc name []]
+
+   let ()  = ()
 
    (*
     * A primitive rewrite is assumed true by fiat.
@@ -2116,6 +2182,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: rwinteractive: %s%t" name eflush;
             interactive_rewrite proc loc rw pf
+       | InputForm ({ rw_name = name } as rw) ->
+            if !debug_filter_prog then
+               eprintf "Filter_prog.extract_str_item: primrw: %s%t" name eflush;
+            define_input_form proc loc rw
        | CondRewrite ({ crw_name = name; crw_proof = Primitive _ } as crw) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: prim condrw: %s%t" name eflush;

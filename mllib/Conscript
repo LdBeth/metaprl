@@ -162,4 +162,4 @@ OCamlLibrary $env 'mllib',
 	'comment_parse',
 	'mp_term';
 
-Default qw ( mllib.cmxa );
+Default "mllib$env->{SUFLIB}";

@@ -136,8 +136,12 @@ let rec hash_expr index = function
       hash_string (hash index 0x7a5835c) s
  | (<:expr< while $e$ do { $list:el$ } >>) ->
       List.fold_left hash_expr (hash_expr (hash index 0x723d7789) e) el
+(* 3.02
  | MLast.ExXnd (loc, s, e) ->
       hash_string (hash_expr (hash index 0x8be2751) e) s
+ *)
+ | MLast.ExCoe (_, e, ot, t) ->
+      hash_type (hash_type_opt (hash_expr (hash index 0x628be91) e) ot) t
 
 and hash_patt index = function
    (<:patt< $p1$ . $p2$ >>) ->
@@ -162,10 +166,12 @@ and hash_patt index = function
       hash_patt (hash_string (hash index 0x30fb5e6f) i) p
  | (<:patt< $lid:i$ >>) ->
       hash_string (hash index 0x44ed2bf9) i
+(* 3.02
  | (<:patt< ? $i$ : $p$ >>) ->
       hash_patt (hash_string (hash index 0x681f0e05) i) p
  | (<:patt< ? $i$ : ( $p$ = $e$ ) >>) ->
       hash_expr (hash_patt (hash_string (hash index 0x18fe22f6) i) p) e
+*)
  | (<:patt< $p1$ | $p2$ >>) ->
       hash_patt (hash_patt (hash index 0x72a2f1ae) p2) p1
  | (<:patt< $p1$ .. $p2$ >>) ->
@@ -182,8 +188,14 @@ and hash_patt index = function
       hash_string (hash index 0x37911bc9) s
  | (<:patt< ` $s$ >>) ->
       hash_string (hash index 0x6aeb916) s
+(* 3.02
  | MLast.PaXnd (loc, s, p) ->
       hash_string (hash_patt (hash index 0x6bcc8901) p) s
+ *)
+ | MLast.PaTyp (_, sl) ->
+      List.fold_left hash_string (hash index 0x1be39e21) sl
+ | MLast.PaOlb (_, s, p, eo) ->
+      hash_string (hash_patt (hash_expr_opt (hash index 0x31663b71) eo) p) s
 
 and hash_type index = function
    (<:ctyp< $t1$ . $t2$ >>) ->
@@ -220,8 +232,10 @@ and hash_type index = function
       hash_string (hash index 0x48872c13) s
  | MLast.TyVrn (_, sbtll, bsloo) ->
       List.fold_left hash_sbtl (hash_string (hash index 0x79ffedd7) bsloo) sbtll
+(* 3.02
  | MLast.TyXnd (loc, s, t) ->
       hash_string (hash_type (hash index 0x1677a389) t) s
+ *)
 
 and hash_sig_item index = function
    (<:sig_item< class $list:ctl$ >>) ->
@@ -276,6 +290,8 @@ and hash_str_item index = function
       hash_string (hash_expr_opt (hash index 0x371be624) eo) s
  | MLast.StInc (loc, me) ->
       hash_module_expr (hash index 0x17be552b) me
+ | MLast.StExc (_, s, tl, sl) ->
+      hash_string (List.fold_left hash_type (List.fold_left hash_string (hash index 0x1378b2ef) sl) tl) s
 
 and hash_module_type index = function
    (<:module_type< $mt1$ . $mt2$ >>) ->
@@ -345,7 +361,7 @@ and hash_class_expr index ce =
   let index = hash index 0x034be1c1 in
      match ce with
          MLast.CeApp (_, ce, el) ->
-            List.fold_left hash_expr (hash_class_expr index ce) el
+            hash_expr (hash_class_expr index ce) el
        | MLast.CeCon (_, sl, tl) ->
             List.fold_left hash_string (List.fold_left hash_type index tl) sl
        | MLast.CeFun (_, p, ce) ->
@@ -356,14 +372,16 @@ and hash_class_expr index ce =
             hash_patt_opt (List.fold_left hash_class_str_item index cfl) p
        | MLast.CeTyc (_, ce, ct) ->
             hash_class_expr (hash_class_type index ct) ce
-(*ifdef 2.02*)
+(* 3.02
        | MLast.CeXnd (_, s, ce) ->
             hash_string (hash_class_expr (hash index 0x4475bac) ce) s
-(*endif 2.02*)
+ *)
 
 and hash_class_str_item index = function
    CrCtr (_, s, t) ->
       hash_string (hash_type (hash index 0x6ebb5387) t) s
+ | CrDcl (_, t) ->
+      List.fold_left hash_class_str_item (hash index 0xb4910045) t
  | CrInh (_, ce, so) ->
       hash_class_expr (hash_string_opt (hash index 0x113fee9d) so) ce
  | CrIni (_, e) ->
@@ -384,14 +402,16 @@ and hash_class_type index ct =
            hash_class_type (hash_type index t) ct
       | CtSig (_, t, ctfl) ->
            List.fold_left hash_class_sig_item (hash_type_opt index t) ctfl
-(*ifdef 2.02*)
+(* 3.02
       | CtXnd (_, s, ct) ->
            hash_string (hash_class_type (hash index 0x344b344) ct) s
-(*endif 2.02*)
+ *)
 
 and hash_class_sig_item index = function
    CgCtr (_, s, t) ->
       hash_string (hash_type (hash index 0x362be7cd) t) s
+ | CgDcl (_, t) ->
+      List.fold_left hash_class_sig_item (hash index 0xbe66301f) t
  | CgInh (_, ct) ->
       hash_class_type (hash index 0x1779e662) ct
  | CgMth (_, s, b, t) ->
@@ -431,13 +451,17 @@ and hash_pp index (p1, p2) =
 and hash_st index (s, t) =
    hash_string (hash_type (hash index 0x241432a7) t) s
 
-and hash_sbt index (s, b, t) =
+and hash_sbt index (_, s, b, t) =
    hash_string (hash_bool (hash_type (hash index 0x1fa3771f) t) b) s
 
-and hash_sbtl index (s, b, tl) =
-   List.fold_left hash_type (hash_bool (hash_string (hash index 0x7497f04c) s) b) tl
+and hash_sbtl index rf =
+   match rf with
+      RfTag (s, b, tl) ->
+         List.fold_left hash_type (hash_bool (hash_string (hash index 0x7497f04c) s) b) tl
+    | RfInh t ->
+         hash_type (hash index 0x743be12a) t
 
-and hash_stl index (s, tl) =
+and hash_stl index (_, s, tl) =
    List.fold_left hash_type (hash_string (hash index 0x7497f04c) s) tl
 
 and hash_typetype index (t1, t2) =

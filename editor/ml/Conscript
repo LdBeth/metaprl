@@ -62,9 +62,9 @@ $env = $env->clone(
       LC_ALL => "C"
    },
    OCAMLCFLAGS => "-thread -linkall",
-   OCAMLC => "prlc -opt -I /usr/lib/camlp4",
-   OCAMLLINK => "$env->{OCAMLLINK} -I /usr/lib/camlp4",
-   MLLIBS => "unix.cmxa threads.cmxa odyl.cmxa camlp4.cmxa pa_o.cmx",
+   OCAMLC => "prlc %PRLCFLAGS -I /usr/lib/ocaml/camlp4",
+   OCAMLLINK => "$env->{OCAMLLINK} -I /usr/lib/ocaml/camlp4",
+   MLLIBS => "unix$env->{SUFLIB} threads$env->{SUFLIB} odyl$env->{SUFLIB} camlp4$env->{SUFLIB} pa_o$env->{SUFOBJ}",
    CCLIBS => "-cclib $env->{MP}/clib/clib.a",
 
    # Files compiled with prlc implicitly depend on these files and modules.

@@ -2,7 +2,7 @@ Import qw( env );
 
 $env = $env->clone(
    INCPATH     => [@{$env->{INCPATH}},
-                   "/usr/lib/camlp4",
+                   "/usr/lib/ocaml/camlp4",
                    "$env->{MP}/filter/base"],
    OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
    PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}"
@@ -35,4 +35,4 @@ OCamlLibrary $env 'boot',
 	'proof_convert';
 
 ## Add the library to the default target list
-Default qw( boot.cmxa );
+Default ( "boot$env->{SUFLIB}" );

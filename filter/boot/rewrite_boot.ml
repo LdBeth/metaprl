@@ -359,6 +359,28 @@ struct
          if !debug_rewrite then
             eprintf "Rewrite done%t" eflush;
          x
+
+   (*
+    * Create an input form.
+    * This is a Relaxed rewrite with no justification.
+    *)
+   let create_iform name redex contractum =
+      let rw = create_input_form (null_refiner name) name redex contractum in
+         rewrite_of_rewrite rw
+
+   (*
+    * Rewrite a term.
+    * No justification.
+    *)
+   let zero_addr = TermAddr.make_address []
+
+   let apply_rewrite bookmark conv t =
+      let bookmark = Mp_resource.find bookmark in
+      let arg = TacticInternal.debug_arg bookmark t in
+      let tac = apply 0 zero_addr conv in
+      let res = fst (TacticInternal.refine tac arg) in
+      let goal, _ = Refine.dest_msequent (List.hd res).ref_goal in
+         goal
 end
 
 (*

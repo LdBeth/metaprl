@@ -551,6 +551,18 @@ struct
                 rw_resources = res
       }
 
+   let simple_input_form proc name redex contractum pf res =
+      (* Check that rewrite will succeed *)
+      Refine.check_rewrite name [||] [] [] redex contractum;
+
+      (* Construct the command *)
+      InputForm { rw_name = name;
+                  rw_redex = redex;
+                  rw_contractum = contractum;
+                  rw_proof = pf;
+                  rw_resources = res
+      }
+
    let cond_rewrite proc name params args pf res =
       (* Print the type to the .mli file *)
       let cvars = context_vars args in
@@ -586,12 +598,28 @@ struct
             (* Conditional rewrite *)
             cond_rewrite proc name params args pf res
 
+   let input_form_command proc name params args pf res =
+      match params, args with
+         [], MetaIff (MetaTheorem redex, MetaTheorem contractum) ->
+            (* This is a simple rewrite *)
+            simple_input_form proc name redex contractum pf res
+       | _ ->
+            (* Conditional rewrite *)
+            raise (RefineError ("input_form_command", StringError "conditional input forms are not allowed"))
+
    (*
     * Add the command and return the declaration.
     *)
    let declare_rewrite proc loc name params args pf res =
       try
          let cmd = rewrite_command proc name params args pf res in
+            FilterCache.add_command proc.cache (cmd, loc)
+      with exn ->
+         Stdpp.raise_with_loc loc exn
+
+   let declare_input_form proc loc name params args pf res =
+      try
+         let cmd = input_form_command proc name params args pf res in
             FilterCache.add_command proc.cache (cmd, loc)
       with exn ->
          Stdpp.raise_with_loc loc exn
@@ -1265,6 +1293,12 @@ EXTEND
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
            in
               print_exn f "prim_rw" loc;
+              empty_str_item loc
+        | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
+           let f () =
+              StrFilter.declare_input_form (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
+           in
+              print_exn f "iform" loc;
               empty_str_item loc
         | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =

@@ -163,7 +163,8 @@ struct
                   eprintf "StackName %d%t" i eflush
             ENDIF;
             match stack.(i) with
-               StackString s ->
+               StackString s
+             | StackMString s ->
                   s
              | x ->
                   REF_RAISE(RefineError ("build_bname", RewriteStringError "stack entry is not a string"))

@@ -94,8 +94,10 @@ val create_resource:
 (* Will raise Not_found if bookmark does not exist *)
 val find : bookmark -> global_resource
 
-(* Get a resource with all the theories loaded so far *)
-val extract_top : unit -> global_resource
+(* Bookmark pointing to all the theories loaded *
+ * last time recompute_top was called           *)
+val top_bookmark : bookmark
+val recompute_top : unit -> unit
 
 val empty_bookmark : global_resource
 val theory_bookmark : string -> bookmark

@@ -157,28 +157,28 @@ ZMLIFILES    = $(addsuffix .mli, $(MLZFILES))
 .SUFFIXES: .cma .cmx .cmo .cmi .ml .mli .mll .mly
 
 $(MAIN)-byte$(EXT_LIB): $(BOFILES)
-	ar r $@ $?
-	ranlib $@
+	$(MPTIME) ar r $@ $?
+	$(MPTIME) ranlib $@
 
 $(MAIN)-native$(EXT_LIB): $(NOFILES)
-	ar r $@ $?
-	ranlib $@
+	$(MPTIME) ar r $@ $?
+	$(MPTIME) ranlib $@
 
 $(MAIN).cma: $(LCMOFILES) $(MP_CMOFILES) $(ROOT)/mk/config
-	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(MP_CMOFILES)
+	$(MPTIME) $(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(MP_CMOFILES)
 
 $(MAIN).cmxa: $(LCMXFILES) $(MP_CMXFILES) $(ROOT)/mk/config
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(MP_CMXFILES)
+	$(MPTIME) $(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(MP_CMXFILES)
 
 $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES) $(ROOT)/mk/config $(THREADSLIB)
-	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
+	$(MPTIME) $(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 	if [ -f $(MAIN).run.exe ]; then\
 		mv $(MAIN).run.exe $(MAIN).run.bak;\
 		mv $(MAIN).run.bak $(MAIN).run;\
 	fi
 
 $(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES) $(ROOT)/mk/config $(OPTTHREADSLIB)
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
+	$(MPTIME) $(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
 	if [ -f $(MAIN).exe ]; then\
 		mv $(MAIN).exe $(MAIN).bak;\
 		mv $(MAIN).bak $(MAIN);\
@@ -209,45 +209,45 @@ $(RAFILES): $(ROOT)/lib/%$(EXT_LIB): %$(EXT_LIB)
 	$(LN) ../$(DIR)/$*$(EXT_LIB) $(ROOT)/lib
 
 $(MP_CMIFILES) $(MP2_CMIFILES): %.cmi: %.mli $(ROOT)/mk/config
-	MPLIB=$(MPLIB) LC_ALL=C $(PRLC) $(OCAMLCFLAGS) -c $*.mli
+	MPLIB=$(MPLIB) LC_ALL=C $(MPTIME) $(PRLC) $(OCAMLCFLAGS) -c $*.mli
 
 $(MP_PPOFILES) $(MP2_PPOFILES): %.ppo: %.cmi %.ml $(ROOT)/mk/config
-	MPLIB=$(MPLIB) LC_ALL=C $(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
+	MPLIB=$(MPLIB) LC_ALL=C $(MPTIME) $(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
 
 $(MP_PRLAFILES) $(MP2_PRLAFILES): %.prla: %.cmoz $(ROOT)/mk/config
-	MPLIB=$(MPLIB) LC_ALL=C $(CONVERT) $(INCLUDE) -impl $*.cmoz
+	MPLIB=$(MPLIB) LC_ALL=C $(MPTIME) $(CONVERT) $(INCLUDE) -impl $*.cmoz
 
 $(MP_PRLBFILES) $(MP2_PRLBFILES): %.prlb: %.prla $(ROOT)/mk/config
-	MPLIB=$(MPLIB) LC_ALL=C $(CONVERT) $(INCLUDE) -raw -impl $*.prla
+	MPLIB=$(MPLIB) LC_ALL=C $(MPTIME) $(CONVERT) $(INCLUDE) -raw -impl $*.prla
 
 $(MP_CMOFILES) $(MP2_CMOFILES): %.cmo: %.ppo %.cmi $(ROOT)/mk/config
-	$(OCAMLC) $(OCAMLCFLAGS) -c -impl $*.ppo
+	$(MPTIME) $(OCAMLC) $(OCAMLCFLAGS) -c -impl $*.ppo
 
 $(MP_CMXFILES) $(MP2_CMXFILES): %.cmx: %.ppo %.cmi $(ROOT)/mk/config
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c -impl $*.ppo
+	$(MPTIME) $(OCAMLOPT) $(OCAMLOPTFLAGS) -c -impl $*.ppo
 
 $(REG_CMOFILES): %.cmo: %.ml %.cmi $(ROOT)/mk/config
-	$(OCAMLCP) $(OCAMLCFLAGS) -c $(OCAMLCPOPT) $*.ml
+	$(MPTIME) $(OCAMLCP) $(OCAMLCFLAGS) -c $(OCAMLCPOPT) $*.ml
 
 $(REG_CMIFILES): %.cmi: %.mli $(ROOT)/mk/config
-	$(OCAMLC) $(OCAMLCFLAGS) -c $*.mli
+	$(MPTIME) $(OCAMLC) $(OCAMLCFLAGS) -c $*.mli
 
 $(REG_CMXFILES): %.cmx: %.ml %.cmi $(ROOT)/mk/config
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $*.ml
+	$(MPTIME) $(OCAMLOPT) $(OCAMLOPTFLAGS) -c $*.ml
 
 %.p4i: %.mli $(ROOT)/mk/config
-	MPLIB=$(MPLIB) LC_ALL=C $(PRLC) $(INCLUDE) -E $*.mli > $*.p4i
+	MPLIB=$(MPLIB) LC_ALL=C $(MPTIME) $(PRLC) $(INCLUDE) -E $*.mli > $*.p4i
 
 %.p4: %.ml $(ROOT)/mk/config
-	MPLIB=$(MPLIB) LC_ALL=C $(PRLC) $(INCLUDE) -E $*.ml > $*.p4
+	MPLIB=$(MPLIB) LC_ALL=C $(MPTIME) $(PRLC) $(INCLUDE) -E $*.ml > $*.p4
 
 %.ml: %.mll $(ROOT)/mk/config
 	$(RM) $@
-	$(OCAMLLEX) $*.mll
+	$(MPTIME) $(OCAMLLEX) $*.mll
 
 %.ml %.mli: %.mly $(ROOT)/mk/config
 	$(RM) $*.ml $*.mli
-	$(OCAMLYACC) $*.mly
+	$(MPTIME) $(OCAMLYACC) $*.mly
 
 %.ml: %.mlz
 	$(RM) $@
@@ -258,16 +258,16 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi $(ROOT)/mk/config
 	$(LN) $*.mlz $@
 
 %-byte.o: %.c $(ROOT)/mk/config
-	$(CC) $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
+	$(MPTIME) $(CC) $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 
 %-native.o: %.c $(ROOT)/mk/config
-	$(CC) $(NATIVE_CFLAGS) $(CFLAGS) -c $*.c -o $@
+	$(MPTIME) $(CC) $(NATIVE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 
 %-byte.p.o: %.c $(ROOT)/mk/config
-	$(CC) -p $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
+	$(MPTIME) $(CC) -p $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 
 %-native.p.o: %.c $(ROOT)/mk/config
-	$(CC) -p $(NATIVE_CFLAGS) $(CFLAGS) -c $*.c -o $@
+	$(MPTIME) $(CC) -p $(NATIVE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 
 #
 clean::
@@ -281,9 +281,9 @@ depend:: $(MLFILES) $(MLIFILES)
 	$(RM) Makefile.tmp
 	touch Makefile.tmp
 ifneq ($(MLFILES),)
-	$(OCAMLDEP) $(OCAMLDEPFLAGS) $(INCLUDE) $(MLFILES) $(MLIFILES) >> Makefile.tmp
+	$(MPTIME) $(OCAMLDEP) $(OCAMLDEPFLAGS) $(INCLUDE) $(MLFILES) $(MLIFILES) >> Makefile.tmp
 endif
 ifneq ($(CFILES),)
-	$(CC) $(CFLAGS) $(CCDEPEND) $(CFILES) >> Makefile.tmp
+	$(MPTIME) $(CC) $(CFLAGS) $(CCDEPEND) $(CFILES) >> Makefile.tmp
 endif
 	mv Makefile.tmp Makefile.dep

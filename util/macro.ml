@@ -184,14 +184,14 @@ module Codewalk = struct
    and string_ctyp (x, y) =
       (x, ctyp y)
 
-   and string_bool_ctyp (x, y, z) =
-      (x, y, ctyp z)
+   and loc_string_bool_ctyp loc (l, x, y, z) =
+      (!loc l, x, y, ctyp z)
 
    and string_bool_ctyplist (x, y, z) =
       (x, y, map ctyp z)
 
-   and string_ctyplist (x, y) =
-      (x, map ctyp y)
+   and loc_string_ctyplist loc (l, x, y) =
+      (!loc l, x, map ctyp y)
 
    and string_stringlist_ctyp (x, y, z) =
       (x, y, ctyp z)
@@ -242,12 +242,15 @@ module Codewalk = struct
        | TyObj (l, x, y)    -> TyObj (!loc l, map string_ctyp x, y)
        | TyOlb (l, s, x)    -> TyOlb (!loc l, s, ctyp x)
        | TyQuo (l, x)       -> TyQuo (!loc l, x)
-       | TyRec (l, x)       -> TyRec (!loc l, map string_bool_ctyp x)
-       | TySum (l, x)       -> TySum (!loc l, map string_ctyplist x)
+       | TyRec (l, x)       -> TyRec (!loc l, map (loc_string_bool_ctyp loc) x)
+       | TySum (l, x)       -> TySum (!loc l, map (loc_string_ctyplist loc) x)
        | TyTup (l, x)       -> TyTup (!loc l, map ctyp x)
        | TyUid (l, x)       -> TyUid (!loc l, x)
-       | TyXnd (l, s, x)    -> TyXnd (!loc l, s, ctyp x)
-       | TyVrn (l, s, x)    -> TyVrn (!loc l, map string_bool_ctyplist s, x)
+       | TyVrn (l, s, x)    -> TyVrn (!loc l, map row_field s, x)
+
+   and row_field = function
+      RfTag (s, b, cl)      -> RfTag (s, b, map ctyp cl)
+    | RfInh c               -> RfInh (ctyp c)
 
    and patt x =
       let newx = (match !patt_fun with None -> x | Some f -> f x) in
@@ -271,8 +274,8 @@ module Codewalk = struct
        | PaStr (l, x)       -> PaStr (!loc l, x)
        | PaTup (l, x)       -> PaTup (!loc l, map patt x)
        | PaTyc (l, x, y)    -> PaTyc (!loc l, patt x, ctyp y)
+       | PaTyp (l, s)       -> PaTyp (!loc l, s)
        | PaUid (l, x)       -> PaUid (!loc l, x)
-       | PaXnd (l, s, x)    -> PaXnd (!loc l, s, patt x)
        | PaVrn (l, x)       -> PaVrn (!loc l, x)
 
    and class_type_infos x =
@@ -298,7 +301,7 @@ module Codewalk = struct
        | ExArr (l, x)       -> ExArr (!loc l, map expr x)
        | ExAss (l, x, y)    -> ExAss (!loc l, expr x, expr y)
        | ExChr (l, x)       -> ExChr (!loc l, x)
-       | ExCoe (l, x, y)    -> ExCoe (!loc l, expr x, ctyp y)
+       | ExCoe (l, x, y, z) -> ExCoe (!loc l, expr x, ctypopt y, ctyp z)
        | ExFlo (l, x)       -> ExFlo (!loc l, x)
        | ExFor (l, x, y, z, v, w) ->
                                ExFor (!loc l, x, expr y, expr z, v, map expr w)
@@ -323,7 +326,6 @@ module Codewalk = struct
        | ExTyc (l, x, y)    -> ExTyc (!loc l, expr x, ctyp y)
        | ExUid (l, x)       -> ExUid (!loc l, x)
        | ExWhi (l, x, y)    -> ExWhi (!loc l, expr x, map expr y)
-       | ExXnd (l, s, x)    -> ExXnd (!loc l, s, expr x)
        | ExVrn (l, x)       -> ExVrn (!loc l, x)
 
    and module_type x =
@@ -375,7 +377,7 @@ module Codewalk = struct
        | StClt (l, x)       -> StClt (!loc l, map class_type_infos x)
        | StDcl (l, x)       -> StDcl (!loc l, map str_item x)
        | StDir (l, x, y)    -> StDir (!loc l, x, expropt y)
-       | StExc (l, x, y)    -> StExc (!loc l, x, map ctyp y)
+       | StExc (l, x, y, z) -> StExc (!loc l, x, map ctyp y, z)
        | StExp (l, x)       -> StExp (!loc l, expr x)
        | StExt (l, x, y, z) -> StExt (!loc l, x, ctyp y, z)
        | StInc (l, y)       -> StInc (!loc l, module_expr y)
@@ -390,11 +392,11 @@ module Codewalk = struct
        | CtCon (l, x, y)    -> CtCon (!loc l, x, map ctyp y)
        | CtFun (l, x, y)    -> CtFun (!loc l, ctyp x, class_type y)
        | CtSig (l, x, y)    -> CtSig (!loc l, ctypopt x, map class_sig_item y)
-       | CtXnd (l, s, x)    -> CtXnd (!loc l, s, class_type x)
 
    and class_sig_item x =
       match x with
        | CgCtr (l, x, y)    -> CgCtr (!loc l, ctyp x, ctyp y)
+       | CgDcl (l, x)       -> CgDcl (!loc l, map class_sig_item x)
        | CgInh (l, x)       -> CgInh (!loc l, class_type x)
        | CgMth (l, x, y, z) -> CgMth (!loc l, x, y, ctyp z)
        | CgVal (l, x, y, z) -> CgVal (!loc l, x, y, ctyp z)
@@ -402,17 +404,17 @@ module Codewalk = struct
 
    and class_expr x =
       match x with
-       | CeApp (l, x, y)    -> CeApp (!loc l, class_expr x, map expr y)
+       | CeApp (l, x, y)    -> CeApp (!loc l, class_expr x, expr y)
        | CeCon (l, x, y)    -> CeCon (!loc l, x, map ctyp y)
        | CeFun (l, x, y)    -> CeFun (!loc l, patt x, class_expr y)
        | CeLet (l, x, y, z) -> CeLet (!loc l, x, map patt_expr y, class_expr z)
        | CeStr (l, x, y)    -> CeStr (!loc l, pattopt x, map class_str_item y)
        | CeTyc (l, x, y)    -> CeTyc (!loc l, class_expr x, class_type y)
-       | CeXnd (l, s, x)    -> CeXnd (!loc l, s, class_expr x)
 
    and class_str_item x =
       match x with
        | CrCtr (l, x, y)    -> CrCtr (!loc l, ctyp x, ctyp y)
+       | CrDcl (l, x)       -> CrDcl (!loc l, map class_str_item x)
        | CrInh (l, x, y)    -> CrInh (!loc l, class_expr x, y)
        | CrIni (l, x)       -> CrIni (!loc l, expr x)
        | CrMth (l, x, y, z) -> CrMth (!loc l, x, y, expr z)

@@ -267,7 +267,11 @@ struct
    let rwcaAll convs = rwcAll (applyAllC convs)
    let rwaAllAll convs = rwAllAll (applyAllC convs)
 
-
+   (*
+    * Conversionals.
+    *)
+   let create_iform = RewriteInternal.create_iform
+   let apply_rewrite = RewriteInternal.apply_rewrite
 end
 
 (*

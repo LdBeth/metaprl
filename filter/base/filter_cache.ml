@@ -47,7 +47,6 @@ open Refiner.Refiner.TermType
 
 open Filter_type
 open Filter_util
-open Filter_ocaml
 open Filter_summary
 open Filter_summary_type
 open Filter_summary_io
@@ -341,7 +340,7 @@ struct
    let expr_of_term = TOCaml.expr_of_term
    let type_of_term = TOCaml.type_of_term
    let sig_item_of_term = TOCaml.sig_item_of_term
-   let str_item_of_term = TOCaml.str_item_of_term
+   let str_item_of_term = TOCaml.str_item_of_term_nofail
 
    (*
     * Marshaling proofs.

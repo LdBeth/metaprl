@@ -435,7 +435,8 @@ struct
     * It checks to see if justifications are justifiable.
     *)
    type sentinal =
-      { sent_rewrite : rewrite_refiner -> unit;
+      { sent_input_form : opname -> unit;
+        sent_rewrite : rewrite_refiner -> unit;
         sent_ml_rewrite : ml_rewrite_refiner -> unit;
         sent_cond_rewrite : cond_rewrite_refiner -> unit;
         sent_ml_cond_rewrite : ml_cond_rewrite_refiner -> unit;
@@ -1704,7 +1705,8 @@ struct
       let null _ =
          ()
       in
-         { sent_rewrite = null;
+         { sent_input_form = null;
+           sent_rewrite = null;
            sent_ml_rewrite = null;
            sent_cond_rewrite = null;
            sent_ml_cond_rewrite = null;
@@ -1717,7 +1719,8 @@ struct
       let null _ =
          raise (RefineError ("Refine", StringError "refinements are not allowed with the null sentinal"))
       in
-         { sent_rewrite = null;
+         { sent_input_form = null;
+           sent_rewrite = null;
            sent_ml_rewrite = null;
            sent_cond_rewrite = null;
            sent_ml_cond_rewrite = null;
@@ -1847,7 +1850,11 @@ struct
       let check_ml_rewrite mlrw = check_sentinal ml_rewrites mlrw.ml_rw_name mlrw in
       let check_cond_rewrite crw = check_sentinal cond_rewrites crw.crw_name crw in
       let check_ml_cond_rewrite mlrw = check_sentinal ml_cond_rewrites mlrw.ml_crw_name mlrw in
-         { sent_rewrite = check_rewrite;
+      let check_input_form name =
+         raise (RefineError ("check_input_form", StringStringError ("input forms can't be used in a proof", string_of_opname name)))
+      in
+         { sent_input_form = check_input_form;
+           sent_rewrite = check_rewrite;
            sent_ml_rewrite = check_ml_rewrite;
            sent_cond_rewrite = check_cond_rewrite;
            sent_ml_cond_rewrite = check_ml_cond_rewrite;
@@ -2163,9 +2170,39 @@ struct
           | [], _ ->
                raise (Failure "Refine.add_rewrite: no contracta")
           | _ ->
-               raise (Failure "Refine.add_Rewrite: multiple contracta")
+               raise (Failure "Refine.add_rewrite: multiple contracta")
       in
          refiner', (rw : prim_rewrite)
+
+   (*
+    * Input forms are like rewrites,
+    * but they don't get added to the refiner,
+    * so they will fail if you every try to use
+    * them in a proof.  Use any_sentinal for input_forms.
+    *)
+   let add_input_form build name redex contractum =
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_input_form: %s%t" name eflush
+      ENDIF;
+      let { build_opname = opname } = build in
+      let rw = Rewrite.term_rewrite Relaxed ar0_ar0 [redex] [contractum] in
+      let opname = mk_opname name opname in
+      let rw sent t =
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rewrites then
+               eprintf "Refiner: applying input form %s to %a%t" name print_term t eflush;
+         ENDIF;
+         match apply_rewrite rw ar0_ar0_null t [] with
+            [t'], _ ->
+               sent.sent_input_form opname;
+               t', RewriteHere (t, opname, t')
+          | [], _ ->
+               raise (Failure "Refine.add_input_form: no contracta")
+          | _ ->
+               raise (Failure "Refine.add_input_form: multiple contracta")
+      in
+         (rw : prim_rewrite)
 
    let add_prim_rewrite build name redex contractum =
       IFDEF VERBOSE_EXN THEN
@@ -2429,6 +2466,8 @@ struct
       let refiner, rw = add_rewrite build name redex contractum in
          build.build_refiner <- refiner;
          rw
+
+   let create_input_form = add_input_form
 
    let prim_rewrite build name redex contractum =
       build.build_refiner <- add_prim_rewrite build name redex contractum

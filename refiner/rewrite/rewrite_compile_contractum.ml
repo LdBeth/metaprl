@@ -118,18 +118,20 @@ struct
    type rwterm = RewriteTypes.rwterm
    type strict = RewriteTypes.strict = Strict | Relaxed
 
-   let compile_bname names enames stack n =
+   let compile_bname strict names enames stack n =
       if Array_util.mem n names then
          enames, ArgName (Array_util.index n names)
       else if array_rstack_fo_mem n stack then
          enames, StackName (array_rstack_fo_index n stack)
+      else if strict = Relaxed && array_rstack_mem n stack then
+         enames, StackName (array_rstack_index n stack)
       else
          (n :: enames), SaveName (List.length enames + Array.length names)
 
-   let rec compile_bnames names enames stack = function
+   let rec compile_bnames strict names enames stack = function
       bname :: bnames ->
-         let enames, bname = compile_bname names enames stack bname in
-         let enames, bnames = compile_bnames names enames stack bnames in
+         let enames, bname = compile_bname strict names enames stack bname in
+         let enames, bnames = compile_bnames strict names enames stack bnames in
             enames, bname :: bnames
     | [] ->
          enames, []
@@ -323,7 +325,7 @@ struct
    and compile_so_contractum_bterm strict names enames stack bvars bterm =
       let { bvars = vars; bterm = term } = dest_bterm bterm in
       let enames, term' = compile_so_contractum_term strict names enames stack (bvars @ vars) term in
-      let enames, vars' = compile_bnames names enames stack vars in
+      let enames, vars' = compile_bnames strict names enames stack vars in
          enames, { rw_bvars = List.length vars; rw_bnames = vars'; rw_bterm = term' }
 
    and compile_so_contractum_bterms strict names enames stack bvars = function
@@ -378,7 +380,7 @@ struct
 
           | Hypothesis (v, term) ->
                let enames, term = compile_so_contractum_term strict names enames stack bvars term in
-               let enames, v' = compile_bname names enames stack v in
+               let enames, v' = compile_bname strict names enames stack v in
                let enames, hyps, goals =
                   compile_so_contractum_sequent_inner strict names enames stack (bvars @ [v]) (i + 1) len hyps goals
                in

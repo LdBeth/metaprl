@@ -1,7 +1,7 @@
 Import qw( env );
 
 $env = $env->clone(
-   INCPATH     => [@{$env->{INCPATH}}, "/usr/lib/camlp4"],
+   INCPATH     => [@{$env->{INCPATH}}, "/usr/lib/ocaml/camlp4"],
    OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
    PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}"
 );
@@ -60,4 +60,4 @@ OCamlLibrary $env 'base',
 	'filter_spell';
 
 ## Add the library to the default target list
-Default qw( base.cmxa );
+Default "base$env->{SUFLIB}";

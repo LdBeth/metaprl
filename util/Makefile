@@ -1,6 +1,6 @@
 ROOT = ..
 DIR = util
-OCAMLC = ocamlc
+OCAMLC = ocamlc -warn-error A
 OCAMLOPT = ocamlopt
 OCAMLLEX = ocamllex
 
@@ -15,7 +15,7 @@ install: ocamldep
 	cp -pf ocamldep $(MPBIN)
 
 macro.cmo: macro.ml
-	ocamlc -pp 'camlp4o pa_extend.cmo q_MLast.cmo' -I `camlp4 -where` -c macro.ml
+	ocamlc -pp "camlp4o pa_extend.cmo q_MLast.cmo" -I `camlp4 -where` -c macro.ml
 
 ocamldep: $(OCAMLDEP)
 	$(OCAMLOPT) -o $@ $(OCAMLDEP)

@@ -206,7 +206,8 @@ let mk_ocamlc argv includes =
       else
          ocamlc_exe
    in
-      [ocamlc; "-I"; !lib; "-pp"; Filename.concat !lib camlp4n_exe] @ argv
+   let argv = "-I" :: !lib :: "-pp" :: Filename.concat !lib camlp4n_exe :: argv in
+      ocamlc :: argv
 
 let mk_prlcn argv includes =
    let rec mk_includes = function
@@ -216,7 +217,7 @@ let mk_prlcn argv includes =
          ""
    in
    let preproc = (Filename.concat !lib prlcn_exe) ^ (mk_includes includes) in
-      [ocamlc_exe; "-I"; !lib; "-pp"; preproc] @ argv
+      ocamlc_exe :: "-I" :: !lib :: "-pp" :: preproc :: argv
 
 let mk_prlco argv includes =
    Filename.concat !lib prlco_exe :: argv
@@ -259,7 +260,10 @@ let spec =
     "-linkall", Unit (add_argv "-linkall"), "specify link";
     "-thread", Unit (add_argv "-thread"), "compile with support for threads";
     "-lib", String set_lib, "set the library directory";
-    "-noassert",Unit (add_argv "-noassert"), "Don't compile assertion checks"]
+    "-noassert", Unit (add_argv "-noassert"), "Don't compile assertion checks";
+    "-warn-error", String (fun s ->
+          add_argv "-warn-error" ();
+          add_argv s ()), "treat OCaml warnings as errors"]
 
 (*
  * Print the command line.

@@ -434,6 +434,12 @@ struct
       in
          ThreadRefiner.share (get_remote_server ()) "sentinal" xlazy
 
+   let any_sentinal =
+      let xlazy () =
+         Refine.any_sentinal
+      in
+         ThreadRefiner.share (get_remote_server ()) "sentinal" xlazy
+
    let sentinal_of_refiner mod_name =
       let xlazy () =
          let refiner = (get_theory mod_name).thy_refiner in
@@ -1181,6 +1187,18 @@ struct
       in
          add_final_hook finalize;
          tac p
+
+   (*
+    * Create a dummy arg for debugging.
+    *)
+   let debug_arg bookmark t =
+      { ref_goal = mk_msequent t [];
+        ref_label = "main";
+        ref_parent = ParentNone;
+        ref_attributes = empty_attribute;
+        ref_bookmark = bookmark;
+        ref_sentinal = any_sentinal
+      }
 end
 
 (*

@@ -10,4 +10,4 @@ OCamlLibrary $env 'refbase',
 	'opname';
 
 ## Add the library to the default target list
-Default qw( refbase.cmxa );
+Default "refbase$env->{SUFLIB}";

@@ -24,4 +24,4 @@ OCamlLibrary $env 'ensemble',
 	'thread_refiner';
 
 ## Add the library to the default target list
-Default qw( ensemble.cmxa );
+Default "ensemble$env->{SUFLIB}";

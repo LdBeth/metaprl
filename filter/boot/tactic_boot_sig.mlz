@@ -462,6 +462,11 @@ sig
     *)
    val timingT : tactic -> tactic
    val finalT : (unit -> unit) -> tactic
+
+   (*
+    * For debugging.
+    *)
+   val debug_arg : global_resource -> term -> tactic_arg
 end
 
 (*
@@ -1093,6 +1098,18 @@ sig
     * Create a fold operation automatically.
     *)
    val makeFoldC : term -> conv -> conv
+
+   (*
+    * Informal rewriting.
+    * Create an input form.  This is a rewrite with
+    * no justification.
+    *)
+   val create_iform : string -> term -> term -> conv
+
+   (*
+    * Debugging.
+    *)
+   val apply_rewrite : Mp_resource.bookmark -> conv -> term -> term
 end
 
 (*
@@ -1202,6 +1219,18 @@ sig
    val untilFailC : conv -> conv
    val repeatC : conv -> conv
    val repeatForC : int -> conv -> conv
+
+   (*
+    * Informal rewriting.
+    * Create an input form.  This is a rewrite with
+    * no justification.
+    *)
+   val create_iform : string -> term -> term -> conv
+
+   (*
+    * Debugging.
+    *)
+   val apply_rewrite : Mp_resource.bookmark -> conv -> term -> term
 end
 
 (*
