@@ -200,10 +200,12 @@ struct
    (*
     * Recursive computation of alpha equality.
     *)
-   let equal_params p1 p2 =
+   let rec equal_params p1 p2 =
       match p1, p2 with
          Number n1, Number n2 ->
             Mp_num.eq_num n1 n2
+       | ParamList pl1, ParamList pl2 ->
+            List.for_all2 equal_params pl1 pl2
        | _ ->
             p1 = p2
 
