@@ -602,8 +602,6 @@ struct
    let mk_bool flag =
       ToTerm.Term.mk_simple_term (if flag then true_op else false_op) []
 
-   let mk_list_term = ToTerm.Term.mk_simple_term expr_seq_op
-
    (*
     * Variables are enclosed in terms that mark
     * the variable type.
@@ -873,7 +871,7 @@ struct
              | (<:expr< for $s$ = $e1$ $to:b$ $e2$ do { $list:el$ } >>) ->
                   let op = if b then expr_upto_op else expr_downto_op in
                   let op_loc = mk_op_loc op loc in
-                  let el' = mk_list_term (List.map (mk_expr (s :: vars)) el) in
+                  let el' = mk_xlist_term (List.map (mk_expr (s :: vars)) el) in
                       mk_dep0_dep0_dep1_any_term op_loc (mk_expr vars e1) (mk_expr vars e2) (Lm_symbol.add s) el'
              | (<:expr< fun [ $list:pwel$ ] >>) ->
                   mk_fun vars loc pwel
@@ -929,7 +927,7 @@ struct
              | (<:expr< $uid:s$ >>) ->
                   mk_var expr_uid_op vars loc s
              | (<:expr< while $e$ do { $list:el$ } >>) ->
-                  mk_simple_term expr_while_op loc [mk_expr vars e; mk_list_term (List.map (mk_expr vars) el)]
+                  mk_simple_term expr_while_op loc [mk_expr vars e; mk_xlist_term (List.map (mk_expr vars) el)]
              | MLast.ExVrn (_, s) ->
                   mk_simple_named_term expr_vrn_op loc s []
              | MLast.ExLab (_, s, e) ->
@@ -1879,7 +1877,7 @@ struct
       ciExp = t
    } =
       mk_simple_named_term class_type_infos_op (num_of_loc loc) s
-         [ mk_list_term (List.map mk_sbb sl);
+         [ mk_xlist_term (List.map mk_sbb sl);
            mk_bool b;
            mk_ct t
          ]
@@ -1892,7 +1890,7 @@ struct
        ciExp = t
      } =
       mk_simple_named_term class_type_infos_op (num_of_loc loc) s
-         [ mk_list_term (List.map mk_sbb sl);
+         [ mk_xlist_term (List.map mk_sbb sl);
            mk_bool b;
            mk_ce vars t
          ]
