@@ -85,6 +85,7 @@ struct
        | String    s1,         String    s2         -> s1 = s2
        | Token     s1,         Token     s2         -> s1 = s2
        | Var       v1,         Var       v2         -> v1 = v2
+       | Quote       ,         Quote                -> true
        | MNumber   s1,         MNumber   s2         -> s1 = s2
        | MString   s1,         MString   s2         -> s1 = s2
        | MToken    s1,         MToken    s2         -> s1 = s2

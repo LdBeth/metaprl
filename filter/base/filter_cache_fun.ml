@@ -87,6 +87,7 @@ let string_of_param = function
  | ShapeVar -> "V"
  | ShapeLevel -> "L"
  | ShapeToken -> "T"
+ | ShapeQuote -> "Q"
 
 let string_of_params = function
    [] -> ""
@@ -390,13 +391,17 @@ struct
    let op_prefix cache =
       cache.opprefix
 
+   let rec strip_quotations = function
+      ShapeQuote :: l -> strip_quotations l
+    | l -> l
+
    (*
     * Construct an opname assuming it is declared in the current module.
     *)
    let mk_opname cache names params arities =
       if names = [] then raise (Invalid_argument "Filter_cache_fun.mk_opname");
       let name = Lm_list_util.last names in
-      let shape = { sh_name = name; sh_params = params; sh_arities = arities } in
+      let shape = { sh_name = name; sh_params = strip_quotations params; sh_arities = arities } in
       if List.tl names = [] then begin
          try
             let opname = optable cache shape in
@@ -427,8 +432,10 @@ struct
       end
 
    let op_shape_of_term name t =
+      let params = List.map param_type (dest_op (dest_term t).term_op).op_params in
+      if strip_quotations params != params then raise (Invalid_argument "Filter_cache_fun.op_shape_of_term: quoted opnames must not be declared");
       { sh_name = name;
-        sh_params = List.map param_type (dest_op (dest_term t).term_op).op_params;
+        sh_params = params;
         sh_arities = Term.subterm_arities t
       }
 

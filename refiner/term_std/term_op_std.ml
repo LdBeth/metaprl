@@ -579,6 +579,22 @@ struct
          }
 
    (*
+    * One quote param.
+    *)
+   let is_quoted_term = function
+      { term_op = { op_params = Quote::_ } } -> true
+    | _ -> false
+
+   let unquote_term = function
+      { term_op = { op_name = opname; op_params = Quote::params }; term_terms = bterms } ->
+         { term_op = { op_name = opname; op_params = params }; term_terms = bterms }
+    | t -> REF_RAISE(RefineError ("unquote_term", TermMatchError (t, "not a quoted term")))
+
+   let quote_term = function
+      { term_op = { op_name = opname; op_params = params }; term_terms = bterms } ->
+         { term_op = { op_name = opname; op_params = Quote::params }; term_terms = bterms }
+
+   (*
     * One token param.
     *)
    let is_token_term opname = function

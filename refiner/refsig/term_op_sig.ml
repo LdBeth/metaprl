@@ -43,6 +43,11 @@ sig
    val map_down : (term -> term) -> term -> term
    val map_up : (term -> term) -> term -> term
 
+   (* Reflected terms *)
+   val is_quoted_term : term -> bool
+   val quote_term : term -> term
+   val unquote_term : term -> term
+
    (* Special cases *)
    val is_no_subterms_term : opname -> term -> bool
 

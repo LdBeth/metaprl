@@ -117,6 +117,8 @@ struct
             true
        | MLevel a, RWMLevel2 b ->
             compare_levels a b
+       | Quote, RWQuote ->
+            true
        | _ -> false
 
    let compare_param_lists = Lm_list_util.for_all2 compare_params
@@ -163,6 +165,7 @@ struct
       RWNumber i -> Number(i)
     | RWString s -> String s
     | RWToken t -> Token t
+    | RWQuote -> Quote
     | RWMNumber i -> MNumber (Lm_symbol.make "v" i)
     | RWMString i -> MString (Lm_symbol.make "v" i)
     | RWMToken i -> MToken (Lm_symbol.make "v" i)

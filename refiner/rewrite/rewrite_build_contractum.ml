@@ -341,6 +341,8 @@ struct
          String s
     | RWToken s ->
          Token s
+    | RWQuote ->
+         Quote
     | RWMNumber i ->
          begin
              match stack.(i) with

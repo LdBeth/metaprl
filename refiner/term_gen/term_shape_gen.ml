@@ -97,6 +97,7 @@ struct
        | Token _ | MToken _ -> ShapeToken
        | Var _ -> ShapeVar
        | MLevel _ -> ShapeLevel
+       | Quote -> ShapeQuote
        | ObId _ | ParamList _ ->
             raise (Invalid_argument "Term.shape_of_term")
 
@@ -140,6 +141,8 @@ struct
                   "L"
              | ShapeVar    ->
                   "V"
+             | ShapeQuote  ->
+                  "Q"
          in
             output_string out s
       in
@@ -172,6 +175,8 @@ struct
                   "L"
              | ShapeVar    ->
                   "V"
+             | ShapeQuote  ->
+                  "Q"
          in
             pp_print_string out s
       in

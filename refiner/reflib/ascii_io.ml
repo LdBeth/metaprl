@@ -232,6 +232,8 @@ struct
          hash_add_new r.io_params name (constr_param (Token s))
     | (_, name, [["Var"; s]]) ->
          hash_add_new r.io_params name (constr_param (Var (Lm_symbol.add s)))
+    | (_, name, [["Quote"]]) ->
+         hash_add_new r.io_params name (constr_param Quote)
     | (_, name, [["MNumber"; s]]) ->
          hash_add_new r.io_params name (constr_param (MNumber (Lm_symbol.add s)))
     | (_, name, [["MString"; s]]) ->
@@ -705,6 +707,7 @@ struct
           | String s -> ["String"; s]
           | Token s -> ["Token"; s]
           | Var s -> ["Var"; string_of_symbol s]
+          | Quote -> ["Quote"]
           | MNumber s -> ["MNumber"; string_of_symbol s]
           | MString s -> ["MString"; string_of_symbol s]
           | MToken s -> ["MToken"; string_of_symbol s]

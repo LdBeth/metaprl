@@ -67,6 +67,7 @@ struct
       RWNumber of Lm_num.num
     | RWString of string
     | RWToken of string
+    | RWQuote
     | RWMNumber of int
     | RWMString of int
     | RWMToken of int

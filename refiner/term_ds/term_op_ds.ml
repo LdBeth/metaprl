@@ -32,6 +32,7 @@ INCLUDE "refine_error.mlh"
 
 open Lm_symbol
 
+open Opname
 open Refine_error_sig
 open Term_sig
 open Term_ds_sig
@@ -529,6 +530,34 @@ struct
         core = Term
          { term_op = { op_name = opname; op_params = [MLevel n] };
            term_terms = [] }}
+
+   (*
+    * One quote param.
+    *)
+   let is_quoted_term t = match get_core t with
+      Term { term_op = { op_params = Quote::_ } } -> true
+    | _ -> false
+
+   let unquote_term t = match get_core t with
+      Term { term_op = { op_name = opname; op_params = Quote::params }; term_terms = bterms } ->
+         if Opname.eq opname var_opname or Opname.eq opname sequent_opname then
+            raise (Invalid_argument "Term_op_ds.unquote_term: support for variables and sequents not implementes");
+         { free_vars = VarsDelayed;
+           core = Term
+            { term_op = { op_name = opname; op_params = params }; term_terms = bterms }
+         }
+    | _ -> REF_RAISE(RefineError ("unquote_term", TermMatchError (t, "not a quote term")))
+
+   let quote_term t = match get_core t with
+      Term { term_op = { op_name = opname; op_params = params }; term_terms = bterms } ->
+         { free_vars = VarsDelayed;
+           core = Term
+            { term_op = { op_name = opname; op_params = Quote::params }; term_terms = bterms }
+         }
+    | FOVar _ | SOVar _ | Sequent _ ->
+         raise (Invalid_argument "Term_op_ds.quote_term: support for variables and sequents not implemented")
+    | Subst _ | Hashed _ ->
+         fail_core "Term_op_ds.quote_term"
 
    (*
     * One token param.

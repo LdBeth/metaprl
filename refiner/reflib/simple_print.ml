@@ -175,6 +175,7 @@ struct
          Number n -> format_num buf n; format_string buf ":n"
        | String s -> format_char buf '"'; format_string buf (String.escaped s); format_char buf '"'; format_string buf ":s"
        | Token t -> format_char buf '"'; format_string buf (String.escaped t); format_char buf '"'; format_string buf ":t"
+       | Quote -> format_string buf "@"
        | MNumber v -> format_var buf v; format_string buf ":n"
        | MString v -> format_var buf v; format_string buf ":s"
        | MToken v -> format_var buf v; format_string buf ":t"

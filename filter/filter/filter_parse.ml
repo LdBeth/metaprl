@@ -234,6 +234,7 @@ let expr_of_pcon loc = function
           | ShapeNumber -> "Number"
           | ShapeLevel -> "Level"
           | ShapeVar -> "Var"
+          | ShapeQuote -> "Quote"
       in
          <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $e$) >>
   | ConPNum n, ShapeNumber ->

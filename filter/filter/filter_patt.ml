@@ -107,6 +107,8 @@ let build_term_patt loc t =
                     | _ ->
                          raise (Invalid_argument "term_patt: complex level expressions not supported"))
 
+             | Quote ->
+                  raise (Invalid_argument "term_patt: quotes not supported")
              | ObId _ ->
                   raise (Invalid_argument "term_patt: object-ids not supported")
              | ParamList _ ->

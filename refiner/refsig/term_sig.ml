@@ -61,6 +61,7 @@ type ('level_exp, 'param) poly_param =
  | MString of var
  | MToken of var
  | MLevel of 'level_exp
+ | Quote
 
    (* Special Nuprl5 values *)
  | ObId of 'param list

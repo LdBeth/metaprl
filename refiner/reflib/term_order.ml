@@ -135,6 +135,8 @@ struct
 			 | Var v1       , Var v2        -> simple_compare v1 v2
 			 | Var _        , _             -> Less
 			 | _            , Var _         -> Greater
+			 | Quote        , _             -> Less
+			 | _            , Quote         -> Greater
 			 | MNumber s1   , MNumber s2    -> simple_compare s1 s2
 			 | MNumber _    , _             -> Less
 			 | _            , MNumber _     -> Greater

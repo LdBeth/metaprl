@@ -835,6 +835,7 @@ struct
             MatchVar v
        | MLevel l ->
             MatchLevel l
+       | Quote
        | MNumber _
        | MString _
        | MToken _

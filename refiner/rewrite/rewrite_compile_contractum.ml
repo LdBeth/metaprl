@@ -297,6 +297,7 @@ struct
        | Number i -> RWNumber i
        | String s -> RWString s
        | Token t -> RWToken t
+       | Quote -> RWQuote
 
        | ObId id ->
             RWObId id
@@ -309,7 +310,7 @@ struct
     *)
 
    and is_sparam = function
-      Number _ | String _ | Token _ ->
+      Number _ | String _ | Token _ | Quote ->
          true
     | ParamList l ->
          are_sparams l

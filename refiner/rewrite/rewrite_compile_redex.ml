@@ -318,6 +318,7 @@ struct
        | Number i -> stack, RWNumber i
        | String s -> stack, RWString s
        | Token t -> stack, RWToken t
+       | Quote -> stack, RWQuote
        | _ -> REF_RAISE(RefineError ("compile_so_redex_param", RewriteBadMatch (ParamMatch param)))
 
    (*

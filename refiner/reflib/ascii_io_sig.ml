@@ -35,7 +35,7 @@
 
 The format for the ASCII files is the following - each line contains
 either a term or a bound term or an operator or an opname or a parameter
-or a hypothesis or a context hypothesis. Seuqents are printed on two lines.
+or a hypothesis or a context hypothesis. Sequents are printed on two lines.
 The lines should be in the following format:
 
 Term:
@@ -71,8 +71,9 @@ P<long_name> <short_name> MNumber <string>
 P<long_name> <short_name> MString <string>
 P<long_name> <short_name> MToken <string>
 P<long_name> <short_name> MLevel <int> [<var_1_string> <off_1_int> ... <var_1_string> <off_1_int>]
+P<long_name> <short_name> Quote <string>
 
-Where "long name" is there only there to make the file more readable for the user,
+Where "long name" is there only to make the file more readable for the user,
 "short name" is probably several characters long, typically - a base short name
 and a serial number. If a string has non-printable characters or spaces, it would
 be printed quoted. For sequents the correspondent S and G lines have to have the same short

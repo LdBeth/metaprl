@@ -252,6 +252,7 @@ struct
             if (t' <> t) then
                REF_RAISE(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
            (* Variable matches *)
+       | RWQuote, Quote -> ()
        | RWMNumber i, Number j ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then

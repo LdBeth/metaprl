@@ -39,6 +39,7 @@ type shape_param =
  | ShapeToken
  | ShapeLevel
  | ShapeVar
+ | ShapeQuote
 
 module type TermShapeSig =
 sig

@@ -280,6 +280,7 @@ struct
     | FOVar s | PVar (s, ShapeVar) -> RewriteVarType, s
     | PVar (s, (ShapeString | ShapeToken)) -> RewriteStringType, s
     | PVar (s, ShapeLevel) -> RewriteLevelType, s
+    | PVar (_, ShapeQuote) -> REF_RAISE (RefineError ("extract_redex_type", RewriteBadMatch (TermMatch xnil_term)))
 
    let extract_redex_types { redex_stack = stack } =
       let l = Array.length stack in
@@ -360,6 +361,7 @@ struct
              | StackVar v -> mk_var_level_exp v
              | _ -> REF_RAISE(extract_exn)
          end
+    | PVar (_, ShapeQuote) -> REF_RAISE(extract_exn)
 
    let extract_redex_values gstack stack=
       let l = Array.length gstack in

@@ -174,6 +174,8 @@ struct
          fprintf out "%s:s" s
     | RWToken s ->
          fprintf out "%s:t" s
+    | RWQuote ->
+         fprintf out "q"
     | RWMNumber i ->
          fprintf out "@%d:n" i
     | RWMString i ->
@@ -214,6 +216,8 @@ struct
          fprintf out "%s:t" s
     | Var s ->
          fprintf out "%s:v" (Lm_symbol.string_of_symbol s)
+    | Quote ->
+         fprintf out "q"
     | ParamList pl ->
          fprintf out "[%a]" print_sparam_list pl
     | _ ->
