@@ -176,28 +176,30 @@ if true
 if true 
     OCAML_LIBS = $(OCAML_LIBS) $(PRLCN_LIBS)
 
-    OCamlProgramInstall($(MPINSTALL), $(LIB), $(PRLCN), $(PRLCN_FILES))
+    OCamlProgramInstall($(MPINSTALL), $(BIN), $(PRLCN), $(PRLCN_FILES))
 
 if true
     OCAML_LIBS = $(OCAML_LIBS) $(PRLCO_LIBS)
 
-    OCamlProgramInstall($(MPINSTALL), $(LIB), $(PRLCO), $(PRLCO_FILES))
+    OCamlProgramInstall($(MPINSTALL), $(BIN), $(PRLCO), $(PRLCO_FILES))
 
 if true
     OCAML_LIBS = $(OCAML_LIBS) $(CONVERT_LIBS)
 
-    OCamlProgramInstall($(MPINSTALL), $(LIB), $(CONVERT), $(CONVERT_FILES))
+    OCamlProgramInstall($(MPINSTALL), $(BIN), $(CONVERT), $(CONVERT_FILES))
 
 if true
     OCAML_LIBS = $(OCAML_LIBS) $(PRLCOMP_LIBS)
 
-    OCamlProgramInstall($(MPINSTALL), $(LIB), $(PRLCOMP), $(PRLCOMP_FILES))
+    OCamlProgramInstall($(MPINSTALL), $(BIN), $(PRLCOMP), $(PRLCOMP_FILES))
 
 #
 # Default targets
 #
-PROGS = $(CAMLP4N) $(CAMLP4O) $(PRLCN) $(PRLCO) $(CONVERT) $(PRLCOMP)
-INSTALL = $(addprefix $(LIB)/, $(PROGS))
+LIB_PROGS = $(CAMLP4N) $(CAMLP4O)
+BIN_PROGS = $(PRLCN) $(PRLCO) $(CONVERT) $(PRLCOMP)
+PROGS = $(LIB_PROGS) $(BIN_PROGS)
+INSTALL = $(addprefix $(LIB)/, $(LIB_PROGS)) $(addprefix $(BIN)/, $(BIN_PROGS))
 
 all: $(PROGS)
 opt: $(PROGS)
