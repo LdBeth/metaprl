@@ -191,6 +191,33 @@ struct
       } when Opname.eq opname' opname -> t1, t2, t3
     | t -> REF_RAISE(RefineError ("dest_dep0_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
+   (*
+    * Terms with four subterms.
+    *)
+   let is_dep0_dep0_dep0_dep0_term opname = function
+      { term_op = { op_name = opname'; op_params = [] };
+        term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [] }; { bvars = [] }]
+      } -> Opname.eq opname' opname
+    | _ -> false
+
+   let mk_dep0_dep0_dep0_dep0_term opname = fun
+      t1 t2 t3 t4 ->
+         { term_op = { op_name = opname; op_params = [] };
+           term_terms = [{ bvars = []; bterm = t1 };
+                         { bvars = []; bterm = t2 };
+                         { bvars = []; bterm = t3 };
+                         { bvars = []; bterm = t4 }]
+         }
+
+   let dest_dep0_dep0_dep0_dep0_term opname = function
+      { term_op = { op_name = opname'; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t1 };
+                      { bvars = []; bterm = t2 };
+                      { bvars = []; bterm = t3 };
+                      { bvars = []; bterm = t4 }]
+      } when Opname.eq opname' opname -> t1, t2, t3, t4
+    | t -> REF_RAISE(RefineError ("dest_dep0_dep0_dep0_dep0_term", TermMatchError (t, "bad arity")))
+
    let is_two_subterm opname = function
       { term_op = { op_name = opname' };
         term_terms = [{ bvars = [] }; { bvars = [] }]
@@ -200,6 +227,12 @@ struct
    let is_three_subterm opname = function
       { term_op = { op_name = opname' };
         term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [] }]
+      } -> Opname.eq opname' opname
+    | _ -> false
+
+   let is_four_subterm opname = function
+      { term_op = { op_name = opname' };
+        term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [] }; { bvars = [] }]
       } -> Opname.eq opname' opname
     | _ -> false
 

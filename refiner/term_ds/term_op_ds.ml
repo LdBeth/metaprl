@@ -165,6 +165,30 @@ struct
          dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3
     | _ -> REF_RAISE(RefineError ("dest_dep0_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
+   (*
+    * Terms with four subterms.
+    *)
+   let is_dep0_dep0_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2; bt3; bt4]
+           } when Opname.eq opname' opname ->
+         bt1.bvars = [] && bt2.bvars = [] && bt3.bvars = [] && bt4.bvars = []
+    | _ -> false
+
+   let mk_dep0_dep0_dep0_dep0_term opname t1 t2 t3 t4 =
+      { free_vars = VarsDelayed;
+        core = Term
+         { term_op = { op_name = opname; op_params = [] };
+           term_terms =
+            [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3; mk_simple_bterm t4]}}
+
+   let dest_dep0_dep0_dep0_dep0_term opname t = match dest_term t with
+      { term_op = { op_name = opname'; op_params = [] };
+        term_terms = [bt1; bt2; bt3; bt4]
+      } when Opname.eq opname' opname ->
+         dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3, dest_simple_bterm bt4
+    | _ -> REF_RAISE(RefineError ("dest_dep0_dep0_dep0_dep0_term", TermMatchError (t, "bad arity")))
+
    let is_two_subterm opname t = match get_core t with
       Term { term_op = { op_name = opname' };
              term_terms = ([_; _] as bterms)
@@ -174,6 +198,12 @@ struct
    let is_three_subterm opname t = match get_core t with
       Term { term_op = { op_name = opname' };
              term_terms = ([_; _; _] as bterms)
+           } when Opname.eq opname' opname -> no_bvars bterms
+    | _ -> false
+
+   let is_four_subterm opname t = match get_core t with
+      Term { term_op = { op_name = opname' };
+             term_terms = ([_; _; _; _] as bterms)
            } when Opname.eq opname' opname -> no_bvars bterms
     | _ -> false
 

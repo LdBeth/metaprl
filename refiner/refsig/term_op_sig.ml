@@ -61,6 +61,10 @@ sig
    val mk_dep0_dep0_dep0_term : opname -> term -> term -> term -> term
    val dest_dep0_dep0_dep0_term : opname -> term -> term * term * term
 
+   val is_dep0_dep0_dep0_dep0_term : opname -> term -> bool
+   val mk_dep0_dep0_dep0_dep0_term : opname -> term -> term -> term -> term -> term
+   val dest_dep0_dep0_dep0_dep0_term : opname -> term -> term * term * term * term
+
    val is_two_subterm : opname -> term -> bool
    val is_three_subterm : opname -> term -> bool
    val is_five_subterm : opname -> term -> bool
