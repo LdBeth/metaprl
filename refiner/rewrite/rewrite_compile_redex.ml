@@ -205,7 +205,7 @@ struct
          let v, term, conts, vars = dest_context term in
             if rstack_mem v stack then
                (* The context should have a unique name *)
-               REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
+               REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
 
             else if Lm_array_util.mem v addrs then
                (* All the vars should be free variables *)
@@ -221,7 +221,7 @@ struct
                      raise (Invalid_argument "compile_so_redex_term: free variable restrictions on SO contexts are not implemented")
             else
                (* No argument for this context *)
-               REF_RAISE(RefineError ("is_context_term", RewriteMissingContextArg v))
+               REF_RAISE(RefineError ("compile_so_redex_term", RewriteMissingContextArg v))
 
       else if is_sequent_term term then
          (* Sequents are handled specially *)
@@ -348,7 +348,7 @@ struct
                let instance = rstack_c_mem v stack in
                if not instance && rstack_mem v stack then
                   (* The context should have a unique name *)
-                  REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
+                  REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
                else
                let stack, term, ind =
                   if instance then begin
