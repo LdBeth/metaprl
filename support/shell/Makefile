@@ -12,10 +12,28 @@ PRLCFLAGS := -v
 
 # Common files
 MLZFILES =\
+	package_sig\
+	shell_sig\
+	shell_p4_sig\
 
 # Library files
 MPFILES =\
 	mptop\
+	mux_channel\
+	display_term\
+	proof_edit\
+	package_sig\
+	package_info\
+	shell_sig\
+	shell_rewrite\
+	shell_rule\
+	shell_tex\
+	shell_package\
+	shell_root\
+	recursive_lock\
+	shell_state\
+	shell_p4_sig\
+	shell\
 
 # Name of main libraris
 MAIN = theory

@@ -93,12 +93,14 @@ type rw =
  * this code should go away (and, for that matter, shell_rule
  * and shell_rewrite should probably be eventually merged).
  *)
-extends Base_trivial
-let seq = << sequent [squash] { <H> >- 'rw } >>
+let hack_arg = mk_xlist_term [mk_simple_term (make_opname ["squash";"Base_trivial"]) []]
+let hack_hyps = SeqHyp.of_list [Context("H",[])]
+let mk_rewrite_hack term =
+   mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_goals = SeqGoal.of_list [term] }
 
 let mk_rw_goal assums redex contractum =
-   let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
-   let assums = List.map (replace_goal seq) assums in
+   let rw = mk_rewrite_hack (mk_xrewrite_term redex contractum) in
+   let assums = List.map mk_rewrite_hack assums in
       if !debug_shell then begin
          eprintf "Shell_rewrite.mk_rw_goal: [... --> ] %a <--> %a%t"
             print_term redex print_term contractum eflush;

@@ -26,30 +26,12 @@ OCAMLDEPFLAGS = -prl
 # Common files
 MLZFILES =\
 	proof_sig\
-	package_sig\
 	display_sig\
 	nuprl_sig\
-	shell_sig\
-	shell_p4_sig
 
 # Library files
 MPFILES =\
-	recursive_lock\
-	mux_channel\
-	display_term\
-	proof_edit\
-	package_sig\
-	package_info\
-	shell_tex\
-	shell_sig\
-	shell_rewrite\
-	shell_rule\
-	shell_package\
-	shell_root\
-	shell_p4_sig\
 	shell_http\
-	shell_state\
-	shell
 
 MP2FILES =\
 	shell_mp\
@@ -152,10 +134,10 @@ CMXADEPS =\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
 	$(CMXALIBS_ext)\
-	$(ROOT)/lib/prlc.cmxa\
-	$(addsuffix /theory.cmxa, $(MP_DIRS))\
 	$(CAMLP4LIB)/pa_o.cmx\
 	$(CAMLP4LIB)/pa_op.cmx\
+	$(ROOT)/lib/prlc.cmxa\
+	$(addsuffix /theory.cmxa, $(MP_DIRS))\
 	$(MAIN).cmxa
 
 CMXALIBS =\
@@ -172,10 +154,10 @@ CMADEPS =\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
 	$(CMALIBS_ext)\
-	$(ROOT)/lib/prlc.cma\
-	$(addsuffix /theory.cma, $(MP_DIRS))\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
+	$(ROOT)/lib/prlc.cma\
+	$(addsuffix /theory.cma, $(MP_DIRS))\
 	$(MAIN).cma
 
 TCMADEPS =\
@@ -188,10 +170,10 @@ TCMADEPS =\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
 	$(CMALIBS_ext)\
-	$(ROOT)/lib/prlc.cma\
-	$(addsuffix /theory.cma, $(MP_DIRS))\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
+	$(ROOT)/lib/prlc.cma\
+	$(addsuffix /theory.cma, $(MP_DIRS))\
 	$(MAIN).cma
 
 CMALIBS =\
