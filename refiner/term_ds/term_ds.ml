@@ -130,7 +130,7 @@ struct
                StringSet.union
                   (List.fold_right
                      StringSet.remove
-                     (fst (List.split sub'))
+                     (List_util.fst_split sub')
                      t.free_vars)
                   (subst_free_vars sub');
              core = Subst (t,sub')}
@@ -143,7 +143,7 @@ struct
                StringSet.union
                   (List.fold_right
                      StringSet.remove
-                     (fst (List.split sub'))
+                     (List_util.fst_split sub')
                   bt.bfree_vars)
                      (subst_free_vars sub');
              bcore = BSubst (bt,sub')}
@@ -151,6 +151,8 @@ struct
    (************************************************************************
     * Variables in pure terms                                              *
     ************************************************************************)
+
+   exception Not_var
 
    let var_opname = make_opname ["var"]
 
@@ -170,7 +172,7 @@ struct
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
       } when opname == var_opname -> v
-     | t -> raise (TermMatch ("dest_var", {free_vars = bterms_free_vars t.term_terms; core = Term t}, ""))
+     | _ -> raise Not_var
 
    (************************************************************************
     * De/Constructors                                                 *
@@ -236,10 +238,9 @@ struct
    and new_vars av = function 
       [] -> ([],[])
     | v::vt ->
-         match (new_vars av vt) with
-            (vs,ts) ->
-               let v' = new_var av v 0 in
-               ((v,v')::vs, (v,mk_var_term v')::ts)
+         let (vs,ts) = (new_vars av vt) in
+         let v' = new_var av v 0 in
+            ((v,v')::vs, (v,mk_var_term v')::ts)
 
    let rec dest_bterm bt =
       match bt.bcore with
@@ -248,7 +249,11 @@ struct
             let ttt = dest_bterm tt in
             let t4 =
                match ttt.bvars with
-                  [] -> { bvars = []; bterm = do_term_subst sub ttt.bterm }
+                  [] -> 
+                     { bvars = []; 
+                       bterm = 
+                        { free_vars = bt.bfree_vars;
+                          core = Subst (ttt.bterm,sub) }}
                 | bvrs -> 
                      let sub_fvars = subst_free_vars sub in
                      let capt_vars = List_util.filter (function v -> StringSet.mem v sub_fvars) bvrs in
@@ -290,7 +295,7 @@ struct
        | _ -> raise (TermMatch ("dest_simple_bterm", term, "bvars exist"))
 
    let dest_simple_bterms term =
-      List.map (function bt -> dest_simple_bterm term bt)
+      List.map (dest_simple_bterm term)
 
    let mk_simple_bterm term =
       { bfree_vars = term.free_vars;
@@ -341,7 +346,11 @@ struct
    (*
     * Destructor for a variable.
     *)
-   let dest_var t = dest_var_nods (dest_term t)
+   let dest_var t = 
+      try
+         dest_var_nods (dest_term t)
+      with
+         Not_var -> raise (TermMatch ("dest_var_nods",t,"not a var"))
 
    let mk_var_op v = { op_name = var_opname; op_params = [Var v] }
 
@@ -358,15 +367,15 @@ struct
          term_terms = bterms
       } when opname == var_opname ->
          v, dest_simple_bterms t bterms
-    | term -> raise (TermMatch ("dest_so_var", t, "not a so_var"))
+    | _ -> raise (TermMatch ("dest_so_var", t, "not a so_var"))
 
    (*
     * Second order variable.
     *)
    let mk_so_var_term v terms =
-      make_term
-         { term_op = { op_name = var_opname; op_params = [Var(v)] };
-           term_terms = List.map mk_simple_bterm terms }
+      mk_term
+         { op_name = var_opname; op_params = [Var(v)] }
+         (List.map mk_simple_bterm terms)
 
    (*
     * Second order context, contains a context term, plus
@@ -377,7 +386,7 @@ struct
    let is_context_term t = match dest_term t with
       { term_op = { op_name = opname; op_params = [Var _] }; term_terms = bterms }
       when opname == context_opname -> no_bvars bterms
-    | term -> false
+    | _ -> false
 
    let dest_context term = match dest_term term with
       { term_op = { op_name = opname; op_params = [Var v] };
@@ -388,9 +397,9 @@ struct
     | _ -> raise (TermMatch ("dest_context", term, "not a context"))
 
    let mk_context_term v term terms =
-      make_term
-         { term_op = { op_name = context_opname; op_params = [Var v] };
-           term_terms = (mk_simple_bterm term)::(List.map mk_simple_bterm terms) }
+      mk_term
+         { op_name = context_opname; op_params = [Var v] }
+         ((mk_simple_bterm term)::(List.map mk_simple_bterm terms))
 
    (************************************************************************
     * NORMALIZATION                                                        *

@@ -69,9 +69,13 @@ val add_assoc : 'a * 'b -> ('a * 'b) list -> ('a * 'b) list
 val split_list : int -> 'a list -> 'a list * 'a list
 val split_last : 'a list -> 'a list * 'a
 val last : 'a list -> 'a
+val fst_split : ('a * 'b) list -> 'a list
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/04 19:52:50  nogin
+ * Efficiency
+ *
  * Revision 1.8  1998/06/03 22:19:22  jyh
  * Nonpolymorphic refiner.
  *

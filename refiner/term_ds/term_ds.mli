@@ -101,6 +101,7 @@ sig
    (* Errors during matching *)
    exception TermMatch of string * term * string
    exception BadMatch of term * term
+   exception Not_var
 
    (*
     * simultaneous delayed substitution

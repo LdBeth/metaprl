@@ -438,6 +438,13 @@ let rec last = function
       raise (Failure "last")
 
 (*
+ * Produce a list of first elements out of the list of pairs
+ *)
+let rec fst_split = function
+   [] -> []
+ | (a,b)::tl -> a::(fst_split tl)
+
+(*
  * Remove the specified suffix from the list.
  *)
 let remove_suffix l suffix =
@@ -543,6 +550,9 @@ let existsp = List.exists
 
 (*
  * $Log$
+ * Revision 1.12  1998/06/04 19:52:49  nogin
+ * Efficiency
+ *
  * Revision 1.11  1998/06/03 22:19:21  jyh
  * Nonpolymorphic refiner.
  *
