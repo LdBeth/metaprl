@@ -69,32 +69,31 @@ let rec lift = function
       lift ancestors
       )
 
-let splay reln t =
-   let rec aux path = function 
-      ((NODE ({ contents = (key, left, right) } as node)),_) ->
-         let comp = reln key
-         in
-            if comp = 0 then
-               (
-               lift path;
-               true
-               )
-            else if comp < 0 then
-               (* left *)
-               aux ((LEFT, node) :: path) left
-            else
-               (* right *)
-               aux ((RIGHT, node) :: path) right
-    | (LEAF,_) ->
-         (match path with
-             [] -> false
-           | _ :: path' ->
-                (
-                lift path';
-                false
-                ))
-   in
-      aux [] t
+let rec splay_aux reln path = function 
+   ((NODE ({ contents = (key, left, right) } as node)),_) ->
+      let comp = reln key
+      in
+         if comp = 0 then
+            (
+            lift path;
+            true
+            )
+         else if comp < 0 then
+            (* left *)
+            splay_aux reln ((LEFT, node) :: path) left
+         else
+            (* right *)
+            splay_aux reln ((RIGHT, node) :: path) right
+ | (LEAF,_) ->
+      (match path with
+          [] -> false
+        | _ :: path' ->
+             (
+             lift path';
+             false
+             ))
+
+let splay reln t = splay_aux reln [] t
 
 let empty = (LEAF,0)
 let is_empty = function
