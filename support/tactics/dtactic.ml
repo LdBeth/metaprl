@@ -80,9 +80,13 @@ doc <:doc<
    @tt{selT 1 (dT 0)} and the right rule is applied with @tt{selT 2 (dT 0)}.
 
    The @tt[IntroArgsOption] is used to @emph{infer} arguments to the rule.
-   The function argument takes the current goal and a subterm, and it provides
-   an argument list that can be used in the rule application.  The @code{term option}
-   entry describes the subterm to be used for the second function argument.
+   The first argument is a function that should provide an argument list to be used in the
+   rule application.  It will be given (a) a @tt[tactic_arg] containing the current proof
+   obligation, and (b) a subterm of the conclusion of the goal. The @code{term option}
+   entry describes the subterm to be used for the second function argument; @tt[None]
+   means that the whole conclusion will be passed in, and @tt[Some] @i[t] (where @i[t]
+   is a subterm of the conclusion in the rule specification) means that the corresponding
+   subterm will be used.
 
    The @tt[AutoMustComplete] option can be used to indicate that the
    @hreftactic[autoT] tactic should not use this rule unless it is capable

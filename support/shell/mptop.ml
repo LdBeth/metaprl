@@ -216,24 +216,15 @@ and mk_expr top_expr =
             not_supported loc "local module"
        | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
             not_supported loc "match"
-       | MLast.ExNew _ ->
+       | (<:expr< new $list:_$ >>) ->
             not_supported loc "new"
-(*
-       | (<:expr< {< $list:sel$ >} >>) ->
-*)
-       | MLast.ExOvr _ ->
+       | (<:expr< {< $list:_$ >} >>) ->
             not_supported loc "stream"
-(*
-       | (<:expr< { $list:eel$ } >>) ->
-*)
        | MLast.ExRec _ ->
             not_supported loc "record"
        | (<:expr< do { $list:el$ } >>) ->
             not_supported loc "do"
-(*
-       | (<:expr< $e$ # $i$ >>) ->
-*)
-       | MLast.ExSnd _ ->
+       | (<:expr< $_$ # $_$ >>) ->
             not_supported loc "class projection"
        | (<:expr< $e1$ .[ $e2$ ] >>) ->
             not_supported loc "string subscript"
@@ -259,199 +250,6 @@ and mk_expr top_expr =
             not_supported loc "ExCoe"
    in
       loc, expr
-
-and mk_patt patt =
-   let loc = loc_of_patt patt in
-      match patt with
-         (<:patt< $p1$ . $p2$ >>) ->
-            not_supported loc "patt projection"
-       | (<:patt< ( $p1$ as $p2$ ) >>) ->
-            not_supported loc "patt"
-       | (<:patt< _ >>) ->
-            not_supported loc "wild pattern"
-       | (<:patt< $p1$ $p2$ >>) ->
-            not_supported loc "pattern application"
-       | (<:patt< [| $list: pl$ |] >>) ->
-            not_supported loc "array patterns"
-       | (<:patt< $chr:c$ >>) ->
-            not_supported loc "pattern char"
-       | (<:patt< $int:s$ >>) ->
-            not_supported loc "pattern int"
-       | (<:patt< $lid:v$ >>) ->
-            not_supported loc "pattern var"
-       | (<:patt< $p1$ | $p2$ >>) ->
-            not_supported loc "pattern choice"
-       | (<:patt< $p1$ .. $p2$ >>) ->
-            not_supported loc "pattern range"
-       | (<:patt< { $list:ppl$ } >>) ->
-            not_supported loc "pattern record"
-       | (<:patt< $str:s$ >>) ->
-            not_supported loc "pattern string"
-       | (<:patt< ( $list:pl$ ) >>) ->
-            not_supported loc "pattern list"
-       | (<:patt< ( $p$ : $t'$ ) >>) ->
-            not_supported loc "pattern cast"
-       | (<:patt< $uid:s$ >>) ->
-            not_supported loc "pattern uid"
-       | MLast.PaAnt (_, p) ->
-            not_supported loc "pattern PaAnt"
-       | MLast.PaVrn _ ->
-            not_supported loc "patterm PaVrn"
-       | MLast.PaOlb _ ->
-            not_supported loc "patterm PaOlb"
-       | MLast.PaLab _ ->
-            not_supported loc "patterm PaLab"
-       | MLast.PaFlo _ ->
-            not_supported loc "patterm PaFlo"
-       | MLast.PaTyp _ ->
-            not_supported loc "patterm PaTyp"
-
-and mk_type t =
-   let loc = loc_of_ctyp t in
-      match t with
-         (<:ctyp< $t1$ . $t2$ >>) ->
-            not_supported loc "type projection"
-       | (<:ctyp< $t1$ as $t2$ >>) ->
-            not_supported loc "type"
-       | (<:ctyp< _ >>) ->
-            not_supported loc "type wildcard"
-       | (<:ctyp< $t1$ $t2$ >>) ->
-            not_supported loc "type application"
-       | (<:ctyp< $t1$ -> $t2$ >>) ->
-            not_supported loc "type function"
-(*
-       | (<:ctyp< # $i$ >>) ->
-*)
-       | MLast.TyCls _ ->
-            not_supported loc "type method"
-       | (<:ctyp< $lid:s$ >>) ->
-            not_supported loc "type var"
-       | (<:ctyp< '$s$ >>) ->
-            not_supported loc "type param"
-       | (<:ctyp< $t1$ == $t2$ >>) ->
-            not_supported loc "type equality"
-(*
-       | (<:ctyp< < $list:stl$ $dd:b$ > >>) ->
-*)
-       | MLast.TyObj (loc, _, _) ->
-            not_supported loc "type class"
-       | (<:ctyp< { $list:sbtl$ } >>) ->
-            not_supported loc "type record"
-       | (<:ctyp< [ $list:stll$ ] >>) ->
-            not_supported loc "type list"
-       | (<:ctyp< ( $list:tl$ ) >>) ->
-            not_supported loc "type product"
-       | (<:ctyp< $uid:s$ >>) ->
-            not_supported loc "type constructor var"
-       | MLast.TyPol (_, _, _) ->
-            not_supported loc "type constructor Pol"
-       | MLast.TyVrn _ ->
-            not_supported loc "type constructor Vrn"
-       | MLast.TyOlb _ ->
-            not_supported loc "type constructor Olb"
-       | MLast.TyLab _ ->
-            not_supported loc "type constructor Lab"
-
-and mk_sig_item si =
-   let loc = loc_of_sig_item si in
-      match si with
-(*
-         (<:sig_item< class $list:ctl$ >>) ->
-*)
-         MLast.SgCls _
-       | MLast.SgClt _ ->
-            not_supported loc "sig class"
-       | (<:sig_item< declare $list:sil$ end >>) ->
-            mk_sig_item (Lm_list_util.last sil)
-       | (<:sig_item< exception $s$ of $list:tl$ >>) ->
-            not_supported loc "sig exception"
-       | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
-            not_supported loc "sig external"
-       | SgInc (_, mt) ->
-            not_supported loc "sig SgInc"
-       | (<:sig_item< module $s$ : $mt$ >>) ->
-            not_supported loc "sig module"
-       | (<:sig_item< module type $s$ = $mt$ >>) ->
-            not_supported loc "sig module type"
-       | (<:sig_item< open $sl$ >>) ->
-            not_supported loc "sig open"
-       | (<:sig_item< type $list:tdl$ >>) ->
-            not_supported loc "sig type"
-       | (<:sig_item< value $s$ : $t$ >>) ->
-            not_supported loc "sig value"
-       | MLast.SgDir _ ->
-            not_supported loc "sig dir"
-
-and mk_str_item si =
-   let loc = loc_of_str_item si in
-      match si with
-         MLast.StCls _
-       | MLast.StClt _ ->
-            not_supported loc "str class"
-       | (<:str_item< declare $list:stl$ end >>) ->
-            mk_str_item (Lm_list_util.last stl)
-       | (<:str_item< exception $s$ of $list:tl$ >>) ->
-            not_supported loc "str exception"
-       | (<:str_item< $exp:e$ >>) ->
-            mk_expr e
-       | (<:str_item< external $s$ : $t$ = $list:sl$ >>) ->
-            not_supported loc "str external"
-       | (<:str_item< module $s$ = $me$ >>) ->
-            not_supported loc "str module"
-       | (<:str_item< module type $s$ = $mt$ >>) ->
-            not_supported loc "str module type"
-       | (<:str_item< open $sl$ >>) ->
-            not_supported loc "str module open"
-       | (<:str_item< type $list:tdl$ >>) ->
-            not_supported loc "str type"
-       | (<:str_item< value $rec:b$ $list:pel$ >>) ->
-            not_supported loc "str let"
-       | MLast.StDir _ ->
-            not_supported loc "str dir"
-       | MLast.StInc _ ->
-            not_supported loc "str include"
-       | MLast.StExc _ ->
-            not_supported loc "StExc"
-
-and mk_module_type mt =
-   let loc = loc_of_module_type mt in
-      match mt with
-         (<:module_type< $mt1$ . $mt2$ >>) ->
-            not_supported loc "module type projection"
-       | (<:module_type< $mt1$ $mt2$ >>) ->
-            not_supported loc "module type application"
-       | (<:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >>) ->
-            not_supported loc "module type functor"
-       | (<:module_type< $lid:_$ >>)
-       | (<:module_type< ' $_$ >>)
-       | (<:module_type< $uid:_$ >>) ->
-            not_supported loc "module type var"
-       | (<:module_type< sig $list:sil$ end >>) ->
-            not_supported loc "module type sig"
-       | (<:module_type< $mt$ with $list:wcl$ >>) ->
-            not_supported loc "module type constraint"
-
-and mk_wc = function
-   WcTyp (loc, sl1, sl2, t) ->
-      not_supported loc "with clause type"
- | WcMod (loc, sl1, mt) ->
-      not_supported loc "with clause module"
-
-and mk_module_expr me =
-   let loc = loc_of_module_expr me in
-      match me with
-         (<:module_expr< $me1$ . $me2$ >>) ->
-            not_supported loc "module top_expr projection"
-       | (<:module_expr< $me1$ $me2$ >>) ->
-            not_supported loc "module top_expr application"
-       | (<:module_expr< functor ( $s$ : $mt$ ) -> $me$ >>) ->
-            not_supported loc "module top_expr functor"
-       | (<:module_expr< struct $list:sil$ end >>) ->
-            not_supported loc "module top_expr struct"
-       | (<:module_expr< ( $me$ : $mt$) >>) ->
-            not_supported loc "module top_expr type"
-       | (<:module_expr< $uid:i$ >>) ->
-            not_supported loc "module top_expr id"
 
 (************************************************************************
  * TYPE CHECKING                                                        *
@@ -642,6 +440,37 @@ and eval_expr base = function
       eval_var_expr base v
  | _, expr ->
       expr
+
+let rec mk_str_item si =
+   let loc = loc_of_str_item si in
+      match si with
+         StCls _
+       | StClt _ ->
+            not_supported loc "str class"
+       | (<:str_item< declare $list:stl$ end >>) ->
+            mk_str_item (Lm_list_util.last stl)
+       | (<:str_item< exception $s$ of $list:tl$ >>) ->
+            not_supported loc "str exception"
+       | (<:str_item< $exp:e$ >>) ->
+            mk_expr e
+       | (<:str_item< external $s$ : $t$ = $list:sl$ >>) ->
+            not_supported loc "str external"
+       | (<:str_item< module $_$ = $_$ >>) ->
+            not_supported loc "str module"
+       | (<:str_item< module type $s$ = $mt$ >>) ->
+            not_supported loc "str module type"
+       | (<:str_item< open $sl$ >>) ->
+            not_supported loc "str module open"
+       | (<:str_item< type $list:tdl$ >>) ->
+            not_supported loc "str type"
+       | (<:str_item< value $rec:b$ $list:pel$ >>) ->
+            not_supported loc "str let"
+       | StDir _ ->
+            not_supported loc "str dir"
+       | StInc _ ->
+            not_supported loc "str include"
+       | StExc _ ->
+            not_supported loc "StExc"
 
 (************************************************************************
  * RESOURCES                                                            *

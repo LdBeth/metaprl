@@ -104,7 +104,7 @@ let build_printed_term loc t =
     | ML_Let (v, expr, body) ->
          let binding_expr = [<:patt< $lid:v$ >>, build expr] in
          let body_expr = build body in
-            <:expr< let $rec:false$ $list:binding_expr$ in $body_expr$ >>
+            <:expr< let $list:binding_expr$ in $body_expr$ >>
    in
       build t
 

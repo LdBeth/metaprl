@@ -704,43 +704,15 @@ let stdin_stream state =
  * Replace the buffer filler so that we record all the input.
  *)
 let rec wrap state f lb =
-   let { refill_buff = refill;
-         lex_buffer = buffer;
-         lex_buffer_len = len;
-         lex_abs_pos = abs_pos;
-         lex_start_pos = start_pos;
-         lex_curr_pos = curr_pos;
-         lex_last_pos = last_pos;
-         lex_last_action = last_action;
-         lex_eof_reached = eof_reached
-       } = lb
-   in
+   let refill = lb.refill_buff in
    let refill' lb =
       lb.lex_buffer <- String.copy lb.lex_buffer;
       unsynchronize state refill lb;
-      let { lex_buffer = buffer;
-            lex_buffer_len = len;
-            lex_abs_pos = abs_pos;
-            lex_start_pos = start_pos;
-            lex_curr_pos = curr_pos
-          } = lb
-      in
-         push_buffer state abs_pos len buffer;
+         push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer;
    in
-   let lb =
-      { refill_buff = refill';
-        lex_buffer = buffer;
-        lex_buffer_len = len;
-        lex_abs_pos = abs_pos;
-        lex_start_pos = start_pos;
-        lex_curr_pos = curr_pos;
-        lex_last_pos = last_pos;
-        lex_last_action = last_action;
-        lex_eof_reached = eof_reached
-      }
-   in
+   let lb = { lb with refill_buff = refill' } in
       reset_input state;
-      push_buffer state abs_pos len buffer;
+      push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer;
       let x = f lb in
          reset_input state;
          x
