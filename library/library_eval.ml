@@ -97,4 +97,16 @@ let library_open_and_loop_eval name rhook =
 
 
 
+open List
+
+let faux_refine g t =
+
+    print_newline();
+    Mbterm.print_term g;
+    print_newline();
+    [g; g]
+;;
+
+
+
 
