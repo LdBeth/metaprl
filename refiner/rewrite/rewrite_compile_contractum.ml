@@ -56,6 +56,8 @@ open Rewrite_debug_sig
 let _ =
    show_loading "Loading Rewrite_compile_contractum%t"
 
+let debug_rewrite = load_debug "rewrite"
+
 module MakeRewriteCompileContractum
    (TermType : TermSig)
    (Term : TermBaseSig
@@ -175,11 +177,9 @@ struct
                (* This is a second order variable that is free *)
                REF_RAISE(
                   RefineError ("Rewrite_compile_contractum.compile_so_contractum_term",
-                  (*
-                     if array_rstack_mem v stack then
+                     if (!debug_rewrite) && (array_rstack_mem v stack) then
                         StringStringError("SO Var has stack item " ^ rstack_item_str stack.(array_rstack_index v stack) ^ " and bvars are [" ^ (String_util.concat "; " bvars) ^ "]", v)
                      else
-                   *)
                         RewriteFreeSOVar v
                   )
                )

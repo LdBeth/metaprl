@@ -586,8 +586,11 @@ struct
     * Add the command and return the declaration.
     *)
    let declare_rewrite proc loc name params args pf res =
-      let cmd = rewrite_command proc name params args pf res in
-         FilterCache.add_command proc.cache (cmd, loc)
+      try
+         let cmd = rewrite_command proc name params args pf res in
+            FilterCache.add_command proc.cache (cmd, loc)
+      with exn ->
+         Stdpp.raise_with_loc loc exn
 
    (*
     * Declare a term, and define a rewrite in one step.
@@ -669,8 +672,12 @@ struct
             cond_axiom proc name params t pf res
 
    let declare_axiom proc loc name args t pf res =
-      let cmd = axiom_command proc name args t pf res in
-         FilterCache.add_command proc.cache (cmd, loc)
+      try
+         let cmd = axiom_command proc name args t pf res in
+            FilterCache.add_command proc.cache (cmd, loc)
+      with exn ->
+         Stdpp.raise_with_loc loc exn
+
 
    (*
     * Infix directive.
@@ -997,8 +1004,11 @@ let define_rule proc loc name
     (mterm : meta_term)
     (extract : Convert.cooked proof_type)
     (res : MLast.expr resource_def) =
-   let cmd = StrFilter.axiom_command proc name params mterm extract res in
+   try
+      let cmd = StrFilter.axiom_command proc name params mterm extract res in
       StrFilter.add_command proc (cmd, loc)
+   with exn ->
+      Stdpp.raise_with_loc loc exn
 
 let define_prim proc loc name params mterm extract =
    define_rule proc loc name params mterm (Primitive extract)

@@ -2074,13 +2074,17 @@ struct
          in
             aux 0
       in
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.compute_rule_ext: %s: %a + params -> %a%t" name print_term (create_redex vars args) print_term result eflush
+      ENDIF;
       let rw = Rewrite.term_rewrite Strict ar0_ar0 (create_redex vars args :: params) [result] in
       let compute_ext vars params args =
          match apply_rewrite rw ar0_ar0_null (create_redex vars args) params with
             [c], x when Array.length x = 0 ->
                c
           | _ ->
-               raise (Failure "Refine.add_prim_theorem.compute_ext: faulty extract")
+               raise (Invalid_argument "Refine.add_prim_theorem.compute_ext: faulty extract")
       in
          compute_ext
 
