@@ -41,7 +41,7 @@ and loc = int * int
 
 exception Parse_error of string * loc
 
-val parse : string -> t
+val parse : bool -> string -> t
 
 (*
  * -*-

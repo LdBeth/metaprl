@@ -346,7 +346,7 @@ struct
    let remove_redundant_hypbindings hyps goals =
       fst (remove_redundant_hbs (free_vars_terms goals) hyps)
 
-   let fake_var = "bh"
+   let fake_var = "_@bh@_"
 
    let rec mk_sequent_inner_term hyps goals vars i len =
       if i = len then
@@ -484,11 +484,20 @@ struct
                   collect args (Context (name, args') :: hyps) concls term
             else if Opname.eq opname concl_opname then
                if bterms = [] then
-                  let goals = List.rev concls in
-                  let hyps = remove_redundant_hypbindings (List.rev hyps) goals in
-                  { sequent_args = args;
-                    sequent_hyps =  SeqHyp.of_list hyps;
-                    sequent_goals = SeqGoal.of_list goals
+                  (*
+                   * XXX HACK:
+                   * The code below will remove double-bindings (e.g. same variable bound twice in the
+                   * hypothesis list, but only used after the second binding) and hyp bindings with fake_var
+                   *)
+                  let vars = free_vars_terms concls in
+                  let hyps = List.rev hyps in
+                  let hyps =
+                     if StringSet.mem vars fake_var then hyps
+                     else fst (remove_redundant_hbs (StringSet.remove (hyp_vars vars hyps) fake_var) hyps)
+                  in {
+                     sequent_args = args;
+                     sequent_hyps = SeqHyp.of_list hyps;
+                     sequent_goals = SeqGoal.of_list (List.rev concls);
                   }
                else
                   let goal, term = match_concl_all explode_sequent_name t bterms in

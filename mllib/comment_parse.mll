@@ -192,6 +192,14 @@ type terminator =
  | TermMath of bool
  | TermEnd of string list
 
+let string_of_term = function
+   TermEof -> "EOF"
+ | TermBrace -> "{}"
+ | TermSemi -> ";"
+ | TermMath false -> "$"
+ | TermMath true -> "$$"
+ | TermEnd l -> "end(" ^ (String.concat "," l) ^ ")"
+
 (*
  * State for parsing quotations.
  *)
@@ -487,7 +495,7 @@ let rec parse_block term mode items buf =
  *)
 and finish_block term term' items buf =
    if not (List.mem term' term) then
-      parse_error "terminator mismatch" buf;
+      parse_error ("terminator mismatch (" ^ (string_of_term term') ^ ")") buf;
    term', List.rev items
 
 (*
@@ -808,10 +816,10 @@ and parse_inner_args mode items buf =
 (*
  * Main function.
  *)
-let parse s =
+let parse math s =
    let lexbuf = Lexing.from_string s in
    let buf = { lexbuf = lexbuf; tokens = [] } in
-   let _, items = parse_block [TermEof] ModeNormal [] buf in
+   let _, items = parse_block [TermEof] (if math then ModeMath else ModeNormal) [] buf in
       items
 }
 

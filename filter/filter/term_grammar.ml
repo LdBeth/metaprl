@@ -401,11 +401,13 @@ struct
             Stdpp.raise_with_loc (offset+l1, offset+l2) exn
       end
     | "doc", s ->
-         parse_comment loc s
+         parse_comment loc true s
+    | "topdoc", s ->
+         parse_comment loc false s
     | nm, _ ->
          Stdpp.raise_with_loc loc (Invalid_argument ("Camlp4 term grammar: unknown " ^ nm ^ " quotation"))
    
-   and parse_comment (loc, _) s =
+   and parse_comment (loc, _) math s =
       if !debug_spell && not(!dict_inited) then begin
          Filter_spell.init ();
          dict_inited:=true
@@ -462,7 +464,7 @@ struct
          mk_xlist_term (List.map (build_comment_term spelling) tl)
       in
       let items =
-         try Comment_parse.parse s with
+         try Comment_parse.parse math s with
             Comment_parse.Parse_error (s, (l1, l2)) ->
                Stdpp.raise_with_loc (loc + l1, loc + l2) (ParseError s)
       in
@@ -476,7 +478,7 @@ struct
 
    let convert_comment loc t =
       if is_string_term comment_string_op t then
-         parse_comment loc (dest_string_term comment_string_op t)
+         parse_comment loc false (dest_string_term comment_string_op t)
       else t
    
    (************************************************************************
@@ -609,8 +611,9 @@ struct
              x
            | x = noncommaterm; sl_comma; y = noncommaterm ->
              { aname = None; aterm = mk_pair_term loc x.aterm y.aterm }
-          ]
-         ];
+          ]|[ x = QUOTATION ->
+             { aname = None; aterm = parse_quotation loc "term" (dest_quot x)}
+         ]];
 
       noncommaterm:
          [
@@ -1111,8 +1114,6 @@ struct
       hyp:
          [[ "<"; name = word_or_string; args=optseqargs; ">" ->
              Context(name,args)
-             (* XXX HACK!!! OPT sl_period is here to have a way to tell camlp4 that opname *
-              * is not a hyp variabe and it should not expect a : after it                 *)
           | v = word_or_string; rest = hyp_suffix ->
               rest(v)
           | t = aterm ->
