@@ -999,9 +999,6 @@ struct
    let map_path f proof path =
       map_path_ext proof proof.pf_node [] [] f path
 
-   let map_root_path f proof =
-      map_path f (root proof) proof.pf_address
-
    (*
     * Fold a function along the path from outermost to innermost.
     *)
@@ -1036,16 +1033,16 @@ struct
     * Fold a function along the path from innermost to outermost,
     * recomputing the proof.
     *)
-   let rec fold_up_proof_ext (proof : proof) (node : extract) (raddr : int list) (arg : extract) (f : proof -> extract -> extract) = function
+   let rec fold_up_proof_ext (proof : proof) (node : extract) (raddr : int list) (arg : extract) = function
       i :: t ->
-         let locked, post, node' = fold_up_proof_ext proof (select_child proof node raddr i) (i :: raddr) arg f t in
-         let locked', post', node = replace_child proof node raddr i (f proof node') in
+         let locked, post, node' = fold_up_proof_ext proof (select_child proof node raddr i) (i :: raddr) arg t in
+         let locked', post', node = replace_child proof node raddr i node' in
             locked || locked', post || post', node
     | [] ->
          false, false, arg
 
-   let fold_up_proof f node proof =
-      fold_up_proof_ext (root proof) proof.pf_root [] node f proof.pf_address
+   let fold_up_proof node proof =
+      fold_up_proof_ext (root proof) proof.pf_root [] node proof.pf_address
 
    let fold_proof postf proof node =
       let _ =
@@ -1055,7 +1052,7 @@ struct
                print_ext root;
                print_ext node
       in
-      let locked_flag, post_flag, root = fold_up_proof (fun _ node -> node) node proof in
+      let locked_flag, post_flag, root = fold_up_proof node proof in
       let proof =
          { pf_root = root;
            pf_address = proof.pf_address;
@@ -1532,23 +1529,10 @@ struct
     * Replace the current proof step.
     *)
    let replace_step_subgoals step subgoals' extras' =
-      let { rule_expr = expr;
-            rule_string = text;
-            rule_tactic = tac;
-            rule_extract_normalized = normal;
-            rule_extract = goal;
-            rule_subgoals = subgoals;
-            rule_extras = extras
-          } = step
-      in
-      let leaves = leaves_ext goal in
-      let subgoals, extras = match_subgoals leaves (subgoals @ subgoals') (extras @ extras') in
-         { rule_status = LazyStatusDelayed;
-           rule_expr = expr;
-           rule_string = text;
-           rule_tactic = tac;
-           rule_extract_normalized = normal;
-           rule_extract = goal;
+      let leaves = leaves_ext step.rule_extract in
+      let subgoals, extras = match_subgoals leaves (step.rule_subgoals @ subgoals') (step.rule_extras @ extras') in
+         { step with
+           rule_status = LazyStatusDelayed;
            rule_subgoals = subgoals;
            rule_leaves = LazyLeavesDelayed;
            rule_extras = extras
@@ -1625,24 +1609,12 @@ struct
                       comp_leaves = leaves;
                       comp_extras = []
             }
-       | RuleBox { rule_status = status;
-                   rule_string = text;
-                   rule_expr = expr;
-                   rule_tactic = tactic;
-                   rule_extract_normalized = normal;
-                   rule_extract = goal;
-                   rule_subgoals = subgoals;
-                   rule_leaves = leaves
-         } ->
-            RuleBox { rule_status = status;
-                      rule_string = text;
-                      rule_expr = expr;
-                      rule_tactic = tactic;
-                      rule_extract_normalized = normal;
-                      rule_extract = clean_extras_ext goal;
-                      rule_subgoals = List.map clean_extras_ext subgoals;
-                      rule_leaves = leaves;
-                      rule_extras = []
+       | RuleBox ri ->
+            RuleBox {
+               ri with
+               rule_extract = clean_extras_ext ri.rule_extract;
+               rule_subgoals = List.map clean_extras_ext ri.rule_subgoals;
+               rule_extras = [];
             }
        | Pending f ->
             clean_extras_ext (f ())
@@ -1733,12 +1705,11 @@ struct
    (*
     * Re-expand all the rule boxes.
     *)
-   let rec expand_ext exn_wrapper node =
-      match node with
+   let rec expand_ext exn_wrapper = function
          Goal _
        | Identity _
        | Unjustified _
-       | Extract _ ->
+       | Extract _ as node ->
             node
        | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
             let goal = expand_ext exn_wrapper goal in
@@ -2166,45 +2137,44 @@ struct
     *)
    let loc = 0, 0
 
-   let rec kreitz_ext proof node =
-      match node with
+   let rec kreitz_ext =
+      let rec concat_text = function
+         [text, _, _, _] ->
+            text
+       | (text, _, _, _) :: subnodes ->
+            text ^ "; " ^ concat_text subnodes
+       | [] ->
+            ""
+      in
+      let rec concat_ast = function
+         (_, e, _, _) :: tl ->
+            (<:expr< $lid:"::"$ $e$ $concat_ast tl$ >>)
+       | [] ->
+            (<:expr< [] >>)
+      in
+      let rec concat_subgoals = function
+         (_, _, _, subgoals) :: tl ->
+            subgoals @ concat_subgoals tl
+       | [] ->
+            []
+      in function
          Goal _
        | Identity _
        | Unjustified _
        | Extract _
        | Wrapped _
-       | Compose _ ->
+       | Compose _ as node ->
             "idT", (<:expr< $lid: "idT"$ >>), TacticInternal.idT, [goal_ext node]
        | Pending f ->
-            kreitz_ext proof (f ())
+            kreitz_ext (f ())
        | Locked ext ->
-            kreitz_ext proof ext
+            kreitz_ext ext
        | RuleBox { rule_expr = expr;
                    rule_string = text;
                    rule_tactic = tac;
                    rule_subgoals = subgoals
          } ->
-            let rec concat_text = function
-               [text, _, _, _] ->
-                  text
-             | (text, _, _, _) :: subnodes ->
-                  text ^ "; " ^ concat_text subnodes
-             | [] ->
-                  ""
-            in
-            let rec concat_ast = function
-               (_, e, _, _) :: tl ->
-                  (<:expr< $lid:"::"$ $e$ $concat_ast tl$ >>)
-             | [] ->
-                  (<:expr< [] >>)
-            in
-            let rec concat_subgoals = function
-               (_, _, _, subgoals) :: tl ->
-                  subgoals @ concat_subgoals tl
-             | [] ->
-                  []
-            in
-            let subnodes = List.map (kreitz_ext proof) subgoals in
+            let subnodes = List.map kreitz_ext subgoals in
             let text = sprintf "%s thenLT [%s]" text (concat_text subnodes) in
             let expr = (<:expr< $lid: "prefix_thenLT"$ $expr ()$ $concat_ast subnodes$ >>) in
             let tac = prefix_thenLT (tac ()) (List.map (fun (_, _, tac, _) -> tac) subnodes) in
@@ -2212,7 +2182,7 @@ struct
                text, expr, tac, subgoals
 
    let kreitz postf proof =
-      let text, expr, tac, subgoals = kreitz_ext proof.pf_node proof.pf_node in
+      let text, expr, tac, subgoals = kreitz_ext proof.pf_node in
       let info =
          { rule_status = LazyStatusDelayed;
            rule_expr = (fun () -> expr);
