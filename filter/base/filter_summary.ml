@@ -1389,7 +1389,9 @@ struct
                                axiom_proof = pf;
                                axiom_resources = res
        } =
-      mk_string_param_term axiom_op name [convert.term_f t; convert.proof_f name pf]
+      mk_string_param_term axiom_op name [convert.term_f t;
+                                          convert.proof_f name pf;
+                                          term_of_resources convert res]
 
    and term_of_rule convert { rule_name = name;
                               rule_params = params;

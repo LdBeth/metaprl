@@ -171,6 +171,9 @@ PARSER & FILTER
 5.5) Toploop_resource seems to be added into .p4 file even if
    base_theory is not included.
 
+5.6) (2000.05.30) Resource annotations on axioms (rules that have neither parameters nor
+assumptions) are currently silently ignored.
+
 RULES & REWRITES
 
 6.1) reduceEta is too strong
