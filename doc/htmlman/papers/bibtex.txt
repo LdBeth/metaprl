@@ -42,19 +42,33 @@
    note     = ""
 }
 
+@InProceedings{HNC+03,
+   author = {Jason Hickey and Aleksey Nogin and Robert L.  Constable and Brian E. Aydemir and Eli Barzilay and Yegor Bryukhov and Richard Eaton and Adam Granicz and Alexei Kopylov and Christoph Kreitz and Vladimir N.  Krupski and Lori Lorigo and Stephan Schmitt and Carl Witty and Xin Yu},
+   title = {{\MetaPRL} --- {A} Modular Logical Environment},
+   pages = {287--303},
+   crossref = {tphols2003}
+}
+
+@inproceedings{HNGA03,
+   author = {Jason Hickey and Aleksey Nogin and Adam Granicz and Brian Aydemir},
+   title = {Compiler implementation in a formal logical framework},
+   booktitle = {Proceedings of the 2003 workshop on {M}echanized reasoning about languages with variable binding},
+   year = 2003,
+   isbn = {1-58113-800-8/03/0008},
+   pages = {1--13},
+   location = {Uppsala, Sweden},
+   doi = {http://doi.acm.org/10.1145/976571.976575},
+   note = {\url{http://doi.acm.org/10.1145/976571.976575}},
+   url = {http://doi.acm.org/10.1145/976571.976575},
+   publisher = {ACM Press},
+}
+
 @inproceedings{NH02,
    author   = "Aleksey Nogin and Jason Hickey",
    title    = "Sequent Schema for Derived Rules",
    pages    = "281--297",
    crossref = "tphols2002",
    note     = "See also \url{http://nogin.org/papers/derived_rules.html}"
-}
-
-@InProceedings{HNC+03,
-   author = {Jason Hickey and Aleksey Nogin and Robert L.  Constable and Brian E. Aydemir and Eli Barzilay and Yegor Bryukhov and Richard Eaton and Adam Granicz and Alexei Kopylov and Christoph Kreitz and Vladimir N.  Krupski and Lori Lorigo and Stephan Schmitt and Carl Witty and Xin Yu},
-   title = {{\MetaPRL} --- {A} Modular Logical Environment},
-   pages = {287--303},
-   crossref = {tphols2003}
 }
 
 @Techreport{Nog02a,
