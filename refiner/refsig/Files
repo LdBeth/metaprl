@@ -12,4 +12,7 @@ REFSIG_FILES :=\
 	term_meta_sig\
 	rewrite_sig\
 	refine_sig\
-	refiner_sig
+	refiner_sig\
+	tm_base_sig\
+	tm_man_sig\
+	termmod_sig

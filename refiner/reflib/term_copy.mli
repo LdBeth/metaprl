@@ -30,24 +30,24 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * Author: Jason Hickey
- * Modified by: Eli Barzilay
+ * Modified by: Eli Barzilay, Alexey Nogin
  *)
 
-open Refiner_sig
+open Termmod_sig
 open Memo
 
-module MakeTermCopy (FromRefiner : RefinerSig) (ToRefiner : RefinerSig) :
+module MakeTermCopy (FromTerm : TermModuleSig) (ToTerm : TermModuleSig) :
 sig
    type t
 
    (* These save the state to get sharing for multiple calls *)
    val create : unit -> t
-   val copy_term : t -> FromRefiner.TermType.term -> ToRefiner.TermType.term
-   val copy_meta_term : t -> FromRefiner.TermType.meta_term -> ToRefiner.TermType.meta_term
+   val copy_term : t -> FromTerm.TermType.term -> ToTerm.TermType.term
+   val copy_meta_term : t -> FromTerm.TermType.meta_term -> ToTerm.TermType.meta_term
 
    (* Single use versions *)
-   val copy_term_single : FromRefiner.TermType.term -> ToRefiner.TermType.term
-   val copy_meta_term_single : FromRefiner.TermType.meta_term -> ToRefiner.TermType.meta_term
+   val copy_term_single : FromTerm.TermType.term -> ToTerm.TermType.term
+   val copy_meta_term_single : FromTerm.TermType.meta_term -> ToTerm.TermType.meta_term
 end
 
 (*

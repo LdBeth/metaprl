@@ -30,7 +30,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * Author: Jason Hickey
- * Modified by: Eli Barzilay
+ * Modified by: Eli Barzilay, Alexey Nogin
  *)
 
 open Nl_debug
@@ -38,7 +38,7 @@ open Printf
 
 open Opname
 
-open Refiner_sig
+open Termmod_sig
 open Memo
 
 let debug_memo =
@@ -48,40 +48,40 @@ let debug_memo =
         debug_value = false
       }
 
-module MakeTermCopy (FromRefiner : RefinerSig) (ToRefiner : RefinerSig)
+module MakeTermCopy (FromTerm : TermModuleSig) (ToTerm : TermModuleSig)
 =
 struct
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
 
-   type to_term = TTerm of ToRefiner.TermType.term' | TSeq of ToRefiner.TermType.esequent
+   type to_term = TTerm of ToTerm.TermType.term' | TSeq of ToTerm.TermType.esequent
 
    type t =
       { copy_level_var : (t,
-                          FromRefiner.TermType.level_exp_var,
-                          ToRefiner.TermType.level_exp_var',
-                          ToRefiner.TermType.level_exp_var) Memo.t;
+                          FromTerm.TermType.level_exp_var,
+                          ToTerm.TermType.level_exp_var',
+                          ToTerm.TermType.level_exp_var) Memo.t;
         copy_level     : (t,
-                          FromRefiner.TermType.level_exp,
-                          ToRefiner.TermType.level_exp',
-                          ToRefiner.TermType.level_exp) Memo.t;
+                          FromTerm.TermType.level_exp,
+                          ToTerm.TermType.level_exp',
+                          ToTerm.TermType.level_exp) Memo.t;
         copy_param     : (t,
-                          FromRefiner.TermType.param,
-                          ToRefiner.TermType.param',
-                          ToRefiner.TermType.param) Memo.t;
+                          FromTerm.TermType.param,
+                          ToTerm.TermType.param',
+                          ToTerm.TermType.param) Memo.t;
         copy_operator  : (t,
-                          FromRefiner.TermType.operator,
-                          ToRefiner.TermType.operator',
-                          ToRefiner.TermType.operator) Memo.t;
+                          FromTerm.TermType.operator,
+                          ToTerm.TermType.operator',
+                          ToTerm.TermType.operator) Memo.t;
         copy_term      : (t,
-                          FromRefiner.TermType.term,
+                          FromTerm.TermType.term,
                           to_term,
-                          ToRefiner.TermType.term) Memo.t;
+                          ToTerm.TermType.term) Memo.t;
         copy_bterm     : (t,
-                          FromRefiner.TermType.bound_term,
-                          ToRefiner.TermType.bound_term',
-                          ToRefiner.TermType.bound_term) Memo.t
+                          FromTerm.TermType.bound_term,
+                          ToTerm.TermType.bound_term',
+                          ToTerm.TermType.bound_term) Memo.t
       }
 
    (************************************************************************
@@ -96,169 +96,169 @@ struct
    (*
     * Comparison functions.
     *)
-   let compare_level_var { ToRefiner.TermType.le_var = v1; ToRefiner.TermType.le_offset = offset1 }
-                         { ToRefiner.TermType.le_var = v2; ToRefiner.TermType.le_offset = offset2 } =
+   let compare_level_var { ToTerm.TermType.le_var = v1; ToTerm.TermType.le_offset = offset1 }
+                         { ToTerm.TermType.le_var = v2; ToTerm.TermType.le_offset = offset2 } =
       v1 == v2 & offset1 == offset2
 
-   let compare_level { ToRefiner.TermType.le_const = const1; ToRefiner.TermType.le_vars = vars1 }
-                     { ToRefiner.TermType.le_const = const2; ToRefiner.TermType.le_vars = vars2 } =
+   let compare_level { ToTerm.TermType.le_const = const1; ToTerm.TermType.le_vars = vars1 }
+                     { ToTerm.TermType.le_const = const2; ToTerm.TermType.le_vars = vars2 } =
       const1 = const2 & list_mem_eq vars1 vars2
 
    let compare_param param1 param2 =
       match param1, param2 with
-         ToRefiner.TermType.Number    n1,         ToRefiner.TermType.Number    n2         -> Nl_num.eq_num n1 n2
-       | ToRefiner.TermType.String    s1,         ToRefiner.TermType.String    s2         -> s1 = s2
-       | ToRefiner.TermType.Token     s1,         ToRefiner.TermType.Token     s2         -> s1 = s2
-       | ToRefiner.TermType.Level     l1,         ToRefiner.TermType.Level     l2         -> l1 == l2
-       | ToRefiner.TermType.Var       v1,         ToRefiner.TermType.Var       v2         -> v1 = v2
-       | ToRefiner.TermType.MNumber   s1,         ToRefiner.TermType.MNumber   s2         -> s1 = s2
-       | ToRefiner.TermType.MString   s1,         ToRefiner.TermType.MString   s2         -> s1 = s2
-       | ToRefiner.TermType.MToken    s1,         ToRefiner.TermType.MToken    s2         -> s1 = s2
-       | ToRefiner.TermType.MLevel    s1,         ToRefiner.TermType.MLevel    s2         -> s1 = s2
-       | ToRefiner.TermType.MVar      s1,         ToRefiner.TermType.MVar      s2         -> s1 = s2
-       | ToRefiner.TermType.ObId      oid1,       ToRefiner.TermType.ObId      oid2       -> list_mem_eq oid1 oid2
-       | ToRefiner.TermType.ParamList params1,    ToRefiner.TermType.ParamList params2    -> list_mem_eq params1 params2
-       | ToRefiner.TermType.MSum      (p11, p12), ToRefiner.TermType.MSum      (p21, p22) -> p11 == p12 & p21 == p22
-       | ToRefiner.TermType.MDiff     (p11, p12), ToRefiner.TermType.MDiff     (p21, p22) -> p11 == p12 & p21 == p22
-       | ToRefiner.TermType.MProduct  (p11, p12), ToRefiner.TermType.MProduct  (p21, p22) -> p11 == p12 & p21 == p22
-       | ToRefiner.TermType.MQuotient (p11, p12), ToRefiner.TermType.MQuotient (p21, p22) -> p11 == p12 & p21 == p22
-       | ToRefiner.TermType.MRem      (p11, p12), ToRefiner.TermType.MRem      (p21, p22) -> p11 == p12 & p21 == p22
-       | ToRefiner.TermType.MLessThan (p11, p12), ToRefiner.TermType.MLessThan (p21, p22) -> p11 == p12 & p21 == p22
-       | ToRefiner.TermType.MEqual    (p11, p12), ToRefiner.TermType.MEqual    (p21, p22) -> p11 == p12 & p21 == p22
-       | ToRefiner.TermType.MNotEqual (p11, p12), ToRefiner.TermType.MNotEqual (p21, p22) -> p11 == p12 & p21 == p22
+         ToTerm.TermType.Number    n1,         ToTerm.TermType.Number    n2         -> Nl_num.eq_num n1 n2
+       | ToTerm.TermType.String    s1,         ToTerm.TermType.String    s2         -> s1 = s2
+       | ToTerm.TermType.Token     s1,         ToTerm.TermType.Token     s2         -> s1 = s2
+       | ToTerm.TermType.Level     l1,         ToTerm.TermType.Level     l2         -> l1 == l2
+       | ToTerm.TermType.Var       v1,         ToTerm.TermType.Var       v2         -> v1 = v2
+       | ToTerm.TermType.MNumber   s1,         ToTerm.TermType.MNumber   s2         -> s1 = s2
+       | ToTerm.TermType.MString   s1,         ToTerm.TermType.MString   s2         -> s1 = s2
+       | ToTerm.TermType.MToken    s1,         ToTerm.TermType.MToken    s2         -> s1 = s2
+       | ToTerm.TermType.MLevel    s1,         ToTerm.TermType.MLevel    s2         -> s1 = s2
+       | ToTerm.TermType.MVar      s1,         ToTerm.TermType.MVar      s2         -> s1 = s2
+       | ToTerm.TermType.ObId      oid1,       ToTerm.TermType.ObId      oid2       -> list_mem_eq oid1 oid2
+       | ToTerm.TermType.ParamList params1,    ToTerm.TermType.ParamList params2    -> list_mem_eq params1 params2
+       | ToTerm.TermType.MSum      (p11, p12), ToTerm.TermType.MSum      (p21, p22) -> p11 == p12 & p21 == p22
+       | ToTerm.TermType.MDiff     (p11, p12), ToTerm.TermType.MDiff     (p21, p22) -> p11 == p12 & p21 == p22
+       | ToTerm.TermType.MProduct  (p11, p12), ToTerm.TermType.MProduct  (p21, p22) -> p11 == p12 & p21 == p22
+       | ToTerm.TermType.MQuotient (p11, p12), ToTerm.TermType.MQuotient (p21, p22) -> p11 == p12 & p21 == p22
+       | ToTerm.TermType.MRem      (p11, p12), ToTerm.TermType.MRem      (p21, p22) -> p11 == p12 & p21 == p22
+       | ToTerm.TermType.MLessThan (p11, p12), ToTerm.TermType.MLessThan (p21, p22) -> p11 == p12 & p21 == p22
+       | ToTerm.TermType.MEqual    (p11, p12), ToTerm.TermType.MEqual    (p21, p22) -> p11 == p12 & p21 == p22
+       | ToTerm.TermType.MNotEqual (p11, p12), ToTerm.TermType.MNotEqual (p21, p22) -> p11 == p12 & p21 == p22
        | _ -> false
 
-   let compare_operator { ToRefiner.TermType.op_name = opname1; ToRefiner.TermType.op_params = params1 }
-                        { ToRefiner.TermType.op_name = opname2; ToRefiner.TermType.op_params = params2 } =
+   let compare_operator { ToTerm.TermType.op_name = opname1; ToTerm.TermType.op_params = params1 }
+                        { ToTerm.TermType.op_name = opname2; ToTerm.TermType.op_params = params2 } =
       opname1 == opname2 & list_mem_eq params1 params2
 
-   let compare_term { ToRefiner.TermType.term_op = op1; ToRefiner.TermType.term_terms = bterms1 }
-                    { ToRefiner.TermType.term_op = op2; ToRefiner.TermType.term_terms = bterms2 } =
+   let compare_term { ToTerm.TermType.term_op = op1; ToTerm.TermType.term_terms = bterms1 }
+                    { ToTerm.TermType.term_op = op2; ToTerm.TermType.term_terms = bterms2 } =
       op1 == op2 & list_mem_eq bterms1 bterms2
 
    let rec compare_hyps hyp1 hyp2 i =
       (i < 0) ||
-      ((match (ToRefiner.Term.SeqHyp.get hyp1 i), (ToRefiner.Term.SeqHyp.get hyp2 i) with
-           ToRefiner.TermType.Hypothesis (v1,t1),  ToRefiner.TermType.Hypothesis (v2,t2)   -> v1 = v2 && t1 == t2
-         | ToRefiner.TermType.Context    (v1,ts1), ToRefiner.TermType.Context    (v2, ts2) -> v1 = v2 && list_mem_eq ts1 ts2
+      ((match (ToTerm.Term.SeqHyp.get hyp1 i), (ToTerm.Term.SeqHyp.get hyp2 i) with
+           ToTerm.TermType.Hypothesis (v1,t1),  ToTerm.TermType.Hypothesis (v2,t2)   -> v1 = v2 && t1 == t2
+         | ToTerm.TermType.Context    (v1,ts1), ToTerm.TermType.Context    (v2, ts2) -> v1 = v2 && list_mem_eq ts1 ts2
          | _ -> false) &&
        (compare_hyps hyp1 hyp2 (pred i)))
 
    let rec compare_goals goal1 goal2 i =
       (i<0) ||
-      (((ToRefiner.Term.SeqGoal.get goal1 i) == (ToRefiner.Term.SeqGoal.get goal2 i)) &&
+      (((ToTerm.Term.SeqGoal.get goal1 i) == (ToTerm.Term.SeqGoal.get goal2 i)) &&
        (compare_goals goal1 goal2 (pred i)))
 
    let compare_tterm t1 t2 =
       match (t1,t2) with
          TTerm t1, TTerm t2 ->
             compare_term t1 t2
-       | TSeq { ToRefiner.TermType.sequent_args = arg1; ToRefiner.TermType.sequent_hyps = hyp1; ToRefiner.TermType.sequent_goals = goal1},
-         TSeq { ToRefiner.TermType.sequent_args = arg2; ToRefiner.TermType.sequent_hyps = hyp2; ToRefiner.TermType.sequent_goals = goal2} ->
+       | TSeq { ToTerm.TermType.sequent_args = arg1; ToTerm.TermType.sequent_hyps = hyp1; ToTerm.TermType.sequent_goals = goal1},
+         TSeq { ToTerm.TermType.sequent_args = arg2; ToTerm.TermType.sequent_hyps = hyp2; ToTerm.TermType.sequent_goals = goal2} ->
             (arg1 == arg2) &&
-            (ToRefiner.Term.SeqHyp.length hyp1 = ToRefiner.Term.SeqHyp.length hyp2) &&
-            (compare_hyps hyp1 hyp2 (ToRefiner.Term.SeqHyp.length hyp1 - 1)) &&
-            (ToRefiner.Term.SeqGoal.length goal1 = ToRefiner.Term.SeqGoal.length goal2) &&
-            (compare_goals goal1 goal2 (ToRefiner.Term.SeqGoal.length goal1 - 1))
+            (ToTerm.Term.SeqHyp.length hyp1 = ToTerm.Term.SeqHyp.length hyp2) &&
+            (compare_hyps hyp1 hyp2 (ToTerm.Term.SeqHyp.length hyp1 - 1)) &&
+            (ToTerm.Term.SeqGoal.length goal1 = ToTerm.Term.SeqGoal.length goal2) &&
+            (compare_goals goal1 goal2 (ToTerm.Term.SeqGoal.length goal1 - 1))
        | _ -> false
 
-   let compare_bterm { ToRefiner.TermType.bvars = bvars1; ToRefiner.TermType.bterm = bterm1 }
-       { ToRefiner.TermType.bvars = bvars2; ToRefiner.TermType.bterm = bterm2 } =
+   let compare_bterm { ToTerm.TermType.bvars = bvars1; ToTerm.TermType.bterm = bterm1 }
+       { ToTerm.TermType.bvars = bvars2; ToTerm.TermType.bterm = bterm2 } =
       bvars1 = bvars2 & bterm1 == bterm2
 
    (*
     * Copy functions.
     *)
    let make_hyp info hyps i =
-      match FromRefiner.Term.SeqHyp.get hyps i with
-         FromRefiner.TermType.Hypothesis (v, t) -> ToRefiner.TermType.Hypothesis (v, Memo.apply info.copy_term info t)
-       | FromRefiner.TermType.Context (v, trms) -> ToRefiner.TermType.Context (v, List.map (Memo.apply info.copy_term info) trms)
+      match FromTerm.Term.SeqHyp.get hyps i with
+         FromTerm.TermType.Hypothesis (v, t) -> ToTerm.TermType.Hypothesis (v, Memo.apply info.copy_term info t)
+       | FromTerm.TermType.Context (v, trms) -> ToTerm.TermType.Context (v, List.map (Memo.apply info.copy_term info) trms)
 
    let make_goal info goals i =
-      Memo.apply info.copy_term info (FromRefiner.Term.SeqGoal.get goals i)
+      Memo.apply info.copy_term info (FromTerm.Term.SeqGoal.get goals i)
 
    let make_term info t =
-      if FromRefiner.TermMan.is_sequent_term t then
-         let { FromRefiner.TermType.sequent_args = args;
-               FromRefiner.TermType.sequent_hyps = hyps;
-               FromRefiner.TermType.sequent_goals = goals } = (FromRefiner.TermMan.explode_sequent t)
+      if FromTerm.TermMan.is_sequent_term t then
+         let { FromTerm.TermType.sequent_args = args;
+               FromTerm.TermType.sequent_hyps = hyps;
+               FromTerm.TermType.sequent_goals = goals } = (FromTerm.TermMan.explode_sequent t)
          in
             TSeq
-               { ToRefiner.TermType.sequent_args =
+               { ToTerm.TermType.sequent_args =
                     Memo.apply info.copy_term info args;
-                 ToRefiner.TermType.sequent_hyps =
-                    ToRefiner.Term.SeqHyp.init (FromRefiner.Term.SeqHyp.length hyps) (make_hyp info hyps);
-                 ToRefiner.TermType.sequent_goals =
-                    ToRefiner.Term.SeqGoal.init (FromRefiner.Term.SeqGoal.length goals) (make_goal info goals)
+                 ToTerm.TermType.sequent_hyps =
+                    ToTerm.Term.SeqHyp.init (FromTerm.Term.SeqHyp.length hyps) (make_hyp info hyps);
+                 ToTerm.TermType.sequent_goals =
+                    ToTerm.Term.SeqGoal.init (FromTerm.Term.SeqGoal.length goals) (make_goal info goals)
                }
       else
-         let { FromRefiner.TermType.term_op = op; FromRefiner.TermType.term_terms = bterms } = FromRefiner.Term.dest_term t
+         let { FromTerm.TermType.term_op = op; FromTerm.TermType.term_terms = bterms } = FromTerm.Term.dest_term t
          in
             TTerm
-               { ToRefiner.TermType.term_op = Memo.apply info.copy_operator info op;
-                 ToRefiner.TermType.term_terms = List.map (Memo.apply info.copy_bterm info) bterms }
+               { ToTerm.TermType.term_op = Memo.apply info.copy_operator info op;
+                 ToTerm.TermType.term_terms = List.map (Memo.apply info.copy_bterm info) bterms }
 
    let do_make_term _ = function
-      TTerm t -> ToRefiner.Term.make_term t
-    | TSeq s -> ToRefiner.TermMan.mk_sequent_term s
+      TTerm t -> ToTerm.Term.make_term t
+    | TSeq s -> ToTerm.TermMan.mk_sequent_term s
 
    let make_bterm info bterm =
-      let { FromRefiner.TermType.bvars = bvars; FromRefiner.TermType.bterm = bterm } = FromRefiner.Term.dest_bterm bterm
+      let { FromTerm.TermType.bvars = bvars; FromTerm.TermType.bterm = bterm } = FromTerm.Term.dest_bterm bterm
       in
-         { ToRefiner.TermType.bvars = bvars;
-           ToRefiner.TermType.bterm = Memo.apply info.copy_term info bterm
+         { ToTerm.TermType.bvars = bvars;
+           ToTerm.TermType.bterm = Memo.apply info.copy_term info bterm
          }
 
    let make_operator info op =
-      let { FromRefiner.TermType.op_name = opname; FromRefiner.TermType.op_params = params } = FromRefiner.Term.dest_op op
+      let { FromTerm.TermType.op_name = opname; FromTerm.TermType.op_params = params } = FromTerm.Term.dest_op op
       in
-         { ToRefiner.TermType.op_name = normalize_opname opname;
-           ToRefiner.TermType.op_params = List.map (Memo.apply info.copy_param info) params
+         { ToTerm.TermType.op_name = normalize_opname opname;
+           ToTerm.TermType.op_params = List.map (Memo.apply info.copy_param info) params
          }
 
    let make_param info param =
-      match FromRefiner.Term.dest_param param with
-         FromRefiner.TermType.Number n1 ->    ToRefiner.TermType.Number n1
-       | FromRefiner.TermType.String s1 ->    ToRefiner.TermType.String s1
-       | FromRefiner.TermType.Token s1 ->     ToRefiner.TermType.Token s1
-       | FromRefiner.TermType.Level l1 ->     ToRefiner.TermType.Level (Memo.apply info.copy_level info l1)
-       | FromRefiner.TermType.Var v1 ->       ToRefiner.TermType.Var v1
-       | FromRefiner.TermType.MNumber s1 ->   ToRefiner.TermType.MNumber s1
-       | FromRefiner.TermType.MString s1 ->   ToRefiner.TermType.MString s1
-       | FromRefiner.TermType.MToken s1 ->    ToRefiner.TermType.MToken s1
-       | FromRefiner.TermType.MLevel s1 ->    ToRefiner.TermType.MLevel s1
-       | FromRefiner.TermType.MVar s1 ->      ToRefiner.TermType.MVar s1
-       | FromRefiner.TermType.ObId oid1 ->    ToRefiner.TermType.ObId (List.map (Memo.apply info.copy_param info) oid1)
-       | FromRefiner.TermType.ParamList p1 -> ToRefiner.TermType.ParamList (List.map (Memo.apply info.copy_param info) p1)
-       | FromRefiner.TermType.MSum (p11, p21) ->
-            ToRefiner.TermType.MSum (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
-       | FromRefiner.TermType.MDiff (p11, p21) ->
-            ToRefiner.TermType.MDiff (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
-       | FromRefiner.TermType.MProduct (p11, p21) ->
-            ToRefiner.TermType.MProduct (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
-       | FromRefiner.TermType.MQuotient (p11, p21) ->
-            ToRefiner.TermType.MQuotient (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
-       | FromRefiner.TermType.MRem (p11, p21) ->
-            ToRefiner.TermType.MRem (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
-       | FromRefiner.TermType.MLessThan (p11, p21) ->
-            ToRefiner.TermType.MLessThan (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
-       | FromRefiner.TermType.MEqual (p11, p21) ->
-            ToRefiner.TermType.MEqual (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
-       | FromRefiner.TermType.MNotEqual (p11, p21) ->
-            ToRefiner.TermType.MNotEqual (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
+      match FromTerm.Term.dest_param param with
+         FromTerm.TermType.Number n1 ->    ToTerm.TermType.Number n1
+       | FromTerm.TermType.String s1 ->    ToTerm.TermType.String s1
+       | FromTerm.TermType.Token s1 ->     ToTerm.TermType.Token s1
+       | FromTerm.TermType.Level l1 ->     ToTerm.TermType.Level (Memo.apply info.copy_level info l1)
+       | FromTerm.TermType.Var v1 ->       ToTerm.TermType.Var v1
+       | FromTerm.TermType.MNumber s1 ->   ToTerm.TermType.MNumber s1
+       | FromTerm.TermType.MString s1 ->   ToTerm.TermType.MString s1
+       | FromTerm.TermType.MToken s1 ->    ToTerm.TermType.MToken s1
+       | FromTerm.TermType.MLevel s1 ->    ToTerm.TermType.MLevel s1
+       | FromTerm.TermType.MVar s1 ->      ToTerm.TermType.MVar s1
+       | FromTerm.TermType.ObId oid1 ->    ToTerm.TermType.ObId (List.map (Memo.apply info.copy_param info) oid1)
+       | FromTerm.TermType.ParamList p1 -> ToTerm.TermType.ParamList (List.map (Memo.apply info.copy_param info) p1)
+       | FromTerm.TermType.MSum (p11, p21) ->
+            ToTerm.TermType.MSum (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
+       | FromTerm.TermType.MDiff (p11, p21) ->
+            ToTerm.TermType.MDiff (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
+       | FromTerm.TermType.MProduct (p11, p21) ->
+            ToTerm.TermType.MProduct (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
+       | FromTerm.TermType.MQuotient (p11, p21) ->
+            ToTerm.TermType.MQuotient (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
+       | FromTerm.TermType.MRem (p11, p21) ->
+            ToTerm.TermType.MRem (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
+       | FromTerm.TermType.MLessThan (p11, p21) ->
+            ToTerm.TermType.MLessThan (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
+       | FromTerm.TermType.MEqual (p11, p21) ->
+            ToTerm.TermType.MEqual (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
+       | FromTerm.TermType.MNotEqual (p11, p21) ->
+            ToTerm.TermType.MNotEqual (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
 
    let make_level info level =
-      let { FromRefiner.TermType.le_const = c; FromRefiner.TermType.le_vars = vars } = FromRefiner.Term.dest_level level
+      let { FromTerm.TermType.le_const = c; FromTerm.TermType.le_vars = vars } = FromTerm.Term.dest_level level
       in
-         { ToRefiner.TermType.le_const = c;
-           ToRefiner.TermType.le_vars = List.map (Memo.apply info.copy_level_var info) vars
+         { ToTerm.TermType.le_const = c;
+           ToTerm.TermType.le_vars = List.map (Memo.apply info.copy_level_var info) vars
          }
 
    let make_level_var info lvar =
-      let { FromRefiner.TermType.le_var = var; FromRefiner.TermType.le_offset = offset } = FromRefiner.Term.dest_level_var lvar
+      let { FromTerm.TermType.le_var = var; FromTerm.TermType.le_offset = offset } = FromTerm.Term.dest_level_var lvar
       in
-         { ToRefiner.TermType.le_var = var;
-           ToRefiner.TermType.le_offset = offset
+         { ToTerm.TermType.le_var = var;
+           ToTerm.TermType.le_offset = offset
          }
 
    (*
@@ -267,19 +267,19 @@ struct
    let create () =
       { copy_level_var = Memo.create (**)
            make_level_var
-           (fun _ t -> ToRefiner.Term.make_level_var t)
+           (fun _ t -> ToTerm.Term.make_level_var t)
            compare_level_var;
         copy_level     = Memo.create (**)
            make_level
-           (fun _ t -> ToRefiner.Term.make_level t)
+           (fun _ t -> ToTerm.Term.make_level t)
            compare_level;
         copy_param     = Memo.create (**)
            make_param
-           (fun _ t -> ToRefiner.Term.make_param t)
+           (fun _ t -> ToTerm.Term.make_param t)
            compare_param;
         copy_operator  = Memo.create (**)
            make_operator
-           (fun _ t -> ToRefiner.Term.make_op t)
+           (fun _ t -> ToTerm.Term.make_op t)
            compare_operator;
         copy_term      = Memo.create (**)
            make_term
@@ -287,7 +287,7 @@ struct
            compare_tterm;
         copy_bterm     = Memo.create (**)
            make_bterm
-           (fun _ t -> ToRefiner.Term.make_bterm t)
+           (fun _ t -> ToTerm.Term.make_bterm t)
            compare_bterm
       }
 
@@ -302,17 +302,17 @@ struct
     * We don't share at the meta-term level.
     *)
    let rec copy_meta_term info = function
-      FromRefiner.TermType.MetaTheorem t ->
-         ToRefiner.TermType.MetaTheorem (Memo.apply info.copy_term info t)
-    | FromRefiner.TermType.MetaImplies (t1, t2) ->
-         ToRefiner.TermType.MetaImplies (copy_meta_term info t1,
+      FromTerm.TermType.MetaTheorem t ->
+         ToTerm.TermType.MetaTheorem (Memo.apply info.copy_term info t)
+    | FromTerm.TermType.MetaImplies (t1, t2) ->
+         ToTerm.TermType.MetaImplies (copy_meta_term info t1,
                                          copy_meta_term info t2)
-    | FromRefiner.TermType.MetaFunction (t1, mt1, mt2) ->
-         ToRefiner.TermType.MetaFunction (Memo.apply info.copy_term info t1,
+    | FromTerm.TermType.MetaFunction (t1, mt1, mt2) ->
+         ToTerm.TermType.MetaFunction (Memo.apply info.copy_term info t1,
                                           copy_meta_term info mt1,
                                           copy_meta_term info mt2)
-    | FromRefiner.TermType.MetaIff (mt1, mt2) ->
-         ToRefiner.TermType.MetaIff (copy_meta_term info mt1,
+    | FromTerm.TermType.MetaIff (mt1, mt2) ->
+         ToTerm.TermType.MetaIff (copy_meta_term info mt1,
                                      copy_meta_term info mt2)
 
 
