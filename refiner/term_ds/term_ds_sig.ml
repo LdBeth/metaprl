@@ -222,8 +222,12 @@ sig
    val dest_object_id : object_id  ->  param list
 
    (*
-    * A variable is a term with opname "var", and a single
-    * var parameter that is the name of the variable.
+    * From external point of view, a variable is a term
+    * with opname "var", and a single var parameter 
+    * that is the name of the variable.
+    *
+    * However, for efficiency purposes, internally 
+    * in Term_ds FO variables are represented specially
     *)
 
    val var_opname : opname
