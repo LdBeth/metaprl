@@ -424,7 +424,7 @@ let refine shell tac =
       touch shell;
       if !debug_refine then
          eprintf "Starting refinement%t" eflush;
-      shell.shell_proof.edit_refine str ast tac;
+      shell.shell_proof.edit_interpret (ProofRefine(str, ast, tac));
       if !debug_refine then
          eprintf "Displaying proof%t" eflush;
       if Shell_state.is_interactive () then

@@ -315,9 +315,6 @@ let rec edit get_dfm dir =
    let edit_info () =
       raise_edit_error "no info for the files"
    in
-   let edit_refine _ _ _ =
-      raise_edit_error "can't refine files"
-   in
    let edit_interpret command =
       raise_edit_error "this is not a proof"
    in
@@ -339,7 +336,6 @@ let rec edit get_dfm dir =
         edit_addr = edit_addr;
         edit_int_addr = edit_int_addr;
         edit_info = edit_info;
-        edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;

@@ -481,7 +481,7 @@ struct
                let expr = ShellP4.parse_string str in
                let tac = ShellP4.eval_tactic expr in
                   proof.edit_int_addr addr;
-                  proof.edit_refine str expr tac;
+                  proof.edit_interpret (ProofRefine (str, expr, tac));
                   let { edit_goal = goal;
                         edit_subgoals = subgoals;
                         edit_extras = extras

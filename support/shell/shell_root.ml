@@ -83,9 +83,6 @@ let rec edit pack get_dfm =
    let edit_info () =
       raise_edit_error "no info for the root packages"
    in
-   let edit_refine _ _ _ =
-      raise_edit_error "can't refine the root packages"
-   in
    let edit_interpret command =
       raise_edit_error "this is not a proof"
    in
@@ -110,7 +107,6 @@ let rec edit pack get_dfm =
         edit_addr = edit_addr;
         edit_int_addr = edit_addr;
         edit_info = edit_info;
-        edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;

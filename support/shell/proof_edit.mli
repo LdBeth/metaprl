@@ -77,11 +77,9 @@ val node_count_of_ped : ped -> int * int
  * After a refine_ped or nop_ped, the undo stack gets reset.
  * The nop_ped does nothing but reset the undo stack.
  *)
-val refine_ped : ped -> string -> MLast.expr -> tactic -> unit
 val undo_ped : ped -> unit
 val redo_ped : ped -> unit
 val nop_ped : ped -> unit
-val kreitz_ped : ped -> unit
 
 (*
  * Navigation.
@@ -91,16 +89,6 @@ val down_ped : ped -> int -> unit
 val root_ped : ped -> unit
 val addr_ped : ped -> int list -> unit
 val rotate_ped : ped -> int -> unit
-
-(*
- * Editing.
- *)
-val copy_ped : ped -> string -> unit
-val paste_ped : ped -> string -> unit
-val cp_ped : ped -> int list -> int list -> unit
-val make_assum_ped : ped -> unit
-val clean_ped : ped -> unit
-val squash_ped : ped -> unit
 
 (*
  * Get the status of the proof.

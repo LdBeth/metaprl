@@ -299,7 +299,6 @@ let rec edit pack_info parse_arg get_dfm =
         edit_addr = edit_addr;
         edit_int_addr = edit_addr;
         edit_info = raise_edit_error_fun "no info for the package";
-        edit_refine = raise_edit_error_fun "can't refine the package";
         edit_undo = not_a_rule;
         edit_redo = not_a_rule;
         edit_interpret = raise_edit_error_fun "this is not a proof";

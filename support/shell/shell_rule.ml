@@ -299,13 +299,6 @@ let rec edit pack parse_arg name window obj =
    let edit_addr addr =
       edit_int_addr (List.map int_of_string addr)
    in
-   let edit_refine text ast tac =
-      if !debug_refine then
-         eprintf "Shell_rule.edit_refine: starting refinement%t" eflush;
-      Proof_edit.refine_ped (get_ped ()) text ast tac;
-      if !debug_refine then
-         eprintf "Shell_rule.edit_refine: refinement done%t" eflush
-   in
    let edit_interpret command =
       Proof_edit.interpret window (get_ped ()) command
    in
@@ -333,7 +326,6 @@ let rec edit pack parse_arg name window obj =
         edit_int_addr = edit_int_addr;
         edit_addr = edit_addr;
         edit_info = edit_info;
-        edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;
