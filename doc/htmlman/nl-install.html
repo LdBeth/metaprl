@@ -1,0 +1,94 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>Download Nuprl-Light</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H3>Download Nuprl-Light</H3>
+
+<P>Nuprl-Light can be downloaded at ftp://ftp.cs.cornell.edu/jyh/nuprl-light.
+You will need three packages:</P>
+
+<OL>
+  <LI>Objective Caml: our version contains a small patch to install
+  interface files needed by Nuprl-Light to evaluate programs in
+  the toploop.
+  <LI>CamlP4: our version contains a small patch to compile the
+  CamlP4 distribution in native code.
+  <LI>Ensemble: you need Ensemble only if you want to use the distributed
+  prover.
+  <LI>Nuprl-Light
+</OL>
+
+<P>All source modules are available as source, and RedHat 5.1
+RPM packages files for Linux i386. There is also a Win32 distribution
+that we'll be placing online soon (if you don't see it contact
+<A HREF="mailto:jyh@cs.cornell.edu">Jason Hickey</A>). You will
+need the Cygnus Systems GNU-Win32 distribution.</P>
+
+<H4>CVS sources</H4>
+
+<P>If you plan any development in Nuprl-Light, you may consider
+using the public CVS repository. This will allow you to use CVS
+to manage patches as the main distribution is updated. The normal
+service is read-only, but if you would like to become a contributor
+with write access, contact <A HREF="mailto:jyh@cs.cornell.edu">Jason
+Hickey</A> ro <A HREF="mailto:nogin@cs.cornell.edu">Alexey Nogin</A>.
+You will need <TT>ssh</TT> for your remote login program. The
+CVS server is at port 80 on the machine <TT>ensemble01.cs.cornell.edu</TT>.
+Install <TT>ssh</TT>, and create an executable shell script called
+<TT>ssh.cvs</TT> containing these lines:</P>
+
+<BLOCKQUOTE>
+  <PRE>#!/bin/sh
+ssh -C -p 80</PRE>
+</BLOCKQUOTE>
+
+<P>You can checkout the distribution by running:</P>
+
+<BLOCKQUOTE>
+  <PRE>% setenv CVS_RSH ssh.cvs
+% cvs -d :ext:ensemble01.cs.cornell.edu:/cvsroot checkout nuprl-light</PRE>
+</BLOCKQUOTE>
+
+<H4>Installation and configuration</H4>
+
+<P>To install OCaml and CamlP4, unpack the distributions. The
+<TT>INSTALL</TT> files describe the process of installation.</P>
+
+<P>To install Ensemble, unpack the distrubution, and edit the
+<TT>&lt;ensemble&gt;/mk/config.mk</TT> file. You will want to
+use the Ensemble socket library (not the Unix socket implementation),
+then change directories to <TT>&lt;ensemble&gt;/def</TT>, and
+run <TT>make</TT>. You can also build the native-code libraries
+by running <TT>make</TT> in the <TT>&lt;ensemble&gt;/opt</TT>
+directory. More information on Ensemble is available at the Ensemble
+Home Page.</P>
+
+<P>To install Nuprl-Light, unpack the distribution into some directory
+<TT>&lt;nuprl-light&gt;</TT>. You need to set the environment
+variables <TT>CAMLLIB=&lt;your ocaml lib directory&gt;</TT>, and
+<TT>ENSROOT=&lt;root of the ensemble source tree&gt;</TT>. Then
+you can build the distribution with these steps:</P>
+
+<BLOCKQUOTE>
+  <PRE>% cd &lt;nuprl-light&gt;
+% make depend
+% make all
+or
+% make opt</PRE>
+</BLOCKQUOTE>
+
+<P>The Nuprl-Light program is <TT>&lt;nuprl-light&gt;/editor/ml/nl</TT>.
+You will need to install the &quot;Nuprl font&quot; to be able
+to interact with some sense. The Nuprl font is in <TT>&lt;nuprl-light&gt;/editor/fonts/nl12.bdf</TT>.
+You'll get the best success if you use Nuprl-Light from a shell
+window within Emacs. You can start Emacs with the Nuprl font by
+running <TT>emacs -fn nl12</TT>.</P>
+
+<P>That's it. To navigate the Nuprl-Light logics and programs,
+you will need to read the User Guide.
+
+</BODY>
+</HTML>

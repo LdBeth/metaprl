@@ -1,0 +1,66 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>Nuprl-Light Tutorial: classical reasoning</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H2>Nuprl-Light Tutorial: classical reasoning</H2>
+
+<P>To enable classical reasoning in this single-conclusion logic,
+we introduce a rule for explicit classical reasoning. The <I>proof
+term</I> in this logic has no computational meaning, so we provide
+a new term <TT>magic</TT> to represent proofs by excluded middle.</P>
+
+<H3>The <TT>Fol_class</TT> interface</H3>
+
+<P>The interface defines the proof term, and a tactic for classical
+reasoning. The classical rule we use is based on the reasoning
+(<TT>not not 'T =&gt; 'T)</TT>, and so we need to include the
+<TT>Fol_not</TT> theory.</P>
+
+<BLOCKQUOTE>
+  <P>1.<I> Define the proof term, and reasoning tactic in the file
+  </I><TT>fol_class.mli:</TT></P>
+  <BLOCKQUOTE>
+    <PRE><B>include</B> Fol_not
+<B>open</B> Tacticals
+<B>declare</B> magic{x. 't['x]}
+<B>val</B> magicT : tactic</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<H3>The <TT>Fol_class</TT> implementation</H3>
+
+<P>The implementation of classical reasoning is short. We need
+just define the rule and tactic for classical reasoning.</P>
+
+<BLOCKQUOTE>
+  <P>2.<I> Define the syntax, rule, a tactic for classical reasoning
+  in the</I> <TT>fol_class.ml</TT><I> file:</I></P>
+  <BLOCKQUOTE>
+    <PRE><B>include</B> Fol_not
+
+<B>declare</B> magic{x. 't['x]}
+
+<B>dform</B> magic_df : magic = `&quot;magic&quot;
+
+<B>prim</B> magic 'H 'x :
+   ('t['x] : sequent ['ext] { 'H; x: &quot;not&quot;{'T} &gt;- &quot;false&quot; }) --&gt;
+   sequent ['ext] { 'H &gt;- 'T } =
+   magic{x. 't['x]}
+
+<B>let</B> magicT p =
+   <B>let</B> v = Var.maybe_new_vars1 p &quot;v&quot; <B>in</B>
+      magic (Sequent.hyp_count_addr p) v p
+    </PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>The <TT>magic</TT> proof term is a <I>value:</I> computation
+over proof terms does not evluate <TT>magic</TT> terms, and so
+computations formed from classical proofs have little meaning
+(without introducing a semantics of classical computations).
+
+</BODY>
+</HTML>

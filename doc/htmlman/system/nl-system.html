@@ -1,0 +1,81 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>Nuprl-Light System Description</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1><CENTER>Nuprl-Light System Description</CENTER></H1>
+
+<P><MAP NAME="nl-archMap1">
+    <AREA SHAPE="rect" COORDS="66,-4,178,27" HREF="nl-editor-imp.html">
+    <AREA SHAPE="rect" COORDS="-3,33,74,62" HREF="nl-itt.html">
+    <AREA SHAPE="rect" COORDS="63,70,178,111" HREF="nl-base.html">
+    <AREA SHAPE="rect" COORDS="63,118,179,161" HREF="nl-ocaml.html">
+    <AREA SHAPE="rect" COORDS="62,165,177,208" HREF="nl-tactic.html">
+    <AREA SHAPE="rect" COORDS="63,213,178,255" HREF="nl-chaining.html">
+    <AREA SHAPE="rect" COORDS="63,263,177,304" HREF="nl-ensemble.html">
+    <AREA SHAPE="rect" COORDS="63,310,178,350" HREF="nl-filter.html">
+    <AREA SHAPE="rect" COORDS="66,359,179,401" HREF="nl-refine.html">
+</MAP><IMG SRC="nl-arch.gif" WIDTH="241" HEIGHT="397" ALIGN="RIGHT"
+BORDER="0" NATURALSIZEFLAG="3" USEMAP="#nl-archMap1" ISMAP>Nuprl-Light
+is implemented as an extended OCaml compiler. Modules in Nuprl-Light
+can be plain prgrams, or they can be extended to additional logical
+definitions and syntax. The architecture of the system is summarized
+in the diagram at the right. The complete system contains these
+parts:</P>
+
+<UL>
+  <LI>The <B><A HREF="nl-refiner.html">refiner</A></B> implements
+  logical operations and accounting. The refiner associates an
+  accounting object called a <I>sentinal</I> with each module.
+  The sentinal defines the valid set of logical inferences, syntax
+  definitions, computational equaivalences, and programs in a module.
+  The sentinal is passed between refiners during distributed computation
+  to localize the context of a refinement.
+  <LI>The <B><A HREF="nl-filter.html">module compiler</A></B> is
+  used to compile Nuprl-Light modules into two parts: an ML module
+  that defines the computation in the module, and a sentinal that
+  expresses the logical content. The module compiler is right above
+  the refiner; it has no knowledge of proofs, whether they be automated
+  or interactive. The compiler simply compiles logical content,
+  to be used later by the <B>module editor.</B>
+  <LI>The refiner defines an abstract logical interface. The <B><A
+  HREF="nl-ensemble.html">distributed prover</A></B> implements
+  the same interface, but the logical operations are spread across
+  multiple machines. The distributed prover contains a scheduler
+  to hand out logical goals, and a failure recovery algorithm to
+  handle refiner failures.
+  <LI>The <B><A HREF="nl-chaining.html">forward chainer</A></B>
+  implements proof caching and forward chaining. Currently, forward
+  chaining is restricted to forward rules with a finite forward
+  closure. Once again, the forward chainer reimplements the refiner
+  interface.
+  <LI>The <B><A HREF="nl-tacticals.html">tactic definitions</A></B>
+  implement the tactic combinator language over the refiner. Logical
+  proofs use basic combinators: each logical definition in a module
+  defines a tactic, and the tactic module provide tactic combinators
+  that are used for automation.
+  <LI>The <B><A HREF="nl-ocaml.html">OCaml syntax</A></B> is defined
+  as a logical module containing syntax definitions and an operational
+  semantics for the OCaml definitions in a module. The <B>module
+  compiler</B> compiles ML programs to logical terms; the OCaml
+  syntax module defines the logical properties and semantics of
+  the programs.
+  <LI>The <B><A HREF="nl-base.html">logic definition</A></B> module
+  defines properties shared by many logics. For example, the Nuprl-Light
+  framework has no knowledge of sequents, but many logics use sequents
+  to express their inference rules. The basic logic module defines
+  sequents. In addition, the basic logic module defines tactics
+  for automation, including automation of introduction and elimination
+  rules, equality reasoning, and general tactic-based search.
+  <LI>The logics currently defined include the Nuprl type theory,
+  Aczel's set theory, first order logic, and a partial implementation
+  of the Edinburgh logical framework (LF).
+  <LI>The <B><A HREF="nl-editor-imp.html">module editor</A></B>
+  provides interactive support, including a module navigator, a
+  proof editor, and context-sensitive toploop language.
+</UL>
+
+</BODY>
+</HTML>

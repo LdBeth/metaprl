@@ -1,0 +1,59 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>Nuprl-Light Editor Module</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>Nuprl-Light Editor Module</H1>
+
+<P>The <I>editor</I> is for navigation and proof editing. The
+<A HREF="xxx">Editor section of the user guide</A> explains how
+to use the editor. The editor include three parts:</P>
+
+<UL>
+  <LI>a representation of <I>proofs</I>,
+  <LI>a representation of <I>modules</I>,
+  <LI>a <I>toploop.</I>
+</UL>
+
+<H4>Proofs</H4>
+
+<P>Proofs have two representations in the editor. The <TT>Io_proof_type</TT>,
+and <TT>Io_proof</TT> modules define the proof structure that
+is saved in files. The <TT>Proof_step</TT>, <TT>Proof</TT>, and
+<TT>Proof_edit</TT> modules define the interactive proofs. Proofs
+are a recursive structure. A <I>proof step</I> is a single refinement
+step. It either <I>primitive: </I>containing a <I>goal</I>, a
+<I>tactic</I>, and a list of <I>subgoals</I>, or it is another
+proof. A <I>proof</I> is a tree of proof steps.</P>
+
+<P>One objective of the proof structure is that work should <B><I>never</I></B>
+be discarded. When a proof is replayed, and a tactic is re-applied
+to the goal of a proof step, the subgoals may change because the
+tactic library changed as part of an upgrade. When subgoals change,
+the proof structure attempts to rebuild the proof tree by reordering
+subgoals. Goals that cannot be matched are saved as <I>extras</I>
+in a proof step. These <I>extras</I> can be navigated and, if
+necessary, modified to reconstruct the proof tree.</P>
+
+<H4>Modules</H4>
+
+<P>The module operations are defined in the <TT>Package_info</TT>
+module. This module contains operations to find and load a theory
+module, and save a module when it is modified. The <TT>Package_df</TT>
+module defines the display code for printing a module.</P>
+
+<H4>Toploop</H4>
+
+<P>The toploop is defined in several modules. The <TT>Shell</TT>
+module defines the commands that are available from the toploop,
+and the <TT>Shell_p4</TT> and <TT>Shell_nl</TT> modules add the
+term syntax to the toploop. Each object in a module, including
+rewrites, inference rules, and display forms, has a module the
+defines the toploop operations on the object. The operations are
+defined in the signature <TT>Shell_type</TT>, and implementations
+are contains in <TT>Shell_rewrite</TT> and <TT>Shell_rule</TT>.
+
+</BODY>
+</HTML>

@@ -1,0 +1,177 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>Nuprl-Light Conversionals</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>Nuprl-Light Conversionals</H1>
+
+<P>The word &quot;conversion&quot; is used to describe rewriting
+rules. Like a &quot;tactical,&quot; a &quot;conversional&quot;
+is an operation on conversions. A conversion is created in a module
+whenever a rewrite rule is defined. For example, the following
+definition of <I>beta</I> reduction defines a conversion called
+<TT>beta</TT>:</P>
+
+<BLOCKQUOTE>
+  <P><B><TT>rewrite</TT></B><TT> beta : (lambda{x. 'b['x]} 'a)
+  &lt;--&gt; 'b['a].</TT></P>
+</BLOCKQUOTE>
+
+<P>The ML conversion has the following type:</P>
+
+<BLOCKQUOTE>
+  <P><B><TT>val</TT></B><TT> beta : conv</TT></P>
+</BLOCKQUOTE>
+
+<H4>Conversion application</H4>
+
+<P>A conversion is applied to the current goal by using the rw
+function:</P>
+
+<BLOCKQUOTE>
+  <P><B><TT>topval</TT></B><TT> rw : conv -&gt; int -&gt; tactic</TT></P>
+</BLOCKQUOTE>
+
+<P>The <TT>rw</TT> function assumes the conversion is being applied
+in a sequent calculus, and the number passed to the rw function
+is the number of the sequent clause to be rewritten. There is
+an additional function <TT>rwh</TT> to perform rewriting on the
+&quot;higher&quot; occurences of subterms.</P>
+
+<BLOCKQUOTE>
+  <P><B><TT>topval</TT></B><TT> rwh : conv -&gt; int -&gt; tactic</TT></P>
+</BLOCKQUOTE>
+
+<P>For example, beta conversion is performed in the following
+proof fragment:</P>
+
+<BLOCKQUOTE>
+  <PRE>Goal: sequent { 'H; x: (lambda{x. 'x} 1) &lt; 0) &gt;- false }
+<B>BY </B>rwh beta 2
+Subgoal 1: sequent { 'H; x: 1 &lt; 0 &gt;- false }</PRE>
+</BLOCKQUOTE>
+
+<H4>Simple conversions</H4>
+
+<P>There are several simple conversions:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>topval</B> idC : conv
+<B>topval</B> failC : conv</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>idC</TT> conversion is the identity: when <TT>idC</TT>
+is applied to a term, the result of the rewriting is the argument,
+unchanged. The <TT>failC</TT> conversion always fails.</P>
+
+<H4>Simple conversionals</H4>
+
+<P>There are several standard conversionals:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>topval</B> prefix_andthenC : conv -&gt; conv -&gt; conv
+<B>topval</B> prefix_orelseC : conv -&gt; conv -&gt; conv
+<B>topval</B> addrC : int list -&gt; conv -&gt; conv
+<B>topval</B> foldC : term -&gt; conv -&gt; conv
+<B>topval</B> makeFoldC : term -&gt; conv -&gt; conv
+<B>topval</B> cutC : term -&gt; conv
+<B>val</B> funC : (env -&gt; conv) -&gt; conv</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>andthenC</TT> conversional is for sequencing: the conversion
+<TT>(rw1 andthenC rw2)</TT> applies rewrite <TT>rw1</TT> and follows
+it by applying <TT>rw2</TT> to the resulting term. The <TT>orelseC</TT>
+is for conditional application: the conversion <TT>(rw1 orelseC
+rw2)</TT> first tries applying the conversion <TT>rw1</TT>. If
+the rewrite succeeds, <TT>rw2</TT> is not applied. Otherwise,
+rw2 is applied to the initial argument.</P>
+
+<P>The conversion <TT>addrC</TT> applies a rewrite to a subterm
+of the goal. The <TT>foldC</TT> conversion is for reversing a
+rewrite. For example, the following proof fragment reverses a
+beta reduction:</P>
+
+<BLOCKQUOTE>
+  <PRE><TT>Goal: sequent { 'H; x: 1 &lt; 0 &gt;- false }</TT>
+<B><TT>BY</TT></B><TT> rwh (foldC &lt;&lt; lambda{x. 'x} 1 &gt;&gt; beta) 2</TT>
+<TT>Subgoal: sequent { 'H; x: (lambda{x. 'x} 1) &lt; 0 &gt;- false }</TT></PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>makeFoldC</TT> conversional performs the same operation
+as <TT>foldC</TT>, but it performs a (relatively expensive) preprocessing
+step. The <TT>makeFoldC</TT> conversional is typically used at
+the top level of a module to define standard reversed rewriting.</P>
+
+<P>The <TT>cutC</TT> conversion replaces the current goal with
+a new goal, producing a rewriting subgoal. The following proof
+fragment illustrates its use:</P>
+
+<BLOCKQUOTE>
+  <PRE>Goal: sequent { 'H &gt;- ('x + 1) - 1 }
+<B>BY</B> rw (cutC &lt;&lt; 'x &gt;&gt;) 0
+Subgoal 1: sequent { 'H &gt;- 'x }
+Subgoal 2: sequent { 'H &gt;- 'x &lt;--&gt; ('x + 1) - 1 }</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>funC</TT> conversional produces an <I>environment</I>
+for a conversion. The current goal can be accessed with the following
+functions:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> env_term : env -&gt; term
+<B>val</B> env_goal : env -&gt; term</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>env_term</TT> function returns the term that the rewriting
+is to be performed on, and the <TT>env_goal</TT> returns the entire
+goal (so, for instance, the results will be different if rewriting
+is being performed on a subterm of the goal with <TT>addrC</TT>).</P>
+
+<H4>Search conversionals</H4>
+
+<P>Typically, rewriting is performed by search. For example, it
+is often useful to reduce <I>all</I> beta redices in the goal.
+The following conversionals provide search strategies.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>topval</B> someSubC : conv -&gt; conv
+<B>topval</B> allSubC : conv -&gt; conv</PRE>
+</BLOCKQUOTE>
+
+<P>These two conversions apply their arguments to the <I>subterms</I>
+of the current goal. The <TT>(someSubC conv)</TT> conversion applies
+<TT>conv</TT> to subterms from left-to-right, succeeding when
+the first rewrite succeeds. The <TT>(allSubC conv)</TT> applies
+<TT>conv</TT> to all subgoals; all rewrites must succeed.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>topval</B> higherC : conv -&gt; conv
+<B>topval</B> lowerC : conv -&gt; conv</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>higherC</TT> conversion searches for the <I>outermost</I>
+terms where a rewrite is successful. It is defined by recursion:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>let</B> higherC conv = conv orelseC (allSubC conv)</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>lowerC</TT> conversion serches for the <I>innermost</I>
+terms:</P>
+
+<BLOCKQUOTE>
+  <P><B><TT>let</TT></B><TT> lowerC conv = (allSubC conv) orelseC
+  conv</TT></P>
+</BLOCKQUOTE>
+
+<P>The <TT>repeatC</TT> conversion applies a conversion until
+a fixpoint is reached:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>topval</B> repeatC : conv -&gt; conv</PRE>
+</BLOCKQUOTE>
+
+</BODY>
+</HTML>

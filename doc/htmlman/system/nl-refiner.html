@@ -1,0 +1,103 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>Nuprl-Light Refiner</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>Nuprl-Light Refiner</H1>
+
+<P>The <I>refiner</I> is the logic engine for Nuprl-Light. The
+logical objects are the following:</P>
+
+<UL>
+  <LI><I>Syntax definitions</I> extend the logical term language,
+  <LI><I>Rewrite rules</I> define computational equivalences,
+  <LI><I>Inference rules</I> define logical axioms and derived
+  rules,
+  <LI><I>Programs</I> define computation, including arbitrary programs,
+  tactic definitions, search algorithms, and the Nuprl-Light implementation
+  itself.
+</UL>
+
+<P>The refiner implementation has three main parts:</P>
+
+<OL>
+  <LI>The definition of the <I>term</I> language, used to express
+  all logical statements.
+  <LI>The <I>rewriter</I> defines rewriting operations on terms,
+  used both for computation and rule application.
+  <LI>The <I>refiner</I> implements accounting, rule application,
+  and proof checking.
+</OL>
+
+<P>The refiner implementation is in the <TT>refiner</TT> directory.
+The structure of the refiner implementation is given by the signature
+for the refiner module, containing the following modules:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>module type</B> RefinerSig =
+<B>sig</B>
+   <B>module</B> <A HREF="nl-terms.html">TermType</A> : TermSig
+   <B>module</B> <A HREF="nl-terms.html">Term</A> : TermBaseSig
+   <B>module</B> <A HREF="nl-terms.html">TermOp</A> : TermOpSig
+   <B>module</B> <A HREF="nl-terms.html">TermAddr</A> : TermAddrSig
+   <B>module</B> <A HREF="nl-terms.html">TermMan</A> : TermManSig
+   <B>module</B> <A HREF="nl-terms.html">TermSubst</A> : TermSubstSig
+   <B>module</B> <A HREF="nl-terms.html">TermShape</A> : TermShapeSig
+   <B>module</B> <A HREF="nl-terms.html">TermMeta</A> : TermMetaSig
+   <B>module</B> <A HREF="nl-terms.html">TermEval</A> : TermEvalSig
+   <B>module</B> RefineError : RefineErrorSig
+   <B>module</B> <A HREF="nl-rewrite.html">Rewrite</A> : RewriteSig
+   <B>module</B> <A HREF="nl-refine.html">Refine</A> : RefineSig
+<B>end</B></PRE>
+</BLOCKQUOTE>
+
+<P>The refiner implementation is contained in the <TT>refiner</TT>
+directory, with the following tree structure.</P>
+
+<BLOCKQUOTE>
+  <PRE>refiner ----&gt; refbase
+   |--------&gt; refsig
+   |--------&gt; term_std
+   |--------&gt; term_ds
+   |--------&gt; term_gen
+   |--------&gt; rewrite
+   |--------&gt; refine
+   \--------&gt; reflib</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>refbase</TT> directory contains basic refiner types,
+including the definition of the <TT>Opname</TT> module. The <TT>refsig</TT>
+directory contains the signatures for each of the modules in the
+refiner. No code is implemented here--the signatures contain just
+type definitions.</P>
+
+<P>There are two implementations of terms. The <TT>term_std</TT>
+directory contains the naive implementation of terms, where the
+abstract implementation <TT>term</TT> is the same as the visible
+definition <TT>term'</TT>. The <TT>term_std</TT> implementation
+is being phased out in favor of the <TT>term_ds</TT> module (&quot;ds&quot;
+for &quot;delayed substitution&quot;). The <TT>term_ds</TT> module
+is much more efficient for performing refinement operations because
+the lazy computation of substitutions has nearly linear complexity
+for large refinements, while the <TT>term_std</TT> module performs
+a complete term copy on every substitution. Both term modules
+have identical signatures, and they can be interchanged without
+affecting the refinement functionality. The <TT>term_gen</TT>
+directory contains term operations that are shared between the
+two implementations of terms.</P>
+
+<P>The <TT>rewrite</TT> directory contains the implementation
+of the rewriter. The <TT>refine</TT> directory implements the
+refiner. The separate refiner modules are composed in the <TT>refiner_std</TT>
+and <TT>refiner_ds</TT> modules.</P>
+
+<P>The final directory contains general term operations for arbitrary
+implementations of the refiner. Some modules include <TT>term_table</TT>:
+a hash table with term keys, <TT>dform</TT>: the display mechanism
+for pretty-printing terms; <TT>resource</TT>: the basic definitions
+for defining inheritable module resources.
+
+</BODY>
+</HTML>

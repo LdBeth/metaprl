@@ -1,0 +1,32 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>Nuprl-Light Type Inference Resource</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>Nuprl-Light Type Inference Resource</H1>
+
+<P>The type inference resource provides the base resource for
+the type inference algorithm. The resource has the following declarations:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>type</B> typeinf_func = unify_subst -&gt; term -&gt; unify_subst * term
+<B>type</B> typeinf_comp = typeinf_func -&gt; typeinf_func
+<B>type</B> typeinf_resource_info = term * typeinf_comp
+<B>type</B> typeinf_data
+<B>resource</B> (typeinf_resource_info, typeinf_func, typeinf_data) typeinf_resource</PRE>
+</BLOCKQUOTE>
+
+<P>The type inference algorithm is an extension of Algorithm W.
+A type inference component taks a partial unification of variables
+to types, and a term, and it produces a new partial unification,
+togher with a term representing the type of the term argument.</P>
+
+<P>Components are added to the type inference algorithm by specifying
+a <I>pattern</I> for the inference, and a function to produce
+the type inference component. Examples of type inference components
+are in modules for the <TT>ITT</TT> theory.
+
+</BODY>
+</HTML>

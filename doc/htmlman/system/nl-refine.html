@@ -1,0 +1,187 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>Nuprl-Light Refiner</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>Nuprl-Light Refiner</H1>
+
+<P>The Nuprl-Light refiner uses the term rewriter to implement
+four kinds of formal objects:</P>
+
+<OL>
+  <LI>Computational rewrites,
+  <LI>Conditional rewrites,
+  <LI>Axioms: true statements in a logic,
+  <LI>Inference rules: relations between the provable statements.
+</OL>
+
+<H4>Computational Rewrites</H4>
+
+<P>Computational rewrites represent equaivalences between terms
+that hold in any context. For example, in our currently implemented
+logics, beta-equivalence holds in every context:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>rewrite</B> beta : apply{lambda{x. 'b['x]}; 'a} &lt;--&gt; 'b['a].</PRE>
+</BLOCKQUOTE>
+
+<P>This rewrite may not hold in logics that formalize computational
+complexity, or in logics that allow effects or require an explicit
+evaluation order.</P>
+
+<H4>Conditional Rewrites</H4>
+
+<P>Conditional rewrites are defined specifically for sequent calculi.
+An example of a conditional rewrite is a rewrite for division:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>rewrite</B> one : ('x &lt;&gt; 0) --&gt; ('x / 'x) --&gt; 1</PRE>
+</BLOCKQUOTE>
+
+<P>The application of this rewrite requires a proof that the term
+being divided is not zero.</P>
+
+<H4>Axioms</H4>
+
+<P>Axioms are a degenerate form of inference rules that represent
+true statements of a logic. An axiom is usually just a term that
+represents a valid proposition. For instance:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>axiom</B> true_ax : true
+<B>axiom</B> identity_ax : int -&gt; int</PRE>
+</BLOCKQUOTE>
+
+<P>The second axiom states that the <I>proposition</I> <TT>int
+-&gt; int</TT> is true. This would be a valid axioms in the propositions-as-types
+interpretation: it would be <I>proved</I> by any function over
+the integers.</P>
+
+<H4>Inference Rules</H4>
+
+<P>Inference rules are used to specify &quot;conditional&quot;
+axioms. Most logical statements have the form of a rule. An example
+in a sequent calculus is the rule for implication introduction:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>axiom</B> imp_intro 'H 'x :
+    sequent { 'H; x: 'A &gt;- 'B } --&gt;
+    sequent { 'H &gt;- 'A =&gt; 'B }</PRE>
+</BLOCKQUOTE>
+
+<P>This is the standard rule: the proposition <TT>'A</TT> implies
+the proposition <TT>'B</TT> if <TT>'B</TT> can be proved by assuming
+<TT>'A</TT>. The arguments <TT>'H</TT> and <TT>'x</TT> represent
+<I>parameters</I> of the rewrite. Given a term matching the <I>goal</I>
+<TT>sequent { 'H &gt;- 'A =&gt; 'B }</TT>, the application of
+the <TT>imp_intro</TT> rule produces a subgoal of the form <TT>sequent
+{ 'H; x: 'A &gt;- 'B }</TT>. The parameters <TT>'H</TT> and <TT>'x</TT>
+are necessary arguments to enable the application: <TT>'H</TT>
+represents the list of hypotheses of the sequent, and the <TT>'x</TT>
+parameter provides the new variable name used in the subgoal.</P>
+
+<H2>Refiner types</H2>
+
+<P>Refiners are constructed recursively as objects of type <TT>refiner</TT>.
+The <TT>null_refiner</TT> value is the empty refiner containing
+no rewrites, and no rules. The following types are related to
+the refiner:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>type</B> rewrite
+<B>type</B> tactic
+<B>type</B> sentinal
+<B>type</B> extract</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>rewrite</TT> type is used to represent both simple
+and conditional rewrites. The <TT>tactic</TT> type is used to
+represent axioms and inference rules. The <TT>extract</TT> type
+is used to provide accouning information for applications of rules.
+The <TT>sentinal</TT> type is a condensed representation of the
+refiner that incudes the collection of all valid rewrites and
+rules in the refiner.</P>
+
+<P>The objects in the refiner are constructed through four functions,
+one for each object type. These functions have the following types:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> create_rewrite : refiner -&gt; <I>rewrite args</I> -&gt; rewrite
+<B>val</B> create_cond_rewrite : refiner -&gt; <I>cond rewrite args</I> -&gt; rewrite
+<B>val</B> create_axiom : refiner -&gt; <I>axiom args </I>-&gt; tactic
+<B>val</B> create_rule : refiner -&gt; <I>rule args</I> -&gt; tactic</PRE>
+</BLOCKQUOTE>
+
+<P>Several operations are defined on rewrites:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> rwaddr : rewrite -&gt; address -&gt; rewrite
+<B>val</B> andthenrw : rewrite -&gt; rewrite -&gt; rewrite
+<B>val</B> orelserw : rewrite -&gt; rewrite -&gt; rewrite
+<B>val</B> rwtactic : rewrite -&gt; tactic</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>rwaddr</TT> function applies the rewrite to a subterm
+of the goal. The <TT>andthenrw</TT> provides sequencing: when
+the rewrite <TT>(andthenrw rw1 rw2)</TT>is applied, the rewrite
+<TT>rw1</TT> is first applied, and it is immediately followed
+by applying the rewrite <TT>rw2</TT>. The <TT>orelserw</TT> rewrite
+is similar for handling failures. When the rewrite <TT>(orelserw
+rw1 rw2)</TT> is applied, the rewrite <TT>rw1</TT> is applied
+to the goal. If <TT>rw1</TT> succeeds, the rewrite completes without
+applying <TT>rw2</TT>. Otherwise, if <TT>rw1</TT> fails (by raising
+an exception), the rewrite is restarted by applying <TT>rw2</TT>.
+The final function converts a rewrite to a tactic, so that the
+tactic mechanism can be used to apply the rewrite.</P>
+
+<P>Tactics are applied with the <TT>refine</TT> function, with
+this simplified type:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> refine : sentinal -&gt; tactic -&gt; term -&gt; term list * extract</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>refine</TT> function takes a <TT>sentinal</TT> that
+is used to check that the tactic performs a valid logical inference;
+it takes a <TT>tactic</TT> that describes the logical operation
+to be performed, and it produces a list of subgoals that results
+from the apllication of the rewrites and inference rules defined
+by the tactic. A successful refinement also returns an <TT>extract</TT>
+that summarizes the logical operation. In constructive logics,
+the <TT>extract</TT> may be used to compute the computational
+content of a proof. The <TT>extract</TT> is also used to construct
+proof trees with the function <TT>compose</TT>:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> compose : extract -&gt; extract list -&gt; extract</PRE>
+</BLOCKQUOTE>
+
+<P>If <TT>extract1</TT> is the extract of a refinement, and <TT>extracts2</TT>
+is a list of extracts for refinements of each of the subgoals,
+then <TT>(compose extract1 extracts2)</TT> is a valid extract
+for the composed proof. As defined, extracts <I>always</I> represent
+valid proofs. However, for untrusted distributed refinement, or
+for proof-carrying code, a checker is implemented as the function:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> term_of_extract : extract -&gt; term</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>term_of_extract</TT> function checks that the extract
+is valid, and it also produces the computational contents for
+constructive proofs.</P>
+
+<P>The final important operation of the refiner is the sentinal
+computation. A sentinal is essentially a summary of all the formal
+objects in a refiner. The sentinal is used during refinement to
+check for valid applications of rules and rewrites. The function
+<TT>sentinal_of_refiner</TT> computes the summary for a refiner.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> sentinal_of_refiner : refiner -&gt; sentinal</PRE>
+</BLOCKQUOTE>
+
+</BODY>
+</HTML>

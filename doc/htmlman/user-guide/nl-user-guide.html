@@ -1,0 +1,54 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>Nuprl-Light User Guide</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>Nuprl-Light User Guide</H1>
+
+<P>Nuprl-Light is implemented as an extension to the OCaml compiler.
+This document covers that language extension. To know more about
+the <I>logical</I> properties of Nuprl-Light, you should read
+about the <A HREF="../framework/default.html">logical framework</A>,
+and to know more about the <I>system implementation</I>, you should
+read the <A HREF="../system/default.html">system description</A>.</P>
+
+<P>The OCaml extension includes <I>interfaces</I> (<TT>.mli</TT>
+files), and <I>implementations</I> (<TT>.ml</TT> files). In OCaml,
+interfaces define module signatures: a declaration of the functions
+that comprise an implementation. In Nuprl-Light, we extend signatures
+with <I>logical declarations:</I> properties that are satisfied
+by the implementation, including properties about the ML programs
+in the implementation, and other <I>logical</I> properties including
+axioms and inference rules. The implementations contain <I>programs</I>
+that implement the ML declarations, and <I>proofs</I> that implement
+the logical part. The framework relies on the judgements-as-types
+principle: logical statements in an interface are <I>types</I>,
+and their proofs in the implementation are <I>programs</I>.</P>
+
+<P>Unlike OCaml, the logical structure of a module is defined
+recursively by <I>inheritence</I>. The differences between the
+logical structure and the program structure are explained in the
+section on the <TT>include</TT> directive.</P>
+
+<P>The following sections describe each of the parts of the logical
+extension:</P>
+
+<UL>
+  <LI><A HREF="nl-terms.html"><I>Terms</I></A> define general logical
+  <I>syntax</I>.
+  <LI><A HREF="nl-dform.html">Display forms</A> describe how to
+  pretty-print terms.
+  <LI><A HREF="nl-axiom.html">The <TT>axiom</TT> directive</A>
+  defines axioms and inference rules.
+  <LI><A HREF="nl-rewrite.html">The <TT>rewrite</TT> directive</A>
+  defines <I>computational equivalences.</I>
+  <LI><A HREF="nl-modules.html">The <TT>include</TT> directive</A>
+  defines logical dependencies between modules.
+  <LI><A HREF="nl-editor.html">The editor</A> provides navigation
+  of the theory hierarchy, and interactive proof editing.
+</UL>
+
+</BODY>
+</HTML>
