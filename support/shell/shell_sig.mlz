@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Refiner.Refiner.Term
@@ -38,8 +38,8 @@ open Dform
 open Dform_print
 
 open Tactic_type.Tactic
-
 open Proof_edit
+open MLast
 
 (*
  * Create either in text mode,
@@ -60,6 +60,57 @@ type ls_option =
  | LsNoSummaryItems
  | LsFormal
  | LsAll
+
+(*
+ * These are the values that we recognize in MetaPRL toploop.
+ *)
+type top_expr =
+   (* Base types *)
+   UnitExpr of unit
+ | BoolExpr of bool
+ | IntExpr of int
+ | StringExpr of string
+ | TermExpr of term
+ | TacticExpr of tactic
+ | ConvExpr of conv
+ | AddressExpr of address
+
+   (* Uptyped tuples and functions *)
+ | ListExpr of top_expr list
+
+   (* Common cases are typed *)
+ | UnitFunExpr of (unit -> top_expr)
+ | BoolFunExpr of (bool -> top_expr)
+ | IntFunExpr of (int -> top_expr)
+ | StringFunExpr of (string -> top_expr)
+ | TermFunExpr of (term -> top_expr)
+ | TacticFunExpr of (tactic -> top_expr)
+ | IntTacticFunExpr of ((int -> tactic) -> top_expr)
+ | ConvFunExpr of (conv -> top_expr)
+ | AddressFunExpr of (address -> top_expr)
+
+   (* These functions take lists *)
+ | IntListFunExpr of (int list -> top_expr)
+ | StringListFunExpr of (string list -> top_expr)
+ | TermListFunExpr of (term list -> top_expr)
+ | TacticListFunExpr of (tactic list -> top_expr)
+ | ConvListFunExpr of (conv list -> top_expr)
+
+   (* Internal use only *)
+ | FunExpr of (top_expr -> top_expr)
+ | ApplyExpr of (loc * top_expr) * (loc * top_expr)
+ | VarExpr of string
+ | VarProjExpr of string list * string
+
+(*
+ * These are the possible types of the top_expr's.
+ *)
+type top_type =
+   UnitType | BoolType | IntType | StringType | TermType | TacticType | ConvType | AddressType
+ | ListType of top_type
+ | NilType  (* 'a list *)
+ | ConsType (* 'a -> 'a list -> 'a list *)
+ | FunType of top_type * top_type
 
 (*
  * An editable object.

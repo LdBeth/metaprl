@@ -45,7 +45,7 @@ open Dform
 open Filter_type
 open Term_grammar
 
-open Mptop
+open Shell_sig
 
 let debug_lock =
    create_debug (**)
@@ -116,29 +116,13 @@ let create () =
      state_inline_terms = [];
      state_inline_var = 0;
      state_tactic = default_saved_tactic;
-     state_toploop = Mptop.get_toploop_resource (Mp_resource.find Mp_resource.top_bookmark);
+     state_toploop = Mptop.get_toploop_resource (Mp_resource.find Mp_resource.top_bookmark) [];
      state_input_info = Buffered [];
      state_interactive = true
    }
 
-let fork { state_mk_opname = mk_opname;
-           state_df_base = df_base;
-           state_inline_terms = inline_terms;
-           state_inline_var = inline_var;
-           state_tactic = tactic;
-           state_toploop = toploop;
-           state_input_info = info;
-           state_interactive = inter
-    } =
-   { state_mk_opname = mk_opname;
-     state_df_base = df_base;
-     state_inline_terms = inline_terms;
-     state_inline_var = inline_var;
-     state_tactic = tactic;
-     state_toploop = toploop;
-     state_input_info = info;
-     state_interactive = inter
-   }
+let fork state =
+   { state with state_mk_opname = state.state_mk_opname }
 
 (************************************************************************
  * CLIENT FUNCTIONS                                                     *
@@ -411,9 +395,8 @@ let set_module state name =
             Mp_resource.recompute_top ();
             Mp_resource.find Mp_resource.top_bookmark
    in
-   let top = Mptop.get_toploop_resource rsrc in
    let shell_expr = IntFunExpr (fun i -> TermExpr (get_term_state state i)) in
-      Mptop.add_commands top ["shell_get_term", shell_expr];
+   let top = Mptop.get_toploop_resource rsrc ["", "shell_get_term", shell_expr, FunType(IntType, TermType)] in
       state.state_toploop <- top
 
 let get_toploop state =

@@ -41,37 +41,35 @@ open Term_io
 let magic = "MP-Caml3.02 term:"
 let magic_len = String.length magic
 
-let get_string s =
-   let len = String.length s in
-      if len < magic_len || String.sub s 0 magic_len <> magic then
-         raise (Invalid_argument "Ml_term.get_string");
-      String.sub s magic_len (len - magic_len)
+let check_magic s =
+   if String.length s < magic_len || String.sub s 0 magic_len <> magic then
+      raise (Invalid_argument "Ml_term.get_string")
 
 (*
  * Convert to a string.
  *)
 let string_of_term t =
-   let s = Marshal.to_string (denormalize_term t) [] in
-      magic ^ s
+   magic ^ (Marshal.to_string (denormalize_term t) [])
 
 (*
  * Convert from a string.
  *)
 let term_of_string s =
-   normalize_term (Marshal.from_string (get_string s) 0 : Refiner_io.TermType.term)
+   check_magic s;
+   normalize_term (Marshal.from_string s magic_len : Refiner_io.TermType.term)
 
 (*
  * Convert to a string.
  *)
 let string_of_mterm t =
-   let s = Marshal.to_string (denormalize_meta_term t) [] in
-      magic ^ s
+   magic ^ (Marshal.to_string (denormalize_meta_term t) [])
 
 (*
  * Convert from a string.
  *)
 let mterm_of_string s =
-   normalize_meta_term (Marshal.from_string (get_string s) 0 : Refiner_io.TermType.meta_term)
+   check_magic s;
+   normalize_meta_term (Marshal.from_string s magic_len : Refiner_io.TermType.meta_term)
 
 (*
  * -*-

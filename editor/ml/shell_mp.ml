@@ -55,6 +55,7 @@ open Filter_grammar
 open Mptop
 open Mp_version
 
+open Shell_sig
 open Shell_p4_sig
 
 module ShellP4 =
@@ -111,12 +112,7 @@ struct
     * Evaluate a tactic through the toploop resource.
     *)
    let eval_tactic state =
-      Shell_state.synchronize state (function expr ->
-          match expr_of_ocaml_expr (Shell_state.get_toploop state) expr with
-             TacticExpr tac ->
-                tac
-           | _ ->
-               raise (RefineError ("eval_tactic", StringError "expression is not a tactic")))
+      Shell_state.synchronize state (tactic_of_ocaml_expr (Shell_state.get_toploop state))
 
    let parse_string state =
       Shell_state.synchronize state (function str ->
@@ -127,39 +123,11 @@ struct
       Shell_state.synchronize state (function str ->
          let instream = Stream.of_string str in
          let expr = Grammar.Entry.parse Pcaml.expr instream in
-         let _ = expr_of_ocaml_expr (Shell_state.get_toploop state) expr in
-            ())
+            ignore(evaluate_ocaml_expr (Shell_state.get_toploop state) expr))
 
    (************************************************************************
     * TOPLOOP                                                              *
     ************************************************************************)
-
-  let string_type = function
-      UnitExpr _ ->        ": unit"
-    | BoolExpr _ ->        ": bool"
-    | IntExpr _ ->         ": int"
-    | AddressExpr _ ->     ": address"
-    | StringExpr _ ->      ": string"
-    | TermExpr _ ->        ": term"
-    | TacticExpr _ ->      ": tactic"
-    | ConvExpr _ ->        ": conv"
-    | ListExpr _ ->        ": list"
-    | TupleExpr _ ->       ": tuple"
-    | FunExpr _ ->         ": expr -> expr"
-    | UnitFunExpr _ ->     ": unit -> expr"
-    | BoolFunExpr _ ->     ": bool -> expr"
-    | IntFunExpr _ ->      ": int -> expr"
-    | StringFunExpr _ ->   ": string -> expr"
-    | TermFunExpr _ ->     ": term -> expr"
-    | TacticFunExpr _ ->   ": tactic -> expr"
-    | IntTacticFunExpr _ -> ": (int -> tactic) -> expr"
-    | AddressFunExpr _
-    | AddrFunExpr _ ->     ": address -> expr"
-    | ConvFunExpr _ ->     ": conv -> expr"
-    | StringListFunExpr _ -> ": string list -> expr"
-    | TermListFunExpr _ -> ": term list -> expr"
-    | TacticListFunExpr _ -> ": tactic list -> expr"
-    | ConvListFunExpr _ -> ": conv list -> expr"
 
    let rec format_expr buf df = function
       UnitExpr () ->
@@ -180,37 +148,28 @@ struct
          format_expr_list buf df l;
          format_popm buf;
          format_char buf ']';
-    | TupleExpr l ->
-         format_char buf '(';
-         format_pushm buf 1;
-         format_expr_list buf df l;
-         format_popm buf;
-         format_char buf ')';
     | _ ->
          format_string buf "-"
 
-   and format_expr_type buf df expr =
-      format_szone buf;
-      format_expr buf df expr;
-      format_space buf;
-      format_ezone buf;
-      format_string buf (string_type expr)
-
    and format_expr_list buf df = function
       [expr] ->
-         format_expr_type buf df expr
+         format_expr buf df expr
     | expr :: exprs ->
-         format_expr_type buf df expr;
+         format_expr buf df expr;
          format_char buf ';';
          format_space buf;
          format_expr_list buf df exprs
     | [] ->
          ()
 
-   let print_expr state out expr =
-      let df = Shell_state.get_dfbase state in
+   let print_expr state out (expr,typ) =
       let buf = new_buffer () in
-         format_expr_type buf df expr;
+         format_szone buf;
+         format_expr buf (Shell_state.get_dfbase state) expr;
+         format_space buf;
+         format_ezone buf;
+         format_string buf ": ";
+         format_string buf (str_typ typ);
          print_to_channel default_width buf out;
          eflush out
 
@@ -218,7 +177,7 @@ struct
     * Evaluate a struct item.
     *)
    let eval_str_item state item =
-      let expr = expr_of_ocaml_str_item (Shell_state.get_toploop state) item in
+      let expr = evaluate_ocaml_str_item (Shell_state.get_toploop state) item in
          if Shell_state.is_interactive state then
             begin
                print_expr state stdout expr;

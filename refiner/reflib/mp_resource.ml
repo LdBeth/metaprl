@@ -264,7 +264,7 @@ let (global_processed_data : (string, (bookmark, (Obj.t,Obj.t) proc_result) Hash
    Hashtbl.create 19
 
 let obj_processor (proc : ('input, 'output) processor) =
-   (Obj.obj (Obj.repr proc) : (Obj.t, Obj.t) processor)
+   (Obj.magic proc : (Obj.t, Obj.t) processor)
 
 let make_resource name proc =
    if Hashtbl.mem global_processed_data name then

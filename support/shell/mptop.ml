@@ -39,8 +39,8 @@ doc <:doc<
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   
-   Author: Jason Hickey
-   @email{jyh@cs.caltech.edu}
+   Author: Jason Hickey @email{jyh@cs.caltech.edu}
+   Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
   
    @end[license]
 >>
@@ -64,6 +64,8 @@ open Mp_resource
 open Tactic_type.Tacticals
 open Tactic_type.Conversionals
 
+open Shell_sig
+
 (* XXX Bootstrapping HACK *)
 let _ = Theory.substitute_dforms "comment" "summary"
 
@@ -77,7 +79,7 @@ doc <:doc<
    definition.
   
    @begin[verbatim]
-   type expr =
+   type top_expr =
       (* Base types *)
       UnitExpr of unit
     | BoolExpr of bool
@@ -89,98 +91,70 @@ doc <:doc<
     | AddressExpr of address
   
       (* Untyped tuples and functions *)
-    | ListExpr of expr list
-    | TupleExpr of expr list
-    | FunExpr of (expr -> expr)
+    | ListExpr of top_expr list
   
       (* Common cases are typed *)
-    | UnitFunExpr of (unit -> expr)
-    | BoolFunExpr of (bool -> expr)
-    | IntFunExpr of (int -> expr)
-    | StringFunExpr of (string -> expr)
-    | TermFunExpr of (term -> expr)
-    | TacticFunExpr of (tactic -> expr)
-    | IntTacticFunExpr of ((int -> tactic) -> expr)
-    | ConvFunExpr of (conv -> expr)
-    | AddressFunExpr of (address -> expr)
+    | UnitFunExpr of (unit -> top_expr)
+    | BoolFunExpr of (bool -> top_expr)
+    | IntFunExpr of (int -> top_expr)
+    | StringFunExpr of (string -> top_expr)
+    | TermFunExpr of (term -> top_expr)
+    | TacticFunExpr of (tactic -> top_expr)
+    | IntTacticFunExpr of ((int -> tactic) -> top_expr)
+    | ConvFunExpr of (conv -> top_expr)
+    | AddressFunExpr of (address -> top_expr)
   
       (* These functions take lists *)
-    | AddrFunExpr of (int list -> expr)
-    | StringListFunExpr of (string list -> expr)
-    | TermListFunExpr of (term list -> expr)
-    | TacticListFunExpr of (tactic list -> expr)
-    | ConvListFunExpr of (conv list -> expr)
+    | AddrFunExpr of (int list -> top_expr)
+    | StringListFunExpr of (string list -> top_expr)
+    | TermListFunExpr of (term list -> top_expr)
+    | TacticListFunExpr of (tactic list -> top_expr)
+    | ConvListFunExpr of (conv list -> top_expr)
    @end[verbatim]
    @end[doc]
 >>
-type expr =
-   (* Base types *)
-   UnitExpr of unit
- | BoolExpr of bool
- | IntExpr of int
- | StringExpr of string
- | TermExpr of term
- | TacticExpr of tactic
- | ConvExpr of conv
- | AddressExpr of address
 
-   (* Uptyped tuples and functions *)
- | ListExpr of expr list
- | TupleExpr of expr list
- | FunExpr of (expr -> expr)
+type item = string * string * top_expr * top_type
 
-   (* Common cases are typed *)
- | UnitFunExpr of (unit -> expr)
- | BoolFunExpr of (bool -> expr)
- | IntFunExpr of (int -> expr)
- | StringFunExpr of (string -> expr)
- | TermFunExpr of (term -> expr)
- | TacticFunExpr of (tactic -> expr)
- | IntTacticFunExpr of ((int -> tactic) -> expr)
- | ConvFunExpr of (conv -> expr)
- | AddressFunExpr of (address -> expr)
+module TableBase = struct
+   type elt = string
+   type data = string * top_expr * top_type
 
-   (* These functions take lists *)
- | AddrFunExpr of (int list -> expr)
- | StringListFunExpr of (string list -> expr)
- | TermListFunExpr of (term list -> expr)
- | TacticListFunExpr of (tactic list -> expr)
- | ConvListFunExpr of (conv list -> expr)
+   let print _ _ = ()
+   let compare = String.compare
+   let append = (@)
+end
+
+module Table = Red_black_table.MakeTable (TableBase)
 
 (*
  * The resource maps strings to values.
  *)
-type top_table =
-   (string, string * expr) Hashtbl.t
+type top_table = Table.t
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
 
-let create () =
-   Hashtbl.create 201
+let add tbl (module_name,name,expr,typ) =
+   Table.add tbl name ((String.capitalize module_name),expr,typ)
 
-let add tbl (module_name,name,expr) =
-   Hashtbl.add tbl name ((String.capitalize module_name),expr)
+let add_list = List.fold_left add
 
-let add_commands tbl =
-   List.iter (fun (name, expr) -> Hashtbl.add tbl name ("",expr))
-
-let retr tbl = tbl
-let mem = Hashtbl.mem
+let mem = Table.mem
 
 doc <:doc< 
    @begin[doc]
    Toplevel values are added to the @Comment!resource[toploop_resource] resource.
-   The argument has type @code{string * expr}, which includes
+   The argument has type @code{string * top_expr}, which includes
    the string name of the value, and it's value.
    @docoff
    @end[doc]
 >>
-let resource toploop = Imperative {
-   imp_create = create;
-   imp_add = add;
-   imp_retr = retr
+let resource toploop = Functional {
+   fp_empty = Table.empty;
+   fp_add = add;
+   fp_retr = add_list
 }
 
 (************************************************************************
@@ -193,223 +167,36 @@ let resource toploop = Imperative {
 let not_supported loc str =
    Stdpp.raise_with_loc loc (RefineError ("mptop", StringStringError ("operation is not implemented", str)))
 
-let type_error loc str =
-   Stdpp.raise_with_loc loc (RefineError ("type error", StringError str))
-
-(*
- * Convert a list to a term list.
- *)
-let some_list_of_list f loc = function
-   ListExpr l ->
-      List.map f l
- | _ ->
-      type_error loc "expr should be a list"
-
-let term_expr loc = function
-   TermExpr t ->
-      t
- | _ ->
-      type_error loc "expr should be a term"
-
-let int_expr loc = function
-   IntExpr t ->
-      t
- | _ ->
-      type_error loc "expr should be an int"
-
-let string_expr loc = function
-   StringExpr t ->
-      t
- | _ ->
-      type_error loc "expr should be a string"
-
-let tactic_expr loc = function
-   TacticExpr t ->
-      t
- | _ ->
-      type_error loc "expr should be a tactic"
-
-let conv_expr loc = function
-   ConvExpr t ->
-      t
- | _ ->
-      type_error loc "expr should be a conv"
-
-let term_list_of_list loc = some_list_of_list (term_expr loc) loc
-let int_list_of_list loc = some_list_of_list (int_expr loc) loc
-let string_list_of_list loc = some_list_of_list (string_expr loc) loc
-let tactic_list_of_list loc = some_list_of_list (tactic_expr loc) loc
-let conv_list_of_list loc = some_list_of_list (conv_expr loc) loc
-
-(*
- * Want an int tactic.
- *)
-let int_tactic_expr loc = function
-   IntFunExpr f ->
-      (fun i ->
-            match f i with
-               TacticExpr tac ->
-                  tac
-             | _ ->
-                  type_error loc "int tactic expected")
- | _ ->
-      type_error loc "int tactic expected"
-
-(*
- * Lookup a variable from the table.
- *)
-let rec mk_var_expr base loc v =
-   try snd (Hashtbl.find base v) with
-      Not_found ->
-         Stdpp.raise_with_loc loc (RefineError ("mk_var_expr", StringStringError ("undefined variable", v)))
-
-and mk_proj_expr base loc expr =
-   let rec search modname v = function
-      (modname', expr) :: tl ->
-         if modname' = modname then
-            expr
-         else
-            search modname v tl
-    | [] ->
-         Stdpp.raise_with_loc loc (**)
-            (RefineError ("mk_proj_expr",
-                          StringStringError ("undefined variable", modname ^ "." ^ v)))
-   in
-   let lookup names v =
-      match names with
-         [modname] ->
-            search modname v (Hashtbl.find_all base v)
-       | _ ->
-            Stdpp.raise_with_loc loc (**)
-               (RefineError ("mk_proj_expr", StringError "nested modules are not implemented"))
-   in
-   let rec collect names expr =
-      match expr with
+let rec mk_proj_expr loc top_expr =
+   let rec collect names top_expr =
+      match top_expr with
          (<:expr< $uid: name$ . $e2$ >>) ->
             collect (name :: names) e2
        | (<:expr< $lid: v$ >>) ->
-            lookup names v
+            VarProjExpr(names, v)
        | _ ->
             not_supported loc "expr projection"
    in
-      collect [] expr
-
-(*
- * For an application, we lookup the function and try to
- * specialize the argument.
- *)
-and mk_apply_expr base loc f a =
-   let a = mk_expr base a in
-      match mk_expr base f with
-         FunExpr f ->
-            f a
-       | UnitFunExpr f ->
-            begin
-               match a with
-                  UnitExpr () ->
-                     f ()
-                | _ ->
-                     type_error loc "expr should be unit"
-            end
-       | BoolFunExpr f ->
-            begin
-               match a with
-                  BoolExpr a ->
-                     f a
-                | _ ->
-                     type_error loc "expr should be a bool"
-            end
-       | IntFunExpr f ->
-            begin
-               match a with
-                  IntExpr a ->
-                     f a
-                | _ ->
-                     type_error loc "expr should be int"
-            end
-       | StringFunExpr f ->
-            begin
-               match a with
-                  StringExpr a ->
-                     f a
-                | _ ->
-                     type_error loc "expr should be a string"
-            end
-       | TermFunExpr f ->
-            begin
-               match a with
-                  TermExpr a ->
-                     f a
-                | _ ->
-                     type_error loc "expr should be a term"
-            end
-       | TacticFunExpr f ->
-            begin
-               match a with
-                  TacticExpr a ->
-                     f a
-                | _ ->
-                     type_error loc "expr should be a tactic"
-            end
-       | IntTacticFunExpr f ->
-            f (int_tactic_expr loc a)
-       | ConvFunExpr f ->
-            begin
-               match a with
-                  ConvExpr a ->
-                     f a
-                | _ ->
-                     type_error loc "expr should be a conversion"
-            end
-       | AddressFunExpr f ->
-            begin
-               match a with
-                  AddressExpr a ->
-                     f a
-                | ListExpr _ ->
-                     f (make_address (int_list_of_list loc a))
-                | _ ->
-                     type_error loc "expr should be an address"
-            end
-       | AddrFunExpr f ->
-            f (int_list_of_list loc a)
-       | StringListFunExpr f ->
-            f (string_list_of_list loc a)
-       | TermListFunExpr f ->
-            f (term_list_of_list loc a)
-       | TacticListFunExpr f ->
-            f (tactic_list_of_list loc a)
-       | ConvListFunExpr f ->
-            f (conv_list_of_list loc a)
-       | UnitExpr _
-       | BoolExpr _
-       | IntExpr _
-       | StringExpr _
-       | TermExpr _
-       | TacticExpr _
-       | ConvExpr _
-       | AddressExpr _
-       | ListExpr _
-       | TupleExpr _ ->
-            type_error loc "expr should be a function"
+      collect [] top_expr
 
 (*
  * A tuple of expressions.
  * We only support unit for now.
  *)
-and mk_tuple_expr base loc = function
+and mk_tuple_expr loc = function
    [] ->
       UnitExpr ()
  | _ ->
       not_supported loc "tuple expression"
 
-and mk_expr base expr =
-   let loc = loc_of_expr expr in
-      match expr with
-         (<:expr< $e1$ . $e2$ >> as expr) ->
-            mk_proj_expr base loc expr
+and mk_expr top_expr =
+   let loc = loc_of_expr top_expr in
+   let expr =
+      match top_expr with
+         (<:expr< $e1$ . $e2$ >> as top_expr) ->
+            mk_proj_expr loc top_expr
        | (<:expr< $e1$ $e2$ >>) ->
-            mk_apply_expr base loc e1 e2
+            ApplyExpr (mk_expr e1, mk_expr e2)
        | (<:expr< $e1$ .( $e2$ ) >>) ->
             not_supported loc "array subscript"
        | (<:expr< [| $list:el$ |] >>) ->
@@ -436,7 +223,7 @@ and mk_expr base expr =
             not_supported loc "let"
        | (<:expr< $lid:s$ >>)
        | (<:expr< $uid:s$ >>) ->
-            mk_var_expr base loc s
+            VarExpr s
        | MLast.ExLmd _ ->
             not_supported loc "local module"
        | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
@@ -467,13 +254,9 @@ and mk_expr base expr =
        | (<:expr< try $e$ with [ $list:pwel$ ] >>) ->
             not_supported loc "try"
        | (<:expr< ( $list:el$ ) >>) ->
-            mk_tuple_expr base loc el
+            mk_tuple_expr loc el
        | (<:expr< ( $e$ : $_$ ) >>) ->
-            mk_expr base e
-(* 3.02
-       | MLast.ExXnd (_, _, e) ->
-            mk_expr base e
- *)
+            snd (mk_expr e)
        | (<:expr< while $e$ do { $list:el$ } >>) ->
             not_supported loc "while"
        | MLast.ExAnt (_, e) ->
@@ -486,8 +269,10 @@ and mk_expr base expr =
             not_supported loc "ExLab"
        | MLast.ExCoe _ ->
             not_supported loc "ExCoe"
+   in
+      loc, expr
 
-and mk_patt base patt =
+and mk_patt patt =
    let loc = loc_of_patt patt in
       match patt with
          (<:patt< $p1$ . $p2$ >>) ->
@@ -522,10 +307,6 @@ and mk_patt base patt =
             not_supported loc "pattern uid"
        | MLast.PaAnt (_, p) ->
             not_supported loc "pattern PaAnt"
-(* 3.02
-       | MLast.PaXnd _ ->
-            not_supported loc "patterm PaXnd"
- *)
        | MLast.PaVrn _ ->
             not_supported loc "patterm PaVrn"
        | MLast.PaOlb _ ->
@@ -537,7 +318,7 @@ and mk_patt base patt =
        | MLast.PaTyp _ ->
             not_supported loc "patterm PaTyp"
 
-and mk_type base t =
+and mk_type t =
    let loc = loc_of_ctyp t in
       match t with
          (<:ctyp< $t1$ . $t2$ >>) ->
@@ -583,7 +364,7 @@ and mk_type base t =
        | MLast.TyLab _ ->
             not_supported loc "type constructor Lab"
 
-and mk_sig_item base si =
+and mk_sig_item si =
    let loc = loc_of_sig_item si in
       match si with
 (*
@@ -593,7 +374,7 @@ and mk_sig_item base si =
        | MLast.SgClt _ ->
             not_supported loc "sig class"
        | (<:sig_item< declare $list:sil$ end >>) ->
-            mk_sig_item base (List_util.last sil)
+            mk_sig_item (List_util.last sil)
        | (<:sig_item< exception $s$ of $list:tl$ >>) ->
             not_supported loc "sig exception"
        | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
@@ -613,18 +394,18 @@ and mk_sig_item base si =
        | MLast.SgDir _ ->
             not_supported loc "sig dir"
 
-and mk_str_item base si =
+and mk_str_item si =
    let loc = loc_of_str_item si in
       match si with
          MLast.StCls _
        | MLast.StClt _ ->
             not_supported loc "str class"
        | (<:str_item< declare $list:stl$ end >>) ->
-            mk_str_item base (List_util.last stl)
+            mk_str_item (List_util.last stl)
        | (<:str_item< exception $s$ of $list:tl$ >>) ->
             not_supported loc "str exception"
        | (<:str_item< $exp:e$ >>) ->
-            mk_expr base e
+            mk_expr e
        | (<:str_item< external $s$ : $t$ = $list:sl$ >>) ->
             not_supported loc "str external"
        | (<:str_item< module $s$ = $me$ >>) ->
@@ -644,7 +425,7 @@ and mk_str_item base si =
        | MLast.StExc _ ->
             not_supported loc "StExc"
 
-and mk_module_type base mt =
+and mk_module_type mt =
    let loc = loc_of_module_type mt in
       match mt with
          (<:module_type< $mt1$ . $mt2$ >>) ->
@@ -662,27 +443,217 @@ and mk_module_type base mt =
        | (<:module_type< $mt$ with $list:wcl$ >>) ->
             not_supported loc "module type constraint"
 
-and mk_wc base = function
+and mk_wc = function
    WcTyp (loc, sl1, sl2, t) ->
       not_supported loc "with clause type"
  | WcMod (loc, sl1, mt) ->
       not_supported loc "with clause module"
 
-and mk_module_expr base me =
+and mk_module_expr me =
    let loc = loc_of_module_expr me in
       match me with
          (<:module_expr< $me1$ . $me2$ >>) ->
-            not_supported loc "module expr projection"
+            not_supported loc "module top_expr projection"
        | (<:module_expr< $me1$ $me2$ >>) ->
-            not_supported loc "module expr application"
+            not_supported loc "module top_expr application"
        | (<:module_expr< functor ( $s$ : $mt$ ) -> $me$ >>) ->
-            not_supported loc "module expr functor"
+            not_supported loc "module top_expr functor"
        | (<:module_expr< struct $list:sil$ end >>) ->
-            not_supported loc "module expr struct"
+            not_supported loc "module top_expr struct"
        | (<:module_expr< ( $me$ : $mt$) >>) ->
-            not_supported loc "module expr type"
+            not_supported loc "module top_expr type"
        | (<:module_expr< $uid:i$ >>) ->
-            not_supported loc "module expr id"
+            not_supported loc "module top_expr id"
+
+(************************************************************************
+ * TYPE CHECKING                                                        *
+ ************************************************************************)
+
+let type_error loc str =
+   Stdpp.raise_with_loc loc (RefineError ("Type error", StringError str))
+
+let rec str_typ = function
+   UnitType -> "unit"
+ | BoolType -> "bool"
+ | IntType -> "int"
+ | StringType -> "string"
+ | TermType -> "term"
+ | TacticType -> "tactic"
+ | ConvType -> "conv"
+ | AddressType -> "address"
+ | ListType t -> (par_str_type t) ^ " list"
+ | NilType -> "'a list"
+ | ConsType -> "'a -> 'a list -> 'a list"
+ | FunType (t1, t2) -> (par_str_type t1) ^ " -> " ^ (str_typ t2)
+
+and par_str_type = function
+   (ListType _ | FunType _ | ConsType) as t -> "(" ^ (str_typ t) ^ ")"
+ | t -> str_typ t
+
+let find_proj_expr base loc names v =
+   let rec search modname v = function
+      (modname', top_expr, top_typ) :: _ when modname' = modname ->
+         top_expr, top_typ
+    | _ :: tl ->
+         search modname v tl
+    | [] ->
+         Stdpp.raise_with_loc loc (RefineError ("mk_proj_expr", StringStringError ("undefined variable", modname ^ "." ^ v)))
+   in
+      match names with
+         [modname] ->
+            search modname v (Table.find_all base v)
+       | _ ->
+            not_supported loc "nested modules"
+
+let subtyp sub sup =
+   match sub, sup with
+      NilType, ListType _ -> true
+    | (ListType IntType | NilType), AddressType -> true
+    | _ -> sub = sup
+
+(* Returns the type of the input expression *)
+let rec expr_tp base loc = function
+   UnitExpr _ -> UnitType
+ | BoolExpr _ -> BoolType
+ | IntExpr _ -> IntType
+ | StringExpr _ -> StringType
+ | TermExpr _ -> TermType
+ | TacticExpr _ -> TacticType
+ | ConvExpr _ -> ConvType
+ | AddressExpr _ -> AddressType
+ | ListExpr [] -> NilType
+ | ListExpr (hd::tl) ->
+      let typ = expr_tp base loc hd in
+         List.iter (expr_typechk base loc typ) tl;
+         ListType typ
+ | VarExpr v ->
+   begin try
+      let _, _, typ = Table.find base v in typ
+   with Not_found ->
+      Stdpp.raise_with_loc loc (RefineError ("Mptop.mk_var_expr", StringStringError ("undefined variable", v)))
+   end
+ | VarProjExpr (names,v) ->
+      snd (find_proj_expr base loc names v)
+ | ApplyExpr (f, (loca, a)) ->
+      begin match expr_type base f with
+         FunType(t1, t2) ->
+            expr_typechk base loca t1 a;
+            t2
+       | ConsType ->
+            let t = ListType(expr_tp base loca a) in
+               FunType(t,t)
+       | _ ->
+            begin match f with
+               _, ApplyExpr _ ->
+                  type_error loc "Function is applied to too many arguments"
+             | _ ->
+                  type_error loc "Expression is not a function, it cannot be applied"
+            end
+      end
+ | UnitFunExpr _ | BoolFunExpr _ | IntFunExpr _ | StringFunExpr _ | TermFunExpr _
+ | TacticFunExpr _ | IntTacticFunExpr _ | ConvFunExpr _ | AddressFunExpr _
+ | IntListFunExpr _ | StringListFunExpr _ | TermListFunExpr _ | TacticListFunExpr _
+ | ConvListFunExpr _ | FunExpr _ ->
+      Stdpp.raise_with_loc loc (Invalid_argument "Mptop: function expression without an explicit type")
+
+and expr_type base (loc, expr) = expr_tp base loc expr
+
+and expr_typechk base loc typ expr =
+   let typ' = expr_tp base loc expr in
+      if not (subtyp typ' typ) then
+         type_error loc ("Expression has type\n   " ^ (str_typ typ') ^ "\nbut is used here as type\n   " ^ (str_typ typ))
+
+(************************************************************************
+ * EVALUATING                                                           *
+ ************************************************************************)
+
+let runtime_error loc =
+   Stdpp.raise_with_loc loc (Invalid_argument "Mptop: type mismatch not caught by type-checking")
+
+(*
+ * Lookup a variable from the table.
+ *)
+let eval_var_expr base v =
+   let _, expr, _  = Table.find base v in expr
+
+(*
+ * Convert a list to a term list.
+ *)
+let term_expr loc = function
+   TermExpr t -> t
+ | _ -> runtime_error loc
+
+let int_expr loc = function
+   IntExpr t -> t
+ | _ -> runtime_error loc
+
+let string_expr loc = function
+   StringExpr t -> t
+ | _ -> runtime_error loc
+
+let tactic_expr loc = function
+   TacticExpr t -> t
+ | _ -> runtime_error loc
+
+let conv_expr loc = function
+   ConvExpr t -> t
+ | _ -> runtime_error loc
+
+(*
+ * For an application, we lookup the function and try to
+ * specialize the argument.
+ *)
+let rec eval_apply_expr base loc f a =
+   match eval_expr base f, eval_expr base a with
+      FunExpr f, a ->
+         f a
+    | BoolFunExpr f, BoolExpr a  ->
+         f a
+    | IntFunExpr f, IntExpr a ->
+         f a
+    | StringFunExpr f, StringExpr a ->
+         f a
+    | TermFunExpr f, TermExpr a ->
+         f a
+    | TacticFunExpr f, TacticExpr a ->
+         f a
+    | ConvFunExpr f, ConvExpr a  ->
+         f a
+    | AddressFunExpr f, AddressExpr a ->
+         f a
+    | UnitFunExpr f, UnitExpr _ ->
+         f ()
+    | IntTacticFunExpr f, IntFunExpr f' ->
+         let tac i =
+            match f' i with
+               TacticExpr tac -> tac
+             | _ -> runtime_error loc
+         in
+            f tac
+    | AddressFunExpr f, ListExpr l ->
+         f (make_address (List.map (int_expr loc) l))
+    | IntListFunExpr f, ListExpr l ->
+         f (List.map (int_expr loc) l)
+    | StringListFunExpr f, ListExpr l ->
+         f (List.map (string_expr loc) l)
+    | TermListFunExpr f, ListExpr l ->
+         f (List.map (term_expr loc) l)
+    | TacticListFunExpr f, ListExpr l ->
+         f (List.map (tactic_expr loc) l)
+    | ConvListFunExpr f, ListExpr l ->
+         f (List.map (conv_expr loc) l)
+    | _ ->
+         runtime_error loc
+
+and eval_expr base = function
+   loc, ApplyExpr(f, a) ->
+      eval_apply_expr base loc f a
+ | loc, VarProjExpr(names,v) ->
+      fst (find_proj_expr base loc names v)
+ | _, VarExpr v ->
+      eval_var_expr base v
+ | _, expr ->
+      expr
 
 (************************************************************************
  * RESOURCES                                                            *
@@ -694,6 +665,8 @@ and mk_module_expr base me =
 let int_int_fun_int_expr f =
    IntFunExpr (fun i -> IntFunExpr (fun j -> IntExpr (f i j)))
 
+let int_int_fun_typ = FunType (IntType, FunType (IntType, IntType))
+
 let cons_expr =
    FunExpr (fun e1 ->
          FunExpr (fun e2 ->
@@ -704,18 +677,32 @@ let cons_expr =
                      raise (RefineError ("cons_expr", StringError "type mismatch"))))
 
 let resource toploop +=
-   ["Pervasives", "+",     int_int_fun_int_expr ( + );
-    "Pervasives", "-",     int_int_fun_int_expr ( - );
-    "Pervasives", "*",     int_int_fun_int_expr ( * );
-    "Pervasives", "/",     int_int_fun_int_expr ( / );
-    "Pervasives", "::",    cons_expr;
-    "Pervasives", "()",    UnitExpr ();
-    "Pervasives", "[]",    ListExpr [];
-    "Pervasives", "True",  BoolExpr true;
-    "Pervasives", "False", BoolExpr false]
+   ["Pervasives", "+",     int_int_fun_int_expr ( + ), int_int_fun_typ;
+    "Pervasives", "-",     int_int_fun_int_expr ( - ), int_int_fun_typ;
+    "Pervasives", "*",     int_int_fun_int_expr ( * ), int_int_fun_typ;
+    "Pervasives", "/",     int_int_fun_int_expr ( / ), int_int_fun_typ;
+    "Pervasives", "::",    cons_expr,                  ConsType;
+    "Pervasives", "()",    UnitExpr (),                UnitType;
+    "Pervasives", "[]",    ListExpr [],                NilType;
+    "Pervasives", "True",  BoolExpr true,              BoolType;
+    "Pervasives", "False", BoolExpr false,             BoolType]
 
-let expr_of_ocaml_expr = mk_expr
-let expr_of_ocaml_str_item = mk_str_item
+let tactic_of_ocaml_expr base expr =
+   let (loc, expr) as lexpr = mk_expr expr in
+      expr_typechk base loc TacticType expr;
+      match eval_expr base lexpr with
+         TacticExpr tac -> tac
+       | _ -> runtime_error loc
+
+let evaluate_ocaml_expr base expr = 
+   let expr = mk_expr expr in
+   let typ = expr_type base expr in
+      eval_expr base expr, typ
+
+let evaluate_ocaml_str_item base item =
+   let expr = mk_str_item item in
+   let typ = expr_type base expr in
+      eval_expr base expr, typ
 
 (*
  * -*-

@@ -26,70 +26,35 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 extends Summary
 
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermAddr
+open Tactic_type.Tactic
 
-open Tactic_type.Tacticals
-open Tactic_type.Conversionals
-
-(*
- * These are the values that we recognize.
- *)
-type expr =
-   (* Base types *)
-   UnitExpr of unit
- | BoolExpr of bool
- | IntExpr of int
- | StringExpr of string
- | TermExpr of term
- | TacticExpr of tactic
- | ConvExpr of conv
- | AddressExpr of address
-
-   (* Uptyped tuples and functions *)
- | ListExpr of expr list
- | TupleExpr of expr list
- | FunExpr of (expr -> expr)
-
-   (* Common cases are typed *)
- | UnitFunExpr of (unit -> expr)
- | BoolFunExpr of (bool -> expr)
- | IntFunExpr of (int -> expr)
- | StringFunExpr of (string -> expr)
- | TermFunExpr of (term -> expr)
- | TacticFunExpr of (tactic -> expr)
- | IntTacticFunExpr of ((int -> tactic) -> expr)
- | ConvFunExpr of (conv -> expr)
- | AddressFunExpr of (address -> expr)
-
-   (* These functions take lists *)
- | AddrFunExpr of (int list -> expr)
- | StringListFunExpr of (string list -> expr)
- | TermListFunExpr of (term list -> expr)
- | TacticListFunExpr of (tactic list -> expr)
- | ConvListFunExpr of (conv list -> expr)
+open Shell_sig
 
 type top_table
+type item = string * string * top_expr * top_type
 
 (*
  * The resource maps strings to values.
  * Input: module name, local name, expr
  *)
-resource (string * string * expr, top_table) toploop
+resource (item, item list -> top_table) toploop
 
-val add_commands : top_table -> (string * expr) list -> unit
 val mem : top_table -> string -> bool
 
 (*
  * A resource for compiling expressions from OCaml input.
  *)
-val expr_of_ocaml_expr : top_table -> MLast.expr -> expr
-val expr_of_ocaml_str_item : top_table -> MLast.str_item -> expr
+val tactic_of_ocaml_expr : top_table -> MLast.expr -> tactic
+val evaluate_ocaml_expr : top_table -> MLast.expr -> top_expr * top_type
+val evaluate_ocaml_str_item : top_table -> MLast.str_item -> top_expr * top_type
+val str_typ : top_type -> string
 
 (*
  * -*-

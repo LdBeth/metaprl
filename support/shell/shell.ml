@@ -147,7 +147,7 @@ type info =
 (* We should skip the packages that do not have basic shell commands in them *)
 let shell_package pkg =
    let name = String.capitalize (Package.name pkg) in
-   try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name))) "cd"
+   try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd"
    with Not_found -> false
 
 (*

@@ -358,70 +358,46 @@ let interactive_exn loc name =
 let raise_toploop_exn loc =
    Stdpp.raise_with_loc loc (RefineError ("topval", StringError
                                           "The types allowed in toploop expressions are limited.\n\
-Your type is not understood. See the module Mptop for allowed types."))
+Your type is not understood. See the support/shell/shell_sig.mlz file\n\
+for the list of allowed types."))
 
 (*
  * This function checks that the type is acceptable for the toploop
  * and creates a toploop expression
  *)
 let toploop_item_expr loc name ctyp =
-   let rec collect index expr = function
-      <:ctyp< unit >> ->
-         mptop "UnitExpr" expr
-    | <:ctyp< bool >> ->
-         mptop "BoolExpr" expr
-    | <:ctyp< int >> ->
-         mptop "IntExpr" expr
-    | <:ctyp< string >> ->
-         mptop "StringExpr" expr
-    | <:ctyp< term >> ->
-         mptop "TermExpr" expr
-    | <:ctyp< tactic >> ->
-         mptop "TacticExpr" expr
-    | <:ctyp< conv >> ->
-         mptop "ConvExpr" expr
-    | <:ctyp< $t1$ -> $t2$ >> ->
-         collect_fun index expr t1 t2
-    | _ ->
-         raise_toploop_exn loc
-   and collect_fun index expr t1 t2 =
-      match t1 with
-         <:ctyp< unit >> ->
-            mpfun index "UnitFunExpr" expr t2
-       | <:ctyp< bool >> ->
-            mpfun index "BoolFunExpr" expr t2
-       | <:ctyp< int >> ->
-            mpfun index "IntFunExpr" expr t2
-       | <:ctyp< string >> ->
-            mpfun index "StringFunExpr" expr t2
-       | <:ctyp< term >> ->
-            mpfun index "TermFunExpr" expr t2
-       | <:ctyp< tactic >> ->
-            mpfun index "TacticFunExpr" expr t2
-       | <:ctyp< conv >> ->
-            mpfun index "ConvFunExpr" expr t2
-       | <:ctyp< address >>
-       | <:ctyp< list $lid: "int"$ >> ->
-            mpfun index "AddrFunExpr" expr t2
-       | <:ctyp< list $lid: "string"$ >> ->
-            mpfun index "StringListFunExpr" expr t2
-       | <:ctyp< list $lid: "term"$ >> ->
-            mpfun index "TermListFunExpr" expr t2
-       | <:ctyp< list $lid: "tactic"$ >> ->
-            mpfun index "TacticListFunExpr" expr t2
-       | <:ctyp< list $lid: "conv"$ >> ->
-            mpfun index "ConvListFunExpr" expr t2
-       | <:ctyp< int -> $lid: "tactic"$ >> ->
-            mpfun index "IntTacticFunExpr" expr t2
+   let str_lid s =
+      match s with
+         "unit" | "bool" |  "int" | "string" | "term" | "tactic" | "conv" | "address" ->
+            String.capitalize s
        | _ ->
             raise_toploop_exn loc
-   and mptop name expr =
-      <:expr< Mptop. $uid: name$ $expr$ >>
-   and mpfun index name expr t2 =
-      let v = sprintf "v%d" index in
-      let patt = <:patt< $lid: v$ >> in
-      let expr = collect (succ index) <:expr< $expr$ $lid: v$ >> t2 in
-         <:expr< Mptop. $uid: name$ (fun [ $list: [ patt, None, expr ]$ ]) >>
+   in let rec collect index expr = function
+      <:ctyp< $lid: typ$ >> ->
+         let name = str_lid typ in
+            <:expr< Shell_sig. $uid: name ^ "Expr"$ $expr$ >>, <:expr< Shell_sig. $uid: name ^ "Type"$ >>
+    | <:ctyp< $t1$ -> $t2$ >> ->
+         let v = sprintf "v%d" index in
+         let patt = <:patt< $lid: v$ >> in
+         let expr,texpr = collect (succ index) <:expr< $expr$ $lid: v$ >> t2 in
+         let expr = <:expr< fun [ $list: [patt, None, expr]$ ]>> in
+            begin match t1 with
+               <:ctyp< $lid: typ$ >> ->
+                  let name = str_lid typ in
+                     <:expr< Shell_sig. $uid: name ^ "FunExpr"$ $expr$ >>,
+                     <:expr< Shell_sig.FunType Shell_sig.$uid: name ^ "Type"$ $texpr$ >>
+             | <:ctyp< list $lid: typ$ >> ->
+                  let name = str_lid typ in
+                     <:expr< Shell_sig. $uid: name ^ "ListFunExpr"$ $expr$ >>,
+                     <:expr< Shell_sig.FunType (Shell_sig.ListType Shell_sig.$uid: name ^ "Type"$) $texpr$ >>
+             | <:ctyp< int -> tactic >> ->
+                  <:expr< Shell_sig.IntTacticFunExpr $expr$ >>,
+                  <:expr< Shell_sig.FunType (Shell_sig.FunType Shell_sig.IntType Shell_sig.TacticType) $texpr$ >>
+             | _ ->
+                  raise_toploop_exn loc
+            end
+    | _ ->
+         raise_toploop_exn loc
    in
       collect 0 <:expr< $lid: name$ >> ctyp
 
@@ -611,14 +587,14 @@ let impr_resource proc loc name expr =
    <:expr< Mp_resource.improve $str:name$ (Obj.repr ( $expr$ : $res_type proc loc name$ )) >>
 
 let impr_resource_list proc loc name expr =
-   <:expr< Mp_resource.improve_list $str:name$ (Obj.obj (Obj.repr ( $expr$ : (list $res_type proc loc name$) ))) >>
+   <:expr< Mp_resource.improve_list $str:name$ (Obj.magic ( $expr$ : (list $res_type proc loc name$) )) >>
 
 (************************************************************************
  * TOP LOOP                                                             *
  ************************************************************************)
 
-let impr_toploop proc loc name expr =
-   let expr = <:expr< ($str:proc.imp_name$, $str: name$, $expr$) >> in
+let impr_toploop proc loc name (expr,texpr) =
+   let expr = <:expr< ($str:proc.imp_name$, $str: name$, $expr$, $texpr$) >> in
       <:str_item< ($impr_resource proc loc "toploop" expr$) >>
 
 (*
@@ -628,25 +604,25 @@ let impr_toploop proc loc name expr =
 let rec loop_params loc i body base_expr = function
    h :: t ->
       let v = "v" ^ string_of_int i in
-      let body = <:expr< $body$ $lid: v$ >> in
-      let expr = <:expr< fun $lid:v$ -> $loop_params loc (succ i) body base_expr t$ >> in
+      let expr, texpr = loop_params loc (succ i) <:expr< $body$ $lid: v$ >> base_expr t in
+      let expr = <:expr< fun $lid:v$ -> $expr$ >> in
       let expr =
          match h with
             ContextParam _ ->
-               <:expr< Mptop.IntFunExpr $expr$ >>
+               <:expr< Shell_sig.IntFunExpr $expr$ >>, <:expr< Shell_sig.FunType Shell_sig.IntType $texpr$ >>
           | TermParam _ ->
-               <:expr< Mptop.TermFunExpr $expr$ >>
+               <:expr< Shell_sig.TermFunExpr $expr$ >>, <:expr< Shell_sig.FunType Shell_sig.TermType $texpr$ >>
       in
          expr
  | [] ->
       base_expr body
 
 let toploop_rewrite proc loc name params =
-   let base body = <:expr< Mptop.ConvExpr $body$ >> in
+   let base body = <:expr< Shell_sig.ConvExpr $body$ >>, <:expr< Shell_sig.ConvType >> in
       impr_toploop proc loc name (loop_params loc 0 <:expr< $lid: name$ >> base params)
 
 let toploop_rule proc loc name params =
-   let base body = <:expr< Mptop.TacticExpr $body$ >> in
+   let base body = <:expr< Shell_sig.TacticExpr $body$ >>, <:expr< Shell_sig.TacticType >> in
       impr_toploop proc loc name (loop_params loc 0 <:expr< $lid: name$ >> base params)
 
 (*

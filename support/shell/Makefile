@@ -18,7 +18,6 @@ MLZFILES =\
 
 # Library files
 MPFILES =\
-	mptop\
 	mux_channel\
 	display_term\
 	proof_edit\
@@ -31,6 +30,7 @@ MPFILES =\
 	shell_package\
 	shell_root\
 	recursive_lock\
+	mptop\
 	shell_state\
 	shell_p4_sig\
 	shell\
