@@ -33,6 +33,7 @@ CCLIBS =\
 
 # Library files
 LMFILES :=\
+	lib_term\
 	utils\
 	int32\
 	nuprl5\
