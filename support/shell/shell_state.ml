@@ -427,7 +427,7 @@ let add_start shape =
       Quotation.add name (Quotation.ExAst (input_exp shape name, input_patt shape))
 
 let add_starts shapes =
-   List.iter add_start shapes
+   ShapeSet.iter add_start shapes
 
 (*
  * The client also saves the most recent tactic.
@@ -456,7 +456,7 @@ let output_short db out t =
          Lm_rformat_text.line_format Lm_rformat.default_width (fun bf -> Dform.format_term db bf t)
       with
          exn ->
-            "unprintable term (printer raised " ^ (Printexc.to_string exn) ^ ")"
+            "unprintable term (printer raised " ^ Printexc.to_string exn ^ ")"
     in
        output_string out str
 

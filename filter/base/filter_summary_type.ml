@@ -281,7 +281,7 @@ sig
    val input_prec_new    : info -> Filter_grammar.assoc -> precedence
    val add_input_prec    : info -> precedence -> term -> unit
    val add_start         : info -> term -> opname -> unit
-   val get_start         : info -> shape list
+   val get_start         : info -> ShapeSet.t
    val parse             : (string -> string -> term) -> info -> Lexing.position -> shape -> string -> term
    val compile_parser    : info -> unit
    val get_grammar       : info -> Filter_grammar.t

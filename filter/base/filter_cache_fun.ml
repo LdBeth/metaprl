@@ -1601,9 +1601,9 @@ struct
       in
       let path = [name] in
       let info' = Base.find_file base.lib barg path my_select AnySuffix in
-      let _ = Filter_grammar.prepare_to_marshal grammar in
       let _ =
          (* Save the .prlb if it doesn't exist *)
+         Filter_grammar.prepare_to_marshal grammar name;
          Base.set_magic base.lib info' 1;
          Base.save_if_missing base.lib barg info' (OnlySuffixes ["prlb"])
       in
@@ -1630,8 +1630,8 @@ struct
       let base_info = Base.find_file base barg path my_select (OnlySuffixes ["prlb"]) in
       let str_info = StrMarshal.unmarshal (Base.info base base_info) in
       let info  = FilterSummaryTerm.copy_proofs revert_proof info str_info in
-      let grammar = Filter_grammar.prepare_to_marshal grammar name in
          (* Save the .prlb to the .cmoz *)
+         Filter_grammar.prepare_to_marshal grammar name;
          Base.set_info base self (StrMarshal.marshal info);
          Base.set_magic base self 1;
          Base.save base barg self (OnlySuffixes ["cmoz"]);
@@ -1658,14 +1658,13 @@ struct
       let { base = { lib = base }; name = name; self = self; info = info; grammar = grammar } = cache in
       let info =
          if Filter_grammar.is_modified grammar then
-            let grammar = Filter_grammar.prepare_to_marshal grammar name in
             let pos = { Lexing.dummy_pos with Lexing.pos_fname = Base.file_name base self } in
             let loc = pos, pos in
                Filter_summary.add_command info (PRLGrammar grammar, loc)
          else
-            let grammar = Filter_grammar.prepare_to_marshal grammar name in
-               info
+            info
       in
+         Filter_grammar.prepare_to_marshal grammar name;
          if !debug_filter_cache then
             begin
                eprintf "Filter_cache.save: begin%t" eflush;

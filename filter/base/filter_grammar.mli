@@ -103,7 +103,7 @@ val add_prec        : t -> precedence -> shape -> t
  * Start symbols.
  *)
 val add_start       : t -> shape -> opname -> t
-val get_start       : t -> shape list
+val get_start       : t -> ShapeSet.t
 
 (*
  * Input forms.
@@ -122,7 +122,7 @@ val compile         : t -> unit
  * but eliminate the iform table since it can't be marshaled.
  * In addition, the grammar is given a name.
  *)
-val prepare_to_marshal : t -> string -> t
+val prepare_to_marshal : t -> string -> unit
 val unmarshal          : t -> t
 
 (*

@@ -219,9 +219,10 @@ type iform =
  * There can be multiple lexers.  Each lexer is associated with a start
  * symbol.
  *)
-type t =
+type gram =
    { gram_magic               : int;
-     gram_name                : string option;
+     mutable gram_name        : string option;
+     mutable gram_subnames    : StringSet.t;
      gram_lexers              : Lexer.t OpnameTable.t;
      gram_lexer_actions       : lexer_action ActionTable.t;
      gram_lexer_clauses       : lexer_clause ActionTable.t;
@@ -233,13 +234,30 @@ type t =
      mutable gram_iform_table : TacticTypes.conv Term_match_table.term_table option
    }
 
+(*
+ * We compute the actual grammars lazily.
+ * First, we just build a collection of grammars.
+ * Then, when the actual grammar is needed, we take
+ * the union of all the roots.
+ *
+ * This is imperative so that we remember the flattening.
+ *)
+type info =
+   GramCollection of gram StringTable.t
+ | GramInfo of gram
+
+type t =
+   { mutable gram_info : info }
 (* %%MAGICEND%% *)
 
-let gram_magic = 0x17b24ef1
+let gram_magic = 0x18b24ef1
+
+let empty_name = ".empty"
 
 let empty =
    { gram_magic          = gram_magic;
-     gram_name           = None;
+     gram_name           = Some empty_name;
+     gram_subnames       = StringSet.singleton empty_name;
      gram_lexers         = OpnameTable.empty;
      gram_lexer_actions  = ActionTable.empty;
      gram_lexer_clauses  = ActionTable.empty;
@@ -327,61 +345,70 @@ let pp_print_string_opt buf s =
    in
       pp_print_string buf s
 
+let pp_print_strings buf names =
+   StringSet.iter (fun name ->
+         fprintf buf "@ %s" name) names
+
+(*
+ * Take the union of two grammars.
+ *)
 let union gram1 gram2 =
    if !debug_grammar then
       eprintf "Grammar union: %a, %a@." pp_print_string_opt gram1.gram_name pp_print_string_opt gram2.gram_name;
-   if is_empty gram1 then
-      gram2
-   else if is_empty gram2 || gram1.gram_name <> None && gram2.gram_name = gram1.gram_name then
-      gram1
-   else
-      let { gram_lexers         = lexers1;
-            gram_lexer_actions  = lexer_actions1;
-            gram_lexer_clauses  = lexer_clauses1;
-            gram_lexer_start    = starts1;
-            gram_parser         = parser1;
-            gram_parser_actions = parser_actions1;
-            gram_parser_clauses = parser_clauses1;
-            gram_iforms         = iforms1
-          } = gram1
-      in
-      let { gram_lexers         = lexers2;
-            gram_lexer_actions  = lexer_actions2;
-            gram_lexer_clauses  = lexer_clauses2;
-            gram_lexer_start    = starts2;
-            gram_parser         = parser2;
-            gram_parser_actions = parser_actions2;
-            gram_parser_clauses = parser_clauses2;
-            gram_iforms         = iforms2
-          } = gram2
-      in
-      let lexers =
-         OpnameTable.fold (fun lexers name lexer2 ->
-               let lexer =
-                  try
-                     let lexer1 = OpnameTable.find lexers name in
-                        Lexer.union lexer1 lexer2
-                  with
-                     Not_found ->
-                        lexer2
-               in
-                  OpnameTable.add lexers name lexer) lexers1 lexers2
-      in
-      let starts = ShapeTable.fold ShapeTable.add starts1 starts2 in
-         if !debug_grammar then
-            eprintf "Grammar union: active: %a, %a@." pp_print_string_opt gram1.gram_name pp_print_string_opt gram2.gram_name;
-         { gram_magic          = gram_magic;
-           gram_name           = None;
-           gram_lexers         = lexers;
-           gram_parser         = Parser.union parser1 parser2;
-           gram_lexer_actions  = ActionTable.fold ActionTable.add lexer_actions1 lexer_actions2;
-           gram_parser_actions = ActionTable.fold ActionTable.add parser_actions1 parser_actions2;
-           gram_lexer_clauses  = ActionTable.fold ActionTable.add lexer_clauses1 lexer_clauses2;
-           gram_parser_clauses = ActionTable.fold ActionTable.add parser_clauses1 parser_clauses2;
-           gram_lexer_start    = starts;
-           gram_iforms         = ActionTable.fold ActionTable.add iforms1 iforms2;
-           gram_iform_table    = None
-         }
+   let { gram_subnames       = subnames1;
+         gram_lexers         = lexers1;
+         gram_lexer_actions  = lexer_actions1;
+         gram_lexer_clauses  = lexer_clauses1;
+         gram_lexer_start    = starts1;
+         gram_parser         = parser1;
+         gram_parser_actions = parser_actions1;
+         gram_parser_clauses = parser_clauses1;
+         gram_iforms         = iforms1
+       } = gram1
+   in
+   let { gram_subnames       = subnames2;
+         gram_lexers         = lexers2;
+         gram_lexer_actions  = lexer_actions2;
+         gram_lexer_clauses  = lexer_clauses2;
+         gram_lexer_start    = starts2;
+         gram_parser         = parser2;
+         gram_parser_actions = parser_actions2;
+         gram_parser_clauses = parser_clauses2;
+         gram_iforms         = iforms2
+       } = gram2
+   in
+   let lexers =
+      OpnameTable.fold (fun lexers name lexer2 ->
+            let lexer =
+               try
+                  let lexer1 = OpnameTable.find lexers name in
+                     Lexer.union lexer1 lexer2
+               with
+                  Not_found ->
+                     lexer2
+            in
+               OpnameTable.add lexers name lexer) lexers1 lexers2
+   in
+   let starts = ShapeTable.fold ShapeTable.add starts1 starts2 in
+   let subnames = StringSet.union subnames1 subnames2 in
+      if !debug_grammar then
+         eprintf "@[<v 3>Grammar union: active: %a, %a; subnames:%a@]@." (**)
+            pp_print_string_opt gram1.gram_name
+            pp_print_string_opt gram2.gram_name
+            pp_print_strings subnames;
+      { gram_magic          = gram_magic;
+        gram_name           = None;
+        gram_lexers         = lexers;
+        gram_subnames       = subnames;
+        gram_parser         = Parser.union parser1 parser2;
+        gram_lexer_actions  = ActionTable.fold ActionTable.add lexer_actions1 lexer_actions2;
+        gram_parser_actions = ActionTable.fold ActionTable.add parser_actions1 parser_actions2;
+        gram_lexer_clauses  = ActionTable.fold ActionTable.add lexer_clauses1 lexer_clauses2;
+        gram_parser_clauses = ActionTable.fold ActionTable.add parser_clauses1 parser_clauses2;
+        gram_lexer_start    = starts;
+        gram_iforms         = ActionTable.fold ActionTable.add iforms1 iforms2;
+        gram_iform_table    = None
+      }
 
 (*
  * Redex patterns and values for the lexer.
@@ -825,14 +852,22 @@ let compile gram =
       compile_iforms gram
 
 let prepare_to_marshal gram name =
-   let { gram_lexers = lexers;
-         gram_parser = parse
+   let { gram_name     = gram_name;
+         gram_subnames = subnames;
+         gram_lexers   = lexers;
+         gram_parser   = parse
        } = gram
    in
-      OpnameTable.iter (fun _ lexer -> Lexer.compile lexer) lexers;
-      Parser.compile parse;
-      gram.gram_iform_table <- None;
-      { gram with gram_name = Some name }
+      match gram_name with
+         Some _ ->
+            (* If it is already named, don't rename it *)
+            ()
+       | None ->
+            OpnameTable.iter (fun _ lexer -> Lexer.compile lexer) lexers;
+            Parser.compile parse;
+            gram.gram_iform_table <- None;
+            gram.gram_name <- Some name;
+            gram.gram_subnames <- StringSet.add subnames name
 
 let unmarshal gram =
    if gram.gram_magic <> gram_magic then begin
@@ -970,9 +1005,162 @@ let parse parse_quotation gram start loc s =
       result
 
 (************************************************************************
- * Imperative version.
+ * Lazy version.
  *)
 
+
+let info_gram gram =
+   { gram_info = GramInfo gram }
+
+(*
+ * Flatten the grammar to a single one.
+ *)
+let flatten debug grams =
+   let subs =
+      StringTable.fold (fun sub name gram ->
+            let subnames = StringSet.remove gram.gram_subnames name in
+               StringSet.union sub subnames) StringSet.empty grams
+   in
+   let roots = StringSet.fold StringTable.remove grams subs in
+   let roots =
+      StringTable.fold (fun roots _ gram ->
+            gram :: roots) [] roots
+   in
+      match roots with
+         [] ->
+            raise (Invalid_argument "Filter_grammar.flatten: cyclic grammar dependencies")
+       | [gram] ->
+            gram
+       | gram :: rest ->
+            if !debug_parsetiming then
+               eprintf "Flatten: %s: taking union@." debug;
+            List.fold_left union gram rest
+
+let flatten debug info =
+   match info.gram_info with
+      GramCollection grams ->
+         let gram = flatten debug grams in
+            info.gram_info <- GramInfo gram;
+            gram
+    | GramInfo gram ->
+         gram
+
+(*
+ * Get the collection.
+ *)
+let unflatten info =
+   match info.gram_info with
+      GramCollection grams ->
+         grams
+    | GramInfo gram ->
+         let name =
+            match gram.gram_name with
+               Some name ->
+                  name
+             | None ->
+                  raise (Invalid_argument "Filter_grammar.union: unnamed grammar")
+         in
+            StringTable.add StringTable.empty name gram
+
+(*
+ * Wrap all of the functions.
+ *)
+let empty = info_gram empty
+
+let add_token info lexer_id id regex term =
+   info_gram (add_token (flatten "add_token" info) lexer_id id regex term)
+
+let add_token_pair info lexer_id id regex1 regex2 term =
+   info_gram (add_token_pair (flatten "add_token_pair" info) lexer_id id regex1 regex2 term)
+
+let add_production info id terms shape term =
+   info_gram (add_production (flatten "add_production" info) id terms shape term)
+
+let hash_grammar info =
+   hash_grammar (flatten "hash_grammar" info)
+
+let find_prec info shape =
+   find_prec (flatten "find_prec" info) shape
+
+let create_prec_new info assoc =
+   let gram, pre = create_prec_new (flatten "create_prec_new" info) assoc in
+      info_gram gram, pre
+
+let create_prec_lt info shape assoc =
+   let gram, pre = create_prec_lt (flatten "create_prec_lt" info) shape assoc in
+      info_gram gram, pre
+
+let create_prec_gt info shape assoc =
+   let gram, pre = create_prec_gt (flatten "create_prec_gt" info) shape assoc in
+      info_gram gram, pre
+
+let add_prec info pre shape =
+   info_gram (add_prec (flatten "add_prec" info) pre shape)
+
+let add_start info shape opname =
+   info_gram (add_start (flatten "add_start" info) shape opname)
+
+let get_start info =
+   match info.gram_info with
+      GramCollection grams ->
+         StringTable.fold (fun shapes _ gram ->
+               List.fold_left ShapeSet.add shapes (get_start gram)) ShapeSet.empty grams
+    | GramInfo gram ->
+         List.fold_left ShapeSet.add ShapeSet.empty (get_start gram)
+
+let add_iform info id redex contractum =
+   info_gram (add_iform (flatten "add_iform" info) id redex contractum)
+
+let iform_count info =
+   iform_count (flatten "iform_count" info)
+
+let compile info =
+   compile (flatten "compile" info)
+
+let prepare_to_marshal info name =
+   prepare_to_marshal (flatten "prepare_to_marshal" info) name
+
+let unmarshal info =
+   info_gram (unmarshal (flatten "unmarshal" info))
+
+let is_modified info =
+   is_modified (flatten "is_modified" info)
+
+let pp_print_grammar buf info =
+   pp_print_grammar buf (flatten "pp_print_grammar" info)
+
+let parse quote info shape pos s =
+   parse quote (flatten "parse" info) shape pos s
+
+let apply_iforms quote info t =
+   apply_iforms quote (flatten "apply_iforms" info) t
+
+let apply_iforms_mterm quote info mt =
+   apply_iforms_mterm quote (flatten "apply_iforms_mterm" info) mt
+
+(*
+ * A grammar is empty if all the subgrammars are empty.
+ *)
+let is_empty info =
+   match info.gram_info with
+      GramCollection grams ->
+         StringTable.forall (fun _ gram ->
+               is_empty gram) grams
+    | GramInfo gram ->
+         is_empty gram
+
+(*
+ * Take the union by building a table containing the two grammars.
+ * The grammars must be named.
+ *)
+let union info1 info2 =
+   let grams1 = unflatten info1 in
+   let grams2 = unflatten info2 in
+      { gram_info = GramCollection (StringTable.fold StringTable.add grams1 grams2) }
+
+(************************************************************************
+ * Imperative version.
+ *)
 type state =
    { mutable state_grammar : t option;
      mutable state_starts  : shape StringTable.t

@@ -446,7 +446,7 @@ struct
          Quotation.add name (Quotation.ExAst (input_exp shape name, input_patt shape name))
 
    let add_starts opnames =
-      List.iter add_start opnames
+      ShapeSet.iter add_start opnames
 
    (*
     * Our version of add_command - make sure there are no name clashes.
