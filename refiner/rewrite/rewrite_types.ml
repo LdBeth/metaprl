@@ -87,6 +87,9 @@ struct
     *    RWCheckVar matches the specific bound variable
     *    RWFreeVars enforces restrictions on free instances
     *       of some variables. This is generated only in "strict" mode.
+    *    RWMatchFreeFOVar is an instance of a free variables (with the list of
+    *       context and the list of bvars enforcing that the variable is actually
+    *       free - in the strict mode only)
     * In a contractum:
     *    RWComposite construct a term with the given pattern
     *    RWSOINstance instantiates a second order variable
@@ -104,6 +107,7 @@ struct
     | RWFreeVars of rwterm * int list * int list
     | RWCheckVar of int
     | RWStackVar of int
+    | RWMatchFreeFOVar of int * int list * int list
 
    (* Match a specific term *)
    and rwcterm = { rw_op : rwoperator; rw_bterms : rw_bound_term list }
@@ -142,7 +146,8 @@ struct
     * We keep the so arg length for checking.
     *)
    type rstack =
-      FOVarPattern of var
+      FreeFOVarPattern of var
+    | FreeFOVarInstance of var
     | SOVarPattern of var * var list * int
     | SOVarInstance of var * var list * int
     | FOVar of var

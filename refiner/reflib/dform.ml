@@ -435,6 +435,7 @@ and format_term buf shortener printer term =
 let base_opname = mk_opname "Base_dform" nil_opname
 let dsovar_opname = mk_opname "df_so_var" base_opname
 let dvar_opname = mk_opname "df_var" base_opname
+let dfvar_opname = mk_opname "df_free_fo_var" base_opname
 let dcont_opname = mk_opname "df_context_var" base_opname
 
 let make_cont v = mk_term (mk_op dcont_opname [make_param (Var v)]) []
@@ -447,7 +448,10 @@ let format_short_term base shortener =
    let rec print_term' pprec buf eq t =
       (* Convert a variable into a display_var *)
       let t =
-         if is_var_term t then
+         if is_encoded_free_var t then
+            let v = decode_free_var t in
+               mk_term (mk_op dfvar_opname [make_param (Var v)]) []
+         else if is_var_term t then
             let v = dest_var t in
                mk_term (mk_op dvar_opname [make_param (Var v)]) []
          else if is_so_var_term t then

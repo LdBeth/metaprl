@@ -57,12 +57,14 @@ sig
    val rstack_mem : var -> rstack list -> bool
    val rstack_so_mem : var -> rstack list -> bool
    val rstack_pattern_mem : var -> rstack list -> bool
+   val rstack_freefo_mem : var -> rstack list -> bool
    val rstack_fo_mem : var -> rstack list -> bool
    val rstack_p_mem : shape_param -> var -> rstack list -> bool
    val rstack_c_mem : var -> rstack list -> bool
 
    val array_rstack_mem : var -> rstack array -> bool
    val array_rstack_so_mem : var -> rstack array -> bool
+   val array_rstack_freefo_mem : var -> rstack array -> bool
    val array_rstack_fo_mem : var -> rstack array -> bool
    val array_rstack_p_mem : shape_param -> var -> rstack array -> bool
    val array_rstack_c_mem : var -> rstack array -> bool
@@ -72,12 +74,14 @@ sig
     *)
    val rstack_index : var -> rstack list -> int
    val rstack_so_index : var -> rstack list -> int
+   val rstack_freefo_index : var -> rstack list -> int
    val rstack_fo_index : var -> rstack list -> int
    val rstack_p_index : shape_param -> var -> rstack list -> int
    val rstack_c_index : var -> rstack list -> int
 
    val array_rstack_index : var -> rstack array -> int
    val array_rstack_so_index : var -> rstack array -> int
+   val array_rstack_freefo_index : var -> rstack array -> int
    val array_rstack_fo_index : var -> rstack array -> int
    val array_rstack_p_index : shape_param -> var -> rstack array -> int
    val array_rstack_c_index : var -> rstack array -> int

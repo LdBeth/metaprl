@@ -73,6 +73,7 @@ let debug_dform = load_debug "dform"
 
 (* @terms *)
 declare df_var[var:v]
+declare df_free_fo_var[var:v]
 declare df_so_var[var:v]{'conts;'termlist}
 declare df_context_var[name:v]
 declare "sequent"{'arg; 'seq}
@@ -122,6 +123,9 @@ dform var_prl_df : df_so_var[v:v]{cons{df_context_var[v:v];nil};nil} = df_var[v:
 
 dform var_prl_df : mode[prl] :: df_var[v:v] = slot[v:v]
 dform var_src_df : mode[src] :: df_var[v:v] = `"'" slot[v:v]
+
+dform free_var_src_df : mode[src] :: df_free_fo_var[v:v] = `"!" slot[v:v]
+dform free_var_df : except_mode[src] :: df_free_fo_var[v:v] = `"!" df_var[v:v]
 
 dform so_var1 : df_so_var[v:v]{cons{df_context_var[v:v];nil};'t} =
    szone df_var[v:v] `"[" pushm[0] var_list{'t} popm `"]" ezone

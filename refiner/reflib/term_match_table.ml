@@ -355,10 +355,7 @@ let make_info =
    let mk_vterm v = mk_so_var_term v [] [] in
    fun (t, v) ->
       let t = simplify_term t in
-      let fv = free_vars_list t in
-      let fvt = List.map mk_vterm fv in
-      let t' = subst t fv fvt in
-      let redex = compile_redex Relaxed [||] t' in {
+      let redex = compile_redex Relaxed [||] t in {
          info_term = t;
          info_redex = redex;
          info_value = v

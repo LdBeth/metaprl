@@ -961,6 +961,8 @@ struct
                    raise (ParseError "body of <rfun> is not a function")
              in
                 { aname = None; aterm = t' }
+            | sl_exclamation; v = var ->
+               { aname = None; aterm = encode_free_var v }
           ]];
 
       var: [[ v = word_or_string -> Lm_symbol.add v ]];

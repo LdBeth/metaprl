@@ -67,6 +67,14 @@ sig
    val mterms_of_parsed_mterms : meta_term -> term list -> meta_term * term list * (term -> term)
    (* finds all SO variables in a term and uses them *)
    val context_subst_of_terms : term list -> var -> int -> var list option
+
+   (*
+    * A free FO variable (denoted !v in input syntax) is temporarily encoded,
+    * in order for the term_of_parsed_term functions to do the right thing
+    *)
+   val encode_free_var : var -> term
+   val is_encoded_free_var : term -> bool
+   val decode_free_var : term -> var
 end
 
 (*

@@ -128,7 +128,6 @@ struct
     | v::tl ->
          begin match stack.(v) with
             StackVar v -> v :: extract_some_bvars stack tl
-          | StackVoid -> extract_some_bvars stack tl
           | _ -> raise(Invalid_argument("Rewrite_match_redex.extract_some_bvars: invalid stack entry"))
          end
 
@@ -152,7 +151,7 @@ struct
 
    let check_instance_term vars t =
       if SymbolSet.intersectp vars (free_vars_set t) then
-         raise (RefineError("Rewrite_match_redex.check_instance_term", StringTermError("term in the inner sequent is bound by the outer context", t)))
+         REF_RAISE(RefineError("Rewrite_match_redex.check_instance_term", StringTermError("term in the inner sequent is bound by the outer context", t)))
 
    let rec check_instance_hyps goals vars hyps i len =
       if i = len then SeqGoal.iter (check_instance_term vars) goals else
@@ -410,6 +409,22 @@ struct
                            REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (VarMatch v)))
                    | x ->
                         REF_RAISE(RefineError ("match_redex_term", RewriteStringError "stack entry is not a string"))
+            end
+
+       | RWMatchFreeFOVar (i, cs, vs) ->
+            begin
+               let v = dest_var t in
+                  if List.mem v (extract_stack_bvars stack cs vs) then
+                     (* XXX: Abusing RewriteBoundSOVar a bit *)
+                     REF_RAISE(RefineError("match_redex_term", RewriteBoundSOVar v));
+                  match stack.(i) with
+                     StackVoid ->
+                        stack.(i) <- StackVar v
+                   | StackVar v' ->
+                        if v <> v' then
+                           REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (VarMatch v)))
+                   | _ ->
+                        REF_RAISE(RefineError ("match_redex_term", RewriteStringError "stack entry is not a variable"))
             end
 
        | RWSOVar (i, l) ->

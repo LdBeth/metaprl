@@ -172,7 +172,19 @@ struct
             if List.mem_assoc v bvars then
                stack, RWCheckVar(svar_index bvars v)
             else
-               REF_RAISE(RefineError ("compile_so_redex_term", StringVarError("First order variables must be bound", v)))
+               let stack =
+                  let mem = rstack_freefo_mem v stack in
+                  if not mem && rstack_mem v stack then
+                     REF_RAISE(RefineError ("compile_so_redex_term", StringVarError("Free FO variable clashes with another variable ", v)));
+                  if allow_so_patterns && not (rstack_pattern_mem v stack) then
+                     if mem then rstack_upgrade v stack else stack @ [ FreeFOVarPattern v ]
+                  else if mem then stack else stack @ [ FreeFOVarInstance v ]
+               in
+                  stack, RWMatchFreeFOVar(
+                     rstack_freefo_index v stack,
+                     (if restrict then List.map bvar_ind bconts else []),
+                     (if restrict then List.map bvar_ind bvars else [])
+                  )
       else if is_so_var_term term then
          let v, conts, subterms = dest_so_var term in
             if List.mem_assoc v bvars then
@@ -427,7 +439,8 @@ struct
             stack'', term'::terms'
 
    let check_stack = function
-      SOVarInstance (n, _, _) ->
+      SOVarInstance (n, _, _)
+    | FreeFOVarInstance n ->
          REF_RAISE(RefineError ("check_stack", RewriteAllSOInstances n))
     | _ ->
          ()

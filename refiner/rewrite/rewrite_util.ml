@@ -124,10 +124,8 @@ struct
    let rec rstack_upgrade v = function
       (SOVarInstance (v', conts, i))::t when Lm_symbol.eq v' v ->
          (SOVarPattern (v, conts, i))::t
-    | ((SOVarPattern (v', _, _))::t as stack) when Lm_symbol.eq v' v ->
-         stack
-    | (FOVarPattern v')::t when Lm_symbol.eq v' v ->
-         (SOVarPattern (v, [], 0))::t
+    | FreeFOVarInstance v' :: t when Lm_symbol.eq v' v ->
+         FreeFOVarPattern v :: t
     | h::t ->
          h::(rstack_upgrade v t)
     | [] ->
@@ -137,12 +135,7 @@ struct
     * Check the arity of a variable.
     *)
    let check_arity v conts arity = function
-      FOVarPattern _ ->
-         if conts <> [] then
-            REF_RAISE(RefineError ("Rewrite_util.check_arity", StringVarError("bound contexts mismatch", v)));
-         if arity <> 0 then
-            REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
-    | SOVarPattern  (_, conts', i)
+      SOVarPattern  (_, conts', i)
     | SOVarInstance (_, conts', i) ->
          if conts <> conts' then
             REF_RAISE(RefineError ("Rewrite_util.check_arity", StringVarError("bound contexts mismatch", v)));
@@ -154,14 +147,15 @@ struct
    let rec rstack_check_arity v conts arity = function
       [] ->
          raise (Invalid_argument "Rewrite_util.rstack_check_arity")
-    | ((FOVarPattern v' | SOVarPattern (v', _, _) | SOVarInstance (v', _, _) | FOVar v' | CVar v' | PVar (v', _)) as h) :: t ->
+    | ((FreeFOVarPattern v' | FreeFOVarInstance v' | SOVarPattern (v', _, _) | SOVarInstance (v', _, _) | FOVar v' | CVar v' | PVar (v', _)) as h) :: t ->
          if Lm_symbol.eq v' v then check_arity v conts arity h else rstack_check_arity v conts arity t
 
    (*
     * Membership functions.
     *)
    let rstack_var = function
-      FOVarPattern v
+      FreeFOVarPattern v
+    | FreeFOVarInstance v
     | SOVarPattern (v, _, _)
     | SOVarInstance (v, _, _)
     | FOVar v
@@ -173,14 +167,21 @@ struct
       Lm_symbol.eq (rstack_var rs) v
 
    let rstack_so_mem_prop v = function
-      FOVarPattern v'
-    | SOVarPattern (v', _, _)
+      SOVarPattern (v', _, _)
     | SOVarInstance (v', _, _) ->
          Lm_symbol.eq v v'
     | _ -> false
 
    let rstack_pattern_mem_prop v = function
-      FOVarPattern v' | SOVarPattern (v', _, _) -> Lm_symbol.eq v v'
+      SOVarPattern (v', _, _) ->
+         Lm_symbol.eq v v'
+    | FreeFOVarPattern v' ->
+         Lm_symbol.eq v v'
+    | _ ->
+         false
+
+   let rstack_freefo_mem_prop v = function
+      FreeFOVarPattern v' | FreeFOVarInstance v' -> Lm_symbol.eq v v'
     | _ -> false
 
    let rstack_fo_mem_prop v = function
@@ -198,12 +199,14 @@ struct
    let rstack_mem v = List.exists (rstack_mem_prop v)
    let rstack_so_mem v = List.exists (rstack_so_mem_prop v)
    let rstack_pattern_mem v = List.exists (rstack_pattern_mem_prop v)
+   let rstack_freefo_mem v = List.exists (rstack_freefo_mem_prop v)
    let rstack_fo_mem v = List.exists (rstack_fo_mem_prop v)
    let rstack_p_mem shape v = List.exists (rstack_p_mem_prop shape v)
    let rstack_c_mem v = List.exists (rstack_c_mem_prop v)
 
    let array_rstack_mem v = Lm_array_util.exists (rstack_mem_prop v)
    let array_rstack_so_mem v = Lm_array_util.exists (rstack_so_mem_prop v)
+   let array_rstack_freefo_mem v = Lm_array_util.exists (rstack_freefo_mem_prop v)
    let array_rstack_fo_mem v = Lm_array_util.exists (rstack_fo_mem_prop v)
    let array_rstack_c_mem v = Lm_array_util.exists (rstack_c_mem_prop v)
    let array_rstack_p_mem shape v = Lm_array_util.exists (rstack_p_mem_prop shape v)
@@ -213,12 +216,14 @@ struct
     *)
    let rstack_index v l = Lm_list_util.find_item (rstack_mem_prop v) l
    let rstack_so_index v l = Lm_list_util.find_item (rstack_so_mem_prop v) l
+   let rstack_freefo_index v l = Lm_list_util.find_item (rstack_freefo_mem_prop v) l
    let rstack_fo_index v l = Lm_list_util.find_item (rstack_fo_mem_prop v) l
    let rstack_p_index shape v l = Lm_list_util.find_item (rstack_p_mem_prop shape v) l
    let rstack_c_index v l = Lm_list_util.find_item (rstack_c_mem_prop v) l
 
    let array_rstack_index v l = Lm_array_util.find_index (rstack_mem_prop v) l
    let array_rstack_so_index v l = Lm_array_util.find_index (rstack_so_mem_prop v) l
+   let array_rstack_freefo_index v l = Lm_array_util.find_index (rstack_freefo_mem_prop v) l
    let array_rstack_fo_index v l = Lm_array_util.find_index (rstack_fo_mem_prop v) l
    let array_rstack_p_index shape v l = Lm_array_util.find_index (rstack_p_mem_prop shape v) l
    let array_rstack_c_index v l = Lm_array_util.find_index (rstack_c_mem_prop v) l

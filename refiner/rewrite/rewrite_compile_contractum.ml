@@ -142,8 +142,10 @@ struct
          let v = dest_var term in
             if List.mem v bvars then
                enames, RWCheckVar(Lm_list_util.find_rindex v bvars)
-            else
-               REF_RAISE(RefineError ("compile_so_redex_term", StringVarError("First order variables must be bound", v)))
+            else if array_rstack_freefo_mem v stack then
+               enames, RWStackVar(array_rstack_freefo_index v stack)
+            else (* XXX: Abusing RewriteFreeSOVar here *)
+               REF_RAISE(RefineError ("compile_so_redex_term", RewriteFreeSOVar v))
       else if is_so_var_term term then
          let v, conts, subterms = dest_so_var term in
             if List.mem v bvars then

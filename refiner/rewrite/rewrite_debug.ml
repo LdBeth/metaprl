@@ -142,8 +142,10 @@ struct
     * Redex stack names.
     *)
    let rstack_item_str = function
-      FOVarPattern v ->
-         "FOVarPattern " ^ string_of_symbol v
+      FreeFOVarPattern v ->
+         "FreeFOVarPattern " ^ string_of_symbol v
+    | FreeFOVarInstance v ->
+         "FreeFOVarInstance " ^ string_of_symbol v
     | SOVarPattern (v, conts, i) ->
          sprintf "SOVarPattern %s<%s>[%d]" (string_of_conts conts) (string_of_symbol v) i
     | SOVarInstance (v, conts, i) ->
@@ -275,6 +277,8 @@ struct
                (print_prog_list (tabstop + 3)) tl
        | RWFreeVars (t,il1,il2) ->
             fprintf out "RWFreeVars <%a> [%a]\n%a" print_int_list il1 print_int_list il2 (print_prog (tabstop+3)) t
+       | RWMatchFreeFOVar (i, cs, is) ->
+            fprintf out "RWMatchFreeFOVar <%d> [%a] [%a]\n" i print_int_list cs print_int_list is
        | RWCheckVar i ->
             fprintf out "RWCheckVar %d\n" i
        | RWStackVar i ->
