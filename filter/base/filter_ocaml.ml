@@ -488,7 +488,7 @@ struct
          if Opname.eq (opname_of_term t) patt_in_op then
             [], one_subterm "dest_fix_expr" t
          else
-            let e, t = two_subterms t in
+            let e, t = two_subterms_opname patt_fix_arg_op t in
             let es, e' = dest_exprs t in
             (dest_expr e) :: es, e'
       and dest_patts t =
@@ -497,7 +497,7 @@ struct
             let es, e = dest_exprs t in
             [p], es, e
          else
-            let t = one_subterm "dest_fix_expr" t in
+            let t = one_subterm_opname patt_fix_and_op t in
             let ps, es, e = dest_patts t in
             p :: ps, es, e
       in
@@ -928,7 +928,7 @@ struct
 
    and dest_substruct_str t =
       let loc = dest_loc "dest_substruct_str" t in
-      let stl = dest_xlist (one_subterm "dest_substruct_str" t) in
+      let stl = subterms_of_term t in
          <:str_item< declare $list: List.map dest_str stl$ end >>
 
    and dest_exception_str t =
@@ -970,17 +970,23 @@ struct
 
    and dest_fix_str t =
       let loc = dest_loc "dest_fix_str" t in
-      let rec dest t =
+      let rec dest_exprs t =
          if Opname.eq (opname_of_term t) patt_done_op then
             []
          else
-            let p, t = dest_patt t in
-            let e, t = two_subterms t in
-            let pel = dest t in
-               (p, dest_expr e) :: pel
+            let e, t = two_subterms_opname patt_fix_arg_op t in
+            (dest_expr e) :: (dest_exprs t)
+      and dest_patts t =
+         let p, t = dest_patt t in
+         if Opname.eq (opname_of_term t) patt_fix_arg_op then
+            [p], dest_exprs t
+         else
+            let t = one_subterm_opname patt_fix_and_op t in
+            let ps, es = dest_patts t in
+            p :: ps, es
       in
-      let pel = dest (one_subterm "dest_fix_str" t) in
-         <:str_item< value $rec:true$ $list: pel$ >>
+      let ps, es = dest_patts (one_subterm "dest_fix_str" t) in
+         <:str_item< value $rec:true$ $list: List.combine ps es$ >>
 
    and dest_let_str t =
       let loc = dest_loc "dest_let_str" t in
@@ -1069,7 +1075,7 @@ struct
 
    and dest_struct_me t =
       let loc = dest_loc "dest_struct_me" t in
-      let stl = dest_xlist (one_subterm "dest_struct_me" t) in
+      let stl = subterms_of_term t in
          <:module_expr< struct $list: List.map dest_str stl$ end >>
 
    and dest_cast_me t =

@@ -126,6 +126,11 @@ struct
       ({ term_terms = [{ bvars = []; bterm = t }]} : term) -> t
     | t -> REF_RAISE(RefineError ("one_subterm", TermMatchError (t, "not a single subterm")))
 
+   let one_subterm_opname opname = function
+      ({ term_op = { op_name = opname' }; term_terms = [{ bvars = []; bterm = t }]} : term)
+      when Opname.eq opname' opname -> t
+    | t -> REF_RAISE(RefineError ("one_subterm", TermMatchError (t, "not a single subterm")))
+
    (*
     * Terms with two subterms.
     *)
@@ -152,6 +157,13 @@ struct
    let two_subterms = function
       ({ term_terms = [{ bvars = []; bterm = a };
                        { bvars = []; bterm = b }]} : term) -> a, b
+    | t -> REF_RAISE(RefineError ("two_subterms", TermMatchError (t, "bad arity")))
+
+   let two_subterms_opname opname  = function
+      ({ term_op = { op_name = opname' };
+         term_terms = [{ bvars = []; bterm = a };
+                       { bvars = []; bterm = b }]} : term)
+      when Opname.eq opname' opname -> a, b
     | t -> REF_RAISE(RefineError ("two_subterms", TermMatchError (t, "bad arity")))
 
    (*

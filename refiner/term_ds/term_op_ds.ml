@@ -100,6 +100,12 @@ struct
       { term_terms = [bt]}  -> dest_simple_bterm bt
     | _ -> REF_RAISE(RefineError ("one_subterm", TermMatchError (t, "bad arity")))
 
+   let one_subterm_opname opname t = match dest_term t with
+      { term_op = { op_name = opname' }; term_terms = [bt] }
+        when Opname.eq opname' opname  ->
+         dest_simple_bterm bt
+    | _ -> REF_RAISE(RefineError ("one_subterm", TermMatchError (t, "bad arity")))
+
    (*
     * Terms with two subterms.
     *)
@@ -125,6 +131,12 @@ struct
 
    let two_subterms t = match dest_term t with
       { term_terms = [bt1; bt2]} ->
+         dest_simple_bterm bt1, dest_simple_bterm bt2
+    | _ -> REF_RAISE(RefineError ("two_subterms", TermMatchError (t, "bad arity")))
+
+   let two_subterms_opname opname t = match dest_term t with
+      { term_op = { op_name = opname' }; term_terms = [bt1; bt2]}
+        when Opname.eq opname' opname ->
          dest_simple_bterm bt1, dest_simple_bterm bt2
     | _ -> REF_RAISE(RefineError ("two_subterms", TermMatchError (t, "bad arity")))
 
