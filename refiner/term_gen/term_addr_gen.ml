@@ -115,16 +115,15 @@ struct
     | [] ->
          f t
 
-   and path_replace_bterm a term f tl i = function
-      bterm::bterms ->
-         if i = 0 then
-            let { bvars = vars; bterm = trm } = dest_bterm bterm in
-            let term, arg = path_replace_term a term f trm tl in
-               mk_bterm vars term :: bterms, arg
-         else
-            let bterms, arg = path_replace_bterm a term f tl (i - 1) bterms in
-               bterm :: bterms, arg
-    | [] ->
+   and path_replace_bterm a term f tl i btrms = match (i,btrms) with
+      (0, bterm::bterms) ->
+         let { bvars = vars; bterm = trm } = dest_bterm bterm in
+         let term, arg = path_replace_term a term f trm tl in
+            mk_bterm vars term :: bterms, arg
+    | (_, bterm::bterms) ->
+         let bterms, arg = path_replace_bterm a term f tl (pred i) bterms in
+            bterm :: bterms, arg
+    | _ ->
          raise (IncorrectAddress (a,term))
 
    let rec nthpath_replace_term a term flag f t i =
