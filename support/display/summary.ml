@@ -439,7 +439,7 @@ dform resource_defs_dfs : resource_defs[start:n, finish:n, name:s]{'args} =
 (*
  * Display a simple rewrite.
  *)
-declare rewrite_like[name:s, kind:s]{'redex : Dform; 'contractum : Dform; 'v : Dform; 'res : Dform} : Dform
+declare rewrite_like[name:s, kind:s]{'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
 
 dform rewrite_like_df : rewrite_like[name, kind]{'redex; 'contractum; 'v; 'res} =
    szone pushm[4]
@@ -460,6 +460,9 @@ dform iform_df : input_form[name]{'redex; 'contractum; status_primitive{xnil}; '
 (* (nogin) This should not happen, but let's keep this just in case *)
 dform iform_df2 : input_form[name]{'redex; 'contractum; 'v; 'res} =
    rewrite_like[name, "input form"]{'redex; 'contractum; 'v; 'res}
+
+dform fake_mlrw_df : fake_mlrw[name]{'redex; 'contractum} =
+   rewrite_like[name, "ml_rewrite"]{'redex; 'contractum; status_primitive{xnil}; xnil}
 
 dform int_param_df : except_mode[src] :: "int_param"[name:v] =
    df_context_var[name:v]
@@ -560,7 +563,7 @@ dform condition_df : "condition"{'term; 'cons; 'oexpr} =
 
 dform mlrewrite_df1 : "mlrewrite"[name:s]{'params; 'redex; some{'body}; 'res} =
    szone pushm[4]
-   info["mlrewrite"] " " rewrite_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] hspace
+   info["ml_rewrite"] " " rewrite_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] hspace
    ensuremath{'redex} " " keyword["="] hspace slot{'body}
    popm ezone
 
