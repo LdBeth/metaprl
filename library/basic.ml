@@ -384,10 +384,6 @@ let transaction_less = fun
     else if (eq_num time1 time2) then seq1 < seq2
          else (lt_num time1 time2)
 
-let get_inet_addr =
-	let {h_addr_list=l} = gethostbyname (gethostname ())
-	in l.(0)
-
 (* TODO pid should include inet addr and time as well as process id to insure uniqueness *)
 let get_pid =
    let pidref = ref None in fun () ->
@@ -400,7 +396,7 @@ let get_pid =
             in
             let pid =
                String.concat "_"
-			      [ string_of_inet_addr get_inet_addr
+			      [ string_of_inet_addr inet_addr
 			      ; string_of_int (getpid())
 			      ; string_of_int (Pervasives.truncate (time()))
 			      ]
