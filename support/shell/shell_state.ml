@@ -284,8 +284,8 @@ let synchronize_state f =
 (*
  * Extend the grammar with terms.
  *)
-module TermGrammarBefore : TermGrammarSig =
-struct
+module TermGrammar = MakeTermGrammar
+(struct
    (*
     * Use global mk_opname function.
     *)
@@ -364,9 +364,7 @@ struct
    let parsed_bound_term = Grammar.Entry.create gram "parsed_bound_term"
    let xdform = Grammar.Entry.create gram "xdform"
    let term_con_eoi = Grammar.Entry.create gram "term_con_eoi"
-end
-
-module TermGrammar = MakeTermGrammar (TermGrammarBefore);;
+end);;
 
 (*
  * Extend the grammar.
@@ -390,8 +388,9 @@ let get_term i =
 let term_exp s =
    synchronize_state (fun state ->
          let cs = Stream.of_string s in
-         let t = Grammar.Entry.parse TermGrammarBefore.term_eoi cs in
-            save_term state (term_of_parsed_term_with_vars t))
+         let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
+         let t = TermGrammar.parse_term_with_vars dummy_loc t in
+            save_term state t)
 
 let term_patt s =
    raise (Failure "Shell_mp.term_patt: not implemented yet")

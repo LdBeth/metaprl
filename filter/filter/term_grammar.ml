@@ -207,6 +207,12 @@ struct
       let _ = infer_term loc t in
          t
 
+   let parse_term_with_vars loc t =
+      let t = Filter_grammar.apply_iforms t in
+      let t = term_of_parsed_term_with_vars t in
+      let _ = infer_term loc t in
+         t
+
    let parse_bound_term loc bt =
       { bt with aterm = parse_term loc bt.aterm }
 

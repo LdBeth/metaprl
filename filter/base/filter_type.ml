@@ -400,6 +400,7 @@ sig
 
    (* Term conversion *)
    val parse_term           : MLast.loc -> parsed_term -> term
+   val parse_term_with_vars : MLast.loc -> parsed_term -> term
    val parse_rule           : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
    val parse_rewrite        : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
    val parse_type_rewrite   : MLast.loc -> parsed_term -> parsed_term -> term * term
