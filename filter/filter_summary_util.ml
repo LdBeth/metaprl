@@ -4,12 +4,79 @@
 
 open Printf
 
-open Term
-open Opname
-open Simple_print
+open Debug
 
-open Filter_ast
+open Term
+
+open Filter_debug
 open Filter_summary
+
+(*
+ * Extract the context var arguments.
+ *)
+let rec collect_cvars = function
+   ContextParam v::t ->
+      v :: collect_cvars t
+ | _::t ->
+      collect_cvars t
+ | [] ->
+      []
+
+let rec collect_vars = function
+   VarParam v::t ->
+      v :: collect_vars t
+ | _::t ->
+      collect_vars t
+ | [] ->
+      []
+
+let rec collect_non_vars = function
+   TermParam x :: t ->
+      x :: collect_non_vars t
+ | _ :: t ->
+      collect_non_vars t
+ | [] ->
+      []
+
+(*
+ * Split parameters into the three types.
+ *)
+let rec split_params = function
+   h::t ->
+      let cvars, tvars, tparams = split_params t in
+         begin
+            match h with
+               ContextParam v ->
+                  v :: cvars, tvars, tparams
+             | VarParam v ->
+                  cvars, v :: tvars, tparams
+             | TermParam t ->
+                  cvars, tvars, t :: tparams
+         end
+ | [] ->
+      [], [], []
+
+(*
+ * Give names to all the parameters.
+ *)
+let name_params =
+   let rec loop i = function
+      h::t ->
+         let aids, cids, tids, xids = loop (i + 1) t in
+         let name = "id_" ^ (string_of_int i) in
+            begin
+               match h with
+                  ContextParam _ ->
+                     name :: aids, name :: cids, tids, xids
+                | VarParam _ ->
+                     name :: aids, cids, name :: tids, xids
+                | TermParam _ ->
+                     name :: aids, cids, tids, name :: xids
+            end
+    | [] ->
+         [], [], [], []
+   in
+      loop 0
 
 (*
  * Distinguish between context var parameters, var names,
@@ -31,44 +98,27 @@ let extract_params cvars bvars =
       List.map aux
 
 (*
- * Param expression.
+ * Membership in a resource list.
  *)
-let param_expr loc = function
-   ContextParam s ->
-      <:expr< $uid:"Filter_summary"$ . $uid:"ContextParam"$ $str:s$ >>
- | VarParam v ->
-      <:expr< $uid:"Filter_summary"$ . $uid:"VarParam"$ $str:v$ >>
- | TermParam t ->
-      let t' = build_ml_term loc t in
-         <:expr< $uid:"Filter_summary"$ . $uid:"TermParam"$ $t'$ >>
-                                           
-(*
- * Create function type.
- *)
-let params_ctyp loc ctyp params =
-   let rec convert = function
-      [] -> ctyp
-    | h::t ->
-         let ctyp' = convert t in
-         let arg_type =
-            match h with
-               ContextParam _ ->
-                  <:ctyp< $lid:"int"$ >>
-             | VarParam _ ->
-                  <:ctyp< $lid:"string"$ >>
-             | TermParam _ ->
-                  <:ctyp< $uid:"Term"$ . $lid:"term"$ >>
-         in
-            <:ctyp< $arg_type$ -> $ctyp'$ >>
+let mem_resource { resource_name = name } resources =
+   let rec search = function
+      { resource_name = name' } :: t ->
+         if debug_resource then
+            eprintf "Resource: %s%t" name' eflush;
+         if name = name' then
+            true
+         else
+            search t
+    | [] ->
+         false
    in
-      convert params
-
-(************************************************************************
- * OPNAMES                                                              *
- ************************************************************************)
+      search resources
 
 (*
  * $Log$
+ * Revision 1.6  1998/02/21 20:57:57  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.5  1998/02/19 17:14:04  jyh
  * Splitting filter_parse.
  *

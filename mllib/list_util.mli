@@ -41,6 +41,7 @@ val rev_iter : ('a -> 'b) -> 'a list -> unit
 val flat_map : ('a -> 'b list) -> 'a list -> 'b list
 val fail_map : ('a -> 'b) -> 'a list -> 'b list
 val some_map : ('a -> 'b option) -> 'a list -> 'b list
+val fold_left : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
 
 (*
  * Association lists.
@@ -60,6 +61,9 @@ val last : 'a list -> 'a
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/21 20:58:14  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.2  1998/02/12 23:35:22  jyh
  * Generalized file base to allow the library.
  *

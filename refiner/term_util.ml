@@ -2,6 +2,9 @@
  * Utilities on terms.
  *
  * $Log$
+ * Revision 1.3  1998/02/21 20:58:25  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.2  1997/08/06 16:18:16  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
@@ -53,7 +56,7 @@ open Opname
 type meta_term =
    MetaTheorem of term
  | MetaImplies of meta_term * meta_term
- | MetaFunction of string * meta_term * meta_term
+ | MetaFunction of term * meta_term * meta_term
  | MetaIff of meta_term * meta_term
 
 exception MetaTermMatch of meta_term
@@ -66,7 +69,8 @@ exception MetaTermMatch of meta_term
  * Normalize all the inner terms.
  *)
 let rec normalize_mterm = function
-   MetaTheorem t -> MetaTheorem (normalize_term t)
+   MetaTheorem t ->
+      MetaTheorem (normalize_term t)
  | MetaImplies (a, b) ->
       MetaImplies (normalize_mterm a, normalize_mterm b)
  | MetaFunction (v, a, b) ->
@@ -78,15 +82,43 @@ let rec normalize_mterm = function
  * Unzip a metaimplication into a list of terms.
  *)
 let rec unzip_mimplies = function
-   MetaTheorem t -> [t]
- | MetaImplies(MetaTheorem a, t) ->
-      a::(unzip_mimplies t)
+   MetaTheorem t ->
+      [t]
+ | MetaImplies (MetaTheorem a, t) ->
+      a :: unzip_mimplies t
  | t -> raise (MetaTermMatch t)
 
 let rec zip_mimplies = function
    [h] -> MetaTheorem h
  | h::t -> MetaImplies (MetaTheorem h, zip_mimplies t)
  | [] -> raise (Invalid_argument "zip_mimplies")
+
+(*
+ * Implication with bindings.
+ *)
+let unzip_mfunction t =
+   let rec collect l = function
+      MetaTheorem t ->
+         List.rev l, t
+    | MetaImplies (MetaTheorem a, t) ->
+         collect ((None, a) :: l) t
+    | MetaFunction (v, MetaTheorem a, t) ->
+         collect ((Some v, a) :: l) t
+    | t ->
+         raise (MetaTermMatch t)
+   in
+      collect [] t
+
+let zip_mfunction args goal =
+   let rec collect = function
+      (Some v, a) :: t ->
+         MetaFunction (v, MetaTheorem a, collect t)
+    | (None, a) :: t ->
+         MetaImplies (MetaTheorem a, collect t)
+    | [] ->
+         MetaTheorem goal
+   in
+      collect args
 
 (*
  * Unzip a rewrite term.

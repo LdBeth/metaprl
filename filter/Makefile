@@ -30,11 +30,12 @@ MFILES :=\
 	filter_summary\
 	filter_summary_type\
 	filter_summary_io\
+	filter_summary_util\
 	filter_cache_fun\
 	filter_cache\
 	term_grammar\
 	filter_process_type\
-	filter_summary_util\
+	filter_prog\
 	filter_parse\
 	filter_main
 

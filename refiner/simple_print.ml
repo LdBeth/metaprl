@@ -290,7 +290,7 @@ let format_mterm buf =
     | MetaFunction (v, a, b) ->
          format_szone buf;
          format_pushm buf 0;
-         format_string buf v;
+         format_term buf v;
          format_string buf " : ";
          aux a;
          format_string buf " -->";
@@ -412,6 +412,9 @@ let prerr_simple_address = print_simple_address_fp stderr
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/21 20:58:19  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.2  1997/09/12 17:21:44  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:

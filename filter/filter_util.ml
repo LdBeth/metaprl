@@ -20,12 +20,16 @@ open Filter_type
  * Get the context vars from a list.
  *)
 let rec context_vars_list = function
-   h::t -> List_util.union (Term.context_vars h) (context_vars_list t)
- | [] -> []
+   h::t ->
+      List_util.union (Term.context_vars h) (context_vars_list t)
+ | [] ->
+      []
 
 let rec binding_vars_list = function
-   h::t -> List_util.union (Term.binding_vars h) (binding_vars_list t)
- | [] -> []
+   h::t ->
+      List_util.union (Term.binding_vars h) (binding_vars_list t)
+ | [] ->
+      []
 
 (*
  * Collect the arguments in a rewrite.
@@ -41,6 +45,21 @@ let unzip_rewrite name =
          raise (BadCommand (name ^ ": illegal specification"))
    in
       aux
+
+(*
+ * Split the function into var names and a simple mterm.
+ *)
+let split_mfunction mterm =
+   let subgoals, goal = unzip_mfunction mterm in
+   let collect pair (i, vars, terms) =
+      match pair with
+         Some v, t ->
+            i, v :: vars, t :: terms
+       | None, t ->
+            i + 1, (mk_var_term ("_" ^ (string_of_int i))) :: vars, t :: terms
+   in
+   let _, vars, terms = List.fold_right collect subgoals (0, [], [goal]) in
+      vars, zip_mimplies terms
 
 (************************************************************************
  * OPNAMES                                                              *
@@ -75,8 +94,36 @@ let translate_opname opname =
     | [] -> ""   in
       aux l
 
+(************************************************************************
+ * MODULE PATHS                                                         *
+ ************************************************************************)
+
+let rec string_of_path = function
+   [] ->
+      (* This should never happen because paths always point to something *)
+      raise (EmptyModulePath "string_of_path")
+ | [h] -> h
+ | h::t -> h ^ "/" ^ (string_of_path t)
+
+(*
+ * Output a path to an ml file.
+ *)
+let output_path oport =
+   let rec aux = function
+      [] -> raise (EmptyModulePath "output_path")
+    | [h] -> output_string oport (String.capitalize h)
+    | h::t ->
+         output_string oport h;
+         output_string oport ".";
+         aux t
+   in
+      aux
+
 (*
  * $Log$
+ * Revision 1.2  1998/02/21 20:58:01  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.1  1997/04/28 15:51:02  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

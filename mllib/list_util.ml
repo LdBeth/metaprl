@@ -436,7 +436,23 @@ let some_map f l =
       aux l
 
 (*
+ * Cross between map a fold_left.
+ *)
+let fold_left f x l =
+   let rec aux x l = function
+      h::t ->
+         let x', h' = f x h in
+            aux x' (h' :: l) t
+    | [] ->
+         x, List.rev l
+   in
+      aux x [] l
+
+(*
  * $Log$
+ * Revision 1.3  1998/02/21 20:58:13  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.2  1998/02/12 23:35:20  jyh
  * Generalized file base to allow the library.
  *

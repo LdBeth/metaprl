@@ -42,7 +42,7 @@ type ('proof, 'ctyp, 'expr, 'item) summary_item =
  | Opname of opname_info
  | MLTerm of 'expr mlterm_info
  | Condition of 'expr mlterm_info
- | Parent of module_path
+ | Parent of 'ctyp parent_info
  | Module of string * ('proof, 'ctyp, 'expr, 'item) module_info
  | DForm of 'expr dform_info
  | Prec of string
@@ -86,11 +86,22 @@ and 'proof rule_info =
    }
 
 (*
+ * A parent command lists all the modules that are recursively
+ * opened, and it lists all the resources that were discovered.
+ *)
+and 'ctyp parent_info =
+   { parent_name : module_path;
+     parent_opens : module_path list;
+     parent_resources : 'ctyp resource_info list
+   }
+
+(*
  * An mlterm is a term that has an ML procedure for its rewrite.
  * The definition is not required in the interface.
  *)
 and 'expr mlterm_info =
    { mlterm_term : term;
+     mlterm_contracta : term list;
      mlterm_def : 'expr option
    }
 
@@ -123,6 +134,7 @@ and 'expr dform_def =
 and 'expr dform_ml_def =
    { dform_ml_printer : string;
      dform_ml_buffer : string;
+     dform_ml_contracta : term list;
      dform_ml_code : 'expr
    }
 
@@ -159,10 +171,16 @@ and param =
  | TermParam of term
 
 (*
+ * Pair it with a location.
+ *)
+type ('proof, 'ctyp, 'expr, 'item) summary_item_loc =
+   ('proof, 'ctyp, 'expr, 'item) summary_item * (int * int)
+
+(*
  * Conversion functions.
  *)
 type ('proof1, 'ctyp1, 'expr1, 'item1, 'proof2, 'ctyp2, 'expr2, 'item2) convert =
-   { term_f : term -> term;
+   { term_f  : term -> term;
      proof_f : 'proof1 -> 'proof2;
      ctyp_f  : 'ctyp1  -> 'ctyp2;
      expr_f  : 'expr1  -> 'expr2;
@@ -181,32 +199,32 @@ val find_sub_module : ('proof, 'ctyp, 'expr, 'item) module_info ->
 val new_module_info : unit -> ('proof, 'ctyp, 'expr, 'item) module_info
 
 val info_items : ('proof, 'ctyp, 'expr, 'item) module_info ->
-   ('proof, 'ctyp, 'expr, 'item) summary_item list
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc list
 
 (* Access *)
 val find_axiom : ('proof, 'ctyp, 'expr, 'item) module_info ->
    string ->
-   ('proof, 'ctyp, 'expr, 'item) summary_item option
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
 val find_rewrite : ('proof, 'ctyp, 'expr, 'item) module_info ->
    string ->
-   ('proof, 'ctyp, 'expr, 'item) summary_item option
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
 val find_mlterm : ('proof, 'ctyp, 'expr, 'item) module_info ->
    term ->
-   ('proof, 'ctyp, 'expr, 'item) summary_item option
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
 val find_condition : ('proof, 'ctyp, 'expr, 'item) module_info ->
    term ->
-   ('proof, 'ctyp, 'expr, 'item) summary_item option
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
 val find_dform : ('proof, 'ctyp, 'expr, 'item) module_info ->
    term ->
-   ('proof, 'ctyp, 'expr, 'item) summary_item option
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
 val find_prec : ('proof, 'ctyp, 'expr, 'item) module_info ->
    string ->
-   ('proof, 'ctyp, 'expr, 'item) summary_item option
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
 val find_id : ('proof, 'ctyp, 'expr, 'item) module_info -> int
 
@@ -218,13 +236,10 @@ val get_infixes : ('proof, 'ctyp, 'expr, 'item) module_info ->
 
 (* Update *)
 val add_command : ('proof, 'ctyp, 'expr, 'item) module_info ->
-   ('proof, 'ctyp, 'expr, 'item) summary_item ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc ->
    ('proof, 'ctyp, 'expr, 'item) module_info
 
 (* Utilities *)
-val collect_cvars : param list -> string array
-val collect_vars : param list -> string array
-val collect_non_vars : param list -> term list
 val summary_map :
    ('proof1, 'ctyp1, 'expr1, 'item1, 'proof2, 'ctyp2, 'expr2, 'item2) convert ->
    ('proof1, 'ctyp1, 'expr1, 'item1) module_info ->
@@ -246,12 +261,6 @@ val check_implementation : ('proof, 'ctyp, 'expr, 'item) module_info ->
    unit
 
 (*
- * Module paths.
- *)
-val string_of_path : module_path -> string
-val output_path : out_channel -> module_path -> unit
-
-(*
  * Debugging.
  *)
 val eprint_command : ('proof, 'ctyp, 'expr, 'item) summary_item -> unit
@@ -259,6 +268,9 @@ val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.6  1998/02/21 20:57:54  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.5  1998/02/19 17:14:01  jyh
  * Splitting filter_parse.
  *

@@ -233,7 +233,7 @@ struct
                      { mname = None; mterm = t } ->
                         { mname = None; mterm = MetaImplies (t, t2.mterm) }
                    | { mname = Some n; mterm = t } ->
-                        { mname = None; mterm = MetaFunction (n, t, t2.mterm) }
+                        { mname = None; mterm = MetaFunction (mk_var_term n, t, t2.mterm) }
                end
             ]
           | "meta_rev_implies" RIGHTA
@@ -243,7 +243,7 @@ struct
                      { mname = None; mterm = t } ->
                         { mname = None; mterm = MetaImplies (t, t2.mterm) }
                    | { mname = Some n; mterm = t } ->
-                        { mname = None; mterm = MetaFunction (n, t, t2.mterm) }
+                        { mname = None; mterm = MetaFunction (mk_var_term n, t, t2.mterm) }
                end
             ]
           | "meta_iff" LEFTA
@@ -897,6 +897,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/02/21 20:58:04  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.4  1998/02/18 18:46:33  jyh
  * Initial ocaml semantics.
  *

@@ -41,7 +41,7 @@ type ('proof, 'ctyp, 'expr, 'item) summary_item =
  | Opname of opname_info
  | MLTerm of 'expr mlterm_info
  | Condition of 'expr mlterm_info
- | Parent of module_path
+ | Parent of 'ctyp parent_info
  | Module of string * ('proof, 'ctyp, 'expr, 'item) module_info
  | DForm of 'expr dform_info
  | Prec of string
@@ -85,11 +85,22 @@ and 'proof rule_info =
    }
 
 (*
+ * A parent command lists all the modules that are recursively
+ * opened, and it lists all the resources that were discovered.
+ *)
+and 'ctyp parent_info =
+   { parent_name : module_path;
+     parent_opens : module_path list;
+     parent_resources : 'ctyp resource_info list
+   }
+
+(*
  * An mlterm is a term that has an ML procedure for its rewrite.
  * The definition is not required in the interface.
  *)
 and 'expr mlterm_info =
    { mlterm_term : term;
+     mlterm_contracta : term list;
      mlterm_def : 'expr option
    }
 
@@ -122,6 +133,7 @@ and 'expr dform_def =
 and 'expr dform_ml_def =
    { dform_ml_printer : string;
      dform_ml_buffer : string;
+     dform_ml_contracta : term list;
      dform_ml_code : 'expr
    }
 
@@ -158,10 +170,16 @@ and param =
  | TermParam of term
 
 (*
+ * Pair it with a location.
+ *)
+and ('proof, 'ctyp, 'expr, 'item) summary_item_loc =
+   ('proof, 'ctyp, 'expr, 'item) summary_item * (int * int)
+
+(*
  * The info about a specific module is just a list of items.
  *)
 and ('proof, 'ctyp, 'expr, 'item) module_info =
-   { info_list : ('proof, 'ctyp, 'expr, 'item) summary_item list }
+   { info_list : ('proof, 'ctyp, 'expr, 'item) summary_item_loc list }
 
 (*
  * Conversion functions.
@@ -173,31 +191,6 @@ type ('proof1, 'ctyp1, 'expr1, 'item1, 'proof2, 'ctyp2, 'expr2, 'item2) convert 
      expr_f  : 'expr1  -> 'expr2;
      item_f  : 'item1  -> 'item2
    }
-
-(************************************************************************
- * MODULE PATHS                                                         *
- ************************************************************************)
-
-let rec string_of_path = function
-   [] ->
-      (* This should never happen because paths always point to something *)
-      raise (EmptyModulePath "string_of_path")
- | [h] -> h
- | h::t -> h ^ "/" ^ (string_of_path t)
-
-(*
- * Output a path to an ml file.
- *)
-let output_path oport =
-   let rec aux = function
-      [] -> raise (EmptyModulePath "output_path")
-    | [h] -> output_string oport (String.capitalize h)
-    | h::t ->
-         output_string oport h;
-         output_string oport ".";
-         aux t
-   in
-      aux
 
 (************************************************************************
  * PRINTING                                                             *
@@ -235,7 +228,7 @@ let eprint_entry print_info = function
       eprintf "MLTerm: %s\n" (string_of_term t)
  | Condition { mlterm_term = t } ->
       eprintf "Condition: %s\n" (string_of_term t)
- | Parent path ->
+ | Parent { parent_name = path } ->
       eprintf "Parent: %s\n" (string_of_path path)
  | Module (name, { info_list = info }) ->
       eprintf "Module: %s\n" name;
@@ -275,7 +268,7 @@ let eprint_command command =
  * Recursive printing.
  *)
 let eprint_info { info_list = l } =
-   let rec print tabstop entry =
+   let rec print tabstop (entry, _) =
       let print_info info =
          List.iter (print (tabstop + 3)) info
       in
@@ -294,11 +287,13 @@ let eprint_info { info_list = l } =
  *)
 let find_sub_module summary path =
    let rec walk sum = function
-      [] -> sum
+      [] ->
+         sum
     | name::rest ->
          let rec search = function
-            [] -> raise (CantFind (string_of_path path))
-          | (Module (n, s))::_ when n = name ->
+            [] ->
+               raise (CantFind (string_of_path path))
+          | ((Module (n, s)), _)::_ when n = name ->
                walk s rest
           | _::t ->
                search t
@@ -315,10 +310,14 @@ let find_sub_module summary path =
  * Find an axiom from the summary.
  *)
 let find_axiom { info_list = summary } name =
-   let test = function
-      Axiom { axiom_name = n } -> n = name
-    | Rule { rule_name = n } -> n = name
-    | _ -> false
+   let test (item, _) =
+      match item with
+         Axiom { axiom_name = n } ->
+            n = name
+       | Rule { rule_name = n } ->
+            n = name
+       | _ ->
+            false
    in
       try Some (List_util.find summary test) with
          _ -> None
@@ -327,10 +326,14 @@ let find_axiom { info_list = summary } name =
  * Find a rewrite in the summary.
  *)
 let find_rewrite { info_list = summary } name =
-   let test = function
-      Rewrite { rw_name = n } -> n = name
-    | CondRewrite { crw_name = n } -> n = name
-    | _ -> false
+   let test (item, _) =
+      match item with
+         Rewrite { rw_name = n } ->
+            n = name
+       | CondRewrite { crw_name = n } ->
+            n = name
+       | _ ->
+            false
    in
       try Some (List_util.find summary test) with
          _ -> None
@@ -340,11 +343,12 @@ let find_rewrite { info_list = summary } name =
  *)
 let find_mlterm { info_list = summary } t =
    let name = opname_of_term t in
-   let test = function
-      MLTerm { mlterm_term = t' } ->
-         opname_of_term t' = name
-    | _ ->
-         false
+   let test (item, _) =
+      match item with
+         MLTerm { mlterm_term = t' } ->
+            opname_of_term t' = name
+       | _ ->
+            false
    in
       try Some (List_util.find summary test) with
          _ -> None
@@ -354,11 +358,12 @@ let find_mlterm { info_list = summary } t =
  *)
 let find_condition { info_list = summary } t =
    let name = opname_of_term t in
-   let test = function
-      Condition { mlterm_term = t' } ->
-         opname_of_term t' = name
-    | _ ->
-         false
+   let test (item, _) =
+      match item with
+         Condition { mlterm_term = t' } ->
+            opname_of_term t' = name
+       | _ ->
+            false
    in
       try Some (List_util.find summary test) with
          _ -> None
@@ -368,9 +373,12 @@ let find_condition { info_list = summary } t =
  *)
 let find_dform { info_list = summary } t =
    let name = opname_of_term t in
-   let test = function
-      DForm { dform_options = options; dform_redex = t' } -> generalizes t t'
-    | _ -> false
+   let test (item, _) =
+      match item with
+         DForm { dform_options = options; dform_redex = t' } ->
+            generalizes t t'
+       | _ ->
+            false
    in
       try Some (List_util.find summary test) with
          _ -> None
@@ -379,9 +387,12 @@ let find_dform { info_list = summary } t =
  * Find a precedence.
  *)
 let find_prec { info_list = summary } name =
-   let test = function
-      Prec s -> s = name
-    | _ -> false
+   let test (item, _) =
+      match item with
+         Prec s ->
+            s = name
+       | _ ->
+            false
    in
       try Some (List_util.find summary test) with
          _ -> None
@@ -391,7 +402,7 @@ let find_prec { info_list = summary } name =
  *)
 let find_id { info_list = summary } =
    let rec search = function
-      h::t ->
+      (h, _)::t ->
          begin
             match h with
                Id i -> i
@@ -407,7 +418,7 @@ let find_id { info_list = summary } =
  *)
 let get_resources { info_list = summary } =
    let rec search = function
-      (Resource x)::t ->
+      (Resource x, _)::t ->
          x::search t
     | _::t ->
          search t
@@ -420,7 +431,7 @@ let get_resources { info_list = summary } =
  *)
 let get_infixes { info_list = summary } =
    let rec search = function
-      h::t ->
+      (h, _)::t ->
          begin
             match h with
                Infix s -> s::search t
@@ -453,6 +464,21 @@ let opt_apply f = function
  | None -> None
 
 (*
+ * Convert a resource.
+ *)
+let convert_resource convert       
+    { resource_name = name;
+      resource_extract_type = extract;
+      resource_improve_type = improve;
+      resource_data_type = data
+    } =
+   { resource_name = name;
+     resource_extract_type = convert.ctyp_f extract;
+     resource_improve_type = convert.ctyp_f improve;
+     resource_data_type = convert.ctyp_f data
+   }
+
+(*
  * Normalize all terms in the info.
  *)
 let summary_map convert =
@@ -475,123 +501,129 @@ let summary_map convert =
    in
    
    (* Map a summary item *)
-   let rec item_map = function
-      SummaryItem t ->
-         SummaryItem (convert.item_f t)
+   let rec item_map (item, loc) =
+      let item =
+         match item with
+            SummaryItem t ->
+               SummaryItem (convert.item_f t)
 
-    | Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
-         Rewrite { rw_name = name;
-                   rw_redex = convert.term_f redex;
-                   rw_contractum = convert.term_f con;
-                   rw_proof = convert.proof_f pf
-         }
+          | Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
+               Rewrite { rw_name = name;
+                         rw_redex = convert.term_f redex;
+                         rw_contractum = convert.term_f con;
+                         rw_proof = convert.proof_f pf
+               }
 
-    | CondRewrite { crw_name = name;
-                    crw_params = params;
-                    crw_args = args;
-                    crw_redex = redex;
-                    crw_contractum = con;
-                    crw_proof = pf
-      } ->
-         CondRewrite { crw_name = name;
-                       crw_params = List.map param_map params;
-                       crw_args = List.map convert.term_f args;
-                       crw_redex = convert.term_f redex;
-                       crw_contractum = convert.term_f con;
-                       crw_proof = convert.proof_f pf
-         }
+          | CondRewrite { crw_name = name;
+                          crw_params = params;
+                          crw_args = args;
+                          crw_redex = redex;
+                          crw_contractum = con;
+                          crw_proof = pf
+            } ->
+               CondRewrite { crw_name = name;
+                             crw_params = List.map param_map params;
+                             crw_args = List.map convert.term_f args;
+                             crw_redex = convert.term_f redex;
+                             crw_contractum = convert.term_f con;
+                             crw_proof = convert.proof_f pf
+               }
 
-    | Axiom { axiom_name = name; axiom_stmt = t; axiom_proof = pf } ->
-         Axiom { axiom_name = name;
-                 axiom_stmt = convert.term_f t;
-                 axiom_proof = convert.proof_f pf
-         }
+          | Axiom { axiom_name = name; axiom_stmt = t; axiom_proof = pf } ->
+               Axiom { axiom_name = name;
+                       axiom_stmt = convert.term_f t;
+                       axiom_proof = convert.proof_f pf
+               }
 
-    | Rule { rule_name = name;
-             rule_params = params;
-             rule_stmt = t;
-             rule_proof = pf
-      } ->
-         Rule { rule_name = name;
-                rule_params = List.map param_map params;
-                rule_stmt = mterm_map t;
-                rule_proof = convert.proof_f pf
-         }
+          | Rule { rule_name = name;
+                   rule_params = params;
+                   rule_stmt = t;
+                   rule_proof = pf
+            } ->
+               Rule { rule_name = name;
+                      rule_params = List.map param_map params;
+                      rule_stmt = mterm_map t;
+                      rule_proof = convert.proof_f pf
+               }
       
-    | Opname { opname_name = name; opname_term = t } ->
-         Opname { opname_name = name; opname_term = convert.term_f t }
+          | Opname { opname_name = name; opname_term = t } ->
+               Opname { opname_name = name; opname_term = convert.term_f t }
       
-    | MLTerm { mlterm_term = term; mlterm_def = def }  ->
-         MLTerm { mlterm_term = convert.term_f term;
-                  mlterm_def = opt_apply convert.expr_f def
-         }
+          | MLTerm { mlterm_term = term; mlterm_contracta = cons; mlterm_def = def }  ->
+               MLTerm { mlterm_term = convert.term_f term;
+                        mlterm_contracta = List.map convert.term_f cons;
+                        mlterm_def = opt_apply convert.expr_f def
+               }
       
-    | Condition { mlterm_term = term; mlterm_def = def } ->
-         Condition { mlterm_term = convert.term_f term;
-                     mlterm_def = opt_apply convert.expr_f def
-         }
+          | Condition { mlterm_term = term; mlterm_contracta = cons; mlterm_def = def } ->
+               Condition { mlterm_term = convert.term_f term;
+                           mlterm_contracta = List.map convert.term_f cons;
+                           mlterm_def = opt_apply convert.expr_f def
+               }
       
-    | Parent p ->
-         Parent p
+          | Parent { parent_name = path;
+                     parent_opens = opens;
+                     parent_resources = resources
+            } ->
+               Parent { parent_name = path;
+                        parent_opens = opens;
+                        parent_resources = List.map (convert_resource convert) resources
+               }
       
-    | Module (name, info) ->
-         Module (name, map info)
+          | Module (name, info) ->
+               Module (name, map info)
       
-    | DForm { dform_modes = modes;
-              dform_options = options;
-              dform_redex = redex;
-              dform_def = def
-      } ->
-         let def' =
-            match def with
-               NoDForm ->
-                  NoDForm
-             | TermDForm t ->
-                  TermDForm (convert.term_f t)
-             | MLDForm { dform_ml_printer = printer;
-                         dform_ml_buffer = buffer;
-                         dform_ml_code = code
-               } ->
-                  MLDForm { dform_ml_printer = printer;
-                            dform_ml_buffer = buffer;
-                            dform_ml_code = convert.expr_f code
-                  }
-         in
-            DForm { dform_modes = modes;
+          | DForm { dform_modes = modes;
                     dform_options = options;
-                    dform_redex = convert.term_f redex;
-                    dform_def = def'
-            }
+                    dform_redex = redex;
+                    dform_def = def
+            } ->
+               let def' =
+                  match def with
+                     NoDForm ->
+                        NoDForm
+                   | TermDForm t ->
+                        TermDForm (convert.term_f t)
+                   | MLDForm { dform_ml_printer = printer;
+                               dform_ml_buffer = buffer;
+                               dform_ml_contracta = cons;
+                               dform_ml_code = code
+                     } ->
+                        MLDForm { dform_ml_printer = printer;
+                                  dform_ml_buffer = buffer;
+                                  dform_ml_contracta = List.map convert.term_f cons;
+                                  dform_ml_code = convert.expr_f code
+                        }
+               in
+                  DForm { dform_modes = modes;
+                          dform_options = options;
+                          dform_redex = convert.term_f redex;
+                          dform_def = def'
+                  }
       
-    | Prec x ->
-         Prec x
+          | Prec x ->
+               Prec x
 
-    | PrecRel rel ->
-         PrecRel rel
+          | PrecRel rel ->
+               PrecRel rel
       
-    | Id id ->
-         Id id
+          | Id id ->
+               Id id
       
-    | Resource { resource_name = name;
-                 resource_extract_type = extract;
-                 resource_improve_type = improve;
-                 resource_data_type = data
-      } ->
-         Resource { resource_name = name;
-                    resource_extract_type = convert.ctyp_f extract;
-                    resource_improve_type = convert.ctyp_f improve;
-                    resource_data_type = convert.ctyp_f data
-         }
+          | Resource resource ->
+               Resource (convert_resource convert resource)
       
-    | Infix name ->
-         Infix name
+          | Infix name ->
+               Infix name
 
-    | MagicBlock { magic_name = name;
-                   magic_code = items
-      } ->
-         MagicBlock { magic_name = name;
-                      magic_code = List.map convert.item_f items
-         }
+          | MagicBlock { magic_name = name;
+                         magic_code = items
+            } ->
+               MagicBlock { magic_name = name;
+                            magic_code = List.map convert.item_f items
+               }
+      in
+         item, loc
 
    and map { info_list = info } =
       { info_list = List.map item_map info }
@@ -636,6 +668,15 @@ let summary_item_op             = mk_opname "summary_item"
  *)
 
 (*
+ * Destruct a location.
+ *)
+let loc_op = mk_opname "location"
+
+let dest_loc t =
+   let i, j, t = dest_number_number_dep0_any_term t in
+      t, (i, j)
+
+(*
  * Dform options.
  *)
 let dform_inherit_op = mk_opname "inherit_df"
@@ -677,10 +718,11 @@ let dest_dform_def convert t =
       else if opname == dform_term_op then
          TermDForm (one_subterm t)
       else if opname == dform_ml_op then
-         let printer, buffer, expr = dest_string_string_dep0_any_term t in
-            MLDForm { dform_ml_printer = printer;
-                      dform_ml_buffer  = buffer;
-                      dform_ml_code    = convert.expr_f expr
+         let printer, buffer, cons, expr = dest_string_string_dep0_dep0_any_term t in
+            MLDForm { dform_ml_printer   = printer;
+                      dform_ml_buffer    = buffer;
+                      dform_ml_contracta = List.map convert.term_f (dest_xlist cons);
+                      dform_ml_code      = convert.expr_f expr
                     }
       else
          raise (Failure "Dform term is not valid")
@@ -731,7 +773,7 @@ let rec dest_meta_term t =
          let a, b = two_subterms t in
             MetaImplies (dest_meta_term a, dest_meta_term b)
       else if opname == meta_function_op then
-         let v, a, b = dest_dep0_dep1_any_term t in
+         let v, a, b = three_subterms t in
             MetaFunction (v, dest_meta_term a, dest_meta_term b)
       else if opname == meta_iff_op then
          let a, b = two_subterms t in
@@ -839,24 +881,30 @@ and dest_opname convert t =
  * ML Term.
  *)
 and dest_mlterm convert t =
-   let term, expr = two_subterms t in
+   let term, cons, expr = three_subterms t in
       MLTerm { mlterm_term = term;
+               mlterm_contracta = dest_xlist cons;
                mlterm_def = dest_opt convert.expr_f expr
-             }
+      }
 
 (*
  * Condition.
  *)
 and dest_condition convert t =
-   let term, expr = two_subterms t in
+   let term, cons, expr = three_subterms t in
       Condition { mlterm_term = term;
+                  mlterm_contracta = dest_xlist cons;
                   mlterm_def = dest_opt convert.expr_f expr
-                }
+      }
 (*
  * Parent declaration.
  *)
 and dest_parent convert t =
-   Parent (dest_string_param_list t)
+   let path, opens, resources = three_subterms t in
+      Parent { parent_name = dest_string_param_list path;
+               parent_opens = List.map dest_string_param_list (dest_xlist opens);
+               parent_resources = List.map (dest_resource_aux convert) (dest_xlist resources)
+      }
 
 (*
  * Enclosed module.
@@ -903,7 +951,7 @@ and dest_prec_rel convert t =
             PrecRel { prec_rel = rel;
                       prec_left = left;
                       prec_right = right
-                    }
+            }
     | _ ->
          raise (Failure "dest_prec_rel: bogus format")
         
@@ -916,14 +964,17 @@ and dest_id convert t =
 (*
  * Resource.
  *)
-and dest_resource convert t =
+and dest_resource_aux convert t =
    let name = dest_string_param t in
    let extract, improve, data = three_subterms t in
-      Resource { resource_name = name;
-                 resource_extract_type = convert.ctyp_f extract;
-                 resource_improve_type = convert.ctyp_f improve;
-                 resource_data_type = convert.ctyp_f data
-               }
+      { resource_name = name;
+        resource_extract_type = convert.ctyp_f extract;
+        resource_improve_type = convert.ctyp_f improve;
+        resource_data_type = convert.ctyp_f data
+      }
+
+and dest_resource convert t =
+   Resource (dest_resource_aux convert t)
 
 (*
  * Infix.
@@ -937,7 +988,7 @@ and dest_infix convert t =
 and dest_magic_block convert t =
    MagicBlock { magic_name = dest_string_param t;
                 magic_code = List.map convert.item_f (dest_xlist (one_subterm t))
-              }
+   }
 
 (*
  * SummaryItem.
@@ -946,8 +997,8 @@ and dest_summary_item convert t =
    SummaryItem (convert.item_f (one_subterm t))
 
 and dest_term_aux
-   (convert : (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert)
-   (t : term) =
+    (convert : (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert)
+    (t : term) =
    let opname = opname_of_term t in
       try
          let info =
@@ -995,18 +1046,34 @@ and dest_term_aux
             eprintf "Filter_summary.dest_term: incorrect syntax for %s%t" (string_of_opname opname) eflush;
             None
 
+and dest_term_loc 
+    (convert : (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert)
+    (t : term) =
+   let t, loc = dest_loc t in
+      match dest_term_aux convert t with
+         Some t ->
+            Some (t, loc)
+       | None ->
+            None
+
 (*
  * Make a module from the term list.
  *)
 and of_term_list
-   (convert : (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert)
-   (terms : term list) =
-   let items = List_util.some_map (dest_term_aux convert) terms in
+    (convert : (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert)
+    (terms : term list) =
+   let items = List_util.some_map (dest_term_loc convert) terms in
       ({ info_list = items } : ('proof, 'ctyp, 'expr, 'item) module_info)
 
 (**************
  * CONSTRUCTION
  *)
+
+(*
+ * Make a location.
+ *)
+let mk_loc (i, j) t =
+   mk_number_number_dep0_term loc_op i j t
 
 (*
  * Make a optional arg.
@@ -1072,9 +1139,12 @@ let mk_dform_def convert = function
       mk_simple_term dform_term_op [t]
  | MLDForm { dform_ml_printer = printer;
              dform_ml_buffer = buffer;
+             dform_ml_contracta = cons;
              dform_ml_code = expr
-           } ->
-      mk_string_string_dep0_term dform_ml_op printer buffer (convert.expr_f expr)
+   } ->
+      let cons = mk_xlist_term (List.map convert.term_f cons) in
+      let expr = convert.expr_f expr in
+         mk_string_string_dep0_dep0_term dform_ml_op printer buffer cons expr
 
 (*
  * Meta terms.
@@ -1085,7 +1155,7 @@ let rec mk_meta_term = function
  | MetaImplies (a, b) ->
       mk_simple_term meta_implies_op [mk_meta_term a; mk_meta_term b]
  | MetaFunction (v, a, b) ->
-      mk_dep0_dep1_term meta_function_op v (mk_meta_term a) (mk_meta_term b)
+      mk_simple_term meta_function_op [v; mk_meta_term a; mk_meta_term b]
  | MetaIff (a, b) ->
       mk_simple_term meta_iff_op [mk_meta_term a; mk_meta_term b]
 
@@ -1105,6 +1175,19 @@ let mk_prec_rel_term rel left right =
             "gt"
    in
       mk_strings_term magic_block_op [rel; left; right]
+
+(*
+ * Convert a resource.
+ *)
+let mk_resource_term convert
+    { resource_name = name;
+      resource_extract_type = extract;
+      resource_improve_type = improve;
+      resource_data_type = data
+    } =
+   mk_string_param_term resource_op name [convert.ctyp_f extract;
+                                          convert.ctyp_f improve;
+                                          convert.ctyp_f data]
 
 (*
  * Convert the items to a term.
@@ -1143,12 +1226,15 @@ let rec term_list_aux
       
  | Opname { opname_name = name; opname_term = term } ->
       mk_string_param_term opname_op name [term]
- | MLTerm { mlterm_term = term; mlterm_def = expr_opt } ->
-      mk_simple_term mlterm_op [term; mk_opt convert.expr_f expr_opt ]
- | Condition { mlterm_term = term; mlterm_def = expr_opt } ->
-      mk_simple_term condition_op [term; mk_opt convert.expr_f expr_opt ]
- | Parent p ->
-      mk_strings_term parent_op p
+ | MLTerm { mlterm_term = term; mlterm_contracta = cons; mlterm_def = expr_opt } ->
+      mk_simple_term mlterm_op [term; mk_xlist_term cons; mk_opt convert.expr_f expr_opt ]
+ | Condition { mlterm_term = term; mlterm_contracta = cons; mlterm_def = expr_opt } ->
+      mk_simple_term condition_op [term; mk_xlist_term cons; mk_opt convert.expr_f expr_opt ]
+ | Parent { parent_name = path; parent_opens = opens; parent_resources = resources } ->
+      mk_simple_term parent_op (**)
+         [mk_strings_term parent_op path;
+          mk_xlist_term (List.map (mk_strings_term parent_op) opens);
+          mk_xlist_term (List.map (mk_resource_term convert) resources)]
  | Module (name, info) ->
       mk_string_param_term module_op name [mk_xlist_term (term_list convert info)]
       
@@ -1166,53 +1252,19 @@ let rec term_list_aux
       mk_prec_rel_term rel left right
  | Id id ->
       mk_number_term id_op id
- | Resource { resource_name = name;
-              resource_extract_type = extract;
-              resource_improve_type = improve;
-              resource_data_type = data
-   } ->
-      mk_string_param_term resource_op name [convert.ctyp_f extract;
-                                             convert.ctyp_f improve;
-                                             convert.ctyp_f data]
+ | Resource rsrc ->
+      mk_resource_term convert rsrc
  | Infix op ->
       mk_string_param_term infix_op op []
  | MagicBlock { magic_name = name; magic_code = items } ->
       mk_string_param_term magic_block_op name [mk_xlist_term (List.map convert.item_f items)]
+   
+and term_list_loc convert (t, loc) =
+   mk_loc loc (term_list_aux convert t)
 
 and term_list (convert : ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert)
               ({ info_list = info } : ('proof, 'ctyp, 'expr, 'item) module_info) =
-   (List.map (term_list_aux convert) info : term list)
-
-(************************************************************************
- * UTILITIES								*
- ************************************************************************)
-
-(*
- * Extract the context var arguments.
- *)
-let collect_cvars l =
-   let rec aux = function
-      (ContextParam v)::t -> v::(aux t)
-    | _::t -> aux t
-    | [] -> []
-   in
-      Array.of_list (aux l)
-
-let collect_vars l =
-   let rec aux = function
-      (VarParam v)::t -> v::(aux t)
-    | _::t -> aux t
-    | [] -> []
-   in
-      Array.of_list (aux l)
-
-let collect_non_vars =
-   let rec aux = function
-      (TermParam x)::t -> x::(aux t)
-    | _::t -> aux t
-    | [] -> []
-   in
-      aux
+   (List.map (term_list_loc convert) info : term list)
 
 (************************************************************************
  * SUBTYPING                                                            *
@@ -1431,7 +1483,7 @@ let check_parent path implem =
          implem_error (sprintf "Include %s: not implemented" (string_of_path path))
     | h::t ->
          match h with
-            Parent path' ->
+            Parent { parent_name = path' } ->
                if path' <> path then
                   search t
           | _ ->
@@ -1535,7 +1587,7 @@ let rec check_module name info implem =
 (*
  * Check that an item is implemented.
  *)
-and check_implemented implem interf =
+and check_implemented implem (interf, _) =
    match interf with
       SummaryItem _ ->
          ()
@@ -1553,8 +1605,8 @@ and check_implemented implem interf =
          check_mlterm info implem
     | Condition info ->
          check_condition info implem
-    | Parent info ->
-         check_parent info implem
+    | Parent { parent_name = path } ->
+         check_parent path implem
     | Module (name, info) ->
          check_module name info implem
     | DForm { dform_options = flags; dform_redex = term } ->
@@ -1577,10 +1629,13 @@ and check_implemented implem interf =
  * This means that every item in the interface must be implemented.
  *)
 and check_implementation { info_list = implem } { info_list = interf } =
-   List.iter (check_implemented implem) interf
+   List.iter (check_implemented (List.map fst implem)) interf
 
 (*
  * $Log$
+ * Revision 1.6  1998/02/21 20:57:51  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.5  1998/02/19 17:14:00  jyh
  * Splitting filter_parse.
  *

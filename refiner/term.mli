@@ -216,6 +216,16 @@ val mk_string_string_dep0_term : opname -> string -> string -> term -> term
 val dest_string_string_dep0_term : opname -> term -> string * string * term
 val dest_string_string_dep0_any_term : term -> string * string * term
 
+val is_number_number_dep0_term : opname -> term -> bool
+val mk_number_number_dep0_term : opname -> int -> int -> term -> term
+val dest_number_number_dep0_term : opname -> term -> int * int * term
+val dest_number_number_dep0_any_term : term -> int * int * term
+
+val is_string_string_dep0_dep0_term : opname -> term -> bool
+val mk_string_string_dep0_dep0_term : opname -> string -> string -> term -> term -> term
+val dest_string_string_dep0_dep0_term : opname -> term -> string * string * term * term
+val dest_string_string_dep0_dep0_any_term : term -> string * string * term * term
+
 val is_number_term : opname -> term -> bool
 val mk_number_term : opname -> int -> term
 val dest_number_term : opname -> term -> int
@@ -415,6 +425,9 @@ val make_2subst_term : term -> string -> string -> term -> term -> term
 
 (*
  * $Log$
+ * Revision 1.10  1998/02/21 20:58:23  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.9  1998/02/19 17:13:39  jyh
  * Splitting filter_parse.
  *

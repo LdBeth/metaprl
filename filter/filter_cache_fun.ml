@@ -25,11 +25,11 @@ open Filter_summary_io
  * Make the enhanced base from a normal summary base.
  *)
 module MakeFilterCache 
-   (SigMarshal : MarshalSig)
-   (StrMarshal : MarshalSig
-       with type select = SigMarshal.select
-       with type cooked = SigMarshal.cooked)
-   (Base : SummaryBaseSig
+(SigMarshal : MarshalSig)
+(StrMarshal : MarshalSig
+              with type select = SigMarshal.select
+              with type cooked = SigMarshal.cooked)
+(Base : SummaryBaseSig
         with type select = SigMarshal.select
         with type cooked = SigMarshal.cooked) =
 struct
@@ -113,7 +113,7 @@ struct
          [modname] ->
             (* If only one name left, it should name a term *)
             let rec search = function
-               ((Opname { opname_name = str })::tl) when str = modname ->
+               ((Opname { opname_name = str }, _)::tl) when str = modname ->
                   modname :: path
              | _::tl ->
                   search tl
@@ -125,7 +125,7 @@ struct
        | modname::tl ->
             (* Modname should name a module in the current summary *)
             let rec search path' = function
-               Module (n, sum'')::sum' ->
+               (Module (n, sum''), _)::sum' ->
                   (* Check if this name matches *)
                   let path'' = n :: path' in
                      if n = modname then
@@ -384,16 +384,17 @@ struct
       let opprefix = make_opname path in
 
       (* Get all the sub-summaries *)
-      let inline_component = function
-         Module (n, _) ->
+      let inline_component (item, _) =
+         match item with
+            Module (n, _) ->
             (* The contained summaries become top level *)
-            let info' = Base.sub_info cache.base self n in
-               cache.summaries <- info' :: cache.summaries
+               let info' = Base.sub_info cache.base self n in
+                  cache.summaries <- info' :: cache.summaries
 
-       | Opname { opname_name = str; opname_term = t } ->
+          | Opname { opname_name = str; opname_term = t } ->
             (* Hash this name to the full opname *)
-            let opname = Opname.mk_opname str opprefix in
-               Hashtbl.add cache.optable str opname
+               let opname = Opname.mk_opname str opprefix in
+                  Hashtbl.add cache.optable str opname
 
 (*
  * NOTE: check for missing prec in the implementation,
@@ -403,13 +404,13 @@ struct
             cache.precs <- name :: cache.precs
 *)
 
-       | Parent path' ->
+          | Parent { parent_name = path' } ->
             (* Recursive inline of all ancestors *)
-            inline_module' arg path';
-            ()
+               inline_module' arg path';
+               ()
 
-       | _ ->
-            ()
+          | _ ->
+               ()
       in
          List_util.rev_iter inline_component items
 
@@ -470,6 +471,8 @@ struct
    (*
     * When a cache is loaded, we follow the steps to inline
     * the file into a new cache.
+    *
+    * The hard thing about this function is that the types 
     *)
 (*
    let load base (name : module_name) (my_select : select) (child_select : select) (hook : 'a hook) (arg : 'a) =
@@ -479,7 +482,7 @@ struct
       let info = Base.find base path my_select in
       let info' = Base.info base info in
          cache.summaries <- [info];
-         inline_components' (cache, hook, vals) path info (info_items info');
+         inline_components' (cache, hook, vals) path info (info_items (StrMarshal.unmarshal info'));
          cache, hook cache (path, info') !vals
 *)
    
@@ -498,6 +501,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.2  1998/02/21 20:57:42  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.1  1998/02/19 17:13:55  jyh
  * Splitting filter_parse.
  *

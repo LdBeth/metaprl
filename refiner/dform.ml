@@ -532,7 +532,7 @@ let format_mterm base buf =
     | MetaFunction (v, a, b) ->
          format_szone buf;
          format_pushm buf 0;
-         format_string buf v;
+         format_term base buf v;
          format_string buf " : ";
          aux a;
          format_string buf " -->";
@@ -568,6 +568,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/21 20:58:16  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.2  1998/02/18 18:46:52  jyh
  * Initial ocaml semantics.
  *

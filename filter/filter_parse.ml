@@ -225,15 +225,15 @@ struct
       { cache : FilterCache.info;
         name : string
       }
-
+   
    (*
-    * When a module is inlined, add the infixes.
+    * When a module is inlined, add the resources and infixes.
     *)
-   let inline_hook proc root_path open_f cache (path, info) (paths, resources) =
+   let inline_hook proc root_path cache (path, info) (paths, resources) =
       (* Include all the resources *)
       if debug_resource then
          eprintf "Inline_hook: %s, %s%t" (string_of_path root_path) (string_of_path path) eflush;
-      let add_resource' rsrc =
+      let add_resource rsrc =
          if debug_resource then
             eprintf "Adding resource: %s.%s%t" (string_of_path path) rsrc.resource_name eflush;
          FilterCache.add_resource cache path rsrc
@@ -242,7 +242,7 @@ struct
       let nresources =
          let rec collect resources = function
             rsrc::tl ->
-               if List.mem rsrc resources then
+               if mem_resource rsrc resources then
                   collect resources tl
                else
                   collect (rsrc :: resources) tl
@@ -251,24 +251,31 @@ struct
          in
             collect resources nresources'
       in
-         List.iter add_resource' nresources';
+         List.iter add_resource nresources;
          
          (* Add all the infix words *)
          List.iter add_infix (get_infixes info);
          
-         (* Return the "open" command *)
-         open_f path :: paths, nresources
+         (* Add the path to the list of parents *)
+         path :: paths, nresources
       
    (*
     * Include a parent.
     * This performs the following tasks:
-    *    1. incorporates the parent names,
-    *    2. adds the infix directives.
+    *    1. incorporates the parents:
+    *       a. adds the resources
+    *       b. adds the infix directives.
     *)
-   let declare_parent proc loc open_f path =
+   let declare_parent proc loc path =
       (* Lots of errors can occur here *)
-      FilterCache.inline_module proc.cache path (inline_hook proc path open_f) ([], []);
-      FilterCache.add_command proc.cache (Parent path)
+      let _, (opens, nresources) = FilterCache.inline_module proc.cache path (inline_hook proc path) ([], []) in
+      let info =
+         { parent_name = path;
+           parent_opens = opens;
+           parent_resources = nresources
+         }
+      in
+         FilterCache.add_command proc.cache (Parent info, loc)
    
    (*
     * Declare a term.
@@ -284,7 +291,7 @@ struct
       let t = mk_term (mk_op opname' params) bterms in
          FilterCache.rm_opname proc.cache s;
          FilterCache.add_opname proc.cache s opname';
-         FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t });
+         FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t }, loc);
          t
    
    (*
@@ -317,7 +324,7 @@ struct
          (* Check the rewrite *)
          Refiner.check_rewrite (**)
             name
-            (collect_vars params')
+            (Array.of_list (collect_vars params'))
             (collect_non_vars params')
             args' redex contractum;
          
@@ -347,7 +354,7 @@ struct
     *)
    let declare_rewrite proc loc name params args pf =
       let cmd = rewrite_command proc name params args pf in
-         FilterCache.add_command proc.cache cmd
+         FilterCache.add_command proc.cache (cmd, loc)
    
    (*
     * Declare a term, and define a rewrite in one step.
@@ -391,8 +398,8 @@ struct
             end;
          Refiner.check_rule (**)
             name
-            (collect_cvars params')
-            (collect_vars params')
+            (Array.of_list (collect_cvars params'))
+            (Array.of_list (collect_vars params'))
             (collect_non_vars params')
             args;
          if debug_grammar then
@@ -414,13 +421,13 @@ struct
          
    let declare_axiom proc loc name params args pf =
       let cmd = axiom_command proc name params args pf in
-         FilterCache.add_command proc.cache cmd
+         FilterCache.add_command proc.cache (cmd, loc)
    
    (*
     * Infix directive.
     *)
    let declare_infix proc loc s =
-      FilterCache.add_command proc.cache (Infix s);
+      FilterCache.add_command proc.cache (Infix s, loc);
       add_infix s
    
    (*
@@ -429,14 +436,20 @@ struct
     *)
    let declare_mlterm proc loc ((name, _, _) as t) def =
       let t' = declare_term proc loc t in
-         FilterCache.add_command proc.cache (MLTerm { mlterm_term = t'; mlterm_def = def })
+         FilterCache.add_command proc.cache (MLTerm { mlterm_term = t';
+                                                      mlterm_contracta = end_rewrite ();
+                                                      mlterm_def = def
+                                             }, loc)
    
    (*
     * Declare a condition term for a rule.
     *)
    let declare_ml_condition proc loc ((name, _, _) as t) =
       let t' = declare_term proc loc t in
-         FilterCache.add_command proc.cache (Condition { mlterm_term = t'; mlterm_def = None })
+         FilterCache.add_command proc.cache (Condition { mlterm_term = t';
+                                                         mlterm_contracta = end_rewrite ();
+                                                         mlterm_def = None
+                                             }, loc)
    
    (*
     * Record a resource.
@@ -444,7 +457,7 @@ struct
     * type resource_name
     *)
    let declare_resource proc loc r =
-      FilterCache.add_command proc.cache (Resource r);
+      FilterCache.add_command proc.cache (Resource r, loc);
       FilterCache.add_resource proc.cache [] r
    
    (*
@@ -489,7 +502,7 @@ struct
                  dform_def = NoDForm
          }
       in
-         FilterCache.add_command proc.cache df
+         FilterCache.add_command proc.cache (df, loc)
    
    (*
     * Define a display form expansion.
@@ -506,7 +519,7 @@ struct
                                                      dform_options = options';
                                                      dform_redex = t;
                                                      dform_def = TermDForm expansion
-                                             })
+                                             }, loc)
    
    (*
     * An ml dterm is a display form that is computed in ML.
@@ -518,6 +531,7 @@ struct
       let ml_def =
          { dform_ml_printer = printer;
            dform_ml_buffer = buffer;
+           dform_ml_contracta = end_rewrite ();
            dform_ml_code = code
          }
       in
@@ -528,7 +542,7 @@ struct
            dform_def = MLDForm ml_def
          }
       in
-         FilterCache.add_command proc.cache (DForm info)
+         FilterCache.add_command proc.cache (DForm info, loc)
    
    (*
     * Precedence declaration.
@@ -536,7 +550,7 @@ struct
    let declare_prec proc loc s =
       if FilterCache.find_prec proc.cache s then
          Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' already declared" s));
-      FilterCache.add_command proc.cache (Prec s);
+      FilterCache.add_command proc.cache (Prec s, loc);
       FilterCache.add_prec proc.cache s
 
    (*
@@ -550,7 +564,7 @@ struct
       FilterCache.add_command proc.cache (PrecRel { prec_rel = rel;
                                                     prec_left = s;
                                                     prec_right = s'
-                                          })
+                                          }, loc)
 
    (*
     * A magic block computes a hash value from the definitions
@@ -559,7 +573,7 @@ struct
    let define_magic_block proc loc name stmts =
       FilterCache.add_command proc.cache (MagicBlock { magic_name = name;
                                                        magic_code = stmts
-                                          })
+                                          }, loc)
    
    (*
     * Processor.
@@ -647,10 +661,10 @@ let define_rule proc loc name
     (goal : term)
     (extract : proof_type) =
    let avars = collect_anames args in
-   let assums = List.map (function { aterm = t } -> t) args in
-   let mterm = zip_mimplies (assums @ [goal]) in
+   let assums = List.map (function { aname = name; aterm = t } -> name, t) args in
+   let mterm = zip_mfunction assums goal in
    let cmd = StrFilter.axiom_command proc name params mterm extract in
-      StrFilter.add_command proc cmd
+      StrFilter.add_command proc (cmd, loc)
    
 let define_prim proc loc name params args goal extract =
    define_rule proc loc name params args goal (Primitive extract)
@@ -698,7 +712,7 @@ EXTEND
    
    interf_item:
       [[ s = sig_item; OPT ";;" ->
-          SigFilter.add_command (SigFilter.get_proc loc) (SummaryItem s);
+          SigFilter.add_command (SigFilter.get_proc loc) (SummaryItem s, loc);
           s, loc
        ]];
    
@@ -716,13 +730,13 @@ EXTEND
    
    implem_item:
       [[ s = str_item; OPT ";;" ->
-          StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem s);
+          StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem s, loc);
           s, loc
        ]];
 
    sig_item:
       [[ "include"; path = mod_ident ->
-          SigFilter.declare_parent (SigFilter.get_proc loc) loc (sig_open loc) path;
+          SigFilter.declare_parent (SigFilter.get_proc loc) loc path;
           empty_sig_item loc
         | "declare"; t = quote_term ->
           SigFilter.declare_term (SigFilter.get_proc loc) loc t;
@@ -764,7 +778,7 @@ EXTEND
    
    str_item:
       [[ "include"; path = mod_ident ->
-          StrFilter.declare_parent (StrFilter.get_proc loc) loc (str_open loc) path;
+          StrFilter.declare_parent (StrFilter.get_proc loc) loc path;
           empty_str_item loc
         | "declare"; t = quote_term ->
           StrFilter.declare_term (StrFilter.get_proc loc) loc t;
@@ -949,6 +963,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.10  1998/02/21 20:57:44  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.9  1998/02/19 21:08:22  jyh
  * Adjusted proof type to be primitive or derived.
  *

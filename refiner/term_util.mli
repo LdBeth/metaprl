@@ -16,7 +16,7 @@ open Term
 type meta_term =
    MetaTheorem of term
  | MetaImplies of meta_term * meta_term
- | MetaFunction of string * meta_term * meta_term
+ | MetaFunction of term * meta_term * meta_term
  | MetaIff of meta_term * meta_term
 
 exception MetaTermMatch of meta_term
@@ -31,6 +31,8 @@ val context_vars : meta_term -> string list
 val meta_alpha_equal : meta_term -> meta_term -> bool
 val unzip_mimplies : meta_term -> term list
 val zip_mimplies : term list -> meta_term
+val unzip_mfunction : meta_term -> (term option * term) list * term
+val zip_mfunction : (term option * term) list -> term -> meta_term
 
 (************************************************************************
  * OTHER UTILITIES                                                      *
@@ -53,6 +55,9 @@ val construct_redex : string array -> term list -> term list -> term
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/21 20:58:26  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.1  1997/04/28 15:51:49  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -16,6 +16,14 @@ val context_vars_list : term list -> string list
 val binding_vars_list : term list -> string list
 val unzip_rewrite : string -> meta_term -> term list * term * term
 
+val split_mfunction : meta_term -> term list * meta_term
+
+(*
+ * Module paths.
+ *)
+val string_of_path : module_path -> string
+val output_path : out_channel -> module_path -> unit
+
 (************************************************************************
  * OPNAMES								*
  ************************************************************************)
@@ -25,6 +33,9 @@ val translate_opname : opname -> string
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/21 20:58:03  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.1  1997/04/28 15:51:02  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

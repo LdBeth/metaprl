@@ -406,6 +406,72 @@ let mk_string_string_dep0_term opname = fun
       }
 
 (*
+ * Two number parameters and one subterm.
+ *)
+let is_number_number_dep0_term opname = function
+   { term_op = { op_name = opname'; op_params = [Number _; Number _] };
+     term_terms = [{ bvars = [] }]
+   } when opname = opname' ->
+      true
+ | _ ->
+      false
+
+let dest_number_number_dep0_term opname = function
+   { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
+     term_terms = [{ bvars = []; bterm = t }]
+   } when opname = opname' ->
+      s1, s2, t
+ | t ->
+      raise (TermMatch ("dest_number_number_dep0_term", t, ""))
+
+let dest_number_number_dep0_any_term = function
+   { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
+     term_terms = [{ bvars = []; bterm = t }]
+   } ->
+      s1, s2, t
+ | t ->
+      raise (TermMatch ("dest_number_number_dep0_term", t, ""))
+
+let mk_number_number_dep0_term opname = fun
+   s1 s2 t ->
+      { term_op = { op_name = opname; op_params = [Number s1; Number s2] };
+        term_terms = [{ bvars = []; bterm = t }]
+      }
+
+(*
+ * Two string parameters, two subterms.
+ *)
+let is_string_string_dep0_dep0_term opname = function
+   { term_op = { op_name = opname'; op_params = [String _; String _] };
+     term_terms = [{ bvars = [] }; { bvars = [] }]
+   } when opname = opname' ->
+      true
+ | _ ->
+      false
+
+let dest_string_string_dep0_dep0_term opname = function
+   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+     term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+   } when opname = opname' ->
+      s1, s2, t1, t2
+ | t ->
+      raise (TermMatch ("dest_string_string_dep0_term", t, ""))
+
+let dest_string_string_dep0_dep0_any_term = function
+   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+     term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+   } ->
+      s1, s2, t1, t2
+ | t ->
+      raise (TermMatch ("dest_string_string_dep0_term", t, ""))
+
+let mk_string_string_dep0_dep0_term opname = fun
+   s1 s2 t1 t2 ->
+      { term_op = { op_name = opname; op_params = [String s1; String s2] };
+        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+      }
+
+(*
  * One number param.
  *)
 let is_number_term opname = function
@@ -2433,6 +2499,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.9  1998/02/21 20:58:21  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.8  1998/02/19 17:13:39  jyh
  * Splitting filter_parse.
  *

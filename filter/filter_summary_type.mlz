@@ -20,6 +20,8 @@ open Filter_summary
  *)
 type module_name = string
 
+type loc = int * int
+
 (*
  * This module just provides subaddressing of its objects.
  *)
@@ -162,18 +164,18 @@ sig
    val mk_opname : info -> string list -> opname
 
    (* Inherited access for module_info *)
-   val find_axiom : info -> string -> str_elem option
-   val find_rewrite : info -> string -> str_elem option
-   val find_mlterm : info -> term -> str_elem option
-   val find_condition : info -> term -> str_elem option
-   val find_dform : info -> term -> str_elem option
+   val find_axiom : info -> string -> (str_elem * loc) option
+   val find_rewrite : info -> string -> (str_elem * loc) option
+   val find_mlterm : info -> term -> (str_elem * loc) option
+   val find_condition : info -> term -> (str_elem * loc) option
+   val find_dform : info -> term -> (str_elem * loc) option
    val find_prec : info -> string -> bool
    val resources : info -> (module_path * str_ctyp resource_info) list
 
    (*
     * Update.
     *)
-   val add_command : info -> str_elem -> unit
+   val add_command : info -> (str_elem * loc) -> unit
    val add_resource : info -> module_path -> str_ctyp resource_info -> unit
    val add_prec : info -> string -> unit
    
@@ -187,6 +189,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/02/21 20:57:56  jyh
+ * Two phase parse/extract.
+ *
  * Revision 1.3  1998/02/19 17:14:04  jyh
  * Splitting filter_parse.
  *
