@@ -32,14 +32,19 @@ let tex_prologue = "% -*- Mode: fundamental -*-
 %
 % Ludica-Bright fonts
 %
-\\usepackage{lucidbry}
+%\\usepackage{lucidbry}
 %\\usepackage[ansinew]{texnansi}
 %\\usepackage[LY1]{fontenc}
 
 %
+% Otherwise, you need to include amssymb to get the math chars.
+%
+\\usepackage{amssymb}
+
+%
 % Hyperlinks
 %
-\\usepackage{hyperref}
+\\usepackage[dvipdfm]{hyperref}
 
 %
 % Definitions.
