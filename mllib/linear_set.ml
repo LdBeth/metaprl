@@ -29,12 +29,23 @@
  *
  * Author: Alexey Nogin
  *)
+
+type ind = int
+type 'a tree = 
+   Leaf
+ | Node of ind * 'a * 'a linear_set * 'a linear_set * int
+ | Lazy of ('a -> 'a) * 'a linear_set
+ | Offset of int * 'a linear_set
+and 'a linear_set = { mutable tree : 'a tree }
+
 module type LinearSetSig =
 sig
    type elt
    type t
    type index = int
 
+   val empty : t
+   val singleton : elt -> t
    val length : t -> int
    val get : t -> index -> elt
    val make : int -> elt -> t
@@ -63,21 +74,34 @@ end
 module Make (Type : TypeSig) = 
 struct
    type elt = Type.t
-   type index = int
+   type t = Type.t linear_set
+   type index = ind
    
-   type tree = 
-      Leaf
-    | Node of index * elt * t * t * int
-    | Lazy of (elt -> elt) * t
-    | Offset of int * t
-   and t = { mutable tree : tree }
-
    type direction = 
       Left of t
     | Right of t
 
-   let leaf = { tree = Leaf }
+   let empty = { tree = Leaf }
 
+   let singleton x = { tree = Node (0,x,empty,empty,1) }
+
+   open Printf
+
+   let rec print_aux s = function
+      { tree = Leaf } -> ()
+    | { tree = Node (i,_,t1,t2,_) } ->
+      print_aux (s^"/") t1;
+      printf "%s%d\n" s i;
+      print_aux (s^"\\") t2;
+    | { tree = Lazy (f',tree) } as t ->
+         printf "%s Lazy\n" s;
+         print_aux (s^"|") t
+    | { tree = Offset (i,t) } ->
+         printf "%s Offset %d" s i;
+         print_aux (s^"|") t
+
+   let print s t = print_aux s t; printf "%t" flush
+   
    let rec length t = match t.tree with
       Leaf  -> 0
     | Node (_,_,_,_,i) -> i
@@ -135,7 +159,7 @@ struct
       match max, lst with
          _,[]
        | 0,_ ->
-            leaf, start, lst
+            empty, start, lst
        | _ -> begin
             match of_list_aux (max/2) start lst with
                (left,lend,[]) as c -> c
@@ -146,7 +170,7 @@ struct
                   
    let of_list l = 
       match of_list_aux (List.length l) 0 l with
-         t,_,[] -> t
+         t,_,[] -> (* print "of_list " t; *) t
        | _ -> raise (Invalid_argument "Linear_set.of_list")
 
    let lazy_apply f t = { tree = Lazy (f,t) }
@@ -261,30 +285,40 @@ sition *)
          splay ind path t
    
    let get t ind =
+      (* printf "\n\nGET %d\n" ind;
+      print "get " t; *)
       splay ind [] t;
       match t.tree with
          Node (_,e,_,_,_) -> e
        | _ -> raise (Invalid_argument "Linear_set.get")
 
    let split t ind =
+      (* print "split " t; *)
       splay ind [] t;
       match t.tree with
          Node (i,e,l,r,_) -> l,e,{ tree = Offset(succ i,r) }
        | _ -> raise (Invalid_argument "Linear_set.split")
 
-   let lazy_sub_map f t ind1 ind2 =
-      splay ind1 [] t;
-      match t.tree with
-         Node (il,el,l,r,n) -> begin
-            splay ind2 [] r;
-            match r.tree with
-               Node (ir,er,c,r,nr) ->
-                  { tree = Node (il,f el,l, 
-                     { tree = Node (ir,f er, 
-                        { tree = Lazy(f,c) },r,nr)},n) }
-             | _ -> raise (Invalid_argument "Linear_set.lazy_sub_map")
-         end
-       | _ -> raise (Invalid_argument "Linear_set.lazy_sub_map")
+   let lazy_sub_map f t i len =
+      if len=0 then empty else
+      let r,lt = if i=0 then t,length t else begin
+         (* printf "\n\nSUB_MAP %d %d\n" i len;
+         print "sub_map " t; *)
+         splay i [] t;
+         match t.tree with
+            Node (_,_,_,r,n) -> r,n
+          | _ -> raise (Invalid_argument "Linear_set.lazy_sub_map")
+      end in
+      let seg_end = i+len in
+      let c = if seg_end = lt then r else begin
+         (* print "sub_map_ii " r; *)
+         splay seg_end [] r;
+         match r.tree with
+            Node (_,_,c,_,_) -> c
+          | _ -> raise (Invalid_argument "Linear_set.lazy_sub_map")
+      end in
+      let oc = if i=0 then c else { tree = Offset (i,c) } in
+         { tree = Lazy (f,oc) }
 
    let rec join t1 t2 = match t1,t2 with
       { tree = Leaf }, _ -> t2
@@ -302,6 +336,7 @@ sition *)
          push_down t2;
          join t1 t2
     | { tree = Node (_,_,_,_,n1) }, _ -> begin
+         (* print "join " t2; *)
          splay 0 [] t2;
          match t2 with
             { tree = Node (0,e,_,r,n2) } ->
@@ -338,7 +373,7 @@ sition *)
          mapi f t
 
    let rec init_aux f max start =
-      if max = 0 then leaf else
+      if max = 0 then empty else
       let m2=max/2 in
       let lend = start+m2 in
       let left = init_aux f m2 start in
@@ -370,20 +405,33 @@ sition *)
             collect_aux min start tl
        | _,[]
        | 0,_ ->
-            leaf, start, lst
+            empty, start, lst
        | 1, (ArrayElement x)::tl ->
-            { tree = Node (start,x,leaf,leaf,1) },(succ start),(strip tl)
+            { tree = Node (start,x,empty,empty,1) },(succ start),(strip tl)
+       | _, ArrayArray (t,0,l)::tl when l>=min ->
+            let t' = if l = (length t) then t else begin
+               (* print "collect_aux_iv " t; *)
+               splay l [] t;
+               match t with
+                  { tree = Node (_,_,l,_,_) } -> 
+                     if start=0 then l else { tree = Offset (start,l) }
+                | _ -> raise (Invalid_argument "Linear_set.collect")
+            end in
+               t',start+(length t'),(strip tl)
        | _, ArrayArray (t,k,l)::tl when l>=min ->
-            splay (succ k) [] t;
+            (* print "collect_aux " t; *)
+            splay (pred k) [] t;
             begin match t with
                { tree = Node (_,_,_,r,_) } ->
-                  splay (k+l) [] r;
-                  begin match r with
-                     { tree = Node (_,_,l,_,_) } -> 
-                        let l' = if k=start then l else { tree = Offset (start-k,l) } in
-                        l',start+(length l),(strip tl)
-                   | _ -> raise (Invalid_argument "Linear_set.collect")
-                  end
+                  let r' = if k+l = (length t) then r else begin
+                     (* print "collect_aux_ii " r; *)
+                     splay (k+l) [] r;
+                     match r with
+                        { tree = Node (_,_,l,_,_) } -> 
+                           if k=start then l else { tree = Offset (start-k,l) }
+                      | _ -> raise (Invalid_argument "Linear_set.collect")
+                  end in
+                     r',start+(length r'),(strip tl)
              | _ -> raise (Invalid_argument "Linear_set.collect")
             end 
        | _ -> 
@@ -393,6 +441,7 @@ sition *)
                   let right, rend, rlst = collect_aux (min - min/2 - 1) (succ lend) t in
                   { tree = Node (lend,h,left,right,rend-start) },rend,rlst
              | left, lend, (ArrayArray (a,i,len))::t ->
+                  (* print "collect_aux_iii " a; *)
                   splay i [] a;
                   begin match a with 
                      { tree = Node (_,h,_,_,_) } ->

@@ -29,12 +29,17 @@
  *
  * Author: Alexey Nogin
  *)
+
+type 'a linear_set
+
 module type LinearSetSig =
 sig
    type elt
    type t
    type index = int
 
+   val empty : t
+   val singleton : elt -> t
    val length : t -> int
    val get : t -> index -> elt
    val make : int -> elt -> t
@@ -58,4 +63,4 @@ sig
    type t
 end
 
-module Make (Type : TypeSig) : LinearSetSig with type elt = Type.t
+module Make (Type : TypeSig) : LinearSetSig with type elt = Type.t and type t = Type.t linear_set
