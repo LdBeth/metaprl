@@ -1,13 +1,15 @@
 To install MetaPRL on Windows, you will need the following:
 
-1. OCaml (for native Win32), available from http://files.metaprl.org
+1. OCaml (for native Win32), available from http://files.metaprl.org/win32
+   Note that the version of the OCaml we provide contains additonal binaries
+   not present by default in the INRIA distribution.
 
 2. The Omake build system, available at
-     http://mojave.caltech.edu/download.html
+   http://mojave.caltech.edu/download.html
 
 3 (optional).  The OpenSSL distribution.  You will need this if
-  you plan to use MetaPRL over the network.  Available at
-  http://www.slproweb.com/products/Win32OpenSSL.html
+   you plan to use MetaPRL over the network.  Available at
+   http://www.slproweb.com/products/Win32OpenSSL.html
 
 Installation:
 
@@ -30,13 +32,11 @@ Installation:
 1. Installating OCaml.
 
    Unzip the ocaml distribution into the c:\ocaml directory.
-   This is the usual location.  If you install it elsewhere,
+   This is the usual location.  If you install it elsewhere
    set the OCAMLLIB environment variable to point to the
    <ocaml>\lib, where <ocaml> is the directory where you
-   placed the OCaml distribution.
-
-   Instead, install it into a directory without spaces in the name.
-   For instance, c:/ocaml is a reasonable choice.
+   placed the OCaml distribution (note that the the directory
+   name may not contain spaces).
 
 2. Installing omake.
 
@@ -53,9 +53,9 @@ Installation:
 4. Modify your path.
 
    You need to include the following three directories in your path.
-      a. <OCaml>/bin
-      b. <omake>/bin
-      c. <OpenSSL>/bin
+      a. <OCaml>\bin
+      b. <omake>\bin
+      c. <OpenSSL>\bin
 
 5. Building MetaPRL
 
