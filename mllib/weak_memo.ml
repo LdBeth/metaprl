@@ -186,10 +186,9 @@ ENDIF
     * Has the value been collected by GC?
     *)
    let gc_tst weak_id image_array (_, weak_descriptor) =
-      !is_gc &&
-      (match Weak.get image_array weak_descriptor with
+      match Weak.get image_array weak_descriptor with
           Some _ -> false
-        | None -> true)
+        | None -> true
 
    (*
     * Create a new table.
@@ -220,8 +219,6 @@ ENDIF
     * Get the value from the table.
     *)
    let guard_get ar wd =
-      if (Weak.length ar) <= wd then
-         invalid_arg "WeakMemo.guard_get: out of range";
       match Weak.get ar wd with
          Some item -> item
        | None -> raise Not_found

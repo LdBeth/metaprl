@@ -61,6 +61,8 @@ struct
     ************************************************************************)
 
    let create i crit_lev hf comp =
+      if crit_lev <= 0 then
+         invalid_arg "Hash_with_gc.create: level argument should be positive";
       { hash_func = hf;
         compare = comp;
         table = Array.create i [];
@@ -78,9 +80,7 @@ struct
     * Rehash the table.
     *)
    let rehash info =
-      let table = info.table in
-      let entries = Array.to_list table in
-      let len = (Array.length table * 2) + 1 in
+      let len = (Array.length info.table * 2) + 1 in
       let table = Array.create len [] in
       let insert bucket =
          let insert ((x, _) as entry) =
@@ -89,7 +89,7 @@ struct
          in
             List.iter insert bucket
       in
-         List.iter insert entries;
+         Array.iter insert info.table;
          table
 
    (*
@@ -156,6 +156,7 @@ struct
                begin
                   info.table.(i) <- new_bucket;
                   info.count <- (pred info.count);
+                  info.gc_count <- succ info.gc_count;
                   Some item
                end
           | None2 ->
