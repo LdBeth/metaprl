@@ -53,7 +53,7 @@ let file_interactive name =
 let lib =
    ref (try Sys.getenv "NLLIB" with
            Not_found ->
-              "/usr/local/lib/nuprl-light")
+              raise (Invalid_argument "NLLIB environment variable is undefined"))
 
 let set_lib s =
    let var = sprintf "NLLIB=%s" s in

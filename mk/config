@@ -27,8 +27,8 @@ ifndef CAMLP4LIB
    CAMLP4LIB = /usr/lib/camlp4
 endif
 
-ifndef TERM
-   TERM = std
+ifndef NLLIB
+   NLLIB=$(ROOT)/lib
 endif
 
 #
@@ -209,10 +209,10 @@ $(RAFILES): $(ROOT)/lib/%.a: %.a
 	$(LN) ../$(DIR)/$*.a $(ROOT)/lib
 
 $(NL_CMIFILES) $(NL2_CMIFILES): %.cmi: %.mli
-	$(PRLC) $(OCAMLCFLAGS) -c $*.mli
+	NLLIB=$(NLLIB) $(PRLC) $(OCAMLCFLAGS) -c $*.mli
 
 $(NL_PPOFILES) $(NL2_PPOFILES): %.ppo: %.cmi %.ml
-	NLLIB=$(ROOT)/lib $(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
+	$(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
 
 $(NL_CMOFILES) $(NL2_CMOFILES): %.cmo: %.ppo %.cmi
 	$(OCAMLC) $(OCAMLCFLAGS) -c -impl $*.ppo
@@ -230,10 +230,10 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $*.ml
 
 %.p4i: %.mli
-	$(PRLC) $(INCLUDE) -E $*.mli > $*.p4i
+	NLLIB=$(NLLIB) $(PRLC) $(INCLUDE) -E $*.mli > $*.p4i
 
 %.p4: %.ml
-	$(PRLC) $(INCLUDE) -E $*.ml > $*.p4
+	NLLIB=$(NLLIB) $(PRLC) $(INCLUDE) -E $*.ml > $*.p4
 
 %.ml: %.mll
 	$(RM) $@
