@@ -77,6 +77,7 @@ LMFILES :=\
 	simplehashtbl\
 	hash_with_gc\
 	weak_memo\
+	permutations\
 	mp_inet\
 	http_server
 
