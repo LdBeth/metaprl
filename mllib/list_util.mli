@@ -41,6 +41,7 @@ val replace_all : ('a -> bool) -> 'a -> 'a list -> 'a list
 
 val remove_nth : int -> 'a list -> 'a list
 val insert_nth : int -> 'a -> 'a list -> 'a list
+val remove : 'a -> 'a list -> 'a list
 val removeq : 'a -> 'a list -> 'a list
 
 (* Find the index of the element that satisfies a predicate *)

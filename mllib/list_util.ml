@@ -107,6 +107,15 @@ let rec removeq x = function
  | [] ->
       raise (Failure "removeq")
 
+let rec remove x = function
+   h::t ->
+      if h = x then
+         t
+      else
+         h :: remove x t
+ | [] ->
+      raise (Failure "remove")
+
 (*
  * Iterated tail.
  *)

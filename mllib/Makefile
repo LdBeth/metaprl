@@ -31,6 +31,8 @@ LMFILES :=\
 	file_type_base\
 	splay_set\
 	splay_table\
+	fun_splay_set\
+	small_set\
 	flist\
 	memo
 

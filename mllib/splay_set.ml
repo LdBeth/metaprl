@@ -19,6 +19,7 @@ sig
    val cardinal : t -> int
    val mem_filt : t -> elt list -> elt list
    val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
+   val intersectp : t -> t -> bool
 end
 
 (*
@@ -30,7 +31,7 @@ struct
 
    type tree =
       LEAF
-    | NODE of node 
+    | NODE of node
    and node = (elt * t * t) ref
    and t = tree * int
 
@@ -236,6 +237,48 @@ struct
          then let rem = fst_mem_filt s t in
                  if rem == t then l else h::rem
          else fst_mem_filt s t
+
+   (*
+    * Test if two sets intersect at all.
+    *)
+   let rec intersectp s1 s2 =
+      match s1, s2 with
+         (LEAF, _), _
+       | _, (LEAF, _) ->
+            false
+
+       | ((NODE n1, sz1), (NODE n2, sz2)) ->
+            if (sz1>=sz2) then
+               if sz2=1 then
+                  let (x2,_,_)=(!n2) in mem s1 x2
+               else
+                  let (x,l,r)=(!n1) in
+                     if (splay x [] s2)
+                     then
+                        true
+                     else
+                        let (x2,((_, sl2) as l2),((_, sr2) as r2)) = (!n2) in
+                           if Ord.compare x x2 < 0 then
+                              (intersectp l l2)
+                              || (intersectp r (NODE(ref(x2,empty,r2)), succ sr2))
+                           else
+                              (intersectp r r2)
+                              || (intersectp l (NODE(ref(x2,l2,empty)), succ sl2))
+            else if sz1=1 then
+               let (x1,_,_)=(!n1) in mem s2 x1
+            else
+               let (x,l,r)=(!n2) in
+                  if (splay x [] s1)
+                  then
+                     true
+                  else
+                     let (x1,((_,sl1) as l1),((_,sr1) as r1)) = (!n1) in
+                        if Ord.compare x x1 < 0 then
+                           (intersectp l l1)
+                           || (intersectp r (NODE(ref(x1,empty,r1)), succ sr1))
+                        else
+                           (intersectp l (NODE(ref(x1,l1,empty)), succ sl1))
+                           || (intersectp r r1)
 end
 
 (*
