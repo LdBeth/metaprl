@@ -40,6 +40,7 @@ open Refine_error_sig
 
 open Rewrite_type_sig
 open Rewrite_util_sig
+open Rewrite_debug_sig
 open Rewrite_compile_contractum_sig
 
 module MakeRewriteCompileContractum
@@ -81,6 +82,8 @@ module MakeRewriteCompileContractum
     with type address = TermAddr.address)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
+    with type rstack = RewriteTypes.rstack)
+   (RewriteDebug : RewriteDebugSig
     with type rstack = RewriteTypes.rstack)
   : RewriteCompileContractumSig
     with type term = TermType.term

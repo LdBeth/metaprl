@@ -121,7 +121,7 @@ struct
          (TermSubst) (RefineError) (RewriteTypes) (RewriteUtil)
    module RewriteCompileContractum =
       MakeRewriteCompileContractum (TermType) (Term) (TermMan) (TermAddr) (**)
-         (TermSubst) (RefineError) (RewriteTypes) (RewriteUtil)
+         (TermSubst) (RefineError) (RewriteTypes) (RewriteUtil) (RewriteDebug)
    module RewriteMatchRedex =
       MakeRewriteMatchRedex (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (**)
          (RefineError) (RewriteTypes) (RewriteUtil) (RewriteDebug)

@@ -143,28 +143,28 @@ struct
    (*
     * Redex stack names.
     *)
-   let print_rstack_item out = function
+   let rstack_item_str = function
       FOVarPattern s ->
-         fprintf out "FOVarPattern %s" s
+         "FOVarPattern " ^ s
     | SOVarPattern (s, i) ->
-         fprintf out "SOVarPattern %s[%d]" s i
+         sprintf "SOVarPattern %s[%d]" s i
     | SOVarInstance (s, i) ->
-         fprintf out "SOVarInstance %s[%d]" s i
+         sprintf "SOVarInstance %s[%d]" s i
     | FOVar s ->
-         fprintf out "FOVar %s" s
+         "FOVar " ^ s
     | CVar s ->
-         fprintf out "CVar %s" s
+         "CVar " ^ s
     | PIVar s ->
-         fprintf out "PIVar %s" s
+         "PIVar " ^ s
     | PSVar s ->
-         fprintf out "PSVar %s" s
+         "PSVar " ^ s
     | PLVar s ->
-         fprintf out "PLVar %s" s
+         "PLVar " ^ s
 
    let print_rstack out stack =
       let print_item item =
          output_char out '\t';
-         print_rstack_item out item;
+         output_string out (rstack_item_str item);
          eflush out
       in
          fprintf out "RStack: %d%t" (Array.length stack) eflush;

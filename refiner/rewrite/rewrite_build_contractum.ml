@@ -344,7 +344,9 @@ struct
             match stack.(i) with
                StackString s ->
                   mk_var_term s
-             | x ->
+             | StackMString s ->
+                  mk_var_term s
+             | _ ->
                   REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
          end
 

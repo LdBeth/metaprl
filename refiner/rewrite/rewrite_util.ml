@@ -138,38 +138,40 @@ struct
    (*
     * Check the arity of a variable.
     *)
+   let check_arity v arity = function
+      FOVarPattern v' ->
+         if v' = v then
+            if arity = 0 then
+               false
+            else
+               REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
+         else
+            true
+    | SOVarPattern (v', i) ->
+         if v' = v then
+            if i = arity then
+               false
+            else
+               REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
+         else
+            true
+    | SOVarInstance (v', i) ->
+         if v' = v then
+            if i = arity then
+               false
+            else
+               REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
+         else
+            true
+    | _ ->
+         true
+
    let rec rstack_check_arity v arity = function
       [] ->
-         raise (Failure "Rewrite.rstack_check_arity")
+         raise (Invalid_argument "Rewrite_util.rstack_check_arity")
     | h::t ->
-         match h with
-            FOVarPattern v' ->
-               if v' = v then
-                  if arity = 0 then
-                     ()
-                  else
-                     REF_RAISE(RefineError ("rstack_check_arity", RewriteSOVarArity v))
-               else
-                  rstack_check_arity v arity t
-          | SOVarPattern (v', i) ->
-               if v' = v then
-                  if i = arity then
-                     ()
-                  else
-                     REF_RAISE(RefineError ("rstack_check_arity", RewriteSOVarArity v))
-               else
-                  rstack_check_arity v arity t
-          | SOVarInstance (v', i) ->
-               if v' = v then
-                  if i = arity then
-                     ()
-                  else
-                     REF_RAISE(RefineError ("rstack_check_arity", RewriteSOVarArity v))
-               else
-                  rstack_check_arity v arity t
-          | _ ->
-               rstack_check_arity v arity t
-
+         if check_arity v arity h then
+            rstack_check_arity v arity t
    (*
     * Membership functions.
     *)

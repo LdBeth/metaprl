@@ -96,6 +96,8 @@ module MakeRewriteCompileContractum
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
     with type rstack = RewriteTypes.rstack)
+   (RewriteDebug : RewriteDebugSig
+    with type rstack = RewriteTypes.rstack)
    =
 struct
    open TermType
@@ -106,6 +108,7 @@ struct
    open RefineError
    open RewriteTypes
    open RewriteUtil
+   open RewriteDebug
 
    type term = TermType.term
    type rstack = RewriteTypes.rstack
@@ -155,17 +158,31 @@ struct
                 * match.
                 *)
                let index = array_rstack_so_index v stack in
-               let v' = stack.(index) in
+               let _ = check_arity v (List.length subterms) stack.(index) in
                let enames, subterms = compile_so_contractum_terms strict names enames stack bvars subterms in
-                  enames, RWSOSubst(array_rstack_so_index v stack, subterms)
+                  enames, RWSOSubst(index, subterms)
 
-            else if array_rstack_fo_mem v stack & subterms = [] then
-               (* This variable represents a binding occurrence *)
+            else if (strict = Relaxed) &&
+                    (array_rstack_mem v stack) &&
+                    (subterms = []) then
+               (*
+                * Display forms:
+                * convert a stack element into a variable representation
+                *)
                enames, RWStackVar (array_rstack_fo_index v stack)
 
             else
                (* This is a second order variable that is free *)
-               REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteFreeSOVar v))
+               REF_RAISE(
+                  RefineError ("Rewrite_compile_contractum.compile_so_contractum_term",
+                  (*
+                     if array_rstack_mem v stack then
+                        StringStringError("SO Var has stack item " ^ rstack_item_str stack.(array_rstack_index v stack) ^ " and bvars are [" ^ (String_util.concat "; " bvars) ^ "]", v)
+                     else
+                   *)
+                        RewriteFreeSOVar v
+                  )
+               )
 
       else if is_context_term term then
          (* This is a second order context *)
