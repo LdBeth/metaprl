@@ -22,8 +22,7 @@
  * Email: granicz@cs.caltech.edu
  *)
 
-open Smap
-(*open Mc_string_util*)
+open Lm_serial_map
 open Phobos_type
 open Phobos_exn
 open Phobos_util
@@ -149,7 +148,7 @@ let apply_token_inheritance
    in
    let change_symbol replace = function
       Terminal s ->
-         let s = 
+         let s =
             (try
                StringTable.find replace s
             with
@@ -159,7 +158,7 @@ let apply_token_inheritance
             Terminal s
     | sym ->
          sym
-   in 
+   in
    (* Replace terminal symbols in grammar. *)
    let grammar =
       StringTable.fold (fun grammar str_from str_to ->
