@@ -25,6 +25,7 @@ struct
    open Refiner.Term
    open Refiner.TermType
    open Refiner.TermAddr
+   open Refiner.TermMan
    open Refiner.TermMeta
 
    type term = TermType.term
@@ -260,7 +261,62 @@ struct
             if !debug_simple_print then
                eprintf "Simple_print.format_terms%t" eflush;
             format_terms subterms
-
+      else if is_sequent_term term then
+         let _ =
+            if !debug_simple_print then
+               eprintf "Simple_print.format_term: got a sequent%t" eflush
+         in
+         let seq = explode_sequent term in
+         let hyps = seq.sequent_hyps in
+         let len = SeqHyp.length hyps in
+         let rec format_hyps i =
+            if i = len then () else
+            begin
+               format_int buf (i+1);
+               format_char buf '.';
+               format_pushm buf 1;
+               begin
+                  match SeqHyp.get hyps i with
+                     Hypothesis (v,t) ->
+                        begin
+                           format_string buf v;
+                           format_string buf " :";
+                           format_pushm buf 1;
+                           format_term buf t;
+                           format_popm buf
+                        end
+                   | Context (v,ts) ->
+                        begin
+                           format_string buf v;
+                           format_termlist buf ts;
+                        end
+               end;
+               format_popm buf;
+               format_char buf '\n';
+               format_hyps (succ i)
+            end in
+         let goals = seq.sequent_goals in
+         let len = SeqGoal.length goals in
+         let rec format_goals i =
+            if i = len then () else
+            begin
+               format_int buf (i+1);
+               format_char buf '.';
+               format_pushm buf 1;
+               format_term buf (SeqGoal.get goals i);
+               format_popm buf;
+               format_char buf '\n';
+               format_goals (succ i)
+            end
+         in
+            format_string buf "Hyps:\n";
+            format_pushm buf 5;
+            format_hyps 0;
+            format_popm buf;
+            format_string buf "Goals:\n";
+            format_pushm buf 5;
+            format_goals 0;
+            format_popm buf
       else
          (* Standard term *)
          let _ =

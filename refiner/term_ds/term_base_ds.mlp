@@ -356,66 +356,11 @@ struct
       let op = { op_name = context_opname; op_params = [Var v] } in
          mk_term op (collect term terms)
 
-   (****************************************************
-    * Sequent "ugly" forms - remove when not necessary *
-    ****************************************************)
-
-   let hyp_opname = mk_opname "hyp" xperv
-   let concl_opname = mk_opname "concl" xperv
-
-   let mk_sequent_outer_term goal args =
-      { term_op = { op_name = sequent_opname; op_params = [] };
-        term_terms = [mk_simple_bterm args; mk_simple_bterm goal] }
-
-   let null_concl =
-      { free_vars = Vars StringSet.empty;
-        core = Term { term_op = { op_name = concl_opname; op_params = [] }; term_terms = [] }}
-
-   let mk_concl_term t1 t2 =
-      { free_vars = VarsDelayed;
-        core = Term
-         { term_op = { op_name = concl_opname; op_params = [] };
-           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2] }}
-
-   let mk_hyp_term v t1 t2 =
-      { free_vars = VarsDelayed;
-        core = Term
-         { term_op = { op_name = hyp_opname; op_params = [] };
-           term_terms =
-            [ mk_simple_bterm t1;
-              { bfree_vars = VarsDelayed;
-                bcore = BTerm
-                 { bvars = [v]; bterm = t2 }}]}}
-
-   let rec mk_goals goals i len =
-      if i = len then
-         null_concl
-      else
-         mk_concl_term (SeqGoal.get goals i) (mk_goals goals (i + 1) len)
-
-   let rec mk_sequent_inner_term hyps goals i len =
-      if i = len then
-         mk_goals goals 0 (SeqGoal.length goals)
-      else
-         match SeqHyp.get hyps i with
-            Hypothesis (v, t') ->
-               mk_hyp_term v t' (mk_sequent_inner_term hyps goals (i + 1) len)
-          | Context (v, subterms) ->
-               mk_context_term v (mk_sequent_inner_term hyps goals (i + 1) len) subterms
-
-   (* End of sequent "ugly" forms *)
-
    let dest_term t =
       match get_core t with
          Term t -> t
-       | Sequent
-            { sequent_args = args;
-              sequent_hyps = hyps;
-              sequent_goals = goals
-            }  ->
-         (* raise (Invalid_argument "Term_base_ds.dest_term: dest_term called on a sequent") *)
-         (* Create an "ugly" form: *)
-          mk_sequent_outer_term (mk_sequent_inner_term hyps goals 0 (SeqHyp.length hyps)) args
+       | Sequent _ ->
+            raise (Invalid_argument "Term_base_ds.dest_term: dest_term called on a sequent")
        | Subst _ -> fail_core "dest_term"
 
    (*
