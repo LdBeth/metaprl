@@ -137,7 +137,7 @@ struct
             if List.mem v bvars then
                (* This is a first order variable instance *)
                if subterms <> [] then
-                  ref_raise(RefineError ("compile_so_contractum_term", RewriteBoundSOVar v))
+                  ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteBoundSOVar v))
                else
                   enames, RWCheckVar(List_util.find_index v bvars)
 
@@ -159,7 +159,7 @@ struct
 
             else
                (* This is a second order variable that is free *)
-               ref_raise(RefineError ("compile_so_contractum_term", RewriteFreeSOVar v))
+               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteFreeSOVar v))
 
       else if is_context_term term then
          (* This is a second order context *)
@@ -175,7 +175,7 @@ struct
 
             else
                (* Free second order context *)
-               ref_raise(RefineError ("is_context_term", RewriteFreeSOVar v))
+               ref_raise(RefineError ("Rewrite_compile_contractum.is_context_term", RewriteFreeSOVar v))
 
       else if is_sequent_term term then
          (* Sequents are handled specially *)
@@ -210,7 +210,7 @@ struct
                RWMNumber (array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError ("compile_so_contractum_param", RewriteFreeParamVar v))
+               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_param", RewriteFreeParamVar v))
 
        | MString v ->
             if array_rstack_p_mem v stack then
@@ -218,7 +218,7 @@ struct
                RWMString (array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError ("compile_so_contractum_param", RewriteFreeParamVar v))
+               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_param", RewriteFreeParamVar v))
 
        | MToken v ->
             if array_rstack_p_mem v stack then
@@ -226,7 +226,7 @@ struct
                RWMToken (array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError ("compile_so_contractum_param", RewriteFreeParamVar v))
+               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_param", RewriteFreeParamVar v))
 
        | MLevel v ->
             if array_rstack_p_mem v stack then
@@ -234,7 +234,7 @@ struct
                RWMLevel (array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError ("compile_so_contractum_param", RewriteFreeParamVar v))
+               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_param", RewriteFreeParamVar v))
 
        | MVar v ->
             if array_rstack_p_mem v stack then
@@ -242,7 +242,7 @@ struct
                RWMVar(array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError ("compile_so_contractum_param", RewriteFreeParamVar v))
+               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_param", RewriteFreeParamVar v))
 
        | Number i -> RWNumber i
        | String s -> RWString s
@@ -330,7 +330,7 @@ struct
                      enames, term :: hyps, goals
                else
                   (* Free second order context *)
-                  ref_raise(RefineError ("compile_so_contractum_hyp", RewriteFreeSOVar v))
+                  ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", RewriteFreeSOVar v))
 
           | Hypothesis (v, term) ->
                let enames, term = compile_so_contractum_term names enames stack bvars term in
@@ -376,3 +376,4 @@ end
  * End:
  * -*-
  *)
+
