@@ -318,6 +318,12 @@ let rec get_parents_aux prnts = function
  | _ :: tl ->
       get_parents_aux prnts tl
 
+let clear_results bookmark =
+   let clear_results_aux _ data =
+      if Hashtbl.mem data bookmark then (Hashtbl.find data bookmark).res_result <- None
+   in 
+      Hashtbl.iter clear_results_aux global_processed_data
+
 let get_parents name =
    try get_parents_aux [] (Hashtbl.find global_data name)
    with Not_found -> raise (Invalid_argument("Mp_resource.get_parents: unknown theory " ^ name))

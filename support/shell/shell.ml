@@ -93,17 +93,15 @@ type commands = {
    mutable view : ls_option list -> string -> unit;
    mutable expand : unit -> unit;
    mutable expand_all : unit -> unit;
+   mutable apply_all : (edit_object -> dform_base -> unit) -> bool -> bool -> unit;
    mutable interpret : proof_command -> unit;
-   mutable interpret_all : proof_command -> unit;
    mutable undo : unit -> unit;
    mutable redo : unit -> unit;
    mutable create_ax_statement : term -> string -> unit;
    mutable refine : tactic -> unit;
    mutable check : unit -> unit;
-   mutable check_all : unit -> unit;
    mutable extract : string list -> unit -> Refine.extract;
    mutable term_of_extract : term list -> term; (* XXX HACK: temporary interface *)
-   mutable status_all : unit -> unit;
    mutable print_theory : string -> unit;
 }
 
@@ -112,9 +110,9 @@ let uninitialized _ = raise (Invalid_argument "The Shell module was not instanti
 let commands = {
    cd = uninitialized; pwd = uninitialized; set_dfmode = uninitialized; create_pkg = uninitialized;
    set_writeable = uninitialized; save = uninitialized; export = uninitialized; view = uninitialized;
-   check = uninitialized; check_all = uninitialized; expand = uninitialized; expand_all = uninitialized;
-   interpret = uninitialized; interpret_all = uninitialized; undo = uninitialized; redo = uninitialized;
-   create_ax_statement = uninitialized; refine = uninitialized; status_all = uninitialized;
+   check = uninitialized; apply_all = uninitialized; expand = uninitialized; expand_all = uninitialized;
+   interpret = uninitialized; undo = uninitialized; redo = uninitialized;
+   create_ax_statement = uninitialized; refine = uninitialized;
    print_theory = uninitialized; extract = (fun _ -> uninitialized); term_of_extract = uninitialized;
 }
 
@@ -165,6 +163,16 @@ let default_mode_base =
       Not_found ->
          eprintf "Can't install Summary display forms%t" eflush;
          Dform_print.null_mode_base
+
+(*
+ * Display possible exceptions.
+ *)
+let print_exn_db db f x =
+   try TacticExn.print db f x with
+      RefineError _ ->
+         raise (RefineError ("Shell", ToploopIgnoreError))
+    | exn ->
+         raise exn
 
 (*
  * Shell takes input parser as an argument.
@@ -295,15 +303,8 @@ struct
       let pack = get_current_package info in
          Package.set_status pack Modified
 
-   (*
-    * Display possible exceptions.
-    *)
    let print_exn info f x =
-      try TacticExn.print (get_db info) f x with
-         RefineError _ ->
-            raise (RefineError ("Shell", ToploopIgnoreError))
-       | exn ->
-            raise exn
+      print_exn_db (get_db info) f x
 
    (************************************************************************
     * VIEWING                                                              *
@@ -931,29 +932,30 @@ struct
       in
          print_exn info sync info
 
-   let rec apply_all f info time =
+   let rec apply_all info f time clean_res =
       let apply_all_exn info =
          let parse_arg = get_parse_arg info in
          let display_mode = get_display_mode info in
          match info.package with
             Some pack ->
                touch info;
-               let apply_it item =
-                  try f item (get_db info) with
-                     _ ->
-                        ()
+               let apply_it item name =
+                  begin try f item (get_db info) with
+                     _ -> ()
+                  end;
+                  if clean_res then Mp_resource.clear_results (Package.name pack, name)
                in
                let apply_item (item, _) =
                   match item with
                      Rewrite rw ->
                         if !debug_shell then eprintf "Rewrite %s%t" rw.rw_name eflush;
-                        apply_it (Shell_rewrite.view_rw pack parse_arg display_mode rw)
+                        apply_it (Shell_rewrite.view_rw pack parse_arg display_mode rw) rw.rw_name
                    | CondRewrite crw ->
                         if !debug_shell then eprintf "CondRewrite %s%t" crw.crw_name eflush;
-                        apply_it (Shell_rewrite.view_crw pack parse_arg display_mode crw)
+                        apply_it (Shell_rewrite.view_crw pack parse_arg display_mode crw) crw.crw_name
                    | Rule rl ->
                         if !debug_shell then eprintf "Rule %s%t" rl.rule_name eflush;
-                        apply_it (Shell_rule.view_rule pack parse_arg display_mode rl)
+                        apply_it (Shell_rule.view_rule pack parse_arg display_mode rl) rl.rule_name
                    | _ ->
                         ()
                in
@@ -978,7 +980,7 @@ struct
                   let name = Package.name pack in
                      eprintf "Entering %s%t" name eflush;
                      chdir info false [name];
-                     apply_all f info false
+                     apply_all info f false clean_res
                in
                   List.iter expand (all_packages());
                   chdir info false []
@@ -989,52 +991,7 @@ struct
       let f item db =
          item.edit_expand db
       in
-         apply_all f info true
-
-   and status item =
-      let name, status, _, _ = item.edit_get_contents () in
-      let str_status = match status with
-         ObjPrimitive ->
-            "is a primitive axiom"
-       | ObjDerived ->
-            "is an internally derived object"
-       | ObjComplete(c1,c2) ->
-            sprintf "is a derived object with a complete proof (%i rule boxes, %i primitive steps)" c1 c2
-       | ObjIncomplete(c1,c2) ->
-            sprintf "is a derived object with an incomplete proof (%i rule boxes, %i primitive steps)" c1 c2
-       | ObjBad ->
-            "is a derived object with a broken proof"
-       | ObjUnknown ->
-            "is an object with unknown status"
-      in
-         eprintf "Status: `%s' %s%t" name str_status eflush
-
-   and check_all info =
-      let check item db =
-         begin match item.edit_get_contents () with
-            _, (ObjPrimitive | ObjDerived), _, _ -> ()
-          | _ -> ignore (item.edit_check db)
-         end;
-         status item
-      in
-      let f item db =
-         print_exn info (check item) db
-      in
-         apply_all f info true
-
-   and status_all info =
-      let f item db =
-         eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents () in name) eflush;
-         begin try item.edit_expand db with Invalid_argument _ | _ -> () end;
-         status item
-      in
-         apply_all f info true
-
-   and interpret_all info command =
-      let f item db =
-         item.edit_interpret command
-      in
-         apply_all f info true
+         apply_all info f true true
 
    (*
     * Change directory.
@@ -1325,7 +1282,7 @@ struct
       let objs = ref [] in
       let f obj _ = objs := (obj.edit_get_contents ())::(!objs) in begin
          print_exn info (chdir info false) [mname];
-         apply_all f info false
+         apply_all info f false false
       end;
       List.rev !objs
 
@@ -1468,12 +1425,10 @@ struct
       commands.export <- wrap_unit export;
       commands.view <- wrap view;
       commands.check <- wrap_unit check;
-      commands.check_all <- wrap_unit check_all;
-      commands.status_all <- wrap_unit status_all;
       commands.expand <- wrap_unit expand;
       commands.expand_all <- wrap_unit expand_all;
+      commands.apply_all <- wrap apply_all;
       commands.interpret <- wrap interpret;
-      commands.interpret_all <- wrap interpret_all;
       commands.undo <- wrap_unit undo;
       commands.redo <- wrap_unit redo;
       commands.create_ax_statement <- wrap create_ax_statement;
@@ -1506,14 +1461,13 @@ let set_writeable _ = commands.set_writeable ()
 let save _ = commands.save ()
 let export _ = commands.export ()
 let check _ = commands.check ()
-let check_all _ = commands.check_all ()
 let expand _ = commands.expand ()
 let expand_all _ = commands.expand_all ()
+let apply_all f t c = commands.apply_all f t c
 let undo _ = commands.undo ()
 let redo _ = commands.redo ()
 let create_ax_statement t s = commands.create_ax_statement t s
 let refine t = commands.refine t
-let status_all _ = commands.status_all ()
 let print_theory s = commands.print_theory s
 
 let nop _ = commands.interpret ProofNop
@@ -1523,8 +1477,15 @@ let squash _ = commands.interpret ProofSquash
 let copy s = commands.interpret (ProofCopy s)
 let paste s = commands.interpret (ProofPaste s)
 let make_assum _ = commands.interpret ProofMakeAssum
-let clean_all _ = commands.interpret_all ProofClean
-let squash_all _ = commands.interpret_all ProofSquash
+
+let interpret_all command =
+   let f item db =
+      item.edit_interpret command
+   in
+      apply_all f true false
+
+let clean_all _ = interpret_all ProofClean
+let squash_all _ = interpret_all ProofSquash
 
 let set_tex_file = Shell_tex.set_file
 
@@ -1580,6 +1541,45 @@ let root () =
          ignore(cd (String.sub pwd 0 (ind - 1)))
    with Not_found -> () end;
    ls ""
+
+let status item =
+   let name, status, _, _ = item.edit_get_contents () in
+   let str_status = match status with
+      ObjPrimitive ->
+         "is a primitive axiom"
+    | ObjDerived ->
+         "is an internally derived object"
+    | ObjComplete(c1,c2) ->
+         sprintf "is a derived object with a complete proof (%i rule boxes, %i primitive steps)" c1 c2
+    | ObjIncomplete(c1,c2) ->
+         sprintf "is a derived object with an incomplete proof (%i rule boxes, %i primitive steps)" c1 c2
+    | ObjBad ->
+         "is a derived object with a broken proof"
+    | ObjUnknown ->
+         "is an object with unknown status"
+   in
+      eprintf "Status: `%s' %s%t" name str_status eflush
+
+let status_all () =
+   let f item db =
+      eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents () in name) eflush;
+      begin try item.edit_expand db with Invalid_argument _ | _ -> () end;
+      status item;
+   in
+      apply_all f true true
+
+let check_all () =
+   let check item db =
+      begin match item.edit_get_contents () with
+         _, (ObjPrimitive | ObjDerived), _, _ -> ()
+       | _ -> ignore (item.edit_check db)
+      end;
+      status item
+   in
+   let f item db =
+      print_exn_db db (check item) db
+   in
+      apply_all f true true
 
 (*
  * -*-

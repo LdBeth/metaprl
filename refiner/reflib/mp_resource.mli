@@ -114,3 +114,6 @@ val debug_resource : bool ref
 
 (* Finds the names of the _immediate_ parents *)
 val get_parents : string -> string list
+
+(* Forgets the results of calling fp_retr and imp_retr for all resources under specific bookmark *)
+val clear_results : bookmark -> unit
