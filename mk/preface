@@ -46,6 +46,8 @@ ifndef TESTS
 endif
 ifneq (,$(findstring $(TESTS),$(YESFLAGS)))
    TESTS=YES
+else
+   TESTS=no
 endif
 ifndef CCC
    CCC=gcc
@@ -75,6 +77,8 @@ endif
 ifneq (,$(findstring $(READLINE),$(YESFLAGS)))
    READLINE=YES
    OTHER_CCLIBS := $(OTHER_CCLIBS) -cclib -lreadline
+else
+   READLINE=no
 endif
 
 #

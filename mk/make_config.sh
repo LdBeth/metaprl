@@ -48,7 +48,7 @@ REFINER=$REFINER
 THEORIES=$THEORIES
 
 #
-# Use GNU readline package (available on Linux at least).
+# Use GNU readline package (available on Linux at least) (yes/no).
 #
 READLINE=$READLINE
 
@@ -74,7 +74,7 @@ MAKE_JOBS=$MAKE_JOBS
 MAKE_OPTS=$MAKE_OPTS
 
 #
-# Whether to compile in various test theories and files
+# Whether to compile in various test theories and files (yes/no)
 #
 TESTS=$TESTS
 
