@@ -342,7 +342,6 @@ sig
    val mterm : meta_term Grammar.Entry.e
    val bmterm : meta_term Grammar.Entry.e
    val singleterm : aterm Grammar.Entry.e
-   val applytermlist : (term list) Grammar.Entry.e
    val parsed_bound_term : aterm Grammar.Entry.e
    val xdform : term Grammar.Entry.e
    val term_con_eoi : (term, MLast.expr) term_constructor Grammar.Entry.e

@@ -147,7 +147,6 @@ struct
    let mterm = Grammar.Entry.create gram "mterm"
    let bmterm = Grammar.Entry.create gram "mterm"
    let singleterm = Grammar.Entry.create gram "singleterm"
-   let applytermlist = Grammar.Entry.create gram "applytermlist"
    let parsed_bound_term = Grammar.Entry.create gram "bound_term"
    let xdform = Grammar.Entry.create gram "xdform"
    let term_con_eoi = Grammar.Entry.create gram "term_con_eoi"
@@ -1231,8 +1230,8 @@ EXTEND
                      SigFilter.declare_comment (SigFilter.get_proc loc) loc (parse_quotation loc "doc" q)
            in
               print_exn f "comment" loc;
-        | tl = applytermlist ->
-           SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_comment_term (List.map term_of_parsed_term tl))
+        | t = parsed_term ->
+           SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_comment_term [t])
        ]];
 
    str_item:
@@ -1428,8 +1427,8 @@ EXTEND
                      StrFilter.declare_comment (StrFilter.get_proc loc) loc (parse_quotation loc "doc" q)
            in
               print_exn f "comment" loc
-        | tl = applytermlist ->
-           StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_comment_term (List.map term_of_parsed_term tl))
+        | t = parsed_term ->
+           StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_comment_term [t])
        ]];
 
    mod_ident:

@@ -48,6 +48,7 @@ open TermShape
 open Lexing
 open Filter_type
 open Filter_util
+open Simple_print.SimplePrint
 
 (*
  * Show the file loading.
@@ -259,10 +260,11 @@ struct
    let mk_pair_term loc a b =
       mk_dep0_dep0_term (mk_dep0_dep0_opname loc "pair") a b
 
-   let get_aterm loc at =
-      if at.aname != None then
-         Stdpp.raise_with_loc loc (Invalid_argument "Syntax Error: Named term where unnamed one is expected")
-      else at.aterm
+   let get_aterm loc = function
+      { aname = Some v; aterm = t } ->
+         Stdpp.raise_with_loc loc (Invalid_argument
+            ("Syntax Error: Named term where unnamed one is expected:\n" ^ (string_of_term v) ^ " : " ^ (string_of_term t)))
+    | { aname = None; aterm = t } -> t
 
    let make_term = function
       ST_String (s, loc) ->
@@ -528,7 +530,7 @@ struct
     ************************************************************************)
 
    EXTEND
-      GLOBAL: term_eoi term parsed_term quote_term mterm bmterm singleterm applytermlist parsed_bound_term xdform term_con_eoi;
+      GLOBAL: term_eoi term parsed_term quote_term mterm bmterm singleterm parsed_bound_term xdform term_con_eoi;
 
       (*
        * Meta-terms include meta arrows.
@@ -662,19 +664,12 @@ struct
            "ite" LEFTA
             [ "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
                wrap_term loc (mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "ifthenelse") (make_term e1) (make_term e2) (make_term e3))
-            | "let"; x = var; sl_equal; e1 = applyterm; "in"; e2 = SELF ->
+            | "let"; x = var; sl_equal; e1 = SELF; "in"; e2 = SELF ->
                wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
             | e2 = SELF; "where";  x = var; sl_equal; e1 = SELF ->
                wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
-            | "open";  e1 =  applyterm; "in"; e2 = SELF ->
+            | "open";  e1 =  SELF; "in"; e2 = SELF ->
                wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add "self") (make_term e1) (make_term e2))
-            ]
-          (* short form for sequents *)
-          | "sequent" NONA
-            [ arg = SELF; "{|"; (hyps, concls) = sequent_body; "|}" ->
-                  let arg_bt = [mk_simple_bterm (make_term arg)] in
-                  let arg = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] arg_bt) []) arg_bt in
-                     wrap_term loc (mk_sequent_term { sequent_args = arg; sequent_hyps = hyps; sequent_goals = concls })
             ]
 
           (* Logical operators *)
@@ -828,53 +823,27 @@ struct
                t1 = SELF; op = sl_div; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
             ]
-          | "apply" LEFTA
-            [ t = applyterm ->
-               t
-             | t = applyterm; l = applytermlist ->
-               make_application loc (make_term t :: l)
-            ]
-          | "type" NONA
-            [ t = SELF; op = sl_type ->
-               wrap_term loc (mk_dep0_term (mk_dep0_opname loc op) (make_term t))
-            ]
-         ];
 
-      (* Term that can be used in application lists *)
-      applyterm:
-         [ [ op = opname ->
-              begin match op with
-                 [name] ->
-                    ST_String(name, loc)
-               | _ ->
-                    wrap_term loc (mk_term (mk_op (mk_opname loc op [] []) []) [])
-              end
-            | op = opname; (params, bterms) = termsuffix ->
-              wrap_term loc (mk_term (mk_op (mk_bopname loc op params bterms) params) bterms)
-            | op = opname; sl_colon; t = applyterm ->
-              match op with
-                 [name] ->
-                    if !debug_grammar then
-                       eprintf "Got bound term: %s%t" name eflush;
-                    ST_Term({ aname = Some (mk_var_term (Lm_symbol.add name)); aterm = make_term t }, loc)
-               | _ ->
-                    Stdpp.raise_with_loc loc (ParseError "illegal binding variable")
-           ]
+          | "apply" LEFTA
+            [ t1 = SELF; t2 = SELF ->
+               make_application loc [make_term t1; make_term t2]
+            ]
+
           | "power" RIGHTA
             [ (* t1 ^@ t2  - integer power *)
-               t1 = applyterm; op = sl_arith_power; t2 = applyterm ->
+               t1 = SELF; op = sl_arith_power; t2 = SELF ->
                mk_arith_term loc op t1 t2
             |(* t1 ^^ t2   - algebraic power for self *)
-               t1 = applyterm; op = sl_label_self_power;  t2 = applyterm ->
+               t1 = SELF; op = sl_label_self_power;  t2 = SELF ->
                make_application loc [mk_field_self_term loc op; (make_term t1); (make_term t2)]
             |(* t1 ^[g] t2   - algebraic power for g *)
-               t1 = applyterm; op = sl_power; sl_open_brack; g = aterm; sl_close_brack; t2 = applyterm ->
+               t1 = SELF; op = sl_power; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; (make_term t1); (make_term t2)]
             |(* r ^ lab - field selection for records *)
-              r = applyterm; sl_power; lab = word_or_string  ->
+              r = SELF; sl_power; lab = word_or_string  ->
                wrap_term loc (mk_field_term loc (make_term r) lab)
             |(* r ^ lab := t - field update for records *)
-               r = applyterm; sl_power; lab = word_or_string; sl_assign; t = noncommaterm  ->
+               r = SELF; sl_power; lab = word_or_string; sl_assign; t = noncommaterm  ->
                wrap_term loc (**)
                   (mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
                            [make_param (Token lab )])  [mk_simple_bterm (make_term t); mk_simple_bterm (make_term r)])
@@ -887,6 +856,38 @@ struct
                   (mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0]) [make_param (Token lab )]) (**)
                            [mk_simple_bterm (make_term t); mk_simple_bterm (mk_var_term (Lm_symbol.add "self"))])
            ]
+
+          | "raw" RIGHTA
+            [ op = opname ->
+              begin match op with
+                 [name] ->
+                    ST_String(name, loc)
+               | _ ->
+                    wrap_term loc (mk_term (mk_op (mk_opname loc op [] []) []) [])
+              end
+            | op = opname; (params, bterms) = termsuffix ->
+              wrap_term loc (mk_term (mk_op (mk_bopname loc op params bterms) params) bterms)
+            | op = opname; sl_colon; t = SELF ->
+              match op with
+                 [name] ->
+                    ST_Term({ aname = Some (mk_var_term (Lm_symbol.add name)); aterm = make_term t }, loc)
+               | _ ->
+                    Stdpp.raise_with_loc loc (ParseError "illegal binding variable")
+           ]
+
+          (* short form for sequents *)
+          | "sequent" NONA
+            [ arg = SELF; "{|"; (hyps, concls) = sequent_body; "|}" ->
+                  let arg_bt = [mk_simple_bterm (make_term arg)] in
+                  let arg = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] arg_bt) []) arg_bt in
+                     wrap_term loc (mk_sequent_term { sequent_args = arg; sequent_hyps = hyps; sequent_goals = concls })
+            ]
+
+          | "type" NONA
+            [ t = SELF; op = sl_type ->
+               wrap_term loc (mk_dep0_term (mk_dep0_opname loc op) (make_term t))
+            ]
+
           | [ t = nonwordterm ->
                wrap_term loc t
             ]
@@ -901,9 +902,6 @@ struct
            ]
           | [ t = nonwordterm ->
                { aname = None; aterm = t }
-            ]
-          | [ s = ANTIQUOT ->
-               { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s}
             ]
          ];
 
@@ -940,19 +938,14 @@ struct
 
       nonwordterm:
          [[ (* vars *)
-             v = varterm ->
-             v
+             v = varterm -> v
 
              (* Abbreviations *)
            | i = sl_number ->
              mk_term (mk_op (mk_opname loc ["number"] [ShapeNumber] [])
                                [make_param (Number i)]) []
-           | x = sequent ->
-             x
+           | x = sequent -> x
 
-             (* Parenthesized terms *)
-           | sl_open_paren; t = aterm; sl_close_paren ->
-             get_aterm loc t
              (* records {x1=a1;x2=a2;...} *)
            | sl_open_curly; lab = word_or_string; sl_equal; t = aterm; rest = LIST0 rcrdterm; sl_close_curly ->
                 let r0 =   mk_term (mk_op (mk_opname loc ["rcrd"] [] []) []) [] in
@@ -996,6 +989,10 @@ struct
                encode_free_var v
             | x = QUOTATION ->
                parse_quotation loc "term" (dest_quot x)
+            | s = ANTIQUOT ->
+               Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
+            | sl_open_paren; t = aterm; sl_close_paren ->
+               get_aterm loc t
           ]];
 
       var: [[ v = word_or_string -> Lm_symbol.add v ]];
@@ -1018,14 +1015,6 @@ struct
       quote_term:
          [[ v = word_or_string; params = optparams; bterms = optbterms ->
              v, params, bterms
-          ]];
-
-      (* Application lists *)
-      applytermlist:
-         [[ x = applyterm ->
-             [make_term x]
-           | l = applytermlist; x = applyterm ->
-             l @ [make_term x]
           ]];
 
       (* List of terms *)
