@@ -747,6 +747,25 @@ struct
    let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
    let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
 
+   let rec context_vars_term cvars t =
+      let t' = dest_term t in
+      let op = dest_op t'.term_op in
+         if Opname.eq op.op_name context_opname then
+            match dest_params op.op_params with
+               [Var v] ->
+                  context_vars_bterms (SymbolSet.add cvars v) t'.term_terms
+             | _ ->
+                  REF_RAISE(RefineError ("Term_man_gen.context_vars_term", TermMatchError (t, "mailformed context")))
+         else
+            context_vars_bterms cvars t'.term_terms
+
+   and context_vars_bterms cvars = function
+      bt::l ->
+         context_vars_bterms (context_vars_term cvars (dest_bterm bt).bterm) l
+    | [] -> cvars
+
+   let context_vars = context_vars_term SymbolSet.empty
+
    let rec free_meta_variables vars t =
       if is_so_var_term t then
          let v, conts, ts = dest_so_var t in

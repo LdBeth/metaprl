@@ -2065,6 +2065,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_ss "TermMan.free_meta_variables" (wrap1 TermMan1.free_meta_variables p0_1) (wrap1 TermMan2.free_meta_variables p0_2)
 
+      let context_vars (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge merge_ss "TermMan.context_vars" (wrap1 TermMan1.context_vars p0_1) (wrap1 TermMan2.context_vars p0_2)
+
       let explode_term (p0 : term) =
          let p0_1, p0_2 = p0 in
          merge merge_match_term "TermMan.explode_term" (wrap1 TermMan1.explode_term p0_1) (wrap1 TermMan2.explode_term p0_2)
@@ -2296,10 +2300,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let free_vars_terms (p0 : term list) =
          let p0_1, p0_2 = split p0 in
          merge merge_ss "TermSubst.free_vars_terms" (wrap1 TermSubst1.free_vars_terms p0_1) (wrap1 TermSubst2.free_vars_terms p0_2)
-
-      let context_vars (p0 : term) =
-         let p0_1, p0_2 = p0 in
-         merge merge_ss "TermSubst.context_vars" (wrap1 TermSubst1.context_vars p0_1) (wrap1 TermSubst2.context_vars p0_2)
 
       let match_terms (p0 : term_subst) (p1 : term) (p2 : term) =
          let p0_1, p0_2 = split_term_subst p0 in

@@ -69,6 +69,7 @@ sig
 
    (* returns both free contexts and all SO variables *)
    val free_meta_variables : term -> SymbolSet.t
+   val context_vars : term -> SymbolSet.t
 
    (*
     * Destruct a term for easy pattern-matching.

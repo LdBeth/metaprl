@@ -158,7 +158,7 @@ struct
     *)
    let rec context_vars = function
       MetaTheorem t ->
-         TermSubst.context_vars t
+         TermMan.context_vars t
     | MetaImplies (a, b)
     | MetaFunction (_, a, b)
     | MetaIff (a, b) ->

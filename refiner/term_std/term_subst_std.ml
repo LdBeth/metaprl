@@ -176,24 +176,6 @@ struct
    let is_some_var_free_list vars =
          List.exists (is_some_var_free vars)
 
-   (*
-    * Similar operation on contexts.
-    *)
-   let rec context_vars_term cvars = function
-      { term_op = { op_name = opname; op_params = [Var v] };
-        term_terms = bterms
-      } when Opname.eq opname context_opname ->
-         context_vars_bterms (SymbolSet.add cvars v) bterms
-    | { term_terms = bterms } ->
-         context_vars_bterms cvars bterms
-
-   and context_vars_bterms cvars = function
-      { bterm = t }::l ->
-         context_vars_bterms (context_vars_term cvars t) l
-    | [] -> cvars
-
-   let context_vars = context_vars_term SymbolSet.empty
-
    (************************************************************************
     * ALPHA EQUALITY                                                       *
     ************************************************************************)

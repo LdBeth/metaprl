@@ -566,6 +566,30 @@ struct
       in
          mk_term (mk_op context_opname [Var v]) (collect terms)
 
+   let rec terms_context_vars = function
+      [] -> SymbolSet.empty
+    | t::ts -> SymbolSet.union (context_vars t) (terms_context_vars ts)
+
+   and context_vars t =
+      match get_core t with
+         Sequent seq ->
+            let hyps = seq.sequent_hyps in
+            let len = SeqHyp.length hyps in
+            let rec hyp_context_vars i =
+               if i = len then SymbolSet.empty else
+               match SeqHyp.get hyps i with
+                  Hypothesis (_, h) -> SymbolSet.union (context_vars h) (hyp_context_vars (succ i))
+                | Context (v,_,ts) -> SymbolSet.add (SymbolSet.union (terms_context_vars ts) (hyp_context_vars (succ i))) v
+            in SymbolSet.union (SymbolSet.union (hyp_context_vars 0) (context_vars seq.sequent_concl)) (context_vars seq.sequent_args)
+       | Term { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bts }
+            when Opname.eq opname Opname.context_opname ->
+            SymbolSet.add (terms_context_vars (List.map (fun bt -> bt.bterm) bts)) v
+       | Term { term_terms = bts } ->
+            terms_context_vars (List.map (fun bt -> bt.bterm) bts)
+       | SOVar(_, _, ts) -> terms_context_vars ts
+       | FOVar _ -> SymbolSet.empty
+       | Hashed _| Subst _ -> fail_core "context_vars"
+
    let rec free_meta_variables vars t = match get_core t with
       FOVar _ -> vars
     | SOVar(v, conts, ts) -> SymbolSet.add (List.fold_left free_meta_variables (SymbolSet.add_list vars conts) ts) v

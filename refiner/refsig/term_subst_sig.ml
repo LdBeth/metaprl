@@ -114,7 +114,6 @@ sig
    val free_vars_list : term -> var list
    val free_vars_set : term -> SymbolSet.t
    val free_vars_terms : term list -> SymbolSet.t
-   val context_vars : term -> SymbolSet.t
 
    (*
     * Matching is like unification but variables in
