@@ -83,12 +83,15 @@ endif
 ifndef READLINE
     ifeq ($(OSTYPE),Linux)
         READLINE=YES
+        NCURSES=YES
     else
         READLINE=NO
+        NCURSES=NO
     endif
 endif
 ifneq (,$(findstring $(READLINE),$(YESFLAGS)))
    READLINE=YES
+   NCURSES=YES
    OTHER_CCLIBS := $(OTHER_CCLIBS) -cclib -lreadline -cclib -lncurses
 else
    READLINE=no

@@ -67,11 +67,13 @@ THEORIES=$THEORIES
 
 #
 # Use GNU readline package (available on Linux at least) (yes/no).
+# Requires "NCURSES=yes" (below) in order to work.
 #
 READLINE=$READLINE
 
 #
 # The GNU ncurses package (available in Linux at least) (yes/no)
+# Should be set to "yes" for readline support (above) to be enabled.
 #
 NCURSES=$NCURSES
 
