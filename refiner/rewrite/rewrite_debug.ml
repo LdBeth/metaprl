@@ -187,15 +187,7 @@ struct
          fprintf out "[%a]" print_param_list pl
 
    and print_param_list out pl =
-      let rec collect = function
-         [h] ->
-            print_param out h
-       | h::t ->
-            fprintf out "%a; %a" print_param h print_param_list t
-       | [] ->
-            ()
-      in
-         collect pl
+      print_any_list print_param out pl
 
    let rec print_sparam out h = match dest_param h with
       Number n ->

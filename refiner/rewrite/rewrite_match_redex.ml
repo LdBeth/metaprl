@@ -286,7 +286,7 @@ struct
       match p', dest_param p with
          (* Literal matches *)
          RWNumber i, Number j ->
-            if (i <> j) then
+            if not (Lm_num.eq_num i j) then
                REF_RAISE(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
        | RWString s', String s ->
             if (s' <> s) then
