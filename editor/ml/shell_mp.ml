@@ -29,8 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-extends Shell
-
 open Lm_debug
 open Lm_rprintf
 

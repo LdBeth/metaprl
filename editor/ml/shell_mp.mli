@@ -30,14 +30,10 @@
  * jyh@cs.cornell.edu
  *)
 
-extends Shell
-
-open Shell_p4_sig
-
 (*
  * Toploop implementation.
  *)
-module ShellP4 : ShellP4Sig
+module ShellP4 : Shell_p4_sig.ShellP4Sig
 
 (*
  * -*-
