@@ -226,6 +226,7 @@ sig
     *)
    type tactic_arg
    type tactic
+   type extract
    type pre_tactic
    type sentinal
    type conv
@@ -291,6 +292,11 @@ sig
     *)
    val tactic_of_rewrite : int -> rw -> tactic
    val tactic_of_cond_rewrite : int -> cond_rewrite -> tactic
+
+	(*
+    * Apply a tactic.
+    *)
+   val refine : tactic -> tactic_arg -> tactic_arg list * extract
 end
 
 (*
