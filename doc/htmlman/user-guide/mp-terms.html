@@ -21,62 +21,62 @@ syntax:</P>
     <TABLE WIDTH="506" BORDER="1" CELLSPACING="2" CELLPADDING="0">
       <TR>
         <TD WIDTH="21%">
-        <B>term</B></TD> 
+        <B>term</B></TD>
         <TD WIDTH="5%" ALIGN="CENTER">
-        ::=</TD> 
+        ::=</TD>
         <TD WIDTH="70%">
-        <B>operator</B> <TT>{</TT> <B>bterms</B> <TT>}</TT></TD> 
+        <B>operator</B> <TT>{</TT> <B>bterms</B> <TT>}</TT></TD>
       </TR>
       <TR>
         <TD WIDTH="21%">
-        <B>bterm</B></TD> 
+        <B>bterm</B></TD>
         <TD WIDTH="5%" ALIGN="CENTER">
-        ::=</TD> 
+        ::=</TD>
         <TD WIDTH="70%">
-        <B>term</B> | vars <TT>.</TT> <B>term</B></TD> 
+        <B>term</B> | vars <TT>.</TT> <B>term</B></TD>
       </TR>
       <TR>
         <TD WIDTH="21%">
-        <B>operator</B></TD> 
+        <B>operator</B></TD>
         <TD WIDTH="5%" ALIGN="CENTER">
-        ::=</TD> 
+        ::=</TD>
         <TD WIDTH="70%">
-        <B>opname</B> <TT>[</TT> <B>params</B> <TT>]</TT></TD> 
+        <B>opname</B> <TT>[</TT> <B>params</B> <TT>]</TT></TD>
       </TR>
       <TR>
         <TD WIDTH="21%">
-        <B>opname</B></TD> 
+        <B>opname</B></TD>
         <TD WIDTH="5%" ALIGN="CENTER">
-        ::=</TD> 
+        ::=</TD>
         <TD WIDTH="70%">
-        literal | literal <TT>.</TT> <B>opname</B></TD> 
+        literal | literal <TT>.</TT> <B>opname</B></TD>
       </TR>
       <TR>
         <TD WIDTH="21%">
-        <B>param</B></TD> 
+        <B>param</B></TD>
         <TD WIDTH="5%" ALIGN="CENTER">
-        ::=</TD> 
+        ::=</TD>
         <TD WIDTH="70%">
         number <TT>:n</TT> | string <TT>:s</TT> | string <TT>:t</TT>
-        | string <TT>:v</TT> | <B>level</B> <TT>:l</TT> | <B>meta-param</B></TD> 
+        | string <TT>:v</TT> | <B>level</B> <TT>:l</TT> | <B>meta-param</B></TD>
       </TR>
       <TR>
         <TD WIDTH="21%">
-        <B>meta-param</B></TD> 
+        <B>meta-param</B></TD>
         <TD WIDTH="5%" ALIGN="CENTER">
-        ::=</TD> 
+        ::=</TD>
         <TD WIDTH="70%">
         var <TT>:n</TT> | var<TT>:s</TT> | var<TT>:t</TT>
-        | var <TT>:v</TT></TD> 
+        | var <TT>:v</TT></TD>
       </TR>
       <TR>
         <TD WIDTH="21%">
-        <B>level</B></TD> 
+        <B>level</B></TD>
         <TD WIDTH="5%" ALIGN="CENTER">
-        ::=</TD> 
+        ::=</TD>
         <TD WIDTH="70%">
         number | literal |<B> level</B> number | <B>level</B> <TT>'</TT>
-        | <B>level</B> &quot;|&quot; <B>level</B></TD> 
+        | <B>level</B> &quot;|&quot; <B>level</B></TD>
       </TR>
     </TABLE>
 </BLOCKQUOTE>
@@ -345,13 +345,19 @@ declared,as in the following sequence:</P>
     </TR>
     <TR>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> = <I>t2</I> <B>in </B><I>t3</I></TT></TD>
+      &nbsp;<TT><I>t1</I><B> IN </B><I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>equal{<I>t2; t1; t1</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<TT><I>t1</I> = <I>t2</I> <B>in </B><I>t3</I></TT></TD>
       <TD WIDTH="50%">
       &nbsp;<TT>equal{<I>t3; t1; t2</I>}</TT></TD>
     </TR>
     <TR>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1 </TT></I><TT>!= <I>t2 </I><B>in</B> <I>t3</I></TT></TD>
+      &nbsp;<TT><I>t1 </I> &lt;&gt; <I>t2 </I><B>in</B> <I>t3</I></TT></TD>
       <TD WIDTH="50%">
       &nbsp;<TT>nequal{<I>t3; t2; t1</I>}</TT></TD>
     </TR>

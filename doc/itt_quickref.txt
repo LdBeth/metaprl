@@ -22,7 +22,7 @@ However, I did set goals for myself that I believe I have met.
 1) Every "topval" in Itt_theory is at least mentioned.
 2) Every extension to dT, autoT, eqcdT, subtypeT, and reduceTopC is
 at least mentioned.
-3) Everywhere that withT, withTermsT, atT, altT, selT, thinningT, or 
+3) Everywhere that withT, withTermsT, atT, altT, selT, thinningT, or
 withTypeT makes a difference is documented.
 
 ----------------------------------------
@@ -315,7 +315,7 @@ second subterm of the first subterm of the current term.
 
 * clauseC : int -> conv -> conv
 (clauseC clause conv) takes the given conversion and applies it to the
-given clause.  You probably only want to use this with rw; 
+given clause.  You probably only want to use this with rw;
 (rwh (clauseC 1 conv) 0) would do something like apply conv at each
 position in the first hypothesis which exists in the conclusion.
 
@@ -396,7 +396,7 @@ determine the correct tactic to apply.
 
 (dT n) will sometimes delete the n'th hypothesis after it has applied
 the rule.  If this is the case, the description of the effect will end
-with "and thins"; you can avoid this deletion with 
+with "and thins"; you can avoid this deletion with
 (thinningT false (dT n)).
 
 * dForT : int -> tactic
@@ -412,8 +412,8 @@ If the argument is 0, this solves a goal with a conclusion of the form
 * rewriteT : term -> tactic
 (rewriteT << "rewrite"{'a; 'b} >>) changes occurrences of << 'a >> in
 the conclusion to << 'b >>.  If you want to substitute for some but
-not all occurrences of << 'a >>, you can wrap the tactic in 
-(withT << bind{x. 'C['x]} >> ...), where the conclusion must be 
+not all occurrences of << 'a >>, you can wrap the tactic in
+(withT << bind{x. 'C['x]} >> ...), where the conclusion must be
 << 'C['a] >>.
 
 ----------------------------------------
@@ -446,39 +446,33 @@ new terms:
 "type"{'a}
 univ[i:l]
 equal{'T; 'a; 'b}
-member{'T; 'x} <--> ('x = 'x in 'T)
 "true"
 "false"
 cumulativity[i:l, j:l]
 
-* unfold_member : conv
-Rewrites << member{'T; 'x} >> to << 'x = 'x in 'T >>.
+Input shortcuts:
+('x = 'y in 'T) = equal{'T; 'x; 'y}
+('x IN 'T) = equal{'T; 'x; 'x}
+Notice that "in" has to be lowercase in the first case and uppercase in the
+second one.
 
 * reduce_cumulativity: conv
 Rewrites a term of the form << cumulativity[i:l, j:l] >> to "true" (if
 i<j) or "false" (otherwise).  (Note that these are not the same "true"
 and "false" as defined in Itt_logic.)
 
-* fold_member : conv
-The opposite of unfold_member; rewrites << 'x = 'x in 'T >> to
-<< member{'T; 'x} >>.
-
 * eqcdT : tactic
-Tries to solve goals with conclusions of the form 
+Tries to solve goals with conclusions of the form
 << 'a = 'b in 'T >>.  This is a resource-based tactic.  It looks at
 the form of 'a to determine the correct tactic to apply.
 
-In its initial state, it can handle 
+In its initial state, it can handle
 << univ[j:l] = univ[j:l] in univ[i:l] >> and
 << it = it in ('a = 'b in 'T) >>.
 
 * squash_equalT : tactic
 Changes the goal to be a "squash" sequent if the conclusion is an
 equality.  This is part of the squashT tactic.
-
-* squash_memberT : tactic
-Changes the goal to be a "squash" sequent if the conclusion is of the
-form << member{'T; 'a} >>.
 
 * squash_typeT : tactic
 Changes the goal to be a "squash" sequent if the conclusion is of the
@@ -490,10 +484,6 @@ form << Perv!"rewrite"{'a; 'b} >>.
 
 * typeAssertT : tactic
 Deduces << "type"{'T} >> from << 'T >>.
-
-* memberAssumT : int -> tactic
-(memberAssumT i) deduces << member{'T; 'x} >> if << x: 'T >> is the i'th
-hypothesis.
 
 * unsquashT : term -> tactic
 Removes any "squash" attribute from the goal sequent.
@@ -527,7 +517,7 @@ equalSymT changes the goal from << 'x = 'y in 'T >> to
 << x: univ[i:l] >>.
 
 * cumulativityT : term -> tactic
-(cumulativityT << univ[j:l] >>) changes the goal from 
+(cumulativityT << univ[j:l] >>) changes the goal from
 << 'x = 'y in univ[i:l] >> to << 'x = 'y in univ[j:l] >>, if the
 universe level j is less than the universe level i.
 
@@ -536,38 +526,25 @@ If the conclusion is of the form << "true" >>,
 (dT 0) solves it with no subgoals.  (This is not the same << "true" >>
 defined in Itt_logic.)
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << ('a1 = 'b1 in 'T1) = ('a2 = 'b2 in 'T2) in univ[i:l] >>,
 (dT 0) creates 3 equality subgoals.
 
-If the conclusion is of the form << member{univ[i:l]; .'a1 = 'b1 in 'T1} >>,
-(dT 0) creates 3 membership subgoals.
-
 If the conclusion is of the form << "type"{. 'a = 'b in 'T } >>,
-(dT 0) creates 2 equality subgoals.
+(dT 0) creates 2 membership subgoals.
 
-If the conclusion is of the form << "type"{. 'a = 'a in 'T } >>,
-(dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form << "type"{member{'T; 'x}} >>,
+If the conclusion is of the form << "type"{. 'a IN 'T } >>,
 (dT 0) creates one membership subgoal.
+(note: until the precedences in term tables are implemented correctly,
+the previous dT addition may take precedence over this one)
 
-If the conclusion is of the form << it = it in ('a = 'b in 'T) >>,
+If the conclusion is of the form << it IN ('a = 'b in 'T) >>,
 (dT 0) creates one equality subgoal.
-
-If the conclusion is of the form << member{.'a = 'b in 'T; it} >>,
-(dT 0) creates one equality subgoal.
-
-If the conclusion is of the form << member{.member{'T; 'a}; it} >>,
-(dT 0) creates one membership subgoal.
 
 If the n'th hypothesis is of the form << x: 'a = 'b in 'T >>,
 (dT n) replaces << x >> with << it >> in the rest of the sequent.
 
-If the n'th hypothesis is of the form << x: member{'T; 'a} >>,
-(dT n) replaces << x >> with << it >> in the rest of the sequent.
-
-If the conclusion is of the form << univ[i:l] = univ[i:l] in univ[j:l] >>,
+If the conclusion is of the form << univ[i:l] IN univ[j:l] >>,
 (dT 0) reduces it to a cumulativity subgoal and tries to prove this
 subgoal.
 
@@ -576,9 +553,9 @@ If the conclusion is of the form << "type"{univ[l:l]} >>,
 
 This file adds to the trivalT tactic:
 trivialT can solve goals with a conclusion of the form
-<< 'x = 'x in 'T >> or << member{'T; 'x} >> if there is a hypothesis
-<< x: 'T >>, or goals with a conclusion of the form 
-<< "type"{'x} >> if there is a hypothesis << x: univ[i:l] >>.
+<< 'x IN 'T >> if there is a hypothesis << x: 'T >>,
+or goals with a conclusion of the form << "type"{'x} >>
+if there is a hypothesis << x: univ[i:l] >>.
 
 ----------------------------------------
 itt_subtype:
@@ -606,7 +583,7 @@ Similarly, type_subtype_rightT t replaces << "type"{'A} >>
 with << subtype{'A; t} >>.
 
 This file adds to the dT tactic.
-If the conclusion is of the form 
+If the conclusion is of the form
 << subtype{'A1; 'B1} = subtype{'A2; 'B2} in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
 
@@ -617,13 +594,13 @@ and << "type"{'B} >>.
 If the conclusion is of the form << subtype{'A; 'B} >>,
 (dT 0) creates two subgoals.  One (marked "wf") has a conclusion of
 << "type"{'A} >>; the other (marked "main") is of the form
-<< x: 'A >- 'x = 'x in 'B >>.
+<< x: 'A >- 'x IN 'B >>.
 
 If the n'th hypothesis is of the form << x: subtype{'A; 'B} >>,
 (dT n) replaces << 'x >> with << it >> in the rest of the sequent.
 (withT t (dT n)) creates two subgoals.
-The first has a conclusion of << member{'A; t} >>.  The
-second has an extra hypothesis, << y: member{'B; t} >>.
+The first has a conclusion of << t IN 'A >>.  The
+second has an extra hypothesis, << y: t IN 'B >>.
 
 ----------------------------------------
 itt_void:
@@ -636,10 +613,7 @@ Changes the goal to be a "squash" sequent if the conclusion is of the
 form << void >>.  This is part of the squashT tactic.
 
 This file adds to the dT tactic:
-If the conclusion is of the form << void = void in univ[i:l] >>,
-(dT 0) succeeds with no subgoals.
-
-If the conclusion is of the form << member{univ[i:l]; void} >>,
+If the conclusion is of the form << void IN univ[i:l] >>,
 (dT 0) succeeds with no subgoals.
 
 If the conclusion is of the form << "type"{void} >>, then
@@ -685,7 +659,7 @@ be useful for performance testing or debugging; it is useless in a
 normal proof.)
 
 * useWitnessT : term -> tactic
-(useWitnessT t) changes a conclusion << 'T >> into 
+(useWitnessT t) changes a conclusion << 'T >> into
 << t = t in 'T >>.
 
 * substT : term -> int -> tactic
@@ -710,7 +684,7 @@ from << x: 'A >> to << x: t >>, and adds an extra subgoal
 << 'A = t in univ[i:l] >>.
 
 This file adds to the trivialT tactic.
-trivialT can solve goals with a hypothesis << x: 'A >> and a goal 
+trivialT can solve goals with a hypothesis << x: 'A >> and a goal
 << 'A >>.
 
 ----------------------------------------
@@ -731,20 +705,20 @@ fix{f. 'b['f]}
 
 Here, << well_founded{'A; x, y. 'R['x; 'y]} >> has the standard
 meaning: over a type << 'A >>, the relation << 'R['x; 'y] >> is
-well-founded (has no infinite descending chains).  You can think of 
+well-founded (has no infinite descending chains).  You can think of
 << well_founded_prop{'A} >> as being like the power set of << 'A >>;
-any member of << well_founded_prop{'A} >> acts like a subset of 
+any member of << well_founded_prop{'A} >> acts like a subset of
 << 'A >>.  (There is a standard notion which is similar to this, where
 << 'A -> univ[i:l] >> acts like the power set of << 'A >>.  That's not
 suitable for use in the well-foundedness definition, because it forces
-you to pick a universe level.)  If << 'P >> is a member of 
+you to pick a universe level.)  If << 'P >> is a member of
 << well_founded_prop{'A} >>, you can test whether a member << 'a >> of
 << 'A >> is in << 'P >> with << well_founded_apply{'P; 'a} >>.
 
 Finally, << well_founded_assum{'A; x, y. 'R['x; 'y]; 'P} >> holds if
 whenever all the << 'R >>-predecessors of an element are in << 'P >>,
 that element is in << 'P >>.  A partial order << 'R >> is well-founded
-over a type << 'A >> iff 
+over a type << 'A >> iff
 << well_founded_assum{'A; x, y. 'R['x; 'y]; 'P} >> implies that every
 member of << 'A >> is in << 'P >>.
 
@@ -764,7 +738,7 @@ types, that the type << { g | x:'A -> 'B['g; 'x] } >> is well-formed,
 and that << 'f1 >> and << 'f2 >> are extensionally equal.
 
 This file adds to the dT tactic.
-If the n'th hypothesis is of the form 
+If the n'th hypothesis is of the form
 << p: well_founded_assum{'A; a1, a2. 'R['a1; 'a2]; 'P} >>,
 (withT a (dT n)) creates 3 subgoals and thins.  Two of the subgoals
 say that a is a member of << 'A >> and that every << 'R >>-predecessor
@@ -778,38 +752,33 @@ of the main subgoals say that << 'R >> is irreflexive, antisymmetric
 you know << well_founded_assum{'A; a2, a3. 'R['a2; 'a3]; 'P} >> then
 every member of << 'A >> is in << 'P >>.
 
-If the conclusion is of the form 
-<< member{univ[i:l]; well_founded_apply{'P; 'a}} >>,
+If the conclusion is of the form
+<< well_founded_apply{'P; 'a} IN univ[i:l] >>,
 (withT t (dT 0)) creates 3 membership subgoals.  Here t must be the
 type of << 'a >>.
 
-If the conclusion is of the form 
-<< { f1 | a1:'A1 -> 'B1['f1; 'a1] } 
-   = { f2 | a2:'A2 -> 'B2['f2; 'a2] } 
+If the conclusion is of the form
+<< { f1 | a1:'A1 -> 'B1['f1; 'a1] }
+   = { f2 | a2:'A2 -> 'B2['f2; 'a2] }
    in univ[i:l] >>,
-<< member{univ[i:l]; { f1 | a1:'A1 -> 'B1['f1; 'a1] }} >>,
 << "type"{. { f | a:'A -> 'B['f; 'a] } } >>, or
 << { f | x:'A -> 'B['f; 'x] } >>,
 (withT r (dT 0)) creates 3 subgoals.  (The argument r, which gives the
 well-founded relation validating the rfun types, must be of the
 form << lambda{a. lambda{b. 'R['a; 'b]}} >>.)
 
-If the conclusion is of the form 
-<< lambda{x1. 'b1['x1]} 
-   = lambda{x2. 'b2['x2]} 
+If the conclusion is of the form
+<< lambda{x1. 'b1['x1]}
+   = lambda{x2. 'b2['x2]}
    in { f | x: 'A -> 'B['f; 'x] } >>,
-(dT 0) creates 2 subgoals.
-
-If the conclusion is of the form 
-<< member{.{ f | x: 'A -> 'B['f; 'x] }; lambda{x1. 'b1['x1]}} >>,
 (dT 0) creates 2 subgoals.
 
 If the n'th hypothesis is of the form
 << f: { g | x:'A -> 'B['g; 'x] } >>,
 (withT a (dT n)) adds hypotheses giving the type of << 'f a >> (and
-another goal with conclusion << member{'A; a} >>).
+another goal with conclusion << a IN 'A >>).
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << subtype{.{ f1 | x1: 'A1 -> 'B1['f1; 'x1] }; .{ f2 | x2: 'A2 -> 'B2['f2; 'x2] } } >>,
 (withT r (dT 0)) creates 5 subgoals.  (The argument r, which gives the
 well-founded relation validating the rfun types, must be of the
@@ -824,10 +793,10 @@ eqcdT can also handle conclusions of the form
 << lambda{x1. 'b1['x1]} = lambda{x2. 'b2['x2]} in { f | x: 'A -> 'B['f; 'x] } >>.
 eqcdT can also handle conclusions of the form
 << 'f1 'a1 = 'f2 'a2 in 'B['f1; 'a1] >> (although it must be wrapped
-in a withT giving the type of << 'f1 >> in the form 
+in a withT giving the type of << 'f1 >> in the form
 << ({ f | x:'A -> 'B['f; 'x] }) >>).
 
-This file adds to the reduceTopC conversion.  
+This file adds to the reduceTopC conversion.
 It adds the reduce_beta and reduce_fix conversions.
 
 ----------------------------------------
@@ -853,13 +822,9 @@ This file adds to the dT tactic.
 If the conclusion is of the form << well_founded{'A; a1, a2. void} >>,
 (dT 0) reduces it to << "type"{'A} >>.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << (a1:'A1 -> 'B1['a1]) = (a2:'A2 -> 'B2['a2]) in univ[i:l] >>,
 (dT 0) reduces it to 2 equality subgoals.
-
-If the conclusion is of the form 
-<< member{univ[i:l]; .a1:'A1 -> 'B1['a1]} >>,
-(dT 0) reduces it to 2 membership subgoals.
 
 If the conclusion is of the form
 << "type"{. a1:'A1 -> 'B1['a1] } >>,
@@ -869,21 +834,16 @@ If the conclusion is of the form << a:'A -> 'B['a] >>,
 (dT 0) reduces it to << z: 'A >- 'B['z] >> (and an extra
 well-formedness subgoal).
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << lambda{a1. 'b1['a1]} = lambda{a2. 'b2['a2]} in a:'A -> 'B['a] >>,
 (dT 0) reduces it to << x: 'A >- 'b1['x] = 'b2['x] in 'B['x] >>
 (and an extra well-formedness subgoal).
 
-If the conclusion is of the form
-<< member{.a:'A -> 'B['a]; lambda{a1. 'b1['a1]}} >>,
-(dT 0) reduces it to << x: 'A >- member{'B['x]; 'b1['x]} >>
-(and an extra well-formedness subgoal).
-
 If the n'th hypothesis is of the form << f: x:'A -> 'B['x] >>,
 (withT a (dT n)) adds new hypotheses indicating the type of
-<< 'f a >>, and creates a new subgoal << member{'A; 'a} >>.
+<< 'f a >>, and creates a new subgoal << 'a IN 'A >>.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << subtype{ (a1:'A1 -> 'B1['a1]); (a2:'A2 -> 'B2['a2]) } >>,
 (dT 0) creates 2 subtype subgoals, with contravariant argument
 and covariant return types.
@@ -893,8 +853,8 @@ eqcdT can handle conclusions of the form
 << (x1:'A1 -> 'B1['x1]) = (x2:'A2 -> 'B2['x2]) in univ[i:l] >>.
 
 This file adds to the subtypeT tactic.
-subtypeT proves that << a1:'A1 -> 'B1['a1] >> is a subtype of 
-<< a2:'A2 -> 'B2['a2] >> by proving << 'B1['a] >> is a subtype of 
+subtypeT proves that << a1:'A1 -> 'B1['a1] >> is a subtype of
+<< a2:'A2 -> 'B2['a2] >> by proving << 'B1['a] >> is a subtype of
 << 'B2['a] >> and << 'A2 >> is a subtype of << 'A1 >>.
 
 ----------------------------------------
@@ -908,12 +868,9 @@ Rewrites << lambda{x. 'f 'x} >> to << 'f >>, under the condition
 Rewrites << 'A -> 'B >> to << x: 'A -> 'B >>.
 
 This file adds to the dT tactic.
-If the conclusion is of the form 
+If the conclusion is of the form
 << ('A1 -> 'B1) = ('A2 -> 'B2) in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form << member{univ[i:l]; .'A1 -> 'B1} >>,
-(dT 0) creates 2 membership subgoals.
 
 If the conclusion is of the form << "type"{. 'A1 -> 'B1 } >>,
 (dT 0) changes it to << x: 'A1 >- "type"{'B1} >> (and adds an extra
@@ -923,47 +880,35 @@ If the conclusion is of the form << 'A -> 'B >>,
 (dT 0) changes it to << z: 'A >- 'B >> (and adds an extra
 well-formedness subgoal).
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << lambda{a1. 'b1['a1]} = lambda{a2. 'b2['a2]} in 'A -> 'B >>,
 (dT 0) changes it to << x: 'A >- 'b1['x] = 'b2['x] in 'B >> (and adds
 an extra well-formedness subgoal).
 
-If the conclusion is of the form
-<< member{.'A -> 'B; lambda{a1. 'b1['a1]}} >>,
-(dT 0) changes it to << x: 'A >- member{'B; 'b1['x]} >> (and adds an
-extra well-formedness subgoal).
-
 If the conclusion is of the form << 'f1 'a1 = 'f2 'a2 in 'T >>,
-(withT t (dT 0)) converts it to 2 equality subgoals, checking that 
+(withT t (dT 0)) converts it to 2 equality subgoals, checking that
 << 'f1 >> equals << 'f2 >> and << 'a1 >> equals << 'a2 >>.  The
 argument t must be the type of << 'f1 >> and << 'f2 >>, and it must be
-of one of the forms << { f | x:'A -> 'B['f; 'x] } >>, 
-<< x:'A -> 'B['x] >>, or << 'A -> 'B >>.  Without the withT wrapper,
-(dT 0) tries to infer the type of << 'f1 >>.
-
-If the conclusion is of the form << member{'T; .'f1 'a1} >>,
-(withT t (dT 0)) converts it to 2 membership subgoals.  The
-argument t must be the type of << 'f1 >> and << 'f2 >>, and it must be
-of one of the forms << { f | x:'A -> 'B['f; 'x] } >>, 
+of one of the forms << { f | x:'A -> 'B['f; 'x] } >>,
 << x:'A -> 'B['x] >>, or << 'A -> 'B >>.  Without the withT wrapper,
 (dT 0) tries to infer the type of << 'f1 >>.
 
 XXX
 If the conclusion is of the form << "type"{('f 'a)} >>,
 (withT t (dT 0)) first checks that t is of the form << 'A -> univ[i:l] >>
-or << x: 'A -> univ[i:l] >>.  It then changes the conclusion to 
-<< member{univ[i:l]; ('f 'a)} >> and applies (withT t eqcdT) (which
+or << x: 'A -> univ[i:l] >>.  It then changes the conclusion to
+<< ('f 'a) IN univ[i:l] >> and applies (withT t eqcdT) (which
 fails miserably).  If t is not given, it attempts to infer the type of
 << 'f >>.
 
 If the n'th hypothesis is of the form << f: ('A -> 'B) >>,
 (withT a (dT n)) adds hypotheses giving the type of << 'f a >>, and
-adds a new subgoal << member{'A; a} >>.  (dT n) (without being wrapped
+adds a new subgoal << a IN 'A >>.  (dT n) (without being wrapped
 by withT) adds a new hypothesis of type << 'B >> and adds a new
 subgoal << 'A >>.
 
 This file adds to the eqcdT tactic.
-eqcdT can handle conclusions of the form 
+eqcdT can handle conclusions of the form
 << ('A1 -> 'B1) = ('A2 -> 'B2) in univ[i:l] >>.
 
 eqcdT can also handle conclusions of the form
@@ -1003,44 +948,35 @@ This file adds to the reduceTopC conversion.
 It adds the reduceSpread, reduceFst, and reduceSnd conversions.
 
 This file adds to the dT tactic.
-If the conclusion is of the form 
+If the conclusion is of the form
 << x1:'A1 * 'B1['x1] = x2:'A2 * 'B2['x2] in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form
-<< member{.univ[i:l]; .x1:'A1 * 'B1['x1]} >>,
-(dT 0) creates 2 membership subgoals.
 
 If the conclusion is of the form
 << "type"{.y:'A1 * 'A2['y]} >>,
 (dT 0) creates 2 typehood subgoals.
 
 If the conclusion is of the form << x:'A * 'B['x] >>,
-(withT a (dT 0)) creates subgoals << member{'A; a} >> and << 'B[a] >>
+(withT a (dT 0)) creates subgoals << a IN 'A >> and << 'B[a] >>
 (and an extra well-formedness subgoal).
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << ('a1, 'b1) = ('a2, 'b2) in x:'A * 'B['x] >>,
 (dT 0) creates 2 equality subgoals and one well-formedness subgoal.
 
-If the conclusion is of the form
-<< member{.x:'A * 'B['x]; .('a1, 'b1)} >>,
-(dT 0) creates 2 membership subgoals and one well-formedness subgoal.
-
 If the n'th hypothesis is of the form << z: x:'A * 'B['x] >>,
-(dT n) creates one subgoal with extra hypotheses 
+(dT n) creates one subgoal with extra hypotheses
 << u: 'A; v: 'B['u] >>, changes << 'z >> to << 'u, 'v >> in the rest
 of the sequent, and thins.
 
-If the conclusion is of the form 
-<< spread{'e1; u1, v1. 'b1['u1; 'v1]} = 
-   spread{'e2; u2, v2. 'b2['u2; 'v2]} in 'T >> or 
-<< member{'T; spread{'e1; u1, v1. 'b1['u1; 'v1]}} >>,
-(withT t (dT 0)) creates 2 equality or membership subgoals
-(respectively).  Here, t must be the type of << 'e1 >> and << 'e2 >>,
-and it must be of the form << w:'A * 'B['w] >>.  Without the withT
-wrapper, (dT 0) will try to infer the type of << 'e1 >>.  You can also
-use (withTermsT [<< bind{x. 'B['x]} >>; t] (dT 0)).  In this case, t
+If the conclusion is of the form
+<< spread{'e1; u1, v1. 'b1['u1; 'v1]} =
+   spread{'e2; u2, v2. 'b2['u2; 'v2]} in 'T >>
+(withT t (dT 0)) creates 2 equality subgoals.  Here, t must be
+the type of << 'e1 >> and << 'e2 >>, and it must be of the form
+<< w:'A * 'B['w] >>.  Without the withT wrapper, (dT 0) will try
+to infer the type of << 'e1 >>.  You can also use
+(withTermsT [<< bind{x. 'B['x]} >>; t] (dT 0)).  In this case, t
 is as above, and it must be the case that << 'T >> is << 'B['e1] >>.
 
 If the conclusion is of the form
@@ -1049,8 +985,8 @@ If the conclusion is of the form
 
 XXX
 This file adds to the subtypeT tactic.
-subtypeT would prove (except for a copy-and-paste bug) that 
-<< x1:'A1 * 'B1['x1] >> is a subtype of << x2:'A2 * 'B2['x2] >> 
+subtypeT would prove (except for a copy-and-paste bug) that
+<< x1:'A1 * 'B1['x1] >> is a subtype of << x2:'A2 * 'B2['x2] >>
 by proving << 'A1 >> is a subtype of << 'A2 >> and << 'B1['x] >> is a
 subtype of << 'B2['x] >>.
 
@@ -1061,7 +997,7 @@ itt_prod:
 Rewrites << ('A * 'B) >> to << (x:'A * 'B) >>.
 
 This file adds to the dT tactic.
-If the conclusion is of the form 
+If the conclusion is of the form
 << 'A1 * 'B1 = 'A2 * 'B2 in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
 
@@ -1075,7 +1011,7 @@ If the n'th hypothesis is of the form << z: 'A * 'B >>,
 (dT n) adds extra hypotheses << u: 'A; v: 'B >>, changes << 'z >> to
 << 'u, 'v >> in the rest of the sequent, and thins.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << ('a1, 'b1) = ('a2, 'b2) in 'A * 'B >>,
 (dT 0) creates 2 equality subgoals.
 
@@ -1115,10 +1051,6 @@ This file adds to the dT tactic.
 If the conclusion is of the form << 'A1 + 'B1 = 'A2 + 'B2 in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
 
-If the conclusion is of the form << member{univ[i:l]; .'A1 + 'B1} >>,
-(dT 0) creates 2 membership subgoals.
-
-If the conclusion is of the form << "type"{. 'A + 'B } >>,
 (dT 0) creates 2 typehood subgoals.
 
 If the conclusion is of the form << 'A + 'B >>,
@@ -1128,26 +1060,20 @@ If the conclusion is of the form << 'A + 'B >>,
 If the conclusion is of the form << inl{'a1} = inl{'a2} in 'A + 'B >>,
 (dT 0) creates subgoals << 'a1 = 'a2 in 'A >> and << "type"{'B} >>.
 
-If the conclusion is of the form << member{.'A + 'B; inl{'a1}} >>,
-(dT 0) creates subgoals << member{'A; 'a1} >> and << "type"{'B} >>.
-
 If the conclusion is of the form << inr{'b1} = inr{'b2} in 'A + 'B >>,
 (dT 0) creates subgoals << 'b1 = 'b2 in 'B >> and << "type"{'A} >>.
 
-If the conclusion is of the form << member{.'A + 'B; inr{'b1}} >>,
-(dT 0) creates subgoals << member{'B; 'b1} >> and << "type"{'A} >>.
-
 If the n'th hypothesis is of the form << x: 'A + 'B >>,
-(dT n) creates 2 subgoals and thins.  One has an extra hypothesis 
+(dT n) creates 2 subgoals and thins.  One has an extra hypothesis
 << u: 'A >>, and replaces << 'x >> by << inl{'u} >> in the rest of the
 sequent.  The other has an extra hypothesis << v: 'B >>, and replaces
 << 'x >> by << inr{'v} >> in the rest of the sequent.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << decide{'e1; u1. 'l1['u1]; v1. 'r1['v1]} =
    decide{'e2; u2. 'l2['u2]; v2. 'r2['v2]} in 'T >>,
 (withTermsT [<< bind{z. 'B['z]} >>; << 'A + 'B >>] (dT 0)) creates 3
-subgoals.  Here << 'B['e1] >> must be the same as << 'T >>, and 
+subgoals.  Here << 'B['e1] >> must be the same as << 'T >>, and
 << 'A + 'B >> must be the type of << 'e1 >> and << 'e2 >>.
 
 XXX decideMember is broken (has equality conclusion)
@@ -1172,9 +1098,8 @@ new terms:
 unit
 
 This file adds to the dT tactic.
-If the conclusion is of the form << unit = unit in univ[i:l] >>,
-<< member{univ[i:l]; unit} >>, << "type"{unit} >>, << unit >>,
-<< it = it in unit >>, or << member{unit; it} >>,
+If the conclusion is of the form << unit IN univ[i:l] >>,
+<< "type"{unit} >>, << unit >>, << it IN unit >>,
 (dT 0) succeeds with no subgoals.
 
 If the n'th hypothesis is of the form << x: unit >>,
@@ -1245,7 +1170,7 @@ free in the conclusion).
 declared by the i'th hypothesis.
 
 * squash_falseT : tactic
-Changes the goal to be a "squash" sequent if the conclusion is 
+Changes the goal to be a "squash" sequent if the conclusion is
 << false >>.
 
 * genAssumT : int list -> tactic
@@ -1256,8 +1181,8 @@ you could write:
 or
   sequent ['ext] { 'H; a: int; b: int >- 'a +@ 'b = 'b +@ 'a in int }
 or
-  sequent ['ext] { 'H >- member{int; 'a} } -->
-  sequent ['ext] { 'H >- member{int; 'b} } -->
+  sequent ['ext] { 'H >- 'a IN int } -->
+  sequent ['ext] { 'H >- 'b IN int } -->
   sequent ['ext] { 'H >- 'a +@ 'b = 'b +@ 'a in int }
 In MetaPRL, it is easier to apply rules of the third form, so that's
 what you would typically write.  However, it is more straightforward
@@ -1270,12 +1195,12 @@ Assumptions which do not have membership conclusions are converted
 into implications.  Assumptions which have membership conclusions
 where the member is not a single variable also work.  Here is a larger
 (meaningless) example.  (genAssumT [3; 1; 2]) would convert
-  sequent ['ext] { 'H >- member{int; 'b +@ 'c} } -->
+  sequent ['ext] { 'H >- 'b +@ 'c IN int } -->
   sequent ['ext] { 'H >- interesting{'a; 'b; 'b +@ 'c} } -->
-  sequent ['ext] { 'H >- member{int; 'a} } -->
+  sequent ['ext] { 'H >- 'a IN int } -->
   sequent ['ext] { 'H >- happy{'b +@ 'c; 'c; 'a} }
 to
-  sequent ['ext] { 'H >- all a: int. 
+  sequent ['ext] { 'H >- all a: int.
                          all v: int.
                          interesting{'a; 'b; 'v} -> happy{'v; 'c; 'a} }
 The tactic is not always able to prove that this transformation is
@@ -1283,21 +1208,16 @@ valid (indeed, sometimes the transformation is not valid).  In that
 case, there will be some extra subgoals for you to prove.
 
 This file adds to the dT tactic.
-If the conclusion is of the form << "true" = "true" in univ[i:l] >>,
-<< member{univ[i:l]; ."true"} >>, << "type"{."true"} >>,
-<< "true" >>, << "false" = "false" in univ[i:l] >>, 
-<< "member"{univ[i:l]; ."false"} >>, or << "type"{."false"} >>,
-(dT 0) succeeds with no subgoals.
+If the conclusion is of the form << "true" IN univ[i:l] >>,
+<< "type"{."true"} >>, << "true" >>, << "false" IN univ[i:l] >>,
+<< "type"{."false"} >>, (dT 0) succeeds with no subgoals.
 
 If the n'th hypothesis is of the form << x: "false" >>,
 (dT n) succeeds with no subgoals (and thins?!?).
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << "not"{'t1} = "not"{'t2} in univ[i:l] >>,
 (dT 0) reduces it to << 't1 = 't2 in univ[i:l] >>.
-
-If the conclusion is of the form << member{univ[i:l]; ."not"{'t}} >>,
-(dT 0) reduces it to << member{univ[i:l]; 't} >>.
 
 If the conclusion is of the form << "type"{."not"{'t}} >>,
 (dT 0) reduces it to << "type"{'t} >>.
@@ -1308,13 +1228,9 @@ If the conclusion is of the form << "not"{'t} >>,
 If the n'th hypothesis is of the form << x: "not"{'t} >>,
 (dT n) changes the conclusion to << 't >>.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << "and"{'a1; 'a2} = "and"{'b1; 'b2} in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form 
-<< member{univ[i:l]; ."and"{'a1; 'a2}} >>,
-(dT 0) creates 2 membership subgoals.
 
 If the conclusion is of the form
 << "type"{."and"{'a1; 'a2}} >>,
@@ -1331,10 +1247,6 @@ If the conclusion is of the form
 << "or"{'a1; 'a2} = "or"{'b1; 'b2} in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
 
-If the conclusion is of the form
-<< member{univ[i:l]; ."or"{'a1; 'a2}} >>,
-(dT 0) creates 2 membership subgoals.
-
 If the conclusion is of the form << "type"{."or"{'a1; 'a2}} >>,
 (dT 0) creates 2 typehood subgoals.
 
@@ -1343,19 +1255,15 @@ If the conclusion is of the form << "or"{'a1; 'a2} >>,
 (selT 2 (dT 0)) creates subgoals << 'a2 >> and << "type"{'a1} >>.
 
 If the n'th hypothesis is of the form << x: "or"{'a1; 'a2} >>,
-(dT n) creates 2 subgoals.  In one, the hypothesis is replaced by 
+(dT n) creates 2 subgoals.  In one, the hypothesis is replaced by
 << y: 'a1 >>, and << 'x >> is replaced by << inl{'y} >> in the rest of
-the sequent.  In the other, the hypothesis is replaced by 
+the sequent.  In the other, the hypothesis is replaced by
 << y: 'a2 >>, and << 'x >> is replaced by << inr{'y} >> in the rest of
 the sequent.
 
 If the conclusion is of the form
 << "implies"{'a1; 'a2} = "implies"{'b1; 'b2} in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form
-<< member{univ[i:l]; ."implies"{'a1; 'a2}} >>,
-(dT 0) creates 2 membership subgoals.
 
 If the conclusion is of the form << "type"{."implies"{'a1; 'a2}} >>,
 (dT 0) creates 2 typehood subgoals.
@@ -1367,13 +1275,9 @@ If the n'th hypothesis is of the form << x: "implies"{'a1; 'a2} >>,
 (dT n) creates 2 subgoals and thins.  One has conclusion << 'a1 >>,
 and the other has a new hypothesis << y: 'a2 >>.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << "iff"{'a1; 'a2} = "iff"{'b1; 'b2} in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form
-<< member{univ[i:l]; ."iff"{'a1; 'a2}} >>,
-(dT 0) creates 2 membership subgoals.
 
 If the conclusion is of the form << "type"{."iff"{'a1; 'a2}} >>,
 (dT 0) creates 2 typehood subgoals.
@@ -1383,16 +1287,12 @@ If the conclusion is of the form << "iff"{'a1; 'a2} >>,
 
 If the n'th hypothesis is of the form << x: "iff"{'a1; 'a2} >>,
 (dT n) replaces this hypothesis with the hypotheses
-<< y: "implies"{'a1; 'a2}; z: "implies"{'a2; 'a1} >> and replaces 
+<< y: "implies"{'a1; 'a2}; z: "implies"{'a2; 'a1} >> and replaces
 << 'x >> with << 'y, 'z >> in the rest of the sequent.
 
 If the conclusion is of the form
 << "cand"{'a1; 'a2} = "cand"{'b1; 'b2} in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form
-<< member{univ[i:l]; ."cand"{'a1; 'a2}} >>,
-(dT 0) creates 2 membership subgoals.
 
 If the conclusion is of the form << "type"{."cand"{'a1; 'a2}} >>,
 (dT 0) creates 2 typehood subgoals.
@@ -1405,13 +1305,9 @@ If the n'th hypothesis is of the form << x: "cand"{'a1; 'a2} >>,
 << y: 'a1; z: 'a2 >>, and replaces << 'x >> with << 'y, 'z >> in the
 rest of the sequent.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << "cor"{'a1; 'a2} = "cor"{'b1; 'b2} in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form
-<< member{univ[i:l]; ."cor"{'a1; 'a2}} >>,
-(dT 0) creates 2 membership subgoals.
 
 If the conclusion is of the form << "type"{."cor"{'a1; 'a2}} >>,
 (dT 0) creates 2 typehood subgoals.
@@ -1423,19 +1319,15 @@ and << 'a1 >>.  (selT 2 (dT 0)) creates 3 subgoals,
 
 If the n'th hypothesis is of the form << x: "cor"{'a1; 'a2} >>,
 (dT n) creates 2 subgoals.  In the first, the hypothesis is replaced
-by the hypothesis << u: 'a1 >>, and << 'x >> is replaced by 
+by the hypothesis << u: 'a1 >>, and << 'x >> is replaced by
 << inl{'u} >> in the rest of the sequent.  In the second, the
 hypothesis is replaced by the hypotheses << u: "not"{'a1}; v: 'a2 >>,
 and << 'x >> is replaced by << inr{'u, 'v} >> in the rest of the
 sequent.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << "all"{'t1; x1. 'b1['x1]} = "all"{'t2; x2. 'b2['x2]} in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form
-<< member{univ[i:l]; ."all"{'t; v. 'b['v]}} >>,
-(dT 0) creates 2 membership subgoals.
 
 If the conclusion is of the form << "type"{."all"{'t; v. 'b['v]}} >>,
 (dT 0) creates 2 typehood subgoals.
@@ -1444,7 +1336,7 @@ If the conclusion is of the form << "all"{'t; v. 'b['v]} >>,
 (dT 0) creates subgoals << "type"{'t} >> and << x: 't >- 'b['x] >>.
 
 If the n'th hypothesis is of the form << x: all a: 'A. 'B['a] >>,
-(withT a (dT n)) creates subgoals << member{'A; a} >> and
+(withT a (dT n)) creates subgoals << a IN 'A >> and
 << w: 'B[a] >- 'C['x] >> and thins.
 
 If the conclusion is of the form
@@ -1452,15 +1344,11 @@ If the conclusion is of the form
 (dT 0) creates 2 equality subgoals.
 
 If the conclusion is of the form
-<< member{univ[i:l]; ."exists"{'t; v. 'b['v]}} >>,
-(dT 0) creates 2 membership subgoals.
-
-If the conclusion is of the form 
-<< "type"{."exists"{'t; v. 'b['v]}} >>, 
+<< "type"{."exists"{'t; v. 'b['v]}} >>,
 (dT 0) creates 2 typehood subgoals.
 
 If the conclusion is of the form << "exists"{'t; v. 'b['v]} >>,
-(withT a (dT 0)) creates subgoals << member{'t; a} >>,
+(withT a (dT 0)) creates subgoals << a IN 't >>,
 << 'b[a] >>, and << x: 't >- "type"{'b['x]} >>.
 
 If the n'th hypothesis is of the form << x: exst v: 'a. 'b['v] >>,
@@ -1536,7 +1424,7 @@ Lets you prove conclusions of the form << "assert"{'t} >> by
 contradiction.
 
 * splitBoolT : term -> int -> tactic
-(splitBoolT t i) lets you do case analysis on a term << t >> of type 
+(splitBoolT t i) lets you do case analysis on a term << t >> of type
 << "bool" >> in the i'th clause.  If you want to affect some but not
 all instances of the term in the clause, you can wrap the call in
 (withT << bind{x. 'B['x]} >> ...) in the standard way (where the
@@ -1567,44 +1455,38 @@ conversions; in addition, the following terms:
 are reduced in the obvious way.
 
 This file adds to the dT tactic.
-If the conclusion is of the form << "bool" = "bool" in univ[i:l] >>,
-<< member{univ[i:l]; ."bool"} >>, << "type"{bool} >>, 
-<< btrue = btrue in "bool" >>, << bfalse = bfalse in "bool" >>,
-<< member{."bool"; btrue} >>, or << member{."bool"; bfalse} >>,
+If the conclusion is of the form << "bool" IN univ[i:l] >>,
+<< "type"{bool} >>, << btrue IN "bool" >>, << bfalse IN "bool" >>,
 (dT 0) succeeds with no subgoals.
 
-If the n'th hypothesis is of the form << x: "bool" >> or 
+If the n'th hypothesis is of the form << x: "bool" >> or
 << x: hide{"bool"} >>,
 (dT n) creates 2 subgoals.  In the first, the hypothesis is removed
 and << 'x >> is replaced by << btrue >>; in the second, the hypothesis
 is removed and << 'x >> is replaced by << bfalse >>.
 
 If the conclusion is of the form << "type"{ifthenelse{'e; 'A; 'B}} >>,
-(dT 0) creates 2 typehood subgoals and the subgoal 
-<< member{bool; 'e} >>.
+(dT 0) creates 2 typehood subgoals and the subgoal
+<< 'e IN bool >>.
 
 If the n'th hypothesis is of the form << x: btrue = bfalse in bool >>
 or << x: bfalse = btrue in bool >>,
 (dT n) succeeds with no subgoals.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << ifthenelse{'e1; 'x1; 'y1} = ifthenelse{'e2; 'x2; 'y2} in 'T >>,
 (dT 0) creates 3 equality subgoals.
 
-If the conclusion is of the form
-<< member{'T; ifthenelse{'e1; 'x1; 'y1}} >>,
-(dT 0) creates 3 membership subgoals.
-
-If the conclusion is of one of the forms 
-<< member{bool; bor{'t1; 't2}} >>, << member{bool; band{'t1; 't2}} >>,
-or << member{bool; bimplies{'t1; 't2}} >>, 
+If the conclusion is of one of the forms
+<< bor{'t1; 't2} IN bool >>, << band{'t1; 't2} IN bool >>,
+or << bimplies{'t1; 't2} IN bool >>,
 (dT 0) creates 2 membership subgoals.
 
-If the conclusion is of the form << member{bool; bnot{'a}} >>,
+If the conclusion is of the form << bnot{'a} IN bool >>,
 (dT 0) creates 1 membership subgoal.
 
 If the conclusion is of the form << "type"{."assert"{'t}} >>,
-(dT 0) creates subgoal << member{bool; 't} >>.
+(dT 0) creates subgoal << 't IN bool >>.
 
 If the conclusion is of the form << "assert"{btrue} >>,
 (dT 0) succeeds with no subgoals.
@@ -1618,23 +1500,23 @@ well-formedness subgoal).
 
 If the n'th hypothesis is of the form << x: "assert"{bnot{'t}} >>,
 (dT n) removes the hypothesis, replaces << 'x >> with << it >> in the
-rest of the hypotheses, and changes the conclusion to 
+rest of the hypotheses, and changes the conclusion to
 << "assert"{'t} >>.
 
 If the n'th hypothesis is of the form << x: "assert"{bor{'t1; 't2}} >>,
-(dT n) creates 3 subgoals.  In one, the hypothesis is changed to 
+(dT n) creates 3 subgoals.  In one, the hypothesis is changed to
 << x: "assert"{'t1} >>, and << 'x >> is changed to << it >> in the
-rest of the sequent.  In the second, the hypothesis is changed to 
+rest of the sequent.  In the second, the hypothesis is changed to
 << x: "assert"{'t2} >>, and << 'x >> is changed to << it >> in the
 rest of the sequent.  The third is a well-formedness subgoal.
 
 If the n'th hypothesis is of the form << x: "assert"{band{'t1; 't2}} >>,
 (dT n) replaces the hypothesis with the hypotheses
-<< y: "assert"{'t1}; z: "assert"{'t2} >> and changes << 'x >> to 
+<< y: "assert"{'t1}; z: "assert"{'t2} >> and changes << 'x >> to
 << it >> in the rest of the sequent.  It also creates a
 well-formedness subgoal.
 
-If the n'th hypothesis is of the form 
+If the n'th hypothesis is of the form
 << x: "assert"{bimplies{'t1; 't2}} >>,
 (dT n) creates 2 subgoals.  The first removes the hypothesis, changes
 << 'x >> to << it >>, and has conclusion << "assert"{'t1} >>.
@@ -1642,9 +1524,9 @@ The second removes the hypothesis, changes << 'x >> to << it >>,
 and adds a new hypothesis << y: "assert"{'t2} >>.
 
 If the conclusion is of the form << "assert"{bor{'t1; 't2}} >>,
-(selT 1 (dT 0)) creates subgoals << member{bool; 't2} >> and 
-<< "assert"{'t1} >>.  (selT 2 (dT 0)) creates subgoals 
-<< member{bool; 't1} >> and << "assert"{'t2} >>.
+(selT 1 (dT 0)) creates subgoals << 't2 IN bool >> and
+<< "assert"{'t1} >>.  (selT 2 (dT 0)) creates subgoals
+<< 't1 IN bool >> and << "assert"{'t2} >>.
 
 If the conclusion is of the form << "assert"{band{'t1; 't2}} >>,
 (dT 0) creates subgoals << "assert"{'t1} >> and << "assert"{'t2} >>.
@@ -1685,7 +1567,7 @@ If the conclusion is of the form << atom = atom in univ[i:l] >>,
 (dT 0) succeeds with no subgoals.
 
 If the conclusion is of the form << atom >>,
-(dT 0) succeeds with no subgoals (with an extract term of 
+(dT 0) succeeds with no subgoals (with an extract term of
 << token["token":t] >>).
 
 ----------------------------------------
@@ -1700,14 +1582,13 @@ to << btrue >> or << bfalse >>.
 
 This file adds to the dT tactic.
 
-If the conclusion is of the form << member{bool; eq_atom{'x; 'y}} >>,
-(dT 0) creates subgoals << member{atom; 'x} >> and
-<< member{atom; 'y} >>.
+If the conclusion is of the form << eq_atom{'x; 'y} IN bool >>,
+(dT 0) creates subgoals << 'x IN atom >> and << 'y IN atom >>.
 
 If the conclusion is of the form << "assert"{eq_atom{'x; 'y}} >>,
 (dT 0) changes it to << 'x = 'y in atom >>.
 
-If the n'th hypothesis is of the form << z: "assert"{eq_atom{'x; 'y}} >>, 
+If the n'th hypothesis is of the form << z: "assert"{eq_atom{'x; 'y}} >>,
 (dT n) changes it to << z: 'x = 'y in atom >>, and replaces << 'z >>
 with << it >> in the rest of the sequent.
 
@@ -1760,7 +1641,7 @@ This tactic changes conclusions of the form << "rewrite"{'x; 'y} >>
 to << 'x = 'y in int >>.
 
 * decideT : term -> tactic
-If the argument term is of the form << 'i < 'j >> or 
+If the argument term is of the form << 'i < 'j >> or
 << 'i = 'j in int >>, this tactic does a case split on the term (and
 adds 2 well-formedness subgoals).
 
@@ -1769,16 +1650,14 @@ It adds the reduce_ind conversion.  Also, "add", "sub", "mul", "div",
 and "rem" applied to number literals are reduced.
 
 This file adds to the dT tactic.
-If the conclusion is of the form << "type"{int} >>, 
-<< int = int in univ[i:l] >>, << member{univ[i:l]; int} >>,
-<< number[n:n] = number[n:n] in int >>, or
-<< member{int; number[n:n]} >>,
+If the conclusion is of the form << "type"{int} >>,
+<< int IN univ[i:l] >>, << number[n:n] IN int >>, or
 (dT 0) succeeds with no subgoals.
 
 If the n'th hypothesis is of the form << n: int >>,
 (dT n) performs induction and thins.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << ind{'x1; i1, j1. 'down1['i1; 'j1]; 'base1; k1, l1. 'up1['k1; 'l1]}
    = ind{'x2; i2, j2. 'down2['i2; 'j2]; 'base2; k2, l2. 'up2['k2; 'l2]}
    in 'T >>,
@@ -1797,15 +1676,14 @@ If the n'th hypothesis is of the form << x: 'a < 'b >>,
 (dT n) would change << 'x >> to << it >> in the rest of the sequent
 EXCEPT THAT it is overridden by another elimination tactic, below.
 
-If the conclusion is of the form << member{int; add{'i; 'j}} >>,
-<< member{int; sub{'i; 'j}} >>, << member{int; mul{'i; 'j}} >>,
-<< member{int; ."div"{'i; 'j}} >>, << member{int; ."rem"{'i; 'j}} >>,
-<< "type"{lt{'i; 'j}} >>, << "type"{gt{'i; 'j}} >>,
+If the conclusion is of the form << add{'i; 'j} IN int >>,
+<< sub{'i; 'j} IN int >>, << mul{'i; 'j} IN int >>, << "div"{'i; 'j} IN int >>,
+<< "rem"{'i; 'j} IN int >>, << "type"{lt{'i; 'j}} >>, << "type"{gt{'i; 'j}} >>,
 << "type"{le{'i; 'j}} >>, << "type"{ge{'i; 'j}} >>,
-<< member{univ[i:l]; lt{'i; 'j}} >>, << member{univ[i:l]; gt{'i; 'j}} >>,
-<< member{univ[i:l]; le{'i; 'j}} >>, or 
-<< member{univ[i:l]; ge{'i; 'j}} >>,
-(dT n) creates subgoals << member{int; 'i} >> and << member{int; 'j} >>.
+<< lt{'i; 'j} IN univ [i:l] >>, << gt{'i; 'j} IN univ [i:l] >>,
+<< le{'i; 'j} IN univ [i:l] >>, or
+<< ge{'i; 'j} IN univ [i:l] >>,
+(dT n) creates subgoals << 'i IN int >> and << 'j IN int >>.
 
 If the n'th hypothesis is of the form << x: ('i < 'j) >>,
 (dT n) adds a new hypothesis << y: "not"{.'j < 'i} >>.
@@ -1838,9 +1716,9 @@ This file adds to the reduceTopC conversion.
 It adds the above conversions.
 
 This file adds to the dT tactic.
-If the conclusion is of the form << member{bool; eq_int{'i; 'j}} >>,
-(dT 0) creates subgoals with conclusions << member{int; 'i} >>
-and << member{int; 'j} >>.
+If the conclusion is of the form << eq_int{'i; 'j} IN bool >>,
+(dT 0) creates subgoals with conclusions << 'i IN int >>
+and << 'j IN int >>.
 
 If the conclusion is of the form << "assert"{eq_int{'i; 'j}} >>,
 (dT 0) changes it to << 'i = 'j in int >>.
@@ -1871,10 +1749,6 @@ If the conclusion is of the form
 << { a1:'A1 | 'B1['a1] } = { a2:'A2 | 'B2['a2] } in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
 
-If the conclusion is of the form
-<< member{univ[i:l]; .{ a1:'A1 | 'B1['a1] }} >>,
-(dT 0) creates 2 membership subgoals.
-
 If the conclusion is of the form << "type"{.{ a1:'A1 | 'B1['a1] }} >>,
 (dT 0) creates 2 typehood subgoals.
 
@@ -1884,10 +1758,6 @@ If the conclusion is of the form << { x:'A | 'B['x] } >>,
 
 If the conclusion is of the form << 'a1 = 'a2 in { a:'A | 'B['a] } >>,
 (dT 0) creates subgoals << 'a1 = 'a2 in 'A >> and << 'B['a1] >> (and a
-well-formedness subgoal).
-
-If the conclusion is of the form << member{.{ a:'A | 'B['a] }; 'a1} >>,
-(dT 0) creates subgoals << member{'A; 'a1} >> and << 'B['a1] >> (and a
 well-formedness subgoal).
 
 If the n'th hypothesis is of the form << u: { x:'A | 'B['x] } >>,
@@ -1911,18 +1781,14 @@ top
 Rewrites << top >> to << "isect"{void; x. void} >>.
 
 This file adds to the dT tactic.
-If the conclusion is of the form 
+If the conclusion is of the form
 << isect x1: 'A1. 'B1['x1] = isect x2: 'A2. 'B2['x2] in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form
-<< member{univ[i:l]; .isect x1: 'A1. 'B1['x1]} >>,
-(dT 0) creates 2 membership subgoals.
 
 If the conclusion is of the form << "type"{."isect"{'A; x. 'B['x]}} >>,
 (dT 0) creates 2 typehood subgoals.
 
-If the conclusion is of the form << member{univ[i:l]; top} >> or 
+If the conclusion is of the form << top IN univ[i:l] >> or
 << "type"{top} >>,
 (dT 0) succeeds with no subgoals.
 
@@ -1932,16 +1798,12 @@ If the conclusion is of the form << isect x: 'A. 'B['x] >>,
 If the conclusion is of the form << 'b1 = 'b2 in isect x: 'A. 'B['x] >>,
 (dT 0) creates an equality subgoal and a well-formedness subgoal.
 
-If the conclusion is of the form << member{.isect x: 'A. 'B['x]; 'b1} >>,
-(dT 0) creates a membership subgoal and a well-formedness subgoal.
-
-If the conclusion is of the form << 'b1 = 'b2 in top >> or 
-<< member{top; 'b1} >>,
+If the conclusion is of the form << 'b1 = 'b2 in top >>,
 (dT 0) succeeds with no subgoals.
 
 If the n'th hypothesis is of the form << x: isect y: 'A. 'B['y] >>,
-(withT a (dT n)) creates 2 subgoals.  One has conclusion 
-<< a = a in 'A >>; the other has extra hypotheses 
+(withT a (dT n)) creates 2 subgoals.  One has conclusion
+<< a = a in 'A >>; the other has extra hypotheses
 << z: 'B['a]; v: 'z = 'x in 'B['a] >>.
 
 If the conclusion is of the form
@@ -1979,7 +1841,7 @@ If the conclusion is of the form << tunion{'A; x. 'B['x]} >>,
 (and a well-formedness subgoal).
 
 If the n'th hypothesis is of the form << x: tunion{'A; y. 'B['y]} >>,
-(dT n) adds new hypotheses 
+(dT n) adds new hypotheses
 << w: hide{'A}; z: 'B['w]; w2: 'z = 'x in tunion{'A; y. 'B['y]} >>.
 
 ----------------------------------------
@@ -1993,7 +1855,7 @@ Rewrites << bisect{'A; 'B} >> to
 << "isect"{bool; x. ifthenelse{'x; 'A; 'B}} >>.
 
 This file adds to the dT tactic.
-If the conclusion is of the form 
+If the conclusion is of the form
 << bisect{'A1; 'B1} = bisect{'A2; 'B2} in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
 
@@ -2008,8 +1870,8 @@ If the n'th hypothesis is of the form << x: bisect{'A; 'B} >>,
 (selT 2 (dT n)) adds new hypotheses << y: 'B; z: 'y = 'x in 'B >>.
 
 If the conclusion is of the form << subtype{bisect{'A; 'B}; 'C} >>,
-(selT 1 (dT 0)) creates subgoals << "type"{'B} >> and 
-<< subtype{'A; 'C} >>.  (selT 2 (dT 0)) creates subgoals 
+(selT 1 (dT 0)) creates subgoals << "type"{'B} >> and
+<< subtype{'A; 'C} >>.  (selT 2 (dT 0)) creates subgoals
 << "type"{'A} >> and << subtype{'B; 'C} >>.
 
 If the conclusion is of the form << subtype{'C; bisect{'A; 'B}} >>,
@@ -2022,14 +1884,14 @@ new terms:
 bunion{'A; 'B}
 
 * unfold_bunion : conv
-Rewrites << bunion{'A; 'B} >> to 
+Rewrites << bunion{'A; 'B} >> to
 << tunion{bool; x. ifthenelse{'x; 'A; 'B}} >>.
 
 * fold_bunion : conv
 This is the inverse of the above conversion.
 
 This file adds to the dT tactic.
-If the conclusion is of the form 
+If the conclusion is of the form
 << bunion{'A1; 'B1} = bunion{'A2; 'B2} in univ[i:l] >>,
 (dT 0) creates 2 equality subgoals.
 
@@ -2037,12 +1899,12 @@ If the conclusion is of the form << "type"{bunion{'A; 'B}} >>,
 (dT 0) creates 2 typehood subgoals.
 
 If the conclusion is of the form << 'x = 'y in bunion{'A; 'B} >>,
-(selT 1 (dT 0)) creates subgoals << 'x = 'y in 'A >> and 
-<< "type"{'B} >>.  (selT 2 (dT 0)) creates subgoals 
+(selT 1 (dT 0)) creates subgoals << 'x = 'y in 'A >> and
+<< "type"{'B} >>.  (selT 2 (dT 0)) creates subgoals
 << 'x = 'y in 'B >> and << "type"{'A} >>.
 
 If the n'th hypothesis is of the form << x: bunion{'A; 'B} >>,
-(dT n) creates 2 subgoals and thins.  One subgoal has new hypotheses 
+(dT n) creates 2 subgoals and thins.  One subgoal has new hypotheses
 << y: 'A; z: 'y = 'x in bunion{'A; 'B} >>; the other has new
 hypotheses << y: 'B; z: 'y = 'x in bunion{'A; 'B} >>.
 
@@ -2055,7 +1917,7 @@ tree{'a; 'f}
 tree_ind{'z; a, f, g. 'body['a; 'f; 'g]}
 
 * reduce_tree_ind : conv
-Reduces terms of the form 
+Reduces terms of the form
 << tree_ind{tree{'a1; 'f1}; a2, f2, g2. 'body['a2; 'f2; 'g2]} >>.
 
 This file adds to the dT tactic.
@@ -2070,14 +1932,14 @@ If the conclusion is of the form << w{'A; x. 'B['x]} >>,
 (withT a (dT 0)) creates subgoals << a = a in 'A >> and
 << 'B['a] -> w{'A; x. 'B['x]} >> (and a well-formedness subgoal).
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << tree{'a1; 'b1} = tree{'a2; 'b2} in w{'A; x. 'B['x]} >>,
 (dT 0) creates 2 equality subgoals and a well-formedness subgoal.
 
 If the n'th hypothesis is of the form << z: w{'A; x. 'B['x]} >>,
 (dT n) performs induction on << 'z >> and thins.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << tree_ind{'z1; a1, f1, g1. 'body1['a1; 'f1; 'g1]}
    = tree_ind{'z2; a2, f2, g2. 'body2['a2; 'f2; 'g2]}
    in 'T >>,
@@ -2111,11 +1973,11 @@ If the conclusion is of the form
 << 'a1 = 'a2 in "prec"{T, x. 'B['T; 'x]; 'a} >>,
 (dT 0) creates an equality subgoal and a typehood subgoal.
 
-If the n'th hypothesis is of the form 
+If the n'th hypothesis is of the form
 << r: "prec"{T, x. 'B['T; 'x]; 'a} >>,
 (withTermsT [<< lambda{z. 'G['z]} >>; a; A; << univ[i:l] >>] (dT n))
-creates 2 subgoals and thins.  Here the conclusion must be 
-<< 'G[a] >>; a must be << 'a >>; A must be the type of << 'a >>; and 
+creates 2 subgoals and thins.  Here the conclusion must be
+<< 'G[a] >>; a must be << 'a >>; A must be the type of << 'a >>; and
 << univ[i:l] >> also plays some role I don't understand.  (I'm not
 sure whether you actually have to pass a.)  (XXX This rule might be
 inaccessible due to being overridden by the following rule.)
@@ -2128,7 +1990,7 @@ If the conclusion is of the form
 << precind{'r1; h1, z1. 't1['h1; 'z1]}
    = precind{'r2; h2, z2. 't2['h2; 'z2]}
    in 'S >>,
-(withTermsT [<< lambda{x. 'B['x]} >>; 
+(withTermsT [<< lambda{x. 'B['x]} >>;
              << (a:'A * "prec"{T, y. 'B['T; 'y]; 'a}) >>;
              << univ[i:l] >>] (dT 0))
 creates 2 equality subgoals and thins.  Here << 'S >> must be << 'B['r1] >>,
@@ -2147,7 +2009,7 @@ Rewrites << srecind{'a; p, h. 'g['p; 'h]} >> to
 << 'g[lambda{a. srecind{'a; p, h. 'g['p; 'h]}}; 'a] >>.
 
 This file adds to the dT tactic.
-If the conclusion is of the form 
+If the conclusion is of the form
 << srec{T1. 'B1['T1]} = srec{T2. 'B2['T2]} in univ[i:l] >>,
 (dT 0) creates an equality subgoal and a subtype subgoal.
 
@@ -2176,9 +2038,9 @@ If the conclusion is of the form
 << srecind{'r1; h1, z1. 't1['h1; 'z1]}
    = srecind{'r2; h2, z2. 't2['h2; 'z2]}
    in 'S >>,
-(withTermsT [<< lambda{x. 'S1['x]} >>; 
-             << srec{T. 'B['T]} >>; 
-             u; 
+(withTermsT [<< lambda{x. 'S1['x]} >>;
+             << srec{T. 'B['T]} >>;
+             u;
              << univ[i:l] >>] (dT 0))
 creates 2 equality subgoals.  Here << 'S >> must be << 'S1['r1] >>,
 << srec{T. 'B['T]} >> must be the type of << 'r1 >> and << 'r2 >>,
@@ -2196,44 +2058,43 @@ If the conclusion is of the form
 << quot x1, y1: 'A1 // 'E1['x1; 'y1]
    = quot x2, y2: 'A2 // 'E2['x2; 'y2]
    in univ[i:l] >>,
-(dT 0) creates 2 equality subgoals and 3 subgoals verifying that 
-<< 'E1['x; 'y] >> is an equivalence relation.  (XXX This rule is
-inaccessible due to being overridden by the following rule.)
+(dT 0) creates 2 equality subgoals and 3 subgoals verifying that
+<< 'E1['x; 'y] >> is an equivalence relation.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << quot x1, y1: 'A1 // 'E1['x1; 'y1]
    = quot x2, y2: 'A2 // 'E2['x2; 'y2]
    in univ[i:l] >>,
-(dT 0) creates 2 reflexive equality subgoals, one non-reflexive
+(selT 1 (dT 0)) creates 2 reflexive equality subgoals, one non-reflexive
 equality subgoal, and 2 subgoals verifying that << 'E1['x; 'y] >> is
-equivalent to << 'E2['x; 'y] >>.  Note that you don't have to prove 
+equivalent to << 'E2['x; 'y] >>.  Note that you don't have to prove
 that the relations are equivalence relations; the reflexive equality
 subgoals take care of that.  This alternate form is more powerful than
 the above rule; it proves quotient types equal if the predicates are
 equivalent (in the sense of iff), whereas the original requires that
-the predicates be equal. 
+the predicates be equal.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << "type"{.quot x, y: 'A // 'E['x; 'y]} >>,
-(dT 0) creates 2 typehood subgoals and 3 subgoals verifying that 
+(dT 0) creates 2 typehood subgoals and 3 subgoals verifying that
 << 'E['x; 'y] >> is an equivalence relation.
 
 If the conclusion is of the form << quot x, y: 'A // 'E['x; 'y] >>,
 (dT 0) creates a subgoal << 'A >> (and a well-formedness subgoal).
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << 'a1 = 'a2 in quot x, y: 'A // 'E['x; 'y] >>,
 (dT 0) creates a subgoal << 'a1 = 'a2 in 'A >> (and a well-formedness
 subgoal).  (XXX This rule is inaccessible due to being overridden by
 the following rule.)
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << 'a1 = 'a2 in quot x, y: 'A // 'E['x; 'y] >>,
 (dT 0) creates the subgoal << 'E['a1; 'a2] >> and 3 well-formedness
 subgoals.
 
 If the conclusion is of the form
-<< member{(quot x, y: 'A // 'E['x; 'y]); 'l} >>,
+<< 'l IN (quot x, y: 'A // 'E['x; 'y]) >>,
 (dT 0) creates a membership subgoal and a well-formedness subgoal.
 
 If the n'th hypothesis is of the form
@@ -2246,12 +2107,6 @@ inaccessible because of the other, and that both are inaccessible due
 to the following rule.
 
 If the n'th hypothesis is of the form
-<< a: quot x, y: 'A // 'E['x; 'y] >>, and the conclusion is a
-membership,
-(dT n) creates an equality subgoal and a well-formedness subgoal, and
-thins.
-
-If the n'th hypothesis is of the form 
 << x: 'a1 = 'a2 in quot x, y: 'A // 'E['x; 'y] >>,
 (dT n) adds a new hypothesis << v: hide('E['a1; 'a2]) >> and thins.
 
@@ -2270,7 +2125,7 @@ list{'a}
 list_ind{'e; 'base; h, t, f. 'step['h; 't; 'f]}
 
 * reduce_listindNil : conv
-Rewrites << list_ind{nil; 'base; h, t, f. 'step['h; 't; 'f]} >> to 
+Rewrites << list_ind{nil; 'base; h, t, f. 'step['h; 't; 'f]} >> to
 << 'base >>.
 
 * reduce_listindCons : conv
@@ -2287,22 +2142,15 @@ If the conclusion is of the form << "type"{list{'A}} >>,
 If the conclusion is of the form << list{'A} = list{'B} in univ[i:l] >>,
 (dT 0) creates an equality subgoal.
 
-If the conclusion is of the form << member{univ[i:l]; list{'A}} >>,
-(dT 0) creates a membership subgoal.
-
 If the conclusion is of the form << list{'A} >>,
 (dT 0) creates a subgoal << "type"{'A} >> (with extract term << nil >>).
 
-If the conclusion is of the form << nil = nil in list{'A} >> or 
-<< member{list{'A}; nil} >>,
+If the conclusion is of the form << nil IN list{'A} >> or
 (dT 0) creates a subgoal << "type"{'A} >>.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << cons{'u1; 'v1} = cons{'u2; 'v2} in list{'A} >>,
 (dT 0) creates 2 equality subgoals.
-
-If the conclusion is of the form << member{list{'A}; cons{'u1; 'v1}} >>,
-(dT 0) creates 2 membership subgoals.
 
 If the n'th hypothesis is of the form << l: list{'A} >>,
 and the conclusion is of the form << 'C['l] >>,
@@ -2310,22 +2158,15 @@ and the conclusion is of the form << 'C['l] >>,
 the second has extra arguments << u: 'A; v: list{'A}; w: 'C['v] >> and
 conclusion << 'C['u::'v] >>.
 
-If the conclusion is of the form 
+If the conclusion is of the form
 << list_ind{'e1; 'base1; u1, v1, z1. 'step1['u1; 'v1; 'z1]}
    = list_ind{'e2; 'base2; u2, v2, z2. 'step2['u2; 'v2; 'z2]}
    in 'T >>,
 (withTermsT [<< lambda{l. 'B['l]} >>; << list{'A} >>] (dT 0)) creates
-3 equality subgoals.  Here << 'B['e1] >> must be << 'T >> and 
+3 equality subgoals.  Here << 'B['e1] >> must be << 'T >> and
 << list{'A} >> must be the common type of << 'e1 >> and << 'e2 >>.
 
-If the conclusion is of the form
-<< member{'T; 
-          list_ind{'e1; 'base1; u1, v1, z1. 'step1['u1; 'v1; 'z1]}} >>,
-(withTermsT [<< lambda{l. 'B['l]} >>; << list{'A} >>] (dT 0)) creates 
-3 membership subgoals.  Here << 'B['e1] >> must be << 'T >> and 
-<< list{'A} >> must be the type of << 'e1 >>.
-
-If the n'th hypothesis is of the form 
+If the n'th hypothesis is of the form
 << x: nil = cons{'h; 't} in list{'T} >> or
 << x: cons{'h; 't} = nil in list{'T} >>,
 (dT n) succeeds with no subgoals.
@@ -2374,7 +2215,7 @@ Rewrites << rev_assoc{'eq; 'x; 'l; y. 'b['y]; 'z} >> to
          ifthenelse{.'eq 'v 'x; 'b['u]; 'g}}} >>.
 
 * unfold_map : conv
-Rewrites << map{'f; 'l} >> to 
+Rewrites << map{'f; 'l} >> to
 << list_ind{'l; nil; h, t, g. cons{.'f 'h; 'g}} >>.
 
 * unfold_fold_left : conv
@@ -2383,18 +2224,18 @@ Rewrites << fold_left{'f; 'v; 'l} >> to
 
 * unfold_nth : conv
 Rewrites << nth{'l; 'i} >> to
-<< (list_ind{'l; 
+<< (list_ind{'l;
              it;
-             u, v, g. lambda{j. ifthenelse{eq_int{'j; 0}; 
-                                           'u; 
+             u, v, g. lambda{j. ifthenelse{eq_int{'j; 0};
+                                           'u;
                                            .'g ('j -@ 1)}}} 'i) >>.
 
 * unfold_replace_nth : conv
 Rewrites << replace_nth{'l; 'i; 't} >> to
-<< (list_ind{'l; 
-             nil; 
-             u, v, g. lambda{j. ifthenelse{eq_int{'j; 0}; 
-                                           cons{'t; 'v}; 
+<< (list_ind{'l;
+             nil;
+             u, v, g. lambda{j. ifthenelse{eq_int{'j; 0};
+                                           cons{'t; 'v};
                                            cons{'u; .'g ('j -@ 1)}}}} 'i) >>
 
 * unfold_length : conv
@@ -2430,101 +2271,101 @@ It reduces terms of the following forms in the obvious way:
 << replace_nth{cons{'u; 'v}; 'i; 't} >>.
 
 This file adds to the dT tactic.
-If the conclusion is of the form << member{bool; is_nil{'l}} >>,
-(withT t (dT 0)) changes it to << member{list{t}; 'l} >>.
+If the conclusion is of the form << is_nil{'l} IN bool >>,
+(withT t (dT 0)) changes it to << 'l IN list{t} >>.
 
-If the conclusion is of the form << member{list{'T}; append{'l1; 'l2}} >>,
+If the conclusion is of the form << append{'l1; 'l2} IN list{'T} >>,
 (dT 0) creates 2 membership subgoals.
 
-If the conclusion is of the form 
-<< member{bool; ball2{'l1; 'l2; x, y. 'b['x; 'y]}} >>,
-(withTermsT [t1; t2] (dT 0)) creates subgoals 
-<< member{list{t1}; 'l1} >> and << member{list{t2}; 'l2} >> (and 3
+If the conclusion is of the form
+<< ball2{'l1; 'l2; x, y. 'b['x; 'y]} IN bool >>,
+(withTermsT [t1; t2] (dT 0)) creates subgoals
+<< 'l1 IN list{t1} >> and << 'l2 IN list{t2} >> (and 3
 well-formedness subgoals).
 
-If the conclusion is of the form 
-<< member{'T; assoc{'eq; 'x; 'l; v. 'b['v]; 'z}} >>
-(withTermsT [t1; t2] (dT 0)) creates membership subgoals for 
+If the conclusion is of the form
+<< assoc{'eq; 'x; 'l; v. 'b['v]; 'z} IN 'T >>
+(withTermsT [t1; t2] (dT 0)) creates membership subgoals for
 << 'eq >>, << 'x >>, << 'l >>, << 'b['a] >>, and << 'z >>, and a
-typehood subgoal for t2.  Here << 'l >> must have type 
+typehood subgoal for t2.  Here << 'l >> must have type
 << list{(t1 * t2)} >>.
 
 If the conclusion is of the form
-<< member{'T; rev_assoc{'eq; 'x; 'l; v. 'b['v]; 'z}} >>,
-(withTermsT [t1; t2] (dT 0)) creates membership subgoals for 
+<< rev_assoc{'eq; 'x; 'l; v. 'b['v]; 'z} IN 'T >>,
+(withTermsT [t1; t2] (dT 0)) creates membership subgoals for
 << 'eq >>, << 'x >>, << 'l >>, << 'b['a] >>, and << 'z >>, and a
-typehood subgoal for t1.  Here << 'l >> must have type 
+typehood subgoal for t1.  Here << 'l >> must have type
 << list{(t1 * t2)} >>.
 
 If the conclusion is of the form
-<< member{list{'T2}; map{'f; 'l}} >>,
+<< map{'f; 'l} IN list{'T2} >>,
 (withT t (dT 0)) creates 2 membership subgoals and 2 typehood
 subgoals.  Here << 'l >> must have type << list{t} >>.
 
 XXX
 If the conclusion is of the form
-<< member{'T2; fold_left{'f; 'v; 'l}} >>,
+<< fold_left{'f; 'v; 'l} IN 'T2 >>,
 (withTermsT [t1; t2] (dT 0)) creates 3 membership subgoals and 2
 typehood subgoals.  Here << 'l >> must have type << list{t1} >>, and
 the second argument is silly.
 
-If the conclusion is of the form << member{int; length{'l}} >>,
-(withT t (dT 0)) creates a subgoal << member{list{t}; 'l} >> (and a
+If the conclusion is of the form << length{'l} IN int >>,
+(withT t (dT 0)) creates a subgoal << 'l IN list{t} >> (and a
 well-formedness subgoal).
 
-If the conclusion is of the form << member{'T; nth{'l; 'i}} >>,
+If the conclusion is of the form << nth{'l; 'i} IN 'T >>,
 (dT 0) creates subgoals stating that << 'T >> is a type, << 'l >> is
 of type << list{'T} >>, and that << 'i >> is in range.
 
-If the conclusion is of the form 
-<< member{list{'T}; replace_nth{'l; 'i; 't}} >>,
+If the conclusion is of the form
+<< replace_nth{'l; 'i; 't} IN list{'T} >>,
 (dT 0) creates subgoals stating that << 'T >> is a type, << 'l >> is
 of type << list{'T} >>, << 'i >> is in range, and << 't >> is of type
 << 'T >>.
 
 # The following "commented-out" paragraphs are no longer correct;
-# I'm leaving them in in hopes that the descriptions of the type 
+# I'm leaving them in in hopes that the descriptions of the type
 # inference which used to be done and is not done any more will
 # inspire somebody to add the type inference back in.
 #
-#If the conclusion is of the form << member{bool; is_nil{'l}} >>,
-#(atT t (dT 0)) changes it to << member{t; 'l} >> (t must be of the
+#If the conclusion is of the form << is_nil{'l} IN bool >>,
+#(atT t (dT 0)) changes it to << 'l IN t >> (t must be of the
 #form << list{'T} >>).  (If you don't specify a type with atT, dT will
 #try to infer the type of << 'l >>.)
 #
-#If the conclusion is of the form << member{list{'T}; append{'l1; 'l2}} >>,
-#(dT 0) creates subgoals << member{list{'T}; 'l1} >> and
-#<< member{list{'T}; 'l2} >>.
+#If the conclusion is of the form << append{'l1; 'l2} IN list{'T} >>,
+#(dT 0) creates subgoals << 'l1 IN list{'T} >> and
+#<< 'l2 IN list{'T} >>.
 #
-#If the conclusion is of the form 
-#<< member{bool; ball2{'l1; 'l2; x, y. 'b['x; 'y]}} >>,
-#(dT 0) will try to infer the types of the members of << 'l1 >> and 
+#If the conclusion is of the form
+#<< ball2{'l1; 'l2; x, y. 'b['x; 'y]} IN bool >>,
+#(dT 0) will try to infer the types of the members of << 'l1 >> and
 #<< 'l2 >>, coming up with << T1 >> and << T2 >>.  (If it can infer
 #types for only one of << 'l1 >> and << 'l2 >>, it will assume that
 #they both have the same type.)  It will then create subgoals (one with
-#extra hypotheses) << "type"{T1} >>, << "type"{T2} >>, 
-#<< member{list{T1}; 'l1} >>, << member{list{T2}; 'l2} >>, and
-#<< u: T1; v: T2 >- member{bool; 'b['u; 'v]} >>.  You can use 
-#(atT t (dT 0)) to use << t >> as the type for both << T1 >> and 
+#extra hypotheses) << "type"{T1} >>, << "type"{T2} >>,
+#<< 'l1 IN list{T1} >>, << 'l2 IN list{T2} >>, and
+#<< u: T1; v: T2 >- 'b['u; 'v] IN bool >>.  You can use
+#(atT t (dT 0)) to use << t >> as the type for both << T1 >> and
 #<< T2 >> (but there's no way to specify two different types).
 #
-#If the conclusion is of the form 
-#<< member{'T; assoc{'eq; 'x; 'l; v. 'b['v]; 'z}} >>,
-#(dT 0) will try to infer the type of 'l (which must be of the form 
+#If the conclusion is of the form
+#<< assoc{'eq; 'x; 'l; v. 'b['v]; 'z} IN 'T >>,
+#(dT 0) will try to infer the type of 'l (which must be of the form
 #<< T1 * T2 >>).  It will then create subgoals (one with an extra
-#hypothesis) << "type"{T2} >>, << member{(T1 -> T1 -> bool; 'eq)} >>,
-#<< member{T1; 'x} >>, << member{list{(T1 * T2)}; 'l} >>,
-#<< member{'T; 'z} >>, and << z: T2 >- member{'T; 'b['z]} >>.  You can
+#hypothesis) << "type"{T2} >>, << 'eq IN (T1 -> T1 -> bool)} >>,
+#<< 'x IN T1 >>, << 'l IN list{(T1 * T2) >>,
+#<< 'z IN 'T >>, and << z: T2 >- 'b['z] IN 'T >>.  You can
 #specify the type of << 'l >> with atT.  Conclusions of the form
-#<< member{'T; rev_assoc{'eq; 'x; 'l; v. 'b['v]; 'z}} >> are handled
+#<< rev_assoc{'eq; 'x; 'l; v. 'b['v]; 'z} IN 'T >> are handled
 #similarly.
 
 ----------------------------------------
 itt_derive:
 
 * applyT : term -> int -> tactic
-(applyT << f a >> 0) tries to infer the type of << f >> to get << T >>, 
-which must be a "dfun", "fun", "all", or "implies" term; say 
+(applyT << f a >> 0) tries to infer the type of << f >> to get << T >>,
+which must be a "dfun", "fun", "all", or "implies" term; say
 << x: A -> B['x] >>.  The conclusion is of the form << 'C[f a] >>.
 The tactic adds a hypothesis and changes the conclusion to get
 << y: 'B[a] >- 'C['y] >> (and adds several other subgoals).
@@ -2573,12 +2414,12 @@ Rewrites << fcompare{'eq; 'x; 'y} >> to <<  ('eq 'x 'y) >>.
 
 * unfold_fequalp : conv
 Rewrites << fequalp{'eq; 'T} >> to
-<< (member{.'T -> 'T -> bool; 'eq}
+<< ('eq IN ('T -> 'T -> bool))
       & (all x: 'T. "assert"{.fcompare{'eq; 'x; 'x}})
       & (all x: 'T. all y: 'T. ("assert"{fcompare{'eq; 'x; 'y}} => "assert"{fcompare{'eq; 'y; 'x}}))
-      & (all x: 'T. all y: 'T. all z: 'T. 
-            ("assert"{fcompare{'eq; 'x; 'y}} => 
-             "assert"{fcompare{'eq; 'y; 'z}} => 
+      & (all x: 'T. all y: 'T. all z: 'T.
+            ("assert"{fcompare{'eq; 'x; 'y}} =>
+             "assert"{fcompare{'eq; 'y; 'z}} =>
              "assert"{fcompare{'eq; 'x; 'z}}))) >>.
 
 * unfold_fset : conv
@@ -2597,12 +2438,12 @@ Rewrites << funion{'eq; 's1; 's2} >> to <<  append{'s1; 's2} >>.
 * unfold_fisect : conv
 Rewrites << fisect{'eq; 's1; 's2} >> to
 << list_ind{'s1; nil; h, t, g. ifthenelse{fmember{'eq; 'h; 's2};
-                                          cons{'h; 'g}; 
+                                          cons{'h; 'g};
                                           'g}} >>.
 
 * unfold_fsub : conv
 Rewrites << fsub{'eq; 's1; 's2} >> to
-<< list_ind{'s1; nil; h, t, g. ifthenelse{fmember{'eq; 'h; 's2}; 
+<< list_ind{'s1; nil; h, t, g. ifthenelse{fmember{'eq; 'h; 's2};
                                           'g;
                                           cons{'h; 'g}}} >>.
 
@@ -2624,7 +2465,7 @@ Rewrites << fequal{'eq; 's1; 's2} >> to
 
 * unfold_fsquash : conv
 Rewrites << fsquash{'eq; 's1} >> to
-<< list_ind{'s1; nil; h, t, g. ifthenelse{fmember{'eq; 'h; 't}; 
+<< list_ind{'s1; nil; h, t, g. ifthenelse{fmember{'eq; 'h; 't};
                                           'g;
                                           cons{it; 'g}}} >>.
 
@@ -2670,7 +2511,7 @@ The opposites of the above conversions.
 #the type of << 'u >>.
 #
 #* fmember_subst_elementT : term -> tactic
-#(fmember_subst_elementT y) reduces a conclusion of the form 
+#(fmember_subst_elementT y) reduces a conclusion of the form
 #<< "assert"{fmember{'eq; 'x; 'l}} >> to subgoals
 #<< "assert"{fmember{'eq; y; 'l}} >> and
 #<< "assert"{fcompare{'eq; 'x; y}} >> (and some other subgoals).  The
@@ -2686,8 +2527,8 @@ The opposites of the above conversions.
 #
 #* fsquash_memberT : tactic
 #fsquash_memberT reduces a conclusion of the form
-#<< fsquash{'eq; 's} = 
-#   cons{it; fsquash{'eq; fsub{'eq; 's; fsingleton{'u}}}} 
+#<< fsquash{'eq; 's} =
+#   cons{it; fsquash{'eq; fsub{'eq; 's; fsingleton{'u}}}}
 #   in list{unit} >> to
 #<< "assert"{fmember{'eq; 'u; 's}} >> (and some other subgoals).
 #The tactic tries to infer the list element type by inferring the type
@@ -2745,43 +2586,37 @@ It reduces terms of the following forms in the obvious way:
 # partial description of what this file used to do to the dT tactic,
 # because the code is still in itt_fset.ml .
 #
-#If the conclusion is of the form << member{bool; fcompare{'eq; 'x; 'y}} >>,
-#(dT 0) breaks it down into subgoals.  It tries to infer the type of 
+#If the conclusion is of the form << fcompare{'eq; 'x; 'y} IN bool >>,
+#(dT 0) breaks it down into subgoals.  It tries to infer the type of
 #<< 'y >> and << 'x >>, but you can specify the type explicitly with atT.
 #
 #If the conclusion is of the form
-#<< member{bool; fmember{'eq; 's1; 's2}} >>,
-#<< member{bool; fsubseteq{'eq; 's1; 's2}} >>, or
-#<< member{bool; fequal{'eq; 's1; 's2}} >>,
-#(dT 0) breaks it down into subgoals.  It tries to infer the type of 
+#<< fmember{'eq; 's1; 's2} IN bool >>, << fsubseteq{'eq; 's1; 's2} IN bool >>, or
+#<< fequal{'eq; 's1; 's2} IN bool >>,
+#(dT 0) breaks it down into subgoals.  It tries to infer the type of
 #<< 's2 >> and << 's1 >>, but you can specify the type explicitly with
 #atT.  You can specify either a "fset" or a "list" type.
 #
 #If the conclusion is of the form
-#<< member{bool; fball{'s; x.'b['x]}} >> or
-#<< member{bool; fbexists{'s; x.'b['x]}} >>,
-#(dT 0) breaks it down into subgoals.  It tries to infer the type of 
+#<< fball{'s; x.'b['x]} IN bool >> or
+#<< fbexists{'s; x.'b['x]} IN bool >>,
+#(dT 0) breaks it down into subgoals.  It tries to infer the type of
 #<< 'b['x] >>, but you can specify the type explicitly with
 #atT.  You can specify either a "fset" or a "list" type.
 #
 #If the conclusion is of the form
-#<< member{list{unit}; fsquash{'eq; 's}} >>,
-#(dT 0) breaks it down into subgoals.  It tries to infer the type of 
+#<< fsquash{'eq; 's} IN list{unit} >>,
+#(dT 0) breaks it down into subgoals.  It tries to infer the type of
 #<< 's >>, but you can specify the type explicitly with
 #atT.  You can specify either a "fset" or a "list" type.
 #
 #If the conclusion is of one of the forms
-#<< member{list{'T}; funion{'eq; 's1; 's2}} >>,
-#<< member{list{'T}; fisect{'eq; 's1; 's2}} >>,
-#<< member{list{'T}; fsub{'eq; 's1; 's2}} >>,
-#<< member{list{'T}; fsingleton{'x}} >>,
-#<< member{list{'T}; fempty} >>,
-#<< member{fset{'eq; 'T}; funion{'eq; 's1; 's2}} >>,
-#<< member{fset{'eq; 'T}; fisect{'eq; 's1; 's2}} >>,
-#<< member{fset{'eq; 'T}; fsub{'eq; 's1; 's2}} >>,
-#<< member{fset{'eq; 'T}; fsingleton{'x}} >>,
-#<< member{fset{'eq; 'T}; fempty} >>, or
-#<< member{fset{'eq; 'T}; foflist{'l}} >>,
+#<< funion{'eq; 's1; 's2} IN list {'T} >>, << fisect{'eq; 's1; 's2}} IN list {'T} >>,
+#<< fsub{'eq; 's1; 's2} IN list {'T} >>, << fsingleton{'x}} IN list {'T} >>,
+#<< fempty IN list {'T} >>, << funion{'eq; 's1; 's2}} IN fset{'eq; 'T} >>,
+#<< fisect{'eq; 's1; 's2} IN fset{'eq; 'T} >>, << fsub{'eq; 's1; 's2} IN fset{'eq; 'T} >>,
+#<< fsingleton{'x} IN fset{'eq; 'T} >>, << fempty IN fset{'eq; 'T} >>, or
+#<< foflist{'l} IN fset{'eq; 'T} >>,
 #(dT 0) breaks it down into subgoals.
 #
 #I left off documenting at the definition of d_fsubseteq_assertT...

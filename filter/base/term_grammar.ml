@@ -385,6 +385,10 @@ struct
              | t1 = noncommaterm; op = sl_equal; t2 = noncommaterm; sl_in; ty = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_opname loc [op]) ty.aterm t1.aterm t2.aterm }
             ]
+          | [ t = noncommaterm; sl_IN; ty = noncommaterm ->
+               (* HACK - this is to support ad-hoc I/O form "member" - see TODO 2.14 -2.15 *)
+                  { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_opname loc ["equal"]) ty.aterm t.aterm t.aterm }
+            ]
           | "fun" RIGHTA
            [ t1 = noncommaterm; op = sl_arrow; t2 = noncommaterm ->
               mk_type_term loc op t1 t2
@@ -810,6 +814,9 @@ struct
 
       sl_in:
          [[ "in" -> () ]];
+
+      sl_IN:
+         [[ "IN" -> () ]];
 
       sl_colon:
          [[ ":" -> () ]];

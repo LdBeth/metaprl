@@ -88,6 +88,11 @@ Example: <<lambda{x.lambda{y.'S['x;'x] +@ 'S['x;'y]}}>> should match
 Nuprl's way is more natural and we should convert. I already wrote the new type
 inference (only for spread) with Nuprl's understanding in mind.
 
+3.11) (nogin; 2000.08.08)
+When dT is ran on hypothesys x: exists i:'T..., y is used as a name of the new hypothesys
+variable instead of i. I am not sure whether it's a rewriter problem or a bad tactic.
+In particular, this breaks lots of proofs in itt_collection.
+
 REFINER
 
 4.1) (Confirmed 1999.10.08 by nogin)
