@@ -7,13 +7,13 @@
 
 <H3>Download Nuprl-Light</H3>
 
-<P>Nuprl-Light can be downloaded at ftp://ftp.cs.cornell.edu/jyh/nuprl-light.
-You will need three packages:</P>
+<P>Nuprl-Light can be downloaded from <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/nuprl-light/">ftp://ftp.cs.cornell.edu/pub/nuprl/nuprl-light/</A>.
+You will need four packages:</P>
 
 <OL>
   <LI>Objective Caml: our version contains a small patch to install
   interface files needed by Nuprl-Light to evaluate programs in
-  the toploop.
+  the toploop and a native code profiler patch.
   <LI>CamlP4: our version contains a small patch to compile the
   CamlP4 distribution in native code.
   <LI>Ensemble: you need Ensemble only if you want to use the distributed
@@ -30,27 +30,30 @@ need the Cygnus Systems GNU-Win32 distribution.</P>
 <H4>CVS sources</H4>
 
 <P>If you plan any development in Nuprl-Light, you may consider
-using the public CVS repository. This will allow you to use CVS
-to manage patches as the main distribution is updated. The normal
+using the public CVS repository. This will allow you to have access 
+to the latest changes in the distribution. The normal
 service is read-only, but if you would like to become a contributor
 with write access, contact <A HREF="mailto:jyh@cs.cornell.edu">Jason
-Hickey</A> ro <A HREF="mailto:nogin@cs.cornell.edu">Alexey Nogin</A>.
-You will need <TT>ssh</TT> for your remote login program. The
-CVS server is at port 80 on the machine <TT>ensemble01.cs.cornell.edu</TT>.
-Install <TT>ssh</TT>, and create an executable shell script called
-<TT>ssh.cvs</TT> containing these lines:</P>
+Hickey</A> or <A HREF="mailto:nogin@cs.cornell.edu">Alexey Nogin</A>.
+
+<P>The CVS server is on the machine <TT>ensemble01.cs.cornell.edu</TT>. 
+First log into the server by running
 
 <BLOCKQUOTE>
-  <PRE>#!/bin/sh
-ssh -C -p 80</PRE>
+  <PRE>% cvs -d :pserver:anoncvs@ensemble01.cs.cornell.edu:/cvsroot login</PRE>
 </BLOCKQUOTE>
 
-<P>You can checkout the distribution by running:</P>
+The password is <TT>anoncvs</TT>. It will be stored on your computer, 
+so you only have to run the login command once.
+
+<P>Now you can checkout the distribution by running:</P>
 
 <BLOCKQUOTE>
-  <PRE>% setenv CVS_RSH ssh.cvs
-% cvs -d :ext:ensemble01.cs.cornell.edu:/cvsroot checkout nuprl-light</PRE>
+  <PRE>% cvs -d :pserver:anoncvs@ensemble01.cs.cornell.edu:/cvsroot checkout nuprl-light</PRE>
 </BLOCKQUOTE>
+
+You can find more information on CVS at 
+<A HREF="http://www.cyclic.com/cvs/info.html">Cyclic Software's pages</A>
 
 <H4>Installation and configuration</H4>
 
