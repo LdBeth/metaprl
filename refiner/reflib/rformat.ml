@@ -1437,24 +1437,38 @@ let tex_escape_string linebreaks s =
           | ']' ->
                collect_escape i j "{]}"
           | '{' ->
-                 collect_escape i j "\\{"
+               collect_escape i j "\\{"
           | '}' ->
                collect_escape i j "\\}"
           | '\\' ->
-               collect_escape i j "\\backslash "
+               collect_escape_space i j "\\backslash"
           | '$' ->
                collect_escape i j "\\$"
           | '%' ->
                collect_escape i j "\\%"
           | '|' ->
                collect_escape i j "\\|"
+          | '<' ->
+               collect_escape_space i j "\\lt"
+          | '>' ->
+               collect_escape_space i j "\\gt"
           | _ ->
                collect i (succ j)
-   and collect_escape i j s' =
+   and collect_esc i j s' =
       if i < j then
-         String.sub s i (j - i) ^ s' ^ collect (succ j) (succ j)
+         String.sub s i (j - i) ^ s'
       else
-         s' ^ collect (succ j) (succ j)
+         s'
+   and collect_escape i j s =
+      collect_esc i j (s ^ (collect (succ j) (succ j)))
+   and collect_escape_space i j s =
+      let s' = collect (succ j) (succ j) in
+      let s'' =
+         if s' = "" then " " ^ s' else match s'.[0] with
+            ' ' | '\\' | '$' | '_' | '^' | '&' | '}' | '{' -> s'
+          | _ -> " " ^ s'
+      in
+         collect_esc i j (s ^ s'')
    in
       collect 0 0
 
