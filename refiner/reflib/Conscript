@@ -1,7 +1,7 @@
 Import qw( env );
 
 $env = $env->clone(
-    INCPATH	=> [@{$env->{INCPATH}}, "../refbase", "../refsig", "../term_gen", "../refiner"]
+    INCPATH	=> [@{$env->{INCPATH}}, "../refbase", "../refsig", "../term_gen", "../refiner", "$env->{MC}/lib/naml/stdlib"]
 );
 
 OCamlSources $env

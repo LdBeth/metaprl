@@ -7,7 +7,38 @@ $env = $env->clone(
 		    "#refiner/refiner", "#refiner/reflib", "#library", "#ensemble",
 		    "#filter/boot", "#filter/base", "#filter/filter",
                     "#theories/tactic", "#theories/ocaml", "#theories/base",
-                    "#theories/itt", "#theories/mc"],
+                    "#theories/itt", "#theories/mc",
+                    "$env->{MC}/lib/naml/stdlib",
+                    "$env->{MC}/lib/util",
+                    "$env->{MC}/fir/type",
+                    "$env->{MC}/fir/util",
+                    "$env->{MC}/fir/opt",
+                    "$env->{MC}/front/fc/config",
+                    "$env->{MC}/front/fc/parse",
+                    "$env->{MC}/front/fc/ast",
+                    "$env->{MC}/front/fc/air",
+                    "$env->{MC}/front/fc/ir",
+                    "$env->{MC}/front/fc/fir",
+		    "$env->{MC}/front/mc",
+                    "$env->{MC}/front/naml/type",
+                    "$env->{MC}/front/naml/parse",
+                    "$env->{MC}/front/naml/ir",
+                    "$env->{MC}/front/unlam",
+                    "$env->{MC}/front/pasqual/util/bootstrap",
+                    "$env->{MC}/front/pasqual/ast",
+                    "$env->{MC}/front/pasqual/ir",
+                    "$env->{MC}/front/pasqual/fir",
+                    "$env->{MC}/arch/conf",
+                    "$env->{MC}/arch/mir/type",
+                    "$env->{MC}/arch/mir/util",
+                    "$env->{MC}/arch/mir/opt",
+                    "$env->{MC}/arch/type",
+                    "$env->{MC}/arch/util",
+                    "$env->{MC}/arch/ra",
+                    "$env->{MC}/arch/x86/type",
+                    "$env->{MC}/arch/x86/util",
+                    "$env->{MC}/arch/x86/opt",
+                    "$env->{MC}/arch/x86/moogle"],
 	ENV => {
 		PATH => "$ENV{'PATH'}:./filter/filter",
 		MPLIB => "lib",
@@ -49,8 +80,20 @@ OCamlSources $env
 	'nuprl_run.ml',
 	'mp_top.ml';
 
-OCamlDepends $env 'shell', 'itt_theory',
-                  'mc_theory', 'fir_test';
+#
+# Always include ITT
+#
+OCamlDepends $env ['mp_top'],
+	'itt_theory';
+
+#
+# Include MC theory only if MC_ROOT is defined
+#
+if(defined($ENV{'MC_ROOT'})) {
+   OCamlDepends $env ['mp_top'],
+        'mc_theory',
+	'fir_test';
+};
 
 OCamlProgram $env 'mp.opt', 'mp_top';
 

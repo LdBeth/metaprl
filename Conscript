@@ -18,6 +18,12 @@ $env = new cons(
     MP_VERSION => "0.7.1",
     REFINER => "VERBOSE",
     TERMS => "ds",
+    MC => "$ENV{'MC_ROOT'}",
+
+    #
+    # Always use stdlib from MC
+    #
+    INCPATH => ["@{$env->{INCPATH}}", "$ENV{'MC_ROOT'}/lib/naml/stdlib"],
 
     ## Overrides
     OCAMLC	=> $native ? "ocamlopt.opt" : "ocamlc",	# The OCaml compiler
