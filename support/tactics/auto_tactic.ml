@@ -22,8 +22,8 @@ doc <:doc<
    @begin[verbatim]
    type auto_info =
       { auto_name : string;
-        auto_prec : auto_prec;
         auto_tac : tactic;
+        auto_prec : auto_prec;
         auto_type : auto_type;
       }
 
@@ -35,11 +35,9 @@ doc <:doc<
    @end[center]
 
    The @tt[auto_name] is the name used to describe the entry (for
-   debugging purposes).  The @tt[auto_tac] is a function that takes
-   the current goal (the @tt[tactic_arg]) and provides a tactic that
-   can be applied to the goal, and a new @tt[auto_tac] that can be
-   used on the subgoals.  The entries are divided into precedence
-   levels; tactics with higher precedence are applied first.
+   debugging purposes).  The @tt[auto_tac] is the actual tactic to try.
+   The entries are divided into precedence levels; tactics with higher precedence
+   are applied first.
 
    Finally, @tt[auto_type] specifies how @hreftactic[autoT] and @hreftactic[trivialT]
    will use each particular entry. @tt[AutoTrivial] entries are the only ones
