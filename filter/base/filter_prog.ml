@@ -367,7 +367,6 @@ let contractum_id       = "_$contractum"
 let params_id           = "_$params"
 let subgoals_id         = "_$subgoals"
 let extract_id          = "_$extract"
-let namer_id            = "_$namer"
 let term_id             = "_$term"
 let x_id                = "_$x"
 let cvars_id            = "_$cvars"
@@ -1410,11 +1409,11 @@ struct
       let params_expr = list_expr loc (expr_of_term loc) tparams in
       let redex_expr = expr_of_term loc redex in
       let simple_flag = params = [] && bvars = [] in
-
       let create_ml_rewrite_expr =
          if simple_flag then
             create_ml_rewrite_expr loc
          else
+            raise(Invalid_argument("Conditional ML rewrites are not currently supported - the code is there, but needs to be cleaned up"))
             create_ml_cond_rewrite_expr loc
       in
       let create_expr =
@@ -1423,8 +1422,7 @@ struct
       let info_let =
          <:expr< let $rec:false$ $list:[info_patt, rewrite_val_expr]$ in $create_expr$ >>
       in
-      let rewrite_body = <:expr< $lid:namer_id$ $lid:stack_id$ $lid:names_id$ >> in
-      let rewrite_body = <:expr< ( $lid:goal_id$ , $lid:subgoals_id$ , $rewrite_body$ , $lid:extract_id$ ) >> in
+      let rewrite_body = <:expr< ( $lid:goal_id$ , $lid:subgoals_id$ , $lid:stack_id$ , $lid:extract_id$ ) >> in
       let rewrite_patt = <:patt< ( $lid:goal_id$ , $lid:subgoals_id$ , $lid:extract_id$ ) >> in
       let rewrite_body' = <:expr< $rewrite_expr$ $lid:goal_id$ >> in
       let rewrite_body =
@@ -1616,11 +1614,11 @@ struct
    let () = ()
 
    (*
-    * An ML rewrite performs the same action as a conditional rewrite,
-    * but the ML code computes the rewrite.
+    * An ML rule performs the same action as a normal one,
+    * but the ML code computes the subgoals.
     *
     * Constructed code:
-    * let name_rewrite =
+    * let name_rule =
     *     ... header produced by define_ml_program ...
     *     let rewrite names bnames params seq goal =
     *        let stack = apply_redex redex [||] goal params in
@@ -1644,6 +1642,7 @@ struct
          mlterm_term       = redex;
        } rule_expr =
       (* Names *)
+      raise(Invalid_argument("ML rules are not currently supported - the code is there, but needs to be cleaned up"));
       let info_patt = <:patt< $lid:info_id$ >> in
       let name_rule_id = "_$" ^ name ^ "_rule" in
       let name_patt = <:patt< $lid:name$ >> in
@@ -1684,8 +1683,7 @@ struct
          <:expr< match ( $lid:addrs_id$ , $lid:names_id$ ) with
                  [ $list: [rule_patt, None, rule_expr; wild_patt, None, wild_expr]$ ] >>
       in
-      let rule_body = <:expr< $lid:namer_id$ $lid:stack_id$ $lid:names_id$ >> in
-      let rule_body = <:expr< ( $lid:subgoals_id$ , $rule_body$ , $lid:extract_id$ ) >> in
+      let rule_body = <:expr< ( $lid:subgoals_id$ , $lid:stack_id$ , $lid:extract_id$ ) >> in
       let rule_patt = <:patt< ( $lid:subgoals_id$ , $lid:extract_id$ ) >> in
       let rule_body = <:expr< let $rec:false$ $list:[ rule_patt, rule_expr ]$ in $rule_body$ >> in
       let rule_patt = <:patt< $lid:stack_id$ >> in
