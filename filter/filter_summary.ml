@@ -38,6 +38,13 @@ let debug_summary =
         debug_value = false
       }
 
+let debug_match =
+   create_debug (**)
+      { debug_name = "match";
+        debug_description = "print term on proof copying errors";
+        debug_value = false
+      }
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -2032,7 +2039,18 @@ let copy_rule_proof copy_proof rule info2 =
                       rule_proof = proof2
                }, _) ->
             if not (meta_alpha_equal stmt1 stmt2) then
-               eprintf "copy_proof: warning: rules %s do not match%t" name eflush;
+               begin
+                  eprintf "copy_proof: warning: rules %s do not match%t" name eflush;
+                  if !debug_match then
+                     begin
+                        eprintf "Term 1:\n\t";
+                        Simple_print.prerr_simple_mterm stmt1;
+                        eflush stderr;
+                        eprintf "Term 2:\n\t";
+                        Simple_print.prerr_simple_mterm stmt2;
+                        eflush stderr
+                     end
+               end;
             { rule_name = name;
               rule_params = params1;
               rule_stmt = stmt1;
