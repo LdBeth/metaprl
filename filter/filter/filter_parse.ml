@@ -1403,6 +1403,14 @@ let parse_dform loc options redex contractum =
    let redex, contractum = TermGrammar.parse_dform loc redex contractum in
       options, redex, contractum
 
+let str_keyword kw loc =
+   Stdpp.raise_with_loc loc (Invalid_argument
+      ("Implementation keyword encountered where an interface one was expected: \"" ^ kw ^ "\""))
+
+let sig_keyword kw loc =
+   Stdpp.raise_with_loc loc (Invalid_argument
+      ("Interface keyword encountered where an implementation one was expected: \"" ^ kw ^ "\""))
+
 (************************************************************************
  * GRAMMAR EXTENSION                                                    *
  ************************************************************************)
@@ -1597,7 +1605,7 @@ EXTEND
            in
              handle_exn f ("ml_rw " ^ name) loc;
              empty_sig_item loc
-        | rule_keyword; name = LIDENT; args = optarglist; ":"; mt = mterm ->
+        | "rule"; name = LIDENT; args = optarglist; ":"; mt = mterm ->
            let f () =
               let proc = SigFilter.get_proc loc in
               let t, args, _ = TermGrammar.parse_rule loc name mt args in
@@ -1695,6 +1703,11 @@ EXTEND
         | "GENGRAMMAR" ->
           SigFilter.compile_parser (SigFilter.get_proc loc) loc;
           empty_sig_item loc
+
+        | "prim" -> str_keyword "prim" loc
+        | "interactive" -> str_keyword "interactive" loc
+        | "prim_rw" -> str_keyword "prim_rw" loc
+        | "interactive_rw" -> str_keyword "interactive_rw" loc
        ]];
 
    doc_sig:
@@ -1980,6 +1993,10 @@ EXTEND
         | "GENGRAMMAR" ->
           StrFilter.compile_parser (StrFilter.get_proc loc) loc;
           empty_str_item loc
+
+        | "rule" -> sig_keyword "rule" loc
+        | "rewrite" -> sig_keyword "rewrite" loc
+        | "topval" -> sig_keyword "topval" loc
        ]];
 
     declare_cases:
@@ -2096,9 +2113,6 @@ EXTEND
            in
               handle_exn f "updresources" loc
       ]];
-
-   rule_keyword:
-      [[ "rule" -> () ]];
 
    mlrule_keyword:
       [[ "ml_rule" | "ml_axiom" -> () ]];
