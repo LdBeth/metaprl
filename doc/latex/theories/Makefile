@@ -4,9 +4,9 @@
 DIR = doc/latex/theories
 ROOT = ../../..
 ifndef TEXINPUTS
-	TEXINPUTS = ../inputs:.:
+	TEXINPUTS := ../inputs:.:
 else
-	TEXINPUTS = ../inputs:$(TEXINPUTS)
+	TEXINPUTS := ../inputs:$(TEXINPUTS)
 endif
 
 include $(ROOT)/mk/preface
