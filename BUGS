@@ -1,5 +1,6 @@
 ************************************************************************
 * THIS FILE IS OUTDATED. PLASE USE BUGZILLA FOR FILING NEW BUG REPORTS *
+*           See http://bugzilla.metaprl.org/                           *
 ************************************************************************
 
 Note - some non-critical bugs may be documented as TODO items.
@@ -43,10 +44,7 @@ It may be a good idea to implement a generic display-form mechanism to allow lim
 the number of lines a certain term would occupy. On the other hand, such an approach
 would only save the time to output the display form, but not the time to produce it.
 
-2.7) Native code just exits with segmentation fault on stack overflow. This is really bad
-since it does not give user a chance to save work.
-Note: tactic scheduler seems to use its own stack, so nothing back happens if a tactic
-loops.
+2.7) (Fixed in OCaml)
 
 2.8) When ls is used with non-empty flags (e.g. ls "u"), it should not use the word
      "Implementation" in the listing header (or it should at least tell what exactly
@@ -58,18 +56,7 @@ loops.
 
 REWRITER
 
-(We are currently in the process of rethinking how exactly we want to do rewriting.
-Because of that we stopped doing anything in the middle of reimplementations that left
-some cases working incorrectly. This resulted in several bugs that we should be able
-to fix pretty quickly if somebody would want us to).
-
-3.1) (fixed)
-
-3.2) If the same variable is bound several times in redex or contractum specification, rewriter
-may handle it incorrectly. We can not prohibit repeated bound variable in redeces
-specifications because of two-way rewrites.
-
-(3.3-3.6 - fixed)
+(3.1-3.6 - fixed)
 
 3.7) Currently rewriter does not enforce building contractum to be against the same redex
 the contractum was compiled against. Hopefully we never do this wrong, but we still
@@ -78,11 +65,7 @@ should enforce it.
 3.8) SO contexts that are not a part of a sequent are currently never used and as a result
 the corresponding rewriter code is undebugged.
 
-3.9) (Added in 1999.11.05 by nogin, unverified)
-If we have a redex where all the arguments of some SO variable are bound variables
-and some variable appears more than once, rewriter may handle it incorrectly.
-Example: <<lambda{x.lambda{y.'S['x;'x] +@ 'S['x;'y]}}>> should match
-<<lambda{x.lambda{y.'x *@ 'x +@ 'x *@ 'y}}>>
+3.9) (fixed)
 
 3.10) (nogin) When the same variable appears twice in the same bvars list
 (e.g., spread{p; x,x.x}), Nuprl upderstands it as y,x.x and MetaPRL - as x,y.x.
@@ -117,12 +100,7 @@ of applyAllC (conversionals_boot.ml).
 
 REFINER
 
-(4.1-4.2 - fixed)
-
-4.3) rwh does not do matching correctly - for example, it allows to use reduceEta
-on <<lambda{x.('x 'x)}>>. This may be already fixed by the "strict" rewriter mode.
-
-(4.4-4.6 - fixed)
+(4.1-4.6 - fixed)
 
 4.7) (nogin)
 In Ocaml, string is a mutable data structure. In MetaPRL, we use strings everywhere (variable
@@ -131,15 +109,7 @@ a) Make sure that nobody can cheat the system by starting to mute strings.
 b) Let the compiler and GC know that we are not going to mute strings (which should allow
 them to be more efficient).
 
-4.8-4.9) (fixed)
-
-4.10) (2000.09.18 kopylov)
-The extract of a subgoal of a rule should be of the form 't['x1;,,,;'xn], where 't is
-a second order varible and 'x,...,'xn are ALL varibles declared in the hypothesis of the subgoal.
-For example we should not be able to write rules with the subgoal of the form:
- ('t['x] : sequent ['ext] { 'H; x: 'A; y: B >- 'T['x] }) --> ....
-or
- ('t+'s : sequent ['ext] { 'H >- 'T }) --> ....
+4.8-4.10) (fixed)
 
 See also BUGS #4.4
 
@@ -147,11 +117,7 @@ See also BUGS #4.4
 
 PARSER & FILTER
 
-5.1-5.2) (fixed)
-
-5.3) The term grammar is very messy. In particular, sometimes parser requires too many brackets.
-
-(5.4-5.6 - fixed)
+5.1-5.6) (fixed)
 
 5.7) (2001.07.18 nogin) Currently .prla ASCII IO requires stack size
 proportional to the file size. This means that we will have a stack overflow
@@ -162,7 +128,7 @@ RULES & REWRITES
 
 6.1-6.2) (fixed)
 
-6.3) See Bugzilla bugs 5,6,7.
+6.3) (Moved to Bugzilla)
 
 6.4) Dependent product type is currently defined as a very dependent function type.
 Unfortunatelly, we were not (yet) able to prove productElimination. We should

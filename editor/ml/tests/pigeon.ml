@@ -67,7 +67,7 @@ let generate size =
       (* Exclusion *)
       for i = 0 to size do
          for j = 1 to size do
-            printf ";\n\th%d_%d: 'x%d_%d => \"not\"{." i j i j;
+            printf ";\n\th%d_%d: 'x%d_%d => \"not\"{" i j i j;
             one_per_hole i j;
             one_hole_only i j;
             printf "}"
