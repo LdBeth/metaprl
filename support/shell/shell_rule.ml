@@ -219,9 +219,6 @@ let rec edit pack parse_arg name window obj =
       obj.rule_params <- pl;
       update_ped ()
    in
-   let edit_save () =
-      save_ped ()
-   in
    let edit_get_extract () =
       match obj.rule_ped with
          Primitive _ ->
@@ -321,6 +318,12 @@ let rec edit pack parse_arg name window obj =
    let edit_interpret command =
       Proof_edit.interpret window (get_ped ()) command
    in
+   let edit_find i =
+      let ped = get_ped () in
+      let addr = Proof.address (Proof.find_subgoal (Proof_edit.proof_of_ped ped) i) in
+         Proof_edit.addr_ped ped addr;
+         addr
+   in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
         edit_get_terms = edit_get_terms;
@@ -331,7 +334,7 @@ let rec edit pack parse_arg name window obj =
         edit_set_assumptions = edit_set_assumptions;
         edit_set_params = edit_set_params;
         edit_get_extract = edit_get_extract;
-        edit_save = edit_save;
+        edit_save = save_ped;
         edit_check = edit_check;
         edit_root = edit_root;
         edit_up = edit_up;
@@ -341,7 +344,8 @@ let rec edit pack parse_arg name window obj =
         edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
-        edit_interpret = edit_interpret
+        edit_interpret = edit_interpret;
+        edit_find = edit_find;
       }
 
 let create_window = function

@@ -188,7 +188,8 @@ type edit_object =
      edit_redo      : unit -> unit;
      edit_addr      : int list -> unit;  (* This operation must be atomic: if it fails, the address is not modified *)
      edit_info      : unit -> edit_info;
-     edit_refine    : string -> MLast.expr -> tactic -> unit
+     edit_refine    : string -> MLast.expr -> tactic -> unit;
+     edit_find      : int -> int list; (* find a subgoal; edit_addr is a side-effect *)
    }
 
 (*

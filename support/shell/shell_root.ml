@@ -201,7 +201,8 @@ let rec edit pack window =
         edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
-        edit_interpret = edit_interpret
+        edit_interpret = edit_interpret;
+        edit_find = not_a_rule;
       }
 
 let create pack window =

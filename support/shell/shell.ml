@@ -102,7 +102,8 @@ type commands =
      mutable print_theory : string -> unit;
      mutable get_view_options : unit -> string;
      mutable set_view_options : string -> unit;
-     mutable clear_view_options : string -> unit
+     mutable clear_view_options : string -> unit;
+     mutable find_subgoal : int -> string;
    }
 
 let uninitialized _ = raise (Invalid_argument "The Shell module has not been instantiated")
@@ -129,7 +130,8 @@ let commands =
      term_of_extract = uninitialized;
      get_view_options = uninitialized;
      set_view_options = uninitialized;
-     clear_view_options = uninitialized
+     clear_view_options = uninitialized;
+     find_subgoal = uninitialized;
    }
 
 (************************************************************************
@@ -952,6 +954,15 @@ struct
        | _ ->
             raise (Failure "Shell.term_of_extract only works inside a proof")
 
+   let edit_find info i =
+      match info.shell_dir with
+         modname :: name :: _ ->
+            let dir = modname :: name :: (List.map string_of_int (info.shell_proof.edit_find i)) in
+               info.shell_dir <- dir;
+               string_of_path dir
+      | _ ->
+            raise (Invalid_argument "Shell.find_subgoal: not in a proof")
+
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *
     ************************************************************************)
@@ -1395,6 +1406,7 @@ struct
       commands.get_view_options <- wrap_unit get_view_options;
       commands.set_view_options <- wrap set_view_options;
       commands.clear_view_options <- wrap clear_view_options;
+      commands.find_subgoal <- wrap edit_find;
       ()
 end
 
@@ -1435,6 +1447,7 @@ let print_theory s = commands.print_theory s
 let get_view_options _ = commands.get_view_options ()
 let set_view_options s = commands.set_view_options s
 let clear_view_options s = commands.clear_view_options s
+let find_subgoal i = commands.find_subgoal i
 
 let nop _ = commands.interpret ProofNop
 let kreitz _ = commands.interpret ProofKreitz

@@ -624,6 +624,13 @@ sig
 
    val format_proof : Dform.dform_base -> Lm_rformat.buffer -> proof -> unit
 
+   (*
+    * Find where a subgoal was generated. Argument 0 refers to goal; positive
+    * numbers refer to positions (starting with 1) in the corresponding step_subgoals
+    * list (step_subgoals is used for consistency with ls "")
+    *)
+   val find_subgoal : proof -> int -> proof
+
    (********************************
     * EXPANSION
     *)

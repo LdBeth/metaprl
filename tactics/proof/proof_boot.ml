@@ -726,14 +726,14 @@ struct
       else if i = 0 then
          goal
       else
-         let i = pred i in
+         let i' = pred i in
          let len = List.length subgoals in
-            if i < len then
-               List.nth subgoals i
+            if i' < len then
+               List.nth subgoals i'
             else
-               let i = i - len in
-                  if i < List.length extras then
-                     List.nth extras i
+               let i' = i' - len in
+                  if i' < List.length extras then
+                     List.nth extras i'
                   else
                      raise_select_error proof node raddr i
 
@@ -1048,13 +1048,8 @@ struct
       fold_up_proof_ext (root proof) proof.pf_root [] node proof.pf_address
 
    let fold_proof postf proof node =
-      let _ =
-         if !debug_proof then
-            let { pf_root = root; pf_address = address } = proof in
-               eprintf "Proof_boot.fold_proof %a%t" print_int_list address eflush;
-               print_ext root;
-               print_ext node
-      in
+      if !debug_proof then
+         eprintf "Proof_boot.fold_proof [%a]%t" print_int_list proof.pf_address eflush;
       let locked_flag, post_flag, root = fold_up_proof node proof in
       let proof =
          { pf_root = root;
@@ -1180,7 +1175,7 @@ struct
    let parent proof =
       match proof.pf_address with
          [] ->
-            proof
+            raise (Invalid_argument "Proof_boot.parent")
        | addr ->
             let addr, _ = Lm_list_util.split_last addr in
                index (root proof) addr
@@ -1522,6 +1517,49 @@ struct
          if !debug_proof then
             eprintf "Got info_ext%t" eflush;
          info
+
+   let rec find_subgoal_aux p arg =
+      let test ext = tactic_arg_alpha_equal arg (goal_ext ext) in
+      if test p.pf_node then
+         if p.pf_address = [] then p else find_subgoal_aux (parent p) arg
+      else
+         let test_subgoal ext = List.exists (tactic_arg_alpha_equal arg) (leaves_ext ext) in
+         let rec comp_aux rb addr goal subgoals =
+            if List.exists test subgoals then
+               aux (if rb then 0::addr else addr) goal
+            else
+               let i = Lm_list_util.find_item test_subgoal subgoals in
+                  aux ((i+1)::addr) (List.nth subgoals i)
+         and aux addr = function
+            Goal _
+          | Extract _
+          | Identity _
+          | Unjustified _  as ext ->
+               if addr = [] then p else index p (List.rev (List.tl addr))
+          | Wrapped (_, ext) ->
+               aux (0::addr) ext
+          | Pending f ->
+               aux addr (f ())
+          | Locked ext ->
+               aux addr ext
+          | RuleBox ri as ext ->
+               if not ri.rule_extract_normalized then ignore (normalize ext);
+               comp_aux true addr ri.rule_extract ri.rule_subgoals
+          | Compose ci ->
+               comp_aux false addr ci.comp_goal ci.comp_subgoals
+         in
+            aux [] p.pf_node
+
+   let find_subgoal p = function
+      0 ->
+         find_subgoal_aux p (goal p)
+    | i ->
+         let l =
+            try List.nth (info p).step_subgoals (i - 1)
+            with Failure _ ->
+               raise (Invalid_argument "Proof_boot.find_subgoal")
+         in
+            find_subgoal_aux p (goal (List.hd l))
 
    (************************************************************************
     * UPDATES                                                              *

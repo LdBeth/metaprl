@@ -400,6 +400,7 @@ let rec edit pack_info parse_arg window =
         edit_undo = not_a_rule;
         edit_redo = not_a_rule;
         edit_interpret = raise_edit_error_fun "this is not a proof";
+        edit_find = not_a_rule;
       }
 
 let create pack parse_arg window =

@@ -74,6 +74,7 @@ topval make_assum : unit -> unit
 topval check : unit -> unit
 topval check_all : unit -> unit
 topval status_all : unit -> unit
+topval find_subgoal : int -> string
 
 (* Module commands. *)
 topval create_pkg : string -> unit
