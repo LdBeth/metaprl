@@ -14,6 +14,7 @@
 value caml_exit(value code)
 {
     int ecode = Int_val(code);
+    write_profiling();
     _exit(ecode);
     return Val_unit;
 }
