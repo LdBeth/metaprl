@@ -152,8 +152,18 @@ let build_sequent_patt loc t =
    let hyps = SeqHyp.to_list hyps in
    let goals = SeqGoal.to_list goals in
 
-   (* For now, the arg must be a var *)
-   let arg = dest_fso_var_string (one_subterm args) in
+   (* For the sequent arg we match based on the opname and the list
+      of subterms. *)
+   let opname = opname_of_term args in
+   let opname = Opname.dest_opname opname in
+   let opname = List.fold_right (fun x l -> 
+         <:patt< [$str:String.escaped x$ :: $l$] >>) opname <:patt< [] >> in
+   
+   let args = subterms_of_term args in
+   let args = List.fold_right (fun x l -> 
+         let x = build_term_patt loc x in
+            <:patt< [$x$ :: $l$] >>) args <:patt< [] >> 
+   in
 
    (* Collect the hyps: if there is a context, it should be final *)
    let rec build_hyps hyps =
@@ -182,8 +192,7 @@ let build_sequent_patt loc t =
             <:patt< $lid:v$ >>) goals
    in
    let goals = List.fold_right (fun x l -> <:patt< [$x$ :: $l$] >>) goals <:patt< [] >> in
-
-      <:patt< Refiner.Refiner.TermType.MatchSequent ($lid:arg$, $hyps$, $goals$) >>
+      <:patt< Refiner.Refiner.TermType.MatchSequent ($opname$, $args$, $hyps$, $goals$) >>
 
 (*
  * General matching.

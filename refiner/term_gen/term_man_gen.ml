@@ -833,7 +833,7 @@ struct
        | ParamList _ ->
             MatchUnsupported
 
-   let explode_term t =
+   let rec explode_term t =
       if is_var_term t then
          let v = dest_var t in
             MatchTerm (["var"], [MatchVar v], [])
@@ -842,9 +842,11 @@ struct
                sequent_hyps = hyps;
                sequent_goals = goals
              } = explode_sequent t in
+         let op = dest_opname (opname_of_term args) in
+         let args = List.map explode_term (subterms_of_term args) in
          let hyps = SeqHyp.to_list hyps in
          let goals = SeqGoal.to_list goals in
-            MatchSequent (args, hyps, goals)
+            MatchSequent (op, args, hyps, goals)
       else
          let { term_op = op; term_terms = bterms } = dest_term t in
          let { op_name = op; op_params = params } = dest_op op in

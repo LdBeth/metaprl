@@ -488,7 +488,7 @@ struct
        | ParamList _ ->
             MatchUnsupported
 
-   let explode_term t =
+   let rec explode_term t =
       match get_core t with
          Term t ->
             let op = dest_opname t.term_op.op_name in
@@ -502,7 +502,9 @@ struct
                    sequent_hyps = hyps;
                    sequent_goals = goals
          } ->
-            MatchSequent (args, SeqHyp.to_list hyps, SeqGoal.to_list goals)
+            let op = dest_opname (opname_of_term args) in
+            let args = List.map explode_term (subterms_of_term args) in
+               MatchSequent (op, args, SeqHyp.to_list hyps, SeqGoal.to_list goals)
        | Subst _ | Hashed _ ->
             fail_core "explode_term"
 

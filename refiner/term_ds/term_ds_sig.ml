@@ -133,7 +133,7 @@ sig
 
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list
-    | MatchSequent of term * hypothesis list * term list
+    | MatchSequent of string list * match_term list * hypothesis list * term list
 
    (*
     * The terms in the framework include
