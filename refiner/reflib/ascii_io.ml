@@ -583,27 +583,31 @@ struct
             New ("P"^lname, name, i_data) :: data.out_items;
          name, param'
 
-   let rec print_out out_line printed names o n =
+   let rec print_out out_line printed data o n =
       match n, o with
          [], _ ->
             ()
-       | (New item :: rest), _ ->
+       | (New ((_, name, _) as item) :: rest), _ ->
             out_line item;
-            print_out out_line printed names o rest
+            print_out out_line (StringSet.add name printed) data o rest
        | (Old name :: nrest), _ when StringSet.mem printed name ->
-            print_out out_line printed names o nrest
-       | (Old _ :: _), ((_, name, _) as item :: orest) when StringSet.mem names name ->
+            print_out out_line printed data o nrest
+       | (Old _ :: _), ((_, name, _) as item :: orest) when StringSet.mem data.io_names name ->
             out_line item;
-            print_out out_line (StringSet.add name printed) names orest n
+            print_out out_line (StringSet.add name printed) data orest n
+       | (Old oname :: nrest), ((_, name, _) as item :: orest) when StringSet.mem data.new_names name && not (StringSet.mem printed name) ->
+            ignore(List.map out_line (Hashtbl.find_all data.old_items oname));
+            data.io_names <- StringSet.remove oname data.io_names;
+            print_out out_line (StringSet.add oname printed) data o nrest
        | (Old _ :: _), _ :: orest ->
-            print_out out_line printed names orest n
+            print_out out_line printed data orest n
        | (Old _ :: _), [] ->
             raise (Invalid_argument "Ascii_io.print_out")
 
    let output_term inputs ctrl t =
       let data = init_data !inputs in
       ignore (out_term ctrl data t);
-      print_out ctrl.out_line StringSet.empty data.io_names (List.rev !inputs) (List.rev data.out_items)
+      print_out ctrl.out_line StringSet.empty data (List.rev !inputs) (List.rev data.out_items)
 
    let simple_name_op _ _ = "","o"
    let simple_name_param _ = "","p"
