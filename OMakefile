@@ -10,8 +10,9 @@ BIN     = $(dir bin)
 # Default compile options are to be quiet
 # and print a progress bar.
 #
-if $(not $(or $(defined VERBOSE), $(intersects $(TARGETS), tex realclean)))
+if $(not $(defined VERBOSE))
    OMakeFlags(-S --progress)
+   export
 
 #
 # Configuration defaults
