@@ -150,6 +150,7 @@ let compile_lexer_rewrites lex_rewrites =
       let c_rewrites = compile_pattern_list rewrites in
          lex_rewrite_add_list new_lex_rewrites key c_rewrites) lex_rewrite_empty lex_rewrites
 
+
 (* Compile all parser {terms}->term rewrites to c_redex->c_contractum. *)
 let compile_parser_rewrites parser_rewrites =
    ProductionIdMTable.fold_all (fun new_parser_rewrites key rewrites ->

@@ -38,9 +38,10 @@ let save_parser_report gst penv (states: state_list_struct) ptable ptable_errors
         (state_id, psym) :: rest ->
          let actions = parsing_table_find ptable (state_id, psym) in
             (match actions with
-               []
-             | [_] ->
-                  raise (Invalid_argument "num_of_conflicts")
+               [] ->
+                  raise (Invalid_argument "num_of_conflicts [empty]")
+             | [a] ->
+                  num_of_conflicts rest
              | a :: [b] ->
                   (match a, b with
                      Shift _, Reduce _

@@ -101,11 +101,7 @@ let string_set_of_list l =
  * Grammar utilities.
  *)
 let find_productions mtable key =
-   try
-      PSymbolMTable.find_all mtable key
-   with
-      Not_found ->
-         []
+   PSymbolMTable.find_all mtable key
 
 (*
  * Dealing with the nullables set.
@@ -185,10 +181,17 @@ let follow_set_add_list follow_set key lst =
 
 let grammar_table_add = PSymbolMTable.add
 let grammar_table_find = PSymbolMTable.find_all
+let grammar_table_find_unsafe table key =
+   let res = grammar_table_find table key in
+      match res with
+         [] ->
+            raise Not_found
+       | _ ->
+            res
 
 let grammar_table_add_once table key data =
    try
-      let data_list = grammar_table_find table key in
+      let data_list = grammar_table_find_unsafe table key in
       if List.mem data data_list then
          table
       else
@@ -204,6 +207,8 @@ let grammar_table_add_once table key data =
  *)
 let prod_id_empty = ProductionIdTable.empty
 (*let prod_id_find_unsafe = ProductionIdTable.find*)
+let prod_id_find = ProductionIdTable.find
+
 let prod_id_find_unsafe pridenv prod_id =
    try
       ProductionIdTable.find pridenv prod_id
@@ -256,11 +261,12 @@ let prod_add = ProductionTable.add
  *)
 let rewrite_empty = ProductionIdMTable.empty
 let rewrite_find_unsafe rewrites key =
-   try
-      ProductionIdMTable.find_all rewrites key
-   with
-      Not_found ->
-         raise (RewriteException (source_position (), "No rewrite rule to apply"))
+   let rewrites = ProductionIdMTable.find_all rewrites key in
+      match rewrites with
+         [] ->
+            raise (RewriteException (source_position (), "No rewrite rule to apply"))
+       | _ ->
+            rewrites
 
 let rewrite_add = ProductionIdMTable.add
 let rewrite_add_list table key lst =
@@ -279,11 +285,12 @@ let rewrite_replace_list table key lst =
 let lex_rewrite_empty = PSymbolMTable.empty
 
 let lex_rewrite_find_unsafe rewrites key =
-   try
-      PSymbolMTable.find_all rewrites key
-   with
-      Not_found ->
-         raise (RewriteException (source_position (), "No rewrite rule to apply"))
+   let res = PSymbolMTable.find_all rewrites key in
+      match res with
+         [] ->
+            raise (RewriteException (source_position (), "No rewrite rule to apply"))
+       | _ ->
+            res
 
 let lex_rewrite_add = PSymbolMTable.add
 
@@ -291,17 +298,18 @@ let lex_rewrite_add_list table key lst =
    List.fold_left (fun table entry ->
       lex_rewrite_add table key entry) table lst
 
+
 (*
  * Don't add more than one set of rewrites for the same symbol.
  * Invariant: we add the newer set of rewrites first.
  *)
 let lex_rewrite_add_or_replace_list table key lst =
-   try
-      let rewrites = PSymbolMTable.find_all table key in
-         table
-   with
-      Not_found ->
-         lex_rewrite_add_list table key lst
+   let rewrites = PSymbolMTable.find_all table key in
+      match rewrites with
+         [] ->
+            lex_rewrite_add_list table key lst
+       | _ ->
+            table
 
 (*
  * State manipulation.
@@ -485,22 +493,23 @@ let accepts_equal = Accepts.equal
  * Parsing table utilities.
  *)
 let parsing_table_empty = ParserFA.empty
-let parsing_table_find_unsafe = ParserFA.find_all
+let parsing_table_find = ParserFA.find_all
 
-let parsing_table_find ptable key =
-   try
-      ParserFA.find_all ptable key
-   with
-      Not_found ->
-         []
+let parsing_table_find_unsafe ptable key =
+   let res = parsing_table_find ptable key in
+      match res with
+         [] ->
+            raise Not_found
+       | _ ->
+            res
 
 let parsing_table_add ptable ptable_errors key data =
-   try
-      let _ = parsing_table_find_unsafe ptable key in
-         ParserFA.add ptable key data, ptable_errors @ [key]
-   with
-        Not_found ->
-         ParserFA.add ptable key data, ptable_errors
+   let res = parsing_table_find ptable key in
+      match res with
+         [] ->
+            ParserFA.add ptable key data, ptable_errors
+       | _ ->
+            ParserFA.add ptable key data, ptable_errors @ [key]
 
 let parsing_table_remove = ParserFA.remove
    
