@@ -43,22 +43,18 @@ let contains_topval = ref false
 (*
  * These are the implicit names.
  *)
-let prl_names =
-   ["Printf";
-    "Lm_debug";
-    "Refiner";
-    "Refine_exn";
-    "Term";
-    "Term_util";
-    "Theory";
-    "Dform";
-    "Dform_print";
-    "Tactic";
-    "Mp_resource";
-    "Precedence";
-    "Filter_summary";
-    "Tactic_type";
-    ]
+let prl_names = [
+   "Obj";
+   "Lm_symbol";
+   "Lm_debug";
+   "Refiner";
+   "Refine_exn";
+   "Theory";
+   "Dform";
+   "Mp_resource";
+   "Precedence";
+   "Tactic_type";
+]
 
 (*
  * These are the names used by "topval" declarations
