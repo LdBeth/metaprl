@@ -99,9 +99,10 @@ let time_it f arg =
    let t1 = times () in
    let res = f arg in
    let t2 = times () in
-   print_string "User time: ";
-   print_float (t2.tms_utime -. t1.tms_utime);
-   print_string "\nSystem time: ";
-   print_float (t2.tms_stime -. t1.tms_stime);
-   print_string "\n\n";
-   res
+      print_string "User time: ";
+      print_float (t2.tms_utime -. t1.tms_utime);
+      print_string "\nSystem time: ";
+      print_float (t2.tms_stime -. t1.tms_stime);
+      print_string "\n\n";
+      flush Pervasives.stdout;
+      res
