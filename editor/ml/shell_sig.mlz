@@ -141,7 +141,7 @@ sig
    val create_rw : t -> string -> unit
    val create_axiom : t -> string -> unit
    val create_thm : t -> string -> unit
-   val create_tptp : t -> string -> unit
+   val create_ax_statement : t -> term -> string -> unit
    val create_opname : t -> string -> unit
    val create_condition : t -> string -> unit
    val create_parent : t -> string -> unit

@@ -717,9 +717,8 @@ struct
       in
          print_exn info create name
 
-   let create_tptp info name =
+   let create_ax_statement info seq name =
       let create name =
-         let seq = Tptp_load.load name in
          let parse_arg = get_parse_arg info in
          let display_mode = get_display_mode info in
          let package = get_current_package info in
@@ -1162,7 +1161,7 @@ struct
        "create_rw",        StringFunExpr   (fun s  -> UnitExpr (create_rw info s));
        "create_axiom",     StringFunExpr   (fun s  -> UnitExpr (create_axiom info s));
        "create_thm",       StringFunExpr   (fun s  -> UnitExpr (create_thm info s));
-       "create_tptp",      StringFunExpr   (fun s  -> UnitExpr (create_tptp info s));
+       "create_ax_statement", TermFunExpr  (fun st -> StringFunExpr (fun s  -> UnitExpr (create_ax_statement info st s)));
        "create_opname",    StringFunExpr   (fun s  -> UnitExpr (create_opname info s));
        "create_condition", StringFunExpr   (fun s  -> UnitExpr (create_condition info s));
        "create_parent",    StringFunExpr   (fun s  -> UnitExpr (create_parent info s));

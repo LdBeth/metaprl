@@ -31,8 +31,8 @@
  *)
 
 cd "tptp_prove";;
-create_tptp "GEN";;
-cd "GEN";;
+create_ax_statement (tptp_load "GEN") "tptp_gen";;
+cd "tptp_gen";;
 restart_gmon ();;
 refine testT;;
 stop_gmon ();;
