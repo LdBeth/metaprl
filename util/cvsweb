@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Usage: cvsweb [directory_or_file]
+#
+# The cvsweb script opens a new browser window showing the CVS entry for the specified
+# file or directory. By default it shows the current directory.
+#
+# The script can be controlled by the following environment variables:
+# CVSBASE - the base cvsweb URL. The default is http://cvs.cs.cornell.edu:12000/cvsweb/
+# URLVIEW - the program to use to start the browser (the default is to use /usr/bin/netscape
+#           if it exists and "xterm -e lynx" otherwise)
+
+if [ "$1" ]; then
+   cd "`dirname "$1"`"
+   NAME=`basename "$1"`
+else
+   NAME=""
+fi
+
+if [ -z "$CVSBASE" ]; then
+   CVSBASE="http://cvs.cs.cornell.edu:12000/cvsweb/"
+fi
+
+if [ ! -r CVS/Repository -o ! -r CVS/Root ]; then
+   echo "`pwd` is not a CVS directory - CVS/Repository and/or CVS/Root are missing"
+   exit 1
+fi
+
+REPOSITORY=`cat CVS/Repository`
+if [ "`echo "$REPOSITORY" | cut -b1`" = "/" ]; then
+   ROOTLEN=`awk -F: '{print $NF}' < CVS/Root|wc -c`
+   REPOSITORY=`echo "$REPOSITORY"| cut -b$[ROOTLEN+1]-`
+fi
+
+if [ -z $URLVIEW ]; then
+   if [ -x /usr/bin/netscape ]; then
+      URLVIEW=/usr/bin/netscape
+   else
+      URLVIEW="xterm -e lynx"
+   fi
+fi
+
+exec $URLVIEW "$CVSBASE$REPOSITORY/$NAME"
+
