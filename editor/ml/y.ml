@@ -32,7 +32,7 @@
 
 load "test";;
 cd "test/pigeon3";;
-ls ();;
+refine timingT propDecideT;;
 
 (*
  * -*-

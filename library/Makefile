@@ -57,7 +57,10 @@ MAIN := library
 
 INSTALL_LIBS := $(MAIN)
 
-all: lib
+all: lib $(ROOT)/lib/mbs-mpl.txt
+
+$(ROOT)/lib/mbs-mpl.txt: mbs-mpl.txt
+	$(LN) $(ROOT)/library/mbs-mpl.txt $@
 
 #
 # Real makefile
