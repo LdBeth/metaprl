@@ -22,6 +22,10 @@ CAMLP4_VERSIONS=3.02_for_MetaPRL-0.7.1
 # All the names for "yes"
 YESFLAGS=1 true True t T TRUE Y y yes Yes YES
 
+DEFAULT_THEORIES = tactic ocaml base itt
+ALL_THEORIES = tactic ocaml base itt ocaml_sos fol czf mc sil reflect_itt tptp
+# Do not compile yet: ocaml_doc lf
+
 ifndef TERMS
    TERMS=undefined
 endif
@@ -84,7 +88,19 @@ endif
 # Theory directories to compile
 #
 ifndef THEORIES
-   THEORIES = tactic ocaml base itt
+   THEORIES = $(DEFAULT_THEORIES)
+endif
+
+ifeq ($(ROOT),.) 
+   ADDROOT=
+else
+   ADDROOT=$(ROOT)/
+endif
+
+ifeq ($(THEORIES),all)
+   MP_DIRS = $(addprefix $(ADDROOT)theories/, $(ALL_THEORIES))
+else
+   MP_DIRS = $(addprefix $(ADDROOT)theories/, $(THEORIES))
 endif
 
 #

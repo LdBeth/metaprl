@@ -26,8 +26,6 @@ REFINER_DIRS =\
 	debug\
 	ensemble
 
-MP_DIRS = $(addprefix theories/, $(THEORIES))
-
 DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 
 .PHONY: all opt

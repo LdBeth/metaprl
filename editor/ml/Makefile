@@ -11,7 +11,7 @@ INCLUDE = -I .\
 	-I $(ROOT)/library\
 	-I $(CAMLP4LIB)\
 	-I $(ROOT)/ensemble\
-	$(addprefix -I $(ROOT)/theories/, $(THEORIES))\
+	$(addprefix -I , $(MP_DIRS))\
 	-I $(ROOT)/library\
 	-I $(ROOT)/ocaml_debug\
 	-I $(CAMLP4LIB)
@@ -123,7 +123,7 @@ CMXDEPS =\
 	$(ROOT)/lib/library.cmxa\
 	$(CMXALIBS_ens)\
 	$(ROOT)/lib/prlc.cmxa\
-	$(addprefix $(ROOT)/theories/, $(addsuffix /theory.cmxa, $(THEORIES)))\
+	$(addsuffix /theory.cmxa, $(MP_DIRS))\
 	mp.cmxa
 
 CMXLIBS =\
@@ -139,7 +139,7 @@ CMXADEPS =\
 	$(ROOT)/lib/library.cmxa\
 	$(CMXALIBS_ens)\
 	$(ROOT)/lib/prlc.cmxa\
-	$(addprefix $(ROOT)/theories/, $(addsuffix /theory.cmxa, $(THEORIES)))\
+	$(addsuffix /theory.cmxa, $(MP_DIRS))\
 	$(CAMLP4LIB)/pa_o.cmx\
 	$(CAMLP4LIB)/pa_op.cmx\
 	$(MAIN).cmxa
@@ -158,7 +158,7 @@ CMADEPS =\
 	$(ROOT)/lib/library.cma\
 	$(CMALIBS_ens)\
 	$(ROOT)/lib/prlc.cma\
-	$(addprefix $(ROOT)/theories/, $(addsuffix /theory.cma, $(THEORIES)))\
+	$(addsuffix /theory.cma, $(MP_DIRS))\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(MAIN).cma
@@ -173,7 +173,7 @@ TCMADEPS =\
 	$(ROOT)/lib/library.cma\
 	$(CMALIBS_ens)\
 	$(ROOT)/lib/prlc.cma\
-	$(addprefix $(ROOT)/theories/, $(addsuffix /theory.cma, $(THEORIES)))\
+	$(addsuffix /theory.cma, $(MP_DIRS))\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(MAIN).cma

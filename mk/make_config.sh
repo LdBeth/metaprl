@@ -54,6 +54,8 @@ REFINER=$REFINER
 # Include itt if you want to use the Nuprl type theory,
 # and add any additional theory directories after that.
 #
+# Alternatively, use THEORIES = all
+#
 THEORIES=$THEORIES
 
 #

@@ -236,14 +236,15 @@ let parse_error s buf =
 
 let white = [' ' '\t']+
 let optwhite = [' ' '\t']*
+let newline = ['\r' '\n']+
 let name = ['a'-'z''A'-'Z']+
 let number = ['0'-'9']+
 let special = ['[' ']' ';' ',' '_' '^' '!']
 
 rule main = parse
    (* White space *)
-   '\n' optwhite '*'
- | '\n'
+   newline optwhite '*'
+ | newline
    { TokWhite true }
  | white
    { TokWhite false }
@@ -369,7 +370,7 @@ and string = parse
       { parse_error_buf "string is not terminated" lexbuf }
 
 and escape = parse
-    '\n'
+    newline
       { string lexbuf }
   | _
       { add_string (Lexing.lexeme lexbuf);
@@ -382,7 +383,7 @@ and escape = parse
  * Literal forms.
  *)
 and code_string_brace = parse
-   '\n' optwhite '*'
+   newline optwhite '*'
       { CodeString "\n" }
  | '}'
       { CodeEnd }
@@ -392,7 +393,7 @@ and code_string_brace = parse
       { parse_error_buf "code string is not terminated" lexbuf }
 
 and code_string_end = parse
-   '\n' optwhite '*'
+   newline optwhite '*'
       { CodeString "\n" }
  | "@end[verbatim]"
  | "@end[literal]"

@@ -27,14 +27,21 @@ TEXTHEORIES=\
 	base\
 	fol\
 	itt\
-	czf
+	czf\
+	mc
 
 TEXFILES = $(addsuffix /theory.tex, $(TEXTHEORIES))\
-	$(addsuffix /theory-body.tex, $(TEXTHEORIES))
+	$(addsuffix /theory-body.tex, $(TEXTHEORIES))\
+	all-bodies.tex
 
 doc:
 	+ @ $(MAKE) -C $(ROOT)/editor/ml TEXTHEORIES="$(TEXTHEORIES)" tex
 	+ @ $(MAKE) $(ROOT)/doc/ps/theories/theories.pdf
+
+ALLBODIES=$(addprefix \input{, $(addsuffix /theory-body.tex}, $(TEXTHEORIES)))
+
+all-bodies.tex: Makefile
+	echo '$(ALLBODIES)' > $@
 
 $(NAME).aux: $(INPUTS) $(TEXFILES)
 	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
@@ -59,7 +66,7 @@ $(ROOT)/doc/ps/theories/theories.pdf: $(NAME).pdf
 
 clean::
 	$(RM) *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out
-	$(RM) */theory-body.tex */theory.tex
+	$(RM) */theory-body.tex */theory.tex all-bodies.tex
 
 # Real makefile
 include $(ROOT)/mk/rules

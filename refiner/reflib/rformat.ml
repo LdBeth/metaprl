@@ -1421,7 +1421,7 @@ let tex_escape_string linebreaks s =
           | '_' ->
                collect_escape i j "\\_"
           | '^' ->
-               collect_escape i j "\\^"
+               collect_escape i j "\\makehat"
           | '&' ->
                collect_escape i j "\\&"
           | '#' ->
@@ -1523,7 +1523,8 @@ let tex_push_line buf =
       output_string buf.tex_out line;
       if (count mod 2) = 1 then
          output_string buf.tex_out "$";
-      output_string buf.tex_out "\\\\\n";
+      if (line <> "") && (line.[String.length line - 1] !='\n')
+         then output_string buf.tex_out "\\\\\n";
       if (count mod 2) = 1 then
          buf.tex_current_line <- [false, "$ "]
       else
@@ -1544,7 +1545,8 @@ let tex_tab buf (col, _) =
    if col = 0 then
       begin
          tex_push_line buf;
-         buf.tex_current_line <- (false, "\\\\\n") :: buf.tex_current_line;
+         if buf.tex_current_line <> []
+            then buf.tex_current_line <- (false, "\\\\\n") :: buf.tex_current_line;
          buf.tex_prefix <- ""
       end
    else
