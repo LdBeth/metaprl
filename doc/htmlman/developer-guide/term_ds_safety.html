@@ -14,7 +14,7 @@ included in any object that may escape that piece of code), the data in mutable 
 of that object may be modified only when the following safety rules are observed:<OL TYPE="1">
 <LI>Term should look immutable for any code accessing it through the generic term module
 interface.
-<LI>Code should be thread-safe. 
+<LI>Code should be thread-safe.
 </OL>
 
 <P>In order to observe those rules, we restrict ourselves in the following ways:<OL TYPE="A">
@@ -35,20 +35,21 @@ and <TT>ts</TT> does not have the same variable repeated more than once.
    equivalent to the old one.
 
    <P>For each interface function we make sure that it "respects" term object equivalence.</LI>
+</OL>
 
    <P>It is easy to see that (A) and (B) together with (2) guarantee (1).
 
-<LI>The possible values of each mutable field are divided in two categories -
+<OL START="3" TYPE="A"><LI>The possible values of each mutable field are divided in two categories -
    complete and incomplete (delayed).
    For <TT>free_vars</TT>, <TT>Vars _</TT> is complete and <TT>VarsDelayed</TT> is incomplete.
    For <TT>core</TT>, <TT>FOVar _</TT>, <TT>Term _</TT> and <TT>Sequent _</TT> are complete and <TT>Subst _</TT> is incomplete.
 
    We only change values of mutable fields from incomplete to complete. And for any term
-   object with incomplete field, only one (w.r.t equivalence) complete value may be 
+   object with incomplete field, only one (w.r.t equivalence) complete value may be
    written into that field.
 </OL>
 
-<P>If used correctly, (A-C) would guarantee (2). Indeed, if two threads try to modify 
+<P>If used correctly, (A-C) would guarantee (2). Indeed, if two threads try to modify
 the same field simultaneously, then<UL>
 <LI>It means that the old values of the field were incomplete in both threads (complete
     values can not be modified - C) and since (again C) we never write an incomplete value
