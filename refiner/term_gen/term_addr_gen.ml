@@ -97,7 +97,7 @@ struct
       match a with
          Path addr ->
             term_subterm_path a term term addr
-       | NthPath (addr, flag) ->
+       | NthClause (addr, flag) ->
             term_subterm_nthpath a term flag term addr
        | Compose (addr1, addr2) ->
             term_subterm (term_subterm term addr1) addr2
@@ -132,7 +132,7 @@ struct
          if flag then
             match dest_term t with
                { term_op = op; term_terms = bterm :: bterms } ->
-                  if (dest_op op).op_name == contexT_opname then
+                  if (dest_op op).op_name == context_opname then
                      f t
                   else
                      let { bvars = vars; bterm = term } = dest_bterm bterm in
@@ -170,7 +170,7 @@ struct
       match a with
          Path addr ->
             path_replace_term a term f term addr
-       | NthPath (addr, flag) ->
+       | NthClause (addr, flag) ->
             nthpath_replace_term a term flag f term addr
        | Compose (addr1, addr2) ->
             apply_fun_arg_at_addr (apply_fun_arg_at_addr f addr2) addr1 term
@@ -214,7 +214,7 @@ struct
    let rec collect_string_of_address = function
       Path addr ->
          collect_string_of_path_address addr
-    | NthPath (addr, flag) ->
+    | NthClause (addr, flag) ->
          (if flag then
             collect_string_of_nthpath_address_true
          else
