@@ -10,7 +10,7 @@ BIN     = $(dir bin)
 # Default compile options are to be quiet
 # and print a progress bar.
 #
-if $(not $(defined VERBOSE))
+if $(not $(or $(defined VERBOSE), $(intersects $(TARGETS), tex realclean)))
    OMakeFlags(-S --progress)
 
 #
@@ -374,4 +374,4 @@ CLEAN += *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc
 ########################################################################
 # Subdirectories to build
 #
-.SUBDIRS: $(MP_DIRS) editor/ml doc/latex/theories
+.SUBDIRS: $(MP_DIRS) editor/ml doc/latex/theories doc/ps/theories

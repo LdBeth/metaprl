@@ -12,8 +12,6 @@ ALL_THEORIES = $(intersection $(DEF_ALL_THEORIES), $(THEORIES))
 
 ALL_BODIES = $(file $(add-wrapper $(ROOT)/theories/, /theory-body.tex, $(ALL_THEORIES)))
 
-print(ALL_BODIES: $(ALL_BODIES))
-
 all-bodies.tex: $(ALL_BODIES)
     cat $^ > $@
 
@@ -21,3 +19,9 @@ all-bodies.tex: $(ALL_BODIES)
 # Format the document
 #
 LaTeXDocumentInstall(tex, $(DOCDIR), theories, all-theories, all-bodies)
+
+#
+# Clean up
+#
+clean:
+	$(CLEAN) all-bodies.tex
