@@ -8,7 +8,7 @@
 ;; 1. It is a simple shell so you can do whatever you want in it.
 ;; 2. Guess that MetaPRL is running if input ends with a "\n# ".
 ;; 3. If "MP" is entered on the shell, automatically go to the editor/ml dir,
-;;    run mp and enter an automatic #use command (needed for pwd()) .
+;;    run mp, open some modules and enter an automatic #use command.
 ;; 4. Prints a MetaPRL prompt instead of the wonderful "# ".  Shows the current
 ;;    pwd() there - using an automatic printf, catching its output.
 ;; 5. Input goes thru an alias replacing mechanism.
@@ -65,7 +65,7 @@ The string should contain %s which will be replaced by the current-path.")
 (defvar metaprl-home-directory (expand-file-name "~/meta-prl")
   "*The MetaPRL root directory.")
 
-(defvar metaprl-editor-directory 
+(defvar metaprl-editor-directory
   (expand-file-name "editor/ml" metaprl-home-directory)
   "*The directory containing the 'mp' program.")
 
@@ -74,8 +74,12 @@ The string should contain %s which will be replaced by the current-path.")
   "*The shell command used to start MetaPRL.
 Change the cd command to wherever you have mp.")
 
-(defvar metaprl-start-ml-command "#use \"eli\""
+(defvar metaprl-init-script "~/.mprc"
   "*The ml command used to initialize MetaPRL.")
+
+(defvar metaprl-modules-to-open '("Printf" "Mp")
+  "*A list of strings that need to be opened on startup.
+Add stuff, but don't remove.")
 
 (defvar metaprl-quiet-result "- : unit = ()\n"
   "*Regexp for output lines that will not be shown on the output.
@@ -176,14 +180,16 @@ uninformative output stuff specified by `metaprl-quiet-result'."
                       (substring str (match-end 0)))))
   ;; Print the MetaPRL prompt - only when we have the ocaml prompt as the
   ;; last string displayed.
-  (if (and metaprl-cur-prompt (string-match "^# \\'" str))
-    (concat (substring str 0 (match-beginning 0)) metaprl-cur-prompt)
+  (if (string-match "\\`# \\'" str)
+    (if metaprl-cur-prompt
+      (concat (substring str 0 (match-beginning 0)) metaprl-cur-prompt)
+      "")
     str))
 
 (defun metaprl-output-filter (str)
   "Filter for output string STR.
-Use a ^L character to put that place on the top line and handle initialization
-(since we have to wait until the process is ready to initialize)."
+Use a ^L character to put that place on the top line and also handle
+initialization - must wait until the process is ready to initialize."
   (let ((len (length str)) (i -1))
     (while (< (setq i (1+ i)) len)
       (if (= (aref str i) ?\C-l)
@@ -197,8 +203,17 @@ Use a ^L character to put that place on the top line and handle initialization
     (progn
       (process-send-string
        "*meta-prl*"
-       (format "%s;;\nprintf \"\\n\\n\" ; %s;;\n"
-               metaprl-start-ml-command metaprl-dir-sync))
+       (format
+        "open %s;;\n%s;;\nprintf \"\\n\\n\";%s;;\n"
+        ;; Open modules (note: need at least one for this)
+        (mapconcat 'identity metaprl-modules-to-open ";;\nopen ")
+        ;; #use a script if it exists
+        (if (and metaprl-init-script
+                 (file-readable-p (expand-file-name metaprl-init-script)))
+          (format "#use \"%s\"" (expand-file-name metaprl-init-script))
+          "()")
+        ;; Initial prompt sync.
+        metaprl-dir-sync))
       (setq metaprl-should-init-ml nil))))
 
 (defun metaprl-input-filter (str)
@@ -215,7 +230,8 @@ Expand aliases etc...  (the good stuff is in here.)"
                                   (progn (end-of-line) (point))))))
     (cond
       ;; If we have a metaprl prompt, go ahead with the aliases etc.
-      ((string-match (regexp-quote metaprl-cur-prompt) line)
+      ((and metaprl-cur-prompt
+            (string-match (regexp-quote metaprl-cur-prompt) line))
        (let* ((args (split-string input))
               (alias
                (cdr
@@ -246,7 +262,7 @@ Expand aliases etc...  (the good stuff is in here.)"
        (setq input metaprl-start-shell-command)
        (setq metaprl-should-init-ml t)
        ;; Initialize an empty prompt.
-       (setq metaprl-cur-prompt (format metaprl-prompt "?"))))))
+       (setq metaprl-cur-prompt nil)))))
 
 (defun metaprl-shell ()
   "Same as `shell', modified to use *meta-prl* as the buffer name."
@@ -302,15 +318,15 @@ special prompt will be displayed, and alias convertion will be performed."
         ;; Display all chars correctly.
         (standard-display-8bit 128 255)
         ;; Set the MetaPRL font.
-	;; My copy of emacs20 (Debian package version 20.3-8) has a
-	;; bug where set-default-font removes the inverse-video from the
-	;; modeline.  This ugly workaround lets me avoid set-default-font
-	;; and shouldn't affect anyone else.  -- cwitty, 6/5/99
-	(if (not (and (fboundp 'frame-parameters)
-		      (equal (cdr (assoc 'font (frame-parameters))) "mp12")))
-	    (set-default-font (if (eq window-system 'nt)
-				  "-*-mp12-r-normal-*-12-96-*-*-c-*-*-ansi-*"
-				  "mp12")))))
+        ;; My copy of emacs20 (Debian package version 20.3-8) has a
+        ;; bug where set-default-font removes the inverse-video from the
+        ;; modeline.  This ugly workaround lets me avoid set-default-font
+        ;; and shouldn't affect anyone else.  -- cwitty, 6/5/99
+        (if (not (and (fboundp 'frame-parameters)
+                      (equal (cdr (assoc 'font (frame-parameters))) "mp12")))
+          (set-default-font (if (eq window-system 'nt)
+                              "-*-mp12-r-normal-*-12-96-*-*-c-*-*-ansi-*"
+                              "mp12")))))
     ;; Initialize the meta-prl buffer once.
     (make-local-variable 'metaprl-new-buffer)
     (if (not (and (boundp 'metaprl-new-buffer) metaprl-new-buffer))
@@ -323,10 +339,10 @@ special prompt will be displayed, and alias convertion will be performed."
         (setq comint-preoutput-filter-functions '(metaprl-preoutput-filter))
         (make-local-variable 'comint-input-filter-functions)
         (setq comint-input-filter-functions 'metaprl-input-filter)
-        (setq metaprl-cur-prompt (format metaprl-prompt "?"))
+        (setq metaprl-cur-prompt nil)
         ;; Just for convenience
-        (setq default-directory (file-name-as-directory
-				 metaprl-editor-directory))))))
+        (setq default-directory
+              (file-name-as-directory metaprl-editor-directory))))))
 
 (provide 'prl-hack)
 
