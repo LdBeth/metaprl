@@ -373,7 +373,7 @@ struct
    let create_optable () =
       let t = Hashtbl.create 79 in
       let add (s, ps, ar) =
-         Hashtbl.replace t { sh_name=s; sh_params=ps; sh_arities=ar} (mk_opname s nil_opname)
+         Hashtbl.add t { sh_name=s; sh_params=ps; sh_arities=ar} (mk_opname s nil_opname)
       in
          List.iter add standard_opnames;
          t
@@ -394,45 +394,43 @@ struct
     * Construct an opname assuming it is declared in the current module.
     *)
    let mk_opname cache names params arities =
-      match names with
-         [name] ->
-            let shape = { sh_name = name; sh_params = params; sh_arities = arities } in
-            begin try
-               let opname = optable cache shape in
-                  if !debug_opname then
-                     eprintf "Filter_cache_fun.mk_opname: %s -> %s%t" (**)
-                        (string_of_shape shape) (**)
-                        (SimplePrint.string_of_opname opname) eflush;
-                  opname
-            with
-               Not_found ->
-                  raise (Failure (sprintf "undeclared name: %s" (string_of_shape shape)))
-            end
-
-   (*
-    * Otherwise opname is prefixed by one or more module names, which
-    * specify it more exactly.
-    *
-    * BUG!!! No shape checking is done here.
-    *)
-       | path ->
-            (* The head serves to specify the name more precisely *)
-           let path' =
-               try expand_path cache path with
-                  Not_found ->
-                     raise (BadCommand ("no object with name: " ^ (string_of_opname_list path)))
-            in
-            let opname = make_opname (List.rev path') in
+      if names = [] then raise (Invalid_argument "Filter_cache_fun.mk_opname");
+      let name = Lm_list_util.last names in
+      let shape = { sh_name = name; sh_params = params; sh_arities = arities } in
+      if List.tl names = [] then begin
+         try
+            let opname = optable cache shape in
                if !debug_opname then
-                  eprintf "Filter_cache_fun.mk_opname: path: %s%t" (**)
+                  eprintf "Filter_cache_fun.mk_opname: %s -> %s%t" (**)
+                     (string_of_shape shape) (**)
                      (SimplePrint.string_of_opname opname) eflush;
                opname
+         with
+            Not_found ->
+               raise (Failure ("undeclared name: " ^ (string_of_shape shape)))
+      end else begin
+         (* Opname is prefixed by one or more module names, which specify it more exactly. *)
+         let path =
+            try expand_path cache names with
+               Not_found ->
+                  raise (Failure ("no object with name: " ^ (string_of_opname_list names)))
+         in
+         let opname = make_opname (List.rev path) in
+         if !debug_opname then
+            eprintf "Filter_cache_fun.mk_opname: path: %s%t" (**)
+               (SimplePrint.string_of_opname opname) eflush;
+         let all_opnames = Hashtbl.find_all cache.optable shape in
+            if List.mem opname all_opnames then
+               opname
+            else
+               raise (Failure ("opname " ^ (SimplePrint.string_of_opname opname) ^ " is not declared with shape name: " ^ (string_of_shape shape)))
+      end
 
    let op_shape_of_term name t =
-    { sh_name = name;
-      sh_params = List.map param_type (dest_op (dest_term t).term_op).op_params;
-      sh_arities = Term.subterm_arities t
-    }
+      { sh_name = name;
+        sh_params = List.map param_type (dest_op (dest_term t).term_op).op_params;
+        sh_arities = Term.subterm_arities t
+      }
 
    (*
     * Update opname in the table.
@@ -443,7 +441,7 @@ struct
          if !debug_opname then
             eprintf "Filter_cache_fun.update_opname: %s -> %s%t" (**)
                (string_of_shape shape) (SimplePrint.string_of_opname opname) eflush;
-         Hashtbl.replace cache.optable shape opname
+         Hashtbl.add cache.optable shape opname
 
    (************************************************************************
     * ACCESS                                                               *
@@ -615,7 +613,7 @@ struct
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
                         (SimplePrint.string_of_opname opname) eflush;
                   let shape = op_shape_of_term str t in
-                  Hashtbl.replace cache.optable shape opname;
+                  Hashtbl.add cache.optable shape opname;
                   { summ with sig_opnames = (shape, opname) :: summ.sig_opnames }
 
           | Parent { parent_name = path } ->
@@ -684,7 +682,7 @@ struct
                   if !debug_opname then
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
                         (SimplePrint.string_of_opname opname) eflush;
-                  Hashtbl.replace cache.optable (op_shape_of_term str t) opname
+                  Hashtbl.add cache.optable (op_shape_of_term str t) opname
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
@@ -736,7 +734,7 @@ struct
       if not (List.memq info cache.summaries) then begin
          Lm_list_util.rev_iter (collect_opnames cache) info.sig_includes;
          let optable = cache.optable in
-         Lm_list_util.rev_iter (fun (str, op) -> Hashtbl.replace optable str op) info.sig_opnames;
+         Lm_list_util.rev_iter (fun (str, op) -> Hashtbl.add optable str op) info.sig_opnames;
          cache.summaries <- info :: cache.summaries
       end
 
