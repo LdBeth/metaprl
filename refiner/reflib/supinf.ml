@@ -196,6 +196,105 @@ struct
 
 end
 
+module Tree =
+struct
+	type 'a tree = Ignore | Leaf of 'a | Left of 'a tree | Right of 'a tree | Pair of ('a tree) * ('a tree)
+
+	let rec string_of_tree = function
+		Ignore -> "ignore"
+	 | Leaf _ -> "leaf"
+	 | Left subtree -> sprintf "left(%s)" (string_of_tree subtree)
+	 | Right subtree -> sprintf "right(%s)" (string_of_tree subtree)
+	 | Pair(left,right) -> sprintf "pair(%s,%s)" (string_of_tree left) (string_of_tree right)
+
+	let rec treeMap f = function
+		Ignore -> Ignore
+	 | Leaf e -> Leaf(f e)
+	 | Left subtree -> Left(treeMap f subtree)
+	 | Right subtree -> Right(treeMap f subtree)
+	 | Pair(left,right) -> Pair(treeMap f left, treeMap f right)
+
+	let leftBranch = function
+		Ignore -> Ignore
+	 |	Leaf _ -> raise (Invalid_argument "leftBranch applied to a leaf")
+	 | Left subtree -> subtree
+	 | Right subtree -> Ignore
+	 | Pair(left, right) -> left
+
+	let rightBranch = function
+		Ignore -> Ignore
+	 | Leaf _ -> raise (Invalid_argument "rightBranch applied to a leaf")
+	 | Left subtree -> Ignore
+	 | Right subtree -> subtree
+	 | Pair(left, right) -> right
+
+	let rec treeProduct f tree1 tree2 =
+		match tree1, tree2 with
+			Ignore, _ -> Ignore
+		 | _, Ignore -> Ignore
+		 | Leaf e1, Leaf e2 ->
+				Leaf(f e1 e2)
+		 | Left(subtree), _ -> Left(treeProduct f subtree tree2)
+		 | Right(subtree), _ -> Right(treeProduct f subtree tree2)
+		 | Pair(a,Ignore), _ -> Pair(treeProduct f a tree2, Ignore)
+		 | Pair(Ignore,b), _ -> Pair(Ignore, treeProduct f b tree2)
+		 | Pair(a,b), _ -> Pair(treeProduct f a tree2, treeProduct f b tree2)
+		 | _, Left(subtree) -> Left(treeProduct f tree1 subtree)
+		 | _, Right(subtree) -> Right(treeProduct f tree1 subtree)
+		 | _, Pair(a,Ignore) -> Left(treeProduct f tree1 a)
+		 | _, Pair(Ignore,b) -> Right(treeProduct f tree1 b)
+		 | _, Pair(a,b) -> Pair(treeProduct f tree1 a, treeProduct f tree1 b)
+
+	let rec treeMergeLeft f tree1 tree2 =
+		match tree1, tree2 with
+			Ignore, _ -> Ignore
+		 | _, Ignore -> Ignore
+		 | Leaf e1, Leaf e2 -> Leaf(f e1 e2)
+		 | _, Left sub2 -> treeMergeLeft f tree1 sub2
+		 | _, Right sub2 -> treeMergeLeft f tree1 sub2
+		 | Left sub1,Pair(left,right) -> (treeMergeLeft f sub1 left)
+		 | Right sub1,Pair(left,right) -> (treeMergeLeft f sub1 right)
+		 | Pair(left1,right1),Pair(Ignore,right2) -> treeMergeLeft f right1 right2
+		 | Pair(left1,right1),Pair(left2,Ignore) -> treeMergeLeft f left1 left2
+		 | Pair(Ignore,right1),Pair(left2,right2) -> treeMergeLeft f right1 right2
+		 | Pair(left1,Ignore),Pair(left2,right2) -> treeMergeLeft f left1 left2
+		 | Pair(left1,Ignore),Leaf _ -> treeMergeLeft f left1 tree2
+		 | Pair(Ignore,right1),Leaf _ -> treeMergeLeft f right1 tree2
+		 | Pair(left1,right1),Pair(left2,right2) -> Pair(treeMergeLeft f left1 left2, treeMergeLeft f right1 right2)
+		 | Pair(left1,right1),Leaf _ -> Pair(treeMergeLeft f left1 tree2, treeMergeLeft f right1 tree2)
+		 | _, _ ->
+				let s = sprintf "Incompatible trees %s %s in treeMergeLeft@." (string_of_tree tree1) (string_of_tree tree2) in
+				raise (Invalid_argument s)
+
+	let rec treeMergeRight f tree1 tree2 =
+		match tree1, tree2 with
+			Ignore, _ -> Ignore
+		 | _, Ignore -> Ignore
+		 | Leaf e1, Leaf e2 -> Leaf(f e1 e2)
+		 | Left sub1, _ -> treeMergeRight f sub1 tree2
+		 | Right sub1, _ -> treeMergeRight f sub1 tree2
+		 | Pair(left,right),Left sub2 -> (*Left*)(treeMergeRight f left sub2)
+		 | Pair(left,right),Right sub2 -> (*Right*)(treeMergeRight f right sub2)
+		 | Pair(left1,right1),Pair(Ignore,right2) -> treeMergeRight f right1 right2
+		 | Pair(left1,right1),Pair(left2,Ignore) -> treeMergeRight f left1 left2
+		 | Pair(Ignore,right1),Pair(left2,right2) -> treeMergeRight f right1 right2
+		 | Pair(left1,Ignore),Pair(left2,right2) -> treeMergeRight f left1 left2
+		 | Leaf _,Pair(left2,Ignore) -> treeMergeRight f tree1 left2
+		 | Leaf _,Pair(Ignore,right2) -> treeMergeLeft f tree1 right2
+		 | Pair(left1,right1),Pair(left2,right2) -> Pair(treeMergeRight f left1 left2, treeMergeRight f right1 right2)
+		 | Leaf _,Pair(left2,right2) -> Pair(treeMergeRight f tree1 left2, treeMergeRight f tree1 right2)
+		 | _, _ ->
+				let s = sprintf "Incompatible trees %s %s in treeMergeRight@." (string_of_tree tree1) (string_of_tree tree2) in
+				raise (Invalid_argument s)
+
+	let rec treeFlatten = function
+		Ignore -> []
+	 | Leaf l -> [l]
+	 | Left subtree -> treeFlatten subtree
+	 | Right subtree -> treeFlatten subtree
+	 | Pair(left, right) -> (treeFlatten left)@(treeFlatten right)
+end
+
 module type AF_Sig =
 sig
    type bfield

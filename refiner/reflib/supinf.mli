@@ -72,6 +72,21 @@ end
 module MakeSource(BField : BoundFieldSig)
 	: SourceSig with type bfield=BField.bfield and type vars=VarType.t
 
+module Tree :
+sig
+	type 'a tree = Ignore | Leaf of 'a | Left of 'a tree | Right of 'a tree | Pair of ('a tree) * ('a tree)
+
+	val string_of_tree : 'a tree -> string
+
+	val treeMap : ('a -> 'a) -> 'a tree -> 'a tree
+	val leftBranch : 'a tree -> 'a tree
+	val rightBranch : 'a tree -> 'a tree
+	val treeProduct : ('a -> 'a -> 'a) -> 'a tree -> 'a tree -> 'a tree
+	val treeMergeLeft : ('a -> 'a -> 'a) -> 'a tree -> 'a tree -> 'a tree
+	val treeMergeRight : ('a -> 'a -> 'a) -> 'a tree -> 'a tree -> 'a tree
+	val treeFlatten : 'a tree -> 'a list
+end
+
 module type AF_Sig =
 sig
    type bfield
