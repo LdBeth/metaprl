@@ -331,10 +331,10 @@ dform text_df : internal :: text{'e} =
    'e
 
 dform info_begin_df : internal :: mode[html] :: info_begin =
-   html["<font color=\"#115599\"><b>"]
+   html["<font class=\"info\">"]
 
 dform info_end_df : internal :: mode[html] :: info_end =
-   html["</b></font>"]
+   html["</font>"]
 
 dform info_df1 : internal :: info[text:s] =
    info_begin slot[text:s] info_end
@@ -343,10 +343,10 @@ dform info_df2 : internal :: info{'t} =
    info_begin 't info_end
 
 dform keyword_begin_df : internal :: mode[html] :: keyword_begin =
-   html["<font color=\"#551155\"><b>"]
+   html["<font class=\"keyword\">"]
 
 dform keyword_end_df : internal :: mode[html] :: keyword_end =
-   html["</b></font>"]
+   html["</font>"]
 
 dform info_begin_df_all : internal :: mode [src] :: info_begin = `""
 dform info_end_df_all : internal :: mode[src] :: info_end = `""
@@ -382,10 +382,10 @@ dform bf_df2 : internal :: bf{'t} =
    bf_begin 't bf_end
 
 dform it_begin_df : internal :: mode[html] :: it_begin =
-   html["<b>"]
+   html["<i>"]
 
 dform it_end_df : internal :: mode[html] :: it_end =
-   html["</b>"]
+   html["</i>"]
 
 dform it_begin_df : internal :: mode[prl] :: it_begin =
    pushfont["it"]
@@ -416,10 +416,10 @@ dform math_it_df2 : internal :: except_mode[tex] :: math_it[text:s] =
  * invisible zone has nonzero width...
  *)
 dform html_sym_df : internal ::  mode[html] :: html_sym[text:s] =
-   izone `"<b>&" ezone slot[text:s] izone `";</b>" ezone
+   izone `"&" ezone slot[text:s] izone `";" ezone
 
 dform html_uni_df : internal :: mode[html] :: html_uni[num:n] =
-   izone `"<b>&#" ezone slot[num:n] izone `";</b>" ezone
+   izone `"&#" ezone slot[num:n] izone `";" ezone
 
 dform em_begin_df : internal :: mode[html] :: em_begin =
    html["<em>"]
@@ -470,10 +470,10 @@ dform url_df3 : internal :: mode[prl] :: mode [src] :: url[url:s] =
    `"@url[" slot[url:s] `"]"
 
 dform sub_begin_df : internal :: mode[html] :: sub_begin =
-   html["<sub><font size=\"-5\">"]
+   html["<sub>"]
 
 dform sub_end_df : internal :: mode[html] :: sub_end =
-   html["</sub></font>"]
+   html["</sub>"]
 
 dform sub_df1 : internal :: sub[text:s] =
    sub_begin slot[text:s] sub_end

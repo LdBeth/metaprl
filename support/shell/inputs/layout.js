@@ -57,7 +57,6 @@ function WriteWindowStyle(rulebox_height) {
 		   + '; border: none'
 		   + '; padding: none'
 		   + '; overflow: auto'
-                   + '; background: #f8f8ff'
 		   + '} ');
     document.write('#rulebox {'
                    + ' position: absolute'
@@ -76,7 +75,7 @@ function WriteWindowStyle(rulebox_height) {
 /*
  * Save the window size as a cookie, so MetaPRL can get a hold of it.
  */
-var window_width_name = 'MetaPRL.window_width';
+var window_width_name = 'MetaPRL.width';
 
 function SetWindowCookie() {
    SetCookie(window_width_name, '' + window_width, null, "/", null, false);

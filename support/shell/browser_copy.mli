@@ -49,6 +49,7 @@ val port_sym        : symbol
 val challenge_sym   : symbol
 val response_sym    : symbol
 val message_sym     : symbol
+val style_sym       : symbol
 
 (*
  * Translate a file.

@@ -49,6 +49,7 @@ let port_sym        = Lm_symbol.add "PORT"
 let challenge_sym   = Lm_symbol.add "CHALLENGE"
 let response_sym    = Lm_symbol.add "RESPONSE"
 let message_sym     = Lm_symbol.add "MESSAGE"
+let style_sym       = Lm_symbol.add "STYLE"
 
 (*
  * Browser table.
@@ -62,19 +63,7 @@ struct
 
 
    let html_table_defaults =
-      [title_sym,       "";
-       fgcolor_sym,     "#000000";
-       bgcolor_sym,     "#ffffff";
-       buttons_sym,     "";
-       rulebox_sym,     "";
-       rulebox_hex_sym, "";
-       location_sym,    "";
-       body_sym,        "";
-       host_sym,        "localhost";
-       port_sym,        "80";
-       challenge_sym,   "unknown";
-       response_sym,    "unknown";
-       message_sym,     ""]
+      []
 
    let empty =
       List.fold_left (fun table (v, s) ->
@@ -131,7 +120,8 @@ rule main = parse
      let () =
         try BrowserTable.append_to_buffer !output_buffer !symbol_table v with
            Not_found ->
-              raise (Invalid_argument ("Browser_copy: unbound variable " ^ Lm_symbol.to_string v))
+              (* Ignore unbound symbols *)
+              ()
      in
         main lexbuf
    }

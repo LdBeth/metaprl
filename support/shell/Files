@@ -37,4 +37,5 @@ INPUTS =\
 	layout.js\
 	md5.js\
 	cookie.js\
-	validate.js
+	validate.js\
+	style.css

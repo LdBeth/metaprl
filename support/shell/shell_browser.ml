@@ -351,7 +351,7 @@ struct
 
    (*
     * Handle a connection.
-    * We switch the mode to HTML.
+    * We handle only get and post for now.
     *)
    let http_connect server state outx inx args header body =
       (* Process the command *)

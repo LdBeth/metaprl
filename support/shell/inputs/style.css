@@ -1,0 +1,57 @@
+BODY {
+    background-color: white;
+    color: black;
+    font-family: Lucida Sans Unicode, Sans-Serif;
+    font-size: 10pt
+}
+B {
+    font-weight: bold
+}
+FONT.info {
+    color: #115599;
+    font-weight: bold
+}
+FONT.keyword {
+    color: #773333;
+    font-weight: bold
+}
+FONT.var {
+    color: #115599;
+    font-style: italic
+}
+FONT.stdout {
+    color: #002299
+}
+FONT.stderr {
+    color: #992222
+}
+SUB {
+    color: #888888;
+    font-size: smaller;
+    position: relative;
+    top: -3pt;
+}
+
+A {
+    font-weight: bold
+}
+A:link {
+    color: #3333bb;
+    background-color: transparent
+}
+A:visited {
+    color: #222288;
+    background-color: transparent
+}
+A:hover {
+    background-color: #e0e0f0
+}
+DIV.content {
+    background-color: white
+}
+DIV.message {
+    background-color: #f8f8ff
+}
+DIV.rule {
+    background-color: white
+}

@@ -177,11 +177,11 @@ let split_var v =
 let print_html_var format_term buf header_fun v =
    let h,tl = split_var v in
       format_izone buf;
-      format_string buf "<font color=\"#114466\">";
+      format_string buf "<font class=\"var\">";
       format_ezone buf;
       format_term buf NOParens (header_fun h);
       format_izone buf;
-      if (tl<>[]) then begin
+      if tl <> [] then begin
          format_string buf "<sub>";
          format_ezone buf;
          format_string buf (String.concat "," tl);
@@ -208,10 +208,11 @@ let print_tex_var format_term buf header_fun v =
       format_string buf "}";
       format_ezone buf
 
+let mk_slot s = <:con< slot[$s$:s] >>
 let mk_mathit s = <:con< math_it[$s$:s] >>
 
 ml_dform var_html_df : mode[html] :: df_var[v:v] format_term buf = fun _ ->
-   print_html_var format_term buf mk_mathit (string_of_symbol v)
+   print_html_var format_term buf mk_slot (string_of_symbol v)
 
 ml_dform var_tex_df : mode[tex] :: df_var[v:v] format_term buf = fun _ ->
    print_tex_var format_term buf mk_mathit (string_of_symbol v)

@@ -10,14 +10,16 @@ WriteWindowStyle(100);
 SetWindowCookie();
 -->
         </script>
+        <style type="text/css" src="/inputs/style.css"></style>
+        %%STYLE%%
     </head>
 
-    <body bgcolor="%%BGCOLOR%%" fgcolor="%%FGCOLOR%%">
-    <div name="content" id="contentbox">%%BODY%%</div>
-    <div name="message" id="messagebox">%%MESSAGE%%</div>
-    <div name="rule" id="rulebox">
+    <body>
+    <div name="content" id="contentbox" class="content">%%BODY%%</div>
+    <div name="message" id="messagebox" class="message">%%MESSAGE%%</div>
+    <div name="rule" id="rulebox" class="rule">
         <form name="commandform" method="post">
-        <font color="%%BGCOLOR%%"># </font>
+        <font style="visibility:hidden"># </font>
         <input name="button" type="submit" value="Submit" border="0">
         <input name="button" type="submit" value="Long" border="0">
         %%BUTTONS%%

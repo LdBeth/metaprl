@@ -85,17 +85,19 @@ let add_prompt str =
 (*
  * Capture output channels.
  *)
-let add_channel color buf =
-   if not (Lm_rformat.buffer_is_empty buf) then
-      let buffer = new_buffer () in
-         format_invis buffer (Printf.sprintf "<font color=\"%s\">" color);
-         format_buffer buffer buf;
-         format_invis buffer "</font>";
-         LineBuffer.add_buffer message buffer
+let add_channel color =
+   let font = Printf.sprintf "<font class=\"%s\">" color in
+      (fun buf ->
+            if not (Lm_rformat.buffer_is_empty buf) then
+               let buffer = new_buffer () in
+                  format_invis buffer font;
+                  format_buffer buffer buf;
+                  format_invis buffer "</font>";
+                  LineBuffer.add_buffer message buffer)
 
 let divert () =
-   Lm_format.divert std_formatter (Some (add_channel "#0022aa"));
-   Lm_format.divert err_formatter (Some (add_channel "#aa2222"))
+   Lm_format.divert std_formatter (Some (add_channel "stdout"));
+   Lm_format.divert err_formatter (Some (add_channel "stderr"))
 
 (*
  * Format it.
