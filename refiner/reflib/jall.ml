@@ -3776,8 +3776,8 @@ let rec ext_partners con path ext_atom reduction_partners extension_partners ato
       [] ->
          (reduction_partners,extension_partners)
     | (a,b)::r ->
-         let a_partner = (ext_atom = a) in
-         if a_partner || (ext_atom = b) then
+         let a_partner = (ext_atom.aname = a.aname) in
+         if a_partner || (ext_atom.aname = b.aname) then
             let ext_partner = if a_partner then b else a in
 (* force reduction steps first *)
             if (AtomSet.mem path ext_partner) then
@@ -3948,43 +3948,20 @@ let rec select_atoms_treelist treelist prefix =
             [(atom_record position prefix)],[],[]
        | NodeA(position,suctrees) ->
             let treelist = Array.to_list suctrees in
+            let st = position.st in
             let new_prefix =
-               match position.st with
+               match st with
                   Psi_0 | Phi_0 ->
                      prefix @ [position.name]
                 | _ ->
                      prefix
             in
-            let (gamma_0_element,delta_0_element) =
-               match position.st with
-                  Gamma_0 ->
-(*  open_box 0;
-   print_endline "gamma_0 prefixes ";
-   print_string (position.name^" :");
-   print_stringlist prefix;
-   print_endline " ";
-   force_newline ();
-   print_flush ();
-*)
-                     [(position.name,prefix)],[]
-                | Delta_0 ->
-(* open_box 0;
-   print_endline "delta_0 prefixes ";
-   print_string (position.name^" :");
-   print_stringlist prefix;
-   print_endline " ";
-   force_newline ();
-   print_flush ();
-*)
-                        [],[(position.name,prefix)]
-                | _ ->
-                     [],[]
-            in
             let (rest_alist,rest_gamma_0_prefixes,rest_delta_0_prefixes) =
-               select_atoms_treelist treelist new_prefix in
-            (rest_alist,(rest_gamma_0_prefixes @ gamma_0_element),
-             (rest_delta_0_prefixes @ delta_0_element))
-
+               select_atoms_treelist treelist new_prefix
+            in
+            (  rest_alist,
+              (if st == Gamma_0 then rest_gamma_0_prefixes @ [position.name,prefix] else rest_gamma_0_prefixes),
+              (if st == Delta_0 then rest_delta_0_prefixes @ [position.name,prefix] else rest_delta_0_prefixes))
    in
    match treelist with
       [] -> [],[],[]
