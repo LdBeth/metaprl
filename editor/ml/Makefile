@@ -229,7 +229,7 @@ texopt:
 do_tex: $(TEXFILES)
 
 $(TEXDIR)/%/theory.tex: $(TEXBIN) $(TEXDIR)/%/print.ml $(ROOT)/theories/%/$(THELIB)
-	$(TEXPROG) $(TEXDIR)/$*/print.ml
+	$(TEXPROG) -cli $(TEXDIR)/$*/print.ml
 
 # Real makefile
 include $(ROOT)/mk/rules
