@@ -121,7 +121,7 @@ declare szone{'e}
 declare var_list{'t}
 declare df_bconts{'conts}
 
-dform var_prl_df : df_so_var[v:v]{cons{df_context_var[v:v]; nil}; nil} =
+dform simple_var_df : mode[src] :: mode[prl] :: mode[html] :: df_so_var[v:v]{cons{df_context_var[v:v]; nil}; nil} =
    df_var[v:v]
 
 dform var_prl_df : mode[prl] :: df_var[v:v] =
@@ -136,13 +136,13 @@ dform free_var_src_df : mode[src] :: df_free_fo_var[v:v] =
 dform free_var_df : except_mode[src] :: df_free_fo_var[v:v] =
    `"!" df_var[v:v]
 
-dform so_var1 : df_so_var[v:v]{cons{df_context_var[v:v];nil};'t} =
+dform so_var1 : mode[src] :: mode[prl] :: mode[html] :: df_so_var[v:v]{cons{df_context_var[v:v];nil};'t} =
    szone df_var[v:v] `"[" pushm[0] var_list{'t} popm `"]" ezone
 
-dform so_var2 : df_so_var[v:v]{'conts;nil} =
+dform so_var2 : mode[src] :: mode[prl] :: mode[html] :: df_so_var[v:v]{'conts;nil} =
    szone df_var[v:v] df_bconts{'conts} `"[]" ezone
 
-dform so_var3 : df_so_var[v:v]{'conts;'t} =
+dform so_var3 : mode[src] :: mode[prl] :: mode[html] :: df_so_var[v:v]{'conts;'t} =
    szone df_var[v:v] df_bconts{'conts} `"[" pushm[0] var_list{'t} popm `"]" ezone
 
 dform conts_left_df : mode[src] :: mode[prl] :: mode[html] :: df_bconts{'conts} =
@@ -153,10 +153,10 @@ dform conts_left_df : mode[tex] :: df_bconts{'conts} =
    <<mathmacro["left<"]>> `"|" df_concat{slot[";"]; 'conts} `"|" <<mathmacro["right>"]>>
    izone `"}" ezone
 
-dform var_list_df1 : var_list{cons{'a;'b}} =
+dform var_list_df1 : mode[src] :: mode[prl] :: mode[html] :: var_list{cons{'a;'b}} =
    slot{'a} `";" hspace var_list{'b}
 
-dform var_list_df2 : var_list{cons{'a;nil}} =
+dform var_list_df2 : mode[src] :: mode[prl] :: mode[html] :: var_list{cons{'a;nil}} =
    slot{'a}
 
 (* @docoff *)
@@ -171,8 +171,8 @@ let split_digits s =
       let i = aux len in
       String.sub s 0 i, String.sub s i (len-i)
 
-let split_var v =
-   match Lm_string_util.split "_" v with
+let split_var =
+   let rec aux = function
       [] ->
          raise (Invalid_argument "var_*_df: string has an empty name")
     | h::tl ->
@@ -182,8 +182,15 @@ let split_var v =
                   hn, hd::tl
                else
                   h, tl
-         else
-               h, tl
+         else begin
+            match tl with
+               [] ->
+                  h, [] (* or internal bug - this should not happen *)
+             | tl1 :: tl ->
+                  aux ((h ^ "_" ^ tl1) :: tl)
+         end
+   in
+      fun v -> aux (Lm_string_util.split "_" v)
 
 let print_html_var format_term buf header_fun v =
    let h, tl = split_var v in

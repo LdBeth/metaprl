@@ -298,7 +298,7 @@ let rec edit pack parse_arg name window obj =
       Proof_edit.edit_info_of_ped (get_ped ()) (mk_addr addr)
    in
    let edit_check_addr addr =
-      Proof_edit.check_addr_ped (get_ped ()) (mk_addr addr)
+      if addr <> [] then Proof_edit.check_addr_ped (get_ped ()) (mk_addr addr)
    in
    let edit_interpret addr command =
       Proof_edit.interpret window (get_ped ()) (mk_addr addr) command
