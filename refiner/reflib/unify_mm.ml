@@ -649,7 +649,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                            and bv1 =
                               { name_bv = (V v1);
                                 fsymb_bv = fs;
-                              arg_numb = (!i);
+                                arg_numb = (!i);
                                 binding_numb =(!j)
                               } in
                            ((fs.opbinding).(!i)).(!j)<- [bv0;bv1];
