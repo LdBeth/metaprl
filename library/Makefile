@@ -3,12 +3,12 @@
 #
 
 # Libraries
-REF_ROOT := ..
+ROOT := ..
 INCLUDE := -I .\
-	-I $(REF_ROOT)/mllib\
-	-I $(REF_ROOT)/refiner/refbase\
-	-I $(REF_ROOT)/refiner/refsig\
-	-I $(REF_ROOT)/refiner/refiner
+	-I $(ROOT)/mllib\
+	-I $(ROOT)/refiner/refbase\
+	-I $(ROOT)/refiner/refsig\
+	-I $(ROOT)/refiner/refiner
 
 OCAMLFLAGS :=
 OCAMLC := ocamlc
@@ -19,8 +19,8 @@ PFILES :=\
 
 # Libraries
 MLLIBS :=\
-	$(REF_ROOT)/mllib/util\
-	$(REF_ROOT)/refiner/refiner\
+	$(ROOT)/mllib/util\
+	$(ROOT)/refiner/refiner\
 	library
 
 CMALIBS :=\
@@ -53,8 +53,21 @@ LMFILES :=\
 # Name of main libraris
 MAIN = library
 
-all: $(MAIN).run $(MAIN).cma
-opt: $(MAIN).cmxa
+INSTALL_LIBS := $(MAIN)
+
+all: lib
+
+#
+# Real makefile
+#
+include $(ROOT)/mk/config
+include Makefile.dep
+
+#
+# Rules
+#
+lib: $(MAIN).run $(RMLIFILES) $(RCMIFILES) $(RCMAFILES) $(ROOT)/lib/registry.txt
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(ROOT)/lib/registry.txt
 
 install:: $(MAIN).cma
 	$(INSTALL) $(MAIN).cma registry.txt $(NLLIB)
@@ -62,10 +75,6 @@ install:: $(MAIN).cma
 clean::
 	rm -f *.p4* *.pp*
 
-# Add dependency for parser
-$(addsuffix .cmiz, $(MFILES)) $(addsuffix .cmoz, $(MFILES)): $(REF_ROOT)/filter/prlcomp.cma
-$(addsuffix .p4i, $(MFILES)) $(addsuffix .p4, $(MFILES)): $(REF_ROOT)/filter/prlcomp.cma
+$(ROOT)/lib/registry.txt: registry.txt
+	$(INSTALL) registry.txt $(ROOT)/lib
 
-# Real makefile
-include $(REF_ROOT)/mk/config
-include Makefile.dep

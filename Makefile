@@ -10,14 +10,8 @@
 #    editor/ml: interactive proof editor
 #
 
-PRLC :=\
-	clib\
-	mllib\
-	refiner\
-	library\
-	filter
-
 DIRS :=\
+	util\
 	clib\
 	mllib\
 	refiner\
@@ -28,21 +22,11 @@ DIRS :=\
 	theories/base\
 	editor/ml
 
-.PHONY: all prlc install depend clean
+.PHONY: all install depend clean
 
 all:
-	@echo "Choose a target:"
-	@echo "   prlc: makes the Nuprl-Light compiler"
-	@echo "   install: install the compiler, and compile the theories"
-
-prlc:
-	@for i in $(PRLC); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) all); then true; else exit 1; fi;\
-	done
-
-prlc_install:
-	@for i in $(PRLC); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) install); then true; else exit 1; fi;\
+	@for i in $(DIRS); do\
+		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
 	done
 
 install:
@@ -51,11 +35,12 @@ install:
 	done
 
 clean:
-	@for i in $(DIRS); do\
+	@for i in $(DIRS) lib bin; do\
 		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
 	done
 
 depend:
+	(cd util; make)
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i; touch Makefile.dep; $(MAKE) $@); then true; else exit 1; fi;\
 	done

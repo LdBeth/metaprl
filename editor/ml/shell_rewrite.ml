@@ -23,6 +23,7 @@ open Filter_ocaml
 open Tactic_type
 open Tactic_cache
 open Shell_type
+open Package_info
 
 (*
  * Show that the file is loading.
@@ -109,7 +110,7 @@ let format_cond_rewrite db buf arg params assums redex contractum expr =
  *)
 let unit_term = mk_simple_term nil_opname []
 
-let edit pack prog arg name obj =
+let edit pack arg name obj =
    let update_ped () =
       obj.rw_ped <- Primitive unit_term
    in
@@ -229,7 +230,7 @@ let edit pack prog arg name obj =
         edit_fold_all = edit_fold_all
       }
 
-let create pack prog arg name =
+let create pack name =
    let obj =
       { rw_assums = [];
         rw_params = [];
@@ -238,9 +239,18 @@ let create pack prog arg name =
         rw_ped = Primitive unit_term
       }
    in
-      edit pack prog arg name obj
+   let arg = Package.argument pack in
+      edit pack arg name obj
 
-let view_rw pack prog arg
+let ped_of_proof pack = function
+   Primitive proof ->
+      Primitive proof
+ | Derived expr ->
+      Derived expr
+ | Interactive proof ->
+      Interactive (Package.ped_of_proof pack proof)
+
+let view_rw pack
     { Filter_summary.rw_name = name;
       Filter_summary.rw_redex = redex;
       Filter_summary.rw_contractum = contractum;
@@ -251,12 +261,13 @@ let view_rw pack prog arg
         rw_params = [];
         rw_redex = redex;
         rw_contractum = contractum;
-        rw_ped = proof
+        rw_ped = ped_of_proof pack proof
       }
    in
-      edit pack prog arg name obj
+   let arg = Package.argument pack in
+      edit pack arg name obj
 
-let view_crw pack prog arg
+let view_crw pack
     { crw_name = name;
       crw_params = params;
       crw_args = args;
@@ -269,13 +280,17 @@ let view_crw pack prog arg
         rw_params = params;
         rw_redex = redex;
         rw_contractum = contractum;
-        rw_ped = proof
+        rw_ped = ped_of_proof pack proof
       }
    in
-      edit pack prog arg name obj
+   let arg = Package.argument pack in
+      edit pack arg name obj
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/29 14:52:53  jyh
+ * Better Makefiles.
+ *
  * Revision 1.8  1998/05/28 13:46:02  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

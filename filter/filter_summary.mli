@@ -237,7 +237,7 @@ val get_infixes : ('proof, 'ctyp, 'expr, 'item) module_info ->
 
 val find : ('proof, 'ctyp, 'expr, 'item) module_info ->
    string ->
-   ('proof, 'ctyp, 'expr, 'item) summary_item
+   ('proof, 'ctyp, 'expr, 'item) summary_item_loc
 
 val parents : ('proof, 'ctyp, 'expr, 'item) module_info ->
    module_path list
@@ -335,6 +335,9 @@ val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.15  1998/05/29 14:53:02  jyh
+ * Better Makefiles.
+ *
  * Revision 1.14  1998/05/28 13:46:32  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

@@ -1,7 +1,16 @@
 #
 # Nuprl-light editor.
 #
-INCLUDE := -I . -I ../../theories/tactic -I ../../theories/ocaml -I ../../theories/base -I $(NLLIB) -I /usr/local/lib/camlp4
+ROOT := ../..
+
+INCLUDE = -I .\
+	-I $(ROOT)/theories/tactic\
+	-I $(ROOT)/theories/ocaml\
+	-I $(ROOT)/theories/base\
+	-I $(ROOT)/lib\
+	-I $(CAMLP4LIB)
+
+OCAMLFLAGS := -v
 OCAMLDEPFLAGS := -prl
 
 # Common files
@@ -36,15 +45,15 @@ CMXDEPS =\
 	$(CAMLLIB)/unix.cmxa\
         $(CAMLLIB)/nums.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
-	$(NLLIB)/clib.cmxa\
-	$(NLLIB)/util.cmxa\
-	$(NLLIB)/refiner.cmxa\
-	$(NLLIB)/library.cmxa\
-	$(NLLIB)/refiner.cmxa\
-	$(NLLIB)/prlc.cmxa\
-	../../theories/tactic/tactics.cmxa\
-	../../theories/ocaml/ocaml_df.cmxa\
-	../../theories/base/base.cmxa\
+	$(ROOT)/lib/clib.cmxa\
+	$(ROOT)/lib/util.cmxa\
+	$(ROOT)/lib/refiner.cmxa\
+	$(ROOT)/lib/library.cmxa\
+	$(ROOT)/lib/refiner.cmxa\
+	$(ROOT)/lib/prlc.cmxa\
+	$(ROOT)/theories/tactic/tactics.cmxa\
+	$(ROOT)/theories/ocaml/ocaml_df.cmxa\
+	$(ROOT)/theories/base/base.cmxa\
 	nl.cmxa
 
 CMXLIBS =\
@@ -56,15 +65,15 @@ CMADEPS =\
         $(CAMLLIB)/nums.cma\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CAMLP4LIB)/camlp4_top.cma\
-	$(NLLIB)/clib.cma\
-	$(NLLIB)/util.cma\
-	$(NLLIB)/refiner.cma\
-	$(NLLIB)/library.cma\
-	$(NLLIB)/refiner.cma\
-	$(NLLIB)/prlc.cma\
-	../../theories/tactic/tactics.cma\
-	../../theories/ocaml/ocaml_df.cma\
-	../../theories/base/base.cma\
+	$(ROOT)/lib/clib.cma\
+	$(ROOT)/lib/util.cma\
+	$(ROOT)/lib/refiner.cma\
+	$(ROOT)/lib/library.cma\
+	$(ROOT)/lib/refiner.cma\
+	$(ROOT)/lib/prlc.cma\
+	$(ROOT)/theories/tactic/tactics.cma\
+	$(ROOT)/theories/ocaml/ocaml_df.cma\
+	$(ROOT)/theories/base/base.cma\
 	$(MAIN).cma
 
 CMALIBS =\
@@ -79,7 +88,7 @@ CMOBJS =\
 CCLIBS =\
 	-cclib -lunix\
         -cclib -lnums\
-	-cclib $(NLLIB)/clib.a
+	-cclib $(ROOT)/lib/clib.a
 
 
 # Name of main libraris
@@ -97,5 +106,5 @@ clean::
 	$(RM) -f *.p4* *.pp*
 
 # Real makefile
-include ../../mk/config
+include $(ROOT)/mk/config
 include Makefile.dep

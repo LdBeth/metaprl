@@ -1,25 +1,31 @@
 #
+# Location
+#
+ROOT := ..
+
+#
 # Common config
 #
-include ../mk/preface
+include $(ROOT)/mk/preface
 
 #
 # Name of main program
 #
 MAIN := prlc
 
+INSTALL_LIBS := prlc
+
 #
 # Flags
 #
-REF_ROOT := ../
 INCLUDE :=\
-	-I ../clib\
-	-I ../mllib\
-	-I ../refiner/refbase\
-	-I ../refiner/refsig\
-	-I ../refiner/refiner\
-	-I ../refiner/reflib\
-	-I ../library\
+	-I $(ROOT)/clib\
+	-I $(ROOT)/mllib\
+	-I $(ROOT)/refiner/refbase\
+	-I $(ROOT)/refiner/refsig\
+	-I $(ROOT)/refiner/refiner\
+	-I $(ROOT)/refiner/reflib\
+	-I $(ROOT)/library\
 	-I $(CAMLP4LIB)
 OCAMLFLAGS := -pp "camlp4o q_MLast.cmo pa_extend.cmo"
 
@@ -63,24 +69,26 @@ MFILES :=\
 	filter_bin
 
 CMOFILES_CAMLP4 := $(addsuffix .cmo, $(MFILES_CAMLP4))
+CMXFILES_CAMLP4 := $(addsuffix .cmx, $(MFILES_CAMLP4))
 CMOFILES_PRLC := $(addsuffix .cmo, $(MFILES_PRLC))
+CMXFILES_PRLC := $(addsuffix .cmx, $(MFILES_PRLC))
 
 PFILES := prlcomp
 
 #
 # Libraries for prlc
 #
-CMXDEPS :=\
-	../clib/clib.cmxa\
-	../mllib/util.cmxa
+CMXADEPS :=\
+	$(ROOT)/clib/clib.cmxa\
+	$(ROOT)/mllib/util.cmxa
 
 CMXLIBS :=\
 	unix.cmxa\
 	$(CMXDEPS)
 
 CMADEPS :=\
-	../clib/clib.cma\
-	../mllib/util.cma
+	$(ROOT)/clib/clib.cma\
+	$(ROOT)/mllib/util.cma
 
 CMALIBS :=\
 	unix.cma\
@@ -89,7 +97,7 @@ CMALIBS :=\
 CCLIBS :=\
 	-cclib -lunix\
         -cclib -lnums\
-	-cclib ../clib/clib.a
+	-cclib $(ROOT)/clib/clib.a
 
 #
 # Libraries for camlp4n
@@ -103,9 +111,18 @@ STANDARD_LIBS =\
         $(CAMLLIB)/nums.cma\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CMADEPS)\
-	../refiner/refiner.cma\
-	../library/library.cma\
+	$(ROOT)/refiner/refiner.cma\
+	$(ROOT)/library/library.cma\
 	$(MAIN).cma
+
+STANDARDX_LIBS =\
+	$(CAMLLIB)/unix.cmxa\
+        $(CAMLLIB)/nums.cmxa\
+	$(CAMLP4LIB)/camlp4.cmxa\
+	$(CMXADEPS)\
+	$(ROOT)/refiner/refiner.cmxa\
+	$(ROOT)/library/library.cmxa\
+	$(MAIN).cmxa
 
 CAMLP4N_CMOBJS =\
 	$(CAMLP4LIB)/odyl.cma\
@@ -117,6 +134,18 @@ CAMLP4N_CMOBJS =\
 	$(CMOFILES_CAMLP4)\
 	$(CAMLP4LIB)/odyl.cmo
 
+CAMLP4N_CMXOBJS = $(CAMLP4N_CMOBJS)
+
+_CAMLP4N_CMXOBJS =\
+	$(CAMLP4LIB)/odyl.cmxa\
+	$(STANDARDX_LIBS)\
+	$(CAMLP4LIB)/pa_o.cmx\
+	$(CAMLP4LIB)/pr_dump.cmx\
+	$(CAMLP4LIB)/pa_extend.cmx\
+	$(CAMLP4LIB)/q_MLast.cmx\
+	$(CMXFILES_CAMLP4)\
+	$(CAMLP4LIB)/odyl.cmx
+
 CAMLP4O_CMOBJS =\
 	$(CAMLP4LIB)/odyl.cma\
 	$(STANDARD_LIBS)\
@@ -126,6 +155,16 @@ CAMLP4O_CMOBJS =\
 	$(CAMLP4LIB)/q_MLast.cmo\
 	$(CMOFILES_CAMLP4)\
 	$(CAMLP4LIB)/odyl.cmo
+
+CAMLP4O_CMXOBJS =\
+	$(CAMLP4LIB)/odyl.cmxa\
+	$(STANDARDX_LIBS)\
+	$(CAMLP4LIB)/pa_o.cmx\
+	$(CAMLP4LIB)/pr_o.cmx\
+	$(CAMLP4LIB)/pa_extend.cmx\
+	$(CAMLP4LIB)/q_MLast.cmx\
+	$(CMXFILES_CAMLP4)\
+	$(CAMLP4LIB)/odyl.cmx
 
 CAMLP4X_CCLIBS := $(CCLIBS)
 
@@ -141,23 +180,79 @@ PRLCN_CMOBJS =\
 	$(CMOFILES_PRLC)\
 	filter_bin.cmo
 
+PRLCN_CMXOBJS =\
+	$(STANDARDX_LIBS)\
+	$(CAMLP4LIB)/pr_dump.cmx\
+	$(CMXFILES_PRLC)\
+	filter_bin.cmx
+
 PRLCO_CMOBJS =\
 	$(STANDARD_LIBS)\
 	$(CAMLP4LIB)/pr_o.cmo\
 	$(CMOFILES_PRLC)\
 	filter_bin.cmo
 
+PRLCO_CMXOBJS =\
+	$(STANDARDX_LIBS)\
+	$(CAMLP4LIB)/pr_o.cmx\
+	$(CMXFILES_PRLC)\
+	filter_bin.cmx
+
 PRLCX_CCLIBS := $(CCLIBS)
 
-.PHONY: all opt install
+all: lib
 
-all: $(MAIN).cma $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAIN).run
-opt: $(MAIN).cmxa $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAIN).opt
+lib::	$(ROOT)/lib/$(CAMLP4N)\
+	$(ROOT)/lib/$(CAMLP4O)\
+	$(ROOT)/lib/$(PRLCN)\
+	$(ROOT)/lib/$(PRLCO)\
+	$(ROOT)/bin/$(MAIN)
+
+$(ROOT)/lib/$(CAMLP4N): $(CAMLP4N).run
+	$(INSTALL) $(CAMLP4N).run $(ROOT)/lib/$(CAMLP4N)
+
+$(ROOT)/lib/$(CAMLP4O): $(CAMLP4O).run
+	$(INSTALL) $(CAMLP4O).run $(ROOT)/lib/$(CAMLP4O)
+
+$(ROOT)/lib/$(PRLCN): $(PRLCN).run
+	$(INSTALL) $(PRLCN).run $(ROOT)/lib/$(PRLCN)
+
+$(ROOT)/lib/$(PRLCO): $(PRLCO).run
+	$(INSTALL) $(PRLCO).run $(ROOT)/lib/$(PRLCO)
+
+$(ROOT)/bin/$(MAIN): $(MAIN).run
+	$(INSTALL) $(MAIN).run $(ROOT)/bin/$(MAIN)
+
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAIN).opt
+	$(INSTALL) $(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N)
+	$(INSTALL) $(CAMLP4O).opt $(ROOT)/lib/$(CAMLP4O)
+	$(INSTALL) $(PRLCN).opt $(ROOT)/lib/$(PRLCN)
+	$(INSTALL) $(PRLCO).opt $(ROOT)/lib/$(PRLCO)
+	$(INSTALL) $(MAIN).opt $(ROOT)/bin/$(MAIN)
 
 install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAIN).run
 	$(INSTALL) $(MAIN).cma $(LMLIFILES) $(LCMIFILES) $(NLLIB)
-	$(INSTALL) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(NLLIB)
-	$(INSTALL) $(MAIN).run $(LOCALBIN)/$(MAIN)
+	if [ $(CAMLP4N).opt -nt $(CAMLP4N).run ]; then\
+		$(INSTALL) $(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N);\
+	else\
+		$(INSTALL) $(CAMLP4N).run $(ROOT)/lib/$(CAMLP4N);\
+	fi
+	if [ $(CAMLP4O).opt -nt $(CAMLP4O).run ]; then\
+		$(INSTALL) $(CAMLP4O).opt $(ROOT)/lib/$(CAMLP4O);\
+	else\
+		$(INSTALL) $(CAMLP4O).run $(ROOT)/lib/$(CAMLP4O);\
+	fi
+	if [ $(PRLCN).opt -nt $(PRLCN).run ]; then\
+		$(INSTALL) $(PRLCN).opt $(ROOT)/lib/$(PRLCN);\
+	else\
+		$(INSTALL) $(PRLCN).run $(ROOT)/lib/$(PRLCN);\
+	fi
+	if [ $(PRLCO).opt -nt $(PRLCO).run ]; then\
+		$(INSTALL) $(PRLCO).opt $(ROOT)/lib/$(PRLCO);\
+	else\
+		$(INSTALL) $(PRLCO).run $(ROOT)/lib/$(PRLCO);\
+	fi
+	$(INSTALL) $(MAIN).run $(NLBIN)/$(MAIN)
 
 #
 # Compile a special camlp4 to run Nuprl.
@@ -176,6 +271,24 @@ $(PRLCN).run: $(PRLCN_CMOBJS)
 
 $(PRLCO).run: $(PRLCO_CMOBJS)
 	$(OCAMLC) -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_CCLIBS)
+
+#
+# Compile a special camlp4 to run Nuprl.
+#
+$(CAMLP4N).opt: $(CAMLP4N_CMXOBJS)
+	$(OCAMLOPT) -o $@ -linkall $(CAMLP4N_CMXOBJS) $(CAMLP4X_CCLIBS)
+
+$(CAMLP4O).opt: $(CAMLP4O_CMXOBJS)
+	$(OCAMLOPT) -o $@ -linkall -custom $(CAMLP4O_CMXOBJS) $(CAMLP4X_CCLIBS)
+
+#
+# Binary compiler
+#
+$(PRLCN).opt: $(PRLCN_CMXOBJS)
+	$(OCAMLOPT) -o $@ -custom $(PRLCN_CMXOBJS) $(PRLCX_CCLIBS)
+
+$(PRLCO).opt: $(PRLCO_CMXOBJS)
+	$(OCAMLOPT) -o $@ -custom $(PRLCO_CMXOBJS) $(PRLCX_CCLIBS)
 
 #
 # Infix file is preprocessed.
@@ -197,5 +310,7 @@ test.cmiz: test.mli prlcomp.run
 	prlcomp.run $(INCLUDE) -c test.mli
 
 # Included files
-include ../mk/config
+include $(ROOT)/mk/config
 include Makefile.dep
+
+lib:: $(RMLIFILES) $(RCMIFILES)	$(RCMAFILES)

@@ -5,7 +5,6 @@
 
 open Pcaml;;
 
-
 (*
  * Make an infix expression.
  *)
@@ -21,7 +20,7 @@ let make_infix loc op e1 e2 =
 let add_infix (keyword : string) =
   Grammar.extend
     (let _ = (expr : 'expr Grammar.Entry.e) in
-     [Grammar.entry_obj (expr : 'expr Grammar.Entry.e),
+     [Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
       Some (Gramext.Before "top"),
       [None, None,
        [[Gramext.Sself; Gramext.Stoken (Token.P_TERM keyword);
@@ -33,12 +32,8 @@ let add_infix (keyword : string) =
 
 (*
  * $Log$
- * Revision 1.2  1998/04/24 02:42:17  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1997/08/06 16:17:37  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
+ * Revision 1.3  1998/05/29 14:53:05  jyh
+ * Better Makefiles.
  *
  * Revision 1.1  1997/04/28 15:51:04  jyh
  * This is the initial checkin of Nuprl-Light.

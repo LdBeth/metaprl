@@ -25,6 +25,8 @@ open Dform
 open Dform_print
 open Rformat
 
+open Filter_summary
+
 open Package_type
 open Package_info
 open Package_df
@@ -223,6 +225,65 @@ let view_item modname name =
    let buf = new_buffer () in
    let mod_info = get_current_package info in
    let db = get_mode_base (Package.dforms mod_info) info.df_mode in
+   let item =
+      try Package.find pack name with
+         Not_found ->
+            eprintf "Item '%s.%s' not found%t" modname name eflush;
+            raise Not_found
+   in
+   let info =
+      match item with
+         Rewrite rw ->
+            Shell_rewrite.view_rw pack rw
+       | CondRewrite _ ->
+            eprintf "Editing conditional rewrite '%s.%s' not implemented%t" modname name eflush;
+            raise (Failure "view")
+       | Axiom _ ->
+            eprintf "Editing axiom '%s.%s' not implemented%t" modname name eflush;
+            raise (Failure "view")
+       | Rule _ ->
+            eprintf "Editing rule '%s.%s' not implemented%t" modname name eflush;
+            raise (Failure "view")
+       | Opname _ ->
+            eprintf "Editing opname '%s.%s' not supported%t" modname name eflush;
+            raise (Failure "view")
+       | MLTerm _ ->
+            eprintf "Editing mlterm '%s.%s' not implemented%t" modname name eflush;
+            raise (Failure "view")
+       | Condition _ ->
+            eprintf "Editing condition '%s.%s' not implemented%t" modname name eflush;
+            raise (Failure "view")
+       | Parent _ ->
+            eprintf "Editing parent '%s.%s' not supported%t" modname name eflush;
+            raise (Failure "view")
+       | Module _ ->
+            eprintf "Editing module '%s.%s' not implemented%t" modname name eflush;
+            raise (Failure "view")
+       | DForm _ ->
+            eprintf "Editing display form '%s.%s' not implemented%t" modname name eflush;
+            raise (Failure "view")
+       | Prec _ ->
+            eprintf "Editing precedence '%s.%s' not supported%t" modname name eflush;
+            raise (Failure "view")
+       | PrecRel _ ->
+            eprintf "Editing precedence relation '%s.%s' not supported%t" modname name eflush;
+            raise (Failure "view")
+       | Id _ ->
+            eprintf "Editing magic number '%s.%s' not supported%t" modname name eflush;
+            raise (Failure "view")
+       | Resource _ ->
+            eprintf "Editing resource '%s.%s' not supported%t" modname name eflush;
+            raise (Failure "view")
+       | Infix _ ->
+            eprintf "Editing infix '%s.%s' not supported%t" modname name eflush;
+            raise (Failure "view")
+       | SummaryItem _ ->
+            eprintf "Editing summary item '%s.%s' not implemented%t" modname name eflush;
+            raise (Failure "view")
+       | MagicBlock _ ->
+            eprintf "Editing magic block '%s.%s' not implemented%t" modname name eflush;
+            raise (Failure "view")
+   in
       ()
 
 (*
@@ -562,6 +623,9 @@ let init () =
 (*
  *
  * $Log$
+ * Revision 1.11  1998/05/29 14:52:51  jyh
+ * Better Makefiles.
+ *
  * Revision 1.10  1998/05/28 13:45:56  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

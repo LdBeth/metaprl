@@ -3,16 +3,13 @@ OCAMLLEX = ocamllex
 
 OCAMLDEP = misc.cmo ocamldep.cmo
 
-ifndef LOCALBIN
-   LOCALBIN := /usr/local/bin
-endif
-
 .PHONY: all install clean depend
 
 all: ocamldep
+	/bin/cp -pf ocamldep ../bin
 
 install: ocamldep
-	install ocamldep $(LOCALBIN)
+	install ocamldep $(NLBIN)
 
 ocamldep: $(OCAMLDEP)
 	$(OCAMLC) -o $@ $(OCAMLDEP)

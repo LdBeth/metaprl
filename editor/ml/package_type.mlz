@@ -102,6 +102,7 @@ sig
     *)
    val info : package -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    val sig_info : package -> (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+   val find : package -> string -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) summary_item
    
    (*
     * This is the starting info for new proofs.
@@ -112,6 +113,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.8  1998/05/29 14:52:49  jyh
+ * Better Makefiles.
+ *
  * Revision 1.7  1998/05/28 13:45:45  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

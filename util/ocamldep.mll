@@ -34,9 +34,7 @@ let comment_depth = ref 0
 let prl_names =
    ["Printf";
     "Debug";
-    "Rewrite";
-    "Refine";
-    "Refine_sig";
+    "Refiner";
     "Refine_exn";
     "Term";
     "Term_util";

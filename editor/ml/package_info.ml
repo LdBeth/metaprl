@@ -459,6 +459,13 @@ struct
     | { pack_sig = None; pack_info = None; pack_name = name } ->
          raise (NotLoaded name)
    
+   let find info name =
+      match info with
+         { pack_info = Some info } ->
+            fst (Cache.StrFilterCache.find info name)
+       | { pack_info = None; pack_name = name } ->
+            raise (NotLoaded name)
+
    (*
     * DAG access.
     *)
@@ -774,6 +781,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.11  1998/05/29 14:52:47  jyh
+ * Better Makefiles.
+ *
  * Revision 1.10  1998/05/28 13:45:42  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

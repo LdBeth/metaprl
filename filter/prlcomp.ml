@@ -3,18 +3,17 @@
  *
  * Call it as:
  *    ocamlc -pp "camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_ast.cmo\
- *                   $REF_ROOT/refiner/refiner.cma\
- *                   $REF_ROOT/filter/prlcomp.cma\
- *                   $REF_ROOT/filter/filter_main.cmo"
+ *                   $NLLIB/refiner/refiner.cma\
+ *                   $NLLIB/filter/prlcomp.cma\
+ *                   $NLLIB/filter/filter_main.cmo"
  *       $*
  *
- * Set REF_INCLUDE from collection of all -I options.
- * Get REF_ROOT from the environment ("." as default).
+ * Set NL_INCLUDE from collection of all -I options.
  * Use "-E" option for preprocessing:
  *     camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_ast.cmo\
- *                   $REF_ROOT/refiner/refiner.cma\
- *                   $REF_ROOT/filter/prlcomp.cma\
- *                   $REF_ROOT/filter/filter_main.cmo
+ *                   $NLLIB/refiner/refiner.cma\
+ *                   $NLLIB/filter/prlcomp.cma\
+ *                   $NLLIB/filter/filter_main.cmo
  *                   $*
  *)
 
@@ -32,19 +31,26 @@ let _ =
    Debug_set.init ()
 
 (*
- * Environment.
- *)
-let lib =
-   try Sys.getenv "NLLIB" with
-      Not_found ->
-         "/usr/local/lib/nuprl-light"
-
-(*
  * Flags.
  *)
 let preprocess_flag = ref false
 let binary_flag = ref false
 let verbose_mode = ref 0
+
+(*
+ * Environment.
+ *)
+let lib =
+   ref (try Sys.getenv "NLLIB" with
+           Not_found ->
+              "/usr/local/lib/nuprl-light")
+
+let set_lib s =
+   let var = sprintf "NLLIB=%s" s in
+      if !verbose_mode > 0 then
+         eprintf "Setting %s%t" var eflush;
+      Punix.putenv var;
+      lib := s
 
 (*
  * Collect argument list.
@@ -106,10 +112,10 @@ let set_includes () =
  * Commands are constructed from argument list.
  *)
 let mk_camlp4 argv includes =
-   (Filename.concat lib "camlp4o.run") :: argv
+   (Filename.concat !lib "camlp4o") :: argv
 
 let mk_ocamlc argv includes =
-   ["ocamlc"; "-I"; lib; "-pp"; Filename.concat lib "camlp4n.run"] @ argv
+   ["ocamlc"; "-I"; !lib; "-pp"; Filename.concat !lib "camlp4n"] @ argv
 
 let mk_prlcn argv includes =
    let rec mk_includes = function
@@ -118,11 +124,11 @@ let mk_prlcn argv includes =
     | [] ->
          ""
    in
-   let preproc = (Filename.concat lib "prlcn.run") ^ (mk_includes includes) in
-      ["ocamlc"; "-I"; lib; "-pp"; preproc] @ argv
+   let preproc = (Filename.concat !lib "prlcn") ^ (mk_includes includes) in
+      ["ocamlc"; "-I"; !lib; "-pp"; preproc] @ argv
 
 let mk_prlco argv includes =
-   Filename.concat lib "prlco.run" :: argv
+   Filename.concat !lib "prlco" :: argv
 
 let mk_command () =
    let f =
@@ -152,7 +158,8 @@ let spec =
     "-a", Unit (add_argv "-a"), "produce archive file";
     "-custom", Unit (add_argv "-custom"), "generate custom executable";
     "-cclib", String (add_string_argv "-cclib"), "C library";
-    "-linkall", Unit (add_argv "-linkall"), "specify link"]
+    "-linkall", Unit (add_argv "-linkall"), "specify link";
+    "-lib", String set_lib, "set the library directory"]
 
 (*
  * Print the command line.
@@ -205,6 +212,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.12  1998/05/29 14:53:06  jyh
+ * Better Makefiles.
+ *
  * Revision 1.11  1998/04/28 18:30:20  jyh
  * ls() works, adding display.
  *

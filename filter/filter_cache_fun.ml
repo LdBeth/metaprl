@@ -338,6 +338,7 @@ struct
     * Inherited access.
     *)
    let parents cache        = Filter_summary.parents cache.info
+   let find cache           = Filter_summary.find cache.info
    let find_axiom cache     = Filter_summary.find_axiom cache.info
    let find_rewrite cache   = Filter_summary.find_rewrite cache.info
    let find_mlterm cache    = Filter_summary.find_mlterm cache.info
@@ -586,6 +587,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.13  1998/05/29 14:52:57  jyh
+ * Better Makefiles.
+ *
  * Revision 1.12  1998/05/28 13:46:14  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

@@ -501,7 +501,7 @@ let find { info_list = summary } name =
        | _ ->
             false
    in
-      fst (List_util.find test summary)
+      List_util.find test summary
 
 (************************************************************************
  * CREATION/MODIFICATION						*
@@ -1810,6 +1810,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.24  1998/05/29 14:53:00  jyh
+ * Better Makefiles.
+ *
  * Revision 1.23  1998/05/28 13:46:29  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

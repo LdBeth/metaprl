@@ -18,27 +18,24 @@ open Package_info
  *)
 val create :
    Package.package ->
-   Extract.t ->
-   tactic_argument ->
    string ->
    edit_object
 
 val view_rw :
    Package.package ->
-   Extract.t ->
-   tactic_argument ->
-   Proof_edit.t proof_type rewrite_info ->
+   Package.proof proof_type rewrite_info ->
    edit_object
 
 val view_crw :
    Package.package ->
-   Extract.t ->
-   tactic_argument ->
-   Proof_edit.t proof_type cond_rewrite_info ->
+   Package.proof proof_type cond_rewrite_info ->
    edit_object
 
 (*
  * $Log$
+ * Revision 1.5  1998/05/29 14:52:54  jyh
+ * Better Makefiles.
+ *
  * Revision 1.4  1998/05/28 13:46:04  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

@@ -1,4 +1,5 @@
 # Flags
+ROOT := ..
 INCLUDE = -I .
 
 # OCAML commands

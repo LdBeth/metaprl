@@ -168,6 +168,7 @@ sig
    val mk_opname : info -> string list -> opname
 
    (* Inherited access for module_info *)
+   val find : info -> string -> (str_elem * loc)
    val find_axiom : info -> string -> (str_elem * loc) option
    val find_rewrite : info -> string -> (str_elem * loc) option
    val find_mlterm : info -> term -> (str_elem * loc) option
@@ -194,6 +195,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.11  1998/05/29 14:53:03  jyh
+ * Better Makefiles.
+ *
  * Revision 1.10  1998/05/27 15:13:06  jyh
  * Functorized the refiner over the Term module.
  *

@@ -12,11 +12,12 @@
 #
 # Config
 #
-ifndef LOCALBIN
-   LOCALBIN := $(NLBIN)
-endif
 ifndef CAMLP4LIB
    CAMLP4LIB := /usr/local/lib/camlp4
+endif
+
+ifndef TERM
+   TERM := std
 endif
 
 #
@@ -35,10 +36,10 @@ ifndef OCAMLOPT
    OCAMLOPT := ocamlopt
 endif
 ifndef PRLC
-   PRLC := prlc
+   PRLC := $(ROOT)/bin/prlc -lib $(ROOT)/lib
 endif
 
-OCAMLDEP := ocamldep
+OCAMLDEP := $(ROOT)/bin/ocamldep
 OCAMLCFLAGS := $(INCLUDE) $(OCAMLFLAGS)
 OCAMLOPTFLAGS := $(INCLUDE) $(OCAMLFLAGS)
 CAMLP4OFLAGS := $(INCLUDE)
@@ -47,6 +48,11 @@ CC = gcc
 RM = rm
 INSTALL = /bin/cp -pf
 CP = /bin/cp -pf
+
+# For cleaning the directory
+ifdef MAIN
+   CLEAN_MAIN := $(MAIN) $(MAIN).run
+endif
 
 # Library file names
 MLFILES      := $(addsuffix .ml,   $(NLFILES) $(LMFILES) $(MFILES) $(PFILES))
@@ -68,12 +74,12 @@ PCMIFILES    := $(addsuffix .cmi,  $(PFILES))
 PCMOFILES    := $(addsuffix .cmo,  $(PFILES))
 PCMXFILES    := $(addsuffix .cmx,  $(PFILES))
 
-LMLIFILES    = $(addsuffix .mli,  $(LMFILES))
-LMLFILES     = $(addsuffix .ml,   $(LMFILES))
-MMLFILES     = $(addsuffix .mli,  $(MFILES))
-MMLIFILES    = $(addsuffix .ml,   $(MFILES))
-PMLIFILES    = $(addsuffix .mli,  $(PFILES))
-PMLFILES     = $(addsuffix .ml,   $(PFILES))
+LMLIFILES    := $(addsuffix .mli,  $(LMFILES))
+LMLFILES     := $(addsuffix .ml,   $(LMFILES))
+MMLFILES     := $(addsuffix .mli,  $(MFILES))
+MMLIFILES    := $(addsuffix .ml,   $(MFILES))
+PMLIFILES    := $(addsuffix .mli,  $(PFILES))
+PMLFILES     := $(addsuffix .ml,   $(PFILES))
 
 REG_CMIFILES := $(LCMIFILES) $(MCMIFILES) $(PCMIFILES)
 REG_CMOFILES := $(LCMOFILES) $(MCMOFILES) $(PCMOFILES)
@@ -89,8 +95,13 @@ CMXAFILES    := $(addsuffix .cmxa, $(MLLIBS))
 OFILES       := $(addsuffix .o, $(LCFILES))
 CFILES       := $(addsuffix .c, $(LCFILES))
 
+RMLIFILES    := $(addprefix $(ROOT)/lib/, $(LMLIFILES))
+RCMIFILES    := $(addprefix $(ROOT)/lib/, $(CMIFILES))
+RCMAFILES    := $(addprefix $(ROOT)/lib/, $(addsuffix .cma, $(INSTALL_LIBS)))
+RCMXAFILES   := $(addprefix $(ROOT)/lib/, $(addsuffix .cmxa, $(INSTALL_LIBS)))
+
 # Instructions to make
-.PHONY: all opt clean depend install
+.PHONY: all lib opt clean depend install
 .PRECIOUS: %.cmo %.cmi %.cmx %.ml %.mli
 
 .SUFFIXES: .cma .cmx .cmo .cmi .ml .mli .mll .mly
@@ -103,7 +114,7 @@ $(MAIN).cma: $(LCMOFILES) $(NL_CMOFILES)
 	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(NL_CMOFILES)
 
 $(MAIN).cmxa: $(LCMXFILES) $(ML_CMXFILES)
-	$(OCAMLOPT) $(OCAMLCFLAGS) -o -o $@ $(LCMXFILES) $(NL_CMXFILES)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(NL_CMXFILES)
 
 $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
 	$(OCAMLC) -custom $(OCAMLCFLAGS) -o $@ $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(CCLIBS)
@@ -113,7 +124,7 @@ $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
 	fi
 
 $(MAIN): $(CMXAFILES) $(CMXDEPS) $(PCMXFILES)
-	$(OCAMLOPT) $(OCAMLCFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(CCLIBS)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(CCLIBS)
 	if [ -f $(MAIN).exe ]; then\
 		mv $(MAIN).exe $(MAIN).bak;\
 		mv $(MAIN).bak $(MAIN);\
@@ -124,13 +135,25 @@ $(MAIN): $(CMXAFILES) $(CMXDEPS) $(PCMXFILES)
 #
 install::
 
+$(RMLIFILES): $(ROOT)/lib/%.mli: %.mli
+	$(INSTALL) $*.mli $(ROOT)/lib
+
+$(RCMIFILES): $(ROOT)/lib/%.cmi: %.cmi
+	$(INSTALL) $*.cmi $(ROOT)/lib
+
+$(RCMAFILES): $(ROOT)/lib/%.cma: %.cma
+	$(INSTALL) $*.cma $(ROOT)/lib
+
+$(RCMXAFILES): $(ROOT)/lib/%.cmxa: %.cmxa
+	$(INSTALL) $*.cmxa $(ROOT)/lib
+
 $(NL_CMOFILES): %.cmo: %.ml %.cmi
 	$(PRLC) $(OCAMLCFLAGS) -c $*.ml
 
 $(NL_CMIFILES): %.cmi: %.mli
 	$(PRLC) $(OCAMLCFLAGS) -c $*.mli
 
-$(NL_CMXFILES): %.cmx: %.ml $.mli
+$(NL_CMXFILES): %.cmx: %.ml %.cmi
 	$(PRLC) $(OCAMLOPTFLAGS) -c $*.ml
 
 $(REG_CMOFILES): %.cmo: %.ml %.cmi
@@ -139,7 +162,7 @@ $(REG_CMOFILES): %.cmo: %.ml %.cmi
 $(REG_CMIFILES): %.cmi: %.mli
 	$(OCAMLC) $(OCAMLCFLAGS) -c $*.mli
 
-$(REG_CMXFILES): %.cmx: %.ml $.mli
+$(REG_CMXFILES): %.cmx: %.ml %.cmi
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $*.ml
 
 %.p4i: %.mli
@@ -172,7 +195,7 @@ $(REG_CMXFILES): %.cmx: %.ml $.mli
 	$(CC) $(CFLAGS) -c $*.c
 
 clean::
-	rm -f *.cm* *.z* *.o *~ *.bak *.output $(MAIN) $(MAIN).run
+	rm -f *.cm* *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
 
 depend:: $(MLFILES) $(MLIFILES)
 	rm -f Makefile.tmp

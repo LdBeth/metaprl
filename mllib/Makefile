@@ -1,4 +1,6 @@
 # Flags
+ROOT := ..
+
 INCLUDE :=
 
 # Types files
@@ -23,17 +25,29 @@ LMFILES :=\
 	precedence\
 	file_base_type\
 	file_base\
-	file_type_base\
+	file_type_base
 
 # Name of library
 MAIN := util
 
-all: $(MAIN).cma
-opt: $(MAIN).cmxa
+INSTALL_LIBS := $(MAIN)
+
+.PHONY: lib
+
+all: lib
+
+#
+# Actual makefile
+#
+include $(ROOT)/mk/config
+include Makefile.dep
+
+#
+# Rules
+#
+lib: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES)
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES)
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MAIN).cma $(MLIFILES) $(CMIFILES) $(NLLIB)
 
-# Actual makefile
-include ../mk/config
-include Makefile.dep

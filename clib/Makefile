@@ -1,4 +1,5 @@
 # Include directories
+ROOT := ..
 INCLUDE :=
 
 # Library files
@@ -14,11 +15,24 @@ LMFILES :=\
 # Name of library
 MAIN := clib
 
-all: $(MAIN).a $(MAIN).cma
-opt: $(MAIN).a $(MAIN).cmxa
+all: $(ROOT)/lib/$(MAIN).a $(ROOT)/lib/$(MAIN).cma
+
+opt: $(ROOT)/lib/$(MAIN).a $(ROOT)/lib/$(MAIN).cmxa
 
 install:: $(MAIN).a $(MAIN).cma
 	$(INSTALL) $(MAIN).a $(MAIN).cma $(NLLIB)
+
+#
+# Installation
+#
+$(ROOT)/lib/$(MAIN).a: $(MAIN).a
+	$(INSTALL) $(MAIN).a $@
+
+$(ROOT)/lib/$(MAIN).cma: $(MAIN).cma
+	$(INSTALL) $(MAIN).cma $@
+
+$(ROOT)/lib/$(MAIN).cmxa: $(MAIN).cmxa
+	$(INSTALL) $(MAIN).cmxa $@
 
 # Actual makefile
 include ../mk/config
