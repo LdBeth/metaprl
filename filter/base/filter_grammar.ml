@@ -586,6 +586,15 @@ let xquotation_opname = mk_opname "xquotation" perv_opname
 let is_xquotation_term = is_string_term xquotation_opname
 let dest_xquotation = dest_string_term xquotation_opname
 
+let is_quote_char = function
+   '<'
+ | '>'
+ | '-'
+ | '+' ->
+      true
+ | _ ->
+      false
+
 let dest_xquotation_term t =
    let s = Lm_string_util.trim (dest_xquotation t) in
    let len = String.length s in
@@ -594,13 +603,13 @@ let dest_xquotation_term t =
          raise (Failure ("bad quotation: " ^ s))
    in
    let name, left =
-      if s.[0] = '<' && s.[1] = '<' then
+      if is_quote_char s.[0] && is_quote_char s.[1] then
          "term", 2
-      else if s.[0] = '<' && s.[1] = ':' then
+      else if is_quote_char s.[0] && s.[1] = ':' then
          let rec search_left i =
             if i = len then
                raise (Failure ("bad quotation: " ^ s))
-            else if s.[i] = '<' then
+            else if is_quote_char s.[i] then
                succ i
             else
                search_left (succ i)
@@ -612,7 +621,7 @@ let dest_xquotation_term t =
          raise (Failure ("bad quotation: " ^ s))
    in
    let right =
-      if s.[len - 1] = '>' && s.[len - 2] = '>' then
+      if is_quote_char s.[len - 1] && is_quote_char s.[len - 2] then
          len - 3
       else
          raise (Failure ("bad quotation: " ^ s))
@@ -623,7 +632,7 @@ let dest_xquotation_term t =
 (*
  * The so-var iforms are primitive, because hyps are rewritten to contexts.
  *)
-let apply_sovar_iforms parse_quotation t =
+let apply_sovar_iforms parse_quotation apply_iforms t =
    let rec apply_so_var_iforms_term t =
       if is_var_term t then
          t
@@ -667,7 +676,8 @@ let apply_sovar_iforms parse_quotation t =
             mk_so_var_term v cvars args
       else if is_xquotation_term t then
          let name, s = dest_xquotation_term t in
-            parse_quotation name s
+         let t = parse_quotation name s in
+            apply_so_var_iforms_term (apply_iforms t)
       else
          let { term_op = op; term_terms = bterms } = dest_term t in
          let bterms = apply_so_var_iforms_bterm_list bterms in
@@ -683,7 +693,7 @@ let apply_sovar_iforms parse_quotation t =
    and apply_so_var_iforms_bterm_list bterms =
       List.map apply_so_var_iforms_bterm bterms
    in
-      apply_so_var_iforms_term t
+      apply_so_var_iforms_term (apply_iforms t)
 
 (*
  * Now actually apply the input forms.
@@ -692,14 +702,17 @@ let apply_iforms parse_quotation gram t =
    let conv = conv_of_iforms gram in
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
-      apply_sovar_iforms parse_quotation (Conversionals.apply_rewrite book conv t)
+      apply_sovar_iforms parse_quotation (Conversionals.apply_rewrite book conv) t
 
 let apply_iforms_mterm parse_quotation gram mt args =
    let conv = conv_of_iforms gram in
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
+   let apply_iforms t =
+      Conversionals.apply_rewrite book conv t
+   in
    let apply_term t =
-      apply_sovar_iforms parse_quotation (Conversionals.apply_rewrite book conv t)
+      apply_sovar_iforms parse_quotation apply_iforms t
    in
    let rec apply mt =
       match mt with
