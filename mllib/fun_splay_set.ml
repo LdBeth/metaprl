@@ -85,7 +85,7 @@ struct
 
    let rotate_right left right = function
       Node (key, left', _, _) ->
-         new_node key left left', right
+         new_node key left' left, right
     | _ ->
          raise (Invalid_argument "rotate_right")
 
@@ -145,7 +145,7 @@ struct
          let left, right = rotate_right_right left right grandparent in
             lift key left right ancestors
     | Left parent :: Right grandparent :: ancestors ->
-         let left, right = rotate_right_right left right grandparent in
+         let left, right = rotate_right_left left right grandparent in
             lift key left right ancestors
     | Right parent :: Left grandparent :: ancestors ->
          let left, right = rotate_left_right left right grandparent in
@@ -164,7 +164,6 @@ struct
             if comp = 0 then
                SplayFound (lift key left right path)
             else if comp < 0 then
-               (* node is down the left branch *)
                if left = Leaf then
                   SplayNotFound (lift key left right path)
                else
@@ -186,7 +185,6 @@ struct
             if comp = 0 then
                true
             else if comp < 0 then
-               (* node is down the left branch *)
                search key0 left
             else
                search key0 right
@@ -195,18 +193,18 @@ struct
          false
 
    (*
-    * Move the rioghtmost node to the root.
+    * Move the rightmost node to the root.
     *)
    let rec lift_right = function
-      Node (key, left, Leaf, _) as parent ->
-         key, left, Leaf
+      Node (key, left, Leaf, _) ->
+         key, left
     | Node (_, _, Node (key, left, Leaf, _), _) as parent ->
-         let left, right = rotate_right left Leaf parent in
-            key, left, right
+         let left, _ = rotate_right left Leaf parent in
+            key, left
     | Node (_, _, Node (_, left, right, _), _) as grandparent ->
-         let key, left, right = lift_right right in
-         let left, right = rotate_right_right left right grandparent in
-            key, left, right
+         let key, left = lift_right right in
+         let left, _ = rotate_right_right left Leaf grandparent in
+            key, left
     | Leaf ->
          raise (Invalid_argument "lift_right")
 
@@ -214,8 +212,8 @@ struct
       Leaf ->
          Leaf
     | node ->
-         let key, left, right = lift_right node in
-            new_node key left right
+         let key, left = lift_right node in
+            new_node key left Leaf
 
    (*
     * An empty tree is just a leaf.
@@ -230,7 +228,7 @@ struct
       { splay_tree = Node (key, Leaf, Leaf, 1) }
 
    (*
-    * Check if a key is listed in the table.
+    * check if a key is listed in the table.
     *)
    let mem t key =
       match splay key [] t.splay_tree with
@@ -255,10 +253,8 @@ struct
                match tree with
                   Node (key', left, right, size) ->
                      if Ord.compare key key' < 0 then
-                        (* Root should become right child *)
                         new_node key left (new_node key' Leaf right)
                      else
-                        (* Root should become left child *)
                         new_node key (new_node key' left Leaf) right
                 | Leaf ->
                      (* Tree is empty, so make a new root *)
@@ -334,7 +330,7 @@ struct
             else if size1 = 1 then
                add_aux s2 key1
             else
-               match splay key1 [] s1 with
+               match splay key2 [] s1 with
                   SplayFound (Node (key1, left1, right1, _)) ->
                      let left3 = union_aux left1 left2 in
                      let right3 = union_aux right1 right2 in

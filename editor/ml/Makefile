@@ -163,7 +163,7 @@ CCLIBS =\
 MAIN = nuprl-light
 NL = nl
 
-all: $(MAIN).cma $(NL).run
+all: $(MAIN).cma $(NL).top
 opt: $(MAIN).cmxa $(NL).opt
 install:: all
 
