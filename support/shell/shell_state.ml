@@ -405,28 +405,19 @@ let _ = Quotation.default := "term"
  * This comes before get_proc because
  * the get_proc function needs to set the start symbols.
  *)
-let input_exp shape id s =
+let input_exp id s =
    synchronize_state (fun state ->
-         let pos =
-            { Lexing.pos_fname = "<stdin>";
-              Lexing.pos_lnum  = 1;
-              Lexing.pos_bol   = 0;
-              Lexing.pos_cnum  = 0
-            }
-         in
-         let parse_quotation name s =
-            TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation (pos, pos) id name s)
-         in
-         let t = Filter_grammar.parse parse_quotation state.state_grammar shape pos s in
-            save_term state t)
+      let t = TermGrammar.parse_quotation dummy_loc "unknown" id s in
+      let t = TermGrammar.parse_term_with_vars dummy_loc t in
+         save_term state t)
 
-let input_patt opname s =
+let input_patt id s =
    raise (Failure "Input grammar does not support patterns")
 
 let add_start shape =
    let name, _ = dst_opname (opname_of_shape shape) in
       Filter_grammar.set_start name shape;
-      Quotation.add name (Quotation.ExAst (input_exp shape name, input_patt shape))
+      Quotation.add name (Quotation.ExAst (input_exp name, input_patt name))
 
 let add_starts shapes =
    ShapeSet.iter add_start shapes
