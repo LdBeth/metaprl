@@ -3,7 +3,6 @@
 #
 INPUTS =\
 	access.html\
-	access.js\
 	start.html\
 	login.html\
 	login.js\
