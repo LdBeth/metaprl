@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cd `dirname '$0'`
+cd `dirname "$0"`
 
 #
 # Configuration
@@ -10,4 +10,4 @@ cd `dirname '$0'`
 #
 # Start the executable.
 #
-exec ./mp.top $INCLUDES $*
+exec ./mp.top $INCLUDES "$@"
