@@ -637,7 +637,12 @@ struct
                      format_string buf "-";
                      format_int buf finish;
                      format_string buf ": ";
-                     Filter_exn.format_exn df buf exn;
+                     begin match exn with
+                        Pcaml.Qerror (_, __, exn) ->
+                           Filter_exn.format_exn df buf exn
+                      | exn ->
+                           Filter_exn.format_exn df buf exn
+                     end;
                      print_to_channel 80 buf stderr;
                      eflush stderr
              | End_of_file ->
