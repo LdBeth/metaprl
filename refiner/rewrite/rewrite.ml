@@ -123,22 +123,6 @@ struct
    type rewrite_rule = RewriteTypes.rewrite_rule
    type rewrite_redex = RewriteTypes.rewrite_redex
 
-   (*
-    * Types for redex matching.
-    *)
-   type rewrite_type =
-      RewriteTermType
-    | RewriteFunType
-    | RewriteContextType
-    | RewriteStringType
-    | RewriteNumType
-    | RewriteLevelType
-    | RewriteVarType
-
-   type 'a rewrite_param =
-      RewriteParam of 'a
-    | RewriteMetaParam of var
-
    type rewrite_item =
       RewriteTerm of term
     | RewriteFun of (term list -> term)

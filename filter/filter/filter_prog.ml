@@ -35,6 +35,7 @@ open Lm_symbol
 open Lm_printf
 
 open Opname
+open Rewrite_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.Rewrite
@@ -1304,7 +1305,7 @@ let rewrite_type_patt loc (kind, name) =
        | RewriteStringType ->
             <:patt< $rewriter_patt loc$ . RewriteString $name$ >>
        | RewriteVarType ->
-            <:patt< $rewriter_patt loc$ . RewriteString (RewriteMetaParam $name$) >>
+            <:patt< $rewriter_patt loc$ . RewriteString (Rewrite_sig.RewriteMetaParam $name$) >>
        | RewriteNumType ->
             <:patt< $rewriter_patt loc$ . RewriteNum $name$ >>
        | RewriteLevelType ->

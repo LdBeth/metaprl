@@ -64,6 +64,22 @@ type rewrite_args = int array * SymbolSet.t
  *)
 type strict = Strict | Relaxed
 
+(*
+ * Types for redex matching.
+ *)
+type rewrite_type =
+   RewriteTermType
+ | RewriteFunType
+ | RewriteContextType
+ | RewriteStringType
+ | RewriteNumType
+ | RewriteLevelType
+ | RewriteVarType (* corresponds to RewriteString(RewriteMetaParam _) *)
+
+type 'a rewrite_param =
+   RewriteParam of 'a
+ | RewriteMetaParam of var
+
 module type RewriteSig =
 sig
    (* Import the term types *)
@@ -77,22 +93,6 @@ sig
 
    (* Separated form *)
    type rewrite_redex
-
-   (*
-    * Types for redex matching.
-    *)
-   type rewrite_type =
-      RewriteTermType
-    | RewriteFunType
-    | RewriteContextType
-    | RewriteStringType
-    | RewriteNumType
-    | RewriteLevelType
-    | RewriteVarType (* corresponds to RewriteString(RewriteMetaParam _) *)
-
-   type 'a rewrite_param =
-      RewriteParam of 'a
-    | RewriteMetaParam of var
 
    type rewrite_item =
       RewriteTerm of term
