@@ -5,7 +5,6 @@
 ### on a per-directory basis.  This one creates a default build environment
 ### and moves into subdirectories for the rest.
 
-
 ### Default environment
 
 $native = 1;    # 0 for bytecodes, 1 for native
@@ -19,7 +18,7 @@ $env = new cons(
     MP_VERSION  => "0.7.1",
     REFINER     => "VERBOSE",
     TERMS       => "ds",
-    MC          => "$ENV{'MC_ROOT'}",
+    MC          => "$ENV{'MC_ROOT'}",  # Needed in the MC Conscripts.
     INCPATH     => [],
 
     ## Overrides
@@ -54,7 +53,7 @@ $env = new cons(
     },
 
     # Use this command to scan ML files for dependencies.
-    OCAMLDEP	=> "util/ocamldep -modules",
+    OCAMLDEP    => "util/ocamldep -modules",
 );
 
 #
