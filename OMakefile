@@ -268,16 +268,16 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
 #
 # For theory files, generate intermediate .ppo files
 #
-%.ppo: %.ml
-	$(CAMLP4NC) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
+%.ppo %.cmoz: %.ml
+	$(CAMLP4NC) $(CAMLP4NFLAGS) -o $*.ppo $<
 
 %.prla: %.cmoz
-	$(CONVERT) $(OCAMLINCLUDES) -impl $*.cmoz
+	$(CONVERT) $(OCAMLINCLUDES) -impl $<
 
 %.prlb: %.prla
-	$(CONVERT) $(OCAMLINCLUDES) -raw -impl $*.prla
+	$(CONVERT) $(OCAMLINCLUDES) -raw -impl $*<
 
-%.cmi: %.mli
+%.cmi %.cmiz: %.mli
         $(PRLCC) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(OCAMLINCLUDES) -c $<
 
 %.cmo: %.ppo
@@ -287,15 +287,16 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINCLUDES) -c -impl $<
 
 %.p4i: %.mli
-	$(PRLCC) $(INCLUDE) -E $*.mli > $*.p4i
+	$(PRLCC) $(INCLUDE) -E $*.mli > $@
 
 %.p4: %.ml
-	$(PRLCC) $(INCLUDE) -E $*.ml > $*.p4
+	$(PRLCC) $(INCLUDE) -E $*.ml > $@
 
 #
 # Support directories
 #
-SUPPORT_DIRS = $(dir $(addprefix support/, display shell tactics))
+SUPPORT = $(dir support)
+SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, display shell tactics))
 SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 
 # Add the extra dependency
@@ -343,17 +344,20 @@ MP = $(file $(ROOT)/editor/ml/mp$(OBJ_SUFFIX))
 # The main goal is to get MetaPRL to generate the TeX files.
 #
 TheoryDocument(name, theories) =
+    CMOZFILES = $(file $(addsuffix .cmoz, $(theories)))
+    THEORIES = $(tail $(theories))
+
     #
     # Contents of the print.ml file
     #
-    $(name).ml:
-	echo 'set_tex_file "$(name).tex";; $(add-quoted-wrapper print_theory , ;;, $(theories))' > $@
+    $(name)_print.ml:
+	echo 'set_tex_file "$(name).tex";; $(add-quoted-wrapper print_theory , ;;, $(THEORIES))' > $@
 
     #
     # Get MetaPRL to generate the .tex files
     #
-    $(name).tex $(name)-body.tex: $(MP) $(name).ml
-	$(SET_MPLIB) $(MP) $(OCAMLINCLUDES) $(name).ml
+    $(name).tex $(name)-body.tex: $(MP) $(CMOZFILES) $(name)_print.ml
+	$(SET_MPLIB) $(MP) $(OCAMLINCLUDES) $(name)_print.ml
 
     #
     # Build the LaTeX document from the .tex files
