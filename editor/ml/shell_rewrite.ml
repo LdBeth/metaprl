@@ -91,7 +91,8 @@ type rw =
  * this code should go away (and, for that matter, shell_rule
  * and shell_rewrite should probably be eventually merged).
  *)
-let seq = << sequent ['ext] { 'H >- 'rw } >>
+include Base_trivial
+let seq = << sequent [squash] { 'H >- 'rw } >>
 
 let mk_rw_goal assums redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in

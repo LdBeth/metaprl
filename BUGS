@@ -81,6 +81,20 @@ rewrites <<test{x.test{x.'x}}>> to 1 instead of 2.
 (3.4-3.5 - fixed)
 
 3.6) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
+More specifically, if some SO variable occurs under some bound variable in
+contractum, but not in the redex, then we need to check whatever matched that
+SO variable for free vars and rename the bvar accordingly. Currently we never
+do this.
+   A particular case of this situation happens when we introduce a bound variable
+in contractum that didn't exist in the redex. In this case a possible workaround
+is to pass the variable name explicitly as an argument to the rule and than to
+compute the correct name ourselves (using the maybe_new_var function) in a
+tactic before calling the rule.
+   When the workaround is not used (such as with x in Itt_prod.unfold_prod and
+x1 in Itt_rfun.rfunctionEqualityA), the Rewrite_compile_redex.compile_bname
+will produce the SaveName variant.
+   After this bug is fixed, we should probably kill all the usage of the
+maybe_new_var function in tactics.
 
 3.7) Currently rewriter does not enforce building contractum to be against the same redex
 the contractum was compiled against. Hopefully we never do this wrong, but we still

@@ -47,7 +47,7 @@ open Refiner.Refiner.RefineError
  * Show loading of the file.
  *)
 let _ =
-   show_loading "Loading Resource%t"
+   show_loading "Loading Mp_resource%t"
 
 let debug_resource =
    create_debug (**)

@@ -578,7 +578,7 @@ struct
          add_attribute "typeinf" Tactic_type.Tactic.typeinf_attribute lazy_typeinf attributes
       in
       let attributes =
-         add_attribute "squash" Tactic_type.Tactic.tactic_attribute lazy_squash attributes
+         add_attribute "squash" Tactic_type.Tactic.int_tactic_attribute lazy_squash attributes
       in
       let attributes =
          add_attribute "subtype" Tactic_type.Tactic.tactic_attribute lazy_subtype attributes
