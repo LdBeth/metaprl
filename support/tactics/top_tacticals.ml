@@ -187,10 +187,7 @@ let firstT = Tacticals.firstT
 let prefix_thenLT = Tacticals.prefix_thenLT
 let seqT = Tacticals.seqT
 let seqOnSameConclT = Tacticals.seqOnSameConclT
-
-let prefix_thenT tac1 tac2 = 
-   if tac1 == idT then tac2 else if tac2 == idT then tac1 else
-      Tacticals.prefix_thenT tac1 tac2
+let prefix_thenT = Tacticals.prefix_thenT
 
 doc <:doc<
    @begin[doc]

@@ -87,6 +87,11 @@ struct
        | CondRW crw, _ -> CondRewriteConv (crw args)
 
    (*
+    * No action.
+    *)
+   let idC = IdentityConv
+
+   (*
     * Combine two lissts of conversion.
     * Note if the adjacent conversion can be combined.
     *)
@@ -114,6 +119,7 @@ struct
       combine orelserw corelserw (fun l -> ChooseConv l) clist1 clist2
 
    let prefix_thenC conv1 conv2 =
+      if conv1 == idC then conv2 else if conv2 == idC then conv1 else
       let clist1 =
          match conv1 with
             ComposeConv clist1 ->
@@ -131,6 +137,7 @@ struct
          compose clist1 clist2
 
    let prefix_orelseC conv1 conv2 =
+      if conv1 == idC then idC else
       let clist1 =
          match conv1 with
             ChooseConv clist1 ->
@@ -146,11 +153,6 @@ struct
                Flist.create conv2
       in
          choose clist1 clist2
-
-   (*
-    * No action.
-    *)
-   let idC = IdentityConv
 
    (*
     * Function conversion needs an argument.

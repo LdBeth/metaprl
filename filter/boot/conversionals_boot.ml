@@ -235,9 +235,10 @@ struct
       Tacticals.funT
       (fun p -> RewriteInternal.rw conv assum (Sequent.assum_clause_addr p assum clause))
 
-   let rwcAll conv assum  =
-(*    RewriteInternal.rw conv assum (TermAddr.make_address []) *)
-      Tacticals.onAllMClausesOfAssumT (rwc conv) assum
+   let empty_addr = TermAddr.make_address []
+
+   let rwcAll conv assum =
+      RewriteInternal.rw (allSubC conv) assum empty_addr
 
    let rw conv clause =
       rwc conv 0 clause

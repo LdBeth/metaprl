@@ -103,20 +103,19 @@ struct
     | [] ->
          raise (RefineError ("firstT", StringError "no tactics"))
 
-   let prefix_then_OnFirstT tac1 tac2 =
-      let aux = function
+   let prefix_then_OnFirstT =
+      let rec dup_id = function
+         x::t ->
+            idT :: dup_id t
+       | [] ->
+            []
+      in let aux tac2 = function
          p::l ->
-            let rec dup_id = function
-               x::t ->
-                  idT :: dup_id t
-             | [] ->
-                  []
-            in
-               tac2 :: dup_id l
+            tac2 :: dup_id l
        | [] ->
             []
       in
-         prefix_thenFLT tac1 aux
+         fun tac1 tac2 -> prefix_thenFLT tac1 (aux tac2)
 
    let prefix_then_OnLastT tac1 tac2 =
       let rec aux = function

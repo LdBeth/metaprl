@@ -1059,13 +1059,28 @@ struct
    (*
     * Sequencing tactics.
     *)
-   let prefix_thenT = ThreadRefinerTacticals.compose1
-   let prefix_thenLT = ThreadRefinerTacticals.compose2
-   let firstT = ThreadRefinerTacticals.first
+   let prefix_thenT tac1 tac2 =
+      if tac1 == idT then tac2 else if tac2 == idT then tac1 else
+            ThreadRefinerTacticals.compose1 tac1 tac2
+
+   let prefix_thenLT tac1 tacl = 
+      if tac1 == idT then
+         match tacl with 
+            [tac] -> tac
+          | _ -> raise (RefineError("thenLT", StringError "tactic list length is wrong"))
+      else ThreadRefinerTacticals.compose2 tac1 tacl
+   
+   let firstT =
+      let non_id tac = (tac != idT) in
+         fun tacl ->
+            match Lm_list_util.filter non_id tacl with 
+               [tac] -> tac
+             | tacl -> ThreadRefinerTacticals.first tacl
+
    let wrapT = ThreadRefinerTacticals.wrap
 
    let prefix_orelseT tac1 tac2 =
-      firstT [tac1; tac2]
+      if tac1 == idT then idT else ThreadRefinerTacticals.first [tac1; tac2]
 
    let prefix_thenFLT =
       let rec join tacs args =
@@ -1080,15 +1095,18 @@ struct
          let tacs = tacf args in
             join tacs args
       in fun tac tacf ->
-         ThreadRefinerTacticals.composef tac (wrap tacf)
+         if tac == idT then
+            fun p ->
+               match tacf [p] with
+                  [tac] -> tac p
+                | _ -> raise (RefineError("thenFLT", StringError "list length mismatch"))
+         else ThreadRefinerTacticals.composef tac (wrap tacf)
 
    (*
     * Modify the label.
     *)
    let setLabelT name p =
-      let p = { p with ref_label = name }
-      in
-         ThreadRefinerTacticals.create_value [p] (Identity p)
+      idT { p with ref_label = name }
 
    (*
     * Add a term argument.
@@ -1097,14 +1115,11 @@ struct
       let attributes = p.ref_attributes in
       let attributes' = f attributes in
       let make_goal p =
-         let p' = { p with ref_attributes = attributes' }
-         in
+         let p' = { p with ref_attributes = attributes' } in
             ThreadRefinerTacticals.create_value [p'] (Identity p)
       in
       let make_subgoal p =
-         let p = { p with ref_attributes = attributes }
-         in
-            ThreadRefinerTacticals.create_value [p] (Identity p)
+         idT { p with ref_attributes = attributes }
       in
          (prefix_thenT make_goal (prefix_thenT tac make_subgoal)) p
 

@@ -405,7 +405,7 @@ struct
                      [subg] -> replace_goal subg goal
                    | _ ->
                         print_ext ext;
-                        raise (Invalid_argument "Proof_boot.normalize - nogin: according to my understanding, this is not supposed to happen")
+                        raise (Invalid_argument "Proof_boot.normalize - this is not supposed to happen")
                   end
              | _ when all_identity c_subgs ->
                   replace_subg c_goal c_subgs
@@ -419,7 +419,7 @@ struct
                   }
              | RuleBox _ ->
                   print_ext ext;
-                  raise (Invalid_argument "Proof_boot.normalize - nogin: according to my understanding, this is not supposed to happen")
+                  raise (Invalid_argument "Proof_boot.normalize - this is not supposed to happen")
              | _ ->
                   if (c_goal==ci.comp_goal) && (c_subgs == ci.comp_subgoals) then ext else
                   Compose { ci with comp_goal = c_goal; comp_subgoals = c_subgs }
