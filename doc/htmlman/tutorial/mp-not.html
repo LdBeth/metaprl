@@ -50,7 +50,7 @@ of <TT>not</TT> using computational rewriting.</P>
 <P>The syntax for negation is established just as in the interface.</P>
 
 <BLOCKQUOTE>
-  <P>2.<I> Define the logical dependencing and syntax for negation
+  <P>2.<I> Define the logical dependencies and syntax for negation
   in the </I><TT>fol_not.ml</TT><I> file:</I></P>
   <BLOCKQUOTE>
     <PRE><B>include</B> Fol_false
@@ -95,7 +95,7 @@ declared the rewrite with the <TT>rewrite</TT> directive.</P>
 <H4>Derived Inference Rules</H4>
 
 <P>The <I>rules</I> for negation include the standard properties
-of well-formedness and introduction and elimination rules, butthese
+of well-formedness and introduction and elimination rules, but these
 rules can be derived from the rules for <I>false</I> and <I>implies</I>.
 In the <TT>fol_not.ml</TT> file, we declare the rules as <TT>interactive</TT>,
 which states that the rules are presumed valid <I>with a proof
@@ -148,7 +148,7 @@ BORDER="0">
 </BLOCKQUOTE>
 
 <P>To prove this goal, we first unfold the negation. This requires
-<I>opening</I> the <TT>Fol_not</TT> module to get acces to the
+<I>opening</I> the <TT>Fol_not</TT> module to get access to the
 definition of negation (<TT>unfold_not</TT>), and then applying
 the <TT>unfold_not</TT> rewrite. The <TT>rwh</TT> function converts
 the rewrite to a tactic, and applies it to the <I>outermost</I>
@@ -194,7 +194,7 @@ BORDER="0">
 <P>At this point, all proof obligations have been satisfied, and
 the proof is complete.</P>
 
-<P>This was a pretty simple proof, invloving only the use of the
+<P>This was a pretty simple proof, involving only the use of the
 <TT>dT</TT> tactic, and the <TT>nthAssumT</TT> tactic. The <TT>autoT</TT>
 tactic performs &quot;automated&quot; proving based on repeated
 application of several &quot;basic&quot; tactics including <TT>dT</TT>
@@ -224,7 +224,7 @@ BORDER="0">
 
 <H4>Proving <TT>not_elim</TT></H4>
 
-<P>The <TT>not_elim</TT> rule is the final peice of reasoning
+<P>The <TT>not_elim</TT> rule is the final piece of reasoning
 that we have to perform. The <TT>autoT</TT> tactic does not completely
 prove this goal because of <I>folding</I> constraints. The root
 of the proof tree can be expanded using the <TT>autoT</TT> tactic.</P>

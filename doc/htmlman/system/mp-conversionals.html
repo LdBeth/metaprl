@@ -38,7 +38,7 @@ function:</P>
 in a sequent calculus, and the number passed to the rw function
 is the number of the sequent clause to be rewritten. There is
 an additional function <TT>rwh</TT> to perform rewriting on the
-&quot;higher&quot; occurences of subterms.</P>
+&quot;higher&quot; occurrences of subterms.</P>
 
 <BLOCKQUOTE>
   <P><B><TT>topval</TT></B><TT> rwh : conv -&gt; int -&gt; tactic</TT></P>
@@ -158,7 +158,7 @@ terms where a rewrite is successful. It is defined by recursion:</P>
   <PRE><B>let</B> higherC conv = conv orelseC (allSubC conv)</PRE>
 </BLOCKQUOTE>
 
-<P>The <TT>lowerC</TT> conversion serches for the <I>innermost</I>
+<P>The <TT>lowerC</TT> conversion searches for the <I>innermost</I>
 terms:</P>
 
 <BLOCKQUOTE>

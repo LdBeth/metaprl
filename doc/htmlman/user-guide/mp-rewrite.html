@@ -7,7 +7,7 @@
 
 <H1>MetaPRL Computational Rewriting</H1>
 
-<H2>Intoroduction</H2>
+<H2>Introduction</H2>
 
 <P>MetaPRL defines two kinds of logical inferences: <I>computational
 rewriting</I> and <I>inference rules</I>. This page describes
@@ -31,7 +31,7 @@ in the <TT>Itt_rfun</TT> module as follows:</P>
 </BLOCKQUOTE>
 
 <P>This rewrite pattern defines the <I>beta</I> redex, and its
-contractum. The contractum is formed by <I>substituion</I>. When
+contractum. The contractum is formed by <I>substitution</I>. When
 the rewrite is applied to a beta-redex, the term matched by <TT>'a</TT>
 is substituted for the variable matched by <TT>'v</TT> in the
 body <TT>'b</TT>.</P>
@@ -67,7 +67,7 @@ are primitive to a logic use the <TT>prim_rw</TT> form:</P>
 </BLOCKQUOTE>
 
 <P>If a declaration is given for the rewrite, the form in the
-<TT>prim_rw</TT> must be the same (with possible renamining in
+<TT>prim_rw</TT> must be the same (with possible renaming in
 the bound variables).</P>
 
 <P>Rewrites that are derived from previous rules in the logic
@@ -82,7 +82,7 @@ has the same form as the <TT>prim_rw</TT>:</P>
 which may be fulfilled with the proof editor. The rewrite may
 be used whether it has been verified or not. When a logical theory
 is finished, the editor can be used to check for unsatisfied subproofs.
-Primitive rewrites never require a proof obligation, unstaisfied
+Primitive rewrites never require a proof obligation, unsatisfied
 interactive rewrites generate an error during proof checking.
 
 </BODY>

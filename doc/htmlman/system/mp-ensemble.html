@@ -9,10 +9,10 @@
 
 <P>MetaPRL is a <I>distributed</I> theorem prover. The distribution
 mechanism is implemented as a layer just above the refiner, and
-belowe the tactic definitions. The distribution is <I>transparent</I>,
+below the tactic definitions. The distribution is <I>transparent</I>,
 in the sense that tactics do not explicitly specify parallelism.
 The tactic mechanism is sufficiently abstract that parallelism
-is added belowe the tactic layer, and the distributed preserves
+is added below the tactic layer, and the distributed preserves
 the behavior of the tactics. In fact, the tactic code that has
 been developed over the past decade can be used without needing
 to consider distribution, with one caveat: tactics may fail if
@@ -25,14 +25,14 @@ and the tasks are more likely to run longer. Proofs represent
 a substantial investment: in some cases the proof procedure may
 run for several days over multiple machines. It is important to
 handle failures, so that proofs will not be lost due to process
-or network failurs, and we also want to handle <I>joins</I>, where
+or network failures, and we also want to handle <I>joins</I>, where
 a new processor is assigned to the pool working on a proof task.</P>
 
 <P><IMG ALT="proof tree" SRC="proof-tree.gif" WIDTH="212" HEIGHT="132" ALIGN="RIGHT"
 BORDER="0">The process of proving generates
 <I>proof trees</I>. Each node in a proof is refined to a list
 of subgoals. Each branch in the tree may be <I>and-branching</I>,
-meaining that <I>all</I> subgoals are required for a successful
+meaning that <I>all</I> subgoals are required for a successful
 proof; or a branch may <I>or-branching</I>, where <I>any</I> of
 the subgoals are sufficient to form a proof. A typical proof tree
 fragment is shown at the right. The root node produces an and-branch
@@ -73,7 +73,7 @@ tactics.</P>
 
 <P>Each <TT>extract</TT> defines a partial proof tree; the <TT>compose</TT>
 function builds larger fragments from pieces. A tactic either
-suceeds, by returning a list of subgoals, or it <I>fails</I> by
+succeeds, by returning a list of subgoals, or it <I>fails</I> by
 raising an exception.</P>
 
 <P>There are three <I>tacticals:</I> the <TT>andthen1</TT> tactical
@@ -110,12 +110,12 @@ BORDER="0">There is a great deal of parallelism
 in tactic-tree proofs: the branches of the proof considered independently.
 The branching factor is typically bounded by a constant, but the
 depth of the tree can grow to be quite large. for performance
-reasons, it is not desireable to completely thread the proof because
+reasons, it is not desirable to completely thread the proof because
 the contention between threads would be quite large.</P>
 
 <P>In the MetaPRL architecture, the <I>base</I> of the proof
 saved by a <I>scheduler</I>, which produces subjobs for independent
-threads. A diagram of the general architecure is shown in the
+threads. A diagram of the general architecture is shown in the
 figure at the right. A <I>client</I> (in this case, the MetaPRL
 proof editor) submits a job to the scheduler containing a proof
 <I>goal</I>, and the <I>tactic</I> to be applied to it.</P>
@@ -131,7 +131,7 @@ are seven operations that the scheduler performs:</P>
   <LI>cancel a running thread (<I>cancel</I>),
   <LI>accept a job from a client (<I>submit</I>),
   <LI>return a result to a client (<I>client-return</I>),
-  <LI>accept a cancelation from a client (<I>client-cancel</I>).
+  <LI>accept a cancellation from a client (<I>client-cancel</I>).
 </OL>
 
 <P>The <B>produce</B> operation produces a new job that can be
@@ -160,7 +160,7 @@ BORDER="0"></P>
 
 <P>The scheduler is implemented in the module <TT>Thread_refiner_ens</TT>.
 The scheduler maintains a constant sized pool of threads that
-can be assignmed to subjobs. The scheduler maintains several job
+can be assigned to subjobs. The scheduler maintains several job
 queues: the <I>running</I> queue list the currently running threads,
 and their locations in the proof tree; the <I>pending</I> queue
 lists nodes of the proof tree that haven't been assigned; and
@@ -296,7 +296,7 @@ and when a result is received, the memory entry is removed. When
 a process receives the result, the entry owner is notified if
 the owner is local. Entry deletions are broadcast, and all processes
 remove then entry from their memory. If a thread holds a lock
-on the entry, it is sent a cancelation.</P>
+on the entry, it is sent a cancellation.</P>
 
 <P>Failures perform two operations: all locks held by failed process
 are released, and entries owned by failed processes are deleted.

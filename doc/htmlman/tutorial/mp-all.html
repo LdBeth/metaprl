@@ -15,17 +15,17 @@ over. At this point, the issue of <I>predicativity</I> comes into
 play:</P>
 
 <UL>
-  <LI>Does the universe of forumlas contain all well-formed formulas,
-  incuding the quantified formulas (an <I>impredicative</I> definition),
+  <LI>Does the universe of formulas contain all well-formed formulas,
+  including the quantified formulas (an <I>impredicative</I> definition),
   <LI>or is the universe stratified to prevent self-quantification
   (a <I>predicative</I> definition)?
 </UL>
 
 <P>The Nuprl type theory adopts the <I>predicative</I> definition,
 and formulas are stratified into type universes so that no non-trivial
-type is a member of itsefl. For this logic, we adopt an <I>impredicative</I>
+type is a member of itself. For this logic, we adopt an <I>impredicative</I>
 theory, which restricts the models of the logic, but increases
-its expressivness. To start, we need to define the universe of
+its expressiveness. To start, we need to define the universe of
 formulas in the <TT>Fol_univ</TT> module.</P>
 
 <H3>The <TT>Fol_univ</TT> interface</H3>
@@ -72,7 +72,7 @@ We can express this in the following rule:</P>
 <P>This rule is a little different that the previous rules: it
 requires a particular terms in both the hypothesis and the conclusion.
 The application of this rule is <I>context-sensitive</I>, so it
-is not a good candiate for automation with the <TT>dT</TT> tactic.
+is not a good candidate for automation with the <TT>dT</TT> tactic.
 Instead, we provide a custom tactic to perform universal reasoning.</P>
 
 <BLOCKQUOTE>
@@ -158,7 +158,7 @@ the standard form.</P>
 </BLOCKQUOTE>
 
 <P>The rules for the <TT>all</TT> term introduce the quantification
-over the univer term <TT>univ</TT>.</P>
+over the universe term <TT>univ</TT>.</P>
 
 <BLOCKQUOTE>
   <P>8.<I> Define the typehood, introduction, and elimination forms

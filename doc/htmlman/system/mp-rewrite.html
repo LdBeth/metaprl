@@ -7,7 +7,7 @@
 
 <H2>MetaPRL Term Rewriting</H2>
 
-<P>The MetaPRL term rewriter is easilty the most complex piece
+<P>The MetaPRL term rewriter is easily the most complex piece
 of the refiner. Rewrites are defined using <I>second-order substitution.</I>
 The variable syntax is extended to include variables that specify
 terms with bound variables, or substitutions. The notation for
@@ -34,7 +34,7 @@ but the free variable has been replaced by the term represented
 by <TT>'a</TT>. In any rewrite definition, the second order variables
 in the redex specify <I>matching</I>, and the second-order variables
 in the contractum specify <I>substitution</I>. In fact, the rewrite
-definition for <TT>beta</TT> can be translated to an equaivalent
+definition for <TT>beta</TT> can be translated to an equivalent
 substitution form. Let <TT>'b['x &lt;- 'a]</TT> represent substitution
 of the term <TT>'a</TT> for the variable <TT>'x</TT> in the term
 <TT>'b</TT>. The beta rewrite is equivalent to the following definition:</P>
@@ -53,7 +53,7 @@ variable</I> <TT>'v['x1; ...; 'xn]</TT> matches any term.</P>
 
 <P>When a redex is matched, the values matched by each of the
 second-order variables are saved, along with renaming for the
-bound variables. When the contractum is constructed, substituion
+bound variables. When the contractum is constructed, substitution
 is used to construct term values for each of the second-order
 variables in the contractum. For example, suppose we apply the
 <TT>beta</TT> rewrite to a specific term</P>
@@ -77,7 +77,7 @@ the value for <TT>'a</TT> (<TT>1</TT>), for the variable <TT>'x</TT>
 application is the term <TT>'y + 1</TT></P>
 
 <P>The difference between the second-order form of a rewrite,
-and the substitution form arises when multiple occurences of a
+and the substitution form arises when multiple occurrences of a
 second order variable occur in a redex pattern. These multiple
 patterns specify term equivalences. For example, we might define
 a rewrite that &quot;doubles&quot; its argument:</P>
