@@ -324,10 +324,9 @@ struct
 
    let args = ThreadRefiner.args
 
-   let remote_server = (* Register.set 0 *) (ThreadRefiner.create print_tactic_arg compose wrap)
+   let remote_server = ThreadRefiner.create print_tactic_arg compose wrap
 
-   let get_remote_server () =
-      (* Register.get *) remote_server
+   let get_remote_server () = remote_server
 
    let empty_attribute =
       { attr_terms      = [];

@@ -22,8 +22,7 @@ MLZFILES :=\
 	hash_with_gc_sig\
 	memo_sig\
 	weak_memo_sig\
-	linear_set\
-	register
+	linear_set
 
 # Library files
 LMFILES :=\
