@@ -166,19 +166,30 @@ or in the environment. If a variable is set in both,
 The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/ocaml/camlp4</TT>
 respectively.</P>
 
-<P> Additional configuration options might be necessary on Windows and Mac OS X. See the corresponding <tt>README</tt> files in the top-level MetaPRL directory for more information.</P>
+<P> Additional configuration options might be necessary on Windows and Mac OS
+X. See the corresponding <tt>README</tt> files in the top-level MetaPRL
+directory for more information.</P>
 
-<P>MetaPRL can be run with the <p>&lt;metaprl&gt;/editor/ml/mpopt<p> script (if <tt>NATIVE_ENABLED</tt> is switched on in <tt>mk/config</tt>), or <tt>&lt;metaprl&gt;/editor/ml/mptopt</tt> (if you have compiled MetaPRL with <tt>BYTECODE_ENABLED</tt>).
-By default, this will attempt to start your browser or prompt you to connect using your browser. MetaPRL looks better if you use Mozilla, but other browsers (including Konqueror and IE) are likely to work as well.
-Internet Explorer is known to work well when "Arial Unicode MS" font is installed
-(arialuni.ttf is available on Microsoft Office CD inside office1.cab;
-note that it is not always installed automatically with MS Office) otherwise some symbols
-might not by displayed; some other "rich" font might work as well.
+<P>MetaPRL can be run with the <p>&lt;metaprl&gt;<tt>/editor/ml/mpopt</tt><p>
+script (if <tt>NATIVE_ENABLED</tt> is switched on in <tt>mk/config</tt>), or
+<tt>&lt;metaprl&gt;/editor/ml/mptop</tt> (if you have compiled MetaPRL with
+<tt>BYTECODE_ENABLED</tt>).  By default, this will attempt to start your
+browser or prompt you to connect using your browser. MetaPRL looks better if
+you use Mozilla, but other browsers (including Konqueror and IE) are likely to
+work as well.  Internet Explorer is known to work well when "Arial Unicode MS"
+font is installed (arialuni.ttf is available on Microsoft Office CD inside
+office1.cab; note that it is not always installed automatically with MS
+Office) otherwise some symbols might not by displayed; some other "rich" font
+might work as well.
 
 <P>You don't have to use the browser.  You can also use the command-line
-   interface by running MetaPRL with the <tt>-cli</tt> option, which will expect to be running in a console with Unicode fonts. To run <tt>mpopt -cli</tt> in an <tt>xterm</tt> with the correct fonts, use
+interface by running MetaPRL with the <tt>-cli</tt> option, which will expect
+to be running in a console with Unicode fonts. To run <tt>mpopt -cli</tt> in
+an <tt>xterm</tt> with the correct fonts, use
 <TT>&lt;metaprl&gt;/editor/ml/mpxterm</TT> (normal fonts),
-<TT>&lt;metaprl&gt;/editor/ml/mpxterm-large</TT> (larger font), or <TT>&lt;metaprl&gt;/editor/ml/mpkonsole</TT> (to run in KDE's <tt>konsole</tt>)</P>
+<TT>&lt;metaprl&gt;/editor/ml/mpxterm-large</TT> (larger font), or
+<TT>&lt;metaprl&gt;/editor/ml/mpkonsole</TT> (to run in KDE's
+<tt>konsole</tt>)</P>
 
 <P>If starting MetaPRL by hands (or from Emacs), the programs to use are
 <TT>&lt;metaprl&gt;/editor/ml/mpopt</TT> (native code) and
