@@ -30,50 +30,61 @@ struct
    type elt = Ord.t
 
    type tree =
-      LEAF
-    | NODE of node
+      Leaf
+    | Node of node * int
    and node = (elt * t * t) ref
-   and t = tree * int
+   and t = tree 
 
-   type direction = LEFT of node | RIGHT of node;;
+   type direction = Left of node | Right of node
 
-   let cardinal (_,c) = c
+   let cardinal = function
+      Leaf -> 0
+    | Node (_,i) -> i 
+
+   let new_node k l r =
+      Node(ref(k,l,r),succ(cardinal(l)+cardinal(r)))
+
+   let right_node k r =
+      Node(ref(k,Leaf,r), succ(cardinal(r)))
+
+   let left_node k l =
+      Node(ref(k,l,Leaf), succ(cardinal(l)))
 
    let rotate_left = function
-      { contents = key,(NODE({ contents = left_key,left_left,((_,slr) as left_right) }),_),((_,sr) as right) } as node ->
-         node := (left_key,left_left,(NODE(ref(key,left_right,right)),slr+sr+1))
+      { contents = key,Node({ contents = left_key,left_left,left_right },_),right } as node ->
+         node := (left_key,left_left,new_node key left_right right)
     | _ -> raise (Invalid_argument "rotate_left")
 
    let rotate_right = function
-      { contents = key,((_,sl) as left),(NODE({ contents = right_key,((_,srl) as right_left),right_right }),_) } as node ->
-         node := (right_key,(NODE(ref(key,left,right_left)),1+sl+srl),right_right)
+      { contents = key,left,Node({ contents = right_key,right_left,right_right },_) } as node ->
+         node := (right_key,new_node key left right_left,right_right)
     | _ -> raise (Invalid_argument "rotate_right")
 
    let rec lift = function
       [] -> ()
-    | [LEFT parent] ->
+    | [Left parent] ->
          rotate_left parent
-    | [RIGHT parent] ->
+    | [Right parent] ->
          rotate_right parent
-    | LEFT parent :: LEFT grandparent :: ancestors ->
+    | Left parent :: Left grandparent :: ancestors ->
          (
             rotate_left grandparent;
             rotate_left grandparent;  (* parent has moved into grandparent's position *)
             lift ancestors
          )
-    | RIGHT parent :: RIGHT grandparent :: ancestors ->
+    | Right parent :: Right grandparent :: ancestors ->
          (
             rotate_right grandparent;
             rotate_right grandparent;  (* parent has moved into grandparent's position *)
             lift ancestors
          )
-    | LEFT parent :: RIGHT grandparent :: ancestors ->
+    | Left parent :: Right grandparent :: ancestors ->
          (
             rotate_left parent;
             rotate_right grandparent;
             lift ancestors
          )
-    | RIGHT parent :: LEFT grandparent :: ancestors ->
+    | Right parent :: Left grandparent :: ancestors ->
          (
             rotate_right parent;
             rotate_left grandparent;
@@ -92,7 +103,7 @@ struct
          )
 
    let rec splay key0 path = function
-      ((NODE ({ contents = (key, left, right) } as node)),_) ->
+      Node ({ contents = (key, left, right) } as node, _) ->
          let comp = Ord.compare key0 key
          in
             if comp = 0 then
@@ -102,11 +113,11 @@ struct
                )
             else if comp < 0 then
             (* left *)
-               splay key0 (LEFT node :: path) left
+               splay key0 (Left node :: path) left
             else
             (* right *)
-               splay key0 (RIGHT node :: path) right
-    | (LEAF,_) ->
+               splay key0 (Right node :: path) right
+    | Leaf ->
          (match path with
              [] -> false
            | _ :: path' ->
@@ -116,17 +127,17 @@ struct
                 ))
 
    let rec splay_right path = function
-      ((NODE ({ contents = (_, _, right) } as node)),_) ->
+      Node ({ contents = (_, _, right) } as node,_) ->
          splay_right (node :: path) right
-    | (LEAF,_) ->
+    | Leaf ->
          (match path with
              [] -> ()
            | _ :: path' ->
                 lift_right path')
 
-   let empty = (LEAF,0)
+   let empty = Leaf
    let is_empty = function
-      (LEAF,_) -> true
+      Leaf -> true
     | _ -> false
 
    let mem t key =
@@ -137,26 +148,28 @@ struct
          t
       else
          match t with
-            (NODE {contents = (key', ((_,sl) as left), ((_,sr) as right)) }, _ ) ->
+            Node ({contents = (key', left, right) }, _ ) ->
+               let sl = cardinal left in
+               let sr = cardinal right in
                if Ord.compare key key' < 0 then
                (* left *)
-                  (NODE (ref (key, left, (NODE (ref (key', empty, right)), succ sr))),2+sl+sr)
+                  Node (ref (key, left, Node (ref (key', empty, right), succ sr)),2+sl+sr)
                else
-                  (NODE (ref (key, (NODE (ref (key', left, empty)), succ sl), right)),2+sl+sr)
-          | (LEAF,_) -> (NODE (ref (key, empty, empty)),1)
+                  Node (ref (key, Node (ref (key', left, empty), succ sl), right),2+sl+sr)
+          | Leaf -> Node (ref (key, empty, empty),1)
 
-   let make key = (NODE (ref (key, empty, empty)),1)
+   let make key = Node (ref (key, empty, empty),1)
 
    let remove key t =
       if splay key [] t then
          match t with
-            (NODE { contents = (_, (LEAF,_), right)}, _) -> right
-          | (NODE { contents = (_, left, (LEAF,_))}, _) -> left
-          | (NODE { contents = (_, left, ((_,sr) as right))}, _) ->
+            Node ({ contents = (_, Leaf, right)}, _) -> right
+          | Node ({ contents = (_, left, Leaf)}, _) -> left
+          | Node ({ contents = (_, left, right)}, _) ->
                (splay_right [] left;
                 match left with
-                   (NODE {contents = (left_key, ((_,sll) as left_left), (LEAF,_)) },_) ->
-                      (NODE (ref (left_key, left_left, right)), 1+sll+sr)
+                   Node ({contents = (left_key, left_left, Leaf) },_) ->
+                      new_node left_key left_left right
                  | _ -> failwith "remove")
           | _ -> failwith "remove"
       else
@@ -164,9 +177,9 @@ struct
 
    let rec union s1 s2 =
       match (s1,s2) with
-         ((LEAF,_), _) -> s2
-       | (_, (LEAF,_)) -> s1
-       | ((NODE n1, sz1), (NODE n2, sz2)) ->
+         (Leaf, _) -> s2
+       | (_, Leaf) -> s1
+       | (Node (n1, sz1), Node (n2, sz2)) ->
             if (sz1>=sz2) then
                if sz2=1 then
                   let (x2,_,_)=(!n2) in add x2 s1
@@ -175,19 +188,19 @@ struct
                      if (splay x [] s2)
                      then
                         let (_,l2,r2) = (!n2) in
-                        let ((_,sll) as ll) = union l l2 in
-                        let ((_,srr) as rr) = union r r2 in
-                           (NODE ( ref (x, ll, rr)), 1+sll+srr)
+                        let ll = union l l2 in
+                        let rr = union r r2 in
+                           new_node x ll rr
                      else
-                        let (x2,((_,sl2) as l2),((_,sr2) as r2)) = (!n2) in
+                        let (x2,l2,r2) = (!n2) in
                            if Ord.compare x x2 < 0 then
-                              let ((_,sll) as ll) = union l l2 in
-                              let ((_,srr) as rr) = union r (NODE(ref(x2,empty,r2)), succ sr2) in
-                                 (NODE ( ref (x, ll, rr)), 1+sll+srr)
+                              let ll = union l l2 in
+                              let rr = union r (right_node x2 r2) in
+                                 new_node x ll rr
                            else
-                              let ((_,sll) as ll) = union l (NODE(ref(x2,l2,empty)), succ sl2) in
-                              let ((_,srr) as rr) = union r r2 in
-                                 (NODE ( ref (x, ll, rr)), 1+sll+srr)
+                              let ll = union l (left_node x2 l2) in
+                              let rr = union r r2 in
+                                 new_node x ll rr
             else
             if sz1=1 then
                let (x1,_,_)=(!n1) in add x1 s2
@@ -196,30 +209,30 @@ struct
                   if (splay x [] s1)
                   then
                      let (_,l1,r1) = (!n1) in
-                     let ((_,sll) as ll) = union l l1 in
-                     let ((_,srr) as rr) = union r r1 in
-                        (NODE ( ref (x, ll, rr)), 1+sll+srr)
+                     let ll = union l l1 in
+                     let rr = union r r1 in
+                        new_node x ll rr
                   else
-                     let (x1,((_,sl1) as l1),((_,sr1) as r1)) = (!n1) in
+                     let (x1,l1,r1) = (!n1) in
                         if Ord.compare x x1 < 0 then
-                           let ((_,sll) as ll) = union l l1 in
-                           let ((_,srr) as rr) = union r (NODE(ref(x1,empty,r1)), succ sr1) in
-                              (NODE ( ref (x, ll, rr)), 1+sll+srr)
+                           let ll = union l l1 in
+                           let rr = union r (right_node x1 r1) in
+                              new_node x ll rr
                         else
-                           let ((_,sll) as ll) = union l (NODE(ref(x1,l1,empty)), succ sl1) in
-                           let ((_,srr) as rr) = union r r1 in
-                              (NODE ( ref (x, ll, rr)), 1+sll+srr)
+                           let ll = union l (left_node x1 l1) in
+                           let rr = union r r1 in
+                              new_node x ll rr
 
    let rec elements_aux coll = function
-      (LEAF,_) -> coll
-    | (NODE {contents=(x,l,r)},_) ->
+      Leaf -> coll
+    | Node ({contents=(x,l,r)},_) ->
          x::(elements_aux (elements_aux coll l) r)
 
    let elements = elements_aux []
 
    let rec iter f = function
-      (LEAF,_) -> ()
-    | (NODE {contents = (x,l,r)},_) ->
+      Leaf -> ()
+    | Node ({contents = (x,l,r)},_) ->
          iter f l; f x; iter f r
 
    let rec mem_filt s = function
@@ -243,11 +256,11 @@ struct
     *)
    let rec intersectp s1 s2 =
       match s1, s2 with
-         (LEAF, _), _
-       | _, (LEAF, _) ->
+         (Leaf, _) -> false
+       | (_, Leaf) ->
             false
 
-       | ((NODE n1, sz1), (NODE n2, sz2)) ->
+       | (Node (n1, sz1), Node (n2, sz2)) ->
             if (sz1>=sz2) then
                if sz2=1 then
                   let (x2,_,_)=(!n2) in mem s1 x2
@@ -257,13 +270,13 @@ struct
                      then
                         true
                      else
-                        let (x2,((_, sl2) as l2),((_, sr2) as r2)) = (!n2) in
+                        let (x2,l2,r2) = (!n2) in
                            if Ord.compare x x2 < 0 then
                               (intersectp l l2)
-                              || (intersectp r (NODE(ref(x2,empty,r2)), succ sr2))
+                              || (intersectp r (right_node x2 r2))
                            else
                               (intersectp r r2)
-                              || (intersectp l (NODE(ref(x2,l2,empty)), succ sl2))
+                              || (intersectp l (left_node x2 l2))
             else if sz1=1 then
                let (x1,_,_)=(!n1) in mem s2 x1
             else
@@ -272,12 +285,12 @@ struct
                   then
                      true
                   else
-                     let (x1,((_,sl1) as l1),((_,sr1) as r1)) = (!n1) in
+                     let (x1,l1,r1) = (!n1) in
                         if Ord.compare x x1 < 0 then
                            (intersectp l l1)
-                           || (intersectp r (NODE(ref(x1,empty,r1)), succ sr1))
+                           || (intersectp r (right_node x1 r1))
                         else
-                           (intersectp l (NODE(ref(x1,l1,empty)), succ sl1))
+                           (intersectp l (left_node x1 l1))
                            || (intersectp r r1)
 end
 
