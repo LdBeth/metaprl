@@ -231,6 +231,8 @@ opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRL
 	$(LN) ../$(DIR)/$(PRLCO).opt $(ROOT)/lib/$(PRLCO)
 	$(LN) ../$(DIR)/$(MAIN).opt $(ROOT)/bin/$(MAIN)
 
+profile: $(RMLIFILES) $(RCMXAFILES) 
+
 install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAIN).run
 	$(INSTALL) $(MAIN).cma $(LMLIFILES) $(LCMIFILES) $(NLLIB)
 	if [ $(CAMLP4N).opt -nt $(CAMLP4N).run ]; then\
@@ -303,7 +305,7 @@ infix.ml: infix.pre.ml
 #
 # Compile a test file
 #
-.PHONY: test
+.PHONY: test profile
 
 test: test.cmiz
 

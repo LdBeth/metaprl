@@ -26,7 +26,7 @@ NL_DIRS :=\
 
 DIRS := $(REFINER_DIRS) filter $(NL_DIRS) editor/ml
 
-.PHONY: all opt install depend clean profile_all profile_clean profile_byte profile
+.PHONY: all opt install depend clean profile_all profile_clean profile_byte profile profile_opt
 
 all:
 	@for i in $(DIRS); do\
@@ -50,11 +50,14 @@ profile_all:
 
 profile_byte: clean all profile_clean profile_all
 
-profile: all
+profile: all profile_opt
+
+profile_opt:
 	@for i in $(REFINER_DIRS); do\
 		if (echo Making $$i...; cd $$i; $(MAKE) PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
-	@for i in $(NL_DIRS); do\
+	@if (echo Making filter...; cd filter; $(MAKE) PROFILE=-p INLINE=0 profile); then true; else exit 1; fi
+	@for i in $(NL_DIRS) editor/ml; do\
 		if (echo Making $$i...; cd $$i; $(MAKE) PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
 
