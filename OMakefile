@@ -106,9 +106,16 @@ if $(not $(equal $(OSTYPE), Win32))
     export
 
 #
+# We have a minimal version of libmojave in case it is not defined
+#
+if $(equal $(LIBMOJAVE), undefined)
+    LIBMOJAVE = $(dir libmojave)
+    export
+
+#
 # Directories needing only the standard config
 #
-.SUBDIRS: util clib
+.SUBDIRS: util clib $(LIBMOJAVE)
 
 ########################################################################
 # Generic directories with no special options
@@ -170,9 +177,7 @@ DEFAULT_THEORIES = base itt
 
 MC_THEORIES = mojave/core
 
-LM_THEORIES = $(if $(equal $(LIBMOJAVE), undefined), $(EMPTY), $(MC_THEORIES))
-
-ALL_THEORIES = base itt fol czf phobos sil
+ALL_THEORIES = base itt fol czf phobos sil mojave/core
 
 #
 # Commands to compile theory files

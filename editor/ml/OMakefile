@@ -97,21 +97,15 @@ else
 #
 # If LIBMOJAVE is enabled, add the libraries
 #
-LMARDEPS =
-LMXADEPS =
-LMADEPS =
-TLMADEPS =
-if $(not $(equal $(LIBMOJAVE), undefined))
-    LMARDEPS = $(LIBMOJAVE)/naml/stdlib/lmstdlib$(EXT_LIB)\
-               $(LIBMOJAVE)/util/lmutil$(EXT_LIB)
-    LMXADEPS = $(LIBMOJAVE)/naml/stdlib/lmstdlib.cmxa\
-               $(LIBMOJAVE)/util/lmutil.cmxa
-    LMADEPS  = $(LIBMOJAVE)/naml/stdlib/lmstdlib.cma\
-               $(LIBMOJAVE)/util/lmutil.cma
-    TLMADEPS = $(LIBMOJAVE)/naml/stdlib/lmstdlib.cma\
-               $(LIBMOJAVE)/util/lmutil.cma
-    LIBS = $(LIBMOJAVE)/cutil/liblmcutil.a
-    export
+LMARDEPS = $(LIBMOJAVE)/stdlib/lmstdlib$(EXT_LIB)\
+           $(LIBMOJAVE)/util/lmutil$(EXT_LIB)
+LMXADEPS = $(LIBMOJAVE)/stdlib/lmstdlib.cmxa\
+           $(LIBMOJAVE)/util/lmutil.cmxa
+LMADEPS  = $(LIBMOJAVE)/stdlib/lmstdlib.cma\
+           $(LIBMOJAVE)/util/lmutil.cma
+TLMADEPS = $(LIBMOJAVE)/stdlib/lmstdlib.cma\
+           $(LIBMOJAVE)/util/lmutil.cma
+LIBS = $(LIBMOJAVE)/cutil/liblmcutil.a
 
 #
 # If MCC is enabled, add the libraries

@@ -64,6 +64,11 @@ THEORIES=$THEORIES
 READLINE=$READLINE
 
 #
+# The GNU ncurses package (available in Linix at least) (yes/no)
+#
+NCURSES=$NCURSES
+
+#
 # C compiler
 #
 CCC=$CCC
