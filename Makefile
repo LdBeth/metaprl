@@ -22,7 +22,8 @@ NL_DIRS :=\
 	theories/ocaml\
 	theories/base\
 	theories/itt\
-	theories/tptp
+	theories/tptp\
+	theories/fol
 
 DIRS := $(REFINER_DIRS) filter $(NL_DIRS) editor/ml
 

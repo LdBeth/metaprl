@@ -272,9 +272,6 @@ let edit pack sentinal arg name obj =
    let edit_down i =
       Proof_edit.down_ped (get_ped obj) i
    in
-   let edit_addr addr =
-      Proof_edit.addr_ped (get_ped obj) addr
-   in
    let edit_undo () =
       Proof_edit.undo_ped (get_ped obj)
    in
@@ -307,6 +304,9 @@ let edit pack sentinal arg name obj =
    in
    let edit_goal () =
       Proof_edit.ped_arg (get_ped ())
+   in
+   let edit_addr addr =
+      Proof_edit.addr_ped (get_ped ()) addr
    in
    let edit_tactic () =
       Proof_edit.ped_tactic (get_ped ())

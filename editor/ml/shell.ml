@@ -752,14 +752,15 @@ struct
    let edit_list_modules () =
       List.map Package.name (Package.packages info.packages)
 
+   let edit_info name =
+      try Package.info (Package.get info.packages name) with
+         NotLoaded _ ->
+            eprintf "Loading package %s%t" name eflush;
+            Package.load info.packages name;
+            Package.info (Package.get info.packages name)
+
    let edit_list_module name =
-      let info =
-         try Package.info (Package.get info.packages name) with
-            NotLoaded _ ->
-               eprintf "Loading package %s%t" name eflush;
-               Package.load info.packages name;
-               Package.info (Package.get info.packages name)
-      in
+      let info = edit_info name in
       let rec collect = function
          [] ->
             []
@@ -778,10 +779,12 @@ struct
     * Create a new thm.
     *)
    let edit_cd_thm mname name =
+      edit_info mname;
       cd ("/" ^ mname ^ "/" ^ name);
       ()
 
    let edit_create_thm mname name seq =
+      edit_info mname;
       cd ("/" ^ mname);
       let create name =
          let package = get_current_package info in
