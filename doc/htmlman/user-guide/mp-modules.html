@@ -9,15 +9,15 @@
 
 <H2>Introduction</H2>
 
-<P>Logics are defined in MetaPRL as <I>modules</I>. Logic
+<P>Theories are defined in MetaPRL as <I>modules</I>. Logical
 modules can be expressed as <I>extensions</I> of previous modules,
-forming an <I>object-oriented</I> logical contruction, and logics
+forming an <I>object-oriented</I> logical contruction, and theories
 can be <I>related</I> using the module system.</P>
 
 <P>Each logical module defines <A HREF="mp-terms.html">syntax</A>,
 <A HREF="mp-dform.html">display</A>, <A HREF="mp-rewrite.html">computational
-rewriting</A>, and <A HREF="mp-axiom.html">logical inference</A>,
-defined in the previous pages. Logics are extended and related
+rewriting</A>, and <A HREF="mp-axiom.html">inference rules</A>,
+defined in the previous pages. Theories are extended and related
 with the <TT>include</TT> directive, discussed here. The <TT>include</TT>
 directive is the <I>logical</I> equivalent of the <TT>open</TT>
 directive in OCaml. The <TT>include</TT> directive &quot;opens&quot;
@@ -26,7 +26,7 @@ between modules. The general form form of the include directive
 is as follows:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>include </TT></B><I>module-path</I></P>
+  <PRE><B>include</B> <I>module-path</I></PRE>
 </BLOCKQUOTE>
 
 <P>Multiple <TT>include</TT> directives may appear in interfaces
@@ -77,8 +77,7 @@ for each included module:</P>
   <LI>All syntax declarations defined with <TT>declare</TT> are
   inherited.
   <LI>All display forms are inherited.
-  <LI>All computational rewrites, axioms, and inference rules are
-  inherited.
+  <LI>All computational rewrites and inference rules are inherited.
 </UL>
 
 <P>The <TT>include</TT> does <I>not</I> open the ML namespace.
@@ -92,7 +91,7 @@ two theories (say <TT>A</TT> and <TT>B</TT>) may both declare
 a conjunction</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>declare</TT></B><TT> &quot;and&quot;{'a; 'b}</TT></P>
+  <PRE><B>declare</B> &quot;and&quot;{'a; 'b}</PRE>
 </BLOCKQUOTE>
 
 <P>and they may impose different logical interpretations of the
@@ -105,7 +104,7 @@ the following:</P>
   <LI>operators names can be qualified to refer to other definitions.
 </UL>
 
-<P>A logic that relates the theories <TT>A</TT> and <TT>B</TT>
+<P>A theory that relates the theories <TT>A</TT> and <TT>B</TT>
 must refer to both terms. Qualified names are expressed by module
 paths composed with the <TT>!</TT> symbol. Here is an example,
 showing an interpretation of <TT>A.and</TT> as the &quot;conditional&quot;

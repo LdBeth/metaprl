@@ -27,11 +27,11 @@ Additional theories can be included by adding them to the <TT>Makefile</TT>.
 There are three standard editors:</P>
 
 <UL>
-  <LI>the <TT>mp.run</TT> editor uses the OCaml bytecode toploop,
-  <LI>the <TT>mp.top</TT> editor uses the MetaPRL toploop with
-  modules compiled as bytecode,
   <LI>the <TT>mp.opt</TT> editor uses the MetaPRL toploop with
-  native-code modules.
+  native-code modules,
+  <LI>the <TT>mp.top</TT> editor uses the MetaPRL toploop with
+  modules compiled as bytecode (usually runs several times slower than <TT>mpopt</TT>),
+  <LI>the <TT>mp.run</TT> editor uses the OCaml bytecode toploop (this is useful for debugging).
 </UL>
 
 <P>The MetaPRL toploop is a simplified version of the OCaml
@@ -44,7 +44,7 @@ toploop used by <TT>mp.run</TT> contains an interpretor for the
 full OCaml language, but it is not connected with the editor,
 and explicit <TT>open</TT> directives must be used to access tactics
 and conversions. In addition, the OCaml toploop runs only in bytecode
-mode;for native-code, the MetaPRL toploop must be used.</P>
+mode; for native-code, the MetaPRL toploop must be used.</P>
 
 <P>The editor requires the installation of the Nuprl font. This
 character set includes synbols for the common logical operators,
@@ -67,8 +67,7 @@ in the file <TT>x.ml</TT>, your first action would be to evaluate
 this file:</P>
 
 <BLOCKQUOTE>
-  <PRE>% <B>cd editor/ml</B>
-% <B>./mp</B>
+  <PRE>% <B>editor/ml/mp</B>
 MetaPRL version 0.1
 # <B>#use &quot;x.ml&quot;</B></PRE>
 </BLOCKQUOTE>
@@ -100,13 +99,12 @@ containing all loaded modules. Here is a script fragment showing
 the initial state of MetaPRL:</P>
 
 <BLOCKQUOTE>
-  <PRE>&lt;mojave:ml 7&gt;<B>./mp</B>
-        Objective Caml version 2.00
-	        MetaPRL 0.4:
-		        build [Sun Sep 13 10:36:42 EDT 1998]
-		        on mojave.cs.cornell.edu
-	        Camlp4 Parsing version 2.00--1
-# <B>#use &quot;x.ml&quot;;;</B>
+  <PRE>% <B>./mpopt</B>
+
+MetaPRL 0.6.0:
+                build [Mon Oct 11 16:19:29 EDT 1999]
+                on tulare.cs.cornell.edu
+                Uses SIMPLE Refiner_ds
 # <B>pwd ();;</B>
 - : string = &quot;/&quot;
 # <B>ls ();;</B>
@@ -842,8 +840,9 @@ its status:</P>
 
 <UL>
   <LI><TT>#</TT> for incomplete,
-  <LI><TT>-</TT> if an error occurred
-  <LI><TT>*</TT> if the proof is complete.
+  <LI><TT>-</TT> if an error occurred,
+  <LI><TT>*</TT> if the proof is complete,
+  <LI><TT>!</TT> if no proof required (primitive rewrite or primitive rule).
 </UL>
 
 <H2>Proof editing</H2>
@@ -1666,7 +1665,7 @@ WIDTH="8" HEIGHT="12" BORDER="0" ALIGN="BOTTOM"></PRE>
 
 <P>New objects are created in a module with the following <TT>create_</TT>
 commands (note that these functions are mostly disabled in the
-current distribution).</P>
+current distribution - you have to edit .ml files instead).</P>
 
 <BLOCKQUOTE>
   <PRE><I>(*

@@ -12,16 +12,14 @@
 <P>MetaPRL defines two kinds of logical inferences: <I>computational
 rewriting</I> and <I>inference rules</I>. This page describes
 computational rewriting. <A HREF="mp-axiom.html">Inference rules</A>
-are described on the previous page.</P>
+are described on the next page.</P>
 
 <H2>Declarations</H2>
 
 <P>Rewrites are declared with the following form:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>rewrite </TT></B><I>name</I> <TT>[</TT><I>params</I><TT>]
-  : [</TT><I>conditions</I><TT>] </TT><I>redex</I><TT> &lt;--&gt;
-  </TT><I>contractum</I></P>
+  <PRE><B>rewrite</B> <I>name</I> [<I>params</I>] : [<I>conditions</I>] <I>redex</I> &lt;--&gt; <I>contractum</I></PRE>
 </BLOCKQUOTE>
 
 <P>A <I>simple</I> rewrite is defined as an equivalence between
@@ -45,8 +43,7 @@ meta-implication <TT>--&gt;</TT>. The following rewrite is an
 example of conditional rewriting in the <TT>Itt_int</TT> module:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>rewrite</TT></B><TT> unit : ('i != 0 in int) --&gt;
-  (('i /@ 'i) &lt;--&gt; 1)</TT></P>
+  <PRE><B>rewrite</B> unit : ('i != 0 in int) --&gt; (('i /@ 'i) &lt;--&gt; 1)</PRE>
 </BLOCKQUOTE>
 
 <P><I>Parameters</I> provide extra variables and terms that are
@@ -56,8 +53,8 @@ beta reduction requires a term specifying the abstracted body
 and also the argument of the application.</P>
 
 <BLOCKQUOTE>
-  <PRE><B><TT>rewrite</TT></B><TT> inverseBeta lambda{v. 'b['v]} 'a :</TT>
-<TT>   'b['a] &lt;--&gt; (lambda{v. 'b['v]} 'a)</TT></PRE>
+  <PRE><B>rewrite</B> inverseBeta lambda{v. 'b['v]} 'a :
+   'b['a] &lt;--&gt; (lambda{v. 'b['v]} 'a)</PRE>
 </BLOCKQUOTE>
 
 <H2>Implementations</H2>
@@ -66,9 +63,7 @@ and also the argument of the application.</P>
 are primitive to a logic use the <TT>prim_rw</TT> form:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>prim_rw </TT></B><I>name </I><TT>[</TT><I>params</I><TT>]
-  : [</TT><I>conditiona</I><TT>] </TT><I>redex</I> <TT>&lt;--&gt;
-  </TT><I>contractum</I></P>
+  <PRE><B>prim_rw</B> <I>name</I> [<I>params</I>] : [<I>conditions</I>] <I>redex</I> &lt;--&gt; <I>contractum</I></PRE>
 </BLOCKQUOTE>
 
 <P>If a declaration is given for the rewrite, the form in the
@@ -80,9 +75,7 @@ are implemented with the <TT>interactive_rw</TT> form. The definition
 has the same form as the <TT>prim_rw</TT>:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>interactive_rw</TT></B><I> name</I><TT> [</TT><I>params</I><TT>]
-  : [</TT><I>conditions</I><TT>] </TT><I>redex</I><TT> &lt;--&gt;
-  </TT><I>contractum</I></P>
+  <PRE><B>interactive_rw</B> <I>name</I> [<I>params</I>] : [<I>conditions</I>] <I>redex</I> &lt;--&gt; <I>contractum</I></PRE>
 </BLOCKQUOTE>
 
 <P>The <TT>interactive_rw</TT> form establishes a proof obligation,

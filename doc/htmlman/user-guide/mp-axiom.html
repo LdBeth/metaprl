@@ -1,11 +1,11 @@
 <HTML>
 <HEAD>
   <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
-  <TITLE>MetaPRL Axioms and Inference Rules</TITLE>
+  <TITLE>MetaPRL Inference Rules</TITLE>
 </HEAD>
 <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
-<H1>MetaPRL Axioms and Inference Rules</H1>
+<H1>MetaPRL Inference Rules</H1>
 
 <H2>Introduction</H2>
 
@@ -13,7 +13,7 @@
 of <I>Horn</I> formulas. The logic includes a <I>term</I> language,
 described in the page on <A HREF="mp-terms.html">MetaPRL terms</A>,
 and a meta-logic defined with a meta-implication over second-order
-term patterns. Each axiom and inference rule in a logic defines
+term patterns. Each inference rule in a theory defines
 a set of valid inferences in the logic. At the moment, inferences
 are non-recursive: they have the syntax:</P>
 
@@ -22,60 +22,60 @@ are non-recursive: they have the syntax:</P>
   </TT><I>inference</I></P>
 </BLOCKQUOTE>
 
-<P>A <I>logic</I> is defined by stating its axioms and inference
-rules. An <I>axiom</I> is an inference rule that is just a single
-term (axioms don't use the meta-implication). The logics are modular:
-each module defines a logic that contains the rules defined in
+<P>A <I>theory</I> is defined by stating its inference
+rules. Some times we call an inference rule that is just a single
+term an <I>axiom</I> (axioms don't use the meta-implication). The theories are modular:
+each module defines a theory that contains the rules defined in
 the module, and in all ancestor modules. The module system is
 discussed in the <A HREF="mp-modules.html">module system page</A>.</P>
 
 <H2>Interface</H2>
 
-<P>A module interface declares the <I>signature</I> of a logic;
-it includes declarations for each of the <I>public</I> axioms
-and inference rules. Rules are not required to be listed in an
-interface, but for clarity, many of the logics in MetaPRL,
-including <TT>Itt_logic</TT>, include the inference rule declarations
+<P>A module interface declares the <I>signature</I> of a theory;
+it includes declarations for each of the <I>public</I>
+inference rules. Rules are not required to be listed in an
+interface, but for clarity, many of the theories in MetaPRL,
+including <TT>Itt_theory</TT>, include the inference rule declarations
 in their signatures.</P>
 
-<P>Axioms and inference rules are declared with the <TT>rule</TT>
+<P>Inference rules are declared with the <TT>rule</TT>
 form. The general syntax is the following:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>rule</TT></B> <I>name </I><TT>[</TT><I>params</I><TT>]
-  : </TT><I>inference</I></P>
+  <PRE><B>rule</B> <I>name</I> [<I>params</I>] : <I>inference</I></PRE>
 </BLOCKQUOTE>
 
 <P>The <I>params</I> are extra parameters that are passed to the
 inference rule, including <I>context</I> addresses, <I>term</I>
 arguments, and <I>new variable</I> names. The <TT>Itt_struct</TT>
-module contains a basic axiom:</P>
+module contains a basic rule:</P>
 
 <BLOCKQUOTE>
   <PRE><B>rule</B> hypothesis 'H 'J 'x :
    <B>sequent</B> ['ext] { 'H; x: 'A; 'J['x] &gt;- 'A }</PRE>
 </BLOCKQUOTE>
 
-<P>The <I>name</I> of the axiom is <TT>hypothesis</TT>. The parameters
+<P>The <I>name</I> of the rule is <TT>hypothesis</TT>. The parameters
 include two context identifiers <TT>'H</TT> and <TT>'J</TT>, and
-a variable identifier <TT>'x</TT>. The inference of this axiom
-defines a set of <I>sequents</I>, contaning a number of hypotheses
+a variable identifier <TT>'x</TT>. The inference of this rule
+defines a set of <I>sequents</I>, containing a number of hypotheses
 defined by the context <TT>'H</TT>, a single hypothesis <TT>x</TT>
 of type <TT>'A</TT>, additional hypotheses defined by the context
 <TT>'J['x]</TT>, where the variable <TT>x</TT> may occur free,
 and a single conclusion <TT>'A</TT>. The sequent also contains
 an extra parameter <TT>'ext</TT> that defines the <I>computational
 status</I> in the <TT><A HREF="../system/mp-itt.html">Itt_theory</A></TT>.
-The parameter is the term <TT>squash</TT> if the axiom has no
+The parameter is the term <TT>squash</TT> if the sequent has no
 computational value, and it is a variable otherwise (in this case
 the variable <TT>'ext</TT>).</P>
 
-<P>The <TT>hypothesis</TT> axiom defines a set of valid inferences
+<P>The <TT>hypothesis</TT> rule defines a set of valid inferences
 defined by the terms that is matches. Put another way, the inference
 states that all <I>substitution instances</I> are valid formulas,
 where the contexts <TT>'H</TT> and <TT>'J['x]</TT> are replaced
 by lists of hypotheses, the variable <TT>'A</TT> is replaced by
-a term, and the variable <TT>'x</TT> is replaced by another variable.
+a term, the variable <TT>'x</TT> is replaced by another variable
+and the variable <TT>'ext</TT> is replaced by arbitrary term.
 For instance, the following formulas are valid in the <TT>Itt_struct</TT>
 module:</P>
 
@@ -89,15 +89,15 @@ module:</P>
 </BLOCKQUOTE>
 
 <P>The second example is strange because <TT>1</TT> is not a type.
-However, the semantics of sequents in the <TT>Itt_logic</TT> theory
+However, the semantics of sequents in the <TT>Itt_theory</TT> theory
 validates the truth of the expression. A hypothesis <TT>(x:'A)</TT>
-in the <TT>Itt</TT> logic implies two assumptions: that <TT>'A</TT>
+in the <TT>Itt</TT> theory implies two assumptions: that <TT>'A</TT>
 is a type, and that <TT>'A</TT> is true. If <TT>'A</TT> is not
 a type, the assumption is false, so the sequent is trivially true.</P>
 
 <P>Inference rules are also defined using the <TT>rule</TT> directive.
 An inference is a <I>conditional</I> rule; it states assumptions
-that must be proved in order for the axiom to hold. Most introduction
+that must be proved in order for the conclusion to hold. Most introduction
 and elimination rules have this form. For example, in the <TT>Itt_logic</TT>
 module, the introduction rule for logical conjunction is stated
 as follows:</P>
@@ -118,9 +118,9 @@ in the same context.</P>
 
 <H2>Implementation</H2>
 
-<P>Axioms and inference rules are implemented two ways: they can
-be derived from previous rules, are they can be as <I>primitive</I>
-axioms of a logic. The difference between these two forms is in
+<P>Inference rules are implemented two ways: they can
+be derived from previous rules and they can be declared as <I>primitive</I>
+axioms of a theory. The difference between these two forms is in
 the way the system does logical accounting.</P>
 
 <P>A primitive inference is &quot;justified&quot; by giving a
@@ -128,14 +128,13 @@ relation on <I>proofs</I> with the <TT>prim</TT> form, which has
 the following syntax:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>prim</TT></B> <I>name</I><TT> [</TT><I>params</I><TT>]
-  : </TT><I>binference</I><TT> = </TT><I>term</I></P>
+  <PRE><B>prim</B> <I>name</I> [<I>params</I>] : <I>binference</I> = <I>term</I></PRE>
 </BLOCKQUOTE>
 
 <P>A <I>binference</I> is like an inference, but it contains bindings
 for the proofs. The bindings are bound in the <I>term</I> part
 of the <TT>prim</TT> form, which provides the final proof term.
-In constructive logics, the &quot;proof&quot; is usually the proof
+In constructive theories, the &quot;proof&quot; is usually the proof
 <I>extract:</I> a term that defines the computational content
 of the proof. For example, the following definition gives an implementation
 of the <TT>and_intro</TT> rule declared above:</P>
@@ -151,20 +150,19 @@ of the <TT>and_intro</TT> rule declared above:</P>
 <P>The <TT>pair</TT> term is the proof term of the proof: if <TT>'t1</TT>
 is a proof of <TT>'a1</TT>, and <TT>'t2</TT> is a proof of <TT>'a2</TT>,
 then <TT>pair{'t1; 't2}</TT> is a proof of <TT>'a1 &amp; 'a2</TT>.
-The proof term is especially useful in constructive logics; in
-classical logics the proof term may just be a <I>canonical</I>
+The proof term is especially useful in constructive theories; in
+classical theories the proof term may just be a <I>canonical</I>
 proof term, indicating the truth of the proof statement without
 any computational value.</P>
 
 <P>The system automatically constructs proof terms for complete
 proofs, using the constructions provided by the <TT>prim</TT>
-form in the logic. Inferences can also be <I>derived</I> from
-previous rules in a logic. Derived rules are delcared with the
+form in the theory. Inferences can also be <I>derived</I> from
+previous rules in a theory. Derived rules are declared with the
 following form:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>interactive </TT></B><I>name</I> <TT>: [</TT><I>params</I><TT>]
-  : </TT><I>inference</I></P>
+  <PRE><B>interactive</B> <I>name</I> : [<I>params</I>] : <I>inference</I></PRE>
 </BLOCKQUOTE>
 
 <P>The interactive form has exactly the same form as an <TT>rule</TT>,
@@ -179,7 +177,7 @@ mechanism used for interactive proving. Tactics are ML programs,
 and they can be combined with the <I>tacticals</I> in the <A HREF="../system/mp-tacticals.html">system description</A> to provide
 automated proving.</P>
 
-<P>Each axiom and inference rule declaration also provides a tactic
+<P>Each inference rule declaration also provides a tactic
 declaration. The exact form of the tactic depends on the types
 of its parameters. A <I>context</I> parameter requires an <TT>address</TT>
 argument, a <I>variable</I> parameter requires a string, and a

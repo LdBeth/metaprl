@@ -109,7 +109,8 @@ implemented (see bug 3.5).
 it "forgets to mention" that they are in the scope of hypothesis variables.
 
 One of the side-effects of this problem is that we have to pass unnecessary arguments
-to some of the rules (such as srecElimination).
+to some of the rules (such as Itt_struct.hypothesis and srecElimination;
+note: Itt_struct.hypothesis is mentioned in doc/htmlman/user-guide/mp-axiom.html).
 
 PARSER & FILTER
 

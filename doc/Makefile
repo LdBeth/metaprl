@@ -25,8 +25,8 @@ USER-GUIDE =\
 	mp-user-guide\
 	mp-terms\
 	mp-dform\
-	mp-axiom\
 	mp-rewrite\
+	mp-axiom\
 	mp-modules\
 	mp-editor
 
