@@ -477,10 +477,10 @@ let thinMatchT thinT assum =
    let rec tac j =
       if j = 0 then idT else
          match index.(pred j) with
-            Some _ ->
-               tac (pred j)
+            Some _ -> tac (pred j)
           | None ->
-               thinT j thenT tac (pred j)
+               let tac = tac (pred j) in
+                  if tac == idT then thinT j else thinT j thenT tac
    in
       tac (Sequent.hyp_count p))
 
