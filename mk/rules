@@ -79,15 +79,20 @@ LCMXFILES    = $(addsuffix .cmx,  $(LMFILES))
 MCMIFILES    = $(addsuffix .cmi,  $(MFILES))
 MCMOFILES    = $(addsuffix .cmo,  $(MFILES))
 MCMXFILES    = $(addsuffix .cmx,  $(MFILES))
+PCMIFILES    = $(addsuffix .cmi,  $(PFILES))
+PCMOFILES    = $(addsuffix .cmo,  $(PFILES))
+PCMXFILES    = $(addsuffix .cmx,  $(PFILES))
 
 LMLIFILES    = $(addsuffix .mli,  $(LMFILES))
 LMLFILES     = $(addsuffix .ml,   $(LMFILES))
 MMLFILES     = $(addsuffix .mli,  $(MFILES))
 MMLIFILES    = $(addsuffix .ml,   $(MFILES))
+PMLIFILES    = $(addsuffix .mli,  $(PFILES))
+PMLFILES     = $(addsuffix .ml,   $(PFILES))
 
-REG_CMIFILES = $(sort $(LCMIFILES) $(MCMIFILES))
-REG_CMOFILES = $(sort $(LCMOFILES) $(MCMOFILES))
-REG_CMXFILES = $(sort $(LCMXFILES) $(MCMXFILES))
+REG_CMIFILES = $(sort $(LCMIFILES) $(MCMIFILES) $(PCMIFILES))
+REG_CMOFILES = $(sort $(LCMOFILES) $(MCMOFILES) $(PCMOFILES))
+REG_CMXFILES = $(sort $(LCMXFILES) $(MCMXFILES) $(PCMXFILES))
 
 CMIFILES     = $(sort $(MP_CMIFILES) $(MP2_CMIFILES) $(LCMIFILES) $(MCMIFILES))
 CMOFILES     = $(sort $(MP_CMOFILES) $(MP2_CMOFILES) $(LCMOFILES) $(MCMOFILES))
@@ -134,15 +139,15 @@ $(MAIN).cma: $(LCMOFILES) $(MP_CMOFILES) $(ROOT)/mk/config
 $(MAIN).cmxa: $(LCMXFILES) $(MP_CMXFILES) $(ROOT)/mk/config
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(MP_CMXFILES)
 
-$(MAIN).run: $(CMAFILES) $(CMADEPS) $(ROOT)/mk/config
-	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
+$(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES) $(ROOT)/mk/config
+	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 	if [ -f $(MAIN).run.exe ]; then\
 		mv $(MAIN).run.exe $(MAIN).run.bak;\
 		mv $(MAIN).run.bak $(MAIN).run;\
 	fi
 
-$(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(ROOT)/mk/config
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(NATIVE_CCLIBS) $(OPTTHREADS)
+$(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES) $(ROOT)/mk/config
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
 	if [ -f $(MAIN).exe ]; then\
 		mv $(MAIN).exe $(MAIN).bak;\
 		mv $(MAIN).bak $(MAIN);\
