@@ -50,7 +50,9 @@ end
 module Nuprl_JProver = Jall.JProver(Nuprl_JLogic) 
 
 let myconcl = ref Basic.inil_term
+let mytermj = ref Basic.inil_term
 let myhyps = ref [Basic.inil_term]
+
 let jprover (tlist,concl) = 
   myconcl := concl;
   myhyps := tlist;
@@ -67,5 +69,8 @@ let ijprover_term (s, t1, t2) =
 let jprover_result_to_term l = 
   Basic.list_to_ilist_map ijprover_term l
 
+let replace_nuprl_var_terms term = term
+  
 let jprover_hook t = 
- jprover_result_to_term (jprover ((Basic.map_isexpr_to_list (function y -> y) (Basic.hd_of_icons_term Basic.icons_op t)), (Basic.tl_of_icons_term Basic.icons_op t))) 
+  mytermj := t;
+ jprover_result_to_term (jprover ((Basic.map_isexpr_to_list replace_nuprl_var_terms (Basic.hd_of_icons_term Basic.icons_op t)), (replace_nuprl_var_terms (Basic.tl_of_icons_term Basic.icons_op t))))

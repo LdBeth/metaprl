@@ -65,6 +65,9 @@ val nuprl_dest_implies : term -> term * term
 val nuprl_is_not_term : term -> bool
 val nuprl_dest_not : term -> term
 
+val nuprl_is_var_term : term -> bool
+val nuprl_dest_var : term -> string
+
 
 
 

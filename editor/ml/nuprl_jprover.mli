@@ -37,5 +37,6 @@ val jprover : term list * term -> (string * term * term) list
 val jprover_hook : term -> term
 
 val myconcl :  term ref
+val mytermj :  term ref
 val myhyps :  (term list) ref
 

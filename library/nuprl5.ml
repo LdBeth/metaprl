@@ -111,26 +111,46 @@ let nuprl_is_and_term = nuprl_is_op_term (mk_nuprl5_simple_op "and")
 let nuprl_is_implies_term = nuprl_is_op_term (mk_nuprl5_simple_op "implies")
 let nuprl_is_all_term = nuprl_is_op_term (mk_nuprl5_simple_op "all")
 
+let nuprl_is_var_term term = 
+  match Lib_term.dest_term term with
+   { term_op = term_op'; term_terms = _ } ->
+    match dest_op term_op' with 
+    {op_name = opname; op_params = [p1; p2] } -> 
+    (match (dest_param p1) with
+     Token "variable" -> true
+     | _ -> false)
+    | _ -> false
+
+let nuprl_dest_var term = 
+  match Lib_term.dest_term term with
+   { term_op = term_op'; term_terms = [] } ->
+   (match dest_op term_op' with 
+    {op_name = opname; op_params = [p1; p2]} ->
+     (match (dest_param p2) with
+     Var p -> p
+     | x -> failwith "nuprl_dest_var")
+   | x -> failwith "nuprl_dest_var")
+ | x -> failwith "nuprl_dest_var"
+
 let nuprl_dest_all term = 
    match Lib_term.dest_term term with
    { term_op = term_op'; term_terms = [tp ; prop] } 
     when term_op' = (mk_nuprl5_simple_op "all") -> 
       (match dest_bterm tp with
-      { bvars = [x]; bterm = t1 } ->
-         (match dest_bterm prop with { bvars = []; bterm = t2 } -> 
+      { bvars = []; bterm = t1 } ->
+         (match dest_bterm prop with { bvars = [x]; bterm = t2 } -> 
           x, t1, t2
          | _ -> failwith "nuprl_dest_all")
       | _ -> failwith "nuprl_dest_all")    
     | _ -> failwith "nuprl_dest_all"
-
   
 let nuprl_dest_exists term = 
    match Lib_term.dest_term term with
    { term_op = term_op'; term_terms = [tp ; prop] } 
     when term_op' = (mk_nuprl5_simple_op "exists") -> 
       (match dest_bterm tp with
-      { bvars = [x]; bterm = t1 } ->
-         (match dest_bterm prop with { bvars = []; bterm = t2 } -> 
+      { bvars = []; bterm = t1 } ->
+         (match dest_bterm prop with { bvars = [x]; bterm = t2 } -> 
           x, t1, t2
          | _ -> failwith "nuprl_dest_exists")
       | _ -> failwith "nuprl_dest_exists")    

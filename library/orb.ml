@@ -110,7 +110,7 @@ and orb =
 let resource env string = assoc string env.resources
 
 let orb_open name =
-	{ lo_address =	[ "nuprl_light"
+	{ lo_address =	[ "metaprl"
 			; name
 			; "orb"
 			; string_of_int (getpid ())

@@ -166,7 +166,7 @@ let levels_lookup scanner level index =
 (* scanner includes levels *)
 
 let make_operator opid parameters =
-  if stringeq opid "!nuprl_light_implementation"
+  if stringeq opid "!metaprl_implementation"
      then (mk_op (make_opname
 			(map (function p ->
 				match dest_param p with
