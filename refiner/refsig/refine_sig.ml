@@ -150,7 +150,7 @@ sig
     * what it did in a proof step
     *)
    type extract_description =
-      EDRule of opname * int array * term list
+      EDRule of opname * int list * term list
     | EDRewrite
     | EDCondREwrite
     | EDComposition (* any compilcated steps will fall into this category *)
@@ -165,27 +165,9 @@ sig
     ************************************************************************)
 
    (*
-    * A rewrite extract is the validation for a rewrite.
-    *)
-   type rw_extract
-
-   (*
     * A normal rewrite can be applied to a term to rewrite it.
     *)
-   type rw_arg1 and rw_arg2 and rw_val
-   type rw = rw_arg1 -> rw_arg2 -> rw_val
-
-   (* Rewrite application *)
-   val rw_refine : sentinal -> rw -> term -> term * rw_extract
-
-   (* Rewrite composition *)
-   val rw_compose : rw_extract -> address -> rw_extract -> rw_extract
-
-   (* Reverse the rewrite *)
-   val rw_reverse : rw_extract -> rw_extract
-
-   (* Turn it into a regular extract *)
-   val extract_of_rw_extract : msequent -> int -> rw_extract -> extract
+   type rw
 
    (*
     * Apply a rewrite to a subterm of the goal.
@@ -213,30 +195,12 @@ sig
     ************************************************************************)
 
    (*
-    * A conditional rewrite validation.
-    *)
-   type crw_extract
-
-   (*
     * A conditional rewrite is a cross between a rewrite and
     * a tactic.  An application may generate subgoals that must
     * be proved.  A conditional rewrite is valid only in a sequent
     * calculus.
     *)
-   type crw_arg1 and crw_arg2 and crw_arg3 and crw_val
-   type cond_rewrite = crw_arg1 -> crw_arg2 -> crw_arg3 -> crw_val
-
-   (* Conditional rewrite application *)
-   val crw_refine : sentinal -> cond_rewrite -> msequent -> term -> term * crw_extract
-
-   (* Rewrite composition *)
-   val crw_compose : crw_extract -> address -> crw_extract -> crw_extract
-
-   (* Reverse the rewrite *)
-   val crw_reverse : crw_extract -> crw_extract
-
-   (* Turn it into a regular extract *)
-   val extract_of_crw_extract : msequent -> int -> crw_extract -> extract
+   type cond_rewrite
 
    (*
     * Ask for the current sequent, and for the term be rewritten.

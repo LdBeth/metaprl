@@ -98,13 +98,13 @@ struct
    let combine rw_f crw_f make clist1 clist2 =
       match Flist.last clist1, Flist.first clist2 with
          RewriteConv rw1, RewriteConv rw2 ->
-            let rw = RewriteConv (fun s t -> rw_f rw1 rw2 s t) in
+            let rw = RewriteConv (rw_f rw1 rw2) in
                if Flist.singleton clist1 & Flist.singleton clist2 then
                   rw
                else
                   make (Flist.append_skip clist1 rw clist2)
        | CondRewriteConv crw1, CondRewriteConv crw2 ->
-            let crw = CondRewriteConv (fun s v t -> crw_f crw1 crw2 s v t) in
+            let crw = CondRewriteConv (crw_f crw1 crw2) in
                if Flist.singleton clist1 & Flist.singleton clist2 then
                   crw
                else
