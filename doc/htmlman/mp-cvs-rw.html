@@ -12,11 +12,8 @@
    <LI>Make sure you have <A HREF="http://www.openssh.com/">OpenSSH</A> (or some other implementation of SSH version 1 protocol) installed on your computer.
    <LI>If you do not have a CVS account set up for you on cvs.metaprl.org:
    <OL>
-      <LI>If you don't have a ssh public key, then run <TT>ssh-keygen</TT>. If you do not
-      want your key to be protected by a passfrase, then press enter when asked for one.
-      <LI>Send your public key (~/.ssh/identity.pub) and your desired login to
-      <A HREF="mailto:nogin@cs.caltech.edu">Aleksey Nogin (nogin@cs.caltech.edu)</A>
-      or to <A HREF="mailto:jyh@cs.caltech.edu">Jason Hickey (jyh@cs.caltech.edu)</A>.
+      <LI>Generate an SSH v.1 RSA key pair (see <a href="http://cvs.metaprl.org:12000/doc/cvs-howto.html#Generating%20RSA%20public/private%20key%20pair%20and">our server HOWTO document</a> for detailed instructions).
+      <LI>Send your public key (~/.ssh/identity.pub) and your desired login to <A HREF="mailto:nogin@cs.caltech.edu">Aleksey Nogin (nogin@cs.caltech.edu).</A>
    </OL>
 
    <LI>Put the following into your <TT>~/.ssh/config</TT> file (if you do not have <TT>~/.ssh/config</TT> file, then create one):
