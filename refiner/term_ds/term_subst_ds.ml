@@ -536,7 +536,7 @@ struct
       i < 0 ||
       ( equal_fun f bvars sub (SeqGoal.get goals1 i) (SeqGoal.get goals2 i) &&
         equal_fun_goals goals1 goals2 f bvars sub (pred i) )
-   
+
    (* See refiner/refsig/term_subst_sig.mlz for explanation of this function *)
    let alpha_equal_fun f t vs t' items =
       IFDEF VERBOSE_EXN THEN

@@ -285,7 +285,7 @@ struct
     * Bound terms.
     *)
    let is_simple_bterm bt = (bt.bvars = [])
-    
+
    let mk_simple_bterm bterm =
       { bvars = []; bterm = bterm }
 

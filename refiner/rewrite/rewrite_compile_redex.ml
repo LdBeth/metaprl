@@ -191,7 +191,7 @@ struct
                   else []
                in
                let restrict_conts = if restrict then restricted_conts v bconts conts else [] in
-                  stack, if restrict_free = [] && restrict_conts = [] then term 
+                  stack, if restrict_free = [] && restrict_conts = [] then term
                          else RWFreeVars(term,restrict_conts,restrict_free)
 
             (* This is a second order variable instance *)
@@ -431,7 +431,7 @@ struct
       CVar v :: tl -> (v, i) :: stack_cvars (i + 1) tl
     | _ :: tl -> stack_cvars (i + 1) tl
     | [] -> []
-   
+
    let compile_so_redex strict addrs = function
       [] -> [||], []
     | (goal::args) as all ->

@@ -1504,10 +1504,10 @@ struct
                let count = addrs.(i) in
                let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
                   aux (goal_ind + count) t arg_ind rest
-          | ECRename i :: rest -> 
+          | ECRename i :: rest ->
                let count = addrs.(i) in
                let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
-                  rename goal_ind t arg_ind rest count 
+                  rename goal_ind t arg_ind rest count
           | ECRenameLast :: rest ->
                rename goal_ind t arg_ind rest (glen - goal_ind)
           | ECRestart :: rest ->
@@ -1668,7 +1668,7 @@ struct
             REF_RAISE(RefineError("check_rule", StringVarError("Unused parameter", dest_var p)))) params
 
    let check_prim_rule name addrs params mterm args result =
-      check_rule name addrs params mterm;        
+      check_rule name addrs params mterm;
       let subgoals, goal = unzip_mimplies mterm in
       (*
        * XXX BUG TODO: we need to make sure the args are "universal" and will always match

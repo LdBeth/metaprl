@@ -233,7 +233,7 @@ struct
        | Hypothesis t ->
             SymbolSet.union (free_vars_set t) fvs
        | Context (v,conts,subterms) ->
-            SymbolSet.remove (SymbolSet.add_list (SymbolSet.union fvs (terms_free_vars subterms)) conts) v) 
+            SymbolSet.remove (SymbolSet.add_list (SymbolSet.union fvs (terms_free_vars subterms)) conts) v)
 
    and subst_free_vars = function
       [] -> SymbolSet.empty

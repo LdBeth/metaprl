@@ -260,7 +260,7 @@ struct
       in let rec make_hyp_list i hyps addrs =
          if i = 0 then addrs else let i = pred i in
             make_hyp_list i hyps (
-               match SeqHyp.get hyps i with 
+               match SeqHyp.get hyps i with
                   Hypothesis _ | HypBinding _ -> HypAddr i :: addrs
                 | Context(_,_,ts) -> make_hyppath_list (List.length ts) (HypAddr i) addrs
             )

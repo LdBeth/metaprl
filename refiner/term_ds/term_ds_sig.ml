@@ -252,7 +252,7 @@ sig
    val xnil_opname : opname
    val xcons_opname : opname
    val xnil_term : term
-   
+
    val is_xlist_term : term -> bool
    val dest_xlist : term -> term list
    val mk_xlist_term : term list -> term

@@ -149,7 +149,7 @@ struct
             REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
     | _ ->
          REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
-         
+
    let rec rstack_check_arity v conts arity = function
       [] ->
          raise (Invalid_argument "Rewrite_util.rstack_check_arity")

@@ -549,9 +549,9 @@ struct
 
    let nth_clause_addr t i =
       nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
-   
+
    let rec make_path_list i =
-      if i = 0 then [] else let i = pred i in (Path [i]) :: (make_path_list i) 
+      if i = 0 then [] else let i = pred i in (Path [i]) :: (make_path_list i)
    let subterm_addresses_name = "Term_addr_gen.subterm_addresses"
    let subterm_addresses t =
       if is_var_term t then []
@@ -565,11 +565,11 @@ struct
                   nth_hd_address i :: aux (i + 1) (match_hyp subterm_addresses_name t bterms)
                else if Opname.eq opname context_opname then
                   let _, term, _, ts = dest_context term in
-                     (List.map (compose_address (nth_hd_address i)) (make_path_list (List.length ts))) @ 
+                     (List.map (compose_address (nth_hd_address i)) (make_path_list (List.length ts))) @
                      (aux (i + 1) term)
                else if Opname.eq opname concl_opname then
                   if bterms = [] then
-                     [Path[0]] (* arg address *)            
+                     [Path[0]] (* arg address *)
                   else
                      nth_hd_address i :: aux (i + 1) (match_concl subterm_addresses_name t bterms)
                else
