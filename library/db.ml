@@ -240,11 +240,11 @@ let read_term_aux scanner stb stp =
  scan_term (new_lscanner scanner stb stp)
 
 
-let string_to_term s = 
+let string_to_trivial_term s stp = 
   read_term_aux
 	(make_scanner "\\ \n\r\t()[]{}:;.," "\n\t\r " (Stream.of_string s))
 	(function s -> error ["string_to_term"; "string_to_binding"] [] [])
-	(function s -> error ["string_to_term"; "string_to_parameter"] [] [])
+	stp
 
 (* db *)
 
@@ -314,7 +314,7 @@ let scan_level_expression s =
 
 let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
 
-let mk_real_param_from_strings value ptype =
+let mk_real_param_from_strings stp value ptype =
   match ptype with "n" -> (Number (Num.num_of_string value))
   | "time" -> (ParmList [(make_param (String "time"));
 			  (make_param (Number (Num.num_of_string value)))])
@@ -323,7 +323,7 @@ let mk_real_param_from_strings value ptype =
   | "q" -> (ParmList [(make_param (String "quote")); (make_param (String value))])
   | "b" -> (ParmList [(make_param (String "bool")); (make_param (Number (Num.num_of_string value)))])
   | "v" -> (Var value)
-  | "o" -> let term = string_to_term value in
+  | "o" -> let term = string_to_trivial_term value stp in
     (ObId (stamp_to_object_id (term_to_stamp term)))
   | "l" -> let level = 
       scan_level_expression (make_le_scanner (Stream.of_string value)) in 
@@ -359,7 +359,7 @@ let string_to_bindings value =
   else [value]
 
 
-let string_to_parameter value ptype =
+let rec string_to_parameter value ptype =
  let l = String.length value in
   if ash_length < l then 
     let v = String.sub value 0 ash_length in
@@ -382,14 +382,14 @@ let string_to_parameter value ptype =
 			  ])
       | "d" ->  (ParmList [(make_param (String "display"));
 			    (make_param (String "slot"));
-			    (make_param (String ptype));
+			    (make_param (String ptype))
 			  ])
       | "a" ->  (mk_meta_param_from_strings value ptype)
-      | "%" ->  (mk_real_param_from_strings v' ptype)
+      | "%" ->  (mk_real_param_from_strings string_to_parameter v' ptype)
       | t -> failwith "unknown special op-param"
-    else (mk_real_param_from_strings value ptype))
+    else (mk_real_param_from_strings string_to_parameter value ptype))
     in make_param pv
-  else make_param (mk_real_param_from_strings value ptype)
+  else make_param (mk_real_param_from_strings string_to_parameter  value ptype)
 
 (* end db ascii*)
 
