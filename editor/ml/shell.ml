@@ -389,6 +389,9 @@ struct
           | InputForm _ ->
                eprintf "Editing input form '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
+          | Definition _ ->
+               eprintf "Editing definition '/%s/%s' not implemented%t" modname name eflush;
+               raise (Failure "view")
       in
          (* Leave the current proof at the root *)
          info.proof.edit_addr [];
