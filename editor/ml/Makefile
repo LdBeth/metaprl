@@ -233,12 +233,12 @@ $(MP).opt: $(CMXOBJS) $(TCMXFILES)
 clean::
 	$(RM) -f *.p4* *.pp* mp_version.ml
 
-mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi
-	echo -n "let version = \"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\"" > mp_version.ml
+mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi Makefile
+	echo -n "let version = \"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses $(REFINER) Refiner_$(TERMS)\"" > mp_version.ml
 	$(OCAMLC) -c $(OCAMLCFLAGS) mp_version.ml
 
-mp_version.cmx: $(CMXOBJS) mp_version.cmi
-	echo -n "let version = \"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\"" > mp_version.ml
+mp_version.cmx: $(CMXOBJS) $(CMXADEPS) $(TCMXADEPS) mp_version.cmi Makefile
+	echo -n "let version = \"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses $(REFINER) Refiner_$(TERMS)\"" > mp_version.ml
 	$(OCAMLOPT) -c $(OCAMLOPTFLAGS) mp_version.ml
 
 mp_version.cmi: mp_version.mli
