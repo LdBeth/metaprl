@@ -135,7 +135,7 @@ dform conts_left_df : mode[src] :: mode[prl] :: mode[html] :: df_bconts{'conts} 
    `"<|" df_concat{slot[";"]; 'conts} `"|>"
 
 dform conts_left_df : mode[tex] :: df_bconts{'conts} =
-   izone `"{}_{" ezone 
+   izone `"{}_{" ezone
    <<mathmacro["left<"]>> `"|" df_concat{slot[";"]; 'conts} `"|" <<mathmacro["right>"]>>
    izone `"}" ezone
 
@@ -151,7 +151,7 @@ let split_digits s =
    let rec aux i =
       if (i=0) then 0 else
          let i' = pred i in
-         if Lm_string_util.is_digit(s.[i']) then aux i' else i
+         if Lm_ctype.is_digit(s.[i']) then aux i' else i
    in
       let len = String.length s in
       let i = aux len in
@@ -162,7 +162,7 @@ let split_var v =
       [] ->
          raise (Invalid_argument "var_*_df: string has an empty name")
     | h::tl ->
-         if List.for_all (Lm_string_util.for_all Lm_string_util.is_digit) tl then
+         if List.for_all (Lm_string_util.for_all Lm_ctype.is_digit) tl then
             let hn,hd = split_digits h in
                if (hn <> "") && (hd <> "") then hn, hd::tl else h,tl
          else

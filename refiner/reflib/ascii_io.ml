@@ -305,8 +305,8 @@ struct
                 | 'V'|'v' -> add_var r item
                 | _ -> fail ("get_term: " ^ long)
             ) in
-            if r.io_old_format then begin 
-               eprintf "Warning: converting a term read from an old .prla file%t" eflush; 
+            if r.io_old_format then begin
+               eprintf "Warning: converting a term read from an old .prla file%t" eflush;
                TM.TermMeta.term_of_parsed_term res (* XXX HACK: format version <= 1.0.7 support *)
             end else res
        | [] -> fail "get_term1"
@@ -316,8 +316,8 @@ struct
       let r = new_record () in
       add_items r !t;
       let res = retrieve (Hashtbl.find r.io_terms name) in
-      if r.io_old_format then begin 
-         eprintf "Warning: converting a term read from an old .prla file%t" eflush; 
+      if r.io_old_format then begin
+         eprintf "Warning: converting a term read from an old .prla file%t" eflush;
          TM.TermMeta.term_of_parsed_term res (* XXX HACK: format version <= 1.0.7 support *)
       end else res
 
@@ -417,10 +417,10 @@ struct
                   [(term :: vars)] -> let term' = rename term in if term == term' then record else [(term'::vars)]
                 | _ -> smap_rename record
                end
-             | 'H' -> begin match record with 
+             | 'H' -> begin match record with
                   [[var;name]] -> let name' = rename name in if name == name' then record else [[var;name']]
                 | _ -> smap_rename record
-               end   
+               end
              | 'N' -> begin match record with
                   [[_;"NIL"]] -> record
                 | [var::rest] -> let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
@@ -765,12 +765,12 @@ struct
    let simple_name_seq _ = "","s"
 
    let output_aux strs =
-      String.concat " " (List.map Lm_string_util.quote strs)
+      String.concat " " (List.map Lm_ctype.quote strs)
 
    let simple_output_line out (str1, str2, strs) =
-      output_string out (Lm_string_util.quote str1);
+      output_string out (Lm_ctype.quote str1);
       output_char out '\t';
-      output_string out (Lm_string_util.quote str2);
+      output_string out (Lm_ctype.quote str2);
       output_char out '\t';
       output_string out (String.concat "\\\\ " (List.map output_aux strs));
       output_char out '\n'

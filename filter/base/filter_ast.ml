@@ -61,7 +61,7 @@ let build_printed_term loc t =
          <:expr< [] >>
    and build_var = function
       [h] ->
-         if Lm_string_util.is_capitalized h then
+         if Lm_ctype.is_capitalized h then
             <:expr< $uid:h$ >>
          else
             <:expr< $lid:h$ >>
@@ -71,7 +71,7 @@ let build_printed_term loc t =
          raise (Invalid_argument "build_application")
    and build_patt = function
       ML_Module_Var [h] ->
-         if Lm_string_util.is_capitalized h then
+         if Lm_ctype.is_capitalized h then
             <:patt< $uid:h$ >>
          else
             <:patt< $lid:h$ >>
