@@ -45,29 +45,6 @@ ABORT_ON_DEPENDENCY_ERRORS = true
 .INCLUDE: mk/defaults
 
 #
-# JYH: do we have to name these things _DEFAULT?
-# If we use the normal names, we don't have to have
-# this section, which would be nice.
-#
-TERMS = $(TERMS_DEFAULT)
-REFINER = $(REFINER_DEFAULT)
-SEQ_SET = $(SEQ_SET_DEFAULT)
-CCC = $(CCC_DEFAULT)
-ENSROOT = $(ENSROOT_DEFAULT)
-OCAMLSRC = $(OCAMLSRC_DEFAULT)
-THEORIES = $(THEORIES_DEFAULT)
-TESTS_ENABLED = $(TESTS_ENABLED_DEFAULT)
-READLINE_ENABLED = true
-NCURSES_ENABLED = true
-SSL_ENABLED = $(SSL_ENABLED_DEFAULT)
-THREADS_ENABLED = $(THREADS_ENABLED_DEFAULT)
-NATIVE_ENABLED = $(NATIVE_ENABLED_DEFAULT)
-BYTE_ENABLED = $(BYTE_ENABLED_DEFAULT)
-SLOPPY_DEPENDENCIES = false
-NATIVE_PROFILING_ENABLED = false
-OCAMLFLAGS = $(DEFAULT_OCAMLFLAGS)
-
-#
 # Configuration file
 #
 .INCLUDE: mk/make_config
@@ -76,6 +53,31 @@ OCAMLFLAGS = $(DEFAULT_OCAMLFLAGS)
 .INCLUDE: mk/config
     section eval
        MakeConfig(mk/config)
+
+#
+# Things that can not be enabled on Win32.
+#
+if $(equal $(OSTYPE), Win32)
+   READLINE_ENABLED = false
+   NCURSES_ENABLED = false
+   NATIVE_PROFILING_ENABLED = false
+
+#
+# Canonize boolean flags
+# This helps in keeping mk/config nice, but can be omited.
+#
+Bool(arg) =
+    return( $(not $(not $(arg))))
+
+NATIVE_ENABLED = $(Bool $(NATIVE_ENABLED))
+BYTE_ENABLED = $(Bool $(BYTE_ENABLED))
+SSL_ENABLED = $(Bool $(SSL_ENABLED))
+THREADS_ENABLED = $(Bool $(THREADS_ENABLED))
+READLINE_ENABLED = $(Bool $(READLINE_ENABLED))
+NCURSES_ENABLED = $(Bool $(NCURSES_ENABLED))
+NATIVE_PROFILING_ENABLED = $(Bool $(NATIVE_PROFILING_ENABLED))
+TESTS_ENABLED = $(Bool $(TESTS_ENABLED))
+SLOPPY_DEPENDENCIES = $(Bool $(SLOPPY_DEPENDENCIES))
 
 # Create a fresh copy if it is out-of-date
 .INCLUDE: mk/config: mk/make_config
@@ -103,13 +105,6 @@ if $(equal $(OSTYPE), Win32)
    # Pathname separator
    #
    SLASH = \\
-
-   #
-   # Things that can not be enabled on Win32.
-   #
-   READLINE_ENABLED = false
-   NCURSES_ENABLED = false
-   NATIVE_PROFILING_ENABLED = false
 
    #
    # Compile C files with threads
