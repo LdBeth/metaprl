@@ -46,7 +46,6 @@
 open Lm_debug
 
 open Lm_ctype
-open Lm_string_util
 open Refiner.Refiner.TermOp
 open Rformat
 

@@ -9,8 +9,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 {
 (* Remember the possibly free structure identifiers *)
 

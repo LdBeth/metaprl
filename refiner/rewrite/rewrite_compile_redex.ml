@@ -111,7 +111,6 @@ struct
    open RefineError
    open RewriteTypes
    open RewriteUtil
-   open RewriteDebug
 
    (*
     *

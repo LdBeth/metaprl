@@ -22,9 +22,6 @@
  * Email: granicz@cs.caltech.edu
  *)
 
-open Phobos_type
-open Phobos_exn
-
 type digest
 
 type header

@@ -1,4 +1,8 @@
 #!/bin/sh
+OUT=`mktemp /tmp/clean-opens.XXXXXX`
+YES=0
+NO=0
+(
 omake clean
 cvs update
 IFS=::::::
@@ -32,26 +36,29 @@ while read FILE; do
             rm -f $BINFILE $PPO
             if omake "$BINFILE" 2>&1 >/dev/null && [ -f $BINFILE ]; then
                echo success!
+               YES=$[$YES + 1]
                rm -f $FILE.save
             else
                echo failed.
+               NO=$[$NO + 1]
                mv -f $FILE.save $FILE
                touch $FILE
-               rm -f "$BINFILE" $PPO
+               rm -f "$BINFILE" "$PPO"
             fi
          fi
       done < $TMP2 
-      omake "$BINFILE" 2>&1 >/dev/null
-      if [ ! -f $BINFILE ]; then
-         omake "$BINFILE" 2>&1 >/dev/null
-         if [ ! -f $BINFILE ]; then
-            echo "*** Execution of"
-            echo "*** omake \"$BINFILE\" 2>&1 >/dev/null"
-            echo "*** did not create $BINFILE"
-            echo "*** Aborting"
-            exit 1
-         fi
-      fi
    fi
 done < $TMP
 rm -f $TMP $TMP2
+) > $OUT
+if [ -z "$LOGNAME" ]; then
+   LOGNAME=`whoami`
+fi
+(
+   echo "Removed $YES out of $[$YES + $NO]"
+   echo " "
+   echo "The full log is in $OUT on `hostname -s`; ends with"
+   echo ...
+   tail $OUT
+   echo "---"
+) | mail "$LOGNAME" -s "Cleaning opens in `pwd` done."

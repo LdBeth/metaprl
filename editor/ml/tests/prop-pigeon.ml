@@ -38,9 +38,7 @@ open Lm_debug
 
 open Lm_symbol
 
-open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.RefineError
@@ -48,7 +46,6 @@ open Refiner.Refiner.RefineError
 open Tactic_type
 open Tacticals
 open Conversionals
-open Var
 open Dtactic
 open Auto_tactic
 
