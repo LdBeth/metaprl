@@ -109,24 +109,20 @@ exception TermMatch of string * term * string
  * subst: simultaneous subst of terms for vars.
  * var_subst: subst of var for a term.
  *)
-val do_subst : term_subst -> term -> term
+val do_term_subst : term_subst -> term -> term
 val subst : term -> term list -> string list -> term
-val do_bsubst : term_subst -> bound_term -> bound_term
+val do_bterm_subst : term_subst -> bound_term -> bound_term
 val var_subst : term -> term -> string -> term
 
-
-val dest_ds_term : term -> term_nods
-val make_ds_term : term_nods -> term
+val dest_term : term -> term_nods
+val make_term : term_nods -> term
 val mk_op : opname -> param list -> operator
 val mk_term : operator -> bound_term list -> term
-val mk_ds_bterm : string list -> term -> bound_term
-val make_ds_bterm : bound_term_nods -> bound_term
-val dest_ds_bterm : bound_term -> bound_term_nods
+val mk_bterm : string list -> term -> bound_term
+val make_bterm : bound_term_nods -> bound_term
+val dest_bterm : bound_term -> bound_term_nods
 val mk_level : int -> level_exp_var list -> level_exp
 val mk_level_var : string -> int -> level_exp_var
-
-val make_object_id : param list -> object_id 
-val dest_object_id : object_id  ->  param list
 
 val normalize_term : term -> term
 
@@ -209,68 +205,6 @@ val mk_so_var_term : string -> term list -> term
 val is_context_term : term -> bool
 val dest_context : term -> string * term * term list
 val mk_context_term : string -> term -> term list -> term
-
-(*
- * Sequents.
- * This should be visible only to sequents, but oh well.
- *)
-val is_sequent_term : term -> bool
-
-val is_hyp_term : term -> bool
-val dest_hyp : term -> string * term * term
-val mk_hyp_term : string -> term -> term -> term
-
-val is_concl_term : term -> bool
-val dest_concl : term -> term * term
-val mk_concl_term : term -> term -> term
-val null_concl : term
-
-val is_sequent_term : term -> bool
-val dest_sequent : term -> term list
-val goal_of_sequent : term -> term
-val mk_sequent_term : term list -> term
-
-val nth_hyp : term -> int -> string * term
-val nth_concl : term -> int -> term
-val num_hyps : term -> int
-val declared_vars : term -> string list
-val declarations : term -> (string * term) list
-val get_decl_number : term -> string -> int
-val is_free_seq_var : int -> string -> term -> bool
-
-val concl_addr : term -> int * int
-val replace_concl : term -> term -> term
-val replace_goal : term -> term -> term          (* One subgoal *)
-
-val is_xrewrite_term : term -> bool
-val mk_xrewrite_term : term -> term -> term
-val dest_xrewrite : term -> term * term
-
-(*
- * Primitive lists.
- *)
-val is_xnil_term : term -> bool
-val xnil_term : term
-
-val is_xcons_term : term -> bool
-val mk_xcons_term : term -> term -> term
-val dest_xcons : term -> term * term
-
-val is_xlist_term : term -> bool
-val dest_xlist : term -> term list
-val mk_xlist_term : term list -> term
-
-(*
- * Primitive strings.
- *)
-val is_xstring_term : term -> bool
-val mk_xstring_term : string -> term
-val dest_xstring : term -> string
-
-(*
- * Primitive abstractions.
- *)
-val mk_xlambda_term : string -> term -> term
 
 (************************************************************************
  * Shapes                                                               *

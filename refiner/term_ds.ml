@@ -4,7 +4,6 @@
  *)
 
 open Printf
-
 open Debug
 open Opname
 
@@ -109,17 +108,11 @@ type address =
 exception IncorrectAddress of address * term
 exception BadAddressPrefix of address * address
 exception BadMatch of term * term
+exception TermMatch of string * term * string
 
 (************************************************************************
- * Term de/constructors                                                 *
+ * Free variables, substitution                                         *
  ************************************************************************)
-
-let rec filter f = function 
-   [] -> [] |
-   h::tl -> 
-      if (f h) 
-         then h::(filter f tl)
-         else filter f tl
 
 let bterms_free_vars = 
    List.fold_left 
@@ -132,7 +125,7 @@ let subst_free_vars =
       StringSet.empty
 
 let do_term_subst sub t =
-   match filter (fun (v,_) -> StringSet.mem v t.free_vars) sub with
+   match List_util.filter (fun (v,_) -> StringSet.mem v t.free_vars) sub with
       [] -> t|
       sub' ->
          {free_vars = 
@@ -147,7 +140,7 @@ let do_term_subst sub t =
 let subst t tl vl = do_term_subst (List.combine vl tl) t
 
 let do_bterm_subst sub bt =
-   match filter (fun (v,_) -> StringSet.mem v bt.bfree_vars) sub with
+   match List_util.filter (fun (v,_) -> StringSet.mem v bt.bfree_vars) sub with
       [] -> bt|
       sub' ->
          {bfree_vars =
@@ -159,24 +152,173 @@ let do_bterm_subst sub bt =
                (subst_free_vars sub');
           bcore = BSubst (bt,sub')}
 
-let rec dest_ds_term t = 
+let is_free_var v t = StringSet.mem v t.free_vars
+
+let free_vars t = StringSet.elements t.free_vars
+
+let free_vars_terms = function
+   [] -> [] |
+   hd::tl ->
+      StringSet.elements 
+         (List.fold_left 
+            (function vars -> function trm -> StringSet.union vars trm.free_vars)
+            hd.free_vars tl)
+
+(************************************************************************
+ * Variables in pure terms                                              *
+ ************************************************************************)
+
+let var_opname = make_opname ["var"]
+
+(*
+ * See if a term is a variable.
+ *)
+let is_var_term_nods = function
+   { term_op = { op_name = opname; op_params = [Var v] };
+     term_terms = []
+   } when opname == var_opname -> true
+ | _ -> false
+
+(*
+ * Destructor for a variable.
+ *)
+let dest_var_nods = function
+   { term_op = { op_name = opname; op_params = [Var v] };
+     term_terms = []
+   } when opname == var_opname -> v
+  | t -> raise (TermMatch ("dest_var", {free_vars = bterms_free_vars t.term_terms; core = Term t}, ""))
+
+(************************************************************************
+ * Term de/constructors                                                 *
+ ************************************************************************)
+
+let rec dest_term t = 
    match t.core with
       Term tt -> tt |
       Subst (tt,sub) -> 
-         let rec 
-            ttt = dest_ds_term tt and
-            t4 = 
+         let ttt = dest_term tt in
+         let t4 = 
+            try dest_term (List.assoc (dest_var_nods ttt) sub)
+            with _ -> 
                {term_op = ttt.term_op; 
                 term_terms = List.map (do_bterm_subst sub) ttt.term_terms}
          in
             t.core <- Term t4;
             t4
 
-let mk_term op bterms = { term_op = op; term_terms = bterms }
+let var_subst t t2 v = 
+   if StringSet.mem v t.free_vars 
+      then 
+         { free_vars = StringSet.union t2.free_vars (StringSet.remove v t.free_vars);
+           core = Subst (t,[(v,t2)])}
+      else t
+
+(*
+ * Make a variable.
+ *)
+let mk_var_term v =
+   { free_vars = StringSet.add v StringSet.empty;
+     core = Term
+      { term_op = { op_name = var_opname; op_params = [Var v] };
+        term_terms = [] }}
+
+let make_term t = 
+   try mk_var_term (dest_var_nods t)
+   with _ ->
+      {free_vars = bterms_free_vars t.term_terms;
+       core = Term t}
+
+let mk_term op bterms = 
+   {free_vars = bterms_free_vars bterms;
+    core = Term { term_op = op; term_terms = bterms }}
 
 let mk_op name params = { op_name = name; op_params = params }
 
-let mk_bterm bvars term = { bvars = bvars; bterm = term }
+
+let make_bterm bt =
+   { bfree_vars = List.fold_right StringSet.remove bt.bvars bt.bterm.free_vars;
+     bcore = BTerm bt }
+
+let mk_bterm vars term =
+   { bfree_vars = List.fold_right StringSet.remove vars term.free_vars;
+     bcore = BTerm {bvars = vars; bterm = term }}
+
+(*
+ * New variable production.
+ * renames are the variables to be renamed,
+ * and av is a list list of variables to avoid.
+ * Our algorithm is slow and simple: just append an
+ * index and increment until no more collisions.
+ *)
+
+let rec new_var av v i =
+   let v' = v ^ "_" ^ (string_of_int i) in
+   if (StringSet.mem v' av)
+      then new_var av v (succ i)
+      else v'
+
+and new_vars av = function 
+   [] -> ([],[]) |
+   v::vt ->
+      match (new_vars av vt) with
+         (vs,ts) -> 
+            let v' = new_var av v 0 in
+            ((v,v')::vs, (v,mk_var_term v')::ts)
+
+let rec dest_bterm bt = 
+   match bt.bcore with
+      BTerm tt -> tt |
+      BSubst (tt,sub) -> 
+         let ttt = dest_bterm tt in
+         let t4 =
+            match ttt.bvars with
+               [] -> { bvars = []; bterm = do_term_subst sub ttt.bterm } |
+               bvrs -> 
+                  let sub_fvars = subst_free_vars sub in
+                  let capt_vars = List_util.filter (function v -> StringSet.mem v sub_fvars) bvrs in
+                  match capt_vars with
+            (* 
+             * Unefficiency : in [] case do_term_subst will go collecting
+             * free variables of sub to get the
+             * list of free variables of bterm, but it may be more efficient to take 
+             * union of bt.free_vars and (bvrs intersect ttt.bterm.free_vars)
+             * 
+             * Similar inefficiency in the "captured" case.
+             *)
+                     [] -> { bvars = bvrs; bterm = do_term_subst sub ttt.bterm } |
+                     captured -> 
+                        let avoidvars = StringSet.union sub_fvars ttt.bterm.free_vars in
+                        let (vs,ts) = new_vars avoidvars captured in
+                        { bvars = 
+                           List.map 
+                              (function v ->
+                                 try List.assoc v vs
+                                 with Not_found -> v)
+                              bvrs;
+                          bterm = 
+                           do_term_subst sub (do_term_subst ts ttt.bterm)}
+         in
+            bt.bcore <- BTerm t4;
+            t4
+
+let no_bvars =
+   List.for_all
+      (function bt ->
+        match dest_bterm bt with
+           { bvars = [] } -> true |
+           _ -> false)
+
+let dest_simple_bterm name term bt =
+   match dest_bterm bt with
+      { bvars = []; bterm = tt } -> tt |
+      _ -> raise (TermMatch (name, term, "bvars exist"))
+
+let dest_simple_bterms name term = 
+   List.map (function bt -> dest_simple_bterm name term bt)
+
+let mk_simple_bterm term =
+   { bfree_vars = term.free_vars; 
+     bcore = BTerm { bvars = []; bterm = term }}
 
 let mk_level_var v i =
    { le_var = v; le_offset = i }
@@ -184,116 +326,27 @@ let mk_level_var v i =
 let mk_level i l =
    { le_const = i; le_vars = l }
 
+let subterms_of_term t =
+   List.map (fun bt -> (dest_bterm bt).bterm) (dest_term t).term_terms
+
+(*
+ * Collect all binding vars.
+ *)
+let rec binding_vars_term bvars = function t ->
+   binding_vars_bterms bvars (dest_term t).term_terms
+
+and binding_vars_bterms bvars = function
+   btrm::l ->
+      let bt = dest_bterm btrm in
+      binding_vars_bterms (binding_vars_term (List_util.union bt.bvars bvars) bt.bterm) l
+   | [] -> bvars
+
+let binding_vars = binding_vars_term []
+
 (*
  * Operator names.
  *)
-let opname_of_term = function
-   { term_op = { op_name = name } } -> name
-
-(*
- * Get the subterms.
- * None of the subterms should be bound.
- *)
-let subterms_of_term t =
-   List.map (fun { bterm = t } -> t) (dest_ds_term t).term_terms
-
-(************************************************************************
- * ZIP/UNZIP                                                            *
- ************************************************************************)        
-
-(*
- * Unzipping means that we want to recursively destruct a
- * right associative type.
- *)
-let unzip_rassoc opname =
-   let rec aux = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = a }; { bvars = []; bterm = b }]
-      } when opname' = opname ->
-         a::(aux b)
-    | t -> [t]
-   in
-      aux
-
-let unzip_lassoc opname =
-   let rec aux = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = a }; { bvars = []; bterm = b }]
-      } when opname' = opname ->
-         (aux a) @ [b]
-    | t -> [t]
-   in
-      aux
-
-let unzip_dep_rassoc opname =
-   let rec aux = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = a }; { bvars = [v]; bterm = b }]
-      } when opname' = opname ->
-         (v, a)::(aux b)
-    | t -> ["", t]
-   in
-      aux
-
-let unzip_dep_lassoc opname =
-   let rec aux = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = a }; { bvars = [v]; bterm = b }]
-      } when opname' = opname ->
-         (aux a) @ [v, b]
-    | t -> ["", t]
-   in
-      aux
-
-let zip_rassoc opname =
-   let rec aux = function
-      [] -> raise (Invalid_argument "zip_rassoc")
-    | [h] -> h
-    | h::t ->
-         { term_op = { op_name = opname; op_params = [] };
-           term_terms = [{ bvars = []; bterm = h }; { bvars = []; bterm = aux t }]
-         }
-   in
-      aux
-
-let zip_lassoc opname t =
-   let rec aux t = function
-      [] -> t
-    | h::tl ->
-         let t' = { term_op = { op_name = opname; op_params = [] };
-                    term_terms = [{ bvars = []; bterm = t }; { bvars = []; bterm = h }]
-                  }
-         in
-            aux t' tl
-   in
-      match t with
-         [] -> raise (Invalid_argument "zip_lassoc")
-       | hd::tl -> aux hd tl
-            
-let zip_dep_rassoc opname =
-   let rec aux = function
-      [] -> raise (Invalid_argument "zip_rassoc")
-    | [v, h] -> h
-    | (v, h)::t ->
-         { term_op = { op_name = opname; op_params = [] };
-           term_terms = [{ bvars = []; bterm = h }; { bvars = [v]; bterm = aux t }]
-         }
-   in
-      aux
-
-let zip_dep_lassoc opname t =
-   let rec aux t = function
-      [] -> t
-    | (v, h)::tl ->
-         let t' = { term_op = { op_name = opname; op_params = [] };
-                    term_terms = [{ bvars = []; bterm = t }; { bvars = [v]; bterm = h }]
-                  }
-         in
-            aux t' tl
-   in
-      match t with
-         [] -> raise (Invalid_argument "zip_lassoc")
-       | (v, h)::tl -> aux h tl
+let opname_of_term t = (dest_term t).term_op.op_name
 
 (************************************************************************
  * Level expressions                                                    *
@@ -369,64 +422,40 @@ let level_cumulativity = fun
  * Variables                                                            *
  ************************************************************************)
 
-let var_opname = make_opname ["var"]
-
 (*
  * See if a term is a variable.
  *)
-let is_var_term = function
-   { term_op = { op_name = opname; op_params = [Var v] };
-     term_terms = []
-   } when opname == var_opname -> true
- | _ -> false
+let is_var_term t = is_var_term_nods (dest_term t)
 
 (*
  * Destructor for a variable.
  *)
-let dest_var = function
-   { term_op = { op_name = opname; op_params = [Var v] };
-     term_terms = []
-   } when opname == var_opname -> v
-  | t -> raise (TermMatch ("dest_var", t, ""))
-
-(*
- * Make a variable.
- *)
-let mk_var_term v =
-   { term_op = { op_name = var_opname; op_params = [Var v] };
-     term_terms = []
-   }
+let dest_var t = dest_var_nods (dest_term t)
 
 let mk_var_op v = { op_name = var_opname; op_params = [Var v] }
 
 (*
  * Second order variables have subterms.
  *)
-let is_so_var_term = function
-   ({ term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms } : term)
-   when opname == var_opname ->
-      List.for_all (function { bvars = [] } -> true | _ -> false) bterms
+let is_so_var_term t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms }
+   when opname == var_opname -> no_bvars bterms
  | _ -> false
 
-let dest_so_var = function
-   ({ term_op = { op_name = opname; op_params = [Var(v)] };
+let dest_so_var t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [Var(v)] };
       term_terms = bterms
-    } : term) as term when opname == var_opname ->
-      v, List.map (function { bvars = []; bterm = t } -> t | _ ->
-            raise (TermMatch ("dest_so_var", term, "bvars exist")))
-      bterms
- | term -> raise (TermMatch ("dest_so_var", term, "not a so_var"))
+   } when opname == var_opname ->
+      v, dest_simple_bterms "dest_so_var" t bterms
+ | term -> raise (TermMatch ("dest_so_var", t, "not a so_var"))
 
 (*
  * Second order variable.
  *)
 let mk_so_var_term v terms =
-   let mk_bterm term =
-      { bvars = []; bterm = term }
-   in
+   make_term 
       { term_op = { op_name = var_opname; op_params = [Var(v)] };
-        term_terms = List.map mk_bterm terms
-      }
+        term_terms = List.map mk_simple_bterm terms }
 
 (*
  * Second order context, contains a context term, plus
@@ -434,117 +463,44 @@ let mk_so_var_term v terms =
  *)
 let context_opname = make_opname ["context"]
 
-let is_context_term = function
-   ({ term_op = { op_name = opname; op_params = [Var _] }; term_terms = bterms } : term)
-   when opname == context_opname ->
-      List.for_all (function { bvars = [] } -> true | _ -> false) bterms
+let is_context_term t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [Var _] }; term_terms = bterms }
+   when opname == context_opname -> no_bvars bterms
  | term -> false
 
-let dest_context = function
-   ({ term_op = { op_name = opname; op_params = [Var v] };
-      term_terms = { bvars = []; bterm = term' }::bterms
-    } : term) as term when opname == context_opname ->
-      v, term', List.map (function { bvars = []; bterm = t } -> t
-       | _ ->
-            raise (TermMatch ("dest_context", term, "bvars exist")))
-      bterms
- | term -> raise (TermMatch ("dest_context", term, "not a context"))
+let dest_context term = match dest_term term with
+   { term_op = { op_name = opname; op_params = [Var v] };
+      term_terms = bterm :: bterms
+    } when opname == context_opname ->
+      v, dest_simple_bterm "dest_context" term bterm, 
+         dest_simple_bterms "dest_context" term bterms
+ | _ -> raise (TermMatch ("dest_context", term, "not a context"))
 
 let mk_context_term v term terms =
-   let mk_bterm term =
-      { bvars = []; bterm = term }
-   in
+   make_term 
       { term_op = { op_name = context_opname; op_params = [Var v] };
-        term_terms = (mk_bterm term)::(List.map mk_bterm terms)
-      }
+        term_terms = (mk_simple_bterm term)::(List.map mk_simple_bterm terms) }
 
-(*
- * Rewrite
- *)
-let xrewrite_op = mk_opname "rewrite" xperv
+let rec context_vars_term cvars t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [Var v] };
+     term_terms = bterms
+   } when opname == context_opname ->
+      let cvars' =
+         if List.mem v cvars then
+            cvars
+         else
+            v::cvars
+      in
+         context_vars_bterms cvars' bterms
+ | { term_terms = bterms } ->
+      context_vars_bterms cvars bterms
 
-let is_xrewrite_term = is_dep0_dep0_term xrewrite_op
-let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
-let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
+and context_vars_bterms cvars = function
+   bt::l ->
+      context_vars_bterms (context_vars_term cvars (dest_bterm bt).bterm) l
+ | [] -> cvars
 
-(************************************************************************
- * PRIMITIVE FORMS                                                      *
- ************************************************************************)
-
-(*
- * Lists.
- *)
-let xnil_opname = mk_opname "nil" xperv
-let xcons_opname = mk_opname "cons" xperv
-
-let xnil_term = mk_simple_term xnil_opname []
-let is_xnil_term t = t = xnil_term
-
-let is_xcons_term = is_dep0_dep0_term xcons_opname
-let mk_xcons_term = mk_dep0_dep0_term xcons_opname
-let dest_xcons = dest_dep0_dep0_term xcons_opname
-
-let rec is_xlist_term = function
-   { term_op = { op_name = opname; op_params = [] };
-     term_terms = [{ bvars = []; bterm = _ };
-                   { bvars = []; bterm = b }]
-   } when opname == xcons_opname -> is_xlist_term b
- | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname -> true
- | _ -> false
-
-let dest_xlist t =
-   let rec aux = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = a };
-                      { bvars = []; bterm = b }]
-      } when opname == xcons_opname -> a::(aux b)
-    | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname -> []
-    | _ -> raise (TermMatch ("dest_xlist", t, "not a list"))
-   in
-       aux t
-
-let rec mk_xlist_term = function
-   h::t ->
-      { term_op = { op_name = xcons_opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = h };
-                      { bvars = []; bterm = mk_xlist_term t }]
-      }
- | [] ->
-      xnil_term
-
-(*
- * Strings.
- *)
-let string_opname = mk_opname "string" xperv
-
-let is_xstring_term = function
-   { term_op = { op_name = opname; op_params = [String _] };
-     term_terms = []
-   } when opname == string_opname ->
-      true
- | _ ->
-      false
-
-let dest_xstring = function
-   { term_op = { op_name = opname; op_params = [String s] };
-     term_terms = []
-   } when opname == string_opname ->
-      s
- | t ->
-      raise (TermMatch ("dest_xstring", t, "not a string"))
-
-let mk_xstring_term s =
-   { term_op = { op_name = string_opname; op_params = [String s] };
-     term_terms = []
-   }
-
-(****************************************
- * LAMBDA                               *
- ****************************************)
-
-let xlambda_opname = mk_opname "lambda" xperv
-
-let mk_xlambda_term = mk_dep1_term xlambda_opname
+let context_vars = context_vars_term []
 
 (************************************************************************
  * Subterm addressing                                                   *
@@ -562,46 +518,47 @@ let nth_cdr_addr i = NthPath (i, false)
 (*
  * Compute arities of subterms.
  *)
-let subterm_arities { term_terms = terms } =
-   let aux { bvars = vars } = List.length vars in
-      List.map aux terms
+let subterm_arities term =
+   let aux bterm = List.length (dest_bterm bterm).bvars in
+      List.map aux (dest_term term).term_terms
 
 (*
  * Get a subterm.
  *)
-let term_subterm term = function
-   (Path addr) as a ->
-      begin
-         let rec aux t = function
-            [] -> t
-          | i::tl -> aux (List.nth t.term_terms i).bterm tl
-         in
-            try aux term addr with
-               Not_found -> raise (IncorrectAddress (a, term))
-      end
- | (NthPath (addr, flag)) as a ->
-      begin
-         let rec aux t = function
-            0 ->
-               if flag then
-                  match t with
-                     { term_terms = { bterm = h }::_ } -> h
-                   | _ -> raise (IncorrectAddress (a, term))
-               else
-                  t
-          | i ->
-               begin
-                  match t.term_terms with
-                     [{ bterm = bterm }] ->
-                        aux bterm (i - 1)
-                   | _::{ bterm = bterm }::_ ->
-                        aux bterm (i - 1)
-                   | _ ->
-                        raise (IncorrectAddress (a, term))
-               end
-         in
-            aux term addr
-      end
+let term_subterm term = 
+   function
+      (Path addr) as a ->
+         begin
+            let rec aux t = function
+               [] -> t
+             | i::tl -> aux (dest_bterm (List.nth (dest_term t).term_terms i)).bterm tl
+            in
+               try aux term addr with
+                  Not_found -> raise (IncorrectAddress (a, term))
+         end
+    | (NthPath (addr, flag)) as a ->
+         begin
+            let rec aux t = function
+               0 ->
+                  if flag then
+                     match dest_term t with
+                        { term_terms = bterm::_ } -> (dest_bterm bterm).bterm
+                      | _ -> raise (IncorrectAddress (a, term))
+                  else
+                     t
+             | i ->
+                  begin
+                     match (dest_term t).term_terms with
+                        [bterm] ->
+                           aux (dest_bterm bterm).bterm (i - 1)
+                      | _::bterm::_ ->
+                           aux (dest_bterm bterm).bterm (i - 1)
+                      | _ ->
+                           raise (IncorrectAddress (a, term))
+                  end
+            in
+               aux term addr
+         end
 
 let apply_fun_at_addr f a term =
    match a with
@@ -610,15 +567,13 @@ let apply_fun_at_addr f a term =
             let rec aux t = function
                [] -> f t
              | i::tl ->
-                  match t with
+                  match dest_term t with
                      { term_op = op; term_terms = bterms } ->
-                        { term_op = op;
-                          term_terms =
-                             let f { bvars = vars; bterm = term } =
-                                { bvars = vars; bterm = aux term tl }
-                             in
-                                List_util.replacef_nth i f bterms
-                        }
+                        let f bt =
+                           let bterm = dest_bterm bt in
+                           mk_bterm bterm.bvars (aux bterm.bterm tl)
+                        in
+                        mk_term op (List_util.replacef_nth i f bterms)
             in
                try aux term addr with
                   Not_found -> raise (IncorrectAddress (a, term))
@@ -628,28 +583,25 @@ let apply_fun_at_addr f a term =
             let rec aux t = function
                0 ->
                   if flag then
-                     match t with
+                     match dest_term t with
                         { term_op = op;
-                          term_terms = { bvars = vars; bterm = term }::bterms
+                          term_terms = btrm::bterms
                         } ->
-                           { term_op = op;
-                             term_terms = { bvars = vars; bterm = f term }::bterms
-                           }
+                           let bt = dest_bterm btrm in
+                           mk_term op ((mk_bterm bt.bvars (f bt.bterm))::bterms)
                       | _ ->
                            raise (IncorrectAddress (a, term))
                   else
                      f t
              | i ->
                   begin
-                     match t with
-                        { term_op = op; term_terms = [{ bvars = vars; bterm = term }] } ->
-                           { term_op = op;
-                             term_terms = [{ bvars = vars; bterm = aux term (i - 1) }]
-                           }
-                      | { term_op = op; term_terms = h::{ bvars = vars; bterm = term }::bterms } ->
-                           { term_op = op;
-                             term_terms = h::{ bvars = vars; bterm = aux term (i - 1) }::bterms
-                           }
+                     match dest_term t with
+                        { term_op = op; term_terms = [btrm] } ->
+                           let bt = dest_bterm btrm in
+                           mk_term op [mk_bterm bt.bvars (aux bt.bterm (pred i))]
+                      | { term_op = op; term_terms = h::btrm::bterms } ->
+                           let bt = dest_bterm btrm in
+                           mk_term op (h::(mk_bterm bt.bvars (aux bt.bterm (pred i)))::bterms)
                       | _ ->
                            raise (IncorrectAddress (a, term))
                   end
@@ -748,108 +700,6 @@ let string_of_address = function
          "[" ^ (aux addr) ^ "]"
 
 (************************************************************************
- * Free variable calculations                                           *
- ************************************************************************)
-
-(*
- * Calculate the list of free variables.
- * Also count second order variables.
- * Just recursively descend the term, keeping track
- * of bound variables.
- *)
-let rec free_vars_term gvars bvars = function
-   { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = bterms } when opname == var_opname ->
-      (* This is a variable *)
-      let gvars' = if List.mem v bvars or List.mem v gvars then
-                      gvars
-                   else
-                      v::gvars
-      in
-         free_vars_bterms gvars' bvars bterms
- | { term_terms = bterms } ->
-      free_vars_bterms gvars bvars bterms
-
-and free_vars_bterms gvars bvars = function
-   { bvars = vars; bterm = term}::l ->
-      let bvars' = vars @ bvars in
-      let gvars' = free_vars_term gvars bvars' term in
-         free_vars_bterms gvars' bvars l
-
- | [] -> gvars
-
-(* Actual function *)
-let free_vars = free_vars_term [] []
-
-(* Collect over a list of terms *)
-let free_vars_terms =
-   let rec aux gvars = function
-      [] -> gvars
-    | t::r -> aux (free_vars_term gvars [] t) r
-   in
-      aux []
-
-(*
- * See if a variable is free.
- *)
-let is_free_var v =
-   let rec free_vars_term bvars = function
-      { term_op = { op_name = opname; op_params = [Var v'] };
-        term_terms = []
-      } when opname == var_opname ->
-         v' = v
-    | { term_terms = bterms } ->
-         free_vars_bterms bvars bterms
-
-   and free_vars_bterms bvars = function
-      { bvars = bvars'; bterm = term }::t ->
-         if List.mem v bvars' then
-            free_vars_bterms bvars t
-         else
-            (free_vars_term (bvars' @ bvars) term) or (free_vars_bterms bvars t)
-            
-    | [] -> false
-   in
-      free_vars_term []
-
-(*
- * Similar operation on contexts.
- *)
-let rec context_vars_term cvars = function
-   { term_op = { op_name = opname; op_params = [Var v] };
-     term_terms = bterms
-   } when opname == context_opname ->
-      let cvars' =
-         if List.mem v cvars then
-            cvars
-         else
-            v::cvars
-      in
-         context_vars_bterms cvars' bterms
- | { term_terms = bterms } ->
-      context_vars_bterms cvars bterms
-
-and context_vars_bterms cvars = function
-   { bterm = t }::l ->
-      context_vars_bterms (context_vars_term cvars t) l
- | [] -> cvars
-
-let context_vars = context_vars_term []
-
-(*
- * Collect all binding vars.
- *)
-let rec binding_vars_term bvars = function
-   { term_terms = bterms } ->
-      binding_vars_bterms bvars bterms
-
-and binding_vars_bterms bvars = function
-   { bvars = vars; bterm = t }::l ->
-      binding_vars_bterms (binding_vars_term (List_util.union vars bvars) t) l
- | [] -> bvars
-
-let binding_vars = binding_vars_term []
-
-(************************************************************************
  * ALPHA EQUALITY                                                       *
  ************************************************************************)
 
@@ -863,8 +713,16 @@ let equal_params p1 p2 =
     | _ ->
          p1 = p2
 
-let rec equal_term vars t t' =
-   match t, t' with
+let rec join_vars vars = function
+   ([],[]) -> vars |
+   (v1::vt1,v2::vt2) -> 
+      if (v1=v2) 
+         then join_vars vars (vt1,vt2)
+         else (v1,v2)::(join_vars vars (vt1,vt2)) |
+   _ -> raise (Invalid_argument ("join_vars"))
+
+let rec equal_term_main vars t t' =
+   match (dest_term t, dest_term t') with
       { term_op = { op_name = opname1; op_params = [Var v] };
         term_terms = []
       },
@@ -877,17 +735,30 @@ let rec equal_term vars t t' =
          end
     | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
       { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-         name1 = name2
+         name1 == name2
                  & List_util.for_all2 equal_params params1 params2
                  & equal_bterms vars bterms1 bterms2
 
-and equal_bterms vars bterms1 bterms2 =
-   let equal_bterm = fun
-      { bvars = bvars1; bterm = term1 }
-      { bvars = bvars2; bterm = term2 } ->
-         equal_term (List_util.zip_list vars bvars1 bvars2) term1 term2
-   in
-      List_util.for_all2 equal_bterm bterms1 bterms2
+and equal_term = function
+   [] ->
+      (function t1  ->
+         function t2 ->
+            (t1 == t2) || equal_term_main [] t1 t2) |
+   vars -> equal_term_main vars
+
+and equal_bterm_main vars btrm1 btrm2 =
+   let bt1 = dest_bterm btrm1 in
+   let bt2 = dest_bterm btrm2 in
+   equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm
+
+and equal_bterm = function
+   [] -> 
+      (function bt1 ->
+         function bt2 ->
+            (bt1 == bt2) || equal_bterm_main [] bt1 bt2) |
+   vars -> equal_bterm_main vars 
+
+and equal_bterms vars = List_util.for_all2 (equal_bterm vars)
 
 let alpha_equal t1 t2 =
    try equal_term [] t1 t2 with
@@ -901,183 +772,39 @@ let alpha_equal_vars (t, v) (t', v') =
  * Check the following:
  *   that t' = t[terms[v''/v''']/v]
  *)
-let equal_comp vars' =
-   let rec equal_comp_term vars = function
-      { term_op = { op_name = opname; op_params = [Var v] };
-        term_terms = []
-      }, t' when opname == var_opname ->
-         begin
-            try equal_term vars' t' (List.assoc v vars) with
-               Not_found ->
-                  begin
-                     match t' with
-                        { term_op = { op_name = opname; op_params = [Var v'] };
-                          term_terms = []
-                        } when opname == var_opname -> v = v'
-                      | _ -> false
-                  end
-         end
-    | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
-      { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-         name1 = name2 & params1 = params2 & equal_comp_bterms vars bterms1 bterms2
+let rec equal_comp vars' vars t t' = match dest_term t with 
+   { term_op = { op_name = opname; op_params = [Var v] };
+     term_terms = []
+   } when opname == var_opname ->
+      (try equal_term vars' t' (List.assoc v vars) with
+         Not_found ->
+            begin
+               match dest_term t' with
+                  { term_op = { op_name = opname; op_params = [Var v'] };
+                    term_terms = []
+                  } when opname == var_opname -> v = v'
+                | _ -> false
+            end)
+ | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 } ->
+      (function
+         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
+         name1 = name2 & params1 = params2 & equal_comp_bterms vars' vars bterms1 bterms2)
+      (dest_term t')
 
-   and equal_comp_bterms vars bterms1 bterms2 =
-      let equal_comp_bterm = fun
-         { bvars = bvars1; bterm = term1 }
-         { bvars = bvars2; bterm = term2 } ->
-            equal_comp_term (List_util.zip_list vars bvars1 (List.map mk_var_term bvars2)) (term1, term2)
-      in
-         List_util.for_all2 equal_comp_bterm bterms1 bterms2
+and equal_comp_bterms vars' vars bterms1 bterms2 =
+   let equal_comp_bterm btrm1 btrm2 =
+      let bt1 = dest_bterm btrm1 and
+          bt2 = dest_bterm btrm2 in
+      equal_comp vars'
+         (List_util.zip_list vars bt1.bvars (List.map mk_var_term bt2.bvars)) 
+         bt1.bterm bt2.bterm
    in
-       equal_comp_term
+      List_util.for_all2 equal_comp_bterm bterms1 bterms2
    
 let alpha_equal_match (t, v) (t', v'', v''', terms) =
-   try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) (t, t') with
+   try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) t t'  with
       Invalid_argument _ -> false
 
-(************************************************************************
- * Substitution                                                         *
- ************************************************************************)
-
-(*
- * Utilities for subst.
- *)
-let rec fsubtract l = function
-   [] -> l
- | h::t ->
-      fsubtract (List_util.subtract l h) t
-
-(*
- * Add a var list.
- *)
-let add_renames_terms r l =
-   let rec aux = function
-      [] -> l
-    | v::t -> (mk_var_term v)::(aux t)
-   in
-      aux r
-
-(*
- * Add a var list onto free vars.
- *)
-let add_renames_fv r l =
-   let rec aux = function
-      [] -> l
-    | v::t -> [v]::(aux t)
-   in
-      aux r
-
-(*
- * New variable production.
- * renames are the variables to be renamed,
- * and fv is a list list of variables to avoid.
- * Our algorithm is slow and simple: just append an
- * index and increment until no more collisions.
- *)
-let new_vars renames fv =
-   let rec new_var v i =
-      (* Try the new value *)
-      let rec mem' v = function
-         [] -> false
-       | h::t -> List.mem v h
-      in
-      let v' = v ^ (string_of_int i) in
-         if mem' v' fv then
-            new_var v (i + 1)
-         else
-            v'
-   in
-   let rec aux fv = function
-      [] -> []
-    | v::t ->
-         (* Rename the first one, then add it to free vars *)
-         let v' = new_var v 1 in
-            v'::(aux ([v']::fv) t)
-   in
-      aux fv renames
-
-(*
- * First order simultaneous substitution.
- *)
-let subst term terms vars =
-   let rec subst_term terms fv vars = function
-      { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t when opname == var_opname->
-         (* Var case *)
-         begin
-            try List.nth terms (List_util.find_index v vars) with
-               Not_found ->
-                  t
-         end
-    | { term_op = op; term_terms = bterms } ->
-         (* Other term *)
-         { term_op = op; term_terms = subst_bterms terms fv vars bterms }
-
-   and subst_bterms terms fv vars bterms =
-      (* When subst through bterms, catch binding occurrences *)
-      let rec subst_bterm = function
-         { bvars = []; bterm = term } ->
-            (* Optimize the common case *)
-            { bvars = []; bterm = subst_term terms fv vars term }
-
-       | { bvars = bvars; bterm = term } ->
-            (* First subtract bound instances *)
-            let flags = List.map (function v -> List.mem v bvars) vars in
-            let vars' = List_util.remove_elements flags vars in
-            let fv' = List_util.remove_elements flags fv in
-            let terms' = List_util.remove_elements flags terms in
-
-            (* If any of the binding variables are free, rename them *)
-            let renames = List_util.subtract bvars (fsubtract bvars fv') in
-               if renames <> [] then
-                  let fv'' = (free_vars term)::fv' in
-                  let renames' = new_vars renames fv'' in
-                     { bvars = subst_bvars renames' renames bvars;
-                       bterm = subst_term
-                           (add_renames_terms renames' terms')
-                           (add_renames_fv renames' fv')
-                           (renames @ vars')
-                           term
-                     }
-               else
-                  { bvars = bvars;
-                    bterm = subst_term terms' fv' vars' term
-                  }
-      in
-         List.map subst_bterm bterms
-
-   and subst_bvars renames' renames bvars =
-      let subst_bvar v =
-         try List.nth renames' (List_util.find_index v renames) with
-            Not_found -> v
-      in
-         List.map subst_bvar bvars
-
-   in
-      subst_term terms (List.map free_vars terms) vars term
-
-(*
- * Inverse substitution.
- *)
-let var_subst t t' v =
-   let { term_op = { op_name = opname } } = t' in
-   let vt = mk_var_term v in
-   let rec subst_term = function
-      { term_op = { op_name = opname'; op_params = params };
-        term_terms = bterms
-      } as t ->
-         (* Check if this is the same *)
-         if opname' == opname & alpha_equal t t' then
-            vt
-         else
-            { term_op = { op_name = opname'; op_params = params };
-              term_terms = List.map subst_bterm bterms
-            }
-            
-   and subst_bterm { bvars = vars; bterm = term } =
-      { bvars = vars; bterm = subst_term term }
-   in
-      subst_term t
-                     
 (************************************************************************
  * UNIFICATION                                                          *
  ************************************************************************)
@@ -1089,7 +816,7 @@ let rev_assoc v =
    let rec aux = function
       (v1, v2)::t ->
          if v2 = v then
-            v
+            v1
          else
             aux t
     | [] -> raise Not_found
@@ -1097,14 +824,17 @@ let rev_assoc v =
       aux
 
 let rec zip_cons l = function
-   v1::t1, v2::t2 -> zip_cons ((v1, v2)::l) (t1, t2)
+   v1::t1, v2::t2 -> 
+      if (v1=v2) 
+         then zip_cons l (t1,t2)
+         else zip_cons ((v1, v2)::l) (t1, t2)
  | [], [] -> l
  | _ -> raise (Invalid_argument "zip_cons")
 
 (*
  * Unify two terms.
  *)
-let rec unify_terms subst bvars = function
+let rec unify_terms subst bvars tm1 tm2 = match (dest_term tm1, dest_term tm2) with
    ({ term_op = { op_name = opname; op_params = [Var v] };
       term_terms = []
     } as t1), t2
@@ -1112,19 +842,19 @@ let rec unify_terms subst bvars = function
       (* t1 is a variable *)
       begin
          try
-            if (List.assoc v bvars) = (dest_var t2) then
+            if (List.assoc v bvars) = (dest_var_nods t2) then
                subst
             else
-               raise (BadMatch (t1, t2))
+               raise (BadMatch (tm1, tm2))
          with
             Not_found ->
                begin
-                  try unify_terms subst bvars (List.assoc v subst, t2) with
+                  try unify_terms subst bvars (List.assoc v subst) tm2 with
                      Not_found ->
-                        (v, t2)::subst
+                        (v, tm2)::subst
                end
           | TermMatch _ ->
-               raise (BadMatch (t1, t2))
+               raise (BadMatch (tm1, tm2))
       end
          
  | t1, ({ term_op = { op_name = opname; op_params = [Var v] };
@@ -1134,19 +864,19 @@ let rec unify_terms subst bvars = function
       (* t2 is a variable *)
       begin
          try
-            if (rev_assoc v bvars) = (dest_var t1) then
+            if (rev_assoc v bvars) = (dest_var_nods t1) then
                subst
             else
-               raise (BadMatch (t1, t2))
+               raise (BadMatch (tm1, tm2))
          with
             Not_found ->
                begin
-                  try unify_terms subst bvars (t1, List.assoc v subst) with
+                  try unify_terms subst bvars tm1 (List.assoc v subst) with
                      Not_found ->
-                        (v, t1)::subst
+                        (v, tm1)::subst
                end
           | TermMatch _ ->
-               raise (BadMatch (t1, t2))
+               raise (BadMatch (tm1, tm2))
       end
          
  | ({ term_op = { op_name = opname1; op_params = params1 };
@@ -1158,215 +888,21 @@ let rec unify_terms subst bvars = function
       (* General case *)
       if opname1 == opname2 & params1 = params2 then
          try unify_bterms subst bvars (bterms1, bterms2) with
-            Invalid_argument _ -> raise (BadMatch (t1, t2))
+            Invalid_argument _ -> raise (BadMatch (tm1, tm2))
       else
-         raise (BadMatch (t1, t2))
+         raise (BadMatch (tm1, tm2))
             
 and unify_bterms subst bvars = function
-   ({ bvars = vars1; bterm = term1 }::tl1),
-   ({ bvars = vars2; bterm = term2 }::tl2) ->
-      let subst' = unify_terms subst (zip_cons bvars (vars1, vars2)) (term1, term2) in
+   (btrm1::tl1), (btrm2::tl2) ->
+      let bt1 = dest_bterm btrm1
+      and bt2 = dest_bterm btrm2 in
+      let subst' = unify_terms subst (zip_cons bvars (bt1.bvars, bt2.bvars)) bt1.bterm bt2.bterm in
          unify_bterms subst' bvars (tl1, tl2)
  | [], [] -> subst
  | _ -> raise (Invalid_argument "unify_bterms")
 
 let unify subst t1 t2 =
-   List.rev (unify_terms subst [] (t1, t2))
-
-(*************************
- * Sequents              *                                              *
- *************************)
-
-(* Sequents operator name *)
-let hyp_opname = mk_opname "hyp" xperv
-let concl_opname = mk_opname "concl" xperv
-let sequent_opname = mk_opname "sequent" xperv
-
-(* Dependent hypotheses *)
-let is_hyp_term = is_dep0_dep1_term hyp_opname
-let mk_hyp_term = mk_dep0_dep1_term hyp_opname
-let dest_hyp = dest_dep0_dep1_term hyp_opname
-
-(* Conclusions *)
-let is_concl_term = is_dep0_dep0_term concl_opname
-let mk_concl_term = mk_dep0_dep0_term concl_opname
-let dest_concl = dest_dep0_dep0_term concl_opname
-
-(* Sequent wrapper *)
-let is_sequent_term = is_simple_term_opname sequent_opname
-let mk_sequent_term = mk_simple_term sequent_opname
-let dest_sequent = dest_simple_term_opname sequent_opname
-let goal_of_sequent = function
-   { term_op = { op_name = name; op_params = [] };
-     term_terms = { bvars = []; bterm = t }::_
-   } when name == sequent_opname ->
-      t
- | t -> raise (TermMatch ("goal_of_sequent", t, ""))
-
-let null_concl = mk_simple_term concl_opname []
-
-(*
- * Find the address of the conclusion.
- *)
-let concl_addr t =
-   let rec aux' i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = [] }; { bvars = []; bterm = term }]
-      } ->
-         if opname = concl_opname then
-            aux' (i + 1) term
-         else
-            i
-    | _ ->
-         i
-   in
-   let rec aux i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = [] }; { bvars = [_]; bterm = term }]
-      } when opname = hyp_opname ->
-         aux (i + 1) term
-    | { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = [] }; { bvars = []; bterm = term }]
-      } ->
-         if opname = concl_opname then
-            i, aux' 0 term
-         else if opname = hyp_opname then
-            aux (i + 1) term
-         else
-            raise (TermMatch ("concl_addr", t, ""))
-    | _ -> raise (TermMatch ("concl_addr", t, ""))
-   in
-      aux 0 (goal_of_sequent t)
-   
-(*
- * Fast access to hyp and concl.
- *)
-let nth_hyp t i =
-   let rec aux i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
-      } when opname == hyp_opname ->
-         if i = 0 then
-            x, t
-         else
-            aux (i - 1) term
-    | { term_op = { op_name = opname } } when opname == concl_opname ->
-         raise Not_found
-    | _ -> raise (TermMatch ("nth_hyp", t, ""))
-   in
-      aux i (goal_of_sequent t)
-
-let nth_concl t i =
-   let rec aux i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = _ }; { bvars = [_]; bterm = term }]
-      } when opname == hyp_opname ->
-         aux i term
-    | { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = []; bterm = term }]
-      } when opname == concl_opname ->
-         if i = 0 then
-            t
-         else
-            aux (i - 1) term
-    | { term_op = { op_name = opname } } when opname == concl_opname ->
-         raise Not_found
-    | t -> raise (TermMatch ("nth_concl", t, ""))
-   in
-      aux i (goal_of_sequent t)
-
-(*
- * Count the hyps.
- *)
-let num_hyps t =
-   let rec aux i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
-      } when opname == hyp_opname ->
-         aux (i + 1) term
-    | _ ->
-         i
-   in
-      aux 0 (goal_of_sequent t)
-
-(*
- * Collect the vars.
- *)
-let declared_vars t =
-   let rec aux vars = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
-      } when opname == hyp_opname ->
-         aux (x::vars) term
-    | _ ->
-         vars
-   in
-      aux [] (goal_of_sequent t)
-
-(*
- * Collect the vars.
- *)
-let declarations t =
-   let rec aux vars = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
-      } when opname == hyp_opname ->
-         aux ((x, t)::vars) term
-    | _ ->
-         vars
-   in
-      aux [] (goal_of_sequent t)
-
-(*
- * Get the number of the hyp with the given var.
- *)
-let get_decl_number t v =
-   let rec aux i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
-      } when opname == hyp_opname ->
-         if x = v then
-            i
-         else
-            aux (i + 1) term
-    | _ ->
-         raise Not_found
-   in
-      aux 0 (goal_of_sequent t)
-
-(*
- * See if a var is free in the rest of the sequent.
- *)
-let is_free_seq_var i v t =
-   let rec aux i t =
-      if i = 0 then
-         is_free_var v t
-      else
-         match t with
-            { term_op = { op_name = opname; op_params = [] };
-              term_terms = [{ bvars = []; bterm = _ }; { bvars = [_]; bterm = term }]
-            } when opname == hyp_opname ->
-               aux (i - 1) term
-          | _ -> raise (Invalid_argument "is_free_seq_var")
-   in
-      aux i (goal_of_sequent t)
-
-(*
- * Generate a list of sequents with replaced goals.
- *)
-let rec replace_concl seq goal =
-   match seq with
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = t2 }]
-      } when opname == hyp_opname ->
-         { term_op = { op_name = hyp_opname; op_params = [] };
-           term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = replace_concl t2 goal }]
-         }
-    | _ ->
-         goal
-
-let replace_goal seq goal =
-   replace_concl (mk_concl_term goal null_concl) seq
+   List.rev (unify_terms subst [] t1 t2)
 
 (************************************************************************
  * NORMALIZATION                                                        *
@@ -1374,19 +910,19 @@ let replace_goal seq goal =
 
 (*
  * "Normalization" means producing a canonical version of the term,
- * not reduction.  Right now, this just means rehashing the opname.
+ * not reduction. Right now, this just means rehashing the opname,
+ * doing all substitutions and copying it all into an unshared location.
  *)
-let rec normalize_term = function
-   { term_op = { op_name = name; op_params = params }; term_terms = bterms } ->
-      { term_op = { op_name = normalize_opname name;
-                    op_params = params
-                  };
-        term_terms = List.map normalize_bterm bterms
-      }
+let rec normalize_term trm =
+   let t = dest_term trm in
+   let op = t.term_op in
+   mk_term 
+      { op_name = normalize_opname op.op_name; op_params = op.op_params }
+      (List.map normalize_bterm t.term_terms)
       
-and normalize_bterm = function
-   { bvars = vars; bterm = t } ->
-      { bvars = vars; bterm = normalize_term t }
+and normalize_bterm btrm =
+   let bt = dest_bterm btrm in
+   mk_bterm bt.bvars (normalize_term bt.bterm)
 
 (************************************************************************
  * EFFICIENCY                                                           *
@@ -1416,7 +952,9 @@ and shape_param =
  * When computing the shape, we don't allow meta-parameters.
  * Raises Invalid_argument if this happens.
  *)
-let shape_of_term { term_op = { op_name = name; op_params = params }; term_terms = bterms } =
+let shape_of_term trm =
+   let t = dest_term trm in
+   let op = t.term_op in
    let param_type = function
       Number _ -> ShapeNumber
     | String _ -> ShapeString
@@ -1431,12 +969,12 @@ let shape_of_term { term_op = { op_name = name; op_params = params }; term_terms
     | _ ->
          raise (Invalid_argument "Term.shape_of_term")
    in
-   let bterm_type { bvars = vars } =
-      List.length vars
+   let bterm_type bt =
+      List.length (dest_bterm bt).bvars
    in
-      { shape_opname = name;
-        shape_params = List.map param_type params;
-        shape_arities = List.map bterm_type bterms
+      { shape_opname = op.op_name;
+        shape_params = List.map param_type op.op_params;
+        shape_arities = List.map bterm_type t.term_terms
       }
 
 let print_shape out { shape_opname = name; shape_params = params; shape_arities = arities } =
@@ -1471,107 +1009,3 @@ let print_shape out { shape_opname = name; shape_params = params; shape_arities 
       print_arity out arities;
       output_string out "}"
  
-(*
- * ``Special'' terms to be used in reduction rules
- *
- * "canon_var" plays the same role as "var" in reduction rules but 
- * the correspondig subterm should be evaluated before the reduction
- * ("call by value" instead of "call by name")
- *
- * subst (v1,v2,v3,...,vm.T;t1;t2;t3;...;tn)
- * it is an error if m!=n
- * if n=m then subst(...) is T with v1 substituted to t2, v2 - to t2, etc.
- *
- *)
- 
-let canon_var_opname = mk_opname "canon_var" xperv
-
-(*
- * See if a term is a "canon_var".
- *)
-let is_canon_var_term = function
-   { term_op = { op_name = opname; op_params = [Var v] };
-     term_terms = []
-   } when opname == canon_var_opname -> true
- | _ -> false
-
-(*
- * Destructor for a "canon_var".
- *)
-let dest_canon_var = function
-   { term_op = { op_name = opname; op_params = [Var v] };
-     term_terms = []
-   } when opname == canon_var_opname -> v
-  | t -> raise (TermMatch ("dest_canon_var", t, ""))
-
-(*
- * Make a "canon_var".
- *)
-let mk_canon_var_term v =
-   { term_op = { op_name = canon_var_opname; op_params = [Var v] };
-     term_terms = []
-   }
-   
-let subst_opname = mk_opname "subst" xperv
-
-(*
- * See if a term is a "subst" term.
- *)
-
-let rec is_subst_term_args = function
-   [],[] -> true
- | var::vars,{bvars = []}::bterms -> is_subst_term_args (vars,bterms) 
- | _ -> false
-
-let is_subst_term = function
-   { term_op = { op_name = opname; op_params = [] };
-     term_terms = {bvars = vars; bterm = main_term}::bterms
-   } when opname == subst_opname -> is_subst_term_args (vars,bterms)
- | _ -> false
-
-(*
- * Destructor for a "subst" term.
- *)
-
-let rec dest_subst_args t = function
-   [],[] -> [],[]
- | var::vars,{bvars = []; bterm = term}::bterms -> 
-      let tail = dest_subst_args t (vars,bterms) in
-      (var::fst tail),(term::snd tail)
- | _ -> raise (TermMatch ("dest_subst", t, ""))
-
-let dest_subst = function
-   { term_op = { op_name = opname; op_params = [] };
-     term_terms = {bvars = vars; bterm = main_term}::bterms
-   } as t when opname == subst_opname -> (main_term, dest_subst_args t (vars,bterms))
-  | t -> raise (TermMatch ("dest_subst", t, ""))
-
-(*
- * Make a "subst" term.
- *)
-
-let mk_subst_term main_term subst =
-   let sub = List.split subst in
-   let vars = fst sub in
-   let terms = List.map (function term -> {bvars=[]; bterm = term}) (snd sub) in
-   { term_op = { op_name = subst_opname; op_params = [] };
-     term_terms = {bvars=vars; bterm=main_term}::terms
-   }
-
-let make_subst_term main_term vars trms =
-   if List.length vars != List.length trms then raise (Invalid_argument "make_subst_term") else
-   let terms = List.map (function term -> {bvars=[]; bterm = term}) trms in
-   { term_op = { op_name = subst_opname; op_params = [] };
-     term_terms = {bvars=vars; bterm=main_term}::terms
-   }
-
-let make_1subst_term main_term v t =
-   { term_op = { op_name = subst_opname; op_params = [] };
-     term_terms = [ {bvars=[v]; bterm=main_term};{bvars=[]; bterm=t} ]
-   }
-
-let make_2subst_term main_term v1 v2 t1 t2 =
-   { term_op = { op_name = subst_opname; op_params = [] };
-     term_terms = [ {bvars=[v1;v2]; bterm=main_term};{bvars=[]; bterm=t1};{bvars=[]; bterm=t2} ]
-   }
-

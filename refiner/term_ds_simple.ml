@@ -20,11 +20,6 @@ let _ =
  ************************************************************************)
 
 (*
- * Native terms are injected into the "perv" module.
- *)
-let xperv = make_opname ["Perv"]
-
-(*
  * "Simple" terms have no parameters and no binding variables.
  *)
 let is_simple_term_opname name = function
@@ -663,4 +658,278 @@ let dest_one_bsubterm opname = function
 
 let mk_one_bsubterm opname = fun
    bterm -> { term_op = { op_name = opname; op_params = [] }; term_terms = [bterm] }
+
+(************************************************************************
+ * PRIMITIVE FORMS                                                      *
+ ************************************************************************)
+
+(*
+ * Lists.
+ *)
+let xnil_opname = mk_opname "nil" xperv
+let xcons_opname = mk_opname "cons" xperv
+
+let xnil_term = mk_simple_term xnil_opname []
+let is_xnil_term t = t = xnil_term
+
+let is_xcons_term = is_dep0_dep0_term xcons_opname
+let mk_xcons_term = mk_dep0_dep0_term xcons_opname
+let dest_xcons = dest_dep0_dep0_term xcons_opname
+
+let rec is_xlist_term = function
+   { term_op = { op_name = opname; op_params = [] };
+     term_terms = [{ bvars = []; bterm = _ };
+                   { bvars = []; bterm = b }]
+   } when opname == xcons_opname -> is_xlist_term b
+ | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname -> true
+ | _ -> false
+
+let dest_xlist t =
+   let rec aux = function
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = a };
+                      { bvars = []; bterm = b }]
+      } when opname == xcons_opname -> a::(aux b)
+    | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname -> []
+    | _ -> raise (TermMatch ("dest_xlist", t, "not a list"))
+   in
+       aux t
+
+let rec mk_xlist_term = function
+   h::t ->
+      { term_op = { op_name = xcons_opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = h };
+                      { bvars = []; bterm = mk_xlist_term t }]
+      }
+ | [] ->
+      xnil_term
+
+(*
+ * Strings.
+ *)
+let string_opname = mk_opname "string" xperv
+
+let is_xstring_term = function
+   { term_op = { op_name = opname; op_params = [String _] };
+     term_terms = []
+   } when opname == string_opname ->
+      true
+ | _ ->
+      false
+
+let dest_xstring = function
+   { term_op = { op_name = opname; op_params = [String s] };
+     term_terms = []
+   } when opname == string_opname ->
+      s
+ | t ->
+      raise (TermMatch ("dest_xstring", t, "not a string"))
+
+let mk_xstring_term s =
+   { term_op = { op_name = string_opname; op_params = [String s] };
+     term_terms = []
+   }
+
+(****************************************
+ * LAMBDA                               *
+ ****************************************)
+
+let xlambda_opname = mk_opname "lambda" xperv
+
+let mk_xlambda_term = mk_dep1_term xlambda_opname
+
+(*************************
+ * Sequents              *                                              *
+ *************************)
+
+(* Sequents operator name *)
+let hyp_opname = mk_opname "hyp" xperv
+let concl_opname = mk_opname "concl" xperv
+let sequent_opname = mk_opname "sequent" xperv
+
+(* Dependent hypotheses *)
+let is_hyp_term = is_dep0_dep1_term hyp_opname
+let mk_hyp_term = mk_dep0_dep1_term hyp_opname
+let dest_hyp = dest_dep0_dep1_term hyp_opname
+
+(* Conclusions *)
+let is_concl_term = is_dep0_dep0_term concl_opname
+let mk_concl_term = mk_dep0_dep0_term concl_opname
+let dest_concl = dest_dep0_dep0_term concl_opname
+
+(* Sequent wrapper *)
+let is_sequent_term = is_simple_term_opname sequent_opname
+let mk_sequent_term = mk_simple_term sequent_opname
+let dest_sequent = dest_simple_term_opname sequent_opname
+let goal_of_sequent = function
+   { term_op = { op_name = name; op_params = [] };
+     term_terms = { bvars = []; bterm = t }::_
+   } when name == sequent_opname ->
+      t
+ | t -> raise (TermMatch ("goal_of_sequent", t, ""))
+
+let null_concl = mk_simple_term concl_opname []
+
+(*
+ * Find the address of the conclusion.
+ *)
+let concl_addr t =
+   let rec aux' i = function
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = [] }; { bvars = []; bterm = term }]
+      } ->
+         if opname = concl_opname then
+            aux' (i + 1) term
+         else
+            i
+    | _ ->
+         i
+   in
+   let rec aux i = function
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = [] }; { bvars = [_]; bterm = term }]
+      } when opname = hyp_opname ->
+         aux (i + 1) term
+    | { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = [] }; { bvars = []; bterm = term }]
+      } ->
+         if opname = concl_opname then
+            i, aux' 0 term
+         else if opname = hyp_opname then
+            aux (i + 1) term
+         else
+            raise (TermMatch ("concl_addr", t, ""))
+    | _ -> raise (TermMatch ("concl_addr", t, ""))
+   in
+      aux 0 (goal_of_sequent t)
+   
+(*
+ * Fast access to hyp and concl.
+ *)
+let nth_hyp t i =
+   let rec aux i = function
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
+      } when opname == hyp_opname ->
+         if i = 0 then
+            x, t
+         else
+            aux (i - 1) term
+    | { term_op = { op_name = opname } } when opname == concl_opname ->
+         raise Not_found
+    | _ -> raise (TermMatch ("nth_hyp", t, ""))
+   in
+      aux i (goal_of_sequent t)
+
+let nth_concl t i =
+   let rec aux i = function
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = _ }; { bvars = [_]; bterm = term }]
+      } when opname == hyp_opname ->
+         aux i term
+    | { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t }; { bvars = []; bterm = term }]
+      } when opname == concl_opname ->
+         if i = 0 then
+            t
+         else
+            aux (i - 1) term
+    | { term_op = { op_name = opname } } when opname == concl_opname ->
+         raise Not_found
+    | t -> raise (TermMatch ("nth_concl", t, ""))
+   in
+      aux i (goal_of_sequent t)
+
+(*
+ * Count the hyps.
+ *)
+let num_hyps t =
+   let rec aux i = function
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
+      } when opname == hyp_opname ->
+         aux (i + 1) term
+    | _ ->
+         i
+   in
+      aux 0 (goal_of_sequent t)
+
+(*
+ * Collect the vars.
+ *)
+let declared_vars t =
+   let rec aux vars = function
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
+      } when opname == hyp_opname ->
+         aux (x::vars) term
+    | _ ->
+         vars
+   in
+      aux [] (goal_of_sequent t)
+
+(*
+ * Collect the vars.
+ *)
+let declarations t =
+   let rec aux vars = function
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
+      } when opname == hyp_opname ->
+         aux ((x, t)::vars) term
+    | _ ->
+         vars
+   in
+      aux [] (goal_of_sequent t)
+
+(*
+ * Get the number of the hyp with the given var.
+ *)
+let get_decl_number t v =
+   let rec aux i = function
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
+      } when opname == hyp_opname ->
+         if x = v then
+            i
+         else
+            aux (i + 1) term
+    | _ ->
+         raise Not_found
+   in
+      aux 0 (goal_of_sequent t)
+
+(*
+ * See if a var is free in the rest of the sequent.
+ *)
+let is_free_seq_var i v t =
+   let rec aux i t =
+      if i = 0 then
+         is_free_var v t
+      else
+         match t with
+            { term_op = { op_name = opname; op_params = [] };
+              term_terms = [{ bvars = []; bterm = _ }; { bvars = [_]; bterm = term }]
+            } when opname == hyp_opname ->
+               aux (i - 1) term
+          | _ -> raise (Invalid_argument "is_free_seq_var")
+   in
+      aux i (goal_of_sequent t)
+
+(*
+ * Generate a list of sequents with replaced goals.
+ *)
+let rec replace_concl seq goal =
+   match seq with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = t2 }]
+      } when opname == hyp_opname ->
+         { term_op = { op_name = hyp_opname; op_params = [] };
+           term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = replace_concl t2 goal }]
+         }
+    | _ ->
+         goal
+
+let replace_goal seq goal =
+   replace_concl (mk_concl_term goal null_concl) seq
 
