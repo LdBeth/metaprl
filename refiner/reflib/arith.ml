@@ -146,6 +146,10 @@ functor (Hyps : HypsSig) -> struct
 		    	end;
 		()
 
+	let print_i_dist i dst =
+		eprintf "%i-> " i;
+		print_dist dst
+
    let init_c h va =
 		let n=Array.length va in
 (*    let ini (_,i,j) = if i=j then Int (0,[]) else Disconnected in
@@ -161,7 +165,7 @@ functor (Hyps : HypsSig) -> struct
 		begin
 			iter h f;
 			if !debug_graph_arith3 then
-				Array.iter print_dist cij;
+				Array.iteri print_i_dist cij;
 			cij
 		end
 
@@ -192,6 +196,12 @@ functor (Hyps : HypsSig) -> struct
                (Disconnected, cij)
        end
 
+	let print_i_var oc i v =
+		fprintf oc "%i-> " i;
+		print_var oc v;
+  		fprintf oc "\n";
+		flush oc
+
    let vars_of_hyps h =
    	let putv v l =
       	if List.exists (compare v) l then l
@@ -204,7 +214,7 @@ functor (Hyps : HypsSig) -> struct
 			iter h put;
 			let result= Array.of_list !l in
 			if !debug_graph_arith3 then
-           	Array.iter (print_var stderr) result;
+           	Array.iteri (print_i_var stderr) result;
          result
 		end
 
