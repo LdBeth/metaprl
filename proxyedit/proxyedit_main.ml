@@ -198,7 +198,7 @@ let edit_file info =
    let digest = Digest.file filename in
 
    (* Edit it until we can save it *)
-   let editor = Setup.editor ()
+   let editor = Setup.editor () in
    let command = sprintf "%s %s" editor filename in
    let exit_ok =
       match Unix.system command with
@@ -252,7 +252,7 @@ let () =
          in
          let filename =
             try
-               let tmp = Filename.concat Setup.home "tmp" in
+               let tmp = Filename.concat (Setup.home ()) "tmp" in
                let () =
                   try Unix.mkdir tmp 0o777 with
                      Unix.Unix_error _ ->

@@ -24,8 +24,8 @@
  *)
 
 val environ_prefix : string  (* MP *)
-val root : string            (* $(MP_ROOT); must be defined *)
-val lib : string             (* $(MPLIB) - when defined, or $(MP_ROOT)/lib - when directory exists *)
+val root : unit -> string    (* $(MP_ROOT); must be defined *)
+val lib : unit -> string     (* $(MPLIB) - when defined, or $(MP_ROOT)/lib - when directory exists *)
 
 (*
  * $(HOME)/.metaprl directory (uses C:\metaprl or /tmp/metaprl-<uid>, when

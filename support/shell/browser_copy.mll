@@ -100,8 +100,11 @@ let string_of_file dir filename =
        | None ->
            ""
 
-let string_of_lib_file = string_of_file Setup.lib
-let string_of_root_file = string_of_file Setup.root
+let string_of_lib_file filename =
+   string_of_file (Setup.lib()) filename
+
+let string_of_root_file filename =
+   string_of_file (Setup.root()) filename
 
 (*
  * Strip DOS-style line-endings.
@@ -132,7 +135,7 @@ let unix_of_dos s =
  *)
 let save_root_file filename contents =
    let contents = unix_of_dos contents in
-      match out_channel_of_file Setup.root filename with
+      match out_channel_of_file (Setup.root()) filename with
          Some out ->
             eprintf "save_root_file: saving file %s@." filename;
             output_string out contents;
@@ -224,7 +227,7 @@ struct
 
    let add_file table v filename =
       SymbolTable.add table v (fun info ->
-         match in_channel_of_file Setup.root filename with
+         match in_channel_of_file (Setup.root()) filename with
             Some inx ->
                let rec copy () =
                   info.info_add_char (input_char inx);
@@ -327,7 +330,7 @@ let parse table buf inx =
  * Print the contents of a file, with replacement.
  *)
 let print_raw_file_to_http out name =
-   match in_channel_of_file Setup.lib name with
+   match in_channel_of_file (Setup.lib()) name with
       Some inx ->
          print_success_channel out OkCode inx;
          close_in inx
@@ -335,7 +338,7 @@ let print_raw_file_to_http out name =
          print_error_page out NotFoundCode
 
 let print_metaprl_file_to_http out name =
-   match in_channel_of_file Setup.root name with
+   match in_channel_of_file (Setup.root()) name with
       Some inx ->
          print_success_channel out OkCode inx;
          close_in inx
@@ -346,7 +349,7 @@ let print_metaprl_file_to_http out name =
  * Print the contents of a file, with replacement.
  *)
 let print_translated_file print_success_page print_error_page out table name =
-   match in_channel_of_file Setup.lib name with
+   match in_channel_of_file (Setup.lib()) name with
       Some inx ->
          let buf = Buffer.create 1024 in
          let info = buffer_info buf in
@@ -412,7 +415,7 @@ let html_escape_char info col c =
 	succ col
 
 let print_translated_io_buffer_to_http out table name io =
-   match in_channel_of_file Setup.lib name with
+   match in_channel_of_file (Setup.lib()) name with
       Some inx ->
          let info = http_info out in
          let inp = Browser_syscall.open_in io in

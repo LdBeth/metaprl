@@ -393,8 +393,6 @@ OCAMLINCLUDES +=\
    -I $(dir libmojave/util)\
    -I $(dir libmojave/unix)\
 
-.SUBDIRS: proxyedit
-
 ########################################################################
 # Refiner building
 #
@@ -423,6 +421,10 @@ section
 
 OCAMLINCLUDES +=\
     -I $(dir mllib)\
+
+.SUBDIRS: proxyedit
+
+OCAMLINCLUDES +=\
     -I $(dir refiner/refsig)\
     -I $(dir refiner/refbase)\
     -I $(dir refiner/refiner)\

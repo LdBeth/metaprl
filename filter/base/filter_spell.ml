@@ -32,8 +32,8 @@ open Lm_printf
  *)
 let tmp_magic = 0x2557f3ed
 
-let tmp_filename = Setup.lib ^ "/english_dictionary.dat"
-let local_words = Setup.lib ^ "/words"
+let tmp_filename = (Setup.lib ()) ^ "/english_dictionary.dat"
+let local_words = (Setup.lib ()) ^ "/words"
 
 let words_filenames = [
    "/usr/dict/words";

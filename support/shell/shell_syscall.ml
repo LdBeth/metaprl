@@ -93,7 +93,7 @@ let handle_syscall command =
 
 let state =
    { shell_handler = handle_syscall;
-     shell_root = Setup.root;
+     shell_root = Setup.root ();
      shell_dir = "."
    }
 

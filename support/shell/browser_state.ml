@@ -483,7 +483,7 @@ let resolve_symlink filename =
 let strip_root filename =
    match filename with
       Some filename ->
-          let root = Setup.root ^ "/" in
+          let root = (Setup.root()) ^ "/" in
           let root_len = String.length root in
           let file_len = String.length filename in
           let convert c =

@@ -7,6 +7,7 @@ if $(SSL_ENABLED)
    BYTE_ENABLED = false
 
    PROXYEDIT_FILES =\
+       ../mllib/setup\
        proxyedit_lex\
        proxyedit_main
 
