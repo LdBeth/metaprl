@@ -25,7 +25,7 @@
 open Phobos_type
 open Phobos_header
 
-let int_cph_magic = 0x89ac12bd
+let int_cph_magic = 0x09ac12bd
 let int_cph_version = 1
 
 let marshal_write channel data options =

@@ -144,7 +144,7 @@ and hash_module_type index = function
  | (<:module_type< $lid:i$ >>) ->
       hash_string (hash index 0x54c81b5b) i
  | (<:module_type< ' $i$ >>) ->
-      hash_string (hash index 0xb023821b) i
+      hash_string (hash index 0x3023821b) i
  | (<:module_type< sig $list:sil$ end >>) ->
       List.fold_left hash_sig_item (hash index 0x1a246031) sil
  | (<:module_type< $uid:i$ >>) ->
@@ -224,7 +224,7 @@ and hash_class_str_item index = function
    CrCtr (_, s, t) ->
       hash_string (hash_type (hash index 0x6ebb5387) t) s
  | CrDcl (_, t) ->
-      List.fold_left hash_class_str_item (hash index 0xb4910045) t
+      List.fold_left hash_class_str_item (hash index 0x34910045) t
  | CrInh (_, ce, so) ->
       hash_class_expr (hash_string_opt (hash index 0x113fee9d) so) ce
  | CrIni (_, e) ->
@@ -254,7 +254,7 @@ and hash_class_sig_item index = function
    CgCtr (_, s, t) ->
       hash_string (hash_type (hash index 0x362be7cd) t) s
  | CgDcl (_, t) ->
-      List.fold_left hash_class_sig_item (hash index 0xbe66301f) t
+      List.fold_left hash_class_sig_item (hash index 0x3e66301f) t
  | CgInh (_, ct) ->
       hash_class_type (hash index 0x1779e662) ct
  | CgMth (_, s, b, t) ->
