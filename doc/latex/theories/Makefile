@@ -83,7 +83,7 @@ $(ROOT)/doc/ps/theories/$(GOAL).ps: $(NAME).ps
 	$(CP) $(NAME).ps $@
 
 clean::
-	$(RM) *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out
+	$(RM) *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc
 	$(RM) */theory-body.tex */theory.tex all-bodies.tex
 	$(RM) */*/theory-body.tex */*/theory.tex */*/tr-body.tex */*/tr.tex
 
