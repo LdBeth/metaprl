@@ -351,7 +351,7 @@ module Nuprl (Edit : ShellEditSig) = struct
 		   (* could have library write to file since coding for pretty printing already exists *)
 		   (* (output_to_file mp_compile_ml_file text;
 		       output_to_file mp_compile_ml_file mli_text;
-		       Unix.system "sh -c make";
+		       Unix.system "sh -c omake";
 		   *)
                             ivoid_term
 
