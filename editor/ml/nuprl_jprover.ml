@@ -49,16 +49,23 @@ end
 
 module Nuprl_JProver = Jall.JProver(Nuprl_JLogic) 
 
-let jprover (tlist,concl) = Nuprl_JProver.prover (tlist,concl)
+let myconcl = ref Basic.inil_term
+let myhyps = ref [Basic.inil_term]
+let jprover (tlist,concl) = 
+  myconcl := concl;
+  myhyps := tlist;
+  Nuprl_JProver.prover (tlist,concl)
 
 
 (* jprover fun returns string*term*term list, convert to term *)
 
 let ijprover_op = Nuprl5.mk_nuprl5_op [(make_param (Token "jprover"))]
 
-let ijprover_term s t1 t2 = 
+let ijprover_term (s, t1, t2) = 
   mk_term ijprover_op [mk_bterm [] (Basic.istring_term s); mk_bterm [] t1; mk_bterm [] t2]
 
 let jprover_result_to_term l = 
-  let f (s, t1, t2) = ijprover_term s t1 t2 in
-  Basic.list_to_ilist_map f l
+  Basic.list_to_ilist_map ijprover_term l
+
+let jprover_run t = 
+ jprover_result_to_term (jprover ((Basic.map_isexpr_to_list (function y -> y) (Basic.hd_of_icons_term Basic.icons_op t)), (Basic.tl_of_icons_term Basic.icons_op t))) 

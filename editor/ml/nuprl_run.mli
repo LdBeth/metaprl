@@ -31,6 +31,9 @@
 
   # #use "nuprl.txt";;
   # NuprlRun.run_connection  3998 4992 "baldwin" "lmp_d21";;
+
+  # #use "nuprl.txt";;
+  # run_connection_with_hook 4666 5666 "baldwin" "lmp_m20" (let f x = jprover_result_to_term (jprover x) in f);;
 *)
 
 module NuprlRun :

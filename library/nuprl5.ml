@@ -139,9 +139,9 @@ let nuprl_dest_exists term =
 
 let nuprl_dest_not term = 
    match Lib_term.dest_term term with
-   { term_op = term_op'; term_terms = [tp ; prop] } 
+   { term_op = term_op'; term_terms = [prop] } 
     when term_op' = (mk_nuprl5_simple_op "not") -> 
-      (match dest_bterm tp with
+      (match dest_bterm prop with
       { bvars = []; bterm = t } ->
           t
          | _ -> failwith "nuprl_dest_not")    
@@ -150,11 +150,11 @@ let nuprl_dest_not term =
 
 let nuprl_dest_or term = 
    match Lib_term.dest_term term with
-   { term_op = term_op'; term_terms = [tp ; prop] } 
+   { term_op = term_op'; term_terms = [left ; right] } 
     when term_op' = (mk_nuprl5_simple_op "or") -> 
-      (match dest_bterm tp with
+      (match dest_bterm left with
       { bvars = []; bterm = t1 } ->
-         (match dest_bterm prop with { bvars = []; bterm = t2 } -> 
+         (match dest_bterm right with { bvars = []; bterm = t2 } -> 
           t1, t2
          | _ -> failwith "nuprl_dest_or")
       | _ -> failwith "nuprl_dest_or")    
@@ -176,11 +176,11 @@ let nuprl_dest_implies term =
 
 let nuprl_dest_and term = 
    match Lib_term.dest_term term with
-   { term_op = term_op'; term_terms = [tp ; prop] } 
+   { term_op = term_op'; term_terms = [left ; right] } 
     when term_op' = (mk_nuprl5_simple_op "and") -> 
-      (match dest_bterm tp with
+      (match dest_bterm left with
       { bvars = []; bterm = t1 } ->
-         (match dest_bterm prop with { bvars = []; bterm = t2 } -> 
+         (match dest_bterm right with { bvars = []; bterm = t2 } -> 
           t1, t2
          | _ -> failwith "nuprl_dest_and")
       | _ -> failwith "nuprl_dest_and")    
