@@ -9,7 +9,7 @@ MetaPRL expects its modules to observe certain rules. This section describes the
 you'll need to follow to make sure your code does not change the system behavior
 in any unwanted way.
 
-<H3><TT>Invalid_argument</TT> exceptions</H3>
+<H3><TT>Invalid_argument</TT> and other "serious" exceptions</H3>
 <P><B>Raising.</B> In MetaPRL, <TT>Invalid_argument</TT> exceptions is a canonical way
 to notify user about potential bugs in the system.
 And more generally, when something happens that prohibits your code from returning a sensible answer
@@ -33,26 +33,27 @@ instead of <TT>Invalid_argument</TT>.
 We need to make sure that whenever an <TT>Invalid_argument</TT> is raised, it will
 go all the way up to the user.
 Because of that, you are not supposed to catch <TT>Invalid_argument</TT> exceptions. In particular, it means that you are not supposed to use "catch all" <TT> try ... with _ -&gt; ...</TT>
-expression.
+expression.<P>The same is true for other "serious" exceptions from the <TT>Pervasives</TT> module. In particular, your code should not catch any of
+<TT>Match_failure</TT>, <TT>Assert_failure</TT>, <TT>Out_of_memory</TT>, <TT>Stack_overflow</TT> and <TT>Division_by_zero</TT> exceptions without a good reason.
 <H3><TT>RefineError</TT> exceptions.</H3>
 <TT>RefineError</TT> exceptions are used to notify the caller that a certain proof search
 step is not applicable to the current goal and/or failed. More generally, it is used to
 notify the caller function that whatever it tried to do was unsuccessful and it should
 try something else or give up.
 
-<P><B>Examples</B>: <TT>dest_var_term</TT> would raise <TT>RefineError</TT> if its input term 
+<P><B>Examples</B>: <TT>dest_var_term</TT> would raise <TT>RefineError</TT> if its input term
 is not a variable. <TT>unify</TT> would raise <TT>RefineError</TT> if input terms are not
 unifiable. A primitive tactic would raise <TT>RefineError</TT> if a rule is not applicable
 to the current goal.
 
-<P>The <TT>orelseT</TT> and similar tacticals only "know" about <TT>RefineError</TT> 
+<P>The <TT>orelseT</TT> and similar tacticals only "know" about <TT>RefineError</TT>
 exceptions. <TT>(t1 orelseT t2)</TT> would run <TT>t2</TT> if and only if <TT>t1</TT>
 raises <TT>RefineError</TT> exception.
 <P><B>Raising.</B> When a certain proof search or proof refinement procedure can not be applied
 to the given input, raise <TT>RefineError</TT>. On the other hand, if you believe that
 the procedure shouldn't have even been attempted on such an input,
 raise <TT>Invalid_argument</TT> to notify the user of a problem. Note that if you are doing
-a lot of raising and catching of <TT>RefineError</TT>s, you may want to consider raising <TT>generic_refiner_exn</TT> to avoid unnecessary allocation overhead. 
+a lot of raising and catching of <TT>RefineError</TT>s, you may want to consider raising <TT>generic_refiner_exn</TT> to avoid unnecessary allocation overhead.
 <P><B>Catching.</B>
 Whenever you are calling something that may raise <TT>RefineError</TT>, feel free to catch it.
 Of course, if you procedure has no way of recovering from that error, it would make
