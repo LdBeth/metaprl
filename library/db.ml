@@ -294,7 +294,7 @@ let ash_length = String.length (ascii_special_header)
 let is_first_char char string =
   (String.get string 0) = char
 
-let level_expression_escape_string = ref "[ |']"
+let level_expression_escape_string = "[ |']"
 
 let incr_level_exp_n i le = 
    let { le_const = c; le_vars = vars } = dest_level le in
@@ -333,7 +333,7 @@ let scan_level_expression scanner =
   in scan_expression scanner; 
   !le
 
-let make_le_scanner = make_scanner !level_expression_escape_string "\n\t\r "
+let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
 
 let mk_real_param_from_strings stp value ptype =
   match ptype with "n" -> (Number (Num.num_of_string value))
