@@ -76,7 +76,8 @@ type info =
      mutable rule_assums : term list;
      mutable rule_goal : term;
      mutable rule_proof : Package.proof proof_type;
-     mutable rule_ped : Proof_edit.t proof_type
+     mutable rule_ped : Proof_edit.t proof_type;
+     mutable rule_resources : MLast.expr resource_def
    }
 
 (*
@@ -146,14 +147,15 @@ let item_of_obj pack name
       rule_assums = assums;
       rule_proof = proof;
       rule_ped = ped;
-      rule_goal = goal
+      rule_goal = goal;
+      rule_resources = res
     } =
    if params = [] & assums = [] then
       Filter_type.Axiom (**)
          { Filter_type.axiom_name = name;
            Filter_type.axiom_stmt = goal;
            Filter_type.axiom_proof = proof;
-           Filter_type.axiom_resources = []
+           Filter_type.axiom_resources = res
          }
    else
       Filter_type.Rule (**)
@@ -161,7 +163,7 @@ let item_of_obj pack name
            Filter_type.rule_params = params;
            Filter_type.rule_stmt = zip_mimplies (assums @ [goal]);
            Filter_type.rule_proof = proof;
-           Filter_type.rule_resources = []
+           Filter_type.rule_resources = res
          }
 
 (*
@@ -354,7 +356,8 @@ let create pack name =
         rule_params = [];
         rule_goal = unit_term;
         rule_proof = Incomplete;
-        rule_ped = Incomplete
+        rule_ped = Incomplete;
+        rule_resources = []
       }
    in
    let sentinal = Package.sentinal pack in
@@ -375,14 +378,16 @@ let ped_of_proof pack = function
 let view_axiom pack
     { Filter_type.axiom_name = name;
       Filter_type.axiom_stmt = goal;
-      Filter_type.axiom_proof = proof
+      Filter_type.axiom_proof = proof;
+      Filter_type.axiom_resources = res
     } =
    let obj =
       { rule_assums = [];
         rule_params = [];
         rule_goal = goal;
         rule_proof = proof;
-        rule_ped = ped_of_proof pack proof
+        rule_ped = ped_of_proof pack proof;
+        rule_resources = res
       }
    in
    let sentinal = Package.sentinal_object pack name in
@@ -393,7 +398,8 @@ let view_rule pack
     { Filter_type.rule_name = name;
       Filter_type.rule_params = params;
       Filter_type.rule_stmt = stmt;
-      Filter_type.rule_proof = proof
+      Filter_type.rule_proof = proof;
+      Filter_type.rule_resources = res
     } =
    let assums, goal = unzip_mfunction stmt in
    let assums = List.map snd assums in
@@ -402,7 +408,8 @@ let view_rule pack
         rule_params = params;
         rule_goal = goal;
         rule_proof = proof;
-        rule_ped = ped_of_proof pack proof
+        rule_ped = ped_of_proof pack proof;
+        rule_resources = res
       }
    in
    let sentinal = Package.sentinal_object pack name in

@@ -74,7 +74,8 @@ type rw =
      mutable rw_redex : term;
      mutable rw_contractum : term;
      mutable rw_proof : Package.proof proof_type;
-     mutable rw_ped : Proof_edit.t proof_type
+     mutable rw_ped : Proof_edit.t proof_type;
+     mutable rw_resources : MLast.expr resource_def
    }
 
 (*
@@ -158,7 +159,8 @@ let item_of_obj pack name
       rw_assums = assums;
       rw_redex = redex;
       rw_contractum = contractum;
-      rw_proof = proof
+      rw_proof = proof;
+      rw_resources = res
     } =
    if params = [] & assums = [] then
       Filter_type.Rewrite (**)
@@ -166,7 +168,7 @@ let item_of_obj pack name
            Filter_type.rw_redex = redex;
            Filter_type.rw_contractum = contractum;
            Filter_type.rw_proof = proof;
-           Filter_type.rw_resources = []
+           Filter_type.rw_resources = res
          }
    else
       Filter_type.CondRewrite (**)
@@ -176,7 +178,7 @@ let item_of_obj pack name
            Filter_type.crw_redex = redex;
            Filter_type.crw_contractum = contractum;
            Filter_type.crw_proof = proof;
-           Filter_type.crw_resources = []
+           Filter_type.crw_resources = res
          }
 
 (*
@@ -371,7 +373,8 @@ let create pack name =
         rw_redex = unit_term;
         rw_contractum = unit_term;
         rw_proof = Interactive proof;
-        rw_ped = Interactive ped
+        rw_ped = Interactive ped;
+        rw_resources = []
       }
    in
    let sentinal = Package.sentinal pack in
@@ -393,7 +396,8 @@ let view_rw pack
     { Filter_type.rw_name = name;
       Filter_type.rw_redex = redex;
       Filter_type.rw_contractum = contractum;
-      Filter_type.rw_proof = proof
+      Filter_type.rw_proof = proof;
+      Filter_type.rw_resources = res
     } =
    let obj =
       { rw_assums = [];
@@ -401,7 +405,8 @@ let view_rw pack
         rw_redex = redex;
         rw_contractum = contractum;
         rw_proof = proof;
-        rw_ped = ped_of_proof pack proof
+        rw_ped = ped_of_proof pack proof;
+        rw_resources = res
       }
    in
    let sentinal = Package.sentinal_object pack name in
@@ -414,7 +419,8 @@ let view_crw pack
       crw_args = args;
       crw_redex = redex;
       crw_contractum = contractum;
-      crw_proof = proof
+      crw_proof = proof;
+      crw_resources = res
     } =
    let obj =
       { rw_assums = args;
@@ -422,7 +428,8 @@ let view_crw pack
         rw_redex = redex;
         rw_contractum = contractum;
         rw_proof = proof;
-        rw_ped = ped_of_proof pack proof
+        rw_ped = ped_of_proof pack proof;
+        rw_resources = res
       }
    in
    let sentinal = Package.sentinal_object pack name in

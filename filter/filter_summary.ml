@@ -918,90 +918,53 @@ let dest_res convert t =
  *)
 let rec dest_rewrite convert t =
    let name = dest_string_param t in
-   if is_three_subterm rewrite_op t then
-      let redex, contractum, proof = three_subterms t in
-         Rewrite { rw_name = name;
-                   rw_redex = convert.term_f redex;
-                   rw_contractum = convert.term_f contractum;
-                   rw_proof = convert.proof_f name proof;
-                   rw_resources = []
-         }
-   else
-      let redex, contractum, proof, res = four_subterms t in
-         Rewrite { rw_name = name;
-                   rw_redex = convert.term_f redex;
-                   rw_contractum = convert.term_f contractum;
-                   rw_proof = convert.proof_f name proof;
-                   rw_resources = dest_res convert res
-         }
+   let redex, contractum, proof, res = four_subterms t in
+      Rewrite { rw_name = name;
+                rw_redex = convert.term_f redex;
+                rw_contractum = convert.term_f contractum;
+                rw_proof = convert.proof_f name proof;
+                rw_resources = dest_res convert res
+      }
 
 (*
  * Conditional rewrite.
  *)
 and dest_cond_rewrite convert t =
    let name = dest_string_param t in
-   if is_five_subterm cond_rewrite_op t then
-      let params, args, redex, contractum, proof = five_subterms t in
-         CondRewrite { crw_name = name;
-                       crw_params = dest_params convert params;
-                       crw_args = List.map convert.term_f (dest_xlist args);
-                       crw_redex = convert.term_f redex;
-                       crw_contractum = convert.term_f contractum;
-                       crw_proof = convert.proof_f name proof;
-                       crw_resources = []
-         }
-      else
-         let params, args, redex, contractum, proof, res = six_subterms t in
-         CondRewrite { crw_name = name;
-                       crw_params = dest_params convert params;
-                       crw_args = List.map convert.term_f (dest_xlist args);
-                       crw_redex = convert.term_f redex;
-                       crw_contractum = convert.term_f contractum;
-                       crw_proof = convert.proof_f name proof;
-                       crw_resources = dest_res convert res
-         }
+   let params, args, redex, contractum, proof, res = six_subterms t in
+      CondRewrite { crw_name = name;
+                    crw_params = dest_params convert params;
+                    crw_args = List.map convert.term_f (dest_xlist args);
+                    crw_redex = convert.term_f redex;
+                    crw_contractum = convert.term_f contractum;
+                    crw_proof = convert.proof_f name proof;
+                    crw_resources = dest_res convert res
+      }
 
 (*
  * Axiom.
  *)
 and dest_axiom convert t =
    let name = dest_string_param t in
-   if is_two_subterm axiom_op t then
-      let stmt, proof = two_subterms t in
-         Axiom { axiom_name = name;
-                 axiom_stmt = convert.term_f stmt;
-                 axiom_proof = convert.proof_f name proof;
-                 axiom_resources = []
-         }
-   else
-      let stmt, proof, res = three_subterms t in
-         Axiom { axiom_name = name;
-                 axiom_stmt = convert.term_f stmt;
-                 axiom_proof = convert.proof_f name proof;
-                 axiom_resources = dest_res convert res
-         }
+   let stmt, proof, res = three_subterms t in
+      Axiom { axiom_name = name;
+              axiom_stmt = convert.term_f stmt;
+              axiom_proof = convert.proof_f name proof;
+              axiom_resources = dest_res convert res
+      }
 
 (*
  * Rule.
  *)
 and dest_rule convert t =
    let name = dest_string_param t in
-   if is_three_subterm rule_op t then
-      let params, stmt, proof = three_subterms t in
-         Rule { rule_name = name;
-                rule_params = dest_params convert params;
-                rule_stmt = convert.meta_term_f stmt;
-                rule_proof = convert.proof_f name proof;
-                rule_resources = []
-         }
-   else
-      let params, stmt, proof, res = four_subterms t in
-         Rule { rule_name = name;
-                rule_params = dest_params convert params;
-                rule_stmt = convert.meta_term_f stmt;
-                rule_proof = convert.proof_f name proof;
-                rule_resources = dest_res convert res
-         }
+   let params, stmt, proof, res = four_subterms t in
+      Rule { rule_name = name;
+             rule_params = dest_params convert params;
+             rule_stmt = convert.meta_term_f stmt;
+             rule_proof = convert.proof_f name proof;
+             rule_resources = dest_res convert res
+      }
 
 (*
  * Opname.
@@ -1325,39 +1288,55 @@ let rec term_of_summary_item convert t =
 and term_of_toploop_item convert t =
    mk_simple_term toploop_item_op [convert.item_f t]
 
+and term_of_res expr_f (name, args) =
+   mk_string_param_term res_op name [(mk_xlist_term (List.map expr_f args))]
+
+and term_of_resources convert res =
+   mk_xlist_term (List.map (term_of_res convert.expr_f) res)
+
 and term_of_rewrite convert { rw_name = name;
                               rw_redex = redex;
                               rw_contractum = con;
-                              rw_proof = pf
+                              rw_proof = pf;
+                              rw_resources = res
     } =
    mk_string_param_term rewrite_op name [convert.term_f redex;
                                          convert.term_f con;
-                                         convert.proof_f name pf]
+                                         convert.proof_f name pf;
+                                         term_of_resources convert res]
 
 and term_of_cond_rewrite convert { crw_name = name;
                                    crw_params = params;
                                    crw_args = args;
                                    crw_redex = redex;
                                    crw_contractum = con;
-                                   crw_proof = pf
+                                   crw_proof = pf;
+                                   crw_resources = res
     } =
    mk_string_param_term cond_rewrite_op name [mk_params convert params;
                                               mk_xlist_term (List.map convert.term_f args);
                                               convert.term_f redex;
                                               convert.term_f con;
-                                              convert.proof_f name pf]
+                                              convert.proof_f name pf;
+                                              term_of_resources convert res]
 
-and term_of_axiom convert { axiom_name = name; axiom_stmt = t; axiom_proof = pf } =
+and term_of_axiom convert { axiom_name = name; 
+                            axiom_stmt = t; 
+                            axiom_proof = pf;
+                            axiom_resources = res
+    } =
    mk_string_param_term axiom_op name [convert.term_f t; convert.proof_f name pf]
 
 and term_of_rule convert { rule_name = name;
                            rule_params = params;
                            rule_stmt = t;
-                           rule_proof = pf
+                           rule_proof = pf;
+                           rule_resources = res
     } =
    mk_string_param_term rule_op name [mk_params convert params;
                                       convert.meta_term_f t;
-                                      convert.proof_f name pf]
+                                      convert.proof_f name pf;
+                                      term_of_resources convert res]
 
 and term_of_opname convert { opname_name = name; opname_term = term } =
    mk_string_param_term opname_op name [convert.term_f term]
@@ -1903,7 +1882,8 @@ let copy_rw_proof copy_proof rw info2 =
    let { rw_name = name;
          rw_redex = redex1;
          rw_contractum = contractum1;
-         rw_proof = proof1
+         rw_proof = proof1;
+         rw_resources = res1;
        } = rw
    in
    let rw =
@@ -1918,7 +1898,7 @@ let copy_rw_proof copy_proof rw info2 =
               rw_redex = redex1;
               rw_contractum = contractum1;
               rw_proof = copy_proof proof1 proof2;
-              rw_resources = []
+              rw_resources = res1
             }
        | _ ->
             rw
@@ -1934,7 +1914,8 @@ let copy_crw_proof copy_proof crw info2 =
          crw_args = args1;
          crw_redex = redex1;
          crw_contractum = contractum1;
-         crw_proof = proof1
+         crw_proof = proof1;
+         crw_resources = res1;
        } = crw
    in
    let crw =
@@ -1957,7 +1938,7 @@ let copy_crw_proof copy_proof crw info2 =
               crw_redex = redex1;
               crw_contractum = contractum1;
               crw_proof = copy_proof proof1 proof2;
-              crw_resources = [];
+              crw_resources = res1;
             }
        | _ ->
             crw
@@ -1970,7 +1951,8 @@ let copy_crw_proof copy_proof crw info2 =
 let copy_axiom_proof copy_proof ax info2 =
    let { axiom_name = name;
          axiom_stmt = stmt1;
-         axiom_proof = proof1
+         axiom_proof = proof1;
+         axiom_resources = res1
        } = ax
    in
    let ax =
@@ -1983,7 +1965,7 @@ let copy_axiom_proof copy_proof ax info2 =
             { axiom_name = name;
               axiom_stmt = stmt1;
               axiom_proof = copy_proof proof1 proof2;
-              axiom_resources = []
+              axiom_resources = res1
             }
        | _ ->
             ax
@@ -1997,7 +1979,8 @@ let copy_rule_proof copy_proof rule info2 =
    let { rule_name = name;
          rule_params = params1;
          rule_stmt = stmt1;
-         rule_proof = proof1
+         rule_proof = proof1;
+         rule_resources = res1
        } = rule
    in
    let rule =
@@ -2023,7 +2006,7 @@ let copy_rule_proof copy_proof rule info2 =
               rule_params = params1;
               rule_stmt = stmt1;
               rule_proof = copy_proof proof1 proof2;
-              rule_resources = []
+              rule_resources = res1
             }
        | _ ->
             rule
