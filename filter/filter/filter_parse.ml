@@ -201,9 +201,7 @@ let expr_of_pcon loc = function
       <:expr<
          Refiner.Refiner.Term.make_param
             (Refiner.Refiner.TermType.MLevel
-               (Refiner.Refiner.Term.mk_level 0 ( $uid:"::"$
-                  (Refiner.Refiner.Term.mk_level_var $str:l$)
-                  [])))
+               (Refiner.Refiner.TermMan.mk_var_level_exp $str:l$))
       >>
  | ConPMeta s, shape ->
       let shape =
