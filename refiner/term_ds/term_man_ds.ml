@@ -159,7 +159,7 @@ struct
           | l1, [] ->
                l1
          in
-            { le_const = max c1 c2; le_vars = join (l1, l2) }
+            { le_const = max c1 (c2 + o3); le_vars = join (l1, l2) }
 
 
    (*

@@ -672,8 +672,9 @@ It adds the reduce_beta and reduce_fix conversions.
 itt_dfun:
 
 * reduceEta : term -> conv
-Rewrites << lambda{x. 'f 'x} >> to << 'f >>, under the conditions
-<< x: 'A -> 'B['x] >> and << 'f = 'f in (x: 'A -> 'B['x]) >>.
+Rewrites << lambda{x. 'f 'x} >> to << 'f >>, under the condition
+<< 'f = 'f in (x: 'A -> 'B['x]) >>.  Takes << x: 'A -> 'B['x] >> as an
+argument.
 
 This file adds to the dT tactic.
 If the conclusion is of the form << x: 'A -> 'B['x] >>,
@@ -704,8 +705,8 @@ subtypeT proves that << a1:'A1 -> 'B1['a1] >> is a subtype of
 itt_fun:
 
 * reduceIndependentEta : term -> conv
-Rewrites << lambda{x. 'f 'x} >> to << 'f >>, under the conditions
-<< 'A -> 'B >> and << 'f = 'f in ('A -> 'B) >>.
+Rewrites << lambda{x. 'f 'x} >> to << 'f >>, under the condition
+<< 'f = 'f in ('A -> 'B) >>.  Takes << 'A -> 'B >> as an argument.
 
 This file adds to the dT tactic.
 If the conclusion is of the form << 'A -> 'B >>,
