@@ -306,7 +306,7 @@ struct
       [] ->
          stack,bnames,bvars
     | v::vs ->
-         rename_repeated_vars (succ i) (stack @ [FOVar v]) (bnames @ [bname i v]) (bvars @ [new_bvar_item i v]) vs
+         rename_repeated_vars (succ i) (stack @ [FOVar v]) (bnames @ [bname i v]) ((new_bvar_item i v) :: bvars) vs
 
    and compile_so_redex_bterm allow_so_patterns strict addrs stack bvars bterm =
       let svars = StringSet.of_list (List.map rstack_var stack) in
@@ -376,7 +376,7 @@ struct
                let stack, term = compile_so_redex_term true strict addrs stack bvars term in
                let l = List.length stack in
                let stack = stack @ [FOVar v] in
-               let bvars = bvars @ [new_bvar_item l v] in
+               let bvars = (new_bvar_item l v) :: bvars in
                let stack, hyps, goals =
                   compile_so_redex_sequent_inner strict addrs stack bvars (i + 1) len hyps goals
                in
