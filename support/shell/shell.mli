@@ -79,7 +79,6 @@ topval status_all : unit -> unit
 
 (* Module commands. *)
 topval create_pkg : string -> unit
-topval set_writeable : unit -> unit
 topval save : unit -> unit
 topval export : unit -> unit
 topval save_all : unit -> unit

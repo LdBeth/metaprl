@@ -238,27 +238,27 @@ struct
     * Then exits to pass control to the toploop.
     *)
    let main _ =
-      let init () =
-         let mplib =
-            try Sys.getenv "MPLIB" with
-               Not_found ->
-                  raise (Invalid_argument "MPLIB environment variable in undefined")
-         in
-         let eval_include inc =
-            let _ = Toploop.execute_phrase false Format.std_formatter (Ptop_dir ("directory", Pdir_string inc)) in
-               ()
-         in
-            eval_include mplib;
-            List.iter eval_include (Shell_state.get_includes ());
-            let _ = Toploop.execute_phrase false Format.std_formatter
-               (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_state", "term_printer")))) in
-            let _ = Toploop.execute_phrase false Format.std_formatter
-               (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp"); pstr_loc = Location.none }]) in
-            let _ = Tactic.main_loop () in
-               ()
+      install_debug_printer Shell_state.print_term_fp;
+      let mplib =
+         try Sys.getenv "MPLIB" with
+            Not_found ->
+               raise (Invalid_argument "MPLIB environment variable in undefined")
       in
-         install_debug_printer Shell_state.print_term_fp;
-         Printexc.catch init ()
+      let eval_include inc =
+         let _ = Toploop.execute_phrase false Format.std_formatter (Ptop_dir ("directory", Pdir_string inc)) in
+            ()
+      in
+         eval_include mplib;
+         List.iter eval_include (Shell_state.get_includes ());
+         if not 
+            (Toploop.execute_phrase false Format.std_formatter
+               (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_state", "term_printer")))))
+         then invalid_arg "Shell_p4.main: installing term printer failed";
+         if not
+            (Toploop.execute_phrase false Format.std_formatter
+               (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp"); pstr_loc = Location.none }]))
+         then invalid_arg "Shell_p4.main: opening Mp module failed";
+         Tactic.main_loop ()
 end
 
 (*

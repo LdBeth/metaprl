@@ -153,7 +153,7 @@ if $(NATIVE_ENABLED)
    export
 else
    LIB_SUFFIX = .cma
-   OBJ_SUFFIX = .run
+   OBJ_SUFFIX = .top
    export
 
 #

@@ -208,11 +208,9 @@ let spec =
  * There should be a single file argument, so
  * process it.
  *)
-let main () =
+let _ =
    Pcaml.input_file := "/dev/null";
    Arg.parse spec process_file "Compile a MetaPRL binary file"
-
-let _ = Printexc.catch main ()
 
 (*
  * -*-

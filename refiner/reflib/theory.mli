@@ -52,6 +52,7 @@ val substitute_dforms : string -> string -> unit
 
 (* Get back all the theories that have been recorded *)
 val get_theories : unit -> theory list
+val get_theory : string -> theory
 
 (*
  * -*-

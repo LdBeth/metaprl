@@ -86,7 +86,6 @@ type commands = {
    mutable pwd : unit -> string list;
    mutable set_dfmode : string -> unit;
    mutable create_pkg : string -> unit;
-   mutable set_writeable : unit -> unit;
    mutable save : unit -> unit;
    mutable export : unit -> unit;
    mutable view : ls_option list -> string -> unit;
@@ -108,7 +107,7 @@ let uninitialized _ = raise (Invalid_argument "The Shell module was not instanti
 
 let commands = {
    cd = uninitialized; pwd = uninitialized; set_dfmode = uninitialized; create_pkg = uninitialized;
-   set_writeable = uninitialized; save = uninitialized; export = uninitialized; view = uninitialized;
+   save = uninitialized; export = uninitialized; view = uninitialized;
    check = uninitialized; apply_all = uninitialized; expand = uninitialized; expand_all = uninitialized;
    interpret = uninitialized; undo = uninitialized; redo = uninitialized;
    create_ax_statement = uninitialized; refine = uninitialized;
@@ -299,16 +298,12 @@ struct
    let touch info =
       let pack = get_current_package info in
          try Package.touch pack with
-            Failure "touch" ->
-               eprintf "The module %s is read-only.  Use set_writeable () to change it.%t" (Package.name pack) eflush;
-               raise (Failure "touch")
-
-   (*
-    * Change the status so that we can write to the file.
-    *)
-   let set_writeable info =
-      let pack = get_current_package info in
-         Package.set_status pack Modified
+            Failure _ ->
+               begin
+                  (* Change the status so that we can write to the file. *)
+                  Package.set_status pack Modified;
+                  Package.touch pack
+               end
 
    let print_exn info f x =
       print_exn_db (get_db info) f x
@@ -1024,7 +1019,14 @@ struct
                begin
                   if modname <> String.uncapitalize modname then
                      raise(Invalid_argument "Shell.chdir: module name should not be capitalized");
-                  let pkg = Package.get packages modname in
+                  (* See if the theory exists *)
+                  ignore(Theory.get_theory modname);
+                  let pkg = 
+                     if Package.is_loaded packages modname then
+                        Package.get packages modname
+                     else
+                        Package.load packages (get_parse_arg info) modname
+                  in
                      if need_shell && not (shell_package pkg) then
                         failwith ("Module " ^ modname ^ " does not contain shell commands");
                      info.package <- Some pkg;
@@ -1032,8 +1034,6 @@ struct
                      Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
                      Shell_state.set_module shell modname;
                      if verbose then eprintf "Module: /%s%t" modname eflush;
-                     (* XXX HACK!!! I do not know a better way to initialize a package - AN *)
-                     ignore (Package.info pkg (get_parse_arg info))
                end;
 
             if item = [] then
@@ -1472,7 +1472,6 @@ let cd s = commands.cd s
 let pwd _ = string_of_path (commands.pwd ())
 let set_dfmode s = commands.set_dfmode s
 let create_pkg s = commands.create_pkg s
-let set_writeable _ = commands.set_writeable ()
 let save _ = commands.save ()
 let export _ = commands.export ()
 let check _ = commands.check ()

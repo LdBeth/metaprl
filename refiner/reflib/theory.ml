@@ -74,6 +74,21 @@ let get_theories () =
    !base
 
 (*
+ * Get a theory by name.
+ *)
+let get_theory name =
+   let rec search = function
+      thy :: t ->
+         if thy.thy_name = name then
+            thy
+         else
+            search t
+    | [] ->
+         invalid_arg ("Theory.get_theory: theory ``" ^ name ^ "'' not found")
+   in
+      search !base
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

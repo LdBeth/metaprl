@@ -123,11 +123,8 @@ let add_anon_arg file =
       output_value out symbols;
       close_out out
 
-let main () =
-   Arg.parse spec add_anon_arg "MetaPRL symbol loader"
-
 let _ =
-   Printexc.catch main ()
+   Arg.parse spec add_anon_arg "MetaPRL symbol loader"
 
 (*
  * -*-

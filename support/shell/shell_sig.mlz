@@ -184,7 +184,6 @@ sig
     * Module commands.
     *)
    val create_pkg : t -> string -> unit
-   val set_writeable : t -> unit
    val save : t -> unit
    val export : t -> unit
 

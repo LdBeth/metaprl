@@ -278,36 +278,6 @@ struct
     ************************************************************************)
 
    (*
-    * See if a theory is already loaded.
-    *)
-   let is_theory_loaded name =
-      let rec search = function
-         { thy_name = name' } :: t ->
-            if name = name' then
-               true
-            else
-               search t
-       | [] ->
-            false
-      in
-         search (get_theories ())
-
-   (*
-    * Get a theory by name.
-    *)
-   let get_theory name =
-      let rec search = function
-         thy :: t ->
-            if thy.thy_name = name then
-               thy
-            else
-               search t
-       | [] ->
-            raise Not_found
-      in
-         search (get_theories ())
-
-   (*
     * Get the refiner.
     *)
    let refiner { pack_name = name } =
@@ -466,7 +436,7 @@ struct
       with
          Not_found
        | Sys_error _ ->
-            raise (Failure (sprintf "Package_info/load: '%s' not found" name))
+            raise (Failure (sprintf "Package_info.load: '%s' not found" name))
 
    (*
     * Make sure the str info is valid.
@@ -626,7 +596,8 @@ struct
    let get pack name =
       synchronize_pack pack (function
          pack ->
-            ImpDag.node_value pack.pack_dag (get_package pack name))
+            try ImpDag.node_value pack.pack_dag (get_package pack name)
+            with Not_found -> raise (Invalid_argument("Package_info.get: package " ^ name ^ " is not loaded")))
 
    (*
     * Save a package.

@@ -322,7 +322,7 @@ let main () =
       eprintf "Execution failed: %s%t" argv'.(0) eflush;
       exit 1
 
-let _ = Printexc.catch (Unix.handle_unix_error main) ()
+let _ = Unix.handle_unix_error main ()
 
 (*
  * -*-

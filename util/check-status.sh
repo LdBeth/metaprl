@@ -32,14 +32,14 @@ until [ -n "$LOG" -a -f "$LOG" -a -s "$LOG" ]; do
    fi
    SUFFIX=`date -d "$DAYS days ago" +-%Y.%m.%d.txt`
    LOG=$LOGS$SUFFIX
-   (cd $TMPDIR; $GET $REMOTE_LOGS$SUFFIX 2>&1)>/dev/null
+   (cd $TMPDIR; $GET $REMOTE_LOGS$SUFFIX ) &>/dev/null
    DAYS=`expr "$DAYS" + 1`
 done
 TEMP=`mktemp /tmp/mkstatus.XXXXXX`
 umask 002
 cd $1
 rm -f editor/ml/mp.opt
-( # cvs -q update 2>&1
+(( # cvs -q update 2>&1
 if [ -e .omakedb ]; then
    omake VERBOSE=1 -S 
 else
@@ -72,5 +72,5 @@ else
    echo ""
    echo BUILD FAILED!
 fi
- ) | mail -s "MetaPRL proofs status update (`hostname -s`, `pwd`)" "$LOGNAME"
+ ) 2>&1 ) | mail -s "MetaPRL proofs status update (`hostname -s`, `pwd`)" "$LOGNAME"
 rm -rf $TMPDIR

@@ -32,10 +32,14 @@ let term_depth = ref 0
 
 let contains_source_quot = ref false
 
+(* MetaPRL topval declarations *)
+
+let contains_topval = ref false
+
 (*
  * These are the implicit names.
  *)
-let prl_init_names =
+let prl_names =
    ["Printf";
     "Lm_debug";
     "Refiner";
@@ -48,10 +52,18 @@ let prl_init_names =
     "Tactic";
     "Mp_resource";
     "Precedence";
-    "Filter_summary"]
+    "Filter_summary";
+    "Tactic_type";
+    ]
 
-let prl_names =
-   ["Tactic_type"]
+(*
+ * These are the names used by "topval" declarations
+ *)
+let topval_names = [
+   "Mptop";
+   "Shell_sig";
+]
+
 }
 
 let white = [' ' '\010' '\013' '\009' '\012']
@@ -65,6 +77,11 @@ rule main = parse
     "open" white+ | "include" white+ | "derive" white+ | "extends" white+
   | "module" white+ modname white+ '=' white+
       { struct_name lexbuf; main lexbuf }
+  | "topval" white+
+      { contains_topval := true; main lexbuf }
+  (* Interactive rules and rewrites are justified via Shell *)
+  | white "interactive" white+ | white "interactive_rw" white+ | white "derived" white+
+      { add_structure "Shell"; main lexbuf }
   | modname '.'
       { let s = Lexing.lexeme lexbuf in
         add_structure(String.sub s 0 (String.length s - 1));
@@ -136,8 +153,6 @@ and string = parse
 let load_path = ref [""]
 
 let prl_flag = ref false
-
-let prl_init_flag = ref false
 
 let modules_flag = ref false
 
@@ -212,6 +227,7 @@ let print_dependencies target_file deps =
 
 let file_dependencies source_file =
   try
+    contains_topval := false;
     contains_source_quot := false;
     free_structure_names := StringSet.empty;
     let ic =
@@ -229,10 +245,10 @@ let file_dependencies source_file =
                       !free_structure_names;
        print_newline ()
     end else begin
-    if !prl_flag or !prl_init_flag then
-      List.iter add_structure prl_init_names;
     if !prl_flag then
       List.iter add_structure prl_names;
+    if !prl_flag && !contains_topval then 
+      List.iter add_structure topval_names;
     if Filename.check_suffix source_file ".ml" then begin
       let basename = Filename.chop_suffix source_file ".ml" in
       let init_deps =
@@ -247,15 +263,21 @@ let file_dependencies source_file =
         else
           cmo_deps, cmx_deps
       in
+      (* XXX HACK: since we can not check whether the corresponding .mli contains "topval",
+         in prl mode we always assume dependencies - at least on the .cmi *)
+      let cmo_deps, ppo_deps, cmx_deps =
+         if !prl_flag then
+            let extra_deps = List.fold_right find_dependency_cmi topval_names [] in
+               (extra_deps @ cmo_deps), cmo_deps, (extra_deps @ cmx_deps)
+         else cmo_deps, cmo_deps, cmx_deps
+      in
       print_dependencies (basename ^ ".cmo") cmo_deps;
       print_dependencies (basename ^ ".ppo") cmo_deps;
       print_dependencies (basename ^ ".cmx") cmx_deps
     end else
     if Filename.check_suffix source_file ".mli" then begin
       let basename = Filename.chop_suffix source_file ".mli" in
-      let deps =
-        StringSet.fold find_dependency_cmi !free_structure_names [] in
-      print_dependencies (basename ^ ".cmi") deps
+      print_dependencies (basename ^ ".cmi") (StringSet.fold find_dependency_cmi !free_structure_names [])
     end else
       ();
     end;
@@ -271,10 +293,8 @@ let _ =
   Arg.parse [
      "-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
            "<dir>  Add <dir> to the list of include directories";
-     "-prl_init", Arg.Set prl_init_flag, "add dependencies for PRL files, no Tactic_type";
-     "-noprl_init", Arg.Set prl_init_flag, "add dependencies for PRL files, no Tactic_type";
      "-prl", Arg.Set prl_flag, "add dependencies for PRL files";
-     "-noprl", Arg.Clear prl_flag, "add dependencies for PRL files";
+     "-noprl", Arg.Clear prl_flag, "do not add dependencies for PRL files";
      "-modules", Arg.Set modules_flag, "print modules"
     ] file_dependencies usage;
   exit 0

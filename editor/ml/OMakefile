@@ -238,9 +238,9 @@ if $(BYTE_ENABLED)
 # Clean up
 #
 clean:
-    $(CLEAN) mp_version.ml make_mp_version$(EXE)
+    $(CLEAN) $(MP).top mp_version.ml make_mp_version$(EXE)
 
 #
 # All defaults
 #
-all: $(MP)$(OBJ_SUFFIX)
+all: .DEFAULT
