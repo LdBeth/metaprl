@@ -42,17 +42,16 @@ exception EmptyModulePath of string
 type module_path = string list
 
 (*
- * Source code location.
- *)
-type loc = int * int
-
-(*
  * Annotated terms may have a name.
  *)
 type aterm = { aname : term option; aterm : term }
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:17:36  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:51:01  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -3,7 +3,7 @@
  * We just want to remove location info.
  *)
 
-open Ast
+open MLast
 
 (*
  * Basic hash functions.
@@ -82,7 +82,7 @@ let rec hash_expr index = function
       hash_string (hash index 0x27139e6c) s
  | (<:expr< while $e$ do $list:el$ done >>) ->
       List.fold_left hash_expr (hash_expr (hash index 0x723d7789) e) el
- | Ast.ExAnt (loc, e) ->
+ | MLast.ExAnt (loc, e) ->
       Stdpp.raise_with_loc loc (Failure "Filter_hash.hash_expr: encountered an ExAnt")
 
 and hash_patt index = function
@@ -114,7 +114,7 @@ and hash_patt index = function
       hash_patt (hash_type (hash index 0x08034ff2) t) p
  | (<:patt< $uid:s$ >>) ->
       hash_string (hash index 0x37911bc9) s
- | Ast.PaAnt (loc, p) ->
+ | MLast.PaAnt (loc, p) ->
       Stdpp.raise_with_loc loc (Failure "Filter_hash:hash_patt: encountered PaAnt")
 
 and hash_type index = function
@@ -293,6 +293,10 @@ and hash_sslt index (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:17:29  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:50:53  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -34,6 +34,8 @@
  *
  *)
 
+open Printf
+
 open Debug
 open Term
 open Term_util
@@ -554,6 +556,8 @@ struct
             raise (FreeContextVars l)
    
    let add_axiom refiner name term =
+      if debug_refiner then
+         eprintf "Refiner.add_axiom: %s%t" name eflush;
       let refiner' = AxiomRefiner { axiom_name = name;
                                     axiom_term = term;
                                     axiom_refiner = refiner
@@ -575,6 +579,8 @@ struct
     * and there are no dependencies.
     *)
    let add_rule refiner name addrs names params mterm =
+      if debug_refiner then
+         eprintf "Refiner.add_rule: %s%t" name eflush;
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
       let rw = term_rewrite (addrs, names) (goal::params) subgoals in
@@ -615,6 +621,8 @@ struct
     * The rewrite must be a MetaIff.
     *)
    let add_rewrite refiner name redex contractum =
+      if debug_refiner then
+         eprintf "Refiner.add_rewrite: %s%t" name eflush;
       let rw = term_rewrite ([||], [||]) [redex] [contractum] in
       let refiner' = RewriteRefiner { rw_name = name;
                                       rw_rewrite = redex, contractum;
@@ -639,6 +647,8 @@ struct
     * Conditional rewrite.
     *)
    let add_cond_rewrite refiner name vars params subgoals redex contractum =
+      if debug_refiner then
+         eprintf "Refiner.add_cond_rewrite: %s%t" name eflush;
       let rw = term_rewrite ([||], vars) (redex::params) [contractum] in
       let refiner' = CondRewriteRefiner { crw_name = name;
                                           crw_rewrite = subgoals, redex, contractum;
@@ -670,6 +680,8 @@ struct
     * Theorem for a previous rewrite.
     *)
    let add_prim_rewrite refiner name redex contractum =
+      if debug_refiner then
+         eprintf "Refiner.add_prim_rewrite: %s%t" name eflush;
       let rw = find_refiner refiner name in
          match rw with
             RewriteRefiner { rw_rewrite = redex', contractum' } ->
@@ -685,6 +697,8 @@ struct
     * In this theorem, we ignore the vars and params.
     *)
    let add_prim_cond_rewrite refiner name vars params subgoals redex contractum =
+      if debug_refiner then
+         eprintf "Refiner.add_prim_cond_rewrite: %s%t" name eflush;
       let rw = find_refiner refiner name in
          match rw with
             CondRewriteRefiner { crw_rewrite = subgoals', redex', contractum' } ->
@@ -758,6 +772,8 @@ struct
     *    lambda(a. lambda(b. ... cons(arg1; cons(arg2; ... cons(argn, nil)))))
     *)
    let add_prim_theorem refiner name vars params args result =
+      if debug_refiner then
+         eprintf "Refiner.add_prim_theorem: %s%t" name eflush;
       (* Special case for trivial theorems *)
       let axiom = find_refiner refiner name in
          if vars = [||] & params = [] & args = [] then
@@ -907,6 +923,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:18:12  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:51:30  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

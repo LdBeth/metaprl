@@ -297,22 +297,35 @@ let rec parent_path_ctyp loc = function
 (*
  * Do this when a module is inlined.
  *)
-let inline_hook proc root_path open_f cache (path, info) =
+let inline_hook proc root_path open_f cache (path, info) (paths, resources) =
    (* Include all the resources *)
    if debug_resource then
       eprintf "Inline_hook: %s, %s%t" (string_of_path root_path) (string_of_path path) eflush;
    let add_resource' rsrc =
       if debug_resource then
          eprintf "Adding resource: %s.%s%t" (string_of_path path) rsrc.resource_name eflush;
-      add_resource cache path rsrc
+      FilterCache.add_resource cache path rsrc
    in
-      List.iter add_resource' (get_resources info);
+   let nresources' = get_resources info in
+   let nresources =
+      let rec collect resources = function
+         rsrc::tl ->
+            if List.mem rsrc resources then
+               collect resources tl
+            else
+               collect (rsrc :: resources) tl
+       | [] ->
+            resources
+      in
+         collect resources nresources'
+   in
+      List.iter add_resource' nresources';
       
       (* Add all the infix words *)
       List.iter add_infix (get_infixes info);
       
       (* Return the "open" command *)
-      open_f path
+      open_f path :: paths, nresources
 
 (*
  * Include a parent.
@@ -321,8 +334,8 @@ let inline_hook proc root_path open_f cache (path, info) =
  *)
 let declare_parent proc open_f path =
    (* Lots of errors can occur here *)
-   let info, opens = inline_module proc.cache path ignore_id (inline_hook proc path open_f) in
-      add_command proc.cache (Parent path);
+   let info, (opens, _) = FilterCache.inline_module proc.cache path (inline_hook proc path open_f) ([], []) in
+      FilterCache.add_command proc.cache (Parent path);
       opens
 
 (*
@@ -330,11 +343,11 @@ let declare_parent proc open_f path =
  * Just given the opname for now.
  *)
 let declare_term proc loc (s, params, bterms) =
-   let opname' = Opname.mk_opname s (get_opprefix proc.cache) in
+   let opname' = Opname.mk_opname s (FilterCache.op_prefix proc.cache) in
    let t = mk_term (mk_op opname' params) bterms in
-      rm_opname proc.cache s;
-      add_opname proc.cache s opname';
-      add_command proc.cache (Opname { opname_name = s; opname_term = t });
+      FilterCache.rm_opname proc.cache s;
+      FilterCache.add_opname proc.cache s opname';
+      FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t });
       t
 
 (*
@@ -347,14 +360,18 @@ let declare_term proc loc (s, params, bterms) =
  * must be provable _in the current context_.  In a sequent calculus,
  * the current context would be the assumption list.
  *)
-let simple_rewrite proc name redex contractum =
+let simple_rewrite proc name redex contractum pf =
    (* Check that rewrite will succeed *)
    Refiner.check_rewrite [||] [] [] redex contractum;
 
    (* Construct the command *)
-   Rewrite { rw_name = name; rw_redex = redex; rw_contractum = contractum }
+   Rewrite { rw_name = name;
+             rw_redex = redex;
+             rw_contractum = contractum;
+             rw_proof = pf
+   }
 
-let cond_rewrite proc name params args =
+let cond_rewrite proc name params args pf =
    (* Print the type to the .mli file *)
    let cvars = context_vars args in
    let bvars = binding_vars args in
@@ -371,27 +388,28 @@ let cond_rewrite proc name params args =
                     crw_params = params';
                     crw_args = args';
                     crw_redex = redex;
-                    crw_contractum = contractum
+                    crw_contractum = contractum;
+                    crw_proof = pf
       }
 
 (*
  * Compile the rewrite.
  *)
-let rewrite_command proc name params args =
+let rewrite_command proc name params args pf =
    match params, args with
       [], MetaIff (MetaTheorem redex, MetaTheorem contractum) ->
          (* This is a simple rewrite *)
-         simple_rewrite proc name redex contractum
+         simple_rewrite proc name redex contractum pf
     | _ ->
          (* Conditional rewrite *)
-         cond_rewrite proc name params args
+         cond_rewrite proc name params args pf
 
 (*
  * Add the command and return the declaration.
  *)
-let define_rewrite proc loc name params args =
-   let cmd = rewrite_command proc name params args in
-   let _ = add_command proc.cache cmd in
+let declare_rewrite proc loc name params args =
+   let cmd = rewrite_command proc name params args InterfaceProof in
+   let _ = FilterCache.add_command proc.cache cmd in
    let ctyp =
       match cmd with
          Rewrite _ ->
@@ -408,18 +426,18 @@ let define_rewrite proc loc name params args =
  *)
 let define_term proc loc name redex contractum =
    let redex' = declare_term proc loc redex in
-      define_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum))
+      declare_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum))
 
 (*
  * Declare an axiom in an interface.  This has a similar flavor
  * as rewrites, but context args have to be extracted from the args.
  *)
-let simple_axiom proc name arg =
+let simple_axiom proc name arg pf =
    (* Check it *)
    Refiner.check_axiom arg;
 
    (* Save it in the transcript *)
-   Axiom { axiom_name = name; axiom_stmt = arg }
+   Axiom { axiom_name = name; axiom_stmt = arg; axiom_proof = pf }
 
 let rec print_terms out = function
    h::t ->
@@ -431,7 +449,7 @@ let rec print_terms out = function
 let print_non_vars out params =
    print_terms out (collect_non_vars params)
    
-let cond_axiom proc name params args =
+let cond_axiom proc name params args pf =
    (* Extract context names *)
    let cvars = context_vars args in
    let bvars = binding_vars args in
@@ -454,21 +472,21 @@ let cond_axiom proc name params args =
       (* If checking completes, add the rule *)
       Rule { rule_name = name;
              rule_params = params';
-             rule_stmt = args
+             rule_stmt = args;
+             rule_proof = pf
       }
 
-let axiom_command proc name params args =
+let axiom_command proc name params args pf =
    match params, args with
      [], MetaTheorem a ->
-         (* Simple axiom *)
-         simple_axiom proc name a
+         simple_axiom proc name a pf
     | _ ->
-         cond_axiom proc name params args
+         cond_axiom proc name params args pf
 
       
 let declare_axiom proc loc name params args =
-   let cmd = axiom_command proc name params args in
-   let _ = add_command proc.cache cmd in
+   let cmd = axiom_command proc name params args InterfaceProof in
+   let _ = FilterCache.add_command proc.cache cmd in
    let params' =
       match cmd with
          Axiom _ -> []
@@ -482,7 +500,7 @@ let declare_axiom proc loc name params args =
  * Infix directive.
  *)
 let declare_infix proc s =
-   add_command proc.cache (Infix s);
+   FilterCache.add_command proc.cache (Infix s);
    add_infix s
 
 (*
@@ -491,7 +509,7 @@ let declare_infix proc s =
 let declare_mlterm proc loc ((name, _, _) as t) =
    let t' = declare_term proc loc t in
       (* The condition creates an ml value for checking *)
-      add_command proc.cache (MLTerm t');
+      FilterCache.add_command proc.cache (MLTerm t');
       t'
 
 (*
@@ -500,7 +518,7 @@ let declare_mlterm proc loc ((name, _, _) as t) =
 let declare_ml_condition proc loc ((name, _, _) as t) =
    let t' = declare_term proc loc t in
       (* The condition creates an ml value for checking *)
-      add_command proc.cache (Condition t')
+      FilterCache.add_command proc.cache (Condition t')
 
 (*
  * Record a resource.
@@ -516,26 +534,29 @@ let declare_resource proc loc r =
    in
    let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$>> in
    let decl = (<:sig_item< type $list:[name, [], rsrc_type]$ >>) in
-      add_command proc.cache (Resource r);
-      add_resource proc.cache [] r;
+      FilterCache.add_command proc.cache (Resource r);
+      FilterCache.add_resource proc.cache [] r;
       decl
 
 (*
  * Dform declaration.
  *)
 let declare_dform proc options t =
-   add_command proc.cache (DForm (options, t))
+   FilterCache.add_command proc.cache (DForm { dform_options = options;
+                                               dform_redex = t;
+                                               dform_def = None
+                                       })
 
 (*
  * Precedence declaration.
  *)
 let declare_prec proc loc s =
-   if find_prec proc.cache s then
+   if FilterCache.find_prec proc.cache s then
       Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' already declared" s))
    else
       begin
-         add_command proc.cache (Prec s);
-         add_prec proc.cache s;
+         FilterCache.add_command proc.cache (Prec s);
+         FilterCache.add_prec proc.cache s;
          <:sig_item< value $s$ : $precedence_ctyp loc$ >>
       end
 
@@ -556,13 +577,13 @@ let interf_resources proc loc =
                   <:ctyp< $parent_path_ctyp loc path$ . $lid:name$ >>
             in
             let rsrc_item = (<:sig_item< value $name$ : $name_ctyp$ >>) in
-               add_command proc.cache (InheritedResource rsrc);
+               FilterCache.add_command proc.cache (InheritedResource rsrc);
                print (name :: names) (rsrc_item :: stmts) t
 
     | [] ->
          List.rev stmts
    in
-   let resources = get_all_resources proc.cache in
+   let resources = FilterCache.resources proc.cache in
       print [] [] resources
 
 (*
@@ -601,33 +622,35 @@ let print_resources proc loc ppath nresources resources =
          aux nresources
    in
    let rec add_resource' names = function
-      (_, ({ resource_name = name } as rsrc))::t ->
-         if debug_resource then
-            eprintf "Looking for resource %s%t" name eflush;
-         if List.mem name names then
-            add_resource' (name :: names) t
-         else
-            let name_expr = <:expr< $lid:name$ >> in
-            let name_patt = <:patt< $lid:name$ >> in
-            let parent_value = <:expr< $parent_path_expr loc ppath$ . $name_expr$ >> in
-            let _ = add_resource proc.cache ppath rsrc in
-            let item =
-               if mem_resource name then
-                  (*
-                   * type name = Parent.name
-                   * let name = name.resource_join name Parent.name
-                   *)
-                  let rsrc_val = <:expr< $name_expr$ . $resource_join_expr loc$ $name_expr$ $parent_value$ >> in
-                     (<:str_item< value $rec:false$ $list:[ name_patt, rsrc_val ]$ >>)
-               else
-                  (*
-                   * type name = Parent.name
-                   * let name = Parent.name
-                   *)
-                  (<:str_item< value $rec:false$ $list:[ name_patt, parent_value ]$ >>)
-            in
-               item :: (add_resource' (name :: names) t)
-    | [] ->
+      rsrc::t ->
+         let { resource_name = name } = rsrc in
+            if debug_resource then
+               eprintf "Looking for resource %s%t" name eflush;
+            if List.mem name names then
+               add_resource' (name :: names) t
+            else
+               let name_expr = <:expr< $lid:name$ >> in
+               let name_patt = <:patt< $lid:name$ >> in
+               let parent_value = <:expr< $parent_path_expr loc ppath$ . $name_expr$ >> in
+               let _ = FilterCache.add_resource proc.cache ppath rsrc in
+               let item =
+                  if mem_resource name then
+                     (*
+                      * type name = Parent.name
+                      * let name = name.resource_join name Parent.name
+                      *)
+                     let rsrc_val = <:expr< $name_expr$ . $resource_join_expr loc$ $name_expr$ $parent_value$ >> in
+                        (<:str_item< value $rec:false$ $list:[ name_patt, rsrc_val ]$ >>)
+                  else
+                     (*
+                      * type name = Parent.name
+                      * let name = Parent.name
+                      *)
+                     (<:str_item< value $rec:false$ $list:[ name_patt, parent_value ]$ >>)
+               in
+                  item :: (add_resource' (name :: names) t)
+    
+      | [] ->
          []
    in
       add_resource' [] resources
@@ -644,27 +667,26 @@ let print_resources proc loc ppath nresources resources =
  *)
 let define_parent proc loc open_f path =
    (* Lots of errors can occur here *)
-   let nresources = get_all_resources proc.cache in
-   let info, opens = inline_module proc.cache path ignore_id (inline_hook proc path open_f) in
+   let nresources = FilterCache.resources proc.cache in
+   let info, (opens, resources) = FilterCache.inline_module proc.cache path (inline_hook proc path open_f) ([], []) in
    let parent_expr = <:expr< $parent_path_expr loc path$ >> in
    let join_refiner = <:expr< $join_refiner_expr loc$ $lid:local_refiner_id$ $parent_expr$ . $lid:refiner_id$ >> in
    let join_dformer = <:expr< $join_mode_base_expr loc$ $lid:local_dformer_id$ $parent_expr$ . $lid:dformer_id$ >> in
-   let resources = get_all_resources proc.cache in
    let _ =
       if debug_resource then
          eprintf "Adding parent %s: %d%t" (string_of_path path) (List.length resources) eflush
    in
    let items = print_resources proc loc path nresources resources in
-      add_command proc.cache (Parent path);
-      opens @ [<:str_item< $exp:join_refiner$ >>; <:str_item< $exp:join_dformer$ >>] @ items
+      FilterCache.add_command proc.cache (Parent path);
+   opens @ [<:str_item< $exp:join_refiner$ >>; <:str_item< $exp:join_dformer$ >>] @ items
 
 (*
  * A primitive rewrite is taken a true by fiat.
  *)
 let prim_rewrite proc loc name params args =
-   let cmd = rewrite_command proc name params args in
+   let cmd = rewrite_command proc name params args (ImplementationProof <:expr< () >>) in
       (* Declare it *)
-      add_command proc.cache cmd;
+      FilterCache.add_command proc.cache cmd;
 
       (* Analyze the rewrite term to decide what type of rewrite *)
       match cmd with
@@ -804,9 +826,9 @@ let prim_rewrite proc loc name params args =
  * Justify a rewrite with a tactic.
  *)
 let rewrite_theorem proc loc name params args expr =
-   let cmd = rewrite_command proc name params args in
+   let cmd = rewrite_command proc name params args (ImplementationProof expr) in
       (* Declare it *)
-      add_command proc.cache cmd;
+      FilterCache.add_command proc.cache cmd;
 
       (* Analyze the rewrite term to decide what type of rewrite *)
       match cmd with
@@ -926,14 +948,14 @@ let collect_anames args =
 (*
  * A primitive rule specifies the extract.
  *)
-let define_rule (code : Ast.expr) proc loc name
-    (params : term list) (args : aterm list) (goal : term) (extract : Ast.expr) =
+let define_rule (code : MLast.expr) proc loc name
+    (params : term list) (args : aterm list) (goal : term) (extract : MLast.expr) =
    let avars = collect_anames args in
    let assums = List.map (function { aterm = t } -> t) args in
    let mterm = zip_mimplies (assums @ [goal]) in
-   let cmd = axiom_command proc name params mterm in
+   let cmd = axiom_command proc name params mterm (ImplementationProof extract) in
       (* Record this axiom *)
-      add_command proc.cache cmd;
+      FilterCache.add_command proc.cache cmd;
       
       (* Pass it to the refiner *)
       match cmd with
@@ -1236,19 +1258,19 @@ let define_dform proc loc options t expansion =
  * Precedence definition relation.
  *)
 let define_prec proc loc s =
-   if find_prec proc.cache s then
+   if FilterCache.find_prec proc.cache s then
       Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' already declared" s))
    else
       let prec_patt = <:patt< $lid:s$ >> in
       let new_prec = <:expr< $new_prec_expr loc$ () >> in
-         add_command proc.cache (Prec s);
-         add_prec proc.cache s;
+         FilterCache.add_command proc.cache (Prec s);
+         FilterCache.add_prec proc.cache s;
          (<:str_item< value $rec:false$ $list:[ prec_patt, new_prec ]$ >>)
 
 let define_prec_rel proc loc s s' rel =
-   if not (find_prec proc.cache s) then
+   if not (FilterCache.find_prec proc.cache s) then
       Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' not defined" s));
-   if not (find_prec proc.cache s') then
+   if not (FilterCache.find_prec proc.cache s') then
       Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' not defined" s'));
    let expr =
       match rel with
@@ -1373,8 +1395,8 @@ let define_resource proc loc r =
    in
    let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$>> in
    let decl = (<:str_item< type $list:[name, [], rsrc_type]$ >>) in
-      add_command proc.cache (Resource r);
-      add_resource proc.cache [] r;
+      FilterCache.add_command proc.cache (Resource r);
+      FilterCache.add_resource proc.cache [] r;
       decl
 
 (*
@@ -1450,21 +1472,18 @@ let _ = ()
 let save_interface proc loc =
    let { name = name } = proc in
    let id = Hashtbl.hash proc in
-      add_command proc.cache (Id id);
-      save_module (get_module_info proc.cache) (name ^ ".cmiz");
+      FilterCache.add_command proc.cache (Id id);
+      FilterCache.save proc.cache;
       interf_postlog proc loc
 
 (*
  * Check that the implementation matches the interfaces.
+ * BUG: Need to adjust the id (it shouldn't be 0).
  *)
 let save_implementation proc loc =
-   let { name = name } = proc in
-   let info = get_module_info proc.cache in
-   let info' = Filter_summary_io.load_module proc.base (name ^ ".cmiz") [name] ignore_id in
-   let info' = normalize_info info' in
-      save_module info (name ^ ".cmoz");
-      check_implementation info info';
-      implem_postlog proc loc name (Filter_summary.find_id info')
+   let { name = name; cache = cache } = proc in
+      FilterCache.save cache;
+      implem_postlog proc loc name 0
 
 (*
  * Save the include path.
@@ -1483,19 +1502,19 @@ let get_proc loc =
    match !proc_ref with
       Some proc -> proc
     | None ->
-         let module_name =
+         let select, module_name =
             let name = !Pcaml.input_file in
                if Filename.check_suffix name ".ml" then
-                  Filename.chop_suffix name ".ml"
+                  ImplementationType, Filename.chop_suffix name ".ml"
                else if Filename.check_suffix name ".mli" then
-                  Filename.chop_suffix name ".mli"
+                  InterfaceType, Filename.chop_suffix name ".mli"
                else
                   Stdpp.raise_with_loc loc (Failure "Input is not a .ml or .mli file")
          in
-         let module_base = new_module_base_io !include_path in
-         let proc = { cache = new_module_cache module_base module_name;
-                      name = module_name;
-                      base = module_base
+         let cache = FilterCache.create !include_path in
+         let info = FilterCache.create_cache cache module_name select InterfaceType in
+         let proc = { cache = info;
+                      name = module_name
                     }
          in
             proc_ref := Some proc;
@@ -1510,7 +1529,10 @@ let get_proc loc =
  *)
 module TermGrammarBefore : TermGrammarSig =
 struct
-   let mk_opname loc l = mk_opname (get_proc loc).cache loc l
+   let mk_opname loc l = 
+      try FilterCache.mk_opname (get_proc loc).cache l with
+         exn ->
+            Stdpp.raise_with_loc loc exn
    
    (*
     * Term grammar.
@@ -1541,11 +1563,12 @@ open TermGrammar
 let term_exp s =
    let cs = Gstream.of_string s in
    let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
-   let file = StringFile.create () in
-      StringPrint.print_term file t;
-      StringFile.get file
+      build_ml_term (0, 0) t
 
-let contractum_exp s =
+let term_patt s =
+   raise (Failure "Filter_parse.term_patt: not implemented yet")
+
+let contractum_exp patt s =
    if !contract_flag then
       let cs = Gstream.of_string s in
       let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
@@ -1555,8 +1578,8 @@ let contractum_exp s =
    else
       Stdpp.raise_with_loc (0, String.length s) (Failure "not in a rewrite block")
 
-let _ = Quotation.add "term" term_exp
-let _ = Quotation.add "con" contractum_exp
+let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
+let _ = Quotation.add "con" (Quotation.ExStr contractum_exp)
 let _ = Quotation.default := "term"
 
 (************************************************************************
@@ -1625,7 +1648,7 @@ EXTEND
         | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = term ->
           define_term (get_proc loc) loc name t def
         | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
-          define_rewrite (get_proc loc) loc name args t
+          declare_rewrite (get_proc loc) loc name args t
         | "axiom"; name = LIDENT; args = optarglist; ":"; t = mterm ->
           declare_axiom (get_proc loc) loc name args t
         | "mlterm"; t = quote_term ->
@@ -1796,6 +1819,8 @@ EXTEND
           make_infix loc op t1 t2
         | t1 = expr; op = "thenWT"; t2 = expr ->
           make_infix loc op t1 t2
+        | t1 = expr; op = "thenET"; t2 = expr ->
+          make_infix loc op t1 t2
         | t1 = expr; op = "thenPT"; t2 = expr ->
           make_infix loc op t1 t2
        ]];
@@ -1803,6 +1828,10 @@ END
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:17:31  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:50:55  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

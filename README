@@ -1,3 +1,8 @@
+To compile Nuprl-light, you need to set the environment variable
+CAMMLIB to the ocaml library.  On mojave, this is
+
+/usr/local/lib/ocaml-1.05
+
 TODO:
 
 1. Sequent variable naming convention (for example, look at capture in cut rule).

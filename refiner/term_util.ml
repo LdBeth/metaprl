@@ -2,6 +2,10 @@
  * Utilities on terms.
  *
  * $Log$
+ * Revision 1.2  1997/08/06 16:18:16  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:51:49  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included
@@ -189,10 +193,12 @@ let generalization =
          let { op_name = name1; op_params = params1 } = dest_op op1 in
          let { op_name = name2; op_params = params2 } = dest_op op2 in
             if name1 = name2 then
-               begin
+               try
                   List.iter2 generalizes_param params1 params2;
                   List.fold_left2 generalizes_bterm vars bterms1 bterms2
-               end
+               with
+                  Invalid_argument _ ->
+                     raise (Invalid_argument "generalization")
             else
                raise (Invalid_argument "generalization")
 
@@ -205,10 +211,11 @@ let generalization =
       let { bvars = vars1; bterm = term1 } = dest_bterm bterm1 in
       let { bvars = vars2; bterm = term2 } = dest_bterm bterm2 in
       let aux vars v1 v2 =
-         try if v2 = List.assoc v1 vars then
-                vars
-             else
-                raise (Invalid_argument "generalization")
+         try
+            if v2 = List.assoc v1 vars then
+               vars
+            else
+               raise (Invalid_argument "generalization")
          with _ ->
                (v1, v2)::vars
       in

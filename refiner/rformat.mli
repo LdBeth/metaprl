@@ -28,7 +28,7 @@
  * TYPES                                                                *
  ************************************************************************)
 
-type buffer;;
+type buffer
 
 (************************************************************************
  * INTERFACE                                                            *
@@ -37,50 +37,54 @@ type buffer;;
 (*
  * Buffer creation.
  *)
-val new_buffer : unit -> buffer;;
-val clear_buffer : buffer -> unit;;
+val new_buffer : unit -> buffer
+val clear_buffer : buffer -> unit
 
 (*
  * Breaks.
  *)
-val format_sbreak : buffer -> string -> string -> unit;;
-val format_break : buffer -> string -> string -> unit;;
-val format_ibreak : buffer -> string -> string -> unit;;
-val format_space : buffer -> unit;;
-val format_hspace : buffer -> unit;;
-val format_newline : buffer -> unit;;
+val format_sbreak : buffer -> string -> string -> unit
+val format_break : buffer -> string -> string -> unit
+val format_ibreak : buffer -> string -> string -> unit
+val format_space : buffer -> unit
+val format_hspace : buffer -> unit
+val format_newline : buffer -> unit
 
 (*
  * Break zones.
  *)
-val format_lzone : buffer -> unit;;
-val format_szone : buffer -> unit;;
-val format_hzone : buffer -> unit;;
-val format_ezone : buffer -> unit;;
+val format_lzone : buffer -> unit
+val format_szone : buffer -> unit
+val format_hzone : buffer -> unit
+val format_ezone : buffer -> unit
 
 (*
  * MArgins.
  *)
-val format_pushm : buffer -> int -> unit;;
-val format_popm : buffer -> unit;;
+val format_pushm : buffer -> int -> unit
+val format_popm : buffer -> unit
 
 (*
  * Printers.
  *)
-val format_char : buffer -> char -> unit;;
-val format_string : buffer -> string -> unit;;
-val format_quoted_string : buffer -> string -> unit;;
-val format_int : buffer -> int -> unit;;
-val format_buffer : buffer -> buffer -> unit;;
+val format_char : buffer -> char -> unit
+val format_string : buffer -> string -> unit
+val format_quoted_string : buffer -> string -> unit
+val format_int : buffer -> int -> unit
+val format_buffer : buffer -> buffer -> unit
 
 (*
  * Collecting output.
  *)
-val print_to_channel : int -> buffer -> out_channel -> unit;;
-val print_to_string : int -> buffer -> string;;
+val print_to_channel : int -> buffer -> out_channel -> unit
+val print_to_string : int -> buffer -> string
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:18:13  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:51:38  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -1,4 +1,4 @@
-# -*- Mode: make -*-
+# -*- Mode: makefile -*-
 #
 # Script to generate a program.
 # Assumes variables:
@@ -9,20 +9,24 @@
 #    MAIN: root name of generated program
 #
 
+#
 # OCAML commands
+#
 ifndef CAMLP4
-CAMLP4 := camlp4
+   CAMLP4 := camlp4o
 endif
 ifndef OCAMLC
-OCAMLC := ocamlc
+   OCAMLC := ocamlc
 endif
 ifndef OCAMLOPT
-OCAMLOPT := ocamlopt
+   OCAMLOPT := ocamlopt
 endif
 OCAMLDEP := ocamldep
 OCAMLCFLAGS := $(OCAMLFLAGS) $(INCLUDE) -g
 OCAMLOPTFLAGS := $(OCAMLFLAGS) $(INCLUDE)
 CAMLP4OFLAGS := $(INCLUDE)
+CFLAGS = -g -I$(CAMLLIB)
+CC = gcc
 
 # Library file names
 MLFILES   := $(addsuffix .ml,   $(LMFILES) $(MFILES) $(PFILES))
@@ -36,11 +40,18 @@ PCMXFILES := $(addsuffix .cmo,  $(PFILES))
 CMAFILES  := $(addsuffix .cma,  $(MLLIBS))
 CMXAFILES := $(addsuffix .cmxa, $(MLLIBS))
 
+OFILES    := $(addsuffix .o, $(LCFILES))
+CFILES    := $(addsuffix .c, $(LCFILES))
+
 # Instructions to make
 .PHONY: all opt clean depend
 .PRECIOUS: %.cmo %.cmi %.cmx %.ml %.mli
 
 .SUFFIXES: .cma .cmx .cmo .cmi .ml .mli .mll .mly
+
+$(MAIN).a: $(OFILES)
+	ar r $@ $?
+	ranlib $@
 
 $(MAIN).cma: $(LCMOFILES)
 	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES)
@@ -48,11 +59,19 @@ $(MAIN).cma: $(LCMOFILES)
 $(MAIN).cmxa: $(LCMXFILES)
 	$(OCAMLOPT) $(OCAMLCFLAGS) -o -o $@ $(LCMXFILES)
 
-$(MAIN).run: $(CMAFILES) $(PCMOFILES)
+$(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
 	$(OCAMLC) -custom $(OCAMLCFLAGS) -o $@ $(CMAFILES) $(CMALIBS) $(PCMOFILES) $(CCLIBS)
+	if [ -f $(MAIN).run.exe ]; then\
+		mv $(MAIN).run.exe $(MAIN).run.bak;\
+		mv $(MAIN).run.bak $(MAIN).run;\
+	fi
 
-$(MAIN): $(CMXAFILES) $(PCMXFILES)
+$(MAIN): $(CMXAFILES) $(CMXDEPS) $(PCMXFILES)
 	$(OCAMLOPT) $(OCAMLCFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(CCLIBS)
+	if [ -f $(MAIN).exe ]; then\
+		mv $(MAIN).exe $(MAIN).bak;\
+		mv $(MAIN).bak $(MAIN);\
+	fi
 
 %.cmo: %.ml %.cmi
 	$(OCAMLC) $(OCAMLCFLAGS) -c $*.ml
@@ -89,8 +108,19 @@ $(MAIN): $(CMXAFILES) $(PCMXFILES)
 	cp $*.mlz $@
 	chmod 444 $@
 
+%.o: %.c
+	$(CC) $(CFLAGS) -c $*.c
+
 clean::
-	del -f *.cm* *.z* *~ *.bak *.output $(MAIN) $(MAIN).run
+	del -f *.cm* *.z* *.o *~ *.bak *.output $(MAIN) $(MAIN).run
 
 depend:: $(MLFILES) $(MLIFILES)
-	$(OCAMLDEP) $(INCLUDE) $(MLFILES) $(MLIFILES) > Makefile.dep
+	rm -f Makefile.tmp
+	touch Makefile.tmp
+ifneq ($(MLFILES),)
+	$(OCAMLDEP) $(INCLUDE) $(MLFILES) $(MLIFILES) >> Makefile.tmp
+endif
+ifneq ($(CFILES),)
+	$(CC) $(CFLAGS) -MM $(CFILES) >> Makefile.tmp
+endif
+	mv Makefile.tmp Makefile.dep

@@ -2,17 +2,20 @@
  * Type of processors that are used to parse files.
  *)
 
-open Filter_summary_io
-open Filter_cache
+open Filter_summary_type
+open Filter_summary_util
 
 type processor =
-   { cache : module_cache;
-     name : string;
-     base : module_base_io
+   { cache : FilterCache.info;
+     name : string
    }
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:17:32  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:50:57  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

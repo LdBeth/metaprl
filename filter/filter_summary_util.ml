@@ -11,7 +11,101 @@ open Filter_ast
 open Filter_type
 open Filter_util
 open Filter_summary
+open Filter_summary_io
 open Filter_cache
+
+open File_base_type
+open File_type_base
+
+(************************************************************************
+ * FILTER CACHE                                                         *
+ ************************************************************************)
+
+(*
+ * This type may contain something useful after a while.
+ *)
+type imp_proof = MLast.expr
+
+(*
+ * For this compiler, we only use two summaries.
+ *)
+type select_type =
+   InterfaceType
+ | ImplementationType
+
+(*
+ * The interface type and implementation proofs.
+ *)
+type proof_type =
+   InterfaceProof
+ | ImplementationProof of imp_proof
+
+(*
+ * Build the cache.
+ *)
+module FileTypes =
+struct
+   type select = select_type
+   type cooked = proof_type module_info
+end
+       
+module InterfaceInfo =
+struct
+   type select = select_type
+   type raw = unit module_info
+   type cooked = proof_type module_info
+   
+   let select = InterfaceType
+   let suffix = "cmiz"
+   let magic = 0x73ac6be1
+   let marshal info =
+      let marshal_proof kind = function
+         InterfaceProof ->
+            ()
+       | ImplementationProof _ ->
+            raise (Invalid_argument (sprintf "Filter_summary_util.InterfaceInfo.marshal: %s" kind))
+      in
+         proof_map marshal_proof info
+   
+   let unmarshal info =
+      let unmarshal_proof kind () = InterfaceProof in
+         proof_map unmarshal_proof info
+end
+
+module ImplementationInfo =
+struct
+   type select = select_type
+   type raw = imp_proof module_info
+   type cooked = proof_type module_info
+   
+   let select = ImplementationType
+   let suffix = "cmoz"
+   let magic = 0x73ac6be2
+   let marshal info =
+      let marshal_proof kind = function
+         InterfaceProof ->
+            raise (Invalid_argument (sprintf "Filter_summary_util.ImplementationInfo.marshal: %s" kind))
+       | ImplementationProof pf ->
+            pf
+      in
+         proof_map marshal_proof info
+   
+   let unmarshal info =
+      let unmarshal_proof kind pf = ImplementationProof pf in
+         proof_map unmarshal_proof info
+end
+
+module SummaryTypes =
+struct
+   type proof = proof_type
+   type select = select_type
+end
+
+module InterfaceCombo = MakeSingletonCombo (InterfaceInfo)
+module Combo = ExtendCombo (ImplementationInfo) (InterfaceCombo)
+module FileBase = MakeFileBase (FileTypes) (Combo)
+module SummaryBase = MakeSummaryBase (SummaryTypes) (FileBase)
+module FilterCache = MakeFilterCache (SummaryBase)
 
 (************************************************************************
  * CONTEXT OPERATORS
@@ -74,43 +168,11 @@ let params_ctyp loc ctyp params =
  ************************************************************************)
 
 (*
- * Construct an opname.
- * If there is only one word, then this opname is declared in the current
- * module.  Otherwise it is prefixed by one or more module names, which
- * specify it more exactly.
- *)
-let mk_opname summary loc = function
-   [] ->
-      raise (Invalid_argument "mk_opname")
-
- | [str] ->
-      (* Name in this module *)
-      begin
-         try find_opname summary str with
-            Not_found ->
-               Stdpp.raise_with_loc loc (Failure (sprintf "undeclared name: %s" str))
-(*
-               let opname' = Opname.mk_opname str (get_opprefix summary) in
-                  add_opname summary str opname';
-                  prerr_string "(%d, %d): undeclared name \"";
-                  prerr_string str;
-                  prerr_string "\", declaring as ";
-                  prerr_endline (string_of_opname opname');
-                  opname'
-*)
-      end
-
- | path ->
-      (* The head serves to specify the name more precisely *)
-      let path' =
-         try expand_path summary path with
-            Not_found ->
-               raise (BadCommand ("no object with name: " ^ (string_of_opname_list path)))
-      in
-         make_opname (List.rev path')
-
-(*
  * $Log$
+ * Revision 1.2  1997/08/06 16:17:35  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:51:00  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

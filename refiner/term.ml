@@ -2019,8 +2019,58 @@ and normalize_bterm = function
    { bvars = vars; bterm = t } ->
       { bvars = vars; bterm = normalize_term t }
 
+(************************************************************************
+ * EFFICIENCY                                                           *
+ ************************************************************************)
+
+(*
+ * Compute the "shape" of the term that can be used for reductions.
+ * Terms are reduced to these templates for indexing
+ * purposes.  Each template just contains information
+ * about the opname, the order and types of params,
+ * and the arties of the subterms.
+ *)
+type shape =
+   { shape_opname : opname;
+     shape_params : shape_param list;
+     shape_arities : (int * opname) list
+   }
+
+and shape_param =
+   ShapeNumber
+ | ShapeString
+ | ShapeToken
+ | ShapeLevel
+ | ShapeVar
+
+(*
+ * When computing the shape, we don't allow meta-parameters.
+ * Raises Invalid_argument if this happens.
+ *)
+let shape_of_term { term_op = { op_name = name; op_params = params }; term_terms = bterms } =
+   let param_type = function
+      Number _ -> ShapeNumber
+    | String _ -> ShapeString
+    | Token _ -> ShapeToken
+    | Level _ -> ShapeLevel
+    | Var _ -> ShapeVar
+    | _ ->
+         raise (Invalid_argument "Term.shape_of_term")
+   in
+   let bterm_type { bvars = vars; bterm = { term_op = { op_name = op } } } =
+      List.length vars, op
+   in
+      { shape_opname = name;
+        shape_params = List.map param_type params;
+        shape_arities = List.map bterm_type bterms
+      }
+
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:18:14  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:51:42  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

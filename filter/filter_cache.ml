@@ -12,435 +12,483 @@ open Term
 
 open Filter_debug
 open Filter_type
+open Filter_util
 open Filter_summary
+open Filter_summary_type
 open Filter_summary_io
 
-(************************************************************************
- * TYPES                                                                *
- ************************************************************************)
-
 (*
- * We keep a record of inlined modules and:
- *    1. Their name
- *    2. Their complete name
- *    3. Their info.
+ * Make the enhanced base from a normal summary base.
  *)
-type moduleSummary =
-   { mod_name : string;
-     mod_fullname : module_path;
-     mod_info : module_info
-   }
+module MakeFilterCache (Base : SummaryBaseSig) :
+   (SummaryCacheSig
+    with type proof = Base.proof
+    with type select = Base.select) =
+struct
+   (************************************************************************
+    * TYPES                                                                *
+    ************************************************************************)
 
-(*
- * For a specific module, we include a list of inlined modules,
- * as well as:
- *    1. opname translation,
- *    2. axiom variable recording
- *    3. prec variable recording
- *    4. inlined modules
- *    5. summaryItems
- *)
-type module_cache =
-   { 
-      (* 
-       * Opname management:
-       *    prefix: the prefix for opnames in this module.
-       *    optable: a hashtable for finding opnames from strings
-       *)
-      opprefix : opname;
-      optable : (string, opname) Hashtbl.t;
+   (*
+    * Base types.
+    *)
+   type proof = Base.proof
+   type select = Base.select
+   type t = Base.t
 
-      (* Names of precedences in this module *)
-      precs : (string list) ref;
-      
-      (* List of resources, and where they come from *)
-      resources : ((module_path * resource_info) list) ref;
-      
-      (*
-       * Summaries of modules.
-       * load_path is search path for finding module summaries from the filesystem.
-       * summaries is the list of inlined module summaries
-       * modules is the list of modules that have been inlined
-       * new_summary is the summary of this module.
-       *)
-      base : module_base_io;
-      mutable summaries : moduleSummary list;
-      mutable info : module_info
-   }
+   (*
+    * This is the extra info we keep for each module.
+    * 1. There is an opname translator that maps strings
+    *    to complete opnames.
+    * 2. Collect all the precedences
+    * 3. Collect all the resources
+    * 4. A list of all inlined modules
+    * 5. The current module_info
+    *)
+   type info =
+      { opprefix : opname;
+        optable : (string, opname) Hashtbl.t;
 
-(*
- * Abbreviation.
- *)
-type 'a module_inline_hook = module_cache -> (module_path * module_info) -> 'a
+        (* Names of precedences in this module *)
+        mutable precs : string list;
 
-(************************************************************************
- * OPERATOR NAME TABLE                                                  *
- ************************************************************************)
+        (* List of resources, and where they come from *)
+        mutable resources : (module_path * resource_info) list;
 
-(* These are the standard opnames *)
-let standard_opnames =
-   ["lzone"; "hzone"; "szone"; "ezone";
-    "break"; "sbreak"; "space"; "hspace"; "newline";
-    "pushm"; "popm";
-    "parens"; "prec"; "mode"; "slot";
-    "sequent"; "hyp"; "concl"; "var"]
+        (*
+         * Summaries of modules.
+         * load_path is search path for finding module summaries from the filesystem.
+         * summaries is the list of inlined module summaries
+         * modules is the list of modules that have been inlined
+         * new_summary is the summary of this module.
+         *)
+        mutable summaries : Base.info list;
+        mutable info : proof module_info;
 
-(*
- * Make a nw hashtable.
- *)
-let new_optable () =
-   let t = Hashtbl.create 79 in
-   let insert s =
-      Hashtbl.add t s (make_opname [s])
-   in
-      List.iter insert standard_opnames;
-      t
+        (*
+         * Self summary, and type of modules to inline.
+         *)
+        self : Base.info;
+        select : select;
 
-(*
- * Get an opname.
- *)
-let find_opname cache str =
-   Hashtbl.find cache.optable str
+        (*
+         * Keep a link to the summary base.
+         *)
+        base : Base.t
+      }
 
-(*
- * Get the prefix.
- *)
-let get_opprefix cache = cache.opprefix
+   (* Hook that is called whenever a module is loaded *)
+   type 'a hook = info -> module_path * proof module_info -> 'a -> 'a
+   
+   (************************************************************************
+    * BASE OPERATIONS                                                      *
+    ************************************************************************)
+   
+   (*
+    * Create the bases.
+    *)
+   let create = Base.create
+   let set_path = Base.set_path
 
-(*
- * Add a map to the table.
- *)
-let add_opname cache str name =
-   Hashtbl.add cache.optable str name
+   (*
+    * Take a partial pathname and expand it with all the intervening modules.
+    * This function works within a summary.  Raises Not_found on failure.
+    *)
+   let expand_in_summary =
+      let rec aux path sum = function
+         [modname] ->
+            (* If only one name left, it should name a term *)
+            let rec search = function
+               ((Opname { opname_name = str })::tl) when str = modname ->
+                  modname :: path
+             | _::tl ->
+                  search tl
+             | [] ->
+                  raise Not_found
+            in
+               search (info_items sum)
 
-(*
- * Remove the map.
- *)
-let rm_opname cache str =
-   Hashtbl.remove cache.optable str
+       | modname::tl ->
+            (* Modname should name a module in the current summary *)
+            let rec search path' = function
+               Module (n, sum'')::sum' ->
+                  (* Check if this name matches *)
+                  let path'' = n :: path' in
+                     if n = modname then
+                        aux path'' sum'' tl
+                     else
+                        begin
+                           try search path'' (info_items sum'') with
+                              Not_found -> search path' sum'
+                        end
+             | _::sum' ->
+                  search path' sum'
+             | [] ->
+                  raise Not_found
+            in
+               search path (info_items sum)
 
-(************************************************************************
- * ACCESS                                                               *       
- ************************************************************************)
+       | [] ->
+            raise (Invalid_argument "expand_in_summary")
+      in
+      let aux path sum =
+         if debug_filter_cache then
+            eprintf "Filter_cache.expand_in_summary: %s%t" (string_of_path path) eflush;
+         let path' = List.rev (aux [] sum path) in
+            if debug_filter_cache then
+               eprintf "Filter_cache.expand_in_summary: expanded to %s%t" (string_of_path path') eflush;
+            path'
+      in
+         aux
 
-(*
- * Projection.
- *)
-let get_module_info cache = cache.info
-
-(*
- * Take a partial pathname and expand it with all the intervening modules.
- * This function works within a summary.  Raises Not_found on failure.
- *)
-let expand_in_summary =
-   let rec aux path sum = function
-      [modname] ->
-         (* If only one name left, it should name a term *)
-         let rec search = function
-            ((Opname { opname_name = str })::tl) when str = modname ->
-               modname :: path
-          | _::tl ->
-               search tl
-          | [] -> raise Not_found
-         in
-            search (info_items sum)
-
-    | modname::tl ->
-         (* Modname should name a module in the current summary *)
-         let rec search path' = function
-            Module (n, sum'')::sum' ->
-               (* Check if this name matches *)
-               let path'' = n :: path' in
-                  if n = modname then
-                     aux path'' sum'' tl
-                  else
-                  begin
-                     try search path'' (info_items sum'') with
-                        Not_found -> search path' sum'
-                  end
-          | x::sum' ->
-               search path' sum'
+   (*
+    * Expand the summary across all the opened modules.
+    * Search for the head module in the list of modules, and
+    * if that fails, search for the module in all submodules.
+    *)
+   let expand_path cache path =
+      if debug_filter_cache then
+         eprintf "Filter_cache.expand_path: %s%t" (string_of_path path) eflush;
+      let { base = base } = cache in
+         match path with
+            modname::modpath ->
+               (* First search for head module in top level modules *)
+               let rec head_search = function
+                  [] ->
+                     raise Not_found
+                | info::t ->
+                     let modname' = Base.name base info in
+                        if modname' = modname then
+                           Some info
+                        else
+                           head_search t
+               in
+               let rec mod_search = function
+                  [] ->
+                     raise Not_found
+                | info::tl ->
+                     let modname' = Base.name base info in
+                        try modname' :: (expand_in_summary path (Base.info base info)) with
+                           Not_found -> mod_search tl
+               in
+               let summaries = cache.summaries in
+               let path' =
+                  match head_search summaries with
+                     Some info ->
+                        modname :: (expand_in_summary modpath (Base.info base info))
+                   | None ->
+                        mod_search summaries
+               in
+                  path'
           | [] ->
-               raise Not_found
-         in
-            search path (info_items sum)
+               raise (Invalid_argument "expand_path")
 
-    | [] ->
-         raise (Invalid_argument "expand_in_summary")
-   in
-   let aux path sum = List.rev (aux [] sum path) in
-      aux
+   (************************************************************************
+    * OPERATOR NAME TABLE                                                  *
+    ************************************************************************)
 
-(*
- * Expand the summary across all the opened modules.
- * Search for the head module in the list of modules, and
- * if that fails, search for the module in all submodules.
- *)
-let expand_path cache = function
-   [] -> raise (Invalid_argument "expand_path")
- | (modname::modpath) as path ->
-      (* First search for head module in top level modules *)
-      let rec head_search = function
-         [] -> None
-       | { mod_name = name; mod_info = sum }::t ->
-            if name = modname then
-               Some sum
-            else
-               head_search t
+   (*
+    * These are the standard opnames.
+    * This should change at some point; either
+    * by moving these opnames into a global file,
+    * or by making nothing global.
+    *)
+   let standard_opnames =
+      ["lzone"; "hzone"; "szone"; "ezone";
+       "break"; "sbreak"; "space"; "hspace"; "newline";
+       "pushm"; "popm";
+       "parens"; "prec"; "mode"; "slot";
+       "sequent"; "hyp"; "concl"; "var"]
+
+   (*
+    * Make a new hashtable for mapping opnames.
+    *)
+   let create_optable () =
+      let t = Hashtbl.create 79 in
+      let add s =
+         Hashtbl.add t s (make_opname [s])
       in
-      let rec mod_search = function
-         [] -> raise Not_found
-       | { mod_name = name; mod_info = sum }::tl ->
-            try name :: (expand_in_summary path sum) with
-               Not_found -> mod_search tl
-      in
-      let summaries = cache.summaries in
-      let path' =
-         match head_search summaries with
-            Some sum ->
-               modname :: (expand_in_summary modpath sum)
-          | None ->
-               mod_search summaries
-      in
-         path'
+         List.iter add standard_opnames;
+         t
 
-(*
- * Find a summary in a list.
- *)
-let find_summary summaries name =
-   let rec aux = function
-      [] -> None
-    | { mod_name = name'; mod_info = info }::_ when name' = name -> Some info
-    | _::t -> aux t
-   in
-      aux summaries
+   (*
+    * Get an opname.
+    *)
+   let optable cache = function
+      str ->
+         Hashtbl.find cache.optable str
 
-(*
- * Find a summry by its module path.
- *)
-let find_summarized_module summaries path id =
-   let rec aux = function
-      [] -> None
-    | info::tl ->
-         if info.mod_fullname = path & (id = ignore_id or find_id info.mod_info = id) then
-            Some info
-         else
-            aux tl
-   in
-      aux summaries
+   (*
+    * Get the prefix.
+    *)
+   let op_prefix cache =
+      cache.opprefix
 
-(*
- * Opname lookup.
- *)
-let get_optable cache = function str -> Hashtbl.find cache.optable str
+   (*
+    * Add a map to the table.
+    *)
+   let add_opname cache str name =
+      Hashtbl.add cache.optable str name
 
-(*
- * Inherited access.
- *)
-let find_axiom cache     = Filter_summary.find_axiom cache.info
-let find_rewrite cache   = Filter_summary.find_rewrite cache.info
-let find_mlterm cache    = Filter_summary.find_mlterm cache.info
-let find_condition cache = Filter_summary.find_condition cache.info
-let find_dform cache     = Filter_summary.find_dform cache.info
-let find_id cache        = Filter_summary.find_id cache.info
+   (*
+    * Remove the map.
+    *)
+   let rm_opname cache str =
+      Hashtbl.remove cache.optable str
 
-let find_prec cache name = List.mem name !(cache.precs)
-
-let get_all_resources cache = !(cache.resources)
-
-(************************************************************************
- * UPDATE                                                               *
- ************************************************************************)
-
-(*
- * Add a command to the summary.
- *)
-let add_command cache item =
-   let info' = Filter_summary.add_command cache.info item in
-      cache.info <- info';
-      item
-
-(*
- * Add a precedence.
- *)
-let add_prec cache s =
-   cache.precs := s :: !(cache.precs)
-
-(*
- * Add a resource.
- * Eliminate duplicates.
- *)
-let add_resource cache path rsrc =
-   let rec rsrc_member = function
-      (path', rsrc')::t ->
-         if path = path' & rsrc.resource_name = rsrc'.resource_name then
-            true
-         else
-            rsrc_member t
-    | [] ->
-         false
-   in
-      if not (rsrc_member !(cache.resources)) then
-         Ref_util.push (path, rsrc) cache.resources
-
-(*
- * Inline a module into the current one.
- *)
-let rec inline_components' ((cache, _, _) as arg) path items =
-   (* Get the opname for this path *)
-   let opprefix = make_opname path in
-
-   (* Get all the sub-summaries *)
-   let inline_component = function
-      Module (n, info) ->
-         (* The contained summaries become top level *)
-         cache.summaries <-
-            { mod_name = n;
-              mod_fullname = path @ [n];
-              mod_info = info
-            }::cache.summaries
-
-    | Opname { opname_name = str; opname_term = t } ->
-         (* Hash this name to the full opname *)
-         let opname = Opname.mk_opname str opprefix in
-            Hashtbl.add cache.optable str opname
-
-    | Prec name ->
-         (* This becomes a local prec *)
-         Ref_util.push name cache.precs
-
-    | Parent path' ->
-         (* Recursive inline of all ancestors *)
-         inline_module' arg path' ignore_id; ()
-
-    | _ -> ()
-   in
-      List_util.rev_iter inline_component items
-
-and inline_module' ((cache, inline_hook, vals) as arg) path id =
-   match find_summarized_module cache.summaries path id with
-      None ->
-         let info = Filter_summary_io.find_module cache.base path id in
-            if debug_resource then
-               begin
-                  eprintf "Summary: %s%t" (string_of_path path) eflush;
-                  eprint_info info
-               end;
-
-            (* Inline the parts of the summary *)
-            cache.summaries <-
-               { mod_name = List_util.last path;
-                 mod_fullname = path;
-                 mod_info = info
-               }::cache.summaries;
-            
-            (* Inline the subparts *)
-            inline_components' arg path (info_items info);
-
-            (* Call the hook *)
-            vals := (inline_hook cache (path, info)) :: !vals;
-            
-            info
-         
-    | Some summary -> summary.mod_info
-
-let inline_components cache path items inline_hook =
-   let vals = ref [] in
-      inline_components' (cache, inline_hook, vals) path items;
-      List.rev !vals
-
-let inline_module cache path id inline_hook =
-   let vals = ref [] in
-   let info = inline_module' (cache, inline_hook, vals) path id in
-      info, List.rev !vals
-
-(*
- * Inline a module by its handle.
- *)
-let find_cache info summaries =
-   let rec aux = function
-      h::t ->
-         if h.mod_info == info then
-            Some h
-         else
-            aux t
-    | [] -> None
-   in
-      aux summaries
-
-let inline_info pcache (info, vals) inline_hook =
-   let base = pcache.base in
-   let name = module_name base info in
-   let path = module_fullname base info in
-   let vals' = ref vals in
-      if find_cache info pcache.summaries = None then
+   (*
+    * Construct an opname.
+    * If there is only one word, then this opname is declared in the current
+    * module.  Otherwise it is prefixed by one or more module names, which
+    * specify it more exactly.
+    *)
+   let mk_opname cache = function
+      [] ->
+         raise (Invalid_argument "mk_opname")
+   
+    | [str] ->
+         (* Name in this module *)
          begin
-            (* Inline the summary *)
-            pcache.summaries <-
-               { mod_name = name;
-                 mod_fullname = path;
-                 mod_info = info
-               }::pcache.summaries;
-      
-            (* Call the hook *)
-            vals' := (inline_hook pcache (path, info)) :: vals;
-         
-            (* Inline the subparts *)
-            inline_components' (pcache, inline_hook, vals') path (info_items info)
-         end;
-      info, !vals'
+            try optable cache str with
+               Not_found ->
+                  raise (Failure (sprintf "undeclared name: %s" str))
+         end
+   
+    | path ->
+         (* The head serves to specify the name more precisely *)
+         let path' =
+            try expand_path cache path with
+               Not_found ->
+                  raise (BadCommand ("no object with name: " ^ (string_of_opname_list path)))
+         in
+            make_opname (List.rev path')
+   
+   (************************************************************************
+    * ACCESS                                                               *
+    ************************************************************************)
 
-let inline_cache pcache ccache hook =
-   inline_info pcache (ccache.info, []) hook
+   (*
+    * Projection.
+    *)
+   let info { info = info } = info
+
+   (*
+    * Find a summary in a list.
+    *)
+   let find_summary cache name =
+      let { base = base; summaries = summaries } = cache in
+      let rec search = function
+         h::t ->
+            let name' = Base.name base h in
+               if name' = name then
+                  Some (Base.info base h)
+               else
+                  search t
+       | [] ->
+            None
+      in
+         search summaries
+
+   (*
+    * Find a summry by its module path.
+    *)
+   let find_summarized_module cache path =
+      let { base = base; summaries = summaries } = cache in
+      let rec search = function
+         info::tl ->
+            let fullname = Base.pathname base info in
+               if fullname = path then
+                  Some info
+               else
+                  search tl
+       | [] -> None
+      in
+         search summaries
+
+   (*
+    * Get a previous module.
+    *)
+   let sub_info cache path =
+      match find_summarized_module cache path with
+         None ->
+            raise Not_found
+       | Some info ->
+            Base.info cache.base info
+
+   (*
+    * Inherited access.
+    *)
+   let find_axiom cache     = Filter_summary.find_axiom cache.info
+   let find_rewrite cache   = Filter_summary.find_rewrite cache.info
+   let find_mlterm cache    = Filter_summary.find_mlterm cache.info
+   let find_condition cache = Filter_summary.find_condition cache.info
+   let find_dform cache     = Filter_summary.find_dform cache.info
+   let find_prec cache name = List.mem name cache.precs
+   let resources cache = cache.resources
+
+   (************************************************************************
+    * UPDATE                                                               *
+    ************************************************************************)
+
+   (*
+    * Add a command to the summary.
+    *)
+   let add_command cache item =
+      let info' = Filter_summary.add_command cache.info item in
+         cache.info <- info';
+         item
+
+   (*
+    * Add a precedence.
+    *)
+   let add_prec cache s =
+      cache.precs <- s :: cache.precs
+
+   (*
+    * Add a resource.
+    * Eliminate duplicates.
+    *)
+   let add_resource cache path rsrc =
+      let { resource_name = name } = rsrc in
+      let rec rsrc_member = function
+         (path', rsrc')::t ->
+            if path' = path & rsrc'.resource_name = name then
+               true
+            else
+               rsrc_member t
+       | [] ->
+            false
+      in
+         if not (rsrc_member cache.resources) then
+            cache.resources <- (path, rsrc) :: cache.resources
+
+   (*
+    * Inline a module into the current one.
+    *)
+   let rec inline_components' arg path self items =
+      let cache, _, _ = arg in
+
+      (* Get the opname for this path *)
+      let opprefix = make_opname path in
+
+      (* Get all the sub-summaries *)
+      let inline_component = function
+         Module (n, _) ->
+            (* The contained summaries become top level *)
+            let info' = Base.sub_info cache.base self n in
+               cache.summaries <- info' :: cache.summaries
+
+       | Opname { opname_name = str; opname_term = t } ->
+            (* Hash this name to the full opname *)
+            let opname = Opname.mk_opname str opprefix in
+               Hashtbl.add cache.optable str opname
 
 (*
- * Get a previous module.
- *)
-let get_sub_module_info cache path =
-   match find_summarized_module cache.summaries path ignore_id with
-      None -> raise Not_found
-    | Some summary -> summary.mod_info
+ * NOTE: check for missing prec in the implementation,
+ * if the interface defines it.
+       | Prec name ->
+            (* This becomes a local prec *)
+            cache.precs <- name :: cache.precs
+*)
 
-(************************************************************************
- * CREATION                                                             *
- ************************************************************************)
+       | Parent path' ->
+            (* Recursive inline of all ancestors *)
+            inline_module' arg path';
+            ()
 
-(*
- * To create, need:
- *    1. module_base
- *    2. Load path
- *)
-let new_module_cache base name =
-   { opprefix = Opname.mk_opname name nil_opname;
-     optable = new_optable ();
-     precs = ref [];
-     base = base;
-     summaries = [];
-     resources = ref [];
-     info = new_module_info ()
-   }
+       | _ ->
+            ()
+      in
+         List_util.rev_iter inline_component items
 
-(*
- * To create, need:
- *    1. module_base
- *    2. Load path
- *)
-let load_module cache name id hook =
-   let info, vals = inline_module cache [name] id hook in
-      cache.info <- info;
-      info, vals
+   and inline_module' arg path =
+      let cache, inline_hook, vals = arg in
+         if debug_filter_cache then
+            eprintf "FilterCache.inline_module': %s%t" (string_of_path path) eflush;
+         match find_summarized_module cache path with
+            None ->
+               if debug_filter_cache then
+                  eprintf "FilterCache.inline_module': finding: %s%t" (string_of_path path) eflush;
+               let { base = base; select = select; summaries = summaries } = cache in
+               let info = Base.find base path select in
+               let info' = Base.info base info in
+                  if debug_resource then
+                     begin
+                        eprintf "Summary: %s%t" (string_of_path path) eflush;
+                        eprint_info (Base.info base info)
+                     end;
 
-(*
- * Load a cache given a full pathname.
- *)
-let get_module_cache base name filename id hook =
-   let cache = new_module_cache base name in
-   let info, vals = inline_info cache (load_module cache filename id hook) hook in
-      cache.info <- info;
-      cache, vals
+                  (* This module gets listed in the inline stack *)
+                  cache.summaries <- info :: summaries;
+
+                  (* Inline the subparts *)
+                  inline_components' arg path info (info_items info');
+
+                  (* Call the hook *)
+                  vals := inline_hook cache (path, info') !vals;
+
+                  info
+
+          | Some info ->
+               if debug_filter_cache then
+                  eprintf "FilterCache.inline_module': %s: already loaded%t" (string_of_path path) eflush;
+               info
+
+   let inline_module cache path inline_hook arg =
+      let vals = ref arg in
+      let info = inline_module' (cache, inline_hook, vals) path in
+         Base.info cache.base info, !vals
+   
+   (*
+    * To create, need:
+    *    1. module_base
+    *    2. Load path
+    *)
+   let create_cache base name self_select child_select =
+      { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
+        optable = create_optable ();
+        precs = [];
+        summaries = [];
+        resources = [];
+        info = new_module_info ();
+        select = child_select;
+        self = Base.create_info base self_select "." name;
+        base = base
+      }
+   
+   (*
+    * When a cache is loaded, we follow the steps to inline
+    * the file into a new cache.
+    *)
+   let load base (name : module_name) (my_select : select) (child_select : select) (hook : 'a hook) (arg : 'a) =
+      let vals = ref arg in
+      let path = [name] in
+      let cache = create_cache base name my_select child_select in
+      let info = Base.find base path my_select in
+      let info' = Base.info base info in
+         cache.summaries <- [info];
+         inline_components' (cache, hook, vals) path info (info_items info');
+         cache, hook cache (path, info') !vals
+   
+   (*
+    * Save the cache.
+    *)
+   let save cache =
+      let { base = base; self = self; info = info } = cache in
+         if debug_filter_cache then
+            eprintf "Filter_cache.save: begin%t" eflush;
+         Base.set_info base self info;
+         Base.save base self;
+         if debug_filter_cache then
+            eprintf "Filter_cache.save: done%t" eflush
+end
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:17:27  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:50:51  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

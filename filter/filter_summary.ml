@@ -26,75 +26,78 @@ open Filter_type
  *     2. new theorems
  *     3. new terms
  *)
-type summary_item =
-   Rewrite of rewrite_info
- | CondRewrite of cond_rewrite_info
- | Axiom of axiom_info
- | Rule of ruleInfo
- | Opname of opnameInfo
+(*
+ * The summary contains information about
+ *     1. included modules
+ *     2. new theorems
+ *     3. new terms
+ *)
+type 'a summary_item =
+   Rewrite of 'a rewrite_info
+ | CondRewrite of 'a cond_rewrite_info
+ | Axiom of 'a axiom_info
+ | Rule of 'a rule_info
+ | Opname of opname_info
  | MLTerm of term
  | Condition of term
  | Parent of module_path
- | Module of string * module_info
- | DForm of term list * term
+ | Module of string * 'a module_info
+ | DForm of dform_info
  | Prec of string
  | Id of int
  | Resource of resource_info
  | InheritedResource of resource_info
  | Infix of string
    
-and axiom_info = { axiom_name : string; axiom_stmt : term }
-and rewrite_info = { rw_name : string; rw_redex : term; rw_contractum : term }
-and cond_rewrite_info =
+and 'a rewrite_info =
+   { rw_name : string;
+     rw_redex : term;
+     rw_contractum : term;
+     rw_proof : 'a
+   }
+and 'a cond_rewrite_info =
    { crw_name : string;
      crw_params : param list;
      crw_args : term list;
      crw_redex : term;
-     crw_contractum : term
+     crw_contractum : term;
+     crw_proof : 'a
    }
-and ruleInfo =
+and 'a axiom_info =
+   { axiom_name : string;
+     axiom_stmt : term;
+     axiom_proof : 'a
+   }
+and 'a rule_info =
    { rule_name : string;
      rule_params : param list;
-     rule_stmt : meta_term
+     rule_stmt : meta_term;
+     rule_proof : 'a
    }
-and opnameInfo = { opname_name : string; opname_term : term }
-                 
+and opname_info =
+   { opname_name : string;
+     opname_term : term
+   }
+and dform_info =
+   { dform_options : term list;
+     dform_redex : term;
+     dform_def : term option
+   }
 and resource_info =
    { resource_name : string;
-     resource_extract_type : Ast.ctyp;
-     resource_improve_type : Ast.ctyp;
-     resource_data_type : Ast.ctyp
+     resource_extract_type : MLast.ctyp;
+     resource_improve_type : MLast.ctyp;
+     resource_data_type : MLast.ctyp
    }
-
 and param =
    ContextParam of string
  | VarParam of string
  | TermParam of term
 
 (*
- * We keep lists of modules in a table.
- * Each module has a name, a path, and a summry.
- *)
-and module_table_entry =
-   { mod_name : string;
-     mod_fullname : module_path;
-     mod_summary : summary_item list
-   }
-
-(*
- * The database is just a list of modules.
- *)
-and module_table = module_table_entry list
-
-(*
- * For the official base, we also include the load path.
- *)
-and module_base = module_table ref
-
-(*
  * The info about a specific module is just a list of items.
  *)
-and module_info = summary_item list
+and 'a module_info = 'a summary_item list
 
 (************************************************************************
  * MODULE PATHS                                                         *
@@ -201,7 +204,7 @@ let find_condition summary t =
 let find_dform summary t =
    let name = opname_of_term t in
    let test = function
-      DForm (options, t') -> generalizes t t'
+      DForm { dform_options = options; dform_redex = t' } -> generalizes t t'
     | _ -> false
    in
       try Some (List_util.find summary test) with
@@ -259,37 +262,6 @@ let rec get_infixes = function
  ************************************************************************)
 
 (*
- * Initial base.
- *)
-let new_module_base () =  ref []
-
-(*
- * Find a module by its pointer.
- *)
-let rec find_module base info =
-   let rec aux = function
-      h::t ->
-         if h.mod_summary == info then
-            h
-         else
-            aux t
-    | [] ->
-         raise Not_found
-   in
-      aux !base
-
-(*
- * Get the module name.
- *)
-let module_name base info =
-   let entry = find_module base info in
-      entry.mod_name
-
-let module_fullname base info =
-   let entry = find_module base info in
-      entry.mod_fullname
-
-(*
  * New info struct.
  *)
 let new_module_info () = []
@@ -306,33 +278,44 @@ let normalize_param = function
    TermParam t -> TermParam (normalize_term t)
  | p -> p
 
-let rec normalize_info_item = function
-   Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con } ->
+let rec normalize_info_item normalize_proof = function
+   Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
       Rewrite { rw_name = name;
                 rw_redex = normalize_term redex;
-                rw_contractum = normalize_term con
+                rw_contractum = normalize_term con;
+                rw_proof = normalize_proof pf
       }
 
  | CondRewrite { crw_name = name;
                  crw_params = params;
                  crw_args = args;
                  crw_redex = redex;
-                 crw_contractum = con
+                 crw_contractum = con;
+                 crw_proof = pf
    } ->
       CondRewrite { crw_name = name;
                     crw_params = List.map normalize_param params;
                     crw_args = List.map normalize_term args;
                     crw_redex = normalize_term redex;
-                    crw_contractum = normalize_term con
+                    crw_contractum = normalize_term con;
+                    crw_proof = normalize_proof pf
       }
 
- | Axiom { axiom_name = name; axiom_stmt = t } ->
-      Axiom { axiom_name = name; axiom_stmt = normalize_term t }
+ | Axiom { axiom_name = name; axiom_stmt = t; axiom_proof = pf } ->
+      Axiom { axiom_name = name;
+              axiom_stmt = normalize_term t;
+              axiom_proof = normalize_proof pf
+      }
 
- | Rule { rule_name = name; rule_params = params; rule_stmt = t } ->
+ | Rule { rule_name = name;
+          rule_params = params;
+          rule_stmt = t;
+          rule_proof = pf
+   } ->
       Rule { rule_name = name;
              rule_params = List.map normalize_param params;
-             rule_stmt = normalize_mterm t
+             rule_stmt = normalize_mterm t;
+             rule_proof = normalize_proof pf
       }
       
  | Opname { opname_name = name; opname_term = t } ->
@@ -348,10 +331,21 @@ let rec normalize_info_item = function
       p
       
  | Module (name, info) ->
-      Module (name, normalize_info info)
+      Module (name, normalize_info info normalize_proof)
       
- | DForm (l, t) ->
-      DForm (List.map normalize_term l, normalize_term t)
+ | DForm { dform_options = options;
+           dform_redex = redex;
+           dform_def = def
+   } ->
+      DForm { dform_options = List.map normalize_term options;
+              dform_redex = normalize_term redex;
+              dform_def =
+                 match def with
+                    Some t ->
+                       Some (normalize_term t)
+                  | None ->
+                       None
+      }
       
  | (Prec _) as p ->
       p
@@ -368,18 +362,8 @@ let rec normalize_info_item = function
  | (Infix _) as p ->
       p
 
-and normalize_info info =
-   List.map normalize_info_item info
-
-(*
- * Add some info to the base.
- *)
-let push_module base name path info =
-   base :=
-      { mod_name = name;
-        mod_fullname = path;
-        mod_summary = info
-      } :: !base
+and normalize_info info normalize_proof =
+   List.map (normalize_info_item normalize_proof) info
 
 (*
  * Add a command to the info.
@@ -388,28 +372,74 @@ let add_command info item =
    item::info
 
 (*
- * Find a module in the base.
+ * Convert the proofs.
  *)
-let ignore_id = -1
+let rec proof_map_item f = function
+   Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
+      Rewrite { rw_name = name;
+                rw_redex = redex;
+                rw_contractum = con;
+                rw_proof = f "Rewrite" pf
+      }
 
-let find_info base name id =
-   let test { mod_name = n; mod_summary = info } =
-      n = name & (id = ignore_id or find_id info = id)
-   in
-      try Some (List_util.find !base test).mod_summary with
-	 _ -> None
+ | CondRewrite { crw_name = name;
+                 crw_params = params;
+                 crw_args = args;
+                 crw_redex = redex;
+                 crw_contractum = con;
+                 crw_proof = pf
+   } ->
+      CondRewrite { crw_name = name;
+                    crw_params = params;
+                    crw_args = args;
+                    crw_redex = redex;
+                    crw_contractum = con;
+                    crw_proof = f "CondRewrite" pf
+      }
 
-(*
- * Load a module by name.
- *)
-let find_module base mpath id =
-   match mpath with
-      [] -> raise (EmptyModulePath "find_module")
-    | top::rest ->
-         (* See if we already have a summary of this module *)
-	 match find_info base top id with
-	    None -> None
-	  | Some sum -> Some (find_sub_module sum rest)
+ | Axiom { axiom_name = name; axiom_stmt = t; axiom_proof = pf } ->
+      Axiom { axiom_name = name;
+              axiom_stmt = t;
+              axiom_proof = f "Axiom" pf
+      }
+
+ | Rule { rule_name = name;
+          rule_params = params;
+          rule_stmt = t;
+          rule_proof = pf
+   } ->
+      Rule { rule_name = name;
+             rule_params = params;
+             rule_stmt = t;
+             rule_proof = f "Rule" pf
+      }
+      
+ | Module (name, info) ->
+      Module (name, proof_map f info)
+      
+ | Opname name ->
+      Opname name
+ | MLTerm t ->
+      MLTerm t
+ | Condition c ->
+      Condition c
+ | Parent p ->
+      Parent p
+ | DForm d ->
+      DForm d
+ | Prec p ->
+      Prec p
+ | Id id ->
+      Id id
+ | Resource r ->
+      Resource r
+ | InheritedResource r ->
+      InheritedResource r
+ | Infix op ->
+      Infix op
+
+and proof_map f info =
+   List.map (proof_map_item f) info
 
 (************************************************************************
  * UTILITIES								*
@@ -676,7 +706,7 @@ let check_dform tags term implem =
          implem_error (sprintf "DForm %s: not implemented" (string_of_term term))
     | h::t ->
          match h with
-            DForm (tags', term') ->
+            DForm { dform_options = tags'; dform_redex =  term' } ->
                if alpha_equal term' term then
                   if List.for_all2 alpha_equal tags' tags then
                      ()
@@ -801,7 +831,7 @@ and check_implemented implem interf =
          check_parent info implem
     | Module (name, info) ->
          check_module name info implem
-    | DForm (flags, term) ->
+    | DForm { dform_options = flags; dform_redex = term } ->
          check_dform flags term implem
     | Prec name ->
          check_prec name implem
@@ -856,7 +886,7 @@ let eprint_info l =
        | Module (name, info) ->
             eprintf "Module: %s\n" name;
             List.iter (print (tabstop + 3)) info
-       | DForm (_, t) ->
+       | DForm { dform_redex = t } ->
             eprintf "Dform: %s\n" (string_of_term t)
        | Prec name ->
             eprintf "PRecedence: %s\n" name
@@ -874,6 +904,10 @@ let eprint_info l =
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:17:32  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:50:58  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -2,6 +2,10 @@
 ;; This is a major mode for editing CAML files.
 ;;
 ;; $Log$
+;; Revision 1.2  1997/08/06 16:17:01  jyh
+;; This is an ocaml version with subtyping, type inference,
+;; d and eqcd tactics.  It is a basic system, but not debugged.
+;;
 ;; Revision 1.1  1997/04/28 15:50:43  jyh
 ;; This is the initial checkin of Nuprl-Light.
 ;; I am porting the editor, so it is not included
@@ -148,6 +152,7 @@ Keybindings:
   (setq local-abbrev-table caml-mode-abbrev-table)
   (set-syntax-table caml-mode-syntax-table)
   (setq indent-tabs-mode nil)
+  (setq case-fold-search nil)
 
   ;; Restrict to a region
   (make-local-variable 'caml-point-min)
@@ -284,15 +289,17 @@ point is outside the region."
     (20 t   (opt &+) word)
     (20 t   (opt &+) \( & \))
     (20 t   (opt &+) \(| & |\))
-;    (20 t   (opt &+) \[ & \])
+;   (20 t   (opt &+) \[ & \])
     (20 t   (opt &+) \[| & |\])
     (20 t   (opt &+) { & })
-;    (20 t   (opt &+) \$ & \$)
     (20 t   (opt &+) (alt \(\) \[\]))
+
+    ; This is problematic
+    (4  t   &+ with &)
 
     ;; Caml productions
     (5  t   (opt &+) let & = & (* and & = &) (opt in &let))
-    (5  t   (opt &+) type & (opt (alt = ==) & (* | &)) (* and & (opt (alt = ==) & (* | &))) (* with &))
+    (5  t   (opt &+) type & (opt (alt = ==) & (* | &)) (* and & (opt (alt = ==) & (* | &))))
     (5  t   try & with & (* | &) -> &2 (* (+ | &) -> &2))
     (5  t   match & with & (* | &) -> &2 (* (+ | &) -> &2))
     (5  nil (alt function fun) & (* | &) -> &2 (* (+ | &) -> &2))
@@ -300,7 +307,7 @@ point is outside the region."
     (1  t   for & (alt to downto) & do & done)
     (1  t   while & do & done)
     (5  t   (opt &+) (alt val value open include exception) &)
-    (5  t   (opt &+) module (opt type) word (* \( & \)) (opt = &))
+    (4  t   (opt &+) module (opt type) word (* \( & : & \)) (opt : &) (opt = &))
     (5  t   (opt &+) magic_block word = &)
     (1  nil sig & end)
     (1  nil struct & end)
@@ -424,14 +431,14 @@ Return nil if there are no more tokens"
 	     (setq token (buffer-substring pos end))
 	     (set-text-properties 0 (- end pos) nil token)
 	     (setq flag (cond ((member token caml-terminals)
-			       (caml-highlight-token pos end 'bold)
+			       (caml-highlight-token pos end 'font-lock-keyword-face)
 			       (intern token))
 			      (t 'word))))
 	    ((eq tag 'comment)
-	     (setq over (caml-highlight-token pos end 'italic 2))
+	     (setq over (caml-highlight-token pos end 'font-lock-comment-face 2))
 	     (overlay-put over 'comment pos))
 	    (t
-	     (setq over (caml-highlight-token pos end 'italic))
+	     (setq over (caml-highlight-token pos end 'font-lock-string-face))
 	     (overlay-put over 'constant pos)
 	     (setq flag 'word))))
     (cons pos flag)))
@@ -462,12 +469,12 @@ Return nil if there are no more tokens"
 		 (setq token (buffer-substring pos end))
 		 (set-text-properties 0 (- end pos) nil token)
 		 (if (member token caml-terminals)
-		     (caml-highlight-token pos end 'bold)))
+		     (caml-highlight-token pos end 'font-lock-keyword-face)))
 		((eq tag 'comment)
-		 (setq over (caml-highlight-token pos end 'italic 2))
+		 (setq over (caml-highlight-token pos end 'font-lock-comment-face 2))
 		 (overlay-put over 'comment pos))
 		(t
-		 (setq over (caml-highlight-token pos end 'italic))
+		 (setq over (caml-highlight-token pos end 'font-lock-string-face))
 		 (overlay-put over 'constant pos))))))))
 
 (defun caml-highlight-token (pos end face &optional priority)

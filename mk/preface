@@ -1,0 +1,17 @@
+# -*- Mode: makefile -*-
+#
+# Script to generate a program.
+# Assumes variables:
+#    MFILES: root names of files
+#    LMFILES: root names of library files
+#    PFILES: root names of program files
+#    MLLIBS: root name of libraries
+#    MAIN: root name of generated program
+#
+
+#
+# System dependencies
+#
+ifeq ($(OSTYPE), win32)
+   EXE_SUFFIX := .exe
+endif

@@ -1,5 +1,5 @@
 # Flags
-INCLUDE :=
+INCLUDE := -I ../mllib
 
 # Types files
 MLZFILES :=\
@@ -10,14 +10,6 @@ MLZFILES :=\
 
 # Library files
 LMFILES :=\
-	debug\
-	array_util\
-	string_util\
-	list_util\
-	ref_util\
-	file_util\
-	env_arg\
-	ctype\
 	rformat\
 	precedence\
 	opname\

@@ -5,162 +5,153 @@
  *
  *)
 
-open Opname
-open File_util
-open Term
-open Term_util
+open Printf
+
+open Debug
+
+open File_base_type
+
 open Filter_type
 open Filter_summary
-
-(************************************************************************
- * TYPES                                                                *
- ************************************************************************)
-
-type module_base_io =
-   { io_base : module_base;
-     mutable io_path : string list
-   }
-
-let new_module_base_io path =
-   { io_base = new_module_base ();
-     io_path = path
-   }
-
-let set_module_base_path base path =
-   base.io_path <- path
-
-let module_name base = Filter_summary.module_name base.io_base
-
-let module_fullname base = Filter_summary.module_fullname base.io_base
-
-let push_module base = Filter_summary.push_module base.io_base
-
-(************************************************************************
- * BASE IO                                                              *
- ************************************************************************)
+open Filter_summary_type
 
 (*
- * Suffix of info files.
+ * Make the summary from the file base.
+ * This just improves the FileBase so we can have
+ * nested modules.
  *)
-let info_suffix = ".cmiz"
-
-(*
- * This is a the magic number for this version of the
- * filter.
- *)
-let magic_number = 0x73095472
-
-exception BadMagicNumber of int
-
-(*
- * Read a summary from a file.
- *)
-let read_info ifile =
-   let i = input_binary_int ifile in
-      if i = magic_number then
-         (input_value ifile : module_info)
-      else
-         raise (BadMagicNumber i)
-
-(*
- * Print it to a file.
- *)
-let write_info info ofile =
-   output_binary_int ofile magic_number;
-   output_value ofile info
-
-(************************************************************************
- * INPUT                                                                *
- ************************************************************************)
-
-(*
- * Load a summary from a file given by name.
- *)
-let load_summary base name ifile =
-   match name with
-      [] ->
-         (* This will never happen *)
-         failwith "load_summary"
-    | top::rest ->
-         let info = read_info ifile in
-            push_module base top [top] info;
-            find_sub_module info rest
-
-(*
- * Load a specific module.
- *)
-let load_module base path mpath id =
-   match Filter_summary.find_module base.io_base mpath id with
-      None ->
-         (* Load it from the filesystem *)
-         let ifile = open_in path in
-         let sum = load_summary base mpath ifile in
-            close_in ifile;
-            if id = ignore_id or find_id sum = id then
-               sum
-            else
-               raise Not_found
-    | Some sum ->
-         sum
-
-(*
- * Load a module by name.
- *)
-let load_in_path base path name mpath id =
-   let name = String.uncapitalize name in
-   let rec aux = function
-      dir::rest ->
-         let fullname = Filename.concat dir name in
-            begin
-               try
-                  let ifile = open_in fullname in
-                  let sum = load_summary base mpath ifile in
-                     close_in ifile;
-                     if id = ignore_id or find_id sum = id then
-                        sum
-                     else
-                        aux rest
-                     
-               with
-                  Sys_error _ -> aux rest
-            end
-    | [] -> raise (CantFind name)
-   in
-      aux path
-
-let find_module base mpath id =
-   match Filter_summary.find_module base.io_base mpath id with
-      None ->
-         begin
-            (* Load it from the filesystem *)
-            match mpath with
-               [] -> raise (EmptyModulePath "find_module")
-             | top::rest ->
-                  let sum = load_in_path base base.io_path (top ^ info_suffix) mpath id in
-                     if rest <> [] then
-                        find_sub_module sum rest
-                     else
-                        sum
-         end
-    | Some sum ->
-         sum
-
-(************************************************************************
- * OUTPUT                                                               *
- ************************************************************************)
-
-(*
- * Save a module.
- *)
-let save_module info path =
-   let ofile = open_out path in
-      (try write_info info ofile with
-         x -> close_out ofile;
-              raise x);
-      close_out ofile
-
+module MakeSummaryBase (Types : SummaryTypesSig)
+   (FileBase : FileBaseSig
+               with type cooked = Types.proof module_info
+               with type select = Types.select) =
+struct
+   (************************************************************************
+    * TYPES                                                                *
+    ************************************************************************)
+   
+   (*
+    * Save the proof and tag types.
+    *)
+   type proof = Types.proof
+   type select = FileBase.select
+   
+   type info =
+      { info_root : FileBase.info;
+        info_path : module_path;
+        mutable info_info : proof module_info
+      }
+   
+   type t = FileBase.t
+   
+   (************************************************************************
+    * INHERITED OPERATIONS                                                 *
+    ************************************************************************)
+   
+   (*
+    * Create a new base from the path.
+    *)
+   let create = FileBase.create
+   let set_path = FileBase.set_path
+   
+   (************************************************************************
+    * LOAD/STORE                                                           *
+    ************************************************************************)
+   
+   (*
+    * Find a specific module given a full pathname.
+    *)
+   let find base name select =
+      match name with
+         [] ->
+            raise (EmptyModulePath "Filter_summary_io.find")
+       | name'::path ->
+            let info = FileBase.find base (String.uncapitalize name') select in
+            let info' = find_sub_module (FileBase.info base info) path in
+               { info_root = info;
+                 info_path = name;
+                 info_info = info'
+               }
+   
+   (*
+    * Find the matching module info.
+    *)
+   let find_match base info select =
+      let { info_root = root; info_path = path } = info in
+      let root' = FileBase.find_match base root select in
+      let info = find_sub_module (FileBase.info base root') info.info_path in
+         { info_root = root';
+           info_path = path;
+           info_info = info
+         }
+   
+   (*
+    * Create an empty info.
+    *)
+   let create_info base select dir file =
+      let data = new_module_info () in
+         { info_root = FileBase.create_info base data select dir file;
+           info_path = [String.capitalize file];
+           info_info = data
+         }
+   
+   (*
+    * Save a module specification.
+    * This can only be called at a root.
+    *)
+   let save base info =
+      match info with
+         { info_info = info; info_path = [_]; info_root = root } ->
+            FileBase.set_info base root info;
+            FileBase.save base root
+       | _ ->
+            raise (Invalid_argument "Filter_summary_io.save")
+   
+   (************************************************************************
+    * MODULE INFO                                                          *
+    ************************************************************************)
+   
+   (*
+    * Projections.
+    *)
+   let info base { info_info = data } =
+      data
+   
+   let sub_info base { info_info = info; info_path = path; info_root = root } name =
+      let path' = path @ [name] in
+      let info' = find_sub_module info path' in
+         { info_info = info';
+           info_path = path';
+           info_root = root
+         }
+   
+   let set_info base info data =
+      info.info_info <- data
+   
+   let name base { info_path = path } =
+      List_util.last path
+   
+   let pathname base { info_path = path } =
+      path
+   
+   let root base { info_root = root; info_path = path } =
+      { info_root = root;
+        info_path = [List_util.last path];
+        info_info = FileBase.info base root
+      }
+   
+   let file_name base { info_root = root } =
+      FileBase.full_name base root
+   
+   let type_of base { info_root = root } =
+      FileBase.type_of base root
+end
+   
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:17:34  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:50:59  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

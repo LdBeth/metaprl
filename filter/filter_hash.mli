@@ -2,16 +2,20 @@
  * Hash functions.
  *)
 
-val hash_expr : int -> Ast.expr -> int
-val hash_patt : int -> Ast.patt -> int
-val hash_type : int -> Ast.ctyp -> int
-val hash_sig_item : int -> Ast.sig_item -> int
-val hash_str_item : int -> Ast.str_item -> int
-val hash_module_type : int -> Ast.module_type -> int
-val hash_module_expr : int -> Ast.module_expr -> int
+val hash_expr : int -> MLast.expr -> int
+val hash_patt : int -> MLast.patt -> int
+val hash_type : int -> MLast.ctyp -> int
+val hash_sig_item : int -> MLast.sig_item -> int
+val hash_str_item : int -> MLast.str_item -> int
+val hash_module_type : int -> MLast.module_type -> int
+val hash_module_expr : int -> MLast.module_expr -> int
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:17:30  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:50:54  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

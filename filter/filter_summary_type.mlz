@@ -1,0 +1,158 @@
+(*
+ * This module defines an interface for saving information about
+ * modules.  We record information about each module interface,
+ * to be used in the definition of the module and in submodules.
+ *
+ * This is just like a FileBase, but we add more structure to it.
+ *
+ *)
+
+open Term
+open Opname
+
+open File_base_type
+open File_type_base
+
+open Filter_type
+open Filter_summary
+
+(*
+ * Abbreviations.
+ *)
+type module_name = string
+
+(*
+ * This is a module base that loads modules automatically
+ * given a directory path to look for module files.
+ * The proof type must be specified (so we know what kind
+ * of proofs are in the file).
+ *)
+module type SummaryBaseSig =
+sig
+   (*
+    * proof: the info is all represented as type proof module_info
+    * select: a type of tags for typecase on the info
+    * info: an abstract type for represeting modules in this base
+    * t: the database type
+    *)
+   type proof
+   type select
+   type info
+   type t
+
+   (* Creation *)
+   val create : string list -> t
+   val set_path : t -> string list -> unit
+   val create_info : t -> select -> dir_name -> file_name -> info
+   
+   (* Loading and saving *)
+   val find : t -> module_path -> select -> info
+   val find_match : t -> info -> select -> info
+   val save : t -> info -> unit
+   
+   (* Info about a module *)
+   val info : t -> info -> proof module_info
+   val set_info : t -> info -> proof module_info -> unit
+   val sub_info : t -> info -> string -> info
+   val name : t -> info -> module_name
+   val pathname : t -> info -> module_path
+   val root : t -> info -> info
+   val file_name : t -> info -> file_name
+   val type_of : t -> info -> select
+end
+
+(*
+ * This module just contains types to express sharing contraints.
+ *)
+module type SummaryTypesSig =
+sig
+   type proof
+   type select
+end
+
+(*
+ * This is an enhanced SummaryBase.
+ *)
+module type SummaryCacheSig =
+sig
+   (*
+    * proof: the info is all represented as type proof module_info
+    * select: a type of tags for typecase on the info
+    * info: an abstract type for represeting modules in this base
+    * t: the database type
+    *)
+   type proof
+   type select
+   type info
+   type t
+   
+   (* Hook that is called whenever a module is loaded *)
+   type 'a hook = info -> module_path * proof module_info -> 'a -> 'a
+
+   (* Creation *)
+   val create : string list -> t
+   val set_path : t -> string list -> unit
+   
+   (* Loading *)
+   val create_cache : t -> module_name -> select -> select -> info
+   val load : t -> module_name -> select -> select -> 'a hook -> 'a -> info * 'a 
+   val save : info -> unit
+
+   (* Access *)
+   val info : info -> proof module_info
+   val sub_info : info -> module_path -> proof module_info
+
+   (* Expand a partial path specification to a complte one *)
+   val expand_path : info -> module_path -> module_path
+
+   (* Opname management *)
+   val optable : info -> (string -> opname)
+   val op_prefix : info -> opname
+   val add_opname : info -> string -> opname -> unit
+   val rm_opname : info -> string -> unit
+   val mk_opname : info -> string list -> opname
+
+   (* Inherited access for module_info *)
+   val find_axiom : info -> string -> proof summary_item option
+   val find_rewrite : info -> string -> proof summary_item option
+   val find_mlterm : info -> term -> proof summary_item option
+   val find_condition : info -> term -> proof summary_item option
+   val find_dform : info -> term -> proof summary_item option
+   val find_prec : info -> string -> bool
+   val resources : info -> (module_path * resource_info) list
+
+   (* Update *)
+   val add_command : info -> proof summary_item -> proof summary_item
+   val add_resource : info -> module_path -> resource_info -> unit
+   val add_prec : info -> string -> unit
+
+   val inline_module : info -> module_path -> 'a hook -> 'a -> proof module_info * 'a
+end
+
+(*
+ * $Log$
+ * Revision 1.1  1997/08/06 16:17:35  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
+ * Revision 1.1  1997/04/28 15:51:00  jyh
+ * This is the initial checkin of Nuprl-Light.
+ * I am porting the editor, so it is not included
+ * in this checkin.
+ *
+ * Directories:
+ *     refiner: logic engine
+ *     filter: front end to the Ocaml compiler
+ *     editor: Emacs proof editor
+ *     util: utilities
+ *     mk: Makefile templates
+ *
+ * Revision 1.1  1996/09/02 19:43:18  jyh
+ * Semi working package management.
+ *
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

@@ -339,8 +339,38 @@ val dest_xstring : term -> string
  *)
 val mk_xlambda_term : string -> term -> term
 
+(************************************************************************
+ * EFFICIENCY                                                           *
+ ************************************************************************)
+
+(*
+ * Compute the "shape" of the term that can be used for reductions.
+ * Terms are reduced to these templates for indexing
+ * purposes.  Each template just contains information
+ * about the opname, the order and types of params,
+ * and the arties of the subterms.
+ *)
+type shape =
+   { shape_opname : opname;
+     shape_params : shape_param list;
+     shape_arities : (int * opname) list
+   }
+
+and shape_param =
+   ShapeNumber
+ | ShapeString
+ | ShapeToken
+ | ShapeLevel
+ | ShapeVar
+
+val shape_of_term : term -> shape
+
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:18:15  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:51:44  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -5,32 +5,28 @@
  *
  *)
 
-open Filter_type
+open File_base_type
+
 open Filter_summary
+open Filter_summary_type
 
-exception BadMagicNumber of int
-
-type module_base_io
-
-(* Suffix of info files *)
-val info_suffix : string
-
-(* Creation *)
-val new_module_base_io : string list -> module_base_io
-val set_module_base_path : module_base_io -> string list -> unit
-
-(* Access *)
-val find_module : module_base_io -> module_path -> int -> module_info
-val load_module : module_base_io -> string -> module_path -> int -> module_info
-val save_module : module_info -> string -> unit
-
-(* Info *)
-val module_name : module_base_io -> module_info -> string
-val module_fullname : module_base_io -> module_info -> module_path
-val push_module : module_base_io -> string -> module_path -> module_info -> unit
+(*
+ * Create a summary base for a specific format.
+ *)
+module MakeSummaryBase (Types : SummaryTypesSig)
+   (FileBase : FileBaseSig
+            with type cooked = Types.proof module_info
+            with type select = Types.select) :
+      (SummaryBaseSig
+       with type proof = Types.proof
+       with type select = Types.select)
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/06 16:17:34  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
  * Revision 1.1  1997/04/28 15:51:00  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included
