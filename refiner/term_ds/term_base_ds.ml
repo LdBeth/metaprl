@@ -47,7 +47,7 @@ let _ =
 let debug_subst =
    create_debug (**)
       { debug_name = "subst";
-        debug_description = "Display substition operations";
+        debug_description = "Substition operations";
         debug_value = false
       }
 

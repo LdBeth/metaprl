@@ -2,7 +2,7 @@
 <HEAD>
   <TITLE>Introduction to MetaPRL Debugging</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000"> 
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
 <H2>Introduction to MetaPRL Debugging</H2>
 
@@ -39,14 +39,14 @@ code on and off:
       eflush ();
    end;</PRE>
 
-It is important that you do not forget to flush the output, otherwise if you code later 
+It is important that you do not forget to flush the output, otherwise if you code later
 crashes or raises an exception, you may never see it.
 </UL>
 
 <P>By default, the <TT>!debug_&lt;name&gt;</TT> would be false. There are several ways to make it
 true:<OL>
 <LI>By setting the <TT>MP_DEBUG</TT> environment variable in your shell before you start
-MetaPRL. <TT>MP_DEBUG</TT> should be a colon-separated list of names (without the 
+MetaPRL. <TT>MP_DEBUG</TT> should be a colon-separated list of names (without the
 <TT>debug_</TT> prefix).
 <LI>By running the "<TT>set_debug "&lt;name&gt;" true</TT>" command from the MetaPRL toploop.
 <LI>By using <TT>debug_value = true</TT> instead of <TT>false</TT> in <TT>create_debug</TT>.
@@ -66,7 +66,8 @@ Note that whoever wrote the <TT>other_code</TT> does not have to export debug_ot
 in their <TT>.mli</TT> file - see <A HREF="#note1">Note 1</A>.
 </OL>
 
-<P><B>Notes</B>:<OL>
+<H3>Notes</H3>
+<OL>
 <LI><A NAME="note1"> If you run <TT>create_debug</TT> more that once with the same <TT>debug_name</TT> (for example, in several modules or in several instances of the same module), you'll
 get the pointer to the same boolean. If you are sure that the debug with that name is already
 created, you can use a shorter <TT>load_debug "&lt;name&gt;"</TT> instead of
@@ -75,4 +76,78 @@ created, you can use a shorter <TT>load_debug "&lt;name&gt;"</TT> instead of
 with different names to have finer control over what pieces of debugging code are active.
 </OL>
 
+<H3>Debug variables</H3>
+<!-- The variable list created using
+rgrep -l -R '*.ml' create_debug . | xargs grep -h -A 4 create_debug | tr '\n' % | sed -e 's/\([^-]\)%/\1/g;s/-+%/%/g' | tr % '\n'| gawk -F '"' '{print "<LI><TT>" $2 "</TT>: " $4 "\n" }'|sort -u
+and some manual editing
+-->
+The following is the current list of debug variables defined in MetaPRL.
+<UL>
+<LI><TT>address</TT>: show term addressing operations
+<LI><TT>alpha_equal</TT>: display alpha equality operations
+<LI><TT>arith</TT>: display arith operations
+<LI><TT>ascii_io</TT>: report ASCII IO errors verbosely
+<LI><TT>auto</TT>: Display auto tactic operations
+<LI><TT>cache</TT>: Show TPTP cache operations
+<LI><TT>convert</TT>: show proof format conversions
+<LI><TT>conv</TT>: display conversion operation
+<LI><TT>czf_set</TT>: display czf_set operations
+<LI><TT>dform</TT>: show display form formatting
+<LI><TT>dtactic</TT>: display dT tactic operations
+<LI><TT>edit</TT>: show editing commands
+<LI><TT>ensemble</TT>: Display MP Ensemble Application actions
+<LI><TT>eqcd</TT>: display eqcd operations
+<LI><TT>file_base</TT>: display file operations on logic files
+<LI><TT>filter_cache</TT>: display cache operations during compiling
+<LI><TT>filter_parse</TT>: display compiling operations
+<LI><TT>filter_path</TT>: display path expansions
+<LI><TT>filter_prog</TT>: display operations that convert ML to terms
+<LI><TT>free_vars</TT>: Display free variables calculation
+<LI><TT>grammar</TT>: display term parsing operations
+<LI><TT>http</TT>: HTTP server operations
+<LI><TT>inet</TT>: Display internet socket operations
+<LI><TT>jprover</TT>: Display Jprover operations
+<LI><TT>load</TT>: Print file and rule names as they are loaded and initialized
+<LI><TT>lock</TT>: show locking operations
+<LI><TT>match</TT>: print term on proof copying errors
+<LI><TT>memo</TT>: Display memo operations
+<LI><TT>message</TT>: Display Ensemble messages
+<LI><TT>ocaml</TT>: debug ocaml term parsing
+<LI><TT>opname</TT>: display opname construction
+<LI><TT>outboard</TT>: Ensemble outboard operations
+<LI><TT>package_info</TT>: display package operations
+<LI><TT>pipe</TT>: Debug shared memory pipe operations
+<LI><TT>proof_normalize</TT>: show proof normalization
+<LI><TT>proof_pending</TT>: show proof Pending operations
+<LI><TT>proof</TT>: show proof operations
+<LI><TT>prop_decide</TT>: show propDecide operations
+<LI><TT>queue</TT>: Remote queue operations
+<LI><TT>queue</TT>: Show remote queue operations
+<LI><TT>reduce</TT>: display reductions
+<LI><TT>refine</TT>: Display refinement operations
+<LI><TT>remote</TT>: Show remote process management
+<LI><TT>resource</TT>: display resource operations
+<LI><TT>rewrites</TT>: Display rewrite applications
+<LI><TT>rewrite</TT>: Term rewriting operations
+<LI><TT>rformat</TT>: display text formatting operations
+<LI><TT>schedule</TT>: Show thread scheduling
+<LI><TT>sentinal</TT>: Display sentinal operations
+<LI><TT>share</TT>: Display MP Ensemble Application memory sharing
+<LI><TT>shell</TT>: Display shell operations
+<LI><TT>simple_print</TT>: show simple printing operations
+<LI><TT>spell</TT>: check spelling
+<LI><TT>strategy</TT>: Show tactic strategy
+<LI><TT>string</TT>: check string bounds
+<LI><TT>subst_ds</TT>: display term_ds substitution operations
+<LI><TT>subst</TT>: Substition operations
+<LI><TT>subst</TT>: Substitution operations
+<LI><TT>summary</TT>: display prl summary operations
+<LI><TT>sync</TT>: Show event synchronization
+<LI><TT>tactic</TT>: display primitive tactic operations
+<LI><TT>terminal</TT>: show terminal size operations
+<LI><TT>term_table</TT>: Display Term_table (term hashtable) operations
+<LI><TT>tptp_prove</TT>: show TPTP proof steps
+<LI><TT>tptp</TT>: show TPTP tactic operations
+<LI><TT>unjustified</TT>: show how Unjustified nodes are created
+</UL>
 

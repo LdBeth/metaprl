@@ -37,7 +37,7 @@ open Mp_debug
 let debug_http =
    create_debug (**)
       { debug_name = "http";
-        debug_description = "Display HTTP server operations";
+        debug_description = "HTTP server operations";
         debug_value = false
       }
 

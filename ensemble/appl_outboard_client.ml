@@ -41,7 +41,7 @@ open Appl_outboard_common
 let debug_outboard =
    create_debug (**)
       { debug_name = "outboard";
-        debug_description = "debug Ensemble outboard operations";
+        debug_description = "Ensemble outboard operations";
         debug_value = false
       }
 

@@ -41,7 +41,7 @@ let _ =
 let debug_http =
    create_debug (**)
       { debug_name = "http";
-        debug_description = "display HTTP services";
+        debug_description = "HTTP server operations";
         debug_value = false
       }
 
