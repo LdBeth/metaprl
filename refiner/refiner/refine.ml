@@ -1309,27 +1309,33 @@ struct
        | _ ->
             raise (Invalid_argument("Refine.extract_term - " ^ (string_of_opname opname) ^ "is not a derived rule/rewrite"))
 
-   let rec compute_deps_ext refiner ext =
-      let find = find_of_refiner refiner in
-      let rec deps = function
-         RuleJust just | MLJust (just, _, _) ->
-            compute_deps_rule (find.find_rule just.just_refiner)
-       | RewriteJust (_, just, _) ->
-            compute_deps_rwjust find.find_rewrite just
-       | CondRewriteJust (_, just, _) ->
-            compute_deps_crwjust find.find_cond_rewrite just
-       | ComposeJust (just, justl) ->
-            List.fold_left (fun ds j -> DepSet.union ds (deps j)) (deps just) justl
-       | Identity | CutJust _ | NthHypJust _ ->
-            DepSet.empty
-      in
-         deps ext.ext_just
+   (* compute_deps_pf is polymorphic, so have to define it outside of let rec *)
+   let compute_deps_pf compute_deps refiner pf =
+      match pf.pf_dependencies with
+         Some deps -> deps
+       | None ->
+            let find = find_of_refiner refiner in
+            let deps = compute_deps find (get_derivation pf).ext_just in
+               pf.pf_dependencies <- Some deps;
+               deps
+
+   let rec compute_deps_ext find = function
+      RuleJust just | MLJust (just, _, _) ->
+         compute_deps_rule (find.find_rule just.just_refiner)
+    | RewriteJust (_, just, _) ->
+         compute_deps_rwjust find.find_rewrite just
+    | CondRewriteJust (_, just, _) ->
+         compute_deps_crwjust find.find_cond_rewrite just
+    | ComposeJust (just, justl) ->
+         List.fold_left (fun ds j -> DepSet.union ds (compute_deps_ext find j)) (compute_deps_ext find just) justl
+    | Identity | CutJust _ | NthHypJust _ ->
+         DepSet.empty
 
    and compute_deps_rule = function
       { rule_name = name; rule_proof = PPrim _ } ->
          DepSet.singleton (DepRule, name)
     | { rule_refiner = refiner; rule_proof = PDerived dp } ->
-         compute_deps_ext refiner (get_derivation dp)
+         compute_deps_pf compute_deps_ext refiner dp
     | { rule_proof = PDefined } ->
          raise (Invalid_argument "Refine.compute_deps_rule")
 
@@ -1339,7 +1345,7 @@ struct
     | { rw_name = name; rw_proof = PDefined } ->
          DepSet.singleton (DepDefinition, name)
     | { rw_refiner = refiner; rw_proof = PDerived dp } ->
-         compute_deps_ext refiner (get_derivation dp)
+         compute_deps_pf compute_deps_ext refiner dp
 
    and compute_deps_rwjust find = function
       RewriteHere (_, name, _) ->
@@ -1357,7 +1363,7 @@ struct
       { crw_name = name; crw_proof = PPrim _ } ->
          DepSet.singleton (DepCondRewrite, name)
     | { crw_refiner = refiner; crw_proof = PDerived dp } ->
-         compute_deps_ext refiner (get_derivation dp)
+         compute_deps_pf compute_deps_ext refiner dp
     | { crw_name = name; crw_proof = PDefined } ->
          raise (Invalid_argument "Refine.compute_deps_crw")
 

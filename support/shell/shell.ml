@@ -1584,6 +1584,12 @@ let status_all () =
       apply_all f true true
 
 let check_all () =
+   (* Make a few things bols, or highlight with `...' and *...* *)
+   let bfs, bfe, bfs2, bfe2 =
+      match Lm_terminfo.tgetstr Lm_terminfo.enter_bold_mode, Lm_terminfo.tgetstr Lm_terminfo.exit_attribute_mode with
+         Some b, Some e -> b, e, b, e
+       | _ -> "*", "*", "`", "'"
+   in
    let check item db =
       let name, _, _, _ = item.edit_get_contents () in
       let status =
@@ -1591,13 +1597,13 @@ let check_all () =
             RefPrimitive ->
                "is a primitive axiom"
           | RefIncomplete(c1,c2) ->
-               sprintf "is a derived object with an incomplete proof (%i rule boxes, %i primitive steps)" c1 c2
+               sprintf "is a derived object with an %sincomplete%s proof (%i rule boxes, %i primitive steps)" bfs bfe c1 c2
           | RefComplete(c1,c2,l) ->
                sprintf "is a derived object with a complete grounded proof (%i rule boxes, %i primitive steps, %i dependencies)" c1 c2 (List.length l)
           | RefUngrounded(c1,c2,op) ->
-               sprintf "is a derived object with a complete (%i rule boxes, %i primitive steps) that depends on an incomplete %s" c1 c2 (mk_dep_name op)
+               sprintf "is a derived object with a complete %sungrounded%s proof (%i rule boxes, %i primitive steps) that depends on an incomplete %s%s%s" bfs bfe c1 c2 bfs2 (mk_dep_name op) bfe2
       in
-         eprintf "Refiner status: `%s' %s%t" name status eflush
+         eprintf "Refiner status: %s%s%s %s%t" bfs2 name bfe2 status eflush
    in
    let f item db =
       print_exn_db db (check item) db
