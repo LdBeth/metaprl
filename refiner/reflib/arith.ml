@@ -251,90 +251,10 @@ open TermOp
 open TermSubst
 open TermMan
 
-module TermHyps =
-struct
-    type var = term
-    type 'a cmp = var * var * num
-    type 'a hyps = term * (int array)
-    type addr = int
-
-    let get_cmp (h,m) a =
-       let t=TermMan.nth_hyp h m.(a) in
-       let v1, v_and_c = two_subterms t in
-       let c, v2 = two_subterms v_and_c in
-(*       let t' : TermType.term' = Term.dest_term c in
-       let { term_op = op ; term_terms = tl } = t' in
-       let {op_params=[param]} = dest_op op in
-       let Number cval = dest_param param in *)
-       let n = TermOp.dest_number_any_term c in
-       (v1,v2,n)
-
-	 let dest_cmp c = c
-
-    let get_v1 h a = let (v,_,_)=get_cmp h a in v
-    let get_v2 h a = let (_,v,_)=get_cmp h a in v
-    let get_const h a = let (_,_,c)=get_cmp h a in c
-    let iter h f =
-       let (t,ar)=h in
-       let f1 i v = f i (get_cmp h i) in
-       Array.iteri f1 ar
-
-    let compare = alpha_equal
-
-    let print_hyps oc (h,ar) =
-    	let pr i =
-    		let t=TermMan.nth_hyp h i in
-    		Printf.fprintf oc "%a\n" debug_print t
-    	in
-	    	Printf.fprintf oc "hyps:\n";
-   	 	Array.iter pr ar;
-    		flush oc
-
-    let print_addr oc a = fprintf oc "%i" a
-
-    let print_var oc t = fprintf oc "%a" print_term t
-end
-
-let collect f gl =
-   let sh = (explode_sequent gl).sequent_hyps in
-   let aux' h = match h with HypBinding (_,t) | Hypothesis t -> t
-    | Context (_,_,_) -> xnil_term in
-   let shl = List.map aux' (SeqHyp.to_list sh) in
-   let rec aux src i l =
-      match src with
-         [] -> l
-       | h::tl -> if f h then
-                     aux tl (i+1) (i::l)
-                  else
-                     aux tl (i+1) l
-   in
-      aux shl 1 []
-
-module Test = struct
-    module SG = Graph(SimpleHyps)
-    open SG
-
-    let h = Array.of_list [
-    ("v1","v2",num_of_int 0);
-    ("v5","v6",num_of_int 3);
-    ("v4","v1",num_of_int 1);
-    ("v1","v5",num_of_int 5);
-    ("v4","v6",num_of_int 1);
-    ("v3","v4",num_of_int (-1));
-    ("v2","v3",num_of_int 2);
-    ("v2","v2",num_of_int (-3))
-    ]
-
-    let v = solve h (*;("ok",Array.of_list ["ok"]))
-                 with ArrayTools.NotFound(a,b) ->(a,b) *)
-end
-
-module TG = Graph(TermHyps)
-
 type 'a inequality =
    term * term * num * 'a (* represents  t1 >= t2 + n *)
 
-module TermHyps2 =
+module TermHyps =
 struct
     type var = term
     type 'a cmp = 'a inequality
@@ -364,16 +284,16 @@ struct
     let print_var oc t = fprintf oc "%a" print_term t
 end
 
-module TG2 = Graph(TermHyps2)
+module TG = Graph(TermHyps)
 
 open RefineError
 
 let find_contradiction l =
 	let ar=Array.of_list l in
-   match TG2.solve ar with
-      TG2.Int (_,r),_ ->
+   match TG.solve ar with
+      TG.Int (_,r),_ ->
          let aux3 i al = (ar.(i))::al in
          let rl = List.fold_right aux3 r [] in
          rl
-    | TG2.Disconnected,_ ->
+    | TG.Disconnected,_ ->
          raise (RefineError("arithT", StringError "Proof by contradiction - No contradiction found"))

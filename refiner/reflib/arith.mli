@@ -34,16 +34,6 @@
 
 open Refiner.Refiner.TermType
 
-val collect : (term -> bool) -> term -> int list
-
-module TG :
-sig
-   type dist =
-      Disconnected
-    | Int of Lm_num.num * int list
-   val solve : (term * int array) -> dist * dist array
-end
-
 type 'a inequality =
    term * term * Lm_num.num * 'a (* represents  t1 >= t2 + n *)
 
