@@ -4,7 +4,6 @@ open List
 open Utils
 open Opname
 open Term
-open Object_id
 open BigInt
 open Nuprl5
 
@@ -136,6 +135,7 @@ type stamp = {term: term;
 	      time: bigint
 	      }
 
+let dest_stamp stamp = stamp
 
 let istamp_parameter = make_param (Token "!stamp" )
 let istamp_op parms = mk_nuprl5_op (istamp_parameter :: parms)
@@ -162,6 +162,8 @@ let term_to_stamp t =
    | _ -> error ["stamp"; "term"; "invalid"; "term"] [] [t]
 
 let stamp_to_term stamp = stamp.term
+
+let stamp_to_object_id stamp = parameters_of_term stamp.term
 
 let in_transaction_p = fun
   { process_id = pid1; transaction_seq = tseq1 }

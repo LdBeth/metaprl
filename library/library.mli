@@ -1,6 +1,6 @@
 
  open Term
- open Object_id
+  (*open Object_id*)
 
  type library
  and transaction
@@ -49,19 +49,22 @@
 				-> object_id
 
  val delete		: transaction -> object_id -> unit
-
+(*
  val parent		: transaction -> object_id -> object_id
  val children		: transaction -> object_id -> object_id list
-
+*)
  val put		: transaction -> object_id -> term -> unit
  val get		: transaction -> object_id -> term
 
- val put_property 	: transaction -> object_id -> string -> term -> unit
- val get_property 	: transaction -> object_id -> string -> term
+ val put_property 	: library -> object_id -> string -> term -> unit
+ val get_property 	: library -> object_id -> string -> term
 
  (* this is not meant as total solution but just as an example of the kinds of 
     things which can easily be done.
   *)
  (* mnemonic could be string list insead of term *)
- find			: transaction -> term   (* mnemonic *) -> object_id
- find_child		: transaction -> string (* mnemonic *) -> object_id (* parent *) -> object_id
+ (* 
+ val find			: transaction -> term   (* mnemonic *) -> object_id
+ val find_child		: transaction -> string (* mnemonic *) -> object_id (* parent *) -> object_id
+
+*)

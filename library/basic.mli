@@ -1,7 +1,6 @@
-
-open Object_id
+ 
 open Term
-
+open BigInt
 
 (*
  * common terms
@@ -43,11 +42,19 @@ val special_error_handler :  (unit -> 'b) -> (string -> term -> 'b) -> 'b
  * stamps
  *)
 
-type stamp
+type stamp = {term: term;
+	      process_id: string;
+	      transaction_seq: int;
+	      seq: int;
+	      time: bigint
+	      }
 
+
+val dest_stamp		: stamp -> stamp
 val term_to_stamp	: term -> stamp
 val stamp_to_term	: stamp -> term
-  
+val stamp_to_object_id	: stamp -> object_id
+ 
 (* (in_transaction_p a b) = true <-> (in_transaction_p b a = true) *)
 val in_transaction_p 	: stamp -> stamp -> bool
 

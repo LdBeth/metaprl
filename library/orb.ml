@@ -8,6 +8,10 @@ open Link
 open Term
 open Basic
 
+open Mbterm
+open Opname
+
+
 
 (*
  * 	Some simplyfying assumtpions FTTB : 
@@ -431,8 +435,6 @@ let istart_term t s e d =
 	; mk_bterm [] d
 	] 
 
-open Mbterm
-
 let broadcasts_of_istart_term s =
   match dest_term s with
     { term_op = o;
@@ -441,8 +443,10 @@ let broadcasts_of_istart_term s =
 	  { term_op = o';
 	    term_terms = bts } when o' = ibroadcasts_op
 	     -> bts
-	|_ -> error ["orb"; "start"; "broadcasts"; "not"] [] [s])
-  |_ -> error ["orb"; "start"; "broadcasts"; "not"] [] [s]
+	|_ -> ( let {op_name = name} = dest_op o in
+	 (*print_term s;*) error ["orb"; "start"; "broadcasts"; "not"] [] [s]))
+  |_ -> ( let name = (opname_of_term s) in
+	 (*print_term s;*) error ["orb"; "start"; "broadcasts"; "not"; "start"] [] [s])
 
 let start_broadcasts e =
   let t = 

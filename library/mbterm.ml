@@ -6,7 +6,6 @@ open BigInt
 open MathBus
 open Term
 open Opname
-open Object_id
 
 
 let mbs_Term = numeric_label2 "Term"
@@ -53,7 +52,8 @@ let rec mbparameter_of_param param =
 	    in loop vars [])
       in aux (dest_level p)
   | Var p -> mb_stringq p mbs_Variable
-  | ObId p -> mb_integerq (dest_object_id p) mbs_ObjectId
+  | ObId p -> mbnode mbs_ParmList (List.map mbparameter_of_param p)
+	 (*mb_integerq (dest_object_id p) mbs_ObjectId*)
   | MNumber p -> mb_stringq p mbs_MLongInteger
   | MString p -> mb_stringq p mbs_MString
   | MToken p -> mb_stringq p mbs_MToken
@@ -64,9 +64,9 @@ let rec mbparameter_of_param param =
 
 let rec print_param param =
   match (dest_param param) with
-    Number p -> print_int p 
-  | String p ->  print_string p
-  | Token p -> print_string p
+    Number p ->  (print_int p  ; print_string " ")
+  | String p ->   (print_string p ; print_string " ")
+  | Token p -> (print_string p ; print_string " ")
   | Level p ->  print_string "level" (* let aux = function
 					{le_const = i; le_vars = vars } ->
 					(let rec loop l nodes=
@@ -76,14 +76,15 @@ let rec print_param param =
 					{ le_var = v; le_offset = i2 } ->
  					loop tl  ((mb_string v)::((mb_integer i2)::nodes))
 					in aux2 (dest_level_var hd)) in loop vars []) in aux  (dest_level p)*)
-  | Var p -> print_string p
-  | ObId p -> print_int (dest_object_id p)
+  | Var p -> (print_string p ; print_string " ")
+  | ObId p -> (print_string "parm_list:" ;print_string "["; List.map print_param p; print_string "]"; ())
+	 (*print_int (dest_object_id p)*)
   | MNumber p -> print_string p
   | MString p -> print_string p
   | MToken p -> print_string p
   | MLevel p -> print_string p
   | MVar p -> print_string p
-  | ParmList p -> (print_string "parm list" ; List.map print_param p; ())
+  | ParmList p -> (print_string "parm_list:" ;print_string "["; List.map print_param p;print_string "]"; ())
   | _ -> failwith "unauthorized parameter type"
 
 let mbbinding_of_binding binding = mb_string binding ;; (*term in the future? yes, far*)
@@ -124,14 +125,16 @@ let rec print_term term =
   let { op_name = opname; op_params = params } = dest_op operator in
   let print_subterms = function
       { bvars = bvars; bterm = t } -> begin
-	print_string "bindings:";
+	print_newline ();
+	print_string "    ";
+	if bvars <> [] then print_string "bindings:";
 	List.map print_string bvars;
-	print_string "subterm:";
 	print_term t
       end in
-  print_string "opname:"; List.map print_string (dest_opname opname);
-  print_string "params:"; List.map print_param params;
-  List.map print_subterms (List.map dest_bterm bterms);
+  List.map print_string (dest_opname opname);
+  print_string "{"; List.map print_param params; print_string "}";
+  print_string "("; List.map print_subterms (List.map dest_bterm bterms);
+  print_string ")" ;
   ()
 		 
 
@@ -151,8 +154,14 @@ let rec param_of_mbparameter mbparameter =
 	Mnode n -> loop (i-1) ((param_of_mbparameter n)::l)
       |	Mbint b -> failwith "subterm should be a node" 
     in make_param (ParmList (loop (mbnode_nSubtermsq mbparameter) []))
+
   else if bequal b mbs_ObjectId then
-    let b = integer_value mbparameter in make_param (ObId (make_object_id b)) (*LAL bigint*)
+    let rec loop i l =
+      if i = 0 then l
+      else match (mbnode_subtermq mbparameter i) with
+	Mnode n -> loop (i-1) ((param_of_mbparameter n)::l)
+      |	Mbint b -> failwith "subterm should be a node" 
+	in make_param (ObId (loop (mbnode_nSubtermsq mbparameter) [])) (*LAL bigint*)
 
   else if bequal b mbs_Level then
     let nsubterms = (mbnode_nSubtermsq mbparameter) in

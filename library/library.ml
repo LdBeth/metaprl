@@ -4,7 +4,6 @@ open Term
 open Basic
 (*open Tent *)
 open Orb
-open Object_id
 
 (* open Table *)
 
