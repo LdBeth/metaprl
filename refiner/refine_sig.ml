@@ -13,6 +13,7 @@
 
 open Term
 open Term_util
+open Rewrite
 
 (************************************************************************
  * ERRORS                                                               *
@@ -35,6 +36,7 @@ type refine_err =
  | SubgoalError of string * int * refine_err
  | PairError of string * refine_err * refine_err
  | RewriteAddressError of string * address * refine_err
+ | RewriteError of string * rewrite_error
  | NodeError of string * term * refine_err list
 
 exception RefineError of refine_err
@@ -213,6 +215,7 @@ sig
       term list ->
       'a tactic
    val check_rule :
+      string ->            (* name *)
       string array ->      (* addrs *)
       string array ->      (* vars *)               
       term list ->         (* params *)
@@ -225,7 +228,9 @@ sig
       term list ->                 (* args (binding vars) *)
       term ->                      (* extract *)
       unit
-   val check_theorem : string array ->               (* vars *)
+   val check_theorem :
+      string ->                    (* name *)
+      string array ->              (* vars *)
       term list ->                 (* params *)
       term list ->                 (* args *)
       term ->                      (* goal *)
@@ -265,6 +270,7 @@ sig
       term ->              (* contractum *)
       unit
    val check_rewrite :
+      string ->            (* string *)
       string array ->      (* vars *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
@@ -348,6 +354,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/07 19:43:46  jyh
+ * Updated and added Lori's term modifications.
+ * Need to update all pattern matchings.
+ *
  * Revision 1.1  1997/04/28 15:51:33  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

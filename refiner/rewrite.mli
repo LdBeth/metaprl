@@ -43,17 +43,20 @@ type match_type =
  | BTermMatch of bound_term
 
 (* Detailed exceptions *)
-exception BoundSOVar of string
-exception FreeSOVar of string
-exception BoundParamVar of string
-exception FreeParamVar of string
-exception BadRedexParam of param
-exception NoRuleOperator
-exception BadMatch of match_type
-exception AllSOInstances of string
-exception MissingContextArg of string
-exception StackError of stack
-exception RewriteError of string
+type rewrite_error =
+   BoundSOVar of string
+ | FreeSOVar of string
+ | BoundParamVar of string
+ | FreeParamVar of string
+ | BadRedexParam of param
+ | NoRuleOperator
+ | BadMatch of match_type
+ | AllSOInstances of string
+ | MissingContextArg of string
+ | StackError of stack
+ | StringError of string
+
+exception RewriteError of rewrite_error
 
 (*
  * Separate analysis.
@@ -92,6 +95,10 @@ val rewrite_eval_flags : rewrite_rule -> (int * bool) list
 
 (*
  * $Log$
+ * Revision 1.2  1997/08/07 19:43:48  jyh
+ * Updated and added Lori's term modifications.
+ * Need to update all pattern matchings.
+ *
  * Revision 1.1  1997/04/28 15:51:36  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

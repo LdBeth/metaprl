@@ -362,7 +362,7 @@ let declare_term proc loc (s, params, bterms) =
  *)
 let simple_rewrite proc name redex contractum pf =
    (* Check that rewrite will succeed *)
-   Refiner.check_rewrite [||] [] [] redex contractum;
+   Refiner.check_rewrite name [||] [] [] redex contractum;
 
    (* Construct the command *)
    Rewrite { rw_name = name;
@@ -379,6 +379,7 @@ let cond_rewrite proc name params args pf =
    let args', redex, contractum = unzip_rewrite name args in
       (* Check the rewrite *)
       Refiner.check_rewrite (**)
+         name
          (collect_vars params')
          (collect_non_vars params')
          args' redex contractum;
@@ -462,6 +463,7 @@ let cond_axiom proc name params args pf =
             eprintf "Args:\n%a" print_terms (unzip_mimplies args)
          end;
       Refiner.check_rule (**)
+         name
          (collect_cvars params')
          (collect_vars params')
          (collect_non_vars params')
@@ -1828,6 +1830,10 @@ END
 
 (*
  * $Log$
+ * Revision 1.3  1997/08/07 19:43:41  jyh
+ * Updated and added Lori's term modifications.
+ * Need to update all pattern matchings.
+ *
  * Revision 1.2  1997/08/06 16:17:31  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

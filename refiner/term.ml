@@ -2043,7 +2043,7 @@ and normalize_bterm = function
 type shape =
    { shape_opname : opname;
      shape_params : shape_param list;
-     shape_arities : (int * opname) list
+     shape_arities : int list
    }
 
 and shape_param =
@@ -2067,8 +2067,8 @@ let shape_of_term { term_op = { op_name = name; op_params = params }; term_terms
     | _ ->
          raise (Invalid_argument "Term.shape_of_term")
    in
-   let bterm_type { bvars = vars; bterm = { term_op = { op_name = op } } } =
-      List.length vars, op
+   let bterm_type { bvars = vars } =
+      List.length vars
    in
       { shape_opname = name;
         shape_params = List.map param_type params;
@@ -2077,6 +2077,10 @@ let shape_of_term { term_op = { op_name = name; op_params = params }; term_terms
 
 (*
  * $Log$
+ * Revision 1.4  1997/08/07 19:43:49  jyh
+ * Updated and added Lori's term modifications.
+ * Need to update all pattern matchings.
+ *
  * Revision 1.3  1997/08/07 19:08:18  lolorigo
  * added ObId and ParmList parameter types
  *

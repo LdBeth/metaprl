@@ -55,7 +55,6 @@ type param' =
  | ObId of object_id
  | ParmList of param list
    
-   
    (* Num operations *)
  | MSum of param * param
  | MDiff of param * param
@@ -69,6 +68,7 @@ type param' =
  | MNotEqual of param * param
 
 and object_id = param list
+
 (*
  * An operator combines a name with a list of parameters.
  * The order of params is significant.
@@ -362,7 +362,7 @@ val mk_xlambda_term : string -> term -> term
 type shape =
    { shape_opname : opname;
      shape_params : shape_param list;
-     shape_arities : (int * opname) list
+     shape_arities : int list
    }
 
 and shape_param =
@@ -376,6 +376,10 @@ val shape_of_term : term -> shape
 
 (*
  * $Log$
+ * Revision 1.4  1997/08/07 19:43:50  jyh
+ * Updated and added Lori's term modifications.
+ * Need to update all pattern matchings.
+ *
  * Revision 1.3  1997/08/07 19:08:20  lolorigo
  * added ObId and ParmList parameter types
  *

@@ -39,7 +39,6 @@ open Printf
 open Debug
 open Term
 open Term_util
-open Rewrite
 open Refine_sig
 
 module Refiner =
@@ -583,14 +582,22 @@ struct
          eprintf "Refiner.add_rule: %s%t" name eflush;
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
-      let rw = term_rewrite (addrs, names) (goal::params) subgoals in
+      let rw =
+         try Rewrite.term_rewrite (addrs, names) (goal::params) subgoals with
+            Rewrite.RewriteError error ->
+               raise (RefineError (RewriteError (name, error)))
+      in
       let refiner' = RuleRefiner { rule_name = name;
                                    rule_rule = mterm;
                                    rule_refiner = refiner
                                  }
       in
       let tac addrs_names params t =
-         let subgoals, names' = apply_rewrite rw addrs_names (t::params) in
+         let subgoals, names' =
+            try Rewrite.apply_rewrite rw addrs_names (t::params) with
+               Rewrite.RewriteError error ->
+                  raise (RefineError (RewriteError (name, error)))
+         in
          let just = SingleJust { ext_names = names';
                                  ext_params = params;
                                  ext_refiner = refiner
@@ -610,10 +617,14 @@ struct
    (*
     * Just do the checking.
     *)
-   let check_rule addrs names params mterm =
+   let check_rule name addrs names params mterm =
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
-      let rw = term_rewrite (addrs, names) (goal::params) subgoals in
+      let rw =
+         try Rewrite.term_rewrite (addrs, names) (goal::params) subgoals with
+            Rewrite.RewriteError error ->
+               raise (RefineError (RewriteError (name, error)))
+      in
          true
    
    (*
@@ -623,7 +634,11 @@ struct
    let add_rewrite refiner name redex contractum =
       if debug_refiner then
          eprintf "Refiner.add_rewrite: %s%t" name eflush;
-      let rw = term_rewrite ([||], [||]) [redex] [contractum] in
+      let rw =
+         try Rewrite.term_rewrite ([||], [||]) [redex] [contractum] with
+            Rewrite.RewriteError error ->
+               raise (RefineError (RewriteError (name, error)))
+      in
       let refiner' = RewriteRefiner { rw_name = name;
                                       rw_rewrite = redex, contractum;
                                       rw_refiner = refiner
@@ -632,7 +647,11 @@ struct
       let null_message = name ^ ": rewrite produced no contractum" in
       let mul_message = name ^ ": rewrite produced multiple contracta" in
       let rw t =
-         match apply_rewrite rw ([||], [||]) [t] with
+         match
+            try Rewrite.apply_rewrite rw ([||], [||]) [t] with
+               Rewrite.RewriteError error ->
+                  raise (RefineError (RewriteError (name, error)))
+         with
             [t'], _ -> t', refiner'
           | [], _ -> failwith null_message
           | _ -> failwith mul_message
@@ -649,7 +668,11 @@ struct
    let add_cond_rewrite refiner name vars params subgoals redex contractum =
       if debug_refiner then
          eprintf "Refiner.add_cond_rewrite: %s%t" name eflush;
-      let rw = term_rewrite ([||], vars) (redex::params) [contractum] in
+      let rw =
+         try Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] with
+            Rewrite.RewriteError error ->
+               raise (RefineError (RewriteError (name, error)))
+      in
       let refiner' = CondRewriteRefiner { crw_name = name;
                                           crw_rewrite = subgoals, redex, contractum;
                                           crw_refiner = refiner
@@ -659,7 +682,11 @@ struct
       let mul_message = name ^ ": rewrite produced multiple contracta" in
       let rw' (vars, params) seq t =
          let subgoals' = mk_seq_subgoals seq subgoals in
-            match apply_rewrite rw ([||], vars) (t :: params) with
+            match
+               try Rewrite.apply_rewrite rw ([||], vars) (t :: params) with
+                  Rewrite.RewriteError error ->
+                     raise (RefineError (RewriteError (name, error)))
+            with
                [t'], names ->
                   t',
                   subgoals',
@@ -710,8 +737,12 @@ struct
                      raise (BadTheorem (name, rw))
           | _ -> raise (BadTheorem (name, rw))
    
-   let check_rewrite vars params subgoals redex contractum =
-      let rw = term_rewrite ([||], vars) (redex::params) [contractum] in
+   let check_rewrite name vars params subgoals redex contractum =
+      let rw =
+         try Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] with
+            Rewrite.RewriteError error ->
+               raise (RefineError (RewriteError (name, error)))
+      in
          true
    
 (*
@@ -794,9 +825,17 @@ struct
                in
                   aux 0
             in
-            let rw = term_rewrite ([||], [||]) ((create_redex vars args)::params) [result] in
+            let rw =
+               try Rewrite.term_rewrite ([||], [||]) ((create_redex vars args)::params) [result] with
+                  Rewrite.RewriteError error ->
+                     raise (RefineError (RewriteError (name, error)))
+            in
             let compute_ext vars params args =
-               match apply_rewrite rw ([||], [||]) ((create_redex vars args)::params) with
+               match
+                  try Rewrite.apply_rewrite rw ([||], [||]) ((create_redex vars args)::params) with
+                     Rewrite.RewriteError error ->
+                        raise (RefineError (RewriteError (name, error)))
+               with
                   [c], x when Array.length x = 0 -> c
                 | _ -> failwith "compute_ext: faulty extract"
             in
@@ -805,7 +844,7 @@ struct
                                     pthm_refiner = refiner
                                   }
    
-   let check_theorem vars params args result =
+   let check_theorem name vars params args result =
       (* Create redex term *)
       let l = Array.length vars in
       let create_redex vars args =
@@ -818,7 +857,11 @@ struct
          in
             aux 0
       in
-      let rw = term_rewrite ([||], [||]) ((create_redex vars args)::params) [result] in
+      let rw =
+         try Rewrite.term_rewrite ([||], [||]) ((create_redex vars args)::params) [result] with
+            Rewrite.RewriteError error ->
+               raise (RefineError (RewriteError (name, error)))
+      in
          true
    
    (*
@@ -923,6 +966,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1997/08/07 19:43:45  jyh
+ * Updated and added Lori's term modifications.
+ * Need to update all pattern matchings.
+ *
  * Revision 1.2  1997/08/06 16:18:12  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
