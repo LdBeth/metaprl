@@ -35,6 +35,9 @@
  * Additional syntax provided by this file:
  * ========================================
  *
+ * declare ... end
+ *   This is added as a convenience from the revised syntax.
+ *
  * DEFINE SYMBOL
  * UNDEFINE SYMBOL
  * UNDEF SYMBOL
@@ -46,10 +49,10 @@
  *   try to define a pattern macro etc if possible.
  *   Also makes "-DSYM=..." available this.
  *
- * IFDEF SYMBOL THEN ...
- * IFDEF SYMBOL THEN ...
- * IFNDEF SYMBOL THEN ... ELSE ...
- * IFNDEF SYMBOL THEN ... ELSE ...
+ * IFDEF SYMBOL THEN ... ENDIF
+ * IFDEF SYMBOL THEN ... ENDIF
+ * IFNDEF SYMBOL THEN ... ELSE ... ENDIF
+ * IFNDEF SYMBOL THEN ... ELSE ... ENDIF
  *   Works for top-level structure items and for expressions.
  *
  * DEFMACRO MAC ARG... = <expr>
@@ -62,9 +65,18 @@
  * DEFPATTMACRO MAC ARG.. = <patt>
  *   The same but for patterns.
  *
+ * DEFEXPRMACRO MAC ARG... = <expr>
+ *   Expand MAC ARG... using <expr> as a template.
+ *
  * LETMACRO MAC ARG... = <expr> IN <expr>
  *   Defines and uses a local macro, it will be expanded as soon as seen,
- *   before expansion of global macros.  Works like DEFINE.
+ *   before expansion of global macros.  Works like DEFMACRO.
+ *
+ * DEFTOPMACRO MAC ARG... = <top>... END
+ *   Defines a toplevel (str_item or sig_item) macro, this is used as shown
+ *   below, not using application.
+ *
+ * USETOPMACRO MAC <expr>... END
  *
  * CONCAT SYM1 SYM2
  *   The result of this macro will be the symbol made out of the concatenation
@@ -84,10 +96,15 @@
  *   Parse the given file name at this point.
  *   Also adds a "-Idir" command-line option for include search directories.
  *
- * Note:
- *   The definition mechanism is mimicked using empty expression macros, also,
+ * Notes:
+ *
+ * - The definition mechanism is mimicked using empty expression macros, also,
  *   when a symbols is UNDEFINEd, both expr and patt macros are deleted.
  *   This makes the keywords a bit messy in an attempt to be a bit CPP-like...
+ *
+ * - expr macros are an exception - when they are expanded, they allow their
+ *   body to contain macro variables in places other than expression as well
+ *   (as long as the actual argument can be converted to that syntax).
  *)
 
 
@@ -377,6 +394,27 @@ end
 
 
 (*****************************************************************************)
+(* Structure for syntax stuff *)
+
+type top_or_def =
+   | MaStr of str_item                    (* normal str_item *)
+   | MaSig of sig_item                    (* normal sig_item *)
+   | MaDfe of string * string list * expr (* an expr macro def. statement *)
+   | MaDfp of string * string list * patt (* a patt macro def. statement *)
+   | MaDfa of string * string list * expr (* all types (should convert expr) *)
+   | MaDfStr of string * string list * top_or_def (* toplevel macro def. *)
+   | MaDfSig of string * string list * top_or_def (* toplevel macro def. *)
+   | MaApStr of expr                              (* toplevel macro app. *)
+   | MaApSig of expr                              (* toplevel macro app. *)
+   | MaUnd of string                      (* a macro undefine statement *)
+   | MaIfd of string * top_or_def list * top_or_def list
+                                          (* a conditional str_item *)
+   | MaLst of top_or_def list             (* str_items to scan *)
+   | MaInc of string                      (* a file to include *)
+
+
+
+(*****************************************************************************)
 (* Macro processing *)
 
 (*
@@ -384,12 +422,14 @@ end
  * There are several useful utilities here:
  *   add_simple_expr_macro name arg-list body
  *   add_simple_patt_macro name arg-list body
+ *     ....
  *     takes a list of variable names (strings) and an expr/patt and returns
  *     a simple template macro
  *   undefine name
- *     delete macros with this name in both lists
+ *     delete macros with this name in all lists
  *   append_exprs expr expr-list
  *   append_patts expr expr-list
+ *   ...
  *     when expr-list = e1, e2, ... -- returns the expr/patt (expr e1 e2...)
  *   macro_error msg
  *     prints an error msg with the current macro name and its location
@@ -404,11 +444,78 @@ let ctyp_macros = ref []
 let mexp_macros = ref []
 let mtyp_macros = ref []
 
-let add_expr_macro name expander = expr_macros := (name,expander)::!expr_macros
-let add_patt_macro name expander = patt_macros := (name,expander)::!patt_macros
-let add_ctyp_macro name expander = ctyp_macros := (name,expander)::!ctyp_macros
-let add_mexp_macro name expander = mexp_macros := (name,expander)::!mexp_macros
-let add_mtyp_macro name expander = mtyp_macros := (name,expander)::!mtyp_macros
+let stri_macros = ref [] (* these two are handled differently by the parser, *)
+let sigi_macros = ref [] (* see below. *)
+
+let saved_macros = ref []
+
+let add_macro macros name expander = macros := (name,expander)::!macros
+
+let undefine_all_macros () =
+   expr_macros := [];
+   patt_macros := [];
+   ctyp_macros := [];
+   mexp_macros := [];
+   mtyp_macros := [];
+   stri_macros := [];
+   sigi_macros := []
+
+let get_all_macros () =
+   !expr_macros,
+   !patt_macros,
+   !ctyp_macros,
+   !mexp_macros,
+   !mtyp_macros,
+   !stri_macros,
+   !sigi_macros
+
+let get_all_macros_except  (exprM, pattM, ctypM, mexpM, mtypM, striM, sigiM) =
+   let get_except l l_tail =
+      let rec aux l acc =
+         if l == l_tail then
+            List.rev acc
+         else match l with
+          | [] -> List.rev acc
+          | x::xs -> aux xs (x::acc)
+      in
+         aux l []
+   in
+      get_except !expr_macros exprM,
+      get_except !patt_macros pattM,
+      get_except !ctyp_macros ctypM,
+      get_except !mexp_macros mexpM,
+      get_except !mtyp_macros mtypM,
+      get_except !stri_macros striM,
+      get_except !sigi_macros sigiM
+
+let restore_all_macros (exprM, pattM, ctypM, mexpM, mtypM, striM, sigiM) =
+   expr_macros := exprM;
+   patt_macros := pattM;
+   ctyp_macros := ctypM;
+   mexp_macros := mexpM;
+   mtyp_macros := mtypM;
+   stri_macros := striM;
+   sigi_macros := sigiM
+
+let add_all_macros (exprM, pattM, ctypM, mexpM, mtypM, striM, sigiM) =
+   expr_macros := exprM @ !expr_macros;
+   patt_macros := pattM @ !patt_macros;
+   ctyp_macros := ctypM @ !ctyp_macros;
+   mexp_macros := mexpM @ !mexp_macros;
+   mtyp_macros := mtypM @ !mtyp_macros;
+   stri_macros := striM @ !stri_macros;
+   sigi_macros := sigiM @ !sigi_macros
+
+let push_macros () =
+   saved_macros := (get_all_macros()) :: !saved_macros;
+   undefine_all_macros()
+
+let pop_macros () =
+   match !saved_macros with
+    | macros :: rest ->
+         restore_all_macros macros;
+         saved_macros := rest
+    | _ -> failwith "No macros to pop."
 
 let undefine_macro x =
    let aux lp =
@@ -418,7 +525,9 @@ let undefine_macro x =
       aux patt_macros;
       aux ctyp_macros;
       aux mexp_macros;
-      aux mtyp_macros
+      aux mtyp_macros;
+      aux stri_macros;
+      aux sigi_macros
 
 let is_defined x =
    let aux lp = List.exists (fun y -> fst y = x) !lp in
@@ -426,7 +535,9 @@ let is_defined x =
       aux patt_macros ||
       aux ctyp_macros ||
       aux mexp_macros ||
-      aux mtyp_macros
+      aux mtyp_macros ||
+      aux stri_macros ||
+      aux sigi_macros
 
 (* This is for errors and locs while expanding macros. *)
 let current_macname_loc = ref ("", 0, 0)
@@ -465,7 +576,7 @@ let rec append_mtyps mtyp = function
                   append_mtyps <:module_type< $mtyp$ $t$ >> mtyps
 
 let _ =
-   add_expr_macro "CONCAT"
+   add_macro expr_macros "CONCAT"
       (function
         | [] | [_] -> macro_error "expecting two identifiers"
         | x :: y :: exprs ->
@@ -482,7 +593,7 @@ let _ =
                 append_exprs id exprs)
 
 let _ =
-   add_patt_macro "CONCAT"
+   add_macro patt_macros "CONCAT"
       (function
           [] | [_] -> macro_error "expecting two identifiers"
         | x :: y :: patts ->
@@ -499,7 +610,7 @@ let _ =
                 append_patts id patts)
 
 let _ =
-   add_ctyp_macro "CONCAT"
+   add_macro ctyp_macros "CONCAT"
       (function
           [] | [_] -> macro_error "expecting two identifiers"
         | x :: y :: ctyps ->
@@ -516,7 +627,7 @@ let _ =
                 append_ctyps id ctyps)
 
 let _ =
-   add_mexp_macro "CONCAT"
+   add_macro mexp_macros "CONCAT"
       (function
           [] | [_] -> macro_error "expecting two identifiers"
         | x :: y :: mexps ->
@@ -531,7 +642,7 @@ let _ =
                 append_mexps id mexps)
 
 let _ =
-   add_mtyp_macro "CONCAT"
+   add_macro mtyp_macros "CONCAT"
       (function
           [] | [_] -> macro_error "expecting two identifiers"
         | x :: y :: mtyps ->
@@ -555,26 +666,25 @@ let _ =
  * Get a pattern/expression "MAC x y z...",
  * Return a name MAC and a list of args [X; Y; ...] if it fits Not_found otw.
  *)
-
 let rec flat_expr = function
- | <:expr< $x$ $y$ >> -> let (name, args) = flat_expr x in (name, y::args)
- | <:expr< $uid:str$ >> -> (str, [])
+ | <:expr< $x$ $y$ >> -> let name, args = flat_expr x in name, y::args
+ | <:expr< $uid:str$ >> -> str, []
  | _ -> raise Not_found
 let rec flat_patt = function
- | <:patt< $x$ $y$ >> -> let (name, args) = flat_patt x in (name, y::args)
- | <:patt< $uid:str$ >> -> (str, [])
+ | <:patt< $x$ $y$ >> -> let name, args = flat_patt x in name, y::args
+ | <:patt< $uid:str$ >> -> str, []
  | _ -> raise Not_found
 let rec flat_ctyp = function
- | <:ctyp< $x$ $y$ >> -> let (name, args) = flat_ctyp x in (name, y::args)
- | <:ctyp< $uid:str$ >> -> (str, [])
+ | <:ctyp< $x$ $y$ >> -> let name, args = flat_ctyp x in name, y::args
+ | <:ctyp< $uid:str$ >> -> str, []
  | _ -> raise Not_found
 let rec flat_mexp = function
- | <:module_expr< $x$ $y$ >> -> let (name,args) = flat_mexp x in (name,y::args)
- | <:module_expr< $uid:str$ >> -> (str, [])
+ | <:module_expr< $x$ $y$ >> -> let name, args = flat_mexp x in name, y::args
+ | <:module_expr< $uid:str$ >> -> str, []
  | _ -> raise Not_found
 let rec flat_mtyp = function
- | <:module_type< $x$ $y$ >> -> let (name,args) = flat_mtyp x in (name,y::args)
- | <:module_type< $uid:str$ >> -> (str, [])
+ | <:module_type< $x$ $y$ >> -> let name, args = flat_mtyp x in name, y::args
+ | <:module_type< $uid:str$ >> -> str, []
  | _ -> raise Not_found
 
 let apply_macros flatter codewalker locator macros x =
@@ -598,111 +708,139 @@ let macros_codewalk f =
       None
       f
 
+
+
+(*****************************************************************************)
+(* expr conversions *)
+
 (*
- * The next two functions create simple template macros;
+ * These turn simple expressions to other things, so it is possible to try and
+ * define several macro types at the same time using add_all_simple_macros.
+ *)
+
+let rec expr2patt expr =
+   let loc = loc_of_expr expr in
+      match expr with
+       | <:expr< $chr:c$ >> -> <:patt< $chr:c$ >>
+       | <:expr< $str:s$ >> -> <:patt< $str:s$ >>
+       | <:expr< $int:s$ >> -> <:patt< $int:s$ >>
+       | <:expr< $lid:i$ >> -> <:patt< $lid:i$ >>
+       | <:expr< $uid:s$ >> -> <:patt< $uid:s$ >>
+       | <:expr< $e1$ . $e2$ >> ->
+            let p1 = expr2patt e1 and p2 = expr2patt e2
+            in <:patt< $p1$ . $p2$ >>
+       | <:expr< $e1$ $e2$ >> ->
+            let p1 = expr2patt e1 and p2 = expr2patt e2
+            in <:patt< $p1$ $p2$ >>
+       | <:expr< ( $list:el$ ) >> ->
+            let pl = List.map expr2patt el in
+               <:patt< ( $list:pl$ ) >>
+       | <:expr< { $list:eel$ } >> ->
+            let ppl =
+               List.map
+                  (fun (e1, e2) -> ((expr2patt e1), (expr2patt e2)))
+                  eel
+            in <:patt< { $list:ppl$ } >>
+       | _ -> failwith "could not convert expression to pattern."
+
+let rec expr2ctyp expr =
+   let loc = loc_of_expr expr in
+      match expr with
+       | <:expr< $lid:i$ >> -> <:ctyp< $lid:i$ >>
+       | <:expr< $uid:s$ >> -> <:ctyp< $uid:s$ >>
+       | <:expr< $e1$ . $e2$ >> ->
+            let ct1 = expr2ctyp e1 and ct2 = expr2ctyp e2
+            in <:ctyp< $ct1$ . $ct2$ >>
+       | <:expr< $e1$ $e2$ >> ->
+            let ct1 = expr2ctyp e1 and ct2 = expr2ctyp e2
+            in <:ctyp< $ct1$ $ct2$ >>
+       | <:expr< ( $list:el$ ) >> ->
+            let ctl = List.map expr2ctyp el in
+               <:ctyp< ( $list:ctl$ ) >>
+       | _ -> failwith "could not convert expression to type."
+
+let rec expr2mexp expr =
+   let loc = loc_of_expr expr in
+      match expr with
+       | <:expr< $uid:s$ >> -> <:module_expr< $uid:s$ >>
+       | <:expr< $e1$ . $e2$ >> ->
+            let me1 = expr2mexp e1 and me2 = expr2mexp e2
+            in <:module_expr< $me1$ . $me2$ >>
+       | <:expr< $e1$ $e2$ >> ->
+            let me1 = expr2mexp e1 and me2 = expr2mexp e2
+            in <:module_expr< $me1$ $me2$ >>
+       | _ -> failwith "could not convert expression to module expression."
+
+let rec expr2mtyp expr =
+   let loc = loc_of_expr expr in
+      match expr with
+       | <:expr< $lid:i$ >> -> <:module_type< $lid:i$ >>
+       | <:expr< $uid:s$ >> -> <:module_type< $uid:s$ >>
+       | <:expr< $e1$ . $e2$ >> ->
+            let mt1 = expr2mtyp e1 and mt2 = expr2mtyp e2
+            in <:module_type< $mt1$ . $mt2$ >>
+       | <:expr< $e1$ $e2$ >> ->
+            let mt1 = expr2mtyp e1 and mt2 = expr2mtyp e2
+            in <:module_type< $mt1$ $mt2$ >>
+       | _ -> failwith "could not convert expression to module expression."
+
+(*
+ * The next function create simple template macros;
  * these are expanded by temporarily binding the formal arguments to the actual
  * arguments and using the same substitution code again.
  *)
 
-let rec add_simple_expr_macro name args body =
-   add_expr_macro name
-      (fun exprs ->
+let add_simple_macro macro_adder appender codewalker macros name args body =
+   add_macro macros name
+      (fun actuals ->
           let rec aux = function
-           | (a::args, e::exprs) ->
+           | (a::args, x::actuals) ->
                 (* Combine macro list *)
-                add_simple_expr_macro a [] e;
-                aux (args, exprs)
-           | ([], exprs) ->
-                (* Do the substitution, append extra exprs *)
-                append_exprs (macros_codewalk Codewalk.expr body) exprs
+                macro_adder a [] x;
+                aux (args, actuals)
+           | ([], actuals) ->
+                (* Do the substitution, append extra actuals *)
+                appender (macros_codewalk codewalker body) actuals
            | (args, _) ->
                 macro_error "not enough arguments for simple macro";
           in
-          let old_macros = !expr_macros in
-             expr_macros := [];
-             let result = aux (args, exprs) in
-                expr_macros := old_macros;
+             push_macros();
+             let result = aux (args, actuals) in
+                pop_macros();
                 result)
 
-let rec add_simple_patt_macro name args body =
-   add_patt_macro name
-      (fun patts ->
-          let rec aux = function
-           | (a::args, p::patts) ->
-                (* Combine macro list *)
-                add_simple_patt_macro a [] p;
-                aux (args, patts)
-           | ([], patts) ->
-                (* Do the substitution, append extra patts *)
-                append_patts (macros_codewalk Codewalk.patt body) patts
-           | (args, _) ->
-                macro_error "not enough arguments for simple macro";
-          in
-          let old_macros = !patt_macros in
-             patt_macros := [];
-             let result = aux (args, patts) in
-                patt_macros := old_macros;
-                result)
+let rec add_simple_expr_macro x =
+   (* this is an exception - use add_all_simple_macros so an expr macro can
+    * substitute in other syntaxes. *)
+   add_simple_macro
+      add_all_simple_macros append_exprs Codewalk.expr expr_macros x
 
-let rec add_simple_ctyp_macro name args body =
-   add_ctyp_macro name
-      (fun ctyps ->
-          let rec aux = function
-           | (a::args, ct::ctyp) ->
-                (* Combine macro list *)
-                add_simple_ctyp_macro a [] ct;
-                aux (args, ctyps)
-           | ([], ctyps) ->
-                (* Do the substitution, append extra ctyps *)
-                append_ctyps (macros_codewalk Codewalk.ctyp body) ctyps
-           | (args, _) ->
-                macro_error "not enough arguments for simple macro";
-          in
-          let old_macros = !ctyp_macros in
-             ctyp_macros := [];
-             let result = aux (args, ctyps) in
-                ctyp_macros := old_macros;
-                result)
+and add_simple_patt_macro x =
+   add_simple_macro
+      add_simple_patt_macro append_patts Codewalk.patt patt_macros x
 
-let rec add_simple_mexp_macro name args body =
-   add_mexp_macro name
-      (fun mexps ->
-          let rec aux = function
-           | (a::args, me::mexp) ->
-                (* Combine macro list *)
-                add_simple_mexp_macro a [] me;
-                aux (args, mexps)
-           | ([], mexps) ->
-                (* Do the substitution, append extra mexps *)
-                append_mexps (macros_codewalk Codewalk.module_expr body) mexps
-           | (args, _) ->
-                macro_error "not enough arguments for simple macro";
-          in
-          let old_macros = !mexp_macros in
-             mexp_macros := [];
-             let result = aux (args, mexps) in
-                mexp_macros := old_macros;
-                result)
+and add_simple_ctyp_macro x =
+   add_simple_macro
+      add_simple_ctyp_macro append_ctyps Codewalk.ctyp ctyp_macros x
 
-let rec add_simple_mtyp_macro name args body =
-   add_mtyp_macro name
-      (fun mtyps ->
-          let rec aux = function
-           | (a::args, mt::mtyp) ->
-                (* Combine macro list *)
-                add_simple_mtyp_macro a [] mt;
-                aux (args, mtyps)
-           | ([], mtyps) ->
-                (* Do the substitution, append extra mtyps *)
-                append_mtyps (macros_codewalk Codewalk.module_type body) mtyps
-           | (args, _) ->
-                macro_error "not enough arguments for simple macro";
-          in
-          let old_macros = !mtyp_macros in
-             mtyp_macros := [];
-             let result = aux (args, mtyps) in
-                mtyp_macros := old_macros;
-                result)
+and add_simple_mexp_macro x =
+   add_simple_macro
+      add_simple_mexp_macro append_mexps Codewalk.module_expr mexp_macros x
+
+and add_simple_mtyp_macro x =
+   add_simple_macro
+      add_simple_mtyp_macro append_mtyps Codewalk.module_type mtyp_macros x
+
+and add_all_simple_macros name args expr =
+   let aux adder convert =
+      try adder name args (convert expr)
+      with _ -> ()
+   in
+      add_simple_expr_macro name args expr;
+      aux add_simple_patt_macro expr2patt;
+      aux add_simple_ctyp_macro expr2ctyp;
+      aux add_simple_mexp_macro expr2mexp;
+      aux add_simple_mtyp_macro expr2mtyp
 
 
 
@@ -714,10 +852,9 @@ let remove_nothings f =
       (Some (fun expr -> match expr with
               | <:expr< $e1$ $lid:"!NOTHING"$ >> -> e1
               | <:expr< $lid:"!NOTHING"$ $e2$ >> -> e2
-              | <:expr< fun $x$ $lid:"!NOTHING"$ -> $b$ >> ->
-                   let loc = loc_of_expr expr in <:expr< fun $x$ -> $b$ >>
-              | <:expr< fun $lid:"!NOTHING"$ $x$ -> $b$ >> ->
-                   let loc = loc_of_expr expr in <:expr< fun $x$ -> $b$ >>
+              (* remove also in function arguments *)
+              | <:expr< fun $lid:"!NOTHING"$ -> $b$ >> ->
+                   let loc = loc_of_expr expr in <:expr< $b$ >>
               | x -> x))
       (Some (fun patt -> match patt with
               | <:patt< $p1$ $lid:"!NOTHING"$ >> -> p1
@@ -745,110 +882,14 @@ let define_str str =
       (* wrap it in parens to make sure it all parses. *)
       let name = String.sub str 0 i in
       let pstr = "("^ (String.sub str (i+1) ((String.length str)-i-1)) ^")" in
-      let parsed = ref false in
-         begin try
-            add_simple_expr_macro
-               name [] (Grammar.Entry.parse expr (Stream.of_string pstr));
-            parsed := true;
-         with _ -> () end;
-         begin try
-            add_simple_patt_macro
-               name [] (Grammar.Entry.parse patt (Stream.of_string pstr));
-            parsed := true;
-         with _ -> () end;
-         begin try
-            add_simple_ctyp_macro
-               name [] (Grammar.Entry.parse ctyp (Stream.of_string pstr));
-            parsed := true;
-         with _ -> () end;
-         begin try
-            add_simple_mexp_macro
-               name []
-               (Grammar.Entry.parse module_expr (Stream.of_string pstr));
-            parsed := true;
-         with _ -> () end;
-         begin try
-            add_simple_mtyp_macro
-               name []
-               (Grammar.Entry.parse module_type (Stream.of_string pstr));
-            parsed := true;
-         with _ -> () end;
-         if not !parsed then begin
-            Printf.eprintf "Couldn't parse -D flag definition: \"%s\"\n" str;
-            exit 2;
-         end
+      let expr = try (Grammar.Entry.parse expr (Stream.of_string pstr))
+                 with _ ->
+                    Printf.eprintf "Couldn't parse -D flag: \"%s\"\n" str;
+                    exit 2
+      in
+         add_all_simple_macros name [] expr
    end with Not_found ->
       add_simple_expr_macro str [] (let loc = (0,0) in <:expr< () >>)
-
-(* This function turns simple expressions to patterns. *)
-let rec expr2patt expr =
-   let loc = loc_of_expr expr in
-      match expr with
-       | <:expr< $chr:c$ >> -> <:patt< $chr:c$ >>
-       | <:expr< $str:s$ >> -> <:patt< $str:s$ >>
-       | <:expr< $int:s$ >> -> <:patt< $int:s$ >>
-       | <:expr< $lid:i$ >> -> <:patt< $lid:i$ >>
-       | <:expr< $uid:s$ >> -> <:patt< $uid:s$ >>
-       | <:expr< $e1$ . $e2$ >> ->
-            let p1 = expr2patt e1 and p2 = expr2patt e2
-            in <:patt< $p1$ . $p2$ >>
-       | <:expr< $e1$ $e2$ >> ->
-            let p1 = expr2patt e1 and p2 = expr2patt e2
-            in <:patt< $p1$ $p2$ >>
-       | <:expr< ( $list:el$ ) >> ->
-            let pl = List.map expr2patt el in
-               <:patt< ( $list:pl$ ) >>
-       | <:expr< { $list:eel$ } >> ->
-            let ppl =
-               List.map
-                  (fun (e1, e2) -> ((expr2patt e1), (expr2patt e2)))
-                  eel
-            in <:patt< { $list:ppl$ } >>
-       | _ -> failwith "could not convert expression to pattern."
-
-(* This function turns simple expressions to patterns. *)
-let rec expr2ctyp expr =
-   let loc = loc_of_expr expr in
-      match expr with
-       | <:expr< $lid:i$ >> -> <:ctyp< $lid:i$ >>
-       | <:expr< $uid:s$ >> -> <:ctyp< $uid:s$ >>
-       | <:expr< $e1$ . $e2$ >> ->
-            let ct1 = expr2ctyp e1 and ct2 = expr2ctyp e2
-            in <:ctyp< $ct1$ . $ct2$ >>
-       | <:expr< $e1$ $e2$ >> ->
-            let ct1 = expr2ctyp e1 and ct2 = expr2ctyp e2
-            in <:ctyp< $ct1$ $ct2$ >>
-       | <:expr< ( $list:el$ ) >> ->
-            let ctl = List.map expr2ctyp el in
-               <:ctyp< ( $list:ctl$ ) >>
-       | _ -> failwith "could not convert expression to type."
-
-(* This function turns simple expressions to patterns. *)
-let rec expr2mexp expr =
-   let loc = loc_of_expr expr in
-      match expr with
-       | <:expr< $uid:s$ >> -> <:module_expr< $uid:s$ >>
-       | <:expr< $e1$ . $e2$ >> ->
-            let me1 = expr2mexp e1 and me2 = expr2mexp e2
-            in <:module_expr< $me1$ . $me2$ >>
-       | <:expr< $e1$ $e2$ >> ->
-            let me1 = expr2mexp e1 and me2 = expr2mexp e2
-            in <:module_expr< $me1$ $me2$ >>
-       | _ -> failwith "could not convert expression to module expression."
-
-(* This function turns simple expressions to patterns. *)
-let rec expr2mtyp expr =
-   let loc = loc_of_expr expr in
-      match expr with
-       | <:expr< $lid:i$ >> -> <:module_type< $lid:i$ >>
-       | <:expr< $uid:s$ >> -> <:module_type< $uid:s$ >>
-       | <:expr< $e1$ . $e2$ >> ->
-            let mt1 = expr2mtyp e1 and mt2 = expr2mtyp e2
-            in <:module_type< $mt1$ . $mt2$ >>
-       | <:expr< $e1$ $e2$ >> ->
-            let mt1 = expr2mtyp e1 and mt2 = expr2mtyp e2
-            in <:module_type< $mt1$ $mt2$ >>
-       | _ -> failwith "could not convert expression to module expression."
 
 (* This is a list of directories to search for INCLUDE statements. *)
 let include_dirs = ref ["./"]
@@ -883,94 +924,115 @@ let read_file file pa =
 (*****************************************************************************)
 (* Syntax extensions *)
 
-type str_item_or_def =
-   | MaStr of str_item                    (* normal str_item *)
-   | MaSig of sig_item                    (* normal sig_item *)
-   | MaDfe of string * string list * expr (* an expr macro def. statement *)
-   | MaDfp of string * string list * patt (* a patt macro def. statement *)
-   | MaDfa of string * string list * expr (* all types (should convert expr) *)
-   | MaUnd of string                      (* a macro undefine statement *)
-   | MaIfd of string * str_item_or_def list * str_item_or_def list
-                                          (* a conditional str_item *)
-   | MaLst of str_item_or_def list        (* str_items to scan *)
-   | MaInc of string                      (* a file to include *)
-
-let handle_macstuff_str loc =
+let handle_macstuff strip_StrSig codewalker macexpand pa lister loc =
+   let nothing = lister [] in
    let rec aux macstuff =
-      let nothing = <:str_item< declare end >> in
       match macstuff with
-       | MaStr si -> si
-       | MaSig _ -> failwith "Something bad happened."
+       | MaStr _ -> remove_nothings codewalker
+                       (macros_codewalk codewalker (strip_StrSig macstuff))
+       | MaSig _ -> remove_nothings codewalker
+                       (macros_codewalk codewalker (strip_StrSig macstuff))
        | MaDfe n a e -> add_simple_expr_macro n a e; nothing
        | MaDfp n a p -> add_simple_patt_macro n a p; nothing
-       | MaDfa n a e -> add_simple_expr_macro n a e;
-            (try add_simple_patt_macro n a (expr2patt e) with _ -> ());
-            (try add_simple_ctyp_macro n a (expr2ctyp e) with _ -> ());
-            (try add_simple_mexp_macro n a (expr2mexp e) with _ -> ());
-            (try add_simple_mtyp_macro n a (expr2mtyp e) with _ -> ());
-            nothing
+       | MaDfa n a e -> add_all_simple_macros n a e; nothing
+       | MaDfStr n a s -> add_macro stri_macros n (a, s); nothing
+       | MaDfSig n a s -> add_macro sigi_macros n (a, s); nothing
+       | MaApStr e -> macexpand e
+       | MaApSig e -> macexpand e
        | MaUnd x -> undefine_macro x; nothing
        | MaIfd x l1 l2 -> aux (MaLst (if is_defined x then l1 else l2))
        | MaLst l ->
             (match List.filter (fun x -> x<>nothing) (List.map aux l)
-             with
-              | []   -> nothing
-              | [si] -> si
-              | sis  -> <:str_item< declare $list:sis$ end >>)
-       | MaInc file -> StDcl (loc,
-                              List.map fst
-                                 (Codewalk.changeloc
-                                     loc
-                                     (Codewalk.ast_list Codewalk.str_item)
-                                     (read_file file implem)))
+             with [] -> nothing | [si] -> si | l -> lister l)
+       | MaInc file ->
+            let l = List.map fst
+                       (Codewalk.changeloc
+                           loc
+                           (Codewalk.ast_list codewalker)
+                           (read_file file pa))
+            in
+               lister l
    in
       aux
 
-let handle_macstuff_sig loc =
-   let rec aux macstuff =
-      let nothing = <:sig_item< declare end >> in
-      match macstuff with
-       | MaSig si -> si
-       | MaStr _ -> failwith "Something bad happened."
-       | MaDfe n a e -> add_simple_expr_macro n a e; nothing
-       | MaDfp n a p -> add_simple_patt_macro n a p; nothing
-       | MaDfa n a e -> add_simple_expr_macro n a e;
-            (try add_simple_patt_macro n a (expr2patt e) with _ -> ());
-            (try add_simple_ctyp_macro n a (expr2ctyp e) with _ -> ());
-            (try add_simple_mexp_macro n a (expr2mexp e) with _ -> ());
-            (try add_simple_mtyp_macro n a (expr2mtyp e) with _ -> ());
-            nothing
-       | MaUnd x -> undefine_macro x; nothing
-       | MaIfd x l1 l2 -> aux (MaLst (if is_defined x then l1 else l2))
-       | MaLst l ->
-            (match List.filter (fun x -> x<>nothing) (List.map aux l)
-             with
-              | []   -> nothing
-              | [si] -> si
-              | sis  -> <:sig_item< declare $list:sis$ end >>)
-       | MaInc file -> SgDcl (loc,
-                              List.map fst
-                                 (Codewalk.changeloc
-                                     loc
-                                     (Codewalk.ast_list Codewalk.sig_item)
-                                     (read_file file interf)))
+let expand_toplevel_macro macros handle_macstuff loc name_and_args =
+   let locb, loce = loc in
+   let name, args =
+         try flat_expr name_and_args
+         with Not_found ->
+            Printf.eprintf
+               "USETOPMACRO (at %d-%d): expects an uppercase identifier.\n"
+               locb loce;
+            exit 2
    in
-      aux
+   let formals, body =
+      try List.assoc name !macros
+         with Not_found ->
+            Printf.eprintf
+               "Toplevel macro \"%s\" not found (at %d-%d).\n" name locb loce;
+            exit 2
+   in
+      push_macros();
+      begin
+         try
+            List.iter2
+               (fun formal arg -> add_all_simple_macros formal [] arg)
+               formals args;
+         with Invalid_argument _ ->
+            Printf.eprintf
+               "%d While expanding toplevel macro \"%s\" (at %d-%d): %s"
+               (List.length args)
+               name locb loce
+               "wrong number of arguments.\n";
+            exit 2
+      end;
+      (* the local macros are saved so when we finish processing we add all
+       * macros that were added in the macro body. *)
+      let local_macros = get_all_macros() in
+      let result = handle_macstuff loc body in
+      let added_macros = get_all_macros_except local_macros in
+         pop_macros();
+         add_all_macros added_macros;
+         result
+
+let rec handle_macstuff_str loc =
+   handle_macstuff
+      (function MaStr si -> si | _ -> failwith "Something bad happened.")
+      Codewalk.str_item
+      (expand_toplevel_macro stri_macros handle_macstuff_str loc)
+      implem
+      (fun l -> <:str_item< declare $list:l$ end >>)
+      loc
+
+and handle_macstuff_sig loc =
+   handle_macstuff
+      (function MaSig si -> si | _ -> failwith "Something bad happened.")
+      Codewalk.sig_item
+      (expand_toplevel_macro sigi_macros handle_macstuff_sig loc)
+      interf
+      (fun l -> <:sig_item< declare $list:l$ end >>)
+      loc
 
 EXTEND
    GLOBAL: str_item sig_item expr patt ctyp module_expr module_type;
    (* Note: macstuff is macro definitions etc, in these cases, there is no
     * substitutions done because we want them as they are. *)
    str_item: FIRST
-      [[ x = macstuff_str -> (* macro directives etc *)
+      [[ "NOTHING" -> <:str_item< declare end >>
+       | x = macstuff_str -> (* macro directives etc *)
             handle_macstuff_str loc x
+       | "declare"; sis = LIST0 str_item; "end" ->
+            <:str_item< declare $list:sis$ end >>
        | si = NEXT -> (* expand macros etc *)
             remove_nothings Codewalk.str_item
                             (macros_codewalk Codewalk.str_item si)
        ]];
    sig_item: FIRST
-      [[ x = macstuff_sig -> (* macro directives etc *)
+      [[ "NOTHING" -> <:sig_item< declare end >>
+       | x = macstuff_sig -> (* macro directives etc *)
             handle_macstuff_sig loc x
+       | "declare"; sis = LIST0 sig_item; "end" ->
+            <:sig_item< declare $list:sis$ end >>
        | si = NEXT -> (* expand macros etc *)
             remove_nothings Codewalk.sig_item
                             (macros_codewalk Codewalk.sig_item si)
@@ -986,6 +1048,11 @@ EXTEND
             MaIfd c e2 e1
        | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_macstuff; "ENDIF"->
             MaIfd c [] e1
+       | "DEFTOPMACRO";
+         name = UIDENT; args = LIST0 UIDENT; "="; body = LIST0 str_item_macstuff;
+         "END" ->
+            MaDfStr name args (MaLst body)
+       | "USETOPMACRO"; name_and_args = expr; "END" -> MaApStr name_and_args
        | x = macstuff_shared -> x
        ]];
    macstuff_sig:
@@ -999,6 +1066,11 @@ EXTEND
             MaIfd c e2 e1
        | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 sig_item_macstuff; "ENDIF"->
             MaIfd c [] e1
+       | "DEFTOPMACRO";
+         name = UIDENT; args = LIST0 UIDENT; "="; body = LIST0 sig_item_macstuff;
+         "END" ->
+            MaDfSig name args (MaLst body)
+       | "USETOPMACRO"; name_and_args = expr; "END" -> MaApSig name_and_args
        | x = macstuff_shared -> x
        ]];
    macstuff_shared:
@@ -1007,7 +1079,7 @@ EXTEND
        | "DEFINE"; name = UIDENT; "="; body = expr ->
             (* can only be used for argument-less macros because of camlp4. *)
             MaDfa name [] body
-       | ["UNDEFINE" | "UNDEF"]; c = UIDENT ->
+       | [ "UNDEFINE" | "UNDEF" ]; c = UIDENT ->
             (* UNDEF is the same as UNDEFINE to mimic CPP *)
             MaUnd c
        | "DEFMACRO";     name= UIDENT; args = LIST0 UIDENT; "="; body = expr ->
@@ -1038,12 +1110,11 @@ EXTEND
             if is_defined c then <:expr< () >> else e1
        | "LETMACRO"; name = UIDENT; args = LIST0 UIDENT; "="; body = expr;
          "IN"; e = expr ->
-            let old_macros = !expr_macros in
-               expr_macros := [];
-               add_simple_expr_macro name args body;
-               let result = macros_codewalk Codewalk.expr e in
-                  expr_macros := old_macros;
-                  result
+            push_macros();
+            add_all_simple_macros name args body;
+            let result = macros_codewalk Codewalk.expr e in
+               pop_macros();
+               result
        ]];
    expr: LEVEL "simple" [[ "NOTHING" -> <:expr< $lid:"!NOTHING"$ >> ]];
    patt: LEVEL "simple" [[ "NOTHING" -> <:patt< $lid:"!NOTHING"$ >> ]];
