@@ -432,11 +432,11 @@ struct
         mseq_vars = free_vars_terms (goal :: subgoals)
       }
 
-   let dest_msequent { mseq_goal = goal; mseq_hyps = hyps } =
-      goal, hyps
+   let dest_msequent mseq =
+      mseq.mseq_goal, mseq.mseq_hyps
 
-   let dest_msequent_vars { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } =
-      vars, goal, hyps
+   let dest_msequent_vars mseq =
+      mseq.mseq_vars, mseq.mseq_goal, mseq.mseq_hyps
 
     (*
      * Check that all the hyps in the list are equal.
@@ -1287,7 +1287,7 @@ struct
          }
       in
       let refiner' = AxiomRefiner ref_axiom in
-      let tac _ _ (sent : sentinal) { mseq_goal = goal; mseq_hyps = hyps } =
+      let tac _ _ (sent : sentinal) { mseq_goal = goal } =
          if alpha_equal (nth_concl goal 0) term then
             begin
                sent.sent_axiom ref_axiom;
@@ -1366,10 +1366,11 @@ struct
          }
       in
       let refiner' = RuleRefiner ref_rule in
-      let tac (addrs, names) params sent { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } =
-         let subgoals, names' = apply_rewrite rw (addrs, names, [vars]) goal params in
+      let tac (addrs, names) params sent mseq =
+         let vars = mseq.mseq_vars in
+         let subgoals, names' = apply_rewrite rw (addrs, names, [vars]) mseq.mseq_goal params in
          let make_subgoal subgoal =
-            { mseq_vars = vars; mseq_goal = subgoal; mseq_hyps = hyps }
+            { mseq_vars = vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
          in
          let just =
             SingleJust { ext_names = names';
@@ -1475,10 +1476,10 @@ struct
       let opname = opname_of_term arg in
       let refiner' = MLRuleRefiner ref_ml_rule in
       let { ml_rule_rewrite = rw } = rule in
-      let tac (_, names) params sent { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } =
-         let subgoals = rw (names, params) goal in
+      let tac (_, names) params sent mseq =
+         let subgoals = rw (names, params) mseq.mseq_goal in
          let make_subgoal subgoal =
-            { mseq_vars = vars; mseq_goal = subgoal; mseq_hyps = hyps }
+            { mseq_vars = mseq.mseq_vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
          in
          let just =
             SingleJust { ext_names = names;
