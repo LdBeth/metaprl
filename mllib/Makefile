@@ -20,6 +20,7 @@ MLZFILES :=\
 	hash_with_gc_sig\
 	memo_sig\
 	weak_memo_sig\
+	linear_set\
 	register
 
 # Library files
@@ -71,7 +72,6 @@ LMFILES :=\
 	remote_queue_null\
 	remote_lazy_queue\
 	memo\
-	linear_set\
 	splay_linear_set\
 	array_linear_set\
 	simplehashtbl\

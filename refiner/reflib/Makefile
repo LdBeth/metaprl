@@ -10,6 +10,7 @@ MLZFILES :=\
 	ml_print_sig\
 	term_compare_sig\
 	ascii_io_sig\
+	jlogic_sig\
 
 # Library files
 include Files
