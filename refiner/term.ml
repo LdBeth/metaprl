@@ -1704,7 +1704,7 @@ let rev_assoc v =
    let rec aux = function
       (v1, v2)::t ->
          if v2 = v then
-            v
+            v1
          else
             aux t
     | [] -> raise Not_found
@@ -2192,6 +2192,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.20  1998/05/22 19:03:04  nogin
+ * Fixed a typo in rev_assoc
+ *
  * Revision 1.19  1998/05/18 18:28:09  nogin
  * Removed standardize_apart function, compare_* functions
  *     and BadParamMatch exception
