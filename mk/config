@@ -34,7 +34,7 @@ CC = gcc
 RM = rm -f
 INSTALL = /bin/cp -pf
 CP = /bin/cp -pf
-CPP = /lib/cpp -traditional
+CPP = /lib/cpp -traditional -nostdinc -nostdinc++
 LN = ln -sf
 ifndef CAMLP4N
 	CAMLP4N = $(ROOT)/lib/camlp4n$(EXE)
