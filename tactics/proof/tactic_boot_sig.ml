@@ -186,6 +186,7 @@ sig
     | HigherConv of conv
     | ThenTC of conv * tactic
     | IdentityConv
+    | TacticConv of (address -> tactic)
 
    type pre_tactic
    type prim_tactic = Refiner.Refiner.Refine.prim_tactic
@@ -962,6 +963,11 @@ sig
    val termC : (term -> conv) -> conv
 
    (*
+    * Apply a tactic at the current address
+    *)
+   val tacticC : (address -> tactic) -> conv
+
+   (*
     * Apply a conversion at an address.
     *)
    val addrC : Term_addr_sig.addr_item list -> conv -> conv
@@ -1064,6 +1070,7 @@ sig
    val funC : (env -> conv) -> conv
    val termC : (term -> conv) -> conv
    val prefix_thenTC : conv -> tactic -> conv
+   val tacticC : (address -> tactic) -> conv
 
    (************************************************************************
     * SEARCH                                                               *

@@ -224,6 +224,7 @@ struct
     | HigherConv of conv
     | ThenTC of conv * tactic
     | IdentityConv
+    | TacticConv of (address -> tactic)
 
    (************************************************************************
     * IMPLEMENTATION                                                       *

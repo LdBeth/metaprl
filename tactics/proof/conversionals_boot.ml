@@ -81,6 +81,7 @@ struct
    let prefix_thenC = Rewrite.prefix_thenC
    let prefix_orelseC = Rewrite.prefix_orelseC
    let addrC = Rewrite.addrC
+   let tacticC = Rewrite.tacticC
    let addrLiteralC = Rewrite.addrLiteralC
    let idC = Rewrite.idC
    let foldC = Rewrite.foldC

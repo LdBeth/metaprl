@@ -158,6 +158,9 @@ struct
 
    let termC f = funC (fun e -> (f (env_term e)))
 
+   let tacticC tac =
+      TacticConv tac
+
    (*
     * Apply the conversion at the specified address.
     *)
@@ -304,6 +307,12 @@ struct
          if !debug_rewrite then
             printf "Rewrite_type.apply: ThenTC%t" eflush;
          applyThenTC assum addr conv tac
+    | TacticConv tac ->
+         if !debug_rewrite then
+            printf "Rewrite_type.apply: TacticConv%t" eflush;
+         if assum <> 0 then
+            raise (RefineError ("rw", StringError "tacticC conversion can not be applied to an assumption"));
+         tac addr
 
    and composeT assum addr = function
       Flist.Empty ->
@@ -323,12 +332,12 @@ struct
 
    and rwcutT assum addr t =
       funT (fun p ->
-      let goal, hyps = Refine.dest_msequent (Sequent.msequent p) in
+      let goal, assums = Refine.dest_msequent (Sequent.msequent p) in
       let t' =
          if assum = 0 then
             goal
-         else if assum > 0 && assum <= List.length hyps then
-            List.nth hyps (pred assum)
+         else if assum > 0 && assum <= List.length assums then
+            List.nth assums (pred assum)
          else
             raise (RefineError ("rwcutT", StringIntError ("assum number is out of range", assum)))
       in

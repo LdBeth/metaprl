@@ -100,7 +100,7 @@ struct
    let bname i _ =
       StackName i
 
-   let new_bvar_item i v =
+   let new_bvar_item (i: int) (v: var) =
       (v, i)
 
    (* Determine if all terms in a list are distinct bound vars *)
@@ -148,6 +148,12 @@ struct
             match SeqHyp.get hyps i with
                Context _ -> i
              | Hypothesis _ -> lastcontext hyps i
+
+   let rec collect_bvars i stack bnames bvars = function
+      [] ->
+         stack,bnames,bvars
+    | v::vs ->
+         collect_bvars (succ i) (stack @ [FOVar v]) (bnames @ [bname i v]) ((new_bvar_item i v) :: bvars) vs
 
    let rec compile_so_redex_term st stack term =
       (* Check for variables and contexts *)
@@ -380,16 +386,10 @@ struct
          let stack, bterms = compile_so_redex_bterms st stack bterms in
             stack, bterm::bterms
 
-   and rename_repeated_vars i stack bnames bvars = function
-      [] ->
-         stack,bnames,bvars
-    | v::vs ->
-         rename_repeated_vars (succ i) (stack @ [FOVar v]) (bnames @ [bname i v]) ((new_bvar_item i v) :: bvars) vs
-
    and compile_so_redex_bterm st stack bterm =
       let svars = SymbolSet.add_list st.st_svars (List.map rstack_var stack) in
       let { bvars = vars; bterm = term } = dest_bterm_and_rename bterm svars in
-      let stack, bnames, bvars = rename_repeated_vars (List.length stack) stack [] st.st_bvars vars in
+      let stack, bnames, bvars = collect_bvars (List.length stack) stack [] st.st_bvars vars in
       (* Compile the term *)
       let stack, term = compile_so_redex_term { st with st_bvars = bvars; st_svars = svars } stack term in
          stack, { rw_bvars = List.length vars; rw_bnames = bnames; rw_bterm = term }
@@ -458,8 +458,6 @@ struct
                   stack, term :: hyps, concl
 
           | Hypothesis (v, term) ->
-               if List.mem_assoc v st.st_bvars then
-                  REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringVarError ("repeated variable", v)));
                let stack, term = compile_so_redex_term st stack term in
                let l = List.length stack in
                let stack = stack @ [FOVar v] in
