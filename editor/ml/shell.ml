@@ -1079,6 +1079,8 @@ struct
                      ShellP4.set_df shell (Some (get_db info));
                      ShellP4.set_mk_opname shell (Some (Package.mk_opname pkg));
                      ShellP4.set_module shell modname (commands info);
+                     (* HACK!!! I do not know a better way to initialize a package - AN *)
+                     ignore (Package.info pkg (get_parse_arg info))
                end;
 
             if item = [] then
