@@ -23,7 +23,7 @@ CAMLP4_VERSIONS=3.06
 YESFLAGS=1 true True t T TRUE Y y yes Yes YES
 
 DEFAULT_THEORIES = base itt
-ALL_THEORIES = base ocaml_doc itt ocaml_sos fol czf phobos sil tptp fir experimental/compile
+ALL_THEORIES = base ocaml_doc itt ocaml_sos fol czf phobos sil tptp fir experimental/compile mojave
 # Outdated and does not currently compile: lf
 
 ifndef TERMS
