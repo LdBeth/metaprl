@@ -40,7 +40,11 @@ umask 002
 cd $1
 rm -f editor/ml/mp.opt
 ( # cvs -q update 2>&1
-(make -s depend > /dev/null && make -s opt > /dev/null) 2>&1 | egrep -v -- "-jN forced in submake|Makefile.dep: No such file or directory"
+if [ -e .omakedb ]; then
+   omake VERBOSE=1 -S 
+else
+   (make -s depend > /dev/null && make -s opt > /dev/null) 2>&1 | egrep -v -- "-jN forced in submake|Makefile.dep: No such file or directory"
+fi
 sleep 10
 if [ -f editor/ml/mp.opt ]; then
 util/status-all.sh > $TEMP
