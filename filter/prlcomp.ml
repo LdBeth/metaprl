@@ -113,7 +113,9 @@ let spec =
     "-c", Unit (add_argv "-c"), "produce object file";
     "-o", String (add_string_argv "-o"), "specify output file";
     "-a", Unit (add_argv "-a"), "produce archive file";
-    "-custom", Unit (add_argv "-custom"), "generate custom executable"]
+    "-custom", Unit (add_argv "-custom"), "generate custom executable";
+    "-cclib", String (add_string_argv "-cclib"), "C library";
+    "-linkall", Unit (add_argv "-linkall"), "specify link"]
 
 (*
  * Print the command line.
@@ -170,6 +172,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.4  1997/09/08 15:02:19  jyh
+ * This version compiles Ensemble.
+ *
  * Revision 1.3  1997/08/06 16:17:38  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -15,6 +15,7 @@ DIRS :=\
 	mllib\
 	refiner\
 	filter\
+	library\
 	theories/tactic\
 	theories/base\
 	theories/itt\

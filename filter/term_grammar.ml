@@ -848,7 +848,7 @@ struct
          [[ "all" -> "all" ]];
       
       sl_exists:
-         [[ "exists" -> "exists" ]];
+         [[ "exst" -> "exists" ]];
       
       sl_isect:
          [[ "isect" -> "isect" ]];
@@ -895,6 +895,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1997/09/08 15:02:21  jyh
+ * This version compiles Ensemble.
+ *
  * Revision 1.2  1997/08/06 16:17:40  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

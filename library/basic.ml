@@ -201,7 +201,7 @@ let transaction_less = fun
     else if (bequal time1 time2) then seq1 < seq2
          else (blt time1 time2)
 
-let get_inet_addr =
+let get_inet_addr () =
 	let {h_addr_list=l} = gethostbyname (gethostname ())
 	in l.(0)
 

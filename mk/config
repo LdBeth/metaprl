@@ -60,7 +60,7 @@ $(MAIN).cmxa: $(LCMXFILES)
 	$(OCAMLOPT) $(OCAMLCFLAGS) -o -o $@ $(LCMXFILES)
 
 $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
-	$(OCAMLC) -custom $(OCAMLCFLAGS) -o $@ $(CMAFILES) $(CMALIBS) $(PCMOFILES) $(CCLIBS)
+	$(OCAMLC) -custom $(OCAMLCFLAGS) -o $@ $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(CCLIBS)
 	if [ -f $(MAIN).run.exe ]; then\
 		mv $(MAIN).run.exe $(MAIN).run.bak;\
 		mv $(MAIN).run.bak $(MAIN).run;\
