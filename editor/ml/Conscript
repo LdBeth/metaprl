@@ -51,7 +51,7 @@ for my $mod ('mp_top', 'shell', 'shell_mp') {
     Depends $env "$mod$env->{SUFOBJ}", "$env->{MP_HASH}/clib/clib.a";
 }
 
-OCamlProgram $env 'mp.opt', 'Itt_theory', 'Itt_record_exm', 'Mp_mc_theory', 'mp_top';
+OCamlProgram $env 'mp.opt', 'Itt_theory', 'Itt_record_exm', 'Mp_mc_theory', 'Mfir_theory', 'mp_top';
 
 ## Add the library to the default target list
 #Default qw( mp.opt );
