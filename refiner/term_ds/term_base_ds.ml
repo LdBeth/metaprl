@@ -342,6 +342,35 @@ struct
             raise(Invalid_argument("Term_base_ds.check_conts: substitution clashed with an SO context "^ (string_of_symbol c)));
          check_conts sub cts
 
+   let single_hyp_subst hyp (sub, hyplist, sub_vars, all_vars) =
+      match hyp with
+         HypBinding (v,t) ->
+            let t' = do_term_subst sub t in
+            (* Filter out any shadowed substs *)
+            let sub = List.filter (fun (v', _) -> v <> v') sub in
+            (* Rename v if it might capture a free var in the subst *)
+            if SymbolSet.mem sub_vars v then
+               let v' = new_name v (SymbolSet.mem all_vars) in
+               let sub = (v, mk_var_term v') :: sub in
+               (* XXX: These would not be needed if new_name was guaranteed unique *)
+               let sub_vars = SymbolSet.add sub_vars v' in
+               let all_vars = SymbolSet.add all_vars v' in
+                  sub, HypBinding (v', t) :: hyplist, sub_vars, all_vars
+            else
+               let hyp = if t = t' then hyp else HypBinding (v, t') in
+                  sub, hyp :: hyplist, sub_vars, all_vars
+       | Hypothesis t ->
+            let t' = do_term_subst sub t in
+            let hyp = if t <> t' then Hypothesis t' else hyp in
+               sub, hyp :: hyplist, sub_vars, all_vars
+       | Context (v,conts,ts) ->
+            if check_conts sub conts; List.mem_assoc v sub then
+               REF_RAISE(RefineError("Term_base_ds.get_core",
+                           StringVarError("substitution captures SO context",v)))
+            else
+               sub, Context (v, conts, Lm_list_util.smap (do_term_subst sub) ts) :: hyplist,
+                     sub_vars, all_vars
+
    let rec get_core t =
       match t.core with
          Subst (tt,sub) ->
@@ -384,35 +413,7 @@ struct
       (* XXX: I'd like to be able to fold directly here but there's no Seq_set.fold_left *)
       let hyplist = SeqHyp.to_list hyps in
       let sub, hyplist, _, _ =
-            List.fold_right ( fun hyp (sub, hyplist, sub_vars, all_vars) ->
-               match hyp with
-                  HypBinding (v,t) ->
-                     let t' = do_term_subst sub t in
-                     (* Filter out any shadowed substs *)
-                     let sub = List.filter (fun (v', _) -> v <> v') sub in
-                     (* Rename v if it might capture a free var in the subst *)
-                     if SymbolSet.mem sub_vars v then
-                        let v' = new_name v (SymbolSet.mem all_vars) in
-                        let sub = (v, mk_var_term v') :: sub in
-                        (* XXX: These would not be needed if new_name was guaranteed unique *)
-                        let sub_vars = SymbolSet.add sub_vars v' in
-                        let all_vars = SymbolSet.add all_vars v' in
-                           sub, HypBinding (v', t) :: hyplist, sub_vars, all_vars
-                     else
-                        let hyp = if t = t' then hyp else HypBinding (v, t') in
-                           sub, hyp :: hyplist, sub_vars, all_vars
-                | Hypothesis t ->
-                     let t' = do_term_subst sub t in
-                     let hyp = if t <> t' then Hypothesis t' else hyp in
-                        sub, hyp :: hyplist, sub_vars, all_vars
-                | Context (v,conts,ts) ->
-                     if check_conts sub conts; List.mem_assoc v sub then
-                        REF_RAISE(RefineError("Term_base_ds.get_core",
-                                    StringVarError("substitution captures SO context",v)))
-                     else
-                        sub, Context (v, conts, Lm_list_util.smap (do_term_subst sub) ts) :: hyplist,
-                              sub_vars, all_vars
-               ) hyplist (sub, [], sub_vars, all_vars)
+            List.fold_right single_hyp_subst hyplist (sub, [], sub_vars, all_vars)
       in
          sub, SeqHyp.of_list hyplist
 
