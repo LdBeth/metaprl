@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#
+# Run this script to compare the proofs status in your current tree
+# to the one in the clean tree in the last successful nightly run.
+#
+# For best results, use THEORIES=all and TESTS=no (since this is what
+# the nightly run uses).
+#
+
+if [ ! -d editor/ml ]; then
+   echo "Should be ran from MetaPrl root"
+   exit 1
+fi
+ssh -n -o BatchMode=yes `hostname -s` `pwd`/util/check-status.sh `pwd`&
