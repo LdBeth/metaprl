@@ -545,19 +545,19 @@ Your type is not understood.  See the module Mptop for allowed types."))
 let add_toploop_item loc name ctyp =
    let rec collect index expr = function
       <:ctyp< $lid: "unit"$ >> ->
-         nltop "UnitExpr" expr
+         mptop "UnitExpr" expr
     | <:ctyp< $lid: "bool"$ >> ->
-         nltop "BoolExpr" expr
+         mptop "BoolExpr" expr
     | <:ctyp< $lid: "int"$ >> ->
-         nltop "IntExpr" expr
+         mptop "IntExpr" expr
     | <:ctyp< $lid: "string"$ >> ->
-         nltop "StringExpr" expr
+         mptop "StringExpr" expr
     | <:ctyp< $lid: "term"$ >> ->
-         nltop "TermExpr" expr
+         mptop "TermExpr" expr
     | <:ctyp< $lid: "tactic"$ >> ->
-         nltop "TacticExpr" expr
+         mptop "TacticExpr" expr
     | <:ctyp< $lid: "conv"$ >> ->
-         nltop "ConvExpr" expr
+         mptop "ConvExpr" expr
     | <:ctyp< $t1$ -> $t2$ >> ->
          collect_fun index expr t1 t2
     | _ ->
@@ -565,37 +565,37 @@ let add_toploop_item loc name ctyp =
    and collect_fun index expr t1 t2 =
       match t1 with
          <:ctyp< $lid: "unit"$ >> ->
-            nlfun index "UnitFunExpr" expr t1
+            mpfun index "UnitFunExpr" expr t1
        | <:ctyp< $lid: "bool"$ >> ->
-            nlfun index "BoolFunExpr" expr t2
+            mpfun index "BoolFunExpr" expr t2
        | <:ctyp< $lid: "int"$ >> ->
-            nlfun index "IntFunExpr" expr t2
+            mpfun index "IntFunExpr" expr t2
        | <:ctyp< $lid: "string"$ >> ->
-            nlfun index "StringFunExpr" expr t2
+            mpfun index "StringFunExpr" expr t2
        | <:ctyp< $lid: "term"$ >> ->
-            nlfun index "TermFunExpr" expr t2
+            mpfun index "TermFunExpr" expr t2
        | <:ctyp< $lid: "tactic"$ >> ->
-            nlfun index "TacticFunExpr" expr t2
+            mpfun index "TacticFunExpr" expr t2
        | <:ctyp< $lid: "conv"$ >> ->
-            nlfun index "ConvFunExpr" expr t2
+            mpfun index "ConvFunExpr" expr t2
        | <:ctyp< $lid: "address"$ >>
        | <:ctyp< $lid: "list"$ $lid: "int"$ >> ->
-            nlfun index "AddrFunExpr" expr t2
+            mpfun index "AddrFunExpr" expr t2
        | <:ctyp< $lid: "list"$ $lid: "string"$ >> ->
-            nlfun index "StringListFunExpr" expr t2
+            mpfun index "StringListFunExpr" expr t2
        | <:ctyp< $lid: "list"$ $lid: "term"$ >> ->
-            nlfun index "TermListFunExpr" expr t2
+            mpfun index "TermListFunExpr" expr t2
        | <:ctyp< $lid: "list"$ $lid: "tactic"$ >> ->
-            nlfun index "TacticListFunExpr" expr t2
+            mpfun index "TacticListFunExpr" expr t2
        | <:ctyp< $lid: "list"$ $lid: "conv"$ >> ->
-            nlfun index "ConvListFunExpr" expr t2
+            mpfun index "ConvListFunExpr" expr t2
        | <:ctyp< $lid: "int"$ -> $lid: "tactic"$ >> ->
-            nlfun index "IntTacticFunExpr" expr t2
+            mpfun index "IntTacticFunExpr" expr t2
        | _ ->
             raise_toploop_exn loc
-   and nltop name expr =
+   and mptop name expr =
       <:expr< $uid: "Mptop"$ . $uid: name$ $expr$ >>
-   and nlfun index name expr t2 =
+   and mpfun index name expr t2 =
       let v = sprintf "v%d" index in
       let patt = <:patt< $lid: v$ >> in
       let expr = collect (index + 1) <:expr< $expr$ $lid: v$ >> t2 in

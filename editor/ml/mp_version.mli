@@ -1,5 +1,5 @@
 (*
- * Version string for NL.
+ * Version string for MetaPRL.
  *
  * ----------------------------------------------------------------
  *

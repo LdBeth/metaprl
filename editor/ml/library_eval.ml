@@ -79,7 +79,7 @@ let lib_open_eval env ehook host localport remoteport =
 
 (*
  * 
- * NL cmd syntax
+ * MetaPRL cmd syntax
  *
  * !mp_list_root{}() returns !tok_cons 
  * !mp_list_module{}(tok_cons) returns !cons{}(!cons(!token{thm:t}(); sequent); !cons ...

@@ -25,10 +25,10 @@ Additional theories can be included by adding them to the <TT>Makefile</TT>.
 There are three standard editors:</P>
 
 <UL>
-  <LI>the <TT>nl.run</TT> editor uses the OCaml bytecode toploop,
-  <LI>the <TT>nl.top</TT> editor uses the MetaPRL toploop with
+  <LI>the <TT>mp.run</TT> editor uses the OCaml bytecode toploop,
+  <LI>the <TT>mp.top</TT> editor uses the MetaPRL toploop with
   modules compiled as bytecode,
-  <LI>the <TT>nl.opt</TT> editor uses the MetaPRL toploop with
+  <LI>the <TT>mp.opt</TT> editor uses the MetaPRL toploop with
   native-code modules.
 </UL>
 
@@ -37,8 +37,8 @@ toploop. It supports an interactive subset of ML programs intended
 specifically for editing and proof refinement. The MetaPRL
 toploop is integrated with the editor, so that module changes
 automatically open the ML namespace. However, general ML programming
-is not possible in the Nuplr-Light toploop. In contrast, the OCaml
-toploop used by <TT>nl.run</TT> contains an interpretor for the
+is not possible in the MetaPRL toploop. In contrast, the OCaml
+toploop used by <TT>mp.run</TT> contains an interpretor for the
 full OCaml language, but it is not connected with the editor,
 and explicit <TT>open</TT> directives must be used to access tactics
 and conversions. In addition, the OCaml toploop runs only in bytecode
@@ -53,8 +53,8 @@ that you run the editor in an Emacs shell window, using the Nuprl
 font.</P>
 
 <P>The editor directory includes shell scripts to invoke the editor.
-The <TT>nl</TT> script invokes the <TT>nl.run</TT> editor, the
-<TT>nltop</TT> and <TT>nlopt</TT> scripts invoke the corresponding
+The <TT>mp</TT> script invokes the <TT>mp.run</TT> editor, the
+<TT>mptop</TT> and <TT>mpopt</TT> scripts invoke the corresponding
 editor. These scripts establish some common environment settings
 for the MetaPRL search path and Ensemble settings if Ensemble
 is being used.</P>
@@ -66,14 +66,14 @@ this file:</P>
 
 <BLOCKQUOTE>
   <PRE>% <B>cd editor/ml</B>
-% <B>./nl</B>
+% <B>./mp</B>
 MetaPRL version 0.1
 # <B>#use &quot;x.ml&quot;</B></PRE>
 </BLOCKQUOTE>
 
 <H4>Module navigation</H4>
 
-<P>All editor commands are declared in the interface <TT>editor/ml/nl.mli</TT>.
+<P>All editor commands are declared in the interface <TT>editor/ml/mp.mli</TT>.
 The editor maintains a state value representing the &quot;current
 module.&quot; There are several commands to navigate the module
 hierarchy:</P>
@@ -99,7 +99,7 @@ containing all loaded modules. Here is a script fragment showing
 the initial state of MetaPRL:</P>
 
 <BLOCKQUOTE>
-  <PRE>&lt;mojave:ml 7&gt;<B>./nl</B>
+  <PRE>&lt;mojave:ml 7&gt;<B>./mp</B>
         Objective Caml version 2.00
 	        MetaPRL 2.00.1:
 		        build [Sun Sep 13 10:36:42 EDT 1998]

@@ -8,7 +8,7 @@
  *                   $MPLIB/filter/filter_main.cmo"
  *       $*
  *
- * Set NL_INCLUDE from collection of all -I options.
+ * Set MP_INCLUDE from collection of all -I options.
  * Use "-E" option for preprocessing:
  *     camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_ast.cmo\
  *                   $MPLIB/refiner/refiner.cma\
@@ -157,7 +157,7 @@ let set_includes () =
     | [] ->
          ""
    in
-   let var = sprintf "NL_INCLUDE=%s" (squash !includes) in
+   let var = sprintf "MP_INCLUDE=%s" (squash !includes) in
       if !verbose_mode > 0 then
          eprintf "%s%t" var eflush;
       Punix.putenv var;

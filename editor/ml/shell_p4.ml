@@ -529,7 +529,7 @@ struct
     *)
    let main () =
       let init () =
-         let nllib =
+         let mplib =
             try Sys.getenv "MPLIB" with
                Not_found ->
                   raise (Invalid_argument "MPLIB environment variable in undefined")
@@ -539,7 +539,7 @@ struct
             ()
          in
             Debug_set.init ();
-            eval_include nllib;
+            eval_include mplib;
             List.iter eval_include !includes;
             Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_p4", "print_term"))));
             Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp");

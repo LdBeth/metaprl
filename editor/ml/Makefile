@@ -235,22 +235,22 @@ CCLIBS =\
 	$(CCLIBS_ens)
 
 # Name of main libraris
-MAIN = nuprl-light
-NL = mp
+MAIN = meta-prl
+MP = mp
 
-all: $(MAIN).cma $(NL).top $(NL).run
-opt: $(MAIN).cmxa $(NL).opt
+all: $(MAIN).cma $(MP).top $(MP).run
+opt: $(MAIN).cmxa $(MP).opt
 install:: all
 
-$(NL).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS)
+$(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS)
 	rm -f $@
 	$(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(CCLIBS) $(LIBTHREADS)
 
-$(NL).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS)
+$(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS)
 	rm -f $@
 	$(OCAMLC) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(CCLIBS) $(LIBTHREADS)
 
-$(NL).opt: $(CMXOBJS) $(TCMXFILES)
+$(MP).opt: $(CMXOBJS) $(TCMXFILES)
 	rm -f $@
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
 

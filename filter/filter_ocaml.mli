@@ -1,5 +1,5 @@
 (*
- * Convert between camlp4 terms and NL terms.
+ * Convert between camlp4 terms and MetaPRL terms.
  *
  * ----------------------------------------------------------------
  *
