@@ -131,12 +131,11 @@ struct
 
    type rewrite_item =
       RewriteTerm of term
-    | RewriteFun of (term list -> term)
-    | RewriteContext of (term -> term list -> term)
     | RewriteString of string rewrite_param
     | RewriteToken of opname rewrite_param
     | RewriteNum of Lm_num.num rewrite_param
     | RewriteLevel of level_exp
+    | RewriteUnsupported
 
    (************************************************************************
     * IMPORTS                                                              *
@@ -233,16 +232,16 @@ struct
       FreeFOVarPattern s
     | FreeFOVarInstance s
     | SOVarPattern (s, _, 0) -> RewriteTermType, s
-    | SOVarPattern (s, _, _)
-    | SOVarInstance (s, _, _) -> RewriteFunType, s
-    | CVar (s, _, _) -> RewriteContextType, s
     | PVar (s, ShapeNumber) -> RewriteNumType, s
     | FOVar s
     | PVar (s, ShapeVar) -> RewriteVarType, s
     | PVar (s, ShapeString) -> RewriteStringType, s
     | PVar (s, ShapeToken) -> RewriteTokenType, s
     | PVar (s, ShapeLevel) -> RewriteLevelType, s
-    | PVar (_, ShapeQuote) -> REF_RAISE (RefineError ("extract_redex_type", RewriteBadMatch (TermMatch xnil_term)))
+    | SOVarPattern (s , _, _)
+    | SOVarInstance (s , _, _)
+    | CVar (s, _, _)
+    | PVar (s, ShapeQuote) -> RewriteUnsupportedType, s
 
    let extract_redex_types { redex_stack = stack } =
       let l = Array.length stack in
@@ -265,8 +264,7 @@ struct
     *       performs the substitution
     *    4. A param variable becaome the param that was matched.
     *)
-   let extract_exn = RefineError ("extract_redex_values", RewriteStringError "stack entry is not valid")
-   let extract_exn_seq_context = RefineError ("extract_redex_values", RewriteStringError "can't extract an entry from a sequent context")
+   let extract_exn = RefineError ("extract_redex_values", RewriteStringError "internal error: stack entry is not valid")
 
    let extract_redex_values_aux gstack = function
       SOVarPattern (_, _, 0) ->
@@ -281,26 +279,9 @@ struct
                StackVar v -> RewriteTerm (mk_var_term v)
              | _ -> REF_RAISE(extract_exn)
          end
-    | SOVarPattern _ ->
-         begin
-            match gstack with
-               StackBTerm (t, l) ->
-                  RewriteFun (subst t l)
-             | _ -> REF_RAISE(extract_exn)
-         end
     | FreeFOVarInstance _
     | SOVarInstance _ ->
-         raise (Invalid_argument "Rewrite.extract_redex_values: instance is not expected")
-    | CVar _ ->
-         begin
-            match gstack with
-               StackContext (l, t, addr) ->
-                  RewriteContext (fun c l' -> subst (replace_subterm t addr c) l l')
-             | StackSeqContext _ ->
-                  RewriteContext (fun _ _ -> REF_RAISE(extract_exn_seq_context))
-             | _ ->
-                  REF_RAISE(extract_exn)
-         end
+         raise (Invalid_argument "Rewrite.extract_redex_values: internal error: instance is not expected")
     | PVar (_, ShapeNumber) ->
          RewriteNum begin
             match gstack with
@@ -330,8 +311,10 @@ struct
                StackLevel l -> l
              | StackVar v -> mk_var_level_exp v
              | _ -> REF_RAISE(extract_exn))
-    | PVar (_, ShapeQuote) ->
-         REF_RAISE(extract_exn)
+    | SOVarPattern _
+    | PVar (_, ShapeQuote)
+    | CVar _ ->
+         RewriteUnsupported
 
    let extract_redex_values gstack stack=
       let l = Array.length gstack in

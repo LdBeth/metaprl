@@ -334,9 +334,6 @@ let format_seq_src format_term buf =
 ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
    format_seq_src format_term buf
 
-ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- } format_term buf =
-   format_seq_src format_term buf
-
 declare inner_df_context{'t : Dform} : Dform
 
 ml_dform inner_df_context_df : inner_df_context{'t} format_term buf =
@@ -404,9 +401,6 @@ let format_seq_prl format_term buf =
 ml_dform sequent_prl_df : mode["prl"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
    format_seq_prl format_term buf
 
-ml_dform sequent_prl_df : mode["prl"] :: sequent ('ext) { <H> >- } format_term buf =
-   format_seq_prl format_term buf
-
 let format_seq_html format_term buf =
    let rec format_hyp hyps i len =
       if i <> len then
@@ -456,9 +450,6 @@ let format_seq_html format_term buf =
       format
 
 ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
-   format_seq_html format_term buf
-
-ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- } format_term buf =
    format_seq_html format_term buf
 
 dform df_context_tex : mode["tex"] :: df_context{'t} =
@@ -516,9 +507,6 @@ let format_seq_tex format_term buf =
       format
 
 ml_dform sequent_tex_df : mode["tex"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
-   format_seq_tex format_term buf
-
-ml_dform sequent_tex_df : mode["tex"] :: sequent ('ext) { <H> >- } format_term buf =
    format_seq_tex format_term buf
 
 (*

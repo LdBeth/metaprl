@@ -79,13 +79,12 @@ type strict = Strict | Relaxed
  *)
 type rewrite_type =
    RewriteTermType
- | RewriteFunType
- | RewriteContextType
  | RewriteStringType
  | RewriteNumType
  | RewriteTokenType
  | RewriteLevelType
  | RewriteVarType (* corresponds to RewriteString(RewriteMetaParam _) *)
+ | RewriteUnsupportedType
 
 type 'a rewrite_param =
    RewriteParam of 'a
@@ -113,12 +112,11 @@ sig
 
    type rewrite_item =
       RewriteTerm of term
-    | RewriteFun of (term list -> term)
-    | RewriteContext of (term -> term list -> term)
     | RewriteString of string rewrite_param
     | RewriteToken of opname rewrite_param
     | RewriteNum of Lm_num.num rewrite_param
     | RewriteLevel of level_exp
+    | RewriteUnsupported
 
    (* Rewrites with no arguments *)
    val empty_args_spec : rewrite_args_spec

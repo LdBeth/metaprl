@@ -1327,10 +1327,6 @@ let rewrite_type_patt loc (kind, name) =
       match kind with
          RewriteTermType ->
             <:patt< $rewriter_patt loc$ . RewriteTerm $name$ >>
-       | RewriteFunType ->
-            <:patt< $rewriter_patt loc$ . RewriteFun $name$ >>
-       | RewriteContextType ->
-            <:patt< $rewriter_patt loc$ . RewriteContext $name$ >>
        | RewriteStringType ->
             <:patt< $rewriter_patt loc$ . RewriteString $name$ >>
        | RewriteTokenType ->
@@ -1341,6 +1337,8 @@ let rewrite_type_patt loc (kind, name) =
             <:patt< $rewriter_patt loc$ . RewriteNum $name$ >>
        | RewriteLevelType ->
             <:patt< $rewriter_patt loc$ . RewriteLevel $name$ >>
+       | RewriteUnsupportedType ->
+            <:patt< _ >>
 
 (*
  * An ml dterm is a display form that is computed in ML.

@@ -120,12 +120,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       type rewrite_item =
          RewriteTerm of term
-       | RewriteFun of (term list -> term)
-       | RewriteContext of (term -> term list -> term)
        | RewriteString of string rewrite_param
        | RewriteToken of opname rewrite_param
        | RewriteNum of Lm_num.num rewrite_param
        | RewriteLevel of level_exp
+       | RewriteUnsupported
 
       type match_param =
          MatchNumber of Lm_num.num * int option
@@ -1013,10 +1012,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       match i1, i2 with
          Rewrite1.RewriteTerm t1, Rewrite2.RewriteTerm t2 ->
              RewriteTerm (merge_term x t1 t2)
-       | Rewrite1.RewriteFun f1, Rewrite2.RewriteFun f2 ->
-            RewriteFun (fun tl -> let tl1, tl2 = split tl in merge merge_term x (wrap1 f1 tl1) (wrap1 f2 tl2))
-       | Rewrite1.RewriteContext f1, Rewrite2.RewriteContext f2 ->
-            RewriteContext (fun (t1, t2) tl -> let tl1, tl2 = split tl in merge merge_term x (wrap2 f1 t1 tl1) (wrap2 f2 t2 tl2))
        | Rewrite1.RewriteString s1, Rewrite2.RewriteString s2 ->
             RewriteString (merge_rwp merge_string x s1 s2)
        | Rewrite1.RewriteToken t1, Rewrite2.RewriteToken t2 ->
@@ -1025,6 +1020,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
             RewriteNum (merge_rwp merge_num x n1 n2)
        | Rewrite1.RewriteLevel le1, Rewrite2.RewriteLevel le2 ->
             RewriteLevel (merge_level_exp x le1 le2)
+       | Rewrite1.RewriteUnsupported, Rewrite2.RewriteUnsupported ->
+            RewriteUnsupported
        | _ ->
             report_error x "rewrite_item kind mismatch"
 
