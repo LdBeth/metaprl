@@ -22,12 +22,21 @@ type shellInfo =
 
       (* Current module and path and proof *)
       mutable dir : string list;
-      mutable cmod : Package.package option;
+      mutable package : Package.package option;
       mutable proof : (string * ped) option;
    
       (* All loaded modules *)
       packages : Package.t;
    }
+
+(************************************************************************
+ * CONSTANTS                                                            *
+ ************************************************************************)
+
+(*
+ * Minimum width of the screen.
+ *)
+let min_width = 40
 
 (************************************************************************
  * ARGUMENT COLLECTION                                                  *
@@ -66,7 +75,7 @@ let info =
    { width = 80;
      df_mode = "prl";
      dir = [];
-     cmod = None;
+     package = None;
      packages = map new_package big_theories;
      proof = Package.create !includes
    }
@@ -80,7 +89,7 @@ let info =
  *)
 let get_db dbase =
    let dbase' =
-      match info.cmod with
+      match info.package with
          Some mod_info ->
             Package.dforms mod_info
        | None ->
@@ -138,9 +147,8 @@ let display_package_thm = function
  * This is just a list of the "important" packages.
  *)
 let view_packages () =
-   let roots = compute_roots info.packages in
    let buf = new_buffer () in
-      display_package_graph buf roots;
+      format_packages buf info.packages;
       format_newline buf;
       output_string stdout "\n--+--modules--+--\nModule listing dir: modules; path: /\n--\n";
       print_to_channel info.width buf stdout;
@@ -151,11 +159,10 @@ let view_packages () =
  * Display a particular package.
  *)
 let view_package name =
-   let thy = find_package name info.packages in
+   let pack = Package.get info.packages name in
    let buf = new_buffer () in
-      display_package info.df_mode buf thy;
-      fprintf stdout "\n--+--theory--+--\nTheory listing for package: %s; path: /%s\n"
-         name name;
+      format_implementation info.df_mode buf pack;
+      printf "\n--+--theory--+--\nTheory listing for package: %s; path: /%s\n" name name;
       print_to_channel info.width buf stdout;
       output_string stdout "--+--theory--+--\n";
       flush stdout
@@ -165,27 +172,10 @@ let view_package name =
  *)
 let view_item modname name =
    (* Get the package and item *)
-   let mod_info = find_package modname info.packages in
+   let pack = Package.get info.packages name in
    let buf = new_buffer () in
    let db = get_mode_base (package_dforms mod_info) info.df_mode in
-      begin
-         try
-            let item = find_package_thm name mod_info in
-               info.cmod <- Some mod_info;
-               display_package_thm { thm_name = name; thm_ped = item }
-         with Not_found ->
-               try
-                  let item = find_refiner_item name mod_info in
-                     display_theory_item db buf item;
-                     printf "\n--+--item--+--\nTheory item: %s; path: /%s/%s\n"
-                     name modname name;
-                     print_to_channel info.width buf stdout;
-                     output_string stdout "\n--+--item--+--\n"
-               with
-                  Not_found ->
-                     fprintf stderr "No such item: %s\n" name
-      end;
-      flush stdout
+      raise (Failure "Shell.view_item: not implemented")
 
 (*
  * General purpose displayer.
@@ -206,7 +196,7 @@ let view name =
  * Window width.
  *)
 let set_window_width i =
-   info.width <- if i < 40 then 40 else i
+   info.width <- if i < min_width then min_width else i
 
 (*
  * Show the directory.
@@ -228,9 +218,9 @@ let cd name =
       begin
          match dir with
             modname::_ ->
-               info.cmod <- Some (find_package modname info.packages)
+               info.package <- Some (find_package modname info.packages)
           | [] ->
-               info.cmod <- None
+               info.package <- None
       end;
       view ".";
       pwd ()
@@ -247,46 +237,29 @@ let create_package name =
    match parse_path info.dir name with
       [modname] ->
          (* Top level *)
-         let mod_info = new_empty_package modname in
-            info.packages <- mod_info :: info.packages;
-            view name
+         Package.create_package info.packages modname;
+         view name
     | [] ->
-         raise (BadCommand "can't create root package")
+         raise (Failure "Shell.create_package: can't create root package")
     | _ ->
-         raise (BadCommand "packages can't be nested right now")
-
-(*
- * Install a package with the given name.
- *)
-let install_package mod_info =
-   (* Maybe have to replace an old one *)
-   let name = package_name mod_info in
-   let rec replace_package = function
-      h::t when (package_name h) = name ->
-         mod_info :: t
-    | h::t ->
-         h :: (replace_package t)
-    | [] ->
-         [mod_info]
-   in
-      info.packages <- replace_package info.packages
+         raise (Failure "Shell.create_package: packages can't be nested right now")
 
 (*
  * Save the current package.
  *)
 let save () =
-   match info.cmod with
-      Some mod_info -> PackageIO.save mod_info
-    | None -> ()
-
-let save_as name =
-   match info.cmod with
-      Some mod_info -> PackageIO.save_as mod_info name
+   match info.package with
+      Some pack ->
+         Package.save pack
     | None ->
-         raise (BadCommand "No current package")
+         ()
 
 let save_all () =
-   do_list PackageIO.save info.packages
+   let save pack =
+      if Package.status pack = Modified then
+         Package.save info.packages pack
+   in
+      List.iter save (Package.packages info.packages)
          
 (************************************************************************
  * OBJECTS                                                              *
@@ -357,6 +330,9 @@ let z p =
 (*
  *
  * $Log$
+ * Revision 1.3  1998/04/17 02:25:32  jyh
+ * Implementing shell.
+ *
  * Revision 1.2  1998/04/17 01:30:49  jyh
  * Editor is almost constructed.
  *

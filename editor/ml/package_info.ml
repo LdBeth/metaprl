@@ -156,6 +156,9 @@ struct
       in
          search packages
 
+   let packages { pack_dag = dag; pack_packages = packages } =
+      List.map (ImpDag.node_value dag) packages
+   
    let roots { pack_dag = dag } =
       List.map (ImpDag.node_value dag) (ImpDag.roots dag)
 
@@ -377,6 +380,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/17 02:25:29  jyh
+ * Implementing shell.
+ *
  * Revision 1.5  1998/04/17 01:30:41  jyh
  * Editor is almost constructed.
  *
