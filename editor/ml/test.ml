@@ -32,12 +32,8 @@
 
 include Itt_theory
 
-declare STACK_sig[@i:l]{'A}
-declare stack_type{'Stack}
-
-prim stack_type_w : :
-   sequent ['ext] { A:univ[@j:l]; Stack:STACK_sig[@i:l]{'A} >- "type"{stack_type{'Stack}} } = it
-
+interactive void_proof 'H : :
+   sequent ['ext] { 'H >- void }
 
 (*
  * -*-
