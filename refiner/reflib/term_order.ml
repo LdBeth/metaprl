@@ -37,15 +37,12 @@ module type TermOrderSig =
    sig
       open R.TermType
 
-      type comparison = Less | Equal | Greater
-
-      val compare_level_vars : level_exp_var -> level_exp_var -> comparison
-      val compare_levels : level_exp -> level_exp -> comparison
-      val compare_params : param -> param -> comparison
-      val compare_operators : operator -> operator -> comparison
-      val compare_terms : term -> term -> comparison
-      val compare_bterms : bound_term -> bound_term -> comparison
-	(*val compare_hyps : Term.Term.SeqHyp.t -> Term.Term.SeqHyp.t -> int -> comparison*)
+      val compare_level_vars : level_exp_var -> level_exp_var -> int
+      val compare_levels : level_exp -> level_exp -> int
+      val compare_params : param -> param -> int
+      val compare_operators : operator -> operator -> int
+      val compare_terms : term -> term -> int
+      val compare_bterms : bound_term -> bound_term -> int
    end
 
 module TermOrder (R: Refiner_sig.RefinerSig) =
@@ -53,60 +50,75 @@ struct
    open R.Term
    open R.TermType
    open R.TermSubst
-
-   type comparison = Less | Equal | Greater
-
-   let simple_compare x y =
-      match Pervasives.compare x y with
-         0 -> Equal
-       | i when i > 0 -> Greater
-       | _ -> Less
+   open R.TermMan
+   open R.TermShape
 
    let rec compare_lists compare l1 l2 =
       if l1==l2 then
-         Equal
+         0
       else
          match l1, l2 with
-            [], [] -> Equal
-          | [], _  -> Less
-          | _ , []  -> Greater
+            [], [] -> 0
+          | [], _  -> -1
+          | _ , []  -> 1
           | hd1::tail1, hd2::tail2 ->
                begin match compare hd1 hd2 with
-                        Equal -> compare_lists compare tail1 tail2
+                        0 -> compare_lists compare tail1 tail2
                       | cmp -> cmp
                end
 
    let rec compare_terms t1 t2 =
       if t1==t2 then
-         Equal
+         0
       else
-         let {term_op=op1; term_terms=subt1} = dest_term t1 in
-         let {term_op=op2; term_terms=subt2} = dest_term t2 in
-            match compare_operators op1 op2 with
-               Less -> Less
-             | Greater -> Greater
-             | Equal -> compare_btlists subt1 subt2
+         let s1 = shape_of_term t1 in
+         let s2 = shape_of_term t2 in
+            match s1 == var_shape, s1 == sequent_shape, s2 == var_shape, s2 == sequent_shape with
+               true, _, false, _ -> 1
+             | false, _, true, _ -> -1
+             | true, _, true, _ -> Lm_symbol.compare (dest_var t1) (dest_var t2)
+             | _, true, _, false -> -1
+             | _, false, _, true -> 1
+             | _, true, _, true ->
+                  let s1 = explode_sequent t1 in
+                  let s2 = explode_sequent t2 in
+                     begin match compare_terms s1.sequent_args s2.sequent_args with
+                        0 ->
+                           let l1 = SeqHyp.length s1.sequent_hyps in
+                           begin match Pervasives.compare l1 (SeqHyp.length s2.sequent_hyps) with
+                              0 ->
+                                 compare_hyps s1 s2 l1 [] 0
+                            | c -> c
+                           end
+                      | c -> c
+                     end
+             | false, false, false, false ->
+                  begin match Pervasives.compare s1 s2 with
+                     0 ->
+                        let {term_op=op1; term_terms=subt1} = dest_term t1 in
+                        let {term_op=op2; term_terms=subt2} = dest_term t2 in
+                           begin match compare_operators op1 op2 with
+                              0 -> compare_btlists subt1 subt2
+                           | c -> c
+                           end
+                   | c -> c
+                  end
 
    and compare_operators op1 op2 =
       if op1==op2 then
-         Equal
+         0
       else
          let {op_name = opn1; op_params = par1} = dest_op op1 in
          let {op_name = opn2; op_params = par2} = dest_op op2 in
-         let str1 = string_of_opname opn1 in
-         let str2 = string_of_opname opn2 in
-            if str1 < str2 then
-               Less
-            else if str1 > str2 then
-               Greater
-            else
-               compare_plists par1 par2
+            match Opname.compare opn1 opn2 with
+               0 -> compare_plists par1 par2
+             | c -> c
 
    and compare_btlists btl1 btl2 = compare_lists compare_bterms btl1 btl2
 
    and compare_bterms b1 b2 =
       if b1==b2 then
-         Equal
+         0
       else
          let { bterm = bt1; bvars = bv1 } = dest_bterm b1 in
          let { bterm = bt2; bvars = bv2 } = dest_bterm b2 in
@@ -117,61 +129,83 @@ struct
 
    and compare_plists pl1 pl2 = compare_lists compare_params pl1 pl2
 
+   and compare_hyps s1 s2 len sub i =
+      if i = len then
+         compare_terms s1.sequent_concl (apply_subst sub s2.sequent_concl)
+      else
+         match (SeqHyp.get s1.sequent_hyps i), (SeqHyp.get s2.sequent_hyps i) with
+            Context(v1, conts1, ts1), Context(v2, conts2, ts2) ->
+               begin match compare_lists Lm_symbol.compare (v1::conts1) (v2::conts2) with
+                  0 ->
+                     begin match compare_lists compare_terms ts1 (List.map (apply_subst sub) ts2) with
+                        0 -> compare_hyps s1 s2 len sub (i+1)
+                      | c -> c
+                     end
+                | c -> c
+               end
+          | Hypothesis(v1, t1), Hypothesis(v2, t2) ->
+               begin match compare_terms t1 (apply_subst sub t2) with
+                  0 -> compare_hyps s1 s2 len ((v2, mk_var_term v1)::sub) (i+1)
+                | c -> c
+               end
+          | Hypothesis _, Context _ -> -1
+          | Context _, Hypothesis _ -> 1
+
    and compare_params par1 par2 =
       if par1==par2 then
-         Equal
+         0
       else
          match dest_param par1, dest_param par2 with
-            Number n1    , Number n2     -> simple_compare n1 n2
-          | Number _     , _             -> Less
-          | _            , Number _      -> Greater
-          | String s1    , String s2     -> simple_compare s1 s2
-          | String _     , _             -> Less
-          | _            , String _      -> Greater
-          | Token t1     , Token t2      -> simple_compare t1 t2
-          | Token _      , _             -> Less
-          | _            , Token _       -> Greater
-          | Var v1       , Var v2        -> simple_compare v1 v2
-          | Var _        , _             -> Less
-          | _            , Var _         -> Greater
-          | Quote        , _             -> Less
-          | _            , Quote         -> Greater
-          | MNumber s1   , MNumber s2    -> simple_compare s1 s2
-          | MNumber _    , _             -> Less
-          | _            , MNumber _     -> Greater
-          | MString s1   , MString s2    -> simple_compare s1 s2
-          | MString _    , _             -> Less
-          | _            , MString _     -> Greater
-          | MToken s1    , MToken s2     -> simple_compare s1 s2
-          | MToken _     , _             -> Less
-          | _            , MToken _      -> Greater
+            Number n1    , Number n2     -> Lm_num.compare_num n1 n2
+          | Number _     , _             -> -1
+          | _            , Number _      -> 1
+          | String s1    , String s2     -> Pervasives.compare s1 s2
+          | String _     , _             -> -1
+          | _            , String _      -> 1
+          | Token t1     , Token t2      -> Opname.compare t1 t2
+          | Token _      , _             -> -1
+          | _            , Token _       -> 1
+          | Var v1       , Var v2        -> Lm_symbol.compare v1 v2
+          | Var _        , _             -> -1
+          | _            , Var _         -> 1
+          | Quote        , _             -> -1
+          | _            , Quote         -> 1
+          | MNumber s1   , MNumber s2    -> Pervasives.compare s1 s2
+          | MNumber _    , _             -> -1
+          | _            , MNumber _     -> 1
+          | MString s1   , MString s2    -> Pervasives.compare s1 s2
+          | MString _    , _             -> -1
+          | _            , MString _     -> 1
+          | MToken s1    , MToken s2     -> Pervasives.compare s1 s2
+          | MToken _     , _             -> -1
+          | _            , MToken _      -> 1
           | MLevel l1    , MLevel l2     -> compare_levels l1 l2
-          | MLevel _     , _             -> Less
-          | _            , MLevel _      -> Greater
+          | MLevel _     , _             -> -1
+          | _            , MLevel _      -> 1
           | ObId id1     , ObId id2      -> compare_plists id1 id2
-          | ObId _       , _             -> Less
-          | _            , ObId _        -> Greater
+          | ObId _       , _             -> -1
+          | _            , ObId _        -> 1
           | ParamList pl1, ParamList pl2 -> compare_plists pl1 pl2
 
    and compare_levels l1 l2 =
       if l1==l2 then
-         Equal
+         0
       else
          let {le_const = c1; le_vars = v1} = dest_level l1 in
          let {le_const = c2; le_vars = v2} = dest_level l2 in
-            if c1<c2 then Less
-            else if c1>c2 then Greater
+            if c1<c2 then -1
+            else if c1>c2 then 1
             else compare_lvlists v1 v2
 
    and compare_lvlists lvl1 lvl2 = compare_lists compare_level_vars lvl1 lvl2
 
    and compare_level_vars v1 v2 =
       if v1==v2 then
-         Equal
+         0
       else
          let {le_var=s1; le_offset=o1}=dest_level_var v1 in
          let {le_var=s2; le_offset=o2}=dest_level_var v2 in
-            if s1<s2 then Less
-            else if s1>s2 then Greater
-            else simple_compare o1 o2
+            if s1<s2 then -1
+            else if s1>s2 then 1
+            else Pervasives.compare o1 o2
 end

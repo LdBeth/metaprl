@@ -216,7 +216,7 @@ struct
       let catch =
          if backtrace then
             begin
-               eprintf "*** Note: uncaught exceptions will cause MetaPRL to exit@.";
+               eprintf "*** Note: OCAMLRUNPARAM environment variable contains \"b\".\n*** Uncaught exceptions will cause MetaPRL to exit@.";
                (fun f ->
                      try f () with
                         End_of_file ->

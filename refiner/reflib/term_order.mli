@@ -34,15 +34,12 @@ functor(R: Refiner_sig.RefinerSig) ->
 sig
 	open R.TermType
 
-	type comparison = Less | Equal | Greater
-
-	val compare_level_vars : level_exp_var -> level_exp_var -> comparison
-	val compare_levels : level_exp -> level_exp -> comparison
-	val compare_params : param -> param -> comparison
-	val compare_operators : operator -> operator -> comparison
-	val compare_terms : term -> term -> comparison
-	val compare_bterms : bound_term -> bound_term -> comparison
-	(*val compare_hyps : Term.Term.SeqHyp.t -> Term.Term.SeqHyp.t -> int -> comparison*)
+	val compare_level_vars : level_exp_var -> level_exp_var -> int
+	val compare_levels : level_exp -> level_exp -> int
+	val compare_params : param -> param -> int
+	val compare_operators : operator -> operator -> int
+	val compare_terms : term -> term -> int
+	val compare_bterms : bound_term -> bound_term -> int
 end
 
 module TermOrder: TermOrderSig
