@@ -1,9 +1,5 @@
 Import qw( env );
 
-$env = $env->clone(
-    INCPATH => [@{$env->{INCPATH}}, "../refbase", "../refsig", "../term_gen", "../refiner"]
-);
-
 OCamlSources $env
 	'rformat.ml',
 	'simple_print_sig.mlz',

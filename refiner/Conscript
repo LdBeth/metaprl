@@ -1,7 +1,6 @@
 Import qw( env );
 
 $env = $env->clone(
-   INCPATH     => [@{$env->{INCPATH}}, "$env->{MP_HASH}/mllib"],
    OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
    PPFLAGS     => "$env->{PPFLAGS} $env->{MP}/util/macro.cmo -D$env->{REFINER}_EXN -DSEQ_SET=Array_linear_set",
 

@@ -1,7 +1,6 @@
 Import qw( env );
 
 $env = $env->clone(
-    INCPATH => [@{$env->{INCPATH}}, "../refbase", "../refsig", "../term_gen"],
     PPFLAGS => "$env->{PPFLAGS} -I$env->{MP}/refiner/refsig"
 );
 

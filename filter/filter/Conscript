@@ -1,9 +1,6 @@
 Import qw( env );
 
 $env = $env->clone(
-   INCPATH     => [@{$env->{INCPATH}},
-                   "$env->{MP_HASH}/filter/base",
-                   "$env->{MP_HASH}/filter/boot"],
    OCAMLC      => "$env->{OCAMLC} -I $env->{CAMLP4STDLIB}",
    OCAMLLINK   => "$env->{OCAMLLINK} -I $env->{CAMLP4STDLIB}",
    OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -linkall -pp '%CAMLP4MACRO'",

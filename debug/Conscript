@@ -1,9 +1,5 @@
 Import qw( env );
 
-$env = $env->clone(
-    INCPATH	=> [@{$env->{INCPATH}}, "$env->{MP_HASH}/lib"]
-);
-
 OCamlSources $env
 	'debug_symbols.ml',
 	'debug.ml';
