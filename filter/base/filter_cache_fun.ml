@@ -1060,7 +1060,8 @@ struct
    let check_input_term cache loc t_root =
       let shapes = cache.shapes in
          iter_down (fun t ->
-               if not (is_var_term t || is_so_var_term t || is_context_term t || is_sequent_term t) then
+               (* XXX: JYH: we should probably strip quotes and check that the original term is legal *)
+               if not (is_var_term t || is_so_var_term t || is_context_term t || is_sequent_term t || is_quoted_term t) then
                   let info =
                      try snd (ShapeTable.find shapes (shape_of_term t)) with
                         Not_found ->
@@ -1069,6 +1070,7 @@ struct
                               "$unknown" ->
                                  ShapeNormal
                             | _ ->
+
                                  check_input_term_error "undeclared term" t_root t
                   in
                      match info with
