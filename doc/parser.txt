@@ -1,0 +1,234 @@
+1. INTRODUCTION
+
+As of version 0.9.6.1+, MetaPRL supports grammar extensions that allow
+you to define your own syntax as part of a MetaPRL theory.  Grammars
+are extensible, and use the normal theory hierarchy.  This allows you
+to define custom syntax for each theory you work in.  This document is
+intended as a guide to defining and using the new syntax mechanism.
+
+Syntax is defined the normal way, using lexing and parsing
+definitions.  For now, syntax extensions are only allowed in CamlP4
+quotations, so the stages are as follows.
+
+   1. CamlP4 parses a quotation like <:expr< 1 + 2 >>
+
+   2. The MetaPRL lexer breaks this up into a sequence of
+      words like:
+
+          number[1:n], tok_plus, number[2:n]
+
+   3. The MetaPRL parser produces a syntax tree like
+
+          add{number[1:n]; number[2:n]}
+
+We'll describe the lexing and parsing stages in this document.
+
+2. LEXING
+
+Lexing is the process of breaking up a sequence of characters into a
+sequence of words.  If you have ever used the Unix program "lex", you
+will be familiar with the process MetaPRL uses.
+
+Lexing definitions are declared with the "lex_token" keyword, and have
+one of the following forms:
+
+    a. lex_token "pattern"
+    b. lex_token "pattern" --> term
+
+The "pattern" in a lex_token definition is a regular expression in
+awk/egrep/vi form that specifies a word to be returned by the lexer.
+In the first form, the word is skipped; in the second form the word is
+returned as the result of a lexing action.  For example, here are some
+typical lexing definitions.
+
+    declare tok_eof
+    declare tok_number[i:n]
+    declare tok_var[v:s]
+    declare tok_if
+
+    lex_token "[[:space:]]+"      (* Whitespace: ignored *)
+    lex_token "//[^\n]*\n"        (* Comment: ignored *)
+    lex_token "\'" --> tok_eof    (* End of file *)
+
+    lex_token "[0-9]+" --> tok_number[lexeme:n]
+    lex_token "[_[:alpha:]][_[:alnum:]]*" --> tok_var[lexeme:s]
+    lex_token "if" --> tok_if
+
+Let's look at these definitions.  The first lex_token definition
+"[[:space:]]+" matches all sequences of whitespace characters.  Since
+there is no arrow (-->) in the rule, the sequence is ignored.
+Similarly, the second lex_token definition "//[^\n]*\n" matches
+single-line comments of the following form.
+
+   // Any garbage like *//$1" is ignored here
+
+The regular expression "\'" matches the end-of-file, which produces
+the tok_eof token.  The fourth lex_token definition "[0-9]+" matches
+all sequences of digits; the right-hand-side tok_number[lexeme:n]
+produces a term with a number parameter that represents the value
+matched.  In general, "lexeme" represents the matched value as a
+string parameter; the "tok_number[lexeme:n]" converts this string
+parameter to a number.
+
+The fifth lex_token definition matches sequence of alphanumeric
+characters standing for identifier, and the final definition matches
+the keyword "if".  The order of the final two lex_token definitions is
+important.  By default, MetaPRL uses the "longest-match" rule, which
+specifies that if two lexing definitions match the input, then the one
+that matches the longest sequence takes precedence.  However, if two
+lex_token definitions match exactly the same input, the *last* one
+takes precedence.  Using this ordering, we have the following.
+
+    xif  -->  tok_var["xif"]
+    if   -->  tok_if
+    ifx  -->  tok_var["ifx"]
+
+3. PARSING
+
+The purpose of the parser is to convert the sequence of tokens
+produced by the lexer into a single term.  The primary mechanism is by
+defining a set of productions for a context-free grammar.  A
+production definition has the following form, where each term is
+either a term produced by the lexer (a "terminal") or the
+right-hand-side of another production (a "nonterminal").
+
+   production term_1; term_2; ...; term_n --> term_r
+
+In addition, at least one (possibly many) start symbols must be
+defined.  A start symbol specifies the result term for the parser, and
+it also specifies a name for a quotation block.
+
+   parser term
+
+Finally, precedences may be necessary for disambiguating a grammar.
+
+   lex_token assoc [tokens]
+   lex_token assoc [tokens] > token
+   lex_token assoc [tokens] = token
+   lex_token assoc [tokens] < token
+
+The assoc should be one of the words "left", "right", or "nonassoc".
+All of the tokens in the list will have the same associativity and
+precedence.
+
+4. EXAMPLE
+
+Let's illustrate this with the canonical example for parsing simple
+arithmetic expressions.
+
+    (* Lexing definitions *)
+    declare number[i:n]
+    declare tok_add
+    declare tok_sub
+    declare tok_mul
+    declare tok_div
+    declare tok_lparen
+    declare tok_rparen
+    declare tok_eof
+
+    lex_token "[[:space:]]+"      (* Whitespace: ignored *)
+    lex_token "//[^\n]*\n"        (* Comment: ignored *)
+    lex_token "\'" --> tok_eof    (* End of file *)
+
+    lex_token "[0-9]+" --> tok_number[lexeme:n]
+    lex_token "[+]" --> tok_add
+    lex_token "-"   --> tok_sub
+    lex_token "[*]" --> tok_mul
+    lex_token "/"   --> tok_div
+    lex_token "[(]" --> tok_lparen
+    lex_token "[)]" --> tok_rparen
+
+    (* Precedences *)
+    declare prec_uminus
+
+    lex_token left [tok_add; sub]
+    lex_token left [tok_mul; tok_div] > tok_add
+    lex_token right [prec_uminus] > tok_mul
+
+    (* Parsing *)
+    declare prog{'e}
+    declare exp{'e}
+    declare add{'e1; 'e2}
+    declare sub{'e1; 'e2}
+    declare mul{'e1; 'e2}
+    declare div{'e1; 'e2}
+
+    (* Start symbol *)
+    parser prog{'e}
+
+    production exp{'e}; tok_eof --> prog{'e}
+
+    (* Expressions *)
+    production number[i:n] --> exp{number[i:n]}
+
+    production tok_lparen; exp{'e}; tok_rparen --> exp{'e}
+
+    production exp{'e1}; tok_add; exp{'e2} --> exp{add{'e1; 'e2}}
+    production exp{'e1}; tok_sub; exp{'e2} --> exp{sub{'e1; 'e2}}
+    production exp{'e1}; tok_mul; exp{'e2} --> exp{mul{'e1; 'e2}}
+    production exp{'e1}; tok_div; exp{'e2} --> exp{div{'e1; 'e2}}
+
+    production tok_sub; exp{'e} % prec_uminus --> exp{uminus{'e}}
+
+    (*
+     * An example using the grammar.  This produces the following term:
+     *
+     * prog{add{mul{number[1:n]; number[2:n]}; sub{number[3:n]; uminus{number[4:n]}}}}
+     *)
+    let e = <:prog< 1 * 2 + (3 - -4) >>
+
+The lexing definitions have the usual form.  Note that patterns like
+"[+]" and "[*]" are specified as character ranges because + and * are
+interpreted specially.
+
+The precedence declarations specify that addition and subtraction have
+the lowest precedence, multiplication and division are next, and
+negation has the highest precedence.
+
+The start term "prog{'e}" specifies the grammar for a quotation
+<:prog< ... >>, and prog{'e} is an expression exp{'e} followed by
+end-of-file.
+
+The productions have the form you would expect.  Note the explicit
+precedence assignment for the uminus production.  By default, the
+precedence of a production is determined by the precedence of the
+*last* terminal symbol.  This can be overridden with the % precedence
+specifier.
+
+5. INPUT FORMS
+
+Ocaasionally you may wish to modify/rewrite the result of a parse.
+Input forms can be used for this.  Their syntax is just like a
+rewrite.  For example, the following iform can be used to strip the
+outermost prog{'e} term.
+
+   iform strip_prog : prog{'e} --> 'e
+
+Input forms can be arbitrary relaxed rewrites.  In general you can
+perform arbitrarily complex rewriting at this stage.  All input forms
+in scope are automatically applied (using repeatC (higherC ...)) to
+the result of a parse.
+
+6. PARSER ORGANIZATION
+
+Normally, a grammar is specified in a .mli file.  The grammar is
+scoped using the normal theory mechanism.  It is used in the
+corresponding .ml file, and also any subtheories.
+
+If a grammar is defined in a .ml file, the grammar applies only to
+that .ml file.
+
+Grammars have the normal inheritence properties--all grammars are
+merged from parent theories.  For example, consider the following
+hierarchy.
+
+   base.mli -- defines tok_eof, number[i:n], exp{'e}, prog{'e}
+   add.mli  -- extends Base
+               defines tok_add, add{'e1; 'e2}
+   mul.mli  -- extends Base
+               defines tok_mul, mul{'e1; 'e2}
+   calc.mli -- extends Add
+               extends Mul
+
+In this case, the grammars for the arithmetic operators are defined in
+separate files, and merged in the Calc theory.
