@@ -41,21 +41,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -529,8 +529,10 @@ struct
     * Convert a rewrite to a tactic.
     *)
    let rwtactic (rw : rw) sent (seq : msequent) =
+      eprintf "Rwtactic: start%t" eflush;
       let { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } = seq in
       let goal, just = rw sent goal in
+         eprintf "Rwtactic: done%t" eflush;
          [{ mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps }], RewriteJust just
 
    (*
@@ -545,8 +547,28 @@ struct
     * does not fail.
     *)
    let rwhigher rw sent t =
+      eprintf "Rwhigher: start%t" eflush;
       let t, justs = apply_fun_higher (rw sent) t in
+         eprintf "Rwhigher: done%t" eflush;
          t, RewriteHigher justs
+
+    (*
+     * Invert the rewrite.
+     *)
+    let foldrw rw t' sent t =
+       let t'', refiner =
+#ifdef VERBOSE_EXN
+          try rw sent t' with
+             RefineError (name, x) ->
+                raise (RefineError ("foldrw", GoalError (name, x)))
+#else
+          rw sent t'
+#endif
+       in
+          if alpha_equal t'' t then
+             t', refiner
+          else
+             raise (RefineError ("foldrw", StringTermError ("fold operation does not match", t')))
 
    (*
     * Composition is supplied for efficiency.

@@ -12,6 +12,7 @@ INCLUDE = -I .\
 	-I $(ROOT)/theories/base\
 	-I $(ROOT)/theories/itt\
 	-I $(ROOT)/theories/fol\
+	-I $(ROOT)/theories/reflect_itt\
 	-I $(ROOT)/theories/tptp\
 	-I $(ROOT)/ensemble\
 	-I $(ROOT)/lib\
@@ -160,6 +161,7 @@ CMXADEPS =\
 	$(ROOT)/theories/base/base.cmxa\
 	$(ROOT)/theories/itt/itt.cmxa\
 	$(ROOT)/theories/fol/fol.cmxa\
+	$(ROOT)/theories/reflect_itt/reflect_itt.cmxa\
 	$(ROOT)/theories/tptp/tptp.cmxa\
 	$(CAMLP4LIB)/pa_o.cmx\
 	$(CAMLP4LIB)/pa_op.cmx\
@@ -185,6 +187,7 @@ CMADEPS =\
 	$(ROOT)/theories/base/base.cma\
 	$(ROOT)/theories/itt/itt.cma\
 	$(ROOT)/theories/fol/fol.cma\
+	$(ROOT)/theories/reflect_itt/reflect_itt.cma\
 	$(ROOT)/theories/tptp/tptp.cma\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
@@ -206,6 +209,7 @@ TCMADEPS =\
 	$(ROOT)/theories/base/base.cma\
 	$(ROOT)/theories/itt/itt.cma\
 	$(ROOT)/theories/fol/fol.cma\
+	$(ROOT)/theories/reflect_itt/reflect_itt.cma\
 	$(ROOT)/theories/tptp/tptp.cma\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
