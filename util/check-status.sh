@@ -26,7 +26,7 @@ fi
 DAYS=0
 until [ -n "$LOG" -a -f "$LOG" -a -s "$LOG" ]; do
    if [ "$DAYS" -gt 50 ]; then
-      echo "Tried last 50 days, can not find status logs at $REMOTE_DIR!" | \
+      echo "Tried last 100 days, can not find status logs at $REMOTE_DIR!" | \
       mail -s "MetaPRL proofs status can not be checked!" "$LOGNAME"
       exit 1
    fi
@@ -39,7 +39,13 @@ TEMP=`mktemp /tmp/mkstatus.XXXXXX`
 umask 002
 cd $1
 rm -f editor/ml/mp.opt
-(( # cvs -q update 2>&1
+(( 
+if [ "$2" = "update" ]; then
+   echo "*** cvs -n update ***"
+   ( cvs -n update 2>&1 ) | grep -v '^cvs server: New directory'
+   echo ""
+fi
+# cvs -q update 2>&1
 if [ -e .omakedb ]; then
    omake VERBOSE=1 -S 
 else
