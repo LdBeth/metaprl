@@ -492,8 +492,38 @@ and subst_var_term subst vars v =
 and subst_term subst vars t =
    if is_fso_var_term t then
       subst_var_term subst vars (dest_fso_var t)
-   else if is_so_var_term t || is_context_term t || is_sequent_term t then
-      raise (RefineError ("Term_ty_infer.subst_term", StringTermError ("illegal type", t)))
+   else if is_so_var_term t then
+      let v, cvars, args = dest_so_var t in
+      let args = List.map (subst_term subst vars) args in
+         mk_so_var_term v cvars args
+   else if is_context_term t then
+      let v, arg, cvars, args = dest_context t in
+      let args = List.map (subst_term subst vars) args in
+      let arg = subst_term subst vars arg in
+         mk_context_term v arg cvars args
+   else if is_sequent_term t then
+      let { sequent_args = arg;
+            sequent_hyps = hyps;
+            sequent_concl = concl
+          } = explode_sequent t
+      in
+      let arg = subst_term subst vars arg in
+      let hyps =
+         SeqHyp.map (fun hyp ->
+               match hyp with
+                  Hypothesis (v, t) ->
+                     Hypothesis (v, subst_term subst vars t)
+                | Context (v, cvars, args) ->
+                     Context (v, cvars, List.map (subst_term subst vars) args)) hyps
+      in
+      let concl = subst_term subst vars concl in
+      let seq =
+         { sequent_args = arg;
+           sequent_hyps = hyps;
+           sequent_concl = concl
+         }
+      in
+         mk_sequent_term seq
    else
       let { term_op = op; term_terms = bterms } = dest_term t in
       let bterms = List.map (subst_bterm subst vars t) bterms in
@@ -918,38 +948,41 @@ let standardize_ty_var info subst v1 ty_bound ty =
       subst, standardize ty
 
 let standardize_ty_hyp info subst vars ty_var ty_hyp =
-   let subst, sub, table =
-      List.fold_left (fun (subst, sub, table) (v, ty) ->
-            let v' = new_symbol v in
-            let t = mk_var_term v' in
-            let sub = (v, t) :: sub in
-            let table = SymbolTable.add table v v' in
-            let subst = subst_add_constraint subst (ConstraintMemberType (UnifyCompose (info, UnifyVar v'), t, ty)) in
-               subst, sub, table) (subst, [], SymbolTable.empty) vars
-   in
-   let rec standardize ty =
-      match ty with
-         TypeVar v ->
-            if SymbolTable.mem table v then
-               TypeVar (SymbolTable.find table v)
-            else
-               ty
-       | TypeTerm t ->
-            TypeTerm (apply_subst sub t)
-       | TypeSoVar (cvars, args, ty) ->
-            TypeSoVar (List.map standardize cvars, List.map standardize args, standardize ty)
-       | TypeCVar (cvars, args, ty_exp, ty) ->
-            TypeCVar (List.map standardize cvars, List.map standardize args, standardize ty_exp, standardize ty)
-       | TypeSCVar (cvars, args, ty_hyp) ->
-            TypeSCVar (List.map standardize cvars, List.map standardize args, standardize ty_hyp)
-       | TypeHyp (ty_var, ty_hyp) ->
-            TypeHyp (standardize ty_var, standardize ty_hyp)
-       | TypeExists (v, ty_var, ty) ->
-            TypeExists (v, standardize ty_var, standardize ty)
-       | TypeSequent (ty_hyp, ty_concl, ty_seq) ->
-            TypeSequent (standardize ty_hyp, standardize ty_concl, standardize ty_seq)
-   in
-      subst, standardize ty_var, standardize ty_hyp
+   if vars = [] then
+      subst, ty_var, ty_hyp
+   else
+      let subst, sub, table =
+         List.fold_left (fun (subst, sub, table) (v, ty) ->
+               let v' = new_symbol v in
+               let t = mk_var_term v' in
+               let sub = (v, t) :: sub in
+               let table = SymbolTable.add table v v' in
+               let subst = subst_add_constraint subst (ConstraintMemberType (UnifyCompose (info, UnifyVar v'), t, ty)) in
+                  subst, sub, table) (subst, [], SymbolTable.empty) vars
+      in
+      let rec standardize ty =
+         match ty with
+            TypeVar v ->
+               if SymbolTable.mem table v then
+                  TypeVar (SymbolTable.find table v)
+               else
+                  ty
+          | TypeTerm t ->
+               TypeTerm (apply_subst sub t)
+          | TypeSoVar (cvars, args, ty) ->
+               TypeSoVar (List.map standardize cvars, List.map standardize args, standardize ty)
+          | TypeCVar (cvars, args, ty_exp, ty) ->
+               TypeCVar (List.map standardize cvars, List.map standardize args, standardize ty_exp, standardize ty)
+          | TypeSCVar (cvars, args, ty_hyp) ->
+               TypeSCVar (List.map standardize cvars, List.map standardize args, standardize ty_hyp)
+          | TypeHyp (ty_var, ty_hyp) ->
+               TypeHyp (standardize ty_var, standardize ty_hyp)
+          | TypeExists (v, ty_var, ty) ->
+               TypeExists (v, standardize ty_var, standardize ty)
+          | TypeSequent (ty_hyp, ty_concl, ty_seq) ->
+               TypeSequent (standardize ty_hyp, standardize ty_concl, standardize ty_seq)
+      in
+         subst, standardize ty_var, standardize ty_hyp
 
 (************************************************
  * Type reductions.
@@ -1316,6 +1349,7 @@ and infer_sovar_term tenv venv info subst e =
          raise (RefineError (sprintf "Term_ty_infer.infer_sovar_term: expected %d cvars, %d args" cvars_len' args_len',
                              TermError e))
    in
+   let info = UnifyCompose (info, UnifyTerm e) in
    let subst = infer_cvars_type_list tenv venv info subst cvars ty_cvars' in
    let subst = infer_term_type_list tenv venv info subst args ty_args' in
       subst, ty_res

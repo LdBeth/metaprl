@@ -707,26 +707,25 @@ let mount_of_fs = function
  *)
 let rec chdir_full parse_arg shell force_flag need_shell verbose (new_fs, new_subdir) =
    let need_mount = force_flag || new_fs <> shell.shell_fs in
-      if need_mount then
-         begin
-            try
-               mount_of_fs new_fs parse_arg shell force_flag need_shell verbose;
-               shell.shell_fs <- new_fs
-            with
-               exn ->
-                  mount_of_fs shell.shell_fs parse_arg shell false false false;
-                  raise exn
-         end;
+      if need_mount then begin
+         try
+            mount_of_fs new_fs parse_arg shell force_flag need_shell verbose;
+            shell.shell_fs <- new_fs
+         with
+            exn ->
+               mount_of_fs shell.shell_fs parse_arg shell false false false;
+               raise exn
+      end;
       try
          shell.shell_proof.edit_check_addr new_subdir;
          shell.shell_subdir <- new_subdir
       with
          exn ->
-            if need_mount then
-               begin
-                  if verbose then eprintf "Warning: chdir partially successful%t" eflush;
-                  shell.shell_subdir <- []
-               end;
+            if need_mount then begin
+               if verbose then
+                  eprintf "Warning: chdir partially successful%t" eflush;
+               shell.shell_subdir <- []
+            end;
             raise exn
 
 (*
@@ -1102,6 +1101,7 @@ let abandon_all parse_arg shell =
       eprintf "Abandoning %s@." (Package_info.name pack);
       Package_info.abandon pack
    in
+      Mp_resource.clear ();
       List.iter abandon (modified_packages ());
       Proof_boot.Proof.clear_cache ();
       Package_info.clear packages;
