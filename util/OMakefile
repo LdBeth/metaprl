@@ -20,7 +20,7 @@ $(LIB)/macro.cmo: macro.cmo
 #
 # We also use our own version of ocamldep
 #
-OCamlProgram(ocamldep, misc ocamldep)
+OCamlProgramInstall($(MPINSTALL), $(BIN), ocamldep, misc ocamldep)
 
 #
 # Phony targets

@@ -10,6 +10,13 @@
 .PHONY: all opt install clean depend
 
 #
+# Phony target for installing libraries
+#
+MPINSTALL = mp.install
+
+.PHONY: $(MPINSTALL)
+
+#
 # Generic C compiler options for this project.
 # You can probably ignore these.
 #
@@ -60,13 +67,6 @@ OCAMLFLAGS = $(OCAMLFLAGS) -thread
 THREADSLIB = threads
 
 #
-# Phony target for installing libraries
-#
-MPINSTALL = mp.install
-
-.PHONY: $(MPINSTALL)
-
-#
 # Directories using our custom scanner, but otherwise config is normal
 #
 .SUBDIRS: library debug ensemble filter
@@ -83,6 +83,7 @@ if true
     # Add a dependency on the macro preprocess
     OCAMLMACROS = $(file lib/macro.cmo)
     CAMLP4MACRO = camlp4o $(OCAMLMACROS)
+    CAMLP4MACROPRINT = camlp4o pr_o.cmo $(OCAMLMACROS)
 
     # Add the extra dependency
     %.cmo: $(OCAMLMACROS)
@@ -98,12 +99,13 @@ if true
 # Theories also have special options
 #
 DEFAULT_THEORIES = tactic ocaml base itt
-ALL_THEORIES = tactic ocaml base ocaml_doc itt ocaml_sos fol czf phobos mc sil
+LM_THEORIES = $(if $(equal $(LIBMOJAVE), undefined), $(EMPTY), mc theories/expermimental)
+ALL_THEORIES = tactic ocaml base ocaml_doc itt ocaml_sos fol czf phobos mc sil $(LM_THEORIES)
 
 #
 # Commands to compile theory files
 #
-PRLC = $(file bin/prlc)
+PRLC = $(file lib/prlc)
 
 if true
     # Use prlc, not ocamlc

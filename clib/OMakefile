@@ -14,7 +14,7 @@ CFILES =\
 	termsize\
 	locale
 
-StaticCLibrary(clib, $(CFILES))
+StaticCLibraryInstall($(MPINSTALL), $(LIB), clib, $(CFILES))
 
 #
 # Patched OCaml files

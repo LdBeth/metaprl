@@ -1,4 +1,13 @@
 ########################################################################
+# General project configuration file.
+#
+# NOTE: this file provides a general basic set of rules.
+# If you want to customize your project, you should not
+# do it in this file.  Instead, add your special-purpose
+# configuration to the top-level OMakefile.
+#
+
+########################################################################
 # A few useful variables
 #
 ROOT  = $(dir .)
@@ -244,7 +253,8 @@ ARCH_FILE   = -no-such-file-
 	$(OCAMLYACC) -v $*.mly
 
 %.ml %.mli: %.mlz
-	$(LN) $*.mlz $@
+	$(LN) $*.mlz $*.ml
+	$(LN) $*.mlz $*.mli
 
 %.ml: %.kupo $(MOOGLEIZE)
 	$(RM) -f $*.ml
@@ -377,6 +387,17 @@ OCamlProgram(name, files) =
 		$(CMXA_OTHER_FILES) $(CMXAFILES) $(CMXFILES)\
 		$(NATIVE_CLIBS) $(CLIBS) $(OCAML_LINK_FLAGS)
 
+   #
+   # Link the actual executables.
+   # Always prefer native executables
+   #
+   if $(NATIVE_ENABLED)
+	$(PROG): $(OPTPROG)
+	    $(LN) $< $@
+   else
+	$(PROG): $(BYTEPROG)
+	    $(LN) $< $@
+
 #
 # Copy to $(BIN) directory
 #
@@ -390,15 +411,9 @@ OCamlProgramCopy(tag, bin, name) =
    # Always prefer native executables
    #
    if $(NATIVE_ENABLED)
-	$(PROG): $(OPTPROG)
-	    $(LN) $< $@
-
 	$(bin)/$(name): $(OPTPROG)
 	    $(LN) $(in $(bin), $(OPTPROG)) $@
    else
-	$(PROG): $(BYTEPROG)
-	    $(LN) $< $@
-
 	$(bin)/$(name): $(BYTEPROG)
 	    $(LN) $(in $(bin), $(BYTEPROG)) $@
 
