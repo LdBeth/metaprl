@@ -1812,7 +1812,7 @@ struct
     | Pending f ->
          refiner_extract_of_proof_ext (f ())
     | Identity goal ->
-         Refine.identity goal.ref_goal
+         TacticInternal.identity goal
 
    and find_mseq_extract subgoals mseq =
       match subgoals with

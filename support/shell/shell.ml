@@ -1082,10 +1082,10 @@ struct
          print_exn info extract info
 
    let term_of_extract info terms =
-      match info.package with
-         Some pack ->
-            Refine.term_of_extract (Package.refiner pack) (info.proof.edit_check (get_db info)) terms
-       | None ->
+      match info with
+         { package = Some pack; dir = mod_name :: name :: _ } ->
+            Refine.extract_term (Package.refiner pack) (make_opname [name;mod_name]) terms
+       | _ ->
             raise(Invalid_argument "Shell.term_of_extract only works inside a proof")
 
    (************************************************************************

@@ -77,6 +77,7 @@ open Term_meta_sig
 open Term_shape_sig
 open Refine_error_sig
 open Rewrite_sig
+open Refine_sig
 
 (*
  * Show the file loading.
@@ -207,15 +208,6 @@ struct
     * TYPES                                                                *
     ************************************************************************)
 
-   (*
-    * A correctness of a proof may depend of a number of axioms refered to in a proof
-    *)
-   type dependency =
-      DepDefinition of opname
-    | DepCondRewrite of opname
-    | DepRewrite of opname
-    | DepRule of opname 
-
    module Deps = struct
       type t = dependency
       let compare = Pervasives.compare
@@ -258,7 +250,8 @@ struct
    and extract =
       { ext_goal : msequent;
         ext_just : ext_just;
-        ext_subgoals : msequent list
+        ext_subgoals : msequent list;
+        ext_sentinal : sentinal;
       }
 
    and rw_extract =
@@ -276,7 +269,7 @@ struct
 
    and ext_just =
       RuleJust of rule_just
-    | MLJust of rule_just * term_extract
+    | MLJust of rule_just * term_extract * int
     | RewriteJust of msequent * rewrite_just * msequent
     | CondRewriteJust of msequent * cond_rewrite_just * msequent list
     | ComposeJust of ext_just * ext_just list
@@ -289,7 +282,6 @@ struct
         just_addrs : int array;
         just_params : term list;
         just_refiner : opname;
-        just_subgoals : msequent list
       }
 
    and cut_just =
@@ -313,7 +305,7 @@ struct
 
    and cond_rewrite_just =
       CondRewriteHere of cond_rewrite_here
-    | CondRewriteML of cond_rewrite_here * term_extract
+    | CondRewriteML of cond_rewrite_here * term_extract * int
     | CondRewriteCompose of cond_rewrite_just * cond_rewrite_just
     | CondRewriteAddress of term * address * cond_rewrite_just * term
     | CondRewriteHigher of term * cond_rewrite_just list * term
@@ -322,8 +314,6 @@ struct
       { cjust_goal : term;
         cjust_params : term list;
         cjust_refiner : opname;
-        cjust_subgoal_term : term;
-        cjust_subgoals : term list
       }
 
    (*
@@ -387,10 +377,25 @@ struct
         ml_crw_info : ml_cond_rewrite;
         ml_crw_refiner : refiner
       }
+   (*
+    * Sentinal specifies a proof "environment". E.g. it specifies which rules/rewrites
+    * are valid in a given proof context.
+    *)
+   and sentinal =
+      { sent_input_form : opname -> unit -> unit;
+        sent_rewrite : opname -> pre_rewrite -> unit;
+        sent_ml_rewrite : opname -> ml_rewrite -> unit;
+        sent_cond_rewrite : opname -> pre_cond_rewrite -> unit;
+        sent_ml_cond_rewrite : opname -> ml_cond_rewrite -> unit;
+        sent_rule : opname -> pre_rule -> unit;
+        sent_ml_rule : opname -> ml_rule -> unit;
+        sent_refiner : refiner;
+      }
 
    (*
-    * A Build has a reference to a refiner,
-    * and the opname of this module.
+    * A Build has a reference to a refiner, the opname of this module,
+    * and the rules/rewrites that were created (but possibly no justification
+    * methods was specified yet).
     *)
    type build =
       { build_opname : opname;
@@ -403,38 +408,10 @@ struct
    (*
     * A hashtable is constructed for looking up justifications.
     *)
-   type hash =
-      { hash_rewrite : (opname, rewrite_refiner) Hashtbl.t;
-        hash_cond_rewrite : (opname, cond_rewrite_refiner) Hashtbl.t;
-        hash_rule : (opname, rule_refiner) Hashtbl.t;
-        hash_refiner : (opname, refiner) Hashtbl.t
-      }
-
    type find =
       { find_rewrite : opname -> rewrite_refiner;
         find_cond_rewrite : opname -> cond_rewrite_refiner;
         find_rule : opname -> rule_refiner;
-        find_refiner : opname -> refiner
-      }
-
-   type check =
-      { check_rewrite : rewrite_refiner -> unit;
-        check_cond_rewrite : cond_rewrite_refiner -> unit;
-        check_rule : rule_refiner -> unit
-      }
-
-   (*
-    * This has a similar function.
-    * It checks to see if justifications are justifiable.
-    *)
-   type sentinal =
-      { sent_input_form : opname -> unit -> unit;
-        sent_rewrite : opname -> pre_rewrite -> unit;
-        sent_ml_rewrite : opname -> ml_rewrite -> unit;
-        sent_cond_rewrite : opname -> pre_cond_rewrite -> unit;
-        sent_ml_cond_rewrite : opname -> ml_cond_rewrite -> unit;
-        sent_rule : opname -> pre_rule -> unit;
-        sent_ml_rule : opname -> ml_rule -> unit
       }
 
    (*
@@ -575,7 +552,7 @@ struct
     *)
    let refine sent (tac : tactic) (seq : msequent) =
       let subgoals, just = tac sent seq in
-         subgoals, { ext_goal = seq; ext_just = just; ext_subgoals = subgoals }
+         subgoals, { ext_goal = seq; ext_just = just; ext_subgoals = subgoals; ext_sentinal = sent }
 
    (*
     * The base tactic proves by assumption.
@@ -602,6 +579,10 @@ struct
          [cut_lemma; cut_then], CutJust cut_info
 
    let subgoals_of_extract ext = ext.ext_subgoals
+   let sent_match sent ext = (ext.ext_sentinal == sent)
+
+   let identity sent goal =
+      { ext_goal = goal; ext_just = Identity; ext_subgoals = [goal]; ext_sentinal = sent  }
 
    (*
     * Compose two extracts.
@@ -609,17 +590,15 @@ struct
     *)
    let compose ext extl =
       let subgoals = List.map (fun ext -> ext.ext_goal) extl in
-      let _ =
          if not (Lm_list_util.for_all2 msequent_alpha_equal ext.ext_subgoals subgoals) then
-            REF_RAISE(RefineError ("compose", StringError "goal mismatch"))
-      in {
-         ext with
-         ext_just = ComposeJust (ext.ext_just, List.map (fun ext -> ext.ext_just) extl);
-         ext_subgoals = Lm_list_util.flat_map (fun ext -> ext.ext_subgoals) extl
-      }
-
-   let identity goal =
-      { ext_goal = goal; ext_just = Identity; ext_subgoals = [goal] }
+            raise(Invalid_argument "Refine.compose - goal mismatch");
+         if not (List.for_all (sent_match ext.ext_sentinal) extl) then
+            raise(Invalid_argument "Refine.compose - sentinals mismatch");
+         {
+            ext with
+            ext_just = ComposeJust (ext.ext_just, List.map (fun ext -> ext.ext_just) extl);
+            ext_subgoals = Lm_list_util.flat_map subgoals_of_extract extl
+         }
 
    (************************************************************************
     * REGULAR REWRITES                                                     *
@@ -923,7 +902,7 @@ struct
     *)
    let describe_extract ext =
       match ext.ext_just with
-         RuleJust j | MLJust (j, _) ->
+         RuleJust j | MLJust (j, _, _) ->
             EDRule (j.just_refiner, Array.to_list j.just_addrs, j.just_params)
        | RewriteJust _ -> EDRewrite
        | CondRewriteJust _ -> EDCondREwrite
@@ -940,121 +919,50 @@ struct
     * for the justifications in the current refiner.  We save them
     * in a hashtable by their names and their types.
     *)
-   let hash_refiner refiner =
-      let def_shapes = Hashtbl.create 19 in
+   let find_of_refiner refiner =
       let rewrites = Hashtbl.create 19 in
       let cond_rewrites = Hashtbl.create 19 in
-      let axioms = Hashtbl.create 19 in
       let rules = Hashtbl.create 19 in
-      let refiners = Hashtbl.create 19 in
       let maybe_add hash name info =
          if not (Hashtbl.mem hash name) then
             Hashtbl.add hash name info
       in
-      let rec insert refiners' refiner =
+      let rec insert refiners refiner =
          match refiner with
             MLRewriteRefiner { ml_rw_refiner = next }
           | MLCondRewriteRefiner { ml_crw_refiner = next }
           | MLRuleRefiner { ml_rule_refiner = next } ->
-               insert refiners' next
+               insert refiners next
           | RuleRefiner rule ->
-               if rule.rule_proof = PDefined then defined_rule_err ();
-               let name = rule.rule_name in
-                  maybe_add rules name rule;
-                  maybe_add refiners name refiner;
-                  insert refiners' rule.rule_refiner
+               maybe_add rules rule.rule_name rule;
+               insert refiners rule.rule_refiner
           | RewriteRefiner rw ->
-               if rw.rw_proof = PDefined then begin
-                  let redex = rw.rw_info.pre_rw_redex in
-                  let shape = shape_of_term redex in
-                  if Hashtbl.mem def_shapes shape then
-                     REF_RAISE(RefineError("definitional rewrite",StringTermError("shape is already defined",redex)));
-                  Hashtbl.add def_shapes shape rw
-               end;
-               let name = rw.rw_name in
-                  maybe_add rewrites name rw;
-                  maybe_add refiners name refiner;
-                  insert refiners' rw.rw_refiner
+               maybe_add rewrites rw.rw_name rw;
+               insert refiners rw.rw_refiner
           | CondRewriteRefiner crw ->
-               let name = crw.crw_name in
-                  maybe_add cond_rewrites name crw;
-                  maybe_add refiners name refiner;
-                  insert refiners' crw.crw_refiner
+               maybe_add cond_rewrites crw.crw_name crw;
+               insert refiners crw.crw_refiner
           | LabelRefiner (_, next) as r ->
-               if List.memq r refiners' then
-                  refiners'
+               if List.memq r refiners then
+                  refiners
                else
-                  insert (r :: refiners') next
+                  insert (r :: refiners) next
           | PairRefiner (next1, next2) ->
-               insert (insert refiners' next1) next2
-          | ListRefiner refiners'' ->
-               List.fold_left insert refiners' refiners''
+               insert (insert refiners next1) next2
+          | ListRefiner refiners' ->
+               List.fold_left insert refiners refiners'
           | NullRefiner ->
-               refiners'
+               refiners
       in
       let _ = insert [] refiner in
-         { hash_rule = rules;
-           hash_rewrite = rewrites;
-           hash_cond_rewrite = cond_rewrites;
-           hash_refiner = refiners
-         }
-
-   (*
-    * Lookup values in the hashtable, or print error messages.
-    *)
-   let find_of_hash { hash_rule = rules;
-                      hash_rewrite = rewrites;
-                      hash_cond_rewrite = cond_rewrites;
-                      hash_refiner = refiners
-       } =
-      let find_rule name =
-         try Hashtbl.find rules name with
+      let find tbl name =
+         try Hashtbl.find tbl name with
             Not_found ->
-               REF_RAISE(RefineError (string_of_opname name, StringError "rule is not justified"))
+               raise(Invalid_argument "Refiner.find_of_refiner")
       in
-      let find_rewrite name =
-         try Hashtbl.find rewrites name with
-            Not_found ->
-               REF_RAISE(RefineError (string_of_opname name, StringError "rewrite is not justified"))
-      in
-      let find_cond_rewrite name =
-         try Hashtbl.find cond_rewrites name with
-            Not_found ->
-               REF_RAISE(RefineError (string_of_opname name, StringError "cond_rewrite is not justified"))
-      in
-      let find_refiner name =
-         try Hashtbl.find refiners name with
-            Not_found ->
-               REF_RAISE(RefineError (string_of_opname name, StringError "refiner is not justified"))
-      in
-         { find_rule = find_rule;
-           find_rewrite = find_rewrite;
-           find_cond_rewrite = find_cond_rewrite;
-           find_refiner = find_refiner
-         }
-
-   (*
-    * Also sent the matching.
-    *)
-   let check_of_find { find_rule = find_rule;
-                       find_rewrite = find_rewrite;
-                       find_cond_rewrite = find_cond_rewrite
-       } =
-      let check_rule rl =
-         if (find_rule rl.rule_name) != rl then
-            REF_RAISE(RefineError (string_of_opname rl.rule_name, StringError "rules do not match"))
-      in
-      let check_rewrite rw =
-         if (find_rewrite rw.rw_name) != rw then
-            REF_RAISE(RefineError (string_of_opname rw.rw_name, StringError "rewrites do not match"))
-      in
-      let check_cond_rewrite crw =
-         if (find_cond_rewrite crw.crw_name) != crw then
-            REF_RAISE(RefineError (string_of_opname crw.crw_name, StringError "cond_rewrites do not match"))
-      in
-         { check_rule = check_rule;
-           check_rewrite = check_rewrite;
-           check_cond_rewrite = check_cond_rewrite
+         { find_rule = find rules;
+           find_rewrite = find rewrites;
+           find_cond_rewrite = find cond_rewrites;
          }
 
    (*
@@ -1082,33 +990,19 @@ struct
          raise (Invalid_argument "Refine.get_proof")
 
    (*
-    * Check for a valid rewrite justification.
-    *)
-   let rec check_rewrite_just check = function
-      RewriteHere (_, op, _)
-    | RewriteML (_, op, _) ->
-         check op
-    | RewriteAddress (_, _, just, _) ->
-         check_rewrite_just check just
-    | RewriteCompose (just1, just2) ->
-         check_rewrite_just check just1;
-         check_rewrite_just check just2
-    | RewriteHigher (_, justs, _) ->
-         List.iter (check_rewrite_just check) justs
-
-   (*
     * Get the subgoal count of a step in the extract.
     *)
-   let rec just_subgoal_count = function
-      RuleJust { just_subgoals = subgoals }
-    | MLJust ({ just_subgoals = subgoals }, _) ->
-         List.length subgoals
+   let rec just_subgoal_count find = function
+      RuleJust just ->
+         List.length (find.find_rule just.just_refiner).rule_info.mseq_hyps
+    | MLJust (_, _, i) ->
+         i
     | RewriteJust _ ->
          1
     | CondRewriteJust (_, cond, _) ->
-         cond_rewrite_just_subgoal_count cond
+         cond_rewrite_just_subgoal_count find cond
     | ComposeJust (_, justl) ->
-         List.fold_left (fun count just -> count + just_subgoal_count just) 0 justl
+         List.fold_left (fun count just -> count + just_subgoal_count find just) 0 justl
     | NthHypJust _ ->
          0
     | CutJust _ ->
@@ -1116,15 +1010,16 @@ struct
     | Identity ->
          1
 
-   and cond_rewrite_just_subgoal_count = function
-      CondRewriteHere { cjust_subgoals = subgoals }
-    | CondRewriteML ({ cjust_subgoals = subgoals }, _) ->
-         List.length subgoals
+   and cond_rewrite_just_subgoal_count find = function
+      CondRewriteHere cjust ->
+          List.length (find.find_cond_rewrite cjust.cjust_refiner).crw_info.pre_crw_assums
+    | CondRewriteML (_, _, i) ->
+         i
     | CondRewriteCompose (_, just)
     | CondRewriteAddress (_, _, just, _) ->
-         cond_rewrite_just_subgoal_count just
+         cond_rewrite_just_subgoal_count find just
     | CondRewriteHigher (_, justs, _) ->
-         List.fold_left (fun count just -> count + cond_rewrite_just_subgoal_count just) 0 justs
+         List.fold_left (fun count just -> count + cond_rewrite_just_subgoal_count find just) 0 justs
 
    (*
     * Get the term from an extract.
@@ -1133,36 +1028,22 @@ struct
    let term_of_extract_nocheck refiner ext (args : term list) =
       if ext.ext_subgoals <> [] then
          raise (Invalid_argument "Refine.term_of_extract: called on an unfinished proof");
-      let find = find_of_hash (hash_refiner refiner) in
-      (* XXX BUG: We never call check.check_rewrite/check_cond_rewrite, but we should *)
-      let check = check_of_find find in
-      let check_rewrite just =
-         check_rewrite_just (fun opname -> ignore (find.find_refiner opname)) just
-      in
+      let find = find_of_refiner refiner in
       (* XXX HACK: this approach of building a closure on-the-fly is probably too inefficient *)
       let rec construct (rest : (term list -> term) list) = function
          RuleJust just ->
-            begin match find.find_refiner just.just_refiner with
-               RuleRefiner r ->
-                  check.check_rule r;
-                  fun args -> get_proof r.rule_proof just.just_addrs just.just_params just.just_goal.mseq_goal (all_args args rest)
-             | _ ->
-                  raise (Invalid_argument "Refine.term_of_extract: extract refers to a non-rule")
-            end
+            fun args -> get_proof (find.find_rule just.just_refiner).rule_proof just.just_addrs just.just_params just.just_goal.mseq_goal (all_args args rest)
        | ComposeJust (just, justl) ->
-            construct (partition_rest rest justl) just
-       | MLJust (just, f) ->
-            (* XXX BUG: just.just_refiner needs to be checked! *)
+            construct (partition_rest find rest justl) just
+       | MLJust (just, f, _) ->
             fun args -> f just.just_addrs just.just_params just.just_goal.mseq_goal (all_args args rest)
        | RewriteJust (_, just, _) ->
-            check_rewrite just;
             List.hd rest
        | Identity ->
             List.hd rest
        | NthHypJust (_, i) ->
             fun args -> List.nth args i
        | CondRewriteJust (_, just, _) ->
-            (* XXX BUG: just needs to be checked! *)
             List.hd rest
        | CutJust _ ->
             match rest with
@@ -1174,11 +1055,11 @@ struct
       and all_args args rest =
          List.map (fun r -> r args) rest
 
-      and partition_rest rest = function
+      and partition_rest find rest = function
          just :: justl ->
-            let count = just_subgoal_count just in
+            let count = just_subgoal_count find just in
             let rest, restl = Lm_list_util.split_list count rest in
-               (construct rest just) :: partition_rest restl justl
+               (construct rest just) :: partition_rest find restl justl
        | [] ->
             if rest <> [] then
                raise (Invalid_argument "Refine.term_of_extract: combination extract is too long");
@@ -1200,6 +1081,7 @@ struct
            sent_ml_cond_rewrite = null;
            sent_rule = null;
            sent_ml_rule = null;
+           sent_refiner = NullRefiner;
          }
 
    let null_sentinal =
@@ -1212,7 +1094,8 @@ struct
            sent_cond_rewrite = null;
            sent_ml_cond_rewrite = null;
            sent_rule = null;
-           sent_ml_rule = null
+           sent_ml_rule = null;
+           sent_refiner = NullRefiner;
          }
 
    (*
@@ -1225,12 +1108,14 @@ struct
       let ml_cond_rewrites = Hashtbl.create 19 in
       let rules = Hashtbl.create 19 in
       let ml_rules = Hashtbl.create 19 in
+      let def_shapes = Hashtbl.create 19 in
       let rec insert refiners = function
          RuleRefiner r ->
                IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
                      eprintf "sentinal_of_refiner: add rule %s%t" (string_of_opname r.rule_name) eflush
                ENDIF;
+               if r.rule_proof = PDefined then defined_rule_err ();
                Hashtbl.add rules r.rule_name r.rule_info;
                insert refiners r.rule_refiner
        | RewriteRefiner rw ->
@@ -1238,6 +1123,13 @@ struct
                   if !debug_sentinal then
                      eprintf "sentinal_of_refiner: add rewrite %s%t" (string_of_opname rw.rw_name) eflush
                ENDIF;
+               if rw.rw_proof = PDefined then begin
+                  let redex = rw.rw_info.pre_rw_redex in
+                  let shape = shape_of_term redex in
+                  if Hashtbl.mem def_shapes shape then
+                     REF_RAISE(RefineError("definitional rewrite",StringTermError("shape is already defined",redex)));
+                  Hashtbl.add def_shapes shape rw
+               end;
                Hashtbl.add rewrites rw.rw_name rw.rw_info;
                insert refiners rw.rw_refiner
        | MLRewriteRefiner mlrw ->
@@ -1305,6 +1197,7 @@ struct
            sent_ml_cond_rewrite = check_sentinal ml_cond_rewrites;
            sent_rule = check_sentinal rules;
            sent_ml_rule = check_sentinal ml_rules;
+           sent_refiner = refiner;
          }
 
    (************************************************************************
@@ -1365,7 +1258,6 @@ struct
                          just_addrs = addrs;
                          just_params = params;
                          just_refiner = opname;
-                         just_subgoals = subgoals
             }
          in
             sent.sent_rule opname seq;
@@ -1427,6 +1319,19 @@ struct
          raise (Invalid_argument "Refine.term_of_extract: wrong number of term arguments");
       term_of_extract_nocheck refiner ext (List.map2 join_ext_arg_hack1 args ext.ext_goal.mseq_hyps)
 
+   let extract_term refiner opname args =
+      match find_refiner refiner opname with
+         RuleRefiner { rule_proof = PDerived dp } ->
+            term_of_extract refiner (get_derivation dp) args
+       | RewriteRefiner { rw_proof = PDerived dp }
+       | CondRewriteRefiner { crw_proof = PDerived dp } ->
+            term_of_extract refiner (get_derivation dp) args
+       | _ ->
+            raise (Invalid_argument("Refine.extract_term - " ^ (string_of_opname opname) ^ "is not a derived rule/rewrite"))
+
+   let rec compute_dependencies refiner opname =
+      raise(Invalid_argument "Refine.compute_dependencies - not implemented")
+
    (*
     * Theorem for a previous theorem or rule.
     * We once again use the rewriter to compute the
@@ -1484,6 +1389,12 @@ struct
          let compute_ext = compute_rule_ext name addrs params goal args result in
             justify_rule build name addrs params goal subgoals (PPrim compute_ext)
 
+   let wrap_extf build extf () =
+      let ext = extf () in
+         if ext.ext_sentinal.sent_refiner != build.build_refiner then
+            raise(Invalid_argument ("Sentinals mismatch in extractor function"));
+         ext
+   
    let delayed_rule build name addrs params mterm _ extf =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
@@ -1500,7 +1411,7 @@ struct
             compute_rule_ext name addrs params goal args (term_of_extract_nocheck build.build_refiner ext args)
       in
       let dp = {
-         pf_get_extract = extf;
+         pf_get_extract = wrap_extf build extf;
          pf_create_proof = compute_ext;
          pf_extract = None;
          pf_proof = None;
@@ -1527,8 +1438,7 @@ struct
                       just_addrs = addrs;
                       just_params = params;
                       just_refiner = opname;
-                      just_subgoals = subgoals
-                    }, ext)
+                    }, ext, List.length subgoals)
          in
             sent.sent_ml_rule opname mlr;
             subgoals, just
@@ -1684,7 +1594,7 @@ struct
             REF_RAISE(RefineError (name, StringError "bogus proof"))
       in
       let dp = {
-         pf_get_extract = extf;
+         pf_get_extract = wrap_extf build extf;
          pf_create_proof = compute_ext;
          pf_extract = None;
          pf_proof = None;
@@ -1749,8 +1659,6 @@ struct
                   CondRewriteHere { cjust_goal = t;
                                     cjust_params = params;
                                     cjust_refiner = opname;
-                                    cjust_subgoal_term = t';
-                                    cjust_subgoals = subgoals
                   }
              | [] ->
                   raise (Failure "Refine.create_cond_rewrite: no contracta")
@@ -1804,7 +1712,7 @@ struct
                REF_RAISE(RefineError (name, StringError "derivation does not match"))
       in
       let dp = {
-         pf_get_extract = extf;
+         pf_get_extract = wrap_extf build extf;
          pf_create_proof = compute_ext;
          pf_extract = None;
          pf_proof = None;
@@ -1832,9 +1740,7 @@ struct
             CondRewriteML ({ cjust_goal = t;
                              cjust_params = params;
                              cjust_refiner = opname;
-                             cjust_subgoal_term = t';
-                             cjust_subgoals = subgoals
-                           }, ext)
+                           }, ext, List.length subgoals)
       in
          build.build_refiner <-
             MLCondRewriteRefiner {

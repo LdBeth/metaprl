@@ -443,6 +443,9 @@ struct
    let get_sentinal key =
       ThreadRefiner.arg_of_key (get_remote_server ()) key
 
+   let identity arg =
+      Refine.identity (get_sentinal arg.ref_sentinal) arg.ref_goal
+
    (************************************************************************
     * ATTRIBUTES                                                           *
     ************************************************************************)

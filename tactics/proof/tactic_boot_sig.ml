@@ -348,6 +348,7 @@ sig
     *)
    val refine : tactic -> tactic_arg -> tactic_arg list * extract
    val compose : extract -> extract list -> extract
+   val identity : tactic_arg -> Refine.extract
 
    (*
     * Access to the argument.

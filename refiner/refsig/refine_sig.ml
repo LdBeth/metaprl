@@ -42,6 +42,16 @@ open Lm_symbol
 
 open Opname
 
+ (*
+  * A semantical correctness of a proof may depend on
+  * a number of axioms refered to in a proof
+  *)
+type dependency =
+   DepDefinition of opname
+ | DepCondRewrite of opname
+ | DepRewrite of opname
+ | DepRule of opname
+
 (************************************************************************
  * REFINER MODULE                                                       *
  ************************************************************************)
@@ -139,8 +149,7 @@ sig
    (* The cut rule is primitive, but it doesn't weaken the logic *)
    val cut : term -> tactic
 
-   (* Identity is a no-op proof step *)
-   val identity : msequent -> extract
+   val identity : sentinal -> msequent -> extract
 
    (* Returns the list of unproven subgoals *)
    val subgoals_of_extract : extract -> msequent list
@@ -270,13 +279,14 @@ sig
     | CondRW of (term list -> cond_rewrite)
 
    (*
-    * Get the term corresponding to an extract.
+    * Get the term corresponding to an extract from the named proof.
     * This will fail if some of the rules are not justified
     * or if the extract is not complete.  The extract terms
     * for the arguments are included.
     *)
-   val term_of_extract : refiner -> extract -> term list -> term
+   val extract_term : refiner -> opname -> term list -> term
    val make_wildcard_ext_arg : int -> term -> term
+   val compute_dependencies : refiner -> opname -> dependency list
 
    (*
     * Get a checker from the refiner.
