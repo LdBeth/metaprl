@@ -148,10 +148,10 @@ let term_to_stamp t =
      term_terms = [] } 
     -> (match dest_op op with
 	{ op_name = opname; 
-	  op_params = [istamp; ppid; ptseq; pseq; ptime] }
+	  op_params = [istamp; pseq; ptime; ptseq; ppid] }
 	    when (opname = nuprl5_opname & istamp = istamp_parameter)
          ->
-	(match dest_param ppid with String pid ->
+	(match dest_param ppid with Token pid ->
 	(match dest_param ptseq with Number tseq -> 
 	(match dest_param pseq with Number seq -> 
          {term = t; process_id = pid; transaction_seq = tseq; seq = seq; time = destruct_time_parameter ptime}
@@ -192,11 +192,11 @@ let stamp_data =
 
 let make_stamp pid tseq seq time = 
 	{ term = (mk_term (istamp_op
-				[ make_param (String pid)
-   				; make_param (Number tseq)
-   				; make_param (Number seq)
+				[ make_param (Number seq)
    				; make_time_parameter time
-				])
+				; make_param (Number tseq)
+   				; make_param (Token pid)
+   				])
 			[])
 	; process_id = pid
 	; transaction_seq = tseq

@@ -48,7 +48,7 @@ let lib_open c =
 	     open_library_environment
 		c
 		""
-		(function b -> 
+		(fun ts acs b -> 
 		  match b with
 		      [] -> ()
 		      |_ -> (error ["library"; "BroadcastsNotCurrentlySupported"] [] [iterm_bterms b]))
@@ -109,7 +109,7 @@ let restore c checkpoint f =
 	    open_library_environment
 		c
 		checkpoint
-		(function b -> 
+		(fun ts acs b -> 
 		  error ["library"; "restore"; "BroadcastsNotCurrentlySupported"]
 			[] [iterm_bterms b]) 
 		(function t -> 
@@ -209,7 +209,7 @@ let delete t oid =
 		[ (ioid_term oid) ]);
   ()
 
-let put t oid term =
+let put_term t oid term =
   require_remote_transaction t;
   (eval_args_to_term t.library.environment t.tid
 		(itext_term "NL0_put")
@@ -218,7 +218,7 @@ let put t oid term =
 		]);
   ()
   
-let get t oid =
+let get_term t oid =
   require_remote_transaction t;
   (eval_args_to_term t.library.environment t.tid
 		(itext_term "NL0_get")
@@ -251,3 +251,14 @@ let get_property l oid s =
 
 
  
+(* tree notes.
+ *
+ *  root objects not collectable all others are.
+ *  objects created by create command are not collectable.
+ *
+ *  in order to prevent cycles by concurrent transactions when one directory is inserted in
+ *  another the path to the root of the dir being inserted into must be locked.
+ *
+ *  we can prevent dup roots by locking all roots at make_root or equivalently by having
+ *  special root object which contains all roots and locking that.
+ *)

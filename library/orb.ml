@@ -52,7 +52,9 @@ and environment =
 						   when req received used to find appropriate eval hook  *)
 	; stamp		: stamp			(* local consumer stamp; for start/stop broadcasts *)
 
-	; bhook 	: bound_term list -> unit		(* broadcast hook *)
+	; bhook 	: stamp (* transaction *)
+				-> stamp option (* auto-commit *)
+				-> bound_term list -> unit		(* broadcast hook *)
 	; ehook 	: term -> term		(* eval hook *)
 	}
 
@@ -107,8 +109,42 @@ let result_of_irsp_term t =
 
 
 (* note that token differs one these are two distinct operators *)
-let ibroadcast_parameter = make_param (Token "!broadcast")
-let ibroadcasts_op = mk_nuprl5_op [make_param (Token "!broadcasts")]
+
+let ibroadcasts_parameter = make_param (Token "!broadcasts")
+
+let broadcasts_of_ibroadcasts_term t =
+  match dest_term t with
+    { term_op = o;
+      term_terms = bterms } 
+    -> (match dest_op o with
+	{ op_name = ro;
+	  op_params = ib :: tp :: ps} when (ro = nuprl5_opname & ib = ibroadcasts_parameter)
+	  -> if (ps = [] or not (destruct_bool_parameter (hd ps)))
+	        then (tl bterms)
+		else (tl (tl bterms))
+	| _ -> error ["orb"; "broadcasts"; "not"] [] [t])
+ 
+let transaction_stamp_of_ibroadcasts_term t =
+  match dest_term t with
+    { term_op = o;
+      term_terms = bterms } 
+    -> (match dest_op o with
+	{ op_name = ro;
+	  op_params = ib :: tp :: ps} when (ro = nuprl5_opname & ib = ibroadcasts_parameter)
+	  -> term_to_stamp (term_of_unbound_term (hd bterms))
+	| _ -> error ["orb"; "broadcasts"; "not"] [] [t])
+ 
+let auto_commit_of_ibroadcasts_term t =
+  match dest_term t with
+    { term_op = o;
+      term_terms = bterms } 
+    -> (match dest_op o with
+	{ op_name = ro;
+	  op_params = ib :: tp :: ps} when (ro = nuprl5_opname & ib = ibroadcasts_parameter)
+	  -> if (ps = [] or not (destruct_bool_parameter (hd ps)))
+	        then Some (term_to_stamp (term_of_unbound_term (hd (tl bterms))))
+		else None
+	| _ -> error ["orb"; "broadcasts"; "not"] [] [t])
 
 let ifail_parameter = make_param (Token "!fail")
 let ifail_op = mk_nuprl5_op [ifail_parameter]
@@ -147,12 +183,12 @@ let result_of_iresult_term t =
        -> term_of_unbound_term r
     |_ -> error ["orb"; "result"; "messages"] [] [t]
 
+let orb_broadcast env t =
+  (env.bhook
+	(transaction_stamp_of_ibroadcasts_term t)
+	(auto_commit_of_ibroadcasts_term t)
+	(broadcasts_of_ibroadcasts_term t))
 
-
-(* assumes single environment is present, nfg if more than one env. *)
-let orb_broadcast orb t =
-  ((hd (orb.environments)).bhook t)
- 
     
 let local_eval f t =
   unconditional_error_handler 
@@ -167,8 +203,9 @@ let rec bus_wait c tid ehook =
       term_terms = bterms } 
     ->  (match dest_op op with
           { op_name = opn;
- 	    op_params = ib :: ps } when (ib = ibroadcast_parameter & opn = nuprl5_opname)
-           -> ( (orb_broadcast c.orb bterms)
+ 	    op_params = ib :: ps } when (ib = ibroadcasts_parameter & opn = nuprl5_opname)
+           -> ( (orb_broadcast (hd c.orb.environments) t) 
+		(* above assumes single environment is present, nfg if more than one env. *)
              ; bus_wait c tid ehook)
 	| { op_name = opn;
 	    op_params = ireq :: ps } when (opn = nuprl5_opname & ireq = ireq_parameter)
@@ -439,12 +476,7 @@ let broadcasts_of_istart_term s =
   match dest_term s with
     { term_op = o;
       term_terms = [_; _; _; bs] } when o = istart_op
-     -> (match dest_term (term_of_unbound_term bs) with
-	  { term_op = o';
-	    term_terms = bts } when o' = ibroadcasts_op
-	     -> bts
-	|_ -> ( let {op_name = name} = dest_op o in
-	 (*print_term s;*) error ["orb"; "start"; "broadcasts"; "not"] [] [s]))
+     -> (term_of_unbound_term bs)
   |_ -> ( let name = (opname_of_term s) in
 	 (*print_term s;*) error ["orb"; "start"; "broadcasts"; "not"; "start"] [] [s])
 
@@ -459,8 +491,9 @@ let start_broadcasts e =
 			  (* nfg if we allow mulitple envs *)
 		     nl0_description)) 
 
-	in (e.bhook (broadcasts_of_istart_term
- 		    (info_of_iinform_term t))); ()
+	in orb_broadcast e (broadcasts_of_istart_term
+				 (info_of_iinform_term t))
+          ; ()
 
 let irevoke_op = mk_nuprl5_op [make_param (Token "!revoke")]
 let irevoke_term t = mk_term irevoke_op [mk_bterm [] t]

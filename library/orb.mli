@@ -1,5 +1,6 @@
 
 open Term
+open Basic
 
 type connection
 type environment
@@ -18,7 +19,8 @@ val orb_close	: orb -> unit
 
 val open_library_environment	: connection			
 				-> string			(* "" means new lib env, otherwise -> restore *)
-				-> (bound_term list -> unit) 	(* broadcast hook *)
+				(* broadcast hook *)
+				-> (stamp -> stamp option -> bound_term list -> unit)
 				-> (term -> term) 		(* local eval *)
 				-> environment
 
