@@ -106,6 +106,7 @@ CMXDEPS =\
 	$(CMXADEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
+	$(ROOT)/lib/library.cmxa\
 	$(ROOT)/lib/prlc.cmxa\
 	$(CMXLIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cmxa\
@@ -124,6 +125,7 @@ CMXADEPS =\
 	$(CMXADEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
+	$(ROOT)/lib/library.cmxa\
 	$(ROOT)/lib/prlc.cmxa\
 	$(CMXALIBS_ens)\
 	$(ROOT)/theories/boot/boot.cmxa\
