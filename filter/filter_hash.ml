@@ -138,8 +138,10 @@ let rec hash_expr index = function
       hash_string (hash index 0x27139e6c) s
  | (<:expr< while $e$ do $list:el$ done >>) ->
       List.fold_left hash_expr (hash_expr (hash index 0x723d7789) e) el
+(*ifdef 2.02*)
  | MLast.ExXnd (loc, s, e) ->
       hash_string (hash_expr (hash index 0x8be2751) e) s
+(*endif 2.02*)
  | MLast.ExAnt (loc, e) ->
       Stdpp.raise_with_loc loc (Failure "Filter_hash.hash_expr: encountered an ExAnt")
 
@@ -176,8 +178,10 @@ and hash_patt index = function
       hash_patt (hash_type (hash index 0x08034ff2) t) p
  | (<:patt< $uid:s$ >>) ->
       hash_string (hash index 0x37911bc9) s
+(*ifdef 2.02*)
  | MLast.PaXnd (loc, s, p) ->
       hash_string (hash_patt (hash index 0x6bcc8901) p) s
+(*endif 2.02*)
 
 and hash_type index = function
    (<:ctyp< $t1$ . $t2$ >>) ->
@@ -214,8 +218,10 @@ and hash_type index = function
       List.fold_left hash_type (hash index 0x5f9e28c7) tl
  | (<:ctyp< $uid:s$ >>) ->
       hash_string (hash index 0x48872c13) s
+(*ifdef 2.02*)
  | MLast.TyXnd (loc, s, t) ->
       hash_string (hash_type (hash index 0x1677a389) t) s
+(*endif 2.02*)
 
 and hash_sig_item index = function
 (*
@@ -350,8 +356,10 @@ and hash_class_expr index ce =
             hash_patt_opt (List.fold_left hash_class_str_item index cfl) p
        | MLast.CeTyc (_, ce, ct) ->
             hash_class_expr (hash_class_type index ct) ce
+(*ifdef 2.02*)
        | MLast.CeXnd (_, s, ce) ->
             hash_string (hash_class_expr (hash index 0x4475bac) ce) s
+(*endif 2.02*)
 
 and hash_class_str_item index = function
    CrCtr (_, s, t) ->
@@ -376,8 +384,10 @@ and hash_class_type index ct =
            hash_class_type (hash_type index t) ct
       | CtSig (_, t, ctfl) ->
            List.fold_left hash_class_sig_item (hash_type_opt index t) ctfl
+(*ifdef 2.02*)
       | CtXnd (_, s, ct) ->
            hash_string (hash_class_type (hash index 0x344b344) ct) s
+(*endif 2.02*)
 
 and hash_class_sig_item index = function
    CgCtr (_, s, t) ->

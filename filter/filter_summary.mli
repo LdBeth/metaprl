@@ -81,12 +81,12 @@ val find_rewrite : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info 
    string ->
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
-val find_mlterm : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
-   term ->
+val find_mlrewrite : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
+   string ->
    (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
-val find_condition : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
-   term ->
+val find_mlaxiom : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
+   string ->
    (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
 val find_module : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
@@ -165,12 +165,12 @@ val term_of_opname :
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
     term, term, term, term, term, term) convert ->
    'term opname_info -> term
-val term_of_mlterm :
+val term_of_mlrewrite :
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
     term, term, term, term, term, term) convert ->
    ('term, 'expr) mlterm_info ->
    term
-val term_of_condition :
+val term_of_mlaxiom :
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
     term, term, term, term, term, term) convert ->
    ('term, 'expr) mlterm_info ->

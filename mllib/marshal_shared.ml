@@ -141,10 +141,14 @@ struct
     *
     *    marshal_local_free_list : list of free pages in local space
     *    marshal_global_free_list : list of free pages in global space
-    *    marshal_new_free_list : list of free pages in global space
-    *       global_free_list is synchronized with all marshalers
-    *       new_free_list is just required to return values not
-    *         allocated in the global space
+    *    marshal_lookahead_free_list : list of free pages in global space
+    *       This list is used to temporarily allocate pages from the global
+    *       space when an object is marshaled.  The list of lookahead pages
+    *       is sent with the message.  When the message is unmarshaled, the
+    *       pages are allocated from the global space, and a translation
+    *       occurs.
+    *    marshal_lookahead_pages : list of global pages that have been
+    *       allocated but not committed.
     *
     *    marshal_page_table : owner assignment to pages, index is in global space
     *)
@@ -166,8 +170,9 @@ struct
         mutable marshal_alloc_list : int list;
 
         mutable marshal_local_free_list : free_list;
-        mutable marshal_new_free_list : free_list;
         mutable marshal_global_free_list : free_list;
+        mutable marshal_lookahead_free_list : free_list;
+        mutable marshal_lookahead_pages : int list;
 
         mutable marshal_page_table : Mp_id.t option array
       }
@@ -216,7 +221,8 @@ struct
 
            marshal_local_free_list = tail_free_list 0;
            marshal_global_free_list = tail_free_list 0;
-           marshal_new_free_list = tail_free_list 0;
+           marshal_lookahead_free_list = tail_free_list 0;
+           marshal_lookahead_pages = [];
 
            marshal_page_table = Array.create max_pages None
          }

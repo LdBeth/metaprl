@@ -137,10 +137,10 @@ let eprint_entry print_info = function
       eprintf "Rule: %s\n" name
  | Opname { opname_name = name } ->
       eprintf "Opname: %s\n" name
- | MLTerm { mlterm_term = t } ->
-      eprintf "MLTerm: %s\n" (string_of_term t)
- | Condition { mlterm_term = t } ->
-      eprintf "Condition: %s\n" (string_of_term t)
+ | MLRewrite { mlterm_name = name } ->
+      eprintf "MLRewrite: %s\n" name
+ | MLAxiom { mlterm_name = name } ->
+      eprintf "MLAxiom: %s\n" name
  | Parent { parent_name = path } ->
       eprintf "Parent: %s\n" (string_of_path path)
  | Module (name, { info_list = info }) ->
@@ -278,34 +278,25 @@ let find_rewrite { info_list = summary } name =
 (*
  * Find a condition.
  *)
-let test_mlterm t =
-   let name = opname_of_term t in
-      (fun (item, _) ->
-            match item with
-               MLTerm { mlterm_term = t' } ->
-                  opname_of_term t' = name
-             | _ ->
-                  false)
+let test_mlrewrite name = function
+   MLRewrite { mlterm_name = name' }, _ ->
+      name' = name
+ | _ ->
+      false
 
-let find_mlterm { info_list = summary } t =
-   try Some (List_util.find (test_mlterm t) summary) with
+let find_mlrewrite { info_list = summary } name =
+   try Some (List_util.find (test_mlrewrite name) summary) with
       Not_found ->
          None
 
-(*
- * Find a condition.
- *)
-let test_condition t =
-   let name = opname_of_term t in
-      (fun (item, _) ->
-            match item with
-               Condition { mlterm_term = t' } ->
-                  opname_of_term t' = name
-             | _ ->
-                  false)
+let test_mlaxiom name = function
+   MLAxiom { mlterm_name = name' }, _ ->
+      name' = name
+ | _ ->
+      false
 
-let find_condition { info_list = summary } t =
-   try Some (List_util.find (test_condition t) summary) with
+let find_mlaxiom { info_list = summary } name =
+   try Some (List_util.find (test_mlaxiom name) summary) with
       Not_found ->
          None
 
@@ -439,12 +430,12 @@ let find { info_list = summary } name =
             n = name
        | CondRewrite { crw_name = n } ->
             n = name
-       | MLTerm { mlterm_term = t' } ->
-            string_of_opname (opname_of_term t') = name
-       | Condition { mlterm_term = t' } ->
-            string_of_opname (opname_of_term t') = name
-       | DForm { dform_name = name' } ->
-            name' = name
+       | MLRewrite { mlterm_name = n } ->
+            n = name
+       | MLAxiom { mlterm_name = n } ->
+            n = name
+       | DForm { dform_name = n } ->
+            n = name
        | Prec s ->
             s = name
        | _ ->
@@ -466,10 +457,10 @@ let set_command info item =
             test_rewrite name
        | CondRewrite { crw_name = name } ->
             test_rewrite name
-       | MLTerm { mlterm_term = t } ->
-            test_mlterm t
-       | Condition { mlterm_term = t } ->
-            test_condition t
+       | MLRewrite { mlterm_name = name } ->
+            test_mlrewrite name
+       | MLAxiom { mlterm_name = name } ->
+            test_mlaxiom name
        | DForm { dform_redex = redex } ->
             test_dform redex
        | Prec s ->
@@ -603,17 +594,67 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1
           | Opname { opname_name = name; opname_term = t } ->
                Opname { opname_name = name; opname_term = convert.term_f t }
 
-          | MLTerm { mlterm_term = term; mlterm_contracta = cons; mlterm_def = def }  ->
-               MLTerm { mlterm_term = convert.term_f term;
-                        mlterm_contracta = List.map convert.term_f cons;
-                        mlterm_def = opt_apply (convert_expr_pair convert) def
-               }
+          | MLRewrite t ->
+               (* HACK! remove this when we start using ASCII theory files *)
+               let t =
+                  if Obj.size (Obj.repr t) = 3 then
+                     let (term, contracta, def) = Obj.magic t in
+                        { mlterm_name = "unknown";
+                          mlterm_params = [];
+                          mlterm_term = term;
+                          mlterm_contracta = contracta;
+                          mlterm_def = def;
+                          mlterm_resources = []
+                        }
+                  else
+                     t
+               in
+               let { mlterm_name = name;
+                     mlterm_params = params;
+                     mlterm_term = term;
+                     mlterm_contracta = cons;
+                     mlterm_def = def;
+                     mlterm_resources = res
+                   } = t
+               in
+                  MLRewrite { mlterm_name = name;
+                              mlterm_params = List.map param_map params;
+                              mlterm_term = convert.term_f term;
+                              mlterm_contracta = List.map convert.term_f cons;
+                              mlterm_def = opt_apply (convert_expr_pair convert) def;
+                              mlterm_resources = res_map res
+                  }
 
-          | Condition { mlterm_term = term; mlterm_contracta = cons; mlterm_def = def } ->
-               Condition { mlterm_term = convert.term_f term;
-                           mlterm_contracta = List.map convert.term_f cons;
-                           mlterm_def = opt_apply (convert_expr_pair convert) def
-               }
+          | MLAxiom t ->
+               (* HACK! remove this when we start using ASCII theory files *)
+               let t =
+                  if Obj.size (Obj.repr t) = 3 then
+                     let (term, contracta, def) = Obj.magic t in
+                        { mlterm_name = "unknown";
+                          mlterm_params = [];
+                          mlterm_term = term;
+                          mlterm_contracta = contracta;
+                          mlterm_def = def;
+                          mlterm_resources = []
+                        }
+                  else
+                     t
+               in
+               let { mlterm_name = name;
+                     mlterm_params = params;
+                     mlterm_term = term;
+                     mlterm_contracta = cons;
+                     mlterm_def = def;
+                     mlterm_resources = res
+                   } = t
+               in
+                  MLAxiom { mlterm_name = name;
+                            mlterm_params = List.map param_map params;
+                            mlterm_term = convert.term_f term;
+                            mlterm_contracta = List.map convert.term_f cons;
+                            mlterm_def = opt_apply (convert_expr_pair convert) def;
+                            mlterm_resources = res_map res
+                  }
 
           | Parent { parent_name = path;
                      parent_opens = opens;
@@ -709,8 +750,8 @@ let axiom_op                    = mk_opname "axiom"
 let rule_op                     = mk_opname "rule"
 let res_op                      = mk_opname "resource_defs"
 let opname_op                   = mk_opname "opname"
-let mlterm_op                   = mk_opname "mlterm"
-let condition_op                = mk_opname "condition"
+let mlrewrite_op                = mk_opname "mlrewrite"
+let mlaxiom_op                  = mk_opname "mlaxiom"
 let parent_op                   = mk_opname "parent"
 let module_op                   = mk_opname "module"
 let dform_op                    = mk_opname "dform"
@@ -979,22 +1020,28 @@ and dest_opname convert t =
 (*
  * ML Term.
  *)
-and dest_mlterm convert t =
-   let term, cons, expr = three_subterms t in
-      MLTerm { mlterm_term = convert.term_f term;
-               mlterm_contracta = List.map convert.term_f (dest_xlist cons);
-               mlterm_def = dest_opt_pair (convert_expr_pair convert) expr
+and dest_mlrewrite convert t =
+   let name = dest_string_param t in
+   let params, term, cons, expr, resources = five_subterms t in
+      MLRewrite { mlterm_name = name;
+                  mlterm_params = dest_params convert params;
+                  mlterm_term = convert.term_f term;
+                  mlterm_contracta = List.map convert.term_f (dest_xlist cons);
+                  mlterm_def = dest_opt_pair (convert_expr_pair convert) expr;
+                  mlterm_resources = dest_res convert resources
       }
 
-(*
- * Condition.
- *)
-and dest_condition convert t =
-   let term, cons, expr = three_subterms t in
-      Condition { mlterm_term = convert.term_f term;
-                  mlterm_contracta = List.map convert.term_f (dest_xlist cons);
-                  mlterm_def = dest_opt_pair (convert_expr_pair convert) expr
+and dest_mlaxiom convert t =
+   let name = dest_string_param t in
+   let params, term, cons, expr, resources = five_subterms t in
+      MLAxiom { mlterm_name = name;
+                mlterm_params = dest_params convert params;
+                mlterm_term = convert.term_f term;
+                mlterm_contracta = List.map convert.term_f (dest_xlist cons);
+                mlterm_def = dest_opt_pair (convert_expr_pair convert) expr;
+                mlterm_resources = dest_res convert resources
       }
+
 (*
  * Parent declaration.
  *)
@@ -1121,10 +1168,10 @@ and dest_term_aux
                dest_rule convert t
             else if Opname.eq opname opname_op then
                dest_opname convert t
-            else if Opname.eq opname mlterm_op then
-               dest_mlterm convert t
-            else if Opname.eq opname condition_op then
-               dest_condition convert t
+            else if Opname.eq opname mlrewrite_op then
+               dest_mlrewrite convert t
+            else if Opname.eq opname mlaxiom_op then
+               dest_mlaxiom convert t
             else if Opname.eq opname parent_op then
                dest_parent convert t
             else if Opname.eq opname module_op then
@@ -1320,8 +1367,8 @@ and term_of_cond_rewrite convert { crw_name = name;
                                               convert.proof_f name pf;
                                               term_of_resources convert res]
 
-and term_of_axiom convert { axiom_name = name; 
-                            axiom_stmt = t; 
+and term_of_axiom convert { axiom_name = name;
+                            axiom_stmt = t;
                             axiom_proof = pf;
                             axiom_resources = res
     } =
@@ -1341,21 +1388,33 @@ and term_of_rule convert { rule_name = name;
 and term_of_opname convert { opname_name = name; opname_term = term } =
    mk_string_param_term opname_op name [convert.term_f term]
 
-and term_of_mlterm convert { mlterm_term = term;
-                             mlterm_contracta = cons;
-                             mlterm_def = expr_opt
-    } =
-   mk_simple_term mlterm_op [convert.term_f term;
-                             mk_xlist_term (List.map convert.term_f cons);
-                             mk_opt_pair (convert_expr_pair convert) expr_opt ]
-
-and term_of_condition convert { mlterm_term = term;
+and term_of_mlrewrite convert { mlterm_name = name;
+                                mlterm_params = params;
+                                mlterm_term = term;
                                 mlterm_contracta = cons;
-                                mlterm_def = expr_opt
+                                mlterm_def = expr_opt;
+                                mlterm_resources = res
     } =
-   mk_simple_term condition_op [convert.term_f term;
-                                mk_xlist_term (List.map convert.term_f cons);
-                                mk_opt_pair (convert_expr_pair convert) expr_opt ]
+   mk_string_param_term mlrewrite_op name (**)
+      [mk_params convert params;
+       convert.term_f term;
+       mk_xlist_term (List.map convert.term_f cons);
+       mk_opt_pair (convert_expr_pair convert) expr_opt;
+       term_of_resources convert res]
+
+and term_of_mlaxiom convert { mlterm_name = name;
+                              mlterm_params = params;
+                              mlterm_term = term;
+                              mlterm_contracta = cons;
+                              mlterm_def = expr_opt;
+                              mlterm_resources = res
+    } =
+   mk_string_param_term mlaxiom_op name (**)
+      [mk_params convert params;
+       convert.term_f term;
+       mk_xlist_term (List.map convert.term_f cons);
+       mk_opt_pair (convert_expr_pair convert) expr_opt;
+       term_of_resources convert res]
 
 and term_of_parent convert { parent_name = path;
                              parent_opens = opens;
@@ -1427,10 +1486,10 @@ and term_list_aux (convert : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, te
       term_of_rule convert rw
  | Opname opname ->
       term_of_opname convert opname
- | MLTerm t ->
-      term_of_mlterm convert t
- | Condition cond ->
-      term_of_condition convert cond
+ | MLRewrite t ->
+      term_of_mlrewrite convert t
+ | MLAxiom cond ->
+      term_of_mlaxiom convert cond
  | Parent par ->
       term_of_parent convert par
  | Module (name, info) ->
@@ -1643,39 +1702,33 @@ let check_opname
 (*
  * MLterms must match.
  *)
-let string_of_term t =
-   string_of_opname_list (Opname.dest_opname (opname_of_term t))
-
-let check_mlterm
-    ({ mlterm_term = term } : ('term1, 'expr1) mlterm_info)
+let check_mlrewrite
+    ({ mlterm_name = name; mlterm_term = term } : ('term1, 'expr1) mlterm_info)
     (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
-         implem_error (sprintf "MLTerm %s: not implemented" (string_of_term term))
+         implem_error (sprintf "MLRewrite %s: not implemented" name)
     | h::t ->
          match h with
-            MLTerm { mlterm_term = term' } ->
+            MLRewrite { mlterm_name = name'; mlterm_term = term' } when name' = name ->
                if not (alpha_equal term' term) then
-                  search t
+                  implem_error (sprintf "MLRewrite %s: definition does not match" name)
           | _ ->
                search t
    in
       search implem
 
-(*
- * Coniditions must match.
- *)
-let check_condition
-    ({ mlterm_term = term } : ('term1, 'expr1) mlterm_info)
+let check_mlaxiom
+    ({ mlterm_name = name; mlterm_term = term } : ('term1, 'expr1) mlterm_info)
     (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
-         implem_error (sprintf "Condition %s: not implemented" (string_of_term term))
+         implem_error (sprintf "MLAxiom %s: not implemented" name)
     | h::t ->
          match h with
-            Condition { mlterm_term = term' } ->
+            MLAxiom { mlterm_name = name'; mlterm_term = term' } when name' = name ->
                if not (alpha_equal term' term) then
-                  search t
+                  implem_error (sprintf "MLAxiom %s: definition does not match" name)
           | _ ->
                search t
    in
@@ -1841,10 +1894,10 @@ and check_implemented
          check_rule info implem
     | Opname info ->
          check_opname info implem
-    | MLTerm info ->
-         check_mlterm info implem
-    | Condition info ->
-         check_condition info implem
+    | MLRewrite info ->
+         check_mlrewrite info implem
+    | MLAxiom info ->
+         check_mlaxiom info implem
     | Parent { parent_name = path } ->
          check_parent path implem
     | Module (name, info) ->
@@ -2037,10 +2090,10 @@ let rec copy_proofs copy_proof { info_list = info1 } info2 =
                copy_rule_proof copy_proof rule info2
           | Opname info ->
                Opname info
-          | MLTerm t ->
-               MLTerm t
-          | Condition t ->
-               Condition t
+          | MLRewrite t ->
+               MLRewrite t
+          | MLAxiom t ->
+               MLAxiom t
           | Parent p ->
                Parent p
           | Module (name, info) ->

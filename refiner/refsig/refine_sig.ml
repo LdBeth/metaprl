@@ -52,21 +52,6 @@ sig
    type meta_term
 
    (*
-    * A ML rewrite replaces a term with another,
-    * no extract.
-    *)
-   type ml_rewrite = (string array * term list) -> term -> term
-
-   (*
-    * A condition relaces an goal with a list of subgoals,
-    * and it provides a function to compute the extract.
-    *)
-   type ml_rule =
-      { ml_rule_rewrite : (string array * term list) -> term -> term list;
-        ml_rule_extract : (string array * term list) -> term list -> term * term list
-      }
-
-   (*
     * Refinements are on meta-sequents,
     * which are a restricted form of meta terms,
     * having only dependent functions format.
@@ -74,6 +59,35 @@ sig
     * Each hyp is labelled by its first argument.
     *)
    type msequent
+
+   (*
+    * A ML rewrite replaces a term with another,
+    * no extract.
+    *)
+   type ml_rewrite =
+      { ml_rewrite_rewrite :
+           string array ->
+           string list list ->
+           term list ->
+           term ->
+           term ->
+           term * term list * string array;
+        ml_rewrite_extract : (string array * term list) -> term list -> term * term list
+      }
+
+   (*
+    * A condition relaces an goal with a list of subgoals,
+    * and it provides a function to compute the extract.
+    *)
+   type ml_rule =
+      { ml_rule_rewrite :
+           address array ->                     (* context addresses *)
+           string array ->                      (* variable names *)
+           msequent ->                          (* goal *)
+           term list ->                         (* params *)
+           msequent list * string array;        (* subgoals, new variable names *)
+        ml_rule_extract : (string array * term list) -> term list -> term * term list
+      }
 
    (************************************************************************
     * PROOFS AND VALIDATIONS                                               *
@@ -296,8 +310,7 @@ sig
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       prim_tactic
-   val create_ml_rule : build ->
-      term ->                    (* term to be expanded *)
+   val create_ml_rule : build -> string ->
       ml_rule ->                 (* the rule definition *)
       prim_tactic
    val check_rule :
@@ -365,7 +378,6 @@ sig
       term ->              (* contractum *)
       prim_cond_rewrite
    val create_ml_rewrite : build -> string ->
-      term list ->         (* subgoals *)
       ml_rewrite ->        (* rewriter *)
       prim_cond_rewrite
    val prim_cond_rewrite : build ->
@@ -436,7 +448,7 @@ sig
         ri_rule_rule : msequent
       }
    and ri_ml_rule =
-      { ri_ml_rule_arg : term }
+      { ri_ml_rule_name : opname }
    and ri_prim_theorem =
       { ri_pthm_axiom : refiner }
 

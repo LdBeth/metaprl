@@ -171,6 +171,8 @@ struct
     | RewriteInt of int
     | RewriteLevel of level_exp
 
+   type rewrite_namer = rewrite_stack -> string array -> string array
+
    (************************************************************************
     * IMPORTS                                                              *
     ************************************************************************)
@@ -232,9 +234,10 @@ struct
 #endif
                      List.map (build_contractum names bnames gstack) con, names'
              | RWCFunction f ->
-                  if params == []
-                     then [f goal], names'
-                     else ref_raise(RefineError ("apply_rewrite", RewriteBadMatch (TermMatch xnil_term)))
+                  if params == [] then
+                     [f goal], names'
+                  else
+                     ref_raise(RefineError ("apply_rewrite", RewriteBadMatch (TermMatch xnil_term)))
          in
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
@@ -438,13 +441,14 @@ struct
     *)
    let compile_redices addrs redices =
       let stack, redices = compile_so_redex addrs redices in
-         { redex_stack = stack; redex_redex = redices }
+      let namer = compute_namer stack [||] in
+         { redex_stack = stack; redex_redex = redices }, namer
 
    let compile_redex addrs redex =
-      let redex = compile_redices addrs [redex] in
+      let redex, namer = compile_redices addrs [redex] in
          match redex.redex_redex with
             [_] ->
-               redex
+               redex, namer
           | _ ->
                failwith "compile_redex: too many redices"
 

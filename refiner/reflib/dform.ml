@@ -164,7 +164,7 @@ let add_dform base { dform_name = name;
    let printer' =
       match printer with
          DFormExpansion e ->
-            let redex = compile_redex [||] t in
+            let redex, _ = compile_redex [||] t in
             let contractum = compile_contractum redex e in
                DFExpansion contractum
        | DFormPrinter f ->

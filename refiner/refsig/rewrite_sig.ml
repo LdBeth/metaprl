@@ -13,21 +13,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
@@ -68,11 +68,13 @@ sig
     | RewriteInt of int
     | RewriteLevel of level_exp
 
+   type rewrite_namer = rewrite_stack -> string array -> string array
+
    (*
     * Separate analysis.
     *)
-   val compile_redex : string array -> term -> rewrite_redex
-   val compile_redices : string array -> term list -> rewrite_redex
+   val compile_redex : string array -> term -> rewrite_redex * rewrite_namer
+   val compile_redices : string array -> term list -> rewrite_redex * rewrite_namer
    val compile_contractum : rewrite_redex -> term -> rewrite_contractum
    val extract_redex_types : rewrite_redex -> rewrite_type list
    val apply_redex :
@@ -89,8 +91,14 @@ sig
    val fun_rewrite : term -> (term -> term) -> rewrite_rule
 
    (* Apply a rewrite to a term *)
-   val apply_rewrite : rewrite_rule -> address array * string array * string list list ->
-      term -> term list -> term list * string array
+   val apply_rewrite :
+      (* rule *)
+      rewrite_rule ->
+      (* addresses for context terms, strings for new variable names, bound variable list *)
+      address array * string array * string list list ->
+      term ->                           (* redex *)
+      term list ->                      (* parameters *)
+      term list * string array          (* contracta, actual variable names that were matched *)
 
    (*
     * See if a rule may apply to a particular term

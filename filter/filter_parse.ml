@@ -155,9 +155,7 @@ let _ =
 let term_exp s =
    let cs = Stream.of_string s in
    let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
-   let s = Ml_term.string_of_term t in
-   let loc = 0, 0 in
-      <:expr< $uid: "Ml_term"$ . $lid: "term_of_string"$ $str: s$ >>
+      expr_of_term (0, 0) t
 
 let term_patt s =
    raise (Failure "Filter_parse.term_patt: not implemented yet")
@@ -512,12 +510,12 @@ struct
        | _ ->
             cond_axiom proc name params args pf res
 
-   let declare_axiom_error proc loc name params args pf res =
-      let cmd = axiom_command proc name params args pf res in
+   let declare_axiom_error proc loc name args t pf res =
+      let cmd = axiom_command proc name args t pf res in
          FilterCache.add_command proc.cache (cmd, loc)
 
-   let declare_axiom proc loc name params args pf res =
-      print_exn_unit (declare_axiom_error proc loc name params args pf) res
+   let declare_axiom proc loc name args t pf res =
+      print_exn_unit (declare_axiom_error proc loc name args t pf) res
 
    (*
     * Infix directive.
@@ -530,28 +528,35 @@ struct
     * Declare an ML term rewrite.
     * There is no definition.
     *)
-   let declare_mlterm_error proc loc ((name, _, _) as t) def =
-      let t' = declare_term proc loc t in
-         FilterCache.add_command proc.cache (MLTerm { mlterm_term = t';
-                                                      mlterm_contracta = end_rewrite ();
-                                                      mlterm_def = def
-                                             }, loc)
-
-   let declare_mlterm proc loc arg def =
-      print_exn_unit (declare_mlterm_error proc loc arg) def
-
-   (*
-    * Declare a condition term for a rule.
-    *)
-   let declare_ml_condition_error proc loc ((name, _, _) as t) =
-      let t' = declare_term proc loc t in
-         FilterCache.add_command proc.cache (Condition { mlterm_term = t';
+   let declare_mlrewrite_error proc loc mlname args t def resources =
+      let cvars = context_vars (MetaTheorem t) in
+      let bvars = binding_vars (MetaTheorem t) in
+      let params = extract_params cvars bvars args in
+         FilterCache.add_command proc.cache (MLRewrite { mlterm_name = mlname;
+                                                         mlterm_params = params;
+                                                         mlterm_term = t;
                                                          mlterm_contracta = end_rewrite ();
-                                                         mlterm_def = None
+                                                         mlterm_def = def;
+                                                         mlterm_resources = resources
                                              }, loc)
 
-   let declare_ml_condition proc loc arg =
-      print_exn_unit (declare_ml_condition_error proc loc) arg
+   let declare_mlrewrite proc loc name args t def resources =
+      print_exn_unit (declare_mlrewrite_error proc loc name args t def) resources
+
+   let declare_mlaxiom_error proc loc mlname args t def resources =
+      let cvars = context_vars (MetaTheorem t) in
+      let bvars = binding_vars (MetaTheorem t) in
+      let params = extract_params cvars bvars args in
+         FilterCache.add_command proc.cache (MLAxiom { mlterm_name = mlname;
+                                                       mlterm_params = params;
+                                                       mlterm_term = t;
+                                                       mlterm_contracta = end_rewrite ();
+                                                       mlterm_def = def;
+                                                       mlterm_resources = resources
+                                             }, loc)
+
+   let declare_mlaxiom proc loc name args t def resources =
+      print_exn_unit (declare_mlaxiom_error proc loc name args t def) resources
 
    (*
     * Record a resource.
@@ -874,7 +879,7 @@ let define_rule_error proc loc name
     (params : term list)
     (args : aterm list)
     (goal : term)
-    (extract : Convert.t proof_type) 
+    (extract : Convert.t proof_type)
     (res : MLast.expr resource_def) =
    let avars = collect_anames args in
    let assums = List.map (function { aname = name; aterm = t } -> name, t) args in
@@ -994,14 +999,14 @@ EXTEND
         | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
           SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t () [];
           empty_sig_item loc
-        | "rule"; name = LIDENT; args = optarglist; ":"; t = mterm ->
+        | "ml_rw"; name = LIDENT; args = optarglist; ":"; t = term ->
+          SigFilter.declare_mlrewrite (SigFilter.get_proc loc) loc name args t None [];
+          empty_sig_item loc
+        | rule_keyword; name = LIDENT; args = optarglist; ":"; t = mterm ->
           SigFilter.declare_axiom (SigFilter.get_proc loc) loc name args t () [];
           empty_sig_item loc
-        | "mlterm"; t = quote_term ->
-          SigFilter.declare_mlterm (SigFilter.get_proc loc) loc t None;
-          empty_sig_item loc
-        | "mlcondition"; t = quote_term ->
-          SigFilter.declare_ml_condition (SigFilter.get_proc loc) loc t;
+        | mlrule_keyword; name = LIDENT; args = optarglist; ":"; t = term ->
+          SigFilter.declare_mlaxiom (SigFilter.get_proc loc) loc name args t None [];
           empty_sig_item loc
         | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ","; arg = ctyp; ")"; name = LIDENT ->
           SigFilter.declare_resource (SigFilter.get_proc loc) loc (**)
@@ -1046,6 +1051,9 @@ EXTEND
         | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
           StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body) res;
           empty_str_item loc
+        | "ml_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = term; rewrite_equal; code = expr; "|"; ext = expr ->
+          StrFilter.declare_mlrewrite (StrFilter.get_proc loc) loc name args t (Some (code, ext)) res;
+          empty_str_item loc
         | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
              (args, goal) = opt_binding_arglist; "="; (**)
              extract = term ->
@@ -1059,8 +1067,8 @@ EXTEND
              (args, goal) = opt_binding_arglist ->
           define_int_thm (StrFilter.get_proc loc) loc name params args goal.aterm res;
           empty_str_item loc
-        | "mlterm"; t = quote_term; rewrite_equal; code = expr; "|"; ext = expr ->
-          StrFilter.declare_mlterm (StrFilter.get_proc loc) loc t (Some (code, ext));
+        | "ml_rule"; name = LIDENT; res = optresources; args = optarglist; ":"; t = term; rewrite_equal; code = expr; "|"; ext = expr ->
+          StrFilter.declare_mlaxiom (StrFilter.get_proc loc) loc name args t (Some (code, ext)) res;
           empty_str_item loc
         | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ","; arg = ctyp; ")"; name = LIDENT ->
           StrFilter.declare_resource (StrFilter.get_proc loc) loc (**)
@@ -1075,7 +1083,7 @@ EXTEND
           let options', t = options in
              StrFilter.define_dform (StrFilter.get_proc loc) loc name options' t form;
              empty_str_item loc
-        | "mldform"; name = LIDENT; ":"; options = df_options; buf = LIDENT; format = LIDENT; "="; code = expr ->
+        | "ml_dform"; name = LIDENT; ":"; options = df_options; buf = LIDENT; format = LIDENT; "="; code = expr ->
           let options', t = options in
              StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t buf format code;
              empty_str_item loc
@@ -1145,9 +1153,19 @@ EXTEND
     * Equality beginning a rewrite block.
     *)
    rewrite_equal:
-      [[ "=" ->
+      [[ "==" ->
           start_rewrite ()
        ]];
+
+   rule_keyword:
+      [[ "rule" -> ()
+       | "axiom" -> ()
+      ]];
+
+   mlrule_keyword:
+      [[ "ml_rule" -> ()
+       | "ml_axiom" -> ()
+      ]];
 
    (*
     * DISPLAY FORMS.

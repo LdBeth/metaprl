@@ -145,8 +145,10 @@ let rec fold_expr iter x expr =
             x
        | (<:expr< while $e$ do $list:el$ done >>) ->
             List.fold_left (fold_expr iter) (fold_expr iter x e) el
+(*ifdef 2.02*)
        | MLast.ExXnd (_, _, e) ->
             fold_expr iter x e
+(*endif 2.02*)
 
 and fold_patt iter x patt =
    let x = iter.fold_patt x patt in
@@ -183,8 +185,10 @@ and fold_patt iter x patt =
             fold_type iter (fold_patt iter x p) t
        | (<:patt< $uid:s$ >>) ->
             x
+(*ifdef 2.02*)
        | MLast.PaXnd (_, _, p) ->
             fold_patt iter x p
+(*endif 2.02*)
 
 and fold_type iter x t =
    let x = iter.fold_type x t in
@@ -223,8 +227,10 @@ and fold_type iter x t =
             List.fold_left (fold_type iter) x tl
        | (<:ctyp< $uid:s$ >>) ->
             x
+(*ifdef 2.02*)
        | MLast.TyXnd (_, _, t) ->
             fold_type iter x t
+(*endif 2.02*)
 
 and fold_sig_item iter x si =
    let x = iter.fold_sig_item x si in
@@ -357,8 +363,10 @@ and fold_class_type iter x ct =
             fold_class_type iter (fold_type iter x t) ct
        | MLast.CtSig (_, t, ctfl) ->
             List.fold_left (fold_class_sig_item iter) (fold_type_opt iter x t) ctfl
+(*ifdef 2.02*)
        | MLast.CtXnd (_, _, ct) ->
             fold_class_type iter x ct
+(*endif 2.02*)
 
 and fold_class_sig_item iter x ctf =
    let x = iter.fold_class_sig_item x ctf in
@@ -389,8 +397,10 @@ and fold_class_expr iter x ce =
             List.fold_left (fold_class_str_item iter) (fold_patt_opt iter x p) cfl
        | MLast.CeTyc (_, ce, ct) ->
             fold_class_type iter (fold_class_expr iter x ce) ct
+(*ifdef 2.02*)
        | MLast.CeXnd (_, _, ce) ->
             fold_class_expr iter x ce
+(*endif 2.02*)
 
 and fold_class_str_item iter x cf =
    let x = iter.fold_class_str_item x cf in

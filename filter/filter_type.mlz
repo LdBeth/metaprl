@@ -124,6 +124,15 @@ and ('term, 'meta_term, 'proof, 'expr) rule_info =
      rule_resources : 'expr resource_def
    }
 
+and ('term, 'expr) mlterm_info =
+   { mlterm_name : string;
+     mlterm_params : 'term param list;
+     mlterm_term : 'term;
+     mlterm_contracta : 'term list;
+     mlterm_def : ('expr * 'expr) option;
+     mlterm_resources : 'expr resource_def
+   }
+
 (*
  * A parent command lists all the modules that are recursively
  * opened, and it lists all the resources that were discovered.
@@ -132,16 +141,6 @@ and 'ctyp parent_info =
    { parent_name : module_path;
      parent_opens : module_path list;
      parent_resources : 'ctyp resource_info list
-   }
-
-(*
- * An mlterm is a term that has an ML procedure for its rewrite.
- * The definition is not required in the interface.
- *)
-and ('term, 'expr) mlterm_info =
-   { mlterm_term : 'term;
-     mlterm_contracta : 'term list;
-     mlterm_def : ('expr * 'expr) option
    }
 
 and 'term opname_info =
@@ -241,8 +240,8 @@ type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, 'module_info) summary_item
  | Axiom of ('term, 'proof, 'expr) axiom_info
  | Rule of ('term, 'meta_term, 'proof, 'expr) rule_info
  | Opname of 'term opname_info
- | MLTerm of ('term, 'expr) mlterm_info
- | Condition of ('term, 'expr) mlterm_info
+ | MLRewrite of ('term, 'expr) mlterm_info
+ | MLAxiom of ('term, 'expr) mlterm_info
  | Parent of 'ctyp parent_info
  | Module of string * 'module_info
  | DForm of ('term, 'expr) dform_info

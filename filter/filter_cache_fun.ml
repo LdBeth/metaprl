@@ -411,8 +411,8 @@ struct
    let find cache           = Filter_summary.find cache.info
    let find_axiom cache     = Filter_summary.find_axiom cache.info
    let find_rewrite cache   = Filter_summary.find_rewrite cache.info
-   let find_mlterm cache    = Filter_summary.find_mlterm cache.info
-   let find_condition cache = Filter_summary.find_condition cache.info
+   let find_mlrewrite cache = Filter_summary.find_mlrewrite cache.info
+   let find_mlaxiom cache   = Filter_summary.find_mlaxiom cache.info
    let find_dform cache     = Filter_summary.find_dform cache.info
    let find_prec cache name = List.mem name cache.precs
    let resources cache      = cache.resources

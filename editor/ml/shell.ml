@@ -254,11 +254,11 @@ struct
           | Opname _ ->
                eprintf "Editing opname '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
-          | MLTerm _ ->
-               eprintf "Editing mlterm '/%s/%s' not implemented%t" modname name eflush;
+          | MLRewrite _ ->
+               eprintf "Editing ML rewrite '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
-          | Condition _ ->
-               eprintf "Editing condition '/%s/%s' not implemented%t" modname name eflush;
+          | MLAxiom _ ->
+               eprintf "Editing ML rule '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
           | Parent _ ->
                eprintf "Editing parent '/%s/%s' not supported%t" modname name eflush;

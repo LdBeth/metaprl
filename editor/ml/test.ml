@@ -32,8 +32,45 @@
 
 include Itt_theory
 
-interactive void_proof 'H : :
-   sequent ['ext] { 'H >- void }
+open Refiner.Refiner.TermType
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.RefineError
+open Itt_int
+
+let dest_level_param t =
+   let { term_op = op } = dest_term t in
+      match dest_op op with
+         { op_params = [param] } ->
+            begin
+               match dest_param param with
+                  Level s -> s
+                | _ ->
+                     raise (RefineError ("dest_level_param", TermMatchError (t, "param type")))
+            end
+       | { op_params = [] } ->
+            raise (RefineError ("dest_level_param", TermMatchError (t, "no params")))
+       | _ ->
+            raise (RefineError ("dest_level_param", TermMatchError (t, "too many params")))
+
+ml_rw test_rw : add{natural_number[@i:n]; natural_number[@j:n]} ==
+   let i = dest_natural_number <:con< natural_number[@i:n] >> in
+   let j = dest_natural_number <:con< natural_number[@j:n] >> in
+      mk_natural_number_term (Mp_num.add_num i j), []
+ | fun _ extracts ->
+   << it >>, extracts
+
+ml_rule cumulativity 'H :
+   sequent ['ext] { 'H >- cumulativity[@j:l, @i:l] } ==
+   let i = dest_level_param <:con< univ[@i:l] >> in
+   let j = dest_level_param <:con< univ[@j:l] >> in
+      if level_cumulativity j i then
+         []
+      else
+         raise (RefineError ("cumulativity", StringError "failed"))
+
+ | fun _ extracts ->
+      << it >>, extracts
 
 (*
  * -*-

@@ -131,21 +131,6 @@ struct
    type meta_term = TermMeta.meta_term
 
    (*
-    * A ML rewrite replaces a term with another,
-    * no extract.
-    *)
-   type ml_rewrite = (string array * term list) -> term -> term
-
-   (*
-    * A condition relaces an goal with a list of subgoals,
-    * and it provides a function to compute the extract.
-    *)
-   type ml_rule =
-      { ml_rule_rewrite : (string array * term list) -> term -> term list;
-        ml_rule_extract : (string array * term list) -> term list -> term * term list
-      }
-
-   (*
     * Refinements are on meta-sequents,
     * which are a restricted form of meta terms,
     * having only dependent functions format.
@@ -156,6 +141,35 @@ struct
       { mseq_vars : string list;
         mseq_goal : term;
         mseq_hyps : term list
+      }
+
+   (*
+    * A ML rewrite replaces a term with another,
+    * no extract.
+    *)
+   type ml_rewrite =
+      { ml_rewrite_rewrite :
+           string array ->
+           string list list ->
+           term list ->
+           term ->
+           term ->
+           term * term list * string array;
+        ml_rewrite_extract : (string array * term list) -> term list -> term * term list
+      }
+
+   (*
+    * A condition relaces an goal with a list of subgoals,
+    * and it provides a function to compute the extract.
+    *)
+   type ml_rule =
+      { ml_rule_rewrite :
+           address array ->                     (* context addresses *)
+           string array ->                      (* variable names *)
+           msequent ->                          (* goal *)
+           term list ->                         (* params *)
+           msequent list * string array;        (* subgoals, new variable names *)
+        ml_rule_extract : (string array * term list) -> term list -> term * term list
       }
 
    (************************************************************************
@@ -263,8 +277,8 @@ struct
         prule_refiner : refiner
       }
    and ml_rule_refiner =
-      { ml_rule_arg : term;
-        ml_rule_rule : ml_rule;
+      { ml_rule_name : opname;
+        ml_rule_info : ml_rule;
         ml_rule_refiner : refiner
       }
 
@@ -292,7 +306,7 @@ struct
       }
    and ml_rewrite_refiner =
       { ml_rw_name : opname;
-        ml_rw_rewrite : ml_rewrite;
+        ml_rw_info : ml_rewrite;
         ml_rw_refiner : refiner
       }
 
@@ -399,7 +413,7 @@ struct
         ri_rule_rule : msequent
       }
    and ri_ml_rule =
-      { ri_ml_rule_arg : term }
+      { ri_ml_rule_name : opname }
    and ri_prim_theorem =
       { ri_pthm_axiom : refiner }
 
@@ -1079,7 +1093,7 @@ struct
                      let { rule_count = count } = rule in
                      let hd, tl = split_list count extracts in
                         rule_proof (find_rule rule) names params hd, tl
-                | MLRuleRefiner { ml_rule_rule = { ml_rule_extract = f } } ->
+                | MLRuleRefiner { ml_rule_info = { ml_rule_extract = f } } ->
                      f (names, params) extracts
                 | RewriteRefiner rw ->
                      let _ = find_rewrite rw in
@@ -1089,8 +1103,8 @@ struct
                      let hd, tl = split_first extracts in
                      let _ = find_cond_rewrite crw in
                         hd, nth_tl count tl
-                | MLRewriteRefiner _ ->
-                     split_first extracts
+                | MLRewriteRefiner { ml_rw_info = { ml_rewrite_extract = f } } ->
+                     f (names, params) extracts
                 | _ ->
                      raise (Failure "Refine.term_of_extract: refine error")
             end
@@ -1189,8 +1203,7 @@ struct
                Hashtbl.add ml_rewrites name mlrw;
                insert refiners next
        | MLRuleRefiner mlrule ->
-            let { ml_rule_arg = arg; ml_rule_refiner = next } = mlrule in
-            let opname = opname_of_term arg in
+            let { ml_rule_name = opname; ml_rule_refiner = next } = mlrule in
 #ifdef VERBOSE_EXN
                if !debug_sentinal then
                   eprintf "sentinal_of_refiner: add ML rule %s%t" (string_of_opname opname) eflush;
@@ -1228,7 +1241,7 @@ struct
       let check_axiom ax = check_sentinal axioms ax.axiom_name ax in
       let check_rule rule = check_sentinal rules rule.rule_name rule in
       let check_ml_rule ml_rule =
-         let opname = opname_of_term ml_rule.ml_rule_arg in
+         let opname = ml_rule.ml_rule_name in
             if try Hashtbl.find ml_rules opname == ml_rule with Not_found -> false
                then
 #ifdef VERBOSE_EXN
@@ -1241,8 +1254,8 @@ struct
                begin
                   eprintf "check_ml_rule: sentinal failed: %s%t" (string_of_opname opname) eflush;
                   ref_raise(RefineError ("check_ml_rule",
-                                      StringTermError ("ML rule is not valid in this context",
-                                                       ml_rule.ml_rule_arg)))
+                                         StringStringError ("ML rule is not valid in this context",
+                                                            string_of_opname opname)))
                end
       in
       let check_rewrite rw = check_sentinal rewrites rw.rw_name rw in
@@ -1459,38 +1472,34 @@ struct
                ref_raise(RefineError (name, StringError "not a rule"))
 
    (*
-    * An ML condition.
+    * An ML rule
     *)
-   let add_ml_rule build arg rule =
+   let add_ml_rule build name info =
 #ifdef VERBOSE_EXN
       if !debug_refiner then
-         eprintf "Refiner.add_ml_rule%t" eflush;
+         eprintf "Refiner.add_ml_rule: %s%t" name eflush;
 #endif
-      let { build_refiner = refiner } = build in
-      let ref_ml_rule =
-         { ml_rule_arg = arg;
-           ml_rule_rule = rule;
+      let { ml_rule_rewrite = rw } = info in
+      let { build_opname = opname; build_refiner = refiner } = build in
+      let opname = mk_opname name opname in
+      let ref_rule =
+         { ml_rule_name = opname;
+           ml_rule_info = info;
            ml_rule_refiner = refiner
          }
       in
-      let opname = opname_of_term arg in
-      let refiner' = MLRuleRefiner ref_ml_rule in
-      let { ml_rule_rewrite = rw } = rule in
-      let tac (_, names) params sent mseq =
-         let subgoals = rw (names, params) mseq.mseq_goal in
-         let make_subgoal subgoal =
-            { mseq_vars = mseq.mseq_vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
-         in
+      let tac (addrs, names) params sent mseq =
+         let subgoals, names = rw addrs names mseq params in
          let just =
             SingleJust { ext_names = names;
                          ext_params = params;
                          ext_refiner = opname
             }
          in
-            sent.sent_ml_rule ref_ml_rule;
-            List.map make_subgoal subgoals, just
+            sent.sent_ml_rule ref_rule;
+            subgoals, just
       in
-         refiner', (tac : prim_tactic)
+         MLRuleRefiner ref_rule, (tac : prim_tactic)
 
    (*
     * Just do the checking.
@@ -1692,29 +1701,32 @@ struct
    (*
     * An ML rewrite.
     *)
-   let add_ml_rewrite build name subgoals rw =
+   let add_ml_rewrite build name info =
+#ifdef VERBOSE_EXN
+      if !debug_refiner then
+         eprintf "Refiner.add_cond_rewrite: %s%t" name eflush;
+#endif
+      let { ml_rewrite_rewrite = rw } = info in
       let { build_opname = opname; build_refiner = refiner } = build in
       let opname = mk_opname name opname in
       let ref_crw =
          { ml_rw_name = opname;
-           ml_rw_rewrite = rw;
+           ml_rw_info = info;
            ml_rw_refiner = refiner
          }
       in
       let refiner' = MLRewriteRefiner ref_crw in
-      let rw' ((vars, params) as args) sent bvars seq t =
-         let subgoals' = List.map (replace_goal seq) subgoals in
-         let t' = rw args t in
-         let just =
-            SingleJust { ext_names = vars;
+      let rw (vars, params) (sent : sentinal) (bvars : string list list) seq t =
+         let t, subgoals, names = rw vars bvars params seq t in
+            sent.sent_ml_rewrite ref_crw;
+            t,
+            subgoals,
+            SingleJust { ext_names = names;
                          ext_params = params;
                          ext_refiner = opname
             }
-         in
-            sent.sent_ml_rewrite ref_crw;
-            t', subgoals', just
       in
-         refiner', (rw' : prim_cond_rewrite)
+         refiner', (rw : prim_cond_rewrite)
 
    (************************************************************************
     * API FUNCTIONS                                                        *
@@ -1760,8 +1772,8 @@ struct
          check refiner;
          build.build_refiner <- refiner
 
-   let create_ml_rule build term mlr =
-      let refiner, tac = add_ml_rule build term mlr in
+   let create_ml_rule build name mlr =
+      let refiner, tac = add_ml_rule build name mlr in
          build.build_refiner <- refiner;
          tac
 
@@ -1805,8 +1817,8 @@ struct
          check refiner;
          build.build_refiner <- refiner
 
-   let create_ml_rewrite build name subgoals rw =
-      let refiner, rw' = add_ml_rewrite build name subgoals rw in
+   let create_ml_rewrite build name rw =
+      let refiner, rw' = add_ml_rewrite build name rw in
          build.build_refiner <- refiner;
          (rw' : prim_cond_rewrite)
 
@@ -1835,8 +1847,8 @@ struct
 
     | RuleRefiner { rule_name = n; rule_rule = t; rule_refiner = r } ->
          RIRule { ri_rule_name = n; ri_rule_rule = t }, r
-    | MLRuleRefiner { ml_rule_arg = cond; ml_rule_refiner = r } ->
-         RIMLRule { ri_ml_rule_arg = cond }, r
+    | MLRuleRefiner { ml_rule_name = cond; ml_rule_refiner = r } ->
+         RIMLRule { ri_ml_rule_name = cond }, r
     | PrimRuleRefiner { prule_rule = rule; prule_refiner = r } ->
          RIPrimTheorem { ri_pthm_axiom = RuleRefiner rule }, r
 

@@ -374,7 +374,9 @@ and process_ctyp x =
     | TySum (loc, x)       -> TySum (loc, List.map process_string_ctyplist x)
     | TyTup (loc, x)       -> TyTup (loc, List.map process_ctyp x)
     | TyUid (loc, x)       -> TyUid (loc, x)
+(*
     | TyXnd (loc, s, x)    -> TyXnd (loc, s, process_ctyp x)
+*)
 
 and process_patt x =
    let x = substitute_patt_macros x in
@@ -395,7 +397,9 @@ and process_patt x =
     | PaTup (loc, x)       -> PaTup (loc, List.map process_patt x)
     | PaTyc (loc, x, y)    -> PaTyc (loc, process_patt x, process_ctyp y)
     | PaUid (loc, x)       -> PaUid (loc, x)
+(*
     | PaXnd (loc, s, x)    -> PaXnd (loc, s, process_patt x)
+*)
 
 and process_class_type_infos x =
    match x with
@@ -439,7 +443,9 @@ and process_expr x =
     | ExTyc (loc, x, y)    -> ExTyc (loc, process_expr x, process_ctyp y)
     | ExUid (loc, x)       -> ExUid (loc, x)
     | ExWhi (loc, x, y)    -> ExWhi (loc, process_expr x, List.map process_expr y)
+(*
     | ExXnd (loc, s, x)    -> ExXnd (loc, s, process_expr x)
+*)
 
 and process_module_type x =
    match x with
@@ -534,7 +540,9 @@ and process_class_type x =
       CtCon (loc, x, y)    -> CtCon (loc, x, List.map process_ctyp y)
     | CtFun (loc, x, y)    -> CtFun (loc, process_ctyp x, process_class_type y)
     | CtSig (loc, x, y)    -> CtSig (loc, process_ctypopt x, List.map process_class_sig_item y)
+(*
     | CtXnd (loc, s, x)    -> CtXnd (loc, s, process_class_type x)
+*)
 
 and process_class_sig_item x =
    match x with
@@ -552,7 +560,9 @@ and process_class_expr x =
     | CeLet (loc, x, y, z) -> CeLet (loc, x, List.map process_patt_expr y, process_class_expr z)
     | CeStr (loc, x, y)    -> CeStr (loc, process_pattopt x, List.map process_class_str_item y)
     | CeTyc (loc, x, y)    -> CeTyc (loc, process_class_expr x, process_class_type y)
+(*
     | CeXnd (loc, s, x)    -> CeXnd (loc, s, process_class_expr x)
+*)
 
 and process_class_str_item x =
    match x with
