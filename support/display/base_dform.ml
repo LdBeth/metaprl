@@ -309,18 +309,21 @@ let format_bconts format_term buf v = function
  | conts -> format_term buf NOParens <:con< df_bconts{$mk_xlist_term (List.map make_cont conts)$} >>
 
 (*
- * For sequents.
- * In the "format" function,
- *    i is the hyp number, if it is known
- *    cflag is true if the last term was a conclusion
- *    t is the term to be printed.
+ * The refiner uses a special representation for sequents that requires the
+ * display form to be implemented in ML.
  *)
-ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
+let format_seq_src format_term buf =
    let rec format_goal goals i len =
+      if i = 0 then begin
+         format_string buf " >-";
+         format_space buf
+      end;
       if i <> len then
          begin
-            format_string buf (if i = 0 then " >-" else ";");
-            format_space buf;
+            if i > 0 then begin
+               format_string buf ";";
+               format_space buf;
+            end;
             format_term buf NOParens (SeqGoal.get goals i);
             format_goal goals (succ i) len
          end
@@ -368,18 +371,18 @@ ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- 'concl } format
    in
       format
 
+ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
+   format_seq_src format_term buf
+
+ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- } format_term buf =
+   format_seq_src format_term buf
+
 let format_context format_term buf v conts values =
    format_term buf NOParens <:con< df_context_var[$v$:v] >>;
    format_bconts format_term buf v conts;
    format_term_list format_term buf values
 
-(*
- * @begin[doc]
- * The refiner uses a special representation for sequents that requires the
- * display form to be implemented in ML.
- * @end[doc]
- *)
-ml_dform sequent_prl_df : mode["prl"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
+let format_seq_prl format_term buf =
    let rec format_hyp hyps i len =
       if i <> len then
          let lead = (string_of_int (succ i)) ^ ". " in
@@ -441,7 +444,13 @@ ml_dform sequent_prl_df : mode["prl"] :: sequent ('ext) { <H> >- 'concl } format
    in
       format
 
-ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
+ml_dform sequent_prl_df : mode["prl"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
+   format_seq_prl format_term buf
+
+ml_dform sequent_prl_df : mode["prl"] :: sequent ('ext) { <H> >- } format_term buf =
+   format_seq_prl format_term buf
+
+let format_seq_html format_term buf =
    let rec format_hyp hyps i len =
       if i <> len then
          let lead = (string_of_int (succ i)) ^ ". " in
@@ -500,7 +509,13 @@ ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- 'concl } form
    in
       format
 
-ml_dform sequent_tex_df : mode["tex"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
+ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
+   format_seq_html format_term buf
+
+ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- } format_term buf =
+   format_seq_html format_term buf
+
+let format_seq_tex format_term buf =
    let rec format_hyp hyps i len =
       if i <> len then
          let lead = (string_of_int (succ i)) ^ ". " in
@@ -560,6 +575,12 @@ ml_dform sequent_tex_df : mode["tex"] :: sequent ('ext) { <H> >- 'concl } format
          format_ezone buf
    in
       format
+
+ml_dform sequent_tex_df : mode["tex"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
+   format_seq_tex format_term buf
+
+ml_dform sequent_tex_df : mode["tex"] :: sequent ('ext) { <H> >- } format_term buf =
+   format_seq_tex format_term buf
 
 (*
  * This is a convenient way to print a number.
