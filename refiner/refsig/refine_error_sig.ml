@@ -75,10 +75,19 @@ sig
     * We declare the general exception type for all the
     * modules in the refiner.
     *
-    * GenericError is used when the specific error is not desired.
+    * The RefineError parameters are only meant to be used for user
+    * interaction and debugging purposes. But in the code that does not directly
+    * produce any output, try ... with ... expressions should
+    * only mention generic  RefineError _  pattern and should not
+    * try to match specific parameters.
+    *
+    * This limitation makes it possible to use RefineError(GenericError)
+    * instead of any other RefineError when we do not care about printed
+    * error messages and want to reduce the RefineError allocation
+    * overhead.
     *)
    type refine_error =
-      (* Generic error is used in simplified refiners *)
+      (* Generic error is used in simplified refiners for space saving reasons *)
       GenericError
 
       (* Mptop toploop ignore this error *)
