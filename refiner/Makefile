@@ -11,7 +11,6 @@ MLZFILES :=\
 	term_shape_sig\
 	term_eval_sig\
 	term_meta_sig\
-	simple_print_sig\
 	refine_sig\
 	refiner_sig\
 	ml_format_sig\
@@ -30,7 +29,6 @@ LMFILES :=\
 	term_shape_sig\
 	term_eval_sig\
 	term_meta_sig\
-	simple_print_sig\
 	rewrite_sig\
 	refine_sig\
 	refiner_sig\
