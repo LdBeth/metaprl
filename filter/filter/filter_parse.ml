@@ -275,12 +275,12 @@ and expr_of_hyps_con loc hyps =
             match hyp with
                ConContext (v, args) ->
                   let args = mk_list_expr loc (List.map (expr_of_term_con loc) args) in
-                  let e = <:expr< Refiner.Refiner.TermType.Context (Lm_symbol.add $v$, $args$) >> in
+                  let e = <:expr< Context (Lm_symbol.add $v$, $args$) >> in
                      <:expr< [ $e$ :: $hyps$ ] >>
              | ConHypList l ->
                   <:expr< $l$ @ $hyps$ >>
              | ConHypothesis (v, t) ->
-                  let e = <:expr< Refiner.Refiner.TermType.HypBinding ($v$, $expr_of_term_con loc t$) >> in
+                  let e = <:expr< Hypothesis ($v$, $expr_of_term_con loc t$) >> in
                      <:expr< [ $e$ :: $hyps$ ] >>
 
 let con_exp s =
