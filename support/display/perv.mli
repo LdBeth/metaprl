@@ -143,6 +143,7 @@ declare type ty_exists{'a : Ty; v : 'a. 'ty['v] : ty_hyp} : ty_hyp
  *    <x<|v1, ..., vn|>[t1; ...; tn]>
  *)
 declare xsovar[v:v]{'contexts : Dform; 'args : Dform} : 'a
+declare xcontext[v:v]{'contexts : Dform; 'args : Dform} : 'a
 declare xhypcontext{'contexts : Dform; 'args : Dform} : 'a
 
 (*
