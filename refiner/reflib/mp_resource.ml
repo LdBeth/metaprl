@@ -162,11 +162,6 @@ let local_state =
      names = StringSet.empty;
    }
 
-let clear () =
-   state.theory_includes <- Hashtbl.create 19;
-   state.bookmarker <- Hashtbl.create 19;
-   state.processed_data <- Hashtbl.create 19
-
 let improve name (data:'input) =
    match local_state.data with
       (DatData l_data) :: l_tail ->
@@ -194,6 +189,18 @@ let theory_bookmark name = name, ""
 
 let top_name = "_$top_resource$_"
 let top_bookmark = theory_bookmark top_name
+
+let clear () =
+   state.theory_includes <- Hashtbl.create 19;
+   state.bookmarker <- Hashtbl.create 19;
+   let pd = Hashtbl.create 19 in
+   let clear_res s t =
+      let t' = Hashtbl.create 19 in
+         Hashtbl.add t' empty_bookmark (Hashtbl.find t empty_bookmark);
+         Hashtbl.add pd s t'
+   in
+      Hashtbl.iter clear_res state.processed_data;
+      state.processed_data <- pd
 
 let close_theory name =
    if Hashtbl.mem state.raw_data name then
