@@ -134,7 +134,7 @@ struct
       match (terms, i) with
          (hd::_, 0) ->
             hd
-       | (hd::tl, _) ->
+       | (_::tl, _) ->
             getnth ATERM tl (pred i)
        | ([], _) ->
             REF_RAISE(RefineError ("getnth", AddressError (a, term)))
@@ -157,23 +157,23 @@ struct
             { term_op = op } when Opname.eq (dest_op op).op_name context_opname ->
                let v, _, conts, subterms = dest_context t in
                   mk_so_var_term v conts subterms
-          | { term_op = op; term_terms = bterm :: _ } ->
+          | { term_terms = bterm :: _ } ->
                (dest_bterm bterm).bterm
           | _ ->
                REF_RAISE(RefineError ("term_subterm_nthpath", AddressError (a, term)))
          end
     | i ->
-         let { term_op = op; term_terms = bterms } = dest_term t in
-            match (dest_term t).term_terms with
-               [bterm] ->
-                  term_subterm_nthpath ATERM (dest_bterm bterm).bterm (i - 1)
-             | ((_ :: bterm2 :: _) as bterms) ->
-                  if Opname.eq (dest_op op).op_name context_opname then
-                     let _, t, _, _ = dest_context t in term_subterm_nthpath ATERM t (i - 1)
-                  else
-                     term_subterm_nthpath ATERM (dest_bterm bterm2).bterm (i - 1)
-             | _ ->
-                  REF_RAISE(RefineError ("term_subterm_nthpath", AddressError (a, term)))
+         begin match dest_term t with
+            { term_terms = [bterm] } ->
+               term_subterm_nthpath ATERM (dest_bterm bterm).bterm (i - 1)
+          | { term_op = op; term_terms = _ :: bterm2 :: _ } ->
+               if Opname.eq (dest_op op).op_name context_opname then
+                  let _, t, _, _ = dest_context t in term_subterm_nthpath ATERM t (i - 1)
+               else
+                  term_subterm_nthpath ATERM (dest_bterm bterm2).bterm (i - 1)
+          | _ ->
+               REF_RAISE(RefineError ("term_subterm_nthpath", AddressError (a, term)))
+         end
 
    (*
     * Get the subterm for any type of path.
@@ -241,9 +241,9 @@ struct
                      else
                         DO_FAIL
              | { term_op = op; term_terms = bterm :: bterms } ->
-                  let { bvars = vars; bterm = term } = dest_bterm bterm in
+                  let { bvars = _vars; bterm = term } = dest_bterm bterm in
                   let term, arg = f vars_bvars term in
-                  let bterm = mk_bterm vars term in
+                  let bterm = mk_bterm _vars term in
                      mk_term op (bterm :: bterms), arg
              | _ ->
                   DO_FAIL
@@ -251,20 +251,20 @@ struct
             match dest_term t with
                { term_op = op; term_terms = [bterm] } ->
                   (* Always take subterm if there is only one *)
-                  let { bvars = vars; bterm = trm } = dest_bterm bterm in
+                  let { bvars = _vars; bterm = trm } = dest_bterm bterm in
                   let term, arg = nthpath_replace_term FAIL f vars_bvars trm (i - 1) in
-                  let bterm = mk_bterm vars term in
+                  let bterm = mk_bterm _vars term in
                      mk_term op [bterm], arg
-             | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms') } ->
+             | { term_op = op; term_terms = bterm1 :: bterm2 :: bterms } ->
                   if Opname.eq (dest_op op).op_name context_opname then
                      let v, t, conts, args  = dest_context t in
-                     let vars = [v] in
+                     let _vars = [v] in
                      let t, arg = nthpath_replace_term FAIL f vars_bvars t (i - 1) in
                         mk_context_term v t conts args, arg
                   else
-                     let { bvars = vars; bterm = trm } = dest_bterm bterm2 in
+                     let { bvars = _vars; bterm = trm } = dest_bterm bterm2 in
                      let term, arg = nthpath_replace_term FAIL f vars_bvars trm (i - 1) in
-                     let bterm = mk_bterm vars term in
+                     let bterm = mk_bterm _vars term in
                         mk_term op (bterm1 :: bterm :: bterms), arg
              | _ ->
                   DO_FAIL
@@ -311,7 +311,7 @@ struct
       MAKE_PATH_REPLACE_BTERM(bvars, SymbolSet.add_list bvars vars, path_var_replace_term, path_var_replace_bterm)
 
    let rec nthpath_var_replace_term =
-      MAKE_NTHPATH_REPLACE_TERM(bvars, SymbolSet.add_list bvars vars, nthpath_var_replace_term)
+      MAKE_NTHPATH_REPLACE_TERM(bvars, SymbolSet.add_list bvars _vars, nthpath_var_replace_term)
 
    IFDEF VERBOSE_EXN THEN
       let rec apply_var_fun_at_addr_aux =

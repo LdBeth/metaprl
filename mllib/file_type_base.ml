@@ -175,7 +175,7 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
                 | Bad_version _ as exn ->
                      close_in inx;
                      raise exn
-                | exn ->
+                | _ ->
                      close_in inx;
                      raise (Sys_error "File_type_base.read")
       end)

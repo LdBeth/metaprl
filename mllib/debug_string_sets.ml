@@ -81,7 +81,7 @@ struct
          error_sets s1' s2'
       end
 
-   let iter f (s1,s2) = Set1.iter f s1
+   let iter f (s1,_) = Set1.iter f s1
 
    let cardinal (s1,s2) =
       let c1 = Set1.cardinal s1 in
@@ -130,7 +130,7 @@ struct
             eprintf "Second arg:\n";
             error_sets s1_2 s2_2
 
-   let elements (s1,s2) = Set1.elements s1
+   let elements (s1,_) = Set1.elements s1
 
    let to_list = elements
 

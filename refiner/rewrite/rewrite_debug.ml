@@ -90,7 +90,7 @@ struct
          fprintf out "String %s" s
     | StackVar v ->
          fprintf out "Var %a" output_symbol v
-    | StackLevel l ->
+    | StackLevel _ ->
          fprintf out "Level"
     | StackBTerm (t, vars) ->
          fprintf out "BTerm %a[%a]" print_term t output_symbol_list vars
@@ -101,7 +101,7 @@ struct
             output_symbol_list vars
             print_term t
             (string_of_address addr)
-    | StackSeqContext (vars, (i, len, hyps)) ->
+    | StackSeqContext (vars, (i, len, _)) ->
          fprintf out "SeqContext (%a/(%d,%d))" (**)
             output_symbol_list vars i len
 
@@ -175,7 +175,7 @@ struct
          fprintf out ")"
     | RWMVar i ->
          fprintf out "@@%d:v" i
-    | RWObId id ->
+    | RWObId _ ->
          fprintf out "ObId"
     | RWParamList pl ->
          fprintf out "[%a]" print_param_list pl
@@ -222,7 +222,7 @@ struct
     * Tab to the tabstop.
     *)
    let tab out stop =
-      for i = 0 to stop do
+      for _i = 0 to stop do
          output_char out ' '
       done
 

@@ -131,10 +131,10 @@ ENDIF
       in
          create 17 17 name fail weaken compare make
 
-   let make_descriptor info i item =
+   let make_descriptor _info i item =
 IFDEF VERBOSE_EXN THEN
       { descriptor = i;
-        desc_name = info.name;
+        desc_name = _info.name;
         anchor = item
       }
 ELSE
@@ -253,7 +253,7 @@ ENDIF
     * For debugging, check that the value saved in the table
     * still exists and matches the value passed in the index.
     *)
-   let retrieve info param index =
+   let retrieve info _ index =
       if Weak.length info.image_array <= index.descriptor then
          invalid_arg "WeakMemo.retrieve: out of range";
       (IFDEF VERBOSE_EXN THEN (**)

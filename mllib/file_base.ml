@@ -267,31 +267,30 @@ struct
     * Check if it has already been loaded, otherwise load it.
     *)
    let find base arg name select suffix =
-      let { io_table = table } = base in
-         if !debug_file_base then
-            eprintf "File_base.find: %s%t" name eflush;
-         try
-            let rec search = function
-               info::tl ->
-                  let { info_type = select'; info_file = file; info_dir = dir } = info in
-                     if !debug_file_base then
-                        eprintf "File_base.find: checking %s/%s%t" dir file eflush;
-                     if select' = select then
-                        info
-                     else
-                        search tl
-             | [] ->
-                  raise Not_found
-            in
-            let info = search !(Hashtbl.find table name) in
-               if !debug_file_base then
-                  eprintf "File_base.find: %s: found %s%t" name info.info_file eflush;
-               info
-         with
-            Not_found ->
-               if !debug_file_base then
-                  eprintf "File_base.find: %s: loading%t" name eflush;
-               load_specific true base (find_specs select suffix) arg name
+      if !debug_file_base then
+         eprintf "File_base.find: %s%t" name eflush;
+      try
+         let rec search = function
+            info::tl ->
+               let { info_type = select'; info_file = file; info_dir = dir } = info in
+                  if !debug_file_base then
+                     eprintf "File_base.find: checking %s/%s%t" dir file eflush;
+                  if select' = select then
+                     info
+                  else
+                     search tl
+          | [] ->
+               raise Not_found
+         in
+         let info = search !(Hashtbl.find base.io_table name) in
+            if !debug_file_base then
+               eprintf "File_base.find: %s: found %s%t" name info.info_file eflush;
+            info
+      with
+         Not_found ->
+            if !debug_file_base then
+               eprintf "File_base.find: %s: loading%t" name eflush;
+            load_specific true base (find_specs select suffix) arg name
 
    let find_file base arg name select suffix =
       load_specific false base (find_specs select suffix) arg name
@@ -301,7 +300,6 @@ struct
     * This means the root with the same name, but different suffix.
     *)
    let find_match base arg info select suffix =
-      let { io_table = table } = base in
       let { info_dir = dir; info_file = file } = info in
       let rec search = function
          info'::tl ->
@@ -313,7 +311,7 @@ struct
        | [] ->
             raise Not_found
       in
-         try search !(Hashtbl.find table file) with
+         try search !(Hashtbl.find base.io_table file) with
             Not_found ->
                load_file true base (find_specs select suffix) arg dir file
 
@@ -335,7 +333,7 @@ struct
     * Save a module specification.
     * Try saving in all the valid formats until one of them succeeds.
     *)
-   let save base arg info suffix =
+   let save _ arg info suffix =
       let spec = find_spec info.info_type suffix in
       let filename = sprintf "%s/%s.%s" info.info_dir info.info_file spec.info_suffix in
          spec.info_marshal spec.info_magics info.info_magic spec.info_versions arg filename info.info_info
@@ -344,7 +342,7 @@ struct
     * Save a module specification.
     * Try saving in all the valid formats until one of them succeeds.
     *)
-   let save_if_newer base arg info suffix =
+   let save_if_newer _ arg info suffix =
       let spec = find_spec info.info_type suffix in
       let filename = sprintf "%s/%s.%s" info.info_dir info.info_file spec.info_suffix in
       let time' =
@@ -362,7 +360,7 @@ struct
     * Save a module specification.
     * Try saving in all the valid formats until one of them succeeds.
     *)
-   let save_if_missing base arg info suffix =
+   let save_if_missing _ arg info suffix =
       let spec = find_spec info.info_type suffix in
       let filename = sprintf "%s/%s.%s" info.info_dir info.info_file spec.info_suffix in
          if not (Sys.file_exists filename) then
@@ -419,18 +417,18 @@ struct
    (*
     * Projections.
     *)
-   let info base { info_info = data } = data
+   let info _ { info_info = data } = data
 
-   let set_info base info data =
+   let set_info _ info data =
       info.info_info <- data
 
-   let file_name base { info_file = file } = file
+   let file_name _ { info_file = file } = file
 
-   let full_name base { info_dir = dir; info_file = file; info_type = select } =
+   let full_name _ { info_dir = dir; info_file = file; info_type = select } =
       let { info_suffix = suffix } = find_spec select AnySuffix in
          sprintf "%s/%s.%s" dir file suffix
 
-   let type_of base { info_type = select } = select
+   let type_of _ { info_type = select } = select
 end
 
 (*

@@ -42,7 +42,7 @@ exception OrefNone
 
 let oref_p = function
  { ocontents = None} -> false
- | { ocontents = Some a } -> true
+ | { ocontents = Some _ } -> true
 
 let oref_option a = a.ocontents
 

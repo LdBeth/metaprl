@@ -530,9 +530,9 @@ struct
        | _::tl, _ -> get_nth tl (pred i)
        | _ -> REF_RAISE(RefineError ("nth_hyp", IntError i))
 
-   let nth_hyp i sent seq =
+   let nth_hyp i _ seq =
       let { mseq_goal = goal; mseq_hyps = hyps } = seq in
-	 if i<0 then REF_RAISE(RefineError ("nth_hyp", IntError i)) else
+         if i<0 then REF_RAISE(RefineError ("nth_hyp", IntError i)) else
             if alpha_equal (get_nth hyps i) goal then
                [], NthHypJust (seq, i)
             else
@@ -541,7 +541,7 @@ struct
    (*
     * Cut rule.
     *)
-   let cut t sent seq =
+   let cut t _ seq =
       let { mseq_hyps = hyps; mseq_goal = goal } = seq in
       let cut_lemma = { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t } in
       let cut_then = { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps @ [t]; mseq_goal = goal } in
@@ -1296,7 +1296,7 @@ struct
          DepSet.singleton (DepCondRewrite, name)
     | { crw_refiner = refiner; crw_proof = PDerived dp } ->
          compute_deps_pf compute_deps_ext refiner dp
-    | { crw_name = name; crw_proof = PDefined } ->
+    | { crw_proof = PDefined } ->
          raise (Invalid_argument "Refine.compute_deps_crw")
 
    and compute_deps_crwjust find = function
@@ -1419,7 +1419,7 @@ struct
       let simple_combine _ goal args =
          mk_xlist_term (goal :: args)
       in
-      (* Debugging output *)
+      (* Debugging output
       let string_of_prog_item = function
          ECBind -> "Bind"
        | ECSkip i -> "Skip(" ^ (string_of_int i) ^ ")"
@@ -1428,6 +1428,7 @@ struct
        | ECRenameLast i -> "RenameLast(" ^ (string_of_int i) ^ ")"
        | ECRestart -> "Restart"
       in
+      *)
       let apply_arg_prog addrs goal arg = function
          ProgDummy ->
             dummy_ext
@@ -1508,7 +1509,7 @@ struct
                else compute
             ELSE compute ENDIF
 
-   let justify_rule build name addrs params goal subgoals proof =
+   let justify_rule build name _ _ goal subgoals proof =
       let opname = mk_opname name build.build_opname in
       let r =
          try Hashtbl.find build.build_rules opname
@@ -1613,7 +1614,7 @@ struct
       let fold (vars, conts, hyps) = function
          Context (c, _, _) as hyp ->
             (vars, c::conts, hyp::hyps)
-       | Hypothesis (v,t) as hyp ->
+       | Hypothesis (v, _) as hyp ->
             (mk_var_term v :: vars , conts, hyp::hyps)
       in
       let make_wildcard_ext_arg t =
@@ -1685,7 +1686,7 @@ struct
    (*
     * Just do the checking.
     *)
-   let check_rule name addrs params mterm =
+   let check_rule _ addrs params mterm =
       let subgoals, goal = unzip_mimplies mterm in
       let vars = free_vars_terms (goal::subgoals) in
          ignore (Rewrite.term_rewrite Strict addrs (goal::params) subgoals);
@@ -1705,7 +1706,7 @@ struct
    (*
     * See if the rewrite will compile.
     *)
-   let check_rewrite name addrs params subgoals redex contractum =
+   let check_rewrite _ addrs params subgoals redex contractum =
       ignore(Rewrite.term_rewrite Strict addrs(*empty_args_spec*) (redex::params) (contractum::subgoals))
 
    (*
@@ -1823,7 +1824,7 @@ struct
       let _, _, terms = dest_so_var bt.bterm in
          check_bound_vars bt.bvars terms
 
-   let check_def_redex name redex =
+   let check_def_redex _ redex =
        List.iter check_def_bterm (dest_term redex).term_terms
 
    let check_definition name redex contractum =
@@ -1936,7 +1937,7 @@ struct
          Hashtbl.add build.build_cond_rewrites opname pre_crw;
          CondRW rw'
 
-   let justify_cond_rewrite build name params subgoals redex contractum proof =
+   let justify_cond_rewrite build name _ subgoals redex contractum proof =
       let opname = mk_opname name build.build_opname in
       let crw =
          try Hashtbl.find build.build_cond_rewrites opname

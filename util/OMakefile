@@ -37,7 +37,7 @@ clean:
 OCAML_LIBS += $(CAMLP4LIB)/odyl $(CAMLP4LIB)/camlp4
 OCAMLINCLUDES += $(CAMLP4LIB)
 OCAML_LINK_FLAGS += -linkall
-OCAMLFLAGS += -pp "$(CAMLP4R) -I $(CAMLP4LIB) -nolib"
+OCAMLFLAGS += -pp "$(CAMLP4R) -I $(CAMLP4LIB) -nolib -loc _loc"
 
 %.cmx %.o: $(CAMLP4R_VERSION)
 %.cmo: $(CAMLP4R_VERSION)

@@ -77,10 +77,10 @@ let dest_bint (a, b) =
   let c = abs a in
   if c > 0x3FFF then failwith "lint32 too big"
   else let i = (c lsl 16) lor b in if a >= 0 then i else (-i)
-let dest_lint32 (a, b) = (a, b)
+let dest_lint32 i = i
 
-let int_of_lint32 (a, b) = b
-let lint32_of_int int = mk_bint int
+let int_of_lint32 = snd
+let lint32_of_int = mk_bint
 
 let lband (x, w) (y, z) = ((x land y),(w land z))
 let lbor (x, w) (y, z) = ((x lor y), (w lor z))

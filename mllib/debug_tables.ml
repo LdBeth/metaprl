@@ -130,7 +130,7 @@ struct
             ignore(find_all t' key');
             raise(Invalid_argument "DebugTables.add - something funny")
 
-   let union (t1, t2 as t) (t1', t2' as t') =
+   let union (t1, t2) (t1', t2') =
       try
          check(Table1.union t1 t1', Table2.union t2 t2')
       with
@@ -148,7 +148,7 @@ struct
             ignore(find_all t' key');
             raise(Invalid_argument "DebugTables.remove - something funny")
 
-   let iter f (t1, t2) =
+   let iter f (t1, _) =
       Table1.iter f t1
 
    let list_of (t1, t2) =

@@ -294,7 +294,7 @@ struct
                   raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
          end
 
-    | t ->
+    | _ ->
          raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
 
    and build_con_exn = Invalid_argument("Rewrite_build_contractum.build_contractum_param: stack entry is not valid")
@@ -329,7 +329,7 @@ struct
                 StackNumber j -> Number j
               | StackString s -> Number (Lm_num.num_of_string s)
               | StackVar v -> MNumber v
-              | t -> raise(build_con_exn)
+              | _ -> raise(build_con_exn)
          end
     | RWMString i ->
          begin
@@ -337,21 +337,21 @@ struct
                 StackString s -> String s
               | StackVar v -> MString v
               | StackNumber j -> String (Lm_num.string_of_num j)
-              | t -> raise(build_con_exn)
+              | _ -> raise(build_con_exn)
          end
     | RWMToken i ->
          begin
              match stack.(i) with
                 StackString s -> Token s
               | StackVar v -> MToken v
-              | t -> raise(build_con_exn)
+              | _ -> raise(build_con_exn)
          end
     | RWMLevel1 i ->
          MLevel begin
              match stack.(i) with
                 StackLevel l -> l
               | StackVar v -> mk_var_level_exp v
-              | t -> raise(build_con_exn)
+              | _ -> raise(build_con_exn)
          end
     | RWMLevel2 { rw_le_const = c; rw_le_vars = vars } ->
          MLevel (build_contractum_level stack (mk_const_level_exp c) vars)
@@ -360,7 +360,7 @@ struct
              match stack.(i) with
                 StackVar v -> v
               | StackString s -> Lm_symbol.add s
-              | t -> raise(build_con_exn)
+              | _ -> raise(build_con_exn)
          end
     | RWObId id ->
          ObId id
@@ -374,9 +374,9 @@ struct
          List.map build_contractum_param' params
 
    and build_contractum_bterm names bnames stack bvars = function
-      { rw_bvars = vcount; rw_bnames = []; rw_bterm = term } ->
+      { rw_bnames = []; rw_bterm = term } ->
             mk_bterm [] (build_contractum_term names bnames stack bvars term)
-    | { rw_bvars = vcount; rw_bnames = vars; rw_bterm = term } ->
+    | { rw_bnames = vars; rw_bterm = term } ->
          let vars' = build_bnames names bnames stack vars in
          let bnames' = SymbolSet.add_list bnames vars' in
          let bvars' = append_vars bvars vars' in

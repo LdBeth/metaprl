@@ -249,7 +249,7 @@ struct
                Hashtbl.add info.param_hash param result;
                result
 
-   let p_constr_operator info (opname_index, params) =
+   let p_constr_operator _info (opname_index, params) =
       TTerm.make_op
       { TType.op_name = opname_index;
         TType.op_params = params

@@ -380,7 +380,7 @@ struct
                         ENDIF;
                         if v' <> v then
                            REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (VarMatch v)))
-                   | x ->
+                   | _ ->
                         REF_RAISE(RefineError ("match_redex_term", RewriteStringError "stack entry is not a string"))
             end
 
