@@ -40,18 +40,12 @@ DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 
 all: check_config
 	+@if (echo Making util...; $(MAKE) -C util -f Makefile $@); then true; else exit 1; fi
-	+@for i in $(PDIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	done
 	+@for i in $(DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 opt: check_config
 	+@if (echo Making util...; $(MAKE) -C util -f Makefile $@); then true; else exit 1; fi
-	+@for i in $(PDIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	done
 	+@for i in $(DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
@@ -113,9 +107,6 @@ profile_opt_mem: check_config
 
 install: check_config
 	+@if (echo Making util...; $(MAKE) -C util -f Makefile $@); then true; else exit 1; fi
-	+@for i in $(PDIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	done
 	+@for i in $(DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
@@ -124,14 +115,8 @@ clean:
 	+@for i in lib bin doc util $(DIRS); do\
 		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
-	+@for i in $(PDIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	done
 
 depend: check_config
-	+@for i in $(PDIRS) $(DIRS); do\
-		if (echo Making $$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
-	done
 	+@$(MAKE) -C refiner depend
 	+@$(MAKE) -C filter depend
 
