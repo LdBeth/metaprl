@@ -1200,7 +1200,6 @@ struct
             if !debug_rules then
                eprintf "Applied rule %s, got %a%t" (string_of_opname opname) (print_any_list print_term) subgoals eflush;
          ENDIF;
-         let subgoals = apply_rewrite rw (addrs, vars) mseq.mseq_goal params in
          let make_subgoal subgoal =
             { mseq_vars = FreeVars vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
          in
