@@ -40,6 +40,7 @@ open Precedence
 open Simple_print.SimplePrint
 open Mp_resource
 open File_base_type
+open Term_shape_sig
 
 open Refiner_io
 open Refiner.Refiner
@@ -163,11 +164,11 @@ let close () =
  * interface.
  *)
 let mk_opname_ref =
-   ref ((fun _ -> raise (Failure "Filter_parse.mk_opname is unititialized"))
-        : string list -> Opname.opname)
+   ref ((fun _ _ _ -> raise (Failure "Filter_parse.mk_opname is unititialized"))
+      : opname_fun)
 
-let mk_opname loc l =
-   try !mk_opname_ref l with
+let mk_opname loc l p a =
+   try !mk_opname_ref l p a with
       exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -335,6 +336,12 @@ type spelling =
  | SpellOn
  | SpellAdd
 
+let fake_arities =
+   List.map ( fun _ -> 0)
+
+let string_params =
+   List.map ( fun _ -> ShapeString)
+
 let parse_comment loc t =
    (*
     * Convert the result of the Comment_parse.
@@ -369,8 +376,9 @@ let parse_comment loc t =
             else
                spelling
          in
-         let opname = mk_opname loc opname in
-         let params = List.map (fun s -> make_param (String s)) params in
+         let opname =
+            mk_opname loc opname (string_params params) (fake_arities args)
+         in let params = List.map (fun s -> make_param (String s)) params in
          let args = List.map (fun t -> mk_simple_bterm (build_term spelling t)) args in
          let op = mk_op opname params in
          let t = mk_term op args in
@@ -520,8 +528,7 @@ struct
    let declare_term proc loc (s, params, bterms) =
       let opname' = Opname.mk_opname s (FilterCache.op_prefix proc.cache) in
       let t = mk_term (mk_op opname' params) bterms in
-         FilterCache.rm_opname proc.cache s;
-         FilterCache.add_opname proc.cache s opname';
+         FilterCache.update_opname proc.cache s t;
          FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t }, loc);
          t
 

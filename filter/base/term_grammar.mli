@@ -31,8 +31,10 @@
  *)
 
 open Opname
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMeta
+open Refiner.Refiner
+open Term
+open TermMeta
+open TermShape
 open Filter_type
 
 (*
@@ -40,7 +42,7 @@ open Filter_type
  *)
 module type TermGrammarSig =
 sig
-   val mk_opname : MLast.loc -> string list -> opname
+   val mk_opname : MLast.loc -> opname_fun
    val term_eoi : term Grammar.Entry.e
    val term : term Grammar.Entry.e
    val quote_term : quote_term Grammar.Entry.e

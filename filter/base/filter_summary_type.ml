@@ -35,8 +35,10 @@
  *
  *)
 
-open Refiner.Refiner.TermType
+open Refiner.Refiner
 open Opname
+open TermType
+open TermShape
 
 open File_base_type
 
@@ -201,11 +203,9 @@ sig
    val expand_path : info -> module_path -> module_path
 
    (* Opname management *)
-   val optable : info -> (string -> opname)
    val op_prefix : info -> opname
-   val add_opname : info -> string -> opname -> unit
-   val rm_opname : info -> string -> unit
-   val mk_opname : info -> string list -> opname
+   val update_opname : info -> string -> term -> unit
+   val mk_opname : info -> opname_fun
 
    (* Inherited access for module_info *)
    val find : info -> string -> (str_elem * loc)

@@ -28,15 +28,19 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Printf
 
 open Mp_debug
 open Opname
-open Refiner.Refiner.TermType
+open Term_shape_sig
+open Refiner.Refiner
+open TermType
+open Term
+open TermShape
 open Mp_resource
 open Simple_print
 
@@ -69,6 +73,35 @@ let debug_filter_path =
         debug_description = "display path expansions";
         debug_value = false
       }
+
+type op_shape = {
+   sh_name : string;
+   sh_params: shape_param list;
+   sh_arities : int list
+}
+
+let rec string_of_list f = function
+   [] -> "";
+ | [a] -> f a;
+ | hd::tl -> (f hd) ^ "; " ^ (string_of_list f tl)
+
+let string_of_param = function
+   ShapeString -> "S"
+ | ShapeNumber -> "N"
+ | ShapeVar -> "V"
+ | ShapeLevel -> "L"
+ | ShapeToken -> "T"
+
+let string_of_params = function
+   [] -> ""
+ | p -> "[" ^ (string_of_list string_of_param p) ^ "]"
+
+let string_of_arity i =
+   "<" ^ (string_of_int i) ^ ">"
+
+let string_of_shape { sh_name = name; sh_params = params; sh_arities = arities } =
+   name ^ (string_of_params params) ^
+      "{" ^ (string_of_list string_of_arity arities) ^ "}"
 
 module FilterSummaryTerm = Filter_summary.FilterSummaryTerm (Refiner.Refiner)
 
@@ -124,7 +157,7 @@ struct
    type sig_summary =
       { sig_summary : Base.info;
         sig_resources : sig_ctyp resource_info list;
-        sig_opnames : (string * opname) list;
+        sig_opnames : (op_shape * opname) list;
         sig_includes : sig_summary list
       }
 
@@ -149,7 +182,7 @@ struct
     *)
    type info =
       { opprefix : opname;
-        optable : (string, opname) Hashtbl.t;
+        optable : (op_shape, opname) Hashtbl.t;
         mutable summaries : sig_summary list;
 
         (* Names of precedences in this module *)
@@ -297,20 +330,35 @@ struct
     * by moving these opnames into a global file,
     * or by making nothing global.
     *)
-   let standard_opnames =
-      ["lzone"; "hzone"; "szone"; "izone"; "tzone"; "ezone";
-       "hbreak"; "sbreak"; "cbreak"; "space"; "hspace"; "newline";
-       "pushm"; "popm"; "pushfont"; "popfont";
-       "parens"; "prec"; "internal"; "mode"; "except_mode"; "slot";
-       "sequent"; "hyp"; "concl"; "var"; "context"]
+   let standard_opnames = [
+      (* No subterms, no params *)
+      "lzone"  , [], []; "hzone"   , [], []; "szone"   , [], []; "izone"  , [], [];
+      "tzone"  , [], []; "ezone"   , [], []; "space"   , [], []; "hspace" , [], [];
+      "newline", [], []; "popm"    , [], []; "pushfont", [], []; "popfont", [], [];
+      "parens" , [], []; "internal", [], [];
+      (* Some params *)
+      "cbreak", [ShapeString; ShapeString], [];
+      "hbreak", [ShapeString; ShapeString], [];
+      "sbreak", [ShapeString; ShapeString], [];
+      "mode", [ShapeString], []; "except_mode", [ShapeString], [];
+      "prec", [ShapeString], [];
+      (* Some subterms *)
+      "display_var", [ShapeVar], [0]; "sequent", [], [0;0];
+      (* Multi-shape operators *)
+      "slot", [ShapeString], []; "slot", [ShapeVar], []; "slot", [ShapeToken], [];
+      "slot", [ShapeLevel] , []; "slot", [ShapeNumber], [];
+      "slot", [ShapeString; ShapeString], [];
+      "slot", [ShapeString], [0]; "slot", [], [0];
+      "pushm", [], []; "pushm", [ShapeNumber], []; "pushm", [ShapeString], [];
+   ]
 
    (*
     * Make a new hashtable for mapping opnames.
     *)
    let create_optable () =
       let t = Hashtbl.create 79 in
-      let add s =
-         Hashtbl.add t s (mk_opname s nil_opname)
+      let add (s, ps, ar) =
+         Hashtbl.add t { sh_name=s; sh_params=ps; sh_arities=ar} (mk_opname s nil_opname)
       in
          List.iter add standard_opnames;
          t
@@ -318,9 +366,8 @@ struct
    (*
     * Get an opname.
     *)
-   let optable cache = function
-      str ->
-         Hashtbl.find cache.optable str
+   let optable cache =
+      Hashtbl.find cache.optable
 
    (*
     * Get the prefix.
@@ -329,55 +376,60 @@ struct
       cache.opprefix
 
    (*
-    * Add a map to the table.
+    * Construct an opname assuming it is declared in the current module.
     *)
-   let add_opname cache str name =
-      if !debug_opname then
-         eprintf "Filter_cache_fun.add_opname: %s.%s%t" str (SimplePrint.string_of_opname name) eflush;
-      Hashtbl.add cache.optable str name
-
-   (*
-    * Remove the map.
-    *)
-   let rm_opname cache str =
-      Hashtbl.remove cache.optable str
-
-   (*
-    * Construct an opname.
-    * If there is only one word, then this opname is declared in the current
-    * module.  Otherwise it is prefixed by one or more module names, which
-    * specify it more exactly.
-    *)
-   let mk_opname cache = function
-      [] ->
-         raise (Invalid_argument "mk_opname")
-
-    | [str] ->
-         (* Name in this module *)
-         begin
-            try
-               let opname = optable cache str in
+   let mk_opname cache names params arities =
+      match names with
+         [name] ->
+            let shape = { sh_name = name; sh_params = params; sh_arities = arities } in
+            begin try
+               let opname = optable cache shape in
                   if !debug_opname then
-                     eprintf "Filter_cache_fun.mk_opname: %s%t" (**)
+                     eprintf "Filter_cache_fun.mk_opname: %s -> %s%t" (**)
+                        (string_of_shape shape) (**)
                         (SimplePrint.string_of_opname opname) eflush;
                   opname
             with
                Not_found ->
-                  raise (Failure (sprintf "undeclared name: %s" str))
-         end
+                  raise (Failure (sprintf "undeclared name: %s" (string_of_shape shape)))
+            end
 
-    | path ->
-         (* The head serves to specify the name more precisely *)
-         let path' =
-            try expand_path cache path with
-               Not_found ->
-                  raise (BadCommand ("no object with name: " ^ (string_of_opname_list path)))
-         in
-         let opname = make_opname (List.rev path') in
-            if !debug_opname then
-               eprintf "Filter_cache_fun.mk_opname: path: %s%t" (**)
-                  (SimplePrint.string_of_opname opname) eflush;
-            opname
+   (*
+    * Otherwise opname is prefixed by one or more module names, which
+    * specify it more exactly.
+    *
+    * BUG!!! No shape checking is done here.
+    *)
+       | path ->
+            (* The head serves to specify the name more precisely *)
+           let path' =
+               try expand_path cache path with
+                  Not_found ->
+                     raise (BadCommand ("no object with name: " ^ (string_of_opname_list path)))
+            in
+            let opname = make_opname (List.rev path') in
+               if !debug_opname then
+                  eprintf "Filter_cache_fun.mk_opname: path: %s%t" (**)
+                     (SimplePrint.string_of_opname opname) eflush;
+               opname
+
+   let op_shape_of_term name t =
+    { sh_name = name;
+      sh_params = List.map param_type (dest_op (dest_term t).term_op).op_params;
+      sh_arities = Term.subterm_arities t
+    }
+
+   (*
+    * Update opname in the table.
+    *)
+   let update_opname cache name t =
+      let shape = op_shape_of_term name t in
+      let opname = opname_of_term t in
+         if !debug_opname then
+            eprintf "Filter_cache_fun.update_opname: %s -> %s%t" (**)
+               (string_of_shape shape) (SimplePrint.string_of_opname opname) eflush;
+         Hashtbl.remove cache.optable shape;
+         Hashtbl.add cache.optable shape opname
 
    (************************************************************************
     * ACCESS                                                               *
@@ -547,13 +599,14 @@ struct
 
           | Opname { opname_name = str; opname_term = t } ->
                (* Hash this name to the full opname *)
-               let opname = Opname.mk_opname str opprefix in
+               let opname = Term.opname_of_term t in
                let resources, opnames, includes = resources_opnames_includes in
                   if !debug_opname then
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
                         (SimplePrint.string_of_opname opname) eflush;
-                  Hashtbl.add cache.optable str opname;
-                  resources, (str, opname) :: opnames, includes
+                  let shape = op_shape_of_term str t in
+                  Hashtbl.add cache.optable shape opname;
+                  resources, (shape, opname) :: opnames, includes
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
@@ -614,11 +667,11 @@ struct
 
           | Opname { opname_name = str; opname_term = t } ->
                (* Hash this name to the full opname *)
-               let opname = Opname.mk_opname str opprefix in
+               let opname = Term.opname_of_term t in
                   if !debug_opname then
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
                         (SimplePrint.string_of_opname opname) eflush;
-                  Hashtbl.add cache.optable str opname
+                  Hashtbl.add cache.optable (op_shape_of_term str t) opname
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)

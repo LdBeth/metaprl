@@ -34,12 +34,15 @@ open Printf
 
 open Mp_debug
 open Opname
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermOp
-open Refiner.Refiner.TermMan
-open Refiner.Refiner.TermMeta
-open Refiner.Refiner.RefineError
+open Term_shape_sig
+open Refiner.Refiner
+open Term
+open TermType
+open TermOp
+open TermMan
+open TermMeta
+open TermShape
+open RefineError
 open Ml_string
 open Simple_print
 open Simple_print.SimplePrint
@@ -65,7 +68,7 @@ let debug_grammar =
  *)
 module type TermGrammarSig =
 sig
-   val mk_opname : MLast.loc -> string list -> opname
+   val mk_opname : MLast.loc -> string list -> shape_param list -> int list -> opname
    val term_eoi : term Grammar.Entry.e
    val term : term Grammar.Entry.e
    val quote_term : quote_term Grammar.Entry.e
@@ -104,6 +107,30 @@ struct
     * UTILITIES                                                            *
     ************************************************************************)
 
+   let mk_0opname loc name =
+      mk_opname loc [name] [] []
+
+   let mk_dep0_opname loc name =
+      mk_opname loc [name] [] [0]
+
+   let mk_dep0_dep0_opname loc name =
+      mk_opname loc [name] [] [0;0]
+
+   let mk_dep0_dep1_opname loc name =
+      mk_opname loc [name] [] [0;1]
+
+   let mk_dep0_dep2_opname loc name =
+      mk_opname loc [name] [] [0;2]
+
+   let mk_dep0_dep0_dep0_opname loc name =
+      mk_opname loc [name] [] [0;0;0]
+
+   let bterm_arities =
+      List.map ( fun bt -> List.length (dest_bterm bt).bvars)
+
+   let mk_bopname loc names params bterms =
+      mk_opname loc names (List.map param_type params) (bterm_arities bterms)
+
    (*
     * For new symbols.
     *)
@@ -120,7 +147,7 @@ struct
     * Construct an application.
     *)
    let mk_apply_term loc a b =
-      mk_dep0_dep0_term (mk_opname loc ["apply"]) a b
+      mk_dep0_dep0_term (mk_dep0_dep0_opname loc "apply") a b
 
    let make_application loc terms =
       (* Convert the list to an application *)
@@ -208,14 +235,14 @@ struct
     * Constructors.
     *)
    let mk_pair_term loc a b =
-      mk_dep0_dep0_term (mk_opname loc ["pair"]) a b
+      mk_dep0_dep0_term (mk_dep0_dep0_opname loc "pair") a b
 
    (*
     * Turn a reversed list of terms into a tuple.
     *)
    let make_term loc = function
       ST_String s ->
-         mk_term (mk_op (mk_opname loc [s]) []) []
+         mk_term (mk_op (mk_0opname loc s) []) []
     | ST_Term (t, _) ->
          t
 
@@ -230,12 +257,12 @@ struct
    let mk_type_term loc name t1 t2 =
       match t1 with
          { aname = None; aterm = t } ->
-            { aname = None; aterm = mk_dep0_dep0_term (mk_opname loc [name]) t t2.aterm }
+            { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc name) t t2.aterm }
        | { aname = Some name'; aterm = t } ->
-            { aname = None; aterm = mk_dep0_dep1_term (mk_opname loc [name]) (dest_var name') t t2.aterm }
+            { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc name) (dest_var name') t t2.aterm }
 
    let mk_arith_term loc name t1 t2 =
-      { aname = None; aterm = mk_dep0_dep0_term (mk_opname loc [name]) t1.aterm t2.aterm }
+      { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc name) t1.aterm t2.aterm }
 
    (*
     * Check that all are strings.
@@ -381,17 +408,17 @@ struct
       noncommaterm:
          [ "equal" LEFTA
             [ t1 = noncommaterm; op = sl_not_equal; t2 = noncommaterm; sl_in; ty = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_opname loc [op]) ty.aterm t1.aterm t2.aterm }
+               { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc op) ty.aterm t1.aterm t2.aterm }
              | t1 = noncommaterm; op = sl_equal; t2 = noncommaterm; sl_in; ty = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_opname loc [op]) ty.aterm t1.aterm t2.aterm }
+               { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc op) ty.aterm t1.aterm t2.aterm }
             ]
           | [ t = noncommaterm; sl_IN; ty = noncommaterm ->
                (* HACK - this is to support ad-hoc I/O form "member" - see TODO 2.14 -2.15 *)
-                  { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_opname loc ["equal"]) ty.aterm t.aterm t.aterm }
+                  { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "equal") ty.aterm t.aterm t.aterm }
             ]
           | [ t1 = noncommaterm; sl_tilde; t2 = noncommaterm ->
                (* HACK - Perv!rewrite should be eventially replaced by mk_opname loc ["sqeq"] *)
-               (* { aname = None; aterm = mk_dep0_dep0_term (mk_opname loc ["sqeq"]) t1.aterm t2.aterm } *)
+               (* { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc "sqeq") t1.aterm t2.aterm } *)
                   { aname = None; aterm = mk_xrewrite_term t1.aterm t2.aterm }
             ]
           | "fun" RIGHTA
@@ -457,7 +484,7 @@ struct
                      { aname = None; aterm = t } ->
                         raise (ParseError (sprintf "no binding var for %s quantifier" op))
                    | { aname = Some name; aterm = t } ->
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_opname loc [op]) (dest_var name) t t2.aterm }
+                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (dest_var name) t t2.aterm }
                end
              | op = sl_isect; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
                begin
@@ -465,7 +492,7 @@ struct
                      { aname = None; aterm = t } ->
                         raise (ParseError (sprintf "no binding var for %s quantifier" op))
                    | { aname = Some name; aterm = t } ->
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_opname loc [op]) (dest_var name) t t2.aterm }
+                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (dest_var name) t t2.aterm }
                end
              | op = sl_exists; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
                begin
@@ -473,10 +500,10 @@ struct
                      { aname = None; aterm = t } ->
                         raise (ParseError (sprintf "no binding var for %s quantifier" op))
                    | { aname = Some name; aterm = t } ->
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_opname loc [op]) (dest_var name) t t2.aterm }
+                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (dest_var name) t t2.aterm }
                end
              | op = sl_quotient; x = sl_word; sl_comma; y = sl_word; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep2_term (mk_opname loc [op]) x y t1.aterm t2.aterm }
+               { aname = None; aterm = mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) x y t1.aterm t2.aterm }
             ]
           | "apply" LEFTA
             [ t = applyterm ->
@@ -486,18 +513,18 @@ struct
             ]
           | "uminus" RIGHTA
             [ op = sl_minus; x = noncommaterm ->
-               { aname = None; aterm = mk_dep0_term (mk_opname loc [op]) x.aterm }
+               { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) x.aterm }
              | op = sl_not; x = noncommaterm ->
-               { aname = None; aterm = mk_dep0_term (mk_opname loc [op]) x.aterm }
+               { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) x.aterm }
             ]
          ];
 
       (* Term that can be used in application lists *)
       applyterm:
          [ [ op = opname ->
-              { aname = None; aterm = mk_term (mk_op (mk_opname loc op) []) [] }
+              { aname = None; aterm = mk_term (mk_op (mk_opname loc op [] []) []) [] }
             | op = opname; (params, bterms) = termsuffix ->
-              { aname = None; aterm = mk_term (mk_op (mk_opname loc op) params) bterms }
+              { aname = None; aterm = mk_term (mk_op (mk_bopname loc op params bterms) params) bterms }
             | op = opname; sl_colon; t = applyterm ->
               match op with
                  [name] ->
@@ -515,9 +542,9 @@ struct
       (* Singleterm is a distinct term and no colons *)
       singleterm:
          [ [ op = opname ->
-              { aname = None; aterm = mk_term (mk_op (mk_opname loc op) []) [] }
+              { aname = None; aterm = mk_term (mk_op (mk_opname loc op [] []) []) [] }
             | op = opname; (params, bterms) = termsuffix ->
-              { aname = None; aterm = mk_term (mk_op (mk_opname loc op) params) bterms }
+              { aname = None; aterm = mk_term (mk_op (mk_bopname loc op params bterms) params) bterms }
            ]
           | [ t = nonwordterm ->
                t
@@ -551,9 +578,9 @@ struct
 
              (* Abbreviations *)
            | i = sl_number ->
-             { aname = None; aterm = mk_term (mk_op (mk_opname loc ["number"])
-                                              [make_param (Number i)]) (**)
-                  []
+             { aname = None;
+               aterm = mk_term (mk_op (mk_opname loc ["number"] [ShapeNumber] [])
+                               [make_param (Number i)]) []
              }
            | x = sequent ->
              { aname = None; aterm = x }
@@ -562,17 +589,17 @@ struct
            | sl_open_paren; t = aterm; sl_close_paren ->
              t
            | sl_open_curly; v = sl_word; sl_colon; ty = applyterm; sl_pipe; b = aterm; sl_close_curly ->
-             { aname = None; aterm = mk_dep0_dep1_term (mk_opname loc ["set"]) v ty.aterm b.aterm }
+             { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") v ty.aterm b.aterm }
            | sl_open_curly; f = sl_word; sl_pipe; t = aterm; sl_close_curly ->
              let t = t.aterm in
-             let fun_opname = mk_opname loc ["fun"] in
+             let rfun_op = mk_dep0_dep2_opname loc "rfun" in
              let t' =
-                if is_dep0_dep0_term fun_opname t then
-                   let a, b = dest_dep0_dep0_term fun_opname t in
-                      mk_dep0_dep2_term (mk_opname loc ["rfun"]) f (mk_gensym ()) a b
-                else if is_dep0_dep1_term fun_opname t then
-                   let v, a, b = dest_dep0_dep1_term fun_opname t in
-                      mk_dep0_dep2_term (mk_opname loc ["rfun"]) f v a b
+                if is_dep0_dep1_term (mk_dep0_dep1_opname loc "fun") t then
+                   let v, a, b = dest_dep0_dep1_any_term t in
+                      mk_dep0_dep2_term rfun_op f v a b
+                else if is_dep0_dep0_term (mk_dep0_dep0_opname loc "fun") t then
+                   let a, b = two_subterms t in
+                      mk_dep0_dep2_term rfun_op f (mk_gensym ()) a b
                 else
                    raise (ParseError "body of <rfun> is not a function")
              in
@@ -707,7 +734,7 @@ struct
          [[ w = sl_word ->
              ST_String w
            | w = sl_word; (params, bterms) = termsuffix ->
-             ST_Term (mk_term (mk_op (mk_opname loc [w]) params) bterms, loc)
+             ST_Term (mk_term (mk_op (mk_bopname loc [w] params bterms) params) bterms, loc)
            | t = nonwordterm ->
              ST_Term (t.aterm, loc)
           ]];

@@ -171,8 +171,6 @@ let add_dform base { dform_name = name;
                      dform_options = options;
                      dform_print = printer
                    } =
-   if (!debug_dform) then
-      eprintf "Adding DForm %s%t" name eflush;
    let precedence, internal = process_options min_prec false false options in
    let printer' =
       match printer with
@@ -411,11 +409,14 @@ and format_term buf shortener printer term =
  ************************************************************************)
 
 (*
- * Sequents are handled specially.
+ * Sequents and variables are handled specially.
  *)
 let sequent_term =
    let opname = mk_opname "sequent" nil_opname in
       mk_simple_term opname [mk_var_term "ext"; mk_var_term "hyps"]
+
+let dvar_opname =
+   mk_opname "display_var" nil_opname
 
 (*
  * Print a term to a buffer.
@@ -423,6 +424,15 @@ let sequent_term =
 let format_short_term base shortener =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
+      (* Convert a variable into a display_var *)
+      let t =
+         if is_so_var_term t then
+            let v, terms = dest_so_var t in
+               mk_term (mk_op dvar_opname [make_param (Var v)])
+                       [mk_bterm [] (mk_xlist_term terms)]
+         else
+            t
+      in
       (* Check for a display form entry *)
       let items, { df_name = name;
                    df_precedence = pr';

@@ -1733,9 +1733,11 @@ struct
        (info : 'term1 opname_info)
        (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let { opname_name = name; opname_term = term } = info in
-      let rec search = function
+      let rec search mismatch = function
          [] ->
-            implem_error (sprintf "Opname %s: not implemented" name)
+            implem_error
+               (sprintf "Opname %s: %s" name
+                  (if mismatch then "specification(s) mismatch" else "not implemented"))
        | h::t ->
             match h with
                Opname { opname_name = name'; opname_term = term' } ->
@@ -1743,13 +1745,13 @@ struct
                      if alpha_equal term' term then
                         ()
                      else
-                        implem_error (sprintf "Opname %s: specification mismatch" name)
+                        search true t
                   else
-                     search t
+                     search mismatch t
              | _ ->
-                  search t
+                  search mismatch t
       in
-         search implem
+         search false implem
 
    (*
     * MLterms must match.

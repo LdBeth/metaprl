@@ -30,9 +30,10 @@
  * jyh@cs.cornell.edu
  *)
 
+open Term_shape_sig
 open Refiner.Refiner
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMeta
+open Term
+open TermMeta
 
 (************************************************************************
  * COMMON ERRORS                                                        *
@@ -260,6 +261,12 @@ type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, 'module_info) summary_item
  | ToploopItem of 'item
  | MagicBlock of 'item magic_info
  | Comment of 'term
+
+(*
+ * This type defines what info do we need during parsing to identify an opname
+ *)
+
+type opname_fun = string list -> shape_param list -> int list -> Opname.opname
 
 (*
  * -*-

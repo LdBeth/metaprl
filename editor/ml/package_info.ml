@@ -776,11 +776,11 @@ struct
    (*
     * Access to cache.
     *)
-   let mk_opname pack_info opname =
+   let mk_opname pack_info opname params bterms =
       synchronize_node pack_info (fun pack_info ->
             match pack_info.pack_str with
                Some { pack_str_info = info } ->
-                  Cache.StrFilterCache.mk_opname info opname
+                  Cache.StrFilterCache.mk_opname info opname params bterms
              | None ->
                   raise (Failure (sprintf "Package_info.mk_opname: %s not initialized" pack_info.pack_name)))
 

@@ -39,9 +39,10 @@ include Summary
 include Proof_edit
 
 open Opname
+open Term_shape_sig
 open Refiner.Refiner
-open Refiner.Refiner.TermType
-open Refiner.Refiner.Refine
+open TermType
+open Refine
 open Dform_print
 
 open Filter_summary
@@ -153,7 +154,7 @@ sig
    (*
     * Access to the cache.
     *)
-   val mk_opname : package -> string list -> opname
+   val mk_opname : package -> string list -> shape_param list -> int list -> opname
 
    (*
     * Collection of objects in the module.

@@ -34,6 +34,7 @@ open Opname
 open Refiner.Refiner.TermType
 open Rformat
 open Dform
+open Filter_type
 
 open Tactic_type.Tactic
 
@@ -64,7 +65,7 @@ sig
    (*
     * Toploop functions.
     *)
-   val set_mk_opname : t -> (string list -> opname) option -> unit
+   val set_mk_opname : t -> opname_fun option -> unit
    val set_module : t -> string -> (string * Mptop.expr) list -> unit
    val set_dfbase : t -> dform_base option -> unit
    val get_dfbase : t -> dform_base
@@ -129,7 +130,7 @@ sig
    (*
     * This is the opname function used when terms are built.
     *)
-   val set_mk_opname : t -> (string list -> opname) option -> unit
+   val set_mk_opname : t -> opname_fun option -> unit
 
    (*
     * Set the current module.

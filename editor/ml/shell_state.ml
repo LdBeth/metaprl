@@ -42,6 +42,7 @@ open Refiner.Refiner.RefineError
 
 open Dform
 
+open Filter_type
 open Term_grammar
 
 open Mptop
@@ -80,7 +81,7 @@ struct
     * This is the type of global state.
     *)
    type t =
-      { mutable state_mk_opname : string list -> opname;
+      { mutable state_mk_opname : opname_fun;
         mutable state_df_base : dform_base;
         mutable state_inline_terms : (int * term) list;
         mutable state_inline_var : int;
