@@ -2306,6 +2306,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p1_1, p1_2 = p1 in
          merge merge_stables "TermMan.so_vars_info" (wrap2 TermMan1.so_vars_info p0 p1_1) (wrap2 TermMan2.so_vars_info p0 p1_2)
 
+      let param_vars_info (p0 : SymbolSet.t) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge merge_ss "TermMan.param_vars_info" (wrap2 TermMan1.param_vars_info p0 p1_1) (wrap2 TermMan2.param_vars_info p0 p1_2)
+
       let context_vars_info_list (p0 : (bool * int * int) SymbolTable.t) (p1 : term list) =
          let p1_1, p1_2 = split p1 in
          merge merge_stables "TermMan.context_vars_info_list" (wrap2 TermMan1.context_vars_info_list p0 p1_1) (wrap2 TermMan2.context_vars_info_list p0 p1_2)
@@ -2313,6 +2317,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let so_vars_info_list (p0 : (int * int) SymbolTable.t) (p1 : term list) =
          let p1_1, p1_2 = split p1 in
          merge merge_stables "TermMan.so_vars_info_list" (wrap2 TermMan1.so_vars_info_list p0 p1_1) (wrap2 TermMan2.so_vars_info_list p0 p1_2)
+
+      let param_vars_info_list (p0 : SymbolSet.t) (p1 : term list) =
+         let p1_1, p1_2 = split p1 in
+         merge merge_ss "TermMan.param_vars_info_list" (wrap2 TermMan1.param_vars_info_list p0 p1_1) (wrap2 TermMan2.param_vars_info_list p0 p1_2)
 
       let free_meta_variables (p0 : term) =
          let p0_1, p0_2 = p0 in

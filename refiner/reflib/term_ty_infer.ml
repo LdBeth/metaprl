@@ -1412,6 +1412,13 @@ let infer_token_type tenv venv info subst opname ty =
    let info = UnifyCompose (info, UnifyTermType2 (tok, TypeTerm ty_type, TypeTerm ty)) in
       unify_subtype_term_types tenv info subst ty_type ty
 
+let infer_token_var tenv venv info subst v ty2 =
+   let ty1 = venv_find_var venv v in
+   let ty2 = TypeTerm ty2 in
+   let tok = mk_var_term v in
+   let info = UnifyCompose (info, UnifyTermType2 (tok, ty1, ty2)) in
+      unify_subtype_types tenv info subst ty1 ty2
+
 (*
  * Typepe checking.
  *)
@@ -1561,9 +1568,10 @@ and infer_params tenv venv info subst param ty_param =
     | MString _, TyString
     | Var _, TyVar
     | Quote, TyQuote
-    | MLevel _, TyLevel
-    | MToken _, TyToken _ ->
+    | MLevel _, TyLevel ->
          subst
+    | MToken v, TyToken ty ->
+         infer_token_var tenv venv info subst v ty
     | Token opname, TyToken ty ->
          infer_token_type tenv venv info subst opname ty
     | _ ->
@@ -1725,7 +1733,7 @@ let venv_of_terms tl =
    let venv = venv_empty in
    let venv =
       SymbolSet.fold (fun venv v ->
-            venv_add_var venv v (TypeVar (new_symbol v))) venv (free_vars_terms tl)
+            venv_add_var venv v (TypeVar (new_symbol v))) venv (param_vars_info_list (free_vars_terms tl) tl)
    in
    let venv =
       SymbolTable.fold (fun venv v (carity, arity) ->
@@ -1770,7 +1778,7 @@ let venv_of_redices args redices =
 
    (* Get additional info about the vars *)
    let terms = args @ redices in
-   let fv = free_vars_terms terms in
+   let fv = param_vars_info_list (free_vars_terms terms) terms in
    let so_vars = so_vars_info_list SymbolTable.empty terms in
 
    (* Add type for all the vars *)

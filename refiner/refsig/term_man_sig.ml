@@ -76,8 +76,10 @@ sig
     *)
    val context_vars_info :  (bool * int * int) SymbolTable.t -> term -> (bool * int * int) SymbolTable.t
    val so_vars_info :  (int * int) SymbolTable.t -> term -> (int * int) SymbolTable.t
+   val param_vars_info : SymbolSet.t -> term -> SymbolSet.t
    val context_vars_info_list :  (bool * int * int) SymbolTable.t -> term list -> (bool * int * int) SymbolTable.t
    val so_vars_info_list :  (int * int) SymbolTable.t -> term list -> (int * int) SymbolTable.t
+   val param_vars_info_list : SymbolSet.t -> term list -> SymbolSet.t
 
    (* returns both free contexts and all SO variables *)
    val free_meta_variables : term -> SymbolSet.t

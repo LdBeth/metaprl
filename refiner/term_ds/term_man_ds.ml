@@ -730,6 +730,64 @@ struct
    let so_vars_info_list = so_vars_term_list
 
    (*
+    * Collect all the parameter vars.
+    *)
+   let rec param_vars_term vars t =
+      match get_core t with
+         Sequent seq ->
+            let hyps = seq.sequent_hyps in
+            let vars =
+               SeqHyp.fold (fun vars hyp ->
+                     match hyp with
+                        Hypothesis (_, h) ->
+                           param_vars_term vars h
+                      | Context (_, _, ts) ->
+                           param_vars_term_list vars ts) vars seq.sequent_hyps
+            in
+               param_vars_term (param_vars_term vars seq.sequent_args) seq.sequent_concl
+       | Term { term_op = { op_params = params }; term_terms = bts } ->
+            param_vars_bterm_list (param_vars_param_list vars params) bts
+       | FOVar _ ->
+            vars
+       | SOVar(_, _, ts) ->
+            param_vars_term_list vars ts
+       | Hashed _
+       | Subst _ ->
+            fail_core "param_vars"
+
+   and param_vars_term_list vars tl =
+      List.fold_left param_vars_term vars tl
+
+   and param_vars_param vars param =
+      match param with
+         Number _
+       | String _
+       | Token _
+       | MLevel _
+       | Quote ->
+            vars
+       | Var v
+       | MNumber v
+       | MString v
+       | MToken v ->
+            SymbolSet.add vars v
+       | ObId params
+       | ParamList params ->
+            param_vars_param_list vars params
+
+   and param_vars_param_list vars params =
+      List.fold_left param_vars_param vars params
+
+   and param_vars_bterm vars bt =
+      param_vars_term vars bt.bterm
+
+   and param_vars_bterm_list vars l =
+      List.fold_left param_vars_bterm vars l
+
+   let param_vars_info = param_vars_term
+   let param_vars_info_list = param_vars_term_list
+
+   (*
     * Meta term.
     *)
    let rec free_meta_variables vars t = match get_core t with

@@ -1091,7 +1091,7 @@ let term_exp s =
 let term_patt s =
    let cs = Stream.of_string s in
    let t = Grammar.Entry.parse term_eoi cs in
-   let t = unchecked_term_of_parsed_term t in
+   let t = TermGrammar.parse_term dummy_loc t in
       Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
 
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))

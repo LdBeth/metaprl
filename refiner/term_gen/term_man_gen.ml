@@ -801,6 +801,72 @@ struct
     *)
 
    (*
+    * Collect the info about all the parameter vars.
+    *)
+   let rec param_vars_term pvars t =
+      if is_var_term t then
+         pvars
+      else if is_so_var_term t then
+         let _, _, ts = dest_so_var t in
+            param_vars_term_list pvars ts
+      else if is_context_term t then
+         let _, term, _, terms = dest_context t in
+            param_vars_term (param_vars_term_list pvars terms) term
+      else if is_sequent_term t then
+         let { sequent_args = args;
+               sequent_hyps = hyps;
+               sequent_concl = concl
+             } = explode_sequent t
+         in
+         let pvars = param_vars_term pvars args in
+         let pvars =
+            SeqHyp.fold (fun pvars hyp ->
+               match hyp with
+                  Hypothesis (_, h) ->
+                     param_vars_term pvars h
+                | Context (_, _, ts) ->
+                     param_vars_term_list pvars ts) pvars hyps
+         in
+            param_vars_term pvars concl
+      else
+         let { term_op = op; term_terms = bterms } = dest_term t in
+         let { op_params = params } = dest_op op in
+         let pvars = param_vars_param_list pvars params in
+            param_vars_bterm_list pvars bterms
+
+   and param_vars_term_list pvars l =
+      List.fold_left param_vars_term pvars l
+
+   and param_vars_param pvars param =
+      match dest_param param with
+         Number _
+       | String _
+       | Token _
+       | MLevel _
+       | Quote ->
+            pvars
+       | Var v
+       | MNumber v
+       | MString v
+       | MToken v ->
+            SymbolSet.add pvars v
+       | ObId params
+       | ParamList params ->
+            param_vars_param_list pvars params
+
+   and param_vars_param_list pvars params =
+      List.fold_left param_vars_param pvars params
+
+   and param_vars_bterm pvars bt =
+      param_vars_term pvars (dest_bterm bt).bterm
+
+   and param_vars_bterm_list pvars btl =
+      List.fold_left param_vars_bterm pvars btl
+
+   let param_vars_info = param_vars_term
+   let param_vars_info_list = param_vars_term_list
+
+   (*
     * Collect the info about all the context vars.
     *)
    let rec context_vars_term cvars t =
