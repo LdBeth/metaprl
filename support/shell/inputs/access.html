@@ -9,6 +9,18 @@
    <script type="text/javascript" src="/inputs/layout.js"></script>
    <script type="text/javascript" src="/inputs/mojave.js"></script>
    <script type="text/javascript" src="/inputs/access.js"></script>
+   <script>
+      <!--
+      //This function needs to be inlined since variables are not
+      //Substituted for in the "/inputs" URLs.
+      function OnLoad()
+      {
+         GetWindowSize();
+         SetWindowCookie();
+         SetResponseCookie('%%RESPONSE%%');
+         location.href = '/'
+      }
+      -->
    </script>
 </head>
 <body onload="OnLoad()">
@@ -16,7 +28,7 @@
    Access has been granted.  Click on the following link to continue.
    </p>
    <p>
-   <a href="/">MetaPRL start</a>
+   <a href="/">MetaPRL Welcome Page</a>
    </p>
 </body>
 </html>
