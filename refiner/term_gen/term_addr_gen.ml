@@ -179,7 +179,7 @@ struct
     | ClauseAddr i :: addr when i > 0 ->
          term_subterm (nth_hyp term i) addr
     | ClauseAddr i :: addr ->
-         term_subterm (nth_hyp term (num_hyps term + i)) addr
+         term_subterm (nth_hyp term (num_hyps term + i + 1)) addr
 
    (*
     * Replace a subterm at the specified address.

@@ -689,9 +689,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       op1
 
    let merge_term x t1 t2 =
-      if not (Opname.eq (Term1.opname_of_term t1) (Term2.opname_of_term t2)) then
+      if not (Opname.eq (Term1.opname_of_term t1) (Term2.opname_of_term t2)) then begin
+         eprintf "Term opname mismatch:\n\t%a%t" print_term (t1, t2) eflush;
          report_error x "term opname mismatch"
-      else
+      end else
          (t1, t2)
 
    let merge_ttf x f1 f2 =
