@@ -1,0 +1,17 @@
+# open Fol_not;;
+# refine rwh unfold_not 0;;
+Rewrite start
+----------------------------------------
+# 
+0 
+....main....
+[ext] H ü A type
+====
+[ext] H ü (øA) type
+
+BY rwh unfold_not 0
+# 1. [ext] H ü (A ùû False) type
+
+++++++++++
+- : unit = ()
+# 

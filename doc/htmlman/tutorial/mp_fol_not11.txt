@@ -1,0 +1,56 @@
+# up 1;;
+...
+# down 1;;
+----------------------------------------
+# # 
+0 1 
+....main....
+[ext] H; x: øA; J[x] ü A
+====
+[ext] H; x: A ùû False; J[x] ü A
+
+BY 
+
+++++++++++
+- : unit = ()
+# refine rwh (foldC << "not"{'A} >> unfold_not) 2;;
+----------------------------------------
+# # 
+1 0 
+....main....
+[ext] H; x: øA; J[x] ü A
+====
+[ext] H; x: A ùû False; J[x] ü A
+
+BY rwh (foldC << "not"{'A} >> unfold_not) 2
+# 1. [ext] H; x: øA; J[x] ü A
+
+++++++++++
+- : unit = ()
+# down 1;;
+----------------------------------------
+# # # 
+1 0 1 
+....main....
+[ext] H; x: øA; J[x] ü A
+====
+[ext] H; x: øA; J[x] ü A
+
+BY 
+
+++++++++++
+- : unit = ()
+# refine nthAssumT 1;;
+----------------------------------------
+* * * 
+1 1 0 
+....main....
+[ext] H; x: øA; J[x] ü A
+====
+[ext] H; x: øA; J[x] ü A
+
+BY nthAssumT 1
+
+++++++++++
+- : unit = ()
+# 

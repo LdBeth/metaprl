@@ -1,0 +1,13 @@
+----------------------------------------
+# # # 
+1 1 0 
+....main....
+[ext] H; P: Univ; Q: Univ; v: (P ùû Q) ùû P; v1: øP ü False
+
+BY dT 4
+# 1. [ext] H; P: Univ; Q: Univ; v: (P ùû Q) ùû P; v1: øP ü P ùû Q
+# 2. [ext] H; P: Univ; Q: Univ; v: (P ùû Q) ùû P; v1: øP; v2: P ü False
+
+++++++++++
+- : unit = ()
+# 

@@ -1,0 +1,34 @@
+# cd "../not_elim";;
+- : string = "/fol_not/not_elim"
+# ls ();;
+View item /fol_not/not_elim
+----------------------------------------
+# 
+0 
+....main....
+[ext] H; x: øA; J[x] ü A
+====
+[ext] H; x: øA; J[x] ü C[x]
+
+BY idT
+# 1. [ext] H; x: øA; J[x] ü C[x]
+
+++++++++++
+- : unit = ()
+# refine rwh unfold_not 2 thenT dT 2;;
+Rewrite start
+----------------------------------------
+# 
+0 
+....main....
+[ext] H; x: øA; J[x] ü A
+====
+[ext] H; x: øA; J[x] ü C[x]
+
+BY rwh unfold_not 2 thenT dT 2
+# 1. [ext] H; x: A ùû False; J[x] ü A
+# 2. [ext] H; x: A ùû False; J[x]; v: False ü C[x]
+
+++++++++++
+- : unit = ()
+# 

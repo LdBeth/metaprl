@@ -13,12 +13,83 @@ for classical reasoning <TT>Fol_class</TT>.</P>
 
 <H3>The <TT>Fol_theory</TT> theory</H3>
 
-<P>The interface and implementation of the classical theory are
-identical; they both include the following lines.</P>
+<P>The interface include the following lines.</P>
 
 <BLOCKQUOTE>
-  <P>1.<I> Define the classical theory in the files</I><TT> fol_theory.mli</TT><I>
-  and </I><TT>fol_theory.ml:</TT></BLOCKQUOTE>
+  <P>1.<I> Define the classical theory interface in the files</I><TT>
+  fol_theory.mli:</TT></P>
+  <BLOCKQUOTE>
+    <PRE><B><TT>include</TT></B><TT> Fol_ctheory
+<B>include</B> Fol_class</TT></PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>In the implementation, we also include a theorem of Pierce's
+law, which we will prove as an example.</P>
+
+<BLOCKQUOTE>
+  <P>2. <I>Define the classical theory in the file</I> <TT>fol_theory.ml:</TT></P>
+  <BLOCKQUOTE>
+    <PRE><B>include</B> Fol_ctheory
+<B>include</B> Fol_class
+
+<B>interactive</B> pierce 'H : :
+   sequent ['ext] { 'H &gt;- &quot;all&quot;{P. &quot;all&quot;{Q. ((('P =&gt; 'Q) =&gt; 'P) =&gt; 'P)}} }</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<H3>Proving Pierce's Law</H3>
+
+<P>To illustrate the classical logic, we prove Pierce's Law, which
+will require classical reasoning.</P>
+
+<BLOCKQUOTE>
+  <P>3.<I> Compile and view the theory </I><TT>fol_theory.</TT></P>
+  <P><IMG SRC="mp_fol_theory1.gif" WIDTH="670" HEIGHT="296" ALIGN="BOTTOM"
+  BORDER="0" NATURALSIZEFLAG="3"></P>
+</BLOCKQUOTE>
+
+<P>The initial steps of the proof can be performed with the <TT>autoT</TT>
+tactic.</P>
+
+<BLOCKQUOTE>
+  <P><IMG SRC="mp_fol_theory2.gif" WIDTH="670" HEIGHT="200" ALIGN="BOTTOM"
+  BORDER="0" NATURALSIZEFLAG="3"></P>
+</BLOCKQUOTE>
+
+<P>Now, at this step, we have two choices: we can dcompose the
+implication with the <TT>dT</TT> tactic, or we can &quot;move&quot;
+<TT>P</TT> across the turnstile with the <TT>magicT</TT> tactic.
+If we decompose the implication, we &quot;lose&quot; the goal,
+and so the best option is to apply the <TT>magicT</TT> tactic.
+Remember to <TT>open Fol_class</TT> first.</P>
+
+<BLOCKQUOTE>
+  <P><IMG SRC="mp_fol_theory3.gif" WIDTH="670" HEIGHT="200" ALIGN="BOTTOM"
+  BORDER="0" NATURALSIZEFLAG="3"></P>
+</BLOCKQUOTE>
+
+<P>Now we can use the <TT>dT</TT> tactic on the implication.</P>
+
+<BLOCKQUOTE>
+  <P><IMG SRC="mp_fol_theory4.gif" WIDTH="670" HEIGHT="212" ALIGN="BOTTOM"
+  BORDER="0" NATURALSIZEFLAG="3"></P>
+</BLOCKQUOTE>
+
+<P>The second goal has a trivial proof by applying <TT>dT</TT>
+to the negation. For the first goal, we apply <TT>dT</TT> to the
+goal.</P>
+
+<BLOCKQUOTE>
+  <P><IMG SRC="mp_fol_theory5.gif" WIDTH="670" HEIGHT="212" ALIGN="BOTTOM"
+  BORDER="0" NATURALSIZEFLAG="3"></P>
+</BLOCKQUOTE>
+
+<P>This last part is proved from the contradiction.</P>
+
+<BLOCKQUOTE>
+  <P><IMG SRC="mp_fol_theory6.gif" WIDTH="670" HEIGHT="212" ALIGN="BOTTOM"
+  BORDER="0" NATURALSIZEFLAG="3"></BLOCKQUOTE>
 
 </BODY>
 </HTML>
