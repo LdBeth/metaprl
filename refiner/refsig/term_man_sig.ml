@@ -84,7 +84,6 @@ sig
 
    (*
     * Sequents.
-    * This should be visible only to sequents, but oh well.
     *)
    val is_sequent_term : term -> bool
    val mk_sequent_term : esequent -> term
@@ -92,7 +91,8 @@ sig
    val remove_redundant_hypbindings : hypothesis list -> term list -> hypothesis list
 
    (* Indexing starts at 1 *)
-
+   (* Functions will raise RefineError when int is out of range *)
+   (* nth_hyp and nth_binding will raise RefineError when index refers to a context *)
    val nth_hyp : term -> int -> term
    val nth_binding : term -> int -> var
    val nth_concl : term -> int -> term
