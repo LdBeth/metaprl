@@ -85,29 +85,29 @@ and multeq =
     mutable var_number: int;
     mutable s: variable list;
     mutable m: multiterm list }
-and variable = { mutable name: var_name; mutable m_v: multeq }
+and variable = { name: var_name; mutable m_v: multeq }
 and temp_multeq =
-  { mutable s_t: variable Queue.t;
+  { s_t: variable Queue.t;
     mutable m_t: multiterm list }
 and multiterm =
-  { mutable fsymb: mm_operator;
+  { fsymb: mm_operator;
     mutable args: temp_multeq list }
 
 and binding = ((bound_variable list) array) array
 
-and bound_variable = {mutable name_bv: var_name;
+and bound_variable = {name_bv: var_name;
+                      arg_numb: int;
+                      binding_numb: int;
                       mutable fsymb_bv: op_with_binding;
-                      mutable arg_numb: int;
-                      mutable binding_numb: int
                      }
 
-and op_with_binding = {mutable opsymb: fun_name;
-                       mutable oparity_n: int;
-                       mutable oparity_a: int array;
+and op_with_binding = {opsymb: fun_name;
+                       oparity_n: int;
+                       oparity_a: int array;
+                       renamings: ((var_name) array) array;
                        mutable b_length: int;
                        mutable opbinding: binding;
-                       mutable renamings: ((var_name) array) array;
-                       mutable timestamp: int
+                       mutable timestamp: int;
                       }
 
 and mm_operator = Op of op_with_binding
@@ -385,7 +385,6 @@ let mm_unify =
  * INTERFACE FUNCTIONS *
  ***********************)
 
-let seq_unsupported = Invalid_argument "Sequents are not currently supported by unify_mm"
 let impossible = Invalid_argument "Bug in unify_mm: this is not supposed to happen"
 
 (* get_variable : here x is a string.
