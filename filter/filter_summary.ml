@@ -17,7 +17,7 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.RefineError
-open Simple_print
+open Simple_print.SimplePrint
 open Precedence
 
 open Filter_util

@@ -9,7 +9,7 @@ open Nl_debug
 open Rformat
 open Dform
 open Dform_print
-open Simple_print
+open Simple_print.SimplePrint
 
 open Filter_ocaml
 open Filter_type

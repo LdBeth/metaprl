@@ -13,7 +13,7 @@ open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Rformat
-open Simple_print
+open Simple_print.SimplePrint
 open Dform
 open Dform_print
 

@@ -15,7 +15,7 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 open Term_table
-open Simple_print
+open Simple_print.SimplePrint
 
 (*
  * Show loading of the file.

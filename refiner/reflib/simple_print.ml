@@ -8,10 +8,7 @@ open Nl_debug
 
 open Rformat
 open Opname
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermAddr
-open Refiner.Refiner.TermMeta
+open Refiner_sig
 
 (*
  * Show the file loading.
@@ -22,411 +19,430 @@ let _ =
 
 let max_column = 120
 
-(************************************************************************
- * PRINTERS                                                             *
- ************************************************************************)
+module MakeSimplePrint (Refiner : RefinerSig) =
+struct
+   open Refiner
+   open Refiner.Term
+   open Refiner.TermType
+   open Refiner.TermAddr
+   open Refiner.TermMeta
 
-(* Level expression *)
-let format_level_exp buf l =
-   if !debug_simple_print then
-      eprintf "Simple_print.format_level_exp%t" eflush;
-   let rec format_quotes = function
-      0 -> ()
-    | i -> format_char buf '\''; format_quotes (i - 1)
-   in
-   let format_var lv =
-      match dest_level_var lv with
-	 { le_var = v; le_offset = o } ->
-	    if o < 3 then begin
-	       format_quoted_string buf v;
-	       format_quotes o
-	    end
-	    else begin
-	       format_quoted_string buf v;
-	       format_char buf ' ';
-	       format_int buf o
-	    end
-   in
-      match dest_level l with
-         { le_const = c; le_vars = [] } ->
-            format_int buf c
-       | { le_const = 0; le_vars = [v] } ->
-	    (match dest_level_var v with
-		{ le_var = v; le_offset = o } ->
-		   if o < 3 then begin
-		      format_quoted_string buf v;
-		      format_quotes o
-		   end
-		   else begin
-		      format_string buf "{";
-		      format_quoted_string buf v;
-		      format_int buf o;
-		      format_string buf "}"
-		   end)
+   type term = TermType.term
+   type level_exp = TermType.level_exp
+   type param = TermType.param
+   type bound_term = TermType.bound_term
+   type meta_term = TermMeta.meta_term
+   type address = TermAddr.address
 
-       | { le_const = c; le_vars = vars } ->
-	    let rec maxaux = function
-	       [] -> 0
-	     | h::t ->
-		  match dest_level_var h with
-		     { le_var = _; le_offset = i } -> max i (maxaux t)
-	    in
-	    let maxoff = maxaux vars in
-	    let rec format_vars = function
-	       [] -> ()
-	     | [h] -> format_var h
-	     | h::t ->
-		  format_var h;
-		  format_string buf " | ";
-		  format_vars t
-	    in
-	       format_string buf "{";
-	       if maxoff < c then begin
-		  format_int buf c;
-		  format_string buf " | "
-	       end;
-	       format_vars vars;
-	       format_string buf "}"
+   (************************************************************************
+    * PRINTERS                                                             *
+    ************************************************************************)
 
-(*
- * Operator name.
- *)
-let string_of_opname opname =
-   if !debug_simple_print then
-      eprintf "Simple_print.string_of_opname%t" eflush;
-   let rec aux v = function
-      [] -> v
-    | str::opname' ->
-         let str' =
-            if v = "" then
-               str
-            else
-               str ^ "!" ^ v
-         in
-            aux str' opname'
-   in
-      aux "" (dest_opname opname)
-
-(* General parameter *)
-let rec format_param buf p =
-   if !debug_simple_print then
-      eprintf "Simple_print.format_param%t" eflush;
-   match dest_param p with
-      Number n -> format_num buf n; format_string buf ":n"
-    | String s -> format_quoted_string buf s; format_string buf ":s"
-    | Token t -> format_quoted_string buf t; format_string buf ":t"
-    | Level l -> format_level_exp buf l; format_string buf ":l"
-    | Var v -> format_quoted_string buf v; format_string buf ":v"
-    | MNumber v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":n"
-    | MString v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":s"
-    | MToken v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":t"
-    | MLevel v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":l"
-    | MVar v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":v"
-    | MSum (a, b) -> format_param buf a; format_string buf " + "; format_param buf b; format_string buf ":n"
-    | MDiff (a, b) -> format_param buf a; format_string buf " - "; format_param buf b; format_string buf ":n"
-    | MProduct (a, b) -> format_param buf a; format_string buf " * "; format_param buf b; format_string buf ":n"
-    | MQuotient(a, b) -> format_param buf a; format_string buf " / "; format_param buf b; format_string buf ":n"
-    | MRem (a, b) -> format_param buf a; format_string buf " % "; format_param buf b; format_string buf ":n"
-    | MLessThan (a, b) -> format_param buf a; format_string buf " < "; format_param buf b; format_string buf ":n"
-    | MEqual (a, b) -> format_param buf a; format_string buf " = "; format_param buf b; format_string buf ":n"
-    | MNotEqual (a, b) -> format_param buf a; format_string buf " <> "; format_param buf b; format_string buf ":n"
-    | ObId a -> format_string buf "<object-id>"
-    | ParamList l ->
-         let rec format = function
-            [h] ->
-               format_param buf h
-          | h::t ->
-               format_param buf h;
-               format_string buf "; ";
-               format t
-          | [] ->
-               ()
-         in
-            format_string buf "[";
-            format l;
-            format_string buf "]"
-
-(* List of params *)
-let rec format_paramlist buf = function
-   [] -> ()
- | h::[] ->
-      format_param buf h
- | h::t ->
-      format_param buf h;
-      format_char buf ',';
-      format_space buf;
-      format_paramlist buf t
-
-(* Optional empty params *)
-let format_params buf = function
-   [] -> ()
- | _::_ as params ->
-      (* format_space buf; *)
-      format_char buf '[';
-      format_pushm buf 1;
-      format_paramlist buf params;
-      format_char buf ']';
-      format_popm buf
-
-(* Print a single bterm *)
-let rec format_bterm buf bterm =
-   if !debug_simple_print then
-      eprintf "Simple_print.format_bterm%t" eflush;
-   match dest_bterm bterm with
-      { bvars = []; bterm = term } ->
-         format_term buf term
-    | { bvars = vars; bterm = term } ->
-         let rec format_bvars = function
-            [] -> ()
-          | [h] -> format_quoted_string buf h
-          | h::t ->
-               format_quoted_string buf h;
-               format_string buf ", ";
-               format_bvars t
-         in
-            format_bvars vars;
-            format_string buf ". ";
-            format_term buf term
-
-(* Nonempty list *)
-and format_btermlist buf = function
-   [] -> ()
- | [h] ->
-      format_bterm buf h
- | h::t ->
-      format_bterm buf h;
-      format_char buf ';';
-      format_space buf;
-      format_btermlist buf t
-
-(* Optional empty bterm list *)
-and format_bterms buf = function
-   [] -> ()
- | _::_ as bterms ->
-      (* format_space buf; *)
-      format_char buf '{';
-                        format_pushm buf 1;
-                        format_btermlist buf bterms;
-                        format_char buf '}';
-      format_popm buf
-
-(*
- * Top level print function.
- *)
-and format_term buf term =
-   if !debug_simple_print then
-      eprintf "Simple_print.format_term%t" eflush;
-   if is_so_var_term term then
-      let _ =
-         if !debug_simple_print then
-            eprintf "Simple_print.format_term: got a variable%t" eflush
+   (* Level expression *)
+   let format_level_exp buf l =
+      if !debug_simple_print then
+         eprintf "Simple_print.format_level_exp%t" eflush;
+      let rec format_quotes = function
+         0 -> ()
+       | i -> format_char buf '\''; format_quotes (i - 1)
       in
-      let v, subterms = dest_so_var term in
-      let rec format_termlist = function
+      let format_var lv =
+         match dest_level_var lv with
+            { le_var = v; le_offset = o } ->
+               if o < 3 then begin
+                  format_quoted_string buf v;
+                  format_quotes o
+               end
+               else begin
+                  format_quoted_string buf v;
+                  format_char buf ' ';
+                  format_int buf o
+               end
+      in
+         match dest_level l with
+            { le_const = c; le_vars = [] } ->
+               format_int buf c
+          | { le_const = 0; le_vars = [v] } ->
+               (match dest_level_var v with
+                  { le_var = v; le_offset = o } ->
+                     if o < 3 then begin
+                     format_quoted_string buf v;
+                     format_quotes o
+                  end
+                  else begin
+                     format_string buf "{";
+                     format_quoted_string buf v;
+                     format_int buf o;
+                     format_string buf "}"
+                  end)
+
+          | { le_const = c; le_vars = vars } ->
+                let rec maxaux = function
+                   [] -> 0
+                 | h::t ->
+                       match dest_level_var h with
+                          { le_var = _; le_offset = i } -> max i (maxaux t)
+                in
+                let maxoff = maxaux vars in
+                let rec format_vars = function
+                   [] -> ()
+                 | [h] -> format_var h
+                 | h::t ->
+                       format_var h;
+                       format_string buf " | ";
+                       format_vars t
+                in
+                   format_string buf "{";
+                   if maxoff < c then begin
+                       format_int buf c;
+                       format_string buf " | "
+                   end;
+                   format_vars vars;
+                   format_string buf "}"
+
+   (*
+    * Operator name.
+    *)
+   let string_of_opname opname =
+      if !debug_simple_print then
+         eprintf "Simple_print.string_of_opname%t" eflush;
+      let rec aux v = function
+         [] -> v
+       | str::opname' ->
+            let str' =
+               if v = "" then
+                  str
+               else
+                  str ^ "!" ^ v
+            in
+               aux str' opname'
+      in
+         aux "" (dest_opname opname)
+
+   (* General parameter *)
+   let rec format_param buf p =
+      if !debug_simple_print then
+         eprintf "Simple_print.format_param%t" eflush;
+      match dest_param p with
+         Number n -> format_num buf n; format_string buf ":n"
+       | String s -> format_quoted_string buf s; format_string buf ":s"
+       | Token t -> format_quoted_string buf t; format_string buf ":t"
+       | Level l -> format_level_exp buf l; format_string buf ":l"
+       | Var v -> format_quoted_string buf v; format_string buf ":v"
+       | MNumber v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":n"
+       | MString v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":s"
+       | MToken v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":t"
+       | MLevel v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":l"
+       | MVar v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":v"
+       | MSum (a, b) -> format_param buf a; format_string buf " + "; format_param buf b; format_string buf ":n"
+       | MDiff (a, b) -> format_param buf a; format_string buf " - "; format_param buf b; format_string buf ":n"
+       | MProduct (a, b) -> format_param buf a; format_string buf " * "; format_param buf b; format_string buf ":n"
+       | MQuotient(a, b) -> format_param buf a; format_string buf " / "; format_param buf b; format_string buf ":n"
+       | MRem (a, b) -> format_param buf a; format_string buf " % "; format_param buf b; format_string buf ":n"
+       | MLessThan (a, b) -> format_param buf a; format_string buf " < "; format_param buf b; format_string buf ":n"
+       | MEqual (a, b) -> format_param buf a; format_string buf " = "; format_param buf b; format_string buf ":n"
+       | MNotEqual (a, b) -> format_param buf a; format_string buf " <> "; format_param buf b; format_string buf ":n"
+       | ObId a -> format_string buf "<object-id>"
+       | ParamList l ->
+            let rec format = function
+               [h] ->
+                  format_param buf h
+             | h::t ->
+                  format_param buf h;
+                  format_string buf "; ";
+                  format t
+             | [] ->
+                  ()
+            in
+               format_string buf "[";
+               format l;
+               format_string buf "]"
+
+   (* List of params *)
+   let rec format_paramlist buf = function
+      [] -> ()
+    | h::[] ->
+         format_param buf h
+    | h::t ->
+         format_param buf h;
+         format_char buf ',';
+         format_space buf;
+         format_paramlist buf t
+
+   (* Optional empty params *)
+   let format_params buf = function
+      [] -> ()
+    | _::_ as params ->
+         (* format_space buf; *)
+         format_char buf '[';
+         format_pushm buf 1;
+         format_paramlist buf params;
+         format_char buf ']';
+         format_popm buf
+
+   (* Print a single bterm *)
+   let rec format_bterm buf bterm =
+      if !debug_simple_print then
+         eprintf "Simple_print.format_bterm%t" eflush;
+      match dest_bterm bterm with
+         { bvars = []; bterm = term } ->
+            format_term buf term
+       | { bvars = vars; bterm = term } ->
+            let rec format_bvars = function
+               [] -> ()
+             | [h] -> format_quoted_string buf h
+             | h::t ->
+                  format_quoted_string buf h;
+                  format_string buf ", ";
+                  format_bvars t
+            in
+               format_bvars vars;
+               format_string buf ". ";
+               format_term buf term
+
+   (* Nonempty list *)
+   and format_btermlist buf = function
+      [] -> ()
+    | [h] ->
+         format_bterm buf h
+    | h::t ->
+         format_bterm buf h;
+         format_char buf ';';
+         format_space buf;
+         format_btermlist buf t
+
+   (* Optional empty bterm list *)
+   and format_bterms buf = function
+      [] -> ()
+    | _::_ as bterms ->
+         (* format_space buf; *)
+         format_char buf '{';
+                           format_pushm buf 1;
+                           format_btermlist buf bterms;
+                           format_char buf '}';
+         format_popm buf
+
+   (*
+    * Top level print function.
+    *)
+   and format_term buf term =
+      if !debug_simple_print then
+         eprintf "Simple_print.format_term%t" eflush;
+      if is_so_var_term term then
+         let _ =
+            if !debug_simple_print then
+               eprintf "Simple_print.format_term: got a variable%t" eflush
+         in
+         let v, subterms = dest_so_var term in
+         let rec format_termlist = function
+            [] -> ()
+          | [h] -> format_term buf h
+          | h::t ->
+               format_term buf h;
+               format_char buf ';';
+               format_space buf;
+               format_termlist t
+         in
+         let format_terms = function
+            [] -> ()
+          | _::_ as subterms ->
+               format_string buf "[";
+               format_pushm buf 0;
+               format_termlist subterms;
+               format_string buf "]";
+               format_popm buf
+         in
+            if !debug_simple_print then
+               eprintf "Simple_print.format_term: var: %s%t" v eflush;
+            if subterms = [] then
+               format_char buf '\'';
+            format_quoted_string buf v;
+            if !debug_simple_print then
+               eprintf "Simple_print.format_terms%t" eflush;
+            format_terms subterms
+
+      else
+         (* Standard term *)
+         let _ =
+            if !debug_simple_print then
+               eprintf "Simple_print.format_term: regular term%t" eflush
+         in
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let { op_name = name; op_params = params } = dest_op op in
+            if !debug_simple_print then
+               eprintf "Simple_print.format_term: destructed term%t" eflush;
+            format_pushm buf 4;
+            format_quoted_string buf (string_of_opname name);
+            format_params buf params;
+            format_bterms buf bterms;
+            format_popm buf
+
+   (*
+    * List of terms.
+    *)
+   and format_termlist buf l =
+      let rec aux = function
          [] -> ()
        | [h] -> format_term buf h
        | h::t ->
             format_term buf h;
-            format_char buf ';';
+            format_string buf ";";
             format_space buf;
-            format_termlist t
+            aux t
       in
-      let format_terms = function
-         [] -> ()
-       | _::_ as subterms ->
-            format_string buf "[";
-            format_pushm buf 0;
-            format_termlist subterms;
-            format_string buf "]";
-            format_popm buf
-      in
-         if !debug_simple_print then
-            eprintf "Simple_print.format_term: var: %s%t" v eflush;
-         if subterms = [] then
-            format_char buf '\'';
-         format_quoted_string buf v;
-         if !debug_simple_print then
-            eprintf "Simple_print.format_terms%t" eflush;
-         format_terms subterms
-
-   else
-      (* Standard term *)
-      let _ =
-         if !debug_simple_print then
-            eprintf "Simple_print.format_term: regular term%t" eflush
-      in
-      let { term_op = op; term_terms = bterms } = dest_term term in
-      let { op_name = name; op_params = params } = dest_op op in
-         if !debug_simple_print then
-            eprintf "Simple_print.format_term: destructed term%t" eflush;
-         format_pushm buf 4;
-         format_quoted_string buf (string_of_opname name);
-         format_params buf params;
-         format_bterms buf bterms;
+         format_pushm buf 1;
+         format_string buf "[";
+         aux l;
+         format_string buf "]";
          format_popm buf
 
-(*
- * List of terms.
- *)
-and format_termlist buf l =
-   let rec aux = function
-      [] -> ()
-    | [h] -> format_term buf h
-    | h::t ->
-         format_term buf h;
-         format_string buf ";";
-         format_space buf;
-         aux t
-   in
-      format_pushm buf 1;
-      format_string buf "[";
-      aux l;
-      format_string buf "]";
-      format_popm buf
+   (*
+    * MetaTerms.
+    *)
+   let format_mterm buf =
+      let rec aux = function
+         MetaTheorem t ->
+            format_term buf t
+       | MetaImplies (a, b) ->
+            format_szone buf;
+            format_pushm buf 0;
+            aux a;
+            format_string buf " -->";
+            format_hspace buf;
+            aux b;
+            format_popm buf;
+            format_ezone buf
+       | MetaFunction (v, a, b) ->
+            format_szone buf;
+            format_pushm buf 0;
+            format_term buf v;
+            format_string buf " : ";
+            aux a;
+            format_string buf " -->";
+            format_hspace buf;
+            aux b;
+            format_popm buf;
+            format_ezone buf
+       | MetaIff (a, b) ->
+            format_szone buf;
+            format_pushm buf 0;
+            aux a;
+            format_string buf " <-->";
+            format_hspace buf;
+            aux b;
+            format_popm buf;
+            format_ezone buf
+      in
+         aux
 
-(*
- * MetaTerms.
- *)
-let format_mterm buf =
-   let rec aux = function
-      MetaTheorem t ->
-         format_term buf t
-    | MetaImplies (a, b) ->
-         format_szone buf;
-         format_pushm buf 0;
-         aux a;
-         format_string buf " -->";
-         format_hspace buf;
-         aux b;
-         format_popm buf;
-         format_ezone buf
-    | MetaFunction (v, a, b) ->
-         format_szone buf;
-         format_pushm buf 0;
-         format_term buf v;
-         format_string buf " : ";
-         aux a;
-         format_string buf " -->";
-         format_hspace buf;
-         aux b;
-         format_popm buf;
-         format_ezone buf
-    | MetaIff (a, b) ->
-         format_szone buf;
-         format_pushm buf 0;
-         aux a;
-         format_string buf " <-->";
-         format_hspace buf;
-         aux b;
-         format_popm buf;
-         format_ezone buf
-   in
-      aux
+   (************************************************************************
+    * INTERFACE                                                            *
+    ************************************************************************)
 
-(************************************************************************
- * INTERFACE                                                            *
- ************************************************************************)
+   (* Level_Exps *)
+   let format_simple_level_exp = format_level_exp
 
-(* Level_Exps *)
-let format_simple_level_exp = format_level_exp
+   let print_simple_level_exp_fp out p =
+      let buf = new_buffer () in
+         format_level_exp buf p;
+         print_to_channel max_column buf out
 
-let print_simple_level_exp_fp out p =
-   let buf = new_buffer () in
-      format_level_exp buf p;
-      print_to_channel max_column buf out
+   let print_simple_level_exp = print_simple_level_exp_fp stdout
 
-let print_simple_level_exp = print_simple_level_exp_fp stdout
+   let prerr_simple_level_exp = print_simple_level_exp_fp stderr
 
-let prerr_simple_level_exp = print_simple_level_exp_fp stderr
+   let string_of_level_exp p =
+      let buf = new_buffer () in
+         format_level_exp buf p;
+         print_to_string max_column buf
 
-let string_of_level_exp p =
-   let buf = new_buffer () in
-      format_level_exp buf p;
-      print_to_string max_column buf
+   (* Params *)
+   let format_simple_param = format_param
 
-(* Params *)
-let format_simple_param = format_param
+   let print_simple_param_fp out p =
+      let buf = new_buffer () in
+         format_param buf p;
+         print_to_channel max_column buf out
 
-let print_simple_param_fp out p =
-   let buf = new_buffer () in
-      format_param buf p;
-      print_to_channel max_column buf out
+   let print_simple_param = print_simple_param_fp stdout
 
-let print_simple_param = print_simple_param_fp stdout
+   let prerr_simple_param = print_simple_param_fp stderr
 
-let prerr_simple_param = print_simple_param_fp stderr
+   let string_of_param p =
+      let buf = new_buffer () in
+         format_param buf p;
+         print_to_string max_column buf
 
-let string_of_param p =
-   let buf = new_buffer () in
-      format_param buf p;
-      print_to_string max_column buf
+   (* Terms *)
+   let format_simple_term = format_term
 
-(* Terms *)
-let format_simple_term = format_term
+   let print_simple_term_fp out term =
+      let buf = new_buffer () in
+         format_term buf term;
+         print_to_channel max_column buf out
 
-let print_simple_term_fp out term =
-   let buf = new_buffer () in
-      format_term buf term;
-      print_to_channel max_column buf out
+   let print_simple_term = print_simple_term_fp stdout
 
-let print_simple_term = print_simple_term_fp stdout
+   let prerr_simple_term = print_simple_term_fp stderr
 
-let prerr_simple_term = print_simple_term_fp stderr
+   let string_of_term term =
+      let buf = new_buffer () in
+         format_term buf term;
+         print_to_string max_column buf
 
-let string_of_term term =
-   let buf = new_buffer () in
-      format_term buf term;
-      print_to_string max_column buf
+   (* Terms *)
+   let format_simple_bterm buf = format_bterm buf
 
-(* Terms *)
-let format_simple_bterm buf = format_bterm buf
+   let print_simple_bterm_fp out term =
+      let buf = new_buffer () in
+         format_bterm buf term;
+         print_to_channel max_column buf out
 
-let print_simple_bterm_fp out term =
-   let buf = new_buffer () in
-      format_bterm buf term;
-      print_to_channel max_column buf out
+   let print_simple_bterm = print_simple_bterm_fp stdout
 
-let print_simple_bterm = print_simple_bterm_fp stdout
+   let prerr_simple_bterm = print_simple_bterm_fp stderr
 
-let prerr_simple_bterm = print_simple_bterm_fp stderr
+   let string_of_bterm term =
+      let buf = new_buffer () in
+         format_bterm buf term;
+         print_to_string max_column buf
 
-let string_of_bterm term =
-   let buf = new_buffer () in
-      format_bterm buf term;
-      print_to_string max_column buf
+   (*
+    * MetaTerms.
+    *)
+   let format_simple_mterm = format_mterm
 
-(*
- * MetaTerms.
- *)
-let format_simple_mterm = format_mterm
+   let print_simple_mterm_fp out mterm =
+      let buf = new_buffer () in
+         format_mterm buf mterm;
+         print_to_channel max_column buf out
 
-let print_simple_mterm_fp out mterm =
-   let buf = new_buffer () in
-      format_mterm buf mterm;
-      print_to_channel max_column buf out
+   let print_simple_mterm = print_simple_mterm_fp stdout
 
-let print_simple_mterm = print_simple_mterm_fp stdout
+   let prerr_simple_mterm = print_simple_mterm_fp stderr
 
-let prerr_simple_mterm = print_simple_mterm_fp stderr
+   let string_of_mterm mterm =
+      let buf = new_buffer () in
+         format_mterm buf mterm;
+         print_to_string max_column buf
 
-let string_of_mterm mterm =
-   let buf = new_buffer () in
-      format_mterm buf mterm;
-      print_to_string max_column buf
+   (*
+    * Addresses.
+    *)
+   let print_simple_address_fp out address =
+      output_string out (string_of_address address)
 
-(*
- * Addresses.
- *)
-let print_simple_address_fp out address =
-   output_string out (string_of_address address)
+   let print_simple_address = print_simple_address_fp stdout
+   let prerr_simple_address = print_simple_address_fp stderr
 
-let print_simple_address = print_simple_address_fp stdout
-let prerr_simple_address = print_simple_address_fp stderr
+   (*
+    * Install simple printer as default printer.
+    *)
+   let _ = install_debug_printer print_simple_term_fp
 
-(*
- * Install simple printer as default printer.
- *)
-let _ = install_debug_printer print_simple_term_fp
+end
+
+module SimplePrint = MakeSimplePrint (Refiner.Refiner)
 
 (*
  * -*-

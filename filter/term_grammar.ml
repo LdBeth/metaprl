@@ -14,6 +14,7 @@ open Refiner.Refiner.TermMeta
 open Refiner.Refiner.RefineError
 open Ml_string
 open Simple_print
+open Simple_print.SimplePrint
 
 open Filter_type
 open Filter_summary
@@ -658,7 +659,7 @@ struct
                    []
               | h::tl ->
                    if !debug_grammar then
-                      eprintf "Got hyp: %s%t" (Simple_print.string_of_term h.aterm) eflush;
+                      eprintf "Got hyp: %s%t" (SimplePrint.string_of_term h.aterm) eflush;
                    match h with
                       { aname = Some v; aterm = t } ->
                          mk_hyp_term (dest_var v) t :: proc_hyps tl
@@ -669,7 +670,7 @@ struct
                          with
                             RefineError (_, TermMatchError _) ->
                                Stdpp.raise_with_loc loc (**)
-                                  (Failure (sprintf "Not a variable: %s" (Simple_print.string_of_term t)))
+                                  (Failure (sprintf "Not a variable: %s" (SimplePrint.string_of_term t)))
              in
              let esequent =
                 { sequent_args = mk_xlist_term args;

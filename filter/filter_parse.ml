@@ -16,7 +16,7 @@ open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Precedence
-open Simple_print
+open Simple_print.SimplePrint
 open Resource
 
 open File_base_type

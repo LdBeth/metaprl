@@ -22,6 +22,7 @@ open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 
 open Simple_print
+open Simple_print.SimplePrint
 
 (*
  * Show the file loading.
@@ -233,7 +234,7 @@ let collect_entries { tbl_items = items } =
             match h with
                Entry info ->
                   if !debug_term_table then
-                     eprintf "Term_table.collect_entries: %s%t" (Simple_print.string_of_term info.info_term) eflush;
+                     eprintf "Term_table.collect_entries: %s%t" (SimplePrint.string_of_term info.info_term) eflush;
                   insert_item (tables, info :: entries) t
              | Table table ->
                   if !debug_term_table then
@@ -255,7 +256,7 @@ let print_table { tbl_items = items } =
          begin
             match h with
                Entry info ->
-                  eprintf "Term_table.print_entries: %s%t" (Simple_print.string_of_term info.info_term) eflush;
+                  eprintf "Term_table.print_entries: %s%t" (SimplePrint.string_of_term info.info_term) eflush;
                   print_item tables t
              | Table table ->
                   eprintf "Term_table.print_entries: Table%t" eflush;

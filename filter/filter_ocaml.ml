@@ -71,7 +71,7 @@ let mk_ocaml_op =
 let one_subterm s t =
    if false then
       begin
-         eprintf "one_subterm: %s: begin: %s%t" s (Simple_print.string_of_term t) eflush;
+         eprintf "one_subterm: %s: begin: %s%t" s (Simple_print.SimplePrint.string_of_term t) eflush;
          let t = one_subterm t in
             eprintf "one_subterm: done%t" eflush;
             t

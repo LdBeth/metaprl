@@ -77,7 +77,7 @@ struct
     * Printers.
     *)
    let string_of_term t =
-      (get_df Dform.string_of_term Simple_print.string_of_term) t
+      (get_df Dform.string_of_term Simple_print.SimplePrint.string_of_term) t
 
    (*
     * Use format library for term printing.

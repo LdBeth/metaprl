@@ -10,6 +10,7 @@ open Nl_debug
 open Opname
 open Refiner.Refiner.TermType
 open Resource
+open Simple_print
 
 open File_base_type
 open File_type_base
@@ -291,7 +292,7 @@ struct
     *)
    let add_opname cache str name =
       if !debug_opname then
-         eprintf "Filter_cache_fun.add_opname: %s.%s%t" str (Simple_print.string_of_opname name) eflush;
+         eprintf "Filter_cache_fun.add_opname: %s.%s%t" str (SimplePrint.string_of_opname name) eflush;
       Hashtbl.add cache.optable str name
 
    (*
@@ -317,7 +318,7 @@ struct
                let opname = optable cache str in
                   if !debug_opname then
                      eprintf "Filter_cache_fun.mk_opname: %s%t" (**)
-                        (Simple_print.string_of_opname opname) eflush;
+                        (SimplePrint.string_of_opname opname) eflush;
                   opname
             with
                Not_found ->
@@ -334,7 +335,7 @@ struct
          let opname = make_opname (List.rev path') in
             if !debug_opname then
                eprintf "Filter_cache_fun.mk_opname: path: %s%t" (**)
-                  (Simple_print.string_of_opname opname) eflush;
+                  (SimplePrint.string_of_opname opname) eflush;
             opname
 
    (************************************************************************
@@ -496,7 +497,7 @@ struct
                let opname = Opname.mk_opname str opprefix in
                   if !debug_opname then
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
-                        (Simple_print.string_of_opname opname) eflush;
+                        (SimplePrint.string_of_opname opname) eflush;
                   Hashtbl.add cache.optable str opname;
                   resources
 
@@ -546,7 +547,7 @@ struct
                let opname = Opname.mk_opname str opprefix in
                   if !debug_opname then
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
-                        (Simple_print.string_of_opname opname) eflush;
+                        (SimplePrint.string_of_opname opname) eflush;
                   Hashtbl.add cache.optable str opname
 
           | Parent { parent_name = path } ->
