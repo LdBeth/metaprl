@@ -862,6 +862,15 @@ let compile gram =
       Parser.compile parse;
       compile_iforms gram
 
+let compile gram =
+   if !debug_parsetiming then
+      let now = Unix.gettimeofday () in
+         eprintf "Compiling grammar@.";
+         compile gram;
+         eprintf "Created grammar: %g secs@." (Unix.gettimeofday () -. now)
+   else
+      compile gram
+
 let prepare_to_marshal gram name =
    let { gram_name     = gram_name;
          gram_subnames = subnames;
@@ -874,8 +883,7 @@ let prepare_to_marshal gram name =
             (* If it is already named, don't rename it *)
             ()
        | None ->
-            OpnameTable.iter (fun _ lexer -> Lexer.compile lexer) lexers;
-            Parser.compile parse;
+            compile gram;
             gram.gram_iform_table <- None;
             gram.gram_name <- Some name;
             gram.gram_subnames <- StringSet.add subnames name
