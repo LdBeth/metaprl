@@ -151,29 +151,26 @@ struct
     | OnceFinal of 'b
 
    let eval_tactic_once tacv =
-      let tac p =
-         match !tacv with
-            OnceFinal tac ->
-               tac p
-          | OnceInitial pt_item ->
-               inline_tactic := None;
-               try
-                  if Toploop.execute_phrase false Format.std_formatter (Parsetree.Ptop_def pt_item) then
-                     match !inline_tactic with
-                        Some tac ->
-                           tacv := OnceFinal tac;
-                           tac p
-                      | None ->
-                           raise (RefineError ("eval_tactic", StringError "evaluation failed"))
-                  else
-                     raise (RefineError ("eval_tactic", StringError "evaluation failed"))
-               with
-                  Typecore.Error (_, err) ->
-                     Typecore.report_error Format.std_formatter err;
-                     eflush stdout;
-                     raise (RefineError ("eval_tactic", StringError "evaluation failed"))
-      in
-         tac
+      match !tacv with
+         OnceFinal tac ->
+            tac
+       | OnceInitial pt_item ->
+            inline_tactic := None;
+            try
+               if Toploop.execute_phrase false Format.std_formatter (Parsetree.Ptop_def pt_item) then
+                  match !inline_tactic with
+                     Some tac ->
+                        tacv := OnceFinal tac;
+                        tac
+                   | None ->
+                        raise (RefineError ("eval_tactic", StringError "evaluation failed"))
+               else
+                  raise (RefineError ("eval_tactic", StringError "evaluation failed"))
+            with
+               Typecore.Error (_, err) ->
+                  Typecore.report_error Format.std_formatter err;
+                  eflush stdout;
+                  raise (RefineError ("eval_tactic", StringError "evaluation failed"))
 
    let eval_tactic state =
       Shell_state.synchronize state (function expr ->
@@ -208,16 +205,14 @@ struct
     *)
    let create_tactic state expr =
       let cell = ref (Delay expr) in
-      let tac p =
+      funT (fun _ ->
          match !cell with
             Tactic tac ->
-               tac p
+               tac
           | Delay expr ->
                let tac = eval_tactic state expr in
                   cell := Tactic tac;
-                  tac p
-      in
-         tac
+                  tac)
 
    (************************************************************************
     * SHELL GRAMMAR                                                        *
