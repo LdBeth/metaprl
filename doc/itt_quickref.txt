@@ -318,12 +318,12 @@ Applies the convertion to all clauses of the givem assumptiom.
 Applies the convertion to all clauses of all assumption and to the goal
 sequent.
 
-* rwh, rwch, rwhAll, rwchAll, rwhAllAll are the same as rw, rwc, rwAll, rwcAll, rwAllAll,
-but use (higherC conv).
+* rwh, rwch, rwhAll, rwchAll, rwhAllAll are the same as
+  rw,  rwc,  rwAll,  rwcAll,  rwAllAll, but use (higherC conv).
 
-* rwa, rwca, rwaAll, rwcaAll, rwaAllAll are the same as rw, rwc, rwAll, rwcAll, rwAllAll,
-but have (conv list) as an argument and use (applyAllC convs) instead of conv.
-use (higherC conv).
+* rwa, rwca, rwaAll, rwcaAll, rwaAllAll are the same as
+  rw,  rwc,  rwAll,  rwcAll,  rwAllAll, but have (conv list) as an argument
+and use (applyAllC convs) instead of conv.
 
 * thenC (infix) : conv -> conv -> conv
 Apply the first conversion and then the second.
@@ -881,7 +881,8 @@ If the n'th hypothesis is of the form
 another goal with conclusion << a IN 'A >>).
 
 If the conclusion is of the form
-<< subtype{.{ f1 | x1: 'A1 -> 'B1['f1; 'x1] }; .{ f2 | x2: 'A2 -> 'B2['f2; 'x2] } } >>,
+<< subtype{.{ f1 | x1: 'A1 -> 'B1['f1; 'x1] };
+           .{ f2 | x2: 'A2 -> 'B2['f2; 'x2] } } >>,
 (withT r (dT 0)) creates 5 subgoals.  (The argument r, which gives the
 well-founded relation validating the rfun types, must be of the
 form << lambda{a. lambda{b. 'R['a; 'b]}} >>.)
@@ -968,6 +969,19 @@ Rewrites << lambda{x. 'f 'x} >> to << 'f >>, under the condition
 
 * unfold_fun : conv
 Rewrites << 'A -> 'B >> to << x: 'A -> 'B >>.
+
+* fnExtensionalityT : term -> term -> tactic
+Reduces a goal of the form << 'f = 'g in fun >> (where fun is either
+a function type, or a dependent funtion type, or a very dependent
+fuction type), to proving that 'f and 'g return equal results for
+equal arguments. The term arguments for fnExtensionalityT should
+be the types of 'f and 'g respectively. The term arguments should be
+function types of the same ``dependency level'' as << fun >>
+
+* fnExtenT : term -> tactic
+fnExtenT t = fnExtensionalityT t t. Calling fnExtenT << fun >> is useful
+when proving goals of the form << 'f in fun' >> in case it is easier to
+show that << 'f >> is in << fun >>.
 
 This file adds to the dT tactic.
 If the conclusion is of the form
@@ -2521,7 +2535,8 @@ Rewrites << fcompare{'eq; 'x; 'y} >> to <<  ('eq 'x 'y) >>.
 Rewrites << fequalp{'eq; 'T} >> to
 << ('eq IN ('T -> 'T -> bool))
       & (all x: 'T. "assert"{.fcompare{'eq; 'x; 'x}})
-      & (all x: 'T. all y: 'T. ("assert"{fcompare{'eq; 'x; 'y}} => "assert"{fcompare{'eq; 'y; 'x}}))
+      & (all x: 'T. all y: 'T.
+          ("assert"{fcompare{'eq; 'x; 'y}} => "assert"{fcompare{'eq; 'y; 'x}}))
       & (all x: 'T. all y: 'T. all z: 'T.
             ("assert"{fcompare{'eq; 'x; 'y}} =>
              "assert"{fcompare{'eq; 'y; 'z}} =>
@@ -2716,10 +2731,12 @@ It reduces terms of the following forms in the obvious way:
 #atT.  You can specify either a "fset" or a "list" type.
 #
 #If the conclusion is of one of the forms
-#<< funion{'eq; 's1; 's2} IN list {'T} >>, << fisect{'eq; 's1; 's2}} IN list {'T} >>,
+#<< funion{'eq; 's1; 's2} IN list {'T} >>,
+#<< fisect{'eq; 's1; 's2}} IN list {'T} >>,
 #<< fsub{'eq; 's1; 's2} IN list {'T} >>, << fsingleton{'x}} IN list {'T} >>,
 #<< fempty IN list {'T} >>, << funion{'eq; 's1; 's2}} IN fset{'eq; 'T} >>,
-#<< fisect{'eq; 's1; 's2} IN fset{'eq; 'T} >>, << fsub{'eq; 's1; 's2} IN fset{'eq; 'T} >>,
+#<< fisect{'eq; 's1; 's2} IN fset{'eq; 'T} >>,
+#<< fsub{'eq; 's1; 's2} IN fset{'eq; 'T} >>,
 #<< fsingleton{'x} IN fset{'eq; 'T} >>, << fempty IN fset{'eq; 'T} >>, or
 #<< foflist{'l} IN fset{'eq; 'T} >>,
 #(dT 0) breaks it down into subgoals.
