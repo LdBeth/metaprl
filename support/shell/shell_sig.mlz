@@ -262,6 +262,9 @@ sig
    val pwd          : unit -> string
    val filename     : unit -> string option
 
+   (* Backup all files *)
+   val backup_all   : unit -> unit
+
    (* Viewing options for the flush function *)
    val get_ls_options     : unit -> LsOptionSet.t
    val get_view_options   : unit -> string

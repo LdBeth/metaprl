@@ -882,7 +882,7 @@ let handle server client connect info =
  *)
 let serve connect server info =
    if !debug_http then
-      eprintf "Httpd_simple: starting web services%t" eflush;
+      eprintf "Http_simple: starting web services%t" eflush;
 
    (* Catch sigpipe *)
    let () = catch_sigpipe () in
@@ -906,12 +906,14 @@ let serve connect server info =
                let info =
                   (* Ignore errors when the connection is handled *)
                   try handle server client connect info with
-                     Unix.Unix_error _
-                   | Sys_error _
+                     Sys_error _
                    | Failure _
                    | End_of_file
                    | SigPipe as exn ->
-                        eprintf "Httpd_simple: %s: error during web service%t" (Printexc.to_string exn) eflush;
+                        eprintf "Http_simple: %s: error during web service%t" (Printexc.to_string exn) eflush;
+                        info
+                   | Unix.Unix_error (errno, funinfo, arginfo) ->
+                        eprintf "Http_simple: Unix error: %s: %s(%s)%t" (Unix.error_message errno) funinfo arginfo eflush;
                         info
                in
                let () =
@@ -929,7 +931,7 @@ let serve connect server info =
    in
       try serve info with
          exn ->
-            eprintf "Httpd_simple: %s: service closed%t" (Printexc.to_string exn) eflush;
+            eprintf "Http_simple: %s: service closed%t" (Printexc.to_string exn) eflush;
             raise exn
 
 (*

@@ -415,7 +415,7 @@ let html_escape_char info col c =
 	succ col
 
 let print_translated_io_buffer_to_http out table name io =
-   match in_channel_of_file (Setup.lib()) name with
+   match in_channel_of_file (Setup.lib ()) name with
       Some inx ->
          let info = http_info out in
          let inp = Browser_syscall.open_in io in

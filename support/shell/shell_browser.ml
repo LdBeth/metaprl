@@ -970,9 +970,7 @@ struct
 
    let start_windowed_command session state outx command =
       if !debug_http then
-         eprintf "Executing inline command %s@." command;
-      let table = table_of_state state in
-      let table = BrowserTable.add_string table title_sym "MetaPRL Command" in
+         eprintf "Executing windowed command %s@." command;
          try
             session.session_io <- Some (Browser_syscall.create command);
             session.session_io_version <- succ session.session_io_version;
@@ -996,17 +994,18 @@ struct
     * Generic handler.
     * Some of the commands can be executed immediately.
     *)
-   let handle_syscall server state session outx command =
-      let () =
+   let handle_syscall server state outx command =
+      State.write session_entry (fun session ->
          match command with
             SyscallRestart ->
+               Top.backup_all ();
                print_page server state session outx 100 "reload";
                Http_simple.Output.close outx;
                close_http server;
-               let _ =
-                  try Unix.execv Sys.argv.(0) Sys.argv; -1 with
+               let () =
+                  try Unix.execv Sys.argv.(0) Sys.argv with
                      Unix.Unix_error _ ->
-                        -1
+                        ()
                in
                   Lm_format.eprintf "System restart failed@."
           | SyscallOMake target ->
@@ -1016,9 +1015,8 @@ struct
           | SyscallEdit (_, target) ->
                start_edit_command session state outx target
           | SyscallShell s ->
-               start_inline_command session state outx s
-      in
-         0
+               start_inline_command session state outx s);
+      0
 
    (************************************************************************
     * Commands.
@@ -1029,7 +1027,7 @@ struct
     * Send it to the shell, and get the result.
     *)
    let eval server state session outx command =
-      Shell_syscall.set_syscall_handler (handle_syscall server state session outx);
+      Shell_syscall.set_syscall_handler (handle_syscall server state outx);
       Session.add_prompt command;
       unsynchronize_session session (fun () ->
             Session.synchronize Top.eval (command ^ ";;"));

@@ -1148,6 +1148,7 @@ struct
       let set_dfmode         = wrap      set_dfmode
       let set_window_width   = wrap      set_window_width
       let flush              = wrap_unit flush
+      let backup_all         = wrap_unit backup_all
 
       (*
        * Refresh packages at startup.
@@ -1172,7 +1173,7 @@ struct
          commands.backup             <- wrap_unit backup;
          commands.revert             <- wrap_unit revert;
          commands.save               <- wrap_unit save;
-         commands.backup_all         <- wrap_unit backup_all;
+         commands.backup_all         <- backup_all;
          commands.revert_all         <- wrap_unit revert_all;
          commands.save_all           <- wrap_unit save_all;
          commands.view               <- wrap view;

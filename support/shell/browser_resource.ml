@@ -432,6 +432,10 @@ let resource (term, browser_state -> browser_info) commandbar =
  *)
 let menubar_init =
    [<< menu["file", "File"] >>;
+    << menuitem["file", "Rebuild",    "Command('!omake')"] >>;
+    << menuitem["file", "Restart",    "Command('!restart')"] >>;
+    << menuitem["file", "CVS Update", "Command('!cvs \"update\"')"] >>;
+    << menuitem["file", "Save",       "Command('save ()')"] >>;
     << menuitem["file", "New Window", "NewWindow()"] >>;
     << menuitem["file", "New Session", "NewSession()"] >>;
     << menu["edit", "Edit"] >>;
@@ -455,9 +459,6 @@ let menubar_collection =
 
 let resource (term, browser_state -> browser_info) menubar =
    menubar_collection
-
-let resource menubar +=
-    << menuitem["file", "Save", "Command('save ()')"] >>
 
 (*!
  * @docoff
