@@ -77,8 +77,8 @@ install:
 	done
 
 clean:
-	@for i in $(DIRS) lib bin; do\
-		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+	@for i in lib bin $(DIRS); do\
+		if (echo Cleaning $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
 	done
 
 depend:
