@@ -629,6 +629,34 @@ struct
 
 
    (*
+    * These tactics work with assumptions.
+    *)
+   let onAllAssumT tac p =
+      let rec all i assums p =
+         match assums with
+          | _ :: assums ->
+               prefix_thenT (tac i) (all (i + 1) assums) p
+          | [] ->
+               idT p
+      in
+      let _, assums = dest_msequent (Sequent.msequent p) in
+         all 1 assums p
+
+   (*
+    * Labeled form
+    *)
+   let onAllMAssumT tac p =
+      let rec all i assums p =
+         match assums with
+          | assum :: assums ->
+               prefix_thenMT (tac i) (all (i + 1) assums) p
+          | [] ->
+               idT p
+      in
+      let _, assums = dest_msequent (Sequent.msequent p) in
+         all 1 assums p
+
+   (*
     * These tactics are useful for trivial search.
     *)
    let onSomeAssumT tac p =

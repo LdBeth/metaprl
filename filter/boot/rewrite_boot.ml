@@ -350,10 +350,9 @@ struct
    (*
     * Apply the rewrite.
     *)
-   let rw conv assum clause p =
+   let rw conv assum addr p =
       if !debug_rewrite then
          eprintf "Rewrite start%t" eflush;
-      let addr = Sequent.clause_addr p clause in
       let x = apply assum addr conv p in
          if !debug_rewrite then
             eprintf "Rewrite done%t" eflush;

@@ -119,6 +119,29 @@ When dT is ran on hypothesys x: exists i:'T..., y is used as a name of the new h
 variable instead of i. I am not sure whether it's a rewriter problem or a bad tactic.
 In particular, this breaks lots of proofs in itt_collection.
 
+3.12) (kopylov; 2001.19.06)
+(rwhc assum clause)  does not work when clause > number of hypothsis in
+the goal (not in the assum).
+
+3.13) (kopylov; 2001.19.06)
+RewriteInternal.rw intentional rewrite should apply conv the whole sequent.
+After fixing this bug, rwcAll should use RewriteInternal.rw instead
+of onAllMClausesT (conversionals_boot.ml).
+
+3.14) (kopylov; 2001.19.06)
+Converertions can not be applied to context.
+E.g.  'H; 'J['A*'B >- C
+# refine rw (reduceC) 1;;
+    Term_addr_ds.term_subterm: [Hyp(1)]
+    [ext] H; J[A * B] >- C
+# refine rw (sweepUpC unfold_prod) 1;;
+Refine error:
+    Term_addr_ds.term_subterm: [Hyp(1)]
+    [ext] H; J[A * B] >- C
+After fixing this bug, higherC would be redundant in the definition
+of applyAllC (conversionals_boot.ml).
+
+
 REFINER
 
 4.1) (fixed)

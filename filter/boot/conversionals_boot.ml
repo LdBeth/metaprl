@@ -37,6 +37,7 @@
 open Mp_debug
 open Printf
 
+open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermSubst
@@ -46,6 +47,8 @@ open Tactic_boot_sig
 open Tactic_boot
 open Rewrite_boot
 open Sequent_boot
+
+open Tacticals_boot
 
 (*
  * Debug statement.
@@ -149,18 +152,6 @@ struct
     *)
    let higherC = RewriteInternal.higherC
 
-   let rw conv clause =
-      RewriteInternal.rw conv 0 clause
-
-   let rwh conv i =
-      RewriteInternal.rw (higherC conv) 0 i
-
-   let rwc conv i j =
-      RewriteInternal.rw conv i j
-
-   let rwch conv i j =
-      RewriteInternal.rw (higherC conv) i j
-
    (*
     * Apply to leftmost-innermost term.
     *)
@@ -200,9 +191,7 @@ struct
     * Apply all to all terms the first conversion that works
     *)
    let applyAllC convs =
-      tryC (sweepUpC (firstC convs))
-
-   let rwa convs = rw (applyAllC convs)
+      higherC (sweepUpC (firstC convs))
 
    (*
     * Repeat the conversion until nothing more happens.
@@ -246,6 +235,38 @@ struct
                prefix_andthenC conv (repeatForC (i - 1) conv)
          in
             funC repeatForCE
+
+
+   let rwc conv assum clause p =
+      let addr = Sequent.clause_addr p clause in
+         RewriteInternal.rw conv assum addr p
+
+   let rwcAll conv assum  =
+(*    RewriteInternal.rw conv assum (TermAddr.make_address []) *)
+      Tacticals.onAllMClausesT (rwc conv assum)
+
+   let rw conv clause =
+      rwc conv 0 clause
+
+   let rwAll conv   =
+      rwcAll conv 0
+
+   let rwAllAll conv   =
+      Tacticals.prefix_thenMT (Tacticals.onAllMAssumT (rwcAll conv)) (rwAll conv)
+
+   let rwh conv = rw (higherC conv)
+   let rwch conv = rwc (higherC conv)
+   let rwhAll conv = rwAll (higherC conv)
+   let rwchAll conv = rwcAll (higherC conv)
+   let rwhAllAll conv = rwAllAll (higherC conv)
+
+   let rwa convs = rw (applyAllC convs)
+   let rwca convs = rwc (applyAllC convs)
+   let rwaAll convs = rwAll (applyAllC convs)
+   let rwcaAll convs = rwcAll (applyAllC convs)
+   let rwaAllAll convs = rwAllAll (applyAllC convs)
+
+
 end
 
 (*

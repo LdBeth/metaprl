@@ -970,6 +970,8 @@ sig
    val onAllMClausesT : (int -> tactic) -> tactic
    val tryOnAllMHypsT : (int -> tactic) -> tactic
    val tryOnAllMClausesT : (int -> tactic) -> tactic
+   val onAllAssumT : (int -> tactic) -> tactic
+   val onAllMAssumT : (int -> tactic) -> tactic
 
    val onSomeAssumT : (int -> tactic) -> tactic
    val onSomeHypT : (int -> tactic) -> tactic
@@ -1050,7 +1052,7 @@ sig
    (*
     * Apply a rewrite.
     *)
-   val rw : conv -> int -> int -> tactic
+   val rw : conv -> int -> address -> tactic
 
    (*
     * Sequencing.
@@ -1122,10 +1124,23 @@ sig
     * The argument is the hyp number, or concl to apply to.
     *)
    val rw : conv -> int -> tactic
-   val rwh : conv -> int -> tactic
    val rwc : conv -> int -> int -> tactic
+   val rwAll : conv -> tactic
+   val rwcAll : conv -> int -> tactic
+   val rwAllAll : conv -> tactic
+
+   val rwh : conv -> int -> tactic
    val rwch : conv -> int -> int -> tactic
-   val rwa  :  conv list -> int -> tactic
+   val rwhAll : conv -> tactic
+   val rwchAll : conv -> int -> tactic
+   val rwhAllAll : conv -> tactic
+
+   val rwa : conv list -> int -> tactic
+   val rwca : conv list -> int -> int -> tactic
+   val rwaAll : conv list -> tactic
+   val rwcaAll : conv list -> int -> tactic
+   val rwaAllAll : conv list -> tactic
+
 
    val prefix_andthenC : conv -> conv -> conv
    val prefix_orelseC : conv -> conv -> conv
