@@ -11,6 +11,12 @@ include $(ROOT)/mk/config
 
 MP_VERSION=0.6.0
 
+#
+# Versions of Ocaml/Camlp4 that are compatible with MetaPRL
+# CAML_VERSIONS shoud be a space-separated list of versions
+#
+CAML_VERSIONS=2.02
+
 ifndef TERMS
    TERMS=undefined
 endif
@@ -100,23 +106,35 @@ ifndef MPLIB
    MPLIB=$(ROOT)/lib
 endif
 
+default: all
+.PHONY: default check_versions
+check_versions::
+
 #
 # OCAML commands
 #
 ifndef CAMLP4
    CAMLP4 = camlp4o$(EXE)
+check_versions::
+	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(CAMLP4) CAMLP4 "Camlp4 version"
 endif
 ifndef OCAMLC
    OCAMLC = ocamlc$(EXE)
+check_versions::
+	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(OCAMLC) OCAMLC "The Objective Caml compiler, version"
 endif
 ifndef OCAMLCP
    OCAMLCP = $(OCAMLC)
 endif
 ifndef OCAMLMKTOP
    OCAMLMKTOP = ocamlmktop
+check_versions::
+	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(OCAMLMKTOP) OCAMLMKTOP "The Objective Caml compiler, version"
 endif
 ifndef OCAMLOPT
    OCAMLOPT = ocamlopt$(EXE)
+check_versions::
+	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(OCAMLOPT) OCAMLOPT "The Objective Caml native-code compiler, version"
 endif
 ifndef OCAMLLEX
    OCAMLLEX = ocamllex$(EXE)

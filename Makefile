@@ -45,7 +45,7 @@ opt: check_config
 		if (echo Making $$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
 	done
 
-profile_clean: check_config
+profile_clean:
 	@for i in $(REFINER_DIRS) editor/ml; do\
 		if (echo Making $$i...; $(MAKE) -C $$i clean); then true; else exit 1; fi;\
 	done
@@ -102,7 +102,7 @@ install: check_config
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
-clean: check_config
+clean:
 	@for i in lib bin doc $(DIRS); do\
 		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
@@ -118,7 +118,7 @@ mk/config: mk/make_config.sh
 	@echo Making mk/config...
 	@TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_JOBS="$(MAKE_JOBS)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" mk/make_config.sh > mk/config
 
-check_config::mk/config
+check_config::check_versions mk/config
 	@if [ $(TERMS) != ds -a $(TERMS) != std ]; then\
 		echo "ERROR: Invalid TERMS variable, edit mk/config file before running make"; \
 		exit 1; \
