@@ -250,7 +250,7 @@ struct
       in
          eval_include mplib;
          List.iter eval_include (Shell_state.get_includes ());
-         if not 
+         if not
             (Toploop.execute_phrase false Format.std_formatter
                (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_state", "term_printer")))))
          then invalid_arg "Shell_p4.main: installing term printer failed";

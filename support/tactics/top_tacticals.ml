@@ -495,7 +495,7 @@ let thinMatchT thin_many assum =
    let rec tac i j =
       if i = 0 then if j > 1 then thin_many 1 j else idT else
          match index.(pred i) with
-            Some _ -> 
+            Some _ ->
                let tac = tac (pred i) 1 in
                   if j > 1 then thin_many (succ i) j thenT tac else tac
           | None ->

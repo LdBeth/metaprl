@@ -290,7 +290,7 @@ let output_short db out t =
     in
        output_string out str
 
-let output_long db out t = 
+let output_long db out t =
    let buf = Rformat.new_buffer () in
       Dform.format_term db buf t;
       Rformat.print_to_channel Rformat.default_width buf out
@@ -298,7 +298,7 @@ let output_long db out t =
 let get_dbase = function
    Some state -> state.state_df_base
  | None -> Dform.null_base
-   
+
 let print_term_fp out t =
    let printer = if !debug_full_terms then output_long else output_short in
       synchronize_client (fun state -> printer (get_dbase state) out t; flush out)
