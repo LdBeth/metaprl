@@ -1,0 +1,13 @@
+set_tex_file "tex/book";;
+print_theory "ocaml_doc_intro";;
+print_theory "ocaml_doc_expr1";;
+print_theory "ocaml_doc_var1";;
+print_theory "ocaml_doc_patt1";;
+print_theory "ocaml_doc_expr2";;
+print_theory "ocaml_doc_expr3";;
+print_theory "ocaml_doc_exn1";;
+print_theory "ocaml_doc_expr4";;
+print_theory "ocaml_doc_io1";;
+print_theory "ocaml_doc_mod1";;
+print_theory "ocaml_doc_mod2";;
+print_theory "ocaml_doc_class1";;
