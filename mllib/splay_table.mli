@@ -6,38 +6,42 @@ module type SplayTableSig =
 sig
    type elt
    type set
-   type 'a t
+   type t
+   type data
 
-   val create : set -> 'a t
-   val add : 'a t -> elt -> 'a -> 'a t
-   val union : ('a list -> 'a list -> 'a list) -> 'a t -> 'a t -> 'a t
-   val mem : 'a t -> elt -> bool
-   val find : 'a t -> elt -> 'a
-   val find_all : 'a t -> elt -> 'a list
-   val remove : 'a t -> elt -> 'a t
-   val iter : (elt -> 'a -> unit) -> 'a t -> unit
-   val map : (elt -> 'a -> 'b) -> 'a t -> 'b t
+   val create : set -> t
+   val add : t -> elt -> data -> t
+   val union : t -> t -> t
+   val mem : t -> elt -> bool
+   val find : t -> elt -> data
+   val find_all : t -> elt -> data list
+   val remove : t -> elt -> t
+   val iter : (elt -> data -> unit) -> t -> unit
+   val map : (elt -> data -> data) -> t -> t
 end
 
 (*
  * Ordering module takes a comparison set.
  *)
-module type OrdSig =
+module type TableBaseSig =
 sig
-   type t
+   type elt
    type set
+   type data
 
    val union : set -> set -> set
-   val compare : set -> t -> t -> int
+   val compare : set -> elt -> elt -> int
+   val append : data list -> data list -> data list
 end
 
 (*
  * Build the table over an ordered type.
  *)
-module MakeSplayTable (Ord : OrdSig)
+module MakeSplayTable (Base : TableBaseSig)
 : SplayTableSig
-  with type elt = Ord.t
-  with type set = Ord.set
+  with type elt = Base.elt
+  with type set = Base.set
+  with type data = Base.data
 
 (*
  * -*-
