@@ -2452,11 +2452,10 @@ struct
 
 (* make a term list out of a bterm list *)
 
-   let rec collect_subterms = function
-      [] -> []
+   let rec collect_subterms tail = function
+      [] -> tail
     | bt::r ->
-         let dbt = dest_bterm bt in
-         (dbt.bterm)::(collect_subterms r)
+         ((dest_bterm bt).bterm)::(collect_subterms tail r)
 
    let rec collect_delta_terms = function
       [] -> []
@@ -2465,8 +2464,7 @@ struct
             if Opname.eq (dest_op dt.term_op).op_name jprover_op then
                (dest_string_param t)::(collect_delta_terms r)
             else
-               let sub_terms = collect_subterms dt.term_terms in
-                  collect_delta_terms (sub_terms @ r)
+               collect_delta_terms (collect_subterms r dt.term_terms)
 
    let rec check_delta_terms (v,term) ass_delta_diff dterms =
       match ass_delta_diff with
@@ -3264,59 +3262,34 @@ struct
          (trans_vars,(n,(com @ [one_subst])))
 (*   end *)
 
-   let rec apply_element fs ft (v,slist) =
+   let rec apply_element v slist fs ft =
       match (fs,ft) with
-         ([],[]) ->
-            ([],[])
-       | ([],(ft_first::ft_rest)) ->
-            let new_ft_first =
-               if ft_first = v then
-                  slist
-               else
-                  [ft_first]
-            in
-            let (emptylist,new_ft_rest) = apply_element [] ft_rest (v,slist) in
-            (emptylist,(new_ft_first @ new_ft_rest))
+         [], [] ->
+            [], []
+       | [], (ft_first::ft_rest) ->
+            let _, ft = apply_element v slist [] ft_rest in
+            [], (if ft_first = v then slist @ ft else ft_first :: ft)
        | ((fs_first::fs_rest),[]) ->
-            let new_fs_first =
-               if fs_first = v then
-                  slist
-               else
-                  [fs_first]
-            in
-            let (new_fs_rest,emptylist) = apply_element fs_rest [] (v,slist) in
-            ((new_fs_first @ new_fs_rest),emptylist)
+            let fs, _ = apply_element v slist fs_rest [] in
+            (if fs_first = v then slist @ fs else fs_first :: fs), []
        | ((fs_first::fs_rest),(ft_first::ft_rest)) ->
-            let new_fs_first =
-               if fs_first = v then
-                  slist
-               else
-                  [fs_first]
-            and new_ft_first =
-               if ft_first = v then
-                  slist
-               else
-                  [ft_first]
-            in
-            let (new_fs_rest,new_ft_rest) = apply_element fs_rest ft_rest (v,slist) in
-            ((new_fs_first @ new_fs_rest),(new_ft_first @ new_ft_rest))
+            let fs, ft = apply_element v slist fs_rest ft_rest in
+            (if fs_first = v then slist @ fs else fs_first :: fs),
+            (if ft_first = v then slist @ ft else ft_first :: ft)
 
    let rec shorten us ut =
       match (us,ut) with
-         ([],_) -> (us,ut)
-       | (_,[])  -> (us,ut)
-       | ((fs::rs),(ft::rt)) ->
-            if fs = ft then
-               shorten rs rt
-            else
-               (us,ut)
+         (fs::rs), (ft::rt) when fs = ft ->
+            shorten rs rt
+       | usut ->
+            usut
 
    let rec apply_subst_list eq_rest v slist =
       match eq_rest with
          [] ->
             []
        | (atomnames,(fs,ft))::r ->
-            let (n_fs,n_ft) = apply_element fs ft (v,slist) in
+            let (n_fs,n_ft) = apply_element v slist fs ft in
             let (new_fs,new_ft) = shorten n_fs n_ft in (* delete equal first elements *)
             match (new_fs,new_ft) with
                [],[] ->
@@ -3519,17 +3492,16 @@ let rec test_apply_eq atomnames eqs eqt subst =
     | (f,flist)::r ->
          let (first_appl_eqs,first_appl_eqt) =
             if List.mem f atomnames then
-               (eqs,eqt)
+               eqs, eqt
             else
-               (apply_element eqs eqt (f,flist))
+               apply_element f flist eqs eqt
          in
          test_apply_eq atomnames first_appl_eqs first_appl_eqt r
 
 let rec test_apply_eqsubst eqlist subst =
    match eqlist with
       [] -> []
-    | f::r ->
-         let (atomnames,(eqs,eqt)) = f in
+    | (atomnames,(eqs,eqt))::r ->
          let applied_element  = test_apply_eq atomnames eqs eqt subst in
          (atomnames,applied_element)::(test_apply_eqsubst r subst)
 
@@ -4478,8 +4450,7 @@ let test concl logic calculus =  (* calculus should be LJmc or LJ for J, and LK 
 (* for sequents *)
 
 let seqtest list_term logic calculus =
-   let bterms = (dest_term list_term).term_terms in
-   let termlist = collect_subterms bterms in
+   let termlist = collect_subterms [] (dest_term list_term).term_terms in
    do_prove None termlist logic calculus
 
 (*****************************************************************)
