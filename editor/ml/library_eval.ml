@@ -93,10 +93,12 @@ let lib_open_eval env ehook host localport remoteport =
  *)
 
 let mp_list_root_op = mk_nuprl5_op [ make_param (Token "!mp_list_root")]
+let mp_list_display_op = mk_nuprl5_op [ make_param (Token "!mp_list_display")]
 let mp_list_module_op = mk_nuprl5_op [ make_param (Token "!mp_list_module")]
 let mp_create_op = mk_nuprl5_op [ make_param (Token "!mp_create")]
 let mp_create_set_op = mk_nuprl5_op [ make_param (Token "!mp_create_set")]
 let mp_set_goal_op = mk_nuprl5_op [ make_param (Token "!mp_set_goal")]
+let mp_set_thm_op = mk_nuprl5_op [ make_param (Token "!mp_set_thm")]
 let mp_lookup_op = mk_nuprl5_op [ make_param (Token "!mp_lookup_proof")]
 let mp_refine_op = mk_nuprl5_op [ make_param (Token "!mp_refine")]
 let mp_undo_op = mk_nuprl5_op [ make_param (Token "!mp_undo")]
@@ -249,7 +251,7 @@ let refine_ehook rhook =
       in list_to_ilist_map ff (map (function x -> (hd (map_isexpr_to_list string_of_itoken_term x)))
                           (map_isexpr_to_list_by_op ilist_op (function x -> x) (term_of_unbound_term symaddr)))
 
-  | {term_op = op; term_terms = symaddr :: goal :: r} when (opeq op mp_set_thm_op) ->
+  | {term_op = op; term_terms = symaddr :: mseq :: r} when (opeq op mp_set_thm_op) ->
       let l = string_list_of_term (term_of_unbound_term symaddr)
       in 
       (if l = !current_symaddr then () else Shell.edit_cd_thm (hd (tl l)) (hd (tl (tl l)));
