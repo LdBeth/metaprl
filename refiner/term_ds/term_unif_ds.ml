@@ -81,15 +81,7 @@ struct
 
    type term_subst = TermType.term_subst
 
-(*
-     Get the list of free variables.
-   val is_free_var : string -> term -> bool
-   val is_free_var_list : string list -> term list -> bool
-   val free_vars : term -> string list
-   val free_vars_terms : term list -> string list
-   val context_vars : term -> string list
-   val binding_vars : term -> string list
-*)
+
 
    let subst t tl vl =
       do_term_subst (List.combine vl tl) t
@@ -173,7 +165,7 @@ struct
             in context_vars 0
        | _ -> []
 
-(************* My ! *********************************)
+
 module Names =
 struct
      type fun_name= TermType.operator
@@ -945,19 +937,20 @@ let cterms2system t_0 t_1 consts var_hashtbl =
 
 let unifiable term0 term1 consts=
     
-     let t0 = match term0.core with   
+     let t0 =( match term0.core with   
                 Term _    -> term0.core
               | Subst _   -> (make_term (dest_term term0)).core
               | Sequent _ -> raise Not_supposed
               | FOVar   _ -> term0.core 
               | Hashed  _ -> (make_term (dest_term term0)).core 
- 
-     and  t1 = match term1.core with   
-                Term  _   -> term1.core
-              | Subst _   -> (make_term (dest_term term1)).core
-              | Sequent _ -> raise Not_supposed
-              | FOVar  _  -> term1.core 
-              | Hashed _  -> (make_term (dest_term term1)).core 
+             )
+     and  t1 =( match term1.core with   
+                 Term  _   -> term1.core
+               | Subst _   -> (make_term (dest_term term1)).core
+               | Sequent _ -> raise Not_supposed
+               | FOVar  _  -> term1.core 
+               | Hashed _  -> (make_term (dest_term term1)).core 
+              )  
 
    in
    match t0, t1 with
@@ -965,7 +958,8 @@ let unifiable term0 term1 consts=
     Term t_0, Term t_1 ->(
       let var_hashtbl = (Hashtbl.create 23) in
            try 
-             mm_unify (cterms2system t_0 t_1 consts var_hashtbl);
+             let trash=mm_unify (cterms2system t_0 t_1 consts var_hashtbl)
+             in
              true
            with _ -> false
                           )
@@ -991,10 +985,270 @@ let unifiable term0 term1 consts=
 
 let alpha_equal_my term0 term1= unifiable term0 term1 (free_vars_terms [term0; term1])
 
-end           (* end Mm_inter *)
 
 (* Not ready yet! *)
 
+
+
+
+(*********************************************************)
+(* Conversion from Mm-unif types to Term                 *) 
+(*                                                       *)
+(*********************************************************)
+
+
+let update_subst varstringl terml sigma =
+       match terml with
+         []  ->( match varstringl with
+                  []    -> sigma
+                | v::h  -> (List.map 
+                            (function x -> (x, mk_var_term v) ) 
+                            h
+                           )@ sigma
+               )
+
+       | [t] ->( match varstringl with
+                  []   -> sigma
+                | li   -> (List.map 
+                          (function x -> (x , (do_term_subst sigma t )) ) 
+                          li
+                          )@ sigma
+                )
+
+       | _   -> raise Impossible
+
+
+
+let rec extract_varstrl l =
+         match l with
+           [] -> []
+         | hd::tl ->(match hd.name with
+                       Vinit ->(extract_varstrl tl)
+                     | V x   -> x::(extract_varstrl tl)
+                    )
+ 
+let mulieq2varstringl meq = extract_varstrl meq.s
+
+
+let pick_name bv consts var_hashtbl =
+   let oldname=
+     (List.hd
+       (((bv.fsymb_bv.opbinding).(bv.arg_numb)).(bv.binding_numb))
+     ).name_bv in
+   let newname =
+     (((bv.fsymb_bv.renamings).(bv.arg_numb)).(bv.binding_numb))
+     in
+   if ( newname = (V "") ) then
+         ( let namestr = match oldname with
+             V oldnamestr ->
+                  ( let rec new_var cts av v i =
+                        let v' = v ^ "_" ^ (string_of_int i) in
+                            try (
+                                 match (Hashtbl.find  av  v') with
+                                 _ -> (new_var cts av v (succ i))
+                                 )
+                            with Not_found ->
+                                  (if (is_constant  v' cts) then
+                                     (new_var cts av v (succ i))
+                                   else v'
+                                  )
+                    in
+                    new_var consts var_hashtbl oldnamestr 0 (* ??? or hash(bv) *)
+                  )
+           | _ -> raise Not_supposed
+         in
+          (
+          ((bv.fsymb_bv.renamings).(bv.arg_numb)).(bv.binding_numb) <-
+           (V namestr)
+          )   ; (V namestr)
+         )
+   else newname
+
+
+
+
+let rec  multiterm_list2term m consts var_hashtbl=
+ ( match m with
+
+       [multit] ->
+      ( match multit.fsymb  with
+          Op op_w_b ->( make_term {term_op = op_w_b.opsymb ;
+                                  term_terms = List.map2
+                                               (function x -> function y ->
+                                                (temp_multieq2bterm x y consts var_hashtbl)
+                                               )
+                                               multit.args
+                                               (List.map Array.to_list (Array.to_list op_w_b.opbinding))
+
+                                 }
+                                 
+                      )
+                     
+
+
+       |  Bvar bv -> (match (pick_name bv consts var_hashtbl) with
+                       (V v) ->  mk_var_term  v
+                      |   _ -> raise Impossible
+                     )
+
+       |  Cnst x  -> (match x with
+                          (V v) ->  mk_var_term  v
+                         |   _ -> raise Impossible
+                     )
+
+      )
+
+     | _ -> raise Impossible
+ )
+
+
+(* given temp_multeq and external bound_variable list constructs bterm *)
+
+and temp_multieq2bterm t_meq b_v_list consts var_hashtbl =
+   (   make_bterm       
+      (   
+           if ( (Queue.length t_meq.s_t) = 0 ) then
+                   {bvars=(List.map
+                           (function l ->( 
+                            match     
+                            (pick_name (List.hd l) consts var_hashtbl)
+                            with  
+                               (V v) -> v 
+                              | _ -> raise Impossible 
+                                          ) 
+                           ) 
+                           b_v_list
+                          );
+                    bterm = (multiterm_list2term t_meq.m_t consts var_hashtbl)
+                   }
+           else
+         
+                   {bvars=(List.map
+                           (function l ->(
+                            match     
+                            (pick_name (List.hd l) consts var_hashtbl )
+                            with  
+                               (V v) -> v 
+                              | _ -> raise Impossible
+                                          ) 
+                           )
+                           b_v_list
+                           );
+                    bterm = mk_var_term (match (Queue.peek t_meq.s_t).name with
+                                           (V v) -> v 
+                                          | _ -> raise Impossible             
+                                        )
+                   }
+               
+        
+      
+      )
+   )
+
+
+
+let  multieq2terms meq consts var_hashtbl =
+       ( match meq.m with
+          []  -> []
+        | [t] ->  [multiterm_list2term meq.m consts var_hashtbl]
+        | _   -> raise Impossible  
+       )
+
+
+
+
+
+
+     
+let solvedpart2subst slvdpt consts var_hashtbl = 
+   let rec sp2s l sigma consts var_hashtbl = 
+    ( match l with
+       [] -> sigma
+     | hd::tl -> (sp2s 
+                   tl 
+                   (update_subst 
+                     (mulieq2varstringl hd) 
+                     (multieq2terms hd consts var_hashtbl)  
+                     sigma 
+                   ) 
+                   consts 
+                   var_hashtbl 
+                 )
+    )
+   in
+   sp2s slvdpt [] consts var_hashtbl
+
+
+
+
+
+let unify term0 term1 consts=
+    
+     let t0 =( match term0.core with   
+                Term _    -> term0.core
+              | Subst _   -> (make_term (dest_term term0)).core
+              | Sequent _ -> raise Not_supposed
+              | FOVar   _ -> term0.core 
+              | Hashed  _ -> (make_term (dest_term term0)).core 
+             )
+     and  t1 =( match term1.core with   
+                 Term  _   -> term1.core
+               | Subst _   -> (make_term (dest_term term1)).core
+               | Sequent _ -> raise Not_supposed
+               | FOVar  _  -> term1.core 
+               | Hashed _  -> (make_term (dest_term term1)).core 
+              )  
+
+   in
+   match t0, t1 with
+
+    Term t_0, Term t_1 ->(
+      let var_hashtbl = (Hashtbl.create 23) in
+
+           solvedpart2subst
+             (mm_unify (cterms2system t_0 t_1 consts var_hashtbl)).t
+             consts
+             var_hashtbl 
+
+                          )
+
+  | FOVar x, FOVar y  ->
+      ( match (is_constant x consts),(is_constant y consts) with
+          true,true    -> (if(x=y) then []
+                                  else raise Clash
+                          )
+        
+        | true,false   ->  [(y,term0)]
+
+        | false,true   ->  [(x,term1)]                   
+
+        | false,false  ->  [(x,term1)]   
+
+
+      )
+
+  | FOVar x, Term _ -> if (is_constant x consts) then raise Clash
+                       else if (is_free x term1) then raise Cycle
+                                     else [(x,term1)]
+   
+
+  | Term _ , FOVar y -> if (is_constant y consts) then raise Clash
+                       else if (is_free y term0) then raise Cycle
+                                     else [(y,term0)]
+
+ 
+  | _ ->  raise Not_supposed
+
+
+
+end           (* end Mm_inter *)
+
+
+
+
+
+
+ 
 
 end     (* end TermSubstMy  *)
 
@@ -1020,5 +1274,9 @@ RefineError)
 
 module Unification = TermSubstMm(Term)(RefineError)
 
+let unifiable = Unification.Mm_inter.unifiable
 
+let alpha_equal = Unification.Mm_inter.alpha_equal_my
+
+let unify = Unification.Mm_inter.unify
 
