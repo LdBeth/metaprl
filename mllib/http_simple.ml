@@ -185,30 +185,46 @@ let print_gmtime outx time =
       Lm_ssl.fprintf outx "%s, %02d %s %d %02d:%02d:%02d GMT" day_names.(wday) mday mon_names.(mon) (1900+year) hour min sec
 
 let print_success_channel_err out code inx =
-   let fd = Unix.descr_of_in_channel inx in
-   let { Unix.st_size = st_size;
-         Unix.st_mtime = st_mtime
-       } = Unix.fstat fd
-   in
    let code, msg = get_code code in
       Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
-      Lm_ssl.fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
-      Lm_ssl.fprintf out "Cache-Control: public\r\n";
-      Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" st_size;
+
+      (* This silly exception block is because Win32 doesn't support fstat *)
+      (try
+          let fd = Unix.descr_of_in_channel inx in
+          let { Unix.st_size = st_size;
+                Unix.st_mtime = st_mtime
+              } = Unix.fstat fd
+          in
+             Lm_ssl.fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
+             Lm_ssl.fprintf out "Cache-Control: public\r\n";
+             Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" st_size
+       with
+          Unix.Unix_error _
+        | Invalid_argument _ ->
+             Lm_ssl.fprintf out "\r\n");
+
       copy out inx
 
 let print_content_channel_err out code content_type inx =
-   let fd = Unix.descr_of_in_channel inx in
-   let { Unix.st_size = st_size;
-         Unix.st_mtime = st_mtime
-       } = Unix.fstat fd
-   in
    let code, msg = get_code code in
       Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
-      Lm_ssl.fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
-      Lm_ssl.fprintf out "Cache-Control: public\r\n";
-      Lm_ssl.fprintf out "Content-Type: %s\r\n" content_type;
-      Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" st_size;
+
+      (* This silly exception block is because Win32 doesn't support fstat *)
+      (try
+          let fd = Unix.descr_of_in_channel inx in
+          let { Unix.st_size = st_size;
+                Unix.st_mtime = st_mtime
+              } = Unix.fstat fd
+          in
+             Lm_ssl.fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
+             Lm_ssl.fprintf out "Cache-Control: public\r\n";
+             Lm_ssl.fprintf out "Content-Type: %s\r\n" content_type;
+             Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" st_size
+       with
+          Unix.Unix_error _
+        | Invalid_argument _ ->
+             Lm_ssl.fprintf out "\r\n");
+
       copy out inx
 
 (*
@@ -286,12 +302,13 @@ let print_redirect_page out code where =
          ()
 
 let catch_sigpipe () =
-   let handle_sigpipe _ =
-      if !debug_http then
-         eprintf "Raised sigpipe@.";
-      raise SigPipe
-   in
-      Sys.set_signal Sys.sigpipe (Sys.Signal_handle handle_sigpipe)
+   if Sys.os_type <> "Win32" then
+      let handle_sigpipe _ =
+         if !debug_http then
+            eprintf "Raised sigpipe@.";
+         raise SigPipe
+      in
+         Sys.set_signal Sys.sigpipe (Sys.Signal_handle handle_sigpipe)
 
 (************************************************************************
  * IMPLEMENTATION                                                       *

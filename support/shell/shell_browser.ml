@@ -1268,7 +1268,8 @@ struct
       let fd = Unix.openfile filename [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
       let () =
          try Unix.fchmod fd 0o600 with
-            Unix.Unix_error _ ->
+            Unix.Unix_error _
+          | Invalid_argument _ ->
                ()
       in
       let out = Unix.out_channel_of_descr fd in
@@ -1340,7 +1341,8 @@ struct
             let fd = Unix.openfile passwd [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
             let () =
                try Unix.fchmod fd 0o600 with
-                  Unix.Unix_error _ ->
+                  Unix.Unix_error _
+                | Invalid_argument _ ->
                      ()
             in
             let out = Unix.out_channel_of_descr fd in
