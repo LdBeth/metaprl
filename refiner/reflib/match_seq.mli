@@ -33,10 +33,19 @@
 open Refiner.Refiner
 open TermType
 
-(* match_hyps big small
-     will try to match all the hypotheses in the small sequent
-     agains hypotheses of the big one. If succeeds, will return
-     an option array telling which hyp of small matches each hyp of
-     large (numbering starts with 0).
-   If fails, raises RefineError *)
+(*
+ * match_hyps big small
+ *   will try to match all the hypotheses in the small sequent
+ *   agains hypotheses of the big one. If succeeds, will return
+ *   an option array telling which hyp of small matches each hyp of
+ *   large (numbering starts with 0).
+ *
+ * match_some_hyps is simplar, but does not insist on matching all the hyps
+ * or the goal (does insist on matching all Contexts, though). If succeeds,
+ * will return the nimber of the hyps in the "small" sequent that were
+ * succesfully matched.
+ *
+ * These functions raise RefineError, when fail.
+ *)
 val match_hyps: esequent -> esequent -> int option array
+val match_some_hyps: esequent -> esequent -> int

@@ -41,24 +41,34 @@ open TermSubst
 let _ = show_loading "Loading Term_subst_ds%t"
 
 let cant_match_hyp = RefineError ("Match_seq.match_hyp", StringError "sequents do not match")
+let fail_match _ = raise cant_match_hyp
 
 let aev v1 v2 t1 t2 = alpha_equal_vars t1 v1 t2 v2
 
 let fake_var = Lm_symbol.add "__@@match_seq_var_HACK@@__"
 
-let match_hyps big small =
+let try_match_hyps relaxed big small =
    let big_hyp = big.sequent_hyps in
    let small_hyp = small.sequent_hyps in
    let small_length = SeqHyp.length small_hyp in
    let big_length = SeqHyp.length big_hyp in
    let may_skip = big_length - small_length in
-   if may_skip < 0 then raise cant_match_hyp;
+   if (not relaxed) && may_skip < 0 then raise cant_match_hyp;
    let result = Array.create big_length None in
+   let all_hyps = if relaxed then
+         let rec aux small_skip =
+            small_skip = small_length || match SeqHyp.get small_hyp small_skip with
+               Hypothesis _ | HypBinding _ -> aux (succ small_skip)
+             | Context _ -> false
+         in aux
+      else fail_match in
    let rec aux big_skip small_skip big_vars small_vars =
       if small_skip = small_length then
-         alpha_equal_vars (SeqGoal.get big.sequent_goals 0) big_vars
-                          (SeqGoal.get small.sequent_goals 0) small_vars
-      else if (big_skip - small_skip) > may_skip then false else
+         relaxed || alpha_equal_vars (SeqGoal.get big.sequent_goals 0) big_vars
+                                     (SeqGoal.get small.sequent_goals 0) small_vars
+      else if big_skip = big_length then relaxed && all_hyps small_skip
+      else if (not relaxed) && (big_skip - small_skip) > may_skip then false
+      else
          match SeqHyp.get big_hyp big_skip, SeqHyp.get small_hyp small_skip with
             Context (v1, terms1), Context (v2, terms2) when
                (v1 = v2) && (List.for_all2 (aev big_vars small_vars) terms1 terms2) ->
@@ -81,3 +91,14 @@ let match_hyps big small =
             false
    in
       if aux 0 0 [] [] then result else raise cant_match_hyp
+
+let match_hyps = try_match_hyps false
+
+let match_some_hyps big small = 
+   let index = try_match_hyps true big small in
+   let rec aux i =
+      let i = pred i in
+      if i<0 then 0 else match index.(i) with
+         Some ind -> ind
+       | None -> aux i
+   in succ (aux (Array.length index))
