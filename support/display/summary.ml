@@ -641,8 +641,8 @@ dform parens_df : parens_df =
 declare packages_df{'t}
 
 dform packages_df1 : packages{'packages} =
-   szone pushm[0] pushm[4] info["Root theories:"] hspace
-       packages_df{'packages} popm hspace
+   szone pushm[0] pushm[4] info["Root theories:"] newline
+       packages_df{'packages} popm newline
    info["end"] popm ezone
 
 dform packages_df2 : packages_df{cons{package[name:s]; 'next}} =
@@ -657,17 +657,17 @@ dform packages_df3 : packages_df{nil} =
 declare listing_df{'t}
 
 dform dirlisting_df : dirlisting[name:s]{'listing} =
-   szone pushm[0] pushm[4] info["Directory listing:"] hspace
-       listing_df{'listing} popm hspace
+   szone pushm[0] pushm[4] info["Directory listing:"] newline
+       listing_df{'listing} popm newline
    info["end"] popm ezone
 
 dform filelisting_df : filelisting[name:s]{'listing} =
-   hzone pushm[0] pushm[4] info["File listing:"] hspace
-       listing_df{'listing} popm hspace
+   hzone pushm[0] pushm[4] info["File listing:"] newline
+       listing_df{'listing} popm newline
    info["end"] popm ezone
 
 dform listing_df1 : listing_df{cons{'e1; cons{'e2; 'next}}} =
-   'e1 hspace listing_df{cons{'e2; 'next}}
+   'e1 newline listing_df{cons{'e2; 'next}}
 
 dform listing_df2 : listing_df{cons{'e; nil}} =
    'e
@@ -738,13 +738,13 @@ dform goal_list_status_df2 : goal_list_status{cons{goal{goal_status{'status}; 'l
 declare numbered_assums{'number; 'assums}
 
 dform msequent_df1 : msequent{'goal; nil} =
-   'goal newline
+   slot{'goal} newline
 
 dform msequent_df2 : msequent{'goal; 'assums} =
-   numbered_assums{cons{nil; nil}; 'assums} 'goal newline
+   numbered_assums{cons{nil; nil}; 'assums} slot{'goal} newline
 
 dform numbered_assums_df1 : numbered_assums{'number; cons{'a; 'b}} =
-   szone df_length{'number} `". " pushm 'a popm newline ezone numbered_assums{cons{nil; 'number}; 'b}
+   szone df_length{'number} `". " pushm slot{'a} popm newline ezone numbered_assums{cons{nil; 'number}; 'b}
 
 dform numbered_assums_df2 : numbered_assums{'number; nil} =
    `"====" newline
@@ -860,7 +860,7 @@ dform child_df1 : child_df{'number; goal_list{'child}} =
    szone info_begin df_down{'number} `". " pushm `"[" goal_list_status{'child} `"]" info_end newline child_df{'child} popm ezone
 
 dform child_df2 : child_df{cons{goal{'status; 'label; 'assums; 'goal}; 'tl}} =
-   'label 'goal
+   'label slot{'goal}
 
 dform tactic_arg_df1 : tactic_arg[label:s]{'goal; 'args; 'parents} =
    szone `"[" slot[label:s] `"] " pushm 'goal popm ezone
