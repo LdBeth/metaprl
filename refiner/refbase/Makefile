@@ -1,6 +1,9 @@
 # Flags
 DIR := refiner/refbase
 ROOT := ../..
+
+include $(ROOT)/mk/preface
+
 INCLUDE := -I ../../mllib
 
 # Library files

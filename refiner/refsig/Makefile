@@ -1,6 +1,9 @@
 # Flags
 DIR := refiner/refsig
 ROOT := ../..
+
+include $(ROOT)/mk/preface
+
 INCLUDE := -I $(ROOT)/mllib -I ../refbase
 
 # Types files

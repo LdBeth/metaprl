@@ -5,6 +5,9 @@
 # Libraries
 DIR := library
 ROOT := ..
+
+include $(ROOT)/mk/preface
+
 INCLUDE := -I .\
 	-I $(ROOT)/mllib\
 	-I $(ROOT)/refiner/refbase\

@@ -1,6 +1,9 @@
 # Flags
 DIR := refiner/term_gen
 ROOT := ../..
+
+include $(ROOT)/mk/preface
+
 INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig
 
 # Library files

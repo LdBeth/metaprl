@@ -1,6 +1,9 @@
 # Flags
 DIR := refiner/reflib
 ROOT := ../..
+
+include $(ROOT)/mk/preface
+
 INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig -I ../refiner
 
 # Signatures

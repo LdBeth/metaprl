@@ -1,6 +1,9 @@
 # Flags
 DIR = refiner/rewrite
 ROOT = ../..
+
+include $(ROOT)/mk/preface
+
 INCLUDE := -I ../../mllib -I ../refbase -I ../refsig -I ../term_std -I ../term_gen -I ../term_ds
 
 # Library files

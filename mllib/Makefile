@@ -2,6 +2,8 @@
 DIR := mllib
 ROOT := ..
 
+include $(ROOT)/mk/preface
+
 INCLUDE := -I .
 
 # C preprocessing
