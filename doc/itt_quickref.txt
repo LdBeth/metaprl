@@ -619,6 +619,10 @@ hypothesis list).
 As assertT, but lets you specify where the new hypothesis is to be
 added.
 
+* copyHypT : int -> int -> tactic
+Copies i'th hypothesys to j'th place in a sequent (useful for elimination
+rules where we want to keep the original hypothesis intact).
+
 * tryAssertT : term -> tactic -> tactic -> tactic
 Runs assertT, then runs the two tactics on the two subgoals
 correspondingly. Hoewever, if the goal already has the right
