@@ -282,7 +282,7 @@ point is outside the region."
     (1  nil sig & end)
     (1  nil struct & end)
     (10 nil &+ -> &)
-    (20 t   (opt &+) begin & end)
+    (20 nil (opt &+) begin & end)
     (20 nil (opt &+) termbegin & end)
 
     ;; Extra syntax for PRL mode
