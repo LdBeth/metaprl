@@ -356,7 +356,7 @@ struct
       let rec aux = function
          (v1, v2)::t ->
             if v2 = v then
-               v
+               v1
             else
                aux t
        | [] -> raise Not_found
@@ -517,6 +517,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/05/29 04:11:05  nogin
+ * Fixed some typos.
+ * Use == instead of = for comparing opnames.
+ *
  * Revision 1.1  1998/05/28 15:02:44  jyh
  * Partitioned refiner into subdirectories.
  *

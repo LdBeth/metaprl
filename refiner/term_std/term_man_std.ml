@@ -220,7 +220,7 @@ struct
          { term_op = { op_name = opname; op_params = [] };
            term_terms = [{ bvars = [] }; { bvars = []; bterm = term }]
          } ->
-            if opname = concl_opname then
+            if opname == concl_opname then
                aux' (i + 1) term
             else
                i
@@ -230,14 +230,14 @@ struct
       let rec aux i = function
          { term_op = { op_name = opname; op_params = [] };
            term_terms = [{ bvars = [] }; { bvars = [_]; bterm = term }]
-         } when opname = hyp_opname ->
+         } when opname == hyp_opname ->
             aux (i + 1) term
        | { term_op = { op_name = opname; op_params = [] };
            term_terms = [{ bvars = [] }; { bvars = []; bterm = term }]
          } ->
-            if opname = concl_opname then
+            if opname == concl_opname then
                i, aux' 0 term
-            else if opname = hyp_opname then
+            else if opname == hyp_opname then
                aux (i + 1) term
             else
                raise (TermMatch ("concl_addr", t, ""))
@@ -396,6 +396,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/05/29 04:11:04  nogin
+ * Fixed some typos.
+ * Use == instead of = for comparing opnames.
+ *
  * Revision 1.1  1998/05/28 15:02:28  jyh
  * Partitioned refiner into subdirectories.
  *
