@@ -19,14 +19,17 @@ To run MetaPRL for the first time:
    3. Edit mk/config
 
    4. Build MetaPRL
-      % make    (bytecode version)
-      or
       % make opt  (native code version - compiles a little slower, but runs much faster)
+      or
+      % make    (bytecode version)
 
    5. Run MetaPRL
-      % cd editor/ml; ./mptop  (bytecode)
+      % editor/ml/mpopt   (native code)
       or
-      % cd editor/ml; ./mpopt  (native code)
+      % editor/ml/mptop   (bytecode)
+      or 
+      % editor/ml/mpxterm (native code in a new xterm usung a correct font)
+     
 
 The file  editor/ml/QUICKSTART contains some hints on the usage
 of MetaPRL proof editor.
