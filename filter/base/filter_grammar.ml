@@ -564,13 +564,13 @@ let dest_xsovar_term t =
 
 let is_xhypcontext_term t =
    if is_dep0_dep0_term xhypcontext_opname t then
-      let cvars, args = dest_dep0_dep0_term xsovar_opname t in
+      let cvars, args = dest_dep0_dep0_term xhypcontext_opname t in
          is_xlist_term cvars && is_xlist_term args
    else
       false
 
 let dest_xhypcontext_term t =
-   let cvars, args = dest_dep0_dep0_term xsovar_opname t in
+   let cvars, args = dest_dep0_dep0_term xhypcontext_opname t in
    let cvars = List.map dest_var (dest_xlist cvars) in
    let args = dest_xlist args in
       cvars, args
