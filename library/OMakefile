@@ -67,6 +67,3 @@ $(LIB)/registry.txt: $(REGISTRY_FILE)
 #
 clean:
     $(CLEAN)
-
-realclean:
-    $(REALCLEAN)

@@ -85,8 +85,8 @@ REALCLEAN = $(CLEAN) *.prlb
 clean:
     $(CLEAN)
 
-realclean:
-    $(REALCLEAN)
+realclean: clean
+    cvs_realclean -f
 
 #
 # Phony target for installing libraries

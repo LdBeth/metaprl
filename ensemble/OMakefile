@@ -126,6 +126,3 @@ else
 #
 clean:
     $(CLEAN)
-
-realclean:
-    $(REALCLEAN)

@@ -72,8 +72,8 @@ TCMOFILES = $(addsuffix .cmo, $(TOPFILES))
 TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 
 # Disable ensemble for now
-CMALIBS_ens = $(LIB)/trefiner.cma
-CMXALIBS_ens =$(LIB)/trefiner.cmxa
+CMALIBS_ens =  $(LIB)/trefiner.cma
+CMXALIBS_ens = $(LIB)/trefiner.cmxa
 
 # JYH: have to update these to match $(ROOT)/OMakefile
 MP_VERSION=0.7.2
@@ -102,8 +102,8 @@ LMXADEPS =
 LMADEPS =
 TLMADEPS =
 if $(not $(equal $(LIBMOJAVE), undefined))
-    LMARDEPS = $(LIBMOJAVE)/naml/stdlib/lmstdlib.a\
-               $(LIBMOJAVE)/util/lmutil.a
+    LMARDEPS = $(LIBMOJAVE)/naml/stdlib/lmstdlib$(EXT_LIB)\
+               $(LIBMOJAVE)/util/lmutil$(EXT_LIB)
     LMXADEPS = $(LIBMOJAVE)/naml/stdlib/lmstdlib.cmxa\
                $(LIBMOJAVE)/util/lmutil.cmxa
     LMADEPS  = $(LIBMOJAVE)/naml/stdlib/lmstdlib.cma\
@@ -111,6 +111,16 @@ if $(not $(equal $(LIBMOJAVE), undefined))
     TLMADEPS = $(LIBMOJAVE)/naml/stdlib/lmstdlib.cma\
                $(LIBMOJAVE)/util/lmutil.cma
     LIBS = $(LIBMOJAVE)/cutil/liblmcutil.a
+    export
+
+#
+# If MCC is enabled, add the libraries
+#
+if $(defined MCC)
+    LMARDEPS += $(MCC)/lib/firtype$(EXT_LIB)
+    LMXADEPS += $(MCC)/lib/firtype.cmxa
+    LMADEPS  += $(MCC)/lib/firtype.cma
+    TLMADEPS += $(MCC)/lib/firtype.cma
     export
 
 CMXADEPS =\
@@ -251,10 +261,6 @@ else
         .DEFAULT: $(MAIN).cma $(MP).top $(MP).run
 
 clean::
-        $(RM) -f *.p4* *.pp* mp_version.ml
-        cd tests && $(RM) -f *.p4* *.pp* *.cmx *.cmi* *.cmo* *.o
-
-realclean:
         $(RM) -f *.p4* *.pp* mp_version.ml
         cd tests && $(RM) -f *.p4* *.pp* *.cmx *.cmi* *.cmo* *.o
 

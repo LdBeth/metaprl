@@ -25,7 +25,4 @@ Theory($(MPFILES))
 clean:
     $(CLEAN)
 
-realclean:
-    $(REALCLEAN)
-
 all: theory$(LIB_SUFFIX)

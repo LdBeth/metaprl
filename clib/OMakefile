@@ -37,6 +37,3 @@ if $(not $(equal $(OCAMLSRC), undefined))
 #
 clean:
     $(CLEAN)
-
-realclean:
-    $(REALCLEAN)

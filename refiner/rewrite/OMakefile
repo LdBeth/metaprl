@@ -24,6 +24,3 @@ rewrite_type_sig.mlz: rewrite_types.ml
 #
 clean:
     $(CLEAN) rewrite_type_sig.mlz
-
-realclean:
-    $(REALCLEAN) rewrite_type_sig.mlz

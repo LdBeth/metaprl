@@ -20,7 +20,4 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), filterfilter, $(FILTER_FILES))
 clean:
     $(CLEAN)
 
-realclean:
-    $(REALCLEAN)
-
 all: filterfilter$(LIB_SUFFIX)

@@ -32,6 +32,3 @@ else
 #
 clean:
     $(CLEAN) infix.ml
-
-realclean:
-    $(REALCLEAN) infix.ml

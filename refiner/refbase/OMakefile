@@ -9,6 +9,3 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), refbase, $(REFBASE_FILES))
 #
 clean:
     $(CLEAN)
-
-realclean:
-    $(REALCLEAN)

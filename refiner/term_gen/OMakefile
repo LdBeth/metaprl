@@ -15,6 +15,3 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), termgen, $(TERM_GEN_FILES))
 #
 clean:
     $(CLEAN)
-
-realclean:
-    $(REALCLEAN)

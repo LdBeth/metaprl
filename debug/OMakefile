@@ -164,6 +164,3 @@ $(addsuffix .mli, $(PARSING_FILES)): %.mli: $(OCAMLSRC)/parsing/%.mli
 #
 clean:
     $(CLEAN)
-
-realclean:
-    $(REALCLEAN)
