@@ -271,11 +271,11 @@ $(REG_CMXFILES): %.cmx: %.ml $(ROOT)/mk/config
 
 %.ml: %.mlz
 	$(RM) $@
-	$(LN) $*.mlz $@
+	$(LN) $(<F) $@
 
 %.mli: %.mlz
 	$(RM) $@
-	$(LN) $*.mlz $@
+	$(LN) $(<F) $@
 
 %-byte.o: %.c $(ROOT)/mk/config
 	$(MPTIME) $(CC) $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
