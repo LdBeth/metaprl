@@ -53,7 +53,13 @@ let home_filename =
    in
       home ^ "/" ^ ispell_filename
 
-let words_filenames = [ home_filename; "/usr/dict/words"; "/usr/dict/webster"; local_words ]
+let words_filenames = [
+   home_filename;
+   "/usr/dict/words";
+   "/usr/dict/webster";
+   "/usr/share/dict/words";
+   local_words
+]
 
 (*
  * The loaded dictionary.
