@@ -83,6 +83,8 @@ struct
 
    let rec combine_fst_flt_nodups fvs vl tl =
       match vl, tl with
+       | v::vl, { core = FOVar v' } :: tl when Lm_symbol.eq v v' ->
+            if vl = [] then [] else combine_fst_flt_nodups (SymbolSet.remove fvs v) vl tl
        | [v],[t] ->
             if SymbolSet.mem fvs v then [v,t] else []
        | v::vl, t::tl ->
@@ -100,12 +102,14 @@ struct
        | sub -> core_term (Subst (t,sub))
 
    let rec fst_flt_nodups fvs = function
-      [v,t] as l ->
+    | (v, { core = FOVar v' }) :: tl when Lm_symbol.eq v v' ->
+         if tl = [] then [] else fst_flt_nodups (SymbolSet.remove fvs v) tl
+    | [v,t] as l ->
          if SymbolSet.mem fvs v then l else []
-    | ((v,t) :: tl) as l ->
+    | ((v,t) as hd :: tl) as l ->
          if SymbolSet.mem fvs v then
             let res = fst_flt_nodups (SymbolSet.remove fvs v) tl in
-            if res == tl then l else (v,t) :: res
+            if res == tl then l else hd :: res
          else
             fst_flt_nodups fvs tl
     | _ ->

@@ -221,20 +221,10 @@ struct
 
    let rec subst_remove v = function
       [] -> []
-    | ((v',t)::tl) as sub ->
+    | ((v',t) as h ::tl) as sub ->
          if (Lm_symbol.eq v v') then subst_remove v tl
          else let rem = subst_remove v tl in
-            if rem == tl then sub else (v',t)::rem
-
-   let subst_filt =
-      let rec aux = function
-         (v1, { core = FOVar v2 } ) :: tl when Lm_symbol.eq v1 v2 ->
-            if tl = [] then []
-            else
-               aux (subst_remove v1 tl)
-       | sub -> sub
-      in
-         fun set sub -> aux (SymbolSet.fst_mem_filt set sub)
+            if rem == tl then sub else h::rem
 
    let do_term_subst sub t =
       IFDEF VERBOSE_EXN THEN
@@ -251,7 +241,7 @@ struct
                debug_subst := true
             end
       ENDIF;
-      match subst_filt (free_vars_set t) sub with
+      match SymbolSet.fst_mem_filt (free_vars_set t) sub with
          [] -> t
        | sub' -> core_term (Subst (t,sub'))
 
@@ -262,14 +252,6 @@ struct
     | [_] as l -> l
     | (h :: t) as l ->
          let t' = filter_sub_vars bvars t in
-         if t' == t then l else h::t'
-
-   let rec filter_sub_var v = function
-      [] -> []
-    | (v', _) :: t when v = v' -> filter_sub_var v t
-    | [_] as l -> l
-    | (h :: t) as l ->
-         let t' = filter_sub_var v t in
          if t' == t then l else h::t'
 
    (*
@@ -298,13 +280,13 @@ struct
       let btrm = bt.bterm in
       match bt.bvars with
          [] ->
-            begin match subst_filt (free_vars_set btrm) sub with
+            begin match SymbolSet.fst_mem_filt (free_vars_set btrm) sub with
                [] -> bt
              | sub ->
                   { bvars = []; bterm = core_term (Subst (btrm,sub))}
             end
        | bvrs ->
-            begin match subst_filt (free_vars_set btrm)
+            begin match SymbolSet.fst_mem_filt (free_vars_set btrm)
                                                (filter_sub_vars bt.bvars sub) with
                [] -> bt
              | sub ->
@@ -380,7 +362,7 @@ struct
       match SeqHyp.get hyps i with
          Hypothesis (v,t) as hyp ->
             let t' = do_term_subst sub t in
-            let sub = filter_sub_var v sub in
+            let sub = subst_remove v sub in
             (* Rename v if it might capture a free var in the subst *)
             if SymbolSet.mem sub_vars v then
                let v' = new_name v (SymbolSet.mem all_vars) in
@@ -396,7 +378,7 @@ struct
             if SymbolSet.mem sub_vars v then
                raise(Invalid_argument "Term_base_ds.get_core: free variable got captured by a context");
             let ts' = Lm_list_util.smap (do_term_subst sub) ts in
-            let sub = filter_sub_var v sub in
+            let sub = subst_remove v sub in
             let hyp = if ts == ts' then hyp else Context (v, conts, ts) in
                hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
 
