@@ -42,7 +42,6 @@ open Precedence
 
 open Filter_type
 open Filter_util
-open Filter_ast
 open Filter_summary_type
 open Filter_summary_util
 open Filter_summary
@@ -132,6 +131,71 @@ let expr_of_opname proc loc opname =
       proc.imp_num_opnames <- succ num;
       <:expr< $lid:global_opname_var$.($int:(string_of_int num)$) >>
 
+(************************************************************************
+ * UTILITIES                                                            *
+ ************************************************************************)
+
+(*
+ * Construct an expression list.
+ *)
+let list_expr loc f l =
+   let rec map = function
+      h::t ->
+         let hd = f h in
+         let tl = map t in
+            <:expr< [ $hd$ :: $tl$ ] >>
+    | [] ->
+         <:expr< [] >>
+   in
+      map l
+
+(*
+ * Construct an expression list.
+ *)
+let apply_patt loc f l =
+   let rec map = function
+      [h] ->
+         f h
+    | h::t ->
+         let hd = f h in
+         let tl = map t in
+            <:patt< $hd$ $tl$ >>
+    | [] ->
+         raise (Invalid_argument "apply_patt")
+   in
+      map l
+
+(*
+ * Construct an expression list.
+ *)
+let list_patt loc f l =
+   let rec map = function
+      [] ->
+         <:patt< [] >>
+    | h::t ->
+         let hd = f h in
+         let tl = map t in
+            <:patt< [ $hd$ :: $tl$ ] >>
+   in
+      map l
+
+(*
+ * A multiple argument function (curried)
+ *)
+let rec fun_expr loc ids body =
+   match ids with
+      h::t ->
+         <:expr< fun $lid:h$ -> $fun_expr loc t body$ >>
+    | [] ->
+         body
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)
 (************************************************************************
  * SYNTAX                                                               *
  ************************************************************************)

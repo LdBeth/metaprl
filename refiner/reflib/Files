@@ -5,12 +5,6 @@ REFLIB_FILES =\
 	term_copy_weak\
 	term_copy2_weak\
 	term_io\
-	ml_format_sig\
-	ml_format\
-	ml_print_sig\
-	ml_print\
-	ml_file\
-	ml_string\
 	ml_term\
 	term_eq_table\
 	term_match_table\

@@ -4,7 +4,6 @@ BASE_FILES =\
 	free_vars\
 	filter_type\
 	infix\
-	filter_ast\
 	filter_hash\
 	filter_util\
 	filter_comment\
