@@ -148,13 +148,14 @@ INCLUDES += -I$(CAMLLIB)
 #
 # Default clean line
 #
-CLEAN = $'(RM) *.opt *.run *.o *.cm* *.a *~ .\#*
-REALCLEAN = $(CLEAN) *.prlb
+MLZFILES =
+CLEAN = $'(RM) *.opt *.run *.o *.cm* *.a *~ .\#* $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES))
 
 clean:
-    $(CLEAN)
+    $(CLEAN) bin/ocamldep lib/camlp4* lib/convert lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/prlc*
 
 realclean: clean
+    $'(RM) theories/*/*.prlb theories/*/*/*.prlb # This is a temporary HACK
     cvs_realclean
 
 #

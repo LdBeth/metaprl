@@ -10,9 +10,8 @@ OCAMLINCLUDES =\
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), termgen, $(TERM_GEN_FILES))
 
-#
-# Clean up
-#
+MLZFILES = term_man_gen_sig
+
 clean:
     $(CLEAN)
 

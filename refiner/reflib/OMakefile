@@ -11,9 +11,14 @@ OCAMLINCLUDES =\
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), reflib, $(REFLIB_FILES))
 
-#
-# Clean up
-#
+MLZFILES =\
+   ascii_io_sig\
+   jlogic_sig\
+   ml_format_sig\
+   ml_print_sig\
+   simple_print_sig\
+   term_compare_sig\
+
 clean:
     $(CLEAN)
 

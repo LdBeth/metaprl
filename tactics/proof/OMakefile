@@ -31,9 +31,6 @@ include Files
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), prooflib, $(PROOF_FILES))
 
-#
-# Clean up
-#
 clean:
     $(CLEAN)
 

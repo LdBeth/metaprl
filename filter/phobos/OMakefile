@@ -22,6 +22,6 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), filterphobos, $(PHOBOS_FILES))
 # Clean up
 #
 clean:
-    $(CLEAN)
+    $(CLEAN) phobos_lexer.ml
 
 all: filterphobos$(LIB_SUFFIX)

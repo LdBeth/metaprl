@@ -34,4 +34,4 @@ OCamlProgramInstall($(MPINSTALL), $(BIN), ocamldep, misc ocamldep)
 install: $(BINDEP)
 
 clean:
-	$(RM) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep
+	$(RM) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep ocamldep.opt ocamldep.run

@@ -10,10 +10,20 @@ include Files
 
 FILES = $(MLLIB_FILES)
 
+MLZFILES =\
+   array_sig\
+   file_base_type\
+   hash_with_gc_sig\
+   memo_sig\
+   remote_lazy_queue_sig\
+   remote_queue_sig\
+   simplehash_sig\
+   weak_memo_sig\
+
 OCamlLibraryInstall($(MPINSTALL), $(LIB), util, $(FILES))
 
 #
 # Clean up
 #
 clean:
-    $(CLEAN)
+    $(CLEAN) comment_parse.ml

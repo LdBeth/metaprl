@@ -11,9 +11,8 @@ OCAMLINCLUDES =\
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), termds, $(TERM_DS_FILES))
 
-#
-# Clean up
-#
+MLZFILES = term_ds_sig
+
 clean:
     $(CLEAN)
 
