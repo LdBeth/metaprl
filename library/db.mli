@@ -16,3 +16,4 @@ val string_to_bindings	: string (*value*) -> string list
 
 val read_term 		: (char t) -> term
 
+val db_read_ascii		: stamp -> string -> term

@@ -438,6 +438,15 @@ let read_term stream =
 	string_to_parameter
 
  
+let db_read_ascii stamp object_type =
+  let {process_id = pid; seq = seq}  = dest_stamp stamp in
+  let filename = String.concat ""
+      [!master_pathname; "/"; pid; "/"; (string_of_int seq); "."; object_type] in
+  let in_channel = try open_in filename with
+    Sys_error e -> error (filename :: ["db_read"; "file"; "not"; "exist"]) [] [] in
+  let term = read_term (Stream.of_channel in_channel) in
+  close_in in_channel;
+  term
 
 (*
 let db_lib_read stamp object_type =

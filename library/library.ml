@@ -52,6 +52,19 @@ let disconnect c = Orb.disconnect (oref_val orbr) c
  *	  
  *	
  *)
+
+let faux_ascii bterms =
+ let persist = term_of_unbound_term (hd bterms) and
+     data = term_of_unbound_term (hd (tl bterms)) in
+   let data' = persist(*Db.db_read_ascii (stamp_of_idata_persist_term persist)
+                             (type_of_idata_persist_term persist)*) in
+    print_newline();
+    if data = data' then print_string "+" else print_string "-" ;
+    print_newline();
+    data'
+
+  
+
 let faux_refine bterms =
  let seq = term_of_unbound_term (hd bterms) in
 
@@ -60,7 +73,6 @@ let faux_refine bterms =
     print_newline();
 
    list_to_ilist [seq; seq]
-
 
 
 
@@ -79,13 +91,16 @@ let test_do_add bterms =
 
 let test_add_op = mk_nuprl5_op [ make_param (Token "!test_add")]
 let faux_refiner_op = mk_nuprl5_op [ make_param (Token "!faux_refine")]
+let faux_ascii_op = mk_nuprl5_op [ make_param (Token "!faux_ascii")]
 
 let test_ehook t = 
   match dest_term t with
     {term_op = op; term_terms = bterms } when op = test_add_op
       -> test_do_add bterms
     | {term_op = op; term_terms = bterms } when op = faux_refiner_op
-      -> faux_refine bterms
+      ->  faux_refine bterms
+    | {term_op = op; term_terms = bterms } when op = faux_ascii_op
+      ->  faux_ascii bterms
     | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
  
 let error_ehook t = (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t])
