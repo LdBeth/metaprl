@@ -514,7 +514,7 @@ let fold_all_ped = fold Proof.fold_all
  ************************************************************************)
 
 (*
- * Move to the parent goal.
+ * Move to the `root' goal.
  *)
 let root_ped ped =
    let { ped_undo = undo; ped_stack = stack } = ped in
