@@ -2,10 +2,6 @@
 # External editor
 #
 if $(SSL_ENABLED)
-   # This application is really only useful in native code
-   NATIVE_ENABLED = true
-   BYTE_ENABLED = false
-
    PROXYEDIT_FILES =\
        ../mllib/punix\
        ../mllib/setup\
