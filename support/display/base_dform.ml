@@ -134,10 +134,10 @@ dform so_var3 : df_so_var[v:v]{'conts;'t} =
    szone df_var[v:v] df_bconts{'conts} `"[" pushm[0] var_list{'t} popm `"]" ezone
 
 dform conts_left_df : mode[src] :: mode[prl] :: mode[html] :: df_bconts{'conts} =
-   `"<|" df_concat{slot[","]; 'conts} `"|>"
+   `"<|" df_concat{slot[";"]; 'conts} `"|>"
 
 dform conts_left_df : mode[tex] :: df_bconts{'conts} =
-   <<mathmacro["left<"]>> `"|" df_concat{slot[","]; 'conts} `"|" <<mathmacro["right>"]>>
+   <<mathmacro["left<"]>> `"|" df_concat{slot[";"]; 'conts} `"|" <<mathmacro["right>"]>>
 
 dform var_list_df1 : var_list{cons{'a;'b}} =
    'a `";" hspace var_list{'b}
