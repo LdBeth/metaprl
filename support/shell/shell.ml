@@ -1423,15 +1423,6 @@ struct
       edit_cd_thm info modname thmname;
       set_params info pl
 
-   (*
-    * Return the current node.
-    *)
-   let edit_addr info addr =
-      let set addr =
-         info.shell_proof.edit_down addr
-      in
-         print_exn info set addr
-
    let edit_node info addr =
       let edit info =
          let proof = info.shell_proof in

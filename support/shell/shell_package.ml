@@ -369,6 +369,12 @@ let mk_ls_filter options =
 let raise_edit_error s =
    raise (RefineError ("Shell_package", StringError s))
 
+let raise_edit_error_fun s _ = raise_edit_error s
+
+let edit_addr = function
+   [] -> ()
+ | _ -> raise (Invalid_argument "Shell_package.edit_addr")
+
 (*
  * Build the shell interface.
  *)
@@ -385,47 +391,12 @@ let rec edit pack_info parse_arg window =
    let edit_copy () =
       edit pack_info parse_arg (new_window window)
    in
-   let not_a_rule _ =
-      raise_edit_error "this is not a rule or rewrite"
-   in
    let edit_save () =
       Package_info.save pack_info
    in
-   let edit_check _ =
-      raise_edit_error "check the entire package? Use check_all."
-   in
-   let edit_root () =
-      ()
-   in
-   let edit_up i =
-      ()
-   in
-   let edit_down i =
-      ()
-   in
-   let edit_undo () =
-      ()
-   in
-   let edit_redo () =
-      ()
-   in
-   let edit_addr addr =
-      ()
-   in
-   let edit_info () =
-      raise_edit_error "no info for the package"
-   in
-   let edit_refine _ _ _ =
-      raise_edit_error "can't refine the package"
-   in
-   let edit_interpret _ =
-      raise_edit_error "this is not a proof"
-   in
-   let edit_get_contents () =
-      raise_edit_error "can only retrieve contents of an individual item, not of a package"
-   in
+   let not_a_rule _ = raise_edit_error "this is not a rule or rewrite" in
       { edit_display = edit_display;
-        edit_get_contents = edit_get_contents;
+        edit_get_contents = raise_edit_error_fun "can only retrieve contents of an individual item, not of a package";
         edit_get_terms = not_a_rule;
         edit_copy = edit_copy;
         edit_set_goal = not_a_rule;
@@ -435,16 +406,16 @@ let rec edit pack_info parse_arg window =
         edit_set_params = not_a_rule;
         edit_get_extract = not_a_rule;
         edit_save = edit_save;
-        edit_check = edit_check;
-        edit_root = edit_root;
-        edit_up = edit_up;
-        edit_down = edit_down;
+        edit_check = raise_edit_error_fun "check the entire package? Use check_all.";
+        edit_root = (fun () -> ());
+        edit_up = not_a_rule;
+        edit_down = not_a_rule;
         edit_addr = edit_addr;
-        edit_info = edit_info;
-        edit_refine = edit_refine;
-        edit_undo = edit_undo;
-        edit_redo = edit_redo;
-        edit_interpret = edit_interpret
+        edit_info = raise_edit_error_fun "no info for the package";
+        edit_refine = raise_edit_error_fun "can't refine the package";
+        edit_undo = not_a_rule;
+        edit_redo = not_a_rule;
+        edit_interpret = raise_edit_error_fun "this is not a proof";
       }
 
 let create pack parse_arg window =
