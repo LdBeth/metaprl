@@ -14,21 +14,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -209,7 +209,8 @@ and 'ctyp resource_info =
    { resource_name : string;
      resource_extract_type : 'ctyp;
      resource_improve_type : 'ctyp;
-     resource_data_type : 'ctyp
+     resource_data_type : 'ctyp;
+     resource_arg_type : 'ctyp
    }
 
 (*
@@ -662,12 +663,14 @@ let convert_resource convert
     { resource_name = name;
       resource_extract_type = extract;
       resource_improve_type = improve;
-      resource_data_type = data
+      resource_data_type = data;
+      resource_arg_type = arg
     } =
    { resource_name = name;
      resource_extract_type = convert.ctyp_f extract;
      resource_improve_type = convert.ctyp_f improve;
-     resource_data_type = convert.ctyp_f data
+     resource_data_type = convert.ctyp_f data;
+     resource_arg_type = convert.ctyp_f arg
    }
 
 (*
@@ -879,7 +882,7 @@ let rec meta_term_of_term t =
          let t' = dest_term t in
          let o' = dest_op t'.term_op in
          match o'.op_params, t'.term_terms with
-            [p], [t] -> 
+            [p], [t] ->
                begin match dest_param p, dest_bterm t with
                   String l, { bvars = []; bterm = t } ->
                      MetaLabeled (l,meta_term_of_term t)
@@ -1187,11 +1190,12 @@ and dest_id convert t =
  *)
 and dest_resource_aux convert t =
    let name = dest_string_param t in
-   let extract, improve, data = three_subterms t in
+   let extract, improve, data, arg = four_subterms t in
       { resource_name = name;
         resource_extract_type = convert.ctyp_f extract;
         resource_improve_type = convert.ctyp_f improve;
-        resource_data_type = convert.ctyp_f data
+        resource_data_type = convert.ctyp_f data;
+        resource_arg_type = convert.ctyp_f arg
       }
 
 and dest_resource convert t =
@@ -1494,11 +1498,13 @@ and term_of_resource convert
     { resource_name = name;
       resource_extract_type = extract;
       resource_improve_type = improve;
-      resource_data_type = data
+      resource_data_type = data;
+      resource_arg_type = arg
     } =
    mk_string_param_term resource_op name [convert.ctyp_f extract;
                                           convert.ctyp_f improve;
-                                          convert.ctyp_f data]
+                                          convert.ctyp_f data;
+                                          convert.ctyp_f arg]
 
 and term_of_infix op =
    mk_string_param_term infix_op op []

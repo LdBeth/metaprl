@@ -651,9 +651,10 @@ let declare_prec loc name =
 let declare_resource loc { resource_name = name;
                            resource_extract_type = extract_type;
                            resource_improve_type = improve_type;
-                           resource_data_type = data_type
+                           resource_data_type = data_type;
+                           resource_arg_type = arg_type
     } =
-   let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$>> in
+   let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$ $arg_type$ >> in
       [<:sig_item< type $list:[name, [], rsrc_type]$ >>]
 
 (*
@@ -693,7 +694,8 @@ let interf_resources resources loc =
       (mname, { resource_name = name;
                 resource_extract_type = extract_type;
                 resource_improve_type = improve_type;
-                resource_data_type = data_type
+                resource_data_type = data_type;
+                resource_arg_type = arg_type
        } as rsrc)::t ->
          if !debug_resource then
             if mname = [] then
@@ -1505,10 +1507,11 @@ struct
       let { resource_name = name;
             resource_extract_type = extract_type;
             resource_improve_type = improve_type;
-            resource_data_type = data_type
+            resource_data_type = data_type;
+            resource_arg_type = arg_type
           } = r
       in
-      let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$>> in
+      let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$ $arg_type$ >> in
          proc.imp_resources <- r :: proc.imp_resources;
          [<:str_item< type $list:[name, [], rsrc_type]$ >>]
 

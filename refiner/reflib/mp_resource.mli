@@ -35,6 +35,9 @@
  * jyh@cs.cornell.edu
  *)
 
+open Refiner.Refiner.TermType
+open Refiner.Refiner.TermMeta
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -42,15 +45,16 @@
 (*
  * Resources are saved when they are labeled.
  *)
-type ('info, 'result, 'data) t
+type ('info, 'result, 'data, 'arg) t
 
 (*
  * these are the methods for modifying a resource.
  *)
-type ('info, 'result, 'data) info =
+type ('info, 'result, 'data, 'arg) info =
    { resource_join : 'data -> 'data -> 'data;
      resource_extract : 'data -> 'result;
      resource_improve : 'data -> 'info -> 'data;
+     resource_improve_arg : 'data -> 'arg -> 'data;
      resource_close : 'data -> string -> 'data
    }
 
@@ -61,26 +65,32 @@ type ('info, 'result, 'data) info =
 (*
  * Create a resource, passing the primitive methods.
  *)
-val create : ('info, 'result, 'data) info -> 'data -> ('info, 'result, 'data) t
+val create : ('info, 'result, 'data, 'arg) info -> 'data -> ('info, 'result, 'data, 'arg) t
 
 (*
  * Update a resource.
  *)
-val join : ('info, 'result, 'data) t -> ('info, 'result, 'data) t -> ('info, 'result, 'data) t
-val extract : ('info, 'result, 'data) t -> 'result
-val improve : ('info, 'result, 'data) t -> 'info -> ('info, 'result, 'data) t
-val close : ('info, 'result, 'data) t -> string -> ('info, 'result, 'data) t
-val wrap : ('info, 'result, 'data) t -> ('data -> 'data) -> ('info, 'result, 'data) t
+val join : ('info, 'result, 'data, 'arg) t -> ('info, 'result, 'data, 'arg) t -> ('info, 'result, 'data, 'arg) t
+val extract : ('info, 'result, 'data, 'arg) t -> 'result
+val improve : ('info, 'result, 'data, 'arg) t -> 'info -> ('info, 'result, 'data, 'arg) t
+val improve_arg : ('info, 'result, 'data, 'arg) t -> 'arg -> ('info, 'result, 'data, 'arg) t
+val close : ('info, 'result, 'data, 'arg) t -> string -> ('info, 'result, 'data, 'arg) t
+val wrap : ('info, 'result, 'data, 'arg) t -> ('data -> 'data) -> ('info, 'result, 'data, 'arg) t
 
 (*
  * Add a list of improvements.
  *)
-val improve_list : ('info, 'result, 'data) t -> 'info list -> ('info, 'result, 'data) t
+val improve_list : ('info, 'result, 'data, 'arg) t -> 'info list -> ('info, 'result, 'data, 'arg) t
 
 (*
  * Get a resource by name.
  *)
-val find : ('info, 'result, 'data) t -> string -> ('info, 'result, 'data) t
+val find : ('info, 'result, 'data, 'arg) t -> string -> ('info, 'result, 'data, 'arg) t
+
+(*
+ * This function is a utility to fail on improvement by arguments.
+ *)
+val improve_arg_fail : string -> 'a -> 'b -> 'c
 
 (*
  * Debugging.

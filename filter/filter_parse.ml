@@ -14,21 +14,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -990,12 +990,13 @@ EXTEND
         | "mlcondition"; t = quote_term ->
           SigFilter.declare_ml_condition (SigFilter.get_proc loc) loc t;
           empty_sig_item loc
-        | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ")"; name = LIDENT ->
+        | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ","; arg = ctyp; ")"; name = LIDENT ->
           SigFilter.declare_resource (SigFilter.get_proc loc) loc (**)
              { resource_name = name;
                resource_extract_type = extract;
                resource_improve_type = improve;
-               resource_data_type = data
+               resource_data_type = data;
+               resource_arg_type = arg
              };
           empty_sig_item loc
         | "dform"; name = LIDENT; ":"; options = df_options ->
@@ -1048,12 +1049,13 @@ EXTEND
         | "mlterm"; t = quote_term; rewrite_equal; code = expr; "|"; ext = expr ->
           StrFilter.declare_mlterm (StrFilter.get_proc loc) loc t (Some (code, ext));
           empty_str_item loc
-        | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ")"; name = LIDENT ->
+        | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ","; arg = ctyp; ")"; name = LIDENT ->
           StrFilter.declare_resource (StrFilter.get_proc loc) loc (**)
              { resource_name = name;
                resource_extract_type = extract;
                resource_improve_type = improve;
-               resource_data_type = data
+               resource_data_type = data;
+               resource_arg_type = arg
              };
           empty_str_item loc
         | "dform"; name = LIDENT; ":"; options = df_options; "="; form = xdform ->
@@ -1112,7 +1114,7 @@ EXTEND
         | arg = bound_term; args = LIST0 bound_term; ":"; goal = singleterm ->
           arg :: args, goal
        ]];
-   
+
    (* The optional list of resources to update *)
    optresources:
       [[ ores = OPT [ "{|"; res = LIST0 updresource SEP ";"; "|}" -> res ] ->

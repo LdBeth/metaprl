@@ -39,6 +39,10 @@
 open Mp_debug
 open Printf
 
+open Refiner.Refiner.TermType
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.RefineError
+
 (*
  * Show loading of the file.
  *)
@@ -60,19 +64,20 @@ let debug_resource =
 (*
  * Resources are saved when they are labeled.
  *)
-type ('info, 'result, 'data) t =
-   { resource_info : ('info, 'result, 'data) info;
+type ('info, 'result, 'data, 'arg) t =
+   { resource_info : ('info, 'result, 'data, 'arg) info;
      resource_data : 'data;
-     resource_list : (string * ('info, 'result, 'data) t) list ref
+     resource_list : (string * ('info, 'result, 'data, 'arg) t) list ref
    }
 
 (*
  * these are the methods for modifying a resource.
  *)
-and ('info, 'result, 'data) info =
+and ('info, 'result, 'data, 'arg) info =
    { resource_join : 'data -> 'data -> 'data;
      resource_extract : 'data -> 'result;
      resource_improve : 'data -> 'info -> 'data;
+     resource_improve_arg : 'data -> 'arg -> 'data;
      resource_close : 'data -> string -> 'data
    }
 
@@ -112,6 +117,15 @@ let improve { resource_info = info; resource_data = data; resource_list = resour
      resource_data = info.resource_improve data info';
      resource_list = resources
    }
+
+let improve_arg { resource_info = info; resource_data = data; resource_list = resources } arg =
+   { resource_info = info;
+     resource_data = info.resource_improve_arg data arg;
+     resource_list = resources
+   }
+
+let improve_arg_fail name _ _ =
+   raise (RefineError (name, StringError "resource method 'improve_arg' is not implemented"))
 
 let rec improve_list { resource_info = info; resource_data = data; resource_list = resources } infos =
    let improve' = info.resource_improve in
