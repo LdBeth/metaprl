@@ -287,7 +287,7 @@ let asciip = ref true
 
 let with_open_db_file f name ext =
   let filename = String.concat ""
-      [!master_pathname; "/"; name; "."; ext] in
+      [!master_pathname; name; "."; ext] in
   let in_channel = try open_in filename with
     Sys_error e -> error (filename :: ["db_open"; name; ext]) [] [] in
   
@@ -298,7 +298,7 @@ let with_open_db_file f name ext =
 let with_open_file f stamp otype =
   let {process_id = pid; seq = seq}  = dest_stamp stamp in
   let filename = String.concat ""
-      [!master_pathname; "/"; pid; "/"; (string_of_int seq); "."; otype] in
+      [!master_pathname; pid; "/"; "data"; "/"; (string_of_int seq); "."; otype] in
   let in_channel = try open_in filename with
     Sys_error e -> error (filename :: ["db_read"; "file"; "not"; "exist"]) [] [] in
   
@@ -439,27 +439,26 @@ let rec string_to_parameter s ptype =
        (match (String.get s 1) with
 	  '%' -> (mk_real_param_from_strings string_to_parameter ss ptype)
 
-	| 'A' -> (ParmList	[ make_param (String "extended")
-				; make_param (String "slot")
-				; make_param (String ptype)
+	| 'A' -> (ParmList	[ make_param (Token "extended")
+				; make_param (Token "abstraction")
+				; make_param (Token ptype)
 				; make_param (Token ss)
 				])
 
-	| 'D' ->  (ParmList	[ make_param (String "extended")
-				; make_param (String "slot")
-				; make_param (String ptype)
+	| 'D' ->  (ParmList	[ make_param (Token "extended")
+				; make_param (Token "display")
+				; make_param (Token ptype)
 				; make_param (Token ss)
 				])
 
-	| 'S' ->  (ParmList	[ make_param (String "extended")
-				; make_param (String "slot")
-				; make_param (String ptype)
+	| 'S' ->  (ParmList	[ make_param (Token "extended")
+				; make_param (Token "slot")
+				; make_param (Token ptype)
 				])
 
-	| 'd' ->  (ParmList	[ make_param (String "display")
-				; make_param (String ss)
-				; make_param (String ptype)
-				])
+	| 'd' ->  (ParmList	[ make_param (Token "display")
+				; (make_param (mk_meta_param_from_strings ss ptype))
+                                ])
 
 	| 'a' ->  (mk_meta_param_from_strings ss ptype)
 
@@ -542,6 +541,31 @@ let with_open_persist_file f t =
      |_ -> error ["open_persist_file"][][t])
    |_ -> error ["open_persist_file"][][t]
 
+let with_open_pid_file f stamp otype =
+  let {process_id = pid; seq = seq}  = dest_stamp stamp in
+  let filename = String.concat ""
+      [!master_pathname; pid; "/"; (string_of_int seq); "."; otype] in
+  let in_channel = try open_in filename with
+    Sys_error e -> error (filename :: ["db_read"; "file"; "not"; "exist"]) [] [] in
+  
+    let x = (try (f in_channel) with e -> close_in in_channel; raise e) in
+	close_in in_channel;
+	x
+
+let with_open_static_file f t =
+ match dest_term t with
+   { term_op = op; term_terms = [istamp] } 
+      -> (match dest_op op with 
+	   { op_name = opname; op_params = [id; ftype] } when idata_persist_param = id
+
+	 -> with_open_pid_file (function in_channel -> 
+			  f (make_session_scanner (Stream.of_channel in_channel)))
+		(term_to_stamp (term_of_unbound_term istamp)) 
+		(dest_token_param ftype)
+  
+     |_ -> error ["open_static_file"][][t])
+   |_ -> error ["open_static_file"][][t]
+
 
 let index_of_il_term t =
   match dest_term t with
@@ -623,7 +647,7 @@ let rec read_levels term index =
 and level_find index =
     try (loaded_level_find_index index) with _ -> read_levels (disk_levels_assoc index) index
 
-and read_static_level t = with_open_persist_file read_static_level_aux t
+and read_static_level t = with_open_static_file read_static_level_aux t
 
 and read_static_level_aux scanner =
  
@@ -722,7 +746,7 @@ let db_read stamp otype =
 let db_write stamp object_type term =
   let {process_id = pid; seq = seq} = dest_stamp stamp in
   let filename = String.concat ""
-      [!master_pathname; "/"; pid; (string_of_int seq); "."; object_type] in
+      [!master_pathname; pid; (string_of_int seq); "."; object_type] in
   let descr = openfile filename [O_EXCL; O_WRONLY; O_CREAT] 999 in
   (write_node (mbterm_of_term term) (out_channel_of_descr descr));
   close descr

@@ -29,7 +29,7 @@ val mb_numberq: num (*value*) -> int32 (*label*) -> mbterm
 val number_value: mbterm -> num
 
 val subterm_types: int32 -> int32
-val mbnode_subtermq:  mbterm -> int  -> mbnode
+val mbnode_subtermq:  mbterm -> int -> mbnode
 val mbnode_nSubtermsq: mbterm -> int
 val mbnode_label: mbterm -> int32
 val mbnode_labelq: mbterm -> int32

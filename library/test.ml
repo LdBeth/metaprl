@@ -312,6 +312,26 @@ let toptestloop libhost remote_port local_port =
  ; print_newline()
 ;;
 
+let testascii libhost remote_port local_port =
+ print_newline(); 
+ print_newline(); 
+ print_endline "TestAscii Called ";
+
+  (let connection = connect libhost remote_port local_port in
+
+    (unwind_error
+      (function () -> 
+	looptest connection
+	)
+      (function () -> disconnect connection))
+
+    ; disconnect connection)
+
+ ; print_string "TestAscii DONE" 
+ ; print_newline()
+ ; print_newline()
+;;
+
 
 let testall libhost remote_port local_port =
  print_newline(); 
@@ -452,6 +472,11 @@ let jointest remote_port local_port =
 ;;
 
 
+special_error_handler (function () -> testascii "BOLVERK" 3444 4352)
+  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
+
+(*
 
 special_error_handler (function () -> 
 			( Db.db_init "/usr/u/nuprl/nuprl5/NuPrlDBa" true	
@@ -461,7 +486,6 @@ special_error_handler (function () ->
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 
-(*
 
 special_error_handler (function () -> 
 			( maybe_lib_open()
@@ -489,10 +513,11 @@ special_error_handler
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 
+
 special_error_handler (function () -> testall "DENEB" 3444 4444)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
-special_error_handler (function () -> testall "DENEB" 5289 2895)
+special_error_handler (function () -> maybe_lib_open())
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 

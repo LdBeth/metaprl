@@ -53,15 +53,32 @@ let disconnect c = Orb.disconnect (oref_val orbr) c
  *	
  *)
 
+let faux_mbs bterms =
+ let term = term_of_unbound_term (hd bterms) in
+   print_newline();
+    print_string "mbs" ;
+    print_newline();
+    term
+
+
 let faux_ascii bterms =
  let persist = term_of_unbound_term (hd bterms) and
      data = term_of_unbound_term (hd (tl bterms)) in
-   let data' = persist(*Db.db_read_ascii (stamp_of_idata_persist_term persist)
-                             (type_of_idata_persist_term persist)*) in
+   let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
+   let data' = Db.db_read s y in
     print_newline();
-    if data = data' then print_string "+" else print_string "-" ;
+    if alpha_equal data data' then print_string "+" else print_string "-" ;
     print_newline();
     data'
+
+let faux_ascii_quick bterms =
+ let persist = term_of_unbound_term (hd bterms) in
+   let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
+   let data = Db.db_read s y in
+    print_newline();
+    print_string "faq";
+    print_newline();
+    data
 
   
 
@@ -92,6 +109,7 @@ let test_do_add bterms =
 let test_add_op = mk_nuprl5_op [ make_param (Token "!test_add")]
 let faux_refiner_op = mk_nuprl5_op [ make_param (Token "!faux_refine")]
 let faux_ascii_op = mk_nuprl5_op [ make_param (Token "!faux_ascii")]
+let faux_mbs_op = mk_nuprl5_op [ make_param (Token "!faux_mbs")]
 
 let test_ehook t = 
   match dest_term t with
@@ -100,7 +118,9 @@ let test_ehook t =
     | {term_op = op; term_terms = bterms } when op = faux_refiner_op
       ->  faux_refine bterms
     | {term_op = op; term_terms = bterms } when op = faux_ascii_op
-      ->  faux_ascii bterms
+      ->  faux_ascii_quick bterms
+    | {term_op = op; term_terms = bterms } when op = faux_mbs_op
+      ->  faux_mbs bterms
     | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
  
 let error_ehook t = (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t])

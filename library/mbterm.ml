@@ -42,7 +42,7 @@ let rec mbparameter_of_param param =
 	  {le_const = i; le_vars = vars } ->
 	    (let rec loop l nodes=
 	      (match l with
-		[] -> mbnode mbs_Level ((mb_integer i)::nodes)
+		[] -> mbnode mbs_Level [(mbnode mbs_Level ((mb_integer i)::nodes))]
 	      | hd::tl -> let aux2 = function
 		    { le_var = v; le_offset = i2 } ->
 		      loop tl ((mb_string v)::((mb_integer i2)::nodes))
@@ -63,7 +63,7 @@ let mbbinding_of_binding binding = mb_stringq binding mbs_Variable (* term in th
 
 let append l p =
   let rec aux l1 l2 =
-    match l1 with
+      match l1 with
       h1::t1 -> aux t1 (h1::l2)
     | [] -> l2 in
   aux (List.rev l) p
@@ -108,7 +108,7 @@ let rec param_of_mbparameter mbparameter =
   else if bequal b mbs_Variable then make_param (Var (string_value mbparameter))
   else if bequal b mbs_Token then make_param (Token (string_value mbparameter))
   else if bequal b mbs_LongInteger then 
-    let b = number_value mbparameter in make_param (Number b)
+    let n = number_value mbparameter in make_param (Number n)
   else if bequal b mbs_ParmList then
     let rec loop i l =
       if i = 0 then l
@@ -126,15 +126,15 @@ let rec param_of_mbparameter mbparameter =
     in make_param (ObId (make_object_id (loop (mbnode_nSubtermsq mbparameter) [])))
 
   else if bequal b mbs_Level then
-    let nsubterms = (mbnode_nSubtermsq mbparameter) in
     match (mbnode_subtermq mbparameter 1) with
-      Mnode n1 -> let l1 = (match (mbnode_subtermq n1 1) with
+      Mnode n1 -> let nsubterms = (mbnode_nSubtermsq n1) in
+      let l1 = (match (mbnode_subtermq n1 1) with
         Mnode n -> let constant = integer_value n and
 	    le_vars = let rec loop i l =
 	      if i <= 1 then l
-	      else (match (mbnode_subtermq mbparameter i) with
+	      else (match (mbnode_subtermq n1 i) with
 	      	Mnode n -> let s = (string_value n) in
-	      	(match (mbnode_subtermq mbparameter (i-1)) with
+	      	(match (mbnode_subtermq n1 (i-1)) with
 	      	  Mnode n2-> loop (i-2) ((mk_level_var s (integer_value n2))::l)
 	      	| Mbint b -> failwith "subterm should be a node")
 	      | Mbint b -> failwith "subterm should be a node")
@@ -143,9 +143,12 @@ let rec param_of_mbparameter mbparameter =
 	      
       	in make_param (Level (mk_level constant le_vars)) 
       | Mbint b -> failwith "subterm should be a node") in
-      if nsubterms = 1 then l1 
+      let nsubterms' = (mbnode_nSubtermsq mbparameter) in
+      if nsubterms' = 1 then l1 
       else make_param (ParmList [l1; make_param (String (match (mbnode_subtermq mbparameter 2) with
-        Mnode n ->  (string_value n)
+        Mnode n -> (match (mbnode_subtermq n 1) with
+          Mnode n1 -> (string_value n1)
+      	| Mbint b -> failwith "subterm should be a node")
       | Mbint b -> failwith "subterm should be a node"))])
     | Mbint b -> failwith "subterm should be a node" 
 
@@ -154,7 +157,8 @@ let rec param_of_mbparameter mbparameter =
   else if bequal b mbs_MToken then make_param (MToken (string_value mbparameter))
   else if bequal b mbs_MLongInteger then make_param (MNumber (string_value mbparameter))
   else if bequal b mbs_MLevel then make_param (MLevel (string_value mbparameter))
-  else failwith "mbparameter_of_parameter" 
+  else let ((x, y) as fg) = dest_int32 b in failwith "mbparameter_of_parameter1"(* ["mbparameter_of_parameter1"; "not"] [] [(inatural_term x); (inatural_term y)]*)
+ 
 
 
 let opname_of_param p =
