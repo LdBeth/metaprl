@@ -82,6 +82,7 @@ open Dform
 open Dform_print
 
 open Term_eq_table
+open Mp_resource
 
 open Tactic_boot
 open Tactic_boot.TacticType
@@ -2544,7 +2545,7 @@ struct
       in
          f
 
-   let proof_of_io_proof raw_attributes sentinal parse eval node =
+   let proof_of_io_proof raw_attributes sentinal bookmark parse eval node =
       let parents = ref [] in
       let rec make_tactic_arg arg =
          try
@@ -2570,6 +2571,7 @@ struct
                     ref_label = label;
                     ref_parent = parent;
                     ref_attributes = args;
+                    ref_bookmark = bookmark;
                     ref_sentinal = sentinal
                   }
                in
@@ -2695,8 +2697,8 @@ struct
       let to_term parse eval proof =
          Convert.to_term parse eval (goal proof) (proof.pf_node)
 
-      let of_term args sentinal parse eval t =
-         let ext = Convert.of_term args sentinal parse eval t in
+      let of_term args sentinal bookmark parse eval t =
+         let ext = Convert.of_term args sentinal bookmark parse eval t in
             { pf_root = ext;
               pf_address = [];
               pf_node = ext
@@ -2735,7 +2737,7 @@ struct
          raise (Invalid_argument "Proof_boot.proof_hack.eval")
       in
          if term_io_proof_hack proof then
-            let proof = ProofTerm_io.of_term [] Tactic.null_sentinal parse eval ((Obj.magic proof) : term_io) in
+            let proof = ProofTerm_io.of_term [] Tactic.null_sentinal empty_bookmark parse eval ((Obj.magic proof) : term_io) in
                io_proof_of_proof true parse eval proof
          else
             proof
@@ -2750,19 +2752,19 @@ struct
     * Convert the IO proof.
     *)
    let term_of_io_proof parse eval proof =
-      ProofTerm_std.to_term parse eval (proof_of_io_proof [] Tactic.null_sentinal parse eval proof)
+      ProofTerm_std.to_term parse eval (proof_of_io_proof [] Tactic.null_sentinal empty_bookmark parse eval proof)
 
    let io_proof_of_term parse eval term =
-      io_proof_of_proof true [] Tactic.null_sentinal (ProofTerm_std.of_term [] Tactic.null_sentinal parse eval term)
+      io_proof_of_proof true [] Tactic.null_sentinal (ProofTerm_std.of_term [] Tactic.null_sentinal empty_bookmark parse eval term)
 
    (*
     * Convert the IO proof
     *)
    let term_io_of_io_proof parse eval proof =
-      ProofTerm_io.to_term parse eval (proof_of_io_proof [] Tactic.null_sentinal parse eval proof)
+      ProofTerm_io.to_term parse eval (proof_of_io_proof [] Tactic.null_sentinal empty_bookmark parse eval proof)
 
    let io_proof_of_term_io parse eval term =
-      let proof = ProofTerm_io.of_term [] Tactic.null_sentinal parse eval term in
+      let proof = ProofTerm_io.of_term [] Tactic.null_sentinal empty_bookmark parse eval term in
          io_proof_of_proof true [] Tactic.null_sentinal proof
 
    (************************************************************************

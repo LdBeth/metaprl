@@ -18,11 +18,11 @@ REFLIB_FILES :=\
 	term_match_table\
 	term_stable\
 	term_dtable\
+	mp_resource\
 	dform\
 	dform_print\
 	refine_exn\
 	theory\
-	mp_resource\
 	term_compare_sig\
 	term_compare\
 	match_seq\

@@ -64,13 +64,6 @@ val create_dform_except_modes : string list -> dform_mode_base ref -> dform_info
 val create_dform_all : dform_mode_base ref -> dform_info -> unit
 
 (*
- * Destruction.
- *)
-val is_null_mode_base : dform_mode_base -> bool
-val equal_mode_bases : dform_mode_base -> dform_mode_base -> bool
-val dest_mode_base : dform_mode_base -> dform_base * ((string * dform_base) list)
-
-(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

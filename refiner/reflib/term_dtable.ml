@@ -26,24 +26,23 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
  *
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Printf
@@ -93,14 +92,12 @@ type 'a table_entry =
    LREntry of 'a info_entry
  | RLEntry of 'a info_entry
  | DEntry of 'a info_entry
- | Table of 'a table_entry list
 
 (*
  * A table has a list of pairs, plus an position for a compute
  * table.
  *)
-type 'a term_dtable =
-   { table_items : 'a table_entry list }
+type 'a term_dtable = 'a table_entry list
 
 type 'a lookup_table = (shape list, 'a info_entry list) Hashtbl.t
 
@@ -171,8 +168,7 @@ let shift_snd = function
 (*
  * Empty table contains nothing.
  *)
-let new_dtable () =
-   { table_items = [] }
+let empty_dtable = []
 
 (*
  * Add an entry.
@@ -185,43 +181,37 @@ let insert_aux t1 t2 v =
         info_value = v
       }
 
-let insert_left { table_items = items } l v =
+let insert_left items l v =
    match l with
       (t1, t2)::t ->
          let suffix = unzip_list t in
          let entry1 = LREntry (insert_aux [t1] (t2 :: suffix) v) in
          let entry2 = DEntry (insert_aux [t1; t2] suffix v) in
-            { table_items = entry1 :: entry2 :: items }
+            entry1 :: entry2 :: items
 
     | [] ->
          raise (Invalid_argument "insert_left")
 
-let insert_right { table_items = items } l v =
+let insert_right items l v =
    match l with
       (t1, t2)::t ->
          let suffix = unzip_list t in
          let entry1 = RLEntry (insert_aux [t2] (t1 :: suffix) v) in
          let entry2 = DEntry (insert_aux [t1; t2] suffix v) in
-            { table_items = entry1 :: entry2 :: items }
+            entry1 :: entry2 :: items
 
     | [] ->
          raise (Invalid_argument "insert_left")
 
-let insert { table_items = items } l v =
+let insert items l v =
    match l with
       (t1, t2)::t ->
          let suffix = unzip_list t in
          let entry = DEntry (insert_aux [t1; t2] suffix v) in
-            { table_items = entry::items }
+            entry::items
 
     | [] ->
          raise (Invalid_argument "insert")
-
-(*
- * Join another table.
- *)
-let join_tables { table_items = items1 } { table_items = items2 } =
-   { table_items = (Table items2)::items1 }
 
 (*
  * Compile the table from the list of entries.
@@ -230,13 +220,14 @@ let join_tables { table_items = items1 } { table_items = items2 } =
  * Note that the items lists have to be reversed before insertion
  * so that newer entries will override older ones.
  *)
-let extract { table_items = entries } =
+let extract entries =
    let lrbase = Hashtbl.create 97 in
    let rlbase = Hashtbl.create 97 in
    let dbase = Hashtbl.create 97 in
 
    (* Insert a new entry into the table *)
-   let insert_entry base ({ info_pattern = pattern } as info) =
+   let insert_entry base info =
+      let pattern = info.info_pattern in
       let entries =
          try Hashtbl.find base pattern with
             Not_found -> []
@@ -244,31 +235,15 @@ let extract { table_items = entries } =
       let entries' = info::entries in
          Hashtbl.remove base pattern;
          Hashtbl.add base pattern entries'
-   in
-
-   (*
-    * Insert another table.  Keep a list of tables that
-    * have been inserted so that each table is only inserted
-    * once.  Tables are just lists of items; compare them with
-    * physical equality.
-    *)
-   let rec insert_table tables t =
-      (* Remember, t is a list of items *)
-      if List.memq t tables then
-         tables
-      else
-         let tables' = t::tables in
-            List.fold_left insert_item tables' (List.rev t)
 
    (* Insert a generic item *)
-   and insert_item tables = function
-      LREntry info -> insert_entry lrbase info; tables
-    | RLEntry info -> insert_entry rlbase info; tables
-    | DEntry info -> insert_entry dbase info; tables
-    | Table t -> insert_table tables t
+   in let insert_item = function
+      LREntry info -> insert_entry lrbase info
+    | RLEntry info -> insert_entry rlbase info
+    | DEntry info -> insert_entry dbase info
 
    in
-   let _ = List.fold_left insert_item [] (List.rev entries) in
+      List.iter insert_item (List.rev entries);
       { ext_lrtable = lrbase;
         ext_rltable = rlbase;
         ext_dtable = dbase
@@ -282,7 +257,7 @@ let find_entry
     (f : term * term -> 'a)
     (f' : term list * term list -> term list * (term * term))
     (entries : 'a info_entry list)
-    (t : term) 
+    (t : term)
     (tl : term list) =
    let match_entry { info_rw = rw; info_value = v } =
       let t2, _ =

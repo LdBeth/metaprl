@@ -80,7 +80,6 @@ struct
    let env_term = RewriteInternal.env_term
    let env_goal = RewriteInternal.env_goal
    let env_arg = RewriteInternal.env_arg
-   let get_conv = Sequent.get_conv_arg
 
    let prefix_thenC = RewriteInternal.prefix_thenC
    let prefix_orelseC = RewriteInternal.prefix_orelseC

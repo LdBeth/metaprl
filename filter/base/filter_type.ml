@@ -197,10 +197,9 @@ and prec_rel_info =
  * Resource descriptions.
  *)
 and 'ctyp resource_sig =
-   { resource_extract_type : 'ctyp;
-     resource_improve_type : 'ctyp;
-     resource_data_type : 'ctyp;
-     resource_arg_type : 'ctyp
+   { resource_input : 'ctyp;
+     resource_intermediate : 'ctyp;
+     resource_output : 'ctyp
    }
 
 and 'expr resource_expr = 'expr

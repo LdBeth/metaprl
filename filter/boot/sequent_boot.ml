@@ -143,12 +143,7 @@ struct
    let get_bool_arg       = TacticInternal.get_bool
    let get_string_arg     = TacticInternal.get_string
    let get_subst_arg      = TacticInternal.get_subst
-   let get_conv_arg       = TacticInternal.get_conv
-   let get_tactic_arg     = TacticInternal.get_tactic
-   let get_int_tactic_arg = TacticInternal.get_int_tactic
-   let get_arg_tactic_arg = TacticInternal.get_arg_tactic
-   let get_tsubst_arg     = TacticInternal.get_tsubst
-   let get_typeinf_arg    = TacticInternal.get_typeinf
+   let get_resource_arg   = TacticInternal.get_resource
 end
 
 (*

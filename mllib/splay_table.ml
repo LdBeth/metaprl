@@ -286,7 +286,7 @@ let create
             end
        | SplayNotFound tree ->
             t := tree;
-            raise Not_found
+            []
    in
 
    (*

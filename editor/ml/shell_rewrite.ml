@@ -104,9 +104,8 @@ let mk_rw_goal assums redex contractum =
       end;
       mk_msequent rw assums
 
-let mk_goal sentinal arg assums redex contractum =
-   let { ref_label = label; ref_args = args } = arg in
-      Tactic_type.Tactic.create sentinal label (mk_rw_goal assums redex contractum) args
+let mk_goal sentinal bookmark assums redex contractum =
+   Tactic.create sentinal (mk_rw_goal assums redex contractum) bookmark
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -371,7 +370,7 @@ let create pack parse_arg window name =
       }
    in
    let sentinal = Package.sentinal pack in
-   let arg = Package.argument pack parse_arg name in
+   let arg = Package.arg_resource pack parse_arg name in
       Package.set pack parse_arg (Filter_type.Rewrite rw);
       edit pack parse_arg sentinal arg name (create_window window) obj
 
@@ -404,7 +403,7 @@ let view_rw pack parse_arg window
       }
    in
    let sentinal = Package.sentinal_object pack name in
-   let arg = Package.argument pack parse_arg name in
+   let arg = Package.arg_resource pack parse_arg name in
       edit pack parse_arg sentinal arg name (create_window window) obj
 
 let view_crw pack parse_arg window
@@ -428,7 +427,7 @@ let view_crw pack parse_arg window
       }
    in
    let sentinal = Package.sentinal_object pack name in
-   let arg = Package.argument pack parse_arg name in
+   let arg = Package.arg_resource pack parse_arg name in
       edit pack parse_arg sentinal arg name (create_window window) obj
 
 (*

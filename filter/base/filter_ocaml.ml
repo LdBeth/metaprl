@@ -2299,20 +2299,18 @@ struct
    let mk_type = mk_type comment
 
    let term_of_resource_sig resource_op {
-      resource_extract_type = extract;
-      resource_improve_type = improve;
-      resource_data_type = data;
-      resource_arg_type = arg
+      resource_input = input;
+      resource_intermediate = intermediate;
+      resource_output = output
    } =
       ToTerm.Term.mk_simple_term resource_op
-         [ mk_type extract; mk_type improve; mk_type data; mk_type arg ]
+         [ mk_type input; mk_type intermediate; mk_type output ]
 
    let resource_sig_of_term t =
-      let extract, improve, data, arg = four_subterms t in {
-         resource_extract_type = dest_type extract;
-         resource_improve_type = dest_type improve;
-         resource_data_type = dest_type data;
-         resource_arg_type = dest_type arg
+      let input, intermediate, output = three_subterms t in {
+         resource_input = dest_type input;
+         resource_intermediate = dest_type intermediate;
+         resource_output = dest_type output
       }
 end
 

@@ -44,6 +44,7 @@ open Refiner.Refiner.RefineError
 
 open Refiner_sig
 open Refiner_io
+open Mp_resource
 
 open Rformat
 open Dform
@@ -138,8 +139,7 @@ sig
     * cost.  The tactic_arg uses keys to distribute the attributes.
     * The values are stored in keys.
     *)
-   type shared_key
-   and sentinal
+   type sentinal
    and attribute
    and attributes = (string * attribute) list
    and raw_attribute
@@ -154,13 +154,14 @@ sig
     * as well as the attributes.  The parents is mutable,
     * but only because it is computed lazily.
     *)
-   and tactic_arg =
-      { ref_goal : msequent;
-        ref_label : string;
-        mutable ref_parent : tactic_parent;
-        ref_attributes : attribute_info;
-        ref_sentinal : sentinal
-      }
+   and tactic_arg = {
+      ref_goal : msequent;
+      ref_label : string;
+      mutable ref_parent : tactic_parent;
+      ref_attributes : attribute_info;
+      ref_bookmark : global_resource;
+      ref_sentinal : sentinal
+   }
 
    and tactic_parent =
       ParentNone
@@ -288,7 +289,8 @@ sig
    (*
     * Build an initial argument for a proof.
     *)
-   val create : sentinal -> string -> msequent -> raw_attributes -> tactic_arg
+   val create :
+      sentinal -> msequent -> global_resource -> tactic_arg
 
    (*
     * Conversion between general forms and optimized forms.
@@ -323,12 +325,6 @@ sig
    val bool_attribute : string -> bool -> raw_attribute
    val string_attribute : string -> string -> raw_attribute
    val subst_attribute : string -> term -> raw_attribute
-   val conv_attribute : string -> (unit -> conv) -> raw_attribute
-   val tactic_attribute : string -> (unit -> tactic) -> raw_attribute
-   val int_tactic_attribute : string -> (unit -> int -> tactic) -> raw_attribute
-   val arg_tactic_attribute : string -> (unit -> tactic_arg -> tactic) -> raw_attribute
-   val tsubst_attribute : string -> (unit -> typeinf_subst_fun) -> raw_attribute
-   val typeinf_attribute : string -> (unit -> typeinf_func) -> raw_attribute
 
    (*
     * Lift refiner tactics into our tactic type.
@@ -422,19 +418,14 @@ sig
    (*
     * Fetch attributes.
     *)
-   val get_term       : tactic_arg -> string -> term
-   val get_term_list  : tactic_arg -> string -> term list
-   val get_type       : tactic_arg -> string -> term
-   val get_int        : tactic_arg -> string -> int
-   val get_bool       : tactic_arg -> string -> bool
-   val get_string     : tactic_arg -> string -> string
-   val get_subst      : tactic_arg -> term_subst
-   val get_conv       : tactic_arg -> string -> conv
-   val get_tactic     : tactic_arg -> string -> tactic
-   val get_int_tactic : tactic_arg -> string -> (int -> tactic)
-   val get_arg_tactic : tactic_arg -> string -> (tactic_arg -> tactic)
-   val get_tsubst     : tactic_arg -> string -> typeinf_subst_fun
-   val get_typeinf    : tactic_arg -> string -> typeinf_func
+   val get_term      : tactic_arg -> string -> term
+   val get_term_list : tactic_arg -> string -> term list
+   val get_type      : tactic_arg -> string -> term
+   val get_int       : tactic_arg -> string -> int
+   val get_bool      : tactic_arg -> string -> bool
+   val get_string    : tactic_arg -> string -> string
+   val get_subst     : tactic_arg -> term_subst
+   val get_resource  : tactic_arg -> (global_resource -> 'a) -> 'a
 
    (*
     * Basic tactics.
@@ -718,6 +709,7 @@ sig
    val proof_of_io_proof :
       raw_attributes ->            (* Default attributes *)
       sentinal ->                  (* Proof checker *)
+      global_resource ->           (* Resource bookmark *)
       (string -> MLast.expr) ->    (* Parser *)
       (MLast.expr -> tactic) ->    (* Evaluator *)
       io_proof ->
@@ -774,6 +766,7 @@ sig
       val of_term :
          raw_attributes ->            (* Default attributes *)
          sentinal ->                  (* Proof checker *)
+         global_resource ->           (* Resource bookmark *)
          (string -> MLast.expr) ->    (* Parser *)
          (MLast.expr -> tactic) ->    (* Evaluator *)
          ToTerm.TermType.term ->      (* Term to parse *)
@@ -843,12 +836,7 @@ sig
    val get_bool_arg       : tactic_arg -> string -> bool
    val get_string_arg     : tactic_arg -> string -> string
    val get_subst_arg      : tactic_arg -> term_subst
-   val get_conv_arg       : tactic_arg -> string -> conv
-   val get_tactic_arg     : tactic_arg -> string -> tactic
-   val get_int_tactic_arg : tactic_arg -> string -> (int -> tactic)
-   val get_arg_tactic_arg : tactic_arg -> string -> tactic_arg -> tactic
-   val get_tsubst_arg     : tactic_arg -> string -> typeinf_subst_fun
-   val get_typeinf_arg    : tactic_arg -> string -> typeinf_func
+   val get_resource_arg   : tactic_arg -> (global_resource -> 'a) -> 'a
 end
 
 (*
@@ -1115,8 +1103,6 @@ sig
    val env_term : env -> term
    val env_goal : env -> term
    val env_arg : env -> tactic_arg
-
-   val get_conv : tactic_arg -> string -> conv
 
    (*
     * All rewrites are wrapped by the rewrite function.

@@ -164,16 +164,16 @@ string is a theory name, we'll have a single entry for each theory *)
 val create: unit -> 'data global_data
 val improve: 'data data -> 'data -> 'data data (* same as "add_data" *)
 val bookmark: 'data data -> string -> 'data data
-val include: 'data data -> string -> 'data data
+val include_theory: 'data data -> string -> 'data data
 
 (* Since theories are processed one-by-one, we can do it imperatively for a
 particular resource. See also Modules 4&5 for an expected value of x_data *)
 val x_theory_data : x_data data ref (* initially empty *)
 val x_improve : x_data -> unit (* adds to x_theory_data *)
 val x_bookmark: string -> unit
-val x_include: string -> unit
+val x_include_theory: string -> unit
 val x_global_data = x_data global_data
-val x_finish_theory: string -> unit (* adds x_theory_data to x_global_data and
+val x_close_theory: string -> unit (* adds x_theory_data to x_global_data and
    flushes it *)
 
 Module 2: Avoiding repeatedly including theories.
@@ -182,18 +182,16 @@ Module 2: Avoiding repeatedly including theories.
 
 type bookmark = string * string (* theory name + local name *)
 
-(* We assume that x_finish_theory bookmarks the theory end by using an empty
+(* We assume that x_close_theory bookmarks the theory end by using an empty
 local name *)
 
 type 'data increment = {
    (* base will be empty_bookmark (see below) for leaf bookmarks *)
    inc_base_bookmark: bookmark;
    (* we should try to keep the increment non-empty, when possible *)
-   (* first added first, this is the opposite of 'data data_cell and 'data
-      data *)
-   inc_increment: 'data list;
+   inc_increment: 'data list; (* last added first *)
    (* non-empty inc_bookmarks list all bookmarks of this increment *)
-   mutable inc_bookmarks: bookmark list
+   mutable inc_bookmarks: bookmark list (* for caching, not really necessary *)
 }
 
 type 'data global_bookmarker = (bookmark, 'data increment) Hashtbl.t
@@ -202,7 +200,7 @@ type 'data global_bookmarker = (bookmark, 'data increment) Hashtbl.t
 val empty_bookmark : bookmark
 
 (* creates a hash table and puts an entry for an empty_bookmark in there *)
-val create_global_data: unit -> 'data global_data
+val create_global_bookmarker: unit -> 'data global_bookmarker
 
 (* Gets theory data from global_data, computes all bookmark increments for
    the specified theory and stores them in the increments hashtable *)
@@ -221,13 +219,13 @@ Module 3: Creating results.
 
 type ('data, 'result) processor = {
    proc_add: 'data -> unit;
-   proc_retrieve: unit -> 'result
+   proc_retrieve: unit -> 'result;
    proc_clone: unit -> ('data, 'result) processor
 }
 
 type ('data, 'intermediate, 'result) funct_processor = {
-   fp_empty: 'intermediate:
-   fp_add: 'itermediate -> 'data -> 'intermediate;
+   fp_empty: 'intermediate;
+   fp_add: 'intermediate -> 'data -> 'intermediate;
    fp_retr: 'intermediate -> 'result
 }
 
@@ -292,7 +290,7 @@ val extract_bookmark:
    2) Retrieve the increment, run extract_bookmark for its base.
    3) If increment is non-empty, then
       a) Clone the proc_result (from 2).
-      b) Feed all increment data to (cloned proc_result).proc_add
+      b) Feed all increment data to (cloned proc_result).proc_add (in reverse order)
    4) Return {res_proc=proc_result; res_result=None}
 *)
 
@@ -307,8 +305,8 @@ Module 4: Dealing with multiple resources with the same 'data and 'result
 types.
 
 type ('data, 'intermediate, 'result) resource_info =
-   Imperative of ('data, 'intermediate, 'result) imperative_processor
- | Functional of ('data, 'intermediate, 'result) functional_processor
+   Imperative of ('data, 'intermediate, 'result) imper_processor
+ | Functional of ('data, 'intermediate, 'result) funct_processor
 
 (* combines make_imp_proc with make_fun_proc *)
 val make_processor:
@@ -355,14 +353,14 @@ Module 6: the actual exposed interface:
 (* From Module1 *)
 val improve : string -> Obj.t -> unit (* takes a resource name and a data *)
 val bookmark: string -> unit (* takes local name *)
-val include: string -> unit (* takes theory name *)
-val finish_theory: string -> unit
+val include_theory: string -> unit (* takes theory name *)
+val close_theory: string -> unit
 
 (* From Module2 *)
 type bookmark = string * string (* theory name + local name *)
 
 type ('data, 'intermediate, 'result) funct_processor = {
-   fp_empty: 'intermediate:
+   fp_empty: 'intermediate;
    fp_add: 'itermediate -> 'data -> 'intermediate;
    fp_retr: 'intermediate -> 'result
 }
@@ -375,8 +373,8 @@ type ('data, 'intermediate, 'result) imper_processor = {
 
 (* From Module3 *)
 type ('data, 'intermediate, 'result) resource_info =
-   Imperative of ('data, 'intermediate, 'result) imperative_processor
- | Functional of ('data, 'intermediate, 'result) functional_processor
+   Imperative of ('data, 'intermediate, 'result) imper_processor
+ | Functional of ('data, 'intermediate, 'result) funct_processor
 
 (* other functions *)
 
@@ -386,7 +384,7 @@ val create_resource:
    string -> ('data, 'intermediate, 'result) resource_info -> unit
 
 type global_resource (* = bookmark *)
-val lazy_find : bookmark -> global_resource (* = identity *)
+val find : bookmark -> global_resource (* = identity, but checks existence *)
 val get_resource : global_resource -> string -> Obj.t
 (* get_resource would take the global_procesed_data from x_processed_data
    using the resource name supplied, and run find_bookmark *)
@@ -406,7 +404,7 @@ will expand to
 
 1. Resource declaration in implementation.
 
-resource (<data>, <info>, <result>) <name> = expr
+let resource <name> = expr
 
 Will expand to
 
@@ -417,10 +415,16 @@ let <name>_resource r =
 
 2. Resource improvement:
 
-improve_resource <name> with <exp>
+let resource <name> += <exp>
 
 Will expand to
 let _ = Mp_resource.improve "<name>" (Obj.repr (<expr>: <data>))
+
+Additionally, one can write
+
+let resource <name> += [ <exp1>; <exp2>; ...; <expn> ]
+
+to add several data object in one step (the order is undefined).
 
 3. Bookmarking at a rule:
 
@@ -431,13 +435,13 @@ Mp_resource.bookmark "xx"
 4. At the end of each theory:
 
 let _ =
-   Mp_resource.finish_theory "theory_name"
+   Mp_resource.close_theory "theory_name"
 
 5. Resource annotation functions.
 
 a. Interface:
 
-resource_arg <name> : <type>
+resource annotation <name> : <type>
 
 will produce the following declaration:
 
@@ -449,7 +453,7 @@ just <data>?
 
 b. I propose to add support for the following implementation declaration:
 
-resource_arg <name> = <expr>
+let resource annotation <name> = <expr>
 
 which will expand to the following:
 
@@ -464,5 +468,5 @@ rule xx {| <name> expr |}
 
 will expand (among other things) to
 
-improve_resource <name> with
+let resource <name> +=
    (Appropriate_theory.$<name>_resource_arg (xx, expr))

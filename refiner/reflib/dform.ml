@@ -122,7 +122,7 @@ type dform_item =
      df_external : bool
    }
 
-type dform_base = (dform_item, dform_item) term_table
+type dform_base = dform_item term_table
 
 (*
  * Destruct a base.
@@ -166,7 +166,7 @@ let rec process_options precedence parens internal = function
        | DFormInternal ->
             process_options precedence parens true t
 
-let add_dform base { dform_name = name;
+let make_dform { dform_name = name;
                      dform_pattern = t;
                      dform_options = options;
                      dform_print = printer
@@ -181,21 +181,11 @@ let add_dform base { dform_name = name;
        | DFormPrinter f ->
             DFPrinter f
    in
-      insert base t { df_name = name;
-                      df_precedence = precedence;
-                      df_printer = printer';
-                      df_external = not internal
+      t, { df_name = name;
+                  df_precedence = precedence;
+                  df_printer = printer';
+                  df_external = not internal
       }
-
-(*
- * Join two bases.
- *)
-let join_dforms = join_tables
-
-(*
- * Destruct a base.
- *)
-let equal_dfbases = equal_tables
 
 (*
  * Commands in initial base.
@@ -445,10 +435,7 @@ let format_short_term base shortener =
             else
                t
          in
-            (* HACK! There used to be an identity instead of List.rev here, but I changed it
-               because for some reason (I have no idea why) the entries were going in the wrong
-               order *)
-            lookup "format_short_term" base List.rev t
+            lookup base t
       in
       let pr, parenflag =
          if pr' = inherit_prec then
@@ -635,22 +622,15 @@ let init_list =
     "slot", [MVar "v"], slot;
    ]
 
-let null_base =
-   let rec aux = function
-      (name, params, f)::t ->
+let null_list =
+   let rec aux (name, params, f) =
          let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in
-         let entry =
             { dform_name = name;
               dform_pattern = term;
               dform_options = [DFormInheritPrec; DFormInternal];
               dform_print = DFormPrinter f
             }
-         in
-            add_dform (aux t) entry
-    | [] ->
-         new_table ()
    in
-   let base = aux init_list in
    let slot_entry1 =
       { dform_name = "slot_entry1";
         dform_pattern =
@@ -669,11 +649,13 @@ let null_base =
         dform_print = DFormPrinter slot
       }
    in
-   let base = add_dform base slot_entry1 in
-   let base = add_dform base slot_entry2 in
-      base
+      slot_entry1 :: slot_entry2 :: (List.map aux init_list)
 
-let is_null_dfbase = equal_tables null_base
+let identity x = x
+let create_dfbase items =
+   create_table (List.map make_dform (items @ null_list)) identity
+
+let null_base = create_dfbase []
 
 (************************************************************************
  * SIMPLIFIED PRINTERS                                                  *

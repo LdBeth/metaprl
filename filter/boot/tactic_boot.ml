@@ -151,18 +151,8 @@ struct
     * cost.  The tactic_arg uses keys to distribute the attributes.
     * The values are stored in keys.
     *)
-   type shared_object =
-      ShareConv of conv
-    | ShareTactic of tactic
-    | ShareIntTactic of (int -> tactic)
-    | ShareArgTactic of (tactic_arg -> tactic)
-    | ShareTSubst of typeinf_subst_fun
-    | ShareTypeinf of typeinf_func
-    | ShareSentinal of Refine.sentinal
 
-   and shared_key = shared_object ThreadRefiner.key
-
-   and sentinal = shared_key
+   and sentinal = Refine.sentinal ThreadRefiner.key
 
    and raw_attribute_info =
       RawTerm of term
@@ -172,7 +162,7 @@ struct
     | RawBool of bool
     | RawString of string
     | RawSubst of term
-    | RawObject of shared_key
+    | RawSentinal of sentinal
 
    and raw_attribute = string * raw_attribute_info
 
@@ -190,7 +180,7 @@ struct
         attr_bools      : (string * bool) list;
         attr_strings    : (string * string) list;
         attr_subst      : (string * term) list;
-        attr_keys       : (string * shared_key) list
+        attr_keys       : (string * sentinal) list
       }
 
    (*
@@ -202,6 +192,7 @@ struct
         ref_label : string;
         mutable ref_parent : tactic_parent;
         ref_attributes : attribute_info;
+        ref_bookmark : Mp_resource.global_resource;
         ref_sentinal : sentinal
       }
 
@@ -362,20 +353,21 @@ struct
         attr_bools      = List_util.some_map (function (name, RawBool b)     -> Some (name, b) | _ -> None) attributes;
         attr_strings    = List_util.some_map (function (name, RawString s)   -> Some (name, s) | _ -> None) attributes;
         attr_subst      = List_util.some_map (function (name, RawSubst t)    -> Some (name, t) | _ -> None) attributes;
-        attr_keys       = List_util.some_map (function (name, RawObject k)   -> Some (name, k) | _ -> None) attributes
+        attr_keys       = List_util.some_map (function (name, RawSentinal k)   -> Some (name, k) | _ -> None) attributes
       }
 
    let squash_attributes attrs =
       { attrs with attr_keys = [] }
 
    let update_attributes attrs raws =
-      { attrs with attr_keys = List_util.some_map (function (name, RawObject k)   -> Some (name, k) | _ -> None) raws }
+      { attrs with attr_keys = List_util.some_map (function (name, RawSentinal k)   -> Some (name, k) | _ -> None) raws }
 
-   let create sentinal label goal attributes =
+   let create sentinal goal bookmark =
       { ref_goal = goal;
-        ref_label = label;
+        ref_label = "main";
         ref_parent = ParentNone;
-        ref_attributes = attribute_info_of_raw_attributes attributes;
+        ref_attributes = empty_attribute;
+        ref_bookmark = bookmark;
         ref_sentinal = sentinal
       }
 
@@ -432,14 +424,14 @@ struct
 
    let null_sentinal =
       let xlazy () =
-         ShareSentinal (Refine.null_sentinal)
+         Refine.null_sentinal
       in
          ThreadRefiner.share (get_remote_server ()) "sentinal" xlazy
 
    let sentinal_of_refiner mod_name =
       let xlazy () =
          let refiner = (get_theory mod_name).thy_refiner in
-            ShareSentinal (Refine.sentinal_of_refiner refiner)
+            Refine.sentinal_of_refiner refiner
       in
          ThreadRefiner.share (get_remote_server ()) "sentinal" xlazy
 
@@ -453,16 +445,12 @@ struct
                   eprintf "Warning: using default refiner for %s%t" name eflush;
                   refiner
          in
-            ShareSentinal (Refine.sentinal_of_refiner refiner)
+            Refine.sentinal_of_refiner refiner
       in
          ThreadRefiner.share (get_remote_server ()) "sentinal_object" xlazy
 
    let get_sentinal key =
-      match ThreadRefiner.arg_of_key (get_remote_server ()) key with
-         ShareSentinal sent ->
-            sent
-       | _ ->
-            raise (Failure "Thread_refiner.get_sentinal")
+      ThreadRefiner.arg_of_key (get_remote_server ()) key
 
    (************************************************************************
     * ATTRIBUTES                                                           *
@@ -597,7 +585,7 @@ struct
       @ (List.map (fun (name, i) -> name, RawInt i) ints)
       @ (List.map (fun (name, b) -> name, RawBool b) bools)
       @ (List.map (fun (name, t) -> name, RawSubst t) subst)
-      @ (List.map (fun (name, t) -> name, RawObject t) keys)
+      @ (List.map (fun (name, t) -> name, RawSentinal t) keys)
 
    (************************************************************************
     * PROOF PRINTING                                                       *
@@ -833,24 +821,6 @@ struct
    let subst_attribute name t =
       name, RawSubst t
 
-   let conv_attribute name f =
-      name, RawObject (ThreadRefiner.share (get_remote_server ()) name (fun () -> ShareConv (f ())))
-
-   let tactic_attribute name f =
-      name, RawObject (ThreadRefiner.share (get_remote_server ()) name (fun () -> ShareTactic (f ())))
-
-   let int_tactic_attribute name f =
-      name, RawObject (ThreadRefiner.share (get_remote_server ()) name (fun () -> ShareIntTactic (f ())))
-
-   let arg_tactic_attribute name f =
-      name, RawObject (ThreadRefiner.share (get_remote_server ()) name (fun () -> ShareArgTactic (f ())))
-
-   let tsubst_attribute name f =
-      name, RawObject (ThreadRefiner.share (get_remote_server ()) name (fun () -> ShareTSubst (f ())))
-
-   let typeinf_attribute name f =
-      name, RawObject (ThreadRefiner.share (get_remote_server ()) name (fun () -> ShareTypeinf (f ())))
-
    (*
     * Fetch the attributes.
     *)
@@ -863,68 +833,29 @@ struct
     | [] ->
          raise (RefineError ("get_attribute", StringStringError ("attribute not found", name)))
 
-   let get_term { ref_attributes = { attr_terms = terms } } name =
-      assoc name terms
+   let get_term arg name =
+      assoc name arg.ref_attributes.attr_terms
 
-   let get_term_list { ref_attributes = { attr_term_lists = term_lists } } name =
-      assoc name term_lists
+   let get_term_list arg name =
+      assoc name arg.ref_attributes.attr_term_lists
 
-   let get_type { ref_attributes = { attr_types = types } } name =
-      assoc name types
+   let get_type arg name =
+      assoc name arg.ref_attributes.attr_types
 
-   let get_int { ref_attributes = { attr_ints = ints } } name =
-      assoc name ints
+   let get_int arg name =
+      assoc name arg.ref_attributes.attr_ints
 
-   let get_bool { ref_attributes = { attr_bools = bools } } name =
-      assoc name bools
+   let get_bool arg name =
+      assoc name arg.ref_attributes.attr_bools
 
-   let get_string { ref_attributes = { attr_strings = strings } } name =
-      assoc name strings
+   let get_string arg name =
+      assoc name arg.ref_attributes.attr_strings
 
-   let get_subst { ref_attributes = { attr_subst = subst } } =
-      subst
+   let get_subst arg =
+      arg.ref_attributes.attr_subst
 
-   let get_conv { ref_attributes = { attr_keys = keys } } name =
-      match ThreadRefiner.arg_of_key (get_remote_server ()) (assoc name keys) with
-         ShareConv conv ->
-            conv
-       | _ ->
-            raise (RefineError ("get_conv", StringStringError ("attribute type error", name)))
-
-   let get_tactic { ref_attributes = { attr_keys = keys } } name =
-      match ThreadRefiner.arg_of_key (get_remote_server ()) (assoc name keys) with
-         ShareTactic tac ->
-            tac
-       | _ ->
-            raise (RefineError ("get_tactic", StringStringError ("attribute type error", name)))
-
-   let get_int_tactic { ref_attributes = { attr_keys = keys } } name =
-      match ThreadRefiner.arg_of_key (get_remote_server ()) (assoc name keys) with
-         ShareIntTactic tac ->
-            tac
-       | _ ->
-            raise (RefineError ("get_int_tactic", StringStringError ("attribute type error", name)))
-
-   let get_arg_tactic { ref_attributes = { attr_keys = keys } } name =
-      match ThreadRefiner.arg_of_key (get_remote_server ()) (assoc name keys) with
-         ShareArgTactic tac ->
-            tac
-       | _ ->
-            raise (RefineError ("get_arg_tactic", StringStringError ("attribute type error", name)))
-
-   let get_tsubst { ref_attributes = { attr_keys = keys } } name =
-      match ThreadRefiner.arg_of_key (get_remote_server ()) (assoc name keys) with
-         ShareTSubst t ->
-            t
-       | _ ->
-            raise (RefineError ("get_tsubst", StringStringError ("attribute type error", name)))
-
-   let get_typeinf { ref_attributes = { attr_keys = keys } } name =
-      match ThreadRefiner.arg_of_key (get_remote_server ()) (assoc name keys) with
-         ShareTypeinf t ->
-            t
-       | _ ->
-            raise (RefineError ("get_typeinf", StringStringError ("attribute type error", name)))
+   let get_resource arg get_res =
+      get_res arg.ref_bookmark
 
    (*
     * Two args are equal if their goals are equal.
@@ -978,11 +909,6 @@ struct
     * in a tactic application.
     *)
    let make_subgoals labels arg goals =
-      let { ref_label = label';
-            ref_attributes = attributes;
-            ref_sentinal = sentinal
-          } = arg
-      in
       let parent_lazy = ParentLazy arg in
       let rec collect labels goals =
          match labels, goals with
@@ -992,16 +918,14 @@ struct
                      Some label ->
                         label
                    | None ->
-                        label'
+                        arg.ref_label
                in
-               let goal =
-                  { ref_goal = goal;
-                    ref_label = label;
-                    ref_parent = parent_lazy;
-                    ref_attributes = attributes;
-                    ref_sentinal = sentinal
-                  }
-               in
+               let goal = {
+                  arg with
+                  ref_goal = goal;
+                  ref_label = label;
+                  ref_parent = parent_lazy;
+               } in
                   goal :: collect lt gt
           | [], [] ->
                []
@@ -1011,31 +935,23 @@ struct
          collect labels goals
 
    let rec make_labeled_subgoals arg goals =
-      let { ref_label = label;
-            ref_attributes = attributes;
-            ref_sentinal = sentinal
-          } = arg
-      in
       let parent_lazy = ParentLazy arg in
       let rec collect = function
          goal :: t ->
             let goal', assums = dest_msequent goal in
             let goal =
                if is_xstring_dep0_term goal' then
-                  let label, goal' = dest_xstring_dep0_term goal' in
-                     { ref_goal = mk_msequent goal' assums;
-                       ref_label = label;
-                       ref_parent = ParentLazy arg;
-                       ref_attributes = attributes;
-                       ref_sentinal = sentinal
-                     }
-               else
-                  { ref_goal = goal;
-                    ref_label = label;
-                    ref_parent = ParentLazy arg;
-                    ref_attributes = attributes;
-                    ref_sentinal = sentinal
+                  let label, goal' = dest_xstring_dep0_term goal' in {
+                     arg with
+                     ref_label = label;
+                     ref_goal = mk_msequent goal' assums;
+                     ref_parent = ParentLazy arg;
                   }
+               else {
+                  arg with
+                  ref_goal = goal;
+                  ref_parent = ParentLazy arg;
+               }
             in
                goal :: make_labeled_subgoals arg t
        | [] ->
@@ -1085,22 +1001,13 @@ struct
 
    let tactic_of_rewrite i rw arg =
       let rl = rwtactic i rw in
-      let { ref_goal = goal;
-            ref_label = label;
-            ref_attributes = attributes;
-            ref_sentinal = sentinal
-          } = arg
-      in
-         match Refine.refine (get_sentinal sentinal) rl goal with
+         match Refine.refine (get_sentinal arg.ref_sentinal) rl arg.ref_goal with
             [subgoal], ext ->
-               let subgoal =
-                  { ref_goal = subgoal;
-                    ref_label = label;
-                    ref_parent = ParentLazy arg;
-                    ref_attributes = attributes;
-                    ref_sentinal = sentinal
-                  }
-               in
+               let subgoal = {
+                  arg with
+                  ref_goal = subgoal;
+                  ref_parent = ParentLazy arg
+               } in
                   ThreadRefinerTacticals.create_value [subgoal] (Extract (arg, [subgoal], ext))
           | [], _ ->
                raise tactic_of_rewrite_exn1
@@ -1112,21 +1019,12 @@ struct
     *)
    let tactic_of_cond_rewrite i crw arg =
       let rl = crwtactic i crw in
-      let { ref_goal = goal;
-            ref_label = label;
-            ref_attributes = attributes;
-            ref_sentinal = sentinal
-          } = arg
-      in
-      let subgoals, ext = Refine.refine (get_sentinal sentinal) rl goal in
-      let make_subgoal label goal =
-         { ref_goal = goal;
-           ref_label = label;
-           ref_parent = ParentLazy arg;
-           ref_attributes = attributes;
-           ref_sentinal = sentinal
-         }
-      in
+      let subgoals, ext = Refine.refine (get_sentinal arg.ref_sentinal) rl arg.ref_goal in
+      let make_subgoal label goal = {
+         arg with
+         ref_goal = goal;
+         ref_parent = ParentLazy arg
+      } in
       let subgoals =
          match subgoals with
             subgoal :: subgoals ->

@@ -27,8 +27,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 include Tactic_cache
@@ -94,14 +94,6 @@ type 'a proof_info =
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
-
-(*
- * Make a dummy tactic_argument.
- *)
-let null_tactic_argument =
-   { ref_label = "main";
-     ref_args = []
-   }
 
 (*
  * For debugging, we keep a display form base.
@@ -499,96 +491,6 @@ struct
          List.iter (insert_parent pack node) parents
 
    (*
-    * Get a tactic_arg for a module.
-    *)
-   let lazy_reduce modname itemname () =
-      let rsrc = Mp_resource.find Top_conversionals.ext_reduce_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let lazy_intro_tactic modname itemname () =
-      let rsrc = Mp_resource.find Base_dtactic.ext_intro_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let lazy_elim_tactic modname itemname () =
-      let rsrc = Mp_resource.find Base_dtactic.ext_elim_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let lazy_trivial modname itemname () =
-      let rsrc = Mp_resource.find Base_auto_tactic.ext_trivial_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let lazy_auto modname itemname () =
-      let rsrc = Mp_resource.find Base_auto_tactic.ext_auto_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let lazy_eqcd modname itemname () =
-      let rsrc = Mp_resource.find Itt_equal.ext_eqcd_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let lazy_tsubst modname itemname () =
-      let rsrc = Mp_resource.find Typeinf.ext_typeinf_subst_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let lazy_typeinf modname itemname () =
-      let rsrc = Mp_resource.find Typeinf.ext_typeinf_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let lazy_squash modname itemname () =
-      let rsrc = Mp_resource.find Itt_squash.ext_squash_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let lazy_subtype modname itemname () =
-      let rsrc = Mp_resource.find Itt_subtype.ext_sub_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let lazy_decide modname itemname () =
-      let rsrc = Mp_resource.find Itt_decidable.ext_decide_resource modname in
-         Mp_resource.extract rsrc itemname
-
-   let get_tactic_arg modname itemname =
-      let add_attribute name con xlazy attributes =
-         try con name (xlazy modname itemname) :: attributes with
-            Not_found ->
-               attributes
-      in
-      let attributes =
-         add_attribute "reduce" Tactic_type.Tactic.conv_attribute lazy_reduce []
-      in
-      let attributes =
-         add_attribute "intro" Tactic_type.Tactic.tactic_attribute lazy_intro_tactic attributes
-      in
-      let attributes =
-         add_attribute "elim" Tactic_type.Tactic.int_tactic_attribute lazy_elim_tactic attributes
-      in
-      let attributes =
-         add_attribute "trivial" Tactic_type.Tactic.tactic_attribute lazy_trivial attributes
-      in
-      let attributes =
-         add_attribute "auto" Tactic_type.Tactic.tactic_attribute lazy_auto attributes
-      in
-      let attributes =
-         add_attribute "eqcd" Tactic_type.Tactic.tactic_attribute lazy_eqcd attributes
-      in
-      let attributes =
-         add_attribute "typeinf_subst" Tactic_type.Tactic.tsubst_attribute lazy_tsubst attributes
-      in
-      let attributes =
-         add_attribute "typeinf" Tactic_type.Tactic.typeinf_attribute lazy_typeinf attributes
-      in
-      let attributes =
-         add_attribute "squash" Tactic_type.Tactic.int_tactic_attribute lazy_squash attributes
-      in
-      let attributes =
-         add_attribute "subtype" Tactic_type.Tactic.tactic_attribute lazy_subtype attributes
-      in
-      let attributes =
-         add_attribute "decide" Tactic_type.Tactic.tactic_attribute lazy_decide attributes
-      in
-         { ref_label = "main";
-           ref_args = attributes
-         }
-
-   (*
     * Load a package.
     * We search for the description, and load it.
     * If the ML file has already been loaded, retrieve
@@ -840,12 +742,21 @@ struct
                info)
 
    (*
-    * tactic_argument for the package.
+    * Look for a global_resource for an item
     *)
-   let argument pack_info arg name =
-      auto_loading_str arg pack_info (function
-         { pack_name = modname } ->
-            get_tactic_arg modname name)
+   let find_bookmark mod_name item_name =
+      let mod_name = String.capitalize mod_name in
+      try Mp_resource.find (mod_name, item_name)
+      with Not_found -> begin
+         eprintf "Warning: resources for %s.%s not found,\n\ttrying to use default resources for %s%t" mod_name item_name mod_name eflush;
+         try
+            Mp_resource.find (Mp_resource.theory_bookmark mod_name)
+         with Not_found ->
+            raise (RefineError("Package_info.new_proof", StringError("can not find any resources")))
+      end
+
+   let arg_resource pack_info arg name =
+      auto_loading_str arg pack_info (fun pack -> find_bookmark pack.pack_name name)
 
    (*
     * A new proof cannot be saved.
@@ -854,9 +765,9 @@ struct
       auto_loading_str arg pack_info (function
          { pack_name = mod_name } ->
             let loc = 0, 0 in
-            let { ref_label = label; ref_args = args } = get_tactic_arg mod_name name in
             let sentinal = Tactic_type.Tactic.sentinal_of_refiner_object mod_name name in
-            let seq = Tactic_type.Tactic.create sentinal label (mk_msequent goal hyps) args in
+            let bookmark = find_bookmark mod_name name in
+            let seq = Tactic_type.Tactic.create sentinal (mk_msequent goal hyps) bookmark in
             let proof = Proof.create seq in
             let ped = Proof_edit.ped_of_proof [] proof in
                ref (ProofEdit (arg, ped)))
@@ -890,9 +801,9 @@ struct
                      ped
                 | ProofRaw (name', proof') ->
                      let parse, eval = arg in
-                     let { ref_args = args } = get_tactic_arg name name' in
                      let sentinal = Tactic_type.Tactic.sentinal_of_refiner_object name name' in
-                     let proof' = Proof.proof_of_io_proof args sentinal parse eval proof' in
+                     let bookmark = find_bookmark name name' in
+                     let proof' = Proof.proof_of_io_proof [] sentinal bookmark parse eval proof' in
                      let ped = Proof_edit.ped_of_proof [] proof' in
                         Proof_edit.set_goal ped goal;
                         proof := ProofEdit (arg, ped);

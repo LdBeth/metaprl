@@ -66,16 +66,6 @@ type status =
  | Incomplete
 
 (*
- * This is the info needed to construct a tactic_arg.
- * Should be similar to Tactic_type.tactic_argument (which
- * is hidden.
- *)
-type tactic_argument =
-   { ref_label : string;
-     ref_args : raw_attributes
-   }
-
-(*
  * Values needed for parsing.
  *)
 type parse_arg = ((string -> MLast.expr) * (MLast.expr -> tactic))
@@ -168,7 +158,7 @@ sig
    (*
     * This is the starting info for new proofs.
     *)
-   val argument : package -> parse_arg -> string -> tactic_argument
+   val arg_resource : package -> parse_arg -> string -> Mp_resource.global_resource
    val new_proof : package -> parse_arg -> string -> term list -> term -> proof
    val ped_of_proof : package -> parse_arg -> proof -> msequent -> ped
    val status_of_proof : proof -> Proof.status

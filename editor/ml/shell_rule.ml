@@ -83,9 +83,8 @@ type info =
  * Make a rewrite goal from the assumptions,
  * and the rewrite.
  *)
-let mk_rule_goal sentinal arg assums goal =
-   let { ref_label = label; ref_args = args } = arg in
-      Tactic.create sentinal label (mk_msequent goal assums) args
+let mk_rule_goal sentinal bookmark assums goal =
+   Tactic.create sentinal (mk_msequent goal assums) bookmark
 
 let mk_ped sentinal arg params assums goal =
    Proof_edit.create params (mk_rule_goal sentinal arg assums goal)
@@ -345,7 +344,7 @@ let create pack parse_arg window name =
       }
    in
    let sentinal = Package.sentinal pack in
-   let arg = Package.argument pack parse_arg name in
+   let arg = Package.arg_resource pack parse_arg name in
       edit pack parse_arg sentinal arg name (create_window window) obj
 
 let ped_of_proof pack parse_arg goal = function
@@ -375,7 +374,7 @@ let view_axiom pack parse_arg window
       }
    in
    let sentinal = Package.sentinal_object pack name in
-   let arg = Package.argument pack parse_arg name in
+   let arg = Package.arg_resource pack parse_arg name in
       edit pack parse_arg sentinal arg name (create_window window) obj
 
 let view_rule pack parse_arg window
@@ -398,7 +397,7 @@ let view_rule pack parse_arg window
       }
    in
    let sentinal = Package.sentinal_object pack name in
-   let arg = Package.argument pack parse_arg name in
+   let arg = Package.arg_resource pack parse_arg name in
       edit pack parse_arg sentinal arg name (create_window window) obj
 
 (*

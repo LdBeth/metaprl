@@ -1,11 +1,5 @@
 (*
- * Resource management.
- * Each resource provides four operations:
- *    1. Create a new, empty resource
- *    2. Join two resource providers
- *    3. Extract a value from the resource
- *    4. Add a value to the resource
- *
+ * Resource management. See doc/resources_spec.txt for more information.
  *
  * ----------------------------------------------------------------
  *
@@ -16,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 2001 Aleksey Nogin, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,16 +26,18 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Mp_debug
 open Printf
 
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermMeta
-open Refiner.Refiner.RefineError
+open Set_sig
+open String_set
+
+open Refiner.Refiner
+open Term
+open Refine
 
 (*
  * Show loading of the file.
@@ -56,179 +52,254 @@ let debug_resource =
         debug_value = false
       }
 
+module UseTable = Red_black_table
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
 
-(*
- * Data is linked so that parts can be retrieved by name.
- *)
-type 'data data =
-   DataBase of 'data
- | DataLabel of string * 'data data
- | DataLink of 'data * 'data data
+type 'input data_cell =
+   DatInclude of string
+ | DatData of 'input list (* last added first *)
+ | DatBookmark of string
 
-(*
- * Resources are saved when they are labeled.
- *)
-type ('info, 'result, 'data, 'arg) t =
-   { resource_info : ('info, 'result, 'data, 'arg) info;
-     resource_data : 'data data;
-     resource_list : (string * ('info, 'result, 'data, 'arg) t) list ref
-   }
+type 'input data =
+   'input data_cell list (* last added first *)
 
-(*
- * these are the methods for modifying a resource.
- *)
-and ('info, 'result, 'data, 'arg) info = {
-   resource_empty : 'data;
-   resource_join : 'data -> 'data -> 'data;
-   resource_extract : 'data -> 'result;
-   resource_improve : 'data -> 'info -> 'data;
-   resource_improve_arg :
-      'data ->
-      string ->               (* Name of the new resource *)
-      string array ->         (* Names of the context vars *)
-      string array ->         (* Names of the new variables *)
-      term list ->            (* Arguments *)
-      term list ->            (* Parameters *)
-      meta_term ->            (* Rule statement *)
-      'arg ->                 (* Extra arguments *)
-      'data;
-   resource_close : 'data -> string -> 'data
+type 'input global_data = (string, 'input data) Hashtbl.t
+
+type bookmark = string * string
+
+type 'input increment = {
+   inc_bookmark: bookmark;
+   inc_increment: (string, 'input) UseTable.table;
 }
+
+type ('input, 'output) processor = {
+   proc_add: 'input -> unit;
+   proc_retrieve: unit -> 'output;
+   proc_clone: unit -> ('input, 'output) processor
+}
+
+type ('input, 'intermediate, 'output) funct_processor = {
+   fp_empty: 'intermediate;
+   fp_add: 'intermediate -> 'input -> 'intermediate;
+   fp_retr: 'intermediate -> 'output
+}
+
+type ('input, 'intermediate, 'output) imper_processor = {
+   imp_create: unit -> 'intermediate;
+   imp_add: 'intermediate -> 'input -> unit;
+   imp_retr: 'intermediate -> 'output
+}
+
+type ('input, 'output) proc_result = {
+   res_proc: ('input, 'output) processor;
+   mutable res_result: 'output option
+}
+
+type ('input, 'intermediate, 'output) resource_info =
+   Imperative of ('input, 'intermediate, 'output) imper_processor
+ | Functional of ('input, 'intermediate, 'output) funct_processor
+
+type global_resource = bookmark
+
+type ('annotation, 'input) annotation_processor =
+   string ->          (* Name of the new rule *)
+   string array ->    (* Names of the context vars *)
+   string array ->    (* Names of the new variables *)
+   term list ->       (* Arguments *)
+   term list ->       (* Parameters *)
+   meta_term ->       (* Rule statement *)
+   'annotation ->     (* Extra arguments, will include Tactic.pre_tactic *)
+   'input
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
 
-(*
- * Get the data from a link.
- *)
-let rec get_data = function
-   DataBase data ->
-      data
- | DataLabel (_, data) ->
-      get_data data
- | DataLink (data, _) ->
-      data
+module TableBase = struct
+   type elt = string
+   type data = Obj.t
 
-let find_data name data =
-   let rec search = function
-      DataBase _ ->
-         eprintf "Warning: resources for %s are not found%t" name eflush;
-         get_data data
-    | DataLabel (name', data) ->
-         if name' = name then
-            get_data data
-         else
-            search data
-    | DataLink (_, next) ->
-         search next
-   in
-      search data
+   let compare = compare
+   let append = (@)
+   let print s _ = printf "Resource: %s" s
+end
 
-(*
- * Create an initial resource.
- *)
-let create info =
-   { resource_info = info;
-     resource_data = DataBase info.resource_empty;
-     resource_list = ref []
-   }
+module Table = UseTable.MakeTable(TableBase)
 
-(*
- * Merge two resources.
- *)
-let join { resource_info = info; resource_data = data1; resource_list = resources } { resource_data = data2 } =
-   { resource_info = info;
-     resource_data = DataBase (info.resource_join (get_data data1) (get_data data2));
-     resource_list = resources
-   }
+let global_data = Hashtbl.create 19
 
-(*
- * Extract a value from the data.
- *)
-let extract { resource_info = info; resource_data = data } name =
-   info.resource_extract (find_data name data)
+let local_data = ref []
 
-let extract_top { resource_info = info; resource_data = data } =
-   info.resource_extract (get_data data)
+let improve name (data:'input) =
+   match (!local_data:(string*'input) data) with
+      (DatData l_data) :: l_tail ->
+         local_data := DatData ((name,data) :: l_data) :: l_tail
+    | l_data ->
+         local_data := DatData [name, data] :: l_data
 
-(*
- * Add some new info to the resource.
- *)
-let improve { resource_info = info; resource_data = data; resource_list = resources } info' =
-   { resource_info = info;
-     resource_data = DataLink (info.resource_improve (get_data data) info', data);
-     resource_list = resources
-   }
+let improve_list name data =
+   List.iter (improve name) data
 
-let improve_list { resource_info = info; resource_data = data; resource_list = resources } info_list =
-   { resource_info = info;
-     resource_data = DataLink (List.fold_left info.resource_improve (get_data data) info_list, data);
-     resource_list = resources
-   }
+let bookmark name =
+   local_data := DatBookmark name :: !local_data
 
-let improve_arg { resource_info = info; resource_data = data; resource_list = resources } name cvars vars args params mterm arg =
-   { resource_info = info;
-     resource_data = DataLink (info.resource_improve_arg (get_data data) name cvars vars args params mterm arg, data);
-     resource_list = resources
-   }
+let include_theory name =
+   if Hashtbl.mem global_data name then
+      local_data := DatInclude name :: !local_data
+   else
+      eprintf "Mp_resource: warning: included theory %s does not have resources%t" name eflush
 
-let improve_arg_fail name _ _ _ _ _ _ _ _ =
-   raise (RefineError (name, StringError "resource method 'improve_arg' is not implemented"))
+let top_data = ref []
 
-let rec improve_list { resource_info = info; resource_data = data; resource_list = resources } infos =
-   let improve' = info.resource_improve in
-   let rec fold data = function
-      h :: t ->
-         fold (DataLink (improve' (get_data data) h, data)) t
-    | [] ->
-         data
-   in
-      { resource_info = info;
-        resource_data = fold data infos;
-        resource_list = resources
+let close_theory name =
+   let name = String.capitalize name in
+   Hashtbl.add global_data name !local_data;
+   top_data := DatInclude name :: !top_data;
+   local_data := []
+
+let empty_bookmark = "",""
+let theory_bookmark name = name, ""
+
+let global_bookmarker = Hashtbl.create 19
+
+let theory_includes = Hashtbl.create 19
+
+let add_data (name, data) incr =
+   Table.add incr name data
+
+let rec collect_include_aux incr includes = function
+   [] ->
+      incr, includes
+ | DatBookmark _ :: tail ->
+      collect_include_aux incr includes tail
+ | DatData data :: tail ->
+      let incr, includes = collect_include_aux incr includes tail in
+         List.fold_right add_data data incr, includes
+ | DatInclude name :: tail ->
+      let incr, includes = collect_include_aux incr includes tail in
+         if StringSet.mem includes name then incr, includes
+         else collect_include incr name includes
+
+and collect_include incr name includes =
+   let data = Hashtbl.find global_data name in
+   let incr, includes = collect_include_aux incr includes data in
+      incr, StringSet.add name includes
+
+let rec compute_aux name = function
+   [] ->
+      empty_bookmark, Table.empty, StringSet.empty
+ | [ DatInclude name' ] ->
+      if not (Hashtbl.mem theory_includes name') then compute_data name';
+      (theory_bookmark name'), Table.empty, (Hashtbl.find theory_includes name')
+ | DatData data :: tail ->
+      let bookmark, _ , includes = compute_aux name tail in
+      bookmark, List.fold_right add_data data Table.empty, includes
+ | DatBookmark bk :: tail ->
+      let bookmark, incr, includes = compute_aux name tail in
+      let bk = (name, bk) in
+      Hashtbl.add global_bookmarker bk {
+         inc_bookmark = bookmark;
+         inc_increment = incr
+      };
+      bk, Table.empty, includes
+  | DatInclude name' :: tail ->
+      let bookmark, incr, includes = compute_aux name tail in
+      let incr, includes = collect_include incr name' includes in
+      bookmark, incr, includes
+
+and compute_data name =
+   let bookmark, incr, includes = compute_aux name (Hashtbl.find global_data name) in
+      Hashtbl.add theory_includes name includes;
+      Hashtbl.add global_bookmarker (theory_bookmark name) {
+         inc_bookmark = bookmark;
+         inc_increment = incr
       }
 
-let wrap { resource_info = info; resource_data = data; resource_list = resources } f =
-   { resource_info = info;
-     resource_data = DataLink (f (get_data data), data);
-     resource_list = resources
-   }
-
-(*
- * Label a resource.
- *)
-let label info name =
-   let { resource_info = info'; resource_data = data; resource_list = resources } = info in
-      { resource_info = info';
-        resource_data = DataLabel (name, data);
-        resource_list = resources
-      }
-
-let close info name =
-   let { resource_info = info'; resource_data = data; resource_list = resources } = info in
-   let info'' =
-      { resource_info = info';
-        resource_data = DataLabel (name, DataLink (info'.resource_close (get_data data) name, data));
-        resource_list = resources
+let make_fun_proc fun_proc =
+   let rec clone data =
+      let data_ref = ref data in
+      let add data = data_ref := fun_proc.fp_add !data_ref data in
+      let retrieve () = fun_proc.fp_retr !data_ref in
+      let clone () = clone !data_ref in {
+         proc_add = add;
+         proc_retrieve = retrieve;
+         proc_clone = clone;
       }
    in
-      resources := (String.capitalize name, info'') :: !resources;
-      info''
+      clone fun_proc.fp_empty
 
-(*
- * Get an resource value from the list of labeled resources.
- *)
-let find { resource_list = resources } name =
-   List.assoc (String.capitalize name) !resources
+let make_proc_functional imp_proc =
+   let result l =
+      let dat = imp_proc.imp_create () in
+      List_util.rev_iter (imp_proc.imp_add dat) l;
+      imp_proc.imp_retr dat
+   in {
+      fp_empty = [];
+      fp_add = (fun l d -> d::l);
+      fp_retr = result
+   }
 
-(*
- * -*-
- * Local Variables:
- * Caml-master: "prlcomp.run"
- * End:
- * -*-
- *)
+let make_processor = function
+   Functional fp -> make_fun_proc fp
+ | Imperative imp -> make_fun_proc (make_proc_functional imp)
+
+let global_processed_data = Hashtbl.create 19
+
+let obj_processor (proc : ('input, 'output) processor) =
+   (Obj.obj (Obj.repr proc) : (Obj.t, Obj.t) processor)
+
+let make_resource name proc =
+   if Hashtbl.mem global_processed_data name then
+      raise (Invalid_argument ("Mp_resource.create_resource: resource with name " ^ name ^ "already exists! Time to start prepending resource names with theory names?"));
+   let proc_data = Hashtbl.create 19 in
+      Hashtbl.add proc_data empty_bookmark {
+         res_proc = obj_processor (make_processor proc);
+         res_result = None
+      };
+      Hashtbl.add global_processed_data name proc_data
+
+let get_result = function
+   { res_result = Some res } -> res
+ | { res_proc = proc } as res_pr ->
+      let res = proc.proc_retrieve () in
+         res_pr.res_result <- Some res;
+         res
+
+let find ((name, _) as bookmark) =
+   if not (Hashtbl.mem theory_includes name) then compute_data name;
+   ignore(Hashtbl.find global_bookmarker bookmark);
+   bookmark
+
+let top_name = "_$top_resource$_"
+let top_bk = theory_bookmark top_name
+let extract_top () =
+   Hashtbl.add global_data top_name !top_data;
+   find top_bk
+
+let get_resource bookmark resource_name =
+   let data = Hashtbl.find global_processed_data resource_name in
+   let rec extract_bookmark bookmark =
+      if Hashtbl.mem data bookmark then Hashtbl.find data bookmark else begin
+      let incr = Hashtbl.find global_bookmarker bookmark in
+      let proc = extract_bookmark incr.inc_bookmark in
+      let incr = Table.find_all incr.inc_increment resource_name in
+      let proc =
+         if incr == [] then proc else
+         let proc = proc.res_proc.proc_clone () in
+         List_util.rev_iter proc.proc_add incr; {
+            res_proc = proc;
+            res_result = None
+         }
+      in
+         Hashtbl.add data bookmark proc;
+         proc
+      end
+   in
+      get_result (extract_bookmark bookmark)
+
+let create_resource name proc =
+   make_resource name proc;
+   (fun bookmark -> Obj.obj (get_resource bookmark name))

@@ -34,6 +34,7 @@ open Refiner_sig
 
 open Refiner.Refiner.Refine
 
+open Mp_resource
 open Tactic_boot
 open Tactic_boot.TacticInternalType
 
@@ -55,6 +56,7 @@ sig
    val of_term :
       raw_attributes ->            (* Default attributes *)
       sentinal ->                  (* Proof checker *)
+      global_resource ->           (* Resource bookmark *)
       (string -> MLast.expr) ->    (* Parser *)
       (MLast.expr -> tactic) ->    (* Evaluator *)
       ToTerm.TermType.term ->      (* Argument term *)

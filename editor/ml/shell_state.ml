@@ -117,8 +117,7 @@ struct
     * Default command set.
     *)
    let default_toploop =
-      let rsrc = Mptop.ext_toploop_resource in
-         Mp_resource.extract_top rsrc
+      Mptop.get_toploop_resource (Mp_resource.extract_top ())
 
    (*
     * Default state.
@@ -417,14 +416,15 @@ struct
    let set_module state name commands =
       let name = String.capitalize name in
       let rsrc =
-         try Mptop.get_resource name with
+         try Mp_resource.find (Mp_resource.theory_bookmark name) with
             Not_found ->
-               eprintf "Module %s: Mptop commands not found%t" name eflush;
-               Mptop.ext_toploop_resource
+               eprintf "Module %s: resources not found%t" name eflush;
+               Mp_resource.extract_top ()
       in
-      let rsrc = Mp_resource.improve_list rsrc commands in
-      let rsrc = Mp_resource.improve_list rsrc ["shell_get_term", IntFunExpr (fun i -> TermExpr (get_term_state state i))] in
-         state.state_toploop <- Mp_resource.extract_top rsrc
+      let top = Mptop.get_toploop_resource rsrc in
+      let shell_expr = IntFunExpr (fun i -> TermExpr (get_term_state state i)) in
+         Mptop.add_commands top (("shell_get_term", shell_expr) :: commands);
+         state.state_toploop <- top
 
    let get_toploop state =
       state.state_toploop

@@ -70,7 +70,7 @@ unchanged. The <TT>failC</TT> conversion always fails.</P>
 <P>There are several standard conversionals:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>topval</B> prefix_andthenC : conv -&gt; conv -&gt; conv
+  <PRE><B>topval</B> prefix_thenC : conv -&gt; conv -&gt; conv
 <B>topval</B> prefix_orelseC : conv -&gt; conv -&gt; conv
 <B>topval</B> addrC : int list -&gt; conv -&gt; conv
 <B>topval</B> foldC : term -&gt; conv -&gt; conv
@@ -79,8 +79,8 @@ unchanged. The <TT>failC</TT> conversion always fails.</P>
 <B>val</B> funC : (env -&gt; conv) -&gt; conv</PRE>
 </BLOCKQUOTE>
 
-<P>The <TT>andthenC</TT> conversional is for sequencing: the conversion
-<TT>(rw1 andthenC rw2)</TT> applies rewrite <TT>rw1</TT> and follows
+<P>The <TT>thenC</TT> conversional is for sequencing: the conversion
+<TT>(rw1 thenC rw2)</TT> applies rewrite <TT>rw1</TT> and follows
 it by applying <TT>rw2</TT> to the resulting term. The <TT>orelseC</TT>
 is for conditional application: the conversion <TT>(rw1 orelseC
 rw2)</TT> first tries applying the conversion <TT>rw1</TT>. If

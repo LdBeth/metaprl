@@ -32,18 +32,19 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *
  *)
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.Rewrite
+open Mp_resource
 
 (*
  * Table type.
  *)
-type ('a, 'b) term_table
+type 'a term_table
 
 (*
  * This is the info we keep for the entries in the table.
@@ -56,39 +57,30 @@ type 'a info_entry =
 
 (*
  * Create a new table.
- *)
-val new_table : unit -> ('a, 'b) term_table
-
-(*
- * Table operations.
- *)
-val insert : ('a, 'b) term_table -> term -> 'a -> ('a, 'b) term_table
-val join_tables : ('a, 'b) term_table -> ('a, 'b) term_table -> ('a, 'b) term_table
-
-(*
+ *
  * The function argument is a function that takes the list
  * of entries for a term and compacts them.  It is perfectly fine
  * for this function to be the identity.
+ *
+ * Earlier items in the list (term * 'a) list will be preffered in lookups
  *)
-val lookup : string -> ('a, 'b) term_table ->
+val create_table :
+   (term * 'a) list ->
    ('a info_entry list -> 'b info_entry list) ->
-   term -> rewrite_item list * 'b
+   'b term_table
 
 (*
- * Destruction.
+ * Create a resource_info that can be used to create a resource
+ * As an input this function takes a compactor (same as the second arg to
+ * create_table) and the extractor function that uses table to do the actual
+ * resource work.
  *)
-type ('a, 'b) table_entry =
-   TableEntry of term * 'a
- | TableTable of ('a, 'b) term_table
+val table_resource_info :
+   ('a info_entry list -> 'b info_entry list) ->
+   ('b term_table -> 'c) ->
+   (term * 'a, (term * 'a) list, 'c) resource_info
 
-val is_empty_table : ('a, 'b) term_table -> bool
-val equal_tables : ('a, 'b) term_table -> ('a, 'b) term_table -> bool
-val dest_table : ('a, 'b) term_table -> ('a, 'b) table_entry * ('a, 'b) term_table
-
-(*
- * Debugging.
- *)
-val print_table : ('a, 'b) term_table -> unit
+val lookup : 'a term_table -> term -> rewrite_item list * 'a
 
 (*
  * -*-

@@ -38,6 +38,7 @@ open Rformat
 
 open Opname
 open Weak_memo
+open Mp_resource
 
 open Refiner_sig
 open Refiner.Refiner.RefineError
@@ -232,6 +233,7 @@ struct
    type args_info =
       { sentinal : Tactic.sentinal;
         raw_attributes : raw_attributes;
+        bookmark : global_resource;
         parse_expr : string -> MLast.expr;
         parse_tactic : MLast.expr -> tactic
       }
@@ -640,6 +642,7 @@ struct
         ref_label = label;
         ref_parent = ext_retrieve_tactic_parent info parent;
         ref_attributes = ext_retrieve_attributes info args;
+        ref_bookmark = (fst info).bookmark;
         ref_sentinal = (fst info).sentinal
       }
 
@@ -932,13 +935,6 @@ struct
     * Make the memo table.
     * Keep the table around forever.
     *)
-   let args =
-      { sentinal = Tactic.null_sentinal;
-        raw_attributes = [];
-        parse_expr = (fun s -> raise (Invalid_argument "Proof_boot.parse_expr is not initialized"));
-        parse_tactic = (fun s -> raise (Invalid_argument "Proof_boot.parse_tactic is not initialized"));
-      }
-
    let ext_memo =
       { attribute = WeakMemo.create_default "Proof_term_boot.ext_memo.attribute" (**)
            weaken_attribute_header compare_attribute ext_make_attribute;
@@ -976,6 +972,7 @@ struct
       let args =
          { sentinal = goal.ref_sentinal;
            raw_attributes = Tactic.raw_attributes goal;
+           bookmark = goal.ref_bookmark;
            parse_expr = parse_expr;
            parse_tactic = parse_tactic
          }
@@ -984,10 +981,11 @@ struct
       let index = ext_add_extract info node in
          term_retrieve_extract info index
 
-   let of_term args sentinal parse_expr parse_tactic term =
+   let of_term args sentinal bookmark parse_expr parse_tactic term =
       let args =
          { sentinal = sentinal;
            raw_attributes = args;
+           bookmark = bookmark;
            parse_expr = parse_expr;
            parse_tactic = parse_tactic
          }

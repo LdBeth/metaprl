@@ -1,10 +1,11 @@
 (*
  * Resource management.
- * Each resource provides four operations:
- *    1. Create a new, empty resource
- *    2. Join two resource providers
- *    3. Extract a value from the resource
- *    4. Add a value to the resource
+ *
+ * This interface is not meant to be used by end-users.
+ * The only code that uses this interface is the code
+ * created by filter.
+ *
+ * See doc/resources_spec.txt for more information.
  *
  * ----------------------------------------------------------------
  *
@@ -15,7 +16,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 2001 Aleksey Nogin, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,97 +32,72 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermMeta
+open Refiner.Refiner
+open Term
+open Refine
 
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
 
-(*
- * Resources are saved when they are labeled.
- *)
-type ('info, 'result, 'data, 'arg) t
+type bookmark = string * string (* theory name + local name *)
 
-(*
- * these are the methods for modifying a resource.
- *)
-type ('info, 'result, 'data, 'arg) info = {
-   resource_empty : 'data;
-   resource_join : 'data -> 'data -> 'data;
-   resource_extract : 'data -> 'result;
-   resource_improve : 'data -> 'info -> 'data;
-   resource_improve_arg :
-      'data ->
-      string ->               (* Name of the new resource *)
-      string array ->         (* Names of the context vars *)
-      string array ->         (* Names of the new variables *)
-      term list ->            (* Arguments *)
-      term list ->            (* Parameters *)
-      meta_term ->            (* Rule statement *)
-      'arg ->                 (* Extra arguments *)
-      'data;
-   resource_close : 'data -> string -> 'data
+type ('input, 'intermediate, 'output) funct_processor = {
+   fp_empty: 'intermediate;
+   fp_add: 'intermediate -> 'input -> 'intermediate;
+   fp_retr: 'intermediate -> 'output
 }
+
+type ('input, 'intermediate, 'output) imper_processor = {
+   imp_create: unit -> 'intermediate;
+   imp_add: 'intermediate -> 'input -> unit;
+   imp_retr: 'intermediate -> 'output
+}
+
+type ('input, 'intermediate, 'output) resource_info =
+   Imperative of ('input, 'intermediate, 'output) imper_processor
+ | Functional of ('input, 'intermediate, 'output) funct_processor
+
+type global_resource
+
+type ('annotation, 'input) annotation_processor =
+   string ->          (* Name of the new rule *)
+   string array ->    (* Names of the context vars *)
+   string array ->    (* Names of the new variables *)
+   term list ->       (* Arguments *)
+   term list ->       (* Parameters *)
+   meta_term ->       (* Rule statement *)
+   'annotation ->     (* Extra arguments, will include Tactic.pre_tactic *)
+   'input
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
 
-(*
- * Create a resource, passing the primitive methods.
- *)
-val create : ('info, 'result, 'data, 'arg) info -> ('info, 'result, 'data, 'arg) t
+val improve : string -> Obj.t -> unit
+val improve_list : string -> Obj.t list -> unit
+val bookmark : string -> unit
+val include_theory : string -> unit
+val close_theory : string -> unit
 
 (*
- * Update a resource.
+ * create_resource "name" info
+ * will return a function that can be used to access global resource
  *)
-val join : ('info, 'result, 'data, 'arg) t -> ('info, 'result, 'data, 'arg) t -> ('info, 'result, 'data, 'arg) t
-val extract : ('info, 'result, 'data, 'arg) t -> string -> 'result
-val extract_top : ('info, 'result, 'data, 'arg) t -> 'result
-val improve : ('info, 'result, 'data, 'arg) t -> 'info -> ('info, 'result, 'data, 'arg) t
-val improve_list : ('info, 'result, 'data, 'arg) t -> 'info list -> ('info, 'result, 'data, 'arg) t
-val improve_arg : ('info, 'result, 'data, 'arg) t ->
-   string ->
-   string array ->
-   string array ->
-   term list ->
-   term list ->
-   meta_term ->
-   'arg ->
-   ('info, 'result, 'data, 'arg) t
-val label : ('info, 'result, 'data, 'arg) t -> string -> ('info, 'result, 'data, 'arg) t
-val close : ('info, 'result, 'data, 'arg) t -> string -> ('info, 'result, 'data, 'arg) t
-val wrap : ('info, 'result, 'data, 'arg) t -> ('data -> 'data) -> ('info, 'result, 'data, 'arg) t
+val create_resource:
+   string -> ('input, 'intermediate, 'output) resource_info ->
+   global_resource -> 'output
 
-(*
- * Add a list of improvements.
- *)
-val improve_list : ('info, 'result, 'data, 'arg) t -> 'info list -> ('info, 'result, 'data, 'arg) t
+(* Will raise Not_found if bookmark does not exist *)
+val find : bookmark -> global_resource
 
-(*
- * Get the module by name.
- *)
-val find : ('info, 'result, 'data, 'arg) t -> string -> ('info, 'result, 'data, 'arg) t
+(* Get a resource with all the theories loaded so far *)
+val extract_top : unit -> global_resource
 
-(*
- * This function is a utility to fail on improvement by arguments.
- *)
-val improve_arg_fail : string -> 'a -> string -> string array -> string array -> term list -> term list -> meta_term -> 'b -> 'c
+val empty_bookmark : global_resource
+val theory_bookmark : string -> bookmark
 
-(*
- * Debugging.
- *)
 val debug_resource : bool ref
-
-(*
- * -*-
- * Local Variables:
- * Caml-master: "prlcomp.run"
- * End:
- * -*-
- *)

@@ -27,20 +27,19 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Refiner.Refiner.Term
+open Mp_resource
 
 type 'a term_stable
-type 'a term_sextract
 
-val new_stable : unit -> 'a term_stable
-
-val sinsert : 'a term_stable -> term -> 'a -> 'a term_stable
-val join_stables : 'a term_stable -> 'a term_stable -> 'a term_stable
-val sextract : 'a term_stable -> 'a term_sextract
-val slookup : 'a term_sextract -> term -> 'a
-val print_keys : out_channel -> 'a term_sextract -> unit
+val slookup : 'a term_stable -> term -> 'a
+val slookup_all : 'a term_stable -> term -> 'a list
+val stable_resource_info :
+   ('a term_stable -> 'b) -> ((term * 'a), 'a term_stable, 'b) resource_info
+val print_keys : out_channel -> 'a term_stable -> unit
 
 (*
  * -*-

@@ -27,9 +27,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
- *
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Printf
@@ -46,6 +45,12 @@ let _ =
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
+
+type dform_base = {
+   mutable base_list : dform_info list;
+   mutable base_includes : (int * dform_info list) list;
+   mutable base_cached : Dform.dform_base option
+}
 
 (*
  * The mode base is just an association list.
@@ -64,43 +69,50 @@ type dform_mode_base =
 (*
  * Empty mode base.
  *)
-let null_mode_base = { all_base = null_base; mode_bases = [] }
+let null_mode_base =
+   { all_base = { base_list = []; base_includes = []; base_cached = None}; mode_bases = [] }
+
+let finish_base =
+   let count = ref 0 in fun base ->
+      if base.base_list != [] then
+         base.base_includes <- (!count, base.base_list) :: base.base_includes;
+         base.base_list <- [];
+         incr count
 
 (*
  * Get a particular mode base.
  *)
 let get_mode_base { all_base = all; mode_bases = bases } name =
-   try List.assoc name bases with
-      Not_found ->
-         all
+   let base =
+      try List.assoc name bases with
+         Not_found ->
+            all
+   in match base.base_cached with
+      Some base -> base
+    | None ->
+         let base' =
+            finish_base base;
+            create_dfbase (List_util.flat_map snd base.base_includes)
+         in
+            base.base_cached <- Some base';
+            base'
 
-(*
- * Destruct the base.
- *)
-let is_null_mode_base { all_base = all; mode_bases = bases } =
-   is_null_dfbase all & bases = []
+let add_dform base info = {
+   base_list = info :: base.base_list;
+   base_includes = base.base_includes;
+   base_cached = None
+}
 
-let equal_mode_bases
-   { all_base = all1; mode_bases = bases1 }
-   { all_base = all2; mode_bases = bases2 }
-   =
-   try
-      let labels1 = List.map fst bases1 in
-      let labels2 = List.map fst bases2 in
-      let equal_mode_base name =
-         let base1 = List.assoc name bases1 in
-         let base2 = List.assoc name bases2 in
-            equal_dfbases base1 base2
-      in
-         equal_dfbases all1 all2 &
-         (List_util.subtract labels1 labels2 = []) &
-         (List_util.subtract labels2 labels1 = []) &
-         List.for_all equal_mode_base labels1
-   with
-      Not_found -> raise (Invalid_argument "Dform_print.equal_mode_bases")
-
-let dest_mode_base { all_base = all; mode_bases = bases } =
-   all, bases
+let join_dforms local_base parent_base =
+   finish_base local_base;
+   finish_base parent_base;
+   let incl = local_base.base_includes in
+   let parincl = List.filter (fun (x,_) -> not (List.mem_assoc x incl)) parent_base.base_includes in
+   {
+      base_list = [];
+      base_includes = parincl @ incl;
+      base_cached = None
+   }
 
 (*
  * Join all the bases.  Create a new mode for

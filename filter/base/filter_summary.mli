@@ -103,6 +103,7 @@ val find_prec : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) modu
 
 val find_id : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info -> int
 
+(* Only returns resources from this module *)
 val get_resources : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
    (string * 'resource) list
 
@@ -199,11 +200,6 @@ sig
    val term_of_prec : string -> term
    val term_of_prec_rel : prec_rel_info -> term
    val term_of_id : int -> term
-   val term_of_resource_sig :
-      ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
-       term, term, term, term, term, term, term) convert ->
-      string * 'ctyp resource_sig ->
-      term
    val term_of_infix : string -> term
    val term_of_summary_item :
       ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,

@@ -42,16 +42,17 @@
 open Printf
 open Mp_debug
 open Opname
-open Refiner.Refiner
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermOp
-open Refiner.Refiner.TermMan
-open Refiner.Refiner.TermMeta
-open Refiner.Refiner.TermShape
-open Refiner.Refiner.Rewrite
 
-open Simple_print
+open Refiner.Refiner
+open Term
+open TermOp
+open TermMan
+open TermMeta
+open TermShape
+open Rewrite
+
 open Simple_print.SimplePrint
+open Mp_resource
 
 (*
  * Show the file loading.
@@ -104,32 +105,7 @@ and 'a info_entry =
 (*
  * Real tree uses a hastable to perform initial selection.
  *)
-type 'a dtree = (shape, 'a dtree_prog) Hashtbl.t
-
-(*
- * We can add entries, as well as other tables.
- * When the tables are compiled, common ancestors
- * are merged.
- *)
-type 'a table_item =
-   Entry of 'a info_entry
- | Table of 'a table_item list
-
-(*
- * A table has a list of pairs, plus an position for a compute
- * table.
- *)
-type ('a, 'b) term_table =
-   { tbl_items : 'a table_item list;
-     mutable tbl_base : 'b dtree option
-   }
-
-(*
- * Destruction.
- *)
-type ('a, 'b) table_entry =
-   TableEntry of term * 'a
- | TableTable of ('a, 'b) term_table
+type 'a term_table = (shape, 'a dtree_prog) Hashtbl.t
 
 (*
  * We need a particular term to represent a term conclusion.
@@ -151,40 +127,6 @@ let shape_of_term t =
  ************************************************************************)
 
 (*
- * Empty table contains nothing.
- *)
-let new_table () =
-   { tbl_items = [];
-     tbl_base = None
-   }
-
-(*
- * Destruction.
- *)
-let is_empty_table = function
-   { tbl_items = [] } ->
-      true
- | _ ->
-      false
-
-let equal_tables { tbl_items = items1 } { tbl_items = items2 } =
-   items1 == items2
-
-let dest_table { tbl_items = items } =
-   match items with
-      [] ->
-         raise (Invalid_argument "dest_table")
-    | x::tl ->
-         let entry =
-            match x with
-               Entry { info_term = t; info_value = x } ->
-                  TableEntry (t, x)
-             | Table t ->
-                  TableTable { tbl_items = t; tbl_base = None }
-         in
-            entry, { tbl_items = tl; tbl_base = None }
-
-(*
  * When a term is inserted, we have to simplify it so that the rewriter does
  * not complain.
  *)
@@ -200,24 +142,13 @@ let simplify_term t =
 (*
  * Add an entry.
  *)
-let insert { tbl_items = items } t v =
+let make_info (t,v) =
    let t = simplify_term t in
    let redex, _ = compile_redex Relaxed [||] t in
-   let entry =
-      { info_term = t;
-        info_redex = redex;
-        info_value = v
-      }
-   in
-      if !debug_term_table then
-         eprintf "Term_table.insert: %s%t" (string_of_term t) eflush;
-      { tbl_items = Entry entry :: items; tbl_base = None }
-
-(*
- * Join another table.
- *)
-let join_tables { tbl_items = entries } { tbl_items = items } =
-   { tbl_items = [Table entries; Table items]; tbl_base = None }
+   { info_term = t;
+     info_redex = redex;
+     info_value = v
+   }
 
 (************************************************************************
  * DTREE COMPILATION                                                    *
@@ -257,58 +188,6 @@ let print_prog out prog =
    in
       print 0 prog;
       flush out
-
-(*
- * Collect the entries into a single list.
- * Keep a list of tables that have been inserted so that each table is only inserted
- * once.  Tables are just lists of items; compare them with physical equality.
- *)
-let collect_entries { tbl_items = items } =
-   let rec insert_item tables_entries = function
-      [] ->
-         tables_entries
-    | h::t ->
-         let tables, entries = tables_entries in
-            match h with
-               Entry info ->
-                  if !debug_term_table then
-                     eprintf "Term_table.collect_entries: %s%t" (SimplePrint.string_of_term info.info_term) eflush;
-                  insert_item (tables, info :: entries) t
-             | Table table ->
-                  if !debug_term_table then
-                     eprintf "Term_table.collect_entries: Table%t" eflush;
-                  if List.memq table tables then
-                     insert_item tables_entries t
-                  else
-                     let tables, entries = insert_item tables_entries table in
-                        insert_item (table :: tables, entries) t
-   in
-      snd (insert_item ([], []) items)
-
-(*
- * Go through and print the entries.
- *)
-let print_table { tbl_items = items } =
-   let rec print_item tables = function
-      h::t ->
-         begin
-            match h with
-               Entry info ->
-                  eprintf "Term_table.print_entries: %s%t" (SimplePrint.string_of_term info.info_term) eflush;
-                  print_item tables t
-             | Table table ->
-                  eprintf "Term_table.print_entries: Table%t" eflush;
-                  if false & List.memq table tables then
-                     print_item tables t
-                  else
-                     let tables = print_item tables table in
-                        print_item (table :: tables) t
-         end
-    | [] ->
-         tables
-   in
-   let _ = print_item [] items in
-      ()
 
 (*
  * Collect subterms entries into three kinds:
@@ -386,10 +265,11 @@ let compile_prog compact terms =
  * same term template, then join all the common ones into
  * programs.
  *)
-let compute_dtree compact table =
+let create_table items compact =
    (* Create the base of entries with the same shape *)
    let base = Hashtbl.create 97 in
-   let insert_entry info =
+   let insert_entry item =
+      let info = make_info item in
       let t = info.info_term in
       let shape' = shape_of_term t in
       let entries =
@@ -401,7 +281,7 @@ let compute_dtree compact table =
       in
          Ref_util.push info entries
    in
-   let _ = List.iter insert_entry (collect_entries table) in
+   let _ = List_util.rev_iter insert_entry items in
 
    (* Compile the hastable into a collection of programs *)
    let base' = Hashtbl.create 97 in
@@ -411,16 +291,14 @@ let compute_dtree compact table =
       Hashtbl.iter compile_entries base;
       base'
 
-(*
- * Lookup the base.
- *)
-let get_base compact = function
-   { tbl_base = Some base } ->
-      base
- | { tbl_base = None } as tbl ->
-      let base = compute_dtree compact tbl in
-         tbl.tbl_base <- Some base;
-         base
+let table_resource_info compact extract =
+   let add datas data = data :: datas in
+   let retr datas = extract (create_table datas compact) in
+   Functional {
+      fp_empty = [];
+      fp_add = add;
+      fp_retr = retr
+   }
 
 (************************************************************************
  * DTREE EXECUTION                                                      *
@@ -507,12 +385,11 @@ let rec execute prog stack =
 (*
  * Lookup an entry.
  *)
-let lookup name table compact t =
-   let base = get_base compact table in
+let lookup base t =
    let shape = shape_of_term t in
    let _ =
       if !debug_term_table then
-         eprintf "Term_table.lookup: %s: %s%t" name (string_of_term t) eflush
+         eprintf "Term_table.lookup: %s%t" (string_of_term t) eflush
    in
    let prog = Hashtbl.find base shape in
    let stack = (subterms_of_term t) @ [end_marker] in

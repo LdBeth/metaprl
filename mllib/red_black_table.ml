@@ -623,7 +623,7 @@ let create
             else
                find_aux key right0
     | Leaf ->
-         raise Not_found
+         []
    in
 
    let find_all tree key =

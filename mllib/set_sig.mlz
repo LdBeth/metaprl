@@ -211,7 +211,7 @@ sig
    val union : t -> t -> t
    val mem : t -> elt -> bool
    val find : t -> elt -> data
-   val find_all : t -> elt -> data list
+   val find_all : t -> elt -> data list (* last added first *)
    val remove : t -> elt -> t
    val iter : (elt -> data -> unit) -> t -> unit
    val map : (elt -> data -> data) -> t -> t

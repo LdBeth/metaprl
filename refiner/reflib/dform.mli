@@ -100,26 +100,11 @@ type dform_info =
    }
 
 (*
- * Destruct a base.
- *)
-type dform_entry =
-   DFormEntry of dform_info
- | DFormBase of dform_base
-
-(*
  * Display form installation.
  *)
 val null_base : dform_base
-val add_dform : dform_base -> dform_info -> dform_base
-
-(*
- * Join two bases.
- *)
-val join_dforms : dform_base -> dform_base -> dform_base
-
-val is_null_dfbase : dform_base -> bool
-val equal_dfbases : dform_base -> dform_base -> bool
-(* val dest_dfbase : dform_base -> dform_entry * dform_base *)
+(* Earlier items are preffered *)
+val create_dfbase : dform_info list -> dform_base
 
 (* DEBUGGING *)
 val debug_base : dform_base ref

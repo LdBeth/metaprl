@@ -359,7 +359,7 @@ let find_id { info_list = summary } =
 (*
  * Get all the resources.
  *)
-let get_resources { info_list = summary } =
+let get_resources info =
    let rec search = function
       (Resource (name, r), _)::t ->
          (name,r)::search t
@@ -367,7 +367,7 @@ let get_resources { info_list = summary } =
          search t
     | [] -> []
    in
-      search summary
+      search info.info_list
 
 (*
  * Get infix directives.
@@ -493,16 +493,16 @@ let opt_apply f = function
       None
 
 let convert_resource convert
-    (name, { resource_extract_type = extract;
-            resource_improve_type = improve;
-            resource_data_type = data;
-            resource_arg_type = arg
-          }) =
-   name, { resource_extract_type = convert.ctyp_f extract;
-           resource_improve_type = convert.ctyp_f improve;
-           resource_data_type = convert.ctyp_f data;
-           resource_arg_type = convert.ctyp_f arg
-         }
+   (name, {
+      resource_input = input;
+      resource_intermediate = intermediate;
+      resource_output = output
+   }) =
+   name, {
+      resource_input = convert.ctyp_f input;
+      resource_intermediate = convert.ctyp_f intermediate;
+      resource_output = convert.ctyp_f output
+   }
 
 (*
  * Normalize all terms in the info.
@@ -1147,12 +1147,11 @@ struct
     *)
    and dest_resource_sig convert t =
       let name = dest_string_param t in
-      let extract, improve, data, arg = four_subterms t in
+      let input, output, intermediate = three_subterms t in
       name, {
-         resource_extract_type = convert.ctyp_f extract;
-         resource_improve_type = convert.ctyp_f improve;
-         resource_data_type = convert.ctyp_f data;
-         resource_arg_type = convert.ctyp_f arg
+         resource_input = convert.ctyp_f input;
+         resource_intermediate = convert.ctyp_f intermediate;
+         resource_output = convert.ctyp_f output
       }
 
    and dest_resource convert t =
@@ -1509,16 +1508,16 @@ struct
       mk_simple_term comment_op [convert.term_f t]
 
    and term_of_resource_sig convert
-       (name, {
-          resource_extract_type = extract;
-          resource_improve_type = improve;
-          resource_data_type = data;
-          resource_arg_type = arg
-       }) =
-      mk_string_param_term resource_op name [convert.ctyp_f extract;
-                                             convert.ctyp_f improve;
-                                             convert.ctyp_f data;
-                                             convert.ctyp_f arg]
+      (name, {
+         resource_input = input;
+         resource_intermediate = intermediate;
+         resource_output = output
+      }) =
+      mk_string_param_term resource_op name [
+         convert.ctyp_f input;
+         convert.ctyp_f intermediate;
+         convert.ctyp_f output
+      ]
 
    and term_of_resource convert name r =
       mk_string_param_term resource_op name [convert.resource_f r]
