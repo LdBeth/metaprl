@@ -108,7 +108,7 @@ system.pdf: $(S-FILES)
 	$(GEN-PDF) $(S-FILES) -f $@
 
 clean::
-	$(RM) $(DOCFILES)
+	$(RM) $(DOCFILES) *.log *.dvi *.aux *~
 
 check::
 	env WEBLINTRC=weblintrc weblint .
