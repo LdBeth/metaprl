@@ -3336,44 +3336,43 @@ struct
             else
                (us,ut)
 
-   let rec apply_subst_list eq_rest (v,slist) =
-
+   let rec apply_subst_list eq_rest v slist =
       match eq_rest with
          [] ->
-            (true,[])
+            []
        | (atomnames,(fs,ft))::r ->
             let (n_fs,n_ft) = apply_element fs ft (v,slist) in
             let (new_fs,new_ft) = shorten n_fs n_ft in (* delete equal first elements *)
             match (new_fs,new_ft) with
                [],[] ->
-                  let (bool,new_eq_rest) = apply_subst_list r (v,slist) in
-                  (bool,((atomnames,([],[]))::new_eq_rest))
+                  let new_eq_rest = apply_subst_list r v slist in
+                  ((atomnames,([],[]))::new_eq_rest)
              | [],(fft::rft) ->
                   if (is_const fft) then
-                     (false,[])
+                     raise Not_unifiable
                   else
-                     let (bool,new_eq_rest) = apply_subst_list r (v,slist) in
-                     (bool,((atomnames,([],new_ft))::new_eq_rest))
+                     let new_eq_rest = apply_subst_list r v slist in
+                     ((atomnames,([],new_ft))::new_eq_rest)
              | (ffs::rfs),[] ->
                   if (is_const ffs) then
-                     (false,[])
+                     raise Not_unifiable
                   else
-                     let (bool,new_eq_rest) = apply_subst_list r (v,slist) in
-                     (bool,((atomnames,(new_fs,[]))::new_eq_rest))
+                     let new_eq_rest = apply_subst_list r v slist in
+                     ((atomnames,(new_fs,[]))::new_eq_rest)
              | (ffs::rfs),(fft::rft) ->
                   if (is_const ffs) & (is_const fft) then
-                     (false,[])
+                     raise Not_unifiable
         (* different first constants cause local fail *)
                   else
         (* at least one of firsts is a variable *)
-                     let (bool,new_eq_rest) = apply_subst_list r (v,slist) in
-                     (bool,((atomnames,(new_fs,new_ft))::new_eq_rest))
+                     let new_eq_rest = apply_subst_list r v slist in
+                     ((atomnames,(new_fs,new_ft))::new_eq_rest)
 
    let apply_subst eq_rest (v,slist) atomnames =
       if (List.mem v atomnames) then (* don't apply subst to atom variables !! *)
-         (true,eq_rest)
+         eq_rest
       else
-         apply_subst_list eq_rest (v,slist)
+         apply_subst_list eq_rest v slist
 
    let all_variable_check eqlist = false   (* needs some discussion with Jens! -- NOT done *)
 
@@ -3424,24 +3423,17 @@ struct
 (* print_endline "r5"; *)
             let v = (List.hd fs) in
             let (compose_vars,new_sigma) = compose sigma (v,ft) in
-            let (bool,new_rest_eq) = apply_subst rest_eq (v,ft) atomnames in
-            if (bool=false) then
-               raise Not_unifiable
-            else
-               let new_ordering = build_orderingJ (v::compose_vars) ft ordering atom_rel in
-               tunify atomnames (List.tl fs) rt rt new_rest_eq new_sigma new_ordering
-
+            let new_rest_eq = apply_subst rest_eq (v,ft) atomnames in
+            let new_ordering = build_orderingJ (v::compose_vars) ft ordering atom_rel in
+            tunify atomnames (List.tl fs) rt rt new_rest_eq new_sigma new_ordering
          in
          let apply_r6 fs ft rt rest_eq sigma =
 (* print_endline "r6"; *)
             let v = (List.hd fs) in
             let (_,new_sigma) = (compose sigma (v,[])) in
-            let (bool,new_rest_eq) = apply_subst rest_eq (v,[]) atomnames in
-            if (bool=false) then
-               raise Not_unifiable
-            else
+            let new_rest_eq = apply_subst rest_eq (v,[]) atomnames in
      (* no relation update since [] has been replaced for v *)
-               tunify atomnames (List.tl fs) ft rt new_rest_eq new_sigma ordering
+            tunify atomnames (List.tl fs) ft rt new_rest_eq new_sigma ordering
 
          in
          let apply_r7 fs ft rt rest_eq sigma =
@@ -3450,12 +3442,9 @@ struct
             and c1 = (List.hd rt)
             and c2t =(List.tl rt) in
             let (compose_vars,new_sigma) = (compose sigma (v,(ft @ [c1]))) in
-            let (bool,new_rest_eq) = apply_subst rest_eq (v,(ft @ [c1])) atomnames in
-            if bool=false then
-               raise Not_unifiable
-            else
-               let new_ordering = build_orderingJ (v::compose_vars) (ft @ [c1]) ordering atom_rel in
-               tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma new_ordering
+            let new_rest_eq = apply_subst rest_eq (v,(ft @ [c1])) atomnames in
+            let new_ordering = build_orderingJ (v::compose_vars) (ft @ [c1]) ordering atom_rel in
+            tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma new_ordering
          in
          let apply_r8 fs ft rt rest_eq sigma =
 (* print_endline "r8"; *)
@@ -3468,13 +3457,9 @@ struct
             and (max,subst) = sigma in
             let v_new = ("vnew"^(string_of_int max)) in
             let (compose_vars,new_sigma) = (compose ((max+1),subst) (v,(ft @ [v_new]))) in
-            let (bool,new_rest_eq) = apply_subst rest_eq (v,(ft @ [v_new])) atomnames in
-            if (bool=false) then
-               raise Not_unifiable
-            else
-               let new_ordering =
-                  build_orderingJ (v::compose_vars) (ft @ [v_new]) ordering atom_rel in
-                 tunify atomnames rt [v_new] (List.tl fs) new_rest_eq new_sigma new_ordering
+            let new_rest_eq = apply_subst rest_eq (v,(ft @ [v_new])) atomnames in
+            let new_ordering = build_orderingJ (v::compose_vars) (ft @ [v_new]) ordering atom_rel in
+            tunify atomnames rt [v_new] (List.tl fs) new_rest_eq new_sigma new_ordering
 
          in
          let apply_r10 fs ft rt rest_eq sigma =
