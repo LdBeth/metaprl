@@ -345,7 +345,7 @@ struct
 
    and solveCutT addr conv p =
       let len = List.length (snd (Refine.dest_msequent (Sequent.msequent p))) in
-         (prefix_thenT (apply len addr conv) (nthAssumT len)) p
+         (prefix_thenMT (apply len addr conv) (nthAssumT len)) p
 
    (*
     * Apply the rewrite.
