@@ -1,40 +1,113 @@
-Author: Brian Emre Aydemir (emre@cs.caltech.edu)
+The directions below outline the process for compiling MetaPRL under Mac OS
+X.  They were developed by Brian Emre Aydemir (emre@cs.caltech.edu) when he
+had temporary access to a machine running Mac OS X.  So if something doesn't
+quite work... *shrug*.
 
-These are some very informal directions for getting MetaPRL to work under
-MacOS X.  I will make them more verbose and precise later.  Feel free to
-email me with any questions that you might have.  --emre
+Note: All the commands below need to be run from a command line, such as
+the Terminal program in /Applications/Utilities.
 
-(0) Download the 'Apple Developer Tools' kit from Apple, and install.
-    [I need to find out exactly what this is called, and so on.]
+0. If you have not already installed the Apple Developer Tools, you will
+   need to download them.  If you have an Apple Developer Connection (ADC)
+   membership, this should be a free download.  Otherwise, you will need to
+   become a member first.  The 'Online' membership level is free and gives
+   you access to the developer tools.  See
 
-(1) Download the sources for OCaml, including the MacOS patch.
+      http://developer.apple.com/membership/descriptions.html
 
-(2) Download MetaPRL, or check it out from CVS.
+   for more information.
 
-(3) Unpack OCaml and copy the MacOS patch and the MetaPRL patch into
-    the OCaml source directory.  Run
+   Once you have downloaded the tools, install them.
 
-       patch -p0 < ocaml-macosx-patch
-       patch -p0 < metaprl-ocaml-patch
+1. MetaPRL requires a customized version of the OCaml programming language
+   tools.  Follow the directions at
 
-   to patch the sources.
+      http://caml.inria.fr/caml-macosx-howto/index.html
 
-(4) Run ./configure with the -with-pthread option.  Ignore the error about
-    "labltk" (unless you really want that support; MetaPRL does not need it).
-    You may also want to use '--prefix dir' to put OCaml in some preferred
-    location.
+   for downloading the OCaml sources and Mac OS X patch.  Go ahead and
+   unpack the source tarball and apply the patch as directed.  Follow the
+   directions in the INSTALL file for increasing the limit on the stack
+   size.  After you have done this, copy the MetaPRL patch from the
 
-(5) Build OCaml, i.e., run 'make world.opt ; make world.opt ; make install'.
-    You will need to run 'ranlib' on the following two files after you
-    install OCaml:
+      metaprl/patches
 
-       lib/ocaml/camlp4/camlp4.a
-       lib/ocaml/camlp4/odyl.a
+   directory into the directory with the OCaml sources.  Apply the patch,
+   e.g.,
 
-    Not exactly sure why you need to do this...
+      patch -p0 < camlp4-3.06-opt.patch
 
-(6) MetaPRL build as normal (see directions elsewhere).
+   Now run ./configure with the -with-pthreads option.  You may also want to
+   specify other options, such as -prefix.  You can safely ignore an error
+   about "labltk" if it appears; follow the directions on the OCaml website
+   for compiling with Tcl/tk support.
 
-(7) In order to use the toploop, you need to install the fonts in
-    editor/fonts/ttf to Library/Fonts (and login again).  You should
-    set the Terminal program to use the MetaPRL Luxi Mono family.
+   Finally, compile the OCaml tools using
+
+      make world.opt
+
+   The tools can be installed using
+
+      make install
+
+   Make sure that location that you chose to put the binaries is in your
+   path.
+
+2. The OCaml install in the previous step should look like it completed
+   without any significant errors.  Unfortunately, this isn't the case.
+   (We're unsure whose fault this is.)  If the OCaml libraries were
+   installed into lib/ocaml, you'll need to run the following two commands:
+
+      ranlib lib/ocaml/camlp4/camlp4.a
+      ranlib lib/ocaml/camlp4/odyl.a
+
+3. Change into the MetaPRL source directory (the directory with this file)
+   and run mk/config.  A new 'config' file should be created in the mk/
+   directory.  Go ahead and edit it (directions are provided in the file
+   itself).  If OCaml was not installed into /usr, you will need to create
+   a file mk/config.local and define CAMLLIB and CAMLP4LIB to point to where
+   the ocaml and ocaml/camlp4 library directories are located.  For example,
+   config.local may contain the following lines:
+
+      CAMLLIB=/Users/emre/Documents/ocaml/install-3.06/lib/ocaml
+      CAMLP4LIB=/Users/emre/Documents/ocaml/install-3.06/lib/ocaml/camlp4
+
+4. From the MetaPRl source directory (the directory with this file), run
+
+      make
+
+   to build the bytecode version of MetaPRL, or run
+
+      make opt
+
+   to build the native-code version of MetaPRL.
+
+5. To run the bytecode MetaPRL toploop, use
+
+      editor/ml/mptop
+
+   To run the native-code MetaPRL toploop, use
+
+      editor/ml/mpopt
+
+   Note the output will be unreadable unless you use the fonts in
+
+      editor/fonts/ttf
+
+   To install the fonts, copy them into a fonts directory, such as
+
+      /Users/your-user-name/Library/Fonts
+
+   or
+
+      /Library/Fonts
+
+   and then unzip them (using the 'gunzip' program).  Set the Terminal
+   program to use those fonts.  They will be called 'MetaPRL Luxi Mono' in
+   the font selection dialogs.  You may need to logout and then log back in
+   for the fonts to show up.
+
+   Anti-aliasing significantly improves the display of these fonts.  It can
+   be enabled in the 'Window Settings...' dialog in the 'Terminal' menu.
+
+   Note: You may want to save your work often in the toploop.  The Terminal
+   application seems to be prone to crashing when using the MetaPRL fonts
+   (at least in emre's experience).
