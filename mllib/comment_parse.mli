@@ -19,8 +19,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Jason Hickey <jyh@cs.caltech.edu>
+ * Modifed By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 (*
@@ -31,11 +31,15 @@ type t = item list
 and item =
    White
  | String of string
- | Term of string list * string list * t list
- | Quote of string * string
+ | Term of opname * string list * t list
+ | Quote of loc * string * string
  | Block of t
 
-exception Parse_error of string * int * int
+and opname = string list * loc
+
+and loc = int * int
+
+exception Parse_error of string * loc
 
 val parse : string -> t
 

@@ -81,9 +81,13 @@ type t = item list
 and item =
    White
  | String of string
- | Term of string list * string list * t list
- | Quote of string * string
+ | Term of opname * string list * t list
+ | Quote of loc * string * string
  | Block of t
+
+and opname = string list * loc
+
+and loc = int * int
 
 (*
  * Tokens.
@@ -223,12 +227,16 @@ type token_buffer =
 (*
  * Errors.
  *)
-exception Parse_error of string * int * int
+exception Parse_error of string * loc
+
+let loc_of_lexbuf lexbuf =
+   Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf 
+
+let loc_of_buf buf =
+   loc_of_lexbuf buf.lexbuf
 
 let parse_error_buf s lexbuf =
-   let loc1 = Lexing.lexeme_start lexbuf in
-   let loc2 = Lexing.lexeme_end lexbuf in
-      raise (Parse_error (s, loc1, loc2))
+   raise (Parse_error (s, loc_of_lexbuf lexbuf))
 
 let parse_error s buf =
    parse_error_buf s buf.lexbuf
@@ -486,9 +494,10 @@ and finish_block term term' items buf =
  * Math mode sub/superscripts.
  *)
 and parse_math_script term mode opname items buf =
+   let loc = loc_of_buf buf in
    match items, parse_item (math_mode mode) buf with
       item :: items, ItemItem item' ->
-         let items = Term ([opname], [], [[item]; [item']]) :: items in
+         let items = Term (([opname], loc), [], [[item]; [item']]) :: items in
             parse_block term mode items buf
     | _ ->
          parse_error "illegal sub/superscript operation" buf
@@ -505,6 +514,7 @@ and parse_item mode buf =
             if is_math_mode mode then
                ItemMath flag
             else
+               let loc = loc_of_buf buf in
                let opname =
                   if flag then
                      "centermath"
@@ -512,11 +522,14 @@ and parse_item mode buf =
                      "math"
                in
                let _, items = parse_block [TermMath flag] ModeMath [] buf in
-                  ItemItem (Term ([opname], [], [items]))
+                  ItemItem (Term (([opname], loc), [], [items]))
        | TokName s ->
             parse_term mode s buf
        | TokQuote (tag, next) ->
-            ItemItem (Quote (tag, next))
+            let loc = loc_of_buf buf in
+            let item = Quote (loc, tag, next) in
+            if is_math_mode mode then ItemItem item
+            else ItemItem (Term ((["math"], loc), [], [[item]]))
        | TokQString s ->
             ItemItem (String ("\"" ^ s ^ "\""))
        | TokString (_, s) ->
@@ -597,11 +610,14 @@ and flush_string token buffer buf =
  * There are several mode cases to consider.
  *)
 and parse_term mode s buf =
+   let (l1,_) = loc_of_buf buf in
    let opname = parse_opname mode s buf in
+   let (_,l2) = loc_of_buf buf in
+   let loc = (l1,l2) in
    let params = parse_params mode false buf in
       if opname = ["code"] || opname = ["email"] then
          let s = parse_code_arg buf in
-            ItemItem (Term (opname, [s], []))
+            ItemItem (Term ((opname, loc), [s], []))
       else
          let args = 
             if opname = ["mbox"] || opname = ["hbox"] then
@@ -618,16 +634,16 @@ and parse_term mode s buf =
             match opname, params, args with
                 ["begin"], [[tag]], [] when tag = "verbatim" || tag = "literal" ->
                    let s = parse_code_block buf in
-                      ItemItem (Term ([tag], [s], []))
+                      ItemItem (Term (([tag], loc), [s], []))
               | ["begin"], tag :: params, [] ->
                    let _, args = parse_block [TermEnd tag] mode [] buf in
                    let opname = mk_opname mode tag in
-                      ItemItem (Term (opname, flatten_params params, [args]))
+                      ItemItem (Term ((opname, loc), flatten_params params, [args]))
               | ["end"], [tag], [] ->
                    ItemEnd tag
               | _ ->
                    let opname = mk_opname mode opname in
-                      ItemItem (Term (opname, flatten_params params, args))
+                      ItemItem (Term ((opname, loc), flatten_params params, args))
 
 (*
  * Code blocks.
