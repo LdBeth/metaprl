@@ -1055,6 +1055,12 @@ EXTEND
           in
              print_exn f "declare" loc;
              empty_str_item loc
+        | "define"; name = LIDENT; res = optresources; ":"; t = quote_term; "<-->"; def = term ->
+           let f () =
+             StrFilter.define_term (StrFilter.get_proc loc) loc name t def (Primitive xnil_term) res
+           in
+             print_exn f "define" loc;
+             empty_str_item loc
         | "prim_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res

@@ -21,6 +21,9 @@ else
    THREADSLIB = $(CAMLLIB)/profiling.cmo $(CAMLLIB)/threads/threads.cma
 endif
 OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
+ifeq ($(OSTYPE),linux-gnu)
+   OSTYPE := Linux
+endif
 ifeq ($(OSTYPE),Linux)
    OPTTHREADS = -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(EXT_PROF) -cclib -lpthread
    LIBTHREADS = -cclib -lthreads -cclib -lunix -cclib -lpthread
