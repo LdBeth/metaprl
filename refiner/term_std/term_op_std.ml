@@ -1055,19 +1055,29 @@ struct
    (*
     * Iterate through the term.
     *)
+
+   (*
+    * XXX: NASTY HACK: Nogin: skip the "special" terms used by Term_man_gen to encode
+    * sequents.
+    *)
+   let normal_term =
+      let hyp_opname = mk_opname "hyp" xperv in
+      let concl_opname = mk_opname "concl" xperv in
+      fun t -> not (is_dep0_dep1_term hyp_opname t || is_dep0_term concl_opname t)
+
    let rec iter_down f t =
-      f t;
+      if normal_term t then f t;
       List.iter (fun bterm -> iter_down f bterm.bterm) t.term_terms
 
    let rec iter_up f t =
       List.iter (fun bterm -> iter_up f bterm.bterm) t.term_terms;
-      f t
+      if normal_term t then f t
 
    (*
     * Sweep a function down through the term.
     *)
    let rec map_down f t =
-      let { term_op = op; term_terms = bterms } = f t in
+      let { term_op = op; term_terms = bterms } = if normal_term t then f t else t in
       let apply { bvars = vars; bterm = t } =
          { bvars = vars; bterm = map_down f t }
       in
@@ -1091,7 +1101,8 @@ struct
          else
             List.map apply bterms
       in
-         f { term_op = op; term_terms = bterms }
+      let t = { term_op = op; term_terms = bterms } in
+         if normal_term t then f t else t
 end
 
 (*
