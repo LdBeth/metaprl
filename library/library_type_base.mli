@@ -5,17 +5,14 @@
 open Term
 
 open File_base_type
-open File_type_base
 
-module MakeSingletonCombo (Info : FileTypeInfoSig
-                                  with type raw = term list) :
-   (FileTypeComboSig
-    with type cooked = Info.cooked
-    with type select = Info.select
-    with type info = (Info.select, Info.cooked) common_info)
+module IO : IOSig with type t = term
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/19 17:24:13  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.1  1998/02/12 23:35:45  jyh
  * Added base Nuprl-Light interface to the library.
  *
