@@ -528,7 +528,8 @@ special_error_handler (function () -> (library_open_and_loop_eval "lNuprlLight" 
 special_error_handler (function () -> testascii "LOCKE" 5289 5289)
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
-special_error_handler (function () -> testall "LOCKE" 5289 2895)
+
+special_error_handler (function () -> testall "ALFHEIM" 3448 4688)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 

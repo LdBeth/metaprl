@@ -70,7 +70,8 @@ let create i =
 
 let mk_bint i =
   let a = abs i in let b = ((a asr 16) land 0xFFFF) and c = (a land 0xFFFF) in
-  if i >= 0 then (b, c) else (if b=0 then (b, -c) else (-b, c))
+  if i >= 0 then (b, c) else (if b = 0 then (b, -c) else (-b, c))
+
 let make_int32 (i, k) =
   if ((i > 0xFFFF) or (k > 0xFFFF)) then raise (IntSize ("make_int32", i))
   else (i, k)
@@ -107,6 +108,7 @@ let basr (x, w) n = (x, w)
 	   (*LAL*)
 let bplus (x, w) n = (x, w+ n)
 let bminus (x, w) n = (x, w - n)
+let bneg (x, w) = if x = 0 then (x, -w) else (-x, w)
 
 let bequal (x, w) (y, z) = (x = y) && (w = z)
 let blt (x, w) (y, z) = (x < y) or ((x = y) && (w < z))

@@ -9,19 +9,19 @@ INCLUDE := -I .\
 	-I $(ROOT)/mllib\
 	-I $(ROOT)/refiner/refbase\
 	-I $(ROOT)/refiner/refsig\
-	-I $(ROOT)/refiner/refiner
+	-I $(ROOT)/refiner/refiner\
 
 OCAMLFLAGS :=
 OCAMLC := ocamlc
 
 # Main files
-PFILES :=\
-	test
+PFILES :=
 
 # Libraries
 MLLIBS :=\
 	$(ROOT)/mllib/util\
 	$(ROOT)/refiner/refiner\
+	$(ROOT)/refiner/refsig/reflib\
 	library
 
 CMALIBS :=\
@@ -50,11 +50,10 @@ LMFILES :=\
 	definition\
 	orb\
 	library\
-	library_type_base\
-	library_eval
+	library_type_base
 
 # Name of main libraris
-MAIN = library
+MAIN := library
 
 INSTALL_LIBS := $(MAIN)
 
@@ -69,7 +68,7 @@ include Makefile.dep
 #
 # Rules
 #
-lib: $(MAIN).run $(RMLIFILES) $(RCMIFILES) $(RCMAFILES) $(ROOT)/lib/registry.txt
+lib: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES) $(ROOT)/lib/registry.txt
 opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(ROOT)/lib/registry.txt
 	@ $(MAKE) $(RAFILES)
 

@@ -47,7 +47,10 @@ val iterm_bterms	: bound_term list -> term
 val ivoid_term		: term
 val ivoid_term_p	: term -> bool
 
+val inil_term		: term
+
 val number_of_inatural_term	: term -> int
+val num_of_inatural_term	: term -> num
 val oid_of_ioid_term		: term -> object_id
 val oids_of_ioid_term		: term -> object_id list
 val string_of_itoken_term	: term -> string
@@ -56,6 +59,8 @@ val operator_of_term		: term -> operator
 val bound_terms_of_term		: term -> bound_term list
 val parameters_of_term		: term -> param list
 val token_parameter_to_string	: param -> string
+
+val inil_parameter		: param
 
 val dest_obid_param 		: param -> object_id
 val dest_token_param		: param -> string
@@ -122,6 +127,7 @@ val string_of_itext_term	: term -> string
 
 val mk_nuprl5_op	: param list -> operator
 
+val icons_op			: operator
 val icons_term			: operator -> term -> term -> term
 val hd_of_icons_term		: operator -> term -> term
 val tl_of_icons_term		: operator -> term -> term

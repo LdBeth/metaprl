@@ -116,7 +116,7 @@ let mbbindings_of_bvars bvars =
   in loop bvars []
 
 let rec mbterm_of_term term =
-  let { term_op = operator; term_terms = bterms} = dest_term term in
+  let { term_op = operator; term_terms = bterms} = Lib_term.dest_term term in
   let { op_name = opname; op_params = params } = dest_op operator in
   let temp =
     if (dest_opname opname) = ["!nuprl5_implementation!"] then params
@@ -258,7 +258,7 @@ let rec term_of_mbterm mbterm =
 		  (if (bequal (mbnode_label n) mbs_Term) then
 		    ((mk_bterm [] (term_of_mbterm n))::b)
 		  else raise (Invalid_argument "last subterm should be a term")) in
-	      	mk_term (op_of_params (List.rev leaves)) bterms
+	      	Lib_term.mk_term (op_of_params (List.rev leaves)) bterms
 
  	      else (if (bequal (mbnode_label n) mbs_Term) then
 		loop1 (i + 1) ((mk_bterm [] (term_of_mbterm n))::b)
@@ -267,7 +267,7 @@ let rec term_of_mbterm mbterm =
 		  (match mbterm.(i+ 1) with
 		    Mnode n2 ->  let bterms = ((mk_bterm (bvars_of_mbbindings n)
 						  (term_of_mbterm n2))::b) in
-		    mk_term (op_of_params (List.rev leaves)) bterms
+		    Lib_term.mk_term (op_of_params (List.rev leaves)) bterms
 		  | Mbint b -> raise (Invalid_argument " subterm should be a node"))
 
 	 	else
@@ -281,7 +281,7 @@ let rec term_of_mbterm mbterm =
 
       else if (index = nsubterms) then
 	let op = (op_of_params (List.rev ((param_of_mbparameter node)::leaves))) in
-	mk_term op []
+	Lib_term.mk_term op []
       else loop (index + 1) ((param_of_mbparameter node)::leaves)
     | Mbint b -> raise (Invalid_argument " subterm should be a node") in
   loop 1 []
@@ -322,7 +322,7 @@ let rec print_param param =
   | _ -> failwith "unauthorized parameter type"
 
 let rec print_term term =
-  let { term_op = operator; term_terms = bterms} = dest_term term in
+  let { term_op = operator; term_terms = bterms} = Lib_term.dest_term term in
   let { op_name = opname; op_params = params } = dest_op operator in
   let print_subterms = function
       { bvars = bvars; bterm = t } -> begin

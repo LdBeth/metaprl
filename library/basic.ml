@@ -124,6 +124,10 @@ let ioid_parameter = make_param (Token "!oid")
 let ioid_op p = mk_nuprl5_op [make_param (Token "!oid"); p]
 let ioid_term o = mk_term (ioid_op (make_param (ObId o))) []
 
+let inil_parameter = 
+	make_param (ParamList [(make_param (Token "bool")); 
+			       (make_param (Number (Nl_num.Int 1)))])
+
 let iterm_op = mk_nuprl5_op [make_param (Token "!term")]
 
 let imessage_term sl ol tl =
@@ -398,7 +402,7 @@ let stamp_data =
 	; pid = String.concat "_"
 			[ string_of_inet_addr get_inet_addr
 			; string_of_int (getpid())
-			; string_of_int (truncate (time()))
+			; string_of_int (Pervasives.truncate (time()))
 			]
 	}
 
@@ -424,10 +428,10 @@ let equal_stamps_p a b =
 
 let new_stamp () =
   stamp_data.count <- stamp_data.count + 1;
-  make_stamp stamp_data.pid stamp_data.count stamp_data.count (num_of_int (time()))
+  make_stamp stamp_data.pid stamp_data.count stamp_data.count (num_of_int (Pervasives.truncate (time())))
 
 let get_stamp () =
-  make_stamp stamp_data.pid stamp_data.count stamp_data.count (num_of_int (time()))
+  make_stamp stamp_data.pid stamp_data.count stamp_data.count (num_of_int (Pervasives.truncate (time())))
 
 let sequence () =
   stamp_data.count <- stamp_data.count + 1;
@@ -476,6 +480,7 @@ let tl_of_icons_term iop t =
        ->  term_of_unbound_term r
     |_ -> error ["icons"; "not"] [] [t]
 
+let inil_term = mk_term icons_op []
 
 let list_to_ilist_by_op_map op f l =
  let rec aux ll =

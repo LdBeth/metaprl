@@ -41,11 +41,17 @@ let _ =
 
 (*
  * jyh: we need documentation for these types.
+ * Unidirectional or Bidirectional (pair of) hash tables.
+ * String is a symbolic label and int32 is its numeric label.
  *)
 type tb =
    Uni of (string, int32) Hashtbl.t
  | Bi of (string, int32) Hashtbl.t * (int32, string) Hashtbl.t
 
+(*
+ * Registry hash table.
+ * String is a registry type, tb it's corresponding cable or pair of tables.
+ *)
 type regtb = (string, tb) Hashtbl.t
 
 let global_registry = (Hashtbl.create 3 : regtb)
@@ -54,7 +60,7 @@ let local_registry = (Hashtbl.create 3 : regtb)
 let registry_types = ref []
 
 (*
- * The registry should be stored in the lib directory.
+ * The registry file should be stored in the lib directory.
  *)
 let registry_file =
    try Filename.concat (Sys.getenv "NLLIB") "registry.txt" with
@@ -116,7 +122,8 @@ let registry_lookup_value id regtype =
                   | Bi (h1, h2) -> Hashtbl.find h1 id))
 
 (*
- * Lookup indetifiers.  jyh: what are identifiers?
+ * Lookup indentifiers.  jyh: what are identifiers?
+ * An identifier is a string label for a mathbus node.
  *)
 let registry_lookup_identifier regtype v =
    match (Hashtbl.find local_registry regtype) with
@@ -134,6 +141,17 @@ let registry_lookup_identifier regtype v =
  *)
 let registry_store_local id regtype v =
    match Hashtbl.find local_registry regtype with
+      Uni h ->
+         Hashtbl.add h id v
+ | Bi (h1, h2) ->
+      (Hashtbl.add h1 id v;
+       Hashtbl.add h2 v id)
+
+(*
+ * Save a value in the global registry.
+ *)
+let registry_store_global id regtype v =
+   match Hashtbl.find global_registry regtype with
       Uni h ->
          Hashtbl.add h id v
  | Bi (h1, h2) ->

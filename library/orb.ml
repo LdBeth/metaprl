@@ -111,11 +111,11 @@ and orb =
 let resource env string = assoc string env.resources
 
 let orb_open name =
-	{ lo_address =	[  "nuprl_light"
+	{ lo_address =	[ "nuprl_light"
 			; name
 			; "orb"
 			; string_of_int (getpid ())
-			; string_of_int (truncate (time ()))
+			; string_of_int (Pervasives.truncate (time ()))
 			]
 	; connections = []
 	; environments = []
@@ -285,9 +285,20 @@ let icommand_parameter = make_param (Token "!command")
 let icommand_op = mk_nuprl5_op [icommand_parameter]
 let icommand_term t = mk_term icommand_op [mk_bterm [] t]
 
+(*
 let cmd_of_icommand_term t =
  match dest_term t with { term_op = o; term_terms = [cmd] } when opeq o icommand_op
     -> term_of_unbound_term cmd
+ |_ -> error ["orb"; "command"; "not"] [] [t]
+
+*)
+
+let cmd_of_icommand_term t =
+ match dest_term t with { term_op = o; term_terms = [cmd] } 
+    -> (match dest_op o with
+        { op_name = opn; op_params = cmdparm :: oppl } when (parmeq cmdparm icommand_parameter)
+	  -> term_of_unbound_term cmd
+        |_ -> error ["orb"; "command"; "op"; "not"] [] [t])
  |_ -> error ["orb"; "command"; "not"] [] [t]
 
 let local_eval f t =

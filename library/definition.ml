@@ -53,7 +53,14 @@ let purposes_of_idescription_term t =
     { term_op = op; term_terms = [version; purposes] }
     -> map_isexpr_to_list string_of_itoken_term (term_of_unbound_term purposes)
     |_ -> error ["term"; "!description"; "not"] [] [t]
+(*
 
+let purposes_of_idescription_term t =
+  match dest_term t with
+    { term_op = op; term_terms = bts }
+    -> map string_of_itoken_term (map term_of_unbound_term (tl bts))
+    |_ -> error ["term"; "!description"; "not"] [] [t]
+*)
 
 type dependency = {data : stamp; objc : stamp; oid : object_id }
 
