@@ -36,24 +36,35 @@ let rec filter f = function
 (*
  * Compare two lists of things.
  *)
-let rec compare_lists cmp l1 l2 = match (l1,l2) with
-   h1::t1, h2::t2 ->
-      let i = cmp h1 h2 in
-         if i = 0 then
-            compare_lists cmp t1 t2
-         else
-            i
- | [], [] -> 0
- | [], _ -> -1
- | _ -> 1
+let rec compare_lists cmp l1 l2 =
+   match (l1,l2) with
+      h1::t1, h2::t2 ->
+         let i = cmp h1 h2 in
+            if i = 0 then
+               compare_lists cmp t1 t2
+            else
+               i
+    | [], [] -> 0
+    | [], _ -> -1
+    | _ -> 1
+
+let rec compare_eq l1 l2 =
+   match l1, l2 with
+      h1::t1, h2::t2 ->
+         h1 == h2 & compare_eq t1 t2
+    | [], [] ->
+         true
+    | _ ->
+         false
 
 (*
  * Test two lists.
  *)
-let rec for_all2 f l1 l2 = match (l1,l2) with
-   h1::t1, h2::t2 -> for_all2 f t1 t2 & f h1 h2
- | [], [] -> true
- | _ -> false
+let rec for_all2 f l1 l2 =
+   match (l1,l2) with
+      h1::t1, h2::t2 -> for_all2 f t1 t2 & f h1 h2
+    | [], [] -> true
+    | _ -> false
 
 (*
  * Exists a pair in the two lists.
@@ -537,6 +548,9 @@ let rec fold_left2 f x al bl =
 
 (*
  * $Log$
+ * Revision 1.21  1998/07/03 22:05:33  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.20  1998/06/22 19:45:28  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

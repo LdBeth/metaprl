@@ -50,6 +50,7 @@ open Refine_exn
 open Sequent
 open Tacticals
 
+open Io_proof_type
 open Proof_type
 
 (*
@@ -144,6 +145,30 @@ exception Match
  * the error.
  *)
 exception ProofRefineError of t * string * refine_error
+
+(*
+ * For building IO proofs.
+ *)
+type io_proof = Refiner_std.Refiner.TermType.term proof
+
+(*
+ * Memo tables for converting proofs.
+ *)
+type 'a denorm =
+   { denorm : term -> 'a;
+     step_denorm : 'a Proof_step.denorm;
+     proof_of_node : ('a denorm, node, 'a proof, 'a proof) Memo.t;
+     proof_node_of_node_item : ('a denorm, node_item, 'a proof_node, 'a proof_node) Memo.t;
+     proof_child_of_child_node : ('a denorm, child_node, 'a proof_child, 'a proof_child) Memo.t
+   }
+
+type 'a norm =
+   { norm : 'a -> term;
+     step_norm : 'a Proof_step.norm;
+     node_of_proof : ('a norm, 'a proof, 'a proof, node) Memo.t;
+     node_item_of_proof_node : ('a norm, 'a proof_node, 'a proof_node, node_item) Memo.t;
+     child_node_of_proof_child : ('a norm, 'a proof_child, 'a proof_child, child_node) Memo.t
+   }
 
 (************************************************************************
  * CONSTRUCTORS                                                         *
@@ -921,7 +946,55 @@ let expand df pf =
  ************************************************************************)
 
 (*
- * Make an io proof.
+ * Comparisons.
+ *)
+let compare_proof
+    { proof_status = status1;
+      proof_step = step1;
+      proof_children = children1;
+      proof_extras = extras1
+    }
+    { proof_status = status2;
+      proof_step = step2;
+      proof_children = children2;
+      proof_extras = extras2
+    } =
+   (status1 = status2)
+   & (step1 == step2)
+   & (List_util.compare_eq children1 children2)
+   & (List_util.compare_eq extras1 extras2)
+
+let compare_proof_node node1 node2 =
+   match node1, node2 with
+      Io_proof_type.ProofStep { step_goal = goal1;
+                  step_subgoals = subgoals1;
+                  step_ast = ast1;
+                  step_text = text1
+      },
+      Io_proof_type.ProofStep { step_goal = goal2;
+                  step_subgoals = subgoals2;
+                  step_ast = ast2;
+                  step_text = text2
+      } ->
+         (goal1 == goal2)
+         & (List_util.compare_eq subgoals1 subgoals2)
+         & (text1 = text2)
+    | Io_proof_type.ProofNode node1, Io_proof_type.ProofNode node2 ->
+         node1 == node2
+    | _ ->
+         false
+
+let compare_proof_child child1 child2 =
+   match child1, child2 with
+      Io_proof_type.ChildGoal goal1, Io_proof_type.ChildGoal goal2 ->
+         goal1 == goal2
+    | Io_proof_type.ChildProof proof1, Io_proof_type.ChildProof proof2 ->
+         proof1 == proof2
+    | _ ->
+         false
+
+(*
+ * Convert the status values.
  *)
 let io_status_of_status = function
    Bad ->
@@ -933,22 +1006,111 @@ let io_status_of_status = function
  | Complete ->
       Io_proof_type.StatusComplete
 
-let rec io_attributes = function
-   [] ->
-      []
- | (name, h)::t ->
-      match h with
-         Tactic_type.TermArg _
-       | Tactic_type.TypeArg _
-       | Tactic_type.IntArg _
-       | Tactic_type.BoolArg _
-       | Tactic_type.SubstArg _ ->
-            (name, h) :: io_attributes t
-       | Tactic_type.TacticArg _
-       | Tactic_type.IntTacticArg _
-       | Tactic_type.TypeinfArg _ ->
-            io_attributes t
+(*
+ * Make the proofs.
+ *)
+let make_proof info { node_status = status;
+                      node_item = item;
+                      node_children = children;
+                      node_extras = extras
+    } =
+   { proof_status = io_status_of_status status;
+     proof_step = Memo.apply info.proof_node_of_node_item info item;
+     proof_children = List.map (Memo.apply info.proof_child_of_child_node info) children;
+     proof_extras = List.map (Memo.apply info.proof_of_node info) extras
+   }
 
+let make_proof_node info = function
+   Step step ->
+      Io_proof_type.ProofStep (Proof_step.io_step_of_step info.step_denorm step)
+ | Node node ->
+      Io_proof_type.ProofNode (Memo.apply info.proof_of_node info node)
+
+let make_proof_child info = function
+   ChildGoal goal ->
+      Io_proof_type.ChildGoal (Proof_step.aterm_of_tactic_arg info.step_denorm goal)
+ | ChildNode node ->
+      Io_proof_type.ChildProof (Memo.apply info.proof_of_node info node)
+
+(*
+ * Create the denormalizer.
+ *)
+let id _ x = x
+
+let create_denorm () =
+   let term_info = Term_copy.create_denorm () in
+   let denorm = Term_copy.denormalize_term term_info in
+      { denorm = denorm;
+        step_denorm = Proof_step.create_denorm denorm;
+        proof_of_node = Memo.create make_proof id compare_proof;
+        proof_node_of_node_item = Memo.create make_proof_node id compare_proof_node;
+        proof_child_of_child_node = Memo.create make_proof_child id compare_proof_child
+      }
+
+let io_proof_of_proof { pf_root = root } =
+   let info = create_denorm () in
+      Memo.apply info.proof_of_node info root
+
+(*
+ * Build a proof from an IO proof.
+ *)
+let status_of_io_status = function
+   Io_proof_type.StatusBad ->
+      Bad
+ | Io_proof_type.StatusPartial ->
+      Partial
+ | Io_proof_type.StatusAsserted ->
+      Asserted
+ | Io_proof_type.StatusComplete ->
+      Complete
+
+let make_proof info { proof_status = status;
+                      proof_step = step;
+                      proof_children = children;
+                      proof_extras = extras
+    } =
+   { node_status = status_of_io_status status;
+     node_item = Memo.apply info.node_item_of_proof_node info step;
+     node_children = List.map (Memo.apply info.child_node_of_proof_child info) children;
+     node_extras = List.map (Memo.apply info.node_of_proof info) extras
+   }
+
+let make_node_item info = function
+   Io_proof_type.ProofStep step ->
+      Step (Proof_step.step_of_io_step info.step_norm step)
+ | Io_proof_type.ProofNode proof ->
+      Node (Memo.apply info.node_of_proof info proof)
+
+let make_child_node info = function
+   Io_proof_type.ChildGoal goal ->
+      ChildGoal (Proof_step.tactic_arg_of_aterm info.step_norm goal)
+ | Io_proof_type.ChildProof proof ->
+      ChildNode (Memo.apply info.node_of_proof info proof)
+
+(*
+ * Create the state.
+ *)
+let proof_of_io_proof arg tacs sentinal pf =
+   let { ref_fcache = fcache; ref_args = args } = arg in
+   let hash = Hashtbl.create (max (Array.length tacs) 17) in
+   let _ = Array.iter (function (name, tac) -> Hashtbl.add hash name tac) tacs in
+   let term_info = Term_copy.create_norm () in
+   let norm = Term_copy.normalize_term term_info in
+   let info =
+      { norm = norm;
+        step_norm = Proof_step.create_norm norm arg hash sentinal;
+        node_of_proof = Memo.create id make_proof compare_proof;
+        node_item_of_proof_node = Memo.create id make_node_item compare_proof_node;
+        child_node_of_proof_child = Memo.create id make_child_node compare_proof_child
+      }
+   in
+   let node = Memo.apply info.node_of_proof info pf in
+      { pf_root = node;
+        pf_address = [];
+        pf_node = node
+      }
+
+(*
 let rec io_child_of_child = function
    ChildGoal goal ->
       let seq = Sequent.msequent goal in
@@ -1034,9 +1196,13 @@ let proof_of_io_proof arg tacs sentinal pf =
         pf_address = [];
         pf_node = node
       }
+*)
 
 (*
  * $Log$
+ * Revision 1.17  1998/07/03 22:05:14  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.16  1998/07/02 18:34:33  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

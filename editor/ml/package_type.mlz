@@ -14,7 +14,7 @@ include Proof_type
 
 open Opname
 open Refiner.Refiner
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Dform_print
 
 open Filter_summary
@@ -104,10 +104,10 @@ sig
    (*
     * Collection of objects in the module.
     *)
-   val info : package -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
-   val sig_info : package -> (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
-   val find : package -> string -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) summary_item
-   val set : package -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) summary_item -> unit
+   val info : package -> (term, meta_term, proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   val sig_info : package -> (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+   val find : package -> string -> (term, meta_term, proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) summary_item
+   val set : package -> (term, meta_term, proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) summary_item -> unit
 
    (*
     * This is the starting info for new proofs.
@@ -119,6 +119,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.13  1998/07/03 22:05:13  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.12  1998/07/02 18:34:32  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

@@ -8,6 +8,9 @@ val filter : ('a -> bool) -> 'a list -> 'a list
 (* Lexicographic comparison of two lists *)
 val compare_lists : ('a -> 'b -> int) -> 'a list -> 'b list -> int
 
+(* Elements must by physically equal *)
+val compare_eq : 'a list -> 'a list -> bool
+
 (*
  * These functions are just liek the List functions
  * but they raise Failure, not Invalid_argument.
@@ -46,7 +49,7 @@ val find_item : ('a -> bool) -> 'a list -> int
 val find_index : 'a -> 'a list -> int
 val find_indexq : 'a -> 'a list -> int
 
-(* Subtract an elenet from a list *)
+(* Set-like operations *)
 val intersect : 'a list -> 'a list -> 'a list
 val intersectq : 'a list -> 'a list -> 'a list
 val subtract : 'a list -> 'a list -> 'a list
@@ -84,6 +87,9 @@ val fst_split : ('a * 'b) list -> 'a list
 
 (*
  * $Log$
+ * Revision 1.13  1998/07/03 22:05:34  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.12  1998/06/22 19:45:29  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

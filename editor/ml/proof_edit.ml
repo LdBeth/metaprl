@@ -62,7 +62,7 @@ type ped_proof =
  * Current proof is at top of undo stack.
  *)
 type t =
-   { mutable ped_params : Filter_summary.param list;
+   { mutable ped_params : term Filter_summary.param list;
      mutable ped_goal : tactic_arg;
      mutable ped_undo : ped_proof list;
      mutable ped_stack : ped_proof list
@@ -549,6 +549,9 @@ let expand_ped df ped =
 
 (*
  * $Log$
+ * Revision 1.15  1998/07/03 22:05:17  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.14  1998/07/02 18:34:35  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

@@ -28,9 +28,9 @@ type t
 (*
  * Constructors.
  *)
-val create : Filter_summary.param list -> tactic_arg -> t
-val ped_of_proof : Filter_summary.param list -> Proof.t -> t
-val set_params : t -> Filter_summary.param list -> unit
+val create : term Filter_summary.param list -> tactic_arg -> t
+val ped_of_proof : term Filter_summary.param list -> Proof.t -> t
+val set_params : t -> term Filter_summary.param list -> unit
 val ped_arg : t -> tactic_arg
 
 (*
@@ -78,6 +78,9 @@ val expand_ped : dform_base -> t -> unit
 
 (*
  * $Log$
+ * Revision 1.8  1998/07/03 22:05:18  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.7  1998/07/02 18:34:36  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

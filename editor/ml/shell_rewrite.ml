@@ -40,7 +40,7 @@ let _ =
  * This is the actual rewrite object.
  *)
 type rw =
-   { mutable rw_params : param list;
+   { mutable rw_params : term param list;
      mutable rw_assums : term list;
      mutable rw_redex : term;
      mutable rw_contractum : term;
@@ -392,6 +392,9 @@ let view_crw pack
 
 (*
  * $Log$
+ * Revision 1.17  1998/07/03 22:05:23  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.16  1998/07/02 18:34:44  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

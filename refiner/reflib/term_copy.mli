@@ -44,27 +44,60 @@ module MakeTermCopy (**)
     with type bound_term' = ToType.bound_term')
 :
 sig
-   val copy_term : FromType.term -> ToType.term
-   val copy_meta_term : FromType.meta_term -> ToType.meta_term
+   type t
+
+   (* These save the state to get sharing for multiple calls *)
+   val create : unit -> t
+   val copy_term : t -> FromType.term -> ToType.term
+   val copy_meta_term : t -> FromType.meta_term -> ToType.meta_term
+
+   (* Single use versions *)
+   val copy_term_single : FromType.term -> ToType.term
+   val copy_meta_term_single : FromType.meta_term -> ToType.meta_term
 end
 
 (*
  * Common cases.
  *)
-val normalize_term : Refiner_std.Refiner.TermType.term ->
+type normalize
+type denormalize
+
+val create_norm : unit -> normalize
+val create_denorm : unit -> denormalize
+
+val normalize_term : normalize ->
+   Refiner_std.Refiner.TermType.term ->
    Refiner.Refiner.TermType.term
 
-val normalize_meta_term : Refiner_std.Refiner.TermType.meta_term ->
+val normalize_meta_term : normalize ->
+   Refiner_std.Refiner.TermType.meta_term ->
    Refiner.Refiner.TermType.meta_term
 
-val denormalize_term : Refiner.Refiner.TermType.term ->
+val denormalize_term : denormalize ->
+   Refiner.Refiner.TermType.term ->
    Refiner_std.Refiner.TermType.term
 
-val denormalize_meta_term : Refiner.Refiner.TermType.meta_term ->
+val denormalize_meta_term : denormalize ->
+   Refiner.Refiner.TermType.meta_term ->
+   Refiner_std.Refiner.TermType.meta_term
+
+val normalize_term_single : Refiner_std.Refiner.TermType.term ->
+   Refiner.Refiner.TermType.term
+
+val normalize_meta_term_single : Refiner_std.Refiner.TermType.meta_term ->
+   Refiner.Refiner.TermType.meta_term
+
+val denormalize_term_single : Refiner.Refiner.TermType.term ->
+   Refiner_std.Refiner.TermType.term
+
+val denormalize_meta_term_single : Refiner.Refiner.TermType.meta_term ->
    Refiner_std.Refiner.TermType.meta_term
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/03 22:05:47  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.1  1998/07/02 22:24:58  jyh
  * Created term_copy module to copy and normalize terms.
  *

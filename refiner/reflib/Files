@@ -1,7 +1,7 @@
 REFLIB_FILES :=\
-	term_copy\
 	rformat\
 	simple_print\
+	term_copy\
 	ml_format_sig\
 	ml_format\
 	ml_print_sig\

@@ -107,50 +107,50 @@ struct
     * Variables.
     *)
    let term_name = ["Refiner"; "Refiner"; "Term"]
+   let term_type_name = ["Refiner"; "Refiner"; "TermType"]
    let make_level_var_expr = ML_Module_Var (term_name @ ["make_level_var"])
-   let le_var_expr = ML_Module_Var (term_name @ ["le_var"])
-   let le_offset_expr = ML_Module_Var (term_name @ ["le_offset"])
+   let le_var_expr = ML_Module_Var (term_type_name @ ["le_var"])
+   let le_offset_expr = ML_Module_Var (term_type_name @ ["le_offset"])
    let make_level_expr = ML_Module_Var (term_name @ ["make_level"])
-   let le_const_expr = ML_Module_Var (term_name @ ["le_const"])
-   let le_vars_expr = ML_Module_Var (term_name @ ["le_vars"])
+   let le_const_expr = ML_Module_Var (term_type_name @ ["le_const"])
+   let le_vars_expr = ML_Module_Var (term_type_name @ ["le_vars"])
    let make_param_expr = ML_Module_Var (term_name @ ["make_param"])
-   let number_expr = ML_Module_Var (term_name @ ["Number"])
-   let string_expr = ML_Module_Var (term_name @ ["String"])
-   let token_expr = ML_Module_Var (term_name @ ["Token"])
-   let level_expr = ML_Module_Var (term_name @ ["Level"])
-   let var_expr = ML_Module_Var (term_name @ ["Var"])
-   let mnumber_expr = ML_Module_Var (term_name @ ["MNumber"])
-   let mstring_expr = ML_Module_Var (term_name @ ["MString"])
-   let mtoken_expr = ML_Module_Var (term_name @ ["MToken"])
-   let mlevel_expr = ML_Module_Var (term_name @ ["MLevel"])
-   let mvar_expr = ML_Module_Var (term_name @ ["MVar"])
-   let msum_expr = ML_Module_Var (term_name @ ["MSum"])
-   let mdiff_expr = ML_Module_Var (term_name @ ["MDiff"])
-   let mproduct_expr = ML_Module_Var (term_name @ ["MProduct"])
-   let mquotient_expr = ML_Module_Var (term_name @ ["MQuotient"])
-   let mrem_expr = ML_Module_Var (term_name @ ["MRem"])
-   let mless_than_expr = ML_Module_Var (term_name @ ["MLessThan"])
-   let mequal_expr = ML_Module_Var (term_name @ ["MEqual"])
-   let mnot_equal_expr = ML_Module_Var (term_name @ ["MNotEqual"])
+   let number_expr = ML_Module_Var (term_type_name @ ["Number"])
+   let string_expr = ML_Module_Var (term_type_name @ ["String"])
+   let token_expr = ML_Module_Var (term_type_name @ ["Token"])
+   let level_expr = ML_Module_Var (term_type_name @ ["Level"])
+   let var_expr = ML_Module_Var (term_type_name @ ["Var"])
+   let mnumber_expr = ML_Module_Var (term_type_name @ ["MNumber"])
+   let mstring_expr = ML_Module_Var (term_type_name @ ["MString"])
+   let mtoken_expr = ML_Module_Var (term_type_name @ ["MToken"])
+   let mlevel_expr = ML_Module_Var (term_type_name @ ["MLevel"])
+   let mvar_expr = ML_Module_Var (term_type_name @ ["MVar"])
+   let msum_expr = ML_Module_Var (term_type_name @ ["MSum"])
+   let mdiff_expr = ML_Module_Var (term_type_name @ ["MDiff"])
+   let mproduct_expr = ML_Module_Var (term_type_name @ ["MProduct"])
+   let mquotient_expr = ML_Module_Var (term_type_name @ ["MQuotient"])
+   let mrem_expr = ML_Module_Var (term_type_name @ ["MRem"])
+   let mless_than_expr = ML_Module_Var (term_type_name @ ["MLessThan"])
+   let mequal_expr = ML_Module_Var (term_type_name @ ["MEqual"])
+   let mnot_equal_expr = ML_Module_Var (term_type_name @ ["MNotEqual"])
    let make_op_expr = ML_Module_Var (term_name @ ["make_op"])
-   let op_name_expr = ML_Module_Var (term_name @ ["op_name"])
-   let op_params_expr = ML_Module_Var (term_name @ ["op_params"])
+   let op_name_expr = ML_Module_Var (term_type_name @ ["op_name"])
+   let op_params_expr = ML_Module_Var (term_type_name @ ["op_params"])
    let make_bterm_expr = ML_Module_Var (term_name @ ["make_bterm"])
-   let bvars_expr = ML_Module_Var (term_name @ ["bvars"])
-   let bterm_expr = ML_Module_Var (term_name @ ["bterm"])
+   let bvars_expr = ML_Module_Var (term_type_name @ ["bvars"])
+   let bterm_expr = ML_Module_Var (term_type_name @ ["bterm"])
    let mk_var_term_expr = ML_Module_Var (term_name @ ["mk_var_term"])
    let make_term_expr = ML_Module_Var (term_name @ ["make_term"])
-   let term_op_expr = ML_Module_Var (term_name @ ["term_op"])
-   let term_terms_expr = ML_Module_Var (term_name @ ["term_terms"])
+   let term_op_expr = ML_Module_Var (term_type_name @ ["term_op"])
+   let term_terms_expr = ML_Module_Var (term_type_name @ ["term_terms"])
 
    let opname_name = "Opname"
    let make_opname_expr = ML_Module_Var [opname_name; "make_opname"]
 
-   let term_util_name = ["Refiner"; "Refiner"; "TermMeta"]
-   let meta_theorem_expr = ML_Module_Var (term_util_name @ ["MetaTheorem"])
-   let meta_implies_expr = ML_Module_Var (term_util_name @ ["MetaImplies"])
-   let meta_function_expr = ML_Module_Var (term_util_name @ ["MetaFunction"])
-   let meta_iff_expr = ML_Module_Var (term_util_name @ ["MetaIff"])
+   let meta_theorem_expr = ML_Module_Var (term_type_name @ ["MetaTheorem"])
+   let meta_implies_expr = ML_Module_Var (term_type_name @ ["MetaImplies"])
+   let meta_function_expr = ML_Module_Var (term_type_name @ ["MetaFunction"])
+   let meta_iff_expr = ML_Module_Var (term_type_name @ ["MetaIff"])
 
    (************************************************************************
     * PRINTERS                                                             *
@@ -478,6 +478,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/07/03 22:05:43  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.3  1998/07/02 18:35:39  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

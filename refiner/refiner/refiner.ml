@@ -2,14 +2,13 @@
  * Abstract refiner.
  *)
 
-module Refiner = Refiner_std.Refiner
-
-open Refiner.RefineError
-
-let _ = Term_exn.set_generic_refiner_exn (RefineError ("generic", GenericError))
+module Refiner = Refiner_ds.Refiner
 
 (*
  * $Log$
+ * Revision 1.5  1998/07/03 22:05:39  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.4  1998/07/02 22:24:54  jyh
  * Created term_copy module to copy and normalize terms.
  *

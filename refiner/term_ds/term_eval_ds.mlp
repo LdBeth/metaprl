@@ -19,7 +19,6 @@ open Term_ds_sig
 open Term_ds
 
 module TermEval
-#ifdef VERBOSE_EXN
    (Term : TermDsSig
     with type level_exp_var = TermType.level_exp_var
     with type level_exp = TermType.level_exp
@@ -40,14 +39,9 @@ module TermEval
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-#endif VERBOSE_EXN
 =
 struct
-#ifdef VERBOSE_EXN
    open RefineError
-#else
-   open Term_base_ds_simp
-#endif
    open TermType
    open Term
 

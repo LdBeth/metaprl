@@ -90,4 +90,9 @@ sig
     * the function that raised it.
     *)
    exception RefineError of string * refine_error
+
+   (*
+    * A default exception.
+    *)
+   val generic_refiner_exn : exn
 end

@@ -6,7 +6,7 @@ include Base_theory
 
 include Package_info
 
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Rformat
 
 open Filter_cache
@@ -30,8 +30,10 @@ val null_proof : 'a proof_type
 (*
  * Summaries conversions.
  *)
-val convert_intf : (unit, MLast.ctyp, MLast.expr, MLast.sig_item, term, term, term, term) convert
-val convert_impl : ('a proof_type, MLast.ctyp, MLast.expr, MLast.str_item, term, term, term, term) convert
+val convert_intf : (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item,
+                    term, term, term, term, term, term) convert
+val convert_impl : (term, meta_term, 'a proof_type, MLast.ctyp, MLast.expr, MLast.str_item,
+                    term, term, term, term, term, term) convert
 
 (*
  * Printers.
@@ -43,6 +45,9 @@ val format_packages : buffer -> Package.t -> unit
 
 (*
  * $Log$
+ * Revision 1.4  1998/07/03 22:05:11  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.3  1998/05/28 13:45:40  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

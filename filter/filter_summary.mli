@@ -266,6 +266,9 @@ val summary_map :
 (*
  * Term conversion.
  *)
+val term_of_meta_term : meta_term -> term
+val meta_term_of_term : term -> meta_term
+
 val term_of_rewrite :
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
     term, term, term, term, term, term) convert ->
@@ -357,6 +360,9 @@ val debug_summary : bool ref
 
 (*
  * $Log$
+ * Revision 1.19  1998/07/03 22:05:32  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.18  1998/07/02 22:24:50  jyh
  * Created term_copy module to copy and normalize terms.
  *

@@ -19,7 +19,6 @@ open Term_std_sig
 open Term_std
 
 module TermEval
-#ifdef VERBOSE_EXN
    (Term : TermStdSig
     with type level_exp_var = TermType.level_exp_var
     with type level_exp = TermType.level_exp
@@ -40,14 +39,9 @@ module TermEval
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-#endif VERBOSE_EXN
 =
 struct
-#ifdef VERBOSE_EXN
    open RefineError
-#else
-   open Term_base_std_simp
-#endif
    open TermType
    open Term
 
@@ -154,6 +148,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/03 22:06:06  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.2  1998/07/02 22:25:13  jyh
  * Created term_copy module to copy and normalize terms.
  *

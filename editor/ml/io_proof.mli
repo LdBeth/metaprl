@@ -14,30 +14,27 @@ val interface_op : opname
 val implementation_op : opname
 
 (*
- * Normalize a proof when it is unmarshaled.
+ * Conversion to terms.
  *)
-val normalize_proof : proof -> unit
-
-(*
- * During the conversion to terms, the tactics are extracted
- * and returned with the term.
- *)
-val term_of_proof : proof -> term
-val proof_of_term : term -> proof
+val term_of_proof : ('term -> term) -> 'term proof -> term
+val proof_of_term : (term -> 'term) -> 'term Tactic_type.attributes -> term -> 'term proof
 
 (*
  * This function extracts an expression that
  * evaluates to a (string * tactic) array.
  *)
-val tactics_of_proof : proof -> MLast.expr
+val tactics_of_proof : 'term proof -> MLast.expr
 
 (*
  * Print the proof.
  *)
-val print_proof : dform_base -> proof -> unit
+val print_proof : dform_base -> term proof -> unit
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/03 22:05:07  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.2  1998/06/15 22:28:59  jyh
  * Added CZF.
  *

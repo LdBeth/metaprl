@@ -63,7 +63,7 @@ let debug_sentinal = load_debug "sentinal"
  * but we also construct Proof_edit.t structures on demand.
  *)
 type 'a proof_info =
-   ProofRaw of string * proof
+   ProofRaw of string * Proof.io_proof
  | ProofEdit of 'a
 
 (************************************************************************
@@ -305,7 +305,7 @@ struct
     * The type of proofs.
     *)
    type t = Proof_edit.t proof_info ref
-   type raw = proof
+   type raw = Proof.io_proof
 
    (*
     * Get a raw proof from the proof.
@@ -318,9 +318,12 @@ struct
             let proof = Proof.io_proof_of_proof (Proof.main (Proof_edit.proof_of_ped ped)) in
                if !debug_package_info then
                   begin
-                     eprintf "Converting the ped back to a regular proof: %s%t" name eflush;
+                     eprintf "Converting the ped back to a regular proof: %s%t" name eflush
+(*
+ * These proofs are now in Refiner_std terms.
                      let db = Dform_print.get_mode_base !debug_forms "prl" in
                         Io_proof.print_proof db proof
+*)
                   end;
                proof
 
@@ -328,12 +331,13 @@ struct
     * Get a proof from the raw proof.
     *)
    let of_raw name proof =
-      normalize_proof proof;
       if !debug_package_info then
          begin
-            eprintf "Converting io proof for %s%t" name eflush;
+            eprintf "Converting io proof for %s%t" name eflush
+(*
             let db = Dform_print.get_mode_base !debug_forms "prl" in
                Io_proof.print_proof db proof
+*)
          end;
       ref (ProofRaw (name, proof))
 
@@ -342,13 +346,15 @@ struct
     * We just save the io representation.
     *)
    let to_term name proof =
-      term_of_proof (to_raw name proof)
+      let norm = Term_copy.normalize_term (Term_copy.create_norm ()) in
+         term_of_proof norm (to_raw name proof)
 
    (*
     * Convert back to a proof.
     *)
    let of_term name proof =
-      ref (ProofRaw (name, proof_of_term proof))
+      let denorm = Term_copy.denormalize_term (Term_copy.create_denorm ()) in
+         ref (ProofRaw (name, proof_of_term denorm [] proof))
 
    (*
     * When we compile, we extract the tactics into a separate array
@@ -768,11 +774,12 @@ struct
     * A new proof cannot be saved.
     *)
    let new_proof { pack_arg = { ref_label = label; ref_args = args } } name hyps goal =
+      let denorm = Term_copy.denormalize_term (Term_copy.create_denorm ()) in
       let aterm =
-         { aterm_goal = goal;
-           aterm_hyps = hyps;
+         { aterm_goal = denorm goal;
+           aterm_hyps = List.map denorm hyps;
            aterm_label = label;
-           aterm_args = args
+           aterm_args = Tactic_type.map_attributes denorm args
          }
       in
       let step =
@@ -956,6 +963,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.18  1998/07/03 22:05:12  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.17  1998/07/02 18:34:29  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

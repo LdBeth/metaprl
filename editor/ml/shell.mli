@@ -62,7 +62,7 @@ val set_goal : term -> unit
 val set_redex : term -> unit
 val set_contractum : term -> unit
 val set_assumptions : term list -> unit
-val set_params : Filter_summary.param list -> unit
+val set_params : term Filter_summary.param list -> unit
 val check : unit -> unit
 val expand : unit -> unit
 
@@ -83,6 +83,9 @@ val fold_all : unit -> unit
 
 (*
  * $Log$
+ * Revision 1.11  1998/07/03 22:05:22  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.10  1998/07/02 18:34:42  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

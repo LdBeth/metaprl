@@ -6,6 +6,8 @@ include Shell_type
 include Package_info
 include Package_df
 
+open Refiner.Refiner.TermType
+
 open Filter_cache
 open Filter_summary
 
@@ -23,16 +25,19 @@ val create :
 
 val view_rw :
    Package.package ->
-   Package.proof proof_type rewrite_info ->
+   (term, Package.proof proof_type) rewrite_info ->
    edit_object
 
 val view_crw :
    Package.package ->
-   Package.proof proof_type cond_rewrite_info ->
+   (term, Package.proof proof_type) cond_rewrite_info ->
    edit_object
 
 (*
  * $Log$
+ * Revision 1.7  1998/07/03 22:05:24  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.6  1998/07/02 18:34:45  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

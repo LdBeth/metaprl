@@ -13,12 +13,15 @@ open Tactic_type
  *)
 type tactic_argument =
    { ref_label : string;
-     ref_args : attributes;
+     ref_args : term attributes;
      ref_fcache : cache
    }
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/03 22:05:21  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.2  1998/07/02 18:34:39  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

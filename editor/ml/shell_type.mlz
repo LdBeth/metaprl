@@ -18,7 +18,7 @@ type edit_object =
      edit_set_redex : term -> unit;
      edit_set_contractum : term -> unit;
      edit_set_assumptions : term list -> unit;
-     edit_set_params : Filter_summary.param list -> unit;
+     edit_set_params : term Filter_summary.param list -> unit;
      edit_save : unit -> unit;
      edit_check : unit -> extract;
      edit_expand : dform_base -> unit;
@@ -35,6 +35,9 @@ type edit_object =
 
 (*
  * $Log$
+ * Revision 1.7  1998/07/03 22:05:28  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.6  1998/06/15 22:31:57  jyh
  * Added CZF.
  *

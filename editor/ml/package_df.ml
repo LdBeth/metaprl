@@ -57,6 +57,7 @@ let term_of_str_item = term_of_str_item comment
 
 let convert_intf =
       { term_f  = identity;
+        meta_term_f = term_of_meta_term;
         proof_f = (fun _ _ -> null_term);
         ctyp_f  = term_of_type;
         expr_f  = term_of_expr;
@@ -74,6 +75,7 @@ let convert_impl =
          null_term
    in
       { term_f  = identity;
+        meta_term_f = term_of_meta_term;
         proof_f = convert_proof;
         ctyp_f  = term_of_type;
         expr_f  = term_of_expr;
@@ -127,6 +129,9 @@ let format_packages buf pack =
 
 (*
  * $Log$
+ * Revision 1.8  1998/07/03 22:05:10  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.7  1998/07/02 18:34:28  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

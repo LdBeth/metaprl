@@ -142,9 +142,10 @@ let unit_term = mk_simple_term nil_opname []
  * Save term in term_std format.
  *)
 let normalize_info info =
+   let share = create_norm () in
    let convert =
-      { term_f  = normalize_term;
-        meta_term_f = normalize_meta_term;
+      { term_f  = normalize_term share;
+        meta_term_f = normalize_meta_term share;
         proof_f = (fun _ pf -> pf);
         ctyp_f  = identity;
         expr_f  = identity;
@@ -154,9 +155,10 @@ let normalize_info info =
       summary_map convert info
 
 let denormalize_info info =
+   let share = create_denorm () in
    let convert =
-      { term_f  = denormalize_term;
-        meta_term_f = denormalize_meta_term;
+      { term_f  = denormalize_term share;
+        meta_term_f = denormalize_meta_term share;
         proof_f = (fun _ pf -> pf);
         ctyp_f  = identity;
         expr_f  = identity;
@@ -164,42 +166,6 @@ let denormalize_info info =
       }
    in
       summary_map convert info
-
-(*
- * Meta term conversions.
- *)
-let summary_opname = mk_opname "Summary"     nil_opname
-
-let meta_theorem_op     = mk_opname "meta_theorem" summary_opname
-let meta_implies_op     = mk_opname "meta_implies" summary_opname
-let meta_function_op    = mk_opname "meta_function" summary_opname
-let meta_iff_op         = mk_opname "meta_iff" summary_opname
-
-let rec meta_term_of_term t =
-   let opname = opname_of_term t in
-      if opname == meta_theorem_op then
-         MetaTheorem (one_subterm t)
-      else if opname == meta_implies_op then
-         let a, b = two_subterms t in
-            MetaImplies (meta_term_of_term a, meta_term_of_term b)
-      else if opname == meta_function_op then
-         let v, a, b = three_subterms t in
-            MetaFunction (v, meta_term_of_term a, meta_term_of_term b)
-      else if opname == meta_iff_op then
-         let a, b = two_subterms t in
-            MetaIff (meta_term_of_term a, meta_term_of_term b)
-      else
-         raise (Failure "term is not a meta term")
-
-let rec term_of_meta_term = function
-   MetaTheorem t ->
-      mk_simple_term meta_theorem_op [t]
- | MetaImplies (a, b) ->
-      mk_simple_term meta_implies_op [term_of_meta_term a; term_of_meta_term b]
- | MetaFunction (v, a, b) ->
-      mk_simple_term meta_function_op [v; term_of_meta_term a; term_of_meta_term b]
- | MetaIff (a, b) ->
-      mk_simple_term meta_iff_op [term_of_meta_term a; term_of_meta_term b]
 
 (*
  * When a StrFilterCache ot SigFilterCache is
@@ -214,6 +180,7 @@ let term_of_str_item = Filter_ocaml.term_of_str_item comment
 (*
  * Marshaling proofs.
  *)
+let summary_opname = mk_opname "Summary"     nil_opname
 let prim_op        = mk_opname "prim"        summary_opname
 let derived_op     = mk_opname "derived"     summary_opname
 let incomplete_op  = mk_opname "incomplete"  summary_opname
@@ -381,9 +348,10 @@ struct
 
    let marshal = function
       Implementation info ->
+         let share = create_denorm () in
          let convert =
-            { term_f  = denormalize_term;
-              meta_term_f = denormalize_meta_term;
+            { term_f  = denormalize_term share;
+              meta_term_f = denormalize_meta_term share;
               proof_f = (fun name proof -> interactive_proof Convert.to_raw name proof);
               ctyp_f  = identity;
               expr_f  = identity;
@@ -394,9 +362,10 @@ struct
     | Interface _ ->
          raise (Failure "RawStrInfo.marshal")
    let unmarshal info =
+      let share = create_norm () in
       let convert =
-         { term_f  = normalize_term;
-           meta_term_f = normalize_meta_term;
+         { term_f  = normalize_term share;
+           meta_term_f = normalize_meta_term share;
            proof_f = (fun name proof -> interactive_proof Convert.of_raw name proof);
            ctyp_f  = identity;
            expr_f  = identity;
@@ -588,6 +557,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.27  1998/07/03 22:05:29  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.26  1998/07/02 22:24:42  jyh
  * Created term_copy module to copy and normalize terms.
  *

@@ -47,14 +47,41 @@ val check : t -> extract
 val expand : dform_base -> t -> t
 
 (* IO *)
-val io_step_of_step : t -> proof_step
-val step_of_io_step : tactic_argument -> (string, tactic) Hashtbl.t -> sentinal -> proof_step -> t
+type 'a norm
+type 'a denorm
+
+val create_denorm : (term -> 'a) -> 'a denorm
+val create_norm :
+   ('a -> term) ->                      (* normalizer *)
+   tactic_argument ->                   (* Default attributes *)
+   (string, tactic) Hashtbl.t ->        (* Table of compiled tactics *)
+   sentinal ->                          (* Sentinal to be used in the proof *)
+   'a norm
+
+val io_step_of_step : 'a denorm -> t -> 'a proof_step
+val step_of_io_step : 'a norm -> 'a proof_step -> t
+
+(*
+ * Other helper functions.
+ *)
+val tactic_arg_of_aterm : 'a norm -> 'a aterm -> tactic_arg
+val term_attributes_of_attributes : 'a norm ->
+   'a Tactic_type.attributes ->
+   term Tactic_type.attributes
+
+val aterm_of_tactic_arg : 'a denorm -> tactic_arg -> 'a aterm
+val attributes_of_term_attributes : 'a denorm ->
+   term Tactic_type.attributes ->
+   'a Tactic_type.attributes
 
 (* Debug *)
 val debug_io_tactic : bool ref
 
 (*
  * $Log$
+ * Revision 1.13  1998/07/03 22:05:20  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.12  1998/07/02 18:34:38  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

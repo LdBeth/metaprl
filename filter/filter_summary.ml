@@ -797,6 +797,40 @@ let infix_op                    = mk_opname "infix"
 let magic_block_op              = mk_opname "magic_block"
 let summary_item_op             = mk_opname "summary_item"
 
+(*
+ * Meta term conversions.
+ *)
+let meta_theorem_op     = mk_opname "meta_theorem"
+let meta_implies_op     = mk_opname "meta_implies"
+let meta_function_op    = mk_opname "meta_function"
+let meta_iff_op         = mk_opname "meta_iff"
+
+let rec meta_term_of_term t =
+   let opname = opname_of_term t in
+      if opname == meta_theorem_op then
+         MetaTheorem (one_subterm t)
+      else if opname == meta_implies_op then
+         let a, b = two_subterms t in
+            MetaImplies (meta_term_of_term a, meta_term_of_term b)
+      else if opname == meta_function_op then
+         let v, a, b = three_subterms t in
+            MetaFunction (v, meta_term_of_term a, meta_term_of_term b)
+      else if opname == meta_iff_op then
+         let a, b = two_subterms t in
+            MetaIff (meta_term_of_term a, meta_term_of_term b)
+      else
+         raise (Failure "term is not a meta term")
+
+let rec term_of_meta_term = function
+   MetaTheorem t ->
+      mk_simple_term meta_theorem_op [t]
+ | MetaImplies (a, b) ->
+      mk_simple_term meta_implies_op [term_of_meta_term a; term_of_meta_term b]
+ | MetaFunction (v, a, b) ->
+      mk_simple_term meta_function_op [v; term_of_meta_term a; term_of_meta_term b]
+ | MetaIff (a, b) ->
+      mk_simple_term meta_iff_op [term_of_meta_term a; term_of_meta_term b]
+
 (*************
  * DESTRUCTION
  *)
@@ -1858,6 +1892,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.30  1998/07/03 22:05:30  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.29  1998/07/02 22:24:49  jyh
  * Created term_copy module to copy and normalize terms.
  *

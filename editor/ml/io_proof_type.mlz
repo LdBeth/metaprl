@@ -11,22 +11,20 @@
 
 include Tactic_type
 
-open Refiner.Refiner.Term
-
 (*
  * An IO step does not save the tactic,
  * and saves only part of the goal.
  *)
-type aterm =
-   { aterm_goal  : term;                       (* Goal of this step *)
-     aterm_hyps  : term list;                  (* Assumptions in this proof *)
-     aterm_label : string;                     (* Label describes the step in the proof *)
-     aterm_args  : Tactic_type.attributes      (* Proof annotations *)
+type 'term aterm =
+   { aterm_goal  : 'term;                       (* Goal of this step *)
+     aterm_hyps  : 'term list;                  (* Assumptions in this proof *)
+     aterm_label : string;                      (* Label describes the step in the proof *)
+     aterm_args  : 'term Tactic_type.attributes (* Proof annotations *)
    }
 
-type proof_step =
-   { step_goal : aterm;
-     step_subgoals : aterm list;
+type 'term proof_step =
+   { step_goal : 'term aterm;
+     step_subgoals : 'term aterm list;
      step_ast : MLast.expr;             (* Parsed expression *)
      step_text : string                 (* String representation of text *)
    }
@@ -36,11 +34,11 @@ type proof_step =
  * The status is redundant, except for "asserted" proofs.
  * Asserted proofs are incomplete, but they are marked as complete.
  *)
-type proof =
+type 'term proof =
    { proof_status : proof_status;
-     proof_step : proof_node;
-     proof_children : proof_child list;
-     proof_extras : proof list
+     proof_step : 'term proof_node;
+     proof_children : 'term proof_child list;
+     proof_extras : 'term proof list
    }
 
 and proof_status =
@@ -49,16 +47,19 @@ and proof_status =
  | StatusAsserted
  | StatusComplete
 
-and proof_node =
-   ProofStep of proof_step
- | ProofNode of proof
+and 'term proof_node =
+   ProofStep of 'term proof_step
+ | ProofNode of 'term proof
 
-and proof_child =
-   ChildGoal of aterm
- | ChildProof of proof
+and 'term proof_child =
+   ChildGoal of 'term aterm
+ | ChildProof of 'term proof
 
 (*
  * $Log$
+ * Revision 1.5  1998/07/03 22:05:09  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.4  1998/06/09 20:51:10  jyh
  * Propagated refinement changes.
  * New tacticals module.

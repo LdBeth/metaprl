@@ -26,13 +26,11 @@ let debug_subst =
       }
 
 module Term
-#ifdef VERBOSE_EXN
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-#endif VERBOSE_EXN
 =
 struct
    (************************************************************************
@@ -40,10 +38,7 @@ struct
     ************************************************************************)
 
    open TermType
-
-#ifdef VERBOSE_EXN
    open RefineError
-#endif VERBOSE_EXN
 
    type level_exp_var = TermType.level_exp_var
    type level_exp = TermType.level_exp

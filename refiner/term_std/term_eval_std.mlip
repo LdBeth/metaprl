@@ -8,7 +8,6 @@ open Term_std_sig
 open Term_eval_sig
 
 module TermEval
-#ifdef VERBOSE_EXN
    (Term : TermStdSig
     with type level_exp_var = TermType.level_exp_var
     with type level_exp = TermType.level_exp
@@ -29,12 +28,14 @@ module TermEval
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-#endif VERBOSE_EXN
 : TermEvalSig
   with type term = TermType.term
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/03 22:06:05  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.1  1998/07/02 18:36:34  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

@@ -164,11 +164,16 @@ val expand : dform_base -> t -> t
 (*
  * IO
  *)
-val io_proof_of_proof : t -> proof
-val proof_of_io_proof : tactic_argument -> (string * tactic) array -> sentinal -> proof -> t
+type io_proof = Refiner_std.Refiner.TermType.term proof
+
+val io_proof_of_proof : t -> io_proof
+val proof_of_io_proof : tactic_argument -> (string * tactic) array -> sentinal -> io_proof -> t
 
 (*
  * $Log$
+ * Revision 1.14  1998/07/03 22:05:16  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.13  1998/07/02 18:34:34  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

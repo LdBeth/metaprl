@@ -43,7 +43,7 @@ let debug_refine = load_debug "refine"
  * This is the actual rewrite object.
  *)
 type info =
-   { mutable rule_params : param list;
+   { mutable rule_params : term param list;
      mutable rule_assums : term list;
      mutable rule_goal : term;
      mutable rule_proof : Package.proof proof_type;
@@ -375,6 +375,9 @@ let view_rule pack
 
 (*
  * $Log$
+ * Revision 1.5  1998/07/03 22:05:26  jyh
+ * IO terms are now in term_std format.
+ *
  * Revision 1.4  1998/07/02 18:34:46  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises
