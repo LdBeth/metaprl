@@ -31,7 +31,7 @@
 
 open Set_sig
 
-module Make (Ord : DebugOrderedType)
+module Make (Ord : Set.OrderedType)
 : SetSig
   with type elt = Ord.t
 

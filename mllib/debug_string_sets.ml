@@ -43,8 +43,8 @@ struct
       match Set1.mem s1 v, Set2.mem s2 v with
          (true,true) -> true
        | (false,false) -> false
-       | _ ->
-            eprintf "is_empty_set mismatch:\n"; error_sets s1 s2
+       | m1,m2 ->
+            eprintf "mem mismatch:\nElement: %s membership: %b %b\n" v m1 m2; error_sets s1 s2
 
    let make v =
       let s1 = Set1.make v in

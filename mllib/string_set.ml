@@ -36,7 +36,7 @@ struct
    let compare = compare
 end
 
-module StringSet = Red_black_set.Make (StringOrd)
+module StringSet = Debug_string_sets.Make(Fun_splay_set.Make(StringOrd))(Red_black_set.Make (StringOrd))
 
 (*
  * -*-
