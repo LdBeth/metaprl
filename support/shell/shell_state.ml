@@ -63,7 +63,33 @@ let debug_lock =
 (*
  * Intialize readline package.
  *)
+let rl_history_file =
+   try
+      Some (Sys.getenv "MP_HISTORY_FILE")
+   with
+      Not_found ->
+         try
+            let home = Sys.getenv "HOME" in
+               Some (Filename.concat home ".metaprl_history")
+         with
+            Not_found -> None
+
+let rl_history_length =
+   try
+      int_of_string (Sys.getenv "MP_HISTORY_LENGTH")
+   with
+      _ -> 100
+
 let _ = Lm_readline.initialize_readline ()
+let _ = match rl_history_file with
+      None -> ()
+    | Some name ->
+         try
+            Lm_readline.read_history name
+         with
+            Sys_error err ->
+               eprintf "Couldn't load readline history file: \"%s\"\n%s\n" name err;
+               flush_all ()
 
 (*
  * Save the text in the input_buffers during each toplevel read.
@@ -628,6 +654,18 @@ let set_prompt _ prompt =
 let set_prompt2 _ prompt =
    stdin_prompt2 := prompt
 
+let save_readline_history () =
+   match rl_history_file with
+      None -> ()
+    | Some name ->
+         try
+            Lm_readline.write_history name;
+            Lm_readline.history_truncate_file name rl_history_length
+         with
+            Sys_error err ->
+               eprintf "Couldn't save readline history file \"%s\"\n%s\n" name err
+
+
 let stdin_stream state =
    let buf = create_buffer () in
    let refill loc =
@@ -645,6 +683,7 @@ let stdin_stream state =
                read loc
             with
                End_of_file ->
+                  save_readline_history ();
                   None
          else
             let c = buffer.[index] in
