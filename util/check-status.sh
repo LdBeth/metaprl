@@ -3,6 +3,10 @@
 # WARNING: Do not run this script directly!
 # Run the util/check-status script instead.
 
+# Standardize the terminal environment
+export TERM=xterm LANG=C
+stty cols 80
+
 REMOTE_DIR=http://files.metaprl.org/logs/
 ST_NAME=status_all
 if [ -x /usr/bin/wget ]; then
