@@ -12,75 +12,53 @@ let _ =
       eprintf "Loading List_util%t" eflush
 
 (* Filter items out of a list *)
-let filter f l =
-   let rec aux = function
-      [] -> []
-    | h::t ->
-         if f h then
-            h::(aux t)
-         else
-            aux t
-   in
-      aux l
+let rec filter f = function
+   [] -> []
+ | h::t ->
+      if f h then
+         h::(filter f t)
+      else
+         filter f t
 
 (*
  * Compare two lists of things.
  *)
-let compare_lists cmp l1 l2 =
-   let rec aux = function
-      h1::t1, h2::t2 ->
-         let i = cmp h1 h2 in
-            if i = 0 then
-               aux (t1, t2)
-            else
-               i
-
-    | [], [] -> 0
-    | [], _ -> -1
-    | _ -> 1
-   in
-      aux (l1, l2)
+let rec compare_lists cmp l1 l2 = match (l1,l2) with
+   h1::t1, h2::t2 ->
+      let i = cmp h1 h2 in
+         if i = 0 then
+            compare_lists cmp t1 t2
+         else
+            i
+ | [], [] -> 0
+ | [], _ -> -1
+ | _ -> 1
 
 (*
  * Test two lists.
  *)
-let for_all2 f l1 l2 =
-   let rec compare = function
-      h1::t1, h2::t2 ->
-         compare (t1, t2) & f h1 h2
-    | [], [] ->
-         true
-    | _ ->
-         false
-   in
-      compare (l1, l2)
+let rec for_all2 f l1 l2 = match (l1,l2) with
+   h1::t1, h2::t2 -> for_all2 f t1 t2 & f h1 h2
+ | [], [] -> true
+ | _ -> false
 
 (*
  * Exists a pair in the two lists.
  *)
-let exists2 f l1 l2 =
-   let rec compare = function
-      h1::t1, h2::t2 ->
-         f h1 h2 or compare (t1, t2)
-    | _ ->
-         false
-   in
-      compare (l1, l2)
+let rec exists2 f l1 l2 = match (l1,l2) with
+   h1::t1, h2::t2 ->
+      f h1 h2 or exists2 f t1 t2
+ | _ -> false
 
 (*
  * Map a function over two lists.
  *)
-let map2 f l1 l2 =
-   let rec map = function
-      h1::t1, h2::t2 ->
-         let h = f h1 h2 in
-            h :: map (t1, t2)
-    | [], [] ->
-         []
-    | _ ->
-         raise (Failure "map2")
-   in
-      map (l1, l2)
+let rec map2 f l1 l2 = match (l1,l2) with
+   h1::t1, h2::t2 ->
+      let h = f h1 h2 in
+         h :: map2 f t1 t2
+ | [], [] -> []
+ | _ -> raise (Failure "map2")
 
 (*
  * Remove marked elements.
@@ -95,17 +73,14 @@ let rec remove_elements l1 l2 =
     | _, l ->
          l
 
-let removeq x l =
-   let rec remove = function
-      h::t ->
-         if h == x then
-            t
-         else
-            h :: remove t
-    | [] ->
-         raise (Failure "removeq")
-   in
-      remove l
+let rec removeq x = function
+   h::t ->
+      if h == x then
+         t
+      else
+         h :: removeq x t
+ | [] ->
+      raise (Failure "removeq")
 
 (*
  * Iterated tail.
@@ -123,61 +98,49 @@ let rec nth_tl i l =
 (*
  * Functional replacement.
  *)
-let replacef_nth i f l =
-   let rec replace i = function
-      h::t ->
-         if i = 0 then
-            f h :: t
-         else
-            h :: replace (i - 1) t
-    | [] ->
-         raise (Failure "replacef_nth")
-   in
-      replace i l
+let rec replacef_nth i f = function
+   h::t ->
+      if i = 0 then
+         f h :: t
+      else
+         h :: replacef_nth (i - 1) f t
+ | [] ->
+      raise (Failure "replacef_nth")
 
-let replacef_arg_nth i f l =
-   let rec replace i = function
-      h::t ->
-         if i = 0 then
-            let h, arg = f h in
-               h :: t, arg
-         else
-            let t, arg = replace (i - 1) t in
-               h :: t, arg
-    | [] ->
-         raise (Failure "replacef_arg_nth")
-   in
-      replace i l
+let rec replacef_arg_nth i f = function
+   h::t ->
+      if i = 0 then
+         let h, arg = f h in
+            h :: t, arg
+      else
+         let t, arg = replacef_arg_nth (i - 1) f t in
+            h :: t, arg
+ | [] ->
+      raise (Failure "replacef_arg_nth")
 
 (*
  * Functional replacement.
  *)
-let replace_nth i x l =
-   let rec replace i = function
-      h::t ->
-         if i = 0 then
-            x :: t
-         else
-            h :: replace (i - 1) t
-    | [] ->
-         raise (Failure "replace_nth")
-   in
-      replace i l
+let rec replace_nth i x = function
+   h::t ->
+      if i = 0 then
+         x :: t
+      else
+         h :: replace_nth (i - 1) x t
+ | [] ->
+      raise (Failure "replace_nth")
 
 (*
  * Functional replacement.
  *)
-let replaceq x1 x2 l =
-   let rec replace = function
-      h::t ->
-         if h == x1 then
-            x2 :: replace t
-         else
-            h :: replace t
-    | [] ->
-         []
-   in
-      replace l
+let rec replaceq x1 x2 = function
+   h::t ->
+      if h == x1 then
+         x2 :: replaceq x1 x2 t
+      else
+         h :: replaceq x1 x2 t
+ | [] ->
+      []
 
 (*
  * Remove an element.
@@ -195,198 +158,164 @@ let rec remove_nth i l =
 (*
  * Insert an element into a position.
  *)
-let insert_nth i x l =
-   let rec insert i l =
-      if i = 0 then
-         x :: l
-      else
-         match l with
-            h::t ->
-               h :: insert (i - 1) t
-          | [] ->
-               raise (Failure "insert_nth")
-   in
-      insert i l
+let rec insert_nth i x l =
+   if i = 0 then
+      x :: l
+   else
+      match l with
+         h::t ->
+            h :: insert_nth (i - 1) x t
+       | [] ->
+            raise (Failure "insert_nth")
 
 (*
  * Find the elemnt.
  *)
-let find f l =
-   let rec find = function
-      h::t ->
-         if f h then
-            h
-         else
-            find t
-    | [] ->
-         raise Not_found
-   in
-      find l
+let rec find f = function
+   h::t ->
+      if f h then
+         h
+      else
+         find f t
+ | [] ->
+      raise Not_found
 
-let find_item f l =
-   let rec find i = function
-      h::t ->
-         if f h then
-            i
-         else
-            find (i + 1) t
-    | [] ->
-         raise Not_found
-   in
-      find 0 l
+let rec find_item_aux f i = function
+   h::t ->
+      if f h then
+         i
+      else
+         find_item_aux f (i + 1) t
+ | [] ->
+      raise Not_found
 
-let find_index v l =
-   let rec find i = function
-      h::t ->
-         if h = v then
-            i
-         else
-            find (i + 1) t
-    | [] ->
-         raise Not_found
-   in
-      find 0 l
+let find_item f l = find_item_aux f 0 l
 
-let find_indexq v l =
-   let rec find i = function
-      h::t ->
-         if h == v then
-            i
-         else
-            find (i + 1) t
-    | [] ->
-         raise Not_found
-   in
-      find 0 l
+let rec find_index_aux v i = function
+   h::t ->
+      if h = v then
+         i
+      else
+         find_index_aux v (i + 1) t
+ | [] ->
+      raise Not_found
+
+let find_index v l = find_index_aux v 0 l
+
+let rec find_indexq_aux v i = function
+   h::t ->
+      if h == v then
+         i
+      else
+         find_indexq_aux v (i + 1) t
+ | [] ->
+      raise Not_found
+
+let find_indexq v l = find_indexq_aux v 0 l
 
 (*
  * Intersect two lists.
  * Quadratic algorithm.
  *)
-let intersect l1 l2 =
-   let rec aux = function
-      h::t ->
-         if List.mem h l2 then
-            h :: aux t
-         else
-            aux t
-    | [] -> []
-   in
-      aux l1
+let rec intersect l = function
+   h::t ->
+      if List.mem h l then
+         h :: intersect l t
+      else
+         intersect l t
+ | [] -> []
 
-let intersectq l1 l2 =
-   let rec aux = function
-      h::t ->
-         if List.memq h l2 then
-            h :: aux t
-         else
-            aux t
-    | [] -> []
-   in
-      aux l1
+let rec intersectq l = function
+   h::t ->
+      if List.memq h l then
+         h :: intersectq l t
+      else
+         intersectq l t
+ | [] -> []
 
 (*
  * Subtract an element from a list.
  * Quadratic algorithm.
  *)
-let subtract l1 l2 =
-   let rec aux = function
-      h::t ->
-         if List.mem h l2 then
-            t
-         else
-            h::(aux t)
-    | [] -> []
-   in
-      aux l1
+let rec subtract l1 l2 = match l1 with
+   h::t ->
+      if List.mem h l2 then
+         t
+      else
+         h::(subtract t l2)
+ | [] -> []
 
 (*
  * Subtract an element from a list.
  * Quadratic algorithm.
  *)
-let subtractq l1 l2 =
-   let rec aux = function
-      h::t ->
-         if List.memq h l2 then
-            t
-         else
-            h::(aux t)
-    | [] -> []
-   in
-      aux l1
+let rec subtractq l1 l2 = match l1 with
+   h::t ->
+      if List.memq h l2 then
+         t
+      else
+         h::(subtractq t l2)
+ | [] -> []
+
+(*
+ * Union of lists by structural equality.
+ *)
+let rec union l = function
+   h::t ->
+      if List.mem h l then
+         union l t
+      else
+         h::(union l t)
+ | [] ->
+      l
 
 (*
  * Union of lists by physical equality.
  *)
-let union l l' =
-   let rec aux = function
-      h::t ->
-         if List.mem h l' then
-            aux t
-         else
-            h::(aux t)
-    | [] ->
-         l'
-   in
-      aux l
-
-(*
- * Union of lists by physical equality.
- *)
-let unionq l l' =
-   let rec aux = function
-      h::t ->
-         if List.memq h l' then
-            aux t
-         else
-            h::(aux t)
-    | [] ->
-         l'
-   in
-      aux l
+let rec unionq l = function
+   h::t ->
+      if List.memq h l then
+         unionq l t
+      else
+         h::(unionq l t)
+ | [] ->
+      l
 
 (*
  * Zip two lists.
  *)
-let zip_list l l1 l2 =
-   let rec aux = function
-      (h1::t1), (h2::t2) ->
-         (h1, h2)::(aux (t1, t2))
-    | [], [] ->
-         l
-    | _ -> raise (Failure "zip")
-   in
-      aux (l1, l2)
+let rec zip_list l l1 l2 = match (l1,l2) with
+   (h1::t1), (h2::t2) ->
+      (h1, h2)::(zip_list l t1 t2)
+ | [], [] ->
+      l
+ | _ -> raise (Failure "zip")
 
 let zip a b = zip_list [] a b
 
 (*
  * Find index of association.
  *)
-let assoc_index l a =
-   let rec aux i = function
-      (a', _)::t ->
-         if a' = a then
-            i
-         else
-            aux (i + 1) t
-    | [] -> raise Not_found
-   in
-      aux 0 l
+let rec assoc_index_aux a i = function
+   (a', _)::t ->
+      if a' = a then
+         i
+      else
+         assoc_index_aux a (i + 1) t
+ | [] -> raise Not_found
+
+let assoc_index l a = assoc_index_aux a 0 l
 
 (*
  * Replace an association, but preserve order.
  *)
-let assoc_replace l a b =
-   let rec aux = function
-      (a', b')::t ->
-         if a' = a then
-            (a, b)::t
-         else
-            (a', b')::(aux t)
-    | [] -> raise Not_found
-   in
-      aux l
+let rec assoc_replace l a b = match l with
+   (a', b')::t ->
+      if a' = a then
+         (a, b)::t
+      else
+         (a', b')::(assoc_replace t a b)
+ | [] -> raise Not_found
 
 (*
  * Add the association if it doesn't already exist.
@@ -403,17 +332,14 @@ let add_assoc (v1, v2) l =
 (*
  * Split a list.
  *)
-let split_list i l =
-   let rec split = function
-      0, l ->
-         [], l
-    | i, h::t ->
-         let l, l' = split (i - 1, t) in
-            h::l, l'
-    | i, [] ->
-         raise (Failure "split_list")
-   in
-      split (i, l)
+let rec split_list i l = match (i,l) with
+   0, _ ->
+      [], l
+ | _, h::t ->
+      let l, l' = split_list (i - 1) t in
+         h::l, l'
+ | _, [] ->
+      raise (Failure "split_list")
 
 (*
  * Split off the last item.
@@ -448,104 +374,92 @@ let rec fst_split = function
 (*
  * Remove the specified suffix from the list.
  *)
-let remove_suffix l suffix =
-   let rec aux = function
-      (0, l') ->
-         if l' = suffix then
-            []
-         else
-            raise (Failure "remove_suffix")
-    | (i, _::t) ->
-         aux (i - 1, t)
-    | _ ->
-         (* This will never happen *)
+
+let rec remove_suffix_aux suffix = function
+   (0, l') ->
+      if l' = suffix then
+         []
+      else
          raise (Failure "remove_suffix")
-   in
+ | (i, _::t) ->
+      remove_suffix_aux suffix (i - 1, t)
+ | _ ->
+      (* This will never happen *)
+      raise (Failure "remove_suffix")
+
+let remove_suffix l suffix =
    let i = (List.length l) - (List.length suffix) in
       if i >= 0 then
-         aux (i, l)
+         remove_suffix_aux suffix (i, l)
       else
          raise (Failure "remove_suffix")
 
 (*
  * Reverse do_list.
  *)
-let rev_iter f =
-   let rec aux = function
-      h::t ->
-         aux t;
-         f h;
-         ()
-    | [] ->
-         ()
-   in
-      aux
+let rec rev_iter f = function
+   h::t ->
+      rev_iter f t;
+      f h;
+      ()
+ | [] ->
+      ()
 
 (*
  * Flat map.
  *)
-let flat_map f l =
-   let rec aux = function
-      h::t ->
-         let h = f h in
-            if h = [] then
-               aux t
-            else
-               h @ aux t
-    | [] ->
-         []
-   in
-      aux l
+let rec flat_map f = function
+   h::t ->
+      let h = f h in
+         if h = [] then
+            flat_map f t
+         else
+            h @ flat_map f t
+ | [] ->
+      []
 
 (*
  * Map, and discard errors.
  *)
-let fail_map f l =
-   let rec aux = function
-      h::t ->
-         begin
-            try
-               let h = f h in
-                  h :: aux t
-            with
-               Failure _ ->
-                  aux t
-         end
-    | [] ->
-         []
-   in
-      aux l
+let rec fail_map f = function
+   h::t ->
+      begin
+         try
+            let h = f h in
+               h :: fail_map f t
+         with
+            Failure _ ->
+               fail_map f t
+      end
+ | [] ->
+      []
 
 (*
  * Map, and discard None.
  *)
-let some_map f l =
-   let rec aux = function
-      h::t ->
-         begin
-            match f h with
-               Some h ->
-                  h :: aux t
-             | None ->
-                  aux t
-         end
-    | [] ->
-         []
-   in
-      aux l
+let rec some_map f = function
+   h::t ->
+      begin
+         match f h with
+            Some h ->
+               h :: some_map f t
+          | None ->
+               some_map f t
+      end
+ | [] ->
+      []
 
 (*
  * Cross between map and fold_left.
  *)
-let fold_left f x l =
-   let rec aux x l = function
-      h :: t ->
-         let x', h' = f x h in
-            aux x' (h' :: l) t
-    | [] ->
-         x, List.rev l
-   in
-      aux x [] l
+let rec fold_left_aux f x l = function
+   h :: t ->
+      let x', h' = f x h in
+         fold_left_aux f x' (h' :: l) t
+ | [] ->
+      x, List.rev l
+
+let fold_left f x l = fold_left_aux f x [] l
 
 (*
  * Inherited.
@@ -560,6 +474,9 @@ let rec rev_iter2 f a b = match (a,b) with
 
 (*
  * $Log$
+ * Revision 1.17  1998/06/14 00:58:38  nogin
+ * Do not define helper functions inside a function
+ *
  * Revision 1.16  1998/06/14 00:04:14  nogin
  * "for_all2 f a b" should not call f when a and b have different length
  *
