@@ -49,15 +49,8 @@ let _ =
 
 module Sequent =
 struct
-   (*
-    * Types.
-    *)
-   type extract = TacticInternalType.extract
-   type conv = TacticInternalType.conv
-   type tactic = TacticInternalType.tactic
-   type tactic_arg = TacticInternalType.tactic_arg
-   type sentinal = TacticInternalType.sentinal
-   type raw_attribute = TacticInternalType.raw_attribute
+   module SequentTypes = TacticInternalType
+   open TacticInternalType
 
    (*
     * Two tactic_arguments are equal when they have

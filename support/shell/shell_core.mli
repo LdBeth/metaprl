@@ -32,7 +32,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 
 open Tactic_type
-open Tactic_type.Tacticals
+open Tactic_type.Tactic
 
 open Shell_sig
 open Shell_util

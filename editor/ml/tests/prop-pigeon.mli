@@ -32,7 +32,7 @@
 
 extends Itt_theory
 
-open Tactic_type.Tacticals
+open Tactic_type.Tactic
 
 topval proveT : tactic
 topval propDecideT : tactic

@@ -36,7 +36,7 @@ extends Summary
 open Mp_resource
 
 open Tactic_cache
-open Tactic_type.Tacticals
+open Tactic_type.Tactic
 
 (************************************************************************
  * TYPES                                                                *

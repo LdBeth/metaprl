@@ -44,7 +44,7 @@ open Refiner.Refiner
 open Dform
 
 open Tactic_type
-open Tactic_type.Tacticals
+open Tactic_type.Tactic
 open Shell_sig
 
 (*

@@ -33,12 +33,9 @@
 open Tactic_boot_sig
 open Tactic_boot
 
-module Conversionals
-: ConversionalsSig
-  with type env = TacticInternalType.env
-  with type conv = TacticInternalType.conv
-  with type tactic_arg = TacticInternalType.tactic_arg
-  with type tactic = TacticInternalType.tactic
+module Conversionals : ConversionalsSig
+   with module ConversionalsTypes = TacticInternalType
+   with type env = TacticInternalType.env
 
 (*
  * -*-

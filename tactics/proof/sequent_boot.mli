@@ -33,14 +33,7 @@
 open Tactic_boot_sig
 open Tactic_boot
 
-module Sequent
-: SequentSig
-  with type extract = TacticInternalType.extract
-  with type conv = TacticInternalType.conv
-  with type tactic = TacticInternalType.tactic
-  with type tactic_arg = TacticInternalType.tactic_arg
-  with type sentinal = TacticInternalType.sentinal
-  with type raw_attribute = TacticInternalType.raw_attribute
+module Sequent : SequentSig with module SequentTypes = TacticInternalType
 
 (*
  * -*-

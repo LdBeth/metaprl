@@ -35,18 +35,11 @@ open Tactic_boot_sig
 open Tactic_boot
 
 module Rewrite
-: RewriteSig
+: RewriteInternalSig
   with type env = TacticInternalType.env
   with type conv = TacticInternalType.conv
   with type tactic_arg = TacticInternalType.tactic_arg
   with type tactic = TacticInternalType.tactic
-
-module RewriteInternal
-: RewriteInternalSig
-  with type env = Rewrite.env
-  with type conv = Rewrite.conv
-  with type tactic_arg = Rewrite.tactic_arg
-  with type tactic = Rewrite.tactic
 
 (*
  * -*-

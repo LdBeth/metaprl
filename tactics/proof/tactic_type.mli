@@ -33,51 +33,36 @@
 
 open Tactic_boot_sig
 
-module TacticType
-: TacticTypeSig
+module TacticType : TacticTypeSig
+
+module TacticTypes : TacticSigTypes
+  with type arglist = TacticType.arglist
 
 module Tactic
 : TacticSig
   with type attribute = TacticType.attribute
   with type arglist = TacticType.arglist
+  with type conv = TacticTypes.conv
+  with type tactic = TacticTypes.tactic
+  with type tactic_arg = TacticTypes.tactic_arg
 
-module Tacticals
-: TacticalsSig
-  with type tactic = Tactic.tactic
-  with type tactic_arg = Tactic.tactic_arg
-  with type arglist = TacticType.arglist
-
-module Rewrite
-: RewriteSig
-  with type conv = Tactic.conv
-  with type tactic = Tactic.tactic
-  with type tactic_arg = Tactic.tactic_arg
+module Tacticals : TacticalsSig with module TacticalsTypes = TacticTypes
 
 module Conversionals
 : ConversionalsSig
-  with type conv = Rewrite.conv
-  with type env = Rewrite.env
-  with type tactic_arg = Tactic.tactic_arg
-  with type tactic = Tactic.tactic
+  with module ConversionalsTypes = TacticTypes
 
-module Sequent
-: SequentSig
-  with type extract = Tacticals.extract
-  with type tactic = Tactic.tactic
-  with type tactic_arg = Tactic.tactic_arg
-  with type sentinal = Tactic.sentinal
-  with type conv = Conversionals.conv
-  with type raw_attribute = Tactic.raw_attribute
+module Sequent : SequentSig with module SequentTypes = TacticTypes
 
 module Proof
 : ProofSig
-  with type extract = Tacticals.extract
+  with type extract = Tactic.extract
   with type tactic_arg = Tactic.tactic_arg
   with type tactic = Tactic.tactic
   with type sentinal = Tactic.sentinal
   with type raw_attribute = Tactic.raw_attribute
-  with type attribute = TacticType.attribute
-  with type arglist = TacticType.arglist
+  with type attribute = Tactic.attribute
+  with type arglist = Tactic.arglist
 
 (*
  * -*-

@@ -172,6 +172,7 @@ open Simple_print
 open Term_match_table
 
 open Tactic_type
+open Tactic_type.Tactic
 open Tactic_type.Tacticals
 
 open Shell_sig

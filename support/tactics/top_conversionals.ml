@@ -80,7 +80,7 @@ open Refiner.Refiner.RefineError
 
 open Term_match_table
 
-open Tactic_type.Rewrite
+open Tactic_type.Tactic
 open Tactic_type.Conversionals
 open Tactic_type.Sequent
 

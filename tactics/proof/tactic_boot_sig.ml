@@ -191,17 +191,11 @@ sig
     | HigherConv of conv
     | ThenTC of conv * tactic
     | IdentityConv
+
+   type pre_tactic
 end
 
-(*
- * Exported tactic module.
- *)
-module type TacticSig =
-sig
-   (************************************************************************
-    * TYPES                                                                *
-    ************************************************************************)
-
+module type TacticSigTypes = sig
    (*
     * Here are all the different type of tactics.
     *    1. A tactic_arg contains all the info about the argument
@@ -219,6 +213,15 @@ sig
    type raw_attribute
    type raw_attributes = raw_attribute list
    type arglist
+   type extract
+end
+
+(*
+ * Exported tactic module.
+ *)
+module type TacticSig =
+sig
+   include TacticSigTypes
 
    (************************************************************************
     * OPERATIONS                                                           *
@@ -708,15 +711,8 @@ end
  *)
 module type SequentSig =
 sig
-   (*
-    * Types.
-    *)
-   type extract
-   type conv
-   type tactic
-   type tactic_arg
-   type sentinal
-   type raw_attribute
+   module SequentTypes : TacticSigTypes
+   open SequentTypes
 
    (*
     * Two tactic_arguments are equal when they have
@@ -780,10 +776,8 @@ end
  *)
 module type TacticalsSig =
 sig
-   type tactic
-   type tactic_arg
-   type arglist
-   type extract
+   module TacticalsTypes : TacticSigTypes
+   open TacticalsTypes
 
    (* Trivial tactics *)
    val idT : tactic
@@ -942,28 +936,6 @@ sig
    val get_alt_arg : tactic_arg -> bool
 end
 
-(*
- * Rewriter operations.
- *)
-module type RewriteSig =
-sig
-   type env
-   type conv
-   type tactic
-   type tactic_arg
-
-   (*
-    * Create a conversion from a basic rewrite.
-    * This function is required by filter_prog.
-    *)
-   val rewrite_of_pre_rewrite : prim_rewrite -> int array -> term list -> conv
-
-   (*
-    * Standard rewrite annotatetion processor: return a pair of the redex and the conv
-    *)
-   val redex_and_conv_of_rw_annotation: string -> (prim_rewrite, term * conv) rw_annotation_processor
-end
-
 module type RewriteInternalSig =
 sig
    type env
@@ -1042,6 +1014,17 @@ sig
     * Debugging.
     *)
    val apply_rewrite : global_resource -> conv -> term -> term
+
+   (*
+    * Create a conversion from a basic rewrite.
+    * This function is required by filter_prog.
+    *)
+   val rewrite_of_pre_rewrite : prim_rewrite -> int array -> term list -> conv
+
+   (*
+    * Standard rewrite annotatetion processor: return a pair of the redex and the conv
+    *)
+   val redex_and_conv_of_rw_annotation: string -> (prim_rewrite, term * conv) rw_annotation_processor
 end
 
 (*
@@ -1049,10 +1032,10 @@ end
  *)
 module type ConversionalsSig =
 sig
+   module ConversionalsTypes : TacticSigTypes
+   open ConversionalsTypes
+
    type env
-   type conv
-   type tactic_arg
-   type tactic
 
    (*
     * Environment.
@@ -1179,6 +1162,17 @@ sig
     * Debugging.
     *)
    val apply_rewrite : global_resource -> conv -> term -> term
+
+   (*
+    * Create a conversion from a basic rewrite.
+    * This function is required by filter_prog.
+    *)
+   val rewrite_of_pre_rewrite : prim_rewrite -> int array -> term list -> conv
+
+   (*
+    * Standard rewrite annotatetion processor: return a pair of the redex and the conv
+    *)
+   val redex_and_conv_of_rw_annotation: string -> (prim_rewrite, term * conv) rw_annotation_processor
 end
 
 (*

@@ -36,7 +36,7 @@ extends Mptop
 open Refiner.Refiner.Refine
 open Mp_resource
 
-open Tactic_type.Conversionals
+open Tactic_type.Tactic
 
 (*
  * Toploop values.

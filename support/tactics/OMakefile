@@ -18,7 +18,10 @@ MPFILES =\
 	auto_tactic\
 	dtactic\
 
-Theory($(MPFILES))
+.DEFAULT: $(addsuffix .cmoz, $(MPFILES))
+
+OCamlLibrary(theory, $(MPFILES) basic_tactics)
+
 
 #
 # Clean up

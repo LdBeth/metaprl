@@ -24,7 +24,7 @@
 
 open Mp_resource
 
-open Conversionals_boot.Conversionals
+open Tactic_type.Conversionals
 
 open Opname
 open Term_sig
@@ -189,7 +189,7 @@ let apply_rewrite rw terms =
  *)
 let _ = recompute_top ()
 let apply_rw_top =
-   Conversionals_boot.Conversionals.apply_rewrite (Mp_resource.find top_bookmark)
+   Tactic_type.Conversionals.apply_rewrite (Mp_resource.find top_bookmark)
 
 let iforms_conv iforms =
    let patterns =

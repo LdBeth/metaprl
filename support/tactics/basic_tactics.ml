@@ -1,0 +1,25 @@
+include Lm_symbol
+include Term_sig
+include Opname
+include Term_match_table
+include Refiner.Refiner
+include Refiner.Refiner.TermType
+include Refiner.Refiner.Term
+include Refiner.Refiner.TermAddr
+include Refiner.Refiner.TermMan
+include Refiner.Refiner.TermMeta
+include Refiner.Refiner.TermOp
+include Refiner.Refiner.TermSubst
+include Mp_resource
+include Tactic_type.Tactic
+include Tactic_type.Conversionals
+module Sequent = Tactic_type.Sequent
+include Sequent
+include Tactic_type.Tacticals
+include Perv
+include Var
+include Top_tacticals
+include Top_conversionals
+include Typeinf
+include Auto_tactic
+include Dtactic

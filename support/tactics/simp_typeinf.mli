@@ -37,7 +37,7 @@ open Refiner.Refiner.TermType
 
 open Unify_mm
 
-open Tactic_type.Tacticals
+open Tactic_type.Tactic
 
 (*
  * Some generic renaming of type variables.

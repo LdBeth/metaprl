@@ -41,7 +41,7 @@ open Refiner.Refiner.TermType
 
 open Unify_mm
 
-open Tactic_type.Tacticals
+open Tactic_type.Tactic
 
 (*
  * A function that analyzes the sequent to gather type info.

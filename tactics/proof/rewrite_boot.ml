@@ -379,11 +379,6 @@ struct
 end
 
 (*
- * Internal version exports more functions.
- *)
-module RewriteInternal = Rewrite
-
-(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

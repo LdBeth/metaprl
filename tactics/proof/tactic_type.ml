@@ -33,9 +33,9 @@
 
 module TacticType = Tactic_boot.TacticType
 module Tactic = Tactic_boot.Tactic
+module TacticTypes = Tactic
 module Sequent = Sequent_boot.Sequent
 module Tacticals = Tacticals_boot.Tacticals
-module Rewrite = Rewrite_boot.Rewrite
 module Conversionals = Conversionals_boot.Conversionals
 module Proof = Proof_boot.Proof
 

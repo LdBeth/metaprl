@@ -33,12 +33,7 @@
 open Tactic_boot_sig
 open Tactic_boot
 
-module Tacticals
-: TacticalsSig
-  with type tactic = TacticInternalType.tactic
-  with type tactic_arg = TacticInternalType.tactic_arg
-  with type extract = TacticInternalType.extract
-  with type arglist = TacticType.arglist
+module Tacticals : TacticalsSig with module TacticalsTypes = TacticInternalType
 
 (*
  * -*-

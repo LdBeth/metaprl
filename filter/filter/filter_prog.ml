@@ -221,10 +221,10 @@ let tactic_type_expr loc =
    <:expr< Tactic_type.Tactic >>
 
 let rewrite_type_expr loc =
-   <:expr< Tactic_type.Rewrite >>
+   <:expr< Tactic_type.Conversionals >>
 
 let rewrite_type_ctyp loc =
-   <:ctyp< Tactic_type.Rewrite >>
+   <:ctyp< Tactic_type.Tactic >>
 
 let dest_msequent_expr loc =
    <:expr< $refiner_expr loc$ . dest_msequent >>

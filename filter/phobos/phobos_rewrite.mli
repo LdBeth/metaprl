@@ -22,7 +22,7 @@
  * Email: granicz@cs.caltech.edu
  *)
 
-open Conversionals_boot.Conversionals
+open Tactic_type.Tactic
 open Phobos_type
 
 val empty_term : mp_term

@@ -35,7 +35,7 @@ extends Auto_tactic
 open Refiner.Refiner.Refine
 
 open Tactic_type
-open Tactic_type.Tacticals
+open Tactic_type.Tactic
 
 open Mp_resource
 open Auto_tactic

@@ -56,14 +56,8 @@ let debug_subgoals =
 
 module Tacticals =
 struct
-   (************************************************************************
-    * TYPES                                                                *
-    ************************************************************************)
-
-   type tactic = TacticInternalType.tactic
-   type tactic_arg = TacticInternalType.tactic_arg
-   type extract = TacticInternalType.extract
-   type arglist = TacticType.arglist
+   module TacticalsTypes = TacticInternalType
+   open TacticalsTypes
 
    (************************************************************************
     * TRIVIAL TACTICS                                                      *

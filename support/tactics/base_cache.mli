@@ -34,7 +34,7 @@ extends Tactic_cache
 extends Summary
 
 open Tactic_cache
-open Tactic_type.Tacticals
+open Tactic_type.Tactic
 
 type cache_rule =
    Forward of tactic frule

@@ -50,6 +50,8 @@ module Tactic
   with type attribute = TacticType.attribute
   with type raw_attribute = TacticInternalType.raw_attribute
   with type arglist = TacticType.arglist
+  with type pre_tactic = TacticInternalType.pre_tactic
+  with type extract = TacticInternalType.extract
 
 module TacticInternal
 : TacticInternalSig

@@ -70,26 +70,25 @@ let debug_reduce =
 
 module Conversionals =
 struct
+   module ConversionalsTypes = TacticInternalType
+   open ConversionalsTypes
    type env = TacticInternalType.env
-   type conv = TacticInternalType.conv
-   type tactic_arg = TacticInternalType.tactic_arg
-   type tactic = TacticInternalType.tactic
 
-   let env_term = RewriteInternal.env_term
-   let env_arg = RewriteInternal.env_arg
+   let env_term = Rewrite.env_term
+   let env_arg = Rewrite.env_arg
 
-   let prefix_thenC = RewriteInternal.prefix_thenC
-   let prefix_orelseC = RewriteInternal.prefix_orelseC
-   let addrC = RewriteInternal.addrC
-   let addrLiteralC = RewriteInternal.addrLiteralC
-   let idC = RewriteInternal.idC
-   let foldC = RewriteInternal.foldC
-   let makeFoldC = RewriteInternal.makeFoldC
-   let cutC = RewriteInternal.cutC
-   let funC = RewriteInternal.funC
-   let termC = RewriteInternal.termC
-   let allSubC = RewriteInternal.allSubC
-   let prefix_thenTC = RewriteInternal.prefix_thenTC
+   let prefix_thenC = Rewrite.prefix_thenC
+   let prefix_orelseC = Rewrite.prefix_orelseC
+   let addrC = Rewrite.addrC
+   let addrLiteralC = Rewrite.addrLiteralC
+   let idC = Rewrite.idC
+   let foldC = Rewrite.foldC
+   let makeFoldC = Rewrite.makeFoldC
+   let cutC = Rewrite.cutC
+   let funC = Rewrite.funC
+   let termC = Rewrite.termC
+   let allSubC = Rewrite.allSubC
+   let prefix_thenTC = Rewrite.prefix_thenTC
 
    (************************************************************************
     * SEARCH                                                               *
@@ -140,7 +139,7 @@ struct
     * HigherC has been moved into the refiner
     * for efficiency.
     *)
-   let higherC = RewriteInternal.higherC
+   let higherC = Rewrite.higherC
 
    (*
     * Apply to leftmost-innermost term.
@@ -245,12 +244,12 @@ struct
 
    let rwc conv assum clause =
       Tacticals.funT
-      (fun p -> RewriteInternal.rw conv assum (Sequent.assum_clause_addr p assum clause))
+      (fun p -> Rewrite.rw conv assum (Sequent.assum_clause_addr p assum clause))
 
    let empty_addr = TermAddr.make_address []
 
    let rwcAll conv assum =
-      RewriteInternal.rw (allSubC conv) assum empty_addr
+      Rewrite.rw (allSubC conv) assum empty_addr
 
    let rw conv clause =
       rwc conv 0 clause
@@ -277,8 +276,10 @@ struct
    (*
     * Conversionals.
     *)
-   let create_iform = RewriteInternal.create_iform
-   let apply_rewrite = RewriteInternal.apply_rewrite
+   let create_iform = Rewrite.create_iform
+   let apply_rewrite = Rewrite.apply_rewrite
+   let rewrite_of_pre_rewrite = Rewrite.rewrite_of_pre_rewrite
+   let redex_and_conv_of_rw_annotation = Rewrite.redex_and_conv_of_rw_annotation
 end
 
 (*

@@ -30,7 +30,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_symbol
-open Tactic_type.Sequent
+open Tactic_type.Tactic
 open Refiner.Refiner.TermType
 
 (* Generate a new var different from any in the list *)

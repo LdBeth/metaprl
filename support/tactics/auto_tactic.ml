@@ -117,6 +117,7 @@ open Term_match_table
 
 open Tactic_type
 open Tactic_type.Sequent
+open Tactic_type.Tactic
 open Tactic_type.Tacticals
 open Top_conversionals
 open Browser_resource
