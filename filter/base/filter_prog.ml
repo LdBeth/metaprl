@@ -298,7 +298,8 @@ let resource_improve_arg_expr loc =
 
 let _resource name =
    let l = String.length name in
-   if l>9 && String.sub name (l-9) 9 = "_resource" then name
+   if l>9 && String.sub name (l-9) 9 = "_resource" then
+      raise(Invalid_argument("resource name: " ^ name))
    else name ^ "_resource"
 
 let ext_resource_name name =
