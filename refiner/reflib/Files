@@ -17,4 +17,8 @@ REFLIB_FILES :=\
 	dform_print\
 	refine_exn\
 	theory\
-	mp_resource
+	mp_resource\
+   term_compare_sig\
+	term_compare\
+   term_transfer\
+   term_copy2

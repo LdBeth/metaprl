@@ -9,10 +9,11 @@ MLZFILES :=\
 	file_base_type\
 	dag\
 	remote_queue_sig\
-	remote_lazy_queue_sig
+	remote_lazy_queue_sig\
+	simplehash_sig
 
 # Library files
-LMFILES :=\
+LMFILES := $(MLZFILES)\
 	mp_debug\
 	mp_pervasives\
 	env_arg\
@@ -30,10 +31,8 @@ LMFILES :=\
 	mp_set\
 	debug_set\
 	bitset\
-	dag\
 	imp_dag\
 	precedence\
-	file_base_type\
 	file_base\
 	file_type_base\
 	splay_table\
@@ -49,10 +48,10 @@ LMFILES :=\
 	memo\
 	thread_util\
 	thread_event\
-	remote_queue_sig\
 	remote_queue_null\
-	remote_lazy_queue_sig\
-	remote_lazy_queue
+	remote_lazy_queue\
+	bi_memo\
+	simplehashtbl
 
 # Name of library
 MAIN := util

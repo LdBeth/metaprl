@@ -6,7 +6,8 @@ INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig -I ../refiner
 # Signatures
 MLZFILES :=\
 	ml_format_sig\
-	ml_print_sig
+	ml_print_sig\
+	term_compare_sig
 
 # Library files
 include Files
