@@ -163,6 +163,12 @@ let improve { resource_info = info; resource_data = data; resource_list = resour
      resource_list = resources
    }
 
+let improve_list { resource_info = info; resource_data = data; resource_list = resources } info_list =
+   { resource_info = info;
+     resource_data = DataLink (List.fold_left info.resource_improve (get_data data) info_list, data);
+     resource_list = resources
+   }
+
 let improve_arg { resource_info = info; resource_data = data; resource_list = resources } name cvars vars args params mterm arg =
    { resource_info = info;
      resource_data = DataLink (info.resource_improve_arg (get_data data) name cvars vars args params mterm arg, data);

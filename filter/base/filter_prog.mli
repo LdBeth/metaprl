@@ -86,6 +86,7 @@ sig
    val define_prec : t -> loc -> string -> MLast.str_item list
    val define_prec_rel : t -> loc -> prec_rel_info -> MLast.str_item list
    val define_resource : t -> loc -> MLast.ctyp resource_info -> MLast.str_item list
+   val improve_resource : t -> loc -> MLast.expr improve_info -> MLast.str_item list
    val define_parent : t -> loc -> MLast.ctyp parent_info -> MLast.str_item list
    val define_magic_block : t -> loc -> MLast.str_item magic_info -> MLast.str_item list
 

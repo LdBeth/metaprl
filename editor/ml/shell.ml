@@ -372,6 +372,9 @@ struct
           | Resource _ ->
                eprintf "Editing resource '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
+          | Improve _ ->
+               eprintf "Editing resource improvement '/%s/%s' not supported%t" modname name eflush;
+               raise (Failure "view")
           | Infix _ ->
                eprintf "Editing infix '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")

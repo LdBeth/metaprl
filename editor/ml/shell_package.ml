@@ -234,7 +234,7 @@ let term_of_implementation pack filter parse_arg =
  * Filter the entries for ls.
  *)
 let is_not_summary_item = function
-   SummaryItem _ ->
+   SummaryItem _ | Improve _ ->
       false
  | _ ->
       true

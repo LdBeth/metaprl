@@ -110,6 +110,7 @@ sig
    val define_prec : t -> loc -> string -> MLast.str_item list
    val define_prec_rel : t -> loc -> prec_rel_info -> MLast.str_item list
    val define_resource : t -> loc -> MLast.ctyp resource_info -> MLast.str_item list
+   val improve_resource : t -> loc -> MLast.expr improve_info -> MLast.str_item list
    val define_parent : t -> loc -> MLast.ctyp parent_info -> MLast.str_item list
    val define_magic_block : t -> loc -> MLast.str_item magic_info -> MLast.str_item list
 
@@ -311,11 +312,33 @@ let resource_rsrc_ctyp loc =
 let resource_join_expr loc =
    <:expr< $uid:"Mp_resource"$ . $lid:"join"$ >>
 
+let resource_improve_expr loc =
+   <:expr< $uid:"Mp_resource"$ . $lid:"improve"$ >>
+
+let resource_list_improve_expr loc =
+   <:expr< $uid:"Mp_resource"$ . $lid:"improve_list"$ >>
+
 let resource_improve_arg_expr loc =
    <:expr< $uid:"Mp_resource"$ . $lid:"improve_arg"$ >>
 
 let ext_resource_name name =
    "ext_" ^ name
+
+let resource_name_expr loc name =
+   let name =
+      let l = String.length name in
+      if l>9 && String.sub name (l-9) 9 = "_resource" then name
+      else name ^ "_resource"
+   in
+      <:expr< $lid: name$ >>
+
+let resource_name_patt loc name =
+   let name =
+      let l = String.length name in
+      if l>9 && String.sub name (l-9) 9 = "_resource" then name
+      else name ^ "_resource"
+   in
+      <:patt< $lid: name$ >>
 
 let dform_name_expr loc =
    <:expr< $uid:"Dform"$ . $lid:"dform_name"$ >>
@@ -603,7 +626,7 @@ let interactive_exn loc name =
  *)
 let toploop_rewrite loc name =
    let patt = <:patt< $lid: "toploop_resource"$ >> in
-   let expr = <:expr< $uid: "Mp_resource"$ . $lid: "improve"$
+   let expr = <:expr< $resource_improve_expr loc$
                       $lid: "toploop_resource"$
                       ($str: name$, $uid: "Mptop"$ . $uid: "ConvExpr"$ $lid: name$) >>
    in
@@ -631,7 +654,7 @@ let toploop_rule loc name params =
    in
    let patt = <:patt< $lid: "toploop_resource"$ >> in
    let expr = loop 0 <:expr< $lid: name$ >> params in
-   let expr = <:expr< $uid: "Mp_resource"$ . $lid: "improve"$
+   let expr = <:expr< $resource_improve_expr loc$
                       $lid: "toploop_resource"$
                       ($str: name$, $expr$) >>
    in
@@ -851,7 +874,7 @@ let add_toploop_item loc name ctyp =
    in
    let expr = collect 0 <:expr< $lid: name$ >> ctyp in
    let patt = <:patt< $lid:"toploop_resource"$ >> in
-   let expr = <:expr< $uid: "Mp_resource"$ . $lid: "improve"$
+   let expr = <:expr< $resource_improve_expr loc$
                       $lid: "toploop_resource"$ ($str: name$, $expr$)
               >>
    in
@@ -1015,6 +1038,8 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: resource: %s%t" name eflush;
          declare_resource loc rsrc
+    | Improve _ ->
+         raise(Invalid_argument "Filter_prog.extract_sig_item")
     | Parent ({ parent_name = name } as parent) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: parent: %s%t" (string_of_path name) eflush;
@@ -1155,8 +1180,8 @@ struct
     let checkpoint_resources proc loc rule_name =
       let label_resource resource =
          let { resource_name = name } = resource in
-         let name_expr = (<:expr< $lid:name$ >>) in
-         let name_patt = (<:patt< $lid:name$ >>) in
+         let name_expr = resource_name_expr loc name in
+         let name_patt = resource_name_patt loc name in
          let expr = <:expr< $uid:"Mp_resource"$ . $lid:"label"$ $name_expr$ $lid:rule_name_id$>> in
             name_patt, expr
       in
@@ -1607,14 +1632,17 @@ struct
                   <:expr< ( $list:rule_expr :: args$ ) >>
          in
          let name_expr =
-            <:expr< $resource_improve_arg_expr loc$ $lid:name'$ $str:name$ $lid:cvars_id$ $lid:tvars_id$ $lid:avars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$ >>
+            <:expr< $resource_improve_arg_expr loc$ $resource_name_expr loc name'$ $str:name$ $lid:cvars_id$ $lid:tvars_id$ $lid:avars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$ >>
          in
             name_patt, name_expr
       in
       let resources_pe = List.map define_resource resources in
-      let names = name_rule_id :: List.map (fun (_, name, _) -> name) resources in
-      let name_patt = List.map (fun s -> <:patt< $lid:s$ >>) names in
-      let name_expr = List.map (fun s -> <:expr< $lid:s$ >>) names in
+      let names = List.map (fun (_, name, _) -> name) resources in
+      let name_patt =
+         <:patt< $lid:name_rule_id$ >> :: List.map (resource_name_patt loc) names
+      in let name_expr =
+         <:expr< $lid:name_rule_id$ >> :: List.map (resource_name_expr loc) names
+      in
          <:patt< ( $list: name_patt$ ) >>, <:expr< let $rec:false$ $list: resources_pe$ in ( $list: name_expr$ ) >>
 
    (*
@@ -2020,6 +2048,22 @@ struct
          proc.imp_resources <- r :: proc.imp_resources;
          [<:str_item< type $list:[name, [], rsrc_type, []]$ >>]
 
+   let rec is_list_expr = function
+      MLast.ExUid(_,"[]") -> true
+    | MLast.ExApp(_,MLast.ExApp(_,MLast.ExUid(_,"::"),_),tail) ->
+         is_list_expr tail
+    | _ -> false
+
+   let improve_resource proc loc { improve_name = name; improve_expr = expr } =
+      let improve_expr =
+         if is_list_expr expr then resource_list_improve_expr
+         else resource_improve_expr
+      in let improve_expr =
+         <:expr< $improve_expr loc$ $resource_name_expr loc name$ $expr$ >>
+      in
+         [<:str_item< value $rec:false$
+                            $list:[resource_name_patt loc name, improve_expr]$ >> ]
+
    (*
     * When a parent is included, we need to open all the ancestors,
     * and we need to patch in all the resources.
@@ -2029,16 +2073,15 @@ struct
          parent_opens = opens;
          parent_resources = nresources
        } =
-      let _ =
-         if !debug_resource then
-            let print_resources out resources =
-               let print { resource_name = name } =
-                  fprintf out " %s" name
-               in
-                  List.iter print resources
+      if !debug_resource then begin
+         let print_resources out resources =
+            let print { resource_name = name } =
+               fprintf out " %s" name
             in
-               eprintf "Filter_prof.define_parent: %s: %a%t" (string_of_path path) print_resources nresources eflush
-      in
+               List.iter print resources
+         in
+            eprintf "Filter_prof.define_parent: %s: %a%t" (string_of_path path) print_resources nresources eflush
+      end;
       let parent_path = parent_path_expr loc path in
       let joins =
          let parent_refiner = (<:expr< $parent_path$ . $lid: refiner_id$ >>) in
@@ -2056,17 +2099,15 @@ struct
          let ext_name_expr = (<:expr< $lid:ext_resource_name name$ >>) in
          let name_patt = (<:patt< $lid:name$ >>) in
          let parent_value = (<:expr< $parent_path$ . $ext_name_expr$ >>) in
-         if mem_resource resource resources then
+         if mem_resource resource resources then begin
             (*
              * let name = name.resource_join name Parent.name
              *)
-            let _ =
-               if !debug_resource then
-                  eprintf "Filter_prog.define_parent: join resource %s.%s%t" (string_of_path path) name eflush
-            in
+            if !debug_resource then
+               eprintf "Filter_prog.define_parent: join resource %s.%s%t" (string_of_path path) name eflush;
             let rsrc_val = <:expr< $resource_join_expr loc$ $name_expr$ $parent_value$ >> in
                (resources, <:str_item< value $rec:false$ $list:[ name_patt, rsrc_val ]$ >>)
-         else
+         end else
             (*
              * let name = Parent.name
              *)
@@ -2310,6 +2351,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: resource: %s%t" name eflush;
             define_resource proc loc rsrc
+       | Improve ({ improve_name = name } as impr) ->
+            if !debug_filter_prog then
+               eprintf "Filter_prog.extract_str_item: improve %s with ... %t" name eflush;
+            improve_resource proc loc impr
        | Parent ({ parent_name = name } as parent) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: parent: %s%t" (string_of_path name) eflush;

@@ -730,6 +730,9 @@ struct
       FilterCache.add_command proc.cache (Resource r, loc);
       FilterCache.add_resource proc.cache r
 
+   let improve_resource proc loc i =
+      FilterCache.add_command proc.cache (Improve i, loc)
+
    (*
     * Extract the options and return the mode paired with
     * the list of string defining the forms.
@@ -1329,6 +1332,15 @@ EXTEND
                  }
            in
               print_exn f "resource" loc;
+              empty_str_item loc
+        | "let"; "resource"; name = LIDENT; "+=" ; code = expr ->
+           let f () =
+              StrFilter.improve_resource (StrFilter.get_proc loc) loc {
+                 improve_name = name;
+                 improve_expr = code
+              }
+           in
+              print_exn f "improve_resource" loc;
               empty_str_item loc
         | "dform"; name = LIDENT; ":"; options = df_options; "="; form = xdform ->
            let f () =

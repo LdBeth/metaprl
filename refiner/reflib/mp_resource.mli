@@ -83,6 +83,7 @@ val join : ('info, 'result, 'data, 'arg) t -> ('info, 'result, 'data, 'arg) t ->
 val extract : ('info, 'result, 'data, 'arg) t -> string -> 'result
 val extract_top : ('info, 'result, 'data, 'arg) t -> 'result
 val improve : ('info, 'result, 'data, 'arg) t -> 'info -> ('info, 'result, 'data, 'arg) t
+val improve_list : ('info, 'result, 'data, 'arg) t -> 'info list -> ('info, 'result, 'data, 'arg) t
 val improve_arg : ('info, 'result, 'data, 'arg) t ->
    string ->
    string array ->

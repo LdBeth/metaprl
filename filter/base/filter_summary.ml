@@ -153,6 +153,8 @@ let eprint_entry print_info = function
          eprintf "Precedence: %s %s %s\n" left rels right
  | Resource { resource_name = name } ->
       eprintf "Resource: %s\n" name
+ | Improve { improve_name = name } ->
+      eprintf "Improve %s with ..." name
  | Infix name ->
       eprintf "Infix: %s\n" name
  | Id id ->
@@ -699,6 +701,9 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1
           | Resource resource ->
                Resource (convert_resource convert resource)
 
+          | Improve { improve_name = name; improve_expr = expr } ->
+               Improve { improve_name = name; improve_expr = convert.expr_f expr }
+
           | Infix name ->
                Infix name
 
@@ -749,26 +754,27 @@ struct
       let op = Opname.mk_opname "Summary" Opname.nil_opname in
          fun s -> Opname.mk_opname s op
 
-   let rewrite_op                  = mk_opname "rewrite"
-   let cond_rewrite_op             = mk_opname "cond_rewrite"
-   let axiom_op                    = mk_opname "axiom"
-   let rule_op                     = mk_opname "rule"
-   let res_op                      = mk_opname "resource_defs"
-   let opname_op                   = mk_opname "opname"
-   let mlrewrite_op                = mk_opname "mlrewrite"
-   let mlaxiom_op                  = mk_opname "mlaxiom"
-   let parent_op                   = mk_opname "parent"
-   let module_op                   = mk_opname "module"
-   let dform_op                    = mk_opname "dform"
-   let prec_op                     = mk_opname "prec"
-   let prec_rel_op                 = mk_opname "prec_rel"
-   let id_op                       = mk_opname "id"
-   let comment_op                  = mk_opname "comment"
-   let resource_op                 = mk_opname "resource"
-   let infix_op                    = mk_opname "infix"
-   let magic_block_op              = mk_opname "magic_block"
-   let summary_item_op             = mk_opname "summary_item"
-   let toploop_item_op             = mk_opname "toploop_item"
+   let rewrite_op                 = mk_opname "rewrite"
+   let cond_rewrite_op            = mk_opname "cond_rewrite"
+   let axiom_op                   = mk_opname "axiom"
+   let rule_op                    = mk_opname "rule"
+   let res_op                     = mk_opname "resource_defs"
+   let opname_op                  = mk_opname "opname"
+   let mlrewrite_op               = mk_opname "mlrewrite"
+   let mlaxiom_op                 = mk_opname "mlaxiom"
+   let parent_op                  = mk_opname "parent"
+   let module_op                  = mk_opname "module"
+   let dform_op                   = mk_opname "dform"
+   let prec_op                    = mk_opname "prec"
+   let prec_rel_op                = mk_opname "prec_rel"
+   let id_op                      = mk_opname "id"
+   let comment_op                 = mk_opname "comment"
+   let resource_op                = mk_opname "resource"
+   let infix_op                   = mk_opname "infix"
+   let magic_block_op             = mk_opname "magic_block"
+   let summary_item_op            = mk_opname "summary_item"
+   let toploop_item_op            = mk_opname "toploop_item"
+   let improve_op                 = mk_opname "improve"
 
    (*
     * Meta term conversions.
@@ -1157,6 +1163,12 @@ struct
    and dest_resource convert t =
       Resource (dest_resource_aux convert t)
 
+   and dest_improve convert t =
+      Improve {
+         improve_name = dest_string_param t;
+         improve_expr = convert.expr_f (one_subterm t)
+      }
+
    (*
     * Infix.
     *)
@@ -1217,6 +1229,8 @@ struct
                   dest_comment convert t
                else if Opname.eq opname resource_op then
                   dest_resource convert t
+               else if Opname.eq opname improve_op then
+                  dest_improve convert t
                else if Opname.eq opname infix_op then
                   dest_infix convert t
                else if Opname.eq opname magic_block_op then
@@ -1511,6 +1525,9 @@ struct
                                              convert.ctyp_f data;
                                              convert.ctyp_f arg]
 
+   and term_of_improve convert { improve_name = name; improve_expr = expr } =
+      mk_string_param_term improve_op name [convert.expr_f expr]
+
    and term_of_infix op =
       mk_string_param_term infix_op op []
 
@@ -1554,6 +1571,8 @@ struct
          term_of_id id
     | Resource rsrc ->
          term_of_resource convert rsrc
+    | Improve i ->
+         term_of_improve convert i
     | Infix op ->
          term_of_infix op
     | MagicBlock magic ->
@@ -1964,6 +1983,8 @@ struct
             ()
        | Resource info ->
             check_resource info implem
+       | Improve _ ->
+            raise (Invalid_argument "Filter_summary.check_implemented")
        | Infix name ->
             check_infix name implem
        | Id id ->
@@ -2128,36 +2149,13 @@ struct
                   copy_axiom_proof copy_proof ax info2
              | Rule rule ->
                   copy_rule_proof copy_proof rule info2
-             | Opname info ->
-                  Opname info
-             | MLRewrite t ->
-                  MLRewrite t
-             | MLAxiom t ->
-                  MLAxiom t
-             | Parent p ->
-                  Parent p
              | Module (name, info) ->
                   copy_module_proof copy_proof name info info2
-             | DForm df ->
-                  DForm df
-             | Prec s ->
-                  Prec s
-             | PrecRel r ->
-                  PrecRel r
-             | Id i ->
-                  Id i
-             | Comment t ->
-                  Comment t
-             | Resource r ->
-                  Resource r
-             | Infix s ->
-                  Infix s
-             | SummaryItem item ->
-                  SummaryItem item
-             | ToploopItem item ->
-                  ToploopItem item
-             | MagicBlock info ->
-                  MagicBlock info
+             | Opname _ | MLRewrite _ | MLAxiom _ | Parent _ | DForm _
+             | Prec _ | PrecRel _ | Id _ | Comment _ | Resource _
+             | Improve _ | Infix _ | SummaryItem _ | ToploopItem _
+             | MagicBlock _ ->
+                  item
          in
             item, loc
       in

@@ -346,8 +346,6 @@ struct
          match Hashtbl.find_all h_rename name with
             [] -> name
           | name' :: _ ->
-               if !debug_ascii_io then
-                  eprintf "renaming %s -> %s %t" name name' eflush;
                name'
       in let rec clean_inputs = function
          [] -> []
@@ -366,7 +364,6 @@ struct
                   in
                      if tail==tail' && item==item' then original else item'::tail'
              | name'::_, _ ->
-                  eprintf "Will be renaming %s -> %s %t" name name' eflush;
                   Hashtbl.add h_rename name name';
                   tail'
             end

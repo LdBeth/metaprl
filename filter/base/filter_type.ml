@@ -205,6 +205,14 @@ and 'ctyp resource_info =
    }
 
 (*
+ * Reource improvement.
+ *)
+and 'expr improve_info = {
+   improve_name : string;
+   improve_expr : 'expr
+}
+
+(*
  * Magic block needs a variable to bind the magic number to.
  *)
 and 'item magic_info =
@@ -256,6 +264,7 @@ type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, 'module_info) summary_item
  | PrecRel of prec_rel_info
  | Id of int
  | Resource of 'ctyp resource_info
+ | Improve of 'expr improve_info
  | Infix of string
  | SummaryItem of 'item
  | ToploopItem of 'item
