@@ -4,6 +4,7 @@
 
 open MLast
 
+open Opname
 open Term
 
 (*
@@ -49,15 +50,18 @@ val nil_op : opname
  * Common destructors.
  *)
 val dest_loc : term -> int * int
-val dest_loc_string : term -> int * int * string
-val dest_loc_int : term -> int * int * int
-val dest_opt : term -> term option
+val dest_loc_string : term -> (int * int) * string
+val dest_loc_int : term -> (int * int) * string
+val dest_opt : (term -> 'a) -> term -> 'a option
 val dest_string : term -> string
 val dest_string_opt : term -> string option
 val dest_var : term -> string
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/12 23:38:10  jyh
+ * Added support for saving intermediate files to the library.
+ *
  * Revision 1.2  1998/01/27 23:04:15  jyh
  * Adding OCaml1.07 syntax.
  *

@@ -13,7 +13,15 @@ val debug_grammar : bool
 val debug_resource : bool
 
 (*
+ * Library debugging.
+ *)
+val debug_library_base : bool
+
+(*
  * $Log$
+ * Revision 1.2  1998/02/12 23:38:06  jyh
+ * Added support for saving intermediate files to the library.
+ *
  * Revision 1.1  1997/04/28 15:50:53  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -15,6 +15,7 @@ open Term_util
 open Simple_print
 open Filter_util
 open Filter_type
+open Filter_ocaml
 
 (************************************************************************
  * TYPES                                                                *
@@ -585,6 +586,454 @@ and proof_map f { info_list = info; info_length = index } =
    }
 
 (************************************************************************
+ * TERMS                                                                *
+ ************************************************************************)
+
+(*
+ * These are the possible opnames.
+ *)
+let mk_opname s = Opname.mk_opname s Opname.nil_opname
+
+let rewrite_op                  = mk_opname "rewrite"
+let cond_rewrite_op             = mk_opname "cond_rewrite"
+let axiom_op                    = mk_opname "axiom"
+let rule_op                     = mk_opname "rule"
+let opname_op                   = mk_opname "opname"
+let mlterm_op                   = mk_opname "mlterm"
+let condition_op                = mk_opname "condition"
+let parent_op                   = mk_opname "parent"
+let module_op                   = mk_opname "module"
+let dform_op                    = mk_opname "dform"
+let prec_op                     = mk_opname "prec"
+let id_op                       = mk_opname "id"
+let resource_op                 = mk_opname "resource"
+let inherited_resource_op       = mk_opname "inherited_resource"
+let infix_op                    = mk_opname "infix"
+let summary_item_op             = mk_opname "summary_item"
+
+(*************
+ * DESTRUCTION
+ *)
+
+(*
+ * Optional args.
+ *)
+let some_op = mk_opname "some"
+let none_op = mk_opname "none"
+
+let dest_opt t =
+   let opname = opname_of_term t in
+      if opname == some_op then
+         Some (one_subterm t)
+      else if opname == none_op then
+         None
+      else
+         raise (Failure "not an option")
+
+(*
+ * All parameters should be strings.
+ *)
+let dest_string_param_list t =
+   let { term_op = op } = dest_term t in
+   let { op_params = params } = dest_op op in
+   let dest_string param =
+      match dest_param param with
+         String s ->
+            s
+       | _ ->
+            raise (Failure "Parameter is not a string")
+   in
+      List.map dest_string params
+
+(*
+ * Meta term destruction.
+ *)
+let meta_theorem_op     = mk_opname "meta_theorem"
+let meta_implies_op     = mk_opname "meta_implies"
+let meta_function_op    = mk_opname "meta_function"
+let meta_iff_op         = mk_opname "meta_iff"
+
+let rec dest_meta_term t =
+   let opname = opname_of_term t in
+      if opname == meta_theorem_op then
+         MetaTheorem (one_subterm t)
+      else if opname == meta_implies_op then
+         let a, b = two_subterms t in
+            MetaImplies (dest_meta_term a, dest_meta_term b)
+      else if opname == meta_function_op then
+         let v, a, b = dest_dep0_dep1_any_term t in
+            MetaFunction (v, dest_meta_term a, dest_meta_term b)
+      else if opname == meta_iff_op then
+         let a, b = two_subterms t in
+            MetaIff (dest_meta_term a, dest_meta_term b)
+      else
+         raise (Failure "term is not a meta term")
+
+(*
+ * Get a parameter.
+ *)
+let context_param_op    = mk_opname "context_param"
+let var_param_op        = mk_opname "var_param"
+let term_param_op       = mk_opname "term_param"
+
+let dest_param t =
+   let string_param = function
+      [param] ->
+         begin
+            match dest_param param with
+               String s ->
+                  s
+             | _ ->
+                  raise (Failure "Parameter is not a string")
+         end
+    | _ ->
+         raise (Failure "Wrong number of parameters")
+   in
+   let { term_op = op } = dest_term t in
+   let { op_name = opname; op_params = params } = dest_op op in
+      if opname == context_param_op then
+         ContextParam (string_param params)
+      else if opname == var_param_op then
+         VarParam (string_param params)
+      else if opname == term_param_op then
+         TermParam (one_subterm t)
+      else
+         raise (Failure "Illegal parameter")
+
+(*
+ * Get the parameter list.
+ *)
+let dest_params t =
+   List.map dest_param (dest_xlist t)
+
+(*
+ * Collect a rewrite.
+ *)
+let rec dest_rewrite f t =
+   let name = dest_string_param t in
+   let redex, contractum, proof = three_subterms t in
+      Rewrite { rw_name = name;
+                rw_redex = redex;
+                rw_contractum = contractum;
+                rw_proof = f "Rewrite" proof
+      }
+
+(*
+ * Conditional rewrite.
+ *)
+and dest_cond_rewrite f t =
+   let name = dest_string_param t in
+   let params, args, redex, contractum, proof = five_subterms t in
+      CondRewrite { crw_name = name;
+                    crw_params = dest_params params;
+                    crw_args = dest_xlist args;
+                    crw_redex = redex;
+                    crw_contractum = contractum;
+                    crw_proof = f "CondRewrite" proof
+      }
+
+(*
+ * Axiom.
+ *)
+and dest_axiom f t =
+   let name = dest_string_param t in
+   let stmt, proof = two_subterms t in
+      Axiom { axiom_name = name;
+              axiom_stmt = stmt;
+              axiom_proof = f "Axiom" proof
+      }
+
+(*
+ * Rule.
+ *)
+and dest_rule f t =
+   let name = dest_string_param t in
+   let params, stmt, proof = three_subterms t in
+      Rule { rule_name = name;
+             rule_params = dest_params params;
+             rule_stmt = dest_meta_term stmt;
+             rule_proof = f "Rule" proof
+      }
+
+(*
+ * Opname.
+ *)
+and dest_opname f t =
+   let name = dest_string_param t in
+   let term = one_subterm t in
+      Opname { opname_name = name;
+               opname_term = term
+      }
+
+(*
+ * ML Term.
+ *)
+and dest_mlterm f t =
+   MLTerm (one_subterm t)
+
+(*
+ * Condition.
+ *)
+and dest_condition f t =
+   Condition (one_subterm t)
+
+(*
+ * Parent declaration.
+ *)
+and dest_parent f t =
+   Parent (dest_string_param_list t)
+
+(*
+ * Enclosed module.
+ *)
+and dest_module f t =
+   let name = dest_string_param t in
+   let items = dest_xlist (one_subterm t) in
+      Module (name, of_term_list f items)
+
+(*
+ * Display form.
+ *)
+and dest_dform f t =
+   let options, redex, def = three_subterms t in
+   let options = dest_xlist options in
+   let def = dest_opt def in
+      DForm { dform_options = options;
+              dform_redex = redex;
+              dform_def = def
+      }
+
+(*
+ * Precedence.
+ *)
+and dest_prec f t =
+   Prec (dest_string_param t)
+
+(*
+ * Identifier.
+ *)
+and dest_id f t =
+   Id (dest_number_any_term t)
+
+(*
+ * Resource.
+ *)
+and dest_resource_aux t =
+   let name = dest_string_param t in
+   let extract, improve, data = three_subterms t in
+      { resource_name = name;
+        resource_extract_type = type_of_term extract;
+        resource_improve_type = type_of_term improve;
+        resource_data_type = type_of_term data
+      }
+
+and dest_resource f t =
+   Resource (dest_resource_aux t)
+
+and dest_inherited_resource f t =
+   InheritedResource (dest_resource_aux t)
+
+(*
+ * Infix.
+ *)
+and dest_infix f t =
+   Infix (dest_string_param t)
+
+(*
+ * SummaryItem.
+ *)
+and dest_summary_item f t =
+   SummaryItem (one_subterm t)
+
+and dest_term f t =
+   let opname = opname_of_term t in
+      try
+         let info =
+            if opname == rewrite_op then
+               dest_rewrite f t
+            else if opname == cond_rewrite_op then
+               dest_cond_rewrite f t
+            else if opname == axiom_op then
+               dest_axiom f t
+            else if opname == rule_op then
+               dest_rule f t
+            else if opname == opname_op then
+               dest_opname f t
+            else if opname == mlterm_op then
+               dest_mlterm f t
+            else if opname == condition_op then
+               dest_condition f t
+            else if opname == parent_op then
+               dest_parent f t
+            else if opname == module_op then
+               dest_module f t
+            else if opname == dform_op then
+               dest_dform f t
+            else if opname == prec_op then
+               dest_prec f t
+            else if opname == id_op then
+               dest_id f t
+            else if opname == resource_op then
+               dest_resource f t
+            else if opname == inherited_resource_op then
+               dest_inherited_resource f t
+            else if opname == infix_op then
+               dest_infix f t
+            else if opname == summary_item_op then
+               dest_summary_item f t
+            else
+               raise (Failure "term is not found")
+         in
+            Some info
+      with
+         Failure _
+       | TermMatch _ ->
+            eprintf "Filter_summary.dest_term: incorrect syntax for %s%t" (string_of_opname opname) eflush;
+            None
+
+(*
+ * Make a module from the term list.
+ *)
+and of_term_list f terms =
+   let items = List_util.some_map (dest_term f) terms in
+      { info_list = items;
+        info_length = List.length items
+      }
+
+(**************
+ * CONSTRUCTION
+ *)
+
+(*
+ * Make a optional arg.
+ *)
+let mk_opt = function
+   Some t ->
+      mk_simple_term some_op [t]
+ | None ->
+      mk_simple_term none_op []
+
+(*
+ * Make a term with a string parameter.
+ *)
+let mk_string_param_term opname s terms =
+   let param = make_param (String s) in
+   let op = mk_op opname [param] in
+   let bterms = List.map (fun t -> mk_bterm [] t) terms in
+      mk_term op bterms
+
+(*
+ * Make a term with only strings parameters.
+ *)
+let mk_strings_term opname l =
+   let params = List.map (fun s -> make_param (String s)) l in
+   let op = mk_op opname params in
+      mk_term op []
+
+(*
+ * Parameters.
+ *)
+let mk_param = function
+   ContextParam s ->
+      mk_string_param_term context_param_op s []
+ | VarParam s ->
+      mk_string_param_term var_param_op s []
+ | TermParam t ->
+      mk_simple_term term_param_op [t]
+
+let mk_params params =
+   mk_xlist_term (List.map mk_param params)
+
+(*
+ * Meta terms.
+ *)
+let rec mk_meta_term = function
+   MetaTheorem t ->
+      mk_simple_term meta_theorem_op [t]
+ | MetaImplies (a, b) ->
+      mk_simple_term meta_implies_op [mk_meta_term a; mk_meta_term b]
+ | MetaFunction (v, a, b) ->
+      mk_dep0_dep1_term meta_function_op v (mk_meta_term a) (mk_meta_term b)
+ | MetaIff (a, b) ->
+      mk_simple_term meta_iff_op [mk_meta_term a; mk_meta_term b]
+
+(*
+ * Convert the items to a term.
+ *)
+let rec term_list_aux (f : string -> 'a -> term) = function
+   SummaryItem t ->
+      mk_simple_term summary_item_op [t]
+
+ | Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
+      mk_string_param_term rewrite_op name [redex; con; f "Rewrite" pf]
+
+ | CondRewrite { crw_name = name;
+                 crw_params = params;
+                 crw_args = args;
+                 crw_redex = redex;
+                 crw_contractum = con;
+                 crw_proof = pf
+   } ->
+      mk_string_param_term cond_rewrite_op name [mk_params params;
+                                                 mk_xlist_term args;
+                                                 redex;
+                                                 con;
+                                                 f "CondRewrite" pf]
+
+ | Axiom { axiom_name = name; axiom_stmt = t; axiom_proof = pf } ->
+      mk_string_param_term axiom_op name [t; f "Axiom" pf]
+
+ | Rule { rule_name = name;
+          rule_params = params;
+          rule_stmt = t;
+          rule_proof = pf
+   } ->
+      mk_string_param_term rule_op name [mk_params params; mk_meta_term t; f "Rule" pf]
+      
+ | Module (name, info) ->
+      mk_string_param_term module_op name [mk_xlist_term (term_list f info)]
+      
+ | Opname { opname_name = name; opname_term = term } ->
+      mk_string_param_term opname_op name [term]
+ | MLTerm t ->
+      mk_simple_term mlterm_op [t]
+ | Condition c ->
+      mk_simple_term condition_op [c]
+ | Parent p ->
+      mk_strings_term parent_op p
+ | DForm { dform_options = options;
+           dform_redex = redex;
+           dform_def = def
+   } ->
+      mk_simple_term dform_op [mk_xlist_term options; redex; mk_opt def]
+ | Prec p ->
+      mk_string_param_term prec_op p []
+ | Id id ->
+      mk_number_term id_op id
+ | Resource { resource_name = name;
+              resource_extract_type = extract;
+              resource_improve_type = improve;
+              resource_data_type = data
+   } ->
+      mk_string_param_term resource_op name [term_of_type extract;
+                                             term_of_type improve;
+                                             term_of_type data]
+ | InheritedResource { resource_name = name;
+                       resource_extract_type = extract;
+                       resource_improve_type = improve;
+                       resource_data_type = data
+   } ->
+      mk_string_param_term inherited_resource_op name [term_of_type extract;
+                                                       term_of_type improve;
+                                                       term_of_type data]
+      
+ | Infix op ->
+      mk_string_param_term infix_op op []
+
+and term_list (f : string -> 'a -> term) { info_list = info } =
+   List.map (term_list_aux f) info
+
+(************************************************************************
  * UTILITIES								*
  ************************************************************************)
 
@@ -790,7 +1239,7 @@ let check_opname info implem =
  * MLterms must match.
  *)
 let string_of_term t =
-   string_of_opname_list (dest_opname (opname_of_term t))
+   string_of_opname_list (Opname.dest_opname (opname_of_term t))
 
 let check_mlterm term implem =
    let rec search = function
@@ -998,6 +1447,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.4  1998/02/12 23:38:14  jyh
+ * Added support for saving intermediate files to the library.
+ *
  * Revision 1.3  1997/09/12 17:21:38  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:

@@ -50,14 +50,15 @@ let camlp4 () =
     "q_MLast.cmo";
     sprintf "%s/mllib/util.cma" !root;
     sprintf "%s/refiner/refiner.cma" !root;
+    sprintf "%s/library/library.cma" !root;
     sprintf "%s/filter/prlcomp.cma" !root;
     sprintf "%s/filter/filter_main.cmo" !root]
 
 let ocamlc () =
    ["ocamlc";
     "-pp";
-    sprintf "camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_MLast.cmo %s/mllib/util.cma %s/refiner/refiner.cma %s/filter/prlcomp.cma %s/filter/filter_main.cmo"
-    !root !root !root !root]
+    sprintf "camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_MLast.cmo %s/mllib/util.cma %s/refiner/refiner.cma %s/library/library.cma %s/filter/prlcomp.cma %s/filter/filter_main.cmo"
+    !root !root !root !root !root]
 
 (*
  * Collect argument list.
@@ -168,6 +169,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.6  1998/02/12 23:38:21  jyh
+ * Added support for saving intermediate files to the library.
+ *
  * Revision 1.5  1998/01/27 23:04:20  jyh
  * Adding OCaml1.07 syntax.
  *

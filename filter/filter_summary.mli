@@ -121,6 +121,8 @@ val collect_cvars : param list -> string array
 val collect_vars : param list -> string array
 val collect_non_vars : param list -> term list
 val proof_map : (string -> 'a -> 'b) -> 'a module_info -> 'b module_info
+val term_list : (string -> 'a -> term) -> 'a module_info -> term list
+val of_term_list : (string -> term -> 'a) -> term list -> 'a module_info
 
 (*
  * Interface checking.
@@ -141,6 +143,9 @@ val eprint_info : 'a module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.4  1998/02/12 23:38:15  jyh
+ * Added support for saving intermediate files to the library.
+ *
  * Revision 1.3  1997/09/12 17:21:39  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:

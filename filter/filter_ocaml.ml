@@ -108,6 +108,32 @@ let dest_loc_int t =
             raise (FormatError ("dest_loc_int: needs three numbers", t))
 
 (*
+ * Make a list of expressions.
+ *)
+let cons_op = mk_ocaml_op "cons"
+let nil_op = mk_ocaml_op  "nil"
+let nil_term = mk_simple_term nil_op []
+
+let rec mk_list = function
+   h::t ->
+      mk_simple_term cons_op [h; mk_list t]
+ | [] ->
+      nil_term
+
+let rec dest_list t =
+   let opname, subterms = dest_simple_term t in
+      if opname == nil_op then
+         []
+      else if opname == cons_op then
+         match subterms with
+            [e1; e2] ->
+               e1 :: dest_list e2
+          | _ ->
+               raise (TermMatch ("Filter_ocaml.dest_list", t, "wrong number of subterms"))
+      else
+         raise (TermMatch ("Filter_ocaml.dest_list", t, "illegal opname"))
+
+(*
  * For looking up destructors in a hashtable.
  *)
 let dest_tbl code table t =
@@ -157,7 +183,7 @@ and dest_array_subscript_expr t =
 
 and dest_array_expr t =
    let loc = dest_loc t in
-   let el = List.map dest_expr (subterms_of_term t) in
+   let el = List.map dest_expr (dest_list (one_subterm t)) in
       <:expr< [| $list:el$ |] >>
 
 and dest_assign_expr t =
@@ -1035,7 +1061,7 @@ let rec mk_expr expr =
        | (<:expr< $e1$ .( $e2$ ) >>) ->
             mk_simple_term expr_array_subscript_op loc [mk_expr e1; mk_expr e2]
        | (<:expr< [| $list:el$ |] >>) ->
-            mk_simple_term expr_array_op loc (List.map mk_expr el)
+            mk_simple_term expr_array_op loc [mk_list (List.map mk_expr el)]
        | (<:expr< $e1$ := $e2$ >>) ->
             mk_simple_term expr_assign_op loc [mk_expr e1; mk_expr e2]
        | (<:expr< $chr:c$ >>) ->
@@ -1380,6 +1406,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/12 23:38:09  jyh
+ * Added support for saving intermediate files to the library.
+ *
  * Revision 1.2  1998/01/27 23:03:33  jyh
  * Ocaml 1.07.
  *

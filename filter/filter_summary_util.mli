@@ -6,27 +6,12 @@ open Term
 open Opname
 open Filter_type
 open Filter_summary_type
+open Filter_summary_spec
 open Filter_cache
 
 (************************************************************************
  * THE FILTER_CACHE                                                     *
  ************************************************************************)
-
-(*
- * For this compiler, we only use two summaries.
- *)
-type select_type =
-   InterfaceType
- | ImplementationType
-
-(*
- * The interface type and implementation proofs.
- *)
-type imp_proof = MLast.expr
-
-type proof_type =
-   InterfaceProof
- | ImplementationProof of imp_proof
 
 (*
  * The summary_cache for interfaces and implementations.
@@ -58,6 +43,9 @@ val mk_opname : FilterCache.info -> MLast.loc -> string list -> opname
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/12 23:38:20  jyh
+ * Added support for saving intermediate files to the library.
+ *
  * Revision 1.2  1997/08/06 16:17:36  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -12,7 +12,9 @@ open Filter_type
 open Filter_util
 open Filter_summary
 open Filter_summary_io
+open Filter_summary_spec
 open Filter_cache
+open Filter_ocaml
 
 open File_base_type
 open File_type_base
@@ -20,25 +22,6 @@ open File_type_base
 (************************************************************************
  * FILTER CACHE                                                         *
  ************************************************************************)
-
-(*
- * This type may contain something useful after a while.
- *)
-type imp_proof = MLast.expr
-
-(*
- * For this compiler, we only use two summaries.
- *)
-type select_type =
-   InterfaceType
- | ImplementationType
-
-(*
- * The interface type and implementation proofs.
- *)
-type proof_type =
-   InterfaceProof
- | ImplementationProof of imp_proof
 
 (*
  * Build the cache.
@@ -95,15 +78,68 @@ struct
          proof_map unmarshal_proof info
 end
 
+module LibraryInterfaceInfo =
+struct
+   type select = select_type
+   type raw = term list
+   type cooked = proof_type module_info
+   
+   let select = InterfaceType
+   let suffix = "cmiz"
+   let magic = 0x73ac6be3
+   let marshal info =
+      let marshal_proof kind = function
+         InterfaceProof ->
+            xnil_term
+       | ImplementationProof _ ->
+            raise (Invalid_argument (sprintf "Filter_summary_util.InterfaceInfo.marshal: %s" kind))
+      in
+         term_list marshal_proof info
+   
+   let unmarshal info =
+      let unmarshal_proof kind t = InterfaceProof in
+         of_term_list unmarshal_proof info
+end
+
+module LibraryImplementationInfo =
+struct
+   type select = select_type
+   type raw = term list
+   type cooked = proof_type module_info
+   
+   let select = ImplementationType
+   let suffix = "cmoz"
+   let magic = 0x73ac6be2
+   let marshal info =
+      let marshal_proof kind = function
+         InterfaceProof ->
+            raise (Invalid_argument (sprintf "Filter_summary_util.ImplementationInfo.marshal: %s" kind))
+       | ImplementationProof pf ->
+            term_of_expr pf
+      in
+         term_list marshal_proof info
+   
+   let unmarshal info =
+      let unmarshal_proof kind pf = ImplementationProof (expr_of_term pf) in
+         of_term_list unmarshal_proof info
+end
+
 module SummaryTypes =
 struct
    type proof = proof_type
    type select = select_type
 end
 
-module InterfaceCombo = MakeSingletonCombo (InterfaceInfo)
-module Combo = ExtendCombo (ImplementationInfo) (InterfaceCombo)
-module FileBase = MakeFileBase (FileTypes) (Combo)
+module FileInterfaceCombo = File_type_base.MakeSingletonCombo (InterfaceInfo)
+module FileImplementationCombo = File_type_base.MakeSingletonCombo (ImplementationInfo)
+module LibraryInterfaceCombo = Library_type_base.MakeSingletonCombo (LibraryInterfaceInfo)
+module LibraryImplementationCombo = Library_type_base.MakeSingletonCombo (LibraryImplementationInfo)
+
+module FileCombo = File_type_base.CombineCombo (FileTypes) (FileImplementationCombo) (FileInterfaceCombo)
+module LibraryCombo = File_type_base.CombineCombo (FileTypes) (LibraryImplementationCombo) (LibraryInterfaceCombo)
+module Combo = File_type_base.CombineCombo (FileTypes) (FileCombo) (LibraryCombo)
+
+module FileBase = MakeFileBase (FileTypes) (LibraryCombo)
 module SummaryBase = MakeSummaryBase (SummaryTypes) (FileBase)
 module FilterCache = MakeFilterCache (SummaryBase)
 
@@ -169,6 +205,9 @@ let params_ctyp loc ctyp params =
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/12 23:38:18  jyh
+ * Added support for saving intermediate files to the library.
+ *
  * Revision 1.2  1997/08/06 16:17:35  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

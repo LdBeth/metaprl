@@ -13,7 +13,15 @@ let debug_grammar = false
 let debug_resource = false
 
 (*
+ * Library debugging.
+ *)
+let debug_library_base = true
+
+(*
  * $Log$
+ * Revision 1.2  1998/02/12 23:38:05  jyh
+ * Added support for saving intermediate files to the library.
+ *
  * Revision 1.1  1997/04/28 15:50:52  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -4,13 +4,16 @@
 include ../mk/preface
 
 # Flags
-INCLUDE := -I ../clib -I ../mllib -I ../refiner -I /usr/local/lib/camlp4
+REF_ROOT := ../
+INCLUDE := -I ../clib -I ../mllib -I ../refiner -I ../library -I /usr/local/lib/camlp4
 OCAMLFLAGS := -pp "camlp4o q_MLast.cmo pa_extend.cmo"
 
 # Type files
 MLZFILES :=\
 	filter_type\
-	filter_process_type
+	filter_summary_type\
+	filter_process_type\
+	filter_summary_spec
 
 # Program files
 LMFILES :=\
@@ -26,6 +29,7 @@ LMFILES :=\
 	filter_summary_type\
 	filter_summary_io\
 	filter_cache\
+	filter_summary_spec\
 	filter_summary_util\
 	term_grammar\
 	filter_process_type\
@@ -39,7 +43,8 @@ PFILES := prlcomp
 CMXDEPS :=\
 	../clib/clib.cmxa\
 	../mllib/util.cmxa\
-	../refiner/refiner.cmxa
+	../refiner/refiner.cmxa\
+	../library/library.cmxa
 
 CMXLIBS :=\
 	unix.cmxa\
@@ -48,7 +53,8 @@ CMXLIBS :=\
 CMADEPS :=\
 	../clib/clib.cma\
 	../mllib/util.cma\
-	../refiner/refiner.cma
+	../refiner/refiner.cma\
+	../library/library.cma
 
 CMALIBS :=\
 	unix.cma\
@@ -72,6 +78,16 @@ infix.ml: infix.pre.ml
 	camlp4 pa_o.cmo pa_op.cmo pr_o.cmo pa_extend.cmo q_MLast.cmo ./infix.pre.ml |\
 		sed -e 's,"KEYWORD",keyword,' > infix.ml
 	chmod 444 $@
+
+#
+# Compile a test file
+#
+.PHONY: test
+
+test: test.cmiz
+
+test.cmiz: test.mli prlcomp.run
+	prlcomp.run $(INCLUDE) -c test.mli
 
 # Included files
 include ../mk/config

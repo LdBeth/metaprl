@@ -37,6 +37,7 @@ open Filter_summary
 open Filter_summary_io
 open Filter_cache
 open Filter_summary_util
+open Filter_summary_spec
 open Filter_process_type
 
 (************************************************************************
@@ -2088,6 +2089,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.6  1998/02/12 23:38:12  jyh
+ * Added support for saving intermediate files to the library.
+ *
  * Revision 1.5  1998/01/27 23:04:17  jyh
  * Adding OCaml1.07 syntax.
  *
