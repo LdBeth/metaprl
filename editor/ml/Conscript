@@ -81,19 +81,10 @@ OCamlSources $env
 	'mp_top.ml';
 
 #
-# Always include ITT
+# Always include ITT, Mc_theory, and Fir_test.
 #
 OCamlDepends $env ['mp_top'],
-	'itt_theory';
-
-#
-# Include MC theory only if MC_ROOT is defined
-#
-if(defined($ENV{'MC_ROOT'})) {
-   OCamlDepends $env ['mp_top'],
-        'mc_theory',
-	'fir_test';
-};
+	'itt_theory', 'mc_theory', 'fir_test';
 
 OCamlProgram $env 'mp.opt', 'mp_top';
 
