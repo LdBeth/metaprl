@@ -33,6 +33,7 @@ DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 .PHONY: all opt
 .PHONY: profile_all profile_clean profile_byte filter profile profile_opt profile_mem profile_mem_opt
 .PHONY: install depend clean check_config
+.PHONY: documentation docs doc
 
 all: check_config
 	@for i in $(DIRS); do\
@@ -135,4 +136,8 @@ check_config::mk/config
 		exit 1; \
 	fi
 
+docs::
+	@make -C doc all
 
+doc: docs
+documentation: docs

@@ -12,7 +12,7 @@
 <H2>Downloading MetaPRL</H2>
 
 <P>MetaPRL can be downloaded from <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/</A>.
-You will need four packages:</P>
+You will need five packages:</P>
 
 <OL>
   <LI>Objective Caml: our version contains a small
@@ -22,6 +22,7 @@ You will need four packages:</P>
   and a patch to install interface files needed by MetaPRL to evaluate programs in the toploop
   <LI>Ensemble: you need Ensemble only if you want to use the distributed
   prover.
+  <LI>HTMLDOC: you will need Htmldoc if you want to convert MetaPRL documentation into Postscript or PDF format. Our version contains a small patch to fix a problem with handling of <TT>&lt;PRE&gt;</TT> tags.
   <LI>MetaPRL
 </OL>
 
@@ -93,6 +94,9 @@ Home Page</A>.</P>
 <P>You may need to set your environment variables <TT>CAMLLIB</TT> and <TT>CAMLP4LIB</TT> to point to the directories where you have installed OCaml and Camlp4 files. The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/camlp4</TT> respectively. If you are using Ensemble, either set <TT>ENSROOT=&lt;root of the ensemble source tree&gt;</TT> or edit the <TT>mk/config</TT> file (this file
 will be created when you run <TT>make</TT> for the first time).
 </P>
+
+<P> If you want to use Htmldoc, download it from
+<A HREF="http://www.easysw.com/~mike/htmldoc/">http://www.easysw.com/~mike/htmldoc/</A></P>
 
 <P>To install MetaPRL, unpack the distribution into some directory
 <TT>&lt;meta-prl&gt;</TT> and build the distribution with these steps:</P>

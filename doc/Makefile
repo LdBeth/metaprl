@@ -1,6 +1,7 @@
 # In order to use this Makefile, you need to have HTMLDOC utility
 # HTMLDOC utility can be downloaded from http://www.easysw.com/~mike/htmldoc/
 # HTMLDOC RPMs can be dowloaded from http://www.cs.cornell.edu/nogin/RPM/htmldoc.html
+# You should probably use htmldoc >= 1.7-2
 
 # The "check" target uses weblint utility.
 # weblint can be downloaded from http://www.cre.canon.co.uk/~neilb/weblint/
@@ -15,7 +16,6 @@ RM = rm -f
 
 WELCOME =\
 	mp\
-	mp-frame\
 	mp-links\
 	mp-install\
 	mp-people\
@@ -47,7 +47,7 @@ TUTORIAL =\
 SYSTEM =\
 	mp-system\
 	mp-refiner\
-	mp-term\
+	mp-terms\
 	mp-rewrite\
 	mp-refine\
 	mp-filter\
@@ -55,9 +55,13 @@ SYSTEM =\
 	mp-chaining\
 	mp-tactic\
 	mp-tacticals\
-	mp-conversionals.html\
+	mp-conversionals\
 	mp-ocaml\
 	mp-base\
+   mp-base-syntax\
+   mp-auto-tactic\
+   mp-type-inf-rsrc\
+   mp-base-cache\
 	mp-editor-imp\
 	mp-itt
 
@@ -75,6 +79,7 @@ GENERATED-FILES =\
 DOCFILES = $(addsuffix .ps, $(GENERATED-FILES)) $(addsuffix .pdf, $(GENERATED-FILES))
 
 all: $(DOCFILES)
+opt: all
 
 introduction.ps: $(W-FILES)
 	$(GEN-PS) $(W-FILES) -f $@
