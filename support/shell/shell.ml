@@ -35,7 +35,6 @@
 extends Mptop
 extends Proof_edit
 extends Package_info
-extends Shell_rewrite
 extends Shell_rule
 extends Shell_package
 extends Shell_root
@@ -371,9 +370,9 @@ struct
       in
          match item with
             Rewrite rw ->
-               Shell_rewrite.view_rw pack parse_arg display_mode rw
+               Shell_rule.view_rw pack parse_arg display_mode rw
           | CondRewrite crw ->
-               Shell_rewrite.view_crw pack parse_arg display_mode crw
+               Shell_rule.view_crw pack parse_arg display_mode crw
           | Rule rl ->
                Shell_rule.view_rule pack parse_arg display_mode rl
           | Opname _ ->
@@ -957,10 +956,10 @@ struct
                let apply_item = function
                   Rewrite rw, _ ->
                      if !debug_shell then eprintf "Rewrite %s%t" rw.rw_name eflush;
-                     apply_it (Shell_rewrite.view_rw pack parse_arg display_mode rw) mod_name rw.rw_name
+                     apply_it (Shell_rule.view_rw pack parse_arg display_mode rw) mod_name rw.rw_name
                 | CondRewrite crw, _ ->
                      if !debug_shell then eprintf "CondRewrite %s%t" crw.crw_name eflush;
-                     apply_it (Shell_rewrite.view_crw pack parse_arg display_mode crw) mod_name crw.crw_name
+                     apply_it (Shell_rule.view_crw pack parse_arg display_mode crw) mod_name crw.crw_name
                 | Rule rl, _ ->
                      if !debug_shell then eprintf "Rule %s%t" rl.rule_name eflush;
                      apply_it (Shell_rule.view_rule pack parse_arg display_mode rl) mod_name rl.rule_name
@@ -1336,7 +1335,7 @@ struct
       chdir info false false [mname];
       let create name =
          let package = get_current_package info in
-         let item = Shell_rewrite.create package (get_parse_arg info) (get_display_mode info) name in
+         let item = Shell_rule.create package (get_parse_arg info) (get_display_mode info) name in
             item.edit_save ();
             touch info
       in

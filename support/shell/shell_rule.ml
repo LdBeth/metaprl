@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 extends Shell_sig
@@ -39,6 +39,7 @@ open Lm_debug
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Opname
@@ -58,15 +59,26 @@ open Filter_summary_type
 let _ =
    show_loading "Loading Shell_rule%t"
 
+let debug_shell =
+   create_debug (**)
+      { debug_name = "shell";
+        debug_description = "Display shell operations";
+        debug_value = false
+      }
+
 let debug_refine = load_debug "refine"
 
+type goal =
+   GRule of term
+ | GRewrite of term*term
+
 (*
- * This is the actual rewrite object.
+ * This is the actual rule/rewrite object.
  *)
 type info =
    { mutable rule_params : term param list;
      mutable rule_assums : term list;
-     mutable rule_goal : term;
+     mutable rule_goal : goal;
      mutable rule_proof : Package.proof proof_type;
      mutable rule_ped : Proof_edit.ped proof_type;
      mutable rule_resources : (MLast.expr, term) resource_def;
@@ -74,11 +86,22 @@ type info =
    }
 
 (*
- * Make a rewrite goal from the assumptions,
- * and the rewrite.
+ * Make a rule/rewrite goal from the assumptions, and the info goal.
  *)
-let mk_bare_goal assums goal =
-   Tactic.create Tactic.null_sentinal (mk_msequent goal assums) (Mp_resource.find Mp_resource.top_bookmark)
+let mk_rw_goal assums redex contractum =
+   let rw = mk_rewrite_hack (mk_xrewrite_term redex contractum) in
+   let assums = List.map mk_rewrite_hack assums in
+      if !debug_shell then begin
+         eprintf "Shell_rule.mk_rw_goal: [... --> ] %a <--> %a%t"
+            print_term redex print_term contractum eflush;
+      end;
+      mk_msequent rw assums
+
+let mk_bare_goal assums = function
+   GRule goal ->
+      Tactic.create Tactic.null_sentinal (mk_msequent goal assums) (Mp_resource.find Mp_resource.top_bookmark)
+ | GRewrite (redex, contractum) ->
+      Tactic.create Tactic.null_sentinal (mk_rw_goal assums redex contractum) (Mp_resource.find Mp_resource.top_bookmark)
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -101,12 +124,32 @@ let item_of_obj pack name
       rule_goal = goal;
       rule_resources = res
     } =
-      Filter_type.Rule (**)
-         { Filter_type.rule_name = name;
-           Filter_type.rule_params = params;
-           Filter_type.rule_stmt = zip_mimplies assums goal;
-           Filter_type.rule_proof = proof;
-           Filter_type.rule_resources = res
+   match goal with
+      GRule goal ->
+         Filter_type.Rule {
+            Filter_type.rule_name = name;
+            Filter_type.rule_params = params;
+            Filter_type.rule_stmt = zip_mimplies assums goal;
+            Filter_type.rule_proof = proof;
+            Filter_type.rule_resources = res
+         }
+    | GRewrite (redex, contractum) when params = [] & assums = [] ->
+         Filter_type.Rewrite {
+            rw_name = name;
+            rw_redex = redex;
+            rw_contractum = contractum;
+            rw_proof = proof;
+            rw_resources = res
+         }
+    | GRewrite (redex, contractum) ->
+         Filter_type.CondRewrite {
+            crw_name = name;
+            crw_params = params;
+            crw_args = assums;
+            crw_redex = redex;
+            crw_contractum = contractum;
+            crw_proof = proof;
+            crw_resources = res
          }
 
 (*
@@ -116,26 +159,7 @@ let unit_term = mk_simple_term nil_opname []
 
 let rec edit pack parse_arg name window obj =
    let edit_copy () =
-      let { rule_params = params;
-            rule_assums = assums;
-            rule_proof = proof;
-            rule_ped = ped;
-            rule_goal = goal;
-            rule_resources = res;
-            rule_name = name
-          } = obj
-      in
-      let obj =
-         { rule_params = params;
-           rule_assums = assums;
-           rule_proof = proof;
-           rule_ped = ped;
-           rule_goal = goal;
-           rule_resources = res;
-           rule_name = name
-         }
-      in
-         edit pack parse_arg name (Proof_edit.new_window window) obj
+      edit pack parse_arg name (Proof_edit.new_window window) { obj with rule_name = obj.rule_name }
    in
    let update_ped () =
       obj.rule_ped <- Primitive unit_term
@@ -165,17 +189,31 @@ let rec edit pack parse_arg name window obj =
                Proof_edit.format window ped
    in
    let edit_get_terms () =
-      obj.rule_goal :: obj.rule_assums
+      match obj.rule_goal with
+         GRule goal ->
+            goal :: obj.rule_assums
+       | GRewrite (redex, contractum) ->
+            redex :: contractum :: obj.rule_assums
    in
    let edit_set_goal t =
-      obj.rule_goal <- t;
+      obj.rule_goal <- GRule t;
       update_ped ()
    in
    let edit_set_redex t =
-      raise (RefineError ("Shell_rule.set_redex", StringError "can't set redex in rules"))
+      match obj.rule_goal with
+         GRule _ ->
+            raise (RefineError ("Shell_rule.set_redex", StringError "can't set redex in rules"))
+       | GRewrite (_, contractum) ->
+            obj.rule_goal <- GRewrite (t, contractum);
+            update_ped ()
    in
    let edit_set_contractum t =
-      raise (RefineError ("Shell_rule.set_contractum", StringError "can't set contractum in rules"))
+      match obj.rule_goal with
+         GRule _ ->
+            raise (RefineError ("Shell_rule.set_contractum", StringError "can't set contractum in rules"))
+       | GRewrite (redex, _) ->
+            obj.rule_goal <- GRewrite (redex, t);
+            update_ped ()
    in
    let edit_set_assumptions tl =
       obj.rule_assums <- tl;
@@ -241,10 +279,15 @@ let rec edit pack parse_arg name window obj =
       Proof_edit.nop_ped (get_ped obj)
    in
    let edit_get_contents () =
-      obj.rule_name,
-      Proof_edit.ped_status obj.rule_ped,
-      List.fold_right (fun x y -> MetaImplies(MetaTheorem x,y)) obj.rule_assums (MetaTheorem obj.rule_goal),
-      obj.rule_params
+      let goal =
+         match obj.rule_goal with
+            GRule goal -> MetaTheorem goal
+          | GRewrite (redex, contractum) -> MetaIff(MetaTheorem redex, MetaTheorem contractum)
+      in
+         obj.rule_name,
+         Proof_edit.ped_status obj.rule_ped,
+         List.fold_right (fun x y -> MetaImplies(MetaTheorem x,y)) obj.rule_assums goal,
+         obj.rule_params
    in
    let get_ped () =
       match obj.rule_ped with
@@ -252,17 +295,18 @@ let rec edit pack parse_arg name window obj =
             raise (RefineError ("Shell_rule.get_ped", StringError "Editing of primitive rules is not currently allowed"))
        | Derived _
        | Incomplete ->
-            (* Convert to a ped *)
-            let { rule_params = params;
-                  rule_assums = assums;
-                  rule_goal = goal
-                } = obj
+            let goal, assums =
+               match obj.rule_goal with
+                  GRule goal ->
+                     goal, obj.rule_assums
+                | GRewrite (redex, contractum) ->
+                     dest_msequent (mk_rw_goal obj.rule_assums redex contractum)
             in
             let proof = Package.new_proof pack parse_arg name assums goal in
             let ped = Package.ped_of_proof pack parse_arg proof (mk_msequent goal assums) in
                obj.rule_proof <- Interactive proof;
                obj.rule_ped <- Interactive ped;
-               Proof_edit.set_params ped params;
+               Proof_edit.set_params ped obj.rule_params;
                save_ped ();
                ped
        | Interactive ped ->
@@ -319,7 +363,7 @@ let create pack parse_arg window name =
    let obj =
       { rule_assums = [];
         rule_params = [];
-        rule_goal = unit_term;
+        rule_goal = GRewrite (unit_term, unit_term);
         rule_proof = Incomplete;
         rule_ped = Incomplete;
         rule_resources = no_resources;
@@ -350,11 +394,51 @@ let view_rule pack parse_arg window
    let obj =
       { rule_assums = assums;
         rule_params = params;
-        rule_goal = goal;
+        rule_goal = GRule goal;
         rule_proof = proof;
         rule_ped = ped_of_proof pack parse_arg (mk_msequent goal assums) proof;
         rule_resources = res;
         rule_name = name
+      }
+   in
+      edit pack parse_arg name (create_window window) obj
+
+let view_rw pack parse_arg window
+    { rw_name = name;
+      rw_redex = redex;
+      rw_contractum = contractum;
+      rw_proof = proof;
+      rw_resources = res;
+    } =
+   let obj =
+      { rule_assums = [];
+        rule_params = [];
+        rule_goal = GRewrite (redex, contractum);
+        rule_proof = proof;
+        rule_ped = ped_of_proof pack parse_arg (mk_rw_goal [] redex contractum) proof;
+        rule_resources = res;
+        rule_name = name;
+      }
+   in
+      edit pack parse_arg name (create_window window) obj
+
+let view_crw pack parse_arg window
+    { crw_name = name;
+      crw_params = params;
+      crw_args = args;
+      crw_redex = redex;
+      crw_contractum = contractum;
+      crw_proof = proof;
+      crw_resources = res;
+    } =
+   let obj =
+      { rule_assums = args;
+        rule_params = params;
+        rule_goal = GRewrite (redex, contractum);
+        rule_proof = proof;
+        rule_ped = ped_of_proof pack parse_arg (mk_rw_goal args redex contractum) proof;
+        rule_resources = res;
+        rule_name = name;
       }
    in
       edit pack parse_arg name (create_window window) obj

@@ -18,7 +18,6 @@ MPFILES =\
 	package_sig\
 	package_info\
 	shell_sig\
-	shell_rewrite\
 	shell_rule\
 	shell_tex\
 	shell_package\

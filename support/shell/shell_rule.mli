@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 extends Shell_sig
@@ -43,7 +43,7 @@ open Package_sig
 open Package_info
 
 (*
- * Make an editable rewrite.
+ * Make an editable rule/rewrite.
  *)
 val create :
    Package.package ->
@@ -57,6 +57,20 @@ val view_rule :
    parse_arg ->
    display_mode ->
    (term, meta_term, Package.proof proof_type, MLast.expr) rule_info ->
+   edit_object
+
+val view_rw :
+   Package.package ->
+   parse_arg ->
+   display_mode ->
+   (term, Package.proof proof_type, MLast.expr) rewrite_info ->
+   edit_object
+
+val view_crw :
+   Package.package ->
+   parse_arg ->
+   display_mode ->
+   (term, Package.proof proof_type, MLast.expr) cond_rewrite_info ->
    edit_object
 
 (*
