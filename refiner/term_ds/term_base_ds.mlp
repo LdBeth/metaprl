@@ -478,10 +478,10 @@ struct
    (*
     * Operator names.
     *)
-   let opname_of_term t = match get_core t with
+   let rec opname_of_term t = match t.core with
       Term t -> t.term_op.op_name
     | Sequent _ -> sequent_opname
-    | Subst _ -> fail_core "opname_of_term"
+    | Subst _ -> get_core t; opname_of_term t
 
    (* These are trivial identity functions *)
 
