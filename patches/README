@@ -1,8 +1,12 @@
 This directory used to contain OCaml patches necessary for compiling MetaPRL.
 
-As of OCaml 3.08.0, the only modification to OCaml that is needed for MetaPRL
+For OCaml 3.08.0, the only modification to OCaml that is needed for MetaPRL
 is copying 8 extra files out of the build tree (as listed in
 doc/htmlman/install.html and http://metaprl.org/install.html). An alternative
 to copying the files manually is to apply the
-"ocaml-%{version}-wish1804.patch" before compiling OCaml (or before running
+"ocaml-3.08-wish1804.patch" before compiling OCaml (or before running
 "make install" on a compiled OCaml tree).
+
+For OCaml 3.08.1, in addition to the above you will also need to apply the
+ocaml-3.08.1-bug3142.patch to roll back a recent camlp4 change that broke the
+pa_macro package.
