@@ -125,9 +125,9 @@ endif
 	done
 
 clean:
-	+@for i in lib bin doc util $(DIRS); do\
+	+@for i in lib bin doc util $(DIRS); do if [ -d $$i ]; then\
 		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
-	done
+	fi; done
 ifdef PDIRS
 	+@for i in $(PDIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
