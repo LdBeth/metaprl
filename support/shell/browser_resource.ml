@@ -303,7 +303,7 @@ let add_sessions info ids =
                           command_value = sprintf "Session(%d)" j
                         }
                      in
-                        item :: items) [] ids
+                        item :: items) menu.menu_items ids
             in
                { menu with menu_items = items })
    with

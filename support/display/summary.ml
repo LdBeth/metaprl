@@ -418,13 +418,13 @@ dform resources_cons_df : resources{cons{'h; 't}} =
    hspace szone keyword["{| "] pushm res_def_list{cons{'h; 't}} popm keyword[" |} "] ezone
 
 dform res_def_list_df1 : res_def_list{cons{'a; nil}} =
-   slot{'a}
+   'a
 
 dform res_def_list_df2 : res_def_list{cons{'a; 'b}} =
-   slot{'a} keyword[";"] hspace res_def_list{'b}
+   'a keyword[";"] hspace res_def_list{'b}
 
 dform resource_defs_df1 : resource_defs[name:s]{'args} =
-   slot[name:s] " " slot{'args}
+   slot[name:s] " " 'args
 
 dform resource_defs_df1 : resource_defs[name:s]{nil} =
    slot[name:s]

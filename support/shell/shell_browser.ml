@@ -59,6 +59,13 @@ let debug_http =
         debug_value = false
       }
 
+let debug_lock =
+   create_debug (**)
+      { debug_name = "lock";
+        debug_description = "Display lock operations";
+        debug_value = false
+      }
+
 (*
  * We may start this as a web service.
  *)
@@ -471,9 +478,18 @@ struct
     * Lock the current session.
     *)
    let synchronize_pid pid f =
+      if !debug_lock then
+         eprintf "Locking session %d from thread %d@." pid (Thread.id (Thread.self ()));
       Lm_thread_shell.with_pid pid (fun () ->
-            State.write session_entry (fun session ->
-                  f session)) ()
+            if !debug_lock then
+               eprintf "Now process %d@." (Lm_thread_shell.get_pid ());
+            let x =
+               State.write session_entry (fun session ->
+                     f session)
+            in
+               if !debug_lock then
+                  eprintf "Unlocking session_entry@.";
+               x) ()
 
    (*
     * The session isn't actually needed,
@@ -1098,8 +1114,10 @@ struct
             synchronize_pid pid (fun session ->
                   if is_valid_response state header then
                      let pid = Lm_thread_shell.create false in
+                        eprintf "Created pid: %d@." pid;
                         synchronize_pid pid (fun session ->
-                              print_redisplay_page frameset_uri server state session outx)
+                              print_redisplay_page frameset_uri server state session outx);
+                        eprintf "ZZZ@."
                   else
                      print_login_page outx state (Some session))
        | SessionURI pid ->
