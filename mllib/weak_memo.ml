@@ -27,7 +27,32 @@
  * Author: Yegor Bryukhov
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Printf
+open Format
+
+(*
+ * BUG WEAK: 8/22/2003 JYH
+ * Something is definitely wrong, probably in Term_hash, which
+ * fails if we use real Weak arrays.  This probably means that
+ * somewhere, someone has a weak_descriptor, but the actual
+ * descriptor is dead.  We'll have to investigate Term_hash
+ * to see what is going on.  In the meantime, we can use real
+ * arrays.  This is probably very inefficient.
+ *)
+module Weak =
+struct
+   type 'a t = 'a option array
+
+   let create len =
+      Array.create len None
+
+   let set = Array.set
+
+   let get = Array.get
+
+   let blit = Array.blit
+
+   let length = Array.length
+end
 
 module WeakMemo (Hash : Hash_with_gc_sig.HashWithGCSig) =
 struct
@@ -167,7 +192,7 @@ ENDIF
             invalid_arg "Can't expand weak array to less size"
          else
             let new_ar = Weak.create new_size in
-               (Weak.blit wa 0 new_ar 0 old_ar_length);
+               Weak.blit wa 0 new_ar 0 old_ar_length;
                new_ar
 
    (*
@@ -207,7 +232,7 @@ ENDIF
                   if info.gc_on then
                      begin
                         (* GC is only triggered when the weak table gets full *)
-                        if ((Weak.length info.image_array) <> info.count) then
+                        if Weak.length info.image_array <> info.count then
                            raise (Inconsistency "weak table length does not match expected value");
 
                         (* Search for a free location in the hash table *)
@@ -234,7 +259,7 @@ ENDIF
                      let count = info.count in
                      let count' = succ count in
                         info.count <- count';
-                        if count' = (Weak.length info.image_array) then
+                        if count' = Weak.length info.image_array then
                            begin
                               (* Table looks full, so trigger GC analysis on the next allocation *)
                               Hash.gc_start table;
@@ -273,7 +298,7 @@ ENDIF
          invalid_arg "WeakMemo.retrieve: out of range";
       (IFDEF VERBOSE_EXN THEN (**)
           if index.desc_name <> info.name then
-             invalid_arg (sprintf "WeakMemo.retrieve: try to retrieve from wrong table: %s from %s" index.desc_name info.name)
+             invalid_arg (Printf.sprintf "WeakMemo.retrieve: try to retrieve from wrong table: %s from %s" index.desc_name info.name)
        ENDIF);
       match Weak.get info.image_array index.descriptor with
          Some item ->

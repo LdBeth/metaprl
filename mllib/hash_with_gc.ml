@@ -63,6 +63,7 @@ struct
    let create i crit_lev hf comp =
       if crit_lev <= 0 then
          invalid_arg "Hash_with_gc.create: level argument should be positive";
+
       { hash_func = hf;
         compare = comp;
         table = Array.create i [];
@@ -111,8 +112,9 @@ struct
          assoc info.compare key bucket
 
    let insert info hash key value =
-      let count = info.count and table = info.table in
-      let len = Array.length table in
+      let count = info.count in
+      let table = info.table in
+      let len   = Array.length table in
       let index = hash mod len in
          info.count <- count + 1;
          table.(index) <- ((key, value) :: table.(index));
@@ -134,7 +136,7 @@ struct
             info.gc_count <- 0
          end
 
-   type ('a,'b) option2 =
+   type ('a, 'b) option2 =
       Some2 of 'a * 'b
     | None2
 
@@ -160,8 +162,8 @@ struct
                   Some item
                end
           | None2 ->
-               let i' = (succ i) in
-                  if i' = (Array.length info.table) then
+               let i' = succ i in
+                  if i' = Array.length info.table then
                      if 100 * info.gc_count < info.gc_critical_level * info.count then
                         begin
                            info.gc_on <- false;
@@ -186,7 +188,6 @@ struct
          scan_for_release test info
 
    let is_gc info = info.gc_on
-
 end
 
 (*
