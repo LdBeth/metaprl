@@ -250,9 +250,6 @@ let edit pack sentinal arg name obj =
    let edit_root () =
       Proof_edit.root_ped (get_ped obj)
    in
-   let edit_addr addr =
-      Proof_edit.addr_ped (get_ped obj) addr
-   in
    let edit_up i =
       Proof_edit.up_ped (get_ped obj) i
    in
@@ -303,6 +300,9 @@ let edit pack sentinal arg name obj =
    in
    let edit_extras () =
       Proof_edit.ped_extras (get_ped ())
+   in
+   let edit_addr addr =
+      Proof_edit.addr_ped (get_ped ()) addr
    in
    let edit_refine text ast tac =
       if !debug_refine then
