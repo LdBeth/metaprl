@@ -57,7 +57,7 @@ let scan_level_expression scanner =
   let le = ref (mk_const_level_exp 0) in
   let rec scan_expression s = 
     if (scan_at_byte_p s ilsquare) then
-      (scan_delimited_list scan_expression s ilsquare irsquare ibar;
+      (scan_char_delimited_list scan_expression s '[' ']' '|';
        scan_whitespace)
     else if numeric_digit_code_p (scan_cur_byte s) then 
       le := max_level_exp (mk_const_level_exp (scan_decimal_num s)) le
