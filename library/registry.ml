@@ -21,7 +21,7 @@ let registry_types = ref []
  *)
 let registry_file_ref = ref (*Env_arg.string 
                            "registry"*)
-                           "/amd/noon/y/nuprl/nuprl4i/nuprl5L/nuprl-light/library/reg-file-test.txt"
+                           "/amd/noon/y/nuprl/nuprl4i/nuprl5L/nuprl-light/library/registry.txt"(*temp hack*)
                           (* "The registry file defines the MathBus syntax"
                            (fun _ s v -> s := v)*)
 
