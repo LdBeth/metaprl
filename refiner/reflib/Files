@@ -2,11 +2,7 @@ REFLIB_FILES :=\
 	rformat\
 	simple_print_sig\
 	simple_print\
-	term_header\
-	term_hash\
-	term_header_constr\
 	term_copy_weak\
-	term_norm\
 	term_copy2_weak\
 	term_io\
 	ml_format_sig\

@@ -1,5 +1,4 @@
-(* This file is an interface for terms' conversion
- * From one Term-module to another
+(* This file is an interface for terms' normalization (DAG-ization)
  *
  * -----------------------------------------------------------------
  * This file is part of Nuprl-Light, a modular, higher order
@@ -28,28 +27,47 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Term_hash
 open Infinite_weak_array
 
-module TermCopyWeak
-   (FromTerm : Termmod_sig.TermModuleSig)
-   (ToTerm : Termmod_hash_sig.TermModuleHashSig) :
+module type TermNormSig =
 sig
 
+   type t
+   type term
+   type term_index
+   type meta_term
+   type meta_term_index
+
+   val p_add : t -> term -> term_index
+   val p_normalize : t -> term -> term
 (*
- * Convert terms and meta_terms from FromTerm-module to ToTerm-module
+ * Restore term from its index
  *)
-   val p_convert :
-      ToTerm.TermHash.t -> FromTerm.TermType.term -> ToTerm.TermType.term
-   val p_convert_meta :
-      ToTerm.TermHash.t -> FromTerm.TermType.meta_term -> ToTerm.TermType.meta_term
+   val p_retrieve :
+     t -> term_index -> term
 
 (*
- * Same functions operating with global hashing structure
+ * Same functions for meta_terms
  *)
-   val convert : FromTerm.TermType.term -> ToTerm.TermType.term
-   val convert_meta :
-      FromTerm.TermType.meta_term -> ToTerm.TermType.meta_term
+   val p_add_meta : t -> meta_term -> meta_term_index
+   val p_normalize_meta : t -> meta_term -> meta_term
+   val p_retrieve_meta : t -> meta_term_index -> meta_term
+
+(*
+ * Synonym to Term_hash's global copy
+ *)
+   val global_hash : t
+
+(*
+ * Versions of previous functions operating with global copy of hashing structure
+ *)
+   val add : term -> term_index
+   val normalize : term -> term
+   val retrieve : term_index -> term
+
+   val add_meta : meta_term -> meta_term_index
+   val normalize_meta : meta_term -> meta_term
+   val retrieve_meta : meta_term_index -> meta_term
 end
 
 (*

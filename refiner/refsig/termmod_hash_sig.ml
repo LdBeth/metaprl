@@ -34,9 +34,12 @@
 open Term_sig
 open Tm_base_sig
 open Tm_man_sig
-open Refine_error_sig
+open Term_header_sig
+open Term_hash_sig
+open Term_norm_sig
+open Infinite_weak_array
 
-module type TermModuleSig =
+module type TermModuleHashSig =
 sig
    (*
     * Terms and operations on terms.
@@ -61,8 +64,35 @@ sig
       with type bound_term' = TermType.bound_term'
 
    module TermMan : TmManSig
-                    with type term = TermType.term
-                    with type esequent = TermType.esequent
+      with type term = TermType.term
+      with type esequent = TermType.esequent
+
+   module TermHeader : TermHeaderSig
+      with type term = TermType.term
+      with type param = TermType.param
+      with type meta_term = TermType.meta_term
+
+      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
+      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor
+
+   module TermHash : TermHashSig
+      with type param_header = TermHeader.param_header
+      with type param_weak_header = TermHeader.param_weak_header
+      with type term_header = TermHeader.term_header
+      with type term_weak_header = TermHeader.term_weak_header
+      with type meta_term_header = TermHeader.meta_term_header
+      with type meta_term_weak_header = TermHeader.meta_term_weak_header
+
+      with type param = TermType.param
+      with type term = TermType.term
+      with type meta_term = TermType.meta_term
+
+   module TermNorm : TermNormSig
+      with type t = TermHash.t
+      with type term = TermType.term
+      with type term_index = TermHash.term_index
+      with type meta_term = TermType.meta_term
+      with type meta_term_index = TermHash.meta_term_index
 
 end
 

@@ -31,14 +31,8 @@
 
 open Term_copy2_weak
 
-module Refiner_std = Refiner_std.Refiner
-module Refiner = Refiner.Refiner
-module Header_std = Term_header.TermHeader (Refiner_std)
-module Header = Term_header.TermHeader (Refiner)
-module Hash_std = Term_hash.TermHash (Refiner_std) (Header_std)
-module Hash = Term_hash.TermHash (Refiner) (Header)
 module NormalizeTerm =
-   Term_copy2_weak.TermCopy2Weak (Refiner_std) (Header_std) (Hash_std) (Refiner) (Header) (Hash)
+   Term_copy2_weak.TermCopy2Weak (Refiner_std.Refiner) (Refiner.Refiner) 
 
 let normalize_term = NormalizeTerm.convert
 let normalize_meta_term = NormalizeTerm.convert_meta

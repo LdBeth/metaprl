@@ -34,32 +34,11 @@ open Infinite_weak_array
 
 module TermCopyWeak
    (FromTerm : Termmod_sig.TermModuleSig)
-
-   (ToTerm : Termmod_sig.TermModuleSig) 
-
-   (TermHeader : Term_header_sig.TermHeaderSig
-      with type term = ToTerm.TermType.term
-      with type param = ToTerm.TermType.param
-      with type meta_term = ToTerm.TermType.meta_term
-
-      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
-      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor)
-
-   (TermHash : Term_hash_sig.TermHashSig
-      with type param_header = TermHeader.param_header
-      with type param_weak_header = TermHeader.param_weak_header
-      with type term_header = TermHeader.term_header
-      with type term_weak_header = TermHeader.term_weak_header
-      with type meta_term_header = TermHeader.meta_term_header
-      with type meta_term_weak_header = TermHeader.meta_term_weak_header
-
-      with type param = ToTerm.TermType.param
-      with type term = ToTerm.TermType.term
-      with type meta_term = ToTerm.TermType.meta_term) =
-   
+   (ToTerm : Termmod_hash_sig.TermModuleHashSig) =
 struct
-
-   module THC = TermHeaderConstr(FromTerm)(ToTerm)(TermHeader)(TermHash)
+   
+   module TermHash = ToTerm.TermHash
+   module THC = TermHeaderConstr(FromTerm)(ToTerm)(ToTerm.TermHeader)(TermHash)
 
    let p_add info t = TermHash.p_lookup info (THC.make_term_header info t)
    let p_convert info t = TermHash.p_retrieve info (p_add info t)

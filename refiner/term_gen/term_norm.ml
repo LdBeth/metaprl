@@ -1,6 +1,5 @@
-(* This file is an interface for terms' normalization (DAG-ization)
- * It introduces interface for storing and accessing terms stored
- * in Term_hash's structure
+(* This file implements terms' normalization (DAG-ization)
+ * It stores and access terms stored in Term_hash's structure
  *
  * -----------------------------------------------------------------
  * This file is part of Nuprl-Light, a modular, higher order
@@ -29,10 +28,12 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
+open Term_hash
+open Term_header_constr
 open Infinite_weak_array
 
-module TermNorm 
-   (ToTerm : Termmod_sig.TermModuleSig) 
+module TermNorm
+   (ToTerm : Termmod_sig.TermModuleSig)
 
    (TermHeader : Term_header_sig.TermHeaderSig
       with type term = ToTerm.TermType.term
@@ -52,53 +53,38 @@ module TermNorm
 
       with type param = ToTerm.TermType.param
       with type term = ToTerm.TermType.term
-      with type meta_term = ToTerm.TermType.meta_term) :
+      with type meta_term = ToTerm.TermType.meta_term) =
 
-sig
+struct
 
-(*
- * Adds term to Term_hash's structure and returns term's index in this structure
- *)
-   val p_add : TermHash.t -> ToTerm.TermType.term -> TermHash.term_index
-(*
- * Normalize term by means of Term_hash structure's data
- * It removes all duplications of term's fragments
- *)
-   val p_normalize :
-     TermHash.t -> ToTerm.TermType.term -> ToTerm.TermType.term
-(*
- * Restore term from its index
- *)
-   val p_retrieve :
-     TermHash.t -> TermHash.term_index -> ToTerm.TermType.term
+   module THC = TermHeaderConstr(ToTerm)(ToTerm)(TermHeader)(TermHash)
 
-(*
- * Same functions for meta_terms
- *)
-   val p_add_meta :
-     TermHash.t -> ToTerm.TermType.meta_term -> TermHash.meta_term_index
-   val p_normalize_meta :
-     TermHash.t -> ToTerm.TermType.meta_term -> ToTerm.TermType.meta_term
-   val p_retrieve_meta :
-     TermHash.t -> TermHash.meta_term_index -> ToTerm.TermType.meta_term
+   type t = TermHash.t
+   type term = ToTerm.TermType.term
+   type term_index = TermHash.term_index
+   type meta_term = ToTerm.TermType.meta_term
+   type meta_term_index = TermHash.meta_term_index
 
-(*
- * Synonym to Term_hash's global copy
- *)
-   val global_hash : TermHash.t
+   let p_add info t = TermHash.p_lookup info (THC.make_term_header info t)
+   let p_normalize info t = TermHash.p_retrieve info (p_add info t)
 
-(*
- * Versions of previous functions operating with global copy of hashing structure
- *)
-   val add : ToTerm.TermType.term -> TermHash.term_index
-   val normalize : ToTerm.TermType.term -> ToTerm.TermType.term
-   val retrieve : TermHash.term_index -> ToTerm.TermType.term
+   let p_add_meta info t = TermHash.p_lookup_meta info (THC.make_meta_term_header info t)
+   let p_normalize_meta info t = TermHash.p_retrieve_meta info (p_add_meta info t)
 
-   val add_meta : ToTerm.TermType.meta_term -> TermHash.meta_term_index
-   val normalize_meta :
-     ToTerm.TermType.meta_term -> ToTerm.TermType.meta_term
-   val retrieve_meta :
-     TermHash.meta_term_index -> ToTerm.TermType.meta_term
+   let p_retrieve = TermHash.p_retrieve
+   let p_retrieve_meta = TermHash.p_retrieve_meta
+
+   let global_hash = TermHash.global_hash
+
+   let add = p_add TermHash.global_hash
+   let normalize = p_normalize TermHash.global_hash
+
+   let add_meta = p_add_meta TermHash.global_hash
+   let normalize_meta = p_normalize_meta TermHash.global_hash
+
+   let retrieve = TermHash.retrieve
+   let retrieve_meta = TermHash.retrieve_meta
+
 end
 
 (*

@@ -2,4 +2,8 @@ TERM_GEN_FILES :=\
 	term_man_gen\
 	term_addr_gen\
 	term_shape_gen\
-	term_meta_gen
+	term_meta_gen\
+	term_header\
+	term_hash\
+	term_header_constr\
+	term_norm

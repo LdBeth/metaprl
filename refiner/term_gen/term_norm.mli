@@ -1,5 +1,6 @@
-(* This file implements terms' normalization (DAG-ization)
- * It stores and access terms stored in Term_hash's structure
+(* This file is an interface for terms' normalization (DAG-ization)
+ * It introduces interface for storing and accessing terms stored
+ * in Term_hash's structure
  *
  * -----------------------------------------------------------------
  * This file is part of Nuprl-Light, a modular, higher order
@@ -28,12 +29,10 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Term_hash
-open Term_header_constr
 open Infinite_weak_array
 
-module TermNorm
-   (ToTerm : Termmod_sig.TermModuleSig)
+module TermNorm 
+   (ToTerm : Termmod_sig.TermModuleSig) 
 
    (TermHeader : Term_header_sig.TermHeaderSig
       with type term = ToTerm.TermType.term
@@ -53,33 +52,14 @@ module TermNorm
 
       with type param = ToTerm.TermType.param
       with type term = ToTerm.TermType.term
-      with type meta_term = ToTerm.TermType.meta_term) =
+      with type meta_term = ToTerm.TermType.meta_term) :
 
-struct
-
-   module THC = TermHeaderConstr(ToTerm)(ToTerm)(TermHeader)(TermHash)
-
-   let p_add info t = TermHash.p_lookup info (THC.make_term_header info t)
-   let p_normalize info t = TermHash.p_retrieve info (p_add info t)
-
-   let p_add_meta info t = TermHash.p_lookup_meta info (THC.make_meta_term_header info t)
-   let p_normalize_meta info t = TermHash.p_retrieve_meta info (p_add_meta info t)
-
-   let p_retrieve = TermHash.p_retrieve
-   let p_retrieve_meta = TermHash.p_retrieve_meta
-
-   let global_hash = TermHash.global_hash
-
-   let add = p_add TermHash.global_hash
-   let normalize = p_normalize TermHash.global_hash
-
-   let add_meta = p_add_meta TermHash.global_hash
-   let normalize_meta = p_normalize_meta TermHash.global_hash
-
-   let retrieve = TermHash.retrieve
-   let retrieve_meta = TermHash.retrieve_meta
-
-end
+   Term_norm_sig.TermNormSig
+      with type t = TermHash.t
+      with type term = ToTerm.TermType.term
+      with type term_index = TermHash.term_index
+      with type meta_term = ToTerm.TermType.meta_term
+      with type meta_term_index = TermHash.meta_term_index
 
 (*
  * -*-

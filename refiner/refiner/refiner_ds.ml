@@ -45,6 +45,14 @@ struct
    module TermShape = Term_shape_gen.TermShape (TermType) (Term)
    module TermEval = Term_eval_ds.TermEval (Term) (RefineError)
    module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (RefineError)
+   module TermMod = struct
+      module TermType = TermType
+      module Term = Term
+      module TermMan = TermMan
+   end
+   module TermHeader = Term_header.TermHeader (TermMod)
+   module TermHash = Term_hash.TermHash (TermMod) (TermHeader)
+   module TermNorm = Term_norm.TermNorm (TermMod) (TermHeader) (TermHash)
    module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
    module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineError)
 end
