@@ -2062,6 +2062,11 @@ struct
     *    lambda(a. lambda(b. ... cons(arg1; cons(arg2; ... cons(argn, nil)))))
     *)
    let compute_rule_ext name vars params args result =
+   (* BUG!!!!!!!!!!!
+    * This code was completely wrong (see BUGS 4.4 and 4.10) and was producing stupid
+      errors.
+      It is disabled for now
+    *) (*
       (* Create redex term *)
       let l = Array.length vars in
       let create_redex vars args =
@@ -2087,6 +2092,10 @@ struct
                raise (Invalid_argument "Refine.add_prim_theorem.compute_ext: faulty extract")
       in
          compute_ext
+   *)
+   fun vars params args ->
+      (* Return dummy answer *)
+      result
 
    let add_prim_rule build name vars params args result =
       IFDEF VERBOSE_EXN THEN
