@@ -1170,6 +1170,8 @@ struct
     * Inline the opname information.
     *)
    let inline_sig_opnames watch cache summ =
+      if !debug_filter_cache then
+         eprintf "FilterCache.inline_sig_opnames: %s%t" (string_of_path (Base.pathname cache.base.lib summ.sig_summary)) eflush;
       let { sig_typeclasses = typeclasses;
             sig_typeenv     = typeenv;
             sig_termenv     = termenv;
@@ -1203,6 +1205,8 @@ struct
     * the inherited attributes.
     *)
    let rec inline_sig_components watch barg cache path self items =
+      if !debug_filter_cache then
+         eprintf "FilterCache.inline_sig_components: %s%t" (string_of_path path) eflush;
       (* Get the opname for this path *)
       let opprefix = make_opname path in
 
