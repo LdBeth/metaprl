@@ -329,8 +329,8 @@ struct
        | (Sequent s, GoalAddr i) -> 											\
             if i>=0 && i < SeqGoal.length s.sequent_goals then 								\
                let term, arg = f GOAL_BVARS (SeqGoal.get s.sequent_goals i) in 							\
-               let aux i' t' = 												\
-                 if i' = i then term else t' 										\
+               let aux i1 t1 = 												\
+                 if i1 = i then term else t1 										\
                in mk_sequent_term (**)                                                    \
                      { sequent_args = s.sequent_args;                                     \
                        sequent_hyps = s.sequent_hyps;                                     \

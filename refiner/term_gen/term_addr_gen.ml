@@ -205,9 +205,9 @@ struct
                let term, arg = nthpath_replace_term FAIL flag f VARS_BVARS trm (i - 1) in \
                let bterm = mk_bterm vars term in \
                   mk_term op [bterm], arg \
-          | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms') } -> \
+          | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms1) } -> \
                if Opname.eq (dest_op op).op_name context_opname then \
-                  let args, bterm = List_util.split_last bterms' in \
+                  let args, bterm = List_util.split_last bterms1 in \
                   let { bvars = vars; bterm = trm } = dest_bterm bterm in \
                   let term, arg = nthpath_replace_term FAIL flag f VARS_BVARS trm (i - 1) in \
                   let bterm = mk_bterm vars term in \
@@ -380,7 +380,7 @@ struct
    and apply_var_fun_higher_bterms f bvars coll = function
       [] ->
          [], coll
-    | (bterm :: bterms) as bterms' ->
+    | (bterm :: bterms) as bterms1 ->
          let bterms_new, args = apply_var_fun_higher_bterms f bvars coll bterms in
          let { bvars = bvars'; bterm = term } = dest_bterm bterm in
          let bterm_new, args = apply_var_fun_higher_term f (bvars' :: bvars) args term in
