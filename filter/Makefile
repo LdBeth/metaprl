@@ -43,9 +43,10 @@ SUB_CMXALIBS := $(addsuffix /filterlib.cmxa, $(LIBDIRS))
 all: lib 
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cma
 
-opt:: optlib 
+opt: optlib 
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa 
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB)$(EXT_LIB)
+	@ $(MAKE) optbin
 
 include base/Files
 include boot/Files
@@ -296,7 +297,7 @@ $(ROOT)/bin/$(MAINPROG)$(EXE): $(MAINPROG).run
 $(ROOT)/bin/$(CONVERT)$(EXE): $(CONVERT).run
 	$(LN) ../$(DIR)/$(CONVERT).run $@
 
-opt:: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAINPROG).opt $(CONVERT).opt
+optbin: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAINPROG).opt $(CONVERT).opt
 	$(LN) ../$(DIR)/$(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N)
 	$(LN) ../$(DIR)/$(CAMLP4O).opt $(ROOT)/lib/$(CAMLP4O)
 	$(LN) ../$(DIR)/$(PRLCN).opt $(ROOT)/lib/$(PRLCN)
