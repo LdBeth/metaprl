@@ -545,9 +545,6 @@ let intro_univ_arg = IntroArgsOption (univ_arg_fun, None)
 (*
  * Add dT 0 to the browser.
  *)
-let refine_is_enabled () =
-   Shell_command.is_enabled MethodRefine
-
 let resource menubar +=
     [<< menuitem["refine", "dT 0", "Command('refine dT 0')"] >>, refine_is_enabled]
 

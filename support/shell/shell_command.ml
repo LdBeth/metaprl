@@ -28,6 +28,7 @@ extends Summary
 extends Mptop
 
 open Lm_debug
+open Lm_rformat
 open Lm_rprintf
 
 open Opname
@@ -208,32 +209,37 @@ let status_all () =
    in
       apply_all f true true
 
+declare refiner_status[name:s]
+
+dform refiner_status_df : refiner_status[name:s] =
+   szone pushm[3] info["Refiner status:"] space bf[name] space
+
 let check_all () =
-   (* Make a few things bols, or highlight with `...' and *...* *)
-   let bfs, bfe, bfs2, bfe2 =
-      match Lm_terminfo.tgetstr Lm_terminfo.enter_bold_mode, Lm_terminfo.tgetstr Lm_terminfo.exit_attribute_mode with
-         Some b, Some e -> b, e, b, e
-       | _ -> "*", "*", "`", "'"
-   in
-   let check item =
+   let check item db =
       let name, _, _, _ = item.edit_get_contents [] in
-      let status =
-         match item.edit_check () with
+      let buf = new_buffer () in
+         Dform.format_term db buf <:con< refiner_status[$name$:s] >>;
+         begin match item.edit_check () with
             RefPrimitive ->
-               "is a primitive axiom"
+               format_string buf "is a primitive axiom"
           | RefIncomplete (c1, c2) ->
-               sprintf "is a derived object with an %sincomplete%s proof (%i rule boxes, %i primitive steps)" bfs bfe c1 c2
+               format_string buf "is a derived object with an ";
+               Dform.format_term db buf << bf["incomplete"] >>;
+               format_string buf (sprintf " proof (%i rule boxes, %i primitive steps)" c1 c2)
           | RefComplete (c1, c2, l) ->
-               sprintf "is a derived object with a complete grounded proof (%i rule boxes, %i primitive steps, %i dependencies)" c1 c2 (List.length l)
+               format_string buf (sprintf "is a derived object with a complete grounded proof (%i rule boxes, %i primitive steps, %i dependencies)" c1 c2 (List.length l))
           | RefUngrounded (c1, c2, op) ->
-               sprintf "is a derived object with a complete %sungrounded%s proof (%i rule boxes, %i primitive steps) that depends on an incomplete %s%s%s" bfs bfe c1 c2 bfs2 (mk_dep_name op) bfe2
-      in
-         eprintf "Refiner status: %s%s%s %s%t" bfs2 name bfe2 status eflush
+               format_string buf "is a derived object with a complete ";
+               Dform.format_term db buf << bf["ungrounded"] >>;
+               format_string buf (sprintf " proof (%i rule boxes, %i primitive steps) that depends on an incomplete " c1 c2);
+               Dform.format_term db buf <:con< bf[$mk_dep_name op$:s] >>
+         end;
+         format_popm buf;
+         format_ezone buf;
+         format_newline buf;
+         print_rbuffer buf
    in
-   let f item db =
-      check item
-   in
-      apply_all f true true
+      apply_all check true true
 
 let up i =
    ignore (cd (String.make (i + 1) '.'));

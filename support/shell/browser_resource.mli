@@ -87,6 +87,7 @@ val default_commandbar_info : browser_state -> browser_info
 type menu_item = term * (unit -> bool)
 
 val always_enabled : unit -> bool
+val refine_is_enabled : unit -> bool
 
 resource (menu_item, browser_state -> browser_info) menubar
 resource (menu_item, browser_state -> browser_info) commandbar
