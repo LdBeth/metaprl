@@ -150,6 +150,7 @@ CMXADEPS =\
 	$(CMXADEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
+	$(ROOT)/lib/ldsymbols.cmxa\
 	$(ROOT)/lib/prlc.cmxa\
 	$(CMXALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cmxa\

@@ -2,6 +2,11 @@
 DIR := debug
 ROOT := ..
 
+#
+# Common config
+#
+include $(ROOT)/mk/preface
+
 INCLUDE := -I .
 
 CMALIBS := $(CAMLLIB)/unix.cma
@@ -11,6 +16,7 @@ MLZFILES :=\
     asttypes\
     parser_aux
 
+ifdef OCAMLSRC
 # Library files
 PFILES :=\
     $(MLZFILES)\
@@ -53,6 +59,7 @@ PFILES :=\
     debugcom\
     symbols\
     debug
+endif
 
 LMFILES :=\
 	debug_symbols
