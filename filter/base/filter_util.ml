@@ -50,6 +50,11 @@ let _ =
  ************************************************************************)
 
 (*
+ * Dummy MLast.loc value
+ *)
+let dummy_loc = (0, 0)
+
+(*
  * Get the context vars from a list.
  *)
 let rec context_vars_list = function
@@ -151,7 +156,7 @@ let output_path oport =
  ************************************************************************)
 
 let add_binding, get_unparsed_bindings =
-   let loc = 0,0 in
+   let loc = dummy_loc in
    let decls = ref [] in
    let decl_var = ref 0 in
    let add_binding d =

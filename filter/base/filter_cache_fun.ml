@@ -834,7 +834,7 @@ struct
    let check cache barg alt_select =
       let sig_info = sig_info cache barg alt_select in
       let id = find_id sig_info in
-         add_command cache (Id id, (0, 0));
+         add_command cache (Id id, dummy_loc);
          check_implementation cache.info sig_info;
          sig_info
 

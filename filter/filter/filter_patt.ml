@@ -48,6 +48,8 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 
+open Filter_util
+
 (*
  * Utilities.
  *)
@@ -189,7 +191,7 @@ let build_sequent_patt loc t =
  *)
 let build_term_patt t =
    (* Fake the location for now *)
-   let loc = 0, 0 in
+   let loc = dummy_loc in
 
    if is_var_term t then
       <:patt< $lid: string_of_symbol (dest_var t)$ >>

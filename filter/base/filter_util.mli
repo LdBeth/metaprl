@@ -61,6 +61,8 @@ val get_unparsed_bindings : unit -> (string * term prl_binding) list
 
 val no_resources : (MLast.expr, term) resource_def
 
+val dummy_loc : MLast.loc
+
 (************************************************************************
  * OPNAMES								*
  ************************************************************************)

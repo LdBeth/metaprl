@@ -180,11 +180,11 @@ let _ = Quotation.default := "term"
 (* Allow dforms too *)
 let add_quot name =
    let quot_exp s =
-      let t = parse_quotation (0, 0) "term" (name, s) in
+      let t = parse_quotation dummy_loc "term" (name, s) in
          add_binding (BindTerm t)
    in
    let quot_patt s =
-      let t = parse_quotation (0, 0) "term" (name, s) in
+      let t = parse_quotation dummy_loc "term" (name, s) in
          Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
    in
       ignore (Quotation.add name (Quotation.ExAst (quot_exp, quot_patt)))
@@ -253,8 +253,7 @@ let rec expr_of_term_con loc = function
  | ConExpr e ->
       e
  | ConVar e ->
-      let loc = (0, 0) in
-         <:expr< Refiner.Refiner.Term.mk_var_term $e$ >>
+      <:expr< Refiner.Refiner.Term.mk_var_term $e$ >>
  | ConConstruct (op, params, bterms) ->
       let op = add_binding (BindOpname op) in
          if params = [] && List.for_all is_simp_bterm bterms then
@@ -302,7 +301,7 @@ and expr_of_hyps_con loc hyps =
 let con_exp s =
    let cs = Stream.of_string s in
    let con = Grammar.Entry.parse term_con_eoi cs in
-      expr_of_term_con (0,0) con
+      expr_of_term_con dummy_loc con
 
 let con_patt _ =
    raise(Invalid_argument "<:con< >> quotation can not be used where pattern is expected")
@@ -1046,7 +1045,7 @@ EXTEND
           let f () =
              let proc = SigFilter.get_proc loc in
              let id = SigFilter.hash proc in
-                SigFilter.add_command proc (Id id, (0, 0));
+                SigFilter.add_command proc (Id id, dummy_loc);
                 SigFilter.save proc AnySuffix;
                 SigFilter.extract () proc
           in

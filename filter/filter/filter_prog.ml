@@ -618,8 +618,8 @@ let extract_sig _ info resources path =
          eprintf "Filter_prog.extract_sig: begin%t" eflush
    in
    let items = Lm_list_util.flat_map extract_sig_item (info_items info) in
-   let postlog = interf_postlog resources (0, 0) in
-      List.map (fun item -> item, (0, 0)) (items @ postlog)
+   let postlog = interf_postlog resources dummy_loc in
+      List.map (fun item -> item, dummy_loc) (items @ postlog)
 
 (************************************************************************
  * UTILITIES                                                            *
@@ -1682,9 +1682,9 @@ let extract_str arg sig_info info resources name =
    in
    let items = Lm_list_util.flat_map (extract_str_item proc) (info_items info) in
    let items = wrap_summary_items proc items in
-   let prolog = implem_prolog proc (0, 0) name in
-   let postlog = implem_postlog proc (0, 0) in
-      List.map (fun item -> item, (0, 0)) (prolog @ items @ postlog)
+   let prolog = implem_prolog proc dummy_loc name in
+   let postlog = implem_postlog proc dummy_loc in
+      List.map (fun item -> item, dummy_loc) (prolog @ items @ postlog)
 
 module ProofCaches = Filter_cache.MakeCaches (Proof_convert.Convert)
 

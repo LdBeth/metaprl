@@ -69,7 +69,7 @@ let ext_exp s =
       add_binding (BindTerm t)
 
 let ext_patt s =
-   let loc = 0,0 in
+   let loc = dummy_loc in
       <:patt<$str:s$>>
 
 let _ = Quotation.add "ext" (Quotation.ExAst (ext_exp, ext_patt))
@@ -89,7 +89,7 @@ let desc_exp s =
       add_binding (BindTerm t)
 
 let desc_patt s =
-   let loc = 0,0 in
+   let loc = dummy_loc in
       <:patt<$str:s$>>
 
 let _ = Quotation.add "desc" (Quotation.ExAst (desc_exp, desc_patt))

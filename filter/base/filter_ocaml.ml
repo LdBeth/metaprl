@@ -43,6 +43,7 @@ open Opname
 open Term_sig
 open Refiner_sig
 open Filter_type
+open Filter_util
 
 (*
  * Show the file loading.
@@ -2278,7 +2279,7 @@ struct
    (*
     * Some default terms to return on error.
     *)
-   let loc = 0, 0
+   let loc = dummy_loc
    let def_str_item = StDcl (loc, [])
 
    (*

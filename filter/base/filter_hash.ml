@@ -35,6 +35,7 @@ open Lm_debug
 open Lm_printf
 
 open MLast
+open Filter_util
 
 (*
  * Show the file loading.
@@ -64,7 +65,7 @@ let hash_bool index flag =
 (*
  * We will relocate everything to 0
  *)
-let loc = (0, 0)
+let loc = dummy_loc
 let reloc = fun _ -> loc
 
 (*

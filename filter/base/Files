@@ -4,8 +4,8 @@ BASE_FILES =\
 	free_vars\
 	filter_type\
 	infix\
-	filter_hash\
 	filter_util\
+	filter_hash\
 	filter_ocaml\
 	filter_exn\
 	filter_summary\
