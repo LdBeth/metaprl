@@ -106,8 +106,15 @@ let main () =
 external exit : int -> unit = "caml_exit"
 
 let _ =
-   try main (); exit 0 with
+   try
+      main ();
+      close_out stdout;
+      close_out stderr;
+      exit 0
+   with
       exn ->
+         close_out stdout;
+         close_out stderr;
          exit 1
 
 (*

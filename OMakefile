@@ -7,6 +7,13 @@ LIB     = $(dir lib)
 BIN     = $(dir bin)
 
 #
+# Default compile options are to be quiet
+# and print a progress bar.
+#
+if $(not $(defined VERBOSE))
+   OMakeFlags(-S --progress)
+
+#
 # We always need threads
 #
 OCAMLFLAGS += -thread
@@ -106,7 +113,7 @@ if $(not $(equal $(OSTYPE), Win32))
 #
 # Directories needing only the standard config
 #
-.SUBDIRS: util clib libmojave
+.SUBDIRS: util clib
 
 ########################################################################
 # Generic directories with no special options
@@ -132,7 +139,7 @@ THREADSLIB = threads
 #
 # Directories using our custom scanner, but otherwise config is normal
 #
-.SUBDIRS: library debug ensemble filter
+.SUBDIRS: libmojave library debug ensemble filter
 
 ########################################################################
 # Refiner building
@@ -171,7 +178,7 @@ DEFAULT_THEORIES = base itt
 
 MC_THEORIES = mojave/core
 
-ALL_THEORIES = base itt fol czf phobos sil mojave/core experimental/compile
+ALL_THEORIES = base itt fol czf phobos sil experimental/compile
 
 #
 # Commands to compile theory files

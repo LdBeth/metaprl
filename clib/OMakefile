@@ -10,6 +10,8 @@ CFILES =\
 	termsize\
 	locale
 
+CFLAGS += -Wno-unused-variable
+
 StaticCLibraryInstall($(MPINSTALL), $(LIB), clib, $(CFILES))
 
 #
