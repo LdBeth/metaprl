@@ -36,14 +36,13 @@ open Printf
 
 open Mp_debug
 open Opname
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermOp
-open Refiner.Refiner.TermMan
-open Term_io
 
 open File_base_type
 open File_type_base
+
+open Refiner_sig
+open Refiner_io
+open Refiner.Refiner.TermType
 
 open Filter_type
 open Filter_util
@@ -78,7 +77,7 @@ type select_type =
  * or they are tactics.
  *)
 type 'a proof_type =
-   Primitive of term
+   Primitive of Refiner.Refiner.TermType.term
  | Derived of MLast.expr
  | Incomplete
  | Interactive of 'a
@@ -98,11 +97,28 @@ module type ConvertProofSig =
 sig
    type t
    type raw
-   val to_raw  : string -> t -> raw
-   val of_raw  : string -> raw -> t
-   val to_expr : string -> t -> MLast.expr
-   val to_term : string -> t -> term
-   val of_term : string -> term -> t
+   type cooked
+
+   val to_raw  : t -> string -> cooked -> raw
+   val of_raw  : t -> string -> raw -> cooked
+   val to_expr : t -> string -> cooked -> MLast.expr
+   val to_term : t -> string -> cooked -> term
+   val of_term : t -> string -> term -> cooked
+   val to_term_io : t -> string -> cooked -> term_io
+   val of_term_io : t -> string -> term_io -> cooked
+end
+
+module type ConvertInternalSig =
+sig
+   type t
+   type cooked
+   type term
+
+   val interface_suffix : string
+   val implementation_suffix : string
+
+   val to_term : t -> string -> cooked -> term
+   val of_term : t -> string -> term -> cooked
 end
 
 (************************************************************************
@@ -148,236 +164,97 @@ let set_raw _ _ v =
    else
       noraw := true
 
-let _ = Env_arg.bool "file"   true  "Use the filesystem"      set_file
 let _ = Env_arg.bool "raw"    false "Use the raw filesystem"  set_raw
-let _ = Env_arg.bool "lib"    false "Use the Nuprl5 library"  set_lib
+let _ = Env_arg.bool "file"   false "Use the term filesystem" set_file
+let _ = Env_arg.bool "lib"    true  "Use the Nuprl5 library"  set_lib
 
 (************************************************************************
  * IMPLEMTATION                                                         *
  ************************************************************************)
 
 (*
- * Identity used for term normalization.
- *)
-let identity x = x (* external identity : 'a -> 'a = "%identity" *)
-
-(*
- * Unit term used for interfaces.
- *)
-let unit_term = mk_simple_term nil_opname []
-
-(*
- * Save term in term_std format.
- *)
-let normalize_info info =
-   let convert =
-      { term_f  = normalize_term;
-        meta_term_f = normalize_meta_term;
-        proof_f = (fun _ pf -> pf);
-        ctyp_f  = identity;
-        expr_f  = identity;
-        item_f  = identity
-      }
-   in
-      summary_map convert info
-
-let denormalize_info info =
-   let convert =
-      { term_f  = denormalize_term;
-        meta_term_f = denormalize_meta_term;
-        proof_f = (fun _ pf -> pf);
-        ctyp_f  = identity;
-        expr_f  = identity;
-        item_f  = identity
-      }
-   in
-      summary_map convert info
-
-(*
- * When a StrFilterCache ot SigFilterCache is
- * saved, comments are not saved.
- *)
-let comment _ _ t = t
-let term_of_expr = Filter_ocaml.term_of_expr [] comment
-let term_of_type = Filter_ocaml.term_of_type comment
-let term_of_sig_item = Filter_ocaml.term_of_sig_item comment
-let term_of_str_item = Filter_ocaml.term_of_str_item [] comment
-
-(*
- * Marshaling proofs.
- *)
-let summary_opname = mk_opname "Summary"     nil_opname
-let prim_op        = mk_opname "prim"        summary_opname
-let derived_op     = mk_opname "derived"     summary_opname
-let incomplete_op  = mk_opname "incomplete"  summary_opname
-let interactive_op = mk_opname "interactive" summary_opname
-
-let marshal_proof name to_term = function
-   Primitive t ->
-      mk_simple_term prim_op [t]
- | Derived expr ->
-      mk_simple_term derived_op [term_of_expr expr]
- | Incomplete ->
-      mk_simple_term incomplete_op []
- | Interactive expr ->
-      mk_simple_term interactive_op [to_term name expr]
-
-let unmarshal_proof name of_term t =
-   let opname = opname_of_term t in
-   let expr = one_subterm t in
-      if Opname.eq opname prim_op then
-         Primitive expr
-      else if Opname.eq opname derived_op then
-         Derived (expr_of_term expr)
-      else if Opname.eq opname incomplete_op then
-         Incomplete
-      else if Opname.eq opname interactive_op then
-         Interactive (of_term name (one_subterm t))
-      else
-         raise (Failure "Filter_cache.unmarshal")
-
-let interactive_proof to_raw name proof =
-   match proof with
-      Primitive t ->
-         Primitive t
-    | Derived expr ->
-         Derived expr
-    | Incomplete ->
-         Incomplete
-    | Interactive pf ->
-         Interactive (to_raw name pf)
-
-(*
  * Term signatures.
  *)
-module TermSigInfo (Convert : ConvertProofSig) =
-struct
-   type select = select_type
-   type raw    = term
-   type cooked = Convert.t summary_type
-
-   let select   = InterfaceType
-   let suffix   = "cmit"
-   let magics   = [0x73ac6be1; int_term_sig_magic]
-   let disabled = nofile
-
-   let marshal = function
-      Interface info ->
-         let convert =
-            { term_f = identity;
-              meta_term_f = term_of_meta_term;
-              proof_f = (fun _ t -> unit_term);
-              ctyp_f = term_of_type;
-              expr_f = term_of_expr;
-              item_f = term_of_sig_item
-            }
-         in
-            mk_xlist_term (term_list convert info)
-    | Implementation _ ->
-         raise (Failure "TermSigInfo.unmarshal")
-
-   let unmarshal info =
-      let convert =
-         { term_f = identity;
-           meta_term_f = meta_term_of_term;
-           proof_f = (fun _ t -> ());
-           ctyp_f = type_of_term;
-           expr_f = expr_of_term;
-           item_f = sig_item_of_term
-         }
-      in
-         Interface (of_term_list convert (dest_xlist info))
-end
+module FSummary = Filter_summary.FilterSummaryTerm (Refiner.Refiner);;
+module FTerm = Refiner.Refiner.Term
+module FTermCopy = Term_copy2_weak.TermCopy2Weak (Refiner.Refiner) (Refiner_io)
 
 (*
- * Raw signatures.
+ * Raw versions to file marshal the Filter_summary.info directly to the
+ * file, but terms are converted to term_io, since that seems pretty stable.
  *)
-module RawSigInfo (Convert : ConvertProofSig) =
+let identity x = x
+
+module MakeRawSigInfo (Convert : ConvertInternalSig) =
 struct
    type select  = select_type
-   type raw     = (Refiner_std.Refiner.TermType.term,
-                   Refiner_std.Refiner.TermType.meta_term,
-                   unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
-   type cooked  = Convert.t summary_type
+   type raw     = (term_io, meta_term_io, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+   type cooked  = Convert.cooked summary_type
+   type arg     = Convert.t
 
    let select   = InterfaceType
-   let suffix   = "cmiz"
+   let suffix   = Convert.interface_suffix
    let magics   = [0x73ac6be2; int_raw_sig_magic]
    let disabled = noraw
 
-   let marshal = function
+   let marshal arg = function
       Interface info ->
-         denormalize_info info
-    | Implementation _ ->
-         raise (Failure "RawSigInfo.marshal")
-   let unmarshal info =
-      Interface (normalize_info info)
-end
-
-(*
- * Term implementations.
- *)
-module TermStrInfo (Convert : ConvertProofSig) =
-struct
-   type select = select_type
-   type raw    = term
-   type cooked = Convert.t summary_type
-
-   let select   = ImplementationType
-   let suffix   = "cmot"
-   let magics   = [0x73ac6be3; int_term_str_magic]
-   let disabled = nofile
-
-   let marshal = function
-      Implementation info ->
          let convert =
-            { term_f = identity;
-              meta_term_f = term_of_meta_term;
-              proof_f = (fun name pf -> marshal_proof name Convert.to_term pf);
-              ctyp_f = term_of_type;
-              expr_f = term_of_expr;
-              item_f = term_of_str_item
+            { term_f  = FTermCopy.convert;
+              meta_term_f = FTermCopy.convert_meta;
+              proof_f = (fun _ pf -> pf);
+              ctyp_f  = identity;
+              expr_f  = identity;
+              item_f  = identity
             }
          in
-            mk_xlist_term (term_list convert info)
-    | Interface _ ->
-         raise (Failure "TermStrInfo.marshal")
+            summary_map convert info
+    | Implementation _ ->
+         raise (Failure "RawStrInfo.marshal")
 
-   let unmarshal info =
+   let unmarshal arg info =
       let convert =
-         { term_f = identity;
-           meta_term_f = meta_term_of_term;
-           proof_f = (fun name pf -> unmarshal_proof name Convert.of_term pf);
-           ctyp_f = type_of_term;
-           expr_f = expr_of_term;
-           item_f = str_item_of_term
+         { term_f  = FTermCopy.revert;
+           meta_term_f = FTermCopy.revert_meta;
+           proof_f = (fun _ pf -> pf);
+           ctyp_f  = identity;
+           expr_f  = identity;
+           item_f  = identity
          }
       in
-         Implementation (of_term_list convert (dest_xlist info))
+         Interface (summary_map convert info)
 end
 
-(*
- * Raw implementation.
- *)
-module RawStrInfo (Convert : ConvertProofSig) =
+module MakeRawStrInfo (Convert : ConvertInternalSig) =
 struct
    type select  = select_type
-   type raw     = (Refiner_std.Refiner.TermType.term,
-                   Refiner_std.Refiner.TermType.meta_term,
-                   Convert.raw proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
-   type cooked  = Convert.t summary_type
+   type raw     = (term_io, meta_term_io,
+                   Convert.term proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   type cooked  = Convert.cooked summary_type
+   type arg    = Convert.t
 
    let select   = ImplementationType
-   let suffix   = "cmoz"
+   let suffix   = Convert.implementation_suffix
    let magics   = [0x73ac6be4; int_raw_str_magic]
    let disabled = noraw
 
-   let marshal = function
+   let interactive_proof to_raw name proof =
+      match proof with
+         Primitive t ->
+            Primitive t
+       | Derived expr ->
+            Derived expr
+       | Incomplete ->
+            Incomplete
+       | Interactive pf ->
+            Interactive (to_raw name pf)
+
+   let marshal arg = function
       Implementation info ->
          let convert =
-            { term_f  = denormalize_term;
-              meta_term_f = denormalize_meta_term;
-              proof_f = (fun name proof -> interactive_proof Convert.to_raw name proof);
+            { term_f  = FTermCopy.convert;
+              meta_term_f = FTermCopy.convert_meta;
+              proof_f = (fun name proof -> interactive_proof (Convert.to_term arg) name proof);
               ctyp_f  = identity;
               expr_f  = identity;
               item_f  = identity
@@ -386,11 +263,12 @@ struct
             summary_map convert info
     | Interface _ ->
          raise (Failure "RawStrInfo.marshal")
-   let unmarshal info =
+
+   let unmarshal arg info =
       let convert =
-         { term_f  = normalize_term;
-           meta_term_f = normalize_meta_term;
-           proof_f = (fun name proof -> interactive_proof Convert.of_raw name proof);
+         { term_f  = FTermCopy.revert;
+           meta_term_f = FTermCopy.revert_meta;
+           proof_f = (fun name proof -> interactive_proof (Convert.of_term arg) name proof);
            ctyp_f  = identity;
            expr_f  = identity;
            item_f  = identity
@@ -400,90 +278,161 @@ struct
 end
 
 (*
- * Library interfaces.
+ * Save terms to files.
  *)
-module LibSigInfo (Convert : ConvertProofSig) =
+module MakeInfo (ToTerm : RefinerSig) =
 struct
-   type select  = select_type
-   type raw     = term
-   type cooked  = Convert.t summary_type
+   module TTerm = ToTerm.Term
+   module TTermOp = ToTerm.TermOp
+   module TTermMan = ToTerm.TermMan
 
-   let select   = InterfaceType
-   let suffix   = "cmit"
-   let magics   = [0x73ac6be5; int_lib_sig_magic]
-   let disabled = nolib
+   module TOCaml = Filter_ocaml.FilterOCaml (ToTerm);;
+   module TSummary = Filter_summary.FilterSummaryTerm (ToTerm);;
+   module TTermCopy = Term_copy2_weak.TermCopy2Weak (Refiner.Refiner) (ToTerm);;
 
-   let marshal = function
-      Interface info ->
+   (*
+    * Identity used for term normalization.
+    *)
+   let identity x = x (* external identity : 'a -> 'a = "%identity" *)
+
+   (*
+    * Unit term used for interfaces.
+    *)
+   let unit_term = TTerm.mk_simple_term nil_opname []
+
+   (*
+    * When a StrFilterCache ot SigFilterCache is
+    * saved, comments are not saved.
+    *)
+   let comment _ _ t = t
+   let term_of_expr = TOCaml.term_of_expr [] comment
+   let term_of_type = TOCaml.term_of_type comment
+   let term_of_sig_item = TOCaml.term_of_sig_item comment
+   let term_of_str_item = TOCaml.term_of_str_item [] comment
+
+   let expr_of_term = TOCaml.expr_of_term
+   let type_of_term = TOCaml.type_of_term
+   let sig_item_of_term = TOCaml.sig_item_of_term
+   let str_item_of_term = TOCaml.str_item_of_term
+
+   (*
+    * Marshaling proofs.
+    *)
+   let summary_opname = mk_opname "Summary"     nil_opname
+   let prim_op        = mk_opname "prim"        summary_opname
+   let derived_op     = mk_opname "derived"     summary_opname
+   let incomplete_op  = mk_opname "incomplete"  summary_opname
+   let interactive_op = mk_opname "interactive" summary_opname
+
+   let marshal_proof name to_term = function
+      Primitive t ->
+         TTerm.mk_simple_term prim_op [TTermCopy.convert t]
+    | Derived expr ->
+         TTerm.mk_simple_term derived_op [term_of_expr expr]
+    | Incomplete ->
+         TTerm.mk_simple_term incomplete_op []
+    | Interactive expr ->
+         TTerm.mk_simple_term interactive_op [to_term name expr]
+
+   let unmarshal_proof name of_term t =
+      let opname = TTerm.opname_of_term t in
+         if Opname.eq opname prim_op then
+            Primitive (TTermCopy.revert (TTermOp.one_subterm t))
+         else if Opname.eq opname derived_op then
+            Derived (TOCaml.expr_of_term (TTermOp.one_subterm t))
+         else if Opname.eq opname incomplete_op then
+            Incomplete
+         else if Opname.eq opname interactive_op then
+            Interactive (of_term name (TTermOp.one_subterm t))
+         else
+            raise (Failure "Filter_cache.unmarshal")
+
+   module MakeSigInfo (Convert : ConvertInternalSig with type term = ToTerm.TermType.term) =
+   struct
+      type select = select_type
+      type raw    = TTerm.term
+      type cooked = Convert.cooked summary_type
+      type arg    = Convert.t
+
+      let select   = InterfaceType
+      let suffix   = Convert.interface_suffix
+      let magics   = [0x73ac6be1; int_term_sig_magic]
+      let disabled = nofile
+
+      let marshal arg = function
+         Interface info ->
+            let convert =
+               { term_f = TTermCopy.convert;
+                 meta_term_f = (fun t -> TTermCopy.convert (FSummary.term_of_meta_term t));
+                 proof_f = (fun _ t -> unit_term);
+                 ctyp_f = term_of_type;
+                 expr_f = term_of_expr;
+                 item_f = term_of_sig_item
+               }
+            in
+               TTermMan.mk_xlist_term (TSummary.term_list convert info)
+       | Implementation _ ->
+            raise (Failure "TermSigInfo.unmarshal")
+
+      let unmarshal arg info =
          let convert =
-            { term_f = identity;
-              meta_term_f = term_of_meta_term;
-              proof_f = (fun _ _ -> unit_term);
-              ctyp_f = term_of_type;
-              expr_f = term_of_expr;
-              item_f = term_of_sig_item
+            { term_f = TTermCopy.revert;
+              meta_term_f = (fun t -> TTermCopy.revert_meta (TSummary.meta_term_of_term t));
+              proof_f = (fun _ t -> ());
+              ctyp_f = type_of_term;
+              expr_f = expr_of_term;
+              item_f = sig_item_of_term
             }
          in
-            mk_xlist_term (term_list convert info)
-    | Implementation _ ->
-         raise (Failure "LibSigInfo.marshal")
-   let unmarshal info =
-      let convert =
-         { term_f = identity;
-           meta_term_f = meta_term_of_term;
-           proof_f = (fun _ t -> ());
-           ctyp_f = type_of_term;
-           expr_f = expr_of_term;
-           item_f = sig_item_of_term
-         }
-      in
-         Interface (of_term_list convert (dest_xlist info))
+            Interface (TSummary.of_term_list convert (TTermMan.dest_xlist info))
+   end
+
+   (*
+    * Term implementations.
+    *)
+   module MakeStrInfo (Convert : ConvertInternalSig with type term = ToTerm.TermType.term) =
+   struct
+      type select = select_type
+      type raw    = TTerm.term
+      type cooked = Convert.cooked summary_type
+      type arg    = Convert.t
+
+      let select   = ImplementationType
+      let suffix   = Convert.implementation_suffix
+      let magics   = [0x73ac6be3; int_term_str_magic]
+      let disabled = nofile
+
+      let marshal arg = function
+         Implementation info ->
+            let convert =
+               { term_f = TTermCopy.convert;
+                 meta_term_f = (fun t -> TTermCopy.convert (FSummary.term_of_meta_term t));
+                 proof_f = (fun name pf -> marshal_proof name (Convert.to_term arg) pf);
+                 ctyp_f = term_of_type;
+                 expr_f = term_of_expr;
+                 item_f = term_of_str_item
+               }
+            in
+               TTermMan.mk_xlist_term (TSummary.term_list convert info)
+       | Interface _ ->
+            raise (Failure "TermStrInfo.marshal")
+
+      let unmarshal arg info =
+         let convert =
+            { term_f = TTermCopy.revert;
+              meta_term_f = (fun t -> TTermCopy.revert_meta (TSummary.meta_term_of_term t));
+              proof_f = (fun name pf -> unmarshal_proof name (Convert.of_term arg) pf);
+              ctyp_f = type_of_term;
+              expr_f = expr_of_term;
+              item_f = str_item_of_term
+            }
+         in
+            Implementation (TSummary.of_term_list convert (TTermMan.dest_xlist info))
+   end
 end
 
 (*
- * Library implementations.
- *)
-module LibStrInfo (Convert : ConvertProofSig) =
-struct
-   type select  = select_type
-   type raw     = term
-   type cooked  = Convert.t summary_type
-
-   let select   = ImplementationType
-   let suffix   = "cmot"
-   let magics   = [0x73ac6be6; int_lib_str_magic]
-   let disabled = nolib
-
-   let marshal = function
-      Implementation info ->
-         let convert =
-            { term_f = identity;
-              meta_term_f = term_of_meta_term;
-              proof_f = (fun name pf -> marshal_proof name Convert.to_term pf);
-              ctyp_f = term_of_type;
-              expr_f = term_of_expr;
-              item_f = term_of_str_item
-            }
-         in
-            mk_xlist_term (term_list convert info)
-    | Interface _ ->
-         raise (Failure "LibStrInfo.marshal")
-
-   let unmarshal info =
-      let convert =
-         { term_f = identity;
-           meta_term_f = meta_term_of_term;
-           proof_f = (fun name pf -> unmarshal_proof name Convert.of_term pf);
-           ctyp_f = type_of_term;
-           expr_f = expr_of_term;
-           item_f = str_item_of_term
-         }
-      in
-         Implementation (of_term_list convert (dest_xlist info))
-end
-
-(*
- * MArshaler to get interfaces.
+ * Marshaler to get interfaces.
  *)
 module SigMarshal (Convert : ConvertProofSig) =
 struct
@@ -491,11 +440,12 @@ struct
    type ctyp  = MLast.ctyp
    type expr  = MLast.expr
    type item  = MLast.sig_item
+   type arg    = Convert.t
 
    type select = select_type
    let select = InterfaceType
 
-   type cooked = Convert.t summary_type
+   type cooked = Convert.cooked summary_type
 
    let marshal info =
       Interface info
@@ -525,15 +475,16 @@ end
  *)
 module StrMarshal (Convert : ConvertProofSig) =
 struct
-   type proof = Convert.t proof_type
+   type proof = Convert.cooked proof_type
    type ctyp  = MLast.ctyp
    type expr  = MLast.expr
    type item  = MLast.str_item
+   type arg   = Convert.t
 
    type select = select_type
    let select = ImplementationType
 
-   type cooked = Convert.t summary_type
+   type cooked = Convert.cooked summary_type
    let marshal info =
       Implementation info
    let unmarshal = function
@@ -551,24 +502,62 @@ struct
    module FileTypes =
    struct
       type select = select_type
-      type cooked = Convert.t summary_type
+      type cooked = Convert.cooked summary_type
+      type arg = Convert.t
    end
-   module RawSigInfo1  = RawSigInfo  (Convert)
-   module TermSigInfo1 = TermSigInfo (Convert)
-   module LibSigInfo1  = LibSigInfo  (Convert)
-   module RawStrInfo1  = RawStrInfo  (Convert)
-   module TermStrInfo1 = TermStrInfo (Convert)
-   module LibStrInfo1  = LibStrInfo  (Convert)
+
+   module ConvertRaw =
+   struct
+      type t = Convert.t
+      type cooked = Convert.cooked
+      type term = Convert.raw
+      let interface_suffix = "cmiz"
+      let implementation_suffix = "cmoz"
+      let of_term = Convert.of_raw
+      let to_term = Convert.to_raw
+   end
+
+   module ConvertStd =
+   struct
+      type t = Convert.t
+      type cooked = Convert.cooked
+      type term = term_io
+      let interface_suffix = "cmit"
+      let implementation_suffix = "cmot"
+      let of_term = Convert.of_term_io
+      let to_term = Convert.to_term_io
+   end
+
+   module ConvertRef =
+   struct
+      type t = Convert.t
+      type cooked = Convert.cooked
+      type term = Refiner.Refiner.TermType.term
+      let interface_suffix = "cmil"
+      let implementation_suffix = "cmol"
+      let of_term = Convert.of_term
+      let to_term = Convert.to_term
+   end
+
+   module TermInfo     = MakeInfo (Refiner_io)
+   module LibInfo      = MakeInfo (Refiner.Refiner)
+
+   module RawSigInfo1  = MakeRawSigInfo       (ConvertRaw)
+   module RawStrInfo1  = MakeRawStrInfo       (ConvertRaw)
+   module TermSigInfo1 = TermInfo.MakeSigInfo (ConvertStd)
+   module TermStrInfo1 = TermInfo.MakeStrInfo (ConvertStd)
+   module LibSigInfo1  = LibInfo.MakeSigInfo  (ConvertRef)
+   module LibStrInfo1  = LibInfo.MakeStrInfo  (ConvertRef)
+
    module RawSigCombo  = MakeSingletonCombo   (RawSigInfo1)
-   module TermSigCombo = MakeSingletonCombo   (TermSigInfo1)
-   (* module LibSigCombo  = MakeIOSingletonCombo (Library_type_base.IO) (LibSigInfo1) *)
    module RawStrCombo  = MakeSingletonCombo   (RawStrInfo1)
+   module TermSigCombo = MakeSingletonCombo   (TermSigInfo1)
    module TermStrCombo = MakeSingletonCombo   (TermStrInfo1)
-   (* module LibStrCombo  = MakeIOSingletonCombo (Library_type_base.IO) (LibStrInfo1) *)
+   module LibSigCombo  = MakeIOSingletonCombo (Library_type_base.IO) (LibSigInfo1)
+   module LibStrCombo  = MakeIOSingletonCombo (Library_type_base.IO) (LibStrInfo1)
    module Combo1 = CombineCombo (FileTypes) (RawStrCombo) (RawSigCombo)
    module Combo2 = CombineCombo (FileTypes) (TermStrCombo) (TermSigCombo)
-   (* module Combo3 = CombineCombo (FileTypes) (LibStrCombo)  (LibSigCombo) *)
-   module Combo3 = Combo2
+   module Combo3 = CombineCombo (FileTypes) (LibStrCombo) (LibSigCombo)
    module Combo4 = CombineCombo (FileTypes) (Combo1) (Combo2)
    module Combo5 = CombineCombo (FileTypes) (Combo4) (Combo3)
    module SigMarshal1 = SigMarshal (Convert)

@@ -61,43 +61,33 @@ sig
    type msequent
 
    (*
-    * A ML rewrite replaces a term with another,
-    * no extract.
+    * An ML rewrite replaces a term with another.
     *)
-   type ml_rewrite =
-      { ml_rewrite_rewrite :
-           string array ->
-           string list list ->
-           term list ->
-           term ->
-           term ->
-           term * term list * string array;
-        ml_rewrite_extract : (string array * term list) -> term list -> term * term list
-      }
+   type ml_extract = (string array * term list) -> term list -> term
+
+   type ml_rewrite = term -> term
+
+   type ml_cond_rewrite =
+      string array ->                                   (* Names *)
+         string list list ->                            (* Free vars in the msequent *)
+         term list ->                                   (* Params *)
+         term ->                                        (* Term to rewrite *)
+         term * term list * string array * ml_extract   (* Extractor is returned *)
 
    (*
     * A condition relaces an goal with a list of subgoals,
     * and it provides a function to compute the extract.
     *)
    type ml_rule =
-      { ml_rule_rewrite :
-           address array ->                     (* context addresses *)
-           string array ->                      (* variable names *)
-           msequent ->                          (* goal *)
-           term list ->                         (* params *)
-           msequent list * string array;        (* subgoals, new variable names *)
-        ml_rule_extract : (string array * term list) -> term list -> term * term list
-      }
+      address array ->                                  (* context addresses *)
+         string array ->                                (* variable names *)
+         msequent ->                                    (* goal *)
+         term list ->                                   (* params *)
+         msequent list * string array * ml_extract      (* subgoals, new variable names *)
 
    (************************************************************************
-    * PROOFS AND VALIDATIONS                                               *
+    * SENTINALS                                                            *
     ************************************************************************)
-
-   (*
-    * An extract is an abstract validation that is generated during
-    * proof refinement using tactics.
-    *)
-   type extract
 
    (*
     * A checker is used to help make sure that the
@@ -106,14 +96,25 @@ sig
     *)
    type sentinal
 
+   (*
+    * Empty checker for just trying refinements.
+    *)
+   val any_sentinal : sentinal
+
+   (*
+    * Null sentinal allows no refinements.
+    *)
+   val null_sentinal : sentinal
+
    (************************************************************************
     * TACTICS                                                              *
     ************************************************************************)
 
    (*
-    * Empty checker for just trying refinements.
+    * An extract is an abstract validation that is generated during
+    * proof refinement using tactics.
     *)
-   val any_sentinal : sentinal
+   type extract
 
    (*
     * A tactic is the reverse form of validation.
@@ -129,22 +130,40 @@ sig
    (* Tactic application *)
    val refine : sentinal -> tactic -> msequent -> msequent list * extract
 
-   (* Compose extract tree *)
+   (* Proof composition *)
    val compose : extract -> extract list -> extract
 
-   (*
-    * The base case tactic proves a goal by assumption.
-    *)
+   (* The base case tactic proves a goal by assumption *)
    val nth_hyp : int -> tactic
+
+   (* The cut rule is primitive, but it doesn't weaken the logic *)
+   val cut : term -> tactic
 
    (************************************************************************
     * REWRITES                                                             *
     ************************************************************************)
 
    (*
+    * A rewrite extract is the validation for a rewrite.
+    *)
+   type rw_extract
+
+   (*
     * A normal rewrite can be applied to a term to rewrite it.
     *)
    type rw
+
+   (* Rewrite application *)
+   val rw_refine : sentinal -> rw -> term -> term * rw_extract
+
+   (* Rewrite composition *)
+   val rw_compose : rw_extract -> address -> rw_extract -> rw_extract
+
+   (* Reverse the rewrite *)
+   val rw_reverse : rw_extract -> rw_extract
+
+   (* Turn it into a regular extract *)
+   val extract_of_rw_extract : msequent -> int -> rw_extract -> extract
 
    (*
     * Apply a rewrite to a subterm of the goal.
@@ -159,7 +178,7 @@ sig
    (*
     * Convert a rewrite that likes to examine its argument.
     *)
-   val rwtactic : rw -> tactic
+   val rwtactic : int -> rw -> tactic
 
    (*
     * Composition is supplied for efficiency.
@@ -172,22 +191,29 @@ sig
     ************************************************************************)
 
    (*
+    * A conditional rewrite validation.
+    *)
+   type crw_extract
+
+   (*
     * A conditional rewrite is a cross between a rewrite and
     * a tactic.  An application may generate subgoals that must
-    * be proved.  A conditional rewrite is valid only for a sequent
+    * be proved.  A conditional rewrite is valid only in a sequent
     * calculus.
     *)
    type cond_rewrite
 
-   (*
-    * Inject a regular rewrite.
-    *)
-   val mk_cond_rewrite : rw -> cond_rewrite
+   (* Conditional rewrite application *)
+   val crw_refine : sentinal -> cond_rewrite -> msequent -> term -> term * crw_extract
 
-   (*
-    * Apply a rewrite in the reverse direction.
-    *)
-   val cutrw : term -> cond_rewrite
+   (* Rewrite composition *)
+   val crw_compose : crw_extract -> address -> crw_extract -> crw_extract
+
+   (* Reverse the rewrite *)
+   val crw_reverse : crw_extract -> crw_extract
+
+   (* Turn it into a regular extract *)
+   val extract_of_crw_extract : msequent -> int -> crw_extract -> extract
 
    (*
     * Ask for the current sequent, and for the term be rewritten.
@@ -205,7 +231,7 @@ sig
     * a sequent, and it returns the rewritten sequent
     * as the first subgoal.
     *)
-   val crwtactic : cond_rewrite -> tactic
+   val crwtactic : int -> cond_rewrite -> tactic
 
    (*
     * Composition is supplied for efficiency.
@@ -222,11 +248,10 @@ sig
     *)
    val mk_msequent : term -> term list -> msequent
    val dest_msequent : msequent -> term * term list
-   val dest_msequent_vars : msequent -> string list * term * term list
+   val msequent_free_vars : msequent -> string list
 
    (*
     * Alpha equality on sequent objects.
-    * Tactic argument is ignored
     *)
    val msequent_alpha_equal : msequent -> msequent -> bool
 
@@ -351,6 +376,9 @@ sig
       term ->              (* redex *)
       term ->              (* contractum *)
       prim_rewrite
+   val create_ml_rewrite : build -> string ->
+      ml_rewrite ->        (* rewriter *)
+      prim_rewrite
    val prim_rewrite : build ->
       string ->            (* name *)
       term ->              (* redex *)
@@ -377,8 +405,8 @@ sig
       term ->              (* redex *)
       term ->              (* contractum *)
       prim_cond_rewrite
-   val create_ml_rewrite : build -> string ->
-      ml_rewrite ->        (* rewriter *)
+   val create_ml_cond_rewrite : build -> string ->
+      ml_cond_rewrite ->   (* rewriter *)
       prim_cond_rewrite
    val prim_cond_rewrite : build ->
       string ->            (* name *)
@@ -425,6 +453,74 @@ sig
     * DESTRUCTION                                                          *
     ************************************************************************)
 
+   (*
+    * Destruct extracts.
+    * the guarantee is that extracts, when destructed and composed, will
+    * be equal.
+    *)
+   type atomic_just =
+      { just_goal : msequent;
+        just_addrs : address array;
+        just_names : string array;
+        just_params : term list;
+        just_refiner : opname;
+        just_subgoals : msequent list
+      }
+
+   type cut_just =
+      { cut_goal : msequent;
+        cut_hyp : term;
+        cut_lemma : msequent;
+        cut_then : msequent
+      }
+
+   type extract_info =
+      AtomicExtract of atomic_just
+    | RewriteExtract of msequent * rw_extract * msequent
+    | CondRewriteExtract of msequent * crw_extract * msequent list
+    | ComposeExtract of extract * extract list
+    | NthHypExtract of msequent * int
+    | CutExtract of cut_just
+
+   type rw_extract_info =
+      AtomicRewriteExtract of term * opname * term
+    | ReverseRewriteExtract of rw_extract
+    | ComposeRewriteExtract of rw_extract * rw_extract
+    | AddressRewriteExtract of term * address * rw_extract * term
+    | HigherRewriteExtract of term * rw_extract list * term
+
+   type cond_rewrite_here =
+      { cjust_goal : term;
+        cjust_names : string array;
+        cjust_params : term list;
+        cjust_refiner : opname;
+        cjust_subgoal_term : term;
+        cjust_subgoals : term list
+      }
+
+   type crw_extract_info =
+      AtomicCondRewriteExtract of cond_rewrite_here
+    | ReverseCondRewriteExtract of crw_extract
+    | ComposeCondRewriteExtract of crw_extract * crw_extract
+    | AddressCondRewriteExtract of term * address * crw_extract * term
+    | HigherCondRewriteExtract of term * crw_extract list * term
+
+   val dest_extract : extract -> extract_info
+   val goal_of_extract : extract -> msequent
+   val subgoals_of_extract : extract -> msequent list
+
+   val dest_rw_extract : rw_extract -> rw_extract_info
+   val goal_of_rw_extract : rw_extract -> term
+   val subgoal_of_rw_extract : rw_extract -> term
+
+   val dest_crw_extract : crw_extract -> crw_extract_info
+   val goal_of_crw_extract : crw_extract -> term
+   val subgoal_of_crw_extract : crw_extract -> term
+   val subgoals_of_crw_extract : crw_extract -> (address * term) list
+
+   (*
+    * Describe the contents of the refiner.
+    *)
    type refiner_item =
       RIAxiom of ri_axiom
     | RIRule of ri_rule
@@ -432,9 +528,10 @@ sig
     | RIMLRule of ri_ml_rule
 
     | RIRewrite of ri_rewrite
+    | RIMLRewrite of ri_ml_rewrite
     | RICondRewrite of ri_cond_rewrite
     | RIPrimRewrite of ri_prim_rewrite
-    | RIMLRewrite of ri_ml_rewrite
+    | RIMLCondRewrite of ri_ml_rewrite
 
     | RIParent of refiner
     | RILabel of string

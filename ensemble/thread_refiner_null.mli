@@ -34,10 +34,10 @@ open Thread_refiner_sig
 
 module ThreadRefinerTacticals : ThreadRefinerTacticalsSig
 
-module MakeThreadRefiner (Arg : ThreadRefinerArgSig) : ThreadRefinerSig
-with type extract = Arg.extract
-with type 'term t = ('term, Arg.extract) ThreadRefinerTacticals.t
-with type 'term tactic = ('term, Arg.extract) ThreadRefinerTacticals.tactic
+module ThreadRefiner
+: ThreadRefinerSig
+  with type ('term, 'arg, 'extract) t = ('term, 'arg, 'extract) ThreadRefinerTacticals.t
+  with type ('term, 'arg, 'extract) tactic = ('term, 'arg, 'extract) ThreadRefinerTacticals.tactic
 
 (*
  * -*-

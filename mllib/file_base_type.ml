@@ -14,21 +14,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -51,9 +51,9 @@ type alt_suffix =
 (*
  * File type selection info.
  *)
-type ('select, 'cooked) file_info =
-   { info_marshal : int list -> int -> string -> 'cooked -> unit;
-     info_unmarshal : int list -> string -> 'cooked * int;
+type ('arg, 'select, 'cooked) file_info =
+   { info_marshal : int list -> int -> 'arg -> string -> 'cooked -> unit;
+     info_unmarshal : int list -> 'arg -> string -> 'cooked * int;
      info_disabled : bool ref;
      info_select : 'select;
      info_suffix : string;
@@ -70,8 +70,9 @@ module type FileBaseInfoSig =
 sig
    type select
    type cooked
+   type arg
 
-   val info : (select, cooked) file_info list
+   val info : (arg, select, cooked) file_info list
 end
 
 (*
@@ -90,6 +91,7 @@ sig
    type cooked
    type select
    type info
+   type arg
    type t
 
    (* Creation *)
@@ -97,13 +99,13 @@ sig
    val set_path : t -> string list -> unit
 
    (* Loading and saving *)
-   val find : t -> file_name -> select -> alt_suffix -> info
-   val find_file : t -> file_name -> select -> alt_suffix -> info
-   val find_match : t -> info -> select -> alt_suffix -> info
-   val save : t -> info -> alt_suffix -> unit
+   val find : t -> arg -> file_name -> select -> alt_suffix -> info
+   val find_file : t -> arg -> file_name -> select -> alt_suffix -> info
+   val find_match : t -> arg -> info -> select -> alt_suffix -> info
+   val save : t -> arg -> info -> alt_suffix -> unit
    val magic : t -> info -> int
    val set_magic : t -> info -> int -> unit
-   val save_as : t -> cooked -> select -> dir_name -> file_name -> alt_suffix -> info
+   val save_as : t -> arg -> cooked -> select -> dir_name -> file_name -> alt_suffix -> info
    val create_info : t -> cooked -> select -> dir_name -> file_name -> info
 
    (* Info about the objects *)
@@ -126,6 +128,7 @@ module type FileTypeSummarySig =
 sig
    type select
    type cooked
+   type arg
 end
 
 (*
@@ -137,6 +140,7 @@ sig
    type select
    type raw
    type cooked
+   type arg
 
    (* File type selection info *)
    val select : select
@@ -145,8 +149,8 @@ sig
    val disabled : bool ref
 
    (* Conversion functions *)
-   val marshal : cooked -> raw
-   val unmarshal : raw -> cooked
+   val marshal : arg -> cooked -> raw
+   val unmarshal : arg-> raw -> cooked
 end
 
 (*
@@ -159,6 +163,7 @@ sig
     *)
    type select
    type cooked
+   type arg
    type info
 
    (*

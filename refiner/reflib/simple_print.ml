@@ -45,6 +45,13 @@ let _ =
    if !debug_load then
       eprintf "Loading Simple_print%t" eflush
 
+let debug_simple_print =
+   create_debug (**)
+      { debug_name = "simple_print";
+        debug_description = "show simple printing operations";
+        debug_value = false
+      }
+
 let max_column = 120
 
 module MakeSimplePrint (Refiner : RefinerSig) =
@@ -62,6 +69,8 @@ struct
    type bound_term = TermType.bound_term
    type meta_term = TermMeta.meta_term
    type address = TermAddr.address
+
+   type buffer = term Rformat.buffer
 
    (************************************************************************
     * PRINTERS                                                             *

@@ -32,7 +32,6 @@
 
 include Base_theory
 
-include Io_proof
 include Package_info
 
 open Printf
@@ -50,7 +49,8 @@ open Filter_ocaml
 open Filter_cache
 open Filter_summary
 
-open Io_proof
+open Tactic_type
+
 open Package_info
 open Package
 
@@ -109,16 +109,17 @@ let convert_impl =
     | Interactive proof ->
          let code =
             match status_of_proof proof with
-               Proof.Bad ->
+               Proof.StatusBad ->
                   "-"
-             | Proof.Partial ->
+             | Proof.StatusPartial ->
                   "#"
-             | Proof.Asserted ->
-                  "!"
-             | Proof.Complete ->
+             | Proof.StatusIncomplete ->
+                  "?"
+             | Proof.StatusComplete ->
                   "*"
          in
-            mk_var_term (sprintf "%s[%d]" code (node_count_of_proof proof))
+         let rcount, ncount = node_count_of_proof proof in
+            mk_var_term (sprintf "%s[%d,%d]" code rcount ncount)
    in
       { term_f  = identity;
         meta_term_f = term_of_meta_term;
@@ -135,7 +136,7 @@ let format_interface mode buf pack =
    let dbase = dforms pack in
    let db = get_mode_base dbase mode in
    let tl = term_list convert_intf (Package.sig_info pack) in
-   let t = mk_simple_term interface_op [mk_xlist_term tl] in
+   let t = mk_simple_term Proof.interface_op [mk_xlist_term tl] in
       format_term db buf t;
       format_newline buf
 
@@ -146,7 +147,7 @@ let format_implementation mode buf pack =
    let dbase = dforms pack in
    let db = get_mode_base dbase mode in
    let tl = term_list convert_impl (Package.info pack) in
-   let t = mk_simple_term implementation_op [mk_xlist_term tl] in
+   let t = mk_simple_term Proof.implementation_op [mk_xlist_term tl] in
       format_term db buf t;
       format_newline buf
 

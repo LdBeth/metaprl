@@ -7,18 +7,19 @@ ROOT = ../..
 include $(ROOT)/mk/preface
 
 INCLUDE = -I .\
+	-I $(ROOT)/theories/boot\
 	-I $(ROOT)/theories/tactic\
 	-I $(ROOT)/theories/ocaml\
 	-I $(ROOT)/theories/base\
 	-I $(ROOT)/theories/itt\
-	-I $(ROOT)/theories/fol\
-	-I $(ROOT)/theories/reflect_itt\
-	-I $(ROOT)/theories/tptp\
 	-I $(ROOT)/ensemble\
 	-I $(ROOT)/lib\
 	-I $(ROOT)/library\
 	-I $(ROOT)/ocaml_debug\
 	-I $(CAMLP4LIB)
+#	-I $(ROOT)/theories/fol\
+#	-I $(ROOT)/theories/reflect_itt\
+#	-I $(ROOT)/theories/tptp\
 
 OCAMLDEPFLAGS = -prl
 
@@ -28,34 +29,34 @@ OCAMLDEPFLAGS = -prl
 
 # Common files
 MLZFILES =\
-	io_proof_type\
-	proof_type\
-	package_type\
-	shell_type\
-	shell_p4_type
+	proof_sig\
+	package_sig\
+	display_sig\
+	shell_sig\
+	shell_p4_sig
 
 # Library files
 MPFILES =\
-	io_proof_type\
-	io_proof\
-	proof_type\
-	proof_step\
-	proof\
+	recursive_lock\
+	mux_channel\
+	display_term\
 	proof_edit\
-	package_type\
+	package_sig\
 	package_info\
-	package_df\
-	shell_type\
-	shell_null\
+	shell_sig\
 	shell_rewrite\
 	shell_rule\
-	shell_p4_type\
+	shell_package\
+	shell_root\
+	shell_p4_sig\
+	shell_state\
+	shell_http\
 	shell
 
 MP2FILES =\
-	shell_p4\
-	shell_mp\
 	test\
+	shell_mp\
+	shell_p4\
 	mp\
 	mp_top\
 	library_eval\
@@ -71,8 +72,8 @@ RUNFILES =\
 
 TOPFILES =\
 	mp_version\
-	shell_mp\
 	test\
+	shell_mp\
 	mp_top
 
 RCMOFILES = $(addsuffix .cmo, $(RUNFILES))
@@ -123,19 +124,19 @@ CMXADEPS =\
 	$(CMXADEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
-	$(ROOT)/lib/ldsymbols.cmxa\
 	$(ROOT)/lib/prlc.cmxa\
 	$(CMXALIBS_ens)\
+	$(ROOT)/theories/boot/boot.cmxa\
 	$(ROOT)/theories/tactic/tactics.cmxa\
 	$(ROOT)/theories/ocaml/ocaml_df.cmxa\
 	$(ROOT)/theories/base/base.cmxa\
 	$(ROOT)/theories/itt/itt.cmxa\
-	$(ROOT)/theories/fol/fol.cmxa\
-	$(ROOT)/theories/reflect_itt/reflect_itt.cmxa\
-	$(ROOT)/theories/tptp/tptp.cmxa\
 	$(CAMLP4LIB)/pa_o.cmx\
 	$(CAMLP4LIB)/pa_op.cmx\
 	$(MAIN).cmxa
+#	$(ROOT)/theories/fol/fol.cmxa\
+#	$(ROOT)/theories/reflect_itt/reflect_itt.cmxa\
+#	$(ROOT)/theories/tptp/tptp.cmxa\
 
 CMXALIBS =\
 	$(CMXADEPS)
@@ -150,19 +151,19 @@ CMADEPS =\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
-	$(ROOT)/lib/ldsymbols.cma\
 	$(ROOT)/lib/prlc.cma\
 	$(CMALIBS_ens)\
+	$(ROOT)/theories/boot/boot.cma\
 	$(ROOT)/theories/tactic/tactics.cma\
 	$(ROOT)/theories/ocaml/ocaml_df.cma\
 	$(ROOT)/theories/base/base.cma\
 	$(ROOT)/theories/itt/itt.cma\
-	$(ROOT)/theories/fol/fol.cma\
-	$(ROOT)/theories/reflect_itt/reflect_itt.cma\
-	$(ROOT)/theories/tptp/tptp.cma\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(MAIN).cma
+#	$(ROOT)/theories/fol/fol.cma\
+#	$(ROOT)/theories/reflect_itt/reflect_itt.cma\
+#	$(ROOT)/theories/tptp/tptp.cma\
 
 TCMADEPS =\
 	$(CAMLP4LIB)/odyl.cma\
@@ -173,19 +174,19 @@ TCMADEPS =\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
-	$(ROOT)/lib/ldsymbols.cma\
 	$(ROOT)/lib/prlc.cma\
 	$(CMALIBS_ens)\
+	$(ROOT)/theories/boot/boot.cma\
 	$(ROOT)/theories/tactic/tactics.cma\
 	$(ROOT)/theories/ocaml/ocaml_df.cma\
 	$(ROOT)/theories/base/base.cma\
 	$(ROOT)/theories/itt/itt.cma\
-	$(ROOT)/theories/fol/fol.cma\
-	$(ROOT)/theories/reflect_itt/reflect_itt.cma\
-	$(ROOT)/theories/tptp/tptp.cma\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(MAIN).cma
+#	$(ROOT)/theories/fol/fol.cma\
+#	$(ROOT)/theories/reflect_itt/reflect_itt.cma\
+#	$(ROOT)/theories/tptp/tptp.cma\
 
 CMALIBS =\
 	$(CMADEPS)

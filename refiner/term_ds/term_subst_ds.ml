@@ -133,30 +133,34 @@ struct
          binding_vars_bterms (binding_vars_term bt.bterm (List.fold_right StringSet.add bt.bvars bvars)) l
     | [] -> bvars
 
-   let binding_vars t =
-      StringSet.elements
-         (match get_core t with
-            Term t ->
-               binding_vars_bterms StringSet.empty t.term_terms
-          | Sequent seq ->
-               let hyps = seq.sequent_hyps in
-               let len = SeqHyp.length hyps in
-               let rec coll_hyps i =
-                  if i = len then binding_vars_term seq.sequent_args StringSet.empty else
+   let rec binding_vars_set t =
+      match get_core t with
+         Term t ->
+            binding_vars_bterms StringSet.empty t.term_terms
+       | Sequent seq ->
+            let hyps = seq.sequent_hyps in
+            let len = SeqHyp.length hyps in
+            let rec coll_hyps i =
+               if i = len then binding_vars_term seq.sequent_args StringSet.empty else
                   match SeqHyp.get hyps i with
                      Hypothesis (v,t) ->
                         binding_vars_term t (StringSet.add v (coll_hyps (succ i)))
                    | Context (v,ts) ->
                         List.fold_right binding_vars_term ts (coll_hyps (succ i))
-               in
-               let goals = seq.sequent_goals in
-               let len = SeqGoal.length goals in
-               let rec coll_goals i =
-                  if i = len then coll_hyps 0 else
+            in
+            let goals = seq.sequent_goals in
+            let len = SeqGoal.length goals in
+            let rec coll_goals i =
+               if i = len then coll_hyps 0 else
                   binding_vars_term (SeqGoal.get goals i) (coll_goals (succ i))
-               in coll_goals 0
-          | FOVar _ -> StringSet.empty
-          | Subst _ -> fail_core "binding_vars")
+            in coll_goals 0
+       | FOVar _ -> StringSet.empty
+       | Subst _ -> fail_core "binding_vars"
+       | Hashed d ->
+            binding_vars_set (Weak_memo.TheWeakMemo.retrieve_hack d)
+
+   let binding_vars t =
+      StringSet.elements (binding_vars_set t)
 
    let add_vars vars term =
       StringSet.union vars (term_free_vars term)
@@ -230,7 +234,7 @@ struct
       [] -> []
     | [(v1,v2)] as l ->
          if v1=v2 then []
-            else if (StringSet.mem set1 v1) || (StringSet.mem set2 v2) 
+            else if (StringSet.mem set1 v1) || (StringSet.mem set2 v2)
             then l else []
     | (((v1,v2) as p) :: tl) as l ->
          let res = eq_filt_vars set1 set2 tl in
@@ -238,7 +242,7 @@ struct
             else if (StringSet.mem set1 v1) || (StringSet.mem set2 v2) then
                if (res==tl) then l else p::res
             else res
-   
+
    let rec equal_term vars t t' =
       let vars = eq_filt_vars (term_free_vars t) (term_free_vars t') vars in
       (vars == [] && t==t') || (
@@ -316,7 +320,7 @@ struct
    let alpha_equal_vars t v t' v' =
 #ifdef VERBOSE_EXN
       if !debug_alpha_equal then
-         try 
+         try
             let _ = equal_term (List_util.zip v v') t t' in
             eprintf "alpha_equal_vars: true%t" eflush;
             true
@@ -591,7 +595,7 @@ struct
     | (_,v)::tl ->
          if StringSet.mem tvs v then raise_generic_exn else
          check_bvars tvs tl
-   
+
    let rec match_terms subst bvars tm1 tm2 =
       if is_var_term tm1 then
          let v = dest_var tm1 in
@@ -702,7 +706,7 @@ struct
       if param1 <> param2 then
          raise (Failure "generalization")
 
-   and generalizes_bterm vars { bvars = vars1; bterm = term1 } 
+   and generalizes_bterm vars { bvars = vars1; bterm = term1 }
                               { bvars = vars2; bterm = term2 } =
       let aux vars v1 v2 =
          try

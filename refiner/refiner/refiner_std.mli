@@ -32,6 +32,7 @@
 
 open Term_sig
 open Refiner_sig
+open Termmod_hash_sig
 
 module Refiner :
    RefinerSig

@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Alexey Nogin, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Alexey Nogin
  *)
 
@@ -150,7 +150,7 @@ struct
             let vars =
                match t.core with
                   FOVar v -> StringSet.make v
-                | Term t' -> 
+                | Term t' ->
 #ifdef VERBOSE_EXN
                      if !debug_fv then
                         eprintf "Request for Term fvs: Term: %a%t" debug_print t eflush;
@@ -188,13 +188,18 @@ struct
                            (term_free_vars t))
                         (subst_free_vars sub)
 #ifdef VERBOSE_EXN
-                     in 
-                        if !debug_fv then begin
-                           eprintf "Result: ";
-                           List.iter (eprintf "%s ") (StringSet.elements res);
-                           eprintf "%t" eflush;
-                        end; res
+                     in
+                        if !debug_fv then
+                           begin
+                              eprintf "Result: ";
+                              List.iter (eprintf "%s ") (StringSet.elements res);
+                              eprintf "%t" eflush;
+                           end;
+                        res
 #endif
+                | Hashed d ->
+                     term_free_vars (Weak_memo.TheWeakMemo.retrieve_hack d)
+
             in t.free_vars <- Vars vars; vars
 
    and bterm_free_vars bt =
@@ -283,14 +288,14 @@ struct
    let do_bterm_subst sub bt =
       let btrm = bt.bterm in
       match bt.bvars with
-         [] -> 
+         [] ->
             begin match StringSet.fst_mem_filt (term_free_vars btrm) sub with
                [] -> bt
              | sub ->
                   { bvars = []; bterm = {free_vars = VarsDelayed; core = Subst (btrm,sub)}}
             end
        | bvrs ->
-            begin match StringSet.fst_mem_filt (term_free_vars btrm) 
+            begin match StringSet.fst_mem_filt (term_free_vars btrm)
                                                (filter_sub_vars bt.bvars sub) with
                [] -> bt
              | sub ->
@@ -353,10 +358,18 @@ struct
                                sequent_hyps = SeqHyp.lazy_apply (hyps_subst sub) hyps;
                                sequent_goals = SeqGoal.lazy_apply (do_term_subst sub) goals }
                 | Subst _ -> fail_core "get_core"
+                | Hashed d ->
+                     (* Get core of inner term *)
+                     get_core (Weak_memo.TheWeakMemo.retrieve_hack d)
             in
                t.core <- core;
                core
-       | core -> core
+       | Hashed d ->
+            (* Preserve the hash as long as possible *)
+            get_core (Weak_memo.TheWeakMemo.retrieve_hack d)
+
+       | core ->
+            core
 
    and hyps_subst sub = function
       Hypothesis (v,t) ->
@@ -379,9 +392,10 @@ struct
          Term t -> t
        | Sequent _ ->
             raise (Invalid_argument "Term_base_ds.dest_term: dest_term called on a sequent")
-       | FOVar v -> 
+       | FOVar v ->
              { term_op = { op_name = var_opname; op_params = [Var v] }; term_terms = [] }
        | Subst _ -> let _ = get_core t in dest_term t
+       | Hashed d -> dest_term (Weak_memo.TheWeakMemo.retrieve_hack d)
 
    let dest_bterm x = x (* external dest_bterm : bound_term -> bound_term = "%identity" *)
 
@@ -436,6 +450,7 @@ struct
     | Sequent _ -> sequent_opname
     | FOVar _ -> var_opname
     | Subst _ -> let _ = get_core t in opname_of_term t
+    | Hashed d -> opname_of_term (Weak_memo.TheWeakMemo.retrieve_hack d)
 
    (* These are trivial identity functions *)
 
@@ -449,6 +464,19 @@ struct
    let dest_level_var x = x (* external dest_level_var : level_exp_var -> level_exp_var' = "%identity" *)
    let make_object_id x = x (* external make_object_id : param list -> object_id = "%identity" *)
    let dest_object_id x = x (* external dest_object_id : object_id -> param list = "%identity" *)
+
+   (*
+    * Descriptor operations.
+    *)
+   let mk_descriptor_term d =
+      { free_vars = VarsDelayed; core = Hashed d }
+
+   let dest_descriptor t =
+      match t.core with
+         Hashed d ->
+            Some d
+       | _ ->
+            None
 
    (************************************************************************
     * Variables                                                            *
@@ -479,7 +507,7 @@ struct
    let is_so_var_term t = match get_core t with
       FOVar _ -> true
     | Term { term_op = { op_name = opname; op_params = [Var _] };
-             term_terms = terms } -> 
+             term_terms = terms } ->
          Opname.eq opname var_opname && no_bvars terms
     | _ -> false
 
@@ -494,7 +522,7 @@ struct
     * Second order variable.
     *)
    let mk_so_var_term v terms =
-      { free_vars = VarsDelayed; 
+      { free_vars = VarsDelayed;
         core = Term { term_op = { op_name = var_opname; op_params = [Var v] };
                       term_terms = List.map mk_simple_bterm terms }
         }

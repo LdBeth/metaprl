@@ -38,24 +38,29 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
-include Proof
+include Summary
 
 open Printf
 open Mp_debug
 
 open Refiner.Refiner
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Rformat
 open Dform
+open Dform_print
+open Simple_print
 
-open Sequent
-open Tacticals
+open Tactic_type
+open Tactic_type.TacticType
+open Tactic_type.Sequent
+open Tactic_type.Tacticals
 
-open Proof_step
-open Proof
+open Summary
+
+open Display_term
 
 (*
  * Show that the file is loading.
@@ -69,38 +74,29 @@ let _ =
  ************************************************************************)
 
 (*
- * We include whether we are at the head or
- * a child of the proof.
- *)
-type ped_select =
-   PedGoal
- | PedChild of int
-
-type ped_proof =
-   { ped_proof : Proof.t;
-     ped_select : ped_select
-   }
-
-(*
  * The is the state of the current proof.
- *    ped_goal: current term trying to be proved
  *    ped_undo: current undo stack, modified by undo operations
  *    ped_stack: global undo stack, not modified by undo operations
  *
  * Current proof is at top of undo stack.
  *)
-type t =
+type ped_proof = Proof.proof
+
+type ped =
    { mutable ped_params : term Filter_type.param list;
-     mutable ped_goal : tactic_arg;
      mutable ped_undo : ped_proof list;
      mutable ped_stack : ped_proof list
    }
 
 (*
- * Line that delineates proofs.
+ * Info for proof-type objects.
  *)
-let hline = "\012----------------------------------------\n"
-let bline = "\n++++++++++\n"
+type edit_info =
+   { edit_goal : tactic_arg;
+     edit_expr : string;
+     edit_subgoals : tactic_arg list;
+     edit_extras : tactic_arg list
+   }
 
 (************************************************************************
  * OPERATIONS                                                           *
@@ -109,341 +105,165 @@ let bline = "\n++++++++++\n"
 (*
  * Constructors.
  *)
-let create params t =
-   { ped_params = params;
-     ped_goal = t;
-     ped_undo = [];
-     ped_stack = []
-   }
-
-let ped_of_proof params pf =
-   let ped = { ped_proof = pf; ped_select = PedGoal } in
-   let stack = [ped] in
+let ped_of_proof params proof =
+   let stack = [proof] in
       { ped_params = params;
-        ped_goal = Proof.goal pf;
         ped_undo = stack;
         ped_stack = stack
       }
+
+let create params t =
+   ped_of_proof params (Proof.create t)
 
 let set_params ped params =
    ped.ped_params <- params
 
 (*
+ * Push a new proof into the ped.
+ *)
+let push_proof ped proof =
+   let stack = proof :: ped.ped_stack in
+      ped.ped_undo <- stack;
+      ped.ped_stack <- stack
+
+(*
+ * This is the function we pass to the proof module to track updates.
+ *)
+let update_fun ped proof =
+   push_proof ped proof;
+   let post () =
+      List.hd ped.ped_undo
+   in
+      Proof.post post
+
+(*
+ * Replace the current proof.
+ *)
+let set_proof ped proof =
+   ped.ped_undo <- proof :: List.tl ped.ped_undo
+
+(*
  * Destructors.
  *)
 let proof_of_ped { ped_undo = undo } =
-   match undo with
-      { ped_proof = pf } :: _ ->
-         pf
-    | [] ->
-         raise (Failure "proof_of_ped")
+   List.hd undo
 
-let status_of_ped { ped_undo = undo } =
-   match undo with
-      { ped_proof = pf } :: _ ->
-         Proof.node_status pf
-    | [] ->
-         raise (Failure "status_of_ped")
+let status_of_ped ped =
+   Proof.status (proof_of_ped ped)
 
-let node_count_of_ped { ped_undo = undo } =
-   match undo with
-      { ped_proof = pf } :: _ ->
-         Proof.node_count pf
-    | [] ->
-         raise (Failure "node_count_of_ped")
+let node_count_of_ped ped =
+   Proof.node_count (proof_of_ped ped)
 
-(*
- * Get the goal of a proof.
- *)
-let ped_goal { ped_proof = pf; ped_select = select } =
-   match select with
-      PedGoal ->
-         Proof.goal pf
-    | PedChild i ->
-         try
-            match List.nth (Proof.children pf) i with
-               Proof.ChildTerm t ->
-                  t
-             | Proof.ChildProof pf ->
-                  raise (Failure "Proof_edit.ped_goal: child is not a leaf")
-         with
-            Failure "nth" ->
-               raise (Failure "Proof_edit.ped_goal: no such child")
+let goal_of_ped ped =
+   Proof.goal (proof_of_ped ped)
 
-(*
- * Get the argument.
- *)
-let ped_arg { ped_goal = goal } =
-   goal
+let item_of_ped ped =
+   Proof.info (proof_of_ped ped)
 
-(*
- * Get the current proof item.
- *)
-let ped_item { ped_undo = undo } =
-   match undo with
-      { ped_proof = pf; ped_select = select } :: _ ->
-         begin
-            match select with
-               PedGoal ->
-                  Some (Proof.item pf)
-             | PedChild _ ->
-                  None
-         end
-    | [] ->
-         None
+let rotate_ped ped i =
+   let { Proof.step_goal = goals } = Proof.info (proof_of_ped ped) in
+   let len = List.length goals in
+      if i < 1 || i > len then
+         raise (RefineError ("rotate_ped", StringIntError ("argument is out of range", i)));
+      push_proof ped (List.nth goals i)
 
-let ped_tactic ped =
-   match ped_item ped with
-      Some (ProofStep step) ->
-         Some (Proof_step.text step,
-               Proof_step.ast step,
-               Proof_step.tactic step)
-    | _ ->
-         None
-
-(*
- * Subgoals.
- *)
-let ped_children { ped_undo = undo } =
-   match undo with
-      { ped_proof = pf; ped_select = select } :: _ ->
-         begin
-            let goal_of_child = function
-               Proof.ChildTerm t ->
-                  t
-             | Proof.ChildProof pf ->
-                  Proof.goal pf
-            in
-               match select with
-                  PedGoal ->
-                     List.map goal_of_child (Proof.children pf)
-                | PedChild _ ->
-                     []
-         end
-    | [] ->
-         []
-
-let ped_extras { ped_undo = undo } =
-   match undo with
-      { ped_proof = pf; ped_select = select } :: _ ->
-         begin
-            match select with
-               PedGoal ->
-                  List.map Proof.goal (Proof.extras pf)
-             | PedChild _ ->
-                  []
-         end
-    | [] ->
-         []
-
-(************************************************************************
- * DISPLAY                                                              *
- ************************************************************************)
-
-(*
- * Turn the status into a char.
- *)
-let proof_status = function
-   Proof.Bad -> '-'
- | Proof.Partial -> '#'
- | Proof.Asserted -> '!'
- | Proof.Complete -> '*'
-
-(*
- * Display the subgoals in order.
- *)
-let display_children db buf children =
-   let rec aux i = function
-      h::t ->
-	 let status, goal =
-	    match h with
-	       Proof.ChildTerm goal ->
-                  Proof.Partial, goal
-	     | Proof.ChildProof pf ->
-                  Proof.node_status pf, Proof.goal pf
-	 in
-         let goal = Sequent.goal goal in
-	    (* format_string buf "\n-<subgoal>-\n"; *)
-            format_char buf (proof_status status);
-            format_char buf ' ';
-	    format_int buf i;
-	    format_string buf ". ";
-	    format_pushm buf 0;
-	    format_term db buf goal;
-	    format_popm buf;
-	    format_newline buf;
-	    aux (i + 1) t
-    | [] ->
-         ()
+let edit_info_of_ped ped =
+   let { Proof.step_goal = goal;
+         Proof.step_expr = expr;
+         Proof.step_subgoals = subgoals;
+         Proof.step_extras = extras
+       } = item_of_ped ped
    in
-      aux 1 children
-
-(*
- * Display the extra subgoals.
- *)
-let display_extras db buf extras =
-   let rec aux = function
-      h::t ->
-	 let status = Proof.node_status h in
-         let goal = Proof.goal h in
-         let goal = Sequent.goal goal in
-	    (* format_string buf "\n-<subgoal>-\n"; *)
-            format_char buf (proof_status status);
-            format_string buf " * ";
-	    format_pushm buf 0;
-	    format_term db buf goal;
-	    format_popm buf;
-	    format_newline buf;
-	    aux t
-    | [] ->
-         ()
+   let expr =
+      match expr with
+         Proof.ExprGoal ->
+            "<goal>"
+       | Proof.ExprIdentity ->
+            "<identity>"
+       | Proof.ExprUnjustified ->
+            "<unjustified>"
+       | Proof.ExprExtract arg ->
+            "<extract>"
+       | Proof.ExprCompose ->
+            "<compose>"
+       | Proof.ExprWrapped arg ->
+            "<wrapped>"
+       | Proof.ExprRule (text, _) ->
+            text
    in
-      match extras with
-         [] ->
-            ()
-       | extras ->
-            format_string buf "-----\n";
-            aux extras
+   let goal = List.hd goal in
+   let subgoals = List.map List.hd subgoals in
+      { edit_goal = Proof.goal goal;
+        edit_expr = expr;
+        edit_subgoals = List.map Proof.goal subgoals;
+        edit_extras = List.map Proof.goal extras
+      }
 
 (*
- * Status is displayed as two lines.  The upper
- * line is the status, and the lower is the address.
+ * Set the goal term.
  *)
-let display_status buffer status =
-   let stats, addrs = List.split status in
-   let rec format_status = function
-      (s::st, a::at) ->
-	 let s' = string_of_int a in
-	 let l = String.length s' in
-	 let code = proof_status s in
-	    format_char buffer code;
-	    format_string buffer (String_util.make "Proof_edit.display_status" l ' ');
-	    format_status (st, at)
-    | _ -> ()
-   in
-   let rec format_addr = function
-      a::at ->
-	 format_int buffer a;
-	 format_char buffer ' ';
-	 format_addr at
-    | _ -> ()
-   in
-      format_status (stats, addrs);
-      format_newline buffer;
-      format_addr addrs;
-      format_newline buffer
+let set_goal ped mseq =
+   let proof = proof_of_ped ped in
+      push_proof ped (Proof.set_goal (update_fun ped) proof mseq)
 
 (*
- * Display a goal, with no subgoals
- * and no tactic.
+ * Move down the undo stack.
  *)
-let display_goal db buffer goal status =
-   let seq = Sequent.msequent goal in
-   let goal', hyps = dest_msequent seq in
-      (* Display the current address *)
-      format_string buffer hline;
-      display_status buffer status;
-      format_string buffer "....";
-      format_string buffer (Sequent.label goal);
-      format_string buffer "....";
-      format_newline buffer;
+let undo_ped ped =
+   let { ped_undo = undo } = ped in
+      match undo with
+         _ :: ((_ :: _) as proofs) ->
+            ped.ped_undo <- proofs
+       | _ ->
+            raise (RefineError ("undo_ped", StringError "undo stack is empty"))
 
-      (* Print hyps *)
-      if hyps <> [] then
-         begin
-            let print_hyp hyp =
-               format_term db buffer hyp;
-               format_newline buffer
-            in
-               List.iter print_hyp hyps;
-               format_string buffer "====\n"
-         end;
-
-      (* Goal *)
-      (* format_string buffer "\n-<main>-\n"; *)
-      format_term db buffer goal';
-
-      (* Rule *)
-      format_string buffer "\n\n";
-      (* format_string buffer "\n\n-<beginrule>-\n"; *)
-      format_string buffer "BY \n";
-      (* format_string buffer "-<endrule>-\n" *)
-      format_string buffer bline
+let redo_ped ped =
+   let { ped_undo = undo; ped_stack = stack } = ped in
+   let undo_length = List.length undo in
+   let stack_length = List.length stack in
+      if undo_length = stack_length then
+         raise (RefineError ("redo_ped", StringError "all steps are already redone"));
+      push_proof ped (List.nth stack (pred (stack_length - undo_length)))
 
 (*
- * Display a proof with an inference.
+ * Reset the undo stack.
  *)
-let display_proof db buffer pf =
-   let pf_goal = Proof.goal pf in
-   let seq = Sequent.msequent pf_goal in
-   let goal, hyps = dest_msequent seq in
-   let item = Proof.item pf in
-   let children = Proof.children pf in
-   let extras = Proof.extras pf in
-   let status = Proof.status pf in
-      (* Display the current address *)
-      format_string buffer hline;
-      display_status buffer status;
-      format_string buffer "....";
-      format_string buffer (Sequent.label pf_goal);
-      format_string buffer "....";
-      format_newline buffer;
-
-      (* Print hyps *)
-      if hyps <> [] then
-         begin
-            let print_hyp hyp =
-               format_term db buffer hyp;
-               format_newline buffer
-            in
-               List.iter print_hyp hyps;
-               format_string buffer "====\n"
-         end;
-
-      (* Goal *)
-      (* format_string buffer "\n-<main>-\n"; *)
-      format_term db buffer goal;
-
-      (* Rule *)
-      format_string buffer "\n\n";
-      (* format_string buffer "\n\n-<beginrule>-\n"; *)
-      begin
-         match item with
-            ProofStep step ->
-               format_string buffer "BY ";
-               format_string buffer (Proof_step.text step);
-               format_newline buffer
-          | ProofProof _ ->
-               format_string buffer "BY <proof>\n"
-      end;
-      (* format_string buffer "-<endrule>-\n"; *)
-
-      (* Subgoals *)
-      display_children db buffer children;
-      display_extras db buffer extras;
-      format_string buffer bline
+let nop_ped ped =
+   ped.ped_undo <- ped.ped_stack
 
 (*
- * Display the current proof.
- *    0. Display the status
- *    1. Display the goal
- *    2. Display the rule
- *    3. Display the subgoals
+ * Move to the `root' goal.
  *)
-let format db buffer { ped_goal = goal; ped_undo = undo } =
-   match undo with
-      [] ->
-         display_goal db buffer goal [Proof.Partial, 1]
-    | { ped_proof = pf; ped_select = select }::_ ->
-         match select with
-            PedChild i ->
-               display_goal db buffer goal ((Proof.status pf) @ [Proof.Partial, i + 1])
-          | PedGoal ->
-               display_proof db buffer pf
+let root_ped ped =
+   set_proof ped (Proof.root (proof_of_ped ped))
 
-(************************************************************************
- * REFINEMENT                                                           *
- ************************************************************************)
+(*
+ * Move to the parent goal.
+ *)
+let up_ped ped i =
+   if i > 0 then
+      let rec parent proof i =
+         if i = 0 then
+            proof
+         else
+            parent (Proof.parent proof) (pred i)
+      in
+         set_proof ped (parent (proof_of_ped ped) i)
+
+(*
+ * Move to a child.
+ *)
+let down_ped ped i =
+   set_proof ped (Proof.child (proof_of_ped ped) i)
+
+let addr_ped ped addr =
+   set_proof ped (Proof.index (Proof.root (proof_of_ped ped)) addr)
+
+(*
+ * Unfold the extract at the current node.
+ *)
+let unfold_ped ped =
+   push_proof ped (Proof.unfold (update_fun ped) (proof_of_ped ped))
 
 (*
  * Refinement, and undo lists.
@@ -452,231 +272,236 @@ let format db buffer { ped_goal = goal; ped_undo = undo } =
  * The nop_ped does nothing but reset the undo stack.
  *)
 let refine_ped ped text ast tac =
-   let { ped_goal = goal; ped_undo = undo; ped_stack = stack } = ped in
-   let subgoals, _ = Tacticals.refine tac goal in
-   let step = Proof_step.create goal subgoals text ast tac in
-   let pf' =
-      match undo with
-         [] ->
-            Proof.of_step step
-       | ped::_ ->
-            let { ped_proof = pf; ped_select = select } = ped in
-               match select with
-                  PedGoal ->
-                     replace_item pf (ProofStep step)
-                | PedChild i ->
-                     let pf' = replace_child pf i (Proof.of_step step) in
-                        Proof.child pf' i
-   in
-   let ped' = { ped_proof = pf'; ped_select = PedGoal } in
-   let stack' = ped' :: stack in
-      ped.ped_undo <- stack';
-      ped.ped_stack <- stack'
-
-(*
- * Move down the undo stack.
- *)
-let undo_ped ped =
-   let { ped_undo = undo } = ped in
-      match undo with
-         _::h::t ->
-            let goal = ped_goal h in
-               ped.ped_goal <- goal;
-               ped.ped_undo <- h::t
-       | _ ->
-            raise (RefineError ("undo_ped", StringError "undo stack is empty"))
-
-(*
- * Reset the undo stack.
- *)
-let nop_ped ped =
-   let { ped_stack = stack } = ped in
-      ped.ped_undo <- stack;
-      match stack with
-         { ped_proof = pf }::t ->
-            ped.ped_goal <- Proof.goal pf
-       | [] ->
-            ()
+   let proof = proof_of_ped ped in
+   let proof = Proof.refine (update_fun ped) proof text ast tac in
+      push_proof ped proof
 
 (*
  * Fold the current subgoals into a new proof node.
  *)
-let fold f ped =
-   let { ped_undo = undo; ped_stack = stack } = ped in
-      match undo with
-         [] ->
-            raise (RefineError ("fold_ped", StringError "no goal"))
-       | ped' :: _ ->
-            let { ped_proof = pf; ped_select = select } = ped' in
-            let ped' = { ped_proof = f pf; ped_select = PedGoal } in
-            let stack = ped' :: stack in
-               ped.ped_undo <- stack;
-               ped.ped_stack <- stack
-
-let fold_ped = fold Proof.fold
-
-let fold_all_ped = fold Proof.fold_all
-
-let kreitz_ped = fold Proof.kreitz
-
-(************************************************************************
- * NAVIGATION                                                           *
- ************************************************************************)
-
-(*
- * Move to the `root' goal.
- *)
-let root_ped ped =
-   let { ped_undo = undo; ped_stack = stack } = ped in
-      match undo with
-         { ped_proof = pf }::_ ->
-            let pf' = Proof.main pf in
-            let ped' = { ped_proof = pf'; ped_select = PedGoal } in
-            let stack' = ped' :: stack in
-               ped.ped_goal <- Proof.goal pf';
-               ped.ped_undo <- stack';
-               ped.ped_stack <- stack'
-       | [] ->
-            ()
-
-(*
- * Move to the parent goal.
- *)
-let up_ped ped i =
-   if i > 0 then
-      let { ped_undo = undo } = ped in
-         match undo with
-            [] ->
-               ()
-          | { ped_proof = pf; ped_select = select }::stack ->
-               let rec climb i pf =
-                  if i = 0 then
-                     pf
-                  else
-                     climb (i - 1) (Proof.parent pf)
-               in
-               let pf =
-                  match select with
-                     PedChild _ ->
-                        pf
-                   | PedGoal ->
-                        try Proof.parent pf with
-                           Failure "parent" ->
-                              pf
-               in
-               let pf = climb (i - 1) pf in
-               let ped' = { ped_proof = pf; ped_select = PedGoal } in
-               let stack' = ped' :: stack in
-                  ped.ped_goal <- Proof.goal pf;
-                  ped.ped_undo <- stack';
-                  ped.ped_stack <- stack'
-
-(*
- * Move to a child.
- *)
-let down_ped_aux ped stack pf i =
-   if i <= 0 then
-      match Proof.item pf with
-         Proof.ProofStep _ ->
-            raise (RefineError ("down_ped", StringError "Proof is not nested"))
-       | Proof.ProofProof pf' ->
-            let ped' = { ped_proof = pf'; ped_select = PedGoal } in
-            let stack' = ped' :: stack in
-               ped.ped_goal <- Proof.goal pf';
-               ped.ped_undo <- stack';
-               ped.ped_stack <- stack'
-   else
-      let children = Proof.children pf in
-      let length = List.length children in
-         if i <= length then
-            let child = List.nth (Proof.children pf) (i - 1) in
-               match child with
-                  Proof.ChildProof pf' ->
-                     let ped' = { ped_proof = pf'; ped_select = PedGoal } in
-                     let stack' = ped' :: stack in
-                        ped.ped_goal <- Proof.goal pf';
-                        ped.ped_undo <- stack';
-                        ped.ped_stack <- stack'
-                | Proof.ChildTerm goal ->
-                        (* This is a leaf *)
-                     let ped' = { ped_proof = pf; ped_select = PedChild (i - 1) } in
-                     let stack' = ped' :: stack in
-                        ped.ped_goal <- goal;
-                        ped.ped_undo <- stack';
-                        ped.ped_stack <- stack'
-         else
-            let pf' =
-               try List.nth (Proof.extras pf) (i - length - 1) with
-                  Not_found ->
-                     raise (RefineError ("down_ped", StringError "Bad child index"))
-            in
-            let ped' = { ped_proof = pf'; ped_select = PedGoal } in
-            let stack' = ped' :: stack in
-               ped.ped_goal <- Proof.goal pf';
-               ped.ped_undo <- stack';
-               ped.ped_stack <- stack'
-
-let down_ped ped i =
-   let { ped_undo = undo } = ped in
-      match undo with
-         [] ->
-            ()
-       | { ped_proof = pf }::stack ->
-            down_ped_aux ped stack pf i
-
-let addr_ped ped addr =
-   match addr with
-      [] ->
-         root_ped ped
-    | _ ->
-         let addr, last = List_util.split_last addr in
-         let { ped_undo = undo } = ped in
-            match undo with
-               [] ->
-                  ()
-             | { ped_proof = pf }::stack ->
-                  let pf = Proof.index (Proof.main pf) addr in
-                     down_ped_aux ped stack pf last
-
-(************************************************************************
- * PROOF CHECKING                                                       *
- ************************************************************************)
+let kreitz_ped ped =
+   push_proof ped (Proof.kreitz (update_fun ped) (proof_of_ped ped))
 
 (*
  * Check a proof.
- * If there is a failure (ProofRefineError (pf, err)),
- * update the current edit, and raise an exception.
  *)
 let check_ped ped =
-   let { ped_undo = undo; ped_stack = stack } = ped in
-      match undo with
-         [] ->
-            raise (RefineError ("check_ped", StringError "no goal"))
-       | ped' :: _ ->
-            let { ped_proof = pf } = ped' in
-               try Proof.check pf with
-                  Proof.ProofRefineError (pf', name, err) ->
-                     let ped' = { ped_proof = pf'; ped_select = PedGoal } in
-                     let stack = ped' :: stack in
-                        ped.ped_undo <- stack;
-                        ped.ped_stack <- stack;
-                        raise (RefineError (name, err))
+   raise (Failure "Proof_edit.check_ped: not implemented")
 
 (*
  * When the proof is expanded, we make a dulicate.
  * Expansion never fails, but it may change the status of the proof.
  *)
-let expand_ped df ped =
-   let { ped_undo =undo; ped_stack = stack } = ped in
-      match undo with
-         [] ->
-            raise (RefineError ("expand_ped", StringError "no goal"))
-       | ped' :: _ ->
-            let { ped_proof = pf; ped_select = select } = ped' in
-            let ped' = { ped_proof = Proof.expand df pf; ped_select = select } in
-            let stack = ped' :: stack in
-               ped.ped_undo <- stack;
-               ped.ped_stack <- stack
+let expand_ped dforms ped =
+   push_proof ped (Proof.expand (update_fun ped) dforms (proof_of_ped ped))
+
+(************************************************************************
+ * HTML DISPLAY                                                         *
+ ************************************************************************)
+
+(*
+ * A window is either a text window or an HTML window.
+ *)
+type proof_window =
+   { pw_port : Mux_channel.session;
+     pw_base : dform_mode_base;
+     pw_goal : Display_term.t;
+     pw_rule : Display_term.t;
+     pw_subgoals : Display_term.t;
+     pw_menu : Display_term.t
+   }
+
+type text_window =
+   { df_base : dform_mode_base;
+     df_mode : string;
+     df_width : int
+   }
+
+type window =
+   ProofWindow of proof_window
+ | TextWindow of text_window
+
+type incomplete_ped =
+   Primitive of tactic_arg
+ | Incomplete of tactic_arg
+ | Derived of tactic_arg * MLast.expr
+
+(*
+ * Create a new window.
+ *)
+let create_text_window base mode =
+   TextWindow { df_base = base;
+                df_mode = mode;
+                df_width = 80
+   }
+
+let create_proof_window port dfbase =
+   let { proof_goal = pw_goal;
+         proof_rule = pw_rule;
+         proof_subgoals = pw_subgoals
+       } = Display_term.create_proof port dfbase
+   in
+   let pw_menu = Display_term.create_menu port dfbase in
+   let window =
+      { pw_port = port;
+        pw_base = dfbase;
+        pw_goal = pw_goal;
+        pw_rule = pw_rule;
+        pw_subgoals = pw_subgoals;
+        pw_menu = pw_menu
+      }
+   in
+      ProofWindow window
+
+(*
+ * Fork the current window.
+ *)
+let new_window = function
+   ProofWindow { pw_port = port; pw_base = base } ->
+      create_proof_window port base
+ | (TextWindow _) as window ->
+      window
+
+(************************************************************************
+ * CONVERSION TO TERMS                                                  *
+ ************************************************************************)
+
+(*
+ * Turn the status into a char.
+ *)
+let term_of_proof_status = function
+   Proof.StatusBad ->
+      status_bad_term
+ | Proof.StatusIncomplete ->
+      status_asserted_term
+ | Proof.StatusPartial ->
+      status_partial_term
+ | Proof.StatusComplete ->
+      status_complete_term
+
+let term_of_proof_status_list status =
+   mk_status_term (List.map term_of_proof_status status)
+
+(*
+ * Label of the goal.
+ *)
+let term_of_tactic_arg status goal =
+   let label = Sequent.label goal in
+   let goal, assums = dest_msequent (Sequent.msequent goal) in
+   let status = term_of_proof_status_list status in
+   let label = mk_goal_label_term label in
+      mk_goal_term status label assums goal
+
+let term_of_proof_arg proof =
+   term_of_tactic_arg (Proof.path_status proof) (Proof.goal proof)
+
+(*
+ * Turn an arglist into a string.
+ *)
+let term_of_arg = function
+   TermArg t ->
+      Summary.mk_term_arg_term t
+ | TypeArg t ->
+      Summary.mk_type_arg_term t
+ | IntArg i ->
+      Summary.mk_int_arg_term i
+ | BoolArg b ->
+      Summary.mk_bool_arg_term b
+ | StringArg s ->
+      Summary.mk_string_arg_term s
+ | SubstArg t ->
+      Summary.mk_subst_arg_term t
+ | TermListArg tl ->
+      Summary.mk_term_list_arg_term tl
+
+let term_of_arglist args =
+   Summary.mk_arglist_term (List.map term_of_arg (Tactic.expand_arglist args))
+
+(*
+ * Display a proof with an inference.
+ *)
+let term_of_proof proof =
+   let { Proof.step_goal = goal;
+         Proof.step_expr = expr;
+         Proof.step_subgoals = subgoals;
+         Proof.step_extras = extras
+       } = Proof.info proof
+   in
+   let main = term_of_proof_arg proof in
+   let goal = mk_goal_list_term (List.map term_of_proof_arg goal) in
+   let subgoals = List.map (fun l -> mk_goal_list_term (List.map term_of_proof_arg l)) subgoals in
+   let extras = List.map term_of_proof_arg extras in
+   let text =
+      match expr with
+         Proof.ExprGoal ->
+            mk_rule_box_string_term "<goal>"
+       | Proof.ExprIdentity ->
+            mk_rule_box_string_term "<identity>"
+       | Proof.ExprUnjustified ->
+            mk_rule_box_string_term "<unjustified>"
+       | Proof.ExprExtract args ->
+            mk_rule_box_term (term_of_arglist args)
+       | Proof.ExprCompose ->
+            mk_rule_box_string_term "<compose>"
+       | Proof.ExprWrapped args ->
+            mk_rule_box_term (term_of_arglist args)
+       | Proof.ExprRule (text, _) ->
+            mk_rule_box_string_term text
+   in
+   let subgoals = mk_subgoals_term subgoals extras in
+      mk_proof_term main goal text subgoals
+
+(*
+ * Show the incomplete proof.
+ *)
+let term_of_incomplete proof =
+   let goal, text =
+      match proof with
+         Primitive goal ->
+            let goal = term_of_tactic_arg [Proof.StatusComplete] goal in
+            let text = mk_rule_box_string_term "<Primitive>" in
+               goal, text
+       | Incomplete goal ->
+            let goal = term_of_tactic_arg [Proof.StatusIncomplete] goal in
+            let text = mk_rule_box_string_term "<Incomplete>" in
+               goal, text
+       | Derived (goal, expr) ->
+            let goal = term_of_tactic_arg [Proof.StatusComplete] goal in
+            let text = mk_rule_box_string_term "<Derived>" in
+               goal, text
+   in
+      mk_proof_term goal (mk_goal_list_term [goal]) text xnil_term
+
+(*
+ * Display the current proof.
+ *    0. Display the status
+ *    1. Display the goal
+ *    2. Display the rule
+ *    3. Display the subgoals
+ *)
+let format_aux window proof =
+   match window with
+      TextWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
+         let df = get_mode_base dfbase mode in
+         let buf = Rformat.new_buffer () in
+            Dform.format_term df buf proof;
+            Rformat.format_newline buf;
+            Rformat.print_to_channel width buf stdout;
+            flush stdout
+    | ProofWindow { pw_goal = pw_goal;
+                    pw_rule = pw_rule;
+                    pw_subgoals = pw_subgoals
+      } ->
+         let main, goal, text, subgoals = dest_proof proof in
+            Display_term.set pw_goal main;
+            Display_term.set pw_rule text;
+            Display_term.set pw_subgoals subgoals
+
+let format window ped =
+   format_aux window (term_of_proof (proof_of_ped ped))
+
+let format_incomplete window proof =
+   format_aux window (term_of_incomplete proof)
 
 (*
  * -*-

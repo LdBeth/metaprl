@@ -13,21 +13,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -51,7 +51,7 @@ let _ =
 (*
  * Type used for common info.
  *)
-type ('select, 'cooked) common_info = ('select, 'cooked) file_info list
+type ('arg, 'select, 'cooked) common_info = ('arg, 'select, 'cooked) file_info list
 
 (************************************************************************
  * MODULE IMPLEMENTATIONS                                               *
@@ -65,18 +65,20 @@ module MakeIOSingletonCombo (IO : IOSig) (Info : FileTypeInfoSig
    (FileTypeComboSig
     with type cooked = Info.cooked
     with type select = Info.select
-    with type info = (Info.select, Info.cooked) common_info) =
+    with type arg = Info.arg
+    with type info = (Info.arg, Info.select, Info.cooked) common_info) =
 struct
    type select = Info.select
    type cooked = Info.cooked
-   type info = (select, cooked) common_info
+   type arg = Info.arg
+   type info = (arg, select, cooked) common_info
 
-   let marshal magics magic filename info =
-      IO.write magics magic filename (Info.marshal info)
+   let marshal magics magic arg filename info =
+      IO.write magics magic filename (Info.marshal arg info)
 
-   let unmarshal magics filename =
+   let unmarshal magics arg filename =
       let t, magic = IO.read magics filename in
-         Info.unmarshal t, magic
+         Info.unmarshal arg t, magic
 
    let info =
       [{ info_marshal = marshal;
@@ -96,7 +98,8 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
    (FileTypeComboSig
     with type cooked = Info.cooked
     with type select = Info.select
-    with type info = (Info.select, Info.cooked) common_info) =
+    with type arg = Info.arg
+    with type info = (Info.arg, Info.select, Info.cooked) common_info) =
    MakeIOSingletonCombo (**)
       (struct
          type t = Info.raw
@@ -150,19 +153,23 @@ module CombineCombo (**)
    (Info : FileTypeComboSig
     with type cooked = Types.cooked
     with type select = Types.select
-    with type info = (Types.select, Types.cooked) common_info)
+    with type arg = Types.arg
+    with type info = (Types.arg, Types.select, Types.cooked) common_info)
    (Combo : FileTypeComboSig
     with type cooked = Types.cooked
     with type select = Types.select
-    with type info = (Types.select, Types.cooked) common_info) :
+    with type arg = Types.arg
+    with type info = (Types.arg, Types.select, Types.cooked) common_info) :
    (FileTypeComboSig
     with type cooked = Types.cooked
     with type select = Types.select
-    with type info = (Types.select, Types.cooked) common_info) =
+    with type arg = Types.arg
+    with type info = (Types.arg, Types.select, Types.cooked) common_info) =
 struct
    type select = Types.select
    type cooked = Types.cooked
-   type info = (select, cooked) common_info
+   type arg = Types.arg
+   type info = (arg, select, cooked) common_info
 
    let info = Info.info @ Combo.info
 end
@@ -174,13 +181,12 @@ module MakeFileBaseInfo (Types : FileTypeSummarySig)
     (Combo : FileTypeComboSig
      with type select = Types.select
      with type cooked = Types.cooked
-     with type info = (Types.select, Types.cooked) common_info) :
-       (FileBaseInfoSig
-        with type select = Types.select
-        with type cooked = Types.cooked) =
+     with type arg = Types.arg
+     with type info = (Types.arg, Types.select, Types.cooked) common_info) =
 struct
    type select = Types.select
    type cooked = Types.cooked
+   type arg = Types.arg
    let info = Combo.info
 end
 
@@ -191,10 +197,8 @@ module MakeFileBase (Types : FileTypeSummarySig)
 (Combo : FileTypeComboSig
          with type select = Types.select
          with type cooked = Types.cooked
-         with type info = (Types.select, Types.cooked) common_info) :
-   (FileBaseSig
-    with type select = Types.select
-    with type cooked = Types.cooked) =
+         with type arg = Types.arg
+         with type info = (Types.arg, Types.select, Types.cooked) common_info) =
    File_base.MakeFileBase (MakeFileBaseInfo (Types) (Combo))
 
 (*

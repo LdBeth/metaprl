@@ -114,6 +114,7 @@ struct
     | Subst of term * term_subst
     | Sequent of esequent
     | FOVar of string
+    | Hashed of term Weak_memo.TheWeakMemo.descriptor
    and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term = bound_term'
    and term' = { term_op : operator; term_terms : bound_term list }

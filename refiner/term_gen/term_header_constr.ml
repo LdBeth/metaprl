@@ -37,23 +37,20 @@ open Weak_memo
 open Opname
 open Term_hash
 
-module TermHeaderConstr
+module TermHeaderConstr (**)
    (FromTerm : Termmod_sig.TermModuleSig)
    (ToTerm : Termmod_sig.TermModuleSig)
-
-   (TermHash : Term_hash_sig.TermHashSig
-      with type param = ToTerm.TermType.param
-      with type param' = ToTerm.TermType.param'
-      with type term = ToTerm.TermType.term
-      with type meta_term = ToTerm.TermType.meta_term) =
-
+   (TermHash : Term_hash_sig.TermHashInternalSig
+    with type param = ToTerm.TermType.param
+    with type param' = ToTerm.TermType.param'
+    with type term = ToTerm.TermType.term
+    with type meta_term = ToTerm.TermType.meta_term
+    with type msequent = ToTerm.Refine .msequent) =
 struct
    module TTerm = ToTerm.Term
    module TType = ToTerm.TermType
    module FTerm = FromTerm.Term
-   module FType = FromTerm.TermType
-
-   module WM = TheWeakMemo
+   module FType = FromTerm.TermType;;
 
    let make_level_var lvar =
       let { FType.le_var = var; FType.le_offset = offset } = FTerm.dest_level_var lvar in
@@ -66,14 +63,14 @@ struct
    let rec make_param info param =
       TermHash.p_constr_param info
       (match FTerm.dest_param param with
-         FType.Number n1 ->            TType.Number n1
-       | FType.String s1 ->            TType.String s1
-       | FType.Token s1 ->             TType.Token s1
-       | FType.Var v1 ->               TType.Var v1
-       | FType.MNumber s1 ->           TType.MNumber s1
-       | FType.MString s1 ->           TType.MString s1
-       | FType.MToken s1 ->            TType.MToken s1
-       | FType.MLevel l1 ->
+          FType.Number n1 ->            TType.Number n1
+        | FType.String s1 ->            TType.String s1
+        | FType.Token s1 ->             TType.Token s1
+        | FType.Var v1 ->               TType.Var v1
+        | FType.MNumber s1 ->           TType.MNumber s1
+        | FType.MString s1 ->           TType.MString s1
+        | FType.MToken s1 ->            TType.MToken s1
+        | FType.MLevel l1 ->
             (* HACK! remove this when we convert to ASCII .prlb files *)
             if Obj.tag (Obj.repr l1) = Obj.string_tag then
                TType.MLevel (TTerm.make_level { TType.le_const = 0;
@@ -114,29 +111,38 @@ struct
                FType.sequent_hyps = hyps;
                FType.sequent_goals = goals } = FromTerm.TermMan.explode_sequent t
          in
-         TermHash.Seq
+            TermHash.Seq
             { TermHash.seq_arg = TermHash.p_lookup info (make_term_header info arg);
               TermHash.seq_hyps = List.map (make_hyp_header info) (FTerm.SeqHyp.to_list hyps);
               TermHash.seq_goals = List.map (fun x -> TermHash.p_lookup info (make_term_header info x)) (FTerm.SeqGoal.to_list goals)
             }
       else
-            TermHash.Term (make_true_term_header info t)
+         TermHash.Term (make_true_term_header info t)
 
    let rec make_meta_term_header info mt =
-         match mt with
+      match mt with
          FType.MetaTheorem t ->
             TermHash.MetaTheorem (TermHash.p_lookup info (make_term_header info t))
        | FType.MetaImplies (t1, t2) ->
             TermHash.MetaImplies (TermHash.p_lookup_meta info (make_meta_term_header info t1),
-                                    TermHash.p_lookup_meta info (make_meta_term_header info t2))
+                                  TermHash.p_lookup_meta info (make_meta_term_header info t2))
        | FType.MetaFunction (t1, mt1, mt2) ->
             TermHash.MetaFunction (TermHash.p_lookup info (make_term_header info t1),
-                                     TermHash.p_lookup_meta info (make_meta_term_header info mt1),
-                                     TermHash.p_lookup_meta info (make_meta_term_header info mt2))
+                                   TermHash.p_lookup_meta info (make_meta_term_header info mt1),
+                                   TermHash.p_lookup_meta info (make_meta_term_header info mt2))
        | FType.MetaIff (mt1, mt2) ->
             TermHash.MetaIff (TermHash.p_lookup_meta info (make_meta_term_header info mt1),
-                                TermHash.p_lookup_meta info (make_meta_term_header info mt2))
+                              TermHash.p_lookup_meta info (make_meta_term_header info mt2))
        | FType.MetaLabeled (l, mt) ->
             TermHash.MetaLabeled (l, TermHash.p_lookup_meta info (make_meta_term_header info mt))
 
+   let make_msequent_header info mseq =
+      let goal, hyps = FromTerm.Refine .dest_msequent mseq in
+      let mk_term t =
+         TermHash.p_lookup info (make_term_header info t)
+      in
+         List.map mk_term hyps, mk_term goal
 end
+
+(*
+ *)

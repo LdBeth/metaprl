@@ -60,10 +60,25 @@ struct
    let nth_tl_address i =
       NthClause (i, false)
 
+   let is_null_address = function
+      Path [] ->
+         true
+    | _ ->
+         false
+
    let depth_of_address = function
       NthClause (i, _) ->
          i
-    | _ ->
+    | Path _
+    | Compose _ ->
+         ref_raise(RefineError ("depth_of_address", StringError "address is not a sequent address"))
+
+   let rec clause_of_address = function
+      NthClause (i, _) ->
+         i
+    | Compose (addr, _) ->
+         clause_of_address addr
+    | Path _ ->
          ref_raise(RefineError ("depth_of_address", StringError "address is not a sequent address"))
 
    let compose_address path1 path2 =

@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
@@ -47,6 +47,11 @@ open Refiner.Refiner.Rewrite
  * are added for term templates.
  *)
 type dform_base
+
+(*
+ * Print to term tagged buffers.
+ *)
+type buffer = term Rformat.buffer
 
 (*
  * A display form printer knows about this term, and
@@ -72,12 +77,18 @@ type dform_printer =
 
 (*
  * Options on a dform.
+ *    1. InheritPrec means that the display form has
+ *       the same precedence as the term it encloses.
+ *    2. DFormPrec gives an exact precedence for the term
+ *    3. DFormParens means the display can be enclosed in parenthesis
+ *    4. DFormInternal means the display form is an
+ *       intermediate form used to compute a complex display.
  *)
 type dform_option =
-   (* Parens and precedences *)
    DFormInheritPrec
  | DFormPrec of precedence
  | DFormParens
+ | DFormInternal
 
 (*
  * This is the info needed for each display form.
@@ -109,7 +120,7 @@ val join_dforms : dform_base -> dform_base -> dform_base
 
 val is_null_dfbase : dform_base -> bool
 val equal_dfbases : dform_base -> dform_base -> bool
-val dest_dfbase : dform_base -> dform_entry * dform_base
+(* val dest_dfbase : dform_base -> dform_entry * dform_base *)
 
 (************************************************************************
  * PRINTERS                                                             *

@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -50,7 +50,7 @@ sig
     ************************************************************************)
 
    (* Term operations. *)
-   
+
    (*
     * subst: simultaneous subst of terms for vars.
     * if string list has repeated variables, the first match is used
@@ -67,8 +67,8 @@ sig
    val var_subst : term -> term -> string -> term
    val equal_params : param -> param -> bool
 
-   (* 
-    * In all alpha_equal* functions: 
+   (*
+    * In all alpha_equal* functions:
     * for bound terms with duplicate variables: x,x.t =alpha x,new_var.t
     *)
    val alpha_equal : term -> term -> bool
@@ -78,10 +78,10 @@ sig
     * If one of the "string list"s has duplicate entries, the first entry is used.
     *)
    val alpha_equal_vars : term -> string list -> term -> string list -> bool
-   
-   (* 
+
+   (*
     * alpha_equal_fun f t1 vs t2 os =
-    * t2 is alpha equal to t1 where for each free occurence of v_i 
+    * t2 is alpha equal to t1 where for each free occurence of v_i
     * some term t is substituted, such that (f t o_i) is true
     *)
    val alpha_equal_fun :

@@ -33,9 +33,10 @@
 open Printf
 open Mp_debug
 
-module Shell = Shell.Shell (Shell_mp.ShellP4)
+module Shell = Shell.Shell (Shell_mp.ShellP4 (Shell_state.ShellState))
+module ShellHTTP = Shell_http.ShellHTTP (Shell)
 
-let _ = Shell.main ()
+let _ = ShellHTTP.main ()
 
 external exit : int -> unit = "caml_exit"
 

@@ -77,7 +77,16 @@ and ('info, 'result, 'data, 'arg) info =
    { resource_join : 'data -> 'data -> 'data;
      resource_extract : 'data -> 'result;
      resource_improve : 'data -> 'info -> 'data;
-     resource_improve_arg : 'data -> 'arg -> 'data;
+     resource_improve_arg :
+        'data ->
+        string ->               (* Name of the new resource *)
+        string array ->         (* Names of the context vars *)
+        string array ->         (* Names of the new variables *)
+        term list ->            (* Arguments *)
+        term list ->            (* Parameters *)
+        meta_term ->            (* Rule statement *)
+        'arg ->                 (* Extra arguments *)
+        'data;
      resource_close : 'data -> string -> 'data
    }
 
@@ -118,13 +127,13 @@ let improve { resource_info = info; resource_data = data; resource_list = resour
      resource_list = resources
    }
 
-let improve_arg { resource_info = info; resource_data = data; resource_list = resources } arg =
+let improve_arg { resource_info = info; resource_data = data; resource_list = resources } name cvars vars args params mterm arg =
    { resource_info = info;
-     resource_data = info.resource_improve_arg data arg;
+     resource_data = info.resource_improve_arg data name cvars vars args params mterm arg;
      resource_list = resources
    }
 
-let improve_arg_fail name _ _ =
+let improve_arg_fail name _ _ _ _ _ _ _ _ =
    raise (RefineError (name, StringError "resource method 'improve_arg' is not implemented"))
 
 let rec improve_list { resource_info = info; resource_data = data; resource_list = resources } infos =

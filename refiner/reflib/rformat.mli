@@ -32,21 +32,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
@@ -56,7 +56,7 @@
  * TYPES                                                                *
  ************************************************************************)
 
-type buffer
+type 'tag buffer
 
 (************************************************************************
  * INTERFACE                                                            *
@@ -65,54 +65,49 @@ type buffer
 (*
  * Buffer creation.
  *)
-val new_buffer : unit -> buffer
-val clear_buffer : buffer -> unit
+val new_buffer : unit -> 'tag buffer
+val clear_buffer : 'tag buffer -> unit
 
 (*
  * Breaks.
  *)
-val format_sbreak : buffer -> string -> string -> unit
-val format_break : buffer -> string -> string -> unit
-val format_ibreak : buffer -> string -> string -> unit
-val format_space : buffer -> unit
-val format_hspace : buffer -> unit
-val format_newline : buffer -> unit
+val format_sbreak : 'tag buffer -> string -> string -> unit
+val format_break : 'tag buffer -> string -> string -> unit
+val format_space : 'tag buffer -> unit
+val format_hspace : 'tag buffer -> unit
+val format_newline : 'tag buffer -> unit
 
 (*
  * Break zones.
  *)
-val format_lzone : buffer -> unit
-val format_szone : buffer -> unit
-val format_hzone : buffer -> unit
-val format_ezone : buffer -> unit
+val format_lzone : 'tag buffer -> unit
+val format_szone : 'tag buffer -> unit
+val format_hzone : 'tag buffer -> unit
+val format_ezone : 'tag buffer -> unit
+val format_izone : 'tag buffer -> unit
+val format_tzone : 'tag buffer -> 'tag -> unit
 
 (*
- * MArgins.
+ * Margins.
  *)
-val format_pushm : buffer -> int -> unit
-val format_popm : buffer -> unit
+val format_pushm : 'tag buffer -> int -> unit
+val format_popm : 'tag buffer -> unit
 
 (*
  * Printers.
  *)
-val format_char : buffer -> char -> unit
-val format_string : buffer -> string -> unit
-val format_quoted_string : buffer -> string -> unit
-val format_int : buffer -> int -> unit
-val format_num : buffer -> Mp_num.num -> unit
-val format_buffer : buffer -> buffer -> unit
+val format_char : 'tag buffer -> char -> unit
+val format_string : 'tag buffer -> string -> unit
+val format_quoted_string : 'tag buffer -> string -> unit
+val format_int : 'tag buffer -> int -> unit
+val format_num : 'tag buffer -> Mp_num.num -> unit
 
 (*
  * Collecting output.
  *)
-val print_to_channel : int -> buffer -> out_channel -> unit
-val print_to_string : int -> buffer -> string
-
-(*
- * Debug variables.
- *)
-val debug_simple_print : bool ref
-val debug_dform : bool ref
+val print_to_channel : int -> 'tag buffer -> out_channel -> unit
+val print_to_string : int -> 'tag buffer -> string
+val print_to_html : int -> 'tag buffer -> out_channel -> (int * 'tag) list
 
 (*
  * -*-

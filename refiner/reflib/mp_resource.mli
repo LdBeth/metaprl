@@ -54,7 +54,16 @@ type ('info, 'result, 'data, 'arg) info =
    { resource_join : 'data -> 'data -> 'data;
      resource_extract : 'data -> 'result;
      resource_improve : 'data -> 'info -> 'data;
-     resource_improve_arg : 'data -> 'arg -> 'data;
+     resource_improve_arg :
+        'data ->
+        string ->               (* Name of the new resource *)
+        string array ->         (* Names of the context vars *)
+        string array ->         (* Names of the new variables *)
+        term list ->            (* Arguments *)
+        term list ->            (* Parameters *)
+        meta_term ->            (* Rule statement *)
+        'arg ->                 (* Extra arguments *)
+        'data;
      resource_close : 'data -> string -> 'data
    }
 
@@ -73,7 +82,15 @@ val create : ('info, 'result, 'data, 'arg) info -> 'data -> ('info, 'result, 'da
 val join : ('info, 'result, 'data, 'arg) t -> ('info, 'result, 'data, 'arg) t -> ('info, 'result, 'data, 'arg) t
 val extract : ('info, 'result, 'data, 'arg) t -> 'result
 val improve : ('info, 'result, 'data, 'arg) t -> 'info -> ('info, 'result, 'data, 'arg) t
-val improve_arg : ('info, 'result, 'data, 'arg) t -> 'arg -> ('info, 'result, 'data, 'arg) t
+val improve_arg : ('info, 'result, 'data, 'arg) t ->
+   string ->
+   string array ->
+   string array ->
+   term list ->
+   term list ->
+   meta_term ->
+   'arg ->
+   ('info, 'result, 'data, 'arg) t
 val close : ('info, 'result, 'data, 'arg) t -> string -> ('info, 'result, 'data, 'arg) t
 val wrap : ('info, 'result, 'data, 'arg) t -> ('data -> 'data) -> ('info, 'result, 'data, 'arg) t
 
@@ -90,7 +107,7 @@ val find : ('info, 'result, 'data, 'arg) t -> string -> ('info, 'result, 'data, 
 (*
  * This function is a utility to fail on improvement by arguments.
  *)
-val improve_arg_fail : string -> 'a -> 'b -> 'c
+val improve_arg_fail : string -> 'a -> string -> string array -> string array -> term list -> term list -> meta_term -> 'b -> 'c
 
 (*
  * Debugging.

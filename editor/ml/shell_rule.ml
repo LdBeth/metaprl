@@ -30,10 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-include Shell_type
+include Shell_sig
 include Package_info
-include Package_df
-include Proof_type
 
 open Printf
 open Mp_debug
@@ -48,16 +46,17 @@ open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Opname
 
+open Tactic_type
+open Tactic_type.Tacticals
+
+open Shell_sig
+open Package_sig
+open Package_info
+
 open Filter_type
 open Filter_summary
 open Filter_cache
 open Filter_ocaml
-
-open Tacticals
-open Tactic_cache
-open Shell_type
-open Package_info
-open Proof_type
 
 (*
  * Show that the file is loading.
@@ -76,7 +75,7 @@ type info =
      mutable rule_assums : term list;
      mutable rule_goal : term;
      mutable rule_proof : Package.proof proof_type;
-     mutable rule_ped : Proof_edit.t proof_type;
+     mutable rule_ped : Proof_edit.ped proof_type;
      mutable rule_resources : MLast.expr resource_def
    }
 
@@ -85,8 +84,8 @@ type info =
  * and the rewrite.
  *)
 let mk_rule_goal sentinal arg assums goal =
-   let { ref_label = label; ref_fcache = cache; ref_args = args } = arg in
-      Sequent.create sentinal label (mk_msequent goal assums) cache args
+   let { ref_label = label; ref_args = args } = arg in
+      Tactic.create sentinal label (mk_msequent goal assums) args
 
 let mk_ped sentinal arg params assums goal =
    Proof_edit.create params (mk_rule_goal sentinal arg assums goal)
@@ -100,44 +99,6 @@ let mk_ped sentinal arg params assums goal =
  *)
 let comment _ _ t =
    t
-
-(*
- * Format the tactic text.
- *)
-let format_tac db buf arg =
-   let seq = Sequent.msequent arg in
-   let rw, hyps = dest_msequent seq in
-   let format_hyp hyp =
-      format_term db buf hyp;
-      format_newline buf
-   in
-      format_string buf "Hyps:";
-      format_newline buf;
-      List.iter format_hyp hyps;
-      format_string buf "Goal: ";
-      format_term db buf rw;
-      format_newline buf
-
-(*
- * A primtive rewrite.
- *)
-let format_rule_aux s db buf sentinal arg params assums goal =
-   let tac = Refine_exn.print db (mk_rule_goal sentinal arg assums) goal in
-      format_tac db buf tac;
-      format_newline buf;
-      format_string buf s;
-      format_newline buf
-
-let format_prim_rule = format_rule_aux "Primitive"
-let format_incomplete_rule = format_rule_aux "Incomplete"
-
-let format_cond_rule db buf sentinal arg params assums goal expr =
-   let tac = Refine_exn.print db (mk_rule_goal sentinal arg assums) goal in
-      format_tac db buf tac;
-      format_newline buf;
-      format_string buf "Derived> ";
-      format_term db buf (term_of_expr [] comment expr);
-      format_newline buf
 
 (*
  * Build an item from the object.
@@ -171,31 +132,53 @@ let item_of_obj pack name
  *)
 let unit_term = mk_simple_term (make_opname ["unit"]) []
 
-let edit pack sentinal arg name obj =
+let rec edit pack parse_arg sentinal arg name window obj =
+   let edit_copy () =
+      let { rule_params = params;
+            rule_assums = assums;
+            rule_proof = proof;
+            rule_ped = ped;
+            rule_goal = goal;
+            rule_resources = res
+          } = obj
+      in
+      let obj =
+         { rule_params = params;
+           rule_assums = assums;
+           rule_proof = proof;
+           rule_ped = ped;
+           rule_goal = goal;
+           rule_resources = res
+         }
+      in
+         edit pack parse_arg sentinal arg name (Proof_edit.new_window window) obj
+   in
    let update_ped () =
       obj.rule_ped <- Primitive unit_term
    in
    let save_ped () =
       let item = item_of_obj pack name obj in
-         Package.set pack item
+         Package.set pack parse_arg item
    in
-   let edit_format db buf =
+   let edit_display () =
       (* Convert to a term *)
-      let { rule_params = params;
-            rule_assums = assums;
+      let { rule_assums = assums;
             rule_goal = goal;
             rule_ped = ped
           } = obj
       in
          match ped with
             Primitive t ->
-               format_prim_rule db buf sentinal arg params assums goal
+               let goal = mk_rule_goal sentinal arg assums goal in
+                  Proof_edit.format_incomplete window (Proof_edit.Primitive goal)
           | Derived expr ->
-               format_cond_rule db buf sentinal arg params assums goal expr
+               let goal = mk_rule_goal sentinal arg assums goal in
+                  Proof_edit.format_incomplete window (Proof_edit.Derived (goal, expr))
           | Incomplete ->
-               format_incomplete_rule db buf sentinal arg params assums goal
+               let goal = mk_rule_goal sentinal arg assums goal in
+                  Proof_edit.format_incomplete window (Proof_edit.Incomplete goal)
           | Interactive ped ->
-               Proof_edit.format db buf ped
+               Proof_edit.format window ped
    in
    let edit_set_goal t =
       obj.rule_goal <- t;
@@ -264,14 +247,14 @@ let edit pack sentinal arg name obj =
    let edit_undo () =
       Proof_edit.undo_ped (get_ped obj)
    in
+   let edit_redo () =
+      Proof_edit.redo_ped (get_ped obj)
+   in
    let edit_nop () =
       Proof_edit.nop_ped (get_ped obj)
    in
-   let edit_fold () =
-      Proof_edit.fold_ped (get_ped obj)
-   in
-   let edit_fold_all () =
-      Proof_edit.fold_all_ped (get_ped obj)
+   let edit_unfold () =
+      Proof_edit.unfold_ped (get_ped obj)
    in
    let edit_kreitz () =
       Proof_edit.kreitz_ped (get_ped obj)
@@ -287,8 +270,8 @@ let edit pack sentinal arg name obj =
                   rule_goal = goal
                 } = obj
             in
-            let proof = Package.new_proof pack name assums goal in
-            let ped = Package.ped_of_proof pack proof in
+            let proof = Package.new_proof pack parse_arg name assums goal in
+            let ped = Package.ped_of_proof pack parse_arg proof (mk_msequent goal assums) in
                obj.rule_proof <- Interactive proof;
                obj.rule_ped <- Interactive ped;
                Proof_edit.set_params ped params;
@@ -297,17 +280,8 @@ let edit pack sentinal arg name obj =
        | Interactive ped ->
             ped
    in
-   let edit_goal () =
-      Proof_edit.ped_arg (get_ped ())
-   in
-   let edit_tactic () =
-      Proof_edit.ped_tactic (get_ped ())
-   in
-   let edit_children () =
-      Proof_edit.ped_children (get_ped ())
-   in
-   let edit_extras () =
-      Proof_edit.ped_extras (get_ped ())
+   let edit_info () =
+      Proof_edit.edit_info_of_ped (get_ped ())
    in
    let edit_addr addr =
       Proof_edit.addr_ped (get_ped ()) addr
@@ -319,7 +293,8 @@ let edit pack sentinal arg name obj =
       if !debug_refine then
          eprintf "Shell_rule.edit_refine: refinement done%t" eflush
    in
-      { edit_format = edit_format;
+      { edit_display = edit_display;
+        edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
         edit_set_redex = edit_set_redex;
         edit_set_contractum = edit_set_contractum;
@@ -332,18 +307,21 @@ let edit pack sentinal arg name obj =
         edit_up = edit_up;
         edit_down = edit_down;
         edit_addr = edit_addr;
-        edit_goal = edit_goal;
-        edit_tactic = edit_tactic;
-        edit_children = edit_children;
-        edit_extras = edit_extras;
+        edit_info = edit_info;
         edit_refine = edit_refine;
         edit_undo = edit_undo;
-        edit_fold = edit_fold;
-        edit_fold_all = edit_fold_all;
+        edit_redo = edit_redo;
+        edit_unfold = edit_unfold;
         edit_kreitz = edit_kreitz
       }
 
-let create pack name =
+let create_window = function
+   DisplayText (base, mode) ->
+      Proof_edit.create_text_window base mode
+ | DisplayGraphical (port, base) ->
+      Proof_edit.create_proof_window port base
+
+let create pack parse_arg window name =
    let rl =
       { Filter_type.axiom_name = name;
         Filter_type.axiom_stmt = unit_term;
@@ -361,11 +339,11 @@ let create pack name =
       }
    in
    let sentinal = Package.sentinal pack in
-   let arg = Package.argument pack in
+   let arg = Package.argument pack parse_arg in
       (* Package.set pack (Filter_summary.Axiom rl); *)
-      edit pack sentinal arg name obj
+      edit pack parse_arg sentinal arg name (create_window window) obj
 
-let ped_of_proof pack = function
+let ped_of_proof pack parse_arg goal = function
    Primitive proof ->
       Primitive proof
  | Derived expr ->
@@ -373,9 +351,9 @@ let ped_of_proof pack = function
  | Incomplete ->
       Incomplete
  | Interactive proof ->
-      Interactive (Package.ped_of_proof pack proof)
+      Interactive (Package.ped_of_proof pack parse_arg proof goal)
 
-let view_axiom pack
+let view_axiom pack parse_arg window
     { Filter_type.axiom_name = name;
       Filter_type.axiom_stmt = goal;
       Filter_type.axiom_proof = proof;
@@ -386,15 +364,15 @@ let view_axiom pack
         rule_params = [];
         rule_goal = goal;
         rule_proof = proof;
-        rule_ped = ped_of_proof pack proof;
+        rule_ped = ped_of_proof pack parse_arg (mk_msequent goal []) proof;
         rule_resources = res
       }
    in
    let sentinal = Package.sentinal_object pack name in
-   let arg = Package.argument pack in
-      edit pack sentinal arg name obj
+   let arg = Package.argument pack parse_arg in
+      edit pack parse_arg sentinal arg name (create_window window) obj
 
-let view_rule pack
+let view_rule pack parse_arg window
     { Filter_type.rule_name = name;
       Filter_type.rule_params = params;
       Filter_type.rule_stmt = stmt;
@@ -402,19 +380,19 @@ let view_rule pack
       Filter_type.rule_resources = res
     } =
    let assums, goal = unzip_mfunction stmt in
-   let assums = List.map snd assums in
+   let assums = List.map (fun (_, _, t) -> t) assums in
    let obj =
       { rule_assums = assums;
         rule_params = params;
         rule_goal = goal;
         rule_proof = proof;
-        rule_ped = ped_of_proof pack proof;
+        rule_ped = ped_of_proof pack parse_arg (mk_msequent goal assums) proof;
         rule_resources = res
       }
    in
    let sentinal = Package.sentinal_object pack name in
-   let arg = Package.argument pack in
-      edit pack sentinal arg name obj
+   let arg = Package.argument pack parse_arg in
+      edit pack parse_arg sentinal arg name (create_window window) obj
 
 (*
  * -*-

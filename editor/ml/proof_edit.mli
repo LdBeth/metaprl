@@ -38,44 +38,46 @@
  * jyh@cs.cornell.edu
  *)
 
-include Proof
-
 open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
-open Rformat
+open Dform_print
 open Dform
 
-open Sequent
-open Tacticals
+open Tactic_type
+open Tactic_type.Sequent
+open Tactic_type.Tacticals
 
 (*
  * The is the state of the current proof.
  *)
-type t
+type ped
+
+(*
+ * Info for proof-type objects.
+ *)
+type edit_info =
+   { edit_goal : tactic_arg;
+     edit_expr : string;
+     edit_subgoals : tactic_arg list;
+     edit_extras : tactic_arg list
+   }
 
 (*
  * Constructors.
  *)
-val create : term Filter_type.param list -> tactic_arg -> t
-val ped_of_proof : term Filter_type.param list -> Proof.t -> t
-val set_params : t -> term Filter_type.param list -> unit
-val ped_arg : t -> tactic_arg
-val ped_item : t -> Proof.item option
-val ped_children : t -> tactic_arg list
-val ped_extras : t -> tactic_arg list
-val ped_tactic : t -> (string * MLast.expr * tactic) option
+val create : term Filter_type.param list -> tactic_arg -> ped
+val ped_of_proof : term Filter_type.param list -> Proof.proof -> ped
+val set_params : ped -> term Filter_type.param list -> unit
+val set_goal : ped -> msequent -> unit
+
+val edit_info_of_ped : ped -> edit_info
 
 (*
  * Destructors.
  *)
-val proof_of_ped : t -> Proof.t
-val status_of_ped : t -> Proof.status
-val node_count_of_ped : t -> int
-
-(*
- * Display operation.
- *)
-val format : dform_base -> buffer -> t -> unit
+val proof_of_ped : ped -> Proof.proof
+val status_of_ped : ped -> Proof.status
+val node_count_of_ped : ped -> int * int
 
 (*
  * Refinement, and undo lists.
@@ -86,20 +88,21 @@ val format : dform_base -> buffer -> t -> unit
  * After a refine_ped or nop_ped, the undo stack gets reset.
  * The nop_ped does nothing but reset the undo stack.
  *)
-val refine_ped : t -> string -> MLast.expr -> tactic -> unit
-val undo_ped : t -> unit
-val nop_ped : t -> unit
-val fold_ped : t -> unit
-val fold_all_ped : t -> unit
-val kreitz_ped : t -> unit
+val refine_ped : ped -> string -> MLast.expr -> tactic -> unit
+val unfold_ped : ped -> unit
+val undo_ped : ped -> unit
+val redo_ped : ped -> unit
+val nop_ped : ped -> unit
+val kreitz_ped : ped -> unit
 
 (*
  * Navigation.
  *)
-val up_ped : t -> int -> unit
-val down_ped : t -> int -> unit
-val root_ped : t -> unit
-val addr_ped : t -> int list -> unit
+val up_ped : ped -> int -> unit
+val down_ped : ped -> int -> unit
+val root_ped : ped -> unit
+val addr_ped : ped -> int list -> unit
+val rotate_ped : ped -> int -> unit
 
 (*
  * Check the proof and return its extract.
@@ -109,8 +112,38 @@ val addr_ped : t -> int list -> unit
  *    expand_proof: check as much of the proof as possible,
  *       no exceptions are raised
  *)
-val check_ped : t -> extract
-val expand_ped : dform_base -> t -> unit
+val check_ped : ped -> term
+val expand_ped : dform_base -> ped -> unit
+
+(*
+ * Display.
+ *)
+type window
+
+type incomplete_ped =
+   Primitive of tactic_arg
+ | Incomplete of tactic_arg
+ | Derived of tactic_arg * MLast.expr
+
+(*
+ * Create text or HTML.
+ *)
+val create_text_window : dform_mode_base -> string -> window
+val create_proof_window : Mux_channel.session -> dform_mode_base -> window
+
+(*
+ * Create a new window.
+ * On text displays, this does nothing.
+ * On graphics displays, this allocates a new
+ * window, but may not immediately display it.
+ *)
+val new_window : window -> window
+
+(*
+ * Display the goals.
+ *)
+val format_incomplete : window -> incomplete_ped -> unit
+val format : window -> ped -> unit
 
 (*
  * -*-

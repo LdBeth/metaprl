@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Refiner_sig
 
 module Refiner =
 struct
@@ -43,16 +44,27 @@ struct
    module TermShape = Term_shape_gen.TermShape (TermType) (Term)
    module TermEval = Term_eval_std.TermEval (Term) (RefineError)
    module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (RefineError)
-   module TermMod = struct
+   module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
+   module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineError)
+   module TermMod =
+   struct
       module TermType = TermType
       module Term = Term
       module TermSubst = TermSubst
       module TermMan = TermMan
+      module Refine = Refine
    end
-   module TermHash = Term_hash.TermHash (TermMod) 
+   module TermHash = Term_hash.TermHash (TermMod)
    module TermNorm = Term_norm.TermNorm (TermMod) (TermHash)
-   module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
-   module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineError)
+
+   module TermHeaderConstr (FromTerm : TermModuleSig) =
+   struct
+      module THC = Term_header_constr.TermHeaderConstr (FromTerm) (TermMod) (TermHash);;
+
+      let make_term_header = THC.make_term_header
+      let make_meta_term_header = THC.make_meta_term_header
+      let make_msequent_header = THC.make_msequent_header
+   end
 end
 
 (*

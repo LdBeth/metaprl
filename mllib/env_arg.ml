@@ -20,7 +20,7 @@ let _ =
  *)
 type 'a env_set = string -> 'a ref -> string -> unit
 type 'a arg_set = string -> 'a ref -> Arg.spec
-type 'a var_set = string -> 'a ref -> 'a -> unit
+type ('a, 'b) var_set = string -> 'a ref -> 'b -> unit
 
 (*
  * Environment variables are prefixed with this string.
@@ -114,6 +114,24 @@ let bool name default info set =
          Arg.Set v
    in
       general name default info env_set arg_set
+
+(*
+ * Standard variable setting functions.
+ *)
+let set_string_string _ cell s =
+   cell := s
+
+let set_string_option_string _ cell s =
+   cell := Some s
+
+let set_int_int _ cell i =
+   cell := i
+
+let set_int_option_int _ cell i =
+   cell := Some i
+
+let set_bool_bool _ cell b =
+   cell := b
 
 (*
  * Return arguments to be passed to the parser.

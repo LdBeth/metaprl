@@ -33,7 +33,7 @@
 open MLast
 
 open Opname
-open Refiner.Refiner.Term
+open Refiner_sig
 
 (*
  * Location is a pair of bignums.
@@ -57,67 +57,83 @@ type term_type =
  | ClassFieldTerm
  | WithClauseTerm
 
-type comment = term_type -> loc -> term -> term
-
 (*
- * Terms to MLAst.
+ * This is a parsing error when terms are converted to MLast.
  * FormatError (reason, term that failed)
  *)
-exception FormatError of string * term
-
-val expr_of_term : term -> expr
-val patt_of_term : term -> patt * term
-val type_of_term : term -> ctyp
-val sig_item_of_term : term -> sig_item
-val str_item_of_term : term -> str_item
-val module_type_of_term : term -> module_type
-val module_expr_of_term : term -> module_expr
-val class_type_infos_of_term : term -> class_type class_infos
-val class_expr_infos_of_term : term -> class_expr class_infos
-val class_type_of_term : term -> class_type
-val class_expr_of_term : term -> class_expr
-val class_str_item_of_term : term -> class_str_item
-val class_sig_item_of_term : term -> class_sig_item
+exception FormatError of string * Refiner.Refiner.TermType.term
 
 (*
- * MLast to term.
- *
- * The extra (loc -> term -> term) argument is used to annoate the results.
- * It is mapped over all terms postfix order.
+ * The conversion is to an arbitrary term type.
  *)
-val term_of_expr : string list -> comment -> expr -> term
-val term_of_patt : string list -> comment -> patt -> (string list -> term) -> term
-val term_of_type : comment -> ctyp -> term
-val term_of_sig_item : comment -> sig_item -> term
-val term_of_str_item : string list -> comment -> str_item -> term
-val term_of_module_type : comment -> module_type -> term
-val term_of_module_expr : string list -> comment -> module_expr -> term
-val term_of_class_type_infos : comment -> class_type class_infos -> term
-val term_of_class_expr_infos : string list -> comment -> class_expr class_infos -> term
-val term_of_class_type : comment -> class_type -> term
-val term_of_class_expr : string list -> comment -> class_expr -> term
-val term_of_class_sig_item : comment -> class_sig_item -> term
-val term_of_class_str_item : string list -> comment -> class_str_item -> term
+module FilterOCaml (ToTerm : RefinerSig) :
+sig
+   open ToTerm.TermType
 
-(*
- * Specific values useful for writing
- * term interpreters.
- *)
-val some_op : opname
-val none_op : opname
-val true_op : opname
-val false_op : opname
+   (*
+    * A "comment" function should fetch the comment closest to
+    * the given location.  If a comment is found, it should
+    * wrap the argument term with a comment term.
+    *)
+   type comment = term_type -> loc -> term -> term
 
-(*
- * Common destructors.
- *)
-val dest_loc : term -> int * int
-val dest_loc_string : term -> (int * int) * string
-val dest_loc_int : term -> (int * int) * string
-val dest_opt : (term -> 'a) -> term -> 'a option
-val dest_string : term -> string
-val dest_string_opt : term -> string option
-val dest_var : term -> string
+   (*
+    * Parsing of terms.
+    *)
+   val expr_of_term : term -> expr
+   val patt_of_term : term -> patt * term
+   val type_of_term : term -> ctyp
+   val sig_item_of_term : term -> sig_item
+   val str_item_of_term : term -> str_item
+   val module_type_of_term : term -> module_type
+   val module_expr_of_term : term -> module_expr
+   val class_type_infos_of_term : term -> class_type class_infos
+   val class_expr_infos_of_term : term -> class_expr class_infos
+   val class_type_of_term : term -> class_type
+   val class_expr_of_term : term -> class_expr
+   val class_str_item_of_term : term -> class_str_item
+   val class_sig_item_of_term : term -> class_sig_item
+
+   (*
+    * MLast to term.
+    *
+    * The comment argument is used to fetch comments for the terms.
+    * It is mapped over all terms postfix order.
+    *)
+   val term_of_expr : string list -> comment -> expr -> term
+   val term_of_patt : string list -> comment -> patt -> (string list -> term) -> term
+   val term_of_type : comment -> ctyp -> term
+   val term_of_sig_item : comment -> sig_item -> term
+   val term_of_str_item : string list -> comment -> str_item -> term
+   val term_of_module_type : comment -> module_type -> term
+   val term_of_module_expr : string list -> comment -> module_expr -> term
+   val term_of_class_type_infos : comment -> class_type class_infos -> term
+   val term_of_class_expr_infos : string list -> comment -> class_expr class_infos -> term
+   val term_of_class_type : comment -> class_type -> term
+   val term_of_class_expr : string list -> comment -> class_expr -> term
+   val term_of_class_sig_item : comment -> class_sig_item -> term
+   val term_of_class_str_item : string list -> comment -> class_str_item -> term
+
+   (*
+    * Specific values useful for writing
+    * term interpreters.
+    *)
+   val some_op : opname
+   val none_op : opname
+   val true_op : opname
+   val false_op : opname
+
+   (*
+    * Common destructors.
+    *)
+   val dest_loc : term -> int * int
+   val dest_loc_string : term -> (int * int) * string
+   val dest_loc_int : term -> (int * int) * string
+   val dest_opt : (term -> 'a) -> term -> 'a option
+   val dest_string : term -> string
+   val dest_string_opt : term -> string option
+   val dest_var : term -> string
+end
 
 (*
  * -*-

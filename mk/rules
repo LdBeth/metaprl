@@ -96,15 +96,15 @@ MLIFILES     = $(sort $(addsuffix .mli,  $(MPFILES) $(MP2FILES) $(LMFILES) $(MFI
 
 MP_CMIFILES  = $(addsuffix .cmi,  $(MPFILES))
 MP_CMOFILES  = $(addsuffix .cmo,  $(MPFILES))
-MP_CMIZFILES = $(addsuffix .cmiz, $(MPFILES))
-MP_CMOZFILES = $(addsuffix .cmoz, $(MPFILES))
+MP_CMIZFILES = $(addsuffix .cmit, $(MPFILES))
+MP_CMOZFILES = $(addsuffix .cmot, $(MPFILES))
 MP_CMXFILES  = $(addsuffix .cmx,  $(MPFILES))
 MP_PPOFILES  = $(addsuffix .ppo,  $(MPFILES))
 
 MP2_CMIFILES  = $(addsuffix .cmi,  $(MP2FILES))
 MP2_CMOFILES  = $(addsuffix .cmo,  $(MP2FILES))
-MP2_CMIZFILES = $(addsuffix .cmiz, $(MP2FILES))
-MP2_CMOZFILES = $(addsuffix .cmoz, $(MP2FILES))
+MP2_CMIZFILES = $(addsuffix .cmit, $(MP2FILES))
+MP2_CMOZFILES = $(addsuffix .cmot, $(MP2FILES))
 MP2_CMXFILES  = $(addsuffix .cmx,  $(MP2FILES))
 MP2_PPOFILES  = $(addsuffix .ppo,  $(MP2FILES))
 
@@ -213,7 +213,7 @@ $(MP_CMIFILES) $(MP2_CMIFILES): %.cmi: %.mli $(ROOT)/mk/config
 	MPLIB=$(MPLIB) $(PRLC) $(OCAMLCFLAGS) -c $*.mli
 
 $(MP_PPOFILES) $(MP2_PPOFILES): %.ppo: %.cmi %.ml $(ROOT)/mk/config
-	$(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
+	MPLIB=$(MPLIB) $(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
 
 $(MP_CMOFILES) $(MP2_CMOFILES): %.cmo: %.ppo %.cmi $(ROOT)/mk/config
 	$(OCAMLC) $(OCAMLCFLAGS) -c -impl $*.ppo

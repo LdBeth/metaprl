@@ -39,7 +39,7 @@ sig
     * Types                                                                *
     ************************************************************************)
 
-   module StringSet : ( Mp_set.S with type elt = string )
+   module StringSet : Set_sig.SetSig with type elt = string
 
    (*
     * Level expression have offsets from level expression
@@ -87,6 +87,7 @@ sig
     * free_vars - set of the free variables
     *
     * Subst (BSubst) - delayed simultanious substitution
+    * Hashed descriptor: a descriptor into the global hash table
     *)
    type term_subst = (string * term) list
    and term_core =
@@ -94,6 +95,7 @@ sig
     | Subst of term * term_subst
     | Sequent of esequent
     | FOVar of string
+    | Hashed of term Weak_memo.TheWeakMemo.descriptor
    and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term = bound_term'
    and term' = { term_op : operator; term_terms : bound_term list }
@@ -253,5 +255,11 @@ sig
    val print_term : out_channel -> term -> unit
    val print_term_list : out_channel -> term list -> unit
    val install_debug_printer : (out_channel -> term -> unit) -> unit
+
+   (*
+    * Wrap descriptors.
+    *)
+   val dest_descriptor : term -> term Weak_memo.TheWeakMemo.descriptor option
+   val mk_descriptor_term : term Weak_memo.TheWeakMemo.descriptor -> term
 end
 

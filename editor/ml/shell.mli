@@ -30,116 +30,18 @@
  * jyh@cs.cornell.edu
  *)
 
-include Tacticals
+include Proof_edit
 include Package_info
-include Package_df
 include Shell_rewrite
 include Shell_rule
+include Shell_package
+include Shell_root
+include Shell_p4_sig
 
-open Refiner.Refiner.Term
-open Refiner.Refiner.Refine
+open Shell_sig
+open Shell_p4_sig
 
-open Tacticals
-
-open Shell_p4_type
-
-module Shell (ShellP4 : ShellP4Sig) :
-sig
-   (*
-    * Some initialization function.
-    *)
-   val main : unit -> unit
-
-   (*
-    * Navigation and display.
-    *)
-   val cd : string -> string
-   val pwd : unit -> string
-   val set_window_width : int -> unit
-
-   (*
-    * Module commands.
-    *)
-   val load : string -> unit
-   val create_pkg : string -> unit
-   val set_writeable : unit -> unit
-   val save : unit -> unit
-   val save_all : unit -> unit
-
-   (*
-    * The possible objects in a package.
-    *)
-   val create_rw : string -> unit
-   val create_axiom : string -> unit
-   val create_thm : string -> unit
-   val create_tptp : string -> unit
-   val create_opname : string -> unit
-   val create_condition : string -> unit
-   val create_parent : string -> unit
-   val create_dform : string -> unit
-   val create_prec : string -> unit
-   val create_prec_rel : string -> string -> string -> unit
-   val create_resource : string -> unit
-   val create_infix : string -> unit
-   val create_ml : string -> unit
-
-   (*
-    * View, close, check object.
-    * An object is not installed until it is checked.
-    *)
-   val view : string -> unit
-   val ls : unit -> unit
-
-   (*
-    * Editing commands.
-    *)
-   val set_goal : term -> unit
-   val set_redex : term -> unit
-   val set_contractum : term -> unit
-   val set_assumptions : term list -> unit
-   val set_params : term Filter_type.param list -> unit
-   val check : unit -> unit
-   val expand : unit -> unit
-
-   (*
-    * Proof editing.
-    *)
-   val root : unit -> unit
-   val up : int -> unit
-   val down : int -> unit
-   val goal : unit -> Tactic_type.tactic_arg
-   val refine : tactic -> unit
-   val undo : unit -> unit
-   val fold : unit -> unit
-   val fold_all : unit -> unit
-   val kreitz : unit -> unit
-   val sync : unit -> unit
-   val expand_all : unit -> unit
-
-   (*
-    * Nuprl5 interface.
-    *)
-   val edit_list_modules : unit -> string list
-   val edit_list_module_all : string -> string list
-   val edit_list_module : string -> string list * string list * string list * string list
-   val edit_list_module_rw : string -> string list
-   val edit_list_parents : string -> string list
-   val edit_list_dforms : string -> (string * string list * term list * term * term) list
-   val edit_list_precs : string -> term list
-   val edit_list_prec_rels : string -> (string * term * term) list
-   val edit_create_thm : string -> string -> unit
-   val edit_create_rw : string -> string -> unit
-   val edit_cd_thm : string -> string -> unit
-   val edit_save : string -> unit
-   val edit_set_goal : string -> string -> term -> unit
-   val edit_set_redex : string -> string -> term -> unit
-   val edit_set_contractum : string -> string -> term -> unit
-   val edit_set_assumptions : string -> string -> term list -> unit
-   val edit_set_params : string -> string -> term Filter_type.param list -> unit
-   val edit_refine : int list -> string -> msequent * msequent list * msequent list
-   val edit_node : int list -> string option * msequent * msequent list * msequent list
-   val edit_undo : unit -> unit
-end
+module Shell (ShellP4 : ShellP4Sig) : ShellSig
 
 (*
  * -*-

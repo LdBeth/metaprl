@@ -32,11 +32,9 @@
 
 open Thread_refiner_sig
 
-module ThreadRefinerTacticals =
-   Thread_refiner_null.ThreadRefinerTacticals
+module ThreadRefinerTacticals = Thread_refiner_null.ThreadRefinerTacticals
 
-module MakeThreadRefiner (Arg : ThreadRefinerArgSig) =
-   Thread_refiner_null.MakeThreadRefiner (Arg)
+module ThreadRefiner = Thread_refiner_null.ThreadRefiner
 
 (*
  * -*-

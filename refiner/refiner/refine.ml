@@ -137,40 +137,40 @@ struct
     *
     * Each hyp is labelled by its first argument.
     *)
+   type msequent_free_vars =
+      FreeVarsDelayed
+    | FreeVars of string list
+
    type msequent =
-      { mseq_vars : string list;
+      { mutable mseq_vars : msequent_free_vars;
         mseq_goal : term;
         mseq_hyps : term list
       }
 
    (*
-    * A ML rewrite replaces a term with another,
-    * no extract.
+    * An ML rewrite replaces a term with another.
     *)
-   type ml_rewrite =
-      { ml_rewrite_rewrite :
-           string array ->
-           string list list ->
-           term list ->
-           term ->
-           term ->
-           term * term list * string array;
-        ml_rewrite_extract : (string array * term list) -> term list -> term * term list
-      }
+   type ml_extract = (string array * term list) -> term list -> term
+
+   type ml_rewrite = term -> term
+
+   type ml_cond_rewrite =
+      string array ->                                   (* Names *)
+         string list list ->                            (* Free vars in the msequent *)
+         term list ->                                   (* Params *)
+         term ->                                        (* Term to rewrite *)
+         term * term list * string array * ml_extract   (* Extractor is returned *)
 
    (*
     * A condition relaces an goal with a list of subgoals,
     * and it provides a function to compute the extract.
     *)
    type ml_rule =
-      { ml_rule_rewrite :
-           address array ->                     (* context addresses *)
-           string array ->                      (* variable names *)
-           msequent ->                          (* goal *)
-           term list ->                         (* params *)
-           msequent list * string array;        (* subgoals, new variable names *)
-        ml_rule_extract : (string array * term list) -> term list -> term * term list
-      }
+      address array ->                                  (* context addresses *)
+         string array ->                                (* variable names *)
+         msequent ->                                    (* goal *)
+         term list ->                                   (* params *)
+         msequent list * string array * ml_extract      (* subgoals, new variable names *)
 
    (************************************************************************
     * TYPES                                                                *
@@ -203,26 +203,99 @@ struct
         ext_subgoals : msequent list
       }
 
+   and rw_extract =
+      { rw_goal : term;
+        rw_just : rewrite_just;
+        rw_subgoal : term
+      }
+
+   and crw_extract =
+      { crw_goal : term;
+        crw_just : cond_rewrite_just;
+        crw_subgoal_term : term;
+        crw_subgoals : cond_rewrite_subgoals
+      }
+
    and ext_just =
       SingleJust of single_just
-    | RewriteJust of rewrite_just
-    | PairJust of ext_just * ext_just
+    | MLJust of single_just * ml_extract
+    | RewriteJust of msequent * rewrite_just * msequent
+    | CondRewriteJust of msequent * cond_rewrite_just * msequent list
     | ComposeJust of ext_just * ext_just list
-    | NthHypJust of int
+    | NthHypJust of msequent * int
+    | CutJust of cut_just
 
-   and single_just =
-      { (* Parameters to the rule and the rule itself *)
-         ext_names : string array;
-         ext_params : term list;
-         ext_refiner : opname
+   and atomic_just =
+      { just_goal : msequent;
+        just_addrs : Rewrite.address array;
+        just_names : string array;
+        just_params : term list;
+        just_refiner : opname;
+        just_subgoals : msequent list
+      }
+   and single_just = atomic_just
+
+   and cut_just =
+      { cut_goal : msequent;
+        cut_hyp : term;
+        cut_lemma : msequent;
+        cut_then : msequent
       }
 
    and rewrite_just =
-      RewriteCut of term
-    | RewriteHere of opname
-    | RewriteAddr of address * rewrite_just
-    | RewriteHigher of rewrite_just list
-    | RewritePair of rewrite_just * rewrite_just
+      RewriteHere of term * opname * term
+    | RewriteML of term * opname * term
+    | RewriteReverse of rewrite_just
+    | RewriteCompose of rewrite_just * rewrite_just
+    | RewriteAddress of term * address * rewrite_just * term
+    | RewriteHigher of term * rewrite_just list * term
+
+   and cond_rewrite_subgoals =
+      CondRewriteSubgoalsAddr of address * cond_rewrite_subgoals
+    | CondRewriteSubgoalsList of cond_rewrite_subgoals list
+    | CondRewriteSubgoals of term list
+
+   and cond_rewrite_just =
+      CondRewriteHere of cond_rewrite_here
+    | CondRewriteML of cond_rewrite_here * ml_extract
+    | CondRewriteReverse of cond_rewrite_just
+    | CondRewriteCompose of cond_rewrite_just * cond_rewrite_just
+    | CondRewriteAddress of term * address * cond_rewrite_just * term
+    | CondRewriteHigher of term * cond_rewrite_just list * term
+
+   and cond_rewrite_here =
+      { cjust_goal : term;
+        cjust_names : string array;
+        cjust_params : term list;
+        cjust_refiner : opname;
+        cjust_subgoal_term : term;
+        cjust_subgoals : term list
+      }
+
+   (*
+    * Extract destruction types.
+    *)
+   and extract_info =
+      AtomicExtract of single_just
+    | RewriteExtract of msequent * rw_extract * msequent
+    | CondRewriteExtract of msequent * crw_extract * msequent list
+    | ComposeExtract of extract * extract list
+    | NthHypExtract of msequent * int
+    | CutExtract of cut_just
+
+   and rw_extract_info =
+      AtomicRewriteExtract of term * opname * term
+    | ReverseRewriteExtract of rw_extract
+    | ComposeRewriteExtract of rw_extract * rw_extract
+    | AddressRewriteExtract of term * address * rw_extract * term
+    | HigherRewriteExtract of term * rw_extract list * term
+
+   and crw_extract_info =
+      AtomicCondRewriteExtract of cond_rewrite_here
+    | ReverseCondRewriteExtract of crw_extract
+    | ComposeCondRewriteExtract of crw_extract * crw_extract
+    | AddressCondRewriteExtract of term * address * crw_extract * term
+    | HigherCondRewriteExtract of term * crw_extract list * term
 
    (*
     * A refiner contains the following items:
@@ -245,10 +318,11 @@ struct
 
     | RewriteRefiner of rewrite_refiner
     | PrimRewriteRefiner of prim_rewrite_refiner
+    | MLRewriteRefiner of ml_rewrite_refiner
 
     | CondRewriteRefiner of cond_rewrite_refiner
     | PrimCondRewriteRefiner of prim_cond_rewrite_refiner
-    | MLRewriteRefiner of ml_rewrite_refiner
+    | MLCondRewriteRefiner of ml_cond_rewrite_refiner
 
     | PairRefiner of refiner * refiner
     | ListRefiner of refiner list
@@ -292,6 +366,11 @@ struct
         prw_rewrite : rewrite_refiner;
         prw_refiner : refiner
       }
+   and ml_rewrite_refiner =
+      { ml_rw_name : opname;
+        ml_rw_info : ml_rewrite;
+        ml_rw_refiner : refiner
+      }
 
    and cond_rewrite_refiner =
       { crw_name : opname;
@@ -304,10 +383,10 @@ struct
         pcrw_rewrite : cond_rewrite_refiner;
         pcrw_refiner : refiner
       }
-   and ml_rewrite_refiner =
-      { ml_rw_name : opname;
-        ml_rw_info : ml_rewrite;
-        ml_rw_refiner : refiner
+   and ml_cond_rewrite_refiner =
+      { ml_crw_name : opname;
+        ml_crw_info : ml_cond_rewrite;
+        ml_crw_refiner : refiner
       }
 
    (*
@@ -351,8 +430,9 @@ struct
     *)
    type sentinal =
       { sent_rewrite : rewrite_refiner -> unit;
-        sent_cond_rewrite : cond_rewrite_refiner -> unit;
         sent_ml_rewrite : ml_rewrite_refiner -> unit;
+        sent_cond_rewrite : cond_rewrite_refiner -> unit;
+        sent_ml_cond_rewrite : ml_cond_rewrite_refiner -> unit;
         sent_axiom : axiom_refiner -> unit;
         sent_rule : rule_refiner -> unit;
         sent_ml_rule : ml_rule_refiner -> unit
@@ -378,7 +458,7 @@ struct
     * the rewrite is being applied to, and the second is the
     * particular subterm to be rewritted.
     *)
-   type cond_rewrite = sentinal -> string list list -> term -> term -> term * term list * ext_just
+   type cond_rewrite = sentinal -> string list list -> term -> term * cond_rewrite_subgoals * cond_rewrite_just
 
    (*
     * These are the forms created at compile time.
@@ -397,9 +477,10 @@ struct
     | RIMLRule of ri_ml_rule
 
     | RIRewrite of ri_rewrite
+    | RIMLRewrite of ri_ml_rewrite
     | RICondRewrite of ri_cond_rewrite
     | RIPrimRewrite of ri_prim_rewrite
-    | RIMLRewrite of ri_ml_rewrite
+    | RIMLCondRewrite of ri_ml_rewrite
 
     | RIParent of refiner
     | RILabel of string
@@ -443,14 +524,21 @@ struct
    let mk_msequent goal subgoals =
       { mseq_goal = goal;
         mseq_hyps = subgoals;
-        mseq_vars = free_vars_terms (goal :: subgoals)
+        mseq_vars = FreeVarsDelayed
       }
 
    let dest_msequent mseq =
       mseq.mseq_goal, mseq.mseq_hyps
 
-   let dest_msequent_vars mseq =
-      mseq.mseq_vars, mseq.mseq_goal, mseq.mseq_hyps
+   let msequent_free_vars mseq =
+      match mseq.mseq_vars with
+         FreeVars vars ->
+            vars
+       | FreeVarsDelayed ->
+            let { mseq_goal = goal; mseq_hyps = hyps } = mseq in
+            let vars = free_vars_terms (goal :: hyps) in
+               mseq.mseq_vars <- FreeVars vars;
+               vars
 
     (*
      * Check that all the hyps in the list are equal.
@@ -505,14 +593,13 @@ struct
          subgoals, { ext_goal = seq; ext_just = just; ext_subgoals = subgoals }
 
    (*
-    * NTH_HYP
     * The base tactic proves by assumption.
     *)
    let nth_hyp i sent seq =
       let { mseq_goal = goal; mseq_hyps = hyps } = seq in
          try
             if alpha_equal (List.nth hyps i) goal then
-               [], NthHypJust i
+               [], NthHypJust (seq, i)
             else
                REF_RAISE(RefineError ("nth_hyp", StringError "hyp mismatch"))
          with
@@ -520,7 +607,16 @@ struct
                REF_RAISE(RefineError ("nth_hyp", IntError i))
 
    (*
-    * COMPOSE
+    * Cut rule.
+    *)
+   let cut t sent seq =
+      let { mseq_hyps = hyps; mseq_goal = goal } = seq in
+      let cut_lemma = { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t } in
+      let cut_then = { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps @ [t]; mseq_goal = goal } in
+      let cut_info = { cut_goal = seq; cut_hyp = t; cut_lemma = cut_lemma; cut_then = cut_then } in
+         [cut_lemma; cut_then], CutJust cut_info
+
+   (*
     * Compose two extracts.
     * The subgoals of the first must match with the goals of the second.
     *)
@@ -541,27 +637,97 @@ struct
     ************************************************************************)
 
    (*
-    * Convert a rewrite to a tactic.
+    * Apply a rewrite to a term.
     *)
-   let rwtactic (rw : rw) sent (seq : msequent) =
-      let { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } = seq in
-      let goal, just = rw sent goal in
-         [{ mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps }], RewriteJust just
+   let rw_refine sent (rw : rw) (t : term) =
+      let t', just = rw sent t in
+         t', { rw_goal = t; rw_just = just; rw_subgoal = t' }
+
+   (*
+    * Compose two rewrites.  The subterm of the first
+    * must match the goal of the second.
+    *)
+   let rw_compose ext1 addr ext2 =
+      let { rw_goal = goal1; rw_just = just1; rw_subgoal = goal2 } = ext1 in
+      let { rw_goal = goal3; rw_just = just2; rw_subgoal = goal4 } = ext2 in
+         if alpha_equal (term_subterm goal2 addr) goal3 then
+            { rw_goal = goal1;
+              rw_just = RewriteCompose (just1, just2);
+              rw_subgoal = replace_subterm goal2 addr goal4
+            }
+         else
+            REF_RAISE(RefineError ("rw_compose_rw", StringError "terms do not match"))
+
+   (*
+    * Reverse the rewrite
+    *)
+   let rw_reverse { rw_goal = goal; rw_just = just; rw_subgoal = subgoal } =
+      { rw_goal = subgoal; rw_just = RewriteReverse just; rw_subgoal = goal}
+
+   (*
+    * Turn it into a regular extract.
+    *)
+   let extract_of_rw_extract mseq i rw_ext =
+      let { mseq_hyps = hyps; mseq_goal = goal } = mseq in
+      let goal1 =
+         if i = 0 then
+            goal
+         else if i <= List.length hyps then
+            List.nth hyps i
+         else
+            REF_RAISE(RefineError ("extract_of_rw_extract", StringIntError ("hyp number is out of range", i)))
+      in
+      let { rw_goal = goal2; rw_just = just; rw_subgoal = subgoal } = rw_ext in
+         if alpha_equal goal2 goal1 then
+            let subgoal =
+               if i = 0 then
+                  { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = subgoal }
+               else
+                  { mseq_vars = FreeVarsDelayed; mseq_hyps = List_util.replace_nth (pred i) subgoal hyps; mseq_goal = goal }
+            in
+               { ext_goal = mseq;
+                 ext_just = RewriteJust (mseq, just, subgoal);
+                 ext_subgoals = [subgoal]
+               }
+         else
+            REF_RAISE(RefineError ("extract_of_rw_extract", StringError "goals do not match"))
+
+   (*
+    * Turn the rewrite into a tactic.
+    *)
+   let rwtactic i rw sent mseq =
+      let { mseq_vars = vars; mseq_hyps = hyps; mseq_goal = goal } = mseq in
+      let t =
+         if i = 0 then
+            goal
+         else if i <= List.length hyps then
+            List.nth hyps (pred i)
+         else
+            REF_RAISE(RefineError ("rwtactic", StringIntError ("hyp number is out of range", i)))
+      in
+      let t', just = rw sent t in
+      let subgoal =
+         if i = 0 then
+            { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t' }
+         else
+            { mseq_vars = FreeVarsDelayed; mseq_hyps = List_util.replace_nth (pred i) t' hyps; mseq_goal = goal }
+      in
+         [subgoal], RewriteJust (mseq, just, subgoal)
 
    (*
     * Apply a rewrite at an address.
     *)
    let rwaddr addr rw sent t =
-      let t, just = apply_fun_arg_at_addr (rw sent) addr t in
-         t, RewriteAddr (addr, just)
+      let t', just = apply_fun_arg_at_addr (rw sent) addr t in
+         t', RewriteAddress (t, addr, just, t')
 
    (*
     * Apply the rewrite to the outermost terms where it
     * does not fail.
     *)
    let rwhigher rw sent t =
-      let t, justs = apply_fun_higher (rw sent) t in
-         t, RewriteHigher justs
+      let t', justs = apply_fun_higher (rw sent) t in
+         t', RewriteHigher (t, justs, t')
 
    (*
     * Composition is supplied for efficiency.
@@ -585,7 +751,7 @@ struct
             rw2 sent t'
          ENDIF
       in
-         t'', RewritePair (just, just')
+         t'', RewriteCompose (just, just')
 
    let orelserw rw1 rw2 sent t =
       IFDEF VERBOSE_EXN THEN
@@ -605,28 +771,194 @@ struct
     ************************************************************************)
 
    (*
-    * Inject a regular rewrite as a conditional rewrite.
+    * Replace the subgoals in the sequent.
+    * We have to rename variables to avoid capture,
+    * so we need to calculate the binding occurrences to the
+    * term in question, and then rename to avoid capture in the goal.
     *)
-   let mk_cond_rewrite rw sent _ _ t =
-      let arg, just = rw sent t in
-         arg, [], RewriteJust just
+   let replace_subgoals mseq subgoals =
+      let { mseq_hyps = hyps; mseq_goal = t } = mseq in
+
+      (* Get vars for free var calculations *)
+      let declared_vars = TermMan.declared_vars t in
+      let declared_len = List.length declared_vars in
+
+      (* Put a placeholder var in the goal *)
+      let v =
+         let rec search i =
+            let v = "goal_var" ^ string_of_int i in
+               if List.mem v declared_vars then
+                  search (succ i)
+               else
+                  v
+         in
+            search 0
+      in
+      let vt = mk_var_term v in
+      let seq = replace_goal t vt in
+
+      (*
+       * We have to rename sequent vars when we substitute into the goal.
+       *)
+      let replace_subgoal addr t' =
+         (* Allowed vars are the bindings in the sequent up until the addressed clause *)
+         let i = TermAddr.clause_of_address addr in
+         let allowed_vars =
+            if i <= 0 || i >= declared_len then
+               declared_vars
+            else
+               fst (List_util.split_list i declared_vars)
+         in
+
+         (* Compute the extra binding variables in the clause *)
+         let _, bound_vars = TermAddr.apply_var_fun_arg_at_addr (fun vars t -> t, vars) addr [] t in
+         let bound_vars = List.flatten bound_vars in
+         let bound_vars = List_util.subtract_multiset bound_vars allowed_vars in
+
+         (* Intersect the bound_vars with the free vars in the term replacement *)
+         let bound_vars = List_util.intersect (free_vars t') bound_vars in
+
+         (* Substitute a placeholder into the sequent to rename other binding vars *)
+         let bvars_term = mk_xlist_term (List.map mk_var_term bound_vars) in
+         let seq = subst seq [bvars_term] [v] in
+
+         (* Now we can replace the goal without fear *)
+         let seq = replace_goal seq t' in
+            { mseq_vars = FreeVarsDelayed;
+              mseq_hyps = hyps;
+              mseq_goal = seq
+            }
+      in
+
+      (*
+       * Collect all the subgoals that were given by the conditional
+       * rewrite.
+       *)
+      let rec replace addr subgoals = function
+         CondRewriteSubgoalsList subgoals' ->
+            List.fold_left (replace addr) subgoals subgoals'
+       | CondRewriteSubgoalsAddr (addr', subgoal) ->
+            replace (TermAddr.compose_address addr addr') subgoals subgoal
+       | CondRewriteSubgoals terms ->
+            List.fold_left (fun subgoals t -> replace_subgoal addr t :: subgoals) subgoals terms
+      in
+         replace (TermAddr.make_address []) [] subgoals
 
    (*
-    * Cut rule in a sequent calculus.
+    * Apply a conditional rewrite.
     *)
-   let cutrw t' sent _ seq t =
-      let rw = mk_xrewrite_term t' t in
-      let seq = replace_goal seq rw in
-         t', [seq], RewriteJust (RewriteCut t')
+   let crw_refine sent (crw : cond_rewrite) mseq t =
+      let t', subgoals, just = crw sent [msequent_free_vars mseq] t in
+         t', { crw_goal = t;
+               crw_just = just;
+               crw_subgoal_term = t';
+               crw_subgoals = subgoals
+         }
+
+   (*
+    * Apply a conditional rewrite.
+    *)
+   let crwtactic i (crw : cond_rewrite) (sent : sentinal) (seq : msequent) =
+      let { mseq_goal = goal; mseq_hyps = hyps } = seq in
+      let t =
+         if i = 0 then
+            goal
+         else if i <= List.length hyps then
+            List.nth hyps (pred i)
+         else
+            REF_RAISE(RefineError ("crwtactic", StringIntError ("hyp is out of range", i)))
+      in
+      let t', subgoals, just = crw sent [msequent_free_vars seq] t in
+      let subgoal =
+         if i = 0 then
+            { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t' }
+         else
+            { mseq_vars = FreeVarsDelayed; mseq_hyps = List_util.replace_nth (pred i) t' hyps; mseq_goal = goal }
+      in
+      let subgoals = subgoal :: replace_subgoals seq subgoals in
+         subgoals, CondRewriteJust (seq, just, subgoals)
+
+   (*
+    * Compose the conditional extracts.
+    *)
+   let crw_compose ext1 addr ext2 =
+      let { crw_goal = goal1;
+            crw_just = just1;
+            crw_subgoal_term = goal2;
+            crw_subgoals = subgoals1
+          } = ext1
+      in
+      let { crw_goal = goal3;
+            crw_just = just2;
+            crw_subgoal_term = goal4;
+            crw_subgoals = subgoals2
+          } = ext2
+      in
+         if alpha_equal (term_subterm goal2 addr) goal3 then
+            { crw_goal = goal1;
+              crw_just = CondRewriteCompose (just1, just2);
+              crw_subgoal_term = replace_subterm goal2 addr goal4;
+              crw_subgoals = CondRewriteSubgoalsList [subgoals1; CondRewriteSubgoalsAddr (addr, subgoals2)]
+            }
+         else
+            REF_RAISE(RefineError ("crw_compose", StringError "terms do not match"))
+
+   (*
+    * Reverse the conditional rewrite.
+    *)
+   let crw_reverse
+       { crw_goal = goal;
+         crw_just = just;
+         crw_subgoal_term = subgoal;
+         crw_subgoals = subgoals
+       } =
+      { crw_goal = subgoal;
+        crw_just = CondRewriteReverse just;
+        crw_subgoal_term = goal;
+        crw_subgoals = subgoals
+      }
+
+   (*
+    * Build an extract from the conditional extract.
+    *)
+   let extract_of_crw_extract mseq i
+       { crw_goal = goal;
+         crw_just = just;
+         crw_subgoal_term = subgoal;
+         crw_subgoals = subgoals
+       } =
+      let { mseq_hyps = hyps; mseq_goal = goal' } = mseq in
+      let t =
+         if i = 0 then
+            goal'
+         else if i <= List.length hyps then
+            List.nth hyps (pred i)
+         else
+            REF_RAISE(RefineError ("extract_of_crw_extract", StringIntError ("hyp is out of range", i)))
+      in
+         if alpha_equal goal t then
+            let subgoal =
+               if i = 0 then
+                  { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = subgoal }
+               else
+                  { mseq_vars = FreeVarsDelayed; mseq_hyps = List_util.replace_nth (pred i) subgoal hyps; mseq_goal = goal' }
+            in
+            let subgoals = subgoal :: replace_subgoals mseq subgoals in
+               { ext_goal = mseq;
+                 ext_just = CondRewriteJust (mseq, just, subgoals);
+                 ext_subgoals = subgoals
+               }
+         else
+            REF_RAISE(RefineError ("extract_of_crw_extract", StringError "terms do not match"))
 
    (*
     * Apply the rewrite to an addressed term.
     *)
-   let crwaddr addr crw sent bvars seq t =
+   let crwaddr addr crw sent bvars t =
       LETMACRO BODY =
          let t, (subgoals, just) =
             let f sent bvars t =
-               let t, subgoals, just = crw sent bvars seq t in
+               let t, subgoals, just = crw sent bvars t in
                   t, (subgoals, just)
             in
                apply_var_fun_arg_at_addr (f sent) addr bvars t
@@ -645,73 +977,52 @@ struct
    (*
     * Apply the rewrite at the outermost terms where it does not fail.
     *)
-   let crwhigher crw sent bvars seq t =
-      let t, args =
+   let crwhigher crw sent bvars t =
+      let t', args =
          let f sent bvars t =
-            let t, subgoals, just = crw sent bvars seq t in
+            let t, subgoals, just = crw sent bvars t in
                t, (subgoals, just)
          in
             apply_var_fun_higher (f sent) bvars t
       in
-      let rec flatten = function
-         [subgoals, just] ->
-            subgoals, just
-       | (subgoals, just) :: tl ->
-            let subgoals', just' = flatten tl in
-               subgoals @ subgoals', PairJust (just, just')
-       | [] ->
-            raise (RefineError ("crwhigher", StringError "operation made no progress"))
-      in
-      let subgoals, just = flatten args in
-         t, subgoals, just
-
-   (*
-    * Apply a conditional rewrite.
-    *)
-   let crwtactic (rw : cond_rewrite) (sent : sentinal) (seq : msequent) =
-      let { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } = seq in
-      let t', subgoals, just = rw sent [vars] goal goal in
-      let mk_subgoal subgoal =
-         { mseq_vars = vars; mseq_goal = subgoal; mseq_hyps = hyps }
-      in
-      let subgoals' = List.map mk_subgoal (t' :: subgoals) in
-         subgoals', just
+      let subgoals, just = List.split args in
+         t', CondRewriteSubgoalsList subgoals, CondRewriteHigher (t, just, t')
 
    (*
     * Composition is supplied for efficiency.
     *)
-   let candthenrw crw1 crw2 sent bvars seq t =
+   let candthenrw crw1 crw2 sent bvars t =
       let t', subgoals, just =
          IFDEF VERBOSE_EXN THEN
-            try crw1 sent bvars seq t with
+            try crw1 sent bvars t with
                RefineError (name, x) ->
                   raise (RefineError ("candthenrw", GoalError (name, x)))
          ELSE
-            crw1 sent bvars seq t
+            crw1 sent bvars t
          ENDIF
       in
       let t'', subgoals', just' =
          IFDEF VERBOSE_EXN THEN
-            try crw2 sent bvars seq t' with
+            try crw2 sent bvars t' with
                RefineError (name, x) ->
                   raise (RefineError ("candthenrw", SecondError (name, x)))
          ELSE
-            crw2 sent bvars seq t'
+            crw2 sent bvars t'
          ENDIF
       in
-         t'', subgoals @ subgoals', PairJust (just, just')
+         t'', CondRewriteSubgoalsList [subgoals; subgoals'], CondRewriteCompose (just, just')
 
-   let corelserw crw1 crw2 sent bvars seq t =
+   let corelserw crw1 crw2 sent bvars t =
       IFDEF VERBOSE_EXN THEN
-         try crw1 sent bvars seq t with
+         try crw1 sent bvars t with
             RefineError (name1, x) ->
-               try crw2 sent bvars seq t with
+               try crw2 sent bvars t with
                   RefineError (name2, y) ->
                      raise (RefineError ("corelserw", PairError (name1, x, name2, y)))
       ELSE
-         try crw1 sent bvars seq t with
+         try crw1 sent bvars t with
             _ ->
-               crw2 sent bvars seq t
+               crw2 sent bvars t
       ENDIF
 
    (************************************************************************
@@ -776,6 +1087,11 @@ struct
                   search refiners next
           | PrimRewriteRefiner { prw_refiner = next } ->
                search refiners next
+          | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next } as r ->
+               if n = name then
+                  REF_RAISE(RefineError (string_of_opname n, StringError "ML rewrites can't be justified"))
+               else
+                  search refiners next
 
           | CondRewriteRefiner { crw_name = n; crw_refiner = next } as r ->
                if n = name then
@@ -784,7 +1100,7 @@ struct
                   search refiners next
           | PrimCondRewriteRefiner { pcrw_refiner = next } ->
                search refiners next
-          | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next } as r ->
+          | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = next } as r ->
                if n = name then
                   REF_RAISE(RefineError (string_of_opname n, StringError "ML rewrites can't be justified"))
                else
@@ -827,6 +1143,264 @@ struct
    (************************************************************************
     * EXTRACTION                                                           *
     ************************************************************************)
+
+   (*
+    * Build a rewrite extract out of a justification.
+    *)
+   let rec goal_of_rewrite_just = function
+      RewriteHere (goal, _, _) ->
+         goal
+    | RewriteML (goal, _, _) ->
+         goal
+    | RewriteReverse just ->
+         subgoal_of_rewrite_just just
+    | RewriteCompose (just, _) ->
+         goal_of_rewrite_just just
+    | RewriteAddress (goal, _, _, _) ->
+         goal
+    | RewriteHigher (goal, _, _) ->
+         goal
+
+   and subgoal_of_rewrite_just = function
+      RewriteHere (_, _, subgoal) ->
+         subgoal
+    | RewriteML (_, _, subgoal) ->
+         subgoal
+    | RewriteReverse just ->
+         goal_of_rewrite_just just
+    | RewriteCompose (_, just) ->
+         subgoal_of_rewrite_just just
+    | RewriteAddress (_, _, _, subgoal) ->
+         subgoal
+    | RewriteHigher (_, _, subgoal) ->
+         subgoal
+
+   let rewrite_extract_of_rewrite_just just =
+      { rw_goal = goal_of_rewrite_just just;
+        rw_just = just;
+        rw_subgoal = subgoal_of_rewrite_just just
+      }
+
+   (*
+    * Build a conditional rewrite extract from a justification.
+    *)
+   let rec goal_of_cond_rewrite_just = function
+      CondRewriteHere { cjust_goal = goal } ->
+         goal
+    | CondRewriteML ({ cjust_goal = goal }, _) ->
+         goal
+    | CondRewriteReverse just ->
+         subgoal_of_cond_rewrite_just just
+    | CondRewriteCompose (just, _) ->
+         goal_of_cond_rewrite_just just
+    | CondRewriteAddress (goal, _, _, _) ->
+         goal
+    | CondRewriteHigher (goal, _, _) ->
+         goal
+
+   and subgoal_of_cond_rewrite_just = function
+      CondRewriteHere { cjust_subgoal_term = subgoal } ->
+         subgoal
+    | CondRewriteML ({ cjust_subgoal_term = subgoal }, _) ->
+         subgoal
+    | CondRewriteReverse just ->
+         goal_of_cond_rewrite_just just
+    | CondRewriteCompose (_, just) ->
+         subgoal_of_cond_rewrite_just just
+    | CondRewriteAddress (_, _, _, subgoal) ->
+         subgoal
+    | CondRewriteHigher (_, _, subgoal) ->
+         subgoal
+
+   let rec subgoals_of_cond_rewrite_just = function
+      CondRewriteHere { cjust_subgoals = subgoals } ->
+         CondRewriteSubgoals subgoals
+    | CondRewriteML ({ cjust_subgoals = subgoals }, _) ->
+         CondRewriteSubgoals subgoals
+    | CondRewriteReverse just ->
+         subgoals_of_cond_rewrite_just just
+    | CondRewriteCompose (just1, just2) ->
+         CondRewriteSubgoalsList [subgoals_of_cond_rewrite_just just1; subgoals_of_cond_rewrite_just just2]
+    | CondRewriteAddress (_, addr, just, _) ->
+         CondRewriteSubgoalsAddr (addr, subgoals_of_cond_rewrite_just just)
+    | CondRewriteHigher (_, justl, _) ->
+         CondRewriteSubgoalsList (List.map subgoals_of_cond_rewrite_just justl)
+
+   let cond_rewrite_extract_of_cond_rewrite_just just =
+      { crw_goal = goal_of_cond_rewrite_just just;
+        crw_just = just;
+        crw_subgoal_term = subgoal_of_cond_rewrite_just just;
+        crw_subgoals = subgoals_of_cond_rewrite_just just
+      }
+
+   (*
+    * Turn a justification into an extract.
+    *)
+   let rec goal_of_just = function
+      SingleJust { just_goal = goal } ->
+         goal
+    | MLJust ({ just_goal = goal }, _) ->
+         goal
+    | RewriteJust (goal, _, _) ->
+         goal
+    | CondRewriteJust (goal, _, _) ->
+         goal
+    | ComposeJust (just, _) ->
+         goal_of_just just
+    | NthHypJust (goal, _) ->
+         goal
+    | CutJust { cut_goal = goal } ->
+         goal
+
+   let rec subgoals_of_just = function
+      SingleJust { just_subgoals = subgoals } ->
+         subgoals
+    | MLJust ({ just_subgoals = subgoals }, _) ->
+         subgoals
+    | RewriteJust (_, _, subgoal) ->
+         [subgoal]
+    | CondRewriteJust (_, _, subgoals) ->
+         subgoals
+    | ComposeJust (_, justl) ->
+         List.flatten (List.map subgoals_of_just justl)
+    | NthHypJust _ ->
+         []
+    | CutJust { cut_lemma = cut_lemma; cut_then = cut_then } ->
+         [cut_lemma; cut_then]
+
+   let extract_of_just just =
+      { ext_goal = goal_of_just just;
+        ext_just = just;
+        ext_subgoals = subgoals_of_just just
+      }
+
+   (*
+    * Extract destruction.
+    * These break the extract into parts,
+    * which can be composed to form the original extract.
+    *)
+   let dest_extract { ext_just = just } =
+      match just with
+         SingleJust info ->
+            AtomicExtract info
+       | MLJust (info, _) ->
+            AtomicExtract info
+       | RewriteJust (goal, info, subgoal) ->
+            RewriteExtract (goal, rewrite_extract_of_rewrite_just info, subgoal)
+       | CondRewriteJust (goal, info, subgoals) ->
+            CondRewriteExtract (goal, cond_rewrite_extract_of_cond_rewrite_just info, subgoals)
+       | ComposeJust (just, justl) ->
+            ComposeExtract (extract_of_just just, List.map extract_of_just justl)
+       | NthHypJust (goal, i) ->
+            NthHypExtract (goal, i)
+       | CutJust info ->
+            CutExtract info
+
+   let goal_of_extract ext =
+      ext.ext_goal
+
+   let subgoals_of_extract ext =
+      ext.ext_subgoals
+
+   (*
+    * Break apart a rw_extract.
+    *)
+(*
+   let rec goal_of_rewrite_just = function
+      RewriteHere (goal, _, _) ->
+         goal
+    | RewriteReverse just ->
+         subgoal_of_rewrite_just just
+    | RewriteCompose (just, _) ->
+         goal_of_rewrite_just just
+    | RewriteAddress (goal, _, _, _) ->
+         goal
+    | RewriteHigher (goal, _, _) ->
+         goal
+
+   and subgoal_of_rewrite_just = function
+      RewriteHere (_, _, subgoal) ->
+         subgoal
+    | RewriteReverse just ->
+         goal_of_rewrite_just just
+    | RewriteCompose (_, just) ->
+         subgoal_of_rewrite_just just
+    | RewriteAddress (_, _, _, subgoal) ->
+         subgoal
+    | RewriteHigher (_, _, subgoal) ->
+         subgoal
+*)
+
+   let rewrite_extract_of_rewrite_just just =
+      { rw_goal = goal_of_rewrite_just just;
+        rw_just = just;
+        rw_subgoal = subgoal_of_rewrite_just just
+      }
+
+   let dest_rw_extract { rw_just = just } =
+      match just with
+         RewriteHere (goal, opname, subgoal) ->
+            AtomicRewriteExtract (goal, opname, subgoal)
+       | RewriteML (goal, opname, subgoal) ->
+            AtomicRewriteExtract (goal, opname, subgoal)
+       | RewriteReverse just ->
+            ReverseRewriteExtract (rewrite_extract_of_rewrite_just just)
+       | RewriteCompose (just1, just2) ->
+            ComposeRewriteExtract (rewrite_extract_of_rewrite_just just1,
+                                   rewrite_extract_of_rewrite_just just2)
+       | RewriteAddress (goal, addr, just, subgoal) ->
+            AddressRewriteExtract (goal, addr, rewrite_extract_of_rewrite_just just, subgoal)
+       | RewriteHigher (goal, justl, subgoal) ->
+            HigherRewriteExtract (goal, List.map rewrite_extract_of_rewrite_just justl, subgoal)
+
+   let goal_of_rw_extract rw =
+      rw.rw_goal
+
+   let subgoal_of_rw_extract rw =
+      rw.rw_subgoal
+
+   (*
+    * Conditional rewrite.
+    *)
+   let cond_rewrite_extract_of_cond_rewrite_just just =
+      { crw_goal = goal_of_cond_rewrite_just just;
+        crw_just = just;
+        crw_subgoal_term = subgoal_of_cond_rewrite_just just;
+        crw_subgoals = subgoals_of_cond_rewrite_just just
+      }
+
+   let dest_crw_extract { crw_just = just } =
+      match just with
+         CondRewriteHere info ->
+            AtomicCondRewriteExtract info
+       | CondRewriteML (info, _) ->
+            AtomicCondRewriteExtract info
+       | CondRewriteReverse just ->
+            ReverseCondRewriteExtract (cond_rewrite_extract_of_cond_rewrite_just just)
+       | CondRewriteCompose (just1, just2) ->
+            ComposeCondRewriteExtract (cond_rewrite_extract_of_cond_rewrite_just just1,
+                                       cond_rewrite_extract_of_cond_rewrite_just just2)
+       | CondRewriteAddress (goal, addr, just, subgoal) ->
+            AddressCondRewriteExtract (goal, addr, cond_rewrite_extract_of_cond_rewrite_just just, subgoal)
+       | CondRewriteHigher (goal, justs, subgoal) ->
+            HigherCondRewriteExtract (goal, List.map cond_rewrite_extract_of_cond_rewrite_just justs, subgoal)
+
+   let goal_of_crw_extract crw =
+      crw.crw_goal
+
+   let subgoal_of_crw_extract crw =
+      crw.crw_subgoal_term
+
+   let rec flatten_cond_rewrite_subgoals addr subgoals = function
+      CondRewriteSubgoalsAddr (addr', subgoal) ->
+         flatten_cond_rewrite_subgoals (TermAddr.compose_address addr addr') subgoals subgoal
+    | CondRewriteSubgoalsList subgoals' ->
+         List.fold_left (flatten_cond_rewrite_subgoals addr) subgoals subgoals'
+    | CondRewriteSubgoals terms ->
+         List.map (fun t -> addr, t) terms @ subgoals
+
+   let subgoals_of_crw_extract crw =
+      flatten_cond_rewrite_subgoals (TermAddr.make_address []) [] crw.crw_subgoals
 
    (*
     * When an term is calculated from an extract, we have to search
@@ -875,6 +1449,8 @@ struct
           | CondRewriteRefiner { crw_refiner = next } ->
                insert refiners' next
           | MLRewriteRefiner { ml_rw_refiner = next } ->
+               insert refiners' next
+          | MLCondRewriteRefiner { ml_crw_refiner = next } ->
                insert refiners' next
           | MLRuleRefiner { ml_rule_refiner = next } ->
                insert refiners' next
@@ -955,10 +1531,10 @@ struct
             else
                REF_RAISE(RefineError (string_of_opname name, StringError "axiom proof does not match"))
       in
-      let check_rule rule =
-         let { rule_name = name } = rule in
+      let check_rule rl =
+         let { rule_name = name } = rl in
          let prule = find_rule name in
-            if prule.prule_rule == rule then
+            if prule.prule_rule == rl then
                prule
             else
                REF_RAISE(RefineError (string_of_opname name, StringError "rule proof does not match"))
@@ -1025,17 +1601,13 @@ struct
     *)
    let check = function
       PrimAxiomRefiner pax ->
-         let _ = axiom_proof pax in
-            ()
+         ignore (axiom_proof pax)
     | PrimRuleRefiner prule ->
-         let _ = rule_proof prule in
-            ()
+         ignore (rule_proof prule)
     | PrimRewriteRefiner prw ->
-         rewrite_proof prw;
-         ()
+         rewrite_proof prw
     | PrimCondRewriteRefiner pcrw ->
-         cond_rewrite_proof pcrw;
-         ()
+         cond_rewrite_proof pcrw
     | _ ->
          ()
 
@@ -1043,17 +1615,52 @@ struct
     * Check for a valid rewrite justification.
     *)
    let rec check_rewrite_just check = function
-      RewriteHere op ->
+      RewriteHere (_, op, _) ->
          check op
-    | RewriteAddr (_, just) ->
+    | RewriteML (_, op, _) ->
+         check op
+    | RewriteReverse just ->
          check_rewrite_just check just
-    | RewritePair (just1, just2) ->
+    | RewriteCompose (just1, just2) ->
          check_rewrite_just check just1;
          check_rewrite_just check just2
-    | RewriteHigher justs ->
+    | RewriteAddress (_, _, just, _) ->
+         check_rewrite_just check just
+    | RewriteHigher (_, justs, _) ->
          List.iter (check_rewrite_just check) justs
-    | RewriteCut _ ->
-         ()
+
+   (*
+    * Get the subgoal count of a step in the extract.
+    *)
+   let rec just_subgoal_count = function
+      SingleJust { just_subgoals = subgoals } ->
+         List.length subgoals
+    | MLJust ({ just_subgoals = subgoals }, _) ->
+         List.length subgoals
+    | RewriteJust _ ->
+         1
+    | CondRewriteJust (_, cond, _) ->
+         cond_rewrite_just_subgoal_count cond
+    | ComposeJust (_, justl) ->
+         List.fold_left (fun count just -> count + just_subgoal_count just) 0 justl
+    | NthHypJust _ ->
+         0
+    | CutJust _ ->
+         2
+
+   and cond_rewrite_just_subgoal_count = function
+      CondRewriteHere { cjust_subgoals = subgoals } ->
+         List.length subgoals
+    | CondRewriteML ({ cjust_subgoals = subgoals }, _) ->
+         List.length subgoals
+    | CondRewriteReverse just ->
+         cond_rewrite_just_subgoal_count just
+    | CondRewriteCompose (_, just) ->
+         cond_rewrite_just_subgoal_count just
+    | CondRewriteAddress (_, _, just, _) ->
+         cond_rewrite_just_subgoal_count just
+    | CondRewriteHigher (_, justs, _) ->
+         List.fold_left (fun count just -> count + cond_rewrite_just_subgoal_count just) 0 justs
 
    (*
     * Get the term from an extract.
@@ -1068,69 +1675,94 @@ struct
             check_cond_rewrite = find_cond_rewrite
           } = check_of_find find
       in
-      let split_first = function
-         h::t ->
-            h, t
-       | [] ->
-            raise (Failure "Refine.term_of_extract: extract list is empty")
-      in
-      let split_list i l =
-         try List_util.split_list i l with
-            Failure _ ->
-               raise (Failure "Refine.term_of_extract: extract list too short")
-      in
-      let nth_tl i l =
-         try List_util.nth_tl i l with
-            Failure _ ->
-               raise (Failure "Refine.term_of_extract: extract list too short")
-      in
       let check_rewrite just =
-         check_rewrite_just (fun opname -> let _ = find_refiner opname in ()) just
+         check_rewrite_just (fun opname -> ignore (find_refiner opname)) just
       in
-      let rec construct extracts = function
-         SingleJust { ext_names = names; ext_params = params; ext_refiner = name } ->
+      let invalid_exn =
+         Invalid_argument "Refine.term_of_extract: extract is ill-formed"
+      in
+      let incomplete_exn =
+         RefineError ("Refine.term_of_extract", StringError "proof is incomplete")
+      in
+
+      let rec construct args (rest : (term list -> term) list) = function
+         SingleJust { just_names = names; just_params = params; just_refiner = name } ->
             begin
                match find_refiner name with
                   AxiomRefiner ax ->
-                     axiom_proof (find_axiom ax), extracts
-                | RuleRefiner rule ->
-                     let { rule_count = count } = rule in
-                     let hd, tl = split_list count extracts in
-                        rule_proof (find_rule rule) names params hd, tl
-                | MLRuleRefiner { ml_rule_info = { ml_rule_extract = f } } ->
-                     f (names, params) extracts
-                | RewriteRefiner rw ->
-                     let _ = find_rewrite rw in
-                        split_first extracts
-                | CondRewriteRefiner crw ->
-                     let { crw_count = count } = crw in
-                     let hd, tl = split_first extracts in
-                     let _ = find_cond_rewrite crw in
-                        hd, nth_tl count tl
-                | MLRewriteRefiner { ml_rw_info = { ml_rewrite_extract = f } } ->
-                     f (names, params) extracts
+                     zero_args rest;
+                     axiom_proof (find_axiom ax)
+                | RuleRefiner r ->
+                     let { rule_count = count } = r in
+                     let extracts = count_args args rest count in
+                        rule_proof (find_rule r) names params extracts
                 | _ ->
-                     raise (Failure "Refine.term_of_extract: refine error")
+                     raise invalid_exn
             end
-       | RewriteJust just ->
-            check_rewrite just;
-            split_first extracts
-       | PairJust (just1, just2) ->
-            let extract, extracts = construct extracts just2 in
-               construct (extract :: extracts) just1
        | ComposeJust (just, justl) ->
-            let rec collect extracts = function
-               just :: justl ->
-                  let extract, extracts = construct extracts just in
-                     extract :: collect extracts justl
-             | [] ->
-                  extracts
+            construct args (partition_rest rest justl) just
+       | MLJust ({ just_names = names; just_params = params; just_refiner = name }, f) ->
+            f (names, params) (all_args args rest)
+       | RewriteJust (_, just, _) ->
+            check_rewrite just;
+            one_arg args rest
+       | NthHypJust (_, i) ->
+            List.nth args i
+       | CondRewriteJust (_, just, _) ->
+            (List.hd rest) args
+       | CutJust _ ->
+            match rest with
+               [cut_lemma; cut_then] ->
+                  let lemma_extract = cut_lemma args in
+                     cut_then (args @ [lemma_extract])
+             | _ :: _ :: _ :: _ ->
+                  raise invalid_exn
+             | _ ->
+                  raise incomplete_exn
+
+      (*
+       * Partitioning of rest list.
+       *)
+      and zero_args = function
+         [] ->
+            ()
+       | _ ->
+            raise invalid_exn
+
+      and one_arg args = function
+         [just] ->
+            just args
+       | [] ->
+            raise incomplete_exn
+       | _ ->
+            raise invalid_exn
+
+      and count_args args rest count =
+         let len = List.length rest in
+            if len = 0 then
+               raise incomplete_exn;
+            if len <> count then
+               raise invalid_exn;
+            List.map (fun r -> r args) rest
+
+      and all_args args rest =
+         List.map (fun r -> r args) rest
+
+      and partition_rest rest = function
+         just :: justl ->
+            let count = just_subgoal_count just in
+            let rest, restl =
+               try List_util.split_list count rest with
+                  Failure _ ->
+                     raise incomplete_exn
             in
-               construct (collect extracts justl) just
-       | NthHypJust i ->
-            List.nth args i, extracts
+               (fun args -> construct args rest just) :: partition_rest restl justl
+       | [] ->
+            if rest <> [] then
+               raise invalid_exn;
+            []
       in
-         fst (construct [] just)
+         construct args [] just
 
    (*
     * An empty sentinal for trying refinements.
@@ -1140,8 +1772,22 @@ struct
          ()
       in
          { sent_rewrite = null;
-           sent_cond_rewrite = null;
            sent_ml_rewrite = null;
+           sent_cond_rewrite = null;
+           sent_ml_cond_rewrite = null;
+           sent_axiom = null;
+           sent_rule = null;
+           sent_ml_rule = null
+         }
+
+   let null_sentinal =
+      let null _ =
+         raise (RefineError ("Refine", StringError "refinements are not allowed with the null sentinal"))
+      in
+         { sent_rewrite = null;
+           sent_ml_rewrite = null;
+           sent_cond_rewrite = null;
+           sent_ml_cond_rewrite = null;
            sent_axiom = null;
            sent_rule = null;
            sent_ml_rule = null
@@ -1152,8 +1798,9 @@ struct
     *)
    let sentinal_of_refiner refiner =
       let rewrites = Hashtbl.create 19 in
-      let cond_rewrites = Hashtbl.create 19 in
       let ml_rewrites = Hashtbl.create 19 in
+      let cond_rewrites = Hashtbl.create 19 in
+      let ml_cond_rewrites = Hashtbl.create 19 in
       let axioms = Hashtbl.create 19 in
       let rules = Hashtbl.create 19 in
       let ml_rules = Hashtbl.create 19 in
@@ -1174,13 +1821,13 @@ struct
                ENDIF;
                Hashtbl.add axioms name ax;
                insert refiners next
-       | RuleRefiner rule ->
-            let { rule_name = name; rule_refiner = next } = rule in
+       | RuleRefiner r ->
+            let { rule_name = name; rule_refiner = next } = r in
                IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
                      eprintf "sentinal_of_refiner: add rule %s%t" (string_of_opname name) eflush
                ENDIF;
-               Hashtbl.add rules name rule;
+               Hashtbl.add rules name r;
                insert refiners next
        | RewriteRefiner rw ->
             let { rw_name = name; rw_refiner = next } = rw in
@@ -1190,6 +1837,14 @@ struct
                ENDIF;
                Hashtbl.add rewrites name rw;
                insert refiners next
+       | MLRewriteRefiner mlrw ->
+            let { ml_rw_name = name; ml_rw_refiner = next } = mlrw in
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_sentinal then
+                     eprintf "sentinal_of_refiner: add ML rewrite %s%t" (string_of_opname name) eflush;
+               ENDIF;
+               Hashtbl.add ml_rewrites name mlrw;
+               insert refiners next
        | CondRewriteRefiner crw ->
             let { crw_name = name; crw_refiner = next } = crw in
                IFDEF VERBOSE_EXN THEN
@@ -1198,13 +1853,13 @@ struct
                ENDIF;
                Hashtbl.add cond_rewrites name crw;
                insert refiners next
-       | MLRewriteRefiner mlrw ->
-            let { ml_rw_name = name; ml_rw_refiner = next } = mlrw in
+       | MLCondRewriteRefiner mlrw ->
+            let { ml_crw_name = name; ml_crw_refiner = next } = mlrw in
                IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
-                     eprintf "sentinal_of_refiner: add ML rewrite %s%t" (string_of_opname name) eflush
+                     eprintf "sentinal_of_refiner: add ML rewrite %s%t" (string_of_opname name) eflush;
                ENDIF;
-               Hashtbl.add ml_rewrites name mlrw;
+               Hashtbl.add ml_cond_rewrites name mlrw;
                insert refiners next
        | MLRuleRefiner mlrule ->
             let { ml_rule_name = opname; ml_rule_refiner = next } = mlrule in
@@ -1259,11 +1914,13 @@ struct
                end
       in
       let check_rewrite rw = check_sentinal rewrites rw.rw_name rw in
-      let check_cond_rewrite crw = check_sentinal cond_rewrites crw.crw_name crw in
       let check_ml_rewrite mlrw = check_sentinal ml_rewrites mlrw.ml_rw_name mlrw in
+      let check_cond_rewrite crw = check_sentinal cond_rewrites crw.crw_name crw in
+      let check_ml_cond_rewrite mlrw = check_sentinal ml_cond_rewrites mlrw.ml_crw_name mlrw in
          { sent_rewrite = check_rewrite;
-           sent_cond_rewrite = check_cond_rewrite;
            sent_ml_rewrite = check_ml_rewrite;
+           sent_cond_rewrite = check_cond_rewrite;
+           sent_ml_cond_rewrite = check_ml_cond_rewrite;
            sent_axiom = check_axiom;
            sent_rule = check_rule;
            sent_ml_rule = check_ml_rule
@@ -1300,16 +1957,22 @@ struct
          }
       in
       let refiner' = AxiomRefiner ref_axiom in
-      let tac _ _ (sent : sentinal) { mseq_goal = goal } =
-         if alpha_equal (nth_concl goal 0) term then
+      let tac _ _ (sent : sentinal) ({ mseq_goal = goal } as goal') =
+         if alpha_equal (nth_concl goal 1) term then
             begin
                sent.sent_axiom ref_axiom;
-               [], SingleJust { ext_names = [||]; ext_params = []; ext_refiner = opname }
+               [], SingleJust { just_goal = goal';
+                                just_addrs = [||];
+                                just_names = [||];
+                                just_params = [];
+                                just_refiner = opname;
+                                just_subgoals = []
+               }
             end
          else
             REF_RAISE(RefineError ("refine_axiom", TermMatchError (goal, name)))
       in
-         let _ = check_axiom term in
+      let _ = check_axiom term in
          refiner', (tac : prim_tactic)
 
    let add_prim_axiom build name term =
@@ -1380,19 +2043,23 @@ struct
       in
       let refiner' = RuleRefiner ref_rule in
       let tac (addrs, names) params sent mseq =
-         let vars = mseq.mseq_vars in
+         let vars = msequent_free_vars mseq in
          let subgoals, names' = apply_rewrite rw (addrs, names, [vars]) mseq.mseq_goal params in
          let make_subgoal subgoal =
-            { mseq_vars = vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
+            { mseq_vars = FreeVars vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
          in
+         let subgoals = List.map make_subgoal subgoals in
          let just =
-            SingleJust { ext_names = names';
-                         ext_params = params;
-                         ext_refiner = opname
+            SingleJust { just_goal = mseq;
+                         just_addrs = addrs;
+                         just_names = names';
+                         just_params = params;
+                         just_refiner = opname;
+                         just_subgoals = subgoals
             }
          in
             sent.sent_rule ref_rule;
-            List.map make_subgoal subgoals, just
+            subgoals, just
       in
          refiner', (tac : prim_tactic)
 
@@ -1436,10 +2103,10 @@ struct
       ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
-            RuleRefiner rule ->
+            RuleRefiner r ->
                let compute_ext = compute_rule_ext name vars params args result in
                   PrimRuleRefiner { prule_proof = Extracted compute_ext;
-                                    prule_rule = rule;
+                                    prule_rule = r;
                                     prule_refiner = refiner
                   }
           | _ ->
@@ -1452,10 +2119,10 @@ struct
       ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
-            RuleRefiner rule ->
+            RuleRefiner r ->
                let compute_ext () =
                   let ext = ext () in
-                  let { rule_rule = goal } = rule in
+                  let { rule_rule = goal } = r in
                   let { ext_goal = goal'; ext_subgoals = subgoals } = ext in
                   let _ =
                      if not (msequent_alpha_equal goal' goal) or subgoals <> [] then
@@ -1465,7 +2132,7 @@ struct
                      compute_rule_ext name vars params args t
                in
                   PrimRuleRefiner { prule_proof = Delayed compute_ext;
-                                    prule_rule = rule;
+                                    prule_rule = r;
                                     prule_refiner = refiner
                   }
           | _ ->
@@ -1474,27 +2141,29 @@ struct
    (*
     * An ML rule
     *)
-   let add_ml_rule build name info =
+   let add_ml_rule build name rw =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.add_ml_rule: %s%t" name eflush
       ENDIF;
-      let { ml_rule_rewrite = rw } = info in
       let { build_opname = opname; build_refiner = refiner } = build in
       let opname = mk_opname name opname in
       let ref_rule =
          { ml_rule_name = opname;
-           ml_rule_info = info;
+           ml_rule_info = rw;
            ml_rule_refiner = refiner
          }
       in
       let tac (addrs, names) params sent mseq =
-         let subgoals, names = rw addrs names mseq params in
+         let subgoals, names, ext = rw addrs names mseq params in
          let just =
-            SingleJust { ext_names = names;
-                         ext_params = params;
-                         ext_refiner = opname
-            }
+            MLJust ({ just_goal = mseq;
+                      just_addrs = addrs;
+                      just_names = names;
+                      just_params = params;
+                      just_refiner = opname;
+                      just_subgoals = subgoals
+                    }, ext)
          in
             sent.sent_ml_rule ref_rule;
             subgoals, just
@@ -1543,7 +2212,7 @@ struct
          match apply_rewrite rw ar0_ar0_null t [] with
             [t'], _ ->
                sent.sent_rewrite ref_rewrite;
-               t', RewriteHere opname
+               t', RewriteHere (t, opname, t')
           | [], _ ->
                raise (Failure "Refine.add_rewrite: no contracta")
           | _ ->
@@ -1604,6 +2273,30 @@ struct
           | _ ->
                REF_RAISE(RefineError (name, StringError "not a rewrite"))
 
+   (*
+    * An ML rewrite.
+    *)
+   let add_ml_rewrite build name rw =
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_ml_rewrite: %s%t" name eflush
+      ENDIF;
+      let { build_opname = opname; build_refiner = refiner } = build in
+      let opname = mk_opname name opname in
+      let ref_rw =
+         { ml_rw_name = opname;
+           ml_rw_info = rw;
+           ml_rw_refiner = refiner
+         }
+      in
+      let refiner' = MLRewriteRefiner ref_rw in
+      let rw (sent : sentinal) (t : term) =
+         let t' = rw t in
+            sent.sent_ml_rewrite ref_rw;
+            t', RewriteML (t, opname, t')
+      in
+         refiner', (rw : prim_rewrite)
+
    (************************************************************************
     * CONDITIONAL REWRITE                                                  *
     ************************************************************************)
@@ -1627,17 +2320,18 @@ struct
          }
       in
       let refiner' = CondRewriteRefiner ref_crw in
-      let rw' (vars, params) (sent : sentinal) (bvars : string list list) seq t =
-         (* BUG: is alpha variance compute correctly by replace_goal? *)
+      let rw' (vars, params) (sent : sentinal) (bvars : string list list) t =
          match apply_rewrite rw ([||], vars, bvars) t params with
             (t' :: subgoals), names ->
-               let subgoals' = List.map (replace_goal seq) subgoals in
-                  sent.sent_cond_rewrite ref_crw;
+               sent.sent_cond_rewrite ref_crw;
                   t',
-                  subgoals',
-                  SingleJust { ext_names = names;
-                               ext_params = params;
-                               ext_refiner = opname
+                  CondRewriteSubgoals subgoals,
+                  CondRewriteHere { cjust_goal = t;
+                                    cjust_names = vars;
+                                    cjust_params = params;
+                                    cjust_refiner = opname;
+                                    cjust_subgoal_term = t';
+                                    cjust_subgoals = subgoals
                   }
              | [], _ ->
                   raise (Failure "Refine.add_cond_rewrite: no contracta")
@@ -1685,8 +2379,7 @@ struct
                      if equal_hyps goal_hyps sub_hyps &
                         List_util.for_all2 alpha_equal (redex :: contractum :: subgoals) (goal :: subgoals)
                      then
-                        let _ = term_of_extract refiner ext []
-                        in ()
+                        ignore (term_of_extract refiner ext [])
                      else
                         REF_RAISE(RefineError (name, StringError "derivation does not match"))
                in
@@ -1700,30 +2393,32 @@ struct
    (*
     * An ML rewrite.
     *)
-   let add_ml_rewrite build name info =
+   let add_ml_cond_rewrite build name rw =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.add_cond_rewrite: %s%t" name eflush
       ENDIF;
-      let { ml_rewrite_rewrite = rw } = info in
       let { build_opname = opname; build_refiner = refiner } = build in
       let opname = mk_opname name opname in
       let ref_crw =
-         { ml_rw_name = opname;
-           ml_rw_info = info;
-           ml_rw_refiner = refiner
+         { ml_crw_name = opname;
+           ml_crw_info = rw;
+           ml_crw_refiner = refiner
          }
       in
-      let refiner' = MLRewriteRefiner ref_crw in
-      let rw (vars, params) (sent : sentinal) (bvars : string list list) seq t =
-         let t, subgoals, names = rw vars bvars params seq t in
-            sent.sent_ml_rewrite ref_crw;
-            t,
-            subgoals,
-            SingleJust { ext_names = names;
-                         ext_params = params;
-                         ext_refiner = opname
-            }
+      let refiner' = MLCondRewriteRefiner ref_crw in
+      let rw (vars, params) (sent : sentinal) (bvars : string list list) t =
+         let t', subgoals, names, ext = rw vars bvars params t in
+            sent.sent_ml_cond_rewrite ref_crw;
+            t',
+            CondRewriteSubgoals subgoals,
+            CondRewriteML ({ cjust_goal = t;
+                             cjust_names = names;
+                             cjust_params = params;
+                             cjust_refiner = opname;
+                             cjust_subgoal_term = t';
+                             cjust_subgoals = subgoals
+                           }, ext)
       in
          refiner', (rw : prim_cond_rewrite)
 
@@ -1796,6 +2491,11 @@ struct
          check refiner;
          build.build_refiner <- refiner
 
+   let create_ml_rewrite build name rw =
+      let refiner, rw' = add_ml_rewrite build name rw in
+         build.build_refiner <- refiner;
+         (rw' : prim_rewrite)
+
    (*
     * Condiitional rewrites.
     *)
@@ -1816,8 +2516,8 @@ struct
          check refiner;
          build.build_refiner <- refiner
 
-   let create_ml_rewrite build name rw =
-      let refiner, rw' = add_ml_rewrite build name rw in
+   let create_ml_cond_rewrite build name rw =
+      let refiner, rw' = add_ml_cond_rewrite build name rw in
          build.build_refiner <- refiner;
          (rw' : prim_cond_rewrite)
 
@@ -1856,6 +2556,8 @@ struct
                      ri_rw_redex = redex;
                      ri_rw_contractum = con
          }, r
+    | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = r } ->
+         RIMLRewrite { ri_ml_rw_name = n }, r
     | PrimRewriteRefiner { prw_rewrite = r1; prw_refiner = r2 } ->
          RIPrimRewrite { ri_prw_rewrite = RewriteRefiner r1 }, r2
 
@@ -1868,8 +2570,8 @@ struct
          r
     | PrimCondRewriteRefiner { pcrw_rewrite = r1; pcrw_refiner = r2 } ->
          RIPrimRewrite { ri_prw_rewrite = CondRewriteRefiner r1 }, r2
-    | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = r } ->
-         RIMLRewrite { ri_ml_rw_name = n }, r
+    | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = r } ->
+         RIMLCondRewrite { ri_ml_rw_name = n }, r
 
     | PairRefiner (par, r) ->
          RIParent par, r

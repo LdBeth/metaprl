@@ -33,8 +33,8 @@
  * jyh@cs.cornell.edu
  *)
 
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMeta
+open Refiner_sig
+
 open Filter_type
 
 (************************************************************************
@@ -81,21 +81,21 @@ val find_rewrite : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info 
    string ->
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
-val find_mlrewrite : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
+val find_mlrewrite : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
    string ->
-   (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
+   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
-val find_mlaxiom : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
+val find_mlaxiom : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
    string ->
-   (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
+   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
 val find_module : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
    string ->
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
-val find_dform : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
-   term ->
-   (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
+val find_dform : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
+   string ->
+   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
 val find_prec : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
    string ->
@@ -112,9 +112,9 @@ val get_infixes : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info -
 val get_proofs : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
    (string * 'proof) list
 
-val find : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
+val find : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
    string ->
-   (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc
+   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc
 
 val parents : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
    module_path list
@@ -124,9 +124,9 @@ val add_command : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info -
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc ->
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info
 
-val set_command : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
-   (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc ->
-   (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info
+val set_command : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
+   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc ->
+   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info
 
 (* Utilities *)
 val summary_map :
@@ -138,101 +138,105 @@ val summary_map :
 (*
  * Term conversion.
  *)
-val term_of_meta_term : meta_term -> term
-val meta_term_of_term : term -> meta_term
+module FilterSummaryTerm (ToTerm : RefinerSig) :
+sig
+   open ToTerm.TermType
 
-val term_of_rewrite :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   ('term, 'proof, 'expr) rewrite_info ->
-   term
-val term_of_cond_rewrite :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   ('term, 'proof, 'expr) cond_rewrite_info ->
-   term
-val term_of_axiom :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   ('term, 'proof, 'expr) axiom_info ->
-   term
-val term_of_rule :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   ('term, 'meta_term, 'proof, 'expr) rule_info ->
-   term
-val term_of_opname :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   'term opname_info -> term
-val term_of_mlrewrite :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   ('term, 'expr) mlterm_info ->
-   term
-val term_of_mlaxiom :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   ('term, 'expr) mlterm_info ->
-   term
-val term_of_parent :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   'ctyp parent_info ->
-   term
-val term_of_dform :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   ('term, 'expr) dform_info ->
-   term
-val term_of_prec : string -> term
-val term_of_prec_rel : prec_rel_info -> term
-val term_of_id : int -> term
-val term_of_resource :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   'ctyp resource_info ->
-   term
-val term_of_infix : string -> term
-val term_of_summary_item :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   'item ->
-   term
-val term_of_magic_block :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   'item magic_info ->
-   term
-val term_list :
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-    term, term, term, term, term, term) convert ->
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
-   term list
-val of_term_list :
-   (term, term, term, term, term, term, 'term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) convert ->
-   term list ->
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info
+   val term_of_meta_term : meta_term -> term
+   val meta_term_of_term : term -> meta_term
 
-(*
- * Interface checking implem/interf/exception.
- *)
-val check_implementation :
-   (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info ->
-   (term, meta_term, 'proof2, 'ctyp2, 'expr2, 'item2) module_info ->
-   unit
+   val term_of_rewrite :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      ('term, 'proof, 'expr) rewrite_info ->
+      term
+   val term_of_cond_rewrite :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      ('term, 'proof, 'expr) cond_rewrite_info ->
+      term
+   val term_of_axiom :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      ('term, 'proof, 'expr) axiom_info ->
+      term
+   val term_of_rule :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      ('term, 'meta_term, 'proof, 'expr) rule_info ->
+      term
+   val term_of_opname :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      'term opname_info -> term
+   val term_of_mlrewrite :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      ('term, 'expr) mlterm_info ->
+      term
+   val term_of_mlaxiom :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      ('term, 'expr) mlterm_info ->
+      term
+   val term_of_parent :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      'ctyp parent_info ->
+      term
+   val term_of_dform :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      ('term, 'expr) dform_info ->
+      term
+   val term_of_prec : string -> term
+   val term_of_prec_rel : prec_rel_info -> term
+   val term_of_id : int -> term
+   val term_of_resource :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      'ctyp resource_info ->
+      term
+   val term_of_infix : string -> term
+   val term_of_summary_item :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      'item ->
+      term
+   val term_of_magic_block :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      'item magic_info ->
+      term
+   val term_list :
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term) convert ->
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
+      term list
+   val of_term_list :
+      (term, term, term, term, term, term, 'term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) convert ->
+      term list ->
+      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info
+   (*
+    * Interface checking.
+    *)
+   val check_implementation :
+      (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info ->
+      (term, meta_term, 'proof2, 'ctyp2, 'expr2, 'item2) module_info ->
+      unit
 
-val copy_proofs :
-   ('proof1 -> 'proof2 -> 'proof1) ->
-   (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info ->
-   (term, meta_term, 'proof2, 'ctyp2, 'expr2, 'item2) module_info ->
-   (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info
+   val copy_proofs :
+      ('proof1 -> 'proof2 -> 'proof1) ->
+      (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info ->
+      (term, meta_term, 'proof2, 'ctyp2, 'expr2, 'item2) module_info ->
+      (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info
+end
 
 (*
  * Debugging.
  *)
-val eprint_command : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item -> unit
-val eprint_info : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info -> unit
+val eprint_command : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item -> unit
+val eprint_info : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 val debug_summary : bool ref
 

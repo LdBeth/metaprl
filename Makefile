@@ -27,11 +27,11 @@ REFINER_DIRS =\
 
 MP_DIRS =\
 	ensemble\
+	theories/boot\
 	theories/tactic\
 	theories/ocaml\
 	theories/base\
 	theories/itt\
-	theories/czf\
 	theories/tptp\
 	theories/reflect_itt\
 	theories/fol

@@ -33,14 +33,13 @@
  * jyh@cs.cornell.edu
  *)
 
-include Tacticals
-
 include Proof_edit
 include Package_info
-include Package_df
-include Shell_null
 include Shell_rewrite
 include Shell_rule
+include Shell_package
+include Shell_root
+include Shell_p4_sig
 
 open Printf
 open Mp_debug
@@ -57,15 +56,15 @@ open Rformat
 open Filter_type
 open Filter_summary
 
-open Tacticals
+open Tactic_type
+open Tactic_type.Tacticals
 open Mptop
 
-open Proof_type
-open Package_type
+open Package_sig
 open Package_info
-open Package_df
-open Shell_type
-open Shell_p4_type
+open Proof_edit
+open Shell_sig
+open Shell_p4_sig
 
 (*
  * Show that the file is loading.
@@ -76,9 +75,6 @@ let _ =
 
 let debug_refine = load_debug "refine"
 
-external restart_gmon : unit -> unit = "restart_gmon"
-external stop_gmon : unit -> unit = "stop_gmon"
-
 let debug_shell =
    create_debug (**)
       { debug_name = "shell";
@@ -86,6 +82,15 @@ let debug_shell =
         debug_value = false
       }
 
+(*
+ * Control profiling.
+ *)
+external restart_gmon : unit -> unit = "restart_gmon"
+external stop_gmon : unit -> unit = "stop_gmon"
+
+(*
+ * Shell takes input parser as an argument.
+ *)
 module Shell (ShellP4 : ShellP4Sig) =
 struct
    (************************************************************************
@@ -93,58 +98,123 @@ struct
     ************************************************************************)
 
    (*
-    * Info need for this shell.
+    * This is the info we need for each subshell.
+    * The subshells can be threaded; we must make this shell
+    * thread-safe.
     *)
-   type shell_info =
+   type t =
       { (* Display *)
          mutable width : int;
          mutable df_mode : string;
+         mutable port : Mux_channel.session option;
 
          (* Current module and path and proof *)
          mutable dir : string list;
          mutable package : Package.package option;
          mutable proof : edit_object;
 
-         (* All loaded modules *)
-         packages : Package.t
+         (* Handle to current shell *)
+         shell : ShellP4.t
       }
 
    (************************************************************************
-    * INITIAL BASE                                                         *
+    * GLOBAL VALUES                                                        *
     ************************************************************************)
 
    (*
-    * This is the info for this shell.
+    * All loaded modules.
     *)
-   let info =
-      { width = 80;
-        df_mode = "prl";
-        dir = [];
-        package = None;
-        packages = Package.create ShellP4.parse_string ShellP4.eval_tactic (ShellP4.get_includes ());
-        proof = Shell_null.null_object
-      }
+   let packages = Package.create (ShellP4.get_includes ())
+
+   let default_mode_base =
+      try Package.get_dforms "summary" with
+         Not_found ->
+            eprintf "Can't install Summary display forms%t" eflush;
+            Dform_print.null_mode_base
 
    (************************************************************************
-    * UTILITIES                                                            *
+    * IMPLEMENTATION                                                       *
     ************************************************************************)
+
+   (*
+    * Don't let the window shrink below this size.
+    *)
+   let min_screen_width = 40
 
    (*
     * Get the current "prl" printing base.
     *)
-   let get_db dbase =
-      let dbase' =
-         match info.package with
-            Some mod_info ->
-               if !debug_shell then
-                  eprintf "Selecting display forms from %s%t" (Package.name mod_info) eflush;
-               Package.dforms mod_info
+   let get_dfbase info =
+      match info.package with
+         Some mod_info ->
+            if !debug_shell then
+               eprintf "Selecting display forms from %s%t" (Package.name mod_info) eflush;
+            Package.dforms mod_info
+       | None ->
+            if !debug_shell then
+               eprintf "Restoring default display forms%t" eflush;
+            default_mode_base
+
+   let get_display_mode info =
+      let dfbase = get_dfbase info in
+         match info.port with
+            Some port ->
+               DisplayGraphical (port, dfbase)
           | None ->
-               if !debug_shell then
-                  eprintf "Restoring default display forms%t" eflush;
-               dbase
-      in
-         get_mode_base dbase' info.df_mode
+               DisplayText (dfbase, info.df_mode)
+
+   let get_db info =
+      let dfbase = get_dfbase info in
+         get_mode_base dfbase info.df_mode
+
+   let set_db info mode =
+      info.df_mode <- mode
+
+   (*
+    * Create a new sub-shell.
+    *)
+   let create_aux port shell =
+      let dfmode = "prl" in
+      let display_mode = DisplayText (default_mode_base, dfmode) in
+      let proof = Shell_root.create packages display_mode in
+         { width = 80;
+           df_mode = dfmode;
+           dir = [];
+           package = None;
+           port = port;
+           proof = proof;
+           shell = shell
+         }
+
+   (*
+    * Global values.
+    *)
+   let global_lock = Mutex.create ()
+
+   let global = create_aux None (ShellP4.get_current_state ())
+
+   let global_shells = ref [global]
+
+   let current_shell = ref global
+
+   let get_current_shell () =
+      !current_shell
+
+   let synchronize info f x =
+      Mutex.lock global_lock;
+      try
+         let result = f x in
+            Mutex.unlock global_lock;
+            result
+      with
+         exn ->
+            Mutex.unlock global_lock;
+            let buf = Rformat.new_buffer () in
+            let db = get_db info in
+               TacticExn.format_exn db buf exn;
+               Rformat.print_to_channel info.width buf stderr;
+               flush stderr;
+               raise exn
 
    (*
     * Get the current package.
@@ -157,9 +227,18 @@ struct
             raise (RefineError ("Shell.get_current_package", StringError "no current package"))
 
    (*
+    * Parsing arguments come from the shell.
+    *)
+   let get_parse_arg info =
+      let shell = info.shell in
+      let parse = ShellP4.parse_string shell in
+      let eval = ShellP4.eval_tactic shell in
+         parse, eval
+
+   (*
     * Update the timestamp.
     *)
-   let touch () =
+   let touch info =
       let pack = get_current_package info in
          try Package.touch pack with
             Failure "touch" ->
@@ -169,28 +248,19 @@ struct
    (*
     * Change the status so that we can write to the file.
     *)
-   let set_writeable () =
+   let set_writeable info =
       let pack = get_current_package info in
          Package.set_status pack Modified
 
    (*
-    * Term printer.
+    * Display possible exceptions.
     *)
-   let print_term dbase t =
-      let db = get_db dbase in
-      let buf = new_buffer () in
-         Dform.format_term db buf t;
-         Format.print_string (print_to_string info.width buf)
-
-   let print_error_term ofile t =
-      let db = get_db null_mode_base in
-      let buf = new_buffer () in
-         Dform.format_term db buf t;
-         output_string ofile (print_to_string info.width buf)
-
-   let print_exn f x =
-      let db = get_db null_mode_base in
-         Filter_exn.print db f x
+   let print_exn info f x =
+      try TacticExn.print (get_db info) f x with
+         RefineError _ ->
+            raise (RefineError ("Shell", ToploopIgnoreError))
+       | exn ->
+            raise exn
 
    (************************************************************************
     * VIEWING                                                              *
@@ -203,8 +273,14 @@ struct
     * Also, "~" refers to the second level from top, e.g. cd "~" goes to
     * the current module.
     *)
-   let parse_path name =
-      let home = (match info.dir with [] -> [] | modname::_ -> [modname]) in
+   let parse_path info name =
+      let home =
+         match info.dir with
+            [] ->
+               []
+          | modname :: _ ->
+               [modname]
+      in
       let rec aux dir names =
          match names with
             [] -> dir
@@ -233,24 +309,33 @@ struct
    (*
     * Update the current item being edited.
     *)
-   let set_item modname name =
-      let pack = Package.get info.packages modname in
+   let set_packages info =
+      info.proof <- Shell_root.view packages (get_display_mode info)
+
+   let set_package info modname =
+      let pack = Package.get packages modname in
+         info.proof <- Shell_package.view pack (get_parse_arg info) (get_display_mode info)
+
+   let set_item info modname name =
+      let parse_arg = get_parse_arg info in
+      let display_mode = get_display_mode info in
+      let pack = Package.get packages modname in
       let item =
-         try Package.find pack name with
+         try Package.find pack parse_arg name with
             Not_found ->
                eprintf "Item '/%s/%s' not found%t" modname name eflush;
                raise Not_found
       in
-      let item =
+      let proof =
          match item with
             Rewrite rw ->
-               Shell_rewrite.view_rw pack rw
+               Shell_rewrite.view_rw pack parse_arg display_mode rw
           | CondRewrite crw ->
-               Shell_rewrite.view_crw pack crw
+               Shell_rewrite.view_crw pack parse_arg display_mode crw
           | Axiom ax ->
-               Shell_rule.view_axiom pack ax
+               Shell_rule.view_axiom pack parse_arg display_mode ax
           | Rule rl ->
-               Shell_rule.view_rule pack rl
+               Shell_rule.view_rule pack parse_arg display_mode rl
           | Opname _ ->
                eprintf "Editing opname '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
@@ -292,88 +377,214 @@ struct
                eprintf "Editing magic block '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
       in
-         info.proof <- item
+         info.proof <- proof
 
    (*
     * Display the current proof.
     *)
-   let display_proof () =
-      (* Get the package and item *)
-      let mod_info = get_current_package info in
-      let edit = info.proof in
-      let dformer = Package.dforms mod_info in
-      let modname = Package.name mod_info in
-      let buf = new_buffer () in
-      let db = get_mode_base dformer info.df_mode in
-         edit.edit_format db buf;
-         print_to_channel info.width buf stdout;
-         flush stdout
+   let display_proof info proof =
+      proof.edit_display ()
 
    (*
     * Display the "root" directory.
     * This is just a list of the "important" packages.
     *)
-   let view_packages () =
-      let buf = new_buffer () in
-         format_packages buf info.packages;
-         format_newline buf;
-         output_string stdout "\n--+--modules--+--\nModule listing dir: modules; path: /\n--\n";
-         print_to_channel info.width buf stdout;
-         output_string stdout "--+--modules--+--\n";
-         flush stdout
+   let view_packages info =
+      let proof = Shell_root.view packages (get_display_mode info) in
+         display_proof info proof
 
    (*
     * Display a particular package.
     *)
-   let view_package name =
-      let pack = Package.get info.packages name in
-      let buf = new_buffer () in
-         format_implementation info.df_mode buf pack;
-         printf "\n--+--theory--+--\nTheory listing for package: %s; path: /%s\n" name name;
-         print_to_channel info.width buf stdout;
-         output_string stdout "--+--theory--+--\n";
-         flush stdout
+   let view_package info name =
+      let pack = Package.get packages name in
+      let parse_arg = get_parse_arg info in
+      let display_mode = get_display_mode info in
+      let proof = Shell_package.view pack parse_arg display_mode in
+         display_proof info proof
 
    (*
     * View an item in a package.
     *)
-   let view_item modname name =
-      (* Get the package and item *)
-      let _ = eprintf "View item /%s/%s%t" modname name eflush in
-      let buf = new_buffer () in
-      let mod_info = get_current_package info in
-      let db = get_mode_base (Package.dforms mod_info) info.df_mode in
-         info.proof.edit_format db buf;
-         print_to_channel info.width buf stdout;
-         flush stdout
+   let view_item info modname name =
+      display_proof info info.proof
 
    (*
     * General purpose displayer.
     *)
-   let view name =
-      let dir = parse_path name in
+   let view info name =
+      let dir = parse_path info name in
          match dir with
             [] ->
-               view_packages ()
+               view_packages info
           | [modname] ->
-               view_package modname
+               view_package info modname
           | modname :: item :: _ ->
-               view_item modname item
+               view_item info modname item
 
-   let ls () =
-      view "."
+   let ls info =
+      print_exn info (view info) "."
 
    (*
     * Window width.
     *)
-   let set_window_width i =
-      info.width <- if i < min_screen_width then min_screen_width else i
+   let set_window_width info i =
+      info.width <- max min_screen_width i
 
    (*
     * Show the directory.
     *)
-   let pwd () =
+   let pwd info =
       string_of_path info.dir
+
+   (************************************************************************
+    * PROCESS CONTROL                                                      *
+    ************************************************************************)
+
+   (*
+    * Format the process name.
+    * We include the pid, and the current directory.
+    *)
+   let format_process_name shell =
+      let port =
+         match shell.port with
+            Some port ->
+               Mux_channel.id_of_session port
+          | None ->
+               0
+      in
+         sprintf "[%d] %s" port (string_of_path shell.dir)
+
+   (*
+    * Copy the current shell.
+    *)
+   let fork =
+      let fork shell =
+         let { width = old_width;
+               df_mode = old_mode;
+               dir = old_dir;
+               package = old_package;
+               port = old_port;
+               proof = old_proof;
+               shell = old_shell
+             } = shell
+         in
+         let new_port =
+            match old_port with
+               Some session ->
+                  Some (Mux_channel.new_session session)
+             | None ->
+                  None
+         in
+         let new_proof = old_proof.edit_copy () in
+         let new_shell = ShellP4.fork old_shell in
+         let new_shell =
+            { width = old_width;
+              df_mode = old_mode;
+              dir = old_dir;
+              package = old_package;
+              port = new_port;
+              proof = new_proof;
+              shell = new_shell
+            }
+         in
+            global_shells := new_shell :: !global_shells;
+            current_shell := new_shell;
+            ShellP4.set_current_state new_shell.shell;
+            format_process_name new_shell
+      in
+         (fun shell -> synchronize shell fork shell)
+
+   (*
+    * Show current process id.
+    *)
+   let pid shell =
+      format_process_name shell
+
+   (*
+    * Show all process names.
+    *)
+   let jobs shell =
+      let jobs shell =
+         let project shell =
+            let pid =
+               match shell.port with
+                  Some session ->
+                     Mux_channel.id_of_session session
+                | None ->
+                     0
+            in
+               pid, shell
+         in
+         let compare (pid1, _) (pid2, _) =
+            pid1 < pid2
+         in
+         let shells = List.map project !global_shells in
+         let shells = Sort.list compare shells in
+            String_util.concat "\n" (List.map (fun (_, shell) -> format_process_name shell) shells)
+      in
+         synchronize shell jobs shell
+
+   (*
+    * Switch jobs.
+    *)
+   let shell_of_id id =
+      let rec search = function
+         [] ->
+            raise Not_found
+       | shell :: tl ->
+            match shell.port with
+               Some session ->
+                  if id = Mux_channel.id_of_session session then
+                     shell
+                  else
+                     search tl
+             | None ->
+                  search tl
+      in
+         search !global_shells
+
+   let fg shell =
+      let fg id =
+         let shell = shell_of_id id in
+            current_shell := shell;
+            ShellP4.set_current_state shell.shell;
+            format_process_name shell
+      in
+         synchronize shell fg
+
+   (*
+    * Interface to the HTTP shell.
+    *)
+   let set_port port =
+      global.port <- port;
+      try
+         print_exn global ls global
+      with
+         exn ->
+            ()
+
+   (*
+    * Evaluate an expression in some shell.
+    *)
+   let eval id text =
+      let shell =
+         synchronize !current_shell shell_of_id id
+      in
+         try
+            print_exn shell (fun text ->
+                  begin
+                     match shell.port with
+                        Some port ->
+                           eprintf "Shell [%d]: %s%t" (Mux_channel.id_of_session port) text eflush
+                      | None ->
+                           ()
+                  end;
+                  ShellP4.eval_expr shell.shell text;
+                  ls shell) text
+         with
+            exn ->
+               ()
 
    (************************************************************************
     * MODULES                                                              *
@@ -382,65 +593,52 @@ struct
    (*
     * Load a package if it is not already loaded.
     *)
-   let load name =
-      let load name =
-         let _ =
-            try
-               let pack = Package.get info.packages name in
-                  match Package.status pack with
-                     Modified ->
-                        raise (Failure (sprintf "Shell.load: package '%s' is modified" name))
-                   | _ ->
-                        ()
-            with
-               Not_found ->
-                  ()
-         in
-         let _ = Package.load info.packages name in
-            ()
+   let load info name =
+      let _ =
+         try
+            let pack = Package.get packages name in
+               match Package.status pack with
+                  Modified ->
+                     raise (Failure (sprintf "Shell.load: package '%s' is modified" name))
+                | _ ->
+                     ()
+         with
+            Not_found ->
+               ()
       in
-         print_exn load name
+         ignore (Package.load packages (get_parse_arg info) name)
 
    (*
     * Make a new package.
     * Right now we only allow packages at the top level.
     *)
-   let create_pkg name =
-      let create name =
-         match parse_path name with
-            [modname] ->
-               (* Top level *)
-               let _ = Package.create_package info.packages modname in
-                  view name
-          | [] ->
-               raise (Failure "Shell.create_package: can't create root package")
-          | _ ->
-               raise (Failure "Shell.create_package: packages can't be nested right now")
-      in
-         print_exn create name
+   let create_pkg info name =
+      match parse_path info name with
+         [modname] ->
+            (* Top level *)
+            let _ = Package.create_package packages (get_parse_arg info) modname in
+               view info name
+       | [] ->
+            raise (Failure "Shell.create_package: can't create root package")
+       | _ ->
+            raise (Failure "Shell.create_package: packages can't be nested right now")
 
    (*
     * Save the current package.
     *)
-   let save () =
-      let save () =
-         match info.package with
-            Some pack ->
-               Package.save info.packages pack
-          | None ->
-               ()
-      in
-         print_exn save ()
+   let save info =
+      match info.package with
+         Some pack ->
+            Package.save pack
+       | None ->
+            ()
 
-   let save_all () =
-      let save_all () =
-         let save pack =
-            if Package.status pack = Modified then
-               Package.save info.packages pack
-         in
-            List.iter save (Package.packages info.packages)
+   let save_all info =
+      let save pack =
+         if Package.status pack = Modified then
+            Package.save pack
       in
-         print_exn save_all ()
+         List.iter save (Package.packages packages)
 
    (************************************************************************
     * OBJECTS                                                              *
@@ -449,159 +647,162 @@ struct
    (*
     * Creation functions.
     *)
-   let create_rw name =
+   let create_rw info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_rw", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_axiom name =
+   let create_axiom info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_axiom", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_thm name =
+   let create_thm info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_thm", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_tptp name =
+   let create_tptp info name =
+      ()
+(*
       let create name =
          let seq = Tptp_load.load name in
          let package = get_current_package info in
          let item = Shell_rule.create package name in
             item.edit_set_goal seq;
             item.edit_save ();
-            touch ()
+            touch info
       in
-         print_exn create name
+         print_exn info create name
+*)
 
-   let create_opname name =
+   let create_opname info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_opname", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_condition name =
+   let create_condition info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_condition", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_parent name =
+   let create_parent info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_parent", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_dform name =
+   let create_dform info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_dform", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_prec name =
+   let create_prec info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_prec", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_prec_rel name =
+   let create_prec_rel info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_prec_rel", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_resource name =
+   let create_resource info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_resources", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_infix name =
+   let create_infix info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_infix", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
-   let create_ml name =
+   let create_ml info name =
       let create name =
-         touch ();
+         touch info;
          raise (RefineError ("Shell.create_ml", StringError "not implemented"))
       in
-         print_exn create name
+         print_exn info create name
 
    (*
     * Proof operations.
     *)
-   let set_goal t =
+   let set_goal info t =
       let set t =
-         touch ();
+         touch info;
          info.proof.edit_set_goal t;
-         display_proof ()
+         display_proof info info.proof
       in
-         print_exn set t
+         print_exn info set t
 
-   let set_redex t =
+   let set_redex info t =
       let set t =
-         touch ();
+         touch info;
          info.proof.edit_set_redex t;
-         display_proof ()
+         display_proof info info.proof
       in
-         print_exn set t
+         print_exn info set t
 
-   let set_contractum t =
+   let set_contractum info t =
       let set t =
-         touch ();
+         touch info;
          info.proof.edit_set_contractum t;
-         display_proof ()
+         display_proof info info.proof
       in
-         print_exn set t
+         print_exn info set t
 
-   let set_assumptions tl =
+   let set_assumptions info tl =
       let set t =
-         touch ();
+         touch info;
          info.proof.edit_set_assumptions tl;
-         display_proof ()
+         display_proof info info.proof
       in
-         print_exn set tl
+         print_exn info set tl
 
-   let set_params pl =
+   let set_params info pl =
       let set t =
-         touch ();
+         touch info;
          info.proof.edit_set_params pl;
-         display_proof ()
+         display_proof info info.proof
       in
-         print_exn set pl
+         print_exn info set pl
 
-   let check () =
-      let set () =
+   let check info =
+      let set info =
          let _ = info.proof.edit_check () in
-            display_proof ()
+            display_proof info info.proof
       in
-         print_exn set ()
+         print_exn info set info
 
-   let expand () =
-      let set () =
+   let expand info =
+      let set info =
          let start = Unix.times () in
          let start_time = Unix.gettimeofday () in
-         let _ = info.proof.edit_expand (get_db null_mode_base) in
+         let _ = info.proof.edit_expand (get_db info) in
          let finish = Unix.times () in
          let finish_time = Unix.gettimeofday () in
-            display_proof ();
+            display_proof info info.proof;
             eprintf "User time %f; System time %f; Real time %f%t" (**)
                ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
                 -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
@@ -610,7 +811,7 @@ struct
                (finish_time -. start_time)
                eflush
       in
-         print_exn set ()
+         print_exn info set info
 
    (*
     * Redefined below as a shortcut for cd
@@ -619,258 +820,276 @@ struct
     *       info.proof.edit_root ();
     *       display_proof ()
     *    in
-    *       print_exn set ()
+    *       print_exn info set ()
     * let up i =
     *    let set () =
     *       info.proof.edit_up i;
     *       display_proof ()
     *    in
-    *       print_exn set ()
+    *       print_exn info set ()
     * let down i =
     *    let set i =
     *       info.proof.edit_down i;
     *       display_proof ()
     *    in
-    *       print_exn set i
+    *       print_exn info set i
     *)
-   let refine tac =
-      let set () =
-         let str, ast = ShellP4.get_tactic () in
-            touch ();
+   let refine info tac =
+      let set info =
+         let str, ast = ShellP4.get_tactic info.shell in
+            touch info;
             if !debug_refine then
                eprintf "Starting refinement%t" eflush;
             info.proof.edit_refine str ast tac;
             if !debug_refine then
                eprintf "Displaying proof%t" eflush;
-            if ShellP4.is_interactive () then
-               display_proof ();
+            if ShellP4.is_interactive info.shell then
+               display_proof info info.proof;
             if !debug_refine then
                eprintf "Proof displayed%t" eflush
       in
-         print_exn set ()
+         print_exn info set info
 
    (*
     * Get the current goal.
     *)
-   let goal () =
-      let get () =
-         touch ();
-         info.proof.edit_goal ()
+   let goal info =
+      let get info =
+         touch info;
+         (info.proof.edit_info ()).edit_goal
       in
-         print_exn get ()
+         print_exn info get info
 
-   let undo () =
-      let set () =
-         touch ();
+   let undo info =
+      let set info =
+         touch info;
          info.proof.edit_undo ();
-         display_proof ()
+         display_proof info info.proof
       in
-         print_exn set ()
+         print_exn info set info
 
-   let fold () =
-      let set () =
-         touch ();
-         info.proof.edit_fold ();
-         display_proof ()
+   let redo info =
+      let set info =
+         touch info;
+         info.proof.edit_redo ();
+         display_proof info info.proof
       in
-         print_exn set ()
+         print_exn info set info
 
-   let fold_all () =
-      let set () =
-         touch ();
-         info.proof.edit_fold_all ();
-         display_proof ()
+   let unfold info =
+      let set info =
+         touch info;
+         info.proof.edit_unfold ();
+         display_proof info info.proof
       in
-         print_exn set ()
+         print_exn info set info
 
-   let kreitz () =
-      let set () =
-         touch ();
+   let kreitz info =
+      let set info =
+         touch info;
          info.proof.edit_kreitz ();
-         display_proof ()
+         display_proof info info.proof
       in
-         print_exn set ()
+         print_exn info set info
 
    (*
     * Load all the ped's for the current module.
     * This is mainly for preparing for performance testing.
     *)
-   let sync () =
-      match info.package with
-         Some pkg ->
-            let ped_of_proof = function
-               Filter_cache.Primitive _
-             | Filter_cache.Derived _
-             | Filter_cache.Incomplete ->
-                  ()
-             | Filter_cache.Interactive proof ->
-                  let _ = Package.ped_of_proof pkg proof in
+   let sync info =
+      let sync info =
+         let parse_arg = get_parse_arg info in
+         match info.package with
+            Some pkg ->
+               let ped_of_proof = function
+                  Filter_cache.Primitive _
+                | Filter_cache.Derived _
+                | Filter_cache.Incomplete ->
                      ()
-            in
-            let sync_item (item, _) =
-               match item with
-                  Rewrite { rw_proof = proof } ->
-                     ped_of_proof proof
-                | CondRewrite { crw_proof = proof } ->
-                     ped_of_proof proof
-                | Axiom { axiom_proof = proof } ->
-                     ped_of_proof proof
-                | Rule { rule_proof = proof } ->
-                     ped_of_proof proof
-                | _ ->
-                     ()
-            in
-               List.iter sync_item (info_items (Package.info pkg))
-       | None ->
-            eprintf "sync: no current package%t" eflush
+                | Filter_cache.Interactive proof ->
+                     let _ = Package.ped_of_proof pkg parse_arg proof in
+                        ()
+               in
+               let sync_item (item, _) =
+                  match item with
+                     Rewrite { rw_proof = proof } ->
+                        ped_of_proof proof
+                   | CondRewrite { crw_proof = proof } ->
+                        ped_of_proof proof
+                   | Axiom { axiom_proof = proof } ->
+                        ped_of_proof proof
+                   | Rule { rule_proof = proof } ->
+                        ped_of_proof proof
+                   | _ ->
+                        ()
+               in
+                  List.iter sync_item (info_items (Package.info pkg parse_arg))
+          | None ->
+               eprintf "sync: no current package%t" eflush
+      in
+         print_exn info sync info
 
-   let expand_all () =
-      match info.package with
-         Some pack ->
-            let expand item =
-               try item.edit_expand (get_db null_mode_base) with
-                  RefineError _ ->
-                     ()
-            in
-            let expand_item (item, _) =
-               match item with
-                  Rewrite rw ->
-                     expand (Shell_rewrite.view_rw pack rw)
-                | CondRewrite crw ->
-                     expand (Shell_rewrite.view_crw pack crw)
-                | Axiom ax ->
-                     expand (Shell_rule.view_axiom pack ax)
-                | Rule rl ->
-                     expand (Shell_rule.view_rule pack rl)
-                | _ ->
-                     ()
-            in
-            let start = Unix.times () in
-            let start_time = Unix.gettimeofday () in
-            let _ = List.iter expand_item (info_items (Package.info pack)) in
-            let finish = Unix.times () in
-            let finish_time = Unix.gettimeofday () in
-               eprintf "User time %f; System time %f; Real time %f%t" (**)
-                  ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
-                   -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
-                  ((finish.Unix.tms_stime +. finish.Unix.tms_cstime)
-                   -. (start.Unix.tms_stime +. finish.Unix.tms_cstime))
-                  (finish_time -. start_time)
-                  eflush
+   let expand_all info =
+      let expand_all info =
+         let parse_arg = get_parse_arg info in
+         let display_mode = get_display_mode info in
+         match info.package with
+            Some pack ->
+               let expand item =
+                  try item.edit_expand (get_db info) with
+                     RefineError _ ->
+                        ()
+               in
+               let expand_item (item, _) =
+                  match item with
+                     Rewrite rw ->
+                        expand (Shell_rewrite.view_rw pack parse_arg display_mode rw)
+                   | CondRewrite crw ->
+                        expand (Shell_rewrite.view_crw pack parse_arg display_mode crw)
+                   | Axiom ax ->
+                        expand (Shell_rule.view_axiom pack parse_arg display_mode ax)
+                   | Rule rl ->
+                        expand (Shell_rule.view_rule pack parse_arg display_mode rl)
+                   | _ ->
+                        ()
+               in
+               let start = Unix.times () in
+               let start_time = Unix.gettimeofday () in
+               let _ = List.iter expand_item (info_items (Package.info pack parse_arg)) in
+               let finish = Unix.times () in
+               let finish_time = Unix.gettimeofday () in
+                  eprintf "User time %f; System time %f; Real time %f%t" (**)
+                     ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
+                      -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
+                     ((finish.Unix.tms_stime +. finish.Unix.tms_cstime)
+                      -. (start.Unix.tms_stime +. finish.Unix.tms_cstime))
+                     (finish_time -. start_time)
+                     eflush
 
-       | None ->
-            eprintf "expand_all: no current package%t" eflush
+          | None ->
+               eprintf "expand_all: no current package%t" eflush
+      in
+         print_exn info expand_all info
 
    (*
     * Change directory.
     *)
-   let rec cd name =
-      let dir = parse_path name in
-         begin
-            match dir with
-               [] ->
-                  (* go to toplevel *)
-                  info.dir <- [];
-                  info.package <- None;
-                  ShellP4.set_df None;
-                  ShellP4.set_mk_opname None;
-             | modname :: item ->
-                  (* change module only if in another (or at top) *)
-                  if (info.dir = []) or ((List.hd info.dir) <> modname) then
-                     begin
-                        let pkg = Package.get info.packages modname in
-                           info.package <- Some pkg;
-                           ShellP4.set_df (Some (get_db null_mode_base));
-                           ShellP4.set_mk_opname (Some (Package.mk_opname pkg));
-                           ShellP4.set_module modname commands;
-                     end;
-                  if (item = []) then
-                     begin
-                        (* top of module *)
-                        info.dir <- dir;
-                        info.proof <- Shell_null.null_object
-                     end
-                  else
-                     begin
-                        (* select an item (if not there already), then go down the proof. *)
-                        if ((info.dir = []) or ((List.tl info.dir) = []) or
-                            ((List.hd (List.tl info.dir)) <> (List.hd item))) then
-                           set_item modname (List.hd item);
-                        (* go down the proof with pf_path *)
-                        info.proof.edit_addr (List.map int_of_string (List.tl item));
-                        info.dir <- dir
-                     end
-         end;
-         pwd ()
+   let rec cd info name =
+      let shell = info.shell in
+      let chdir = function
+         [] ->
+            (* go to toplevel *)
+            info.dir <- [];
+            info.package <- None;
+            set_packages info;
+            ShellP4.set_df shell None;
+            ShellP4.set_mk_opname shell None;
+       | (modname :: item) as dir ->
+            (* change module only if in another (or at top) *)
+            if info.dir = [] or List.hd info.dir <> modname then
+               begin
+                  let pkg = Package.get packages modname in
+                     info.package <- Some pkg;
+                     ShellP4.set_df shell (Some (get_db info));
+                     ShellP4.set_mk_opname shell (Some (Package.mk_opname pkg));
+                     ShellP4.set_module shell modname (commands info);
+               end;
 
-   and root () =
-      let set () =
-         let _ = cd (String.make ((List.length info.dir)-1) '.') in
-            display_proof ()
+            if item = [] then
+               begin
+                  (* top of module *)
+                  info.dir <- dir;
+                  set_package info modname
+               end
+            else
+               begin
+                  (* select an item (if not there already), then go down the proof. *)
+                  if info.dir = []
+                     or List.tl info.dir = []
+                     or List.hd (List.tl info.dir) <> List.hd item
+                  then
+                     set_item info modname (List.hd item);
+
+                  (* go down the proof with pf_path *)
+                  info.proof.edit_addr (List.map int_of_string (List.tl item));
+                  info.dir <- dir
+               end
       in
-         if (List.length info.dir) >= 2 then
-            print_exn set ()
+         print_exn info chdir (parse_path info name);
+         pwd info
 
-   and up i =
-      let set () =
-         let _ = cd (String.make (i+1) '.') in
-            display_proof ()
+   and root info =
+      let set info =
+         let _ = cd info (String.make ((List.length info.dir) - 1) '.') in
+            display_proof info info.proof
       in
-         print_exn set ()
+         if List.length info.dir >= 2 then
+            set info
 
-   and down i =
+   and up info i =
+      let set info =
+         let _ = cd info (String.make (i + 1) '.') in
+            display_proof info info.proof
+      in
+         set info
+
+   and down info i =
       let set i =
-         let _ = cd (string_of_int i) in
-            display_proof ()
+         let _ = cd info (string_of_int i) in
+            display_proof info info.proof
       in
-         print_exn set i
+         set i
 
    (*
     * Commands.
     *)
-   and commands =
-      ["cd",               StringFunExpr   (fun s  -> StringExpr (cd s));
-       "pwd",              UnitFunExpr     (fun () -> StringExpr (pwd ()));
-       "set_window_width", IntFunExpr      (fun i  -> UnitExpr (set_window_width i));
-       "load",             StringFunExpr   (fun s  -> UnitExpr (load s));
-       "create_pkg",       StringFunExpr   (fun s  -> UnitExpr (create_pkg s));
-       "save",             UnitFunExpr     (fun () -> UnitExpr (save ()));
-       "save_all",         UnitFunExpr     (fun () -> UnitExpr (save_all ()));
-       "create_rw",        StringFunExpr   (fun s  -> UnitExpr (create_rw s));
-       "create_axiom",     StringFunExpr   (fun s  -> UnitExpr (create_axiom s));
-       "create_thm",       StringFunExpr   (fun s  -> UnitExpr (create_thm s));
-       "create_tptp",      StringFunExpr   (fun s  -> UnitExpr (create_tptp s));
-       "create_opname",    StringFunExpr   (fun s  -> UnitExpr (create_opname s));
-       "create_condition", StringFunExpr   (fun s  -> UnitExpr (create_condition s));
-       "create_parent",    StringFunExpr   (fun s  -> UnitExpr (create_parent s));
-       "create_dform",     StringFunExpr   (fun s  -> UnitExpr (create_dform s));
-       "create_prec",      StringFunExpr   (fun s  -> UnitExpr (create_prec s));
+   and commands info =
+      ["fork",             UnitFunExpr     (fun () -> StringExpr (fork info));
+       "pid",              UnitFunExpr     (fun () -> StringExpr (pid info));
+       "jobs",             UnitFunExpr     (fun () -> StringExpr (jobs info));
+       "fg",               IntFunExpr      (fun i ->  StringExpr (fg info i));
+       "cd",               StringFunExpr   (fun s  -> StringExpr (cd info s));
+       "pwd",              UnitFunExpr     (fun () -> StringExpr (pwd info));
+       "set_window_width", IntFunExpr      (fun i  -> UnitExpr (set_window_width info i));
+       "load",             StringFunExpr   (fun s  -> UnitExpr (load info s));
+       "create_pkg",       StringFunExpr   (fun s  -> UnitExpr (create_pkg info s));
+       "save",             UnitFunExpr     (fun () -> UnitExpr (save info));
+       "save_all",         UnitFunExpr     (fun () -> UnitExpr (save_all info));
+       "create_rw",        StringFunExpr   (fun s  -> UnitExpr (create_rw info s));
+       "create_axiom",     StringFunExpr   (fun s  -> UnitExpr (create_axiom info s));
+       "create_thm",       StringFunExpr   (fun s  -> UnitExpr (create_thm info s));
+       "create_tptp",      StringFunExpr   (fun s  -> UnitExpr (create_tptp info s));
+       "create_opname",    StringFunExpr   (fun s  -> UnitExpr (create_opname info s));
+       "create_condition", StringFunExpr   (fun s  -> UnitExpr (create_condition info s));
+       "create_parent",    StringFunExpr   (fun s  -> UnitExpr (create_parent info s));
+       "create_dform",     StringFunExpr   (fun s  -> UnitExpr (create_dform info s));
+       "create_prec",      StringFunExpr   (fun s  -> UnitExpr (create_prec info s));
        "create_prec_rel", (**)
           StringFunExpr (fun s1 ->
                 StringFunExpr (fun s2 ->
                       StringFunExpr (fun s3 ->
-                            UnitExpr (create_prec_rel s1 s2 s3))));
-       "create_resource",  StringFunExpr   (fun s  -> UnitExpr (create_resource s));
-       "create_infix",     StringFunExpr   (fun s  -> UnitExpr (create_infix s));
-       "create_ml",        StringFunExpr   (fun s  -> UnitExpr (create_ml s));
-       "view",             StringFunExpr   (fun s  -> UnitExpr (view s));
-       "ls",               UnitFunExpr     (fun () -> UnitExpr (ls ()));
-       "set_goal",         TermFunExpr     (fun t  -> UnitExpr (set_goal t));
-       "set_redex",        TermFunExpr     (fun t  -> UnitExpr (set_redex t));
-       "set_contractum",   TermFunExpr     (fun t  -> UnitExpr (set_contractum t));
-       "set_assumptions",  TermListFunExpr (fun tl -> UnitExpr (set_assumptions tl));
-       "check",            UnitFunExpr     (fun () -> UnitExpr (check ()));
-       "expand",           UnitFunExpr     (fun () -> UnitExpr (expand ()));
-       "root",             UnitFunExpr     (fun () -> UnitExpr (root ()));
-       "up",               IntFunExpr      (fun i  -> UnitExpr (up i));
-       "down",             IntFunExpr      (fun i  -> UnitExpr (down i));
-       "refine",           TacticFunExpr   (fun t  -> UnitExpr (refine t));
-       "undo",             UnitFunExpr     (fun () -> UnitExpr (undo ()));
-       "fold",             UnitFunExpr     (fun () -> UnitExpr (fold ()));
-       "fold_all",         UnitFunExpr     (fun () -> UnitExpr (fold_all ()));
-       "kreitz",           UnitFunExpr     (fun () -> UnitExpr (kreitz ()));
-       "sync",             UnitFunExpr     (fun () -> UnitExpr (sync ()));
-       "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all ()));
+                            UnitExpr (create_prec_rel info s1 s2 s3))));
+       "create_resource",  StringFunExpr   (fun s  -> UnitExpr (create_resource info s));
+       "create_infix",     StringFunExpr   (fun s  -> UnitExpr (create_infix info s));
+       "create_ml",        StringFunExpr   (fun s  -> UnitExpr (create_ml info s));
+       "view",             StringFunExpr   (fun s  -> UnitExpr (view info s));
+       "ls",               UnitFunExpr     (fun () -> UnitExpr (ls info));
+       "set_goal",         TermFunExpr     (fun t  -> UnitExpr (set_goal info t));
+       "set_redex",        TermFunExpr     (fun t  -> UnitExpr (set_redex info t));
+       "set_contractum",   TermFunExpr     (fun t  -> UnitExpr (set_contractum info t));
+       "set_assumptions",  TermListFunExpr (fun tl -> UnitExpr (set_assumptions info tl));
+       "check",            UnitFunExpr     (fun () -> UnitExpr (check info));
+       "expand",           UnitFunExpr     (fun () -> UnitExpr (expand info));
+       "root",             UnitFunExpr     (fun () -> UnitExpr (root info));
+       "up",               IntFunExpr      (fun i  -> UnitExpr (up info i));
+       "down",             IntFunExpr      (fun i  -> UnitExpr (down info i));
+       "refine",           TacticFunExpr   (fun t  -> UnitExpr (refine info t));
+       "undo",             UnitFunExpr     (fun () -> UnitExpr (undo info));
+       "redo",             UnitFunExpr     (fun () -> UnitExpr (redo info));
+       "unfold",           UnitFunExpr     (fun () -> UnitExpr (unfold info));
+       "kreitz",           UnitFunExpr     (fun () -> UnitExpr (kreitz info));
+       "sync",             UnitFunExpr     (fun () -> UnitExpr (sync info));
+       "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all info));
        "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)));
        "stop_gmon",        UnitFunExpr     (fun () -> UnitExpr (stop_gmon ()));
        "restart_gmon",     UnitFunExpr     (fun () -> UnitExpr (restart_gmon ()));
@@ -883,21 +1102,31 @@ struct
    (*
     * Return the list of all module names.
     *)
-   let edit_list_modules () =
-      List.map Package.name (Package.packages info.packages)
+   let edit_list_modules info =
+      let list info =
+         List.map Package.name (Package.packages packages)
+      in
+         print_exn info list info
 
-   let edit_info name =
-      try Package.info (Package.get info.packages name) with
-         NotLoaded _ ->
-            eprintf "Loading package %s%t" name eflush;
-            (let _ = Package.load info.packages name in ());
-            Package.info (Package.get info.packages name)
+   let edit_info info name =
+      let parse_arg = get_parse_arg info in
+      let edit info =
+         try Package.info (Package.get packages name) parse_arg with
+            NotLoaded _ ->
+               eprintf "Loading package %s%t" name eflush;
+               ignore (Package.load packages (get_parse_arg info) name);
+               Package.info (Package.get packages name) parse_arg
+      in
+         print_exn info edit info
 
-   let edit_save name =
-      Package.save info.packages (Package.get info.packages name)
+   let edit_save info name =
+      let edit info =
+         Package.save (Package.get packages name)
+      in
+         print_exn info edit info
 
-   let edit_list_module_all name =
-      let info = edit_info name in
+   let edit_list_module_all info name =
+      let info = edit_info info name in
       let rec collect = function
          [] ->
             []
@@ -912,9 +1141,13 @@ struct
       in
          collect (info_items info)
 
-   let edit_list_module name =
-      let info = edit_info name in
-      let (wnames : string list ref) = ref [] and (cnames : string list ref) = ref [] and (anames : string list ref) = ref [] and (rnames : string list ref) = ref [] in
+   let edit_list_module info name =
+      let info = edit_info info name in
+      let (wnames : string list ref) = ref []
+      and (cnames : string list ref) = ref []
+      and (anames : string list ref) = ref []
+      and (rnames : string list ref) = ref []
+      in
       let rec collect = function
          [] -> (!wnames, !cnames, !anames, !rnames)
        | (h, _) :: t ->
@@ -927,8 +1160,8 @@ struct
       in
          collect (info_items info)
 
-   let edit_list_module_rw name =
-      let info = edit_info name in
+   let edit_list_module_rw info name =
+      let info = edit_info info name in
       let rec collect = function
          [] ->
             []
@@ -946,7 +1179,7 @@ struct
    (*
     * Navigating the hierarchy.
     *)
-   let edit_list_parents name =
+   let edit_list_parents info name =
       let rec collect = function
          [] ->
             []
@@ -958,7 +1191,7 @@ struct
                 | _ ->
                      parents
       in
-         collect (info_items (edit_info name))
+         collect (info_items (edit_info info name))
 
    (*
     * Display forms and precedences.
@@ -970,8 +1203,10 @@ struct
       mk_simple_term (mk_opname "inherit" summary_opname) []
    let parens_term =
       mk_simple_term (mk_opname "parens" summary_opname) []
+   let internal_term =
+      mk_simple_term (mk_opname "internal" summary_opname) []
 
-   let edit_list_dforms name =
+   let edit_list_dforms info name =
       let opname = make_opname [name] in
       let mk_dform_option = function
          DFormInheritPrec ->
@@ -980,6 +1215,8 @@ struct
             mk_simple_term prec_op [mk_simple_term (make_opname [name'; name]) []]
        | DFormParens ->
             parens_term
+       | DFormInternal ->
+            internal_term
       in
       let rec collect = function
          [] ->
@@ -1004,9 +1241,9 @@ struct
                 | _ ->
                      dforms
       in
-         collect (info_items (edit_info name))
+         collect (info_items (edit_info info name))
 
-   let edit_list_precs name =
+   let edit_list_precs info name =
       let rec collect = function
          [] ->
             []
@@ -1018,9 +1255,9 @@ struct
                 | _ ->
                      precs
       in
-         collect (info_items (edit_info name))
+         collect (info_items (edit_info info name))
 
-   let edit_list_prec_rels name =
+   let edit_list_prec_rels info name =
       let rec collect = function
          [] ->
             []
@@ -1047,12 +1284,12 @@ struct
                 | _ ->
                      rels
       in
-         collect (info_items (edit_info name))
+         collect (info_items (edit_info info name))
 
    (*
     * Create a new thm.
     *)
-   let edit_cd_thm mname name =
+   let edit_cd_thm info mname name =
       let rec collect = function
          [] ->
             []
@@ -1063,97 +1300,104 @@ struct
              | _ ->
                   collect t
       in
-      let opens = collect (info_items (edit_info mname)) in
-      let _ = cd ("/" ^ mname ^ "/" ^ name) in
-         ShellP4.eval_opens opens;
+      let opens = collect (info_items (edit_info info mname)) in
+      let _ = cd info ("/" ^ mname ^ "/" ^ name) in
+         ShellP4.eval_opens info.shell opens;
          ()
 
-   let edit_create_thm mname name =
-      let _ = edit_info mname in
-      let _ = cd ("/" ^ mname) in
+   let edit_create_thm info mname name =
+      let _ = edit_info info mname in
+      let _ = cd info ("/" ^ mname) in
       let create name =
          let package = get_current_package info in
-         let item = Shell_rule.create package name in
+         let item = Shell_rule.create package (get_parse_arg info) (get_display_mode info) name in
             item.edit_save ();
-            touch ()
+            touch info
       in
-         print_exn create name;
-         edit_cd_thm mname name
+         print_exn info create name;
+         edit_cd_thm info mname name
 
-   let edit_create_rw mname name =
-      let _ = edit_info mname in
-      let _ = cd ("/" ^ mname) in
+   let edit_create_rw info mname name =
+      let _ = edit_info info mname in
+      let _ = cd info ("/" ^ mname) in
       let create name =
          let package = get_current_package info in
-         let item = Shell_rewrite.create package name in
+         let item = Shell_rewrite.create package (get_parse_arg info) (get_display_mode info) name in
             item.edit_save ();
-            touch ()
+            touch info
       in
-         print_exn create name;
-         edit_cd_thm mname name
+         print_exn info create name;
+         edit_cd_thm info mname name
 
    (*
     * Wrappers because Nuprl5 doesn't know about loading packages.
     *)
-   let edit_set_goal modname thmname t =
-      edit_cd_thm modname thmname;
-      set_goal t
+   let edit_set_goal info modname thmname t =
+      edit_cd_thm info modname thmname;
+      set_goal info t
 
-   let edit_set_redex modname thmname t =
-      edit_cd_thm modname thmname;
-      set_redex t
+   let edit_set_redex info modname thmname t =
+      edit_cd_thm info modname thmname;
+      set_redex info t
 
-   let edit_set_contractum modname thmname t =
-      edit_cd_thm modname thmname;
-      set_contractum t
+   let edit_set_contractum info modname thmname t =
+      edit_cd_thm info modname thmname;
+      set_contractum info t
 
-   let edit_set_assumptions modname thmname tl =
-      edit_cd_thm modname thmname;
-      set_assumptions tl
+   let edit_set_assumptions info modname thmname tl =
+      edit_cd_thm info modname thmname;
+      set_assumptions info tl
 
-   let edit_set_params modname thmname pl =
-      edit_cd_thm modname thmname;
-      set_params pl
+   let edit_set_params info modname thmname pl =
+      edit_cd_thm info modname thmname;
+      set_params info pl
 
    (*
     * Return the current node.
     *)
-   let edit_addr addr =
+   let edit_addr info addr =
       let set addr =
          info.proof.edit_down addr
       in
-         print_exn set addr
+         print_exn info set addr
 
-   let edit_node addr =
-      let proof = info.proof in
-         proof.edit_addr addr;
-         let tac =
-            match proof.edit_tactic () with
-               Some (str, _, _) ->
-                  Some str
-             | None ->
-                  None
-         in
-         let goal = Sequent.msequent (proof.edit_goal ()) in
-         let children = List.map Sequent.msequent (proof.edit_children ()) in
-         let extras = List.map Sequent.msequent (proof.edit_extras ()) in
-            tac, goal, children, extras
+   let edit_node info addr =
+      let edit info =
+         let proof = info.proof in
+            proof.edit_addr addr;
+            let { edit_goal = goal;
+                  edit_expr = tac;
+                  edit_subgoals = subgoals;
+                  edit_extras = extras
+                } = proof.edit_info ()
+            in
+            let goal = Sequent.msequent goal in
+            let children = List.map Sequent.msequent subgoals in
+            let extras = List.map Sequent.msequent extras in
+               Some tac, goal, children, extras
+      in
+         print_exn info edit info
 
-   let edit_refine addr str =
-      let proof = info.proof in
-      let refine () =
-         let expr = ShellP4.parse_string str in
-         let tac = ShellP4.eval_tactic expr in
+   let edit_refine info addr str =
+      let edit info =
+         let proof = info.proof in
+         let expr = ShellP4.parse_string info.shell str in
+         let tac = ShellP4.eval_tactic info.shell expr in
             proof.edit_addr addr;
             proof.edit_refine str expr tac;
-            let goal = Sequent.msequent (proof.edit_goal ()) in
-            let children = List.map Sequent.msequent (proof.edit_children ()) in
-            let extras = List.map Sequent.msequent (proof.edit_extras ()) in
+            let { edit_goal = goal;
+                  edit_subgoals = subgoals;
+                  edit_extras = extras
+                } = proof.edit_info ()
+            in
+            let goal = Sequent.msequent goal in
+            let children = List.map Sequent.msequent subgoals in
+            let extras = List.map Sequent.msequent extras in
                goal, children, extras
       in
-         print_exn refine ()
+         print_exn info edit info
 
-   let edit_undo () =
+   let edit_undo info =
       info.proof.edit_undo ()
 
    (************************************************************************
@@ -1164,8 +1408,9 @@ struct
     * Print out an initialization file, and parse it.
     *)
    let main () =
-      ShellP4.set_module "Mptop" commands;
-      ShellP4.main ()
+      let info = global in
+         ShellP4.set_module info.shell "Mptop" (commands info);
+         ShellP4.main info.shell
 end
 
 (*

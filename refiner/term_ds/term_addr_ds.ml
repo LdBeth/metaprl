@@ -101,6 +101,12 @@ struct
    let nth_tl_address i =
       ref_raise (RefineError ("Term_addr_ds.nth_tl_address", StringError "not implemented and should not be used"))
 
+   let is_null_address = function
+      Path [] ->
+         true
+    | _ ->
+         false
+
    let compose_address path1 path2 =
       match path1 with
          Path [] ->
@@ -118,6 +124,16 @@ struct
          i
     | _ ->
          ref_raise (RefineError ("Term_addr_ds.depth_of_address", StringError "address is not a sequent address"))
+
+   let rec clause_of_address = function
+      HypAddr i ->
+         i
+    | GoalAddr i ->
+         -i
+    | Compose (addr, _) ->
+         clause_of_address addr
+    | _ ->
+         ref_raise (RefineError ("Term_addr_ds.clause_of_address", StringError "address is not a sequent address"))
 
 #ifdef VERBOSE_EXN
 #  define ATERM a term
@@ -418,14 +434,14 @@ struct
          collect_string_of_path_address addr
     | ArgAddr -> "Arg"
     | HypAddr i -> "Hyp(" ^ string_of_int i ^ ")"
-    | GoalAddr i -> "Hyp(" ^ string_of_int i ^ ")"
+    | GoalAddr i -> "Goal(" ^ string_of_int i ^ ")"
     | Compose (addr1, addr2) ->
          let addr1 = collect_string_of_address addr1 in
          let addr2 = collect_string_of_address addr2 in
             if addr1 = "" then
                addr2
             else if addr2 = "" then
-               addr2
+               addr1
             else
                addr1 ^ "; " ^ addr2
 

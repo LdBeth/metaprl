@@ -225,6 +225,13 @@ sig
    val print_term : out_channel -> term -> unit
    val print_term_list : out_channel -> term list -> unit
    val install_debug_printer : (out_channel -> term -> unit) -> unit
+
+   (*
+    * This function is not implemented, and it always returns the
+    * invalid descriptor.
+    *)
+   val dest_descriptor : term -> term Weak_memo.TheWeakMemo.descriptor option
+   val mk_descriptor_term : term Weak_memo.TheWeakMemo.descriptor -> term
 end
 
 (*

@@ -115,6 +115,10 @@ sig
    val mk_xstring_term : string -> term
    val dest_xstring : term -> string
 
+   val is_xstring_dep0_term : term -> bool
+   val mk_xstring_dep0_term : string -> term -> term
+   val dest_xstring_dep0_term : term -> string * term
+
    (*
     * Primitive abstractions.
     *)

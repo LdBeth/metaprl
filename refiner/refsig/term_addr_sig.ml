@@ -40,6 +40,7 @@ sig
     *)
    val make_address : int list -> address
    val compose_address : address -> address -> address
+   val is_null_address : address -> bool
 
    (*
     * These constructors are specifically for sequents.
@@ -54,6 +55,7 @@ sig
     * This function only works on sequent addresses.
     *)
    val depth_of_address : address -> int
+   val clause_of_address : address -> int
 
    (*
     * Destructors.

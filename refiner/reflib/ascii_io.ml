@@ -10,22 +10,22 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ * Copyright (C) 1999 Alexey Nogin, Cornell University
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Alexey Nogin
  * nogin@cs.cornell.edu
  *
@@ -38,13 +38,12 @@ open Termmod_hash_sig
 
 module MakeAsciiIO (TM: TermModuleHashSig) =
 struct
-
    open TM
    open TM.TermType
    open TM.Term
    open TM.TermMan
    open TM.TermHash
-   
+
    type term = TM.TermType.term
    type param = TM.TermType.param
    type bound_term = TM.TermType.bound_term
@@ -62,7 +61,7 @@ struct
    let add_line t i =
       t:=i::(!t)
 
-   type io_record = 
+   type io_record =
     { io_terms : (string,term_index) Hashtbl.t;
       io_ops : (string,opname * hashed_param list) Hashtbl.t;
       io_opnames : (string,opname) Hashtbl.t;
@@ -164,9 +163,9 @@ struct
 
    let rec level_exp_vars = function
       var::offset::vars ->
-         make_level_var { le_var = var; le_offset = int_of_string offset } :: 
+         make_level_var { le_var = var; le_offset = int_of_string offset } ::
             level_exp_vars vars
-    | [] -> 
+    | [] ->
          []
     | _ ->
          fail "level_exp_vars"
@@ -209,7 +208,7 @@ struct
          end
     | [] -> ()
 
-   let get_term t = 
+   let get_term t =
       try begin match !t with
          (long,_,_) as item :: items ->
             let r = new_record () in
@@ -219,7 +218,7 @@ struct
                   'T'|'t' -> add_term r item
                 | 'G'|'g' -> add_goal r item
                 | _ -> fail "get_term"
-            ) 
+            )
        | [] -> fail "get_term"
       end with Not_found -> fail "get_term"
 
@@ -252,7 +251,7 @@ struct
     }
 
    let new_out_data () =
-    { io_names = StringSet.empty; 
+    { io_names = StringSet.empty;
       new_names = StringSet.empty;
       all_names = StringSet.empty;
       out_items = [];
@@ -300,15 +299,15 @@ struct
 
    let rec do_rename name names i =
       let name' = name ^ (string_of_int i) in
-      if StringSet.mem names name' then 
-         do_rename name names (succ i) 
+      if StringSet.mem names name' then
+         do_rename name names (succ i)
       else name'
 
    let rename name data =
       let names = data.all_names in
       let name' =
          if StringSet.mem names name then
-            do_rename name names 1 
+            do_rename name names 1
          else name
       in
       data.all_names <- StringSet.add name' names;
@@ -346,7 +345,7 @@ struct
             let (hyps_lname, goals_lname, name) = ctrl.out_name_seq seq in
             let name = rename name data in
             HashTerm.add data.out_terms ind name;
-            data.out_items <- 
+            data.out_items <-
                New ("G" ^ goals_lname, name, List.map fst goals) ::
                New ("S" ^ hyps_lname, name, arg_name :: List.map fst hyps) ::
                data.out_items;
@@ -356,7 +355,7 @@ struct
          let (oper_name, (op, params)) = out_op ctrl data t'.term_op in
          let btrms = List.map (out_bterm ctrl data) t'.TermType.term_terms in
          let ind = lookup ( Term { op_name = op;
-                                   op_params = params; 
+                                   op_params = params;
                                    term_terms = List.map snd btrms } ) in
          try
             let name = HashTerm.find data.out_terms ind in
@@ -459,11 +458,11 @@ struct
 
    and out_param ctrl data param =
       let param' = constr_param (dest_param param) in
-      try 
+      try
          let name = Hashtbl.find data.out_params param' in
          check_old data name;
          name, param'
-      with Not_found -> 
+      with Not_found ->
          let new_rec =
             match dest_param param with
                Number n -> ["Number"; Mp_num.string_of_num n]
@@ -507,7 +506,7 @@ struct
       let data = init_data r in
       ignore (out_term ctrl data t);
       print_out ctrl.out_line data.io_names (List.rev !inputs) (List.rev data.out_items)
-      
+
    let simple_name_op _ _ = "",""
    let simple_name_param _ = "",""
    let simple_name_term _ = "",""
@@ -518,7 +517,7 @@ struct
    let simple_output_line out (str1, str2, strs) =
       Printf.fprintf out "%s\t%s\t%s\n"
          (String_util.quote str1)
-         (String_util.quote str2) 
+         (String_util.quote str2)
          (String.concat " " (List.map String_util.quote strs))
 
    let make_simple_control out =

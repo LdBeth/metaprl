@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Refiner_io
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
@@ -44,7 +45,7 @@ let string_of_term t =
  * Convert from a string.
  *)
 let term_of_string s =
-   let t = (Marshal.from_string s 0 : Refiner_std.Refiner.TermType.term) in
+   let t = (Marshal.from_string s 0 : Refiner_io.TermType.term) in
       normalize_term t
 
 (*
@@ -57,7 +58,7 @@ let string_of_mterm t =
  * Convert from a string.
  *)
 let mterm_of_string s =
-   let t = (Marshal.from_string s 0 : Refiner_std.Refiner.TermType.meta_term) in
+   let t = (Marshal.from_string s 0 : Refiner_io.TermType.meta_term) in
       normalize_meta_term t
 
 (*

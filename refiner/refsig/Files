@@ -12,9 +12,10 @@ REFSIG_FILES :=\
 	term_meta_sig\
 	rewrite_sig\
 	refine_sig\
-	tm_base_sig\
-	tm_subst_sig\
-	tm_man_sig\
+	term_base_minimal_sig\
+	term_subst_minimal_sig\
+	term_man_minimal_sig\
+	refine_minimal_sig\
 	termmod_sig\
 	term_hash_sig\
 	term_norm_sig\

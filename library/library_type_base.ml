@@ -38,14 +38,14 @@ let library_open host localport remoteport =
 
   eprintf "%s %d %d %t" host localport remoteport eflush;
 
-  if oref_p library then 
+  if oref_p library then
     raise (LibraryException "Open: Library already open.")
   else (let _ = oref_set library (join (oref_set connection (connect host localport remoteport))
 			    ["NuprlLight"]) in
 	at_exit library_close)   (* nogin: something is strange here *)
 
 let maybe_lib_open () =
-  if not (oref_p library) then 
+  if not (oref_p library) then
     let host = Sys.getenv "NUPRLLIB_HOST"
     and port = int_of_string (Sys.getenv "NUPRLLIB_PORT")
     in
@@ -92,7 +92,9 @@ let library_set magics magic filename term =
  *)
 
 let library_get magics filename =
+(*
   print_string "hello g";
+*)
   with_transaction (lib_get())
 
    (function t ->

@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -38,6 +38,11 @@ open Mp_debug
 let _ =
    if !debug_load then
       eprintf "Loading List_util%t" eflush
+
+(*
+ * Exception for operations that have no effect.
+ *)
+exception Unchanged
 
 (*
  * Get the nth item.
@@ -76,6 +81,13 @@ let rec compare_lists cmp l1 l2 =
     | [], [] -> 0
     | [], _ -> -1
     | _ -> 1
+
+let rec compare_cmp cmp l1 l2 =
+   match l1, l2 with
+      h1 :: t1, h2 :: t2 ->
+         cmp h1 h2 && compare_cmp cmp t1 t2
+    | [], [] -> true
+    | _ -> false
 
 let rec compare_eq l1 l2 =
    match l1, l2 with
@@ -331,6 +343,31 @@ let rec subtract l1 l2 =
          []
 
 (*
+ * Subtract only the first occurrence.
+ *)
+let rec mem_once v head = function
+   h :: t ->
+      if v = h then
+         Some (head @ t)
+      else
+         mem_once v (h :: head) t
+ | [] ->
+      None
+
+let rec subtract_multiset l1 l2 =
+   match l1 with
+      h :: t ->
+         begin
+            match mem_once h [] l2 with
+               Some l2 ->
+                  subtract_multiset t l2
+             | None ->
+                  h :: subtract_multiset t l2
+         end
+    | [] ->
+         []
+
+(*
  * Subtract an element from a list.
  * Quadratic algorithm.
  *)
@@ -569,12 +606,31 @@ let rec fail_map f = function
 (*
  * Map, and discard None.
  *)
-let rec some_map f = function
-   h::t ->
+let rec some_map_aux unchanged f = function
+   h :: t ->
       begin
          match f h with
-            Some h ->
-               h :: some_map f t
+            Some h' ->
+               h' :: some_map_aux (unchanged && h' == h) f t
+          | None ->
+               some_map_aux false f t
+      end
+ | [] ->
+      if unchanged then
+         raise Unchanged;
+      []
+
+let some_map_safe f l =
+   try some_map_aux true f l with
+      Unchanged ->
+         l
+
+let rec some_map f = function
+   h :: t ->
+      begin
+         match f h with
+            Some h' ->
+               h' :: some_map f t
           | None ->
                some_map f t
       end

@@ -42,7 +42,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
-open Term_table
+open Term_match_table
 open Simple_print.SimplePrint
 
 (*
@@ -52,9 +52,21 @@ let _ =
    if !debug_load then
       eprintf "Loading Dform%t" eflush
 
+let debug_dform =
+   create_debug (**)
+      { debug_name = "dform";
+        debug_description = "show display form formatting";
+        debug_value = false
+      }
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
+
+(*
+ * Print to term tagged buffers.
+ *)
+type buffer = term Rformat.buffer
 
 (*
  * A display form printer knows about this term, and
@@ -83,10 +95,10 @@ type dform_printer =
  * Options on a dform.
  *)
 type dform_option =
-   (* Parens and precedences *)
    DFormInheritPrec
  | DFormPrec of precedence
  | DFormParens
+ | DFormInternal
 
 (*
  * This is the info needed for each display form.
@@ -109,10 +121,11 @@ type df_printer =
 type dform_item =
    { df_name : string;
      df_precedence : precedence;
-     df_printer : df_printer
+     df_printer : df_printer;
+     df_external : bool
    }
 
-type dform_base = dform_item term_table
+type dform_base = (dform_item, dform_item) term_table
 
 (*
  * Destruct a base.
@@ -144,23 +157,24 @@ let add_dform base { dform_name = name;
                      dform_options = options;
                      dform_print = printer
                    } =
-   (* The options all have to do with precedence right now *)
-   let rec process_options (prec, parens) = function
+   let rec process_options precedence parens internal = function
       [] ->
          if parens then
-            prec
+            precedence, internal
          else
-            max_prec
-      | h::t ->
-          match h with
-              DFormInheritPrec ->
-                 inherit_prec
-            | DFormPrec p ->
-                 process_options (p, true) t
-            | DFormParens ->
-                 process_options (prec, true) t
+            max_prec, internal
+    | h::t ->
+         match h with
+            DFormInheritPrec ->
+               process_options inherit_prec true internal t
+          | DFormPrec p ->
+               process_options p true internal t
+          | DFormParens ->
+               process_options precedence true internal t
+          | DFormInternal ->
+               process_options precedence parens true t
    in
-   let prec = process_options (min_prec, false) options in
+   let precedence, internal = process_options min_prec false false options in
    let printer' =
       match printer with
          DFormExpansion e ->
@@ -170,7 +184,11 @@ let add_dform base { dform_name = name;
        | DFormPrinter f ->
             DFPrinter f
    in
-      insert base t { df_name = name; df_precedence = prec; df_printer = printer' }
+      insert base t { df_name = name;
+                      df_precedence = precedence;
+                      df_printer = printer';
+                      df_external = not internal
+      }
 
 (*
  * Join two bases.
@@ -181,37 +199,6 @@ let join_dforms = join_tables
  * Destruct a base.
  *)
 let equal_dfbases = equal_tables
-
-let dest_dfbase base =
-   let info, base' = dest_table base in
-   let info' =
-      match info with
-         TableEntry (t, { df_name = name; df_precedence = pr; df_printer = p }) ->
-            let options =
-               if pr = max_prec then
-                  []
-               else
-                  [DFormParens; DFormPrec pr]
-            in
-            let printer =
-               match p with
-                  DFExpansion e ->
-                     (* BUG: this is not right, but hard to construct the right term *)
-                     DFormExpansion t
-
-                | DFPrinter p ->
-                     DFormPrinter p
-            in
-               DFormEntry { dform_name = name;
-                            dform_pattern = t;
-                            dform_options = options;
-                            dform_print = printer
-               }
-
-       | TableTable t ->
-            DFormBase t
-   in
-      info', base'
 
 (*
  * Commands in initial base.
@@ -224,6 +211,9 @@ let hzone { dform_buffer = buf } =
 
 let szone { dform_buffer = buf } =
    format_szone buf
+
+let izone { dform_buffer = buf } =
+   format_izone buf
 
 let ezone { dform_buffer = buf } =
    format_ezone buf
@@ -275,6 +265,7 @@ let init_list =
     "lzone", [], lzone;
     "szone", [], szone;
     "hzone", [], hzone;
+    "izone", [], izone;
     "ezone", [], ezone;
     "pushm", [MNumber "i"], pushm;
     "pushm", [], pushm;
@@ -399,14 +390,18 @@ let format_short_term base shortener =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
       (* Check for a display form entry *)
-      let stack, items, { df_name = name; df_precedence = pr'; df_printer = printer } =
+      let stack, items, { df_name = name;
+                          df_precedence = pr';
+                          df_printer = printer;
+                          df_external = is_external
+          } =
          let t =
             if is_sequent_term t then
                sequent_term
             else
                t
          in
-            lookup "format_short_term" base t
+            lookup "format_short_term" base (fun entries -> entries) t
       in
       let pr, parenflag =
          if pr' = inherit_prec then
@@ -443,6 +438,8 @@ let format_short_term base shortener =
       in
          if parenflag then
             format_string buf "(";
+         if is_external then
+            format_tzone buf t;
          begin
             match printer with
                DFPrinter f ->
@@ -463,8 +460,10 @@ let format_short_term base shortener =
                         eprintf "Dform %s%t" name eflush;
                      print_entry pr buf eq t
          end;
+         if is_external then
+            format_ezone buf;
          if parenflag then
-            format_string buf ")"
+            format_string buf ")";
 
    (* If there is no template, use the standard printer *)
    and print_term pprec buf eq t =
@@ -561,7 +560,7 @@ let null_base =
          let entry =
             { dform_name = name;
               dform_pattern = term;
-              dform_options = [DFormInheritPrec];
+              dform_options = [DFormInheritPrec; DFormInternal];
               dform_print = DFormPrinter f
             }
          in
@@ -575,7 +574,7 @@ let null_base =
         dform_pattern =
            mk_term (mk_op slot_opname [make_param (MString "eq")])
               [mk_bterm [] (mk_var_term "v")];
-        dform_options = [DFormInheritPrec];
+        dform_options = [DFormInheritPrec; DFormInternal];
         dform_print = DFormPrinter slot
       }
    in
@@ -584,21 +583,21 @@ let null_base =
         dform_pattern =
            mk_term (mk_op slot_opname [])
               [mk_bterm [] (mk_var_term "v")];
-        dform_options = [DFormInheritPrec];
+        dform_options = [DFormInheritPrec; DFormInternal];
         dform_print = DFormPrinter slot
       }
    in
    let slot_entry3 =
       { dform_name = "slot_entry3";
         dform_pattern = mk_term (mk_op slot_opname [make_param (MString "eq")]) [];
-        dform_options = [];
+        dform_options = [DFormInternal];
         dform_print = DFormPrinter slot
       }
    in
    let slot_entry4 =
       { dform_name = "slot_entry4";
         dform_pattern = mk_term (mk_op slot_opname [make_param (MLevel (mk_var_level_exp "l"))]) [];
-        dform_options = [];
+        dform_options = [DFormInternal];
         dform_print = DFormPrinter slot
       }
    in

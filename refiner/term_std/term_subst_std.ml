@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -42,11 +42,11 @@ open Term_std
 
 IFDEF VERBOSE_EXN THEN
 
-(* 
+(*
  * Show that the file is loading.
- *) 
+ *)
 let _ =
-   if !debug_load then 
+   if !debug_load then
       eprintf "Loading Term_subst_std%t" eflush
 
 let debug_alpha_equal =
@@ -57,7 +57,7 @@ let debug_alpha_equal =
       }
 
 let debug_unify =
-   create_debug (**) 
+   create_debug (**)
       { debug_name = "unify";
         debug_description = "display unification operations";
         debug_value = false
@@ -140,6 +140,9 @@ struct
        | t::r -> aux (free_vars_term gvars [] t) r
       in
          aux []
+
+   let free_vars_equal t1 t2 =
+      (Sort.list (<) (free_vars t1)) = (Sort.list (<) (free_vars t2))
 
    (*
     * See if a variable is free.
@@ -320,7 +323,7 @@ struct
       IN
       IFDEF VERBOSE_EXN THEN
          if !debug_alpha_equal then
-            try 
+            try
                let result = equal_term (*_debug*) [] t1 t2 in
                eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
                result
@@ -337,7 +340,7 @@ struct
       IN
       IFDEF VERBOSE_EXN THEN
          if !debug_alpha_equal then
-            try 
+            try
                let _ = equal_term (List_util.zip v v') t t' in
                eprintf "alpha_equal_vars: true%t" eflush;
                true
@@ -362,7 +365,7 @@ struct
       IN
       IFDEF VERBOSE_EXN THEN
          if !debug_alpha_equal then
-            try 
+            try
                let _ = equal_term (List_util.zip v v') t t' in
                eprintf "alpha_equal_vars: true%t" eflush;
                true
@@ -457,7 +460,7 @@ struct
          [] -> false
        | h::t ->
             List.mem v h || fv_mem t v
-   
+
    let rec new_vars fv = function
       [] -> []
     | v::t ->
@@ -642,7 +645,7 @@ struct
    let unify_empty = []
 
    let convert_subst_of_subst (v, t) = ([v], Some t)
-      
+
    let unify_subst_of_subst subst = List.map convert_subst_of_subst subst
 
    let add_unify_subst v t s =
@@ -691,8 +694,8 @@ struct
       else
          let op1 = term1.term_op in
          let op2 = term2.term_op in
-            if Opname.eq op1.op_name op2.op_name && 
-               List_util.for_all2 equal_params op1.op_params op2.op_params 
+            if Opname.eq op1.op_name op2.op_name &&
+               List_util.for_all2 equal_params op1.op_params op2.op_params
             then
                unify_bterms subst constants bvars term1.term_terms term2.term_terms
             else
@@ -701,7 +704,7 @@ struct
    and unify_var_term subst constants bvars v term1 term2 =
       if StringSet.mem constants v then
          raise unify_exn
-      else 
+      else
          try unify_terms subst constants bvars (subst_assoc subst v) term2 with
             Not_found ->
                (* Bound vars occurs check goes here *)
@@ -731,7 +734,7 @@ struct
     | (_,v)::tl ->
          if List.mem v tvs then RAISE_GENERIC_EXN else
          check_bvars tvs tl
-    
+
    let rec match_terms subst bvars tm1 tm2 =
       if is_var_term tm1 then
          let v = dest_var tm1 in

@@ -14,6 +14,8 @@
  *    format_szone: soft break zone (all or no hard breaks are taken)
  *    format_hzone: all hard breaks are taken.
  *    format_ezone: end the current zone.
+ *    format_izone: start an invisible zone.
+ *    format_tzone: start a tagged zone
  *
  *    format_pushm i: push left margin from here by i more spaces
  *    format_popm: pop last pushm
@@ -31,22 +33,22 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ * Copyright (C) 1998, 1999 Jason Hickey, Cornell University
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
@@ -63,17 +65,10 @@ let _ =
    if !debug_load then
       eprintf "Loading Rformat%t" eflush
 
-let debug_dform =
+let debug_rformat =
    create_debug (**)
-      { debug_name = "dform";
-        debug_description = "Display display-form operations";
-        debug_value = false
-      }
-
-let debug_simple_print =
-   create_debug (**)
-      { debug_name = "simple_print";
-        debug_description = "Display simple printing operations";
+      { debug_name = "rformat";
+        debug_description = "display text formatting operations";
         debug_value = false
       }
 
@@ -82,266 +77,405 @@ let debug_simple_print =
  ************************************************************************)
 
 (*
+ * Identify the zone types.
+ *)
+type 'tag zone_tag =
+   LZoneTag
+ | HZoneTag
+ | SZoneTag
+ | IZoneTag
+ | TZoneTag of 'tag
+ | MZoneTag of int
+
+(*
  * A print command is
  *   1. a string of text,
- *   2. a hard Break, which contains:
+ *   2. a Break
+ *      Either all Breaks are taken in a zone, or all are not
  *      a. the number of the corresponding zone
  *      b. a string to append to the current line if the break is taken
  *      c. a string to append if it is not
- *   3. a soft SBreak, which contains:
+ *
+ *   3. a soft SBreak
+ *      Soft breaks are optional, and all are independent of one another
  *      a. a unique number
  *      b. a string to append to the current line if the break is taken
  *      c. a string to append if it is not
+ *
  *   4. zone control
- *   5. left margin control
- *   6. an inline buffer, which contains
- *      a. a number ofr top level hard breaks
- *      b. contents of the buffer
+ *      LZone: no line breaks are allowed in a linear zone
+ *      HZone: all Breaks are takes in a hard zone
+ *      SZone: either all Breaks are taken, or they are not
+ *      IZone: no lines breaks or margin control
+ *      TZone: tag the enclosing block
+ *      MZone: push the left margin to the current column plus the offset
  *)
-type print_command =
+type 'tag print_command =
    (* Printing text, keep the length *)
    Text of int * string
 
    (*
-    * Line breaks; each break is assigned a number,
-    * and we keep track of the string lengths.
+    * Break contains a break number, and the line breaking text.
+    * HBreak is a break that is always taken.
     *)
  | Break of int * int * int * string * string
- | IBreak of int * int * int * string * string
- | SBreak of int * int * int * string * string
  | HBreak
 
-   (* Break zones plus zone numbers *)
- | LZone
- | HZone of int
- | SZone of int
- | EZone of int
-
-   (* Margin control *)
- | PushM of int
- | PopM
-
-   (* Recursive buffer *)
- | Inline of buffer
+   (*
+    * Inlined buffer.
+    *)
+ | Inline of 'tag buffer
 
 (*
- * An output buffer contains all the input data as:
- *    commands @ (rev commands')
- *
- * zone_number: the current zone number
- * szone_number: the current number for soft breaks
- *
- * parents: this is a set of parents that use this buffer.
- * children: this is a list of buffers used by this buffer
- *     (this is for computing break offsets)
+ * This is the info that is computed once a buffer has
+ * been formatted.
  *)
-and buffer =
-   { mutable commands : print_command list;
-     mutable commands' : print_command list;
-
-     (* Keep track of zone numbers for spcifying breaks *)
-     mutable zone_numbers : int list;
-     mutable szone_number : int;
-
-     (* Links for recursive buffers *)
-     mutable parents : buffer list;
-     mutable children : buffer list
+and 'tag formatted_info =
+   { formatted_commands : 'tag print_command list;
+     formatted_breaks : bool array;     (* Flags for breaks that were taken *)
+     formatted_col : int;               (* Starting column *)
+     formatted_maxx : int;              (* Max layout column *)
+     formatted_lmargin : int;           (* Left margin provided by environment *)
+     formatted_search : bool            (* Was this zone formatted in linear mode? *)
    }
 
 (*
- * We also contruct trees of line break vectors.
+ * This is the info for buffers that are being constructed.
+ *   formatting_commands: commands that have been added (reversed)
+ *   formatting_index: total number of breaks inserted so far
+ *   formatting_buf: current buffer being inserted into
  *)
-type break_tree =
-   BreakNode of (bool array) * (break_tree list)
+and 'tag unformatted_info =
+   { unformatted_commands : 'tag print_command list;
+     unformatted_index : int
+   }
+
+and 'tag formatting_info =
+   { mutable formatting_commands : 'tag print_command list;
+     mutable formatting_index : int;
+     formatting_buf : 'tag buffer
+   }
+
+and 'tag formatting_stack =
+   { mutable formatting_stack : 'tag formatting_info list }
+
+(*
+ * This is the info collected for the buffer.
+ *)
+and 'tag format_info =
+   Formatted of 'tag formatted_info
+ | Unformatted of 'tag unformatted_info
+ | Formatting of 'tag formatting_stack
+
+(*
+ * Input data is formatted on a stack.
+ *
+ * zone_numbers: the stack of zone numbers
+ * szone_number: the current number for soft breaks
+ *)
+and 'tag buffer =
+   { (* What format is this zone *)
+     buf_tag : 'tag zone_tag;
+
+     (* Name of this zone *)
+     buf_index : int;
+
+     (* Compiled info about this buffer *)
+     mutable buf_info : 'tag format_info;
+
+     (* Parent buffer to notify when the format changes *)
+     buf_parent : 'tag buffer option;
+
+     (* Save the root buffer *)
+     buf_root : 'tag root
+   }
+
+(*
+ * The root buffer contains name allocation info,
+ * and a stack of buffers it is inserting into.
+ *)
+and 'tag root =
+   { (* For allocating names *)
+     mutable root_index : int
+   }
+
+(*
+ * A printer contains a tabbing function,
+ * a function to print to strings,
+ * and a function to print tags.
+ *)
+type 'tag printer =
+   { print_string : string -> unit;
+     print_invis : string -> unit;
+     print_tab : int -> unit;
+     print_begin_block : 'tag buffer -> int -> unit;
+     print_end_block : 'tag buffer -> int -> unit;
+     print_begin_tag : 'tag buffer -> 'tag -> unit;
+     print_end_tag : 'tag buffer -> 'tag -> unit
+   }
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
 
 (*
- * New buffer.
+ * Default empty buffer.
+ *)
+let empty_info = Unformatted { unformatted_commands = []; unformatted_index = 0 }
+
+(*
+ * Create a new empty buffer.
  *)
 let new_buffer () =
-   { commands = [];
-     commands' = [];
-     zone_numbers = [];
-     szone_number = 1;
-     parents = [];
-     children = []
-   }
-
-(*
- * Linking.  The children are collected with duplicates.
- * The parents have a single copy.
- *)
-let add_child buf buf' =
-   buf.children <- buf'::buf.children;
-   if not (List.memq buf buf'.parents) then
-      buf'.parents <- buf::buf'.parents
-
-(*
- * This is called when buf' is removed from buf.
- *)
-let remove_parent buf' buf =
-   buf.parents <- List_util.removeq buf' buf.children
+   let root = { root_index = 0 } in
+      { buf_tag = SZoneTag;
+        buf_index = 0;
+        buf_info = empty_info;
+        buf_parent = None;
+        buf_root = root
+      }
 
 (*
  * Empty the buffer.
  * The parents are unchanged.
  *)
 let clear_buffer buf =
-   buf.commands <- [];
-   buf.commands' <- [];
-   buf.zone_numbers <- [];
-   buf.szone_number <- 0;
-
-   (* Children have been removed *)
-   List.iter (remove_parent buf) buf.children;
-   buf.children <- []
+   buf.buf_info <- empty_info
 
 (*
- * Compute the minimum horizontal space used by the list of items.
+ * Switch this buffer to formatting mode.
  *)
-let get_nspace =
-   let rec aux nspace = function
-      [] -> nspace
-    | h::t ->
-         begin
-            match h with
-               Text (i, _) -> aux (nspace + i) t
-             | HBreak -> nspace
-             | SBreak (_, take, _, _, _) -> nspace + take
-             | Break (_, take, _, _, _) -> nspace + take
-             | IBreak (_, take, _, _, _) -> nspace + take
-             | _ -> aux nspace t
-         end
-   in
-      aux 0
+let get_formatting_stack buf =
+   match buf.buf_info with
+      Formatting info ->
+         info
+    | Unformatted { unformatted_commands = commands;
+                    unformatted_index = index
+      } ->
+         let stack =
+            { formatting_stack =
+                 [{ formatting_commands = commands;
+                    formatting_index = index;
+                    formatting_buf = buf
+                  }]
+            }
+         in
+            buf.buf_info <- Formatting stack;
+            stack
+    | Formatted { formatted_commands = commands;
+                  formatted_breaks = breaks
+      } ->
+         let stack =
+            { formatting_stack =
+                 [{ formatting_commands = commands;
+                    formatting_index = Array.length breaks;
+                    formatting_buf = buf
+                  }]
+            }
+         in
+            buf.buf_info <- Formatting stack;
+            stack
 
 (*
- * Collect the zones that are referenced.
+ * End the formatting mode.
  *)
-let referenced_zones zones prog =
-   let collect = function
-      Break (i, _, _, _, _) ->
-         zones.(i) <- true
-    | _ ->
+let flush_formatting buf =
+   match buf.buf_info with
+      Formatting stack ->
+         let rec flush = function
+            [{ formatting_commands = commands;
+               formatting_index = index
+             }] ->
+               buf.buf_info <- Unformatted { unformatted_commands = List.rev commands;
+                                             unformatted_index = index
+                               }
+          | { formatting_commands = commands;
+              formatting_index = index;
+              formatting_buf = buf
+            } :: tl ->
+               eprintf "Unbalanced buffer%t" eflush;
+               buf.buf_info <- Unformatted { unformatted_commands = List.rev commands;
+                                             unformatted_index = index
+                               };
+               flush tl
+          | [] ->
+               raise (Invalid_argument "Rformat.flush_formatting")
+         in
+            flush stack.formatting_stack
+
+    | Unformatted _
+    | Formatted _ ->
          ()
+
+(*
+ * Start a new zone.
+ *)
+let push_zone buf tag =
+   let stack = get_formatting_stack buf in
+   let root = buf.buf_root in
+   let index = succ root.root_index in
+   let buf' =
+      { buf_tag = tag;
+        buf_index = index;
+        buf_info = empty_info;
+        buf_parent = Some buf;
+        buf_root = root
+      }
    in
-      List.iter collect prog;
-      zones
-
-(*
- * Remove the zones that never are referenced.
- *)
-let remove_extra_zones zones prog =
-   let rec strip = function
-      h::t ->
-         begin
-            match h with
-               SZone i ->
-                  if zones.(i) then
-                     h :: strip t
-                  else
-                     strip t
-             | _ ->
-                  h :: strip t
-         end
-    | [] ->
-         []
+   let _ =
+      match stack.formatting_stack with
+         head :: _ ->
+            head.formatting_commands <- Inline buf' :: head.formatting_commands
+       | [] ->
+            raise (Invalid_argument "Rformat.push_zone")
    in
-      strip prog
-
-(*
- * Optimize the prog.
- *)
-let optimize_prog zones prog =
-   remove_extra_zones (referenced_zones zones prog) prog
-
-(*
- * Normalize the commands.
- *)
-let normalize_buffer buf =
-   if buf.commands' <> [] then
-      begin
-         buf.commands <- (buf.commands @ (List.rev buf.commands'));
-         buf.commands' <- []
-      end
-
-(************************************************************************
- * INPUT                                                                *
- ************************************************************************)
-
-(*
- * Add a command.
- *)
-let push_command buf = function
-   Text (i, t) ->
-      (* Compress test *)
-      buf.commands' <-
-         begin
-            match buf.commands' with
-               (Text (i', t'))::tl -> (Text (i + i', t' ^ t))::tl
-             | l -> (Text (i, t))::l
-         end
- | com ->
-      (* Other commands are just pushed *)
-      buf.commands' <- com::buf.commands'
-
-(*
- * Zone pushing.
- *)
-let incr_zone buf =
-   let i = buf.szone_number + 1 in
-      buf.szone_number <- i;
-      i
-
-let zone_number buf =
-   match buf.zone_numbers with
-      [] -> 0
-    | i::_ -> i
-
-let push_zone buf =
-   let i = incr_zone buf in
-      buf.zone_numbers <- i::buf.zone_numbers;
-      i
-
-let pop_zone buf =
-   match buf.zone_numbers with
-      [] -> 0
-    | i::t ->
-         buf.zone_numbers <- t;
-         i
+   let info =
+      { formatting_commands = [];
+        formatting_index = 0;
+        formatting_buf = buf'
+      }
+   in
+      root.root_index <- index;
+      stack.formatting_stack <- info :: stack.formatting_stack
 
 let format_lzone buf =
-   push_command buf LZone
+   push_zone buf LZoneTag
 
 let format_hzone buf =
-   push_command buf (HZone (push_zone buf))
+   push_zone buf HZoneTag
 
 let format_szone buf =
-   push_command buf (SZone (push_zone buf))
+   push_zone buf SZoneTag
 
+let format_izone buf =
+   push_zone buf IZoneTag
+
+let format_tzone buf tag =
+   push_zone buf (TZoneTag tag)
+
+let format_pushm buf off =
+   push_zone buf (MZoneTag off)
+
+(*
+ * End the zone by popping the last entry off the stack.
+ *)
 let format_ezone buf =
-   push_command buf (EZone (pop_zone buf))
+   let stack = get_formatting_stack buf in
+      match stack.formatting_stack with
+         { formatting_commands = commands;
+           formatting_index = index;
+           formatting_buf = buf'
+         } :: ((head :: _) as tail) ->
+            let info =
+               { unformatted_commands = List.rev commands;
+                 unformatted_index = index
+               }
+            in
+               buf'.buf_info <- Unformatted info;
+               stack.formatting_stack <- tail
+       | _ ->
+            (* Ignore excessive pops *)
+            ()
+
+let format_popm = format_ezone
+
+(*
+ * Get the head entry on the stack.
+ *)
+let get_formatting_head buf =
+   match (get_formatting_stack buf).formatting_stack with
+      head :: _ ->
+         head
+    | [] ->
+         raise (Invalid_argument "Rformat.get_formatting_head")
+
+(*
+ * Push a command onto the stack.
+ *)
+let push_command buf command =
+   let entry = get_formatting_head buf in
+      entry.formatting_commands <- command :: entry.formatting_commands
 
 (*
  * Add breaks.
  *)
+exception NoBinder
+
+let rec get_soft_binder buf =
+   let rec search = function
+      head :: tl ->
+         let buf = head.formatting_buf in
+         let index =
+            match buf.buf_tag with
+               LZoneTag
+             | IZoneTag ->
+                  (* No binders in these zones *)
+                  raise NoBinder
+
+             | SZoneTag
+             | HZoneTag ->
+                  (* Allocate a new binding occurrence *)
+                  let index = succ head.formatting_index in
+                     head.formatting_index <- index;
+                     index
+
+             | TZoneTag _
+             | MZoneTag _ ->
+                  (* These zones are invisible to binders *)
+                  search tl
+         in
+            index
+    | [] ->
+         (* No binding occurrence *)
+         raise NoBinder
+   in
+      search (get_formatting_stack buf).formatting_stack
+
+let rec get_hard_binder buf =
+   let rec search = function
+      head :: tl ->
+         let buf = head.formatting_buf in
+         let index =
+            match buf.buf_tag with
+               LZoneTag
+             | IZoneTag ->
+                  (* No binders in these zones *)
+                  raise NoBinder
+
+             | HZoneTag
+             | SZoneTag ->
+                  (* Return the hard break binder *)
+                  0
+
+             | TZoneTag _
+             | MZoneTag _ ->
+                  (* These zones are invisible to binders *)
+                  search tl
+         in
+            index
+    | [] ->
+         (* No binding occurrence *)
+         raise NoBinder
+   in
+      search (get_formatting_stack buf).formatting_stack
+
 let format_sbreak buf str str' =
    let l = String.length str in
    let l' = String.length str' in
-      push_command buf (SBreak (incr_zone buf, l, l', str, str'))
+      try
+         push_command buf (Break (get_soft_binder buf, l, l', str, str'))
+      with
+         NoBinder ->
+            ()
 
 let format_break buf str str' =
    let l = String.length str in
    let l' = String.length str' in
-      push_command buf (Break (zone_number buf, l, l', str, str'))
-
-let format_ibreak buf str str' =
-   let l = String.length str in
-   let l' = String.length str' in
-      push_command buf (IBreak (zone_number buf, l, l', str, str'))
+      try
+         push_command buf (Break (get_hard_binder buf, l, l', str, str'))
+      with
+         NoBinder ->
+            ()
 
 let format_newline buf =
    push_command buf HBreak
@@ -353,15 +487,6 @@ let format_hspace buf =
    format_break buf "" " "
 
 (*
- * Indentation pushing.
- *)
-let format_pushm buf i =
-   push_command buf (PushM i)
-
-let format_popm buf =
-   push_command buf PopM
-
-(*
  * Actual printing.
  *)
 let format_char buf c =
@@ -371,7 +496,7 @@ let format_char buf c =
       push_command buf (Text (1, String.make 1 c))
 
 (*
- * Check for newlines in a string.
+ * Check for newlines in the string.
  *)
 let rec format_string buf s =
    try
@@ -397,7 +522,7 @@ let format_quoted_string buf str =
           | '\r'
           | '\t'
           | ' '
-          | '"' ->
+          | '\034' ->
                true
           | _ ->
                quotep (i + 1)
@@ -411,17 +536,15 @@ let format_quoted_string buf str =
                '\n' -> format_string buf "\\n"
              | '\r' -> format_string buf "\\r"
              | '\t' -> format_string buf "\\r"
-             | '"' -> format_string buf "\\\""
-          | _ -> format_char buf c
+             | '\034' -> format_string buf "\\\034"
+             | _ -> format_char buf c
    in
    let quote_flag = (length = 0) or (quotep 0) or (str.[0] = '\'') in
-      if !debug_simple_print then
-         eprintf "Rformat.format_quoted_string: quote_flag: %b%t" quote_flag eflush;
       if quote_flag then
          begin
-            format_char buf '"';
+            format_char buf '\034';
             format_string' 0;
-            format_char buf '"'
+            format_char buf '\034'
          end
       else
          format_string buf str
@@ -440,243 +563,249 @@ let format_num buf n =
    let s = Mp_num.string_of_num n in
       push_command buf (Text (String.length s, s))
 
-(*
- * Print a buffer.
- *)
-let format_buffer buf buf' =
-   add_child buf buf';
-   push_command buf (Inline buf')
-
 (************************************************************************
  * FORMATTING                                                           *
  ************************************************************************)
 
 (*
- * Make a first pass at formatting.
- * Arguments:
- *    margins: left margin stack
- *    breaks: the line break
- *    cbreaks: the breaks in the children
- *    lzone: currently in a linear zone?
- *    curx: current column
- *    maxx: maximum column that has been used
- *    cury: current row
+ * This first part doesn't do the actual formatting, it just computes
+ * which line breaks should be taken.
  *
- * Layout algorithm:
- *    1. If in linear mode and past the right margin,
- *           throw a margin error
- *    2. When text is added, add to the current column
- *    3. On HBreak, take it
- *    4. On SBreak
- *       don't take it in a linear zone
- *       otherwise, take it if the next thing would
- *          cross the right margin
- *    5. On Break
- *       take it iff the break.(i) flag is set
- *    6. On LZone
- *       do a linear zone
- *    7. On HZone
- *       set the break.(i) flag unless in a linear zone
- *    8. On SZone
- *       a. in a leanear zone, continue
- *       b. else try a linear zone, with break.(i) = false
- *       c. else do break.(i) = true
- *    9. On EZone
- *       Pop the current zone
- *    10. On PushM:
- *       Push the left margin to the current column + the margin
- *    11. On PopM
- *       Pop to the last left margin
+ * For each zone, there is a function to compute line breaks for its
+ * content.
  *
- * Return:
- *    coff: the new child zone offset
- *    curx: the current column
- *    maxx: the maximum column
- *    cury:  the current row
- *    search: perform search on the current szone
- *    scol: the column of the last szone
+ * The arguments are:
+ *    lmargin: position of the left margin
+ *    rmargin: maximum width of the line
+ *    col: current position in the line
+ *    search: true if an exception should be raised when the right margin is exceeded
+ *       if this is true, we are in a linear search
+ *
+ * The result is a tuple:
+ *    col: the position in the current line
  *)
-exception MarginError of int
 
-let get_margin = function
-   [] -> 0
- | i::_ -> i
+exception MarginError
 
-let softcdr = function
-   [] -> []
- | _::t -> t
+(*
+ * Get the info from the buffer.
+ *)
+let get_unformatted buf =
+   match buf.buf_info with
+      Unformatted info ->
+         info
+    | Formatted { formatted_commands = commands;
+                  formatted_breaks = breaks
+      } ->
+         { unformatted_commands = commands;
+           unformatted_index = Array.length breaks
+         }
+    | Formatting _ ->
+         raise (Invalid_argument "Rformat.get_unformatted")
 
-let compute_breaks buf rmargin =
-   let rec aux ((margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) as args) = function
-      [] ->
-         BreakNode (breaks, List.rev cbreaks), curx, maxx, cury
-    | info::t ->
-         (* Check that we haven't reached the margin *)
-         if catch & curx > rmargin then
-            begin
-               let _ =
-                  if !debug_dform then
-                     match search with
-                     None ->
-                        eprintf "raise MarginError with None %d > %d%t" curx rmargin eflush
-                   | Some (i, col) ->
-                        eprintf "raise MarginError with Some(%d, %d) %d > %d%t" i col curx rmargin eflush
-               in
-                  raise (MarginError curx)
-            end;
+(*
+ * Get format info from the buffer.
+ *)
+let get_formatted buf =
+   match buf.buf_info with
+      Formatted info ->
+         info
+    | Unformatted { unformatted_commands = commands;
+                    unformatted_index = index
+      } ->
+         { formatted_commands = commands;
+           formatted_breaks = Array.create (succ index) false;
+           formatted_col = 0;
+           formatted_maxx = 0;
+           formatted_lmargin = 0;
+           formatted_search = false
+         }
+    | Formatting _ ->
+         raise (Invalid_argument "Rformat.get_formatted")
 
-         (* Set this item *)
+(*
+ * Breaks are never taken in a linear zone.
+ *)
+let rec search_lzone buf lmargin rmargin col maxx search =
+   if !debug_rformat then
+      eprintf "Rformat.search_lzone%t" eflush;
+   let rec collect col maxx = function
+      h :: t ->
+         let col, maxx =
+            match h with
+               Text (len, _) ->
+                  let col = col + len in
+                     col, max col maxx
+             | Break (_, _, notake_len, _, _) ->
+                  let col = col + notake_len in
+                     col, max col maxx
+             | HBreak ->
+                  let col = succ col in
+                     col, max col maxx
+             | Inline buf' ->
+                  search_zone buf' lmargin rmargin col maxx [||] search
+         in
+            if search && col >= rmargin then
+               raise MarginError;
+            collect col maxx t
+    | [] ->
+         col, maxx
+   in
+   let { unformatted_commands = commands } = get_unformatted buf in
+   let col, maxx = collect col maxx commands in
+   let formatted =
+      { formatted_commands = commands;
+        formatted_breaks = [||];
+        formatted_col = col;
+        formatted_maxx = maxx;
+        formatted_lmargin = lmargin;
+        formatted_search = search
+      }
+   in
+      buf.buf_info <- Formatted formatted;
+      col, maxx
+
+(*
+ * This is the generic search for a non-linear zone.
+ * The break array is passed as an argument, and this
+ * function is both for tagged zones, and as the inner
+ * search of hard/soft breaking zones.
+ *)
+and search_tzone buf lmargin rmargin col maxx breaks search =
+   if !debug_rformat then
+      eprintf "Rformat.search_tzone%t" eflush;
+   let rec collect col maxx search = function
+      h :: t ->
          begin
-            match info with
-               Text (i, s) ->
-                  (* Text *)
-                  let curx' = curx + i in
-                  let maxx' = max maxx curx' in
-                     (* eprintf "Text: %s: %d -> %d%t" s curx curx' eflush; *)
-                     aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
+            match h with
+               Text (len, _) ->
+                  let col = col + len in
+                     if search && col >= rmargin then
+                        raise MarginError;
+                     collect col (max col maxx) search t
+
+             | Break (index, take_len, notake_len, _, _) ->
+                  if !debug_rformat then
+                     eprintf "Break col=%d rmargin=%d search=%b index=%d breaks=%b%t" col rmargin search index breaks.(index) eflush;
+                  if search then
+                     (* Searching for margin error in linear mode *)
+                     let col = col + notake_len in
+                        if col >= rmargin then
+                           raise MarginError;
+                        collect col (max col maxx) true t
+
+                  else if breaks.(index) then
+                     (* Break has been chosen, and we are not searching *)
+                     let col = col + take_len in
+                        collect lmargin (max col maxx) search t
+
+                  else
+                     (* Not searching, and break hasn't been tried yet *)
+                     (try
+                         let col = col + notake_len in
+                            collect col (max col maxx) true t
+                      with
+                         MarginError ->
+                            breaks.(index) <- true;
+                            let col = col + take_len in
+                               collect col (max col maxx) false t)
 
              | HBreak ->
-                  (* Always take hard breaks *)
-                  let curx' = get_margin margins in
-                  let search =
-                     match search with
-                        Some (0, col) when curx' <= col ->
-                           if !debug_dform then
-                              eprintf "Restarting search: hard%t" eflush;
-                           None
-                      | _ ->
-                           search
-                  in
-                     aux (margins, breaks, refd, cbreaks, curx', maxx, cury + 1, catch, search, nest) t
+                  (* Hard breaks are always taken *)
+                  collect lmargin maxx search t
 
-             | SBreak (i, take, notake, _, _) ->
-                  if (notake + (get_nspace t) < rmargin) then
-                     (* Don't take the break *)
-                     let curx' = curx + notake in
-                     let maxx' = max curx' maxx in
-                        breaks.(i) <- false;
-                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
-                  else
-                     (* Take the break *)
-                     let curx' = (get_margin margins) + take in
-                     let maxx' = max maxx curx in
-                        breaks.(i) <- true;
-                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury + 1, catch, search, nest) t
-
-             | Break (i, take, notake, _, _) ->
-                  if breaks.(i) = false then
-                     (* Don't take the break *)
-                     let curx' = curx + notake in
-                     let maxx' = max curx' maxx in
-                        breaks.(i) <- false;
-                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
-
-                  else
-                     (* Take the break *)
-                     let curx' = (get_margin margins) + take in
-                     let maxx' = max maxx curx in
-                     let search =
-                        match search with
-                           Some (0, col) when curx' <= col ->
-                              if !debug_dform then
-                                 eprintf "Restarting search: %d%t" i eflush;
-                              None
-                         | _ ->
-                              search
-                     in
-                        breaks.(i) <- true;
-                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury + 1, catch, search, nest) t
-
-             | IBreak (i, take, notake, _, _) ->
-                  if breaks.(i) = false then
-                     (* Don't take the break *)
-                     let curx' = curx + notake in
-                     let maxx' = max curx' maxx in
-                        breaks.(i) <- false;
-                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
-
-                  else
-                     (* Take the break *)
-                     let curx' = curx + take in
-                     let maxx' = max maxx curx in
-                        breaks.(i) <- true;
-                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury + 1, catch, search, nest) t
-
-             | LZone ->
-                  (* Try linear mode, an error signals end of format *)
-                  begin
-                     try aux (margins, breaks, refd, cbreaks, curx, maxx, cury, true, search, nest) t with
-                        MarginError curx' ->
-                           BreakNode (breaks, List.rev cbreaks), curx', maxx, cury
-                  end
-
-             | HZone i ->
-                  (* Initiate a breaking zone *)
-                  begin
-                     breaks.(i) <- true;
-                     aux (margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
-                  end
-
-             | SZone i ->
-                  (* Try out both cases *)
-                  if search = None & refd.(i) then
-                     begin
-                        breaks.(i) <- false;
-                        if !debug_dform then
-                           eprintf "Try %d linear: %d, %d%t" i curx nest eflush;
-                        try aux (margins, breaks, refd, cbreaks, curx, maxx, cury, true, Some (i, curx), nest + 1) t with
-                           MarginError _ ->
-                              breaks.(i) <- true;
-                              if !debug_dform then
-                                 eprintf "Fail %d break: %b%t" i catch eflush;
-                              aux (margins, breaks, refd, cbreaks, curx, maxx, cury, false, None, nest) t
-                     end
-                  else
-                     begin
-                        breaks.(i) <- false;
-                        aux (margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
-                     end
-
-             | EZone i ->
-                  let search =
-                     match search with
-                        Some (i', col) when i' = i ->
-                           if !debug_dform then
-                              eprintf "Closing zone %d%t" i eflush;
-                           Some (0, col)
-                      | _ ->
-                           search
-                  in
-                     aux (margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
-
-             | PushM i ->
-                  (* Push the margin *)
-                  let lmargin = curx + i in
-                     aux (lmargin::margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
-
-             | PopM ->
-                  (* Pop the margin *)
-                  aux (softcdr margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
-
-             | Inline b ->
-                  (* Recursive buffer *)
-                  let breaks' = Array.create (b.szone_number + 1) false in
-                  let refd' = Array.create (b.szone_number + 1) false in
-                  let _ = normalize_buffer b in
-                  let coms = b.commands in
-                  let _ = referenced_zones refd' coms in
-                  let breaks'', curx', maxx', cury' =
-                     aux (margins, breaks', refd', [], curx, maxx, cury, catch, search, nest) coms
-                  in
-                     aux (margins, breaks, refd, breaks''::cbreaks, curx', maxx', cury', catch, search, nest) t
+             | Inline buf' ->
+                  let col, maxx = search_zone buf' lmargin rmargin col maxx breaks search in
+                     collect col maxx search t
          end
+
+    | [] ->
+         col, maxx
    in
-   let breaks = Array.create (buf.szone_number + 1) false in
-   let refd = Array.create (buf.szone_number + 1) false in
-   let prog = buf.commands in
-   let _ = referenced_zones refd prog in
-   let breaks', _, _, _ = aux ([], breaks, refd, [], 0, 0, 1, false, None, 0) prog in
-      breaks'
+   let { unformatted_commands = commands } = get_unformatted buf in
+   let col, maxx = collect col maxx search commands in
+   let formatted =
+      { formatted_commands = commands;
+        formatted_breaks = breaks;
+        formatted_col = col;
+        formatted_maxx = maxx;
+        formatted_lmargin = lmargin;
+        formatted_search = search
+      }
+   in
+      buf.buf_info <- Formatted formatted;
+      col, maxx
+
+(*
+ * Hard breaks are always taken in a hard zone.
+ * Soft breaks are taken only if the margin would be exceeded otherwise.
+ *)
+and search_hzone buf lmargin rmargin col maxx search =
+   let { unformatted_index = index } = get_unformatted buf in
+   let breaks = Array.create (succ index) false in
+      breaks.(0) <- true;
+      search_tzone buf lmargin rmargin col maxx breaks search
+
+and search_szone buf lmargin rmargin col maxx search =
+   let { unformatted_index = index } = get_unformatted buf in
+   let breaks = Array.create (succ index) false in
+      if search then
+         search_tzone buf lmargin rmargin col maxx breaks search
+      else
+         try search_tzone buf lmargin rmargin col maxx breaks true with
+            MarginError ->
+               breaks.(0) <- true;
+               search_tzone buf lmargin rmargin col maxx breaks false
+
+(*
+ * Generic zone searcher.
+ *)
+and search_zone buf lmargin rmargin col maxx breaks search =
+   if !debug_rformat then
+      eprintf "Rformat.search_zone%t" eflush;
+   match buf.buf_tag with
+      LZoneTag ->
+         search_lzone buf lmargin rmargin col maxx search
+    | HZoneTag ->
+         search_hzone buf lmargin rmargin col maxx search
+    | SZoneTag ->
+         search_szone buf lmargin rmargin col maxx search
+    | IZoneTag ->
+         (* All text inside is invisible to margin calculations *)
+         col, maxx
+    | TZoneTag _ ->
+         (* Tag doesn't affect the breaking *)
+         search_tzone buf lmargin rmargin col maxx breaks search
+    | MZoneTag off ->
+         (* Adjust the left margin *)
+         search_tzone buf (col + off) rmargin col maxx breaks search
+
+(*
+ * Calculate all the line breaks.
+ *)
+let compute_breaks buf width =
+   if !debug_rformat then
+      eprintf "Rformat.compute_breaks%t" eflush;
+   flush_formatting buf;
+   search_zone buf 0 width 0 0 [||] false
+
+(*
+ * Refresh a buffer.
+ *)
+let refresh_breaks buf =
+   flush_formatting buf;
+   match buf.buf_info with
+      Formatted { formatted_breaks = breaks;
+                  formatted_col = col;
+                  formatted_maxx = rmargin;
+                  formatted_lmargin = lmargin;
+                  formatted_search = search
+      } ->
+         search_zone buf lmargin rmargin col col breaks false
+
+    | Unformatted _
+    | Formatting _ ->
+         raise (Invalid_argument "Rformat.compute_breaks")
 
 (*
  * "tab" to a position on the next line.
@@ -685,142 +814,409 @@ let tab printer pos =
    printer ("\n" ^ (String_util.make "Rformat.tab" pos ' '))
 
 (*
- * Given a break vector, print out the data.
- * Return the x position.
+ * Some empty print functions.
  *)
-let format_to_handler printer rmargin (BreakNode (breaks, cbreaks)) =
-   (* This printer watches the right margin *)
-   let print_text curx i s =
-      (* Watch the right margin
-      if curx < rmargin then
-         if curx + i > rmargin then
-            let amount = rmargin - curx - 1 in
-               if amount > 0 then
-                  printer (String_util.sub "Rformat.format_to_handler" s 0 amount);
-               printer "$"
-         else *)
-            printer s
-   in
+let print_arg1_invis _ =
+   ()
 
-   (* Print the entire box *)
-   let rec aux ((margins, breaks, cbreaks, curx) as args) = function
-      [] ->
-         curx
-    | h::t ->
+let print_arg2_invis _ _ =
+   ()
+
+(*
+ * Format a linear zone.
+ * Stop when the right margin is exceeded.
+ *)
+let rec print_lzone buf rmargin col printer =
+   if !debug_rformat then
+      eprintf "Rformat.print_lzone%t" eflush;
+   let rec print col = function
+      h :: t ->
          begin
             match h with
-               Text (i, s) ->
-                  print_text curx i s;
-                  aux (margins, breaks, cbreaks, curx + i) t
+               Text (len, s) ->
+                  if col + len <= rmargin then
+                     begin
+                        printer.print_string s;
+                        print (col + len) t
+                     end
+                  else
+                     col
+
+             | Break (_, _, notake_len, _, notake) ->
+                  if col + notake_len <= rmargin then
+                     begin
+                        printer.print_string notake;
+                        print (col + notake_len) t
+                     end
+                  else
+                     col
 
              | HBreak ->
-                  let lmargin = get_margin margins in
-                     tab printer lmargin;
-                     aux (margins, breaks, cbreaks, lmargin) t
-
-             | SBreak (i, take, notake, str, str') ->
-                  if breaks.(i) then
-                     let lmargin = get_margin margins in
-                        tab printer lmargin;
-                        if !debug_dform then
-                           print_text lmargin take ("<" ^ string_of_int i ^ ">");
-                        print_text lmargin take str;
-                        aux (margins, breaks, cbreaks, lmargin + take) t
-                  else
+                  if succ col <= rmargin then
                      begin
-                        if !debug_dform then
-                           print_text curx notake ("<" ^ string_of_int i ^ ">");
-                        print_text curx notake str';
-                        aux (margins, breaks, cbreaks, curx + notake) t
-                     end
-
-             | Break (i, take, notake, str, str') ->
-                  if breaks.(i) then
-                     let lmargin = get_margin margins in
-                        tab printer lmargin;
-                        if !debug_dform then
-                           print_text lmargin take ("<!" ^ string_of_int i ^ ">");
-                        print_text lmargin take str;
-                        aux (margins, breaks, cbreaks, lmargin + take) t
-                  else
-                     begin
-                        if !debug_dform then
-                           print_text curx notake ("<!" ^ string_of_int i ^ ">");
-                        print_text curx notake str';
-                        aux (margins, breaks, cbreaks, curx + notake) t
-                     end
-
-             | IBreak (i, take, notake, str, str') ->
-                  if breaks.(i) then
-                     begin
-                        print_text curx take str;
-                        aux (margins, breaks, cbreaks, curx + take) t
+                        printer.print_string " ";
+                        print (succ col) t
                      end
                   else
-                     begin
-                        print_text curx notake str';
-                        aux (margins, breaks, cbreaks, curx + notake) t
-                     end
+                     col
 
-             | PushM i ->
-                  aux ((curx + i)::margins, breaks, cbreaks, curx) t
-
-             | PopM ->
-                  aux (softcdr margins, breaks, cbreaks, curx) t
-
-             | Inline b ->
-                  begin
-                     match cbreaks with
-                        [] ->
-                           raise (Invalid_argument "format_to_handler")
-                      | (BreakNode (breaks', cbreaks'))::cbreaks'' ->
-                           let curx' = aux (margins, breaks', cbreaks', curx) b.commands in
-                              aux (margins, breaks, cbreaks'', curx') t
-                  end
-
-             | SZone i ->
-                  if !debug_dform then
-                     print_text curx "" ("[[" ^ string_of_int i);
-                  aux args t
-             | EZone i ->
-                  if !debug_dform then
-                     print_text curx "" (string_of_int i ^ "]]");
-                  aux args t
-
-             | _ ->
-                  aux args t
+             | Inline buf' ->
+                  print (print_zone buf' rmargin col printer true) t
          end
+
+    | [] ->
+         col
    in
-      aux ([], breaks, cbreaks, 0)
+   let { formatted_commands = commands } = get_formatted buf in
+      print col commands
+
+(*
+ * Format a tagged zone.
+ *)
+and print_tzone buf rmargin col printer =
+   if !debug_rformat then
+      eprintf "Rformat.print_tzone%t" eflush;
+   let { formatted_commands = commands;
+         formatted_breaks = breaks;
+         formatted_lmargin = lmargin
+       } = get_formatted buf
+   in
+   let rec print col = function
+      h :: t ->
+         begin
+            match h with
+               Text (len, s) ->
+                  printer.print_string s;
+                  print (col + len) t
+
+             | Break (index, take_len, notake_len, take, notake) ->
+                  if breaks.(index) then
+                     begin
+                        printer.print_string take;
+                        printer.print_tab lmargin;
+                        print lmargin t
+                     end
+                  else
+                     begin
+                        printer.print_string notake;
+                        print (col + notake_len) t
+                     end
+
+             | HBreak ->
+                  printer.print_tab lmargin;
+                  print lmargin t
+
+             | Inline buf' ->
+                  print (print_zone buf' rmargin col printer false) t
+         end
+    | [] ->
+         col
+   in
+      print col commands
+
+(*
+ * Generic formatter.
+ *)
+and print_zone buf rmargin col printer linear =
+   if !debug_rformat then
+      eprintf "Rformat.print_zone%t" eflush;
+   match buf.buf_tag with
+      LZoneTag ->
+         print_lzone buf rmargin col printer
+
+    | HZoneTag
+    | SZoneTag ->
+         if linear then
+            print_lzone buf rmargin col printer
+         else
+            print_tzone buf rmargin col printer
+
+    | IZoneTag ->
+         let { print_invis = print_invis } = printer in
+         let printer =
+            { print_string = print_invis;
+              print_invis = print_invis;
+              print_tab = print_arg1_invis;
+              print_begin_block = print_arg2_invis;
+              print_end_block = print_arg2_invis;
+              print_begin_tag = print_arg2_invis;
+              print_end_tag = print_arg2_invis
+            }
+         in
+            print_tzone buf rmargin col printer
+
+    | MZoneTag off ->
+         printer.print_begin_block buf (col + off);
+         let col = print_tzone buf rmargin col printer in
+            printer.print_end_block buf (col + off);
+            col
+
+    | TZoneTag tag ->
+         printer.print_begin_tag buf tag;
+         let col = print_tzone buf rmargin col printer in
+            printer.print_end_tag buf tag;
+            col
+
+let print_buf buf rmargin printer =
+   if !debug_rformat then
+      eprintf "Rformat.print_buf%t" eflush;
+   print_zone buf rmargin 0 printer false
+
+(************************************************************************
+ * PRINTING                                                             *
+ ************************************************************************)
+
+(*
+ * Channel printer.
+ *)
+let make_channel_printer out =
+   let print_string s =
+      output_string out s
+   in
+   let print_tab i =
+      output_char out '\n';
+      for j = 0 to pred i do
+         output_char out ' '
+      done
+   in
+      { print_string = print_string;
+        print_invis = print_arg1_invis;
+        print_tab = print_tab;
+        print_begin_block = print_arg2_invis;
+        print_end_block = print_arg2_invis;
+        print_begin_tag = print_arg2_invis;
+        print_end_tag = print_arg2_invis
+      }
+
+(*
+ * A string printer.
+ *)
+let make_string_printer () =
+   let strings = ref [] in
+   let print_string s =
+      strings := s :: !strings
+   in
+   let print_tab i =
+      strings := ("\n" ^ String.make i ' ') :: !strings
+   in
+   let printer =
+      { print_string = print_string;
+        print_invis = print_arg1_invis;
+        print_tab = print_tab;
+        print_begin_block = print_arg2_invis;
+        print_end_block = print_arg2_invis;
+        print_begin_tag = print_arg2_invis;
+        print_end_tag = print_arg2_invis
+      }
+   in
+   let get_string () =
+      let rec total_length i = function
+         h :: t ->
+            total_length (i + String.length h) t
+       | [] ->
+            i
+      in
+      let rec copy buf i = function
+         h :: t ->
+            let len = String.length h in
+               String.blit h 0 buf i len;
+               copy buf (i + len) t
+       | [] ->
+            ()
+      in
+      let strs = List.rev !strings in
+      let len = total_length 0 strs in
+      let buf = String.create len in
+         copy buf 0 strs;
+         strings := [];
+         buf
+   in
+      get_string, printer
+
+(*
+ * We hack the indentation in the HTML printer.
+ * Format the data into lines, and print the tabstops in
+ * the background color.
+ *
+ * The prefix is the white space that is inserted to
+ * get the left margin right.
+ *)
+type 'tag html_buffer =
+   { mutable html_current_line : (bool * string) list;
+     mutable html_prefix : string;
+     mutable html_tags : (int * 'tag) list;
+     html_out : out_channel
+   }
+
+(*
+ * Have to escape special characters.
+ *)
+let html_escape_string s =
+   let len = String.length s in
+   let rec collect i j =
+      if j = len then
+         if i = 0 then
+             s
+         else if i < j then
+            String.sub s i (j - i)
+         else
+            ""
+      else
+         match s.[j] with
+            '<' ->
+               collect_escape i j "&lt;"
+          | '>' ->
+               collect_escape i j "&gt;"
+          | _ ->
+               collect i (succ j)
+   and collect_escape i j s' =
+      if i < pred j then
+         String.sub s i (pred j) ^ s' ^ collect (succ j) (succ j)
+      else
+         s' ^ collect (succ j) (succ j)
+   in
+      collect 0 0
+
+(*
+ * Print strings.
+ *)
+let html_print_string buf s =
+   buf.html_current_line <- (true, s) :: buf.html_current_line
+
+let html_print_invis buf s =
+   buf.html_current_line <- (false, s) :: buf.html_current_line
+
+(*
+ * Extract the entire line.
+ *)
+let html_line buf =
+   let rec collect line = function
+      (_, h) :: t ->
+         collect (h ^ line) t
+    | [] ->
+         line
+   in
+      collect "" buf.html_current_line
+
+let html_visible buf =
+   let rec collect line = function
+      (true, h) :: t ->
+         collect (h ^ line) t
+    | _ :: t ->
+         collect line t
+    | [] ->
+         line
+   in
+      collect "" buf.html_current_line
+
+let html_push_line buf =
+   let line = html_line buf in
+      output_string buf.html_out line;
+      buf.html_current_line <- []
+
+(*
+ * Set up all pending tabstops.
+ *)
+let html_tab_line buf =
+   buf.html_prefix ^ html_visible buf
+
+(*
+ * Newline.
+ * Compute all pending tabstops,
+ * then push the line and the new tabstop.
+ *)
+let html_tab buf col =
+   if col = 0 then
+      begin
+         html_push_line buf;
+         output_string buf.html_out "<br>\n";
+         buf.html_prefix <- ""
+      end
+   else
+      let tabline = buf.html_prefix ^ html_visible buf in
+         html_push_line buf;
+         let prefix =
+            if col >= String.length tabline then
+               tabline
+            else
+               String.sub tabline 0 col
+         in
+         let spacer = sprintf "<font color=white style=\"visibility:hidden\">%s</font>" prefix in
+            buf.html_prefix <- prefix;
+            output_string buf.html_out "<br>\n";
+            output_string buf.html_out spacer
+
+(*
+ * Begin a tagged block.
+ *)
+let html_begin_tag buf buffer _ =
+   match buffer.buf_tag with
+      TZoneTag t ->
+         let index = buffer.buf_index in
+            buf.html_tags <- (index, t) :: buf.html_tags;
+            (* buf.html_current_line <- (false, sprintf "<block id=term%d>" index) :: buf.html_current_line *)
+    | _ ->
+         raise (Invalid_argument "html_begin_tag")
+
+let html_end_tag buf _ _ =
+   (* buf.html_current_line <- (false, "</block>") :: buf.html_current_line *)
+   ()
+
+(*
+ * An HTML printer.
+ *)
+
+let make_html_printer out =
+   let buf =
+      { html_current_line = [];
+        html_out = out;
+        html_tags = [];
+        html_prefix = ""
+      }
+   in
+   let printer =
+      { print_string = html_print_string buf;
+        print_invis = html_print_invis buf;
+        print_tab = html_tab buf;
+        print_begin_block = print_arg2_invis;
+        print_end_block = print_arg2_invis;
+        print_begin_tag = html_begin_tag buf;
+        print_end_tag = html_end_tag buf;
+      }
+   in
+   let get_info () =
+      let tags = buf.html_tags in
+         buf.html_tags <- [];
+         buf.html_prefix <- "";
+         tags
+   in
+      get_info, printer
+
+(*
+ * Generic printer.
+ *)
+let print_to_printer buf rmargin printer =
+   ignore (compute_breaks buf rmargin);
+   ignore (print_buf buf rmargin printer)
 
 (*
  * Print to an IO buffer.
  *)
-let print_to_channel rmargin buf ch =
-   let breaks = Array.create (buf.szone_number + 1) false in
-   let _ = normalize_buffer buf in
-   let breaks = compute_breaks buf rmargin in
-   let _ = format_to_handler (output_string ch) rmargin breaks buf.commands in
-      ()
+let print_to_channel rmargin buf out =
+   print_to_printer buf rmargin (make_channel_printer out)
+
+let print_to_string rmargin buf =
+   let get_string, printer = make_string_printer () in
+      print_to_printer buf rmargin printer;
+      get_string ()
 
 (*
- * Print to a string.
+ * Print to HTML.
  *)
-let print_to_string rmargin buf =
-   let buffer = ref ([] : string list) in
-   let handle s =
-      buffer := s :: !buffer
-   in
-   let rec smash s = function
-      [] ->
-         s
-    | s'::t' ->
-         smash (s' ^ s) t'
-   in
-   let _ = normalize_buffer buf in
-   let breaks = compute_breaks buf rmargin in
-   let _ = format_to_handler handle rmargin breaks buf.commands in
-      smash "" !buffer
+let print_to_html rmargin buf out =
+   let get_info, printer = make_html_printer out in
+      print_to_printer buf rmargin printer;
+      get_info ()
 
 (*
  * -*-

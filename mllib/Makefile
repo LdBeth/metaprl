@@ -9,7 +9,7 @@ OCAMLFLAGS = -pp "$(CAMLP4MACRO)"
 
 # Types files
 MLZFILES :=\
-	mp_set\
+	set_sig\
 	file_base_type\
 	dag\
 	array_sig\
@@ -18,6 +18,7 @@ MLZFILES :=\
 	remote_lazy_queue_sig\
 	simplehash_sig\
 	hash_with_gc_sig\
+	memo_sig\
 	weak_memo_sig\
 	register
 
@@ -38,6 +39,7 @@ LMFILES :=\
 	ref_util\
 	file_util\
 	filename_util\
+	list_neq_append\
 	mp_id\
 	large_array\
 	large_weak_array\
@@ -52,10 +54,12 @@ LMFILES :=\
 	precedence\
 	file_base\
 	file_type_base\
+	table_util\
 	splay_table\
 	fun_splay_set\
 	red_black_set\
 	red_black_test\
+	red_black_table\
 	hash_set\
 	small_set\
 	debug_string_sets\
@@ -72,7 +76,9 @@ LMFILES :=\
 	array_linear_set\
 	simplehashtbl\
 	hash_with_gc\
-	weak_memo
+	weak_memo\
+	mp_inet\
+	http_server
 
 # Name of library
 MAIN := util

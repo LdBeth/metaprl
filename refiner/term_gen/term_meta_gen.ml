@@ -65,11 +65,27 @@ struct
    (*
     * Unzip a metaimplication into a list of terms.
     *)
+   let rec unfold_mlabeled name = function
+      MetaLabeled (_, t) ->
+         unfold_mlabeled name t
+    | MetaTheorem a ->
+         a
+    | t ->
+         ref_raise(RefineError (name, MetaTermMatchError t))
+
+   let rec unzip_mlabeled name labels = function
+      MetaLabeled (l, t) ->
+         unzip_mlabeled name (l :: labels) t
+    | MetaTheorem a ->
+         List.rev labels, a
+    | t ->
+         ref_raise(RefineError (name, MetaTermMatchError t))
+
    let rec unzip_mimplies = function
       MetaTheorem t ->
          [t]
-    | MetaImplies (MetaTheorem a, t) ->
-         a :: unzip_mimplies t
+    | MetaImplies (a, t) ->
+         unfold_mlabeled "unzip_mimplies" a :: unzip_mimplies t
     | MetaLabeled (_, t) ->
          unzip_mimplies t
     | t -> ref_raise(RefineError ("unzip_mimplies", MetaTermMatchError t))
@@ -87,7 +103,7 @@ struct
          t
     | MetaImplies (a, t) ->
          MetaImplies (a, strip_mfunction t)
-    | MetaFunction (v, a, t) ->
+    | MetaFunction (_, a, t) ->
          MetaImplies (a, strip_mfunction t)
     | MetaIff (t1, t2) ->
          MetaIff (strip_mfunction t1, strip_mfunction t2)
@@ -96,14 +112,14 @@ struct
 
    let unzip_mfunction t =
       let rec collect l = function
-         MetaTheorem t ->
-            List.rev l, t
-       | MetaImplies (MetaTheorem a, t) ->
-            collect ((None, a) :: l) t
-       | MetaFunction (v, MetaTheorem a, t) ->
-            collect ((Some v, a) :: l) t
-       | MetaLabeled (_, t) ->
-            collect l t
+         MetaImplies (a, t) ->
+            let labels, a = unzip_mlabeled "unzip_mfunction" [] a in
+               collect ((labels, None, a) :: l) t
+       | MetaFunction (v, a, t) ->
+            let labels, a = unzip_mlabeled "unzip_mfunction" [] a in
+               collect ((labels, Some v, a) :: l) t
+       | MetaTheorem a ->
+            List.rev l, a
        | t ->
             ref_raise(RefineError ("unzip_mfunction", MetaTermMatchError t))
       in
@@ -126,12 +142,13 @@ struct
    let rec unzip_mrewrite = function
       MetaIff (MetaTheorem redex, MetaTheorem contractum) ->
          [], redex, contractum
-    | MetaImplies(MetaTheorem a, t) ->
+    | MetaImplies (MetaTheorem a, t) ->
          let l, redex, contractum = unzip_mrewrite t in
             a::l, redex, contractum
     | MetaLabeled (_, t) ->
          unzip_mrewrite t
-    | t -> ref_raise(RefineError ("unzip_mrewrite", MetaTermMatchError t))
+    | t ->
+         ref_raise(RefineError ("unzip_mrewrite", MetaTermMatchError t))
 
    (*
     * Calculate context vars.
@@ -164,7 +181,8 @@ struct
     * Induction forms.
     *)
    let rec meta_for_all f = function
-      MetaTheorem t -> f t
+      MetaTheorem t ->
+         f t
     | MetaImplies (a, b) ->
          meta_for_all f a & meta_for_all f b
     | MetaFunction (v, a, b) ->

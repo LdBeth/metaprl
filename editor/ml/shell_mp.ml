@@ -51,392 +51,49 @@ open Filter_ast
 open Term_grammar
 open Filter_grammar
 
-open Tacticals
 open Mptop
 open Mp_version
 
-(************************************************************************
- * CONSTANTS                                                            *
- ************************************************************************)
+open Shell_p4_sig
 
-module ShellP4 =
+module ShellP4 (State : ShellStateSig) =
 struct
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
 
    (*
-    * Type of buffered input.
+    * Our state is just the global state.
     *)
-   type input_buf =
-      { mutable buf_index : int;
-        mutable buf_buffer : string
-      }
+   type t = State.t
 
    (************************************************************************
-    * PRINTERS                                                             *
+    * STATE FUNCTIONS                                                      *
     ************************************************************************)
 
    (*
-    * This is the current display form database.
+    * State for evaluating toploop expressions.
     *)
-   let df = ref None
+   let current_state = ref (State.create ())
 
-   let set_df df' =
-      df := df'
+   let get_current_state () =
+      !current_state
 
-   let get_df found notfound =
-      match !df with
-         Some df ->
-            found df
-       | None ->
-            notfound
-
-   let get_dfbase () =
-      match !df with
-         Some df ->
-            df
-       | None ->
-            Dform.null_base
+   let set_current_state state =
+      current_state := state
 
    (*
-    * Printers.
+    * We take these directly from the state.
     *)
-   let string_of_term t =
-      (get_df Dform.string_of_term Simple_print.SimplePrint.string_of_term) t
-
-   (*
-    * Use format library for term printing.
-    *)
-   let print_term t =
-      Format.print_string (string_of_term t);
-      flush stdout
-
-   let print_term_fp out t =
-      let db = get_df (fun x -> x) Dform.null_base in
-      let buf = Rformat.new_buffer () in
-         Dform.format_term db buf t;
-         Rformat.print_to_channel 80 buf out
-
-   (************************************************************************
-    * QUOTATIONS                                                           *
-    ************************************************************************)
-
-   (*
-    * Term parsing.
-    *)
-   let mk_opname_null _ =
-      raise (Failure "Shell_p4.mk_opname: no current package")
-
-   let mk_opname_ref = ref mk_opname_null
-
-   let set_mk_opname = function
-      Some f ->
-         mk_opname_ref := f
-    | None ->
-         mk_opname_ref := mk_opname_null
-
-   (*
-    * Base term grammar.
-    *)
-   module TermGrammarBefore : TermGrammarSig =
-   struct
-      let mk_opname loc l =
-         try !mk_opname_ref l with
-            exn ->
-               Stdpp.raise_with_loc loc exn
-
-      (*
-       * Term grammar.
-       *)
-      let gram = Pcaml.gram
-      let term_eoi = Grammar.Entry.create gram "term"
-      let term = Grammar.Entry.create gram "term"
-      let quote_term = Grammar.Entry.create gram "quote_term"
-      let mterm = Grammar.Entry.create gram "mterm"
-      let singleterm = Grammar.Entry.create gram "singleterm"
-      let bound_term = Grammar.Entry.create gram "bound_term"
-      let xdform = Grammar.Entry.create gram "xdform"
-   end
-
-   (*
-    * Extended term grammar.
-    *)
-   module TermGrammar = MakeTermGrammar (TermGrammarBefore)
-
-   (*
-    * Save terms in a table, and return a function to
-    * fetch the term.
-    *)
-   let (inline_terms : (int * term) list ref) = ref []
-   let inline_var = ref 0
-
-   let save_term t =
-      let loc = 0, 0 in
-      let v = !inline_var in
-         incr inline_var;
-         inline_terms := (v, t) :: !inline_terms;
-         <:expr< $lid: "shell_get_term"$ $int: string_of_int v$ >>
-
-   let reset_terms () =
-      inline_terms := []
-
-   let shell_get_term i =
-      try List.assoc i !inline_terms with
-         Not_found ->
-            eprintf "Term %d not found%t" i eflush;
-            xnil_term
-
-   (*
-    * String -> string translator.
-    *)
-   let term_exp s =
-      let cs = Stream.of_string s in
-      let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
-         save_term t
-
-   let term_patt s =
-      raise (Failure "Shell_p4.term_patt: not implemented yet")
-
-   let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
-   let _ = Quotation.default := "term"
-
-   (************************************************************************
-    * MODULE                                                               *
-    ************************************************************************)
-
-   (*
-    * Reference to current command set.
-    *)
-   let toploop =
-      let rsrc = Mptop.ext_toploop_resource in
-         ref (Mp_resource.extract rsrc)
-
-   (*
-    * Set the module.
-    * Collect the toplevel commands to use.
-    * Shell commands are always added in.
-    *)
-   let set_module name commands =
-      let name = String.capitalize name in
-      let rsrc =
-         try Mptop.get_resource name with
-            Not_found ->
-               eprintf "Module %s: commands not found%t" name eflush;
-               Mptop.ext_toploop_resource
-      in
-      let rsrc = Mp_resource.improve_list rsrc commands in
-      let rsrc = Mp_resource.improve_list rsrc ["shell_get_term", IntFunExpr (fun i -> TermExpr (shell_get_term i))] in
-         toploop := Mp_resource.extract rsrc
-
-   (************************************************************************
-    * ARGUMENT COLLECTION                                                  *
-    ************************************************************************)
-
-   (*
-    * -I <dir>
-    *)
-   let includes = ref []
-
-   let get_includes () =
-      !includes
-
-   let add_include dir =
-      includes := !includes @ [dir]
-
-   (*
-    * File arguments.
-    *)
-   let input_files = ref []
-   let interactive_flag = ref true
-
-   let is_interactive () =
-      !interactive_flag
-
-   (*
-    * Anonymous arguments are rejected.
-    *)
-   let handle_anon_arg arg =
-      input_files := !input_files @ [arg]
-
-   (*
-    * Argument specifications.
-    *)
-   let spec =
-      ["-I", Arg.String add_include, "add an directory to the path for include files"]
-
-   let _ =
-      Debug_symbols.debug_symbols Sys.argv.(0);
-      Arg.current := 0;
-      Env_arg.parse spec handle_anon_arg "MetaPRL toploop"
-
-   (************************************************************************
-    * TOPLEVEL                                                             *
-    ************************************************************************)
-
-   (*
-    * Save the text in the input_buffers during each toplevel read.
-    *)
-   type info =
-      Buffered of (int * int * string) list
-    | Filename of string
-    | File of in_channel
-
-   let input_info = ref (Buffered [])
-
-   (*
-    * Push a new value into the buffer.
-    *)
-   let push_buffer abs len buf =
-      match !input_info with
-         Buffered l ->
-            input_info := Buffered ((abs, len, buf) :: l)
-       | _ ->
-            raise (Failure "Shell_p4.push_buffer")
-
-   (*
-    * Reset the input to the buffered state
-    * with an empty buffer.
-    *)
-   let reset_input () =
-      let _ =
-         match !input_info with
-            File input ->
-               close_in input
-          | _ ->
-               ()
-      in
-         input_info := Buffered []
-
-   (*
-    * Set the file to read from.
-    *)
-   let set_file name =
-      reset_input ();
-      input_info := Filename name
-
-   (*
-    * Get the text associated with a location.
-    *)
-   let get_buffered_text (start, finish) bufs =
-      let count = finish - start in
-      let s = String_util.create "Shell_p4.get_buffered_text" count in
-      let rec collect count = function
-         (pos, len, buf) :: t ->
-            if start > pos then
-               if start + count - pos > len then
-                  raise (Failure "collect")
-               else
-                  String_util.blit "Shell_p4.get_buffered_text" buf (start - pos) s 0 count
-            else if start + count > pos then
-               let amount = start + count - pos in
-                  if amount > len then
-                     raise (Failure "collect")
-                  else
-                     begin
-                        String_util.blit "Shell_p4.get_buffered_text" buf 0 s (pos - start) amount;
-                        collect (count - amount) t
-                     end
-            else
-               collect count t
-       | [] ->
-            if count <> 0 then
-               raise (Failure "collect")
-      in
-         try
-            collect count bufs;
-            s
-         with
-            Failure "collect" ->
-               eprintf "Can't recover input, characters (%d, %d)%t" start finish eflush;
-               raise (Failure "get_text")
-
-   (*
-    * Get the text from the file.
-    *)
-   let get_file_text (start, finish) input =
-      let buf = String_util.create "Shell_p4.get_file_text" (finish - start) in
-         try
-            seek_in input start;
-            really_input input buf 0 (finish - start);
-            buf
-         with
-            End_of_file ->
-               eprintf "Can't recover input, characters (%d, %d)%t" start finish eflush;
-               raise (Failure "get_file_text")
-
-   (*
-    * Get the text from the input.
-    *)
-   let get_text loc =
-      match !input_info with
-         Buffered bufs ->
-            get_buffered_text loc bufs
-       | Filename name ->
-            begin
-               try
-                  let input = open_in name in
-                     input_info := File input;
-                     get_file_text loc input
-               with
-                  Sys_error _ ->
-                     let start, finish = loc in
-                        eprintf "Can't recover input, file %s, characters (%d, %d)%t" name start finish eflush;
-                        raise (Failure "get_text")
-            end
-       | File input ->
-            get_file_text loc input
-
-   (*
-    * Create an empty buffer.
-    *)
-   let create_buffer () =
-      { buf_index = 0; buf_buffer = "" }
-
-   (*
-    * Wrap the input channel so that we can recover input.
-    *)
-   let stream_of_channel inx =
-      let buf = create_buffer () in
-      let refill loc =
-         let str = input_line inx ^ "\n" in
-            buf.buf_index <- 0;
-            buf.buf_buffer <- str;
-            push_buffer loc (String.length str) str
-      in
-      let rec read loc =
-         let { buf_index = index; buf_buffer = buffer } = buf in
-            if index = String.length buffer then
-               try
-                  refill loc;
-                  read loc
-               with
-                  End_of_file ->
-                     None
-            else
-               let c = buffer.[index] in
-                  buf.buf_index <- index + 1;
-                  Some c
-      in
-         reset_input ();
-         Stream.from read
-
-   (************************************************************************
-    * TACTIC SAVING                                                        *
-    ************************************************************************)
-
-   (*
-    * We save the tactic and its text to be passed to the refiner.
-    *)
-   let saved_tactic = ref ("\"no saved tactic\"",
-                           let loc = (0, 0) in
-                              <:expr< $str: "no saved tactic"$ >>)
-
-   let set_tactic s e =
-      saved_tactic := (s, e)
-
-   let get_tactic () =
-      !saved_tactic
+   let create = State.create
+   let fork = State.fork
+   let get_includes = State.get_includes
+   let get_tactic = State.get_tactic
+   let print_term = State.print_term
+   let set_module = State.set_module
+   let set_mk_opname = State.set_mk_opname
+   let set_df = State.set_dfbase
+   let is_interactive = State.is_interactive
 
    (************************************************************************
     * SHELL GRAMMAR                                                        *
@@ -459,7 +116,7 @@ struct
 
       refine_item:
          [[ e = expr ->
-             set_tactic (get_text loc) e;
+             State.set_tactic (State.get_text loc) e;
              e
           ]];
    END
@@ -471,22 +128,31 @@ struct
    (*
     * Evaluate a tactic through the toploop resource.
     *)
-   let eval_tactic expr =
-      match expr_of_ocaml_expr !toploop expr with
-         TacticExpr tac ->
-            tac
-       | _ ->
-            raise (RefineError ("eval_tactic", StringError "expression is not a tactic"))
+   let eval_tactic state =
+      State.synchronize state (function expr ->
+          match expr_of_ocaml_expr (State.get_toploop state) expr with
+             TacticExpr tac ->
+                tac
+           | _ ->
+               raise (RefineError ("eval_tactic", StringError "expression is not a tactic")))
 
-   let parse_string str =
-      let instream = Stream.of_string str in
-         Grammar.Entry.parse Pcaml.expr instream
+   let parse_string state =
+      State.synchronize state (function str ->
+          let instream = Stream.of_string str in
+             Grammar.Entry.parse Pcaml.expr instream)
+
+   let eval_expr state =
+      State.synchronize state (function str ->
+         let instream = Stream.of_string str in
+         let expr = Grammar.Entry.parse Pcaml.expr instream in
+         let _ = expr_of_ocaml_expr (State.get_toploop state) expr in
+            ())
 
    (************************************************************************
     * TOPLOOP                                                              *
     ************************************************************************)
 
-   let rec print_expr out = function
+   let rec print_expr state out = function
       UnitExpr () ->
          fprintf out "() : unit\n"
     | BoolExpr b ->
@@ -496,15 +162,15 @@ struct
     | StringExpr s ->
          fprintf out "%s : string\n" s
     | TermExpr t ->
-         fprintf out "%s : term\n" (string_of_term t)
+         fprintf out "%s : term\n" (State.string_of_term state t)
     | TacticExpr _ ->
          fprintf out "- : tactic\n"
     | ConvExpr _ ->
          fprintf out "-: conv\n"
     | ListExpr l ->
-         fprintf out "[%a] : list\n" print_expr_list l
+         fprintf out "[%a] : list\n" (print_expr_list state) l
     | TupleExpr l ->
-         fprintf out "(%a) : tuple\n" print_expr_list l
+         fprintf out "(%a) : tuple\n" (print_expr_list state) l
     | FunExpr _ ->
          fprintf out "- : expr -> expr\n"
     | UnitFunExpr _ ->
@@ -534,34 +200,26 @@ struct
     | ConvListFunExpr _ ->
          fprintf out "- : conv list -> expr\n"
 
-   and print_expr_list out = function
+   and print_expr_list state out = function
       [expr] ->
-         print_expr out expr
+         print_expr state out expr
     | expr :: exprs ->
-         fprintf out "%a; %a" print_expr expr print_expr_list exprs
+         fprintf out "%a; %a" (print_expr state) expr (print_expr_list state) exprs
     | [] ->
          ()
 
    (*
     * Evaluate a struct item.
     *)
-   let eval_str_item loc item =
-      let expr = expr_of_ocaml_str_item !toploop item in
-         if !interactive_flag then
+   let eval_str_item state loc item =
+      let expr = expr_of_ocaml_str_item (State.get_toploop state) item in
+         if State.is_interactive state then
             begin
-               print_expr stdout expr;
+               print_expr state stdout expr;
                flush stdout
             end
 
-   let eval_expr loc expr =
-      let expr = expr_of_ocaml_expr !toploop expr in
-         if !interactive_flag then
-            begin
-               print_expr stdout expr;
-               flush stdout
-            end
-
-   let eval_opens opens =
+   let eval_opens _ _ =
       ()
 
    (*
@@ -569,15 +227,15 @@ struct
     *)
    external exit : int -> unit = "caml_exit"
 
-   let rec use name =
+   let rec use state name =
       let inx = open_in name in
-      let int_flag = !interactive_flag in
-         interactive_flag := false;
-         toploop false (stream_of_channel inx);
-         interactive_flag := int_flag;
+      let int_flag = State.is_interactive state in
+         State.set_interactive state false;
+         toploop state false (State.stream_of_channel state inx);
+         State.set_interactive state true;
          close_in inx
 
-   and eval_directive loc str = function
+   and eval_directive state loc str = function
       DpNon ->
          begin
             match str with
@@ -590,7 +248,7 @@ struct
          begin
             match str with
                "use" ->
-                  use str'
+                  use state str'
              | _ ->
                   raise (Failure (sprintf "Unknown %s %s" str str'))
          end
@@ -604,87 +262,96 @@ struct
    (*
     * Evaluate a toplevel phrase.
     *)
-   and eval_phrase = function
+   and eval_phrase state = function
       PhStr (loc, item) ->
-         eval_str_item loc item
+         eval_str_item state loc item
     | PhDir (loc, str, param) ->
-         eval_directive loc str param
+         eval_directive state loc str param
 
    (*
     * Toploop reads phrases, then prints errors.
     *)
-   and toploop prompt instream =
+   and toploop state prompt instream =
       let loop = ref true in
          while !loop do
-            if prompt then
-               begin
-                  output_string stdout "# ";
-                  flush stdout
-               end;
-            reset_terms ();
-            try
-               match Grammar.Entry.parse Pcaml.top_phrase instream with
-                  Some phrase ->
-                     eval_phrase phrase
-                | None ->
+            let state =
+               if prompt then
+                  begin
+                     output_string stdout "# ";
+                     flush stdout;
+                     !current_state
+                  end
+               else
+                  state
+            in
+               State.reset_terms state;
+               try
+                  match State.synchronize state (Grammar.Entry.parse Pcaml.top_phrase) instream with
+                     Some phrase ->
+                        eval_phrase state phrase
+                   | None ->
+                        loop := false
+               with
+                  Stdpp.Exc_located ((start, finish), exn) ->
+                     let df = State.get_dfbase state in
+                     let buf = new_buffer () in
+                        format_string buf "chars ";
+                        format_int buf start;
+                        format_string buf "-";
+                        format_int buf finish;
+                        format_string buf ": ";
+                        begin
+                           match exn with
+                              Pcaml.Qerror (_, _, exn) ->
+                                 Filter_exn.format_exn df buf exn
+                            | exn ->
+                                 Filter_exn.format_exn df buf exn
+                        end;
+                        print_to_channel 80 buf stderr;
+                        eflush stderr
+                | End_of_file ->
                      loop := false
-            with
-               Stdpp.Exc_located ((start, finish), exn) ->
-                  let df = get_dfbase () in
-                  let buf = new_buffer () in
-                     format_string buf "chars ";
-                     format_int buf start;
-                     format_string buf "-";
-                     format_int buf finish;
-                     format_string buf ": ";
-                     begin match exn with
-                        Pcaml.Qerror (_, __, exn) ->
-                           Filter_exn.format_exn df buf exn
-                      | exn ->
-                           Filter_exn.format_exn df buf exn
-                     end;
-                     print_to_channel 80 buf stderr;
-                     eflush stderr
-             | End_of_file ->
-                  loop := false
 
-             | (Pcaml.Qerror _) as exn ->
-                  Pcaml.report_error exn;
-                  eflush stderr
-
-             | exn ->
-                  let df = get_dfbase () in
-                  let buf = new_buffer () in
-                     format_string buf "uncaught exception: ";
-                     Filter_exn.format_exn df buf exn;
-                     print_to_channel 80 buf stderr;
+                | (Pcaml.Qerror _) as exn ->
+                     Pcaml.report_error exn;
                      eflush stderr
-          done
+
+                | RefineError (_, ToploopIgnoreError) ->
+                     ()
+
+                | exn ->
+                     let df = State.get_dfbase state in
+                     let buf = new_buffer () in
+                        format_string buf "uncaught exception: ";
+                        Filter_exn.format_exn df buf exn;
+                        print_to_channel 80 buf stderr;
+                        eflush stderr
+         done
 
    (*
     * Process some input files.
     *)
-   let use_files files =
-      List.iter use files
+   let use_files state files =
+      List.iter (use state) files
 
    (*
     * We just loop on the input.  Evaluation is performed by
     * the toploop resource.
     *)
-   let main_loop_aux () =
-      match !input_files with
+   let main_loop_aux state =
+      match State.get_input_files () with
          [] ->
-            let instream = stream_of_channel stdin in
+            let instream = State.stream_of_channel state stdin in
                printf "%s\n%t" version eflush;
-               toploop true instream
+               toploop state true instream
         | files ->
-            use_files files
+            use_files state files
 
-   let main () =
-      install_debug_printer print_term_fp;
+   let main state =
+      install_debug_printer State.print_term_fp;
       Sys.catch_break true;
-      Tactic_type.main_loop ();
-      main_loop_aux ()
+      Tactic_type.Tactic.main_loop ();
+      main_loop_aux state
 end
 
 (*

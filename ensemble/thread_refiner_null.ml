@@ -36,14 +36,15 @@ open Thread_refiner_sig
 
 module ThreadRefinerTacticals =
 struct
-   type 'extract extract =
+   type ('arg, 'extract) extract =
       Leaf of 'extract
-    | Node of 'extract extract * 'extract extract list
-   type ('term, 'extract) t = 'term list * 'extract extract
-   type ('term, 'extract) tactic = 'term -> ('term, 'extract) t
+    | Node of ('arg, 'extract) extract * ('arg, 'extract) extract list
+    | Wrap of 'arg * ('arg, 'extract) extract
+   type ('term, 'arg, 'extract) t = 'term list * ('arg, 'extract) extract
+   type ('term, 'arg, 'extract) tactic = 'term -> ('term, 'arg, 'extract) t
 
    (*
-    * Constructor.
+    * Constructors.
     *)
    let create_value args ext =
       (args, Leaf ext)
@@ -93,6 +94,10 @@ struct
     | [] ->
          [], []
 
+   let wrap wrap_arg tac arg =
+      let args, ext = tac arg in
+         args, Wrap (wrap_arg, ext)
+
    let compose1 tac1 tac2 arg =
       let args, ext = tac1 arg in
       let argsl, extl = apply1 tac2 args in
@@ -109,17 +114,19 @@ struct
          argsl, Node (ext, extl)
 end
 
-module MakeThreadRefiner (Arg : ThreadRefinerArgSig) =
+module ThreadRefiner =
 struct
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
 
-   type extract = Arg.extract
-   type 'term t = ('term, extract) ThreadRefinerTacticals.t
-   type 'term tactic = ('term, extract) ThreadRefinerTacticals.tactic
+   type ('term, 'arg, 'extract) t = ('term, 'arg, 'extract) ThreadRefinerTacticals.t
+   type ('term, 'arg, 'extract) tactic = ('term, 'arg, 'extract) ThreadRefinerTacticals.tactic
    type 'share key = 'share
-   type ('term, 'share) server = unit
+   type ('term, 'share, 'arg, 'extract) server =
+      { compose : 'extract -> 'extract list -> 'extract;
+        wrap : 'arg -> 'extract -> 'extract
+      }
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
@@ -128,13 +135,17 @@ struct
    (*
     * Server is empty.
     *)
-   let create _ =
-      ()
+   let create _ compose wrap =
+      { compose = compose;
+        wrap = wrap
+      }
 
    (*
     * Tacticals.
     *)
    let create_value = ThreadRefinerTacticals.create_value
+
+   let wrap = ThreadRefinerTacticals.wrap
    let first = ThreadRefinerTacticals.first
    let compose1 = ThreadRefinerTacticals.compose1
    let compose2 = ThreadRefinerTacticals.compose2
@@ -143,31 +154,33 @@ struct
    (*
     * Evaluation just composes the extract
     *)
-   let eval () (arg, ext) =
-      let rec compose = function
+   let eval { compose = compose; wrap = wrap } (arg, ext) =
+      let rec compose' = function
          ThreadRefinerTacticals.Leaf ext ->
             ext
        | ThreadRefinerTacticals.Node (ext, extl) ->
-            Arg.compose (compose ext) (List.map compose extl)
+            compose (compose' ext) (List.map compose' extl)
+       | ThreadRefinerTacticals.Wrap (arg, ext) ->
+            wrap arg (compose' ext)
       in
-         arg, compose ext
+         arg, compose' ext
 
    (*
     * Shared memory.
     *)
-   let share () _ f =
+   let share _ _ f =
       f ()
 
-   let arg_of_key () x =
+   let arg_of_key _ x =
       x
 
    (*
     * Nothing in main loop.
     *)
-   let args () =
+   let args _ =
       []
 
-   let main_loop () =
+   let main_loop _ =
       ()
 end
 

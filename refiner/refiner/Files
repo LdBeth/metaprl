@@ -3,4 +3,5 @@ REFINER_FILES :=\
 	refine_error\
 	refiner_std\
 	refiner_ds\
+	refiner_io\
 	refiner

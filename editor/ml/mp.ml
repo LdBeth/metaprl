@@ -30,98 +30,105 @@
  * jyh@cs.cornell.edu
  *)
 
-module Shell = Shell.Shell (Shell_p4.ShellP4)
+module Shell = Shell.Shell (Shell_p4.ShellP4 (Shell_state.ShellState))
+module ShellHTTP = Shell_http.ShellHTTP (Shell)
 
 open Shell
 
 (*
+ * Job control.
+ *)
+let fork = fork (get_current_shell ())
+let pid = pid (get_current_shell ())
+let jobs = jobs (get_current_shell ())
+let fg = fg (get_current_shell ())
+
+(*
  * Navigation and display.
  *)
-let cd = cd
-let pwd = pwd
-let set_window_width = set_window_width
+let cd = cd (get_current_shell ())
+let pwd () = pwd (get_current_shell ())
+let set_window_width = set_window_width (get_current_shell ())
 
 (*
  * Module commands.
  *)
-let load = load
-let create_pkg = create_pkg
-let set_writeable = set_writeable
-let save = save
-let save_all = save_all
+let load = load (get_current_shell ())
+let create_pkg = create_pkg (get_current_shell ())
+let set_writeable () = set_writeable (get_current_shell ())
+let save () = save (get_current_shell ())
+let save_all () = save_all (get_current_shell ())
 
 (*
  * The possible objects in a package.
  *)
-let create_rw = create_rw
-let create_axiom = create_axiom
-let create_thm = create_thm
-let create_tptp = create_tptp
-let create_opname = create_opname
-let create_condition = create_condition
-let create_parent = create_parent
-let create_dform = create_dform
-let create_prec = create_prec
-let create_prec_rel = create_prec_rel
-let create_resource = create_resource
-let create_infix = create_infix
-let create_ml = create_ml
+let create_rw = create_rw (get_current_shell ())
+let create_axiom = create_axiom (get_current_shell ())
+let create_thm = create_thm (get_current_shell ())
+let create_tptp = create_tptp (get_current_shell ())
+let create_opname = create_opname (get_current_shell ())
+let create_condition = create_condition (get_current_shell ())
+let create_parent = create_parent (get_current_shell ())
+let create_dform = create_dform (get_current_shell ())
+let create_prec = create_prec (get_current_shell ())
+let create_prec_rel = create_prec_rel (get_current_shell ())
+let create_resource = create_resource (get_current_shell ())
+let create_infix = create_infix (get_current_shell ())
+let create_ml = create_ml (get_current_shell ())
 
 (*
  * View, close, check object.
  * An object is not installed until it is checked.
  *)
-let view = view
-let ls = ls
+let view = view (get_current_shell ())
+let ls () = ls (get_current_shell ())
 
 (*
  * Editing commands.
  *)
-let set_goal = set_goal
-let set_redex = set_redex
-let set_contractum = set_contractum
-let set_assumptions = set_assumptions
-let set_params = set_params
-let check = check
-let expand = expand
+let set_goal = set_goal (get_current_shell ())
+let set_redex = set_redex (get_current_shell ())
+let set_contractum = set_contractum (get_current_shell ())
+let set_assumptions = set_assumptions (get_current_shell ())
+let set_params = set_params (get_current_shell ())
+let check () = check (get_current_shell ())
+let expand () = expand (get_current_shell ())
 
 (*
  * Proof editing.
  *)
-let root = root
-let up = up
-let down = down
-let goal = goal
-let refine = refine
-let undo = undo
-let fold = fold
-let fold_all = fold_all
+let root () = root (get_current_shell ())
+let up = up (get_current_shell ())
+let down = down (get_current_shell ())
+let goal () = goal (get_current_shell ())
+let refine = refine (get_current_shell ())
+let undo () = undo (get_current_shell ())
 
 (*
  * Nuprl5 interface.
  *)
-let edit_list_modules = edit_list_modules
-let edit_list_module_all = edit_list_module_all
-let edit_list_module = edit_list_module
-let edit_list_module_rw = edit_list_module_rw
-let edit_list_parents = edit_list_parents
-let edit_list_dforms = edit_list_dforms
-let edit_list_precs = edit_list_precs
-let edit_list_prec_rels = edit_list_prec_rels
-let edit_create_thm = edit_create_thm
-let edit_create_rw = edit_create_rw
-let edit_cd_thm = edit_cd_thm
-let edit_set_goal = edit_set_goal
-let edit_set_redex = edit_set_redex
-let edit_set_contractum = edit_set_contractum
-let edit_set_assumptions = edit_set_assumptions
-let edit_set_params = edit_set_params
-let edit_refine = edit_refine
-let edit_node = edit_node
-let edit_save = edit_save
-let edit_undo = edit_undo
+let edit_list_modules () = edit_list_modules (get_current_shell ())
+let edit_list_module_all = edit_list_module_all (get_current_shell ())
+let edit_list_module = edit_list_module (get_current_shell ())
+let edit_list_module_rw = edit_list_module_rw (get_current_shell ())
+let edit_list_parents = edit_list_parents (get_current_shell ())
+let edit_list_dforms = edit_list_dforms (get_current_shell ())
+let edit_list_precs = edit_list_precs (get_current_shell ())
+let edit_list_prec_rels = edit_list_prec_rels (get_current_shell ())
+let edit_create_thm = edit_create_thm (get_current_shell ())
+let edit_create_rw = edit_create_rw (get_current_shell ())
+let edit_cd_thm = edit_cd_thm (get_current_shell ())
+let edit_set_goal = edit_set_goal (get_current_shell ())
+let edit_set_redex = edit_set_redex (get_current_shell ())
+let edit_set_contractum = edit_set_contractum (get_current_shell ())
+let edit_set_assumptions = edit_set_assumptions (get_current_shell ())
+let edit_set_params = edit_set_params (get_current_shell ())
+let edit_refine = edit_refine (get_current_shell ())
+let edit_node = edit_node (get_current_shell ())
+let edit_save = edit_save (get_current_shell ())
+let edit_undo () = edit_undo (get_current_shell ())
 
-let _ = Shell.main ()
+let _ = ShellHTTP.main ()
 
 (*
  * -*-

@@ -1,0 +1,177 @@
+(*
+ * The shell_p4 module configures camlp4 for MetaPRL.
+ *
+ * ----------------------------------------------------------------
+ *
+ * This file is part of MetaPRL, a modular, higher order
+ * logical framework that provides a logical programming
+ * environment for OCaml and other languages.
+ *
+ * See the file doc/index.html for information on Nuprl,
+ * OCaml, and more information about this system.
+ *
+ * Copyright (C) 1998 Jason Hickey, Cornell University
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * Author: Jason Hickey
+ * jyh@cs.cornell.edu
+ *)
+
+open Opname
+open Refiner.Refiner.TermType
+open Rformat
+open Dform
+
+open Tactic_type.Tactic
+
+(*
+ * These are the global functions that a shell requires.
+ *)
+module type ShellStateSig =
+sig
+   type t
+
+   (*
+    * Create a copy of the shell.
+    *)
+   val create : unit -> t
+   val fork : t -> t
+
+   (*
+    * Client functions called somewhere within a toploop.
+    * Client functions are global, and they are only valid
+    * within a toploop call.  These functions usually fail if the
+    * toploop is not active.
+    *)
+   val print_term_fp : out_channel -> term -> unit
+   val set_tactic : string -> MLast.expr -> unit
+
+   (*
+    * Toploop functions.
+    *)
+   val set_mk_opname : t -> (string list -> opname) option -> unit
+   val set_module : t -> string -> (string * Mptop.expr) list -> unit
+   val set_dfbase : t -> dform_base option -> unit
+   val get_dfbase : t -> dform_base
+   val get_tactic : t -> string * MLast.expr
+   val get_toploop : t -> Mptop.top_table
+   val print_term : t -> term -> unit
+   val string_of_term : t -> term -> string
+   val is_interactive : t -> bool
+   val set_interactive : t -> bool -> unit
+   val reset_terms : t -> unit
+   val synchronize : t -> ('a -> 'b) -> 'a -> 'b
+
+   (*
+    * File parsing.
+    *)
+   val stream_of_channel : t -> in_channel -> char Stream.t
+   val get_text : int * int -> string
+   val wrap : t -> (Lexing.lexbuf -> 'a) -> Lexing.lexbuf -> 'a
+   val set_file : t -> string -> unit
+
+   (*
+    * Additional global functions.
+    *)
+   val get_includes : unit -> string list
+   val get_input_files : unit -> string list
+end
+
+(*
+ * These are the functions provided by the shell.
+ *)
+module type ShellP4Sig =
+sig
+   (*
+    * Can have multiple instances of the shell.
+    *)
+   type t
+
+   (*
+    * Create an instance of the shell.
+    *)
+   val create : unit -> t
+   val fork : t -> t
+
+   (*
+    * Current toploop state.
+    *)
+   val set_current_state : t -> unit
+   val get_current_state : unit -> t
+
+   (*
+    * Flag for whether currently in interactive mode.
+    *)
+   val is_interactive : t -> bool
+
+   (*
+    * Set the current display form base.
+    *)
+   val set_df : t -> dform_base option -> unit
+
+   (*
+    * This is the opname function used when terms are built.
+    *)
+   val set_mk_opname : t -> (string list -> opname) option -> unit
+
+   (*
+    * Set the current module.
+    *)
+   val set_module : t -> string -> (string * Mptop.expr) list -> unit
+
+   (*
+    * Printers.
+    *)
+   val print_term : t -> term -> unit
+
+   (*
+    * Get the tactic for the last refinement.
+    *)
+   val get_tactic : t -> string * MLast.expr
+
+   (*
+    * Expression evaluation.
+    *)
+   val parse_string : t -> string -> MLast.expr
+   val eval_tactic : t -> MLast.expr -> tactic
+   val eval_expr : t -> string -> unit
+
+   (*
+    * Open all the obvious modules.
+    *)
+   val eval_opens : t -> string list list -> unit
+
+   (*
+    * Include directory list.
+    *)
+   val get_includes : unit -> string list
+
+   (*
+    * Main loop.
+    * If the standard toploop is used, this function
+    * will exit.  Otherwise, it will only exit when the toploop
+    * is finished.
+    *)
+   val main : t -> unit
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

@@ -32,11 +32,8 @@
  *)
 
 include Tactic_cache
-include Tacticals
 
-include Io_proof
-include Package_type
-include Proof_type
+include Package_sig
 
 open Parsetree
 
@@ -44,6 +41,7 @@ open Printf
 
 open Mp_debug
 open Imp_dag
+open String_set
 
 open File_base_type
 
@@ -61,13 +59,10 @@ open Filter_util
 open Filter_prog
 open Infix
 
-open Tactic_cache
-open Tacticals
+open Tactic_type
+open Tactic_type.Tacticals
 
-open Io_proof_type
-open Io_proof
-open Package_type
-open Proof_type
+open Package_sig
 
 (*
  * Show that the file is loading.
@@ -106,8 +101,7 @@ type 'a proof_info =
  *)
 let null_tactic_argument =
    { ref_label = "main";
-     ref_args = [];
-     ref_fcache = Sequent.make_cache (fun () -> extract (new_cache ()))
+     ref_args = []
    }
 
 (*
@@ -123,42 +117,59 @@ struct
    (*
     * The type of proofs.
     *)
-   type t = Proof_edit.t proof_info ref
+   type t = parse_arg
+   type cooked = (parse_arg * Proof_edit.ped) proof_info ref
    type raw = Proof.io_proof
 
    (*
     * Get a raw proof from the proof.
     *)
-   let to_raw name proof =
+   let to_raw_aux arg name proof =
       match !proof with
          ProofRaw (_, proof) ->
-            proof
-       | ProofEdit ped ->
-            let proof = Proof.io_proof_of_proof (Proof.main (Proof_edit.proof_of_ped ped)) in
+            arg, proof
+       | ProofEdit ((parse, eval) as arg, ped) ->
+            let proof = Proof.io_proof_of_proof parse eval (Proof.root (Proof_edit.proof_of_ped ped)) in
                if !debug_package_info then
                   eprintf "Converting the ped back to a regular proof: %s%t" name eflush;
-               proof
+               arg, proof
+
+   let to_raw arg name proof =
+      snd (to_raw_aux arg name proof)
 
    (*
     * Get a proof from the raw proof.
     *)
-   let of_raw name proof =
+   let of_raw _ name proof =
       if !debug_package_info then
          eprintf "Converting io proof for %s%t" name eflush;
       ref (ProofRaw (name, proof))
 
    (*
     * Convert the proof to a term.
-    * We just save the io representation.
     *)
-   let to_term name proof =
-      term_of_proof Term_io.normalize_term (to_raw name proof)
+   let to_term arg name proof =
+      let (parse, eval), proof = to_raw_aux arg name proof in
+         Proof.term_of_io_proof parse eval proof
 
    (*
     * Convert back to a proof.
     *)
-   let of_term name proof =
-      ref (ProofRaw (name, proof_of_term Term_io.denormalize_term [] proof))
+   let of_term (parse, eval) name proof =
+      ref (ProofRaw (name, Proof.io_proof_of_term parse eval proof))
+
+   (*
+    * Convert the proof to a term.
+    *)
+   let to_term_io arg name proof =
+      let (parse, eval), proof = to_raw_aux arg name proof in
+         Proof.term_io_of_io_proof parse eval proof
+
+   (*
+    * Convert back to a proof.
+    *)
+   let of_term_io (parse, eval) name proof =
+      ref (ProofRaw (name, Proof.io_proof_of_term_io parse eval proof))
 
    (*
     * When we compile, we extract the tactics into a separate array
@@ -170,7 +181,7 @@ struct
     * BUG: jyh: I backed this out, and right now proofs
     * always fail.
     *)
-   let to_expr name proof =
+   let to_expr _ name proof =
       let loc = 0, 0 in
       let unit_patt = <:patt< () >> in
       let error_expr = <:expr< raise ( $uid: "Refiner"$ . $uid: "Refiner"$ . $uid: "RefineError"$
@@ -200,50 +211,71 @@ module Cache = MakeCaches (Convert)
 module Package =
 struct
    (*
-    * A package may have a signature, and an implementation
-    * as a cache.
-    *)
-   type package =
-      { mutable pack_status : status;
-        pack_parse : string -> MLast.expr;
-        pack_eval : MLast.expr -> tactic;
-        pack_name : string;
-        mutable pack_sig  : Cache.StrFilterCache.sig_info option;
-        mutable pack_info : Cache.StrFilterCache.info option;
-        pack_arg : tactic_argument
-      }
-
-   (*
-    * Built from a filter cache.
+    * This is the global info.
     *)
    type t =
-      { pack_cache : Cache.StrFilterCache.t;
-        pack_eval_string : string -> MLast.expr;
-        pack_create_tactic : MLast.expr -> tactic;
+      { pack_lock : Mutex.t;
+        pack_cache : Cache.StrFilterCache.t;
         pack_dag : package ImpDag.t;
         mutable pack_packages : package ImpDag.node list
       }
 
    (*
+    * This is the info we save when the structure is
+    * loaded.
+    *)
+   and pack_str_info =
+      { pack_str_info : Cache.StrFilterCache.info;
+        pack_arg : tactic_argument;
+        pack_parse : parse_arg
+      }
+
+   (*
+    * A package may have a signature, and an implementation
+    * as a cache.  Modifications are in-place as information
+    * is collected.
+    *)
+   and package =
+      { pack_info : t;
+
+        pack_name : string;
+
+        mutable pack_status : status;
+        mutable pack_sig_info : Cache.StrFilterCache.sig_info option;
+        mutable pack_str : pack_str_info option;
+        mutable pack_infixes : string list
+      }
+
+   (*
     * Proof is either in raw form, or it is editable.
     *)
-   type proof = Proof_edit.t proof_info ref
+   type proof = Convert.cooked
+
+   (************************************************************************
+    * CONSTRUCTION                                                         *
+    ************************************************************************)
 
    (*
     * Create the cache.
     * Add placeholders for all the theories.
     *)
-   let create parser create_tactic path =
+   let create path =
       let dag = ImpDag.create () in
+      let pack =
+         { pack_lock = Mutex.create ();
+           pack_cache = Cache.StrFilterCache.create path;
+           pack_dag = dag;
+           pack_packages = []
+         }
+      in
       let hash = Hashtbl.create 17 in
       let mk_package name =
-         { pack_status = Incomplete;
-           pack_parse = parser;
-           pack_eval = create_tactic;
+         { pack_info = pack;
            pack_name = name;
-           pack_sig = None;
-           pack_info = None;
-           pack_arg = null_tactic_argument
+           pack_status = Incomplete;
+           pack_sig_info = None;
+           pack_str = None;
+           pack_infixes = []
          }
       in
       let find_or_create name =
@@ -263,12 +295,39 @@ struct
             List.iter add_parent (Theory.get_parents thy);
             node
       in
-         { pack_cache = Cache.StrFilterCache.create path;
-           pack_eval_string = parser;
-           pack_create_tactic = create_tactic;
-           pack_dag = dag;
-           pack_packages = List.map add_theory (get_theories ())
-         }
+         pack.pack_packages <- List.map add_theory (get_theories ());
+         pack
+
+   (*
+    * Lock the pack.
+    *)
+   let synchronize_pack pack f =
+      let lock = pack.pack_lock in
+         Mutex.lock lock;
+         try
+            let result = f pack in
+               Mutex.unlock lock;
+               result
+         with
+            exn ->
+               Mutex.unlock lock;
+               raise exn
+
+   let synchronize_node node f =
+      let lock = node.pack_info.pack_lock in
+         Mutex.lock lock;
+         try
+            let result = f node in
+               Mutex.unlock lock;
+               result
+         with
+            exn ->
+               Mutex.unlock lock;
+               raise exn
+
+   (************************************************************************
+    * REFINER ACCESS                                                       *
+    ************************************************************************)
 
    (*
     * See if a theory is already loaded.
@@ -307,10 +366,10 @@ struct
       (get_theory name).thy_refiner
 
    let sentinal { pack_name = name } =
-      Sequent.sentinal_of_refiner name
+      Tactic_type.Tactic.sentinal_of_refiner name
 
    let sentinal_object { pack_name = name } name' =
-      Sequent.sentinal_of_refiner_object name name'
+      Tactic_type.Tactic.sentinal_of_refiner_object name name'
 
    (*
     * Get the list of display forms.
@@ -321,6 +380,280 @@ struct
    let dforms { pack_name = name } =
       get_dforms name
 
+
+   (************************************************************************
+    * LOADING                                                              *
+    ************************************************************************)
+
+   (*
+    * Get a node by its name.
+    *)
+   let load_check dag name node =
+      let { pack_name = name' } = ImpDag.node_value dag node in
+         name' = name
+
+   let is_loaded { pack_dag = dag; pack_packages = packages } name =
+      List_util.existsp (load_check dag name) packages
+
+   let get_package { pack_dag = dag; pack_packages = packages } name =
+      List_util.find (load_check dag name) packages
+
+   (*
+    * Add a parent edge.
+    * We only allow parents with toplevel names.
+    *)
+   let insert_parent pack node = function
+      [parent] ->
+         begin
+            try
+               let pnode = get_package pack parent in
+                  ImpDag.add_edge pack.pack_dag pnode node
+            with
+               Not_found ->
+                  raise (Failure "Package_info.maybe_add_package: parent is not defined")
+         end
+    | path ->
+         raise (Failure ("Package_info.insert_parent: parent is not toplevel: " ^ string_of_path path))
+
+   (*
+    * Add a signature package.
+    * It adds the package, and creates
+    * the edges to the parents.
+    *)
+   let maybe_add_package pack path sig_info infixes =
+      match path with
+         [name] ->
+            let { pack_dag = dag;
+                  pack_packages = packages
+                } = pack
+            in
+            let node =
+               try
+                  let node = get_package pack name in
+                  let pinfo = ImpDag.node_value dag node in
+                     pinfo.pack_sig_info <- Some sig_info;
+                     if pinfo.pack_status = Incomplete then
+                        pinfo.pack_status <- ReadOnly;
+                     pinfo.pack_infixes <- infixes;
+                     node
+               with
+                  Not_found ->
+                     let pinfo =
+                        { pack_info = pack;
+                          pack_name = name;
+                          pack_status = ReadOnly;
+                          pack_sig_info = Some sig_info;
+                          pack_str = None;
+                          pack_infixes = infixes
+                        }
+                     in
+                     let node = ImpDag.insert dag pinfo in
+                        pack.pack_packages <- node :: packages;
+                        node
+            in
+            let parents = Filter_summary.parents sig_info in
+               List.iter (insert_parent pack node) parents
+       | _ ->
+            raise (Failure "Package_info.maybe_add_package: nested modules are not implemented")
+
+   (*
+    * When a module is inlined, add the resources and infixes.
+    * The info is the _signature_.  Later we may want to replace
+    * it with the implementation.
+    *)
+   let inline_hook pack root_path cache (path, info) infixes =
+      if !debug_package_info then
+         eprintf "Inline_hook: %s, %s%t" (string_of_path root_path) (string_of_path path) eflush;
+
+      (* Add all the infix words and add the package *)
+      let infixes = StringSet.union (StringSet.of_list (get_infixes info)) infixes in
+         maybe_add_package pack path info (StringSet.elements infixes);
+         infixes
+
+   (*
+    * Add an implementation package.
+    * This replaces any current version of the package,
+    * and adds the edges to the parents.
+    *)
+   let add_implementation pack_info =
+      let { pack_info = pack; pack_name = name; pack_str = info } = pack_info in
+      let { pack_dag = dag; pack_packages = packages } = pack in
+      let rec remove = function
+         node :: t ->
+            let { pack_name = name' } = ImpDag.node_value dag node in
+               if name' = name then
+                  begin
+                     ImpDag.delete dag node;
+                     t
+                  end
+               else
+                  node :: remove t
+       | [] ->
+            []
+      in
+      let parents =
+         match info with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.parents info
+          | None ->
+               raise (Invalid_argument "Package_info.add_implementation")
+      in
+      let node = ImpDag.insert dag pack_info in
+         pack.pack_packages <- node :: remove packages;
+         List.iter (insert_parent pack node) parents
+
+   (*
+    * Get a tactic_arg for a module.
+    *)
+   let lazy_reduce modname () =
+      let rsrc = Mp_resource.find Top_conversionals.ext_reduce_resource modname in
+         Mp_resource.extract rsrc
+
+   let lazy_intro_tactic modname () =
+      let rsrc = Mp_resource.find Base_dtactic.ext_intro_resource modname in
+         Mp_resource.extract rsrc
+
+   let lazy_elim_tactic modname () =
+      let rsrc = Mp_resource.find Base_dtactic.ext_elim_resource modname in
+         Mp_resource.extract rsrc
+
+   let lazy_trivial modname () =
+      let rsrc = Mp_resource.find Base_auto_tactic.ext_trivial_resource modname in
+         Mp_resource.extract rsrc
+
+   let lazy_auto modname () =
+      let rsrc = Mp_resource.find Base_auto_tactic.ext_auto_resource modname in
+         Mp_resource.extract rsrc
+
+   let lazy_eqcd modname () =
+      let rsrc = Mp_resource.find Itt_equal.ext_eqcd_resource modname in
+         Mp_resource.extract rsrc
+
+   let lazy_tsubst modname () =
+      let rsrc = Mp_resource.find Typeinf.ext_typeinf_subst_resource modname in
+         Mp_resource.extract rsrc
+
+   let lazy_typeinf modname () =
+      let rsrc = Mp_resource.find Typeinf.ext_typeinf_resource modname in
+         Mp_resource.extract rsrc
+
+   let lazy_squash modname () =
+      let rsrc = Mp_resource.find Itt_squash.ext_squash_resource modname in
+         Mp_resource.extract rsrc
+
+   let lazy_subtype modname () =
+      let rsrc = Mp_resource.find Itt_subtype.ext_sub_resource modname in
+         Mp_resource.extract rsrc
+
+   let get_tactic_arg modname =
+      let add_attribute name con xlazy attributes =
+         try con name (xlazy modname) :: attributes with
+            Not_found ->
+               attributes
+      in
+      let attributes =
+         add_attribute "reduce" Tactic_type.Tactic.conv_attribute lazy_reduce []
+      in
+      let attributes =
+         add_attribute "intro" Tactic_type.Tactic.tactic_attribute lazy_intro_tactic attributes
+      in
+      let attributes =
+         add_attribute "elim" Tactic_type.Tactic.int_tactic_attribute lazy_elim_tactic attributes
+      in
+      let attributes =
+         add_attribute "trivial" Tactic_type.Tactic.tactic_attribute lazy_trivial attributes
+      in
+      let attributes =
+         add_attribute "auto" Tactic_type.Tactic.tactic_attribute lazy_auto attributes
+      in
+      let attributes =
+         add_attribute "eqcd" Tactic_type.Tactic.tactic_attribute lazy_eqcd attributes
+      in
+      let attributes =
+         add_attribute "typeinf_subst" Tactic_type.Tactic.tsubst_attribute lazy_tsubst attributes
+      in
+      let attributes =
+         add_attribute "typeinf" Tactic_type.Tactic.typeinf_attribute lazy_typeinf attributes
+      in
+      let attributes =
+         add_attribute "squash" Tactic_type.Tactic.tactic_attribute lazy_squash attributes
+      in
+      let attributes =
+         add_attribute "subtype" Tactic_type.Tactic.tactic_attribute lazy_subtype attributes
+      in
+         { ref_label = "main";
+           ref_args = attributes
+         }
+
+   (*
+    * Load a package.
+    * We search for the description, and load it.
+    * If the ML file has already been loaded, retrieve
+    * the refiner and display forms.  Else construct the code
+    * to be evaluated, and return it.
+    *)
+   let load_aux arg pack_info =
+      let { pack_info = pack; pack_name = name } = pack_info in
+      let { pack_cache = cache } = pack in
+         try
+            let path = [name] in
+            let info, infixes =
+               Cache.StrFilterCache.load cache arg name (**)
+                  ImplementationType InterfaceType
+                  (inline_hook pack path) StringSet.empty (NewerSuffix "prlb")
+            in
+            let pack_str =
+               { pack_str_info = info;
+                 pack_arg = get_tactic_arg name;
+                 pack_parse = arg
+               }
+            in
+               pack_info.pack_str <- Some pack_str;
+               pack_info.pack_infixes <- StringSet.elements infixes;
+               add_implementation pack_info;
+               Cache.StrFilterCache.set_mode info InteractiveSummary
+      with
+         Not_found
+       | Sys_error _ ->
+            raise (Failure (sprintf "Package_info.load: '%s' not found" name))
+
+   (*
+    * Make sure the str info is valid.
+    *)
+   let auto_loading_str arg pack_info f =
+      synchronize_node pack_info (function
+         { pack_str = Some _ } ->
+            f pack_info
+       | { pack_str = None } ->
+            load_aux arg pack_info;
+            f pack_info)
+
+   let auto_load_str arg pack_info =
+      auto_loading_str arg pack_info (fun pack_info -> ())
+
+   (*
+    * Load the package if it is not loaded already.
+    *)
+   let load pack arg name =
+      synchronize_pack pack (fun pack ->
+            let pack_info =
+               try ImpDag.node_value pack.pack_dag (get_package pack name) with
+                  Not_found ->
+                     { pack_info = pack;
+                       pack_status = Unmodified;
+                       pack_name = name;
+                       pack_sig_info = None;
+                       pack_str = None;
+                       pack_infixes = []
+                     }
+            in
+               auto_load_str arg pack_info;
+               pack_info)
+
+   (************************************************************************
+    * DESTRUCTION                                                          *
+    ************************************************************************)
+
    (*
     * Get the name of the package.
     *)
@@ -330,11 +663,12 @@ struct
    (*
     * Get the filename for the package.
     *)
-   let filename pack = function
-      { pack_info = Some info } ->
-         Cache.StrFilterCache.filename pack.pack_cache info
-    | { pack_info = None } ->
-         raise (Failure "Package_info.filename: package is not loaded")
+   let filename pack_info arg =
+      auto_loading_str arg pack_info (function
+         { pack_info = { pack_cache = cache }; pack_str = Some { pack_str_info = info } } ->
+            Cache.StrFilterCache.filename cache info
+       | { pack_name = name; pack_str = None } ->
+            raise (NotLoaded name))
 
    (*
     * Get the status of the package.
@@ -361,35 +695,41 @@ struct
    (*
     * Get the items in the module.
     *)
-   let info = function
-      { pack_info = Some info } ->
-         Cache.StrFilterCache.info info
-    | { pack_info = None; pack_name = name } ->
-         raise (NotLoaded name)
+   let info pack_info arg =
+      auto_loading_str arg pack_info (function
+         { pack_str = Some { pack_str_info = info } } ->
+            Cache.StrFilterCache.info info
+       | { pack_str = None; pack_name = name } ->
+            raise (NotLoaded name))
 
-   let sig_info = function
-      { pack_sig = Some info } ->
+   let sig_info_aux = function
+      { pack_sig_info = Some info } ->
          info
-    | { pack_sig = None; pack_info = Some info } as pack ->
-         let info = Cache.StrFilterCache.sig_info info InterfaceType in
-            pack.pack_sig <- Some info;
-            info
-    | { pack_sig = None; pack_info = None; pack_name = name } ->
+    | { pack_sig_info = None; pack_str = Some { pack_str_info = str_info; pack_parse = arg } } as pack ->
+         let sig_info = Cache.StrFilterCache.sig_info str_info arg InterfaceType in
+            pack.pack_sig_info <- Some sig_info;
+            sig_info
+    | { pack_sig_info = None; pack_str = None; pack_name = name } ->
          raise (NotLoaded name)
 
-   let find info name =
-      match info with
-         { pack_info = Some info } ->
-            fst (Cache.StrFilterCache.find info name)
-       | { pack_info = None; pack_name = name } ->
-            raise (NotLoaded name)
+   let sig_info pack_info arg =
+      try synchronize_node pack_info sig_info_aux with
+         NotLoaded _ ->
+            auto_loading_str arg pack_info sig_info_aux
 
-   let set info item =
-      match info with
-         { pack_info = Some info } ->
+   let find pack_info arg name =
+      auto_loading_str arg pack_info (function
+         { pack_str = Some { pack_str_info = info } } ->
+            fst (Cache.StrFilterCache.find info name)
+       | { pack_str = None; pack_name = name } ->
+            raise (NotLoaded name))
+
+   let set pack_info arg item =
+      auto_loading_str arg pack_info (function
+         { pack_str = Some { pack_str_info = info } } ->
             Cache.StrFilterCache.set_command info (item, (0, 0))
-       | { pack_info = None; pack_name = name } ->
-            raise (NotLoaded name)
+       | { pack_str = None; pack_name = name } ->
+            raise (NotLoaded name))
 
    (*
     * DAG access.
@@ -398,7 +738,7 @@ struct
       let rec search = function
          node :: t ->
             let info' = ImpDag.node_value dag node in
-               if info' == info then
+               if info'.pack_name = info.pack_name then
                   node
                else
                   search t
@@ -407,387 +747,158 @@ struct
       in
          search packages
 
-   let packages { pack_dag = dag; pack_packages = packages } =
-      List.map (ImpDag.node_value dag) packages
+   let packages pack =
+      synchronize_pack pack (function
+         { pack_dag = dag; pack_packages = packages } ->
+            List.map (ImpDag.node_value dag) packages)
 
-   let roots { pack_dag = dag } =
-      List.map (ImpDag.node_value dag) (ImpDag.roots dag)
+   let roots pack =
+      synchronize_pack pack (function
+         { pack_dag = dag } ->
+            List.map (ImpDag.node_value dag) (ImpDag.roots dag))
 
    let parents pack info =
-      let { pack_dag = dag } = pack in
-      let node = get_node pack info in
-         List.map (ImpDag.node_value dag) (ImpDag.node_out_edges dag node)
+      synchronize_pack pack (function
+            { pack_dag = dag } ->
+               let node = get_node pack info in
+                  List.map (ImpDag.node_value dag) (ImpDag.node_out_edges dag node))
 
    let children pack info =
-      let { pack_dag = dag } = pack in
-      let node = get_node pack info in
-         List.map (ImpDag.node_value dag) (ImpDag.node_in_edges dag node)
-
-   (*
-    * Get a node by its name.
-    *)
-   let load_check dag name node =
-      let { pack_name = name' } = ImpDag.node_value dag node in
-         name' = name
-
-   let is_loaded { pack_dag = dag; pack_packages = packages } name =
-      List_util.existsp (load_check dag name) packages
-
-   let get_package { pack_dag = dag; pack_packages = packages } name =
-      List_util.find (load_check dag name) packages
+      synchronize_pack pack (function
+         { pack_dag = dag } ->
+            let node = get_node pack info in
+               List.map (ImpDag.node_value dag) (ImpDag.node_in_edges dag node))
 
    (*
     * Access to cache.
     *)
-   let mk_opname pack opname =
-      match pack.pack_info with
-         Some info ->
-            Cache.StrFilterCache.mk_opname info opname
-       | None ->
-            raise (Failure (sprintf "Package_info.mk_opname: %s not initialized" pack.pack_name))
-
-   (*
-    * Add a parent edge.
-    * We only allow parents with toplevel names.
-    *)
-   let insert_parent pack node = function
-      [parent] ->
-         begin
-            try
-               let pnode = get_package pack parent in
-                  ImpDag.add_edge pack.pack_dag pnode node
-            with
-               Not_found ->
-                  raise (Failure "Package_info.maybe_add_package: parent is not defined")
-         end
-    | path ->
-         raise (Failure ("Package_info.insert_parent: parent is not toplevel: " ^ string_of_path path))
-
-   (*
-    * Add an implementation package.
-    * This replaces any current version of the package,
-    * and adds the edges to the parents.
-    *)
-   let add_implementation pack info =
-      let { pack_dag = dag; pack_packages = packages } = pack in
-      let { pack_name = name; pack_info = info' } = info in
-      let rec remove = function
-         node :: t ->
-            let { pack_name = name' } = ImpDag.node_value dag node in
-               if name' = name then
-                  begin
-                     ImpDag.delete dag node;
-                     t
-                  end
-               else
-                  node :: remove t
-       | [] ->
-            []
-      in
-      let node = ImpDag.insert dag info in
-      let parents =
-         match info' with
-            Some info ->
-               Cache.StrFilterCache.parents info
-          | None ->
-               raise (Invalid_argument "Package_info.add_implementation")
-      in
-         pack.pack_packages <- node :: (remove packages);
-         List.iter (insert_parent pack node) parents
-
-   (*
-    * Add a signature package.
-    * It adds the package, and creates
-    * the edges to the parents.
-    *)
-   let maybe_add_package pack path sig_info =
-      match path with
-         [name] ->
-            let { pack_eval_string = parser;
-                  pack_create_tactic = eval;
-                  pack_dag = dag;
-                  pack_packages = packages
-                } = pack
-            in
-            let node =
-               try
-                  let node = get_package pack name in
-                  let pinfo = ImpDag.node_value dag node in
-                     pinfo.pack_sig <- Some sig_info;
-                     if pinfo.pack_status = Incomplete then
-                        pinfo.pack_status <- ReadOnly;
-                     node
-               with
-                  Not_found ->
-                     let pinfo =
-                        { pack_status = ReadOnly;
-                          pack_parse = parser;
-                          pack_eval = eval;
-                          pack_sig = Some sig_info;
-                          pack_info = None;
-                          pack_name = name;
-                          pack_arg = null_tactic_argument
-                        }
-                     in
-                     let node = ImpDag.insert dag pinfo in
-                        pack.pack_packages <- node :: packages;
-                        node
-            in
-            let parents = Filter_summary.parents sig_info in
-               List.iter (insert_parent pack node) parents
-       | _ ->
-            raise (Failure "Package_info.maybe_add_package: nested modules are not implemented")
-
-   (*
-    * When a module is inlined, add the resources and infixes.
-    * The info is the _signature_.  Later we may want to replace
-    * it with the implementation.
-    *)
-   let inline_hook pack root_path cache (path, info) () =
-      (* Include all the resources *)
-      if !debug_package_info then
-         eprintf "Inline_hook: %s, %s%t" (string_of_path root_path) (string_of_path path) eflush;
-
-      (* Add all the infix words *)
-      List.iter add_infix (get_infixes info);
-
-      (* Add this node to the pack *)
-      maybe_add_package pack path info
+   let mk_opname pack_info opname =
+      synchronize_node pack_info (fun pack_info ->
+            match pack_info.pack_str with
+               Some { pack_str_info = info } ->
+                  Cache.StrFilterCache.mk_opname info opname
+             | None ->
+                  raise (Failure (sprintf "Package_info.mk_opname: %s not initialized" pack_info.pack_name)))
 
    (*
     * Get a loaded theory.
     *)
    let get pack name =
-      let { pack_dag = dag } = pack in
-         ImpDag.node_value dag (get_package pack name)
+      synchronize_pack pack (function
+         pack ->
+            ImpDag.node_value pack.pack_dag (get_package pack name))
 
    (*
     * Save a package.
     * This happens only if it is modified.
     *)
-   let save pack = function
-      { pack_status = ReadOnly; pack_name = name } ->
-         raise (Failure (sprintf "Package_info.save: package '%s' is read-only" name))
-    | { pack_status = Unmodified } ->
-         ()
-    | { pack_status = Incomplete; pack_name = name } ->
-         raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
-    | { pack_status = Modified; pack_info = Some info } ->
-         Cache.StrFilterCache.save info (AlwaysSuffix "prlb")
-    | { pack_status = Modified; pack_info = None } ->
-         raise (Invalid_argument "Package_info.save")
+   let save pack_info =
+      synchronize_node pack_info (function
+         { pack_status = ReadOnly; pack_name = name } ->
+            raise (Failure (sprintf "Package_info.save: package '%s' is read-only" name))
+       | { pack_status = Unmodified } ->
+            ()
+       | { pack_status = Incomplete; pack_name = name } ->
+            raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
+       | { pack_status = Modified; pack_str = Some { pack_str_info = info; pack_parse = arg } } ->
+            Cache.StrFilterCache.save info arg (AlwaysSuffix "prlb")
+       | { pack_status = Modified; pack_str = None } ->
+            raise (Invalid_argument "Package_info.save"))
 
    (*
     * Create an empty package.
     *)
-   let create_package pack name =
-      let info =
-         { pack_status = Modified;
-           pack_parse = pack.pack_eval_string;
-           pack_eval = pack.pack_create_tactic;
-           pack_sig = None;
-           pack_info = Some (Cache.StrFilterCache.create_cache pack.pack_cache (**)
-                                name ImplementationType InterfaceType);
-           pack_name = name;
-           pack_arg = null_tactic_argument
-         }
-      in
-         add_implementation pack info;
-         info
+   let create_package pack arg name =
+      synchronize_pack pack (function
+         pack ->
+            let info =
+               { pack_info = pack;
+                 pack_status = Modified;
+                 pack_sig_info = None;
+                 pack_str = Some { pack_str_info =
+                                      Cache.StrFilterCache.create_cache pack.pack_cache (**)
+                                      name ImplementationType InterfaceType;
+                                   pack_arg = null_tactic_argument;
+                                   pack_parse = arg
+                            };
+                 pack_infixes = [];
+                 pack_name = name
+               }
+            in
+               add_implementation info;
+               info)
 
    (*
     * tactic_argument for the package.
     *)
-   let argument { pack_arg = arg } =
-      arg
+   let argument pack_info arg =
+      auto_loading_str arg pack_info (function
+         { pack_str = Some { pack_arg = arg } } ->
+            arg
+       | { pack_name = name; pack_str = None } ->
+            raise (NotLoaded name))
 
    (*
     * A new proof cannot be saved.
     *)
-   let new_proof { pack_name = mod_name;
-                   pack_arg = { ref_fcache = fcache; ref_label = label; ref_args = args }
-       } name hyps goal =
-      let loc = 0, 0 in
-      let sentinal = Sequent.sentinal_of_refiner_object mod_name name in
-      let seq = Sequent.create sentinal label (mk_msequent goal hyps) fcache args in
-      let step = Proof_step.create seq [seq] "idT" (<:expr< $lid: "idT"$ >>) idT in
-      let proof = Proof.of_step step in
-      let ped = Proof_edit.ped_of_proof [] proof in
-         ref (ProofEdit ped)
+   let new_proof pack_info arg name hyps goal =
+      auto_loading_str arg pack_info (function
+         { pack_name = mod_name;
+           pack_str = Some { pack_arg = { ref_label = label; ref_args = args } };
+         } ->
+            let loc = 0, 0 in
+            let sentinal = Tactic_type.Tactic.sentinal_of_refiner_object mod_name name in
+            let seq = Tactic_type.Tactic.create sentinal label (mk_msequent goal hyps) args in
+            let proof = Proof.create seq in
+            let ped = Proof_edit.ped_of_proof [] proof in
+               ref (ProofEdit (arg, ped))
+       | { pack_name = mod_name; pack_str = None } ->
+            raise (NotLoaded mod_name))
 
    (*
     * Get the status of the proof.
     *)
    let status_of_proof proof =
       match !proof with
-         ProofEdit ped ->
+         ProofEdit (_, ped) ->
             Proof_edit.status_of_ped ped
        | ProofRaw (_, proof) ->
-            match proof.proof_status with
-               Io_proof_type.StatusBad ->
-                  Proof.Bad
-             | Io_proof_type.StatusPartial ->
-                  Proof.Partial
-             | Io_proof_type.StatusAsserted ->
-                  Proof.Asserted
-             | Io_proof_type.StatusComplete ->
-                  Proof.Complete
+            Proof.status_of_io_proof proof
 
    let node_count_of_proof proof =
       match !proof with
-         ProofEdit ped ->
+         ProofEdit (_, ped) ->
             Proof_edit.node_count_of_ped ped
        | ProofRaw (_, proof) ->
-            node_count_of_proof proof
+            Proof.node_count_of_io_proof proof
 
    (*
     * Convert a proof on demand.
     *)
-   let ped_of_proof { pack_name = name; pack_parse = parse; pack_eval = eval; pack_arg = arg } proof =
-      match !proof with
-         ProofEdit ped ->
-            ped
-       | ProofRaw (name', proof') ->
-            let sentinal = Sequent.sentinal_of_refiner_object name name' in
-            let proof' = Proof.proof_of_io_proof arg parse eval sentinal proof' in
-            let ped = Proof_edit.ped_of_proof [] proof' in
-               proof := ProofEdit ped;
-               ped
+   let ped_of_proof pack_info arg proof goal =
+      auto_loading_str arg pack_info (function
+         { pack_name = name;
+           pack_str = Some { pack_arg = { ref_label = label; ref_args = args } }
+         } ->
+            begin
+               match !proof with
+                  ProofEdit (_, ped) ->
+                     ped
+                | ProofRaw (name', proof') ->
+                     let parse, eval = arg in
+                     let sentinal = Tactic_type.Tactic.sentinal_of_refiner_object name name' in
+                     let proof' = Proof.proof_of_io_proof args sentinal parse eval proof' in
+                     let ped = Proof_edit.ped_of_proof [] proof' in
+                        Proof_edit.set_goal ped goal;
+                        proof := ProofEdit (arg, ped);
+                        ped
+            end
+       | { pack_name = name; pack_str = None } ->
+            raise (NotLoaded name))
 
-   let proof_of_ped _ proof ped =
-      proof := ProofEdit ped;
+   let proof_of_ped proof arg ped =
+      proof := ProofEdit (arg, ped);
       proof
-
-   (*
-    * Get a tactic_arg for a module.
-    *)
-   let lazy_cache modname () =
-      let cache =
-         try
-            let rsrc = Base_cache.get_resource modname in
-               Mp_resource.extract rsrc
-         with
-            Not_found ->
-               Tactic_cache.new_cache ()
-      in
-         Tactic_cache.extract cache
-
-   let lazy_reduce modname () =
-      let rsrc = Conversionals.get_resource modname in
-         Mp_resource.extract rsrc
-
-   let lazy_dtactic modname () =
-      let rsrc = Base_dtactic.get_resource modname in
-         Mp_resource.extract rsrc
-
-   let lazy_trivial modname () =
-      let rsrc = Base_auto_tactic.get_trivial_resource modname in
-         Mp_resource.extract rsrc
-
-   let lazy_auto modname () =
-      let rsrc = Base_auto_tactic.get_auto_resource modname in
-         Mp_resource.extract rsrc
-
-   let lazy_eqcd modname () =
-      let rsrc = Itt_equal.get_resource modname in
-         Mp_resource.extract rsrc
-
-   let lazy_tsubst modname () =
-      let rsrc = Typeinf.get_typeinf_subst_resource modname in
-         Mp_resource.extract rsrc
-
-   let lazy_typeinf modname () =
-      let rsrc = Typeinf.get_typeinf_resource modname in
-         Mp_resource.extract rsrc
-
-   let lazy_squash modname () =
-      let rsrc = Itt_squash.get_resource modname in
-         Mp_resource.extract rsrc
-
-   let lazy_subtype modname () =
-      let rsrc = Itt_subtype.get_resource modname in
-         Mp_resource.extract rsrc
-
-   let get_tactic_arg modname =
-      let cache = Tactic_type.make_cache (lazy_cache modname) in
-      let add_attribute name con xlazy attributes =
-         try con name (xlazy modname) :: attributes with
-            Not_found ->
-               attributes
-      in
-      let attributes =
-         add_attribute "reduce" Rewrite_type.conv_attribute lazy_reduce []
-      in
-      let attributes =
-         add_attribute "d" Sequent.int_tactic_attribute lazy_dtactic attributes
-      in
-      let attributes =
-         add_attribute "trivial" Sequent.tactic_attribute lazy_trivial attributes
-      in
-      let attributes =
-         add_attribute "auto" Sequent.tactic_attribute lazy_auto attributes
-      in
-      let attributes =
-         add_attribute "eqcd" Sequent.tactic_attribute lazy_eqcd attributes
-      in
-      let attributes =
-         add_attribute "typeinf_subst" Sequent.tsubst_attribute lazy_tsubst attributes
-      in
-      let attributes =
-         add_attribute "typeinf" Sequent.typeinf_attribute lazy_typeinf attributes
-      in
-      let attributes =
-         add_attribute "squash" Sequent.tactic_attribute lazy_squash attributes
-      in
-      let attributes =
-         add_attribute "subtype" Sequent.tactic_attribute lazy_subtype attributes
-      in
-         { ref_label = "main";
-           ref_args = attributes;
-           ref_fcache = cache
-         }
-
-   (*
-    * Build the package from its info.
-    *)
-   let build_package pack name status info =
-      let info =
-         { pack_status = status;
-           pack_parse = pack.pack_eval_string;
-           pack_eval = pack.pack_create_tactic;
-           pack_sig = None;
-           pack_info = Some info;
-           pack_name = name;
-           pack_arg = get_tactic_arg name
-         }
-      in
-         add_implementation pack info;
-         info
-
-   (*
-    * Load a package.
-    * We search for the description, and load it.
-    * If the ML file has already been loaded, retrieve
-    * the refiner and display forms.  Else construct the code
-    * to be evaluated, and return it.
-    *)
-   let load pack name =
-      try
-         let loc = 0, 0 in
-         let { pack_cache = cache } = pack in
-         let path = [name] in
-         let info, () =
-            Cache.StrFilterCache.load cache name (**)
-               ImplementationType InterfaceType
-               (inline_hook pack path) () (NewerSuffix "prlb")
-         in
-         let info' = build_package pack name Unmodified info in
-            Cache.StrFilterCache.set_mode info InteractiveSummary;
-            info'
-      with
-         Not_found
-       | Sys_error _ ->
-            raise (Failure (sprintf "Package_info.load: '%s' not found" name))
 end
 
 (*

@@ -71,6 +71,10 @@ let debug_filter_path =
         debug_value = false
       }
 
+module FilterSummaryTerm = Filter_summary.FilterSummaryTerm (Refiner.Refiner)
+
+open FilterSummaryTerm
+
 (*
  * Make the enhanced base from a normal summary base.
  *)
@@ -106,6 +110,7 @@ struct
    type str_elem  = (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item
 
    type select = Base.select
+   type arg = Base.arg
 
    (*
     * We save summaries with inherited attributes.
@@ -285,10 +290,10 @@ struct
     * or by making nothing global.
     *)
    let standard_opnames =
-      ["lzone"; "hzone"; "szone"; "ezone";
+      ["lzone"; "hzone"; "szone"; "izone"; "tzone"; "ezone";
        "break"; "sbreak"; "space"; "hspace"; "newline";
        "pushm"; "popm"; "pushfont"; "popfont";
-       "parens"; "prec"; "mode"; "slot";
+       "parens"; "prec"; "internal"; "mode"; "slot";
        "sequent"; "hyp"; "concl"; "var"; "context"]
 
    (*
@@ -505,7 +510,7 @@ struct
     * The inline_{sig,str}_components function return
     * the inherited attributes.
     *)
-   let rec inline_sig_components arg path self items =
+   let rec inline_sig_components barg arg path self items =
       let cache, _, _ = arg in
 
       (* Get the opname for this path *)
@@ -533,7 +538,7 @@ struct
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
-               let { sig_resources = resources' } = inline_sig_module arg path in
+               let { sig_resources = resources' } = inline_sig_module barg arg path in
                let this_resources, par_resources = resources in
                   this_resources, merge_resources resources' par_resources
 
@@ -556,7 +561,7 @@ struct
       let this_resources = Sort.list compare_resources this_resources in
          merge_resources this_resources par_resources
 
-   and inline_str_components arg path self (items : (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item_loc list) =
+   and inline_str_components barg arg path self (items : (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item_loc list) =
       let cache, _, _ = arg in
 
       (* Get the opname for this path *)
@@ -582,7 +587,7 @@ struct
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
-               let _ = inline_sig_module arg path in
+               let _ = inline_sig_module barg arg path in
                   ()
 
           | _ ->
@@ -590,7 +595,7 @@ struct
       in
          List.iter inline_component items
 
-   and inline_sig_module arg path =
+   and inline_sig_module barg arg path =
       let cache, inline_hook, vals = arg in
          if !debug_filter_cache then
             eprintf "FilterCache.inline_module': %s%t" (string_of_path path) eflush;
@@ -605,7 +610,7 @@ struct
                   eprintf "FilterCache.inline_module': finding: %s%t" (string_of_path path) eflush;
                let { base = { lib = base } } = cache in
                let info =
-                  try Base.find base path SigMarshal.select NeverSuffix with
+                  try Base.find base barg path SigMarshal.select NeverSuffix with
                      Not_found ->
                         eprintf "Can't find module %s%t" (string_of_path path) eflush;
                         raise Not_found
@@ -613,7 +618,7 @@ struct
                let info' = SigMarshal.unmarshal (Base.info base info) in
                let resources =
                   (* Inline the subparts *)
-                  inline_sig_components arg path info (info_items info')
+                  inline_sig_components barg arg path info (info_items info')
                in
                let info = { sig_summary = info; sig_resources = resources } in
                   (* This module gets listed in the inline stack *)
@@ -629,10 +634,14 @@ struct
 
                   info
 
-   let inline_module cache path inline_hook arg =
-      let vals = ref arg in
-      let info = inline_sig_module (cache, inline_hook, vals) path in
-         SigMarshal.unmarshal (Base.info cache.base.lib info.sig_summary), !vals
+   let inline_module cache barg path inline_hook arg =
+      try
+         let vals = ref arg in
+         let info = inline_sig_module barg (cache, inline_hook, vals) path in
+            SigMarshal.unmarshal (Base.info cache.base.lib info.sig_summary), !vals
+      with
+         Not_found ->
+            raise (BadCommand (sprintf "Theory is not found: %s" (String_util.concat "." path)))
 
    (*
     * To create, need:
@@ -655,13 +664,13 @@ struct
     * When a cache is loaded, we follow the steps to inline
     * the file into a new cache.
     *)
-   let load base (name : module_name) (my_select : select) (child_select : select) (hook : 'a hook) (arg : 'a) suffix =
+   let load base barg (name : module_name) (my_select : select) (child_select : select) (hook : 'a hook) (arg : 'a) suffix =
       let vals = ref arg in
       let path = [name] in
       let info =
          try find_summarized_str_module base path with
             Not_found ->
-               let info = Base.find base.lib path my_select suffix in
+               let info = Base.find base.lib barg path my_select suffix in
                   base.str_summaries <- info :: base.str_summaries;
                   info
       in
@@ -683,7 +692,7 @@ struct
                eprintf "Filter_cache.load: loaded %s%t" name eflush;
                eprint_info info'
             end;
-         inline_str_components (cache, hook, vals) [String.capitalize name] info (info_items info');
+         inline_str_components barg (cache, hook, vals) [String.capitalize name] info (info_items info');
          cache, !vals (* hook cache (path, info') !vals *)
 
    (*
@@ -698,13 +707,13 @@ struct
    (*
     * Get the signature for the module.
     *)
-   let sig_info cache alt_select =
+   let sig_info cache barg alt_select =
       let { base = base; self = self; name = name } = cache in
       let { lib = lib; sig_summaries = summaries } = base in
       let info =
          try (find_summarized_sig_module cache [name]).sig_summary with
             Not_found ->
-               let info = Base.find_match lib self alt_select NeverSuffix in
+               let info = Base.find_match lib barg self alt_select NeverSuffix in
                let sum = { sig_summary = info; sig_resources = List.map snd cache.resources } in
                   base.sig_summaries <- sum :: summaries;
                   info
@@ -714,8 +723,8 @@ struct
    (*
     * Check the implementation with its interface.
     *)
-   let check cache alt_select =
-      let sig_info = sig_info cache alt_select in
+   let check cache barg alt_select =
+      let sig_info = sig_info cache barg alt_select in
       let id = find_id sig_info in
          add_command cache (Id id, (0, 0));
          check_implementation cache.info sig_info;
@@ -724,7 +733,7 @@ struct
    (*
     * Copy the proofs from the summary.
     *)
-   let copy_proofs cache copy_proof =
+   let copy_proofs cache barg copy_proof =
       let { name = name;
             base = base;
             info = info;
@@ -732,9 +741,9 @@ struct
           } = cache
       in
       let path = [name] in
-      let info' = Base.find_file base.lib path my_select (AlwaysSuffix "prlb") in
+      let info' = Base.find_file base.lib barg path my_select (AlwaysSuffix "prlb") in
       let info' = StrMarshal.unmarshal (Base.info base.lib info') in
-         cache.info <- Filter_summary.copy_proofs copy_proof info info'
+         cache.info <- FilterSummaryTerm.copy_proofs copy_proof info info'
 
    (*
     * Upgrade the file mode.
@@ -753,7 +762,7 @@ struct
    (*
     * Save the cache.
     *)
-   let save cache suffix =
+   let save cache barg suffix =
       let { base = { lib = base }; self = self; info = info } = cache in
          if !debug_filter_cache then
             begin
@@ -761,7 +770,7 @@ struct
                eprint_info info
             end;
          Base.set_info base self (StrMarshal.marshal info);
-         Base.save base self suffix;
+         Base.save base barg self suffix;
          if !debug_filter_cache then
             eprintf "Filter_cache.save: done%t" eflush
 

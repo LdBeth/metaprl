@@ -75,6 +75,7 @@ sig
     *)
    type cooked
    type select
+   type arg
    type info
    type t
 
@@ -85,10 +86,10 @@ sig
    val create_info : t -> select -> dir_name -> file_name -> info
 
    (* Loading and saving *)
-   val find : t -> module_path -> select -> alt_suffix -> info
-   val find_file : t -> module_path -> select -> alt_suffix -> info
-   val find_match : t -> info -> select -> alt_suffix -> info
-   val save : t -> info -> alt_suffix -> unit
+   val find : t -> arg -> module_path -> select -> alt_suffix -> info
+   val find_file : t -> arg -> module_path -> select -> alt_suffix -> info
+   val find_match : t -> arg -> info -> select -> alt_suffix -> info
+   val save : t -> arg -> info -> alt_suffix -> unit
 
    (* Info about a module *)
    val info : t -> info -> cooked
@@ -167,6 +168,7 @@ sig
    type str_elem = (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item
    type str_info = (term, meta_term, str_proof, str_ctyp, str_expr, str_item) module_info
 
+   type arg
    type select
    type info
    type t
@@ -180,17 +182,17 @@ sig
 
    (* Loading *)
    val create_cache : t -> module_name -> select -> select -> info
-   val load : t -> module_name -> select -> select -> 'a hook -> 'a -> alt_suffix -> info * 'a
-   val check : info -> select -> sig_info
-   val copy_proofs : info -> (str_proof -> str_proof -> str_proof) -> unit
+   val load : t -> arg -> module_name -> select -> select -> 'a hook -> 'a -> alt_suffix -> info * 'a
+   val check : info -> arg -> select -> sig_info
+   val copy_proofs : info -> arg -> (str_proof -> str_proof -> str_proof) -> unit
    val set_mode : info -> summary_mode -> unit
-   val save : info -> alt_suffix -> unit
+   val save : info -> arg -> alt_suffix -> unit
 
    (* Access *)
    val info : info -> str_info
    val name : info -> string
    val filename : t -> info -> string
-   val sig_info : info -> select -> sig_info
+   val sig_info : info -> arg -> select -> sig_info
    val sub_info : info -> module_path -> sig_info
 
    (* Expand a partial path specification to a complete one *)
@@ -209,7 +211,7 @@ sig
    val find_rewrite : info -> string -> (str_elem * loc) option
    val find_mlrewrite : info -> string -> (str_elem * loc) option
    val find_mlaxiom : info -> string -> (str_elem * loc) option
-   val find_dform : info -> term -> (str_elem * loc) option
+   val find_dform : info -> string -> (str_elem * loc) option
    val find_prec : info -> string -> bool
    val resources : info -> (module_path * str_ctyp resource_info) list
    val parents : info -> module_path list
@@ -236,7 +238,7 @@ sig
     * space.  This function recursively inlines all modules in
     * the hierarchy, calling the hook on each.
     *)
-   val inline_module : info -> module_path -> 'a hook -> 'a -> sig_info * 'a
+   val inline_module : info -> arg -> module_path -> 'a hook -> 'a -> sig_info * 'a
 end
 
 (*

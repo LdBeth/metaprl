@@ -50,13 +50,16 @@ val expr_of_contractum : loc -> int -> MLast.expr
 module type ExtractSig =
 sig
    type proof
+   type arg
 
    val extract_sig :
+      arg ->
       (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
       string -> (MLast.sig_item * (int * int)) list
 
    val extract_str :
+      arg ->
       (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
       (term, meta_term, proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
@@ -67,17 +70,17 @@ sig
     *)
    type t
 
-   val prim_axiom : t -> loc -> (term, 'proof, 'expr) axiom_info -> term -> MLast.str_item list
-   val derived_axiom : t -> loc -> (term, 'proof, 'expr) axiom_info -> MLast.expr -> MLast.str_item list
+   val prim_axiom : t -> loc -> (term, 'proof, MLast.expr) axiom_info -> term -> MLast.str_item list
+   val derived_axiom : t -> loc -> (term, 'proof, MLast.expr) axiom_info -> MLast.expr -> MLast.str_item list
 
-   val prim_rule : t -> loc -> (term, meta_term, 'proof, 'expr) rule_info -> term -> MLast.str_item list
-   val derived_rule : t -> loc -> (term, meta_term, 'proof, 'expr) rule_info -> MLast.expr -> MLast.str_item list
+   val prim_rule : t -> loc -> (term, meta_term, 'proof, MLast.expr) rule_info -> term -> MLast.str_item list
+   val derived_rule : t -> loc -> (term, meta_term, 'proof, MLast.expr) rule_info -> MLast.expr -> MLast.str_item list
 
-   val prim_rewrite : t -> loc -> (term, 'proof, 'expr) rewrite_info -> MLast.str_item list
-   val derived_rewrite : t -> loc -> (term, 'proof, 'expr) rewrite_info -> MLast.expr -> MLast.str_item list
+   val prim_rewrite : t -> loc -> (term, 'proof, MLast.expr) rewrite_info -> MLast.str_item list
+   val derived_rewrite : t -> loc -> (term, 'proof, MLast.expr) rewrite_info -> MLast.expr -> MLast.str_item list
 
-   val prim_cond_rewrite : t -> loc -> (term, 'proof, 'expr) cond_rewrite_info -> MLast.str_item list
-   val derived_cond_rewrite : t -> loc -> (term, 'proof, 'expr) cond_rewrite_info -> MLast.expr -> MLast.str_item list
+   val prim_cond_rewrite : t -> loc -> (term, 'proof, MLast.expr) cond_rewrite_info -> MLast.str_item list
+   val derived_cond_rewrite : t -> loc -> (term, 'proof, MLast.expr) cond_rewrite_info -> MLast.expr -> MLast.str_item list
 
    val define_dform : t -> loc -> (term, MLast.expr) dform_info -> term -> MLast.str_item list
    val define_prec : t -> loc -> string -> MLast.str_item list
@@ -91,7 +94,9 @@ sig
 end
 
 module MakeExtract (Convert : ConvertProofSig) :
-   ExtractSig with type proof = Convert.t
+   ExtractSig
+   with type arg = Convert.t
+   with type proof = Convert.cooked
 
 (*
  * -*-

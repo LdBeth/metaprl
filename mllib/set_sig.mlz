@@ -1,0 +1,231 @@
+(*
+ * Types of the Set and Table modules.
+ *
+ * ----------------------------------------------------------------
+ *
+ * This file is part of MetaPRL, a modular, higher order
+ * logical framework that provides a logical programming
+ * environment for OCaml and other languages.
+ *
+ * See the file doc/index.html for information on Nuprl,
+ * OCaml, and more information about this system.
+ *
+ * Copyright (C) 1999 Jason Hickey, Cornell University
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * Author: Jason Hickey
+ * jyh@cs.cornell.edu
+ *)
+
+(************************************************************************
+ * SETS                                                                 *
+ ************************************************************************)
+
+(*
+ * Used for expressing sharing constraints.
+ *)
+module type TypeSig =
+sig
+   type t
+end
+
+(*
+ * Set signature.
+ *)
+module type SetSig =
+sig
+   type elt
+   type t
+
+   val empty : t
+   val is_empty : t -> bool
+   val mem : t -> elt -> bool
+   val add : elt -> t -> t
+   val make : elt -> t
+   val remove : elt -> t -> t
+   val union : t -> t -> t
+   val elements : t -> elt list
+   val iter : (elt -> unit) -> t -> unit
+   val cardinal : t -> int
+   val mem_filt : t -> elt list -> elt list
+   val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
+   val not_mem_filt : t -> elt list -> elt list
+   val intersectp : t -> t -> bool
+   val of_list : elt list -> t
+end
+
+(*
+ * Ordered type need for debugging.
+ *)
+module type DebugOrderedType =
+sig
+   type t
+
+   val print : t -> unit
+   val compare : t -> t -> int
+end
+
+(*
+ * Debugging version of a set.
+ *)
+module type DebugSetSig =
+sig
+   type elt
+   type t
+
+   val empty : t
+   val is_empty : t -> bool
+   val mem : t -> elt -> bool
+   val add : elt -> t -> t
+   val make : elt -> t
+   val remove : elt -> t -> t
+   val union : t -> t -> t
+   val elements : t -> elt list
+   val iter : (elt -> unit) -> t -> unit
+   val cardinal : t -> int
+   val mem_filt : t -> elt list -> elt list
+   val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
+   val not_mem_filt : t -> elt list -> elt list
+   val intersectp : t -> t -> bool
+   val of_list : elt list -> t
+
+   (* Debugging function *)
+   val print : t -> unit
+end
+
+(*
+ * Linearly ordered set.
+ *)
+module type LinearSetSig =
+sig
+   type elt
+   type t
+   type index = int
+
+   val empty : t
+   val singleton : elt -> t
+   val length : t -> int
+   val get : t -> index -> elt
+   val make : int -> elt -> t
+   val create : int -> elt -> t
+   val to_list : t -> elt list
+   val of_list : elt list -> t
+   val iter : (elt -> unit) -> t -> unit
+   val split : t -> index -> t * elt * t
+   val append : t -> elt -> t -> t
+   val append_list : t -> elt list -> t -> t
+   val lazy_apply : (elt -> elt) -> t -> t
+   val lazy_sub_map : (elt -> elt) -> t -> index -> index -> t
+
+   val mapi : (index -> elt -> elt) -> t -> t
+   val init : int -> (index -> elt) -> t
+   val collect : (elt, t) Array_util.array_part list -> t
+end
+
+(************************************************************************
+ * TABLES                                                               *
+ ************************************************************************)
+
+(*
+ * The record of methods.
+ *)
+type ('arg, 'elt, 'data, 'table) table_methods =
+   { create : 'arg -> 'table;
+     make : 'arg -> 'elt -> 'data list -> 'table;
+     is_empty : 'table -> bool;
+     mem : 'table -> 'elt -> bool;
+     add : 'table -> 'elt -> 'data -> 'table;
+     find : 'table -> 'elt -> 'data;
+     find_all : 'table -> 'elt -> 'data list;
+     remove : 'table -> 'elt -> 'table;
+     union : 'table -> 'table -> 'table;
+     elements : 'table -> ('elt * 'data list) list;
+     iter : ('elt -> 'data -> unit) -> 'table -> unit;
+     map : ('elt -> 'data -> 'data) -> 'table -> 'table;
+     cardinal : 'table -> int;
+     mem_filt : 'table -> 'elt list -> 'elt list;
+     not_mem_filt : 'table -> 'elt list -> 'elt list;
+     intersectp : 'table -> 'table -> bool;
+     of_list : 'arg -> ('elt * 'data list) list -> 'table;
+
+     (* Debugging *)
+     print : 'table -> unit
+   }
+
+(*
+ * Creation functions.
+ *)
+type ('arg, 'elt, 'data, 'table) table_create_type =
+   ('arg -> 'elt -> 'data list -> unit) ->              (* printer *)
+   ('arg -> 'arg -> 'arg) ->                            (* union *)
+   ('arg -> 'elt -> 'elt -> int) ->                     (* comparison function *)
+   ('data list -> 'data list -> 'data list) ->          (* append during union *)
+   ('arg, 'elt, 'data, 'table) table_methods
+
+(*
+ * Module containing a creation function.
+ *)
+module type TableCreateSig =
+sig
+   type ('arg, 'elt, 'data) t
+
+   val create : ('arg, 'elt, 'data, ('arg, 'elt, 'data) t) table_create_type
+end
+
+(*
+ * Ordering module takes a comparison set.
+ *)
+module type TableBaseSig =
+sig
+   type elt
+   type set
+   type data
+
+   val print : set -> elt -> data list -> unit
+   val union : set -> set -> set
+   val compare : set -> elt -> elt -> int
+   val append : data list -> data list -> data list
+end
+
+(*
+ * These are the functions provided by the table.
+ *)
+module type TableSig =
+sig
+   type elt
+   type set
+   type data
+   type t
+
+   val create : set -> t
+   val add : t -> elt -> data -> t
+   val union : t -> t -> t
+   val mem : t -> elt -> bool
+   val find : t -> elt -> data
+   val find_all : t -> elt -> data list
+   val remove : t -> elt -> t
+   val iter : (elt -> data -> unit) -> t -> unit
+   val map : (elt -> data -> data) -> t -> t
+   val print : t -> unit
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "nl"
+ * End:
+ * -*-
+ *)

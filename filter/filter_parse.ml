@@ -36,6 +36,12 @@ open Printf
 open Pcaml
 
 open Mp_debug
+open Precedence
+open Simple_print.SimplePrint
+open Mp_resource
+open File_base_type
+
+open Refiner_io
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -43,11 +49,6 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
-open Precedence
-open Simple_print.SimplePrint
-open Mp_resource
-
-open File_base_type
 
 open Infix
 open Free_vars
@@ -127,6 +128,7 @@ struct
    let term = Grammar.Entry.create gram "term"
    let quote_term = Grammar.Entry.create gram "quote_term"
    let mterm = Grammar.Entry.create gram "mterm"
+   let bmterm = Grammar.Entry.create gram "mterm"
    let singleterm = Grammar.Entry.create gram "singleterm"
    let bound_term = Grammar.Entry.create gram "bound_term"
    let xdform = Grammar.Entry.create gram "xdform"
@@ -137,13 +139,6 @@ end
  *)
 module TermGrammar = MakeTermGrammar (TermGrammarBefore)
 open TermGrammar
-
-(*
- * Show the file loading.
- *)
-let _ =
-   if !debug_load then
-      eprintf "Loading Filter_parse%t" eflush
 
 (************************************************************************
  * QUOTATIONS                                                           *
@@ -237,6 +232,18 @@ let get_string_param loc t =
        | _ ->
             Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "too many params")))
 
+(*
+ * Wrap a code block with a binding variable.
+ *)
+let wrap_code loc v body =
+   let v =
+      match v with
+         Some v -> dest_var v
+       | None -> "_$goal"
+   in
+   let p = <:patt< $lid:v$ >> in
+      <:expr< fun [ $list: [p, None, body]$ ] >>
+
 (************************************************************************
  * GENERIC CONSTRUCTION                                                 *
  ************************************************************************)
@@ -245,17 +252,10 @@ let get_string_param loc t =
  * We may be able to do better sometime, but for now
  * we print the terms using the default display forms.
  *)
-let print_exn f x =
-   Filter_exn.print Dform.null_base f x
-
-let print_exn_unit (f : 'a -> unit) x =
-   Filter_exn.print Dform.null_base f x
-
-let print_exn_term (f : 'a -> term) x =
-   Filter_exn.print Dform.null_base f x
-
-let print_exn_item (f : 'a -> ('b * (int * int)) list) x =
-   Filter_exn.print Dform.null_base f x
+let print_exn f s (start, stop) =
+   if !debug_filter_parse then
+      eprintf "Filter_parse.%s (%d, %d)%t" s start stop eflush;
+   Filter_exn.print Dform.null_base f ()
 
 (*
  * Need some info about types and extraction.
@@ -294,7 +294,8 @@ module MakeFilter (**)
     with type str_expr  = Info.expr
     with type str_ctyp  = Info.ctyp
     with type str_item  = Info.item
-    with type select    = select_type) =
+    with type select    = select_type
+    with type arg       = unit) =
 struct
    (*
     * Processors include both the cache and the name of the module.
@@ -322,9 +323,9 @@ struct
     *       a. adds the resources
     *       b. adds the infix directives.
     *)
-   let declare_parent_error proc loc path =
+   let declare_parent proc loc path =
       (* Lots of errors can occur here *)
-      let _, opens = FilterCache.inline_module proc.cache path (inline_hook path) [] in
+      let _, opens = FilterCache.inline_module proc.cache () path (inline_hook path) [] in
       let resources = FilterCache.sig_resources proc.cache path in
       let _ =
          if !debug_resource then
@@ -344,9 +345,6 @@ struct
       in
          FilterCache.add_command proc.cache (Parent info, loc)
 
-   let declare_parent proc loc path =
-      print_exn_unit (declare_parent_error proc loc) path
-
    (*
     * Declare a term.
     * This defines a new opname,
@@ -356,16 +354,13 @@ struct
     * This command is used both for signature items
     * as well as structure items.
     *)
-   let declare_term_error proc loc (s, params, bterms) =
+   let declare_term proc loc (s, params, bterms) =
       let opname' = Opname.mk_opname s (FilterCache.op_prefix proc.cache) in
       let t = mk_term (mk_op opname' params) bterms in
          FilterCache.rm_opname proc.cache s;
          FilterCache.add_opname proc.cache s opname';
          FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t }, loc);
          t
-
-   let declare_term proc loc arg =
-      print_exn_term (declare_term_error proc loc) arg
 
    (*
     * Define a rewrite in an interface.
@@ -427,22 +422,16 @@ struct
    (*
     * Add the command and return the declaration.
     *)
-   let declare_rewrite_error proc loc name params args pf res =
+   let declare_rewrite proc loc name params args pf res =
       let cmd = rewrite_command proc name params args pf res in
          FilterCache.add_command proc.cache (cmd, loc)
-
-   let declare_rewrite proc loc name params args pf res =
-      print_exn_unit (declare_rewrite_error proc loc name params args pf) res
 
    (*
     * Declare a term, and define a rewrite in one step.
     *)
-   let define_term_error proc loc name redex contractum pf res =
+   let define_term proc loc name redex contractum pf res =
       let redex' = declare_term proc loc redex in
          declare_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum)) pf res
-
-   let define_term proc loc name redex contractum pf res =
-      print_exn_unit (define_term_error proc loc name redex contractum pf) res
 
    (*
     * Declare an axiom in an interface.  This has a similar flavor
@@ -463,11 +452,11 @@ struct
          flush stderr
 
    let rec print_vterms out = function
-      (Some v, h)::t ->
-         eprintf "\t%s. %s\n" (string_of_term v) (string_of_term h);
+      (labels, Some v, h)::t ->
+         eprintf "\t%a %s. %s\n" print_string_list labels (string_of_term v) (string_of_term h);
          print_vterms out t
-    | (None, h)::t ->
-         eprintf "\t%s\n" (string_of_term h);
+    | (labels, None, h)::t ->
+         eprintf "\t%a %s\n" print_string_list labels (string_of_term h);
          print_vterms out t
     | [] ->
          flush stderr
@@ -475,49 +464,50 @@ struct
    let print_non_vars out params =
       print_terms out (collect_non_vars params)
 
-   let cond_axiom proc name params args pf res =
+   let cond_axiom proc name params t pf res =
       (* Extract context names *)
-      let cvars = context_vars args in
-      let bvars = binding_vars args in
+      let _ =
+         if !debug_grammar then
+            eprintf "Conditional rule: %s%t" name eflush
+      in
+      let cvars = context_vars t in
+      let bvars = binding_vars t in
       let params' = extract_params cvars bvars params in
          (* Do some checking on the rule *)
          if !debug_grammar then
             begin
-               let args, result = unzip_mfunction args in
+               let t, result = unzip_mfunction t in
                   eprintf "Checking rule: %s\n" name;
                   eprintf "Non vars:\n%a" print_non_vars params';
-                  eprintf "Args:\n%a --> %s\n" print_vterms args (string_of_term result)
+                  eprintf "Args:\n%a --> %s\n" print_vterms t (string_of_term result)
             end;
          Refine.check_rule (**)
             name
             (Array.of_list (collect_cvars params'))
             (Array.of_list (collect_vars params'))
             (collect_non_vars params')
-            (strip_mfunction args);
+            (strip_mfunction t);
          if !debug_grammar then
             eprintf "Checked rule: %s%t" name eflush;
 
          (* If checking completes, add the rule *)
          Rule { rule_name = name;
                 rule_params = params';
-                rule_stmt = args;
+                rule_stmt = t;
                 rule_proof = pf;
                 rule_resources = res
          }
 
-   let axiom_command proc name params args pf res =
-      match params, args with
+   let axiom_command proc name params t pf res =
+      match params, t with
          [], MetaTheorem a ->
             simple_axiom proc name a pf res
        | _ ->
-            cond_axiom proc name params args pf res
-
-   let declare_axiom_error proc loc name args t pf res =
-      let cmd = axiom_command proc name args t pf res in
-         FilterCache.add_command proc.cache (cmd, loc)
+            cond_axiom proc name params t pf res
 
    let declare_axiom proc loc name args t pf res =
-      print_exn_unit (declare_axiom_error proc loc name args t pf) res
+      let cmd = axiom_command proc name args t pf res in
+         FilterCache.add_command proc.cache (cmd, loc)
 
    (*
     * Infix directive.
@@ -530,7 +520,7 @@ struct
     * Declare an ML term rewrite.
     * There is no definition.
     *)
-   let declare_mlrewrite_error proc loc mlname args t def resources =
+   let declare_mlrewrite proc loc mlname args t def resources =
       let cvars = context_vars (MetaTheorem t) in
       let bvars = binding_vars (MetaTheorem t) in
       let params = extract_params cvars bvars args in
@@ -542,10 +532,7 @@ struct
                                                          mlterm_resources = resources
                                              }, loc)
 
-   let declare_mlrewrite proc loc name args t def resources =
-      print_exn_unit (declare_mlrewrite_error proc loc name args t def) resources
-
-   let declare_mlaxiom_error proc loc mlname args t def resources =
+   let declare_mlaxiom proc loc mlname args t def resources =
       let cvars = context_vars (MetaTheorem t) in
       let bvars = binding_vars (MetaTheorem t) in
       let params = extract_params cvars bvars args in
@@ -556,9 +543,6 @@ struct
                                                        mlterm_def = def;
                                                        mlterm_resources = resources
                                              }, loc)
-
-   let declare_mlaxiom proc loc name args t def resources =
-      print_exn_unit (declare_mlaxiom_error proc loc name args t def) resources
 
    (*
     * Record a resource.
@@ -585,6 +569,8 @@ struct
                         modes, (DFormPrec (get_string_param loc hd)) :: options
                    | "inherit" :: _ ->
                         modes, DFormParens :: options
+                   | "internal" :: _ ->
+                        modes, DFormInternal :: options
                    | "mode" :: _ ->
                         (get_string_param loc hd)::modes, options
                    | _ ->
@@ -606,7 +592,7 @@ struct
    (*
     * Dform declaration.
     *)
-   let declare_dform_error proc loc name options t =
+   let declare_dform proc loc name options t =
       let modes, options' = get_dform_options proc loc options in
       let df =
          DForm { dform_name = name;
@@ -618,9 +604,6 @@ struct
       in
          FilterCache.add_command proc.cache (df, loc)
 
-   let declare_dform proc loc name options t =
-      print_exn_unit (declare_dform_error proc loc name options) t
-
    (*
     * Define a display form expansion.
     *
@@ -630,7 +613,7 @@ struct
     *      dform_print = DFormExpansion expansion
     *    }
     *)
-   let define_dform_error proc loc name options t expansion =
+   let define_dform proc loc name options t expansion =
       let modes, options' = get_dform_options proc loc options in
          FilterCache.add_command proc.cache (DForm { dform_name = name;
                                                      dform_modes = modes;
@@ -639,15 +622,12 @@ struct
                                                      dform_def = TermDForm expansion
                                              }, loc)
 
-   let define_dform proc loc name options t expansion =
-      print_exn_unit (define_dform_error proc loc name options t) expansion
-
    (*
     * An ml dterm is a display form that is computed in ML.
     *
     * Within the body, terms may expand to contracta.
     *)
-   let define_ml_dform_error proc loc name options t printer buffer code =
+   let define_ml_dform proc loc name options t printer buffer code =
       let modes, options' = get_dform_options proc loc options in
       let ml_def =
          { dform_ml_printer = printer;
@@ -665,9 +645,6 @@ struct
          }
       in
          FilterCache.add_command proc.cache (DForm info, loc)
-
-   let define_ml_dform proc loc name options t printer buffer code =
-      print_exn_unit (define_ml_dform_error proc loc name options t printer buffer) code
 
    (*
     * Precedence declaration.
@@ -748,25 +725,19 @@ struct
     * Save the summary.
     *)
    let save proc suffix =
-      let f proc =
-         FilterCache.save proc.cache suffix
-      in
-         print_exn_unit f proc
+      FilterCache.save proc.cache () suffix
 
    (*
     * Extract an item list.
     *)
    let extract sig_info proc =
-      let f proc =
-         (Info.extract sig_info (FilterCache.info proc.cache) (**)
-             (FilterCache.resources proc.cache)) proc.name
-      in
-         print_exn_item f proc
+      (Info.extract sig_info (FilterCache.info proc.cache) (**)
+          (FilterCache.resources proc.cache)) proc.name
 
    (*
     * Check the implementation with its interface.
     *)
-   let check_error proc alt_select =
+   let check proc alt_select =
       (* Check that implementation matches interface *)
       let sig_info = FilterCache.check proc.cache alt_select in
       let _ =
@@ -776,50 +747,63 @@ struct
                if file_interactive (name ^ ".prlb") then
                   begin
                      FilterCache.set_mode proc.cache InteractiveSummary;
-                     FilterCache.copy_proofs proc.cache Info.copy_proof
+                     FilterCache.copy_proofs proc.cache () Info.copy_proof
                   end
       in
          sig_info
-
-   let check proc alt_select =
-      print_exn (check_error proc) alt_select
 end
 
 (*
  * Interactive proofs are handled as raw objects.
  *)
-module Convert : ConvertProofSig =
+module Convert =
 struct
+   type t = unit
    type raw = Obj.t
-   type t =
+   type cooked =
       Term of term
+    | TermStd of term_io
     | Raw of Obj.t
 
-   let to_raw _ = function
+   let to_raw _ _ = function
       Raw t ->
          t
-    | Term t ->
+    | Term _
+    | TermStd _ ->
          raise (Failure "Filter_bin.Convert.to_raw: interactive term proof can't be converted to raw")
 
-   let of_raw _ t =
+   let of_raw _ _ t =
       Raw t
 
-   let to_expr _ t =
+   let to_term _ _ = function
+      Raw _ ->
+         raise (Failure "Filter_bin.Convert.to_term: interactive raw proof can't be converted to term")
+    | Term t ->
+         t
+    | TermStd t ->
+         Term_io.normalize_term t
+
+   let of_term _ _ t =
+      Term t
+
+   let to_term_io _ _ = function
+      Raw _ ->
+         raise (Failure "Filter_bin.Convert.to_raw: interactive raw proof can't be converted to term")
+    | Term t ->
+         Term_io.denormalize_term t
+    | TermStd t ->
+         t
+
+   let of_term_io _ _ t =
+      TermStd t
+
+   let to_expr _ _ t =
       let loc = 0, 0 in
       let body =
          <:expr< raise ( $uid: "Failure"$ $str: "Filter_bin.Convert.to_expr: not implemented"$ ) >>
       in
       let patt = <:patt< _ >> in
          <:expr< fun [ $list: [ patt, None, body ]$ ] >>
-
-   let to_term _ = function
-      Term t ->
-         t
-    | Raw t ->
-         raise (Failure "Filter_bin.Convert.to_raw: interactive raw proof can't be converted to term")
-
-   let of_term _ t =
-      Term t
 end
 
 (*
@@ -844,12 +828,12 @@ struct
    type sig_info = unit
 
    let copy_proof proof1 proof2 = proof1
-   let extract () = Extract.extract_sig
+   let extract = Extract.extract_sig
 end
 
 module StrFilterInfo =
 struct
-   type proof = Convert.t proof_type
+   type proof = Convert.cooked proof_type
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.str_item
@@ -864,7 +848,7 @@ struct
        | _ ->
             proof1
 
-   let extract = Extract.extract_str
+   let extract = Extract.extract_str ()
 end
 
 module SigFilter = MakeFilter (SigFilterInfo) (Cache.SigFilterCache)
@@ -877,29 +861,22 @@ module StrFilter = MakeFilter (StrFilterInfo) (Cache.StrFilterCache)
 (*
  * A primitive rule specifies the extract.
  *)
-let define_rule_error proc loc name
+let define_rule proc loc name
     (params : term list)
-    (args : aterm list)
-    (goal : term)
-    (extract : Convert.t proof_type)
+    (mterm : meta_term)
+    (extract : Convert.cooked proof_type)
     (res : MLast.expr resource_def) =
-   let avars = collect_anames args in
-   let assums = List.map (function { aname = name; aterm = t } -> name, t) args in
-   let mterm = zip_mfunction assums goal in
    let cmd = StrFilter.axiom_command proc name params mterm extract res in
       StrFilter.add_command proc (cmd, loc)
 
-let define_rule proc loc name params args goal extract res =
-   print_exn_unit (define_rule_error proc loc name params args goal extract) res
+let define_prim proc loc name params mterm extract =
+   define_rule proc loc name params mterm (Primitive extract)
 
-let define_prim proc loc name params args goal extract =
-   define_rule proc loc name params args goal (Primitive extract)
+let define_thm proc loc name params mterm tac =
+   define_rule proc loc name params mterm (Derived tac)
 
-let define_thm proc loc name params args goal tac =
-   define_rule proc loc name params args goal (Derived tac)
-
-let define_int_thm proc loc name params args goal =
-   define_rule proc loc name params args goal Incomplete
+let define_int_thm proc loc name params mterm =
+   define_rule proc loc name params mterm Incomplete
 
 (************************************************************************
  * GRAMMAR EXTENSION                                                    *
@@ -937,177 +914,287 @@ EXTEND
 
    interf:
       [[ interf_opening; st = LIST0 interf_item; EOI ->
-          let proc = SigFilter.get_proc loc in
-          let id = Hashtbl.hash proc in
-             SigFilter.add_command proc (Id id, (0, 0));
-             SigFilter.save proc NeverSuffix;
-             SigFilter.extract () proc
+          let f () =
+             let proc = SigFilter.get_proc loc in
+             let id = Hashtbl.hash proc in
+                SigFilter.add_command proc (Id id, (0, 0));
+                SigFilter.save proc NeverSuffix;
+                SigFilter.extract () proc
+          in
+             print_exn f "interf" loc
        ]];
 
    interf_opening:
       [[ OPT "PRL_interface" ->
-          SigFilter.get_proc loc
+          let f () =
+             SigFilter.get_proc loc
+          in
+             print_exn f "interf_opening" loc
        ]];
 
    interf_item:
       [[ s = sig_item; OPT ";;" ->
-          if !debug_filter_parse then
-             eprintf "Filter_parse.interf_item: adding item%t" eflush;
-          begin
-             match s with
-                <:sig_item< declare $list: []$ end >> ->
+          let f () =
+             if !debug_filter_parse then
+                eprintf "Filter_parse.interf_item: adding item%t" eflush;
+             begin
+                match s with
+                   <:sig_item< declare $list: []$ end >> ->
                    ()
-              | _ ->
-                   SigFilter.add_command (SigFilter.get_proc loc) (SummaryItem s, loc)
-          end;
-          s, loc
+                 | _ ->
+                      SigFilter.add_command (SigFilter.get_proc loc) (SummaryItem s, loc)
+             end;
+             s, loc
+           in
+              print_exn f "interf_item" loc
        ]];
 
    implem:
       [[ implem_opening; st = LIST0 implem_item; EOI ->
-          let proc = StrFilter.get_proc loc in
-          let interf = StrFilter.check proc InterfaceType in
-             StrFilter.save proc NeverSuffix;
-             StrFilter.extract interf proc
+          let f () =
+             let proc = StrFilter.get_proc loc in
+             let interf = StrFilter.check proc () InterfaceType in
+                StrFilter.save proc NeverSuffix;
+                StrFilter.extract interf proc
+          in
+             print_exn f "implem" loc
        ]];
 
    implem_opening:
       [[ OPT "PRL_implementation" ->
-          StrFilter.get_proc loc
+         let f () =
+            StrFilter.get_proc loc
+         in
+            print_exn f "implem_opening" loc
        ]];
 
    implem_item:
       [[ s = str_item; OPT ";;" ->
-          begin
-             match s with
-                <:str_item< declare $list: []$ end >> ->
-                   ()
-              | _ ->
-                   StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem s, loc);
-          end;
-          s, loc
+          let f () =
+             begin
+                match s with
+                   <:str_item< declare $list: []$ end >> ->
+                      ()
+                 | _ ->
+                      StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem s, loc);
+             end;
+             s, loc
+          in
+             print_exn f "implem_item" loc
        ]];
 
    sig_item:
       [[ "include"; path = mod_ident ->
-          SigFilter.declare_parent (SigFilter.get_proc loc) loc path;
-          empty_sig_item loc
-        | "declare"; t = quote_term ->
-          let _ = SigFilter.declare_term (SigFilter.get_proc loc) loc t in
-          empty_sig_item loc
-        | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = term ->
-          SigFilter.define_term (SigFilter.get_proc loc) loc name t def () [];
-          empty_sig_item loc
-        | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
-          SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t () [];
-          empty_sig_item loc
-        | "ml_rw"; name = LIDENT; args = optarglist; ":"; t = term ->
-          SigFilter.declare_mlrewrite (SigFilter.get_proc loc) loc name args t None [];
-          empty_sig_item loc
-        | rule_keyword; name = LIDENT; args = optarglist; ":"; t = mterm ->
-          SigFilter.declare_axiom (SigFilter.get_proc loc) loc name args t () [];
-          empty_sig_item loc
-        | mlrule_keyword; name = LIDENT; args = optarglist; ":"; t = term ->
-          SigFilter.declare_mlaxiom (SigFilter.get_proc loc) loc name args t None [];
-          empty_sig_item loc
-        | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ","; arg = ctyp; ")"; name = LIDENT ->
-          SigFilter.declare_resource (SigFilter.get_proc loc) loc (**)
-             { resource_name = name;
-               resource_extract_type = extract;
-               resource_improve_type = improve;
-               resource_data_type = data;
-               resource_arg_type = arg
-             };
-          empty_sig_item loc
-        | "dform"; name = LIDENT; ":"; options = df_options ->
-          let options', t = options in
-             SigFilter.declare_dform (SigFilter.get_proc loc) loc name options' t;
+          let f () =
+             SigFilter.declare_parent (SigFilter.get_proc loc) loc path
+          in
+             print_exn f "include" loc;
              empty_sig_item loc
+        | "declare"; t = quote_term ->
+          let f () =
+             ignore (SigFilter.declare_term (SigFilter.get_proc loc) loc t)
+          in
+             print_exn f "declare" loc;
+             empty_sig_item loc
+        | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = term ->
+           let f () =
+             SigFilter.define_term (SigFilter.get_proc loc) loc name t def () []
+           in
+             print_exn f "define" loc;
+             empty_sig_item loc
+        | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
+           let f () =
+             SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t () []
+           in
+             print_exn f "rewrite" loc;
+             empty_sig_item loc
+        | "ml_rw"; name = LIDENT; args = optarglist; ":"; t = term ->
+           let f () =
+             SigFilter.declare_mlrewrite (SigFilter.get_proc loc) loc name args t None []
+           in
+             print_exn f "ml_rw" loc;
+             empty_sig_item loc
+        | rule_keyword; name = LIDENT; args = optarglist; ":"; t = mterm ->
+           let f () =
+             SigFilter.declare_axiom (SigFilter.get_proc loc) loc name args t () []
+           in
+              print_exn f "rule" loc;
+              empty_sig_item loc
+        | mlrule_keyword; name = LIDENT; args = optarglist; ":"; t = term ->
+           let f () =
+              SigFilter.declare_mlaxiom (SigFilter.get_proc loc) loc name args t None []
+           in
+              print_exn f "mlrule_keyword" loc;
+             empty_sig_item loc
+        | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ","; arg = ctyp; ")"; name = LIDENT ->
+           let f () =
+              SigFilter.declare_resource (SigFilter.get_proc loc) loc (**)
+                 { resource_name = name;
+                   resource_extract_type = extract;
+                   resource_improve_type = improve;
+                   resource_data_type = data;
+                   resource_arg_type = arg
+                 }
+           in
+              print_exn f "resource" loc;
+              empty_sig_item loc
+        | "dform"; name = LIDENT; ":"; options = df_options ->
+           let f () =
+              let options', t = options in
+                 SigFilter.declare_dform (SigFilter.get_proc loc) loc name options' t;
+           in
+              print_exn f "dform" loc;
+              empty_sig_item loc
         | "infix"; name = ident ->
-          SigFilter.declare_infix (SigFilter.get_proc loc) loc name;
-          empty_sig_item loc
+           let f () =
+              SigFilter.declare_infix (SigFilter.get_proc loc) loc name
+           in
+              print_exn f "infix" loc;
+             empty_sig_item loc
         | "prec"; name = LIDENT ->
-          SigFilter.declare_prec (SigFilter.get_proc loc) loc name;
-          empty_sig_item loc
+           let f () =
+              SigFilter.declare_prec (SigFilter.get_proc loc) loc name
+           in
+              print_exn f "prec" loc;
+              empty_sig_item loc
         | "topval"; name = LIDENT; ":"; t = ctyp ->
-          SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>;
-          empty_sig_item loc
+           let f () =
+              SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>
+           in
+              print_exn f "topval" loc;
+              empty_sig_item loc
         | "topval"; "("; name = operator; ")"; ":"; t = ctyp ->
-          SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>;
-          empty_sig_item loc
+           let f () =
+              SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>
+           in
+              print_exn f "topval" loc;
+              empty_sig_item loc
        ]];
 
    str_item:
       [[ "include"; path = mod_ident ->
-          StrFilter.declare_parent (StrFilter.get_proc loc) loc path;
-          empty_str_item loc
+          let f () =
+             StrFilter.declare_parent (StrFilter.get_proc loc) loc path
+          in
+             print_exn f "include" loc;
+             empty_str_item loc
         | "declare"; t = quote_term ->
-          let _ = StrFilter.declare_term (StrFilter.get_proc loc) loc t in
-          empty_str_item loc
+          let f () =
+             ignore (StrFilter.declare_term (StrFilter.get_proc loc) loc t)
+          in
+             print_exn f "declare" loc;
+             empty_str_item loc
         | "prim_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
-          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res;
-          empty_str_item loc
+           let f () =
+              StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
+           in
+              print_exn f "prim_rw" loc;
+              empty_str_item loc
         | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
-          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res;
-          empty_str_item loc
+           let f () =
+              StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res
+           in
+              print_exn f "interactive_rw" loc;
+              empty_str_item loc
         | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
-          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body) res;
-          empty_str_item loc
-        | "ml_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = term; rewrite_equal; code = expr; "|"; ext = expr ->
-          StrFilter.declare_mlrewrite (StrFilter.get_proc loc) loc name args t (Some (code, ext)) res;
-          empty_str_item loc
-        | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
-             (args, goal) = opt_binding_arglist; "="; (**)
-             extract = term ->
-          define_prim (StrFilter.get_proc loc) loc name params args goal.aterm extract res;
-          empty_str_item loc
-        | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
-             (args, goal) = opt_binding_arglist; "="; tac = expr ->
-          define_thm (StrFilter.get_proc loc) loc name params args goal.aterm tac res;
-          empty_str_item loc
-        | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
-             (args, goal) = opt_binding_arglist ->
-          define_int_thm (StrFilter.get_proc loc) loc name params args goal.aterm res;
-          empty_str_item loc
-        | "ml_rule"; name = LIDENT; res = optresources; args = optarglist; ":"; t = term; rewrite_equal; code = expr; "|"; ext = expr ->
-          StrFilter.declare_mlaxiom (StrFilter.get_proc loc) loc name args t (Some (code, ext)) res;
-          empty_str_item loc
+           let f () =
+              StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body) res
+           in
+              print_exn f "thm_rw" loc;
+             empty_str_item loc
+        | "ml_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = bound_term; "="; code = expr ->
+           let f () =
+              StrFilter.declare_mlrewrite (StrFilter.get_proc loc) loc name args t.aterm (Some (wrap_code loc t.aname code)) res
+           in
+              print_exn f "ml_rw" loc;
+              empty_str_item loc
+        | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; extract = term ->
+           let f () =
+              define_prim (StrFilter.get_proc loc) loc name params mt extract res
+           in
+              print_exn f "prim" loc;
+              empty_str_item loc
+        | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = expr ->
+           let f () =
+              define_thm (StrFilter.get_proc loc) loc name params mt tac res
+           in
+              print_exn f "thm" loc;
+              empty_str_item loc
+        | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
+           let f () =
+              define_int_thm (StrFilter.get_proc loc) loc name params mt res
+           in
+              f ();
+              empty_str_item loc
+        | mlrule_keyword; name = LIDENT; res = optresources; args = optarglist; ":"; t = bound_term; "="; code = expr ->
+           let f () =
+              StrFilter.declare_mlaxiom (StrFilter.get_proc loc) loc name args t.aterm (Some (wrap_code loc t.aname code)) res
+           in
+              print_exn f "mlrule" loc;
+              empty_str_item loc
         | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ","; arg = ctyp; ")"; name = LIDENT ->
-          StrFilter.declare_resource (StrFilter.get_proc loc) loc (**)
-             { resource_name = name;
-               resource_extract_type = extract;
-               resource_improve_type = improve;
-               resource_data_type = data;
-               resource_arg_type = arg
-             };
-          empty_str_item loc
+           let f () =
+              StrFilter.declare_resource (StrFilter.get_proc loc) loc (**)
+                 { resource_name = name;
+                   resource_extract_type = extract;
+                   resource_improve_type = improve;
+                   resource_data_type = data;
+                   resource_arg_type = arg
+                 }
+           in
+              print_exn f "resource" loc;
+              empty_str_item loc
         | "dform"; name = LIDENT; ":"; options = df_options; "="; form = xdform ->
-          let options', t = options in
-             StrFilter.define_dform (StrFilter.get_proc loc) loc name options' t form;
-             empty_str_item loc
+           let f () =
+              let options', t = options in
+                 StrFilter.define_dform (StrFilter.get_proc loc) loc name options' t form
+           in
+              print_exn f "dform" loc;
+              empty_str_item loc
         | "ml_dform"; name = LIDENT; ":"; options = df_options; buf = LIDENT; format = LIDENT; "="; code = expr ->
-          let options', t = options in
-             StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t buf format code;
-             empty_str_item loc
+           let f () =
+              let options', t = options in
+                 StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t buf format code
+           in
+              print_exn f "ml_dform" loc;
+              empty_str_item loc
         | "infix"; name = ident ->
-          StrFilter.declare_infix (StrFilter.get_proc loc) loc name;
-          empty_str_item loc
+           let f () =
+              StrFilter.declare_infix (StrFilter.get_proc loc) loc name
+           in
+              print_exn f "infix" loc;
+              empty_str_item loc
         | "prec"; name = LIDENT ->
-          StrFilter.declare_prec (StrFilter.get_proc loc) loc name;
-          empty_str_item loc
+           let f () =
+              StrFilter.declare_prec (StrFilter.get_proc loc) loc name
+           in
+              print_exn f "prec" loc;
+              empty_str_item loc
         | "prec"; name1 = LIDENT; "<"; name2 = LIDENT ->
-          StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 LTRelation;
-          empty_str_item loc
+           let f () =
+              StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 LTRelation
+           in
+              print_exn f "prec" loc;
+              empty_str_item loc
         | "prec"; name1 = LIDENT; "="; name2 = LIDENT ->
-          StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 EQRelation;
-          empty_str_item loc
+           let f () =
+              StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 EQRelation
+           in
+              f ();
+              empty_str_item loc
         | "prec"; name1 = LIDENT; ">"; name2 = LIDENT ->
-          StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 GTRelation;
-          empty_str_item loc
+           let f () =
+              StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 GTRelation
+           in
+              print_exn f "prec" loc;
+              empty_str_item loc
         | "magic_block"; name = LIDENT; "=";
           "struct"; st = LIST0 [ s = str_item; OPT ";;" -> s ]; "end" ->
-          StrFilter.define_magic_block (StrFilter.get_proc loc) loc name st;
-          empty_str_item loc
+           let f () =
+              StrFilter.define_magic_block (StrFilter.get_proc loc) loc name st
+           in
+              print_exn f "magic_block" loc;
+              empty_str_item loc
        ]];
 
    mod_ident:
@@ -1127,37 +1214,34 @@ EXTEND
           List.map (function t -> t.aterm) args
        ]];
 
-   opt_binding_arglist:
-      [[ ":"; goal = singleterm ->
-          [], goal
-        | arg = bound_term; ":"; goal = singleterm ->
-          [arg], goal
-        | arg = bound_term; "-->"; args = LIST0 bound_term SEP "-->" ->
-          List_util.split_last (arg :: args)
-        | arg = bound_term; args = LIST0 bound_term; ":"; goal = singleterm ->
-          arg :: args, goal
-       ]];
-
    (* The optional list of resources to update *)
    optresources:
-      [[ ores = OPT [ "{|"; res = LIST0 updresource SEP ";"; "|}" -> res ] ->
+      [[ ores = OPT updresources ->
           match ores with
              Some ores -> ores
            | None -> []
       ]];
 
-   updresource:
-      [[ name = LIDENT; args = LIST0 expr ->
-          name, args (* should be an application *)
+   updresources:
+      [[ "{|"; e = expr; "|}" ->
+           let f () =
+                let rec split_application loc tl expr =
+                   match expr with
+                      <:expr< $e1$ $e2$ >> ->
+                         split_application loc (e2 :: tl) e1
+                    | <:expr< $lid:name$ >> ->
+                         loc, name, tl
+                    | _ ->
+                         Stdpp.raise_with_loc (MLast.loc_of_expr expr) (Failure "resource is not a sequence")
+                in
+                   match e with
+                      <:expr< do $list:el$ return $e$ >> ->
+                         List.map (fun expr -> split_application (MLast.loc_of_expr expr) [] expr) (el @ [e])
+                    | _ ->
+                         [split_application (MLast.loc_of_expr e) [] e]
+           in
+              print_exn f "updresources" loc
       ]];
-
-   (*
-    * Equality beginning a rewrite block.
-    *)
-   rewrite_equal:
-      [[ "==" ->
-          start_rewrite ()
-       ]];
 
    rule_keyword:
       [[ "rule" -> ()
@@ -1165,8 +1249,10 @@ EXTEND
       ]];
 
    mlrule_keyword:
-      [[ "ml_rule" -> ()
-       | "ml_axiom" -> ()
+      [[ "ml_rule" ->
+         start_rewrite ()
+       | "ml_axiom" ->
+         start_rewrite ()
       ]];
 
    (*

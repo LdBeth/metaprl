@@ -13,21 +13,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -40,6 +40,7 @@ open Mp_debug
 open File_base_type
 
 open Refiner.Refiner.TermType
+open Refiner_io
 
 open Filter_type
 open Filter_summary
@@ -96,7 +97,8 @@ module MakeCompile (**)
     with type str_expr  = Info.expr
     with type str_ctyp  = Info.ctyp
     with type str_item  = Info.str_item
-    with type select    = select_type) =
+    with type select    = select_type
+    with type arg       = unit) =
 struct
    let compile name =
       let inline_hook cache (path, info) () =
@@ -115,52 +117,66 @@ struct
             raise (Failure "Filter_parse.compile: invalid suffix")
       in
       let cache = FilterCache.create !include_path in
-      let info, _ = FilterCache.load cache path kind InterfaceType inline_hook () NeverSuffix in
+      let info, _ = FilterCache.load cache () path kind InterfaceType inline_hook () NeverSuffix in
       let check () =
-         FilterCache.check info InterfaceType
+         FilterCache.check info () InterfaceType
       in
-      let items = Info.extract check (FilterCache.info info) (**)
-                     (FilterCache.resources info) path
+      let items = Info.extract check (FilterCache.info info) (FilterCache.resources info) path
       in
          Info.compile items
 end
 
 (*
- * Proof conversions are always void, since
- * we don't have any interactive proofs.
+ * Interactive proofs are handled as raw objects.
  *)
-module Convert : ConvertProofSig =
+module Convert =
 struct
+   type t = unit
    type raw = Obj.t
-   type t =
+   type cooked =
       Term of term
+    | TermStd of term_io
     | Raw of Obj.t
 
-   let to_raw _ = function
+   let to_raw _ _ = function
       Raw t ->
          t
-    | Term t ->
+    | Term _
+    | TermStd _ ->
          raise (Failure "Filter_bin.Convert.to_raw: interactive term proof can't be converted to raw")
 
-   let of_raw _ t =
+   let of_raw _ _ t =
       Raw t
 
-   let to_expr _ t =
+   let to_term _ _ = function
+      Raw _ ->
+         raise (Failure "Filter_bin.Convert.to_term: interactive raw proof can't be converted to term")
+    | Term t ->
+         t
+    | TermStd t ->
+         Term_io.normalize_term t
+
+   let of_term _ _ t =
+      Term t
+
+   let to_term_io _ _ = function
+      Raw _ ->
+         raise (Failure "Filter_bin.Convert.to_raw: interactive raw proof can't be converted to term")
+    | Term t ->
+         Term_io.denormalize_term t
+    | TermStd t ->
+         t
+
+   let of_term_io _ _ t =
+      TermStd t
+
+   let to_expr _ _ t =
       let loc = 0, 0 in
       let body =
          <:expr< raise ( $uid: "Failure"$ $str: "Filter_bin.Convert.to_expr: not implemented"$ ) >>
       in
       let patt = <:patt< _ >> in
          <:expr< fun [ $list: [ patt, None, body ]$ ] >>
-
-   let to_term _ = function
-      Term t ->
-         t
-    | Raw t ->
-         raise (Failure "Filter_bin.Convert.to_raw: interactive raw proof can't be converted to term")
-
-   let of_term _ t =
-      Term t
 end
 
 (*
@@ -184,20 +200,20 @@ struct
    type sig_item = MLast.sig_item
    type str_item = MLast.sig_item
 
-   let extract _ = Extract.extract_sig
+   let extract check = Extract.extract_sig ()
    let compile items =
       (!Pcaml.print_interf) items
 end
 
 module StrCompileInfo =
 struct
-   type proof = Convert.t proof_type
+   type proof = Convert.cooked proof_type
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type sig_item = MLast.sig_item
    type str_item = MLast.str_item
 
-   let extract check = Extract.extract_str (check ())
+   let extract check = Extract.extract_str () (check ())
    let compile items =
       (!Pcaml.print_implem) items;
       eprintf "Writing output file%t" eflush;

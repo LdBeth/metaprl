@@ -317,6 +317,38 @@ struct
            term_terms = [mk_simple_bterm t]}}
 
    (*
+    * Two number parameters, a string, and one subterm.
+    *)
+   let is_number_number_string_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number _; Number _; String _] };
+             term_terms = [ {bvars=[]} ]
+           } -> Opname.eq opname opname'
+    | _ ->
+         false
+
+   let dest_number_number_string_dep0_term opname t = match dest_term t with
+      { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
+        term_terms = [bt]
+      } when Opname.eq opname opname' ->
+         s1, s2, s3, dest_simple_bterm bt
+    | _ ->
+         ref_raise(RefineError ("dest_number_number_dep0_term", TermMatchError (t, "bad arity")))
+
+   let dest_number_number_string_dep0_any_term t = match dest_term t with
+      { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
+        term_terms = [bt]
+      } ->
+         s1, s2, s3, dest_simple_bterm bt
+    | _ ->
+         ref_raise(RefineError ("dest_number_number_dep0_any_term", TermMatchError (t, "bad arity")))
+
+   let mk_number_number_string_dep0_term opname s1 s2 s3 t =
+      { free_vars = t.free_vars;
+        core = Term
+         { term_op = { op_name = opname; op_params = [Number s1; Number s2; String s3] };
+           term_terms = [mk_simple_bterm t]}}
+
+   (*
     * Two string parameters, two subterms.
     *)
    let is_string_string_dep0_dep0_term opname t = match get_core t with
@@ -510,8 +542,7 @@ struct
     | _ -> ref_raise(RefineError ("dest_dep0_dep1_term", TermMatchError (t, "bad arity")))
 
    let dest_dep0_dep1_any_term t = match dest_term t with
-      { term_op = { op_params = [] };
-        term_terms = [{ bvars = []; bterm = t1 };
+      { term_terms = [{ bvars = []; bterm = t1 };
                       { bvars = [v]; bterm = t2 }] } -> v, t1, t2
     | _ -> ref_raise(RefineError ("dest_dep0_dep1_any_term", TermMatchError (t, "bad arity")))
 
@@ -824,6 +855,8 @@ struct
        | FOVar _ -> t
        | Sequent _ -> raise (Invalid_argument "Term_op_ds.map_down: sequent code is not implemented")
        | Subst _ -> fail_core "Term_op_ds.map_down"
+       | Hashed d ->
+            map_down f (Weak_memo.TheWeakMemo.retrieve_hack d)
 
    let rec bterm_up f btrm =
       { bvars = btrm.bvars; bterm = map_up f btrm.bterm }
@@ -835,4 +868,6 @@ struct
        | FOVar _ -> f t
        | Sequent _ -> raise (Invalid_argument "Term_op_ds.map_up: sequent code is not implemented")
        | Subst _ -> fail_core "Term_op_ds.map_up"
+       | Hashed d ->
+            map_up f (Weak_memo.TheWeakMemo.retrieve_hack d)
 end

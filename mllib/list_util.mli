@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -38,6 +38,9 @@ val compare_lists : ('a -> 'b -> int) -> 'a list -> 'b list -> int
 
 (* Elements must by physically equal *)
 val compare_eq : 'a list -> 'a list -> bool
+
+(* Elements must be equal, but lists may be different lengths *)
+val compare_cmp : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 
 (*
  * These functions are just liek the List functions
@@ -84,6 +87,7 @@ val intersectq : 'a list -> 'a list -> 'a list
 val intersects : 'a list -> 'a list -> bool
 val subtract : 'a list -> 'a list -> 'a list
 val subtractq : 'a list -> 'a list -> 'a list
+val subtract_multiset : 'a list -> 'a list -> 'a list
 val union : 'a list -> 'a list -> 'a list
 val unionq : 'a list -> 'a list -> 'a list
 
@@ -95,6 +99,7 @@ val rev_iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
 val flat_map : ('a -> 'b list) -> 'a list -> 'b list
 val fail_map : ('a -> 'b) -> 'a list -> 'b list
 val some_map : ('a -> 'b option) -> 'a list -> 'b list
+val some_map_safe : ('a -> 'a option) -> 'a list -> 'a list
 val fold_left : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
 
 (*

@@ -289,6 +289,31 @@ struct
       let op = { op_name = string_opname; op_params = [String s] } in
          mk_term op []
 
+   (*
+    * String with one subterm.
+    *)
+   let is_xstring_dep0_term t =
+      match get_core t with
+         Term { term_op = { op_name = opname; op_params = [String _] };
+                term_terms = [{ bvars = [] }]
+         } when Opname.eq opname string_opname ->
+            true
+       | _ ->
+            false
+
+   let dest_xstring_dep0_term t =
+      match dest_term t with
+         { term_op = { op_name = opname; op_params = [String s] };
+           term_terms = [{ bvars = []; bterm = t }]
+         } when Opname.eq opname string_opname ->
+            s, t
+       | _ ->
+            ref_raise(RefineError ("dest_xstring_dep0_term", TermMatchError (t, "not a string")))
+
+   let mk_xstring_dep0_term s t =
+      let op = { op_name = string_opname; op_params = [String s] } in
+         mk_term op [mk_simple_bterm t]
+
    (****************************************
     * LAMBDA                               *
     ****************************************)

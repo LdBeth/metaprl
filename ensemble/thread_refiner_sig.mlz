@@ -33,70 +33,70 @@
 (*
  * This module is used to provide arguments to the thread module.
  *)
-module type ThreadRefinerArgSig =
-sig
-   type extract
-
-   (* Function for composing extracts *)
-   val compose : extract -> extract list -> extract
-end
-
 module type ThreadRefinerTacticalsSig =
 sig
-   type ('term, 'extract) t
-   type ('term, 'extract) tactic = 'term -> ('term, 'extract) t
+   type ('term, 'arg, 'extract) t
+   type ('term, 'arg, 'extract) tactic = 'term -> ('term, 'arg, 'extract) t
 
    (* Fold a value *)
-   val create_value : 'term list -> 'extract -> ('term, 'extract) t
+   val create_value : 'term list -> 'extract -> ('term, 'arg, 'extract) t
+
+   (* Postprocess the tactic *)
+   val wrap : 'arg -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
 
    (* First operation that succeeds *)
-   val first : ('term, 'extract) tactic list -> ('term, 'extract) tactic
+   val first : ('term, 'arg, 'extract) tactic list -> ('term, 'arg, 'extract) tactic
 
    (* All operations should succeed *)
-   val compose1 : ('term, 'extract) tactic -> ('term, 'extract) tactic -> ('term, 'extract) tactic
-   val compose2 : ('term, 'extract) tactic -> ('term, 'extract) tactic list -> ('term, 'extract) tactic
-   val composef : ('term, 'extract) tactic -> ('term list -> ('term, 'extract) t list) -> ('term, 'extract) tactic
+   val compose1 : ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
+   val compose2 : ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic list -> ('term, 'arg, 'extract) tactic
+   val composef : ('term, 'arg, 'extract) tactic -> ('term list -> ('term, 'arg, 'extract) t list) -> ('term, 'arg, 'extract) tactic
 end
 
 module type ThreadRefinerSig =
 sig
    (* Access is through a server *)
-   type ('term, 'share) server
+   type ('term, 'share, 'arg, 'extract) server
 
    (*
     * These are the thread objects.
     *)
-   type 'term t
-   type extract
-   type 'term tactic = 'term -> 'term t
+   type ('term, 'arg, 'extract) t
+   type ('term, 'arg, 'extract) tactic = 'term -> ('term, 'arg, 'extract) t
 
    (* Shared values *)
-   type 'c key
+   type 'share key
 
    (* Create a server *)
-   val create : (out_channel -> 'term -> unit) -> ('term, 'share) server
+   val create : (out_channel -> 'term -> unit) ->
+      ('extract -> 'extract list -> 'extract) ->        (* compose function *)
+      ('arg -> 'extract -> 'extract) ->                 (* post-processor *)
+      ('term, 'share, 'arg, 'extract) server
 
    (* Fold a value *)
-   val create_value : 'term list -> extract -> 'term t
+   val create_value : 'term list -> 'extract -> ('term, 'arg, 'extract) t
+
+   (* Post-process the extract *)
+   val wrap : 'arg -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
 
    (* First operation that succeeds *)
-   val first : 'term tactic list -> 'term tactic
+   val first : ('term, 'arg, 'extract) tactic list -> ('term, 'arg, 'extract) tactic
 
    (* All operations should succeed *)
-   val compose1 : 'term tactic -> 'term tactic -> 'term tactic
-   val compose2 : 'term tactic -> 'term tactic list -> 'term tactic
-   val composef : 'term tactic -> ('term list -> 'term t list) -> 'term tactic
+   val compose1 : ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
+   val compose2 : ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic list -> ('term, 'arg, 'extract) tactic
+   val composef : ('term, 'arg, 'extract) tactic -> ('term list -> ('term, 'arg, 'extract) t list) -> ('term, 'arg, 'extract) tactic
 
    (* Fully evaluate the thread *)
-   val eval : ('term, 'share) server -> 'term t -> 'term list * extract
+   val eval : ('term, 'share, 'arg, 'extract) server -> ('term, 'arg, 'extract) t -> 'term list * 'extract
 
    (* Shared memory *)
-   val share : ('term, 'share) server -> string -> (unit -> 'share) -> 'share key
-   val arg_of_key : ('term, 'share) server -> 'share key -> 'share
+   val share : ('term, 'share, 'arg, 'extract) server -> string -> (unit -> 'share) -> 'share key
+   val arg_of_key : ('term, 'share, 'arg, 'extract) server -> 'share key -> 'share
 
    (* Start the main loop *)
    val args : unit -> (string * Arg.spec * string) list
-   val main_loop : ('term, 'share) server -> unit
+   val main_loop : ('term, 'share, 'arg, 'extract) server -> unit
 end
 
 (*

@@ -47,8 +47,7 @@ let prl_init_names =
     "Filter_summary"]
 
 let prl_names =
-   ["Tactic_type";
-    "Rewrite_type"]
+   ["Tactic_type"]
 }
 
 rule main = parse

@@ -1,8 +1,9 @@
 open Printf
+open Set_sig
 
 module Make
-   (Set1: Mp_set.S with type elt = string)
-   (Set2: Mp_set.S with type elt = string) =
+   (Set1: SetSig with type elt = string)
+   (Set2: SetSig with type elt = string) =
 
 struct
 

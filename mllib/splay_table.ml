@@ -12,113 +12,81 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-module type SplayTableSig =
-sig
-   type elt
-   type set
-   type t
-   type data
+open Set_sig
 
-   val create : set -> t
-   val add : t -> elt -> data -> t
-   val union : t -> t -> t
-   val mem : t -> elt -> bool
-   val find : t -> elt -> data
-   val find_all : t -> elt -> data list
-   val remove : t -> elt -> t
-   val iter : (elt -> data -> unit) -> t -> unit
-   val map : (elt -> data -> data) -> t -> t
-end
+(************************************************************************
+ * TYPES                                                                *
+ ************************************************************************)
 
 (*
- * Ordering module takes a comparison set.
+ * Table is a binary tree.
+ * Each node has five fields:
+ *    1. a key
+ *    2. a list of values associated with the key
+ *    3. a left child
+ *    4. a right child
+ *    5. the total number of keys in the tree
  *)
-module type TableBaseSig =
-sig
-   type elt
-   type set
-   type data
+type ('elt, 'data) tree =
+   Leaf
+ | Node of 'elt * 'data list * ('elt, 'data) tree * ('elt, 'data) tree * int
 
-   val union : set -> set -> set
-   val compare : set -> elt -> elt -> int
-   val append : data list -> data list -> data list
-end
+(*
+ * We keep an argument for the comparison,
+ * and the aplay tree.  The tree is mutable
+ * so that we can rearrange the tree in place.
+ * However, we all splay operations are functional,
+ * and we assume that the rearranged tree can be
+ * assigned atomically to this field.
+ *)
+type ('arg, 'elt, 'data) table =
+   { mutable splay_tree : ('elt, 'data) tree;
+     splay_arg : 'arg
+   }
+
+type ('arg, 'elt, 'data) t = ('arg, 'elt, 'data) table
+
+(*
+ * Directions are used to define
+ * paths in the tree.
+ *)
+type ('elt, 'data) direction =
+   Left of ('elt, 'data) tree
+ | Right of ('elt, 'data) tree
+
+(*
+ * Result of a splay operation.
+ *)
+type ('elt, 'data) splay_result =
+   SplayFound of ('elt, 'data) tree
+ | SplayNotFound of ('elt, 'data) tree
 
 (*
  * Build the set from an ordered type.
  *)
-module MakeSplayTable (Base : TableBaseSig) =
-struct
-   (************************************************************************
-    * TYPES                                                                *
-    ************************************************************************)
-
-   type elt = Base.elt
-   type set = Base.set
-   type data = Base.data
-
-   (*
-    * Table is a binary tree.
-    * Each node has five fields:
-    *    1. a key
-    *    2. a list of values associated with the key
-    *    3. a left child
-    *    4. a right child
-    *    5. the total number of keys in the tree
-    *)
-   type tree =
-      Leaf
-    | Node of elt * data list * tree * tree * int
-
-   (*
-    * We keep an argument for the comparison,
-    * and the aplay tree.  The tree is mutable
-    * so that we can rearrange the tree in place.
-    * However, we all splay operations are functional,
-    * and we assume that the rearranged tree can be
-    * assigned atomically to this field.
-    *)
-   type t =
-      { mutable splay_tree : tree;
-        splay_arg : set
-      }
-
-   (*
-    * Directions are used to define
-    * paths in the tree.
-    *)
-   type direction =
-      Left of tree
-    | Right of tree
-
-   (*
-    * Result of a splay operation.
-    *)
-   type splay_result =
-      SplayFound of tree
-    | SplayNotFound of tree
-
-   (************************************************************************
-    * IMPLEMENTATION                                                       *
-    ************************************************************************)
+let create
+    (ord_print : 'arg -> 'elt -> 'data list -> unit)
+    (ord_union : 'arg -> 'arg -> 'arg)
+    (ord_compare : 'arg -> 'elt -> 'elt -> int)
+    (ord_append : 'data list -> 'data list -> 'data list) =
 
    (*
     * Size of a table.
@@ -128,6 +96,11 @@ struct
          size
     | Leaf ->
          0
+   in
+
+   let cardinal { splay_tree = tree } =
+      cardinality tree
+   in
 
    (*
     * Add two nodes.
@@ -135,6 +108,7 @@ struct
    let new_node key data left right =
       if data == [] then raise (Invalid_argument "Splay_table.new_node : empty data") else
       Node (key, data, left, right, cardinality left + cardinality right + 1)
+   in
 
    (*
     * This function performs the action of moving an entry
@@ -157,6 +131,7 @@ struct
          lift key data (new_node key_left data_left left_left left) (new_node key' data' right right') ancestors
     | _ ->
          raise (Invalid_argument "lift")
+   in
 
    (*
     * Find an entry in the tree.
@@ -167,7 +142,7 @@ struct
     *)
    let rec splay arg key0 path = function
       Node (key, data, left, right, _) as node ->
-         let comp = Base.compare arg key0 key in
+         let comp = ord_compare arg key0 key in
             if comp = 0 then
                SplayFound (lift key data left right path)
             else if comp < 0 then
@@ -183,6 +158,7 @@ struct
 
     | Leaf ->
          SplayNotFound Leaf
+   in
 
    (*
     * Move the rioghtmost node to the root.
@@ -197,16 +173,86 @@ struct
             key, data, new_node key_right data_right (new_node key' data' left' right_left) left
     | Leaf ->
          raise (Invalid_argument "lift_right")
+   in
 
    (*
     * An empty tree is just a leaf.
     *)
    let empty = Leaf
+   in
+
+   let is_empty = function
+      { splay_tree = Leaf } ->
+         true
+    | _ ->
+         false
+   in
 
    let create arg =
       { splay_tree = empty;
         splay_arg = arg
       }
+   in
+
+   let make arg key data =
+      { splay_tree = Node (key, data, Leaf, Leaf, 1);
+        splay_arg = arg
+      }
+   in
+
+   (*
+    * Get the elements of the list.
+    *)
+   let rec to_list_aux elements = function
+      Node (key, data, left, right, _) ->
+         to_list_aux ((key, data) :: to_list_aux elements right) left
+    | Leaf ->
+         elements
+   in
+
+   let to_list { splay_tree = tree } =
+      to_list_aux [] tree
+   in
+
+   let elements = to_list
+   in
+
+   (*
+    * Build a table from a list.
+    *)
+   let rec of_array elements off len =
+      if len = 0 then
+         Leaf
+      else if len = 1 then
+         let key, data = elements.(off) in
+            Node (key, data, Leaf, Leaf, 1)
+      else if len = 2 then
+         let key1, data1 = elements.(off) in
+         let key0, data0 = elements.(succ off) in
+            Node (key0, data0, Node (key1, data1, Leaf, Leaf, 1), Leaf, 2)
+      else
+         let len2 = len lsr 1 in
+         let key0, data0 = elements.(off + len2) in
+            Node (key0, data0,
+                  of_array elements off len2,
+                  of_array elements (off + len2 + 1) (len - len2 - 1),
+                  len)
+   in
+
+   let of_list arg elements =
+      let tree =
+         match elements with
+            [] ->
+               Leaf
+          | [key, data] ->
+               Node (key, data, Leaf, Leaf, 1)
+          | elements ->
+               let elements = Array.of_list elements in
+               let length = Array.length elements in
+                  of_array elements 0 length
+      in
+         { splay_arg = arg; splay_tree = tree }
+   in
 
    (*
     * Check if a key is listed in the table.
@@ -219,6 +265,7 @@ struct
        | SplayNotFound tree ->
             t.splay_tree <- tree;
             false
+   in
 
    let find t key =
       match splay t.splay_arg key [] t.splay_tree with
@@ -234,6 +281,7 @@ struct
        | SplayNotFound tree ->
             t.splay_tree <- tree;
             raise Not_found
+   in
 
    let find_all t key =
       match splay t.splay_arg key [] t.splay_tree with
@@ -249,7 +297,7 @@ struct
        | SplayNotFound tree ->
             t.splay_tree <- tree;
             raise Not_found
-
+   in
 
    (*
     * Add an entry to the table.
@@ -262,7 +310,7 @@ struct
             begin
                match tree with
                   Node (key, data', left, right, size) ->
-                     Node (key, Base.append data data', left, right, size)
+                     Node (key, ord_append data data', left, right, size)
                 | Leaf ->
                      raise (Failure "add_list")
             end
@@ -270,7 +318,7 @@ struct
             begin
                match tree with
                   Node (key', data', left, right, size) ->
-                     if Base.compare arg key key' < 0 then
+                     if ord_compare arg key key' < 0 then
                         (* Root should become right child *)
                         new_node key data left (new_node key' data' empty right)
                      else
@@ -280,10 +328,12 @@ struct
                         (* Tree is empty, so make a new root *)
                      new_node key data empty empty
             end
+   in
 
    let add t key data =
       let arg = t.splay_arg in
       { splay_tree = add_list arg t.splay_tree key [data]; splay_arg = arg }
+   in
 
    (*
     * Remove the first entry from the hashtable.
@@ -311,6 +361,7 @@ struct
        | SplayNotFound tree ->
             t.splay_tree <- tree;
             t
+   in
 
    (*
     * Merge two hashtables.
@@ -332,7 +383,7 @@ struct
                      SplayFound (Node (key2, data2, left2, right2, _)) ->
                         let left3 = union_aux arg left1 left2 in
                         let right3 = union_aux arg right1 right2 in
-                           new_node key1 (Base.append data1 data2) left3 right3
+                           new_node key1 (ord_append data1 data2) left3 right3
                    | SplayNotFound (Node (key2, data2, left2, right2, _)) ->
                         if compare key1 key2 < 0 then
                            let left3 = union_aux arg left1 left2 in
@@ -351,7 +402,7 @@ struct
                   SplayFound (Node (key1, data1, left1, right1, _)) ->
                      let left3 = union_aux arg left1 left2 in
                      let right3 = union_aux arg right1 right2 in
-                        new_node key2 (Base.append data1 data2) left3 right3
+                        new_node key2 (ord_append data1 data2) left3 right3
                 | SplayNotFound (Node (key1, data1, left1, right1, _)) ->
                      if compare key2 key1 < 0 then
                         let left3 = union_aux arg left1 left2 in
@@ -363,14 +414,79 @@ struct
                            new_node key2 data2 left3 right3
                 | _ ->
                      raise (Failure "union")
+   in
 
    let union s1 s2 =
       let { splay_tree = tree1; splay_arg = arg1 } = s1 in
       let { splay_tree = tree2; splay_arg = arg2 } = s2 in
-      let arg = Base.union arg1 arg2 in
+      let arg = ord_union arg1 arg2 in
          { splay_tree = union_aux arg tree1 tree2;
            splay_arg = arg
          }
+   in
+
+   (*
+    * Build a path into a tree.
+    *)
+   let rec initial_path path node =
+      match node with
+         Node (_, _, Leaf, _, _) ->
+            Left node :: path
+       | Node (_, _, left, _, _) ->
+            initial_path (Left node :: path) left
+       | Leaf ->
+            raise (Invalid_argument "initial_path")
+   in
+
+   let key_of_path = function
+      Left (Node (key, _, _, _, _)) :: _ ->
+         key
+    | Right (Node (key, _, _, _, _)) :: _ ->
+         key
+    | _ ->
+         raise (Invalid_argument "key_of_path")
+   in
+
+   let rec next_path = function
+      Left (Node (_, _, _, Leaf, _)) :: path ->
+         next_path path
+    | Left (Node (_, _, _, right, _)) :: path ->
+         initial_path path right
+    | Right  _ :: path ->
+         next_path path
+    | [] ->
+         raise Not_found
+    | _ ->
+         raise (Invalid_argument "next_path")
+   in
+
+   (*
+    * See if two sets intersect.
+    *)
+   let rec intersect_aux arg path1 path2 =
+      let key1 = key_of_path path1 in
+      let key2 = key_of_path path2 in
+      let comp = ord_compare arg key1 key2 in
+         if comp = 0 then
+            true
+         else if comp < 0 then
+            intersect_aux arg (next_path path1) path2
+         else
+            intersect_aux arg path1 (next_path path2)
+   in
+
+   let intersectp { splay_arg = arg; splay_tree = s1 } { splay_tree = s2 } =
+      match s1, s2 with
+         Leaf, _
+       | _, Leaf ->
+            false
+       | _ ->
+            let path1 = initial_path [] s1 in
+            let path2 = initial_path [] s2 in
+               try intersect_aux arg path1 path2 with
+                  Not_found ->
+                     false
+   in
 
    (*
     * Iterate a function over the hashtable.
@@ -382,9 +498,11 @@ struct
          iter_aux f right
     | Leaf ->
          ()
+   in
 
    let iter f { splay_tree = t } =
       iter_aux f t
+   in
 
    (*
     * Map a function over the table.
@@ -394,10 +512,96 @@ struct
          Node (key, List.map (f key) data, map_aux f left, map_aux f right, size)
     | Leaf ->
          Leaf
+   in
 
    let map f { splay_tree = tree; splay_arg = arg } =
       { splay_tree = map_aux f tree; splay_arg = arg }
+   in
+
+
+   (*
+    * Intersection.
+    *)
+   let rec mem_filt s = function
+      [] ->
+         []
+    | (h :: t) as l ->
+         if mem s h then
+            let rem = mem_filt s t in
+               if rem == t then
+                  l
+               else
+                  h :: rem
+         else
+            mem_filt s t
+   in
+
+   let rec not_mem_filt s = function
+      [] ->
+         []
+    | (h :: t) as l ->
+         if mem s h then
+            not_mem_filt s t
+         else
+            let rem = not_mem_filt s t in
+               if rem == t then
+                  l
+               else
+                  h :: rem
+   in
+
+   let rec fst_mem_filt s = function
+      [] ->
+         []
+    | (((v, _) as h) :: t) as l ->
+         if mem s v then
+            let rem = fst_mem_filt s t in
+               if rem == t then
+                  l
+               else
+                  h :: rem
+         else
+            fst_mem_filt s t
+   in
+
+   (*
+    * Debugging.
+    *)
+   let print _ =
+      ()
+   in
+      { create = create;
+        is_empty = is_empty;
+        mem = mem;
+        add = add;
+        find = find;
+        find_all = find_all;
+        make = make;
+        remove = remove;
+        union = union;
+        elements = elements;
+        iter = iter;
+        map = map;
+        cardinal = cardinal;
+        mem_filt = mem_filt;
+        not_mem_filt = not_mem_filt;
+        intersectp = intersectp;
+        of_list = of_list;
+        print = print
+      }
+
+module Create =
+struct
+   type ('arg, 'elt, 'data) t = ('arg, 'elt, 'data) table
+
+   let create = create
 end
+
+(*
+ * Module version.
+ *)
+module MakeTable (Base : TableBaseSig) =
+   Table_util.MakeTable (Create) (Base)
 
 (*
  * -*-

@@ -13,21 +13,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -70,6 +70,7 @@ struct
     *)
    type cooked = FileBase.cooked
    type select = FileBase.select
+   type arg = FileBase.arg
 
    type info =
       { info_root : FileBase.info;
@@ -96,14 +97,14 @@ struct
    (*
     * Find a specific module given a full pathname.
     *)
-   let find_aux find base name select suffix =
+   let find_aux find base arg name select suffix =
       if !debug_summary then
          eprintf "Filter_summary_io.find: %a%t" print_string_list name eflush;
       match name with
          [] ->
             raise (EmptyModulePath "Filter_summary_io.find")
        | name'::path ->
-            let info = find base (String.uncapitalize name') select suffix in
+            let info = find base arg (String.uncapitalize name') select suffix in
             let info' = Address.find_sub_module (FileBase.info base info) path in
                { info_root = info;
                  info_path = name;
@@ -117,9 +118,9 @@ struct
    (*
     * Find the matching module info.
     *)
-   let find_match base info select suffix =
+   let find_match base arg info select suffix =
       let { info_root = root; info_path = path } = info in
-      let root' = FileBase.find_match base root select suffix in
+      let root' = FileBase.find_match base arg root select suffix in
       let info = Address.find_sub_module (FileBase.info base root') (List.tl info.info_path) in
          { info_root = root';
            info_path = path;
@@ -146,11 +147,11 @@ struct
     * Save a module specification.
     * This can only be called at a root.
     *)
-   let save base info suffix =
+   let save base arg info suffix =
       match info with
          { info_info = info; info_path = [_]; info_root = root } ->
             FileBase.set_info base root info;
-            FileBase.save base root suffix
+            FileBase.save base arg root suffix
        | _ ->
             raise (Invalid_argument "Filter_summary_io.save")
 

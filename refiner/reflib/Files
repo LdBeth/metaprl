@@ -14,7 +14,8 @@ REFLIB_FILES :=\
 	ml_file\
 	ml_string\
 	ml_term\
-	term_table\
+	term_eq_table\
+	term_match_table\
 	term_stable\
 	term_dtable\
 	dform\

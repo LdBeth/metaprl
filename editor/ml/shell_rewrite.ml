@@ -30,10 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-include Shell_type
+include Shell_sig
 include Package_info
-include Package_df
-include Proof_type
 
 open Printf
 open Mp_debug
@@ -47,16 +45,17 @@ open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Opname
 
+open Tactic_type
+open Tactic_type.Tacticals
+
+open Shell_sig
+open Package_sig
+open Package_info
+
 open Filter_type
 open Filter_summary
 open Filter_cache
 open Filter_ocaml
-
-open Tacticals
-open Tactic_cache
-open Shell_type
-open Package_info
-open Proof_type
 
 (*
  * Show that the file is loading.
@@ -74,7 +73,7 @@ type rw =
      mutable rw_redex : term;
      mutable rw_contractum : term;
      mutable rw_proof : Package.proof proof_type;
-     mutable rw_ped : Proof_edit.t proof_type;
+     mutable rw_ped : Proof_edit.ped proof_type;
      mutable rw_resources : MLast.expr resource_def
    }
 
@@ -100,8 +99,8 @@ let mk_rw_goal assums redex contractum =
       mk_cond_goal assums redex contractum
 
 let mk_goal sentinal arg assums redex contractum =
-   let { ref_label = label; ref_fcache = cache; ref_args = args } = arg in
-      Sequent.create sentinal label (mk_rw_goal assums redex contractum) cache args
+   let { ref_label = label; ref_args = args } = arg in
+      Tactic_type.Tactic.create sentinal label (mk_rw_goal assums redex contractum) args
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -112,44 +111,6 @@ let mk_goal sentinal arg assums redex contractum =
  *)
 let comment _ _ t =
    t
-
-(*
- * Format the tactic text.
- *)
-let format_tac db buf arg =
-   let seq = Sequent.msequent arg in
-   let rw, hyps = dest_msequent seq in
-   let format_hyp hyp =
-      format_term db buf hyp;
-      format_newline buf
-   in
-      format_string buf "Hyps:";
-      format_newline buf;
-      List.iter format_hyp hyps;
-      format_string buf "Goal: ";
-      format_term db buf rw;
-      format_newline buf
-
-(*
- * A primtive rewrite.
- *)
-let format_rewrite_aux s db buf arg sentinal params assums redex contractum =
-   let tac = Refine_exn.print db (mk_goal sentinal arg assums redex) contractum in
-      format_tac db buf tac;
-      format_newline buf;
-      format_string buf s;
-      format_newline buf
-
-let format_prim_rewrite = format_rewrite_aux "Primitive"
-let format_incomplete_rewrite = format_rewrite_aux "Incomplete"
-
-let format_cond_rewrite db buf arg sentinal params assums redex contractum expr =
-   let tac = Refine_exn.print db (mk_goal sentinal arg assums redex) contractum in
-      format_tac db buf tac;
-      format_newline buf;
-      format_string buf "Derived> ";
-      format_term db buf (term_of_expr [] comment expr);
-      format_newline buf
 
 (*
  * Build an item from the object.
@@ -186,18 +147,40 @@ let item_of_obj pack name
  *)
 let unit_term = mk_simple_term nil_opname []
 
-let edit pack sentinal arg name obj =
+let rec edit pack parse_arg sentinal arg name window obj =
+   (* Copy the edit object *)
+   let edit_copy () =
+      let { rw_params = params;
+            rw_assums = assums;
+            rw_redex = redex;
+            rw_contractum = contractum;
+            rw_proof = proof;
+            rw_ped = ped;
+            rw_resources = resources
+          } = obj
+      in
+      let obj =
+         { rw_params = params;
+           rw_assums = assums;
+           rw_redex = redex;
+           rw_contractum = contractum;
+           rw_proof = proof;
+           rw_ped = ped;
+           rw_resources = resources
+         }
+      in
+         edit pack parse_arg sentinal arg name (Proof_edit.new_window window) obj
+   in
    let update_ped () =
       obj.rw_ped <- Primitive unit_term
    in
    let save_ped () =
       let item = item_of_obj pack name obj in
-         Package.set pack item
+         Package.set pack parse_arg item
    in
-   let edit_format db buf =
+   let edit_display () =
       (* Convert to a term *)
-      let { rw_params = params;
-            rw_assums = assums;
+      let { rw_assums = assums;
             rw_redex = redex;
             rw_contractum = contractum;
             rw_ped = ped
@@ -205,16 +188,19 @@ let edit pack sentinal arg name obj =
       in
          match ped with
             Primitive t ->
-               format_prim_rewrite db buf arg sentinal params assums redex contractum
+               let goal = mk_goal sentinal arg assums redex contractum in
+                  Proof_edit.format_incomplete window (Proof_edit.Primitive goal)
           | Derived expr ->
-               format_cond_rewrite db buf arg sentinal params assums redex contractum expr
+               let goal = mk_goal sentinal arg assums redex contractum in
+                  Proof_edit.format_incomplete window (Proof_edit.Derived (goal, expr))
           | Incomplete ->
-               format_incomplete_rewrite db buf arg sentinal params assums redex contractum
+               let goal = mk_goal sentinal arg assums redex contractum in
+                  Proof_edit.format_incomplete window (Proof_edit.Incomplete goal)
           | Interactive ped ->
-               Proof_edit.format db buf ped
+               Proof_edit.format window ped
    in
    let edit_set_goal t =
-      raise (Failure "Shell_rewrite.edit_set_goal: bogus edit")
+      raise (Failure "Shell_rewrite.edit_set_goal: use set_redex or set_contractum")
    in
    let edit_set_redex t =
       obj.rw_redex <- t;
@@ -278,14 +264,14 @@ let edit pack sentinal arg name obj =
    let edit_undo () =
       Proof_edit.undo_ped (get_ped obj)
    in
+   let edit_redo () =
+      Proof_edit.redo_ped (get_ped obj)
+   in
    let edit_nop () =
       Proof_edit.nop_ped (get_ped obj)
    in
-   let edit_fold () =
-      Proof_edit.fold_ped (get_ped obj)
-   in
-   let edit_fold_all () =
-      Proof_edit.fold_all_ped (get_ped obj)
+   let edit_unfold () =
+      Proof_edit.unfold_ped (get_ped obj)
    in
    let edit_kreitz () =
       Proof_edit.kreitz_ped (get_ped obj)
@@ -304,8 +290,8 @@ let edit pack sentinal arg name obj =
             in
             let assums' = List.map (replace_goal seq) assums in
             let goal' = replace_goal seq (mk_xrewrite_term redex contractum) in
-            let proof = Package.new_proof pack name assums goal' in
-            let ped = Package.ped_of_proof pack proof in
+            let proof = Package.new_proof pack parse_arg name assums goal' in
+            let ped = Package.ped_of_proof pack parse_arg proof (mk_msequent goal' assums) in
                obj.rw_proof <- Interactive proof;
                obj.rw_ped <- Interactive ped;
                Proof_edit.set_params ped params;
@@ -314,25 +300,17 @@ let edit pack sentinal arg name obj =
        | Interactive ped ->
             ped
    in
-   let edit_goal () =
-      Proof_edit.ped_arg (get_ped ())
+   let edit_info () =
+      Proof_edit.edit_info_of_ped (get_ped ())
    in
    let edit_addr addr =
       Proof_edit.addr_ped (get_ped ()) addr
    in
-   let edit_tactic () =
-      Proof_edit.ped_tactic (get_ped ())
-   in
-   let edit_children () =
-      Proof_edit.ped_children (get_ped ())
-   in
-   let edit_extras () =
-      Proof_edit.ped_extras (get_ped ())
-   in
    let edit_refine text ast tac =
       Proof_edit.refine_ped (get_ped ()) text ast tac
    in
-      { edit_format = edit_format;
+      { edit_display = edit_display;
+        edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
         edit_set_redex = edit_set_redex;
         edit_set_contractum = edit_set_contractum;
@@ -345,20 +323,23 @@ let edit pack sentinal arg name obj =
         edit_up = edit_up;
         edit_down = edit_down;
         edit_addr = edit_addr;
-        edit_goal = edit_goal;
-        edit_tactic = edit_tactic;
-        edit_children = edit_children;
-        edit_extras = edit_extras;
+        edit_info = edit_info;
         edit_refine = edit_refine;
         edit_undo = edit_undo;
-        edit_fold = edit_fold;
-        edit_fold_all = edit_fold_all;
+        edit_redo = edit_redo;
+        edit_unfold = edit_unfold;
         edit_kreitz = edit_kreitz
       }
 
-let create pack name =
-   let proof = Package.new_proof pack name [] unit_term in
-   let ped = Package.ped_of_proof pack proof in
+let create_window = function
+   DisplayText (base, mode) ->
+      Proof_edit.create_text_window base mode
+ | DisplayGraphical (port, base) ->
+      Proof_edit.create_proof_window port base
+
+let create pack parse_arg window name =
+   let proof = Package.new_proof pack parse_arg name [] unit_term in
+   let ped = Package.ped_of_proof pack parse_arg proof (mk_msequent unit_term []) in
    let rw =
       { Filter_type.rw_name = name;
         Filter_type.rw_redex = unit_term;
@@ -378,11 +359,11 @@ let create pack name =
       }
    in
    let sentinal = Package.sentinal pack in
-   let arg = Package.argument pack in
-      Package.set pack (Filter_type.Rewrite rw);
-      edit pack sentinal arg name obj
+   let arg = Package.argument pack parse_arg in
+      Package.set pack parse_arg (Filter_type.Rewrite rw);
+      edit pack parse_arg sentinal arg name (create_window window) obj
 
-let ped_of_proof pack = function
+let ped_of_proof pack parse_arg goal = function
    Primitive proof ->
       Primitive proof
  | Derived expr ->
@@ -390,30 +371,31 @@ let ped_of_proof pack = function
  | Incomplete ->
       Incomplete
  | Interactive proof ->
-      Interactive (Package.ped_of_proof pack proof)
+      Interactive (Package.ped_of_proof pack parse_arg proof goal)
 
-let view_rw pack
+let view_rw pack parse_arg window
     { Filter_type.rw_name = name;
       Filter_type.rw_redex = redex;
       Filter_type.rw_contractum = contractum;
       Filter_type.rw_proof = proof;
       Filter_type.rw_resources = res
     } =
+   let goal = replace_goal seq (mk_xrewrite_term redex contractum) in
    let obj =
       { rw_assums = [];
         rw_params = [];
         rw_redex = redex;
         rw_contractum = contractum;
         rw_proof = proof;
-        rw_ped = ped_of_proof pack proof;
+        rw_ped = ped_of_proof pack parse_arg (mk_msequent goal []) proof;
         rw_resources = res
       }
    in
    let sentinal = Package.sentinal_object pack name in
-   let arg = Package.argument pack in
-      edit pack sentinal arg name obj
+   let arg = Package.argument pack parse_arg in
+      edit pack parse_arg sentinal arg name (create_window window) obj
 
-let view_crw pack
+let view_crw pack parse_arg window
     { crw_name = name;
       crw_params = params;
       crw_args = args;
@@ -422,19 +404,20 @@ let view_crw pack
       crw_proof = proof;
       crw_resources = res
     } =
+   let goal = replace_goal seq (mk_xrewrite_term redex contractum) in
    let obj =
       { rw_assums = args;
         rw_params = params;
         rw_redex = redex;
         rw_contractum = contractum;
         rw_proof = proof;
-        rw_ped = ped_of_proof pack proof;
+        rw_ped = ped_of_proof pack parse_arg (mk_msequent goal args) proof;
         rw_resources = res
       }
    in
    let sentinal = Package.sentinal_object pack name in
-   let arg = Package.argument pack in
-      edit pack sentinal arg name obj
+   let arg = Package.argument pack parse_arg in
+      edit pack parse_arg sentinal arg name (create_window window) obj
 
 (*
  * -*-

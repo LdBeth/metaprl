@@ -86,7 +86,7 @@ type aterm = { aname : term option; aterm : term }
  * 'item: type of summary items
  *)
 
-type 'expr resource_def = (string * 'expr list) list
+type 'expr resource_def = (MLast.loc * string * 'expr list) list
 
 (*
  * Proof is type unit in interface.
@@ -129,7 +129,7 @@ and ('term, 'expr) mlterm_info =
      mlterm_params : 'term param list;
      mlterm_term : 'term;
      mlterm_contracta : 'term list;
-     mlterm_def : ('expr * 'expr) option;
+     mlterm_def : 'expr option;
      mlterm_resources : 'expr resource_def
    }
 
@@ -164,6 +164,7 @@ and dform_option =
    DFormInheritPrec
  | DFormPrec of string
  | DFormParens
+ | DFormInternal
 
 and ('term, 'expr) dform_def =
    NoDForm

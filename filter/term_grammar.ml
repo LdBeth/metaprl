@@ -71,6 +71,7 @@ sig
    val term : term Grammar.Entry.e
    val quote_term : quote_term Grammar.Entry.e
    val mterm : meta_term Grammar.Entry.e
+   val bmterm : meta_term Grammar.Entry.e
    val singleterm : aterm Grammar.Entry.e
    val bound_term : aterm Grammar.Entry.e
    val xdform : term Grammar.Entry.e
@@ -91,6 +92,7 @@ struct
     * Also meta-terms.
     *)
    type amterm = { mname : string option; mterm : meta_term }
+   type vmterm = { vname : term option; vterm : meta_term }
 
    (*
     * String or term.
@@ -253,54 +255,102 @@ struct
     ************************************************************************)
 
    EXTEND
-      GLOBAL: term_eoi term quote_term mterm singleterm bound_term xdform;
+      GLOBAL: term_eoi term quote_term mterm bmterm singleterm bound_term xdform;
 
       (*
        * Meta-terms include meta arrows.
        *)
       mterm:
          [[ t = amterm ->
-             t.mterm
+             t.vterm
+          ]];
+
+      bmterm:
+         [[ t = bbmterm ->
+             t.vterm
           ]];
 
       amterm:
-         [[ t = noncommaterm ->
+         [[ t = singleterm ->
              match t with
                 { aname = None; aterm = t } ->
-                   { mname = None; mterm = MetaTheorem t }
+                   { vname = None; vterm = MetaTheorem t }
               | { aname = Some n; aterm = t } ->
-                   { mname = Some (dest_var n); mterm = MetaLabeled (dest_var n, MetaTheorem t) }
+                   { vname = Some n; vterm = MetaTheorem t }
           ]
+          | [ sl_open_brack; name = word_or_string; sl_close_brack; t = singleterm ->
+              match t with
+                 { aname = None; aterm = t } ->
+                   { vname = None; vterm = MetaLabeled (name, MetaTheorem t) }
+               | { aname = Some n; aterm = t } ->
+                   { vname = Some n; vterm = MetaLabeled (name, MetaTheorem t) }
+            ]
           | "meta_implies" LEFTA
             [ t1 = amterm; sl_meta_right_arrow; t2 = amterm ->
                begin
                   match t1 with
-                     { mname = None; mterm = t } ->
-                        { mname = None; mterm = MetaImplies (t, t2.mterm) }
-                   | { mname = Some n; mterm = t } ->
-                        { mname = None; mterm = MetaFunction (mk_var_term n, t, t2.mterm) }
+                     { vname = None; vterm = t } ->
+                        { vname = None; vterm = MetaImplies (t, t2.vterm) }
+                   | { vname = Some n; vterm = t } ->
+                        { vname = None; vterm = MetaFunction (n, t, t2.vterm) }
                end
             ]
           | "meta_rev_implies" RIGHTA
             [ t2 = amterm; sl_meta_left_arrow; t1 = amterm ->
                begin
                   match t1 with
-                     { mname = None; mterm = t } ->
-                        { mname = None; mterm = MetaImplies (t, t2.mterm) }
-                   | { mname = Some n; mterm = t } ->
-                        { mname = None; mterm = MetaFunction (mk_var_term n, t, t2.mterm) }
+                     { vname = None; vterm = t } ->
+                        { vname = None; vterm = MetaImplies (t, t2.vterm) }
+                   | { vname = Some n; vterm = t } ->
+                        { vname = None; vterm = MetaFunction (n, t, t2.vterm) }
                end
             ]
           | "meta_iff" LEFTA
             [ t1 = amterm; sl_meta_left_right_arrow; t2 = amterm ->
-               { mname = None; mterm = MetaIff (t1.mterm, t2.mterm) }
-            ]
-          | NONA
-            [ sl_open_paren; t = amterm; sl_close_paren ->
-               t
+               { vname = None; vterm = MetaIff (t1.vterm, t2.vterm) }
             ]
          ];
 
+      bbmterm:
+         [[ t = bound_term ->
+             match t with
+                { aname = None; aterm = t } ->
+                   { vname = None; vterm = MetaTheorem t }
+              | { aname = Some n; aterm = t } ->
+                   { vname = Some n; vterm = MetaTheorem t }
+          ]
+          | [ sl_open_brack; name = word_or_string; sl_close_brack; t = bound_term ->
+              match t with
+                 { aname = None; aterm = t } ->
+                   { vname = None; vterm = MetaLabeled (name, MetaTheorem t) }
+               | { aname = Some n; aterm = t } ->
+                   { vname = Some n; vterm = MetaLabeled (name, MetaTheorem t) }
+            ]
+          | "meta_implies" LEFTA
+            [ t1 = bbmterm; sl_meta_right_arrow; t2 = bbmterm ->
+               begin
+                  match t1 with
+                     { vname = None; vterm = t } ->
+                        { vname = None; vterm = MetaImplies (t, t2.vterm) }
+                   | { vname = Some n; vterm = t } ->
+                        { vname = None; vterm = MetaFunction (n, t, t2.vterm) }
+               end
+            ]
+          | "meta_rev_implies" RIGHTA
+            [ t2 = bbmterm; sl_meta_left_arrow; t1 = bbmterm ->
+               begin
+                  match t1 with
+                     { vname = None; vterm = t } ->
+                        { vname = None; vterm = MetaImplies (t, t2.vterm) }
+                   | { vname = Some n; vterm = t } ->
+                        { vname = None; vterm = MetaFunction (n, t, t2.vterm) }
+               end
+            ]
+          | "meta_iff" LEFTA
+            [ t1 = bbmterm; sl_meta_left_right_arrow; t2 = bbmterm ->
+               { vname = None; vterm = MetaIff (t1.vterm, t2.vterm) }
+            ]
+         ];
 
       (*
        * Regular terms.
@@ -502,8 +552,6 @@ struct
 
              (* Parenthesized terms *)
            | sl_open_paren; t = aterm; sl_close_paren ->
-             t
-           | sl_open_brack; t = aterm; sl_close_brack ->
              t
            | sl_open_curly; v = sl_word; sl_colon; ty = applyterm; sl_pipe; b = aterm; sl_close_curly ->
              { aname = None; aterm = mk_dep0_dep1_term (mk_opname loc ["set"]) v ty.aterm b.aterm }
@@ -905,6 +953,7 @@ struct
 
    (* Implementation *)
    let mterm = mterm
+   let bmterm = bmterm
    let quote_term = quote_term
    let term = term
    let term_eoi = term_eoi

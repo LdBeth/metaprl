@@ -12,21 +12,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -90,15 +90,15 @@ let unzip_rewrite name =
  *)
 let split_mfunction mterm =
    let subgoals, goal = unzip_mfunction mterm in
-   let collect pair (i, vars, terms) =
+   let collect pair (i, labels, vars, terms) =
       match pair with
-         Some v, t ->
-            i, v :: vars, t :: terms
-       | None, t ->
-            i + 1, (mk_var_term ("_" ^ (string_of_int i))) :: vars, t :: terms
+         labels', Some v, t ->
+            i, labels' :: labels, v :: vars, t :: terms
+       | labels', None, t ->
+            succ i, labels' :: labels, (mk_var_term ("_" ^ (string_of_int i))) :: vars, t :: terms
    in
-   let _, vars, terms = List.fold_right collect subgoals (0, [], [goal]) in
-      vars, zip_mimplies terms
+   let _, labels, vars, terms = List.fold_right collect subgoals (0, [], [], [goal]) in
+      labels, vars, zip_mimplies terms
 
 (************************************************************************
  * OPNAMES                                                              *

@@ -1,0 +1,346 @@
+(*
+ * Create an ediable rewrite object.
+ *
+ * ----------------------------------------------------------------
+ *
+ * This file is part of MetaPRL, a modular, higher order
+ * logical framework that provides a logical programming
+ * environment for OCaml and other languages.
+ *
+ * See the file doc/index.html for information on Nuprl,
+ * OCaml, and more information about this system.
+ *
+ * Copyright (C) 1998 Jason Hickey, Cornell University
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * Author: Jason Hickey
+ * jyh@cs.cornell.edu
+ *)
+
+include Shell_sig
+include Package_info
+include Summary
+
+open Printf
+
+open Refiner.Refiner.TermType
+open Refiner.Refiner.Term
+open Refiner.Refiner.RefineError
+
+open Dform_print
+
+open Filter_ocaml
+open Filter_type
+open Filter_cache
+
+open Tactic_type
+
+open Summary
+
+open Shell_sig
+open Package_info
+
+(************************************************************************
+ * TYPES                                                                *
+ ************************************************************************)
+
+(*
+ * A window is either a text window or an HTML window.
+ *)
+type proof_window =
+   { pw_port : Mux_channel.session;
+     pw_base : dform_mode_base;
+     pw_menu : Display_term.t
+   }
+
+type text_window =
+   { df_base : dform_mode_base;
+     df_mode : string;
+     df_width : int
+   }
+
+type window =
+   ProofWindow of proof_window
+ | TextWindow of text_window
+
+(************************************************************************
+ * WINDOWS                                                              *
+ ************************************************************************)
+
+(*
+ * Create a new window.
+ *)
+let create_text_window base mode =
+   TextWindow { df_base = base;
+                df_mode = mode;
+                df_width = 80
+   }
+
+let create_proof_window port dfbase =
+   let menu = Display_term.create_term port dfbase in
+   let window =
+      { pw_port = port;
+        pw_base = dfbase;
+        pw_menu = menu
+      }
+   in
+      ProofWindow window
+
+(*
+ * Fork the current window.
+ *)
+let new_window = function
+   ProofWindow { pw_port = port; pw_base = base } ->
+      ProofWindow { pw_port = port;
+                    pw_base = base;
+                    pw_menu = Display_term.create_term port base
+      }
+ | (TextWindow _) as window ->
+      window
+
+(*
+ * Create a window from the description.
+ *)
+let create_window = function
+   DisplayText (base, mode) ->
+      TextWindow { df_base = base; df_mode = mode; df_width = 80 }
+ | DisplayGraphical (port, base) ->
+      let menu = Display_term.create_term port base in
+         ProofWindow { pw_port = port; pw_base = base; pw_menu = menu }
+
+(*
+ * Copy the window.
+ *)
+let new_window = function
+   ProofWindow { pw_port = port; pw_base = base } ->
+      ProofWindow { pw_port = port; pw_base = base; pw_menu = Display_term.create_term port base }
+ | (TextWindow _) as window ->
+      window
+
+(*
+ * Display a term in the window.
+ *)
+let display_term pack window term =
+   match window with
+      TextWindow { df_base = base; df_mode = mode; df_width = width } ->
+         let df = get_mode_base base mode in
+         let buf = Rformat.new_buffer () in
+            Dform.format_term df buf term;
+            Rformat.print_to_channel width buf stdout;
+            flush stdout
+    | ProofWindow { pw_menu = menu } ->
+         Display_term.set_dir menu ("/" ^ Package.name pack);
+         Display_term.set menu term
+
+(************************************************************************
+ * FORMATTING                                                           *
+ ************************************************************************)
+
+(*
+ * Standard FilterOCaml module.
+ *)
+module FilterOCaml = Filter_ocaml.FilterOCaml (Refiner.Refiner)
+module FilterSummaryTerm = Filter_summary.FilterSummaryTerm (Refiner.Refiner)
+
+open FilterOCaml
+open FilterSummaryTerm
+
+(*
+ * This comment function removes expressions.
+ *)
+let comment =
+   let loc = 0, 0 in
+   let null_term = mk_var_term "..." in
+   let comment ttype _ t =
+      match ttype with
+         ExprTerm ->
+            null_term
+       | _ ->
+            t
+   in
+      comment
+
+let identity x       = x
+let term_of_expr     = term_of_expr [] comment
+let term_of_type     = term_of_type comment
+let term_of_sig_item = term_of_sig_item comment
+let term_of_str_item = term_of_str_item [] comment
+
+let convert_intf =
+   let null_term    = mk_var_term "..." in
+      { term_f      = identity;
+        meta_term_f = term_of_meta_term;
+        proof_f     = (fun _ _ -> null_term);
+        ctyp_f      = term_of_type;
+        expr_f      = term_of_expr;
+        item_f      = term_of_sig_item
+      }
+
+let convert_impl =
+   let convert_proof _ = function
+      Primitive t ->
+         mk_var_term "!"
+    | Derived expr ->
+         mk_var_term "?"
+    | Incomplete ->
+         mk_var_term "#"
+    | Interactive proof ->
+         let code =
+            match Package.status_of_proof proof with
+               Proof.StatusBad ->
+                  "-"
+             | Proof.StatusPartial ->
+                  "#"
+             | Proof.StatusIncomplete ->
+                  "?"
+             | Proof.StatusComplete ->
+                  "*"
+         in
+         let rcount, ncount = Package.node_count_of_proof proof in
+            mk_var_term (sprintf "%s[%d,%d]" code rcount ncount)
+   in
+      { term_f      = identity;
+        meta_term_f = term_of_meta_term;
+        proof_f     = convert_proof;
+        ctyp_f      = term_of_type;
+        expr_f      = term_of_expr;
+        item_f      = term_of_str_item
+      }
+
+(*
+ * Display the entire package.
+ *)
+let term_of_interface pack parse_arg =
+   let tl = term_list convert_intf (Package.sig_info pack parse_arg) in
+      mk_interface_term tl
+
+(*
+ * Display the entire package.
+ *)
+let term_of_implementation pack parse_arg =
+   let tl = term_list convert_impl (Package.info pack parse_arg) in
+      mk_implementation_term tl
+
+(************************************************************************
+ * SHELL INTERFACE                                                      *
+ ************************************************************************)
+
+(*
+ * Error handler.
+ *)
+let raise_edit_error s =
+   raise (RefineError ("Shell_root", StringError s))
+
+(*
+ * Build the shell interface.
+ *)
+let rec edit pack_info parse_arg window =
+   let edit_display () =
+      display_term pack_info window (term_of_implementation pack_info parse_arg)
+   in
+   let edit_copy () =
+      edit pack_info parse_arg (new_window window)
+   in
+   let edit_set_goal goal =
+      raise_edit_error "no goal"
+   in
+   let edit_set_redex redex =
+      raise_edit_error "no redex"
+   in
+   let edit_set_contractum contractum =
+      raise_edit_error "no contractum"
+   in
+   let edit_set_assumptions assum =
+      raise_edit_error "no assumptions"
+   in
+   let edit_set_params params =
+      raise_edit_error "no params"
+   in
+   let edit_save () =
+      Package.save pack_info
+   in
+   let edit_check () =
+      raise_edit_error "check the entire package?"
+   in
+   let edit_expand _ =
+      raise_edit_error "expand all the proofs in the package?"
+   in
+   let edit_root () =
+      ()
+   in
+   let edit_up i =
+      ()
+   in
+   let edit_down i =
+      ()
+   in
+   let edit_undo () =
+      ()
+   in
+   let edit_redo () =
+      ()
+   in
+   let edit_addr addr =
+      ()
+   in
+   let edit_info () =
+      raise_edit_error "no info for the package"
+   in
+   let edit_refine _ _ _ =
+      raise_edit_error "can't refine the package"
+   in
+   let edit_unfold () =
+      ()
+   in
+   let edit_kreitz () =
+      raise_edit_error "can't kreitz the package"
+   in
+      { edit_display = edit_display;
+        edit_copy = edit_copy;
+        edit_set_goal = edit_set_goal;
+        edit_set_redex = edit_set_redex;
+        edit_set_contractum = edit_set_contractum;
+        edit_set_assumptions = edit_set_assumptions;
+        edit_set_params = edit_set_params;
+        edit_save = edit_save;
+        edit_check = edit_check;
+        edit_expand = edit_expand;
+        edit_root = edit_root;
+        edit_up = edit_up;
+        edit_down = edit_down;
+        edit_addr = edit_addr;
+        edit_info = edit_info;
+        edit_refine = edit_refine;
+        edit_undo = edit_undo;
+        edit_redo = edit_redo;
+        edit_unfold = edit_unfold;
+        edit_kreitz = edit_kreitz
+      }
+
+let create pack parse_arg window =
+   let window = create_window window in
+      edit pack parse_arg window
+
+let view pack parse_arg window =
+   edit pack parse_arg (create_window window)
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

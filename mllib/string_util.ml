@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -149,7 +149,7 @@ let for_all f s =
 let mem c s =
    let len = String.length s in
    let rec loop i =
-      (i < len) & (c = s.[i] or loop (i + 1))
+      (i != len) & (c = s.[i] or loop (i + 1))
    in
       loop 0
 
@@ -204,23 +204,144 @@ let split c s =
    in
       loop 0 0
 
+(*
+ * Split a string at a particular char.
+ *)
 let split_set c s =
    let len = String.length s in
    let rec loop i j =
       if j = len then
-         if i = 0 then
-            [s]
-         else if i = j then
+         if i = j then
             []
          else
             [String.sub s i (j - i)]
-      else if mem s.[i] c then
-         (String.sub s i (j - i)) :: (loop (j + 1) (j + 1))
+      else if mem s.[j] c then
+         if i = j then
+            loop (j + 1) (j + 1)
+         else
+            (String.sub s i (j - i)) :: (loop (j + 1) (j + 1))
       else
          loop i (j + 1)
    in
       loop 0 0
 
+(*
+ * Turn a string into an argument list.
+ *)
+let parse_args line =
+   let len = String.length line in
+   let buf = String.create len in
+   let rec skip i =
+      if i = len then
+         []
+      else
+         match line.[i] with
+            ' ' | '\t' | '\n' | '\r' ->
+               skip (i + 1)
+          | '"' ->
+               string (i + 1) 0 (i + 1)
+          | _ ->
+               collect i i
+   and collect i j =
+      if j = len then
+         [String.sub line i (j - i)]
+      else
+         match line.[j] with
+            ' ' | '\t' | '\n' | '\r' ->
+               (String.sub line i (j - i)) :: (skip j)
+          | _ ->
+               collect i (j + 1)
+   and string i j k =
+      if k = len then
+         [String.sub buf 0 j]
+      else
+         let c = line.[k] in
+            if c = '"' then
+               (String.sub buf 0 j) :: (skip (k + 1))
+            else if c = '\\' then
+               escape i j (k + 1)
+            else
+               begin
+                  buf.[j] <- c;
+                  string i (j + 1) (k + 1)
+               end
+   and escape i j k =
+       if k = len then
+           [String.sub buf 0 j]
+       else
+           let c =
+              match line.[k] with
+                 't' -> '\t'
+               | 'n' -> '\n'
+               | 'r' -> '\r'
+               | '\\' -> '\\'
+               | c -> c
+           in
+              buf.[j] <- c;
+              string i (j + 1) (k + 1)
+   in
+   let _ =
+      if !debug_string then
+         eprintf "String_util.get_args: %s%t" (String.escaped line) eflush
+   in
+   let args = skip 0 in
+      if !debug_string then
+         eprintf "String_util.get_args: done%t" eflush;
+      args
+
+(*
+ * Concatenate strings.
+ *)
+let rec concat s = function
+   [h] -> h
+ | h::t ->
+      h ^ s ^ (concat s t)
+ | [] ->
+      ""
+
+(*
+ * Use hex notation.
+ *)
+let hexify s =
+   let len = String.length s in
+   let rec hexify i =
+      if i < len then
+         (sprintf "%02x" (Char.code s.[i])) ^ (hexify (i + 1))
+      else
+         ""
+   in
+      hexify 0
+
+let unhex i =
+   match i with
+      '0' .. '9' ->
+         (Char.code i) - (Char.code '0')
+    | 'a' .. 'f' ->
+         (Char.code i) - (Char.code 'a') + 10
+    | 'A' .. 'F' ->
+         (Char.code i) - (Char.code 'A') + 10
+    | _ ->
+         raise (Failure "unhexify")
+
+let unhexify s =
+   let len = String.length s in
+      if len mod 2 = 0 then
+         let buf = create "String_util.unhexify" (len / 2) in
+         let rec unhexify i j =
+            if j < len then
+               begin
+                  buf.[i] <- Char.chr ((unhex s.[j]) * 16 + (unhex s.[j + 1]));
+                  unhexify (i + 1) (j + 2)
+               end
+         in
+            unhexify 0 0;
+            buf
+      else
+         raise (Failure "unhexify")
+
+(*
+ * Functions to quote and unquote strings.
+ *)
 external is_printable: char -> bool = "is_printable"
 
 let rec is_simple l i s =
@@ -228,14 +349,14 @@ let rec is_simple l i s =
       '"' | '\\' | '\n' | '\t' | ' ' -> false
     | c -> is_printable c && is_simple l (succ i) s
 
-let quote s = 
+let quote s =
    if s<>"" && is_simple (String.length s) 0 s then s
    else "\"" ^ (String.escaped s) ^ "\""
 
 let rec unquote_aux l i s =
    if (l=i) then raise (Invalid_argument "unquote");
    match String.unsafe_get s i with
-      '\\' -> 
+      '\\' ->
          let i = succ i in
          if (l=i) then raise (Invalid_argument "unquote");
          begin match String.unsafe_get s i with

@@ -23,7 +23,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Authors: Lori Lorigo, Richard Eaton
- *	
+ *
  *)
 
 (*
@@ -37,9 +37,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.Refine
 open Basic
 
-module Shell = Shell.Shell (Shell_p4.ShellP4)
-
-open Shell
+open Mp
 
 open Utils
 open Library
@@ -162,16 +160,16 @@ let term_to_msequent t =
 	(map_isexpr_to_list_by_op imcons_op (let f x = x in f) (term_of_unbound_term assums),
 	 (term_of_unbound_term goal))
     | _ ->
-        raise (Refiner.Refiner.RefineError.RefineError 
-		 ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError 
+        raise (Refiner.Refiner.RefineError.RefineError
+		 ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError
 					 (t, "malformed metasequent"))))
 
 let term_to_symaddr t =
   match string_list_of_term t with
       a::b::c::tl -> (b, c)
     | _ ->
-        raise (Refiner.Refiner.RefineError.RefineError 
-		 ("term_to_symaddr", (Refiner.Refiner.RefineError.TermMatchError 
+        raise (Refiner.Refiner.RefineError.RefineError
+		 ("term_to_symaddr", (Refiner.Refiner.RefineError.TermMatchError
 					 (t, "malformed msequent"))))
 
 let ilist_op = (mk_nuprl5_op [make_param (Token "!list")])
@@ -181,7 +179,7 @@ let ipair_term h t = mk_term ipair_op [(mk_bterm [] h); (mk_bterm [] t)]
 
 let list_of_ints length =
   let rec ll len =
-    if len = 0 then [] 
+    if len = 0 then []
     else len::(ll (len - 1))
   in List.rev (ll length)
 
@@ -190,10 +188,10 @@ open List_util
 
 let get_fl name =
   let rec lp ls lf =
-    if ls = [] then lf 
+    if ls = [] then lf
     else let el = edit_list_parents (hd ls) in
-      lp (union el (tl ls)) (union el lf) in 
-    lp [name] [name] 
+      lp (union el (tl ls)) (union el lf) in
+    lp [name] [name]
 
 let idform_op = (mk_nuprl5_op [make_param (Token "!dform")])
 let idform_term attr lhs rhs =
@@ -216,132 +214,132 @@ let ifail_op = mk_nuprl5_op [ifail_parameter]
 let ifail_term t = mk_term ifail_op [mk_bterm [] t]
 
 (*
-let dest_rw_term t = 
+let dest_rw_term t =
   match dest_term t with
       { term_op = imp_rw_op; term_terms = [redex; contract]} ->
 	((term_of_unbound_term redex), (term_of_unbound_term contract))
     | _ ->
-        raise (Refiner.Refiner.RefineError.RefineError 
-		 ("dest_rw_term", (Refiner.Refiner.RefineError.TermMatchError 
+        raise (Refiner.Refiner.RefineError.RefineError
+		 ("dest_rw_term", (Refiner.Refiner.RefineError.TermMatchError
 					 (t, "malformed rw"))))
 
 let dest_rw_term t =
   match dest_term t with
       { term_op = imp_msequent_op; term_terms = [assums; goal]} ->
-	  (match dest_term (term_of_unbound_term goal) with 
+	  (match dest_term (term_of_unbound_term goal) with
                 { term_op = op ; term_terms = [redex; contract]} ->
                 ((term_of_unbound_term redex), (term_of_unbound_term contract))
 		| _ ->
-                raise (Refiner.Refiner.RefineError.RefineError 
-		 ("dest_rw_term", (Refiner.Refiner.RefineError.TermMatchError 
+                raise (Refiner.Refiner.RefineError.RefineError
+		 ("dest_rw_term", (Refiner.Refiner.RefineError.TermMatchError
 					 ((term_of_unbound_term goal), "malformed rw")))))
     | _ ->
-        raise (Refiner.Refiner.RefineError.RefineError 
-		 ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError 
+        raise (Refiner.Refiner.RefineError.RefineError
+		 ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError
 					 (t, "malformed metasequent"))))
 
 this one if treated as proof
 let dest_rw_term t =
   match dest_term t with
       { term_op = imp_msequent_op; term_terms = [assums; goal]} ->
-	  (match dest_term (term_of_unbound_term goal) with 
+	  (match dest_term (term_of_unbound_term goal) with
                 { term_op = op ; term_terms = [seq]} ->
-                (match dest_term (term_of_unbound_term seq) with 
+                (match dest_term (term_of_unbound_term seq) with
                 { term_op = op ; term_terms = [h]} ->
-		(match dest_term (term_of_unbound_term h) with 
+		(match dest_term (term_of_unbound_term h) with
                 { term_op = op ; term_terms = [concl]} ->
-		(match dest_term (term_of_unbound_term concl) with 
+		(match dest_term (term_of_unbound_term concl) with
                 { term_op = op ; term_terms = [rw]} ->
-		(match dest_term (term_of_unbound_term rw) with 
+		(match dest_term (term_of_unbound_term rw) with
                 { term_op = op ; term_terms = [redex; contract]} ->
 		((term_of_unbound_term redex), (term_of_unbound_term contract))))))
 		| _ ->
-                raise (Refiner.Refiner.RefineError.RefineError 
-		 ("dest_rw_term", (Refiner.Refiner.RefineError.TermMatchError 
+                raise (Refiner.Refiner.RefineError.RefineError
+		 ("dest_rw_term", (Refiner.Refiner.RefineError.TermMatchError
 					 ((term_of_unbound_term goal), "malformed rw")))))
     | _ ->
-        raise (Refiner.Refiner.RefineError.RefineError 
-		 ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError 
+        raise (Refiner.Refiner.RefineError.RefineError
+		 ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError
 					 (t, "malformed metasequent"))))
 
 *)
 let dest_rw_term t =
   match dest_term t with
       { term_op = imp_msequent_op; term_terms = [assums; goal]} ->
-	  (match dest_term (term_of_unbound_term goal) with 
+	  (match dest_term (term_of_unbound_term goal) with
                 { term_op = op ; term_terms = [redex; contract]} ->
 		((term_of_unbound_term redex), (term_of_unbound_term contract))
 		| _ ->
-                raise (Refiner.Refiner.RefineError.RefineError 
-		 ("dest_rw_term", (Refiner.Refiner.RefineError.TermMatchError 
+                raise (Refiner.Refiner.RefineError.RefineError
+		 ("dest_rw_term", (Refiner.Refiner.RefineError.TermMatchError
 					 ((term_of_unbound_term goal), "malformed rw")))))
     | _ ->
-        raise (Refiner.Refiner.RefineError.RefineError 
-		 ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError 
+        raise (Refiner.Refiner.RefineError.RefineError
+		 ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError
 					 (t, "malformed metasequent"))))
 
 
 
 let refine_ehook rhook =
   unconditional_error_handler
-    (function () -> 
+    (function () ->
        (function t ->
     (* used in undo and lookup cmds *)
-	  let rec visit_proof root_il = 
+	  let rec visit_proof root_il =
 	    let (s, goal, subgoals, extras) = edit_node root_il
 	    in
-	      (match s with 
-		   Some ss -> let length = List.length subgoals in 
+	      (match s with
+		   Some ss -> let length = List.length subgoals in
 			      let vps i = visit_proof (i :: root_il) in
-				(mp_prf_term (msequent_to_term goal) (itext_term ss) 
-				   (list_to_ilist (List.map vps (list_of_ints length))) 
+				(mp_prf_term (msequent_to_term goal) (itext_term ss)
+				   (list_to_ilist (List.map vps (list_of_ints length)))
 				   (list_to_ilist (List.map msequent_to_term extras)))
-		 | None -> (mp_prf_term (msequent_to_term goal) ivoid_term inil_term 
-			      (list_to_ilist (List.map msequent_to_term extras))))	 
-	  in 
+		 | None -> (mp_prf_term (msequent_to_term goal) ivoid_term inil_term
+			      (list_to_ilist (List.map msequent_to_term extras))))
+	  in
 	    (match dest_term t with
 		 {term_op = op; term_terms = symaddr :: addr :: tac :: r } when (opeq op mp_refine_op) ->
 		   (let l = string_list_of_term (term_of_unbound_term symaddr)
-		    in if l = !current_symaddr then () 
+		    in if l = !current_symaddr then ()
 		      else (current_symaddr := l; Mp.edit_cd_thm (hd (tl l)) (hd (tl (tl l))));
 		      let tactic = string_of_itext_term (term_of_unbound_term tac) in
 			eprintf "%s %t" tactic eflush;
-			
-			let (gg, subgoals, extras) = 
-      			  Mp.edit_refine (int_list_of_term (term_of_unbound_term addr)) tactic in 
+
+			let (gg, subgoals, extras) =
+      			  Mp.edit_refine (int_list_of_term (term_of_unbound_term addr)) tactic in
 			  mp_ref_term (msequent_to_term gg)
-      			    (list_to_ilist (List.map msequent_to_term subgoals)) 
+      			    (list_to_ilist (List.map msequent_to_term subgoals))
 			    (list_to_ilist (List.map msequent_to_term extras)))
 
   (* node not needed at command call level*)
-  (*| {term_op = op; term_terms = addr :: tac :: r } when (opeq op mp_node_op) -> 
-    let (goal, subgoals, extras) = 
-    Shell.edit_refine (int_list_of_term (term_of_unbound_term addr))
-    (string_of_itext_term tac) 
+  (*| {term_op = op; term_terms = addr :: tac :: r } when (opeq op mp_node_op) ->
+    let (goal, subgoals, extras) =
+    Mp.edit_refine (int_list_of_term (term_of_unbound_term addr))
+    (string_of_itext_term tac)
     in
     icons_term icons_op (msequent_to_term goal)
-    (icons_term icons_op (list_to_ilist (map msequent_to_term subgoals)) 
+    (icons_term icons_op (list_to_ilist (map msequent_to_term subgoals))
     (list_to_ilist (List.map msequent_to_term extras)))
   *)
 
 	       | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_undo_op) ->
 		   (let l = string_list_of_term (term_of_unbound_term symaddr) in
-		      if l = !current_symaddr then () 
+		      if l = !current_symaddr then ()
 		      else (current_symaddr := l; Mp.edit_cd_thm (hd (tl l)) (hd (tl (tl l))));
-		      Shell.edit_undo ();  
+		      Mp.edit_undo ();
 		      visit_proof [])
 
 	       | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_save_op) ->
 		   ((*let (b, c) = term_to_symaddr (term_of_unbound_term symaddr) in
-		      if (b, c) = !current_pair then () 
+		      if (b, c) = !current_pair then ()
 		      else (current_pair := (b, c); Mp.edit_cd_thm b c);*)
                      let l = string_list_of_term (term_of_unbound_term symaddr) in
 		      if l = !current_symaddr then () else
 		      (current_symaddr := l; Mp.edit_cd_thm (hd (tl l)) (hd (tl (tl l))));
-		      eprintf "saving thm %s %t" (hd (tl (tl l))) eflush; 
+		      eprintf "saving thm %s %t" (hd (tl (tl l))) eflush;
                       Mp.save();
 		      ivoid_term)
-                   
+
 	       | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_save_thy_op) ->
 		   ((*let l = string_list_of_term (term_of_unbound_term symaddr) in
 		      Mp.edit_save_thy (hd (tl l));*)
@@ -351,64 +349,64 @@ let refine_ehook rhook =
 		   list_to_ilist (map itoken_term (Mp.edit_list_modules ()))
 
 	       | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_module_all_op) ->
-		   let name = (hd (map_isexpr_to_list string_of_itoken_term 
+		   let name = (hd (map_isexpr_to_list string_of_itoken_term
 						      (term_of_unbound_term symaddr))) in
 		   let f x = (Mp.edit_cd_thm name x;
-			 let (s, goal, subgoals, extras) = Shell.edit_node [] in
+			 let (s, goal, subgoals, extras) = Mp.edit_node [] in
 			   ipair_term (itoken_term x) (msequent_to_term goal))
-		     
+
 		   and flat_list = get_fl name
-		   in icons_term icons_op 
+		   in icons_term icons_op
 			(list_to_ilist_map (function x -> itoken_term (String.uncapitalize x)) flat_list)
 			(list_to_ilist_map f (Mp.edit_list_module_all name))
-									
+
 	       | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_module_op) ->
-		   let name = (hd (map_isexpr_to_list string_of_itoken_term 
+		   let name = (hd (map_isexpr_to_list string_of_itoken_term
 						      (term_of_unbound_term symaddr))) in
 		   let f x = (Mp.edit_cd_thm name x;
 			     let (s, goal, subgoals, extras) = Mp.edit_node [] in
 			      ipair_term (itoken_term x) (msequent_to_term goal))
-		     
+
 		   and flat_list = get_fl name
-		   in icons_term icons_op 
+		   in icons_term icons_op
 			(list_to_ilist_map (function x -> itoken_term (String.uncapitalize x)) flat_list)
-			(let (w, c, a, rl) = Mp.edit_list_module name in 
+			(let (w, c, a, rl) = Mp.edit_list_module name in
 			    mp_edit_term (list_to_ilist_map f w) (list_to_ilist_map f c) (list_to_ilist_map f a) (list_to_ilist_map f rl))
-			
+
 	       | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_display_op) ->
 		   let ff name =
-		     let f = function (n, modes, attr, model, formats) -> 
-		       (ipair_term (itoken_term n) 
-			  (idform_term (list_to_ilist_by_op idform_attr_op 
-					  ((list_to_ilist_by_op imode_cons_op (map itoken_term modes)) :: attr)) 
-			     formats 
+		     let f = function (n, modes, attr, model, formats) ->
+		       (ipair_term (itoken_term n)
+			  (idform_term (list_to_ilist_by_op idform_attr_op
+					  ((list_to_ilist_by_op imode_cons_op (map itoken_term modes)) :: attr))
+			     formats
 			     model))
-		     in 
-		       ipair_term (imp_prec_pair_term (list_to_ilist_by_op imp_prec_cons_op 
+		     in
+		       ipair_term (imp_prec_pair_term (list_to_ilist_by_op imp_prec_cons_op
 							 (edit_list_precs name))
-				     (list_to_ilist_by_op_map imp_prec_rel_cons_op 
-					(function (r, t1, t2) -> imp_prec_rel_term r t1 t2) 
+				     (list_to_ilist_by_op_map imp_prec_rel_cons_op
+					(function (r, t1, t2) -> imp_prec_rel_term r t1 t2)
 					(edit_list_prec_rels name)))
 			 (list_to_ilist (List.map f (edit_list_dforms name)))
 		   in list_to_ilist_map ff (map (function x -> hd (map_isexpr_to_list string_of_itoken_term x))
-					      (map_isexpr_to_list_by_op ilist_op 
+					      (map_isexpr_to_list_by_op ilist_op
 						 (function x -> x) (term_of_unbound_term symaddr)))
 
 	       | {term_op = op; term_terms = symaddr :: mseq :: r} when (opeq op mp_set_thm_op) ->
 		   let l = string_list_of_term (term_of_unbound_term symaddr)
-		   in 
+		   in
 		   (if l = !current_symaddr then () else Mp.edit_cd_thm (hd (tl l)) (hd (tl (tl l)));
 		       let (assums, goal) = term_to_msequent (term_of_unbound_term mseq) in
-		       (eprintf "setting goal %s %s %t" (hd (tl l)) (hd (tl (tl l))) eflush; 
+		       (eprintf "setting goal %s %s %t" (hd (tl l)) (hd (tl (tl l))) eflush;
 			 eprintf "TO: %a/%t" print_term goal eflush;
 			 Mp.set_goal goal; Mp.set_assumptions assums; ivoid_term))
 
 	       | {term_op = op; term_terms = symaddr :: rw :: r} when (opeq op mp_set_rw_op) ->
 		   let l = string_list_of_term (term_of_unbound_term symaddr)
-		   in 
+		   in
 		   (if l = !current_symaddr then () else Mp.edit_cd_thm (hd (tl l)) (hd (tl (tl l)));
 		       let (redex, contract) = dest_rw_term (term_of_unbound_term rw) in
-		       (eprintf "setting redex %s %s %t" (hd (tl l)) (hd (tl (tl l))) eflush; 
+		       (eprintf "setting redex %s %s %t" (hd (tl l)) (hd (tl (tl l))) eflush;
 			 eprintf "TO: %a/%a%t" print_term redex print_term contract eflush;
 			 Mp.set_redex redex; Mp.set_contractum contract; ivoid_term)) (*use edit_set?*)
 
@@ -417,24 +415,24 @@ let refine_ehook rhook =
  (*
    | {term_op = op; term_terms = symaddr :: r} when (opeq op mp_cd_thm_op) ->
    let l = string_list_of_term (term_of_unbound_term symaddr)
-   in 
+   in
    (current_symaddr := l; Shell.edit_cd_thm (hd (tl l)) (hd (tl (tl l))); ivoid_term)
-   *)  
+   *)
 	| {term_op = op; term_terms = mname :: name :: r} when (opeq op mp_create_op) ->
 	    (Mp.edit_create_thm (string_of_itoken_term (term_of_unbound_term mname))
 	       (string_of_itoken_term (term_of_unbound_term name));
 	     ivoid_term)
-	      
+
 	| {term_op = op; term_terms = mname :: name :: r} when (opeq op mp_create_rw_op) ->
 	    (Mp.edit_create_rw (string_of_itoken_term (term_of_unbound_term mname))
 	       (string_of_itoken_term (term_of_unbound_term name));
 	     ivoid_term)
-	      
+
 	| {term_op = op; term_terms = symaddr :: r} when (opeq op mp_lookup_op) ->
 	    let l = string_list_of_term (term_of_unbound_term symaddr)
-	    in 
-	    (if l = !current_symaddr then () 
-	    else Shell.edit_cd_thm (hd l) (hd (tl l));
+	    in
+	    (if l = !current_symaddr then ()
+	    else Mp.edit_cd_thm (hd l) (hd (tl l));
 	     visit_proof [])
 
 	| _ -> error ["eval"; "op"; "unrecognized"] [] [t])))
