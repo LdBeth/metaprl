@@ -34,6 +34,8 @@ open Refiner_sig
 open Termmod_sig
 
 open Lm_symbol
+open Lm_printf
+open Lm_array_util
 open Opname
 
 module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
@@ -75,10 +77,16 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    open TermType
 
    (* Helper functions *)
-   module TermT1 = Refiner1.TermType
-   module TermT2 = Refiner2.TermType
+   module Type1 = Refiner1.TermType
+   module Type2 = Refiner2.TermType
    module Term1 = Refiner1.Term
    module Term2 = Refiner2.Term
+   module TermOp1 = Refiner1.TermOp
+   module TermOp2 = Refiner2.TermOp
+   module Subst1 = Refiner1.TermSubst
+   module Subst2 = Refiner2.TermSubst
+   module SeqHyp1 = Refiner1.Term.SeqHyp
+   module SeqHyp2 = Refiner2.Term.SeqHyp
 
    (*
     * We use a separate error reporting function to have a single breakpoint
@@ -91,39 +99,1124 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let split_term' { term_op = (op1, op2); term_terms = btl } =
       let btl1, btl2 = split btl in
-         { TermT1.term_op = op1; TermT1.term_terms = btl1 },
-         { TermT2.term_op = op2; TermT2.term_terms = btl2 }
+         { Type1.term_op = op1; Type1.term_terms = btl1 },
+         { Type2.term_op = op2; Type2.term_terms = btl2 }
+
+   let split_bterm' { bvars = vs; bterm = bt1, bt2 } =
+      { Type1.bvars = vs; Type1.bterm = bt1 },
+      { Type2.bvars = vs; Type2.bterm = bt2 }
+
+   let split_op' { op_name = name; op_params = pars } =
+      let pl1, pl2 = split pars in
+         { Type1.op_name = name; Type1.op_params = pl1 },
+         { Type2.op_name = name; Type2.op_params = pl2 }
+
+   let split_level_exp_var' { le_var = v; le_offset = i } =
+      { Type1.le_var = v; Type1.le_offset = i },
+      { Type2.le_var = v; Type2.le_offset = i }
+
+   let split_level_exp' { le_const = c; le_vars = vs } =
+      let vs1, vs2 = split vs in
+         { Type1.le_const = c; Type1.le_vars = vs1 },
+         { Type2.le_const = c; Type2.le_vars = vs2 }
+
+   let split_param' = function
+      (Number _ | String _ | Token _ | Var _ | MNumber _ | MString _ | MToken _ | Quote) as p -> p, p
+    | MLevel (l1, l2) -> MLevel l1, MLevel l2
+    | ObId pl -> let pl1, pl2 = split pl in ObId pl1, ObId pl2
+    | ParamList pl -> let pl1, pl2 = split pl in ParamList pl1, ParamList pl2
+
+   let merge_bool x (b1:bool) b2 =
+      if b1 <> b2 then
+         report_error x "Booleans mismatch";
+      b1
+
+   let merge_int x (i1: int) i2 =
+      if i1 <> i2 then
+         report_error x "Integers mismatch";
+      i1
+
+   let merge_var x (v1:var) v2 =
+      if v1 <> v2 then
+         report_error x "Variable mismatch";
+      v1
+
+   let merge_string x s1 s2 =
+      if s1 <> s2 then
+         report_error x ("Strings mismatch: \"" ^s1^"\" vs \""^s2^"\"");
+      s1
+
+   let merge_num x n1 n2 =
+      if not (Lm_num.eq_num n1 n2) then
+          report_error x "nums mismatch";
+      n1
+
+   let merge_unit x () () = ()
+
+   let merge_ints x is1 is2 =
+      if not (List.length is1 = List.length is2) then
+         report_error x "integer lists length mismatch";
+      List.map2 (merge_int x) is1 is2
+
+   let merge_param x p1 p2 =
+      (* XXX: TODO: need some consistency checks *)
+      p1, p2
+
+   let merge_level_exp_var x v1 v2 =
+      (* XXX: TODO: need some consistency checks *)
+      v1, v2
+
+   let merge_level_exp x le1 le2 =
+      (* XXX: TODO: need some consistency checks *)
+      le1, le2
+
+   let merge_params x pl1 pl2 =
+      if not (List.length pl1 = List.length pl2) then
+         report_error x "param list length mismatch";
+      List.map2 (merge_param x) pl1 pl2
+
+   let merge_param' x p1 p2 =
+      match p1, p2 with
+         (Number _ | String _ | Token _ | Var _ | MNumber _ | MString _ | MToken _ | Quote as p1),
+         (Number _ | String _ | Token _ | Var _ | MNumber _ | MString _ | MToken _ | Quote as p2)
+         when p1 = p2 ->
+            p1
+       | MLevel l1, MLevel l2 -> MLevel (l1, l2)
+       | ObId pl1, ObId pl2 -> ObId (merge_params x pl1 pl2)
+       | ParamList pl1, ParamList pl2 -> ParamList (merge_params x pl1 pl2)
+       | _ -> report_error x "incompatible param'"
+
+   let merge_params' x pl1 pl2 =
+      if not (List.length pl1 = List.length pl2) then
+         report_error x "param' list length mismatch";
+      List.map2 (merge_param' x) pl1 pl2
+
+   let merge_level_exp_vars x vs1 vs2 =
+      if not (List.length vs1 = List.length vs2) then
+         report_error x "level_exp_var list length mismatch";
+      List.map2 (merge_level_exp_var x) vs1 vs2
+
+   let merge_level_exp_var' x { Type1.le_var = v1; Type1.le_offset = i1 } { Type2.le_var = v2; Type2.le_offset = i2 } =
+      if not (v1 = v2) then
+         report_error x "le_var field mismatch";
+      if not (i1 = i2) then
+         report_error x "le_offset field mismatch";
+      { le_var = v1; le_offset = i1 }
+
+   let merge_level_exp_vars' x vs1 vs2 =
+      if not (List.length vs1 = List.length vs2) then
+         report_error x "level_exp_var' list length mismatch";
+      List.map2 (merge_level_exp_var' x) vs1 vs2
+
+   let merge_level_exp' x { Type1.le_const = c1; Type1.le_vars = vs1 } { Type2.le_const = c2; Type2.le_vars = vs2 } =
+      if not (c1 = c2) then
+         report_error x "le_const field mismatch";
+      { le_const = c1; le_vars = merge_level_exp_vars x vs1 vs2 }
+
+   let merge_op' x { Type1.op_name = name1; Type1.op_params = pl1 } { Type2.op_name = name2; Type2.op_params = pl2 } =
+      if not (Opname.eq name1 name2) then
+         report_error x "operator' opname mismatch";
+      { op_name = name1; op_params = merge_params x pl1 pl2 }
+
+   let merge_op x op1 op2 =
+      (* XXX: TODO: need some consistency checks *)
+      op1, op2
+
+   let merge_opname x op1 op2 =
+      if not (Opname.eq op1 op2) then
+         report_error x "opnames mismatch";
+      op1
 
    let merge_term x t1 t2 =
       if not (Opname.eq (Term1.opname_of_term t1) (Term2.opname_of_term t2)) then
-         report_error x "opname mismatch"
+         report_error x "term opname mismatch"
       else
          (t1, t2)
 
    let merge_terms x tl1 tl2 =
       if not (List.length tl1 = List.length tl2) then
-         report_error x "length mismatch"
-      else
-         List.map2 (merge_term x) tl1 tl2
+         report_error x "term list length mismatch";
+      List.map2 (merge_term x) tl1 tl2
+
+   let merge_bterm' x { Type1.bvars = bv1; Type1.bterm = t1 } { Type2.bvars = bv2; Type2.bterm = t2 } =
+      if not (List.length bv1 = List.length bv2) then
+         report_error x "bvar length mismatch";
+      { bvars = bv1; bterm = merge_term x t1 (Subst2.subst t2 (List.rev bv2) (List.rev_map Term2.mk_var_term bv1)) }
+
+   let merge_bterm x bt1 bt2 =
+      (* XXX: TODO: need some consistency checks *)
+      bt1, bt2
+
+   let merge_bterms x btl1 btl2 =
+      if not (List.length btl1 = List.length btl2) then
+         report_error x "bterm list length mismatch";
+      List.map2 (merge_bterm x) btl1 btl2
+
+   let merge_term' x { Type1.term_op = op1; Type1.term_terms = btl1 } { Type2.term_op = op2; Type2.term_terms = btl2 } =
+      { term_op = merge_op x op1 op2; term_terms = merge_bterms x btl1 btl2 }
+
+   let split_hyp = function
+      Hypothesis (v, (t1, t2)) ->
+         Hypothesis (v, t1), Hypothesis (v, t2)
+    | Context(v, vs, ts) ->
+         let ts1, ts2 = split ts in
+            Context (v, vs, ts1), Context(v, vs, ts2)
+
+   let split_hyps hs =
+      split (List.map split_hyp hs)
+
+   let merge_hyp x h1 h2 =
+      match h1, h2 with
+         Hypothesis (v1, t1), Hypothesis (v2, t2) ->
+            if not (v1 = v2) then
+               report_error x "Hyp variable mismatch";
+            Hypothesis (v1, merge_term x t1 t2)
+       | Context (v1, vs1, ts1), Context (v2, vs2, ts2) ->
+            if not (v1 = v2) then
+               report_error x "Context variable mismatch";
+            if not (vs1 = vs2) then
+               report_error x "Contexts of a context mismatch";
+            Context (v1, vs1, merge_terms x ts1 ts2)
+       | _ ->
+            report_error x "hypothesis kind mismatch"
+
+   let merge_hyps x hs1 hs2 =
+      if not (List.length hs1 = List.length hs2) then
+         report_error x "hyp list length mismatch";
+      List.map2 (merge_hyp x) hs1 hs2
+
+   let merge_SeqHyp x hyps1 hyps2 =
+      if not (SeqHyp1.length hyps1 = SeqHyp2.length hyps2) then
+         report_error x "SeqHyp.length mismatch on merge";
+      hyps1, hyps2
+
+   module SeqHyp = struct
+      type elt = hypothesis
+      type t = seq_hyps
+      type index = int
+
+      let empty =
+         merge_SeqHyp "SeqHyp.empty" SeqHyp1.empty SeqHyp2.empty
+
+      let singleton h =
+         let h1, h2 = split_hyp h in
+            merge_SeqHyp "SeqHyp.singleton" (SeqHyp1.singleton h1) (SeqHyp2.singleton h2)
+
+      let length (t1, t2) =
+         merge_int "SeqHyp.length" (SeqHyp1.length t1) (SeqHyp2.length t2)
+
+      let make i h =
+         let h1, h2 = split_hyp h in
+            merge_SeqHyp "SeqHyp.make" (SeqHyp1.make i h1) (SeqHyp2.make i h2)
+
+      let create = make
+
+      let get (t1, t2) i =
+         merge_hyp "SeqHyp.get" (SeqHyp1.get t1 i) (SeqHyp2.get t2 i)
+
+      let to_list (t1, t2) =
+         merge_hyps "SeqHyp.to_list" (SeqHyp1.to_list t1) (SeqHyp2.to_list t2)
+
+      let of_list hl =
+         let hl1, hl2 = split_hyps hl in
+            merge_SeqHyp "SeqHyp.of_list" (SeqHyp1.of_list hl1) (SeqHyp2.of_list hl2)
+
+      let append (t1, t2) h (tt1, tt2) =
+         let h1, h2 = split_hyp h in
+            merge_SeqHyp "SeqHyp.append" (SeqHyp1.append t1 h1 tt1) (SeqHyp2.append t2 h2 tt2)
+
+      let append_list (t1, t2) (hs : elt list) (tt1, tt2) =
+         let hs1, hs2 = split_hyps hs in
+            merge_SeqHyp "SeqHyp.append_list" (SeqHyp1.append_list t1 hs1 tt1) (SeqHyp2.append_list t2 hs2 tt2)
+
+      let split (t1, t2) i =
+         let l1, h1, r1 = SeqHyp1.split t1 i in
+         let l2, h2, r2 = SeqHyp2.split t2 i in
+            (merge_SeqHyp "SeqHyp.split - 1" l1 l2),
+            (merge_hyp "SeqHyp.split - 2" h1 h2),
+            (merge_SeqHyp "SeqHyp.split - 3" r1 r2)
+
+      let init i f =
+         merge_SeqHyp "SeqHyp.init" (SeqHyp1.init i (fun i -> fst (split_hyp (f i)))) (SeqHyp2.init i (fun i -> snd (split_hyp (f i))))
+
+      (* XXX: TODO: we do not use the underlying implementation here, so it is not fully tested *)
+      let iter f t = List.iter f (to_list t)
+      let map f t = of_list (List.map f (to_list t))
+      let lazy_apply = map
+      let mapi f t = init (length t) (fun i -> f i (get t i))
+      let lazy_sub_map f t i len = of_list (Array.to_list (Lm_array_util.sub_map f (Array.of_list (to_list t)) i len))
+      let map_part = function
+         ArrayElement a -> ArrayElement a
+       | ArrayArray (t, i, j) -> ArrayArray (Array.of_list (to_list t), i, j)
+      let collect ps = of_list (Array.to_list (Lm_array_util.collect (List.map map_part ps)))
+   end
 
    module Term = struct
       module TermTypes = TermType
-      module SeqHyp = struct
-         type elt = hypothesis
-         type t = seq_hyps
-      end
+      module SeqHyp = SeqHyp
 
-      let mk_term (o1, o2) btl =
-         let btl1, btl2 = split btl in
-            merge_term "Term.mk_term" (Term1.mk_term o1 btl1) (Term2.mk_term o2 btl2)
+      (* XXX: TODO: we need some way to print terms given by individual implementations *)
 
-      let make_term t' =
-         let t1, t2 = split_term' t' in
-            merge_term "Term.make_term" (Term1.make_term t1) (Term2.make_term t2)
+      let print_term_ref = ref (fun _ _ -> raise (Failure "Refiner_debug.Term.print_term: printer not installed"))
+
+      let debug_print out t = !print_term_ref out t
+      let print_term = debug_print
+      let rec print_term_list out = function
+         [t] ->
+            debug_print out t
+       | h::t ->
+            debug_print out h;
+            output_string out ", ";
+            print_term_list out t
+       | [] ->
+            ()
+
+      let install_debug_printer f =
+         print_term_ref := f;
+         Term1.install_debug_printer (fun out _ -> output_string out "<Refiner_debug: Implementation1 term>");
+         Term2.install_debug_printer (fun out _ -> output_string out "<Refiner_debug: Implementation2 term>")
+
+      (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
+
+      let mk_term (p0 : operator) (p1 : bound_term list) =
+         let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = split p1 in
+         merge_term "Term.mk_term" (Term1.mk_term p0_1 p1_1) (Term2.mk_term p0_2 p1_2)
+
+      let make_term (p0 : term') =
+         let p0_1, p0_2 = split_term' p0 in
+         merge_term "Term.make_term" (Term1.make_term p0_1) (Term2.make_term p0_2)
+
+      let dest_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_term' "Term.dest_term" (Term1.dest_term p0_1) (Term2.dest_term p0_2)
+
+      let mk_op (p0 : opname) (p1 : param list) =
+         let p1_1, p1_2 = split p1 in
+         merge_op "Term.mk_op" (Term1.mk_op p0 p1_1) (Term2.mk_op p0 p1_2)
+
+      let make_op (p0 : operator') =
+         let p0_1, p0_2 = split_op' p0 in
+         merge_op "Term.make_op" (Term1.make_op p0_1) (Term2.make_op p0_2)
+
+      let dest_op (p0 : operator) =
+         let p0_1, p0_2 = p0 in
+         merge_op' "Term.dest_op" (Term1.dest_op p0_1) (Term2.dest_op p0_2)
+
+      let ops_eq (p0 : operator) (p1 : operator) =
+         let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = p1 in
+         merge_bool "Term.ops_eq" (Term1.ops_eq p0_1 p1_1) (Term2.ops_eq p0_2 p1_2)
+
+      let mk_bterm (p0 : var list) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bterm "Term.mk_bterm" (Term1.mk_bterm p0 p1_1) (Term2.mk_bterm p0 p1_2)
+
+      let make_bterm (p0 : bound_term') =
+         let p0_1, p0_2 = split_bterm' p0 in
+         merge_bterm "Term.make_bterm" (Term1.make_bterm p0_1) (Term2.make_bterm p0_2)
+
+      let dest_bterm (p0 : bound_term) =
+         let p0_1, p0_2 = p0 in
+         merge_bterm' "Term.dest_bterm" (Term1.dest_bterm p0_1) (Term2.dest_bterm p0_2)
+
+      let make_param (p0 : param') =
+         let p0_1, p0_2 = split_param' p0 in
+         merge_param "Term.make_param" (Term1.make_param p0_1) (Term2.make_param p0_2)
+
+      let dest_param (p0 : param) =
+         let p0_1, p0_2 = p0 in
+         merge_param' "Term.dest_param" (Term1.dest_param p0_1) (Term2.dest_param p0_2)
+
+      let dest_params (p0 : param list) =
+         let p0_1, p0_2 = split p0 in
+         merge_params' "Term.dest_params" (Term1.dest_params p0_1) (Term2.dest_params p0_2)
+
+      let mk_level (p0 : int) (p1 : level_exp_var list) =
+         let p1_1, p1_2 = split p1 in
+         merge_level_exp "Term.mk_level" (Term1.mk_level p0 p1_1) (Term2.mk_level p0 p1_2)
+
+      let make_level (p0 : level_exp') =
+         let p0_1, p0_2 = split_level_exp' p0 in
+         merge_level_exp "Term.make_level" (Term1.make_level p0_1) (Term2.make_level p0_2)
+
+      let dest_level (p0 : level_exp) =
+         let p0_1, p0_2 = p0 in
+         merge_level_exp' "Term.dest_level" (Term1.dest_level p0_1) (Term2.dest_level p0_2)
+
+      let mk_level_var (p0 : var) (p1 : int) =
+         merge_level_exp_var "Term.mk_level_var" (Term1.mk_level_var p0 p1) (Term2.mk_level_var p0 p1)
+
+      let make_level_var (p0 : level_exp_var') =
+         let p0_1, p0_2 = split_level_exp_var' p0 in
+         merge_level_exp_var "Term.make_level_var" (Term1.make_level_var p0_1) (Term2.make_level_var p0_2)
+
+      let dest_level_var (p0 : level_exp_var) =
+         let p0_1, p0_2 = p0 in
+         merge_level_exp_var' "Term.dest_level_var" (Term1.dest_level_var p0_1) (Term2.dest_level_var p0_2)
+
+      let make_object_id (p0 : param list) =
+         let p0_1, p0_2 = split p0 in
+         merge_params "Term.make_object_id" (Term1.make_object_id p0_1) (Term2.make_object_id p0_2)
+
+      let dest_object_id (p0 : object_id) =
+         let p0_1, p0_2 = split p0 in
+         merge_params "Term.dest_object_id" (Term1.dest_object_id p0_1) (Term2.dest_object_id p0_2)
+
+      let opname_of_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_opname "Term.opname_of_term" (Term1.opname_of_term p0_1) (Term2.opname_of_term p0_2)
+
+      let subterms_of_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_terms "Term.subterms_of_term" (Term1.subterms_of_term p0_1) (Term2.subterms_of_term p0_2)
+
+      let subterm_arities (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_ints "Term.subterm_arities" (Term1.subterm_arities p0_1) (Term2.subterm_arities p0_2)
+
+      let is_var_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_bool "Term.is_var_term" (Term1.is_var_term p0_1) (Term2.is_var_term p0_2)
+
+      let dest_var (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_var "Term.dest_var" (Term1.dest_var p0_1) (Term2.dest_var p0_2)
+
+      let mk_var_term (p0 : var) =
+         merge_term "Term.mk_var_term" (Term1.mk_var_term p0) (Term2.mk_var_term p0)
+
+      let mk_any_term (p0 : operator) (p1 : term list) =
+         let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = split p1 in
+         merge_term "Term.mk_any_term" (Term1.mk_any_term p0_1 p1_1) (Term2.mk_any_term p0_2 p1_2)
+
+      let mk_simple_term (p0 : opname) (p1 : term list) =
+         let p1_1, p1_2 = split p1 in
+         merge_term "Term.mk_simple_term" (Term1.mk_simple_term p0 p1_1) (Term2.mk_simple_term p0 p1_2)
+
+      let dest_simple_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1 = Term1.dest_simple_term p0_1 in
+         let res0_2, res1_2 = Term2.dest_simple_term p0_2 in
+         (merge_opname "Term.dest_simple_term - 0" res0_1 res0_2),
+         (merge_terms "Term.dest_simple_term - 1" res1_1 res1_2)
+
+      let is_simple_term_opname (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "Term.is_simple_term_opname" (Term1.is_simple_term_opname p0 p1_1) (Term2.is_simple_term_opname p0 p1_2)
+
+      let dest_simple_term_opname (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_terms "Term.dest_simple_term_opname" (Term1.dest_simple_term_opname p0 p1_1) (Term2.dest_simple_term_opname p0 p1_2)
+
+      let is_simple_bterm (p0 : bound_term) =
+         let p0_1, p0_2 = p0 in
+         merge_bool "Term.is_simple_bterm" (Term1.is_simple_bterm p0_1) (Term2.is_simple_bterm p0_2)
+
+      let mk_simple_bterm (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_bterm "Term.mk_simple_bterm" (Term1.mk_simple_bterm p0_1) (Term2.mk_simple_bterm p0_2)
+
+      let dest_simple_bterm (p0 : bound_term) =
+         let p0_1, p0_2 = p0 in
+         merge_term "Term.dest_simple_bterm" (Term1.dest_simple_bterm p0_1) (Term2.dest_simple_bterm p0_2)
+
    end
 
    module TermOp = struct
       module OpTypes = TermType
+
+      (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
+
+      let is_quoted_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_bool "TermOp.is_quoted_term" (TermOp1.is_quoted_term p0_1) (TermOp2.is_quoted_term p0_2)
+
+      let quote_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_term "TermOp.quote_term" (TermOp1.quote_term p0_1) (TermOp2.quote_term p0_2)
+
+      let unquote_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_term "TermOp.unquote_term" (TermOp1.unquote_term p0_1) (TermOp2.unquote_term p0_2)
+
+      let is_no_subterms_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_no_subterms_term" (TermOp1.is_no_subterms_term p0 p1_1) (TermOp2.is_no_subterms_term p0 p1_2)
+
+      let is_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_term" (TermOp1.is_dep0_term p0 p1_1) (TermOp2.is_dep0_term p0 p1_2)
+
+      let mk_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_term "TermOp.mk_dep0_term" (TermOp1.mk_dep0_term p0 p1_1) (TermOp2.mk_dep0_term p0 p1_2)
+
+      let dest_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_term "TermOp.dest_dep0_term" (TermOp1.dest_dep0_term p0 p1_1) (TermOp2.dest_dep0_term p0 p1_2)
+
+      let one_subterm (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_term "TermOp.one_subterm" (TermOp1.one_subterm p0_1) (TermOp2.one_subterm p0_2)
+
+      let one_subterm_opname (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_term "TermOp.one_subterm_opname" (TermOp1.one_subterm_opname p0 p1_1) (TermOp2.one_subterm_opname p0 p1_2)
+
+      let is_dep0_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep0_term" (TermOp1.is_dep0_dep0_term p0 p1_1) (TermOp2.is_dep0_dep0_term p0 p1_2)
+
+      let mk_dep0_dep0_term (p0 : opname) (p1 : term) (p2 : term) =
+         let p1_1, p1_2 = p1 in
+         let p2_1, p2_2 = p2 in
+         merge_term "TermOp.mk_dep0_dep0_term" (TermOp1.mk_dep0_dep0_term p0 p1_1 p2_1) (TermOp2.mk_dep0_dep0_term p0 p1_2 p2_2)
+
+      let dest_dep0_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1 = TermOp1.dest_dep0_dep0_term p0 p1_1 in
+         let res0_2, res1_2 = TermOp2.dest_dep0_dep0_term p0 p1_2 in
+         (merge_term "TermOp.dest_dep0_dep0_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep0_dep0_term - 1" res1_1 res1_2)
+
+      let two_subterms (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1 = TermOp1.two_subterms p0_1 in
+         let res0_2, res1_2 = TermOp2.two_subterms p0_2 in
+         (merge_term "TermOp.two_subterms - 0" res0_1 res0_2),
+         (merge_term "TermOp.two_subterms - 1" res1_1 res1_2)
+
+      let two_subterms_opname (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1 = TermOp1.two_subterms_opname p0 p1_1 in
+         let res0_2, res1_2 = TermOp2.two_subterms_opname p0 p1_2 in
+         (merge_term "TermOp.two_subterms_opname - 0" res0_1 res0_2),
+         (merge_term "TermOp.two_subterms_opname - 1" res1_1 res1_2)
+
+      let is_dep0_dep0_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep0_dep0_term" (TermOp1.is_dep0_dep0_dep0_term p0 p1_1) (TermOp2.is_dep0_dep0_dep0_term p0 p1_2)
+
+      let mk_dep0_dep0_dep0_term (p0 : opname) (p1 : term) (p2 : term) (p3 : term) =
+         let p1_1, p1_2 = p1 in
+         let p2_1, p2_2 = p2 in
+         let p3_1, p3_2 = p3 in
+         merge_term "TermOp.mk_dep0_dep0_dep0_term" (TermOp1.mk_dep0_dep0_dep0_term p0 p1_1 p2_1 p3_1) (TermOp2.mk_dep0_dep0_dep0_term p0 p1_2 p2_2 p3_2)
+
+      let dest_dep0_dep0_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_dep0_dep0_dep0_term p0 p1_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_dep0_dep0_dep0_term p0 p1_2 in
+         (merge_term "TermOp.dest_dep0_dep0_dep0_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep0_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep0_term - 2" res2_1 res2_2)
+
+      let is_dep0_dep0_dep0_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep0_dep0_dep0_term" (TermOp1.is_dep0_dep0_dep0_dep0_term p0 p1_1) (TermOp2.is_dep0_dep0_dep0_dep0_term p0 p1_2)
+
+      let mk_dep0_dep0_dep0_dep0_term (p0 : opname) (p1 : term) (p2 : term) (p3 : term) (p4 : term) =
+         let p1_1, p1_2 = p1 in
+         let p2_1, p2_2 = p2 in
+         let p3_1, p3_2 = p3 in
+         let p4_1, p4_2 = p4 in
+         merge_term "TermOp.mk_dep0_dep0_dep0_dep0_term" (TermOp1.mk_dep0_dep0_dep0_dep0_term p0 p1_1 p2_1 p3_1 p4_1) (TermOp2.mk_dep0_dep0_dep0_dep0_term p0 p1_2 p2_2 p3_2 p4_2)
+
+      let dest_dep0_dep0_dep0_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.dest_dep0_dep0_dep0_dep0_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.dest_dep0_dep0_dep0_dep0_term p0 p1_2 in
+         (merge_term "TermOp.dest_dep0_dep0_dep0_dep0_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep0_dep0_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep0_dep0_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep0_dep0_term - 3" res3_1 res3_2)
+
+      let is_two_subterm (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_two_subterm" (TermOp1.is_two_subterm p0 p1_1) (TermOp2.is_two_subterm p0 p1_2)
+
+      let is_three_subterm (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_three_subterm" (TermOp1.is_three_subterm p0 p1_1) (TermOp2.is_three_subterm p0 p1_2)
+
+      let is_five_subterm (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_five_subterm" (TermOp1.is_five_subterm p0 p1_1) (TermOp2.is_five_subterm p0 p1_2)
+
+      let three_subterms (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1 = TermOp1.three_subterms p0_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.three_subterms p0_2 in
+         (merge_term "TermOp.three_subterms - 0" res0_1 res0_2),
+         (merge_term "TermOp.three_subterms - 1" res1_1 res1_2),
+         (merge_term "TermOp.three_subterms - 2" res2_1 res2_2)
+
+      let four_subterms (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.four_subterms p0_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.four_subterms p0_2 in
+         (merge_term "TermOp.four_subterms - 0" res0_1 res0_2),
+         (merge_term "TermOp.four_subterms - 1" res1_1 res1_2),
+         (merge_term "TermOp.four_subterms - 2" res2_1 res2_2),
+         (merge_term "TermOp.four_subterms - 3" res3_1 res3_2)
+
+      let five_subterms (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1, res3_1, res4_1 = TermOp1.five_subterms p0_1 in
+         let res0_2, res1_2, res2_2, res3_2, res4_2 = TermOp2.five_subterms p0_2 in
+         (merge_term "TermOp.five_subterms - 0" res0_1 res0_2),
+         (merge_term "TermOp.five_subterms - 1" res1_1 res1_2),
+         (merge_term "TermOp.five_subterms - 2" res2_1 res2_2),
+         (merge_term "TermOp.five_subterms - 3" res3_1 res3_2),
+         (merge_term "TermOp.five_subterms - 4" res4_1 res4_2)
+
+      let six_subterms (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1, res3_1, res4_1, res5_1 = TermOp1.six_subterms p0_1 in
+         let res0_2, res1_2, res2_2, res3_2, res4_2, res5_2 = TermOp2.six_subterms p0_2 in
+         (merge_term "TermOp.six_subterms - 0" res0_1 res0_2),
+         (merge_term "TermOp.six_subterms - 1" res1_1 res1_2),
+         (merge_term "TermOp.six_subterms - 2" res2_1 res2_2),
+         (merge_term "TermOp.six_subterms - 3" res3_1 res3_2),
+         (merge_term "TermOp.six_subterms - 4" res4_1 res4_2),
+         (merge_term "TermOp.six_subterms - 5" res5_1 res5_2)
+
+      let is_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep1_term" (TermOp1.is_dep1_term p0 p1_1) (TermOp2.is_dep1_term p0 p1_2)
+
+      let mk_dep1_term (p0 : opname) (p1 : var) (p2 : term) =
+         let p2_1, p2_2 = p2 in
+         merge_term "TermOp.mk_dep1_term" (TermOp1.mk_dep1_term p0 p1 p2_1) (TermOp2.mk_dep1_term p0 p1 p2_2)
+
+      let dest_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1 = TermOp1.dest_dep1_term p0 p1_1 in
+         let res0_2, res1_2 = TermOp2.dest_dep1_term p0 p1_2 in
+         (merge_var "TermOp.dest_dep1_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep1_term - 1" res1_1 res1_2)
+
+      let is_dep2_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep2_term" (TermOp1.is_dep2_term p0 p1_1) (TermOp2.is_dep2_term p0 p1_2)
+
+      let mk_dep2_term (p0 : opname) (p1 : var) (p2 : var) (p3 : term) =
+         let p3_1, p3_2 = p3 in
+         merge_term "TermOp.mk_dep2_term" (TermOp1.mk_dep2_term p0 p1 p2 p3_1) (TermOp2.mk_dep2_term p0 p1 p2 p3_2)
+
+      let dest_dep2_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_dep2_term p0 p1_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_dep2_term p0 p1_2 in
+         (merge_var "TermOp.dest_dep2_term - 0" res0_1 res0_2),
+         (merge_var "TermOp.dest_dep2_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_dep2_term - 2" res2_1 res2_2)
+
+      let is_dep1_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep1_dep1_term" (TermOp1.is_dep1_dep1_term p0 p1_1) (TermOp2.is_dep1_dep1_term p0 p1_2)
+
+      let mk_dep1_dep1_term (p0 : opname) (p1 : var) (p2 : term) (p3 : var) (p4 : term) =
+         let p2_1, p2_2 = p2 in
+         let p4_1, p4_2 = p4 in
+         merge_term "TermOp.mk_dep1_dep1_term" (TermOp1.mk_dep1_dep1_term p0 p1 p2_1 p3 p4_1) (TermOp2.mk_dep1_dep1_term p0 p1 p2_2 p3 p4_2)
+
+      let dest_dep1_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.dest_dep1_dep1_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.dest_dep1_dep1_term p0 p1_2 in
+         (merge_var "TermOp.dest_dep1_dep1_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep1_dep1_term - 1" res1_1 res1_2),
+         (merge_var "TermOp.dest_dep1_dep1_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_dep1_dep1_term - 3" res3_1 res3_2)
+
+      let is_dep0_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep1_term" (TermOp1.is_dep0_dep1_term p0 p1_1) (TermOp2.is_dep0_dep1_term p0 p1_2)
+
+      let is_dep0_dep1_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_bool "TermOp.is_dep0_dep1_any_term" (TermOp1.is_dep0_dep1_any_term p0_1) (TermOp2.is_dep0_dep1_any_term p0_2)
+
+      let mk_dep0_dep1_term (p0 : opname) (p1 : var) (p2 : term) (p3 : term) =
+         let p2_1, p2_2 = p2 in
+         let p3_1, p3_2 = p3 in
+         merge_term "TermOp.mk_dep0_dep1_term" (TermOp1.mk_dep0_dep1_term p0 p1 p2_1 p3_1) (TermOp2.mk_dep0_dep1_term p0 p1 p2_2 p3_2)
+
+      let mk_dep0_dep1_any_term (p0 : operator) (p1 : var) (p2 : term) (p3 : term) =
+         let p0_1, p0_2 = p0 in
+         let p2_1, p2_2 = p2 in
+         let p3_1, p3_2 = p3 in
+         merge_term "TermOp.mk_dep0_dep1_any_term" (TermOp1.mk_dep0_dep1_any_term p0_1 p1 p2_1 p3_1) (TermOp2.mk_dep0_dep1_any_term p0_2 p1 p2_2 p3_2)
+
+      let dest_dep0_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_dep0_dep1_term p0 p1_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_dep0_dep1_term p0 p1_2 in
+         (merge_var "TermOp.dest_dep0_dep1_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep0_dep1_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_dep0_dep1_term - 2" res2_1 res2_2)
+
+      let dest_dep0_dep1_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_dep0_dep1_any_term p0_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_dep0_dep1_any_term p0_2 in
+         (merge_var "TermOp.dest_dep0_dep1_any_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep0_dep1_any_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_dep0_dep1_any_term - 2" res2_1 res2_2)
+
+      let is_dep1_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep1_dep0_term" (TermOp1.is_dep1_dep0_term p0 p1_1) (TermOp2.is_dep1_dep0_term p0 p1_2)
+
+      let mk_dep1_dep0_term (p0 : opname) (p1 : var) (p2 : term) (p3 : term) =
+         let p2_1, p2_2 = p2 in
+         let p3_1, p3_2 = p3 in
+         merge_term "TermOp.mk_dep1_dep0_term" (TermOp1.mk_dep1_dep0_term p0 p1 p2_1 p3_1) (TermOp2.mk_dep1_dep0_term p0 p1 p2_2 p3_2)
+
+      let dest_dep1_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_dep1_dep0_term p0 p1_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_dep1_dep0_term p0 p1_2 in
+         (merge_var "TermOp.dest_dep1_dep0_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep1_dep0_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_dep1_dep0_term - 2" res2_1 res2_2)
+
+      let is_dep0_dep2_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep2_term" (TermOp1.is_dep0_dep2_term p0 p1_1) (TermOp2.is_dep0_dep2_term p0 p1_2)
+
+      let mk_dep0_dep2_term (p0 : opname) (p1 : var) (p2 : var) (p3 : term) (p4 : term) =
+         let p3_1, p3_2 = p3 in
+         let p4_1, p4_2 = p4 in
+         merge_term "TermOp.mk_dep0_dep2_term" (TermOp1.mk_dep0_dep2_term p0 p1 p2 p3_1 p4_1) (TermOp2.mk_dep0_dep2_term p0 p1 p2 p3_2 p4_2)
+
+      let dest_dep0_dep2_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.dest_dep0_dep2_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.dest_dep0_dep2_term p0 p1_2 in
+         (merge_var "TermOp.dest_dep0_dep2_term - 0" res0_1 res0_2),
+         (merge_var "TermOp.dest_dep0_dep2_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_dep0_dep2_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_dep0_dep2_term - 3" res3_1 res3_2)
+
+      let is_dep0_dep3_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep3_term" (TermOp1.is_dep0_dep3_term p0 p1_1) (TermOp2.is_dep0_dep3_term p0 p1_2)
+
+      let mk_dep0_dep3_term (p0 : opname) (p1 : var) (p2 : var) (p3 : var) (p4 : term) (p5 : term) =
+         let p4_1, p4_2 = p4 in
+         let p5_1, p5_2 = p5 in
+         merge_term "TermOp.mk_dep0_dep3_term" (TermOp1.mk_dep0_dep3_term p0 p1 p2 p3 p4_1 p5_1) (TermOp2.mk_dep0_dep3_term p0 p1 p2 p3 p4_2 p5_2)
+
+      let dest_dep0_dep3_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1, res4_1 = TermOp1.dest_dep0_dep3_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2, res4_2 = TermOp2.dest_dep0_dep3_term p0 p1_2 in
+         (merge_var "TermOp.dest_dep0_dep3_term - 0" res0_1 res0_2),
+         (merge_var "TermOp.dest_dep0_dep3_term - 1" res1_1 res1_2),
+         (merge_var "TermOp.dest_dep0_dep3_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_dep0_dep3_term - 3" res3_1 res3_2),
+         (merge_term "TermOp.dest_dep0_dep3_term - 4" res4_1 res4_2)
+
+      let is_dep2_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep2_dep0_term" (TermOp1.is_dep2_dep0_term p0 p1_1) (TermOp2.is_dep2_dep0_term p0 p1_2)
+
+      let mk_dep2_dep0_term (p0 : opname) (p1 : var) (p2 : var) (p3 : term) (p4 : term) =
+         let p3_1, p3_2 = p3 in
+         let p4_1, p4_2 = p4 in
+         merge_term "TermOp.mk_dep2_dep0_term" (TermOp1.mk_dep2_dep0_term p0 p1 p2 p3_1 p4_1) (TermOp2.mk_dep2_dep0_term p0 p1 p2 p3_2 p4_2)
+
+      let dest_dep2_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.dest_dep2_dep0_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.dest_dep2_dep0_term p0 p1_2 in
+         (merge_var "TermOp.dest_dep2_dep0_term - 0" res0_1 res0_2),
+         (merge_var "TermOp.dest_dep2_dep0_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_dep2_dep0_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_dep2_dep0_term - 3" res3_1 res3_2)
+
+      let is_dep0_dep0_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep0_dep1_term" (TermOp1.is_dep0_dep0_dep1_term p0 p1_1) (TermOp2.is_dep0_dep0_dep1_term p0 p1_2)
+
+      let mk_dep0_dep0_dep1_term (p0 : opname) (p1 : term) (p2 : term) (p3 : var) (p4 : term) =
+         let p1_1, p1_2 = p1 in
+         let p2_1, p2_2 = p2 in
+         let p4_1, p4_2 = p4 in
+         merge_term "TermOp.mk_dep0_dep0_dep1_term" (TermOp1.mk_dep0_dep0_dep1_term p0 p1_1 p2_1 p3 p4_1) (TermOp2.mk_dep0_dep0_dep1_term p0 p1_2 p2_2 p3 p4_2)
+
+      let dest_dep0_dep0_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.dest_dep0_dep0_dep1_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.dest_dep0_dep0_dep1_term p0 p1_2 in
+         (merge_term "TermOp.dest_dep0_dep0_dep1_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep1_term - 1" res1_1 res1_2),
+         (merge_var "TermOp.dest_dep0_dep0_dep1_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep1_term - 3" res3_1 res3_2)
+
+      let is_dep0_dep0_dep2_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep0_dep2_term" (TermOp1.is_dep0_dep0_dep2_term p0 p1_1) (TermOp2.is_dep0_dep0_dep2_term p0 p1_2)
+
+      let mk_dep0_dep0_dep2_term (p0 : opname) (p1 : term) (p2 : term) (p3 : var) (p4 : var) (p5 : term) =
+         let p1_1, p1_2 = p1 in
+         let p2_1, p2_2 = p2 in
+         let p5_1, p5_2 = p5 in
+         merge_term "TermOp.mk_dep0_dep0_dep2_term" (TermOp1.mk_dep0_dep0_dep2_term p0 p1_1 p2_1 p3 p4 p5_1) (TermOp2.mk_dep0_dep0_dep2_term p0 p1_2 p2_2 p3 p4 p5_2)
+
+      let dest_dep0_dep0_dep2_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1, res4_1 = TermOp1.dest_dep0_dep0_dep2_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2, res4_2 = TermOp2.dest_dep0_dep0_dep2_term p0 p1_2 in
+         (merge_term "TermOp.dest_dep0_dep0_dep2_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep2_term - 1" res1_1 res1_2),
+         (merge_var "TermOp.dest_dep0_dep0_dep2_term - 2" res2_1 res2_2),
+         (merge_var "TermOp.dest_dep0_dep0_dep2_term - 3" res3_1 res3_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep2_term - 4" res4_1 res4_2)
+
+      let is_dep0_dep0_dep1_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_bool "TermOp.is_dep0_dep0_dep1_any_term" (TermOp1.is_dep0_dep0_dep1_any_term p0_1) (TermOp2.is_dep0_dep0_dep1_any_term p0_2)
+
+      let mk_dep0_dep0_dep1_any_term (p0 : operator) (p1 : term) (p2 : term) (p3 : var) (p4 : term) =
+         let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = p1 in
+         let p2_1, p2_2 = p2 in
+         let p4_1, p4_2 = p4 in
+         merge_term "TermOp.mk_dep0_dep0_dep1_any_term" (TermOp1.mk_dep0_dep0_dep1_any_term p0_1 p1_1 p2_1 p3 p4_1) (TermOp2.mk_dep0_dep0_dep1_any_term p0_2 p1_2 p2_2 p3 p4_2)
+
+      let dest_dep0_dep0_dep1_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.dest_dep0_dep0_dep1_any_term p0_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.dest_dep0_dep0_dep1_any_term p0_2 in
+         (merge_term "TermOp.dest_dep0_dep0_dep1_any_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep1_any_term - 1" res1_1 res1_2),
+         (merge_var "TermOp.dest_dep0_dep0_dep1_any_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep1_any_term - 3" res3_1 res3_2)
+
+      let is_dep0_dep1_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep1_dep1_term" (TermOp1.is_dep0_dep1_dep1_term p0 p1_1) (TermOp2.is_dep0_dep1_dep1_term p0 p1_2)
+
+      let mk_dep0_dep1_dep1_term (p0 : opname) (p1 : term) (p2 : var) (p3 : term) (p4 : var) (p5 : term) =
+         let p1_1, p1_2 = p1 in
+         let p3_1, p3_2 = p3 in
+         let p5_1, p5_2 = p5 in
+         merge_term "TermOp.mk_dep0_dep1_dep1_term" (TermOp1.mk_dep0_dep1_dep1_term p0 p1_1 p2 p3_1 p4 p5_1) (TermOp2.mk_dep0_dep1_dep1_term p0 p1_2 p2 p3_2 p4 p5_2)
+
+      let dest_dep0_dep1_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1, res4_1 = TermOp1.dest_dep0_dep1_dep1_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2, res4_2 = TermOp2.dest_dep0_dep1_dep1_term p0 p1_2 in
+         (merge_term "TermOp.dest_dep0_dep1_dep1_term - 0" res0_1 res0_2),
+         (merge_var "TermOp.dest_dep0_dep1_dep1_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_dep0_dep1_dep1_term - 2" res2_1 res2_2),
+         (merge_var "TermOp.dest_dep0_dep1_dep1_term - 3" res3_1 res3_2),
+         (merge_term "TermOp.dest_dep0_dep1_dep1_term - 4" res4_1 res4_2)
+
+      let is_dep0_dep2_dep0_dep2_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep2_dep0_dep2_term" (TermOp1.is_dep0_dep2_dep0_dep2_term p0 p1_1) (TermOp2.is_dep0_dep2_dep0_dep2_term p0 p1_2)
+
+      let mk_dep0_dep2_dep0_dep2_term (p0 : opname) (p1 : term) (p2 : var) (p3 : var) (p4 : term) (p5 : term) (p6 : var) (p7 : var) (p8 : term) =
+         let p1_1, p1_2 = p1 in
+         let p4_1, p4_2 = p4 in
+         let p5_1, p5_2 = p5 in
+         let p8_1, p8_2 = p8 in
+         merge_term "TermOp.mk_dep0_dep2_dep0_dep2_term" (TermOp1.mk_dep0_dep2_dep0_dep2_term p0 p1_1 p2 p3 p4_1 p5_1 p6 p7 p8_1) (TermOp2.mk_dep0_dep2_dep0_dep2_term p0 p1_2 p2 p3 p4_2 p5_2 p6 p7 p8_2)
+
+      let dest_dep0_dep2_dep0_dep2_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1, res4_1, res5_1, res6_1, res7_1 = TermOp1.dest_dep0_dep2_dep0_dep2_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2, res4_2, res5_2, res6_2, res7_2 = TermOp2.dest_dep0_dep2_dep0_dep2_term p0 p1_2 in
+         (merge_term "TermOp.dest_dep0_dep2_dep0_dep2_term - 0" res0_1 res0_2),
+         (merge_var "TermOp.dest_dep0_dep2_dep0_dep2_term - 1" res1_1 res1_2),
+         (merge_var "TermOp.dest_dep0_dep2_dep0_dep2_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_dep0_dep2_dep0_dep2_term - 3" res3_1 res3_2),
+         (merge_term "TermOp.dest_dep0_dep2_dep0_dep2_term - 4" res4_1 res4_2),
+         (merge_var "TermOp.dest_dep0_dep2_dep0_dep2_term - 5" res5_1 res5_2),
+         (merge_var "TermOp.dest_dep0_dep2_dep0_dep2_term - 6" res6_1 res6_2),
+         (merge_term "TermOp.dest_dep0_dep2_dep0_dep2_term - 7" res7_1 res7_2)
+
+      let is_dep0_dep0_dep3_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep0_dep0_dep3_term" (TermOp1.is_dep0_dep0_dep3_term p0 p1_1) (TermOp2.is_dep0_dep0_dep3_term p0 p1_2)
+
+      let mk_dep0_dep0_dep3_term (p0 : opname) (p1 : term) (p2 : term) (p3 : var) (p4 : var) (p5 : var) (p6 : term) =
+         let p1_1, p1_2 = p1 in
+         let p2_1, p2_2 = p2 in
+         let p6_1, p6_2 = p6 in
+         merge_term "TermOp.mk_dep0_dep0_dep3_term" (TermOp1.mk_dep0_dep0_dep3_term p0 p1_1 p2_1 p3 p4 p5 p6_1) (TermOp2.mk_dep0_dep0_dep3_term p0 p1_2 p2_2 p3 p4 p5 p6_2)
+
+      let dest_dep0_dep0_dep3_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1, res4_1, res5_1 = TermOp1.dest_dep0_dep0_dep3_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2, res4_2, res5_2 = TermOp2.dest_dep0_dep0_dep3_term p0 p1_2 in
+         (merge_term "TermOp.dest_dep0_dep0_dep3_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep3_term - 1" res1_1 res1_2),
+         (merge_var "TermOp.dest_dep0_dep0_dep3_term - 2" res2_1 res2_2),
+         (merge_var "TermOp.dest_dep0_dep0_dep3_term - 3" res3_1 res3_2),
+         (merge_var "TermOp.dest_dep0_dep0_dep3_term - 4" res4_1 res4_2),
+         (merge_term "TermOp.dest_dep0_dep0_dep3_term - 5" res5_1 res5_2)
+
+      let is_dep2_dep2_dep0_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_dep2_dep2_dep0_dep0_term" (TermOp1.is_dep2_dep2_dep0_dep0_term p0 p1_1) (TermOp2.is_dep2_dep2_dep0_dep0_term p0 p1_2)
+
+      let mk_dep2_dep2_dep0_dep0_term (p0 : opname) (p1 : var) (p2 : var) (p3 : term) (p4 : var) (p5 : var) (p6 : term) (p7 : term) (p8 : term) =
+         let p3_1, p3_2 = p3 in
+         let p6_1, p6_2 = p6 in
+         let p7_1, p7_2 = p7 in
+         let p8_1, p8_2 = p8 in
+         merge_term "TermOp.mk_dep2_dep2_dep0_dep0_term" (TermOp1.mk_dep2_dep2_dep0_dep0_term p0 p1 p2 p3_1 p4 p5 p6_1 p7_1 p8_1) (TermOp2.mk_dep2_dep2_dep0_dep0_term p0 p1 p2 p3_2 p4 p5 p6_2 p7_2 p8_2)
+
+      let dest_dep2_dep2_dep0_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1, res4_1, res5_1, res6_1, res7_1 = TermOp1.dest_dep2_dep2_dep0_dep0_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2, res4_2, res5_2, res6_2, res7_2 = TermOp2.dest_dep2_dep2_dep0_dep0_term p0 p1_2 in
+         (merge_var "TermOp.dest_dep2_dep2_dep0_dep0_term - 0" res0_1 res0_2),
+         (merge_var "TermOp.dest_dep2_dep2_dep0_dep0_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_dep2_dep2_dep0_dep0_term - 2" res2_1 res2_2),
+         (merge_var "TermOp.dest_dep2_dep2_dep0_dep0_term - 3" res3_1 res3_2),
+         (merge_var "TermOp.dest_dep2_dep2_dep0_dep0_term - 4" res4_1 res4_2),
+         (merge_term "TermOp.dest_dep2_dep2_dep0_dep0_term - 5" res5_1 res5_2),
+         (merge_term "TermOp.dest_dep2_dep2_dep0_dep0_term - 6" res6_1 res6_2),
+         (merge_term "TermOp.dest_dep2_dep2_dep0_dep0_term - 7" res7_1 res7_2)
+
+      let is_string_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_string_term" (TermOp1.is_string_term p0 p1_1) (TermOp2.is_string_term p0 p1_2)
+
+      let mk_string_term (p0 : opname) (p1 : string) =
+         merge_term "TermOp.mk_string_term" (TermOp1.mk_string_term p0 p1) (TermOp2.mk_string_term p0 p1)
+
+      let dest_string_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_string "TermOp.dest_string_term" (TermOp1.dest_string_term p0 p1_1) (TermOp2.dest_string_term p0 p1_2)
+
+      let dest_string_param (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_string "TermOp.dest_string_param" (TermOp1.dest_string_param p0_1) (TermOp2.dest_string_param p0_2)
+
+      let is_string_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_string_dep0_term" (TermOp1.is_string_dep0_term p0 p1_1) (TermOp2.is_string_dep0_term p0 p1_2)
+
+      let mk_string_dep0_term (p0 : opname) (p1 : string) (p2 : term) =
+         let p2_1, p2_2 = p2 in
+         merge_term "TermOp.mk_string_dep0_term" (TermOp1.mk_string_dep0_term p0 p1 p2_1) (TermOp2.mk_string_dep0_term p0 p1 p2_2)
+
+      let dest_string_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1 = TermOp1.dest_string_dep0_term p0 p1_1 in
+         let res0_2, res1_2 = TermOp2.dest_string_dep0_term p0 p1_2 in
+         (merge_string "TermOp.dest_string_dep0_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_string_dep0_term - 1" res1_1 res1_2)
+
+      let is_string_string_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_string_string_dep0_term" (TermOp1.is_string_string_dep0_term p0 p1_1) (TermOp2.is_string_string_dep0_term p0 p1_2)
+
+      let mk_string_string_dep0_term (p0 : opname) (p1 : string) (p2 : string) (p3 : term) =
+         let p3_1, p3_2 = p3 in
+         merge_term "TermOp.mk_string_string_dep0_term" (TermOp1.mk_string_string_dep0_term p0 p1 p2 p3_1) (TermOp2.mk_string_string_dep0_term p0 p1 p2 p3_2)
+
+      let dest_string_string_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_string_string_dep0_term p0 p1_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_string_string_dep0_term p0 p1_2 in
+         (merge_string "TermOp.dest_string_string_dep0_term - 0" res0_1 res0_2),
+         (merge_string "TermOp.dest_string_string_dep0_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_string_string_dep0_term - 2" res2_1 res2_2)
+
+      let dest_string_string_dep0_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_string_string_dep0_any_term p0_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_string_string_dep0_any_term p0_2 in
+         (merge_string "TermOp.dest_string_string_dep0_any_term - 0" res0_1 res0_2),
+         (merge_string "TermOp.dest_string_string_dep0_any_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_string_string_dep0_any_term - 2" res2_1 res2_2)
+
+      let is_number_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_number_dep0_term" (TermOp1.is_number_dep0_term p0 p1_1) (TermOp2.is_number_dep0_term p0 p1_2)
+
+      let mk_number_dep0_term (p0 : opname) (p1 : Lm_num.num) (p2 : term) =
+         let p2_1, p2_2 = p2 in
+         merge_term "TermOp.mk_number_dep0_term" (TermOp1.mk_number_dep0_term p0 p1 p2_1) (TermOp2.mk_number_dep0_term p0 p1 p2_2)
+
+      let dest_number_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1 = TermOp1.dest_number_dep0_term p0 p1_1 in
+         let res0_2, res1_2 = TermOp2.dest_number_dep0_term p0 p1_2 in
+         (merge_num "TermOp.dest_number_dep0_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_number_dep0_term - 1" res1_1 res1_2)
+
+      let dest_number_dep0_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1 = TermOp1.dest_number_dep0_any_term p0_1 in
+         let res0_2, res1_2 = TermOp2.dest_number_dep0_any_term p0_2 in
+         (merge_num "TermOp.dest_number_dep0_any_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_number_dep0_any_term - 1" res1_1 res1_2)
+
+      let is_number_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_number_dep1_term" (TermOp1.is_number_dep1_term p0 p1_1) (TermOp2.is_number_dep1_term p0 p1_2)
+
+      let mk_number_dep1_term (p0 : opname) (p1 : Lm_num.num) (p2 : var) (p3 : term) =
+         let p3_1, p3_2 = p3 in
+         merge_term "TermOp.mk_number_dep1_term" (TermOp1.mk_number_dep1_term p0 p1 p2 p3_1) (TermOp2.mk_number_dep1_term p0 p1 p2 p3_2)
+
+      let dest_number_dep1_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_number_dep1_term p0 p1_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_number_dep1_term p0 p1_2 in
+         (merge_num "TermOp.dest_number_dep1_term - 0" res0_1 res0_2),
+         (merge_var "TermOp.dest_number_dep1_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_number_dep1_term - 2" res2_1 res2_2)
+
+      let dest_number_dep1_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_number_dep1_any_term p0_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_number_dep1_any_term p0_2 in
+         (merge_num "TermOp.dest_number_dep1_any_term - 0" res0_1 res0_2),
+         (merge_var "TermOp.dest_number_dep1_any_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_number_dep1_any_term - 2" res2_1 res2_2)
+
+      let is_number_number_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_number_number_dep0_term" (TermOp1.is_number_number_dep0_term p0 p1_1) (TermOp2.is_number_number_dep0_term p0 p1_2)
+
+      let mk_number_number_dep0_term (p0 : opname) (p1 : Lm_num.num) (p2 : Lm_num.num) (p3 : term) =
+         let p3_1, p3_2 = p3 in
+         merge_term "TermOp.mk_number_number_dep0_term" (TermOp1.mk_number_number_dep0_term p0 p1 p2 p3_1) (TermOp2.mk_number_number_dep0_term p0 p1 p2 p3_2)
+
+      let dest_number_number_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_number_number_dep0_term p0 p1_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_number_number_dep0_term p0 p1_2 in
+         (merge_num "TermOp.dest_number_number_dep0_term - 0" res0_1 res0_2),
+         (merge_num "TermOp.dest_number_number_dep0_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_number_number_dep0_term - 2" res2_1 res2_2)
+
+      let dest_number_number_dep0_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1 = TermOp1.dest_number_number_dep0_any_term p0_1 in
+         let res0_2, res1_2, res2_2 = TermOp2.dest_number_number_dep0_any_term p0_2 in
+         (merge_num "TermOp.dest_number_number_dep0_any_term - 0" res0_1 res0_2),
+         (merge_num "TermOp.dest_number_number_dep0_any_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_number_number_dep0_any_term - 2" res2_1 res2_2)
+
+      let is_number_number_string_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_number_number_string_dep0_term" (TermOp1.is_number_number_string_dep0_term p0 p1_1) (TermOp2.is_number_number_string_dep0_term p0 p1_2)
+
+      let mk_number_number_string_dep0_term (p0 : opname) (p1 : Lm_num.num) (p2 : Lm_num.num) (p3 : string) (p4 : term) =
+         let p4_1, p4_2 = p4 in
+         merge_term "TermOp.mk_number_number_string_dep0_term" (TermOp1.mk_number_number_string_dep0_term p0 p1 p2 p3 p4_1) (TermOp2.mk_number_number_string_dep0_term p0 p1 p2 p3 p4_2)
+
+      let dest_number_number_string_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.dest_number_number_string_dep0_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.dest_number_number_string_dep0_term p0 p1_2 in
+         (merge_num "TermOp.dest_number_number_string_dep0_term - 0" res0_1 res0_2),
+         (merge_num "TermOp.dest_number_number_string_dep0_term - 1" res1_1 res1_2),
+         (merge_string "TermOp.dest_number_number_string_dep0_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_number_number_string_dep0_term - 3" res3_1 res3_2)
+
+      let dest_number_number_string_dep0_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.dest_number_number_string_dep0_any_term p0_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.dest_number_number_string_dep0_any_term p0_2 in
+         (merge_num "TermOp.dest_number_number_string_dep0_any_term - 0" res0_1 res0_2),
+         (merge_num "TermOp.dest_number_number_string_dep0_any_term - 1" res1_1 res1_2),
+         (merge_string "TermOp.dest_number_number_string_dep0_any_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_number_number_string_dep0_any_term - 3" res3_1 res3_2)
+
+      let is_string_string_dep0_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_string_string_dep0_dep0_term" (TermOp1.is_string_string_dep0_dep0_term p0 p1_1) (TermOp2.is_string_string_dep0_dep0_term p0 p1_2)
+
+      let mk_string_string_dep0_dep0_term (p0 : opname) (p1 : string) (p2 : string) (p3 : term) (p4 : term) =
+         let p3_1, p3_2 = p3 in
+         let p4_1, p4_2 = p4 in
+         merge_term "TermOp.mk_string_string_dep0_dep0_term" (TermOp1.mk_string_string_dep0_dep0_term p0 p1 p2 p3_1 p4_1) (TermOp2.mk_string_string_dep0_dep0_term p0 p1 p2 p3_2 p4_2)
+
+      let dest_string_string_dep0_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.dest_string_string_dep0_dep0_term p0 p1_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.dest_string_string_dep0_dep0_term p0 p1_2 in
+         (merge_string "TermOp.dest_string_string_dep0_dep0_term - 0" res0_1 res0_2),
+         (merge_string "TermOp.dest_string_string_dep0_dep0_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_string_string_dep0_dep0_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_string_string_dep0_dep0_term - 3" res3_1 res3_2)
+
+      let dest_string_string_dep0_dep0_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res0_1, res1_1, res2_1, res3_1 = TermOp1.dest_string_string_dep0_dep0_any_term p0_1 in
+         let res0_2, res1_2, res2_2, res3_2 = TermOp2.dest_string_string_dep0_dep0_any_term p0_2 in
+         (merge_string "TermOp.dest_string_string_dep0_dep0_any_term - 0" res0_1 res0_2),
+         (merge_string "TermOp.dest_string_string_dep0_dep0_any_term - 1" res1_1 res1_2),
+         (merge_term "TermOp.dest_string_string_dep0_dep0_any_term - 2" res2_1 res2_2),
+         (merge_term "TermOp.dest_string_string_dep0_dep0_any_term - 3" res3_1 res3_2)
+
+      let is_number_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_number_term" (TermOp1.is_number_term p0 p1_1) (TermOp2.is_number_term p0 p1_2)
+
+      let mk_number_term (p0 : opname) (p1 : Lm_num.num) =
+         merge_term "TermOp.mk_number_term" (TermOp1.mk_number_term p0 p1) (TermOp2.mk_number_term p0 p1)
+
+      let dest_number_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_num "TermOp.dest_number_term" (TermOp1.dest_number_term p0 p1_1) (TermOp2.dest_number_term p0 p1_2)
+
+      let dest_number_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_num "TermOp.dest_number_any_term" (TermOp1.dest_number_any_term p0_1) (TermOp2.dest_number_any_term p0_2)
+
+      let is_univ_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_univ_term" (TermOp1.is_univ_term p0 p1_1) (TermOp2.is_univ_term p0 p1_2)
+
+      let mk_univ_term (p0 : opname) (p1 : level_exp) =
+         let p1_1, p1_2 = p1 in
+         merge_term "TermOp.mk_univ_term" (TermOp1.mk_univ_term p0 p1_1) (TermOp2.mk_univ_term p0 p1_2)
+
+      let dest_univ_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_level_exp "TermOp.dest_univ_term" (TermOp1.dest_univ_term p0 p1_1) (TermOp2.dest_univ_term p0 p1_2)
+
+      let is_token_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_token_term" (TermOp1.is_token_term p0 p1_1) (TermOp2.is_token_term p0 p1_2)
+
+      let mk_token_term (p0 : opname) (p1 : string) =
+         merge_term "TermOp.mk_token_term" (TermOp1.mk_token_term p0 p1) (TermOp2.mk_token_term p0 p1)
+
+      let dest_token_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_string "TermOp.dest_token_term" (TermOp1.dest_token_term p0 p1_1) (TermOp2.dest_token_term p0 p1_2)
+
+      let is_token_simple_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermOp.is_token_simple_term" (TermOp1.is_token_simple_term p0 p1_1) (TermOp2.is_token_simple_term p0 p1_2)
+
+      let mk_token_simple_term (p0 : opname) (p1 : string) (p2 : term list) =
+         let p2_1, p2_2 = split p2 in
+         merge_term "TermOp.mk_token_simple_term" (TermOp1.mk_token_simple_term p0 p1 p2_1) (TermOp2.mk_token_simple_term p0 p1 p2_2)
+
+      let dest_token_simple_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res0_1, res1_1 = TermOp1.dest_token_simple_term p0 p1_1 in
+         let res0_2, res1_2 = TermOp2.dest_token_simple_term p0 p1_2 in
+         (merge_string "TermOp.dest_token_simple_term - 0" res0_1 res0_2),
+         (merge_terms "TermOp.dest_token_simple_term - 1" res1_1 res1_2)
+
    end
 
    module TermAddr = struct
