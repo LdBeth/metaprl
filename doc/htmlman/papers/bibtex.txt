@@ -3,6 +3,13 @@
 @preamble{ \def\MetaPRL{\textsf{MetaPRL}} }
 @preamble{ \def\JProver{\textsf{JProver}} }
 
+@InProceedings{BKKN03,
+  AUTHOR = {Yegor Bryukhov and Alexei Kopylov and Vladimir Krupski and Aleksey Nogin},
+  TITLE = {Implementing and Automating Basic Number Theory in {\MetaPRL} Proof Assistant},
+  PAGES = {29--39},
+  CROSSREF = {tphols2003b}
+}
+
 @InProceedings{GTNH03,
    Author =      {Nathaniel Gray and Cristian Tapus and Aleksey Nogin and Jason Hickey},
    Title =       {Building Reliable Compilers with a Formal Methods Framework},
@@ -89,6 +96,14 @@
    year      = 2001
 }
 
+@InProceedings{YNKH03,
+  AUTHOR = {Xin Yu and Aleksey Nogin and Alexei Kopylov and Jason Hickey},
+  TITLE = {Formalizing Abstract Algebra in Type Theory with Dependent Records},
+  PAGES = {13--27},
+  CROSSREF = {tphols2003b},
+  NOTE = {\url{http://nogin.org/papers/formalaa.html}},
+}
+
 @Misc{MPHome,
    author = "Jason J. Hickey and Aleksey Nogin and Alexei Kopylov and others",
    key    = "MetaPRL",
@@ -159,5 +174,14 @@ Automated Deduction},
    editor =    {David Basin and Burkhart Wolff},
    publisher = {Springer-Verlag},
    year =      2003,
+}
+
+@PROCEEDINGS{tphols2003b,
+  KEY =          {TPHOLs03B},
+  TITLE =        {16$^{th}$ International Conference on Theorem Proving in Higher Order Logics (TPHOLs 2003). Emerging Trends Proceedings},
+  BOOKTITLE =    {16$^{th}$ International Conference on Theorem Proving in Higher Order Logics (TPHOLs 2003). Emerging Trends Proceedings},
+  EDITOR =       {David Basin and Burkhart Wolff},
+  PUBLISHER =    {Universit{\"a}t Freiburg},
+  YEAR =         2003,
 }
 
