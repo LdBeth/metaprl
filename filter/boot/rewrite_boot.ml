@@ -165,15 +165,16 @@ struct
    (*
     * Apply the conversion at the specified address.
     *)
+   let addrLiteralC addr = function
+      RewriteConv rw ->
+         RewriteConv (rwaddr addr rw)
+    | CondRewriteConv crw ->
+         CondRewriteConv (crwaddr addr crw)
+    | conv ->
+         AddressConv (addr, conv)
+
    let addrC addr =
-      let addr = make_address addr in
-         (function
-            RewriteConv rw ->
-               RewriteConv (rwaddr addr rw)
-          | CondRewriteConv crw ->
-               CondRewriteConv (crwaddr addr crw)
-          | conv ->
-               AddressConv (addr, conv))
+      addrLiteralC (make_address addr)
 
    (*
     * Apply the conversion at the highest addresses.

@@ -134,7 +134,7 @@ struct
             Some addr -> Path (List.rev addr)
           | None ->
                REF_RAISE(RefineError ("Term_addr_gen.find_subterm", StringTermError ("subterm can't be found", arg)))
-   
+
    IFDEF VERBOSE_EXN THEN
       DEFMACRO ATERM = (a, term)
    ELSE
@@ -570,5 +570,6 @@ struct
    let nth_clause_addr t i =
       nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
 
+   let arg_addr = Path [0]
 end
 

@@ -32,6 +32,8 @@
 
 open Tactic_boot_sig
 
+val backtrace : bool
+
 module TacticExn : TacticExnSig
 
 (*

@@ -436,7 +436,7 @@ struct
    let xnil_opname = mk_opname "nil" xperv
    let xcons_opname = mk_opname "cons" xperv
 
-   let xnil_term = 
+   let xnil_term =
       core_term (Term { term_op = { op_name = xnil_opname; op_params = [] }; term_terms = [] })
 
    let rec is_xlist_term t =
@@ -495,7 +495,7 @@ struct
           | [Var v], bterms ->
                begin try
                   let bterms, conts = Lm_list_util.split_last bterms in
-                     core_term (SOVar (v, 
+                     core_term (SOVar (v,
                                        List.map dest_var (dest_xlist (dest_simple_bterm conts)),
                                        List.map dest_simple_bterm bterms))
                with _ ->
@@ -519,7 +519,7 @@ struct
    let subterm_count t =
       match get_core t with
          Term t -> List.length t.term_terms
-       | SOVar(_, _, ts) -> List.length ts
+       | SOVar (_, _, ts) -> List.length ts
        | FOVar _ -> 0
        | Sequent _ -> raise (Invalid_argument "Term_base_ds.subterm_count: got a sequent")
        | Subst _ | Hashed _ -> fail_core "subterm_count"

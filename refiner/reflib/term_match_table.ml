@@ -98,7 +98,7 @@ type 'a dtree_prog =
  * Entries contain the pattern/value pair.
  *)
 and 'a info_entry =
-   { info_term : term;
+   { info_term  : term;
      info_redex : rewrite_redex;
      info_value : 'a
    }
@@ -251,7 +251,7 @@ and compile_stacks compact stacks =
                       @ [DtreePop (compile_stacks compact skip)])
 
 (*
- * The raw interface assumes the term has already been falttened.
+ * The raw interface assumes the term has already been flattened.
  *)
 let compile_prog compact terms =
    let mk_stack info =

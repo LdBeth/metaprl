@@ -40,6 +40,8 @@ open Printf
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.RefineError
 
@@ -83,6 +85,7 @@ struct
    let prefix_thenC = RewriteInternal.prefix_thenC
    let prefix_orelseC = RewriteInternal.prefix_orelseC
    let addrC = RewriteInternal.addrC
+   let addrLiteralC = RewriteInternal.addrLiteralC
    let idC = RewriteInternal.idC
    let foldC = RewriteInternal.foldC
    let makeFoldC = RewriteInternal.makeFoldC
@@ -115,14 +118,37 @@ struct
    let someSubC conv =
       let someSubCE env =
          let t = env_term env in
-         let count = subterm_count t in
-         let rec subC i =
-            if i = count then
-               funC (fun _ -> raise (RefineError ("subC", StringError "all subterms failed")))
+            if is_sequent_term t then
+               (* For sequents, apply to all the hyps, goals, and arg *)
+               let { sequent_hyps = hyps;
+                     sequent_goals = goals
+                   } = explode_sequent t
+               in
+               let hyp_count = SeqHyp.length hyps in
+               let goal_count = SeqGoal.length goals in
+               let rec subGoalC conv i =
+                  if i = goal_count then
+                     addrLiteralC arg_addr conv
+                  else
+                     prefix_orelseC (addrLiteralC (nth_concl_addr t i) conv) (subGoalC conv (i + 1))
+               in
+               let rec subHypC conv i =
+                  if i = hyp_count then
+                     subGoalC conv 0
+                  else
+                     prefix_orelseC (addrLiteralC (nth_hyp_addr t i) conv) (subHypC conv (i + 1))
+               in
+                  subHypC conv 0
             else
-               prefix_orelseC (addrC [i] conv) (subC (i + 1))
-         in
-            subC 0
+               (* A normal term *)
+               let count = subterm_count t in
+               let rec subC i =
+                  if i = count then
+                     funC (fun _ -> raise (RefineError ("subC", StringError "all subterms failed")))
+                  else
+                     prefix_orelseC (addrC [i] conv) (subC (i + 1))
+               in
+                  subC 0
       in
          funC someSubCE
 
@@ -132,14 +158,37 @@ struct
    let allSubC conv =
       let allSubCE conv env =
          let t = env_term env in
-         let count = subterm_count t in
-         let rec subC conv count i =
-            if i = count then
-               idC
+            if is_sequent_term t then
+               (* For sequents, apply to all the hyps, goals, and arg *)
+               let { sequent_hyps = hyps;
+                     sequent_goals = goals
+                   } = explode_sequent t
+               in
+               let hyp_count = SeqHyp.length hyps in
+               let goal_count = SeqGoal.length goals in
+               let rec subGoalC conv i =
+                  if i = goal_count then
+                     addrLiteralC arg_addr conv
+                  else
+                     prefix_thenC (addrLiteralC (nth_concl_addr t i) conv) (subGoalC conv (i + 1))
+               in
+               let rec subHypC conv i =
+                  if i = hyp_count then
+                     subGoalC conv 0
+                  else
+                     prefix_thenC (addrLiteralC (nth_hyp_addr t i) conv) (subHypC conv (i + 1))
+               in
+                  subHypC conv 0
             else
-               prefix_thenC (addrC [i] conv) (subC conv count (i + 1))
-         in
-            subC conv count 0
+               (* A normal term *)
+               let count = subterm_count t in
+               let rec subC conv count i =
+                  if i = count then
+                     idC
+                  else
+                     prefix_thenC (addrC [i] conv) (subC conv count (i + 1))
+               in
+                  subC conv count 0
       in
          funC (allSubCE conv)
 
@@ -233,7 +282,7 @@ struct
     *)
    let untilFailC conv =
       let rec aux env =
-          (tryC (prefix_thenC conv (funC aux)))
+         (tryC (prefix_thenC conv (funC aux)))
       in
          funC aux
 
@@ -251,8 +300,8 @@ struct
 
 
    let rwc conv assum clause =
-      Tacticals.funT 
-         (fun p -> RewriteInternal.rw conv assum (Sequent.assum_clause_addr p assum clause))
+      Tacticals.funT
+      (fun p -> RewriteInternal.rw conv assum (Sequent.assum_clause_addr p assum clause))
 
    let rwcAll conv assum  =
 (*    RewriteInternal.rw conv assum (TermAddr.make_address []) *)
@@ -266,7 +315,7 @@ struct
 
    let rwAllAll conv   =
       Tacticals.prefix_thenT Tacticals.removeHiddenLabelT
-         (Tacticals.prefix_thenMT (Tacticals.onAllMAssumT (rwcAll conv)) (rwAll conv))
+      (Tacticals.prefix_thenMT (Tacticals.onAllMAssumT (rwcAll conv)) (rwAll conv))
 
    let rwh conv = rw (higherC conv)
    let rwch conv = rwc (higherC conv)

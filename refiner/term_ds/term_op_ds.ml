@@ -34,7 +34,6 @@ open Lm_symbol
 
 open Refine_error_sig
 open Term_ds_sig
-
 open Term_ds
 
 module TermOp
@@ -46,6 +45,10 @@ module TermOp
     with type term = TermType.term
     with type term_core = TermType.term_core
     with type bound_term = TermType.bound_term
+    with type hypothesis = TermType.hypothesis
+    with type esequent = TermType.esequent
+    with type seq_hyps = TermType.seq_hyps
+    with type seq_goals = TermType.seq_goals
 
     with type level_exp_var' = TermType.level_exp_var'
     with type level_exp' = TermType.level_exp'
@@ -973,7 +976,25 @@ struct
             make_term { term_op = trm.term_op; term_terms = List.map (bterm_down f) trm.term_terms }
        | FOVar _ -> t
        | SOVar(v, conts, ts) -> { free_vars = VarsDelayed; core = SOVar(v, conts, List.map (map_down f) ts) }
-       | Sequent _ -> raise (Invalid_argument "Term_op_ds.map_down: sequent code is not implemented")
+       | Sequent { sequent_hyps = hyps;
+                   sequent_goals = goals;
+                   sequent_args = args
+         } ->
+            let hyps =
+               SeqHyp.map (function
+                  HypBinding (v, t) ->
+                     HypBinding (v, map_down f t)
+                | Hypothesis t ->
+                     Hypothesis (map_down f t)
+                | Context (v, vl, args) ->
+                     Context (v, vl, List.map (map_down f) args)) hyps
+            in
+            let goals = SeqGoal.map (map_down f) goals in
+            let args = map_down f args in
+               mk_sequent_term { sequent_hyps = hyps;
+                                 sequent_goals = goals;
+                                 sequent_args = args
+               }
        | Subst _ | Hashed _ -> fail_core "Term_op_ds.map_down"
 
    let rec bterm_up f btrm =
@@ -985,6 +1006,24 @@ struct
             f (make_term { term_op = trm.term_op; term_terms = List.map (bterm_up f) trm.term_terms })
        | FOVar _ -> f t
        | SOVar(v, conts, ts) -> f { free_vars = VarsDelayed; core = SOVar(v, conts, List.map (map_up f) ts) }
-       | Sequent _ -> raise (Invalid_argument "Term_op_ds.map_up: sequent code is not implemented")
+       | Sequent { sequent_hyps = hyps;
+                   sequent_goals = goals;
+                   sequent_args = args
+         } ->
+            let hyps =
+               SeqHyp.map (function
+                  HypBinding (v, t) ->
+                     HypBinding (v, map_up f t)
+                | Hypothesis t ->
+                     Hypothesis (map_up f t)
+                | Context (v, vl, args) ->
+                     Context (v, vl, List.map (map_up f) args)) hyps
+            in
+            let goals = SeqGoal.map (map_up f) goals in
+            let args = map_up f args in
+               f (mk_sequent_term { sequent_hyps = hyps;
+                                 sequent_goals = goals;
+                                 sequent_args = args
+                  })
        | Subst _ | Hashed _ -> fail_core "Term_op_ds.map_up"
 end

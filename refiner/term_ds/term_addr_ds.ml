@@ -156,12 +156,12 @@ struct
 
    and find_subterm_terms addr arg index = function
       [] -> None
-    | t :: ts -> 
+    | t :: ts ->
          begin match find_subterm_term (index :: addr) arg t with
             Some _ as result -> result
           | None -> find_subterm_terms addr arg (succ index) ts
          end
-         
+
    and find_subterm_hyps arg s i len =
       if i = len then find_subterm_goals arg s 0 (SeqGoal.length s.sequent_goals)
       else match
@@ -680,5 +680,9 @@ struct
        | _ ->
             REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
 
+   (*
+    * Argument address.
+    *)
+   let arg_addr = ArgAddr
 end
 

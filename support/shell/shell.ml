@@ -171,8 +171,6 @@ let print_exn_db db f x =
    try TacticExn.print db f x with
       RefineError _ ->
          raise (RefineError ("Shell", ToploopIgnoreError))
-    | exn ->
-         raise exn
 
 (*
  * Turn a path to an absolute string.

@@ -55,6 +55,7 @@ open Filter_grammar
 open Mptop
 open Mp_version
 
+open Exn_boot
 open Shell_sig
 open Shell_p4_sig
 
@@ -207,6 +208,45 @@ struct
     *)
    and toploop state prompt instream inflush =
       let loop = ref true in
+      let print_exn exn =
+         let df = Shell_state.get_dfbase state in
+         let buf = new_buffer () in
+            begin
+               match exn with
+                  Stdpp.Exc_located _ | Pcaml.Qerror _ -> inflush ()
+                | _ -> format_string buf "Uncaught exception: ";
+            end;
+            Filter_exn.format_exn df buf exn;
+            print_to_channel default_width buf stderr;
+            eflush stderr
+      in
+      let catch =
+         if backtrace then
+            (fun f ->
+                  try f () with
+                     End_of_file ->
+                        loop := false
+
+                   | RefineError (_, ToploopIgnoreError) ->
+                        ()
+
+                   | RefineError _ as exn ->
+                        print_exn exn)
+         else
+            begin
+               eprintf "*** Note: uncaught exceptions will cause MetaPRL to exit%t" eflush;
+               (fun f ->
+                     try f () with
+                        End_of_file ->
+                           loop := false
+
+                      | RefineError (_, ToploopIgnoreError) ->
+                           ()
+
+                      | exn ->
+                           print_exn exn)
+            end
+      in
          while !loop do
             let state =
                if prompt then
@@ -216,29 +256,12 @@ struct
             in
                Shell_state.set_prompt state "# ";
                Shell_state.reset_terms state;
-               try
+               catch (fun () ->
                   match Shell_state.synchronize state (Grammar.Entry.parse Pcaml.top_phrase) instream with
                      Some phrase ->
                         eval_str_item state phrase
                    | None ->
-                        loop := false
-               with
-                  End_of_file ->
-                     loop := false
-
-                | RefineError (_, ToploopIgnoreError) ->
-                     ()
-
-                | exn ->
-                     let df = Shell_state.get_dfbase state in
-                     let buf = new_buffer () in
-                        begin match exn with
-                           Stdpp.Exc_located _ | Pcaml.Qerror _ -> inflush ()
-                         | _ -> format_string buf "Uncaught exception: ";
-                        end;
-                        Filter_exn.format_exn df buf exn;
-                        print_to_channel default_width buf stderr;
-                        eflush stderr
+                        loop := false)
          done
 
    (*

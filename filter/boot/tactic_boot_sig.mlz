@@ -1023,6 +1023,7 @@ sig
     * Apply a conversion at an address.
     *)
    val addrC : int list -> conv -> conv
+   val addrLiteralC : address -> conv -> conv
 
    (*
     * Apply a conversion at the outermost terms where it does not fail.

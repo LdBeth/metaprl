@@ -35,6 +35,14 @@ open Rformat
 open Proof_boot.Proof
 open Tactic_boot.TacticInternal
 
+(*
+ * Flag is true if we don't want to catch exceptions.
+ *)
+let backtrace =
+   try String.contains (Sys.getenv "OCAMLRUNPARAM") 'b' with
+      Not_found ->
+         false
+
 module TacticExn =
 struct
    (*
@@ -80,9 +88,12 @@ struct
          raise exn
 
    let print db f x =
-      try f x with
-         exn ->
-            print_exn db stderr exn
+      if backtrace then
+         f x
+      else
+         try f x with
+            exn ->
+               print_exn db stderr exn
 end
 
 (*
