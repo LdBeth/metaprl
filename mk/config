@@ -62,8 +62,8 @@ CC = gcc
 RM = rm
 INSTALL = /bin/cp -pf
 CP = /bin/cp -pf
-LN = ln -sf
 CPP = /lib/cpp -traditional
+LN = ln -sf
 
 # For cleaning the directory
 ifdef MAIN

@@ -574,7 +574,7 @@ struct
                   eprintf "FilterCache.inline_module': finding: %s%t" (string_of_path path) eflush;
                let { base = { lib = base } } = cache in
                let info =
-                  try Base.find base path SigMarshal.select None with
+                  try Base.find base path SigMarshal.select NeverSuffix with
                      Not_found ->
                         eprintf "Can't find module %s%t" (string_of_path path) eflush;
                         raise Not_found
@@ -624,13 +624,13 @@ struct
     * When a cache is loaded, we follow the steps to inline
     * the file into a new cache.
     *)
-   let load base (name : module_name) (my_select : select) (child_select : select) (hook : 'a hook) (arg : 'a) =
+   let load base (name : module_name) (my_select : select) (child_select : select) (hook : 'a hook) (arg : 'a) suffix =
       let vals = ref arg in
       let path = [name] in
       let info =
          try find_summarized_str_module base path with
             Not_found ->
-               let info = Base.find base.lib path my_select None in
+               let info = Base.find base.lib path my_select suffix in
                   base.str_summaries <- info :: base.str_summaries;
                   info
       in
@@ -673,7 +673,7 @@ struct
       let info =
          try (find_summarized_sig_module cache [name]).sig_summary with
             Not_found ->
-               let info = Base.find_match lib self alt_select None in
+               let info = Base.find_match lib self alt_select NeverSuffix in
                let sum = { sig_summary = info; sig_resources = List.map snd cache.resources } in
                   base.sig_summaries <- sum :: summaries;
                   info
@@ -700,7 +700,7 @@ struct
           } = cache
       in
       let path = [name] in
-      let info' = Base.find_file base.lib path my_select (Some "prlb") in
+      let info' = Base.find_file base.lib path my_select (AlwaysSuffix "prlb") in
       let info' = StrMarshal.unmarshal (Base.info base.lib info') in
          cache.info <- Filter_summary.copy_proofs copy_proof info info'
 

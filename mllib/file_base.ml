@@ -97,14 +97,35 @@ struct
    (*
     * Load a file given the directory, the filename, and the spec.
     *)
-   let load_file save_flag base spec dir name =
+   let load_file save_flag base (spec, alt_suffix) dir name =
       let { info_unmarshal = unmarshal;
             info_suffix = suffix;
             info_magics = magics;
             info_select = select
           } = spec
       in
-      let filename = sprintf "%s/%s.%s" dir name suffix in
+      let filename =
+         let filename1 = sprintf "%s/%s.%s" dir name suffix in
+         match alt_suffix with
+            None ->
+               filename1
+          | Some suffix' ->
+               let filename2 = sprintf "%s/%s.%s" dir name suffix' in
+                  try
+                     let stat2 = Unix.stat filename2 in
+                        try
+                           let stat1 = Unix.stat filename1 in
+                              if stat1.Unix.st_mtime >= stat2.Unix.st_mtime then
+                                 filename1
+                              else
+                                 filename2
+                        with
+                           Unix.Unix_error _ ->
+                              filename2
+                  with
+                     Unix.Unix_error _ ->
+                        filename1
+      in
       let info, magic = unmarshal magics filename in
       let _ =
          if !debug_file_base then
@@ -128,7 +149,7 @@ struct
     * in the filesystem and load it.  The type preference is
     * given by the ordering of Combo info items.
     *)
-   let load_specific save_flag base spec name =
+   let load_specific save_flag base (spec, alt_suffix) name =
       if !debug_file_base then
          eprintf "File_base.load_specific: %s.%s: begin%t" name spec.info_suffix eflush;
       let rec search = function
@@ -139,7 +160,7 @@ struct
        | dir::path' ->
             if !debug_file_base then
                eprintf "File_base.load_specific: try %s/%s%t" dir name eflush;
-            try load_file save_flag base spec dir name with
+            try load_file save_flag base (spec, alt_suffix) dir name with
                Sys_error _ ->
                   search path'
       in
@@ -154,14 +175,15 @@ struct
             let { info_select = select'; info_disabled = disabled } = io in
                if select' = select & not !disabled then
                   match suffix with
-                     None ->
-                        io
-                   | Some suffix ->
+                     NeverSuffix ->
+                        io, None
+                   | AlwaysSuffix suffix ->
                         let { info_marshal = marshal;
                               info_unmarshal = unmarshal;
                               info_magics = magics
                             } = io
                         in
+                        let io =
                            { info_marshal = marshal;
                              info_unmarshal = unmarshal;
                              info_disabled = disabled;
@@ -169,6 +191,10 @@ struct
                              info_suffix = suffix;
                              info_magics = magics
                            }
+                        in
+                           io, None
+                   | NewerSuffix suffix ->
+                        io, Some suffix
                else
                   search tl
        | [] ->
@@ -239,7 +265,7 @@ struct
 
    let set_magic _ info magic =
       let { info_type = select } = info in
-      let { info_magics = magics } = find_spec select None in
+      let { info_magics = magics }, _ = find_spec select NeverSuffix in
          if magic < List.length magics then
             info.info_magic <- magic
          else
@@ -251,8 +277,10 @@ struct
     *)
    let save base info suffix =
       let { info_dir = dir; info_file = file; info_type = select; info_info = data; info_magic = magic } = info in
-      let { info_magics = magics; info_marshal = marshal; info_suffix = suffix } = find_spec select suffix in
-      let filename = sprintf "%s/%s.%s" dir file suffix in
+      let { info_magics = magics; info_marshal = marshal; info_suffix = suffix }, _ = find_spec select suffix in
+      let filename =
+         sprintf "%s/%s.%s" dir file suffix
+      in
          marshal magics magic filename data
 
    (*
@@ -313,7 +341,7 @@ struct
    let file_name base { info_file = file } = file
 
    let full_name base { info_dir = dir; info_file = file; info_type = select } =
-      let { info_suffix = suffix } = find_spec select None in
+      let { info_suffix = suffix }, _ = find_spec select NeverSuffix in
          sprintf "%s/%s.%s" dir file suffix
 
    let type_of base { info_type = select } = select

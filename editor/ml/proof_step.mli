@@ -54,7 +54,6 @@ val create_denorm : (term -> 'a) -> 'a denorm
 val create_norm :
    ('a -> term) ->                      (* normalizer *)
    tactic_argument ->                   (* Default attributes *)
-   (string, tactic) Hashtbl.t ->        (* Table of compiled tactics *)
    sentinal ->                          (* Sentinal to be used in the proof *)
    'a norm
 

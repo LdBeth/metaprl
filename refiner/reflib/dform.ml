@@ -372,7 +372,7 @@ let format_short_term base shortener =
                pprec, false
             end
          else
-            pr', (if eq = NOParens then
+            pr', (if eq = NOParens or get_prec pr' max_prec = EQRelation then
                      begin
                         if !debug_dform then
                            eprintf "Dform %s: NOParens%t" name eflush;

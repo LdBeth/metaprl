@@ -33,7 +33,15 @@ open Czf_itt_set
 open Czf_itt_eq
 open Czf_itt_member
 open Czf_itt_sep
+open Czf_itt_union
+open Czf_itt_map
 open Czf_itt_all
+open Czf_itt_exists
+open Czf_itt_dall
+open Czf_itt_dexists
+open Czf_itt_sall
+open Czf_itt_sexists
+open Czf_itt_rel
 
 (*
  * Proof saving.
@@ -53,14 +61,8 @@ let zT, z =
    in
       zT, z
 
-(*
-let _ = load "itt_logic_var"
-let _ = cd "itt_logic_var.pairFormation"
-let _ = load "itt_derive"
-let _ = cd "itt_derive.independentApplyIntro2"
-*)
-let _ = load "czf_itt_all"
-let _ = cd "czf_itt_all.dfun_res2"
+let _ = load "czf_itt_axioms"
+let _ = cd "czf_itt_axioms.subset_collection"
 let _ = set_writeable ()
 
 (*

@@ -9,6 +9,8 @@ open Printf
 
 open Debug
 
+open File_base_type
+
 open Refiner.Refiner.TermType
 
 open Filter_type
@@ -79,7 +81,7 @@ struct
             raise (Failure "Filter_parse.compile: invalid suffix")
       in
       let cache = FilterCache.create !include_path in
-      let info, _ = FilterCache.load cache path kind InterfaceType inline_hook () in
+      let info, _ = FilterCache.load cache path kind InterfaceType inline_hook () NeverSuffix in
       let items = Info.extract (FilterCache.info info) (FilterCache.resources info) path in
          Info.compile items
 end

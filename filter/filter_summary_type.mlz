@@ -57,10 +57,10 @@ sig
    val create_info : t -> select -> dir_name -> file_name -> info
 
    (* Loading and saving *)
-   val find : t -> module_path -> select -> string option -> info
-   val find_file : t -> module_path -> select -> string option -> info
-   val find_match : t -> info -> select -> string option -> info
-   val save : t -> info -> string option -> unit
+   val find : t -> module_path -> select -> alt_suffix -> info
+   val find_file : t -> module_path -> select -> alt_suffix -> info
+   val find_match : t -> info -> select -> alt_suffix -> info
+   val save : t -> info -> alt_suffix -> unit
 
    (* Info about a module *)
    val info : t -> info -> cooked
@@ -152,11 +152,11 @@ sig
 
    (* Loading *)
    val create_cache : t -> module_name -> select -> select -> info
-   val load : t -> module_name -> select -> select -> 'a hook -> 'a -> info * 'a
+   val load : t -> module_name -> select -> select -> 'a hook -> 'a -> alt_suffix -> info * 'a
    val check : info -> select -> unit
    val copy_proofs : info -> (str_proof -> str_proof -> str_proof) -> unit
    val set_mode : info -> summary_mode -> unit
-   val save : info -> string option -> unit
+   val save : info -> alt_suffix -> unit
 
    (* Access *)
    val info : info -> str_info

@@ -76,7 +76,6 @@ type 'a norm =
      global_args : term attributes;
      fcache : cache;
      sentinal : sentinal;
-     tactics : (string, tactic) Hashtbl.t;
      step_of_proof_step : ('a norm, 'a proof_step, 'a proof_step, t) Memo.t;
      tactic_arg_of_aterm : ('a norm, 'a aterm, 'a aterm, tactic_arg) Memo.t;
      term_attributes_of_attributes : ('a norm, 'a attributes, 'a attributes, term attributes) Memo.t
@@ -162,6 +161,68 @@ let check step =
          ext
       else
          raise (RefineError ("Proof_step.check", StringError "refinement mismatch"))
+
+(************************************************************************
+ * TACTIC CREATION                                                      *
+ ************************************************************************)
+
+(*
+ * We create tactics through the toploop,
+ * but it is delayed until the tactic is first evaluated.
+ *)
+type delayed_tactic =
+   Delay of MLast.expr
+ | Tactic of tactic
+
+(*
+ * Ref cell for returning the tactic value.
+ *)
+let inline_tactic = ref None
+
+let install_tactic tac =
+   inline_tactic := Some tac
+
+(*
+ * Evaluate a tactic through the toploop.
+ *)
+let eval_tactic_exn = RefineError ("eval_tactic", StringError "evaluation failed")
+
+let eval_tactic expr =
+   let loc = 0, 0 in
+   let expr = (<:expr< $uid: "Proof_step"$ . $lid: "install_tactic"$ $expr$ >>) in
+   let item = (<:str_item< $exp: expr$ >>) in
+   let pt_item = Ast2pt.str_item item [] in
+       inline_tactic := None;
+       try
+          if Toploop.execute_phrase false (Parsetree.Ptop_def pt_item) then
+             match !inline_tactic with
+                Some tac ->
+                   tac
+              | None ->
+                   raise eval_tactic_exn
+          else
+             raise eval_tactic_exn
+       with
+          Typecore.Error (_, err) ->
+             Typecore.report_error err;
+             eflush stdout;
+             raise eval_tactic_exn
+
+(*
+ * Build a delayed-evaluation tactic.
+ *)
+let create_tactic expr =
+   let cell = ref (Delay expr) in
+   let tac p =
+      match !cell with
+         Tactic tac ->
+            tac p
+       | Delay expr ->
+            let tac = eval_tactic expr in
+               cell := Tactic tac;
+               tac p
+   in
+      tac
 
 (************************************************************************
  * IO PROOF CONVERSION                                                  *
@@ -301,13 +362,7 @@ let make_step info { Io_proof_type.step_goal = goal;
      step_subgoals = List.map (Memo.apply info.tactic_arg_of_aterm info) subgoals;
      step_text = text;
      step_ast = ast;
-     step_tactic =
-        (if !debug_io_tactic then
-            eprintf "Finding tactic '%s'%t" text eflush;
-         let tac = Hashtbl.find info.tactics text in
-            if !debug_io_tactic then
-               eprintf "Found tactic%t" eflush;
-            tac)
+     step_tactic = create_tactic ast
    }
 
 let make_tactic_arg info { aterm_goal = goal;
@@ -343,12 +398,11 @@ let rec make_term_attributes info = function
 (*
  * Create the info.
  *)
-let create_norm norm { ref_fcache = fcache; ref_args = args } tactics sentinal =
+let create_norm norm { ref_fcache = fcache; ref_args = args } sentinal =
    { norm = norm;
      global_args = args;
      fcache = fcache;
      sentinal = sentinal;
-     tactics = tactics;
      step_of_proof_step = Memo.create id make_step compare_step;
      tactic_arg_of_aterm = Memo.create id make_tactic_arg compare_aterm;
      term_attributes_of_attributes = Memo.create id make_term_attributes compare_attributes

@@ -1090,15 +1090,13 @@ let make_child_node info = function
 (*
  * Create the state.
  *)
-let proof_of_io_proof arg tacs sentinal pf =
+let proof_of_io_proof arg sentinal pf =
    let { ref_fcache = fcache; ref_args = args } = arg in
-   let hash = Hashtbl.create (max (Array.length tacs) 17) in
-   let _ = Array.iter (function (name, tac) -> Hashtbl.add hash name tac) tacs in
    let term_info = Term_copy.create_norm () in
    let norm = Term_copy.normalize_term term_info in
    let info =
       { norm = norm;
-        step_norm = Proof_step.create_norm norm arg hash sentinal;
+        step_norm = Proof_step.create_norm norm arg sentinal;
         node_of_proof = Memo.create id make_proof compare_proof;
         node_item_of_proof_node = Memo.create id make_node_item compare_proof_node;
         child_node_of_proof_child = Memo.create id make_child_node compare_proof_child

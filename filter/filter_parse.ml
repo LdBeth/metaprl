@@ -19,6 +19,8 @@ open Precedence
 open Simple_print
 open Resource
 
+open File_base_type
+
 open Infix
 open Free_vars
 open Term_grammar
@@ -863,7 +865,7 @@ EXTEND
           let proc = SigFilter.get_proc loc in
           let id = Hashtbl.hash proc in
              SigFilter.add_command proc (Id id, (0, 0));
-             SigFilter.save proc None;
+             SigFilter.save proc NeverSuffix;
              SigFilter.extract proc
        ]];
 
@@ -890,7 +892,7 @@ EXTEND
       [[ implem_opening; st = LIST0 implem_item; EOI ->
           let proc = StrFilter.get_proc loc in
              StrFilter.check proc InterfaceType;
-             StrFilter.save proc None;
+             StrFilter.save proc NeverSuffix;
              StrFilter.extract proc
        ]];
 

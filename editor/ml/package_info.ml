@@ -17,6 +17,8 @@ open Printf
 open Debug
 open Imp_dag
 
+open File_base_type
+
 open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 
@@ -92,7 +94,6 @@ let null_tactic_argument =
  *)
 let tactic_argument = ref (ref null_tactic_argument)
 let io_proofs = Hashtbl.create 97
-let tactics = Hashtbl.create 97
 
 (*
  * Clear the current tactic argument.
@@ -118,16 +119,10 @@ let clear_proofs () =
    Hashtbl.clear io_proofs
 
 (*
- * Remove all the tactics.
- *)
-let clear_tactics () =
-   Hashtbl.clear tactics
-
-(*
  * Prove an theorem.
  * This dereferences the tactic_argument to get at the resources.
  *)
-let prove name tactics' refiner =
+let prove name refiner =
    let arg = !tactic_argument in
    let proof = Hashtbl.find io_proofs name in
    let refiner =
@@ -136,17 +131,8 @@ let prove name tactics' refiner =
             eprintf "Refiner not found for %s%t" name eflush;
             raise (RefineError ("Package_info.prove", StringStringError ("refiner not found", name)))
    in
-   let _ = Hashtbl.add tactics name tactics' in
-   let _ =
-      if !debug_package_info then
-         begin
-            eprintf "Added tactics for %s\n" name;
-            Array.iter (fun (name, _) -> eprintf "\t%s\n" name) tactics';
-            eflush stderr
-         end
-   in
    let prove () =
-      Proof.check (Proof.proof_of_io_proof !arg tactics' (sentinal_of_refiner refiner) proof)
+      Proof.check (Proof.proof_of_io_proof !arg (sentinal_of_refiner refiner) proof)
    in
       prove
 
@@ -287,11 +273,6 @@ let install_tactic_arg_expr resources =
          eprintf "Install tactic arg%t" eflush;
       <:str_item< $exp: install_expr$ >>
 
-(*
- * Default tactic array includes the initial identity tactic.
- *)
-let null_tactics = []
-
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
@@ -322,14 +303,7 @@ struct
        | ProofEdit ped ->
             let proof = Proof.io_proof_of_proof (Proof.main (Proof_edit.proof_of_ped ped)) in
                if !debug_package_info then
-                  begin
-                     eprintf "Converting the ped back to a regular proof: %s%t" name eflush
-(*
- * These proofs are now in Refiner_std terms.
-                     let db = Dform_print.get_mode_base !debug_forms "prl" in
-                        Io_proof.print_proof db proof
-*)
-                  end;
+                  eprintf "Converting the ped back to a regular proof: %s%t" name eflush;
                proof
 
    (*
@@ -337,13 +311,7 @@ struct
     *)
    let of_raw name proof =
       if !debug_package_info then
-         begin
-            eprintf "Converting io proof for %s%t" name eflush
-(*
-            let db = Dform_print.get_mode_base !debug_forms "prl" in
-               Io_proof.print_proof db proof
-*)
-         end;
+         eprintf "Converting io proof for %s%t" name eflush;
       ref (ProofRaw (name, proof))
 
    (*
@@ -371,9 +339,8 @@ struct
    let to_expr name proof =
       let loc = 0, 0 in
       let proof = to_raw name proof in
-      let tactics = tactics_of_proof proof in
          Hashtbl.add io_proofs name proof;
-         <:expr< $uid: "Package_info"$ . $lid: "prove"$ $str: name$ $tactics$ $lid: "refiner"$ >>
+         <:expr< $uid: "Package_info"$ . $lid: "prove"$ $str: name$ $lid: "refiner"$ >>
 end
 
 (*
@@ -400,7 +367,6 @@ struct
         pack_name : string;
         mutable pack_sig  : Cache.StrFilterCache.sig_info option;
         mutable pack_info : Cache.StrFilterCache.info option;
-        pack_tactics : (string * ((string * tactic) array)) list;
         pack_arg : tactic_argument
       }
 
@@ -430,7 +396,6 @@ struct
            pack_name = name;
            pack_sig = None;
            pack_info = None;
-           pack_tactics = null_tactics;
            pack_arg = null_tactic_argument
          }
       in
@@ -700,7 +665,6 @@ struct
                           pack_sig = Some sig_info;
                           pack_info = None;
                           pack_name = name;
-                          pack_tactics = null_tactics;
                           pack_arg = null_tactic_argument
                         }
                      in
@@ -748,7 +712,7 @@ struct
     | { pack_status = Incomplete; pack_name = name } ->
          raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
     | { pack_status = Modified; pack_info = Some info } ->
-         Cache.StrFilterCache.save info (Some "prlb")
+         Cache.StrFilterCache.save info (AlwaysSuffix "prlb")
     | { pack_status = Modified; pack_info = None } ->
          raise (Invalid_argument "Package_info.save")
 
@@ -762,7 +726,6 @@ struct
            pack_info = Some (Cache.StrFilterCache.create_cache pack.pack_cache (**)
                                 name ImplementationType InterfaceType);
            pack_name = name;
-           pack_tactics = null_tactics;
            pack_arg = null_tactic_argument
          }
       in
@@ -824,7 +787,7 @@ struct
    (*
     * Convert a proof on demand.
     *)
-   let ped_of_proof { pack_name = name; pack_tactics = tactics; pack_arg = arg } proof =
+   let ped_of_proof { pack_name = name; pack_arg = arg } proof =
       match !proof with
          ProofEdit ped ->
             ped
@@ -834,8 +797,6 @@ struct
                   begin
                      eprintf "Attributes are:\n";
                      List.iter (fun (name, _) -> eprintf "\t%s%t" name eflush) arg.ref_args;
-                     eprintf "Lookup up from tactics in %s.%s\nHere are the choices\n\t" name name';
-                     List.iter (fun (name, _) -> eprintf " %s" name) tactics;
                      eflush stderr
                   end
             in
@@ -846,13 +807,8 @@ struct
                   Not_found ->
                      raise (RefineError ("ped_of_proof", StringStringError ("refiner not found", name')))
             in
-            let tactics =
-               try List.assoc name' tactics with
-                  Not_found ->
-                     [|"idT", idT|]
-            in
             let sentinal = sentinal_of_refiner refiner in
-            let proof' = Proof.proof_of_io_proof arg tactics sentinal proof' in
+            let proof' = Proof.proof_of_io_proof arg sentinal proof' in
             let ped = Proof_edit.ped_of_proof [] proof' in
                proof := ProofEdit ped;
                ped
@@ -865,55 +821,16 @@ struct
     * Build the package from its info.
     *)
    let build_package pack name status info =
-      let tacl = ref null_tactics in
-      let add name tactics =
-         Ref_util.push (name, tactics) tacl
-      in
-      let _ = Hashtbl.iter add tactics in
       let info =
          { pack_status = status;
            pack_sig = None;
            pack_info = Some info;
            pack_name = name;
-           pack_tactics = !tacl;
            pack_arg = !(!tactic_argument)
          }
       in
-         if !debug_package_info then
-            begin
-               eprintf "Build package %s\nTactics are:%t" name eflush;
-               List.iter (fun (name, _) -> eprintf "\t%s%t" name eflush) !tacl
-            end;
          add_implementation pack info;
          info
-
-   (*
-    * This function is used to construct the tactic array when
-    * a theory is loaded.
-    *)
-   let loaded_tactics info =
-      let rec collect exprs = function
-         (name, h)::t ->
-            let exprs =
-               match h with
-                  Filter_cache.Interactive proof ->
-                     Convert.to_expr name proof :: exprs
-                | Filter_cache.Incomplete
-                | Filter_cache.Primitive _
-                | Filter_cache.Derived _ ->
-                     exprs
-            in
-               collect exprs t
-       | [] ->
-            List.rev exprs
-      in
-      let proofs = Cache.StrFilterCache.proofs info in
-      let exprs = collect [] proofs in
-      let mk_item expr =
-         let loc = 0, 0 in
-            (<:str_item< $exp: expr$ >>)
-      in
-         List.map mk_item exprs
 
    (*
     * Load a package.
@@ -929,8 +846,7 @@ struct
          let path = [name] in
          let info, () =
             clear_proofs ();
-            clear_tactics ();
-            Cache.StrFilterCache.load cache name ImplementationType InterfaceType (inline_hook pack path) ()
+            Cache.StrFilterCache.load cache name ImplementationType InterfaceType (inline_hook pack path) () (NewerSuffix "prlb")
          in
          let status =
             let filename = Cache.StrFilterCache.filename cache info in
@@ -947,7 +863,7 @@ struct
             if is_theory_loaded name then
                let open_item = (<:str_item< open $[ mod_name ]$ >>) in
                let _ = debug_forms := get_dforms name in
-               let items = open_item :: loaded_tactics info @ [arg_item] in
+               let items = [open_item; arg_item] in
                let mod_expr = (<:module_expr< struct $list: items$ end >>) in
                let dumb_name = "Arg" ^ mod_name in
                   (<:str_item< module $dumb_name$ = $mod_expr$ >>)
@@ -962,7 +878,6 @@ struct
             if Toploop.execute_phrase false (Ptop_def pt_item) then
                let info' = build_package pack name status info in
                   clear_proofs ();   (* so these can be garbage collected *)
-                  clear_tactics ();
                   Cache.StrFilterCache.set_mode info InteractiveSummary;
                   info'
             else

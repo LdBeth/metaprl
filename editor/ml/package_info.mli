@@ -26,7 +26,7 @@ module Package : PackageSig
  * Auxiliary functions for managing resources and proofs.
  *)
 val install_tactic_argument : tactic_argument -> unit
-val prove : string -> (string * tactic) array -> refiner -> unit -> extract
+val prove : string -> refiner -> unit -> extract
 
 (*
  * For debugging purposes.

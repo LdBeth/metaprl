@@ -12,6 +12,15 @@ type dir_name = string
 type file_name = string
 
 (*
+ * Files can loaded with an alternate suffix:
+ * never, always, or if the suffixed file is newer.
+ *)
+type alt_suffix =
+   AlwaysSuffix of string
+ | NewerSuffix of string
+ | NeverSuffix
+
+(*
  * File type selection info.
  *)
 type ('select, 'cooked) file_info =
@@ -60,13 +69,13 @@ sig
    val set_path : t -> string list -> unit
 
    (* Loading and saving *)
-   val find : t -> file_name -> select -> string option -> info
-   val find_file : t -> file_name -> select -> string option -> info
-   val find_match : t -> info -> select -> string option -> info
-   val save : t -> info -> string option -> unit
+   val find : t -> file_name -> select -> alt_suffix -> info
+   val find_file : t -> file_name -> select -> alt_suffix -> info
+   val find_match : t -> info -> select -> alt_suffix -> info
+   val save : t -> info -> alt_suffix -> unit
    val magic : t -> info -> int
    val set_magic : t -> info -> int -> unit
-   val save_as : t -> cooked -> select -> dir_name -> file_name -> string option -> info
+   val save_as : t -> cooked -> select -> dir_name -> file_name -> alt_suffix -> info
    val create_info : t -> cooked -> select -> dir_name -> file_name -> info
 
    (* Info about the objects *)
