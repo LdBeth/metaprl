@@ -3,6 +3,8 @@
 #
 DIR := support/tactics
 ROOT := ../..
+THEORYNAME = support
+THEORYDESCR = MetaPRL Internal \"Helper\" Modules
 
 include $(ROOT)/mk/preface
 

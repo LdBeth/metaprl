@@ -38,6 +38,7 @@ extends Shell_util
 extends Shell_rule
 extends Shell_package
 extends Shell_root
+extends Shell_fs
 extends Shell_p4_sig
 
 open Exn_boot
@@ -302,7 +303,7 @@ struct
                let f obj _ =
                   objs := obj.edit_get_contents shell.shell_subdir:: !objs
                in
-                  chdir parse_arg shell false false (DirModule mname, []);
+                  chdir parse_arg shell false false (module_dir mname);
                   apply_all parse_arg shell f false false;
                   List.rev !objs)
 
@@ -322,13 +323,13 @@ struct
                            collect t
                in
                let opens = collect (info_items (get_info shell mname)) in
-                  chdir parse_arg shell false false (DirProof (mname, name), []);
+                  chdir parse_arg shell false false (proof_dir mname name);
                   ignore (ShellP4.eval_opens opens))
 
       let create_thm mname name =
          synchronize (fun shell ->
                ignore (get_info shell mname);
-               chdir parse_arg shell false false (DirModule mname, []);
+               chdir parse_arg shell false false (module_dir mname);
                let package = get_current_package shell in
                let item = Shell_rule.create package parse_arg (get_display_mode shell) name in
                   item.edit_save ();
@@ -338,7 +339,7 @@ struct
       let create_rw mname name =
          synchronize (fun shell ->
                ignore (get_info shell mname);
-               chdir parse_arg shell false false (DirModule mname, []);
+               chdir parse_arg shell false false (module_dir mname);
                let package = get_current_package shell in
                let item = Shell_rule.create package parse_arg (get_display_mode shell) name in
                   item.edit_save ();
@@ -519,6 +520,7 @@ struct
        *)
       let init () =
          refresh_packages ();
+         Shell_current.restore_sessions ();
          Shell_state.set_module "shell_theory";
          synchronize (fun shell ->
                eprintf "Current directory: %s@." (string_of_dir (shell.shell_fs, shell.shell_subdir)))

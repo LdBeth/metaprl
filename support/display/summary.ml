@@ -306,10 +306,6 @@ declare "rule_box"[text:s]{'text}
 declare "proof"{'main; 'goal; 'status; 'text; 'subgoals}
 declare "tactic_arg"[label:s]{'goal; 'attrs; 'parents}
 
-(* Packages *)
-declare "package"[name:s]
-declare "packages"{'pl}
-
 (* Location *)
 declare "location"[start:n, finish:n]{'body}
 
@@ -518,7 +514,7 @@ dform begin_cd_df1 : mode[java] :: begin_cd{'path} =
    izone `"<a href=\"http://cd.metaprl.local/" cdinternal{'path} `"\">" ezone
 
 dform begin_cd_df2 : mode[html] :: begin_cd{'path} =
-   izone `"<a href=\"../" cdinternal{'path} `"/\">" ezone
+   izone `"<a href=\"../../" cdinternal{'path} `"/\">" ezone
 
 dform cd_internal_df1 : cdinternal{cons{."parent"[name:s]; cons{'n2; 'n3}}} =
    slot[name:s] `"/" cdinternal{cons{'n2; 'n3}}
@@ -541,7 +537,7 @@ dform path_parent_cons_df : path{cons{."parent"[name:s]; .cons{'n1; 'n2}}} =
    slot[name:s] keyword["."] cons{'n1; 'n2}
 
 dform parent_df : except_mode[tex] :: "parent"{'path; 'resources} =
-   info["extends"] " " begin_cd{'path} path{'path} cd_end
+   info["Extends"] " " begin_cd{'path} path{'path} cd_end
 
 dform parent_df2 : mode[tex] :: "parent"{'path; 'resources} =
    info["Extends"] " " cdinternal{'path}
@@ -627,22 +623,6 @@ dform prec_df : prec_df[s:s] =
 
 dform parens_df : parens_df =
    keyword["parens"]
-
-(*
- * Packages.
- *)
-declare packages_df{'t}
-
-dform packages_df1 : packages{'packages} =
-   szone pushm[0] pushm[4] info["Root theories:"] newline
-       packages_df{'packages} popm newline
-   info["end"] popm ezone
-
-dform packages_df2 : packages_df{cons{package[name:s]; 'next}} =
-   info["module "] cd_begin[name] slot[name:s] cd_end hspace packages_df{'next}
-
-dform packages_df3 : packages_df{nil} =
-   `""
 
 (********************************
  * Argument lists
@@ -863,8 +843,6 @@ dform bound_term : bound_term{'t} =
 
 let mk_interface_term tl = <:con< "interface"{ $mk_xlist_term tl$ } >>
 let mk_implementation_term tl = <:con< "implementation"{ $mk_xlist_term tl$ } >>
-let mk_package_term name = <:con< "package"[$name$:s] >>
-let mk_packages_term tl = <:con< "packages"{$mk_xlist_term tl$} >>
 let mk_href_term s t = <:con< "href"[$s$:s]{$t$} >>
 
 let mk_status_term tl = <:con< "goal_status"{$mk_xlist_term tl$} >>

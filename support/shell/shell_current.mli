@@ -34,6 +34,11 @@ open Shell_internal_sig
 val shell_entry : shell State.entry
 
 (*
+ * Load the save shell data on startup.
+ *)
+val restore_sessions : unit -> unit
+
+(*
  * Save the current shell to disk.
  *)
 val flush : unit -> unit

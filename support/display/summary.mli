@@ -113,10 +113,6 @@ declare "subgoals"{'subgoals; 'extras}
 declare "rule_box"[text:s]
 declare "proof"{'main; 'goal; 'status; 'text; 'subgoals}
 
-(* Packages *)
-declare "package"[name:s]
-declare "packages"{'pl}
-
 (* PRL Bindings *)
 declare term_binding{'t;v.'t2['v]}
 
@@ -129,9 +125,6 @@ declare term_binding{'t;v.'t2['v]}
  *)
 val mk_interface_term : term list -> term
 val mk_implementation_term : term list -> term
-
-val mk_package_term : string -> term
-val mk_packages_term : term list -> term
 
 (*
  * Proofs.

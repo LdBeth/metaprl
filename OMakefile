@@ -488,12 +488,6 @@ CAMLP4OFLAGS = $'(OCAMLINCLUDES)
 MPTIME =
 
 #
-# Theory name and description
-#
-THEORYNAME = other
-THEORYDESCR = Miscellaneous Theories
-
-#
 # Commands for running MetaPRL
 #
 if $(equal $(OSTYPE), Win32)
@@ -579,7 +573,8 @@ OCAMLDEPFLAGS = -prl -omake
 
 # These directories use prlc
 THEORIES = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all%, $(THEORIES)), $(THEORIES))
-MP_DIRS  = $(SUPPORT_DIRS) $(dir $(addprefix theories/, $(THEORIES)))
+THEORY_DIRS = $(dir $(addprefix theories/, $(THEORIES)))
+MP_DIRS  = $(SUPPORT_DIRS) $(THEORY_DIRS)
 
 Theory(files) =
     .DEFAULT: $(addsuffix .cmoz, $(files))
@@ -645,4 +640,15 @@ CLEAN += *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc
 ########################################################################
 # Subdirectories to build
 #
-.SUBDIRS: $(MP_DIRS) editor/ml doc
+.SUBDIRS: doc
+
+section
+   THEORYNAME = support
+   THEORYDESCR = MetaPRL Internal \"Helper\" Modules
+   .SUBDIRS: $(SUPPORT_DIRS) editor/ml
+
+section
+   # Default theory for those directories that do not override it
+   THEORYNAME = other
+   THEORYDESCR = Miscellaneous Theories
+   .SUBDIRS: $(THEORY_DIRS)

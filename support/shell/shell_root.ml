@@ -33,6 +33,7 @@ extends Shell_sig
 extends Package_info
 extends Summary
 
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Dform
 
@@ -42,6 +43,39 @@ open Shell_sig
 (************************************************************************
  * SHELL INTERFACE                                                      *
  ************************************************************************)
+
+declare "package"[name:s]
+declare "packages"[name:s,dsc:s]{'pl}
+declare "theory"[name:s,dsc:s]
+declare "theories"{'tl}
+
+(*
+ * Packages.
+ *)
+declare packages_df{'t}
+declare theories_df{'t}
+
+dform packages_df1 : packages[name,dsc]{'packages} =
+   szone pushm[0] pushm[4] info[dsc] info[" ("] info[name] info[") contains:"]
+       packages_df{'packages} popm newline
+   info["end"] popm ezone
+
+dform packages_df2 : packages_df{cons{package[name:s]; 'next}} =
+   newline info["Module "] cd_begin[name] slot[name:s] cd_end packages_df{'next}
+
+dform packages_df3 : packages_df{nil} = `""
+
+dform theories_df1: theories{'tl} =
+   szone pushm[0] pushm[4] info["Root Theories Listing:"]
+      theories_df{'tl} popm newline
+   info["end"] popm ezone
+
+dform packages_df2 : except_mode[prl] :: theories_df{cons{theory[name:s,dsc:s]; 'next}} =
+   newline
+   info["Theory \""] cd_begin[name] slot[name:s] cd_end `"\": " cd_begin[name] slot[dsc:s] cd_end
+   theories_df{'next}
+
+dform packages_df3 : theories_df{nil} = `""
 
 (*
  * Error handler.
@@ -53,16 +87,24 @@ let raise_edit_error s =
  * Build the shell interface.
  *)
 let rec edit pack get_dfm =
-   let edit_check_addr addr =
-      if addr <> [] then
+   let edit_check_addr = function
+      [] -> ()
+    | [ name ] when Package_info.group_exists pack name -> ()
+    | _ ->
          raise (Failure "Shell_root.edit_check_addr: internal error")
    in
    let edit_display addr _ =
       edit_check_addr addr;
-      (* Display the roots of the package *)
-      let packs = List.map Package_info.name (Package_info.packages pack) in
-      let term = mk_packages_term (List.map mk_package_term ("fs" :: packs)) in
-         Proof_edit.display_term (get_dfm ()) term
+      match addr with
+         [] ->
+            let groups = Package_info.groups pack @ ["fs", "Browse MetaPRL Source Code"] in
+            let thys = List.map (fun (name, dsc) -> <:con< theory[$name$:s,$dsc$:s] >>) groups in
+               Proof_edit.display_term (get_dfm ()) <:con< theories{$mk_xlist_term thys$} >>
+       | [ name ] ->
+            let dsc, packs = Package_info.group_packages pack name in
+            let packs = List.map (fun name -> <:con< package[$name$:s] >>) packs in
+               Proof_edit.display_term (get_dfm ()) <:con< packages[$name$:s,$dsc$:s]{$mk_xlist_term packs$} >>
+       | _ -> raise (Invalid_argument "Shell_root.edit_display: internal error")
    in
    let edit_copy () =
       edit pack get_dfm
@@ -77,10 +119,10 @@ let rec edit pack get_dfm =
       raise_edit_error "check the complete set of packages? Use check_all."
    in
    let edit_undo addr =
-      []
+      addr
    in
    let edit_redo addr =
-      []
+      addr
    in
    let edit_info addr =
       raise_edit_error "no info for the root packages"

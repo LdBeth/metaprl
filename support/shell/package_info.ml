@@ -35,6 +35,7 @@ open Lm_debug
 open Lm_printf
 open Lm_thread
 open Lm_imp_dag
+open Lm_string_set
 
 open File_base_type
 
@@ -153,7 +154,8 @@ module Cache = MakeCaches (Convert)
 type info =
    { pack_cache    : Cache.StrFilterCache.t;
      pack_dag      : package ImpDag.t;
-     pack_packages : (string,package ImpDag.node) Hashtbl.t
+     pack_packages : (string,package ImpDag.node) Hashtbl.t;
+     pack_groups   : (string,(string*StringSet.t)) Hashtbl.t;
    }
 
 and t = info State.entry
@@ -215,11 +217,20 @@ let refresh pack_entry path =
                      node
          in
          let add_theory thy =
+            let dsc, theories =
+               try Hashtbl.find pack.pack_groups thy.thy_group with
+                  Not_found -> thy.thy_groupdesc, StringSet.empty
+            in
             let node = find_or_create thy.thy_name in
             let add_parent name =
                ImpDag.add_edge pack.pack_dag (find_or_create name) node
             in
-               List.iter add_parent (Mp_resource.get_parents thy.thy_name)
+               List.iter add_parent (Mp_resource.get_parents thy.thy_name);
+               if thy.thy_groupdesc <> dsc then
+                  raise (Failure (sprintf "Description mismatch:\n %s described %s as %s,\nbut %s describes it as %s" (**)
+                     (StringSet.choose theories) thy.thy_group dsc thy.thy_name thy.thy_groupdesc));
+               Hashtbl.replace pack.pack_groups thy.thy_group (dsc, StringSet.add theories thy.thy_name)
+
          in
             List.iter add_theory (get_theories ()))
 
@@ -227,7 +238,8 @@ let create path =
    let pack =
       { pack_cache = Cache.StrFilterCache.create path;
         pack_dag = ImpDag.create ();
-        pack_packages = Hashtbl.create 17
+        pack_packages = Hashtbl.create 17;
+        pack_groups = Hashtbl.create 17;
       }
    in
    let pack = State.shared_val "Package_info.pack" pack in
@@ -498,6 +510,27 @@ let get pack name =
          try ImpDag.node_value pack.pack_dag (get_package pack name) with
             Not_found ->
                raise (Invalid_argument("Package_info.get: package " ^ name ^ " is not loaded")))
+
+let groups pack =
+   let res = ref [] in
+      synchronize_pack pack (fun pack -> Hashtbl.iter (fun gr (dsc, _) -> res := (gr, dsc) :: !res) pack.pack_groups);
+      Sort.list (<) !res
+
+let group_exists pack group =
+   synchronize_pack pack (fun pack -> Hashtbl.mem pack.pack_groups group)
+
+let group_packages pack group =
+   synchronize_pack pack (fun pack ->
+      let desc, thys = (Hashtbl.find pack.pack_groups group) in
+         desc, (StringSet.elements thys))
+
+let group_of_module pack name =
+   let res = ref None in
+      synchronize_pack pack (fun pack ->
+         Hashtbl.iter (fun gr (_, set) -> if StringSet.mem set name then res := Some gr) pack.pack_groups);
+      match !res with
+         Some gr -> gr
+       | None -> raise Not_found
 
 (*
  * Three versions of saving.

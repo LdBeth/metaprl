@@ -63,16 +63,7 @@ let groups = Hashtbl.create 19
  * Record a theory by pushing it onto the list.
  *)
 let record_theory thy =
-   Lm_ref_util.push thy base;
-   try
-      let thy' = Hashtbl.find groups thy.thy_group in
-      if thy.thy_groupdesc <> thy'.thy_groupdesc then
-         raise (Failure (
-            sprintf "Description mismatch:\n%s describes %s as %s,\nbut %s describes it as %s" (**)
-               thy'.thy_name thy'.thy_group thy'.thy_groupdesc thy.thy_name thy.thy_groupdesc))
-   with
-      Not_found ->
-         Hashtbl.add groups thy.thy_group thy
+   Lm_ref_util.push thy base
 
 (*
  * Get all the theories.

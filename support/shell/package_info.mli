@@ -96,6 +96,10 @@ val get_refiner  : package -> Refine.refiner
  * Navigation.
  *)
 val packages : t -> package list
+val groups : t -> (string * string) list
+val group_exists : t -> string -> bool
+val group_packages : t -> string -> string * string list (* May raise Not_found *)
+val group_of_module : t -> string -> string (* May raise Not_found *)
 val roots : t -> package list
 val parents : t -> package -> package list
 val children : t -> package -> package list

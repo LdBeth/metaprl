@@ -37,8 +37,8 @@ open Shell_util
 type shell_fs =
    DirRoot
  | DirFS
- | DirModule of string
- | DirProof of string * string
+ | DirModule of string * string
+ | DirProof of string * string * string
 
 type shell_dir = shell_fs * string list (* mount point + relative path *)
 

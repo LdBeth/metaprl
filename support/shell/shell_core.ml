@@ -377,7 +377,7 @@ let set_params shell pl =
 
 let check shell =
    match shell with
-      { shell_package = Some pack; shell_fs = DirProof (mod_name, name) } ->
+      { shell_package = Some pack; shell_fs = DirProof (_, mod_name, name) } ->
          begin
             try
                let deps = Refine.compute_dependencies (Package_info.get_refiner pack) (make_opname [name; mod_name]) in
@@ -460,29 +460,37 @@ let interpret shell command =
 (*
  * This is the critical function that decides mount points!!!
  *)
-let dir_of_path path =
-   match path with
-      [] ->
-         DirRoot, []
-    | "fs" :: rest ->
-         DirFS, rest
-    | [modname] ->
-         DirModule modname, []
-    | modname :: itemname :: subdir ->
-         DirProof (modname, itemname), subdir
+let rec dir_of_path = function
+   [] ->
+      DirRoot, []
+ | "fs" :: rest ->
+      DirFS, rest
+ | modname :: rest as path when not (Package_info.group_exists packages modname) ->
+      let group =
+         try Package_info.group_of_module packages modname with
+            Not_found ->
+               raise (Failure("Shell_core.dir_of_path: module " ^ modname ^ " does not exist"))
+      in
+         dir_of_path (group :: path)
+ | [group] as path ->
+      DirRoot, path
+ | [group; modname] ->
+      DirModule (group, modname), []
+ | group :: modname :: itemname :: subdir ->
+      DirProof (group, modname, itemname), subdir
 
 (*
  * Turn the directory into a simple string path.
  *)
 let path_of_dir = function
-   DirRoot, [] ->
-      []
+   DirRoot, addr ->
+      addr
  | DirFS, rest ->
       "fs" :: rest
- | DirModule modname, [] ->
-      [modname]
- | DirProof (modname, itemname), rest ->
-      modname :: itemname :: rest
+ | DirModule (group, modname), [] ->
+      [group; modname]
+ | DirProof (group, modname, itemname), rest ->
+      group :: modname :: itemname :: rest
  | _ ->
       raise (Invalid_argument "Shell_core.path_of_dir: internal error")
 
@@ -494,35 +502,33 @@ let home_of_fs = function
  | DirModule _
  | DirFS as fs ->
       fs
- | DirProof (modname, _) ->
-      DirModule modname
+ | DirProof (group, modname, _) ->
+      DirModule (group, modname)
 
 let root_of_dir = function
-   DirRoot, []
+   DirRoot, _ ->
+      DirRoot, []
  | DirFS, []
  | DirModule _, [] as dir ->
       dir
  | DirFS, (name :: _) ->
       DirFS, [name]
- | DirProof (modname, itemname), _ ->
-      DirProof (modname, itemname), []
+ | DirProof _ as fs, _ ->
+      fs, []
  | _ ->
       raise (Invalid_argument "Shell_core.root_of_dir: internal error")
 
 (*
  * Get the string version of the current directory.
  *)
-let string_of_dir = function
-   DirRoot, [] ->
-      "/"
- | DirFS, rest ->
-      Lm_string_util.prepend "/" ("fs" :: rest)
- | DirModule modname, [] ->
-      "/" ^ modname
- | DirProof (modname, itemname), rest ->
-      Lm_string_util.prepend "/" (modname :: itemname :: rest)
- | _ ->
-      raise (Invalid_argument "Shell_core.string_of_dir: internal error")
+let string_of_dir dir =
+   Lm_string_util.prepend "/" (path_of_dir dir)
+
+let module_dir name =
+   DirModule (Package_info.group_of_module packages name, name), []
+
+let proof_dir modname name =
+   DirProof (Package_info.group_of_module packages modname, modname, name), []
 
 (*
  * Turn a string into a path, relative to the current directory.
@@ -602,8 +608,8 @@ let mount_current_module modname parse_arg shell force_flag need_shell verbose =
          DirRoot
        | DirFS ->
             true
-       | DirModule modname'
-       | DirProof (modname', _) ->
+       | DirModule (_, modname')
+       | DirProof (_, modname', _) ->
             modname' <> modname
    in
       if force_flag || update then
@@ -664,8 +670,8 @@ let mount_proof modname itemname parse_arg shell force_flag need_shell verbose =
 let mount_of_fs = function
    DirRoot -> mount_root
  | DirFS -> mount_fs
- | DirModule modname -> mount_module modname
- | DirProof (modname, itemname) -> mount_proof modname itemname
+ | DirModule (_, modname) -> mount_module modname
+ | DirProof (_, modname, itemname) -> mount_proof modname itemname
 
 (*
  * Change directory.
@@ -867,7 +873,7 @@ let rec apply_all parse_arg shell f (time : bool) (clean_res : bool) =
                let expand pack =
                   let name = Package_info.name pack in
                      eprintf "Entering %s%t" name eflush;
-                     chdir parse_arg shell false true (DirModule name, []);
+                     chdir parse_arg shell false true (module_dir name);
                      apply_all_exn false
                in
                   List.iter expand (all_packages ())
@@ -888,7 +894,7 @@ let print_theory parse_arg shell name =
    let dfm = shell.shell_df_method in
    let dir = shell.shell_fs, shell.shell_subdir in
       shell.shell_df_method <- { dfm with df_type = DisplayTex; df_width = 60; df_mode = "tex" };
-      chdir parse_arg shell false true (DirModule name, []);
+      chdir parse_arg shell false true (module_dir name);
       expand_all parse_arg shell;
       view parse_arg shell (LsOptionSet.singleton LsAll);
       shell.shell_df_method <- dfm;
@@ -908,14 +914,14 @@ let extract parse_arg shell path () =
 
 let term_of_extract shell terms =
    match shell with
-      { shell_package = Some pack; shell_fs = DirProof (mod_name, name) } ->
+      { shell_package = Some pack; shell_fs = DirProof (_, mod_name, name) } ->
          Refine.extract_term (Package_info.get_refiner pack) (make_opname [name; mod_name]) terms
     | _ ->
          raise (Failure "Shell.term_of_extract only works inside a proof")
 
 let edit_find info i =
    match info.shell_fs with
-      DirProof (modname, name) ->
+      DirProof (_, modname, name) ->
          info.shell_subdir <- info.shell_proof.edit_find info.shell_subdir i;
          pwd info
     | _ ->
@@ -934,7 +940,7 @@ let edit_is_enabled shell name =
  *)
 let create_pkg parse_arg shell name =
    match parse_path shell name with
-      DirModule modname, [] ->
+      DirModule (_, modname), [] ->
          (* Top level *)
          let _ = Package_info.create_package packages parse_arg modname in
             view parse_arg shell LsOptionSet.empty

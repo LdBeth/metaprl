@@ -243,7 +243,12 @@ let shell_entry = State.private_val "Shell_current.shell_entry" default_shell fo
 let set_current_session session_info =
    State.write shell_entry (fun shell ->
    State.write session_entry (fun session ->
-      let fs, subdir = dir_of_path session_info.session_info_dir in
+      let fs, subdir =
+         try dir_of_path session_info.session_info_dir with
+            Not_found
+          | Failure _ ->
+               DirRoot, []
+      in
          shell.shell_fs              <- fs;
          shell.shell_subdir          <- subdir;
          shell.shell_needs_refresh   <- true;
@@ -265,7 +270,7 @@ let () =
 (*
  * Load all the shells.
  *)
-let () =
+let restore_sessions () =
    (* Load all the previous sessions *)
    let sessions = read_sessions () in
       List.iter (fun session ->
