@@ -31,7 +31,7 @@
  *)
 
 load "test";;
-cd "test/pigeon2";;
+cd "test/pigeon3";;
 ls ();;
 
 (*

@@ -43,6 +43,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermAddr
+open Refiner.Refiner.TermSubst
 open Refiner.Refiner.RefineError
 
 open Tacticals
@@ -181,10 +182,42 @@ let revOnSomeHypT tac p =
 
 (* Operate on all non-wf subgoals *)
 let ifNotWT tac p =
-   (if (Sequent.label p) = "wf" then
-       idT
+   (if Sequent.label p = "wf" then
+       autoT
     else
        tac) p
+
+(* Select a clause in the disjunction *)
+let rec dorT i =
+   if i = 1 then
+      idT
+   else
+      selT 2 (dT 0) thenMT dorT (pred i)
+
+(* Decompose a nested disjunction *)
+let rec dest_nested_or t =
+   if is_or_term t then
+      let h, t = dest_or t in
+         h :: dest_nested_or t
+   else
+      [t]
+
+let is_hyp_term p t =
+   let rec search i length =
+      if i > length then
+         false
+      else
+         try
+            let _, t' = Sequent.nth_hyp p i in
+               if alpha_equal t t' then
+                  true
+               else
+                  search (succ i) length
+         with
+            RefineError _ ->
+               search (succ i) length
+   in
+      search 1 (Sequent.hyp_count p)
 
 (* Term classes *)
 let is_imp_and_term term =
@@ -236,8 +269,8 @@ let d_or_impT i p =
       let u, v = maybe_new_vars2 p "u" "v" in
       let j, k = Sequent.hyp_indices p i in
          (imp_or_rule j k u v
-          thenLT [autoT (* addHiddenLabelT "wf" *);
-                  autoT (* addHiddenLabelT "wf" *);
+          thenLT [addHiddenLabelT "wf";
+                  addHiddenLabelT "wf";
                   thinT i]) p
 
 let d_imp_impT i p =
@@ -247,53 +280,74 @@ let d_imp_impT i p =
       let u = maybe_new_vars1 p "u" in
       let j, k = Sequent.hyp_indices p i in
          (imp_and_rule j k u
-          thenLT [autoT (* addHiddenLabelT "wf" *);
-                  autoT (* addHiddenLabelT "wf" *);
+          thenLT [addHiddenLabelT "wf";
+                  addHiddenLabelT "wf";
                   thinT i]) p
 
 (* Try to decompose a hypothesis *)
-let rec decompPropDecideHypT count i p =
-   (let term = snd (Sequent.nth_hyp p i) in
-       if is_false_term term then
+let rec decompPropDecideHyp1T max_depth count i p =
+   let term = snd (Sequent.nth_hyp p i) in
+      (if is_false_term term then
           dT i
        else if is_and_term term or is_or_term term then
-          dT i thenT ifNotWT (internalPropDecideT count)
+          dT i thenT ifNotWT (internalPropDecideT max_depth count)
        else if is_imp_and_term term then
           (* {C & D => B} => {C => D => B} *)
-          d_and_impT i thenT ifNotWT (internalPropDecideT count)
+          d_and_impT i thenT ifNotWT (internalPropDecideT max_depth count)
        else if is_imp_or_term term then
           (* {C or D => B} => {(C => B) & (D => B)} *)
-          d_or_impT i thenT ifNotWT (internalPropDecideT count)
+          d_or_impT i thenT ifNotWT (internalPropDecideT max_depth count)
        else if is_imp_imp_term term then
           (* {(C => D) => B} => {D => B} *)
-          d_imp_impT i thenT ifNotWT (internalPropDecideT count)
-       else if is_implies_term term then
-          dT i thenT thinT i thenT ifNotWT (internalPropDecideT count)
+          d_imp_impT i thenT ifNotWT (internalPropDecideT max_depth count)
        else
           (* Nothing recognized, try to see if we're done. *)
           nthHypT i) p
 
+and decompPropDecideHyp2T max_depth count i p =
+   let term = snd (Sequent.nth_hyp p i) in
+      (if is_implies_term term then
+          let t, _ = dest_implies term in
+             if is_hyp_term p t then
+                dT i thenT thinT i thenT ifNotWT (internalPropDecideT max_depth count)
+             else
+                failT
+       else
+          failT) p
+
+and decompPropDecideHyp3T max_depth count i p =
+   let term = snd (Sequent.nth_hyp p i) in
+      (if is_implies_term term then
+          let t, _ = dest_implies term in
+             if is_hyp_term p t then
+                failT
+             else
+                dT i thenT thinT i thenT ifNotWT (internalPropDecideT max_depth count)
+       else
+          failT) p
+
 (* Decompose the goal *)
-and decompPropDecideConclT count p =
-   if !debug_prop_decide then
-      begin
-         eprintf "decompPropDecideConclT: %a%t" Refiner.Refiner.Term.debug_print (Sequent.concl p) eflush
-      end;
-   (let goal = Sequent.concl p in
-       if is_or_term goal then
-          (selT 1 (dT 0) thenT ifNotWT (internalPropDecideT count))
-          orelseT (selT 2 (dT 0) thenT ifNotWT (internalPropDecideT count))
+and decompPropDecideConclT max_depth count p =
+   let goal = Sequent.concl p in
+      (if is_or_term goal then
+          (selT 1 (dT 0) thenT ifNotWT (internalPropDecideT max_depth count))
+          orelseT (selT 2 (dT 0) thenT ifNotWT (internalPropDecideT max_depth count))
        else if is_and_term goal or is_implies_term goal then
-          dT 0 thenT ifNotWT (internalPropDecideT count)
+          dT 0 thenT ifNotWT (internalPropDecideT max_depth count)
        else
           trivialT) p
 
 (* Prove the proposition - internal version that does not handle negation *)
-and internalPropDecideT count p =
-   if !debug_prop_decide then
-      eprintf "propDecideT: %d: %a%t" count debug_print (Sequent.goal p) eflush;
-   let count = succ count in
-      (revOnSomeHypT (decompPropDecideHypT count) orelseT decompPropDecideConclT count) p
+and internalPropDecideT max_depth count p =
+   if count = max_depth then
+      raise (RefineError ("internalPropDecideT", StringIntError ("depth bound exceeded", count)))
+   else
+      let count = succ count in
+         (trivialT
+          orelseT revOnSomeHypT (decompPropDecideHyp1T max_depth count)
+          orelseT revOnSomeHypT (decompPropDecideHyp2T max_depth count)
+          orelseT revOnSomeHypT (decompPropDecideHyp3T max_depth count)
+          orelseT decompPropDecideConclT max_depth count) p
 
 (* Convert all "not X" terms to "X => False" *)
 let notToImpliesFalseC =
@@ -303,9 +357,13 @@ let notToImpliesFalseC =
  * Toplevel tactic:
  * Unfold all negations, then run Dyckoff's algorithm.
  *)
+let rec iterativeDeepeningPropDecideT max_depth p =
+   eprintf "iterativeDeepeningPropDecideT: depth = %d%t" max_depth eflush;
+   (internalPropDecideT max_depth 0 orelseT iterativeDeepeningPropDecideT (succ max_depth)) p
+
 let propDecideT =
    onAllClausesT (fun i -> tryT (rw notToImpliesFalseC i))
-   thenT internalPropDecideT 0
+   thenT iterativeDeepeningPropDecideT 12
 
 (*
  * -*-
