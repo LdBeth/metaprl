@@ -243,7 +243,7 @@ struct
          let _ = Toploop.execute_phrase false Format.std_formatter (Ptop_dir ("directory", Pdir_string inc)) in
             ()
       in
-         eval_include Env_arg.lib;
+         eval_include (Setup.lib());
          List.iter eval_include (Shell_state.get_includes ());
          if not
             (Toploop.execute_phrase false Format.std_formatter
