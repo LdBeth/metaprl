@@ -45,7 +45,7 @@ val format : dform_base -> buffer -> t -> unit
  * After a refine_ped or nop_ped, the undo stack gets reset.
  * The nop_ped does nothing but reset the undo stack.
  *)
-val refine_ped : t -> string -> Ast.expr -> tactic -> unit
+val refine_ped : t -> string -> MLast.expr -> tactic -> unit
 val undo_ped : t -> unit
 val nop_ped : t -> unit
 
@@ -58,6 +58,9 @@ val root_ped : t -> unit
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/09 19:07:26  jyh
+ * Updating the editor.
+ *
  * Revision 1.1  1997/08/06 16:17:23  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

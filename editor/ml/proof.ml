@@ -37,7 +37,7 @@ open Term
 open Refine
 open Proof_step
 
-include Itt_theory
+include Tactic_type
 
 (************************************************************************
  * TYPES                                                                *
@@ -829,6 +829,9 @@ let restore_proof { in_proofs = proofs; in_steps = steps } resources tacs hand =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/09 19:07:23  jyh
+ * Updating the editor.
+ *
  * Revision 1.1  1997/08/06 16:17:22  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

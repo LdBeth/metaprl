@@ -1,5 +1,5 @@
 # Libraries
-INCLUDE := -I .
+INCLUDE := -I . -I ../../theories/tactic -I /usr/local/lib/camlp4
 
 # Common files
 MLZFILES :=\
@@ -18,7 +18,6 @@ NLFILES :=\
 	display_package\
 	display_package_graph\
 	display_theory_item\
-	proof_edit\
 	shell
 
 MFILES :=\

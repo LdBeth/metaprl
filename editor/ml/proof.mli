@@ -28,11 +28,12 @@
  *
  *)
 
-include Itt_theory
-
 open Term
 open Refine
-open Proof_step
+
+include Tactic_type
+
+include Proof_step
 
 (* Abstract type *)
 type proof
@@ -154,12 +155,15 @@ val save_base : out_base -> out_channel -> unit
  * As in proof_step, the tactics can be extracted spearately for
  * pre-compilation.
  *)
-val restore_tactics : in_channel -> Ast.expr array
+val restore_tactics : in_channel -> MLast.expr array
 val restore_base : in_channel -> in_base
 val restore_proof : in_base -> tactic_resources -> tactic array -> handle -> proof
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/09 19:07:25  jyh
+ * Updating the editor.
+ *
  * Revision 1.1  1997/08/06 16:17:22  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -26,7 +26,7 @@ val create :
        tactic_arg ->            (* Goal *)
        tactic_arg list ->       (* Subgoals *)
        string ->                (* Text in rule box *)
-       Ast.expr ->              (* Parsed ML expression *)
+       MLast.expr ->            (* Parsed ML expression *)
        tactic ->                (* Keep the tactic too *)
        t
      
@@ -34,7 +34,7 @@ val create :
 val step_goal : t -> tactic_arg
 val step_subgoals : t -> tactic_arg list
 val step_text : t -> string
-val step_ast : t -> Ast.expr
+val step_ast : t -> MLast.expr
 val step_tactic : t -> tactic
 
 (* Saving proof steps *)
@@ -49,12 +49,15 @@ val save_base : out_base -> out_channel -> unit
  *
  * restore_tactics can be compiled to a tactic array.
  *)
-val restore_tactics : in_channel -> Ast.expr array
+val restore_tactics : in_channel -> MLast.expr array
 val restore_base : in_channel -> in_base
 val restore_step : in_base -> tactic_resources -> tactic array -> handle -> t
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/09 19:07:29  jyh
+ * Updating the editor.
+ *
  * Revision 1.1  1997/08/06 16:17:25  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -21,7 +21,7 @@ type t =
    { step_goal : tactic_arg;
      step_subgoals : tactic_arg list;
      step_text : string;
-     step_ast : Ast.expr;
+     step_ast : MLast.expr;
      step_tactic : tactic
    }
 
@@ -45,7 +45,7 @@ struct
    type io_proof_step =
       { io_step_goal : aterm;
         io_step_subgoals : aterm list;
-        io_step_ast : Ast.expr;
+        io_step_ast : MLast.expr;
         io_step_text : string
       }
 
@@ -215,6 +215,9 @@ let restore_step base resources tacs hand =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/09 19:07:27  jyh
+ * Updating the editor.
+ *
  * Revision 1.1  1997/08/06 16:17:24  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -7,28 +7,22 @@
  * and may contain interactivly generated proofs.
  *)
 
-open List
-open Util
-open Term
-open Dform_print
-open Theory
-open Proof_edit
-open Filter_cache
+include Proof_edit
 
 (*
  * Save status of a module.
  *)
-type package_status =
-   PackageUnmodified
- | PackageModified
- | PackageReadOnly
+type status =
+   Unmodified
+ | Modified
+ | ReadOnly
 
 (*
  * This is the info for each open Package.
  *)
-type package_info
+type t
      
-exception PackageReadError of package_info
+exception ReadError of t
 
 (*
  * Info about theorems.
@@ -42,34 +36,37 @@ type thm_info =
  * Create a Package from a raw theory.
  * This creates a read-only Package.
  *)
-val package_of_theory : theory -> package_info
-val create_package : string -> package_info
-val make_package : theory -> thm_info list -> string -> package_info
+val of_theory : theory -> t
+val create : string -> t
+val make : theory -> thm_info list -> string -> t
 
 (*
  * Access.
  *)
-val package_status : package_info -> package_status
-val package_cache : package_info -> module_cache
-val package_refiner : package_info -> refiner
-val package_dforms : package_info -> dform_mode_base
-val package_thms : package_info -> thm_info list
-val package_name : package_info -> string
-val package_file : package_info -> string option
+val status  : t -> package_status
+val cache   : t -> module_cache
+val refiner : t -> refiner
+val dforms  : t -> dform_mode_base
+val thms    : t -> thm_info list
+val name    : t -> string
+val file    : t -> string option
 
 (*
  * Modification.
  *)
-val package_set_file : package_info -> string -> unit
+val set_file : t -> string -> unit
 
 (*
  * Interactive additions.
  *)
-val package_add_parent : package_info -> package_info -> unit
-val package_add_thm : package_info -> string -> ped -> unit
+val add_parent : t -> t -> unit
+val add_thm    : t -> string -> ped -> unit
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/09 19:07:22  jyh
+ * Updating the editor.
+ *
  * Revision 1.1  1997/08/06 16:17:17  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
