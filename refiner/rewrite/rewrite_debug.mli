@@ -62,7 +62,8 @@ module MakeRewriteDebug
     with type bound_term = TermType.bound_term)
    (RewriteTypes : RewriteTypesSig
     with type term = TermType.term
-    with type address = TermAddr.address) :
+    with type address = TermAddr.address
+    with type operator = TermType.operator) :
    RewriteDebugSig
    with type rwterm = RewriteTypes.rwterm
    with type rstack = RewriteTypes.rstack

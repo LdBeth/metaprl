@@ -71,7 +71,8 @@ module MakeRewriteDebug
     with type bound_term = TermType.bound_term)
    (RewriteTypes : RewriteTypesSig
     with type term = TermType.term
-    with type address = TermAddr.address)
+    with type address = TermAddr.address
+    with type operator = TermType.operator)
    =
 struct
    open TermType
@@ -240,6 +241,31 @@ struct
       in
          collect pl
 
+   let rec print_sparam out h = match dest_param h with
+      Number n ->
+         fprintf out "%s:n" (Mp_num.string_of_num n)
+    | String s ->
+         fprintf out "%s:s" s
+    | Token s ->
+         fprintf out "%s:t" s
+    | Var s ->
+         fprintf out "%s:v" s
+    | ParamList pl ->
+         fprintf out "[%a]" print_sparam_list pl
+    | _ ->
+         raise (Invalid_argument "Rewrite_debug.print_sparam")
+
+   and print_sparam_list out pl =
+      let rec collect = function
+         [h] ->
+            print_sparam out h
+       | h::t ->
+            fprintf out "%a; %a" print_sparam h print_sparam_list t
+       | [] ->
+            ()
+      in
+         collect pl
+
    (*
     * Tab to the tabstop.
     *)
@@ -257,6 +283,10 @@ struct
          RWComposite { rw_op = op; rw_bterms = bterms } ->
             fprintf out "RWComposite %a\n%a" (**)
                print_op op
+               (print_bterms (tabstop + 3)) bterms
+       | RWCompositeSimple { rws_op = op; rws_bterms = bterms } ->
+            fprintf out "RWCompositeSimple %a\n%a" (**)
+               print_sop op
                (print_bterms (tabstop + 3)) bterms
        | RWSequent (arg, hyps, goals) ->
             fprintf out "RWSequent:\n%aArg:\n%a%aHyps:\n%a%aGoals:\n%a" (**)
@@ -327,6 +357,11 @@ struct
    and print_op out { rw_name = opname; rw_params = params } =
       fprintf out "%s%a" (string_of_opname opname) (**)
          print_param_list params
+
+   and print_sop out op =
+      let op' = dest_op op in
+      fprintf out "%s%a" (string_of_opname op'.op_name) (**)
+         print_sparam_list op'.op_params
 
    let print_prog = print_prog 0
 end

@@ -81,6 +81,7 @@ module MakeRewriteBuildContractum
     with type level_exp = TermType.level_exp
     with type object_id = TermType.object_id
     with type term = TermType.term
+    with type operator = TermType.operator
     with type address = TermAddr.address
     with type seq_hyps = TermType.seq_hyps)
    (RewriteUtil : RewriteUtilSig

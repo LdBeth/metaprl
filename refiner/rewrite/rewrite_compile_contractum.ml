@@ -91,6 +91,7 @@ module MakeRewriteCompileContractum
     with type level_exp = TermType.level_exp
     with type object_id = TermType.object_id
     with type term = TermType.term
+    with type operator = TermType.operator
     with type address = TermAddr.address)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
@@ -188,11 +189,14 @@ struct
          (* This is a normal term--not a var *)
          let { term_op = op; term_terms = bterms } = dest_term term in
          let { op_name = name; op_params = params } = dest_op op in
-         let params' = List.map (compile_so_contractum_param stack) params in
          let enames, bterms' = compile_so_contractum_bterms names enames stack bvars bterms in
-            enames, RWComposite { rw_op = { rw_name = name; rw_params = params' };
-                                  rw_bterms = bterms'
-                                }
+         if are_sparams params then
+               enames, RWCompositeSimple { rws_op = op; rws_bterms = bterms' }
+         else
+            let params' = List.map (compile_so_contractum_param stack) params in
+               enames, RWComposite { rw_op = { rw_name = name; rw_params = params' };
+                                     rw_bterms = bterms'
+                                   }
 
    and compile_so_contractum_terms names enames stack bvars = function
       term :: terms ->
@@ -272,6 +276,24 @@ struct
 
        | BackwardsCompatibleLevel _ ->
             REF_RAISE(RefineError (param_error, StringError "BackwardsCompatibleLevel"))
+
+   (*
+    * Tests whether params can be left as is.
+    *)
+
+   and is_sparam = function
+      Number _ | String _ | Token _ | Var _ ->
+         true
+    | ParamList l ->
+         are_sparams l
+    | _ ->
+         false
+
+   and are_sparams = function
+      [] ->
+         true
+    | p :: pl ->
+         is_sparam (dest_param p) && are_sparams pl
 
    (*
     * In bterms, have to add these vars to the binding stack.

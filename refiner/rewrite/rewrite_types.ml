@@ -84,6 +84,7 @@ DEFTOPMACRO BODY =
     *)
    and rwterm =
       RWComposite of rwcterm
+    | RWCompositeSimple of rwcterm_simple
     | RWSequent of rwterm * rw_seq_term list * rwterm list
     | RWSOVar of int * int list
     | RWSOMatch of int * rwterm list
@@ -97,6 +98,7 @@ DEFTOPMACRO BODY =
 
    (* Match a specific term *)
    and rwcterm = { rw_op : rwoperator; rw_bterms : rw_bound_term list }
+   and rwcterm_simple = { rws_op : operator; rws_bterms : rw_bound_term list }
 
    (*
     * In the bound term, rw_bnames is used in the contractum
@@ -205,6 +207,7 @@ struct
    type level_exp = TermType.level_exp
    type object_id = TermType.object_id
    type term = TermType.term
+   type operator = TermType.operator
    type address = TermAddr.address
    type seq_hyps = TermType.seq_hyps
 
@@ -218,6 +221,7 @@ sig
    type level_exp
    type object_id
    type term
+   type operator
    type address
    type seq_hyps
 

@@ -94,6 +94,7 @@ module MakeRewriteBuildContractum
     with type level_exp = TermType.level_exp
     with type object_id = TermType.object_id
     with type term = TermType.term
+    with type operator = TermType.operator
     with type address = TermAddr.address
     with type seq_hyps = TermType.seq_hyps)
    (RewriteUtil : RewriteUtilSig
@@ -238,7 +239,9 @@ struct
          (* Build a regular term from the parts *)
          mk_term (mk_op name (build_contractum_params stack params)) (**)
             (build_contractum_bterms names bnames stack bvars bterms)
-
+    | RWCompositeSimple { rws_op = op; rws_bterms = bterms } ->
+         (* Build a regular term from the parts *)
+         mk_term op (build_contractum_bterms names bnames stack bvars bterms)
     | RWSequent (arg, hyps, goals) ->
          let arg = build_contractum_term names bnames stack bvars arg in
          let bnames, bvars, hyps = build_contractum_sequent_hyps names bnames stack bvars [] hyps in
