@@ -12,8 +12,16 @@ $native = 1;	# 0 for bytecodes, 1 for native
 
 ## Cons environments come from the cons module.
 $env = new cons(
+    #
+    # Configuration
+    #
+    MP_VERSION => "0.7.1",
+    REFINER => "Refiner_ds",
+    TERMS => "ds",
+
     ## Overrides
     OCAMLC	=> $native ? "ocamlopt.opt" : "ocamlc",	# The OCaml compiler
+    OCAMLLINK	=> $native ? "ocamlopt.opt" : "ocamlc",	# The OCaml compiler
     SUFOBJ	=> $native ? ".cmx"  : ".cmo",		# Object suffix
     SUFLIB	=> $native ? ".cmxa" : ".cma",		# Library suffix
 
@@ -24,11 +32,12 @@ $env = new cons(
     OCAMLCFLAGS => "-thread",					# Basic options
     OCAMLCOM	=> "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1",	# How to compile files
     SIGCOM	=> "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1",	# How to compile signatures
-    LINKCOM	=> "%OCAMLC %OCAMLCFLAGS -o %> %MLLIBS %< %CCLIBS",	# How to link objects
-    ARCOM	=> "%OCAMLC %OCAMLCFLAGS -a -o %> %<",	# How to archive objects
+    LINKCOM	=> "%OCAMLLINK %OCAMLCFLAGS -o %> %MLLIBS %< %CCLIBS",	# How to link objects
+    ARCOM	=> "%OCAMLLINK %OCAMLCFLAGS -a -o %> %<",	# How to archive objects
     LEXCOM	=> "ocamllex %1",		# How to lex a file
     YACCCOM	=> "ocamlyacc %1",		# How to yacc a file
     LNCOM       => "ln -sf %1:f %>",		# How to link a file
+    LNCOM2      => "ln -sf %1:f %>:b.ml; ln -sf %1:f %>:b.mli",		# How to link a file
 
     PPFLAGS     => "",
     CAMLP4MACRO => "camlp4o %PPFLAGS",
@@ -51,4 +60,7 @@ Build qw(
 	library/Conscript
 	ensemble/Conscript
 	filter/Conscript
+	lib/Conscript
+	theories/Conscript
+	editor/Conscript
 );

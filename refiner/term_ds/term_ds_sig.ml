@@ -34,6 +34,7 @@ open Refine_error_sig
 open Term_base_sig
 open String_set
 
+(* open Array_linear_set *)
 module type TermDsTypeSig =
 sig
    (************************************************************************

@@ -22,6 +22,6 @@ value caml_term_size(value arg)
     buf = alloc_small(2, 0);
     Field(buf, 0) = Val_int(ws.ws_row);
     Field(buf, 1) = Val_int(ws.ws_col);
-    CAMLreturn buf;
+    CAMLreturn(buf);
 }
 

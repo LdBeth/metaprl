@@ -15,7 +15,6 @@
 ### For more information on cons, see the homepage at
 ### http://www.dsmit.com/cons/, or view the manual with "perldoc cons".
 
-
 #### David's Muy Advanced OCaml Cons Extensions ##############################
 #
 # Revision History
@@ -60,8 +59,10 @@ my $ocamlscan = sub {
 
 	s/"[^"]*?"//go;	# Remove double quoted strings from $_
 
-	push @modules, /open\s+([A-Z]\w*)/go;	# Search $_ for "open Module"
-	push @modules, /([A-Z]\w*)\.\w+/go;	# Search $_ for "Module.var"
+	push @modules, /open\s+([A-Z]\w*)/go;			# Search $_ for "open Module"
+	push @modules, /include\s+([A-Z]\w*)/go;		# Search $_ for "include Module"
+#	push @modules, /module\s+[A-Z]\w*\s+=\s+([A-Z]\w*)/go;	# Search $_ for "module M = Module"
+	push @modules, /([A-Z]\w*)\.\w+/go;			# Search $_ for "Module.var"
 
 	## Convert the Modules into filenames and return the list
 	map(("$_.cmi", "$_.cmx"), map(lcfirst $_, @modules));
@@ -197,11 +198,13 @@ sub cons::OCamlSources {
 	elsif ($src->suffix eq ".mlz") {
 	    ## ocamlyacc produces an OCaml source file and a signature file
 	    my($mlsrc) = cons::lookup_sibling($src, $env->{SUFSRC});
-	    my($builder) = find build::command::user($env, $env->{LNCOM});
-	    my($multi) = build::multiple->new($builder, [$mlsrc]);
+	    my($sig) = cons::lookup_sibling($src, $env->{SUFSIG});
+	    my($builder) = find build::command::user($env, $env->{LNCOM2});
+	    my($multi) = build::multiple->new($builder, [$mlsrc, $sig]);
 	    $mlsrc->bind($multi, $src);
+	    $sig->bind($multi, $src);
 
-	    cons::module_without_signature($env, $mlsrc);
+	    cons::module_with_signature($env, $mlsrc, $sig);
 	}
 
 	## What kind of file is this?
@@ -269,6 +272,21 @@ sub cons::OCamlLibrary {
     }
 }
 
+###
+### Extra OCaml dependencies
+###
+sub cons::OCamlDepends {
+    my($env) = shift;
+    my($tgt) = $env->_subst(shift);
+    my(@deps) = @_;
+    if (! ref($tgt)) {
+	$tgt = [ $tgt ];
+    }
+    my($t);
+    foreach $t (map($dir::cwd->lookupfile($_ . $env->{SUFSRC}), @$tgt)) {
+	push(@{$t->{ocamldep}}, @deps);
+    }
+}
 
 ### A scanner for OCaml programs.
 package scan::ocamlprog;
@@ -327,6 +345,7 @@ sub includes {
     while ($source = shift @work_list) {
 	next if exists $source_set{$source};   # Already seen it.
         $source_set{$source} = $source;
+
 
         ## build file and generate includes if necessary
 	unless ($inc->{$source}) {
@@ -391,6 +410,12 @@ sub scan {
 	## Search for "open Module"
 	$includes{$_} = 0 for (/open\s+([A-Z]\w*)/go);
 
+	## Search for "include Module"
+	$includes{$_} = 0 for (/include\s+([A-Z]\w*)/go);
+
+	# Search $_ for "module M = Module"
+	# $includes{$_} = 0 for (/module\s+[A-Z]\w*\s+=\s+([A-Z]\w*)/go);
+
 	## Search for "Module.var"
 	$includes{$_} = 0 for (/([A-Z]\w*)\.\w+/go);
 	}
@@ -401,6 +426,16 @@ sub scan {
     my @files;
     for (keys %includes) {
         my $name = (lcfirst) . '.cmi';
+	for my $dir (@dirs) {
+	    my $include = $dir->lookup_accessible($name);
+	    if ($include) {
+                push @files, $include unless $include->ignore;
+		last;
+	    }
+	}
+    }
+    for my $name (@{$file->{ocamldep}}) {
+        $name = $name . '.cmi';
 	for my $dir (@dirs) {
 	    my $include = $dir->lookup_accessible($name);
 	    if ($include) {

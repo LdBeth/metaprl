@@ -113,6 +113,7 @@ depend: check_config
 		if (echo Making $$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done
 	+@$(MAKE) -C refiner depend
+	+@$(MAKE) -C filter depend
 
 mk/config: mk/make_config.sh
 	@echo Making mk/config...

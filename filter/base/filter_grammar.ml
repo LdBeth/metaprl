@@ -57,7 +57,7 @@ end
 module MakeFilterGrammar (Unit : UnitSig) =
 struct
    EXTEND
-       GLOBAL: expr;
+      GLOBAL: expr;
 
       (*
        * Pre-add some infix operators.

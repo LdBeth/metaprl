@@ -6,7 +6,7 @@
 VERSION=`$1 $2 -v 2>&1 | head -n1`
 OK=no
 for i in $VERSIONS; do
-   if [ "$VERSION" = "$4 $i" ]; then
+   if [ "`echo "$VERSION"| tr " " _`" = "`echo "$4 $i"| tr " " _`" ]; then
       exit 0
    fi
 done

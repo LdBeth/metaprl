@@ -10,9 +10,11 @@
 #endif
 
 #include <caml/mlvalues.h>
+#include <caml/memory.h>
 
 value caml_execv(value command, value argv)
 {
+	 CAMLparam2(command,argv);
     char *command_str = String_val(command);
     int len = Wosize_val(argv);
     char **argv_str=malloc((len+1)*sizeof (char *));
@@ -28,11 +30,12 @@ value caml_execv(value command, value argv)
 #endif
     v = Val_int(execv(command_str, argv_str));
     free (argv_str);
-    return v;
+    CAMLreturn(v);
 }
 
 value caml_execvp(value command, value argv)
 {
+	 CAMLparam2(command,argv);
     char *command_str = String_val(command);
     int len = Wosize_val(argv);
     char **argv_str=malloc((len+1)*sizeof (char *));
@@ -50,13 +53,13 @@ value caml_execvp(value command, value argv)
         int code = spawnvp(_P_OVERLAY, command_str, argv_str);
         perror("execvp");
         free(argv_str);
-        return Val_int(code);
+        CAMLreturn(Val_int(code));
     }
 #else
-    { 
+    {
       value v = Val_int(execvp(command_str, argv_str));
       free (argv_str);
-      return v;
+      CAMLreturn(v);
     }
 #endif
 }

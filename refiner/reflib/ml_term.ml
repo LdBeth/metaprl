@@ -36,30 +36,50 @@ open Refiner.Refiner.TermMeta
 open Term_io
 
 (*
+ * Header.
+ *)
+let magic = "MetaPRL-3.02-term:"
+let magic_len = String.length magic
+
+(*
  * Convert to a string.
  *)
 let string_of_term t =
-   Marshal.to_string (denormalize_term t) []
+   let s = Marshal.to_string (denormalize_term t) [] in
+   let s = String_util.hexify s in
+      magic ^ s
 
 (*
  * Convert from a string.
  *)
 let term_of_string s =
-   let t = (Marshal.from_string s 0 : Refiner_io.TermType.term) in
-      normalize_term t
+   let len = String.length s in
+      if len < magic_len || String.sub s 0 magic_len <> magic then
+         raise (Invalid_argument "term_of_string");
+      let s = String.sub s magic_len (len - magic_len) in
+      let s = String_util.unhexify s in
+      let t = (Marshal.from_string s 0 : Refiner_io.TermType.term) in
+         normalize_term t
 
 (*
  * Convert to a string.
  *)
 let string_of_mterm t =
-   Marshal.to_string (denormalize_meta_term t) []
+   let s = Marshal.to_string (denormalize_meta_term t) [] in
+   let s = String_util.hexify s in
+      magic ^ s
 
 (*
  * Convert from a string.
  *)
 let mterm_of_string s =
-   let t = (Marshal.from_string s 0 : Refiner_io.TermType.meta_term) in
-      normalize_meta_term t
+   let len = String.length s in
+      if len < magic_len || String.sub s 0 magic_len <> magic then
+         raise (Invalid_argument "mterm_of_string");
+      let s = String.sub s magic_len (len - magic_len) in
+      let s = String_util.unhexify s in
+      let t = (Marshal.from_string s 0 : Refiner_io.TermType.meta_term) in
+         normalize_meta_term t
 
 (*
  * -*-

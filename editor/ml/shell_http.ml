@@ -49,6 +49,7 @@ let debug_http =
  * We may start this as a web service.
  *)
 let http_port = Env_arg.int "port" None "start web service on this port" Env_arg.set_int_option_int
+let http_enabled = Env_arg.bool "http" false "whether to start a web service" Env_arg.set_bool_bool
 
 module ShellHTTP (Shell : ShellSig) =
 struct
@@ -98,8 +99,8 @@ struct
     * Start the web server.
     *)
    let main () =
-      let host = Http_server.start_http http_connect !http_port in
-      let _ =
+      if !http_enabled then begin
+         let host = Http_server.start_http http_connect !http_port in
          try
             if Sys.getenv "TERM" = "xterm" then
                let { Http_server.http_host = host;
@@ -111,8 +112,8 @@ struct
          with
             Not_found ->
                ()
-      in
-         Shell.main ()
+      end;
+      Shell.main ()
 end
 
 (*

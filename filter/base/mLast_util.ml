@@ -85,14 +85,11 @@ let rec fold_expr iter x expr =
             fold_expr iter (fold_expr iter x e1) e2
        | (<:expr< $chr:c$ >>) ->
             x
-(*
        | (<:expr< ( $e$ :> $t$ ) >>) ->
-*)
-       | MLast.ExCoe (_, e, t) ->
             fold_type iter (fold_expr iter x e) t
        | (<:expr< $flo:s$ >>) ->
             x
-       | (<:expr< for $s$ = $e1$ $to:b$ $e2$ do $list:el$ done >>) ->
+       | (<:expr< for $s$ = $e1$ $to:b$ $e2$ do { $list:el$ } >>) ->
             List.fold_left (fold_expr iter) (fold_expr iter (fold_expr iter x e1) e2) el
        | (<:expr< fun [ $list:pwel$ ] >>) ->
             List.fold_left (fold_pwe iter) x pwel
@@ -100,6 +97,8 @@ let rec fold_expr iter x expr =
            fold_expr iter (fold_expr iter (fold_expr iter x e1) e2) e3
        | (<:expr< $int:s$ >>) ->
             x
+       | (<:expr< ~ $i$ : $e$ >>) ->
+            fold_expr iter x e
        | (<:expr< let $rec:b$ $list:pel$ in $e$ >>) ->
             fold_expr iter (List.fold_left (fold_pe iter) x pel) e
        | (<:expr< $lid:s$ >>) ->
@@ -108,27 +107,23 @@ let rec fold_expr iter x expr =
             fold_module_expr iter (fold_expr iter x e) me
        | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
             List.fold_left (fold_pwe iter) (fold_expr iter x e) pwel
+       | (<:expr< ? $i$ : $e$ >>) ->
+            fold_expr iter x e
 (*
        | (<:expr< new $e$ >>) ->
 *)
        | MLast.ExNew (_, _) ->
             x
-(*
        | (<:expr< {< $list:sel$ >} >>) ->
-*)
-       | MLast.ExOvr (_, sel) ->
             List.fold_left (fold_se iter) x sel
 (*
        | (<:expr< { $list:eel$ } >>) ->
 *)
        | MLast.ExRec (_, eel, eo) ->
-            List.fold_left (fold_ee iter) (fold_expr_opt iter x eo) eel
-       | (<:expr< do $list:el$ return $e$ >>) ->
-            fold_expr iter (List.fold_left (fold_expr iter) x el) e
-(*
+            List.fold_left (fold_pe iter) (fold_expr_opt iter x eo) eel
+       | (<:expr< do { $list:el$ } >>) ->
+            List.fold_left (fold_expr iter) x el
        | (<:expr< $e$ # $i$ >>) ->
-*)
-       | MLast.ExSnd (_, e, i) ->
             fold_expr iter x e
        | (<:expr< $e1$ .[ $e2$ ] >>) ->
             fold_expr iter (fold_expr iter x e1) e2
@@ -140,14 +135,14 @@ let rec fold_expr iter x expr =
             List.fold_left (fold_expr iter) x el
        | (<:expr< ( $e$ : $t$ ) >>) ->
             fold_type iter (fold_expr iter x e) t
-       | (<:expr< $uid:s$ >>) ->
+       | (<:expr< $uid:_$ >>) ->
             x
-       | (<:expr< while $e$ do $list:el$ done >>) ->
+       | (<:expr< ` $_$ >>) ->
+            x
+       | (<:expr< while $e$ do { $list:el$ } >>) ->
             List.fold_left (fold_expr iter) (fold_expr iter x e) el
-(*ifdef 2.02*)
        | MLast.ExXnd (_, _, e) ->
             fold_expr iter x e
-(*endif 2.02*)
 
 and fold_patt iter x patt =
    let x = iter.fold_patt x patt in
@@ -164,12 +159,18 @@ and fold_patt iter x patt =
             fold_patt iter (fold_patt iter x p1) p2
        | (<:patt< [| $list: pl$ |] >>) ->
             List.fold_left (fold_patt iter) x pl
-       | (<:patt< $chr:c$ >>) ->
+       | (<:patt< $chr:_$ >>)
+       | (<:patt< $flo:_$ >>)
+       | (<:patt< $int:_$ >>) ->
             x
-       | (<:patt< $int:s$ >>) ->
-            x
+       | (<:patt< ~ $i$ : $p$ >>) ->
+            fold_patt iter x p
        | (<:patt< $lid:i$ >>) ->
             x
+       | (<:patt< ? $i$ : $p$ >>) ->
+            fold_patt iter x p
+       | (<:patt< ? $i$ : ( $p$ = $e$ ) >>) ->
+            fold_expr iter (fold_patt iter x p) e
        | (<:patt< $p1$ | $p2$ >>) ->
             fold_patt iter (fold_patt iter x p1) p2
        | (<:patt< $p1$ .. $p2$ >>) ->
@@ -184,10 +185,10 @@ and fold_patt iter x patt =
             fold_type iter (fold_patt iter x p) t
        | (<:patt< $uid:s$ >>) ->
             x
-(*ifdef 2.02*)
+       | (<:patt< ` $_$ >>) ->
+            x
        | MLast.PaXnd (_, _, p) ->
             fold_patt iter x p
-(*endif 2.02*)
 
 and fold_type iter x t =
    let x = iter.fold_type x t in
@@ -202,20 +203,18 @@ and fold_type iter x t =
             fold_type iter (fold_type iter x t1) t2
        | (<:ctyp< $t1$ -> $t2$ >>) ->
             fold_type iter (fold_type iter x t1) t2
-(*
-       | (<:ctyp< # $i$ >>) ->
-*)
-       | MLast.TyCls (_, i) ->
+       | (<:ctyp< # $list:i$ >>) ->
             x
+       | (<:ctyp< ~ $_$ : $t$ >>) ->
+            fold_type iter x t
        | (<:ctyp< $lid:s$ >>) ->
             x
        | (<:ctyp< $t1$ == $t2$ >>) ->
             fold_type iter (fold_type iter x t1) t2
-(*
-       | (<:ctyp< < $list:stl$ > >>) ->
-*)
-       | MLast.TyObj (_, stl, _) ->
+       | (<:ctyp< < $list:stl$ $_$ > >>) ->
             List.fold_left (fold_st iter) x stl
+       | (<:ctyp< ? $_$ : $t$ >>) ->
+            fold_type iter x t
        | (<:ctyp< '$s$ >>) ->
             x
        | (<:ctyp< { $list:sbtl$ } >>) ->
@@ -226,28 +225,27 @@ and fold_type iter x t =
             List.fold_left (fold_type iter) x tl
        | (<:ctyp< $uid:s$ >>) ->
             x
-(*ifdef 2.02*)
+       | MLast.TyVrn (_, sbtll, _) ->
+            List.fold_left (fold_sbtl iter) x sbtll
        | MLast.TyXnd (_, _, t) ->
             fold_type iter x t
-(*endif 2.02*)
 
 and fold_sig_item iter x si =
    let x = iter.fold_sig_item x si in
       match si with
-(*
          (<:sig_item< class $list:ctl$ >>) ->
-*)
-         MLast.SgCls (_, ctl) ->
             List.fold_left (fold_class_type_infos iter) x ctl
-       | MLast.SgClt (_, ctl) ->
+       | (<:sig_item< class type $list:ctl$ >>) ->
             List.fold_left (fold_class_type_infos iter) x ctl
        | (<:sig_item< declare $list:sil$ end >>) ->
             List.fold_left (fold_sig_item iter) x sil
+       | (<:sig_item< # $n$ $opt:dp$ >>) ->
+            fold_expr_opt iter x dp
        | (<:sig_item< exception $s$ of $list:tl$ >>) ->
             List.fold_left (fold_type iter) x tl
        | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
             fold_type iter x t
-       | MLast.SgInc (_, mt) ->
+       | (<:sig_item< include $mt$ >>) ->
             fold_module_type iter x mt
        | (<:sig_item< module $s$ : $mt$ >>) ->
             fold_module_type iter x mt
@@ -263,21 +261,22 @@ and fold_sig_item iter x si =
 and fold_str_item iter x si =
    let x = iter.fold_str_item x si in
       match si with
-(*
          (<:str_item< class $list:cdl$ >>) ->
-*)
-         MLast.StCls (_, cdl) ->
             List.fold_left (fold_class_expr_infos iter) x cdl
-       | MLast.StClt (_, cdl) ->
+       | (<:str_item< class type $list:cdl$ >>) ->
             List.fold_left (fold_class_type_infos iter) x cdl
        | (<:str_item< declare $list:stl$ end >>) ->
             List.fold_left (fold_str_item iter) x stl
+       | (<:str_item< # $n$ $opt:dp$ >>) ->
+            fold_expr_opt iter x dp
        | (<:str_item< exception $s$ of $list:tl$ >>) ->
             List.fold_left (fold_type iter) x tl
        | (<:str_item< $exp:e$ >>) ->
             fold_expr iter x e
        | (<:str_item< external $s$ : $t$ = $list:sl$ >>) ->
             fold_type iter x t
+       | (<:str_item< include $mt$ >>) ->
+            fold_module_expr iter x mt
        | (<:str_item< module $s$ = $me$ >>) ->
             fold_module_expr iter x me
        | (<:str_item< module type $s$ = $mt$ >>) ->
@@ -441,9 +440,6 @@ and fold_pe iter x (patt, expr) =
 and fold_se iter x (s, e) =
    fold_expr iter x e
 
-and fold_ee iter x (e1, e2) =
-   fold_expr iter (fold_expr iter x e1) e2
-
 and fold_pp iter x (p1, p2) =
    fold_patt iter (fold_patt iter x p1) p2
 
@@ -454,6 +450,9 @@ and fold_sbt iter x (s, b, t) =
    fold_type iter x t
 
 and fold_stl iter x (s, tl) =
+   List.fold_left (fold_type iter) x tl
+
+and fold_sbtl iter x (s, b, tl) =
    List.fold_left (fold_type iter) x tl
 
 and fold_tt iter x (t1, t2) =

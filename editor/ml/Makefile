@@ -46,8 +46,8 @@ MPFILES =\
 	shell_package\
 	shell_root\
 	shell_p4_sig\
-	shell_state\
 	shell_http\
+	shell_state\
 	shell
 
 MP2FILES =\

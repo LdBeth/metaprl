@@ -7,21 +7,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
@@ -32,7 +32,7 @@ open Mp_debug
 
 open Mp_num
 open Registry
-open Int32
+open Lint32
 
 let _ =
    show_loading "Loading MathBus%t"
@@ -243,7 +243,7 @@ let mb_number num =
     if Mp_num.lt_num c b then
       (Mbint (mk_bint (int_of_num c)))::l
     else loop (quo_num c b) ((Mbint (mk_bint (int_of_num (mod_num c b))))::l) in
-  let ints = try (loop a []) with _ -> 
+  let ints = try (loop a []) with _ ->
       (print_string "mb_number "; print_string (string_of_num a); print_string " quo "; print_string (string_of_num a); print_string " "; print_string (string_of_num b); print_string " = "; print_string (string_of_num (quo_num a b)); print_string " mod "; print_string (string_of_num (mod_num a b)); failwith "foo")
   in
   let length = List.length ints in
@@ -383,7 +383,7 @@ let mb_stringq_with_unicode s num_id =
   then match node.(j) with
     Mbint b -> Array.set node j
 	(Mbint (if (1+ (i * 2))< len then
-	  lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_stringq" s (2 * i)))) 16) 
+	  lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_stringq" s (2 * i)))) 16)
 	    (create (Char.code  (String_util.get "MathBus.mb_stringq" s (1+ (2 * i)))))
 	else lbsl (create (Char.code (String_util.get "MathBus.mb_stringq" s (2 * i)))) 16))
   | Mnode n -> failwith "mb_string";
@@ -397,19 +397,19 @@ let mb_stringq s num_id =
   let m = len mod 4 in let d = (len - m) / 4 in let a = if (m = 0) then (1 + d) else (2 + d)
   in let node = make_mbnode num_id a in
   Array.set node 1 (Mbint (create len));
-  let rec loop i j = 
+  let rec loop i j =
   if (1 + i) > len then () else
   (match node.(j) with
     Mbint b -> (Array.set node j
-	(Mbint 
+	(Mbint
 	  (lbor (lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s i))) 24)
-	             (if (i + 2) > len then (create 0) 
+	             (if (i + 2) > len then (create 0)
 			else (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s (1 + i)))) 16)))
 	       (lbor (if (i + 3) > len then (create 0) else (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s (2 + i)))) 8))
 		     (if (i + 4) > len then (create 0) else (create (Char.code (String_util.get "MathBus.mb_string" s (3 + i)))))))); loop (i + 4) (1 + j))
   | Mnode n -> failwith "mb_string") in
   loop 0 2;
-	
+
   node
 
 let mb_string s =
@@ -432,7 +432,7 @@ let string_value_with_unicode node =
     loop 0 2
   | Mnode n -> failwith "string_value"
 
-  
+
 let string_value node =
   if !use_unicode then string_value_with_unicode node
   else match (mbnode_subtermq node 1) with

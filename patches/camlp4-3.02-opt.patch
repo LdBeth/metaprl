@@ -1,0 +1,169 @@
+--- Makefile.mp-opt	Mon Jun 18 09:31:17 2001
++++ Makefile	Sun Sep 23 12:06:33 2001
+@@ -12,10 +12,7 @@
+ 	set -e; for i in $(DIRS); do cd $$i; $(MAKE) all; cd ..; done
+ 
+ opt:
+-	cd lib; $(MAKE) opt
+-
+-bullshit:
+-	set -e; for i in $(OPTDIRS); do cd $$i; $(MAKE) opt; cd ..; done
++	set -e; for i in ocaml_stuff $(OPTDIRS); do $(MAKE) -C $$i opt; done
+ 
+ boot/camlp4$(EXE):
+ 	cd ocaml_stuff; $(MAKE)
+--- meta/Makefile.mp-opt	Wed Jun 20 07:36:45 2001
++++ meta/Makefile	Sun Sep 23 12:06:33 2001
+@@ -7,6 +7,7 @@
+ OBJS=q_MLast.cmo pa_r.cmo pa_rp.cmo pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo pr_dump.cmo
+ CAMLP4RM=pa_r.cmo pa_rp.cmo pr_dump.cmo
+ CAMLP4RMX=pa_r.cmx pa_rp.cmx pr_dump.cmx pa_extend.cmx q_MLast.cmx pa_ifdef.cmx
++CAMLP4RMO=pa_r.o pa_rp.o pr_dump.o pa_extend.o q_MLast.o
+ SHELL=/bin/sh
+ COUT=$(OBJS) camlp4r$(EXE)
+ COPT=camlp4r.opt
+@@ -46,6 +47,9 @@
+ 	cp $(OBJS) $(LIBDIR)/.
+ 	cp pa_ifdef.cmi $(LIBDIR)/.
+ 	cp camlp4r$(EXE) $(BINDIR)/.
+-	if test -f $(COPT); then cp $(COPT) $(BINDIR)/.; fi
++	if test -f $(COPT); then\
++		cp $(COPT) $(BINDIR)/.;\
++		cp $(CAMLP4RMX) $(CAMLP4RMO) $(LIBDIR)/;\
++	fi
+ 
+ include .depend
+--- odyl/Makefile.mp-opt	Mon Jun 18 15:13:37 2001
++++ odyl/Makefile	Sun Sep 23 12:06:33 2001
+@@ -28,6 +28,12 @@
+ 	$(OCAMLOPT) -c -impl odyl.ppo
+ 	rm -f odyl.ppo
+ 
++odyl_main.cmx: odyl_main.ml
++	touch odyl_main.mli
++	../boot/camlp4r -nolib -I ../boot pa_ifdef.cmo -DOPT -o odyl_main.ppo odyl_main.ml
++	$(OCAMLOPT) -c -impl odyl_main.ppo
++	rm -f odyl_main.ppo odyl_main.mli
++
+ odyl_config.cmo:
+ 	echo "let standard_library =" > odyl_config.ml
+ 	echo "  try Sys.getenv \"CAMLP4LIB\" with" >> odyl_config.ml
+@@ -51,7 +57,10 @@
+ 
+ install:
+ 	-$(MKDIR) $(LIBDIR) $(BINDIR)
+-	cp odyl.cmo odyl.cma $(LIBDIR)
++	cp odyl.cmo odyl.cma odyl_main.cmi $(LIBDIR)
+ 	cp odyl$(EXE) $(BINDIR)/.
++	if [ -f odyl.cmxa ]; then\
++		cp odyl.cmxa odyl.a $(LIBDIR)/;\
++	fi
+ 
+ include .depend
+--- odyl/odyl_main.ml.mp-opt	Wed May 30 00:24:36 2001
++++ odyl/odyl_main.ml	Mon Sep 24 12:31:41 2001
+@@ -52,7 +52,7 @@
+ 
+ value nolib = ref False;
+ value initialized = ref False;
+-value path = ref [];
++value path = ref ([] : list string);
+ 
+ value loadfile file =
+   ifdef OPT then
+--- camlp4/Makefile.mp-opt	Fri Jun 22 02:51:15 2001
++++ camlp4/Makefile	Sun Sep 23 12:06:33 2001
+@@ -10,7 +10,7 @@
+ INTERFACES=-I $(OLIBDIR) Arg Array Buffer Callback Char Digest Filename Format Gc Genlex Hashtbl Lazy Lexing List Map Marshal Obj Oo Parsing Pervasives Printexc Printf Queue Random Set Sort Stack Stream String Sys Weak -I ../boot Extfun Fstream Gramext Grammar Plexer Stdpp Token -I $(OTOP)/utils Config Warnings -I $(OTOP)/parsing Asttypes Location Longident Parsetree -I . Ast2pt MLast Pcaml Quotation Spretty
+ CAMLP4_INTF=$(OTOP)/utils/config.cmi $(OTOP)/utils/warnings.cmi $(OTOP)/parsing/asttypes.cmi $(OTOP)/parsing/location.cmi $(OTOP)/parsing/longident.cmi $(OTOP)/parsing/parsetree.cmi ast2pt.cmi mLast.cmi pcaml.cmi spretty.cmi quotation.cmi
+ CAMLP4_OBJS=../boot/stdpp.cmo ../boot/token.cmo ../boot/plexer.cmo ../boot/gramext.cmo ../boot/grammar.cmo ../boot/extfun.cmo ../boot/fstream.cmo $(OTOP)/utils/config.cmo quotation.cmo ast2pt.cmo spretty.cmo reloc.cmo pcaml.cmo argl.cmo crc.cmo
+-CAMLP4_XOBJS=../lib/stdpp.cmx ../lib/token.cmx ../lib/plexer.cmx ../lib/gramext.cmx ../lib/grammar.cmx config.cmx quotation.cmx ast2pt.cmx spretty.cmx reloc.cmx pcaml.cmx argl.cmx
++CAMLP4_XOBJS=../lib/stdpp.cmx ../lib/token.cmx ../lib/plexer.cmx ../lib/gramext.cmx ../lib/grammar.cmx ../lib/extfun.cmx ../lib/fstream.cmx $(OTOP)/utils/config.cmx quotation.cmx ast2pt.cmx spretty.cmx reloc.cmx pcaml.cmx argl.cmx
+ OBJS=../odyl/odyl.cma camlp4.cma
+ CAMLP4M=
+ 
+@@ -18,7 +18,7 @@
+ CAMLP4OPT=phony
+ 
+ all: $(CAMLP4)
+-opt: $(CAMLP4OPT)
++opt: camlp4.cmxa $(CAMLP4OPT)
+ 
+ $(CAMLP4OPT): $(OBJS:.cma=.cmxa) ../odyl/odyl.cmx
+ 
+@@ -65,5 +65,6 @@
+ 	cp mLast.mli quotation.mli pcaml.mli spretty.mli $(LIBDIR)/.
+ 	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi $(LIBDIR)/.
+ 	cp camlp4.cma $(LIBDIR)/.
++	if [ -f camlp4.cmxa ]; then cp camlp4.a camlp4.cmxa $(LIBDIR)/; fi
+ 
+ include .depend
+--- etc/Makefile.mp-opt	Tue Jun 19 08:54:41 2001
++++ etc/Makefile	Sun Sep 23 12:06:33 2001
+@@ -13,7 +13,7 @@
+ COPT=camlp4o.opt
+ 
+ all: $(COUT) mkcamlp4.sh
+-opt: $(COPT)
++opt: $(COPT) pr_o.cmx pr_op.cmx pa_o.cmx pa_op.cmx
+ 
+ camlp4o$(EXE): ../camlp4/camlp4$(EXE) $(CAMLP4OM)
+ 	rm -f camlp4o$(EXE)
+@@ -56,6 +56,9 @@
+ 	if test -f $(COPT); then cp $(COPT) $(BINDIR)/.; fi
+ 	cp mkcamlp4.sh $(BINDIR)/mkcamlp4
+ 	chmod a+x $(BINDIR)/mkcamlp4
++	if [ -f pa_op.cmx ]; then\
++		cp pr_o.o pr_o.cmx pr_op.o pr_op.cmx pa_o.o pa_op.o pa_o.cmx pa_op.cmx $(LIBDIR)/;\
++	fi
+ 
+ pa_lisp.cmo: pa_lispr.cmo
+ pr_extend.cmo: pa_extfun.cmo
+--- ocaml_stuff/Makefile.mp-opt	Mon Jul 30 05:05:07 2001
++++ ocaml_stuff/Makefile	Sun Sep 23 12:06:33 2001
+@@ -3,11 +3,18 @@
+ include ../config/Makefile
+ 
+ DIRS=utils parsing otherlibs
++OPTDIRS=utils
+ 
+ all:
+ 	if test "$(OTOP)" = "../ocaml_stuff"; then \
+ 	  set -e; \
+ 	  for i in $(DIRS); do cd $$i; $(MAKE) all EXE=$(EXE); cd ..; done; \
++	fi
++
++opt:
++	if test "$(OTOP)" = "../ocaml_stuff"; then \
++	  set -e; \
++	  for i in $(OPTDIRS); do $(MAKE) -C $$i opt EXE=$(EXE); done; \
+ 	fi
+ 
+ clean:
+--- ocaml_stuff/utils/Makefile.mp-opt	Mon Jun 18 09:31:34 2001
++++ ocaml_stuff/utils/Makefile	Sun Sep 23 12:06:33 2001
+@@ -4,6 +4,7 @@
+ INCL=
+ 
+ all: $(FILES)
++opt: config.cmx
+ 
+ clean:
+ 	rm -f *.cm[oi]
+@@ -11,12 +12,15 @@
+ depend:
+ 	ocamldep $(INCL) *.ml* > .depend
+ 
+-.SUFFIXES: .mli .cmi .ml .cmo
++.SUFFIXES: .mli .cmi .ml .cmo .cmx
+ 
+ .mli.cmi:
+ 	ocamlc $(INCL) -c $<
+ 
+ .ml.cmo:
+ 	ocamlc $(INCL) -c $<
++
++.ml.cmx:
++	ocamlopt $(INCL) -c $<
+ 
+ include .depend

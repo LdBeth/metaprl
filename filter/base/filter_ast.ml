@@ -70,10 +70,18 @@ let build_printed_term loc t =
          else
             <:expr< $lid:h$ >>
     | h::t ->
-         let mod_expr = <:expr< $uid:h$ >> in
-         let name_expr = build_var t in
-            <:expr< $mod_expr$ . $name_expr$ >>
+         <:expr< $uid:h$ . $build_var t$ >>
     | [] ->
+         raise (Invalid_argument "build_application")
+   and build_patt = function
+      ML_Module_Var [h] ->
+         if Mp_ctype.is_capitalized h then
+            <:patt< $uid:h$ >>
+         else
+            <:patt< $lid:h$ >>
+    | ML_Module_Var (h::t) ->
+         <:patt< $uid:h$ . $build_patt (ML_Module_Var t)$ >>
+    | _ ->
          raise (Invalid_argument "build_application")
    and build = function
       ML_Var v ->
@@ -93,7 +101,7 @@ let build_printed_term loc t =
          let exprs = List.map build l in
             <:expr< ( $list:exprs$ ) >>
     | ML_Record l ->
-         let fields = List.map (function (name, expr) -> (build name, build expr)) l in
+         let fields = List.map (function (name, expr) -> (build_patt name, build expr)) l in
             <:expr< { $list:fields$ } >>
     | ML_Module_Var l ->
          build_var l

@@ -703,7 +703,7 @@ struct
     * Argument specifications.
     *)
    let spec =
-      ["-I", Arg.String add_include, "add a directory to the path for include files"]
+      ["-I", Arg.String add_include, ": add a directory to the path for include files"]
 
    let _ =
       (* Debug_symbols.debug_symbols Sys.argv.(0); *)

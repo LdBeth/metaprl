@@ -17,12 +17,11 @@
  */
 value ml_getrusage(value unit_val)
 {
+	 CAMLparam1(unit_val);
     struct rusage rsrc;
     double system, user;
-    value rval;
+    CAMLlocal1(rval);
     int ret, i;
-
-    Begin_roots1(rval);
 
     ret = getrusage(RUSAGE_SELF, &rsrc);
     if(ret < 0)
@@ -50,9 +49,8 @@ value ml_getrusage(value unit_val)
     Field(rval, 14) = Val_int(rsrc.ru_nvcsw);
     Field(rval, 15) = Val_int(rsrc.ru_nivcsw);
 
-    End_roots();
-    return rval;
+    CAMLreturn(rval);
 }
-    
 
-    
+
+

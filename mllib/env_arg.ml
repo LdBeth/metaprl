@@ -163,7 +163,7 @@ let set_debug_flags _ _ =
       in
          Arg.String set
 
-let _ = general "debug" () "" set_possible_debug_flags set_debug_flags
+let _ = general "debug" () "set debugging flags" set_possible_debug_flags set_debug_flags
 
 (*
  * -*-

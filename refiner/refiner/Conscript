@@ -5,6 +5,10 @@ $env = $env->clone(
     PPFLAGS     => "$env->{PPFLAGS} -Irefiner/refsig"
 );
 
+Command $env "refiner.ml", "#mk/config", qq(
+	echo "module Refiner = Refiner_ds.Refiner" > %>
+);
+
 OCamlSources $env
 	'refine.ml',
 	'refine_error.ml',

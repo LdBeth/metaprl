@@ -33,6 +33,13 @@
  *)
 
 (*
+ * open Dform_print
+ * open Refiner
+ * open Theory
+ * open Mp_resource
+ *)
+
+(*
  * The data we need for the lock.
  * The count is the number of recursive calls.
  *)

@@ -239,7 +239,7 @@ struct
    (*
     * Evaluate a struct item.
     *)
-   let eval_str_item state loc item =
+   let eval_str_item state item =
       let expr = expr_of_ocaml_str_item (State.get_toploop state) item in
          if State.is_interactive state then
             begin
@@ -263,39 +263,6 @@ struct
          State.set_interactive state true;
          close_in inx
 
-   and eval_directive state loc str = function
-      DpNon ->
-         begin
-            match str with
-              "quit" ->
-                 exit 0
-             | _ ->
-                 raise (Failure (sprintf "Unknown command %s" str))
-         end
-    | DpStr str' ->
-         begin
-            match str with
-               "use" ->
-                  use state str'
-             | _ ->
-                  raise (Failure (sprintf "Unknown %s %s" str str'))
-         end
-    | DpInt str' ->
-         eprintf "Directive DpInt: %s/%s%t" str str' eflush
-    | DpIde strs ->
-         eprintf "Directive DpIde: %s" str;
-         List.iter (fun s -> eprintf "/%s" s) strs;
-         eflush stderr
-
-   (*
-    * Evaluate a toplevel phrase.
-    *)
-   and eval_phrase state = function
-      PhStr (loc, item) ->
-         eval_str_item state loc item
-    | PhDir (loc, str, param) ->
-         eval_directive state loc str param
-
    (*
     * Toploop reads phrases, then prints errors.
     *)
@@ -313,7 +280,7 @@ struct
                try
                   match State.synchronize state (Grammar.Entry.parse Pcaml.top_phrase) instream with
                      Some phrase ->
-                        eval_phrase state phrase
+                        eval_str_item state phrase
                    | None ->
                         loop := false
                with

@@ -68,6 +68,8 @@ let hash_bool index flag =
 let rec hash_expr index = function
    (<:expr< $e1$ . $e2$ >>) ->
       hash_expr (hash_expr (hash index 0x36eab5f0) e1) e2
+ | (<:expr< $anti: e$ >>) ->
+      hash_expr (hash index 0x6757ffcb) e
  | (<:expr< $e1$ $e2$ >>) ->
       hash_expr (hash_expr (hash index 0x0ad11a34) e1) e2
  | (<:expr< $e1$ .( $e2$ ) >>) ->
@@ -77,15 +79,12 @@ let rec hash_expr index = function
  | (<:expr< $e1$ := $e2$ >>) ->
       hash_expr (hash_expr (hash index 0x0171ab0d) e1) e2
  | (<:expr< $chr:c$ >>) ->
-      hash_char (hash index 0x776fd938) c
-(*
+      hash_string (hash index 0x776fd938) c
  | (<:expr< ( $e$ :> $t$ ) >>) ->
-*)
- | MLast.ExCoe (_, e, t) ->
       hash_type (hash_expr (hash index 0x6a8d593f) e) t
  | (<:expr< $flo:s$ >>) ->
       hash_string (hash index 0x1b11445f) s
- | (<:expr< for $s$ = $e1$ $to:b$ $e2$ do $list:el$ done >>) ->
+ | (<:expr< for $s$ = $e1$ $to:b$ $e2$ do { $list:el$ } >>) ->
       List.fold_left hash_expr (hash_string (hash_expr (hash_bool (hash_expr (hash index 0x4ba64ac0) e2) b) e1) s) el
  | (<:expr< fun [ $list:pwel$ ] >>) ->
       List.fold_left hash_pwe (hash index 0x5a60d0dc) pwel
@@ -93,6 +92,8 @@ let rec hash_expr index = function
       hash_expr (hash_expr (hash_expr (hash index 0x7359fe14) e3) e2) e1
  | (<:expr< $int:s$ >>) ->
       hash_string (hash index 0x1458c565) s
+ | (<:expr< ~ $i$ : $e$ >>) ->
+      hash_string (hash_expr (hash index 0x18e9bcfa) e) i
  | (<:expr< let $rec:b$ $list:pel$ in $e$ >>) ->
       List.fold_left hash_pe (hash_bool (hash_expr (hash index 0x328a80d8) e) b) pel
  | (<:expr< $lid:s$ >>) ->
@@ -101,27 +102,23 @@ let rec hash_expr index = function
       hash_string (hash_module_expr (hash_expr (hash index 0x3881be91) e) me) s
  | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
       List.fold_left hash_pwe (hash_expr (hash index 0x565460ab) e) pwel
+ | (<:expr< ? $i$ : $e$ >>) ->
+      hash_string (hash_expr (hash index 0xe5a52b6) e) i
 (*
  | (<:expr< new $e$ >>) ->
 *)
  | MLast.ExNew (_, sl) ->
       List.fold_left hash_string (hash index 0x24e41e2d) sl
-(*
  | (<:expr< {< $list:sel$ >} >>) ->
-*)
- | MLast.ExOvr (_, sel) ->
       List.fold_left hash_se (hash index 0x5e034524) sel
 (*
  | (<:expr< { $list:eel$ } >>) ->
 *)
  | MLast.ExRec (_, eel, eo) ->
-      List.fold_left hash_ee (hash_expr_opt (hash index 0x3f143e45) eo) eel
- | (<:expr< do $list:el$ return $e$ >>) ->
-      List.fold_left hash_expr (hash_expr (hash index 0x1f9b5a49) e) el
-(*
+      List.fold_left hash_pe (hash_expr_opt (hash index 0x3f143e45) eo) eel
+ | (<:expr< do { $list:el$ } >>) ->
+      List.fold_left hash_expr (hash index 0x1f9b5a49) el
  | (<:expr< $e$ # $i$ >>) ->
-*)
- | MLast.ExSnd (_, e, i) ->
       hash_expr (hash_string (hash index 0x012df1d2) i) e
  | (<:expr< $e1$ .[ $e2$ ] >>) ->
       hash_expr (hash_expr (hash index 0x4d02cac0) e2) e1
@@ -135,14 +132,12 @@ let rec hash_expr index = function
       hash_expr (hash_type (hash index 0x206d0588) t) e
  | (<:expr< $uid:s$ >>) ->
       hash_string (hash index 0x27139e6c) s
- | (<:expr< while $e$ do $list:el$ done >>) ->
+ | (<:expr< ` $s$ >>) ->
+      hash_string (hash index 0x7a5835c) s
+ | (<:expr< while $e$ do { $list:el$ } >>) ->
       List.fold_left hash_expr (hash_expr (hash index 0x723d7789) e) el
-(*ifdef 2.02*)
  | MLast.ExXnd (loc, s, e) ->
       hash_string (hash_expr (hash index 0x8be2751) e) s
-(*endif 2.02*)
- | MLast.ExAnt (loc, e) ->
-      Stdpp.raise_with_loc loc (Failure "Filter_hash.hash_expr: encountered an ExAnt")
 
 and hash_patt index = function
    (<:patt< $p1$ . $p2$ >>) ->
@@ -158,11 +153,19 @@ and hash_patt index = function
  | (<:patt< [| $list:pl$ |] >>) ->
       List.fold_left hash_patt (hash index 0x053ba831) pl
  | (<:patt< $chr:c$ >>) ->
-      hash_char (hash index 0x00b259e4) c
+      hash_string (hash index 0x00b259e4) c
+ | (<:patt< $flo:f$ >>) ->
+      hash_string (hash index 0x71f944f6) f
  | (<:patt< $int:s$ >>) ->
       hash_string (hash index 0x32b6925e) s
+ | (<:patt< ~ $i$ : $p$ >>) ->
+      hash_patt (hash_string (hash index 0x30fb5e6f) i) p
  | (<:patt< $lid:i$ >>) ->
       hash_string (hash index 0x44ed2bf9) i
+ | (<:patt< ? $i$ : $p$ >>) ->
+      hash_patt (hash_string (hash index 0x681f0e05) i) p
+ | (<:patt< ? $i$ : ( $p$ = $e$ ) >>) ->
+      hash_expr (hash_patt (hash_string (hash index 0x18fe22f6) i) p) e
  | (<:patt< $p1$ | $p2$ >>) ->
       hash_patt (hash_patt (hash index 0x72a2f1ae) p2) p1
  | (<:patt< $p1$ .. $p2$ >>) ->
@@ -177,10 +180,10 @@ and hash_patt index = function
       hash_patt (hash_type (hash index 0x08034ff2) t) p
  | (<:patt< $uid:s$ >>) ->
       hash_string (hash index 0x37911bc9) s
-(*ifdef 2.02*)
+ | (<:patt< ` $s$ >>) ->
+      hash_string (hash index 0x6aeb916) s
  | MLast.PaXnd (loc, s, p) ->
       hash_string (hash_patt (hash index 0x6bcc8901) p) s
-(*endif 2.02*)
 
 and hash_type index = function
    (<:ctyp< $t1$ . $t2$ >>) ->
@@ -193,21 +196,19 @@ and hash_type index = function
       hash_type (hash_type (hash index 0x4b2e0da1) t2) t1
  | (<:ctyp< $t1$ -> $t2$ >>) ->
       hash_type (hash_type (hash index 0x72b07603) t2) t1
-(*
- | (<:ctyp< # $i$ >>) ->
-*)
- | MLast.TyCls (_, i) ->
+ | (<:ctyp< # $list:i$ >>) ->
       hash_string (hash index 0x0effbacf) i
+ | (<:ctyp< ~ $i$ : $t$ >>) ->
+      hash_type (hash_string (hash index 0x6a06805c) i) t
  | (<:ctyp< $lid:s$ >>) ->
       hash_string (hash index 0x293152c5) s
+ | (<:ctyp< ? $i$ : $t$ >>) ->
+      hash_type (hash_string (hash index 0x1a6813a8) i) t
  | (<:ctyp< '$s$ >>) ->
       hash_string (hash index 0x31c4b448) s
  | (<:ctyp< $t1$ == $t2$ >>) ->
       hash_type (hash_type (hash index 0x2e9b1519) t2) t1
-(*
- | (<:ctyp< < $list:stl$ $dd:b$ > >>) ->
-*)
- | MLast.TyObj (_, stl, b) ->
+ | (<:ctyp< < $list:stl$ $b$ > >>) ->
       List.fold_left hash_st (hash_bool (hash index 0x2a5f4498) b) stl
  | (<:ctyp< { $list:sbtl$ } >>) ->
       List.fold_left hash_sbt (hash index 0x7ec77f08) sbtl
@@ -217,26 +218,23 @@ and hash_type index = function
       List.fold_left hash_type (hash index 0x5f9e28c7) tl
  | (<:ctyp< $uid:s$ >>) ->
       hash_string (hash index 0x48872c13) s
-(*ifdef 2.02*)
+ | MLast.TyVrn (_, sbtll, bsloo) ->
+      List.fold_left hash_sbtl (hash_string (hash index 0x79ffedd7) bsloo) sbtll
  | MLast.TyXnd (loc, s, t) ->
       hash_string (hash_type (hash index 0x1677a389) t) s
-(*endif 2.02*)
 
 and hash_sig_item index = function
-(*
-   (<:sig_item< class $list:cdl$ >>) ->
-*)
-   MLast.SgCls (_, ctl) ->
+   (<:sig_item< class $list:ctl$ >>) ->
       List.fold_left hash_class_type_infos (hash index 0x0629e079) ctl
- | MLast.SgClt (_, ctl) ->
-      List.fold_left hash_class_type_infos (hash index 0x0627e079) ctl
+ | (<:sig_item< class type $list:ctl$ >>) ->
+      List.fold_left hash_class_type_infos (hash index 0x704fd0ec) ctl
  | (<:sig_item< declare $list:sil$ end >>) ->
       List.fold_left hash_sig_item index sil
  | (<:sig_item< exception $s$ of $list:tl$ >>) ->
       List.fold_left hash_type (hash_string (hash index 0x6fd24af2) s) tl
  | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
       List.fold_left hash_string (hash_type (hash_string (hash index 0x06b1c733) s) t) sl
- | MLast.SgInc (_, mt) ->
+ | (<:sig_item< include $mt$ >>) ->
       hash_module_type (hash index 0x283bed1) mt
  | (<:sig_item< module $s$ : $mt$ >>) ->
       hash_module_type (hash (hash_string index s) 0x22e62741) mt
@@ -248,21 +246,20 @@ and hash_sig_item index = function
       List.fold_left hash_tdl (hash index 0x3c820480) tdl
  | (<:sig_item< value $s$ : $t$ >>) ->
       hash_type (hash_string (hash index 0x2a8f655f) s) t
+ | MLast.SgDir (loc, s, eo) ->
+      hash_string (hash_expr_opt (hash index 0x5ab39bee) eo) s
 
 and hash_str_item index = function
-(*
    (<:str_item< class $list:cdl$ >>) ->
-*)
-   MLast.StCls (_, cdl) ->
-      List.fold_left hash_class_expr_infos (hash index 0x0629e079) cdl
- | MLast.StClt (_, cdl) ->
+      List.fold_left hash_class_expr_infos (hash index 0x5058b095) cdl
+ | (<:str_item< class type $list:cdl$ >>) ->
       List.fold_left hash_class_type_infos (hash index 0x0627e079) cdl
  | (<:str_item< declare $list:stl$ end >>) ->
       List.fold_left hash_str_item index stl
  | (<:str_item< exception $s$ of $list:tl$ >>) ->
       List.fold_left hash_type (hash_string (hash index 0x6172cfc9) s) tl
  | (<:str_item< $exp:e$ >>) ->
-      hash_expr (hash index 0x3890da9c) e
+      hash_expr (hash index 0x27b41b21) e
  | (<:str_item< external $s$ : $t$ = $list:sl$ >>) ->
       List.fold_left hash_string (hash (hash_type (hash_string index s) t) 0x0294d774) sl
  | (<:str_item< module $s$ = $me$ >>) ->
@@ -275,6 +272,10 @@ and hash_str_item index = function
       List.fold_left hash_tdl (hash index 0x0c9046df) tdl
  | (<:str_item< value $rec:b$ $list:pel$ >>) ->
       List.fold_left hash_pe (if b then 0x2715b1cb else 0x383ff901) pel
+ | MLast.StDir (loc, s, eo) ->
+      hash_string (hash_expr_opt (hash index 0x371be624) eo) s
+ | MLast.StInc (loc, me) ->
+      hash_module_expr (hash index 0x17be552b) me
 
 and hash_module_type index = function
    (<:module_type< $mt1$ . $mt2$ >>) ->
@@ -424,9 +425,6 @@ and hash_pe index (patt, expr) =
 and hash_se index (s, e) =
    hash_string (hash_expr (hash index 0x70cea23f) e) s
 
-and hash_ee index (e1, e2) =
-   hash_expr (hash_expr (hash index 0x7b06e459) e2) e1
-
 and hash_pp index (p1, p2) =
    hash_patt (hash_patt (hash index 0x1272c69f) p2) p1
 
@@ -435,6 +433,9 @@ and hash_st index (s, t) =
 
 and hash_sbt index (s, b, t) =
    hash_string (hash_bool (hash_type (hash index 0x1fa3771f) t) b) s
+
+and hash_sbtl index (s, b, tl) =
+   List.fold_left hash_type (hash_bool (hash_string (hash index 0x7497f04c) s) b) tl
 
 and hash_stl index (s, tl) =
    List.fold_left hash_type (hash_string (hash index 0x7497f04c) s) tl

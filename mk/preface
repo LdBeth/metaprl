@@ -9,14 +9,14 @@
 #
 include $(ROOT)/mk/config
 
-MP_VERSION=0.7.0
+MP_VERSION=0.7.1
 
 #
 # Versions of Ocaml/Camlp4 that are compatible with MetaPRL
 # CAML_VERSIONS shoud be a space-separated list of versions
 #
-CAML_VERSIONS=2.03 2.04
-CAMLP4_VERSIONS=2.04+plexer
+CAML_VERSIONS=3.02
+CAMLP4_VERSIONS=3.02_for_MetaPRL-0.7.1
 
 # All the names for "yes"
 YESFLAGS=1 true True t T TRUE Y y yes Yes YES
@@ -77,7 +77,7 @@ ifndef READLINE
 endif
 ifneq (,$(findstring $(READLINE),$(YESFLAGS)))
    READLINE=YES
-   OTHER_CCLIBS := $(OTHER_CCLIBS) -cclib -lreadline
+   OTHER_CCLIBS := $(OTHER_CCLIBS) -cclib -lreadline -cclib -ltermcap
 else
    READLINE=no
 endif

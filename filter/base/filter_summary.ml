@@ -742,14 +742,14 @@ let res_op                     = mk_opname "resource_defs"
 let opname_op                  = mk_opname "opname"
 let mlrewrite_op               = mk_opname "mlrewrite"
 let mlaxiom_op                 = mk_opname "mlaxiom"
-let parent_op                  = mk_opname "parent"
+let parent_op                  = mk_opname "parent2"
 let module_op                  = mk_opname "module"
 let dform_op                   = mk_opname "dform"
 let prec_op                    = mk_opname "prec"
 let prec_rel_op                = mk_opname "prec_rel"
 let id_op                      = mk_opname "id"
 let comment_op                 = mk_opname "comment"
-let resource_op                = mk_opname "resource"
+let resource_op                = mk_opname "resource2"
 let infix_op                   = mk_opname "infix"
 let magic_block_op             = mk_opname "magic_block"
 let summary_item_op            = mk_opname "summary_item"
@@ -1235,10 +1235,11 @@ struct
             in
                Some info
          with
-            Failure _
-          | RefineError (_, TermMatchError _) ->
+            Failure _ ->
                eprintf "Filter_summary.dest_term: incorrect syntax for %s%t" (string_of_opname opname) eflush;
                None
+          | RefineError (x, TermMatchError (t', _)) ->
+               raise (RefineError (x, TermPairMatchError (t, t')))
 
    and dest_term_loc
        (convert : (term, term, term, term, term, term, term,

@@ -1,0 +1,13 @@
+#!/bin/csh -f
+
+cd `dirname $0`
+
+#
+# Configuration
+#
+source mpconfig
+
+#
+# Start the executable.
+#
+exec ocamldebug $INCLUDES -I ../../refiner/reflib ./mp.top $INCLUDES $*

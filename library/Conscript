@@ -7,7 +7,7 @@ $env = $env->clone(
 OCamlSources $env
 	'lib_term.ml',
 	'utils.ml',
-	'int32.ml',
+	'lint32.ml',
 	'nuprl5.ml',
 	'registry.ml',
 	'mathBus.ml',
@@ -27,7 +27,7 @@ OCamlSources $env
 OCamlLibrary $env 'library',
 	'lib_term',
 	'utils',
-	'int32',
+	'lint32',
 	'nuprl5',
 	'registry',
 	'mathBus',

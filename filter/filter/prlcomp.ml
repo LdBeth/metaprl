@@ -56,8 +56,7 @@ open Filter_magic
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Prlcomp%t";
-   Debug_set.init ()
+   show_loading "Loading Prlcomp%t"
 
 (*
  * Flags.
@@ -187,8 +186,8 @@ let exe_name =
       else
          (fun name -> name)
 
-let ocamlc_exe   = exe_name "ocamlc"
-let ocamlopt_exe = exe_name "ocamlopt"
+let ocamlc_exe   = exe_name "ocamlc.opt"
+let ocamlopt_exe = exe_name "ocamlopt.opt"
 let camlp4o_exe  = exe_name "camlp4o"
 let camlp4n_exe  = exe_name "camlp4n"
 let prlcn_exe    = exe_name "prlcn"
@@ -307,7 +306,7 @@ let main () =
        | Unix.WSTOPPED _ ->
             exit 1
 *)
-      Punix.execvp argv'.(0) argv';
+      Unix.execvp argv'.(0) argv';
       eprintf "Execution failed: %s%t" argv'.(0) eflush;
       exit 1
 

@@ -52,6 +52,7 @@ let debug_resource =
         debug_value = false
       }
 
+(* open Red_black_table *)
 module UseTable = Red_black_table
 
 (************************************************************************

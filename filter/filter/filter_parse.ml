@@ -1062,7 +1062,7 @@ let _ =
    Grammar.Unsafe.clear_entry interf;
    Grammar.Unsafe.clear_entry implem
 
-let operator = Pa_o.operator
+let operator = Pa_o.operator_rparen
 
 EXTEND
    GLOBAL: interf implem sig_item str_item expr;
@@ -1076,7 +1076,7 @@ EXTEND
                 SigFilter.save proc AnySuffix;
                 SigFilter.extract () proc
           in
-             print_exn f "interf" loc
+             print_exn f "interf" loc, false
        ]];
 
    interf_opening:
@@ -1112,7 +1112,7 @@ EXTEND
                 StrFilter.save proc AnySuffix;
                 StrFilter.extract interf proc
           in
-             print_exn f "implem" loc
+             print_exn f "implem" loc, false
        ]];
 
    implem_opening:
@@ -1434,8 +1434,8 @@ EXTEND
                          Stdpp.raise_with_loc (MLast.loc_of_expr expr) (Failure "resource is not a sequence")
                 in
                    match e with
-                      <:expr< do $list:el$ return $e$ >> ->
-                         List.map (fun expr -> split_application (MLast.loc_of_expr expr) [] expr) (el @ [e])
+                      <:expr< do { $list:el$ } >> ->
+                         List.map (fun expr -> split_application (MLast.loc_of_expr expr) [] expr) el
                     | _ ->
                          [split_application (MLast.loc_of_expr e) [] e]
            in

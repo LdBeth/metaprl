@@ -1595,7 +1595,7 @@ struct
       PrimAxiomRefiner pax ->
          ignore (axiom_proof pax)
     | PrimRuleRefiner prule ->
-         ignore (rule_proof prule)
+         let _ = rule_proof prule in ()
     | PrimRewriteRefiner prw ->
          rewrite_proof prw
     | PrimCondRewriteRefiner pcrw ->

@@ -9,40 +9,40 @@ class NuprlDebug
     /**
      * Debug socket input.
      */
-    static final boolean debug_input = true;
+    static final boolean debug_input = false;
 
     /**
      * Debug telnet protocol.
      */
-    static final boolean debug_telnet = true;
+    static final boolean debug_telnet = false;
 
     /**
      * Debug terminal protocol.
      */
-    static final boolean debug_terminal = true;
+    static final boolean debug_terminal = false;
 
     /**
      * Debug terminal protocol.
      */
-    static final boolean debug_text_terminal = true;
+    static final boolean debug_text_terminal = false;
 
     /*
      * Debug text operations in text window.
      */
-    static final boolean debug_text = true;
+    static final boolean debug_text = false;
 
     /**
      * Debug window manager.
      */
-    static final boolean debug_manager = true;
+    static final boolean debug_manager = false;
 
     /**
      * Debug term windows.
      */
-    static final boolean debug_term = true;
+    static final boolean debug_term = false;
 
     /**
      * Debug the token pipe.
      */
-    static final boolean debug_token_stream = true;
+    static final boolean debug_token_stream = false;
 }

@@ -31,7 +31,7 @@ open Printf
 open Mp_debug
 open Mp_pervasives
 
-open Int32
+open Lint32
 open Mp_num
 open MathBus
 open Refiner.Refiner.Term

@@ -32,7 +32,7 @@ value caml_readline(value prompt_arg)
     /* Readline returns null on EOF */
     if(line == 0) {
         /* None */
-        CAMLreturn Val_int(0);
+        CAMLreturn(Val_int(0));
     }
 
     /* This (probably) copies the line */
@@ -42,7 +42,7 @@ value caml_readline(value prompt_arg)
     bufp = malloc(MAX_LINE_LENGTH);
     if(bufp == 0) {
         /* Pretend that we have reached EOF */
-        CAMLreturn Val_int(0);
+        CAMLreturn(Val_int(0));
     }
 
     /* Get the line (make sure string is terminated) */
@@ -54,7 +54,7 @@ value caml_readline(value prompt_arg)
     if(line == 0) {
         /* None */
         free(bufp);
-        CAMLreturn Val_int(0);
+        CAMLreturn(Val_int(0));
     }
 #endif
 
@@ -68,5 +68,5 @@ value caml_readline(value prompt_arg)
     /* Free the buffer */
     free(line);
 
-    CAMLreturn b;
+    CAMLreturn(b);
 }

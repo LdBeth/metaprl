@@ -71,7 +71,6 @@ val debug_usage : unit -> unit
  * then check them later.
  *)
 val set_possible_debug : string -> bool -> unit
-val check_debug : unit -> unit
 
 (*
  * Print a list of strings.

@@ -80,7 +80,7 @@
  *   implementation from the same source.
  *
  * USETOPMACRO MAC <expr>... END
- *   Use a toplevel macro.  
+ *   Use a toplevel macro.
  *
  * IFIMPLEMENTATION THEN <str_item>... ELSE <sig_item>... END
  *   This is useful for files that are compiled from the same source, and one
@@ -187,6 +187,9 @@ module Codewalk = struct
    and string_bool_ctyp (x, y, z) =
       (x, y, ctyp z)
 
+   and string_bool_ctyplist (x, y, z) =
+      (x, y, map ctyp z)
+
    and string_ctyplist (x, y) =
       (x, map ctyp y)
 
@@ -233,15 +236,18 @@ module Codewalk = struct
        | TyApp (l, x, y)    -> TyApp (!loc l, ctyp x, ctyp y)
        | TyArr (l, x, y)    -> TyArr (!loc l, ctyp x, ctyp y)
        | TyCls (l, x)       -> TyCls (!loc l, x)
+       | TyLab (l, s, x)    -> TyLab (!loc l, s, ctyp x)
        | TyLid (l, x)       -> TyLid (!loc l, x)
        | TyMan (l, x, y)    -> TyMan (!loc l, ctyp x, ctyp y)
        | TyObj (l, x, y)    -> TyObj (!loc l, map string_ctyp x, y)
+       | TyOlb (l, s, x)    -> TyOlb (!loc l, s, ctyp x)
        | TyQuo (l, x)       -> TyQuo (!loc l, x)
        | TyRec (l, x)       -> TyRec (!loc l, map string_bool_ctyp x)
        | TySum (l, x)       -> TySum (!loc l, map string_ctyplist x)
        | TyTup (l, x)       -> TyTup (!loc l, map ctyp x)
        | TyUid (l, x)       -> TyUid (!loc l, x)
        | TyXnd (l, s, x)    -> TyXnd (!loc l, s, ctyp x)
+       | TyVrn (l, s, x)    -> TyVrn (!loc l, map string_bool_ctyplist s, x)
 
    and patt x =
       let newx = (match !patt_fun with None -> x | Some f -> f x) in
@@ -254,8 +260,11 @@ module Codewalk = struct
        | PaApp (l, x, y)    -> PaApp (!loc l, patt x, patt y)
        | PaArr (l, x)       -> PaArr (!loc l, map patt x)
        | PaChr (l, x)       -> PaChr (!loc l, x)
+       | PaFlo (l, x)       -> PaFlo (!loc l, x)
        | PaInt (l, x)       -> PaInt (!loc l, x)
+       | PaLab (l, s, x)    -> PaLab (!loc l, s, patt x)
        | PaLid (l, x)       -> PaLid (!loc l, x)
+       | PaOlb (l, s, p, e) -> PaOlb (!loc l, s, patt p, expropt e)
        | PaOrp (l, x, y)    -> PaOrp (!loc l, patt x, patt y)
        | PaRng (l, x, y)    -> PaRng (!loc l, patt x, patt y)
        | PaRec (l, x)       -> PaRec (!loc l, map patt_patt x)
@@ -264,6 +273,7 @@ module Codewalk = struct
        | PaTyc (l, x, y)    -> PaTyc (!loc l, patt x, ctyp y)
        | PaUid (l, x)       -> PaUid (!loc l, x)
        | PaXnd (l, s, x)    -> PaXnd (!loc l, s, patt x)
+       | PaVrn (l, x)       -> PaVrn (!loc l, x)
 
    and class_type_infos x =
       match x with
@@ -295,14 +305,16 @@ module Codewalk = struct
        | ExFun (l, x)       -> ExFun (!loc l, map patt_expropt_expr x)
        | ExIfe (l, x, y, z) -> ExIfe (!loc l, expr x, expr y, expr z)
        | ExInt (l, x)       -> ExInt (!loc l, x)
+       | ExLab (l, s, x)    -> ExLab (!loc l, s, expr x)
        | ExLet (l, x, y, z) -> ExLet (!loc l, x, map patt_expr y, expr z)
        | ExLid (l, x)       -> ExLid (!loc l, x)
        | ExLmd (l, x, y, z) -> ExLmd (!loc l, x, module_expr y, expr z)
        | ExMat (l, x, y)    -> ExMat (!loc l, expr x, map patt_expropt_expr y)
        | ExNew (l, x)       -> ExNew (!loc l, x)
+       | ExOlb (l, s, x)    -> ExOlb (!loc l, s, expr x)
        | ExOvr (l, x)       -> ExOvr (!loc l, map string_expr x)
-       | ExRec (l, x, y)    -> ExRec (!loc l, map expr_expr x, expropt y)
-       | ExSeq (l, x, y)    -> ExSeq (!loc l, map expr x, expr y)
+       | ExRec (l, x, y)    -> ExRec (!loc l, map patt_expr x, expropt y)
+       | ExSeq (l, x)       -> ExSeq (!loc l, map expr x)
        | ExSnd (l, x, y)    -> ExSnd (!loc l, expr x, y)
        | ExSte (l, x, y)    -> ExSte (!loc l, expr x, expr y)
        | ExStr (l, x)       -> ExStr (!loc l, x)
@@ -312,6 +324,7 @@ module Codewalk = struct
        | ExUid (l, x)       -> ExUid (!loc l, x)
        | ExWhi (l, x, y)    -> ExWhi (!loc l, expr x, map expr y)
        | ExXnd (l, s, x)    -> ExXnd (!loc l, s, expr x)
+       | ExVrn (l, x)       -> ExVrn (!loc l, x)
 
    and module_type x =
       let newx = match !mtyp_fun with None -> x | Some f -> f x in
@@ -330,6 +343,7 @@ module Codewalk = struct
        | SgCls (l, x)       -> SgCls (!loc l, map class_type_infos x)
        | SgClt (l, x)       -> SgClt (!loc l, map class_type_infos x)
        | SgDcl (l, x)       -> SgDcl (!loc l, map sig_item x)
+       | SgDir (l, x, y)    -> SgDir (!loc l, x, expropt y)
        | SgExc (l, x, y)    -> SgExc (!loc l, x, map ctyp y)
        | SgExt (l, x, y, z) -> SgExt (!loc l, x, ctyp y, z)
        | SgInc (l, x)       -> SgInc (!loc l, module_type x)
@@ -360,9 +374,11 @@ module Codewalk = struct
        | StCls (l, x)       -> StCls (!loc l, map class_expr_infos x)
        | StClt (l, x)       -> StClt (!loc l, map class_type_infos x)
        | StDcl (l, x)       -> StDcl (!loc l, map str_item x)
+       | StDir (l, x, y)    -> StDir (!loc l, x, expropt y)
        | StExc (l, x, y)    -> StExc (!loc l, x, map ctyp y)
        | StExp (l, x)       -> StExp (!loc l, expr x)
        | StExt (l, x, y, z) -> StExt (!loc l, x, ctyp y, z)
+       | StInc (l, y)       -> StInc (!loc l, module_expr y)
        | StMod (l, x, y)    -> StMod (!loc l, x, module_expr y)
        | StMty (l, x, y)    -> StMty (!loc l, x, module_type y)
        | StOpn (l, x)       -> StOpn (!loc l, x)
@@ -755,7 +771,7 @@ let rec expr2patt expr =
        | <:expr< { $list:eel$ } >> ->
             let ppl =
                List.map
-                  (fun (e1, e2) -> ((expr2patt e1), (expr2patt e2)))
+                  (fun (e1, e2) -> (e1, (expr2patt e2)))
                   eel
             in <:patt< { $list:ppl$ } >>
        | _ -> failwith "could not convert expression to pattern."
@@ -918,7 +934,7 @@ let add_include_dir str =
                 then str else str ^ "/" in
          include_dirs := !include_dirs @ [str]
 
-let read_file file pa =
+let read_file file pa loc =
    (* This is copied from camlp4/argl.ml's 'process'. *)
    let file =
       try (List.find (fun dir -> Sys.file_exists (dir ^ file)) !include_dirs)
@@ -929,7 +945,18 @@ let read_file file pa =
    let clear()  = close_in ic in
    let cs       = Stream.of_channel ic in
       input_file := file;
-      let phr = try Grammar.Entry.parse pa cs with x -> clear(); raise x
+      let phr =
+         try
+            let rec loop () =
+               let (pl, stopped_at_directive) = Grammar.Entry.parse pa cs in
+                  if stopped_at_directive then
+                     Stdpp.raise_with_loc loc
+                        (Stream.Error "Directives not supported by the macro package")
+                  else pl
+             in
+               loop ()
+          with x ->
+             clear (); raise x
       in
          clear();
          (* Note: input_file isn't restored above when on an error. *)
@@ -973,7 +1000,7 @@ let handle_macstuff strip_StrSig codewalker macexpand pa lister loc =
                        (Codewalk.changeloc
                            loc
                            (Codewalk.ast_list codewalker)
-                           (read_file file pa))
+                           (read_file file pa loc))
             in
                lister l
    in

@@ -261,19 +261,6 @@ let get_debug name =
    in
       search !info
 
-(*
- * Check for no remaining possible debug flags.
- *)
-let check_debug () =
-   ()
-(*
-   if List.exists (fun info -> info.info_info = None) !info then
-      begin
-         debug_usage ();
-         raise (Failure "check_debug")
-      end
-*)
-
 (************************************************************************
  * PARTICULAR DEBUG                                                     *
  ************************************************************************)

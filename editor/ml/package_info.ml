@@ -167,7 +167,7 @@ struct
     * so that they can be compiled with the theory.  The term we produce
     * has type (unit -> extract).  Expands to:
     *
-    *    (Package_info.prove name tactics)
+    *    (Package_info/prove name tactics)
     *
     * BUG: jyh: I backed this out, and right now proofs
     * always fail.
@@ -177,7 +177,7 @@ struct
       let unit_patt = <:patt< () >> in
       let error_expr =
          <:expr< raise ( Refiner.Refiner.RefineError
-                           ("Package_info.to_expr",
+                           ("Package_info/to_expr",
                               (Refiner.Refiner.RefineError.StringError
                                                "interactive proofs not implemented"))) >>
       in
@@ -398,10 +398,10 @@ struct
                   ImpDag.add_edge pack.pack_dag pnode node
             with
                Not_found ->
-                  raise (Failure "Package_info.maybe_add_package: parent is not defined")
+                  raise (Failure "Package_info/maybe_add_package: parent is not defined")
          end
     | path ->
-         raise (Failure ("Package_info.insert_parent: parent is not toplevel: " ^ string_of_path path))
+         raise (Failure ("Package_info/insert_parent: parent is not toplevel: " ^ string_of_path path))
 
    (*
     * Add a signature package.
@@ -442,7 +442,7 @@ struct
             let parents = Filter_summary.parents sig_info in
                List.iter (insert_parent pack node) parents
        | _ ->
-            raise (Failure "Package_info.maybe_add_package: nested modules are not implemented")
+            raise (Failure "Package_info/maybe_add_package: nested modules are not implemented")
 
    (*
     * When a module is inlined, add the resources and infixes.
@@ -484,7 +484,7 @@ struct
             Some { pack_str_info = info } ->
                Cache.StrFilterCache.parents info
           | None ->
-               raise (Invalid_argument "Package_info.add_implementation")
+               raise (Invalid_argument "Package_info/add_implementation")
       in
       let node = ImpDag.insert dag pack_info in
          pack.pack_packages <- node :: remove packages;
@@ -519,7 +519,7 @@ struct
       with
          Not_found
        | Sys_error _ ->
-            raise (Failure (sprintf "Package_info.load: '%s' not found" name))
+            raise (Failure (sprintf "Package_info/load: '%s' not found" name))
 
    (*
     * Make sure the str info is valid.
@@ -685,7 +685,7 @@ struct
                Some { pack_str_info = info } ->
                   Cache.StrFilterCache.mk_opname info opname params bterms
              | None ->
-                  raise (Failure (sprintf "Package_info.mk_opname: %s not initialized" pack_info.pack_name)))
+                  raise (Failure (sprintf "Package_info/mk_opname: %s not initialized" pack_info.pack_name)))
 
    (*
     * Get a loaded theory.
@@ -702,15 +702,15 @@ struct
    let save pack_info =
       synchronize_node pack_info (function
          { pack_status = ReadOnly; pack_name = name } ->
-            raise (Failure (sprintf "Package_info.save: package '%s' is read-only" name))
+            raise (Failure (sprintf "Package_info/save: package '%s' is read-only" name))
        | { pack_status = Unmodified } ->
             ()
        | { pack_status = Incomplete; pack_name = name } ->
-            raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
+            raise (Failure (sprintf "Package_info/save: package '%s' is incomplete" name))
        | { pack_status = Modified; pack_str = Some { pack_str_info = info; pack_parse = arg } } ->
             Cache.StrFilterCache.save info arg (OnlySuffixes ["prlb"])
        | { pack_status = Modified; pack_str = None } ->
-            raise (Invalid_argument "Package_info.save"))
+            raise (Invalid_argument "Package_info/save"))
 
    let export arg pack_info =
       auto_loading_str arg pack_info (function
@@ -726,7 +726,7 @@ struct
       synchronize_pack pack (function
          pack ->
             let info =
-               { pack_info = pack;
+              { pack_info = pack;
                  pack_status = Modified;
                  pack_sig_info = None;
                  pack_str = Some { pack_str_info =
@@ -752,7 +752,7 @@ struct
          try
             Mp_resource.find (Mp_resource.theory_bookmark mod_name)
          with Not_found ->
-            raise (RefineError("Package_info.new_proof", StringError("can not find any resources")))
+            raise (RefineError("Package_info/new_proof", StringError("can not find any resources")))
       end
 
    let arg_resource pack_info arg name =

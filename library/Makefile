@@ -38,7 +38,7 @@ CCLIBS =\
 LMFILES :=\
 	lib_term\
 	utils\
-	int32\
+	lint32\
 	nuprl5\
 	registry\
 	mathBus\

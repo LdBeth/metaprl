@@ -12,21 +12,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -111,7 +111,7 @@ let free_vars expr =
          free bvars l e
     | <:expr< $flo:s$ >> ->
          l
-    | <:expr< for $v$ = $e1$ $to:_$ $e2$ do $list:el$ done >> ->
+    | <:expr< for $v$ = $e1$ $to:_$ $e2$ do { $list:el$ } >> ->
          List.fold_left (free (v::bvars)) (free bvars (free bvars l e1) e2) el
     | <:expr< fun [ $list:pwel$ ] >> ->
          free_pwel bvars l pwel
@@ -137,12 +137,9 @@ let free_vars expr =
          List.fold_left (fun l (_, el) -> free bvars l el) l sel
     | <:expr< { $list:eel$ } >> ->
          List.fold_left (fun l (_, el) -> free bvars l el) l eel
-    | <:expr< do $list:el$ return $e$ >> ->
-         List.fold_left (free bvars) (free bvars l e) el
-(*
+    | <:expr< do { $list:el$ } >> ->
+         List.fold_left (free bvars) l el
     | <:expr< $e$ # $_$ >> ->
-*)
-    | MLast.ExSnd (_, e, _) ->
          free bvars l e
     | <:expr< $e1$ .[ $e2$ ] >> ->
          free bvars (free bvars l e1) e2
@@ -156,7 +153,7 @@ let free_vars expr =
          free bvars l e
     | <:expr< $uid:_$ >> ->
          l
-    | <:expr< while $e$ do $list:el$ done >> ->
+    | <:expr< while $e$ do { $list:el$ } >> ->
          List.fold_left (free bvars) (free bvars l e) el
     | _ ->
          raise (Failure "free_vars: expression not recognized")

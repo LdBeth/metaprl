@@ -153,11 +153,11 @@ struct
    let eval_str_item loc item =
       let pt_item = Ast2pt.str_item item [] in
           try
-             if not (Toploop.execute_phrase false (Parsetree.Ptop_def pt_item)) then
+             if not (Toploop.execute_phrase false Format.std_formatter (Parsetree.Ptop_def pt_item)) then
                 raise (RefineError ("eval_expr", StringError "evaluation failed"))
           with
              Typecore.Error (_, err) ->
-                Typecore.report_error err;
+                Typecore.report_error Format.std_formatter err;
                 eflush stdout;
                 raise (RefineError ("eval_expr", StringError "evaluation failed"))
 
@@ -173,7 +173,7 @@ struct
           | OnceInitial pt_item ->
                inline_tactic := None;
                try
-                  if Toploop.execute_phrase false (Parsetree.Ptop_def pt_item) then
+                  if Toploop.execute_phrase false Format.std_formatter (Parsetree.Ptop_def pt_item) then
                      match !inline_tactic with
                         Some tac ->
                            tacv := OnceFinal tac;
@@ -184,7 +184,7 @@ struct
                      raise (RefineError ("eval_tactic", StringError "evaluation failed"))
                with
                   Typecore.Error (_, err) ->
-                     Typecore.report_error err;
+                     Typecore.report_error Format.std_formatter err;
                      eflush stdout;
                      raise (RefineError ("eval_tactic", StringError "evaluation failed"))
       in
@@ -272,16 +272,16 @@ struct
                   raise (Invalid_argument "MPLIB environment variable in undefined")
          in
          let eval_include inc =
-            let _ = Toploop.execute_phrase false (Ptop_dir ("directory", Pdir_string inc)) in
+            let _ = Toploop.execute_phrase false Format.std_formatter (Ptop_dir ("directory", Pdir_string inc)) in
                ()
          in
             Debug_set.init ();
             eval_include mplib;
             List.iter eval_include (State.get_includes ());
-            let _ = Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Ldot (Lident "Shell_state", "ShellState"), "term_printer")))) in
-            let _ = Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp");
-                                                      pstr_loc = Location.none
-                                                    }]) in
+            let _ = Toploop.execute_phrase false Format.std_formatter
+               (Ptop_dir ("install_printer", Pdir_ident (Ldot (Ldot (Lident "Shell_state", "ShellState"), "term_printer")))) in
+            let _ = Toploop.execute_phrase false Format.std_formatter
+               (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp"); pstr_loc = Location.none }]) in
             let _ = Tactic.main_loop () in
                ()
       in

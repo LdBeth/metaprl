@@ -251,15 +251,6 @@ let relaxed_expr loc =
 (*
  * Other expressions.
  *)
-let thy_name_expr loc =
-   <:expr< Theory.thy_name >>
-
-let thy_refiner_expr loc =
-   <:expr< Theory.thy_refiner >>
-
-let thy_dformer_expr loc =
-   <:expr< Theory.thy_dformer >>
-
 let label_refiner_expr loc =
    <:expr< $refiner_expr loc$ . label_refiner >>
 
@@ -281,17 +272,17 @@ let get_resource_name name =
 let input_type name =
    "_$" ^ name ^ "_resource_input"
 
-let dform_name_expr loc =
-   <:expr< Dform.dform_name >>
+let dform_name_patt loc =
+   <:patt< Dform.dform_name >>
 
-let dform_pattern_expr loc =
-   <:expr< Dform.dform_pattern >>
+let dform_pattern_patt loc =
+   <:patt< Dform.dform_pattern >>
 
-let dform_options_expr loc =
-   <:expr< Dform.dform_options >>
+let dform_options_patt loc =
+   <:patt< Dform.dform_options >>
 
-let dform_print_expr loc =
-   <:expr< Dform.dform_print >>
+let dform_print_patt loc =
+   <:patt< Dform.dform_print >>
 
 let dform_term_patt loc =
    <:patt< Dform.dform_term >>
@@ -467,7 +458,7 @@ let wrap_exn loc name e =
    let show_loading = <:expr< Mp_debug.show_loading >> in
    let msg = <:expr< $str: "Loading " ^ name ^ "%t"$ >> in
    let loading_msg = <:expr< $show_loading$ $msg$ >> in
-      <:expr< do $list: [ loading_msg ]$ return $wrapped$ >>
+      <:expr< do { $list: [ loading_msg; wrapped ] $ } >>
 
 (*
  * Param expression.
@@ -1628,7 +1619,7 @@ struct
                                           wild_patt, thm_value ]$
                   in
                   let $rec:false$ $list:[ name_rule_patt, rule_expr ]$ in
-                     ( do $list:resource_exprs$ return $name_rule_expr$ )
+                     ( do { $list:(resource_exprs @[name_rule_expr])$ } )
           >>)
       in
       let rule_def = <:str_item< value $rec:false$ $list:[ name_rule_patt, wrap_exn loc name rule_expr ]$ >> in
@@ -1787,10 +1778,10 @@ struct
       let expansion_expr = <:expr< $dform_expansion_expr loc$ $expr_of_term loc expansion$ >> in
       let t_expr = expr_of_term loc t in
       let rec_value =
-         <:expr< { $list:[ dform_name_expr loc, name_expr;
-                           dform_pattern_expr loc, t_expr;
-                           dform_options_expr loc, options_expr;
-                           dform_print_expr loc, expansion_expr ]$ } >>
+         <:expr< { $list:[ dform_name_patt loc, name_expr;
+                           dform_pattern_patt loc, t_expr;
+                           dform_options_patt loc, options_expr;
+                           dform_print_patt loc, expansion_expr ]$ } >>
       in
       let expr = <:expr< $create_dform_expr loc modes$ $lid:local_dformer_id$ $rec_value$ >> in
          [<:str_item< $exp: wrap_exn loc name expr$ >>]
@@ -1898,10 +1889,10 @@ struct
       (* Build the program *)
       let dprinter = <:expr< $dform_printer_expr loc$ $dprinter_expr$ >> in
       let rec_value =
-         <:expr< { $list:[ dform_name_expr loc, name_expr;
-                           dform_pattern_expr loc, term_expr;
-                           dform_options_expr loc, options_expr;
-                           dform_print_expr loc, dprinter ]$ } >>
+         <:expr< { $list:[ dform_name_patt loc, name_expr;
+                           dform_pattern_patt loc, term_expr;
+                           dform_options_patt loc, options_expr;
+                           dform_print_patt loc, dprinter ]$ } >>
       in
       let body_expr =
          <:expr< $create_dform_expr loc modes$ $lid:local_dformer_id$ $rec_value$ >>
@@ -2086,9 +2077,9 @@ struct
     *)
    let implem_postlog { imp_name = name } loc =
       let thy_elems =
-         [(<:expr< $thy_name_expr loc$ >>, <:expr< $str:name$ >>);
-          (<:expr< $thy_refiner_expr loc$ >>, <:expr< $lid:refiner_id$ >>);
-          (<:expr< $thy_dformer_expr loc$ >>, <:expr< $lid:dformer_id$ >>)]
+         [(<:patt< Theory.thy_name >>, <:expr< $str:name$ >>);
+          (<:patt< Theory.thy_refiner >>, <:expr< $lid:refiner_id$ >>);
+          (<:patt< Theory.thy_dformer >>, <:expr< $lid:dformer_id$ >>)]
       in
       let thy_rec = <:expr< { $list:thy_elems$ } >> in
       let thy = <:expr< Theory.record_theory $thy_rec$ >> in

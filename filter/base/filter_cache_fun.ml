@@ -742,13 +742,15 @@ struct
     *    2. Load path
     *)
    let create_cache base name self_select child_select =
+      let dir = Filename.dirname name in
+      let name = Filename.basename name in
       { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
         optable = create_optable ();
         summaries = [];
         precs = [];
         resources = [];
         info = new_module_info ();
-        self = Base.create_info base.lib self_select "." name;
+        self = Base.create_info base.lib self_select dir name;
         name = name;
         base = base;
         select = self_select

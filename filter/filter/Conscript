@@ -3,9 +3,32 @@ Import qw( env );
 $env = $env->clone(
 	INCPATH	=> [@{$env->{INCPATH}}, "../base", "../boot"],
 	OCAMLC => "$env->{OCAMLC} -I /usr/lib/camlp4",
-	OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
+	OCAMLLINK => "$env->{OCAMLLINK} -I /usr/lib/camlp4",
+	OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -linkall -pp '%CAMLP4MACRO'",
     	PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}",
-	MLLIBS => "unix.cmxa threads.cmxa camlp4.cmxa odyl.cmxa pa_o.cmx pr_dump.cmx pa_extend.cmx q_MLast.cmx"
+        MLLIBS => "unix.cmxa threads.cmxa",
+        CCLIBS => "-cclib clib/clib.a"
+);
+
+$nenv = $env->clone(
+	MLLIBS => "$env->{MLLIBS} odyl.cmxa camlp4.cmxa pa_o.cmx pr_dump.cmx pa_extend.cmx q_MLast.cmx"
+);
+
+$oenv = $env->clone(
+	MLLIBS => "$env->{MLLIBS} odyl.cmxa camlp4.cmxa pa_o.cmx pr_o.cmx pa_extend.cmx q_MLast.cmx"
+);
+
+$poenv = $env->clone(
+	MLLIBS => "$env->{MLLIBS} odyl.cmxa camlp4.cmxa pr_dump.cmx"
+);
+
+$pnenv = $env->clone(
+	MLLIBS => "$env->{MLLIBS} odyl.cmxa camlp4.cmxa pr_o.cmx"
+);
+
+$penv = $env->clone(
+	MLLIBS => "unix.cmxa",
+	OCAMLCFLAGS => ""
 );
 
 OCamlSources $env
@@ -22,7 +45,12 @@ OCamlLibrary $env 'filter',
 	'filter_convert',
 	'prlcomp';
 
-OCamlProgram $env 'camlp4n', 'filter_parse', 'filter_main';
+OCamlProgram $nenv  'camlp4n', 'filter_main';
+OCamlProgram $oenv  'camlp4o', 'filter_main';
+OCamlProgram $pnenv 'prlcn', 'filter_bin';
+OCamlProgram $poenv 'prlco', 'filter_bin';
+OCamlProgram $env   'convert', 'filter_convert';
+OCamlProgram $penv  'prlc', 'prlcomp';
 
 ## Add the library to the default target list
-Default qw( filter.cmxa camlp4n );
+Default qw( filter.cmxa camlp4n camlp4o prlcn prlco prlc );

@@ -63,7 +63,7 @@ OCamlLibrary $env 'util',
 ## - A leading # in a filename indicates that the name is relative to the
 ##   top-level directory.
 #
-OCamlProgram $env 'ocamldep', 'ocamldep', 'misc';
+OCamlProgram $env 'ocamldep', 'ocamldep';
 
 ## Add the program to the default target list
 Default qw( util.cma ocamldep );

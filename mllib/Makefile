@@ -53,7 +53,6 @@ LMFILES :=\
 	mp_big_int\
 	mp_num\
 	mp_ctype\
-	debug_set\
 	bitset\
 	imp_dag\
 	precedence\

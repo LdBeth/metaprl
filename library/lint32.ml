@@ -7,21 +7,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
@@ -29,7 +29,7 @@ open Printf
 open Mp_debug
 
 let _ =
-   show_loading "Loading Int32%t"
+   show_loading "Loading Lint32%t"
 
  (*module type BigIntSig =
 sig
@@ -90,7 +90,7 @@ let lbsl (x, w) n =
   let a = abs (w lsl n) and b = abs ((x lsl n) land 0xFFFF) in
   if a <= 0xFFFF then (b, a)
   else ((b lor (a lsr 16)), (a land 0xFFFF)) ;;
-	
+
 let lbsl (x, w) n =
   let rec aux i y z=
     (if i = n then (y, z)
@@ -125,6 +125,6 @@ let print_int32 b =
   print_int a;
   print_char ',';
   print_int c; print_char ')'
-	
+
 
 
