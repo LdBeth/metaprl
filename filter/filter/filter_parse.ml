@@ -1039,8 +1039,15 @@ let pho_grammar_filename =
       Not_found ->
          !Phobos_state.mp_grammar_filename
 
+let pho_desc_grammar_filename =
+   try
+      Sys.getenv "DESC_LANG_FILE"
+   with
+      Not_found ->
+         !Phobos_state.mp_desc_grammar_filename
+
 EXTEND
-   GLOBAL: term interf implem sig_item str_item expr;
+   GLOBAL: singleterm term interf implem sig_item str_item expr;
 
    term: LAST
       [[ "$"; s = STRING; "$" ->
@@ -1058,12 +1065,41 @@ EXTEND
                match kind with
                   "ext" ->
                      Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
+                | "desc" ->
+                     Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
                 | "term" | "" ->
                      raise (Failure "Term quotation inside a term")
 (*                     let cs = Stream.of_string s in
                         Grammar.Entry.parse TermGrammar.term_eoi cs*)
                 | _ ->
                      raise (Invalid_argument "Invalid term quotation")
+        ]
+      ];
+
+   singleterm: FIRST
+      [[ "$"; s = STRING; "$" ->
+            { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s}
+      ]
+      | [ x = QUOTATION ->
+            let kind, s =
+               try
+                  let i = String.index x ':' in
+                     String.sub x 0 i, String.sub x (i+1) (String.length x-i-1)
+               with
+                  Not_found ->
+                     "", x
+            in
+               match kind with
+                  "ext" ->
+                     { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s }
+                | "desc" ->
+                     { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s }
+                | "term" | "" ->
+                     raise (Failure "Term quotation inside a term")
+(*                     let cs = Stream.of_string s in
+                        Grammar.Entry.parse TermGrammar.term_eoi cs*)
+                | _ ->
+                     raise (Invalid_argument "Invalid singleterm quotation")
         ]
       ];
 
