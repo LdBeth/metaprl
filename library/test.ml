@@ -309,7 +309,7 @@ let dtest connection =
 
 
 let looptest connection =
-  let lib = join connection ["NuprlLight"] in
+  let lib = join connection ["metaprl"] in
   (* let lib = join connection ["nltestl"] in  *)
     (unwind_error
       (function () ->
@@ -317,7 +317,7 @@ let looptest connection =
 	(with_transaction lib
 	   (function t ->
 		(eval t
-		 (null_ap (itext_term "\l. inform_message nil ``NuprlLight Loop Start`` nil")))))
+		 (null_ap (itext_term "\l. inform_message nil ``Metaprl Loop Start`` nil")))))
 
 	; server_loop lib
 	; leave lib

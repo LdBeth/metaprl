@@ -158,7 +158,7 @@ let error sl oids tl =
   print_newline();
   List.iter Mbterm.print_term tl;
 
- raise (Nuprl5_Exception ((String.concat " " sl),(imessage_term ("NuprlLightLibrary" :: sl) oids tl)))
+ raise (Nuprl5_Exception ((String.concat " " sl),(imessage_term ("MetaprlLibrary" :: sl) oids tl)))
 
 let special_error_handler body handler =
   try body ()

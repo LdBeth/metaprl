@@ -38,7 +38,7 @@ let library_open host localport remoteport =
   if oref_p library then
     raise (LibraryException "Open: Library already open.")
   else (let _ = oref_set library (join (oref_set connection (connect host localport remoteport))
-			    ["NuprlLight"]) in
+			    ["metaprl"]) in
 	at_exit library_close)   (* nogin: something is strange here *)
 
 let maybe_lib_open () =

@@ -660,7 +660,7 @@ let library_environment_close c addr =
 
 let nl0_description =
   mk_term (mk_nuprl5_op
-		 [make_param (Token "!description"); make_param (Token "NuprlLight")])
+		 [make_param (Token "!description"); make_param (Token "metaprl")])
 	[ mk_bterm [] (inatural_term 0)
 	; mk_bterm [] (list_to_ilist_map itoken_term ["REFINER"; "ObjectIdDAG"])
 	]
