@@ -92,14 +92,14 @@ let is_integer_big_int (sign, mag) =
     | _ :: _ :: mag ->
          zeros mag
 
+let rec collect_big_int = function
+   digit :: mag ->
+      digit + ((collect_big_int mag) lsl shift_int)
+ | [] ->
+      0
+
 let integer_big_int (sign, mag) =
-   let rec collect = function
-      digit :: mag ->
-         digit + ((collect mag) lsl shift_int)
-    | [] ->
-         0
-   in
-   let mag = collect mag in
+   let mag = collect_big_int mag in
       if sign then
          mag
       else
@@ -122,10 +122,10 @@ let rec compare_mag val1 val2 =
                comp
     | [], [] ->
          0
-    | [], _ ->
-         -1
-    | _, [] ->
-         1
+    | [], t ->
+         if zeros t then 0 else -1
+    | t, [] ->
+         if zeros t then 0 else 1
 
 let compare_big_int (sign1, val1) (sign2, val2) =
    if sign1 then
@@ -142,6 +142,8 @@ let rec eq_mag val1 val2 =
    match val1, val2 with
       digit1 :: val1, digit2 :: val2 ->
          digit1 = digit2 && eq_mag val1 val2
+    | [], [] ->
+         true 
     | [], val2 ->
          zeros val2
     | val1, [] ->
@@ -201,7 +203,7 @@ let rec sub_mag borrow val1 val2 =
     | val1, [] ->
          sub_borrow borrow val1
     | [], val2 ->
-         raise (Failure "sub_mag")
+         if (zeros val2) && (not borrow) then [] else raise (Failure "sub_mag")
 
 and sub_digit borrow digit1 digit2 val1 val2 =
    let z =
