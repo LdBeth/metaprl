@@ -249,7 +249,7 @@ if $(BYTE_ENABLED)
 # Clean up
 #
 clean:
-    $(CLEAN) mp_version.ml make_mp_version
+    $(CLEAN) mp_version.ml make_mp_version$(EXE)
 
 #
 # All defaults

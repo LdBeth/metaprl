@@ -194,16 +194,19 @@ $(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(ROOT)/lib/clib-native$(EXT
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
 
 clean::
-	$(RM) *.p4* *.pp*
+	$(RM) *.p4* *.pp* mp_version.ml make_mp_version
 	$(RM) tests/*.p4* tests/*.pp* tests/*.cmx tests/*.cmi* tests/*.cmo* tests/*.o
 
-VERSION_FLAGS=-pp '$(CAMLP4MACROPRINT) -D "VERSION=\"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses $(REFINER) Refiner_$(TERMS)\""'
+make_mp_version: make_mp_version.ml
+	$(OCAMLC) -o $@ unix.cma $<
 
-mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi Makefile $(ROOT)/mk/defaults mp_version.ml
-	$(OCAMLC) $(VERSION_FLAGS) -c $(OCAMLCFLAGS) mp_version.ml
+mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi Makefile $(ROOT)/mk/defaults make_mp_version
+	./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > mp_version.ml
+	$(OCAMLC) -c $(OCAMLCFLAGS) mp_version.ml
 
-mp_version.cmx: $(CMXOBJS) $(CMXADEPS) $(TCMXADEPS) mp_version.cmi Makefile $(ROOT)/mk/defaults mp_version.ml
-	$(OCAMLOPT) $(VERSION_FLAGS) -c $(OCAMLOPTFLAGS) mp_version.ml
+mp_version.cmx: $(CMXOBJS) $(CMXADEPS) $(TCMXADEPS) mp_version.cmi Makefile $(ROOT)/mk/defaults make_mp_version
+	./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > mp_version.ml
+	$(OCAMLOPT) -c $(OCAMLOPTFLAGS) mp_version.ml
 
 mp_version.cmi: mp_version.mli
 	$(OCAMLC) $(OCAMLCFLAGS) mp_version.mli
