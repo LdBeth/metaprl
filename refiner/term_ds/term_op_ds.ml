@@ -360,6 +360,45 @@ struct
          { term_op = { op_name = opname; op_params = [Number s1] };
            term_terms = [mk_simple_bterm t]}}
 
+   let is_number_dep1_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number _] };
+             term_terms = [ {bvars=[_]} ]
+           } -> Opname.eq opname opname'
+    | _ ->
+         false
+
+   let dest_number_dep1_term opname t =
+      match dest_term t with
+         { term_op = { op_name = opname'; op_params = [Number s1] };
+           term_terms = [bt]
+         } when Opname.eq opname opname' ->
+            (match dest_bterm bt with
+                { bvars = [v]; bterm = t } ->
+                   s1, v, t
+              | _ ->
+                   REF_RAISE(RefineError ("dest_number_dep1_term", TermMatchError (t, "bad arity"))))
+       | _ ->
+            REF_RAISE(RefineError ("dest_number_dep1_term", TermMatchError (t, "bad arity")))
+
+   let dest_number_dep1_any_term t =
+      match dest_term t with
+         { term_op = { op_name = opname'; op_params = [Number s1] };
+           term_terms = [bt]
+         } ->
+            (match dest_bterm bt with
+                { bvars = [v]; bterm = t } ->
+                   s1, v, t
+              | _ ->
+                   REF_RAISE(RefineError ("dest_number_dep1_any_term", TermMatchError (t, "bad arity"))))
+       | _ ->
+            REF_RAISE(RefineError ("dest_number_dep1_any_term", TermMatchError (t, "bad arity")))
+
+   let mk_number_dep1_term opname s1 v t =
+      { free_vars = t.free_vars;
+        core = Term
+         { term_op = { op_name = opname; op_params = [Number s1] };
+           term_terms = [mk_bterm [v] t]}}
+
    (*
     * Two number parameters and one subterm.
     *)

@@ -166,6 +166,11 @@ sig
    val dest_number_dep0_term : opname -> term -> Mp_num.num * term
    val dest_number_dep0_any_term : term -> Mp_num.num * term
 
+   val is_number_dep1_term : opname -> term -> bool
+   val mk_number_dep1_term : opname -> Mp_num.num -> string -> term -> term
+   val dest_number_dep1_term : opname -> term -> Mp_num.num * string * term
+   val dest_number_dep1_any_term : term -> Mp_num.num * string * term
+
    val is_number_number_dep0_term : opname -> term -> bool
    val mk_number_number_dep0_term : opname -> Mp_num.num -> Mp_num.num -> term -> term
    val dest_number_number_dep0_term : opname -> term -> Mp_num.num * Mp_num.num * term

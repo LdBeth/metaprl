@@ -632,7 +632,9 @@ let binding_let proc loc (v, bnd) =
       BindTerm t ->
          expr_of_term proc loc t
     | BindOpname op ->
-         <:expr< Opname.make_opname $mk_string_list_expr loc (Opname.dest_opname op)$ >>
+         expr_of_opname proc loc op
+    | BindNum n ->
+         expr_of_num proc loc n
 
 let bindings_let proc loc bnd_expr expr =
    if bnd_expr.item_bindings = [] then expr

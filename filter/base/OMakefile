@@ -32,3 +32,5 @@ else
 #
 clean:
     $(CLEAN) infix.ml
+
+all: filterbase$(LIB_SUFFIX)

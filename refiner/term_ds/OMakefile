@@ -17,3 +17,5 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), termds, $(TERM_DS_FILES))
 clean:
     $(CLEAN)
 
+all: termds$(LIB_SUFFIX)
+

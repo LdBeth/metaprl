@@ -255,7 +255,7 @@ let rec edit pack parse_arg name window obj =
       obj.rw_name,
       Proof_edit.ped_status obj.rw_ped,
       List.fold_right (fun x y -> MetaImplies(MetaTheorem x,y))
-                      obj.rw_assums 
+                      obj.rw_assums
                       (MetaIff(MetaTheorem obj.rw_redex, MetaTheorem obj.rw_contractum)),
       obj.rw_params
    in

@@ -242,7 +242,7 @@ let parents { info_list = summary } =
 (*
  * Test for an axiom.
  *)
-let test_axiom name = function 
+let test_axiom name = function
    (Rule { rule_name = n }, _) -> n = name
  | _ -> false
 
@@ -516,6 +516,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
    let convert_bnd = function
       s, BindTerm t -> s, BindTerm (convert.term_f t)
     | (s, BindOpname o) as d -> d
+    | (s, BindNum i) as d -> d
    in
 
    let convert_bnd_expr expr = {
@@ -689,6 +690,7 @@ let magic_block_op             = mk_opname "magic_block"
 let summary_item_op            = mk_opname "summary_item"
 let term_binding_op            = mk_opname "term_binding"
 let opname_binding_op          = mk_opname "opname_binding"
+let num_binding_op             = mk_opname "num_binding"
 let toploop_item_op            = mk_opname "toploop_item"
 let improve_op                 = mk_opname "improve"
 let definition_op              = mk_opname "definition"
@@ -780,7 +782,7 @@ struct
    (*
     * PRL bindings
     *)
-   
+
    let rec dest_bindings convert bnds t =
       let opname = opname_of_term t in
          if Opname.eq opname term_binding_op then
@@ -789,7 +791,11 @@ struct
          else if Opname.eq opname opname_binding_op then
             let v, t, t' = dest_dep0_dep1_any_term t in
                dest_bindings convert ((v,BindOpname (opname_of_term t))::bnds) t'
-         else bnds, t
+         else if Opname.eq opname num_binding_op then
+            let n, v, t = dest_number_dep1_any_term t in
+               dest_bindings convert ((v, BindNum n) :: bnds) t
+         else
+            bnds, t
 
    let dest_bnd_item convert item_f t =
       let bnds, t = dest_bindings convert [] t in {
@@ -1271,6 +1277,8 @@ struct
     | (v, BindOpname op) :: tl ->
          let t' = mk_simple_term op [] in
             term_of_bindings convert (mk_dep0_dep1_term opname_binding_op v t' t) tl
+    | (v, BindNum n) :: tl ->
+         term_of_bindings convert (mk_number_dep1_term num_binding_op n v t) tl
 
    and mk_bnd_expr convert expr =
       term_of_bindings convert (convert.expr_f expr.item_item) expr.item_bindings
@@ -1537,7 +1545,7 @@ struct
          [] ->
             implem_error (sprintf "Rewrite %s: not implemented" name)
        | ( Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' }
-         | Definition { opdef_name = name'; opdef_term = redex'; opdef_definition = con' } 
+         | Definition { opdef_name = name'; opdef_term = redex'; opdef_definition = con' }
          ) :: _ when name = name' ->
             if alpha_equal redex' redex then
                if alpha_equal con' con then

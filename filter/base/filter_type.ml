@@ -94,6 +94,7 @@ type aterm = { aname : term option; aterm : term }
 type 'term prl_binding =
    BindTerm of 'term
  | BindOpname of opname
+ | BindNum of Mp_num.num
 
 type ('item, 'term) bnd_expr = {
    item_bindings : (string * 'term prl_binding) list;
