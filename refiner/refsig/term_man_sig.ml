@@ -19,9 +19,9 @@ sig
     | Context of string * term list
 
    type esequent =
-      { sequent_args : term list;
-        sequent_hyps : hypothesis list;
-        sequent_goals : term list
+      { sequent_args : term;
+        sequent_hyps : hypothesis array;
+        sequent_goals : term array
       }
 
    (************************************************************************
@@ -40,19 +40,10 @@ sig
     * Sequents.
     * This should be visible only to sequents, but oh well.
     *)
-   val is_hyp_term : term -> bool
-   val dest_hyp : term -> string * term * term
-   val mk_hyp_term : string -> term -> term -> term
-
-   val is_concl_term : term -> bool
-   val dest_concl : term -> term * term
-   val mk_concl_term : term -> term -> term
-   val null_concl : term
-
    val is_sequent_term : term -> bool
+   val mk_sequent_term : esequent -> term
    val explode_sequent : term -> esequent
-   val dest_sequent : term -> term * term       (* goal * args *)
-   val mk_sequent_term : term -> term -> term   (* goal -> args -> seq *)
+   val args_of_sequent : term -> term
 
    val nth_hyp : term -> int -> string * term
    val nth_concl : term -> int -> term

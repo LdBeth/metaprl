@@ -275,6 +275,9 @@ let dform_options_expr loc =
 let dform_print_expr loc =
    <:expr< $uid:"Dform"$ . $lid:"dform_print"$ >>
 
+let dform_term_patt loc =
+   <:patt< $uid:"Dform"$ . $lid:"dform_term"$ >>
+
 let dform_stack_patt loc =
    <:patt< $uid:"Dform"$ . $lid:"dform_stack"$ >>
 
@@ -1413,7 +1416,7 @@ struct
 
       (* Identifier names *)
       let vars = printer :: buffer :: free_vars code in
-      let term_id = new_var loc "term" vars in
+      let term_id = "term" in
       let redex_id = new_var loc "redex" vars in
       let dprinter_id = new_var loc "printer" vars in
 
@@ -1447,7 +1450,8 @@ struct
          <:expr< $create_dform_expr loc$ $lid:local_dformer_id$ $modes_expr$ $rec_value$ >>
       in
       let dprinter_rec_patt =
-         <:patt< { $list:[ dform_stack_patt loc, stack_patt;
+         <:patt< { $list:[ dform_term_patt loc, term_patt;
+                           dform_stack_patt loc, stack_patt;
                            dform_items_patt loc, items_patt;
                            dform_printer_patt loc, printer_patt;
                            dform_buffer_patt loc, buffer_patt ]$ } >>

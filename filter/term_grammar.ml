@@ -651,35 +651,35 @@ struct
          [[ sl_sequent; args = optseqargs; sl_open_curly;
             hyps = LIST0 hyp SEP ";"; sl_turnstile;
             concl = LIST1 term SEP ";"; sl_close_curly ->
-             let rec proc_concl = function
-                [] ->
-                   null_concl
-              | h::t ->
-                   if !debug_grammar then
-                      eprintf "Got concl: %s%t" (string_of_term h) eflush;
-                   mk_concl_term h (proc_concl t)
-             in
+             let mk_hyp_term v t = Hypothesis (v, t) in
+             let mk_context_term v subterms = Context (v, subterms) in
              let rec proc_hyps = function
                 [] ->
-                   proc_concl concl
+                   []
               | h::tl ->
                    if !debug_grammar then
                       eprintf "Got hyp: %s%t" (Simple_print.string_of_term h.aterm) eflush;
                    match h with
                       { aname = Some v; aterm = t } ->
-                         mk_hyp_term (dest_var v) t (proc_hyps tl)
+                         mk_hyp_term (dest_var v) t :: proc_hyps tl
                     | { aname = None; aterm = t } ->
                          try
                             let v, subterms = dest_so_var t in
-                               mk_context_term v (proc_hyps tl) subterms
+                               mk_context_term v subterms :: proc_hyps tl
                          with
                             RefineError (_, TermMatchError _) ->
                                Stdpp.raise_with_loc loc (**)
                                   (Failure (sprintf "Not a variable: %s" (Simple_print.string_of_term t)))
              in
+             let esequent =
+                { sequent_args = mk_xlist_term args;
+                  sequent_hyps = Array.of_list (proc_hyps hyps);
+                  sequent_goals = Array.of_list concl
+                }
+             in
                 if !debug_grammar then
                    eprintf "Constructing sequent: %d, %d%t" (List.length hyps) (List.length concl) eflush;
-                mk_sequent_term (proc_hyps hyps) (mk_xlist_term args)
+                mk_sequent_term esequent
           ]];
 
       hyp:
