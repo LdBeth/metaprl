@@ -1,5 +1,6 @@
 #!/bin/sh
 
+#
 # If you want to add a new variable to this file (mk/make_config.sh):
 #
 # 1) add a default value to mk/preface (possibly via mk/default)
@@ -10,6 +11,7 @@
 #    top-level OMakefile
 #
 # 3) generate an updated mk/config.win32
+#
 
 if [ "$ENSROOT"x = x -o ! -d "$ENSROOT" ]; then
    ENSROOT=undefined

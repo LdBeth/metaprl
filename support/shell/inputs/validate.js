@@ -7,7 +7,8 @@ var response_name = 'MetaPRL.response';
 /*
  * Get the password, and check it against the challenge.
  */
-function ValidatePassword() {
+function ValidatePassword()
+{
     var encrypted;
 
     // Try to get it from the browser
@@ -40,7 +41,7 @@ function ValidatePassword() {
     SetCookie(response_name, encrypted, expDate, "/", null, false);
 
     // Allow the user to return to work
-    location.reload();
+    location.href = startpage;
 
     return false;
 }
@@ -48,7 +49,8 @@ function ValidatePassword() {
 /*
  * Set the response cookie.
  */
-function SetResponseCookie(cookie) {
+function SetResponseCookie(cookie)
+{
    // Save the cookies, expiring tomorrow
    var expDate = new Date();
    expDate.setTime(expDate.getTime() + (1 * 24 * 3600 * 1000));
@@ -59,7 +61,8 @@ function SetResponseCookie(cookie) {
  * Just in case, check the current password.  If it works, then
  * don't bother with the rest of this page.
  */
-function ValidateOnLoad() {
+function ValidateOnLoad()
+{
     var cleartext = GetCookie(password_name);
     if(cleartext != null) {
         encrypted = md5(cleartext + challenge);

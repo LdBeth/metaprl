@@ -67,6 +67,11 @@ val get_history     : t -> string list
 val synchronize : t -> ('a -> 'b) -> 'a -> 'b
 
 (*
+ * Flush the session before the program exits.
+ *)
+val flush : t -> unit
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "nl"

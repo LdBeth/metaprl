@@ -148,6 +148,43 @@ function Command(cmd)
 }
 
 /*
+ * Quit the current session.
+ */
+function Quit()
+{
+    Command('exit ()');
+    parent.window.close();
+}
+
+/*
+ * Make a new session in a new window.
+ */
+function NewWindow()
+{
+    var url = parent.location.href;
+    window.open(url + '/clone');
+    parent.menu.location.reload();
+}
+
+/*
+ * Make a new session in this window.
+ */
+function NewSession()
+{
+    var url = parent.location.href;
+    parent.location.href = url + '/clone';
+}
+
+/*
+ * Switch to another session.
+ */
+function Session(id)
+{
+    var url = parent.location.href;
+    parent.location.href = url + '/session/' + id;
+}
+
+/*
  * Bring up a URL in another window.
  */
 function URL(where)

@@ -55,6 +55,11 @@ let eflush out =
 type t = Lm_inet.server
 
 (*
+ * The output is just a channel.
+ *)
+type output = out_channel
+
+(*
  * Info about the local connection.
  *)
 type http_info =
@@ -120,7 +125,7 @@ let http_protocol = "HTTP/1.0"
 (*
  * Print a success code.
  *)
-let print_success_page out code buf =
+let print_success_page_err out code buf =
    let code, msg = get_code code in
       fprintf out "%s %d %s\r\n" http_protocol code msg;
       fprintf out "Content-Length: %d\r\n\r\n" (Buffer.length buf);
@@ -155,7 +160,7 @@ let print_gmtime outx time =
    let day_names = [|"Sun"; "Mon"; "Tue"; "Wed"; "Thu"; "Fri"; "Sat"|] in
       fprintf outx "%s, %02d %s %d %02d:%02d:%02d GMT" day_names.(wday) mday mon_names.(mon) (1900+year) hour min sec
 
-let print_success_channel out code inx =
+let print_success_channel_err out code inx =
    let fd = Unix.descr_of_in_channel inx in
    let { Unix.st_size = st_size;
          Unix.st_mtime = st_mtime
@@ -171,7 +176,7 @@ let print_success_channel out code inx =
 (*
  * For errors, construct a message body.
  *)
-let print_error_page out code =
+let print_error_page_err out code =
    let code, msg = get_code code in
    let buf = sprintf "<html>
 <head>
@@ -187,7 +192,7 @@ let print_error_page out code =
 (*
  * Redirect.
  *)
-let print_redirect_page out code where =
+let print_redirect_page_err out code where =
    let code, msg = get_code code in
    let buf = sprintf "<html>
 <head>
@@ -201,6 +206,39 @@ You are being redirected to <a href=\"%s\"><tt>%s</tt></a>
       fprintf out "%s %d %s\r\n" http_protocol code msg;
       fprintf out "Location: %s\r\n" where;
       fprintf out "Content-Length: %d\r\n\r\n%s" (String.length buf) buf
+
+(*
+ * Catch sigpipe.
+ *)
+exception SigPipe
+
+let print_success_page out code buf =
+   try print_success_page_err out code buf with
+      SigPipe ->
+         ()
+
+let print_success_channel out code inx =
+   try print_success_channel_err out code inx with
+      SigPipe ->
+         ()
+
+let print_error_page out code =
+   try print_error_page_err out code with
+      SigPipe ->
+         ()
+
+let print_redirect_page out code where =
+   try print_redirect_page_err out code where with
+      SigPipe ->
+         ()
+
+let catch_sigpipe () =
+   let handle_sigpipe _ =
+      if !debug_http then
+         eprintf "Raised sigpipe@.";
+      raise SigPipe
+   in
+      Sys.set_signal Sys.sigpipe (Sys.Signal_handle handle_sigpipe)
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -595,7 +633,9 @@ let serve connect fd info =
       let info =
          (* Ignore errors when the connection is handled *)
          try handle fd connect info client with
-            Unix.Unix_error _ | Sys_error _ as exn ->
+            Unix.Unix_error _
+          | Sys_error _
+          | SigPipe as exn ->
                if !debug_http then
                   eprintf "Httpd_simple: %s: stopping web services%t" (Printexc.to_string exn) eflush;
                info
@@ -603,6 +643,10 @@ let serve connect fd info =
          Unix.close fd';
          serve info
    in
+
+      (* Catch sigpipe *)
+      catch_sigpipe ();
+
       try serve info with
          Unix.Unix_error _
        | Sys_error _ ->

@@ -23,6 +23,12 @@ B {
  *    stdout: text displayed to stdout
  *    stderr: text displayed to stderr
  */
+SPAN.location {
+    color: #444488;
+    font-weight: bold;
+    font-style: italic;
+    font-size: 12pt
+}
 SPAN.info {
     color: #115599;
     font-weight: bold
@@ -71,6 +77,13 @@ A:visited {
 }
 A:hover {
     background-color: #e0e0f0
+}
+
+/*
+ * Properties of select menus.
+ */
+SELECT.menu {
+    width: 100px
 }
 
 /*

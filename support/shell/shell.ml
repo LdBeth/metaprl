@@ -536,11 +536,7 @@ struct
     *)
    let fork =
       let fork shell =
-         let { shell_width = old_width;
-               shell_df_mode = old_mode;
-               shell_dir = old_dir;
-               shell_package = old_package;
-               shell_df_info = old_port;
+         let { shell_df_info = old_port;
                shell_proof = old_proof;
                shell_shell = old_shell
              } = shell
@@ -556,14 +552,10 @@ struct
          let new_shell = Shell_state.fork old_shell in
          let new_pid = create_pid () in
          let new_shell =
-            { shell_width = old_width;
-              shell_df_mode = old_mode;
-              shell_dir = old_dir;
-              shell_package = old_package;
-              shell_df_info = new_port;
-              shell_proof = new_proof;
-              shell_shell = new_shell;
-              shell_pid = new_pid
+            { shell with shell_df_info = new_port;
+                         shell_proof = new_proof;
+                         shell_shell = new_shell;
+                         shell_pid = new_pid
             }
          in
             global_shells := new_shell :: !global_shells;
@@ -1459,7 +1451,9 @@ struct
                end;
                ShellP4.eval_top shell.shell_shell text) text
       with
-         exn ->
+         End_of_file as exn ->
+            raise exn
+       | exn ->
             ()
 
    let chdir_top shell text =

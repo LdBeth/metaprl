@@ -139,7 +139,7 @@ let display_term pack window term =
          let df = get_mode_base base mode in
          let buf = Lm_rformat.new_buffer () in
             Dform.format_term df buf term;
-            Browser_display_term.set_main buf
+            Browser_state.set_main buf
 
 (************************************************************************
  * FORMATTING                                                           *

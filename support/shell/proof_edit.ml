@@ -420,7 +420,7 @@ let format_aux window proof =
          let buf = Lm_rformat.new_buffer () in
             Dform.format_term df buf proof;
             Lm_rformat.format_newline buf;
-            Browser_display_term.set_main buf
+            Browser_state.set_main buf
 
 (*
  * Display the error.

@@ -37,6 +37,11 @@ open Http_server_type
 type t
 
 (*
+ * Output channel is abstract.
+ *)
+type output
+
+(*
  * Info about the local connection.
  *)
 type http_info =
@@ -66,7 +71,7 @@ val parse_post_body : string -> (string * string) list
  * version is synchronous, and not threaded.
  *)
 type 'a start_handler = t -> 'a -> 'a
-type 'a connect_handler = t -> 'a -> out_channel -> in_channel -> string list -> request_header_entry list -> string -> 'a
+type 'a connect_handler = t -> 'a -> output -> in_channel -> string list -> request_header_entry list -> string -> 'a
 
 val serve_http : 'a start_handler -> 'a connect_handler -> 'a -> int option -> unit
 
@@ -78,10 +83,10 @@ val http_info : t -> http_info
 (*
  * Responses.
  *)
-val print_success_page : out_channel -> response_code -> Buffer.t -> unit
-val print_success_channel : out_channel -> response_code -> in_channel -> unit
-val print_error_page : out_channel -> response_code -> unit
-val print_redirect_page : out_channel -> response_code -> string -> unit
+val print_success_page : output -> response_code -> Buffer.t -> unit
+val print_success_channel : output -> response_code -> in_channel -> unit
+val print_error_page : output -> response_code -> unit
+val print_redirect_page : output -> response_code -> string -> unit
 
 (*
  * -*-

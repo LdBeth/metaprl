@@ -96,7 +96,8 @@ type browser_info =
  *)
 type browser_state =
    { browser_directories : string list;
-     browser_history     : string list
+     browser_history     : string list;
+     browser_sessions    : int
    }
 
 (************************************************************************
@@ -178,7 +179,7 @@ let extract info =
       List.fold_left (fun macros menu ->
             let { menu_label = label; menu_items = items } = menu in
             let macros =
-               bprintf buf "<select name=\"%s\" onChange=\"parent.MenuCommand(macros, this);\">\n" label;
+               bprintf buf "<select name=\"%s\" class=\"menu\" onChange=\"parent.MenuCommand(macros, this);\">\n" label;
                bprintf buf "<option value=\"nop\">%s</option>\n" label;
                List.fold_left (fun macros { command_label = label; command_value = command } ->
                      let sym = sprintf "id%d" (StringTable.cardinal macros) in
@@ -249,20 +250,45 @@ let add_history info lines =
       Not_found ->
          info
 
+(*
+ * Add the sessions.
+ *)
+let add_sessions info i =
+   try
+      menu_replace info "session" (fun menu ->
+            let rec collect items j =
+               if j > i then
+                  items
+               else
+                  let item =
+                     { command_label = sprintf "Session %d" j;
+                       command_value = sprintf "Session(%d)" j
+                     }
+                  in
+                     collect (item :: items) (succ j)
+            in
+            let items = collect menu.menu_items 1 in
+               { menu with menu_items = items })
+   with
+      Not_found ->
+         info
+
 let extract info state =
    let { browser_directories = directories;
-         browser_history = history
+         browser_history = history;
+         browser_sessions = sessions
        } = state
    in
    let info = add_directories info directories in
    let info = add_history info history in
+   let info = add_sessions info sessions in
       extract info
 
 (************************************************************************
  * Commandbar.
  *)
 let commandbar_init =
-   [<< menu["history", "--History--"] >>]
+   [<< menu["history", "History"] >>]
 
 let default_commandbar = List.fold_left improve info_empty commandbar_init
 
@@ -283,12 +309,15 @@ let resource (term, browser_state -> browser_info) commandbar =
  * Default menubar resource.
  *)
 let menubar_init =
-   [<< menu["file", "--File--"] >>;
-    << menu["edit", "--Edit--"] >>;
-    << menu["session", "--Session--"] >>;
-    << menu["dir", "--Directory--"] >>;
+   [<< menu["file", "File"] >>;
+    << menuitem["file", "New Window", "NewWindow()"] >>;
+    << menuitem["file", "Quit", "Quit()"] >>;
+    << menu["edit", "Edit"] >>;
+    << menu["session", "Session"] >>;
+    << menuitem["session", "New", "NewSession()"] >>;
+    << menu["dir", "Directory"] >>;
     << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>;
-    << menu["help", "--Help--"] >>;
+    << menu["help", "Help"] >>;
     << menuitem["help", "MetaPRL Home", "URL('http://www.metaprl.org/')"] >>]
 
 let default_menubar = List.fold_left improve info_empty menubar_init
@@ -305,6 +334,9 @@ let menubar_collection =
 
 let resource (term, browser_state -> browser_info) menubar =
    menubar_collection
+
+let resource menubar +=
+    << menuitem["file", "Save", "Command('save ()')"] >>
 
 (*!
  * @docoff

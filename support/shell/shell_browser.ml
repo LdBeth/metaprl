@@ -12,7 +12,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1999 Jason Hickey, Cornell University
+ * Copyright (C) 2004 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -46,7 +46,7 @@ open Shell_sig
 open Package_info
 
 let _ =
-   show_loading "Loading Shell HTTP%t"
+   show_loading "Loading Shell Browser%t"
 
 let debug_http =
    create_debug (**)
@@ -59,7 +59,7 @@ let debug_http =
  *)
 let browser_flag = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool
 let browser_port = Env_arg.int "port" None "start browser services on this port" Env_arg.set_int_option_int
-let browser_string = Env_arg.string "BROWSER_COMMAND" None "browser to start on startup" Env_arg.set_string_option_string
+let browser_string = Env_arg.string "browser_command" None "browser to start on startup" Env_arg.set_string_option_string
 
 module ShellBrowser (Shell : ShellSig) =
 struct
@@ -77,7 +77,7 @@ struct
     *)
    type session =
       { session_id                      : int;
-        session_buffer                  : Browser_display_term.t;
+        session_buffer                  : Browser_state.t;
         session_shell                   : Shell.t;
 
         (*
@@ -136,7 +136,11 @@ struct
         mutable state_response  : string;
 
         (* Active sessions *)
-        mutable state_sessions  : session IntTable.t
+        mutable state_id        : int;
+        mutable state_sessions  : session IntTable.t;
+
+        (* Processes *)
+        mutable state_children  : int list
       }
 
    (*
@@ -145,9 +149,11 @@ struct
    type uri =
       ContentURI of session * string * bool  (* bool states whether the URL ends with a / *)
     | FrameURI of session * string
+    | CloneURI of session
     | InputURI of string
     | LoginURI of string
     | UnknownURI of string
+    | SessionURI of session * session
 
    (*
     * Decode the URI.
@@ -164,6 +170,25 @@ struct
                 Not_found
               | Failure _ ->
                    eprintf "Bad session: %s@." id;
+                   UnknownURI "/")
+       | ["session"; id; "frameset"; "clone"] ->
+            (try
+                let session = IntTable.find state.state_sessions (int_of_string id) in
+                   CloneURI session
+             with
+                Not_found
+              | Failure _ ->
+                   eprintf "Bad session: %s@." id;
+                   UnknownURI "/")
+       | ["session"; id1; "frameset"; "session"; id2] ->
+            (try
+                let session1 = IntTable.find state.state_sessions (int_of_string id1) in
+                let session2 = IntTable.find state.state_sessions (int_of_string id2) in
+                   SessionURI (session1, session2)
+             with
+                Not_found
+              | Failure _ ->
+                   eprintf "Bad sessions: %s -> %s@." id1 id2;
                    UnknownURI "/")
        | ["session"; id; "frame"; frame] ->
             (try
@@ -269,6 +294,14 @@ struct
                (* Some default width *)
                default_width
 
+   (*
+    * Close an exit the process.
+    *)
+   let quit state =
+      IntTable.iter (fun _ session ->
+            Browser_state.flush session.session_buffer) state.state_sessions;
+      exit 0
+
    (************************************************************************
     * Lazy state operations.
     *)
@@ -287,7 +320,7 @@ struct
             session_content_version = content_version
           } = session
       in
-         Browser_display_term.add_directory state cwd;
+         Browser_state.add_directory state cwd;
 
          session.session_cwd <- cwd;
 
@@ -339,6 +372,7 @@ struct
     * Get the current state if possible.
     *)
    let get_session_state state session =
+      let { state_id = session_count } = state in
       let { session_buffer = buffer;
             session_state = info
           } = session
@@ -348,8 +382,9 @@ struct
                state
           | None ->
                let info =
-                  { browser_directories = Browser_display_term.get_directories buffer;
-                    browser_history = Browser_display_term.get_history buffer
+                  { browser_directories = Browser_state.get_directories buffer;
+                    browser_history = Browser_state.get_history buffer;
+                    browser_sessions = session_count
                   }
                in
                   session.session_state <- Some info;
@@ -521,10 +556,10 @@ struct
       let table = BrowserTable.add_fun    table menu_macros_sym    (print_menu_macros get_menu) in
 
       (* Content *)
-      let table = BrowserTable.add_fun    table body_sym           (Browser_display_term.format_main info width) in
+      let table = BrowserTable.add_fun    table body_sym           (Browser_state.format_main info width) in
 
       (* Messages *)
-      let table = BrowserTable.add_fun    table message_sym        (Browser_display_term.format_message info width) in
+      let table = BrowserTable.add_fun    table message_sym        (Browser_state.format_message info width) in
 
       (* Buttons *)
       let table = BrowserTable.add_fun    table buttons_sym        (print_menu_buffer get_buttons) in
@@ -539,9 +574,19 @@ struct
    (*
     * Print the login page.
     *)
-   let print_login_page out state =
+   let print_login_page out state session =
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "MetaPRL Login Page" in
+      let table =
+         let id =
+            match session with
+               Some { session_id = id } ->
+                  id
+             | None ->
+                  1
+         in
+            BrowserTable.add_string table session_sym (string_of_int id)
+      in
          print_translated_file_to_http out table "login.html"
 
    (*
@@ -567,7 +612,7 @@ struct
    (*
     * Something failed.  Ask the browser to start over.
     *)
-   let print_content_redisplay_page server state session outx =
+   let print_redisplay_page which_uri server state session outx =
       let { http_host     = host;
             http_port     = port
           } = http_info server
@@ -576,31 +621,71 @@ struct
             session_cwd = cwd
           } = session
       in
-      let uri = sprintf "http://%s:%d/session/%d/content%s/" host port id cwd in
+      let uri = sprintf "http://%s:%d/session/%d/%s" host port id (which_uri cwd) in
          if !debug_http then
             eprintf "Redirecting to %s@." uri;
          print_redirect_page outx SeeOtherCode uri
+
+   let content_uri cwd =
+      "content" ^ cwd ^ "/"
+
+   let rule_uri cwd =
+      "frame/rule/"
+
+   let frameset_uri cwd =
+      "frameset"
 
    (*
-    * Redisplay the rulebox.
+    * Flush the session (ask the shell to display the current
+    * directory).
     *)
-   let print_rule_redisplay_page server state session outx =
-      let { http_host     = host;
-            http_port     = port
-          } = http_info server
-      in
-      let { session_id = id } = session in
-      let uri = sprintf "http://%s:%d/session/%d/frame/rule/" host port id in
-         if !debug_http then
-            eprintf "Redirecting to %s@." uri;
-         print_redirect_page outx SeeOtherCode uri
-
    let flush state session =
       let { session_buffer = buffer;
             session_shell  = shell
           } = session
       in
-         Browser_display_term.synchronize buffer Shell.flush session.session_shell
+         Browser_state.synchronize buffer Shell.flush shell
+
+   (*
+    * Clone the current command.
+    *)
+   let clone state session =
+      let { state_id = id;
+            state_sessions = sessions
+          } = state
+      in
+      let { session_shell = shell;
+            session_buffer = buffer;
+            session_menu_version = menu_version;
+            session_cwd = cwd
+          } = session
+      in
+      let id = succ id in
+      let clone =
+         { session_id              = id;
+           session_shell           = Shell.fork shell;
+           session_buffer          = Browser_state.create ();
+           session_cwd             = cwd;
+           session_menu_version    = 1;
+           session_content_version = 1;
+           session_message_version = 1;
+           session_buttons_version = 1;
+           session_rule_version    = 1;
+           session_state           = None;
+           session_menubar_info    = None;
+           session_commandbar_info = None;
+           session_menu            = None;
+           session_buttons         = None;
+           session_styles          = None
+         }
+      in
+         state.state_id               <- id;
+         state.state_sessions         <- IntTable.add sessions id clone;
+         session.session_menu_version <- succ menu_version;
+         session.session_state        <- None;
+         session.session_menubar_info <- None;
+         session.session_menu         <- None;
+         clone
 
    (*
     * Evaluate a command.
@@ -611,10 +696,13 @@ struct
             session_buffer = buffer
           } = session
       in
-         Browser_display_term.add_prompt buffer command;
-         Browser_display_term.synchronize buffer (Shell.eval_top shell) (command ^ ";;");
+         Browser_state.add_prompt buffer command;
+         Browser_state.synchronize buffer (Shell.eval_top shell) (command ^ ";;");
          invalidate_eval session
 
+   (*
+    * Set the current directory.
+    *)
    let chdir state session dir =
       if !debug_http then
          eprintf "Changing directory to %s@." dir;
@@ -622,7 +710,7 @@ struct
             session_shell = shell
           } = session
       in
-      let success = Browser_display_term.synchronize buffer (Shell.chdir_top shell) dir in
+      let success = Browser_state.synchronize buffer (Shell.chdir_top shell) dir in
          invalidate_chdir session success;
          success
 
@@ -650,13 +738,24 @@ struct
             if key = state.state_response then
                print_access_granted_page outx state
             else
-               print_login_page outx state
+               print_login_page outx state None
        | FrameURI (session, frame) ->
             if is_valid_response state header then
                let width = get_window_width header in
                   print_page server state session outx width frame
             else
-               print_login_page outx state
+               print_login_page outx state (Some session)
+       | CloneURI session ->
+            if is_valid_response state header then
+               let session = clone state session in
+                  print_redisplay_page frameset_uri server state session outx
+            else
+               print_login_page outx state (Some session)
+       | SessionURI (_, session) ->
+            if is_valid_response state header then
+               print_redisplay_page frameset_uri server state session outx
+            else
+               print_login_page outx state (Some session)
        | ContentURI (session, dirname, is_dir) ->
             if is_valid_response state header then
                let width = get_window_width header in
@@ -668,11 +767,11 @@ struct
                      end
                   else
                      (* Invalid directory or directory change failed *)
-                     print_content_redisplay_page server state session outx
+                     print_redisplay_page content_uri server state session outx
             else
-               print_login_page outx state
+               print_login_page outx state (Some session)
        | UnknownURI dirname ->
-            print_error_page outx NotFoundCode
+            print_login_page outx state None
 
    (*
     * Handle a post command.  This means to submit the text to MetaPRL.
@@ -698,18 +797,48 @@ struct
                      Some command ->
                         if !debug_http then
                            eprintf "Command: \"%s\"@." (String.escaped command);
-                        eval state session outx command
+                        (try eval state session outx command with
+                            End_of_file ->
+                               quit state)
                    | None ->
                         ()
                in
-                  print_rule_redisplay_page server state session outx
+                  print_redisplay_page rule_uri server state session outx
           | InputURI _
           | LoginURI _
           | UnknownURI _
           | ContentURI _
-          | FrameURI _ ->
+          | FrameURI _
+          | CloneURI _
+          | SessionURI _ ->
                print_error_page outx BadRequestCode;
                eprintf "Shell_simple_http: bad POST command@."
+
+   (*
+    * Poll-wait for child processes.
+    *
+    * BUG JYH: this is kind of ugly.  When using threads,
+    * it is probably best to fork a thread to do an explicit wait.
+    * We don't want to catch SIGCHLD since we'll have
+    * trouble on Windows.  See the comment on start_browser
+    * below.
+    *)
+   let http_wait server state =
+      let children =
+         List.fold_left (fun children pid ->
+               try
+                  (* Wait for the child *)
+                  let pid', _ = Unix.waitpid [Unix.WNOHANG] pid in
+                     if pid' = pid then
+                        children
+                     else
+                        pid :: children
+               with
+                  Unix.Unix_error _ ->
+                     (* Assume the child is dead *)
+                     children) [] state.state_children
+      in
+         state.state_children <- children
 
    (*
     * Handle a connection.
@@ -717,6 +846,9 @@ struct
     *)
    let http_connect server state outx inx args header body =
       let () =
+         (* Wait for children *)
+         http_wait server state;
+
          (* Process the command *)
          match args with
             "get" :: uri :: _ ->
@@ -725,7 +857,7 @@ struct
                if is_valid_response state header then
                   post server state outx inx uri header body
                else
-                  print_login_page outx state
+                  print_login_page outx state None
           | command :: _ ->
                print_error_page outx NotImplementedCode;
                eprintf "Shell_simple_http: unknown command: %s@." command
@@ -740,13 +872,21 @@ struct
     *
     * BUG JYH: this works with Mozilla/Linux, but I'm not at all sure
     * how well it will work on other systems.
-    *      n8: It doesn't work so well on Safari/OS X, where you want
+    *
+    * BUG n8: It doesn't work so well on Safari/OS X, where you want
     * to use "open -a safari" as your browser command.
+    *
+    * BUG JYH: took out the waitpid.  This will allow the browser
+    * not to exit, but it usually leaves around a zombie process.
+    * For now, poll for exit in the connect function.
     *)
-   let start_browser browser url =
-      let browser_list = Str.split (Str.regexp "[ \t]+") browser in
-      let argv = Array.of_list (browser_list @ [url]) in
-         try ignore (Unix.waitpid [] (Unix.create_process browser argv Unix.stdin Unix.stdout Unix.stderr)) with
+   let start_browser server state browser url =
+      let argv = Lm_string_util.split " \t" browser @ [url] in
+      let argv = Array.of_list argv in
+         try
+            let pid = Unix.create_process browser argv Unix.stdin Unix.stdout Unix.stderr in
+               state.state_children <- pid :: state.state_children
+         with
             Unix.Unix_error _ ->
                eprintf "Shell_browser: could not start browser %s@." browser
 
@@ -783,7 +923,7 @@ struct
          (* Start the browser if requested *)
          (match !browser_string with
              Some browser ->
-                start_browser browser file_url
+                start_browser server state browser file_url
            | None ->
                 ());
 
@@ -871,7 +1011,7 @@ struct
          let session =
             { session_id              = id;
               session_shell           = shell;
-              session_buffer          = Browser_display_term.create ();
+              session_buffer          = Browser_state.create ();
               session_cwd             = Shell.pwd shell;
               session_menu_version    = 1;
               session_content_version = 1;
@@ -892,7 +1032,9 @@ struct
               state_password  = password;
               state_challenge = "unknown";
               state_response  = "unknown";
-              state_sessions  = IntTable.add IntTable.empty id session
+              state_id        = id;
+              state_sessions  = IntTable.add IntTable.empty id session;
+              state_children  = []
             }
          in
          let state = update_challenge state in

@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1999 Jason Hickey, Cornell University
+ * Copyright (C) 2004 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+
 open Shell_sig
 
 module ShellBrowser (Shell : ShellSig) : ShellMainSig

@@ -55,8 +55,8 @@ val buttons_macros_sym : symbol
 (*
  * Translate a file.
  *)
-val print_raw_file_to_http           : out_channel -> string -> unit
-val print_translated_file_to_http    : out_channel -> BrowserTable.t -> string -> unit
+val print_raw_file_to_http           : Http_simple.output -> string -> unit
+val print_translated_file_to_http    : Http_simple.output -> BrowserTable.t -> string -> unit
 val print_translated_file_to_channel : out_channel -> BrowserTable.t -> string -> unit
 
 (*!

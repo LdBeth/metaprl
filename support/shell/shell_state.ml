@@ -162,7 +162,7 @@ let default_saved_tactic =
 let create () =
    Mp_resource.recompute_top ();
    { state_mk_opname = mk_opname_null;
-     state_mk_var_contexts =  mk_var_contexts_null;
+     state_mk_var_contexts = mk_var_contexts_null;
      state_df_base = Dform.null_base;
      state_inline_terms = [];
      state_inline_var = 0;
