@@ -42,7 +42,8 @@ LMFILES :=\
 	oidtable\
 	definition\
 	orb\
-	library
+	library\
+	library_type_base
 
 # Name of main libraris
 MAIN = library
