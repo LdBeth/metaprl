@@ -866,9 +866,7 @@ struct
             make_term { term_op = trm.term_op; term_terms = List.map (bterm_down f) trm.term_terms }
        | FOVar _ -> t
        | Sequent _ -> raise (Invalid_argument "Term_op_ds.map_down: sequent code is not implemented")
-       | Subst _ -> fail_core "Term_op_ds.map_down"
-       | Hashed d ->
-            map_down f (Weak_memo.TheWeakMemo.retrieve_hack d)
+       | Subst _ | Hashed _ -> fail_core "Term_op_ds.map_down"
 
    let rec bterm_up f btrm =
       { bvars = btrm.bvars; bterm = map_up f btrm.bterm }
@@ -879,7 +877,5 @@ struct
             f (make_term { term_op = trm.term_op; term_terms = List.map (bterm_up f) trm.term_terms })
        | FOVar _ -> f t
        | Sequent _ -> raise (Invalid_argument "Term_op_ds.map_up: sequent code is not implemented")
-       | Subst _ -> fail_core "Term_op_ds.map_up"
-       | Hashed d ->
-            map_up f (Weak_memo.TheWeakMemo.retrieve_hack d)
+       | Subst _ | Hashed _ -> fail_core "Term_op_ds.map_up"
 end

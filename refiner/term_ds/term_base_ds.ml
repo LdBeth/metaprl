@@ -332,7 +332,7 @@ struct
     ************************************************************************)
 
    let fail_core s =
-      raise (Invalid_argument ("Term_ds." ^ s ^ ": get_core returned a Subst"))
+      raise (Invalid_argument ("Term_ds." ^ s ^ ": get_core returned a Subst or a Hashed"))
 
    let rec subst_remove v = function
       [] -> []
@@ -359,10 +359,7 @@ struct
                      Sequent { sequent_args = do_term_subst sub args;
                                sequent_hyps = SeqHyp.lazy_apply (hyps_subst sub) hyps;
                                sequent_goals = SeqGoal.lazy_apply (do_term_subst sub) goals }
-                | Subst _ -> fail_core "get_core"
-                | Hashed d ->
-                     (* Get core of inner term *)
-                     get_core (Weak_memo.TheWeakMemo.retrieve_hack d)
+                | Subst _ | Hashed _ -> fail_core "get_core"
             in
                t.core <- core;
                core
