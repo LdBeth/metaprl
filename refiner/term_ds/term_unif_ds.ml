@@ -86,9 +86,9 @@ struct
 
    let eqnlist_append_var_eqn v t l = (mk_var_term v, t) :: l
 
-   let eqnlist_append_eqns l es  = es @ l  
+   let eqnlist_append_eqns l es  = es @ l
 
-   let eqnlist2ttlist x = x  
+   let eqnlist2ttlist x = x
 
    (*
     * Collect all free vars
@@ -408,7 +408,7 @@ and merge_multiterms m0 m1 current_ts =
         [] ->if (not (test_timestamps m1 current_ts) ) then raise Clash;
              m1
       | [multit0] -> (match m1 with
-                       [] ->if (not (test_timestamps m1 current_ts) ) then raise Clash;
+                       [] ->if (not (test_timestamps m0 current_ts) ) then raise Clash;
                             m0
                      | [multit1] -> (
            if not (header_equal multit0 multit1 current_ts ) then raise Clash
@@ -631,7 +631,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
         with Not_found ->
                ((if (List.mem_assoc y b_asslist1) then raise Clash);
                   match StringSet.mem consts x, StringSet.mem consts y with
-                  true,true -> 
+                  true,true ->
                      if x=y then
                       { m_t =
                            [{ fsymb = (Cnst (V x));
@@ -664,7 +664,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
           );
            (* try let vx=(List.assoc x b_asslist0) in (raise Clash )
               with Not_found -> *)
-         let q = Queue.create () in 
+         let q = Queue.create () in
          Queue.add (get_variable x u var_hashtbl) q;
          { m_t = [cterm2multiterm t consts u var_hashtbl b_asslist1];
            s_t = q }
@@ -685,7 +685,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
       and tbcore_list0 = get_bterms t_0.term_terms
       and tbcore_list1 = get_bterms t_1.term_terms in
       let op_n0 =List.length tbvs_list0
-      and op_n1 =List.length tbvs_list1 in 
+      and op_n1 =List.length tbvs_list1 in
       if not (op_n0=op_n1) then raise Clash;
       let op_a0 = Array.of_list (List.map List.length tbvs_list0)
       and op_a1 = Array.of_list (List.map List.length tbvs_list1) in
@@ -704,8 +704,8 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                              );
                  timestamp = (-1)
                 } in
-      let multit = 
-         { fsymb = Op fs ; 
+      let multit =
+         { fsymb = Op fs ;
            args =
             if op_n0 = 0 then
                targs2args_for2 [] [] consts u var_hashtbl []
@@ -724,7 +724,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                   and b_aslist_ref1 = ref b_asslist1 in
                   List.iter2
                      (fun v0 v1 ->
-                        let bv0 = 
+                        let bv0 =
                            { name_bv = (V v0);
                              fsymb_bv = fs;
                              arg_numb = (!i);
@@ -804,7 +804,7 @@ let unifiable term0 term1 consts=
   | FOVar x, FOVar y ->
      (not (StringSet.mem consts x)) || (not (StringSet.mem consts y)) || x=y
   | FOVar x, Term _ -> not (StringSet.mem consts x)
-  | Term _ , FOVar y -> not (StringSet.mem consts y) 
+  | Term _ , FOVar y -> not (StringSet.mem consts y)
   | Subst _, _ | _, Subst _ | Hashed _, _ | _, Hashed _ -> fail_core "unify_mm"
   | Sequent _ , _ | _, Sequent _ -> raise seq_unsupported
 
@@ -1062,7 +1062,7 @@ let unify term0 term1 consts=
 
 let unify_eqnl l1 consts =
                 let l = List.rev l1
-                in 
+                in
                 let opL = mk_op (Opname.make_opname ["L"]) []
                 in
                 unify (mk_term opL (fofeqnlist l) ) (mk_term opL (sofeqnlist l)) consts
@@ -1201,7 +1201,7 @@ end  (* To_eqnlist *)
 let opL = mk_op (Opname.make_opname ["L"]) []
 
 let unify_eqnl_eqnl l1 consts =
-        let l = List.rev l1 
+        let l = List.rev l1
         in
         let t_0={term_op = opL; term_terms =(fofeqnlist l)}
         and t_1={term_op = opL; term_terms =(sofeqnlist l)}
