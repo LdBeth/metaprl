@@ -25,9 +25,11 @@ INSTALL_LIBS := $(MAINLIB)
 
 .PHONY: lib optlib
 
-all: $(ROOT)/lib/$(MAINLIB).cma
+all: lib 
+	$(MAKE) $(ROOT)/lib/$(MAINLIB).cma
 
-opt: $(ROOT)/lib/$(MAINLIB).cmxa $(ROOT)/lib/$(MAINLIB).a
+opt: optlib 
+	$(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa $(ROOT)/lib/$(MAINLIB).a
 
 #
 # The real Makefile
@@ -74,12 +76,6 @@ $(MAINLIB).a: $(MAINLIB).cmxa
 
 $(MAINLIB).cmxa: $(CMXFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $(MAINLIB).cmxa $(CMXFILES)
-
-#
-# Standard build rules
-#
-$(CMALIBS): lib
-$(CMXFILES): optlib
 
 #
 # Standard build rules
