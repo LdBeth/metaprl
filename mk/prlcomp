@@ -22,12 +22,9 @@ WrapC(command) =
    #
    # Default environment
    #
-   ENV = $(SetEnv MP_ROOT, $(ROOT)) $(SetEnv MPLIB, $(LIB))
-
-   #
-   # Add the theory description
-   #
-   ENV += $(SetEnv MP_GROUP, $(THEORYNAME)) $(SetEnv MP_DESCR, $(THEORYDESCR))
+   ENV =\
+      $(SetEnv MP_ROOT, $(ROOT)) $(SetEnv MPLIB, $(LIB))\
+      $(SetEnv MP_GROUP, $(THEORYNAME)) $(SetEnv MP_DESCR, $(THEORYDESCR))
 
    #
    # Put together the command
@@ -42,19 +39,11 @@ WrapC(command) =
 PrlC(command) =
    #
    # Default environment
+   # JYH: do we still need MP_INCLUDE?
    #
-   ENV = $(SetEnv MP_ROOT, $(ROOT)) $(SetEnv MPLIB, $(LIB))
-
-   #
-   # Add the include files
-   # JYH: do we still need this?
-   #
-   ENV += $(SetEnv MP_INCLUDE, $(concat :, $(filter-out -I%, $(OCAMLINCLUDES))))
-
-   #
-   # Add the theory description
-   #
-   ENV += $(SetEnv MP_GROUP, $(THEORYNAME)) $(SetEnv MP_DESCR, $(THEORYDESCR))
+   ENV = $(SetEnv MP_ROOT, $(ROOT)) $(SetEnv MPLIB, $(LIB))\
+      $(SetEnv MP_INCLUDE, $(concat :, $(filter-out -I%, $(OCAMLINCLUDES))))\
+      $(SetEnv MP_GROUP, $(THEORYNAME)) $(SetEnv MP_DESCR, $(THEORYDESCR))
 
    #
    # Put together the command
