@@ -112,6 +112,7 @@ depend::
 ########################################################################
 
 MFILES_CAMLP4 =\
+	filter/filter_patt\
 	filter/filter_prog\
 	filter/filter_parse\
 	filter/filter_main\
