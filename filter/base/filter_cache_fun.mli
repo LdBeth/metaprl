@@ -2,7 +2,6 @@
  * We add a layer to filterSummry, to allow inlined modules
  * and cached info about opnames, axioms, and precedences.
  *
- *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order

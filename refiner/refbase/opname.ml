@@ -115,8 +115,7 @@ and normalize_opname opname =
       (* This opname is already normalized *)
       opname
    else
-      let res = make_opname opname.opname_name
-      in
+      let res = make_opname opname.opname_name in
          opname.opname_name <- res.opname_name;
          opname.opname_token <- opname_token;
          res
@@ -156,12 +155,11 @@ let eq_inner op1 op2 =
 
 let eq op1 op2 =
    (op1.opname_name == op2.opname_name)
-   or ((op1.opname_token != opname_token or op2.opname_token != opname_token) & eq_inner op1 op2)
+   || ((op1.opname_token != opname_token || op2.opname_token != opname_token) && eq_inner op1 op2)
 
 (*
  * Destructor.
  *)
-
 let dst_opname = function
    { opname_name = n :: name } -> n, { opname_token = opname_token; opname_name = name }
  | _ -> raise (Invalid_argument "dst_opname")
@@ -201,7 +199,6 @@ let context_opname = make_opname ["context"]
  *)
 let xperv = make_opname ["Perv"]
 let sequent_opname = mk_opname "sequent" xperv
-
 
 (*
  * -*-

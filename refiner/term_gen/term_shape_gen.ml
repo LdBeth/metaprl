@@ -58,6 +58,9 @@ struct
         shape_arities : int list
       }
 
+   let opname_of_shape { shape_opname = opname } =
+      opname
+
    (*
     * Shapes for special terms.
     * XXX HACK/TODO: shape type should probably be a choice type
@@ -118,7 +121,8 @@ struct
       & (params1 = params2)
       & (arities1 = arities2)
 
-   let print_shape out { shape_opname = name; shape_params = params; shape_arities = arities } =
+   let string_of_shape { shape_opname = name; shape_params = params; shape_arities = arities } =
+      let buf = Buffer.create 32 in
       let print_param param =
          let s =
             match param with
@@ -135,55 +139,29 @@ struct
              | ShapeQuote  ->
                   "Q"
          in
-            output_string out s
+            Buffer.add_string buf s
       in
-      let rec print_arity out = function
+      let rec print_arity = function
          [i] ->
-            fprintf out "%d" i
-       | i::t ->
-            fprintf out "%d;%a" i print_arity t
+            Buffer.add_string buf (string_of_int i)
+       | i :: t ->
+            Buffer.add_string buf (string_of_int i);
+            Buffer.add_char buf ';';
+            print_arity t
        | [] ->
             ()
       in
-         output_string out (string_of_opname name);
-         output_string out "[";
+         Buffer.add_string buf (string_of_opname name);
+         Buffer.add_char buf '[';
          List.iter print_param params;
-         output_string out "]{";
-         print_arity out arities;
-         output_string out "}"
+         Buffer.add_string buf "]{";
+         print_arity arities;
+         Buffer.add_string buf "}";
+         Buffer.contents buf
 
-   let pp_print_shape out { shape_opname = name; shape_params = params; shape_arities = arities } =
-      let pp_print_param out param =
-         let s =
-            match param with
-               ShapeNumber ->
-                  "N"
-             | ShapeString ->
-                  "S"
-             | ShapeToken  ->
-                  "T"
-             | ShapeLevel  ->
-                  "L"
-             | ShapeVar    ->
-                  "V"
-             | ShapeQuote  ->
-                  "Q"
-         in
-            pp_print_string out s
-      in
-      let pp_print_params out params =
-         List.iter (pp_print_param out) params
-      in
-      let rec pp_print_arity out = function
-         [i] ->
-            fprintf out "%d" i
-       | i::t ->
-            fprintf out "%d;%a" i pp_print_arity t
-       | [] ->
-            ()
-      in
-         fprintf out "%s[%a]{%a}" (**)
-            (string_of_opname name)
-            pp_print_params params
-            pp_print_arity arities
+   let print_shape out shape =
+      output_string out (string_of_shape shape)
+
+   let pp_print_shape out shape =
+      pp_print_string out (string_of_shape shape)
 end

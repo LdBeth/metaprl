@@ -54,6 +54,7 @@ struct
    (*
     * For matching level expressions.
     *)
+   (* %%MAGICBEGIN%% *)
    type rw_level_exp_var = { rw_le_var : int; rw_le_offset : int }
    type rw_level_exp = { rw_le_const : int; rw_le_vars : rw_level_exp_var list }
 
@@ -206,7 +207,7 @@ struct
       { con_contractum : rwterm;
         con_new_vars : var array
       }
-
+   (* %%MAGICEND%% *)
 end
 
 (*

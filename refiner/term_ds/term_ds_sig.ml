@@ -45,6 +45,7 @@ sig
     * Level expression have offsets from level expression
     * vars, plus a constant offset.
     *)
+   (* %%MAGICBEGIN%% *)
    type level_exp_var' = { le_var : var; le_offset : int }
    type level_exp_var = level_exp_var'
 
@@ -100,6 +101,7 @@ sig
    and lazy_vars =
       Vars of SymbolSet.t
     | VarsDelayed
+   (* %%MAGICEND%% *)
 
    (*
     * Define a type of parameters used in pattern matching.

@@ -33,6 +33,8 @@
  *)
 open Lm_printf
 
+open Opname
+
 type shape_param =
    ShapeNumber
  | ShapeString
@@ -51,11 +53,14 @@ sig
    val eq : shape -> shape -> bool
    val param_type : param -> shape_param
 
+   val opname_of_shape : shape -> opname
+
    val sequent_shape : shape (* Any sequent *)
    val var_shape : shape (* First-order variable *)
 
    val print_shape : out_channel -> shape -> unit
    val pp_print_shape : formatter -> shape -> unit
+   val string_of_shape : shape -> string
 end
 
 (*

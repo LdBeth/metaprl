@@ -42,6 +42,7 @@ type 'term poly_hypothesis =
  * The terms in the framework include
  * a meta-implication and meta-iff.
  *)
+(* %%MAGICBEGIN%% *)
 type 'term poly_meta_term =
    MetaTheorem of 'term
  | MetaImplies of 'term poly_meta_term * 'term poly_meta_term
@@ -134,6 +135,7 @@ sig
         sequent_hyps : seq_hyps;
         sequent_goals : seq_goals
       }
+(* %%MAGICEND%% *)
 
    (************************************************************************
     * DESTRUCTION
