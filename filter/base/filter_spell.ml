@@ -1,5 +1,5 @@
 (*
- * Define a specll-checker.
+ * Define a spell-checker.
  *
  * ----------------------------------------------------------------
  *
@@ -34,13 +34,13 @@ open Printf
  *)
 let tmp_magic = 0x2557f3ed
 
-let tmp_filename =
+let tmp_filename, local_words =
    let lib =
       try Sys.getenv "MPLIB" with
          Not_found ->
             raise (Invalid_argument "MPLIB environment variable in undefined")
    in
-      lib ^ "/english_dictionary.dat"
+      lib ^ "/english_dictionary.dat", lib ^ "/words"
 
 let ispell_filename =
    ".ispell_english"
@@ -53,7 +53,7 @@ let home_filename =
    in
       home ^ "/" ^ ispell_filename
 
-let words_filenames = [ home_filename; "/usr/dict/words"; "/usr/dict/webster" ]
+let words_filenames = [ home_filename; "/usr/dict/words"; "/usr/dict/webster"; local_words ]
 
 (*
  * The loaded dictionary.
