@@ -61,6 +61,29 @@ Failure: undeclared name: fun
 
 (Running this example in mpopt produces similar result).
 
+This error also raised when we cd <theory>, and then load <theory>:
+> # cd "dec_eq";;
+> /dec_eq : string
+> # load "dec_eq";;
+> () : unit
+> # <<it>>;;
+> chars 32-34: Pcaml.Qerror("", 0, _)
+> # chars 36-38: Stream.Error("illegal begin of toplevel phrase")
+> #
+> # MetaPRL exiting
+>
+> [kopylov@tulare ml]$ ./mpopt
+> MetaPRL 0.5.2:
+>   build [Fri May 21 19:06:08 EDT 1999]
+>   on tulare.cs.cornell.edu
+>   Uses VERBOSE Refiner_ds
+> # load "dec_eq";;
+> () : unit
+> # cd "dec_eq";;
+> /dec_eq : string
+> # <<it>>;;
+
+
 REFINER
 
 1) There is no clear semantics for the hidden hypothesis. As a result,
