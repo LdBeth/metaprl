@@ -317,4 +317,4 @@ test.cmiz: test.mli prlcomp.run
 lib:: $(RMLIFILES) $(RCMIFILES)	$(RCMAFILES)
 
 clean::
-	$(RM) *.opt
+	$(RM) *.opt infix.ml
