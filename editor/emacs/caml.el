@@ -276,7 +276,7 @@ point is outside the region."
     (8  t   if & then & (opt else &if))
     (1  t   for & (alt to downto) & do & done)
     (1  t   while & do & done)
-    (5  t   (opt &+) (alt val value open extends include exception external) &)
+    (5  t   (opt &+) (alt val open extends include exception external) &)
     (4  t   (opt &+) module (opt type) word (* \( & : & \)) (opt : &) (opt = &))
     (5  t   (opt &+) magic_block word = &)
     (1  nil sig & end)

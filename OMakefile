@@ -55,6 +55,7 @@ realclean: clean
 #
 # Phony target for installing libraries
 #
+INSTALL_INTERFACES = true
 MPINSTALL = mp.install
 
 .PHONY: $(MPINSTALL)
