@@ -1522,7 +1522,7 @@ struct
     * Print an error and raise an exception.
     *)
    let implem_error s =
-      raise (Failure s)
+      raise (IterfImplemMismatch s)
 
    (*
     * Check parameter lists.

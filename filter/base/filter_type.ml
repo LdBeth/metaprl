@@ -53,6 +53,11 @@ exception ParseError of string
  *)
 exception BadCommand of string
 
+(*
+ * .ml does not match its .mli
+ *)
+exception IterfImplemMismatch of string
+
 (************************************************************************
  * COMMON TYPES                                                         *
  ************************************************************************)

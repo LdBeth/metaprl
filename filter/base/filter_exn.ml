@@ -89,6 +89,12 @@ let rec format_exn db buf exn =
          format_string buf "Parse error:";
          format_space buf;
          format_string buf s
+    | IterfImplemMismatch s ->
+         format_pushm buf 3;
+         format_string buf "Mismatch between the interface and implementation:";
+         format_newline buf;
+         format_string buf s;
+         format_popm buf
     | BadCommand s ->
          format_string buf "Bad command:";
          format_string buf s
