@@ -1,8 +1,50 @@
 (*
  * A precedence is really just a partial order.
  *
+ *)
+
+(*
+ * Actual precedence.
+ *)
+type precedence
+
+(*
+ * Relations.
+ *)
+type relation =
+   NoRelation
+ | LTRelation
+ | EQRelation
+ | GTRelation
+
+(*
+ * Smallest and largest elements.
+ *)
+val min_prec : precedence
+val max_prec : precedence
+
+(*
+ * New precedence in the base.
+ *)
+val new_prec : unit -> precedence
+
+(*
+ * Install a relation.
+ *)
+val add_lt : precedence -> precedence -> unit
+val add_eq : precedence -> precedence -> unit
+
+(*
+ * Get the relation.
+ *)
+val get_prec : precedence -> precedence -> relation
+
+(*
  * $Log$
- * Revision 1.1  1998/04/08 14:57:27  jyh
+ * Revision 1.2  1998/04/08 15:08:27  jyh
+ * Moved precedence to mllib.
+ *
+ * Revision 1.2  1998/04/08 14:57:31  jyh
  * ImpDag is in mllib.
  *
  * Revision 1.1  1997/04/28 15:51:29  jyh
@@ -27,45 +69,6 @@
  * Revision 1.1  1996/04/04 20:19:19  jyh
  * This is a functional version of the precedentor.
  *
- *)
-
-(*
- * Actual precedence.
- *)
-type t
-
-(*
- * Relations.
- *)
-type relation =
-   None
- | LT
- | EQ
- | GT
-
-(*
- * Smallest and largest elements.
- *)
-val min : t
-val max : t
-
-(*
- * New precedence in the base.
- *)
-val create : string -> t
-
-(*
- * Install a relation.
- *)
-val add_lt : t -> t -> unit
-val add_eq : t -> t -> unit
-
-(*
- * Get the relation.
- *)
-val get_prec : t -> t -> relation
-
-(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

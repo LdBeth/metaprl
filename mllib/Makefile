@@ -19,6 +19,7 @@ LMFILES :=\
 	bitset\
 	dag\
 	imp_dag\
+	precedence\
 	file_base_type\
 	file_base\
 	file_type_base\

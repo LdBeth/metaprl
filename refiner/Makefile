@@ -11,7 +11,6 @@ MLZFILES :=\
 # Library files
 LMFILES :=\
 	rformat\
-	precedence\
 	opname\
 	term\
 	term_util\
