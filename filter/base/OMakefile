@@ -56,7 +56,7 @@ FILTER_MAGIC[] =
     $(ROOT)/libmojave/util/lm_lexer.ml
     $(ROOT)/libmojave/util/lm_parser.ml
     $(ROOT)/refiner/rewrite/rewrite_types.ml
-    $(ROOT)/refiner/refsig/term_sig.mlz
+    $(ROOT)/refiner/refsig/term_sig.ml
     $(ROOT)/refiner/term_ds/term_ds_sig.mlz
     $(ROOT)/refiner/reflib/ascii_io.ml
     filter_type.mlz

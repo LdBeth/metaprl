@@ -20,4 +20,4 @@ REFSIG_FILES =\
 	term_norm_sig\
 	termmod_hash_sig\
 	refiner_sig\
-   thread_refiner_sig\
+   	thread_refiner_sig\

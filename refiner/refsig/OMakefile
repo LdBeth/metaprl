@@ -1,5 +1,3 @@
-MLZFILES = $(REFSIG_FILES)
-
 OCAMLINCLUDES[] +=
 	../refbase
 
