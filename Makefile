@@ -38,7 +38,7 @@ MP_DIRS =\
 DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 
 .PHONY: all opt
-.PHONY: profile_all profile_clean profile_byte filter profile profile_opt
+.PHONY: profile_all profile_clean profile_byte filter profile profile_opt profile_mem profile_mem_opt
 .PHONY: install depend clean check_config
 
 all: check_config
@@ -76,6 +76,10 @@ profile: check_config
 	@$(MAKE) filter
 	@$(MAKE) profile_opt
 
+profile_mem: check_config
+	@$(MAKE) filter
+	@$(MAKE) profile_opt_mem
+
 profile_opt: check_config
 	@for i in $(REFINER_DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
@@ -83,6 +87,15 @@ profile_opt: check_config
 	@if (echo Making filter...; $(MAKE) -C filter PROFILE=-p INLINE=0 profile); then true; else exit 1; fi
 	@for i in $(MP_DIRS) editor/ml; do\
 		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
+	done
+
+profile_opt_mem: check_config
+	@for i in $(REFINER_DIRS); do\
+		if (echo Making $$i...; $(MAKE) -C $$i PROFILE="-p -compact" INLINE=0 opt); then true; else exit 1; fi;\
+	done
+	@if (echo Making filter...; $(MAKE) -C filter PROFILE="-p -compact" INLINE=0 profile); then true; else exit 1; fi
+	@for i in $(MP_DIRS) editor/ml; do\
+		if (echo Making $$i...; $(MAKE) -C $$i PROFILE="-p -compact" INLINE=0 opt); then true; else exit 1; fi;\
 	done
 
 install: check_config
