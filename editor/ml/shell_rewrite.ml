@@ -47,6 +47,7 @@ open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Opname
 
+open Filter_type
 open Filter_summary
 open Filter_cache
 open Filter_ocaml
@@ -160,20 +161,20 @@ let item_of_obj pack name
       rw_proof = proof
     } =
    if params = [] & assums = [] then
-      Filter_summary.Rewrite (**)
-         { Filter_summary.rw_name = name;
-           Filter_summary.rw_redex = redex;
-           Filter_summary.rw_contractum = contractum;
-           Filter_summary.rw_proof = proof
+      Filter_type.Rewrite (**)
+         { Filter_type.rw_name = name;
+           Filter_type.rw_redex = redex;
+           Filter_type.rw_contractum = contractum;
+           Filter_type.rw_proof = proof
          }
    else
-      Filter_summary.CondRewrite (**)
-         { Filter_summary.crw_name = name;
-           Filter_summary.crw_params = params;
-           Filter_summary.crw_args = assums;
-           Filter_summary.crw_redex = redex;
-           Filter_summary.crw_contractum = contractum;
-           Filter_summary.crw_proof = proof
+      Filter_type.CondRewrite (**)
+         { Filter_type.crw_name = name;
+           Filter_type.crw_params = params;
+           Filter_type.crw_args = assums;
+           Filter_type.crw_redex = redex;
+           Filter_type.crw_contractum = contractum;
+           Filter_type.crw_proof = proof
          }
 
 (*
@@ -355,10 +356,10 @@ let create pack name =
    let proof = Package.new_proof pack name [] unit_term in
    let ped = Package.ped_of_proof pack proof in
    let rw =
-      { Filter_summary.rw_name = name;
-        Filter_summary.rw_redex = unit_term;
-        Filter_summary.rw_contractum = unit_term;
-        Filter_summary.rw_proof = Interactive proof
+      { Filter_type.rw_name = name;
+        Filter_type.rw_redex = unit_term;
+        Filter_type.rw_contractum = unit_term;
+        Filter_type.rw_proof = Interactive proof
       }
    in
    let obj =
@@ -372,7 +373,7 @@ let create pack name =
    in
    let sentinal = Package.sentinal pack in
    let arg = Package.argument pack in
-      Package.set pack (Filter_summary.Rewrite rw);
+      Package.set pack (Filter_type.Rewrite rw);
       edit pack sentinal arg name obj
 
 let ped_of_proof pack = function
@@ -386,10 +387,10 @@ let ped_of_proof pack = function
       Interactive (Package.ped_of_proof pack proof)
 
 let view_rw pack
-    { Filter_summary.rw_name = name;
-      Filter_summary.rw_redex = redex;
-      Filter_summary.rw_contractum = contractum;
-      Filter_summary.rw_proof = proof
+    { Filter_type.rw_name = name;
+      Filter_type.rw_redex = redex;
+      Filter_type.rw_contractum = contractum;
+      Filter_type.rw_proof = proof
     } =
    let obj =
       { rw_assums = [];

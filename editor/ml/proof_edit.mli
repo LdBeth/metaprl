@@ -56,9 +56,9 @@ type t
 (*
  * Constructors.
  *)
-val create : term Filter_summary.param list -> tactic_arg -> t
-val ped_of_proof : term Filter_summary.param list -> Proof.t -> t
-val set_params : t -> term Filter_summary.param list -> unit
+val create : term Filter_type.param list -> tactic_arg -> t
+val ped_of_proof : term Filter_type.param list -> Proof.t -> t
+val set_params : t -> term Filter_type.param list -> unit
 val ped_arg : t -> tactic_arg
 val ped_item : t -> Proof.item option
 val ped_children : t -> tactic_arg list

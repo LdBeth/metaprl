@@ -75,6 +75,182 @@ type module_path = string list
  *)
 type aterm = { aname : term option; aterm : term }
 
+(************************************************************************
+ * Summary (filtyer_summary) TYPES                                      *
+ ************************************************************************)
+
+(*
+ * 'proof: type of proofs for rewrites, etc.
+ * 'ctyp: type of type definitions for resources
+ * 'expr: type of expressions used in ML definitions
+ * 'item: type of summary items
+ *)
+
+(*
+ * Proof is type unit in interface.
+ *)
+type ('term, 'proof) rewrite_info =
+   { rw_name : string;
+     rw_redex : 'term;
+     rw_contractum : 'term;
+     rw_proof : 'proof
+   }
+
+type ('term, 'proof) axiom_info =
+   { axiom_name : string;
+     axiom_stmt : 'term;
+     axiom_proof : 'proof
+   }
+
+type ('term, 'proof) cond_rewrite_info =
+   { crw_name : string;
+     crw_params : 'term param list;
+     crw_args : 'term list;
+     crw_redex : 'term;
+     crw_contractum : 'term;
+     crw_proof : 'proof
+   }
+
+and ('term, 'meta_term, 'proof) rule_info =
+   { rule_name : string;
+     rule_params : 'term param list;
+     rule_stmt : 'meta_term;
+     rule_proof : 'proof
+   }
+
+(*
+ * A parent command lists all the modules that are recursively
+ * opened, and it lists all the resources that were discovered.
+ *)
+and 'ctyp parent_info =
+   { parent_name : module_path;
+     parent_opens : module_path list;
+     parent_resources : 'ctyp resource_info list
+   }
+
+(*
+ * An mlterm is a term that has an ML procedure for its rewrite.
+ * The definition is not required in the interface.
+ *)
+and ('term, 'expr) mlterm_info =
+   { mlterm_term : 'term;
+     mlterm_contracta : 'term list;
+     mlterm_def : ('expr * 'expr) option
+   }
+
+and 'term opname_info =
+   { opname_name : string;
+     opname_term : 'term
+   }
+
+(*
+ * Dform descriptions.
+ * The definition is not required in the interface.
+ *)
+and ('term, 'expr) dform_info =
+   { dform_name : string;
+     dform_modes : string list;
+     dform_options : dform_option list;
+     dform_redex : 'term;
+     dform_def : ('term, 'expr) dform_def
+   }
+
+and dform_option =
+   DFormInheritPrec
+ | DFormPrec of string
+ | DFormParens
+
+and ('term, 'expr) dform_def =
+   NoDForm
+ | TermDForm of 'term
+ | MLDForm of ('term, 'expr) dform_ml_def
+
+and ('term, 'expr) dform_ml_def =
+   { dform_ml_printer : string;
+     dform_ml_buffer : string;
+     dform_ml_contracta : 'term list;
+     dform_ml_code : 'expr
+   }
+
+(*
+ * Define a precedence relation.
+ *)
+and prec_rel_info =
+   { prec_rel : Precedence.relation;
+     prec_left : string;
+     prec_right : string
+   }
+
+(*
+ * Resource descriptions.
+ *)
+and 'ctyp resource_info =
+   { resource_name : string;
+     resource_extract_type : 'ctyp;
+     resource_improve_type : 'ctyp;
+     resource_data_type : 'ctyp;
+     resource_arg_type : 'ctyp
+   }
+
+(*
+ * Magic block needs a variable to bind the magic number to.
+ *)
+and 'item magic_info =
+   { magic_name : string;
+     magic_code : 'item list
+   }
+
+and 'term param =
+   ContextParam of string
+ | VarParam of string
+ | TermParam of 'term
+
+(*
+ * Conversion functions.
+ *)
+type ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1,
+      'term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) convert =
+   { term_f       : 'term1 -> 'term2;
+     meta_term_f  : 'meta_term1 -> 'meta_term2;
+     proof_f      : string -> 'proof1 -> 'proof2;
+     ctyp_f       : 'ctyp1  -> 'ctyp2;
+     expr_f       : 'expr1  -> 'expr2;
+     item_f       : 'item1  -> 'item2
+   }
+
+type 'expr resource_def = (string * 'expr list) list
+
+(*
+ * The summary contains information about everything in the file.
+ * We use the summary for both interfaces and implementations.
+ * If the implementation requires a term for the definition,
+ * we use a term option so that the term does not have to be
+ * provided in the interface.
+ *
+ * A MagicBlock is a block of code that we use to compute
+ * a magic number.  The magic number changes whenever the code changes.
+ *)
+
+type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, 'module_info) summary_item_type =
+   Rewrite of ('term, 'proof) rewrite_info
+ | CondRewrite of ('term, 'proof) cond_rewrite_info
+ | Axiom of ('term, 'proof) axiom_info
+ | Rule of ('term, 'meta_term, 'proof) rule_info
+ | Opname of 'term opname_info
+ | MLTerm of ('term, 'expr) mlterm_info
+ | Condition of ('term, 'expr) mlterm_info
+ | Parent of 'ctyp parent_info
+ | Module of string * 'module_info
+ | DForm of ('term, 'expr) dform_info
+ | Prec of string
+ | PrecRel of prec_rel_info
+ | Id of int
+ | Resource of 'ctyp resource_info
+ | Infix of string
+ | SummaryItem of 'item
+ | ToploopItem of 'item
+ | MagicBlock of 'item magic_info
+
 (*
  * -*-
  * Local Variables:

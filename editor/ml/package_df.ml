@@ -45,9 +45,10 @@ open Rformat
 open Dform_print
 open Dform
 
-open Filter_summary
+open Filter_type
 open Filter_ocaml
 open Filter_cache
+open Filter_summary
 
 open Io_proof
 open Package_info

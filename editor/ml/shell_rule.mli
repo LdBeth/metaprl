@@ -36,8 +36,8 @@ include Package_df
 
 open Refiner.Refiner.TermType
 
+open Filter_type
 open Filter_cache
-open Filter_summary
 
 open Tacticals
 open Shell_type

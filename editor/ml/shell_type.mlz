@@ -46,7 +46,7 @@ type edit_object =
      edit_set_redex : term -> unit;
      edit_set_contractum : term -> unit;
      edit_set_assumptions : term list -> unit;
-     edit_set_params : term Filter_summary.param list -> unit;
+     edit_set_params : term Filter_type.param list -> unit;
      edit_save : unit -> unit;
      edit_check : unit -> extract;
      edit_expand : dform_base -> unit;

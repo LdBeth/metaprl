@@ -38,6 +38,7 @@ open Refiner.Refiner.Term
 open Mp_resource
 
 open Filter_summary
+open Filter_type
 
 (*
  * Show the file loading.

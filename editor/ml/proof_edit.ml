@@ -90,7 +90,7 @@ type ped_proof =
  * Current proof is at top of undo stack.
  *)
 type t =
-   { mutable ped_params : term Filter_summary.param list;
+   { mutable ped_params : term Filter_type.param list;
      mutable ped_goal : tactic_arg;
      mutable ped_undo : ped_proof list;
      mutable ped_stack : ped_proof list

@@ -33,6 +33,7 @@
 open Refiner.Refiner.Term
 
 open Filter_summary
+open Filter_type
 
 (*
  * Parameter lists.

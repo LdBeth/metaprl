@@ -54,6 +54,7 @@ open Dform
 open Dform_print
 open Rformat
 
+open Filter_type
 open Filter_summary
 
 open Tacticals

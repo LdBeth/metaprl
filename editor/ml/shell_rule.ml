@@ -48,6 +48,7 @@ open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Opname
 
+open Filter_type
 open Filter_summary
 open Filter_cache
 open Filter_ocaml
@@ -148,17 +149,17 @@ let item_of_obj pack name
       rule_goal = goal
     } =
    if params = [] & assums = [] then
-      Filter_summary.Axiom (**)
-         { Filter_summary.axiom_name = name;
-           Filter_summary.axiom_stmt = goal;
-           Filter_summary.axiom_proof = proof
+      Filter_type.Axiom (**)
+         { Filter_type.axiom_name = name;
+           Filter_type.axiom_stmt = goal;
+           Filter_type.axiom_proof = proof
          }
    else
-      Filter_summary.Rule (**)
-         { Filter_summary.rule_name = name;
-           Filter_summary.rule_params = params;
-           Filter_summary.rule_stmt = zip_mimplies (assums @ [goal]);
-           Filter_summary.rule_proof = proof
+      Filter_type.Rule (**)
+         { Filter_type.rule_name = name;
+           Filter_type.rule_params = params;
+           Filter_type.rule_stmt = zip_mimplies (assums @ [goal]);
+           Filter_type.rule_proof = proof
          }
 
 (*
@@ -340,9 +341,9 @@ let edit pack sentinal arg name obj =
 
 let create pack name =
    let rule =
-      { Filter_summary.axiom_name = name;
-        Filter_summary.axiom_stmt = unit_term;
-        Filter_summary.axiom_proof = Incomplete
+      { Filter_type.axiom_name = name;
+        Filter_type.axiom_stmt = unit_term;
+        Filter_type.axiom_proof = Incomplete
       }
    in
    let obj =
@@ -369,9 +370,9 @@ let ped_of_proof pack = function
       Interactive (Package.ped_of_proof pack proof)
 
 let view_axiom pack
-    { Filter_summary.axiom_name = name;
-      Filter_summary.axiom_stmt = goal;
-      Filter_summary.axiom_proof = proof
+    { Filter_type.axiom_name = name;
+      Filter_type.axiom_stmt = goal;
+      Filter_type.axiom_proof = proof
     } =
    let obj =
       { rule_assums = [];
@@ -386,10 +387,10 @@ let view_axiom pack
       edit pack sentinal arg name obj
 
 let view_rule pack
-    { Filter_summary.rule_name = name;
-      Filter_summary.rule_params = params;
-      Filter_summary.rule_stmt = stmt;
-      Filter_summary.rule_proof = proof
+    { Filter_type.rule_name = name;
+      Filter_type.rule_params = params;
+      Filter_type.rule_stmt = stmt;
+      Filter_type.rule_proof = proof
     } =
    let assums, goal = unzip_mfunction stmt in
    let assums = List.map snd assums in

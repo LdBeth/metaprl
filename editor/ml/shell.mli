@@ -97,7 +97,7 @@ sig
    val set_redex : term -> unit
    val set_contractum : term -> unit
    val set_assumptions : term list -> unit
-   val set_params : term Filter_summary.param list -> unit
+   val set_params : term Filter_type.param list -> unit
    val check : unit -> unit
    val expand : unit -> unit
 
@@ -135,7 +135,7 @@ sig
    val edit_set_redex : string -> string -> term -> unit
    val edit_set_contractum : string -> string -> term -> unit
    val edit_set_assumptions : string -> string -> term list -> unit
-   val edit_set_params : string -> string -> term Filter_summary.param list -> unit
+   val edit_set_params : string -> string -> term Filter_type.param list -> unit
    val edit_refine : int list -> string -> msequent * msequent list * msequent list
    val edit_node : int list -> string option * msequent * msequent list * msequent list
    val edit_undo : unit -> unit

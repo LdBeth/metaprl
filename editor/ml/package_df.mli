@@ -39,7 +39,7 @@ open Rformat
 
 open Filter_cache
 
-open Filter_summary
+open Filter_type
 
 open Package_info
 
