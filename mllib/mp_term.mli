@@ -24,6 +24,7 @@
  *)
 
 val term_size : unit -> int * int
+val min_screen_width : int ref
 val term_width : int -> int
 
 (*

@@ -156,65 +156,86 @@ struct
     * TOPLOOP                                                              *
     ************************************************************************)
 
-   let rec print_expr state out = function
-      UnitExpr () ->
-         fprintf out "() : unit\n"
-    | BoolExpr b ->
-         fprintf out "%b : bool\n" b
-    | IntExpr i ->
-         fprintf out "%d : int\n" i
-    | AddressExpr a ->
-         fprintf out "%s : address\n" (string_of_address a)
-    | StringExpr s ->
-         fprintf out "%s : string\n" s
-    | TermExpr t ->
-         fprintf out "%s : term\n" (State.string_of_term state t)
-    | TacticExpr _ ->
-         fprintf out "- : tactic\n"
-    | ConvExpr _ ->
-         fprintf out "-: conv\n"
-    | ListExpr l ->
-         fprintf out "[%a] : list\n" (print_expr_list state) l
-    | TupleExpr l ->
-         fprintf out "(%a) : tuple\n" (print_expr_list state) l
-    | FunExpr _ ->
-         fprintf out "- : expr -> expr\n"
-    | UnitFunExpr _ ->
-         fprintf out "- : unit -> expr\n"
-    | BoolFunExpr _ ->
-         fprintf out "- : bool -> expr\n"
-    | IntFunExpr _ ->
-         fprintf out "- : int -> expr\n"
-    | StringFunExpr _ ->
-         fprintf out "- : string -> expr\n"
-    | TermFunExpr _ ->
-         fprintf out "- : term -> expr\n"
-    | TacticFunExpr _ ->
-         fprintf out "- : tactic -> expr\n"
-    | IntTacticFunExpr _ ->
-         fprintf out "- : (int -> tactic) -> tactic\n"
-    | AddressFunExpr _ ->
-         fprintf out "-: address -> expr\n"
-    | ConvFunExpr _ ->
-         fprintf out "- : conv -> expr\n"
-    | AddrFunExpr _ ->
-         fprintf out "- : address -> expr\n"
-    | StringListFunExpr _ ->
-         fprintf out "- : string list -> expr\n"
-    | TermListFunExpr _ ->
-         fprintf out "- : term list -> expr\n"
-    | TacticListFunExpr _ ->
-         fprintf out "- : tactic list -> expr\n"
-    | ConvListFunExpr _ ->
-         fprintf out "- : conv list -> expr\n"
+  let string_type = function
+      UnitExpr _ ->        ": unit"
+    | BoolExpr _ ->        ": bool"
+    | IntExpr _ ->         ": int"
+    | AddressExpr _ ->     ": address"
+    | StringExpr _ ->      ": string"
+    | TermExpr _ ->        ": term"
+    | TacticExpr _ ->      ": tactic"
+    | ConvExpr _ ->        ": conv"
+    | ListExpr _ ->        ": list"
+    | TupleExpr _ ->       ": tuple"
+    | FunExpr _ ->         ": expr -> expr"
+    | UnitFunExpr _ ->     ": unit -> expr"
+    | BoolFunExpr _ ->     ": bool -> expr"
+    | IntFunExpr _ ->      ": int -> expr"
+    | StringFunExpr _ ->   ": string -> expr"
+    | TermFunExpr _ ->     ": term -> expr"
+    | TacticFunExpr _ ->   ": tactic -> expr"
+    | IntTacticFunExpr _ -> ": (int -> tactic) -> expr"
+    | AddressFunExpr _ ->  ": address -> expr"
+    | ConvFunExpr _ ->     ": conv -> expr"
+    | AddrFunExpr _ ->     ": address -> expr"
+    | StringListFunExpr _ -> ": string list -> expr"
+    | TermListFunExpr _ -> ": term list -> expr"
+    | TacticListFunExpr _ -> ": tactic list -> expr"
+    | ConvListFunExpr _ -> ": conv list -> expr"
 
-   and print_expr_list state out = function
+   let rec format_expr buf df = function
+      UnitExpr () ->
+         format_string buf "()"
+    | BoolExpr b ->
+         format_string buf (sprintf "%b" b)
+    | IntExpr i ->
+         format_int buf i;
+    | AddressExpr a ->
+         format_string buf (string_of_address a);
+    | StringExpr s ->
+         format_string buf s;
+    | TermExpr t ->
+         Dform.format_term df buf t;
+    | ListExpr l ->
+         format_char buf '[';
+         format_pushm buf 1;
+         format_expr_list buf df l;
+         format_popm buf;
+         format_char buf ']';
+    | TupleExpr l ->
+         format_char buf '(';
+         format_pushm buf 1;
+         format_expr_list buf df l;
+         format_popm buf;
+         format_char buf ')';
+    | _ ->
+         format_string buf "-"
+
+   and format_expr_type buf df expr =
+      format_szone buf;
+      format_expr buf df expr;
+      format_space buf;
+      format_ezone buf;
+      format_string buf (string_type expr)
+
+   and format_expr_list buf df = function
       [expr] ->
-         print_expr state out expr
+         format_expr_type buf df expr
     | expr :: exprs ->
-         fprintf out "%a; %a" (print_expr state) expr (print_expr_list state) exprs
+         format_expr_type buf df expr;
+         format_char buf ';';
+         format_space buf;
+         format_expr_list buf df exprs
     | [] ->
          ()
+
+   let print_expr state out expr =
+      let df = State.get_dfbase state in
+      let buf = new_buffer () in
+      let width = Mp_term.term_width 80 in
+         format_expr_type buf df expr;
+         print_to_channel width buf out;
+         eflush out
 
    (*
     * Evaluate a struct item.

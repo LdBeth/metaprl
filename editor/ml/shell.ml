@@ -139,11 +139,6 @@ struct
     ************************************************************************)
 
    (*
-    * Don't let the window shrink below this size.
-    *)
-   let min_screen_width = 40
-
-   (*
     * Get the current "prl" printing base.
     *)
    let get_dfbase info =
@@ -474,7 +469,7 @@ struct
     * Window width.
     *)
    let set_window_width info i =
-      info.width <- max min_screen_width i
+      info.width <- max !Mp_term.min_screen_width i
 
    (*
     * Show the directory.

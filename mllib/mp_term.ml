@@ -22,14 +22,31 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
+
+open Mp_debug
+open Printf
+
+let debug_terminal =
+   create_debug {
+      debug_name = "terminal";
+      debug_description = "show terminal size operations";
+      debug_value = false
+   }
+
 external term_size : unit -> int * int = "caml_term_size"
+
+let min_screen_width = ref 40
 
 let term_width width =
    try
       let _, cols = term_size () in
-         max cols width
+         if !debug_terminal then
+            eprintf "Terminal size: requested %i, got %i, minimal witdth is %i%t" width cols (!min_screen_width) eflush;
+         max (!min_screen_width) cols
    with
-      Failure _ ->
+      Failure s ->
+         if !debug_terminal then
+            eprintf "Can't get terminal size: %s%t" s eflush;
          width
 
 (*

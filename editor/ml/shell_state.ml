@@ -354,12 +354,6 @@ struct
       state.state_df_base
 
    (*
-    * Format a term.
-    *)
-   let string_of_term state t =
-      Dform.string_of_term state.state_df_base t
-
-   (*
     * Fetch terms after parsing.
     *)
    let reset_terms state =
