@@ -1130,11 +1130,10 @@ struct
       in
       let _ = insert [] refiner in
       let check_sentinal table name v =
-         if try Hashtbl.find table name == v with Not_found -> false
-         then
+         if try Hashtbl.find table name == v with Not_found -> false then
 #ifdef VERBOSE_EXN
-            if !debug_sentinal then
-               eprintf "check_sentinal: found %s%t" name eflush
+            (if !debug_sentinal then
+                eprintf "check_sentinal: found %s%t" name eflush)
 #else
             ()
 #endif
