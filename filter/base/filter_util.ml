@@ -32,7 +32,6 @@
  *)
 open Lm_debug
 open Lm_printf
-open Lm_symbol
 
 open Opname
 open Term_sig
@@ -88,15 +87,6 @@ let adjust_pos globpos local_pos =
  *  }
  *)
    mk_pos (globpos.pos_cnum + local_pos.pos_cnum)
-
-(*
- * Get the context vars from a list.
- *)
-let rec context_vars_list = function
-   h::t ->
-      SymbolSet.union (TermSubst.context_vars h) (context_vars_list t)
- | [] ->
-      SymbolSet.empty
 
 (*
  * Collect the arguments in a rewrite.

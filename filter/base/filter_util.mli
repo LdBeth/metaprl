@@ -39,7 +39,6 @@ open Filter_type
  * UTILITIES								*
  ************************************************************************)
 
-val context_vars_list : term list -> SymbolSet.t
 val unzip_rewrite : string -> meta_term -> term list * term * term
 
 val split_mfunction : meta_term -> string list list * term list * meta_term
