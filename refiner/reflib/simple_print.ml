@@ -481,6 +481,9 @@ struct
          format_term buf term;
          print_to_string max_column buf
 
+   let short_string_of_term term =
+      line_format max_column ( fun buf -> format_term buf term)
+
    (* Terms *)
    let format_simple_bterm buf = format_bterm buf
 

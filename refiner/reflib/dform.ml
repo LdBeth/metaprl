@@ -509,7 +509,7 @@ let format_short_term base shortener =
                      }
                   in
                      if !debug_dform then
-                        eprintf "Dform fun %s: %s%t" name (string_of_term t) eflush;
+                        eprintf "Dform fun %s: %s%t" name (short_string_of_term t) eflush;
                      f entry
              | DFExpansion (r, c) ->
                   let stack = apply_redex r [||] t [] in
@@ -526,14 +526,14 @@ let format_short_term base shortener =
    (* If there is no template, use the standard printer *)
    and print_term pprec buf eq t =
       if !debug_dform then
-         eprintf "Dform: %s%t" (string_of_term t) eflush;
+         eprintf "Dform: %s%t" (short_string_of_term t) eflush;
       try print_term' pprec buf eq t with
          Not_found ->
             if !debug_dform then
                let rec format t =
                   format_term buf shortener format t
                in
-                  eprintf "Default display form: %s%t" (string_of_term t) eflush;
+                  eprintf "Default display form: %s%t" (short_string_of_term t) eflush;
                   format t
             else
                format_term buf shortener (print_term max_prec buf NOParens) t
@@ -595,7 +595,7 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
          end
     | [RewriteTerm body] ->
          if !debug_dform then
-            eprintf "Dform.slot: %s%t" (string_of_term body) eflush;
+            eprintf "Dform.slot: %s%t" (short_string_of_term body) eflush;
          printer buf LTParens body
     | [RewriteString s] ->
          if !debug_dform then

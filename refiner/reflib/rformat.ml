@@ -123,7 +123,7 @@ type 'tag print_command =
    (*
     * Inlined buffer.
     *)
- | Inline of 'tag buffer
+ | Inline of 'tag buf
 
 (*
  * This is the info that is computed once a buffer has
@@ -152,7 +152,7 @@ and 'tag unformatted_info =
 and 'tag formatting_info =
    { mutable formatting_commands : 'tag print_command list;
      mutable formatting_index : int;
-     formatting_buf : 'tag buffer
+     formatting_buf : 'tag buf
    }
 
 and 'tag formatting_stack =
@@ -172,7 +172,7 @@ and 'tag format_info =
  * zone_numbers: the stack of zone numbers
  * szone_number: the current number for soft breaks
  *)
-and 'tag buffer =
+and 'tag buf =
    { (* What format is this zone *)
      buf_tag : 'tag zone_tag;
 
@@ -183,7 +183,7 @@ and 'tag buffer =
      mutable buf_info : 'tag format_info;
 
      (* Parent buffer to notify when the format changes *)
-     buf_parent : 'tag buffer option;
+     buf_parent : 'tag buf option;
 
      (* Save the root buffer *)
      buf_root : 'tag root
@@ -207,15 +207,27 @@ type 'tag printer =
    { print_string : string -> unit;
      print_invis : string -> unit;
      print_tab : int * string -> unit;
-     print_begin_block : 'tag buffer -> int -> unit;
-     print_end_block : 'tag buffer -> int -> unit;
-     print_begin_tag : 'tag buffer -> 'tag -> unit;
-     print_end_tag : 'tag buffer -> 'tag -> unit
+     print_begin_block : 'tag buf -> int -> unit;
+     print_end_block : 'tag buf -> int -> unit;
+     print_begin_tag : 'tag buf -> 'tag -> unit;
+     print_end_tag : 'tag buf -> 'tag -> unit
    }
+
+type 'tag buffer =
+   Buf of 'tag buf
+ | LineBuf of (int * string) ref
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
+
+exception LineOverflow
+
+let elinebuf = Invalid_argument "RFormat operation not supported on 1-line buffers"
+
+(* Spend at most 1/3 of the screen in a margin *)
+
+let lcol_const = 3
 
 (*
  * Default empty buffer.
@@ -227,19 +239,23 @@ let empty_info = Unformatted { unformatted_commands = []; unformatted_index = 0 
  *)
 let new_buffer () =
    let root = { root_index = 0 } in
-      { buf_tag = SZoneTag;
-        buf_index = 0;
-        buf_info = empty_info;
-        buf_parent = None;
-        buf_root = root
-      }
+   Buf {
+      buf_tag = SZoneTag;
+      buf_index = 0;
+      buf_info = empty_info;
+      buf_parent = None;
+      buf_root = root
+   }
 
 (*
  * Empty the buffer.
  * The parents are unchanged.
  *)
-let clear_buffer buf =
-   buf.buf_info <- empty_info
+let clear_buffer = function
+   Buf buf ->
+      buf.buf_info <- empty_info
+ | LineBuf _ ->
+      raise elinebuf
 
 (*
  * Switch this buffer to formatting mode.
@@ -337,56 +353,70 @@ let push_zone buf tag =
       root.root_index <- index;
       stack.formatting_stack <- info :: stack.formatting_stack
 
-let format_lzone buf =
-   push_zone buf LZoneTag
+let format_lzone = function
+   Buf buf -> push_zone buf LZoneTag
+ | LineBuf _ -> ()
 
-let format_hzone buf =
-   push_zone buf HZoneTag
+let format_hzone = function
+   Buf buf -> push_zone buf HZoneTag
+ | LineBuf _ -> ()
 
-let format_szone buf =
-   push_zone buf SZoneTag
+let format_szone = function
+   Buf buf -> push_zone buf SZoneTag
+ | LineBuf _ -> ()
 
-let format_izone buf =
-   push_zone buf IZoneTag
+let format_izone = function
+   Buf buf -> push_zone buf IZoneTag
+ | LineBuf _ -> ()
 
 let format_tzone buf tag =
-   push_zone buf (TZoneTag tag)
+   match buf with
+      Buf buf -> push_zone buf (TZoneTag tag)
+    | LineBuf _ -> ()
 
 let format_pushm buf off =
-   let off =
-      if off < 0 then
-         begin
-            eprintf "Rformat.format_pushm: negative margin %d%t" off eflush;
-            0
-         end
-      else
-         off
-   in
-      push_zone buf (MZoneTag (off, String.make off ' '))
+   match buf with
+      Buf buf ->
+         let off =
+            if off < 0 then
+               begin
+                  eprintf "Rformat.format_pushm: negative margin %d%t" off eflush;
+                  0
+               end
+            else
+               off
+         in
+            push_zone buf (MZoneTag (off, String.make off ' '))
+    | LineBuf _ -> ()
 
 let format_pushm_str buf s =
-   push_zone buf (MZoneTag (String.length s, s))
+   match buf with
+      Buf buf -> push_zone buf (MZoneTag (String.length s, s))
+    | LineBuf _ -> ()
 
 (*
  * End the zone by popping the last entry off the stack.
  *)
-let format_ezone buf =
-   let stack = get_formatting_stack buf in
-      match stack.formatting_stack with
-         { formatting_commands = commands;
-           formatting_index = index;
-           formatting_buf = buf'
-         } :: ((head :: _) as tail) ->
-            let info =
-               { unformatted_commands = List.rev commands;
-                 unformatted_index = index
-               }
-            in
-               buf'.buf_info <- Unformatted info;
-               stack.formatting_stack <- tail
-       | _ ->
-            (* Ignore excessive pops *)
-            ()
+let format_ezone = function
+   Buf buf -> begin
+      let stack = get_formatting_stack buf in
+         match stack.formatting_stack with
+            { formatting_commands = commands;
+              formatting_index = index;
+              formatting_buf = buf'
+            } :: ((head :: _) as tail) ->
+               let info =
+                  { unformatted_commands = List.rev commands;
+                    unformatted_index = index
+                  }
+               in
+                  buf'.buf_info <- Unformatted info;
+                  stack.formatting_stack <- tail
+          | _ ->
+               (* Ignore excessive pops *)
+               ()
+   end
+ | LineBuf _ -> ()
 
 let format_popm = format_ezone
 
@@ -470,68 +500,109 @@ let rec get_hard_binder buf =
    in
       search (get_formatting_stack buf).formatting_stack
 
-let format_cbreak buf str str' =
-   let l = String.length str in
-   let l' = String.length str' in
-      try
-         push_command buf (CBreak (get_soft_binder buf, l, l', str, str'))
-      with
-         NoBinder ->
-            ()
+let rec format_cbreak buf str str' =
+   match buf with
+      Buf buf ->
+         let l = String.length str in
+         let l' = String.length str' in
+            begin try
+               push_command buf (CBreak (get_soft_binder buf, l, l', str, str'))
+            with
+               NoBinder ->
+                  ()
+            end
+    | LineBuf _ ->
+         format_string buf str'
 
-let format_sbreak buf str str' =
-   let l = String.length str in
-   let l' = String.length str' in
-      try
-         push_command buf (Break (get_soft_binder buf, l, l', str, str'))
-      with
-         NoBinder ->
-            ()
+and format_sbreak buf str str' =
+   match buf with
+      Buf buf ->
+         let l = String.length str in
+         let l' = String.length str' in
+            begin try
+               push_command buf (Break (get_soft_binder buf, l, l', str, str'))
+            with
+               NoBinder ->
+                  ()
+            end
+    | LineBuf _ ->
+         format_string buf str'
 
-let format_hbreak buf str str' =
-   let l = String.length str in
-   let l' = String.length str' in
-      try
-         push_command buf (Break (get_hard_binder buf, l, l', str, str'))
-      with
-         NoBinder ->
-            ()
+and format_hbreak buf str str' =
+   match buf with
+      Buf buf ->
+         let l = String.length str in
+         let l' = String.length str' in
+            begin try
+               push_command buf (Break (get_hard_binder buf, l, l', str, str'))
+            with
+               NoBinder ->
+                  ()
+            end
+    | LineBuf _ ->
+         format_string buf str'
 
-let format_newline buf =
-   push_command buf HBreak
+and format_newline = function
+   Buf buf ->
+      push_command buf HBreak
+ | (LineBuf _) as buf ->
+      format_string buf ";;"
 
-let format_space buf =
+and format_space buf =
    format_sbreak buf "" " "
 
-let format_hspace buf =
+and format_hspace buf =
    format_hbreak buf "" " "
 
 (*
  * Actual printing.
  *)
-let format_char buf c =
+and format_char buf c =
    if c = '\n' then
       format_newline buf
    else
-      push_command buf (Text (1, String.make 1 c))
+      let s = String.make 1 c in
+      match buf with
+         Buf buf ->
+            push_command buf (Text (1, s))
+       | LineBuf buf ->
+            let (chars, line) = !buf in
+               if (chars < 1) then raise LineOverflow else
+               buf := (pred chars, line ^ s)
 
 (*
  * Check for newlines in the string.
  *)
-let format_raw_string buf s =
-   push_command buf (Text (String.length s, s))
+and format_raw_string buf s =
+   match buf with
+      Buf buf ->
+         push_command buf (Text (String.length s, s))
+    | LineBuf _ ->
+         format_string buf s
 
-let rec format_string buf s =
+and format_string buf s =
    try
        let i = String_util.strchr s '\n' in
-          push_command buf (Text (i, String_util.sub "Rformat.format_string" s 0 i));
+          format_string buf (String_util.sub "Rformat.format_string" s 0 i);
           format_newline buf;
           let l = (String.length s) - i - 1 in
              if l > 0 then
                 format_string buf (String_util.sub "Rformat.format_string" s (i + 1) l)
    with
-      Not_found ->
-         push_command buf (Text (String.length s, s))
+      Not_found -> begin
+         match buf with
+            Buf buf ->
+               push_command buf (Text (String.length s, s))
+          | LineBuf buf ->
+               let chars, line = !buf in
+               let l = String.length s in
+               if chars >= l then
+                  buf:=(chars - l, line ^ s)
+               else begin
+                  buf:=(0, line ^ (String_util.sub "Rformat.format_string" s 0 chars));
+                  raise LineOverflow
+               end
+      end
 
 (*
  * Print a string, and quote it if necessary.
@@ -576,15 +647,13 @@ let format_quoted_string buf str =
  * Standard int.
  *)
 let format_int buf i =
-   let s = string_of_int i in
-      push_command buf (Text (String.length s, s))
+   format_string buf (string_of_int i)
 
 (*
  * Num.num numbers.
  *)
 let format_num buf n =
-   let s = Mp_num.string_of_num n in
-      push_command buf (Text (String.length s, s))
+   format_string buf (Mp_num.string_of_num n)
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -879,8 +948,12 @@ and search_zone buf stack lmargin rmargin col maxx breaks search =
     | MZoneTag (off, str) ->
          (* Adjust the left margin *)
          let lmargin, str' = lmargin in
-         let space = col - lmargin in
-         let lmargin = col + off, margin_string str' space str in
+         let col' = col + off in
+         let col' =
+            if (col' < rmargin / lcol_const ) then col' else rmargin/lcol_const
+         in
+         let space = col' - lmargin - off in
+         let lmargin = col', margin_string str' space str in
             search_tzone buf stack lmargin rmargin col maxx breaks search
 
 (*
@@ -1507,29 +1580,55 @@ let print_to_printer buf rmargin printer =
  * Print to an IO buffer.
  *)
 let print_to_channel rmargin buf out =
-   print_to_printer buf rmargin (make_channel_printer out)
+   match buf with
+      Buf buf -> print_to_printer buf rmargin (make_channel_printer out)
+    | LineBuf _ -> raise elinebuf
 
-let print_to_string rmargin buf =
-   let get_string, printer = make_string_printer () in
-      print_to_printer buf rmargin printer;
-      get_string ()
+let print_to_string rmargin = function
+   Buf buf ->
+      let get_string, printer = make_string_printer () in
+         print_to_printer buf rmargin printer;
+         get_string ()
+ | LineBuf buf -> raise elinebuf
 
 (*
  * Print to HTML.
  *)
 let print_to_html rmargin buf out =
-   let get_info, printer = make_html_printer out in
-      print_to_printer buf rmargin printer;
-      get_info ()
+   match buf with
+      Buf buf ->
+         let get_info, printer = make_html_printer out in
+            print_to_printer buf rmargin printer;
+            get_info ()
+    | LineBuf _ -> raise elinebuf
 
 (*
  * TeX formatting.
  *)
 let print_to_tex rmargin buf out =
-   let get_info, printer = make_tex_printer out in
-      output_string out "\\iftex\\begin{tabbing}\n";
-      print_to_printer buf rmargin printer;
-      output_string out "\\end{tabbing}\\fi\n"
+   match buf with
+      Buf buf ->
+         let get_info, printer = make_tex_printer out in
+            output_string out "\\iftex\\begin{tabbing}\n";
+            print_to_printer buf rmargin printer;
+            output_string out "\\end{tabbing}\\fi\n"
+    | LineBuf _ -> raise elinebuf
+
+let line_format length fmt_fun =
+   if length<=3 then
+      raise(Invalid_argument "Rformat.line_format: length should be > 3");
+   let buffer = (ref (length, "")) in
+   let buf = LineBuf buffer in
+   try
+      fmt_fun buf;
+      let _, line = !buffer in
+         line
+   with
+      LineOverflow ->
+         let chars, line = !buffer in
+         if chars <> 0 then
+            raise (Invalid_argument "bug in Rformat.line_format");
+         (String_util.sub "Rformat.line_format" line 0 (length-3)) ^ "..."
 
 (*
  * -*-

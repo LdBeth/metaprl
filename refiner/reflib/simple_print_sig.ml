@@ -69,6 +69,13 @@ sig
    val prerr_simple_term : term -> unit
    val string_of_term : term -> string
 
+   (*
+    * The short_string_of_term creates a 1-line string of at most 120 symbols
+    * It aborts printing as soon as it hits the limit, so it should be fast
+    * even of very big terms
+    *)
+   val short_string_of_term : term -> string
+
    val format_simple_bterm : buffer -> bound_term -> unit
    val print_simple_bterm_fp : out_channel -> bound_term -> unit
    val print_simple_bterm : bound_term -> unit
