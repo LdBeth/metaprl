@@ -38,81 +38,22 @@ extends Ocaml_df
 
 open Refiner.Refiner.TermType
 
-declare "interface"{'intf}
-declare "implementation"{'impl}
-declare "location"[start:n, finish:n]{'body}
+(*
+ * Structured comments
+ *)
+declare comment{'t : Dform} : Dform
 
-declare "rewrite"[name:s]{'redex; 'contractum; 'proof; 'res}
-declare "cond_rewrite"[name:s]{'params; 'args; 'redex; 'contractum; 'proof; 'res}
-declare "rule"[name:s]{'params; 'stmt; 'proof; 'res}
-declare "opname"[name:s]{'term}
-declare "definition"[name:s]{'term; 'definition; 'res}
-declare "mlterm"{'term; 'cons; 'oexpr}
-declare "condition"{'term; 'cons; 'oexpr}
-declare "mlrewrite"[name:s]{'params; 'redex; 'body; 'resources}
-declare "parent"{'path; 'resources}
-declare "module"[name:s]{'info}
-declare "dform"[name:s]{'modes; 'redex; 'def}
-declare "prec"[name:s]
-declare "prec_rel"[op, left, right]
-declare "id"[n:n]
-declare "resource"[name:s]{'expr}
-declare "resource"{'inp; 'outp; 'expr}
-declare "infix"[name:s]
-declare "suffix"[name:s]
-declare "magic_block"[name:s]{'items}
-declare "summary_item"{'term}
-declare "resource_defs"[start:n, finish:n, name:s]{'res}
-declare "resource_defs"[name:s]{'res}
-declare "comment"{'t}
+(*
+ * Proof Status
+ *)
+declare status_bad : Dform
+declare status_partial : Dform
+declare status_asserted : Dform
+declare status_complete : Dform
+declare status_primitive{'extract} : Dform
+declare status_interactive[rules:n,nodes:n]{'status : Dform} : Dform
 
-declare "inherit_df"
-declare "prec_df"[name:s]
-declare "parens_df"
-declare "mode_df"[mode:s]
-
-declare "df_none"
-declare "df_term"{'t}
-declare "df_ml"[printer:s, buffer:s]{'contracta; 'code}
-
-declare "none"
-declare "some"{'t}
-
-declare "meta_theorem"{'A}
-declare "meta_implies"{'A; 'B}
-declare "meta_function"{'arg; 'A; 'B}
-declare "meta_iff"{'A; 'B}
-declare "meta_labeled"[label:s]{'meta}
-
-declare "int_param"[name:v]
-declare "addr_param"[name:v]
-declare "term_param"{'t}
-
-(* Proofs *)
-declare "href"[command:s]{'t}
-
-declare status_bad
-declare status_partial
-declare status_asserted
-declare status_complete
-declare status_primitive{'extract}
-declare status_interactive[rules:n,nodes:n]{'status}
-
-declare "goal_status"{'sl}
-declare "goal_label"[s:s]
-declare "goal_list"{'goals}
-declare "goal"{'status; 'label; 'assums; 'goal}
-declare "subgoals"{'subgoals; 'extras}
-declare "rule_box"[text:s]
-declare "proof"{'main; 'goal; 'status; 'text; 'subgoals}
-
-(* PRL Bindings *)
-declare term_binding{'t;v.'t2['v]}
-declare opname_binding{'t;v.'t2['v]}
-
-(************************************************************************
- * ML ACCESS                                                            *
- ************************************************************************)
+val term_of_proof_status : Tactic_type.Proof.status -> term
 
 (*
  * Interface and implementation files.

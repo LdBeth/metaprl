@@ -56,6 +56,7 @@ doc <:doc<
 
    @end[license]
 >>
+extends Perv
 
 open Term_sig
 open Refiner.Refiner.TermType
@@ -66,6 +67,9 @@ open Refiner.Refiner.RefineError
 
 open Tactic_type
 
+(*
+ * Dummy argument used for comments.
+ *)
 doc <:doc<
    @begin[doc]
    @parents
@@ -83,8 +87,8 @@ doc <:doc< *********************************************************************
 
    $$
    @rulebox{idT; ;
-     <<sequent(nil){ <H> >- 'T}>>;
-     <<sequent(nil){ <H> >- 'T}>>}
+     <<sequent[dummy_arg]{ <H> >- 'T}>>;
+     <<sequent[dummy_arg]{ <H> >- 'T}>>}
    $$}
    @end[description]
 
@@ -146,13 +150,13 @@ doc <:doc<
    $$
    @rulebox{nthAssumT; i;
     @cdot;
-    <<sequent(nil){ <H_1> >- 'T_1}>> @i{(Assumption@space 1)}@cr
+    <<sequent[dummy_arg]{ <H_1> >- 'T_1}>> @i{(Assumption@space 1)}@cr
     @ldots@cr
-    <<sequent(nil){ <H_i> >- 'T_i}>> @i{(Assumption@space @i{i})}@cr
+    <<sequent[dummy_arg]{ <H_i> >- 'T_i}>> @i{(Assumption@space @i{i})}@cr
     @ldots@cr
-    <<sequent(nil){ <H_n> >- 'T_n}>> @i{(Assumption@space @i{n})}@cr
+    <<sequent[dummy_arg]{ <H_n> >- 'T_n}>> @i{(Assumption@space @i{n})}@cr
     @hline
-    <<sequent(nil){ <H_i> >- 'T_i}>>}
+    <<sequent[dummy_arg]{ <H_i> >- 'T_i}>>}
    $$}
    @end[description]
 
@@ -248,8 +252,8 @@ doc <:doc<
 
    $$
    @rulebox{timingT idT; ;
-     <<sequent(nil){ <H> >- 'T}>>;
-     <<sequent(nil){ <H> >- 'T}>>}
+     <<sequent[dummy_arg]{ <H> >- 'T}>>;
+     <<sequent[dummy_arg]{ <H> >- 'T}>>}
    $$
 
    @code{User time 0.000000; System time 0.000000; Real time 0.001778}}
@@ -349,9 +353,9 @@ doc <:doc< *********************************************************************
 
    $$
    @rulebox{selT; 2@space (@tt[dT]@space 0);
-     <<sequent(nil){ <H>; x: 'T_2; <J> >- <:doc< <<'T_1<|H|> >> @space @i{Type}>>}>> @cr
-     <<sequent(nil){ <H>; x: 'T_2; <J> >- 'T_2}>>;
-     <<sequent(nil){ <H>; x: 'T_2; <J> >- <:doc< <<'T_1<|H|> >> @vee <<'T_2<|H|> >> >>}>>}
+     <<sequent[dummy_arg]{ <H>; x: 'T_2; <J> >- <:doc< <<'T_1<|H|> >> @space @i{Type}>>}>> @cr
+     <<sequent[dummy_arg]{ <H>; x: 'T_2; <J> >- 'T_2<|H|>}>>;
+     <<sequent[dummy_arg]{ <H>; x: 'T_2; <J> >- <:doc< <<'T_1<|H|> >> @vee <<'T_2<|H|> >> >>}>>}
    $$}
    @end[description]
 
@@ -375,7 +379,7 @@ doc <:doc< *********************************************************************
    @modsection{Clause selection}
 
    The following tactics are intended for use in a single-conclusion sequent calculus.
-   A sequent <<sequent(nil){x: 'T_1; math_cdots; x: 'T_n >- 'C}>> has
+   A sequent <<sequent[dummy_arg]{x: 'T_1; math_cdots; x: 'T_n >- 'C}>> has
    $n + 1$ @emph{clauses}.  The hypotheses are clauses $1, @ldots, n$ and the conclusion
    is clause $0$.
 

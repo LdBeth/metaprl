@@ -41,7 +41,7 @@ module MakeRewriteUtil
    (TermType : TermSig)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (Term : TermBaseSig with module TermTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType):
+   (RefineError : RefineErrorSig with module Types = TermType):
    RewriteUtilSig
    with type term = TermType.term
    with type rstack = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rstack

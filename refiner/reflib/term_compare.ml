@@ -32,7 +32,6 @@
  * Author: Jason Hickey
  * Modified by: Eli Barzilay, Alexey Nogin, Yegor Bryukhov
  *)
-
 open Lm_debug
 
 open Term_sig
@@ -70,12 +69,12 @@ struct
    (*
     * Comparison functions.
     *)
-   let compare_level_var { CType.le_var = v1; CType.le_offset = offset1 }
-                         { CType.le_var = v2; CType.le_offset = offset2 } =
+   let compare_level_var { le_var = v1; le_offset = offset1 }
+                         { le_var = v2; le_offset = offset2 } =
       v1 == v2 & offset1 == offset2
 
-   let compare_level { CType.le_const = const1; CType.le_vars = vars1 }
-                     { CType.le_const = const2; CType.le_vars = vars2 } =
+   let compare_level { le_const = const1; le_vars = vars1 }
+                     { le_const = const2; le_vars = vars2 } =
       const1 = const2 & list_mem_eq vars1 vars2
 
    let compare_param param1 param2 =
@@ -93,12 +92,12 @@ struct
        | ParamList params1,    ParamList params2    -> list_mem_eq params1 params2
        | _ -> false
 
-   let compare_operator { CType.op_name = opname1; CType.op_params = params1 }
-                        { CType.op_name = opname2; CType.op_params = params2 } =
+   let compare_operator { op_name = opname1; op_params = params1 }
+                        { op_name = opname2; op_params = params2 } =
       Opname.eq opname1 opname2 & list_mem_eq params1 params2
 
-   let compare_term { CType.term_op = op1; CType.term_terms = bterms1 }
-                    { CType.term_op = op2; CType.term_terms = bterms2 } =
+   let compare_term { term_op = op1; term_terms = bterms1 }
+                    { term_op = op2; term_terms = bterms2 } =
       (op1 == op2) & list_mem_eq bterms1 bterms2
 
    let rec compare_hyps hyp1 hyp2 i =
@@ -121,8 +120,8 @@ struct
             (compare_hyps hyp1 hyp2 (CTerm.SeqHyp.length hyp1 - 1))
        | _ -> false
 
-   let compare_bterm { CType.bvars = bvars1; CType.bterm = bterm1 }
-       { CType.bvars = bvars2; CType.bterm = bterm2 } =
+   let compare_bterm { bvars = bvars1; bterm = bterm1 }
+       { bvars = bvars2; bterm = bterm2 } =
       bvars1 = bvars2 & bterm1 == bterm2
 
 end

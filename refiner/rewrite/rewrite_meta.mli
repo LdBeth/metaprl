@@ -41,7 +41,7 @@ module MakeRewriteMeta
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
 : sig
    open TermType
 

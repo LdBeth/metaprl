@@ -29,9 +29,9 @@ doc <:doc<
    $$
    @defrule[and_intro]{
        @tt["{| intro [ ] |}"];
-       <<sequent(nil){ <H> >- 'A }>>@cr
-          <<sequent(nil){ <H> >- 'B }>>;
-       <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
+       <<sequent [dummy_arg] { <H> >- 'A }>>@cr
+          <<sequent [dummy_arg] { <H> >- 'B }>>;
+       <<sequent [dummy_arg] { <H> >- <:doc<A @wedge B>> }>>}
    $$
 
    Once this rule is defined, an application of the tactic (@hreftactic[dT] 0)
@@ -58,17 +58,17 @@ doc <:doc<
    $$
    @defrule[or_intro_left]{
       @tt["{| intro [SelectOption 1] |}"];
-      <<sequent(nil){ <H> >- <:doc<B @Type>> }>>
-          @cr <<sequent(nil){ <H> >- 'A }>>;
-      <<sequent(nil){ <H> >- <:doc<A @vee B>> }>>}
+      <<sequent [dummy_arg] { <H> >- <:doc<B @Type>> }>>
+          @cr <<sequent [dummy_arg] { <H> >- 'A }>>;
+      <<sequent [dummy_arg] { <H> >- <:doc<A @vee B>> }>>}
    $$
 
    $$
    @defrule[or_intro_right]{
      @tt["{| intro [SelectOption 2] |}"];
-     <<sequent(nil){ <H> >- <:doc<A @Type>> }>>@cr
-        <<sequent(nil){ <H> >- 'B }>>;
-     <<sequent(nil){ <H> >- <:doc<A @vee B>> }>>}
+     <<sequent [dummy_arg] { <H> >- <:doc<A @Type>> }>>@cr
+        <<sequent [dummy_arg] { <H> >- 'B }>>;
+     <<sequent [dummy_arg] { <H> >- <:doc<A @vee B>> }>>}
    $$
 
    These options require @hreftactic[selT] arguments: the left rule is applied with
@@ -195,8 +195,6 @@ let debug_dtactic =
         debug_value = false
       }
 
-let debug_term_table = load_debug "term_table"
-
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -265,7 +263,8 @@ let extract_intro_data =
        | _ -> false)
    in
    let extract (name, _, _, tac) =
-      if !debug_dtactic then eprintf "Dtactic: intro: found %s%t" name eflush; tac
+      if !debug_dtactic then
+         eprintf "Dtactic: intro: found %s%t" name eflush; tac
    in
    (fun tbl ->
    funT (fun p ->
@@ -274,9 +273,7 @@ let extract_intro_data =
          eprintf "Dtactic: intro: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
       let sel_arg = get_sel_arg p in
       let tacs =
-         try
-            lookup_bucket tbl (select_intro sel_arg (Sequent.get_int_arg p "d_auto")) t
-         with
+         try lookup_bucket tbl (select_intro sel_arg (Sequent.get_int_arg p "d_auto")) t with
             Not_found ->
                let sel_err =
                   match sel_arg with
@@ -455,7 +452,7 @@ let process_elim_resource_annotation name args term_args statement (pre_tactic, 
                         let hyps = (TermMan.explode_sequent assum).sequent_hyps in
                         find_thin_num_aux hyps (SeqHyp.length hyps) 0
                      with RefineError _ ->
-                        raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: assumtions must be sequents" name))
+                        raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: assumptions must be sequents" name))
                   in
                   let thin_nums = List.map find_thin_num assums in
                   let rec check_thin_nums = function

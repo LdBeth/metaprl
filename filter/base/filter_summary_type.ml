@@ -38,6 +38,7 @@ open Lm_symbol
 open Opname
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
+open Refiner.Refiner.TermTy
 
 open File_base_type
 
@@ -206,9 +207,21 @@ sig
    val expand_path    : info -> module_path -> module_path
 
    (* Opname management *)
-   val op_prefix      : info -> opname
-   val update_opname  : info -> string -> term -> unit
-   val mk_opname      : info -> opname_fun
+   val op_prefix            : info -> opname
+   val mk_opname            : info -> opname_fun
+   val mk_opname_kind       : info -> op_kind -> opname_fun
+   val declare_typeclass    : info -> opname -> opname -> typeclass_parent -> unit
+   val declare_type         : info -> ty_term -> opname -> unit
+   val declare_term         : info -> ty_term -> unit
+   val declare_type_rewrite : info -> term -> term -> unit
+   val infer_term           : info -> term -> term   (* Returns the type of the term *)
+   val check_term           : info -> term -> term   (* This is the identity *)
+   val check_rule           : info -> meta_term -> term list -> unit
+   val infer_rewrite        : info -> meta_term -> term list -> term
+   val check_type_rewrite   : info -> term -> term -> unit
+   val check_dform          : info -> term -> term -> unit
+   val check_iform          : info -> meta_term -> term list -> unit
+   val check_production     : info -> term list -> term -> unit
 
    (* Inherited access for module_info *)
    val find           : info -> string -> (str_elem * loc)

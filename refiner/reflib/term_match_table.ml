@@ -76,12 +76,6 @@ let debug_rewrite = load_debug "rewrite"
  * TYPES                                                                *
  ************************************************************************)
 
-module ShapeTable = Lm_map.LmMake (
-struct
-   type t = shape
-   let compare = Pervasives.compare
-end)
-
 (*
  * Entries contain the pattern/value pair.
  *)
@@ -310,55 +304,66 @@ let rmap_table_resource_info extract =
    }
 
 (************************************************************************
- * DTREE EXECUTION                                                      *
- ************************************************************************)
+ * DTREE EXECUTION
+ *)
 
+(*
+ * Execute the program to match against the term.
+ *   fallbacks : alternate programs for backtracking
+ *   stacks : current collection of terms.
+ *)
 let rec execute search fallbacks stack = function
    DtreePop prog ->
       if !debug_term_table then
          eprintf "Term_table.execute: DtreePop: %d@." (List.length stack);
-      begin match stack with
-         h :: t ->
-            execute search fallbacks t prog
-       | [] ->
-            raise (Invalid_argument "Term_match_table.execute: bug")
+      begin
+         match stack with
+            h :: t ->
+               execute search fallbacks t prog
+          | [] ->
+               raise (Invalid_argument "Term_match_table.execute: bug")
       end
  | DtreeFlatten stbl ->
-      begin match stack with
-         t :: ts ->
-            if !debug_term_table then
-               eprintf "Term_table.execute: DtreeFlatten %s@." (string_of_term t);
-            let s = shape_of_term t in
-            if ShapeTable.mem stbl s then
-               let prog = ShapeTable.find stbl s in
-               if s == sequent_shape then
-                  execute search fallbacks ((explode_sequent t).sequent_args :: stack) prog
-               else
-                  execute search fallbacks ((subterms_of_term t) @ ts) prog
-            else
-               execute_fallback search fallbacks
-       | [] ->
-            raise (Invalid_argument "Term_match_table.execute: bug")
+      begin
+         match stack with
+            t :: ts ->
+               if !debug_term_table then
+                  eprintf "Term_table.execute: DtreeFlatten %s@." (string_of_term t);
+               let s = shape_of_term t in
+                  if ShapeTable.mem stbl s then
+                     let prog = ShapeTable.find stbl s in
+                        if s == sequent_shape then
+                           execute search fallbacks ((explode_sequent t).sequent_args :: stack) prog
+                        else
+                           execute search fallbacks (subterms_of_term t @ ts) prog
+                  else
+                     begin
+                        if !debug_term_table then
+                           eprintf "Term_table.execute: DtreeFlatten: fallback on %s@." (string_of_term t);
+                        execute_fallback search fallbacks
+                     end
+          | [] ->
+               raise (Invalid_argument "Term_match_table.execute: bug")
       end
  | DtreeChoice progs ->
       if !debug_term_table then
          eprintf "Term_table.execute: DtreeChoice@.";
       execute_fallback search ((progs, stack) :: fallbacks)
  | DtreeAccept infos ->
-      if !debug_term_table then begin
+      if !debug_term_table then
          eprintf "Term_table.execute: DtreeAccept: %d@." (List.length stack);
-      end;
       search fallbacks infos
- | DtreeSeq(lst) ->
-      begin match stack with
-         t :: ts ->
-            if !debug_term_table then
-               eprintf "Term_table.execute: DtreeSeq %s@." (string_of_term t);
-            let eseq = explode_sequent t in
-            let l = SeqHyp.length eseq.sequent_hyps in
-               execute_sequent search fallbacks stack eseq.sequent_hyps l (eseq.sequent_concl::ts) lst
-       | [] ->
-            raise (Invalid_argument "Term_match_table.execute: bug")
+ | DtreeSeq lst ->
+      begin
+         match stack with
+            t :: ts ->
+               if !debug_term_table then
+                  eprintf "Term_table.execute: DtreeSeq %s@." (string_of_term t);
+               let eseq = explode_sequent t in
+               let l = SeqHyp.length eseq.sequent_hyps in
+                  execute_sequent search fallbacks stack eseq.sequent_hyps l (eseq.sequent_concl :: ts) lst
+          | [] ->
+               raise (Invalid_argument "Term_match_table.execute: bug")
       end
 
 and execute_fallback search = function
@@ -366,7 +371,7 @@ and execute_fallback search = function
       execute search progs stack prog
  | ([], _) :: progs ->
       execute_fallback search progs
- | ((prog::progs), stack) :: fallbacks ->
+ | ((prog :: progs), stack) :: fallbacks ->
       execute search ((progs, stack) :: fallbacks) stack prog
  | [] ->
       raise Not_found
@@ -374,51 +379,66 @@ and execute_fallback search = function
 and execute_sequent search fallbacks old_stack hyps l stack = function
    [] ->
       execute_fallback search fallbacks
- | ((Exact i|Left i|Right i), _) :: lst when i > l ->
+ | (Exact i, _) :: lst
+ | (Left i, _) :: lst
+ | (Right i, _) :: lst when i > l ->
       execute_sequent search fallbacks old_stack hyps l stack lst
  | (Exact i, _) :: lst when i <> l ->
       execute_sequent search fallbacks old_stack hyps l stack lst
- | (Both (i1,i2), _) :: lst when (i1 + i2) > l ->
+ | (Both (i1, i2), _) :: lst when i1 + i2 > l ->
       execute_sequent search fallbacks old_stack hyps l stack lst
  | (knd, tbl) :: lst ->
       let fallbacks =
-         if lst = [] then fallbacks else (([DtreeSeq lst], old_stack)::fallbacks)
+         if lst = [] then
+            fallbacks
+         else
+            ([DtreeSeq lst], old_stack) :: fallbacks
       in
          match knd with
-            Exact i | Right i ->
-               execute_hyps search fallbacks tbl hyps stack i (l-1)
+            Exact i
+          | Right i ->
+               execute_hyps search fallbacks tbl hyps stack i (l - 1)
           | Left i ->
                execute_hyps search fallbacks tbl hyps stack i (i - 1)
           | Both (i1, i2) ->
-               execute_hyps_both search fallbacks tbl hyps stack i1 i2 (l-1)
+               execute_hyps_both search fallbacks tbl hyps stack i1 i2 (l - 1)
 
 and execute_hyps search fallbacks tbl hyps stack num last =
    if num = 0 then
       execute search fallbacks stack tbl
-   else match SeqHyp.get hyps last with
-      Hypothesis (_, t) ->
-         execute_hyps search fallbacks tbl hyps (t::stack) (num-1) (last-1)
-    | Context _ ->
-         execute_fallback search fallbacks
+   else
+      match SeqHyp.get hyps last with
+         Hypothesis (_, t) ->
+            execute_hyps search fallbacks tbl hyps (t :: stack) (num - 1) (last - 1)
+       | Context _ ->
+            execute_fallback search fallbacks
 
 and execute_hyps_both search fallbacks tbl hyps stack lnum num last =
    if num = 0 then
-      execute_hyps search fallbacks tbl hyps stack lnum (lnum-1)
-   else match SeqHyp.get hyps last with
-      Hypothesis (_, t) ->
-         execute_hyps_both search fallbacks tbl hyps (t::stack) lnum (num-1) (last-1)
-    | Context _ ->
-         execute_fallback search fallbacks
+      execute_hyps search fallbacks tbl hyps stack lnum (lnum - 1)
+   else
+      match SeqHyp.get hyps last with
+         Hypothesis (_, t) ->
+            execute_hyps_both search fallbacks tbl hyps (t :: stack) lnum (num - 1) (last - 1)
+       | Context _ ->
+            execute_fallback search fallbacks
+
+(************************************************************************
+ * Lookup.
+ *)
 
 (*
  * Lookup an entry.
  *)
 let rec search_infos get f t fallbacks = function
    info :: tl when f info.info_value ->
-      begin try
-         get info f t tl fallbacks
-      with RefineError _ | Not_found ->
-         search_infos get f t fallbacks tl
+      begin
+         try
+            get info f t tl fallbacks
+         with
+            RefineError _
+          | Not_found ->
+               search_infos get f t fallbacks tl
       end
  | _ :: tl ->
       search_infos get f t fallbacks tl
@@ -429,7 +449,7 @@ let lookup_aux get tbl f t =
    execute (search_infos get f t) [] [t] tbl
 
 let get_val info _ t _ _ =
-   ignore(apply_redex info.info_redex empty_rw_args t []);
+   test_redex_applicability info.info_redex empty_rw_args t [];
    info.info_value
 
 let get_val_rwi info _ t _ _ =
@@ -437,25 +457,32 @@ let get_val_rwi info _ t _ _ =
 
 let rec get_val_all info f t tl fallbacks =
    (get_val info f t tl fallbacks), get_val_all_aux f t tl fallbacks
-and get_val_all_aux f t tl fallbacks () = search_infos get_val_all f t fallbacks tl
+and get_val_all_aux f t tl fallbacks () =
+   search_infos get_val_all f t fallbacks tl
 
 let rec get_val_bucket =
    let rec aux f t = function
       [] -> []
     | info :: tl when f info.info_value ->
          let tl = aux f t tl in
-         begin try
-            ignore(apply_redex info.info_redex empty_rw_args t []);
-            info.info_value :: tl
-         with RefineError _ ->
-            tl
-         end
+            begin
+               try
+                  if !debug_term_table then
+                     eprintf "test_redex_applicability: %s@." (string_of_term t);
+                  test_redex_applicability info.info_redex empty_rw_args t [];
+                  if !debug_term_table then
+                     eprintf "test_redex_applicability: success@.";
+                  info.info_value :: tl
+               with RefineError _ ->
+                     tl
+            end
     | _ :: tl ->
-      aux f t tl
-   in (fun info f t tl fallbacks ->
-      match aux f t (info :: tl) with
-         [] -> execute_fallback (search_infos get_val_bucket f t) fallbacks
-       | l -> l)
+         aux f t tl
+   in
+      (fun info f t tl fallbacks ->
+            match aux f t (info :: tl) with
+               [] -> execute_fallback (search_infos get_val_bucket f t) fallbacks
+             | l -> l)
 
 let get_val_rmap info _ t _ _ =
    apply_rewrite info.info_redex empty_args t [], info.info_value

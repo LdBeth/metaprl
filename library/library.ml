@@ -36,6 +36,7 @@ open Refiner.Refiner.TermSubst
 open Basic
 open Nuprl5
 open Orb
+open Opname
 
 let _ =
    show_loading "Loading Library%t"
@@ -140,11 +141,13 @@ let test_do_add bterms =
   print_newline();
   r
 
-let test_add_op = mk_nuprl5_op [ make_param (Token "!test_add")]
-let faux_refiner_op = mk_nuprl5_op [ make_param (Token "!faux_refine")]
-let refiner_op = mk_nuprl5_op [ make_param (Token "!refine")]
-let faux_ascii_op = mk_nuprl5_op [ make_param (Token "!faux_ascii")]
-let faux_mbs_op = mk_nuprl5_op [ make_param (Token "!faux_mbs")]
+let token s = Token (mk_opname s nil_opname)
+
+let test_add_op = mk_nuprl5_op [ make_param (token "!test_add")]
+let faux_refiner_op = mk_nuprl5_op [ make_param (token "!faux_refine")]
+let refiner_op = mk_nuprl5_op [ make_param (token "!refine")]
+let faux_ascii_op = mk_nuprl5_op [ make_param (token "!faux_ascii")]
+let faux_mbs_op = mk_nuprl5_op [ make_param (token "!faux_mbs")]
 
 let test_ehook t =
   match dest_term t with
@@ -182,7 +185,7 @@ let join_eval c tags ehook =
  *  to import oids. Later either do in one step or as for export second step is local.
  *)
 
-let icallback_param =  make_param (Token "!callback")
+let icallback_param =  make_param (token "!callback")
 let icallback_op =  mk_nuprl5_op [icallback_param]
 
 let cookie_of_icallback_term t =
@@ -383,7 +386,7 @@ let require_remote_transaction t =
 
 (* todo : desire an iml_parens wrap then cons("String_ap"; wrap(f)) *)
 
-let iml_cons_op = (mk_nuprl5_op [make_param (Token "!ml_text_cons")])
+let iml_cons_op = (mk_nuprl5_op [make_param (token "!ml_text_cons")])
 let iml_cons_term = icons_term iml_cons_op
 
 let lparen_itext = itext_term "("

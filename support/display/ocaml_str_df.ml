@@ -123,23 +123,23 @@ dform str_let_df3 : str_let{."fun"[s3:n, f3:n]{
 dform str_let_df4 : str_let{'e} =
    "=" hspace szone{'e}
 
-dform str_let_df5 : str_let[start:n, finish:n]{cons{str_let[s:n, f:n]{'p; 'e}; 'pel}} =
+dform str_let_df5 : str_let[start:n, finish:n]{ocons{str_let[s:n, f:n]{'p; 'e}; 'pel}} =
    szone pushm[0] str_let{'p; 'e}
    and_let{'pel}
    popm ezone
 
-dform and_let_df1 : and_let{cons{str_let[s:n, f:n]{'p; 'e}; 'pel}} =
+dform and_let_df1 : and_let{ocons{str_let[s:n, f:n]{'p; 'e}; 'pel}} =
    popm newline pushm[3] "_and" `" " str_let{'p; 'e}
    and_let{'pel}
 
-dform and_let_df2 : and_let{nil} =
+dform and_let_df2 : and_let{onil} =
    `""
 
 (*
  * Fix definition.
  *)
 dform str_fix_df1 : str_fix{'p} =
-   szone pushm[0] "_letrec" `" " patt_format{'p; nil} popm ezone
+   szone pushm[0] "_letrec" `" " patt_format{'p; onil} popm ezone
 
 dform str_fix_df2 : str_fix[start:n, finish:n]{'p} =
    str_fix{'p}

@@ -35,20 +35,23 @@ open Lm_debug
 open Lm_symbol
 open Lm_printf
 
+open Opname
 open Term_sig
 open Term_shape_sig
-open Refiner.Refiner
-open Term
-open TermType
-open TermOp
-open TermMan
-open TermMeta
-open TermShape
+open Term_ty_sig
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
+open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermShape
 
 open Lexing
 open Filter_type
 open Filter_util
 open Simple_print.SimplePrint
+
+open Term_ty_infer
 
 (*
  * Show the file loading.
@@ -71,8 +74,8 @@ let debug_spell =
       }
 
 let _ =
-   Grammar.error_verbose:=true;
-   Grammar.warning_verbose:=true
+   Grammar.error_verbose := true;
+   Grammar.warning_verbose := true
 
 (*
  * Terms for representing comments.
@@ -128,15 +131,30 @@ let create_meta_function t left right =
       MetaFunction(t, left, right)
 
 (*
+ * Handle empty conclusions.
+ *)
+let concl_of_opt_concl concl =
+   match concl with
+      Some t -> t
+    | None -> xconcl_term
+
+(*
  * Build the grammar.
  *)
 module MakeTermGrammar (TermGrammar : TermGrammarSig) =
 struct
-   open TermGrammar
-
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
+
+   (*
+    * Parsed forms are the usual forms, used for abstraction.
+    *)
+   type parsed_term = term
+   type parsed_meta_term = meta_term
+   type parsed_bound_term = bound_term
+
+   include TermGrammar
 
    (*
     * Also meta-terms.
@@ -151,9 +169,166 @@ struct
       ST_String of (string * MLast.loc)
     | ST_Term of (aterm * MLast.loc)
 
+   (*
+    * Binding vars for declares.
+    *)
+   type ty_ass_bvar =
+      TyBVar1 of string_or_term
+    | TyBVar2 of string_or_term * string_or_term
+
+   (*
+    * String or word.
+    *)
+   type string_or_word =
+      SW_String of string
+    | SW_Word of string
+
+   let string_of_sw = function
+      SW_String s
+    | SW_Word s ->
+         s
+
+   (************************************************************************
+    * Parsing.
+    *)
+
+   (*
+    * Parse the terms, and perform a type check.
+    * In the following four functions, type constraints
+    * are ignored.  That is, constraints are just
+    * comments.
+    *)
+   let parse_term loc t =
+      let t = Filter_grammar.apply_iforms t in
+      let t = term_of_parsed_term t in
+      let _ = infer_term loc t in
+         t
+
+   let parse_bound_term loc bt =
+      { bt with aterm = parse_term loc bt.aterm }
+
+   let parse_rule loc mt args =
+      let mt, args = Filter_grammar.apply_iforms_mterm mt args in
+      let mt, args, f = mterms_of_parsed_mterms mt args in
+         check_rule loc mt args;
+         mt, args, f
+
+   let parse_rewrite loc mt args =
+      let mt, args = Filter_grammar.apply_iforms_mterm mt args in
+      let mt, args, f = mterms_of_parsed_mterms mt args in
+      let _ = infer_rewrite loc mt args in
+         mt, args, f
+
+   let parse_type_rewrite loc redex contractum =
+      let redex = Filter_grammar.apply_iforms redex in
+      let contractum = Filter_grammar.apply_iforms contractum in
+      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+         check_type_rewrite loc redex contractum;
+         redex, contractum
+
+   (*
+    * In the following functions, type constraints
+    * are erased after inference.  In the informal
+    * code, constraints are legal.
+    *)
+   let parse_iform loc mt args =
+      let mt, args, f = mterms_of_parsed_mterms mt args in
+      let () = check_iform loc mt args in
+      let mt = erase_meta_term mt in
+      let args = List.map erase_term args in
+         mt, args, f
+
+   let parse_dform loc redex contractum =
+      let redex = Filter_grammar.apply_iforms redex in
+      let contractum = Filter_grammar.apply_iforms contractum in
+      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+      let () = check_dform loc redex contractum in
+      let redex = erase_term redex in
+      let contractum = erase_term contractum in
+         redex, contractum
+
+   let parse_production loc redices contractum =
+      let redices = List.map Filter_grammar.apply_iforms redices in
+      let contractum = Filter_grammar.apply_iforms contractum in
+      let redices, contractum = mrewrite_of_parsed_mrewrite redices contractum in
+      let () = check_production loc redices contractum in
+      let redices = List.map erase_term redices in
+      let contractum = erase_term contractum in
+         redices, contractum
+
+   (*
+    * For terms from other grammars.
+    * The other grammars will expand their iforms,
+    * so we don't need to do it.
+    *)
+   let mk_parsed_term t =
+      t
+
+   (************************************************
+    * !!! WARNING !!!
+    * !!! The following functions bypass either the
+    * !!! parser or the type checker.
+    *)
+
+   (* For bypassing the type checker *)
+   let raw_term_of_parsed_term t =
+      Filter_grammar.apply_iforms t
+
+   let unparsed_term_of_parsed_term loc t =
+      let t = Filter_grammar.apply_iforms t in
+      let _ = infer_term loc t in
+         erase_term t
+
+   let unchecked_term_of_parsed_term t =
+      let t = Filter_grammar.apply_iforms t in
+      let t = term_of_parsed_term t in
+         erase_term t
+
+   (*
+    * Parameterize declares over default types.
+    *)
+   let unknown_opname = mk_opname "$unknown" nil_opname
+
+   let unknown_token_opname = mk_opname "token" unknown_opname
+   let unknown_bvar_opname = mk_opname "bvar" unknown_opname
+   let unknown_type_opname = mk_opname "type" unknown_opname
+
+   let unknown_token  = mk_term (mk_op unknown_token_opname []) []
+   let unknown_bvar  = mk_term (mk_op unknown_bvar_opname []) []
+   let unknown_type  = mk_term (mk_op unknown_type_opname []) []
+
+   let is_unknown_token_term = is_no_subterms_term unknown_token_opname
+   let is_unknown_bvar_term = is_no_subterms_term unknown_bvar_opname
+   let is_unknown_type_term = is_no_subterms_term unknown_type_opname
+
+   let subst_unknown token_type bvar_type term_type t =
+      let subst t =
+         if is_unknown_token_term t then
+            token_type
+         else if is_unknown_bvar_term t then
+            bvar_type
+         else if is_unknown_type_term t then
+            term_type
+         else
+            t
+      in
+         map_up subst t
+
+   let quote_term_of_parsed_term loc token_type bvar_type term_type t =
+      let t = Filter_grammar.apply_iforms t in
+      let t = subst_unknown token_type bvar_type term_type t in
+      let _ = infer_term loc t in
+         t
+
    (************************************************************************
     * UTILITIES                                                            *
     ************************************************************************)
+
+   let mk_opname loc names params bterms =
+      mk_opname_kind loc NormalKind names params bterms
+
+   let mk_opname_token loc names =
+      mk_opname_kind loc TokenKind names [] []
 
    let mk_0opname loc name =
       mk_opname loc [name] [] []
@@ -165,22 +340,77 @@ struct
       mk_opname loc [name] [] [1]
 
    let mk_dep0_dep0_opname loc name =
-      mk_opname loc [name] [] [0;0]
+      mk_opname loc [name] [] [0; 0]
 
    let mk_dep0_dep1_opname loc name =
-      mk_opname loc [name] [] [0;1]
+      mk_opname loc [name] [] [0; 1]
 
    let mk_dep0_dep2_opname loc name =
-      mk_opname loc [name] [] [0;2]
+      mk_opname loc [name] [] [0; 2]
 
    let mk_dep0_dep0_dep0_opname loc name =
-      mk_opname loc [name] [] [0;0;0]
+      mk_opname loc [name] [] [0; 0; 0]
 
    let bterm_arities =
-      List.map ( fun bt -> List.length (dest_bterm bt).bvars)
+      List.map (fun bt -> List.length (dest_bterm bt).bvars)
 
    let mk_bopname loc names params bterms =
       mk_opname loc names (List.map param_type params) (bterm_arities bterms)
+
+   let mk_token_opname loc name =
+      mk_opname_kind loc TokenKind [name] [] []
+
+   (*
+    * Parameters.
+    *)
+   let make_param_opname loc l =
+      match l with
+         [SW_Word s] ->
+            make_param (MString (Lm_symbol.add s))
+       | [SW_String s] ->
+            make_param (String s)
+       | _ ->
+            make_param (Token (mk_opname_token loc (List.map string_of_sw l)))
+
+   let make_con_param_opname loc l =
+      match l with
+         [SW_Word s] ->
+            ConPMeta (Lm_symbol.add s), ShapeString
+       | [SW_String s] ->
+            ConPStr s, ShapeString
+       | _ ->
+            ConPToken (mk_opname_token loc (List.map string_of_sw l)), ShapeToken
+
+   let make_con_param_opname_shape loc l shape =
+      match l, shape with
+         _, ShapeToken
+       | _ :: _ :: _, _
+       | [], _ ->
+            ConPToken (mk_opname_token loc (List.map string_of_sw l)), ShapeToken
+       | [SW_Word s], _ ->
+            ConPMeta (Lm_symbol.add s), shape
+       | [SW_String s], _ ->
+            ConPStr s, ShapeString
+
+   let make_param_class loc l =
+      match l with
+         [SW_Word s]
+       | [SW_String s] ->
+            (match s with
+                "n" ->
+                   TyNumber
+              | "s" ->
+                   TyString
+              | "t" ->
+                   TyToken Term_ty_infer.token_type
+              | "v" ->
+                   TyVar
+              | "l" ->
+                   TyLevel
+              | _ ->
+                   TyToken (mk_term (mk_op (mk_opname_token loc [s]) []) []))
+       | _ ->
+            TyToken (mk_term (mk_op (mk_opname_token loc (List.map string_of_sw l)) []) [])
 
    (*
     * For new symbols.
@@ -192,7 +422,35 @@ struct
       Lm_symbol.make "$" !gensym
 
    (* Currying *)
-   let mk_bterm' (vars, bterm) = mk_bterm vars bterm
+   let mk_bterm' (vars, bterm) =
+      mk_bterm vars bterm
+
+   let mk_ty_bterm (vars, bterm, ty) =
+      mk_bterm vars bterm, ty
+
+   (*
+    * Get the class of a param.
+    *)
+   let ty_param_of_param param =
+      match dest_param param with
+         Number _
+       | MNumber _ ->
+            TyNumber
+       | String _
+       | MString _ ->
+            TyString
+       | Token _
+       | MToken _ ->
+            TyToken unknown_token
+       | Var _ ->
+            TyVar
+       | MLevel _ ->
+            TyLevel
+       | Quote ->
+            TyQuote
+       | ObId _
+       | ParamList _ ->
+            raise (Invalid_argument "ty_param_of_param: unexpected Nuprl5 parameter")
 
    (*
     * Cast a parameter to a level expression.
@@ -207,52 +465,104 @@ struct
       match dest_param p with
          Number n when Lm_num.is_integer_num n ->
            mk_const_level_exp (Lm_num.int_of_num n)
-       | MLevel l -> l
-       | MString v -> level_var (string_of_symbol v)
-       | _ -> raise (BadParamCast (p, "l"))
+       | MLevel l ->
+            l
+       | MString v ->
+            level_var (string_of_symbol v)
+       | _ ->
+            raise (BadParamCast (p, "l"))
 
    (*
     * Cast to a number.
     *)
    let cast_number p =
       match dest_param p with
-         Number _ | MNumber _ -> p
-       | MString s -> make_param (MNumber s)
-       | _ -> raise (BadParamCast (p, "n"))
+         Number _
+       | MNumber _ ->
+            p
+       | MString s ->
+            make_param (MNumber s)
+       | _ ->
+            raise (BadParamCast (p, "n"))
+
+   (*
+    * Cast to a token.
+    *)
+   let cast_token loc p =
+      match dest_param p with
+         Number n ->
+            make_param (Token (mk_token_opname loc (Lm_num.string_of_num n)))
+       | String s ->
+            make_param (Token (mk_token_opname loc s))
+       | MString v ->
+            make_param (MToken v)
+       | Token _
+       | MToken _ ->
+            p
+       | _ ->
+            raise (BadParamCast (p, "t"))
+
+   let cast_string loc p =
+      match dest_param p with
+         Number n ->
+            make_param (String (Lm_num.string_of_num n))
+       | String _
+       | MString _ ->
+            p
+       | _ ->
+            raise (BadParamCast (p, "s"))
+
+   let cast_var loc p =
+      match dest_param p with
+         Number n ->
+            make_param (Var (Lm_symbol.add (Lm_num.string_of_num n)))
+       | String s ->
+            make_param (Var (Lm_symbol.add s))
+       | MString v ->
+            make_param (Var v)
+       | _ ->
+            raise (BadParamCast (p, "v"))
 
    (*
     * Parameter casting.
     *)
-   let cast_param p = function
-      "n" -> cast_number p
+   let cast_param_string loc p = function
+      "n" ->
+         cast_number p, TyNumber
     | "s" ->
-         begin
-            match dest_param p with
-               Number(n) -> make_param (String (Lm_num.string_of_num n))
-             | String _ | MString _ -> p
-             | _ -> raise (BadParamCast (p, "s"))
-         end
-    | "t" ->
-         begin
-            match dest_param p with
-               Number(n) -> make_param (Token (Lm_num.string_of_num n))
-             | String(s) -> make_param (Token s)
-             | MString(v) -> make_param (MToken v)
-             | _ -> raise (BadParamCast (p, "t"))
-         end
-
+         cast_string loc p, TyString
     | "v" ->
-         begin
-            match dest_param p with
-               Number(n) -> make_param (Var (Lm_symbol.add (Lm_num.string_of_num n)))
-             | MString(v) -> make_param (Var v)
-             | _ -> raise (BadParamCast (p, "v"))
-         end
-
+         cast_var loc p, TyVar
     | "l" ->
-         make_param (MLevel (cast_level p))
+         make_param (MLevel (cast_level p)), TyLevel
+    | "t" ->
+         cast_token loc p, TyToken Term_ty_infer.token_type
+    | opname ->
+         (*
+          * By default, everything else is a token, and the name
+          * is the name of the class for the token.  Check that it
+          * exists.
+          *)
+         let cl = mk_term (mk_op (mk_opname loc [opname] [] []) []) [] in
+            cast_token loc p, TyToken cl
 
-    | x -> raise (BadParamCast (p, x))
+   let cast_param loc p ty =
+      match ty with
+         [SW_Word s] ->
+            fst (cast_param_string loc p s)
+       | _ ->
+            let opname = mk_opname loc (List.map string_of_sw ty) [] [] in
+               cast_token loc p
+
+   let cast_ty_param loc p ty =
+      match ty with
+         [SW_Word s] ->
+            cast_param_string loc p s
+       | _ ->
+            (* Check that the opname exists *)
+            let opname = mk_opname loc (List.map string_of_sw ty) [] [] in
+            let p = cast_token loc p in
+               p, TyToken (mk_term (mk_op opname []) [])
 
    (*
     * Constructors.
@@ -264,7 +574,8 @@ struct
       { aname = Some v; aterm = t } ->
          Stdpp.raise_with_loc loc (Invalid_argument
             ("Syntax Error: Named term where unnamed one is expected:\n" ^ (string_of_term v) ^ " : " ^ (string_of_term t)))
-    | { aname = None; aterm = t } -> t
+    | { aname = None; aterm = t } ->
+         t
 
    let make_term = function
       ST_String (s, loc) ->
@@ -320,8 +631,9 @@ struct
     * Make record terms
     *)
    let mk_field_term loc r field =
-                mk_term (mk_op (mk_opname loc ["field"] [ShapeToken] [0])
-                               [make_param (Token field)])  [mk_simple_bterm r]
+      let field_opname = mk_opname loc ["field"] [ShapeToken] [0] in
+      let token_opname = mk_token_opname loc field in
+         mk_term (mk_op field_opname [make_param (Token token_opname)]) [mk_simple_bterm r]
 
    let mk_field_self_term =
       let self_term = mk_var_term (Lm_symbol.add "self") in
@@ -336,8 +648,37 @@ struct
     | ST_String (s, _) ->
          Lm_symbol.add s
 
+   let make_ty_bvar (v, ty) =
+      make_bvar v, ty
+
+   let make_ty_bvar = function
+      TyBVar1 (ST_Term ({ aname = Some v; aterm = ty }, loc)) ->
+         dest_var v, ty
+    | TyBVar1 (ST_Term (_, loc)) ->
+         Stdpp.raise_with_loc loc (ParseError "Not a binding var")
+    | TyBVar1 (ST_String (s, _)) ->
+         Lm_symbol.add s, unknown_bvar
+    | TyBVar2 (id, ty) ->
+         make_bvar id, make_term ty
+
+   let make_ty_term loc = function
+      [TyBVar1 (ST_Term ({ aname = Some v; aterm = ty }, _))] ->
+         let term = mk_term (mk_op (mk_0opname loc (string_of_symbol (dest_var v))) []) [] in
+            term, ty
+    | [TyBVar1 (ST_Term ({ aname = None; aterm = t }, _))] ->
+         t, unknown_type
+    | [TyBVar1 (ST_String (s, _))] ->
+         let term = mk_term (mk_op (mk_0opname loc s) []) [] in
+            term, unknown_type
+    | [TyBVar2 (id, ty)] ->
+         make_term id, make_term ty
+    | _ ->
+         Stdpp.raise_with_loc loc (ParseError "illegal bterm")
+
    let get_var_contexts loc v terms =
-      match mk_var_contexts loc v (List.length terms) with Some conts -> conts | None -> [v]
+      match mk_var_contexts loc v (List.length terms) with
+         Some conts -> conts
+       | None -> [v]
 
    (************************************************************************
     * QUOTATIONS                                                           *
@@ -405,7 +746,7 @@ struct
        | "" ->
             (try
                 let cs = Stream.of_string s in
-                   term_of_parsed_term (Grammar.Entry.parse TermGrammar.term_eoi cs)
+                   Grammar.Entry.parse TermGrammar.term_eoi cs
              with
                 Stdpp.Exc_located ((l1, l2), exn) ->
                    let pos = fst (q_shift_loc loc nm) in
@@ -422,16 +763,17 @@ struct
                 Filter_grammar.term_of_string nm (fst (q_shift_loc loc nm)) s
              with
                 exn ->
-                   (* XXX: TODO: nogin: This stuff needs debugging; what if exn is already an Exc_located? *)
                    Stdpp.raise_with_loc loc exn)
 
    and parse_comment loc math spell space s =
       let pos = fst loc in
-      if !debug_spell && not !dict_inited then
-         begin
-            Filter_spell.init ();
-            dict_inited := true
-         end;
+      let () =
+         if !debug_spell && not !dict_inited then
+            begin
+               Filter_spell.init ();
+               dict_inited := true
+            end
+      in
 
       (*
        * Convert the result of the Comment_parse.
@@ -494,7 +836,8 @@ struct
        | Comment_parse.Block items ->
             mk_simple_term comment_block_op [build_term spelling space items]
        | Comment_parse.Quote ((l1, l2), tag, s) ->
-            mk_simple_term comment_term_op [parse_quotation (adjust_pos pos l1, adjust_pos pos l2) "doc" (tag, s)]
+            let t = parse_quotation (adjust_pos pos l1, adjust_pos pos l2) "doc" (tag, s) in
+               mk_simple_term comment_term_op [term_of_parsed_term t]
 
       (*
        * If spacing is ignored, ignore spaces.
@@ -539,7 +882,18 @@ struct
     ************************************************************************)
 
    EXTEND
-      GLOBAL: term_eoi term parsed_term quote_term mterm bmterm singleterm parsed_bound_term xdform term_con_eoi;
+      GLOBAL: opname
+              opname_name
+              term_eoi
+              term
+              parsed_term
+              quote_term
+              mterm
+              bmterm
+              singleterm
+              parsed_bound_term
+              xdform
+              term_con_eoi;
 
       (*
        * Meta-terms include meta arrows.
@@ -648,10 +1002,15 @@ struct
        *)
       term_eoi: [[ x = term; EOI -> x ]];
 
-      parsed_term: [[ t = term -> term_of_parsed_term t ]];
+      parsed_term:
+         [[ t = term ->
+             parse_term loc t
+          ]];
 
       parsed_bound_term:
-         [[ t = bound_term -> { t with aterm = term_of_parsed_term t.aterm } ]];
+         [[ t = bound_term ->
+             parse_bound_term loc t
+          ]];
 
       term:
          [[ x = aterm ->
@@ -751,13 +1110,13 @@ struct
             [ (* t1 =@ t2, t1 <>@ t2, t1 <@ t2, t1 >@ t2, ...  - integer relations as booleans *)
                t1 = SELF; op = sl_arith_rel; t2 = SELF ->
                mk_arith_term loc op t1 t2
-            |(* t1 < t2, t1 > t2, ...  - integer relations as propositions *)
+            | (* t1 < t2, t1 > t2, ...  - integer relations as propositions *)
                t1 = SELF; (op,_) = sl_rel;  t2 = SELF ->
                mk_arith_term loc op t1 t2
-            |(* t1 ^= t2, t1 ^<> t2, t1 ^< t2, t1 ^> t2, ...  - algebraic relations for self *)
+            | (* t1 ^= t2, t1 ^<> t2, t1 ^< t2, t1 ^> t2, ...  - algebraic relations for self *)
                t1 = SELF; op = sl_label_self_rel;  t2 = SELF ->
                make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
-            |(* t1 <[g] t2, t1 >[g] t2, ...  - algebraic relations for g *)
+            | (* t1 <[g] t2, t1 >[g] t2, ...  - algebraic relations for g *)
                t1 = SELF; (_,op) = sl_rel; "["; g = aterm; "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
             ]
@@ -801,10 +1160,10 @@ struct
             [ (* t1 +@ t2, t1 -@ t2 - integer plus, minus *)
                t1 = SELF; op = sl_arith_add; t2 = SELF ->
                mk_arith_term loc op t1 t2
-            |(* t1 ^- t2   - algebraic minus for self *)
+            | (* t1 ^- t2   - algebraic minus for self *)
                t1 = SELF; op = sl_label_self_minus;  t2 = SELF ->
                make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
-            |(* t1 -[g] t2   - algebraic minus for g *)
+            | (* t1 -[g] t2   - algebraic minus for g *)
                t1 = SELF; op = sl_add; "["; g = aterm; "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2 ]
             ]
@@ -813,13 +1172,13 @@ struct
                wrap_term loc (mk_dep0_term (mk_dep0_opname loc op) (make_term x))
             ]
           | "prod" RIGHTA
-            [  (* t1 *[g] t2  - algebraic multiplication (e.g. group operation) *)
+            [ (* t1 *[g] t2  - algebraic multiplication (e.g. group operation) *)
                t1 = SELF; sl_star; "["; g = aterm;  "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) "*"; make_term t1; make_term t2]
              | (* t1 * t2 - type product *)
                t1 = SELF; op = sl_star; t2 = SELF ->
                mk_type_term loc op t1 t2
-             |(* t1 ^* t2   - algebraic multiplication for self *)
+             | (* t1 ^* t2   - algebraic multiplication for self *)
                t1 = SELF; op = sl_label_self_star;  t2 = SELF ->
                make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
             ]
@@ -827,10 +1186,10 @@ struct
             [ (* t1 *@ t2, t1 /@ t2, t1 %@ t2  - integer multiplication, division, reminder *)
                t1 = SELF; op = sl_arith_mul; t2 = SELF ->
                mk_arith_term loc op t1 t2
-            |(* t1 ^/ t2   - algebraic division for self *)
+            | (* t1 ^/ t2   - algebraic division for self *)
                t1 = SELF; op = sl_label_self_div;  t2 = SELF ->
                make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
-            |(* t1 /[g] t2   - algebraic right division for g *)
+            | (* t1 /[g] t2   - algebraic right division for g *)
                t1 = SELF; op = sl_div; "["; g = aterm; "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
             ]
@@ -844,54 +1203,58 @@ struct
             [ (* t1 ^@ t2  - integer power *)
                t1 = SELF; op = sl_arith_power; t2 = SELF ->
                mk_arith_term loc op t1 t2
-            |(* t1 ^^ t2   - algebraic power for self *)
+            | (* t1 ^^ t2   - algebraic power for self *)
                t1 = SELF; op = sl_label_self_power;  t2 = SELF ->
                make_application loc [mk_field_self_term loc op; (make_term t1); (make_term t2)]
-            |(* t1 ^[g] t2   - algebraic power for g *)
+            | (* t1 ^[g] t2   - algebraic power for g *)
                t1 = SELF; op = sl_power; "["; g = aterm; "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; (make_term t1); (make_term t2)]
-            |(* r ^ lab - field selection for records *)
+            | (* r ^ lab - field selection for records *)
               r = SELF; sl_power; lab = word_or_string  ->
                wrap_term loc (mk_field_term loc (make_term r) lab)
-            |(* r ^ lab := t - field update for records *)
+            | (* r ^ lab := t - field update for records *)
                r = SELF; sl_power; lab = word_or_string; sl_assign; t = noncommaterm  ->
                wrap_term loc (**)
                   (mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
-                           [make_param (Token lab )])  [mk_simple_bterm (make_term t); mk_simple_bterm (make_term r)])
-            |(* ^ lab  - field selection for self *)
+                           [make_param (Token (mk_token_opname loc lab))])  [mk_simple_bterm (make_term t); mk_simple_bterm (make_term r)])
+            | (* ^ lab  - field selection for self *)
               sl_power; lab = word_or_string  ->
                wrap_term loc (mk_field_self_term loc lab)
-            |(* ^ lab - field update for records *)
+            | (* ^ lab - field update for records *)
                sl_power; lab = word_or_string; sl_assign; t = noncommaterm   ->
                wrap_term loc (**)
-                  (mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0]) [make_param (Token lab )]) (**)
+                  (mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0]) [make_param (Token (mk_token_opname loc lab))]) (**)
                            [mk_simple_bterm (make_term t); mk_simple_bterm (mk_var_term (Lm_symbol.add "self"))])
            ]
 
           | "raw" RIGHTA
-            [ op = opname ->
+            [ op = opname_list ->
               begin match op with
                  [name] ->
                     ST_String(name, loc)
                | _ ->
                     wrap_term loc (mk_term (mk_op (mk_opname loc op [] []) []) [])
               end
-            | op = opname; (params, bterms) = termsuffix ->
+            | op = opname_list; (params, bterms) = termsuffix ->
               wrap_term loc (mk_term (mk_op (mk_bopname loc op params bterms) params) bterms)
-            | op = opname; ":"; t = SELF ->
+            | op = opname_list; ":"; t = SELF ->
               match op with
                  [name] ->
                     ST_Term({ aname = Some (mk_var_term (Lm_symbol.add name)); aterm = make_term t }, loc)
                | _ ->
                     Stdpp.raise_with_loc loc (ParseError "illegal binding variable")
-           ]
+            ]
 
-          (* short form for sequents *)
+            (* type constraints *)
+          | "constrain" NONA
+            [ arg = SELF; ":>"; ty = SELF ->
+                 wrap_term loc (mk_ty_constrain_term (make_term arg) (make_term ty))
+            ]
+
+            (* short form for sequents *)
           | "sequent" NONA
             [ arg = SELF; "{|"; (hyps, concl) = sequent_body; "|}" ->
-                  let arg_bt = [mk_simple_bterm (make_term arg)] in
-                  let arg = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] arg_bt) []) arg_bt in
-                     wrap_term loc (mk_sequent_term { sequent_args = arg; sequent_hyps = hyps; sequent_concl = concl })
+               wrap_term loc (mk_sequent_term { sequent_args = make_term arg; sequent_hyps = hyps; sequent_concl = concl })
             ]
 
           | "type" NONA
@@ -906,9 +1269,9 @@ struct
 
       (* Singleterm is a distinct term and no colons *)
       singleterm:
-         [ [ op = opname ->
+         [ [ op = opname_list ->
               { aname = None; aterm = mk_term (mk_op (mk_opname loc op [] []) []) [] }
-            | op = opname; (params, bterms) = termsuffix ->
+            | op = opname_list; (params, bterms) = termsuffix ->
               { aname = None; aterm = mk_term (mk_op (mk_bopname loc op params bterms) params) bterms }
            ]
           | [ t = nonwordterm ->
@@ -936,15 +1299,15 @@ struct
 
       rcrdterm:
          [[ ";"; lab = word_or_string; "="; t = aterm  ->
-               (lab,t)
+               lab, t
          ]];
 
       recordterm:
          [[ lab = word_or_string; ":"; t = aterm  ->
-             (Some lab,t)
+             Some lab, t
            ]
          |[ t = aterm  ->
-             (None,t)
+             None, t
            ]];
 
       nonwordterm:
@@ -955,24 +1318,25 @@ struct
            | i = sl_number ->
              mk_term (mk_op (mk_opname loc ["number"] [ShapeNumber] [])
                                [make_param (Number i)]) []
-           | x = sequent -> x
+           | x = sequent ->
+             x
 
              (* records {x1=a1;x2=a2;...} *)
            | "{"; lab = word_or_string; "="; t = aterm; rest = LIST0 rcrdterm; "}" ->
                 let r0 =   mk_term (mk_op (mk_opname loc ["rcrd"] [] []) []) [] in
                 let aux = fun r -> function (lab,t) ->
                            mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
-                               [make_param (Token lab )])  [mk_simple_bterm (get_aterm loc t); mk_simple_bterm  r]
+                               [make_param (Token (mk_token_opname loc lab))])  [mk_simple_bterm (get_aterm loc t); mk_simple_bterm  r]
                 in
                    List.fold_left aux r0 ((lab,t)::rest)
              (* record typess {x1:A1;x2:a2;...} *)
            | "{"; lab = word_or_string; ":"; t = aterm; ";"; r = LIST0 recordterm SEP ";"; "}" ->
                 let r0 =   mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
-                               [make_param (Token lab )])  [mk_simple_bterm (get_aterm loc t)] in
+                               [make_param (Token (mk_token_opname loc lab))])  [mk_simple_bterm (get_aterm loc t)] in
                 let aux = fun r -> function
                       (Some lab,t) ->
                            mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [1;0])
-                               [make_param (Token lab )])  [mk_bterm [Lm_symbol.add "self"] (get_aterm loc t); mk_simple_bterm  r]
+                               [make_param (Token (mk_token_opname loc lab))])  [mk_bterm [Lm_symbol.add "self"] (get_aterm loc t); mk_simple_bterm  r]
                    |  (None,t) ->
                            mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add "self") r (get_aterm loc t)
                 in
@@ -980,7 +1344,7 @@ struct
              (* single record types {x1:A1} *)
            | "{"; lab = word_or_string; ":"; t = aterm; "}" ->
                 mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
-                        [make_param (Token lab )])  [mk_simple_bterm (get_aterm loc t)]
+                        [make_param (Token (mk_token_opname loc lab))])  [mk_simple_bterm (get_aterm loc t)]
              (* sets {x:A | P[x]} *)
            | "{"; v = word_or_string; ":"; ty = aterm; "|"; b = aterm; "}" ->
              mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add v) (get_aterm loc ty) (get_aterm loc b)
@@ -1029,68 +1393,62 @@ struct
                mk_context_term v t (get_var_contexts loc v terms) terms
           ]];
 
-      quote_term:
-         [[ v = word_or_string; params = optparams; bterms = optbterms ->
-             v, params, bterms
-          ]];
-
       (* List of terms *)
       termlist:
          [[ l = LIST0 term SEP ";" -> l ]];
 
       (* Parameters and bterm lists *)
-      opname:
+      opname_name:
+         [[ s = word_or_string ->
+             s
+          ]];
+
+      opname_list:
          [[ op = LIST1 word_or_string SEP "!" ->
              op
           ]];
 
-      optparams:
-         [[ params = OPT params ->
-             match params with
-                Some params' -> params'
-              | None -> []
+      opname_param:
+         [[ op = LIST1 word_or_string_sw SEP "!" ->
+             op
+         ]];
+
+      opname:
+         [[ op = opname_list ->
+             mk_opname loc op [] []
           ]];
 
+      (* Parameters *)
       params:
          [[ "["; params = LIST0 param SEP ","; "]" ->
              params
           ]];
 
-      (* Parameters *)
       param:
-         [[  w = sl_word ->
-             make_param (MString (Lm_symbol.add w))
-           | w = STRING ->
-             make_param (String (Token.eval_string loc w))
+         [[ w = param_const ->
+             w
+           | w = param_const; ":"; t = opname_param ->
+             cast_param loc w t
+          ]];
+
+      param_const:
+         [[  w = opname_param ->
+             make_param_opname loc w
            | n = sl_number ->
              make_param (Number n)
            | "-"; n = sl_number ->
              make_param (Number (Lm_num.mult_num n (Lm_num.num_of_int (-1))))
            | "@" ->
-             make_param (Quote)
+             make_param Quote
           ]
-          | [ p = param; ":"; w = sl_word ->
-               cast_param p w
-             | p = param; "'" ->
-               make_param (MLevel (incr_level_exp (cast_level p)))
-             | p1 = param; "|"; p2 = param ->
-               make_param (MLevel (max_level_exp (cast_level p1) (cast_level p2) 0))
-            ]
-         ];
-
-      (* Bound terms *)
-      optbterms:
-         [[ bterms = OPT bterms ->
-             match bterms with
-                Some bterms' -> bterms'
-              | None -> []
+          |
+          [ p = param_const; "'" ->
+             make_param (MLevel (incr_level_exp (cast_level p)))
+           | p1 = param_const; "|"; p2 = param_const ->
+             make_param (MLevel (max_level_exp (cast_level p1) (cast_level p2) 0))
           ]];
 
-      bterms:
-         [[ "{"; bterms = btermslist; "}" ->
-             bterms
-          ]];
-
+      (* Normal bound terms *)
       btermslist:
          [[ bterms = LIST0 bterm SEP ";" ->
                 List.map mk_bterm' bterms
@@ -1110,7 +1468,168 @@ struct
              l
           ]];
 
-      (* Special forms *)
+      (************************************************************************
+       * Typed versions of bterms.
+       *)
+
+      (*
+       * For declarations.
+       *)
+      quote_term:
+         [[ (t, opname, ty_params, ty_bterms) = quote_term_arg; ty = ty_opt_constraint ->
+             { ty_term   = t;
+               ty_opname = opname;
+               ty_params = ty_params;
+               ty_bterms = ty_bterms;
+               ty_type   = ty
+             }
+           | "sequent"; (ty_hyp, ty_concl) = ty_sequent; ty_seq = ty_opt_constraint ->
+             let opname = Opname.mk_opname "sequent_arg" (opname_prefix loc) in
+             let t = mk_term (mk_op opname []) [] in
+                { ty_term   = t;
+                  ty_opname = opname;
+                  ty_params = [];
+                  ty_bterms = [];
+                  ty_type   = mk_ty_sequent_term ty_hyp ty_concl ty_seq
+                }
+           | "sequent"; "["; (t, opname, ty_params, ty_bterms) = quote_term_arg; "]";
+             (ty_hyp, ty_concl) = ty_sequent; ty_seq = ty_opt_constraint ->
+                { ty_term   = t;
+                  ty_opname = opname;
+                  ty_params = ty_params;
+                  ty_bterms = ty_bterms;
+                  ty_type   = mk_ty_sequent_term ty_hyp ty_concl ty_seq
+                }
+          ]];
+
+      quote_term_arg:
+         [[ opname = word_or_string; params = ty_opt_params; bterms = ty_opt_bterms ->
+             let params, ty_params = params in
+             let bterms, ty_bterms = bterms in
+             let opname = Opname.mk_opname opname (opname_prefix loc) in
+             let t = mk_term (mk_op opname params) bterms in
+                t, opname, ty_params, ty_bterms
+          ]];
+
+      (*
+       * Sequent type.
+       *)
+      ty_sequent:
+         [[ ty_seq = OPT ty_sequent_terms ->
+             match ty_seq with
+                Some (ty_hyp, ty_concl) ->
+                   ty_hyp, ty_concl
+              | None ->
+                   mk_ty_hyp_term unknown_type unknown_type, unknown_type
+          ]];
+
+      ty_sequent_terms:
+         [[ "{"; ty_hyp = ty_hyp; ">-"; ty_concl = term; "}" ->
+             ty_hyp, ty_concl
+          ]];
+
+      ty_hyp:
+         [[ ty_var = singleterm; ":"; ty_hyp = singleterm ->
+             let ty_var = get_aterm loc ty_var in
+             let ty_hyp = get_aterm loc ty_hyp in
+                mk_ty_hyp_term ty_var ty_hyp
+           | "exst"; v = var; ":"; ty_var = singleterm; "."; ty_hyp = SELF ->
+             let ty_var = get_aterm loc ty_var in
+                mk_ty_exists_term v ty_var ty_hyp
+          ]];
+
+      (*
+       * Parameters.
+       *)
+      ty_opt_params:
+         [[ params = OPT ty_params ->
+             match params with
+                Some params -> params
+              | None -> [], []
+          ]];
+
+      ty_params:
+         [[ "["; params = LIST0 ty_param SEP ","; "]" ->
+             List.split params
+          ]];
+
+      ty_param:
+         [[ w = param_const ->
+             w, ty_param_of_param w
+           | w = param_const; ":"; t = opname_param ->
+             cast_ty_param loc w t
+          ]];
+
+      (*
+       * Bterms.
+       *)
+      ty_opt_bterms:
+         [[ bterms = OPT ty_bterms ->
+             match bterms with
+                Some bterms -> bterms
+              | None -> [], []
+         ]];
+
+      ty_bterms:
+         [[ "{"; bterms = ty_bterms_list; "}" ->
+             bterms
+         ]];
+
+      ty_bterms_list:
+         [[ bterms = LIST0 ty_bterm SEP ";" ->
+             List.split bterms
+         ]];
+
+      ty_bterm:
+         [[ h = ty_bhead ->
+             let term, ty = make_ty_term loc h in
+             let bterm = mk_bterm [] term in
+             let ty_bterm = { ty_bvars = []; ty_bterm = ty } in
+                bterm, ty_bterm
+          | h = ty_bhead; "."; t = term; ty = ty_opt_constraint ->
+             let bvars = List.map make_ty_bvar h in
+             let bvars, ty_bvars = List.split bvars in
+             let bterm = mk_bterm bvars t in
+             let ty_bterm = { ty_bvars = ty_bvars; ty_bterm = ty } in
+                bterm, ty_bterm
+          | "."; t = term; ty = ty_opt_constraint ->
+             let bterm = mk_bterm [] t in
+             let ty_bterm = { ty_bvars = []; ty_bterm = ty } in
+                bterm, ty_bterm
+         ]];
+
+      ty_bhead:
+         [[ l = LIST1 ty_bvar SEP "," ->
+             l
+         ]];
+
+      ty_bvar:
+         [[ id = noncommaterm ->
+             TyBVar1 id
+          | id = noncommaterm; ":"; ty = noncommaterm ->
+             TyBVar2 (id, ty)
+         ]];
+
+      (*
+       * Generic type constraints.
+       *)
+      ty_opt_constraint:
+         [[ ty = OPT ty_constraint ->
+             match ty with
+                Some ty ->
+                   ty
+              | None ->
+                   unknown_type
+         ]];
+
+      ty_constraint:
+         [[ ":"; ty = singleterm ->
+             get_aterm loc ty
+         ]];
+
+      (************************************************************************
+       * Special forms.
+       *)
       sequent:
          [[ sl_sequent; "{"; (hyps, concl) = sequent_body; "}" ->
                mk_sequent_term {
@@ -1118,11 +1637,18 @@ struct
                   sequent_hyps = hyps;
                   sequent_concl = concl;
                }
-          | sl_sequent; "["; args = LIST1 term SEP ";"; "]";
+          | sl_sequent; "["; arg = term; "]";
             "{"; (hyps, concl) = sequent_body; "}" ->
-               let args_bt = List.map mk_simple_bterm args in
                mk_sequent_term {
-                  sequent_args = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] args_bt) []) args_bt;
+                  sequent_args = arg;
+                  sequent_hyps = hyps;
+                  sequent_concl = concl
+               }
+          | sl_sequent; "[|"; arg = term; "|]";
+            "{"; (hyps, concl) = sequent_body; "}" ->
+               let arg = mk_simple_bterm arg in
+               mk_sequent_term {
+                  sequent_args = mk_term (mk_op (mk_opname loc ["sequent_arg"] [] [0]) []) [arg];
                   sequent_hyps = hyps;
                   sequent_concl = concl
                }
@@ -1133,7 +1659,7 @@ struct
 
       sequent_body:
          [[ hyps = LIST0 hyp SEP ";"; sl_turnstile; concl = OPT term ->
-               (SeqHyp.of_list hyps, match concl with Some t -> t | None -> xnil_term)
+               (SeqHyp.of_list hyps, concl_of_opt_concl concl)
           ]];
 
       hyp:
@@ -1193,8 +1719,8 @@ struct
           | e = ANTIQUOT -> ConExpr (expr_of_anti loc "" e)
           | "'"; v = ANTIQUOT "arg" -> ConVar (expr_of_arg loc v)
           | "'"; v = ANTIQUOT -> ConVar (expr_of_anti loc "" v)
-          | op = opname -> ConConstruct (mk_opname loc op [] [], [], [])
-          | op = opname; (params, bterms) = con_term_suffix ->
+          | op = opname_list -> ConConstruct (mk_opname loc op [] [], [], [])
+          | op = opname_list; (params, bterms) = con_term_suffix ->
                let param_types = List.map snd params in
                let bterm_arities = List.map (fun (bvars, _) -> List.length bvars) bterms in
                   ConConstruct (mk_opname loc op param_types bterm_arities, params, bterms)
@@ -1216,12 +1742,10 @@ struct
           ]];
 
       con_param:
-         [[ s = STRING    -> ConPStr s, ShapeString
-          | s = sl_word   -> ConPMeta (Lm_symbol.add s), ShapeString
+         [[ s = opname_param -> make_con_param_opname loc s
+          | s = opname_param; ":"; shape = con_param_shape -> make_con_param_opname_shape loc s shape
           | n = sl_number -> ConPNum n, ShapeNumber
           | e = ANTIQUOT "int" -> ConPInt (expr_of_anti loc "int" e), ShapeNumber
-          | s = STRING  ; ":"; shape = con_param_shape -> ConPStr s, shape
-          | s = sl_word ; ":"; shape = con_param_shape -> ConPMeta (Lm_symbol.add s), shape
           | e = ANTIQUOT; ":"; shape = con_param_shape -> ConPExpr (expr_of_anti loc "" e), shape
           ]];
 
@@ -1272,11 +1796,7 @@ struct
          [[ sl_sequent; "{"; hyps = con_hyps; concl = con_concl; "}" ->
                let arg = ConTerm (mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) []) in
                   ConSequent (arg, hyps, concl)
-          | sl_sequent; "["; args = con_termlist; "]"; "{"; hyps = con_hyps; concl = con_concl; "}" ->
-               let bterm_arities = List.map (fun _ -> 0) args in
-               let op = mk_opname loc ["sequent_arg"] [] bterm_arities in
-               let bterms = List.map (fun t -> [], t) args in
-               let arg = ConConstruct (op, [], bterms) in
+          | sl_sequent; "["; arg = con_term; "]"; "{"; hyps = con_hyps; concl = con_concl; "}" ->
                   ConSequent (arg, hyps, concl)
           | sl_sequent; "("; arg = con_term; ")"; "{"; hyps = con_hyps; concl = con_concl; "}" ->
                   ConSequent (arg, hyps, concl)
@@ -1310,8 +1830,10 @@ struct
           ]];
 
       con_concl:
-         [[ con = OPT con_term ->
-               match con with Some con -> con | None -> ConTerm xnil_term
+         [[ concl = OPT con_term ->
+               match concl with
+                  Some con -> con
+                | None -> ConTerm xconcl_term
           ]];
 
       con_optbrtermlist:
@@ -1494,6 +2016,15 @@ struct
           ]];
 
       (* Take a word or a string as an identifier *)
+      word_or_string_sw:
+         [[ name = UIDENT ->
+             SW_Word name
+           | name = LIDENT ->
+             SW_Word name
+           | name = STRING ->
+             SW_String (Token.eval_string loc name)
+          ]];
+
       word_or_string:
          [[ name = UIDENT ->
              name
@@ -1501,11 +2032,6 @@ struct
              name
            | name = STRING ->
              Token.eval_string loc name
-          ]];
-
-      sl_word:
-         [[ s = LIDENT -> s
-           | s = UIDENT -> s
           ]];
    END
 end

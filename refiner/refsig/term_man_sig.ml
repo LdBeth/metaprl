@@ -67,6 +67,18 @@ sig
    val dest_context : term -> var * term * var list * term list
    val mk_context_term : var -> term -> var list -> term list -> term
 
+   (* A term is FO if it does not have bvars *)
+   val is_fo_term : term -> bool
+
+   (*
+    * Context info is:  var -> (sequent_flag, context_arity, term_arity).
+    * Second-order var info is: var -> (context_arity, term_arity).
+    *)
+   val context_vars_info :  (bool * int * int) SymbolTable.t -> term -> (bool * int * int) SymbolTable.t
+   val so_vars_info :  (int * int) SymbolTable.t -> term -> (int * int) SymbolTable.t
+   val context_vars_info_list :  (bool * int * int) SymbolTable.t -> term list -> (bool * int * int) SymbolTable.t
+   val so_vars_info_list :  (int * int) SymbolTable.t -> term list -> (int * int) SymbolTable.t
+
    (* returns both free contexts and all SO variables *)
    val free_meta_variables : term -> SymbolSet.t
    val context_vars : term -> SymbolSet.t * SymbolSet.t (* sequent conts, normal conts *)
@@ -117,6 +129,11 @@ sig
    val is_xlist_term : term -> bool
    val dest_xlist : term -> term list
    val mk_xlist_term : term list -> term
+
+   (*
+    * Empty conclusion in a sequent.
+    *)
+   val xconcl_term : term
 
    (*
     * Primitive strings.

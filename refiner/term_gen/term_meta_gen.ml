@@ -46,7 +46,7 @@ module TermMeta (**)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType) =
+   (RefineError : RefineErrorSig with module Types = TermType) =
 struct
    open TermType
    open Term
@@ -168,6 +168,51 @@ struct
     | MetaLabeled (_, t) ->
          context_vars t
 
+let () = ();;
+
+   (*
+    * All free variables.
+    *)
+   let rec free_vars_mterm vars = function
+      MetaTheorem t ->
+         SymbolSet.union vars (free_vars_set t)
+    | MetaLabeled (_, mt) ->
+         free_vars_mterm vars mt
+    | MetaImplies (a, b)
+    | MetaIff (a, b) ->
+         free_vars_mterm (free_vars_mterm vars a) b
+    | MetaFunction (t, a, b) ->
+         free_vars_mterm (free_vars_mterm (SymbolSet.union vars (free_vars_set t)) a) b
+
+   let free_vars_mterm = free_vars_mterm SymbolSet.empty
+
+   (*
+    * Context vars.
+    *)
+   let rec context_vars_info vars = function
+      MetaTheorem t ->
+         TermMan.context_vars_info vars t
+    | MetaLabeled (_, a) ->
+         context_vars_info vars a
+    | MetaImplies (a, b)
+    | MetaFunction (_, a, b)
+    | MetaIff (a, b) ->
+         context_vars_info (context_vars_info vars a) b
+
+   (*
+    * Second-order vars.
+    *)
+   let rec so_vars_info vars = function
+      MetaTheorem t ->
+         TermMan.so_vars_info vars t
+    | MetaLabeled (_, t) ->
+         so_vars_info vars t
+    | MetaImplies (a, b)
+    | MetaIff (a, b) ->
+         so_vars_info (so_vars_info vars a) b
+    | MetaFunction (a, b, c) ->
+         so_vars_info (so_vars_info (TermMan.so_vars_info vars a) b) c
+
    (*
     * Alpha equality.
     *)
@@ -201,7 +246,9 @@ struct
 
    let decode_free_var t =
       let v,conts,terms = dest_so_var t in
-         if conts = bang && terms = [] then v else
+         if conts = bang && terms = [] then
+            v
+         else
             raise (RefineError ("decode_free_var", StringTermError ("not an encoded free var", t)))
 
    (*
@@ -359,8 +406,15 @@ struct
       in
          convert_contexts context_of_parsed_contexts deal_with_a_var true
 
-   let mterm_of_parsed_mterm mt =
-      convert_mterm (create_term_parser ()) mt
+   let rewrite_of_parsed_rewrite redex contractum =
+      let f = create_term_parser () in
+         f redex, f contractum
+
+   let mrewrite_of_parsed_mrewrite redices contractum =
+      let parse = create_term_parser () in
+      let redices = List.map parse redices in
+      let contractum = parse contractum in
+         redices, contractum
 
    let mterms_of_parsed_mterms mt ts =
       let parse = create_term_parser () in
@@ -406,7 +460,24 @@ struct
                   if i <> i' then
                      raise(Failure "Variable arity mismatch");
                   Some conts
-            else None
+            else
+               None
+
+   (*
+    * Sweeping and mapping.
+    *)
+   let rec map_mterm f mt =
+      match mt with
+         MetaTheorem t ->
+            MetaTheorem (f t)
+       | MetaImplies (mt1, mt2) ->
+            MetaImplies (map_mterm f mt1, map_mterm f mt2)
+       | MetaIff (mt1, mt2) ->
+            MetaIff (map_mterm f mt1, map_mterm f mt2)
+       | MetaFunction (t, mt1, mt2) ->
+            MetaFunction (f t, map_mterm f mt1, map_mterm f mt2)
+       | MetaLabeled (l, mt) ->
+            MetaLabeled (l, map_mterm f mt)
 end
 
 (*

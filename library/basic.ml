@@ -34,6 +34,7 @@ open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5
+open Opname
 
 let _ =
    show_loading "Loading Basic%t"
@@ -86,51 +87,53 @@ let rec parmhash p =
 (*
  * common terms
  *)
+let fdl_opname = mk_opname "FDL" nil_opname
+let token s = Token (mk_opname s fdl_opname)
 
-let imessage_parameter = make_param (Token "!message")
+let imessage_parameter = make_param (token "!message")
 let imessage_op parms = mk_nuprl5_op (imessage_parameter :: parms)
 
 (* !natural{n} *)
-let inatural_parameter = make_param (Token "!natural")
+let inatural_parameter = make_param (token "!natural")
 let inatural_op p = mk_nuprl5_op [inatural_parameter; p]
 let inatural_term i = mk_term (inatural_op (make_param (Number (Lm_num.num_of_int i)))) []
 
 (* !token{t} *)
-let itoken_parameter = make_param (Token "!token")
+let itoken_parameter = make_param (token "!token")
 let itoken_op p =  mk_nuprl5_op [itoken_parameter; p]
-let itoken_term s = mk_term (itoken_op (make_param (Token s))) []
+let itoken_term s = mk_term (itoken_op (make_param (token s))) []
 
 (* !string{s} *)
-let istring_parameter = make_param (Token "!string")
+let istring_parameter = make_param (token "!string")
 let istring_op p =  mk_nuprl5_op [istring_parameter; p]
 let istring_term s = mk_term (istring_op (make_param (String s))) []
 
 (* !text{s} *)
-let itext_parameter = make_param (Token "!text")
+let itext_parameter = make_param (token "!text")
 let itext_op p = mk_nuprl5_op [itext_parameter; p]
 let itext_term s = mk_term (itext_op (make_param (String s))) []
 
-let ioid_parameter = make_param (Token "!oid")
-let ioid_op p = mk_nuprl5_op [make_param (Token "!oid"); p]
+let ioid_parameter = make_param (token "!oid")
+let ioid_op p = mk_nuprl5_op [make_param (token "!oid"); p]
 let ioid_term o = mk_term (ioid_op (make_param (ObId o))) []
 
 let inil_parameter =
-	make_param (ParamList [(make_param (Token "bool"));
+	make_param (ParamList [(make_param (token "bool"));
 			       (make_param (Number (Lm_num.num_of_int 1)))])
 
-let iterm_op = mk_nuprl5_op [make_param (Token "!term")]
+let iterm_op = mk_nuprl5_op [make_param (token "!term")]
 
 let imessage_term sl ol tl =
   mk_term
     (imessage_op
-      ( (map (function s -> make_param (Token s)) sl)
+      ( (map (function s -> make_param (token s)) sl)
       @ (map (function o -> make_param (ObId o)) ol)
       ))
     (map (function t -> mk_bterm [] t) tl)
 
 let iterm_term t = mk_term iterm_op [mk_bterm [] t]
 let iterm_bterms bterms = mk_term iterm_op bterms
-let ivoid_op = (mk_nuprl5_op [make_param (Token "!void")])
+let ivoid_op = (mk_nuprl5_op [make_param (token "!void")])
 let ivoid_term = mk_term ivoid_op []
 
 let ivoid_term_p t =
@@ -219,10 +222,10 @@ let parameters_of_carrier p t =
 
 let token_parameter_to_string p =
   match dest_param p with
-    Token s -> s
+    Token s -> fst (dst_opname s)
   | _ -> error ["parameter"; "token"; "not"] [] []
 
-let ipui_addr_parameter = make_param (Token "!pui_addr")
+let ipui_addr_parameter = make_param (token "!pui_addr")
 let number_of_ipui_addr_term t =
   match dest_param (parameter_of_carrier ipui_addr_parameter t) with
     Number n when Lm_num.is_integer_num n -> Lm_num.int_of_num n
@@ -250,7 +253,7 @@ let string_of_istring_term t =
 
 let string_of_itoken_term t =
   match dest_param (parameter_of_carrier itoken_parameter t) with
-    Token s -> s
+    Token s -> fst (dst_opname s)
   |_ -> (
   print_endline "string_of_itoken_term";
   Mbterm.print_term t;
@@ -275,7 +278,7 @@ let oids_of_ioid_term t = map dest_obid_param (parameters_of_carrier ioid_parame
 
 let dest_token_param p =
   match dest_param p with
-    Token s -> s
+    Token s -> fst (dst_opname s)
   |_ -> error ["parameter"; "token"] [] []
 
 let dest_int_param p =
@@ -312,7 +315,7 @@ let print_stamp s =
 
 let dest_stamp stamp = stamp
 
-let istamp_parameter = make_param (Token "!stamp" )
+let istamp_parameter = make_param (token "!stamp" )
 let istamp_op parms = mk_nuprl5_op (istamp_parameter :: parms)
 
 exception InvalidStampTerm of term
@@ -331,7 +334,7 @@ let term_to_stamp t =
 	(match dest_param pseq with Number seq when Lm_num.is_integer_num seq ->
 	       (* print_string "tts "; *)
            {term = t;
-            process_id = pid;
+            process_id = fst (dst_opname pid);
             transaction_seq = Lm_num.int_of_num tseq;
             seq = Lm_num.int_of_num seq;
             time = (try (destruct_time_parameter ptime)
@@ -397,7 +400,7 @@ let make_stamp pid tseq seq time =
 				[ make_param (Number (Lm_num.num_of_int seq))
    				; make_time_parameter time
 				; make_param (Number (Lm_num.num_of_int tseq))
-   				; make_param (Token pid)
+   				; make_param (token pid)
    				])
 			[])
 	; process_id = pid
@@ -421,14 +424,14 @@ let new_stamp () =
 let sequence () =
    incr stamp_count; !stamp_count
 
-let itransaction_id_parameter = make_param (Token "!transaction_id")
+let itransaction_id_parameter = make_param (token "!transaction_id")
 let itransaction_id_op pl = mk_nuprl5_op (itransaction_id_parameter :: pl)
 
 let tid () =
     (mk_term
       (itransaction_id_op
 		[ make_param (Number (Lm_num.num_of_int (sequence())))
-		; make_param (Token  (get_pid ()))
+		; make_param (token  (get_pid ()))
 		])
      [])
 
@@ -447,7 +450,7 @@ let test () =
       (transaction_less s3 s2)
 ;;
 
-let icons_op = (mk_nuprl5_op [make_param (Token "!cons")])
+let icons_op = (mk_nuprl5_op [make_param (token "!cons")])
 let icons_term op h t = mk_term op [mk_bterm [] h; mk_bterm [] t]
 
 let hd_of_icons_term iop t =
@@ -506,7 +509,7 @@ let map_isexpr_by_op iop f t =
 
 let map_isexpr_to_list f t = map_isexpr_to_list_by_op icons_op f t
 
-let isome_op = (mk_nuprl5_op [make_param (Token "!some")])
+let isome_op = (mk_nuprl5_op [make_param (token "!some")])
 let isome_term t = mk_term isome_op [mk_bterm [] t]
 
 let ioption_term tt =
@@ -522,14 +525,14 @@ let option_of_ioption_term t =
                ->  Some (term_of_unbound_term s)
 	      |_ -> error ["isome"; "not"] [] [t]
 
-let iproperty_parameter = make_param (Token "!property")
+let iproperty_parameter = make_param (token "!property")
 let iproperty_term name_prop =
-  mk_term (mk_nuprl5_op [iproperty_parameter; make_param (Token (fst name_prop))])
+  mk_term (mk_nuprl5_op [iproperty_parameter; make_param (token (fst name_prop))])
 	  [mk_bterm [] (snd name_prop)]
 
 let string_of_token_parameter p =
   match dest_param p with
-    Token s -> s
+    Token s -> fst (dst_opname s)
   |_ -> error ["parameter"; "token"; "not"; ""] [] []
 
 let property_of_iproperty_term pt =

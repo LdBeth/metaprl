@@ -125,8 +125,8 @@ module Refine (**)
     with type RwTypes.term = TermType.term
     with type RwTypes.address = TermAddr.address)
    (RefineError : RefineErrorSig
-    with module ErrTypes.Types = TermType
-    with type ErrTypes.address = TermAddr.address) =
+    with module Types = TermType
+    with type Params.address = TermAddr.address) =
 struct
    open TermType
    open Term

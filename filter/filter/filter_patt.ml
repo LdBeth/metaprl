@@ -41,7 +41,10 @@
  * Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_printf
 open Lm_symbol
+
+open Opname
 
 open Term_sig
 open Refiner.Refiner.TermType
@@ -81,9 +84,6 @@ let build_term_patt loc t =
              | String s ->
                   <:patt< Refiner.Refiner.TermType.MatchString $str: String.escaped s$ >>
 
-             | Token s ->
-                  <:patt< Refiner.Refiner.TermType.MatchToken $str: String.escaped s$ >>
-
              | MNumber v ->
                   <:patt< Refiner.Refiner.TermType.MatchNumber ( $lid: (string_of_symbol v)$, _ ) >>
 
@@ -91,10 +91,15 @@ let build_term_patt loc t =
                   <:patt< Refiner.Refiner.TermType.MatchString $lid: (string_of_symbol v)$ >>
 
              | MToken v ->
-                  <:patt< Refiner.Refiner.TermType.MatchToken $lid: (string_of_symbol v)$ >>
+                  <:patt< Refiner.Refiner.TermType.MatchToken ($lid: (string_of_symbol v)$, _) >>
 
              | Var v ->
                   <:patt< Refiner.Refiner.TermType.MatchVar $lid: (string_of_symbol v)$ >>
+
+             | Token opname ->
+                  let strings = Opname.dest_opname opname in
+                  let patt = List.fold_right (fun x l -> <:patt< [$str:String.escaped x$ :: $l$] >>) strings <:patt< [] >> in
+                     <:patt< Refiner.Refiner.TermType.MatchToken (_, $patt$) >>
 
              | MLevel l ->
                   (match dest_level l with
@@ -125,9 +130,12 @@ let build_term_patt loc t =
                raise (Invalid_argument "term_patt: subterms must be variables")
          in
          let v = dest_fso_var t in
-         let bvars_rhs = List.fold_right (fun v l -> <:patt< [$lid: string_of_symbol v$ :: $l$] >>) bvars <:patt< [] >> in
-            <:patt< { Refiner.Refiner.TermType.bvars = $bvars_rhs$;
-                      Refiner.Refiner.TermType.bterm = $lid: string_of_symbol v$
+         let bvars_rhs =
+            List.fold_right (fun v l ->
+                             <:patt< [$lid: string_of_symbol v$ :: $l$] >>) bvars <:patt< [] >>
+         in
+            <:patt< { Term_sig.bvars = $bvars_rhs$;
+                      Term_sig.bterm = $lid: string_of_symbol v$
                     } >>) bterms
    in
    let bterms = List.fold_right (fun x l -> <:patt< [$x$ :: $l$] >>) bterms <:patt< [] >> in
@@ -148,20 +156,21 @@ let build_sequent_patt loc t =
    in
    let hyps = SeqHyp.to_list hyps in
 
-   (* For the sequent arg we match based on the opname and the list
-      of subterms. *)
+   (*
+    * For the sequent arg we match based on the opname and the list
+    * of subterms.
+    *)
    let opname = opname_of_term args in
    let opname = Opname.dest_opname opname in
-   let opname = List.fold_right (fun x l ->
-         <:patt< [$str:String.escaped x$ :: $l$] >>) opname <:patt< [] >> in
-
-   let args = subterms_of_term args in
-   let args = List.fold_right (fun x l ->
-         let x = build_term_patt loc x in
-            <:patt< [$x$ :: $l$] >>) args <:patt< [] >>
+   let opname =
+      List.fold_right (fun x l ->
+         <:patt< [$str:String.escaped x$ :: $l$] >>) opname <:patt< [] >>
    in
 
-   (* Collect the hyps: if there is a context, it should be final *)
+   (* Pattern for the arguments *)
+   let args = build_term_patt loc args in
+
+   (* Collect the hyps--if there is a context, it should be final *)
    let rec build_hyps hyps =
       match hyps with
          [] ->

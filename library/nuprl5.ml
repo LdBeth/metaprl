@@ -39,61 +39,82 @@ let nuprl5_opname = mk_opname "!nuprl5_implementation!" nil_opname
 let nuprl5_opname_p opname = opname = nuprl5_opname
 
 (* parameter mapping *)
+let time_opname = mk_opname "time" nil_opname
+let bool_opname = mk_opname "bool" nil_opname
 
 let make_bool_parameter b =
   make_param (ParamList
-		[(make_param (Token "bool")); (make_param (Number (Lm_num.num_of_int (if b then 1 else 0))))])
+		[(make_param (Token bool_opname)); (make_param (Number (Lm_num.num_of_int (if b then 1 else 0))))])
 
 let make_time_parameter time =
   make_param (ParamList
-		[(make_param (Token "time")); (make_param (Number time))])
+		[(make_param (Token time_opname)); (make_param (Number time))])
 
 let time_parameter_p p =
-  match (dest_param p) with
-    ParamList [h; a; b] -> (match (dest_param h) with
-      Token s -> if s = "time" then (match (dest_param a) with
-	Number i -> (match (dest_param b) with
-	  Number i -> true
-      	| _ -> false)
-      | _ -> false) else false
-    | _ -> false)
-  | _ -> false
+   match (dest_param p) with
+      ParamList [h; a; b] ->
+         (match (dest_param h) with
+             Token s ->
+                if Opname.eq s time_opname then
+                   (match (dest_param a) with
+                       Number i ->
+                          (match (dest_param b) with
+                              Number i -> true
+                            | _ -> false)
+                     | _ -> false)
+                else
+                   false
+           | _ ->
+                false)
+    | _ -> false
 
 let bool_parameter_p p =
-  match (dest_param p) with
-    ParamList [h; v] -> (match (dest_param h) with
-      Token s -> if s = "bool" then (match (dest_param v) with
-	Number i when Lm_num.is_integer_num i -> let i = Lm_num.int_of_num i in (i = 1 || i = 0)
-      | _ -> false) else false
-    | _ -> false)
-  | _ -> false
+   match (dest_param p) with
+      ParamList [h; v] ->
+         (match (dest_param h) with
+             Token s ->
+                if Opname.eq s bool_opname then
+                   (match (dest_param v) with
+                       Number i when Lm_num.is_integer_num i -> let i = Lm_num.int_of_num i in (i = 1 || i = 0)
+                     | _ -> false)
+                else
+                   false
+           | _ -> false)
+    | _ -> false
 
 let destruct_time_parameter p =
-  match (dest_param p) with
-    ParamList [h; n] -> (match (dest_param h) with
-      Token s -> (if s = "time" then (match (dest_param n) with
-	Number i -> i
-      | _ -> raise (Invalid_argument "destruct_time_parameter_b"))
-      else raise (Invalid_argument "destruct_time_parameter_c"))
-    | _ -> raise (Invalid_argument "destruct_time_parameter_d"))
-  | _ -> raise (Invalid_argument "destruct_time_parameter_e")
+   match (dest_param p) with
+      ParamList [h; n] ->
+         (match (dest_param h) with
+             Token s ->
+                (if Opname.eq s time_opname then
+                    (match (dest_param n) with
+                        Number i -> i
+                      | _ -> raise (Invalid_argument "destruct_time_parameter_b"))
+                 else
+                    raise (Invalid_argument "destruct_time_parameter_c"))
+           | _ -> raise (Invalid_argument "destruct_time_parameter_d"))
+    | _ -> raise (Invalid_argument "destruct_time_parameter_e")
 
 
 let destruct_bool_parameter p =
-  match (dest_param p) with
-    ParamList [h; v] -> (match (dest_param h) with
-      Token s -> if s = "bool" then (match (dest_param v) with
-	Number i when Lm_num.is_integer_num i -> let i = Lm_num.int_of_num i in i = 1
-      | _ -> raise (Invalid_argument "destruct_bool_parameter"))
-      else raise (Invalid_argument "destruct_bool_parameter")
-    | _ -> raise (Invalid_argument "destruct_bool_parameter"))
-  | _ -> raise (Invalid_argument "destruct_bool_parameter")
+   match (dest_param p) with
+      ParamList [h; v] ->
+         (match (dest_param h) with
+             Token s ->
+                if Opname.eq s bool_opname then
+                   (match (dest_param v) with
+                       Number i when Lm_num.is_integer_num i -> let i = Lm_num.int_of_num i in i = 1
+                     | _ -> raise (Invalid_argument "destruct_bool_parameter"))
+                else raise (Invalid_argument "destruct_bool_parameter")
+           | _ -> raise (Invalid_argument "destruct_bool_parameter"))
+    | _ -> raise (Invalid_argument "destruct_bool_parameter")
 
 
 (* common terms *)
 
 let mk_nuprl5_op pl = mk_op nuprl5_opname pl
-let mk_nuprl5_simple_op s = mk_op nuprl5_opname [(make_param (Token s))]
+let mk_nuprl5_simple_op s = mk_op nuprl5_opname [(make_param (Token (mk_opname s nil_opname)))]
 
 let nuprl_is_op_term opname term =
     match Lib_term.dest_term term with
@@ -108,13 +129,15 @@ let nuprl_is_and_term = nuprl_is_op_term (mk_nuprl5_simple_op "and")
 let nuprl_is_implies_term = nuprl_is_op_term (mk_nuprl5_simple_op "implies")
 let nuprl_is_all_term = nuprl_is_op_term (mk_nuprl5_simple_op "all")
 
+let variable_opname = mk_opname "variable" nil_opname
+
 let nuprl_is_var_term term =
   match Lib_term.dest_term term with
    { term_op = term_op'; term_terms = _ } ->
     match dest_op term_op' with
     {op_name = opname; op_params = [p1; p2] } ->
     (match (dest_param p1) with
-     Token "variable" -> true
+     Token v when Opname.eq v variable_opname -> true
      | _ -> false)
     | _ -> false
 

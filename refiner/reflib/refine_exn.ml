@@ -39,6 +39,8 @@ open Refine_sig
 open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
+open Refiner.Refiner.TermShape
+open Refiner.Refiner.TermTy
 open Refiner.Refiner.RefineError
 open Simple_print.SimplePrint
 open Dform
@@ -53,14 +55,14 @@ let _ =
  * Default printer uses the Simple_print.
  *)
 type printers =
-   { format_term : dform_base -> buffer -> term -> unit;
+   { format_term  : dform_base -> buffer -> term -> unit;
      format_bterm : dform_base -> buffer -> bound_term -> unit;
      format_param : dform_base -> buffer -> param -> unit;
-     format_mterm : dform_base -> buffer -> meta_term -> unit
+     format_mterm : dform_base -> buffer -> meta_term -> unit;
    }
 
 let simple_printers =
-   { format_term = (fun _ t -> format_simple_term t);
+   { format_term  = (fun _ t -> format_simple_term t);
      format_bterm = (fun _ t -> format_simple_bterm t);
      format_param = (fun _ t -> format_simple_param t);
      format_mterm = (fun _ t -> format_simple_mterm t);
@@ -172,155 +174,256 @@ let format_refine_error db buf printers name error =
    let rec format name error =
       format_newline buf;
       format_pushm buf 3;
-      format_string buf (name ^ ":");
+      format_string buf name;
+      format_string buf ":";
       format_space buf;
       format_szone buf;
-      begin match error with
-         GenericError ->
-            format_string buf "Generic refiner error"
-       | ToploopIgnoreError ->
-            raise (Invalid_argument "Print_exn.format_refine_error: got ToploopIgnoreError")
-       | StringError s ->
-            format_string buf s
-       | IntError i ->
-            format_int buf i
-       | TermError t ->
-            printers.format_term db buf t
-       | StringIntError (s, i) ->
-            format_string buf s;
-            format_space buf;
-            format_int buf i
-       | StringStringError (s1, s2) ->
-            format_string buf s1;
-            format_space buf;
-            format_string buf s2
-       | StringVarError (s, v) ->
-            format_string buf s;
-            format_space buf;
-            format_string buf (string_of_symbol v)
-       | StringTermError (s, t) ->
-            format_string buf s;
-            format_space buf;
-            printers.format_term db buf t
-       | StringWrapError (name, e) ->
-            format name e
-       | SubgoalError (i, name, e) ->
-            format_int buf i;
-            format_space buf;
-            format name e
-       | PairError (name1, e1, name2, e2) ->
-            format name1 e1;
-            format name2 e2
-       | NodeError (s, t, el) ->
-            format_string buf s;
-            format_space buf;
-            printers.format_term db buf t
-       | AddressError (addr, t) ->
-            format_address buf addr;
-            format_space buf;
-            printers.format_term db buf t
-       | TermMatchError (t, s2) ->
-            format_string buf s2;
-            format_newline buf;
-            printers.format_term db buf t
-       | TermPairError (t1, t2) ->
-            format_newline buf;
-            format_string buf "Term 1: ";
-            printers.format_term db buf t1;
-            format_newline buf;
-            format_string buf "Term 2: ";
-            printers.format_term db buf t2
-       | MetaTermMatchError mt ->
-            printers.format_mterm db buf mt
-       | RewriteBoundSOVar s ->
-            format_string buf "BoundSoVar:";
-            format_space buf;
-            format_string buf (string_of_symbol s)
-       | RewriteFreeSOVar s ->
-            format_szone buf;
-            format_string buf "FreeSOVar:";
-            format_space buf;
-            format_string buf (string_of_symbol s);
-            format_ezone buf;
-            format_explanation buf "Meta-variables (second-order, context, and free first-order ones) that occur in assumptions of a rule (right hand side of a rewrite), but not in rule conclusion (left hand side of a rewrite) need to occur in rule (rewrite) argument(s)."
-       | RewriteSOVarArity s ->
-            format_string buf "SOVarArity:";
-            format_space buf;
-            format_string buf (string_of_symbol s)
-       | RewriteBoundParamVar s ->
-            format_string buf "BoundParamVar:";
-            format_space buf;
-            format_string buf (string_of_symbol s)
-       | RewriteFreeParamVar s ->
-            format_string buf "FreeParamVar:";
-            format_space buf;
-            format_string buf (string_of_symbol s)
-       | RewriteBadRedexParam p ->
-            format_string buf "BadRedexParam:";
-            format_space buf;
-            printers.format_param db buf p
-       | RewriteNoRuleOperator ->
-            format_string buf "NoRuleOperator"
-       | RewriteBadMatch t ->
-            format_string buf "BadMatch:";
-            format_space buf;
-            format_match_type db buf printers t
-       | RewriteAllSOInstances s ->
-            format_string buf "AllSOInstances:";
-            format_space buf;
-            format_string buf (string_of_symbol s);
-            format_explanation buf "Second-order variables that take arguments need to occur in such a position that the exact \"address\" of the arguments can be deduced. In oder words, each second variable that occurs in a rule/rewrite need to occur in either arguments of the rule conclusion (left hand side of the rewrite) in such a way that all its arguments are distinct bound variables and not being itself inside an argument to a meta-variable."
-       | RewriteMissingContextArg s ->
-            format_string buf "MissingContextArg:";
-            format_space buf;
-            format_string buf (string_of_symbol s)
-       | RewriteStringError s ->
-            format_string buf "StringError:";
-            format_space buf;
-            format_string buf s
-       | RewriteStringOpnameOpnameError (s, opname1, opname2) ->
-            format_string buf "StringOpnameOpnameError:";
-            format_space buf;
-            format_string buf s;
-            format_space buf;
-            format_string buf (string_of_opname opname1);
-            format_space buf;
-            format_string buf (string_of_opname opname2)
-       | RewriteAddressError (a, name, e) ->
-            format_address buf a;
-            format_space buf;
-            format name e
-       | RewriteFreeContextVar(v1,v2) ->
-            format_string buf "FreeContextVar: ";
-            format_string buf (string_of_symbol v1);
-            format_string buf " (in context or variable: ";
-            format_string buf (string_of_symbol v2);
-            format_string buf ")";
-      end;
+      format_error error;
       format_ezone buf;
       format_popm buf
+
+   and format_next_error error =
+      format_space buf;
+      format_string buf "- ";
+      format_error error
+
+   and format_error = function
+      GenericError ->
+         format_string buf "Generic refiner error"
+    | ToploopIgnoreError ->
+         raise (Invalid_argument "Print_exn.format_refine_error: got ToploopIgnoreError")
+    | StringError s ->
+         format_string buf s
+    | IntError i ->
+         format_int buf i
+    | TermError t ->
+         printers.format_term db buf t
+    | StringIntError (s, i) ->
+         format_string buf s;
+         format_space buf;
+         format_int buf i
+    | StringStringError (s1, s2) ->
+         format_string buf s1;
+         format_space buf;
+         format_string buf s2
+    | StringVarError (s, v) ->
+         format_string buf s;
+         format_space buf;
+         format_string buf ("'" ^ string_of_symbol v)
+    | StringTermError (s, t) ->
+         format_string buf s;
+         format_space buf;
+         printers.format_term db buf t
+    | StringWrapError (name, e) ->
+         format name e
+    | SubgoalError (i, name, e) ->
+         format_int buf i;
+         format_space buf;
+         format name e
+    | PairError (name1, e1, name2, e2) ->
+         format name1 e1;
+         format name2 e2
+    | NodeError (s, t, el) ->
+         format_string buf s;
+         format_space buf;
+         printers.format_term db buf t
+    | AddressError (addr, t) ->
+         format_address buf addr;
+         format_space buf;
+         printers.format_term db buf t
+    | TermMatchError (t, s2) ->
+         format_string buf s2;
+         format_newline buf;
+         printers.format_term db buf t
+    | TermPairError (t1, t2) ->
+         format_newline buf;
+         format_string buf "Term 1: ";
+         printers.format_term db buf t1;
+         format_newline buf;
+         format_string buf "Term 2: ";
+         printers.format_term db buf t2
+    | MetaTermMatchError mt ->
+         printers.format_mterm db buf mt
+    | RewriteBoundSOVar s ->
+         format_string buf "BoundSoVar:";
+         format_space buf;
+         format_string buf ("'" ^ string_of_symbol s)
+    | RewriteFreeSOVar s ->
+         format_szone buf;
+         format_string buf "FreeSOVar:";
+         format_space buf;
+         format_string buf ("'" ^ string_of_symbol s);
+         format_ezone buf;
+         format_explanation buf "Meta-variables (second-order, context, and free first-order ones) that occur in assumptions of a rule (right hand side of a rewrite), but not in rule conclusion (left hand side of a rewrite) need to occur in rule (rewrite) argument(s)."
+    | RewriteSOVarArity s ->
+         format_string buf "SOVarArity:";
+         format_space buf;
+         format_string buf ("'" ^ string_of_symbol s)
+    | RewriteBoundParamVar s ->
+         format_string buf "BoundParamVar:";
+         format_space buf;
+         format_string buf ("'" ^ string_of_symbol s)
+    | RewriteFreeParamVar s ->
+         format_string buf "FreeParamVar:";
+         format_space buf;
+         format_string buf ("'" ^ string_of_symbol s)
+    | RewriteBadRedexParam p ->
+         format_string buf "BadRedexParam:";
+         format_space buf;
+         printers.format_param db buf p
+    | RewriteNoRuleOperator ->
+         format_string buf "NoRuleOperator"
+    | RewriteBadMatch t ->
+         format_string buf "BadMatch:";
+         format_space buf;
+         format_match_type db buf printers t
+    | RewriteAllSOInstances s ->
+         format_string buf "AllSOInstances:";
+         format_space buf;
+         format_string buf (string_of_symbol s);
+         format_explanation buf "Second-order variables that take arguments need to occur in such a position that the exact \"address\" of the arguments can be deduced. In oder words, each second variable that occurs in a rule/rewrite need to occur in either arguments of the rule conclusion (left hand side of the rewrite) in such a way that all its arguments are distinct bound variables and not being itself inside an argument to a meta-variable."
+    | RewriteMissingContextArg s ->
+         format_string buf "MissingContextArg:";
+         format_space buf;
+         format_string buf (string_of_symbol s)
+    | RewriteStringError s ->
+         format_string buf "StringError:";
+         format_space buf;
+         format_string buf s
+    | RewriteStringOpnameOpnameError (s, opname1, opname2) ->
+         format_string buf "StringOpnameOpnameError:";
+         format_space buf;
+         format_string buf s;
+         format_space buf;
+         format_string buf (string_of_opname opname1);
+         format_space buf;
+         format_string buf (string_of_opname opname2)
+    | RewriteAddressError (a, name, e) ->
+         format_address buf a;
+         format_space buf;
+         format name e
+    | RewriteFreeContextVar (v1, v2) ->
+         format_string buf "FreeContextVar: ";
+         format_string buf (string_of_symbol v1);
+         format_string buf " (in context or variable: ";
+         format_string buf (string_of_symbol v2);
+         format_string buf ")"
+    | VarError v ->
+         format_string buf ("'" ^ string_of_symbol v)
+    | OpnameError opname ->
+         format_string buf (string_of_opname opname)
+    | Opname2Error (opname1, opname2) ->
+         format_string buf (string_of_opname opname1);
+         format_string buf ",";
+         format_space buf;
+         format_string buf (string_of_opname opname2)
+    | ParamError param ->
+         printers.format_param db buf param
+    | Param2Error (param1, param2) ->
+         printers.format_param db buf param1;
+         format_string buf ",";
+         format_space buf;
+         printers.format_param db buf param2
+    | ParamTyParamError (param, ty_param) ->
+         printers.format_param db buf param;
+         format_string buf ",";
+         format_space buf;
+         format_string buf (string_of_ty_param ty_param)
+    | ShapeError shape ->
+         format_string buf (string_of_shape shape)
+    | Shape2Error (shape1, shape2) ->
+         format_string buf (string_of_shape shape1);
+         format_string buf ",";
+         format_space buf;
+         format_string buf (string_of_shape shape2)
+    | Term2Error (t1, t2) ->
+         format_newline buf;
+         format_string buf "Term 1: ";
+         printers.format_term db buf t1;
+         format_newline buf;
+         format_string buf "Term 2: ";
+         printers.format_term db buf t2
+    | VarTermError (v, t) ->
+         format_string buf ("'" ^ string_of_symbol v);
+         format_string buf ":";
+         format_space buf;
+         printers.format_term db buf t
+    | IntTermError (i, t) ->
+         format_int buf i;
+         format_string buf ":";
+         format_space buf;
+         printers.format_term db buf t
+
+      (* Wrapped errors *)
+    | StringErrorError (s, err) ->
+         format_string buf s;
+         format_next_error err
+
+    | VarErrorError (v, err) ->
+         format_string buf ("'" ^ string_of_symbol v);
+         format_next_error err
+
+    | IntErrorError (i, err) ->
+         format_int buf i;
+         format_next_error err
+
+    | TermErrorError (t, err) ->
+         printers.format_term db buf t;
+         format_next_error err
+
+    | OpnameErrorError (opname, err) ->
+         format_string buf (string_of_opname opname);
+         format_next_error err
+
+    | ShapeErrorError (shape, err) ->
+         format_string buf (string_of_shape shape);
+         format_next_error err
+
+    | MetaTermErrorError (mt, err) ->
+         printers.format_mterm db buf mt;
+         format_next_error err
    in
       format name error
+
+(*
+ * Print a generic exception.
+ *)
+let format_exn_aux db printers exn =
+   let buf = new_buffer () in
+      format_pushm buf 4;
+      (match exn with
+          RefineError (name, msg) ->
+             format_string buf "Refine error:";
+             format_refine_error db buf printers name msg
+        | Incomplete opname ->
+             format_string buf ("Incomplete proof: /" ^ (String.concat "/" (List.rev (dest_opname opname))))
+        | Invalid_argument s ->
+             format_string buf ("Invalid Argument:\n" ^ s)
+        | Failure s ->
+             format_string buf ("Failure:\n" ^ s)
+        | exn ->
+             format_string buf (Printexc.to_string exn));
+      format_popm buf;
+      buf
 
 (*
  * Convert an exception to a string.
  *)
 let format_exn db buf printers exn =
-   format_pushm buf 4;
-   begin match exn with
-      RefineError (name, msg) ->
-         format_string buf "Refine error:";
-         format_refine_error db buf printers name msg
-    | Incomplete opname ->
-         format_string buf ("Incomplete proof: /" ^ (String.concat "/" (List.rev (dest_opname opname))))
-    | Invalid_argument s ->
-         format_string buf ("Invalid Argument:\n" ^ s)
-    | Failure s ->
-         format_string buf ("Failure:\n" ^ s)
-    | exn ->
-         format_string buf (Printexc.to_string exn)
-   end;
-   format_popm buf
+   let buf' =
+      try format_exn_aux db printers exn with
+         _ ->
+            try format_exn_aux db simple_printers exn with
+               exn ->
+                  let buf = new_buffer () in
+                     format_hzone buf;
+                     format_string buf "!!! Refine_exn.format_exn: unrecoverable error during exception printing !!!";
+                     format_space buf;
+                     format_string buf (Printexc.to_string exn);
+                     format_ezone buf;
+                     buf
+   in
+      format_buffer buf buf'
 
 (*
  * Formatting.

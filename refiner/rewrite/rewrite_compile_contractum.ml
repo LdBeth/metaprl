@@ -66,7 +66,7 @@ module MakeRewriteCompileContractum
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
     with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)

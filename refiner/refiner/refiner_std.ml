@@ -34,14 +34,21 @@ open Termmod_sig
 module Refiner =
 struct
    module TermType = Term_std.TermType
-   module AddressType = struct type t = Term_addr_sig.addr_item list end
-   module RefineError = Refine_error.MakeRefineError (TermType) (AddressType)
+   module ErrParamType =
+   struct
+      type address = Term_addr_sig.addr_item list
+      type shape = Term_shape_gen.term_shape
+      type ty_param = TermType.term Term_ty_sig.poly_ty_param
+      type ty_term  = (TermType.term, TermType.term) Term_ty_sig.poly_ty_term
+   end
+   module RefineError = Refine_error.MakeRefineError (TermType) (ErrParamType)
    module Term = Term_base_std.Term (RefineError)
    module TermOp = Term_op_std.TermOp (Term) (RefineError)
    module TermSubst = Term_subst_std.TermSubst (Term) (RefineError)
    module TermMan = Term_man_gen.TermMan (TermType) (Term) (TermOp) (TermSubst) (RefineError)
    module TermAddr = Term_addr_gen.TermAddr (TermType) (Term) (TermSubst) (TermOp) (TermMan) (RefineError)
    module TermShape = Term_shape_gen.TermShape (TermType) (Term) (TermMan)
+   module TermTy = Term_ty_gen.TermTy (TermType) (Term) (TermMan) (TermSubst)
    module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (TermMan) (RefineError)
    module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
    module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (Rewrite) (RefineError)

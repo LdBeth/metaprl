@@ -38,7 +38,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 0x64020d7281b77ea99cd7080bef6a8f59
+ * FILTER_MD5: 0x37065004ee099503590971ab60b6d92b
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -65,10 +65,12 @@ open File_type_base
  * Rev 12: added the "Grammar" choice to the summary_item type
  * Rev 13: switched to single-conclusion sequents
  * Rev 14: address arguments to rules and rewrites
+ * Rev 15: tokens now use opnames instead of strings
+ * Rev 16: removed "Opname" and "Definition" from the summary_item type
  *)
-let raw_versions = List.map (pack_version 1 0) [14]
+let raw_versions = List.map (pack_version 1 0) [16]
 
-let term_versions = List.map (pack_version 1 0) [14;13]
+let term_versions = List.map (pack_version 1 0) [16]
 
 (*
  * ASCII IO format revision history:
@@ -90,6 +92,8 @@ let term_versions = List.map (pack_version 1 0) [14;13]
  * Rev 14: added a Quote parameter
  * Rev 15: switched to single-conclusion sequents
  * Rev 16: address arguments to rules and rewrites
+ * Rev 17: tokens now use opnames instead of strings
+ * Rev 18: removed "Opname" and "Definition" from the summary_item type
  *
  * Ascii_io has a HACK needed to read some rev 0-5 files
  * Ascii_io has another set of HACKs to read sequents in rev 0-6 files
@@ -102,8 +106,9 @@ let term_versions = List.map (pack_version 1 0) [14;13]
  * Filter_ocaml has a HACK needed to read some rev 0-12 files.
  * Ascii_io has another HACK needed to read some rev 0-14 files.
  * Filter_summary has another HACK needed to read some rev 0-15 files.
+ * Filter_summary has another HACK needed to read some rev 0-17 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *

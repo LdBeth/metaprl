@@ -39,84 +39,84 @@ extends Base_dform
 (*
  * Operators.
  *)
-declare "["
-declare "]"
-declare "[|"
-declare "|]"
-declare "[<"
-declare ">]"
-declare "{"
-declare "}"
-declare "("
-declare ")"
+declare "[" : Dform
+declare "]" : Dform
+declare "[|" : Dform
+declare "|]" : Dform
+declare "[<" : Dform
+declare ">]" : Dform
+declare "{" : Dform
+declare "}" : Dform
+declare "(" : Dform
+declare ")" : Dform
 
-declare "+"
-declare "-"
-declare "*"
-declare "/"
-declare "mod"
+declare "+" : Dform
+declare "-" : Dform
+declare "*" : Dform
+declare "/" : Dform
+declare "mod" : Dform
 
-declare "&"
-declare "or"
-declare "="
-declare "=="
-declare "::"
-declare ":="
-declare "."
-declare ".("
-declare ".["
-declare ":>"
-declare ";"
-declare "->"
-declare "|"
-declare "<>"
-declare ":"
-declare "_"
-declare "#"
-declare "'"
-declare "\""
+declare "&" : Dform
+declare "or" : Dform
+declare "=" : Dform
+declare "==" : Dform
+declare "::" : Dform
+declare ":=" : Dform
+declare "." : Dform
+declare ".(" : Dform
+declare ".[" : Dform
+declare ":>" : Dform
+declare ";" : Dform
+declare "->" : Dform
+declare "|" : Dform
+declare "<>" : Dform
+declare ":" : Dform
+declare "_" : Dform
+declare "#" : Dform
+declare "'" : Dform
+declare "\"" : Dform
 
-declare "_if"
-declare "_then"
-declare "_else"
+declare "_if" : Dform
+declare "_then" : Dform
+declare "_else" : Dform
 
-declare "_for"
-declare "_while"
-declare "_to"
-declare "_downto"
-declare "_do"
-declare "_done"
+declare "_for" : Dform
+declare "_while" : Dform
+declare "_to" : Dform
+declare "_downto" : Dform
+declare "_do" : Dform
+declare "_done" : Dform
 
-declare "_new"
-declare "_fun"
-declare "_match"
-declare "_try"
-declare "_type"
-declare "_exception"
-declare "_let"
-declare "_letrec"
-declare "_in"
-declare "_and"
-declare "_with"
-declare "_val"
-declare "_as"
-declare "_external"
-declare "_of"
+declare "_new" : Dform
+declare "_fun" : Dform
+declare "_match" : Dform
+declare "_try" : Dform
+declare "_type" : Dform
+declare "_exception" : Dform
+declare "_let" : Dform
+declare "_letrec" : Dform
+declare "_in" : Dform
+declare "_and" : Dform
+declare "_with" : Dform
+declare "_val" : Dform
+declare "_as" : Dform
+declare "_external" : Dform
+declare "_of" : Dform
 
-declare "_module"
-declare "_moduletype"
-declare "_open"
-declare "_sig"
-declare "_struct"
-declare "_functor"
-declare "_end"
+declare "_module" : Dform
+declare "_moduletype" : Dform
+declare "_open" : Dform
+declare "_sig" : Dform
+declare "_struct" : Dform
+declare "_functor" : Dform
+declare "_end" : Dform
 
-declare push_indent
+declare push_indent : Dform
 
 (*
  * Display control tags.
  *)
-declare patt_format{'a;'b}
+declare patt_format{'a : Dform; 'b} : Dform
 
 (*
  * -*-

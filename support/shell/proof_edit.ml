@@ -106,19 +106,6 @@ type incomplete_ped =
  * CONVERSION TO TERMS                                                  *
  ************************************************************************)
 
-(*
- * Turn the status into a char.
- *)
-let term_of_proof_status = function
-   Proof.StatusBad ->
-      <<status_bad>>
- | Proof.StatusIncomplete ->
-      <<status_asserted>>
- | Proof.StatusPartial ->
-      <<status_partial>>
- | Proof.StatusComplete ->
-      <<status_complete>>
-
 let term_of_proof_status_list status =
    mk_status_term (List.map term_of_proof_status status)
 

@@ -55,6 +55,7 @@ let debug_simple_print =
       }
 
 let format_quoted_var buf v =
+   format_string buf "'";
    format_quoted_string buf (Lm_symbol.string_of_symbol v)
 
 let format_var buf v =
@@ -94,22 +95,24 @@ struct
       let format_var lv =
          match dest_level_var lv with
             { le_var = v; le_offset = o } ->
-               if o < 3 then begin
-                  format_quoted_var buf v;
-                  format_quotes o
-               end
-               else begin
-                  format_quoted_var buf v;
-                  format_char buf ' ';
-                  format_int buf o
-               end
+               if o < 3 then
+                  begin
+                     format_quoted_var buf v;
+                     format_quotes o
+                  end
+               else
+                  begin
+                     format_quoted_var buf v;
+                     format_char buf ' ';
+                     format_int buf o
+                  end
       in
          match dest_level l with
             { le_const = c; le_vars = [] } ->
                format_int buf c
           | { le_const = 0; le_vars = [v] } ->
                (match dest_level_var v with
-                  { le_var = v; le_offset = o } ->
+                   { le_var = v; le_offset = o } ->
                       if o < 3 then
                          begin
                             format_quoted_var buf v;
@@ -124,29 +127,29 @@ struct
                          end)
 
           | { le_const = c; le_vars = vars } ->
-                let rec maxaux = function
-                   [] -> 0
-                 | h::t ->
-                       match dest_level_var h with
-                          { le_var = _; le_offset = i } -> max i (maxaux t)
-                in
-                let maxoff = maxaux vars in
-                let rec format_vars = function
-                   [] -> ()
-                 | [h] -> format_var h
-                 | h::t ->
-                       format_var h;
-                       format_string buf " | ";
-                       format_vars t
-                in
-                   format_string buf "{";
-                   if maxoff < c then
-                      begin
-                         format_int buf c;
-                         format_string buf " | "
-                      end;
-                   format_vars vars;
-                   format_string buf "}"
+               let rec maxaux = function
+                  [] -> 0
+                | h::t ->
+                     match dest_level_var h with
+                        { le_var = _; le_offset = i } -> max i (maxaux t)
+               in
+               let maxoff = maxaux vars in
+               let rec format_vars = function
+                  [] -> ()
+                | [h] -> format_var h
+                | h::t ->
+                     format_var h;
+                     format_string buf " | ";
+                     format_vars t
+               in
+                  format_string buf "{";
+                  if maxoff < c then
+                     begin
+                        format_int buf c;
+                        format_string buf " | "
+                     end;
+                  format_vars vars;
+                  format_string buf "}"
 
    (*
     * Operator name.
@@ -174,7 +177,7 @@ struct
       match dest_param p with
          Number n -> format_num buf n; format_string buf ":n"
        | String s -> format_char buf '"'; format_string buf (String.escaped s); format_char buf '"'; format_string buf ":s"
-       | Token t -> format_char buf '"'; format_string buf (String.escaped t); format_char buf '"'; format_string buf ":t"
+       | Token t -> format_char buf '"'; format_string buf (String.escaped (string_of_opname t)); format_char buf '"'; format_string buf ":t"
        | Quote -> format_string buf "@"
        | MNumber v -> format_var buf v; format_string buf ":n"
        | MString v -> format_var buf v; format_string buf ":s"
@@ -223,18 +226,20 @@ struct
    let rec format_contexts buf conts =
       format_pushm buf 1;
       format_string buf "<|";
-      format_contextlist buf conts;
+      format_context_list buf conts;
       format_string buf "|>";
       format_popm buf
 
-   and format_contextlist buf = function
-      [] -> ()
-    | [v] -> format_quoted_var buf v
-    | v::vs ->
-         format_quoted_var buf v;
+   and format_context_list buf = function
+      [] ->
+         ()
+    | [v] ->
+         format_var buf v
+    | v :: vs ->
+         format_var buf v;
          format_string buf ";";
          format_space buf;
-         format_contextlist buf vs
+         format_context_list buf vs
 
    (* Print a single bterm *)
    let rec format_bterm buf bterm =
@@ -284,77 +289,86 @@ struct
    and format_term buf term =
       if !debug_simple_print then
          eprintf "Simple_print.format_term%t" eflush;
-      if is_var_term term then begin
-          format_char buf '\'';
-          format_quoted_var buf (dest_var term)
-      end else if is_so_var_term term then begin
-         if !debug_simple_print then
-            eprintf "Simple_print.format_term: got a variable%t" eflush;
-         let v, conts, subterms = dest_so_var term in
+      if is_var_term term then
+         format_quoted_var buf (dest_var term)
+      else if is_so_var_term term then
+         begin
             if !debug_simple_print then
-               eprintf "Simple_print.format_term: var: %a%t" output_symbol v eflush;
-            format_quoted_var buf v;
-            if conts <> [v] then format_contexts buf conts;
-            format_terms buf subterms
-      end else if is_sequent_term term then begin
-         if !debug_simple_print then
-            eprintf "Simple_print.format_term: got a sequent%t" eflush;
-         let seq = explode_sequent term in
-         let hyps = seq.sequent_hyps in
-         let len = SeqHyp.length hyps in
-         let rec format_hyps i =
-            if i = len then () else
-            begin
-               format_char buf '\n';
-               format_int buf (i + 1);
-               format_char buf '.';
-               format_pushm buf 1;
-               begin
-                  match SeqHyp.get hyps i with
-                     Hypothesis (v,t) ->
-                        if Lm_symbol.to_string v <> "" then begin
-                           format_string buf (string_of_symbol v);
-                           format_string buf " :";
-                           format_pushm buf 1;
-                        end else format_pushm buf 0;
-                        format_term buf t;
-                        format_popm buf
-                   | Context (v,conts,ts) ->
-                        format_string buf ("<" ^ (string_of_symbol v));
-                        if conts <> [v] then format_contexts buf conts;
-                        format_terms buf ts;
-                        format_string buf (">");
-               end;
+               eprintf "Simple_print.format_term: got a variable%t" eflush;
+            let v, conts, subterms = dest_so_var term in
+               if !debug_simple_print then
+                  eprintf "Simple_print.format_term: var: %a%t" output_symbol v eflush;
+               format_quoted_var buf v;
+               if conts <> [v] then
+                  format_contexts buf conts;
+               format_terms buf subterms
+         end
+      else if is_sequent_term term then
+         begin
+            if !debug_simple_print then
+               eprintf "Simple_print.format_term: got a sequent%t" eflush;
+            let seq = explode_sequent term in
+            let hyps = seq.sequent_hyps in
+            let len = SeqHyp.length hyps in
+            let rec format_hyps i =
+               if i <> len then
+                  begin
+                     format_char buf '\n';
+                     format_int buf (i + 1);
+                     format_char buf '.';
+                     format_pushm buf 1;
+                     begin
+                        match SeqHyp.get hyps i with
+                           Hypothesis (v, t) ->
+                              if Lm_symbol.to_string v <> "" then
+                                 begin
+                                    format_string buf (string_of_symbol v);
+                                    format_string buf " :";
+                                    format_pushm buf 1;
+                                 end
+                              else
+                                 format_pushm buf 0;
+                              format_term buf t;
+                              format_popm buf
+                         | Context (v, conts, ts) ->
+                              format_string buf ("<" ^ (string_of_symbol v));
+                              if conts <> [v] then
+                                 format_contexts buf conts;
+                              format_terms buf ts;
+                              format_string buf (">");
+                     end;
+                     format_popm buf;
+                     format_hyps (succ i)
+                  end
+            in
+               format_string buf "Arg: ";
+               format_pushm buf 2;
+               format_term buf seq.sequent_args;
                format_popm buf;
-               format_hyps (succ i)
-            end
-         in
-            format_string buf "Arg: ";
-            format_pushm buf 2;
-            format_term buf seq.sequent_args;
-            format_popm buf;
-            format_string buf "\nHyps:";
-            format_pushm buf 1;
-            format_hyps 0;
-            format_popm buf;
-            format_string buf "\nGoal:";
-            format_pushm buf 1;
-            format_term buf seq.sequent_concl;
-            format_popm buf
-      end else begin
+               format_string buf "\nHyps:";
+               format_pushm buf 1;
+               format_hyps 0;
+               format_popm buf;
+               format_string buf "\nGoal:";
+               format_pushm buf 1;
+               format_term buf seq.sequent_concl;
+               format_popm buf
+         end
+      else
+         begin
          (* Standard term *)
-         if !debug_simple_print then
-            eprintf "Simple_print.format_term: regular term%t" eflush;
-         let { term_op = op; term_terms = bterms } = dest_term term in
-         let { op_name = name; op_params = params } = dest_op op in
             if !debug_simple_print then
-               eprintf "Simple_print.format_term: destructed term%t" eflush;
-            format_pushm buf 4;
-            format_quoted_string buf (string_of_opname name);
-            format_params buf params;
-            format_bterms buf bterms;
-            format_popm buf
-      end
+               eprintf "Simple_print.format_term: regular term%t" eflush;
+            let { term_op = op; term_terms = bterms } = dest_term term in
+            let { op_name = name; op_params = params } = dest_op op in
+               if !debug_simple_print then
+                  eprintf "Simple_print.format_term: destructed term%t" eflush;
+               format_pushm buf 4;
+               format_quoted_string buf (string_of_opname name);
+               format_params buf params;
+               format_bterms buf bterms;
+               format_popm buf
+         end
 
    (*
     * List of terms.

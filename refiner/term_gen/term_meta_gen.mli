@@ -42,7 +42,7 @@ module TermMeta (**)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
 : (TermMetaSig with module MetaTypes = TermType)
 
 (*

@@ -79,18 +79,18 @@ dform type_wildcard_df2 : type_wildcard[start:n, finish:n] =
 (*
  * Application.
  *)
-declare type_apply_list{'t}
-declare type_apply_aux{'t1; 't2}
-declare type_apply_aux{'t1}
+declare type_apply_list{'t} : Dform
+declare type_apply_aux{'t1; 't2} : Dform
+declare type_apply_aux{'t1} : Dform
 
 dform type_apply_df1 : parens :: "prec"[prec_apply] :: type_apply{'t1; 't2} =
-   type_apply_aux{'t1; cons{'t2; nil}}
+   type_apply_aux{'t1; ocons{'t2; onil}}
 
 dform type_apply_df2 : type_apply[start:n, finish:n]{'t1; 't2} =
    type_apply{'t1; 't2}
 
 dform type_apply_df3a : type_apply_aux{type_apply{'t1; 't2}; 't3} =
-   type_apply_aux{'t1; cons{'t2; 't3}}
+   type_apply_aux{'t1; ocons{'t2; 't3}}
 
 dform type_apply_df3b : type_apply_aux{type_apply[start:n, finish:n]{'t1; 't2}; 't3} =
    type_apply_aux{type_apply{'t1; 't2}; 't3}
@@ -98,13 +98,13 @@ dform type_apply_df3b : type_apply_aux{type_apply[start:n, finish:n]{'t1; 't2}; 
 dform type_apply_df4 : type_apply_aux{'t1; 't2} =
    "(" type_apply_aux{'t2} ")" `" " slot{'t1}
 
-dform type_apply_df5 : type_apply_aux{cons{'t1; 't2}} =
+dform type_apply_df5 : type_apply_aux{ocons{'t1; 't2}} =
    slot{'t1} type_apply_list{'t2}
 
-dform type_apply_df6 : type_apply_list{nil} =
+dform type_apply_df6 : type_apply_list{onil} =
    `""
 
-dform type_apply_df7 : type_apply_list{cons{'t1; 't2}} =
+dform type_apply_df7 : type_apply_list{ocons{'t1; 't2}} =
    `", " slot{'t1} type_apply_list{'t2}
 
 (*
@@ -168,16 +168,16 @@ dform type_equal_df2 : type_equal[start:n, finish:n]{'t1; 't2} =
  * Record type.
  * I'm not sure what the boolean is for.
  *)
-declare type_record_aux{'t}
+declare type_record_aux{'t} : Dform
 
-dform type_record_df1 : type_record{cons{'sbt; 'sbtl}} =
+dform type_record_df1 : type_record{ocons{'sbt; 'sbtl}} =
    "{" `" " szone pushm[0] slot{'sbt} type_record_aux{'sbtl} popm ezone `" " "}"
 
-dform type_record_cons_df1 : type_record_aux{cons{'sbt; 'sbtl}} =
+dform type_record_cons_df1 : type_record_aux{ocons{'sbt; 'sbtl}} =
    ";" hspace `" " slot{'sbt}
    type_record_aux{'sbtl}
 
-dform type_record_nil_df1 : type_record{nil} =
+dform type_record_onil_df1 : type_record{onil} =
    `""
 
 dform sbt_df1 : sbt{.Ocaml!"string"[name:s]; .Ocaml!"false"; 't} =
@@ -192,15 +192,15 @@ dform type_record_df2 : type_record[start:n, finish:n]{'t} =
 (*
  * Product types.
  *)
-declare type_prod_aux{'t}
+declare type_prod_aux{'t : Dform} : Dform
 
-dform type_prod_df1 : parens :: "prec"[prec_star] :: type_prod{cons{'t; 'tl}} =
+dform type_prod_df1 : parens :: "prec"[prec_star] :: type_prod{ocons{'t; 'tl}} =
    szone pushm[0] slot{'t} type_prod_aux{'tl} popm ezone
 
-dform type_prod_nil_df1 : type_prod_aux{nil} =
+dform type_prod_onil_df1 : type_prod_aux{onil} =
    `""
 
-dform type_prod_cons_df1 : type_prod_aux{cons{'t; 'tl}} =
+dform type_prod_cons_df1 : type_prod_aux{ocons{'t; 'tl}} =
    `" " "*" `" " slot{'t} type_prod_aux{'tl}
 
 dform type_prod_df2 : type_prod[start:n, finish:n]{'tl} =
@@ -212,28 +212,28 @@ dform type_prod_df2 : type_prod[start:n, finish:n]{'tl} =
 declare stl{'lst}
 declare type_list_aux{'stll}
 
-dform type_list_df1 : type_list{cons{'stl; 'stll}} =
+dform type_list_df1 : type_list{ocons{'stl; 'stll}} =
    szone{'stl} type_list_aux{'stll}
 
 dform type_list_df2 : type_list[start:n, finish:n]{'stl} =
    type_list{'stl}
 
-dform type_list_nil_df1 : type_list_aux{nil} =
+dform type_list_onil_df1 : type_list_aux{onil} =
    `""
 
-dform type_list_cons_df1 : type_list_aux{cons{'stl; 'stll}} =
+dform type_list_cons_df1 : type_list_aux{ocons{'stl; 'stll}} =
    hspace keyword["|"] `" " szone{'stl} type_list_aux{'stll}
 
-dform stl_df1 : stl{.Ocaml!"string"[name:s]; nil} =
+dform stl_df1 : stl{.Ocaml!"string"[name:s]; onil} =
    slot[name:s]
 
-dform stl_df2 : stl{.Ocaml!"string"[name:s]; cons{'t; 'tl}} =
+dform stl_df2 : stl{.Ocaml!"string"[name:s]; ocons{'t; 'tl}} =
    slot[name:s] `" of " szone slot{'t} stl{'tl} ezone
 
-dform stl_df3 : stl{nil} =
+dform stl_df3 : stl{onil} =
    `""
 
-dform stl_df4 : stl{cons{'t; 'tl}} =
+dform stl_df4 : stl{ocons{'t; 'tl}} =
    hspace "*" `" " slot{'t} stl{'tl}
 
 (*

@@ -9,6 +9,7 @@ open MathBus
 open SocketIo
 open Mbterm
 open Nuprl5
+open Opname
 
 let _ =
    show_loading "Loading LinkMini%t"
@@ -17,20 +18,22 @@ type sockopt = Fd of Unix.file_descr | Null of unit
 
 type link = (in_channel * out_channel) * sockopt
 
+let token s = Token (mk_opname s nil_opname)
+
 let dest_link ((in_channel, out_channel), socket) =
   match socket with Fd fd -> ((in_channel, out_channel), (Fd fd))
   | Null _ -> ((in_channel, out_channel), (Null ()))
 
 let iconnect_term port host =
   mk_term (mk_op nuprl5_opname
-	     [(make_param (Token "!connect")); (make_param (Number (Lm_num.num_of_int port)));
+	     [(make_param (token "!connect")); (make_param (Number (Lm_num.num_of_int port)));
 	       (make_param (String host))])
     []
 
 let idisconnect_term error_p =
   mk_term (mk_op nuprl5_opname
-	     [(make_param (Token "!disconnect"));
-	       (make_param (ParamList [(make_param (Token "bool"));
+	     [(make_param (token "!disconnect"));
+	       (make_param (ParamList [(make_param (token "bool"));
 					(make_param (Number (Lm_num.num_of_int (if error_p then 1 else 0))))]))]) []
 
 let cautious_in = ref Unix.stderr

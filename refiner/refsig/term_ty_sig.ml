@@ -1,5 +1,5 @@
 (*
- * Commands for editing a rewrite.
+ * A term class is like a very simple type system.
  *
  * ----------------------------------------------------------------
  *
@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 2005 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,57 +26,65 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey <jyh@cs.cornell.edu>
- * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
+ * Author: Jason Hickey <jyh@cs.caltech.edu>
  *)
+open Lm_printf
 
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermTy
-
-open Filter_type
-open Filter_summary_type
-
-open Shell_sig
-open Package_info
+open Opname
 
 (*
- * Make an editable rule/rewrite.
+ * The type system.
  *)
-val create :
-   package ->
-   parse_arg ->
-   display_fun ->
-   string ->
-   edit_object
+type 'term poly_ty_param =
+   TyNumber
+ | TyString
+ | TyToken of 'term
+ | TyLevel
+ | TyVar
+ | TyQuote
 
-val view_rule :
-   package ->
-   parse_arg ->
-   display_fun ->
-   (term, meta_term, proof proof_type, MLast.expr) rule_info ->
-   edit_object
+type 'term poly_ty_bterm =
+   { ty_bvars : 'term list;
+     ty_bterm : 'term
+   }
 
-val view_rw :
-   package ->
-   parse_arg ->
-   display_fun ->
-   (term, proof proof_type, MLast.expr) rewrite_info ->
-   edit_object
+type ('term1, 'term2) poly_ty_term =
+   { ty_term   : 'term1;
+     ty_opname : opname;
+     ty_params : 'term2 poly_ty_param list;
+     ty_bterms : 'term2 poly_ty_bterm list;
+     ty_type   : 'term2
+   }
 
-val view_crw :
-   package ->
-   parse_arg ->
-   display_fun ->
-   (term, proof proof_type, MLast.expr) cond_rewrite_info ->
-   edit_object
+module type TermTySig =
+sig
+   type term
 
-val view_def :
-   package ->
-   parse_arg ->
-   display_fun ->
-   ty_term ->
-   (term, MLast.expr) term_def ->
-   edit_object
+   type ty_param = term poly_ty_param
+   type ty_bterm = term poly_ty_bterm
+   type ty_term  = (term, term) poly_ty_term
+
+   (*
+    * Get the term corresponding to the type.
+    *)
+   val term_of_ty : ty_term -> term
+
+   (*
+    * Printers.
+    *)
+   val string_of_ty_param : ty_param -> string
+
+   (*
+    * Test for alpha-equality.
+    *)
+   val eq : ty_term -> ty_term -> bool
+
+   (*
+    * Test for alpha-equality of just the class part,
+    * not the term.
+    *)
+   val eq_ty : ty_term -> ty_term -> bool
+end
 
 (*
  * -*-

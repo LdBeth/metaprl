@@ -31,9 +31,12 @@
  *)
 open Lm_symbol
 
+open Term_sig
 open Term_shape_sig
-open Refiner.Refiner
-open TermType
+open Term_ty_sig
+open Refiner.Refiner.TermType
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermTy
 open Opname
 open Dform
 
@@ -69,11 +72,6 @@ exception IterfImplemMismatch of string
  ************************************************************************)
 
 (*
- * A "quoted" term is given in exploded form.
- *)
-type quote_term = string * param list * bound_term list
-
-(*
  * Module paths, but empty paths are not allowed.
  *)
 exception EmptyModulePath of string
@@ -83,7 +81,8 @@ type module_path = string list
 (*
  * Annotated terms may have a name.
  *)
-type aterm = { aname : term option; aterm : term }
+type 'term poly_aterm = { aname : 'term option; aterm : 'term }
+type aterm = term poly_aterm
 
 (************************************************************************
  * A "bytecode" description of how to construct a term                  *
@@ -95,6 +94,7 @@ type 'expr param_constr =
  | ConPNum of Lm_num.num
  | ConPInt of 'expr
  | ConPExpr of 'expr
+ | ConPToken of opname
 
 type 'expr param_constructor = 'expr param_constr * shape_param
 
@@ -136,10 +136,10 @@ type 'term prl_binding =
  | BindOpname of opname
  | BindNum of Lm_num.num
 
-type ('item, 'term) bnd_expr = {
-   item_bindings : (string * 'term prl_binding) list;
-   item_item : 'item
-}
+type ('item, 'term) bnd_expr =
+   { item_bindings : (string * 'term prl_binding) list;
+     item_item : 'item
+   }
 
 type ('expr, 'term) resource_def =
    ((MLast.loc * string * 'expr list) list, 'term) bnd_expr
@@ -200,11 +200,6 @@ type ('term, 'expr) mlterm_info =
      mlterm_resources : ('expr, 'term) resource_def
    }
 
-type 'term opname_info =
-   { opname_name : string;
-     opname_term : 'term
-   }
-
 (*
  * A parent command lists all the modules that are recursively
  * opened, and it lists all the resources that were discovered.
@@ -214,12 +209,10 @@ type 'ctyp parent_info =
      parent_resources : (string * 'ctyp resource_sig) list
    }
 
-type ('term, 'expr) opname_definition =
-   { opdef_name : string;
-     opdef_opname : string;
-     opdef_term : 'term;
-     opdef_definition : 'term;
-     opdef_resources : ('expr, 'term) resource_def
+type ('term, 'expr) term_def =
+   { term_def_name : string;
+     term_def_value : 'term;
+     term_def_resources : ('expr, 'term) resource_def
    }
 
 type dform_option =
@@ -295,6 +288,11 @@ type grammar_update =
    Infix of string
  | Suffix of string
 
+type typeclass_parent =
+   ParentNone
+ | ParentExtends of opname
+ | ParentInclude of opname
+
 (*
  * The summary contains information about everything in the file.
  * We use the summary for both interfaces and implementations.
@@ -309,7 +307,6 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
    Rewrite     of ('term, 'proof, 'expr) rewrite_info
  | CondRewrite of ('term, 'proof, 'expr) cond_rewrite_info
  | Rule        of ('term, 'meta_term, 'proof, 'expr) rule_info
- | Opname      of 'term opname_info
  | MLRewrite   of ('term, 'expr) mlterm_info
  | MLAxiom     of ('term, 'expr) mlterm_info
  | Parent      of 'ctyp parent_info
@@ -326,35 +323,131 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  | MagicBlock  of 'item magic_info
  | Comment     of 'term
  | InputForm   of ('term, 'proof, 'expr) rewrite_info
- | Definition  of ('term, 'expr) opname_definition
  | PRLGrammar  of Filter_grammar.t
 
+   (* JYH: added opname classes 2004/01/16 *)
+ | DeclareTypeClass   of opname * opname * typeclass_parent
+ | DeclareType        of ('term, 'term) poly_ty_term * opname
+ | DeclareTerm        of ('term, 'term) poly_ty_term
+ | DefineTerm         of ('term, 'term) poly_ty_term * ('term, 'expr) term_def
+ | DeclareTypeRewrite of 'term * 'term
 (* %%MAGICEND%% *)
+
+(*
+ * Kinds of operators.
+ *)
+type op_kind =
+   NormalKind
+ | TokenKind
 
 (*
  * These type define what info do we need during parsing to identify opnames and context bindings
  * The context_fun should return the Some list when the SO variable bindings are known from the proof context
  *)
-type opname_fun = string list -> shape_param list -> int list -> Opname.opname
-type context_fun = var -> int -> var list option
+type opname_fun             = string list -> shape_param list -> int list -> Opname.opname
+type opname_kind_fun        = op_kind -> string list -> shape_param list -> int list -> Opname.opname
+type context_fun            = var -> int -> var list option
+type infer_term_fun         = term -> term
+type check_rule_fun         = meta_term -> term list -> unit
+type infer_rewrite_fun      = meta_term -> term list -> term
+type check_type_rewrite_fun = term -> term -> unit
+type check_dform_fun        = term -> term -> unit
+type check_iform_fun        = meta_term -> term list -> unit
+type check_production_fun   = term list -> term -> unit
 
 (*
  * Grammars to extend.
  *)
 module type TermGrammarSig =
 sig
-   val mk_opname         : MLast.loc -> opname_fun
-   val mk_var_contexts   : MLast.loc -> context_fun
+   (* Provided by environments *)
+   val opname_prefix      : MLast.loc -> opname
+   val mk_opname_kind     : MLast.loc -> opname_kind_fun
+   val mk_var_contexts    : MLast.loc -> context_fun
+   val infer_term         : MLast.loc -> infer_term_fun
+   val check_rule         : MLast.loc -> check_rule_fun
+   val infer_rewrite      : MLast.loc -> infer_rewrite_fun
+   val check_type_rewrite : MLast.loc -> check_type_rewrite_fun
+   val check_dform        : MLast.loc -> check_dform_fun
+   val check_iform        : MLast.loc -> check_iform_fun
+   val check_production   : MLast.loc -> check_production_fun
+
+   (* Grammar *)
+   val opname            : opname Grammar.Entry.e
+   val opname_name       : string Grammar.Entry.e
    val term_eoi          : term Grammar.Entry.e
    val term              : term Grammar.Entry.e
-   val parsed_term       : term Grammar.Entry.e
-   val quote_term        : quote_term Grammar.Entry.e
-   val mterm             : meta_term Grammar.Entry.e
-   val bmterm            : meta_term Grammar.Entry.e
-   val singleterm        : aterm Grammar.Entry.e
-   val parsed_bound_term : aterm Grammar.Entry.e
+   val quote_term        : ty_term Grammar.Entry.e
+   val mterm             : term poly_meta_term Grammar.Entry.e
+   val bmterm            : term poly_meta_term Grammar.Entry.e
+   val singleterm        : term poly_aterm Grammar.Entry.e
    val xdform            : term Grammar.Entry.e
    val term_con_eoi      : (term, MLast.expr) term_constructor Grammar.Entry.e
+
+   val parsed_term       : term Grammar.Entry.e
+   val parsed_bound_term : aterm Grammar.Entry.e
+end
+
+(*
+ * Grammars to extend.
+ *)
+module type ParsedTermGrammarSig =
+sig
+   (* The results have abstract types *)
+   type parsed_term
+   type parsed_bound_term
+   type parsed_meta_term = parsed_term poly_meta_term
+
+   (* Term conversion *)
+   val parse_term           : MLast.loc -> parsed_term -> term
+   val parse_rule           : MLast.loc -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
+   val parse_rewrite        : MLast.loc -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
+   val parse_type_rewrite   : MLast.loc -> parsed_term -> parsed_term -> term * term
+   val parse_iform          : MLast.loc -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
+   val parse_dform          : MLast.loc -> parsed_term -> parsed_term -> term * term
+   val parse_production     : MLast.loc -> parsed_term list -> parsed_term -> term list * term
+
+   (* For input terms from other parsers *)
+   val mk_parsed_term : term -> parsed_term
+
+   (* Grammar *)
+   val opname            : opname Grammar.Entry.e
+   val opname_name       : string Grammar.Entry.e
+   val term_eoi          : parsed_term Grammar.Entry.e
+   val term              : parsed_term Grammar.Entry.e
+   val quote_term        : (parsed_term, parsed_term) poly_ty_term Grammar.Entry.e
+   val mterm             : parsed_term poly_meta_term Grammar.Entry.e
+   val bmterm            : parsed_term poly_meta_term Grammar.Entry.e
+   val singleterm        : parsed_term poly_aterm Grammar.Entry.e
+   val xdform            : parsed_term Grammar.Entry.e
+   val term_con_eoi      : (parsed_term, MLast.expr) term_constructor Grammar.Entry.e
+
+   (* Parsed versions *)
+   val parsed_term       : term Grammar.Entry.e
+   val parsed_bound_term : term poly_aterm Grammar.Entry.e
+
+   (************************************************
+    * !!! WARNING, UNSAFE !!!
+    * !!! The following three functions bypass
+    * !!! either the parser or the type checker.
+    *)
+
+   (* Bypass both the parser and the type checker *)
+   val raw_term_of_parsed_term : parsed_term -> term
+
+   (* Bypass the parser, but do type checking *)
+   val unparsed_term_of_parsed_term : MLast.loc -> parsed_term -> term
+
+   (* Bypass the type checker, but do parsing *)
+   val unchecked_term_of_parsed_term : parsed_term -> term
+
+   (* Bypass the parser, but do typechecking *)
+   val quote_term_of_parsed_term : MLast.loc ->
+      term ->           (* token type *)
+      term ->           (* bvar type *)
+      term ->           (* term type *)
+      parsed_term ->
+      term
 end
 
 (*

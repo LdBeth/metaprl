@@ -41,10 +41,10 @@ open Term_ds
 module TermOp
    (Term : TermDsSig with module TermTypes = TermType)
    (RefineError : RefineErrorSig
-    with type ErrTypes.Types.level_exp = TermType.level_exp
-    with type ErrTypes.Types.param = TermType.param
-    with type ErrTypes.Types.term = TermType.term
-    with type ErrTypes.Types.bound_term = TermType.bound_term)
+                  with type Types.level_exp = TermType.level_exp
+                  with type Types.param = TermType.param
+                  with type Types.term = TermType.term
+                  with type Types.bound_term = TermType.bound_term)
 =
 struct
    open RefineError
@@ -246,6 +246,30 @@ struct
       { free_vars = Vars SymbolSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [String s] }; term_terms = [] }}
+
+   (*
+    * One var parameter.
+    *)
+   let is_var_param_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Var _] };
+             term_terms = []
+           } when Opname.eq opname opname' ->
+         true
+    | _ ->
+         false
+
+   let dest_var_param_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Var v] }; term_terms = [] }
+         when Opname.eq opname opname' -> v
+    | _ ->
+         REF_RAISE(RefineError ("dest_var_param_term", TermMatchError (t, "not a var param term")))
+
+   let mk_var_param_term opname s =
+      if Opname.eq opname var_opname || Opname.eq opname context_opname then
+         raise (Invalid_argument "Term_op_ds.mk_var_param_term: special opnames not allowed");
+      { free_vars = Vars SymbolSet.empty;
+        core = Term
+         { term_op = { op_name = opname; op_params = [Var s] }; term_terms = [] }}
 
    (*
     * One string parameter, and one simple subterm.
@@ -551,6 +575,12 @@ struct
              term_terms = []
            } when Opname.eq opname opname' -> n
     | _ -> REF_RAISE(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
+
+   let dest_token_param t = match get_core t with
+      Term { term_op = { op_params = [Token n] };
+             term_terms = []
+           } -> n
+    | _ -> REF_RAISE(RefineError ("dest_token_param", TermMatchError (t, "bad arity")))
 
    let mk_token_term opname n =
       { free_vars = Vars SymbolSet.empty;

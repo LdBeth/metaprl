@@ -62,10 +62,10 @@ let debug_fv =
 
 module Term
    (RefineError : RefineErrorSig
-    with type ErrTypes.Types.level_exp = TermType.level_exp
-    with type ErrTypes.Types.param = TermType.param
-    with type ErrTypes.Types.term = TermType.term
-    with type ErrTypes.Types.bound_term = TermType.bound_term)
+    with type Types.level_exp = TermType.level_exp
+    with type Types.param = TermType.param
+    with type Types.term = TermType.term
+    with type Types.bound_term = TermType.bound_term)
 =
 struct
    (************************************************************************
@@ -416,11 +416,14 @@ struct
        | _ -> REF_RAISE(RefineError ("dest_var", TermMatchError (t, "not a var")))
 
    (* xlists *)
-   let xnil_opname = mk_opname "nil" xperv
-   let xcons_opname = mk_opname "cons" xperv
+   let xnil_opname = Opname.xnil_opname
+   let xcons_opname = Opname.xcons_opname
 
    let xnil_term =
       core_term (Term { term_op = { op_name = xnil_opname; op_params = [] }; term_terms = [] })
+
+   let xconcl_term =
+      core_term (Term { term_op = { op_name = xconcl_opname; op_params = [] }; term_terms = [] })
 
    let rec is_xlist_term t =
       match get_core t with

@@ -52,10 +52,10 @@ struct
     * Level expression have offsets from level expression
     * vars, plus a constant offset.
     *)
-   type level_exp_var' = { le_var : var; le_offset : int }
+   type level_exp_var' = poly_level_exp_var
    type level_exp_var = level_exp_var'
 
-   type level_exp' = { le_const : int; le_vars : level_exp_var list }
+   type level_exp' = level_exp_var poly_level_exp
    type level_exp = level_exp'
 
    type param' = (level_exp, param) poly_param
@@ -66,7 +66,7 @@ struct
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
-   type operator' = { op_name : opname; op_params : param list }
+   type operator' = param poly_operator
    type operator =  operator'
 
    (*
@@ -88,8 +88,8 @@ struct
     | Hashed of term Weak_memo.TheWeakMemo.descriptor
    and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term = bound_term'
-   and term' = { term_op : operator; term_terms : bound_term list }
-   and bound_term' = { bvars : var list; bterm : term }
+   and term' = (operator, bound_term) poly_term
+   and bound_term' = term poly_bound_term
    and hypothesis = term poly_hypothesis
    and seq_hyps = hypothesis Seq_set.linear_set
    and esequent =
@@ -110,14 +110,14 @@ struct
    type match_param =
       MatchNumber of Lm_num.num * int option
     | MatchString of string
-    | MatchToken of string
+    | MatchToken of opname * string list
     | MatchVar of var
     | MatchLevel of level_exp
     | MatchUnsupported
 
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list
-    | MatchSequent of string list * match_term list * hypothesis list * term
+    | MatchSequent of string list * match_term * hypothesis list * term
 
    type meta_term = term poly_meta_term
 end

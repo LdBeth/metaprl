@@ -165,6 +165,8 @@ let levels_lookup scanner level index =
  level_get (nth scanner.levels level) index
 
 (* scanner includes levels *)
+let token s = Token (mk_opname s nil_opname)
+let dst_token s = fst (dst_opname s)
 
 let make_operator opid parameters =
   if stringeq opid "!metaprl_implementation"
@@ -178,7 +180,7 @@ let make_operator opid parameters =
                                 ParamList pl -> pl
                                  | _ -> error ["read_term"; "operator"; "nuprl-light"; "opname"] [] [])))
                 (tl parameters))
-     else Nuprl5.mk_nuprl5_op ((make_param (Token opid)) :: parameters)
+     else Nuprl5.mk_nuprl5_op ((make_param (token opid)) :: parameters)
 
 let rec scan_item stype scanner =
   match stype with
@@ -229,9 +231,9 @@ and scan_numeral_parameter scanner =
         myscanner := scanner.scanner;
      let ptype = scan_string scanner.scanner in
       match ptype with "n" -> make_param (Number value)
-      | "time" -> make_param (ParamList [(make_param (Token "time"));
+      | "time" -> make_param (ParamList [(make_param (token "time"));
                           (make_param (Number value))])
-      | "ime" -> make_param (ParamList [(make_param (Token "time"));
+      | "ime" -> make_param (ParamList [(make_param (token "time"));
                           (make_param (Number value))])
       | _ -> error ["scan_numeral_parameter"; ptype] [] []
 
@@ -250,7 +252,7 @@ and scan_numeral_parameter_old scanner =
     scan_byte scanner.scanner icolon;
     let ptype = (scan_string scanner.scanner) in
       match ptype with "n" -> make_param (Number n)
-      | "time" -> make_param (ParamList [(make_param (Token "time"));
+      | "time" -> make_param (ParamList [(make_param (token "time"));
                           (make_param (Number n))])
       | _ -> error ["scan_numeral_parameter_old"; ptype] [] []
 
@@ -512,12 +514,12 @@ let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
 let mk_real_param_from_strings stp value ptype =
   match ptype with
     "n" -> (Number (Lm_num.num_of_string value))
-  | "time" -> (ParamList [(make_param (Token "time"));
+  | "time" -> (ParamList [(make_param (token "time"));
                           (make_param (Number (Lm_num.num_of_string value)))])
-  | "t" -> (Token value)
+  | "t" -> (token value)
   | "s" -> (String value)
-  | "q" -> (ParamList [(make_param (Token "quote")); (make_param (Token value))])
-  | "b" -> ( ParamList [ (make_param (Token "bool"))
+  | "q" -> (ParamList [(make_param (token "quote")); (make_param (token value))])
+  | "b" -> ( ParamList [ (make_param (token "bool"))
                         ; if (stringeq value "false") or (stringeq value "F") then
                           make_param (Number (Lm_num.num_of_int 0))
                           else if (stringeq value "true") or (stringeq value "T") then
@@ -526,7 +528,7 @@ let mk_real_param_from_strings stp value ptype =
                       ])
   | "v" -> (Var (Lm_symbol.add value))
   | "l" -> let level = scan_level_expression (make_le_scanner (Stream.of_string value)) in
-    (ParamList [(make_param (Token "nuprl5_level_expression")); (make_param (MLevel level)); (make_param (String value))])
+    (ParamList [(make_param (token "nuprl5_level_expression")); (make_param (MLevel level)); (make_param (String value))])
   | "oid" -> let term = string_to_trivial_term value stp in
     (ObId (stamp_to_object_id (term_to_stamp term)))
   | "o" -> let term = string_to_trivial_term value stp in
@@ -538,23 +540,23 @@ let mk_meta_param_from_strings value ptype =
     "n" -> (MNumber (Lm_symbol.add value))
   | "t" -> (MToken (Lm_symbol.add value))
   | "s" -> (MString (Lm_symbol.add value))
-  | "q" -> (ParamList [(make_param (Token "quote")); (make_param (Token value))])
-  | "b" -> (ParamList [(make_param (Token "bool")); (make_param (Number (Lm_num.num_of_string value)))])
+  | "q" -> (ParamList [(make_param (token "quote")); (make_param (token value))])
+  | "b" -> (ParamList [(make_param (token "bool")); (make_param (Number (Lm_num.num_of_string value)))])
   | "v" -> (Var (Lm_symbol.add value))
   | "l" -> let level =
       scan_level_expression (make_le_scanner (Stream.of_string value)) in
-    (ParamList [(make_param (Token "nuprl5_level_expression")); (make_param (MLevel level)); (make_param (String value))])
+    (ParamList [(make_param (token "nuprl5_level_expression")); (make_param (MLevel level)); (make_param (String value))])
   |  t -> failwith "unknown special meta op-param"
 
 let extract_binding3 pl =
   match pl with
-  (Token "extended")::((Token m)::((Token v)::tl)) -> ["extended"; m; v]
+  (Token ext)::((Token m)::((Token v)::tl)) when dst_token ext = "extended" -> ["extended"; dst_token m; dst_token v]
  | t  -> failwith "extract binding 3"
 
 let extract_binding2 pl =
   match pl with
-  (Token "extended")::((Token v)::tl) -> ["extended"; v]
- |(Token "display")::((String v)::tl) -> ["display"; v]
+  (Token ext)::((Token v)::tl) when dst_token ext = "extended" -> ["extended"; dst_token v]
+ |(Token disp)::((String v)::tl) when dst_token disp = "display" -> ["display"; v]
  | t  -> failwith "extract binding 2"
 
 let extract_binding1 pl =
@@ -590,21 +592,21 @@ let rec string_to_parameter s ptype =
       make_param
        (match (Lm_string_util.get "Db.string_to_parameter" s 1) with
           '%' -> (mk_real_param_from_strings string_to_parameter (Lm_string_util.sub "Db.string_to_parameter" s 1 (len - 1)) ptype)
-        | 'A' -> (ParamList   [ make_param (Token "extended")
-                              ; make_param (Token "abstraction")
-                              ; make_param (Token ptype)
-                              ; make_param (Token ss)
+        | 'A' -> (ParamList   [ make_param (token "extended")
+                              ; make_param (token "abstraction")
+                              ; make_param (token ptype)
+                              ; make_param (token ss)
                               ])
-        | 'D' ->  (ParamList  [ make_param (Token "extended")
-                              ; make_param (Token "display")
-                              ; make_param (Token ptype)
-                              ; make_param (Token ss)
+        | 'D' ->  (ParamList  [ make_param (token "extended")
+                              ; make_param (token "display")
+                              ; make_param (token ptype)
+                              ; make_param (token ss)
                               ])
-        | 'S' ->  (ParamList  [ make_param (Token "extended")
-                              ; make_param (Token "slot")
-                              ; make_param (Token ptype)
+        | 'S' ->  (ParamList  [ make_param (token "extended")
+                              ; make_param (token "slot")
+                              ; make_param (token ptype)
                               ])
-        | 'd' ->  (ParamList  [ make_param (Token "display")
+        | 'd' ->  (ParamList  [ make_param (token "display")
                               ; (make_param (mk_meta_param_from_strings ss ptype))
                               ])
         | 'a' ->  (mk_meta_param_from_strings ss ptype)
@@ -617,29 +619,30 @@ let make_session_scanner stream =
         string_to_parameter
 
 let extract_level_string_updates level inparms =
-     let parms = ref (dest_params inparms) in
-        while not (nullp !parms )
-        do (match (hd !parms) with
-            Token s ->
-             (try
-                if stringeq s "nuprl5_implementation3"
-                   then (level_assign level (Binding (extract_binding3 (tl !parms)))
-                        ; parms := tl (tl (tl !parms)))
-                else if stringeq s "nuprl5_implementation2"
-                   then (level_assign level (Binding (extract_binding2 (tl !parms)))
-                        ; parms := tl (tl !parms))
-                else if stringeq s "nuprl5_implementation1"
-                   then (level_assign level (Binding (extract_binding2 (tl !parms)))
-                        ; parms := tl !parms)
-                else level_assign level (Opid s)
-             with _ -> level_assign level (Opid s))
-            | Var s -> level_assign level (Binding [string_of_symbol s])
-            | _ -> error ["level_read"; "strings"] [] [])
-           ; parms := (tl !parms)
-        done
+   let parms = ref (dest_params inparms) in
+      while not (nullp !parms )
+      do (match (hd !parms) with
+             Token s ->
+                let s = dst_token s in
+                   (try
+                       if stringeq s "nuprl5_implementation3"
+                       then (level_assign level (Binding (extract_binding3 (tl !parms)))
+                             ; parms := tl (tl (tl !parms)))
+                       else if stringeq s "nuprl5_implementation2"
+                       then (level_assign level (Binding (extract_binding2 (tl !parms)))
+                             ; parms := tl (tl !parms))
+                       else if stringeq s "nuprl5_implementation1"
+                       then (level_assign level (Binding (extract_binding2 (tl !parms)))
+                             ; parms := tl !parms)
+                       else level_assign level (Opid s)
+                    with _ -> level_assign level (Opid s))
+           | Var s -> level_assign level (Binding [string_of_symbol s])
+           | _ -> error ["level_read"; "strings"] [] [])
+         ; parms := (tl !parms)
+      done
 
-let idata_persist_param = make_param (Token "!data_persist")
-let idata_persist_inline_param = make_param (Token "!data_persist_inline")
+let idata_persist_param = make_param (token "!data_persist")
+let idata_persist_inline_param = make_param (token "!data_persist_inline")
 
 let idata_persist_term_p t =
  match dest_term t with

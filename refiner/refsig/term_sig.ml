@@ -51,12 +51,19 @@ type 'term poly_meta_term =
  | MetaLabeled of string * 'term poly_meta_term
 
 (*
+ * Level expression have offsets from level expression
+ * vars, plus a constant offset.
+ *)
+type poly_level_exp_var = { le_var : var; le_offset : int }
+type 'le_var poly_level_exp = { le_const : int; le_vars : 'le_var list }
+
+(*
  * Parameters have a number of simple types.
  *)
 type ('level_exp, 'param) poly_param =
    Number of Lm_num.num
  | String of string
- | Token of string
+ | Token of opname
  | Var of var
  | MNumber of var
  | MString of var
@@ -67,6 +74,30 @@ type ('level_exp, 'param) poly_param =
    (* Special Nuprl5 values *)
  | ObId of 'param list
  | ParamList of 'param list
+
+(*
+ * Bound terms.
+ *)
+type 'term poly_bound_term =
+   { bvars : var list;
+     bterm : 'term
+   }
+
+(*
+ * Operators.
+ *)
+type 'param poly_operator =
+   { op_name   : opname;
+     op_params : 'param list
+   }
+
+(*
+ * Terms.
+ *)
+type ('operator, 'bound_term) poly_term =
+   { term_op    : 'operator;
+     term_terms : 'bound_term list
+   }
 
 module type TermSig =
 sig
@@ -97,25 +128,19 @@ sig
     ************************************************************************)
 
    (*
-    * Level expression have offsets from level expression
-    * vars, plus a constant offset.
-    *)
-   and level_exp_var' = { le_var : var; le_offset : int }
-
-   and level_exp' = { le_const : int; le_vars : level_exp_var list }
-
-   (*
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
-   and operator' = { op_name : opname; op_params : param list }
+   and level_exp_var' = poly_level_exp_var
+   and level_exp' = level_exp_var poly_level_exp
+   and operator' = param poly_operator
 
    (*
     * A term has an operator, and a finite number of subterms
     * that may be bound.
     *)
-   and term' = { term_op : operator; term_terms : bound_term list }
-   and bound_term' = { bvars : var list; bterm : term }
+   and term' = (operator, bound_term) poly_term
+   and bound_term' = term poly_bound_term
 
    and object_id = param list
    and param' = (level_exp, param) poly_param
@@ -130,8 +155,8 @@ sig
    type seq_hyps
 
    type esequent =
-      { sequent_args : term;
-        sequent_hyps : seq_hyps;
+      { sequent_args  : term;
+        sequent_hyps  : seq_hyps;
         sequent_concl : term
       }
 (* %%MAGICEND%% *)
@@ -149,14 +174,14 @@ sig
    type match_param =
       MatchNumber of Lm_num.num * int option
     | MatchString of string
-    | MatchToken of string
+    | MatchToken of opname * string list
     | MatchVar of var
     | MatchLevel of level_exp
     | MatchUnsupported
 
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list
-    | MatchSequent of string list * match_term list * hypothesis list * term
+    | MatchSequent of string list * match_term * hypothesis list * term
 end
 
 (*

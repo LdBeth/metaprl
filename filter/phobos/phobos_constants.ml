@@ -21,7 +21,7 @@
  * Author: Adam Granicz
  * Email: granicz@cs.caltech.edu
  *)
-
+open Term_sig
 open Phobos_type
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term

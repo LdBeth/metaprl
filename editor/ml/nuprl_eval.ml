@@ -40,6 +40,7 @@ open Library
 open Nuprl5
 open Lm_printf
 open Shell_sig
+open Opname
 
 module Nuprl (Edit : ShellEditSig) = struct
    exception LibraryException of string
@@ -65,40 +66,41 @@ module Nuprl (Edit : ShellEditSig) = struct
          let _ = oref_set library (join_eval (oref_val connection) ["JPROVER"] hook) in
             at_exit library_close (* jyh: something is strange here *)
 
-(*
-   *
-   * MetaPRL cmd syntax
-   *
-   * !mp_list_root{}() returns !tok_cons
-   * !mp_list_module{}(tok_cons) returns !mp_edit{}(!cons(!token{thm:t}(); sequent); !cons ...)
-   * !mp_list_display{}(list) returns !ipair_term (name) (idform_term)
-   * !mp_lookup_proof{}(symaddr) returns !mp_prf(goal; tactic; children; extras) g and ex are msequent, ch are mp_prf
-   * !mp_thm_create{}(!msequent) returns !void()
-   * !mp_create_set{}(!tok_cons; sequent) returns !void()
-   * !mp_set_goal{}(!tok_cons; sequent) returns !void ()
-   * !mp_refine{}(symaddr; address; tactic) returns !mp_ref(goal; subgoals; extras) g, subs and ex are sequent terms
-   * !mp_undo{}(symb) returns !mp_prf(goal; tactic; children; extras)
-   * !mp_save{}(symb) returns !void()
-   *
-*)
+   (*
+    *
+    * MetaPRL cmd syntax
+    *
+    * !mp_list_root{}() returns !tok_cons
+    * !mp_list_module{}(tok_cons) returns !mp_edit{}(!cons(!token{thm:t}(); sequent); !cons ...)
+    * !mp_list_display{}(list) returns !ipair_term (name) (idform_term)
+    * !mp_lookup_proof{}(symaddr) returns !mp_prf(goal; tactic; children; extras) g and ex are msequent, ch are mp_prf
+    * !mp_thm_create{}(!msequent) returns !void()
+    * !mp_create_set{}(!tok_cons; sequent) returns !void()
+    * !mp_set_goal{}(!tok_cons; sequent) returns !void ()
+    * !mp_refine{}(symaddr; address; tactic) returns !mp_ref(goal; subgoals; extras) g, subs and ex are sequent terms
+    * !mp_undo{}(symb) returns !mp_prf(goal; tactic; children; extras)
+    * !mp_save{}(symb) returns !void()
+    *
+    *)
+   let token s = Token (mk_opname s nil_opname)
 
-   let mp_list_root_op = mk_nuprl5_op [ make_param (Token "!mp_list_root")]
-   let mp_list_display_op = mk_nuprl5_op [ make_param (Token "!mp_list_display")]
-   let mp_list_module_op = mk_nuprl5_op [ make_param (Token "!mp_list_module")]
-   let mp_create_op = mk_nuprl5_op [ make_param (Token "!mp_create")]
-   let mp_create_rw_op = mk_nuprl5_op [ make_param (Token "!mp_create_rw")]
-   let mp_create_set_op = mk_nuprl5_op [ make_param (Token "!mp_create_set")]
-   let mp_set_goal_op = mk_nuprl5_op [ make_param (Token "!mp_set_goal")]
-   let mp_set_thm_op = mk_nuprl5_op [ make_param (Token "!mp_set_thm")]
-   let mp_set_rw_op = mk_nuprl5_op [ make_param (Token "!mp_set_rw")]
-   let mp_lookup_op = mk_nuprl5_op [ make_param (Token "!mp_lookup_proof")]
-   let mp_refine_op = mk_nuprl5_op [ make_param (Token "!mp_refine")]
-   let mp_undo_op = mk_nuprl5_op [ make_param (Token "!mp_undo")]
-   let mp_save_op = mk_nuprl5_op [ make_param (Token "!mp_save")]
-   let mp_save_thy_op = mk_nuprl5_op [ make_param (Token "!mp_save_thy")]
-   let mp_node_op = mk_nuprl5_op [ make_param (Token "!mp_node")]
-   let refiner_op = mk_nuprl5_op [ make_param (Token "!refine")]
-   let mp_compile_op = mk_nuprl5_op [ make_param (Token "!mp_compile")]
+   let mp_list_root_op = mk_nuprl5_op [ make_param (token "!mp_list_root")]
+   let mp_list_display_op = mk_nuprl5_op [ make_param (token "!mp_list_display")]
+   let mp_list_module_op = mk_nuprl5_op [ make_param (token "!mp_list_module")]
+   let mp_create_op = mk_nuprl5_op [ make_param (token "!mp_create")]
+   let mp_create_rw_op = mk_nuprl5_op [ make_param (token "!mp_create_rw")]
+   let mp_create_set_op = mk_nuprl5_op [ make_param (token "!mp_create_set")]
+   let mp_set_goal_op = mk_nuprl5_op [ make_param (token "!mp_set_goal")]
+   let mp_set_thm_op = mk_nuprl5_op [ make_param (token "!mp_set_thm")]
+   let mp_set_rw_op = mk_nuprl5_op [ make_param (token "!mp_set_rw")]
+   let mp_lookup_op = mk_nuprl5_op [ make_param (token "!mp_lookup_proof")]
+   let mp_refine_op = mk_nuprl5_op [ make_param (token "!mp_refine")]
+   let mp_undo_op = mk_nuprl5_op [ make_param (token "!mp_undo")]
+   let mp_save_op = mk_nuprl5_op [ make_param (token "!mp_save")]
+   let mp_save_thy_op = mk_nuprl5_op [ make_param (token "!mp_save_thy")]
+   let mp_node_op = mk_nuprl5_op [ make_param (token "!mp_node")]
+   let refiner_op = mk_nuprl5_op [ make_param (token "!refine")]
+   let mp_compile_op = mk_nuprl5_op [ make_param (token "!mp_compile")]
 
    let refine_req_p t = opeq refiner_op (operator_of_term t)
 
@@ -111,25 +113,25 @@ module Nuprl (Edit : ShellEditSig) = struct
       -> (term_of_unbound_term goal, term_of_unbound_term tac)
        | _ -> error ["refine_args"; "op"; "unrecognized"] [] [t]
 
-   let iinf_sequent_op = mk_nuprl5_op [make_param (Token "!inf_sequent"); Basic.inil_parameter]
+   let iinf_sequent_op = mk_nuprl5_op [make_param (token "!inf_sequent"); Basic.inil_parameter]
    let iinf_sequent_term hyp term = mk_term iinf_sequent_op [(mk_bterm [] hyp); (mk_bterm [Lm_symbol.add ""] term)]
 
    let mp_prf_term g tac s e =
-      mk_term (mk_nuprl5_op [make_param (Token "!mp_prf")])
+      mk_term (mk_nuprl5_op [make_param (token "!mp_prf")])
       [(mk_bterm [] g); (mk_bterm [] tac); (mk_bterm [] s); (mk_bterm [] e)]
 
    let mp_edit_term w c a r =
-      mk_term (mk_nuprl5_op [make_param (Token "!mp_edit")])
+      mk_term (mk_nuprl5_op [make_param (token "!mp_edit")])
       [(mk_bterm [] w); (mk_bterm [] c); (mk_bterm [] a); (mk_bterm [] r)]
 
    let mp_ref_term g s e =
-      mk_term (mk_nuprl5_op [make_param (Token "!mp_ref")])
+      mk_term (mk_nuprl5_op [make_param (token "!mp_ref")])
       [(mk_bterm [] g); (mk_bterm [] s); (mk_bterm [] e)]
 
-   let inatural_cons_op = (mk_nuprl5_op [make_param (Token "!natural_cons")])
+   let inatural_cons_op = (mk_nuprl5_op [make_param (token "!natural_cons")])
    let int_list_of_term_old t =
       map_isexpr_to_list_by_op inatural_cons_op number_of_inatural_term t
-   let ipui_addr_cons_op = mk_nuprl5_op [make_param (Token "!pui_addr_cons")]
+   let ipui_addr_cons_op = mk_nuprl5_op [make_param (token "!pui_addr_cons")]
 
    let int_list_of_term t =
       map_isexpr_to_list_by_op ipui_addr_cons_op number_of_ipui_addr_term t
@@ -137,10 +139,10 @@ module Nuprl (Edit : ShellEditSig) = struct
    let string_list_of_term t =
       map_isexpr_to_list string_of_itoken_term t
 
-   let imp_msequent_op = (mk_nuprl5_op [make_param (Token "!mp_msequent")])
+   let imp_msequent_op = (mk_nuprl5_op [make_param (token "!mp_msequent")])
    let imp_msequent_term a g = mk_term imp_msequent_op [(mk_bterm [] a); (mk_bterm [] g)]
-   let imcons_op = (mk_nuprl5_op [make_param (Token "!mcons")])
-   let ianno_arg_cons_op = (mk_nuprl5_op [make_param (Token "!anno_arg_cons")])
+   let imcons_op = (mk_nuprl5_op [make_param (token "!mcons")])
+   let ianno_arg_cons_op = (mk_nuprl5_op [make_param (token "!anno_arg_cons")])
 
    let msequent_to_term mseq =
       let (goal, hyps) = dest_msequent mseq
@@ -168,9 +170,9 @@ module Nuprl (Edit : ShellEditSig) = struct
                    ("term_to_symaddr", (Refiner.Refiner.RefineError.TermMatchError
 					(t, "malformed msequent"))))
 
-   let ilist_op = (mk_nuprl5_op [make_param (Token "!list")])
+   let ilist_op = (mk_nuprl5_op [make_param (token "!list")])
 
-   let ipair_op = (mk_nuprl5_op [make_param (Token "!pair")])
+   let ipair_op = (mk_nuprl5_op [make_param (token "!pair")])
    let ipair_term h t = mk_term ipair_op [(mk_bterm [] h); (mk_bterm [] t)]
 
    let list_of_ints length =
@@ -189,23 +191,23 @@ module Nuprl (Edit : ShellEditSig) = struct
                  f (union l3 (tl l1)) (union l3 l2) in
          f [name] [name]
 
-   let idform_op = mk_nuprl5_op [make_param (Token "!dform")]
+   let idform_op = mk_nuprl5_op [make_param (token "!dform")]
    let idform_term attr lhs rhs =
       mk_term idform_op [mk_bterm [] attr; mk_bterm [] lhs; mk_bterm [] rhs]
 
-   let imp_prec_pair_op = (mk_nuprl5_op [make_param (Token "!mp_prec_pair")])
+   let imp_prec_pair_op = (mk_nuprl5_op [make_param (token "!mp_prec_pair")])
    let imp_prec_pair_term lhs rhs =
       mk_term imp_prec_pair_op [mk_bterm [] lhs; mk_bterm [] rhs]
-   let imp_prec_rel_op r = (mk_nuprl5_op [make_param (Token "!mp_prec_rel"); make_param (Token r)])
+   let imp_prec_rel_op r = (mk_nuprl5_op [make_param (token "!mp_prec_rel"); make_param (token r)])
    let imp_prec_rel_term r lhs rhs =
       mk_term (imp_prec_rel_op r) [mk_bterm [] lhs; mk_bterm [] rhs]
 
-   let idform_attr_op = (mk_nuprl5_op [make_param (Token "!dform_attr_cons")])
-   let imode_cons_op = (mk_nuprl5_op [make_param (Token "!mode_cons")])
-   let imp_prec_cons_op = (mk_nuprl5_op [make_param (Token "!mp_prec_cons")])
-   let imp_prec_rel_cons_op = (mk_nuprl5_op [make_param (Token "!mp_prec_rel_cons")])
+   let idform_attr_op = (mk_nuprl5_op [make_param (token "!dform_attr_cons")])
+   let imode_cons_op = (mk_nuprl5_op [make_param (token "!mode_cons")])
+   let imp_prec_cons_op = (mk_nuprl5_op [make_param (token "!mp_prec_cons")])
+   let imp_prec_rel_cons_op = (mk_nuprl5_op [make_param (token "!mp_prec_rel_cons")])
 
-   let ifail_parameter = make_param (Token "!fail")
+   let ifail_parameter = make_param (token "!fail")
    let ifail_op = mk_nuprl5_op [ifail_parameter]
    let ifail_term t = mk_term ifail_op [mk_bterm [] t]
 

@@ -59,8 +59,6 @@ val make_groupdsc_opts : unit -> (unit -> string) * (unit -> string)
  *)
 val add_binding : term prl_binding -> MLast.expr
 val get_bindings : unit -> (string * term prl_binding) list
-(* Do not convert bound contexts *)
-val get_unparsed_bindings : unit -> (string * term prl_binding) list
 
 val no_resources : (MLast.expr, term) resource_def
 

@@ -58,13 +58,8 @@ let _ =
    show_loading "Loading Nuprl_font%t"
 
 (************************************************************************
- * TERMS                                                                *
+ * INTERNAL TERMS                                                       *
  ************************************************************************)
-
-(*
- * Display control.
- *)
-declare pagebreak
 
 (*
  * Fonts.
@@ -76,216 +71,28 @@ declare pagebreak
  *    bf{"["}
  *    bf_begin "[" bf_end
  *)
-declare info[name:s]
-declare info{'t}
-declare info_begin
-declare info_end
-declare keyword[name:s]
-declare keyword{'t}
-declare keyword_begin
-declare keyword_end
-declare bf[name:s]
-declare bf{'t}
-declare bf_begin
-declare bf_end
-declare monospaced[name:s]
-declare monospaced{'t}
-declare monospaced_begin
-declare monospaced_end
-declare i[name:s]
-declare i{'t}
-declare it[name:s]
-declare it{'t}
-declare it_begin
-declare it_end
-declare math_it{'t}
-declare math_it[text:s]
-declare html_sym[name:s]
-declare html_uni[unicode:n]
-declare em[s:s]
-declare em{'s}
-declare em_begin
-declare em_end
-declare emph{'t}
-declare tt[name:s]
-declare tt{'t}
-declare tt_begin
-declare tt_end
-declare url[url:s]
-declare sub[name:s]
-declare sub{'t}
-declare sub[i:l]
-declare sub_begin
-declare sub_end
-declare sup[name:s]
-declare sup{'t}
-declare sup_begin
-declare sup_end
-declare small[name:s]
-declare small{'t}
-declare small_begin
-declare small_end
-declare esquash{'t}
-declare text{'t}
-declare atomic[text:s]
-
-(*
- * HTML control.
- *)
-declare html[content:s]
-declare cd_begin[command:s]
-declare cd_end
-declare html_anchor[name:s]{'body}
-declare html_head[l:n]{'body}
-
-(* Displays *)
-declare mathbbA
-declare mathbbB
-declare mathbbC
-declare mathbbD
-declare mathbbE
-declare mathbbF
-declare mathbbG
-declare mathbbH
-declare mathbbI
-declare mathbbJ
-declare mathbbK
-declare mathbbL
-declare mathbbM
-declare mathbbN
-declare mathbbO
-declare mathbbP
-declare mathbbQ
-declare mathbbR
-declare mathbbS
-declare mathbbT
-declare mathbbU
-declare mathbbV
-declare mathbbW
-declare mathbbX
-declare mathbbY
-declare mathbbZ
-
-declare shortLeftarrow
-declare Leftarrow
-declare Middlearrow
-declare shortRightarrow
-declare Rightarrow
-declare Leftrightarrow
-declare ulcorner
-declare urcorner
-declare mid
-declare vdash
-declare integral
-declare cdot
-declare downarrow
-declare uparrow
-declare alpha
-declare beta
-declare pi
-declare lambda
-declare gamma
-declare delta
-declare rho
-declare sigma
-declare epsilon
-declare eta
-declare theta
-declare iota
-declare kappa
-declare mu
-declare nu
-declare omicron
-declare tau
-declare phi
-declare xi
-declare omega
-
-declare wedge
-declare tneg
-declare member
-declare plusminus
-declare oplus
-declare infty
-declare partial
-declare cap
-declare cup
-declare forall
-declare "exists"
-declare oinfty
-declare shortleftrightarrow
-declare shortleftarrow
-declare shortrightarrow
-declare longleftrightarrow
-declare longleftarrow
-declare longrightarrow
-declare neq
-declare sim
-declare cong
-declare le
-declare ge
-declare equiv
-declare vee
-declare perp
-declare esq_l
-declare esq_r
-declare leftarrow
-declare middlearrow
-declare rightarrow
-declare vartriangleleft
-declare vartriangleright
-declare Gamma
-declare Delta
-declare Lambda
-declare Pi
-declare Sigma
-declare Omega
-declare times
-declare "div"
-declare circ
-declare supplus
-declare supminus
-declare supcirc
-declare "subset"
-declare supset
-declare sqsubset
-declare sqsupset
-declare subseteq
-declare supseteq
-declare sqsubseteq
-declare sqsupseteq
-declare subzero
-declare subone
-declare subtwo
-declare subthree
-declare suba
-declare subb
-declare subc
-declare subd
-declare sube
-declare subf
-declare subg
-declare subh
-declare subi
-declare subj
-declare subk
-declare subl
-declare subm
-declare subn
-declare subo
-declare subp
-declare subq
-declare subr
-declare subs
-declare subt
-declare subu
-declare subv
-declare subw
-declare subx
-declare suby
-declare subz
-
-declare math_div
+declare info{'t : Dform} : Dform
+declare keyword{'t : Dform} : Dform
+declare keyword_begin : Dform
+declare keyword_end : Dform
+declare bf_begin : Dform
+declare bf_end : Dform
+declare it_begin : Dform
+declare it_end : Dform
+declare html_sym[name:s] : Dform
+declare html_uni[unicode:n] : Dform
+declare em_begin : Dform
+declare em_end : Dform
+declare tt_begin : Dform
+declare tt_end : Dform
+declare sub_begin : Dform
+declare sub_end : Dform
+declare sup_begin : Dform
+declare sup_end : Dform
+declare small_begin : Dform
+declare small_end : Dform
+declare esq_l : Dform
+declare esq_r : Dform
 
 (************************************************************************
  * DISPLAY CONTROL                                                      *
@@ -566,11 +373,6 @@ dform esquash_df : esquash{'t} =
  * TEX HELPERS                                                          *
  ************************************************************************)
 
-declare ensuremath[name:s]
-declare ensuremath{'t}
-declare mathBB[name:s]
-declare mathmacro[name:s]
-
 dform ensuremath_df0 : except_mode[tex] :: ensuremath{'t} =
    't
 
@@ -580,8 +382,8 @@ dform ensuremath_df1 : ensuremath[text:s] =
 dform ensuremath_df2 : mode[tex] :: ensuremath{'t} =
    tzone["ensuremath"] slot{'t} ezone
 
-dform ensuremath_cons_df : mode[tex] :: cons{ensuremath{'t1}; ensuremath{'t2}} =
-   ensuremath{cons{'t1;'t2}}
+dform ensuremath_xcons_df : mode[tex] :: xcons{ensuremath{'t1}; ensuremath{'t2}} =
+   ensuremath{xcons{'t1;'t2}}
 
 dform mathBB_df : mode[tex] :: mathBB[text:s] =
    izone `"\\mathbb{" ezone slot[text:s] izone `"}" ezone

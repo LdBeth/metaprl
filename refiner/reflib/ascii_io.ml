@@ -54,7 +54,6 @@ let eflush  = Lm_printf.eflush
  * _do not delete_.
  * %%MAGICBEGIN%%
  *)
-
 module MakeAsciiIO (TM: TermModuleHashSig) =
 struct
    open TM
@@ -109,8 +108,14 @@ struct
    let fail s =
       raise (Invalid_argument ("ASCII IO: invalid entry encountered by " ^ s ))
 
+   let fail2 s key =
+      raise (Invalid_argument ("ASCII IO: invalid entry encountered by " ^ s ^ " key=" ^ key))
+
    let hash_add_new tbl key data =
-      if Hashtbl.mem tbl key then fail "hash_add_new" else Hashtbl.add tbl key data
+      if Hashtbl.mem tbl key then
+         fail2 "hash_add_new" key
+      else
+         Hashtbl.add tbl key data
 
    let add_term r = function
       (_, name, [op::bterms]) ->
@@ -119,7 +124,7 @@ struct
          let t =
             if op = var_opname && btrms <> [] then (* XXX HACK: Version <= 1.0.7 compatiility *)
                let t = retrieve (lookup (Term { op_name = op; op_params = params; term_terms = [] })) in
-               match dest_params (dest_op (dest_term t).term_op).TM.TermType.op_params with
+               match dest_params (dest_op (dest_term t).term_op).Term_sig.op_params with
                   [Var v] ->
                      let dest bt =
                         if bt.bvars = [] then bt.bterm else
@@ -243,7 +248,7 @@ struct
     | (_, name, [["String"; s]]) ->
          hash_add_new r.io_params name (constr_param (String s))
     | (_, name, [["Token"; s]]) ->
-         hash_add_new r.io_params name (constr_param (Token s))
+         hash_add_new r.io_params name (constr_param (Token (Hashtbl.find r.io_opnames s)))
     | (_, name, [["Var"; s]]) ->
          hash_add_new r.io_params name (constr_param (Var (Lm_symbol.add s)))
     | (_, name, [["Quote"]]) ->
@@ -263,7 +268,7 @@ struct
          fail "add_param"
 
    let rec add_items_aux r = function
-      (long,_,_) as item :: items ->
+      (long, _, _) as item :: items ->
          add_items_aux r items;
          begin match long.[0] with
             'T'|'t' -> ignore (add_term r item)
@@ -281,7 +286,7 @@ struct
     | [] -> ()
 
    let rec add_items_debug r = function
-      (long,short,rest) as item :: items ->
+      (long, short, rest) as item :: items ->
          add_items_debug r items;
          eprintf "%s %s %s%t" long short (String.concat "\\\\ " (List.map (String.concat " ") rest)) eflush;
          begin try
@@ -303,8 +308,12 @@ struct
     | [] -> ()
 
    let add_items r items =
-      if !debug_ascii_io then add_items_debug r items
-      else try add_items_aux r items with Not_found -> fail "add_items"
+      if !debug_ascii_io then
+         add_items_debug r items
+      else
+         try add_items_aux r items with
+            Not_found ->
+               fail "add_items"
 
    let get_term t =
       try begin match !t with
@@ -603,7 +612,7 @@ struct
       else
          let t' = dest_term t in
          let (oper_name, (op, params)) = out_op ctrl data t'.term_op in
-         let btrms = List.map (out_bterm ctrl data) t'.TermType.term_terms in
+         let btrms = List.map (out_bterm ctrl data) t'.Term_sig.term_terms in
          let ind = lookup ( Term { op_name = op;
                                    op_params = params;
                                    term_terms = List.map snd btrms } ) in
@@ -657,8 +666,8 @@ struct
 
    and out_op ctrl data op =
       let op' = dest_op op in
-      let (name_name, opname) = out_name ctrl data op'.TermType.op_name in
-      let params = List.map (out_param ctrl data) op'.TermType.op_params in
+      let (name_name, opname) = out_name ctrl data op'.Term_sig.op_name in
+      let params = List.map (out_param ctrl data) op'.Term_sig.op_params in
       let op'' = (opname,List.map snd params) in
       let i_data = [name_name :: List.map fst params] in
       try
@@ -666,7 +675,7 @@ struct
          check_old data name i_data;
          (name, op'')
       with Not_found ->
-         let (lname, name) = ctrl.out_name_op opname op'.TermType.op_params in
+         let (lname, name) = ctrl.out_name_op opname op'.Term_sig.op_params in
          let name = rename name data in
          Hashtbl.add data.out_ops op'' name;
          data.out_items <-
@@ -675,9 +684,9 @@ struct
 
    and out_bterm ctrl data bt =
       let bt' = dest_bterm bt in
-      let (term_name, term_ind) = out_term ctrl data bt'.TermType.bterm in
-      let bt'' = { bvars = bt'.TermType.bvars; bterm = term_ind } in
-      let i_data = [term_name :: List.map string_of_symbol bt'.TermType.bvars] in
+      let (term_name, term_ind) = out_term ctrl data bt'.Term_sig.bterm in
+      let bt'' = { bvars = bt'.Term_sig.bvars; bterm = term_ind } in
+      let i_data = [term_name :: List.map string_of_symbol bt'.Term_sig.bvars] in
       try
          let name = HashBTerm.find data.out_bterms bt'' in
          check_old data name i_data;
@@ -715,21 +724,21 @@ struct
 
    and out_param ctrl data param =
       let param' = constr_param (dest_param param) in
-      let i_data = [
-         match dest_param param with
-            Number n -> ["Number"; Lm_num.string_of_num n]
-          | String s -> ["String"; s]
-          | Token s -> ["Token"; s]
-          | Var s -> ["Var"; string_of_symbol s]
-          | Quote -> ["Quote"]
+      let i_data =
+         [match dest_param param with
+            Number n  -> ["Number"; Lm_num.string_of_num n]
+          | String s  -> ["String"; s]
+          | Token op  -> ["Token"; fst (out_name ctrl data op)]
+          | Var s     -> ["Var"; string_of_symbol s]
+          | Quote     -> ["Quote"]
           | MNumber s -> ["MNumber"; string_of_symbol s]
           | MString s -> ["MString"; string_of_symbol s]
-          | MToken s -> ["MToken"; string_of_symbol s]
+          | MToken s  -> ["MToken"; string_of_symbol s]
           | MLevel le ->
                let le' = dest_level le in
                "MLevel" :: (string_of_int le'.le_const) :: (map_level_vars le'.le_vars)
-          | _ -> fail "out_param"
-      ] in try
+          | _ -> fail "out_param"]
+      in try
          let name = Hashtbl.find data.out_params param' in
          check_old data name i_data;
          name, param'

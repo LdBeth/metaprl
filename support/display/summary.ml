@@ -80,6 +80,7 @@ open Lm_debug
 open Term_addr_sig
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
+open Tactic_type
 
 (*
  * Show that the file is loading.
@@ -91,7 +92,7 @@ let _ =
  * HTML                                                                 *
  ************************************************************************)
 
-declare package_link[name:s]
+declare package_link[name:s] : Dform
 
 (************************************************************************
  * TERMS                                                                *
@@ -106,8 +107,8 @@ doc <:doc<
    implementation is wrapped with @tt{implementation}.
    @end[doc]
 >>
-declare "interface"{'intf}
-declare "implementation"{'impl}
+declare "interface"{'intf} : Dform
+declare "implementation"{'impl} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -116,7 +117,7 @@ doc <:doc<
    comments).
    @end[doc]
 >>
-declare comment{'t}
+declare comment{'t : Dform} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -137,12 +138,18 @@ doc <:doc<
    expands to and @it[res] lists the resource annotations.
    @end[doc]
 >>
-declare "parent"{'path; 'resources}
-declare "opname"[name:s]{'term}
-declare "definition"[name:s]{'term; 'definition; 'res}
+declare "parent"{'path : Dform; 'resources : Dform} : Dform
+declare "declare_kind"{'term : Dform; 'parent : Dform} : Dform
+declare "declare_type"{'term : Dform} : Dform
+declare "declare_term"{'term : Dform} : Dform
+declare "define_term"{'term : Dform; 'def : Dform} : Dform
+declare "ty_term"{'term : Dform; 'opname : Dform; 'params : Dform; 'bterms : Dform; 'ty : Dform} : Dform
+declare "term_def"[name:s]{'def : Dform; 'res : Dform} : Dform
+declare "parent_kind"[name:s] : Dform
+declare "parent_kind"[name:s]{'parent : Dform} : Dform
 
 doc <:doc< @docoff >>
-declare "parent"[name:s]
+declare "parent"[name:s] : Dform
 
 doc <:doc<
    @begin[doc]
@@ -154,8 +161,8 @@ doc <:doc<
    under which the rewrite is valid.  The @it{name} is the name of the rewrite.
    @end[doc]
 >>
-declare "rewrite"[name:s]{'redex; 'contractum; 'proof; 'res}
-declare "cond_rewrite"[name:s]{'params; 'args; 'redex; 'contractum; 'proof; 'res}
+declare "rewrite"[name:s]{'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
+declare "cond_rewrite"[name:s]{'params : Dform; 'args : Dform; 'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -165,7 +172,7 @@ doc <:doc<
    of the rule and the @it[res] list of resource annotations.
    @end[doc]
 >>
-declare "rule"[name:s]{'params; 'stmt; 'proof; 'res}
+declare "rule"[name:s]{'params : Dform; 'stmt : Dform; 'proof : Dform; 'res : Dform} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -181,12 +188,12 @@ doc <:doc<
    to improve and the expression to improve the resource with.
    @end[doc]
 >>
-declare "resource"[name:s]{'expr}
-declare "resource_defs"[name:s]{'res}
-declare "resource"{'inp; 'outp; 'expr}
-declare "improve"[name:s]{'expr}
+declare "resource"[name:s]{'expr : Dform} : Dform
+declare "resource_defs"[name:s]{'res : Dform} : Dform
+declare "resource"{'inp : Dform; 'outp : Dform; 'expr : Dform} : Dform
+declare "improve"[name:s]{'expr : Dform} : Dform
 doc <:doc< @docoff >>
-declare "resource_defs"[start:n, finish:n, name:s]{'res}
+declare "resource_defs"[start:n, finish:n, name:s]{'res : Dform} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -198,17 +205,17 @@ doc <:doc<
    term that represents the OCaml code.
    @end[doc]
 >>
-declare "infix"[name:s]
-declare "suffix"[name:s]
-declare "summary_item"{'term}
+declare "infix"[name:s] : Dform
+declare "suffix"[name:s] : Dform
+declare "summary_item"{'term : Dform} : Dform
 doc <:doc< @docoff >>
 
-declare "magic_block"[name:s]{'items}
-declare "id"[n:n]
-declare "module"[name:s]{'info}
-declare "mlterm"{'term; 'cons; 'oexpr}
-declare "condition"{'term; 'cons; 'oexpr}
-declare "mlrewrite"[name:s]{'params; 'redex; 'body; 'resources}
+declare "magic_block"[name:s]{'items : Dform} : Dform
+declare "id"[n:n] : Dform
+declare "module"[name:s]{'info : Dform} : Dform
+declare "mlterm"{'term : Dform; 'cons : Dform; 'oexpr : Dform} : Dform
+declare "condition"{'term : Dform; 'cons : Dform; 'oexpr : Dform} : Dform
+declare "mlrewrite"[name:s]{'params : Dform; 'redex : Dform; 'body : Dform; 'resources : Dform} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -220,22 +227,22 @@ doc <:doc<
    the term describing the displayed definition.
    @end[doc]
 >>
-declare "dform"[name:s]{'modes; 'redex; 'def}
-declare "prec"[name:s]
-declare "prec_rel"[op:s, left:s, right:s]
-declare "inherit_df"
-declare "prec_df"[name:s]
-declare "parens_df"
-declare "mode_df"[mode:s]
-declare "except_mode_df"[mode:s]
+declare "dform"[name:s]{'modes : Dform; 'redex : Dform; 'def : Dform} : Dform
+declare "prec"[name:s] : Dform
+declare "prec_rel"[op:s, left:s, right:s] : Dform
+declare "inherit_df" : Dform
+declare "prec_df"[name:s] : Dform
+declare "parens_df" : Dform
+declare "mode_df"[mode:s] : Dform
+declare "except_mode_df"[mode:s] : Dform
 doc <:doc< @docoff >>
 
-declare "df_none"
-declare "df_term"{'t}
-declare "df_ml"[printer:s, buffer:s]{'contracta; 'code}
+declare "df_none" : Dform
+declare "df_term"{'t} : Dform
+declare "df_ml"[printer:s, buffer:s]{'contracta : Dform; 'code : Dform} : Dform
 
-declare "none"
-declare "some"{'t}
+declare "none" : Dform
+declare "some"{'t} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -249,34 +256,38 @@ doc <:doc<
    @tt{meta_labeled} term is used to add a label to a meta-term.
    @end[doc]
 >>
-declare "meta_theorem"{'A}
-declare "meta_implies"{'A; 'B}
-declare "meta_function"{'arg; 'A; 'B}
-declare "meta_iff"{'A; 'B}
-declare "meta_labeled"[label:s]{'meta}
+declare "meta_theorem"{'A : Dform} : Dform
+declare "meta_implies"{'A : Dform; 'B : Dform} : Dform
+declare "meta_function"{'arg : Dform; 'A : Dform; 'B : Dform} : Dform
+declare "meta_iff"{'A : Dform; 'B : Dform} : Dform
+declare "meta_labeled"[label:s]{'meta : Dform} : Dform
 doc <:doc< @docoff >>
 
-declare "int_param"[name:v]
-declare "addr_param"[name:v]
-declare "term_param"{'t}
+declare "int_param"[name:v] : Dform
+declare "addr_param"[name:v] : Dform
+declare "term_param"{'t : Dform} : Dform
 
-declare addr_subterm[i:n]
-declare addr_arg
-declare addr_clause[i:n]
+declare addr_subterm[i:n] : Dform
+declare addr_arg : Dform
+declare addr_clause[i:n] : Dform
 
 (* Arguments *)
-declare int_arg[i:n]
-declare term_arg{'t}
-declare type_arg{'t}
-declare addr_arg{'t}
-declare bool_arg[s:t]
-declare string_arg[s:s]
-declare term_list_arg{'t}
-declare arglist{'t}
+declare int_arg[i:n] : Dform
+declare term_arg{'t : Dform}      : Dform
+declare type_arg{'t : Dform}      : Dform
+declare addr_arg{'t : Dform}      : Dform
+declare string_arg[s:s]           : Dform
+declare term_list_arg{'t : Dform} : Dform
+declare arglist{'t : Dform}       : Dform
+
+declare typeclass Bool -> Token
+declare "true"  : Bool
+declare "false" : Bool
+declare "bool_arg"[s:Bool] : Dform
 
 (* Proofs *)
 
-declare "href"[command:s]{'t}
+declare "href"[command:s]{'t} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -291,29 +302,23 @@ doc <:doc<
    or if it has not been checked; and it is @it{complete} if it has been checked.
    @end[doc]
 >>
-declare "goal"{'status; 'label; 'assums; 'goal}
-declare status_bad
-declare status_partial
-declare status_asserted
-declare status_complete
-declare status_primitive{'extract}
-declare status_interactive[rules:n,nodes:n]{'status}
-declare "status"{'sl}
+declare "goal"{'status : Dform; 'label : Dform; 'assums : Dform; 'goal : Dform} : Dform
+declare "status"{'sl : Dform} : Dform
 doc <:doc< @docoff >>
 
-declare "goal_status"{'sl}
-declare "goal_label"[s:s]
-declare "goal_list"{'goals}
-declare "subgoals"{'subgoals; 'extras}
-declare "subgoals"{'number; 'subgoals; 'extras}
-declare "rule_box"[text:s]
-declare "rule_box"{'text}
-declare "rule_box"[text:s]{'text}
-declare "proof"{'main; 'goal; 'status; 'text; 'subgoals}
-declare "tactic_arg"[label:s]{'goal; 'attrs; 'parents}
+declare "goal_status"{'sl : Dform} : Dform
+declare "goal_label"[s:s] : Dform
+declare "goal_list"{'goals : Dform} : Dform
+declare "subgoals"{'subgoals : Dform; 'extras : Dform} : Dform
+declare "subgoals"{'number : Dform; 'subgoals : Dform; 'extras : Dform} : Dform
+declare "rule_box"[text:s] : Dform
+declare "rule_box"{'text : Dform} : Dform
+declare "rule_box"[text:s]{'text : Dform} : Dform
+declare "proof"{'main : Dform; 'goal : Dform; 'status : Dform; 'text : Dform; 'subgoals : Dform} : Dform
+declare "tactic_arg"[label:s]{'goal : Dform; 'attrs : Dform; 'parents : Dform} : Dform
 
 (* Location *)
-declare "location"[start:n, finish:n]{'body}
+declare "location"[start:n, finish:n]{'body : Dform} : Dform
 
 (************************************************************************
  * DISPLAY FORMS                                                        *
@@ -322,7 +327,8 @@ declare "location"[start:n, finish:n]{'body}
 (*
  * Names of items.
  *)
-declare opname_name[name:s]
+(* XXX: BUG: opname_name is no longer used; but it should be *)
+declare opname_name[name:s] : Dform
 
 dform opname_name_df2 : mode[tex] :: opname_name[name:s] =
    izone `"\\labelterm{" slot[name:s] `"}{" ezone slot[name:s] izone `"}" ezone
@@ -330,7 +336,7 @@ dform opname_name_df2 : mode[tex] :: opname_name[name:s] =
 dform opname_name_df1 : except_mode[tex] :: opname_name[name:s] =
    slot[name:s]
 
-declare rule_name[name:s]
+declare rule_name[name:s] : Dform
 
 dform rule_name_df1 : except_mode[tex] :: except_mode[html] :: rule_name[name:s] =
    slot[name:s]
@@ -341,7 +347,7 @@ dform rule_name_df2 : mode[tex] :: rule_name[name:s] =
 dform rule_name_df3 : mode[html] :: rule_name[name:s] =
    html["<span class=\"rule_name\">"] cd_begin[name] slot[name:s] cd_end html["</span>"]
 
-declare rewrite_name[name:s]
+declare rewrite_name[name:s] : Dform
 
 dform rewrite_name_df2 : mode[tex] :: rewrite_name[name:s] =
    izone `"\\labelrewrite{" slot[name:s] `"}{" ezone slot[name:s] izone `"}" ezone
@@ -349,7 +355,7 @@ dform rewrite_name_df2 : mode[tex] :: rewrite_name[name:s] =
 dform rewrite_name_df1 : except_mode[tex] :: rewrite_name[name:s] =
    rule_name[name:s]
 
-declare resource_name[name:s]
+declare resource_name[name:s] : Dform
 
 dform resource_name_df2 : mode[tex] :: resource_name[name:s] =
    izone `"\\labelresource{" slot[name:s] `"}{" ezone slot[name:s] izone `"}" ezone
@@ -360,37 +366,37 @@ dform resource_name_df1 : except_mode[tex] :: resource_name[name:s] =
 (*
  * Modes.
  *)
-declare dform_modes{'l}
+declare dform_modes{'l : Dform} : Dform
 
-dform dform_modes_df1 : dform_modes{cons{'hd; 'tl}} =
+dform dform_modes_df1 : dform_modes{xcons{'hd; 'tl}} =
    slot{'hd} " " keyword["::"] " " dform_modes{'tl}
 
-dform dform_modes_df2 : dform_modes{nil} =
+dform dform_modes_df2 : dform_modes{xnil} =
    `""
 
 (*
  * Print term in raw format.
  *)
-declare raw_list{'l}
+declare raw_list{'l : Dform} : Dform
 
-dform raw_list_df1 : raw_list{cons{'hd; cons{'tl1; 'tl2}}} =
-   slot["raw"]{'hd} " " raw_list{cons{'tl1; 'tl2}}
+dform raw_list_df1 : raw_list{xcons{'hd; xcons{'tl1; 'tl2}}} =
+   slot["raw"]{'hd} " " raw_list{xcons{'tl1; 'tl2}}
 
-dform raw_list_df2 : raw_list{cons{'hd; nil}} =
+dform raw_list_df2 : raw_list{xcons{'hd; xnil}} =
    slot["raw"]{'hd}
 
-dform raw_list_df2 : raw_list{nil} =
+dform raw_list_df2 : raw_list{xnil} =
    `""
 
 (*
  * Interface just declares it.
  *)
-declare lines{'e}
+declare lines{'e : Dform} : Dform
 
-dform lines_nil_df : lines{nil} =
+dform lines_xnil_df : lines{xnil} =
    `""
 
-dform lines_cons_df : lines{cons{'e1; 'e2}} =
+dform lines_cons_df : lines{xcons{'e1; 'e2}} =
    newline szone{'e1} lines{'e2}
 
 dform interface_df : "interface"{'body} =
@@ -405,25 +411,25 @@ dform location_df : "location"[start:n, finish:n]{'body} =
 (*
  * Resource annotations
  *)
-declare res_def_list{'res}
-declare resources{'resources}
+declare res_def_list{'res : Dform} : Dform
+declare resources{'resources : Dform} : Dform
 
-dform resources_nil_df : resources{nil} =
+dform resources_xnil_df : resources{xnil} =
    " "
 
-dform resources_cons_df : resources{cons{'h; 't}} =
-   hspace szone keyword["{| "] pushm res_def_list{cons{'h; 't}} popm keyword[" |} "] ezone
+dform resources_cons_df : resources{xcons{'h; 't}} =
+   hspace szone keyword["{| "] pushm res_def_list{xcons{'h; 't}} popm keyword[" |} "] ezone
 
-dform res_def_list_df1 : res_def_list{cons{'a; nil}} =
+dform res_def_list_df1 : res_def_list{xcons{'a; xnil}} =
    'a
 
-dform res_def_list_df2 : res_def_list{cons{'a; 'b}} =
+dform res_def_list_df2 : res_def_list{xcons{'a; 'b}} =
    'a keyword[";"] hspace res_def_list{'b}
 
 dform resource_defs_df1 : resource_defs[name:s]{'args} =
    slot[name:s] " " 'args
 
-dform resource_defs_df1 : resource_defs[name:s]{nil} =
+dform resource_defs_df1 : resource_defs[name:s]{xnil} =
    slot[name:s]
 
 dform resource_defs_dfs : resource_defs[start:n, finish:n, name:s]{'args} =
@@ -475,7 +481,7 @@ dform rule_df : "rule"[name:s]{'params; 'stmt; 'proof; 'res} =
    ensuremath{'proof} info[" rule"] " " szone rule_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] ezone hspace ensuremath{'stmt}
    ezone popm
 
-declare displayed_as{'t}
+declare displayed_as{'t : Dform} : Dform
 
 dform displayed_as_df : except_mode[tex] :: displayed_as{'t} =
    szone info["(displayed as"] hspace ensuremath{slot["decl"]{'t}} info[")"] ezone
@@ -483,17 +489,50 @@ dform displayed_as_df : except_mode[tex] :: displayed_as{'t} =
 dform displayed_as_df : mode[tex] :: displayed_as{'t} =
    szone info["(displayed as"] hspace `"``" ensuremath{slot["decl"]{'t}} `"''" info[")"] ezone
 
-dform opname_df : "opname"[name:s]{'term} =
+dform declare_kind_df : "declare_kind"{'term; 'parent} =
    pushm[4] szone
-   info["declare"] hspace szone tt{slot["raw"]{'term}} hspace displayed_as{'term} ezone
+   info["declare class"] " " szone tt{slot["raw"]{'term}} hspace displayed_as{'term} ezone
    ezone popm
 
-dform definition_df : "definition"[name:s]{'term; 'definition; 'res} =
-   szone pushm[4]
-   info["define"] " " szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
-   szone pushm[4]
-   tt{slot["raw"]{'term}} space displayed_as{'term} `" " ensuremath{longleftrightarrow} hspace ensuremath{slot{'definition}}
+dform declare_type_df : "declare_type"{'info} =
+   pushm[4] szone
+   info["declare type"] " " 'info
+   ezone popm
+
+dform declare_term_df : "declare_term"{'info} =
+   pushm[4] szone
+   info["declare"] " " 'info
+   ezone popm
+
+dform define_term_df : "define_term"{'info; term_def[name:s]{'contractum; 'res}} =
+   pushm[4] szone
+      info["define"] " " szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
+      szone pushm[4]
+         'info `" " ensuremath{longleftrightarrow}
+         hspace ensuremath{slot{'contractum}}
+      popm ezone
    popm ezone
+
+declare ty_constraint{'ty : Dform} : Dform
+
+dform ty_con_df : ty_constraint{'ty} =
+   `" :" space slot{'ty}
+
+dform ty_con_seq_df : ty_constraint{ty_sequent{'ty_hyp; 'ty_concl; 'ty_seq}} =
+  hspace szone pushm
+  szone pushm[3] `"{ " slot{'ty_hyp} `" " ensuremath{vdash} hspace slot{'ty_concl} popm hspace `"}" ezone
+  `" :" hspace slot{'ty_seq} popm ezone
+
+dform ty_con_term_df : ty_constraint{Term} = `""
+
+dform class_term_df : "ty_term"{'term; 'opname; 'params; 'bterms; 'ty} =
+   pushm[4] szone
+   szone tt{slot["raw"]{'term}} ty_constraint{'ty} ezone hspace displayed_as{'term}
+   popm ezone
+
+dform class_term_df : "ty_term"{'term; 'opname; 'params; 'bterms; ty_sequent{'ty_hyp; 'ty_concl; 'ty_seq}} =
+   info["sequent"] " " pushm[4] szone
+   szone tt{slot["raw"]{'term}} ty_constraint{ty_sequent{'ty_hyp; 'ty_concl; 'ty_seq}} ezone hspace displayed_as{'term}
    popm ezone
 
 dform mlterm_df : "mlterm"{'term; 'cons; 'oexpr} =
@@ -515,9 +554,9 @@ dform mlrewrite_df1 : "mlrewrite"[name:s]{'params; 'redex; some{'body}; 'res} =
 (*
  * Parent path is separated by dots.
  *)
-declare begin_cd{'t}
-declare path{'t}
-declare cdinternal{'t}
+declare begin_cd{'t : Dform} : Dform
+declare path{'t : Dform} : Dform
+declare cdinternal{'t : Dform} : Dform
 
 dform begin_cd_df : except_mode[html] :: begin_cd{'path} =
    `""
@@ -528,25 +567,25 @@ dform begin_cd_df1 : mode[java] :: begin_cd{'path} =
 dform begin_cd_df2 : mode[html] :: begin_cd{'path} =
    izone `"<a href=\"../../" cdinternal{'path} `"/\">" ezone
 
-dform cd_internal_df1 : cdinternal{cons{."parent"[name:s]; cons{'n2; 'n3}}} =
-   slot[name:s] `"/" cdinternal{cons{'n2; 'n3}}
+dform cd_internal_df1 : cdinternal{xcons{."parent"[name:s]; xcons{'n2; 'n3}}} =
+   slot[name:s] `"/" cdinternal{xcons{'n2; 'n3}}
 
-dform cd_internal_df2 : mode[html] :: cdinternal{cons{."parent"[name:s]; nil}} =
+dform cd_internal_df2 : mode[html] :: cdinternal{xcons{."parent"[name:s]; xnil}} =
    slot[name:s]
 
-dform cd_internal_df2 : except_mode[html] :: cdinternal{cons{."parent"[name:s]; nil}} =
+dform cd_internal_df2 : except_mode[html] :: cdinternal{xcons{."parent"[name:s]; xnil}} =
    hrefmodule[name:s]
 
-dform cd_internal_df3 : cdinternal{nil} = `""
+dform cd_internal_df3 : cdinternal{xnil} = `""
 
-dform path_parent_nil_df2 : mode[tex] :: path{cons{."parent"[name:s]; nil}} =
+dform path_parent_xnil_df2 : mode[tex] :: path{xcons{."parent"[name:s]; xnil}} =
    slot[name:s]
 
-dform path_parent_nil_df : path{cons{."parent"[name:s]; nil}} =
+dform path_parent_xnil_df : path{xcons{."parent"[name:s]; xnil}} =
    slot[name:s]
 
-dform path_parent_cons_df : path{cons{."parent"[name:s]; .cons{'n1; 'n2}}} =
-   slot[name:s] keyword["."] cons{'n1; 'n2}
+dform path_parent_cons_df : path{xcons{."parent"[name:s]; .xcons{'n1; 'n2}}} =
+   slot[name:s] keyword["."] xcons{'n1; 'n2}
 
 dform parent_df : except_mode[tex] :: "parent"{'path; 'resources} =
    info["Extends"] " " begin_cd{'path} path{'path} cd_end
@@ -572,7 +611,7 @@ dform dform_df : "dform"[name:s]{'modes; 'redex; 'def} =
 (*
  * Precedence relations.
  *)
-declare "rel"[op:s]
+declare "rel"[op:s] : Dform
 
 dform rel_lt_df : "rel"["lt"] = keyword["<"]
 dform rel_eq_df : "rel"["eq"] = keyword["="]
@@ -651,7 +690,8 @@ dform type_arg_df : type_arg{'t} =
 dform addr_arg_df : addr_arg{'t} =
    szone pushm[2] `"[ " df_concat{hspace; 't} popm hspace `"]" ezone
 
-dform addr_arg_nil : addr_arg{nil} = `"[]"
+dform addr_arg_xnil : addr_arg{xnil} =
+   `"[]"
 
 dform bool_arg_df : bool_arg[s:t] =
    slot[s:t]
@@ -673,10 +713,10 @@ dform addr_clause_df2 : addr_clause[0] = `"Goal"
 (********************************
  * Proofs.
  *)
-declare msequent{'goal; 'assums}
-declare goals_df{'main; 'goal; 'status}
-declare status_df{'path_status; 'node_status; 'cache_status}
-declare goal_list_status{'cache}
+declare msequent{'goal : Dform; 'assums : Dform} : Dform
+declare goals_df{'main : Dform; 'goal : Dform; 'status : Dform} : Dform
+declare status_df{'path_status : Dform; 'node_status : Dform; 'cache_status : Dform} : Dform
+declare goal_list_status{'cache : Dform} : Dform
 
 dform proof_df : proof{'main; goal_list{'goal}; 'status; 'text; 'subgoals} =
    szone pushm pagebreak goals_df{'main; 'goal; 'status} 'text 'subgoals popm ezone
@@ -685,61 +725,61 @@ dform goals_df : goals_df{goal{'path_status; 'label; 'assums; 'goal}; 'cache; 'n
    status_df{'path_status;'node_status;goal_list_status{'cache}} newline 'label msequent{'goal; 'assums}
 
 dform goal_df : goal{'status; 'label; 'assums; 'goal} =
-   status_df{'status; status_partial; nil} newline 'label msequent{'goal; 'assums}
+   status_df{'status; status_partial; xnil} newline 'label msequent{'goal; 'assums}
 
 (* XXX display of the cache status is turned off since there is no way to access the cache anyway *)
 dform cache_status_df : status_df{'path_status; 'node_status; 'cache_status} =
    'path_status `"<" 'node_status `">" (* space `"[" 'cache_status `"]" *)
 
-dform goal_list_status_df1 : goal_list_status{cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; cons{'hd; 'tl}}} =
-   df_last{'status} `" " goal_list_status{cons{'hd; 'tl}}
+dform goal_list_status_df1 : goal_list_status{xcons{goal{goal_status{'status}; 'label; 'assums; 'goal}; xcons{'hd; 'tl}}} =
+   df_last{'status} `" " goal_list_status{xcons{'hd; 'tl}}
 
-dform goal_list_status_df2 : goal_list_status{cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; nil}} =
+dform goal_list_status_df2 : goal_list_status{xcons{goal{goal_status{'status}; 'label; 'assums; 'goal}; xnil}} =
    df_last{'status}
 
 (*
  * Display the meta-sequent.
  *)
-declare numbered_assums{'number; 'assums}
+declare numbered_assums{'number : Dform; 'assums : Dform} : Dform
 
-dform msequent_df1 : msequent{'goal; nil} =
+dform msequent_df1 : msequent{'goal; xnil} =
    slot{'goal} newline
 
 dform msequent_df2 : msequent{'goal; 'assums} =
-   numbered_assums{cons{nil; nil}; 'assums} slot{'goal} newline
+   numbered_assums{xcons{xnil; xnil}; 'assums} slot{'goal} newline
 
-dform numbered_assums_df1 : numbered_assums{'number; cons{'a; 'b}} =
-   szone df_length{'number} `". " pushm slot{'a} popm newline ezone numbered_assums{cons{nil; 'number}; 'b}
+dform numbered_assums_df1 : numbered_assums{'number; xcons{'a; 'b}} =
+   szone df_length{'number} `". " pushm slot{'a} popm newline ezone numbered_assums{xcons{xnil; 'number}; 'b}
 
-dform numbered_assums_df2 : numbered_assums{'number; nil} =
+dform numbered_assums_df2 : numbered_assums{'number; xnil} =
    `"====" newline
 
 (*
  * Status line includes commands to move up the tree.
  *)
-declare goal_status_df{'a; 'b}
-declare goal_status_cd{'a; 'b}
-declare goal_cd_dot
-declare goal_cd_up
-declare goal_cd_begin{'cd}
-declare goal_cd_middle{'cd}
-declare goal_cd_end
+declare goal_status_df{'a : Dform; 'b : Dform} : Dform
+declare goal_status_cd{'a : Dform; 'b : Dform} : Dform
+declare goal_cd_dot : Dform
+declare goal_cd_up : Dform
+declare goal_cd_begin{'cd : Dform} : Dform
+declare goal_cd_middle{'cd : Dform} : Dform
+declare goal_cd_end : Dform
 
-dform status_df2 : goal_status{nil} = `""
+dform status_df2 : goal_status{xnil} = `""
 
-dform status_df1 : goal_status{cons{'a; 'b}} =
-   goal_status_df{cons{'a; nil}; 'b}
+dform status_df1 : goal_status{xcons{'a; 'b}} =
+   goal_status_df{xcons{'a; xnil}; 'b}
 
-dform status_df3 : goal_status_df{'l; cons{'a; 'b}} =
-   goal_status_df{cons{'a; 'l}; 'b}
+dform status_df3 : goal_status_df{'l; xcons{'a; 'b}} =
+   goal_status_df{xcons{'a; 'l}; 'b}
 
-dform status_df4 : goal_status_df{'l; nil} =
+dform status_df4 : goal_status_df{'l; xnil} =
    goal_status_cd{goal_cd_dot; 'l}
 
-dform status_df5 : goal_status_cd{'cd; cons{'a; 'b}} =
-   goal_status_cd{cons{goal_cd_up; 'cd}; 'b} goal_cd_begin{'cd} 'a `" " goal_cd_end
+dform status_df5 : goal_status_cd{'cd; xcons{'a; 'b}} =
+   goal_status_cd{xcons{goal_cd_up; 'cd}; 'b} goal_cd_begin{'cd} 'a `" " goal_cd_end
 
-dform status_df5b : goal_status_cd{'cd; nil} =
+dform status_df5b : goal_status_cd{'cd; xnil} =
    `""
 
 dform status_df6a : goal_cd_begin{'cd} =
@@ -757,7 +797,7 @@ dform status_df6_html : mode[html] :: goal_cd_begin{'cd} =
 dform status_df7 : mode[html] :: goal_cd_middle{goal_cd_dot} =
    `"/.\">" ezone
 
-dform status_df8 : mode[html] :: goal_cd_middle{cons{goal_cd_up; 'cd}} =
+dform status_df8 : mode[html] :: goal_cd_middle{xcons{goal_cd_up; 'cd}} =
    `"/.." goal_cd_middle{'cd}
 
 dform status_df9 : mode[html] :: goal_cd_end =
@@ -802,29 +842,29 @@ dform rule_box_df3 : rule_box[text:s]{'t} =
 (*
  * Subgoals are printed in simplified form.
  *)
-declare child_df{'number; 'child}
-declare child_df{'child}
+declare child_df{'number : Dform; 'child : Dform} : Dform
+declare child_df{'child : Dform} : Dform
 
 dform subgoals_df1 : subgoals{'children; 'extras} =
-   newline subgoals{cons{nil; nil}; 'children; 'extras}
+   newline subgoals{xcons{xnil; xnil}; 'children; 'extras}
 
-dform subgoals_df2 : subgoals{'number; cons{'child; 'tl}; 'extras} =
-   newline child_df{'number; 'child} subgoals{cons{nil; 'number}; 'tl; 'extras}
+dform subgoals_df2 : subgoals{'number; xcons{'child; 'tl}; 'extras} =
+   newline child_df{'number; 'child} subgoals{xcons{xnil; 'number}; 'tl; 'extras}
 
-dform subgoals_df3 : subgoals{'number; nil; cons{'a; 'b}} =
-   newline info["===="] newline subgoals{'number; cons{'a; 'b}; nil}
+dform subgoals_df3 : subgoals{'number; xnil; xcons{'a; 'b}} =
+   newline info["===="] newline subgoals{'number; xcons{'a; 'b}; xnil}
 
-dform subgoals_df4 : subgoals{'number; cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; 'tl}; nil} =
+dform subgoals_df4 : subgoals{'number; xcons{goal{goal_status{'status}; 'label; 'assums; 'goal}; 'tl}; xnil} =
    szone info_begin df_length{'number} `". " pushm df_last{'status} info_end newline 'label 'goal popm ezone newline
-   subgoals{cons{nil; 'number}; nil; 'tl}
+   subgoals{xcons{xnil; 'number}; xnil; 'tl}
 
-dform subgoals_df5 : subgoals{'number; nil; nil} =
+dform subgoals_df5 : subgoals{'number; xnil; xnil} =
    `""
 
 dform child_df1 : child_df{'number; goal_list{'child}} =
    szone info_begin df_down{'number} `". " pushm `"[" goal_list_status{'child} `"]" info_end newline child_df{'child} popm ezone
 
-dform child_df2 : child_df{cons{goal{'status; 'label; 'assums; 'goal}; 'tl}} =
+dform child_df2 : child_df{xcons{goal{'status; 'label; 'assums; 'goal}; 'tl}} =
    'label slot{'goal}
 
 dform tactic_arg_df1 : tactic_arg[label:s]{'goal; 'args; 'parents} =
@@ -850,14 +890,24 @@ dform comment_df3 : mode[html] :: comment{'t} =
  *
  * XXX TODO: display forms for term constructor bindings.
  *)
-declare term_binding{'t;v.'t2['v]}
-declare opname_binding{'t;v.'t2['v]}
-declare bound_term{'t}
+declare term_binding{'t : Dform; v : Dform. 't2['v] : Dform} : Dform
+declare opname_binding{'t : Dform; v : Dform. 't2['v] : Dform} : Dform
+declare bound_term{'t : Dform} : Dform
 
-dform term_binding : term_binding{'t;v.'t2['v]} = 't2[bound_term{'t}]
-dform term_binding2 : resources{term_binding{'t;v.'t2['v]}} = resources{'t2[bound_term{'t}]}
-dform opname_binding : opname_binding{'t;v.'t2['v]} =
-   't2[Ocaml!apply{ (Ocaml!lid["opname_of_term"]); bound_term{'t}}]
+dform term_binding : term_binding{'t; v. 't2['v]} = 't2[bound_term{'t}]
+dform term_binding2 : resources{term_binding{'t; v. 't2['v]}} = resources{'t2[bound_term{'t}]}
+
+declare opname_of_term
+declare opname_bound_term{'t : Dform}
+
+dform opname_of_term_df : opname_of_term =
+   Ocaml!lid["opname_of_term"]
+
+dform opname_bound_term_df : opname_bound_term{'t} =
+   bound_term{'t}
+
+dform opname_binding : opname_binding{'t; v. 't2['v]} =
+   't2[Ocaml!apply{opname_of_term; opname_bound_term{'t}}]
 
 dform bound_term : bound_term{'t} =
    szone pushm[3] tt["<<"] hspace ensuremath{'t} popm hspace tt[">>"] ezone
@@ -919,6 +969,19 @@ let mk_string_arg_term s = <:con< string_arg[$s$:s] >>
 let mk_term_list_arg_term tl = <:con< term_list_arg{$mk_xlist_term tl$} >>
 let mk_addr_arg_term al = <:con< addr_arg{$mk_xlist_term (List.map mk_addr_term al)$} >>
 let mk_arglist_term tl = <:con< arglist{$mk_xlist_term tl$} >>
+
+(*
+ * Turn the status into a char.
+ *)
+let term_of_proof_status = function
+   Proof.StatusBad ->
+      <<status_bad>>
+ | Proof.StatusIncomplete ->
+      <<status_asserted>>
+ | Proof.StatusPartial ->
+      <<status_partial>>
+ | Proof.StatusComplete ->
+      <<status_complete>>
 
 (*
  * -*-

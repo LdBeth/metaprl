@@ -50,8 +50,8 @@ module TermAddr (**)
    (TermOp : TermOpSig with module OpTypes = TermType)
    (TermMan: TermManGenSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
-    with module ErrTypes.Types = TermType
-    with type ErrTypes.address = addr_item list) =
+    with module Types = TermType
+    with type Params.address = addr_item list) =
 struct
    open TermType
    open Term
@@ -93,7 +93,7 @@ struct
          match search [] t with
             Some addr -> List.rev addr
           | None ->
-               REF_RAISE(RefineError ("Term_addr_gen.find_subterm", StringTermError ("subterm can't be found", arg)))
+               REF_RAISE(RefineError ("Term_addr_gen.find_subterm: subterm can't be found", Term2Error (arg, t)))
 
    (*
     * A version of the nth_hyp capable of returning the context term.

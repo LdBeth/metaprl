@@ -47,7 +47,11 @@ sig
    (*
     * Some operations on meta_term.
     *)
+   val free_vars_mterm : meta_term -> SymbolSet.t
    val context_vars : meta_term -> SymbolSet.t * SymbolSet.t
+   val context_vars_info : (bool * int * int) SymbolTable.t -> meta_term -> (bool * int * int) SymbolTable.t
+   val so_vars_info :  (int * int) SymbolTable.t -> meta_term -> (int * int) SymbolTable.t
+
    val meta_alpha_equal : meta_term -> meta_term -> bool
    val unfold_mlabeled : string -> meta_term -> term
    val unzip_mimplies : meta_term -> term list * term
@@ -55,6 +59,10 @@ sig
    val unzip_mfunction : meta_term -> (string list * term option * term) list * term
    val zip_mfunction : (term option * term) list -> term -> meta_term
    val strip_mfunction : meta_term -> meta_term
+   val unzip_mrewrite : meta_term -> term list * term * term
+
+   (* Mappins *)
+   val map_mterm : (term -> term) -> meta_term -> meta_term
 
    (*
     * During parsing and display, the default contexts are "encoded"
@@ -62,10 +70,13 @@ sig
     *)
    val term_of_parsed_term : term -> term
    val term_of_parsed_term_with_vars : term -> term
-   val display_term_of_term : term -> term
-   val create_term_parser : unit -> term -> term
-   val mterm_of_parsed_mterm : meta_term -> meta_term
    val mterms_of_parsed_mterms : meta_term -> term list -> meta_term * term list * (term -> term)
+   val rewrite_of_parsed_rewrite : term -> term -> term * term
+   val mrewrite_of_parsed_mrewrite : term list -> term -> term list * term
+
+   (* Shortener *)
+   val display_term_of_term : term -> term
+
    (* finds all SO variables in a term and uses them *)
    val context_subst_of_terms : term list -> var -> int -> var list option
 

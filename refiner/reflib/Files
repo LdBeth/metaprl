@@ -26,3 +26,4 @@ REFLIB_FILES =\
 	term_order\
 	arith\
 	supinf\
+	term_ty_infer

@@ -33,20 +33,33 @@
 open Lm_debug
 
 open Lm_printf
-open Opname
-open Term_shape_sig
-open Refiner.Refiner
-open TermType
-open Term
-open TermShape
-open Simple_print
+open Lm_symbol
 
+open Opname
+open Term_sig
+open Term_shape_sig
+open Term_ty_sig
+open Rewrite_sig
+open Refiner.Refiner.TermType
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermShape
+open Refiner.Refiner.TermTy
+open Refiner.Refiner.Rewrite
+
+open Simple_print
 open File_base_type
+open Term_ty_infer
+open Term_match_table
 
 open Filter_type
 open Filter_util
 open Filter_summary
 open Filter_summary_type
+
+(************************************************************************
+ * Operator shape.
+ *)
 
 (*
  * Show the file loading.
@@ -68,36 +81,98 @@ let debug_filter_path =
         debug_value = false
       }
 
-type op_shape = {
-   sh_name : string;
-   sh_params: shape_param list;
-   sh_arities : int list
-}
+type op_shape =
+   { sh_name    : string;
+     sh_kind    : op_kind;
+     sh_params  : shape_param list;
+     sh_arities : int list
+   }
 
-let rec string_of_list f = function
-   [] -> "";
- | [a] -> f a;
- | hd::tl -> (f hd) ^ "; " ^ (string_of_list f tl)
+let string_of_op_shape shape =
+   let buf = Buffer.create 64 in
+   let rec string_of_list f = function
+      [] ->
+         ()
+    | [a] ->
+         f a
+    | hd::tl ->
+         f hd;
+         Buffer.add_string buf "; ";
+         string_of_list f tl
+   in
+   let string_of_param param =
+      let s =
+         match param with
+            ShapeString -> "S"
+          | ShapeNumber -> "N"
+          | ShapeVar    -> "V"
+          | ShapeLevel  -> "L"
+          | ShapeToken  -> "T"
+          | ShapeQuote  -> "Q"
+      in
+         Buffer.add_string buf s
+   in
+   let string_of_params = function
+      [] ->
+         ()
+    | p ->
+         Buffer.add_string buf "[";
+         string_of_list string_of_param p;
+         Buffer.add_string buf "]"
+   in
+   let string_of_arity i =
+      Buffer.add_string buf "<";
+      Buffer.add_string buf (string_of_int i);
+      Buffer.add_string buf ">"
+   in
+   let { sh_name = name;
+         sh_kind = kind;
+         sh_params = params;
+         sh_arities = arities
+       } = shape
+   in
+      Buffer.add_string buf name;
+      string_of_params params;
+      Buffer.add_string buf "{";
+      string_of_list string_of_arity arities;
+      Buffer.add_string buf "}";
+      (match kind with
+          NormalKind ->
+             Buffer.add_string buf ":normal"
+        | TokenKind ->
+             Buffer.add_string buf ":token");
+      Buffer.contents buf
 
-let string_of_param = function
-   ShapeString -> "S"
- | ShapeNumber -> "N"
- | ShapeVar -> "V"
- | ShapeLevel -> "L"
- | ShapeToken -> "T"
- | ShapeQuote -> "Q"
+(************************************************************************
+ * Define an abstract optable.
+ *)
+module type OptableSig =
+sig
+   type t
 
-let string_of_params = function
-   [] -> ""
- | p -> "[" ^ (string_of_list string_of_param p) ^ "]"
+   val create : unit -> t
+   val add : t -> op_shape -> opname -> unit
+   val find : t -> op_shape -> opname
+   val find_all : t -> op_shape -> opname list
+   val fold : (op_shape -> opname -> 'a -> 'a) -> t -> 'a -> 'a
+end
 
-let string_of_arity i =
-   "<" ^ (string_of_int i) ^ ">"
+module Optable : OptableSig =
+struct
+   type t = (op_shape, opname) Hashtbl.t
 
-let string_of_shape { sh_name = name; sh_params = params; sh_arities = arities } =
-   name ^ (string_of_params params) ^
-      "{" ^ (string_of_list string_of_arity arities) ^ "}"
+   let create () =
+      Hashtbl.create 79
 
+   let add = Hashtbl.add
+   let find = Hashtbl.find
+   let find_all = Hashtbl.find_all
+   let fold = Hashtbl.fold
+end
+
+(************************************************************************
+ * The cache.
+ *)
 module FilterSummaryTerm = Filter_summary.FilterSummaryTerm (Refiner.Refiner)
 
 open FilterSummaryTerm
@@ -153,12 +228,16 @@ struct
     * of a given module, with the last included parent first in the list.
     *)
    type sig_summary =
-      { sig_summary   : Base.info;
-        sig_resources : (string * sig_ctyp resource_sig) list;
-        sig_infixes   : Infix.Set.t;
-        sig_opnames   : (op_shape * opname) list;
-        sig_grammar   : Filter_grammar.t;
-        sig_includes  : sig_summary list
+      { sig_summary      : Base.info;
+        sig_resources    : (string * sig_ctyp resource_sig) list;
+        sig_infixes      : Infix.Set.t;
+        sig_grammar      : Filter_grammar.t;
+        sig_includes     : sig_summary list;
+
+        sig_typeclasses  : (opname * opname * typeclass_parent) list;
+        sig_typereduce   : (term * term) list;
+        sig_typeenv      : (ty_term * opname) list;
+        sig_termenv      : ty_term list
       }
 
    (*
@@ -172,6 +251,13 @@ struct
       }
 
    (*
+    * A generic delayed value.
+    *)
+   type 'a delayed =
+      Value of 'a
+    | Delayed
+
+   (*
     * This is the extra info we keep for each module.
     * 1. There is an opname translator that maps strings
     *    to complete opnames.
@@ -182,8 +268,17 @@ struct
     *)
    type info =
       { opprefix : opname;
-        optable : (op_shape, opname) Hashtbl.t; (* Invariant: old entries are replaced, not shadowed *)
+        optable : Optable.t;
         mutable summaries : sig_summary list;
+
+        (* Types of terms *)
+        mutable typedelayed    : typeclasses delayed;
+        mutable typeclasses    : typeclasses;
+        mutable typereduce     : typereduce;
+        mutable typereductions : typereductions;
+        mutable typeenv        : typeenv;
+        mutable termenv        : termenv;
+        mutable shapes         : ShapeSet.t;
 
         (* Input grammar *)
         mutable grammar : Filter_grammar.t;
@@ -210,6 +305,71 @@ struct
       }
 
    (************************************************************************
+    * Opname classes.
+    *)
+
+   (*
+    * Explanation.
+    *
+    *    - Each term has a type description (of type ty_term).
+    *      This is just a fully-annotated version of the term, so
+    *      we know what the types of the subterms and the result.
+    *      These are stored in the field "termenv".
+    *
+    *    - Each term belongs to a "type".
+    *      A type is just another term, belonging to typeclass "type".
+    *
+    *    - A "typeclass" is used to group together terms of various types.
+    *      Every type declares what typeclass it belongs to in the
+    *      field "typeenv".
+    *
+    *    - Kinds have subtyping, stored in the field "typeclasses".
+    *
+    * Some properties.
+    *
+    *    - Every term that denotes a typeclass has the following.
+    *      - It has an entry in "typeclass".
+    *      - It has an entry in "typenv" belonging to the kind "typeclass".
+    *      - It has an entry in "types" belonging to itself.
+    *
+    *    - Every term that denotes a type has the following.
+    *      - It has an entry in "typenv" telling what typeclass it belongs to.
+    *      - It has an entry in "types" of type "type".
+    *
+    *    - Every normal term has the following.
+    *      - It has an entry in "types" giving its ty_term.
+    *)
+   let root_typeclasses, root_typeenv, root_termenv =
+      let builtin_typeclasses =
+         [type_opname; term_opname]
+      in
+         List.fold_left (fun (typeclasses, typeenv, termenv) name_op ->
+               (* Add the typeclass *)
+               let typeclasses = OpnameTable.add typeclasses name_op (OpnameSet.singleton name_op) in
+
+               (*
+                * Add the type.
+                * Any term in this type belongs to the typeclass.
+                *)
+               let term = mk_term (mk_op name_op []) [] in
+               let shape = shape_of_term term in
+               let typeenv = ShapeTable.add typeenv shape name_op in
+
+               (*
+                * Add the type of this term.  It is a typeclass.
+                *)
+               let ty_info =
+                  { ty_term = term;
+                    ty_opname = name_op;
+                    ty_params = [];
+                    ty_bterms = [];
+                    ty_type   = type_type
+                  }
+               in
+               let termenv = ShapeTable.add termenv shape ty_info in
+                  typeclasses, typeenv, termenv) (OpnameTable.empty, ShapeTable.empty, ShapeTable.empty) builtin_typeclasses
+
+   (************************************************************************
     * BASE OPERATIONS                                                      *
     ************************************************************************)
 
@@ -234,9 +394,9 @@ struct
          [modname] ->
             (* If only one name left, it should name a term *)
             let rec search = function
-               (Opname { opname_name = str }, _) :: tl
-             | (Definition { opdef_opname = str }, _) :: tl
-               when str = modname ->
+               (DeclareTerm { ty_opname = opname }, _) :: tl
+             | (DefineTerm ({ ty_opname = opname }, _), _) :: tl
+               when fst (dst_opname opname) = modname ->
                   modname :: path
              | _ :: tl ->
                   search tl
@@ -327,18 +487,6 @@ struct
     ************************************************************************)
 
    (*
-    * Make a new hashtable for mapping opnames.
-    *)
-   let create_optable () =
-      Hashtbl.create 79
-
-   (*
-    * Get an opname.
-    *)
-   let optable cache =
-      Hashtbl.find cache.optable
-
-   (*
     * Get the prefix.
     *)
    let op_prefix cache =
@@ -351,61 +499,390 @@ struct
    (*
     * Construct an opname assuming it is declared in the current module.
     *)
-   let mk_opname cache names params arities =
-      if names = [] then raise (Invalid_argument "Filter_cache_fun.mk_opname");
+   let mk_opname_kind cache kind names params arities =
+      if names = [] then
+         raise (Invalid_argument "Filter_cache_fun.mk_opname");
       let name = Lm_list_util.last names in
-      let shape = { sh_name = name; sh_params = strip_quotations params; sh_arities = arities } in
-         if List.tl names = [] then
-            begin
-               try
-                  let opname = optable cache shape in
-                     if !debug_opname then
-                        eprintf "Filter_cache_fun.mk_opname: %s -> %s%t" (**)
-                           (string_of_shape shape) (**)
-                           (SimplePrint.string_of_opname opname) eflush;
-                     opname
-               with
-                  Not_found ->
-                     raise (Failure ("undeclared name: " ^ (string_of_shape shape)))
-            end
-         else
-            begin
-               (* Opname is prefixed by one or more module names, which specify it more exactly. *)
-               let path =
-                  try expand_path cache names with
+      let shape = { sh_name = name; sh_kind = kind; sh_params = strip_quotations params; sh_arities = arities } in
+         match names with
+            [_] ->
+               begin
+                  try
+                     let opname = Optable.find cache.optable shape in
+                        if !debug_opname then
+                           eprintf "Filter_cache_fun.mk_opname: %s -> %s%t" (**)
+                              (string_of_op_shape shape) (**)
+                              (SimplePrint.string_of_opname opname) eflush;
+                        opname
+                  with
                      Not_found ->
-                        raise (Failure ("no object with name: " ^ (string_of_opname_list names)))
-               in
-               let opname = make_opname (List.rev path) in
-                  if !debug_opname then
-                     eprintf "Filter_cache_fun.mk_opname: path: %s%t" (**)
-                        (SimplePrint.string_of_opname opname) eflush;
-                  let all_opnames = Hashtbl.find_all cache.optable shape in
+                        raise (Failure ("undeclared name: " ^ string_of_op_shape shape))
+               end
+          | _ ->
+               begin
+                  (* Opname is prefixed by one or more module names, which specify it more exactly. *)
+                  let path =
+                     try expand_path cache names with
+                        Not_found ->
+                           raise (Failure ("no object with name: " ^ (string_of_opname_list names)))
+                  in
+                  let opname = make_opname (List.rev path) in
+                  let () =
+                     if !debug_opname then
+                        eprintf "Filter_cache_fun.mk_opname: path: %s%t" (**)
+                           (SimplePrint.string_of_opname opname) eflush
+                  in
+                  let all_opnames = Optable.find_all cache.optable shape in
                      if List.mem opname all_opnames then
                         opname
                      else
-                        raise (Failure ("opname " ^ (SimplePrint.string_of_opname opname) ^ " is not declared with shape name: " ^ (string_of_shape shape)))
-            end
+                        raise (Failure ("opname " ^ SimplePrint.string_of_opname opname ^ " is not declared with shape name: " ^ string_of_op_shape shape))
+               end
 
-   let op_shape_of_term name t =
+   let mk_opname cache names params arities =
+      mk_opname_kind cache NormalKind names params arities
+
+   let op_shape_of_term_kind name kind t =
       let params = List.map param_type (dest_op (dest_term t).term_op).op_params in
          if strip_quotations params != params then
             raise (Invalid_argument "Filter_cache_fun.op_shape_of_term: quoted opnames must not be declared");
-         { sh_name = name;
-           sh_params = params;
-           sh_arities = Term.subterm_arities t
+         { sh_name    = name;
+           sh_kind    = kind;
+           sh_params  = params;
+           sh_arities = subterm_arities t
          }
 
+   let op_shape_of_term name t =
+      op_shape_of_term_kind name NormalKind t
+
    (*
-    * Update opname in the table.
+    * Flatten the typeclasses table.
     *)
-   let update_opname cache name t =
-      let shape = op_shape_of_term name t in
-      let opname = opname_of_term t in
+   let close_typeclasses typeclasses =
+      let step typeclasses =
+         OpnameTable.fold (fun (typeclasses, changed) v names ->
+               let names' =
+                  OpnameSet.fold (fun names v ->
+                        let names' =
+                           try OpnameTable.find typeclasses v with
+                              Not_found ->
+                                 raise (Failure ("close_typeclasses: unknown typeclass: " ^ string_of_opname v))
+                        in
+                           OpnameSet.union names names') names names
+               in
+               let changed' = OpnameSet.cardinal names' <> OpnameSet.cardinal names in
+               let typeclasses =
+                  if changed' then
+                     OpnameTable.add typeclasses v names'
+                  else
+                     typeclasses
+               in
+                  typeclasses, changed || changed') (typeclasses, false) typeclasses
+      in
+      let rec fixpoint typeclasses =
+         let typeclasses', changed = step typeclasses in
+            if changed then
+               fixpoint typeclasses'
+            else
+               typeclasses
+      in
+         fixpoint typeclasses
+
+   let get_typeclasses cache =
+      match cache.typedelayed with
+         Value typeclasses ->
+            typeclasses
+       | Delayed ->
+            let typeclasses = close_typeclasses cache.typeclasses in
+               cache.typedelayed <- Value typeclasses;
+               typeclasses
+
+   (*
+    * Check that the shape is never seen before.
+    *)
+   let check_redeclaration watch cache shape =
+      if ShapeSet.mem cache.shapes shape then
+         raise (Failure ("Filter_cache_fun.check_redeclaration: redefining shape " ^ string_of_shape shape));
+      if watch then
+         cache.shapes <- ShapeSet.add cache.shapes shape
+
+   (*
+    * Check that the opname denotes a typeclass.
+    *)
+   let check_is_typeclass cache opname =
+      if not (OpnameTable.mem cache.typeclasses opname) then
+         raise (Failure ("unknown typeclass: " ^ string_of_opname opname))
+
+   (*
+    * Check that the term denotes a typeclass.
+    *)
+   let check_is_typeclass_term cache term =
+      let { term_op = op; term_terms = bterms } = dest_term term in
+      let { op_name = opname; op_params = params } = dest_op op in
+         match bterms, params with
+            [], [] ->
+               check_is_typeclass cache opname
+          | _ ->
+               raise (Failure ("unknown typeclass: " ^ string_of_opname opname))
+
+   (*
+    * Add a typeclass with the given opname.
+    *
+    * declare typeclass current_opname : current_type :> current_parent
+    * declare typeclass current_opname : current_type <: current_parent
+    * declare typeclass current_opname : current_type
+    *
+    * Constraints:
+    *   1. current_type is a subclass of Ty
+    *   2. current_parent is a typeclass
+    *
+    * Properties:
+    *   1. << current_opname >> is a type
+    *   2. Subtyping:
+    *      a. Given ":> current_parent"
+    *         Any element of << current_opname >> is also a member of << current_parent >>
+    *      b. Given "<: current_parent"
+    *         Any element of << current_parent >> is also a member of << current_opname >>
+    *   3. The term << current_opname >> has type << current_opname >>
+    *
+    * Actions:
+    *   1. current_opname is declared as a typeclass
+    *      a. if the parent is "-> current_parent"
+    *         -- the parents are { current_opname, current_parent }
+    *      b. if the parent is "<- current_parent"
+    *         -- the parents are { current_opname }
+    *         -- current_opname is added as a parent of current_parent
+    *      c. otherwise
+    *         -- the parents are { current_opname }
+    *
+    *   2. The term << current_opname >> is declared as a type
+    *      with typeclass << current_opname >>
+    *
+    *   3. The term << current_opname >> is declared with typeclass
+    *      << current_type >>, which must be a sub-typeclass
+    *      of Ty.
+    *)
+   let declare_typeclass_env watch cache current_opname current_type current_parent =
+      let current_term = mk_term (mk_op current_opname []) [] in
+      let current_name = fst (dst_opname current_opname) in
+      let current_shape = shape_of_term current_term in
+      let current_op_shape = op_shape_of_term current_name current_term in
+
+      (* Update typeclasses *)
+      let typeclasses = OpnameSet.singleton current_opname in
+      let typeclasses =
+         match current_parent with
+            ParentExtends parent_opname ->
+               check_is_typeclass cache parent_opname;
+               OpnameSet.add typeclasses parent_opname
+          | ParentInclude parent_opname ->
+               (try
+                   let typeclasses = OpnameTable.find cache.typeclasses parent_opname in
+                      cache.typedelayed <- Delayed;
+                      cache.typeclasses <- OpnameTable.add cache.typeclasses parent_opname (OpnameSet.add typeclasses current_opname)
+                with
+                   Not_found ->
+                      raise (Failure (sprintf "not a typeclass: '%s'" (string_of_opname parent_opname))));
+               typeclasses
+          | ParentNone ->
+               typeclasses
+      in
+
+      (* Update termenv entry *)
+      let current_class =
+         { ty_term   = current_term;
+           ty_opname = current_opname;
+           ty_params = [];
+           ty_bterms = [];
+           ty_type   = mk_term (mk_op current_type []) []
+         }
+      in
+         (* Make sure never seen before *)
+         check_redeclaration watch cache current_shape;
+
+         (* Make sure the type is a typeclass *)
+         check_is_typeclass cache current_type;
+
+         (* Add the typeclass *)
+         cache.typedelayed <- Delayed;
+         cache.typeclasses <- OpnameTable.add cache.typeclasses current_opname typeclasses;
+
+         (* Add the type and the term *)
+         cache.typeenv <- ShapeTable.add cache.typeenv current_shape current_opname;
+         cache.termenv <- ShapeTable.add cache.termenv current_shape current_class;
+         Optable.add cache.optable current_op_shape current_opname
+
+   (*
+    * Add an opname class.
+    *
+    * declare type current : current_type :> current_parent
+    *
+    * Constraints.
+    *    1. current_type must be sub-typeclass of Ty
+    *    2. current_parent must be a typeclass
+    *
+    * Properties:
+    *    1. << current >> is a type
+    *    2. The term << current >> has type << current_type >>
+    *    3. Any element of << current >> is also a member of << current_parent >>
+    *
+    * Actions:
+    *    1. Declare the type << current >> with parent typeclass << current_parent >>
+    *    2. Declare the term << current >> with type << current_type >>
+    *)
+   let declare_type_env watch cache current_class current_parent =
+      let current_term = term_of_ty current_class in
+      let current_opname = opname_of_term current_term in
+      let current_shape = shape_of_term current_term in
+      let current_name = fst (dst_opname current_opname) in
+      let current_op_shape = op_shape_of_term current_name current_term in
+         (* Check that the term has never been defined before *)
+         check_redeclaration watch cache current_shape;
+
+         (* Check that the term is a typeclass *)
+         check_is_typeclass_term cache current_class.ty_type;
+
+         (* Check that the parent is a typeclass *)
+         check_is_typeclass cache current_parent;
+
+         (* Add to the kind specified *)
+         cache.typeenv <- ShapeTable.add cache.typeenv current_shape current_parent;
+         cache.termenv <- ShapeTable.add cache.termenv current_shape current_class;
+         Optable.add cache.optable current_op_shape current_opname
+
+   (*
+    * Add a term in a class.
+    *
+    * declare current : current_type
+    *
+    * Constraints:
+    *    1. current_type must be a type
+    *
+    * Properties:
+    *    1. The term << current >> has type << current_type >>
+    *
+    * Actions:
+    *    1. Get the kind of term
+    *       a. If it derives from Token, its kind is TokenKind
+    *       b. Otherwise, it is NormalKind
+    *    2. Add the entry
+    *)
+   let declare_term_env watch cache current_class =
+      (* Get the class *)
+      let ty_term = current_class.ty_type in
+      let current_kind =
+         if is_fso_var_term ty_term then
+            NormalKind
+         else
+            let ty_shape = shape_of_term ty_term in
+            let ty_opname = opname_of_term ty_term in
+            let ty_class_opname =
+               try ShapeTable.find cache.typeenv ty_shape with
+                  Not_found ->
+                     raise (Failure (sprintf "declare_term %s/%s: type '%s' not found" (**)
+                                        cache.name
+                                        (string_of_shape (shape_of_term current_class.ty_term))
+                                        (string_of_shape ty_shape)))
+            in
+            let typeclasses = get_typeclasses cache in
+            let typeclasses = OpnameTable.find typeclasses ty_class_opname in
+               if OpnameSet.mem typeclasses token_opname then
+                  TokenKind
+               else
+                  NormalKind
+      in
+      let () =
+         if false then
+            let kind =
+               match current_kind with
+                  TokenKind ->
+                     "token"
+                | NormalKind ->
+                     "normal"
+            in
+               eprintf "@[<hv 3>declare_term: %s %s@ : %s@]@." kind (**)
+                  (SimplePrint.string_of_term current_class.ty_term)
+                  (SimplePrint.string_of_term ty_term)
+      in
+
+      (* Build the class description *)
+      let current_term = term_of_ty current_class in
+      let current_shape = shape_of_term current_term in
+      let current_opname = opname_of_term current_term in
+      let current_name = fst (dst_opname current_opname) in
+      let current_op_shape = op_shape_of_term_kind current_name current_kind current_term in
+         (* Check the the term has nver been seen before *)
+         check_redeclaration watch cache current_shape;
+
+         (* Add the type *)
          if !debug_opname then
-            eprintf "Filter_cache_fun.update_opname: %s -> %s%t" (**)
-               (string_of_shape shape) (SimplePrint.string_of_opname opname) eflush;
-         Hashtbl.add cache.optable shape opname
+            eprintf "Declare term: %s@." (string_of_opname current_opname);
+         cache.termenv <- ShapeTable.add cache.termenv current_shape current_class;
+         Optable.add cache.optable current_op_shape current_opname
+
+   (*
+    * Add a rewrite.
+    *)
+   let declare_type_rewrite cache redex contractum =
+      let redex_shape = shape_of_term redex in
+      let contractum_shape = shape_of_term contractum in
+      let () =
+         if not (ShapeTable.mem cache.typeenv redex_shape) then
+            raise (Failure (sprintf "not a type: '%s'" (string_of_opname (opname_of_term redex))));
+         if not (ShapeTable.mem cache.typeenv contractum_shape) then
+            raise (Failure (sprintf "not a type: '%s'" (string_of_opname (opname_of_term contractum))))
+      in
+      let rw = term_rewrite Strict empty_args_spec [redex] [contractum] in
+      let () =
+         if false then
+            eprintf "@[<v 3>declare_type_rewrite:@ %s@ <-->@ %s@]@." (**)
+               (SimplePrint.string_of_term redex)
+               (SimplePrint.string_of_term contractum)
+      in
+         cache.typereduce <- Term_match_table.add_item cache.typereduce redex rw;
+         cache.typereductions <- Shape2Table.add cache.typereductions (redex_shape, contractum_shape) (redex, contractum)
+
+   (*
+    * Check that a term is well-formed.
+    *)
+   let tenv_of_cache cache =
+      let { typeenv        = typeenv;
+            termenv        = termenv;
+            typereduce     = typereduce;
+            typereductions = typereductions
+          } = cache
+      in
+         { tenv_typeclasses    = get_typeclasses cache;
+           tenv_typeenv        = typeenv;
+           tenv_typereduce     = typereduce;
+           tenv_typereductions = typereductions;
+           tenv_termenv        = termenv
+         }
+
+   let infer_term cache t =
+      Term_ty_infer.infer_term (tenv_of_cache cache) t
+
+   let check_rule cache mt args =
+      Term_ty_infer.check_rule (tenv_of_cache cache) mt args
+
+   let infer_rewrite cache mt args =
+      Term_ty_infer.infer_rewrite (tenv_of_cache cache) mt args
+
+   let check_type_rewrite cache redex contractum =
+      Term_ty_infer.check_type_rewrite (tenv_of_cache cache) redex contractum
+
+   let check_dform cache t form =
+      Term_ty_infer.check_dform (tenv_of_cache cache) t form
+
+   let check_iform cache mt args =
+      Term_ty_infer.check_iform (tenv_of_cache cache) mt args
+
+   let check_production cache redices contractum =
+      Term_ty_infer.check_production (tenv_of_cache cache) redices contractum
+
+   let check_term cache t =
+      ignore (infer_term cache t);
+      t
 
    (************************************************************************
     * ACCESS                                                               *
@@ -547,6 +1024,9 @@ struct
    let add_command cache item =
       cache.info <- Filter_summary.add_command cache.info item
 
+   let add_prefix_commands cache items =
+      cache.info <- Filter_summary.add_prefix_commands cache.info items
+
    let hash cache =
       let aux ops op i =
          (*
@@ -555,7 +1035,7 @@ struct
           *)
          (Hashtbl.hash_param max_int max_int (ops, op)) lxor i
       in
-         Hashtbl.fold aux cache.optable (Filter_summary.hash cache.info)
+         Optable.fold aux cache.optable (Filter_summary.hash cache.info)
 
    let set_command cache item =
       try cache.info <- Filter_summary.set_command cache.info item with
@@ -607,11 +1087,42 @@ struct
             l1
 
    (*
+    * Inline the opname information.
+    *)
+   let inline_sig_opnames watch cache summ =
+      let { sig_typeclasses = typeclasses;
+            sig_typeenv     = typeenv;
+            sig_termenv     = termenv;
+            sig_typereduce  = typereduce
+          } = summ
+      in
+         List.iter (fun (opname, typeclass_type, typeclass_parent) ->
+               declare_typeclass_env watch cache opname typeclass_type typeclass_parent) (List.rev typeclasses);
+         List.iter (fun (ty_term, ty_opname) ->
+               declare_type_env watch cache ty_term ty_opname) (List.rev typeenv);
+         List.iter (fun ty_term ->
+               declare_term_env watch cache ty_term) (List.rev termenv);
+         List.iter (fun (redex, contractum) ->
+               declare_type_rewrite cache redex contractum) (List.rev typereduce)
+
+   (*
+    * Collect opnames from all the ancestors.
+    * We assume that all summaries have been loaded.
+    *)
+   let rec collect_opnames cache info =
+      if not (List.memq info cache.summaries) then
+         begin
+            Lm_list_util.rev_iter (collect_opnames cache) info.sig_includes;
+            inline_sig_opnames true cache info;
+            cache.summaries <- info :: cache.summaries
+         end
+
+   (*
     * Inline a module into the current one.
     * The inline_{sig,str}_components function return
     * the inherited attributes.
     *)
-   let rec inline_sig_components barg cache path self items =
+   let rec inline_sig_components watch barg cache path self items =
       (* Get the opname for this path *)
       let opprefix = make_opname path in
 
@@ -627,31 +1138,40 @@ struct
                let base = cache.base in
                let info = Base.sub_info base.lib self n in
                let info =
-                  { sig_summary   = info;
-                    sig_resources = [];
-                    sig_infixes   = Infix.Set.empty;
-                    sig_opnames   = [];
-                    sig_grammar   = Filter_grammar.empty;
-                    sig_includes  = []
+                  { sig_summary     = info;
+                    sig_resources   = [];
+                    sig_infixes     = Infix.Set.empty;
+                    sig_grammar     = Filter_grammar.empty;
+                    sig_includes    = [];
+
+                    sig_typeclasses = [];
+                    sig_typereduce  = [];
+                    sig_typeenv     = [];
+                    sig_termenv     = []
                   }
                in
                   base.sig_summaries <- info :: base.sig_summaries;
                   summ
 
-          | Opname { opname_name = str; opname_term = t }
-          | Definition { opdef_opname = str; opdef_term = t } ->
-               (* Hash this name to the full opname *)
-               let opname = Term.opname_of_term t in
-                  if !debug_opname then
-                     eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
-                        (SimplePrint.string_of_opname opname) eflush;
-                  let shape = op_shape_of_term str t in
-                  Hashtbl.add cache.optable shape opname;
-                  { summ with sig_opnames = (shape, opname) :: summ.sig_opnames }
+          | DeclareTypeClass (opname, type_opname, parent) ->
+               { summ with sig_typeclasses = (opname, type_opname, parent) :: summ.sig_typeclasses }
+          | DeclareType (ty_term, type_opname) ->
+               { summ with sig_typeenv = (ty_term, type_opname) :: summ.sig_typeenv }
+          | DeclareTerm ty_term
+          | DefineTerm (ty_term, _) ->
+               { summ with sig_termenv = ty_term :: summ.sig_termenv }
+          | DeclareTypeRewrite (redex, contractum) ->
+               { summ with sig_typereduce = (redex, contractum) :: summ.sig_typereduce }
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
                let info = inline_sig_module barg cache path in
+
+               (*
+                * The module save a PRLGrammar item only when the
+                * grammar has been modified.  Otherwise, we get the
+                * grammar from the parents.
+                *)
                let grammar =
                   if Filter_grammar.is_empty info.sig_grammar then
                      summ.sig_grammar
@@ -681,26 +1201,45 @@ struct
           | PRLGrammar gram ->
                { summ with sig_grammar = gram }
 
-          | _ ->
+          | InputForm _
+          | Comment _
+          | MagicBlock _
+          | ToploopItem _
+          | SummaryItem _
+          | Improve _
+          | Id _
+          | PrecRel _
+          | DForm _
+          | MLAxiom _
+          | MLRewrite _
+          | Rule _
+          | CondRewrite _
+          | Rewrite _ ->
                summ
       in
       let summ =
-         { sig_summary   = self;
-           sig_resources = [];
-           sig_infixes   = Infix.Set.empty;
-           sig_opnames   = [];
-           sig_grammar   = Filter_grammar.empty;
-           sig_includes  = []
+         { sig_summary     = self;
+           sig_resources   = [];
+           sig_infixes     = Infix.Set.empty;
+           sig_grammar     = Filter_grammar.empty;
+           sig_includes    = [];
+
+           sig_typeclasses = [];
+           sig_typereduce  = [];
+           sig_typeenv     = [];
+           sig_termenv     = []
          }
       in
-         List.fold_left inline_component summ items
+      let summ = List.fold_left inline_component summ items in
+         inline_sig_opnames watch cache summ;
+         summ
 
    and inline_str_components barg cache path self (items : (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) summary_item_loc list) =
       (* Get the opname for this path *)
       let opprefix = make_opname path in
 
       (* Get all the sub-summaries *)
-      let inline_component (item, _) =
+      let inline_component summ (item, _) =
          match item with
             Module (n, _) ->
                (*
@@ -710,37 +1249,75 @@ struct
                let base = cache.base in
                let info = Base.sub_info base.lib self n in
                let info =
-                  { sig_summary   = info;
-                    sig_resources = [];
-                    sig_infixes   = Infix.Set.empty;
-                    sig_opnames   = [];
-                    sig_grammar   = Filter_grammar.empty;
-                    sig_includes  = []
+                  { sig_summary     = info;
+                    sig_resources   = [];
+                    sig_infixes     = Infix.Set.empty;
+                    sig_grammar     = Filter_grammar.empty;
+                    sig_includes    = [];
+
+                    sig_typeclasses = [];
+                    sig_typereduce  = [];
+                    sig_typeenv     = [];
+                    sig_termenv     = []
                   }
                in
-                  base.sig_summaries <- info :: base.sig_summaries
+                  base.sig_summaries <- info :: base.sig_summaries;
+                  summ
 
-          | Opname { opname_name = str; opname_term = t }
-          | Definition { opdef_opname = str; opdef_term = t } ->
-               (* Hash this name to the full opname *)
-               let opname = Term.opname_of_term t in
-                  if !debug_opname then
-                     eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
-                        (SimplePrint.string_of_opname opname) eflush;
-                  Hashtbl.add cache.optable (op_shape_of_term str t) opname
+          | DeclareTypeClass (opname, type_opname, parent) ->
+               { summ with sig_typeclasses = (opname, type_opname, parent) :: summ.sig_typeclasses }
+          | DeclareType (ty_term, type_opname) ->
+               { summ with sig_typeenv = (ty_term, type_opname) :: summ.sig_typeenv }
+          | DeclareTerm ty_term
+          | DefineTerm (ty_term, _) ->
+               { summ with sig_termenv = ty_term :: summ.sig_termenv }
+          | DeclareTypeRewrite (redex, contractum) ->
+               { summ with sig_typereduce = (redex, contractum) :: summ.sig_typereduce }
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
                let info = inline_sig_module barg cache path in
-                  cache.grammar <- info.sig_grammar
+                  cache.grammar <- info.sig_grammar;
+                  summ
 
           | PRLGrammar gram ->
-               cache.grammar <- gram
+               cache.grammar <- gram;
+               summ
 
-          | _ ->
-               ()
+          | InputForm _
+          | Comment _
+          | MagicBlock _
+          | ToploopItem _
+          | SummaryItem _
+          | MLGramUpd _
+          | Improve _
+          | Resource (_, _)
+          | Id _
+          | PrecRel _
+          | Prec _
+          | DForm _
+          | MLAxiom _
+          | MLRewrite _
+          | Rule _
+          | CondRewrite _
+          | Rewrite _ ->
+               summ
       in
-         List.iter inline_component items
+      let summ =
+         { sig_summary     = self;
+           sig_resources   = [];
+           sig_infixes     = Infix.Set.empty;
+           sig_grammar     = Filter_grammar.empty;
+           sig_includes    = [];
+
+           sig_typeclasses = [];
+           sig_typereduce  = [];
+           sig_typeenv     = [];
+           sig_termenv     = []
+         }
+      in
+      let summ = List.fold_left inline_component summ items in
+         inline_sig_opnames true cache summ
 
    and inline_sig_module barg cache path =
       let base = cache.base.lib in
@@ -751,7 +1328,7 @@ struct
                raise exn
       in
          if !debug_filter_cache then
-            eprintf "FilterCache.inline_sig_module: %s%t" (string_of_path path) eflush;
+            eprintf "FilterCache.inline_sig_module: %s: %s%t" cache.name (string_of_path path) eflush;
          try
             let info = find_summarized_sig_module cache path in
                if !debug_filter_cache then
@@ -761,11 +1338,11 @@ struct
          with
             Not_found ->
                if !debug_filter_cache then
-                  eprintf "FilterCache.inline_sig_module: finding: %s%t" (Base.file_name base base_info) eflush;
+                  eprintf "FilterCache.inline_sig_module: %s: finding: %s%t" cache.name (Base.file_name base base_info) eflush;
                let info' = SigMarshal.unmarshal (Base.info base base_info) in
                let info =
                   (* Inline the subparts *)
-                  inline_sig_components barg cache path base_info (info_items info')
+                  inline_sig_components true barg cache path base_info (info_items info')
                in
                   (* This module gets listed in the inline stack *)
                   cache.base.sig_summaries <- info :: cache.base.sig_summaries;
@@ -773,20 +1350,11 @@ struct
 
                   if !debug_filter_cache then
                      begin
-                        eprintf "Summary: %s%t" (Base.file_name base base_info) eflush;
+                        eprintf "Summary: %s: %s%t" cache.name (Base.file_name base base_info) eflush;
                         eprint_info info'
                      end;
 
                   info
-
-   and collect_opnames cache info =
-      if not (List.memq info cache.summaries) then
-         begin
-            Lm_list_util.rev_iter (collect_opnames cache) info.sig_includes;
-            let optable = cache.optable in
-               Lm_list_util.rev_iter (fun (str, op) -> Hashtbl.replace optable str op) info.sig_opnames;
-               cache.summaries <- info :: cache.summaries
-         end
 
    let inline_module cache barg path =
       try
@@ -804,17 +1372,24 @@ struct
    let create_cache base name self_select =
       let dir = Filename.dirname name in
       let name = Filename.basename name in
-         { opprefix   = Opname.mk_opname (String.capitalize name) nil_opname;
-           optable    = create_optable ();
-           summaries  = [];
-           precs      = [];
-           resources  = [];
-           info       = new_module_info ();
-           self       = Base.create_info base.lib self_select dir name;
-           name       = name;
-           base       = base;
-           grammar    = Filter_grammar.empty;
-           select     = self_select
+         { opprefix       = Opname.mk_opname (String.capitalize name) nil_opname;
+           optable        = Optable.create ();
+           summaries      = [];
+           precs          = [];
+           resources      = [];
+           info           = new_module_info ();
+           self           = Base.create_info base.lib self_select dir name;
+           name           = name;
+           base           = base;
+           grammar        = Filter_grammar.empty;
+           select         = self_select;
+           typedelayed    = Delayed;
+           typeclasses    = root_typeclasses;
+           typereduce     = empty_table;
+           typereductions = Shape2Table.empty;
+           typeenv        = root_typeenv;
+           termenv        = root_termenv;
+           shapes         = ShapeSet.empty
          }
 
    (*
@@ -832,17 +1407,24 @@ struct
       in
       let info' = StrMarshal.unmarshal (Base.info base.lib info) in
       let cache =
-         { opprefix   = Opname.mk_opname (String.capitalize name) nil_opname;
-           optable    = create_optable ();
-           summaries  = [];
-           precs      = [];
-           resources  = [];
-           info       = info';
-           self       = info;
-           name       = name;
-           base       = base;
-           grammar    = Filter_grammar.empty;
-           select     = my_select
+         { opprefix       = Opname.mk_opname (String.capitalize name) nil_opname;
+           optable        = Optable.create ();
+           summaries      = [];
+           precs          = [];
+           resources      = [];
+           info           = info';
+           self           = info;
+           name           = name;
+           base           = base;
+           grammar        = Filter_grammar.empty;
+           select         = my_select;
+           typedelayed    = Delayed;
+           typeclasses    = root_typeclasses;
+           typereduce     = empty_table;
+           typereductions = Shape2Table.empty;
+           typeenv        = root_typeenv;
+           termenv        = root_termenv;
+           shapes         = ShapeSet.empty
          }
       in
          if !debug_filter_cache then
@@ -882,33 +1464,38 @@ struct
 
    (*
     * Include the grammar from the .cmiz file.
+    * Also include the term declarations.
     *)
    let load_sig_grammar cache barg alt_select =
       let { base = base; self = self; name = name } = cache in
       let { lib = lib; sig_summaries = summaries } = base in
-      let grammar =
-         try (find_summarized_sig_module cache [name]).sig_grammar with
+      let info =
+         try find_summarized_sig_module cache [name] with
             Not_found ->
                let base_info = Base.find_match lib barg self alt_select AnySuffix in
                let info = SigMarshal.unmarshal (Base.info lib base_info) in
-               let info =
-                  (* Inline the subparts *)
-                  inline_sig_components barg cache [name] base_info (info_items info)
-               in
+               let info = inline_sig_components false barg cache [name] base_info (info_items info) in
                   (* This module gets listed in the inline stack *)
                   cache.base.sig_summaries <- info :: cache.base.sig_summaries;
-                  info.sig_grammar
+                  info
       in
-         cache.grammar <- grammar
+      let loc =
+         { Lexing.pos_fname = name ^ ".mli";
+           Lexing.pos_lnum = 0;
+           Lexing.pos_bol = 0;
+           Lexing.pos_cnum = 0
+         }
+      in
+      let loc = loc, loc in
+         cache.grammar <- info.sig_grammar
 
    (*
     * Check the implementation with its interface.
     *)
    let check cache barg alt_select =
       let sig_info = sig_info cache barg alt_select in
-      let id = find_id sig_info in
-         add_command cache (Id id, dummy_loc);
-         check_implementation cache.info sig_info;
+      let items = check_implementation cache.info sig_info in
+         add_prefix_commands cache items;
          sig_info
 
    (*
@@ -1006,6 +1593,18 @@ struct
     *)
    let eprint_info { info = info } =
       Filter_summary.eprint_info info
+
+   (*
+    * The external functions watch for redeclarations.
+    *)
+   let declare_typeclass =
+      declare_typeclass_env true
+
+   let declare_type =
+      declare_type_env true
+
+   let declare_term =
+      declare_term_env true
 end
 
 (*

@@ -347,6 +347,10 @@ let get_start gram =
 (************************************************************************
  * Input forms.
  *)
+
+(*
+ * Add a new iform.  Clear the cached table.
+ *)
 let add_iform gram id redex contractum =
    let iform =
       { iform_redex = redex;
@@ -357,6 +361,12 @@ let add_iform gram id redex contractum =
                   gram_iforms = ActionTable.add gram.gram_iforms id iform;
                   gram_iform_table = None
       }
+
+(*
+ * For debugging.
+ *)
+let iform_count gram =
+   ActionTable.cardinal gram.gram_iforms
 
 (*
  * Build the Term_match_table.
@@ -401,6 +411,28 @@ let apply_iforms gram t =
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
       Conversionals.apply_rewrite book conv t
+
+let apply_iforms_mterm gram mt args =
+   let conv = conv_of_iforms gram in
+   let conv = Conversionals.repeatC (Conversionals.higherC conv) in
+   let book = Mp_resource.find Mp_resource.top_bookmark in
+   let apply_term t =
+      Conversionals.apply_rewrite book conv t
+   in
+   let rec apply mt =
+      match mt with
+         MetaTheorem t ->
+            MetaTheorem (apply_term t)
+       | MetaImplies (mt1, mt2) ->
+            MetaImplies (apply mt1, apply mt2)
+       | MetaIff (mt1, mt2) ->
+            MetaIff (apply mt1, apply mt2)
+       | MetaFunction (t, mt1, mt2) ->
+            MetaFunction (apply_term t, apply mt1, apply mt2)
+       | MetaLabeled (l, mt) ->
+            MetaLabeled (l, apply mt)
+   in
+      apply mt, List.map apply_term args
 
 (************************************************************************
  * Utilities.
@@ -523,6 +555,20 @@ let term_of_string name loc s =
       Some gram ->
          let start = StringTable.find state.state_starts name in
             parse gram start loc s
+    | None ->
+         raise (Failure "grammar is not initialized")
+
+let apply_iforms t =
+   match state.state_grammar with
+      Some gram ->
+         apply_iforms gram t
+    | None ->
+         raise (Failure "grammar is not initialized")
+
+let apply_iforms_mterm mt args =
+   match state.state_grammar with
+      Some gram ->
+         apply_iforms_mterm gram mt args
     | None ->
          raise (Failure "grammar is not initialized")
 

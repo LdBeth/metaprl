@@ -35,6 +35,7 @@ open Term_shape_sig
 open Refiner_sig
 open Termmod_sig
 open Rewrite_sig
+open Term_ty_sig
 
 open Lm_symbol
 open Lm_printf
@@ -42,6 +43,11 @@ open Lm_array_util
 open Opname
 
 module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
+
+   (******************************************************************************************
+    * MODULE ALIASES
+    *)
+
    module Type1 = Refiner1.TermType
    module Type2 = Refiner2.TermType
    module Term1 = Refiner1.Term
@@ -58,6 +64,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    module TermSubst2 = Refiner2.TermSubst
    module TermShape1 = Refiner1.TermShape
    module TermShape2 = Refiner2.TermShape
+   module TermTy1 = Refiner1.TermTy
+   module TermTy2 = Refiner2.TermTy
    module SeqHyp1 = Refiner1.Term.SeqHyp
    module SeqHyp2 = Refiner2.Term.SeqHyp
    module Err1 = Refiner1.RefineError
@@ -67,6 +75,14 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    module Refine1 = Refiner1.Refine
    module Refine2 = Refiner2.Refine
 
+   (******************************************************************************************
+    * TYPES
+    *)
+
+   (*
+    * In this module we define _all_ the refiner types (except for the RefineError ones),
+    * not only those that are required by the signature to be in the TermType submodule.
+    *)
    module TermType = struct
       type term = Type1.term * Type2.term
       type bound_term = Type1.bound_term * Type2.bound_term
@@ -88,36 +104,40 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       type refiner = Refine1.refiner * Refine2.refiner
       type build = Refine1.build * Refine2.build
 
-      type level_exp_var' = { le_var : var; le_offset : int }
-      type level_exp' = { le_const : int; le_vars : level_exp_var list }
-      type operator' = { op_name : opname; op_params : param list }
-      type term' = { term_op : operator; term_terms : bound_term list }
-      type bound_term' = { bvars : var list; bterm : term }
+      type level_exp_var' = poly_level_exp_var
+      type level_exp' = level_exp_var poly_level_exp
+      type operator' = param poly_operator
+      type term' = (operator, bound_term) poly_term
+      type bound_term' = term poly_bound_term
       type object_id = param list
       type param' = (level_exp, param) poly_param
       type meta_term = term poly_meta_term
       type hypothesis = term poly_hypothesis
       type esequent = { sequent_args : term; sequent_hyps : seq_hyps; sequent_concl : term }
+      type ty_param = term poly_ty_param
+      type ty_bterm = term poly_ty_bterm
+      type ty_term  = (term, term) poly_ty_term
 
       type rewrite_item =
          RewriteTerm of term
        | RewriteFun of (term list -> term)
        | RewriteContext of (term -> term list -> term)
        | RewriteString of string rewrite_param
+       | RewriteToken of opname rewrite_param
        | RewriteNum of Lm_num.num rewrite_param
        | RewriteLevel of level_exp
 
       type match_param =
          MatchNumber of Lm_num.num * int option
        | MatchString of string
-       | MatchToken of string
+       | MatchToken of opname * string list
        | MatchVar of var
        | MatchLevel of level_exp
        | MatchUnsupported
 
       type match_term =
          MatchTerm of string list * match_param list * bound_term' list
-       | MatchSequent of string list * match_term list * hypothesis list * term
+       | MatchSequent of string list * match_term * hypothesis list * term
 
       type rw_args = address rw_args_poly
       type rewrite_args = rw_args * SymbolSet.t
@@ -140,6 +160,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          PrimRW of rw
        | CondRW of (rw_args -> term list -> cond_rewrite)
 
+      (* Shapes are compared to these two by ==, so we need to define them early *)
       let sequent_shape = TermShape1.sequent_shape, TermShape2.sequent_shape
       let var_shape = TermShape1.var_shape, TermShape2.var_shape
 
@@ -148,10 +169,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    open TermType
 
    module RefineError = struct
-      module ErrTypes = struct
-         module Types = TermType
-         type address = TermType.address
-      end
+      module Types = TermType
+      module Params = TermType
 
       type match_type =
          ParamMatch of param
@@ -199,6 +218,26 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
        | RewriteAddressError of address * string * refine_error
        | RewriteFreeContextVar of var * var
 
+       | VarError of var
+       | OpnameError of opname
+       | Opname2Error of opname * opname
+       | ParamError of param
+       | Param2Error of param * param
+       | ParamTyParamError of param * ty_param
+       | ShapeError of shape
+       | Shape2Error of shape * shape
+       | Term2Error of term * term
+       | VarTermError of var * term
+       | IntTermError of int * term
+
+       | StringErrorError of string * refine_error
+       | VarErrorError of var * refine_error
+       | IntErrorError of int * refine_error
+       | TermErrorError of term * refine_error
+       | OpnameErrorError of opname * refine_error
+       | ShapeErrorError of shape * refine_error
+       | MetaTermErrorError of meta_term * refine_error
+
       exception RefineError of string * refine_error
 
       let generic_refiner_exn = RefineError("generic", GenericError)
@@ -207,13 +246,21 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    open RefineError
 
-   (* Helper functions *)
+   (******************************************************************************************
+    * CONVERSIONS 1 <--> 2
+    *)
+
+   (*
+    * These helper functions define functions of type  Refiner1.Mod.t -> Refiner2.Mod.t
+    * for certain Mod.t types. This is needed for higher-order functions and exceptions
+    *)
+
    let lev2_of_lev1 lev =
-      let { Type1.le_var = v; Type1.le_offset = i } = Term1.dest_level_var lev in
+      let { le_var = v; le_offset = i } = Term1.dest_level_var lev in
          Term2.mk_level_var v i
 
    let levex2_of_levex1 levex =
-      let { Type1.le_const = c; Type1.le_vars = vs } = Term1.dest_level levex in
+      let { le_const = c; le_vars = vs } = Term1.dest_level levex in
       Term2.mk_level c (List.map lev2_of_lev1 vs)
 
    let rec param2_of_param1 p =
@@ -227,7 +274,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          Term2.make_param p
 
    let op2_of_op1 op =
-      let { Type1.op_name = name; Type1.op_params = pl } = Term1.dest_op op in
+      let { op_name = name; op_params = pl } = Term1.dest_op op in
          Term2.mk_op name (List.map param2_of_param1 pl)
 
    let rec term2_of_term1 t =
@@ -244,11 +291,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
                Type2.sequent_concl = term2_of_term1 c
             }
       else
-         let { Type1.term_op = op; Type1.term_terms = btl } = Term1.dest_term t in
+         let { term_op = op; term_terms = btl } = Term1.dest_term t in
             Term2.mk_term (op2_of_op1 op) (List.map bterm2_of_bterm1 btl)
 
    and bterm2_of_bterm1 bt =
-      let { Type1.bvars = vs; Type1.bterm = bt } = Term1.dest_bterm bt in
+      let { bvars = vs; bterm = bt } = Term1.dest_bterm bt in
          Term2.mk_bterm vs (term2_of_term1 bt)
 
    and hyp2_of_hyp1 = function
@@ -259,11 +306,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       SeqHyp2.of_list (List.map hyp2_of_hyp1 (SeqHyp1.to_list h))
 
    let lev1_of_lev2 lev =
-      let { Type2.le_var = v; Type2.le_offset = i } = Term2.dest_level_var lev in
+      let { le_var = v; le_offset = i } = Term2.dest_level_var lev in
          Term1.mk_level_var v i
 
    let levex1_of_levex2 levex =
-      let { Type2.le_const = c; Type2.le_vars = vs } = Term2.dest_level levex in
+      let { le_const = c; le_vars = vs } = Term2.dest_level levex in
       Term1.mk_level c (List.map lev1_of_lev2 vs)
 
    let rec param1_of_param2 p =
@@ -277,7 +324,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          Term1.make_param p
 
    let op1_of_op2 op =
-      let { Type2.op_name = name; Type2.op_params = pl } = Term2.dest_op op in
+      let { op_name = name; op_params = pl } = Term2.dest_op op in
          Term1.mk_op name (List.map param1_of_param2 pl)
 
    let rec term1_of_term2 t =
@@ -294,11 +341,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
                Type1.sequent_concl = term1_of_term2 c
             }
       else
-         let { Type2.term_op = op; Type2.term_terms = btl } = Term2.dest_term t in
+         let { term_op = op; term_terms = btl } = Term2.dest_term t in
             Term1.mk_term (op1_of_op2 op) (List.map bterm1_of_bterm2 btl)
 
    and bterm1_of_bterm2 bt =
-      let { Type2.bvars = vs; Type2.bterm = bt } = Term2.dest_bterm bt in
+      let { bvars = vs; bterm = bt } = Term2.dest_bterm bt in
          Term1.mk_bterm vs (term1_of_term2 bt)
 
    and hyp1_of_hyp2 = function
@@ -342,12 +389,20 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let rwargs_of_rwargs2 a =
       { a with arg_addrs = Array.map addr_of_addr2 a.arg_addrs }
 
+   let tp_of_tp1 = function
+      TyToken t -> TyToken (term_of_term1 t)
+    | (TyNumber | TyString | TyLevel | TyVar | TyQuote) as tp -> tp
+
+   let shape_of_shape1 _ =
+      (* XXX: HACK: this is fake *)
+      var_shape
+
    let rec re_of_re1 = function
-    | Err1.GenericError -> GenericError
-    | Err1.ToploopIgnoreError -> ToploopIgnoreError
-    | Err1.StringError s -> StringError (s)
-    | Err1.IntError i -> IntError (i)
-    | Err1.TermError t -> TermError (term_of_term1 t)
+    | Err1.GenericError  -> GenericError
+    | Err1.ToploopIgnoreError  -> ToploopIgnoreError
+    | Err1.StringError s0 -> StringError (s0)
+    | Err1.IntError i0 -> IntError (i0)
+    | Err1.TermError t0 -> TermError (term_of_term1 t0)
     | Err1.StringIntError (s0, i1) -> StringIntError (s0, i1)
     | Err1.StringStringError (s0, s1) -> StringStringError (s0, s1)
     | Err1.StringVarError (s0, v1) -> StringVarError (s0, v1)
@@ -355,28 +410,50 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
     | Err1.StringWrapError (s0, re1) -> StringWrapError (s0, re_of_re1 re1)
     | Err1.SubgoalError (i0, s1, re2) -> SubgoalError (i0, s1, re_of_re1 re2)
     | Err1.PairError (s0, re1, s2, re3) -> PairError (s0, re_of_re1 re1, s2, re_of_re1 re3)
-    | Err1.NodeError (s0, t1, srel) -> NodeError (s0, term_of_term1 t1, List.map sre_of_sre1 srel)
+    | Err1.NodeError (s0, t1, sre2) -> NodeError (s0, term_of_term1 t1, List.map sre_of_sre1 sre2)
     | Err1.AddressError (a0, t1) -> AddressError (addr_of_addr1 a0, term_of_term1 t1)
     | Err1.TermMatchError (t0, s1) -> TermMatchError (term_of_term1 t0, s1)
     | Err1.TermPairError (t0, t1) -> TermPairError (term_of_term1 t0, term_of_term1 t1)
-    | Err1.MetaTermMatchError mt -> MetaTermMatchError (mterm_of_mterm1 mt)
-    | Err1.RewriteBoundSOVar v -> RewriteBoundSOVar (v)
-    | Err1.RewriteFreeSOVar v -> RewriteFreeSOVar (v)
-    | Err1.RewriteSOVarArity v -> RewriteSOVarArity (v)
-    | Err1.RewriteBoundParamVar v -> RewriteBoundParamVar (v)
-    | Err1.RewriteFreeParamVar v -> RewriteFreeParamVar (v)
-    | Err1.RewriteBadRedexParam p -> RewriteBadRedexParam (param_of_param1 p)
-    | Err1.RewriteNoRuleOperator -> RewriteNoRuleOperator
-    | Err1.RewriteBadMatch mt -> RewriteBadMatch (mtype_of_mtype1 mt)
-    | Err1.RewriteAllSOInstances v -> RewriteAllSOInstances (v)
-    | Err1.RewriteMissingContextArg v -> RewriteMissingContextArg (v)
-    | Err1.RewriteStringError s -> RewriteStringError (s)
+    | Err1.MetaTermMatchError mt0 -> MetaTermMatchError (mterm_of_mterm1 mt0)
+    | Err1.RewriteBoundSOVar v0 -> RewriteBoundSOVar (v0)
+    | Err1.RewriteFreeSOVar v0 -> RewriteFreeSOVar (v0)
+    | Err1.RewriteSOVarArity v0 -> RewriteSOVarArity (v0)
+    | Err1.RewriteBoundParamVar v0 -> RewriteBoundParamVar (v0)
+    | Err1.RewriteFreeParamVar v0 -> RewriteFreeParamVar (v0)
+    | Err1.RewriteBadRedexParam p0 -> RewriteBadRedexParam (param_of_param1 p0)
+    | Err1.RewriteNoRuleOperator  -> RewriteNoRuleOperator
+    | Err1.RewriteBadMatch mt0 -> RewriteBadMatch (mtype_of_mtype1 mt0)
+    | Err1.RewriteAllSOInstances v0 -> RewriteAllSOInstances (v0)
+    | Err1.RewriteMissingContextArg v0 -> RewriteMissingContextArg (v0)
+    | Err1.RewriteStringError s0 -> RewriteStringError (s0)
     | Err1.RewriteStringOpnameOpnameError (s0, o1, o2) -> RewriteStringOpnameOpnameError (s0, o1, o2)
     | Err1.RewriteAddressError (a0, s1, re2) -> RewriteAddressError (addr_of_addr1 a0, s1, re_of_re1 re2)
     | Err1.RewriteFreeContextVar (v0, v1) -> RewriteFreeContextVar (v0, v1)
+    | Err1.VarError v0 -> VarError (v0)
+    | Err1.OpnameError o0 -> OpnameError (o0)
+    | Err1.Opname2Error (o0, o1) -> Opname2Error (o0, o1)
+    | Err1.ParamError p0 -> ParamError (param_of_param1 p0)
+    | Err1.Param2Error (p0, p1) -> Param2Error (param_of_param1 p0, param_of_param1 p1)
+    | Err1.ParamTyParamError (p0, tp1) -> ParamTyParamError (param_of_param1 p0, tp_of_tp1 tp1)
+    | Err1.ShapeError s0 -> ShapeError (shape_of_shape1 s0)
+    | Err1.Shape2Error (s0, s1) -> Shape2Error (shape_of_shape1 s0, shape_of_shape1 s1)
+    | Err1.Term2Error (t0, t1) -> Term2Error (term_of_term1 t0, term_of_term1 t1)
+    | Err1.VarTermError (v0, t1) -> VarTermError (v0, term_of_term1 t1)
+    | Err1.IntTermError (i0, t1) -> IntTermError (i0, term_of_term1 t1)
+    | Err1.StringErrorError (s0, re1) -> StringErrorError (s0, re_of_re1 re1)
+    | Err1.VarErrorError (v0, re1) -> VarErrorError (v0, re_of_re1 re1)
+    | Err1.IntErrorError (i0, re1) -> IntErrorError (i0, re_of_re1 re1)
+    | Err1.TermErrorError (t0, re1) -> TermErrorError (term_of_term1 t0, re_of_re1 re1)
+    | Err1.OpnameErrorError (o0, re1) -> OpnameErrorError (o0, re_of_re1 re1)
+    | Err1.ShapeErrorError (s0, re1) -> ShapeErrorError (shape_of_shape1 s0, re_of_re1 re1)
+    | Err1.MetaTermErrorError (mt0, re1) -> MetaTermErrorError (mterm_of_mterm1 mt0, re_of_re1 re1)
 
    and sre_of_sre1 (s, re) =
       s, re_of_re1 re
+
+   (******************************************************************************************
+    * DEBUG TERM PRINTING
+    *)
 
    let print_term_ref = ref (fun _ _ -> raise (Failure "Refiner_debug.Term.print_term: printer not installed"))
 
@@ -392,6 +469,16 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          print_term_list out t
     | [] ->
          ()
+
+   (******************************************************************************************
+    * EXCEPTIONS WRAPPING
+    *)
+
+   (*
+    * In order to catch the cases where one implementation raises an exception and another
+    * succeeds, we need to catch exceptions. We also need to take into account that an
+    * exception may be raised in a partial application
+    *)
 
    type 'a wrap =
       Val of 'a
@@ -414,6 +501,15 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let wrap8 f a1 a2 a3 a4 a5 a6 a7 = wrap_plus (wrap7 f a1 a2 a3 a4 a5 a6 a7)
    let wrap9 f a1 a2 a3 a4 a5 a6 a7 a9 = wrap_plus (wrap8 f a1 a2 a3 a4 a5 a6 a7 a9)
 
+   (******************************************************************************************
+    * SPLITS
+    *)
+
+   (*
+    * This section defines functions of the type   t -> Refiner1.Mod.t * Refiner1,Mod.t
+    * and in general
+    * TypeFun(Refiner_debug types) -> TypeFun(Refiner1 types) * TypeFun(Refiner2 types)
+    *)
    let split = List.split
 
    let split_opt = function
@@ -431,26 +527,22 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let split_term' { term_op = (op1, op2); term_terms = btl } =
       let btl1, btl2 = split btl in
-         { Type1.term_op = op1; Type1.term_terms = btl1 },
-         { Type2.term_op = op2; Type2.term_terms = btl2 }
+         { term_op = op1; term_terms = btl1 },
+         { term_op = op2; term_terms = btl2 }
 
    let split_bterm' { bvars = vs; bterm = bt1, bt2 } =
-      { Type1.bvars = vs; Type1.bterm = bt1 },
-      { Type2.bvars = vs; Type2.bterm = bt2 }
+      { bvars = vs; bterm = bt1 },
+      { bvars = vs; bterm = bt2 }
 
    let split_op' { op_name = name; op_params = pars } =
       let pl1, pl2 = split pars in
-         { Type1.op_name = name; Type1.op_params = pl1 },
-         { Type2.op_name = name; Type2.op_params = pl2 }
-
-   let split_level_exp_var' { le_var = v; le_offset = i } =
-      { Type1.le_var = v; Type1.le_offset = i },
-      { Type2.le_var = v; Type2.le_offset = i }
+         { op_name = name; op_params = pl1 },
+         { op_name = name; op_params = pl2 }
 
    let split_level_exp' { le_const = c; le_vars = vs } =
       let vs1, vs2 = split vs in
-         { Type1.le_const = c; Type1.le_vars = vs1 },
-         { Type2.le_const = c; Type2.le_vars = vs2 }
+         { le_const = c; le_vars = vs1 },
+         { le_const = c; le_vars = vs2 }
 
    let split_param' = function
       (Number _ | String _ | Token _ | Var _ | MNumber _ | MString _ | MToken _ | Quote) as p -> p, p
@@ -503,6 +595,31 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let a1, a2 = split_args a in
          (a1, ss), (a2, ss)
 
+   let split_ty_param = function
+      TyToken (t1, t2) -> TyToken t1, TyToken t2
+    | (TyNumber | TyString | TyLevel | TyVar | TyQuote) as tp -> tp, tp
+
+   let split_ty_params pl =
+      split (List.map split_ty_param pl)
+
+   let split_ty_bterm { ty_bvars = tl; ty_bterm = t1, t2 } =
+      let tl1, tl2 = split tl in
+         { ty_bvars = tl1; ty_bterm = t1 }, { ty_bvars = tl2; ty_bterm = t2 }
+
+   let split_ty_bterms bl =
+      split (List.map split_ty_bterm bl)
+
+   let split_ty_term { ty_term = t1, t2; ty_opname = o; ty_params = pl; ty_bterms = bl; ty_type = tt1, tt2 } =
+      let pl1, pl2 = split_ty_params pl in
+      let bl1, bl2 = split_ty_bterms bl in
+         { ty_term = t1; ty_opname = o; ty_params = pl1; ty_bterms = bl1; ty_type = tt1 },
+         { ty_term = t2; ty_opname = o; ty_params = pl2; ty_bterms = bl2; ty_type = tt2 }
+
+   (*
+    * Splits for function types need to use "Refiner1 -> Refiner_debug" and
+    * "Refiner2 -> Refiner_debug" conversions
+    *)
+
    let split_taf f =
       (fun t1 -> f (term_of_term1 t1)), (fun t2 -> f (term_of_term2 t2))
 
@@ -547,6 +664,20 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let split_utriv f =
       (fun () -> fst (f ())), (fun () -> snd (f ()))
+
+   (******************************************************************************************
+    * MERGES
+    *)
+
+   (*
+    * The merge functions in general have the type
+    * string -> TypeFun(Refiner1) -> TypeFun(Refiner2) -> TypeFun(Refiner)
+    * where TypeFun just specifies some particular combinarion of the refiner types.
+    * The string argument (which we always call "x" for brievity) is the name of the API
+    * function that is responsible for the merge (and which should be blamed if the values
+    * are inconsisntent. The merge functions _must_ test the two values for consistency if
+    * at all possible.
+    *)
 
    (*
     * We use a separate error reporting function to have a single breakpoint
@@ -684,7 +815,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let merge_params' = merge_list merge_param' "param'"
    let merge_level_exp_vars = merge_list merge_level_exp_var "level_exp_var"
 
-   let merge_level_exp_var' x { Type1.le_var = v1; Type1.le_offset = i1 } { Type2.le_var = v2; Type2.le_offset = i2 } =
+   let merge_level_exp_var' x { le_var = v1; le_offset = i1 } { le_var = v2; le_offset = i2 } =
       if not (v1 = v2) then
          report_error x "le_var field mismatch";
       if not (i1 = i2) then
@@ -693,12 +824,12 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let merge_level_exp_vars' = merge_list merge_level_exp_var' "level_exp_var'"
 
-   let merge_level_exp' x { Type1.le_const = c1; Type1.le_vars = vs1 } { Type2.le_const = c2; Type2.le_vars = vs2 } =
+   let merge_level_exp' x { le_const = c1; le_vars = vs1 } { le_const = c2; le_vars = vs2 } =
       if not (c1 = c2) then
          report_error x "le_const field mismatch";
       { le_const = c1; le_vars = merge_level_exp_vars x vs1 vs2 }
 
-   let merge_op' x { Type1.op_name = name1; Type1.op_params = pl1 } { Type2.op_name = name2; Type2.op_params = pl2 } =
+   let merge_op' x { op_name = name1; op_params = pl1 } { op_name = name2; op_params = pl2 } =
       if not (Opname.eq name1 name2) then
          report_error x "operator' opname mismatch";
       { op_name = name1; op_params = merge_params x pl1 pl2 }
@@ -757,7 +888,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let merge_sltot x (sl1, to1, t1) (sl2, to2, t2) =
       (merge_strings x sl1 sl2), (merge_term_opt x to1 to2), (merge_term x t1 t2)
 
-   let merge_bterm' x { Type1.bvars = bv1; Type1.bterm = t1 } { Type2.bvars = bv2; Type2.bterm = t2 } =
+   let merge_sltotlt x (l1, t1) (l2, t2) =
+      (merge_list merge_sltot "string list * term option * term" x l1 l2), (merge_term x t1 t2)
+
+   let merge_bterm' x { bvars = bv1; bterm = t1 } { bvars = bv2; bterm = t2 } =
       if not (List.length bv1 = List.length bv2) then
          report_error x "bvar length mismatch";
       { bvars = bv1; bterm = merge_term x t1 (TermSubst2.subst t2 (List.rev bv2) (List.rev_map Term2.mk_var_term bv1)) }
@@ -769,7 +903,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let merge_bterms' = merge_list merge_bterm' "bound_term'"
    let merge_bterms = merge_list merge_bterm "bterm"
 
-   let merge_term' x { Type1.term_op = op1; Type1.term_terms = btl1 } { Type2.term_op = op2; Type2.term_terms = btl2 } =
+   let merge_term' x { term_op = op1; term_terms = btl1 } { term_op = op2; term_terms = btl2 } =
       { term_op = merge_op x op1 op2; term_terms = merge_bterms x btl1 btl2 }
 
    let merge_hyp x h1 h2 =
@@ -828,7 +962,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          Type1.MatchNumber (n1, None), Type2.MatchNumber (n2, None) -> MatchNumber (merge_num x n1 n2, None)
        | Type1.MatchNumber (n1, Some i1), Type2.MatchNumber (n2, Some i2) -> MatchNumber (merge_num x n1 n2, Some (merge_int x i1 i2))
        | Type1.MatchString s1, Type2.MatchString s2 -> MatchString (merge_string x s1 s2)
-       | Type1.MatchToken s1, Type2.MatchToken s2 -> MatchToken (merge_string x s1 s2)
+       | Type1.MatchToken (o1, s1), Type2.MatchToken (o2, s2) -> MatchToken (merge_opname x o1 o2, merge_strings x s1 s2)
        | Type1.MatchVar v1, Type2.MatchVar v2 -> MatchVar (merge_var x v1 v2)
        | Type1.MatchLevel l1, Type2.MatchLevel l2 -> MatchLevel (merge_level_exp x l1 l2)
        | Type1.MatchUnsupported, Type2.MatchUnsupported -> MatchUnsupported
@@ -840,8 +974,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       match mt1, mt2 with
          Type1.MatchTerm (sl1, pl1, bl1), Type2.MatchTerm (sl2, pl2, bl2) ->
             MatchTerm (merge_strings x sl1 sl2, merge_match_params x pl1 pl2, merge_bterms' x bl1 bl2)
-       | Type1.MatchSequent (sl1, mtl1, hl1, t1), Type2.MatchSequent (sl2, mtl2, hl2, t2) ->
-            MatchSequent (merge_strings x sl1 sl2, merge_match_terms x mtl1 mtl2, merge_hyps x hl1 hl2, merge_term x t1 t2)
+       | Type1.MatchSequent (sl1, mt1, hl1, t1), Type2.MatchSequent (sl2, mt2, hl2, t2) ->
+            MatchSequent (merge_strings x sl1 sl2, merge_match_term x mt1 mt2, merge_hyps x hl1 hl2, merge_term x t1 t2)
        | _ -> report_error x "match_term kind mismatch"
 
    and merge_match_terms x mtl1 mtl2 = merge_list merge_match_term "match term" x mtl1 mtl2
@@ -885,6 +1019,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
             RewriteContext (fun (t1, t2) tl -> let tl1, tl2 = split tl in merge merge_term x (wrap2 f1 t1 tl1) (wrap2 f2 t2 tl2))
        | Rewrite1.RewriteString s1, Rewrite2.RewriteString s2 ->
             RewriteString (merge_rwp merge_string x s1 s2)
+       | Rewrite1.RewriteToken t1, Rewrite2.RewriteToken t2 ->
+            RewriteToken (merge_rwp merge_opname x t1 t2)
        | Rewrite1.RewriteNum n1, Rewrite2.RewriteNum n2 ->
             RewriteNum (merge_rwp merge_num x n1 n2)
        | Rewrite1.RewriteLevel le1, Rewrite2.RewriteLevel le2 ->
@@ -930,6 +1066,21 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
             in
                CondRW rw
        | _ -> report_error x "prim_rewrite kind mismatch"
+
+   let merge_stables x t1 t2 =
+      let tst t s v =
+         if not (SymbolTable.mem t s) then
+            report_error x ("table membership mismatch for " ^ (string_of_symbol s));
+         if (SymbolTable.find t s) <> v then
+            report_error x ("table value mismatch for " ^ (string_of_symbol s));
+      in
+         SymbolTable.iter (tst t2) t1;
+         SymbolTable.iter (tst t1) t2;
+         t1
+
+   (******************************************************************************************
+    * The SeqHyp Module
+    *)
 
    module SeqHyp = struct
       type elt = hypothesis
@@ -992,6 +1143,16 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let collect ps = of_list (Array.to_list (Lm_array_util.collect (List.map map_part ps)))
    end
 
+   (******************************************************************************************
+    * NORMAL MODULES
+    *)
+
+   (*
+    * Most of the code in the modules below is generated by the util/gen_refiner_debug.pl script.
+    * The shell command line needed to regenerate the code is given in front of each
+    * generated section.
+    *)
+
    module Term = struct
       module TermTypes = TermType
       module SeqHyp = SeqHyp
@@ -1018,6 +1179,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       let mk_descriptor_term d =
          Weak_memo.TheWeakMemo.retrieve_hack d
+
+      (*
+       * To generate the code for this module, run the following:
+       *   grep '^   [v ][a ][l ]' refiner/refsig/term_base_sig.ml | grep -v print | util/gen_refiner_debug.pl Term > /tmp/code
+       *)
 
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
 
@@ -1091,8 +1257,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          merge merge_level_exp_var "Term.mk_level_var" (wrap2 Term1.mk_level_var p0 p1) (wrap2 Term2.mk_level_var p0 p1)
 
       let make_level_var (p0 : level_exp_var') =
-         let p0_1, p0_2 = split_level_exp_var' p0 in
-         merge merge_level_exp_var "Term.make_level_var" (wrap1 Term1.make_level_var p0_1) (wrap1 Term2.make_level_var p0_2)
+         merge merge_level_exp_var "Term.make_level_var" (wrap1 Term1.make_level_var p0) (wrap1 Term2.make_level_var p0)
 
       let dest_level_var (p0 : level_exp_var) =
          let p0_1, p0_2 = p0 in
@@ -1170,6 +1335,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    module TermOp = struct
       module OpTypes = TermType
+
+      (*
+       * To generate the code for this module, run the following:
+       *   grep '^   [v ][a ][l ]' refiner/refsig/term_op_sig.ml | util/gen_refiner_debug.pl Term > /tmp/code
+       *)
 
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
 
@@ -1681,6 +1851,17 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_string "TermOp.dest_string_param" (wrap1 TermOp1.dest_string_param p0_1) (wrap1 TermOp2.dest_string_param p0_2)
 
+      let is_var_param_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge merge_bool "TermOp.is_var_param_term" (wrap2 TermOp1.is_var_param_term p0 p1_1) (wrap2 TermOp2.is_var_param_term p0 p1_2)
+
+      let mk_var_param_term (p0 : opname) (p1 : var) =
+         merge merge_term "TermOp.mk_var_param_term" (wrap2 TermOp1.mk_var_param_term p0 p1) (wrap2 TermOp2.mk_var_param_term p0 p1)
+
+      let dest_var_param_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge merge_var "TermOp.dest_var_param_term" (wrap2 TermOp1.dest_var_param_term p0 p1_1) (wrap2 TermOp2.dest_var_param_term p0 p1_2)
+
       let is_string_dep0_term (p0 : opname) (p1 : term) =
          let p1_1, p1_2 = p1 in
          merge merge_bool "TermOp.is_string_dep0_term" (wrap2 TermOp1.is_string_dep0_term p0 p1_1) (wrap2 TermOp2.is_string_dep0_term p0 p1_2)
@@ -1887,18 +2068,22 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p1_1, p1_2 = p1 in
          merge merge_bool "TermOp.is_token_term" (wrap2 TermOp1.is_token_term p0 p1_1) (wrap2 TermOp2.is_token_term p0 p1_2)
 
-      let mk_token_term (p0 : opname) (p1 : string) =
+      let mk_token_term (p0 : opname) (p1 : opname) =
          merge merge_term "TermOp.mk_token_term" (wrap2 TermOp1.mk_token_term p0 p1) (wrap2 TermOp2.mk_token_term p0 p1)
 
       let dest_token_term (p0 : opname) (p1 : term) =
          let p1_1, p1_2 = p1 in
-         merge merge_string "TermOp.dest_token_term" (wrap2 TermOp1.dest_token_term p0 p1_1) (wrap2 TermOp2.dest_token_term p0 p1_2)
+         merge merge_opname "TermOp.dest_token_term" (wrap2 TermOp1.dest_token_term p0 p1_1) (wrap2 TermOp2.dest_token_term p0 p1_2)
+
+      let dest_token_param (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge merge_opname "TermOp.dest_token_param" (wrap1 TermOp1.dest_token_param p0_1) (wrap1 TermOp2.dest_token_param p0_2)
 
       let is_token_simple_term (p0 : opname) (p1 : term) =
          let p1_1, p1_2 = p1 in
          merge merge_bool "TermOp.is_token_simple_term" (wrap2 TermOp1.is_token_simple_term p0 p1_1) (wrap2 TermOp2.is_token_simple_term p0 p1_2)
 
-      let mk_token_simple_term (p0 : opname) (p1 : string) (p2 : term list) =
+      let mk_token_simple_term (p0 : opname) (p1 : opname) (p2 : term list) =
          let p2_1, p2_2 = split p2 in
          merge merge_term "TermOp.mk_token_simple_term" (wrap3 TermOp1.mk_token_simple_term p0 p1 p2_1) (wrap3 TermOp2.mk_token_simple_term p0 p1 p2_2)
 
@@ -1907,7 +2092,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let res1 = wrap2 TermOp1.dest_token_simple_term p0 p1_1 in
          let res2 = wrap2 TermOp2.dest_token_simple_term p0 p1_2 in
          let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermOp.dest_token_simple_term" res1 res2 in
-         (merge_string "TermOp.dest_token_simple_term - 0" res0_1 res0_2),
+         (merge_opname "TermOp.dest_token_simple_term - 0" res0_1 res0_2),
          (merge_terms "TermOp.dest_token_simple_term - 1" res1_1 res1_2)
 
    end
@@ -1918,6 +2103,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       let string_of_address (a1, a2) =
          sprintf "Impl1 addr: %s; Impl2 addr: %s" (TermAddr1.string_of_address a1) (TermAddr2.string_of_address a2)
+
+      (*
+       * To generate the code for this module, run the following:
+       *   grep -A1 val refiner/refsig/term_addr_sig.ml | grep -v -- -- | grep -v string_of_address | grep -v end | util/gen_refiner_debug.pl TermAddr > /tmp/code
+       *)
 
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
 
@@ -2027,6 +2217,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    module TermMan = struct
       module ManTypes = TermType
 
+      (*
+       * To generate the code for this module, run the following:
+       *   grep -A1 val refiner/refsig/term_man_sig.ml | egrep -v 'end|--|analoguos' | sed -e 's|(\*.*||' | util/gen_refiner_debug.pl TermMan > /tmp/code
+       *)
+
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
 
       let mk_const_level_exp (p0 : int) =
@@ -2097,6 +2292,26 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p1_1, p1_2 = p1 in
          let p3_1, p3_2 = split p3 in
          merge merge_term "TermMan.mk_context_term" (wrap4 TermMan1.mk_context_term p0 p1_1 p2 p3_1) (wrap4 TermMan2.mk_context_term p0 p1_2 p2 p3_2)
+
+      let is_fo_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge merge_bool "TermMan.is_fo_term" (wrap1 TermMan1.is_fo_term p0_1) (wrap1 TermMan2.is_fo_term p0_2)
+
+      let context_vars_info (p0 : (bool * int * int) SymbolTable.t) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge merge_stables "TermMan.context_vars_info" (wrap2 TermMan1.context_vars_info p0 p1_1) (wrap2 TermMan2.context_vars_info p0 p1_2)
+
+      let so_vars_info (p0 : (int * int) SymbolTable.t) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge merge_stables "TermMan.so_vars_info" (wrap2 TermMan1.so_vars_info p0 p1_1) (wrap2 TermMan2.so_vars_info p0 p1_2)
+
+      let context_vars_info_list (p0 : (bool * int * int) SymbolTable.t) (p1 : term list) =
+         let p1_1, p1_2 = split p1 in
+         merge merge_stables "TermMan.context_vars_info_list" (wrap2 TermMan1.context_vars_info_list p0 p1_1) (wrap2 TermMan2.context_vars_info_list p0 p1_2)
+
+      let so_vars_info_list (p0 : (int * int) SymbolTable.t) (p1 : term list) =
+         let p1_1, p1_2 = split p1 in
+         merge merge_stables "TermMan.so_vars_info_list" (wrap2 TermMan1.so_vars_info_list p0 p1_1) (wrap2 TermMan2.so_vars_info_list p0 p1_2)
 
       let free_meta_variables (p0 : term) =
          let p0_1, p0_2 = p0 in
@@ -2188,6 +2403,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let xnil_term =
          merge_term "TermMan.xnil_term" (TermMan1.xnil_term) (TermMan2.xnil_term)
 
+      let xconcl_term =
+         merge_term "TermMan.xconcl_term" (TermMan1.xconcl_term) (TermMan2.xconcl_term)
+
       let is_xcons_term (p0 : term) =
          let p0_1, p0_2 = p0 in
          merge merge_bool "TermMan.is_xcons_term" (wrap1 TermMan1.is_xcons_term p0_1) (wrap1 TermMan2.is_xcons_term p0_2)
@@ -2262,6 +2480,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    module TermSubst = struct
       module SubstTypes = TermType
       type term_subst = (var * term) list
+
+      (*
+       * To generate the code for this module, run the following:
+       *    grep '^   [v ][a ][l ]' refiner/refsig/term_subst_sig.ml |  util/gen_refiner_debug.pl TermSubst > /tmp/code
+       *)
 
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
 
@@ -2356,6 +2579,24 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let string_of_shape (s1, s2) =
          sprintf "Impl1 shape: %s; Impl2 shape: %s" (TermShape1.string_of_shape s1) (TermShape2.string_of_shape s2)
 
+      (* XXX: BUG: we are reimplementing the modules instead of debugging the underlying implementation *)
+      module ShapeCompare =
+      struct
+         type t = shape
+         let compare = Pervasives.compare
+      end
+
+      let shape_compare = Pervasives.compare
+
+      module ShapeSet = Lm_set.LmMake (ShapeCompare);;
+      module ShapeTable = Lm_map.LmMake (ShapeCompare);;
+      module ShapeMTable = Lm_map.LmMakeList (ShapeCompare);;
+
+      (*
+       * To generate the code for this module, run the following:
+       *   grep '^   [v ][a ][l ]' refiner/refsig/term_shape_sig.ml | sed -e 's/(\*.*//' | egrep -v 'end|string_of|(sequent|var)_shape' | util/gen_refiner_debug.pl TermShape > /tmp/code
+       *)
+
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
 
       let shape_of_term (p0 : term) =
@@ -2385,17 +2626,49 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    end
 
+   module TermTy = struct
+      include TermType
+
+      (*
+       * To generate the code for this module, run the following:
+       *   grep '^   [v ][a ][l ]' refiner/refsig/term_ty_sig.ml | util/gen_refiner_debug.pl TermTy > /tmp/code
+       *)
+
+      (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
+
+      let term_of_ty (p0 : ty_term) =
+         let p0_1, p0_2 = split_ty_term p0 in
+         merge merge_term "TermTy.term_of_ty" (wrap1 TermTy1.term_of_ty p0_1) (wrap1 TermTy2.term_of_ty p0_2)
+
+      let string_of_ty_param (p0 : ty_param) =
+         let p0_1, p0_2 = split_ty_param p0 in
+         merge merge_string "TermTy.string_of_ty_param" (wrap1 TermTy1.string_of_ty_param p0_1) (wrap1 TermTy2.string_of_ty_param p0_2)
+
+      let eq (p0 : ty_term) (p1 : ty_term) =
+         let p0_1, p0_2 = split_ty_term p0 in
+         let p1_1, p1_2 = split_ty_term p1 in
+         merge merge_bool "TermTy.eq" (wrap2 TermTy1.eq p0_1 p1_1) (wrap2 TermTy2.eq p0_2 p1_2)
+
+      let eq_ty (p0 : ty_term) (p1 : ty_term) =
+         let p0_1, p0_2 = split_ty_term p0 in
+         let p1_1, p1_2 = split_ty_term p1 in
+         merge merge_bool "TermTy.eq_ty" (wrap2 TermTy1.eq_ty p0_1 p1_1) (wrap2 TermTy2.eq_ty p0_2 p1_2)
+
+   end
+
    module TermMeta = struct
       module MetaTypes = TermType
 
-      let unzip_mfunction mt =
-         let mt1, mt2 = split_meta_term mt in
-         let l1, t1 = TermMeta1.unzip_mfunction mt1 in
-         let l2, t2 = TermMeta2.unzip_mfunction mt2 in
-         let x = "TermMeta.unzip_mfunction" in
-            (merge_list merge_sltot "meta_func" x l1 l2), (merge_term x t1 t2)
+      (*
+       * To generate the code for this module, run the following:
+       *   grep '^   [v ][a ][l ]' refiner/refsig/term_meta_sig.ml | util/gen_refiner_debug.pl TermMeta > /tmp/code
+       *)
 
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
+
+      let free_vars_mterm (p0 : meta_term) =
+         let p0_1, p0_2 = split_meta_term p0 in
+         merge merge_ss "TermMeta.free_vars_mterm" (wrap1 TermMeta1.free_vars_mterm p0_1) (wrap1 TermMeta2.free_vars_mterm p0_2)
 
       let context_vars (p0 : meta_term) =
          let p0_1, p0_2 = split_meta_term p0 in
@@ -2404,6 +2677,14 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermMeta.context_vars" res1 res2 in
          (merge_ss "TermMeta.context_vars - 0" res0_1 res0_2),
          (merge_ss "TermMeta.context_vars - 1" res1_1 res1_2)
+
+      let context_vars_info (p0 : (bool * int * int) SymbolTable.t) (p1 : meta_term) =
+         let p1_1, p1_2 = split_meta_term p1 in
+         merge merge_stables "TermMeta.context_vars_info" (wrap2 TermMeta1.context_vars_info p0 p1_1) (wrap2 TermMeta2.context_vars_info p0 p1_2)
+
+      let so_vars_info (p0 : (int * int) SymbolTable.t) (p1 : meta_term) =
+         let p1_1, p1_2 = split_meta_term p1 in
+         merge merge_stables "TermMeta.so_vars_info" (wrap2 TermMeta1.so_vars_info p0 p1_1) (wrap2 TermMeta2.so_vars_info p0 p1_2)
 
       let meta_alpha_equal (p0 : meta_term) (p1 : meta_term) =
          let p0_1, p0_2 = split_meta_term p0 in
@@ -2422,10 +2703,17 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          (merge_terms "TermMeta.unzip_mimplies - 0" res0_1 res0_2),
          (merge_term "TermMeta.unzip_mimplies - 1" res1_1 res1_2)
 
+      let unzip_mrewrite (p1 : meta_term) =
+         raise (Invalid_argument "jyh")
+
       let zip_mimplies (p0 : term list) (p1 : term) =
          let p0_1, p0_2 = split p0 in
          let p1_1, p1_2 = p1 in
          merge merge_meta_term "TermMeta.zip_mimplies" (wrap2 TermMeta1.zip_mimplies p0_1 p1_1) (wrap2 TermMeta2.zip_mimplies p0_2 p1_2)
+
+      let unzip_mfunction (p0 : meta_term) =
+         let p0_1, p0_2 = split_meta_term p0 in
+         merge merge_sltotlt "TermMeta.unzip_mfunction" (wrap1 TermMeta1.unzip_mfunction p0_1) (wrap1 TermMeta2.unzip_mfunction p0_2)
 
       let zip_mfunction (p0 : (term option * term) list) (p1 : term) =
          let p0_1, p0_2 = split_popl p0 in
@@ -2435,6 +2723,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let strip_mfunction (p0 : meta_term) =
          let p0_1, p0_2 = split_meta_term p0 in
          merge merge_meta_term "TermMeta.strip_mfunction" (wrap1 TermMeta1.strip_mfunction p0_1) (wrap1 TermMeta2.strip_mfunction p0_2)
+
+      let map_mterm (p0 : (term -> term)) (p1 : meta_term) =
+         let p0_1, p0_2 = split_ttf p0 in
+         let p1_1, p1_2 = split_meta_term p1 in
+         merge merge_meta_term "TermMeta.map_mterm" (wrap2 TermMeta1.map_mterm p0_1 p1_1) (wrap2 TermMeta2.map_mterm p0_2 p1_2)
 
       let term_of_parsed_term (p0 : term) =
          let p0_1, p0_2 = p0 in
@@ -2448,13 +2741,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_term "TermMeta.display_term_of_term" (wrap1 TermMeta1.display_term_of_term p0_1) (wrap1 TermMeta2.display_term_of_term p0_2)
 
-      let create_term_parser (p0 : unit) (p1 : term) =
-         let p1_1, p1_2 = p1 in
-         merge merge_term "TermMeta.create_term_parser" (wrap2 TermMeta1.create_term_parser p0 p1_1) (wrap2 TermMeta2.create_term_parser p0 p1_2)
+      let rewrite_of_parsed_rewrite (redex : term) (contractum : term) =
+         raise (Invalid_argument "jyh gives up in despair")
 
-      let mterm_of_parsed_mterm (p0 : meta_term) =
-         let p0_1, p0_2 = split_meta_term p0 in
-         merge merge_meta_term "TermMeta.mterm_of_parsed_mterm" (wrap1 TermMeta1.mterm_of_parsed_mterm p0_1) (wrap1 TermMeta2.mterm_of_parsed_mterm p0_2)
+      let mrewrite_of_parsed_mrewrite (redex : term list) (contractum : term) =
+         raise (Invalid_argument "jyh gives up in despair")
 
       let mterms_of_parsed_mterms (p0 : meta_term) (p1 : term list) =
          let p0_1, p0_2 = split_meta_term p0 in
@@ -2465,6 +2756,19 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          (merge_meta_term "TermMeta.mterms_of_parsed_mterms - 0" res0_1 res0_2),
          (merge_terms "TermMeta.mterms_of_parsed_mterms - 1" res1_1 res1_2),
          (merge_ttf "TermMeta.mterms_of_parsed_mterms - 2" res2_1 res2_2)
+
+      let rewrite_of_parsed_rewrite (p0 : term) (p1 : term) =
+         let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = p1 in
+         let res1 = wrap2 TermMeta1.rewrite_of_parsed_rewrite p0_1 p1_1 in
+         let res2 = wrap2 TermMeta2.rewrite_of_parsed_rewrite p0_2 p1_2 in
+         let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermMeta.rewrite_of_parsed_rewrite" res1 res2 in
+         (merge_term "TermMeta.rewrite_of_parsed_rewrite - 0" res0_1 res0_2),
+         (merge_term "TermMeta.rewrite_of_parsed_rewrite - 1" res1_1 res1_2)
+
+      let display_term_of_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge merge_term "TermMeta.display_term_of_term" (wrap1 TermMeta1.display_term_of_term p0_1) (wrap1 TermMeta2.display_term_of_term p0_2)
 
       let context_subst_of_terms (p0 : term list) (p1 : var) (p2 : int) =
          let p0_1, p0_2 = split p0 in
@@ -2481,11 +2785,16 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_var "TermMeta.decode_free_var" (wrap1 TermMeta1.decode_free_var p0_1) (wrap1 TermMeta2.decode_free_var p0_2)
 
-   end
+  end
 
    module Rewrite = struct
       module RwTypes = TermType
       include TermType
+
+      (*
+       * To generate the code for this module, run the following:
+       *   grep '^   [v ][a ][l ]' refiner/refsig/rewrite_sig.ml | grep -v unzip_mfunction | sed -e 's/(\*.*//' | util/gen_refiner_debug.pl Rewrite > /tmp/code
+       *)
 
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
 
@@ -2566,6 +2875,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    module Refine = struct
       include TermType
+
+      (*
+       * To generate the code for this module, run the following:
+       *   grep '^   [v ][a ][l ]' refiner/refsig/refine_sig.ml | grep -v ' of ' | sed -e 's/(\*.*//' | util/gen_refiner_debug.pl Refine > /tmp/code
+       *)
 
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
 

@@ -92,7 +92,9 @@ let rec mbparameter_of_param param =
   match (dest_param param) with
     Number p -> mb_number p
   | String p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_string p) else mb_integerq v !mbs_StringIndex) else mb_string p
-  | Token p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_stringq p !mbs_Token) else mb_integerq v !mbs_TokenIndex) else mb_stringq p !mbs_Token
+  | Token p ->
+       let p = string_of_opname p in
+          if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_stringq p !mbs_Token) else mb_integerq v !mbs_TokenIndex) else mb_stringq p !mbs_Token
   | Var p -> mb_stringq (string_of_symbol p) !mbs_Variable
   | ObId p -> mbnode !mbs_ObjectId (List.map mbparameter_of_param (dest_object_id p))
   | MNumber p -> mb_stringq (string_of_symbol p) !mbs_MLongInteger
@@ -160,8 +162,8 @@ let rec param_of_mbparameter mbparameter =
   let b = (mbnode_label mbparameter) in
   if bequal b !mbs_String then make_param (String (string_value mbparameter))
   else if bequal b !mbs_Variable then make_param (Var (Lm_symbol.add (string_value mbparameter)))
-  else if bequal b !mbs_Token then make_param (Token (string_value mbparameter))
-  else if bequal b !mbs_TokenIndex then make_param (Token (Hashtbl.find index_table (integer_value mbparameter)))
+  else if bequal b !mbs_Token then make_param (Token (mk_opname (string_value mbparameter) nil_opname))
+  else if bequal b !mbs_TokenIndex then make_param (Token (mk_opname (Hashtbl.find index_table (integer_value mbparameter)) nil_opname))
   else if bequal b !mbs_StringIndex then make_param (String (Hashtbl.find index_table (integer_value mbparameter)))
   else if bequal b !mbs_TermIndex then make_param (String (Hashtbl.find index_table (integer_value mbparameter)))
   else if bequal b !mbs_LongInteger then
@@ -311,7 +313,7 @@ let rec print_param param =
    match (dest_param param) with
       Number p -> (print_string (string_of_num p)  ; print_string ":n ")
     | String p -> (print_string p ; print_string ":s ")
-    | Token p -> (print_string p ; print_string ":t ")
+    | Token p -> (print_string (string_of_opname p) ; print_string ":t ")
     | Var p -> (print_string (string_of_symbol p) ; print_string ":v ")
     | ObId p -> (print_string "["; List.iter print_param (dest_object_id p); print_string "]";
                  print_string ":oid ")

@@ -7,6 +7,7 @@ REFSIG_FILES =\
 	term_man_sig\
 	term_subst_sig\
 	term_shape_sig\
+	term_ty_sig\
 	term_meta_sig\
 	rewrite_sig\
 	refine_sig\

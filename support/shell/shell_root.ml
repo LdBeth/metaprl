@@ -40,38 +40,38 @@ open Shell_sig
  * SHELL INTERFACE                                                      *
  ************************************************************************)
 
-declare "package"[name:s]
-declare "packages"[name:s,dsc:s]{'pl}
-declare "theory"[name:s,dsc:s]
-declare "theories"{'tl}
+declare "package"[name:s] : Dform
+declare "packages"[name:s, dsc:s]{'pl : Dform} : Dform
+declare "theory"[name:s, dsc:s] : Dform
+declare "theories"{'tl : Dform} : Dform
 
 (*
  * Packages.
  *)
-declare packages_df{'t}
-declare theories_df{'t}
+declare packages_df{'t : Dform} : Dform
+declare theories_df{'t : Dform} : Dform
 
 dform packages_df1 : packages[name,dsc]{'packages} =
    szone pushm[0] pushm[4] info[dsc] info[" ("] info[name] info[") contains:"]
        packages_df{'packages} popm newline
    info["end"] popm ezone
 
-dform packages_df2 : packages_df{cons{package[name:s]; 'next}} =
+dform packages_df2 : packages_df{xcons{package[name:s]; 'next}} =
    newline info["Module "] cd_begin[name] slot[name:s] cd_end packages_df{'next}
 
-dform packages_df3 : packages_df{nil} = `""
+dform packages_df3 : packages_df{xnil} = `""
 
 dform theories_df1: theories{'tl} =
    szone pushm[0] pushm[4] info["Root Theories Listing:"]
       theories_df{'tl} popm newline
    info["end"] popm ezone
 
-dform packages_df2 : except_mode[prl] :: theories_df{cons{theory[name:s,dsc:s]; 'next}} =
+dform packages_df2 : except_mode[prl] :: theories_df{xcons{theory[name:s,dsc:s]; 'next}} =
    newline
    info["Theory \""] cd_begin[name] slot[name:s] cd_end `"\": " cd_begin[name] slot[dsc:s] cd_end
    theories_df{'next}
 
-dform packages_df3 : theories_df{nil} = `""
+dform packages_df3 : theories_df{xnil} = `""
 
 (*
  * Error handler.

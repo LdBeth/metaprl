@@ -30,6 +30,7 @@ open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5
+open Opname
 
 module Nuprl_JLogic =
 struct
@@ -64,7 +65,9 @@ let jprover mult_limit (tlist,concl) =
 
 (* jprover function returns string*term*term list, convert to term *)
 
-let ijprover_op = Nuprl5.mk_nuprl5_op [(make_param (Token "jprover"))]
+let token s = Token (mk_opname s nil_opname)
+
+let ijprover_op = Nuprl5.mk_nuprl5_op [(make_param (token "jprover"))]
 
 let ijprover_term (s, t1, t2) =
   mk_term ijprover_op [mk_bterm [] (Basic.istring_term s); mk_bterm [] t1; mk_bterm [] t2]

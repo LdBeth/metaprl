@@ -24,6 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 
 (*
@@ -91,6 +92,7 @@ val get_start       : t -> shape list
  * Input forms.
  *)
 val add_iform       : t -> id -> term -> term -> t
+val iform_count     : t -> int
 
 (*
  * Build the machines and check for errors.
@@ -129,6 +131,12 @@ val parse           : t -> shape -> Lexing.position -> string -> term
 val set_grammar     : t -> unit
 val set_start       : string -> shape -> unit
 val term_of_string  : string -> Lexing.position -> string -> term
+
+(*
+ * Iform expansion.
+ *)
+val apply_iforms       : term -> term
+val apply_iforms_mterm : meta_term -> term list -> meta_term * term list
 
 (*!
  * @docoff

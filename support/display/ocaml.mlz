@@ -38,6 +38,12 @@ extends Perv
  ************************************************************************)
 
 (*
+ * Lists.
+ *)
+declare "onil"
+declare "ocons"{'hd; 'tl}
+
+(*
  * Constants.
  *)
 declare "unit"

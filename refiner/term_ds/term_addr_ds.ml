@@ -48,8 +48,8 @@ module TermAddr (**)
    (TermOp : TermOpSig with module OpTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
-    with type ErrTypes.Types.term = TermType.term
-    with type ErrTypes.address = addr_item list) =
+    with type Types.term = TermType.term
+    with type Params.address = addr_item list) =
 struct
    open TermMan
    open TermType
@@ -165,7 +165,7 @@ struct
       match find_subterm_term [] arg t with
          Some addr -> addr
        | None ->
-            REF_RAISE(RefineError ("Term_addr_gen.find_subterm", StringTermError ("subterm can't be found",arg)))
+            REF_RAISE(RefineError ("Term_addr_ds.find_subterm: subterm can't be found", Term2Error (arg, t)))
 
    (*
     * Traslate a [-lenght..-1]U[1..length] index into a [0..length-1] one.

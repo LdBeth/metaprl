@@ -33,6 +33,8 @@
  *)
 open Lm_symbol
 
+open Opname
+
 type out_channel = Lm_printf.out_channel
 
 (* Names of the sequent and regular contexts to be passed as arguments *)
@@ -81,6 +83,7 @@ type rewrite_type =
  | RewriteContextType
  | RewriteStringType
  | RewriteNumType
+ | RewriteTokenType
  | RewriteLevelType
  | RewriteVarType (* corresponds to RewriteString(RewriteMetaParam _) *)
 
@@ -113,6 +116,7 @@ sig
     | RewriteFun of (term list -> term)
     | RewriteContext of (term -> term list -> term)
     | RewriteString of string rewrite_param
+    | RewriteToken of opname rewrite_param
     | RewriteNum of Lm_num.num rewrite_param
     | RewriteLevel of level_exp
 
@@ -135,8 +139,7 @@ sig
       term -> term list -> rewrite_item list
 
    (* Rewrite constructor/destructors *)
-   val term_rewrite : strict -> rewrite_args_spec ->
-      term list -> term list -> rewrite_rule
+   val term_rewrite : strict -> rewrite_args_spec -> term list -> term list -> rewrite_rule
    val fun_rewrite : strict -> term -> (term -> term) -> rewrite_rule
 
    (* Apply a rewrite to a term *)

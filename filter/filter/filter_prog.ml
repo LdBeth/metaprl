@@ -39,6 +39,7 @@ open Rewrite_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermTy
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Precedence
@@ -502,8 +503,8 @@ let declare_rewrite loc rw =
 
 let declare_input_form = declare_rewrite
 
-let declare_definition loc def =
-   [<:sig_item< value $def.opdef_name$ : $rewrite_ctyp loc$ >>]
+let declare_define_term loc _ def =
+   [<:sig_item< value $def.term_def_name$ : $rewrite_ctyp loc$ >>]
 
 let declare_cond_rewrite loc { crw_name = name; crw_params = params } =
    [<:sig_item< value $name$ : $params_ctyp loc (cond_rewrite_ctyp loc) params$ >>]
@@ -618,7 +619,10 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: magic block%t" eflush;
          declare_magic_block loc block
-    | Opname _
+    | DeclareTypeClass _
+    | DeclareType _
+    | DeclareTerm _
+    | DeclareTypeRewrite _
     | DForm _
     | PrecRel _
     | Id _
@@ -636,8 +640,8 @@ let extract_sig_item (item, loc) =
          declare_ml_axiom loc item
     | Module (name, _) ->
          Stdpp.raise_with_loc loc (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
-    | Definition def ->
-         declare_definition loc def
+    | DefineTerm (class_term, term_def) ->
+         declare_define_term loc class_term term_def
 
 (*
  * Extract a signature.
@@ -910,7 +914,8 @@ let define_rewrite_resources proc loc name redex contractum assums addrs params 
             ($lid:process_name$ : Mp_resource.rw_annotation_processor '$anno_name$ $input$)
                $str:name$ $redex$ $contractum$ $assums$ $addrs$ $params$ $arg_expr$
          >>
-   in bindings_let proc loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
+   in
+      bindings_let proc loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
 
 (*
  * An input form is a rewrite, but we don't add it to the
@@ -1018,14 +1023,15 @@ let define_cond_rewrite want_checkpoint code proc loc crw expr =
 let prim_rewrite proc loc rw =
    define_rewrite false (prim_rewrite_expr loc) proc loc rw None
 
-let definition proc loc def =
-   let rw = {
-      rw_name = def.opdef_name;
-      rw_redex = def.opdef_term;
-      rw_contractum = def.opdef_definition;
-      rw_proof = xnil_term;
-      rw_resources = def.opdef_resources;
-   } in
+let define_term proc loc class_term def =
+   let rw =
+      { rw_name = def.term_def_name;
+        rw_redex = term_of_ty class_term;
+        rw_contractum = def.term_def_value;
+        rw_proof = xnil_term;
+        rw_resources = def.term_def_resources
+      }
+   in
       define_rewrite false (def_rewrite_expr loc) proc loc rw None
 
 let prim_cond_rewrite proc loc crw =
@@ -1146,7 +1152,8 @@ let define_rule_resources proc loc name args_id params_id assums_id resources na
             ($lid:process_name$ : Mp_resource.annotation_processor '$anno_name$ $input$)
                $str:name$ $lid:args_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$
          >>
-   in bindings_let proc loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
+   in
+      bindings_let proc loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
 
 let define_rule prim_rule deffun proc loc
     { rule_name = name;
@@ -1326,6 +1333,8 @@ let rewrite_type_patt loc (kind, name) =
             <:patt< $rewriter_patt loc$ . RewriteContext $name$ >>
        | RewriteStringType ->
             <:patt< $rewriter_patt loc$ . RewriteString $name$ >>
+       | RewriteTokenType ->
+            <:patt< $rewriter_patt loc$ . RewriteToken $name$ >>
        | RewriteVarType ->
             <:patt< $rewriter_patt loc$ . RewriteString (Rewrite_sig.RewriteMetaParam $name$) >>
        | RewriteNumType ->
@@ -1662,7 +1671,10 @@ let extract_str_item proc (item, loc) =
     | MLGramUpd (Infix s)
     | MLGramUpd (Suffix s) ->
          define_prefix loc s
-    | Opname _
+    | DeclareTypeClass _
+    | DeclareType _
+    | DeclareTerm _
+    | DeclareTypeRewrite _
     | Id _
     | Comment _
     | PRLGrammar _ ->
@@ -1671,8 +1683,8 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: infix%t" eflush;
          raise (Failure "Filter_prog.extract_str_item: nested modules are not implemented")
-    | Definition def ->
-         definition proc loc def
+    | DefineTerm (class_term, def) ->
+         define_term proc loc class_term def
 
 (*
  * Extract a signature.

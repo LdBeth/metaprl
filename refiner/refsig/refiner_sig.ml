@@ -36,6 +36,7 @@ open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
 open Term_shape_sig
+open Term_ty_sig
 open Term_meta_sig
 open Term_hash_sig
 open Term_norm_sig
@@ -58,14 +59,19 @@ sig
    module TermShape : TermShapeSig
                       with type term = TermType.term
                       with type param = TermType.param
+   module TermTy : TermTySig
+                   with type term = TermType.term
    module TermMeta : TermMetaSig with module MetaTypes = TermType
 
    (*
     * Rewriting and refinement.
     *)
    module RefineError : RefineErrorSig
-                        with module ErrTypes.Types = TermType
-                        with type ErrTypes.address = TermAddr.address
+                        with module Types = TermType
+                        with type Params.address = TermAddr.address
+                        with type Params.shape = TermShape.shape
+                        with type Params.ty_param = TermType.term Term_ty_sig.poly_ty_param
+                        with type Params.ty_term = (TermType.term, TermType.term) Term_ty_sig.poly_ty_term
 
    module Rewrite : RewriteSig
                     with type RwTypes.term = TermType.term

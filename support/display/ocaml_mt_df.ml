@@ -112,9 +112,9 @@ dform mt_with_df1 : mt_with{'mt; 'wcl} =
 dform mt_with_df2 : mt_with[start:n, finish:n]{'mt; 'wcl} =
    mt_with{'mt; 'wcl}
 
-dform mt_with_nil_df : mt_with{nil} = `""
+dform mt_with_nil_df : mt_with{onil} = `""
 
-dform mt_with_cons_df : mt_with{cons{'wc; 'wcl}} =
+dform mt_with_cons_df : mt_with{ocons{'wc; 'wcl}} =
    slot{'wc} mt_with{'wcl}
 
 (*

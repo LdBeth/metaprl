@@ -76,15 +76,15 @@ type info =
  *)
 
 (* Directories and files *)
-declare "direntry"[name:s, modifier:s]
-declare "dirlisting"[name:s]{'fl}
-declare "fileline"[number:n, contents:s]
-declare "filelisting"[name:s]{'l}
+declare "direntry"[name:s, modifier:s] : Dform
+declare "dirlisting"[name:s]{'fl} : Dform
+declare "fileline"[number:n, contents:s] : Dform
+declare "filelisting"[name:s]{'l} : Dform
 
 (*
  * Packages.
  *)
-declare listing_df{'t}
+declare listing_df{'t : Dform} : Dform
 
 dform dirlisting_df : dirlisting[name:s]{'listing} =
    hzone listing_df{'listing} ezone
@@ -92,13 +92,13 @@ dform dirlisting_df : dirlisting[name:s]{'listing} =
 dform filelisting_df : filelisting[name:s]{'listing} =
    hzone monospaced_begin listing_df{'listing} monospaced_end ezone
 
-dform listing_df1 : listing_df{cons{'e1; cons{'e2; 'next}}} =
-   'e1 hspace listing_df{cons{'e2; 'next}}
+dform listing_df1 : listing_df{xcons{'e1; xcons{'e2; 'next}}} =
+   'e1 hspace listing_df{xcons{'e2; 'next}}
 
-dform listing_df2 : listing_df{cons{'e; nil}} =
+dform listing_df2 : listing_df{xcons{'e; xnil}} =
    'e
 
-dform listing_df3 : listing_df{nil} =
+dform listing_df3 : listing_df{xnil} =
    `""
 
 dform direntry_df : direntry[name:s, modifier:s] =

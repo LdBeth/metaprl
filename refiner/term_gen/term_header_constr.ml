@@ -26,7 +26,6 @@
  *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
-
 open Opname
 open Term_sig
 
@@ -46,12 +45,12 @@ struct
    module FType = FromTerm.TermType;;
 
    let make_level_var lvar =
-      let { FType.le_var = var; FType.le_offset = offset } = FTerm.dest_level_var lvar in
-         TTerm.make_level_var { TType.le_var = var; TType.le_offset = offset}
+      let { le_var = var; le_offset = offset } = FTerm.dest_level_var lvar in
+         TTerm.make_level_var { le_var = var; le_offset = offset}
 
    let make_level level =
-      let { FType.le_const = c; FType.le_vars = vars } = FTerm.dest_level level in
-         TTerm.make_level { TType.le_const=c; TType.le_vars=List.map make_level_var vars }
+      let { le_const = c; le_vars = vars } = FTerm.dest_level level in
+         TTerm.make_level { le_const=c; le_vars=List.map make_level_var vars }
 
    let rec make_param' = function
       MLevel l1 ->            MLevel (make_level l1)
@@ -76,15 +75,15 @@ struct
       TermHash.p_lookup info (make_term_header info goal)
 
    and make_true_term_header info tterm =
-      let { FType.term_op = term_op; FType.term_terms = term_terms } = FTerm.dest_term tterm in
-      let { FType.op_name = opname; FType.op_params = params } = FTerm.dest_op term_op in
+      let { term_op = term_op; term_terms = term_terms } = FTerm.dest_term tterm in
+      let { op_name = opname; op_params = params } = FTerm.dest_op term_op in
          { TermHash.op_name = normalize_opname opname;
            TermHash.op_params = List.map (make_param info) params;
            TermHash.term_terms = List.map (make_bterm_header info) term_terms
          }
 
    and make_bterm_header info bterm =
-      let { FType.bvars = bvs; FType.bterm = bterm } = FTerm.dest_bterm bterm in
+      let { bvars = bvs; bterm = bterm } = FTerm.dest_bterm bterm in
          { TermHash.bvars = bvs; TermHash.bterm = TermHash.p_lookup info (make_term_header info bterm) }
 
    and make_term_header info t =

@@ -3,7 +3,6 @@
  * modules.  We record information about each module interface,
  * to be used in the definition of the module and in submodules.
  *
- *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
@@ -42,6 +41,7 @@ open Refiner_sig
 open Precedence
 open Dform
 open Lexing
+open Term_ty_sig
 
 open Filter_util
 open Filter_type
@@ -112,6 +112,34 @@ let rec tab i =
          tab (i - 1)
       end
 
+let print_ty_param out = function
+   TyNumber ->
+      fprintf out "<N>"
+ | TyString ->
+      fprintf out "<S>"
+ | TyToken t ->
+      fprintf out "<T>"
+ | TyLevel ->
+      fprintf out "<L>"
+ | TyVar ->
+      fprintf out "<V>"
+ | TyQuote ->
+      fprintf out "@"
+
+let print_ty_bterm out { ty_bvars = bvars } =
+   fprintf out "<%d>" (List.length bvars)
+
+let print_ty_term out ty_term =
+   let { ty_opname = opname;
+         ty_params = params;
+         ty_bterms = bterms
+       } = ty_term
+   in
+      fprintf out "%s[%a]{%a}" (**)
+         (string_of_opname opname)
+         (print_any_list print_ty_param) params
+         (print_any_list print_ty_bterm) bterms
+
 (*
  * Print a single entry.
  *)
@@ -128,8 +156,16 @@ let eprint_entry print_info = function
       eprintf "CondRewrite: %s\n" name
  | Rule { rule_name = name } ->
       eprintf "Rule: %s\n" name
- | Opname { opname_name = name } ->
-      eprintf "Opname: %s\n" name
+ | DeclareTypeClass (opname, _, _) ->
+      eprintf "DeclareTypeClass: %s" (string_of_opname opname)
+ | DeclareType (ty_term, _) ->
+      eprintf "DeclareType: %a" print_ty_term ty_term
+ | DeclareTerm ty_term ->
+      eprintf "DeclareTerm: %a" print_ty_term ty_term
+ | DefineTerm (ty_term, _) ->
+      eprintf "DefineTerm: %a" print_ty_term ty_term
+ | DeclareTypeRewrite _ ->
+      eprintf "DeclareTypeRewrite"
  | MLRewrite { mlterm_name = name } ->
       eprintf "MLRewrite: %s\n" name
  | MLAxiom { mlterm_name = name } ->
@@ -156,7 +192,8 @@ let eprint_entry print_info = function
       eprintf "Resource: %s\n" name
  | Improve { improve_name = name } ->
       eprintf "Improve %s with ..." name
- | MLGramUpd (Infix name | Suffix name) ->
+ | MLGramUpd (Infix name)
+ | MLGramUpd (Suffix name) ->
       eprintf "Infix/Suffix: %s\n" name
  | Id id ->
       eprintf "Id: 0x%08x\n" id
@@ -164,8 +201,6 @@ let eprint_entry print_info = function
       eprintf "Magic: %s\n" name
  | Comment t ->
       eprintf "Comment\n"
- | Definition { opdef_name = name } ->
-      eprintf "Definition: %s\n" name
  | PRLGrammar _ ->
       eprintf "PRLGrammar\n"
 
@@ -431,7 +466,6 @@ let find { info_list = summary } name =
        | CondRewrite { crw_name = n }
        | MLRewrite { mlterm_name = n }
        | InputForm { rw_name = n }
-       | Definition { opdef_name = n }
        | MLAxiom { mlterm_name = n }
        | DForm { dform_name = n }
        | Prec n ->
@@ -523,19 +557,65 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
 
    let convert_bnd = function
       s, BindTerm t -> s, BindTerm (convert.term_f t)
-    | (s, BindOpname o) as d -> d
-    | (s, BindNum i) as d -> d
+    | _, BindOpname _
+    | _, BindNum _ as d -> d
    in
 
-   let convert_bnd_expr expr = {
-      item_item = convert.expr_f expr.item_item;
-      item_bindings = List.map convert_bnd expr.item_bindings;
-   } in
+   let convert_bnd_expr expr =
+      { item_item = convert.expr_f expr.item_item;
+        item_bindings = List.map convert_bnd expr.item_bindings;
+      }
+   in
 
-   let res_map res = {
-      item_item = List.map (fun (loc, name, exprs) -> (loc, name, List.map convert.expr_f exprs)) res.item_item;
-      item_bindings = List.map convert_bnd res.item_bindings;
-   } in
+   let res_map res =
+      { item_item = List.map (fun (loc, name, exprs) -> (loc, name, List.map convert.expr_f exprs)) res.item_item;
+        item_bindings = List.map convert_bnd res.item_bindings;
+      }
+   in
+
+   let convert_ty_param ty_param =
+      match ty_param with
+         TyToken t ->
+            TyToken (convert.term_f t)
+       | TyNumber
+       | TyString
+       | TyLevel
+       | TyVar
+       | TyQuote as param ->
+            param
+   in
+   let convert_ty_bterm ty_bterm =
+      let { ty_bvars = bvars; ty_bterm = term } = ty_bterm in
+         { ty_bvars = List.map convert.term_f bvars;
+           ty_bterm = convert.term_f term
+         }
+   in
+   let convert_ty_term ty_term =
+      let { ty_term   = term;
+            ty_opname = opname;
+            ty_params = params;
+            ty_bterms = bterms;
+            ty_type   = ty
+          } = ty_term
+      in
+         { ty_term   = convert.term_f term;
+           ty_opname = opname;
+           ty_params = List.map convert_ty_param params;
+           ty_bterms = List.map convert_ty_bterm bterms;
+           ty_type   = convert.term_f ty
+         }
+   in
+   let convert_term_def term_def =
+      let { term_def_name = name;
+            term_def_value = t;
+            term_def_resources = res
+          } = term_def
+      in
+         { term_def_name = name;
+           term_def_value = convert.term_f t;
+           term_def_resources = res_map res
+         }
+   in
 
    (* Map a summary item *)
    let rec item_map (item, loc) =
@@ -589,8 +669,14 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                       rule_resources = res_map res
                }
 
-          | Opname { opname_name = name; opname_term = t } ->
-               Opname { opname_name = name; opname_term = convert.term_f t }
+          | DeclareType (ty_term, ty_opname) ->
+               DeclareType (convert_ty_term ty_term, ty_opname)
+          | DeclareTerm ty_term ->
+               DeclareTerm (convert_ty_term ty_term)
+          | DefineTerm (ty_term, term_def) ->
+               DefineTerm (convert_ty_term ty_term, convert_term_def term_def)
+          | DeclareTypeRewrite (redex, contractum) ->
+               DeclareTypeRewrite (convert.term_f redex, convert.term_f contractum)
 
           | MLRewrite t ->
                MLRewrite { t with
@@ -632,6 +718,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
           | PrecRel _
           | Id _
           | MLGramUpd _
+          | DeclareTypeClass _
           | PRLGrammar _ as item ->
                item
 
@@ -651,12 +738,6 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
           | Comment t ->
                Comment (convert.term_f t)
 
-          | Definition def ->
-               Definition { def with
-                  opdef_term = convert.term_f def.opdef_term;
-                  opdef_definition = convert.term_f def.opdef_definition;
-                  opdef_resources = res_map def.opdef_resources;
-               }
       in
          item, loc
 
@@ -668,6 +749,9 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
  *)
 let add_command { info_list = info } item =
    { info_list = item::info }
+
+let add_prefix_commands { info_list = info } items =
+   { info_list = info @ List.rev items }
 
 (************************************************************************
  * TERMS                                                                *
@@ -685,7 +769,16 @@ let input_form_op              = mk_opname "input_form"
 let cond_rewrite_op            = mk_opname "cond_rewrite"
 let rule_op                    = mk_opname "rule"
 let res_op                     = mk_opname "resource_defs"
-let opname_op                  = mk_opname "opname"
+let declare_typeclass_op       = mk_opname "declare_typeclass"
+let declare_type_op            = mk_opname "declare_type"
+let declare_term_op            = mk_opname "declare_term"
+let declare_type_rewrite_op    = mk_opname "declare_type_rewrite"
+let ty_term_op                 = mk_opname "ty_term"
+let term_def_op                = mk_opname "term_def"
+let parent_kind_op             = mk_opname "parent_kind"
+let define_term_op             = mk_opname "define_term"
+let ty_param_op                = mk_opname "ty_param"
+let ty_bterm_op                = mk_opname "ty_bterm"
 let mlrewrite_op               = mk_opname "mlrewrite"
 let mlaxiom_op                 = mk_opname "mlaxiom"
 let parent_op                  = mk_opname "parent"
@@ -705,7 +798,11 @@ let opname_binding_op          = mk_opname "opname_binding"
 let num_binding_op             = mk_opname "num_binding"
 let toploop_item_op            = mk_opname "toploop_item"
 let improve_op                 = mk_opname "improve"
+
+(* XXX HACK: ASCII_IO format <= 1.0.17 had "opname" and "definition" *)
+let opname_op                  = mk_opname "opname"
 let definition_op              = mk_opname "definition"
+
 
 (*
  * Meta term conversions.
@@ -724,6 +821,7 @@ struct
    open ToTerm.TermMan
    open ToTerm.TermSubst
    open ToTerm.TermShape
+   open ToTerm.TermTy
    open ToTerm.TermMeta
    open ToTerm.RefineError
 
@@ -852,7 +950,8 @@ struct
                push modes (dest_string_param t)
             else if Opname.eq opname dform_except_mode_op && (!modes)=[] then
                push except (dest_string_param t)
-            else if Opname.eq opname dform_internal_op then () (* XXX: HACK: obsolete *)
+            else if Opname.eq opname dform_internal_op then (* XXX: HACK: obsolete *)
+               ()
             else
                raise (Invalid_argument "Dform option is not valid")
       in
@@ -1006,15 +1105,82 @@ struct
                 rule_resources = dest_res convert res
          }
 
-   (*
-    * Opname.
-    *)
-   and dest_opname convert t =
+   and dest_ty_param convert t =
       let name = dest_string_param t in
-      let term = one_subterm t in
-         Opname { opname_name = name;
-                  opname_term = convert.term_f term
+         match name with
+            "n" ->
+               TyNumber
+          | "s" ->
+               TyString
+          | "t" ->
+               TyToken (convert.term_f (one_subterm t))
+          | "l" ->
+               TyLevel
+          | "v" ->
+               TyVar
+          | "@" ->
+               TyQuote
+          | _ ->
+               raise (Failure ("illegal class parameter: " ^ name))
+
+   and dest_ty_bterm convert t =
+      let bvars, bterm = two_subterms t in
+         { ty_bvars = List.map convert.term_f (dest_xlist bvars);
+           ty_bterm = convert.term_f bterm
          }
+
+   and dest_ty_def convert t =
+      let term, opname, params, bterms, ty = five_subterms t in
+         { ty_term   = convert.term_f term;
+           ty_opname = opname_of_term opname;
+           ty_params = List.map (dest_ty_param convert) (dest_xlist params);
+           ty_bterms = List.map (dest_ty_bterm convert) (dest_xlist bterms);
+           ty_type   = convert.term_f ty
+         }
+
+   and dest_term_def convert t =
+      let name = dest_string_param t in
+      let t, res = two_subterms t in
+         { term_def_name = name;
+           term_def_value = convert.term_f t;
+           term_def_resources = dest_res convert res
+         }
+
+   and dest_typeclass_parent t =
+      let s = dest_string_param t in
+         match s with
+            "extends" ->
+               ParentExtends (opname_of_term (one_subterm t))
+          | "include" ->
+               ParentInclude (opname_of_term (one_subterm t))
+          | "none" ->
+               ParentNone
+          | _ ->
+               raise (Failure ("bad kind parent: " ^ s))
+
+   and dest_declare_typeclass convert t =
+      let typeclass_opname, typeclass_type_opname, parent = three_subterms t in
+      let typeclass_opname = opname_of_term typeclass_opname in
+      let typeclass_type_opname = opname_of_term typeclass_type_opname in
+      let parent = dest_typeclass_parent parent in
+         DeclareTypeClass (typeclass_opname, typeclass_type_opname, parent)
+
+   and dest_declare_type convert t =
+      let ty_def, ty_opname = two_subterms t in
+      let ty_def = dest_ty_def convert ty_def in
+      let ty_opname = opname_of_term ty_opname in
+         DeclareType (ty_def, ty_opname)
+
+   and dest_declare_term convert t =
+      DeclareTerm (dest_ty_def convert (one_subterm t))
+
+   and dest_define_term convert t =
+      let ty_def, term_def = two_subterms t in
+         DefineTerm (dest_ty_def convert ty_def, dest_term_def convert term_def)
+
+   and dest_declare_type_rewrite_term convert t =
+      let redex, contractum = two_subterms t in
+         DeclareTypeRewrite (convert.term_f redex, convert.term_f contractum)
 
    (*
     * ML Term.
@@ -1142,16 +1308,6 @@ struct
                    magic_code = List.map convert.item_f (dest_xlist (one_subterm t))
       }
 
-   and dest_definition convert t =
-      let redex, contractum, res = three_subterms t in
-         Definition {
-            opdef_name = dest_string_param t;
-            opdef_opname = fst(dst_opname(opname_of_term redex));
-            opdef_term = convert.term_f redex;
-            opdef_definition = convert.term_f contractum;
-            opdef_resources = dest_res convert res;
-         }
-
    and dest_term_aux
        (convert : (term, term, term, term, term, term, term,
                    'term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) convert)
@@ -1167,10 +1323,16 @@ struct
                   dest_rule convert t
                else if Opname.eq opname dform_op then
                   dest_dform convert t
-               else if Opname.eq opname opname_op then
-                  dest_opname convert t
-               else if Opname.eq opname definition_op then
-                  dest_definition convert t
+               else if Opname.eq opname declare_typeclass_op then
+                  dest_declare_typeclass convert t
+               else if Opname.eq opname declare_type_op then
+                  dest_declare_type convert t
+               else if Opname.eq opname declare_term_op then
+                  dest_declare_term convert t
+               else if Opname.eq opname define_term_op then
+                  dest_define_term convert t
+               else if Opname.eq opname declare_type_rewrite_op then
+                  dest_declare_type_rewrite_term convert t
                else if Opname.eq opname mlrewrite_op then
                   dest_mlrewrite convert t
                else if Opname.eq opname parent_op then
@@ -1209,7 +1371,9 @@ struct
                Some info
          with
             Failure _ ->
-               eprintf "Filter_summary.dest_term: incorrect syntax for %s%t" (string_of_opname opname) eflush;
+               (* XXX HACK: the "if" line is for ASCII_IO format <= 1.0.17 *)
+               if not ((Opname.eq opname opname_op) || (Opname.eq opname definition_op)) then
+                  eprintf "Filter_summary.dest_term: incorrect syntax for %s%t" (string_of_opname opname) eflush;
                None
           | RefineError (x, TermMatchError (t', _)) ->
                raise (RefineError (x, TermPairError (t, t')))
@@ -1458,16 +1622,84 @@ struct
          convert.ctyp_f output
       ]
 
-   and term_of_definition convert
-       { opdef_name = name;
-         opdef_term = redex;
-         opdef_definition = contractum;
-         opdef_resources = res;
-       } =
-      mk_string_param_term definition_op name (**)
-         [convert.term_f redex;
-          convert.term_f contractum;
-          term_of_resources convert res]
+   and term_of_typeclass_parent = function
+      ParentExtends opname ->
+         let t = mk_term (mk_op opname []) [] in
+            mk_string_param_term parent_kind_op "extends" [t]
+    | ParentInclude opname ->
+         let t = mk_term (mk_op opname []) [] in
+            mk_string_param_term parent_kind_op "include" [t]
+    | ParentNone ->
+         mk_string_param_term parent_kind_op "none" []
+
+   and term_of_declare_typeclass convert opname type_opname parent =
+      let t1 = mk_term (mk_op opname []) [] in
+      let t2 = mk_term (mk_op type_opname []) [] in
+      let p = term_of_typeclass_parent parent in
+         mk_simple_term declare_typeclass_op [t1; t2; p]
+
+   and mk_ty_param_term convert param =
+      match param with
+         TyNumber ->
+            mk_string_param_term ty_param_op "n" []
+       | TyString ->
+            mk_string_param_term ty_param_op "s" []
+       | TyToken t ->
+            mk_string_param_term ty_param_op "t" [convert.term_f t]
+       | TyLevel ->
+            mk_string_param_term ty_param_op "l" []
+       | TyVar ->
+            mk_string_param_term ty_param_op "v" []
+       | TyQuote ->
+            mk_string_param_term ty_param_op "@" []
+
+   and mk_ty_bterm_term convert bterm =
+      let { ty_bvars = bvars; ty_bterm = term } = bterm in
+      let bvars = mk_xlist_term (List.map convert.term_f bvars) in
+      let term = convert.term_f term in
+         mk_simple_term ty_bterm_op [bvars; term]
+
+   and mk_ty_term_term convert ty_term =
+      let { ty_term   = term;
+            ty_opname = opname;
+            ty_params = params;
+            ty_bterms = bterms;
+            ty_type   = ty
+          } = ty_term
+      in
+      let term = convert.term_f term in
+      let opname = mk_term (mk_op opname []) [] in
+      let params = mk_xlist_term (List.map (mk_ty_param_term convert) params) in
+      let bterms = mk_xlist_term (List.map (mk_ty_bterm_term convert) bterms) in
+      let ty = convert.term_f ty in
+         mk_simple_term ty_term_op [term; opname; params; bterms; ty]
+
+   and mk_term_def_term convert term_def =
+      let { term_def_name = name;
+            term_def_value = term;
+            term_def_resources = res
+          } = term_def
+      in
+      let term = convert.term_f term in
+      let res = term_of_resources convert res in
+         mk_string_param_term term_def_op name [term; res]
+
+   and term_of_declare_type convert ty_term ty_opname =
+      let term = mk_ty_term_term convert ty_term in
+      let ty_opname = mk_term (mk_op ty_opname []) [] in
+         mk_simple_term declare_type_op [term; ty_opname]
+
+   and term_of_declare_term convert ty_term =
+      let term = mk_ty_term_term convert ty_term in
+         mk_simple_term declare_term_op [term]
+
+   and term_of_define_term convert ty_term term_def =
+      let ty_term = mk_ty_term_term convert ty_term in
+      let term_def = mk_term_def_term convert term_def in
+         mk_simple_term define_term_op [ty_term; term_def]
+
+   and term_of_declare_type_rewrite convert redex contractum =
+      mk_simple_term declare_type_rewrite_op  [convert.term_f redex; convert.term_f contractum]
 
    and term_of_item convert item =
       mk_simple_term summary_item_op [term_of_bindings convert (convert.item_f item.item_item) item.item_bindings]
@@ -1489,8 +1721,16 @@ struct
          term_of_cond_rewrite convert crw
     | Rule rw ->
          term_of_rule convert rw
-    | Opname { opname_name = name; opname_term = term } ->
-         mk_string_param_term opname_op name [convert.term_f term]
+    | DeclareTypeClass (opname, type_opname, parent) ->
+         term_of_declare_typeclass convert opname type_opname parent
+    | DeclareType (ty_term, ty_opname) ->
+         term_of_declare_type convert ty_term ty_opname
+    | DeclareTerm ty_term ->
+         term_of_declare_term convert ty_term
+    | DefineTerm (ty_term, term_def) ->
+         term_of_define_term convert ty_term term_def
+    | DeclareTypeRewrite (redex, contractum) ->
+         term_of_declare_type_rewrite convert redex contractum
     | MLRewrite t ->
          term_of_mlrewrite convert t
     | MLAxiom cond ->
@@ -1519,8 +1759,6 @@ struct
          mk_string_param_term magic_block_op name [mk_xlist_term (List.map convert.item_f items)]
     | Comment t ->
          mk_simple_term comment_op [convert.term_f t]
-    | Definition d ->
-         term_of_definition convert d
     | PRLGrammar _ ->
          raise (Invalid_argument "Filter_summary.term_list_aux")
 
@@ -1573,33 +1811,34 @@ struct
    (*
     * Check that a rewrite is justified.
     *)
-   let check_rewrite
+   let check_rewrite loc
        (info : ('term1, 'proof1, 'expr1) rewrite_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let { rw_name = name; rw_redex = redex; rw_contractum = con } = info in
       let rec search = function
          [] ->
             implem_error (sprintf "Rewrite %s: not implemented" name)
-       | Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _
-       | Definition { opdef_name = name'; opdef_term = redex'; opdef_definition = con' } :: _
-         when name = name' ->
-            if alpha_equal redex' redex then
-               if alpha_equal con' con then
-                  ()
-               else
-                  implem_error (sprintf "Rewrite %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
-                                   name (string_of_term con') (string_of_term con))
-            else
-               implem_error (sprintf "Rewrite %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
-                                name (string_of_term redex') (string_of_term redex))
+       | Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _ when name = name' ->
+            redex', con'
+       | DefineTerm (ty_term, { term_def_name = name'; term_def_value = con' }) :: _ when name = name' ->
+            (term_of_ty ty_term), con'
        | _ :: t ->
             search t
       in
-         search implem
+      let redex', con' = search implem in
+         if not (alpha_equal redex' redex) then
+            implem_error (sprintf "Rewrite %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
+                             name (string_of_term redex') (string_of_term redex));
+         if not (alpha_equal con' con) then
+            implem_error (sprintf "Rewrite %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
+                             name (string_of_term con') (string_of_term con));
+         items
 
-   let check_iform
+   let check_iform loc
        (info : ('term1, 'proof1, 'expr1) rewrite_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let { rw_name = name; rw_redex = redex; rw_contractum = con } = info in
       let rec search = function
          [] ->
@@ -1617,14 +1856,16 @@ struct
        | _ :: t ->
             search t
       in
-         search implem
+         search implem;
+         items
 
    (*
     * Conditions in implementation must be weaker than in the interface.
     *)
-   let check_cond_rewrite
+   let check_cond_rewrite loc
        (info : ('term, 'proof1, 'expr1) cond_rewrite_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let { crw_name = name;
             crw_params = params;
             crw_args = args;
@@ -1657,14 +1898,16 @@ struct
              | _ ->
                   search t
       in
-         search implem
+         search implem;
+         items
 
    (*
     * Rule must be more general.
     *)
-   let check_rule
+   let check_rule loc
        (info : ('term1, 'meta_term1, 'proof1, 'expr1) rule_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let { rule_name = name; rule_params = params; rule_stmt = stmt } = info in
       let rec search = function
          [] ->
@@ -1686,38 +1929,156 @@ struct
        | _ :: t ->
             search t
       in
+         search implem;
+         items
+
+   let check_declare_typeclass loc (**)
+          (opname : opname)
+          (type_opname : opname)
+          (parent : typeclass_parent)
+          (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+          (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
+      let rec search = function
+         [] ->
+            (DeclareTypeClass (opname, type_opname, parent), loc) :: items
+       | DeclareTypeClass (opname', type_opname', parent') :: _
+         when Opname.eq opname' opname ->
+            let parent_matches =
+               match parent, parent' with
+                  ParentExtends opname, ParentExtends opname'
+                | ParentInclude opname, ParentInclude opname' ->
+                     Opname.eq opname opname'
+                | ParentNone, ParentNone ->
+                     true
+                | _ ->
+                     false
+            in
+               if Opname.eq type_opname type_opname' && parent_matches then
+                  items
+               else
+                  implem_error (sprintf "declare kind '%s' mismatch" (string_of_opname opname))
+       | _ :: t ->
+            search t
+      in
+         search implem
+
+   let check_declare_type loc (**)
+          (ty_term : ('term1, 'term1) poly_ty_term)
+          (ty_opname : opname)
+          (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+          (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
+      let term = term_of_ty ty_term in
+      let shape = shape_of_term term in
+      let rec search = function
+         [] ->
+            (DeclareType (ty_term, ty_opname), loc) :: items
+       | DeclareType (ty_term', ty_opname') :: t ->
+            let term' = term_of_ty ty_term' in
+            let shape' = shape_of_term term' in
+               if ToTerm.TermShape.eq shape' shape then
+                  if ToTerm.TermTy.eq_ty ty_term' ty_term && Opname.eq ty_opname' ty_opname then
+                     items
+                  else
+                     implem_error (sprintf "declare type '%s' mismatch" (string_of_opname (opname_of_term term)))
+               else
+                  search t
+       | _ :: t ->
+            search t
+      in
+         search implem
+
+   let check_declare_term loc (**)
+          (ty_term : ty_term)
+          (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+          (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
+      let term = term_of_ty ty_term in
+      let shape = shape_of_term term in
+      let rec search = function
+         [] ->
+            (DeclareTerm ty_term, loc) :: items
+       | DeclareTerm ty_term' :: t
+       | DefineTerm (ty_term', _) :: t ->
+            let term' = term_of_ty ty_term' in
+            let shape' = shape_of_term term' in
+               if ToTerm.TermShape.eq shape' shape then
+                  if ToTerm.TermTy.eq_ty ty_term' ty_term then
+                     items
+                  else
+                     implem_error (sprintf "declare '%s' mismatch" (string_of_shape shape))
+               else
+                  search t
+       | _ :: t ->
+            search t
+      in
+         search implem
+
+   let check_define_term loc (**)
+          (ty_term : ty_term)
+          (term_def : ('expr1, 'term1) term_def)
+          (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+          (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
+      let term = term_of_ty ty_term in
+      let shape = shape_of_term term in
+      let rec search = function
+         [] ->
+            implem_error (sprintf "Definition %s: not implemented" (string_of_shape shape))
+       | DefineTerm (ty_term', term_def') :: t ->
+            let term' = term_of_ty ty_term' in
+            let shape' = shape_of_term term' in
+               if ToTerm.TermShape.eq shape' shape then begin
+                  if not (ToTerm.TermTy.eq_ty ty_term' ty_term) then
+                     implem_error (sprintf "define '%s' mismatch" (string_of_shape shape));
+                  if not (alpha_equal term_def'.term_def_value term_def.term_def_value) then
+                     implem_error (sprintf "define '%s' definition mismatch" (string_of_shape shape))
+               end
+               else
+                  search t
+       | _ :: t ->
+            search t
+      in
+         search implem;
+         items
+
+   let check_declare_type_rewrite loc (**)
+          (redex      : 'term1)
+          (contractum : 'term1)
+          (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+          (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
+      let redex_opname = opname_of_term redex in
+      let rec search = function
+         [] ->
+            (DeclareTypeRewrite (redex, contractum), loc) :: items
+       | DeclareTypeRewrite (redex', contractum') :: _
+         when alpha_equal redex redex' ->
+            if alpha_equal contractum contractum' then
+               items
+            else
+               implem_error (sprintf "declare type rewrite '%s' mismatch" (string_of_opname redex_opname))
+       | _ :: t ->
+            search t
+      in
          search implem
 
    (*
-    * Opnames must be equal.
+    * Token classes.
     *)
-   let check_opname
-       (info : 'term1 opname_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
-      let { opname_name = name; opname_term = term } = info in
-      let rec search mismatch = function
-         [] ->
-            implem_error
-               (sprintf "Opname %s: %s" name
-                  (if mismatch then "specification(s) mismatch" else "not implemented"))
-       | Opname { opname_name = name'; opname_term = term' } :: t
-       | Definition { opdef_opname = name'; opdef_term = term' } :: t
-         when name' = name ->
-            let shape' = shape_of_term term' in
-            let shape = shape_of_term term in
-               if not (ToTerm.TermShape.eq shape' shape) then
-                   search true t
-       | _ :: t ->
-            search mismatch t
-      in
-         search false implem
+   let rec compare_string_lists l1 l2 =
+      match l1, l2 with
+         [], [] ->
+            true
+       | ((h1 : string) :: l1), ((h2 : string) :: l2) ->
+            h1 = h2 && compare_string_lists l1 l2
+       | [], _
+       | _, [] ->
+            false
 
    (*
     * MLterms must match.
     *)
-   let check_mlrewrite
+   let check_mlrewrite loc (**)
        ({ mlterm_name = name; mlterm_term = term } : ('term1, 'expr1) mlterm_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
             implem_error (sprintf "MLRewrite %s: not implemented" name)
@@ -1727,11 +2088,13 @@ struct
        | _ :: t ->
             search t
       in
-         search implem
+         search implem;
+         items
 
-   let check_mlaxiom
+   let check_mlaxiom loc (**)
        ({ mlterm_name = name; mlterm_term = term } : ('term1, 'expr1) mlterm_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
             implem_error (sprintf "MLAxiom %s: not implemented" name)
@@ -1741,14 +2104,16 @@ struct
        | _ :: t ->
             search t
       in
-         search implem
+         search implem;
+         items
 
    (*
     * Parent names must match.
     *)
-   let check_parent
+   let check_parent loc (**)
        (path : module_path)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
             implem_error (sprintf "Extends %s: not implemented" (string_of_path path))
@@ -1757,15 +2122,17 @@ struct
        | _ :: t ->
             search t
       in
-         search implem
+         search implem;
+         items
 
    (*
     * Display forms.
     *)
-   let check_dform
+   let check_dform loc (**)
        (tags : dform_option list)
        (term : term)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
             implem_error (sprintf "DForm %s: not implemented" (string_of_term term))
@@ -1778,13 +2145,15 @@ struct
        | _ :: t ->
             search t
       in
-         search implem
+         search implem;
+         items
 
    (*
     * Precedence declaration.
     *)
-   let check_prec (name : string)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+   let check_prec loc (name : string)
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
             implem_error (sprintf "Prec %s: not implemented" name)
@@ -1796,32 +2165,34 @@ struct
              | _ ->
                   search t
       in
-         search implem
+         search implem;
+         items
 
    (*
     * Resource checking.
     *)
-   let rec check_resource name = function
-      [] ->
-         implem_error (sprintf "Resource %s: not implemented" name)
-    | Resource ( name', _ ) :: _  when name = name' ->
-         ()
-    | _ :: t ->
-         check_resource name t
+   let rec check_resource loc name implem items =
+      match implem with
+         [] ->
+            implem_error (sprintf "Resource %s: not implemented" name)
+       | Resource ( name', _ ) :: _  when name = name' ->
+            items
+       | _ :: t ->
+            check_resource loc name t items
 
    (*
     * Infix declarations.
     *)
-   let check_gupd (upd : grammar_update)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+   let check_gupd loc (upd : grammar_update)
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
-            implem_error (
-               match upd with
-                  Infix name -> sprintf "Infix %s: not implemented" name
-                | Suffix name -> sprintf "Suffix %s: not implemented" name)
-       | (MLGramUpd upd')::_ when upd = upd' ->
-            ()
+            implem_error (match upd with
+                             Infix name -> sprintf "Infix %s: not implemented" name
+                           | Suffix name -> sprintf "Suffix %s: not implemented" name)
+       | MLGramUpd upd' :: _ when upd = upd' ->
+            items
        | _ :: t ->
             search t
       in
@@ -1830,33 +2201,26 @@ struct
    (*
     * Match the ids.
     *)
-   let rec check_id id = function
-      [] ->
-         implem_error "Id: not implemented"
-    | Id id'::_ ->
-         if id' <> id then
-            implem_error (sprintf "Implementation is out of date (recompile)")
-    | _ :: t ->
-         check_id id t
-
-   let rec check_definition def = function
-      [] ->
-         implem_error ("Definition " ^ def.opdef_name ^": not implemented")
-    | Definition def' :: _ when def.opdef_name = def'.opdef_name ->
-         if not (alpha_equal def.opdef_term def'.opdef_term) then
-            implem_error ("Definition " ^ def.opdef_name ^": LHS mismatch")
-         else if not (alpha_equal def.opdef_definition def'.opdef_definition) then
-            implem_error ("Definition " ^ def.opdef_name ^": RHS mismatch")
-    | _ :: t ->
-         check_definition def t
+   let rec check_id loc id implem items =
+      match implem with
+         [] ->
+            (Id id, loc) :: items
+       | Id id'::_ ->
+            if id' = id then
+               items
+            else
+               implem_error (sprintf "Implementation is out of date (recompile)")
+       | _ :: t ->
+            check_id loc id t items
 
    (*
     * Module definitions.
     *)
-   let rec check_module
+   let rec check_module loc (**)
        (name : string)
        (info : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) module_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
             implem_error (sprintf "Module %s: not implemented" name)
@@ -1870,61 +2234,70 @@ struct
              | _ ->
                   search t
       in
-         search implem
+         search implem;
+         items
 
    (*
     * Check that an item is implemented.
     *)
    and check_implemented
+       (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list)
        (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
-       ((interf : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) summary_item), _) =
+       ((interf : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) summary_item), loc) =
       match interf with
          Rewrite info ->
-            check_rewrite info implem
+            check_rewrite loc info implem items
        | InputForm info ->
-            check_iform info implem
+            check_iform loc info implem items
        | CondRewrite info ->
-            check_cond_rewrite info implem
+            check_cond_rewrite loc info implem items
        | Rule info ->
-            check_rule info implem
-       | Opname info ->
-            check_opname info implem
+            check_rule loc info implem items
+       | DeclareTypeClass (opname, type_opname, parent) ->
+            check_declare_typeclass loc opname type_opname parent implem items
+       | DeclareType (ty_term, ty_opname) ->
+            check_declare_type loc ty_term ty_opname implem items
+       | DeclareTerm ty_term ->
+            check_declare_term loc ty_term implem items
+       | DefineTerm (ty_term, term_def) ->
+            check_define_term loc ty_term term_def implem items
+       | DeclareTypeRewrite (redex, contractum) ->
+            check_declare_type_rewrite loc redex contractum implem items
        | MLRewrite info ->
-            check_mlrewrite info implem
+            check_mlrewrite loc info implem items
        | MLAxiom info ->
-            check_mlaxiom info implem
+            check_mlaxiom loc info implem items
        | Parent { parent_name = path } ->
-            check_parent path implem
+            check_parent loc path implem items
        | Module (name, info) ->
-            check_module name info implem
+            check_module loc name info implem items
        | DForm { dform_options = flags; dform_redex = term } ->
-            check_dform flags term implem
+            check_dform loc flags term implem items
        | Prec name ->
-            check_prec name implem
+            check_prec loc name implem items
        | Resource (name, _) ->
-            check_resource name implem
+            check_resource loc name implem items
        | Improve _ ->
             raise (Invalid_argument "Filter_summary.check_implemented")
        | MLGramUpd upd ->
-            check_gupd upd implem
+            check_gupd loc upd implem items
        | Id id ->
-            check_id id implem
-       | Definition def ->
-            check_definition def implem
+            check_id loc id implem items
        | SummaryItem _
        | ToploopItem _
        | PrecRel _
        | MagicBlock _
        | Comment _
        | PRLGrammar _ ->
-            ()
+            items
 
    (*
     * Check that the implementation satisfies the interface.
     * This means that every item in the interface must be implemented.
     *)
    and check_implementation { info_list = implem } { info_list = interf } =
-      List.iter (check_implemented (List.map fst implem)) interf
+      let implem = List.map fst implem in
+         List.fold_left (fun items item -> check_implemented items implem item) [] interf
 
    (************************************************************************
     * COMMENT PARSING                                                      *
@@ -2042,7 +2415,11 @@ struct
                   copy_rule_proof copy_proof item info2
              | Module (name, info) ->
                   copy_module_proof copy_proof name info info2
-             | Opname _
+             | DeclareTypeClass _
+             | DeclareType _
+             | DeclareTerm _
+             | DefineTerm _
+             | DeclareTypeRewrite _
              | MLRewrite _
              | MLAxiom _
              | Parent _
@@ -2058,7 +2435,6 @@ struct
              | ToploopItem _
              | MagicBlock _
              | InputForm _
-             | Definition _
              | PRLGrammar _ ->
                   item
          in

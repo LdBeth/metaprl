@@ -31,6 +31,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
+open Lm_set_sig
 open Lm_debug
 
 (*
@@ -146,9 +147,9 @@ let intern opname =
  * because opnames are usually small.
  *)
 let eq_inner op1 op2 =
-   op1.opname_name <- (normalize_opname op1).opname_name;
+   op1.opname_name  <- (normalize_opname op1).opname_name;
    op1.opname_token <- opname_token;
-   op2.opname_name <- (normalize_opname op2).opname_name;
+   op2.opname_name  <- (normalize_opname op2).opname_name;
    op2.opname_token <- opname_token;
    op1.opname_name == op2.opname_name
 
@@ -160,8 +161,10 @@ let eq op1 op2 =
  * Destructor.
  *)
 let dst_opname = function
-   { opname_name = n :: name } -> n, { opname_token = opname_token; opname_name = name }
- | _ -> raise (Invalid_argument "dst_opname")
+   { opname_name = n :: name } ->
+      n, { opname_token = opname_token; opname_name = name }
+ | _ ->
+      raise (Invalid_argument "dst_opname")
 
 let dest_opname { opname_name = name } =
    name
@@ -172,8 +175,8 @@ let dest_opname { opname_name = name } =
  * This function is overly long,
  * but it is efficient.
  *)
-let string_of_opname op =
-   let rec flatten = function
+let rec string_of_opname opname =
+   match opname.opname_name with
       [] ->
          ""
     | h::t ->
@@ -184,22 +187,37 @@ let string_of_opname op =
                s
          in
             collect h t
-   in
-      flatten op.opname_name
 
 (*
  * A few "special" opnames.
  *)
-let var_opname = make_opname ["var"]
+let var_opname     = make_opname ["var"]
 let context_opname = make_opname ["context"]
 
 (*
  * Manifest terms are injected into the "perv" module.
  *)
-let xperv = make_opname ["Perv"]
+let xperv          = make_opname ["Perv"]
 let sequent_opname = mk_opname "sequent" xperv
-let xnil_opname = mk_opname "nil" xperv
-let xcons_opname = mk_opname "cons" xperv
+let xnil_opname    = mk_opname "xnil" xperv
+let xcons_opname   = mk_opname "xcons" xperv
+let xconcl_opname  = mk_opname "xconcl" xperv
+
+(************************************************************************
+ * Sets and tables.
+ *)
+let compare { opname_name = name1 } { opname_name = name2 } =
+   Pervasives.compare name1 name2
+
+module OpnameCompare =
+struct
+   type t = opname
+   let compare = compare
+end
+
+module OpnameSet = Lm_set.LmMake (OpnameCompare)
+module OpnameTable = Lm_map.LmMake (OpnameCompare)
+module OpnameMTable = Lm_map.LmMakeList (OpnameCompare)
 
 (*
  * -*-

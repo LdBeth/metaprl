@@ -26,14 +26,18 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
+ * Modified By: Alexei Kopylov @email{kopylov@cs.cornell.edu}
+ * Modified By: Xin Yu @email{xiny@cs.caltech.edu}
  *)
+
+extends Perv
 
 (*
  * Display control.
  *)
-declare pagebreak
+declare pagebreak : Dform
 
 (*
  * Fonts.
@@ -45,200 +49,200 @@ declare pagebreak
  *    bold{"["}
  *    bold_begin "[" bold_end
  *)
-declare info[name:s]
-declare info_begin
-declare info_end
-declare keyword[name:s]
-declare bf[name:s]
-declare bf{'t}
-declare i[name:s]
-declare i{'t}
-declare it[name:s]
-declare it{'t}
-declare math_it{'t}
-declare math_it[text:s]
-declare em[s:s]
-declare em{'s}
-declare emph{'t}
-declare tt[name:s]
-declare tt{'t}
-declare url[url:s]
-declare sub{'t}
-declare sub[name:s]
-declare sub[i:l]
-declare sup{'t}
-declare sup[name:s]
-declare small[name:s]
-declare small{'t}
-declare esquash{'t}
-declare atomic[text:s]
-declare monospaced[name:s]
-declare monospaced{'t}
-declare monospaced_begin
-declare monospaced_end
+declare info[name:s] : Dform
+declare info_begin : Dform
+declare info_end : Dform
+declare keyword[name:s] : Dform
+declare bf[name:s] : Dform
+declare bf{'t : Dform} : Dform
+declare i[name:s] : Dform
+declare i{'t : Dform} : Dform
+declare it[name:s] : Dform
+declare it{'t : Dform} : Dform
+declare math_it{'t : Dform} : Dform
+declare math_it[text:s] : Dform
+declare em[s:s] : Dform
+declare em{'s : Dform} : Dform
+declare emph{'t : Dform} : Dform
+declare tt[name:s] : Dform
+declare tt{'t : Dform} : Dform
+declare url[url:s] : Dform
+declare sub{'t : Dform} : Dform
+declare sub[name:s] : Dform
+declare sub[i:l] : Dform
+declare sup{'t : Dform} : Dform
+declare sup[name:s] : Dform
+declare small[name:s] : Dform
+declare small{'t : Dform} : Dform
+declare esquash{'t : Dform} : Dform
+declare atomic[text:s] : Dform
+declare monospaced[name:s] : Dform
+declare monospaced{'t : Dform} : Dform
+declare monospaced_begin : Dform
+declare monospaced_end : Dform
 
 (*
  * HTML control.
  *)
-declare html[content:s]
-declare cd_begin[command:s]
-declare cd_end
-declare html_anchor[name:s]{'body}
-declare html_head[l:n]{'body}
+declare html[content:s] : Dform
+declare cd_begin[command:s] : Dform
+declare cd_end : Dform
+declare html_anchor[name:s]{'body : Dform} : Dform
+declare html_head[l:n]{'body : Dform} : Dform
 
 (*
  * TeX control.
  *)
-declare text{'t}
-declare mathBB[name:s]
-declare ensuremath[name:s]
-declare ensuremath{'t}
-declare mathmacro[name:s]
+declare text{'t : Dform} : Dform
+declare mathBB[name:s] : Dform
+declare ensuremath[name:s] : Dform
+declare ensuremath{'t : Dform} : Dform
+declare mathmacro[name:s] : Dform
 
 (* Displays *)
-declare mathbbA
-declare mathbbB
-declare mathbbC
-declare mathbbD
-declare mathbbE
-declare mathbbF
-declare mathbbG
-declare mathbbH
-declare mathbbI
-declare mathbbJ
-declare mathbbK
-declare mathbbL
-declare mathbbM
-declare mathbbN
-declare mathbbO
-declare mathbbP
-declare mathbbQ
-declare mathbbR
-declare mathbbS
-declare mathbbT
-declare mathbbU
-declare mathbbV
-declare mathbbW
-declare mathbbX
-declare mathbbY
-declare mathbbZ
+declare mathbbA : Dform
+declare mathbbB : Dform
+declare mathbbC : Dform
+declare mathbbD : Dform
+declare mathbbE : Dform
+declare mathbbF : Dform
+declare mathbbG : Dform
+declare mathbbH : Dform
+declare mathbbI : Dform
+declare mathbbJ : Dform
+declare mathbbK : Dform
+declare mathbbL : Dform
+declare mathbbM : Dform
+declare mathbbN : Dform
+declare mathbbO : Dform
+declare mathbbP : Dform
+declare mathbbQ : Dform
+declare mathbbR : Dform
+declare mathbbS : Dform
+declare mathbbT : Dform
+declare mathbbU : Dform
+declare mathbbV : Dform
+declare mathbbW : Dform
+declare mathbbX : Dform
+declare mathbbY : Dform
+declare mathbbZ : Dform
 
-declare shortLeftarrow
-declare Leftarrow
-declare Middlearrow
-declare shortRightarrow
-declare Rightarrow
-declare Leftrightarrow
-declare ulcorner
-declare urcorner
-declare mid
-declare vdash
-declare integral
-declare cdot
-declare downarrow
-declare uparrow
-declare alpha
-declare beta
-declare pi
-declare lambda
-declare gamma
-declare delta
-declare rho
-declare sigma
-declare epsilon
-declare eta
-declare theta
-declare iota
-declare kappa
-declare mu
-declare nu
-declare omicron
-declare tau
-declare phi
-declare xi
-declare omega
-declare wedge
-declare tneg
-declare member
-declare plusminus
-declare oplus
-declare infty
-declare partial
-declare cap
-declare cup
-declare forall
-declare "exists"
-declare oinfty
-declare shortleftrightarrow
-declare shortleftarrow
-declare shortrightarrow
-declare longleftrightarrow
-declare longleftarrow
-declare longrightarrow
-declare neq
-declare sim
-declare cong
-declare le
-declare ge
-declare equiv
-declare vee
-declare perp
-declare leftarrow
-declare middlearrow
-declare rightarrow
-declare vartriangleleft
-declare vartriangleright
-declare Gamma
-declare Delta
-declare Lambda
-declare Pi
-declare Sigma
-declare Omega
-declare times
-declare "div"
-declare circ
-declare supplus
-declare supminus
-declare supcirc
-declare "subset"
-declare supset
-declare subseteq
-declare supseteq
-declare sqsubset
-declare sqsupset
-declare sqsubseteq
-declare sqsupseteq
-declare subzero
-declare subone
-declare subtwo
-declare subthree
-declare suba
-declare subb
-declare subc
-declare subd
-declare sube
-declare subf
-declare subg
-declare subh
-declare subi
-declare subj
-declare subk
-declare subl
-declare subm
-declare subn
-declare subo
-declare subp
-declare subq
-declare subr
-declare subs
-declare subt
-declare subu
-declare subv
-declare subw
-declare subx
-declare suby
-declare subz
-declare math_div
+declare shortLeftarrow : Dform
+declare Leftarrow : Dform
+declare Middlearrow : Dform
+declare shortRightarrow : Dform
+declare Rightarrow : Dform
+declare Leftrightarrow : Dform
+declare ulcorner : Dform
+declare urcorner : Dform
+declare mid : Dform
+declare vdash : Dform
+declare integral : Dform
+declare cdot : Dform
+declare downarrow : Dform
+declare uparrow : Dform
+declare alpha : Dform
+declare beta : Dform
+declare pi : Dform
+declare lambda : Dform
+declare gamma : Dform
+declare delta : Dform
+declare rho : Dform
+declare sigma : Dform
+declare epsilon : Dform
+declare eta : Dform
+declare theta : Dform
+declare iota : Dform
+declare kappa : Dform
+declare mu : Dform
+declare nu : Dform
+declare omicron : Dform
+declare tau : Dform
+declare phi : Dform
+declare xi : Dform
+declare omega : Dform
+declare wedge : Dform
+declare tneg : Dform
+declare member : Dform
+declare plusminus : Dform
+declare oplus : Dform
+declare infty : Dform
+declare partial : Dform
+declare cap : Dform
+declare cup : Dform
+declare forall : Dform
+declare "exists" : Dform
+declare oinfty : Dform
+declare shortleftrightarrow : Dform
+declare shortleftarrow : Dform
+declare shortrightarrow : Dform
+declare longleftrightarrow : Dform
+declare longleftarrow : Dform
+declare longrightarrow : Dform
+declare neq : Dform
+declare sim : Dform
+declare cong : Dform
+declare le : Dform
+declare ge : Dform
+declare equiv : Dform
+declare vee : Dform
+declare perp : Dform
+declare leftarrow : Dform
+declare middlearrow : Dform
+declare rightarrow : Dform
+declare vartriangleleft : Dform
+declare vartriangleright : Dform
+declare Gamma : Dform
+declare Delta : Dform
+declare Lambda : Dform
+declare Pi : Dform
+declare Sigma : Dform
+declare Omega : Dform
+declare times : Dform
+declare "div" : Dform
+declare circ : Dform
+declare supplus : Dform
+declare supminus : Dform
+declare supcirc : Dform
+declare "subset" : Dform
+declare supset : Dform
+declare subseteq : Dform
+declare supseteq : Dform
+declare sqsubset : Dform
+declare sqsupset : Dform
+declare sqsubseteq : Dform
+declare sqsupseteq : Dform
+declare subzero : Dform
+declare subone : Dform
+declare subtwo : Dform
+declare subthree : Dform
+declare suba : Dform
+declare subb : Dform
+declare subc : Dform
+declare subd : Dform
+declare sube : Dform
+declare subf : Dform
+declare subg : Dform
+declare subh : Dform
+declare subi : Dform
+declare subj : Dform
+declare subk : Dform
+declare subl : Dform
+declare subm : Dform
+declare subn : Dform
+declare subo : Dform
+declare subp : Dform
+declare subq : Dform
+declare subr : Dform
+declare subs : Dform
+declare subt : Dform
+declare subu : Dform
+declare subv : Dform
+declare subw : Dform
+declare subx : Dform
+declare suby : Dform
+declare subz : Dform
+declare math_div : Dform
 
 (*
  * -*-

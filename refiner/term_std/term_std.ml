@@ -63,10 +63,8 @@ struct
     * Level expression have offsets from level expression
     * vars, plus a constant offset.
     *)
-   and level_exp_var' = { le_var : var; le_offset : int }
-
-   and level_exp' = { le_const : int; le_vars : level_exp_var list }
-
+   and level_exp_var' = poly_level_exp_var
+   and level_exp' = level_exp_var poly_level_exp
    and param' = (level_exp, param) poly_param
    and object_id = param list
 
@@ -74,14 +72,14 @@ struct
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
-   and operator' = { op_name : opname; op_params : param list }
+   and operator' = param poly_operator
 
    (*
     * A term has an operator, and a finite number of subterms
     * that may be bound.
     *)
-   and term' = { term_op : operator; term_terms : bound_term list }
-   and bound_term' = { bvars : var list; bterm : term }
+   and term' = (operator, bound_term) poly_term
+   and bound_term' = term poly_bound_term
 
    type meta_term = term poly_meta_term
    type hypothesis = term poly_hypothesis
@@ -102,14 +100,14 @@ struct
    type match_param =
       MatchNumber of Lm_num.num * int option
     | MatchString of string
-    | MatchToken of string
+    | MatchToken of opname * string list
     | MatchVar of var
     | MatchLevel of level_exp
     | MatchUnsupported
 
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list
-    | MatchSequent of string list * match_term list * hypothesis list * term
+    | MatchSequent of string list * match_term * hypothesis list * term
 end
 
 (*

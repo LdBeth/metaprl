@@ -52,7 +52,7 @@ module MakeRewriteDebug
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
    =
 struct
    module RewriteTypes = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr)
@@ -90,6 +90,8 @@ struct
          fprintf out "Number %s" (Lm_num.string_of_num n)
     | StackString s ->
          fprintf out "String %s" s
+    | StackOpname s ->
+         fprintf out "Opname %s" (string_of_opname s)
     | StackVar v ->
          fprintf out "Var %a" output_symbol v
     | StackLevel _ ->
@@ -161,7 +163,7 @@ struct
     | RWString s ->
          fprintf out "%s:s" s
     | RWToken s ->
-         fprintf out "%s:t" s
+         fprintf out "%s:t" (string_of_opname s)
     | RWQuote ->
          fprintf out "q"
     | RWMNumber i ->
@@ -201,7 +203,7 @@ struct
     | String s ->
          fprintf out "%s:s" s
     | Token s ->
-         fprintf out "%s:t" s
+         fprintf out "%s:t" (string_of_opname s)
     | Var s ->
          fprintf out "%s:v" (Lm_symbol.string_of_symbol s)
     | Quote ->

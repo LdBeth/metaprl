@@ -59,9 +59,9 @@ let debug_alpha_equal =
 
 ENDIF
 
-module TermSubst
-(Term : TermStdSig with module TermTypes = TermType)
-(RefineError : RefineErrorSig with module ErrTypes.Types = TermType) =
+module TermSubst (**)
+   (Term : TermStdSig with module TermTypes = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType) =
 struct
    open RefineError
    open TermType
@@ -104,7 +104,7 @@ struct
       { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bterms } when Opname.eq opname var_opname ->
          (* This is a variable *)
          let gvars' =
-            if List.mem v bvars or List.mem v gvars then
+            if List.mem v bvars || List.mem v gvars then
                gvars
             else
                v::gvars
@@ -174,7 +174,7 @@ struct
          free_vars_term vars []
 
    let is_some_var_free_list vars =
-         List.exists (is_some_var_free vars)
+      List.exists (is_some_var_free vars)
 
    (************************************************************************
     * ALPHA EQUALITY                                                       *

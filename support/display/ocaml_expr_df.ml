@@ -64,6 +64,44 @@ prec prec_fun
 prec prec_let
 
 (*
+ * Lists.
+ *)
+dform ocons_df : ocons{'hd; 'tl} =
+   'hd 'tl
+
+dform onil_df : onil =
+   `""
+
+(*
+ * List concatenation
+ *)
+dform df_concat_cons : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_concat{'sep; ocons{'hd; 'tl}} =
+   slot{'hd} 'sep df_concat{'sep;'tl}
+
+dform df_concat_onil : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_concat{'sep; ocons{'hd; onil}} =
+   slot{'hd}
+
+dform df_concat_onil2 : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_concat{'sep; onil} =
+   `""
+
+dform df_rev_concat_cons : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_rev_concat{'sep; ocons{'hd; 'tl}} =
+   slot{'hd} 'sep df_rev_concat{'sep;'tl}
+
+dform df_rev_concat_onil : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_rev_concat{'sep; ocons{'hd; onil}} =
+   slot{'hd}
+
+dform df_rev_concat_onil2 : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_rev_concat{'sep; onil} =
+   `""
+
+(*
+ * Type hacking.
+ *)
+declare df_term{'t : Dform} : Term
+
+dform df_term_df : df_term{'t} =
+   't
+
+(*
  * Constants.
  *)
 dform char_df1 : "char"[c:s] =
@@ -120,8 +158,8 @@ dform proj_df2 : "proj"[start:n, finish:n]{'A; 'B} =
 (*
  * Application.
  *)
-declare "apply"[lid:s]{'e1; 'e2}
-declare apply_cons_list_parse{'reversed_parsed; 'tail}
+declare "apply"[lid:s]{'e1; 'e2} : Dform
+declare apply_cons_list_parse{'reversed_parsed; 'tail : Dform} : Dform
 
 dform apply_df1 : parens :: "prec"[prec_apply] :: "apply"{'e1; 'e2} =
    pushm[0] slot{'e1} hspace slot{'e2} popm
@@ -178,16 +216,16 @@ dform apply_gt_df : "apply"[">"]{'e1; 'e2} =
    pushm[0] slot{'e1} hspace keyword[">"] hspace slot{'e2} popm
 
 dform apply_cons_df : "apply"["::"]{'e1; 'e2} =
-   apply_cons_list_parse{cons{szone{'e1};nil}; 'e2}
+   apply_cons_list_parse{ocons{df_term{szone{'e1}}; onil}; 'e2}
 
 dform apply_cons_parse_df1 : apply_cons_list_parse{'list;."apply"[start:n,finish:n]{."apply"[start1:n, finish1:n]{.uid[start2:n, finish2:n]{uid["::"]}; 'e1}; 'e2}} =
-   apply_cons_list_parse{cons{szone{'e1};'list};'e2}
+   apply_cons_list_parse{ocons{df_term{szone{'e1}}; 'list}; 'e2}
 
 dform apply_cons_parse_df2 : apply_cons_list_parse{'e1; uid[start1:n, finish1:n]{uid["[]"]}} =
-   `"[" pushm[0] df_rev_concat{cons{keyword[";"];hspace};'e1} popm `"]"
+   `"[" pushm[0] df_rev_concat{xcons{keyword[";"]; hspace}; 'e1} popm `"]"
 
 dform apply_cons_parse_df3 : parens :: apply_cons_list_parse{'e1; 'e2} =
-   pushm[0] df_rev_concat{cons{hspace;cons{keyword["::"];hspace}};cons{szone{'e2};'e1}} popm
+   pushm[0] df_rev_concat{xcons{hspace; xcons{keyword["::"]; hspace}}; xcons{szone{'e2}; 'e1}} popm
 
 (*
  * Subscripting.
@@ -251,49 +289,49 @@ dform tuple_df2 : "tuple"[start:n, finish:n]{'e1} =
  * Lists & arrays.
  *)
 dform list_expr_df : list_expr{'e} =
-   df_concat{cons{keyword[";"];hspace};'e}
+   df_concat{xcons{keyword[";"]; hspace}; 'e}
 
 (*
  * Module name.
  *)
-dform ident_expr_cons_df : ident_expr{cons{.Ocaml!"string"[name:s]; cons{'e1; 'e2}}} =
-   slot[name:s] `"." ident_expr{cons{'e1; 'e2}}
+dform ident_expr_cons_df : ident_expr{ocons{.Ocaml!"string"[name:s]; ocons{'e1; 'e2}}} =
+   slot[name:s] `"." ident_expr{ocons{'e1; 'e2}}
 
-dform ident_expr_nil_df : ident_expr{cons{.Ocaml!"string"[name:s]; nil}} =
+dform ident_expr_onil_df : ident_expr{ocons{.Ocaml!"string"[name:s]; onil}} =
    slot[name:s]
 
 (*
  * Streams.
  *)
-dform se_list_nil_df : se_list{nil} =
+dform se_list_onil_df : se_list{onil} =
    `""
 
-dform se_list_cons_df1 : se_list{cons{cons{'s; 'e}; nil}} =
+dform se_list_cons_df1 : se_list{ocons{ocons{'s; 'e}; onil}} =
    slot{'s} `"XXX" slot{'e}
 
-dform se_list_cons_df2 : se_list{cons{cons{'s; 'e}; cons{'e2; 'e3}}} =
-   slot{'s} `"XXX" slot{'e} ";" hspace se_list{cons{'e2; 'e3}}
+dform se_list_cons_df2 : se_list{ocons{ocons{'s; 'e}; ocons{'e2; 'e3}}} =
+   slot{'s} `"XXX" slot{'e} ";" hspace se_list{ocons{'e2; 'e3}}
 
 (*
  * Tuples.
  *)
 dform e_list_df : e_list{'e} =
-   df_concat{cons{keyword[","];hspace}; 'e}
+   df_concat{xcons{keyword[","]; hspace}; 'e}
 
 (*
  * Records.
  *)
-dform ee_list_nil_df : ee_list{nil} =
+dform ee_list_onil_df : ee_list{onil} =
    `""
 
-dform ee_list2_nil_df : ee_list'{nil} =
+dform ee_list2_onil_df : ee_list'{onil} =
    `""
 
-dform ee_list_nil_df2 : ee_list{cons{ee{'e1; 'e2}; 'e3}} =
+dform ee_list_onil_df2 : ee_list{ocons{ee{'e1; 'e2}; 'e3}} =
    szone slot{'e1} hspace "=" hspace slot{'e2} ezone
    ee_list'{'e3}
 
-dform ee_list2_nil_df2 : ee_list'{cons{ee{'e1; 'e2}; 'e3}} =
+dform ee_list2_onil_df2 : ee_list'{ocons{ee{'e1; 'e2}; 'e3}} =
    ";" hspace szone slot{'e1} `" " "=" hspace slot{'e2} ezone
    ee_list'{'e3}
 
@@ -376,14 +414,14 @@ dform new_df1 : parens :: "prec"[prec_not] :: "new"{'e1} =
  * "Match" forms.
  *)
 dform fun_df1 : parens :: "prec"[prec_fun] :: "fun"{'pwel} =
-   szone "_fun" `" " patt_format{'pwel; nil} ezone
+   szone "_fun" `" " patt_format{'pwel; onil} ezone
 
 dform fun_df2 : "fun"[start:n, finish:n]{'pwel} =
    "fun"{'pwel}
 
 dform match_df1 : parens :: "prec"[prec_fun] :: "match"{'pwel; 'e} =
    szone push_indent "_match" hspace 'e hspace "_with" hspace
-   patt_format{'pwel; nil}
+   patt_format{'pwel; onil}
    popm ezone
 
 dform match_df2 : "match"[start:n, finish:n]{'e; 'pwel} =
@@ -391,7 +429,7 @@ dform match_df2 : "match"[start:n, finish:n]{'e; 'pwel} =
 
 dform try_df1 : parens :: "prec"[prec_fun] :: "try"{'pwel; 'e} =
    szone push_indent "_try" hspace slot{'e} hspace "_with" hspace
-   patt_format{'pwel; nil}
+   patt_format{'pwel; onil}
    popm ezone
 
 dform try_df2 : "try"[start:n, finish:n]{'e; 'pwel} =
@@ -407,7 +445,7 @@ dform let_df2 : "let"[start:n, finish:n]{'p; 'e} =
    "let"{'p; 'e}
 
 dform fix_df1 : parens :: "prec"[prec_let] :: "fix"{'p} =
-   szone pushm[0] keyword["_letrec"] hspace patt_format{'p; nil} popm ezone
+   szone pushm[0] keyword["_letrec"] hspace patt_format{'p; onil} popm ezone
 
 dform fix_df2 : "fix"[start:n, finish:n]{'p} =
    "fix"{'p}

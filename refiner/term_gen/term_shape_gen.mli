@@ -31,11 +31,14 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Opname
 
 open Term_sig
 open Term_base_sig
 open Term_man_sig
 open Term_shape_sig
+
+type term_shape
 
 module TermShape (**)
    (TermType : TermSig)
@@ -44,6 +47,7 @@ module TermShape (**)
 : TermShapeSig
   with type term = TermType.term
   with type param = TermType.param
+  with type shape = term_shape
 
 (*
  * -*-

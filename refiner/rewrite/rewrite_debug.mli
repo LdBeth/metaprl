@@ -40,7 +40,7 @@ module MakeRewriteDebug
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType):
+   (RefineError : RefineErrorSig with module Types = TermType):
    RewriteDebugSig
    with type rwcontractum = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rwcontractum
    with type rwterm = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rwterm

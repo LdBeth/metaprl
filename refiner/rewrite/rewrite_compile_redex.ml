@@ -59,20 +59,20 @@ open Rewrite_types
 let _ =
    show_loading "Loading Rewrite_compile_redex%t"
 
-module MakeRewriteCompileRedex
-(TermType : TermSig)
-(Term : TermBaseSig with module TermTypes = TermType)
-(TermMan : TermManSig with module ManTypes = TermType)
-(TermAddr : TermAddrSig with module AddrTypes = TermType)
-(TermSubst : TermSubstSig with module SubstTypes = TermType)
-(RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
-(RewriteUtil : RewriteUtilSig
-               with type term = TermType.term
-               with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
-(RewriteDebug : RewriteDebugSig
-                with type rwterm = MakeRewriteTypes(TermType)(TermAddr).rwterm
-                with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack
-                with type varname = MakeRewriteTypes(TermType)(TermAddr).varname)
+module MakeRewriteCompileRedex (**)
+   (TermType : TermSig)
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermMan : TermManSig with module ManTypes = TermType)
+   (TermAddr : TermAddrSig with module AddrTypes = TermType)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
+   (RewriteUtil : RewriteUtilSig
+    with type term = TermType.term
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
+   (RewriteDebug : RewriteDebugSig
+    with type rwterm = MakeRewriteTypes(TermType)(TermAddr).rwterm
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack
+    with type varname = MakeRewriteTypes(TermType)(TermAddr).varname)
 =
 struct
    module RewriteTypes = MakeRewriteTypes(TermType)(TermAddr);;

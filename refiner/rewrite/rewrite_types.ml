@@ -64,7 +64,7 @@ struct
    type rwparam =
       RWNumber of Lm_num.num
     | RWString of string
-    | RWToken of string
+    | RWToken of opname
     | RWQuote
     | RWMNumber of int
     | RWMString of int
@@ -199,6 +199,7 @@ struct
       StackVoid
     | StackNumber of Lm_num.num
     | StackString of string
+    | StackOpname of opname
     | StackVar of var
     | StackLevel of level_exp
     | StackBTerm of term * var list

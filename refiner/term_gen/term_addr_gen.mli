@@ -44,8 +44,8 @@ module TermAddr (**)
    (TermOp : TermOpSig with module OpTypes = TermType)
    (TermMan: TermManGenSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
-    with module ErrTypes.Types = TermType
-    with type ErrTypes.address = addr_item list)
+    with module Types = TermType
+    with type Params.address = addr_item list)
 : (TermAddrSig
   with module AddrTypes = TermType
   with type address = addr_item list)

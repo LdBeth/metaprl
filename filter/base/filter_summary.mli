@@ -125,6 +125,10 @@ val add_command : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) mo
    ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc ->
    ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info
 
+val add_prefix_commands : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
+   ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc list ->
+   ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info
+
 val set_command : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
    ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc ->
    ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info
@@ -201,7 +205,7 @@ sig
    val check_implementation :
       (term, meta_term, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) module_info ->
       (term, meta_term, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) module_info ->
-      unit
+      (term, meta_term, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) summary_item_loc list
 
    val copy_proofs :
       ('proof1 -> 'proof2 -> 'proof1) ->

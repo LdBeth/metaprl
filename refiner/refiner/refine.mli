@@ -63,8 +63,8 @@ module Refine (**)
     with type RwTypes.term = TermType.term
     with type RwTypes.address = TermAddr.address)
    (RefineError : RefineErrorSig
-    with module ErrTypes.Types = TermType
-    with type ErrTypes.address = TermAddr.address)
+    with module Types = TermType
+    with type Params.address = TermAddr.address)
 : RefineSig
   with type term = TermType.term
   with type address = TermAddr.address

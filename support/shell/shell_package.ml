@@ -81,17 +81,7 @@ let convert_impl =
     | Incomplete ->
          <<status_partial>>
     | Interactive proof ->
-         let status =
-            match Package_info.status_of_proof proof with
-               Proof.StatusBad ->
-                  <<status_bad>>
-             | Proof.StatusPartial ->
-                  <<status_partial>>
-             | Proof.StatusIncomplete ->
-                  <<status_asserted>>
-             | Proof.StatusComplete ->
-                  <<status_complete>>
-         in
+         let status = term_of_proof_status (Package_info.status_of_proof proof) in
          let rcount, ncount = Package_info.node_count_of_proof proof in
             <:con<status_interactive[$int:rcount$, $int:ncount$]{$status$}>>
    in
@@ -128,7 +118,7 @@ let is_rewrite_item = function
    Rewrite _
  | CondRewrite _
  | MLRewrite _
- | Definition _ ->
+ | DefineTerm _ ->
       true
  | _ ->
       false
@@ -152,9 +142,13 @@ let is_formal_item = function
  | MLRewrite _
  | Rule _
  | MLAxiom  _
- | Definition _
- | Opname _ ->
+ | DeclareTypeClass _
+ | DeclareType _
+ | DefineTerm _
+ | DeclareTypeRewrite _ ->
       true
+ | DeclareTerm ty_term ->
+      not (Perv.is_dform_type ty_term)
  | Parent _
  | SummaryItem _
  | Improve _
@@ -176,12 +170,13 @@ let is_informal_item item =
    not (is_formal_item item)
 
 let is_display_item = function
-   Opname _
- | MLGramUpd _
+   MLGramUpd _
  | Prec _
  | DForm _
  | InputForm _ ->
       true
+ | DeclareTerm ty_term ->
+     Perv.is_dform_type ty_term
  | _ ->
       false
 

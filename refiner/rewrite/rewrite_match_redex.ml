@@ -69,7 +69,7 @@ module MakeRewriteMatchRedex (**)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
     with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
@@ -147,6 +147,7 @@ struct
        | StackITerm _
        | StackBTerm _
        | StackLevel _
+       | StackOpname _
        | StackVar _
        | StackString _
        | StackNumber _  -> raise (Invalid_argument "Rewrite_match_redex.restrict_context_vars: internal error")
@@ -291,7 +292,7 @@ struct
             if (s' <> s) then
                REF_RAISE(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
        | RWToken t', Token t ->
-            if (t' <> t) then
+            if not (Opname.eq t' t) then
                REF_RAISE(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
          (* Variable matches *)
        | RWQuote, Quote -> ()
@@ -313,9 +314,9 @@ struct
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
                   eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %s%t" (**)
-                     i (Array.length stack) t eflush
+                     i (Array.length stack) (string_of_opname t) eflush
             ENDIF;
-            update_redex_param stack i (StackString t) PARAM_REASON
+            update_redex_param stack i (StackOpname t) PARAM_REASON
        | RWMVar i, Var v ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then

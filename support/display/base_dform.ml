@@ -72,36 +72,10 @@ let _ =
 let debug_dform = load_debug "dform"
 
 (* @terms *)
-declare df_var[var:v]
-declare df_free_fo_var[var:v]
-declare df_so_var[var:v]{'conts;'termlist}
-declare df_context_var[name:v]
-declare df_context{'t}
-declare "sequent"{'arg; 'seq}
-declare bvar{'v}
-declare " "
-declare "^"
-declare "_"
-declare "{"
-declare "}"
-declare "$"
-declare "["
-declare "]"
-declare ";"
-declare "\\"
-
-(*
- * List helper operations.
- *)
-declare df_length{'l}
-declare df_last{'l}
-declare df_concat{'sep;'l}
-declare df_rev_concat{'sep;'l}
-declare df_down{'l}
-
-(* same as "szone 'e ezone" *)
-declare szone{'e}
-(* @docoff *)
+declare df_var[var:v] : Dform
+declare df_free_fo_var[var:v] : Dform
+declare df_so_var[var:v]{'conts : Dform; 'termlist : Dform} : Dform
+declare "sequent"{'arg; 'seq} : Dform
 
 (*
  * @begin[doc]
@@ -118,10 +92,10 @@ declare szone{'e}
  * documentation.
  * @end[doc]
  *)
-declare var_list{'t}
-declare df_bconts{'conts}
+declare var_list{'t : Dform} : Dform
+declare df_bconts{'conts : Dform} : Dform
 
-dform simple_var_df : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{cons{df_context_var[v:v]; nil}; nil} =
+dform simple_var_df : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{xcons{df_context_var[v:v]; xnil}; xnil} =
    df_var[v:v]
 
 dform var_prl_df : mode[prl] :: df_var[v:v] =
@@ -136,13 +110,13 @@ dform free_var_src_df : mode[src] :: df_free_fo_var[v:v] =
 dform free_var_df : except_mode[src] :: df_free_fo_var[v:v] =
    `"!" df_var[v:v]
 
-dform so_var1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{cons{df_context_var[v:v];nil};'t} =
+dform so_var1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{xcons{df_context_var[v:v]; xnil}; 't} =
    szone df_var[v:v] `"[" pushm[0] var_list{'t} popm `"]" ezone
 
-dform so_var2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{'conts;nil} =
+dform so_var2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{'conts; xnil} =
    szone df_var[v:v] df_bconts{'conts} `"[]" ezone
 
-dform so_var3 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{'conts;'t} =
+dform so_var3 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{'conts; 't} =
    szone df_var[v:v] df_bconts{'conts} `"[" pushm[0] var_list{'t} popm `"]" ezone
 
 dform conts_left_df : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_bconts{'conts} =
@@ -153,10 +127,10 @@ dform conts_left_df : mode[tex] :: df_bconts{'conts} =
    <<mathmacro["left<"]>> `"|" df_concat{slot[";"]; 'conts} `"|" <<mathmacro["right>"]>>
    izone `"}" ezone
 
-dform var_list_df1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: var_list{cons{'a;'b}} =
+dform var_list_df1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: var_list{xcons{'a;'b}} =
    slot{'a} `";" hspace var_list{'b}
 
-dform var_list_df2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: var_list{cons{'a;nil}} =
+dform var_list_df2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: var_list{xcons{'a;xnil}} =
    slot{'a}
 
 (* @docoff *)
@@ -363,7 +337,8 @@ ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- 'concl } format
 ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- } format_term buf =
    format_seq_src format_term buf
 
-declare inner_df_context{'t}
+declare inner_df_context{'t : Dform} : Dform
+
 ml_dform inner_df_context_df : inner_df_context{'t} format_term buf =
    fun _ ->
       let v, conts, values = dest_so_var t in
@@ -587,34 +562,34 @@ ml_dform df_down_df : except_mode[html] :: df_down{'l} format_term buf = fun ter
 (*
  * Get the last item in a list.
  *)
-dform df_last_df1 : df_last{cons{'a; cons{'b; 'c}}} =
-   df_last{cons{'b; 'c}}
+dform df_last_df1 : df_last{xcons{'a; xcons{'b; 'c}}} =
+   df_last{xcons{'b; 'c}}
 
-dform df_last_df2 : df_last{cons{'a; nil}} =
+dform df_last_df2 : df_last{xcons{'a; xnil}} =
    'a
 
 (*
  * List concatenation
  *)
-dform df_concat_cons : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_concat{'sep; cons{'hd; 'tl}} =
+dform df_concat_cons : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_concat{'sep; xcons{'hd; 'tl}} =
    slot{'hd} 'sep df_concat{'sep;'tl}
 
-dform df_concat_nil : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_concat{'sep; cons{'hd; nil}} =
+dform df_concat_xnil : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_concat{'sep; xcons{'hd; xnil}} =
    slot{'hd}
 
-dform df_concat_nil2 : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_concat{'sep; nil} =
+dform df_concat_xnil2 : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_concat{'sep; xnil} =
    `""
 
 (*
  * List rev_concatenation
  *)
-dform df_rev_concat_cons : df_rev_concat{'sep; cons{'hd; 'tl}} =
+dform df_rev_concat_cons : df_rev_concat{'sep; xcons{'hd; 'tl}} =
    df_rev_concat{'sep; 'tl} 'sep slot{'hd}
 
-dform df_rev_concat_nil : df_rev_concat{'sep; cons{'hd; nil}} =
+dform df_rev_concat_xnil : df_rev_concat{'sep; xcons{'hd; xnil}} =
    slot{'hd}
 
-dform df_rev_concat_nil2 : df_rev_concat{'sep; nil} =
+dform df_rev_concat_xnil2 : df_rev_concat{'sep; xnil} =
    `""
 
 (*

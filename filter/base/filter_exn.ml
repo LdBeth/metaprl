@@ -67,6 +67,30 @@ let format_version buf i =
       format_char buf '.';
       format_int buf rev
 
+let format_loc buf (bp, ep) =
+   if (bp.pos_fname <> "") && (bp.pos_fname <> "-") && (bp.pos_fname = ep.pos_fname) then begin
+      format_string buf "File \"";
+      format_string buf bp.pos_fname;
+      format_string buf "\", line ";
+   end
+   else
+      format_string buf "Line ";
+   format_int buf bp.pos_lnum;
+   format_string buf ", ";
+   if bp.pos_lnum = ep.pos_lnum then begin
+      format_string buf "characters ";
+      format_int buf (bp.pos_cnum - bp.pos_bol + 1);
+      format_string buf "-";
+   end
+   else begin
+      format_string buf "char ";
+      format_int buf (bp.pos_cnum - bp.pos_bol + 1);
+      format_string buf " -- line ";
+      format_int buf ep.pos_lnum;
+      format_string buf ", char ";
+   end;
+   format_int buf (ep.pos_cnum - ep.pos_bol)
+
 (*
  * Convert an exception to a string.
  *)
@@ -133,28 +157,9 @@ let rec format_exn db buf exn =
          format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
          format_newline buf;
          format_string buf "! and possibly export the data to a different format."
-    | Stdpp.Exc_located ((bp, ep), exn) ->
+    | Stdpp.Exc_located (loc, exn) ->
          format_pushm buf 3;
-         if (bp.pos_fname <> "") && (bp.pos_fname <> "-") && (bp.pos_fname = ep.pos_fname) then begin
-            format_string buf "File \"";
-            format_string buf bp.pos_fname;
-            format_string buf "\", line ";
-         end else
-            format_string buf "Line ";
-         format_int buf bp.pos_lnum;
-         format_string buf ", ";
-         if bp.pos_lnum = ep.pos_lnum then begin
-            format_string buf "characters ";
-            format_int buf (bp.pos_cnum - bp.pos_bol + 1);
-            format_string buf "-";
-         end else begin
-            format_string buf "char ";
-            format_int buf (bp.pos_cnum - bp.pos_bol + 1);
-            format_string buf " -- line ";
-            format_int buf ep.pos_lnum;
-            format_string buf ", char ";
-         end;
-         format_int buf (ep.pos_cnum - ep.pos_bol);
+         format_loc buf loc;
          format_string buf ": ";
          format_newline buf;
          format_szone buf;
@@ -162,15 +167,20 @@ let rec format_exn db buf exn =
          format_ezone buf;
          format_popm buf;
     | Pcaml.Qerror (name, where, exn) ->
-         let name = if name = "" then !(Quotation.default) else name in
+         let name =
+            if name = "" then
+               !Quotation.default
+            else
+               name
+         in
             format_pushm buf 3;
-            format_string buf ("While " ^
-                                  (match where with
-                                      Pcaml.Finding -> "finding quotation"
-                                    | Pcaml.Expanding -> "expanding quotation"
-                                    | Pcaml.ParsingResult _ -> "parsing result of quotation"
-                                    | Pcaml.Locating -> "parsing"
-                                  ) ^ " \"" ^ name ^ "\":");
+            format_string buf "While ";
+            (match where with
+                Pcaml.Finding -> format_string buf "finding quotation"
+              | Pcaml.Expanding -> format_string buf "expanding quotation"
+              | Pcaml.ParsingResult _ -> format_string buf "parsing result of quotation"
+              | Pcaml.Locating -> format_string buf "parsing");
+            format_string buf (" \"" ^ String.escaped name ^ "\":");
             format_space buf;
             format_szone buf;
             format_exn db buf exn;
@@ -193,20 +203,21 @@ let rec format_exn db buf exn =
 let dont_print_exn _ _ f x =
    f x
 
+let format_message buf s =
+   match s with
+      None ->
+         format_pushm buf 0;
+         format_szone buf
+    | Some s ->
+         format_pushm buf 3;
+         format_string buf s;
+         format_szone buf
+
 let print_exn db s f x =
    try f x with
       exn ->
          let buf = new_buffer () in
-            begin
-               match s with
-                  None ->
-                     format_pushm buf 0;
-                     format_szone buf
-                | Some s ->
-                     format_pushm buf 3;
-                     format_string buf s;
-                     format_szone buf
-            end;
+            format_message buf s;
             format_exn db buf exn;
             format_ezone buf;
             format_popm buf;
@@ -214,6 +225,37 @@ let print_exn db s f x =
             output_rbuffer stderr buf;
             flush stderr;
             raise exn
+
+let handle_exn db s loc f =
+   try f () with
+      exn ->
+         let exn =
+            match exn with
+               Stdpp.Exc_located _ ->
+                  exn
+             | _ ->
+                  Stdpp.Exc_located (loc, exn)
+         in
+         let buf = new_buffer () in
+         let () = format_message buf s in
+         let buf =
+            try format_exn db buf exn; buf with
+               exn ->
+                  let buf = new_buffer () in
+                     format_message buf s;
+                     format_string buf "!!! Filter_exn.handle_exn: error during exception printing !!!";
+                     format_space buf;
+                     format_loc buf loc;
+                     format_space buf;
+                     format_string buf (Printexc.to_string exn);
+                     buf
+         in
+            format_ezone buf;
+            format_popm buf;
+            format_newline buf;
+            output_rbuffer stderr buf;
+            flush stderr;
+            exit 2
 
 let print_exn =
    if Exn_boot.backtrace then

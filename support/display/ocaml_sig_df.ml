@@ -108,41 +108,41 @@ declare type_arg{'sl}
 declare type_constraint{'sl}
 declare sig_type_aux{'tdls}
 
-dform sig_type_df : sig_type{cons{'tdl; 'tdls}} =
+dform sig_type_df : sig_type{ocons{'tdl; 'tdls}} =
    szone pushm[0] "_type" `" " slot{'tdl} sig_type_aux{'tdls} popm ezone
 
-dform sig_type_aux_df : sig_type_aux{cons{'tdl; 'tdls}} =
+dform sig_type_aux_df : sig_type_aux{ocons{'tdl; 'tdls}} =
    newline "_and" `" " slot{'tdl}
    sig_type_aux{'tdls}
 
-dform sig_type_aux_df : sig_type_aux{nil} =
+dform sig_type_aux_df : sig_type_aux{onil} =
    `""
 
 dform sig_type_df2 : sig_type[start:n, finish:n]{'tdl} =
    sig_type{'tdl}
 
-dform tdl_df1 : tdl{.Ocaml!"string"[name:s]; nil; 't; nil} =
+dform tdl_df1 : tdl{.Ocaml!"string"[name:s]; onil; 't; onil} =
    slot[name:s] `" =" hspace slot{'t}
 
-dform tdl_df2 : tdl{.Ocaml!"string"[name:s]; 'sl; 't; nil} =
+dform tdl_df2 : tdl{.Ocaml!"string"[name:s]; 'sl; 't; onil} =
    "(" type_arg{'sl} ")" `" " slot[name:s] `" =" hspace slot{'t}
 
-dform tdl_df3 : tdl{.Ocaml!"string"[name:s]; nil; 't; 'tc} =
+dform tdl_df3 : tdl{.Ocaml!"string"[name:s]; onil; 't; 'tc} =
    slot[name:s] `" =" hspace slot{'t} hspace type_constraint{'tc}
 
 dform tdl_df4 : tdl{.Ocaml!"string"[name:s]; 'sl; 't; 'tc} =
    "(" type_arg{'sl} ")" `" " slot[name:s] `" =" hspace slot{'t} hspace type_constraint{'tc}
 
-dform tc_df1 : type_constraint{cons{ tc{'t1;'t2}; nil}} =
+dform tc_df1 : type_constraint{ocons{ tc{'t1;'t2}; onil}} =
    `"constraint' " slot{'t1} `" = " slot{'t2}
 
-dform tc_df1 : type_constraint{cons{ tc{'t1;'t2}; 'tc}} =
+dform tc_df1 : type_constraint{ocons{ tc{'t1;'t2}; 'tc}} =
    `"constraint' " slot{'t1} `" = " slot{'t2} hspace type_constraint{'tc}
 
-dform type_arg_cons_df1 : type_arg{cons{.Ocaml!"string"[name:s]; nil}} =
+dform type_arg_cons_df1 : type_arg{ocons{.Ocaml!"string"[name:s]; onil}} =
    "'" slot[name]
 
-dform type_arg_cons_df2 : type_arg{cons{.Ocaml!"string"[name:s]; 'sl}} =
+dform type_arg_cons_df2 : type_arg{ocons{.Ocaml!"string"[name:s]; 'sl}} =
    "'" slot[name] `", " type_arg{'sl}
 
 (*

@@ -35,6 +35,7 @@ open Lm_printf
 
 open Term_sig
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermTy
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
@@ -419,17 +420,19 @@ let view_crw pack parse_arg window
    in
       edit pack parse_arg name window obj
 
-let view_def pack parse_arg window def =
-   let goal = mk_rw_goal [] def.opdef_term def.opdef_definition in
-   let proof = Primitive (mk_xrewrite_term def.opdef_term def.opdef_definition) in
-      edit pack parse_arg def.opdef_name window {
+let view_def pack parse_arg window ty_term def =
+   let redex = term_of_ty ty_term in
+   let contractum = def.term_def_value in
+   let goal = mk_rw_goal [] redex contractum in
+   let proof = Primitive (mk_xrewrite_term redex contractum) in
+      edit pack parse_arg def.term_def_name window {
          rule_assums = [];
          rule_params = [];
-         rule_goal = GRewrite (def.opdef_term, def.opdef_definition);
+         rule_goal = GRewrite (redex, contractum);
          rule_proof = proof;
          rule_ped = ped_of_proof pack parse_arg goal proof;
-         rule_resources = def.opdef_resources;
-         rule_name = def.opdef_name;
+         rule_resources = def.term_def_resources;
+         rule_name = def.term_def_name;
       }
 
 (*

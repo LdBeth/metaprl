@@ -29,6 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Opname
 open Refiner.Refiner.TermType
 
 open Dform
@@ -51,7 +52,16 @@ val get_term : int -> term
  *)
 
 (* This is the opname function used when terms are built. *)
-val set_mk_opname : opname_fun option -> unit
+val set_mk_opname : (opname * opname_kind_fun) option -> unit
+
+(* This is the term checker to be used when terms are parsed. *)
+val set_infer_term : (infer_term_fun
+                      * check_rule_fun
+                      * infer_rewrite_fun
+                      * check_type_rewrite_fun
+                      * check_iform_fun
+                      * check_dform_fun
+                      * check_production_fun) option -> unit
 
 (* This is the set of grammar infix/suffix mods needed in this state *)
 val set_infixes : Infix.Set.t option -> unit

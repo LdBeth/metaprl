@@ -35,6 +35,7 @@ open Lm_symbol
 open Lm_printf
 open Lm_string_set
 
+open Term_sig
 open Refiner.Refiner
 open Term
 open TermType

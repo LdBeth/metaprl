@@ -62,8 +62,8 @@ module TermMan (**)
    (TermOp : TermOpSig with module OpTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (RefineError : RefineErrorSig
-    with type ErrTypes.Types.term = TermType.term
-    with type ErrTypes.Types.level_exp = TermType.level_exp) =
+    with type Types.term = TermType.term
+    with type Types.level_exp = TermType.level_exp) =
 struct
    open Term
    open TermType
@@ -195,6 +195,8 @@ struct
    let is_xcons_term = is_dep0_dep0_term xcons_opname
    let mk_xcons_term = mk_dep0_dep0_term xcons_opname
    let dest_xcons = dest_dep0_dep0_term xcons_opname
+
+   let xconcl_term = xconcl_term
 
    (*
     * Strings.
@@ -459,8 +461,8 @@ struct
                MatchNumber (n, None)
        | String s ->
             MatchString s
-       | Token s ->
-            MatchToken s
+       | Token opname ->
+            MatchToken (opname, Opname.dest_opname opname)
        | Var v ->
             MatchVar v
        | MLevel l ->
@@ -488,31 +490,51 @@ struct
                    sequent_concl = concl
          } ->
             let op = dest_opname (opname_of_term args) in
-            let args = List.map explode_term (subterms_of_term args) in
+            let args = explode_term args in
                MatchSequent (op, args, SeqHyp.to_list hyps, concl)
-       | Subst _ | Hashed _ ->
+       | Subst _
+       | Hashed _ ->
             fail_core "explode_term"
 
    (*****************************************
     * SO variables and contexts             *
     *****************************************)
+
    let is_so_var_term t = match get_core t with
-    | SOVar _ -> true
+      SOVar _ -> true
     | _ -> false
 
    let dest_so_var t = match get_core t with
-      SOVar(v,cs,ts) -> v,cs,ts
+      SOVar(v, cs, ts) -> v, cs, ts
     | _ -> REF_RAISE(RefineError ("Term_man_ds.dest_so_var", TermMatchError (t, "not a so_var")))
 
    let mk_so_var_term v cs ts = core_term (SOVar (v,cs,ts))
 
    let is_fso_var_term t = match get_core t with
-      FOVar _ | SOVar (_, _, []) -> true
+      FOVar _
+    | SOVar (_, _, []) -> true
     | _ -> false
 
    let dest_fso_var t = match get_core t with
-      FOVar v | SOVar(v,_,[]) -> v
+      FOVar v
+    | SOVar(v, _, []) -> v
     | _ -> REF_RAISE(RefineError ("Term_man_ds.dest_fso_var", TermMatchError (t, "not a FO or 0-ary SO variable")))
+
+   (*
+    * A first-order term has no bvars.
+    *)
+   let is_fo_term t =
+      match get_core t with
+         Term t ->
+            List.for_all (fun bterm -> bterm.bvars = []) t.term_terms
+       | FOVar _ ->
+            true
+       | SOVar _
+       | Sequent _ ->
+            false
+       | Subst _
+       | Hashed _ ->
+            fail_core "is_fo_term"
 
    (*
     * Second order context, contains a context term, plus
@@ -599,6 +621,106 @@ struct
 
    let context_vars = context_vars (SymbolSet.empty, SymbolSet.empty)
 
+   (*
+    * This is a variant of the above,
+    * but instead of just collecting the vars,
+    * we collect a table of their arities.
+    *
+    * The table is:
+    *     var -> (sequent_flag, context_arities, term_arities)
+    *        sequent_flag : true iff this is a sequent context
+    *        context_arity : number of context arguments
+    *        term_arity : number of subterms
+    *)
+   let rec context_vars_term vars t =
+      match get_core t with
+         Sequent seq ->
+            let hyps = seq.sequent_hyps in
+            let len = SeqHyp.length hyps in
+            let rec hyp_context_vars vars i =
+               if i = len then
+                  vars
+               else
+                  match SeqHyp.get hyps i with
+                     Hypothesis (_, h) ->
+                        hyp_context_vars (context_vars_term vars h) (succ i)
+                   | Context (v, cs, ts) ->
+                        let vars = SymbolTable.add vars v (true, List.length cs, List.length ts) in
+                           hyp_context_vars (context_vars_term_list vars ts) (succ i)
+            in
+               context_vars_term (hyp_context_vars (context_vars_term vars seq.sequent_args) 0) seq.sequent_concl
+       | Term { term_op = { op_name = opname; op_params = [Var v] }} when Opname.eq opname Opname.context_opname ->
+            let v, term, cons, terms = dest_context t in
+            let vars = SymbolTable.add vars v (false, List.length cons, List.length terms) in
+               context_vars_term (context_vars_term_list vars terms) term
+       | Term { term_terms = bts } ->
+            context_vars_bterm_list vars bts
+       | FOVar _ ->
+            vars
+       | SOVar(v, _, ts) ->
+            context_vars_term_list vars ts
+       | Hashed _
+       | Subst _ ->
+            fail_core "context_vars"
+
+   and context_vars_term_list vars tl =
+      List.fold_left context_vars_term vars tl
+
+   and context_vars_bterm vars bt =
+      context_vars_term vars bt.bterm
+
+   and context_vars_bterm_list vars l =
+      List.fold_left context_vars_bterm vars l
+
+   let context_vars_info = context_vars_term
+   let context_vars_info_list = context_vars_term_list
+
+   (*
+    * We do similarly for so_vars.
+    *)
+   let rec so_vars_term vars t =
+      match get_core t with
+         Sequent seq ->
+            let hyps = seq.sequent_hyps in
+            let len = SeqHyp.length hyps in
+            let rec hyp_so_vars vars i =
+               if i = len then
+                  vars
+               else
+                  match SeqHyp.get hyps i with
+                     Hypothesis (v, h) ->
+                        let vars = SymbolTable.remove (so_vars_term vars h) v in
+                           hyp_so_vars vars (succ i)
+                   | Context (_, _, ts) ->
+                        hyp_so_vars (so_vars_term_list vars ts) (succ i)
+            in
+               so_vars_term (hyp_so_vars (so_vars_term vars seq.sequent_args) 0) seq.sequent_concl
+       | Term { term_terms = bts } ->
+            so_vars_bterm_list vars bts
+       | FOVar _ ->
+            vars
+       | SOVar (v, cs, ts) ->
+            let vars = SymbolTable.add vars v (List.length cs, List.length ts) in
+               so_vars_term_list vars ts
+       | Hashed _
+       | Subst _ ->
+            fail_core "context_vars"
+
+   and so_vars_term_list vars tl =
+      List.fold_left so_vars_term vars tl
+
+   and so_vars_bterm vars bt =
+      so_vars_term vars bt.bterm
+
+   and so_vars_bterm_list vars l =
+      List.fold_left so_vars_bterm vars l
+
+   let so_vars_info = so_vars_term
+   let so_vars_info_list = so_vars_term_list
+
+   (*
+    * Meta term.
+    *)
    let rec free_meta_variables vars t = match get_core t with
       FOVar _ -> vars
     | SOVar(v, conts, ts) -> SymbolSet.add (List.fold_left free_meta_variables (SymbolSet.add_list vars conts) ts) v

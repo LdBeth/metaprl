@@ -203,7 +203,7 @@ let make_groupdsc_opts () =
  * BINDINGS IN STR ITEMS                                                *
  ************************************************************************)
 
-let add_binding, get_unparsed_bindings =
+let add_binding, get_bindings =
    let loc = dummy_loc in
    let decls = ref [] in
    let decl_var = ref 0 in
@@ -216,19 +216,13 @@ let add_binding, get_unparsed_bindings =
       let res = !decls in
          decls := [];
          res
-   in add_binding, get_bindings
+   in
+      add_binding, get_bindings
 
-let conv = function
-   v, BindTerm t -> v, BindTerm(term_of_parsed_term t)
- | bnd -> bnd
-
-let get_bindings () =
-   List.map conv (get_unparsed_bindings ())
-
-let no_resources = {
-   item_item = [];
-   item_bindings = [];
-}
+let no_resources =
+   { item_item = [];
+     item_bindings = [];
+   }
 
 (*
  * -*-

@@ -28,16 +28,16 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
- * Modified By: Alelsey Nogin <nogin@cs.caltech.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 type atom
 type opname
 
 (* Constructors *)
-val nil_opname : opname
-val mk_opname : string -> opname -> opname
-val make_opname : string list -> opname
+val nil_opname     : opname
+val mk_opname      : string -> opname -> opname
+val make_opname    : string list -> opname
 
 (* Atoms are always equal iff they are pointer equal *)
 val intern : opname -> atom
@@ -57,17 +57,28 @@ val string_of_opname : opname -> string
  * A few "special" opnames.
  * These must be common to all the term modules, so they are defined here.
  *)
-val var_opname : opname
+val var_opname     : opname
 val context_opname : opname
-val xperv : opname
+val xperv          : opname
 val sequent_opname : opname
-val xnil_opname : opname
-val xcons_opname : opname
+val xnil_opname    : opname
+val xcons_opname   : opname
+val xconcl_opname  : opname
 
 (*
  * Debugging.
  *)
 val debug_opname : bool ref
+
+(*
+ * This table provides associations between symbols
+ * and values.
+ *)
+val compare : opname -> opname -> int
+
+module OpnameSet    : Lm_set_sig.LmSet with type elt = opname
+module OpnameTable  : Lm_map_sig.LmMap with type key = opname
+module OpnameMTable : Lm_map_sig.LmMapList with type key = opname
 
 (*
  * -*-

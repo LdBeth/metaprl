@@ -40,6 +40,12 @@ open Term_base_sig
 open Term_man_sig
 open Term_shape_sig
 
+type term_shape =
+   { shape_opname  : opname;
+     shape_params  : shape_param list;
+     shape_arities : int list
+   }
+
 module TermShape (**)
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
@@ -51,12 +57,7 @@ struct
 
    type term = TermType.term
    type param = TermType.param
-
-   type shape =
-      { shape_opname : opname;
-        shape_params : shape_param list;
-        shape_arities : int list
-      }
+   type shape = term_shape
 
    let opname_of_shape { shape_opname = opname } =
       opname
@@ -164,4 +165,35 @@ struct
 
    let pp_print_shape out shape =
       pp_print_string out (string_of_shape shape)
+
+   (************************************************************************
+    * Sets and tables.
+    *)
+   module ShapeCompare =
+   struct
+      type t = shape
+
+      let compare shape1 shape2 =
+         let { shape_opname = opname1;
+               shape_params = params1;
+               shape_arities = arities1
+             } = shape1
+         in
+         let { shape_opname = opname2;
+               shape_params = params2;
+               shape_arities = arities2
+             } = shape2
+         in
+         let cmp = Opname.compare opname1 opname2 in
+            if cmp = 0 then
+               Pervasives.compare (params1, arities1) (params2, arities2)
+            else
+               cmp
+   end
+
+   let shape_compare = ShapeCompare.compare
+
+   module ShapeSet = Lm_set.LmMake (ShapeCompare);;
+   module ShapeTable = Lm_map.LmMake (ShapeCompare);;
+   module ShapeMTable = Lm_map.LmMakeList (ShapeCompare);;
 end

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-$nm{"string"}="s";
+$nm{"shape"}=$nm{"string"}="s";
 $nm{"param"}="p";
 $nm{"var"}="v";
 $nm{"int"}="i";
@@ -9,6 +9,7 @@ $nm{"refine_error"}="re";
 $nm{"address"}="a";
 $nm{"match_type"}=$nm{"meta_term"}="mt";
 $nm{"opname"}="o";
+$nm{"ty_param"}="tp";
 $nm{"(string ### refine_error) list"}="sre";
 
 $cnv{"opname"}=$cnv{"string"}=$cnv{"var"}=$cnv{"int"}="";
@@ -18,6 +19,8 @@ $cnv{"refine_error"}="re_of_re1 ";
 $cnv{"address"}="addr_of_addr1 ";
 $cnv{"meta_term"}="mterm_of_mterm1 ";
 $cnv{"match_type"}="mtype_of_mtype1 ";
+$cnv{"ty_param"}="tp_of_tp1 ";
+$cnv{"shape"}="shape_of_shape1 ";
 $cnv{"(string ### refine_error) list"}="List.map sre_of_sre1 ";
 
 open IN, 'grep -A5000 refine_error refiner/refsig/refine_error_sig.ml | egrep -v \'type re|^ *\*|^ *(exception|val|end)|\(\*|^ *$\'|';

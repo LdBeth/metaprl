@@ -1,5 +1,5 @@
 (*
- * Print exceptions from filter, refiner, and others.
+ * The term classes define a very simple type system.
  *
  * ----------------------------------------------------------------
  *
@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 2005 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,14 +26,22 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Dform
+open Term_sig
+open Term_base_sig
+open Term_man_sig
+open Term_ty_sig
+open Term_subst_sig
 
-val format_exn  : dform_base -> buffer -> exn -> unit
-val print_exn   : dform_base -> string option -> ('a -> 'b) -> 'a -> 'b
-val handle_exn  : dform_base -> string option -> Token.flocation -> (unit -> 'a) -> 'a
+module TermTy (**)
+   (TermType : TermSig)
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermMan : TermManSig with module ManTypes = TermType)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
+: TermTySig
+  with type term = TermType.term
 
 (*
  * -*-

@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1999-2004 MetaPRL Group
+ * Copyright (C) 1999-2005 MetaPRL Group
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -138,26 +138,34 @@ type input_buf =
  * This is the type of global state.
  *)
 type state =
-   { mutable state_mk_opname       : opname_fun;
-     mutable state_mk_var_contexts : context_fun;
-     mutable state_df_base         : dform_base;
-     mutable state_inline_terms    : (int * term) list;
-     mutable state_inline_var      : int;
-     mutable state_tactic          : string * MLast.expr;
-     mutable state_active          : bool;
-     mutable state_toploop         : Mptop.top_table;
-     mutable state_input_info      : info;
-     mutable state_interactive     : bool;
-     mutable state_infixes         : Infix.Set.t;
-     mutable state_grammar         : Filter_grammar.t;
-     mutable state_prompt1         : string;
-     mutable state_prompt2         : string
+   { mutable state_opname_prefix      : opname;
+     mutable state_mk_opname_kind     : opname_kind_fun;
+     mutable state_mk_var_contexts    : context_fun;
+     mutable state_infer_term         : infer_term_fun;
+     mutable state_check_rule         : check_rule_fun;
+     mutable state_infer_rewrite      : infer_rewrite_fun;
+     mutable state_check_type_rewrite : check_type_rewrite_fun;
+     mutable state_check_iform        : check_iform_fun;
+     mutable state_check_dform        : check_dform_fun;
+     mutable state_check_production   : check_production_fun;
+     mutable state_df_base            : dform_base;
+     mutable state_inline_terms       : (int * term) list;
+     mutable state_inline_var         : int;
+     mutable state_tactic             : string * MLast.expr;
+     mutable state_active             : bool;
+     mutable state_toploop            : Mptop.top_table;
+     mutable state_input_info         : info;
+     mutable state_interactive        : bool;
+     mutable state_infixes            : Infix.Set.t;
+     mutable state_grammar            : Filter_grammar.t;
+     mutable state_prompt1            : string;
+     mutable state_prompt2            : string
    }
 
 (*
  * Default values.
  *)
-let mk_opname_null _ =
+let mk_opname_null _ _ =
    raise (Failure "Shell_mp.mk_opname: no current package")
 
 let mk_var_contexts_null v i =
@@ -165,6 +173,27 @@ let mk_var_contexts_null v i =
       None
    else
       raise (Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
+
+let infer_term_null t =
+   raise (Failure "Shell_mp.infer_term: no current package")
+
+let check_rule_null mt args =
+   raise (Failure "Shell_mp.check_rule: no current package")
+
+let infer_rewrite_null mt args =
+   raise (Failure "Shell_mp.infer_rewrite: no current package")
+
+let check_type_rewrite_null redex contractum =
+   raise (Failure "Shell_mp.check_type_rewrite: no current package")
+
+let check_iform_null mt args =
+   raise (Failure "Shell_mp.check_iform: no current package")
+
+let check_dform_null redex contractum =
+   raise (Failure "Shell_mp.check_dform: no current package")
+
+let check_production_null redices contractum =
+   raise (Failure "Shell_mp.check_production: no current package")
 
 let default_saved_tactic =
    let loc = dummy_loc in
@@ -176,24 +205,32 @@ let default_saved_tactic =
 let state_entry =
    Mp_resource.recompute_top ();
    let default =
-      { state_mk_opname       = mk_opname_null;
-        state_mk_var_contexts = mk_var_contexts_null;
-        state_active          = false;
-        state_df_base         = Dform.null_base;
-        state_inline_terms    = [];
-        state_inline_var      = 0;
-        state_tactic          = default_saved_tactic;
-        state_toploop         = Mptop.get_toploop_resource (Mp_resource.find Mp_resource.top_bookmark) [];
-        state_input_info      = Buffered [];
-        state_interactive     = true;
-        state_infixes         = Infix.Set.empty;
-        state_grammar         = Filter_grammar.empty;
-        state_prompt1         = "# ";
-        state_prompt2         = "  "
+      { state_opname_prefix      = nil_opname;
+        state_mk_opname_kind     = mk_opname_null;
+        state_mk_var_contexts    = mk_var_contexts_null;
+        state_infer_term         = infer_term_null;
+        state_check_rule         = check_rule_null;
+        state_infer_rewrite      = infer_rewrite_null;
+        state_check_type_rewrite = check_type_rewrite_null;
+        state_check_iform        = check_iform_null;
+        state_check_dform        = check_dform_null;
+        state_check_production   = check_production_null;
+        state_active             = false;
+        state_df_base            = Dform.null_base;
+        state_inline_terms       = [];
+        state_inline_var         = 0;
+        state_tactic             = default_saved_tactic;
+        state_toploop            = Mptop.get_toploop_resource (Mp_resource.find Mp_resource.top_bookmark) [];
+        state_input_info         = Buffered [];
+        state_interactive        = true;
+        state_infixes            = Infix.Set.empty;
+        state_grammar            = Filter_grammar.empty;
+        state_prompt1            = "# ";
+        state_prompt2            = "  "
       }
    in
    let fork state =
-      { state with state_mk_opname = state.state_mk_opname }
+      { state with state_mk_opname_kind = state.state_mk_opname_kind }
    in
       State.private_val "Shell_state.state" default fork
 
@@ -252,9 +289,13 @@ struct
    (*
     * Use global mk_opname function.
     *)
-   let mk_opname loc l =
+   let opname_prefix loc =
       synchronize_state (function state ->
-            try state.state_mk_opname l with
+            state.state_opname_prefix)
+
+   let mk_opname_kind loc l =
+      synchronize_state (function state ->
+            try state.state_mk_opname_kind l with
                exn ->
                   Stdpp.raise_with_loc loc exn)
 
@@ -264,14 +305,59 @@ struct
                exn ->
                   Stdpp.raise_with_loc loc exn)
 
+   let infer_term loc t =
+      synchronize_state (function state ->
+            try state.state_infer_term t with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
+   let check_rule loc mt args =
+      synchronize_state (function state ->
+            try state.state_check_rule mt args with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
+   let infer_rewrite loc mt args =
+      synchronize_state (function state ->
+            try state.state_infer_rewrite mt args with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
+   let check_type_rewrite loc redex contractum =
+      synchronize_state (function state ->
+            try state.state_check_type_rewrite redex contractum with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
+   let check_iform loc mt args =
+      synchronize_state (function state ->
+            try state.state_check_iform mt args with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
+   let check_dform loc redex contractum =
+      synchronize_state (function state ->
+            try state.state_check_dform redex contractum with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
+   let check_production loc redices contractum =
+      synchronize_state (function state ->
+            try state.state_check_production redices contractum with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
    (*
     * Term grammar.
     *)
    let gram = Pcaml.gram
+   let opname = Grammar.Entry.create gram "opname"
+   let opname_name = Grammar.Entry.create gram "opname_name"
    let term_eoi = Grammar.Entry.create gram "term"
    let term = Grammar.Entry.create gram "term"
    let parsed_term = Grammar.Entry.create gram "term"
    let quote_term = Grammar.Entry.create gram "quote_term"
+   let ty_term = Grammar.Entry.create gram "ty_term"
    let mterm = Grammar.Entry.create gram "mterm"
    let bmterm = Grammar.Entry.create gram "bmterm"
    let singleterm = Grammar.Entry.create gram "singleterm"
@@ -416,10 +502,32 @@ let get_tactic () =
 let set_mk_opname op =
    synchronize_write (fun state ->
          match op with
-            Some f ->
-               state.state_mk_opname <- f
+            Some (op_prefix, f) ->
+               state.state_opname_prefix <- op_prefix;
+               state.state_mk_opname_kind <- f
           | None ->
-               state.state_mk_opname <- mk_opname_null)
+               state.state_opname_prefix <- nil_opname;
+               state.state_mk_opname_kind <- mk_opname_null)
+
+let set_infer_term infer =
+   synchronize_write (fun state ->
+         match infer with
+            Some (infer_term, check_rule, infer_rewrite, check_type_rewrite, check_iform, check_dform, check_production) ->
+               state.state_infer_term         <- infer_term;
+               state.state_check_rule         <- check_rule;
+               state.state_infer_rewrite      <- infer_rewrite;
+               state.state_check_type_rewrite <- check_type_rewrite;
+               state.state_check_iform        <- check_iform;
+               state.state_check_dform        <- check_dform;
+               state.state_check_production   <- check_production
+          | None ->
+               state.state_infer_term         <- infer_term_null;
+               state.state_check_rule         <- check_rule_null;
+               state.state_infer_rewrite      <- infer_rewrite_null;
+               state.state_check_type_rewrite <- check_type_rewrite_null;
+               state.state_check_iform        <- check_iform_null;
+               state.state_check_dform        <- check_dform_null;
+               state.state_check_production  <- check_production_null)
 
 let set_infixes infixes =
    synchronize_write (fun state ->
@@ -448,11 +556,12 @@ let set_so_var_context context =
             Some ts ->
                let delayed_fun v i =
                   let f = context_subst_of_terms ts in
-                  let f v i = match f v i with
-                                 Some _ as conts -> conts
-                               | None ->
-                                    if i = 0 then None else
-                                       raise(Failure "Unknown SO variable, please specify contexts explicitly")
+                  let f v i =
+                     match f v i with
+                        Some _ as conts -> conts
+                      | None ->
+                           if i = 0 then None else
+                              raise(Failure "Unknown SO variable, please specify contexts explicitly")
                   in
                      state.state_mk_var_contexts <- f;
                      f v i

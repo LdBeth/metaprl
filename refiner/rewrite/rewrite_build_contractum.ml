@@ -63,7 +63,7 @@ module MakeRewriteBuildContractum
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
     with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
@@ -342,7 +342,7 @@ struct
     | RWMToken i ->
          begin
              match stack.(i) with
-                StackString s -> Token s
+                StackOpname s -> Token s
               | StackVar v -> MToken v
               | _ -> raise(build_con_exn)
          end

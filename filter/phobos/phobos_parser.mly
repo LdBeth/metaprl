@@ -726,7 +726,7 @@ term_param:
                                    TyString ->
                                        make_param (String (fst $1))
                                  | TyToken ->
-                                       make_param (Token (fst $1))
+                                       make_param (Token (mk_opname (fst $1) nil_opname))
                                  | _ ->
                                        raise (ParseError (snd $3, "invalid parameter type"))
                               }

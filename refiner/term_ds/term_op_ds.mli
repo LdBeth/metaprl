@@ -36,11 +36,12 @@ open Term_ds
 module TermOp
    (Term : TermDsSig with module TermTypes = TermType)
    (RefineError : RefineErrorSig
-    with type ErrTypes.Types.level_exp = TermType.level_exp
-    with type ErrTypes.Types.param = TermType.param
-    with type ErrTypes.Types.term = TermType.term
-    with type ErrTypes.Types.bound_term = TermType.bound_term)
-: (TermOpSig with module OpTypes = TermType)
+                  with type Types.level_exp = TermType.level_exp
+                  with type Types.param = TermType.param
+                  with type Types.term = TermType.term
+                  with type Types.bound_term = TermType.bound_term)
+: TermOpSig
+  with module OpTypes = TermType
 
 (*
  * -*-

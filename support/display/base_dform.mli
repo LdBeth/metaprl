@@ -36,34 +36,36 @@ extends Nuprl_font
 (*
  * Other commands.
  *)
-declare bvar{'v}
-declare " "
-declare "^"
-declare "_"
-declare "{"
-declare "}"
-declare "$"
-declare "["
-declare "]"
-declare ";"
-declare "\\"
+declare bvar{'v : Dform} : Dform
+declare " " : Dform
+declare "^" : Dform
+declare "_" : Dform
+declare "{" : Dform
+declare "}" : Dform
+declare "$" : Dform
+declare "[" : Dform
+declare "]" : Dform
+declare ";" : Dform
+declare "\\" : Dform
 
 (*
  * List utilities.
  *)
-declare df_length{'l}          (* Prints l's length *)
-declare df_down{'l}            (* Prints l's length, cd to the directory in HTML mode *)
-declare df_last{'l}            (* Prints l's last element *)
-declare df_concat{'sep;'l}     (* Prints l's elements separated by sep *)
-declare df_rev_concat{'sep;'l} (* Same as df_concat, but prints l in reverse order *)
-declare df_context_var[name:v]
-(*
- * Before a term is passed to the display form mechanism, each sequen context <H...>
- * is turned into a hypothesys df_context{'H...} (where 'H is now a SO variable)
- *)
-declare df_context{'t}
+declare df_length{'l : Dform} : Dform                   (* Prints l's length *)
+declare df_down{'l : Dform} : Dform                     (* Prints l's length, cd to the directory in HTML mode *)
+declare df_last{'l : Dform} : Dform                     (* Prints l's last element *)
+declare df_concat{'sep : Dform; 'l : Dform} : Dform     (* Prints l's elements separated by sep *)
+declare df_rev_concat{'sep : Dform; 'l : Dform} : Dform (* Same as df_concat, but prints l in reverse order *)
+declare df_context_var[name:v] : Dform
 
-declare szone{'e}
+(*
+ * Before a term is passed to the display form mechanism, each sequent context <H...>
+ * is turned into a hypothesis df_context{'H...} (where 'H is now a SO variable)
+ *)
+declare df_context{'t : Dform} : Dform
+
+(* same as "szone 'e ezone" *)
+declare szone{'e : Dform} : Dform
 
 (*
  * -*-

@@ -44,17 +44,22 @@ open Precedence
 open Simple_print.SimplePrint
 open File_base_type
 open Term_shape_sig
+open Term_ty_sig
 open Term_sig
 
+open Term_ty_infer
+
 open Refiner.Refiner
-open Term
-open TermOp
-open TermType
-open TermMan
-open TermMeta
-open TermShape
-open Rewrite
-open RefineError
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermType
+open Refiner.Refiner.TermSubst
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermShape
+open Refiner.Refiner.TermTy
+open Refiner.Refiner.Rewrite
+open Refiner.Refiner.RefineError
 
 open Term_grammar
 open Filter_type
@@ -140,258 +145,6 @@ let set_include_path path =
    include_path := path
 
 (************************************************************************
- * TERM GRAMMAR                                                         *
- ************************************************************************)
-
-(*
- * XXX This is a HACK!
- * We have to get around the type system somehow.
- * The FilterCache modules have different type for
- * signatures and implementations, but their mk_opname
- * functions will have the same type.  However, at the
- * time that the TermGrammar is defined, we don't know if this
- * is a signature or implementation.  So instead we leave a
- * reference to the mk_opname.  The refence is set by the get_proc
- * method, below, which knows if this is an implementation or
- * interface.
- *)
-let mk_opname_ref =
-   ref ((fun _ _ _ -> raise (Failure "Filter_parse.mk_opname is unititialized"))
-      : opname_fun)
-
-let mk_opname loc l p a =
-   try !mk_opname_ref l p a with
-      exn ->
-         Stdpp.raise_with_loc loc exn
-
-(*
- * Base term grammar
- *)
-module TermGrammarBefore : TermGrammarSig =
-struct
-   let mk_opname = mk_opname
-   let mk_var_contexts _ v _ = None
-
-   (*
-    * Term grammar.
-    *)
-   let gram = Pcaml.gram
-   let term_eoi = Grammar.Entry.create gram "term_eoi"
-   let term = Grammar.Entry.create gram "term"
-   let parsed_term = Grammar.Entry.create gram "parsed_term"
-   let quote_term = Grammar.Entry.create gram "quote_term"
-   let mterm = Grammar.Entry.create gram "mterm"
-   let bmterm = Grammar.Entry.create gram "mterm"
-   let singleterm = Grammar.Entry.create gram "singleterm"
-   let parsed_bound_term = Grammar.Entry.create gram "bound_term"
-   let xdform = Grammar.Entry.create gram "xdform"
-   let term_con_eoi = Grammar.Entry.create gram "term_con_eoi"
-end
-
-(*
- * Extended term grammar.
- *)
-module TermGrammar = MakeTermGrammar (TermGrammarBefore)
-open TermGrammarBefore
-open TermGrammar
-
-(************************************************************************
- * QUOTATIONS                                                           *
- ************************************************************************)
-
-let term_exp s =
-   let cs = Stream.of_string s in
-   let t = Grammar.Entry.parse term_eoi cs in
-      add_binding (BindTerm t)
-
-let term_patt s =
-   let cs = Stream.of_string s in
-   let t = Grammar.Entry.parse term_eoi cs in
-      Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
-
-let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
-let _ = Quotation.default := "term"
-
-(* Allow dforms too *)
-let add_quot name =
-   let quot_exp s =
-      let t = parse_quotation dummy_loc "term" (name, s) in
-         add_binding (BindTerm t)
-   in
-   let quot_patt s =
-      let t = parse_quotation dummy_loc "term" (name, s) in
-         Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
-   in
-      ignore (Quotation.add name (Quotation.ExAst (quot_exp, quot_patt)))
-
-let () = add_quot "dform"
-let () = add_quot "doc"
-let () = add_quot "topdoc"
-
-let rec mk_list_expr loc = function
-   [] -> <:expr< [] >>
- | hd :: tl -> <:expr< $uid:"::"$ $hd$ $mk_list_expr loc tl$ >>
-
-let expr_of_bvar_con loc = function
-   ConBVarConst s -> <:expr< $str: s$ >>
- | ConBVarExpr e -> e
-
-let expr_of_pcon loc = function
-   ConPStr s, shape ->
-      let shape =
-         match shape with
-            ShapeString -> "String"
-          | ShapeToken -> "Token"
-          | _ -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: string constant parameter must
- be of string or token kind")
-      in
-         <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:s$) >>
- | ConPMeta l, ShapeLevel ->
-      <:expr<
-         Refiner.Refiner.Term.make_param
-            (Term_sig.MLevel
-               (Refiner.Refiner.TermMan.mk_var_level_exp $str:string_of_symbol l$))
-      >>
- | ConPMeta s, shape ->
-      let shape =
-         match shape with
-            ShapeString -> "MString"
-          | ShapeNumber -> "MNumber"
-          | ShapeToken -> "MToken"
-          | _ -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: unsupported meta-parameter")
-      in
-         <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:string_of_symbol s$) >>
-  | ConPExpr e, shape ->
-      let shape =
-         match shape with
-            ShapeString -> "String"
-          | ShapeToken -> "Token"
-          | ShapeNumber -> "Number"
-          | ShapeLevel -> "Level"
-          | ShapeVar -> "Var"
-          | ShapeQuote -> "Quote"
-      in
-         <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $e$) >>
-  | ConPNum n, ShapeNumber ->
-      <:expr< Refiner.Refiner.Term.make_param (Term_sig.Number $add_binding (BindNum n)$) >>
-  | ConPInt e, ShapeNumber ->
-      <:expr< Refiner.Refiner.Term.make_param (Term_sig.Number (Lm_num.num_of_int $e$)) >>
-  | (ConPNum _|ConPInt _), _ ->
-      Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: numeric parameter of non-numeric kind?")
-
-let is_simp_bterm = function
-   [], _ -> true
- | _ -> false
-
-let rec expr_of_term_con loc = function
-   ConTerm t ->
-      add_binding (BindTerm t)
- | ConExpr e ->
-      e
- | ConVar e ->
-      <:expr< Refiner.Refiner.Term.mk_var_term $e$ >>
- | ConConstruct (op, params, bterms) ->
-      let op = add_binding (BindOpname op) in
-         if params = [] && List.for_all is_simp_bterm bterms then
-            let bterms = mk_list_expr loc (List.map (fun (_, bt) -> expr_of_term_con loc bt) bterms) in
-               <:expr< Refiner.Refiner.Term.mk_simple_term $op$ $bterms$ >>
-         else
-            let bterms = mk_list_expr loc (List.map (expr_of_bterm_con loc) bterms) in
-            let params = mk_list_expr loc (List.map (expr_of_pcon loc) params) in
-               <:expr< Refiner.Refiner.Term.mk_term (Refiner.Refiner.Term.mk_op $op$ $params$) $bterms$ >>
- | ConSequent (arg, hyps, concl) ->
-      let arg = expr_of_term_con loc arg in
-      let hyps = expr_of_hyps_con loc hyps in
-      let concl = expr_of_term_con loc concl in
-         <:expr< Refiner.Refiner.TermMan.mk_sequent_term
-                    { Refiner.Refiner.TermType.sequent_args = $arg$;
-                      Refiner.Refiner.TermType.sequent_hyps = Refiner.Refiner.Term.SeqHyp.of_list $hyps$;
-                      Refiner.Refiner.TermType.sequent_concl = $concl$
-         } >>
-
-and expr_of_bterm_con loc (bvars, bt) =
-   let bt = expr_of_term_con loc bt in
-   if bvars = [] then
-      <:expr< Refiner.Refiner.Term.mk_simple_bterm $bt$ >>
-   else
-      let bvars = mk_list_expr loc (List.map (expr_of_bvar_con loc) bvars) in
-         <:expr< Refiner.Refiner.Term.mk_bterm $bvars$ $bt$ >>
-
-and expr_of_hyps_con loc hyps =
-   match hyps with
-      [] ->
-         <:expr< [] >>
-    | hyp :: hyps ->
-         let hyps = expr_of_hyps_con loc hyps in
-            match hyp with
-               ConContext (v, args) ->
-                  let args = mk_list_expr loc (List.map (expr_of_term_con loc) args) in
-                  let e = <:expr< Context (Lm_symbol.add $v$, $args$) >> in
-                     <:expr< [ $e$ :: $hyps$ ] >>
-             | ConHypList l ->
-                  <:expr< $l$ @ $hyps$ >>
-             | ConHypothesis (v, t) ->
-                  let e = <:expr< Hypothesis ($v$, $expr_of_term_con loc t$) >> in
-                     <:expr< [ $e$ :: $hyps$ ] >>
-
-let con_exp s =
-   let cs = Stream.of_string s in
-   let con = Grammar.Entry.parse term_con_eoi cs in
-      expr_of_term_con dummy_loc con
-
-let con_patt _ =
-   raise (Invalid_argument "<:con< >> quotation can not be used where pattern is expected")
-
-let _ = Quotation.add "con" (Quotation.ExAst (con_exp, con_patt))
-
-(*
- * <:action< s >> is like <:con< s >>, but it is wrapped in
- * a (fun argv -> ...)
- *)
-let action_exp s =
-   let e = con_exp s in
-   let loc = dummy_loc in
-      <:expr< fun argv -> $e$ >>
-
-let action_patt _ =
-   raise (Invalid_argument "<:action< >> quotation can not be used where pattern is expected")
-
-let _ = Quotation.add "action" (Quotation.ExAst (action_exp, action_patt))
-
-let bind_item i =
-   { item_item = i;
-     item_bindings = get_bindings ();
-   }
-
-(* Convert contexts in meta-terms, terms args and resource term bindings *)
-let parse_mtlr mt tl rs =
-   let mt, tl, f = mterms_of_parsed_mterms mt tl in
-   let conv = function
-      v, BindTerm t -> v, BindTerm(f t)
-    | bnd -> bnd
-   in
-      mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
-
-(* Same as parse_mtlr, but with extract term as well *)
-let parse_mtlre mt tl rs extract =
-   let mt, tl, f = mterms_of_parsed_mterms mt tl in
-   let conv = function
-      v, BindTerm t -> v, BindTerm(f t)
-    | bnd -> bnd
-   in
-   let extract =
-      (*
-       * XXX HACK: we assume that extracts from sequents must be sequents of the same shape
-       * And whenever users specify a non-sequent extract, they must be meaning to specify a
-       * conclusion of a sequent.
-       * There is a complimentary HACK in Term_grammar.create_meta_function
-       *)
-      let _, goal = unzip_mfunction mt in
-         if is_sequent_term goal && not (is_sequent_term extract) then replace_concl goal extract else extract
-   in
-      mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }, f extract
-
-(************************************************************************
  * TERM HACKING                                                         *
  ************************************************************************)
 
@@ -421,6 +174,151 @@ let wrap_code loc v body =
       <:expr< fun [ $list: [p, None, body]$ ] >>
 
 (************************************************************************
+ * TERM GRAMMAR                                                         *
+ ************************************************************************)
+
+(*
+ * XXX This is a HACK!
+ * We have to get around the type system somehow.
+ * The FilterCache modules have different type for
+ * signatures and implementations, but their mk_opname
+ * functions will have the same type.  However, at the
+ * time that the TermGrammar is defined, we don't know if this
+ * is a signature or implementation.  So instead we leave a
+ * reference to the mk_opname.  The refence is set by the get_proc
+ * method, below, which knows if this is an implementation or
+ * interface.
+ *)
+type cache_funs =
+   { opname_prefix      : opname;
+     mk_opname_kind     : opname_kind_fun;
+     mk_var_contexts    : context_fun;
+     infer_term         : infer_term_fun;
+     check_rule         : check_rule_fun;
+     infer_rewrite      : infer_rewrite_fun;
+     check_type_rewrite : check_type_rewrite_fun;
+     check_dform        : check_dform_fun;
+     check_iform        : check_iform_fun;
+     check_production   : check_production_fun
+   }
+
+let cache_funs_ref =
+   ref None
+
+let set_cache_funs funs =
+   cache_funs_ref := Some funs
+
+let with_cache_funs loc f =
+   match !cache_funs_ref with
+      Some funs ->
+         (try f funs with
+             exn ->
+                Stdpp.raise_with_loc loc exn)
+    | None ->
+         Stdpp.raise_with_loc loc (Failure "Filter_parse.cache_funs is uninitialized")
+
+(*
+ * Base term grammar
+ *)
+module TermGrammarBefore : TermGrammarSig =
+struct
+   let opname_prefix loc =
+      with_cache_funs loc (fun funs ->
+            funs.opname_prefix)
+
+   let mk_opname_kind loc kind names params bterms =
+      with_cache_funs loc (fun funs ->
+            funs.mk_opname_kind kind names params bterms)
+
+   let mk_var_contexts loc v i =
+      with_cache_funs loc (fun funs ->
+            funs.mk_var_contexts v i)
+
+   let infer_term loc t =
+      with_cache_funs loc (fun funs ->
+            funs.infer_term t)
+
+   let check_rule loc mt args =
+      with_cache_funs loc (fun funs ->
+            funs.check_rule mt args)
+
+   let infer_rewrite loc mt args =
+      with_cache_funs loc (fun funs ->
+            funs.infer_rewrite mt args)
+
+   let check_type_rewrite loc redex contractum =
+      with_cache_funs loc (fun funs ->
+            funs.check_type_rewrite redex contractum)
+
+   let check_dform loc redex contractum =
+      with_cache_funs loc (fun funs ->
+            funs.check_dform redex contractum)
+
+   let check_iform loc mt args =
+      with_cache_funs loc (fun funs ->
+            funs.check_iform mt args)
+
+   let check_production loc redices contractum =
+      with_cache_funs loc (fun funs ->
+            funs.check_production redices contractum)
+
+   (*
+    * Term grammar.
+    *)
+   let gram              = Pcaml.gram
+   let opname            = Grammar.Entry.create gram "opname"
+   let opname_name       = Grammar.Entry.create gram "opname_name"
+   let term_eoi          = Grammar.Entry.create gram "term_eoi"
+   let term              = Grammar.Entry.create gram "term"
+   let parsed_term       = Grammar.Entry.create gram "parsed_term"
+   let quote_term        = Grammar.Entry.create gram "quote_term"
+   let mterm             = Grammar.Entry.create gram "mterm"
+   let bmterm            = Grammar.Entry.create gram "mterm"
+   let singleterm        = Grammar.Entry.create gram "singleterm"
+   let parsed_bound_term = Grammar.Entry.create gram "bound_term"
+   let xdform            = Grammar.Entry.create gram "xdform"
+   let term_con_eoi      = Grammar.Entry.create gram "term_con_eoi"
+end
+
+(*
+ * Extended term grammar.
+ *)
+module TermGrammar = MakeTermGrammar (TermGrammarBefore)
+
+(*
+ * The bindings contain raw, parsed terms.
+ * Wrap the binding functions.
+ *)
+let add_parsed_binding bind =
+   let bind =
+      match bind with
+         BindTerm t ->
+            BindTerm (TermGrammar.raw_term_of_parsed_term t)
+       | BindOpname _
+       | BindNum _ as bind ->
+            bind
+   in
+      add_binding bind
+
+let get_unchecked_bindings = get_bindings
+
+let get_checked_bindings loc =
+   List.map (fun (v, bind) ->
+         let bind =
+            match bind with
+               BindTerm t ->
+                  BindTerm (TermGrammar.parse_term loc (TermGrammar.mk_parsed_term t))
+             | BindOpname _
+             | BindNum _ as bind ->
+                  bind
+         in
+            v, bind) (get_bindings ())
+
+(* Just to make sure we don't use them accidentally *)
+let get_bindings () = ()
+let add_binding () = ()
+
+(************************************************************************
  * GENERIC CONSTRUCTION                                                 *
  ************************************************************************)
 
@@ -430,8 +328,8 @@ let theory_group, theory_groupdsc = make_groupdsc_opts ()
  * We may be able to do better sometime, but for now
  * we print the terms using the default display forms.
  *)
-let print_exn f s loc =
-   Filter_exn.print_exn Dform.null_base (Some (sprintf "While processing %s:\n" s)) f ()
+let handle_exn f s loc =
+   Filter_exn.handle_exn Dform.null_base (Some (sprintf "While processing %s:\n" s)) loc f
 
 (*
  * Need some info about types and extraction.
@@ -515,7 +413,8 @@ struct
                }
             in
             let t = FilterCache.parse proc.cache pos shape s in
-               add_binding (BindTerm t)
+            let t = TermGrammar.mk_parsed_term t in
+               add_parsed_binding (BindTerm t)
        | None ->
             raise (Invalid_argument "Input grammar is not initialized")
 
@@ -538,35 +437,38 @@ struct
     * debug messages when debug_dform is enabled).
     *)
    let add_command proc cmd =
-      begin match fst(cmd) with
-         Rewrite { rw_name = name }
-       | InputForm { rw_name = name }
-       | CondRewrite { crw_name = name }
-       | Rule { rule_name = name }
-       | MLRewrite { mlterm_name = name }
-       | MLAxiom { mlterm_name = name }
-       | MLGramUpd (Infix name)
-       | MLGramUpd (Suffix name)
-       | Definition { opdef_name = name } ->
-       (* | DForm { dform_name = name } *)
-            if StringSet.mem proc.names name then
-               raise (Invalid_argument ("Filter_parse.add_command: duplicate name " ^ name));
-            proc.names <- StringSet.add proc.names name
-       | DForm _
-       | SummaryItem _
-       | ToploopItem _
-       | Opname _
-       | Parent _
-       | Module _
-       | Prec _
-       | PrecRel _
-       | Resource _
-       | Improve _
-       | Id _
-       | MagicBlock _
-       | Comment _
-       | PRLGrammar _ ->
-            ()
+      begin
+         match fst cmd with
+            Rewrite { rw_name = name }
+          | InputForm { rw_name = name }
+          | CondRewrite { crw_name = name }
+          | Rule { rule_name = name }
+          | MLRewrite { mlterm_name = name }
+          | MLAxiom { mlterm_name = name }
+          | MLGramUpd (Infix name)
+          | MLGramUpd (Suffix name)
+          | DefineTerm (_, { term_def_name = name }) ->
+               if StringSet.mem proc.names name then
+                  raise (Invalid_argument ("Filter_parse.add_command: duplicate name " ^ name));
+               proc.names <- StringSet.add proc.names name
+          | DForm _
+          | SummaryItem _
+          | ToploopItem _
+          | DeclareTypeClass _
+          | DeclareType _
+          | DeclareTerm _
+          | DeclareTypeRewrite _
+          | Parent _
+          | Module _
+          | Prec _
+          | PrecRel _
+          | Resource _
+          | Improve _
+          | Id _
+          | MagicBlock _
+          | Comment _
+          | PRLGrammar _ ->
+               ()
       end;
       FilterCache.add_command proc.cache cmd
 
@@ -615,26 +517,52 @@ struct
          }
       in
          add_starts (FilterCache.get_start proc.cache);
+         FilterCache.set_grammar proc.cache;
          add_command proc (Parent info, loc)
 
    (*
-    * Declare a term.
-    * This defines a new opname,
-    * stores the term in the cache,
-    * and returns the term that was created.
-    *
-    * This command is used both for signature items
-    * as well as structure items.
+    * Declarations.
     *)
-   let declare_term_opname proc loc (s, params, bterms) =
-      let opname' = Opname.mk_opname s (FilterCache.op_prefix proc.cache) in
-      let t = term_of_parsed_term (mk_term (mk_op opname' params) bterms) in
-         FilterCache.update_opname proc.cache s t;
-         t
+   let declare_typeclass proc loc kind_name typeclass_type typeclass_parent =
+      let kind_opname = Opname.mk_opname kind_name (FilterCache.op_prefix proc.cache) in
+         FilterCache.declare_typeclass proc.cache kind_opname typeclass_type typeclass_parent;
+         add_command proc (DeclareTypeClass (kind_opname, typeclass_type, typeclass_parent), loc)
 
-   let declare_term proc loc ((s, _, _) as term_spec) =
-      let t = declare_term_opname proc loc term_spec in
-         add_command proc (Opname { opname_name = s; opname_term = t }, loc)
+   let declare_type proc loc ty_term ty_parent =
+      FilterCache.declare_type proc.cache ty_term ty_parent;
+      add_command proc (DeclareType (ty_term, ty_parent), loc)
+
+   let declare_term proc loc ty_term =
+      FilterCache.declare_term proc.cache ty_term;
+      add_command proc (DeclareTerm ty_term, loc)
+
+   let declare_type_cases proc loc ty_term ty_parent cases =
+      let ty_type = term_of_ty ty_term in
+         FilterCache.declare_type proc.cache ty_term ty_parent;
+         add_command proc (DeclareType (ty_term, ty_parent), loc);
+         List.iter (fun ty_term ->
+               let ty_term = { ty_term with ty_type = ty_type } in
+                  FilterCache.declare_term proc.cache ty_term;
+                  add_command proc (DeclareTerm ty_term, loc)) cases
+
+   let declare_define_term proc ty_term =
+      FilterCache.declare_term proc.cache ty_term
+
+   let define_term proc loc name ty_term contractum res =
+      let redex = term_of_ty ty_term in
+      let term_def =
+         { term_def_name = name;
+           term_def_value = contractum;
+           term_def_resources = res
+         }
+      in
+         Refine.check_definition name redex contractum;
+         add_command proc (DefineTerm (ty_term, term_def), loc)
+
+   let declare_type_rewrite proc loc redex contractum =
+      Refine.check_rewrite "type" empty_args_spec [] [] redex contractum;
+      FilterCache.declare_type_rewrite proc.cache redex contractum;
+      add_command proc (DeclareTypeRewrite (redex, contractum), loc)
 
    (*
     * Define a rewrite in an interface.
@@ -719,20 +647,6 @@ struct
             redex, contractum
       with exn ->
          Stdpp.raise_with_loc loc exn
-
-   (*
-    * Declare a term, and define a rewrite in one step.
-    *)
-   let define_term proc loc name ((s,_,_) as term_spec) contractum res =
-      let t = declare_term_opname proc loc term_spec in
-         Refine.check_definition name t contractum;
-         add_command proc (Definition {
-            opdef_name = name;
-            opdef_opname = s;
-            opdef_term = t;
-            opdef_definition = contractum;
-            opdef_resources = res;
-         }, loc)
 
    let rule_command proc name params t pf res =
       (* Extract context names *)
@@ -819,7 +733,8 @@ struct
     *)
    let get_dfmode loc t =
       let mode = get_string_param loc t in
-         if mode = "raw" then Stdpp.raise_with_loc loc (Invalid_argument "Attempts to refer to the built-in \"raw\" mode");
+         if mode = "raw" then
+            Stdpp.raise_with_loc loc (Invalid_argument "Attempts to refer to the built-in \"raw\" mode");
          mode
 
    let get_dform_options proc loc options =
@@ -876,11 +791,12 @@ struct
       let modes, options' = get_dform_options proc loc options in
          if !debug_dform && modes = Dform.AllModes then
             eprintf "Warning: display form %s - no modes specified%t" name eflush;
-         begin try
-            ignore (term_rewrite Rewrite_sig.Relaxed empty_args_spec [t] [expansion])
-         with
-            exn ->
-               Stdpp.raise_with_loc loc exn
+         begin
+            try
+               ignore (term_rewrite Rewrite_sig.Relaxed empty_args_spec [t] [expansion])
+            with
+               exn ->
+                  Stdpp.raise_with_loc loc exn
          end;
          add_command proc (DForm { dform_name = name;
                                    dform_modes = modes;
@@ -987,11 +903,24 @@ struct
                  infixes  = Infix.Set.empty;
                }
             in
+            let funs =
+               { opname_prefix      = FilterCache.op_prefix info;
+                 mk_opname_kind     = FilterCache.mk_opname_kind info;
+                 infer_term         = FilterCache.infer_term info;
+                 check_rule         = FilterCache.check_rule info;
+                 infer_rewrite      = FilterCache.infer_rewrite info;
+                 check_type_rewrite = FilterCache.check_type_rewrite info;
+                 mk_var_contexts    = (fun _ _ -> None);
+                 check_iform        = FilterCache.check_iform info;
+                 check_dform        = FilterCache.check_dform info;
+                 check_production   = FilterCache.check_production info
+               }
+            in
                if select = ImplementationType then
                   FilterCache.load_sig_grammar info () InterfaceType;
                FilterCache.set_grammar info;
                add_starts (FilterCache.get_start info);
-               mk_opname_ref := FilterCache.mk_opname info;
+               set_cache_funs funs;
                proc_ref := Some proc;
                proc
 
@@ -1018,11 +947,14 @@ struct
     * Check the implementation with its interface.
     *)
    let check proc alt_select =
-      (* Check that implementation matches interface *)
+      (*
+       * Check that implementation matches interface.
+       * This will also copy part of the interface into the implementation.
+       *)
       let sig_info = FilterCache.check proc.cache alt_select in
       let _ =
          (* Read the comments *)
-         FilterCache.parse_comments proc.cache convert_comment;
+         FilterCache.parse_comments proc.cache TermGrammar.convert_comment;
 
          (* Also copy the proofs if they exist *)
          if proc.select = ImplementationType then
@@ -1165,6 +1097,311 @@ let define_int_thm proc loc name params mterm =
    define_rule proc loc name params mterm Incomplete
 
 (************************************************************************
+ * QUOTATIONS                                                           *
+ ************************************************************************)
+
+open TermGrammar
+
+(* Parse a term *)
+let term_exp s =
+   let cs = Stream.of_string s in
+   let t = Grammar.Entry.parse term_eoi cs in
+      add_parsed_binding (BindTerm t)
+
+let term_patt s =
+   let cs = Stream.of_string s in
+   let t = Grammar.Entry.parse term_eoi cs in
+   let t = unchecked_term_of_parsed_term t in
+      Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
+
+let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
+let _ = Quotation.default := "term"
+
+(* Allow dforms too *)
+let add_quot name check =
+   let quot_exp s =
+      let t = parse_quotation dummy_loc "term" (name, s) in
+         add_parsed_binding (BindTerm t)
+   in
+   let quot_patt s =
+      let t = parse_quotation dummy_loc "term" (name, s) in
+      let t = unchecked_term_of_parsed_term t in
+         Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
+   in
+      ignore (Quotation.add name (Quotation.ExAst (quot_exp, quot_patt)))
+
+let () = add_quot "dform" true
+let () = add_quot "doc" false
+let () = add_quot "topdoc" false
+
+let rec mk_list_expr loc = function
+   [] -> <:expr< [] >>
+ | hd :: tl -> <:expr< $uid:"::"$ $hd$ $mk_list_expr loc tl$ >>
+
+let expr_of_bvar_con loc = function
+   ConBVarConst s -> <:expr< $str: s$ >>
+ | ConBVarExpr e -> e
+
+let expr_of_pcon loc = function
+   ConPStr s, shape ->
+      let shape =
+         match shape with
+            ShapeString -> "String"
+          | _ ->
+               Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: string constant parameter must be of string kind")
+      in
+         <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:s$) >>
+ | ConPToken opname, shape ->
+      let strings = Opname.dest_opname opname in
+      let strings = List.map (fun s -> <:expr< $str: s$ >>) strings in
+          <:expr< Refiner.Refiner.Term.make_param (Term_sig.Token (Opname.make_opname $mk_list_expr loc strings$)) >>
+ | ConPMeta l, ShapeLevel ->
+      <:expr<
+         Refiner.Refiner.Term.make_param
+            (Term_sig.MLevel
+               (Refiner.Refiner.TermMan.mk_var_level_exp $str:string_of_symbol l$))
+      >>
+ | ConPMeta s, shape ->
+      let shape =
+         match shape with
+            ShapeString -> "MString"
+          | ShapeNumber -> "MNumber"
+          | ShapeToken -> "MToken"
+          | _ -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: unsupported meta-parameter")
+      in
+         <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:string_of_symbol s$) >>
+ | ConPExpr e, shape ->
+      let shape =
+         match shape with
+            ShapeString -> "String"
+          | ShapeToken -> "Token"
+          | ShapeNumber -> "Number"
+          | ShapeLevel -> "Level"
+          | ShapeVar -> "Var"
+          | ShapeQuote -> "Quote"
+      in
+         <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $e$) >>
+ | ConPNum n, ShapeNumber ->
+      <:expr< Refiner.Refiner.Term.make_param (Term_sig.Number $add_parsed_binding (BindNum n)$) >>
+ | ConPInt e, ShapeNumber ->
+      <:expr< Refiner.Refiner.Term.make_param (Term_sig.Number (Lm_num.num_of_int $e$)) >>
+ | ConPNum _, _
+ | ConPInt _, _ ->
+      Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: numeric parameter of non-numeric kind?")
+
+let is_simp_bterm = function
+   [], _ -> true
+ | _ -> false
+
+let rec expr_of_term_con loc = function
+   ConTerm t ->
+      add_parsed_binding (BindTerm t)
+ | ConExpr e ->
+      e
+ | ConVar v ->
+      <:expr< Refiner.Refiner.Term.mk_var_term $v$ >>
+ | ConConstruct (op, params, bterms) ->
+      let op = add_parsed_binding (BindOpname op) in
+         if params = [] && List.for_all is_simp_bterm bterms then
+            let bterms = mk_list_expr loc (List.map (fun (_, bt) -> expr_of_term_con loc bt) bterms) in
+               <:expr< Refiner.Refiner.Term.mk_simple_term $op$ $bterms$ >>
+         else
+            let bterms = mk_list_expr loc (List.map (expr_of_bterm_con loc) bterms) in
+            let params = mk_list_expr loc (List.map (expr_of_pcon loc) params) in
+               <:expr< Refiner.Refiner.Term.mk_term (Refiner.Refiner.Term.mk_op $op$ $params$) $bterms$ >>
+ | ConSequent (arg, hyps, concl) ->
+      let arg = expr_of_term_con loc arg in
+      let hyps = expr_of_hyps_con loc hyps in
+      let concl = expr_of_term_con loc concl in
+         <:expr< Refiner.Refiner.TermMan.mk_sequent_term (**)
+                    { Refiner.Refiner.TermType.sequent_args = $arg$;
+                      Refiner.Refiner.TermType.sequent_hyps = Refiner.Refiner.Term.SeqHyp.of_list $hyps$;
+                      Refiner.Refiner.TermType.sequent_concl = $concl$
+         } >>
+
+and expr_of_bterm_con loc (bvars, bt) =
+   let bt = expr_of_term_con loc bt in
+      if bvars = [] then
+         <:expr< Refiner.Refiner.Term.mk_simple_bterm $bt$ >>
+      else
+         let bvars = mk_list_expr loc (List.map (expr_of_bvar_con loc) bvars) in
+            <:expr< Refiner.Refiner.Term.mk_bterm $bvars$ $bt$ >>
+
+and expr_of_hyps_con loc hyps =
+   match hyps with
+      [] ->
+         <:expr< [] >>
+    | hyp :: hyps ->
+         let hyps = expr_of_hyps_con loc hyps in
+            match hyp with
+               ConContext (v, args) ->
+                  let args = mk_list_expr loc (List.map (expr_of_term_con loc) args) in
+                  let e = <:expr< Context (Lm_symbol.add $v$, $args$) >> in
+                     <:expr< [ $e$ :: $hyps$ ] >>
+             | ConHypList l ->
+                  <:expr< $l$ @ $hyps$ >>
+             | ConHypothesis (v, t) ->
+                  let e = <:expr< Hypothesis ($v$, $expr_of_term_con loc t$) >> in
+                     <:expr< [ $e$ :: $hyps$ ] >>
+
+let con_exp s =
+   let cs = Stream.of_string s in
+   let con = Grammar.Entry.parse term_con_eoi cs in
+      expr_of_term_con dummy_loc con
+
+let con_patt _ =
+   raise (Invalid_argument "<:con< >> quotation can not be used where pattern is expected")
+
+let _ = Quotation.add "con" (Quotation.ExAst (con_exp, con_patt))
+
+(*
+ * <:action< s >> is like <:con< s >>, but it is wrapped in
+ * a (fun argv -> ...)
+ *)
+let action_exp s =
+   let e = con_exp s in
+   let loc = dummy_loc in
+      <:expr< fun argv -> $e$ >>
+
+let action_patt _ =
+   raise (Invalid_argument "<:action< >> quotation can not be used where pattern is expected")
+
+let _ = Quotation.add "action" (Quotation.ExAst (action_exp, action_patt))
+
+(*
+ * Parsed the terms from the bindings.
+ *)
+let bind_item loc i =
+   { item_item = i;
+     item_bindings = get_checked_bindings loc
+   }
+
+(*
+ * Replace a term with another.
+ *)
+let subst_term term1 term2 t =
+   let v = new_symbol_string "v" in
+   let t = var_subst t term1 v in
+      subst1 t v term2
+
+(* Convert the quotation *)
+let parse_quote loc quote token_type bvar_type subterm_type term_type =
+   let { ty_params = params;
+         ty_bterms = bterms;
+         ty_type   = ty
+       } = quote
+   in
+   let parse_param param =
+      match param with
+         TyToken t ->
+            TyToken (quote_term_of_parsed_term loc token_type bvar_type term_type t)
+       | TyNumber
+       | TyString
+       | TyLevel
+       | TyVar
+       | TyQuote as param ->
+            param
+   in
+   let parse_bterm { ty_bvars = bvars; ty_bterm = term } =
+      { ty_bvars = List.map (quote_term_of_parsed_term loc token_type bvar_type term_type) bvars;
+        ty_bterm = quote_term_of_parsed_term loc token_type bvar_type subterm_type term
+      }
+   in
+      { quote with ty_params = List.map parse_param params;
+                   ty_bterms = List.map parse_bterm bterms;
+                   ty_type   = quote_term_of_parsed_term loc token_type bvar_type term_type ty
+      }
+
+(* Convert the term in the quotation *)
+let parse_quote_term loc quote =
+   { quote with ty_term = unchecked_term_of_parsed_term quote.ty_term }
+
+(* For type definitions, the default type is Ty *)
+let parse_declare_term loc quote =
+   parse_quote_term loc (parse_quote loc quote term_type term_type term_type term_type)
+
+let parse_declare_type loc quote =
+   parse_quote_term loc (parse_quote loc quote term_type term_type term_type type_type)
+
+(* For term definitions, the default type is Term *)
+let parse_define_term loc quote =
+   parse_quote loc quote term_type term_type term_type term_type
+
+(* Parse and check a rewrite definition *)
+let parse_rewrite loc mt tl rs =
+   let mt, tl, f = TermGrammar.parse_rewrite loc mt tl in
+   let conv = function
+      v, BindTerm t ->
+         v, BindTerm (f t)
+    | bnd ->
+         bnd
+   in
+      mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
+
+let parse_type_rewrite loc redex contractum =
+   TermGrammar.parse_type_rewrite loc redex contractum
+
+(* Don't require the two sides to have the same type *)
+let parse_iform loc mt tl rs =
+   let mt, tl, f = TermGrammar.parse_iform loc mt tl in
+   let conv = function
+      v, BindTerm t ->
+         v, BindTerm (f t)
+    | bnd ->
+         bnd
+   in
+      mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
+
+(*
+ * A new term definition.
+ *)
+let parse_define loc quote contractum =
+   let redex, contractum = TermGrammar.parse_dform loc quote.ty_term contractum in
+   let quote = { quote with ty_term = redex } in
+      quote, contractum
+
+(* Convert contexts in meta-terms, terms args and resource term bindings *)
+let parse_rule loc mt tl rs =
+   let mt, tl, f = TermGrammar.parse_rule loc mt tl in
+   let conv = function
+      v, BindTerm t ->
+         v, BindTerm (f t)
+    | bnd ->
+         bnd
+   in
+      mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
+
+(* Same as parse_rule, but with extract term as well *)
+let parse_rule_with_extract loc mt tl rs extract =
+   let mt, tl, f = TermGrammar.parse_rule loc mt tl in
+   let conv = function
+      v, BindTerm t ->
+         v, BindTerm (f t)
+    | bnd ->
+         bnd
+   in
+   let extract =
+      (*
+       * XXX HACK: we assume that extracts from sequents must be sequents of the same shape
+       * And whenever users specify a non-sequent extract, they must be meaning to specify a
+       * conclusion of a sequent.
+       * There is a complimentary HACK in Term_grammar.create_meta_function
+       *)
+      let _, goal = unzip_mfunction mt in
+         if is_sequent_term goal && not (is_sequent_term extract) then
+            replace_concl goal extract
+         else
+            extract
+   in
+      mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }, f extract
+
+(* Display forms *)
+let parse_dform loc options redex contractum =
+   let options = List.map (unparsed_term_of_parsed_term loc) options in
+   let redex, contractum = TermGrammar.parse_dform loc redex contractum in
+      options, redex, contractum
+
+(************************************************************************
  * GRAMMAR EXTENSION                                                    *
  ************************************************************************)
 
@@ -1198,7 +1435,7 @@ EXTEND
                 SigFilter.save proc AnySuffix;
                 SigFilter.extract () proc
           in
-             print_exn f "interf" loc, false
+             handle_exn f "interf" loc, false
        ]];
 
    interf_opening:
@@ -1206,27 +1443,28 @@ EXTEND
           let f () =
              SigFilter.get_proc loc
           in
-             print_exn f "interf_opening" loc
+             handle_exn f "interf_opening" loc
        ]];
 
    interf_item:
       [[ s = sig_item; OPT ";;" ->
           let f () =
-             if !debug_filter_parse then
-                eprintf "Filter_parse.interf_item: adding item%t" eflush;
-             if get_bindings () <> [] then
-                Stdpp.raise_with_loc loc (Invalid_argument "Filter_parse.interf_item: sig item has bindings");
-             begin
+             let proc = SigFilter.get_proc loc in
+             let () =
+                if !debug_filter_parse then
+                   eprintf "Filter_parse.interf_item: adding item%t" eflush;
+                if get_checked_bindings loc <> [] then
+                   Stdpp.raise_with_loc loc (Invalid_argument "Filter_parse.interf_item: sig item has bindings");
                 match s with
                    <:sig_item< declare $list: []$ end >> ->
                       ()
                  | _ ->
                       let item = SummaryItem { item_bindings = []; item_item = s } in
-                         SigFilter.add_command (SigFilter.get_proc loc) (item, loc)
-             end;
-             s, loc
+                         SigFilter.add_command proc (item, loc)
+             in
+                s, loc
            in
-              print_exn f "interf_item" loc
+              handle_exn f "interf_item" loc
        ]];
 
    implem:
@@ -1238,7 +1476,7 @@ EXTEND
                 StrFilter.save proc (OnlySuffixes ["cmoz"]);
                 StrFilter.extract interf proc
           in
-             print_exn f "implem" loc, false
+             handle_exn f "implem" loc, false
        ]];
 
    implem_opening:
@@ -1246,23 +1484,24 @@ EXTEND
          let f () =
             StrFilter.get_proc loc
          in
-            print_exn f "implem_opening" loc
+            handle_exn f "implem_opening" loc
        ]];
 
    implem_item:
       [[ s = str_item; OPT ";;" ->
           let f () =
-             begin
+             let proc = StrFilter.get_proc loc in
+             let () =
                 match s with
                    <:str_item< declare $list: []$ end >> ->
-                      if get_bindings () <> [] then
+                      if get_checked_bindings loc <> [] then
                          Stdpp.raise_with_loc loc (Invalid_argument "Filter_parse.implem_item: empty str item has bindings")
                  | _ ->
-                      StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem (bind_item s), loc)
-             end;
-             s, loc
+                      StrFilter.add_command proc (SummaryItem (bind_item loc s), loc)
+             in
+                s, loc
           in
-             print_exn f "implem_item" loc
+             handle_exn f "implem_item" loc
        ]];
 
    sig_item:
@@ -1270,109 +1509,157 @@ EXTEND
           let f () =
              SigFilter.declare_parent (SigFilter.get_proc loc) loc path
           in
-             print_exn f "extends" loc;
+             handle_exn f "extends" loc;
              empty_sig_item loc
         | "derive"; path = mod_ident ->
           let f () =
              SigFilter.declare_parent (SigFilter.get_proc loc) loc path
           in
-             print_exn f "derive" loc;
+             handle_exn f "derive" loc;
              empty_sig_item loc
-        | "declare"; t = quote_term ->
+
+          (************************************************************************
+           * Opname classes.
+           *)
+        | "declare"; "typeclass"; name = id_or_string; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
-             SigFilter.declare_term (SigFilter.get_proc loc) loc t
+             SigFilter.declare_typeclass (SigFilter.get_proc loc) loc name typeclass_type typeclass_parent
           in
-             print_exn f "declare" loc;
+             handle_exn f "declare-typeclass" loc;
              empty_sig_item loc
-        | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = parsed_term ->
-           let f () =
-             SigFilter.define_term (SigFilter.get_proc loc) loc name t def no_resources
+        | "declare"; "type"; quote = quote_term; ty_parent = opt_type_parent ->
+          let f () =
+             let quote = parse_declare_type loc quote in
+                SigFilter.declare_type (SigFilter.get_proc loc) loc quote ty_parent
+          in
+             handle_exn f "declare-type" loc;
+             empty_sig_item loc
+        | "declare"; "type"; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
+          let f () =
+             let quote = parse_declare_type loc quote in
+             let cases = List.map (parse_declare_term loc) cases in
+                SigFilter.declare_type_cases (SigFilter.get_proc loc) loc quote ty_parent cases
+          in
+             handle_exn f "declare-type-cases" loc;
+             empty_sig_item loc
+        | "declare"; quote = quote_term ->
+          let f () =
+             let quote = parse_declare_term loc quote in
+                SigFilter.declare_term (SigFilter.get_proc loc) loc quote
+          in
+             handle_exn f "declare" loc;
+             empty_sig_item loc
+        | "define"; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
+          let f () =
+             let proc = SigFilter.get_proc loc in
+             let quote = parse_define_term loc quote in
+             let () = SigFilter.declare_define_term proc (parse_quote_term loc quote) in
+             let quote, def = parse_define loc quote def in
+                SigFilter.define_term proc loc name quote def res
            in
-             print_exn f "define" loc;
+              handle_exn f ("define " ^ name) loc;
+              empty_sig_item loc
+        | "declare"; "rewrite"; redex = term; "<-->"; contractum = term ->
+          let f () =
+             let redex, contractum = parse_type_rewrite loc redex contractum in
+                SigFilter.declare_type_rewrite (SigFilter.get_proc loc) loc redex contractum
+          in
+             handle_exn f "declare-rewrite" loc;
              empty_sig_item loc
+
+          (************************************************************************
+           * Standard forms.
+           *)
         | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
            let f () =
-             let t, args, _ = mterms_of_parsed_mterms t args in
-             SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t () no_resources
+              let proc = SigFilter.get_proc loc in
+              let t, args, _ = TermGrammar.parse_rewrite loc t args in
+                 SigFilter.declare_rewrite proc loc name args t () no_resources
            in
-             print_exn f ("rewrite " ^ name) loc;
+             handle_exn f ("rewrite " ^ name) loc;
              empty_sig_item loc
         | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
-              let t, args, res = parse_mtlr t args res in
-              let redex, contractum = SigFilter.declare_input_form (SigFilter.get_proc loc) loc name args t () res in
-                 SigFilter.add_iform (SigFilter.get_proc loc) loc redex contractum
+              let proc = SigFilter.get_proc loc in
+              let t, args, res = parse_iform loc t args res in
+              let redex, contractum = SigFilter.declare_input_form proc loc name args t () res in
+                 SigFilter.add_iform proc loc redex contractum
            in
-              print_exn f ("iform " ^ name) loc;
+              handle_exn f ("iform " ^ name) loc;
               empty_sig_item loc
         | "ml_rw"; name = LIDENT; args = optarglist; ":"; t = parsed_term ->
            let f () =
-             let args = List.map term_of_parsed_term args in
-             SigFilter.declare_mlrewrite (SigFilter.get_proc loc) loc name args t None no_resources
+              let proc = SigFilter.get_proc loc in
+              let args = List.map (parse_term loc) args in
+                SigFilter.declare_mlrewrite proc loc name args t None no_resources
            in
-             print_exn f ("ml_rw " ^ name) loc;
+             handle_exn f ("ml_rw " ^ name) loc;
              empty_sig_item loc
-        | rule_keyword; name = LIDENT; args = optarglist; ":"; t = mterm ->
+        | rule_keyword; name = LIDENT; args = optarglist; ":"; mt = mterm ->
            let f () =
-             let t, args, _ = mterms_of_parsed_mterms t args in
-             SigFilter.declare_rule (SigFilter.get_proc loc) loc name args t () no_resources
+              let proc = SigFilter.get_proc loc in
+              let t, args, _ = TermGrammar.parse_rule loc mt args in
+                 SigFilter.declare_rule proc loc name args t () no_resources
            in
-              print_exn f ("rule " ^ name) loc;
+              handle_exn f ("rule " ^ name) loc;
               empty_sig_item loc
         | mlrule_keyword; name = LIDENT; args = optarglist; ":"; t = parsed_term ->
            let f () =
-              let args = List.map term_of_parsed_term args in
-              SigFilter.declare_mlaxiom (SigFilter.get_proc loc) loc name args t None no_resources
+              let proc = SigFilter.get_proc loc in
+              let args = List.map (parse_term loc) args in
+                 SigFilter.declare_mlaxiom proc loc name args t None no_resources
            in
-              print_exn f ("mlrule " ^ name) loc;
-             empty_sig_item loc
+              handle_exn f ("mlrule " ^ name) loc;
+              empty_sig_item loc
         | "resource"; "("; input = ctyp; ","; output = ctyp; ")"; name = LIDENT ->
            let f () =
-              let r = {
-                 resource_input = input;
-                 resource_output = output
-              } in let proc = SigFilter.get_proc loc in
+              let r =
+                 { resource_input = input;
+                   resource_output = output
+                 }
+              in
+              let proc = SigFilter.get_proc loc in
                  SigFilter.declare_resource proc loc name r;
                  SigFilter.define_resource proc loc name r
            in
-              print_exn f ("resource " ^ name) loc;
+              handle_exn f ("resource " ^ name) loc;
               empty_sig_item loc
         | "dform"; name = LIDENT; ":"; options = parsed_df_options ->
            let f () =
               let options', t = options in
                  SigFilter.declare_dform (SigFilter.get_proc loc) loc name options' t;
            in
-              print_exn f ("dform " ^ name) loc;
+              handle_exn f ("dform " ^ name) loc;
               empty_sig_item loc
         | "infix"; name = ident ->
            let f () =
               SigFilter.declare_gupd (SigFilter.get_proc loc) loc (Infix name)
            in
-              print_exn f ("infix " ^ name) loc;
+              handle_exn f ("infix " ^ name) loc;
               empty_sig_item loc
         | "suffix"; name = ident ->
            let f () =
               SigFilter.declare_gupd (SigFilter.get_proc loc) loc (Suffix name)
            in
-              print_exn f ("suffix " ^ name) loc;
+              handle_exn f ("suffix " ^ name) loc;
               empty_sig_item loc
         | "prec"; name = LIDENT ->
            let f () =
               SigFilter.declare_prec (SigFilter.get_proc loc) loc name
            in
-              print_exn f ("prec " ^ name) loc;
+              handle_exn f ("prec " ^ name) loc;
               empty_sig_item loc
         | "topval"; name = LIDENT; ":"; t = ctyp ->
            let f () =
               SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>
            in
-              print_exn f ("topval " ^ name) loc;
+              handle_exn f ("topval " ^ name) loc;
               empty_sig_item loc
         | "topval"; "("; name = operator; ")"; ":"; t = ctyp ->
            let f () =
               SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>
            in
-              print_exn f ("topval " ^ name) loc;
+              handle_exn f ("topval " ^ name) loc;
               empty_sig_item loc
         | "doc"; doc_sig ->
           empty_sig_item loc
@@ -1382,17 +1669,19 @@ EXTEND
           SigFilter.add_token (SigFilter.get_proc loc) loc regex t;
           empty_sig_item loc
 
-        | "production"; args = LIST0 parsed_term SEP ";"; opt_prec = OPT prec_term; "-->"; t = parsed_term ->
-          SigFilter.add_production (SigFilter.get_proc loc) loc args opt_prec t;
-          empty_sig_item loc
+        | "production"; args = LIST0 term SEP ";"; opt_prec = OPT prec_term; "-->"; t = term ->
+          let args, t = parse_production loc args t in
+             SigFilter.add_production (SigFilter.get_proc loc) loc args opt_prec t;
+             empty_sig_item loc
 
         | "lex_token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
           SigFilter.input_prec (SigFilter.get_proc loc) loc assoc args rel;
           empty_sig_item loc
 
         | "parser"; t = term ->
-          SigFilter.add_parser (SigFilter.get_proc loc) loc t;
-          empty_sig_item loc
+          let t = unchecked_term_of_parsed_term t in
+             SigFilter.add_parser (SigFilter.get_proc loc) loc t;
+             empty_sig_item loc
 
         | "GENGRAMMAR" ->
           SigFilter.compile_parser (SigFilter.get_proc loc) loc;
@@ -1406,9 +1695,10 @@ EXTEND
                   "doc", com ->
                      SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_string_term comment_string_op com)
                 | q ->
-                     SigFilter.declare_comment (SigFilter.get_proc loc) loc (parse_quotation loc "doc" q)
+                     let q = unchecked_term_of_parsed_term (parse_quotation loc "doc" q) in
+                        SigFilter.declare_comment (SigFilter.get_proc loc) loc q
            in
-              print_exn f "comment" loc;
+              handle_exn f "comment" loc;
         | t = parsed_term ->
            SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_comment_term [t])
        ]];
@@ -1418,185 +1708,236 @@ EXTEND
           let f () =
              StrFilter.declare_parent (StrFilter.get_proc loc) loc path
           in
-             print_exn f "extends" loc;
+             handle_exn f "extends" loc;
              empty_str_item loc
         | "derive"; path = mod_ident ->
           let f () =
              StrFilter.declare_parent (StrFilter.get_proc loc) loc path
           in
-             print_exn f "derive" loc;
+             handle_exn f "derive" loc;
              empty_str_item loc
-        | "declare"; t = quote_term ->
+
+          (************************************************************************
+           * Opname classes.
+           *)
+        | "declare"; "typeclass"; name = id_or_string; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
-             StrFilter.declare_term (StrFilter.get_proc loc) loc t
+             StrFilter.declare_typeclass (StrFilter.get_proc loc) loc name typeclass_type typeclass_parent
           in
-             print_exn f "declare" loc;
+             handle_exn f "declare-typeclass" loc;
              empty_str_item loc
-        | "define"; name = LIDENT; res = optresources; ":"; t = quote_term; "<-->"; def = parsed_term ->
-           let f () =
-             StrFilter.define_term (StrFilter.get_proc loc) loc name t def res
+        | "declare"; "type"; quote = quote_term; ty_parent = opt_type_parent ->
+          let f () =
+             let quote = parse_declare_type loc quote in
+                StrFilter.declare_type (StrFilter.get_proc loc) loc quote ty_parent
+          in
+             handle_exn f "declare-type" loc;
+             empty_str_item loc
+        | "declare"; "type"; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
+          let f () =
+             let quote = parse_declare_type loc quote in
+             let cases = List.map (parse_declare_term loc) cases in
+                StrFilter.declare_type_cases (StrFilter.get_proc loc) loc quote ty_parent cases
+          in
+             handle_exn f "declare-type-cases" loc;
+             empty_str_item loc
+        | "declare"; quote = quote_term ->
+          let f () =
+             let quote = parse_declare_term loc quote in
+                StrFilter.declare_term (StrFilter.get_proc loc) loc quote
+          in
+             handle_exn f "declare" loc;
+             empty_str_item loc
+        | "define"; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
+          let f () =
+             let proc = StrFilter.get_proc loc in
+             let quote = parse_define_term loc quote in
+             let () = StrFilter.declare_define_term proc (parse_quote_term loc quote) in
+             let quote, def = parse_define loc quote def in
+                StrFilter.define_term proc loc name quote def res
            in
-             print_exn f ("define " ^ name) loc;
+              handle_exn f ("define " ^ name) loc;
+              empty_str_item loc
+        | "declare"; "rewrite"; redex = term; "<-->"; contractum = term ->
+          let f () =
+             let redex, contractum = parse_type_rewrite loc redex contractum in
+                StrFilter.declare_type_rewrite (StrFilter.get_proc loc) loc redex contractum
+          in
+             handle_exn f "declare-rewrite" loc;
              empty_str_item loc
+
+          (************************************************************************
+           * Standard grammar.
+           *)
         | "prim_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
-              let t, args, res = parse_mtlr t args res in
-              StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
+              let proc = StrFilter.get_proc loc in
+              let t, args, res = parse_rewrite loc t args res in
+                 StrFilter.declare_rewrite proc loc name args t (Primitive xnil_term) res
            in
-              print_exn f ("prim_rw " ^ name) loc;
+              handle_exn f ("prim_rw " ^ name) loc;
               empty_str_item loc
         | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
-           let f () =
-              let t, args, res = parse_mtlr t args res in
+          let f () =
+              let proc = StrFilter.get_proc loc in
+              let t, args, res = parse_iform loc t args res in
               let redex, contractum =
                  StrFilter.declare_input_form (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
               in
-                 StrFilter.add_iform (StrFilter.get_proc loc) loc redex contractum
+                 StrFilter.add_iform proc loc redex contractum
            in
-              print_exn f ("iform " ^ name) loc;
+              handle_exn f ("iform " ^ name) loc;
               empty_str_item loc
         | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
-              let t, args, res = parse_mtlr t args res in
-              StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res
+              let proc = StrFilter.get_proc loc in
+              let t, args, res = parse_rewrite loc t args res in
+                 StrFilter.declare_rewrite proc loc name args t Incomplete res
            in
-              print_exn f ("interactive_rw " ^ name) loc;
+              handle_exn f ("interactive_rw " ^ name) loc;
               empty_str_item loc
         | "derived_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
-              let t, args, res = parse_mtlr t args res in
-              StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res
+              let proc = StrFilter.get_proc loc in
+              let t, args, res = parse_rewrite loc t args res in
+                 StrFilter.declare_rewrite proc loc name args t Incomplete res
            in
-              print_exn f ("derived_rw " ^ name) loc;
+              handle_exn f ("derived_rw " ^ name) loc;
               empty_str_item loc
         | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
            let f () =
-              let t, args, res = parse_mtlr t args res in
-              StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body) res
+              let proc = StrFilter.get_proc loc in
+              let t, args, res = parse_rewrite loc t args res in
+                 StrFilter.declare_rewrite proc loc name args t (Derived body) res
            in
-              print_exn f ("thm_rw " ^ name) loc;
+              handle_exn f ("thm_rw " ^ name) loc;
              empty_str_item loc
         | "ml_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = parsed_bound_term; "="; code = expr ->
            let f () =
-              let args = List.map term_of_parsed_term args in
-              let code = bind_item (wrap_code loc t.aname code) in
-                 StrFilter.declare_mlrewrite (StrFilter.get_proc loc) loc name args t.aterm (Some code) res
+              let proc = StrFilter.get_proc loc in
+              let args = List.map (parse_term loc) args in
+              let code = bind_item loc (wrap_code loc t.aname code) in
+                 StrFilter.declare_mlrewrite proc loc name args t.aterm (Some code) res
            in
-              print_exn f ("ml_rw " ^ name) loc;
+              handle_exn f ("ml_rw " ^ name) loc;
               empty_str_item loc
         | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; body = rule_body ->
            let f () =
+              let proc = StrFilter.get_proc loc in
               let mt, extract = body in
-              let mt, params, res, extract = parse_mtlre mt params res extract in
-              define_prim (StrFilter.get_proc loc) loc name params mt extract res
+              let mt, params, res, extract = parse_rule_with_extract loc mt params res extract in
+                 define_prim proc loc name params mt extract res
            in
-              print_exn f ("prim " ^ name) loc;
+              handle_exn f ("prim " ^ name) loc;
               empty_str_item loc
         | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = expr ->
            let f () =
-              let mt, params, res = parse_mtlr mt params res in
-              define_thm (StrFilter.get_proc loc) loc name params mt tac res
+              let proc = StrFilter.get_proc loc in
+              let mt, params, res = parse_rule loc mt params res in
+                 define_thm proc loc name params mt tac res
            in
-              print_exn f ("thm " ^ name) loc;
+              handle_exn f ("thm " ^ name) loc;
               empty_str_item loc
         | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
-              let mt, params, res = parse_mtlr mt params res in
-              define_int_thm (StrFilter.get_proc loc) loc name params mt res
+              let proc = StrFilter.get_proc loc in
+              let mt, params, res = parse_rule loc mt params res in
+                 define_int_thm proc loc name params mt res
            in
-              print_exn f ("interactive " ^ name) loc;
+              handle_exn f ("interactive " ^ name) loc;
               empty_str_item loc
         | "derived"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
-              let mt, params, res = parse_mtlr mt params res in
-              define_int_thm (StrFilter.get_proc loc) loc name params mt res
+              let proc = StrFilter.get_proc loc in
+              let mt, params, res = parse_rule loc mt params res in
+                 define_int_thm proc loc name params mt res
            in
-              print_exn f ("derived " ^ name) loc;
+              handle_exn f ("derived " ^ name) loc;
               empty_str_item loc
         | mlrule_keyword; name = LIDENT; res = optresources; args = optarglist; ":"; t = parsed_bound_term; "="; code = expr ->
            let f () =
-              let args = List.map term_of_parsed_term args in
-              let code = bind_item (wrap_code loc t.aname code) in
-                 StrFilter.declare_mlaxiom (StrFilter.get_proc loc) loc name args t.aterm (Some code) res
+              let proc = StrFilter.get_proc loc in
+              let args = List.map (parse_term loc) args in
+              let code = bind_item loc (wrap_code loc t.aname code) in
+                 StrFilter.declare_mlaxiom proc loc name args t.aterm (Some code) res
            in
-              print_exn f ("mlrule " ^ name) loc;
+              handle_exn f ("mlrule " ^ name) loc;
               empty_str_item loc
         | "let"; "resource"; "("; inp = ctyp; ","; outp = ctyp; ")"; name = LIDENT; "="; code = expr ->
            let f () =
               StrFilter.define_resource (StrFilter.get_proc loc) loc name (**)
                  { res_input = inp; res_output = outp; res_body = code }
            in
-              print_exn f ("resource " ^ name) loc;
+              handle_exn f ("resource " ^ name) loc;
               empty_str_item loc
         | "let"; "resource"; name = LIDENT; "+=" ; code = expr ->
            let f () =
-              StrFilter.improve_resource (StrFilter.get_proc loc) loc {
-                 improve_name = name;
-                 improve_expr = (bind_item code);
-              }
+              let proc = StrFilter.get_proc loc in
+                 StrFilter.improve_resource proc loc (**)
+                    { improve_name = name;
+                      improve_expr = bind_item loc code;
+                    }
            in
-              print_exn f (name ^ "resource improvement") loc;
+              handle_exn f (name ^ "resource improvement") loc;
               empty_str_item loc
         | "dform"; name = LIDENT; ":"; options = df_options; "="; form = xdform ->
            let f () =
-              let f = create_term_parser () in
               let options, t = options in
-              (* We want to scan the redex before contractum here; the order is important *)
-              let t = f t in
-              let form = f form in
-                 StrFilter.define_dform (StrFilter.get_proc loc) loc name options t form
+              let options, redex, contractum = parse_dform loc options t form in
+                 StrFilter.define_dform (StrFilter.get_proc loc) loc name options redex contractum
            in
-              print_exn f ("dform " ^ name) loc;
+              handle_exn f ("dform " ^ name) loc;
               empty_str_item loc
         | "ml_dform"; name = LIDENT; ":"; options = parsed_df_options; format = LIDENT; buf = LIDENT; "="; code = expr ->
            let f () =
               let options', t = options in
-                 StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t format buf (bind_item code)
+              let proc = StrFilter.get_proc loc in
+                 StrFilter.define_ml_dform proc loc name options' t format buf (bind_item loc code)
            in
-              print_exn f ("ml_dform " ^ name) loc;
+              handle_exn f ("ml_dform " ^ name) loc;
               empty_str_item loc
         | "infix"; name = ident ->
            let f () =
               StrFilter.declare_gupd (StrFilter.get_proc loc) loc (Infix name)
            in
-              print_exn f ("infix " ^ name) loc;
+              handle_exn f ("infix " ^ name) loc;
               empty_str_item loc
         | "suffix"; name = ident ->
            let f () =
               StrFilter.declare_gupd (StrFilter.get_proc loc) loc (Suffix name)
            in
-              print_exn f ("suffix " ^ name) loc;
+              handle_exn f ("suffix " ^ name) loc;
               empty_str_item loc
         | "prec"; name = LIDENT ->
            let f () =
               StrFilter.declare_prec (StrFilter.get_proc loc) loc name
            in
-              print_exn f ("prec " ^ name) loc;
+              handle_exn f ("prec " ^ name) loc;
               empty_str_item loc
         | "prec"; name1 = LIDENT; "<"; name2 = LIDENT ->
            let f () =
               StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 LTRelation
            in
-              print_exn f "prec" loc;
+              handle_exn f "prec" loc;
               empty_str_item loc
         | "prec"; name1 = LIDENT; "="; name2 = LIDENT ->
            let f () =
               StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 EQRelation
            in
-              print_exn f "prec" loc;
+              handle_exn f "prec" loc;
               empty_str_item loc
         | "prec"; name1 = LIDENT; ">"; name2 = LIDENT ->
            let f () =
               StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 GTRelation
            in
-              print_exn f "prec" loc;
+              handle_exn f "prec" loc;
               empty_str_item loc
         | "magic_block"; name = LIDENT; "=";
           "struct"; st = LIST0 [ s = str_item; OPT ";;" -> s ]; "end" ->
            let f () =
               StrFilter.define_magic_block (StrFilter.get_proc loc) loc name st
            in
-              print_exn f "magic_block" loc;
+              handle_exn f "magic_block" loc;
               empty_str_item loc
         | "doc"; doc_str ->
            empty_str_item loc
@@ -1606,21 +1947,72 @@ EXTEND
           StrFilter.add_token (StrFilter.get_proc loc) loc regex t;
           empty_str_item loc
 
-        | "production"; args = LIST0 parsed_term SEP ";"; opt_prec = OPT prec_term; "-->"; t = parsed_term ->
-          StrFilter.add_production (StrFilter.get_proc loc) loc args opt_prec t;
-          empty_str_item loc
+        | "production"; args = LIST0 term SEP ";"; opt_prec = OPT prec_term; "-->"; t = term ->
+          let args, t = parse_production loc args t in
+             StrFilter.add_production (StrFilter.get_proc loc) loc args opt_prec t;
+             empty_str_item loc
 
         | "lex_token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
           StrFilter.input_prec (StrFilter.get_proc loc) loc assoc args rel;
           empty_str_item loc
 
         | "parser"; t = term ->
-          StrFilter.add_parser (StrFilter.get_proc loc) loc t;
-          empty_str_item loc
+          let t = unchecked_term_of_parsed_term t in
+             StrFilter.add_parser (StrFilter.get_proc loc) loc t;
+             empty_str_item loc
 
         | "GENGRAMMAR" ->
           StrFilter.compile_parser (StrFilter.get_proc loc) loc;
           empty_str_item loc
+       ]];
+
+    declare_cases:
+      [[ cases = LIST1 quote_term SEP "|" ->
+          cases
+       ]];
+
+    opt_type_parent:
+      [[ ty_parent = OPT type_parent ->
+          match ty_parent with
+             Some opname ->
+                opname
+           | None ->
+                term_opname
+       ]];
+
+    type_parent:
+      [[ "->"; opname = opname ->
+          opname
+       ]];
+
+    opt_typeclass_type:
+      [[ opname = OPT typeclass_type ->
+          match opname with
+             Some opname ->
+                opname
+           | None ->
+                type_opname
+       ]];
+
+    typeclass_type:
+      [[ ":"; opname = opname ->
+          opname
+       ]];
+
+    opt_typeclass_parent:
+      [[ t = OPT typeclass_parent ->
+          match t with
+             Some kind ->
+                kind
+           | None ->
+                ParentNone
+       ]];
+
+    typeclass_parent:
+      [[ "->"; t = singleterm ->
+          ParentExtends (opname_of_term (parse_term loc t.aterm))
+        | "<-"; t = singleterm ->
+          ParentInclude (opname_of_term (parse_term loc t.aterm))
        ]];
 
     doc_str:
@@ -1631,9 +2023,10 @@ EXTEND
                   "doc", com ->
                      StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_string_term comment_string_op com)
                 | q ->
-                     StrFilter.declare_comment (StrFilter.get_proc loc) loc (parse_quotation loc "doc" q)
+                     let q = unchecked_term_of_parsed_term (parse_quotation loc "doc" q) in
+                        StrFilter.declare_comment (StrFilter.get_proc loc) loc q
            in
-              print_exn f "comment" loc
+              handle_exn f "comment" loc
         | t = parsed_term ->
            StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_comment_term [t])
        ]];
@@ -1682,10 +2075,10 @@ EXTEND
                     | _ ->
                          [split_application (MLast.loc_of_expr e) [] e]
                 in
-                  (* context in resource term quotations will get converted by parse_mtlr *)
-                  { item_item = e; item_bindings = get_unparsed_bindings (); }
+                  (* context in resource term quotations will get converted by parse_rule/rewrite *)
+                  { item_item = e; item_bindings = get_unchecked_bindings () }
            in
-              print_exn f "updresources" loc
+              handle_exn f "updresources" loc
       ]];
 
    rule_keyword:
@@ -1696,9 +2089,9 @@ EXTEND
 
    rule_body:
       [[ mt = bmterm; "="; extract = term ->
-            mt, extract
+            mt, raw_term_of_parsed_term extract
        | mt = bmterm ->
-            mt, mk_simple_term (mk_opname loc ["default_extract"] [] []) []
+            mt, mk_simple_term (TermGrammarBefore.mk_opname_kind loc NormalKind ["default_extract"] [] []) []
       ]];
 
    (*
@@ -1728,7 +2121,7 @@ EXTEND
     *)
    parsed_df_options:
       [[ l = LIST1 singleterm SEP "::" ->
-          Lm_list_util.split_last (List.map (function { aterm = t } -> term_of_parsed_term t) l)
+          Lm_list_util.split_last (List.map (function { aterm = t } -> parse_term loc t) l)
        ]];
 
    df_options:
@@ -1744,6 +2137,15 @@ EXTEND
           name
         | name = LIDENT ->
           name
+       ]];
+
+   id_or_string:
+      [[ name = UIDENT ->
+          name
+        | name = LIDENT ->
+          name
+        | name = STRING ->
+          Token.eval_string loc name
        ]];
 
    (*

@@ -62,7 +62,7 @@ module MakeRewriteUtil
    (TermType : TermSig)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (Term : TermBaseSig with module TermTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
    =
 struct
    module RewriteTypes = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr)

@@ -28,6 +28,7 @@ open Lm_debug
 open Lm_rprintf
 
 open Opname
+open Term_sig
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -217,9 +218,12 @@ let get_item parse_arg info modname name =
             Shell_rule.view_crw pack parse_arg display_mode crw
        | Rule rl ->
             Shell_rule.view_rule pack parse_arg display_mode rl
-       | Definition def ->
-            Shell_rule.view_def pack parse_arg display_mode def
-       | Opname _ ->
+       | DefineTerm (term, def) ->
+            Shell_rule.view_def pack parse_arg display_mode term def
+       | DeclareTypeClass _
+       | DeclareType _
+       | DeclareTerm _
+       | DeclareTypeRewrite _ ->
             eprintf "Editing opname '/%s/%s' not supported%t" modname name eflush;
             raise (Failure "view")
        | MLRewrite _ ->
@@ -572,6 +576,7 @@ let mount_root parse_arg shell force_flag need_shell verbose =
       update_dfbase shell;
       shell.shell_proof <- proof;
       Shell_state.set_mk_opname None;
+      Shell_state.set_infer_term None;
       Shell_state.set_so_var_context None;
       Shell_state.set_infixes None;
       Shell_state.set_grammar None;
@@ -586,6 +591,7 @@ let mount_fs parse_arg shell force_flag need_shell verbose =
       update_dfbase shell;
       shell.shell_proof <- proof;
       Shell_state.set_mk_opname None;
+      Shell_state.set_infer_term None;
       Shell_state.set_so_var_context None;
       Shell_state.set_infixes None;
       Shell_state.set_grammar None;
@@ -617,7 +623,14 @@ let mount_current_module modname parse_arg shell force_flag need_shell verbose =
                   failwith ("Module " ^ modname ^ " does not contain shell commands");
                shell.shell_package <- Some pack;
                update_dfbase shell;
-               Shell_state.set_mk_opname (Some (Package_info.mk_opname pack));
+               Shell_state.set_mk_opname (Some (Package_info.opname_prefix pack, Package_info.mk_opname_kind pack));
+               Shell_state.set_infer_term (Some (Package_info.infer_term pack,
+                                                 Package_info.check_rule pack,
+                                                 Package_info.infer_rewrite pack,
+                                                 Package_info.check_type_rewrite pack,
+                                                 Package_info.check_iform pack,
+                                                 Package_info.check_dform pack,
+                                                 Package_info.check_production pack));
                Shell_state.set_infixes (Some (Package_info.get_infixes pack));
                Shell_state.set_grammar (Some (Package_info.get_grammar pack));
                Shell_state.set_module modname;
@@ -777,7 +790,7 @@ let clear_view_options shell s =
 let get_shortener shell =
    match shell.shell_package with
       Some pack ->
-         let mk_opname = Package_info.mk_opname pack in
+         let mk_opname = Package_info.mk_opname_kind pack NormalKind in
          let shortener opname params bterms =
             match Opname.dest_opname opname with
                h :: _ ->

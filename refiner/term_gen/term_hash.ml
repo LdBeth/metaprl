@@ -251,14 +251,14 @@ struct
 
    let p_constr_operator _info (opname_index, params) =
       TTerm.make_op
-      { TType.op_name = opname_index;
-        TType.op_params = params
+      { Term_sig.op_name = opname_index;
+        Term_sig.op_params = params
       }
 
    let p_constr_bterm info { bvars=bvs; bterm=term_index } =
       TTerm.make_bterm
-      { TType.bvars = bvs;
-        TType.bterm = WM.retrieve info.term_hash info term_index
+      { Term_sig.bvars = bvs;
+        Term_sig.bterm = WM.retrieve info.term_hash info term_index
       }
 
    let p_constr_hyp info hyp =
@@ -268,8 +268,8 @@ struct
 
    let p_constr_tterm info { op_name = op; op_params = params; term_terms = bterms } =
       TTerm.make_term
-      { TType.term_op = p_constr_operator info (op, params);
-        TType.term_terms = List.map (p_constr_bterm info) bterms }
+      { Term_sig.term_op = p_constr_operator info (op, params);
+        Term_sig.term_terms = List.map (p_constr_bterm info) bterms }
 
    let p_constr_term info th =
       match th with

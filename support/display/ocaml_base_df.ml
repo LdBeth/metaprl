@@ -37,96 +37,6 @@ open Lm_debug
 let _ =
    show_loading "Loading Ocaml_base_df%t"
 
-(************************************************************************
- * DISPLAY TERMS                                                        *
- ************************************************************************)
-
-(*
- * Operators.
- *)
-declare "["
-declare "]"
-declare "[|"
-declare "|]"
-declare "[<"
-declare ">]"
-declare "{"
-declare "}"
-declare "("
-declare ")"
-
-declare "+"
-declare "-"
-declare "*"
-declare "/"
-declare "mod"
-
-declare "&"
-declare "or"
-declare "="
-declare "=="
-declare "::"
-declare ":="
-declare "."
-declare ".("
-declare ".["
-declare ":>"
-declare ";"
-declare "->"
-declare "|"
-declare "<>"
-declare ":"
-declare "_"
-declare "#"
-declare "'"
-declare "\""
-
-declare "_if"
-declare "_then"
-declare "_else"
-
-declare "_for"
-declare "_while"
-declare "_to"
-declare "_downto"
-declare "_do"
-declare "_done"
-
-declare "_new"
-declare "_fun"
-declare "_match"
-declare "_try"
-declare "_type"
-declare "_exception"
-declare "_let"
-declare "_letrec"
-declare "_in"
-declare "_and"
-declare "_with"
-declare "_val"
-declare "_as"
-declare "_external"
-declare "_of"
-
-declare "_module"
-declare "_moduletype"
-declare "_open"
-declare "_sig"
-declare "_struct"
-declare "_functor"
-declare "_end"
-
-declare push_indent
-
-(*
- * Display control tags.
- *)
-declare patt_format{'a;'b}
-
-(************************************************************************
- * DISPLAYS                                                             *
- ************************************************************************)
-
 (*
  * Operators.
  *)
@@ -168,41 +78,41 @@ dform quote_df		: "'"		= keyword["'"]
 dform backslash_df	: "\""		= keyword["\""]
 
 dform if_df		: "_if"		= keyword["if"]
-dform then_df		: "_then"           = keyword["then"]
-dform else_df		: "_else"           = keyword["else"]
+dform then_df		: "_then"       = keyword["then"]
+dform else_df		: "_else"       = keyword["else"]
 
-dform for_df		: "_for"            = keyword["for"]
-dform while_df		: "_while"          = keyword["while"]
+dform for_df		: "_for"        = keyword["for"]
+dform while_df		: "_while"      = keyword["while"]
 dform to_df		: "_to"		= keyword["to"]
-dform downto_df		: "_downto"         = keyword["downto"]
+dform downto_df		: "_downto"     = keyword["downto"]
 dform do_df		: "_do"		= keyword["do"]
-dform done_df		: "_done"           = keyword["done"]
+dform done_df		: "_done"       = keyword["done"]
 
-dform new_df		: "_new"            = keyword["new"]
-dform fun_df		: "_fun"            = keyword["fun"]
-dform match_df		: "_match"          = keyword["match"]
-dform try_df		: "_try"            = keyword["try"]
-dform type_df		: "_type"           = keyword["type"]
+dform new_df		: "_new"        = keyword["new"]
+dform fun_df		: "_fun"        = keyword["fun"]
+dform match_df		: "_match"      = keyword["match"]
+dform try_df		: "_try"        = keyword["try"]
+dform type_df		: "_type"       = keyword["type"]
 dform exception_df	: "_exception"	= keyword["exception"]
-dform let_df		: "_let"            = keyword["let"]
-dform letrec_df		: "_letrec"         = keyword["let rec"]
+dform let_df		: "_let"        = keyword["let"]
+dform letrec_df		: "_letrec"     = keyword["let rec"]
 dform in_df		: "_in"		= keyword["in"]
-dform and_df		: "_and"            = keyword["and"]
-dform with_df		: "_with"           = keyword["with"]
-dform val_df		: "_val"            = keyword["val"]
+dform and_df		: "_and"        = keyword["and"]
+dform with_df		: "_with"       = keyword["with"]
+dform val_df		: "_val"        = keyword["val"]
 dform as_df		: "_as"		= keyword["as"]
 dform external_df	: "_external"	= keyword["of"]
 dform of_df		: "_of"		= keyword["external"]
 
-dform module_df		: "_module"         = keyword["module"]
+dform module_df		: "_module"     = keyword["module"]
 dform moduletype_df	: "_moduletype"	= keyword["module type"]
-dform open_df		: "_open"           = keyword["open"]
-dform sig_df		: "_sig"            = keyword["sig"]
-dform struct_df		: "_struct"         = keyword["struct"]
+dform open_df		: "_open"       = keyword["open"]
+dform sig_df		: "_sig"        = keyword["sig"]
+dform struct_df		: "_struct"     = keyword["struct"]
 dform functor_df	: "_functor"	= keyword["functor"]
-dform end_df		: "_end"            = keyword["end"]
+dform end_df		: "_end"        = keyword["end"]
 
-dform push_ident_df     : push_indent       = pushm[3]
+dform push_ident_df     : push_indent   = pushm[3]
 
 (*
  * -*-

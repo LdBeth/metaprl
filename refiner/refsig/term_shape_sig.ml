@@ -65,6 +65,12 @@ sig
    val print_shape : out_channel -> shape -> unit
    val pp_print_shape : formatter -> shape -> unit
    val string_of_shape : shape -> string
+
+   val shape_compare : shape -> shape -> int
+
+   module ShapeSet : Lm_set_sig.LmSet with type elt = shape;;
+   module ShapeTable : Lm_map_sig.LmMap with type key = shape;;
+   module ShapeMTable : Lm_map_sig.LmMapList with type key = shape;;
 end
 
 (*

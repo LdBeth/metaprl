@@ -38,6 +38,7 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
 open Basic
+open Opname
 
 open Mbterm
 
@@ -105,15 +106,17 @@ let orb_open name =
      environments = []
    }
 
-let ireq_parameter = make_param (Token "!req")
+let token s = Token (mk_opname s nil_opname)
+
+let ireq_parameter = make_param (token "!req")
 let ireq_op pl = mk_nuprl5_op (ireq_parameter :: pl)
 let ireq_term seq addr t tid =
   mk_term (ireq_op (make_param (Number (Lm_num.num_of_int seq))
-		    :: (make_param (Token "CONFIG"(*NUPRL5-type*)))
-		    :: (map (function s -> make_param (Token s)) addr)))
+		    :: (make_param (token "CONFIG"(*NUPRL5-type*)))
+		    :: (map (function s -> make_param (token s)) addr)))
     [mk_bterm [] t(*; mk_bterm [] tid*)]
 
-let irsp_parameter = make_param (Token "!rsp")
+let irsp_parameter = make_param (token "!rsp")
 let irsp_op p = mk_nuprl5_op [irsp_parameter; p]
 let irsp_term seq t =
   mk_term (irsp_op seq)
@@ -137,7 +140,7 @@ let seq_of_irsp_term t =
 	-> dest_int_param iseq
       | _ -> error ["orb"; "rsp"; "not"] [] [t])
 
-let ibroadcasts_parameter = make_param (Token "!broadcasts")
+let ibroadcasts_parameter = make_param (token "!broadcasts")
 let broadcasts_of_ibroadcasts_term t =
   match dest_term t with
     { term_op = o; term_terms = bterms } ->
@@ -170,7 +173,7 @@ let auto_commit_of_ibroadcasts_term t =
 	else None
       | _ -> error ["orb"; "broadcasts"; "commit"; "not"] [] [t])
 
-let ifail_parameter = make_param (Token "!fail")
+let ifail_parameter = make_param (token "!fail")
 let ifail_op = mk_nuprl5_op [ifail_parameter]
 let ifail_term t = mk_term ifail_op [mk_bterm [] t]
 let ifail_term_p t =
@@ -178,7 +181,7 @@ let ifail_term_p t =
     { term_op = fo; term_terms = bterms } when opeq fo ifail_op -> true
   | _ -> false
 
-let ivalue_parameter = make_param (Token "!value")
+let ivalue_parameter = make_param (token "!value")
 let ivalue_op = mk_nuprl5_op [ivalue_parameter]
 let ivalue_term_p t =
   match dest_term t with
@@ -187,7 +190,7 @@ let ivalue_term_p t =
 
 let ivalue_term t = mk_term ivalue_op [mk_bterm [] t]
 
-let iack_parameter = make_param (Token "!ack")
+let iack_parameter = make_param (token "!ack")
 let iack_op = mk_nuprl5_op [iack_parameter]
 let iack_term = mk_term iack_op []
 let iack_term_p t =
@@ -207,7 +210,7 @@ let result_of_iresult_term t =
        -> term_of_unbound_term r
   | _ -> error ["orb"; "result"; "messages"] [] [t]
 
-let ipassport_param = make_param (Token "!passport")
+let ipassport_param = make_param (token "!passport")
 
 (*
  * pull desc and bcast
@@ -246,7 +249,7 @@ let orb_broadcast env t =
     (auto_commit_of_ibroadcasts_term t)
     (broadcasts_of_ibroadcasts_term t)
 
-let icommand_parameter = make_param (Token "!command")
+let icommand_parameter = make_param (token "!command")
 let icommand_op = mk_nuprl5_op [icommand_parameter]
 let icommand_term t = mk_term icommand_op [mk_bterm [] t]
 
@@ -281,7 +284,7 @@ let local_eval_new f t =
     (function term -> ifail_term term)
 *)
 
-let imsg_parameter = make_param (Token "!msg")
+let imsg_parameter = make_param (token "!msg")
 
 let rec bus_wait c tid ehook =
   let t = (Link.recv c.link) in
@@ -350,7 +353,7 @@ let bus_eval c addr expr tid ehook =
   then (Mbterm.print_term t; Mbterm.print_term expr; error ["bus"; "eval"; "sequence"] [] [t])
   else result_of_irsp_term t
 
-let iinform_parameter = make_param (Token "!inform")
+let iinform_parameter = make_param (token "!inform")
 let iinform_op = mk_nuprl5_op [iinform_parameter]
 let iinform_term info = mk_term iinform_op [mk_bterm [] info]
 let iinform_term_p t =
@@ -359,11 +362,11 @@ let iinform_term_p t =
   | _ -> false
 
 let info_of_iinform_term t = one_subterm t
-let ienvironment_address_parameter = make_param (Token "!environment_address")
+let ienvironment_address_parameter = make_param (token "!environment_address")
 let ienvironment_address_op pl = mk_nuprl5_op (ienvironment_address_parameter :: pl)
 let ienvironment_address_term a =
  mk_term (ienvironment_address_op
-	    (map (function s -> make_param (Token s)) a))
+	    (map (function s -> make_param (token s)) a))
     []
 
 let address_of_ienvironment_address_term t =
@@ -377,14 +380,14 @@ let address_of_ienvironment_address_term t =
     |_-> error ["orb"; "term"; "EnvironmentAddress"; "invalid"; "op"] [] [t])
   |_-> error ["orb"; "term"; "EnvironmentAddress"; "invalid"; "subterms"; token_parameter_to_string (hd (parameters_of_term t))] [] [t])
 
-let itable_types_parameter = make_param (Token "!table_types" )
+let itable_types_parameter = make_param (token "!table_types" )
 let itable_types_op pl = mk_nuprl5_op (itable_types_parameter :: pl)
 let itable_types_term types address =
   mk_term (itable_types_op
-	     (map (function s -> make_param (Token s)) types))
+	     (map (function s -> make_param (token s)) types))
     [mk_bterm [] (ienvironment_address_term address)]
 
-let iconfigure_parameter = make_param (Token "!configure")
+let iconfigure_parameter = make_param (token "!configure")
 let iconfigure_op = mk_nuprl5_op [iconfigure_parameter]
 let iconfigure_term term =  mk_term iconfigure_op [mk_bterm [] term]
 
@@ -418,32 +421,32 @@ let config_send_request c term =
       then cmd
     else error ["orb"; "configure"; "send"; "request"] [] [cmd]
 
-let irequest_parameter = make_param (Token "!request")
+let irequest_parameter = make_param (token "!request")
 let irequest_op = mk_nuprl5_op [irequest_parameter]
 let irequest_term t = mk_term irequest_op [mk_bterm [] t]
 
 
 let itokens_term toks =
-    let param_list = List.append [(make_param (Token "!tokens"))] (List.map
-	(function s -> make_param (Token s)) toks) in
+    let param_list = List.append [(make_param (token "!tokens"))] (List.map
+	(function s -> make_param (token s)) toks) in
     mk_term (mk_nuprl5_op param_list) []
 
 let ilink_describe_environment_term address description =
-    mk_term (mk_nuprl5_op [(make_param (Token "!link_describe_environment"))])
+    mk_term (mk_nuprl5_op [(make_param (token "!link_describe_environment"))])
       [(mk_bterm [] address); (mk_bterm [] description)]
 
 let iconnect_environments_term source dest =
-    mk_term (mk_nuprl5_op [(make_param (Token "!connect_environments"))])
+    mk_term (mk_nuprl5_op [(make_param (token "!connect_environments"))])
       [(mk_bterm [] source); (mk_bterm [] dest)]
 
 let ilink_environment_properties_term addr prop=
   mk_term (mk_nuprl5_op
-	     [(make_param (Token "!link_environment_properties"))])
+	     [(make_param (token "!link_environment_properties"))])
     [(mk_bterm [] addr); (mk_bterm [] prop)]
 
 let ibool_term b =
   mk_term (mk_nuprl5_op
-	     [(make_param (Token "!bool"));
+	     [(make_param (token "!bool"));
 	       (make_bool_parameter b)]) []
 
 let orb_mini_set_idle connection addr b =
@@ -473,11 +476,11 @@ let orb_mini_describe connection remotea locala locald =
 	     locald));
   remoted
 
-let idisconnect_parameter = make_param (Token "!disconnect")
+let idisconnect_parameter = make_param (token "!disconnect")
 let idisconnect_op b = mk_nuprl5_op [idisconnect_parameter; make_bool_parameter b]
 let idisconnect_term b = mk_term (idisconnect_op b) []
 
-let iconnect_parameter = make_param (Token "!connect")
+let iconnect_parameter = make_param (token "!connect")
 let iconnect_op localhost sock =
   mk_nuprl5_op
     [ iconnect_parameter;
@@ -489,8 +492,8 @@ let iconnect_term localhost sock = mk_term (iconnect_op localhost sock) []
 
 let ilink_encoding_term encoding =
   mk_term (mk_nuprl5_op
-    [ (make_param (Token "!link_encoding"));
-      (make_param (Token encoding))
+    [ (make_param (token "!link_encoding"));
+      (make_param (token encoding))
     ]) []
 
 let connect_aux orb host rport =
@@ -522,7 +525,7 @@ let connect orb name host rport =
     connection (iinform_term (ienvironment_address_term ["JPROVER"])) in
   connection
 
-let irevoke_parameter = make_param (Token "!revoke")
+let irevoke_parameter = make_param (token "!revoke")
 let irevoke_op = mk_nuprl5_op [irevoke_parameter]
 let irevoke_term t = mk_term irevoke_op [mk_bterm [] t]
 
@@ -553,10 +556,10 @@ let orb_close orb =
 	connection_eval
 *)
 
-let iml_parameter = make_param (Token "!ML")
+let iml_parameter = make_param (token "!ML")
 let iml_op pl = mk_nuprl5_op (iml_parameter :: pl)
 
-let iml_woargs_parameter = make_param (Token "!ML_woargs")
+let iml_woargs_parameter = make_param (token "!ML_woargs")
 let iml_woargs_op pl = mk_nuprl5_op (iml_woargs_parameter :: pl)
 
 let iml_woargs_term result_p term =
@@ -572,7 +575,7 @@ let iml_term result_p term terms =
          ((mk_bterm [] term) :: map (function t -> mk_bterm [] t) terms)
 
 
-let iexpression_parameter = make_param (Token "!expression")
+let iexpression_parameter = make_param (token "!expression")
 let iexpression_op = mk_nuprl5_op [iexpression_parameter]
 let iexpression_term term =
  mk_term iexpression_op
@@ -644,21 +647,21 @@ let library_environment_close c addr =
 
 let metaprl_description_term =
   mk_term (mk_nuprl5_op
-		 [make_param (Token "!description"); make_param (Token "metaprl")])
+		 [make_param (token "!description"); make_param (token "metaprl")])
 	[ mk_bterm [] (inatural_term 0)
 	; mk_bterm [] (list_to_ilist_map itoken_term ["REFINER"; "ObjectIdDAG"])
 	]
 
 let jprover_description_term =
   mk_term (mk_nuprl5_op
-		 [make_param (Token "!description"); make_param (Token "metaprl")])
+		 [make_param (token "!description"); make_param (token "metaprl")])
 	[ mk_bterm [] (inatural_term 0)
 	; mk_bterm [] (itoken_term "JPROVER")
 	]
 
 let current_description_term = ref metaprl_description_term
 
-let istart_op = mk_nuprl5_op [make_param (Token "!start")]
+let istart_op = mk_nuprl5_op [make_param (token "!start")]
 
 let istart_term t s e d =
   mk_term istart_op
@@ -692,7 +695,7 @@ let start_broadcasts e =
                             (info_of_iinform_term t))
       in ()
 
-let irevoke_op = mk_nuprl5_op [make_param (Token "!revoke")]
+let irevoke_op = mk_nuprl5_op [make_param (token "!revoke")]
 let irevoke_term t = mk_term irevoke_op [mk_bterm [] t]
 
 let stop_broadcasts e =
@@ -832,7 +835,7 @@ let eval_args_to_term e tid t tl =
  *)
 
 
-let itransaction_parameter = make_param (Token "!transaction")
+let itransaction_parameter = make_param (token "!transaction")
 let itransaction_term b = mk_term (mk_nuprl5_op [itransaction_parameter; make_bool_parameter b]) []
 
 let eval_callback checkpointp e tid f =
@@ -892,7 +895,7 @@ let eval_args_to_term_with_callback e tid f t tl =
 
 let quit_loop = oref false
 
-let iquit_loop_op = mk_nuprl5_op [ make_param (Token "!quit_loop")]
+let iquit_loop_op = mk_nuprl5_op [ make_param (token "!quit_loop")]
 
 let quit_loop_term_p t =
   match dest_term t with

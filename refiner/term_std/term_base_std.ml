@@ -52,7 +52,7 @@ let _ =
  * Simple term module.
  *)
 module Term (**)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType) =
+   (RefineError : RefineErrorSig with module Types = TermType) =
 struct
    (************************************************************************
     * Type definitions                                                     *

@@ -114,7 +114,15 @@ val touch : package -> unit
 (*
  * Access to the cache.
  *)
-val mk_opname : package -> string list -> shape_param list -> int list -> opname
+val opname_prefix      : package -> opname
+val mk_opname_kind     : package -> opname_kind_fun
+val infer_term         : package -> infer_term_fun
+val check_rule         : package -> check_rule_fun
+val infer_rewrite      : package -> infer_rewrite_fun
+val check_type_rewrite : package -> check_type_rewrite_fun
+val check_iform        : package -> check_iform_fun
+val check_dform        : package -> check_dform_fun
+val check_production   : package -> check_production_fun
 
 (*
  * Infixes/suffixes declared in the package

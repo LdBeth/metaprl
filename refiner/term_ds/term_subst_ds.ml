@@ -64,10 +64,10 @@ ENDIF
 module TermSubst
 (Term : TermDsSig with module TermTypes = TermType)
 (RefineError : RefineErrorSig
-               with type ErrTypes.Types.level_exp = TermType.level_exp
-               with type ErrTypes.Types.param = TermType.param
-               with type ErrTypes.Types.term = TermType.term
-               with type ErrTypes.Types.bound_term = TermType.bound_term)
+               with type Types.level_exp = TermType.level_exp
+               with type Types.param = TermType.param
+               with type Types.term = TermType.term
+               with type Types.bound_term = TermType.bound_term)
 =
 struct
    open RefineError
@@ -334,8 +334,10 @@ struct
     * is to substitute v for occurrences of the term t' in t.
     *)
    let rec var_subst t t' fv' v =
-      if alpha_equal t t' then mk_var_term v
-      else match t.core with
+      if alpha_equal t t' then
+         mk_var_term v
+      else
+         match t.core with
            Term { term_op = op; term_terms = bterms} ->
               let bterms' = var_subst_bterms bterms t' fv' v in
                  if bterms == bterms' then t else mk_term op bterms'

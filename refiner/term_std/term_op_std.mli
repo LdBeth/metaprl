@@ -37,7 +37,7 @@ open Term_std
 
 module TermOp (**)
    (Term : TermStdSig with module TermTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
 : (TermOpSig with module OpTypes = TermType)
 
 (*

@@ -35,7 +35,7 @@ open Term_std_sig
 open Term_std
 
 module Term (**)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
 : (TermStdSig with module TermTypes = TermType)
 
 (*

@@ -34,11 +34,14 @@ open Refiner.Refiner.TermType
 open Nuprl5
 open List
 open Db
+open Opname
 
 let _ =
    show_loading "Loading Definition%t"
 
-let idescription_parameter = make_param (Token "!description")
+let token s = Token (mk_opname s nil_opname)
+
+let idescription_parameter = make_param (token "!description")
 let idescription_op sys = mk_nuprl5_op [idescription_parameter; sys]
 let idescription_term sys version purposes =
   mk_term (idescription_op sys)
@@ -63,7 +66,7 @@ let purposes_of_idescription_term t =
 
 type dependency = {data : stamp; objc : stamp; oid : object_id }
 
-let idata_op = mk_nuprl5_op [make_param (Token "!data")]
+let idata_op = mk_nuprl5_op [make_param (token "!data")]
 let term_of_idata_term t =
   match dest_term t with
     { term_op = op; term_terms = [subterm] } when opeq op idata_op
@@ -108,8 +111,8 @@ class inline_data (s : stamp) (inl : term) =
 
 end
 
-let idata_persist_param = make_param (Token "!data_persist")
-let idata_persist_inline_param = make_param (Token "!data_persist_inline")
+let idata_persist_param = make_param (token "!data_persist")
+let idata_persist_inline_param = make_param (token "!data_persist_inline")
 
 let term_to_data t =
  match dest_term t with
@@ -135,7 +138,7 @@ type substance_type = TermSubstance | Substance
    at initialization.
  *)
 
-let isubstance_op = mk_nuprl5_op [make_param (Token "!substance")]
+let isubstance_op = mk_nuprl5_op [make_param (token "!substance")]
 
 let term_of_isubstance_term t =
  match dest_term t with
@@ -290,11 +293,11 @@ class ['a] term_definition d da st =
 
 end
 
-let idag_child_param = make_param (Token "!dag_child")
-let idirectory_param = make_param (Token "!directory")
-let idyneval_param = make_param (Token "!dyneval")
+let idag_child_param = make_param (token "!dag_child")
+let idirectory_param = make_param (token "!directory")
+let idyneval_param = make_param (token "!dyneval")
 
-let idag_cons_op = mk_nuprl5_op [make_param (Token "!dag_cons")]
+let idag_cons_op = mk_nuprl5_op [make_param (token "!dag_cons")]
 
 let idirectory_term_p t =
  match dest_term t with
@@ -401,9 +404,9 @@ let dag_description_p t =
      else let purposes = (purposes_of_idescription_term t) in
        ((mem "ObjectIdDAG" purposes) & not (mem "Derived" purposes))
 
-let idefinition_op = mk_nuprl5_op [make_param (Token "!definition")]
+let idefinition_op = mk_nuprl5_op [make_param (token "!definition")]
 
-let idependency_param = make_param (Token "!dependency")
+let idependency_param = make_param (token "!dependency")
 
 let term_to_dependency t =
   match dest_term t with
@@ -500,10 +503,10 @@ let definition_of_entry entry =
 
 let oid_of_term_entry e = ((definition_of_entry e)#get_dependency).oid
 
-let idefinition_insert_param = make_param (Token "!definition_insert")
-let idefinition_delete_param = make_param (Token "!definition_delete")
-let icommit_param = make_param (Token "!commit")
-let iundo_param = make_param (Token "!undo")
+let idefinition_insert_param = make_param (token "!definition_insert")
+let idefinition_delete_param = make_param (token "!definition_delete")
+let icommit_param = make_param (token "!commit")
+let iundo_param = make_param (token "!undo")
 
 let apply_broadcast ttable ibcast idesc stamp commit_stamp =
   let auto_commit oid seq =

@@ -43,7 +43,7 @@ module MakeRewriteMeta
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RefineError : RefineErrorSig with module Types = TermType)
    =
 struct
    module RewriteTypes = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr)
@@ -82,9 +82,10 @@ struct
       match dest_param p, rwp with
          Number n, RWNumber rn ->
             n = rn
-       | String s, RWString rs
-       | Token s, RWToken rs ->
+       | String s, RWString rs ->
             s = rs
+       | Token s, RWToken rs ->
+            Opname.eq s rs
        | MNumber _, RWNumber _
        | MNumber _, RWMNumber _
        | MString _, RWString _
@@ -98,7 +99,8 @@ struct
             compare_levels a b
        | Quote, RWQuote ->
             true
-       | _ -> false
+       | _ ->
+            false
 
    let compare_param_lists = Lm_list_util.for_all2 compare_params
 

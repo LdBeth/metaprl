@@ -38,10 +38,10 @@ open Term_sig
  *)
 module MakeRefineError (**)
    (TermType : TermSig)
-   (AddressType : TypeSig) :
-RefineErrorSig
-with module ErrTypes.Types = TermType
-with type ErrTypes.address = AddressType.t
+   (ParamType : ErrParamSig)
+: RefineErrorSig
+  with module Types = TermType
+  with module Params = ParamType
 
 (*
  * -*-

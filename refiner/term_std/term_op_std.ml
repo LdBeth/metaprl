@@ -40,7 +40,7 @@ open Term_std
 
 module TermOp
    (Term : TermStdSig with module TermTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType) =
+   (RefineError : RefineErrorSig with module Types = TermType) =
 struct
    open RefineError
    open TermType
@@ -289,6 +289,28 @@ struct
 
    let mk_string_term opname s =
       { term_op = { op_name = opname; op_params = [String s] }; term_terms = [] }
+
+   (*
+    * One variable param.
+    *)
+   let is_var_param_term opname = function
+      { term_op = { op_name = opname'; op_params = [Var _] };
+        term_terms = []
+      } when Opname.eq opname opname' ->
+         true
+    | _ ->
+         false
+
+   let dest_var_param_term opname = function
+      { term_op = { op_name = opname'; op_params = [Var v] };
+        term_terms = []
+      } when Opname.eq opname opname' ->
+         v
+    | t ->
+         REF_RAISE(RefineError ("dest_string_term", TermMatchError (t, "not a var param term")))
+
+   let mk_var_param_term opname v =
+      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = [] }
 
    (*
     * One string parameter, and one simple subterm.
@@ -586,6 +608,12 @@ struct
         term_terms = []
       } when Opname.eq opname opname' -> n
     | t -> REF_RAISE(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
+
+   let dest_token_param = function
+      { term_op = { op_params = [Token n] };
+        term_terms = []
+      } -> n
+    | t -> REF_RAISE(RefineError ("dest_token_param", TermMatchError (t, "bad arity")))
 
    let mk_token_term opname = function
       n ->

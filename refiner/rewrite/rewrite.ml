@@ -39,6 +39,8 @@ open Lm_debug
 open Lm_symbol
 open Lm_printf
 
+open Opname
+
 open Term_sig
 open Term_base_sig
 open Term_man_sig
@@ -74,7 +76,7 @@ module Rewrite (**)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType) =
+   (RefineError : RefineErrorSig with module Types = TermType) =
 struct
    (************************************************************************
     * MODULES                                                              *
@@ -132,6 +134,7 @@ struct
     | RewriteFun of (term list -> term)
     | RewriteContext of (term -> term list -> term)
     | RewriteString of string rewrite_param
+    | RewriteToken of opname rewrite_param
     | RewriteNum of Lm_num.num rewrite_param
     | RewriteLevel of level_exp
 
@@ -234,8 +237,10 @@ struct
     | SOVarInstance (s, _, _) -> RewriteFunType, s
     | CVar (s, _, _) -> RewriteContextType, s
     | PVar (s, ShapeNumber) -> RewriteNumType, s
-    | FOVar s | PVar (s, ShapeVar) -> RewriteVarType, s
-    | PVar (s, (ShapeString | ShapeToken)) -> RewriteStringType, s
+    | FOVar s
+    | PVar (s, ShapeVar) -> RewriteVarType, s
+    | PVar (s, ShapeString) -> RewriteStringType, s
+    | PVar (s, ShapeToken) -> RewriteTokenType, s
     | PVar (s, ShapeLevel) -> RewriteLevelType, s
     | PVar (_, ShapeQuote) -> REF_RAISE (RefineError ("extract_redex_type", RewriteBadMatch (TermMatch xnil_term)))
 
@@ -283,7 +288,8 @@ struct
                   RewriteFun (subst t l)
              | _ -> REF_RAISE(extract_exn)
          end
-    | FreeFOVarInstance _ | SOVarInstance _ ->
+    | FreeFOVarInstance _
+    | SOVarInstance _ ->
          raise (Invalid_argument "Rewrite.extract_redex_values: instance is not expected")
     | CVar _ ->
          begin
@@ -303,22 +309,29 @@ struct
              | _ -> REF_RAISE(extract_exn)
          end
     | FOVar _
-    | PVar (_, (ShapeString | ShapeToken | ShapeVar)) ->
-         RewriteString begin
-            match gstack with
+    | PVar (_, ShapeString)
+    | PVar (_, ShapeVar) ->
+         RewriteString (**)
+            (match gstack with
                StackString s -> RewriteParam s
              | StackVar v -> RewriteMetaParam v
              | _ ->
-               REF_RAISE(extract_exn)
-         end
+               REF_RAISE(extract_exn))
+    | PVar (_, ShapeToken) ->
+         RewriteToken (**)
+            (match gstack with
+               StackOpname opname -> RewriteParam opname
+             | StackVar v -> RewriteMetaParam v
+             | _ ->
+               REF_RAISE(extract_exn))
     | PVar (_, ShapeLevel) ->
-         RewriteLevel begin
-            match gstack with
+         RewriteLevel (**)
+            (match gstack with
                StackLevel l -> l
              | StackVar v -> mk_var_level_exp v
-             | _ -> REF_RAISE(extract_exn)
-         end
-    | PVar (_, ShapeQuote) -> REF_RAISE(extract_exn)
+             | _ -> REF_RAISE(extract_exn))
+    | PVar (_, ShapeQuote) ->
+         REF_RAISE(extract_exn)
 
    let extract_redex_values gstack stack=
       let l = Array.length gstack in

@@ -56,7 +56,7 @@ module TermMan (**)
    (TermBase : TermBaseSig with module TermTypes = Term)
    (TermOp : TermOpSig with module OpTypes = Term)
    (TermSubst : TermSubstSig with module SubstTypes = Term)
-   (RefineError : RefineErrorSig with module ErrTypes.Types = Term) =
+   (RefineError : RefineErrorSig with module Types = Term) =
 struct
    open Term
    open TermBase
@@ -154,7 +154,9 @@ struct
     * Lists.
     *)
    let xnil_term = mk_simple_term xnil_opname []
-   let is_xnil_term t = t = xnil_term
+   let is_xnil_term = is_no_subterms_term xnil_opname
+
+   let xconcl_term = mk_simple_term xconcl_opname []
 
    let is_xcons_term = is_dep0_dep0_term xcons_opname
    let mk_xcons_term = mk_dep0_dep0_term xcons_opname
@@ -171,7 +173,8 @@ struct
                      false
             end
        | { term_op = op; term_terms = [] } ->
-            let op = dest_op op in Opname.eq op.op_name xnil_opname && op.op_params = []
+            let op = dest_op op in
+               Opname.eq op.op_name xnil_opname && op.op_params = []
        | _ ->
             false
 
@@ -194,11 +197,11 @@ struct
       in
          aux t
 
+   let xcons_op = mk_op xcons_opname []
+
    let rec mk_xlist_term = function
       h::t ->
-         mk_term (**)
-            (mk_op xcons_opname [])
-            [mk_simple_bterm h; mk_simple_bterm (mk_xlist_term t)]
+         mk_term xcons_op [mk_simple_bterm h; mk_simple_bterm (mk_xlist_term t)]
     | [] ->
          xnil_term
 
@@ -330,7 +333,13 @@ struct
    let is_xbind_term = is_dep1_term xbind_opname
    let mk_xbind_term = mk_dep1_term xbind_opname
 
-    (*
+   (*
+    * A term is first-order if it has no bvars.
+    *)
+   let is_fo_term t =
+      List.for_all is_simple_bterm (dest_term t).term_terms
+
+   (*
     * Second order context, contains a context term, plus
     * binding variables like so vars.
     *)
@@ -788,6 +797,106 @@ struct
    let free_meta_variables = free_meta_variables SymbolSet.empty
 
    (************************************************************************
+    * Variable info.
+    *)
+
+   (*
+    * Collect the info about all the context vars.
+    *)
+   let rec context_vars_term cvars t =
+      if is_var_term t then
+         cvars
+      else if is_so_var_term t then
+         let _, _, ts = dest_so_var t in
+            context_vars_term_list cvars ts
+      else if is_context_term t then
+         let v, term, cons, terms = dest_context t in
+         let cvars = SymbolTable.add cvars v (false, List.length cons, List.length terms) in
+            context_vars_term (context_vars_term_list cvars terms) term
+      else if is_sequent_term t then
+         let { sequent_args = args;
+               sequent_hyps = hyps;
+               sequent_concl = concl
+             } = explode_sequent t
+         in
+         let len = SeqHyp.length hyps in
+         let rec hyp_context_vars cvars i =
+            if i = len then
+               cvars
+            else
+               match SeqHyp.get hyps i with
+                  Hypothesis (_, h) ->
+                     hyp_context_vars (context_vars_term cvars h) (succ i)
+                | Context (v, cs, ts) ->
+                     let cvars = SymbolTable.add cvars v (true, List.length cs, List.length ts) in
+                        hyp_context_vars (context_vars_term_list cvars ts) (succ i)
+         in
+            context_vars_term (hyp_context_vars (context_vars_term cvars args) 0) concl
+      else
+         let { term_terms = bterms } = dest_term t in
+            context_vars_bterm_list cvars bterms
+
+   and context_vars_term_list cvars l =
+      List.fold_left context_vars_term cvars l
+
+   and context_vars_bterm cvars bt =
+      context_vars_term cvars (dest_bterm bt).bterm
+
+   and context_vars_bterm_list cvars btl =
+      List.fold_left context_vars_bterm cvars btl
+
+   let context_vars_info = context_vars_term
+   let context_vars_info_list = context_vars_term_list
+
+   (*
+    * Collect the info about all the second-order vars.
+    *)
+   let rec so_vars_term sovars t =
+      if is_var_term t then
+         sovars
+      else if is_so_var_term t then
+         let v, cs, ts = dest_so_var t in
+         let sovars = SymbolTable.add sovars v (List.length cs, List.length ts) in
+            so_vars_term_list sovars ts
+      else if is_context_term t then
+         let v, term, _, terms = dest_context t in
+            so_vars_term (so_vars_term_list sovars terms) term
+      else if is_sequent_term t then
+         let { sequent_args = args;
+               sequent_hyps = hyps;
+               sequent_concl = concl
+             } = explode_sequent t
+         in
+         let len = SeqHyp.length hyps in
+         let rec hyp_so_vars sovars i =
+            if i = len then
+               sovars
+            else
+               match SeqHyp.get hyps i with
+                  Hypothesis (v, h) ->
+                     let sovars = SymbolTable.remove (so_vars_term sovars h) v in
+                        hyp_so_vars sovars (succ i)
+                | Context (v, _, ts) ->
+                     hyp_so_vars (so_vars_term_list sovars ts) (succ i)
+         in
+            so_vars_term (hyp_so_vars (so_vars_term sovars args) 0) concl
+      else
+         let { term_terms = bterms } = dest_term t in
+            so_vars_bterm_list sovars bterms
+
+   and so_vars_term_list sovars l =
+      List.fold_left so_vars_term sovars l
+
+   and so_vars_bterm sovars bt =
+      so_vars_term sovars (dest_bterm bt).bterm
+
+   and so_vars_bterm_list sovars btl =
+      List.fold_left so_vars_bterm sovars btl
+
+   let so_vars_info = so_vars_term
+   let so_vars_info_list = so_vars_term_list
+
+   (************************************************************************
     * General term destruction.
     *)
    let dest_match_param param =
@@ -799,8 +908,8 @@ struct
                MatchNumber (n, None)
        | String s ->
             MatchString s
-       | Token s ->
-            MatchToken s
+       | Token opname ->
+            MatchToken (opname, Opname.dest_opname opname)
        | Var v ->
             MatchVar v
        | MLevel l ->
@@ -823,7 +932,7 @@ struct
                sequent_concl = concl
              } = explode_sequent t in
          let op = dest_opname (opname_of_term args) in
-         let args = List.map explode_term (subterms_of_term args) in
+         let args = explode_term args in
          let hyps = SeqHyp.to_list hyps in
             MatchSequent (op, args, hyps, concl)
       else
@@ -851,6 +960,5 @@ struct
             t
       in
          aux 0
-
 end
 

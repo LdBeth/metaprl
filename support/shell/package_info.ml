@@ -489,11 +489,75 @@ let children pack_entry info =
 (*
  * Access to cache.
  *)
-let mk_opname pack_info opname params bterms =
+let opname_prefix pack_info =
    synchronize_node pack_info (fun pack_info ->
          match pack_info.pack_str with
             Some { pack_str_info = info } ->
-               Cache.StrFilterCache.mk_opname info opname params bterms
+               Cache.StrFilterCache.op_prefix info
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let mk_opname_kind pack_info kind opname params bterms =
+   synchronize_node pack_info (fun pack_info ->
+         match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.mk_opname_kind info kind opname params bterms
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let infer_term pack_info term =
+   synchronize_node pack_info (fun pack_info ->
+         match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.infer_term info term
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let check_rule pack_info mt args =
+   synchronize_node pack_info (fun pack_info ->
+         match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.check_rule info mt args
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let infer_rewrite pack_info mt args =
+   synchronize_node pack_info (fun pack_info ->
+         match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.infer_rewrite info mt args
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let check_type_rewrite pack_info redex contractum =
+   synchronize_node pack_info (fun pack_info ->
+         match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.check_type_rewrite info redex contractum
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let check_iform pack_info mt args =
+   synchronize_node pack_info (fun pack_info ->
+         match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.check_iform info mt args
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let check_dform pack_info redex contractum =
+   synchronize_node pack_info (fun pack_info ->
+         match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.check_dform info redex contractum
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let check_production pack_info redices contractum =
+   synchronize_node pack_info (fun pack_info ->
+         match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.check_production info redices contractum
           | None ->
                raise (NotLoaded pack_info.pack_name))
 

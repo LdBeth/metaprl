@@ -25,8 +25,8 @@ doc <:doc<
 
    $$
    @rulebox{rwh; @tt[unfold_beta]@space 0;
-     <<sequent(nil){ <H> >- <:doc< ((@lambda v. v + 1)@space 2) = 3 @in @int>>}>>;
-     <<sequent(nil){ <H> >- <:doc< 2 + 1 = 3 @in @int>> }>> }
+     <<sequent [dummy_arg] { <H> >- <:doc< ((@lambda v. v + 1)@space 2) = 3 @in @int>>}>>;
+     <<sequent [dummy_arg] { <H> >- <:doc< 2 + 1 = 3 @in @int>> }>> }
    $$
 
    @end[doc]
@@ -69,6 +69,7 @@ doc <:doc<
    @parents
    @end[doc]
 >>
+extends Perv
 extends Mptop
 doc <:doc< @docoff >>
 
@@ -341,8 +342,8 @@ doc <:doc<
 
    $$
    @rulebox{rwh; (@tt[foldC]@space (@lambda v. v + 1)@space 2@space @tt[unfold_beta])@space 0;
-     <<sequent(nil){ <H> >- <:doc<2 + 1 = 3 @in @int>>}>>;
-     <<sequent(nil){ <H> >- <:doc< ((@lambda v. v + 1)@space 2) = 3 @in @int>> }>>}
+     <<sequent [dummy_arg] { <H> >- <:doc<2 + 1 = 3 @in @int>>}>>;
+     <<sequent [dummy_arg] { <H> >- <:doc< ((@lambda v. v + 1)@space 2) = 3 @in @int>> }>>}
    $$
 
    @noindent
@@ -351,9 +352,9 @@ doc <:doc<
 
    $$
    @rulebox{rw; (@tt[addrC]@space{} [1]@space (@tt[cutC]@space 3))@space 0;
-     <<sequent(nil){ <H> >- <:doc< 3 = 3 @in @int>> }>> @cr
-     <<sequent(nil){ <H> >- <:doc< ((@lambda v. v + 1)@space 2) @longleftrightarrow 3>>}>>;
-     <<sequent(nil){ <H> >- <:doc< ((@lambda v. v + 1)@space 2) = 3 @in @int>>}>>}
+     <<sequent [dummy_arg] { <H> >- <:doc< 3 = 3 @in @int>> }>> @cr
+     <<sequent [dummy_arg] { <H> >- <:doc< ((@lambda v. v + 1)@space 2) @longleftrightarrow 3>>}>>;
+     <<sequent [dummy_arg] { <H> >- <:doc< ((@lambda v. v + 1)@space 2) = 3 @in @int>>}>>}
    $$}
    @end[description]
 

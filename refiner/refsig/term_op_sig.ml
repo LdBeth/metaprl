@@ -146,6 +146,10 @@ sig
    val dest_string_term : opname -> term -> string
    val dest_string_param : term -> string
 
+   val is_var_param_term : opname -> term -> bool
+   val mk_var_param_term : opname -> var -> term
+   val dest_var_param_term : opname -> term -> var
+
    val is_string_dep0_term : opname -> term -> bool
    val mk_string_dep0_term : opname -> string -> term -> term
    val dest_string_dep0_term : opname -> term -> string * term
@@ -190,11 +194,12 @@ sig
    val dest_univ_term : opname -> term -> level_exp
 
    val is_token_term : opname -> term -> bool
-   val mk_token_term : opname -> string -> term
-   val dest_token_term : opname -> term -> string
+   val mk_token_term : opname -> opname -> term
+   val dest_token_term : opname -> term -> opname
+   val dest_token_param : term -> opname
 
    val is_token_simple_term : opname -> term -> bool
-   val mk_token_simple_term : opname -> string -> term list -> term
-   val dest_token_simple_term : opname -> term -> string * term list
+   val mk_token_simple_term : opname -> opname -> term list -> term
+   val dest_token_simple_term : opname -> term -> opname * term list
 end
 

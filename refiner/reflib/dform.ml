@@ -433,9 +433,9 @@ and format_sequent buf format_term term =
       format_pushm buf 3;
       format_string buf "sequent";
       format_space buf;
-      format_string buf "(";
+      format_string buf "[";
       format_term arg;
-      format_string buf ")";
+      format_string buf "]";
       format_space buf;
       format_string buf "{";
       format_hyp hyps 0 (SeqHyp.length hyps);
@@ -452,7 +452,9 @@ and format_sequent buf format_term term =
  * Check for variables.
  *)
 and format_term buf (shortener : shortener) printer term =
-   if is_so_var_term term then
+   if is_var_term term then
+      format_string buf ("'" ^ string_of_symbol (dest_var term))
+   else if is_so_var_term term then
       format_simple_term buf term
    else if is_sequent_term term then
       format_sequent buf printer term
@@ -717,7 +719,8 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
          printer buf LTParens body;
          format_etag state buf
     | [RewriteString s]
-    | [RewriteNum ((RewriteMetaParam _) as s)] ->
+    | [RewriteNum ((RewriteMetaParam _) as s)]
+    | [RewriteToken ((RewriteMetaParam _) as s)] ->
          if !debug_dform then
             eprintf "Dform.slot: str: %s%t" (string_of_param s) eflush;
          format_string buf (string_of_param s)
@@ -725,6 +728,11 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
          if !debug_dform then
             eprintf "Dform.slot: raw str: %s%t" (string_of_param s) eflush;
          format_raw_string buf (string_of_param s)
+    | [RewriteToken (RewriteParam opname)] ->
+         if !debug_dform then
+            eprintf "Dform.slot: token: %s%t" (string_of_opname opname) eflush;
+         (* XXX: TODO (nogin) Should we use the shortener here? *)
+         format_string buf (string_of_opname opname)
     | [RewriteNum (RewriteParam n)] ->
          let s = Lm_num.string_of_num n in
             if !debug_dform then

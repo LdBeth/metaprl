@@ -38,12 +38,15 @@ open Filter_type
 val comment_string_op : opname
 val raise_spelling_error: unit -> unit
 
+(* Parsed types *)
 module MakeTermGrammar (TermGrammar : TermGrammarSig) :
 sig
-   val dest_quot : string -> string * string
-   val parse_quotation: MLast.loc -> string -> string * string -> term
+   include ParsedTermGrammarSig
+
+   val dest_quot       : string -> string * string
+   val parse_quotation : MLast.loc -> string -> string * string -> parsed_term
    val mk_comment_term : term list -> term
-   val convert_comment: MLast.loc -> term -> term
+   val convert_comment : MLast.loc -> term -> term
 end
 
 (*

@@ -39,20 +39,12 @@ open Term_sig
 (*
  * Error module.
  *)
-module MakeRefineError (**)
-   (TermType : TermSig)
-   (AddressType : TypeSig) =
+module MakeRefineError (TermType : TermSig) (ParamType : ErrParamSig) =
 struct
-
-   (*
-    * Types.
-    *)
-   module ErrTypes = struct
-      module Types = TermType
-      type address = AddressType.t
-   end
-   open ErrTypes
+   module Types = TermType;;
+   module Params = ParamType;;
    open Types
+   open Params
 
    (*
     * Match errors in the rewriter.
@@ -123,6 +115,28 @@ struct
     | RewriteStringOpnameOpnameError of string * opname * opname
     | RewriteAddressError of address * string * refine_error
     | RewriteFreeContextVar of var * var
+
+      (* Type errors *)
+    | VarError of var
+    | OpnameError of opname
+    | Opname2Error of opname * opname
+    | ParamError of param
+    | Param2Error of param * param
+    | ParamTyParamError of param * ty_param
+    | ShapeError of shape
+    | Shape2Error of shape * shape
+    | Term2Error of term * term
+    | VarTermError of var * term
+    | IntTermError of int * term
+
+      (* Wrapped errors *)
+    | StringErrorError of string * refine_error
+    | VarErrorError of var * refine_error
+    | IntErrorError of int * refine_error
+    | TermErrorError of term * refine_error
+    | OpnameErrorError of opname * refine_error
+    | ShapeErrorError of shape * refine_error
+    | MetaTermErrorError of meta_term * refine_error
 
    (*
     * Every error is paired with the name of

@@ -96,10 +96,10 @@ doc <:doc<
    block.  The @tt[comment_term] term contains an arbitrary term.
    @end[doc]
 >>
-declare comment_white
-declare comment_string[s:s]
-declare comment_block{'t}
-declare comment_term{'t}
+declare comment_white : Dform
+declare comment_string[s:s] : Dform
+declare comment_block{'t : Dform} : Dform
+declare comment_term{'t : Dform} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -119,17 +119,18 @@ doc <:doc<
    spelling dictionary as correctly-spelled words.
    @end[doc]
 >>
-declare "doc"{'t}
-declare license{'t}
-declare spelling{'t}
-declare misspelled{'t}
-doc <:doc< @docoff >>
+declare "doc"{'t : Dform} : Dform
+declare license{'t : Dform} : Dform
+declare spelling{'t : Dform} : Dform
+declare misspelled{'t : Dform} : Dform
+
+doc docoff
 
 (*
  * Standard display forms.
  *)
-declare com_cbreak
-declare com_hbreak
+declare com_cbreak : Dform
+declare com_hbreak : Dform
 
 dform com_cbreak_df : mode[tex] :: com_cbreak =
    slot["raw", " "]
@@ -159,8 +160,8 @@ doc <:doc<
    re-enables display.
    @end[doc]
 >>
-declare docoff
-declare docon
+declare docoff : Dform
+declare docon : Dform
 doc docoff
 
 dform docoff_df1 : mode[tex] :: docoff =
@@ -178,13 +179,12 @@ dform docon_df1 : except_mode[tex] :: docon =
 (*
  * TeX version.
  *)
-declare tex_comment{'t}
-declare tex_comment_item{'t}
+declare tex_comment_item{'t : Dform} : Dform
 
-dform tex_comment_df1 : tex_comment{nil} =
+dform tex_comment_df1 : tex_comment{xnil} =
    `""
 
-dform tex_comment_df2 : tex_comment{cons{'h; 't}} =
+dform tex_comment_df2 : tex_comment{xcons{'h; 't}} =
    tex_comment_item{'h} tex_comment{'t}
 
 dform tex_comment_df2 : tex_comment{comment_term{'t}} =
@@ -211,12 +211,12 @@ dform tex_comment_item_df5 : tex_comment_item{comment_term{"doc"{'t}}} =
    izone slot["raw","\\iftex\\begin{tabbing}%\n"] ezone
 
 dform tex_comment_item_df6 : tex_comment_item{comment_term{docon}} =
-   tex_comment_item{comment_term{"doc"{Perv!nil}}}
+   tex_comment_item{comment_term{"doc"{xnil}}}
 
 dform tex_comment_white_df1 : mode[tex] :: comment_white =
    izone slot["raw", " "] ezone
 
-dform tex_comment_white_df2 : mode[tex] :: cons{comment_white; cons{comment_white; 't}} =
+dform tex_comment_white_df2 : mode[tex] :: xcons{comment_white; xcons{comment_white; 't}} =
    izone slot["raw", "\n\n"] ezone 't
 
 (*
@@ -237,12 +237,10 @@ dform misspelled_df1 : misspelled{'t} =
 (*
  * PRL comments.
  *)
-declare prl_comment{'t}
-
 dform prl_comment_df1 : mode[prl] :: prl_comment{'t} =
    newline 't newline
 
-dform prl_comment_df2 : mode[prl] :: prl_comment{cons{comment_white;'t}} =
+dform prl_comment_df2 : mode[prl] :: prl_comment{xcons{comment_white;'t}} =
    prl_comment{'t}
 
 dform prl_comment_df3 : mode[prl] :: prl_comment{comment_term{'t}} =
@@ -251,12 +249,12 @@ dform prl_comment_df3 : mode[prl] :: prl_comment{comment_term{'t}} =
 dform normal_doc_df2 : mode[prl] :: "doc"{'t} =
    pushm[3] info["@begin[doc]"] newline szone 't ezone popm newline info["@end[doc]"]
 
-dform normal_doc_df4 : mode[html] :: mode[prl] :: "doc"{cons{comment_white; 't}} =
+dform normal_doc_df4 : mode[html] :: mode[prl] :: "doc"{xcons{comment_white; 't}} =
    "doc"{'t}
 
 dform normal_license_df3 : mode[prl] :: license{'t} = `""
 
-dform prl_paragraph_df : mode[prl] :: cons{comment_white; cons{comment_white; 't}} =
+dform prl_paragraph_df : mode[prl] :: xcons{comment_white; xcons{comment_white; 't}} =
    newline 't
 
 dform prl_comment_white_df1 : mode[prl] :: comment_white =
@@ -265,15 +263,13 @@ dform prl_comment_white_df1 : mode[prl] :: comment_white =
 (*
  * HTML comments.
  *)
-declare html_comment{'t}
-
 dform html_comment_df1 : mode[html] :: html_comment{'t} =
    izone `"<!-- " ezone 't izone `" -->" ezone
 
 dform normal_doc_df3 : mode[html] :: "doc"{'t} =
    izone `" -->" ezone 't izone `"<!-- " ezone
 
-dform html_paragraph_df : mode[html] :: cons{comment_white; cons{comment_white; 't}} =
+dform html_paragraph_df : mode[html] :: xcons{comment_white; xcons{comment_white; 't}} =
    izone slot["raw","\n<p style=\"doc\">"] ezone 't
 
 dform html_comment_white_df1 : mode[html] :: comment_white =
@@ -290,10 +286,10 @@ doc <:doc<
    header for the current module.
    @end[doc]
 >>
-declare "theory"{'t}
-declare "module"[name:s]
-declare "module"{'name}
-doc <:doc< @docoff >>
+declare "theory"{'t : Dform} : Dform
+declare "module"[name:s] : Dform
+declare "module"{'name : Dform} : Dform
+doc docoff
 
 dform theory_df1 : mode[tex] :: "theory"{'t} =
    izone `"\\theory{" ezone 't izone `"}" ezone
@@ -327,11 +323,11 @@ doc <:doc<
    Bookmarking commands.
    @end[doc]
 >>
-declare chapter[name:s]{'t}
-declare section[name:s]{'t}
-declare subsection[name:s]{'t}
-declare subsubsection[name:s]{'t}
-doc <:doc< @docoff >>
+declare chapter[name:s]{'t : Dform} : Dform
+declare section[name:s]{'t : Dform} : Dform
+declare subsection[name:s]{'t : Dform} : Dform
+declare subsubsection[name:s]{'t : Dform} : Dform
+doc docoff
 
 dform chapter_df1 : mode[tex] :: "chapter"[name:s]{'t} =
    izone `"\\labelchapter{" slot[name:s] `"}{" ezone 't izone `"}" ezone
@@ -374,8 +370,8 @@ doc <:doc<
    The @code{@modsection} term produces a subsection header.
    @end[doc]
 >>
-declare modsection{'t}
-doc <:doc< @docoff >>
+declare modsection{'t : Dform} : Dform
+doc docoff
 
 dform modsection_df1 : mode[tex] :: modsection{'t} =
    izone `"\\modsection{" ezone 't izone `"}" ezone
@@ -391,8 +387,8 @@ doc <:doc<
    The @code{@modsubsection} term produces a sub-subsection header.
    @end[doc]
 >>
-declare modsubsection{'t}
-doc <:doc< @docoff >>
+declare modsubsection{'t : Dform} : Dform
+doc docoff
 
 dform modsubsection_df1 : mode[tex] :: modsubsection{'t} =
    izone `"\\modsubsection{" ezone 't izone `"}" ezone
@@ -408,8 +404,8 @@ doc <:doc<
    The @code{@paragraph} and @code{@subparagraph} terms produce paragraph and subparagraph headers.
    @end[doc]
 >>
-declare paragraph{'t}
-declare subparagraph{'t}
+declare paragraph{'t : Dform} : Dform
+declare subparagraph{'t : Dform} : Dform
 
 doc docoff
 
@@ -436,9 +432,9 @@ doc <:doc<
    Generic targets.
    @end[doc]
 >>
-declare target[name:s]{'t}
-declare hreftarget[name:s]
-doc <:doc< @docoff >>
+declare target[name:s]{'t : Dform} : Dform
+declare hreftarget[name:s] : Dform
+doc docoff
 
 dform target_df1 : mode[tex] :: target[name:s]{'t} =
    izone `"\\hreflabeltarget{" slot[name:s] `"}{" ezone 't izone `"}" ezone
@@ -458,14 +454,14 @@ doc <:doc<
    headings for the commonly-defined parts of a module.
    @end[doc]
 >>
-declare parents
-declare rewrites
-declare rules
-declare convs
-declare tactics
-declare resources
-declare terms
-doc <:doc< @docoff >>
+declare parents : Dform
+declare rewrites : Dform
+declare rules : Dform
+declare convs : Dform
+declare tactics : Dform
+declare resources : Dform
+declare terms : Dform
+doc docoff
 
 dform parents_df1 : parents =
    modsection{comment_string["Parents"]}
@@ -494,13 +490,13 @@ doc <:doc<
    terms establish hypertext @emph{targets}.
    @end[doc]
 >>
-declare "term"[name:s]
-declare "resource"[name:s]
-declare "tactic"[name:s]
-declare "conv"[name:s]
-declare "rule"[name:s]
-declare "rewrite"[name:s]
-doc <:doc< @docoff >>
+declare "term"[name:s] : Dform
+declare "resource"[name:s] : Dform
+declare "tactic"[name:s] : Dform
+declare "conv"[name:s] : Dform
+declare "rule"[name:s] : Dform
+declare "rewrite"[name:s] : Dform
+doc docoff
 
 dform term_df1 : mode[tex] :: "term"[name:s] =
    izone `"\\labelterm{" slot[name:s] `"}{" ezone slot[name:s] izone `"}" ezone
@@ -540,15 +536,15 @@ doc <:doc<
    The hypertext links are specified with the following terms.
    @end[doc]
 >>
-declare hrefmodule[name:s]
-declare hrefmodule_internal[name:s]
-declare hrefterm[name:s]
-declare hrefresource[name:s]
-declare hrefrewrite[name:s]
-declare hreftactic[name:s]
-declare hrefconv[name:s]
-declare hrefrule[name:s]
-doc <:doc< @docoff >>
+declare hrefmodule[name:s] : Dform
+declare hrefmodule_internal[name:s] : Dform
+declare hrefterm[name:s] : Dform
+declare hrefresource[name:s] : Dform
+declare hrefrewrite[name:s] : Dform
+declare hreftactic[name:s] : Dform
+declare hrefconv[name:s] : Dform
+declare hrefrule[name:s] : Dform
+doc docoff
 
 ml_dform hrefmodule_df : hrefmodule[name:s] format_term buf = fun _ ->
    format_term buf Dform.NOParens (**)
@@ -602,20 +598,20 @@ doc <:doc<
    a hypertext link.
    @end[doc]
 >>
-declare refchapter[name:s]
-declare refsection[name:s]
-declare refsubsection[name:s]
-declare refsubsubsection[name:s]
+declare refchapter[name:s] : Dform
+declare refsection[name:s] : Dform
+declare refsubsection[name:s] : Dform
+declare refsubsubsection[name:s] : Dform
 
-declare refmodule[name:s]
-declare refterm[name:s]
-declare refresource[name:s]
-declare refrewrite[name:s]
-declare reftactic[name:s]
-declare refconv[name:s]
-declare refrule[name:s]
-declare reffigure[name:s]
-doc <:doc< @docoff >>
+declare refmodule[name:s] : Dform
+declare refterm[name:s] : Dform
+declare refresource[name:s] : Dform
+declare refrewrite[name:s] : Dform
+declare reftactic[name:s] : Dform
+declare refconv[name:s] : Dform
+declare refrule[name:s] : Dform
+declare reffigure[name:s] : Dform
+doc docoff
 
 dform refchapter_df1 : mode[tex] :: refchapter[name:s] =
    izone `"\\reflabelchapter{" slot[name:s] `"}" ezone
@@ -692,8 +688,8 @@ dform reffigure_df2 : except_mode[tex] :: reffigure[name:s] =
 (*
  * TeX structuring.
  *)
-declare "begin"[name:s]
-declare "end"[name:s]
+declare "begin"[name:s] : Dform
+declare "end"[name:s] : Dform
 
 dform begin_df1 : mode[tex] :: "begin"[name:s] =
    izone `"\\begin{" slot[name:s] `"}" ezone
@@ -713,8 +709,8 @@ doc <:doc<
    should not include the usual indentation for the first line.
    @end[doc]
 >>
-declare noindent
-doc <:doc< @docoff >>
+declare noindent : Dform
+doc docoff
 
 dform noindent_df1 : mode[tex] :: noindent =
    izone `"\\noindent{}" ezone
@@ -728,8 +724,8 @@ doc <:doc<
    only has effect on @LaTeX display mode.
    @end[doc]
 >>
-declare cite[s:s]
-doc <:doc< @docoff >>
+declare cite[s:s] : Dform
+doc docoff
 
 dform cite_df1 : mode[tex] :: cite[text:s] =
    izone `"\\cite{" slot[text:s] `"}" ezone
@@ -743,8 +739,8 @@ doc <:doc<
    to the term being typeset.
    @end[doc]
 >>
-declare phantom{'t}
-doc <:doc< @docoff >>
+declare phantom{'t : Dform} : Dform
+doc docoff
 
 dform phantom_df1 : mode[tex] :: phantom{'t} =
    izone `"\\phantom{" 't `"}" ezone
@@ -758,10 +754,10 @@ doc <:doc<
    these colors using @code{\definecolor} in your preamble.
    @end[doc]
 >>
-declare color[name:s]
-declare pagecolor[name:s]
-declare colorbox[name:s]{'t}
-doc <:doc< @docoff >>
+declare color[name:s] : Dform
+declare pagecolor[name:s] : Dform
+declare colorbox[name:s]{'t : Dform} : Dform
+doc docoff
 
 dform color_df1 : mode[tex] :: color[name:s] =
    izone `"\\color{" slot[name:s] `"}" ezone
@@ -790,11 +786,11 @@ doc <:doc<
    @code{$$text$$} form produces a @tt{centermath} term.
    @end[doc]
 >>
-declare math[s:s]
-declare math{'t}
-declare centermath[s:s]
-declare centermath{'t}
-doc <:doc< @docoff >>
+declare math[s:s] : Dform
+declare math{'t : Dform} : Dform
+declare centermath[s:s] : Dform
+declare centermath{'t : Dform} : Dform
+doc docoff
 
 dform math_df1 : math[s:s] = math{slot[s:s]}
 
@@ -821,8 +817,8 @@ doc <:doc<
    The literal text is enclosed in curly brackets.
    @end[doc]
 >>
-declare code[text:s]
-doc <:doc< @docoff >>
+declare code[text:s] : Dform
+doc docoff
 
 dform code_df1 : mode[tex] :: code[s:s] =
    izone `"\\verb}" slot[s:s] `"}" ezone
@@ -839,9 +835,9 @@ doc <:doc<
      treated like a page.
    @end[doc]
 >>
-declare minipage[width:s]{'t}
-declare minipage[width:s,pos:s]{'t}
-doc <:doc< @docoff >>
+declare minipage[width:s]{'t : Dform} : Dform
+declare minipage[width:s,pos:s]{'t : Dform} : Dform
+doc docoff
 
 dform minipage_df1 : mode[tex] :: minipage[width:s]{'t} =
    izone `"\\begin{minipage}{" slot[width:s] `"}" ezone
@@ -864,8 +860,8 @@ doc <:doc<
    The @tt[verbatim] term encloses a block of verbatim text.
    @end[doc]
 >>
-declare verbatim[text:s]
-doc <:doc< @docoff >>
+declare verbatim[text:s] : Dform
+doc docoff
 
 dform verbatim_df1 : mode[tex] :: verbatim[s:s] =
    izone `"\\begin{verbatim}\n" slot["raw", s:s] `"\n\\end{verbatim}" ezone
@@ -878,8 +874,8 @@ doc <:doc<
    The @tt[iverbatim] term encloses a block of verbatim text, indented.
    @end[doc]
 >>
-declare iverbatim[text:s]
-doc <:doc< @docoff >>
+declare iverbatim[text:s] : Dform
+doc docoff
 
 dform iverbatim_df1 : mode[tex] :: iverbatim[s:s] =
    izone `"\n\n\\begin{quote}\\begin{minipage}{3in}\\begin{verbatim}\n"
@@ -895,8 +891,8 @@ doc <:doc<
    but it is normally used to represent an E-mail address.
    @end[doc]
 >>
-declare email[text:s]
-doc <:doc< @docoff >>
+declare email[text:s] : Dform
+doc docoff
 
 dform email_df1 : mode[tex] :: email[s:s] =
    izone `"\\verb}" slot[s:s] `"}" ezone
@@ -918,8 +914,8 @@ doc <:doc<
    Each line of the text in the @tt{center} block is centered.
    @end[doc]
 >>
-declare center{'t}
-doc <:doc< @docoff >>
+declare center{'t : Dform} : Dform
+doc docoff
 
 dform center_df1 : mode[tex] :: center{'t} =
    izone `"\\begin{center}" ezone 't izone `"\\end{center}" ezone
@@ -941,10 +937,10 @@ doc <:doc<
    @end[verbatim]
    @end[doc]
 >>
-declare figure[label:s]{'t}
-declare figure[label:s,pos:s]{'t}
-declare caption{'caption}
-doc <:doc< @docoff >>
+declare figure[label:s]{'t : Dform} : Dform
+declare figure[label:s,pos:s]{'t : Dform} : Dform
+declare caption{'caption : Dform} : Dform
+doc docoff
 
 dform figure_df1 : mode[tex] :: figure[label:s]{'t} =
    izone `"\\begin{figure}" ezone
@@ -986,8 +982,8 @@ doc <:doc<
    Each line of the text in the @tt{indent} block is indented.
    @end[doc]
 >>
-declare indent{'t}
-doc <:doc< @docoff >>
+declare indent{'t : Dform} : Dform
+doc docoff
 
 dform indent_df1 : mode[tex] :: indent{'t} =
    izone `"\\begin{indent}" ezone 't izone `"\\end{indent}" ezone
@@ -1009,9 +1005,9 @@ doc <:doc<
    Each line of the text in the @tt{quote} block is centered.
    @end[doc]
 >>
-declare quote{'t}
-declare quotation{'t}
-doc <:doc< @docoff >>
+declare quote{'t : Dform} : Dform
+declare quotation{'t : Dform} : Dform
+doc docoff
 
 dform quote_df1 : mode[tex] :: quote{'t} =
    izone `"\\begin{quote}" ezone 't izone `"\\end{quote}" ezone
@@ -1030,8 +1026,8 @@ doc <:doc<
    Footnotes use the @code{@footnote} form.
    @end[doc]
 >>
-declare footnote{'t}
-doc <:doc< @docoff >>
+declare footnote{'t : Dform} : Dform
+doc docoff
 
 dform footnote_df1 : mode[tex] :: footnote{'t} =
    izone `"\\footnote{" ezone 't izone `"}" ezone
@@ -1063,8 +1059,8 @@ doc <:doc<
    entry, and the second is the @emph{body}.
    @end[doc]
 >>
-declare item{'t}
-declare item{'label; 'body}
+declare item{'t : Dform} : Dform
+declare item{'label; 'body} : Dform
 doc docoff
 
 dform item_df2 : except_mode[tex] :: item{'t} =
@@ -1080,32 +1076,32 @@ dform item_df1 : mode[tex] :: item{'t1; 't2} =
    izone `"\\item[" ezone 't1 izone `"]" ezone 't2
 
 doc docon
-declare enumerate{'t}
+declare enumerate{'t : Dform} : Dform
 doc docoff
-declare normal_enumerate{'count; 't}
+declare normal_enumerate{'count : Dform; 't : Dform} : Dform
 
 dform enumerate_df2 : except_mode[tex] :: enumerate{'t} =
-   normal_enumerate{cons{nil; nil}; 't}
+   normal_enumerate{xcons{xnil; xnil}; 't}
 
-dform normal_enumerate_df1 : normal_enumerate{'count; nil} =
+dform normal_enumerate_df1 : normal_enumerate{'count; xnil} =
    com_hbreak
 
-dform normal_enumerate_df3 : normal_enumerate{'count; cons{comment_white; 'tl}} =
+dform normal_enumerate_df3 : normal_enumerate{'count; xcons{comment_white; 'tl}} =
    normal_enumerate{'count; 'tl}
 
-dform normal_enumerate_df4 : normal_enumerate{'count; cons{comment_term{item{'t}}; 'tl}} =
+dform normal_enumerate_df4 : normal_enumerate{'count; xcons{comment_term{item{'t}}; 'tl}} =
    com_hbreak pushm[3] df_length{'count} `"." 't popm
-   normal_enumerate{cons{nil; 'count}; 'tl}
+   normal_enumerate{xcons{xnil; 'count}; 'tl}
 
-dform normal_enumerate_df5 : normal_enumerate{'count; cons{comment_term{item{'t1; 't2}}; 'tl}} =
+dform normal_enumerate_df5 : normal_enumerate{'count; xcons{comment_term{item{'t1; 't2}}; 'tl}} =
    com_hbreak pushm[3] 't1 `"." 't2 popm
-   normal_enumerate{cons{nil; 'count}; 'tl}
+   normal_enumerate{xcons{xnil; 'count}; 'tl}
 
 dform enumerate_df1 : mode[tex] :: enumerate{'t} =
    izone `"\\begin{enumerate}" ezone 't izone `"\\end{enumerate}" ezone
 
 doc docon
-declare itemize{'t}
+declare itemize{'t : Dform} : Dform
 doc docoff
 
 dform itemize_df1 : mode[tex] :: itemize{'t} =
@@ -1115,20 +1111,20 @@ dform itemize_df2 : except_mode[tex] :: itemize{'t} =
    't
 
 doc docon
-declare description{'t}
+declare description{'t : Dform} : Dform
 doc docoff
 
 dform description_df1 : mode[tex] :: description{'t} =
    izone `"\\begin{description}" ezone 't izone `"\\end{description}" ezone
 
 dform description_df2 : except_mode[tex] :: description{'t} =
-   normal_enumerate{cons{nil; nil}; 't}
+   normal_enumerate{xcons{xnil; xnil}; 't}
 
 doc <:doc< @doc{Other macros} >>
-declare lbrace
-declare rbrace
-declare comment[who:s]{'e}
-doc <:doc< @docoff >>
+declare lbrace : Dform
+declare rbrace : Dform
+declare comment[who:s]{'e : Dform} : Dform
+doc docoff
 
 dform lbrace_df1 : mode[tex] :: lbrace =
    izone `"\\{" ezone
@@ -1155,7 +1151,7 @@ dform comment_df2 : except_mode[tex] :: comment[who:s]{'e} =
 (*
  * Toplevel form.
  *)
-declare math_misspelled{'t}
+declare math_misspelled{'t : Dform} : Dform
 
 dform math_misspelled_df1 : math_misspelled{'t} =
    't
@@ -1163,7 +1159,7 @@ dform math_misspelled_df1 : math_misspelled{'t} =
 (*
  * Allow raw printing.
  *)
-declare math_slot[tag:s]{'t}
+declare math_slot[tag:s]{'t : Dform} : Dform
 
 dform math_slot_df1 : math_slot[tag:s]{'t} =
    slot[tag:s]{'t}
@@ -1193,23 +1189,23 @@ doc <:doc<
    contents.
    @end[doc]
 >>
-declare math_mbox{'t}
-declare math_hbox{'t}
+declare math_mbox{'t : Dform} : Dform
+declare math_hbox{'t : Dform} : Dform
 
-declare math_mathop{'t}
-declare math_mathop[text:s]
-declare math_mathrel{'t}
-declare math_mathrel[text:s]
-declare math_bb{'T}
-declare math_bb[TEXT:s]
-declare math_tt{'t}
-declare math_tt[text:s]
-declare math_bf{'t}
-declare math_bf[text:s]
-declare math_i{'t}
-declare math_i[text:s]
-declare math_emph{'t}
-doc <:doc< @docoff >>
+declare math_mathop{'t : Dform} : Dform
+declare math_mathop[text:s] : Dform
+declare math_mathrel{'t : Dform} : Dform
+declare math_mathrel[text:s] : Dform
+declare math_bb{'T} : Dform
+declare math_bb[TEXT:s] : Dform
+declare math_tt{'t : Dform} : Dform
+declare math_tt[text:s] : Dform
+declare math_bf{'t : Dform} : Dform
+declare math_bf[text:s] : Dform
+declare math_i{'t : Dform} : Dform
+declare math_i[text:s] : Dform
+declare math_emph{'t : Dform} : Dform
+doc docoff
 
 dform math_hbox_df1 : mode[tex] :: math_hbox{'t} =
    izone `"\\hbox{" ezone 't izone `"}" ezone
@@ -1298,65 +1294,65 @@ dform math_emph_df2 : except_mode[tex] :: math_emph{'t} =
 (*
  * Math symbols.
  *)
-declare math_Type
+declare math_Type : Dform
 
 doc <:doc<
    @doc{The following terms define some common math symbols.}
 >>
-declare math_colon
-declare math_rightarrow
-declare math_Rightarrow
-declare math_leftarrow
-declare math_Leftarrow
-declare math_leftrightarrow
-declare math_Leftrightarrow
-declare math_longrightarrow
-declare math_longleftrightarrow
+declare math_colon : Dform
+declare math_rightarrow : Dform
+declare math_Rightarrow : Dform
+declare math_leftarrow : Dform
+declare math_Leftarrow : Dform
+declare math_leftrightarrow : Dform
+declare math_Leftrightarrow : Dform
+declare math_longrightarrow : Dform
+declare math_longleftrightarrow : Dform
 
-declare math_le
-declare math_ge
-declare math_wedge
-declare math_vee
-declare math_phi
-declare math_varphi
-declare math_cap
-declare math_cup
-declare math_bigcap
-declare math_bigcup
-declare math_in
-declare math_cdot
-declare math_cdots
-declare math_vdots
-declare math_ldots
-declare math_subset
-declare math_subseteq
-declare math_times
-declare math_equiv
-declare math_space
-declare math_neg
-declare math_neq
-declare math_forall
-declare math_exists
-declare math_alpha
-declare math_beta
-declare math_lambda
-declare math_epsilon
-declare math_Gamma
-declare math_vdash
-declare math_int
-declare math_lbrace
-declare math_rbrace
-declare math_lfloor
-declare math_rfloor
-declare math_quad
-declare math_qquad
-declare math_bullet
-declare math_left[s]
-declare math_right[s]
+declare math_le : Dform
+declare math_ge : Dform
+declare math_wedge : Dform
+declare math_vee : Dform
+declare math_phi : Dform
+declare math_varphi : Dform
+declare math_cap : Dform
+declare math_cup : Dform
+declare math_bigcap : Dform
+declare math_bigcup : Dform
+declare math_in : Dform
+declare math_cdot : Dform
+declare math_cdots : Dform
+declare math_vdots : Dform
+declare math_ldots : Dform
+declare math_subset : Dform
+declare math_subseteq : Dform
+declare math_times : Dform
+declare math_equiv : Dform
+declare math_space : Dform
+declare math_neg : Dform
+declare math_neq : Dform
+declare math_forall : Dform
+declare math_exists : Dform
+declare math_alpha : Dform
+declare math_beta : Dform
+declare math_lambda : Dform
+declare math_epsilon : Dform
+declare math_Gamma : Dform
+declare math_vdash : Dform
+declare math_int : Dform
+declare math_lbrace : Dform
+declare math_rbrace : Dform
+declare math_lfloor : Dform
+declare math_rfloor : Dform
+declare math_quad : Dform
+declare math_qquad : Dform
+declare math_bullet : Dform
+declare math_left[s] : Dform
+declare math_right[s] : Dform
 
-declare math_vec{'e}
-declare math_underbrace{'e}
-declare math_underbrace{'e1; 'e2}
+declare math_vec{'e : Dform} : Dform
+declare math_underbrace{'e : Dform} : Dform
+declare math_underbrace{'e1 : Dform; 'e2 : Dform} : Dform
 doc docoff
 
 dform math_Type_df1 : math_Type =
@@ -1682,9 +1678,9 @@ doc <:doc<
    produces the @tt{superscript} term.
    @end[doc]
 >>
-declare math_subscript{'t1; 't2}
-declare math_superscript{'t1; 't2}
-doc <:doc< @docoff >>
+declare math_subscript{'t1 : Dform; 't2 : Dform} : Dform
+declare math_superscript{'t1 : Dform; 't2 : Dform} : Dform
+doc docoff
 
 dform tex_math_subscript_df1 : mode[tex] :: math_subscript{'t1; 't2} =
    izone `"{" ezone
@@ -1752,90 +1748,90 @@ doc <:doc<
    is encouraged.
    @end[doc]
 >>
-declare tabular[placement,tags]{'t}
-declare tabular[tags]{'t}
-declare line{'t}
-declare cr
-declare hline
-declare arraystretch{'e}
-declare multicolumn[cols,align]{'t}
+declare tabular[placement,tags]{'t : Dform} : Dform
+declare tabular[tags]{'t : Dform} : Dform
+declare line{'t : Dform} : Dform
+declare cr : Dform
+declare hline : Dform
+declare arraystretch{'e : Dform} : Dform
+declare multicolumn[cols,align]{'t : Dform} : Dform
 
-declare math_array[placement,tags]{'t}
-declare math_tabular[placement,tags]{'t}
-declare math_array[tags]{'t}
-declare math_tabular[tags]{'t}
-declare math_line{'t}
-declare math_item{'t}
-declare math_cr
-declare math_hline
-declare math_arraystretch{'e}
-declare math_multicolumn[cols,align]{'t}
-doc <:doc< @docoff >>
+declare math_array[placement,tags]{'t : Dform} : Dform
+declare math_tabular[placement,tags]{'t : Dform} : Dform
+declare math_array[tags]{'t : Dform} : Dform
+declare math_tabular[tags]{'t : Dform} : Dform
+declare math_line{'t : Dform} : Dform
+declare math_item{'t : Dform} : Dform
+declare math_cr : Dform
+declare math_hline : Dform
+declare math_arraystretch{'e : Dform} : Dform
+declare math_multicolumn[cols,align]{'t : Dform} : Dform
+doc docoff
 
 (*
  * TeX display.
  *)
-declare tex_strip_white{'l1; 'l2; 't}
-declare tex_reverse{'l1; 'l2; 't}
-declare tex_apply{'t; 'l}
+declare tex_strip_white{'l1 : Dform; 'l2 : Dform; 't : Dform} : Dform
+declare tex_reverse{'l1 : Dform; 'l2 : Dform; 't : Dform} : Dform
+declare tex_apply{'t : Dform; 'l : Dform} : Dform
 
-declare tex_array_lines{'l}
-declare tex_array_lns
-declare tex_array_line{'l}
-declare tex_array_ln
+declare tex_array_lines{'l : Dform} : Dform
+declare tex_array_lns : Dform
+declare tex_array_line{'l : Dform} : Dform
+declare tex_array_ln : Dform
 
 dform array_df1 : mode[tex] :: math_array[tags:s]{'t} =
    izone `"\\begin{array}{@{}" slot[tags:s] `"@{}}" ezone
-   tex_strip_white{nil; 't; tex_array_lns}
+   tex_strip_white{xnil; 't; tex_array_lns}
    izone `"\\end{array}" ezone
 
 dform tabular_df1 : mode[tex] :: math_tabular[tags:s]{'t} =
    izone `"\\begin{tabular}{@{}" slot[tags:s] `"@{}}" ezone
-   tex_strip_white{nil; 't; tex_array_lns}
+   tex_strip_white{xnil; 't; tex_array_lns}
    izone `"\\end{tabular}" ezone
 
 dform tabular_df2 : mode[tex] :: tabular[tags:s]{'t} =
    izone `"\\begin{tabular}{@{}" slot[tags:s] `"@{}}" ezone
-   tex_strip_white{nil; 't; tex_array_lns}
+   tex_strip_white{xnil; 't; tex_array_lns}
    izone `"\\end{tabular}" ezone
 
 dform array_place_df1 : mode[tex] :: math_array[placement:s,tags:s]{'t} =
    izone `"\\begin{array}[" slot[placement:s] `"]{@{}" slot[tags:s] `"@{}}" ezone
-   tex_strip_white{nil; 't; tex_array_lns}
+   tex_strip_white{xnil; 't; tex_array_lns}
    izone `"\\end{array}" ezone
 
 dform tabular_place_df1 : mode[tex] :: math_tabular[placement:s,tags:s]{'t} =
    izone `"\\begin{tabular}[" slot[placement:s] `"]{@{}" slot[tags:s] `"@{}}" ezone
-   tex_strip_white{nil; 't; tex_array_lns}
+   tex_strip_white{xnil; 't; tex_array_lns}
    izone `"\\end{tabular}" ezone
 
 dform tabular_place_df2 : mode[tex] :: tabular[placement:s,tags:s]{'t} =
    izone `"\\begin{tabular}[" slot[placement:s] `"]{@{}" slot[tags:s] `"@{}}" ezone
-   tex_strip_white{nil; 't; tex_array_lns}
+   tex_strip_white{xnil; 't; tex_array_lns}
    izone `"\\end{tabular}" ezone
 
 (*
  * Strip the whitespace from the second argument.
  *)
-dform tex_strip_white_df1 : tex_strip_white{'l; cons{comment_white; 'tl}; 't} =
+dform tex_strip_white_df1 : tex_strip_white{'l; xcons{comment_white; 'tl}; 't} =
    tex_strip_white{'l; 'tl; 't}
 
-dform tex_strip_white_df2 : tex_strip_white{'l; cons{comment_term{'t1}; 'tl}; 't2} =
-   tex_strip_white{cons{'t1; 'l}; 'tl; 't2}
+dform tex_strip_white_df2 : tex_strip_white{'l; xcons{comment_term{'t1}; 'tl}; 't2} =
+   tex_strip_white{xcons{'t1; 'l}; 'tl; 't2}
 
-dform tex_strip_white_df3 : tex_strip_white{'l; cons{comment_string[text:s]; 'tl}; 't2} =
-   tex_strip_white{cons{comment_block{cons{comment_string[text:s]; nil}}; 'l}; 'tl; 't2}
+dform tex_strip_white_df3 : tex_strip_white{'l; xcons{comment_string[text:s]; 'tl}; 't2} =
+   tex_strip_white{xcons{comment_block{xcons{comment_string[text:s]; xnil}}; 'l}; 'tl; 't2}
 
-dform tex_strip_white_df4 : tex_strip_white{'l; cons{comment_block{'t}; 'tl}; 't2} =
-   tex_strip_white{cons{comment_block{'t}; 'l}; 'tl; 't2}
+dform tex_strip_white_df4 : tex_strip_white{'l; xcons{comment_block{'t}; 'tl}; 't2} =
+   tex_strip_white{xcons{comment_block{'t}; 'l}; 'tl; 't2}
 
-dform tex_strip_white_df3 : tex_strip_white{'l; nil; 't} =
-   tex_reverse{nil; 'l; 't}
+dform tex_strip_white_df3 : tex_strip_white{'l; xnil; 't} =
+   tex_reverse{xnil; 'l; 't}
 
-dform tex_reverse_df1 : tex_reverse{'l; cons{'t1; 'tl}; 't2} =
-   tex_reverse{cons{'t1; 'l}; 'tl; 't2}
+dform tex_reverse_df1 : tex_reverse{'l; xcons{'t1; 'tl}; 't2} =
+   tex_reverse{xcons{'t1; 'l}; 'tl; 't2}
 
-dform tex_reverse_df2 : tex_reverse{'l; nil; 't} =
+dform tex_reverse_df2 : tex_reverse{'l; xnil; 't} =
    tex_apply{'t; 'l}
 
 (*
@@ -1844,45 +1840,45 @@ dform tex_reverse_df2 : tex_reverse{'l; nil; 't} =
 dform tex_apply_array_lines_df1 : tex_apply{tex_array_lns; 'l} =
    tex_array_lines{'l}
 
-dform tex_array_lines_nil_df1 : tex_array_lines{cons{line{'l}; nil}} =
-   tex_strip_white{nil; 'l; tex_array_ln}
+dform tex_array_lines_xnil_df1 : tex_array_lines{xcons{line{'l}; xnil}} =
+   tex_strip_white{xnil; 'l; tex_array_ln}
 
-dform tex_array_lines_nil_df2 : tex_array_lines{cons{math_line{'l}; nil}} =
-   tex_strip_white{nil; 'l; tex_array_ln}
+dform tex_array_lines_xnil_df2 : tex_array_lines{xcons{math_line{'l}; xnil}} =
+   tex_strip_white{xnil; 'l; tex_array_ln}
 
-dform tex_array_lines_nil_df3 : tex_array_lines{cons{comment_block{'l}; nil}} =
-   tex_strip_white{nil; 'l; tex_array_ln}
+dform tex_array_lines_xnil_df3 : tex_array_lines{xcons{comment_block{'l}; xnil}} =
+   tex_strip_white{xnil; 'l; tex_array_ln}
 
-dform tex_array_lines_nil_df4 : tex_array_lines{cons{hline; nil}} =
+dform tex_array_lines_xnil_df4 : tex_array_lines{xcons{hline; xnil}} =
    hline
 
-dform tex_array_lines_nil_df5 : tex_array_lines{cons{math_hline; nil}} =
+dform tex_array_lines_xnil_df5 : tex_array_lines{xcons{math_hline; xnil}} =
    math_hline
 
-dform tex_array_lines_cons_df1 : tex_array_lines{cons{line{'l}; cons{'h; 't}}} =
-   tex_strip_white{nil; 'l; tex_array_ln}
+dform tex_array_lines_cons_df1 : tex_array_lines{xcons{line{'l}; xcons{'h; 't}}} =
+   tex_strip_white{xnil; 'l; tex_array_ln}
    izone `"\\\\" ezone
-   tex_array_lines{cons{'h; 't}}
+   tex_array_lines{xcons{'h; 't}}
 
-dform tex_array_lines_cons_df2 : tex_array_lines{cons{math_line{'l}; cons{'h; 't}}} =
-   tex_strip_white{nil; 'l; tex_array_ln}
+dform tex_array_lines_cons_df2 : tex_array_lines{xcons{math_line{'l}; xcons{'h; 't}}} =
+   tex_strip_white{xnil; 'l; tex_array_ln}
    izone `"\\\\" ezone
-   tex_array_lines{cons{'h; 't}}
+   tex_array_lines{xcons{'h; 't}}
 
-dform tex_array_lines_cons_df3 : tex_array_lines{cons{comment_block{'l}; cons{'h; 't}}} =
-   tex_strip_white{nil; 'l; tex_array_ln}
+dform tex_array_lines_cons_df3 : tex_array_lines{xcons{comment_block{'l}; xcons{'h; 't}}} =
+   tex_strip_white{xnil; 'l; tex_array_ln}
    izone `"\\\\" ezone
-   tex_array_lines{cons{'h; 't}}
+   tex_array_lines{xcons{'h; 't}}
 
-dform tex_array_lines_cons_df4 : tex_array_lines{cons{hline; cons{'h; 't}}} =
+dform tex_array_lines_cons_df4 : tex_array_lines{xcons{hline; xcons{'h; 't}}} =
    hline
-   tex_array_lines{cons{'h; 't}}
+   tex_array_lines{xcons{'h; 't}}
 
-dform tex_array_lines_cons_df5 : tex_array_lines{cons{math_hline; cons{'h; 't}}} =
+dform tex_array_lines_cons_df5 : tex_array_lines{xcons{math_hline; xcons{'h; 't}}} =
    math_hline
-   tex_array_lines{cons{'h; 't}}
+   tex_array_lines{xcons{'h; 't}}
 
-dform tex_array_lines_df : tex_array_lines{nil} =
+dform tex_array_lines_df : tex_array_lines{xnil} =
    `""
 
 (*
@@ -1891,15 +1887,15 @@ dform tex_array_lines_df : tex_array_lines{nil} =
 dform tex_apply_array_line_df1 : tex_apply{tex_array_ln; 'l} =
    tex_array_line{'l}
 
-dform tex_array_line_df1 : tex_array_line{cons{'h; nil}} =
+dform tex_array_line_df1 : tex_array_line{xcons{'h; xnil}} =
    'h
 
-dform tex_array_line_df2 : tex_array_line{cons{'h; cons{'hd; 'tl}}} =
+dform tex_array_line_df2 : tex_array_line{xcons{'h; xcons{'hd; 'tl}}} =
    'h
    izone `"&" ezone
-   tex_array_line{cons{'hd; 'tl}}
+   tex_array_line{xcons{'hd; 'tl}}
 
-dform tex_array_line_df3 : tex_array_line{nil} =
+dform tex_array_line_df3 : tex_array_line{xnil} =
    `""
 
 (*
@@ -1954,12 +1950,12 @@ dform arraystretch_df2 : mode[tex] :: math_arraystretch{'e} =
  *)
 dform normal_math_array_df1 : except_mode[tex] :: math_array[tags:s]{'t} =
    pushm[0] szone
-   tex_strip_white{nil; 't; tex_array_lns}
+   tex_strip_white{xnil; 't; tex_array_lns}
    ezone popm
 
 dform normal_math_tabular_df1 : except_mode[tex] :: math_tabular[tags:s]{'t} =
    pushm[0] szone
-   tex_strip_white{nil; 't; tex_array_lns}
+   tex_strip_white{xnil; 't; tex_array_lns}
    ezone popm
 
 dform normal_math_line_df1 : except_mode[tex] :: line{'l} =
@@ -2006,9 +2002,9 @@ doc <:doc<
 
    @end[doc]
 >>
-declare math_defrule[name]{'args; 'hyps; 'goal}
-declare math_rulebox{'tac; 'args; 'hyps; 'goal}
-doc <:doc< @docoff >>
+declare math_defrule[name]{'args; 'hyps; 'goal} : Dform
+declare math_rulebox{'tac; 'args; 'hyps; 'goal} : Dform
+doc docoff
 
 (*
  * TeX display.
@@ -2051,16 +2047,27 @@ dform normal_math_rulebox_df1 : except_mode[tex] :: math_rulebox{'name; 'args; '
 
 doc <:doc<
    @begin[doc]
+   The @tt{dummy_arg} sequent argument is usually used for sequents
+   that occur in comments.
+   @end[doc]
+>>
+declare sequent [dummy_arg] { Dform : Dform >- Dform } : Dform
+doc docoff
+
+dform dummy_arg_df : dummy_arg = `""
+
+doc <:doc<
+   @begin[doc]
    The following terms display standard representations
    of the usual names.
    @end[doc]
 >>
-declare "MetaPRL"
-declare "Nuprl"
-declare "NuPRL"
-declare "OCaml"
-declare "LaTeX"
-declare "MartinLof"
+declare "MetaPRL" : Dform
+declare "Nuprl" : Dform
+declare "NuPRL" : Dform
+declare "OCaml" : Dform
+declare "LaTeX" : Dform
+declare "MartinLof" : Dform
 doc docoff
 
 dform metaprl_df1 : mode[tex] :: "MetaPRL" =
@@ -2097,7 +2104,7 @@ dform latex_df2 : except_mode[tex] :: "LaTeX" =
  * would try to display them)
  *)
 
-declare special
+declare special : Dform
 
 dform special_df : special =
    math_it{slot["special display"]}
