@@ -66,6 +66,7 @@ declare misspelled{'t}
  *)
 declare prl_comment{'t}
 declare tex_comment{'t}
+declare html_comment{'t}
 
 (*
  * @begin[doc]

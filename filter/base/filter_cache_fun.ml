@@ -334,13 +334,14 @@ struct
        "hzone"   , [], [];
        "szone"   , [], [];
        "izone"  , [], [];
+       "azone"  , [], [];
        "ezone"  , [], [];
        "space"   , [], [];
        "hspace" , [], [];
        "newline", [], [];
        "popm"    , [], [];
        "pushfont", [ShapeString], [];
-       "popfont", [], [];
+       "popfont", [ShapeString], [];
        "parens" , [], [];
        "internal", [], [];
 
@@ -360,7 +361,6 @@ struct
        "slot", [ShapeLevel] , [];
        "slot", [ShapeNumber], [];
        "slot", [ShapeString; ShapeString], [];
-       "slot", [ShapeString; ShapeNumber], [];
        "slot", [ShapeString], [0];
        "slot", [], [0];
        "pushm", [], [];

@@ -839,8 +839,11 @@ dform tactic_arg_df2 : internal :: tactic_arg[label:s]{'goal;'args;'parents} =
 dform comment_df1 : mode[tex] :: comment{'t} =
    tex_comment{'t}
 
-dform comment_df2 : mode["prl"] :: comment{'t} =
+dform comment_df2 : mode[prl] :: comment{'t} =
    prl_comment{'t}
+
+dform comment_df3 : mode[html] :: comment{'t} =
+   html_comment{'t}
 
 (*
  * PRL Bindings

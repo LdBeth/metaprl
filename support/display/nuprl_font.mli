@@ -70,6 +70,7 @@ declare sup[name:s]
 declare small[name:s]
 declare small{'t}
 declare esquash{'t}
+declare atomic[text:s]
 
 (*
  * HTML control.

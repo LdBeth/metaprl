@@ -72,7 +72,14 @@ REFINER=$REFINER
 # Include itt if you want to use the Nuprl type theory,
 # and add any additional theory directories after that.
 #
-# Alternatively, use THEORIES = all, or THEORIES = default
+# Alternatively, include THEORIES = all, or THEORIES = default,
+# to include the usual set of theories.  For example, you can
+# use THEORIES=all to get all theories.  To include your special
+# theory, you would use the following if you want the usual
+# directories and your own, use the following.
+#    THEORIES=all mytheory
+# Or, if you just want your own, use the following.
+#    THEORIES=base mytheory
 #
 THEORIES=$THEORIES
 

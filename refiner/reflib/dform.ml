@@ -206,6 +206,7 @@ let lzone df = format_lzone df.dform_buffer
 let hzone df = format_hzone df.dform_buffer
 let szone df = format_szone df.dform_buffer
 let izone df = format_izone df.dform_buffer
+let azone df = format_azone df.dform_buffer
 let ezone df = format_ezone df.dform_buffer
 
 let string_of_param = function
@@ -269,7 +270,8 @@ let changefont buf s =
          format_izone buf;
          format_raw_string buf s';
          format_ezone buf
-    | None -> ()
+    | None ->
+         ()
 
 let pushfont df =
    let font, buf =
@@ -638,10 +640,6 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
          if !debug_dform then
             eprintf "Dform.slot: str: %s%t" (string_of_param s) eflush;
          format_string buf (string_of_param s)
-    | [RewriteString s; RewriteNum (RewriteParam n)] ->
-         if !debug_dform then
-            eprintf "Dform.slot: width str: %s/%s%t" (string_of_param s) (Lm_num.string_of_num n) eflush;
-         format_string_width buf (string_of_param s) (Lm_num.int_of_num n)
     | [RewriteString (RewriteParam "raw"); RewriteString s] ->
          if !debug_dform then
             eprintf "Dform.slot: raw str: %s%t" (string_of_param s) eflush;
@@ -702,6 +700,7 @@ let init_list =
     "szone", [], szone;
     "hzone", [], hzone;
     "izone", [], izone;
+    "azone", [], azone;
     "ezone", [], ezone;
     "tzone", [MString t_sym], tzone;
     "pushm", [MNumber i_sym], pushm;
@@ -709,9 +708,8 @@ let init_list =
     "pushm", [], pushm;
     "popm", [], popm;
     "pushfont", [MString plain_sym], pushfont;
-    "popfont", [], popfont;
+    "popfont", [MString plain_sym], popfont;
     "slot", [MString raw_sym; MString s_sym], slot;
-    "slot", [MString s_sym; MNumber n_sym], slot;
     "slot", [MString s_sym], slot;
     "slot", [MLevel (mk_var_level_exp l_sym)], slot;
     "slot", [MToken t_sym], slot;

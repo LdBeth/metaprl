@@ -130,7 +130,7 @@ declare misspelled{'t}
 doc <:doc< @docoff >>
 
 (*
- * Standard sisplay forms.
+ * Standard display forms.
  *)
 declare com_cbreak
 declare com_hbreak
@@ -243,7 +243,15 @@ dform misspelled_df1 : misspelled{'t} =
 declare prl_comment{'t}
 
 dform prl_comment_df1 : except_mode[tex] :: except_mode[src] :: prl_comment{'t} =
-   szone pushm[" * "] pushfont["bf"] `"(*" popfont 't popm pushfont["bf"] hbreak[" *)", "*)"] popfont ezone
+   szone pushm[" * "] pushfont["bf"] `"(*" popfont["bf"] 't popm pushfont["bf"] hbreak[" *)", "*)"] popfont["bf"] ezone
+
+(*
+ * HTML comments.
+ *)
+declare html_comment{'t}
+
+dform html_comment_df1 : mode[html] :: html_comment{'t} =
+   szone pushm[" * "] izone `"<b>" ezone `"(*" izone `"</b>" ezone izone `"<i>" ezone 't izone `"</i>" ezone popm izone `"<b>" ezone hbreak[" *)", "*)"] izone `"</b>" ezone ezone
 
 (************************************************************************
  * COMMENT ITEMS                                                        *

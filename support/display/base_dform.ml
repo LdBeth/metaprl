@@ -367,7 +367,7 @@ ml_dform sequent_prl_df : mode["prl"] :: sequent ('ext) { <H> >- 'concl } format
                format_hbreak buf lead ""
             else
                format_hbreak buf lead "; ";
-            format_term buf NOParens <<popfont>>;
+            format_term buf NOParens <<popfont["bf"]>>;
             match SeqHyp.get hyps i with
                Context (v, conts, values) ->
                   (* This is a context hypothesis *)
