@@ -434,8 +434,8 @@ dform resource_defs_dfs : internal :: resource_defs[start:n, finish:n, name:s]{'
 dform rewrite_df : "rewrite"[name:s]{'redex; 'contractum; 'v; 'res} =
    szone pushm[4]
    ensuremath{'v} info[" rewrite"] " " szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
-   szone pushm[4]
-   ensuremath{'redex} `" " ensuremath{longleftrightarrow} hspace ensuremath{'contractum}
+   szone pushm[0] pushm[2]
+   ensuremath{'redex} hspace ensuremath{longleftrightarrow} popm hspace ensuremath{'contractum}
    popm ezone
    popm ezone
 
@@ -456,7 +456,7 @@ dform term_param_df : "term_param"{'t} =
 dform cond_rewrite_df : "cond_rewrite"[name:s]{'params; 'args; 'redex; 'contractum; 'proof; 'res} =
    szone pushm[4]
    ensuremath{'proof} info[" rewrite"] " " szone rewrite_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] ezone hspace ensuremath{'args} " " ensuremath{longrightarrow} hspace
-   szone pushm[4]
+   szone pushm[0]
    ensuremath{'redex} " " ensuremath{longleftrightarrow} hspace ensuremath{'contractum}
    popm ezone
    popm ezone
