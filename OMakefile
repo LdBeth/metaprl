@@ -176,7 +176,7 @@ SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 #
 DEFAULT_THEORIES = base itt
 
-MC_THEORIES = mojave/core
+MC_THEORIES = mojave
 
 ALL_THEORIES = base itt fol czf phobos sil experimental/compile
 
