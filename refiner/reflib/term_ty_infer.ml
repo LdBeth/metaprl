@@ -324,17 +324,17 @@ let shape_of_type = function
 
 (*
  * Construct the quoted type from the normal type.
+ *
+ * XXX: BUG? Nogin: Currently we change the type to be Perv!Quote (for all the
+ * bindings, for all the subterms for the resulting type). However, this is too coarse
+ * and may be a better approach would be to do "ty -> Quote{ty}" instead of just "ty -> Quote".
  *)
 let quote_bterm_type bterm =
    let { ty_bvars = bvars; ty_bterm = term } = bterm in
-      { ty_bvars = List.map (fun _ -> term_type) bvars;
-        ty_bterm = term_type
+      { ty_bvars = List.map (fun _ -> quote_type) bvars;
+        ty_bterm = quote_type
       }
 
-(*
- * BUG: JYH: For now, we leave the term alone.  It is mainly used
- * for printing, so it should have no effect.
- *)
 let quote_type ty =
    let { ty_term   = t;
          ty_opname = opname;
