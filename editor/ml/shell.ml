@@ -1005,7 +1005,7 @@ struct
             Some pack ->
                let expand item =
                   try f item (get_db info) with
-                     RefineError _ ->
+                     _ ->
                         ()
                in
                let expand_item (item, _) =

@@ -60,14 +60,17 @@ newest among the .prla, .prlb and .cmoz
   5) commit.
 -------------------------
  
+Proof expansion:
+   expand ();;
+     -- re-runs the proof (that's at and under the current node you are at);
+   expand_all ();;	
+     -- re-runs all proofs under the current node
+     -- in a module - re-runs all proofs in a module.
+
 Proof checking:
 
-   check ();; check_all ();;  -- not imlpemented yet.
-
-Proof expansion:
-   expand ();; expand_all ();;	
-     --  re-runs the proof (that's at and under the current node you are at);
-         re-runs all proofs in a module.
+   check ();;
+   check_all ();;  -- not imlpemented yet.
 
 WHERE AND HOW TO TRY:
 
