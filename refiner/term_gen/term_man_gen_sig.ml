@@ -42,6 +42,5 @@ sig
 
    val match_hyp : string -> term -> bound_term list -> term
    val match_context : operator -> string -> term -> bound_term list -> term
-   val match_concl : string -> term -> bound_term list -> term
    val body_of_sequent : term -> term
 end

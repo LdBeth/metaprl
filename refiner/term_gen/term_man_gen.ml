@@ -498,18 +498,6 @@ struct
       in
          aux bterms
 
-   let match_concl name t = function
-      [bterm1; bterm2] ->
-         begin
-            match dest_bterm bterm1, dest_bterm bterm2 with
-               ({ bvars = [] }, { bvars = []; bterm = term }) ->
-                  term
-             | _ ->
-                  REF_RAISE(RefineError (name, TermMatchError (t, "malformed conclusion")))
-         end
-    | _ ->
-         REF_RAISE(RefineError (name, TermMatchError (t, "malformed conclusion")))
-
    (*
     * Explode the sequent into a list of hyps and concls.
     *)
@@ -727,27 +715,27 @@ struct
          aux 1 (body_of_sequent t)
 
    (*
-    * Generate a list of sequents with replaced goals.
+    * Generate a list of sequents with a replace conclusion.
     *)
    let replace_concl_name = "replace_concl"
-   let rec replace_concl seq goal =
+   let rec replace_concl seq concl =
       let { term_op = op; term_terms = bterms } = dest_term seq in
       let opname = (dest_op op).op_name in
          if Opname.eq opname hyp_opname then
             let t, x, term = match_hyp_all replace_concl_name seq bterms in
-               mk_term op [mk_simple_bterm t; mk_bterm [x] (replace_concl term goal)]
+               mk_term op [mk_simple_bterm t; mk_bterm [x] (replace_concl term concl)]
          else if Opname.eq opname context_opname then
             let name, term, conts, args = dest_context seq in
-               mk_context_term name (replace_concl term goal) conts args
+               mk_context_term name (replace_concl term concl) conts args
          else if Opname.eq opname concl_opname then
-            goal
+            concl
          else
             REF_RAISE(RefineError (replace_concl_name, TermMatchError (seq, "malformed sequent")))
 
    let replace_concl_name = "replace_concl"
-   let replace_concl seq goal =
+   let replace_concl seq concl =
       let seq, args = dest_sequent_outer_term seq in
-         mk_sequent_outer_term (replace_concl seq (mk_concl_term goal)) args
+         mk_sequent_outer_term (replace_concl seq (mk_concl_term concl)) args
 
    (*
     * Rewrite

@@ -468,8 +468,6 @@ struct
     * Find the address of the conclusion.
     * This is the address of the concl term whose car is the desired conclusion
     * not the conclusion itself.
-    *
-    * Conclusions are numbered from 1.
     *)
    let concl_addr_name = "concl_addr"
    let concl_addr t =
@@ -483,8 +481,7 @@ struct
                let term = match_context op concl_addr_name t bterms in
                   skip_hyps (i + 1) term
             else if Opname.eq opname concl_opname then
-               let term = match_concl concl_addr_name t bterms in
-                  nth_hd_address (i + 1)
+               nth_hd_address (i + 1)
             else
                REF_RAISE(RefineError (concl_addr_name, TermMatchError (t, "malformed sequent")))
       in
@@ -541,10 +538,11 @@ struct
                      (List.map (compose_address (nth_hd_address i)) (make_path_list (List.length ts))) @
                      (aux (i + 1) term)
                else if Opname.eq opname concl_opname then
-                  if bterms = [] then
-                     [Path[0]] (* arg address *)
-                  else
-                     nth_hd_address i :: aux (i + 1) (match_concl subterm_addresses_name t bterms)
+                  match bterms with
+                     [bt] when is_simple_bterm bt ->
+                        [nth_hd_address i; Path[0]] (* arg address *)
+                   | _ ->
+                        REF_RAISE(RefineError (subterm_addresses_name, TermMatchError (t, "malformed sequent")))
                else
                   REF_RAISE(RefineError (subterm_addresses_name, TermMatchError (t, "malformed sequent")))
          in
