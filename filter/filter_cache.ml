@@ -90,6 +90,9 @@ type 'a summary_type =
    Interface of (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
  | Implementation of (term, meta_term, 'a proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
 
+type term_io = Refiner_io.TermType.term
+type meta_term_io = Refiner_io.TermType.meta_term
+
 (*
  * Proof conversion.
  *)
@@ -104,7 +107,7 @@ sig
    val to_expr : t -> string -> cooked -> MLast.expr
    val to_term : t -> string -> cooked -> term
    val of_term : t -> string -> term -> cooked
-   val to_term_io : t -> string -> cooked -> term_io
+   val to_term_io : t -> string -> cooked -> Refiner_io.TermType.term
    val of_term_io : t -> string -> term_io -> cooked
 end
 

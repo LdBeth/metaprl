@@ -31,10 +31,10 @@
 open Refiner_io
 open Refiner.Refiner.TermType
 
-val normalize_term : term_io -> term
-val normalize_meta_term : meta_term_io -> meta_term
-val denormalize_term : term -> term_io
-val denormalize_meta_term : meta_term -> meta_term_io
+val normalize_term : Refiner_io.TermType.term -> term
+val normalize_meta_term : Refiner_io.TermType.meta_term -> meta_term
+val denormalize_term : term -> Refiner_io.TermType.term
+val denormalize_meta_term : meta_term -> Refiner_io.TermType.meta_term
 
 (*
  * -*-

@@ -34,10 +34,6 @@ open Refiner_sig
 
 module Refiner_io : RefinerSig
 
-type term_io = Refiner_io.TermType.term
-type meta_term_io = Refiner_io.TermType.meta_term
-type msequent_op = Refiner_io.Refine.msequent
-
 (*
  * -*-
  * Local Variables:

@@ -135,14 +135,14 @@ struct
    type raw = Obj.t
    type cooked =
       Term of term
-    | TermStd of term_io
+    | TermIO of Refiner_io.TermType.term
     | Raw of Obj.t
 
    let to_raw _ _ = function
       Raw t ->
          t
     | Term _
-    | TermStd _ ->
+    | TermIO _ ->
          raise (Failure "Filter_bin.Convert.to_raw: interactive term proof can't be converted to raw")
 
    let of_raw _ _ t =
@@ -153,7 +153,7 @@ struct
          raise (Failure "Filter_bin.Convert.to_term: interactive raw proof can't be converted to term")
     | Term t ->
          t
-    | TermStd t ->
+    | TermIO t ->
          Term_io.normalize_term t
 
    let of_term _ _ t =
@@ -164,11 +164,11 @@ struct
          raise (Failure "Filter_bin.Convert.to_raw: interactive raw proof can't be converted to term")
     | Term t ->
          Term_io.denormalize_term t
-    | TermStd t ->
+    | TermIO t ->
          t
 
    let of_term_io _ _ t =
-      TermStd t
+      TermIO t
 
    let to_expr _ _ t =
       let loc = 0, 0 in

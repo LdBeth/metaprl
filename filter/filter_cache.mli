@@ -69,8 +69,8 @@ sig
    val to_expr : t -> string -> cooked -> MLast.expr
    val to_term : t -> string -> cooked -> term
    val of_term : t -> string -> term -> cooked
-   val to_term_io : t -> string -> cooked -> term_io
-   val of_term_io : t -> string -> term_io -> cooked
+   val to_term_io : t -> string -> cooked -> Refiner_io.TermType.term
+   val of_term_io : t -> string -> Refiner_io.TermType.term -> cooked
 end
 
 (*
