@@ -64,6 +64,7 @@ print_theory "itt_record_label";;
 print_theory "itt_record";;
 print_theory "itt_record_exm";;
 print_theory "itt_collection";;
+print_theory "itt_pointwise";;
 
 (*
  * -*-
