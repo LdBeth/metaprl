@@ -33,7 +33,7 @@ doc <:doc<
 
    $$
    @defrule[and_intro]{
-       @tt["{| intro [ ] |}"] @Gamma;
+       @tt["{| intro [ ] |}"];
        <<sequent(nil){ <H> >- 'A }>>@cr
           <<sequent(nil){ <H> >- 'B }>>;
        <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
@@ -62,7 +62,7 @@ doc <:doc<
 
    $$
    @defrule[or_intro_left]{
-      @tt["{| intro [SelectOption 1] |}"] @Gamma;
+      @tt["{| intro [SelectOption 1] |}"];
       <<sequent(nil){ <H> >- <:doc<B @Type>> }>>
           @cr <<sequent(nil){ <H> >- 'A }>>;
       <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
@@ -70,7 +70,7 @@ doc <:doc<
 
    $$
    @defrule[or_intro_right]{
-     @tt["{| intro [SelectOption 2] |}"] @Gamma;
+     @tt["{| intro [SelectOption 2] |}"];
      <<sequent(nil){ <H> >- <:doc<A @Type>> }>>@cr
         <<sequent(nil){ <H> >- 'B }>>;
      <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
