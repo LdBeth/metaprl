@@ -1,7 +1,6 @@
-;; ============================================================================
-;; MetaPRL hack stuff
-
-(setq tuareg-default-indent 3)
+;;; prl-hack.el --- hack a convenient MetaPRL shell.
+;;-----------------------------------------------------------------------------
+;; Written by Eli Barzilay: Maze is Life!   (eli@cs.cornell.edu)
 
 ;; A MetaPRL friendly shell.
 ;; M-x metaprl will start a shell that provide a nice interface to MetaPRL.
@@ -19,11 +18,16 @@
 ;; 7. Hide unnecessary output: "unit = ()".
 ;; 8. A string of the form ".../" is translated to "cd (\"...\")".
 
+
+;;; Commentary:
+;; 
+
+;;; Code:
 (defvar metaprl-aliases
-  '(("cd|1"   . "cd\"$1\"")
+  '(("cd|1"   . "ignore (cd\"$1\")")
     ("cd|0"   . "pwd()")
-    ("..|0"   . "cd \"..\"")
-    ("~|0"    . "cd \"~\"")
+    ("..|0"   . "ignore (cd\"..\")")
+    ("~|0"    . "ignore (cd\"~\")")
     ("pwd|0"  . "pwd()")
     ("ls|0"   . "ls()")
     ("ls|1"   . "view \"$1\"")
@@ -47,7 +51,8 @@ arguments.  Use $$ for a single $ character.
 
 Aliases are not recursive.")
 
-(defvar metaprl-dir-command "^\\(cd\\|up\\|down\\|root\\)\\>"
+(defvar metaprl-dir-command
+  "^\\([( ]\\|ignore\\)*\\(cd\\|up\\|down\\|root\\)\\>"
   "*A regexp for commands that require a prompt-directory synchronization.")
 
 (defvar metaprl-prompt "MetaPRL %s > "
@@ -73,10 +78,16 @@ Default is a () result.")
 This print a string that is captured by this mode for setting the prompt, so if
 it is changed, make sure you change the occurrence of CURDIR below.")
 
-(defvar metaprl-should-init-ml nil "Internal.  Do not change.")
-(defvar metaprl-cur-prompt nil "Internal.  Do not change.")
+(defvar metaprl-window-size 20
+  "*The size of the `meta-prl' buffer.
+An integer smaller than 100, the precent of buffer heigh, or nil - default.")
 
-(defun replace-dollar-substrings (str args)
+(defvar metaprl-should-init-ml    nil "Internal.  Do not change.")
+(defvar metaprl-cur-prompt        nil "Internal.  Do not change.")
+(defvar metaprl-initialized-emacs nil "Internal.  Do not change.")
+
+(defun metaprl-replace-dollar-substrings (str args)
+  "Replace $N's in STR by the corresponding element of ARGS."
   (let ((len (1- (length str))) (i -1))
     (while (< (setq i (1+ i)) len)
       (if (eq (aref str i) ?$)
@@ -142,6 +153,9 @@ it is changed, make sure you change the occurrence of CURDIR below.")
 	  (set-buffer obuf)))))
 
 (defun metaprl-preoutput-filter (str)
+  "Prefilter for output string STR.
+This is responsible for setting and displaying the prompt, and deleting
+uninformative output stuff specified by `metaprl-quiet-result'."
   ;; Look for directory sync commands, set prompt accordingly.
   (if (string-match "CURDIR=:=\\(.*\\)\n" str)
     (progn (setq metaprl-cur-prompt
@@ -159,7 +173,9 @@ it is changed, make sure you change the occurrence of CURDIR below.")
     str))
 
 (defun metaprl-output-filter (str)
-  ;; Use a ^L character to put that place on the top line.
+  "Filter for output string STR.
+Use a ^L character to put that place on the top line and handle initialization
+(since we have to wait until the process is ready to initialize)."
   (let ((len (length str)) (i -1))
     (while (< (setq i (1+ i)) len)
       (if (= (aref str i) ?\C-l)
@@ -178,6 +194,8 @@ it is changed, make sure you change the occurrence of CURDIR below.")
       (setq metaprl-should-init-ml nil))))
 
 (defun metaprl-input-filter (str)
+  "Filter for input string STR.
+Expand aliases etc...  (the good stuff is in here.)"
   ;; This uses an ugly hack: It changes the value of "input" that holds text to
   ;; send to the shell.  This is because the input-filter functions' output is
   ;; not taken as the new input.
@@ -198,7 +216,8 @@ it is changed, make sure you change the occurrence of CURDIR below.")
                         metaprl-aliases)
                  (assoc (car args) metaprl-aliases)))))
          ;; Do the argument substitution.
-         (and alias (setq input (replace-dollar-substrings alias args)))
+         (and alias
+              (setq input (metaprl-replace-dollar-substrings alias args)))
          ;; Shorthand cd commands.
          (and (not alias)
               args
@@ -221,6 +240,29 @@ it is changed, make sure you change the occurrence of CURDIR below.")
        ;; Initialize an empty prompt.
        (setq metaprl-cur-prompt (format metaprl-prompt "?"))))))
 
+(defun metaprl-shell ()
+  "Same as `shell', modified to use *meta-prl* as the buffer name."
+  (interactive)
+  (if (not (comint-check-proc "*meta-prl*"))
+    (let* ((prog (or explicit-shell-file-name
+                     (getenv "ESHELL")
+                     (getenv "SHELL")
+                     "/bin/sh"))
+           (name "meta-prl")
+           (startfile (concat "~/.emacs_" name))
+           (xargs-name (intern-soft (concat "explicit-" name "-args")))
+           shell-buffer)
+      (save-excursion
+        (set-buffer (apply 'make-comint "meta-prl" prog
+                           (if (file-exists-p startfile) startfile)
+                           (if (and xargs-name (boundp xargs-name))
+                             (symbol-value xargs-name)
+                             '("-i"))))
+        (setq shell-buffer (current-buffer))
+        (shell-mode))
+      (pop-to-buffer shell-buffer))
+    (pop-to-buffer "*meta-prl*")))
+
 ;; Set a shell for MetaPRL.
 (defun meta-prl ()
   "Start a shell with a nice interface to MetaPRL.
@@ -230,31 +272,47 @@ directory, run mp and enter an automatic #use command.  Once in MetaPRL, a
 special prompt will be displayed, and alias convertion will be performed."
   (interactive)
   (require 'comint)
-  (if (comint-check-proc "*meta-prl*")
-    ;; Have a MetaPRL shell running, use it.
-    (pop-to-buffer "*meta-prl*")
-    (let ((shell-mode-hook
-           ;; Rename the shell-buffer as soon as it is created.  This method
-           ;; will cause problems when there is no *meta-prl* buffer, but there
-           ;; is a *shell*  already - that *shell* will be used and renamed as
-           ;; the *meta-prl* buffer.
-           '(lambda (&rest args) (rename-buffer "*meta-prl*"))))
-      ;; Start the shell.
-      (shell)
-      (set-buffer (get-buffer "*meta-prl*"))
-      ;; Display all chars correctly.
-      (standard-display-8bit 128 255)
-      ;; Set the MetaPRL font.
-      (set-default-font (if (eq window-system 'nt)
-                          "-*-mp12-r-normal-*-12-96-*-*-c-*-*-ansi-*"
-                          "mp12"))
-      ;; Set the filter functions locally.
-      (make-local-variable 'comint-output-filter-functions)
-      (setq comint-output-filter-functions 'metaprl-output-filter)
-      (make-local-variable 'comint-preoutput-filter-functions)
-      (setq comint-preoutput-filter-functions '(metaprl-preoutput-filter))
-      (make-local-variable 'comint-input-filter-functions)
-      (setq comint-input-filter-functions 'metaprl-input-filter)
-      (setq metaprl-cur-prompt (format metaprl-prompt "?"))
-      ;; Just for continence
-      (setq default-directory "~/meta-prl/editor/ml/"))))
+  (require 'shell)
+  (let ((shell-mode-hook
+         ;; Rename the shell-buffer as soon as it is created.  This method
+         ;; will cause problems when there is no *meta-prl* buffer, but there
+         ;; is a *shell*  already - that *shell* will be used and renamed as
+         ;; the *meta-prl* buffer.
+         '(lambda (&rest args) (rename-buffer "*meta-prl*"))))
+    ;; Start the shell, or switch to an existing one.
+    (metaprl-shell)
+    ;; Make the window no more than metaprl-window-size precent of the frame.
+    (and metaprl-window-size (> metaprl-window-size 0)
+         (< 1 (count-windows)) (= (window-width) (frame-width))
+         (shrink-window
+          (max 0 (- (window-height)
+                    (/ (* metaprl-window-size (frame-height)) 100)))))
+    ;; Initialize Emacs only once.
+    (if (not metaprl-initialized-emacs)
+      (progn
+        (setq metaprl-initialized-emacs t)
+        ;; Display all chars correctly.
+        (standard-display-8bit 128 255)
+        ;; Set the MetaPRL font.
+        (set-default-font (if (eq window-system 'nt)
+                            "-*-mp12-r-normal-*-12-96-*-*-c-*-*-ansi-*"
+                            "mp12"))))
+    ;; Initialize the meta-prl buffer once.
+    (make-local-variable 'metaprl-new-buffer)
+    (if (not (and (boundp 'metaprl-new-buffer) metaprl-new-buffer))
+      (progn
+        (setq metaprl-new-buffer t)
+        ;; Set the filter functions locally.
+        (make-local-variable 'comint-output-filter-functions)
+        (setq comint-output-filter-functions 'metaprl-output-filter)
+        (make-local-variable 'comint-preoutput-filter-functions)
+        (setq comint-preoutput-filter-functions '(metaprl-preoutput-filter))
+        (make-local-variable 'comint-input-filter-functions)
+        (setq comint-input-filter-functions 'metaprl-input-filter)
+        (setq metaprl-cur-prompt (format metaprl-prompt "?"))
+        ;; Just for convenience
+        (setq default-directory "~/meta-prl/editor/ml/")))))
+
+(provide 'meta-prl)
+
+;;; meta-prl.el ends here
