@@ -458,7 +458,7 @@ let new_module_info () = { info_list = [] }
 (*
  * Coerce the info.
  *)
-let info_items { info_list = info } = info
+let info_items { info_list = info } = List.rev info
 
 (*
  * Optional application.
@@ -1686,6 +1686,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.9  1998/04/06 21:31:17  jyh
+ * Items must be reversed.
+ *
  * Revision 1.8  1998/03/20 22:15:44  eli
  * Eli: Changed integer parameters to Num.num's.
  *
