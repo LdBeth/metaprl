@@ -470,7 +470,7 @@ SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 OCAMLDEPFLAGS = -prl -omake
 
 # These directories use prlc
-THEORIES = $(if $(equal $(THEORIES), all), $(THEORIES_ALL), $(THEORIES))
+THEORIES = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all%, $(THEORIES)), $(THEORIES))
 MP_DIRS  = $(SUPPORT_DIRS) $(dir $(addprefix theories/, $(THEORIES)))
 
 Theory(files) =

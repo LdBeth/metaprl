@@ -173,20 +173,20 @@ struct
              | ShapeVar    ->
                   "V"
          in
-            Lm_format.pp_print_string out s
+            pp_print_string out s
       in
       let pp_print_params out params =
          List.iter (pp_print_param out) params
       in
       let rec pp_print_arity out = function
          [i] ->
-            Lm_format.fprintf out "%d" i
+            fprintf out "%d" i
        | i::t ->
-            Lm_format.fprintf out "%d;%a" i pp_print_arity t
+            fprintf out "%d;%a" i pp_print_arity t
        | [] ->
             ()
       in
-         Lm_format.fprintf out "%s[%a]{%a}" (**)
+         fprintf out "%s[%a]{%a}" (**)
             (string_of_opname name)
             pp_print_params params
             pp_print_arity arities

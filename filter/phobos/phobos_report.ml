@@ -21,6 +21,7 @@
  * Author: Adam Granicz
  * Email: granicz@cs.caltech.edu
  *)
+open Lm_printf
 
 open Phobos_type
 open Phobos_print
@@ -30,7 +31,7 @@ open Phobos_parser_internals
 let save_parser_report gst penv (states: state_list_struct) ptable ptable_errors name =
    let print_opt_prec = function
       Some s ->
-         Lm_format.print_string (Lm_printf.sprintf " %%prec %s" s)
+         print_string (Lm_printf.sprintf " %%prec %s" s)
     | None ->
          ()
    in
@@ -58,25 +59,25 @@ let save_parser_report gst penv (states: state_list_struct) ptable ptable_errors
     | [] ->
          0, 0
    in
-   let outx = open_out name in
-      Lm_format.set_formatter_out_channel outx;
+   let outx = Pervasives.open_out name in
+      set_formatter_out_channel outx;
    let total_productions, _ =
       (* Print all productions *)
       ProductionIdTable.fold (fun (prod_num, last) prod_id (head, prods, opt_prec) ->
          if psymbol_compare last head = 0 then
             begin
-               Lm_format.print_string (Lm_printf.sprintf "%4d      |" prod_num);
+               print_string (Lm_printf.sprintf "%4d      |" prod_num);
                print_psymbol_list prods;
                print_opt_prec opt_prec;
-               Lm_format.print_string "\n"
+               print_string "\n"
             end else
             begin
-               Lm_format.print_string (Lm_printf.sprintf "\n%4d  " prod_num);
+               print_string (Lm_printf.sprintf "\n%4d  " prod_num);
                print_psymbol head;
-               Lm_format.print_string " :";
+               print_string " :";
                print_psymbol_list prods;
                print_opt_prec opt_prec;
-               Lm_format.print_string "\n"
+               print_string "\n"
          end;
             prod_num+1, head) (1, Empty) penv.parser_prod_ids
    in
@@ -85,40 +86,40 @@ let save_parser_report gst penv (states: state_list_struct) ptable ptable_errors
          if old_state_num <> state_id then
             begin
                let state = states_nth states.states_list state_id in
-               Lm_format.print_string (Lm_printf.sprintf "\nState %d\n" state_id);
+               print_string (Lm_printf.sprintf "\nState %d\n" state_id);
                (* Print all non-trivival rules *)
                Parser_state.fold (fun () (prod_id, i) _ ->
                   if i <> 0 then
                      begin
-                        Lm_format.print_string "        ";
+                        print_string "        ";
                         print_rule_loc penv.parser_prod_ids (prod_id, i);
-                        Lm_format.print_string (Lm_printf.sprintf " (%d)\n" prod_id)
+                        print_string (Lm_printf.sprintf " (%d)\n" prod_id)
                      end) () state.state_map;
-               Lm_format.print_string "\n";
+               print_string "\n";
             end;
          (* Print all lookaheads and the associated action *)
          let action = select_action actions in
          if List.length actions > 1 then
-            Lm_format.print_string "   **   "
+            print_string "   **   "
          else
-            Lm_format.print_string "        ";
+            print_string "        ";
          print_psymbol lookahead;
-         Lm_format.print_string "  ";
+         print_string "  ";
          print_pentry_simple action;
          if List.length actions > 1 then
             begin
-               Lm_format.print_string "  [";
+               print_string "  [";
                print_pentry_simple_list actions;
-               Lm_format.print_string " ]"
+               print_string " ]"
             end;
-         Lm_format.print_string "\n";
+         print_string "\n";
          state_id) (-1) ptable
    in
    let sr, rr = num_of_conflicts ptable_errors in
-      Lm_format.print_string (**)
+      print_string (**)
          (Lm_printf.sprintf "\n%d terminals, %d nonterminals\n%d grammar rules, %d states\n%d shift-reduce, %d reduce-reduce conflicts\n%d entries in parsing table\n" (**)
             (StringSet.cardinal gst.grammar_terminals) (StringSet.cardinal gst.grammar_nonterminals) (**)
             (total_productions-1) (List.length states.states_list) sr rr (ParserFA.cardinal ptable));
-      Lm_format.set_formatter_out_channel stdout;
+      set_formatter_out_channel Pervasives.stdout;
       close_out outx
 

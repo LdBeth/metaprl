@@ -352,9 +352,9 @@ let print_term_fp out t =
 
 let term_printer t =
    synchronize_client (fun state ->
-      Lm_format.open_box 0;
-      Lm_format.print_string (Dform.string_of_term (get_dbase state) t);
-      Lm_format.close_box())
+      open_box 0;
+      print_string (Dform.string_of_term (get_dbase state) t);
+      close_box())
 
 (************************************************************************
  * TOPLOOP FUNCTIONS                                                    *

@@ -254,9 +254,9 @@ let include_grammars paths includes =
             }) dummy_gst includes
       in
          if !debug_phobos then begin
-            Lm_format.print_string "After include_grammars: terminals = \n";
+            print_string "After include_grammars: terminals = \n";
             print_string_set gst.grammar_terminals;
-            Lm_format.print_string "After include_grammars: nonterminals = \n";
+            print_string "After include_grammars: nonterminals = \n";
             print_string_set gst.grammar_nonterminals
          end;
          gst

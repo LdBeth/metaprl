@@ -45,18 +45,18 @@ let set_source_position pos =
  *)
 let print_psymbol = function
    Terminal s ->
-      Lm_format.print_string s
+      print_string s
  | NonTerminal s ->
-      Lm_format.print_string (string_add ["<"; s; ">"])
+      print_string (string_add ["<"; s; ">"])
  | Empty ->
-      Lm_format.print_string "{Epsilon}"
+      print_string "{Epsilon}"
  | Eof ->
-      Lm_format.print_string "$"
+      print_string "$"
 
 let print_psymbol_set set =
    let psymbol_list = PSymbolSet.to_list set in
    List.iter (fun psym ->
-      Lm_format.print_string " ";
+      print_string " ";
       print_psymbol psym) psymbol_list
 
 let psymbol_equal ps1 ps2 =
@@ -226,19 +226,19 @@ let prod_id_replace table key data =
 
 let print_psym = function
    NonTerminal s ->
-      Lm_format.print_string "<";
-      Lm_format.print_string s;
-      Lm_format.print_string ">"
+      print_string "<";
+      print_string s;
+      print_string ">"
  | Terminal s ->
-      Lm_format.print_string s
+      print_string s
  | Eof ->
-      Lm_format.print_string "EOF"
+      print_string "EOF"
  | Empty ->
-      Lm_format.print_string "{epsilon}"
+      print_string "{epsilon}"
 
 let print_psym_list lst =
    List.iter (fun psym ->
-      Lm_format.print_string " ";
+      print_string " ";
       print_psym psym) lst
 
 let prod_empty = ProductionTable.empty
@@ -248,9 +248,9 @@ let prod_find prenv (head, prods) =
       ProductionTable.find prenv (head, prods)
    with
       Not_found ->
-         Lm_format.print_string "PROD not found :";
+         print_string "PROD not found :";
          print_psym head;
-         Lm_format.print_string " ->";
+         print_string " ->";
          print_psym_list prods;
          exit 1
 

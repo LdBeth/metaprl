@@ -93,7 +93,7 @@ let rec format_strings buf = function
       ()
 
 (*
- * Lm_format a hypothesis.
+ * Format a hypothesis.
  *)
 let format_hypothesis db buf printers = function
    Context (v, conts, subterms) ->

@@ -30,6 +30,7 @@
  * Author: Stephan Schmitt <schmitts@spmail.slu.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Lm_printf
 
 exception Not_unifiable
 exception Failed
@@ -63,11 +64,11 @@ let rec print_eqlist eqlist =
 
 let print_equations eqlist =
    begin
-      Lm_format.open_box 0;
-      Lm_format.force_newline ();
+      open_box 0;
+      force_newline ();
       print_endline "Equations:";
       print_eqlist eqlist;
-      Lm_format.force_newline ();
+      force_newline ();
    end
 
 let rec print_subst sigma =

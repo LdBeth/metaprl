@@ -55,7 +55,7 @@ let serialize_productions gst =
  *)
    if !debug_phobos then
       begin
-         Lm_format.print_string "Compiling local rewrites....\n";
+         print_string "Compiling local rewrites....\n";
          flush stdout
       end;
    let new_term_rewrites =
@@ -64,7 +64,7 @@ let serialize_productions gst =
    in
    if !debug_phobos then
       begin
-         Lm_format.print_string "Finished....\n";
+         print_string "Finished....\n";
          flush stdout
       end;
 (***********************************************)
@@ -79,13 +79,13 @@ let serialize_productions gst =
             let index = prod_find_unsafe prenv (psym, prods) in
             if !debug_phobos then
                begin
-                  Lm_format.print_string "warning: ";
-                  Lm_format.print_string (string_of_pos pos);
-                  Lm_format.print_string ": production redeclared: \"";
+                  print_string "warning: ";
+                  print_string (string_of_pos pos);
+                  print_string ": production redeclared: \"";
                   print_psymbol psym;
-                  Lm_format.print_string " ::= ";
+                  print_string " ::= ";
                   print_psymbol_list prods;
-                  Lm_format.print_string "\"\n";
+                  print_string "\"\n";
                   flush stdout;
                end;
             (* Update production with optional precision *)
@@ -362,7 +362,7 @@ let rec iterate penv (all_states: state_list_struct) (new_states: state_with_id_
    in
       if changed then begin
          if !debug_phobos then
-            Lm_format.print_string "iterate: changed\n";
+            print_string "iterate: changed\n";
          iterate penv all_states new_states actions' accepts
       end
       else
@@ -557,7 +557,7 @@ let create_parsing_table name gst penv =
    debug_ploc_list penv ptable ptable_errors;
    debug_string "\n";
    if List.length ptable_errors > 0 then
-      Lm_format.print_string "There were errors.\n";
+      print_string "There were errors.\n";
    if !Phobos_state.debug_grammar then
       save_parser_report gst penv states ptable ptable_errors (**)
          (string_add [chop_extension name; ".output"]);
@@ -575,24 +575,24 @@ let perform_action clenv penv ptable rewrites stack sym matched_string input_pos
    match action with
       Shift i ->
          if !debug_phobos then begin
-            Lm_format.print_string "Performing SHIFT(";
+            print_string "Performing SHIFT(";
             print_int i;
-            Lm_format.print_string ")\n"
+            print_string ")\n"
          end;
          let term = term_of_token_string pos matched_string in
 
          if !debug_phobos then begin
-            Lm_format.print_string "token on the line is =";
+            print_string "token on the line is =";
             print_term term;
-            Lm_format.print_string "\n"
+            print_string "\n"
          end;
 
          let lex_pre_rewrites = lex_rewrite_find_unsafe clenv.clexer_rewrites sym in
 
          if !debug_phobos then begin
-            Lm_format.print_string "Its matching rewrite rules =\n";
+            print_string "Its matching rewrite rules =\n";
             print_pre_rewrites lex_pre_rewrites;
-            Lm_format.print_string "\n"
+            print_string "\n"
          end;
 
          (* Find all lexical rewrites for sym *)
@@ -604,9 +604,9 @@ let perform_action clenv penv ptable rewrites stack sym matched_string input_pos
             stack, input_pos + 1
     | Goto i ->
          if !debug_phobos then begin
-            Lm_format.print_string "Performing GOTO(";
+            print_string "Performing GOTO(";
             print_int i;
-            Lm_format.print_string ")\n"
+            print_string ")\n"
          end;
          (* Go to another state. *)
          (* We will push an "empty" term on the stack. *)
@@ -615,42 +615,42 @@ let perform_action clenv penv ptable rewrites stack sym matched_string input_pos
             stack, input_pos
     | Reduce prod_id ->
          if !debug_phobos then begin
-            Lm_format.print_string "Performing REDUCE(";
+            print_string "Performing REDUCE(";
             print_int prod_id;
-            Lm_format.print_string ")\n"
+            print_string ")\n"
          end;
          let psym, psyml, _ = prod_id_find_unsafe penv.parser_prod_ids prod_id in
 
          if !debug_phobos then begin
-            Lm_format.print_string "   REDUCE -> Stack =";
+            print_string "   REDUCE -> Stack =";
             print_stack stack;
-            Lm_format.print_string "\n";
+            print_string "\n";
             flush stdout
          end;
 
          let term = term_of_token_string pos matched_string in
 
          if !debug_phobos then begin
-            Lm_format.print_string "token on the line is =";
+            print_string "token on the line is =";
             print_term term;
-            Lm_format.print_string "\n"
+            print_string "\n"
          end;
 
          let parser_pre_rewrites = rewrite_find_unsafe penv.parser_rewrites prod_id in
 
          if !debug_phobos then begin
-            Lm_format.print_string "Production's matching rewrite rules =\n";
+            print_string "Production's matching rewrite rules =\n";
             print_pre_rewrites parser_pre_rewrites;
-            Lm_format.print_string "\n"
+            print_string "\n"
          end;
 
          (* Terms on the stack to be reduced *)
          let stack, _, terms = stack_pop_list stack psyml in
 
          if !debug_phobos then begin
-            Lm_format.print_string "the stack terms that this production applies to =\n";
+            print_string "the stack terms that this production applies to =\n";
             print_terms terms;
-            Lm_format.print_string "\n"
+            print_string "\n"
          end;
 
          (* Fetch the rewrites that apply *)
@@ -673,20 +673,20 @@ let perform_action clenv penv ptable rewrites stack sym matched_string input_pos
          let stack = stack_push stack (Sta_state new_state) in
 
          if !debug_phobos then begin
-            Lm_format.print_string "   after REDUCE -> Stack =";
+            print_string "   after REDUCE -> Stack =";
             print_stack stack;
-            Lm_format.print_string "\n";
+            print_string "\n";
             flush stdout
          end;
 
          stack, input_pos
     | Accept ->
          if !debug_phobos then
-            Lm_format.print_string "ACCEPT!\n";
+            print_string "ACCEPT!\n";
          raise SourceAccepted
     | Error ->
          if !debug_phobos then
-            Lm_format.print_string "ERROR!\n";
+            print_string "ERROR!\n";
          raise (SyntaxError (source_position ()))
 
 let parse_source gst (clenv: clexer_env) penv ptable source =
@@ -721,14 +721,14 @@ let parse_source gst (clenv: clexer_env) penv ptable source =
                set_source_position pos;
 
                if !debug_phobos then begin
-                  Lm_format.print_string "Stack =";
+                  print_string "Stack =";
                   print_stack !stack;
-                  Lm_format.print_string "\n";
-                  Lm_format.print_string "Processing symbol =";
+                  print_string "\n";
+                  print_string "Processing symbol =";
                   print_psymbol psym;
-                  Lm_format.print_string " @(";
-                  Lm_format.print_int !input_pos;
-                  Lm_format.print_string ")\n";
+                  print_string " @(";
+                  print_int !input_pos;
+                  print_string ")\n";
                   flush stdout
                end;
 
