@@ -53,10 +53,12 @@ val string_of_path : module_path -> string
 val output_path : out_channel -> module_path -> unit
 
 (*
- * Expression of a term.
+ * MetaPRL bindings in str items
  *)
-val expr_of_term : MLast.loc -> term -> MLast.expr
-val expr_of_mterm : MLast.loc -> meta_term -> MLast.expr
+val add_binding : term prl_binding -> MLast.expr
+val get_bindings : unit -> (string * term prl_binding) list
+
+val no_resources : (MLast.expr, term) resource_def
 
 (************************************************************************
  * OPNAMES								*

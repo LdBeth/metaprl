@@ -55,6 +55,7 @@ open Package_sig
 open Package_info
 
 open Filter_type
+open Filter_util
 open Filter_summary
 open Filter_summary_type
 open Filter_ocaml
@@ -76,7 +77,7 @@ type info =
      mutable rule_goal : term;
      mutable rule_proof : Package.proof proof_type;
      mutable rule_ped : Proof_edit.ped proof_type;
-     mutable rule_resources : MLast.expr resource_def;
+     mutable rule_resources : (MLast.expr, term) resource_def;
      mutable rule_name : string
    }
 
@@ -325,7 +326,7 @@ let create pack parse_arg window name =
         rule_goal = unit_term;
         rule_proof = Incomplete;
         rule_ped = Incomplete;
-        rule_resources = [];
+        rule_resources = no_resources;
         rule_name = name
       }
    in

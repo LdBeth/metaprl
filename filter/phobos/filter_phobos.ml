@@ -29,11 +29,13 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Adam Granicz <granicz@cs.caltech.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Mp_debug
 open Phobos_debug
 open Filter_util
+open Filter_type
 open Phobos_compile
 
 (*
@@ -65,7 +67,7 @@ let ext_exp s =
             !Phobos_state.mp_grammar_filename
    in
    let t = Phobos_exn.catch (term_of_string [] grammar_filename) s in
-      expr_of_term (0, 0) t
+      add_binding (BindTerm t)
 
 let ext_patt s =
    let loc = 0,0 in
@@ -85,7 +87,7 @@ let desc_exp s =
             !Phobos_state.mp_desc_grammar_filename
    in
    let t = Phobos_exn.catch (term_of_string [] grammar_filename) s in
-      expr_of_term (0, 0) t
+      add_binding (BindTerm t)
 
 let desc_patt s =
    let loc = 0,0 in

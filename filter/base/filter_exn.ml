@@ -79,7 +79,7 @@ let rec format_exn db buf = function
       format_space buf;
       format_string buf name;
       format_space buf;
-      format_term db buf t
+      format_short_term db (fun _ -> Opname.nil_opname) buf t
  | NotANumber name ->
       format_string buf "Not a number:";
       format_space buf;

@@ -1338,7 +1338,7 @@ struct
             []
        | (h, _) :: t ->
             match h with
-               SummaryItem (<:str_item< open $sl$ >>) ->
+               SummaryItem { item_item = <:str_item< open $sl$ >> } ->
                   sl :: collect t
              | _ ->
                   collect t

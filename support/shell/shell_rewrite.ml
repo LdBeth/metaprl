@@ -54,6 +54,7 @@ open Package_sig
 open Package_info
 
 open Filter_type
+open Filter_util
 open Filter_summary
 open Filter_summary_type
 open Filter_ocaml
@@ -81,7 +82,7 @@ type rw =
      mutable rw_contractum : term;
      mutable rw_proof : Package.proof proof_type;
      mutable rw_ped : Proof_edit.ped proof_type;
-     mutable rw_resources : MLast.expr resource_def;
+     mutable rw_resources : (MLast.expr, term) resource_def;
      mutable rw_name : string
    }
 
@@ -357,7 +358,7 @@ let create pack parse_arg window name =
         Filter_type.rw_redex = unit_term;
         Filter_type.rw_contractum = unit_term;
         Filter_type.rw_proof = Interactive proof;
-        Filter_type.rw_resources = []
+        Filter_type.rw_resources = no_resources;
       }
    in
    let obj =
@@ -367,7 +368,7 @@ let create pack parse_arg window name =
         rw_contractum = unit_term;
         rw_proof = Interactive proof;
         rw_ped = Interactive ped;
-        rw_resources = [];
+        rw_resources = no_resources;
         rw_name = name
       }
    in

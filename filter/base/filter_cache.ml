@@ -95,21 +95,29 @@ end
  * The arguments for pack_version are: major version number, minor sub-version number, revision number
  *)
 
-let raw_versions = List.map (pack_version 1 0) [0]
+(*
+ * Raw data structures revision history
+ *
+ * Rev 0: whatever was around when the versioning was added
+ * Rev 1: added PRL bindings to several summary items (many types have chaged)
+ *)
+let raw_versions = List.map (pack_version 1 0) [1]
+
 let term_versions = List.map (pack_version 1 0) [0]
 
 (*
  * ASCII IO format revision history:
  *
- * Rev 0: original syntax
+ * Rev 0: whatever was around when the versioning was added
  * Rev 1: added new hypothesis syntax (hyps with and w/o bindings)
  * Rev 2: removed support for variable name (string) arguments to rules/rewrites
  * Rev 3: added a real summary item for "define" directives (instead of declare + prim_rw implementation)
  * Rev 4: corrected term representation for prec_rel
+ * Rev 5: added PRL bindings to several summary items
  *
  * Filter_summary has a HACK needed to read some rev 0-1 files
  *)
-let ascii_versions = List.map (pack_version 1 0) [4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [5;4;3;2;1;0]
 
 (************************************************************************
  * CONFIG                                                               *

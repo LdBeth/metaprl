@@ -102,19 +102,6 @@ let split_mfunction mterm =
       labels, vars, zip_mimplies terms goal
 
 (************************************************************************
- * TERMS                                                                *
- ************************************************************************)
-
-(*
- * Convert between expressions and terms.
- *)
-let expr_of_term loc t =
-   <:expr< Ml_term.term_of_string $str: String.escaped (Ml_term.string_of_term t)$ >>
-
-let expr_of_mterm loc t =
-   <:expr< Ml_term.mterm_of_string $str: String.escaped (Ml_term.string_of_mterm t)$ >>
-
-(************************************************************************
  * OPNAMES                                                              *
  ************************************************************************)
 
@@ -171,6 +158,30 @@ let output_path oport =
          aux t
    in
       aux
+
+(************************************************************************
+ * BINDINGS IN STR ITEMS                                                *
+ ************************************************************************)
+
+let add_binding, get_bindings =
+   let loc = 0,0 in
+   let decls = ref [] in
+   let decl_var = ref 0 in
+   let add_binding d =
+      incr decl_var;
+      let v = "_$item_bnd" ^ (string_of_int !decl_var) in
+         decls := (v, d) :: !decls;
+         <:expr< $lid:v$ >>
+   and get_bindings () =
+      let res = !decls in
+         decls := [];
+         res
+   in add_binding, get_bindings
+
+let no_resources = {
+   item_item = [];
+   item_bindings = [];
+}
 
 (*
  * -*-

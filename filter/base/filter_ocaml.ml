@@ -2364,7 +2364,7 @@ struct
       try dest t with
          FormatError (s', t) as exn ->
             eprintf "Warning: FormatError: %s.%s term is omitted\n" s s';
-            eprintf "Term: %a\n" Refiner.Refiner.Term.debug_print t;
+            eprintf "Term: %s\n" (Simple_print.SimplePrint.short_string_of_term t);
             eprintf "\tThis is usually because the OCaml term format has changed\n";
             eprintf "\tand the .prla files haven't been updated.  This error\n";
             eprintf "\tmessage can usually be ignored, and it will go away\n";

@@ -166,13 +166,18 @@ open TermGrammar
 let term_exp s =
    let cs = Stream.of_string s in
    let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
-      expr_of_term (0, 0) t
+      add_binding (BindTerm t)
 
 let term_patt s =
    raise (Failure "Filter_parse.term_patt: not implemented yet")
 
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
 let _ = Quotation.default := "term"
+
+let bind_item i = {
+   item_item = i;
+   item_bindings = get_bindings ();
+}
 
 (************************************************************************
  * TERM HACKING                                                         *
@@ -807,7 +812,7 @@ let define_rule proc loc name
     (params : term list)
     (mterm : meta_term)
     (extract : Convert.cooked proof_type)
-    (res : MLast.expr resource_def) =
+    (res : ((MLast.expr, term) resource_def)) =
    try
       let cmd = StrFilter.rule_command proc name params mterm extract res in
       StrFilter.add_command proc (cmd, loc)
@@ -882,12 +887,15 @@ EXTEND
           let f () =
              if !debug_filter_parse then
                 eprintf "Filter_parse.interf_item: adding item%t" eflush;
+             if get_bindings () <> [] then
+                Stdpp.raise_with_loc loc (Invalid_argument "Filter_parse.interf_item: sig item has bindings");
              begin
                 match s with
                    <:sig_item< declare $list: []$ end >> ->
-                   ()
+                      ()
                  | _ ->
-                      SigFilter.add_command (SigFilter.get_proc loc) (SummaryItem s, loc)
+                      let item = SummaryItem { item_bindings = []; item_item = s } in
+                         SigFilter.add_command (SigFilter.get_proc loc) (item, loc)
              end;
              s, loc
            in
@@ -919,9 +927,10 @@ EXTEND
              begin
                 match s with
                    <:str_item< declare $list: []$ end >> ->
-                      ()
+                      if get_bindings () <> [] then
+                         Stdpp.raise_with_loc loc (Invalid_argument "Filter_parse.implem_item: empty str item has bindings")
                  | _ ->
-                      StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem s, loc)
+                      StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem (bind_item s), loc)
              end;
              s, loc
           in
@@ -949,31 +958,31 @@ EXTEND
              empty_sig_item loc
         | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = term ->
            let f () =
-             SigFilter.define_term (SigFilter.get_proc loc) loc name t def []
+             SigFilter.define_term (SigFilter.get_proc loc) loc name t def no_resources
            in
              print_exn f "define" loc;
              empty_sig_item loc
         | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
            let f () =
-             SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t () []
+             SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t () no_resources
            in
              print_exn f "rewrite" loc;
              empty_sig_item loc
         | "ml_rw"; name = LIDENT; args = optarglist; ":"; t = term ->
            let f () =
-             SigFilter.declare_mlrewrite (SigFilter.get_proc loc) loc name args t None []
+             SigFilter.declare_mlrewrite (SigFilter.get_proc loc) loc name args t None no_resources
            in
              print_exn f "ml_rw" loc;
              empty_sig_item loc
         | rule_keyword; name = LIDENT; args = optarglist; ":"; t = mterm ->
            let f () =
-             SigFilter.declare_rule (SigFilter.get_proc loc) loc name args t () []
+             SigFilter.declare_rule (SigFilter.get_proc loc) loc name args t () no_resources
            in
               print_exn f "rule" loc;
               empty_sig_item loc
         | mlrule_keyword; name = LIDENT; args = optarglist; ":"; t = term ->
            let f () =
-              SigFilter.declare_mlaxiom (SigFilter.get_proc loc) loc name args t None []
+              SigFilter.declare_mlaxiom (SigFilter.get_proc loc) loc name args t None no_resources
            in
               print_exn f "mlrule_keyword" loc;
              empty_sig_item loc
@@ -1094,7 +1103,8 @@ EXTEND
              empty_str_item loc
         | "ml_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = bound_term; "="; code = expr ->
            let f () =
-              StrFilter.declare_mlrewrite (StrFilter.get_proc loc) loc name args t.aterm (Some (wrap_code loc t.aname code)) res
+              let code = bind_item (wrap_code loc t.aname code) in
+                 StrFilter.declare_mlrewrite (StrFilter.get_proc loc) loc name args t.aterm (Some code) res
            in
               print_exn f "ml_rw" loc;
               empty_str_item loc
@@ -1124,7 +1134,8 @@ EXTEND
               empty_str_item loc
         | mlrule_keyword; name = LIDENT; res = optresources; args = optarglist; ":"; t = bound_term; "="; code = expr ->
            let f () =
-              StrFilter.declare_mlaxiom (StrFilter.get_proc loc) loc name args t.aterm (Some (wrap_code loc t.aname code)) res
+              let code = bind_item (wrap_code loc t.aname code) in
+                 StrFilter.declare_mlaxiom (StrFilter.get_proc loc) loc name args t.aterm (Some code) res
            in
               print_exn f "mlrule" loc;
               empty_str_item loc
@@ -1138,7 +1149,7 @@ EXTEND
            let f () =
               StrFilter.improve_resource (StrFilter.get_proc loc) loc {
                  improve_name = name;
-                 improve_expr = code
+                 improve_expr = (bind_item code);
               }
            in
               print_exn f "improve_resource" loc;
@@ -1153,7 +1164,7 @@ EXTEND
         | "ml_dform"; name = LIDENT; ":"; options = df_options; buf = LIDENT; format = LIDENT; "="; code = expr ->
            let f () =
               let options', t = options in
-                 StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t buf format code
+                 StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t buf format (bind_item code)
            in
               print_exn f "ml_dform" loc;
               empty_str_item loc
@@ -1235,7 +1246,7 @@ EXTEND
       [[ ores = OPT updresources ->
           match ores with
              Some ores -> ores
-           | None -> []
+           | None -> no_resources
       ]];
 
    updresources:
@@ -1250,11 +1261,13 @@ EXTEND
                     | _ ->
                          Stdpp.raise_with_loc (MLast.loc_of_expr expr) (Failure "resource is not a sequence")
                 in
+                let e = 
                    match e with
                       <:expr< do { $list:el$ } >> ->
                          List.map (fun expr -> split_application (MLast.loc_of_expr expr) [] expr) el
                     | _ ->
                          [split_application (MLast.loc_of_expr e) [] e]
+                in bind_item e
            in
               print_exn f "updresources" loc
       ]];

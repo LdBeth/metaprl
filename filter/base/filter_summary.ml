@@ -513,18 +513,31 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
     | ContextParam s -> ContextParam s
    in
 
-   let rec res_map = function
-      [] -> []
-    | (loc, name, exprs) :: tl ->
-         (loc, name, List.map convert.expr_f exprs) :: res_map tl
+   let convert_bnd = function
+      s, BindTerm t -> s, BindTerm (convert.term_f t)
+    | (s, BindOpname o) as d -> d
    in
+
+   let convert_bnd_expr expr = {
+      item_item = convert.expr_f expr.item_item;
+      item_bindings = List.map convert_bnd expr.item_bindings;
+   } in
+
+   let res_map res = {
+      item_item = List.map (fun (loc, name, exprs) -> (loc, name, List.map convert.expr_f exprs)) res.item_item;
+      item_bindings = List.map convert_bnd res.item_bindings;
+   } in
 
    (* Map a summary item *)
    let rec item_map (item, loc) =
       let item =
          match item with
-            SummaryItem t ->
-               SummaryItem (convert.item_f t)
+            SummaryItem item ->
+               SummaryItem {
+                  item_bindings = List.map convert_bnd item.item_bindings;
+                  item_item = convert.item_f item.item_item;
+               }
+
           | ToploopItem t ->
                ToploopItem (convert.item_f t)
 
@@ -574,7 +587,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                MLRewrite { t with
                            mlterm_params = List.map param_map t.mlterm_params;
                            mlterm_term = convert.term_f t.mlterm_term;
-                           mlterm_def = opt_apply convert.expr_f t.mlterm_def;
+                           mlterm_def = opt_apply convert_bnd_expr t.mlterm_def;
                            mlterm_resources = res_map t.mlterm_resources;
                }
 
@@ -582,7 +595,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                MLAxiom { t with
                          mlterm_params = List.map param_map t.mlterm_params;
                          mlterm_term = convert.term_f t.mlterm_term;
-                         mlterm_def = opt_apply convert.expr_f t.mlterm_def;
+                         mlterm_def = opt_apply convert_bnd_expr t.mlterm_def;
                          mlterm_resources = res_map t.mlterm_resources;
                }
 
@@ -600,7 +613,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                    | TermDForm t ->
                         TermDForm (convert.term_f t)
                    | MLDForm mldf ->
-                        MLDForm { mldf with dform_ml_code = convert.expr_f mldf.dform_ml_code }
+                        MLDForm { mldf with dform_ml_code = convert_bnd_expr mldf.dform_ml_code }
                in
                   DForm { df with
                      dform_redex = convert.term_f df.dform_redex;
@@ -614,7 +627,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                Resource (name, convert.resource_f r)
 
           | Improve { improve_name = name; improve_expr = expr } ->
-               Improve { improve_name = name; improve_expr = convert.expr_f expr }
+               Improve { improve_name = name; improve_expr = convert_bnd_expr expr }
 
           | MagicBlock { magic_name = name;
                          magic_code = items
@@ -635,9 +648,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
       in
          item, loc
 
-   and map { info_list = info } =
-      { info_list = List.map item_map info }
-   in
+   and map info = { info_list = List.map item_map info.info_list } in
       map
 
 (*
@@ -676,6 +687,8 @@ let resource_op                = mk_opname "resource"
 let infix_op                   = mk_opname "infix"
 let magic_block_op             = mk_opname "magic_block"
 let summary_item_op            = mk_opname "summary_item"
+let term_binding_op            = mk_opname "term_binding"
+let opname_binding_op          = mk_opname "opname_binding"
 let toploop_item_op            = mk_opname "toploop_item"
 let improve_op                 = mk_opname "improve"
 let definition_op              = mk_opname "definition"
@@ -765,6 +778,28 @@ struct
             raise (Failure "dest_loc_string: location is not an integer")
 
    (*
+    * PRL bindings
+    *)
+   
+   let rec dest_bindings convert bnds t =
+      let opname = opname_of_term t in
+         if Opname.eq opname term_binding_op then
+            let v, t, t' = dest_dep0_dep1_any_term t in
+               dest_bindings convert ((v,BindTerm (convert.term_f t))::bnds) t'
+         else if Opname.eq opname opname_binding_op then
+            let v, t, t' = dest_dep0_dep1_any_term t in
+               dest_bindings convert ((v,BindOpname (opname_of_term t))::bnds) t'
+         else bnds, t
+
+   let dest_bnd_item convert item_f t =
+      let bnds, t = dest_bindings convert [] t in {
+         item_bindings = bnds;
+         item_item = item_f t;
+      }
+
+   let dest_bnd_expr convert t = dest_bnd_item convert convert.expr_f t
+
+   (*
     * Dform options.
     *)
    let dform_inherit_op     = mk_opname "inherit_df"
@@ -821,7 +856,7 @@ struct
             let printer, buffer, expr = dest_string_string_dep0_any_term t in
                MLDForm { dform_ml_printer   = printer;
                          dform_ml_buffer    = buffer;
-                         dform_ml_code      = convert.expr_f expr
+                         dform_ml_code      = dest_bnd_expr convert expr
                        }
          else
             raise (Failure "Dform term is not valid")
@@ -903,8 +938,11 @@ struct
       let t, loc, name = dest_loc_string t in
          loc, name, List.map expr_f (dest_xlist t)
 
-   let dest_res convert t =
+   let dest_res_inner convert t =
       List.map (dest_resource_term convert.expr_f) (dest_xlist t)
+
+   let dest_res convert t =
+      dest_bnd_item convert (dest_res_inner convert) t
 
    (*
     * Collect a rewrite.
@@ -966,7 +1004,7 @@ struct
          MLRewrite { mlterm_name = name;
                      mlterm_params = dest_params convert params;
                      mlterm_term = convert.term_f term;
-                     mlterm_def = dest_opt convert.expr_f expr;
+                     mlterm_def = dest_opt (dest_bnd_expr convert) expr;
                      mlterm_resources = dest_res convert resources
          }
 
@@ -976,7 +1014,7 @@ struct
          MLAxiom { mlterm_name = name;
                    mlterm_params = dest_params convert params;
                    mlterm_term = convert.term_f term;
-                   mlterm_def = dest_opt convert.expr_f expr;
+                   mlterm_def = dest_opt (dest_bnd_expr convert) expr;
                    mlterm_resources = dest_res convert resources
          }
 
@@ -989,6 +1027,9 @@ struct
                   parent_opens = List.map dest_string_param_list (dest_xlist opens);
                   parent_resources = List.map (dest_resource_sig convert) (dest_xlist resources)
          }
+
+   and dest_summary_item convert t =
+      SummaryItem (dest_bnd_item convert convert.item_f (one_subterm t))
 
    (*
     * Enclosed module.
@@ -1062,7 +1103,7 @@ struct
    and dest_improve convert t =
       Improve {
          improve_name = dest_string_param t;
-         improve_expr = convert.expr_f (one_subterm t)
+         improve_expr = dest_bnd_expr convert (one_subterm t)
       }
 
    (*
@@ -1123,7 +1164,7 @@ struct
                else if Opname.eq opname magic_block_op then
                   dest_magic_block convert t
                else if Opname.eq opname summary_item_op then
-                  SummaryItem (convert.item_f (one_subterm t))
+                  dest_summary_item convert t
                else if Opname.eq opname toploop_item_op then
                   ToploopItem (convert.item_f (one_subterm t))
                else if Opname.eq opname module_op then
@@ -1221,6 +1262,20 @@ struct
       mk_xlist_term (List.map (mk_param convert) params)
 
    (*
+    * PRL bindings
+    *)
+   let rec term_of_bindings convert t = function
+      [] -> t
+    | (v, BindTerm t') :: tl ->
+         term_of_bindings convert (mk_dep0_dep1_term term_binding_op v (convert.term_f t') t) tl
+    | (v, BindOpname op) :: tl ->
+         let t' = mk_simple_term op [] in
+            term_of_bindings convert (mk_dep0_dep1_term opname_binding_op v t' t) tl
+
+   and mk_bnd_expr convert expr =
+      term_of_bindings convert (convert.expr_f expr.item_item) expr.item_bindings
+
+   (*
     * Display form options.
     *)
    let mk_dform_mode mode =
@@ -1251,8 +1306,7 @@ struct
                 dform_ml_buffer = buffer;
                 dform_ml_code = expr
       } ->
-         let expr = convert.expr_f expr in
-            mk_string_string_dep0_term dform_ml_op printer buffer expr
+         mk_string_string_dep0_term dform_ml_op printer buffer (mk_bnd_expr convert expr)
 
    (*
     * Precedence relation.
@@ -1274,7 +1328,7 @@ struct
       mk_loc_string_term res_op loc name (mk_xlist_term (List.map expr_f args))
 
    and term_of_resources convert res =
-      mk_xlist_term (List.map (term_of_res convert.expr_f) res)
+      term_of_bindings convert (mk_xlist_term (List.map (term_of_res convert.expr_f) res.item_item)) res.item_bindings
 
    and term_of_rewrite op convert { rw_name = name;
                                     rw_redex = redex;
@@ -1322,7 +1376,7 @@ struct
       mk_string_param_term mlrewrite_op name (**)
          [mk_params convert params;
           convert.term_f term;
-          mk_opt convert.expr_f expr_opt;
+          mk_opt (mk_bnd_expr convert) expr_opt;
           term_of_resources convert res]
 
    and term_of_mlaxiom convert { mlterm_name = name;
@@ -1334,7 +1388,7 @@ struct
       mk_string_param_term mlaxiom_op name (**)
          [mk_params convert params;
           convert.term_f term;
-          mk_opt convert.expr_f expr_opt;
+          mk_opt (mk_bnd_expr convert) expr_opt;
           term_of_resources convert res]
 
    and term_of_parent convert { parent_name = path;
@@ -1383,15 +1437,18 @@ struct
       term_of_resources convert res
    ]
 
+   and term_of_item convert item =
+      mk_simple_term summary_item_op [term_of_bindings convert (convert.item_f item.item_item) item.item_bindings]
+
    (*
     * Convert the items to a term.
     *)
    and term_list_aux (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, term,
                                  term, term, term, term, term, term) convert) = function
-      SummaryItem t ->
-         mk_simple_term summary_item_op [convert.item_f t]
-    | ToploopItem t ->
-         mk_simple_term toploop_item_op [convert.item_f t]
+      SummaryItem item ->
+         term_of_item convert item
+    | ToploopItem item ->
+         mk_simple_term toploop_item_op [convert.item_f item]
     | Rewrite rw ->
          term_of_rewrite rewrite_op convert rw
     | InputForm rw ->
@@ -1421,7 +1478,7 @@ struct
     | Resource (name, r) ->
          mk_string_param_term resource_op name [convert.resource_f r]
     | Improve { improve_name = name; improve_expr = expr } ->
-         mk_string_param_term improve_op name [convert.expr_f expr]
+         mk_string_param_term improve_op name [mk_bnd_expr convert expr]
     | Infix op ->
          mk_string_param_term infix_op op []
     | MagicBlock { magic_name = name; magic_code = items } ->

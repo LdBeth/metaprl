@@ -26,14 +26,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Term_shape_sig
 open Refiner.Refiner
 open Term
 open TermMeta
+open Opname
 
 (************************************************************************
  * COMMON ERRORS                                                        *
@@ -44,7 +45,7 @@ open TermMeta
  *)
 exception NotANumber of string         (* Int param is not a number *)
 exception BadParam of string           (* Bogus parameter format *)
-exception BadLevelExp of level_exp     (* Level expression has wrong type *)
+exception BadLevelExp of level_exp     (* Level bnd_expression has wrong type *)
 exception BadParamCast of param * string
 exception BadArgList of (string list * term) list
 exception BadBinder of term
@@ -83,11 +84,36 @@ type aterm = { aname : term option; aterm : term }
 (*
  * 'proof: type of proofs for rewrites, etc.
  * 'ctyp: type of type definitions for resources
- * 'expr: type of expressions used in ML definitions
+ * 'expr: type of bnd_expressions used in ML definitions
  * 'item: type of summary items
  *)
 
-type 'expr resource_def = (MLast.loc * string * 'expr list) list
+(*
+ * A str_item can have MetaPRL stuff in it.
+ *)
+type 'term prl_binding =
+   BindTerm of 'term
+ | BindOpname of opname
+
+type ('item, 'term) bnd_expr = {
+   item_bindings : (string * 'term prl_binding) list;
+   item_item : 'item
+}
+
+type ('expr, 'term) resource_def =
+   ((MLast.loc * string * 'expr list) list, 'term) bnd_expr
+
+(*
+ * Resource descriptions.
+ *)
+type 'ctyp resource_sig = {
+   resource_input : 'ctyp;
+   resource_output : 'ctyp
+}
+
+type 'term param =
+   ContextParam of string
+ | TermParam of 'term
 
 (*
  * Proof is type unit in interface.
@@ -97,7 +123,7 @@ type ('term, 'proof, 'expr) rewrite_info =
      rw_redex : 'term;
      rw_contractum : 'term;
      rw_proof : 'proof;
-     rw_resources : 'expr resource_def
+     rw_resources : ('expr, 'term) resource_def
    }
 
 type ('term, 'proof, 'expr) cond_rewrite_info =
@@ -107,58 +133,75 @@ type ('term, 'proof, 'expr) cond_rewrite_info =
      crw_redex : 'term;
      crw_contractum : 'term;
      crw_proof : 'proof;
-     crw_resources : 'expr resource_def
+     crw_resources : ('expr, 'term) resource_def
    }
 
-and ('term, 'meta_term, 'proof, 'expr) rule_info =
+type ('term, 'meta_term, 'proof, 'expr) rule_info =
    { rule_name : string;
      rule_params : 'term param list;
      rule_stmt : 'meta_term;
      rule_proof : 'proof;
-     rule_resources : 'expr resource_def
+     rule_resources : ('expr, 'term) resource_def
    }
 
-and ('term, 'expr) mlterm_info =
+type ('term, 'expr) mlterm_info =
    { mlterm_name : string;
      mlterm_params : 'term param list;
      mlterm_term : 'term;
-     mlterm_def : 'expr option;
-     mlterm_resources : 'expr resource_def
+     mlterm_def : ('expr, 'term) bnd_expr option;
+     mlterm_resources : ('expr, 'term) resource_def
+   }
+
+type 'term opname_info =
+   { opname_name : string;
+     opname_term : 'term
    }
 
 (*
  * A parent command lists all the modules that are recursively
  * opened, and it lists all the resources that were discovered.
  *)
-and 'ctyp parent_info =
+type 'ctyp parent_info =
    { parent_name : module_path;
      parent_opens : module_path list;
      parent_resources : (string * 'ctyp resource_sig) list
    }
 
-and 'term opname_info =
-   { opname_name : string;
-     opname_term : 'term
-   }
-
-and ('term, 'expr) opname_definition = {
+type ('term, 'expr) opname_definition = {
    opdef_name : string;
    opdef_opname : string;
    opdef_term : 'term;
    opdef_definition : 'term;
-   opdef_resources : 'expr resource_def
+   opdef_resources : ('expr, 'term) resource_def
 }
 
-and dform_modes =
+type dform_modes =
    Modes of string list       (* include these modes *)
  | ExceptModes of string list (* exclude these modes *)
  | AllModes
+
+type dform_option =
+   DFormInheritPrec
+ | DFormPrec of string
+ | DFormParens
+ | DFormInternal
+
+type ('term, 'expr) dform_ml_def =
+   { dform_ml_printer : string;
+     dform_ml_buffer : string;
+     dform_ml_code : ('expr, 'term) bnd_expr;
+   }
+
+type ('term, 'expr) dform_def =
+   NoDForm
+ | TermDForm of 'term
+ | MLDForm of ('term, 'expr) dform_ml_def
 
 (*
  * Dform descriptions.
  * The definition is not required in the interface.
  *)
-and ('term, 'expr) dform_info =
+type ('term, 'expr) dform_info =
    { dform_name : string;
      dform_modes : dform_modes;
      dform_options : dform_option list;
@@ -166,61 +209,32 @@ and ('term, 'expr) dform_info =
      dform_def : ('term, 'expr) dform_def
    }
 
-and dform_option =
-   DFormInheritPrec
- | DFormPrec of string
- | DFormParens
- | DFormInternal
-
-and ('term, 'expr) dform_def =
-   NoDForm
- | TermDForm of 'term
- | MLDForm of ('term, 'expr) dform_ml_def
-
-and ('term, 'expr) dform_ml_def =
-   { dform_ml_printer : string;
-     dform_ml_buffer : string;
-     dform_ml_code : 'expr
-   }
-
 (*
  * Define a precedence relation.
  *)
-and prec_rel_info =
+type prec_rel_info =
    { prec_rel : Precedence.relation;
      prec_left : string;
      prec_right : string
    }
 
-(*
- * Resource descriptions.
- *)
-and 'ctyp resource_sig = {
-   resource_input : 'ctyp;
-   resource_output : 'ctyp
-}
-
-and 'expr resource_expr = 'expr
+type 'expr resource_expr = 'expr
 
 (*
  * Reource improvement.
  *)
-and 'expr improve_info = {
+type ('expr, 'term) improve_info = {
    improve_name : string;
-   improve_expr : 'expr
+   improve_expr : ('expr, 'term) bnd_expr
 }
 
 (*
  * Magic block needs a variable to bind the magic number to.
  *)
-and 'item magic_info =
+type 'item magic_info =
    { magic_name : string;
      magic_code : 'item list
    }
-
-and 'term param =
-   ContextParam of string
- | TermParam of 'term
 
 (*
  * Conversion functions.
@@ -243,7 +257,7 @@ type ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1,
  * we use a term option so that the term does not have to be
  * provided in the interface.
  *
- * A MagicBlock is a block of code that we use to compute
+ * A MagicBlock (not currently used!) is a block of code that we use to compute
  * a magic number.  The magic number changes whenever the code changes.
  *)
 
@@ -261,9 +275,9 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  | PrecRel of prec_rel_info
  | Id of int
  | Resource of string * 'resource
- | Improve of 'expr improve_info
+ | Improve of ('expr, 'term) improve_info
  | Infix of string
- | SummaryItem of 'item
+ | SummaryItem of ('item, 'term) bnd_expr
  | ToploopItem of 'item
  | MagicBlock of 'item magic_info
  | Comment of 'term
