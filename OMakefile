@@ -509,10 +509,10 @@ OCamlGeneratedFiles(files) =
         $(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINCLUDES) -c -impl $<
 
 %.p4i: %.mli $(CAMLP4O)
-        $(PrlC $(OCAMLC)) $(OCAMLINCLUDES) -E $*.mli > $@
+        $(WrapC $(CAMLP4O)) $(OCAMLINCLUDES) $*.mli > $@
 
 %.p4: %.ml $(CAMLP4O)
-        $(PrlC $(OCAMLC)) $(OCAMLINCLUDES) -E $*.ml > $@
+        $(WrapC $(CAMLP4O)) $(OCAMLINCLUDES) $*.ml > $@
 
 #
 # Support directories
