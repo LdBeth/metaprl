@@ -224,11 +224,7 @@ struct
 
                       | ToploopIgnoreExn _
                       | RefineError (_, ToploopIgnoreError) ->
-                           ()
-
-                      | exn ->
-                           print_exn exn;
-                           raise exn)
+                           ())
             end
          else
             (fun f ->

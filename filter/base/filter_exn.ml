@@ -211,7 +211,9 @@ let format_message buf s =
          format_szone buf
 
 let print_exn db s f x =
-   try f x with
+   if Refine_exn.backtrace then
+      f x
+   else try f x with
       exn ->
          let buf = new_buffer () in
             format_message buf s;
@@ -221,10 +223,7 @@ let print_exn db s f x =
             format_newline buf;
             output_rbuffer stderr buf;
             flush stderr;
-            if Refine_exn.backtrace then
-               raise exn
-            else
-               raise (Refine_exn.ToploopIgnoreExn exn)
+            raise (Refine_exn.ToploopIgnoreExn exn)
 
 let handle_exn db s loc f =
    if Refine_exn.backtrace then
