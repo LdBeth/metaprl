@@ -50,6 +50,9 @@ for the refiner module, containing the following modules:</P>
    <B>module</B> RefineError : RefineErrorSig
    <B>module</B> <A HREF="mp-rewrite.html">Rewrite</A> : RewriteSig
    <B>module</B> <A HREF="mp-refine.html">Refine</A> : RefineSig
+   <B>module</B> TermHash : TermHashSig
+   <B>module</B> TermNorm : TermNormSig
+   <B>module</B> TermHeaderConstr (FromTerm : TermModuleSig) : TermHeaderContrSig
 <B>end</B></PRE>
 </BLOCKQUOTE>
 
@@ -85,12 +88,13 @@ for large refinements, while the <TT>term_std</TT> module performs
 a complete term copy on every substitution. Both term modules
 have identical signatures, and they can be interchanged without
 affecting the refinement functionality. The <TT>term_gen</TT>
-directory contains term operations that are shared between the
-two implementations of terms.</P>
+directory contains term operations that treat the <TT>term</TT> type
+abstractly and, as a result, may be shared between different
+implementations of terms.</P>
 
 <P>The <TT>rewrite</TT> directory contains the implementation
 of the rewriter. The <TT>refine</TT> directory implements the
-refiner. The separate refiner modules are composed in the <TT>refiner_std</TT>
+refiner. Two separate refiner modules are composed in the <TT>refiner_std</TT>
 and <TT>refiner_ds</TT> modules.</P>
 
 <P>The final directory contains general term operations for arbitrary

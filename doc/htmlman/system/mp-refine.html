@@ -5,7 +5,7 @@
 </HEAD>
 <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
-<H1>MetaPRL Refiner</H1>
+<H2>MetaPRL Refiner</H2>
 
 <P>The MetaPRL refiner uses the term rewriter to implement
 four kinds of formal objects:</P>
@@ -17,9 +17,9 @@ four kinds of formal objects:</P>
   <LI>Inference rules: relations between the provable statements.
 </OL>
 
-<H2>Computational Rewrites</H2>
+<H3>Computational Rewrites</H3>
 
-<P>Computational rewrites represent equaivalences between terms
+<P>Computational rewrites represent equivalences between terms
 that hold in any context. For example, in our currently implemented
 logics, beta-equivalence holds in every context:</P>
 
@@ -31,7 +31,7 @@ logics, beta-equivalence holds in every context:</P>
 complexity, or in logics that allow effects or require an explicit
 evaluation order.</P>
 
-<H2>Conditional Rewrites</H2>
+<H3>Conditional Rewrites</H3>
 
 <P>Conditional rewrites are defined specifically for sequent calculi.
 An example of a conditional rewrite is a rewrite for division:</P>
@@ -43,7 +43,7 @@ An example of a conditional rewrite is a rewrite for division:</P>
 <P>The application of this rewrite requires a proof that the term
 being divided is not zero.</P>
 
-<H2>Axioms</H2>
+<H3>Axioms</H3>
 
 <P>Axioms are a degenerate form of inference rules that represent
 true statements of a logic. An axiom is usually just a term that
@@ -59,7 +59,7 @@ represents a valid proposition. For instance:</P>
 interpretation: it would be <I>proved</I> by any function over
 the integers.</P>
 
-<H2>Inference Rules</H2>
+<H3>Inference Rules</H3>
 
 <P>Inference rules are used to specify &quot;conditional&quot;
 axioms. Most logical statements have the form of a rule. An example
@@ -74,15 +74,15 @@ in a sequent calculus is the rule for implication introduction:</P>
 <P>This is the standard rule: the proposition <TT>'A</TT> implies
 the proposition <TT>'B</TT> if <TT>'B</TT> can be proved by assuming
 <TT>'A</TT>. The arguments <TT>'H</TT> and <TT>'x</TT> represent
-<I>parameters</I> of the rewrite. Given a term matching the <I>goal</I>
+<I>parameters</I> of the rewrite. Given a <I>goal</I> term matching
 <TT>sequent { 'H &gt;- 'A =&gt; 'B }</TT>, the application of
-the <TT>imp_intro</TT> rule produces a subgoal of the form <TT>sequent
+the <TT>imp_intro</TT> rule produces a <I>subgoal</I> of the form <TT>sequent
 { 'H; x: 'A &gt;- 'B }</TT>. The parameters <TT>'H</TT> and <TT>'x</TT>
 are necessary arguments to enable the application: <TT>'H</TT>
 represents the list of hypotheses of the sequent, and the <TT>'x</TT>
 parameter provides the new variable name used in the subgoal.</P>
 
-<H2>Refiner types</H2>
+<H3>Refiner types</H3>
 
 <P>Refiners are constructed recursively as objects of type <TT>refiner</TT>.
 The <TT>null_refiner</TT> value is the empty refiner containing
@@ -99,9 +99,9 @@ the refiner:</P>
 <P>The <TT>rewrite</TT> type is used to represent both simple
 and conditional rewrites. The <TT>tactic</TT> type is used to
 represent axioms and inference rules. The <TT>extract</TT> type
-is used to provide accouning information for applications of rules.
+is used to provide accounting information for applications of rules.
 The <TT>sentinal</TT> type is a condensed representation of the
-refiner that incudes the collection of all valid rewrites and
+refiner that includes the collection of all valid rewrites and
 rules in the refiner.</P>
 
 <P>The objects in the refiner are constructed through four functions,
@@ -120,6 +120,7 @@ one for each object type. These functions have the following types:</P>
   <PRE><B>val</B> rwaddr : rewrite -&gt; address -&gt; rewrite
 <B>val</B> andthenrw : rewrite -&gt; rewrite -&gt; rewrite
 <B>val</B> orelserw : rewrite -&gt; rewrite -&gt; rewrite
+<B>val</B> rwhigher : rewrite -&gt; rewrite
 <B>val</B> rwtactic : rewrite -&gt; tactic</PRE>
 </BLOCKQUOTE>
 
@@ -127,13 +128,16 @@ one for each object type. These functions have the following types:</P>
 of the goal. The <TT>andthenrw</TT> provides sequencing: when
 the rewrite <TT>(andthenrw rw1 rw2)</TT>is applied, the rewrite
 <TT>rw1</TT> is first applied, and it is immediately followed
-by applying the rewrite <TT>rw2</TT>. The <TT>orelserw</TT> rewrite
+by applying the rewrite <TT>rw2</TT>. The <TT>orelserw</TT>
 is similar for handling failures. When the rewrite <TT>(orelserw
 rw1 rw2)</TT> is applied, the rewrite <TT>rw1</TT> is applied
 to the goal. If <TT>rw1</TT> succeeds, the rewrite completes without
 applying <TT>rw2</TT>. Otherwise, if <TT>rw1</TT> fails (by raising
-an exception), the rewrite is restarted by applying <TT>rw2</TT>.
-The final function converts a rewrite to a tactic, so that the
+a <TT>RefineError</TT> exception), the rewrite is restarted by applying <TT>rw2</TT>.
+When the <TT>(rwhigher rw)</TT> rewrite is applied, the rewrite <TT>rw</TT> is
+allied to all the outermost subterms of the goal where <TT>rw</TT> may be
+applied successfully (without raising a <TT>RefineError</TT> exception).
+Finally he <TT>rwtactic</TT> function converts a rewrite to a tactic, so that the
 tactic mechanism can be used to apply the rewrite.</P>
 
 <P>Tactics are applied with the <TT>refine</TT> function, with
@@ -147,7 +151,7 @@ this simplified type:</P>
 is used to check that the tactic performs a valid logical inference;
 it takes a <TT>tactic</TT> that describes the logical operation
 to be performed, and it produces a list of subgoals that results
-from the apllication of the rewrites and inference rules defined
+from the application of the rewrites and inference rules defined
 by the tactic. A successful refinement also returns an <TT>extract</TT>
 that summarizes the logical operation. In constructive logics,
 the <TT>extract</TT> may be used to compute the computational
