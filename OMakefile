@@ -4,7 +4,7 @@
 # The upper limit is there because old versions of omake did not do the comparison correctly.
 # Remove when we require omake >= 0.8
 #
-OMakeVersion(0.7.15, 0.7.30)
+OMakeVersion(0.7.17, 0.7.30)
 
 ########################################################################
 # This section is for compatibility with old version of omake, so
@@ -54,7 +54,46 @@ ABORT_ON_DEPENDENCY_ERRORS = true
 #
 .INCLUDE: mk/defaults
 
+#
+# JYH: do we have to name these things _DEFAULT?
+# If we use the normal names, we don't have to have
+# this section, which would be nice.
+#
+TERMS = $(TERMS_DEFAULT)
+REFINER = $(REFINER_DEFAULT)
+SEQ_SET = $(SEQ_SET_DEFAULT)
+CCC = $(CCC_DEFAULT)
+ENSROOT = $(ENSROOT_DEFAULT)
+OCAMLSRC = $(OCAMLSRC_DEFAULT)
+THEORIES = $(THEORIES_DEFAULT)
+TESTS_ENABLED = $(TESTS_ENABLED_DEFAULT)
+READLINE_ENABLED = true
+NCURSES_ENABLED = true
+SSL_ENABLED = $(SSL_ENABLED_DEFAULT)
+THREADS_ENABLED = $(THREADS_ENABLED_DEFAULT)
+NATIVE_ENABLED = $(NATIVE_ENABLED_DEFAULT)
+BYTE_ENABLED = $(BYTE_ENABLED_DEFAULT)
+SLOPPY_DEPENDENCIES = false
+NATIVE_PROFILING_ENABLED = false
 OCAMLFLAGS = $(DEFAULT_OCAMLFLAGS)
+
+#
+# Configuration file
+#
+.INCLUDE: mk/make_config
+
+# Create it if it doesn't exist
+.INCLUDE: mk/config
+    section eval
+       MakeConfig(mk/config)
+
+# Create a fresh copy if it is out-of-date
+.INCLUDE: mk/config: mk/make_config
+    section eval
+       MakeConfig(mk/config)
+
+.INCLUDE: mk/config.local
+    $(CP) mk/config.local.empty mk/config.local
 
 #
 # Win32-specific config.
@@ -62,12 +101,6 @@ OCAMLFLAGS = $(DEFAULT_OCAMLFLAGS)
 # If the config file does not exist, then create one.
 #
 if $(equal $(OSTYPE), Win32)
-   .INCLUDE: mk/config: mk/config.win32
-       copy mk\config.win32 mk\config
-
-   .INCLUDE: mk/config.local
-       copy mk\config.local.empty mk\config.local
-
    #
    # cmd.exe does not like ./command paths
    #
@@ -79,11 +112,15 @@ if $(equal $(OSTYPE), Win32)
    SLASH = \\
 
    #
-   # No native-code version of camlp4 on windows
+   # Things not enabled on Win32.
    #
    READLINE_ENABLED = false
    NCURSES_ENABLED = false
    NATIVE_PROFILING_ENABLED = false
+
+   #
+   # Compile C files with threads
+   #
    CFLAGS += /MT
 
    #
@@ -94,35 +131,6 @@ if $(equal $(OSTYPE), Win32)
    export
 
 else
-   #
-   # Defaults (in case mk/config does not define them)
-   #
-   TERMS = $(TERMS_DEFAULT)
-   REFINER = $(REFINER_DEFAULT)
-   SEQ_SET = $(SEQ_SET_DEFAULT)
-   CCC = $(CCC_DEFAULT)
-   ENSROOT = $(ENSROOT_DEFAULT)
-   OCAMLSRC = $(OCAMLSRC_DEFAULT)
-   THEORIES = $(THEORIES_DEFAULT)
-   TESTS_ENABLED = $(TESTS_ENABLED_DEFAULT)
-   READLINE_ENABLED = true
-   NCURSES_ENABLED = true
-   SSL_ENABLED = $(SSL_ENABLED_DEFAULT)
-   THREADS_ENABLED = $(THREADS_ENABLED_DEFAULT)
-   NATIVE_ENABLED = $(NATIVE_ENABLED_DEFAULT)
-   BYTE_ENABLED = $(BYTE_ENABLED_DEFAULT)
-   SLOPPY_DEPENDENCIES = false
-   NATIVE_PROFILING_ENABLED = false
-
-   .INCLUDE: mk/config
-       ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SSL_ENABLED="$(SSL_ENABLED)" THREADS_ENABLED="$(THREADS_ENABLED_DEFAULT)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" NATIVE_PROFILING_ENABLED="$(NATIVE_PROFILING_ENABLED)" mk/make_config.sh
-
-   .INCLUDE: mk/config: mk/make_config.sh
-       ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SSL_ENABLED="$(SSL_ENABLED)" THREADS_ENABLED="$(THREADS_ENABLED)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" NATIVE_PROFILING_ENABLED="$(NATIVE_PROFILING_ENABLED)" mk/make_config.sh
-
-   .INCLUDE: mk/config.local
-       $(CP) mk/config.local.empty mk/config.local
-
    #
    # Current directory, for executables.
    # That is, the current directory, like ./make_mp_config
