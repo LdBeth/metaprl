@@ -9,16 +9,18 @@
  * Iteration functions.
  *)
 type 'a fold =
-   { fold_expr        : 'a -> MLast.expr -> 'a;
-     fold_patt        : 'a -> MLast.patt -> 'a;
-     fold_type        : 'a -> MLast.ctyp -> 'a;
-     fold_sig_item    : 'a -> MLast.sig_item -> 'a;
-     fold_str_item    : 'a -> MLast.str_item -> 'a;
-     fold_module_expr : 'a -> MLast.module_expr -> 'a;
-     fold_module_type : 'a -> MLast.module_type -> 'a;
-     fold_with_constr : 'a -> MLast.with_constr -> 'a;
-     fold_class       : 'a -> MLast.class_decl -> 'a;
-     fold_class_field : 'a -> MLast.class_field -> 'a
+   { fold_expr             : 'a -> MLast.expr -> 'a;
+     fold_patt             : 'a -> MLast.patt -> 'a;
+     fold_type             : 'a -> MLast.ctyp -> 'a;
+     fold_sig_item         : 'a -> MLast.sig_item -> 'a;
+     fold_str_item         : 'a -> MLast.str_item -> 'a;
+     fold_module_expr      : 'a -> MLast.module_expr -> 'a;
+     fold_module_type      : 'a -> MLast.module_type -> 'a;
+     fold_with_constr      : 'a -> MLast.with_constr -> 'a;
+     fold_class            : 'a -> MLast.class_decl -> 'a;
+     fold_class_field      : 'a -> MLast.class_field -> 'a;
+     fold_class_type       : 'a -> MLast.class_type -> 'a;
+     fold_class_type_field : 'a -> MLast.class_type_field -> 'a
    }
 
 (*
@@ -37,6 +39,9 @@ val fold_class_field : 'a fold -> 'a -> MLast.class_field -> 'a
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/06 19:50:41  jyh
+ * Fixed match error in mLast_util.ml
+ *
  * Revision 1.1  1998/02/19 17:14:05  jyh
  * Splitting filter_parse.
  *

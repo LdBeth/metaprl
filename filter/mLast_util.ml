@@ -11,16 +11,18 @@ open MLast
  * Iteration functions.
  *)
 type 'a fold =
-   { fold_expr        : 'a -> MLast.expr -> 'a;
-     fold_patt        : 'a -> MLast.patt -> 'a;
-     fold_type        : 'a -> MLast.ctyp -> 'a;
-     fold_sig_item    : 'a -> MLast.sig_item -> 'a;
-     fold_str_item    : 'a -> MLast.str_item -> 'a;
-     fold_module_expr : 'a -> MLast.module_expr -> 'a;
-     fold_module_type : 'a -> MLast.module_type -> 'a;
-     fold_with_constr : 'a -> MLast.with_constr -> 'a;
-     fold_class       : 'a -> MLast.class_decl -> 'a;
-     fold_class_field : 'a -> MLast.class_field -> 'a
+   { fold_expr             : 'a -> MLast.expr -> 'a;
+     fold_patt             : 'a -> MLast.patt -> 'a;
+     fold_type             : 'a -> MLast.ctyp -> 'a;
+     fold_sig_item         : 'a -> MLast.sig_item -> 'a;
+     fold_str_item         : 'a -> MLast.str_item -> 'a;
+     fold_module_expr      : 'a -> MLast.module_expr -> 'a;
+     fold_module_type      : 'a -> MLast.module_type -> 'a;
+     fold_with_constr      : 'a -> MLast.with_constr -> 'a;
+     fold_class            : 'a -> MLast.class_decl -> 'a;
+     fold_class_field      : 'a -> MLast.class_field -> 'a;
+     fold_class_type       : 'a -> MLast.class_type -> 'a;
+     fold_class_type_field : 'a -> MLast.class_type_field -> 'a
    }
 
 (*
@@ -155,7 +157,9 @@ and fold_type iter x t =
 and fold_sig_item iter x si =
    let x = iter.fold_sig_item x si in
       match si with
-         (<:sig_item< declare $list:sil$ end >>) ->
+         (<:sig_item< class $list:ctl$ >>) ->
+            List.fold_left (fold_class_type iter) x ctl
+       | (<:sig_item< declare $list:sil$ end >>) ->
             List.fold_left (fold_sig_item iter) x sil
        | (<:sig_item< exception $s$ of $list:tl$ >>) ->
             List.fold_left (fold_type iter) x tl
@@ -242,16 +246,44 @@ and fold_module_expr iter x me =
        | (<:module_expr< $uid:i$ >>) ->
             x
       
+and fold_class_type iter x
+  ({ ctLoc = loc;
+     ctNam = s;
+     ctPrm = sl;
+     ctArg = tl;
+     ctTyc = so;
+     ctFld = ctfl;
+     ctVir = b1;
+     ctCls = b2 } as ct) =
+   let x = iter.fold_class_type x ct in
+   let x = List.fold_left (fold_type iter) x tl in
+   let x = List.fold_left (fold_class_type_field iter) x ctfl in
+      x
+
+and fold_class_type_field iter x ctf =
+   let x = iter.fold_class_type_field x ctf in
+      match ctf with
+         CtCtr (loc, s, t) ->
+            fold_type iter x t
+       | CtInh (loc, t) ->
+            fold_type iter x t
+       | CtMth (loc, s, t) ->
+            fold_type iter x t
+       | CtVal (loc, s, b1, b2, ot) ->
+            fold_type_opt iter x ot
+       | CtVir (loc, s, t) ->
+            fold_type iter x t
+
 and fold_class iter x
   ({ cdLoc = loc;
-    cdNam = s;
-    cdPrm = sl1;
-    cdArg = pl1;
-    cdSlf = so1;
-    cdTyc = so2;
-    cdFld = cfl;
-    cdVir = b1;
-    cdCls = b2 } as cl) =
+     cdNam = s;
+     cdPrm = sl1;
+     cdArg = pl1;
+     cdSlf = so1;
+     cdTyc = so2;
+     cdFld = cfl;
+     cdVir = b1;
+     cdCls = b2 } as cl) =
    let x = iter.fold_class x cl in
    let x = List.fold_left (fold_patt iter) x pl1 in
    let x = List.fold_left (fold_class_field iter) x cfl in
@@ -276,6 +308,10 @@ and fold_class_field iter x cf =
  *)
 and fold_expr_opt iter x = function
    Some e -> fold_expr iter x e
+ | None -> x
+
+and fold_type_opt iter x = function
+   Some e -> fold_type iter x e
  | None -> x
 
 and fold_pwe iter x (patt, with_expr, expr) =
@@ -307,6 +343,9 @@ and fold_sslt iter x (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/06 19:50:40  jyh
+ * Fixed match error in mLast_util.ml
+ *
  * Revision 1.1  1998/02/19 17:14:05  jyh
  * Splitting filter_parse.
  *

@@ -171,6 +171,20 @@ let fold_class_field locs field =
    in
       loc :: locs
                               
+let fold_class_type locs { ctLoc = loc } =
+   loc :: locs
+
+let fold_class_type_field locs field =
+   let loc =
+      match field with
+         CtCtr (loc, _, _) -> loc
+       | CtInh (loc, _) -> loc
+       | CtMth (loc, _, _) -> loc
+       | CtVal (loc, _, _, _, _) -> loc
+       | CtVir (loc, _, _) -> loc
+   in
+      loc :: locs
+                              
 (*
  * Fold record.
  *)
@@ -184,7 +198,9 @@ let folder =
      fold_module_type = fold_module_type;
      fold_with_constr = fold_with_constr;
      fold_class = fold_class_decl;
-     fold_class_field = fold_class_field
+     fold_class_field = fold_class_field;
+     fold_class_type = fold_class_type;
+     fold_class_type_field = fold_class_type_field
    }
 
 (*
@@ -250,6 +266,9 @@ let get = Hashtbl.find
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/06 19:50:37  jyh
+ * Fixed match error in mLast_util.ml
+ *
  * Revision 1.1  1998/02/19 17:13:56  jyh
  * Splitting filter_parse.
  *
