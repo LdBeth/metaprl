@@ -79,6 +79,34 @@ Installation:
 
    Running within Emacs is much better.  GNU distributes a native
    version of emacs that you can use.  The main thing you have to do
-   is tell emacs to use a en_US.UTF-8 unicode font.
+   is tell emacs to use the right en_US.UTF-8 unicode font.
 
-   I'll tell you how to do this when I figure it out for myself.
+   Any font with the appropriate symbols will work.  However, it seems
+   the default fonts distributed with Windows do not contain enough
+   symbols for MetaPRL in one monospaced font.  The metaprl/editor/fonts/ttf
+   directory contains a "virtual" font that contains enough characters for
+   MetaPRL.  If you want to use this, copy the .ttf files to your <windows>\fonts
+   directory, and use the following command:
+
+      (set-default-font "-outline-MetaPRL Luxi Mono-normal-r-normal-normal-14-*-96-96-c-*-iso10646-1")
+
+   This font is not at all beautiful.  If you want to try other fonts,
+   evaluate this expression in the *scratch* buffer:
+
+      (insert (prin1-to-string (x-list-fonts "*")))
+
+   You will get a list of all the fonts that emacs knows about.
+
+   Next, you can run MetaPRL in a shell window in emacs.  First, make sure the
+   environment variable SHELL is set to cmd.exe:
+
+      M-x setenv
+      Set environment variable: SHELL
+      Set SHELL to value: cmd.exe
+
+   Now run the shell:
+
+      M-x shell
+
+   In the shell window, change directories to metaprl/editor/ml, and run
+   the mptop.bat script.  Have fun!
