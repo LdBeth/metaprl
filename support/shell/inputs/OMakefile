@@ -39,5 +39,7 @@ $(LIBINPUTS): $(LIB)$(SLASH)%: %
 
 $(MPINSTALL): $(LIBINPUTS)
 
+.DEFAULT: $(LIBINPUTS)
+
 clean:
    $(CLEAN) *.pem
