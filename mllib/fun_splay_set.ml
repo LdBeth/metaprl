@@ -211,30 +211,28 @@ struct
     * entire entry from the tree.
     *)
    let remove key t =
-      let tree =
-         match splay key [] t.splay_tree with
-            SplayFound tree ->
-               begin
-                  match tree with
-                     Node (_, Leaf, right, _) ->
-                        right
-                   | Node (_, left, Leaf, _) ->
-                        left
-                   | Node (_, left, right, _) ->
-                        begin
-                           match splay_right left with
-                              Node (key, left_left, Leaf, _) ->
-                                 new_node key left_left right
-                            | _ ->
-                                 raise (Failure "remove")
-                        end
-                   | Leaf ->
-                        raise (Failure "remove")
-               end
-          | SplayNotFound tree ->
-               tree
-      in
-         { splay_tree = tree }
+      match splay key [] t.splay_tree with
+         SplayFound tree ->
+            begin
+               match tree with
+                  Node (_, Leaf, right, _) ->
+                     { splay_tree = right }
+                | Node (_, left, Leaf, _) ->
+                     { splay_tree = left }
+                | Node (_, left, right, _) ->
+                     begin
+                        match splay_right left with
+                           Node (key, left_left, Leaf, _) ->
+                              { splay_tree = new_node key left_left right }
+                         | _ ->
+                              raise (Failure "remove")
+                     end
+                | Leaf ->
+                     raise (Failure "remove")
+            end
+       | SplayNotFound tree ->
+            t.splay_tree <- tree;
+            t
 
    (*
     * Merge two hashtables.
