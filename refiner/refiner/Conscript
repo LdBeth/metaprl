@@ -5,10 +5,10 @@ $env = $env->clone(
                 "../refbase",  "../refsig",  "../term_gen",
                 "../term_std", "../term_ds", "../rewrite"
                ],
-    PPFLAGS => "$env->{PPFLAGS} -Irefiner/refsig"
+    PPFLAGS => "$env->{PPFLAGS} -I$env->{MP}/refiner/refsig"
 );
 
-Command $env "refiner.ml", "#mk/config", qq(
+Command $env "refiner.ml", "$env->{MP}/mk/config", qq(
    echo "module Refiner = Refiner_%TERMS.Refiner" > %>
 );
 

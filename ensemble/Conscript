@@ -1,7 +1,10 @@
 Import qw( env );
 
 $env = $env->clone(
-    INCPATH	=> [@{$env->{INCPATH}}, "#mllib", "#refiner/refsig", "#refiner/refiner"]
+    INCPATH => [@{$env->{INCPATH}},
+                "$env->{MP}/mllib",
+                "$env->{MP}/refiner/refsig",
+                "$env->{MP}/refiner/refiner"]
 );
 
 Command $env 'thread_refiner.ml', 'thread_refiner_null.ml', qq(

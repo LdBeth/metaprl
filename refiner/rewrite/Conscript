@@ -1,8 +1,8 @@
 Import qw( env );
 
 $env = $env->clone(
-    INCPATH	=> [@{$env->{INCPATH}}, "../refbase", "../refsig"],
-    PPFLAGS     => "$env->{PPFLAGS} -Irefiner/refsig",
+    INCPATH => [@{$env->{INCPATH}}, "../refbase", "../refsig"],
+    PPFLAGS => "$env->{PPFLAGS} -I$env->{MP}/refiner/refsig",
 );
 
 Command $env 'rewrite_type_sig.mlz', 'rewrite_types.ml', qq(

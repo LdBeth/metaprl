@@ -1,8 +1,9 @@
 Import qw( env );
 
 $env = $env->clone(
-    INCPATH	=> [@{$env->{INCPATH}}, "#lib", "#mllib", "../refbase", "../refsig"],
-    PPFLAGS     => "$env->{PPFLAGS} -Irefiner/refsig"
+    INCPATH => [@{$env->{INCPATH}}, "$env->{MP}/lib", "$env->{MP}/mllib",
+                "../refbase", "../refsig"],
+    PPFLAGS => "$env->{PPFLAGS} -I$env->{MP}/refiner/refsig"
 );
 
 OCamlSources $env

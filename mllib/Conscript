@@ -5,10 +5,10 @@ Import qw( env );
 ## include path, since some of the modules here depend on the modules therein.
 $env = $env->clone(
 	OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
-	PPFLAGS => "./util/macro.cmo",
+	PPFLAGS => "$env->{MP}/util/macro.cmo",
 
 	# Because of PPFLAGS, all these files must be built with macro.cmo
-	HIDDEPS => "#util/macro.cmo",
+	HIDDEPS => "$env->{MP}/util/macro.cmo",
 );
 
 ## Declare the module sources in this directory that will be built
@@ -84,10 +84,10 @@ OCamlSources $env
 	'comment_parse.mll',
 	'mp_term.ml';
 
-# These files use external symbols in #clib/clib.a
+# These files use external symbols in $env->{MP}/clib/clib.a
 for my $mod ('getrusage', 'marshal_shared', 'mmap', 'mp_debug', 'mp_term',
-	     'punix', 'readline', 'string_util') {
-    Depends $env $mod.$env->{SUFOBJ}, "#clib/clib.a";
+             'punix', 'readline', 'string_util') {
+    Depends $env $mod.$env->{SUFOBJ}, "$env->{MP}/clib/clib.a";
 }
 
 OCamlLibrary $env 'mllib',

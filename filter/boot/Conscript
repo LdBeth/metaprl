@@ -1,9 +1,11 @@
 Import qw( env );
 
 $env = $env->clone(
-	INCPATH	=> [@{$env->{INCPATH}}, "/usr/lib/camlp4", "../base"],
-	OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
-    	PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}"
+   INCPATH     => [@{$env->{INCPATH}},
+                   "/usr/lib/camlp4",
+                   "$env->{MP}/filter/base"],
+   OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
+   PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}"
 );
 
 OCamlSources $env

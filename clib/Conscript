@@ -4,7 +4,7 @@ Import qw( env );
 ## Clone the default environment.
 $cenv = new cons(
     CC          => 'gcc',
-    CFLAGS	=> '-Wall -O2 -g',
+    CFLAGS      => '-Wall -O2 -g',
     CPPPATH     => '/usr/lib/ocaml:/usr/local/lib/ocaml:/usr/lib/ocaml/byterun'
 );
 

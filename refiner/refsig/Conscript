@@ -1,11 +1,11 @@
 Import qw( env );
 
 $env = $env->clone(
-    INCPATH	=> [@{$env->{INCPATH}}, "../refbase"]
+    INCPATH => [@{$env->{INCPATH}}, "../refbase"]
 );
 
 Command $env 'term_sig.ml', 'term_simple_sig.mlz', qq(
-	sed -e "s,TermSimpleSig,TermSig," -e "s,type level_exp_var =.*,type level_exp_var," -e "s,and level_exp =.*,and level_exp," -e "s,and param =.*,and param," -e "s,and operator =.*,and operator," %1 > %>
+   sed -e "s,TermSimpleSig,TermSig," -e "s,type level_exp_var =.*,type level_exp_var," -e "s,and level_exp =.*,and level_exp," -e "s,and param =.*,and param," -e "s,and operator =.*,and operator," %1 > %>
 );
 
 Default qw ( term_sig.ml );

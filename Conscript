@@ -5,6 +5,9 @@
 ### on a per-directory basis.  This one creates a default build environment
 ### and moves into subdirectories for the rest.
 
+# We need the current directory to set the MetaPRL root.
+use Cwd;
+
 ### Default environment
 
 $native = 1;    # 0 for bytecodes, 1 for native
@@ -12,13 +15,14 @@ $native = 1;    # 0 for bytecodes, 1 for native
 ## Cons environments come from the cons module.
 $env = new cons(
 
-    #
+    # Configure base directories.
+    MC => "$ENV{'MC_ROOT'}",  # Needed mostly in the MC Conscripts.
+    MP => getcwd,             # Needed mostly in the MetaPRL Conscripts.
+
     # Configuration
-    #
     MP_VERSION  => "0.7.1",
     REFINER     => "VERBOSE",
     TERMS       => "ds",
-    MC          => "$ENV{'MC_ROOT'}",  # Needed in the MC Conscripts.
     INCPATH     => [],
 
     ## Overrides
@@ -43,6 +47,7 @@ $env = new cons(
     YACCCOM     => "ocamlyacc %1",                        # How to yacc a file
     LNCOM       => "ln -sf %1:f %>",                      # How to link a file
     LNCOM2      => "ln -sf %1:f %>:b.ml; ln -sf %1:f %>:b.mli", # How to link a file
+    LNCOM3      => "ln -sf ../%1 %>", # How to a link a file (for lib/).
 
     PPFLAGS     => "",
     CAMLP4MACRO => "camlp4o %PPFLAGS",
@@ -53,7 +58,7 @@ $env = new cons(
     },
 
     # Use this command to scan ML files for dependencies.
-    OCAMLDEP    => "util/ocamldep -modules",
+    OCAMLDEP    => "util/ocamldep -modules"
 );
 
 #

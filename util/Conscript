@@ -17,7 +17,6 @@ $env = new cons(
     SUFSIG      => ".mli",      # The suffix for signature files
     SUFCSIG     => ".cmi",      # The suffix for compiled signature files
 
-    #OCAMLCFLAGS => "-thread",                             # Basic options
     OCAMLCFLAGS => "-pp 'camlp4o pa_extend.cmo q_MLast.cmo' -I `camlp4 -where`",
     OCAMLCOM    => "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1", # How to compile files
     SIGCOM      => "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1", # How to compile signatures

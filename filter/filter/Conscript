@@ -1,13 +1,15 @@
 Import qw( env );
 
 $env = $env->clone(
-	INCPATH	=> [@{$env->{INCPATH}}, "../base", "../boot"],
-	OCAMLC => "$env->{OCAMLC} -I /usr/lib/camlp4",
-	OCAMLLINK => "$env->{OCAMLLINK} -I /usr/lib/camlp4",
-	OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -linkall -pp '%CAMLP4MACRO'",
-    	PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}",
-        MLLIBS => "unix.cmxa threads.cmxa",
-        CCLIBS => "-cclib clib/clib.a"
+   INCPATH     => [@{$env->{INCPATH}},
+                   "$env->{MP}/filter/base",
+                   "$env->{MP}/filter/boot"],
+   OCAMLC      => "$env->{OCAMLC} -I /usr/lib/camlp4",
+   OCAMLLINK   => "$env->{OCAMLLINK} -I /usr/lib/camlp4",
+   OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -linkall -pp '%CAMLP4MACRO'",
+   PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}",
+   MLLIBS      => "unix.cmxa threads.cmxa",
+   CCLIBS      => "-cclib $env->{MP}/clib/clib.a"
 );
 
 $nenv = $env->clone(
@@ -39,7 +41,7 @@ OCamlSources $env
 	'prlcomp.ml';
 
 # filter_mail.ml uses external symbols from clib.a
-Depends $env 'filter_main'.$env->{SUFOBJ}, "#clib/clib.a";
+Depends $env 'filter_main'.$env->{SUFOBJ}, "$env->{MP}/clib/clib.a";
 
 OCamlLibrary $env 'filter',
 	'filter_parse',

@@ -1,27 +1,27 @@
 Import qw( env );
 
-Command $env 'camlp4n', '#filter/filter/camlp4n', qq(
-	ln -sf ../%1 %>
+Command $env 'camlp4n', "$env->{MP}/filter/filter/camlp4n", qq(
+	%LNCOM3
 );
 
-Command $env 'camlp4o', '#filter/filter/camlp4o', qq(
-	ln -sf ../%1 %>
+Command $env 'camlp4o', "$env->{MP}/filter/filter/camlp4o", qq(
+	%LNCOM3
 );
 
-Command $env 'prlcn', '#filter/filter/prlcn', qq(
-	ln -sf ../%1 %>
+Command $env 'prlcn', "$env->{MP}/filter/filter/prlcn", qq(
+	%LNCOM3
 );
 
-Command $env 'prlco', '#filter/filter/prlco', qq(
-	ln -sf ../%1 %>
+Command $env 'prlco', "$env->{MP}/filter/filter/prlco", qq(
+	%LNCOM3
 );
 
-Command $env 'registry.txt', '#library/registry.txt', qq(
-	ln -sf ../%1 %>
+Command $env 'registry.txt', "$env->{MP}/library/registry.txt", qq(
+	%LNCOM3
 );
 
-Command $env 'mbs-mpl.txt', '#library/mbs-mpl.txt', qq(
-	ln -sf ../%1 %>
+Command $env 'mbs-mpl.txt', "$env->{MP}/library/mbs-mpl.txt", qq(
+	%LNCOM3
 );
 
 ## Add the library to the default target list

@@ -1,9 +1,9 @@
 Import qw( env );
 
 $env = $env->clone(
-	INCPATH	=> [@{$env->{INCPATH}}, "/usr/lib/camlp4"],
-	OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
-    	PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}"
+   INCPATH     => [@{$env->{INCPATH}}, "/usr/lib/camlp4"],
+   OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
+   PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}"
 );
 
 Command $env 'infix.ml', 'infix.pre.ml', qq(
