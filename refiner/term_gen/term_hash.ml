@@ -41,6 +41,7 @@ struct
    module TType = ToTerm.TermType
    module TSubst = ToTerm.TermSubst
 
+   type hashed_param = TType.param
    type param = TType.param
    type param' = TType.param'
    type term = TType.term
@@ -126,6 +127,8 @@ struct
    (************************************************************************
     * IMPLEMENTATION                                                       *
     ************************************************************************)
+
+   let dest_hparam p = p
 
    let weak_bterm_header { bvars=bvs; bterm=term_index } =
       { bvars_weak=bvs; bterm_weak= WM.weaking term_index }
@@ -285,6 +288,7 @@ struct
 
    let global_hash = p_create 17
 
+   let constr_param p = p_constr_param global_hash p
    let lookup th = p_lookup global_hash th
    let unsafe_lookup th = p_unsafe_lookup global_hash th
    let retrieve ti = p_retrieve global_hash ti

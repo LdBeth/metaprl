@@ -34,6 +34,7 @@ sig
    
    type param
    type param'
+   type hashed_param
    type term
    type meta_term
 
@@ -55,7 +56,7 @@ sig
 
    type true_term_header = {
                              op_name: Opname.opname;
-                             op_params: param list;
+                             op_params: hashed_param list;
                              term_terms: bound_term_header list
                            }
 
@@ -80,10 +81,12 @@ sig
  *)
    type t
 
+   val dest_hparam : hashed_param -> param
+
 (*
  * Construct term-objects from headers
  *)    
-   val p_constr_param : t -> param' -> param
+   val p_constr_param : t -> param' -> hashed_param
    val p_constr_term : t -> term_header -> term
    val p_constr_meta_term : t -> meta_term_header -> meta_term
 
@@ -111,6 +114,8 @@ sig
 (*
  * As previous but operate with global copy of data
  *)
+   val constr_param : param' -> hashed_param
+
    val lookup : term_header -> term_index
    val unsafe_lookup : term_header -> term_index
    val retrieve : term_index -> term

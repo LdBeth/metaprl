@@ -84,8 +84,8 @@ struct
                TType.MLevel (make_level l1)
        | FType.BackwardsCompatibleLevel l1 -> TType.MLevel (make_level l1)
        | FType.MVar s1 ->              TType.MVar s1
-       | FType.ObId oid1 ->            TType.ObId (List.map (make_param info) oid1)
-       | FType.ParamList p1 ->         TType.ParamList (List.map (make_param info) p1)
+       | FType.ObId oid1 ->            TType.ObId (List.map TermHash.dest_hparam (List.map (make_param info) oid1))
+       | FType.ParamList p1 ->         TType.ParamList (List.map TermHash.dest_hparam (List.map (make_param info) p1))
       )
 
    let rec make_context_header info x =
