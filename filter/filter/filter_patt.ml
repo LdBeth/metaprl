@@ -65,8 +65,8 @@ let dest_fso_var_string t =
  * Turn a term into a pattern expression.
  * The bterms should all be vars.
  *)
-let build_term_patt loc t =
-   let { term_op = op; term_terms = bterms } = dest_term t in
+let build_term_patt loc term =
+   let { term_op = op; term_terms = bterms } = dest_term term in
    let { op_name = op; op_params = params } = dest_op op in
 
    (* String form of the operator name *)
@@ -129,7 +129,7 @@ let build_term_patt loc t =
          let { bvars = bvars; bterm = t } = dest_bterm bterm in
          let _ =
             if not (is_fso_var_term t) then
-               raise (Invalid_argument ("term_patt: subterms must be variables\n" ^ string_of_term t))
+               raise (Invalid_argument ("term_patt: subterms must be variables\n" ^ string_of_term term))
          in
          let v = dest_fso_var t in
          let bvars_rhs =

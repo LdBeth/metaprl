@@ -82,6 +82,15 @@ struct
    open RewriteTypes
    open RewriteDebug
 
+   (* Check if a string is a number *)
+   let is_int_string s =
+      let len = String.length s in
+      let rec test i =
+         i = len || (match s.[i] with '0'..'9' -> test (succ i) | _ -> false)
+      in
+         test 0
+
+   (* Print a list of terms separated by commas *)
    let rec print_term_list out = function
       term :: terms ->
          output_string out ", ";
@@ -328,7 +337,11 @@ struct
          begin
              match stack.(i) with
                 StackNumber j -> Number j
-              | StackString s -> Number (Lm_num.num_of_string s)
+              | StackString s ->
+                   if is_int_string s then
+                      Number (Lm_num.num_of_string s)
+                   else
+                      MNumber (Lm_symbol.add s)
               | StackVar v -> MNumber v
               | _ -> raise(build_con_exn)
          end
