@@ -26,7 +26,6 @@ REFINER_DIRS =\
 	debug
 
 MP_DIRS =\
-	filter\
 	ensemble\
 	theories/tactic\
 	theories/ocaml\
@@ -36,10 +35,10 @@ MP_DIRS =\
 	theories/reflect_itt\
 	theories/fol
 
-DIRS = $(REFINER_DIRS) $(MP_DIRS) editor/ml
+DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 
 .PHONY: all opt
-.PHONY: profile_all profile_clean profile_byte profile profile_opt
+.PHONY: profile_all profile_clean profile_byte filter profile profile_opt
 .PHONY: install depend clean check_config
 
 all: check_config
@@ -60,6 +59,11 @@ profile_clean: check_config
 profile_all: check_config
 	@for i in $(REFINER_DIRS) editor/ml; do\
 		if (echo Making $$i...; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(MAKE) -C $$i all); then true; else exit 1; fi;\
+	done
+
+filter: check_config
+	@for i in $(REFINER_DIRS) filter; do\
+		if (echo Making $$i...; $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
 profile_byte: check_config
@@ -91,7 +95,7 @@ clean: check_config
 		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
-depend:
+depend: check_config
 	@$(MAKE) -C util
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i && touch Makefile.dep && $(MAKE) $@); then true; else exit 1; fi;\
