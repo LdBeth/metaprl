@@ -163,13 +163,18 @@ struct
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             name1 == name2
                     & List_util.for_all2 equal_params params1 params2
-                    & List_util.for_all2 (equal_bterm vars) bterms1 bterms2 )
+                    & equal_bterms vars bterms1 bterms2 )
 
-   and equal_bterm vars btrm1 btrm2 =
-      (vars == [] && btrm1 == btrm2) || (
-      let bt1 = dest_bterm btrm1 in
-      let bt2 = dest_bterm btrm2 in
-      equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm)
+   and equal_bterms vars btrms1 btrms2 =
+      match (btrms1,btrms2) with 
+         [],[] -> true
+       | (btrm1::btrms1_tl, btrm2::btrms2_tl) ->
+            (equal_bterms vars btrms1_tl btrms2_tl) &&
+            ((vars == [] && btrm1 == btrm2) || (
+            let bt1 = dest_bterm btrm1 in
+            let bt2 = dest_bterm btrm2 in
+            equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm))
+       | _ -> false
 
    let alpha_equal t1 t2 = 
       try equal_term [] t1 t2 with
