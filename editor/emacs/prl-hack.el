@@ -172,7 +172,7 @@ it is changed, make sure you change the occurrence of CURDIR below.")
   (if metaprl-should-init-ml
     (progn
       (process-send-string
-       "*metaprl*"
+       "*meta-prl*"
        (format "%s;;\nprintf \"\\n\\n\" ; %s;;\n"
                metaprl-start-ml-command metaprl-dir-sync))
       (setq metaprl-should-init-ml nil))))
@@ -183,7 +183,7 @@ it is changed, make sure you change the occurrence of CURDIR below.")
   ;; not taken as the new input.
   (let (;; Get the contents of the current line.
         (line (save-excursion
-                (set-buffer "*metaprl*")
+                (set-buffer "*meta-prl*")
                 (forward-line -1)
                 (buffer-substring (progn (beginning-of-line) (point))
                                   (progn (end-of-line) (point))))))
@@ -230,18 +230,18 @@ directory, run mp and enter an automatic #use command.  Once in MetaPRL, a
 special prompt will be displayed, and alias convertion will be performed."
   (interactive)
   (require 'comint)
-  (if (comint-check-proc "*metaprl*")
+  (if (comint-check-proc "*meta-prl*")
     ;; Have a MetaPRL shell running, use it.
-    (pop-to-buffer "*metaprl*")
+    (pop-to-buffer "*meta-prl*")
     (let ((shell-mode-hook
            ;; Rename the shell-buffer as soon as it is created.  This method
-           ;; will cause problems when there is no *metaprl* buffer, but there
+           ;; will cause problems when there is no *meta-prl* buffer, but there
            ;; is a *shell*  already - that *shell* will be used and renamed as
-           ;; the *metaprl* buffer.
-           '(lambda (&rest args) (rename-buffer "*metaprl*"))))
+           ;; the *meta-prl* buffer.
+           '(lambda (&rest args) (rename-buffer "*meta-prl*"))))
       ;; Start the shell.
       (shell)
-      (set-buffer (get-buffer "*metaprl*"))
+      (set-buffer (get-buffer "*meta-prl*"))
       ;; Display all chars correctly.
       (standard-display-8bit 128 255)
       ;; Set the MetaPRL font.
