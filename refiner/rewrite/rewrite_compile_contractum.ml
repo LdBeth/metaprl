@@ -289,6 +289,8 @@ struct
             if array_rstack_p_mem ShapeVar v stack then
                (* New param *)
                RWMVar(array_rstack_p_index ShapeVar v stack)
+            else if strict == Relaxed && array_rstack_mem v stack then
+               RWMVar(array_rstack_index v stack)
             else
                (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
