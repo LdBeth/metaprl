@@ -1,0 +1,114 @@
+@string{ LNCS = "Lecture Notes in Computer Science" }
+@string{ LNAI = "Lecture Notes in Artificial Intelligence" }
+@preamble{ \def\MetaPRL{\textsf{MetaPRL}} }
+@preamble{ \def\JProver{\textsf{JProver}} }
+
+@inproceedings{HN00,
+   crossref = "tphols2000",
+   title    = "Fast Tactic-based Theorem Proving",
+   author   = "Jason J. Hickey and Aleksey Nogin",
+   pages    = "252--266"
+}
+
+@inproceedings{KN01,
+   author   = "Alexei Kopylov and Aleksey Nogin",
+   title    = "Markov's Principle for Propositional Type Theory",
+   pages    = "570--584",
+   crossref = "CSL01",
+   note     = ""
+}
+
+@inproceedings{NH02,
+   author   = "Aleksey Nogin and Jason Hickey",
+   title    = "Sequent Schema for Derived Rules",
+   pages    = "281--297",
+   crossref = "tphols2002",
+   note     = "See also \url{http://nogin.org/papers/derived_rules.html}"
+}
+
+@Techreport{Nog95,
+   author      = "Aleksey Nogin",
+   title       = "On {H}orn Interpolation in Linear Logic",
+   institution = "Steklov Mathematical Institute",
+   type        = "Mathematical Logic and Theoretical Computer Science",
+   number      = "TR 1995-11",
+   month       = "April",
+   year        = 1995,
+   note        = "In Russian"
+}
+
+@Techreport{Nog02a,
+   author      = "Aleksey Nogin",
+   title       = "Quotient Types --- A Modular Approach",
+   institution = "Cornell University",
+   type        = "Department of Computer Science",
+   number      = "\href{http://techreports.library.cornell.edu:8081/Dienst/UI/1.0/Display/cul.cs/TR2002-1869}{TR2002-1869}",
+   month       = "April",
+   year        = 2002,
+   note        = "See also \url{http://nogin.org/papers/quotients.html}"
+}
+
+@INPROCEEDINGS{Nog02b,
+   author   = "Aleksey Nogin",
+   title    = "Quotient Types: A Modular Approach",
+   pages    = "263--280",
+   crossref = "tphols2002",
+   note     = "Available at \url{http://nogin.org/papers/quotients.html}"
+}
+
+@PhdThesis{Nog02c,
+   author  = "Aleksey Nogin",
+   title   = "Theory and Implementation of an Efficient Tactic-Based Logical Framework",
+   school  = "Cornell University",
+   address = "Ithaca, NY",
+   month   = aug,
+   year    = 2002
+}
+
+@inproceedings{SLKN01,
+   author    = "Stephan Schmitt and Lori Lorigo and Christoph Kreitz and Aleksey Nogin",
+   title     = "{\JProver}: Integrating Connection-Based Theorem Proving into Interactive Proof Assistants",
+   booktitle = "International Joint Conference on Automated Reasoning",
+   series    = LNAI,
+   volume    = 2083,
+   pages     = "421--426",
+   publisher = "Springer-Verlag",
+   year      = 2001
+}
+
+@Misc{MPHome,
+   author = "Jason J. Hickey and Aleksey Nogin and Alexei Kopylov and others",
+   key    = "MetaPRL",
+   title  = "{\MetaPRL} Home Page",
+   note   = "\url{http://metaprl.org/}"
+}
+
+@Misc{MPthe,
+   author = "Jason J. Hickey and Brian Aydemir and Yegor Bryukhov and Alexei Kopylov and Aleksey Nogin and Xin Yu",
+   title  = "A Listing of {\MetaPRL} Theories",
+   note   = "\url{http://metaprl.org/theories.pdf}"
+}
+
+@proceedings{CSL01,
+   booktitle = "Computer Science Logic, Proceedings of the 10$^{th}$ Annual Conference of the EACSL",
+   title     = "Computer Science Logic, Proceedings of the 10$^{th}$ Annual Conference of the EACSL",
+   volume    = "2142",
+   series    = LNCS,
+   editor    = "L. Fribourg",
+   publisher = "Springer-Verlag",
+   year      = "2001",
+   note      = "\url{http://link.springer-ny.com/link/service/series/0558/tocs/t2142.htm}"
+}
+
+@PROCEEDINGS{tphols2000,
+   key       = "TPHOLs00",
+   title     = "Theorem Proving in Higher Order Logics: 13$^{th}$ International Conference, TPHOLs 2000",
+   editor    = "J. Harrison and M. Aagaard",
+   booktitle = "Theorem Proving in Higher Order Logics: 13$^{th}$ International Conference, TPHOLs 2000",
+   series    = LNCS,
+   volume    = 1869,
+   year      = 2000,
+   publisher = "Springer-Verlag",
+}
+
+
