@@ -146,7 +146,6 @@ struct
    let number_expr = ML_Module_Var (term_type_name @ ["Number"])
    let string_expr = ML_Module_Var (term_type_name @ ["String"])
    let token_expr = ML_Module_Var (term_type_name @ ["Token"])
-   let level_expr = ML_Module_Var (term_type_name @ ["Level"])
    let var_expr = ML_Module_Var (term_type_name @ ["Var"])
    let mnumber_expr = ML_Module_Var (term_type_name @ ["MNumber"])
    let mstring_expr = ML_Module_Var (term_type_name @ ["MString"])
@@ -267,10 +266,10 @@ struct
           | MToken v -> print_string_param (newv ()) mtoken_expr v
           | MLevel l ->
                let v1 = print_level_exp ofile l in
-                  print_le_param (newv ()) level_expr v1
+                  print_le_param (newv ()) mlevel_expr v1
           | BackwardsCompatibleLevel l ->
                let v1 = print_level_exp ofile l in
-                  print_le_param (newv ()) level_expr v1
+                  print_le_param (newv ()) mlevel_expr v1
           | MVar v -> print_string_param (newv ()) mvar_expr v
           | ObId _ ->
                (* We don't allow these fancy terms *)
