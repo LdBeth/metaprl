@@ -65,6 +65,8 @@ ifndef CAMLP4N
 	CAMLP4N = $(ROOT)/lib/camlp4n$(EXE)
 endif
 
+CAMLP4MACROPRINT = camlp4o pr_o.cmo $(ROOT)/util/macro.cmo $(PPFLAGS)
+
 CAMLP4MACRO = camlp4o $(ROOT)/util/macro.cmo $(PPFLAGS)
 
 #

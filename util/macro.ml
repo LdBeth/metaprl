@@ -78,6 +78,13 @@
  *
  * USETOPMACRO MAC <expr>... END
  *
+ * IFIMPLEMENTATION THEN <str_item>... ELSE <sig_item>... END
+ *   This is useful for files that are compiled from the same source, and one
+ *   version is needed for interfaces and another for implementation.  Note
+ *   that the parsing of the two parts will be as indicated, and only the
+ *   proper part will be kept.  No other versions (i.e, must have both parts).
+ *   Note also that camlp4 determines how to compile files by their suffix.
+ *
  * CONCAT SYM1 SYM2
  *   The result of this macro will be the symbol made out of the concatenation
  *   of SYM1 and SYM2, it's type (LIDENT or UIDENT) depends on SYM1.
@@ -935,8 +942,15 @@ let handle_macstuff strip_StrSig codewalker macexpand pa lister loc =
        | MaDfe n a e -> add_simple_expr_macro n a e; nothing
        | MaDfp n a p -> add_simple_patt_macro n a p; nothing
        | MaDfa n a e -> add_all_simple_macros n a e; nothing
-       | MaDfStr n a s -> add_macro stri_macros n (a, s); nothing
-       | MaDfSig n a s -> add_macro sigi_macros n (a, s); nothing
+       | MaDfStr n a s ->
+            add_macro stri_macros n (a, s);
+            (* Note: add both macros in case we compile from the same source *)
+            add_macro sigi_macros n (a, MaSig <:sig_item< declare end >>);
+            nothing
+       | MaDfSig n a s ->
+            add_macro sigi_macros n (a, s);
+            add_macro stri_macros n (a, MaStr <:str_item< declare end >>);
+            nothing
        | MaApStr e -> macexpand e
        | MaApSig e -> macexpand e
        | MaUnd x -> undefine_macro x; nothing
@@ -1048,6 +1062,10 @@ EXTEND
             MaIfd c e2 e1
        | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_macstuff; "ENDIF"->
             MaIfd c [] e1
+       | "IFIMPLEMENTATION";
+         "THEN"; body = LIST0 str_item_macstuff;
+         "ELSE"; LIST0 sig_item_macstuff; "ENDIF" ->
+            MaLst body
        | "DEFTOPMACRO";
          name = UIDENT; args = LIST0 UIDENT; "="; body = LIST0 str_item_macstuff;
          "END" ->
@@ -1066,6 +1084,10 @@ EXTEND
             MaIfd c e2 e1
        | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 sig_item_macstuff; "ENDIF"->
             MaIfd c [] e1
+       | "IFIMPLEMENTATION";
+         "THEN"; LIST0 str_item_macstuff;
+         "ELSE"; body = LIST0 sig_item_macstuff; "ENDIF" ->
+            MaLst body
        | "DEFTOPMACRO";
          name = UIDENT; args = LIST0 UIDENT; "="; body = LIST0 sig_item_macstuff;
          "END" ->
