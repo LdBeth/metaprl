@@ -27,4 +27,12 @@
  *	
  *)
 
-val jprover_result_to_term : (string * Refiner.Refiner.Term.term * Refiner.Refiner.Term.term) list -> Refiner.Refiner.Term.term
+open Refiner.Refiner.Term
+
+val jprover_result_to_term : (string * term * term) list -> term
+
+(* sequent calculus, another argument for proof reconstruction *)
+
+val jprover : term -> (string * term * term) list
+
+

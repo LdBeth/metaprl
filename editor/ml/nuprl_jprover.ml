@@ -28,6 +28,29 @@
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
+open Nuprl5
+
+module Nuprl_JLogic =
+struct
+	let is_all_term = nuprl_is_all_term
+        let dest_all = nuprl_dest_all
+	let is_exists_term = nuprl_is_exists_term
+        let dest_exists = nuprl_dest_exists
+	let is_and_term = nuprl_is_and_term
+        let dest_and = nuprl_dest_and
+	let is_or_term = nuprl_is_or_term
+        let dest_or = nuprl_dest_or
+	let is_implies_term = nuprl_is_implies_term
+        let dest_implies = nuprl_dest_implies
+	let is_not_term = nuprl_is_not_term
+        let dest_not = nuprl_dest_not
+end
+
+
+module Nuprl_JProver = Jall.JProver(Nuprl_JLogic) 
+
+let jprover t = Nuprl_JProver.prover t 
+
 
 (* jprover fun returns string*term*term list, convert to term *)
 
