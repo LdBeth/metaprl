@@ -25,7 +25,7 @@ type 'a var_set = string -> 'a ref -> 'a -> unit
 (*
  * Environment variables are prefixed with this string.
  *)
-let environ_prefix = "NL_"
+let environ_prefix = "MP_"
 
 (*
  * Master list of args.
