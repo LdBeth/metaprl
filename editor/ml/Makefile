@@ -11,7 +11,6 @@ INCLUDE = -I .\
 	-I $(ROOT)/theories/ocaml\
 	-I $(ROOT)/theories/base\
 	-I $(ROOT)/theories/itt\
-	-I $(ROOT)/theories/fol\
 	-I $(ROOT)/theories/tptp\
 	-I $(ROOT)/ensemble\
 	-I $(ROOT)/lib\
@@ -55,6 +54,7 @@ NL2FILES =\
 	shell_p4\
 	shell_nl\
 	test\
+	eli\
 	nl\
 	nl_top
 
@@ -62,6 +62,7 @@ RUNFILES =\
 	nl_version\
 	shell_p4\
 	test\
+	eli\
 	nl
 
 TOPFILES =\
@@ -155,7 +156,6 @@ CMXADEPS =\
 	$(ROOT)/theories/ocaml/ocaml_df.cmxa\
 	$(ROOT)/theories/base/base.cmxa\
 	$(ROOT)/theories/itt/itt.cmxa\
-	$(ROOT)/theories/fol/fol.cmxa\
 	$(ROOT)/theories/tptp/tptp.cmxa\
 	$(CAMLP4LIB)/pa_o.cmx\
 	$(CAMLP4LIB)/pa_op.cmx\
@@ -179,7 +179,6 @@ CMADEPS =\
 	$(ROOT)/theories/ocaml/ocaml_df.cma\
 	$(ROOT)/theories/base/base.cma\
 	$(ROOT)/theories/itt/itt.cma\
-	$(ROOT)/theories/fol/fol.cma\
 	$(ROOT)/theories/tptp/tptp.cma\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
@@ -199,7 +198,6 @@ TCMADEPS =\
 	$(ROOT)/theories/ocaml/ocaml_df.cma\
 	$(ROOT)/theories/base/base.cma\
 	$(ROOT)/theories/itt/itt.cma\
-	$(ROOT)/theories/fol/fol.cma\
 	$(ROOT)/theories/tptp/tptp.cma\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
@@ -228,8 +226,6 @@ CCLIBS =\
 MAIN = nuprl-light
 NL = nl
 
-.PHONY: version
-
 all: $(MAIN).cma $(NL).top $(NL).run
 opt: $(MAIN).cmxa $(NL).opt
 install:: all
@@ -249,9 +245,7 @@ $(NL).opt: $(CMXOBJS) $(TCMXFILES)
 clean::
 	$(RM) -f *.p4* *.pp*
 
-nl_version.ml: version
-
-version:
+nl_version.ml: $(CMOBJS) $(filter-out nl_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out nl_version.%, $(TCMOFILES)) $(TCMADEPS)
 	echo -n "let version = \"Nuprl-Light 2.00.1:\\n\\t\\tbuild [`date`]\\n\\t\\ton `hostname`\"" > nl_version.ml
 
 # Real makefile
