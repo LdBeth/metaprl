@@ -6,4 +6,5 @@ TERM_DS_FILES :=\
 	term_subst_ds\
 	term_eval_ds\
 	term_addr_ds\
-	term_man_ds
+	term_man_ds\
+        term_unif_ds
