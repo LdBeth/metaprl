@@ -138,7 +138,11 @@ functor (Hyps : HypsSig) -> struct
        (Disconnected,Disconnected) -> d1
        | (Disconnected,Int _) -> d1
        | (Int _, Disconnected) -> d2
-       | (Int (i1,a1), Int (i2,a2)) -> Int (add_num i1 i2, a1 @ a2)
+       | (Int (i1,a1), Int (i2,a2)) ->
+				if (a=b) && (b=c) then
+					d1
+				else
+					Int (add_num i1 i2, a1 @ a2)
 
   	let print_dist dst =
 	   match dst with
@@ -290,6 +294,8 @@ let find_contradiction l =
       TG.Int (_,r),_ ->
          let aux3 i al = (ar.(i))::al in
          let rl = List.fold_right aux3 r [] in
+		   if !debug_graph_arith2 then
+				eprintf"Cycle size %i, list size %i%t" (List.length r) (List.length rl) eflush;
          rl
     | TG.Disconnected,_ ->
          raise (RefineError("arithT", StringError "Proof by contradiction - No contradiction found"))
