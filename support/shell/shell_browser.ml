@@ -1149,10 +1149,11 @@ struct
                in
                   (match content with
                       Some content ->
-                         if save_root_file filename content then
-                            print_edit_done_page outx state
-                         else
-                            print_error_page outx NotFoundCode
+                         let filename = filename_of_proxyedit filename in
+                            if save_root_file filename content then
+                               print_edit_done_page outx state
+                            else
+                               print_error_page outx NotFoundCode
                     | None ->
                          print_error_page outx BadRequestCode)
           | InputURI _

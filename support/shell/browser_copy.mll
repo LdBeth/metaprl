@@ -151,8 +151,10 @@ let unix_of_dos s =
  *)
 let save_root_file filename contents =
    let contents = unix_of_dos contents in
+      eprintf "save_root_file: save file %s@." filename;
       match out_channel_of_file mproot filename with
          Some out ->
+            eprintf "save_root_file: saving file %s@." filename;
             output_string out contents;
             close_out out;
             true

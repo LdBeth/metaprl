@@ -937,6 +937,8 @@ let serve_http start connect info port =
       in
       let passwd_name = Filename.concat mplib "server.pem" in
       let dh_name = Filename.concat mplib "dh.pem" in
+         if not Lm_ssl.enabled then
+            raise (Invalid_argument "SSL_ENABLED must be set to run the HTTP interface");
          if not (Sys.file_exists passwd_name) then
             raise (Invalid_argument (sprintf "Http_simple.serve: SSL certificate file %s does not exist" passwd_name));
          if not (Sys.file_exists dh_name) then
