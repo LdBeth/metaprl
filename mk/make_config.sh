@@ -67,15 +67,15 @@ THEORIES=$THEORIES
 
 #
 # Use GNU readline package (available on Linux at least) (yes/no).
-# Requires "NCURSES=yes" (below) in order to work.
+# Requires "NCURSES_ENABLED=yes" (below) in order to work.
 #
-READLINE=$READLINE
+READLINE_ENABLED=$READLINE_ENABLED
 
 #
 # The GNU ncurses package (available in Linux at least) (yes/no)
 # Should be set to "yes" for readline support (above) to be enabled.
 #
-NCURSES=$NCURSES
+NCURSES_ENABLED=$NCURSES_ENABLED
 
 #
 # C compiler
@@ -90,7 +90,7 @@ MAKE_OPTS=$MAKE_OPTS
 #
 # Whether to compile in various test theories and files (yes/no)
 #
-TESTS=$TESTS
+TESTS_ENABLED=$TESTS_ENABLED
 
 #
 # If ENSROOT is defined, it should point

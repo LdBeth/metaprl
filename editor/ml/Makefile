@@ -62,7 +62,7 @@ TOPFILES =\
 	nuprl_run\
 	mp_top
 
-ifeq ($(TESTS),YES)
+ifeq ($(TESTS_ENABLED),YES)
 TESTFILES =\
 	tests/test\
 	tests/prop-pigeon\

@@ -58,7 +58,7 @@ OCamlLibrary($(MAIN), $(MPFILES))
 
 TESTFILES =
 
-if $(TESTS)
+if $(TESTS_ENABLED)
    .SUBDIRS: tests
    TESTFILES =\
       tests/test\

@@ -37,13 +37,13 @@ endif
 ifndef OCAMLSRC
    OCAMLSRC=$(OCAMLSRC_DEFAULT)
 endif
-ifndef TESTS
-   TESTS=$(TESTS_DEFAULT)
+ifndef TESTS_ENABLED
+   TESTS_ENABLED=$(TESTS_ENABLED_DEFAULT)
 endif
-ifneq (,$(findstring $(TESTS),$(YESFLAGS)))
-   TESTS=YES
+ifneq (,$(findstring $(TESTS_ENABLED),$(YESFLAGS)))
+   TESTS_ENABLED=YES
 else
-   TESTS=no
+   TESTS_ENABLED=NO
 endif
 ifndef CCC
    CCC=$(CCC_DEFAULT)
@@ -80,21 +80,21 @@ endif
 #
 # Use readline by default on Linux
 #
-ifndef READLINE
+ifndef READLINE_ENABLED
     ifeq ($(OSTYPE),Linux)
-        READLINE=YES
-        NCURSES=YES
+        READLINE_ENABLED=YES
+        NCURSES_ENABLED=YES
     else
-        READLINE=NO
-        NCURSES=NO
+        READLINE_ENABLED=NO
+        NCURSES_ENABLED=NO
     endif
 endif
-ifneq (,$(findstring $(READLINE),$(YESFLAGS)))
-   READLINE=YES
-   NCURSES=YES
+ifneq (,$(findstring $(READLINE_ENABLED),$(YESFLAGS)))
+   READLINE_ENABLED=YES
+   NCURSES_ENABLED=YES
    OTHER_CCLIBS := $(OTHER_CCLIBS) -cclib -lreadline -cclib -lncurses
 else
-   READLINE=no
+   READLINE_ENABLED=no
 endif
 
 #

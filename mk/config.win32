@@ -42,12 +42,12 @@ THEORIES=base itt
 #
 # Use GNU readline package (available on Linux at least) (yes/no).
 #
-READLINE=yes
+READLINE_ENABLED=yes
 
 #
 # The GNU ncurses package (available in Linux at least) (yes/no)
 #
-NCURSES=no
+NCURSES_ENABLED=no
 
 #
 # C compiler
@@ -62,7 +62,7 @@ MAKE_OPTS=
 #
 # Whether to compile in various test theories and files (yes/no)
 #
-TESTS=no
+TESTS_ENABLED=no
 
 #
 # If ENSROOT is defined, it should point

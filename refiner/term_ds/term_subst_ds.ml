@@ -448,7 +448,7 @@ struct
          | SOVar(v', conts, ts) ->
                core_term (SOVar(v', conts, List.map (fun t -> var_subst t t' v) ts))
          | Sequent _ -> raise (Invalid_argument "Term_ds.var_subst: sequents not supported")
-         | Hashed _ | Subst _ -> raise (Invalid_argument "Term_ds.var_subst: this is not supposed to happen")
+         | Hashed _ | Subst _ -> fail_core "var_subst"
 
    and var_subst_bterms bterms t' v =
       match bterms with
