@@ -834,6 +834,7 @@ declare term_binding{'t;v.'t2['v]}
 declare bound_term{'t}
 
 dform term_binding : internal :: term_binding{'t;v.'t2['v]} = 't2[bound_term{'t}]
+dform term_binding2 : internal :: resources{term_binding{'t;v.'t2['v]}} = resources{'t2[bound_term{'t}]}
 
 dform bound_term : internal :: bound_term{'t} =
    szone pushm[3] `"<<" hspace slot{'t} popm hspace `">>" ezone

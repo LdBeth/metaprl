@@ -981,22 +981,22 @@ let handle_macstuff strip_StrSig codewalker macexpand pa lister loc =
                        (macros_codewalk codewalker (strip_StrSig macstuff))
        | MaSig _ -> remove_nothings codewalker
                        (macros_codewalk codewalker (strip_StrSig macstuff))
-       | MaDfe n a e -> add_simple_expr_macro n a e; nothing
-       | MaDfp n a p -> add_simple_patt_macro n a p; nothing
-       | MaDfa n a e -> add_all_simple_macros n a e; nothing
-       | MaDfStr n a s ->
+       | MaDfe(n,a,e) -> add_simple_expr_macro n a e; nothing
+       | MaDfp(n,a,p) -> add_simple_patt_macro n a p; nothing
+       | MaDfa(n,a,e) -> add_all_simple_macros n a e; nothing
+       | MaDfStr(n,a,s) ->
             add_macro stri_macros n (a, s);
             (* Note: add both macros in case we compile from the same source *)
             add_macro sigi_macros n (a, MaSig <:sig_item< declare end >>);
             nothing
-       | MaDfSig n a s ->
+       | MaDfSig(n,a,s) ->
             add_macro sigi_macros n (a, s);
             add_macro stri_macros n (a, MaStr <:str_item< declare end >>);
             nothing
        | MaApStr e -> macexpand e
        | MaApSig e -> macexpand e
        | MaUnd x -> undefine_macro x; nothing
-       | MaIfd x l1 l2 -> aux (MaLst (if is_defined x then l1 else l2))
+       | MaIfd(x,l1,l2) -> aux (MaLst (if is_defined x then l1 else l2))
        | MaLst l ->
             (match List.filter (fun x -> x<>nothing) (List.map aux l)
              with [] -> nothing | [si] -> si | l -> lister l)
@@ -1114,14 +1114,14 @@ EXTEND
    macstuff_str:
       [[ "IFDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_macstuff;
          "ELSE"; e2 = LIST0 str_item_macstuff; "ENDIF" ->
-            MaIfd c e1 e2
+            MaIfd(c,e1,e2)
        | "IFDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_macstuff; "ENDIF" ->
-            MaIfd c e1 []
+            MaIfd(c,e1,[])
        | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_macstuff;
          "ELSE"; e2 = LIST0 str_item_macstuff; "ENDIF" ->
-            MaIfd c e2 e1
+            MaIfd(c,e2,e1)
        | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_macstuff; "ENDIF"->
-            MaIfd c [] e1
+            MaIfd(c,[],e1)
        | "IFIMPLEMENTATION";
          "THEN"; body = LIST0 str_item_macstuff;
          "ELSE"; LIST0 sig_item_macstuff; "ENDIF" ->
@@ -1129,21 +1129,21 @@ EXTEND
        | "DEFTOPMACRO";
          name = UIDENT; args = LIST0 UIDENT; "="; body = LIST0 str_item_macstuff;
          "END" ->
-            MaDfStr name args (MaLst body)
+            MaDfStr(name,args,(MaLst body))
        | "USETOPMACRO"; name_and_args = expr; "END" -> MaApStr name_and_args
        | x = macstuff_shared -> x
        ]];
    macstuff_sig:
       [[ "IFDEF"; c = UIDENT; "THEN"; e1 = LIST0 sig_item_macstuff;
          "ELSE"; e2 = LIST0 sig_item_macstuff; "ENDIF" ->
-            MaIfd c e1 e2
+            MaIfd(c,e1,e2)
        | "IFDEF"; c = UIDENT; "THEN"; e1 = LIST0 sig_item_macstuff; "ENDIF" ->
-            MaIfd c e1 []
+            MaIfd(c,e1,[])
        | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 sig_item_macstuff;
          "ELSE"; e2 = LIST0 sig_item_macstuff; "ENDIF" ->
-            MaIfd c e2 e1
+            MaIfd(c,e2,e1)
        | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 sig_item_macstuff; "ENDIF"->
-            MaIfd c [] e1
+            MaIfd(c,[],e1)
        | "IFIMPLEMENTATION";
          "THEN"; LIST0 str_item_macstuff;
          "ELSE"; body = LIST0 sig_item_macstuff; "ENDIF" ->
@@ -1151,25 +1151,25 @@ EXTEND
        | "DEFTOPMACRO";
          name = UIDENT; args = LIST0 UIDENT; "="; body = LIST0 sig_item_macstuff;
          "END" ->
-            MaDfSig name args (MaLst body)
+            MaDfSig(name,args,(MaLst body))
        | "USETOPMACRO"; name_and_args = expr; "END" -> MaApSig name_and_args
        | x = macstuff_shared -> x
        ]];
    macstuff_shared:
       [[ "DEFINE"; c = UIDENT ->
-            MaDfe c [] <:expr< () >>
+            MaDfe(c,[],<:expr< () >>)
        | "DEFINE"; name = UIDENT; "="; body = expr ->
             (* can only be used for argument-less macros because of camlp4. *)
-            MaDfa name [] body
+            MaDfa(name,[],body)
        | [ "UNDEFINE" | "UNDEF" ]; c = UIDENT ->
             (* UNDEF is the same as UNDEFINE to mimic CPP *)
             MaUnd c
        | "DEFMACRO";     name= UIDENT; args = LIST0 UIDENT; "="; body = expr ->
-            MaDfa name args body
+            MaDfa(name,args,body)
        | "DEFEXPRMACRO"; name= UIDENT; args = LIST0 UIDENT; "="; body = expr ->
-            MaDfe name args body
+            MaDfe(name,args,body)
        | "DEFPATTMACRO"; name= UIDENT; args = LIST0 UIDENT; "="; body = patt ->
-            MaDfp name args body
+            MaDfp(name,args,body)
        | "INCLUDE"; file = STRING ->
             MaInc file
        ]];
