@@ -88,25 +88,18 @@ let dict_inited = ref false
 
 let raise_spelling_error () =
    if !misspelled <> [] then begin
-      let rec print col word = function
-         (h, _) :: t ->
-            if h = word then
-               print col word t
+      let rec print word = function
+         (h, loc) :: t ->
+            if word = h then
+               eprintf "; "
             else
-               let len = String.length h in
-               let col =
-                  if col + len >= 80 then
-                     begin
-                        eprintf "\n\t%s" h;
-                        len + 9
-                     end
-                  else
-                     begin
-                        eprintf " %s" h;
-                        col + len + 1
-                     end
-               in
-                  print col h t
+               eprintf "\n\t%s: " h;
+            if !Pcaml.input_file <> "-" then
+               let (line, bp, _) = Stdpp.line_of_loc !Pcaml.input_file loc in
+                  eprintf "line %i, char %i" line bp
+            else
+               eprintf "char %i" (fst loc);
+            print h t
        | [] ->
             ()
       in
@@ -114,7 +107,7 @@ let raise_spelling_error () =
       let l = Sort.list (<) !misspelled in
          misspelled := [];
          eprintf "The following words may be misspelled:";
-         print 80 "" l;
+         print "" l;
          eflush stderr;
          Stdpp.raise_with_loc loc (Failure ("spelling (" ^ word ^ ")"))
       end
@@ -417,61 +410,60 @@ struct
       (*
        * Convert the result of the Comment_parse.
        *)
-      let rec build_comment_term spelling space item =
-         match item with
-            Comment_parse.White ->
-               mk_simple_term comment_white_op []
-          | Comment_parse.String s ->
+      let rec build_comment_term spelling space = function
+         Comment_parse.White ->
+            mk_simple_term comment_white_op []
+       | Comment_parse.String s ->
+            if !debug_spell then
+               begin
+                  match spelling with
+                     SpellOff ->
+                        ()
+                   | SpellAdd ->
+                        Filter_spell.add s
+                   | SpellOn ->
+                        if not (Filter_spell.check s) then
+                           misspelled := (s, (loc, 0)) :: !misspelled
+               end;
+            mk_string_term comment_string_op s
+       | Comment_parse.Variable s ->
+            mk_var_term (Lm_symbol.add s)
+       | Comment_parse.Term ((opname, (l1, l2)), params, args) ->
+            let spelling =
                if !debug_spell then
-                  begin
-                     match spelling with
-                        SpellOff ->
-                           ()
-                      | SpellAdd ->
-                           Filter_spell.add s
-                      | SpellOn ->
-                           if not (Filter_spell.check s) then
-                              misspelled := (s, (loc, 0)) :: !misspelled
-                  end;
-               mk_string_term comment_string_op s
-          | Comment_parse.Variable s ->
-               mk_var_term (Lm_symbol.add s)
-          | Comment_parse.Term ((opname, (l1, l2)), params, args) ->
-               let spelling =
-                  if !debug_spell then
-                     match opname with
-                        ["spelling"] ->
-                           SpellAdd
-                      | ["misspelled"]
-                      | ["math_misspelled"]
-                      | ["license"]
-                      | ["url"]
-                      | ["comment"] ->
-                           SpellOff
-                      | _ ->
-                           spelling
-                  else
-                     spelling
-               in
-               let space =
                   match opname with
-                     ["text"] ->
-                        true
+                     ["spelling"] ->
+                        SpellAdd
+                   | ["misspelled"]
+                   | ["math_misspelled"]
+                   | ["license"]
+                   | ["url"]
+                   | ["comment"] ->
+                        SpellOff
                    | _ ->
-                        space
-               in
-               let opname =
-                  mk_opname (loc + l1, loc + l2) opname (string_params params) (fake_arities args)
-               in
-               let params = List.map (fun s -> make_param (String s)) params in
-               let args = List.map (fun t -> mk_simple_bterm (build_term spelling space t)) args in
-               let op = mk_op opname params in
-               let t = mk_term op args in
-                  mk_simple_term comment_term_op [t]
-          | Comment_parse.Block items ->
-               mk_simple_term comment_block_op [build_term spelling space items]
-          | Comment_parse.Quote ((l1, l2), tag, s) ->
-               mk_simple_term comment_term_op [parse_quotation (loc + l1, loc + l2) "doc" (tag, s)]
+                        spelling
+               else
+                  spelling
+            in
+            let space =
+               match opname with
+                  ["text"] ->
+                     true
+                | _ ->
+                     space
+            in
+            let opname =
+               mk_opname (loc + l1, loc + l2) opname (string_params params) (fake_arities args)
+            in
+            let params = List.map (fun s -> make_param (String s)) params in
+            let args = List.map (fun t -> mk_simple_bterm (build_term spelling space t)) args in
+            let op = mk_op opname params in
+            let t = mk_term op args in
+               mk_simple_term comment_term_op [t]
+       | Comment_parse.Block items ->
+            mk_simple_term comment_block_op [build_term spelling space items]
+       | Comment_parse.Quote ((l1, l2), tag, s) ->
+            mk_simple_term comment_term_op [parse_quotation (loc + l1, loc + l2) "doc" (tag, s)]
 
       (*
        * If spacing is ignored, ignore spaces.
