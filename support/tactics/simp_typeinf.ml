@@ -127,7 +127,7 @@ let infer tbl =
 (*
  * The resource itself.
  *)
-let resource simp_typeinf =
+let resource (simp_typeinf_resource_info, simp_typeinf_func) simp_typeinf =
    table_resource_info infer
 
 let typeinf_final consts eqs t ty =

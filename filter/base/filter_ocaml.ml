@@ -2341,6 +2341,29 @@ struct
          }
 
    let resource_sig_of_term = wrap_error "resource_sig_of_term" resource_sig_of_term
+
+   let term_of_resource_str resource_op res =
+      ToTerm.Term.mk_simple_term resource_op
+         [ mk_type res.res_input; mk_type res.res_output; mk_expr [] res.res_body ]
+
+   let resource_str_of_term resourse_op t =
+      (*
+       * XXX: HACK: In ASCII IO format <= 1.0.12 and Term IO format <= 1.0.9,
+       * resource_str was just an expression. Once we no longer have old files,
+       * there will be no need to pass the resourse_op parameter and test it.
+       *)
+      if is_dep0_dep0_dep0_term resourse_op t then
+         let inp, outp, expr = three_subterms t in {
+            res_input = dest_type inp;
+            res_output = dest_type outp;
+            res_body = dest_expr expr;
+         }
+      else {
+         res_input = <:ctyp< Filter_ocaml.fake_ctyp_made_for_old_file_format_compatibility >>;
+         res_output = <:ctyp< Filter_ocaml.fake_ctyp_made_for_old_file_format_compatibility >>;
+         res_body = dest_expr t
+      }
+
 end
 
 (*

@@ -104,6 +104,8 @@ sig
     *)
    val resource_sig_of_term : term -> ctyp resource_sig
    val term_of_resource_sig : opname -> ctyp resource_sig -> term
+   val resource_str_of_term : opname -> term -> (ctyp, expr) resource_str
+   val term_of_resource_str : opname -> (ctyp, expr) resource_str -> term
 end
 
 (*

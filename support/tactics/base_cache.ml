@@ -65,11 +65,12 @@ let improve_data cache info =
 (*
  * Resource.
  *)
-let resource cache = Functional {
-   fp_empty = empty_cache;
-   fp_add = improve_data;
-   fp_retr = (fun x -> x)
-}
+let resource (cache_rule, cache) cache =
+   Functional {
+      fp_empty = empty_cache;
+      fp_add = improve_data;
+      fp_retr = (fun x -> x)
+   }
 
 (*
  * -*-

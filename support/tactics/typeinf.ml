@@ -119,7 +119,7 @@ let collect tbl subst (so, t) =
 (*
  * Resource.
  *)
-let resource typeinf_subst =
+let resource (typeinf_subst_info, typeinf_subst_fun) typeinf_subst =
    table_resource_info collect
 
 (*
@@ -192,7 +192,7 @@ let infer tbl =
 (*
  * The resource itself.
  *)
-let resource typeinf =
+let resource (typeinf_resource_info, typeinf_func) typeinf =
    table_resource_info infer
 
 (*

@@ -438,7 +438,7 @@ let process_reduce_resource_rw_annotation = redex_and_conv_of_rw_annotation "red
 (*
  * Resource.
  *)
-let resource reduce =
+let resource (term * conv, conv) reduce =
    table_resource_info extract_data
 
 let reduceTopC_env e =

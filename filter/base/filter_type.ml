@@ -141,6 +141,12 @@ type 'ctyp resource_sig = {
    resource_output : 'ctyp
 }
 
+type ('ctyp, 'expr) resource_str = {
+   res_input : 'ctyp;
+   res_output : 'ctyp;
+   res_body : 'expr;
+}
+
 type 'term param =
    ContextParam of var
  | TermParam of 'term

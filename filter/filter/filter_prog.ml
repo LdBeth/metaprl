@@ -294,7 +294,10 @@ let get_resource_name name =
    "get_" ^ name ^ "_resource"
 
 let input_type name =
-   "_$" ^ name ^ "_resource_input"
+   "_$" ^ name ^ "_$$resource_input"
+
+let output_type name =
+   "_$" ^ name ^ "_$$resource_output"
 
 let res_fqn path name =
    (String.concat "!" (List.map String.capitalize path)) ^ "!" ^ name
@@ -502,12 +505,11 @@ let declare_prec loc name =
 (*
  * Resource.
  *)
-let declare_resource loc name {
-   resource_input = input;
-   resource_output = output
-} =
-   [<:sig_item< type $input_type name$ = $input$ >>;
-    <:sig_item< value $get_resource_name name$ : Mp_resource.global_resource -> $output$ >>]
+let declare_resource loc name res =
+   let outp_name = output_type name in
+      [<:sig_item< type $input_type name$ = $res.resource_input$ >>;
+       <:sig_item< type $outp_name$ = $res.resource_output$ >>;
+       <:sig_item< value $get_resource_name name$ : Mp_resource.global_resource -> $lid:outp_name$ >>]
 
 (*
  * When a parent is declared, we need to open all the ancestors.
@@ -1366,25 +1368,18 @@ let define_ml_dform proc loc
  *
  * type resource_name
  *)
-let define_resource proc loc name expr =
-   let { resource_input = input;
-         resource_output = output
-       } =
-      try
-         List.assoc name (get_resources proc.imp_sig_info)
-      with
-         Not_found ->
-            Stdpp.raise_with_loc loc (Failure("Tries to implement undeclared resource " ^ name))
-   in
+let define_resource proc loc name res =
    let intermediate = "_$" ^ name ^ "_resource_intermediate" in
-   let input_name = input_type name in
+   let inp_name = input_type name in
+   let outp_name = output_type name in
    let fqn = res_fqn [proc.imp_name] name in
       proc.imp_resources
-         <- (name, (<:ctyp< $lid:input_name$ >>, fqn)) :: proc.imp_resources;
-      [<:str_item< type $input_name$ = $input$ >>;
+         <- (name, (<:ctyp< $lid:inp_name$ >>, fqn)) :: proc.imp_resources;
+      [<:str_item< type $inp_name$ = $res.res_input$ >>;
+       <:str_item< type $outp_name$ = $res.res_output$ >>;
        <:str_item< value $lid:get_resource_name name$ =
          Mp_resource.create_resource $str:fqn$ (**)
-            ( $expr$ : Mp_resource.resource_info $lid:input_name$ '$intermediate$ $output$ ) >>]
+            ( $res.res_body$ : Mp_resource.resource_info $lid:inp_name$ '$intermediate$ $lid:outp_name$ ) >>]
 
 let rec is_list_expr = function
    MLast.ExUid(_,"[]") -> true
@@ -1631,10 +1626,10 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: prec_rel%t" eflush;
          define_prec_rel proc loc rel
-    | Resource (name, expr) ->
+    | Resource (name, res) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: resource: %s%t" name eflush;
-         define_resource proc loc name expr
+         define_resource proc loc name res
     | Improve ({ improve_name = name } as impr) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: improve %s with ... %t" name eflush;

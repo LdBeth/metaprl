@@ -955,7 +955,7 @@ struct
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.str_item
-   type resource = MLast.expr
+   type resource = (ctyp, expr) resource_str
    type sig_info = (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
    (*
     * Proof copying.
@@ -1331,9 +1331,10 @@ EXTEND
            in
               print_exn f ("mlrule " ^ name) loc;
               empty_str_item loc
-        | "let"; "resource"; name = LIDENT; "="; code = expr ->
+        | "let"; "resource"; "("; inp = ctyp; ","; outp = ctyp; ")"; name = LIDENT; "="; code = expr ->
            let f () =
-              StrFilter.define_resource (StrFilter.get_proc loc) loc name code
+              StrFilter.define_resource (StrFilter.get_proc loc) loc name (**)
+                 { res_input = inp; res_output = outp; res_body = code }
            in
               print_exn f ("resource " ^ name) loc;
               empty_str_item loc

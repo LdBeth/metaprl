@@ -467,8 +467,11 @@ let wrap_intro tac =
 (*
  * Resources
  *)
-let resource elim = table_resource_info extract_elim_data
-let resource intro = table_resource_info extract_intro_data
+let resource (term * (int -> tactic), int -> tactic) elim =
+   table_resource_info extract_elim_data
+
+let resource (term * (string * int option * tactic), tactic) intro =
+   table_resource_info extract_intro_data
 
 let dT =
    argfunT (fun i p ->

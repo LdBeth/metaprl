@@ -158,14 +158,13 @@ open FilterSummaryTerm
 let identity x       = x
 let term_of_expr     = term_of_expr []
 let term_of_str_item = term_of_str_item []
-let term_of_resource = FilterOCaml.term_of_resource_sig resource_op
 
 let convert_intf =
    let null_term    = mk_xstring_term "..." in
       { term_f      = identity;
         meta_term_f = term_of_meta_term;
         proof_f     = (fun _ _ -> null_term);
-        resource_f  = term_of_resource;
+        resource_f  = FilterOCaml.term_of_resource_sig resource_op;
         ctyp_f      = term_of_type;
         expr_f      = term_of_expr;
         item_f      = term_of_sig_item
@@ -197,7 +196,7 @@ let convert_impl =
       { term_f      = identity;
         meta_term_f = term_of_meta_term;
         proof_f     = convert_proof;
-        resource_f  = term_of_expr;
+        resource_f  = FilterOCaml.term_of_resource_str resource_op;
         ctyp_f      = term_of_type;
         expr_f      = term_of_expr;
         item_f      = term_of_str_item

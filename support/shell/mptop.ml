@@ -136,11 +136,12 @@ doc <:doc<
    @docoff
    @end[doc]
 >>
-let resource toploop = Functional {
-   fp_empty = Table.empty;
-   fp_add = add;
-   fp_retr = add_list
-}
+let resource (item, item list -> top_table) toploop =
+   Functional {
+      fp_empty = Table.empty;
+      fp_add = add;
+      fp_retr = add_list
+   }
 
 (************************************************************************
  * COMPILING                                                            *

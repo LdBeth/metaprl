@@ -199,11 +199,12 @@ let extract_nth_hyp_data =
 let add_nth_hyp_data tbl (hyp,concl,tac) =
    add_item tbl (mk_pair_term hyp concl) tac
 
-let resource nth_hyp = Functional {
-   fp_empty = empty_table;
-   fp_add = add_nth_hyp_data;
-   fp_retr = extract_nth_hyp_data;
-}
+let resource (term * term * (int -> tactic), int -> tactic) nth_hyp =
+   Functional {
+      fp_empty = empty_table;
+      fp_add = add_nth_hyp_data;
+      fp_retr = extract_nth_hyp_data;
+   }
 
 let nthHypT = argfunT (fun i p -> get_resource_arg p get_nth_hyp_resource i)
 
@@ -302,11 +303,12 @@ let improve_resource data info = info::data
 (*
  * Resource.
  *)
-let resource auto = Functional {
-   fp_empty = [];
-   fp_add = improve_resource;
-   fp_retr = extract
-}
+let resource (auto_info, tactic * tactic * tactic) auto =
+   Functional {
+      fp_empty = [];
+      fp_add = improve_resource;
+      fp_retr = extract
+   }
 
 (*
  * Create a precedence.

@@ -296,7 +296,7 @@ sig
       with type str_ctyp   = MLast.ctyp
       with type str_expr   = MLast.expr
       with type str_item   = MLast.str_item
-      with type str_resource = MLast.expr
+      with type str_resource = (MLast.ctyp, MLast.expr) resource_str
       with type select     = select_type
       with type arg        = t
 end

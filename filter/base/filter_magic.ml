@@ -54,10 +54,11 @@ open File_type_base
  * Rev 7: removed the "ref_parent" fields from the tactic_arg and related types.
  * Rev 8: removed the Hypothesis/HypBinding distinction
  * Rev 9: removed the "internal" display form flag.
+ * Rev 10: added input/optput types to resource definitions (bug 168).
  *)
-let raw_versions = List.map (pack_version 1 0) [9]
+let raw_versions = List.map (pack_version 1 0) [10]
 
-let term_versions = List.map (pack_version 1 0) [9;8]
+let term_versions = List.map (pack_version 1 0) [10;9;8]
 
 (*
  * ASCII IO format revision history:
@@ -75,6 +76,7 @@ let term_versions = List.map (pack_version 1 0) [9;8]
  * Rev 10: removed the "ref_parent" fields from the tactic_arg and related types
  * Rev 11: removed the Hypothesis/HypBinding distinction
  * Rev 12: removed the "internal_df" operator from the list of the valid dform options
+ * Rev 13: added input/optput types to resource definitions (bug 168)
  *
  * Filter_summary has a HACK needed to read some rev 0-1 files
  * Ascii_io has a HACK needed to read some rev 0-5 files
@@ -85,8 +87,9 @@ let term_versions = List.map (pack_version 1 0) [9;8]
  * Proof_term_boot has a HACK needed to read rev 0-9 files.
  * Ascii_io has another HACK needed to read some rev 0-10 files.
  * Filter_summary has another HACK needed to read some rev 0-11 files.
+ * Filter_ocaml has a HACK needed to read some rev 0-12 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [12;11;10;9;8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [13;12;11;10;9;8;7;6;5;4;3;2;1;0]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *

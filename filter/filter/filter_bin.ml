@@ -146,7 +146,7 @@ struct
    type ctyp  = MLast.ctyp
    type sig_item = MLast.sig_item
    type str_item = MLast.str_item
-   type str_resource = MLast.expr
+   type str_resource = (ctyp, expr) resource_str
 
    let extract check = extract_str () (check ())
    let compile items =
