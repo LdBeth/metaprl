@@ -219,10 +219,14 @@ let () =
    (* Load all the previous sessions *)
    let sessions = read_sessions () in
       List.iter (fun session ->
-            let id, i = pid_of_string session.session_info_id in
-            let pid = Lm_thread_shell.create_or_find id i Lm_thread_shell.VisibleJob in
-               Lm_thread_shell.with_pid pid (fun () ->
-                     set_current_session session) ()) sessions
+            try
+               let id, i = pid_of_string session.session_info_id in
+               let pid = Lm_thread_shell.create_or_find id i Lm_thread_shell.VisibleJob in
+                  Lm_thread_shell.with_pid pid (fun () ->
+                        set_current_session session) ()
+            with
+               RefineError _ ->
+                  ()) sessions
 
 (*
  * Create the session and save it.
