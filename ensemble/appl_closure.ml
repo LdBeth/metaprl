@@ -13,21 +13,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -49,7 +49,7 @@ open Printf
 let debug_marshal =
    create_debug (**)
       { debug_name = "ensemble";
-        debug_description = "Display NL Ensemble Application actions";
+        debug_description = "Display MP Ensemble Application actions";
         debug_value = false
       }
 
@@ -72,7 +72,7 @@ let rec marshal x =
       try
          let size = Marshal.to_buffer buf 0 len x [Marshal.Closures] in
          let size = Trans.ceil_word size in
-         let vecl = Mbuf.allocl "NLSERVER:marshal" buf 0 size in
+         let vecl = Mbuf.allocl "MPSERVER:marshal" buf 0 size in
             if !debug_marshal then
                begin
                   lock_printer ();
@@ -93,11 +93,11 @@ let rec marshal x =
  * When unmarshaling, we have to flatten the buffer.
  *)
 let unmarshal vecl =
-   let iov = Iovecl.flatten "NLSERVER:unmarshal" vecl in
+   let iov = Iovecl.flatten "MPSERVER:unmarshal" vecl in
    let read buf off len =
       Marshal.from_string buf off
    in
-      Iovec.read "NLSERVER:unmarshal" iov read
+      Iovec.read "MPSERVER:unmarshal" iov read
 
 (************************************************************************
  * INTERFACE                                                            *

@@ -25,7 +25,7 @@ rules. An <I>axiom</I> is an inference rule that is just a single
 term (axioms don't use the meta-implication). The logics are modular:
 each module defines a logic that contains the rules defined in
 the module, and in all ancestor modules. The module system is
-discussed in the <A HREF="mp-module.html">module system page</A>.</P>
+discussed in the <A HREF="mp-modules.html">module system page</A>.</P>
 
 <H4>Interface</H4>
 
@@ -174,8 +174,7 @@ with the <A HREF="mp-editor.html">proof editor</A>.</P>
 <P>When an <TT>axiom</TT> is declared, the system creates a <I>tactic</I>
 that can be used to apply the rule. Tactics are the general reasoning
 mechanism used for interactive proving. Tactics are ML programs,
-and they can be combined with the <I>tacticals</I> in the <A 
-HREF="../system/mp-tacticals.html">system description</A> to provide
+and they can be combined with the <I>tacticals</I> in the <A HREF="../system/mp-tacticals.html">system description</A> to provide
 automated proving.</P>
 
 <P>Each axiom and inference rule declaration also provides a tactic

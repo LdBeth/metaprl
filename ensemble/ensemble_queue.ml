@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -47,21 +47,21 @@ open Printf
 let debug_ensemble =
    create_debug (**)
       { debug_name = "ensemble";
-        debug_description = "Display NL Ensemble Application actions";
+        debug_description = "Display MP Ensemble Application actions";
         debug_value = false
       }
 
 let debug_share =
    create_debug (**)
       { debug_name = "share";
-        debug_description = "Display NL Ensemble Application memory sharing";
+        debug_description = "Display MP Ensemble Application memory sharing";
         debug_value = false
       }
 
 let debug_marshal =
    create_debug (**)
       { debug_name = "ensemble";
-        debug_description = "Display NL Ensemble Application actions";
+        debug_description = "Display MP Ensemble Application actions";
         debug_value = false
       }
 
@@ -1120,10 +1120,10 @@ struct
        * Get default transport for this group,
        * and override the endpoint.
        *)
-      let ls, vs = Appl.default_info "nlapp" in
-      let endpt = Endpt.named "NLAPP" in
+      let ls, vs = Appl.default_info "MPAPP" in
+      let endpt = Endpt.named "MPAPP" in
       let vs = View.set vs [Vs_view (Arrayf.create 1 endpt)] in
-      let ls = View.local "NLAPP" endpt vs in
+      let ls = View.local "MPAPP" endpt vs in
       let state = ls, vs in
 
       (*
@@ -1143,7 +1143,7 @@ struct
        * Initialize the protocol stack, using the interface and
        * view state chosen above.
        *)
-      let interface = Appl_intf.New.debug_view "NLSERVER" interface in
+      let interface = Appl_intf.New.debug_view "MPSERVER" interface in
       let interface = Appl_closure.full interface in
          Appl.config_new interface state;
          info
