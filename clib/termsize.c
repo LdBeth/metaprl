@@ -2,6 +2,9 @@
  * Set a variable in the environment.
  */
 #include <stdio.h>
+#ifdef __CYGWIN__
+#   include <sys/termios.h>
+#endif
 #include <sys/ioctl.h>
 
 #include <caml/mlvalues.h>

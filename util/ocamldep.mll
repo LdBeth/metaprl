@@ -163,9 +163,9 @@ let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
 
 let (depends_on, escaped_eol) =
   match Sys.os_type with
-  | "Unix" | "Win32" -> (": ", "\\\n    ")
+  | "Unix" | "Win32" | "Cygwin" -> (": ", "\\\n    ")
   | "MacOS" -> ("\196 ", "\182\n    ")
-  | x -> Misc.fatal_error ("Ocamldep: unknown system type" ^ x)
+  | x -> Misc.fatal_error ("Ocamldep: unknown system type: " ^ x)
 ;;
 
 let print_dependencies target_file deps =

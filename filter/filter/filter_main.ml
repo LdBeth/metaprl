@@ -107,7 +107,7 @@ let main () =
 external exit : int -> unit = "caml_exit"
 
 let _ =
-   try main () with
+   try main (); exit 0 with
       exn ->
          exit 1
 
