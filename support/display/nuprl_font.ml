@@ -115,6 +115,7 @@ declare tt_end
 declare url[url:s]
 declare sub[name:s]
 declare sub{'t}
+declare sub[i:l]
 declare sub_begin
 declare sub_end
 declare sup[name:s]
@@ -518,6 +519,10 @@ dform sub_df1 : sub[text:s] =
 dform sub_df2 : sub{'t} =
    sub_begin 't sub_end
 
+dform sub_df3 : sub[i:l] =
+   sub_begin slot[i:l] sub_end
+
+
 dform sup_begin_df : mode[html] :: sup_begin =
    html["<sup>"]
 
@@ -529,6 +534,7 @@ dform sup_df1 : sup[text:s] =
 
 dform sup_df2 : sup{'t} =
    sup_begin 't sup_end
+
 
 dform sub_begin_df : mode[prl] :: sub_begin =
    `"_"

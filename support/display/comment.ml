@@ -395,6 +395,35 @@ dform modsubsection_df3 : except_mode[tex] :: except_mode[html] :: modsubsection
 
 doc <:doc<
    @begin[doc]
+   The @code{@paragraph} and @code{@subparagraph} terms produce paragraph and subparagraph headers.
+   @end[doc]
+>>
+declare paragraph{'t}
+declare subparagraph{'t}
+
+
+dform paragraph_df1 : mode[tex] :: paragraph{'t} =
+   izone `"\\paragraph{"  ezone 't izone `"}" ezone
+
+dform paragraph_df2 : mode[html] :: paragraph{'t} =
+   html_head[5]{'t}
+
+dform paragraph_df3 : except_mode[tex] :: except_mode[html] :: paragraph{'t} =
+   com_hbreak bf{'t}
+
+dform subparagraph_df1 : mode[tex] :: subparagraph{'t} =
+   izone `"\\subparagraph{" ezone 't izone `"}" ezone
+
+dform subparagraph_df2 : mode[html] :: subparagraph{'t} =
+   html_head[6]{'t}
+
+dform subparagraph_df3 : except_mode[tex] :: except_mode[html] :: subparagraph{'t} =
+   com_hbreak it{'t}
+
+
+
+doc <:doc<
+   @begin[doc]
    Generic targets.
    @end[doc]
 >>
@@ -2071,6 +2100,8 @@ dform chap_sp   : slot["decl"]{chapter[name:s]{'t}} = special
 dform sec_sp    : slot["decl"]{section[name:s]{'t}} = special
 dform subsec_sp : slot["decl"]{subsection[name:s]{'t}} = special
 dform sbssec_sp : slot["decl"]{subsubsection[name:s]{'t}} = special
+dform prgr_sp   : slot["decl"]{paragraph{'t}} = special
+dform sprgr_sp  : slot["decl"]{subparagraph{'t}} = special
 dform modsec_sp : slot["decl"]{modsection{'t}} = special
 dform msbsec_sp : slot["decl"]{modsubsection{'t}} = special
 dform parent_sp : slot["decl"]{parents} = special

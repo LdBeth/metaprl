@@ -65,6 +65,7 @@ declare tt{'t}
 declare url[url:s]
 declare sub{'t}
 declare sub[name:s]
+declare sub[i:l]
 declare sup{'t}
 declare sup[name:s]
 declare small[name:s]

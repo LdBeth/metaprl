@@ -294,6 +294,13 @@ withT t = withTermsT [t]
 * doNotThinT :  tactic -> tactic
 = thinningT false
 
+* nameHypT : int -> string -> tactic
+Renames bound variable for a hypothesis
+
+* nameHypsT :  (int list) -> (string list) -> tactic
+Renames bound variables for hypotheses
+
+
 ----------------------------------------
 conversionals:
 

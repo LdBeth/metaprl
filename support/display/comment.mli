@@ -103,6 +103,9 @@ declare modsection{'t}
  *)
 declare modsubsection{'t}
 
+declare paragraph{'t}
+declare subparagraph{'t}
+
 (*
  * Generic targets.
  *)
