@@ -44,7 +44,6 @@ open Filter_summary
 
 open Shell_sig
 open Shell_util
-open Shell_command
 open Shell_internal_sig
 
 let debug_refine = load_debug "refine"
@@ -405,6 +404,9 @@ let set_params shell pl =
    touch shell;
    shell.shell_proof.edit_set_params pl;
    display_proof shell LsOptionSet.empty
+
+let mk_dep_name opname =
+   Lm_string_util.prepend "/" (List.rev (dest_opname opname))
 
 let check shell =
    match shell with
@@ -930,6 +932,19 @@ let rec apply_all parse_arg shell (f : item_fun) (time : bool) (clean_item : cle
       apply_all_exn time;
       chdir_full parse_arg shell true false false dir
 
+let dont_clean_item mod_name name =
+   ()
+
+let dont_clean_module pack =
+   ()
+
+let clean_resources mod_name name =
+   Mp_resource.clear_results (mod_name, name)
+
+let clean_and_abandon pack =
+   Package_info.abandon pack;
+   Proof_boot.Proof.clear_cache ()
+
 let expand_all parse_arg shell =
    let f item db =
       item.edit_interpret [] ProofExpand
@@ -1104,7 +1119,7 @@ let abandon_all parse_arg shell =
       Mp_resource.clear ();
       List.iter abandon (modified_packages ());
       Proof_boot.Proof.clear_cache ();
-      Package_info.clear packages;
+      Package_info.clear_cache packages;
       refresh parse_arg shell
 
 (*!

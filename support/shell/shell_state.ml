@@ -844,7 +844,6 @@ let save_readline_history () =
       Sys_error err ->
          eprintf "Couldn't save readline history file \"%s\"\n%s\n" rl_history_file err
 
-
 let stdin_stream () =
    let buf = create_buffer () in
    let refill loc =

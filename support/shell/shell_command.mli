@@ -34,21 +34,9 @@ open Shell_sig
 open Shell_internal_sig
 
 (*
- * Arguments to apply_all.
- *)
-val dont_clean_item   : clean_item_fun
-val dont_clean_module : clean_module_fun
-val clean_resources   : clean_item_fun
-
-(*
  * Update the commands.
  *)
 val synchronize : (shell_commands -> unit) -> unit
-
-(*
- * Name from an opname.
- *)
-val mk_dep_name : opname -> string
 
 (* Quit *)
 topval exit : unit -> unit

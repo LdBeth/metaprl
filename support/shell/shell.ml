@@ -296,7 +296,7 @@ struct
                   false
                in
                   chdir parse_arg shell false false (module_dir mname);
-                  apply_all parse_arg shell f false Shell_command.dont_clean_item Shell_command.dont_clean_module;
+                  apply_all parse_arg shell f false Shell_core.dont_clean_item Shell_core.dont_clean_module;
                   List.rev !objs)
 
       (*
@@ -519,7 +519,9 @@ struct
             Shell_state.set_module "shell_theory";
             synchronize (fun shell ->
                eprintf "Current directory: %s@." (string_of_dir (shell.shell_fs, shell.shell_subdir)))
-         end
+         end else
+            (* XXX HACK: This initializes things somehow *)
+            synchronize (fun _ -> ())
 
       (*
        * External toploop.

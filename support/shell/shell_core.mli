@@ -24,6 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Opname
 open Dform
 
 open Refiner.Refiner.TermShape
@@ -82,6 +83,14 @@ val refresh : parse_arg -> shell -> unit
 val apply_all : parse_arg -> shell -> item_fun -> bool -> clean_item_fun -> clean_module_fun -> unit
 
 (*
+ * Arguments to apply_all.
+ *)
+val dont_clean_item   : clean_item_fun
+val dont_clean_module : clean_module_fun
+val clean_resources   : clean_item_fun
+val clean_and_abandon : clean_module_fun
+
+(*
  * Proof modifications.
  *)
 val set_goal : shell -> term -> unit
@@ -122,6 +131,11 @@ val edit_is_enabled : shell -> method_name -> bool
 
 val undo : shell -> unit
 val redo : shell -> unit
+
+(*
+ * Name from an opname.
+ *)
+val mk_dep_name : opname -> string
 
 (*!
  * @docoff

@@ -236,10 +236,8 @@ let create path =
       refresh pack path;
       pack
 
-let clear pack =
-   State.write pack (fun pack ->
-         Cache.StrFilterCache.clear pack.pack_cache;
-         pack.pack_modified <- [])
+let clear_cache pack =
+   State.write pack (fun pack -> Cache.StrFilterCache.clear pack.pack_cache)
 
 (*
  * Lock the pack.

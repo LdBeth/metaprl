@@ -36,6 +36,7 @@ open Opname
 open Shell_sig
 open Shell_util
 open Shell_internal_sig
+open Shell_core
 
 (*
  * Default command set.
@@ -87,18 +88,6 @@ let commands =
    }
 
 (*
- * Arguments to apply_all.
- *)
-let dont_clean_item mod_name name =
-   ()
-
-let dont_clean_module mod_name =
-   ()
-
-let clean_resources mod_name name =
-   Mp_resource.clear_results (mod_name, name)
-
-(*
  * Set the commands.
  *)
 let synchronize f =
@@ -111,9 +100,6 @@ let synchronize f =
  *)
 external restart_gmon : unit -> unit = "restart_gmon"
 external stop_gmon : unit -> unit = "stop_gmon"
-
-let mk_dep_name opname =
-   Lm_string_util.prepend "/" (List.rev (dest_opname opname))
 
 (*
  * Call the commands.
@@ -209,12 +195,6 @@ let ls s =
          options
    in
       commands.view options
-
-(*
- * Check status.
- *)
-let clean_and_abandon pack =
-   Package_info.abandon pack
 
 let status item =
    let name, status, _, _ = item.edit_get_contents [] in

@@ -48,13 +48,13 @@ FILES[] =
    	shell_syscall_sig
 	mptop
 	shell_internal_sig
-	shell_command
 	shell_rule
 	shell_package
 	shell_root
 	shell_fs
 	shell_state
 	shell_core
+	shell_command
 	shell_current
 	shell_syscall
 	shell_p4_sig

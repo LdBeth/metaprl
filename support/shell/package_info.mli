@@ -67,7 +67,6 @@ type proof
  * Create a database.  The argument is the search path.
  *)
 val create  : string list -> t
-val clear   : t -> unit
 val refresh : t -> string list -> unit
 
 (*
@@ -82,6 +81,7 @@ val save    : parse_arg -> package -> unit
 val export  : parse_arg -> package -> unit
 val revert  : package -> unit
 val abandon : package -> unit
+val clear_cache   : t -> unit
 
 (*
  * Access.
