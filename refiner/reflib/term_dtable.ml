@@ -46,7 +46,6 @@
  *)
 
 open Lm_debug
-open Lm_printf
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 

@@ -34,7 +34,6 @@ open Lm_symbol
 open Term_shape_sig
 open Refiner.Refiner
 open TermType
-open TermMeta
 open Opname
 open Dform
 

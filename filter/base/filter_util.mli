@@ -30,7 +30,6 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_symbol
-open Lm_printf
 
 open Opname
 open Refiner.Refiner.TermType
@@ -49,7 +48,7 @@ val split_mfunction : meta_term -> string list list * term list * meta_term
  * Module paths.
  *)
 val string_of_path : module_path -> string
-val output_path : out_channel -> module_path -> unit
+val output_path : Lm_printf.out_channel -> module_path -> unit
 
 (*
  * Command-line options for group and description of the theory

@@ -32,9 +32,7 @@
  *)
 
 open Lm_debug
-open Lm_printf
 
-open MLast
 open Filter_util
 
 (*

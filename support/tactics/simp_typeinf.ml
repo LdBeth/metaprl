@@ -45,7 +45,6 @@
 
 open Lm_debug
 open Lm_symbol
-open Lm_printf
 
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermSubst

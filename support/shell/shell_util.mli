@@ -25,9 +25,6 @@
  * @end[license]
  *)
 
-open Refiner.Refiner.TermType
-open Dform
-
 (*
  * Options to the "ls" command.
  *)

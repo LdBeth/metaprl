@@ -32,7 +32,6 @@ open Lm_rformat
 open Lm_rprintf
 
 open Opname
-open Refiner.Refiner.Term
 
 open Shell_sig
 open Shell_util

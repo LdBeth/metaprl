@@ -35,9 +35,7 @@ extends Summary
 
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
-open Dform
 
-open Summary
 open Shell_sig
 
 (************************************************************************

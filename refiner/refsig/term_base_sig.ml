@@ -30,10 +30,11 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_symbol
-open Lm_printf
 open Lm_linear_set_sig
 
 open Opname
+
+type out_channel = Lm_printf.out_channel
 
 (*
  * We use read-only arrays for sequents.

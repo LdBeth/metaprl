@@ -41,7 +41,6 @@
  * @end[license]
  *)
 open Lm_debug
-open Lm_printf
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp

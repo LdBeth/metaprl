@@ -175,8 +175,6 @@ open Tactic_type
 open Tactic_type.Tactic
 open Tactic_type.Tacticals
 
-open Shell_sig
-
 open Auto_tactic
 open Simp_typeinf
 open Typeinf

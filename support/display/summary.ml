@@ -76,7 +76,6 @@ extends Comment
 extends Ocaml_df
 
 open Lm_debug
-open Lm_printf
 
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan

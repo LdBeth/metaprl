@@ -26,7 +26,6 @@
  *)
 
 open Lm_debug
-open Lm_printf
 
 open Basic
 open Term_sig

@@ -46,27 +46,19 @@ open Exn_boot
 open Lm_debug
 open Lm_rprintf
 open Lm_thread
-open Lm_thread_sig
 
 open Opname
 open Precedence
-open Refiner.Refiner
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermShape
-open Refiner.Refiner.RefineError
-open Dform
 
 open Filter_type
 open Filter_summary
 
 open Tactic_type
-open Tactic_type.Tacticals
 
 open Shell_sig
 open Shell_p4_sig
 open Shell_internal_sig
-open Shell_util
 open Shell_core
 open Shell_current
 

@@ -32,7 +32,6 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_debug
-open Lm_printf
 
 open Opname
 

@@ -26,7 +26,6 @@
  *)
 
 open Lm_debug
-open Lm_printf
 
 open Lm_num
 open Char

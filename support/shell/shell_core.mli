@@ -24,14 +24,9 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Opname
 open Dform
 
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
-
-open Tactic_type
 open Tactic_type.Tactic
 
 open Shell_sig

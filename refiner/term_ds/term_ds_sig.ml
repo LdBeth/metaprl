@@ -29,11 +29,12 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_printf
 open Lm_symbol
 
 open Opname
 open Term_sig
+
+type out_channel = Lm_printf.out_channel
 
 module type TermDsTypeSig =
 sig

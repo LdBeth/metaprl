@@ -121,7 +121,6 @@ open Tactic_type.Tactic
 open Tactic_type.Tacticals
 open Top_conversionals
 open Browser_resource
-open Shell_sig
 
 (*
  * Debugging.

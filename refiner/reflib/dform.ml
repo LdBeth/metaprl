@@ -46,7 +46,6 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
-open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 open Term_match_table
 open Simple_print.SimplePrint

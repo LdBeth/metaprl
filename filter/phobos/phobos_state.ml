@@ -25,9 +25,6 @@
  * @end[license]
  *)
 
-open Lm_debug
-open Lm_printf
-
 (*
  * Default grammar and options.
  *)

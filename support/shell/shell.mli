@@ -36,10 +36,6 @@ extends Shell_package
 extends Shell_root
 extends Shell_p4_sig
 
-open Refiner.Refiner
-open Refiner.Refiner.TermType
-open Tactic_type.Tactic
-
 open Shell_sig
 open Shell_p4_sig
 

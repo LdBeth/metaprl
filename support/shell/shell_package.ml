@@ -37,8 +37,6 @@ extends Summary
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 
-open Dform
-
 open Filter_type
 open Filter_summary_type
 

@@ -33,7 +33,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_printf
 
 (*
  * This module is used to provide arguments to the thread module.
@@ -76,7 +75,7 @@ sig
    type 'share key
 
    (* Create a server *)
-   val create : (out_channel -> 'term -> unit) ->
+   val create : (Lm_printf.out_channel -> 'term -> unit) ->
       ('extract -> 'extract list -> 'extract) ->        (* compose function *)
       ('arg -> 'extract -> 'extract) ->                 (* post-processor *)
       ('term, 'share, 'arg, 'extract) server

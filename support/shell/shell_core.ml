@@ -28,7 +28,6 @@ open Lm_debug
 open Lm_rprintf
 
 open Opname
-open Precedence
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType

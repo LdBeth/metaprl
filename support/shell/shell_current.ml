@@ -30,7 +30,6 @@ open Lm_rprintf
 open Line_buffer
 
 open Refiner.Refiner.RefineError
-open Dform
 
 open Shell_sig
 open Shell_util

@@ -44,7 +44,6 @@
  *)
 
 open Lm_debug
-open Lm_printf
 
 open Lm_ctype
 open Refiner.Refiner.TermOp

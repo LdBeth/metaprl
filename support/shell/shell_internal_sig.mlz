@@ -24,12 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_string_set
-
-open Refiner.Refiner.Term
-
 open Shell_sig
-open Shell_util
 
 (*
  * Mount descriptions.

@@ -33,7 +33,6 @@ open Lm_string_set
 
 open Opname
 open Term_sig
-open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermShape

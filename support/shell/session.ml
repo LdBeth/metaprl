@@ -37,10 +37,7 @@ open Lm_thread
 
 open Line_buffer
 
-open Refiner.Refiner.Term
-
 open Shell_util
-open Session_io
 open Session_sig
 open Session_current
 

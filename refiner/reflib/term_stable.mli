@@ -29,8 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Lm_printf
-
 open Refiner.Refiner.TermType
 open Mp_resource
 
@@ -40,7 +38,7 @@ val slookup : 'a term_stable -> term -> 'a
 val slookup_all : 'a term_stable -> term -> 'a list
 val stable_resource_info :
    ('a term_stable -> 'b) -> ((term * 'a), 'a term_stable, 'b) resource_info
-val print_keys : out_channel -> 'a term_stable -> unit
+val print_keys : Lm_printf.out_channel -> 'a term_stable -> unit
 
 (*
  * -*-

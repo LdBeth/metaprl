@@ -28,7 +28,6 @@
 (*34567890123456789012345678901234567890123456789012345 *)
 
 open Lm_debug
-open Lm_printf
 
 let _ =
    show_loading "Loading TentFunctor%t"

@@ -24,7 +24,6 @@
  *)
 
 open Lm_debug
-open Lm_printf
 
 open Phobos_type
 open Phobos_print

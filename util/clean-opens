@@ -2,7 +2,7 @@
 OUT=`mktemp /tmp/clean-opens.XXXXXX`
 YES=0
 NO=0
-unset OMAKEFLAGS
+export OMAKEFLAGS="-j6"
 (
 omake clean
 cvs update
@@ -13,7 +13,7 @@ TMP3=`mktemp /tmp/clop3.XXXXXX`
 grep -r -l --include=\*.ml --include=\*.mli --include=\*.mlz --include=\*.mll --include=\*.mly '^ *open ' . > $TMP
 omake || exit 1
 while read FILE; do
-   BINFILE=`echo $FILE|sed -e 's/\.mli$/.cmi/' -e 's/\.mlz$/.cmi/' -e 's/\.ml.*$/.cmo/'`
+   BINFILE=`echo $FILE|sed -e 's/\.ml[iz]*$/.cmo/'`
    if [ "$BINFILE" == "$FILE" ]; then
       echo "$FILE" "???"
       exit 1

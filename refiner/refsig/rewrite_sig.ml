@@ -31,9 +31,9 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
 open Lm_symbol
-open Lm_printf
+
+type out_channel = Lm_printf.out_channel
 
 (* Names of the sequent and regular contexts to be passed as arguments *)
 type rewrite_args_spec = var array

@@ -24,7 +24,6 @@
  * @end[license]
  *)
 open Refiner.Refiner.TermType
-open Mp_resource
 
 (************************************************************************
  * Different kinds of elements to display.

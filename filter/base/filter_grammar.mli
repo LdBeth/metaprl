@@ -24,10 +24,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_printf
-open Lm_symbol
-
-open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 
 (*
@@ -118,7 +114,7 @@ val is_modified        : t -> bool
 (*
  * Print (for debugging).
  *)
-val pp_print_grammar : out_channel -> t -> unit
+val pp_print_grammar : Lm_printf.out_channel -> t -> unit
 
 (*
  * Parse a string.

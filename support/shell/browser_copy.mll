@@ -24,15 +24,11 @@
  *)
 
 {
-open Format
-
 open Lm_symbol
 open Lm_thread
 
 open Http_server_type
 open Http_simple
-
-open Browser_sig
 
 (*
  * Build the table of values used in the HTML.

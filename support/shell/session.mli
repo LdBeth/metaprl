@@ -30,12 +30,10 @@
  * jyh@cs.cornell.edu
  *)
 open Lm_string_set
-open Lm_rformat_html
 
 open Refiner.Refiner.TermType
 
 open Shell_util
-open Session_sig
 
 (*
  * The output goes into the "current" buffer.

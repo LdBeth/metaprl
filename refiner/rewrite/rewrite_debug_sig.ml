@@ -29,8 +29,9 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Lm_printf
 open Rewrite_sig
+
+type out_channel = Lm_printf.out_channel
 
 module type RewriteDebugSig =
 sig

@@ -29,8 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Lm_printf
-
 open Refiner.Refiner.TermType
 
 open Dform
@@ -44,7 +42,7 @@ open Filter_type
  * toploop is not active.
  *)
 val term_printer : term -> unit  (* uses Format library *)
-val print_term_fp : out_channel -> term -> unit
+val print_term_fp : Lm_printf.out_channel -> term -> unit
 val set_tactic : string -> MLast.expr -> unit
 val get_term : int -> term
 

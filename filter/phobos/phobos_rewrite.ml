@@ -28,7 +28,6 @@ open Tactic_type.Conversionals
 
 open Opname
 open Term_sig
-open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.Rewrite

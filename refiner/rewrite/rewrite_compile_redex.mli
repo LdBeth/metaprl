@@ -29,7 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Lm_symbol
 
 open Term_sig
 open Term_base_sig

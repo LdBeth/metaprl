@@ -38,8 +38,6 @@ open Tactic_type.Tactic
 open Mp_resource
 open MLast
 
-open Filter_type
-
 open Shell_util
 
 (*

@@ -32,23 +32,18 @@
  * jyh@cs.cornell.edu
  *)
 open Lm_debug
-open Lm_symbol
-open Lm_int_set
 open Lm_thread
-open Lm_thread_sig
 
 open Format
 
 open Http_simple
 open Http_server_type
 
-open Session_sig
 open Browser_copy
 open Browser_edit
 open Browser_state
 open Browser_resource
 open Shell_sig
-open Package_info
 open Shell_util
 open Shell_syscall_sig
 

@@ -34,7 +34,6 @@
  *)
 
 open Lm_debug
-open Lm_printf
 open Lm_imp_dag
 
 (*

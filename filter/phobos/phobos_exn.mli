@@ -22,7 +22,6 @@
  * Email: granicz@cs.caltech.edu
  *)
 open Lm_rformat
-open Lm_rprintf
 
 open Phobos_type
 open Refiner.Refiner.TermType
@@ -48,6 +47,6 @@ exception SyntaxError of pos
 exception SourceAccepted
 
 val format_exn : buffer -> exn -> unit
-val format_exn_chan : out_channel -> exn -> unit
+val format_exn_chan : Lm_rprintf.out_channel -> exn -> unit
 
 val catch : ('a -> 'b) -> 'a -> 'b

@@ -35,13 +35,8 @@ extends Nuprl_font
 extends Base_dform
 extends Summary
 
-open Lm_printf
-
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
-open Dform
-
-open Summary
 
 open Shell_sig
 open Shell_util

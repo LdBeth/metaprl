@@ -26,7 +26,6 @@
  *)
 open Printf
 
-open Session_sig
 
 (*
  * Complete edit info.

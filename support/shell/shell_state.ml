@@ -39,7 +39,6 @@ open Lm_thread
 
 open Opname
 
-open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape

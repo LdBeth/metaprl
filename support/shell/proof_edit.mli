@@ -41,7 +41,6 @@
 open Opname
 open Refiner.Refiner.TermType
 open Refiner.Refiner
-open Dform
 
 open Tactic_type
 open Tactic_type.Tactic

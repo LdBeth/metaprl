@@ -33,7 +33,6 @@ extends Nuprl_font
 extends Base_dform
 
 open Lm_debug
-open Lm_printf
 
 let _ =
    show_loading "Loading Ocaml_base_df%t"

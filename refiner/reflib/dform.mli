@@ -30,13 +30,11 @@
  * jyh@cs.cornell.edu
  *
  *)
-open Lm_printf
 open Lm_string_set
 
 open Opname
 open Precedence
 open Refiner.Refiner.TermType
-open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 
 (************************************************************************
@@ -156,23 +154,23 @@ type shortener = opname -> param list -> bound_term list -> string
 
 val format_quoted_term : dform_base -> buffer -> term -> unit
 val format_term : dform_base -> buffer -> term -> unit
-val print_term_fp : dform_base -> out_channel -> term -> unit
+val print_term_fp : dform_base -> Lm_printf.out_channel -> term -> unit
 val print_term : dform_base -> term -> unit
 val prerr_term : dform_base -> term -> unit
 val string_of_term : dform_base -> term -> string
 
 val format_short_term : dform_base -> shortener -> buffer -> term -> unit
-val print_short_term_fp : dform_base -> shortener -> out_channel -> term -> unit
+val print_short_term_fp : dform_base -> shortener -> Lm_printf.out_channel -> term -> unit
 val string_of_short_term : dform_base -> shortener -> term -> string
 
 val format_bterm : dform_base -> buffer -> bound_term -> unit
-val print_bterm_fp : dform_base -> out_channel -> bound_term -> unit
+val print_bterm_fp : dform_base -> Lm_printf.out_channel -> bound_term -> unit
 val print_bterm : dform_base -> bound_term -> unit
 val prerr_bterm : dform_base -> bound_term -> unit
 val string_of_bterm : dform_base -> bound_term -> string
 
 val format_mterm : dform_base -> buffer -> meta_term -> unit
-val print_mterm_fp : dform_base -> out_channel -> meta_term -> unit
+val print_mterm_fp : dform_base -> Lm_printf.out_channel -> meta_term -> unit
 val print_mterm : dform_base -> meta_term -> unit
 val prerr_mterm : dform_base -> meta_term -> unit
 val string_of_mterm : dform_base -> meta_term -> string
