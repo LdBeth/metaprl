@@ -481,7 +481,7 @@ section
     %.cmx: $(MACROPP)
 
     MACROPPOPTS =
-    OCAMLPPFLAGS = -pp "$(MACROPP) $`(MACROPPOPTS)"
+    OCAMLPPFLAGS = -pp $`(quote $(MACROPP) $(MACROPPOPTS))
 
     %.p4: %.ml $(MACROPRINT)
         $(MACROPRINT) $(MACROPPOPTS) $< > $@

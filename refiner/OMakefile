@@ -4,13 +4,6 @@
 MACROPPOPTS = -D $(REFINER)_EXN -D SEQ_SET_$(SEQ_SET)_linear_set -D TERMS_$(TERMS) -I $(dir refsig)
 
 #
-# XXX: nogin: I do not uderstand why the OCAMLPPFLAGS definition in the
-# top-level OMakefile was insufficient. But for now define OCAMLPPFLAGS
-# again.
-#
-OCAMLPPFLAGS = -pp "$(MACROPP) $`(MACROPPOPTS)"
-
-#
 # Include files from subdirectories
 #
 include refbase/Files
