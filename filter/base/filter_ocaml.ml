@@ -717,8 +717,14 @@ struct
             let l, t = dest_array t in
                p :: l, t
       in
-      let pl, t = dest_array t in
-         <:patt< ( $list: pl$ ) >>, t
+      let pl, t =
+         let t' = one_subterm "dest_array_patt" t in
+         if Opname.eq (opname_of_term t') patt_array_end_op then
+            [], one_subterm "dest_array_patt" t'
+         else
+            dest_array t
+      in
+         <:patt< [| $list: pl$ |] >>, t
 
    and dest_cast_patt t =
       let loc = dest_loc "dest_cast_patt" t in
@@ -1261,7 +1267,7 @@ struct
       let t1, t2 = two_subterms t in
          dest_type t1, dest_type t2
 
-   (* HACK!!! The three_subterms case is for backwards compatibility with 
+   (* HACK!!! The three_subterms case is for backwards compatibility with
     * theories compiled under Caml 2.02 and I do not really know if this
     * is necessary - nogin
     *)
