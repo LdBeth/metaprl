@@ -1018,21 +1018,6 @@ struct
       fold_down f arg (root proof) proof.pf_address
 
    (*
-    * Fold a function along the path from innermost to outermost.
-    *)
-   let rec fold_up_ext proof node raddr arg f = function
-      i :: t ->
-         f proof node (fold_up_ext proof (select_child proof node raddr i) (i :: raddr) arg f t)
-    | [] ->
-         f proof node arg
-
-   let fold_up f arg proof path =
-      fold_up_ext proof proof.pf_node [] arg f path
-
-   let fold_up_root f arg proof =
-      fold_up f arg (root proof) proof.pf_address
-
-   (*
     * Fold a function along the path from innermost to outermost,
     * recomputing the proof.
     *)
@@ -1109,10 +1094,6 @@ struct
             map_tactic_arg_ext f (g ())
        | Locked ext ->
             Locked (map_tactic_arg_ext f ext)
-
-   let map_tactic_arg postf f proof =
-      let node = map_tactic_arg_ext f proof.pf_node in
-         fold_proof postf proof node
 
    (************************************************************************
     * NAVIGATION                                                           *
