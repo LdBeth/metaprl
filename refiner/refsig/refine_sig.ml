@@ -280,7 +280,7 @@ sig
    type prim_tactic = int array -> term list -> tactic
    type prim_rewrite =
       PrimRW of rw
-    | CondRW of (term list -> cond_rewrite)
+    | CondRW of (int array -> term list -> cond_rewrite)
 
    (*
     * Get the term corresponding to an extract from the named proof.
@@ -409,6 +409,7 @@ sig
 
    val create_cond_rewrite : build ->
       string ->            (* name *)
+      var array ->         (* addrs *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
       term ->              (* redex *)
@@ -442,6 +443,7 @@ sig
       unit
    val check_rewrite :
       string ->            (* name *)
+      var array ->         (* addrs *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
       term ->              (* redex *)

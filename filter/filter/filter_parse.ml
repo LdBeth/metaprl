@@ -484,7 +484,7 @@ struct
     *)
    let simple_rewrite proc name redex contractum pf res =
       (* Check that rewrite will succeed *)
-      Refine.check_rewrite name [] [] redex contractum;
+      Refine.check_rewrite name [||] [] [] redex contractum;
 
       (* Construct the command *)
       Rewrite { rw_name = name;
@@ -495,10 +495,7 @@ struct
       }
 
    let simple_input_form proc name redex contractum pf res =
-      (* Check that rewrite will succeed *)
-      Refine.check_rewrite name [] [] redex contractum;
-
-      (* Construct the command *)
+      Refine.check_rewrite name [||] [] [] redex contractum;
       InputForm { rw_name = name;
                   rw_redex = redex;
                   rw_contractum = contractum;
@@ -507,17 +504,11 @@ struct
       }
 
    let cond_rewrite proc name params args pf res =
-      (* Print the type to the .mli file *)
       let cvars = context_vars args in
       let params' = extract_params cvars params in
       let args', redex, contractum = unzip_rewrite name args in
-         (* Check the rewrite *)
-         Refine.check_rewrite (**)
-            name
-            (collect_terms params')
-            args' redex contractum;
-
-         (* Construct the command *)
+      let addrs = Array.of_list (collect_cvars params') in
+         Refine.check_rewrite name addrs (collect_terms params') args' redex contractum;
          CondRewrite { crw_name = name;
                        crw_params = params';
                        crw_args = args';

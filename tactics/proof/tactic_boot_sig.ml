@@ -967,7 +967,7 @@ sig
     * Create a conversion from a basic rewrite.
     * This function is required by filter_prog.
     *)
-   val rewrite_of_pre_rewrite : prim_rewrite -> term list -> conv
+   val rewrite_of_pre_rewrite : prim_rewrite -> int array -> term list -> conv
 
    (*
     * Standard rewrite annotatetion processor: return a pair of the redex and the conv

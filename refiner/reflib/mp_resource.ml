@@ -115,6 +115,7 @@ type ('annotation, 'input) rw_annotation_processor =
    term ->            (* Redex *)
    term ->            (* Contractum *)
    term list ->       (* Assumptions *)
+   var array ->       (* Names of the context vars parameters *)
    term list ->       (* Term arguments *)
    'annotation ->     (* Extra arguments, will include Refine.prim_rewrite *)
    'input

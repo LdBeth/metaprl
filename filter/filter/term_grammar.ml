@@ -972,6 +972,10 @@ struct
                mk_so_var_term v conts []
            | sl_single_quote; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right; sl_open_brack; terms = opttermlist; sl_close_brack ->
                mk_so_var_term v conts terms
+           | sl_single_quote; v = var; sl_contexts_empty ->
+               mk_so_var_term v [] []
+           | sl_single_quote; v = var; sl_contexts_empty; sl_open_brack; terms = opttermlist; sl_close_brack ->
+               mk_so_var_term v [] terms
            | sl_single_quote; v = var; sl_open_brack; terms = opttermlist; sl_close_brack ->
                mk_so_var_term v (get_var_contexts loc v terms) terms
           ]];
@@ -1309,6 +1313,7 @@ struct
       (* Terminals *)
       sl_contexts_left: [[ "<|" -> () ]];
       sl_contexts_right: [[ "|>" -> () ]];
+      sl_contexts_empty: [[ "<||>" -> () ]];
 
       sl_meta_left_right_arrow:
          [[ "<-->" -> () ]];

@@ -322,6 +322,7 @@ struct
 
    and cond_rewrite_here =
       { cjust_goal : term;
+        cjust_addrs : int array;
         cjust_params : term list;
         cjust_refiner : opname;
       }
@@ -450,7 +451,7 @@ struct
     * These are the forms created at compile time.
     *)
    type prim_tactic = int array -> term list -> tactic
-   type prim_cond_rw = term list -> cond_rewrite
+   type prim_cond_rw = int array -> term list -> cond_rewrite
    type prim_rewrite =
       PrimRW of rw
     | CondRW of prim_cond_rw
@@ -1716,8 +1717,8 @@ struct
    (*
     * See if the rewrite will compile.
     *)
-   let check_rewrite name params subgoals redex contractum =
-      ignore(Rewrite.term_rewrite Strict empty_args_spec (redex::params) (contractum::subgoals))
+   let check_rewrite name addrs params subgoals redex contractum =
+      ignore(Rewrite.term_rewrite Strict addrs(*empty_args_spec*) (redex::params) (contractum::subgoals))
 
    (*
     * Create a simple rewrite from a meta-term.
@@ -1826,7 +1827,7 @@ struct
 
    let check_definition name redex contractum =
       check_def_redex name redex;
-      check_rewrite name [] [] redex contractum
+      check_rewrite name [||] [] [] redex contractum
 
    let definitional_rewrite build name redex contractum =
       IFDEF VERBOSE_EXN THEN
@@ -1901,29 +1902,30 @@ struct
    (*
     * Conditional rewrite.
     *)
-   let create_cond_rewrite build name params subgoals redex contractum =
+   let create_cond_rewrite build name addrs params subgoals redex contractum =
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.create_cond_rewrite: %s%t" name eflush
       ENDIF;
-      let rw = Rewrite.term_rewrite Strict empty_args_spec (redex::params) (contractum :: subgoals) in
+      let rw = Rewrite.term_rewrite Strict addrs (redex::params) (contractum :: subgoals) in
       let opname = mk_opname name build.build_opname in
       let pre_crw = {
          pre_crw_redex = redex;
          pre_crw_contractum = contractum;
          pre_crw_assums = subgoals;
       } in
-      let rw' params (sent : sentinal) (bvars : SymbolSet.t) t =
+      let rw' addrs params (sent : sentinal) (bvars : SymbolSet.t) t =
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
                eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t print_symbol_set bvars eflush;
          ENDIF;
-         match apply_rewrite rw ([||], bvars) t params with
+         match apply_rewrite rw (addrs, bvars) t params with
             (t' :: subgoals) ->
                sent.sent_cond_rewrite opname pre_crw;
                   t',
                   CondRewriteSubgoals subgoals,
                   CondRewriteHere { cjust_goal = t;
+                                    cjust_addrs = addrs;
                                     cjust_params = params;
                                     cjust_refiner = opname;
                   }
@@ -1993,12 +1995,13 @@ struct
             eprintf "Refiner.add_ml_cond_rewrite: %s%t" name eflush
       ENDIF;
       let opname = mk_opname name build.build_opname in
-      let crw params (sent : sentinal) (bvars : SymbolSet.t) t =
+      let crw addrs params (sent : sentinal) (bvars : SymbolSet.t) t =
          let t', subgoals, ext = rw bvars params t in
             sent.sent_ml_cond_rewrite opname rw;
             t',
             CondRewriteSubgoals subgoals,
             CondRewriteML ({ cjust_goal = t;
+                             cjust_addrs = addrs;
                              cjust_params = params;
                              cjust_refiner = opname;
                            }, ext, List.length subgoals)

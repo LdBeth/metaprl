@@ -76,11 +76,11 @@ struct
     * Create a conversion from a basic rewrite.
     * This function is required by filter_prog.
     *)
-   let rewrite_of_pre_rewrite rw args =
-      match rw, args with
-         PrimRW rw, [] -> RewriteConv rw
-       | PrimRW _, _ -> raise(Invalid_argument "Rewrite_boot.rewrite_of_pre_rewrite: PrimRW rewrites do not take arguments")
-       | CondRW crw, _ -> CondRewriteConv (crw args)
+   let rewrite_of_pre_rewrite rw addrs args =
+      match rw, addrs, args with
+         PrimRW rw, [||], [] -> RewriteConv rw
+       | PrimRW _, _, _ -> raise(Invalid_argument "Rewrite_boot.rewrite_of_pre_rewrite: PrimRW rewrites do not take arguments")
+       | CondRW crw, _, _ -> CondRewriteConv (crw addrs args)
 
    (*
     * No action.
@@ -356,7 +356,7 @@ struct
     * This is a Relaxed rewrite with no justification.
     *)
    let create_iform name strictp redex contractum =
-      rewrite_of_pre_rewrite (create_input_form (null_refiner name) name strictp redex contractum) []
+      rewrite_of_pre_rewrite (create_input_form (null_refiner name) name strictp redex contractum) [||] []
 
    (*
     * Rewrite a term.
@@ -371,9 +371,9 @@ struct
       let goal, _ = Refine.dest_msequent (List.hd res).ref_goal in
          goal
 
-   let redex_and_conv_of_rw_annotation name _ redex _ _ args rw =
-      match args with
-         [] -> redex, rewrite_of_pre_rewrite rw []
+   let redex_and_conv_of_rw_annotation name _ redex _ _ addrs args rw =
+      match addrs, args with
+         [||], [] -> redex, rewrite_of_pre_rewrite rw [||] []
        | _ -> raise (Invalid_argument(name ^ " resource does not support annotations on rewrites that take arguments"))
 end
 
