@@ -113,6 +113,9 @@ struct
    let mk_dep0_opname loc name =
       mk_opname loc [name] [] [0]
 
+   let mk_dep1_opname loc name =
+      mk_opname loc [name] [] [1]
+
    let mk_dep0_dep0_opname loc name =
       mk_opname loc [name] [] [0;0]
 
@@ -433,12 +436,18 @@ struct
                mk_arith_term loc op t1 t2
             ]
           | "quantify" LEFTA
-            [  op = sl_all; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
-             | op = sl_exists; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
-             | op = sl_open_quantify; t1 = noncommaterm; sl_period; t2 = noncommaterm -> (* thereis/forall *)
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) "self" t1.aterm t2.aterm }
+            [ (* all/exists*)
+               op = sl_quantify; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
+              (* dall/dexists*)
+             | op = sl_quantify; v = word_or_string; sl_set_in; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc  ("d"^op)) v t1.aterm t2.aterm }
+              (* sall/sexists*)
+             | op = sl_quantify; v = word_or_string; sl_period; t2 = noncommaterm ->
+                  { aname = None; aterm = mk_dep1_term (mk_dep1_opname loc ("s"^op)) v t2.aterm }
+              (* thereis/forall *)
+             | op = sl_open_quantify; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) "self" t1.aterm t2.aterm }
             ]
           | "neg"
             [ op = sl_not; x = noncommaterm ->
@@ -446,19 +455,19 @@ struct
             ]
           (* Relations *)
           | "equal" NONA
-            [ t1 = noncommaterm; op = sl_not_equal; t2 = noncommaterm; sl_in; ty = noncommaterm ->
+            [ t1 = noncommaterm; op = sl_equal_rel; t2 = NEXT; sl_in; ty = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc op) ty.aterm t1.aterm t2.aterm }
-             | t1 = noncommaterm; op = sl_equal; t2 = noncommaterm; sl_in; ty = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc op) ty.aterm t1.aterm t2.aterm }
-            ]
-          | [ t = noncommaterm; sl_IN; ty = noncommaterm ->
+            | t = noncommaterm; op = sl_in; ty = noncommaterm ->
                (* HACK - this is to support ad-hoc I/O form "member" - see TODO 2.14 -2.15 *)
                   { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "equal") ty.aterm t.aterm t.aterm }
-            ]
-          | [ t1 = noncommaterm; sl_tilde; t2 = noncommaterm ->
+            | t1 = noncommaterm; op = sl_equal_rel; t2 = NEXT ->
+               { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc op) t1.aterm t2.aterm }
+            | t1 = noncommaterm; sl_tilde; t2 = noncommaterm ->
                (* HACK - Perv!rewrite should be eventially replaced by mk_opname loc ["sqeq"] *)
                (* { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc "sqeq") t1.aterm t2.aterm } *)
                   { aname = None; aterm = mk_xrewrite_term t1.aterm t2.aterm }
+            | t1 = noncommaterm; op = sl_set_in; t2 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc op) t1.aterm t2.aterm }
             ]
           | "compare" NONA
             [ t1 = noncommaterm; op = sl_less_than; t2 = noncommaterm ->
@@ -496,7 +505,7 @@ struct
           | "isect" LEFTA
             [  op = sl_isect; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
                         { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
-             | op = sl_quotient; x = sl_word; sl_comma; y = sl_word; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
+             | op = sl_quotient; x = word_or_string; sl_comma; y = word_or_string; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) x y t1.aterm t2.aterm }
             ]
           | "add" LEFTA
@@ -676,9 +685,9 @@ struct
           ]];
 
       varterm:
-         [[ sl_single_quote; v = sl_word ->
+         [[ sl_single_quote; v = word_or_string ->
              mk_var_term v
-           | sl_single_quote; v = sl_word; sl_open_brack; terms = opttermlist; sl_close_brack ->
+           | sl_single_quote; v = word_or_string; sl_open_brack; terms = opttermlist; sl_close_brack ->
              mk_so_var_term v terms
           ]];
 
@@ -800,9 +809,9 @@ struct
           ]];
 
       bsingle:
-         [[ w = sl_word ->
+         [[ w = word_or_string ->
              ST_String w
-           | w = sl_word; (params, bterms) = termsuffix ->
+           | w = word_or_string; (params, bterms) = termsuffix ->
              ST_Term (mk_term (mk_op (mk_bopname loc [w] params bterms) params) bterms, loc)
            | t = nonwordterm ->
              ST_Term (t.aterm, loc)
@@ -845,7 +854,7 @@ struct
           ]];
 
       hyp:
-         [[ bvar = OPT [ name = sl_word; sl_colon -> name]; t = aterm ->
+         [[ bvar = OPT [ name = word_or_string; sl_colon -> name]; t = aterm ->
              let v =
                 match bvar with
                    Some v' ->
@@ -914,10 +923,12 @@ struct
          [[ "]" -> () ]];
 
       sl_in:
-         [[ "in" -> () ]];
+         [[ "in" -> ()
+          | "IN" -> () ]];
 
-      sl_IN:
-         [[ "IN" -> () ]];
+      sl_set_in:
+         [[ "In" -> "mem"
+         ]];
 
       sl_colon:
          [[ ":" -> () ]];
@@ -1027,10 +1038,12 @@ struct
          [[ ">=" -> "ge" ]];
 
       sl_equal:
-         [[ "=" -> "equal" ]];
+         [[ "=" -> () ]];
 
-      sl_not_equal:
-         [[ "<>" -> "nequal" ]];
+      sl_equal_rel:
+         [[ "=" -> "equal"
+          | "<>" -> "nequal"
+          ]];
 
       sl_not:
          [[ "neg" -> "not" ]];
@@ -1055,6 +1068,11 @@ struct
       sl_open_quantify:
          [[ "forany" -> "all"
           | "thereis" -> "exists"
+          ]];
+
+      sl_quantify:
+         [[ "all" -> "all"
+          | "exst" -> "exists"
           ]];
 
       sl_isect:
