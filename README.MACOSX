@@ -39,6 +39,10 @@ SATISFYING DEPENDENCIES
       ranlib /usr/local/lib/ocaml/camlp4/camlp4.a
       ranlib /usr/local/lib/ocaml/camlp4/odyl.a
 
+   [Sidenote:  This ranlib issue should be fixed in post-3.08.0 OCaml
+   releases.  There will be no need to run ranlib as stated above.  The
+   final fixes were committed to OCaml CVS sometime on 2004-07-30.]
+
    You also need to copy some files from your OCaml build directory.
    Copy these files into the OCaml library directory (e.g., ./lib/ocaml)
    using (for example) this command (run from within the OCaml source
