@@ -49,7 +49,6 @@ CMXDEPS =\
 	$(CAMLLIB)/unix.cmxa\
         $(CAMLLIB)/nums.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
-	$(ROOT)/lib/clib.cmxa\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
@@ -68,7 +67,6 @@ CMADEPS =\
         $(CAMLLIB)/nums.cma\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CAMLP4LIB)/camlp4_top.cma\
-	$(ROOT)/lib/clib.cma\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\

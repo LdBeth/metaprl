@@ -19,7 +19,6 @@ INSTALL_LIBS = prlc
 # Flags
 #
 INCLUDE =\
-	-I $(ROOT)/clib\
 	-I $(ROOT)/mllib\
 	-I $(ROOT)/refiner/refbase\
 	-I $(ROOT)/refiner/refsig\
@@ -83,7 +82,6 @@ PFILES =\
 # Libraries for prlc
 #
 CMXADEPS =\
-	$(ROOT)/clib/clib.cmxa\
 	$(ROOT)/mllib/util.cmxa
 
 CMXLIBS =\
@@ -91,7 +89,6 @@ CMXLIBS =\
 	$(CMXDEPS)
 
 CMADEPS =\
-	$(ROOT)/clib/clib.cma\
 	$(ROOT)/mllib/util.cma
 
 CMALIBS =\

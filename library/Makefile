@@ -70,7 +70,7 @@ include Makefile.dep
 # Rules
 #
 lib: $(MAIN).run $(RMLIFILES) $(RCMIFILES) $(RCMAFILES) $(ROOT)/lib/registry.txt
-opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(ROOT)/lib/registry.txt
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(RAFILES) $(ROOT)/lib/registry.txt
 
 install:: $(MAIN).cma
 	$(INSTALL) $(MAIN).cma registry.txt $(NLLIB)

@@ -65,8 +65,8 @@ ifdef MAIN
 endif
 
 # Library file names
-MLFILES      = $(addsuffix .ml,   $(NLFILES) $(LMFILES) $(MFILES) $(PFILES))
-MLIFILES     = $(addsuffix .mli,  $(NLFILES) $(LMFILES) $(MFILES) $(PFILES))
+MLFILES      = $(sort $(addsuffix .ml,   $(NLFILES) $(LMFILES) $(MFILES) $(PFILES)))
+MLIFILES     = $(sort $(addsuffix .mli,  $(NLFILES) $(LMFILES) $(MFILES) $(PFILES)))
 
 NL_CMIFILES  = $(addsuffix .cmi,  $(NLFILES))
 NL_CMOFILES  = $(addsuffix .cmo,  $(NLFILES))
@@ -91,13 +91,13 @@ MMLIFILES    = $(addsuffix .ml,   $(MFILES))
 PMLIFILES    = $(addsuffix .mli,  $(PFILES))
 PMLFILES     = $(addsuffix .ml,   $(PFILES))
 
-REG_CMIFILES = $(LCMIFILES) $(MCMIFILES) $(PCMIFILES)
-REG_CMOFILES = $(LCMOFILES) $(MCMOFILES) $(PCMOFILES)
-REG_CMXFILES = $(LCMXFILES) $(MCMXFILES) $(PCMXFILES)
+REG_CMIFILES = $(sort $(LCMIFILES) $(MCMIFILES) $(PCMIFILES))
+REG_CMOFILES = $(sort $(LCMOFILES) $(MCMOFILES) $(PCMOFILES))
+REG_CMXFILES = $(sort $(LCMXFILES) $(MCMXFILES) $(PCMXFILES))
 
-CMIFILES     = $(NL_CMIFILES) $(LCMIFILES) $(MCMIFILES)
-CMOFILES     = $(NL_CMOFILES) $(LCMOFILES) $(MCMOFILES)
-CMXFILES     = $(NL_CMXFILES) $(LCMXFILES) $(MCMXFILES)
+CMIFILES     = $(sort $(NL_CMIFILES) $(LCMIFILES) $(MCMIFILES))
+CMOFILES     = $(sort $(NL_CMOFILES) $(LCMOFILES) $(MCMOFILES))
+CMXFILES     = $(sort $(NL_CMXFILES) $(LCMXFILES) $(MCMXFILES))
 
 CMAFILES     = $(addsuffix .cma,  $(MLLIBS))
 CMXAFILES    = $(addsuffix .cmxa, $(MLLIBS))
@@ -109,6 +109,7 @@ RMLIFILES    = $(addprefix $(ROOT)/lib/, $(LMLIFILES))
 RCMIFILES    = $(addprefix $(ROOT)/lib/, $(CMIFILES))
 RCMAFILES    = $(addprefix $(ROOT)/lib/, $(addsuffix .cma, $(INSTALL_LIBS)))
 RCMXAFILES   = $(addprefix $(ROOT)/lib/, $(addsuffix .cmxa, $(INSTALL_LIBS)))
+RAFILES      = $(addprefix $(ROOT)/lib/, $(addsuffix .a, $(INSTALL_LIBS)))
 
 # Instructions to make
 .PHONY: all lib opt clean depend install
@@ -156,6 +157,9 @@ $(RCMAFILES): $(ROOT)/lib/%.cma: %.cma
 
 $(RCMXAFILES): $(ROOT)/lib/%.cmxa: %.cmxa
 	$(INSTALL) $*.cmxa $(ROOT)/lib
+
+$(RAFILES): $(ROOT)/lib/%.a: %.a
+	$(INSTALL) $*.a $(ROOT)/lib
 
 $(NL_CMOFILES): %.cmo: %.ml %.cmi
 	$(PRLC) $(OCAMLCFLAGS) -c $*.ml

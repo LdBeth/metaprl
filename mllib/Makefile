@@ -11,6 +11,7 @@ MLZFILES :=\
 LMFILES :=\
 	debug\
 	env_arg\
+	punix\
 	array_util\
 	string_util\
 	list_util\
@@ -47,7 +48,7 @@ include Makefile.dep
 # Rules
 #
 lib: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES)
-opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES)
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(RAFILES)
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MAIN).cma $(MLIFILES) $(CMIFILES) $(NLLIB)

@@ -27,7 +27,7 @@ INSTALL_LIBS := $(MAINLIB)
 
 all: lib $(ROOT)/lib/$(MAINLIB).cma
 
-opt: optlib $(ROOT)/lib/$(MAINLIB).cmxa
+opt: optlib $(ROOT)/lib/$(MAINLIB).cmxa $(ROOT)/lib/$(MAINLIB).a
 
 #
 # The real Makefile
