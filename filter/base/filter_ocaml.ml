@@ -1,6 +1,9 @@
 (*
  * Convert between terms and ocaml asts.
  *
+ * WARNING: If you modify this file, please make sure that
+ * you've updated display forms in theories/ocaml accordingly.
+ *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
