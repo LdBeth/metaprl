@@ -52,11 +52,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
- * jyh@cs.cornell.edu
  *)
-
 open Printf
 
 open Mp_debug
@@ -170,9 +168,6 @@ and 'tag format_info =
 
 (*
  * Input data is formatted on a stack.
- *
- * zone_numbers: the stack of zone numbers
- * szone_number: the current number for soft breaks
  *)
 and 'tag buffer =
    { (* What format is this zone *)
@@ -192,12 +187,16 @@ and 'tag buffer =
    }
 
 (*
- * The root buffer contains name allocation info,
- * and a stack of buffers it is inserting into.
+ * The root contains info for general formatting.
+ *    root_index: zones are given unique numbers,
+ *       the root_index is the index of the next zone
+ *    root_bound: max number of visible characters in the buffer
+ *    root_count: number of visible characters in the buffer
  *)
 and 'tag root =
-   { (* For allocating names *)
-     mutable root_index : int
+   { mutable root_index : int;
+     mutable root_bound : int;
+     mutable root_count : int
    }
 
 (*
@@ -214,6 +213,12 @@ type 'tag printer =
      print_begin_tag : 'tag buffer -> 'tag -> unit;
      print_end_tag : 'tag buffer -> 'tag -> unit
    }
+
+(*
+ * Buffer overflow is raised when too much visible text is
+ * put in the buffer.
+ *)
+exception BufferOverflow
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -233,7 +238,12 @@ let lcol_const = 3
  * Create a new empty buffer.
  *)
 let new_buffer () =
-   let root = { root_index = 0 } in
+   let root =
+      { root_index = 0;
+        root_bound = max_int;
+        root_count = 0
+      }
+   in
       { buf_tag = SZoneTag;
         buf_index = 0;
         buf_info = empty_info;
@@ -320,12 +330,6 @@ let push_zone buf tag =
    let stack = get_formatting_stack buf in
    let root = buf.buf_root in
    let index = succ root.root_index in
-   let tag =
-      if buf.buf_tag = LZoneTag then
-         LZoneTag
-      else
-         tag
-   in
    let buf' =
       { buf_tag = tag;
         buf_index = index;
@@ -418,7 +422,28 @@ let get_formatting_head buf =
  *)
 let push_command buf command =
    let entry = get_formatting_head buf in
+   let () =
+      match command, entry.formatting_buf.buf_tag with
+         Text (len, _), IZoneTag ->
+            let root = buf.buf_root in
+            let { root_bound = bound;
+                  root_count = count
+                } = root
+            in
+               if count >= bound then
+                  raise BufferOverflow;
+               root.root_count <- count + len
+       | _ ->
+            ()
+   in
       entry.formatting_commands <- command :: entry.formatting_commands
+
+(*
+ * Set the bound in the buffer.
+ * If you set this, you must be prepared to catch BufferOverflow.
+ *)
+let format_bound buf bound =
+   buf.buf_root.root_bound <- bound
 
 (*
  * Add breaks.
@@ -1479,9 +1504,9 @@ let tex_visible buf =
 
 let tex_push_line buf =
    let count, line = tex_line buf in
+      output_string buf.tex_out line;
       if count mod 2 = 1 then
          output_string buf.tex_out "$";
-      output_string buf.tex_out line;
       if line <> "" && line.[String.length line - 1] != '\n' then
          output_string buf.tex_out "\\\\\n";
       if count mod 2 = 1 then
@@ -1604,16 +1629,26 @@ let print_to_tex rmargin buf out =
  * Print to a single line.
  *)
 let line_format length fmt_fun =
+   if length < 3 then
+      raise (Invalid_argument "Rformat.line_format");
+
    let buf = new_buffer () in
    let s =
+      format_bound buf length;
       format_lzone buf;
-      fmt_fun buf;
+      (try fmt_fun buf with
+          BufferOverflow ->
+             ());
       format_ezone buf;
       print_to_string length buf
    in
    let len = String.length s in
       if len > length then
-         String.sub s 0 length
+         let s = String.sub s 0 length in
+            s.[length - 3] <- '.';
+            s.[length - 2] <- '.';
+            s.[length - 1] <- '.';
+            s
       else
          s
 

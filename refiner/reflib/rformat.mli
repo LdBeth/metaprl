@@ -58,6 +58,13 @@
 
 type 'tag buffer
 
+(*
+ * The BufferOverflow exception is raised when too much visible text is
+ * put in the buffer.  You can control how much visible text is allowed
+ * by using the format_bound function below.
+ *)
+exception BufferOverflow
+
 (************************************************************************
  * INTERFACE                                                            *
  ************************************************************************)
@@ -67,6 +74,14 @@ type 'tag buffer
  *)
 val new_buffer : unit -> 'tag buffer
 val clear_buffer : 'tag buffer -> unit
+
+(*
+ * Specify the max number of characters in the buffer.
+ * This will not raise an exception even if the buffer
+ * is already too large.  You will get the exception
+ * the next time you insert visible text.
+ *)
+val format_bound : 'tag buffer -> int -> unit
 
 (*
  * Breaks.
