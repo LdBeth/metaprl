@@ -99,6 +99,30 @@ topval autoT : tactic (* weakAutoT thenT tcaT *)
 topval prefix_ttca : tactic -> tactic
 suffix ttca
 
+(*
+ * "tac tatca" is a short for "tac thenAT tryT (completeT autoT)"
+ *)
+topval prefix_tatca : tactic -> tactic
+suffix tatca
+
+(*
+ * "tac twtca" is a short for "tac thenWT tryT (completeT autoT)"
+ *)
+topval prefix_twtca : tactic -> tactic
+suffix twtca
+
+(*
+ * "tac taa" is a short for "tac thenAT autoT"
+ *)
+topval prefix_taa : tactic -> tactic
+suffix taa
+
+(*
+ * "tac twa" is a short for "tac thenWT autoT"
+ *)
+topval prefix_twa : tactic -> tactic
+suffix twa
+
 topval byDefT: conv -> tactic
 topval byDefsT: conv list -> tactic
 

@@ -296,6 +296,29 @@ let prefix_ttca tac =
 
 suffix ttca
 
+let tcaT = tryT (completeT strongAutoT)
+let tcwaT = tryT (completeT autoT)
+
+let prefix_tatca tac =
+   tac thenAT tcwaT
+
+suffix tatca
+
+let prefix_twtca tac =
+   tac thenWT tcwaT
+
+suffix twtca
+
+let prefix_taa tac =
+   tac thenAT autoT
+
+suffix taa
+
+let prefix_twa tac =
+   tac thenWT autoT
+
+suffix twa
+
 let make_defT conv = rwhAllAll (conv thenC reduceC) (* BUG? : Should be reduceTopC ? *)
 let byDefT conv = make_defT conv thenT autoT
 let byDefsT convs = seqT (List.map make_defT convs) thenT autoT
