@@ -379,12 +379,6 @@ struct
    let replace_subterm term addr subterm =
       apply_fun_at_addr (replace_subterm_aux subterm) addr term
 
-   let replace_bound_subterm_aux f bvars term =
-      f bvars
-
-   let replace_bound_subterm term addr bvars f =
-      apply_var_fun_at_addr (replace_bound_subterm_aux f) addr bvars term
-
    (*
     * Apply the function to the outermost terms where it does not fail.
     *)

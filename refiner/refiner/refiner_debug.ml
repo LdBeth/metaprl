@@ -2183,12 +2183,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p2_1, p2_2 = p2 in
          merge merge_term "TermAddr.replace_subterm" (wrap3 TermAddr1.replace_subterm p0_1 p1_1 p2_1) (wrap3 TermAddr2.replace_subterm p0_2 p1_2 p2_2)
 
-      let replace_bound_subterm (p0 : term) (p1 : address) (p2 : SymbolSet.t) (p3 : (SymbolSet.t -> term)) =
-         let p0_1, p0_2 = p0 in
-         let p1_1, p1_2 = p1 in
-         let p3_1, p3_2 = split_atf p3 in
-         merge merge_term "TermAddr.replace_bound_subterm" (wrap4 TermAddr1.replace_bound_subterm p0_1 p1_1 p2 p3_1) (wrap4 TermAddr2.replace_bound_subterm p0_2 p1_2 p2 p3_2)
-
       let apply_fun_at_addr (p0 : (term -> term)) (p1 : address) (p2 : term) =
          let p0_1, p0_2 = split_ttf p0 in
          let p1_1, p1_2 = p1 in
