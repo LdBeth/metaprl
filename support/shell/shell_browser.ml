@@ -57,6 +57,7 @@ let debug_http =
  *)
 let browser_flag = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool
 let browser_port = Env_arg.int "port" None "start browser services on this port" Env_arg.set_int_option_int
+let browser_string = Env_arg.string "BROWSER_COMMAND" None "browser to start on startup" Env_arg.set_string_option_string
 
 module ShellBrowser (Shell : ShellSig) =
 struct
@@ -87,7 +88,8 @@ struct
       let challenge = new_challenge () in
       let response = Digest.string (password ^ challenge) in
       let response = Lm_string_util.hexify response in
-         eprintf "@[<v 3>Password is: %s@ Challenge is: %s@ Response is: %s@]@." password challenge response;
+         if !debug_http then
+            eprintf "@[<v 3>Password is: %s@ Challenge is: %s@ Response is: %s@]@." password challenge response;
          { state with state_challenge = challenge;
                       state_response = response
          }
@@ -143,14 +145,6 @@ struct
          { state with state_table = table }
 
    (*
-    * Print the startup page.
-    *)
-   let print_startpage out state =
-      let table = table_of_state state in
-      let table = BrowserTable.add_string table title_sym "MetaPRL Start Page" in
-         print_translated_file_to_channel out table "start.html"
-
-   (*
     * This is the default printer that uses tables for display.
     *)
    let print_page out state location =
@@ -168,10 +162,31 @@ struct
    (*
     * Print the login page.
     *)
-   let print_login out state =
+   let print_login_page out state =
+      let state = update_challenge state in
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "MetaPRL Login Page" in
          print_translated_file_to_http out table "login.html";
+         state
+
+   (*
+    * Print the startup page.  The start page gets the full response.
+    *)
+   let print_start_page out state =
+      let table = table_of_state state in
+      let table = BrowserTable.add_string table title_sym "MetaPRL Start Page" in
+      let table = BrowserTable.add_string table response_sym state.state_response in
+         print_translated_file_to_channel out table "start.html"
+
+   (*
+    * Print the login page.
+    *)
+   let print_access_granted_page out state =
+      let state = update_challenge state in
+      let table = table_of_state state in
+      let table = BrowserTable.add_string table title_sym "MetaPRL Access Granted" in
+      let table = BrowserTable.add_string table response_sym state.state_response in
+         print_translated_file_to_http out table "access.html";
          state
 
    (*
@@ -193,8 +208,11 @@ struct
 
    (*
     * Handle a get command by changing directories as specified.
+    *
+    * This is untrusted, so each case should check if access is
+    * granted.
     *)
-   let get state outx uri =
+   let get state outx uri header =
       if !debug_http then
          eprintf "Get: %s@." uri;
 
@@ -206,13 +224,18 @@ struct
             let filename = Lm_string_util.concat "/" uri in
                print_raw_file_to_http outx filename;
                state
+       | ["login"; key] when key = state.state_response ->
+            print_access_granted_page outx state
        | _ ->
-            let uri = "" :: decode_uri uri in
-            let dirname = Lm_string_util.concat "/" uri in
-               chdir state dirname;
-               flush state;
-               print_page outx state dirname;
-               state
+            if is_valid_response state header then
+               let uri = "" :: decode_uri uri in
+               let dirname = Lm_string_util.concat "/" uri in
+                  chdir state dirname;
+                  flush state;
+                  print_page outx state dirname;
+                  state
+            else
+               print_login_page outx state
 
    (*
     * Handle a post command.  This means to submit the text to MetaPRL.
@@ -261,7 +284,8 @@ struct
                (match macro, command with
                    Some command, _
                  | None, Some command ->
-                      eprintf "Command: \"%s\"@." (String.escaped command);
+                      if !debug_http then
+                         eprintf "Command: \"%s\"@." (String.escaped command);
                       eval state outx command;
                       let { http_host     = host;
                             http_port     = port
@@ -284,24 +308,35 @@ struct
     * We switch the mode to HTML.
     *)
    let http_connect server state outx inx args header body =
-      (* Check the response *)
-      if is_valid_response state header then
-         (* Process the command *)
-         match args with
-            "get" :: uri :: _ ->
-               get state outx uri
-          | "post" :: uri :: _ ->
+      (* Process the command *)
+      match args with
+         "get" :: uri :: _ ->
+            get state outx uri header
+       | "post" :: uri :: _ ->
+            if is_valid_response state header then
                post server state outx inx uri header body
-          | command :: _ ->
-               print_error_page outx NotImplementedCode;
-               eprintf "Shell_simple_http: unknown command: %s@." command;
-               state
-          | [] ->
-               print_error_page outx BadRequestCode;
-               eprintf "Shell_simple_http: null command@.";
-               state
-      else
-         print_login outx state
+            else
+               print_login_page outx state
+       | command :: _ ->
+            print_error_page outx NotImplementedCode;
+            eprintf "Shell_simple_http: unknown command: %s@." command;
+            state
+       | [] ->
+            print_error_page outx BadRequestCode;
+            eprintf "Shell_simple_http: null command@.";
+            state
+
+   (*
+    * Start a browser if possible.
+    *
+    * BUG JYH: this works with Mozilla/Linux, but I'm not at all sure
+    * how well it will work on other systems.
+    *)
+   let start_browser browser url =
+      let argv = [|browser; url|] in
+         try ignore (Unix.waitpid [] (Unix.create_process browser argv Unix.stdin Unix.stdout Unix.stderr)) with
+            Unix.Unix_error _ ->
+               eprintf "Shell_browser: could not start browser %s@." browser
 
    (*
     * Start the server.
@@ -319,14 +354,26 @@ struct
 
       (* Create the start file *)
       let filename = Filename.concat metaprl_dir "start.html" in
-      let fd = Unix.openfile filename [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o666 in
+      let fd = Unix.openfile filename [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
+      let () =
+         try Unix.fchmod fd 0o600 with
+            Unix.Unix_error _ ->
+               ()
+      in
       let out = Unix.out_channel_of_descr fd in
       let file_url = sprintf "file://%s" filename in
       let http_url = sprintf "http://%s:%d/" host port in
          (* Start page *)
-         print_startpage out state;
+         print_start_page out state;
          Pervasives.flush out;
          Unix.close fd;
+
+         (* Start the browser if requested *)
+         (match !browser_string with
+             Some browser ->
+                start_browser browser file_url
+           | None ->
+                ());
 
          (* Tell the user *)
          eprintf "@[<v 0>@[<v 3>Browsing service started.  Point your browser to the following URL:@ %s@]@ \
@@ -380,6 +427,11 @@ struct
          else
                (* Create a new password *)
             let fd = Unix.openfile passwd [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
+            let () =
+               try Unix.fchmod fd 0o600 with
+                  Unix.Unix_error _ ->
+                     ()
+            in
             let out = Unix.out_channel_of_descr fd in
             let password = new_challenge () in
                output_string out password;

@@ -162,6 +162,7 @@ let print_success_channel out code inx =
    let code, msg = ok_code in
       fprintf out "%s %d %s\r\n" http_protocol code msg;
       fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
+      fprintf out "Cache-Control: public\r\n";
       fprintf out "Content-Length: %d\r\n\r\n" st_size;
       copy out inx
 
@@ -435,7 +436,8 @@ let parse_eq_list sep body =
          Not_found ->
             arg, ""
    in
-      eprintf "parse_post_body: \"%s\"%t" (String.escaped body) eflush;
+      if !debug_http then
+         eprintf "parse_post_body: \"%s\"%t" (String.escaped body) eflush;
       List.map split (Lm_string_util.split sep body)
 
 let parse_cookies body =

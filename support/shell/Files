@@ -29,6 +29,7 @@ MPFILES =\
 
 # Files to copy to the lib directory
 INPUTS =\
+	access.html\
 	start.html\
 	login.html\
 	pagelong.html\

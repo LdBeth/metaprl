@@ -53,3 +53,13 @@ function WriteWindowStyle(rulebox_height) {
 		   + '} ');
     document.write(' --></style>');
 }
+
+/*
+ * Save the window size as a cookie, so MetaPRL can get a hold of it.
+ */
+var window_width_name = 'MetaPRL.window_width';
+
+function SetWindowCookie() {
+   SetCookie(window_width_name, '' + window_width, null, "/", null, false);
+}
+
