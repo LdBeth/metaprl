@@ -60,31 +60,37 @@ struct
    let compose_address path1 path2 =
       Compose (path1, path2)
 
+#ifdef VERBOSE_EXN 
+#  define ATERM a term
+#else
+#  define ATERM
+#endif
+
    (*
     * Get a subterm.
     *)
-   let rec getnth a term terms i =
+   let rec getnth ATERM terms i =
       match (terms, i) with
          (hd::_, 0) ->
             hd
        | (hd::tl, _) ->
-            getnth a term tl (pred i)
+            getnth ATERM tl (pred i)
        | ([], _) ->
             ref_raise(RefineError ("getnth", AddressError (a, term)))
 
    (*
     * Follow an explicit path.
     *)
-   let rec term_subterm_path a term t = function
+   let rec term_subterm_path ATERM t = function
       [] ->
          t
     | i::tl ->
-         term_subterm_path a term (dest_bterm (getnth a term (dest_term t).term_terms i)).bterm tl
+         term_subterm_path ATERM (dest_bterm (getnth ATERM (dest_term t).term_terms i)).bterm tl
 
    (*
     * Follow a sequent path to a clause.
     *)
-   let rec term_subterm_nthpath a term flag t = function
+   let rec term_subterm_nthpath ATERM flag t = function
       0 ->
          if flag then
             match dest_term t with
@@ -101,12 +107,12 @@ struct
          let { term_op = op; term_terms = bterms } = dest_term t in
             match (dest_term t).term_terms with
                [bterm] ->
-                  term_subterm_nthpath a term flag (dest_bterm bterm).bterm (i - 1)
+                  term_subterm_nthpath ATERM flag (dest_bterm bterm).bterm (i - 1)
              | ((_ :: bterm2 :: _) as bterms) ->
                   if (dest_op op).op_name == context_opname then
-                     term_subterm_nthpath a term flag (dest_bterm (List_util.last bterms)).bterm (i - 1)
+                     term_subterm_nthpath ATERM flag (dest_bterm (List_util.last bterms)).bterm (i - 1)
                   else
-                     term_subterm_nthpath a term flag (dest_bterm bterm2).bterm (i - 1)
+                     term_subterm_nthpath ATERM flag (dest_bterm bterm2).bterm (i - 1)
              | _ ->
                ref_raise(RefineError ("term_subterm_nthpath", AddressError (a, term)))
 
@@ -116,9 +122,9 @@ struct
    let rec term_subterm term a =
       match a with
          Path addr ->
-            term_subterm_path a term term addr
+            term_subterm_path ATERM term addr
        | NthClause (addr, flag) ->
-            term_subterm_nthpath a term flag term addr
+            term_subterm_nthpath ATERM flag term addr
        | Compose (addr1, addr2) ->
             term_subterm (term_subterm term addr1) addr2
 
@@ -127,30 +133,38 @@ struct
     * Capture is not taken into account.  This function
     * allows the replacement to compute an extra value.
     *)
+#ifdef VERBOSE_EXN
+#  define FAIL fail
+#  define DO_FAIL fail_addr fail
+#else
+#  define FAIL
+#  define DO_FAIL raise_generic_exn
+#endif
+
    let fail_addr (addr, term) =
       ref_raise(RefineError ("replace_term", AddressError (addr, term)))
 
-   let rec path_replace_term fail f bvars t = function
+   let rec path_replace_term FAIL f bvars t = function
       i::tl ->
          let { term_op = op; term_terms = bterms } = dest_term t in
-         let bterms, arg = path_replace_bterm fail f tl i bvars bterms in
+         let bterms, arg = path_replace_bterm FAIL f tl i bvars bterms in
             mk_term op bterms, arg
     | [] ->
          f bvars t
 
-   and path_replace_bterm fail f tl i bvars bterms =
+   and path_replace_bterm FAIL f tl i bvars bterms =
       match i, bterms with
          (0, bterm :: bterms) ->
             let { bvars = vars; bterm = term } = dest_bterm bterm in
-            let term, arg = path_replace_term fail f (vars :: bvars) term tl in
+            let term, arg = path_replace_term FAIL f (vars :: bvars) term tl in
                mk_bterm vars term :: bterms, arg
        | (_, bterm :: bterms) ->
-            let bterms, arg = path_replace_bterm fail f tl (i - 1) bvars bterms in
+            let bterms, arg = path_replace_bterm FAIL f tl (i - 1) bvars bterms in
                bterm :: bterms, arg
        | _, [] ->
-            fail_addr fail
+            DO_FAIL
 
-   let rec nthpath_replace_term fail flag f bvars t i =
+   let rec nthpath_replace_term FAIL flag f bvars t i =
       if i = 0 then
          if flag then
             match dest_term t with
@@ -163,7 +177,7 @@ struct
                      let bterm = mk_bterm vars term in
                         mk_term op (bterm :: bterms), arg
              | _ ->
-                  fail_addr fail
+                  DO_FAIL
          else
             f bvars t
       else
@@ -171,24 +185,25 @@ struct
             { term_op = op; term_terms = [bterm] } ->
                (* Always take subterm if there is only one *)
                let { bvars = vars; bterm = trm } = dest_bterm bterm in
-               let term, arg = nthpath_replace_term fail flag f (vars :: bvars) trm (i - 1) in
+               let term, arg = nthpath_replace_term FAIL flag f (vars :: bvars) trm (i - 1) in
                let bterm = mk_bterm vars term in
                   mk_term op [bterm], arg
           | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms') } ->
                if (dest_op op).op_name == context_opname then
                   let args, bterm = List_util.split_last bterms' in
                   let { bvars = vars; bterm = term } = dest_bterm bterm in
-                  let term, arg = nthpath_replace_term fail flag f (vars :: bvars) term (i - 1) in
+                  let term, arg = nthpath_replace_term FAIL flag f (vars :: bvars) term (i - 1) in
                   let bterm = mk_bterm vars term in
                      mk_term op (args @ [bterm]), arg
                else
                   let { bvars = vars; bterm = term' } = dest_bterm bterm2 in
-                  let term, arg = nthpath_replace_term fail flag f (vars :: bvars) term' (i - 1) in
+                  let term, arg = nthpath_replace_term FAIL flag f (vars :: bvars) term' (i - 1) in
                   let bterm = mk_bterm vars term in
                      mk_term op (bterm1 :: bterm :: bterms), arg
           | _ ->
-               fail_addr fail
+               DO_FAIL
 
+#ifdef VERBOSE_EXN
    let rec apply_fun_arg_at_addr_aux fail f addr bvars term =
       match addr with
          Path addr ->
@@ -201,6 +216,17 @@ struct
 
    let apply_fun_arg_at_addr f addr bvars term =
       apply_fun_arg_at_addr_aux (addr, term) f addr bvars term
+#else
+   let rec apply_fun_arg_at_addr f addr bvars term =
+      match addr with
+         Path addr ->
+            path_replace_term f bvars term addr
+       | NthClause (addr, flag) ->
+            nthpath_replace_term flag f bvars term addr
+       | Compose (addr1, addr2) ->
+            apply_fun_arg_at_addr 
+               (apply_fun_arg_at_addr f addr2) addr1 bvars term
+#endif
 
    let add_unit_arg f bvars t =
       f bvars t, ()
