@@ -50,6 +50,7 @@ let match_hyps big small =
    let small_length = SeqHyp.length small_hyp in
    let big_length = SeqHyp.length big_hyp in
    let may_skip = big_length - small_length in
+   if may_skip < 0 then raise cant_match_hyp;
    let result = Array.create big_length None in
    let rec aux big_skip small_skip big_vars small_vars =
       if small_skip = small_length then

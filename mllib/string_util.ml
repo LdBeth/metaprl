@@ -323,7 +323,7 @@ let unhexify_int s =
       else
          index
    in
-      unhexify 0 0;
+      unhexify 0 0
 
 (*
  * Locale functions

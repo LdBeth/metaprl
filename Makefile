@@ -63,6 +63,9 @@ filter_opt: check_config
 		if (echo Making $$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
 	done
 
+debug: check_config
+	+@$(MAKE) OCAMLC="$(OCAMLC) -g" OCAMLMKTOP="$(OCAMLMKTOP) -g"
+
 profile_byte: check_config
 	+@$(MAKE) profile_clean
 	+@$(MAKE) all
