@@ -6,6 +6,7 @@
 open Printf
 
 open Debug
+open Imp_dag
 
 open Theory
 
@@ -23,12 +24,14 @@ include Package_type
 module Package : PackageSig =
 struct
    (*
-    * Our info contains the cache module,
-    * plus the refiner and display forms.
+    * A package may have a signature, and an implementation
+    * as a cache.
     *)
    type package =
-      { mutable pack_status  : status;
-        pack_info : StrFilterCache.info
+      { mutable pack_status : status;
+        pack_name : string;
+        pack_sig  : StrFilterCache.sig_info option;
+        pack_info : StrFilterCache.info option
       }
    
    (*
@@ -36,8 +39,8 @@ struct
     *)
    type t =
       { pack_cache : StrFilterCache.t;
-        pack_dag : ImpDag.t;
-        mutable pack_packages : package list
+        pack_dag : package ImpDag.t;
+        mutable pack_packages : package ImpDag.node list
       }
    
    (*
@@ -96,8 +99,8 @@ struct
    (*
     * Get the name of the package.
     *)
-   let name { pack_info = info } =
-      StrFilterCache.name info
+   let name { pack_name = name } =
+      name
    
    (*
     * Get the filename for the package.
@@ -124,13 +127,76 @@ struct
       info_items (StrFilterCache.info info)
    
    (*
+    * Get a node by its name.
+    *)
+   let load_check dag name node =
+      let { pack_info = info } = ImpDag.node_value dag node in
+         StrFilterCache.name info = name
+
+   let is_loaded { pack_dag = dag; pack_packages = packages } name =
+      List.exists (load_check dag name) packages
+
+   let get_package { pack_dag = dag; pack_packages = packages } name =
+      List_util.find packages (load_check dag name)
+   
+   (*
+    * Add a parent edge.
+    * We only allow parents with toplevel names.
+    *)
+   let insert_parent pack node = function
+      [parent] ->
+         begin
+            try
+               let pnode = get_package pack parent in
+                  ImpDag.add_edge pack.pack_dag node pnode
+            with
+               Not_found ->
+                  raise (Failure "Package_info.maybe_add_package: parent is not defined")
+         end
+    | path ->
+         raise (Failure ("Package_info.insert_parent: parent is not toplevel: " ^ string_of_path path))
+
+   (*
+    * Add an implementation package.
+    * This replaces any current version of the package,
+    * and adds the edges to the parents.
+    *)
+   let add_implementation pack info =
+      let { pack_dag = dag; pack_packages = packages } = pack in
+      let name = StrFilterCache.name info.pack_info in
+      let rec remove = function
+         node :: t ->
+            let { pack_info = info' } = ImpDag.node_value dag node in
+               if StrFilterCache.name info' = name then
+                  begin
+                     ImpDag.delete dag node;
+                     t
+                  end
+               else
+                  node :: remove t
+       | [] ->
+            []
+      in
+      let node = ImpDag.insert dag info in
+      let parents = StrFilterCache.parents info.pack_info in
+         pack.pack_packages <- node :: (remove packages);
+         List.iter (insert_parent pack node) parents
+   
+   (*
     * Add a signature package.
     * This does nothing if the package already exists,
-    * otherwise it adds the package.
+    * otherwise it adds the package, and creates
+    * the edges to the parents.
     *)
    let maybe_add_package pack info =
-      let { pack_packages = packages } = pack in
-      let parents = StrFilterCache.
+      let name = StrFilterCache.name info in
+         if not (is_loaded pack name) then
+            let { pack_dag = dag; pack_packages = packages } = pack in
+            let parents = StrFilterCache.parents info in
+            let pinfo = { pack_status = ReadOnly; pack_info = info } in
+            let node = ImpDag.insert dag pinfo in
+               pack.pack_packages <- node :: packages;
+               List.iter (insert_parent pack node) parents
 
    (*
     * When a module is inlined, add the resources and infixes.
@@ -167,32 +233,17 @@ struct
          (* Add all the infix words *)
          List.iter add_infix (get_infixes info);
          
+         (* Add this node to the pack *)
+         maybe_add_package pack info;
+         
          (* Add the path to the list of parents *)
          path :: paths, nresources
 
    (*
-    * Add a theory to the list of loaded theories.
-    *)
-   let add_package pack info =
-      let { pack_packages = packages } = pack in
-         pack.pack_packages <- info :: packages
-   
-   (*
     * Get a loaded theory.
     *)
-   let get { pack_packages = packages } name =
-      let rec search = function
-         pack :: t ->
-            let { pack_info = info } = pack in
-            let name' = StrFilterCache.name info in
-               if name' = name then
-                  pack
-               else
-                  search t
-       | [] ->
-            raise Not_found
-      in
-         search packages
+   let get pack name =
+      get_package pack name
 
    (*
     * Save a package.
@@ -250,6 +301,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/16 14:55:44  jyh
+ * Upgrading packages.
+ *
  * Revision 1.3  1998/04/15 22:28:49  jyh
  * Converting packages from summaries.
  *
