@@ -22,6 +22,6 @@ function OnStart()
 function OnLoad()
 {
     var abortbutton = parent.parent.GetObject(self, 'abortbutton');
-    abortbutton.value = 'Close';
+    abortbutton.value = 'Done';
     not_finished = false;
 }

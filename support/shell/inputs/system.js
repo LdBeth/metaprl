@@ -35,12 +35,21 @@ function Abort()
 /*
  * Load the content.
  */
+function LoadOutput()
+{
+    var outputframe = parent.GetObject(self, 'outputframe');
+    outputframe.src = '/output';
+}
+
+/*
+ * Load the content.
+ */
 function OnLoad()
 {
     var window_height = FrameHeight();
     var outputframe = parent.GetObject(self, 'outputframe');
     outputframe.style.height = (window_height - 50) + 'px';
-    outputframe.src = '/session/' + session['id'] + '/output';
+    setTimeout('LoadOutput ()', 1000);
     document.onmouseup = parent.CancelMenu;
 }
 

@@ -171,9 +171,7 @@ function Update(session)
         parent.ruleframe.location.reload();
     if(session['io'] && version['io'] != session['io']) {
         version['io'] = session['io'];
-        if(reloading)
-            setTimeout('LoadSystem ()', 2000);
-        else {
+        if(!reloading) {
             LoadSystem();
             ShowSystem();
         }
@@ -377,7 +375,7 @@ function ShowSystem()
 
 function LoadSystem()
 {
-    parent.systemframe.location.href = '/session/' + version['id'] + '/frame/system/';
+    parent.systemframe.location.reload();
 }
 
 function ShowEdit()

@@ -144,13 +144,6 @@ struct
         mutable session_styles          : Buffer.t option;
 
         (*
-         * Is a command running for this session?
-         *)
-        mutable session_io_command      : string;
-        mutable session_io              : Browser_syscall.t option;
-        mutable session_io_version      : int;
-
-        (*
          * Edit files.
          *)
         mutable session_edit            : string;
@@ -168,7 +161,7 @@ struct
          mutable shared_response  : string;
 
         (* Processes *)
-         mutable shared_children  : int list
+        mutable shared_children  : int list
       }
 
    type state =
@@ -178,7 +171,8 @@ struct
         state_shared    : state_shared State.entry;
         state_challenge : string;
         state_response  : string;
-        state_children  : int list
+        state_children  : int list;
+        state_io        : Browser_syscall.t
       }
 
    (*
@@ -194,8 +188,8 @@ struct
     | FrameURI    of pid * string
     | SessionURI  of pid
     | EditURI     of pid * string
-    | OutputURI   of pid
     | CloneURI    of pid
+    | OutputURI
     | WelcomeURI
 
    (*
@@ -270,12 +264,8 @@ struct
               | Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI (Lm_string_util.prepend "/" rest))
-       | ["session"; id; "output"] ->
-            (try OutputURI (make_pid id) with
-                Failure _
-              | Not_found ->
-                   eprintf "Bad session: %s@." id;
-                   UnknownURI "/output")
+       | ["output"] ->
+            OutputURI
        | "inputs" :: rest ->
             InputURI (Lm_string_util.prepend "/" rest)
        | ["login"; key] ->
@@ -342,15 +332,28 @@ struct
                update_from_shared state shared)
 
    (*
+    * Load the browser on startup.
+    *)
+   let load_browser state =
+      let state = update_challenge state in
+      let io = state.state_io in
+         Session_io.read_output (Browser_syscall.set_command io) (Browser_syscall.add_char io);
+         state
+
+   (*
     * Save the state in the environment so that we can re-use it
     * during a restart.
     *)
    let save_browser server state =
-      State.read state.state_shared (fun shared ->
-            let port = Http_simple.save_http server in
-               Env_arg.putenv challenge_name shared.shared_challenge;
-               Env_arg.putenv browser_name "";
-               Env_arg.putenv browser_port_name (string_of_int port))
+      let io = state.state_io in
+      let command = Browser_syscall.command io in
+      let contents = Browser_syscall.contents io in
+         Session_io.write_output command contents;
+         State.read state.state_shared (fun shared ->
+               let port = Http_simple.save_http server in
+                  Env_arg.putenv challenge_name shared.shared_challenge;
+                  Env_arg.putenv browser_name "";
+                  Env_arg.putenv browser_port_name (string_of_int port))
 
    (*
     * Get the content-type.
@@ -473,9 +476,6 @@ struct
               session_menu            = None;
               session_buttons         = None;
               session_styles          = None;
-              session_io              = None;
-              session_io_command      = "No Command";
-              session_io_version      = 0;
               session_edit            = "No File";
               session_edit_flag       = false;
               session_edit_external   = false;
@@ -499,9 +499,6 @@ struct
               session_menu            = None;
               session_buttons         = None;
               session_styles          = None;
-              session_io              = None;
-              session_io_command      = "No command";
-              session_io_version      = 0;
               session_edit            = "No File";
               session_edit_flag       = false;
               session_edit_external   = false;
@@ -755,7 +752,7 @@ struct
    (*
     * Print the session state.
     *)
-   let print_session server session buf =
+   let print_session server state session buf =
       let { http_host = host;
             http_port = port
           } = http_info server
@@ -767,7 +764,6 @@ struct
             session_message_version = message_version;
             session_buttons_version = buttons_version;
             session_rule_version    = rule_version;
-            session_io_version      = io_version;
             session_edit            = edit;
             session_edit_flag       = edit_flag;
             session_edit_external   = edit_external;
@@ -775,6 +771,7 @@ struct
           } = session
       in
       let id = dest_pid id in
+      let io_version = Browser_syscall.version state.state_io in
          Printf.bprintf buf "\tvar session = new Array();\n";
          Printf.bprintf buf "\tsession['cwd']      = '%s';\n" cwd;
          Printf.bprintf buf "\tsession['location'] = 'https://%s:%d/session/%d/content%s/';\n" host port id cwd;
@@ -808,8 +805,7 @@ struct
       let { session_cwd             = cwd;
             session_menu            = menu;
             session_buttons         = buttons;
-            session_styles          = styles;
-            session_io_command      = command
+            session_styles          = styles
           } = session
       in
       let table = table_of_state state in
@@ -828,12 +824,12 @@ struct
       in
 
       (* Current command *)
-      let table = BrowserTable.add_string table command_sym        command in
+      let table = BrowserTable.add_string table command_sym        (Browser_syscall.command state.state_io) in
 
       (* General info *)
       let table = BrowserTable.add_string table title_sym          "MetaPRL" in
       let table = BrowserTable.add_string table location_sym       cwd in
-      let table = BrowserTable.add_fun    table session_sym        (print_session server session) in
+      let table = BrowserTable.add_fun    table session_sym        (print_session server state session) in
 
       (* Menubar *)
       let table = BrowserTable.add_fun    table menu_sym           (print_menu_buffer get_menu) in
@@ -931,7 +927,7 @@ struct
       let table = BrowserTable.add_string table basename_sym (Filename.basename filename) in
       let table = BrowserTable.add_file   table content_sym filename in
       let table = BrowserTable.add_string table response_sym state.state_response in
-      let table = BrowserTable.add_fun    table session_sym (print_session server session) in
+      let table = BrowserTable.add_fun    table session_sym (print_session server state session) in
          print_translated_file_to_http outx table "edit.html"
 
    let print_external_edit_page server state session filename outx =
@@ -1014,47 +1010,32 @@ struct
    (*
     * Print the output page.
     *)
-   let print_output_page state session outx =
-      match session.session_io with
-         Some io ->
-            let table = table_of_state state in
-            let table = BrowserTable.add_string table title_sym "MetaPRL output window" in
-            let table = BrowserTable.add_string table command_sym session.session_io_command in
-               print_translated_io_buffer_to_http outx table "output.html" io
-       | None ->
-            print_error_page outx NotFoundCode
+   let print_output_page state outx =
+      let table = table_of_state state in
+      let table = BrowserTable.add_string table title_sym "MetaPRL output window" in
+      let table = BrowserTable.add_string table command_sym (Browser_syscall.command state.state_io) in
+         print_translated_io_buffer_to_http outx table "output.html" state.state_io
 
    (*
     * Perform a command.
     *)
-   let start_inline_command session state outx command =
+   let start_command session state command =
       if !debug_http then
-         eprintf "Executing inline command %s@." command;
-      try
-         let io = Browser_syscall.create command in
-            session.session_io <- Some io;
-            session.session_io_command <- command;
-            Session.add_command io;
-            Browser_syscall.close io
-      with
+         eprintf "Executing windowed command %s@." command;
+      try Browser_syscall.start state.state_io command with
          Unix.Unix_error _ ->
             Lm_format.eprintf "%s: failed\n" command
 
-   let start_windowed_command session state outx command =
+   let start_inline_command session state command =
       if !debug_http then
-         eprintf "Executing windowed command %s@." command;
-      try
-         session.session_io <- Some (Browser_syscall.create command);
-         session.session_io_version <- succ session.session_io_version;
-         session.session_io_command <- command
-      with
-         Unix.Unix_error _ ->
-            Lm_format.eprintf "%s: failed\n" command
+         eprintf "Executing inline command %s@." command;
+      start_command session state command;
+      Session.add_command state.state_io
 
    (*
     * For the editor, just set the info in the session.
     *)
-   let start_edit_command session state outx target =
+   let start_edit_command session state target =
       let { session_edit_version = edit_version } = session in
       let flag = LsOptionSet.mem (Top.get_ls_options ()) LsExternalEditor in
          Session.add_edit target;
@@ -1072,9 +1053,13 @@ struct
             match command with
                SyscallRestart ->
                   Top.backup_all ();
-                  print_page server state session outx 100 "reload";
-                  Http_simple.Output.flush outx;
                   save_browser server state;
+                  (match outx with
+                      Some outx ->
+                         print_page server state session outx 100 "reload";
+                         Http_simple.Output.flush outx
+                    | None ->
+                         ());
                   let () =
                      try Unix.execv Sys.argv.(0) Sys.argv with
                         Unix.Unix_error _ ->
@@ -1082,13 +1067,13 @@ struct
                   in
                      Lm_format.eprintf "System restart failed@."
              | SyscallOMake target ->
-                  start_windowed_command session state outx (sprintf "omake %s" target)
+                  start_command session state (sprintf "omake %s" target)
              | SyscallCVS (cwd, command) ->
-                  start_windowed_command session state outx (sprintf "cd %s && cvs %s" cwd command)
+                  start_command session state (sprintf "cd %s && cvs %s" cwd command)
              | SyscallEdit (_, target) ->
-                  start_edit_command session state outx target
+                  start_edit_command session state target
              | SyscallShell s ->
-                  start_inline_command session state outx s);
+                  start_inline_command session state s);
       0
 
    (************************************************************************
@@ -1100,10 +1085,11 @@ struct
     * Send it to the shell, and get the result.
     *)
    let eval server state session outx command =
-      Shell_syscall.set_syscall_handler (handle_syscall server state outx);
+      Shell_syscall.set_syscall_handler (handle_syscall server state (Some outx));
       Session.add_prompt command;
       unsynchronize_session session (fun () ->
             Session.synchronize Top.eval (command ^ ";;"));
+      Shell_syscall.set_syscall_handler (handle_syscall server state None);
       invalidate_eval session
 
    (*
@@ -1231,12 +1217,11 @@ struct
                print_file_page server state filename outx
             else
                print_error_page outx ForbiddenCode
-       | OutputURI pid ->
-            synchronize_pid pid (fun session ->
-                  if is_valid_response state header then
-                     print_output_page state session outx
-                  else
-                     print_login_page outx state (Some session))
+       | OutputURI ->
+            if is_valid_response state header then
+               print_output_page state outx
+            else
+               print_login_page outx state None
        | UnknownURI dirname ->
             print_error_page outx NotFoundCode
 
@@ -1259,7 +1244,7 @@ struct
        | ContentURI _
        | FrameURI _
        | CloneURI _
-       | OutputURI _
+       | OutputURI
        | SessionURI _
        | EditURI _
        | WelcomeURI ->
@@ -1329,7 +1314,7 @@ struct
           | ContentURI _
           | FrameURI _
           | CloneURI _
-          | OutputURI _
+          | OutputURI
           | SessionURI _
           | FileURI _
           | WelcomeURI ->
@@ -1465,6 +1450,9 @@ struct
          eprintf "@[<v 0>@[<v 3>Browsing service started.  Point your browser to the following URL:@ %s@]@ \
 @[<v 3>Or use the following URL:@ %s@]@]@." file_url http_url;
 
+         (* Handle commands *)
+         Shell_syscall.set_syscall_handler (handle_syscall server state None);
+
          (* Return the new translation state *)
          state
 
@@ -1523,9 +1511,9 @@ struct
       if !browser_flag then
          let password = init_password () in
          let shared =
-            { shared_challenge = "unknown";
-              shared_response  = "unknown";
-              shared_children  = []
+            { shared_challenge  = "unknown";
+              shared_response   = "unknown";
+              shared_children   = []
             }
          in
          let shared = State.shared_val "Shell_browser.shared" shared in
@@ -1536,10 +1524,11 @@ struct
               state_shared    = shared;
               state_challenge = "unknown";
               state_response  = "unknown";
-              state_children  = []
+              state_children  = [];
+              state_io        = Browser_syscall.create ()
             }
          in
-         let state = update_challenge state in
+         let state = load_browser state in
             Lm_thread_shell.with_pid main_pid (fun () ->
                   Top.init ();
                   Top.set_dfmode "html";

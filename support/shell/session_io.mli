@@ -33,6 +33,9 @@ val read_session   : string -> session_info
 val read_sessions  : unit -> session_info list
 val write_session  : session_info -> unit
 
+val read_output    : (string -> unit) -> (char -> unit) -> unit
+val write_output   : string -> string -> unit
+
 (*!
  * @docoff
  *

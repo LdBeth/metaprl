@@ -30,10 +30,17 @@ type buffer
 (*
  * Processes.
  *)
-val create   : string -> t
+val create   : unit -> t
+val start    : t -> string -> unit
 val flush    : t -> unit
 val contents : t -> string
 val close    : t -> unit
+val add_char : t -> char -> unit
+
+val command     : t -> string
+val set_command : t -> string -> unit
+
+val version  : t -> int
 
 (*
  * Buffered input.

@@ -152,7 +152,7 @@ let mkdir name =
 (*
  * Session directory name.
  *)
-let shared_filename, session_dir =
+let shared_filename, output_filename, session_dir =
    let home =
        try Sys.getenv "HOME" with
           Not_found ->
@@ -162,9 +162,10 @@ let shared_filename, session_dir =
    let metaprl_dir = Filename.concat home ".metaprl" in
    let session_dir = Filename.concat metaprl_dir "sessions" in
    let shared_name = Filename.concat metaprl_dir "shared" in
+   let output_name = Filename.concat metaprl_dir "output" in
       mkdir metaprl_dir;
       mkdir session_dir;
-      shared_name, session_dir
+      shared_name, output_name, session_dir
 
 (*
  * Filename for a session.
@@ -331,6 +332,49 @@ let write_session session =
       fprintf outx "\r\n";
 
       close_out outx
+
+(*
+ * Read the output command.
+ *)
+let read_output set_command add_char =
+   let inx =
+      try Some (open_in_bin output_filename) with
+         Sys_error _ ->
+            None
+   in
+      match inx with
+         Some inx ->
+            let command =
+               try input_line inx with
+                  End_of_file ->
+                     "No Command"
+            in
+            let rec copy () =
+                add_char (input_char inx);
+                copy ()
+            in
+               set_command command;
+               (try copy () with
+                   End_of_file ->
+                      ());
+            close_in inx;
+       | None ->
+            ()
+
+let write_output command s =
+   let outx =
+      try Some (open_out_bin output_filename) with
+         Sys_error _ ->
+            None
+   in
+      match outx with
+         Some outx ->
+            output_string outx command;
+            output_char outx '\n';
+            output_string outx s;
+            close_out outx
+       | None ->
+            eprintf "Session_io.write_output: can't write %s%t" output_filename eflush
 }
 
 (*

@@ -105,25 +105,42 @@ struct
          if i < 0 || i >= length then
             raise (Invalid_argument "get_char");
          data.[i]
+
+   (*
+    * Clear the buffer.
+    *)
+   let clear buf =
+      buf.buf_length <- 0
 end
 
 (*
  * Buffer for storing output from commands.
  *)
-type t =
-   { io_in : Unix.file_descr;
-     io_pid : int;
-     io_input : in_channel;
-     io_buffer : Buffer.t;
-     mutable io_finished : bool
+type command =
+   { command_in : Unix.file_descr;
+     command_pid : int;
+     command_input : in_channel
    }
+
+type process =
+   ProcessRunning of command
+ | ProcessIdle
+
+type io =
+   { mutable io_process : process;
+     mutable io_command : string;
+     mutable io_version : int;
+     io_buffer : Buffer.t
+   }
+
+type t = io State.entry
 
 (*
  * Buffer for reading from the buffer incrementally.
  *)
 type buffer =
-   { in_io : t;
-     mutable in_index  : int
+   { in_io_entry : t;
+     mutable in_index : int
    }
 
 let cmd_exe, cmd_argv =
@@ -142,72 +159,116 @@ let cmd_exe, cmd_argv =
 (*
  * Start a new process dumping data into the buffer.
  *)
-let create command =
-   let fd_in, fd_out = Unix.pipe () in
-   let () = Unix.set_close_on_exec fd_in in
-   let pid = Unix.create_process cmd_exe (cmd_argv command) Unix.stdin fd_out fd_out in
-   let inx = Unix.in_channel_of_descr fd_in in
-      Unix.close fd_out;
-      { io_in = fd_in;
-        io_pid = pid;
-        io_input = inx;
-        io_buffer = Buffer.create 256;
-        io_finished = false
+let create () =
+   let default =
+      { io_process = ProcessIdle;
+        io_command = "No Command";
+        io_version = 0;
+        io_buffer = Buffer.create 256
       }
-
-let close io =
-   let { io_in = fd_in;
-         io_pid = pid;
-         io_input = inx;
-         io_finished = finished
-       } = io
    in
-      if not finished then
-         begin
-            io.io_finished <- true;
-            Unix.close fd_in;
-            close_in inx;
+      State.shared_val "Browser_syscall.create" default
 
-            (*
-             * BUG JYH: Linux *says* that any thread can call waitpid,
-             * but it isn't true.
-             *)
-            try ignore (Unix.waitpid [] pid) with
-               Unix.Unix_error _ ->
-                  ()
-         end
+let add_char io_entry c =
+   State.write io_entry (fun io ->
+         Buffer.add_char io.io_buffer c)
+
+let close io_entry =
+   State.write io_entry (fun io ->
+         match io.io_process with
+            ProcessRunning command ->
+               let { command_in = fd_in;
+                     command_pid = pid;
+                     command_input = inx
+                   } = command
+               in
+                  Unix.close fd_in;
+                  close_in inx;
+
+                  (*
+                   * BUG JYH: Linux *says* that any thread can call waitpid,
+                   * but it isn't true.
+                   *)
+                  (try ignore (Unix.waitpid [] pid) with
+                      Unix.Unix_error _ ->
+                         ());
+
+                  io.io_process <- ProcessIdle
+          | ProcessIdle ->
+               ())
+
+let start io_entry command_string =
+   close io_entry;
+   State.write io_entry (fun io ->
+         let fd_in, fd_out = Unix.pipe () in
+         let () = Unix.set_close_on_exec fd_in in
+         let pid = Unix.create_process cmd_exe (cmd_argv command_string) Unix.stdin fd_out fd_out in
+         let inx = Unix.in_channel_of_descr fd_in in
+         let command =
+            { command_in = fd_in;
+              command_pid = pid;
+              command_input = inx
+            }
+         in
+            Unix.close fd_out;
+            Buffer.clear io.io_buffer;
+            io.io_command <- command_string;
+            io.io_version <- succ io.io_version;
+            io.io_process <- ProcessRunning command)
 
 (*
  * Flush the buffer by reading all possible data.
  *)
-let flush io =
-   let { io_input = inx;
-         io_buffer = buf
-       } = io
-   in
-   let rec copy () =
-      let c = input_char inx in
-         Buffer.add_char buf c;
-         copy ()
-   in
-   let () =
-      try copy () with
-         End_of_file ->
-            ()
-   in
-      close io
+let flush io_entry =
+   State.write io_entry (fun io ->
+         let { io_process = process;
+               io_buffer = buf
+             } = io
+         in
+            match process with
+               ProcessRunning { command_input = inx } ->
+                  let rec copy () =
+                     let c = input_char inx in
+                        Buffer.add_char buf c;
+                        copy ()
+                  in
+                     (try copy () with
+                         End_of_file ->
+                            ());
+                     close io_entry
+             | ProcessIdle ->
+                  ())
 
 (*
  * Get the contents as a string.
  *)
-let contents io =
-   Buffer.contents io.io_buffer
+let contents io_entry =
+   State.read io_entry (fun io ->
+         Buffer.contents io.io_buffer)
+
+(*
+ * Command name.
+ *)
+let command io_entry =
+   State.read io_entry (fun io ->
+         io.io_command)
+
+let set_command io_entry command =
+   State.write io_entry (fun io ->
+         io.io_command <- command)
+
+(*
+ * Version number.
+ *)
+let version io_entry =
+   State.read io_entry (fun io ->
+         io.io_version)
 
 (*
  * Open an incremental channel.
  *)
-let open_in io =
-   { in_io = io;
+let open_in io_entry =
+   { in_io_entry = io_entry;
      in_index = 0
    }
 
@@ -215,33 +276,34 @@ let open_in io =
  * Get the next char.
  *)
 let get_char inx =
-   let { in_io = io;
+   let { in_io_entry = io_entry;
          in_index = index
        } = inx
    in
-   let { io_input = iny;
-         io_buffer = buf;
-         io_finished = finished
-       } = io
-   in
-   let len = Buffer.length buf in
-      if index = len then
-         if finished then
-            raise End_of_file
-         else
-            try
-               let c = input_char iny in
-                  Buffer.add_char buf c;
-                  inx.in_index <- succ index;
-                  c
-            with
-               End_of_file ->
-                  close io;
-                  raise End_of_file
-      else
-         let c = Buffer.get_char buf index in
-            inx.in_index <- succ index;
-            c
+      State.write io_entry (fun io ->
+            let { io_process = process;
+                  io_buffer = buf
+                } = io
+            in
+            let len = Buffer.length buf in
+               if index >= len then
+                  match process with
+                     ProcessRunning { command_input = iny } ->
+                        (try
+                            let c = input_char iny in
+                               Buffer.add_char buf c;
+                               inx.in_index <- succ index;
+                               c
+                         with
+                            End_of_file ->
+                               close io_entry;
+                               raise End_of_file)
+                   | ProcessIdle ->
+                        raise End_of_file
+               else
+                  let c = Buffer.get_char buf index in
+                     inx.in_index <- succ index;
+                     c)
 
 (*!
  * @docoff
