@@ -65,6 +65,12 @@ sig
     | RewriteNum of Mp_num.num
     | RewriteLevel of level_exp
 
+   (* Names of the contexts and variables to be passed as arguments *)
+   type rewrite_args_spec = string array * string array
+
+   (* Addresses for context terms, strings for new variable names, bound variables *)
+   type rewrite_args = address array * string array * string list list
+
    (*
     * Specifies whether instances of bound variables should be explicitly mentioned
     *
@@ -75,6 +81,10 @@ sig
     * and display forms - in "Relaxed" mode
     *)
    type strict = Strict | Relaxed
+
+   (* Rewrites with no arguments *)
+   val empty_args_spec : rewrite_args_spec
+   val empty_args : rewrite_args
 
    (*
     * Separate analysis.
@@ -90,19 +100,17 @@ sig
       term -> term list -> rewrite_item list
 
    (* Rewrite constructor/destructors *)
-   val term_rewrite : strict -> string array * string array ->
+   val term_rewrite : strict -> rewrite_args_spec ->
       term list -> term list -> rewrite_rule
    val fun_rewrite : strict -> term -> (term -> term) -> rewrite_rule
 
    (* Apply a rewrite to a term *)
    val apply_rewrite :
-      (* rule *)
-      rewrite_rule ->
-      (* addresses for context terms, strings for new variable names, bound variable list *)
-      address array * string array * string list list ->
-      term ->                           (* redex *)
-      term list ->                      (* parameters *)
-      term list                         (* contracta, actual variable names that were matched *)
+      rewrite_rule -> (* rule *)
+      rewrite_args -> (* contexts, variable names, bound variables *)
+      term ->         (* redex *)
+      term list ->    (* parameters *)
+      term list       (* contracta, actual variable names that were matched *)
 
    (*
     * See if a rule may apply to a particular term

@@ -1835,9 +1835,6 @@ struct
       in
          refiner', (tac : prim_tactic)
 
-   let ar0_ar0_null = ([||], [||], [])
-   let ar0_ar0 = ([||], [||])
-
    (*
     * Theorem for a previous theorem or rule.
     * We once again use the rewriter to compute the
@@ -1867,9 +1864,9 @@ struct
          if !debug_refiner then
             eprintf "Refiner.compute_rule_ext: %s: %a + params -> %a%t" name print_term (create_redex vars args) print_term result eflush
       ENDIF;
-      let rw = Rewrite.term_rewrite Strict ar0_ar0 (create_redex vars args :: params) [result] in
+      let rw = Rewrite.term_rewrite Strict empty_args_spec (create_redex vars args :: params) [result] in
       let compute_ext vars params args =
-         match apply_rewrite rw ar0_ar0_null (create_redex vars args) params with
+         match apply_rewrite rw empty_args (create_redex vars args) params with
             [c], x when Array.length x = 0 ->
                c
           | _ ->
@@ -1984,7 +1981,7 @@ struct
             eprintf "Refiner.add_rewrite: %s%t" name eflush
       ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
-      let rw = Rewrite.term_rewrite Strict ar0_ar0 [redex] [contractum] in
+      let rw = Rewrite.term_rewrite Strict empty_args_spec [redex] [contractum] in
       let opname = mk_opname name opname in
       let ref_rewrite =
          { rw_name = opname;
@@ -1998,7 +1995,7 @@ struct
             if !debug_rewrites then
                eprintf "Refiner: applying simple rewrite %s to %a%t" name print_term t eflush;
          ENDIF;
-         match apply_rewrite rw ar0_ar0_null t [] with
+         match apply_rewrite rw empty_args t [] with
             [t'] ->
                sent.sent_rewrite ref_rewrite;
                t', RewriteHere (t, opname, t')
@@ -2022,14 +2019,14 @@ struct
       ENDIF;
       let { build_opname = opname } = build in
       let strictp = if strictp then Strict else Relaxed in
-      let rw = Rewrite.term_rewrite strictp ar0_ar0 [redex] [contractum] in
+      let rw = Rewrite.term_rewrite strictp empty_args_spec [redex] [contractum] in
       let opname = mk_opname name opname in
       let rw sent t =
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
                eprintf "Refiner: applying input form %s to %a%t" name print_term t eflush;
          ENDIF;
-         match apply_rewrite rw ar0_ar0_null t [] with
+         match apply_rewrite rw empty_args t [] with
             [t'] ->
                sent.sent_input_form opname;
                t', RewriteHere (t, opname, t')

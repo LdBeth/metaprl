@@ -182,7 +182,7 @@ let make_dform { dform_name = name;
    let printer' =
       match printer with
          DFormExpansion e ->
-            DFExpansion (term_rewrite Relaxed ([||],[||]) [t] [e])
+            DFExpansion (term_rewrite Relaxed empty_args_spec [t] [e])
        | DFormPrinter f ->
             DFPrinter f
    in
@@ -474,7 +474,7 @@ let format_short_term base shortener =
                         eprintf "Dform fun %s: %s%t" name (short_string_of_term t) eflush;
                      f entry
              | DFExpansion (r) ->
-                  begin match apply_rewrite r ([||],[||],[]) t [] with
+                  begin match apply_rewrite r empty_args t [] with
                      [t] ->
                         if !debug_dform then
                            eprintf "Dform %s%t" name eflush;

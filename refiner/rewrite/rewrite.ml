@@ -155,6 +155,9 @@ struct
    type rewrite_rule = RewriteTypes.rewrite_rule
    type rewrite_redex = RewriteTypes.rewrite_redex
 
+   type rewrite_args_spec = string array * string array
+   type rewrite_args = address array * string array * string list list
+
    (*
     * Types for redex matching.
     *)
@@ -189,6 +192,9 @@ struct
     ************************************************************************)
 
    let opname_exn = RefineError ("Rewrite.apply_rewrite", RewriteStringError "opnames do not match")
+
+   let empty_args_spec = [||], [||]
+   let empty_args = [||], [||], []
 
    (*
     * To do the rewrite. match agaist the redex, then
