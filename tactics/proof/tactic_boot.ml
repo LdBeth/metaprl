@@ -91,6 +91,9 @@ struct
    module ThreadRefinerTacticals = Thread_refiner.ThreadRefinerTacticals
    module ThreadRefiner = Thread_refiner.ThreadRefiner
 
+   type prim_tactic = Refiner.Refiner.Refine.prim_tactic
+   type prim_rewrite = Refiner.Refiner.Refine.prim_rewrite
+
    (*
     * Functions needed for the table.
     *)

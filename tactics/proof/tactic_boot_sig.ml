@@ -193,6 +193,8 @@ sig
     | IdentityConv
 
    type pre_tactic
+   type prim_tactic = Refiner.Refiner.Refine.prim_tactic
+   type prim_rewrite = Refiner.Refiner.Refine.prim_rewrite
 end
 
 module type TacticSigTypes = sig
@@ -203,6 +205,8 @@ module type TacticSigTypes = sig
     *    3. A pre_tactic is some precompiled info used to construct a tactic.
     *    4. A tactic is a refinement
     *)
+   type prim_tactic = Refiner.Refiner.Refine.prim_tactic
+   type prim_rewrite = Refiner.Refiner.Refine.prim_rewrite
    type tactic_arg
    type tactic
    type pre_tactic
@@ -291,15 +295,9 @@ sig
     * TYPES                                                                *
     ************************************************************************)
 
-   type tactic_arg
-   type tactic
-   type extract
-   type conv
+   include TacticSigTypes
+
    type attribute_info
-   type attribute
-   type arglist
-   type raw_attribute
-   type raw_attributes = raw_attribute list
 
    (************************************************************************
     * OPERATIONS                                                           *
