@@ -117,7 +117,18 @@ struct
          Mismatch (t,key) ->
             eprintf "@[<v 3>Create made non-empty tables:@ ";
             ignore(find_all t key);
-            raise(Invalid_argument "DebugTables.create - something funny")
+            raise(Invalid_argument "DebugTables.is_empty - something funny")
+
+   let is_empty (t1, t2) =
+      let r1 = Table1.is_empty t1 in
+      let r2 = Table2.is_empty t2 in
+      if r1=r2 then
+      	r1
+      else
+      	begin
+	         eprintf "@[<v 3>is_empty returned different results:@ ";
+   	      raise(Invalid_argument "DebugTables.create - something funny")
+   	   end
 
    let add (t1, t2 as t) key data =
       try

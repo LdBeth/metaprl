@@ -94,6 +94,7 @@ struct
       type t = (Extra.index, data) table
 
       let empty = Table.empty
+      let is_empty = Table.is_empty
       let add table term data = Table.add table (Extra.hash term) data
       let union = Table.union
       let mem table term = Table.mem table (Extra.hash term)
