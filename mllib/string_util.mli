@@ -77,6 +77,11 @@ val split_set : string -> string -> string list
 val concat : string -> string list -> string
 
 (*
+ * Find a new name (usually - for a variable) avoiding those where the predicate is true
+ *)
+val vnewname : string -> (string -> bool) -> string
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

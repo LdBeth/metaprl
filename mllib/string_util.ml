@@ -231,6 +231,17 @@ let rec concat s = function
  | [] ->
       ""
 
+let newname v i =
+   v ^ "_" ^ (string_of_int i)
+
+let rec new_var v avoid i =
+   let v' = newname v i in
+   if avoid v'
+      then new_var v avoid (succ i)
+      else v'
+
+let vnewname v avoid = new_var v avoid 1
+
 (*
  * -*-
  * Local Variables:

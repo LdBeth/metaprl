@@ -267,21 +267,12 @@ struct
     * New variable production.
     * renames are the variables to be renamed,
     * and av is a list list of variables to avoid.
-    * Our algorithm is slow and simple: just append an
-    * index and increment until no more collisions.
     *)
-
-   let rec new_var av v i =
-      let v' = v ^ "_" ^ (string_of_int i) in
-      if (StringSet.mem av v')
-         then new_var av v (succ i)
-         else v'
-
-   and new_vars av = function
+   let rec new_vars av = function
       [] -> ([],[])
     | v::vt ->
-         let (vs,ts) = (new_vars av vt) in
-         let v' = new_var av v 1 in
+         let v' = String_util.vnewname v (StringSet. mem av) in
+         let (vs,ts) = (new_vars (StringSet.add v' av) vt) in
             ((v,v')::vs, (v,mk_var_term v')::ts)
 
    let rec rename_bvars vs = function

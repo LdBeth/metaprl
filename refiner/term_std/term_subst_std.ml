@@ -428,27 +428,18 @@ struct
     * Our algorithm is slow and simple: just append an
     * index and increment until no more collisions.
     *)
-   let new_vars renames fv =
-      let rec new_var v i =
-         (* Try the new value *)
-         let rec mem' v = function
-            [] -> false
-          | h::t -> List.mem v h
-         in
-         let v' = v ^ (string_of_int i) in
-            if mem' v' fv then
-               new_var v (i + 1)
-            else
-               v'
-      in
-      let rec aux fv = function
-         [] -> []
-       | v::t ->
-            (* Rename the first one, then add it to free vars *)
-            let v' = new_var v 1 in
-               v'::(aux ([v']::fv) t)
-      in
-         aux fv renames
+   let rec fv_mem fv v =
+      match fv with
+         [] -> false
+       | h::t ->
+            List.mem v h || fv_mem t v
+   
+   let rec new_vars fv = function
+      [] -> []
+    | v::t ->
+         (* Rename the first one, then add it to free vars *)
+         let v' = String_util.vnewname v (fv_mem fv) in
+            v'::(new_vars ([v']::fv) t)
 
    (*
     * First order simultaneous substitution.
@@ -485,7 +476,7 @@ struct
                let renames = List_util.subtract bvars (fsubtract bvars fv') in
                   if renames <> [] then
                      let fv'' = (free_vars term)::fv' in
-                     let renames' = new_vars renames fv'' in
+                     let renames' = new_vars fv'' renames in
                         { bvars = subst_bvars renames' renames bvars;
                           bterm = subst_term
                                   (add_renames_terms renames' terms')
