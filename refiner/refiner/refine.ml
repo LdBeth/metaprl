@@ -748,6 +748,7 @@ struct
             eprintf "crwtactic applied to %a%t" print_term t eflush;
       ENDIF;
       let t', subgoals, just = crw sent (msequent_free_vars seq) t in
+      if t' == t then [seq], Identity else
       let subgoal =
          if i = 0 then
             { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t' }
@@ -1025,20 +1026,23 @@ struct
 
    and cond_rewrite_just_subgoal_count find = function
       CondRewriteHere cjust ->
-          List.length (find.find_cond_rewrite cjust.cjust_refiner).crw_info.pre_crw_assums
+         1 + List.length (find.find_cond_rewrite cjust.cjust_refiner).crw_info.pre_crw_assums
     | CondRewriteML (_, _, i) ->
-         i
-    | CondRewriteCompose (_, just)
+         i + 1
+    | CondRewriteCompose (just1, just2) ->
+         cond_rewrite_just_subgoal_count find just1 + cond_rewrite_just_subgoal_count find just2 - 1
     | CondRewriteAddress (_, _, just, _) ->
          cond_rewrite_just_subgoal_count find just
     | CondRewriteHigher (_, justs, _) ->
-         List.fold_left (fun count just -> count + cond_rewrite_just_subgoal_count find just) 0 justs
+         List.fold_left (fun count just -> count + cond_rewrite_just_subgoal_count find just - 1) 1 justs
 
    (*
     * Get the term from an extract.
     * This will fail if some of the rules are not justified.
     *)
    let term_of_extract refiner ext (args : term list) =
+      if List.length ext.ext_goal.mseq_hyps <> List.length args then
+         raise (Invalid_argument "Refine.term_of_extract: number of term arguments differs from the number of assumptions");
       let find = find_of_refiner refiner in
       (* XXX HACK: this approach of building a closure on-the-fly is probably too inefficient *)
       let rec construct (rest : (term list -> term) list) = function
@@ -1570,10 +1574,16 @@ struct
          ENDIF;
          let rw = Rewrite.term_rewrite Strict addrs (goal :: params) [result] in
          if !debug_refine then eprintf "\nDone\n%t" eflush;
-         let compute_ext addrs params goal args =
-            List.hd (apply_rewrite rw (addrs, free_vars_terms args) (combine addrs goal args) params)
-         in
-            compute_ext
+         fun addrs' params' goal' args' ->
+            DEFINE compute = List.hd (apply_rewrite rw (addrs', free_vars_terms args') (combine addrs' goal' args') params') IN
+            IFDEF VERBOSE_EXN THEN
+               if !debug_refine then
+                  try compute with exn ->
+                     let arg = combine addrs' goal' args' in
+                     eprintf "Refiner.compute_rule_ext: rewrite failed: %s: %a + [%s] [%a] -> %a appplied to %a [%a]%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list addrs))) (print_any_list print_term) params print_term result print_term arg (print_any_list print_term) params' eflush;
+                     raise exn
+               else compute
+            ELSE compute ENDIF
 
    let justify_rule build name addrs params goal subgoals proof =
       let opname = mk_opname name build.build_opname in
@@ -1594,6 +1604,59 @@ struct
          else
             REF_RAISE(RefineError (name, StringError "rule mismatch"))
 
+   let check_subgoal_arg =
+      let rec check_conts conts = function
+         [] -> SymbolSet.is_empty conts
+       | c::cs -> SymbolSet.mem conts c && check_conts (SymbolSet.remove conts c) cs
+      in
+      let rec check_vars vars = function
+         [] -> SymbolSet.is_empty vars
+       | t::ts ->
+            let v = dest_var t in
+               SymbolSet.mem vars v && check_vars (SymbolSet.remove vars v) ts
+      in
+      let rec aux conts vars sub arg =
+         if is_so_var_term arg then begin
+            let _, conts', ts = dest_so_var arg in
+               if not (check_conts conts conts' && check_vars vars ts) then
+                  raise (RefineError("Refine.check_subgoal_arg",
+                     StringTermError("Extract term is not general enough (not all hypotheses and/or contexts mentioned", arg)))
+         end else if is_sequent_term sub && is_sequent_term arg then begin
+            let sub' = explode_sequent sub in
+            let arg' = explode_sequent arg in
+               if not (alpha_equal sub'.sequent_args arg'.sequent_args) then
+                  raise (RefineError("Refine.check_subgoal_arg",
+                     StringTermError("Extract does not match the subgoal (sequent arg mismatch)", arg'.sequent_args)));
+               let len = SeqHyp.length arg'.sequent_hyps in
+                  (* XXX TODO: To be completely safe, also need to make sure that hyps match between the sub' and arg' *)
+                  check_hyps conts vars 0 len arg'.sequent_hyps (**)
+                     (SeqGoal.get sub'.sequent_goals 0)
+                     (SeqGoal.get arg'.sequent_goals 0)
+         end else
+            let sub' = dest_term sub in
+            let arg' = dest_term arg in
+               if sub'.term_op <> arg'.term_op || List.length sub'.term_terms <> List.length arg'.term_terms then
+                  raise (RefineError("Refine.check_subgoal_arg",
+                     StringTermError("Extract does not match the subgoal", arg)));
+               List.iter2 (check_bterm conts vars) sub'.term_terms arg'.term_terms
+      and check_bterm conts vars sub arg =
+         let sub' = dest_bterm sub in
+         let arg' = dest_bterm arg in
+            if List.length sub'.bvars <> List.length arg'.bvars then
+               raise (RefineError("Refine.check_subgoal_arg",
+                  StringTermError("Extract does not match the subgoal (in number of bvars)", arg'.bterm)));
+            aux conts (SymbolSet.add_list vars arg'.bvars) sub'.bterm arg'.bterm
+      and check_hyps conts vars i len hyps sgoal agoal =
+         if i = len then aux conts vars sgoal agoal else
+         match SeqHyp.get hyps i with
+            Context (c, _, _) -> check_hyps (SymbolSet.add conts c) vars (i+1) len hyps sgoal agoal
+          | HypBinding (v, _) -> check_hyps conts (SymbolSet.add vars v) (i+1) len hyps sgoal agoal
+          | Hypothesis t ->
+               raise (RefineError("Refine.check_subgoal_arg",
+                  StringTermError("Extract term is not general enough (hypothesis does not introduce a variable)", t)))
+      in
+         aux SymbolSet.empty SymbolSet.empty
+
    let prim_rule build name addrs params mterm args result =
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
@@ -1601,12 +1664,10 @@ struct
       ENDIF;
       let subgoals, goal = unzip_mimplies mterm in
          (*
-          * XXX BUG TODO: we need to make sure the args are "universal" and will always match
-          * r.rule_rule.mseq_hyps and the result is a sequent whenever r.rule_rule.mseq_goal is
-          * a sequent.
+          * XXX BUG TODO: we need to make sure the result is a sequent
+          * whenever r.rule_rule.mseq_goal is a sequent.
           *)
-         if (List.length subgoals) <> (List.length args) then
-            raise (Invalid_argument "Refine.add_prim_rule: wrong number of term arguments");
+         List.iter2 check_subgoal_arg subgoals args;
          let compute_ext = compute_rule_ext name addrs params goal args result in
             justify_rule build name addrs params goal subgoals (PPrim compute_ext)
 
@@ -1691,14 +1752,8 @@ struct
    let check_prim_rule name addrs params mterm args result =
       check_rule name addrs params mterm;
       let subgoals, goal = unzip_mimplies mterm in
-      (*
-       * XXX BUG TODO: we need to make sure the args are "universal" and will always match
-       * r.rule_rule.mseq_hyps and the result is a sequent whenever r.rule_rule.mseq_goal is
-       * a sequent.
-       *)
-      if (List.length subgoals) <> (List.length args) then
-         raise (Invalid_argument "Refine.add_prim_rule: wrong number of term arguments");
-      let _ = compute_rule_ext name addrs params goal args result in ()
+         List.iter2 check_subgoal_arg subgoals args;
+         let _ = compute_rule_ext name addrs params goal args result in ()
 
    (************************************************************************
     * REWRITE                                                              *

@@ -33,6 +33,8 @@ open Lm_symbol
 open Lm_debug
 
 open Term_sig
+open Refine_sig
+open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
@@ -293,6 +295,8 @@ let format_exn db buf printers exn =
       RefineError (name, msg) ->
          format_string buf "Refine error:";
          format_refine_error db buf printers name msg
+    | Incomplete opname ->
+         format_string buf ("Incomplete proof: /" ^ (String.concat "/" (List.rev (dest_opname opname))))
     | exn ->
          format_string buf (Printexc.to_string exn)
    in
