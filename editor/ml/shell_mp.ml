@@ -43,6 +43,7 @@ open MLast
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
 open Mp_resource
 open Rformat
@@ -163,6 +164,8 @@ struct
          fprintf out "%b : bool\n" b
     | IntExpr i ->
          fprintf out "%d : int\n" i
+    | AddressExpr a ->
+         fprintf out "%s : address\n" (string_of_address a)
     | StringExpr s ->
          fprintf out "%s : string\n" s
     | TermExpr t ->
@@ -191,6 +194,8 @@ struct
          fprintf out "- : tactic -> expr\n"
     | IntTacticFunExpr _ ->
          fprintf out "- : (int -> tactic) -> tactic\n"
+    | AddressFunExpr _ ->
+         fprintf out "-: address -> expr\n"
     | ConvFunExpr _ ->
          fprintf out "- : conv -> expr\n"
     | AddrFunExpr _ ->

@@ -1227,6 +1227,12 @@ let tex_escape_string s =
                collect_escape i j "\\^"
           | '&' ->
                collect_escape i j "\\&"
+          | '#' ->
+               collect_escape i j "\\#"
+          | '[' ->
+               collect_escape i j "{[}"
+          | ']' ->
+               collect_escape i j "{]}"
           | '{' ->
                  collect_escape i j "\\{"
           | '}' ->

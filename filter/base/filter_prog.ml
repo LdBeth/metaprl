@@ -603,6 +603,34 @@ let toploop_rewrite loc name =
    in
       <:str_item< value $rec: false$ $list: [ patt, expr ]$ >>
 
+let toploop_rule loc name params =
+   let rec loop i body = function
+      h :: t ->
+         let v = "v" ^ string_of_int i in
+         let body = <:expr< $body$ $lid: v$ >> in
+         let v = <:patt< $lid:v$ >> in
+         let expr = <:expr< fun [ $list: [v, None, loop (succ i) body t]$ ] >> in
+         let expr =
+            match h with
+               ContextParam _ ->
+                  <:expr< $uid:"Mptop"$ . $uid:"AddressFunExpr"$ $expr$ >>
+             | VarParam _ ->
+                  <:expr< $uid:"Mptop"$ . $uid:"StringFunExpr"$ $expr$ >>
+             | TermParam _ ->
+                  <:expr< $uid:"Mptop"$ . $uid:"TermFunExpr"$ $expr$ >>
+         in
+            expr
+    | [] ->
+        <:expr< $uid:"Mptop"$ . $uid:"TacticExpr"$ $body$ >>
+   in
+   let patt = <:patt< $lid: "toploop_resource"$ >> in
+   let expr = loop 0 <:expr< $lid: name$ >> params in
+   let expr = <:expr< $uid: "Mp_resource"$ . $lid: "improve"$
+                      $lid: "toploop_resource"$
+                      ($str: name$, $expr$) >>
+   in
+      <:str_item< value $rec: false$ $list: [ patt, expr ]$ >>
+
 (*
  * Add a toploop item.
  *)
@@ -1672,7 +1700,7 @@ struct
       in
       let rule_def = <:str_item< value $rec:false$ $list:[ resource_patt, wrap_exn loc name rule_expr ]$ >> in
       let tac_def = <:str_item< value $rec:false$ $list:[ name_patt, name_value ]$ >> in
-         (checkpoint_resources proc loc name) @ [rule_def; tac_def; refiner_let loc]
+         (checkpoint_resources proc loc name) @ [rule_def; tac_def; refiner_let loc; toploop_rule loc name params]
 
    let prim_rule proc loc ax extract =
       let code = prim_rule_expr loc in
