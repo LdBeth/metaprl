@@ -49,11 +49,6 @@ type addr =
  | GoalAddr of int
  | Compose of addr * addr
 
-module AddressType =
-struct
-   type t = addr
-end
-
 module TermAddr (**)
    (Term : TermDsSig
     with type level_exp_var = TermType.level_exp_var

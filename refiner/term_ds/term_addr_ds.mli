@@ -41,8 +41,6 @@ type addr =
  | GoalAddr of int
  | Compose of addr * addr
 
-module AddressType : TypeSig with type t = addr
-
 module TermAddr (**)
    (Term : TermDsSig
     with type level_exp_var = TermType.level_exp_var
@@ -68,10 +66,10 @@ module TermAddr (**)
     with type term = TermType.term)
    (RefineError : RefineErrorSig
     with type term = TermType.term
-    with type address = AddressType.t)
+    with type address = addr)
 : TermAddrSig
   with type term = TermType.term
-  with type address = AddressType.t
+  with type address = addr
 
 (*
  * -*-
