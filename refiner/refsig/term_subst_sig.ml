@@ -152,7 +152,14 @@ sig
    val unify_mm_eqnl_eqnl : eqnlist -> StringSet.t -> eqnlist
 
 (***********************)
+(* Rob_ds testing*)
+   type sacktype
+   val initsack : sacktype
+   val unifiable_rob : term -> term -> sacktype -> StringSet.t -> bool
+   val unifytosack : term -> term -> sacktype -> StringSet.t -> sacktype
 
+
+(***********************)
    (*
     * generalization: see if the first term generalizes the second term.
     * Return the alpha conversion if so, otherwise raise
