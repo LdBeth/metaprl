@@ -84,7 +84,11 @@ Object status:
 Proof checking:
 
    check ();;
-   check_all ();;  -- not implemented yet.
+     -- lists the dependencies of the current rule
+   check_all ();;
+     -- checks all rules in the current node
+     -- displays if they're primitive or derived
+     -- displays if the proofs are complete or incomplete
 
 Changing display form mode:
     set_dfmode : string -> unit
