@@ -161,6 +161,8 @@ let format_refine_error db buf printers name error =
       match error with
          GenericError ->
             format_string buf "Generic refiner error"
+       | ToploopIgnoreError ->
+            raise (Invalid_argument "Print_exn.format_refine_error: got ToploopIgnoreError")
        | StringError s ->
             format_string buf s
        | IntError i ->
