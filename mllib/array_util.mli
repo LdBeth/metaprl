@@ -43,6 +43,19 @@ type ('a, 'b) array_part =
 
 val collect : ('a, 'a array) array_part list -> 'a array
 
+(* In-place quicksort of an array. Uses code from
+ * http://www-staff.mcs.uts.edu.au/~cbj/FISh/Benchmarks/Plots/Quicksort2/Ocaml/Source/benchmark.ml
+ *
+ * After we upgrade to Ocaml 3.0, we may consider using their sort.
+ *)
+val qsort: ('a -> 'a -> int) -> 'a array -> unit
+
+(* Sorts an array, than eliminates the duplicate elements
+ * and moves the remaining elements into an initial segment
+ * of the input array. Returns the # of distinct elements.
+ *)
+val distinct: ('a -> 'a -> int) -> 'a array -> int
+
 (*
  * -*-
  * Local Variables:

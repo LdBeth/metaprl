@@ -247,6 +247,52 @@ let rec collect = function
                         Array.blit a (i + 1) a' 1 (len - 1);
                      collect_append a' len parts
 
+(* Uses code from
+ * http://www-staff.mcs.uts.edu.au/~cbj/FISh/Benchmarks/Plots/Quicksort2/Ocaml/Source/benchmark.ml
+ *
+ * After we upgrade to Ocaml 3.0, we may consider using their sort.
+ *)
+let qsort cmp array = 
+   let rec qs m n = 
+      if m<n then 
+      let pivot = array.((m+n) / 2) 
+      and i = ref m
+      and j = ref n
+      in 
+         while (cmp array.(!i) pivot < 0) do incr i done;  
+         while (cmp pivot array.(!j) < 0) do decr j done;
+         while (!i < (!j)) do
+            let aux = array.(!i) 
+            in
+               array.(!i) <-array.(!j);
+               array.(!j) <- aux
+            ;
+            incr i; decr j;
+            while (cmp array.(!i) pivot < 0) do incr i done;  
+            while (cmp pivot array.(!j) < 0) do decr j done
+         done;
+         (if !i= (!j) then (incr i; decr j) else ());
+         qs m (!j) ; qs (!i) n 
+      else ()
+   in qs 0 (pred (Array.length array))
+
+let distinct cmp = function
+   [||] -> 0
+ | array ->
+      let l = Array.length array in
+      let rec d_find i =
+         let j = (succ i) in
+         if j=l then j else
+         if (cmp array.(i) array.(j)) = 0 then d_copy i (succ j) else d_find j
+      and d_copy i j = 
+         if j=l then (succ i) else
+         if (cmp array.(i) array.(j)) = 0 then d_copy i (succ j) else
+         let i = succ i in
+            array.(i) <- array.(j);
+            d_copy i (succ j)
+      in
+         qsort cmp array;
+         d_find 0 
 (*
  * -*-
  * Local Variables:
