@@ -374,11 +374,11 @@ struct
    let mk_simple_bterm bterm =
       { bvars = []; bterm = bterm }
 
-   let dest_simple_bterm t = function
+   let dest_simple_bterm = function
       { bvars = []; bterm = bterm } ->
          bterm
     | _ ->
-         ref_raise(RefineError ("dest_simple_bterm", TermMatchError (t, "bterm is not simple")))
+         ref_raise(RefineError ("dest_simple_bterm", StringError ("bterm is not simple")))
 end
 
 (*

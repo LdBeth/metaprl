@@ -108,7 +108,7 @@ struct
       [],[] -> [],[]
     | var::vars,bt::bterms ->
          let tail = dest_subst_args t (vars,bterms) in
-         (var::fst tail),((dest_simple_bterm t bt)::snd tail)
+         (var::fst tail),((dest_simple_bterm bt)::snd tail)
     | _ -> ref_raise(RefineError ("dest_subst", TermMatchError (t, "bad arity")))
 
    let dest_subst t = match dest_term t with

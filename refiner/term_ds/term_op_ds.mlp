@@ -67,11 +67,11 @@ struct
    let dest_dep0_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt]
-      } when Opname.eq opname' opname -> dest_simple_bterm t bt
+      } when Opname.eq opname' opname -> dest_simple_bterm bt
     | _ -> ref_raise(RefineError ("dest_dep0_term", TermMatchError (t, "bad arity")))
 
    let one_subterm t = match dest_term t with
-      { term_terms = [bt]}  -> dest_simple_bterm t bt
+      { term_terms = [bt]}  -> dest_simple_bterm bt
     | _ -> ref_raise(RefineError ("one_subterm", TermMatchError (t, "bad arity")))
 
    (*
@@ -94,14 +94,12 @@ struct
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1 ; bt2 ]
       } when Opname.eq opname' opname ->
-         let destr = dest_simple_bterm t in
-         destr bt1, destr bt2
+         dest_simple_bterm bt1, dest_simple_bterm bt2
     | _ -> ref_raise(RefineError ("dest_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
    let two_subterms t = match dest_term t with
       { term_terms = [bt1; bt2]} ->
-         let destr = dest_simple_bterm t in
-         destr bt1, destr bt2
+         dest_simple_bterm bt1, dest_simple_bterm bt2
     | _ -> ref_raise(RefineError ("two_subterms", TermMatchError (t, "bad arity")))
 
    (*
@@ -124,32 +122,28 @@ struct
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3]
       } when Opname.eq opname' opname ->
-         let destr = dest_simple_bterm t in
-         destr bt1, destr bt2, destr bt3
+         dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3
     | _ -> ref_raise(RefineError ("dest_dep0_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
    let three_subterms t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3]
       } ->
-         let destr = dest_simple_bterm t in
-         destr bt1, destr bt2, destr bt3
+         dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3
     | _ -> ref_raise(RefineError ("three_subterms", TermMatchError (t, "bad arity")))
 
    let four_subterms t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3; bt4]
       } ->
-         let destr = dest_simple_bterm t in
-         destr bt1, destr bt2, destr bt3, destr bt4
+         dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3, dest_simple_bterm bt4
     | _ -> ref_raise(RefineError ("four_subterms", TermMatchError (t, "bad arity")))
 
    let five_subterms t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3; bt4; bt5]
       } ->
-         let destr = dest_simple_bterm t in
-         destr bt1, destr bt2, destr bt3, destr bt4, destr bt5
+          dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3, dest_simple_bterm bt4, dest_simple_bterm bt5
     | _ -> ref_raise(RefineError ("five_subterms", TermMatchError (t, "bad arity")))
 
    (************************************************************************
@@ -198,7 +192,7 @@ struct
    let dest_string_dep0_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [String s] };
         term_terms = [bt]
-      } when Opname.eq opname opname' -> s, dest_simple_bterm t bt
+      } when Opname.eq opname opname' -> s, dest_simple_bterm bt
     | _ -> ref_raise(RefineError ("dest_string_dep0_term", TermMatchError (t, "bad arity")))
 
    let mk_string_dep0_term opname s t =
@@ -221,7 +215,7 @@ struct
       { term_op = { op_name = opname'; op_params = [String s1; String s2] };
         term_terms = [bt]
       } when Opname.eq opname opname' ->
-         s1, s2, dest_simple_bterm t bt
+         s1, s2, dest_simple_bterm bt
     | _ ->
          ref_raise(RefineError ("dest_string_string_dep0_term", TermMatchError (t, "bad arity")))
 
@@ -229,7 +223,7 @@ struct
       { term_op = { op_name = opname'; op_params = [String s1; String s2] };
         term_terms = [bt]
       } ->
-         s1, s2, dest_simple_bterm t bt
+         s1, s2, dest_simple_bterm bt
     | _ ->
          ref_raise(RefineError ("dest_string_string_dep0_any_term", TermMatchError (t, "bad arity")))
 
@@ -253,7 +247,7 @@ struct
       { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
         term_terms = [bt]
       } when Opname.eq opname opname' ->
-         s1, s2, dest_simple_bterm t bt
+         s1, s2, dest_simple_bterm bt
     | _ ->
          ref_raise(RefineError ("dest_number_number_dep0_term", TermMatchError (t, "bad arity")))
 
@@ -261,7 +255,7 @@ struct
       { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
         term_terms = [bt]
       } ->
-         s1, s2, dest_simple_bterm t bt
+         s1, s2, dest_simple_bterm bt
     | _ ->
          ref_raise(RefineError ("dest_number_number_dep0_any_term", TermMatchError (t, "bad arity")))
 
@@ -286,7 +280,7 @@ struct
       { term_op = { op_name = opname'; op_params = [String s1; String s2] };
         term_terms = [bt1;bt2]
       } when Opname.eq opname opname' ->
-         let destr = dest_simple_bterm t in
+         let destr = dest_simple_bterm in
          s1, s2, destr bt1, destr bt2
     | _ ->
          ref_raise(RefineError ("dest_string_string_dep0_dep0_term", TermMatchError (t, "bad arity")))
@@ -295,7 +289,7 @@ struct
       { term_op = { op_name = opname'; op_params = [String s1; String s2] };
         term_terms = [bt1;bt2]
       } ->
-         let destr = dest_simple_bterm t in
+         let destr = dest_simple_bterm in
          s1, s2, destr bt1, destr bt2
     | _ ->
          ref_raise(RefineError ("dest_string_string_dep0_dep0_any_term", TermMatchError (t, "bad arity")))
@@ -394,7 +388,7 @@ struct
          { term_op = { op_name = opname'; op_params = [Token n] };
            term_terms = terms
          } when Opname.eq opname opname' ->
-            n, List.map (dest_simple_bterm t) terms
+            n, List.map dest_simple_bterm terms
        | _ ->
             ref_raise(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
 

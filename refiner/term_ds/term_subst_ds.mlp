@@ -121,7 +121,8 @@ struct
                   if i = len then coll_hyps 0 else
                   binding_vars_term goals.(i) (coll_goals (succ i))
                in coll_goals 0
-          | _ -> fail_core "binding_vars")
+          | TVar _ -> StringSet.empty
+          | Subst _ -> fail_core "binding_vars")
 
    let add_vars vars term =
       StringSet.union vars (term_free_vars term)
@@ -256,6 +257,8 @@ struct
              with
                 Failure _ ->
                    false)
+       | TVar (v1,ts1), TVar(v2,ts2) ->
+            (v1=v2) && (List_util.for_all2 (equal_term []) ts1 ts2)
        | _ ->
             false
 

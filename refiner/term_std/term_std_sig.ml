@@ -200,7 +200,7 @@ sig
    val dest_simple_term_opname : opname -> term -> term list
 
    val mk_simple_bterm : term -> bound_term
-   val dest_simple_bterm : term -> bound_term -> term
+   val dest_simple_bterm : bound_term -> term
 
    (*
     * We allow a term printer to be injected.

@@ -77,6 +77,7 @@ sig
       Term of term'
     | Subst of term * term_subst
     | Sequent of esequent
+    | TVar of string * term list
    and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term_core =
       BTerm of bound_term'
@@ -175,9 +176,7 @@ sig
    val no_bvars : bound_term list -> bool
    val mk_simple_bterm : term -> bound_term
 
-   (* term is only necessary to raise the appropriate exception *)
-   val dest_simple_bterm : term -> bound_term -> term
-   val dest_simple_bterms : term -> bound_term list -> term list
+   val dest_simple_bterm : bound_term -> term
 
    (* Projections *)
    val opname_of_term : term -> opname

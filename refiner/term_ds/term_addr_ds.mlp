@@ -153,6 +153,10 @@ struct
                         ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
             else
                ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
+       | (TVar _, Path []) -> 
+            term
+       | (TVar (_,ts), Path (hd::tl)) ->
+            term_subterm_path ATERM (getnth ATERM ts hd) tl 
        | (_, Compose (addr1, addr2)) ->
             term_subterm (term_subterm term addr1) addr2
        | _ -> ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
@@ -197,25 +201,36 @@ struct
             let term, arg = path_replace_term FAIL f VARS_BVARS term tl in \
                mk_bterm vars term :: bterms, arg \
        | (_, bterm :: bterms) -> \
-            let bterms, arg = path_replace_bterm FAIL f tl (i - 1) BVARS bterms in \
+            let bterms, arg = path_replace_bterm FAIL f tl (pred i) BVARS bterms in \
                bterm :: bterms, arg \
+       | _, [] -> \
+            DO_FAIL \
+\
+   let rec var_replace_term FAIL f tl i BVARS terms = \
+      match i, terms with \
+         (0, term :: terms) -> \
+            let term, arg = path_replace_term FAIL f BVARS term tl in \
+               term :: terms, arg \
+       | (_, term :: terms) -> \
+            let terms, arg = var_replace_term FAIL f tl (pred i) BVARS terms in \
+               term :: terms, arg \
        | _, [] -> \
             DO_FAIL
 
-#define APPLY_FUN_AUX                                                                                                   \
-   let rec apply_fun_arg_at_addr_aux FAIL f addr BVARS term =                                                           \
-      match (get_core term, addr) with                                                                                  \
-         (Term _, Path addr) ->                                                                                         \
-            path_replace_term FAIL f BVARS term addr                                                                    \
-       | (Sequent s, ArgAddr) ->                                                                                        \
-            let term, arg = f BVARS s.sequent_args in                                                                   \
-               mk_sequent_term (**)                                                                                     \
-                  { sequent_args = term;                                                                                \
-                    sequent_hyps = s.sequent_hyps;                                                                      \
-                    sequent_goals = s.sequent_goals                                                                     \
-                  }, arg                                                                                                \
-       | (Sequent s, HypAddr i) ->                                                                                      \
-            if i>=0 && i < SeqHyp.length s.sequent_hyps then                                                            \
+#define APPLY_FUN_AUX                                                                     \
+   let rec apply_fun_arg_at_addr_aux FAIL f addr BVARS term =                             \
+      match (get_core term, addr) with                                                    \
+         (Term _, Path addr) ->                                                           \
+            path_replace_term FAIL f BVARS term addr                                      \
+       | (Sequent s, ArgAddr) ->                                                          \
+            let term, arg = f BVARS s.sequent_args in                                     \
+               mk_sequent_term (**)                                                       \
+                  { sequent_args = term;                                                  \
+                    sequent_hyps = s.sequent_hyps;                                        \
+                    sequent_goals = s.sequent_goals                                       \
+                  }, arg                                                                  \
+       | (Sequent s, HypAddr i) ->                                                        \
+            if i>=0 && i < SeqHyp.length s.sequent_hyps then                              \
                match s.sequent_hyps.(i) with 										\
                   Hypothesis (v,t) -> 											\
                      let term, arg = f HYP_BVARS t in 									\
@@ -251,12 +266,17 @@ struct
                let term, arg = f GOAL_BVARS s.sequent_goals.(i) in 							\
                let aux i' t' = 												\
                  if i' = i then term else t' 										\
-               in mk_sequent_term (**)                                                                                  \
-                     { sequent_args = s.sequent_args;                                                                   \
-                       sequent_hyps = s.sequent_hyps;                                                                   \
-                       sequent_goals = SeqGoal.mapi aux s.sequent_goals                                                 \
+               in mk_sequent_term (**)                                                    \
+                     { sequent_args = s.sequent_args;                                     \
+                       sequent_hyps = s.sequent_hyps;                                     \
+                       sequent_goals = SeqGoal.mapi aux s.sequent_goals                   \
                      }, arg 												\
             else DO_FAIL 												\
+       | (TVar _, Path []) -> \
+            f BVARS term \
+       | (TVar (v,ts), Path (hd::tl)) -> \
+            let terms, arg = var_replace_term FAIL f tl hd BVARS ts in \
+               mk_so_var_term v terms, arg \
        | (_, Compose (addr1, addr2)) -> 										\
             apply_fun_arg_at_addr_aux FAIL (**) 									\
                (apply_fun_arg_at_addr_aux FAIL f addr2) addr1 BVARS term 						\

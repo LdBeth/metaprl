@@ -304,7 +304,7 @@ struct
          { term_op = { op_name = name; op_params = [] };
            term_terms = [_; bgoal]
          } when Opname.eq name sequent_opname ->
-            dest_simple_bterm t bgoal
+            dest_simple_bterm bgoal
        | _ ->
             ref_raise(RefineError ("goal_of_sequent", TermMatchError (t, "not a sequent")))
 
