@@ -101,7 +101,7 @@ val stream_of_string : string -> char Stream.t
 val set_prompt : string -> unit
 val set_prompt2 : string -> unit
 val stdin_stream : unit -> char Stream.t * (unit -> unit)
-val get_text : int * int -> string
+val get_text : MLast.loc -> string
 val wrap : (Lexing.lexbuf -> 'a) -> Lexing.lexbuf -> 'a
 val set_file : string -> unit
 
