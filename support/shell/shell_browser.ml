@@ -1114,10 +1114,8 @@ struct
             synchronize_pid pid (fun session ->
                   if is_valid_response state header then
                      let pid = Lm_thread_shell.create false in
-                        eprintf "Created pid: %d@." pid;
                         synchronize_pid pid (fun session ->
-                              print_redisplay_page frameset_uri server state session outx);
-                        eprintf "ZZZ@."
+                              print_redisplay_page frameset_uri server state session outx)
                   else
                      print_login_page outx state (Some session))
        | SessionURI pid ->

@@ -1,5 +1,5 @@
 (*
- * Translation table for HTML files.
+ * Saving/loading sessions from files.
  *
  * ----------------------------------------------------------------
  *
@@ -24,35 +24,10 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_symbol
+open Browser_sig
 
-(*
- * Table for translating HTML files.
- *)
-module type BrowserTableSig =
-sig
-   type t
-
-   (*
-    * Table operations.
-    *)
-   val empty      : t
-   val add_string : t -> symbol -> string -> t
-   val add_buffer : t -> symbol -> Buffer.t -> t
-   val add_file   : t -> symbol -> string -> t
-   val add_fun    : t -> symbol -> (Buffer.t -> unit) -> t
-end
-
-(*
- * File information for a session.
- *)
-type session_info =
-   { session_dir     : string;
-     session_options : string;
-     session_history : string list;
-     session_edit    : string list;
-     session_dirs    : string list
-   }
+val read_session : string -> session_info
+val write_session : string -> session_info -> unit
 
 (*!
  * @docoff

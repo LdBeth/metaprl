@@ -1,4 +1,18 @@
 /*
+ * Return focus to the input area.
+ * Why oh why do we have to use a timeout?
+ */
+function ButtonFocusTimeout()
+{
+    parent.ruleframe.document.commandform.command.focus();
+}
+
+function ButtonFocus()
+{
+    setTimeout(ButtonFocusTimeout, 100);
+}
+
+/*
  * The styles depend on the window size.
  */
 var messageheight = 100;
@@ -62,6 +76,7 @@ function ResizeBoxes()
 
     /* Input area gets resized too */
     ResizeInput();
+    ButtonFocus();
 
     /* Handles */
     var handleheight = 10;
@@ -281,14 +296,23 @@ function ButtonSubmit()
 }
 
 /*
+ * Clear the area.
+ */
+function ButtonClear()
+{
+    parent.ruleframe.document.commandform.command.value = '';
+    ButtonFocus();
+}
+
+/*
  * Toggle the kind of input area.
  */
 function ButtonLong()
 {
     // Get the current text
-    var frame = GetObject(self, 'ruleframe');
+    var frame = parent.ruleframe;
     if(frame) {
-        var ruledoc = parent.ruleframe.document;
+        var ruledoc = frame.document;
         var text = ruledoc.commandform.command.value;
 
         // Reset the input area
@@ -296,14 +320,13 @@ function ButtonLong()
         ResizeInput();
 
         // For convenience, refocus the input area
-        ruledoc.commandform.command.focus();
+        ButtonFocus();
     }
 }
 
 /************************************************************************
  * Edit a file.
  */
-
 function Edit(ext, filename)
 {
     if(ext)

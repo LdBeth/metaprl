@@ -5,7 +5,6 @@ INPUTS =\
 	access.html\
 	start.html\
 	login.html\
-	page.html\
 	layout.js\
 	md5.js\
 	cookie.js\

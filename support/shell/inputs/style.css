@@ -339,6 +339,10 @@ DIV.menuitemhover {
     border: 0px
 }
 
+#helpbody {
+    background: white
+}
+
 /*
  * System output.
  */
