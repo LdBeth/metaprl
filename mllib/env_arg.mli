@@ -91,6 +91,11 @@ val usage : (string * Arg.spec * string) list -> string -> unit
 val parse : (string * Arg.spec * string) list -> (string -> unit) -> string -> unit
 
 (*
+ * Set an environment variable.
+ *)
+val putenv : string -> string -> unit
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

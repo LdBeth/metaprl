@@ -70,9 +70,16 @@ let debug_lock =
 (*
  * We may start this as a web service.
  *)
-let browser_flag    = Shell_state.browser_flag
-let browser_port    = Shell_state.browser_port
-let browser_string  = Shell_state.browser_string
+let browser_flag      = Shell_state.browser_flag
+
+let browser_port_name = Shell_state.browser_port_name
+let browser_port      = Shell_state.browser_port
+
+let browser_name      = Shell_state.browser_name
+let browser_string    = Shell_state.browser_string
+
+let challenge_name    = Shell_state.challenge_name
+let challenge_string  = Shell_state.challenge_string
 
 module ShellBrowser (Top : ShellTopSig) =
 struct
@@ -157,11 +164,11 @@ struct
     *)
    type state_shared =
       { (* Validation *)
-        mutable shared_challenge : string;
-        mutable shared_response  : string;
+         mutable shared_challenge : string;
+         mutable shared_response  : string;
 
         (* Processes *)
-        mutable shared_children  : int list
+         mutable shared_children  : int list
       }
 
    type state =
@@ -179,7 +186,7 @@ struct
     *)
    type uri =
       InputURI    of string
-    | HtmlmanURI  of string
+    | ManualURI   of string
     | LoginURI    of string
     | UnknownURI  of string
     | FileURI     of string
@@ -276,9 +283,9 @@ struct
        | "file" :: name ->
             FileURI (String.concat "/" name)
        | "manual" :: rest ->
-            HtmlmanURI (Lm_string_util.prepend "/" rest)
+            ManualURI (Lm_string_util.prepend "/" rest)
        | ["favicon.ico"] ->
-            HtmlmanURI "/images/metaprl.ico"
+            ManualURI "/images/metaprl.ico"
        | uri ->
             UnknownURI (Lm_string_util.prepend "/" uri)
 
@@ -308,23 +315,42 @@ struct
 
    (*
     * Update the challenge and renew the response.
+    * The environment may specify a challenge.
     *)
    let update_challenge state =
       let { state_password = password;
             state_shared = shared_entry
           } = state
       in
-      let challenge = new_challenge () in
+      let challenge =
+         match !challenge_string with
+            Some challenge ->
+               challenge
+          | None ->
+               new_challenge ()
+      in
       let response = Digest.string (password ^ challenge) in
       let response = Lm_string_util.hexify response in
       let () =
          if !debug_http then
             eprintf "@[<v 3>Password is: %s@ Challenge is: %s@ Response is: %s@]@." password challenge response
       in
+         challenge_string := None;
          State.write shared_entry (fun shared ->
                shared.shared_challenge <- challenge;
                shared.shared_response <- response;
                update_from_shared state shared)
+
+   (*
+    * Save the state in the environment so that we can re-use it
+    * during a restart.
+    *)
+   let save_browser server state =
+      State.read state.state_shared (fun shared ->
+            let port = Http_simple.save_http server in
+               Env_arg.putenv challenge_name shared.shared_challenge;
+               Env_arg.putenv browser_name "";
+               Env_arg.putenv browser_port_name (string_of_int port))
 
    (*
     * Get the content-type.
@@ -1001,13 +1027,13 @@ struct
    let start_windowed_command session state outx command =
       if !debug_http then
          eprintf "Executing windowed command %s@." command;
-         try
-            session.session_io <- Some (Browser_syscall.create command);
-            session.session_io_version <- succ session.session_io_version;
-            session.session_io_command <- command
-         with
-            Unix.Unix_error _ ->
-               Lm_format.eprintf "%s: failed\n" command
+      try
+         session.session_io <- Some (Browser_syscall.create command);
+         session.session_io_version <- succ session.session_io_version;
+         session.session_io_command <- command
+      with
+         Unix.Unix_error _ ->
+            Lm_format.eprintf "%s: failed\n" command
 
    (*
     * For the editor, just set the info in the session.
@@ -1027,26 +1053,26 @@ struct
     *)
    let handle_syscall server state outx command =
       State.write session_entry (fun session ->
-         match command with
-            SyscallRestart ->
-               Top.backup_all ();
-               print_page server state session outx 100 "reload";
-               Http_simple.Output.close outx;
-               close_http server;
-               let () =
-                  try Unix.execv Sys.argv.(0) Sys.argv with
-                     Unix.Unix_error _ ->
-                        ()
-               in
-                  Lm_format.eprintf "System restart failed@."
-          | SyscallOMake target ->
-               start_windowed_command session state outx (sprintf "omake %s" target)
-          | SyscallCVS (cwd, command) ->
-               start_windowed_command session state outx (sprintf "cd %s && cvs %s" cwd command)
-          | SyscallEdit (_, target) ->
-               start_edit_command session state outx target
-          | SyscallShell s ->
-               start_inline_command session state outx s);
+            match command with
+               SyscallRestart ->
+                  Top.backup_all ();
+                  print_page server state session outx 100 "reload";
+                  Http_simple.Output.flush outx;
+                  save_browser server state;
+                  let () =
+                     try Unix.execv Sys.argv.(0) Sys.argv with
+                        Unix.Unix_error _ ->
+                           ()
+                  in
+                     Lm_format.eprintf "System restart failed@."
+             | SyscallOMake target ->
+                  start_windowed_command session state outx (sprintf "omake %s" target)
+             | SyscallCVS (cwd, command) ->
+                  start_windowed_command session state outx (sprintf "cd %s && cvs %s" cwd command)
+             | SyscallEdit (_, target) ->
+                  start_edit_command session state outx target
+             | SyscallShell s ->
+                  start_inline_command session state outx s);
       0
 
    (************************************************************************
@@ -1130,7 +1156,7 @@ struct
       match decode_uri state uri with
          InputURI filename ->
             print_raw_file_to_http outx filename
-       | HtmlmanURI filename ->
+       | ManualURI filename ->
             print_metaprl_file_to_http outx ( "/doc/htmlman/" ^ filename )
        | WelcomeURI ->
             print_welcome_page outx state
@@ -1211,7 +1237,7 @@ struct
             else
                print_error_page outx NotFoundCode
        | InputURI _
-       | HtmlmanURI _
+       | ManualURI _
        | LoginURI _
        | UnknownURI _
        | ContentURI _
@@ -1281,7 +1307,7 @@ struct
                     | None ->
                          print_error_page outx BadRequestCode)
           | InputURI _
-          | HtmlmanURI _
+          | ManualURI _
           | LoginURI _
           | UnknownURI _
           | ContentURI _
@@ -1414,7 +1440,8 @@ struct
          (* Start the browser if requested *)
          (match !browser_string with
              Some browser ->
-                start_browser server state browser file_url
+                if browser <> "" then
+                   start_browser server state browser file_url
            | None ->
                 ());
 
@@ -1431,44 +1458,47 @@ struct
    let init_password () =
       (* Get, or create the password *)
       let passwd = Filename.concat (Setup.home ()) "passwd" in
-         if Sys.file_exists passwd then begin
-            let inx =
-               try open_in passwd with
-                  Sys_error _ ->
-                     raise (Invalid_argument ("The password file \"" ^ passwd ^ "\" exists, but is protected"))
-            in
-            let password =
-               try input_line inx with
-                  End_of_file ->
-                     close_in inx;
-                     raise (Invalid_argument ("The password file \"" ^ passwd ^ "\" is empty"))
-            in
-               close_in inx;
-               Lm_string_util.trim password
+         if Sys.file_exists passwd then
+            begin
+               let inx =
+                  try open_in passwd with
+                     Sys_error _ ->
+                        raise (Invalid_argument ("The password file \"" ^ passwd ^ "\" exists, but is protected"))
+               in
+               let password =
+                  try input_line inx with
+                     End_of_file ->
+                        close_in inx;
+                        raise (Invalid_argument ("The password file \"" ^ passwd ^ "\" is empty"))
+               in
+                  close_in inx;
+                  Lm_string_util.trim password
 
-         end else begin
+            end
+         else
+            begin
                (* Create a new password *)
-            let fd = Unix.openfile passwd [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
-            let () =
-               try Unix.fchmod fd 0o600 with
-                  Unix.Unix_error _
-                | Invalid_argument _ ->
-                     ()
-            in
-            let out = Unix.out_channel_of_descr fd in
-            let password = new_challenge () in
-               output_string out password;
-               close_out out;
+               let fd = Unix.openfile passwd [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
+               let () =
+                  try Unix.fchmod fd 0o600 with
+                     Unix.Unix_error _
+                   | Invalid_argument _ ->
+                        ()
+               in
+               let out = Unix.out_channel_of_descr fd in
+               let password = new_challenge () in
+                  output_string out password;
+                  close_out out;
 
-               eprintf "@[<v 3>\
+                  eprintf "@[<v 3>\
 *** Note ***@ \
 *** This is the first time you are using the browser service.@ \
 *** A new password has been created for you in the file %s@ \
 *** You will need this password to connect to MetaPRL from your browser.@ \
 *** You may change this password to something you can remember if you like.@ @]@." passwd;
 
-               password
-         end
+                  password
+            end
 
    (*
     * Start the web server.

@@ -44,6 +44,16 @@ let debug_http =
 
 let http_threads = Env_arg.int "threads" 4 "number of threads for the web service" Env_arg.set_int_int
 
+(*
+ * Allow the socket to be inherited from the parent process.
+ *)
+let socket_name = "socket"
+
+let socket_fd = Env_arg.int socket_name None "socket descriptor (for restart)" Env_arg.set_int_option_int
+
+(*
+ * IO.
+ *)
 let eflush out =
    output_char out '\n';
    flush out
@@ -842,8 +852,14 @@ let rec read_body inx header =
  *)
 
 (*
- * Shutdown the server.
+ * Save the server filedescriptor in the environment,
+ * so that we will re-use it on restart.
  *)
+let save_http server =
+   let _, port = Lm_ssl.getsockname server in
+      Env_arg.putenv socket_name (string_of_int (Lm_ssl.fd server));
+      port
+
 let close_http server =
    Lm_ssl.close server
 
@@ -951,10 +967,15 @@ let serve_http start connect info port =
             raise (Invalid_argument (sprintf "Http_simple.serve: SSL certificate file %s does not exist" dh_name));
          passwd_name, dh_name
    in
-   let ssl = Lm_ssl.socket passwd_name in
-   let () =
-      Lm_ssl.bind ssl Unix.inet_addr_any port;
-      Lm_ssl.listen ssl dh_name 10
+   let ssl =
+      match !socket_fd with
+         Some fd ->
+            Lm_ssl.serve fd passwd_name dh_name
+       | None ->
+            let ssl = Lm_ssl.socket passwd_name in
+               Lm_ssl.bind ssl Unix.inet_addr_any port;
+               Lm_ssl.listen ssl dh_name 10;
+               ssl
    in
    let info = start ssl info in
       if Thread.enabled then

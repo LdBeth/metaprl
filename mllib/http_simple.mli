@@ -89,8 +89,9 @@ type 'a connect_handler = t -> 'a -> Output.t -> Input.t -> string list -> reque
 val serve_http : 'a start_handler -> 'a connect_handler -> 'a -> int -> unit
 
 (*
- * Close the HTTP socket.
+ * Save/close the HTTP socket.
  *)
+val save_http  : t -> int
 val close_http : t -> unit
 
 (*

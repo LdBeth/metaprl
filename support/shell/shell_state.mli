@@ -119,8 +119,15 @@ val get_input_files : unit -> string list
  * We may start this as a web service.
  *)
 val browser_flag : bool ref
-val browser_port : int ref
-val browser_string : string option ref
+
+val browser_port_name : string
+val browser_port      : int ref
+
+val browser_name     : string
+val browser_string   : string option ref
+
+val challenge_name   : string
+val challenge_string : string option ref
 
 (*
  * -*-

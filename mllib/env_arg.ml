@@ -26,6 +26,14 @@ type ('a, 'b) var_set = string -> 'a ref -> 'b -> unit
 let param_args = ref []
 
 (*
+ * Define an environment string.
+ *)
+let putenv key s =
+   let key = String.uppercase key in
+   let key = Setup.environ_prefix ^ "_" ^ key in
+      Unix.putenv key s
+
+(*
  * Call a function if an environment variable is set.
  *)
 let if_getenv key f =
