@@ -13,7 +13,7 @@ setenv ENS_DOMAIN_PORT 7473
 # TPTP libraries
 #
 setenv TPTP ../../../TPTP
-if(-d $TPTP) then
+if (-d $TPTP) then
    setenv MP_TPTP `echo . $TPTP $TPTP/Problems/* | sed -e 's, ,:,g'`
 endif
 
@@ -27,7 +27,7 @@ setenv MPLIB ../../lib
 # in funny places like the .prla files (since is_printable function used by String.escape is
 # locale-aware). To avoid these problems, we'd better work with LC_ALL=C
 #
-setenv LC_ALL=C
+setenv LC_ALL C
 
 #
 # Camlp4 directory
