@@ -252,7 +252,7 @@ else
 
 clean::
         $(RM) -f *.p4* *.pp* mp_version.ml
-        $(RM) -f tests/*.p4* tests/*.pp* tests/*.cmx tests/*.cmi* tests/*.cmo* tests/*.o
+        cd tests && $(RM) -f *.p4* *.pp* *.cmx *.cmi* *.cmo* *.o
 
 #
 # TeX

@@ -306,18 +306,17 @@ let main () =
       if !verbose_mode <> 0 then
          print_command_line argv
    in
-(*
-   let env = Unix.environment () in
-   let pid = Unix.create_process_env argv'.(0) argv' env Unix.stdin Unix.stdout Unix.stderr in
-      match snd (Unix.waitpid [] pid) with
-         Unix.WEXITED code ->
-            eprintf "Compiler exited with code %d%t" code eflush;
-            exit code
-       | Unix.WSIGNALED _
-       | Unix.WSTOPPED _ ->
-            exit 1
-*)
-      Unix.execvp argv'.(0) argv';
+      if Sys.os_type = "Win32" then
+         let pid = Unix.create_process argv'.(0) argv' Unix.stdin Unix.stdout Unix.stderr in
+            match snd (Unix.waitpid [] pid) with
+               Unix.WEXITED code ->
+                  eprintf "Compiler exited with code %d%t" code eflush;
+                  exit code
+             | Unix.WSIGNALED _
+             | Unix.WSTOPPED _ ->
+                  exit 1
+      else
+         Unix.execvp argv'.(0) argv';
       eprintf "Execution failed: %s%t" argv'.(0) eflush;
       exit 1
 

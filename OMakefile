@@ -31,7 +31,7 @@ if $(equal $(OLDROOT), $(ROOT))
     #
     if $(equal $(OSTYPE), Win32)
        .INCLUDE: mk/config
-           copy mk\\config.default mk\\config
+           copy mk\config.win32 mk\config
 
        #
        # No native-code version of camlp4 on windows
@@ -49,6 +49,7 @@ if $(equal $(OLDROOT), $(ROOT))
     else
        .INCLUDE: mk/config
            ROOT=$(ROOT) mk/make_config.sh
+           $(CP) mk/config mk/config.win32
 
        #
        # JYH: I'm not sure why these are not set in mk/config...
@@ -78,7 +79,7 @@ if $(equal $(OLDROOT), $(ROOT))
 #
 # Default clean line
 #
-CLEAN = $'(RM) -f *.opt *.run *.o *.cm* *~ .\#*
+CLEAN = $'(RM) *.opt *.run *.o *.cm* *~ .\#*
 REALCLEAN = $(CLEAN) *.prlb
 
 clean:
@@ -205,9 +206,3 @@ if true
     MP_DIRS  = $(SUPPORT_DIRS) $(dir $(addprefix theories/, $(THEORIES)))
 
     .SUBDIRS: $(MP_DIRS) editor/ml
-
-#
-# Clean up
-#
-clean:
-    $(CLEAN)
