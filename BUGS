@@ -148,6 +148,9 @@ RULES & REWRITES
 *) reduceEta is too strong
    should be moved to a new module not included in Itt_theory.
 
+*) The rule interactive bunionElimination in the theory itt_bunion is not correct.
+(This is a result of non-understanding hidden hypothesis)
+
 BUILD SYSTEM
 
 *) Dependencies between .prla, .prlb, .cmiz, .cmoz, etc., are all messed up
