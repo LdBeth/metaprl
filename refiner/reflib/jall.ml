@@ -48,6 +48,16 @@ open Unify_mm
 open Jlogic_sig
 open Jtunify
 
+let _ =
+   show_loading "Loading Jall%t"
+
+let debug_jprover =
+   create_debug (**)
+      { debug_name = "jprover";
+        debug_description = "Display Jprover operations";
+        debug_value = false
+      }
+
 (************************************************************************
  * Compatibility layer for abstract vars.
  *)
@@ -169,16 +179,6 @@ struct
    end
 
    module StringSet = Set.Make(OrderedString)
-
-   let _ =
-      show_loading "Loading Jall%t"
-
-   let debug_jprover =
-      create_debug (**)
-         { debug_name = "jprover";
-           debug_description = "Display Jprover operations";
-           debug_value = false
-         }
 
    let jprover_bug = Invalid_argument "Jprover bug (Jall module)"
 
@@ -1981,7 +1981,7 @@ struct
             let (rest_rel,rest_renlist) = build_formula_rel dir_r slist predname in
             match f with
                Empty ->
-                  print_endline "Hello, an empty subtree!!!!!!";
+                  if !debug_jprover then print_endline "Hello, an empty subtree!!!!!!";
                   rest_rel,rest_renlist
              | NodeAt(pos) ->
                   (((predname,pos.name),d)::rest_rel),rest_renlist
@@ -2063,7 +2063,7 @@ struct
    let pt ptree subrel =
       let tsubrel = transitive_closure subrel in
       let transptree = trans_layer ptree (subrel,tsubrel) in
-      print_endline "";
+(*      print_endline ""; *)
       fst (modify transptree (subrel,tsubrel))
 (*     let mtree = fst (modify transptree (subrel,tsubrel)) in *)
 (*       pretty_print mtree ax *)
@@ -4354,22 +4354,21 @@ let rec try_multiplicity mult_limit ftree ordering pos_n mult logic =
             raise mult_limit_exn
        | _ ->
             let new_mult = mult+1 in
-            begin
+            if !debug_jprover then begin
                Format.open_box 0;
                Format.force_newline ();
                Format.print_string "Multiplicity Fail: ";
                Format.print_string ("Try new multiplicity "^(string_of_int new_mult));
                Format.force_newline ();
                Format.print_flush ();
-
-               let (new_ftree,new_ordering,new_pos_n) =
-                  add_multiplicity ftree pos_n new_mult logic in
-               if (new_ftree = ftree) then
-                  raise unprovable
-               else
-(*                print_formula_info new_ftree new_ordering new_pos_n;   *)
-                  try_multiplicity mult_limit new_ftree new_ordering new_pos_n new_mult logic
-            end
+            end;
+            let (new_ftree,new_ordering,new_pos_n) =
+               add_multiplicity ftree pos_n new_mult logic in
+            if (new_ftree = ftree) then
+               raise unprovable
+            else
+(*             print_formula_info new_ftree new_ordering new_pos_n;   *)
+               try_multiplicity mult_limit new_ftree new_ordering new_pos_n new_mult logic
 
 let prove mult_limit termlist logic =
    let (ftree,ordering,pos_n) = construct_ftree termlist [] [] 0 (mk_var_term "dummy") in
