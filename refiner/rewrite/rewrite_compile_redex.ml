@@ -166,7 +166,7 @@ struct
                   let mem = rstack_freefo_mem v stack in
                      if not mem && rstack_mem v stack then
                         REF_RAISE(RefineError ("compile_so_redex_term", StringVarError("Free FO variable clashes with another variable ", v)));
-                     if st.st_patterns && not (rstack_pattern_mem v stack) then
+                     if st.st_patterns then
                         if mem then
                            rstack_upgrade v stack
                         else
@@ -192,12 +192,12 @@ struct
 
       else if is_so_var_term term then
          let v, conts, subterms = dest_so_var term in
+         let so_mem = rstack_so_mem v stack in
             if List.mem_assoc v st.st_bvars then
                REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
-            else if st.st_patterns && are_bound_vars st.st_bvars subterms && not (rstack_pattern_mem v stack) then
+            else if st.st_patterns && are_bound_vars st.st_bvars subterms then
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)
-               let so_mem = rstack_so_mem v stack in
                let () =
                   if so_mem then
                      rstack_check_arity v conts (List.length subterms) stack
@@ -242,7 +242,7 @@ struct
                   stack, t
 
             (* This is a second order variable instance *)
-            else if rstack_so_mem v stack then
+            else if so_mem then
                begin
                   rstack_check_arity v conts (List.length subterms) stack;
                   (*

@@ -379,13 +379,6 @@ struct
    let print_string_pair_list =
       print_any_list print_string_pair
 
-   let eq_comp_var v t =
-      match get_core t with
-         FOVar v' ->
-            v' = v
-       | _ ->
-            false
-
    let rec equal_fun f bvars sub t t' =
       match get_core t, get_core t' with
          FOVar v, FOVar v' ->

@@ -110,10 +110,12 @@ struct
          (SOVarPattern (v, conts, i))::t
     | FreeFOVarInstance v' :: t when Lm_symbol.eq v' v ->
          FreeFOVarPattern v :: t
+    | (FreeFOVarPattern v' | SOVarPattern (v', _, _)) :: _ as l when Lm_symbol.eq v' v ->
+         l
     | h::t ->
          h::(rstack_upgrade v t)
     | [] ->
-         raise (Invalid_argument "rstack_upgrade")
+         raise (Invalid_argument "Rewrite_util.rstack_upgrade: internal error")
 
    (*
     * Check the arity of a variable.
@@ -157,14 +159,6 @@ struct
          Lm_symbol.eq v v'
     | _ -> false
 
-   let rstack_pattern_mem_prop v = function
-      SOVarPattern (v', _, _) ->
-         Lm_symbol.eq v v'
-    | FreeFOVarPattern v' ->
-         Lm_symbol.eq v v'
-    | _ ->
-         false
-
    let rstack_freefo_mem_prop v = function
       FreeFOVarPattern v' | FreeFOVarInstance v' -> Lm_symbol.eq v v'
     | _ -> false
@@ -183,7 +177,6 @@ struct
 
    let rstack_mem v = List.exists (rstack_mem_prop v)
    let rstack_so_mem v = List.exists (rstack_so_mem_prop v)
-   let rstack_pattern_mem v = List.exists (rstack_pattern_mem_prop v)
    let rstack_freefo_mem v = List.exists (rstack_freefo_mem_prop v)
    let rstack_fo_mem v = List.exists (rstack_fo_mem_prop v)
    let rstack_p_mem shape v = List.exists (rstack_p_mem_prop shape v)

@@ -56,7 +56,6 @@ sig
    val rstack_var : rstack -> var
    val rstack_mem : var -> rstack list -> bool
    val rstack_so_mem : var -> rstack list -> bool
-   val rstack_pattern_mem : var -> rstack list -> bool
    val rstack_freefo_mem : var -> rstack list -> bool
    val rstack_fo_mem : var -> rstack list -> bool
    val rstack_p_mem : shape_param -> var -> rstack list -> bool
