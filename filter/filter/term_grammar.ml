@@ -1348,6 +1348,12 @@ struct
             | op = opname_list; (params, bterms) = termsuffix ->
               { aname = None; aterm = mk_term (mk_op (mk_bopname loc op params bterms) params) bterms }
            ]
+          | "sequent" NONA
+            [ arg = SELF; "{|"; (hyps, concl) = sequent_body; "|}" ->
+               { aname = None; aterm = mk_sequent_term
+                   { sequent_args = get_aterm loc arg; sequent_hyps = hyps; sequent_concl = concl }}
+            ]
+
           | [ t = nonwordterm ->
                { aname = None; aterm = t }
             ]
