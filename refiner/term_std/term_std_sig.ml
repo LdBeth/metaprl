@@ -167,6 +167,8 @@ sig
     *)
    val var_opname : opname
    val context_opname : opname
+   val xperv : opname
+   val sequent_opname : opname
 
    val is_var_term : term -> bool
    val dest_var : term -> string

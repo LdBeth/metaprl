@@ -72,11 +72,11 @@ sig
     *
     * Subst (BSubst) - delayed simultanious substitution
     *)
-
    type term_subst = (string * term) list
    and term_core =
       Term of term'
     | Subst of term * term_subst
+    | Sequent of esequent
    and term = { free_vars : StringSet.t; mutable core : term_core }
    and bound_term_core =
       BTerm of bound_term'
@@ -84,6 +84,16 @@ sig
    and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : string list; bterm : term }
+   and hypothesis =
+      Hypothesis of string * term
+    | Context of string * term list
+   and esequent =
+      { sequent_args : term;
+        sequent_hyps : seq_hyps;
+        sequent_goals : seq_goals
+      }
+   and seq_hyps = hypothesis array
+   and seq_goals = term array
 
    (*
     * The terms in the framework include
@@ -95,18 +105,13 @@ sig
     | MetaFunction of term * meta_term * meta_term
     | MetaIff of meta_term * meta_term
 
-   type hypothesis =
-      Hypothesis of string * term
-    | Context of string * term list
+   module SeqHyp : ROArraySig 
+                   with type elt = hypothesis
+                   with type t = seq_hyps
+   module SeqGoal : ROArraySig 
+                    with type elt = term
+                    with type t = seq_goals
 
-   module SeqHyp : ROArraySig with type elt = hypothesis
-   module SeqGoal : ROArraySig with type elt = term
-
-   type esequent =
-      { sequent_args : term;
-        sequent_hyps : SeqHyp.t;
-        sequent_goals : SeqGoal.t
-      }
 end
 
 module type TermDsSig =
@@ -122,6 +127,7 @@ sig
    type term
    type term_core
    type bound_term
+   type esequent
 
    type level_exp_var'
    type level_exp'
@@ -154,6 +160,7 @@ sig
    val dest_bterm : bound_term -> bound_term'
    val mk_level : int -> level_exp_var list -> level_exp
    val mk_level_var : string -> int -> level_exp_var
+   val mk_sequent_term : esequent -> term
 
    val no_bvars : bound_term list -> bool
    val mk_simple_bterm : term -> bound_term
@@ -187,6 +194,8 @@ sig
 
    val var_opname : opname
    val context_opname : opname
+   val xperv : opname
+   val sequent_opname : opname
 
    val is_var_term : term -> bool
    val dest_var : term -> string

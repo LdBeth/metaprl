@@ -113,6 +113,7 @@ struct
       let create = Array.create
       let make = Array.make
       let init = Array.init
+      let mapi = Array.mapi
       let to_list = Array.to_list
       let of_list = Array.of_list
    end
@@ -126,6 +127,7 @@ struct
       let get = Array.get
       let make = Array.make
       let init = Array.init
+      let mapi = Array.mapi
       let to_list = Array.to_list
       let of_list = Array.of_list
    end

@@ -47,6 +47,7 @@ struct
    type term = TermType.term
    type term_core = TermType.term_core
    type bound_term = TermType.bound_term
+   type esequent = TermType.esequent
 
    type level_exp_var' = TermType.level_exp_var'
    type level_exp' = TermType.level_exp'
@@ -132,8 +133,25 @@ struct
 
    let var_opname = make_opname ["var"]
 
+   (*
+    * Manifest terms are injected into the "perv" module.
+    *)
+   let xperv = make_opname ["Perv"]
+   let sequent_opname = mk_opname "sequent" xperv
+
+   (************************************************************************
+    * De/Constructors                                                 *
+    ************************************************************************)
+
    let fail_core s =
       raise (Invalid_argument ("Term_ds." ^ s ^ ": get_core returned a Subst"))
+
+   let rec subst_remove v = function
+      [] -> [] 
+    | ((v',t)::tl) as sub ->
+         if (v = v') then subst_remove v tl
+         else let rem = subst_remove v tl in
+            if rem == tl then sub else (v',t)::rem
 
    let rec get_core t =
       match t.core with
@@ -147,16 +165,39 @@ struct
                 | Term ttt ->
                      Term { term_op = ttt.term_op;
                             term_terms = List.map (do_bterm_subst sub) ttt.term_terms }
+                | Sequent { sequent_args = args;
+                            sequent_hyps = hyps;
+                            sequent_goals = goals } ->
+                     let new_args = do_term_subst sub args in
+                     let new_hyps = Array.copy hyps in
+                     let new_goals = Array.copy goals in
+                     let hlen = Array.length hyps in
+                     let rec do_hyps_subst sub i =
+                        if i = hlen then 
+                           let glen = Array.length goals in
+                           let rec do_goals_subst i =
+                              if i = glen then
+                                 Sequent { sequent_args = new_args;
+                                           sequent_hyps = new_hyps;
+                                           sequent_goals = new_goals }
+                              else begin
+                                 new_goals.(i) <- do_term_subst sub goals.(i);
+                                 do_goals_subst (succ i)
+                              end 
+                           in do_goals_subst 0
+                        else (match hyps.(i) with
+                           Hypothesis (v,t) ->
+                              new_hyps.(i) <- Hypothesis (v,do_term_subst sub t);
+                              do_hyps_subst (subst_remove v sub) (succ i) 
+                         | Context (v,ts) -> 
+                              new_hyps.(i) <- Context (v, List.map (do_term_subst sub) ts);
+                              do_hyps_subst sub (succ i)) in
+                     do_hyps_subst sub 0
                 | Subst _ -> fail_core "get_core"
             in
                t.core <- core;
                core
        | core -> core
-
-   let dest_term t = 
-      match get_core t with
-         Term t -> t
-       | Subst _ -> fail_core "dest_term"
 
    (*
     * Make a variable.
@@ -186,6 +227,10 @@ struct
 
    let mk_op name params = { op_name = name; op_params = params }
 
+   let mk_simple_bterm term =
+      { bfree_vars = term.free_vars;
+        bcore = BTerm { bvars = []; bterm = term }}
+
    let make_bterm bt =
       { bfree_vars = List.fold_right StringSet.remove bt.bvars bt.bterm.free_vars;
         bcore = BTerm bt }
@@ -193,6 +238,85 @@ struct
    let mk_bterm vars term =
       { bfree_vars = List.fold_right StringSet.remove vars term.free_vars;
         bcore = BTerm {bvars = vars; bterm = term }}
+
+   (*
+    * Second order context, contains a context term, plus
+    * binding variables like so vars.
+    *)
+   let context_opname = make_opname ["context"]
+
+   let mk_context_term v term terms =
+      let rec collect term = function
+         [] ->
+            [mk_simple_bterm term]
+       | h::t ->
+            mk_simple_bterm h :: collect term t
+      in
+      let op = { op_name = context_opname; op_params = [Var v] } in
+         mk_term op (collect term terms)
+
+   (****************************************************
+    * Sequent "ugly" forms - remove when not necessary *
+    ****************************************************)
+   
+   let hyp_opname = mk_opname "hyp" xperv
+   let concl_opname = mk_opname "concl" xperv
+
+   let mk_sequent_outer_term goal args =
+      { term_op = { op_name = sequent_opname; op_params = [] };
+        term_terms = [mk_simple_bterm args; mk_simple_bterm goal] }
+
+   let null_concl = 
+      { free_vars = StringSet.empty;
+        core = Term { term_op = { op_name = concl_opname; op_params = [] }; term_terms = [] }}
+
+   let mk_concl_term t1 t2 =
+      { free_vars = StringSet.union t1.free_vars t2.free_vars;
+        core = Term 
+         { term_op = { op_name = concl_opname; op_params = [] };
+           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2] }}
+
+   let mk_hyp_term v t1 t2 =
+      let fv2 = StringSet.remove v t2.free_vars in
+      { free_vars = StringSet.union t1.free_vars fv2;
+        core = Term
+         { term_op = { op_name = hyp_opname; op_params = [] };
+           term_terms = 
+            [ mk_simple_bterm t1;
+              { bfree_vars = fv2;
+                bcore = BTerm
+                 { bvars = [v]; bterm = t2 }}]}}
+
+   let rec mk_goals goals i len =
+      if i = len then
+         null_concl
+      else
+         mk_concl_term (SeqGoal.get goals i) (mk_goals goals (i + 1) len)
+
+   let rec mk_sequent_inner_term hyps goals i len =
+      if i = len then
+         mk_goals goals 0 (SeqGoal.length goals)
+      else
+         match SeqHyp.get hyps i with
+            Hypothesis (v, t') ->
+               mk_hyp_term v t' (mk_sequent_inner_term hyps goals (i + 1) len)
+          | Context (v, subterms) ->
+               mk_context_term v (mk_sequent_inner_term hyps goals (i + 1) len) subterms
+
+   (* End of sequent "ugly" forms *)
+   
+   let dest_term t = 
+      match get_core t with
+         Term t -> t
+       | Sequent 
+            { sequent_args = args;
+              sequent_hyps = hyps;
+              sequent_goals = goals
+            }  ->
+         (* raise (Invalid_argument "Term_base_ds.dest_term: dest_term called on a sequent") *)
+         (* Create an "ugly" form: *)
+          mk_sequent_outer_term (mk_sequent_inner_term hyps goals 0 (SeqHyp.length hyps)) args
+       | Subst _ -> fail_core "dest_term"
 
    (*
     * New variable production.
@@ -267,12 +391,37 @@ struct
                bt.bcore <- BTerm t4;
                t4
 
-   let no_bvars =
-      List.for_all
-         (function bt ->
-            match dest_bterm bt with
-               { bvars = [] } -> true
-             | _ -> false)
+   let rec goal_fv goals i =
+      if i < 0 then StringSet.empty else
+      StringSet.union (SeqGoal.get goals i).free_vars (goal_fv goals (pred i))
+
+   let rec terms_free_vars = function
+      [] -> StringSet.empty
+    | [t] -> t.free_vars
+    | t::tl -> StringSet.union (terms_free_vars tl) t.free_vars
+   
+   let rec hyp_fv hyps i fvs =
+      if i < 0 then fvs else
+      hyp_fv hyps (pred i) (
+      match SeqHyp.get hyps i with
+         Hypothesis (v,t) ->
+            StringSet.union t.free_vars (StringSet.remove v fvs)
+       | Context (v,subterms) ->
+            StringSet.union fvs (terms_free_vars subterms))
+            
+   let mk_sequent_term seq =
+      { free_vars = 
+         StringSet.union 
+            seq.sequent_args.free_vars 
+            (hyp_fv 
+               seq.sequent_hyps 
+               (SeqHyp.length seq.sequent_hyps - 1) 
+               (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)));
+        core = Sequent seq }
+
+   let rec no_bvars = function
+      [] -> true
+    | bt::btrms -> (dest_bterm bt).bvars == [] && no_bvars btrms
 
    let dest_simple_bterm term bt =
       match dest_bterm bt with
@@ -282,9 +431,33 @@ struct
    let dest_simple_bterms term =
       List.map (dest_simple_bterm term)
 
-   let mk_simple_bterm term =
-      { bfree_vars = term.free_vars;
-        bcore = BTerm { bvars = []; bterm = term }}
+   let is_context_term t =
+      match dest_term t with
+         { term_op = { op_name = opname; op_params = [Var _] };
+           term_terms = bterms
+         } when Opname.eq opname context_opname ->
+            bterms <> [] & no_bvars bterms
+       | _ ->
+            false
+
+   let dest_context term =
+      match dest_term term with
+         { term_op = { op_name = opname; op_params = [Var v] };
+           term_terms = bterms
+         } when Opname.eq opname context_opname ->
+            let rec collect term = function
+               [bterm] ->
+                  [], dest_simple_bterm term bterm
+             | bterm::bterms ->
+                  let args, term = collect term bterms in
+                     dest_simple_bterm term bterm :: args, term
+             | _ ->
+                  ref_raise(RefineError ("dest_context", TermMatchError (term, "not a context")))
+            in
+            let args, term = collect term bterms in
+               v, term, args
+       | _ ->
+            ref_raise(RefineError ("dest_context", TermMatchError (term, "not a context")))
 
    let mk_level_var v i =
       { le_var = v; le_offset = i }
@@ -307,6 +480,7 @@ struct
     *)
    let opname_of_term t = match get_core t with
       Term t -> t.term_op.op_name
+    | Sequent _ -> sequent_opname
     | Subst _ -> fail_core "opname_of_term"
 
    (* These are trivial identity functions *)
@@ -329,6 +503,7 @@ struct
    (*
     * See if a term is a variable.
     *)
+
    let is_var_term t = 
       match get_core t with
          Term { term_op = { op_name = opname; op_params = [Var _] };

@@ -77,6 +77,9 @@ sig
    val dest_context : term -> string * term * term list
    val mk_context_term : string -> term -> term list -> term
 
+   val xperv : opname
+   val sequent_opname : opname
+
    (*
     * Simple terms have no paramaters and
     * all subterms have no binding vars.

@@ -15,6 +15,7 @@ sig
    val make : int -> elt -> t
    val create : int -> elt -> t
    val init : int -> (int -> elt) -> t
+   val mapi : (int -> elt -> elt) -> t -> t
    val to_list : t -> elt list
    val of_list : elt list -> t
 end

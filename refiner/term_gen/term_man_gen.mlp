@@ -66,11 +66,6 @@ struct
 
    type esequent = Term.esequent
 
-   (*
-    * Manifest terms are injected into the "perv" module.
-    *)
-   let xperv = make_opname ["Perv"]
-
    (************************************************************************
     * Level expressions                                                    *
     ************************************************************************)
@@ -144,8 +139,6 @@ struct
    (************************************************************************
     * PRIMITIVE FORMS                                                      *
     ************************************************************************)
-
-   let xperv = make_opname ["Perv"]
 
    (*
     * Lists.
@@ -245,7 +238,6 @@ struct
    (* Sequent operator names *)
    let hyp_opname = mk_opname "hyp" xperv
    let concl_opname = mk_opname "concl" xperv
-   let sequent_opname = mk_opname "sequent" xperv
 
    (* Sequent wrapper *)
    let is_sequent_term = is_simple_term_opname sequent_opname

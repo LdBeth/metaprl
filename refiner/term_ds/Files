@@ -2,7 +2,9 @@ TERM_DS_PFILES :=\
 	term_base_ds\
 	term_op_ds\
 	term_subst_ds\
-	term_eval_ds
+	term_eval_ds\
+	term_addr_ds\
+	term_man_ds
 
 TERM_DS_FILES :=\
 	term_ds_sig\

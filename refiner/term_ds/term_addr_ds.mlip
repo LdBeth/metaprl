@@ -1,0 +1,53 @@
+(*
+ * Addressed operations on terms.
+ *)
+
+open Refine_error_sig
+open Term_ds_sig
+open Term_ds
+open Term_op_sig
+open Term_addr_sig
+
+type addr =
+   Path of int list
+ | ArgAddr
+ | HypAddr of int
+ | GoalAddr of int
+ | Compose of addr * addr
+
+module AddressType : TypeSig with type t = addr
+
+module TermAddr (**)
+   (Term : TermDsSig
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type operator = TermType.operator
+    with type term = TermType.term
+    with type term_core = TermType.term_core
+    with type bound_term = TermType.bound_term
+    with type esequent = TermType.esequent
+
+    with type level_exp_var' = TermType.level_exp_var'
+    with type level_exp' = TermType.level_exp'
+    with type object_id = TermType.object_id
+    with type param' = TermType.param'
+    with type operator' = TermType.operator'
+    with type term' = TermType.term'
+    with type bound_term' = TermType.bound_term')
+   (TermOp : TermOpSig
+    with type term = TermType.term)
+   (RefineError : RefineErrorSig
+    with type term = TermType.term
+    with type address = AddressType.t)
+: TermAddrSig
+  with type term = TermType.term
+  with type address = AddressType.t
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

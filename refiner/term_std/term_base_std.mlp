@@ -141,6 +141,12 @@ struct
    let subterm_arities { term_terms = terms } =
       List.map (fun { bvars = vars } -> List.length vars) terms
 
+   (*
+    * Manifest terms are injected into the "perv" module.
+    *)
+   let xperv = make_opname ["Perv"]
+   let sequent_opname = mk_opname "sequent" xperv
+
    (************************************************************************
     * Variables                                                            *
     ************************************************************************)

@@ -96,6 +96,7 @@ struct
    and term_core =
       Term of term'
     | Subst of term * term_subst
+    | Sequent of esequent
    and term = { free_vars : StringSet.t; mutable core : term_core }
    and bound_term_core =
       BTerm of bound_term'
@@ -103,6 +104,16 @@ struct
    and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : string list; bterm : term }
+   and hypothesis =
+      Hypothesis of string * term
+    | Context of string * term list
+   and seq_hyps = hypothesis array
+   and seq_goals = term array
+   and esequent =
+      { sequent_args : term;
+        sequent_hyps : seq_hyps;
+        sequent_goals : seq_goals
+      }
 
    (*
     * The terms in the framework include
@@ -114,25 +125,16 @@ struct
     | MetaFunction of term * meta_term * meta_term
     | MetaIff of meta_term * meta_term
 
-   type hypothesis =
-      Hypothesis of string * term
-    | Context of string * term list
-
-   type esequent =
-      { sequent_args : term;
-        sequent_hyps : hypothesis array;
-        sequent_goals : term array
-      }
-
    module SeqHyp =
    struct
       type elt = hypothesis
-      type t = hypothesis array
+      type t = seq_hyps
       let length = Array.length
       let get = Array.get
       let create = Array.create
       let make = Array.make
       let init = Array.init
+      let mapi = Array.mapi
       let to_list = Array.to_list
       let of_list = Array.of_list
    end
@@ -140,12 +142,13 @@ struct
    module SeqGoal =
    struct
       type elt = term
-      type t = term array
+      type t = seq_goals
       let length = Array.length
       let create = Array.create
       let get = Array.get
       let make = Array.make
       let init = Array.init
+      let mapi = Array.mapi
       let to_list = Array.to_list
       let of_list = Array.of_list
    end

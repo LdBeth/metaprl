@@ -47,6 +47,7 @@ module TermMan (**)
         with type term = TermType.term
         with type term_core = TermType.term_core
         with type bound_term = TermType.bound_term
+        with type esequent = TermType.esequent
 
         with type level_exp_var' = TermType.level_exp_var'
         with type level_exp' = TermType.level_exp'
@@ -260,33 +261,7 @@ struct
       Sequent _ -> true
     | _ -> false
 
-   let rec goal_fv goals i =
-      if i < 0 then StringSet.empty else
-      StringSet.union (SeqGoal.get goals i).free_vars (goal_fv goals (pred i))
-
-   let rec terms_free_vars = function
-      [] -> StringSet.empty
-    | [t] -> t.free_vars
-    | t::tl -> StringSet.union (terms_free_vars tl) t.free_vars
-   
-   let rec hyp_fv hyps i fvs =
-      if i < 0 then fvs else
-      hyp_fv hyps (pred i) (
-      match SeqHyp.get hyps i with
-         Hypothesis (v,t) ->
-            StringSet.union t.free_vars (StringSet.remove v fvs)
-       | Context (v,subterms) ->
-            StringSet.union fvs (terms_free_vars subterms))
-            
-   let mk_sequent_term seq =
-      { free_vars = 
-         StringSet.union 
-            seq.sequent_args.free_vars 
-            (hyp_fv 
-               seq.sequent_hyps 
-               (SeqHyp.length seq.sequent_hyps - 1) 
-               (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)));
-        core = Sequent seq }
+   let mk_sequent_term = Term.mk_sequent_term 
 
    let explode_sequent t = match get_core t with
       Sequent s -> s
@@ -309,7 +284,7 @@ struct
             if n <= SeqHyp.length s.sequent_hyps then 
                let pn = pred n in
                match s.sequent_hyps.(pn) with
-                  Hypothesis _ -> SeqNthHyp pn
+                  Hypothesis _ -> HypAddr pn
                 | Context _ -> ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "it's a context")))
             else
                ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
@@ -324,7 +299,7 @@ struct
          ref_raise(RefineError (nth_concl_addr_name, StringError "negative address"))
       else match get_core t with
          Sequent s ->
-            if n <= SeqGoal.length s.sequent_goals then SeqNthGoal (pred n)
+            if n <= SeqGoal.length s.sequent_goals then GoalAddr (pred n)
             else
                ref_raise(RefineError (nth_concl_addr_name, TermMatchError (t, "not enough hyps")))
        | _ -> ref_raise(RefineError (nth_concl_addr_name, TermMatchError (t, "not a sequent")))
@@ -338,18 +313,18 @@ struct
       match get_core t with
          Sequent s ->
             let hlen = SeqHyp.length s.sequent_hyps in
-            if (i = 0) then SeqNthGoal 0 else
+            if (i = 0) then GoalAddr 0 else
             if (i > 0) then 
                if i <= hlen then 
                   let pi = pred i in
                   match s.sequent_hyps.(pi) with
-                     Hypothesis _ -> SeqNthHyp pi
+                     Hypothesis _ -> HypAddr pi
                    | Context _ -> ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "it's a context")))
                else ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps"))) else
             if (-i) <= hlen then 
                let pi = hlen + i in
                match s.sequent_hyps.(pi) with
-                  Hypothesis _ -> SeqNthHyp pi
+                  Hypothesis _ -> HypAddr pi
                 | Context _ -> ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "it's a context")))
             else ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps for a negative addressing"))) 
       | _ -> ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))

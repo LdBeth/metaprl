@@ -22,6 +22,7 @@ module Term (**)
   with type term = TermType.term
   with type term_core = TermType.term_core
   with type bound_term = TermType.bound_term
+  with type esequent = TermType.esequent
 
   with type level_exp_var' = TermType.level_exp_var'
   with type level_exp' = TermType.level_exp'

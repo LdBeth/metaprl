@@ -47,7 +47,6 @@ sig
    val nth_concl_addr : term -> int -> address
    val nth_clause_addr : term -> int -> address
    val nth_clause_addrs : term -> int array -> address array
-   val replace_concl : term -> term -> term
    val replace_goal : term -> term -> term          (* One concl *)
 
    val is_xrewrite_term : term -> bool
