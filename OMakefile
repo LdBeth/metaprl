@@ -67,7 +67,7 @@ else
    if $(not $(defined CAMLLIB))
       CAMLLIB = $(dir $(CAMLLIB_DEFAULT))
       export
-   
+
    if $(not $(defined CAMLP4LIB))
       CAMLP4LIB = $(dir $(CAMLP4LIB_DEFAULT))
       export
@@ -196,30 +196,29 @@ SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 #
 PRLC = $(file lib/prlc$(EXE))
 
-if true
-    # Use prlc, not ocamlc
-    if $(equal $(OSTYPE), Win32)
-        OCAMLC = set MPLIB=$(LIB)&& $(PRLC)
-        OCAMLOPT = set MPLIB=$(LIB)&& $(PRLC) -opt
-        export
-    else
-        OCAMLC = MPLIB=$(LIB) $(PRLC)
-        OCAMLOPT = MPLIB=$(LIB) $(PRLC) -opt
-        export
+# Use prlc, not ocamlc
+if $(equal $(OSTYPE), Win32)
+    OCAMLC = set MPLIB=$(LIB)&& $(PRLC)
+    OCAMLOPT = set MPLIB=$(LIB)&& $(PRLC) -opt
+    export
+else
+    OCAMLC = MPLIB=$(LIB) $(PRLC)
+    OCAMLOPT = MPLIB=$(LIB) $(PRLC) -opt
+    export
 
-    # Add the extra dependency
-    %.cmi: $(MPINSTALL) $(PRLC)
-    %.cmo: $(MPINSTALL) $(PRLC)
-    %.cmx: $(MPINSTALL) $(PRLC)
+# Add the extra dependency
+%.cmi: $(MPINSTALL) $(PRLC)
+%.cmo: $(MPINSTALL) $(PRLC)
+%.cmx: $(MPINSTALL) $(PRLC)
 
-    # Dependency analysis uses -prl flag by default
-    OCAMLDEPFLAGS = -prl
+# Dependency analysis uses -prl flag by default
+OCAMLDEPFLAGS = -prl
 
-    # Add library to include path
-    OCAMLINCLUDES = $(OCAMLINCLUDES) -I $(CAMLP4LIB) -I $(LIB)
+# Add library to include path
+OCAMLINCLUDES = $(OCAMLINCLUDES) -I $(CAMLP4LIB) -I $(LIB)
 
-    # These directories use prlc
-    THEORIES = $(if $(equal $(THEORIES), all), $(THEORIES_ALL), $(THEORIES))
-    MP_DIRS  = $(SUPPORT_DIRS) $(dir $(addprefix theories/, $(THEORIES)))
+# These directories use prlc
+THEORIES = $(if $(equal $(THEORIES), all), $(THEORIES_ALL), $(THEORIES))
+MP_DIRS  = $(SUPPORT_DIRS) $(dir $(addprefix theories/, $(THEORIES)))
 
-    .SUBDIRS: $(MP_DIRS) editor/ml
+.SUBDIRS: $(MP_DIRS) editor/ml
