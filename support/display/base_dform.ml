@@ -177,7 +177,7 @@ let split_var v =
 let print_html_var format_term buf header_fun v =
    let h,tl = split_var v in
       format_izone buf;
-      format_string buf "<font class=\"var\">";
+      format_string buf "<span class=\"var\">";
       format_ezone buf;
       format_term buf NOParens (header_fun h);
       format_izone buf;
@@ -188,7 +188,7 @@ let print_html_var format_term buf header_fun v =
          format_izone buf;
          format_string buf "</sub>";
       end;
-      format_string buf "</font>";
+      format_string buf "</span>";
       format_ezone buf
 
 let print_tex_var format_term buf header_fun v =

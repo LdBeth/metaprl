@@ -8,16 +8,18 @@
     </head>
 
     <body onLoad="Load(110)" onResize="Resize(110)">
-    <div name="content" id="contentbox" class="content">%%BODY%%</div>
-    <div name="message" id="messagebox" class="message">%%MESSAGE%%</div>
-    <div name="rule" id="rulebox" class="rule">
+    <div id="contentbox">%%BODY%%</div>
+    <div id="messagebox">%%MESSAGE%%</div>
+    <div id="rulebox">
         <form name="commandform" method="post">
         <font style="visibility:hidden"># </font>
-        <input name="button" type="submit" value="Submit" border="0">
-        <input name="button" type="submit" value="Long" border="0">
+        <input type=submit name="submit" value="Submit" border="0">
+        <input type=button name="togglebutton" value="Long" border="0" onClick="return Toggle()">
         %%BUTTONS%%
         <p>
-        # <input name="command" type="text" size="100" border="0" value="%%RULEBOX%%">
+        <div id="inputbox">
+	# <input type="text" name="command" size="100" border="0" value="">
+        </div>
         </form>
     </div>
     </body>

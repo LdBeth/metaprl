@@ -331,10 +331,10 @@ dform text_df : internal :: text{'e} =
    'e
 
 dform info_begin_df : internal :: mode[html] :: info_begin =
-   html["<font class=\"info\">"]
+   html["<span class=\"info\">"]
 
 dform info_end_df : internal :: mode[html] :: info_end =
-   html["</font>"]
+   html["</span>"]
 
 dform info_df1 : internal :: info[text:s] =
    info_begin slot[text:s] info_end
@@ -343,10 +343,10 @@ dform info_df2 : internal :: info{'t} =
    info_begin 't info_end
 
 dform keyword_begin_df : internal :: mode[html] :: keyword_begin =
-   html["<font class=\"keyword\">"]
+   html["<span class=\"keyword\">"]
 
 dform keyword_end_df : internal :: mode[html] :: keyword_end =
-   html["</font>"]
+   html["</span>"]
 
 dform info_begin_df_all : internal :: mode [src] :: info_begin = `""
 dform info_end_df_all : internal :: mode[src] :: info_end = `""

@@ -141,18 +141,29 @@ type df_info =
 
 type info =
    { (* Display *)
-      mutable width   : int;
-      mutable df_mode : string;
-      mutable df_info : df_info;
+      mutable shell_width   : int;
+      mutable shell_df_mode : string;
+      mutable shell_df_info : df_info;
 
       (* Current module and path and proof *)
-      mutable dir     : string list;
-      mutable package : Package.package option;
-      mutable proof   : edit_object;
+      mutable shell_dir     : string list;
+      mutable shell_package : Package.package option;
+      mutable shell_proof   : edit_object;
+
+      (* Process identifier *)
+      shell_pid             : string;
 
       (* Handle to current shell *)
-      shell           : Shell_state.t
+      shell_shell           : Shell_state.t
    }
+
+let create_pid =
+   let pid = ref 0 in
+      (fun () ->
+            let id = succ !pid in
+            let name = string_of_int id in
+               pid := id;
+               name)
 
 (************************************************************************
  * GLOBAL VALUES                                                        *
@@ -200,6 +211,7 @@ struct
       show_loading "Loading Shell module%t"
 
    type t = info
+   type pid = string
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
@@ -209,7 +221,7 @@ struct
     * Get the current "prl" printing base.
     *)
    let get_dfbase info =
-      match info.package with
+      match info.shell_package with
          Some mod_info ->
             if !debug_shell then
                eprintf "Selecting display forms from %s%t" (Package.name mod_info) eflush;
@@ -221,11 +233,11 @@ struct
 
    let get_display_mode info =
       let dfbase = get_dfbase info in
-         match info.df_info with
+         match info.shell_df_info with
             DisplayJavaInfo port ->
                DisplayJava (port, dfbase)
           | DisplayOtherInfo ->
-               match info.df_mode with
+               match info.shell_df_mode with
                   "tex" ->
                      DisplayTex dfbase
                 | "html" ->
@@ -235,15 +247,17 @@ struct
 
    let get_db info =
       let dfbase = get_dfbase info in
-         get_mode_base dfbase info.df_mode
+         get_mode_base dfbase info.shell_df_mode
 
    let set_dfmode info mode =
-      info.df_mode <- mode
+      info.shell_df_mode <- mode
 
    (*
     * Create a new sub-shell.
     *)
-   let create_aux port shell =
+   let global =
+      let port = None in
+      let shell = ShellP4.get_current_state () in
       let dfmode = "prl" in
       let display_mode = DisplayText (default_mode_base, dfmode) in
       let proof = Shell_root.create packages display_mode in
@@ -254,21 +268,20 @@ struct
           | None ->
                DisplayOtherInfo
       in
-         { width = 80;
-           df_mode = dfmode;
-           dir = [];
-           package = None;
-           df_info = port;
-           proof = proof;
-           shell = shell
+         { shell_width = 80;
+           shell_df_mode = dfmode;
+           shell_dir = [];
+           shell_package = None;
+           shell_df_info = port;
+           shell_proof = proof;
+           shell_shell = shell;
+           shell_pid = create_pid ()
          }
 
    (*
     * Global values.
     *)
    let global_lock = Mutex.create ()
-
-   let global = create_aux None (ShellP4.get_current_state ())
 
    let global_shells = ref [global]
 
@@ -297,7 +310,7 @@ struct
     * Get the current package.
     *)
    let get_current_package info =
-      match info.package with
+      match info.shell_package with
          Some pack ->
             pack
        | None ->
@@ -307,7 +320,7 @@ struct
     * Parsing arguments come from the shell.
     *)
    let get_parse_arg info =
-      let shell = info.shell in
+      let shell = info.shell_shell in
       let parse = ShellP4.parse_string shell in
       let eval = ShellP4.eval_tactic shell in
          parse, eval
@@ -346,7 +359,7 @@ struct
     *)
    let parse_path info name =
       let home =
-         match info.dir with
+         match info.shell_dir with
             [] ->
                []
           | modname :: _ ->
@@ -364,35 +377,34 @@ struct
                in aux head ns
           | n::ns -> aux (dir @ [n]) ns
       in
-         aux (if String.length name <> 0 & name.[0] = '/' then [] else info.dir)
+         aux (if String.length name <> 0 & name.[0] = '/' then [] else info.shell_dir)
              (Lm_string_util.split "/" name)
 
    (*
     * Update the current item being edited.
     *)
    let set_packages info =
-      info.proof.edit_addr [];
-      info.proof <- Shell_root.view packages (get_display_mode info)
+      info.shell_proof.edit_addr [];
+      info.shell_proof <- Shell_root.view packages (get_display_mode info)
 
    let set_package info modname =
       let pack = Package.get packages modname in
-         info.proof.edit_addr [];
-         info.proof <- Shell_package.view pack (get_parse_arg info) (get_display_mode info)
+         info.shell_proof.edit_addr [];
+         info.shell_proof <- Shell_package.view pack (get_parse_arg info) (get_display_mode info)
 
    let get_item info modname name =
       let parse_arg = get_parse_arg info in
       let display_mode = get_display_mode info in
       let pack =
-         match info.package with
+         match info.shell_package with
             Some pack -> pack
           | None -> invalid_arg "Shell.get_item: no package"
       in
       let item =
-         try
-            Package.find pack parse_arg name
-         with Not_found ->
-            eprintf "Item '/%s/%s' not found%t" modname name eflush;
-            raise Not_found
+         try Package.find pack parse_arg name with
+            Not_found ->
+               eprintf "Item '/%s/%s' not found%t" modname name eflush;
+               raise Not_found
       in
          match item with
             Rewrite rw ->
@@ -482,7 +494,7 @@ struct
     * View an item in a package.
     *)
    let view_item info modname name options =
-      display_proof info info.proof options
+      display_proof info info.shell_proof options
 
    (*
     * General purpose displayer.
@@ -504,38 +516,24 @@ struct
     * Window width.
     *)
    let set_window_width info i =
-      info.width <- max !Mp_term.min_screen_width i
+      info.shell_width <- max !Mp_term.min_screen_width i
 
    (************************************************************************
     * PROCESS CONTROL                                                      *
     ************************************************************************)
 
    (*
-    * Lm_format the process name.
-    * We include the pid, and the current directory.
-    *)
-   let format_process_name shell =
-      let port =
-         match shell.df_info with
-            DisplayJavaInfo port ->
-               Java_mux_channel.id_of_session port
-          | DisplayOtherInfo ->
-               0
-      in
-         sprintf "[%d] %s" port (string_of_path shell.dir)
-
-   (*
     * Copy the current shell.
     *)
    let fork =
       let fork shell =
-         let { width = old_width;
-               df_mode = old_mode;
-               dir = old_dir;
-               package = old_package;
-               df_info = old_port;
-               proof = old_proof;
-               shell = old_shell
+         let { shell_width = old_width;
+               shell_df_mode = old_mode;
+               shell_dir = old_dir;
+               shell_package = old_package;
+               shell_df_info = old_port;
+               shell_proof = old_proof;
+               shell_shell = old_shell
              } = shell
          in
          let new_port =
@@ -547,20 +545,22 @@ struct
          in
          let new_proof = old_proof.edit_copy () in
          let new_shell = Shell_state.fork old_shell in
+         let new_pid = create_pid () in
          let new_shell =
-            { width = old_width;
-              df_mode = old_mode;
-              dir = old_dir;
-              package = old_package;
-              df_info = new_port;
-              proof = new_proof;
-              shell = new_shell
+            { shell_width = old_width;
+              shell_df_mode = old_mode;
+              shell_dir = old_dir;
+              shell_package = old_package;
+              shell_df_info = new_port;
+              shell_proof = new_proof;
+              shell_shell = new_shell;
+              shell_pid = new_pid
             }
          in
             global_shells := new_shell :: !global_shells;
             current_shell := new_shell;
-            ShellP4.set_current_state new_shell.shell;
-            format_process_name new_shell
+            ShellP4.set_current_state new_shell.shell_shell;
+            new_shell
       in
          (fun shell -> synchronize shell fork shell)
 
@@ -568,7 +568,7 @@ struct
     * Show current process id.
     *)
    let pid shell =
-      format_process_name shell
+      shell.shell_pid
 
    (*
     * Show all process names.
@@ -577,7 +577,7 @@ struct
       let jobs shell =
          let project shell =
             let pid =
-               match shell.df_info with
+               match shell.shell_df_info with
                   DisplayJavaInfo session ->
                      Java_mux_channel.id_of_session session
                 | DisplayOtherInfo ->
@@ -590,7 +590,7 @@ struct
          in
          let shells = List.map project !global_shells in
          let shells = Sort.list compare shells in
-            String.concat "\n" (List.map (fun (_, shell) -> format_process_name shell) shells)
+            String.concat "\n" (List.map (fun (_, shell) -> shell.shell_pid) shells)
       in
          synchronize shell jobs shell
 
@@ -602,14 +602,10 @@ struct
          [] ->
             raise Not_found
        | shell :: tl ->
-            match shell.df_info with
-               DisplayJavaInfo session ->
-                  if id = Java_mux_channel.id_of_session session then
-                     shell
-                  else
-                     search tl
-             | DisplayOtherInfo ->
-                  search tl
+            if shell.shell_pid = id then
+               shell
+            else
+               search tl
       in
          search !global_shells
 
@@ -617,8 +613,8 @@ struct
       let fg id =
          let shell = shell_of_id id in
             current_shell := shell;
-            ShellP4.set_current_state shell.shell;
-            format_process_name shell
+            ShellP4.set_current_state shell.shell_shell;
+            shell.shell_pid
       in
          synchronize shell fg
 
@@ -633,42 +629,18 @@ struct
           | None ->
                DisplayOtherInfo
       in
-         global.df_info <- port;
+         global.shell_df_info <- port;
          try
             print_exn global (fun info -> view info [] ".") global
          with
             exn ->
                ()
 
-   (*
-    * Evaluate an expression in some shell.
-    *)
-   let eval shell text =
-      try
-         print_exn shell (fun text ->
-               begin
-                  match shell.df_info with
-                     DisplayJavaInfo port ->
-                        eprintf "Shell [%d]: %s%t" (Java_mux_channel.id_of_session port) text eflush
-                   | DisplayOtherInfo ->
-                        ()
-               end;
-               ShellP4.eval_top shell.shell text) text
-      with
-         exn ->
-            ()
-
    let flush shell =
       view shell [] "."
 
    let pwd shell =
-      string_of_path shell.dir
-
-   (*
-    * Evaluate an expression in some shell (for the Java interface).
-    *)
-   let eval_id id text =
-      eval (synchronize !current_shell shell_of_id id) text
+      string_of_path shell.shell_dir
 
   (************************************************************************
     * MODULES                                                              *
@@ -693,7 +665,7 @@ struct
     * Save the current package.
     *)
    let save info =
-      match info.package with
+      match info.shell_package with
          Some pack ->
             Package.save pack
        | None ->
@@ -701,7 +673,7 @@ struct
 
    let export info =
       touch info;
-      match info.package with
+      match info.shell_package with
          Some pack ->
             Package.export (get_parse_arg info) pack
        | None ->
@@ -816,62 +788,64 @@ struct
    let set_goal info t =
       let set t =
          touch info;
-         info.proof.edit_set_goal t;
-         display_proof info info.proof []
+         info.shell_proof.edit_set_goal t;
+         display_proof info info.shell_proof []
       in
          print_exn info set t
 
    let set_redex info t =
       let set t =
          touch info;
-         info.proof.edit_set_redex t;
-         display_proof info info.proof []
+         info.shell_proof.edit_set_redex t;
+         display_proof info info.shell_proof []
       in
          print_exn info set t
 
    let set_contractum info t =
       let set t =
          touch info;
-         info.proof.edit_set_contractum t;
-         display_proof info info.proof []
+         info.shell_proof.edit_set_contractum t;
+         display_proof info info.shell_proof []
       in
          print_exn info set t
 
    let set_assumptions info tl =
       let set t =
          touch info;
-         info.proof.edit_set_assumptions tl;
-         display_proof info info.proof []
+         info.shell_proof.edit_set_assumptions tl;
+         display_proof info info.shell_proof []
       in
          print_exn info set tl
 
    let set_params info pl =
       let set t =
          touch info;
-         info.proof.edit_set_params pl;
-         display_proof info info.proof []
+         info.shell_proof.edit_set_params pl;
+         display_proof info info.shell_proof []
       in
          print_exn info set pl
 
    let check info =
       let check = function
-         { package = Some pack; dir = mod_name :: name :: _ } ->
-            begin try
-               let deps = Refine.compute_dependencies (Package.refiner pack) (make_opname [name;mod_name]) in
-                  printf "The proof of /%s/%s depends on the following definitions and axioms:\n" mod_name name;
-                  let print_dep (dep, opname) =
-                     let kind =
-                        match dep with
-                           Refine_sig.DepDefinition -> "Definition"
-                         | Refine_sig.DepRule -> "Rule"
-                         | Refine_sig.DepRewrite -> "Rewrite"
-                         | Refine_sig.DepCondRewrite -> "Conditional Rewrite"
+         { shell_package = Some pack; shell_dir = mod_name :: name :: _ } ->
+            begin
+               try
+                  let deps = Refine.compute_dependencies (Package.refiner pack) (make_opname [name;mod_name]) in
+                     printf "The proof of /%s/%s depends on the following definitions and axioms:\n" mod_name name;
+                     let print_dep (dep, opname) =
+                        let kind =
+                           match dep with
+                              Refine_sig.DepDefinition -> "Definition"
+                            | Refine_sig.DepRule -> "Rule"
+                            | Refine_sig.DepRewrite -> "Rewrite"
+                            | Refine_sig.DepCondRewrite -> "Conditional Rewrite"
+                        in
+                           printf "\t%s %s\n" kind (mk_dep_name opname)
                      in
-                        printf "\t%s %s\n" kind (mk_dep_name opname)
-                  in
-                     List.iter print_dep deps
-            with Refine_sig.Incomplete opname ->
-               eprintf "Error: Proof of /%s/%s depends on incomplete proof of %s!%t" mod_name name (mk_dep_name opname) eflush
+                        List.iter print_dep deps
+               with
+                  Refine_sig.Incomplete opname ->
+                     eprintf "Error: Proof of /%s/%s depends on incomplete proof of %s!%t" mod_name name (mk_dep_name opname) eflush
             end
        | _ ->
             raise (Failure "check - must be inside a proof")
@@ -882,10 +856,10 @@ struct
       let set info =
          let start = Unix.times () in
          let start_time = Unix.gettimeofday () in
-         let () = info.proof.edit_interpret ProofExpand in
+         let () = info.shell_proof.edit_interpret ProofExpand in
          let finish = Unix.times () in
          let finish_time = Unix.gettimeofday () in
-            display_proof info info.proof [];
+            display_proof info info.shell_proof [];
             eprintf "User time %f; System time %f; Real time %f%t" (**)
                ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
                 -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
@@ -898,15 +872,15 @@ struct
 
    let refine info tac =
       let set info =
-         let str, ast = Shell_state.get_tactic info.shell in
+         let str, ast = Shell_state.get_tactic info.shell_shell in
             touch info;
             if !debug_refine then
                eprintf "Starting refinement%t" eflush;
-            info.proof.edit_refine str ast tac;
+            info.shell_proof.edit_refine str ast tac;
             if !debug_refine then
                eprintf "Displaying proof%t" eflush;
-            if Shell_state.is_interactive info.shell then
-               display_proof info info.proof [];
+            if Shell_state.is_interactive info.shell_shell then
+               display_proof info info.shell_proof [];
             if !debug_refine then
                eprintf "Proof displayed%t" eflush
       in
@@ -918,31 +892,31 @@ struct
    let goal info =
       let get info =
          touch info;
-         (info.proof.edit_info ()).edit_goal
+         (info.shell_proof.edit_info ()).edit_goal
       in
          print_exn info get info
 
    let undo info =
       let set info =
          touch info;
-         info.proof.edit_undo ();
-         display_proof info info.proof []
+         info.shell_proof.edit_undo ();
+         display_proof info info.shell_proof []
       in
          print_exn info set info
 
    let redo info =
       let set info =
          touch info;
-         info.proof.edit_redo ();
-         display_proof info info.proof []
+         info.shell_proof.edit_redo ();
+         display_proof info info.shell_proof []
       in
          print_exn info set info
 
    let interpret info command =
       let set info =
          touch info;
-         info.proof.edit_interpret command;
-         display_proof info info.proof []
+         info.shell_proof.edit_interpret command;
+         display_proof info info.shell_proof []
       in
          print_exn info set info
 
@@ -953,7 +927,7 @@ struct
    let sync info =
       let sync info =
          let parse_arg = get_parse_arg info in
-         match info.package with
+         match info.shell_package with
             Some pkg ->
                let ped_of_proof = function
                   Filter_summary_type.Primitive _
@@ -980,20 +954,20 @@ struct
          print_exn info sync info
 
    let rec apply_all info f time clean_res =
-      let dir = info.dir in
+      let dir = info.shell_dir in
       let apply_it item mod_name name =
          (*
           * Here we indeed want to ignore absolutely any kind of error.
           * Whatever went wrong, we just want to skip the bad item and continue to the next one.
           *)
-         (try Shell_state.set_so_var_context info.shell (Some (item.edit_get_terms ())) with _ -> ());
+         (try Shell_state.set_so_var_context info.shell_shell (Some (item.edit_get_terms ())) with _ -> ());
          (try f item (get_db info) with _ -> ());
          if clean_res then Mp_resource.clear_results (mod_name, name)
       in
       let rec apply_all_exn time =
          let parse_arg = get_parse_arg info in
          let display_mode = get_display_mode info in
-         match info.package with
+         match info.shell_package with
             Some pack ->
                touch info;
                let mod_name = Package.name pack in
@@ -1050,12 +1024,12 @@ struct
     * Change directory.
     *)
    and chdir info need_shell verbose path =
-      let shell = info.shell in
+      let shell = info.shell_shell in
       match path with
          [] ->
             (* go to toplevel *)
-            info.dir <- [];
-            info.package <- None;
+            info.shell_dir <- [];
+            info.shell_package <- None;
             set_packages info;
             Shell_state.set_dfbase shell None;
             Shell_state.set_mk_opname shell None;
@@ -1064,7 +1038,7 @@ struct
             Shell_state.set_module shell "shell"
        | (modname :: item) as dir ->
             (* change module only if in another (or at top) *)
-            if info.dir = [] || List.hd info.dir <> modname then
+            if info.shell_dir = [] || List.hd info.shell_dir <> modname then
                begin
                   if modname <> String.uncapitalize modname then
                      raise (Failure "Shell.chdir: module name should not be capitalized");
@@ -1074,7 +1048,7 @@ struct
                   let pkg = Package.load packages (get_parse_arg info) modname in
                      if need_shell && not (shell_package pkg) then
                         failwith ("Module " ^ modname ^ " does not contain shell commands");
-                     info.package <- Some pkg;
+                     info.shell_package <- Some pkg;
                      Shell_state.set_dfbase shell (Some (get_db info));
                      Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
                      Shell_state.set_infixes shell (Some (Package.get_infixes pkg));
@@ -1086,60 +1060,60 @@ struct
             if item = [] then
                begin
                   (* top of module *)
-                  info.dir <- dir;
+                  info.shell_dir <- dir;
                   Shell_state.set_so_var_context shell None;
                   set_package info modname
                end
             else
                begin
                   (* select an item (if not there already), then go down the proof. *)
-                  begin match info.dir with
+                  begin match info.shell_dir with
                      old_modname::old_item::_ when old_modname = modname && old_item = List.hd item ->
-                        info.proof.edit_addr (List.map int_of_string (List.tl item))
+                        info.shell_proof.edit_addr (List.map int_of_string (List.tl item))
                    | _ ->
                         try
                            (* Leave the old proof at the root *)
-                           info.proof.edit_addr [];
+                           info.shell_proof.edit_addr [];
                            let proof = get_item info modname (List.hd item) in
                               Shell_state.set_so_var_context shell (Some (proof.edit_get_terms ()));
                               proof.edit_addr (List.map int_of_string (List.tl item));
-                              info.proof <- proof
+                              info.shell_proof <- proof
                         with exn -> begin
                            (* Bring things back to where they were *)
-                           let dir = info.dir in
-                              if (dir <> []) && (List.hd dir = modname) then info.dir <- [modname] else info.dir <- [];
+                           let dir = info.shell_dir in
+                              if (dir <> []) && (List.hd dir = modname) then info.shell_dir <- [modname] else info.shell_dir <- [];
                               chdir info false verbose dir;
                               raise exn
                         end;
                   end;
-                  info.dir <- dir
+                  info.shell_dir <- dir
                end
 
    and cd info name =
       print_exn info (chdir info true true) (parse_path info name);
-      string_of_path info.dir
+      string_of_path info.shell_dir
 
    (*
     * TeX functions.
     *)
    and print_theory info name =
       let f () =
-         let mode = info.df_mode in
-         let dir = info.dir in
-            info.df_mode <- "tex";
+         let mode = info.shell_df_mode in
+         let dir = info.shell_dir in
+            info.shell_df_mode <- "tex";
             chdir info false true [name];
             expand_all info;
             view info [] ".";
-            info.df_mode <- mode;
+            info.shell_df_mode <- mode;
             chdir info false false dir
       in
          print_exn info f ()
 
    let extract info path () =
-      let dir = info.dir in
+      let dir = info.shell_dir in
       try
          chdir info false false path;
-         let res = info.proof.edit_get_extract () in
+         let res = info.shell_proof.edit_get_extract () in
             chdir info false false dir;
             res
       with
@@ -1149,7 +1123,7 @@ struct
 
    let term_of_extract info terms =
       match info with
-         { package = Some pack; dir = mod_name :: name :: _ } ->
+         { shell_package = Some pack; shell_dir = mod_name :: name :: _ } ->
             Refine.extract_term (Package.refiner pack) (make_opname [name;mod_name]) terms
        | _ ->
             raise (Failure "Shell.term_of_extract only works inside a proof")
@@ -1360,7 +1334,7 @@ struct
                   collect t
       in
       let opens = collect (info_items (edit_info info mname)) in
-      ignore (print_exn info (chdir info false false) [mname; name]; ShellP4.eval_opens info.shell opens)
+      ignore (print_exn info (chdir info false false) [mname; name]; ShellP4.eval_opens info.shell_shell opens)
 
    let edit_create_thm info mname name =
       ignore (edit_info info mname);
@@ -1414,13 +1388,13 @@ struct
     *)
    let edit_addr info addr =
       let set addr =
-         info.proof.edit_down addr
+         info.shell_proof.edit_down addr
       in
          print_exn info set addr
 
    let edit_node info addr =
       let edit info =
-         let proof = info.proof in
+         let proof = info.shell_proof in
             proof.edit_addr addr;
             let { edit_goal = goal;
                   edit_expr = tac;
@@ -1437,9 +1411,9 @@ struct
 
    let edit_refine info addr str =
       let edit info =
-         let proof = info.proof in
-         let expr = ShellP4.parse_string info.shell str in
-         let tac = ShellP4.eval_tactic info.shell expr in
+         let proof = info.shell_proof in
+         let expr = ShellP4.parse_string info.shell_shell str in
+         let tac = ShellP4.eval_tactic info.shell_shell expr in
             proof.edit_addr addr;
             proof.edit_refine str expr tac;
             let { edit_goal = goal;
@@ -1455,7 +1429,51 @@ struct
          print_exn info edit info
 
    let edit_undo info =
-      info.proof.edit_undo ()
+      info.shell_proof.edit_undo ()
+
+   (************************************************************************
+    * Toplevel functions.
+    *)
+
+   (*
+    * Evaluate an expression in some shell.
+    *)
+   let eval_top shell text =
+      try
+         print_exn shell (fun text ->
+               begin
+                  match shell.shell_df_info with
+                     DisplayJavaInfo port ->
+                        eprintf "Shell [%d]: %s%t" (Java_mux_channel.id_of_session port) text eflush
+                   | DisplayOtherInfo ->
+                        ()
+               end;
+               ShellP4.eval_top shell.shell_shell text) text
+      with
+         exn ->
+            ()
+
+   let chdir_top shell text =
+      try
+         print_exn shell (fun text ->
+               begin
+                  match shell.shell_df_info with
+                     DisplayJavaInfo port ->
+                        eprintf "Shell [%d]: %s%t" (Java_mux_channel.id_of_session port) text eflush
+                   | DisplayOtherInfo ->
+                        ()
+               end;
+               ignore (cd shell text);
+               true) text
+      with
+         exn ->
+            false
+
+   (*
+    * Evaluate an expression in some shell (for the Java interface).
+    *)
+   let find_shell id =
+      synchronize !current_shell shell_of_id id
 
    (************************************************************************
     * INITIALIZATION                                                       *
@@ -1470,8 +1488,8 @@ struct
    let main () =
       refresh_packages ();
       let info = global in
-         Shell_state.set_module info.shell "shell";
-         ShellP4.main info.shell
+         Shell_state.set_module info.shell_shell "shell";
+         ShellP4.main info.shell_shell
 
    let wrap cmd arg = cmd !current_shell arg
    let wrap_unit cmd () = cmd !current_shell
@@ -1480,7 +1498,7 @@ struct
       if commands.cd != uninitialized then
          raise (Invalid_argument "The Shell module was initialized twice");
       commands.cd <- wrap cd;
-      commands.pwd <- (fun () -> !current_shell.dir);
+      commands.pwd <- (fun () -> !current_shell.shell_dir);
       commands.set_dfmode <- wrap set_dfmode;
       commands.create_pkg <- wrap create_pkg;
       commands.save <- wrap_unit save;

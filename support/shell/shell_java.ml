@@ -65,7 +65,11 @@ struct
                   command :: _ ->
                      let command = Http_server.decode_hex command in
                      let port = Java_mux_channel.id_of_session port in
-                        Shell.eval_id port command
+                        raise (Invalid_argument "Not implemented: ShellJava.serve_client")
+(*
+                     let shell = Shell.find_shell port in
+                        ignore (Shell.eval_top shell command)
+*)
                 | [] ->
                      ()
          done;

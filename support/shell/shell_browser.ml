@@ -65,14 +65,44 @@ struct
     * Keep track of the state.
     *)
    type state =
-      { state_shell     : Shell.t;
-        state_table     : BrowserTable.t;
-        state_long      : bool;
+      { state_table     : BrowserTable.t;
         state_mp_dir    : string;
         state_password  : string;
         state_challenge : string;
         state_response  : string
       }
+
+   (*
+    * Types of URIs.
+    *)
+   type uri =
+      SessionURI of Shell.t * string
+    | InputURI of string
+    | LoginURI of string
+    | UnknownURI of string
+
+   (*
+    * Decode the URI.
+    * This first part should be a session #.
+    *)
+   let decode_uri uri =
+      let uri = decode_uri uri in
+         match uri with
+            "session" :: id :: rest ->
+               (try
+                   let shell = Shell.find_shell id in
+                   let dirname = Lm_string_util.prepend "/" rest in
+                      SessionURI (shell, dirname)
+                with
+                   Not_found ->
+                      eprintf "Bad session: %s@." id;
+                      UnknownURI (Lm_string_util.prepend "/" rest))
+          | "inputs" :: rest ->
+               InputURI (Lm_string_util.prepend "/" rest)
+          | ["login"; key] ->
+               LoginURI key
+          | _ ->
+               UnknownURI (Lm_string_util.prepend "/" uri)
 
    (*
     * Make up a challenge.
@@ -190,13 +220,7 @@ struct
       let table = add_title_location state "MetaPRL display" location in
       let table = BrowserTable.add_fun table body_sym (Browser_display_term.format_main width) in
       let table = BrowserTable.add_fun table message_sym (Browser_display_term.format_message width) in
-      let filename =
-         if state.state_long then
-            "pagelong.html"
-         else
-            "pageshort.html"
-      in
-         print_translated_file_to_http out table filename
+         print_translated_file_to_http out table "page.html"
 
    (*
     * Print the login page.
@@ -229,25 +253,35 @@ struct
          state
 
    (*
+    * Something failed.  Ask the browser to start over.
+    *)
+   let print_redisplay_page server state shell outx =
+      let { http_host     = host;
+            http_port     = port
+          } = http_info server
+      in
+      let uri = sprintf "http://%s:%d/session/%s%s" host port (Shell.pid shell) (Shell.pwd shell) in
+         print_redirect_page outx SeeOtherCode uri;
+         state
+
+   (*
     * Evaluate a command.
     * Send it to the shell, and get the result.
     *)
-   let eval state outx command =
+   let eval state shell outx command =
       let command = command ^ ";;" in
       let state = add_rulebox state "" in
          Browser_display_term.add_prompt ("# " ^ command);
-         Shell.eval state.state_shell command;
+         Shell.eval_top shell command;
          state
 
-   let chdir state dir =
+   let chdir state shell dir =
       if !debug_http then
          eprintf "Changing directory to %s@." dir;
-      try ignore (Shell.cd state.state_shell dir); true with
-         Not_found | Failure _ ->
-            false
+      Shell.chdir_top shell dir
 
-   let flush state =
-      Shell.flush state.state_shell
+   let flush state shell =
+      Shell.flush shell
 
    (*
     * Handle a get command by changing directories as specified.
@@ -255,7 +289,7 @@ struct
     * This is untrusted, so each case should check if access is
     * granted.
     *)
-   let get state outx uri header =
+   let get server state outx uri header =
       if !debug_http then
          eprintf "Get: %s@." uri;
 
@@ -263,22 +297,36 @@ struct
        * Catch references to direct files.
        *)
       match decode_uri uri with
-         "inputs" :: uri ->
-            let filename = String.concat "/" uri in
-               print_raw_file_to_http outx filename;
-               state
-       | ["login"; key] when key = state.state_response ->
-            print_access_granted_page outx state
-       | uri ->
+         InputURI filename ->
+            print_raw_file_to_http outx filename;
+            state
+       | LoginURI key ->
+            if key = state.state_response then
+               print_access_granted_page outx state
+            else
+               print_login_page outx state
+       | SessionURI (shell, dirname) ->
             if is_valid_response state header then
-               let dirname = String.concat "/" ("" :: uri) in
                let width = get_window_width header in
-                  if chdir state dirname then begin
-                     flush state;
-                     print_page outx width state dirname
-                  end else
-                     print_error_page outx NotFoundCode;
-                  state
+                  if chdir state shell dirname then
+                     begin
+                        flush state shell;
+                        print_page outx width state dirname;
+                        state
+                     end
+                  else
+                     (* Directory changed failed *)
+                     print_redisplay_page server state shell outx
+            else
+               print_login_page outx state
+       | UnknownURI dirname ->
+            (*
+             * Create a new shell, and change to that shell.
+             *)
+            if is_valid_response state header then
+               let shell = Shell.get_current_shell () in
+               let shell = Shell.fork shell in
+                  print_redisplay_page server state shell outx
             else
                print_login_page outx state
 
@@ -292,8 +340,6 @@ struct
             List.iter (fun (name, text) ->
                   eprintf "Post: %s, \"%s\"@." name (String.escaped text)) body
       in
-      let uri = decode_uri uri in
-      let dirname = String.concat "/" uri in
 
       (* Precedence *)
       let command =
@@ -311,43 +357,35 @@ struct
             Not_found ->
                None
       in
-      let redisplay state =
-         let { http_host     = host;
-               http_port     = port
-             } = http_info server
-         in
-         let uri = sprintf "http://%s:%d%s" host port (Shell.pwd state.state_shell) in
-            print_redirect_page outx SeeOtherCode uri;
-            state
-      in
-         match button with
-            Some ("Long" as s)
-          | Some ("Short" as s) ->
-               let state = { state with state_long = s = "Long" } in
-               let state =
-                  match command with
-                     Some command ->
-                        add_rulebox state command
-                   | None ->
-                        state
-               in
-                  redisplay state
-          | Some "Submit"
-          | None ->
-               (match macro, command with
-                   Some command, _
-                 | None, Some command ->
-                      if !debug_http then
-                         eprintf "Command: \"%s\"@." (String.escaped command);
-                      let state = eval state outx command in
-                         redisplay state
-                 | None, None ->
-                      print_error_page outx BadRequestCode;
-                      eprintf "Shell_simple_http: null command@.";
-                      state)
-          | Some button ->
-               Browser_display_term.add_prompt (sprintf "Unknown button %s" button);
-               redisplay state
+         match decode_uri uri with
+            InputURI _
+          | LoginURI _
+          | UnknownURI _ ->
+               print_error_page outx BadRequestCode;
+               eprintf "Shell_simple_http: bad POST command@.";
+               state
+          | SessionURI (shell, dirname) ->
+               if chdir state shell dirname then
+                  match button with
+                     None
+                   | Some "Submit" ->
+                        (match macro, command with
+                            Some command, _
+                          | None, Some command ->
+                               if !debug_http then
+                                  eprintf "Command: \"%s\"@." (String.escaped command);
+                               let state = eval state shell outx command in
+                                  print_redisplay_page server state shell outx
+                          | None, None ->
+                               print_error_page outx BadRequestCode;
+                               eprintf "Shell_simple_http: null command@.";
+                               state)
+                   | Some button ->
+                        Browser_display_term.add_prompt (sprintf "Unknown button %s" button);
+                        print_redisplay_page server state shell outx
+                  else
+                     (* Directory change failed *)
+                     print_redisplay_page server state shell outx
 
    (*
     * Handle a connection.
@@ -357,7 +395,7 @@ struct
       (* Process the command *)
       match args with
          "get" :: uri :: _ ->
-            get state outx uri header
+            get server state outx uri header
        | "post" :: uri :: _ ->
             if is_valid_response state header then
                post server state outx inx uri header body
@@ -484,10 +522,10 @@ struct
                close_out out;
 
                eprintf "@[<v 3>*** Note ***@ \
-This is the first time you are using the browser service.@ \
-A new password has been created for you in the file %s@ \
-You will need this password to connect to MetaPRL from your browser.@ \
-You may change this password to something you can remember if you like.@ @]@." passwd;
+*** This is the first time you are using the browser service.@ \
+*** A new password has been created for you in the file %s@ \
+*** You will need this password to connect to MetaPRL from your browser.@ \
+*** You may change this password to something you can remember if you like.@ @]@." passwd;
 
                password
       in
@@ -501,9 +539,7 @@ You may change this password to something you can remember if you like.@ @]@." p
          let mp_dir, password = init_password () in
          let shell = Shell.get_current_shell () in
          let state =
-            { state_shell     = shell;
-              state_table     = BrowserTable.empty;
-              state_long      = false;
+            { state_table     = BrowserTable.empty;
               state_mp_dir    = mp_dir;
               state_password  = password;
               state_challenge = "unknown";

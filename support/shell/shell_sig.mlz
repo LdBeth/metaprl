@@ -172,18 +172,24 @@ sig
     * Job control.
     *)
    val get_current_shell : unit -> t
-   val fork : t -> string
+   val fork : t -> t
    val pid : t -> string
    val jobs : t -> string
-   val fg : t -> int -> string
+   val fg : t -> string -> string
 
    (*
     * This is the interface to the HTTP shell.
-    * Not available from the toploop.
     *)
-   val eval : t -> string -> unit
-   val eval_id : int -> string -> unit
+   val find_shell : string -> t
+   val eval_top : t -> string -> unit
+
+   (* Returns false iff the directory command failed *)
+   val chdir_top : t -> string -> bool
+
+   (* Make sure all buffers are flushed *)
    val flush : t -> unit
+
+   (* BUG JYH: perhaps we should abandon the Java interface *)
    val set_port : Java_mux_channel.session option -> unit
 
    (*

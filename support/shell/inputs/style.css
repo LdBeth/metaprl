@@ -1,30 +1,50 @@
+/*
+ * General properties of everything in the <body>
+ */
 BODY {
     background-color: white;
     color: black;
     font-family: Sans-Serif;
     font-size: 10pt
 }
+
+/*
+ * Bold-face.
+ */
 B {
     font-weight: bold
 }
-FONT.info {
+
+/*
+ * General text classes for MetaPRL.
+ *    info: general informative text, used in root display
+ *    keyword: program keywords
+ *    var: first and second-order variables
+ *    stdout: text displayed to stdout
+ *    stderr: text displayed to stderr
+ */
+SPAN.info {
     color: #115599;
     font-weight: bold
 }
-FONT.keyword {
+SPAN.keyword {
     color: #773333;
     font-weight: bold
 }
-FONT.var {
+SPAN.var {
     color: #115599;
     font-style: italic
 }
-FONT.stdout {
+SPAN.stdout {
     color: #002299
 }
-FONT.stderr {
+SPAN.stderr {
     color: #992222
 }
+
+/*
+ * Subscripts.
+ */
 SUB {
     color: #888888;
     font-size: smaller;
@@ -32,6 +52,9 @@ SUB {
     top: -3pt;
 }
 
+/*
+ * Anchors, or hypertext links.
+ */
 A {
     font-weight: bold
 }
@@ -46,16 +69,10 @@ A:visited {
 A:hover {
     background-color: #e0e0f0
 }
-DIV.content {
-    background-color: white
-}
-DIV.message {
-    background-color: #f8f8ff
-}
-DIV.rule {
-    background-color: white
-}
 
+/*
+ * Properties of the built-in panels.
+ */
 #contentbox {
     position: absolute;
     top: 0;
@@ -67,6 +84,7 @@ DIV.rule {
     padding: none;
     overflow: auto
 }
+
 #messagebox {
     position: absolute;
     top: 600;
@@ -76,8 +94,10 @@ DIV.rule {
     display: block;
     border: none;
     padding: none;
-    overflow: auto
+    overflow: auto;
+    background-color: #f8f8ff
 }
+
 #rulebox {
     position: absolute;
     top: 700;
@@ -88,4 +108,11 @@ DIV.rule {
     border: none;
     padding: none;
     overflow: auto
+}
+
+#inputbox {
+    position: static;
+    display: block;
+    border: none;
+    padding: none
 }

@@ -86,13 +86,13 @@ let add_prompt str =
  * Capture output channels.
  *)
 let add_channel color =
-   let font = Printf.sprintf "<font class=\"%s\">" color in
+   let font = Printf.sprintf "<span class=\"%s\">" color in
       (fun buf ->
             if not (Lm_rformat.buffer_is_empty buf) then
                let buffer = new_buffer () in
                   format_invis buffer font;
                   format_buffer buffer buf;
-                  format_invis buffer "</font>";
+                  format_invis buffer "</span>";
                   LineBuffer.add_buffer message buffer)
 
 let divert () =

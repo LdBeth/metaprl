@@ -70,6 +70,38 @@ function SetWindowCookie() {
 }
 
 /*
+ * Toggling between the long and short view of the input box.
+ */
+var input_is_short = true;
+
+function Long() {
+    var inputbox = document.getElementById('inputbox');
+    var text = document.commandform.command.value;
+    document.commandform.togglebutton.value = 'Short';
+    inputbox.innerHTML = '# <textarea name="command" rows="4" cols="100" border="0">' + text + '</textarea>';
+    ResizeBoxes(150);
+    input_is_short = false;
+}
+
+function Short() {
+    var inputbox = document.getElementById('inputbox');
+    var text = document.commandform.command.value;
+    document.commandform.togglebutton.value = 'Long';
+    inputbox.innerHTML = '# <input type="text" name="command" size="100" border="0" value="' + text + '">';
+    ResizeBoxes(100);
+    input_is_short = true;
+}
+
+function Toggle() {
+    if(input_is_short)
+        Long();
+    else
+        Short();
+    document.commandform.command.focus();
+    return false;
+}
+
+/*
  * Resize event.
  */
 function Resize(rulebox_height) {
@@ -79,9 +111,9 @@ function Resize(rulebox_height) {
 }
 
 function Load(rulebox_height) {
+    input_is_short = true;
     Resize(rulebox_height);
     document.commandform.command.focus();
     document.getElementById('messagebox').scrollTop += 10000;
 }
-
 
