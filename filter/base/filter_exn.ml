@@ -124,13 +124,26 @@ let rec format_exn db buf = function
       format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
       format_newline buf;
       format_string buf "! and possibly export the data to a different format."
- | Stdpp.Exc_located ((start, finish), exn) ->
+ | Stdpp.Exc_located (loc, exn) ->
       format_pushm buf 3;
-      format_string buf "Chars ";
-      format_int buf start;
-      format_string buf "-";
-      format_int buf finish;
+      if !Pcaml.input_file <> "-" then begin
+         let (line, bp, ep) = Stdpp.line_of_loc !Pcaml.input_file loc in
+            format_string buf "File \"";
+            format_string buf !Pcaml.input_file;
+            format_string buf "\", line ";
+            format_int buf line;
+            format_string buf ", characters ";
+            format_int buf bp;
+            format_string buf "-";
+            format_int buf ep;
+      end else begin
+         format_string buf "Chars ";
+         format_int buf (fst loc);
+         format_string buf "-";
+         format_int buf (snd loc);
+      end;
       format_string buf ": ";
+      format_newline buf;
       format_szone buf;
       format_exn db buf exn;
       format_ezone buf;
@@ -161,12 +174,20 @@ let print =
       fun _ _ f x -> f x
    else
       fun db s f x -> try f x with exn ->
-         begin match s with
-            None -> ()
-          | Some s -> output_string stderr s;
-         end;
          let buf = new_buffer () in
+            begin match s with
+               None ->
+                  format_pushm buf 0;
+                  format_szone buf
+             | Some s ->
+                  format_pushm buf 3;
+                  format_string buf s;
+                  format_szone buf
+            end;
             format_exn db buf exn;
+            format_ezone buf;
+            format_popm buf;
+            format_newline buf;
             format_newline buf;
             print_to_channel default_width buf stderr;
             flush stderr;

@@ -37,6 +37,7 @@ open Pcaml
 
 open Lm_symbol
 open Lm_debug
+open Lm_string_set
 open Precedence
 open Simple_print.SimplePrint
 open Mp_resource
@@ -371,8 +372,8 @@ let wrap_code loc v body =
  * We may be able to do better sometime, but for now
  * we print the terms using the default display forms.
  *)
-let print_exn f s (start, stop) =
-   let s = sprintf "Processing %s (%d, %d):\n" s start stop in
+let print_exn f s loc =
+   let s = sprintf "While processing %s:\n" s in
       Filter_exn.print Dform.null_base (Some s) f ()
 
 (*
@@ -423,7 +424,8 @@ struct
    type t =
       { cache : FilterCache.info;
         select : FilterCache.select;
-        name : string
+        name : string;
+        mutable names : StringSet.t;
       }
 
    (*
@@ -851,7 +853,8 @@ struct
             let info = FilterCache.create_cache cache module_name select InterfaceType in
             let proc = { cache = info;
                          select = select;
-                         name = module_name
+                         name = module_name;
+                         names = StringSet.empty;
                        }
             in
                mk_opname_ref := FilterCache.mk_opname info;
@@ -862,6 +865,33 @@ struct
     * Our version of add_command.
     *)
    let add_command proc cmd =
+      begin match fst(cmd) with
+         Rewrite { rw_name = name }
+       | InputForm { rw_name = name }
+       | CondRewrite { crw_name = name }
+       | Rule { rule_name = name }
+       | MLRewrite { mlterm_name = name }
+       | MLAxiom { mlterm_name = name }
+       | DForm { dform_name = name }
+       | GramUpd (Infix name | Suffix name)
+       | Definition { opdef_name = name } ->
+            if StringSet.mem proc.names name then
+               raise(Invalid_argument ("Filter_parse.add_command: duplicate name " ^ name));
+            proc.names <- StringSet.add proc.names name
+       | SummaryItem _
+       | ToploopItem _
+       | Opname _
+       | Parent _
+       | Module _
+       | Prec _
+       | PrecRel _
+       | Resource _
+       | Improve _
+       | Id _
+       | MagicBlock _
+       | Comment _ ->
+            ()
+      end;
       FilterCache.add_command proc.cache cmd
 
    (*

@@ -127,6 +127,7 @@ type ('annotation, 'input) rw_annotation_processor =
 let (global_data : (Table.key * Obj.t) global_data) = Hashtbl.create 19
 
 let local_data = ref []
+let local_names = ref StringSet.empty
 
 let improve name (data:'input) =
    match (!local_data:(string*'input) data) with
@@ -139,7 +140,10 @@ let improve_list name data =
    List.iter (improve name) data
 
 let bookmark name =
-   local_data := DatBookmark name :: !local_data
+   if StringSet.mem !local_names name then
+      raise(Invalid_argument("Mp_resource.bookmark: bookmark "^name^" aready exists in this theory"));
+   local_data := DatBookmark name :: !local_data;
+   local_names := StringSet.add !local_names name
 
 let extends_theory name =
    if Hashtbl.mem global_data name then
@@ -155,9 +159,12 @@ let top_name = "_$top_resource$_"
 let top_bookmark = theory_bookmark top_name
 
 let close_theory name =
+   if Hashtbl.mem global_data name then
+      raise(Invalid_argument("Mp_resource.close_theory: theory "^name^" aready exists"));
    Hashtbl.add global_data name !local_data;
    top_data := DatInclude name :: !top_data;
-   local_data := []
+   local_data := [];
+   local_names := StringSet.empty
 
 (* Theory name -> names of included theories *)
 let (theory_includes : (string, StringSet.t) Hashtbl.t) = Hashtbl.create 19
@@ -319,7 +326,7 @@ let rec get_parents_aux prnts = function
 let clear_results bookmark =
    let clear_results_aux _ data =
       if Hashtbl.mem data bookmark then (Hashtbl.find data bookmark).res_result <- None
-   in 
+   in
       Hashtbl.iter clear_results_aux global_processed_data
 
 let get_parents name =
