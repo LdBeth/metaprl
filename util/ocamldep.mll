@@ -28,6 +28,24 @@ let add_structure name =
 
 let comment_depth = ref 0
 
+(*
+ * These are the implicit names.
+ *)
+let prl_names =
+   ["Printf";
+    "Debug";
+    "Rewrite";
+    "Refine";
+    "Refine_sig";
+    "Refine_exn";
+    "Term";
+    "Term_util";
+    "Theory";
+    "Dform";
+    "Dform_print";
+    "Resource";
+    "Precedence";
+    "Filter_summary"]
 }
 
 rule main = parse
@@ -106,6 +124,8 @@ let load_path = ref [""]
 
 let opt_flag = ref true
 
+let prl_flag = ref false
+
 let find_dependency modname (byt_deps, opt_deps) =
   let name = String.uncapitalize modname in
   try
@@ -154,6 +174,8 @@ let file_dependencies source_file =
     let ic = open_in source_file in
     let lb = Lexing.from_channel ic in
     main lb;
+    if !prl_flag then
+      List.iter add_structure prl_names;
     if Filename.check_suffix source_file ".ml" then begin
       let basename = Filename.chop_suffix source_file ".ml" in
       let init_deps =
@@ -185,7 +207,9 @@ let _ =
      "-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
            "<dir>  Add <dir> to the list of include directories";
      "-opt", Arg.Set opt_flag, " (undocumented)";
-     "-noopt", Arg.Clear opt_flag, " (undocumented)"
+     "-noopt", Arg.Clear opt_flag, " (undocumented)";
+     "-prl", Arg.Set prl_flag, "add dependencies for PRL files";
+     "-noprl", Arg.Set prl_flag, "add dependencies for PRL files"
     ] file_dependencies usage;
   exit 0
     
