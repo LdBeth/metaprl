@@ -158,6 +158,14 @@ else
 #
 OCAMLLEX += -q
 
+if $(not $(defined CAMLP4R))
+   CAMLP4R = camlp4r
+   export
+
+if $(not $(defined CAMLP4O))
+   CAMLP4O = camlp4o
+   export
+
 #
 # Inline more aggressively
 #
@@ -198,15 +206,16 @@ if $(NATIVE_PROFILING_ENABLED)
 #
 # Check the configuration
 #
-if $(not $(file-exists $(CAMLLIB)/parsetree.cmi))
-   eprintln(!!! The file $(CAMLLIB)/parsetree.cmi does not exist \(or is not readable\))
-   eprintln(!!!)
-   eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
-   eprintln(!!! for instructions on compiling OCaml and setting the CAMLLIB variable)
-   eprintln(!!!)
-   exit(1)
 
 if $(BYTE_ENABLED)
+   if $(not $(file-exists $(CAMLLIB)/parsetree.cmi))
+      eprintln(!!! The file $(CAMLLIB)/parsetree.cmi does not exist \(or is not readable\))
+      eprintln(!!!)
+      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
+      eprintln(!!! for instructions on compiling OCaml and setting the CAMLLIB variable)
+      eprintln(!!!)
+      exit(1)
+
    if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cma), $(file-exists $(CAMLP4LIB)/pa_op.cmo)))
       eprintln(!!! One of the files)
       eprintln(!!!    $(CAMLP4LIB)/camlp4.cma)
@@ -248,6 +257,8 @@ if $(not $(or $(equal $(SEQ_SET), Lm_array), $(equal $(SEQ_SET), Lm_splay)))
 OCAMLC_VERSION     = $(file .version.ocamlc)
 OCAMLOPT_VERSION   = $(file .version.ocamlopt)
 CAMLP4_VERSION     = $(file .version.camlp4)
+CAMLP4R_VERSION    = $(file .version.camlp4r)
+CAMLP4O_VERSION    = $(file .version.camlp4o)
 OCAMLMKTOP_VERSION = $(file .version.ocamlmktop)
 
 #
@@ -276,10 +287,9 @@ VersionCheck($(OCAMLC_VERSION),     $(OCAMLC))
 VersionCheck($(OCAMLOPT_VERSION),   $(OCAMLOPT))
 VersionCheck($(OCAMLMKTOP_VERSION), $(OCAMLMKTOP))
 VersionCheck($(CAMLP4_VERSION),     $(CAMLP4))
+VersionCheck($(CAMLP4R_VERSION),    $(CAMLP4R))
+VersionCheck($(CAMLP4O_VERSION),    $(CAMLP4O))
 
-#
-# Camlp4 -version doesn't work, so leave it out for now
-#
 %.cmo %.cmi: $(OCAMLC_VERSION)
 %.cmx: $(OCAMLOPT_VERSION)
 

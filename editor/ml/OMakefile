@@ -203,7 +203,7 @@ if $(NATIVE_ENABLED)
     ALL_DEPS += $(OPT_DEPS)
     export
 
-$(MP).run: $(BYTE_DEPS) $(RCMOFILES)
+$(MP).run: $(BYTE_DEPS) $(RCMOFILES) $(OCAMLMKTOP_VERSION)
         $(RM) $@
         $(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 

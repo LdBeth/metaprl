@@ -1,7 +1,10 @@
 #
 # Generic camlp4 preprocessing
 #
-OCAMLPPFLAGS = -pp "camlp4o$(EXE) -I $(CAMLP4LIB) q_MLast.cmo pa_extend.cmo"
+OCAMLPPFLAGS = -pp "$(CAMLP4O) -I $(CAMLP4LIB) q_MLast.cmo pa_extend.cmo"
+
+%.cmx %.o: $(CAMLP4O_VERSION)
+%.cmo: $(CAMLP4O_VERSION)
 
 #
 # Name of main program
