@@ -546,6 +546,23 @@ struct
       } when Opname.eq opname' opname -> v, t
     | t -> REF_RAISE(RefineError ("dest_dep1_term", TermMatchError (t, "bad arity")))
 
+   let is_dep2_term opname = function
+      { term_op = { op_name = opname'; op_params = [] };
+        term_terms = [{ bvars = [_;_] }]
+      } when Opname.eq opname' opname -> true
+    | _ -> false
+
+   let mk_dep2_term opname = fun
+      v1 v2 t -> { term_op = { op_name = opname; op_params = [] };
+                   term_terms = [{ bvars = [v1;v2]; bterm = t }]
+                 }
+
+   let dest_dep2_term opname = function
+      { term_op = { op_name = opname'; op_params = [] };
+        term_terms = [{ bvars = [v1;v2]; bterm = t }]
+      } when Opname.eq opname' opname -> v1, v2, t
+    | t -> REF_RAISE(RefineError ("dest_dep1_term", TermMatchError (t, "bad arity")))
+
    let is_dep0_dep1_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = [_] }]

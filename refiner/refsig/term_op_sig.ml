@@ -72,6 +72,9 @@ sig
    val is_dep1_term : opname -> term -> bool
    val mk_dep1_term : opname -> string -> term -> term
    val dest_dep1_term : opname -> term -> string * term
+   val is_dep2_term : opname -> term -> bool
+   val mk_dep2_term : opname -> string -> string -> term -> term
+   val dest_dep2_term : opname -> term -> string * string * term
 
    val is_dep0_dep1_term : opname -> term -> bool
    val is_dep0_dep1_any_term : term -> bool

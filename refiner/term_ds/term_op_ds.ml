@@ -517,6 +517,25 @@ struct
       } when Opname.eq opname' opname -> v,t
     | _ -> REF_RAISE(RefineError ("dest_dep1_term", TermMatchError (t, "bad arity")))
 
+   let is_dep2_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [{bvars=[_;_]}]
+           } -> Opname.eq opname' opname
+    | _ -> false
+
+   let mk_dep2_term opname v1 v2 t =
+      { free_vars = VarsDelayed;
+        core = Term
+         { term_op = { op_name = opname; op_params = [] };
+           term_terms =
+            [{ bvars = [v1;v2]; bterm = t }]}}
+
+   let dest_dep2_term opname t = match dest_term t with
+      { term_op = { op_name = opname'; op_params = [] };
+        term_terms = [{ bvars = [v1;v2]; bterm = t }]
+      } when Opname.eq opname' opname -> v1,v2,t
+    | _ -> REF_RAISE(RefineError ("dest_dep2_term", TermMatchError (t, "bad arity")))
+
    let is_dep0_dep1_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
              term_terms = [{bvars=[]};{bvars=[_]}]
