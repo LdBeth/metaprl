@@ -287,7 +287,7 @@ MLPFILES =
 CLEAN = $'(RM) *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES)) $'(addsuffix .ml, $(MLPFILES))
 
 clean:
-    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc*) lib/*.html lib/*.js lib/*.css
+    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc*) lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem
 
 realclean: clean
     -$'(RM) $(file theories/*/*.prlb theories/*/*/*.prlb) # XXX: This is a temporary HACK
