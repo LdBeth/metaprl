@@ -4,7 +4,7 @@
 # Run this script to compare the proofs status in your current tree
 # to the one in the clean tree in the last successful nightly run.
 #
-# For best results, use THEORIES=all and TESTS=no (since this is what
+# For best results, use THEORIES=all and TESTS=yes (since this is what
 # the nightly run uses).
 #
 
@@ -19,8 +19,8 @@ fi
 if grep -qi '^THEORIES *= *ALL$' mk/config ; then :; else
    echo "Warning: to make the comparison more adequate, use THEORIES=all in mk/config"
 fi
-if grep -qi '^TESTS *= *NO$' mk/config ; then :; else
-   echo "Warning: to make the comparison more adequate, use TESTS=no in mk/config"
+if grep -qi '^TESTS *= *YES$' mk/config ; then :; else
+   echo "Warning: to make the comparison more adequate, use TESTS=yes in mk/config"
 fi
 ssh -x -n -o BatchMode=yes localhost `pwd`/util/check-status.sh `pwd`&
 date "+%c: check-status.sh spawned, results should be emailed to you in a little while"
