@@ -334,6 +334,8 @@ struct
                if (res==tl) then l else p::res
             else res
 
+   let fake_var=Lm_symbol.add "__@@nosuchvarHACK@@__"
+
    let rec equal_term vars t t' =
       let vars = eq_filt_vars (free_vars_set t) (free_vars_set t') vars in
       (vars == [] && t==t') || (
@@ -345,6 +347,13 @@ struct
             Opname.eq name1 name2
                     & Lm_list_util.for_all2 equal_params params1 params2
                     & equal_bterms vars bterms1 bterms2
+       | Sequent s1, Sequent s2 ->
+            (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
+            (SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals) &&
+            (equal_term vars s1.sequent_args s2.sequent_args) &&
+            (match equal_hyps s1.sequent_hyps s2.sequent_hyps vars 0 with
+                None -> false
+              | Some vars -> equal_goals s1.sequent_goals s2.sequent_goals vars (SeqGoal.length s1.sequent_goals - 1))
        | SOVar(v,conts,ts), SOVar(v',conts',ts') ->
             v=v' && conts = conts' && Lm_list_util.for_all2 (equal_term vars) ts ts'
        | _ -> false )
@@ -358,9 +367,7 @@ struct
             equal_term (join_vars vars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm))
        | _ -> false
 
-   let fake_var=Lm_symbol.add "__@@nosuchvarHACK@@__"
-
-   let rec equal_hyps hyps1 hyps2 vars i =
+   and equal_hyps hyps1 hyps2 vars i =
       if i = SeqHyp.length hyps1 then Some vars else
          match SeqHyp.get hyps1 i, SeqHyp.get hyps2 i with
             (Hypothesis t1 | HypBinding (_,t1)) as h1, (Hypothesis t2 | HypBinding(_,t2) as h2) ->
@@ -376,7 +383,7 @@ struct
             else None
           | _ -> None
 
-   let rec equal_goals goals1 goals2 vars i =
+   and equal_goals goals1 goals2 vars i =
       i < 0 ||
       ( equal_term vars (SeqGoal.get goals1 i) (SeqGoal.get goals2 i) &&
         equal_goals goals1 goals2 vars (pred i) )
@@ -384,15 +391,8 @@ struct
    let alpha_equal t1 t2 =
       LETMACRO BODY =
          match get_core t1, get_core t2 with
-            Term _, Term _ ->
+            (Term _, Term _) | (Sequent _, Sequent _) ->
                equal_term [] t1 t2
-          | Sequent s1, Sequent s2 ->
-               (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
-               (SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals) &&
-               (equal_term [] s1.sequent_args s2.sequent_args) &&
-               (match equal_hyps s1.sequent_hyps s2.sequent_hyps [] 0 with
-                   None -> false
-                 | Some vars -> equal_goals s1.sequent_goals s2.sequent_goals vars (SeqGoal.length s1.sequent_goals - 1))
           | FOVar v1, FOVar v2 ->
                (v1=v2)
           | SOVar(v1, conts1, ts1), SOVar(v2, conts2, ts2) ->
@@ -400,6 +400,7 @@ struct
           | _ ->
                false
       IN
+      (t1 == t2) ||
       try
          IFDEF VERBOSE_EXN THEN
             let result = BODY in
