@@ -1,29 +1,31 @@
 # Flags
-INCLUDE := -I ../../mllib -I ../refbase -I ../refsig
+ROOT := ../..
+INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig
 
 # Library files
-LMFILES :=\
-	term_std\
-	term_op_std\
-	term_addr_std\
-	term_subst_std\
-	term_man_std\
-	term_shape_std\
-	term_eval_std\
-	term_meta_std
+includes Files
+LMFILES := $(TERM_STD_FILES)
 
 # Name of library
-MAIN := lib
+MAIN := reflib
 
 # Flags
 CCLIBS := -cclib -lnums
 
-all: $(MAIN).cma
-opt: $(MAIN).cmxa
+all: lib
+
+#
+# Actual makefile
+#
+include $(ROOT)/mk/config
+include Makefile.dep
+
+#
+# Rules
+#
+lib: $(MAIN).cma $(RMLIFILES) $(RCMIFILES)
+opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES)
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(NLLIB)
 
-# Actual makefile
-include ../../mk/config
-include Makefile.dep

@@ -1,22 +1,29 @@
 # Flags
+ROOT := ../..
 INCLUDE := -I ../../mllib
 
 # Library files
-LMFILES :=\
-	opname
+include Files
+LMFILES := $(REFBASE_FILES)
 
 # Name of library
-MAIN := lib
+MAIN := reflib
 
 # Flags
 CCLIBS := -cclib -lnums
 
-all: $(MAIN).cma
-opt: $(MAIN).cmxa
+all: lib
+
+# Actual makefile
+include $(ROOT)/mk/config
+include Makefile.dep
+
+#
+# Rules
+#
+lib: $(MAIN).cma $(RMLIFILES) $(RCMIFILES)
+opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES)
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(NLLIB)
 
-# Actual makefile
-include ../../mk/config
-include Makefile.dep

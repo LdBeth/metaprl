@@ -17,7 +17,10 @@ type ('a, 'b, 'c) rsrc =
 
 (*
  * $Log$
- * Revision 1.1  1998/05/28 15:01:09  jyh
+ * Revision 1.1  1998/05/28 22:09:57  jyh
+ * Updated Makefiles.
+ *
+ * Revision 1.1  1998/05/28 15:01:07  jyh
  * Partitioned refiner into subdirectories.
  *
  * Revision 1.1  1997/04/28 15:51:34  jyh
