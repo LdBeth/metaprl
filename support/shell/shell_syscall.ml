@@ -40,22 +40,6 @@ type state =
    }
 
 (*
- * Compiler target.
- *)
-let target =
-   let target1 = Filename.basename Sys.argv.(0) in
-   let target2 =
-      match Lm_config.code with
-         ByteCode ->
-            "mp.top"
-       | NativeCode ->
-            "mp.opt"
-   in
-      if target1 <> target2 then
-         eprintf "@[<v 3>Current command targets differ:@ Command line: %s@ Expected: %s@]@." target1 target2;
-      target1
-
-(*
  * Default system call handler.
  *)
 let handle_syscall command =
@@ -175,11 +159,23 @@ let deref_edit () s =
  * The target is either mp.top or mp.opt.
  *)
 let deref_omake () =
-   exec (SyscallOMake target)
+   let target1 = Filename.basename Sys.argv.(0) in
+   let target2 =
+      match Lm_config.code with
+         ByteCode ->
+            "mp.top"
+       | NativeCode ->
+            "mp.opt"
+   in
+      if target1 <> target2 then begin
+         eprintf "@[<v 3>Unexpected name of the MetaPRL executable:@ Command line: %s@ Expected: %s@]@." target1 target2;
+         raise (Invalid_argument "deref_omake")
+      end else
+         exec (SyscallOMake target1)
 
 (*
  * Restart metaprl.
- * BUG: how do we close all file descriptors?
+ * XXX BUG: how do we close all file descriptors?
  *)
 let deref_restart () =
    exec SyscallRestart
