@@ -25,7 +25,8 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
+open Shell_sig
 open Nuprl_sig
 
-module Nuprl : NuprlSig
+module Nuprl (Shell: ShellSig) : NuprlSig
 

@@ -38,23 +38,6 @@ open Tactic_type.Tacticals
 open Proof_edit
 
 (*
- * Navigation and display.
- *)
-val cd : string -> string
-val pwd : unit -> string
-val set_window_width : int -> unit
-
-(*
- * Module commands.
- *)
-val load : string -> unit
-val create_pkg : string -> unit
-val set_writeable : unit -> unit
-val save : unit -> unit
-val export : unit -> unit
-val save_all : unit -> unit
-
-(*
  * The possible objects in a package.
  *)
 val create_rw : string -> unit

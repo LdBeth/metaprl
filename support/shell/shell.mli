@@ -44,6 +44,19 @@ open Shell_p4_sig
 
 module Shell (ShellP4 : ShellP4Sig): ShellSig
 
+(* Navigation and display. *)
+topval cd : string -> string
+topval pwd : unit -> string
+topval set_dfmode : string -> unit
+
+(* Module commands. *)
+topval create_pkg : string -> unit
+topval set_writeable : unit -> unit
+topval save : unit -> unit
+topval export : unit -> unit
+topval save_all : unit -> unit
+
+(* Other utilities *)
 topval set_debug : string -> bool -> unit
 topval stop_gmon : unit -> unit
 topval restart_gmon : unit -> unit

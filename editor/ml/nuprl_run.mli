@@ -43,7 +43,9 @@
   # NuprlRun.run_connection  3998 "baldwin" "lmp_d21" "/home/nuprl/nuprl5/NuPrlDB/";;
 *)
 
-module NuprlRun :
+open Nuprl_sig
+
+module NuprlRun (Nuprl: NuprlSig):
     sig
       val run_library : string -> unit  (* uses  NUPRL_HOST and NUPRL_PORT env vars *)
       val run_jprover : string -> unit  (* uses NUPRL_HOST and NUPRL_PORT env vars *)

@@ -504,13 +504,10 @@ open List
 open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
-open Nuprl_eval
 open Nuprl_sig
 
-module Nuprl = (Nuprl_eval.Nuprl : NuprlSig)
-open Nuprl
-
-module NuprlRun = struct
+module NuprlRun (Nuprl : NuprlSig) = struct
+   open Nuprl
 
   let run_library name =
     special_error_handler (function () -> 

@@ -37,35 +37,10 @@ open Shell
 open Printf
 open Mp_debug
 
-module Nuprl = Nuprl_eval.Nuprl 
-module NuprlRun = Nuprl_run.NuprlRun 
+module Nuprl = Nuprl_eval.Nuprl(Shell)
+module NuprlRun = Nuprl_run.NuprlRun(Nuprl)
 
 let run_nuprl = NuprlRun.run_connection
-
-(*
- * Job control.
- *)
-let fork = fork (get_current_shell ())
-let pid = pid (get_current_shell ())
-let jobs = jobs (get_current_shell ())
-let fg = fg (get_current_shell ())
-
-(*
- * Navigation and display.
- *)
-let cd = cd (get_current_shell ())
-let pwd () = pwd (get_current_shell ())
-let set_window_width = set_window_width (get_current_shell ())
-
-(*
- * Module commands.
- *)
-let load = load (get_current_shell ())
-let create_pkg = create_pkg (get_current_shell ())
-let set_writeable () = set_writeable (get_current_shell ())
-let save () = save (get_current_shell ())
-let export () = export (get_current_shell ())
-let save_all () = save_all (get_current_shell ())
 
 (*
  * The possible objects in a package.

@@ -100,6 +100,7 @@ sig
     * Create a database.  The argument is the search path.
     *)
    val create : string list -> t
+   val refresh : t -> string list -> unit
 
    (*
     * Filesystem interface.

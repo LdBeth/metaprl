@@ -196,7 +196,7 @@ struct
       { pack_lock : Mutex.t;
         pack_cache : Cache.StrFilterCache.t;
         pack_dag : package ImpDag.t;
-        mutable pack_packages : package ImpDag.node list
+        pack_packages : (string,package ImpDag.node) Hashtbl.t
       }
 
    (*
@@ -237,16 +237,7 @@ struct
     * Create the cache.
     * Add placeholders for all the theories.
     *)
-   let create path =
-      let dag = ImpDag.create () in
-      let pack =
-         { pack_lock = Mutex.create ();
-           pack_cache = Cache.StrFilterCache.create path;
-           pack_dag = dag;
-           pack_packages = []
-         }
-      in
-      let hash = Hashtbl.create 17 in
+    let refresh pack path =
       let mk_package name =
          { pack_info = pack;
            pack_name = name;
@@ -257,24 +248,31 @@ struct
          }
       in
       let find_or_create name =
-         try Hashtbl.find hash name with
+         try Hashtbl.find pack.pack_packages name with
             Not_found ->
-               let pack = mk_package name in
-               let node = ImpDag.insert dag pack in
-                  Hashtbl.add hash name node;
+               let node = ImpDag.insert pack.pack_dag (mk_package name) in
+                  Hashtbl.add pack.pack_packages name node;
                   node
       in
       let add_theory thy =
          let { thy_name = name } = thy in
          let node = find_or_create name in
          let add_parent { thy_name = name } =
-            ImpDag.add_edge dag (find_or_create name) node
+            ImpDag.add_edge pack.pack_dag (find_or_create name) node
          in
-            List.iter add_parent (Theory.get_parents thy);
-            node
+            List.iter add_parent (Theory.get_parents thy)
       in
-         pack.pack_packages <- List.map add_theory (get_theories ());
-         pack
+         List.iter add_theory (get_theories ())
+
+   let create path =
+      let pack = {
+         pack_lock = Mutex.create ();
+         pack_cache = Cache.StrFilterCache.create path;
+         pack_dag = ImpDag.create ();
+         pack_packages = Hashtbl.create 17
+      } in
+      refresh pack path;
+      pack
 
    (*
     * Lock the pack.
@@ -366,15 +364,11 @@ struct
    (*
     * Get a node by its name.
     *)
-   let load_check dag name node =
-      let { pack_name = name' } = ImpDag.node_value dag node in
-         name' = name
+   let is_loaded pack name =
+      Hashtbl.mem pack.pack_packages name
 
-   let is_loaded { pack_dag = dag; pack_packages = packages } name =
-      List_util.existsp (load_check dag name) packages
-
-   let get_package { pack_dag = dag; pack_packages = packages } name =
-      List_util.find (load_check dag name) packages
+   let get_package pack name =
+      Hashtbl.find pack.pack_packages name
 
    (*
     * Add a parent edge.
@@ -426,7 +420,7 @@ struct
                         }
                      in
                      let node = ImpDag.insert dag pinfo in
-                        pack.pack_packages <- node :: packages;
+                        Hashtbl.add packages name node;
                         node
             in
             let parents = Filter_summary.parents sig_info in
@@ -456,19 +450,6 @@ struct
    let add_implementation pack_info =
       let { pack_info = pack; pack_name = name; pack_str = info } = pack_info in
       let { pack_dag = dag; pack_packages = packages } = pack in
-      let rec remove = function
-         node :: t ->
-            let { pack_name = name' } = ImpDag.node_value dag node in
-               if name' = name then
-                  begin
-                     ImpDag.delete dag node;
-                     t
-                  end
-               else
-                  node :: remove t
-       | [] ->
-            []
-      in
       let parents =
          match info with
             Some { pack_str_info = info } ->
@@ -477,7 +458,11 @@ struct
                raise (Invalid_argument "Package_info/add_implementation")
       in
       let node = ImpDag.insert dag pack_info in
-         pack.pack_packages <- node :: remove packages;
+         if Hashtbl.mem packages name then begin
+            ImpDag.delete dag (Hashtbl.find packages name);
+            Hashtbl.remove packages name
+         end;
+         Hashtbl.add packages name node;
          List.iter (insert_parent pack node) parents
 
    (*
@@ -550,10 +535,10 @@ struct
     ************************************************************************)
 
    (*
-    * Get the name of the package.
+    * Get the name/status of the package.
     *)
-   let name { pack_name = name } =
-      name
+   let name pack = pack.pack_name
+   let status pack = pack.pack_status
 
    (*
     * Get the filename for the package.
@@ -564,12 +549,6 @@ struct
             Cache.StrFilterCache.filename cache info
        | { pack_name = name; pack_str = None } ->
             raise (NotLoaded name))
-
-   (*
-    * Get the status of the package.
-    *)
-   let status { pack_status = status } =
-      status
 
    (*
     * Set the status of the package.
@@ -629,26 +608,18 @@ struct
    (*
     * DAG access.
     *)
-   let get_node { pack_dag = dag; pack_packages = packages } info =
-      let rec search = function
-         node :: t ->
-            let info' = ImpDag.node_value dag node in
-               if info'.pack_name = info.pack_name then
-                  node
-               else
-                  search t
-       | [] ->
-            raise Not_found
-      in
-         search packages
+   let get_node pack info =
+      Hashtbl.find pack.pack_packages info.pack_name
 
    let compare pack1 pack2 =
       pack1.pack_name < pack2.pack_name
 
    let packages pack =
+      let res = ref [] in
       synchronize_pack pack (function
-         { pack_dag = dag; pack_packages = packages } ->
-            Sort.list compare (List.map (ImpDag.node_value dag) packages))
+         { pack_dag = dag; pack_packages = packs } -> 
+         Hashtbl.iter (fun _ pack -> res := (ImpDag.node_value dag pack):: !res) packs;
+            Sort.list compare !res)
 
    let roots pack =
       synchronize_pack pack (function

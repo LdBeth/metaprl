@@ -1397,15 +1397,20 @@ let add_toploop_item proc loc name ctyp =
    let expr = toploop_item_expr loc name ctyp in
       impr_toploop proc loc name expr
 
+let get_top_ctyp proc name =
+   let ctyp = List.assoc name proc.imp_toploop in
+      proc.imp_toploop <- List.remove_assoc name proc.imp_toploop;
+      ctyp
+
 (*
  * An regular item.
  *)
 let wrap_toploop_item proc loc ((patt, expr) as item) =
    match patt with
       <:patt< $lid:name$ >> when List.mem_assoc name proc.imp_toploop ->
-         let ctyp = List.assoc name proc.imp_toploop in
-         proc.imp_toploop <- List.remove_assoc name proc.imp_toploop;
+         let ctyp = get_top_ctyp proc name in
          let expr1 = wrap_toploop_item loc name ctyp expr in
+         let expr = toploop_item_expr loc name ctyp in
             (patt, expr1), [add_toploop_item proc loc name ctyp]
      | _ ->
          item, []
@@ -1422,6 +1427,8 @@ let rec wrap_summary_items proc = function
          MLast.StVal (loc, rec_flag, pel) ->
             let pel, toploop = wrap_toploop_items proc loc pel in
                <:str_item< value $rec:rec_flag$ $list:pel$ >> :: (toploop @ items)
+       | MLast.StExt (loc, name, ctyp, _ ) when List.mem_assoc name proc.imp_toploop ->
+            item :: add_toploop_item proc loc name (get_top_ctyp proc name) :: items
        | _ ->
          item::items
       end
@@ -1445,18 +1452,19 @@ let implem_prolog proc loc name =
  * Trailing declarations.
  *)
 let implem_postlog proc loc = 
-   let name = <:expr< $str:proc.imp_name$ >> in
-      <:str_item< Mp_resource.close_theory $name$ >> ::
-      <:str_item< value $lid:refiner_id$ = $refiner_expr loc$.label_refiner $lid:local_refiner_id$ $name$ and
-                        $lid:dformer_id$ = $lid:local_dformer_id$.val >> ::
-      <:str_item<
-         Theory.record_theory {
-            Theory.thy_name = $name$;
-            Theory.thy_refiner = $lid:refiner_id$;
-            Theory.thy_dformer = $lid:dformer_id$
-         }
-      >> ::
-      (List.map (fun (name,ctyp) -> add_toploop_item proc loc name ctyp) proc.imp_toploop)
+   match proc.imp_toploop with
+      (name, _) :: _ -> raise (Failure ("Topval "^name^" not implemented (or was duplicated in the interface)"))
+    | [] ->
+         let name = <:expr< $str:proc.imp_name$ >> in [
+            <:str_item< Mp_resource.close_theory $name$ >>;
+            <:str_item< value $lid:refiner_id$ = $refiner_expr loc$.label_refiner $lid:local_refiner_id$ $name$ and
+                              $lid:dformer_id$ = $lid:local_dformer_id$.val >>;
+            <:str_item<
+               Theory.record_theory {
+                  Theory.thy_name = $name$;
+                  Theory.thy_refiner = $lid:refiner_id$;
+                  Theory.thy_dformer = $lid:dformer_id$
+               }>>]
 
 (*
  * Now extract the program.

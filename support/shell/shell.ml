@@ -82,6 +82,62 @@ let debug_shell =
         debug_value = false
       }
 
+type commands = {
+   mutable cd : string -> string;
+   mutable pwd : unit -> string;
+   mutable set_dfmode : string -> unit;
+   mutable create_pkg : string -> unit;
+   mutable set_writeable : unit -> unit;
+   mutable save : unit -> unit;
+   mutable export : unit -> unit;
+}
+
+let uninitialized _ = raise (Invalid_argument "The Shell module was not instantiated")
+
+let commands = {
+   cd = uninitialized; pwd = uninitialized; set_dfmode = uninitialized; create_pkg = uninitialized;
+   set_writeable = uninitialized; save = uninitialized; export = uninitialized;
+}
+
+(************************************************************************
+ * TYPES                                                                *
+ ************************************************************************)
+
+(*
+ * This is the info we need for each subshell.
+ * The subshells can be threaded; we must make this shell
+ * thread-safe.
+ *)
+type info =
+   { (* Display *)
+      mutable width : int;
+      mutable df_mode : string;
+      mutable port : Mux_channel.session option;
+
+      (* Current module and path and proof *)
+      mutable dir : string list;
+      mutable package : Package.package option;
+      mutable proof : edit_object;
+
+      (* Handle to current shell *)
+      shell : Shell_state.t
+   }
+
+(************************************************************************
+ * GLOBAL VALUES                                                        *
+ ************************************************************************)
+
+(*
+ * All loaded modules.
+ *)
+let packages = Package.create (Shell_state.get_includes ())
+
+let default_mode_base =
+   try Package.get_dforms "summary" with
+      Not_found ->
+         eprintf "Can't install Summary display forms%t" eflush;
+         Dform_print.null_mode_base
+
 (*
  * Shell takes input parser as an argument.
  *)
@@ -90,44 +146,7 @@ struct
    let _ =
       show_loading "Loading Shell module%t"
 
-   (************************************************************************
-    * TYPES                                                                *
-    ************************************************************************)
-
-   (*
-    * This is the info we need for each subshell.
-    * The subshells can be threaded; we must make this shell
-    * thread-safe.
-    *)
-   type t =
-      { (* Display *)
-         mutable width : int;
-         mutable df_mode : string;
-         mutable port : Mux_channel.session option;
-
-         (* Current module and path and proof *)
-         mutable dir : string list;
-         mutable package : Package.package option;
-         mutable proof : edit_object;
-
-         (* Handle to current shell *)
-         shell : Shell_state.t
-      }
-
-   (************************************************************************
-    * GLOBAL VALUES                                                        *
-    ************************************************************************)
-
-   (*
-    * All loaded modules.
-    *)
-   let packages = Package.create (Shell_state.get_includes ())
-
-   let default_mode_base =
-      try Package.get_dforms "summary" with
-         Not_found ->
-            eprintf "Can't install Summary display forms%t" eflush;
-            Dform_print.null_mode_base
+   type t = info
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
@@ -163,10 +182,7 @@ struct
       let dfbase = get_dfbase info in
          get_mode_base dfbase info.df_mode
 
-   let set_db info mode =
-      info.df_mode <- mode
-
-   let set_dfmode mode info =
+   let set_dfmode info mode =
       info.df_mode <- mode
 
    (*
@@ -474,9 +490,6 @@ struct
    let set_window_width info i =
       info.width <- max !Mp_term.min_screen_width i
 
-   (*
-    * Show the directory.
-    *)
    let pwd info =
       string_of_path info.dir
 
@@ -634,30 +647,6 @@ struct
     ************************************************************************)
 
    (*
-    * Load a package if it is not already loaded.
-    *)
-   let load info name =
-      let _ =
-         try
-            let pack = Package.get packages name in
-               match Package.status pack with
-                  Modified ->
-                     raise (Failure (sprintf "Shell.load: package '%s' is modified" name))
-                | _ ->
-                     ()
-         with
-            Not_found ->
-               ()
-      in
-         ignore (Package.load packages (get_parse_arg info) name)
-
-   (* Currently load only creates problesm, does not work correctly
-    * HACK!!!
-    *)
-   let fake_load _ _ =
-      raise (Failure "The ``load'' function is currently not supported\nPlease ``cd'' into the theory you want to get loaded")
-
-   (*
     * Make a new package.
     * Right now we only allow packages at the top level.
     *)
@@ -689,13 +678,6 @@ struct
             Package.export (get_parse_arg info) pack
        | None ->
             ()
-
-   let save_all info =
-      let save pack =
-         if Package.status pack = Modified then
-            Package.save pack
-      in
-         List.iter save (Package.packages packages)
 
    (************************************************************************
     * OBJECTS                                                              *
@@ -1110,7 +1092,7 @@ struct
             set_packages info;
             Shell_state.set_dfbase shell None;
             Shell_state.set_mk_opname shell None;
-            Shell_state.set_module shell "Shell" (commands info);
+            Shell_state.set_module shell "Shell" (deprecated_commands info);
             eprintf "Module: /%t" eflush
        | (modname :: item) as dir ->
             (* change module only if in another (or at top) *)
@@ -1120,7 +1102,7 @@ struct
                      info.package <- Some pkg;
                      Shell_state.set_dfbase shell (Some (get_db info));
                      Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
-                     Shell_state.set_module shell modname (commands info);
+                     Shell_state.set_module shell modname (deprecated_commands info);
                      eprintf "Module: /%s%t" modname eflush;
                      (* HACK!!! I do not know a better way to initialize a package - AN *)
                      ignore (Package.info pkg (get_parse_arg info))
@@ -1197,21 +1179,8 @@ struct
    (*
     * Commands.
     *)
-   and commands info =
-      ["fork",             UnitFunExpr     (fun () -> StringExpr (fork info));
-       "pid",              UnitFunExpr     (fun () -> StringExpr (pid info));
-       "jobs",             UnitFunExpr     (fun () -> StringExpr (jobs info));
-       "fg",               IntFunExpr      (fun i ->  StringExpr (fg info i));
-       "cd",               StringFunExpr   (fun s  -> StringExpr (cd info s));
-       "pwd",              UnitFunExpr     (fun () -> StringExpr (pwd info));
-       "set_dfmode",       StringFunExpr   (fun s ->  UnitExpr (set_dfmode s info));
-       "set_window_width", IntFunExpr      (fun i  -> UnitExpr (set_window_width info i));
-       "load",             StringFunExpr   (fun s  -> UnitExpr (fake_load info s));
-       "create_pkg",       StringFunExpr   (fun s  -> UnitExpr (create_pkg info s));
-       "save",             UnitFunExpr     (fun () -> UnitExpr (save info));
-       "export",           UnitFunExpr     (fun () -> UnitExpr (export info));
-       "save_all",         UnitFunExpr     (fun () -> UnitExpr (save_all info));
-       "create_rw",        StringFunExpr   (fun s  -> UnitExpr (create_rw info s));
+   and deprecated_commands info =
+      ["create_rw",        StringFunExpr   (fun s  -> UnitExpr (create_rw info s));
        "create_axiom",     StringFunExpr   (fun s  -> UnitExpr (create_axiom info s));
        "create_thm",       StringFunExpr   (fun s  -> UnitExpr (create_thm info s));
        "create_ax_statement", TermFunExpr  (fun st -> StringFunExpr (fun s  -> UnitExpr (create_ax_statement info st s)));
@@ -1575,9 +1544,24 @@ struct
     * Print out an initialization file, and parse it.
     *)
    let main () =
+      Package.refresh packages (Shell_state.get_includes ());
       let info = global in
-         Shell_state.set_module info.shell "Shell" (commands info);
+         Shell_state.set_module info.shell "Shell" (deprecated_commands info);
          ShellP4.main info.shell
+
+   let wrap cmd arg = cmd !current_shell arg
+   let wrap_unit cmd () = cmd !current_shell
+
+   let _ =
+      if commands.cd != uninitialized then
+         raise (Invalid_argument "The Shell module was initialized twice");
+      commands.cd <- wrap cd;
+      commands.pwd <- (fun () -> pwd !current_shell);
+      commands.set_dfmode <- wrap set_dfmode;
+      commands.create_pkg <- wrap create_pkg;
+      commands.save <- wrap_unit save;
+      commands.export <- wrap_unit export;
+      ()
 end
 
 (*
@@ -1591,6 +1575,20 @@ external stop_gmon : unit -> unit = "stop_gmon"
  *)
 let set_debug = set_debug
 let print_gc_stats () = Gc.print_stat stdout
+let cd s = commands.cd s
+let pwd _ = commands.pwd ()
+let set_dfmode s = commands.set_dfmode s
+let create_pkg s = commands.create_pkg s
+let set_writeable _ = commands.set_writeable ()
+let save _ = commands.save ()
+let export _ = commands.export ()
+
+let save_all _ =
+   let save pack =
+      if Package.status pack = Modified then
+         Package.save pack
+   in
+      List.iter save (Package.packages packages)
 
 (*
  * -*-

@@ -127,17 +127,16 @@ sig
     *)
    val cd : t -> string -> string
    val pwd : t -> string
+   val set_dfmode : t -> string -> unit
    val set_window_width : t -> int -> unit
 
    (*
     * Module commands.
     *)
-   val load : t -> string -> unit
    val create_pkg : t -> string -> unit
    val set_writeable : t -> unit
    val save : t -> unit
    val export : t -> unit
-   val save_all : t -> unit
 
    (*
     * The possible objects in a package.

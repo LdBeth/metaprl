@@ -42,11 +42,9 @@ open Mp_debug
 open Mp_num
 open Shell_sig
 
-module Shell = Shell.Shell (Shell_mp.ShellP4)
 
-open Shell
-
-module Nuprl = struct
+module Nuprl (Shell : ShellSig) = struct
+   open Shell
 
   exception LibraryException of string
   let itt_bug = ref true
