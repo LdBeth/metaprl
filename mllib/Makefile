@@ -25,7 +25,8 @@ LMFILES :=\
 	precedence\
 	file_base_type\
 	file_base\
-	file_type_base
+	file_type_base\
+	splay_set
 
 # Name of library
 MAIN := util

@@ -27,7 +27,7 @@ struct
          let compare = Pervasives.compare
        end
 
-   module StringSet = Set.Make (OrderedString)
+   module StringSet = Splay_set.Make (OrderedString)
 
    (************************************************************************
     * Type definitions                                                     *
@@ -112,15 +112,15 @@ struct
     * Free variables, substitution                                         *
     ************************************************************************)
 
-   let bterms_free_vars =
-      List.fold_left
-         (fun s bt -> StringSet.union s bt.bfree_vars)
-         StringSet.empty
+   let rec bterms_free_vars = function
+      [] -> StringSet.empty
+    | [bt] -> bt.bfree_vars
+    | bt::tl -> StringSet.union (bterms_free_vars tl) bt.bfree_vars
 
-   let subst_free_vars =
-      List.fold_left
-         (fun s (v,t) -> StringSet.union s t.free_vars)
-         StringSet.empty
+   let rec subst_free_vars = function
+      [] -> StringSet.empty
+    | [(v,t)] -> t.free_vars
+    | (v,t)::tl -> StringSet.union (subst_free_vars tl) t.free_vars
 
    let do_term_subst sub t =
       match List_util.filter (fun (v,_) -> StringSet.mem v t.free_vars) sub with
@@ -196,7 +196,7 @@ struct
     * Make a variable.
     *)
    let mk_var_term v =
-      { free_vars = StringSet.add v StringSet.empty;
+      { free_vars = StringSet.make v;
         core = Term
          { term_op = { op_name = var_opname; op_params = [Var v] };
            term_terms = [] }}

@@ -20,7 +20,7 @@ sig
     * Types                                                                *
     ************************************************************************)
 
-   module StringSet : ( Set.S with type elt = string )
+   module StringSet : ( Splay_set.S with type elt = string )
 
    (*
     * Level expression have offsets from level expression
