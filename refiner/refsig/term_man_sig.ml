@@ -13,16 +13,7 @@ sig
    type operator
    type level_exp
    type address
-
-   type hypothesis =
-      Hypothesis of string * term
-    | Context of string * term list
-
-   type esequent =
-      { sequent_args : term;
-        sequent_hyps : hypothesis array;
-        sequent_goals : term array
-      }
+   type esequent
 
    (************************************************************************
     * Simplified operations on manifest terms                              *

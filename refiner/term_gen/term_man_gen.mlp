@@ -64,15 +64,7 @@ struct
    type level_exp = Term.level_exp
    type address = TermAddr.address
 
-   type hypothesis =
-      Hypothesis of string * term
-    | Context of string * term list
-
-   type esequent =
-      { sequent_args : term;
-        sequent_hyps : hypothesis array;
-        sequent_goals : term array
-      }
+   type esequent = Term.esequent
 
    (*
     * Manifest terms are injected into the "perv" module.
@@ -279,13 +271,13 @@ struct
       if i = len then
          null_concl
       else
-         mk_concl_term goals.(i) (mk_goals goals (i + 1) len)
+         mk_concl_term (SeqGoal.get goals i) (mk_goals goals (i + 1) len)
 
    let rec mk_sequent_inner_term hyps goals i len =
       if i = len then
-         mk_goals goals 0 (Array.length goals)
+         mk_goals goals 0 (SeqGoal.length goals)
       else
-         match hyps.(i) with
+         match SeqHyp.get hyps i with
             Hypothesis (v, t') ->
                mk_hyp_term v t' (mk_sequent_inner_term hyps goals (i + 1) len)
           | Context (v, subterms) ->
@@ -296,7 +288,7 @@ struct
          sequent_hyps = hyps;
          sequent_goals = goals
        } =
-      mk_sequent_outer_term (mk_sequent_inner_term hyps goals 0 (Array.length hyps)) args
+      mk_sequent_outer_term (mk_sequent_inner_term hyps goals 0 (SeqHyp.length hyps)) args
 
    let dest_sequent_outer_term seq =
       match dest_simple_term_opname sequent_opname seq with
@@ -403,8 +395,8 @@ struct
             else if Opname.eq opname concl_opname then
                if bterms = [] then
                   { sequent_args = args;
-                    sequent_hyps =  Array.of_list (List.rev hyps);
-                    sequent_goals = Array.of_list (List.rev concls)
+                    sequent_hyps =  SeqHyp.of_list (List.rev hyps);
+                    sequent_goals = SeqGoal.of_list (List.rev concls)
                   }
                else
                   let goal, term = match_concl_all explode_sequent_name t bterms in

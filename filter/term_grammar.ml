@@ -673,8 +673,8 @@ struct
              in
              let esequent =
                 { sequent_args = mk_xlist_term args;
-                  sequent_hyps = Array.of_list (proc_hyps hyps);
-                  sequent_goals = Array.of_list concl
+                  sequent_hyps = SeqHyp.of_list (proc_hyps hyps);
+                  sequent_goals = SeqGoal.of_list concl
                 }
              in
                 if !debug_grammar then

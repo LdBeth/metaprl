@@ -113,4 +113,39 @@ struct
     | MetaImplies of meta_term * meta_term
     | MetaFunction of term * meta_term * meta_term
     | MetaIff of meta_term * meta_term
+
+   type hypothesis =
+      Hypothesis of string * term
+    | Context of string * term list
+
+   type esequent =
+      { sequent_args : term;
+        sequent_hyps : hypothesis array;
+        sequent_goals : term array
+      }
+
+   module SeqHyp =
+   struct
+      type elt = hypothesis
+      type t = hypothesis array
+      let length = Array.length
+      let get = Array.get
+      let create = Array.create
+      let make = Array.make
+      let to_list = Array.to_list
+      let of_list = Array.of_list
+   end
+
+   module SeqGoal =
+   struct
+      type elt = term
+      type t = term array
+      let length = Array.length
+      let create = Array.create
+      let get = Array.get
+      let make = Array.make
+      let to_list = Array.to_list
+      let of_list = Array.of_list
+   end
+
 end

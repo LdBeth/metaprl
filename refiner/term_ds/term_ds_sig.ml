@@ -3,6 +3,7 @@
  *)
 open Opname
 open Refine_error_sig
+open Term_simple_sig
 
 module type TermDsTypeSig =
 sig
@@ -93,6 +94,19 @@ sig
     | MetaImplies of meta_term * meta_term
     | MetaFunction of term * meta_term * meta_term
     | MetaIff of meta_term * meta_term
+
+   type hypothesis =
+      Hypothesis of string * term
+    | Context of string * term list
+
+   module SeqHyp : ROArraySig with type elt = hypothesis
+   module SeqGoal : ROArraySig with type elt = term
+
+   type esequent =
+      { sequent_args : term;
+        sequent_hyps : SeqHyp.t;
+        sequent_goals : SeqGoal.t
+      }
 end
 
 module type TermDsSig =
