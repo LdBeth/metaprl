@@ -15,6 +15,7 @@ open Dform
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
+open Refiner.Refiner.RefineErrors
 open Refiner.Refiner.Refine
 open Opname
 
@@ -354,6 +355,9 @@ let view_crw pack
 
 (*
  * $Log$
+ * Revision 1.15  1998/07/01 04:36:32  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.14  1998/06/15 22:31:53  jyh
  * Added CZF.
  *

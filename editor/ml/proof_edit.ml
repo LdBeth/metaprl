@@ -18,6 +18,7 @@ open Debug
 
 open Refiner.Refiner
 open Refiner.Refiner.Term
+open Refiner.Refiner.RefineErrors
 open Refiner.Refiner.Refine
 open Rformat
 open Dform
@@ -516,6 +517,9 @@ let expand_ped df ped =
 
 (*
  * $Log$
+ * Revision 1.13  1998/07/01 04:36:27  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.12  1998/06/16 16:25:24  jyh
  * Added itt_test.
  *

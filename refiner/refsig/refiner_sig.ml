@@ -10,6 +10,7 @@ open Term_subst_sig
 open Term_shape_sig
 open Term_eval_sig
 open Term_meta_sig
+open Refine_errors_sig
 open Rewrite_sig
 open Refine_sig
 
@@ -43,23 +44,30 @@ sig
    (*
     * Rewriting and refinement.
     *)
+   module RefineErrors : RefineErrorsSig
+                        with type term = Term.term
+                        with type bound_term = Term.bound_term
+                        with type param = Term.param
+                        with type address = TermAddr.address
+                        with type meta_term = TermMeta.meta_term
+
    module Rewrite : RewriteSig
                     with type term = Term.term
                     with type level_exp = Term.level_exp
-                    with type param = Term.param
                     with type operator = Term.operator
-                    with type bound_term = Term.bound_term
                     with type address = TermAddr.address
 
    module Refine : RefineSig
                    with type term = Term.term
                    with type address = TermAddr.address
                    with type meta_term = TermMeta.meta_term
-                   with type rewrite_error = Rewrite.rewrite_error
 end
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/01 04:37:09  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.2  1998/06/03 22:19:26  jyh
  * Nonpolymorphic refiner.
  *

@@ -41,6 +41,7 @@ open Term_man_sig
 open Term_subst_sig
 open Term_addr_sig
 open Term_meta_sig
+open Refine_errors_sig
 open Rewrite_sig
 open Refine_sig
 
@@ -70,7 +71,11 @@ module Refine (**)
     with type term = Term.term)
    (Rewrite : RewriteSig
     with type term = Term.term
-    with type address = TermAddr.address) =
+    with type address = TermAddr.address)
+   (RefineErrors : RefineErrorsSig
+    with type term = Term.term
+    with type address = TermAddr.address
+    with type meta_term = TermMeta.meta_term) = 
 struct
    open Term
    open TermMan
@@ -78,45 +83,11 @@ struct
    open TermAddr
    open TermMeta
    open Rewrite
+   open RefineErrors
 
    type term = Term.term
    type address = TermAddr.address
    type meta_term = TermMeta.meta_term
-   type rewrite_error = Rewrite.rewrite_error
-
-   (************************************************************************
-    * ERRORS                                                               *
-    ************************************************************************)
-
-   exception FreeContextVars of string list
-
-   (*
-    * Unfortunately, we need to declare the general TacticException
-    * type here, because the following combinators need to
-    * collect exceptions of their subtactics.
-    *)
-   type refine_error_info =
-      StringError of string
-    | IntError of int
-    | TermError of term
-    | StringIntError of string * int
-    | StringStringError of string * string
-    | StringTermError of string * term
-    | GoalError of refine_error
-    | SecondError of refine_error
-    | SubgoalError of int * refine_error
-    | PairError of refine_error * refine_error
-    | RewriteAddressError of address * refine_error
-    | RewriteError of rewrite_error
-    | NodeError of string * term * refine_error list
-    | TermMatchError of string * term * string
-    | TermPairMatchError of term * term
-    | AddressError of address * term
-    | MetaTermMatchError of meta_term
-
-   and refine_error = string * refine_error_info
-
-   exception RefineError of refine_error
 
    (*
     * A ML rewrite replaces a term with another,
@@ -946,7 +917,7 @@ struct
     *)
    let apply_rewrite name rw addrs_names terms =
       try Rewrite.apply_rewrite rw addrs_names terms with
-         Rewrite.RewriteError error ->
+         RewriteErr error ->
             raise (RefineError (name, RewriteError error))
        | Term.TermMatch (s1, t, s2) ->
             raise (RefineError (name, TermMatchError (s1, t, s2)))
@@ -1042,7 +1013,7 @@ struct
       let seq = { mseq_goal = goal; mseq_hyps = subgoals } in
       let rw =
          try Rewrite.term_rewrite (addrs, names) (goal :: params) subgoals with
-            Rewrite.RewriteError error ->
+            RewriteErr error ->
                raise (RefineError (name, RewriteError error))
       in
       let refiner' =
@@ -1089,7 +1060,7 @@ struct
       in
       let rw =
          try Rewrite.term_rewrite ([||], [||]) (create_redex vars args :: params) [result] with
-            Rewrite.RewriteError error ->
+            RewriteErr error ->
                raise (RefineError (name, RewriteError error))
       in
       let compute_ext vars params args =
@@ -1173,7 +1144,7 @@ struct
       let subgoals, goal = List_util.split_last terms in
       let rw =
          try Rewrite.term_rewrite (addrs, names) (goal::params) subgoals with
-            Rewrite.RewriteError error ->
+            RewriteErr error ->
                raise (RefineError (name, RewriteError error))
       in
          true
@@ -1188,7 +1159,7 @@ struct
    let check_rewrite name vars params subgoals redex contractum =
       let rw =
          try Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] with
-            Rewrite.RewriteError error ->
+            RewriteErr error ->
                raise (RefineError (name, RewriteError error))
       in
          true
@@ -1202,7 +1173,7 @@ struct
          eprintf "Refiner.add_rewrite: %s%t" name eflush;
       let rw =
          try Rewrite.term_rewrite ([||], [||]) [redex] [contractum] with
-            Rewrite.RewriteError error ->
+            RewriteErr error ->
                raise (RefineError (name, RewriteError error))
       in
       let refiner' =
@@ -1281,7 +1252,7 @@ struct
          eprintf "Refiner.add_cond_rewrite: %s%t" name eflush;
       let rw =
          try Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] with
-            Rewrite.RewriteError error ->
+            RewriteErr error ->
                raise (RefineError (name, RewriteError error))
       in
       let refiner' =
@@ -1530,6 +1501,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.8  1998/07/01 04:36:50  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.7  1998/06/23 22:12:13  jyh
  * Improved rewriter speed with conversion tree and flist.
  *

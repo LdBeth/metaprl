@@ -8,6 +8,7 @@ REFSIG_FILES :=\
 	term_shape_sig\
 	term_eval_sig\
 	term_meta_sig\
+	refine_errors_sig\
 	rewrite_sig\
 	refine_sig\
 	refiner_sig

@@ -20,7 +20,7 @@ open Printf
 open Debug
 
 open Refiner.Refiner.Term
-open Refiner.Refiner.Refine
+open Refiner.Refiner.RefineErrors
 open Dform
 open Dform_print
 open Rformat
@@ -713,6 +713,9 @@ let init () =
 (*
  *
  * $Log$
+ * Revision 1.15  1998/07/01 04:36:29  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.14  1998/06/15 22:31:49  jyh
  * Added CZF.
  *

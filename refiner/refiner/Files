@@ -1,4 +1,5 @@
 REFINER_FILES :=\
+	refine_errors\
 	rewrite\
 	refine\
 	refiner_std\

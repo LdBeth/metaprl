@@ -16,6 +16,7 @@ open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.RefineErrors
 open Refiner.Refiner.Refine
 open Opname
 
@@ -337,6 +338,9 @@ let view_rule pack
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/01 04:36:33  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.2  1998/06/23 22:12:07  jyh
  * Improved rewriter speed with conversion tree and flist.
  *

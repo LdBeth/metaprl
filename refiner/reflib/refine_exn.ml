@@ -11,7 +11,7 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
-open Refiner.Refiner.Refine
+open Refiner.Refiner.RefineErrors
 open Rformat
 open Simple_print
 open Dform
@@ -128,7 +128,7 @@ let format_rewrite_error db buf printers = function
       format_string buf s
  | StackError _ ->
       format_string buf "StackError"
- | Rewrite.StringError s ->
+ | RewriteStringError s ->
       format_string buf "StringError:";
       format_space buf;
       format_string buf s
@@ -216,7 +216,7 @@ let format_exn db buf printers error =
          format_string buf "FreeContextVars:";
          format_space buf;
          format_strings buf vars
-    | Rewrite.RewriteError msg ->
+    | RewriteErr msg ->
          format_string buf "Rewrite error:";
          format_space buf;
          format_rewrite_error db buf printers msg
@@ -293,6 +293,9 @@ let print_exn db out s exn =
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/01 04:37:01  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.2  1998/06/12 13:46:59  jyh
  * D tactic works, added itt_bool.
  *

@@ -2,8 +2,7 @@
  * Define a printer for all escaping refiner exceptions.
  *)
 
-open Refiner.Refiner.Rewrite
-open Refiner.Refiner.Refine
+open Refiner.Refiner.RefineErrors
 open Rformat
 open Dform
 open Dform_print
@@ -17,6 +16,9 @@ val print_exn : dform_mode_base -> out_channel -> string -> exn -> 'a
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/01 04:37:03  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.1  1998/05/28 15:01:06  jyh
  * Partitioned refiner into subdirectories.
  *

@@ -16,6 +16,7 @@ open Term_man_sig
 open Term_subst_sig
 open Term_addr_sig
 open Term_meta_sig
+open Refine_errors_sig
 open Rewrite_sig
 open Refine_sig
 
@@ -32,14 +33,20 @@ module Refine (**)
    (Rewrite : RewriteSig
     with type term = Term.term
     with type address = TermAddr.address)
+   (RefineErrors : RefineErrorsSig
+    with type term = Term.term
+    with type address = TermAddr.address 
+    with type meta_term = TermMeta.meta_term)
 : RefineSig
 with type term = Term.term
 with type address = TermAddr.address
 with type meta_term = TermMeta.meta_term
-with type rewrite_error = Rewrite.rewrite_error
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/01 04:36:52  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.1  1998/05/28 15:00:25  jyh
  * Partitioned refiner into subdirectories.
  *

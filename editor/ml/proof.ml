@@ -43,6 +43,7 @@ open Debug
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermSubst
+open Refiner.Refiner.RefineErrors
 open Refiner.Refiner.Refine
 open Refine_exn
 open Tactic_type
@@ -997,6 +998,9 @@ let proof_of_io_proof arg tacs pf =
 
 (*
  * $Log$
+ * Revision 1.15  1998/07/01 04:36:24  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.14  1998/06/15 22:31:44  jyh
  * Added CZF.
  *

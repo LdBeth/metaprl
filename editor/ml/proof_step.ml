@@ -14,11 +14,12 @@ open Debug
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
+open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.Refine
 open Opname
 open Dform
 open Rformat
 open Refine_exn
-open Refine
 
 open Io_proof_type
 open Tactic_type
@@ -184,6 +185,9 @@ let step_of_io_step { ref_fcache = fcache; ref_rsrc = resources } tactics
 
 (*
  * $Log$
+ * Revision 1.16  1998/07/01 04:36:28  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.15  1998/06/12 13:45:11  jyh
  * D tactic works, added itt_bool.
  *

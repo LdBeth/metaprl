@@ -8,7 +8,7 @@ open Printf
 open Debug
 
 open Rformat
-open Refiner.Refiner.Refine
+open Refiner.Refiner.RefineErrors
 
 open Shell_type
 
@@ -49,6 +49,9 @@ let null_object =
 
 (*
  * $Log$
+ * Revision 1.6  1998/07/01 04:36:31  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.5  1998/06/15 22:31:51  jyh
  * Added CZF.
  *

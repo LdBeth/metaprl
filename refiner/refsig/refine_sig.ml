@@ -20,41 +20,6 @@ sig
    type term
    type address
    type meta_term
-   type rewrite_error
-
-   (************************************************************************
-    * ERRORS                                                               *
-    ************************************************************************)
-
-   exception FreeContextVars of string list
-
-   (*
-    * Unfortunately, we need to declare the general TacticException
-    * type here, because the following combinators need to
-    * collect exceptions of their subtactics.
-    *)
-   type refine_error_info =
-      StringError of string
-    | IntError of int
-    | TermError of term
-    | StringIntError of string * int
-    | StringStringError of string * string
-    | StringTermError of string * term
-    | GoalError of refine_error
-    | SecondError of refine_error
-    | SubgoalError of int * refine_error
-    | PairError of refine_error * refine_error
-    | RewriteAddressError of address * refine_error
-    | RewriteError of rewrite_error
-    | NodeError of string * term * refine_error list
-    | TermMatchError of string * term * string
-    | TermPairMatchError of term * term
-    | AddressError of address * term
-    | MetaTermMatchError of meta_term
-
-   and refine_error = string * refine_error_info
-
-   exception RefineError of refine_error
 
    (*
     * A ML rewrite replaces a term with another,
@@ -435,6 +400,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.7  1998/07/01 04:37:08  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.6  1998/06/22 19:45:44  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

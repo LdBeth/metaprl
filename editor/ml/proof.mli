@@ -35,7 +35,7 @@ include Tactic_type
 include Proof_step
 
 open Refiner.Refiner.Term
-open Refiner.Refiner.Refine
+open Refiner.Refiner.RefineErrors
 open Dform
 
 open Io_proof_type
@@ -165,6 +165,9 @@ val proof_of_io_proof : tactic_argument -> (string * tactic) array -> proof -> t
 
 (*
  * $Log$
+ * Revision 1.12  1998/07/01 04:36:26  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.11  1998/06/15 22:31:46  jyh
  * Added CZF.
  *

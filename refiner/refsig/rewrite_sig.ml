@@ -10,9 +10,7 @@ sig
    (* Import the term types *)
    type term
    type level_exp
-   type param
    type operator
-   type bound_term
    type address
 
    (* Packaged rewrite rule *)
@@ -41,30 +39,6 @@ sig
     | RewriteString of string
     | RewriteInt of int
     | RewriteLevel of level_exp
-
-   type stack
-
-   type match_type =
-      ParamMatch of param
-    | VarMatch of string
-    | TermMatch of term
-    | BTermMatch of bound_term
-
-   (* Detailed exceptions *)
-   type rewrite_error =
-      BoundSOVar of string
-    | FreeSOVar of string
-    | BoundParamVar of string
-    | FreeParamVar of string
-    | BadRedexParam of param
-    | NoRuleOperator
-    | BadMatch of match_type
-    | AllSOInstances of string
-    | MissingContextArg of string
-    | StackError of stack
-    | StringError of string
-
-   exception RewriteError of rewrite_error
 
    (*
     * Separate analysis.
@@ -105,6 +79,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/01 04:37:10  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.2  1998/06/01 13:55:10  jyh
  * Proving twice one is two.
  *

@@ -11,14 +11,17 @@ struct
    module TermMan = Term_man_gen.TermMan (Term) (TermOp) (TermAddr) (TermSubst)
    module TermShape = Term_shape_gen.TermShape (Term)
    module TermEval = Term_eval_ds.TermEval
-
    module TermMeta = Term_meta_gen.TermMeta (Term) (TermSubst)
-   module Rewrite = Rewrite.Rewrite (Term) (TermMan) (TermAddr) (TermSubst)
-   module Refine = Refine.Refine (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite)
+   module RefineErrors = Refine_errors.RefineErrors (Term) (TermAddr) (TermMeta)
+   module Rewrite = Rewrite.Rewrite (Term) (TermMan) (TermAddr) (TermSubst) (RefineErrors)
+   module Refine = Refine.Refine (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineErrors)
 end
 
 (*
  * $Log$
+ * Revision 1.5  1998/07/01 04:36:54  nogin
+ * Moved Refiner exceptions into a separate module RefineErrors
+ *
  * Revision 1.4  1998/06/03 22:19:23  jyh
  * Nonpolymorphic refiner.
  *
