@@ -2,10 +2,13 @@
  * Meta terms include implications, etc.
  *)
 
-open Term_std
-open Term_subst_std
+open Term_sig
+open Term_subst_sig
 
-module TermMeta =
+module TermMeta 
+   (Term : TermSig) 
+   (TermSubst : TermSubstSig
+    with type term = Term.term) =
 struct
    open Term
 
@@ -171,6 +174,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/05/28 02:44:29  nogin
+ * Parameterized by the Term and TermSubst modules
+ *
  * Revision 1.1  1998/05/27 15:14:37  jyh
  * Functorized the refiner over the Term module.
  *
