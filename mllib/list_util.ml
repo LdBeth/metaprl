@@ -486,7 +486,11 @@ let rev_iter f =
 let flat_map f l =
    let rec aux = function
       h::t ->
-         (f h) @ (aux t)
+         let h = f h in
+            if h = [] then
+               aux t
+            else
+               h @ aux t
     | [] ->
          []
    in
@@ -530,11 +534,11 @@ let some_map f l =
       aux l
 
 (*
- * Cross between map a fold_left.
+ * Cross between map and fold_left.
  *)
 let fold_left f x l =
    let rec aux x l = function
-      h::t ->
+      h :: t ->
          let x', h' = f x h in
             aux x' (h' :: l) t
     | [] ->
@@ -550,6 +554,9 @@ let existsp = List.exists
 
 (*
  * $Log$
+ * Revision 1.13  1998/06/12 13:46:52  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.12  1998/06/04 19:52:49  nogin
  * Efficiency
  *

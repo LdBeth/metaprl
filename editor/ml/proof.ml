@@ -830,7 +830,7 @@ let check { pf_root = root; pf_address = addr; pf_node = node } =
              | Node node ->
                   check_node (0 :: addr') node
          else
-            raise (ProofRefineError (mk_pf addr' node, (StringError "Proof is not complete")))
+            raise (ProofRefineError (mk_pf addr' node, ("Proof.check", StringError "Proof is not complete")))
       in
       let rec fold_child i = function
          child :: childt ->
@@ -851,7 +851,7 @@ let check { pf_root = root; pf_address = addr; pf_node = node } =
    and check_child addr' node = function
       ChildGoal goal ->
          (* This can't happen if the status were set correctly *)
-         raise (ProofRefineError (mk_pf addr' node, StringError "Proof is not complete"))
+         raise (ProofRefineError (mk_pf addr' node, ("Proof.check", StringError "Proof is not complete")))
     | ChildNode node ->
          check_node addr' node
    in
@@ -955,7 +955,7 @@ let status_of_io_status = function
 
 let proof_of_io_proof arg tacs pf =
    let { ref_fcache = fcache; ref_rsrc = resources } = arg in
-   let hash = Hashtbl.create (Array.length tacs) in
+   let hash = Hashtbl.create (max (Array.length tacs) 17) in
    let _ = Array.iter (function (name, tac) -> Hashtbl.add hash name tac) tacs in
    let rec child_of_io_child = function
       Io_proof_type.ChildGoal (**)
@@ -994,6 +994,9 @@ let proof_of_io_proof arg tacs pf =
 
 (*
  * $Log$
+ * Revision 1.13  1998/06/12 13:45:09  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.12  1998/06/09 20:51:15  jyh
  * Propagated refinement changes.
  * New tacticals module.

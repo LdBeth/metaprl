@@ -178,12 +178,20 @@ sig
    val resources : info -> (module_path * str_ctyp resource_info) list
    val parents : info -> module_path list
 
+   (* These are the resources for an included parent *)
+   val sig_resources : info -> module_path -> str_ctyp resource_info list
+
    (*
     * Update.
     *)
    val add_command : info -> (str_elem * loc) -> unit
-   val add_resource : info -> module_path -> str_ctyp resource_info -> unit
+   val add_resource : info -> str_ctyp resource_info -> unit
    val add_prec : info -> string -> unit
+
+   (*
+    * Debugging.
+    *)
+   val eprint_info : info -> unit
 
    (*
     * An inlined module includes its opnames in the current
@@ -195,6 +203,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.13  1998/06/12 13:46:39  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.12  1998/06/01 13:53:17  jyh
  * Proving twice one is two.
  *

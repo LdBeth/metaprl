@@ -8,10 +8,13 @@ declare guard{'a}
 
 primrw fold : 'a <--> guard{'a}
 
-primrw test : Itt_rfun!apply{.Itt_rfun!lambda{x. 'x +@ 'x}; 1} <--> 2
+primrw test : ind{2; m, z. 'm; 1; m, z. 0} <--> 1
 
 (*
  * $Log$
+ * Revision 1.8  1998/06/12 13:45:18  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.7  1998/06/01 19:53:12  jyh
  * Working addition proof.  Removing polymorphism from refiner(?)
  *

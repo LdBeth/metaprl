@@ -18,11 +18,12 @@ open Filter_summary
 module MakeFilterCache
    (SigMarshal : MarshalSig)
    (StrMarshal : MarshalSig
-       with type select = SigMarshal.select
-       with type cooked = SigMarshal.cooked)
+                 with type ctyp = SigMarshal.ctyp
+                 with type select = SigMarshal.select
+                 with type cooked = SigMarshal.cooked)
    (Base : SummaryBaseSig
-        with type select = SigMarshal.select
-        with type cooked = SigMarshal.cooked) :
+           with type select = SigMarshal.select
+           with type cooked = SigMarshal.cooked) :
    SummaryCacheSig
    with type sig_proof  = SigMarshal.proof
    with type sig_ctyp   = SigMarshal.ctyp
@@ -36,6 +37,9 @@ module MakeFilterCache
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/12 13:46:25  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.3  1998/06/01 13:52:52  jyh
  * Proving twice one is two.
  *

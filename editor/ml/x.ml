@@ -10,6 +10,7 @@ open Refiner.Refiner.TermAddr;;
 open Refiner.Refiner.Refine;;
 
 open Tacticals;;
+open Conversionals;;
 
 open Base_rewrite;;
 open Itt_rfun;;
@@ -22,12 +23,15 @@ load "test";;
 cd "test.test";;
 
 (*
- refine rwtactic (rwaddr (make_address [0;0;0;0]) (andthenrw betaReduction reduceAdd));; 
- down 0;;
+refine rw (higherC (betaReduction andthenC reduceAdd)) 0;;
+down 0;;
 *)
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/12 13:45:20  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.1  1998/06/09 20:51:22  jyh
  * Propagated refinement changes.
  * New tacticals module.

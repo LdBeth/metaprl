@@ -81,7 +81,16 @@ val print_to_channel : int -> buffer -> out_channel -> unit
 val print_to_string : int -> buffer -> string
 
 (*
+ * Debug variables.
+ *)
+val debug_simple_print : bool ref
+val debug_dform : bool ref
+
+(*
  * $Log$
+ * Revision 1.2  1998/06/12 13:47:01  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.1  1998/05/28 15:01:12  jyh
  * Partitioned refiner into subdirectories.
  *

@@ -27,6 +27,9 @@ open Rformat
 
 open Filter_summary
 
+open Tactic_type
+
+open Proof_type
 open Package_type
 open Package_info
 open Package_df
@@ -46,7 +49,7 @@ let _ =
 (*
  * Info need for this shell.
  *)
-type shellInfo =
+type shell_info =
    { (* Display *)
       mutable width : int;
       mutable df_mode : string;
@@ -131,7 +134,7 @@ let get_current_package info =
       Some pack ->
          pack
     | None ->
-         raise (RefineError (StringError "no current package"))
+         raise (RefineError ("Shell.get_current_package", StringError "no current package"))
 
 (*
  * Term printer.
@@ -440,73 +443,73 @@ let save_all () =
  *)
 let create_rw name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_rw", StringError "not implemented"))
    in
       print_exn create name
 
 let create_axiom name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_axiom", StringError "not implemented"))
    in
       print_exn create name
 
 let create_thm name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_thm", StringError "not implemented"))
    in
       print_exn create name
 
 let create_opname name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_opname", StringError "not implemented"))
    in
       print_exn create name
 
 let create_condition name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_condition", StringError "not implemented"))
    in
       print_exn create name
 
 let create_parent name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_parent", StringError "not implemented"))
    in
       print_exn create name
 
 let create_dform name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_dform", StringError "not implemented"))
    in
       print_exn create name
 
 let create_prec name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_prec", StringError "not implemented"))
    in
       print_exn create name
 
 let create_prec_rul name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_prec_rel", StringError "not implemented"))
    in
       print_exn create name
 
 let create_resource name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_resources", StringError "not implemented"))
    in
       print_exn create name
 
 let create_infix name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_infix", StringError "not implemented"))
    in
       print_exn create name
 
 let create_ml name =
    let create name =
-      raise (RefineError (StringError "not implemented"))
+      raise (RefineError ("Shell.create_ml", StringError "not implemented"))
    in
       print_exn create name
 
@@ -613,6 +616,25 @@ let fold_all () =
       print_exn set ()
 
 (************************************************************************
+ * TACTICS                                                              *
+ ************************************************************************)
+
+let resources () =
+   (Package.argument (get_current_package info)).ref_rsrc
+
+let dT i p =
+   (resources ()).ref_d i p
+
+let subtypeT p =
+   (resources ()).ref_subtype p
+
+let squashT p =
+   (resources ()).ref_squash p
+
+let eqcdT p =
+   (resources ()).ref_eqcd p
+
+(************************************************************************
  * INITIALIZATION                                                       *
  ************************************************************************)
 
@@ -630,6 +652,7 @@ let init () =
          Toploop.execute_phrase false (Ptop_dir ("directory", Pdir_string inc));
          ()
       in
+         Debug_set.init ();
          eval_include nllib;
          List.iter eval_include !includes;
          Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_p4", "print_term"))));
@@ -643,6 +666,9 @@ let init () =
 (*
  *
  * $Log$
+ * Revision 1.13  1998/06/12 13:45:12  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.12  1998/06/01 13:52:26  jyh
  * Proving twice one is two.
  *

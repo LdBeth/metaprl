@@ -54,7 +54,8 @@ LMFILES =\
 	filter_cache_fun\
 	filter_cache\
 	filter_prog\
-	term_grammar
+	term_grammar\
+	filter_grammar
 
 MFILES_CAMLP4 =\
 	filter_parse\

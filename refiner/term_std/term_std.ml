@@ -189,7 +189,7 @@ struct
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
       } when opname == var_opname -> v
-     | t -> raise (TermMatch ("dest_var", t, ""))
+    | t -> raise (TermMatch ("dest_var", t, ""))
 
    (*
     * Make a variable.
@@ -246,11 +246,15 @@ struct
       ({ term_op = { op_name = opname; op_params = [Var v] };
          term_terms = { bvars = []; bterm = term' }::bterms
        } : term) as term when opname == context_opname ->
-         v, term', List.map (function { bvars = []; bterm = t } -> t
+         let dest_bterm = function
+            { bvars = []; bterm = t } ->
+               t
           | _ ->
-               raise (TermMatch ("dest_context", term, "bvars exist")))
-         bterms
-    | term -> raise (TermMatch ("dest_context", term, "not a context"))
+               raise (TermMatch ("dest_context", term, "bvars exist"))
+         in
+            v, term', List.map dest_bterm bterms
+    | term ->
+         raise (TermMatch ("dest_context", term, "not a context"))
 
    let mk_context_term v term terms =
       let mk_bterm term =
@@ -346,6 +350,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.8  1998/06/12 13:47:10  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.7  1998/06/03 22:19:37  jyh
  * Nonpolymorphic refiner.
  *

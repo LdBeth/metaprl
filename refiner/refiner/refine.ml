@@ -51,6 +51,13 @@ let _ =
    if !debug_load then
       eprintf "Loading Refine%t" eflush
 
+let debug_refiner =
+   create_debug (**)
+      { debug_name = "refiner";
+        debug_description = "Display refinement operations";
+        debug_value = false
+      }
+
 module Refine (**)
    (Term : TermSig)
    (TermMan : TermManSig
@@ -88,19 +95,26 @@ struct
     * type here, because the following combinators need to
     * collect exceptions of their subtactics.
     *)
-   type refine_error =
+   type refine_error_info =
       StringError of string
+    | IntError of int
     | TermError of term
     | StringIntError of string * int
     | StringStringError of string * string
     | StringTermError of string * term
-    | GoalError of string * refine_error
-    | SecondError of string * refine_error
-    | SubgoalError of string * int * refine_error
-    | PairError of string * refine_error * refine_error
-    | RewriteAddressError of string * address * refine_error
-    | RewriteError of string * rewrite_error
+    | GoalError of refine_error
+    | SecondError of refine_error
+    | SubgoalError of int * refine_error
+    | PairError of refine_error * refine_error
+    | RewriteAddressError of address * refine_error
+    | RewriteError of rewrite_error
     | NodeError of string * term * refine_error list
+    | TermMatchError of string * term * string
+    | TermPairMatchError of term * term
+    | AddressError of address * term
+    | MetaTermMatchError of meta_term
+
+   and refine_error = string * refine_error_info
 
    exception RefineError of refine_error
 
@@ -389,15 +403,15 @@ struct
       else
          let { mseq_goal = goal1; mseq_hyps = hyps1 } = seq1 in
          let { mseq_goal = goal2; mseq_hyps = hyps2 } = seq2 in
-            let rec compare = function
-               hyp1::hyps1, hyp2::hyps2 ->
-                  alpha_equal hyp1 hyp2 & compare (hyps1, hyps2)
-             | [], [] ->
-                  true
-             | _ ->
-                  false
-            in
-               alpha_equal goal1 goal2 & compare (hyps1, hyps2)
+         let rec compare = function
+            hyp1::hyps1, hyp2::hyps2 ->
+               alpha_equal hyp1 hyp2 & compare (hyps1, hyps2)
+          | [], [] ->
+               true
+          | _ ->
+               false
+         in
+            alpha_equal goal1 goal2 & compare (hyps1, hyps2)
 
    (*
     * Split the goals from the hyps.
@@ -432,10 +446,10 @@ struct
             if alpha_equal (List.nth hyps i) goal then
                [], NthHypJust i
             else
-               raise (RefineError (StringError "nth_hyp"))
+               raise (RefineError ("nth_hyp", StringError "hyp mismatch"))
          with
             Failure "nth" ->
-               raise (RefineError (StringIntError ("nth_hyp", i)))
+               raise (RefineError ("nth_hyp", IntError i))
 
    (*
     * COMPOSE
@@ -447,13 +461,13 @@ struct
       let subgoals' = List.map (fun ext -> ext.ext_goal) extl in
       let _ =
          if not (List_util.for_all2 msequent_alpha_equal subgoals subgoals') then
-            raise (RefineError (StringError "Refine.compose: goal mistmatch"))
+            raise (RefineError ("compose", StringError "goal mistmatch"))
       in
       let justl = List.map (fun ext -> ext.ext_just) extl in
       let just = ComposeJust (just, justl) in
       let subgoals'' = List_util.flat_map (fun ext -> ext.ext_subgoals) extl in
          { ext_goal = goal; ext_just = just; ext_subgoals = subgoals }
-   
+
    (************************************************************************
     * REGULAR REWRITES                                                     *
     ************************************************************************)
@@ -473,7 +487,7 @@ struct
    let rwaddr addr rw t =
       try apply_fun_arg_at_addr rw addr t with
          RefineError x ->
-            raise (RefineError (RewriteAddressError ("rwaddr", addr, x)))
+            raise (RefineError ("rwaddr", RewriteAddressError (addr, x)))
 
    (*
     * Composition is supplied for efficiency.
@@ -482,12 +496,12 @@ struct
       let t', refiner =
          try rw1 t with
             RefineError x ->
-               raise (RefineError (GoalError ("andthenrw", x)))
+               raise (RefineError ("andthenrw", GoalError x))
       in
       let t'', refiner' =
          try rw2 t' with
             RefineError x ->
-               raise (RefineError (SecondError ("andthenrw", x)))
+               raise (RefineError ("andthenrw", SecondError x))
       in
          t'', PairRefiner (refiner, refiner')
 
@@ -496,7 +510,7 @@ struct
          RefineError x ->
             try rw2 t with
                RefineError y ->
-                  raise (RefineError (PairError ("orelserw", x, y)))
+                  raise (RefineError ("orelserw", PairError (x, y)))
 
    (************************************************************************
     * CONDITIONAL REWRITES                                                 *
@@ -524,7 +538,7 @@ struct
             t, subgoals, just
       with
          RefineError x ->
-            raise (RefineError (RewriteAddressError ("crwaddr", addr, x)))
+            raise (RefineError ("crwaddr", RewriteAddressError (addr, x)))
 
    (*
     * Apply a conditional rewrite.
@@ -537,7 +551,7 @@ struct
       in
       let subgoals' = List.map mk_subgoal (t' :: subgoals) in
          subgoals', just
-   
+
    (*
     * Composition is supplied for efficiency.
     *)
@@ -545,12 +559,12 @@ struct
       let t', subgoals, just =
          try crw1 seq t with
             RefineError x ->
-               raise (RefineError (GoalError ("candthenrw", x)))
+               raise (RefineError ("candthenrw", GoalError x))
       in
       let t'', subgoals', just' =
          try crw2 seq t' with
             RefineError x ->
-               raise (RefineError (SecondError ("candthenrw", x)))
+               raise (RefineError ("candthenrw", SecondError x))
       in
          t'', subgoals @ subgoals', PairJust (just, just')
 
@@ -559,7 +573,7 @@ struct
          RefineError x ->
             try crw2 seq t with
                RefineError y ->
-                  raise (RefineError (PairError ("corelserw", x, y)))
+                  raise (RefineError ("corelserw", PairError (x, y)))
 
    (************************************************************************
     * UTILITIES                                                            *
@@ -628,7 +642,7 @@ struct
                   search refiners next
              | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next } as r ->
                   if n = name then
-                     raise (RefineError (StringStringError (n, "ML rewrites can't be justified")))
+                     raise (RefineError (n, StringError "ML rewrites can't be justified"))
                   else
                      search refiners next
 
@@ -715,22 +729,22 @@ struct
       let find_axiom name =
          try Hashtbl.find axioms name with
             Not_found ->
-               raise (RefineError (StringStringError (name, "axiom is not justified")))
+               raise (RefineError (name, StringError "axiom is not justified"))
       in
       let find_rule name =
          try Hashtbl.find rules name with
             Not_found ->
-               raise (RefineError (StringStringError (name, "rule is not justified")))
+               raise (RefineError (name, StringError "rule is not justified"))
       in
       let find_rewrite name =
          try Hashtbl.find rewrites name with
             Not_found ->
-               raise (RefineError (StringStringError (name, "rewrite is not justified")))
+               raise (RefineError (name, StringError "rewrite is not justified"))
       in
       let find_cond_rewrite name =
          try Hashtbl.find cond_rewrites name with
             Not_found ->
-               raise (RefineError (StringStringError (name, "cond_rewrite is not justified")))
+               raise (RefineError (name, StringError "cond_rewrite is not justified"))
       in
          { find_axiom = find_axiom;
            find_rule = find_rule;
@@ -752,7 +766,7 @@ struct
             if pax.pax_axiom == ax then
                pax
             else
-               raise (RefineError (StringStringError (name, "axiom proof does not match")))
+               raise (RefineError (name, StringError "axiom proof does not match"))
       in
       let check_rule rule =
          let { rule_name = name } = rule in
@@ -760,7 +774,7 @@ struct
             if prule.prule_rule == rule then
                prule
             else
-               raise (RefineError (StringStringError (name, "rule proof does not match")))
+               raise (RefineError (name, StringError "rule proof does not match"))
       in
       let check_rewrite rw =
          let { rw_name = name } = rw in
@@ -768,7 +782,7 @@ struct
             if prw.prw_rewrite == rw then
                prw
             else
-               raise (RefineError (StringStringError (name, "rewrite proof does not match")))
+               raise (RefineError (name, StringError "rewrite proof does not match"))
       in
       let check_cond_rewrite crw =
          let { crw_name = name } = crw in
@@ -776,7 +790,7 @@ struct
             if pcrw.pcrw_rewrite == crw then
                pcrw
             else
-               raise (RefineError (StringStringError (name, "cond_rewrite proof does not match")))
+               raise (RefineError (name, StringError "cond_rewrite proof does not match"))
       in
          { check_axiom = check_axiom;
            check_rule = check_rule;
@@ -912,6 +926,22 @@ struct
     ************************************************************************)
 
    (*
+    * We wrap the rewrite to map the exceptions.
+    *)
+   let apply_rewrite name rw addrs_names terms =
+      try Rewrite.apply_rewrite rw addrs_names terms with
+         Rewrite.RewriteError error ->
+            raise (RefineError (name, RewriteError error))
+       | Term.TermMatch (s1, t, s2) ->
+            raise (RefineError (name, TermMatchError (s1, t, s2)))
+       | Term.BadMatch (t1, t2) ->
+            raise (RefineError (name, TermPairMatchError (t1, t2)))
+       | TermAddr.IncorrectAddress (addr, t) ->
+            raise (RefineError (name, AddressError (addr, t)))
+       | TermMeta.MetaTermMatch t ->
+            raise (RefineError (name, MetaTermMatchError t))
+
+   (*
     * An theorem is a special case of a rule, where to
     * arity is 1, and there are no addrs or params.
     * Still get a tactic by this name (the equivalent
@@ -952,7 +982,7 @@ struct
                                pax_refiner = refiner
             }
        | _ ->
-            raise (RefineError (StringStringError (name, "not an axiom")))
+            raise (RefineError (name, StringError "not an axiom"))
 
    let add_delayed_axiom refiner name extf =
       if !debug_refiner then
@@ -964,7 +994,7 @@ struct
                let ext = extf () in
                let { ext_goal = { mseq_goal = goal' }; ext_subgoals = subgoals } = ext in
                   if not (alpha_equal (nth_concl goal' 0) goal) or subgoals != [] then
-                     raise (RefineError (StringStringError (name, "not justified")));
+                     raise (RefineError (name, StringError "not justified"));
                   term_of_extract refiner ext []
             in
                PrimAxiomRefiner { pax_proof = Delayed compute;
@@ -972,7 +1002,7 @@ struct
                                   pax_refiner = refiner
                }
        | _ ->
-            raise (RefineError (StringStringError (name, "not an axiom")))
+            raise (RefineError (name, StringError "not an axiom"))
 
    (************************************************************************
     * RULE                                                                 *
@@ -993,7 +1023,7 @@ struct
       let rw =
          try Rewrite.term_rewrite (addrs, names) (goal :: params) subgoals with
             Rewrite.RewriteError error ->
-               raise (RefineError (RewriteError (name, error)))
+               raise (RefineError (name, RewriteError error))
       in
       let refiner' =
          RuleRefiner { rule_name = name;
@@ -1003,11 +1033,7 @@ struct
          }
       in
       let tac addrs_names params { mseq_goal = goal; mseq_hyps = hyps } =
-         let subgoals, names' =
-            try Rewrite.apply_rewrite rw addrs_names (goal :: params) with
-               Rewrite.RewriteError error ->
-                  raise (RefineError (RewriteError (name, error)))
-         in
+         let subgoals, names' = apply_rewrite name rw addrs_names (goal :: params) in
          let make_subgoal subgoal =
             { mseq_goal = subgoal; mseq_hyps = hyps }
          in
@@ -1044,14 +1070,10 @@ struct
       let rw =
          try Rewrite.term_rewrite ([||], [||]) (create_redex vars args :: params) [result] with
             Rewrite.RewriteError error ->
-               raise (RefineError (RewriteError (name, error)))
+               raise (RefineError (name, RewriteError error))
       in
       let compute_ext vars params args =
-         match
-            try Rewrite.apply_rewrite rw ([||], [||]) (create_redex vars args :: params) with
-               Rewrite.RewriteError error ->
-                  raise (RefineError (RewriteError (name, error)))
-         with
+         match apply_rewrite name rw ([||], [||]) (create_redex vars args :: params) with
             [c], x when Array.length x = 0 ->
                c
           | _ ->
@@ -1070,7 +1092,7 @@ struct
                                  prule_refiner = refiner
                }
        | _ ->
-            raise (RefineError (StringStringError (name, "not a rule")))
+            raise (RefineError (name, StringError "not a rule"))
 
    let add_delayed_rule refiner name vars params args ext =
       if !debug_refiner then
@@ -1083,7 +1105,7 @@ struct
                let { ext_goal = goal'; ext_subgoals = subgoals } = ext in
                let _ =
                   if not (msequent_alpha_equal goal' goal) or subgoals <> [] then
-                     raise (RefineError (StringError "Refine.add_derived_rule: extract does not match"))
+                     raise (RefineError (name, StringError "extract does not match"))
                in
                let t = term_of_extract refiner ext args in
                   compute_rule_ext name vars params args t
@@ -1093,7 +1115,7 @@ struct
                                  prule_refiner = refiner
                }
        | _ ->
-            raise (RefineError (StringStringError (name, "not a rule")))
+            raise (RefineError (name, StringError "not a rule"))
 
    (*
     * An ML condition.
@@ -1132,7 +1154,7 @@ struct
       let rw =
          try Rewrite.term_rewrite (addrs, names) (goal::params) subgoals with
             Rewrite.RewriteError error ->
-               raise (RefineError (RewriteError (name, error)))
+               raise (RefineError (name, RewriteError error))
       in
          true
 
@@ -1147,7 +1169,7 @@ struct
       let rw =
          try Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] with
             Rewrite.RewriteError error ->
-               raise (RefineError (RewriteError (name, error)))
+               raise (RefineError (name, RewriteError error))
       in
          true
 
@@ -1161,7 +1183,7 @@ struct
       let rw =
          try Rewrite.term_rewrite ([||], [||]) [redex] [contractum] with
             Rewrite.RewriteError error ->
-               raise (RefineError (RewriteError (name, error)))
+               raise (RefineError (name, RewriteError error))
       in
       let refiner' =
          RewriteRefiner { rw_name = name;
@@ -1170,11 +1192,7 @@ struct
          }
       in
       let rw t =
-         match
-            try Rewrite.apply_rewrite rw ([||], [||]) [t] with
-               Rewrite.RewriteError error ->
-                  raise (RefineError (RewriteError (name, error)))
-         with
+         match apply_rewrite name rw ([||], [||]) [t] with
             [t'], _ ->
                t', refiner'
           | [], _ ->
@@ -1198,9 +1216,9 @@ struct
                                        prw_proof = Extracted ()
                   }
                else
-                  raise (RefineError (StringStringError (name, "not a rewrite")))
+                  raise (RefineError (name, StringError "not a rewrite"))
        | _ ->
-            raise (RefineError (StringStringError (name, "not a rewrite")))
+            raise (RefineError (name, StringError "not a rewrite"))
 
    let add_delayed_rewrite refiner name redex contractum ext =
       if !debug_refiner then
@@ -1218,9 +1236,9 @@ struct
                         if alpha_equal goal redex & alpha_equal subgoal contractum then
                            term_of_extract refiner ext []
                         else
-                           raise (RefineError (StringError "Refine.add_delayed_rewrite: extract does not match"))
+                           raise (RefineError (name, StringError "extract does not match"))
                    | _ ->
-                        raise (RefineError (StringError "Refine.add_delayed_rewrite: bogus proof"))
+                        raise (RefineError (name, StringError "bogus proof"))
                in
                   ()
             in
@@ -1229,7 +1247,7 @@ struct
                                     prw_refiner = refiner
                }
        | _ ->
-            raise (RefineError (StringStringError (name, "not a rewrite")))
+            raise (RefineError (name, StringError "not a rewrite"))
 
    (************************************************************************
     * CONDITIONAL REWRITE                                                  *
@@ -1244,7 +1262,7 @@ struct
       let rw =
          try Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] with
             Rewrite.RewriteError error ->
-               raise (RefineError (RewriteError (name, error)))
+               raise (RefineError (name, RewriteError error))
       in
       let refiner' =
          CondRewriteRefiner { crw_name = name;
@@ -1256,11 +1274,7 @@ struct
       let rw' (vars, params) seq t =
          (* BUG: is alpha variance compute correctly by replace_goal? *)
          let subgoals' = List.map (replace_goal seq) subgoals in
-            match
-               try Rewrite.apply_rewrite rw ([||], vars) (t :: params) with
-                  Rewrite.RewriteError error ->
-                     raise (RefineError (RewriteError (name, error)))
-            with
+            match apply_rewrite name rw ([||], vars) (t :: params) with
                [t'], names ->
                   t',
                   subgoals',
@@ -1289,9 +1303,9 @@ struct
                                            pcrw_refiner = refiner
                   }
                else
-                  raise (RefineError (StringStringError (name, "not a conditional rewrite")))
-          | _ ->
-               raise (RefineError (StringStringError (name, "not a conditional rewrite")))
+                  raise (RefineError (name, StringError "not a conditional rewrite"))
+       | _ ->
+            raise (RefineError (name, StringError "not a conditional rewrite"))
 
    let add_delayed_cond_rewrite refiner name vars params subgoals redex contractum ext =
       if !debug_refiner then
@@ -1312,7 +1326,7 @@ struct
                   then
                      term_of_extract refiner ext []
                   else
-                     raise (RefineError (StringError "Refine.add_delayed_cond_rewrite: derivation does not match"));
+                     raise (RefineError (name, StringError "derivation does not match"));
                   ()
             in
                PrimCondRewriteRefiner { pcrw_proof = Delayed compute_ext;
@@ -1320,7 +1334,7 @@ struct
                                         pcrw_refiner = refiner
                }
        | _ ->
-            raise (RefineError (StringStringError (name, "not a conditional rewrite")))
+            raise (RefineError (name, StringError "not a conditional rewrite"))
 
    (*
     * An ML rewrite.
@@ -1338,7 +1352,7 @@ struct
          let just = SingleJust { ext_names = vars;
                                  ext_params = params;
                                  ext_refiner = refiner'
-                               }
+                    }
          in
             t', subgoals', just
       in
@@ -1496,6 +1510,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/12 13:46:54  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.3  1998/06/03 15:23:16  jyh
  * Generalized many the term_addr, term_man, and term_shape modules.
  *

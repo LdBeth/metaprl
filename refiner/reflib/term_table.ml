@@ -29,6 +29,13 @@ let _ =
    if !debug_load then
       eprintf "Loading Term_table%t" eflush
 
+let debug_term_table =
+   create_debug (**)
+      { debug_name = "term_table";
+        debug_description = "Display Term_table (term hashtable) operations";
+        debug_value = false
+      }
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -447,6 +454,9 @@ let lookup table t =
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/12 13:47:03  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.2  1998/06/01 13:55:07  jyh
  * Proving twice one is two.
  *

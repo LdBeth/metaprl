@@ -29,6 +29,12 @@ let _ =
    if !debug_load then
       eprintf "Loading Filter_summary%t" eflush
 
+let debug_summary =
+   create_debug (**)
+      { debug_name = "summary";
+        debug_description = "display prl summary operations";
+        debug_value = false
+      }
 
 (************************************************************************
  * TYPES                                                                *
@@ -510,12 +516,14 @@ let find { info_list = summary } name =
 (*
  * New info struct.
  *)
-let new_module_info () = { info_list = [] }
+let new_module_info () =
+   { info_list = [] }
 
 (*
  * Coerce the info.
  *)
-let info_items { info_list = info } = List.rev info
+let info_items { info_list = info } =
+   List.rev info
 
 (*
  * Optional application.
@@ -1810,6 +1818,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.26  1998/06/12 13:46:36  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.25  1998/06/01 13:53:13  jyh
  * Proving twice one is two.
  *

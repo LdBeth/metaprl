@@ -9,7 +9,6 @@ sig
 
    (* Subterm addressing *)
    exception IncorrectAddress of address * term
-   exception BadAddressPrefix of address * address
 
    (*
     * Constructors.
@@ -34,6 +33,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/12 13:47:05  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.4  1998/06/03 22:19:27  jyh
  * Nonpolymorphic refiner.
  *

@@ -137,59 +137,71 @@ let format_rewrite_error db buf printers = function
  * Print a refinement error.
  *)
 let format_refine_error db buf printers error =
-   let rec format = function
-      StringError s ->
-         format_string buf s
-    | TermError t ->
-         printers.format_term db buf t
-    | StringIntError (s, i) ->
-         format_string buf s;
-         format_space buf;
-         format_int buf i
-    | StringStringError (s1, s2) ->
-         format_string buf s1;
-         format_space buf;
-         format_string buf s2
-    | StringTermError (s, t) ->
-         format_string buf s;
-         format_space buf;
-         printers.format_term db buf t
-    | GoalError (s, e) ->
-         format_string buf s;
-         format_space buf;
-         format e
-    | SecondError (s, e) ->
-         format_string buf s;
-         format_space buf;
-         format e
-    | SubgoalError (s, i, e) ->
-         format_string buf s;
-         format_space buf;
-         format_int buf i;
-         format_space buf;
-         format e
-    | PairError (s, e1, e2) ->
-         format_string buf s;
-         format_space buf;
-         format e1;
-         format_space buf;
-         format e2
-    | RewriteAddressError (s, a, e) ->
-         format_string buf s;
-         format_space buf;
-         format_address buf a;
-         format_space buf;
-         format e
-    | RewriteError (s, e) ->
-         format_string buf s;
-         format_space buf;
-         format_rewrite_error db buf printers e
-    | NodeError (s, t, el) ->
-         format_string buf s;
-         format_space buf;
-         printers.format_term db buf t
+   let rec format indent (name, error) =
+      format_newline buf;
+      for i = 0 to indent do
+         format_char buf ' ';
+      done;
+      format_string buf name;
+      format_string buf ": ";
+      match error with
+         StringError s ->
+            format_string buf s
+       | IntError i ->
+            format_int buf i
+       | TermError t ->
+            printers.format_term db buf t
+       | StringIntError (s, i) ->
+            format_string buf s;
+            format_space buf;
+            format_int buf i
+       | StringStringError (s1, s2) ->
+            format_string buf s1;
+            format_space buf;
+            format_string buf s2
+       | StringTermError (s, t) ->
+            format_string buf s;
+            format_space buf;
+            printers.format_term db buf t
+       | GoalError e ->
+            format (indent + 3) e
+       | SecondError e ->
+            format (indent + 3) e
+       | SubgoalError (i, e) ->
+            format_int buf i;
+            format_space buf;
+            format (indent + 3) e
+       | PairError (e1, e2) ->
+            format (indent + 3) e1;
+            format (indent + 3) e2
+       | RewriteAddressError (a, e) ->
+            format_address buf a;
+            format_space buf;
+            format (indent + 3) e
+       | RewriteError e ->
+            format_rewrite_error db buf printers e
+       | NodeError (s, t, el) ->
+            format_string buf s;
+            format_space buf;
+            printers.format_term db buf t
+       | TermMatchError (s1, t, s2) ->
+            format_string buf s1;
+            format_string buf ": ";
+            format_string buf s2;
+            format_newline buf;
+            printers.format_term db buf t
+       | TermPairMatchError (t1, t2) ->
+            printers.format_term db buf t1;
+            format_newline buf;
+            printers.format_term db buf t2
+       | AddressError (addr, t) ->
+            format_address buf addr;
+            format_space buf;
+            printers.format_term db buf t
+       | MetaTermMatchError mt ->
+            printers.format_mterm db buf mt
    in
-      format error
+      format 0 error
 
 (*
  * Convert an exception to a string.
@@ -222,12 +234,6 @@ let format_exn db buf printers error =
          format_address buf a;
          format_space buf;
          printers.format_term db buf t
-    | BadAddressPrefix (a1, a2) ->
-         format_string buf "Bad address prefix:";
-         format_space buf;
-         format_address buf a1;
-         format_space buf;
-         format_address buf a2
     | Term.BadMatch (t1, t2) ->
          format_string buf "Terms do not match:";
          format_space buf;
@@ -265,7 +271,9 @@ let print db f x =
       exn ->
          let buf = new_buffer () in
             format_exn db buf exn;
+            format_newline buf;
             print_to_channel 80 buf stderr;
+            flush stderr;
             raise exn
 
 let print_exn db out s exn =
@@ -278,12 +286,16 @@ let print_exn db out s exn =
       format_exn db buf exn;
       format_popm buf;
       format_ezone buf;
+      format_newline buf;
       print_to_channel 80 buf out;
       flush out;
       raise exn
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/12 13:46:59  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.1  1998/05/28 15:01:04  jyh
  * Partitioned refiner into subdirectories.
  *

@@ -7,6 +7,7 @@ open Printf
 open Debug
 
 open Refiner.Refiner.Term
+open Resource
 
 open Filter_summary
 
@@ -123,6 +124,9 @@ let mem_resource { resource_name = name } resources =
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/12 13:46:40  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.9  1998/05/27 15:13:07  jyh
  * Functorized the refiner over the Term module.
  *

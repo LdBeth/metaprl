@@ -333,8 +333,13 @@ val check_implementation :
 val eprint_command : ('proof, 'ctyp, 'expr, 'item) summary_item -> unit
 val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
+val debug_summary : bool ref
+
 (*
  * $Log$
+ * Revision 1.16  1998/06/12 13:46:38  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.15  1998/05/29 14:53:02  jyh
  * Better Makefiles.
  *

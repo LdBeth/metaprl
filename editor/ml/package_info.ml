@@ -42,6 +42,13 @@ let _ =
    if !debug_load then
       eprintf "Loading Package_info%t" eflush
 
+let debug_package_info =
+   create_debug (**)
+      { debug_name = "package_info";
+        debug_description = "display package operations";
+        debug_value = false
+      }
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -57,6 +64,11 @@ type proof_info =
 (************************************************************************
  * REFERENCES                                                           *
  ************************************************************************)
+
+let debug_item =
+   let loc = 0, 0 in
+   let unit_expr = <:expr< () >> in
+      ref <:str_item< $exp: unit_expr$ >>
 
 (*
  * Make a dummy tactic_argument.
@@ -94,6 +106,7 @@ let clear_tactic_argument () =
  * Install a new argument (called when a theory is evaluated).
  *)
 let install_tactic_argument arg =
+   eprintf "Package_info.install_tactic_argument%t" eflush;
    (!tactic_argument) := arg
 
 (*
@@ -126,25 +139,26 @@ let prove name tactics' =
  *)
 let loc = 0, 0
 
+let pt             = <:expr< $uid: "Proof_type"$ >>
+let ref_label_id   = <:expr< $pt$ . $lid: "ref_label"$ >>
+let ref_args_id    = <:expr< $pt$ . $lid: "ref_args"$ >>
+let ref_fcache_id  = <:expr< $pt$ . $lid: "ref_fcache"$ >>
+let ref_rsrc_id    = <:expr< $pt$ . $lid: "ref_rsrc"$ >>
+
 let tt             = <:expr< $uid: "Tactic_type"$ >>
-let ref_label_id   = <:expr< $tt$ . $lid: "ref_label"$ >>
-let ref_args_id    = <:expr< $tt$ . $lid: "ref_args"$ >>
-let ref_fcache_id  = <:expr< $tt$ . $lid: "ref_fcache"$ >>
-let ref_rsrc_id    = <:expr< $tt$ . $lid: "ref_rsrc"$ >>
 let ref_d_id       = <:expr< $tt$ . $lid: "ref_d"$ >>
 let ref_eqcd_id    = <:expr< $tt$ . $lid: "ref_eqcd"$ >>
 let ref_typeinf_id = <:expr< $tt$ . $lid: "ref_typeinf"$ >>
 let ref_squash_id  = <:expr< $tt$ . $lid: "ref_squash"$ >>
 let ref_subtype_id = <:expr< $tt$ . $lid: "ref_subtype"$ >>
 
-let cache_default =
+let cache_default = <:expr< $uid: "Tactic_cache"$ . $lid: "new_cache"$ () >>
+
+let make_extract expr =
    let extract_expr =
       <:expr< $uid: "Tactic_cache"$ . $lid: "extract"$ >>
    in
-   let new_expr =
-      <:expr< $uid: "Tactic_cache"$ . $lid: "new_cache"$ () >>
-   in
-      <:expr< $extract_expr$ $new_expr$ >>
+      <:expr< $extract_expr$ $expr$ >>
 
 let wild_patt = <:patt< _ >>
 
@@ -197,11 +211,22 @@ let subtype_default =
  * The resources are checked first to see if they exist, and if they
  * don't, then dummy values are plugged in.
  *)
-let install_tactic_arg_expr info =
-   let resources = get_resources info in
+let install_tactic_arg_expr resources =
+   let _ =
+      if !debug_package_info then
+         let print (_, { resource_name = name }) =
+            eprintf "\tresource %s%t" name eflush
+         in
+            eprintf "Package_info.install_tactic_arg: resources:\n";
+            List.iter print resources
+   in
    let rec get_resource name default =
+      if !debug_package_info then
+         eprintf "Package_info.install_tactic_arg: check for resource %s%t" name eflush;
       let rec search = function
-         { resource_name = name' } :: t ->
+         (_, { resource_name = name' }) :: t ->
+            if !debug_package_info then
+               eprintf "Package_info.install_tactic_arg: %s = %s%t" name name' eflush;
             if name = name' then
                (<:expr< $lid: name$ . $uid: "Resource"$ . $lid: "resource_extract"$ $lid: name$ >>)
             else
@@ -232,15 +257,20 @@ let install_tactic_arg_expr info =
    let arg_expr =
       (<:expr< { $list: [ ref_label_id, label_expr;
                           ref_args_id, args_expr;
-                          ref_fcache_id, cache_expr;
+                          ref_fcache_id, make_extract cache_expr;
                           ref_rsrc_id, rsrc_expr
                         ]$
                } >>)
    in
    let install_expr =
-      <:expr< $uid: "Package_info"$ . $lid: "install_tactic_arg"$ $arg_expr$ >>
+      <:expr< $uid: "Printexc"$ . $lid: "print"$
+              $uid: "Package_info"$ . $lid: "install_tactic_argument"$
+              $arg_expr$
+      >>
    in
-      <:str_item< $exp: arg_expr$ >>
+      if !debug_package_info then
+         eprintf "Install tactic arg%t" eflush;
+      <:str_item< $exp: install_expr$ >>
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -614,41 +644,16 @@ struct
     * The info is the _signature_.  Later we may want to replace
     * it with the implementation.
     *)
-   let inline_hook pack root_path cache (path, info) (paths, resources) =
+   let inline_hook pack root_path cache (path, info) () =
       (* Include all the resources *)
-      if !debug_resource then
+      if !debug_package_info then
          eprintf "Inline_hook: %s, %s%t" (string_of_path root_path) (string_of_path path) eflush;
-      let add_resource rsrc =
-         if !debug_resource then
-            eprintf "Adding resource: %s.%s%t" (string_of_path path) rsrc.resource_name eflush;
-         Cache.StrFilterCache.add_resource cache path rsrc
-      in
-      let nresources, nresources' =
-         (*
-          * nresources: all the resources
-          * nresources': just the new ones
-          *)
-         let rec collect nresources nresources' = function
-            rsrc::tl ->
-               if mem_resource rsrc nresources then
-                  collect nresources nresources' tl
-               else
-                  collect (rsrc :: nresources) (rsrc :: nresources') tl
-          | [] ->
-               nresources, nresources'
-         in
-            collect resources [] (get_resources info)
-      in
-         List.iter add_resource nresources';
 
-         (* Add all the infix words *)
-         List.iter add_infix (get_infixes info);
+      (* Add all the infix words *)
+      List.iter add_infix (get_infixes info);
 
-         (* Add this node to the pack *)
-         maybe_add_package pack path info;
-
-         (* Add the path to the list of parents *)
-         path :: paths, nresources
+      (* Add this node to the pack *)
+      maybe_add_package pack path info
 
    (*
     * Get a loaded theory.
@@ -743,10 +748,10 @@ struct
          let loc = 0, 0 in
          let { pack_cache = cache } = pack in
          let path = [name] in
-         let info, _ =
+         let info, () =
             clear_proofs ();
             clear_tactics ();
-            Cache.StrFilterCache.load cache name ImplementationType InterfaceType (inline_hook pack path) ([], [])
+            Cache.StrFilterCache.load cache name ImplementationType InterfaceType (inline_hook pack path) ()
          in
          let status =
             let filename = Cache.StrFilterCache.filename cache info in
@@ -756,33 +761,52 @@ struct
                else
                   Unmodified
          in
+         let info' = Cache.StrFilterCache.info info in
+         let mod_name = String.capitalize name in
+         let arg_item = install_tactic_arg_expr (Cache.StrFilterCache.resources info) in
+         let item =
             if is_theory_loaded name then
-               build_package pack name status info
+               let open_item = (<:str_item< open $[ mod_name ]$ >>) in
+               let mod_expr = (<:module_expr< struct $list: [ open_item; arg_item ]$ end >>) in
+               let dumb_name = "Arg" ^ mod_name in
+                  (<:str_item< module $dumb_name$ = $mod_expr$ >>)
             else
-               let item =
-                  let info' = Cache.StrFilterCache.info info in
-                  let items = Extract.extract_str info' (Cache.StrFilterCache.resources info) name in
-                  let items = (List.map fst items) @ [install_tactic_arg_expr info'] in
-                  let mn = String.capitalize name in
-                  let me = (<:module_expr< struct $list: items$ end >>) in
-                      (<:str_item< module $mn$ = $me$ >>)
-               in
-               let pt_item = Ast2pt.str_item item [] in
-                  if Toploop.execute_phrase false (Ptop_def pt_item) then
-                     let info = build_package pack name status info in
-                        clear_proofs ();   (* so these can be garbage collected *)
-                        clear_tactics ();
-                        info
-                  else
-                     raise (Failure "Package_info.load: evaluation failed")
+               let items = Extract.extract_str info' (Cache.StrFilterCache.resources info) name in
+               let items = (List.map fst items) @ [arg_item] in
+               let mod_expr = (<:module_expr< struct $list: items$ end >>) in
+                   (<:str_item< module $mod_name$ = $mod_expr$ >>)
+         in
+         let _ = debug_item := item in
+         let pt_item = Ast2pt.str_item item [] in
+            if Toploop.execute_phrase false (Ptop_def pt_item) then
+               let info = build_package pack name status info in
+                  clear_proofs ();   (* so these can be garbage collected *)
+                  clear_tactics ();
+                  info
+            else
+               raise (Failure "Package_info.load: evaluation failed")
       with
          Not_found
        | Sys_error _ ->
              raise (Failure (sprintf "Package_info.load: '%s' not found" name))
+
+         (*
+          * BUG: We have to peek into the type system.
+          * Have to copy <ocaml-src>/typing/typecore.cmi into CAMLLIB
+          * This is really a bug in Toploop.execute_phrase, which
+          * should not raise an exception.
+          *)
+       | Typecore.Error (_, err) ->
+             Typecore.report_error err;
+             eflush stderr;
+             raise (Failure "Package_info.load: load failed")
 end
 
 (*
  * $Log$
+ * Revision 1.14  1998/06/12 13:45:06  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.13  1998/06/09 20:51:12  jyh
  * Propagated refinement changes.
  * New tacticals module.

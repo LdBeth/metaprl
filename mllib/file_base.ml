@@ -17,6 +17,13 @@ let _ =
    if !debug_load then
       eprintf "Loading File_base%t" eflush
 
+let debug_file_base =
+   create_debug (**)
+      { debug_name = "file_base";
+        debug_description = "display file operations on logic files";
+        debug_value = false
+      }
+
 (*
  * Make the summary from the info in the Combo.
  *)
@@ -278,6 +285,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.8  1998/06/12 13:46:51  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.7  1998/06/01 13:54:34  jyh
  * Proving twice one is two.
  *

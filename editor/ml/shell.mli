@@ -76,12 +76,23 @@ val undo : unit -> unit
 val fold : unit -> unit
 val fold_all : unit -> unit
 
+(*
+ * Basic tactics.
+ *)
+val dT : int -> tactic
+val eqcdT : tactic
+val squashT : tactic
+val subtypeT : tactic
+
 (************************************************************************
  * DEBUGGING                                                            *
  ************************************************************************)
 
 (*
  * $Log$
+ * Revision 1.8  1998/06/12 13:45:14  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.7  1998/06/01 13:52:28  jyh
  * Proving twice one is two.
  *

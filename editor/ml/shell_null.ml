@@ -24,10 +24,10 @@ let null_object =
       format_string buf "No object"
    in
    let one_error _ =
-      raise (RefineError (StringError "no current object"))
+      raise (RefineError ("Shell_null.null_object", StringError "no current object"))
    in
    let three_errors _ _ _ =
-      raise (RefineError (StringError "no current object"))
+      raise (RefineError ("Shell_null.null_object", StringError "no current object"))
    in
       { edit_format = edit_format;
         edit_set_goal = one_error;
@@ -48,6 +48,9 @@ let null_object =
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/12 13:45:15  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.3  1998/05/28 13:45:59  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

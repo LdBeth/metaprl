@@ -101,6 +101,7 @@ opt: $(MAIN).cmxa $(NL)
 install:: all
 
 $(NL).run: $(CMOBJS)
+	rm -f $@
 	$(OCAMLMKTOP) -g -o $@ -custom -linkall $(CMOBJS) $(CCLIBS)
 
 clean::

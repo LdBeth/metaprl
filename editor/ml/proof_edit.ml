@@ -65,6 +65,11 @@ type t =
      mutable ped_stack : ped_proof list
    }
 
+(*
+ * Line that delineates proofs.
+ *)
+let hline = "\n--------------------------------------------------------------------------------\n"
+
 (************************************************************************
  * OPERATIONS                                                           *
  ************************************************************************)
@@ -143,7 +148,7 @@ let display_children db buf =
                   Proof.goal pf
 	 in
          let goal = Sequent.goal goal in
-	    format_string buf "\n-<subgoal>-\n";
+	    (* format_string buf "\n-<subgoal>-\n"; *)
 	    format_int buf i;
 	    format_string buf ". ";
 	    format_pushm buf 0;
@@ -196,16 +201,19 @@ let display_status buffer status =
  *)
 let display_goal db buffer goal status =
    (* Display the current address *)
+   format_string buffer hline;
    display_status buffer status;
 
    (* Goal *)
-   format_string buffer "\n-<main>-\n";
+   (* format_string buffer "\n-<main>-\n"; *)
    format_term db buffer (Sequent.goal goal);
 
    (* Rule *)
-   format_string buffer "\n\n-<beginrule>-\n";
+   format_string buffer "\n\n";
+   (* format_string buffer "\n\n-<beginrule>-\n"; *)
    format_string buffer "BY \n";
-   format_string buffer "-<endrule>-\n"
+   (* format_string buffer "-<endrule>-\n" *)
+   format_string buffer hline
 
 (*
  * Display a proof with an inference.
@@ -216,14 +224,16 @@ let display_proof db buffer pf =
    let children = Proof.children pf in
    let status = Proof.status pf in
       (* Display the current address *)
+      format_string buffer hline;
       display_status buffer status;
 
       (* Goal *)
-      format_string buffer "\n-<main>-\n";
+      (* format_string buffer "\n-<main>-\n"; *)
       format_term db buffer goal;
 
       (* Rule *)
-      format_string buffer "\n\n-<beginrule>-\n";
+      format_string buffer "\n\n";
+      (* format_string buffer "\n\n-<beginrule>-\n"; *)
       begin
          match item with
             ProofStep step ->
@@ -233,7 +243,8 @@ let display_proof db buffer pf =
           | ProofProof _ ->
                format_string buffer "BY <proof>\n"
       end;
-      format_string buffer "-<endrule>-\n";
+      (* format_string buffer "-<endrule>-\n"; *)
+      format_string buffer hline;
 
       (* Subgoals *)
       display_children db buffer children
@@ -299,7 +310,7 @@ let undo_ped ped =
                ped.ped_goal <- goal;
                ped.ped_undo <- h::t
        | _ ->
-            raise (RefineError (StringError "undo stack is empty"))
+            raise (RefineError ("undo_ped", StringError "undo stack is empty"))
 
 (*
  * Reset the undo stack.
@@ -320,7 +331,7 @@ let fold f ped =
    let { ped_undo = undo; ped_stack = stack } = ped in
       match undo with
          [] ->
-            raise (RefineError (StringError "fold_ped: no goal"))
+            raise (RefineError ("fold_ped", StringError "no goal"))
        | ped' :: _ ->
             let { ped_proof = pf; ped_select = select } = ped' in
             let ped' = { ped_proof = f pf; ped_select = PedGoal } in
@@ -388,7 +399,7 @@ let rec down_ped ped i =
             let child =
                try List.nth (Proof.children pf) i with
                   Not_found ->
-                     raise (RefineError (StringStringError ("down_ped", "Bad child index")))
+                     raise (RefineError ("down_ped", StringError "Bad child index"))
             in
                match child with
                   Proof.ChildProof pf' ->
@@ -418,7 +429,7 @@ let check_ped ped =
    let { ped_undo = undo; ped_stack = stack } = ped in
       match undo with
          [] ->
-            raise (RefineError (StringError "check_ped: no goal"))
+            raise (RefineError ("check_ped", StringError "no goal"))
        | ped' :: _ ->
             let { ped_proof = pf } = ped' in
                try Proof.check pf with
@@ -437,7 +448,7 @@ let expand_ped df ped =
    let { ped_undo =undo; ped_stack = stack } = ped in
       match undo with
          [] ->
-            raise (RefineError (StringError "expand_ped: no goal"))
+            raise (RefineError ("expand_ped", StringError "no goal"))
        | ped' :: _ ->
             let { ped_proof = pf; ped_select = select } = ped' in
             let ped' = { ped_proof = Proof.expand df pf; ped_select = select } in
@@ -447,6 +458,9 @@ let expand_ped df ped =
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/12 13:45:10  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.9  1998/06/03 22:19:11  jyh
  * Nonpolymorphic refiner.
  *

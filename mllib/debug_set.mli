@@ -1,18 +1,14 @@
 (*
- * Commands to manipulate debug variables.
+ * This file is just loaded to initialize debug variables.
  *)
-
-(*
- * Set a particular debug flag.
- *)
-val set_debug : string -> bool -> unit
-val get_debug : string -> string * bool
-val debuggers : unit -> (string * string * bool) array
 
 val init : unit -> unit
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/12 13:46:49  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.2  1998/04/28 18:30:28  jyh
  * ls() works, adding display.
  *

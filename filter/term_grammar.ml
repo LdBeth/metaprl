@@ -23,6 +23,12 @@ let _ =
    if !debug_load then
       eprintf "Loading Term_grammar%t" eflush
 
+let debug_grammar =
+   create_debug (**)
+      { debug_name = "grammar";
+        debug_description = "display term parsing operations";
+        debug_value = false
+      }
 
 (*
  * Grammars to extend.
@@ -907,6 +913,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/12 13:46:41  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.10  1998/06/01 13:53:24  jyh
  * Proving twice one is two.
  *

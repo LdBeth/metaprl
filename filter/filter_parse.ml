@@ -16,10 +16,12 @@ open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
 open Precedence
 open Simple_print
+open Resource
 
 open Infix
 open Free_vars
 open Term_grammar
+open Filter_grammar
 open Filter_type
 open Filter_util
 open Filter_ast
@@ -28,6 +30,20 @@ open Filter_summary_type
 open Filter_summary_util
 open Filter_cache
 open Filter_prog
+
+(*
+ * Show loading of the file.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Filter_parse%t" eflush
+
+let debug_filter_parse =
+   create_debug (**)
+      { debug_name = "filter_parse";
+        debug_description = "display compiling operations";
+        debug_value = false
+      }
 
 (************************************************************************
  * PATHS                                                                *
@@ -231,38 +247,12 @@ struct
    (*
     * When a module is inlined, add the resources and infixes.
     *)
-   let inline_hook root_path cache (path, info) (paths, resources) =
-      (* Include all the resources *)
-      if !debug_resource then
-         eprintf "Inline_hook: %s, %s%t" (string_of_path root_path) (string_of_path path) eflush;
-      let add_resource rsrc =
-         if !debug_resource then
-            eprintf "Adding resource: %s.%s%t" (string_of_path path) rsrc.resource_name eflush;
-         FilterCache.add_resource cache path rsrc
-      in
-      let nresources, nresources' =
-         (*
-          * nresources: all the resources
-          * nresources': just the new ones
-          *)
-         let rec collect nresources nresources' = function
-            rsrc::tl ->
-               if mem_resource rsrc nresources then
-                  collect nresources nresources' tl
-               else
-                  collect (rsrc :: nresources) (rsrc :: nresources') tl
-          | [] ->
-               nresources, nresources'
-         in
-            collect resources [] (get_resources info)
-      in
-         List.iter add_resource nresources';
+   let inline_hook root_path cache (path, info) paths =
+      (* Add all the infix words *)
+      List.iter add_infix (get_infixes info);
 
-         (* Add all the infix words *)
-         List.iter add_infix (get_infixes info);
-
-         (* Add the path to the list of parents *)
-         path :: paths, nresources
+      (* Add the path to the list of parents *)
+      path :: paths
 
    (*
     * Include a parent.
@@ -273,11 +263,22 @@ struct
     *)
    let declare_parent proc loc path =
       (* Lots of errors can occur here *)
-      let _, (opens, nresources) = FilterCache.inline_module proc.cache path (inline_hook path) ([], []) in
+      let _, opens = FilterCache.inline_module proc.cache path (inline_hook path) [] in
+      let resources = FilterCache.sig_resources proc.cache path in
+      let _ =
+         if !debug_resource then
+            let print_resources out resources =
+               let print { resource_name = name } =
+                  fprintf out " %s" name
+               in
+                  List.iter print resources
+            in
+               eprintf "Filter_parse.declare_parent: %s:%a%t" (string_of_path path) print_resources resources eflush
+      in
       let info =
          { parent_name = path;
            parent_opens = opens;
-           parent_resources = nresources
+           parent_resources = resources
          }
       in
          FilterCache.add_command proc.cache (Parent info, loc)
@@ -474,7 +475,7 @@ struct
     *)
    let declare_resource proc loc r =
       FilterCache.add_command proc.cache (Resource r, loc);
-      FilterCache.add_resource proc.cache [] r
+      FilterCache.add_resource proc.cache r
 
    (*
     * Extract the options and return the mode paired with
@@ -732,6 +733,15 @@ let define_thm proc loc name params args goal tac =
  ************************************************************************)
 
 (*
+ * Add the infixes.
+ *)
+module Unit =
+struct
+end
+
+module FGrammar = MakeFilterGrammar (Unit)
+
+(*
  * Empty items.
  *)
 let empty_sig_item loc =
@@ -962,57 +972,6 @@ EXTEND
        ]];
 
    (*
-    * Pre-add some infix operators.
-    *)
-   expr: AFTER "expr1" (**)
-      [LEFTA
-       [ t1 = expr; op = "THEN"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "THENL"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "orelseT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "andalsoT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "orthenT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenLT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenFLT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "then_OnEachT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "then_OnFirstT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "then_OnLastT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "then_OnSameConclT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenLabLT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenMT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenMLT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenAT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenALT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenWT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenET"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "thenPT"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "andthenC"; t2 = expr ->
-          make_infix loc op t1 t2
-        | t1 = expr; op = "orelseC"; t2 = expr ->
-          make_infix loc op t1 t2
-       ]];
-
-   (*
     * Add the ML parts of the terms.
     *
    exterm:
@@ -1036,6 +995,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.27  1998/06/12 13:46:31  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.26  1998/06/01 19:53:25  jyh
  * Working addition proof.  Removing polymorphism from refiner(?)
  *

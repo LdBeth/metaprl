@@ -4,12 +4,17 @@
 
 include Itt_theory
 
+open MLast
+
 declare guard{'a}
 
 rewrite fold : 'a <--> guard{'a}
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/12 13:45:19  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.3  1998/06/01 13:52:37  jyh
  * Proving twice one is two.
  *

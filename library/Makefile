@@ -27,7 +27,10 @@ CMALIBS :=\
 	nums.cma\
 	unix.cma
 
-CCLIBS = -cclib -lunix -cclib -lnums
+CCLIBS =\
+	-cclib $(ROOT)/lib/clib.a\
+	-cclib -lunix\
+	-cclib -lnums
 
 # Library files
 LMFILES :=\

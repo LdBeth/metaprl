@@ -12,6 +12,7 @@ open Debug
 
 open Rformat
 open Dform
+open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.Refine
@@ -52,7 +53,7 @@ type rw =
 let seq = << sequent { 'H >- 'rw } >>
 
 let mk_goal arg redex contractum =
-   let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
+   let rw = TermMan.replace_goal seq (mk_xrewrite_term redex contractum) in
    let { ref_label = label; ref_fcache = cache; ref_args = args; ref_rsrc = resources } = arg in
       Tactic_type.create label { mseq_goal = rw; mseq_hyps = [] } cache args resources
 
@@ -101,14 +102,14 @@ let format_tac db buf arg =
  * A primtive rewrite.
  *)
 let format_prim_rewrite db buf arg params assums redex contractum =
-   let tac = mk_rw_goal arg assums redex contractum in
+   let tac = Refine_exn.print db (mk_rw_goal arg assums redex) contractum in
       format_tac db buf tac;
       format_newline buf;
       format_string buf "Primitive";
       format_newline buf
 
 let format_cond_rewrite db buf arg params assums redex contractum expr =
-   let tac = mk_rw_goal arg assums redex contractum in
+   let tac = Refine_exn.print db (mk_rw_goal arg assums redex) contractum in
       format_tac db buf tac;
       format_newline buf;
       format_string buf "Derived> ";
@@ -163,19 +164,19 @@ let edit pack arg name obj =
    let edit_check () =
       match obj.rw_ped with
          Primitive _ ->
-            raise (RefineError (StringError "Shell_rewrite.check: can't check primitive rules"))
+            raise (RefineError ("Shell_rewrite.check", StringError "can't check primitive rules"))
        | Derived _ ->
-            raise (RefineError (StringError "Shell_rewrite.check: can't check noninteractive proofs"))
+            raise (RefineError ("Shell_rewrite.check", StringError "can't check noninteractive proofs"))
        | Interactive ped ->
             try Proof_edit.check_ped ped with
                RefineError err ->
-                  raise (RefineError (GoalError (name, err)))
+                  raise (RefineError (name, GoalError err))
    in
    let get_ped obj =
       match obj.rw_ped with
          Primitive _
        | Derived _ ->
-            raise (RefineError (StringError "Shell_rewrite: proof is not interactive"))
+            raise (RefineError ("Shell_rewrite.get_ped", StringError "proof is not interactive"))
        | Interactive ped ->
             ped
    in
@@ -298,6 +299,9 @@ let view_crw pack
 
 (*
  * $Log$
+ * Revision 1.13  1998/06/12 13:45:17  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.12  1998/06/09 20:51:20  jyh
  * Propagated refinement changes.
  * New tacticals module.

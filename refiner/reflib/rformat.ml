@@ -35,6 +35,20 @@ let _ =
    if !debug_load then
       eprintf "Loading Rformat%t" eflush
 
+let debug_dform =
+   create_debug (**)
+      { debug_name = "dform";
+        debug_description = "Display display-form operations";
+        debug_value = false
+      }
+
+let debug_simple_print =
+   create_debug (**)
+      { debug_name = "simple_print";
+        debug_description = "Display simple printing operations";
+        debug_value = false
+      }
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -782,6 +796,9 @@ let print_to_string rmargin buf =
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/12 13:47:00  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.2  1998/06/01 13:55:02  jyh
  * Proving twice one is two.
  *

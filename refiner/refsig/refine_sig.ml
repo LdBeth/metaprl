@@ -33,19 +33,26 @@ sig
     * type here, because the following combinators need to
     * collect exceptions of their subtactics.
     *)
-   type refine_error =
+   type refine_error_info =
       StringError of string
+    | IntError of int
     | TermError of term
     | StringIntError of string * int
     | StringStringError of string * string
     | StringTermError of string * term
-    | GoalError of string * refine_error
-    | SecondError of string * refine_error
-    | SubgoalError of string * int * refine_error
-    | PairError of string * refine_error * refine_error
-    | RewriteAddressError of string * address * refine_error
-    | RewriteError of string * rewrite_error
+    | GoalError of refine_error
+    | SecondError of refine_error
+    | SubgoalError of int * refine_error
+    | PairError of refine_error * refine_error
+    | RewriteAddressError of address * refine_error
+    | RewriteError of rewrite_error
     | NodeError of string * term * refine_error list
+    | TermMatchError of string * term * string
+    | TermPairMatchError of term * term
+    | AddressError of address * term
+    | MetaTermMatchError of meta_term
+   
+   and refine_error = string * refine_error_info
 
    exception RefineError of refine_error
 
@@ -428,6 +435,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/12 13:47:04  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.4  1998/06/09 20:52:24  jyh
  * Propagated refinement changes.
  * New tacticals module.

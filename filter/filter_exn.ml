@@ -95,6 +95,7 @@ let format_exn db buf exn =
 let print_exn db out exn =
    let buf = new_buffer () in
       format_exn db buf exn;
+      format_newline buf;
       print_to_channel 80 buf stderr;
       flush stderr;
       raise exn
@@ -106,6 +107,9 @@ let print db f x =
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/12 13:46:26  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.2  1998/06/01 13:52:55  jyh
  * Proving twice one is two.
  *

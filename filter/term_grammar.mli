@@ -25,7 +25,15 @@ end
 module MakeTermGrammar (TermGrammar : TermGrammarSig) : TermGrammarSig
 
 (*
+ * Debugging.
+ *)
+val debug_grammar : bool ref
+
+(*
  * $Log$
+ * Revision 1.4  1998/06/12 13:46:43  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.3  1998/05/27 15:13:14  jyh
  * Functorized the refiner over the Term module.
  *

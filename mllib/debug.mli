@@ -1,77 +1,43 @@
 (*
  * Debugging tools.
- *
  *)
 
 (*
- * Debug during load.
+ * Particular debug variables.
  *)
 val debug_load : bool ref
 
 (*
- * Debug display forms.
+ * Info about debug variables.
+ * The variables themselves are defined in the Debug module.
  *)
-val debug_dform : bool ref
+type debug_info =
+   { debug_name : string;
+     debug_description : string;
+     debug_value : bool
+   }
 
 (*
- * Debugging of term table.
+ * We create named debug variables.
  *)
-val debug_term_table : bool ref
+val create_debug : debug_info -> bool ref
+val load_debug : string -> bool ref
 
 (*
- * Debug the rewriter.
+ * Operations to inspect debug flags.
  *)
-val debug_rewrite : bool ref
+val set_debug : string -> bool -> unit
+val get_debug : string -> debug_info
+val debuggers : unit -> debug_info array
 
 (*
- * Debug the refiner.
+ * We allow flags to be set from the environment.
+ * they may be set before the vars are created,
+ * so we add them as "possible" debug flags,
+ * then check them later.
  *)
-val debug_refiner : bool ref
-
-(*
- * Debug the printer.
- *)
-val debug_simple_print : bool ref
-
-(*
- * Debug Files
- *)
-val debug_file_base : bool ref
-
-(*
- * Debug the term grammar.
- *)
-val debug_grammar : bool ref
-
-(*
- * Resource and inheritance debugging.
- *)
-val debug_resource : bool ref
-
-(*
- * Library debugging.
- *)
-val debug_library_base : bool ref
-
-(*
- * Summary debugging.
- *)
-val debug_summary : bool ref
-
-(*
- * Conversion to program code.
- *)
-val debug_filter_prog : bool ref
-
-(*
- * Parser.
- *)
-val debug_filter_parse : bool ref
-
-(*
- * Debug FilterCache.
- *)
-val debug_filter_cache : bool ref
+val set_possible_debug : string -> bool -> unit
+val check_debug : unit -> unit
 
 (*
  * Print a list of strings.
@@ -85,6 +51,9 @@ val eflush : out_channel -> unit
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/12 13:46:47  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.5  1998/05/01 14:59:28  jyh
  * Updating display forms.
  *

@@ -15,6 +15,7 @@ open Refiner.Refiner.Term
 
 open Filter_ast
 open Term_grammar
+open Filter_grammar
 
 (************************************************************************
  * CONSTANTS                                                            *
@@ -334,6 +335,12 @@ let get_tactic () =
  * SHELL GRAMMAR                                                        *
  ************************************************************************)
 
+module Unit =
+struct
+end
+
+module Infix = MakeFilterGrammar (Unit)
+
 EXTEND
    GLOBAL: str_item;
 
@@ -352,6 +359,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/12 13:45:16  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.5  1998/06/01 19:53:11  jyh
  * Working addition proof.  Removing polymorphism from refiner(?)
  *

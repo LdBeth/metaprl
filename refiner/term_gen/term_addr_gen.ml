@@ -24,7 +24,6 @@ struct
     | Compose of address * address
 
    exception IncorrectAddress of address * term
-   exception BadAddressPrefix of address * address
 
    (*
     * Constructor.
@@ -185,9 +184,12 @@ struct
        | NthPath (addr, flag) ->
             let rec aux = function
                0 ->
-                  if flag then "1" else "0"
+                  if flag then
+                     "0"
+                  else
+                     ""
              | i ->
-                  "2; " ^ (aux (i - 1))
+                  "@; " ^ (aux (i - 1))
             in
                aux addr
        | Compose (addr1, addr2) ->

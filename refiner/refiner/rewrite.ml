@@ -20,6 +20,13 @@ let _ =
    if !debug_load then
       eprintf "Loading Rewrite%t" eflush
 
+let debug_rewrite =
+   create_debug (**)
+      { debug_name = "rewrite";
+        debug_description = "Show term rewriting operations";
+        debug_value = false
+      }
+
 (*
  * Rewrite module.
  *)
@@ -1349,6 +1356,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/12 13:46:56  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.3  1998/06/01 19:53:40  jyh
  * Working addition proof.  Removing polymorphism from refiner(?)
  *

@@ -30,7 +30,15 @@ val install_tactic_argument : tactic_argument -> unit
 val prove : string -> (string * tactic) array -> unit -> extract
 
 (*
+ * For debugging purposes.
+ *)
+val debug_item : MLast.str_item ref
+
+(*
  * $Log$
+ * Revision 1.8  1998/06/12 13:45:08  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.7  1998/06/09 20:51:13  jyh
  * Propagated refinement changes.
  * New tacticals module.

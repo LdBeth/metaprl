@@ -12,6 +12,7 @@ open Refiner.Refiner.Rewrite
 open Precedence
 open Rewrite
 open Simple_print
+open Resource
 
 open Free_vars
 open Filter_type
@@ -28,6 +29,13 @@ open Filter_summary
 let _ =
    if !debug_load then
       eprintf "Loading Filter_prog%t" eflush
+
+let debug_filter_prog =
+   create_debug (**)
+      { debug_name = "filter_prog";
+        debug_description = "display operations that convert ML to terms";
+        debug_value = false
+      }
 
 (************************************************************************
  * TYPES                                                                *
@@ -179,11 +187,10 @@ let rewrite_of_rewrite_expr loc =
  * Conditional rewrite.
  *)
 let cond_rewrite_ctyp loc =
-   let result = <:ctyp< $refiner_ctyp loc$ . $lid:"cond_rewrite"$ '$"a"$ >> in
    let sarray = <:ctyp< $lid:"array"$ $lid:"string"$ >> in
    let term = <:ctyp< $lid:"list"$ ($uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Term"$ . $lid:"term"$) >> in
    let arg = <:ctyp< ($sarray$ * $term$) >> in
-      <:ctyp< $arg$ -> $result$ >>
+      <:ctyp< $arg$ -> $rewrite_ctyp loc$ >>
 
 let create_cond_rewrite_expr loc =
    <:expr< $refiner_expr loc$ . $lid:"create_cond_rewrite"$ >>
@@ -1336,6 +1343,16 @@ struct
          parent_opens = opens;
          parent_resources = nresources
        } =
+      let _ =
+         if !debug_resource then
+            let print_resources out resources =
+               let print { resource_name = name } =
+                  fprintf out " %s" name
+               in
+                  List.iter print resources
+            in
+               eprintf "Filter_prof.define_parent: %s: %a%t" (string_of_path path) print_resources nresources eflush
+      in
       let parent_path = parent_path_expr loc path in
       let joins =
          let parent_refiner = (<:expr< $parent_path$ . $lid: refiner_id$ >>) in
@@ -1355,13 +1372,21 @@ struct
             (*
              * let name = name.resource_join name Parent.name
              *)
+            let _ =
+               if !debug_resource then
+                  eprintf "Filter_prog.define_parent: join resource %s.%s%t" (string_of_path path) name eflush
+            in
             let rsrc_val = <:expr< $name_expr$ . $resource_join_expr loc$ $name_expr$ $parent_value$ >> in
                (resources, <:str_item< value $rec:false$ $list:[ name_patt, rsrc_val ]$ >>)
          else
             (*
              * let name = Parent.name
              *)
-            (resource :: resources, <:str_item< value $rec:false$ $list:[ name_patt, parent_value ]$ >>)
+            let _ =
+               if !debug_resource then
+                  eprintf "Filter_prog.define_parent: new resource %s.%s%t" (string_of_path path) name eflush
+            in
+               (resource :: resources, <:str_item< value $rec:false$ $list:[ name_patt, parent_value ]$ >>)
       in
       let { imp_resources = resources } = proc in
       let resources, items = List_util.fold_left print_resource resources nresources in
@@ -1563,6 +1588,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.19  1998/06/12 13:46:34  jyh
+ * D tactic works, added itt_bool.
+ *
  * Revision 1.18  1998/06/09 20:52:14  jyh
  * Propagated refinement changes.
  * New tacticals module.

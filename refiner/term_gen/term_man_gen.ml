@@ -318,25 +318,22 @@ struct
    let explode_sequent_name = "explode_sequent"
    let explode_sequent t =
       let rec collect hyps concls term =
-         match dest_term term with
-            { term_op = { op_name = opname; op_params = [] }; term_terms = bterms } ->
-               if opname == hyp_opname then
-                  let t, x, term = match_hyp_all explode_sequent_name t bterms in
-                     collect (Hypothesis (x, t) :: hyps) concls term
-               else if opname == context_opname then
-                  let name, term, args = dest_context term in
-                     collect (Context (name, args) :: hyps) concls term
-               else if opname == concl_opname then
-                  if bterms = [] then
-                     { sequent_hyps =  List.rev hyps;
-                       sequent_goals = List.rev concls
-                     }
-                  else
-                     let goal, term = match_concl_all explode_sequent_name t bterms in
-                        collect hyps (goal :: concls) term
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if opname == hyp_opname then
+               let t, x, term = match_hyp_all explode_sequent_name t bterms in
+                  collect (Hypothesis (x, t) :: hyps) concls term
+            else if opname == context_opname then
+               let name, term, args = dest_context term in
+                  collect (Context (name, args) :: hyps) concls term
+            else if opname == concl_opname then
+               if bterms = [] then
+                  { sequent_hyps =  List.rev hyps;
+                    sequent_goals = List.rev concls
+                  }
                else
-                  raise (TermMatch (explode_sequent_name, t, "malformed sequent"))
-          | _ ->
+                  let goal, term = match_concl_all explode_sequent_name t bterms in
+                     collect hyps (goal :: concls) term
+            else
                raise (TermMatch (explode_sequent_name, t, "malformed sequent"))
       in
          collect [] [] t
@@ -349,24 +346,21 @@ struct
    let nth_hyp_addr t n =
       let addr = nth_address n true in
       let rec skip_hyps i term =
-         match dest_term term with
-            { term_op = { op_name = opname; op_params = [] }; term_terms = bterms } ->
-               if opname = hyp_opname then
-                  let term = match_hyp nth_hyp_addr_name t bterms in
-                     if i = 0 then
-                        addr
-                     else
-                        skip_hyps (i - 1) term
-               else if opname == context_opname then
-                  let term = match_context nth_hyp_addr_name t bterms in
-                     if i = 0 then
-                        addr
-                     else
-                        skip_hyps (i - 1) term
-               else
-                  raise (TermMatch (nth_hyp_addr_name, t, "not enough hyps"))
-          | _ ->
-               raise (TermMatch (nth_hyp_addr_name, t, "malformed sequent"))
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if opname = hyp_opname then
+               let term = match_hyp nth_hyp_addr_name t bterms in
+                  if i = 0 then
+                     addr
+                  else
+                     skip_hyps (i - 1) term
+            else if opname == context_opname then
+               let term = match_context nth_hyp_addr_name t bterms in
+                  if i = 0 then
+                     addr
+                  else
+                     skip_hyps (i - 1) term
+            else
+               raise (TermMatch (nth_hyp_addr_name, t, "not enough hyps"))
       in
          skip_hyps n (goal_of_sequent t)
 
@@ -382,7 +376,7 @@ struct
             nth_address i false
          else
             match dest_term term with
-               { term_op = { op_name = opname; op_params = [] };
+               { term_op = { op_name = opname };
                  term_terms = [bterm1; bterm2]
                } when opname == concl_opname ->
                   begin
@@ -396,20 +390,17 @@ struct
                   raise (TermMatch (nth_concl_addr_name, t, "malformed conclusion"))
       in
       let rec skip_hyps i term =
-         match dest_term term with
-            { term_op = { op_name = opname; op_params = [] }; term_terms = bterms } ->
-               if opname == hyp_opname then
-                  let term = match_hyp nth_concl_addr_name t bterms in
-                     skip_hyps (i + 1) term
-               else if opname == context_opname then
-                  let term = match_context nth_concl_addr_name t bterms in
-                     skip_hyps (i - 1) term
-               else if opname == concl_opname then
-                  let term = match_concl nth_concl_addr_name t bterms in
-                     skip_concl i n term
-               else
-                  raise (TermMatch (nth_concl_addr_name, t, "malformed sequent"))
-          | _ ->
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if opname == hyp_opname then
+               let term = match_hyp nth_concl_addr_name t bterms in
+                  skip_hyps (i + 1) term
+            else if opname == context_opname then
+               let term = match_context nth_concl_addr_name t bterms in
+                  skip_hyps (i - 1) term
+            else if opname == concl_opname then
+               let term = match_concl nth_concl_addr_name t bterms in
+                  skip_concl i n term
+            else
                raise (TermMatch (nth_concl_addr_name, t, "malformed sequent"))
       in
          skip_hyps 0 (goal_of_sequent t)
@@ -421,62 +412,56 @@ struct
    let nth_clause_addr_name = "nth_clause_addr"
    let nth_clause_addr_aux make_address t =
       let rec aux i term =
-         match dest_term term with
-            { term_op = { op_name = opname; op_params = [] }; term_terms = bterms } ->
-               if opname == hyp_opname then
-                  let term = match_hyp nth_clause_addr_name t bterms in
-                     aux (i + 1) term
-               else if opname == context_opname then
-                  let term = match_context nth_clause_addr_name t bterms in
-                     aux (i + 1) term
-               else if opname == concl_opname then
-                  make_address i
-               else
-                  raise (TermMatch (nth_clause_addr_name, t, "malformed sequent"))
-          | _ ->
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if opname == hyp_opname then
+               let term = match_hyp nth_clause_addr_name t bterms in
+                  aux (i + 1) term
+            else if opname == context_opname then
+               let term = match_context nth_clause_addr_name t bterms in
+                  aux (i + 1) term
+            else if opname == concl_opname then
+               make_address i
+            else
                raise (TermMatch (nth_clause_addr_name, t, "malformed sequent"))
       in
-         aux 0 (goal_of_sequent t)
-   
-   let make_nth_clause_addr count i =
+         aux 1 (goal_of_sequent t)
+
+   let make_nth_clause_addr flag count i =
       if i < 0 then
-         nth_address (count + i) true
+         nth_address (count + i) flag
       else if i = 0 then
-         nth_address count false
+         nth_address count flag
       else
-         nth_address i true
+         nth_address i flag
 
    let nth_clause_addr t i =
-      nth_clause_addr_aux (fun count -> make_nth_clause_addr count i) t
-   
+      nth_clause_addr_aux (fun count -> make_nth_clause_addr true count i) t
+
    let nth_clause_addrs t il =
-      nth_clause_addr_aux (fun count -> Array.map (make_nth_clause_addr count) il) t
+      nth_clause_addr_aux (fun count -> Array.map (make_nth_clause_addr false count) il) t
 
    (*
     * Fast access to hyp and concl.
     *)
    let nth_hyp_name = "nth_hyp"
    let nth_hyp t i =
-      let rec aux i trm =
-         match dest_term trm with
-            { term_op = { op_name = opname; op_params = [] }; term_terms = bterms } ->
-               if opname == hyp_opname then
-                  let t, x, term = match_hyp_all nth_hyp_name t bterms in
-                     if i = 0 then
-                        x, t
-                     else
-                        aux (i - 1) term
-               else if opname == context_opname then
-                  let term = match_context nth_hyp_name t bterms in
-                     if i = 0 then
-                        raise (TermMatch (nth_hyp_name, t, "nth hyp is a context var"))
-                     else
-                        aux (i - 1) term
-               else if opname == concl_opname then
-                  raise Not_found
-               else
-                  raise (TermMatch (nth_hyp_name, t, "malformed sequent"))
-          | _ ->
+      let rec aux i term =
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if opname == hyp_opname then
+               let t, x, term = match_hyp_all nth_hyp_name t bterms in
+                  if i = 0 then
+                     x, t
+                  else
+                     aux (i - 1) term
+            else if opname == context_opname then
+               let term = match_context nth_hyp_name t bterms in
+                  if i = 0 then
+                     raise (TermMatch (nth_hyp_name, t, "nth hyp is a context var"))
+                  else
+                     aux (i - 1) term
+            else if opname == concl_opname then
+               raise Not_found
+            else
                raise (TermMatch (nth_hyp_name, t, "malformed sequent"))
       in
          aux i (goal_of_sequent t)
@@ -484,23 +469,20 @@ struct
    let nth_concl_name = "nth_concl"
    let nth_concl t i =
       let rec aux i term =
-         match dest_term term with
-            { term_op = { op_name = opname; op_params = [] }; term_terms = bterms } ->
-               if opname == hyp_opname then
-                  let term = match_hyp nth_concl_name t bterms in
-                     aux i term
-               else if opname == context_opname then
-                  let term = match_context nth_concl_name t bterms in
-                     aux i term
-               else if opname == concl_opname then
-                  let t, term = match_concl_all nth_concl_name t bterms in
-                     if i = 0 then
-                        t
-                     else
-                        aux (i - 1) term
-               else
-                  raise (TermMatch (nth_concl_name, t, "malformed sequent"))
-          | _ ->
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if opname == hyp_opname then
+               let term = match_hyp nth_concl_name t bterms in
+                  aux i term
+            else if opname == context_opname then
+               let term = match_context nth_concl_name t bterms in
+                  aux i term
+            else if opname == concl_opname then
+               let t, term = match_concl_all nth_concl_name t bterms in
+                  if i = 0 then
+                     t
+                  else
+                     aux (i - 1) term
+            else
                raise (TermMatch (nth_concl_name, t, "malformed sequent"))
       in
          aux i (goal_of_sequent t)
@@ -511,20 +493,17 @@ struct
    let num_hyps_name = "num_hyps"
 
    let num_hyps t =
-      let rec aux i trm =
-         match dest_term trm with
-            { term_op = { op_name = opname; op_params = [] }; term_terms = bterms } ->
-               if opname == hyp_opname then
-                  let term = match_hyp num_hyps_name t bterms in
-                     aux (i + 1) term
-               else if opname == context_opname then
-                  let term = match_context num_hyps_name t bterms in
-                     aux (i + 1) term
-               else if opname == concl_opname then
-                  i
-               else
-                  raise (TermMatch (num_hyps_name, t, "malformed sequent"))
-          | _ ->
+      let rec aux i term =
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if opname == hyp_opname then
+               let term = match_hyp num_hyps_name t bterms in
+                  aux (i + 1) term
+            else if opname == context_opname then
+               let term = match_context num_hyps_name t bterms in
+                  aux (i + 1) term
+            else if opname == concl_opname then
+               i
+            else
                raise (TermMatch (num_hyps_name, t, "malformed sequent"))
       in
          aux 0 (goal_of_sequent t)
@@ -534,20 +513,17 @@ struct
     *)
    let declared_vars_name = "declared_vars"
    let declared_vars t =
-      let rec aux vars trm =
-         match dest_term trm with
-            { term_op = { op_name = opname; op_params = [] }; term_terms = bterms } ->
-               if opname == hyp_opname then
-                  let _, x, term = match_hyp_all declared_vars_name t bterms in
-                     aux (x :: vars) term
-               else if opname == context_opname then
-                  let term = match_context declared_vars_name t bterms in
-                     aux vars term
-               else if opname == concl_opname then
-                  vars
-               else
-                  raise (TermMatch (declared_vars_name, t, "malformed sequent"))
-          | _ ->
+      let rec aux vars term =
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if opname == hyp_opname then
+               let _, x, term = match_hyp_all declared_vars_name t bterms in
+                  aux (x :: vars) term
+            else if opname == context_opname then
+               let term = match_context declared_vars_name t bterms in
+                  aux vars term
+            else if opname == concl_opname then
+               vars
+            else
                raise (TermMatch (declared_vars_name, t, "malformed sequent"))
       in
          aux [] (goal_of_sequent t)
@@ -558,23 +534,20 @@ struct
    let get_decl_number_name = "get_decl_number"
 
    let get_decl_number t v =
-      let rec aux i trm =
-         match dest_term trm with
-            { term_op = { op_name = opname; op_params = [] }; term_terms = bterms } ->
-               if opname == hyp_opname then
-                  let _, x, term = match_hyp_all get_decl_number_name t bterms in
-                     if x = v then
-                        i
-                     else
-                        aux (i + 1) term
-               else if opname == context_opname then
-                  let term = match_context get_decl_number_name t bterms in
+      let rec aux i term =
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if opname == hyp_opname then
+               let _, x, term = match_hyp_all get_decl_number_name t bterms in
+                  if x = v then
+                     i
+                  else
                      aux (i + 1) term
-               else if opname == concl_opname then
-                  raise (TermMatch (get_decl_number_name, t, "declaration not found"))
-               else
-                  raise (TermMatch (get_decl_number_name, t, "malformed sequent"))
-          | _ ->
+            else if opname == context_opname then
+               let term = match_context get_decl_number_name t bterms in
+                  aux (i + 1) term
+            else if opname == concl_opname then
+               raise (TermMatch (get_decl_number_name, t, "declaration not found"))
+            else
                raise (TermMatch (get_decl_number_name, t, "malformed sequent"))
       in
          aux 0 (goal_of_sequent t)
@@ -588,19 +561,16 @@ struct
          if i = 0 then
             is_free_var v t
          else
-            match dest_term t with
-               { term_op = { op_name = opname; op_params = [] }; term_terms = bterms } ->
-                  if opname == hyp_opname then
-                     let term = match_hyp is_free_seq_var_name t bterms in
-                        aux (i - 1) term
-                  else if opname == context_opname then
-                     let term = match_context is_free_seq_var_name t bterms in
-                        aux (i - 1) term
-                  else if opname == concl_opname then
-                     raise (TermMatch (is_free_seq_var_name, t, "index is not a hypothesis"))
-                  else
-                     raise (TermMatch (is_free_seq_var_name, t, "malformed sequent"))
-             | _ ->
+            let { term_op = { op_name = opname }; term_terms = bterms } = dest_term t in
+               if opname == hyp_opname then
+                  let term = match_hyp is_free_seq_var_name t bterms in
+                     aux (i - 1) term
+               else if opname == context_opname then
+                  let term = match_context is_free_seq_var_name t bterms in
+                     aux (i - 1) term
+               else if opname == concl_opname then
+                  raise (TermMatch (is_free_seq_var_name, t, "index is not a hypothesis"))
+               else
                   raise (TermMatch (is_free_seq_var_name, t, "malformed sequent"))
       in
          aux i (goal_of_sequent t)
@@ -610,26 +580,23 @@ struct
     *)
    let replace_concl_name = "replace_concl"
    let rec replace_concl seq goal =
-      match dest_term seq with
-         { term_op = ({ op_name = opname; op_params = [] } as op); term_terms = bterms } ->
-            if opname == hyp_opname then
-               let t, x, term = match_hyp_all replace_concl_name seq bterms in
-                  mk_term op [mk_simple_bterm t; mk_bterm [x] (replace_concl term goal)]
-            else if opname == context_opname then
-               let name, term, args = dest_context seq in
-                  mk_context_term name (replace_concl term goal) args
-            else if opname == concl_opname then
-               goal
-            else
-               raise (TermMatch (replace_concl_name, seq, "malformed sequent"))
-       | _ ->
+      let { term_op = ({ op_name = opname } as op); term_terms = bterms } = dest_term seq in
+         if opname == hyp_opname then
+            let t, x, term = match_hyp_all replace_concl_name seq bterms in
+               mk_term op [mk_simple_bterm t; mk_bterm [x] (replace_concl term goal)]
+         else if opname == context_opname then
+            let name, term, args = dest_context seq in
+               mk_context_term name (replace_concl term goal) args
+         else if opname == concl_opname then
+            goal
+         else
             raise (TermMatch (replace_concl_name, seq, "malformed sequent"))
-   
+
    let replace_goal_name = "replace_goal"
    let replace_goal seq goal =
       match dest_sequent seq with
          seq :: args ->
-            mk_sequent_term (replace_concl (mk_concl_term goal null_concl) seq :: args)
+            mk_sequent_term (replace_concl seq (mk_concl_term goal null_concl) :: args)
        | [] ->
             raise (TermMatch (replace_goal_name, seq, "malformed sequent"))
 
@@ -661,3 +628,10 @@ struct
          aux 0
 
 end
+
+(*
+ * $Log$
+ * Revision 1.4  1998/06/12 13:47:08  jyh
+ * D tactic works, added itt_bool.
+ *
+ *)
