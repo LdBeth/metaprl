@@ -27,8 +27,12 @@ if $(mem $(ARCH), x86 i386 i486 i586 i686)
 # and print a progress bar.
 #
 if $(not $(defined VERBOSE))
-   OMakeFlags(-S --progress)
-   export
+    VERBOSE = false
+    export
+
+if $(not $(VERBOSE))
+    OMakeFlags(-S --progress)
+    export
 
 #
 # omake options
