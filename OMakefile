@@ -228,7 +228,7 @@ OCAMLDEP = $(file bin/ocamldep$(EXE))
 .SCANNER: %.cmi: %.mli $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
 
-.SCANNER: %.cmo %.cmx: %.ml $(OCAMLDEP)
+.SCANNER: %.cmo %.cmx: %.ml $(optional %.mli) $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
 
 #
@@ -298,13 +298,13 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
 #
 # Add dependency scanning for .ppo files
 #
-.SCANNER: %.ppo: %.ml $(OCAMLDEP)
+.SCANNER: %.ppo: %.ml $(optional %.mli) $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(replacesuffixes .ppo, .ml, $^)
 
 #
 # For theory files, generate intermediate .ppo files
 #
-%.ppo %.cmoz: %.ml
+%.ppo: %.ml $(CAMLP4N)
 	$(CAMLP4NC) $(CAMLP4NFLAGS) -o $*.ppo $<
 
 %.prla: %.cmoz
@@ -313,7 +313,7 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
 %.prlb: %.prla
 	$(CONVERT) $(OCAMLINCLUDES) -raw -impl $*<
 
-%.cmi %.cmiz: %.mli
+%.cmi: %.mli
         $(PRLCC) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(OCAMLINCLUDES) -c $<
 
 %.cmo: %.ppo

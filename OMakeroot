@@ -4,6 +4,6 @@
 include $(STDROOT)
 
 #
-# Start in the current directory
+# Include the OMakefile
 #
 .SUBDIRS: .
