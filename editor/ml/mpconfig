@@ -88,6 +88,7 @@ INCLUDES="\
 	-I ../../theories/mmc/util\
 	-I ../../theories/mmc/main\
 	-I ../../theories/mmc/test\
+	-I ../../theories/cic\
 	-I tests\
 	-I $CAMLP4LIB"
 

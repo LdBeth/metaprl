@@ -42,6 +42,12 @@ val maybe_new_var_arg : tactic_arg -> var -> var
 
 (* var_subst_to_bind 'A[t] t = bind{v.'A['v]} *)
 val var_subst_to_bind : term -> term -> term
+(*
+ * var_subst_to_bind2 'A[t;s] t s = bind{v,w.'A['v;'w]}
+ * note that t is replaced with variable first;
+ *	it's important if t is a subterm of s or vice versa
+ *)
+val var_subst_to_bind2 : term -> term -> term -> term
 val get_bind_from_arg_or_concl_subst : tactic_arg -> term -> term
 val get_bind_from_arg_or_hyp_subst : tactic_arg -> int -> term -> term
 

@@ -41,8 +41,7 @@ doc <:doc<
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
+   GNU General Public License for more details
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -121,6 +120,18 @@ let var_subst_to_bind t1 t2 =
          bv
    in
       mk_bind1_term v (var_subst t1 t2 v)
+
+let var_subst_to_bind2 t t1 t2 =
+   let vs = free_vars_set t in
+   let v1 =
+      if SymbolSet.mem vs bv then
+         new_name bv (SymbolSet.mem vs)
+      else
+         bv
+	in
+	let vs' = SymbolSet.add vs v1 in
+	let v2 = new_name bv (SymbolSet.mem vs') in
+      mk_bind2_term v1 v2 (var_subst (var_subst t t1 v1) t2 v2)
 
 let get_bind_from_arg_or_concl_subst p t =
    try
