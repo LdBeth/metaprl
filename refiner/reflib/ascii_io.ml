@@ -96,7 +96,7 @@ struct
       r
 
    let fail s =
-      raise (Failure ("ASCII IO: invalid entry encountered by " ^ s ^ " function."))
+      raise (Failure ("ASCII IO: invalid entry encountered by " ^ s ))
 
    let hash_add_new tbl key data =
       if Hashtbl.mem tbl key then fail "hash_add_new" else Hashtbl.add tbl key data
@@ -221,7 +221,7 @@ struct
     | [] -> ()
 
    let rec add_items_debug r = function
-      (long,_,_) as item :: items ->
+      (long,short,_) as item :: items ->
          add_items_debug r items;
          begin try
             match long.[0] with
@@ -236,7 +236,7 @@ struct
              | 'P'|'p' -> add_param r item
              | _ -> fail ("add_items: " ^ long)
          with 
-            Not_found -> fail ("add_items_debug: " ^ long)
+            Not_found -> fail ("add_items_debug: " ^ long ^ " " ^ short ^ " ...")
          end
     | [] -> ()
 
