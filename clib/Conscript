@@ -3,9 +3,12 @@ Import qw( env );
 
 ## Clone the default environment.
 $cenv = new cons(
-    CC          => 'gcc',
-    CFLAGS      => '-Wall -O2 -g',
-    CPPPATH     => '/usr/lib/ocaml:/usr/local/lib/ocaml:/usr/lib/ocaml/byterun'
+   CC       => $env->{CC},
+   CFLAGS   => $env->{CFLAGS},
+   CPPPATH  => $env->{CPPPATH},
+   ENV  => {
+      PATH  => ENV->{'PATH'},
+   },
 );
 
 ## Declare the module sources in this directory that will be built

@@ -1,7 +1,7 @@
 Import qw( env );
 
 $env = $env->clone(
-   INCPATH     => [@{$env->{INCPATH}}, "/usr/lib/ocaml/camlp4"],
+   INCPATH     => [@{$env->{INCPATH}}, $env->{CAMLP4STDLIB}],
    OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
    PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}"
 );

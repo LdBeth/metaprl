@@ -62,8 +62,8 @@ $env = $env->clone(
       LC_ALL => "C"
    },
    OCAMLCFLAGS => "-thread -linkall",
-   OCAMLC => "prlc %PRLCFLAGS -I /usr/lib/ocaml/camlp4",
-   OCAMLLINK => "$env->{OCAMLLINK} -I /usr/lib/ocaml/camlp4",
+   OCAMLC => "prlc %PRLCFLAGS -I $env->{CAMLP4STDLIB}",
+   OCAMLLINK => "$env->{OCAMLLINK} -I $env->{CAMLP4STDLIB}",
    MLLIBS => "unix$env->{SUFLIB} threads$env->{SUFLIB} odyl$env->{SUFLIB} camlp4$env->{SUFLIB} pa_o$env->{SUFOBJ}",
    CCLIBS => "-cclib $env->{MP}/clib/clib.a",
 
