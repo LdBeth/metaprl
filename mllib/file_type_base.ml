@@ -169,33 +169,6 @@ module MakeFileBase (Types : FileTypeSummarySig)
    File_base.MakeFileBase (MakeFileBaseInfo (Types) (Combo))
 
 (*
- * $Log$
- * Revision 1.8  1998/06/15 22:32:23  jyh
- * Added CZF.
- *
- * Revision 1.7  1998/06/01 13:54:37  jyh
- * Proving twice one is two.
- *
- * Revision 1.6  1998/04/24 19:38:53  jyh
- * Updated debugging.
- *
- * Revision 1.5  1998/02/23 14:46:36  jyh
- * First implementation of binary file compilation.
- *
- * Revision 1.4  1998/02/19 17:13:21  jyh
- * Splitting filter_parse.
- *
- * Revision 1.3  1998/02/18 18:46:49  jyh
- * Initial ocaml semantics.
- *
- * Revision 1.2  1998/02/12 23:35:18  jyh
- * Generalized file base to allow the library.
- *
- * Revision 1.1  1997/08/06 16:17:56  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

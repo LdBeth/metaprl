@@ -76,37 +76,6 @@ let get_parents thy =
       search refiner
 
 (*
- * $Log$
- * Revision 1.1  1998/05/28 15:01:29  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.5  1998/05/27 15:15:12  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.4  1998/04/28 18:30:52  jyh
- * ls() works, adding display.
- *
- * Revision 1.3  1998/04/24 02:43:08  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.2  1998/02/23 14:46:42  jyh
- * First implementation of binary file compilation.
- *
- * Revision 1.1  1997/04/28 15:51:50  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.1  1996/06/11 18:35:04  jyh
- * Demo version 0.0
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

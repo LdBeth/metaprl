@@ -34,32 +34,6 @@ val view_crw :
    edit_object
 
 (*
- * $Log$
- * Revision 1.7  1998/07/03 22:05:24  jyh
- * IO terms are now in term_std format.
- *
- * Revision 1.6  1998/07/02 18:34:45  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- * Revision 1.5  1998/05/29 14:52:54  jyh
- * Better Makefiles.
- *
- * Revision 1.4  1998/05/28 13:46:04  jyh
- * Updated the editor to use new Refiner structure.
- * ITT needs dform names.
- *
- * Revision 1.3  1998/05/07 16:02:27  jyh
- * Adding interactive proofs.
- *
- * Revision 1.2  1998/04/23 20:04:22  jyh
- * Initial rebuilt editor.
- *
- * Revision 1.1  1998/04/17 20:48:18  jyh
- * Updating refiner for extraction.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

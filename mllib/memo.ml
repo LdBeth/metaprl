@@ -178,14 +178,6 @@ let apply info arg x =
                         b
 
 (*
- * $Log$
- * Revision 1.2  1998/07/03 22:05:35  jyh
- * IO terms are now in term_std format.
- *
- * Revision 1.1  1998/07/02 22:24:54  jyh
- * Created term_copy module to copy and normalize terms.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

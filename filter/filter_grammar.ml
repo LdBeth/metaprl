@@ -86,11 +86,6 @@ struct
 end
 
 (*
- * $Log$
- * Revision 1.1  1998/06/12 13:46:28  jyh
- * D tactic works, added itt_bool.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

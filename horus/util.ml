@@ -1,15 +1,6 @@
 (*
  * Basic utility functions.
  * There is no particular order.
- *
- * $Log$
- * Revision 1.2  1998/06/16 16:25:36  jyh
- * Added itt_test.
- *
- * Revision 1.1  1997/08/06 16:17:45  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
  *)
 
 open List;;

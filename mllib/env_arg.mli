@@ -40,26 +40,6 @@ val args : unit -> (string * Arg.spec * string) list
 val parse : (string * Arg.spec * string) list -> (string -> unit) -> string -> unit
 
 (*
- * $Log$
- * Revision 1.1  1997/08/06 16:17:53  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:51:19  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.1  1997/02/10 16:17:48  jyh
- * Added some new files.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

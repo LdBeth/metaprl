@@ -127,43 +127,6 @@ let parse spec usage errmsg =
    Arg.parse (!param_args @ spec) usage errmsg
 
 (*
- * $Log$
- * Revision 1.5  1998/06/01 13:54:33  jyh
- * Proving twice one is two.
- *
- * Revision 1.4  1998/04/24 19:38:50  jyh
- * Updated debugging.
- *
- * Revision 1.3  1998/02/18 18:46:42  jyh
- * Initial ocaml semantics.
- *
- * Revision 1.2  1997/11/12 22:28:17  jyh
- * Small changes for NT.
- *
- * Revision 1.1  1997/08/06 16:17:53  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:51:19  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.2  1997/02/18 02:54:50  jyh
- * Added radios, initial compilations.
- * This is a working version in the old style.
- * Converting ejb_file to work with radios.
- *
- * Revision 1.1  1997/02/10 16:17:48  jyh
- * Added some new files.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

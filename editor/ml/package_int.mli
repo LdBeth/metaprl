@@ -36,12 +36,6 @@ val restore_tactics : in_channel -> int -> Ast.expr array
 val restore : in_channel -> int -> tactic_resources -> tactic array -> t
 
 (*
- * $Log$
- * Revision 1.1  1997/08/06 16:17:18  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -86,61 +86,6 @@ val last : 'a list -> 'a
 val fst_split : ('a * 'b) list -> 'a list
 
 (*
- * $Log$
- * Revision 1.13  1998/07/03 22:05:34  jyh
- * IO terms are now in term_std format.
- *
- * Revision 1.12  1998/06/22 19:45:29  jyh
- * Rewriting in contexts.  This required a change in addressing,
- * and the body of the context is the _last_ subterm, not the first.
- *
- * Revision 1.11  1998/06/15 22:32:25  jyh
- * Added CZF.
- *
- * Revision 1.10  1998/06/13 22:48:11  nogin
- * Added rev_iter2
- *
- * Revision 1.9  1998/06/04 19:52:50  nogin
- * Efficiency
- *
- * Revision 1.8  1998/06/03 22:19:22  jyh
- * Nonpolymorphic refiner.
- *
- * Revision 1.7  1998/04/28 18:30:31  jyh
- * ls() works, adding display.
- *
- * Revision 1.6  1998/04/23 20:04:36  jyh
- * Initial rebuilt editor.
- *
- * Revision 1.5  1998/04/21 19:53:54  jyh
- * Upgraded refiner for program extraction.
- *
- * Revision 1.4  1998/04/17 20:48:36  jyh
- * Updating refiner for extraction.
- *
- * Revision 1.3  1998/02/21 20:58:14  jyh
- * Two phase parse/extract.
- *
- * Revision 1.2  1998/02/12 23:35:22  jyh
- * Generalized file base to allow the library.
- *
- * Revision 1.1  1997/08/06 16:18:00  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:51:22  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -4,26 +4,6 @@
 ;; to narrow caml-mode to the rule box, and
 ;; protect the main goal and the subgoals.
 ;;
-;; $Log$
-;; Revision 1.1  1997/04/28 15:50:47  jyh
-;; This is the initial checkin of Nuprl-Light.
-;; I am porting the editor, so it is not included
-;; in this checkin.
-;;
-;; Directories:
-;;     refiner: logic engine
-;;     filter: front end to the Ocaml compiler
-;;     editor: Emacs proof editor
-;;     util: utilities
-;;     mk: Makefile templates
-;;
-;; Revision 1.2  1996/09/02 19:34:52  jyh
-;; Semi working package management.
-;;
-;; Revision 1.1  1996/05/21 02:26:38  jyh
-;; This is a semi-working version before Wisconsin vacation.
-;;
-;;
 
 (require 'caml)
 

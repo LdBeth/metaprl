@@ -63,32 +63,6 @@ val dest_string_opt : term -> string option
 val dest_var : term -> string
 
 (*
- * $Log$
- * Revision 1.7  1998/05/27 15:12:50  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.6  1998/05/04 13:01:12  jyh
- * Ocaml display without let rec.
- *
- * Revision 1.5  1998/03/20 22:15:43  eli
- * Eli: Changed integer parameters to Num.num's.
- *
- * Revision 1.4  1998/02/19 17:13:58  jyh
- * Splitting filter_parse.
- *
- * Revision 1.3  1998/02/12 23:38:10  jyh
- * Added support for saving intermediate files to the library.
- *
- * Revision 1.2  1998/01/27 23:04:15  jyh
- * Adding OCaml1.07 syntax.
- *
- * Revision 1.1  1997/09/12 17:21:37  jyh
- * Added MLast <-> term conversion.
- * Splitting filter_parse into two phases:
- *    1. Compile into Filter_summary
- *    2. Compile Filter_summary into code.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

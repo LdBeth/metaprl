@@ -90,16 +90,6 @@ struct
 end
 
 (*
- * $Log$
- * Revision 1.2  1998/07/03 22:05:37  jyh
- * IO terms are now in term_std format.
- *
- * Revision 1.1  1998/07/02 18:35:24  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -795,64 +795,6 @@ let print_to_string rmargin buf =
       smash "" !buffer
 
 (*
- * $Log$
- * Revision 1.4  1998/06/16 16:25:53  jyh
- * Added itt_test.
- *
- * Revision 1.3  1998/06/12 13:47:00  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.2  1998/06/01 13:55:02  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/05/28 15:01:10  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.6  1998/05/04 13:01:19  jyh
- * Ocaml display without let rec.
- *
- * Revision 1.5  1998/04/28 18:30:47  jyh
- * ls() works, adding display.
- *
- * Revision 1.4  1998/04/24 02:42:54  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.3  1998/04/21 19:54:16  jyh
- * Upgraded refiner for program extraction.
- *
- * Revision 1.2  1998/03/20 22:16:20  eli
- * Eli: Changed integer parameters to Num.num's.
- *
- * Revision 1.1  1997/04/28 15:51:37  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.6  1996/05/21 02:14:12  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.5  1996/03/28 02:58:22  jyh
- * Prelim checkin for an partial version of the refiner document in the
- * first version of README.tex.
- *
- * Revision 1.4  1996/03/25 20:50:38  jyh
- * Intermediate commit while modifying grammer.  Restricting
- * ML hooks to condition terms.
- *
- * Revision 1.3  1996/02/25 15:16:12  jyh
- * This is a partial checkin as filterModule is being developed.
- * After the meta-logical framework is developed, sequent.* will go away.
- *
- * Revision 1.1  1996/02/18 23:32:27  jyh
- * Changin Format module to more Nuprl-like format.
- *
  * -*-
  * Local Variables:
  * Caml-master: "manager"

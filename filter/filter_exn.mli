@@ -12,11 +12,6 @@ val print : dform_base -> ('a -> 'b) -> 'a -> 'b
 val print_exn : dform_base -> out_channel -> exn -> 'a
 
 (*
- * $Log$
- * Revision 1.1  1998/04/28 18:30:09  jyh
- * ls() works, adding display.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

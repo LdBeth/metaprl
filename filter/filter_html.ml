@@ -439,29 +439,6 @@ let print_str out info =
       List.iter (print_item buf declare_str_item) (info_items info)
 
 (*
- * $Log$
- * Revision 1.5  1998/06/01 13:52:58  jyh
- * Proving twice one is two.
- *
- * Revision 1.4  1998/05/27 15:12:45  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.3  1998/04/24 19:38:21  jyh
- * Updated debugging.
- *
- * Revision 1.2  1998/04/24 02:41:53  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1998/03/12 00:27:04  jyh
- * Added filter_html, but its not finished yet.
- *
- * Revision 1.2  1998/02/23 14:46:14  jyh
- * First implementation of binary file compilation.
- *
- * Revision 1.1  1998/02/21 20:57:47  jyh
- * Two phase parse/extract.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

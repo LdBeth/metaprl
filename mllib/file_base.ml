@@ -301,36 +301,6 @@ struct
 end
 
 (*
- * $Log$
- * Revision 1.9  1998/06/15 22:32:21  jyh
- * Added CZF.
- *
- * Revision 1.8  1998/06/12 13:46:51  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.7  1998/06/01 13:54:34  jyh
- * Proving twice one is two.
- *
- * Revision 1.6  1998/04/24 19:38:52  jyh
- * Updated debugging.
- *
- * Revision 1.5  1998/04/24 02:42:32  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.4  1998/02/23 14:46:34  jyh
- * First implementation of binary file compilation.
- *
- * Revision 1.3  1998/02/18 18:46:43  jyh
- * Initial ocaml semantics.
- *
- * Revision 1.2  1998/02/12 23:35:15  jyh
- * Generalized file base to allow the library.
- *
- * Revision 1.1  1997/08/06 16:17:54  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

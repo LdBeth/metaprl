@@ -341,43 +341,6 @@ and hash_sslt index (s, sl, t) =
    hash_string (List.fold_left hash_string (hash_type (hash index 0x0a10556d) t) sl) s
 
 (*
- * $Log$
- * Revision 1.9  1998/06/06 02:31:52  nogin
- * Commented out the parts of the code that are not compatible
- * with the Camlp4 1.07.02+1
- *
- * Revision 1.8  1998/06/01 13:52:56  jyh
- * Proving twice one is two.
- *
- * Revision 1.7  1998/04/24 19:38:20  jyh
- * Updated debugging.
- *
- * Revision 1.6  1998/04/24 02:41:51  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.5  1998/02/12 23:38:07  jyh
- * Added support for saving intermediate files to the library.
- *
- * Revision 1.3  1998/01/27 23:04:14  jyh
- * Adding OCaml1.07 syntax.
- *
- * Revision 1.2  1997/08/06 16:17:29  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:50:53  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

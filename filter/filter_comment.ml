@@ -276,27 +276,6 @@ let create_str comments implem =
 let get = Hashtbl.find
 
 (*
- * $Log$
- * Revision 1.6  1998/06/06 02:31:52  nogin
- * Commented out the parts of the code that are not compatible
- * with the Camlp4 1.07.02+1
- *
- * Revision 1.5  1998/06/01 13:52:53  jyh
- * Proving twice one is two.
- *
- * Revision 1.4  1998/04/24 19:38:19  jyh
- * Updated debugging.
- *
- * Revision 1.3  1998/04/24 02:41:49  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.2  1998/04/06 19:50:37  jyh
- * Fixed match error in mLast_util.ml
- *
- * Revision 1.1  1998/02/19 17:13:56  jyh
- * Splitting filter_parse.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

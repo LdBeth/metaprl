@@ -1,23 +1,6 @@
 ;;
 ;; Some utilities to use in CAML mode.
 ;;
-;; $Log$
-;; Revision 1.1  1997/04/28 15:50:43  jyh
-;; This is the initial checkin of Nuprl-Light.
-;; I am porting the editor, so it is not included
-;; in this checkin.
-;;
-;; Directories:
-;;     refiner: logic engine
-;;     filter: front end to the Ocaml compiler
-;;     editor: Emacs proof editor
-;;     util: utilities
-;;     mk: Makefile templates
-;;
-;; Revision 1.1  1996/05/09 14:09:12  jyh
-;; This version of cam.el is the first version that really works.
-;;
-;;
 
 (provide 'caml-util)
 

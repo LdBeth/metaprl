@@ -232,27 +232,3 @@ implements Marshalable
     }
 }
 
-/*
- * $Log$
- * Revision 1.1  1998/02/05 15:49:28  jyh
- * This is a simple term display in an applet.
- *
- * Revision 1.5  1997/12/15 22:16:58  jyh
- * First working version using ocaml-1.07
- *
- * Revision 1.4  1997/12/15 15:26:24  jyh
- * Upgrading to ocaml-1.07.
- *
- * Revision 1.3  1997/11/14 22:08:16  jyh
- * Small changes.
- *
- * Revision 1.2  1997/11/05 23:10:04  jyh
- * Initial recording.
- *
- * Revision 1.1  1997/10/15 01:25:17  jyh
- * Converted from ranks to abstract handles (Appl_handle).
- *
- * Revision 1.1  1997/07/25 19:12:05  jyh
- * Raw Java version.
- *
- */

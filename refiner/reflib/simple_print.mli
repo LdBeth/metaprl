@@ -50,14 +50,6 @@ val print_simple_address : address -> unit
 val prerr_simple_address : address -> unit
 
 (*
- * $Log$
- * Revision 1.1  1998/05/28 15:01:15  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.2  1998/05/27 15:14:13  jyh
- * Functorized the refiner over the Term module.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner.run"

@@ -353,27 +353,6 @@ and fold_sslt iter x (s, sl, t) =
    fold_type iter x t
 
 (*
- * $Log$
- * Revision 1.6  1998/06/06 02:31:54  nogin
- * Commented out the parts of the code that are not compatible
- * with the Camlp4 1.07.02+1
- *
- * Revision 1.5  1998/06/01 13:53:21  jyh
- * Proving twice one is two.
- *
- * Revision 1.4  1998/04/24 19:38:40  jyh
- * Updated debugging.
- *
- * Revision 1.3  1998/04/24 02:42:18  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.2  1998/04/06 19:50:40  jyh
- * Fixed match error in mLast_util.ml
- *
- * Revision 1.1  1998/02/19 17:14:05  jyh
- * Splitting filter_parse.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

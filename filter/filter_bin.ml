@@ -218,46 +218,6 @@ let main () =
 let _ = Printexc.catch main ()
 
 (*
- * $Log$
- * Revision 1.12  1998/07/02 22:24:41  jyh
- * Created term_copy module to copy and normalize terms.
- *
- * Revision 1.11  1998/06/22 19:45:17  jyh
- * Rewriting in contexts.  This required a change in addressing,
- * and the body of the context is the _last_ subterm, not the first.
- *
- * Revision 1.10  1998/06/15 22:32:02  jyh
- * Added CZF.
- *
- * Revision 1.9  1998/06/01 13:52:45  jyh
- * Proving twice one is two.
- *
- * Revision 1.8  1998/05/28 13:46:09  jyh
- * Updated the editor to use new Refiner structure.
- * ITT needs dform names.
- *
- * Revision 1.7  1998/05/07 16:02:32  jyh
- * Adding interactive proofs.
- *
- * Revision 1.6  1998/04/24 19:38:14  jyh
- * Updated debugging.
- *
- * Revision 1.5  1998/04/24 02:41:44  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.4  1998/04/15 12:39:47  jyh
- * Updating editor packages to Filter_summarys.
- *
- * Revision 1.3  1998/04/13 17:08:26  jyh
- * Adding interactive proofs.
- *
- * Revision 1.2  1998/04/09 18:25:47  jyh
- * Working compiler once again.
- *
- * Revision 1.1  1998/03/03 04:05:59  jyh
- * Added filter bin.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

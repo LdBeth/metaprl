@@ -18,9 +18,3 @@ extends Application
     public abstract int desiredHeight();
 }
 
-/*
- * $Log$
- * Revision 1.1  1998/02/09 15:43:40  jyh
- * Prelimnary semi-working version.
- *
- */

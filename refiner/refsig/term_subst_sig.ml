@@ -53,17 +53,6 @@ sig
 end
 
 (*
- * $Log$
- * Revision 1.2  1998/06/01 13:55:19  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/05/28 15:01:53  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.1  1998/05/27 15:14:57  jyh
- * Functorized the refiner over the Term module.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

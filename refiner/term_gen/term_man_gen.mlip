@@ -36,27 +36,6 @@ module TermMan (**)
   with type address = TermAddr.address
 
 (*
- * $Log$
- * Revision 1.1  1998/07/02 18:36:21  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- * Revision 1.2  1998/06/03 22:19:36  jyh
- * Nonpolymorphic refiner.
- *
- * Revision 1.1  1998/06/03 15:23:45  jyh
- * Generalized many the term_addr, term_man, and term_shape modules.
- *
- * Revision 1.1  1998/05/28 15:02:08  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.1  1998/05/28 02:53:09  nogin
- * Splitted Term_ds and Term_ds_simple modules into a smaller modules
- * for use in the functorized refiner
- *
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

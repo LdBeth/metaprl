@@ -548,69 +548,6 @@ let expand_ped df ped =
                ped.ped_stack <- stack
 
 (*
- * $Log$
- * Revision 1.15  1998/07/03 22:05:17  jyh
- * IO terms are now in term_std format.
- *
- * Revision 1.14  1998/07/02 18:34:35  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- * Revision 1.13  1998/07/01 04:36:27  nogin
- * Moved Refiner exceptions into a separate module RefineErrors
- *
- * Revision 1.12  1998/06/16 16:25:24  jyh
- * Added itt_test.
- *
- * Revision 1.11  1998/06/15 22:31:47  jyh
- * Added CZF.
- *
- * Revision 1.10  1998/06/12 13:45:10  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.9  1998/06/03 22:19:11  jyh
- * Nonpolymorphic refiner.
- *
- * Revision 1.8  1998/06/01 19:53:10  jyh
- * Working addition proof.  Removing polymorphism from refiner(?)
- *
- * Revision 1.7  1998/06/01 13:52:21  jyh
- * Proving twice one is two.
- *
- * Revision 1.6  1998/05/28 13:45:50  jyh
- * Updated the editor to use new Refiner structure.
- * ITT needs dform names.
- *
- * Revision 1.5  1998/04/28 18:29:47  jyh
- * ls() works, adding display.
- *
- * Revision 1.4  1998/04/24 02:41:31  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.3  1998/04/23 20:03:52  jyh
- * Initial rebuilt editor.
- *
- * Revision 1.2  1998/04/15 12:39:40  jyh
- * Updating editor packages to Filter_summarys.
- *
- * Revision 1.1  1997/08/06 16:17:23  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.4  1996/10/23 15:17:50  jyh
- * First working version of dT tactic.
- *
- * Revision 1.3  1996/09/02 19:33:33  jyh
- * Semi-working package management.
- *
- * Revision 1.2  1996/05/21 02:25:40  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.1  1996/05/20 17:00:08  jyh
- * This is an intermediate form of the editor with modules
- * before debugging.  Will be removing theoryGraph files next.
- *
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"

@@ -52,18 +52,3 @@ implements Marshalable
     }
 }
            
-/*
- * $Log$
- * Revision 1.1  1998/02/05 15:48:56  jyh
- * This is a simple term display in an applet.
- *
- * Revision 1.3  1997/12/15 22:16:38  jyh
- * First working version using ocaml-1.07
- *
- * Revision 1.2  1997/12/15 15:25:49  jyh
- * Upgrading to ocaml-1.07.
- *
- * Revision 1.1  1997/10/27 15:08:11  jyh
- * First working version of Java EJB.
- *
- */

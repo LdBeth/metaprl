@@ -53,13 +53,3 @@ value caml_execvp(value command, value argv)
 #endif
 }
 
-/*
- * $Log$
- * Revision 1.1  1998/06/03 22:19:00  jyh
- * Nonpolymorphic refiner.
- *
- * Revision 1.1  1997/08/06 16:17:00  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- */

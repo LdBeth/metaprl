@@ -1,20 +1,6 @@
 /*
  * These are variables for debuggin, and a hook for
  * manipulating them from ML.
- *
- * $Log$
- * Revision 1.1  1998/04/24 02:41:16  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.3  1998/01/09 19:29:53  jyh
- * Removed NT client.
- *
- * Revision 1.2  1997/11/04 04:26:34  jyh
- * Working win32 version of debug.
- *
- * Revision 1.1  1997/11/04 01:49:19  jyh
- * Initial version of debugging.
- *
  */
 
 #ifdef __GNUC__

@@ -31,11 +31,6 @@ val append_skip : 'a t -> 'a -> 'a t -> 'a t
 val tree_of_list : 'a t -> 'a tree
 
 (*
- * $Log$
- * Revision 1.1  1998/06/23 22:12:13  jyh
- * Improved rewriter speed with conversion tree and flist.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

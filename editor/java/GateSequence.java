@@ -29,9 +29,3 @@ extends ImageSequence
     }
 }
 
-/*
- * $Log$
- * Revision 1.1  1998/02/09 15:43:44  jyh
- * Prelimnary semi-working version.
- *
- */

@@ -23,39 +23,6 @@ val string_of_opname : opname -> string
 val debug_opname : bool ref
 
 (*
- *
- * $Log$
- * Revision 1.3  1998/06/22 19:45:35  jyh
- * Rewriting in contexts.  This required a change in addressing,
- * and the body of the context is the _last_ subterm, not the first.
- *
- * Revision 1.2  1998/06/12 18:36:30  jyh
- * Working factorial proof.
- *
- * Revision 1.1  1998/05/28 15:00:19  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.2  1998/05/07 16:02:51  jyh
- * Adding interactive proofs.
- *
- * Revision 1.1  1997/04/28 15:51:28  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.2  1996/09/02 19:43:22  jyh
- * Semi working package management.
- *
- * Revision 1.1  1996/04/07 18:27:09  jyh
- * Intermediate checking while updating dform commands.
- *
  * -*-
  * Local Variables:
  * Caml-master: "manager"

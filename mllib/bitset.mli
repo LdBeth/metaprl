@@ -10,11 +10,6 @@ val reset : t -> int -> unit
 val get : t -> int -> bool
 
 (*
- * $Log$
- * Revision 1.1  1998/04/08 14:57:15  jyh
- * ImpDag is in mllib.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

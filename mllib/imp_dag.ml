@@ -313,33 +313,6 @@ struct
 end
 
 (*
- * $Log$
- * Revision 1.5  1998/06/14 23:03:03  nogin
- * .
- *
- * Revision 1.4  1998/06/01 13:54:39  jyh
- * Proving twice one is two.
- *
- * Revision 1.3  1998/04/24 19:38:57  jyh
- * Updated debugging.
- *
- * Revision 1.2  1998/04/17 01:31:16  jyh
- * Editor is almost constructed.
- *
- * Revision 1.1  1998/04/08 14:57:21  jyh
- * ImpDag is in mllib.
- *
- * Revision 1.1  1997/08/06 16:17:12  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.2  1996/05/21 02:25:17  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.1  1996/05/01 15:04:08  jyh
- * This is the initial checkin of the NuprlLight editor.  This editor provides
- * an emacs interface, a library navigator, and a proof editor.
- *
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"

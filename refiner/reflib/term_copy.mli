@@ -94,14 +94,6 @@ val denormalize_meta_term_single : Refiner.Refiner.TermType.meta_term ->
    Refiner_std.Refiner.TermType.meta_term
 
 (*
- * $Log$
- * Revision 1.2  1998/07/03 22:05:47  jyh
- * IO terms are now in term_std format.
- *
- * Revision 1.1  1998/07/02 22:24:58  jyh
- * Created term_copy module to copy and normalize terms.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -37,26 +37,6 @@ let include_path = Env_arg.general "include" ["."] "Include directories" set_pat
 let _ = set_include_path !include_path
 
 (*
- * $Log$
- * Revision 1.3  1998/04/24 19:38:23  jyh
- * Updated debugging.
- *
- * Revision 1.2  1998/04/24 02:41:54  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1997/04/28 15:50:54  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

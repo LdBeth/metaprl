@@ -87,49 +87,6 @@ val debug_simple_print : bool ref
 val debug_dform : bool ref
 
 (*
- * $Log$
- * Revision 1.2  1998/06/12 13:47:01  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.1  1998/05/28 15:01:12  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.3  1998/03/20 22:16:20  eli
- * Eli: Changed integer parameters to Num.num's.
- *
- * Revision 1.2  1997/08/06 16:18:13  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:51:38  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.5  1996/05/21 02:14:14  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.4  1996/03/25 20:50:39  jyh
- * Intermediate commit while modifying grammer.  Restricting
- * ML hooks to condition terms.
- *
- * Revision 1.3  1996/02/25 15:16:13  jyh
- * This is a partial checkin as filterModule is being developed.
- * After the meta-logical framework is developed, sequent.* will go away.
- *
- * Revision 1.2  1996/02/19 18:46:45  jyh
- * Updating format.prl
- *
- * Revision 1.1  1996/02/18 23:32:27  jyh
- * Changin Format module to more Nuprl-like format.
- *
  * -*-
  * Local Variables:
  * Caml-master: "manager"

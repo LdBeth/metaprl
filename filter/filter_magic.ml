@@ -16,11 +16,6 @@ let interactive_magics =
     int_lib_str_magic]
 
 (*
- * $Log$
- * Revision 1.1  1998/06/16 16:28:18  jyh
- * Added magic numbers.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

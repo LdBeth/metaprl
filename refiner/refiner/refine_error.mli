@@ -20,13 +20,6 @@ with type meta_term = TermType.meta_term
 with type address = AddressType.t
 
 (*
- * $Log$
- * Revision 1.1  1998/07/02 18:35:25  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -209,32 +209,3 @@ let generate_registry_declarations ofile file =
 
 *)
 
-(*
- * $Log$
- * Revision 1.13  1998/06/16 16:25:42  jyh
- * Added itt_test.
- *
- * Revision 1.12  1998/06/01 13:54:16  jyh
- * Proving twice one is two.
- *
- * Revision 1.11  1998/05/28 13:46:55  jyh
- * Updated the editor to use new Refiner structure.
- * ITT needs dform names.
- *
- * Revision 1.10  1998/04/14 19:29:42  lolorigo
- * text filename
- *
- * Revision 1.9  1998/04/09 20:19:37  eaton
- * .
- *
- * Revision 1.8  1998/04/09 18:25:57  jyh
- * Working compiler once again.
- *
- * Revision 1.7  1998/04/08 20:51:37  lolorigo
- * reg file
- *
- * Revision 1.6  1998/04/08 15:58:26  jyh
- * Updated registry.ml to fix read_string,
- * and adjust the style.
- *
- *)

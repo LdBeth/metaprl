@@ -91,44 +91,6 @@ let slookup tbl t =
    Hashtbl.find tbl (shape_of_term t)
 
 (*
- * $Log$
- * Revision 1.3  1998/06/09 20:52:20  jyh
- * Propagated refinement changes.
- * New tacticals module.
- *
- * Revision 1.2  1998/06/01 13:55:05  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/05/28 15:01:20  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.4  1998/05/27 15:14:52  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.3  1998/04/24 02:43:02  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.2  1997/09/12 17:21:46  jyh
- * Added MLast <-> term conversion.
- * Splitting filter_parse into two phases:
- *    1. Compile into Filter_summary
- *    2. Compile Filter_summary into code.
- *
- * Revision 1.1  1997/04/28 15:51:45  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.1  1996/11/13 22:58:57  jyh
- * Initial version of forward/backward chaining cache.
- *
  * -*-
  * Local Variables:
  * Caml-master: "editor.run"

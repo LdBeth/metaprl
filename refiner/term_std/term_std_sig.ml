@@ -187,16 +187,6 @@ sig
 end
 
 (*
- * $Log$
- * Revision 1.2  1998/07/02 22:25:16  jyh
- * Created term_copy module to copy and normalize terms.
- *
- * Revision 1.1  1998/07/02 18:36:40  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -76,24 +76,3 @@ class Semaphore
     }
 }
 
-/*
- * $Log$
- * Revision 1.1  1998/02/09 15:44:09  jyh
- * Prelimnary semi-working version.
- *
- * Revision 1.1  1998/02/05 15:49:22  jyh
- * This is a simple term display in an applet.
- *
- * Revision 1.4  1997/12/15 22:16:54  jyh
- * First working version using ocaml-1.07
- *
- * Revision 1.3  1997/12/15 15:26:14  jyh
- * Upgrading to ocaml-1.07.
- *
- * Revision 1.2  1997/12/01 18:38:02  jyh
- * Upgrading security.
- *
- * Revision 1.1  1997/07/25 19:12:04  jyh
- * Raw Java version.
- *
- */

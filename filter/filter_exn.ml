@@ -106,17 +106,6 @@ let print db f x =
          print_exn db stderr exn
 
 (*
- * $Log$
- * Revision 1.3  1998/06/12 13:46:26  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.2  1998/06/01 13:52:55  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/04/28 18:30:07  jyh
- * ls() works, adding display.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -24,16 +24,3 @@ int truncate(const char *name, off_t length)
 
 #endif /* __CYGWIN32__ */
 
-/*
- * $Log$
- * Revision 1.1  1998/05/27 15:12:33  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.1  1998/02/18 18:56:29  jyh
- * Added truncate(2) for cygwin32.
- *
- * Revision 1.1  1997/08/06 16:17:00  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- */

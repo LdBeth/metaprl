@@ -143,12 +143,3 @@ extends DisplayTerm
     }
 }        
 
-/*
- * $Log$
- * Revision 1.2  1998/02/09 15:43:42  jyh
- * Prelimnary semi-working version.
- *
- * Revision 1.1  1998/02/05 15:46:14  jyh
- * This is a simple term display in an applet.
- *
- */

@@ -108,33 +108,6 @@ let with_output_file name f =
       a
 
 (*
- * $Log$
- * Revision 1.4  1998/06/16 16:25:45  jyh
- * Added itt_test.
- *
- * Revision 1.3  1998/04/24 19:38:54  jyh
- * Updated debugging.
- *
- * Revision 1.2  1998/04/08 14:57:18  jyh
- * ImpDag is in mllib.
- *
- * Revision 1.1  1997/08/06 16:17:57  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:51:21  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -110,43 +110,6 @@ val prerr_mterm : dform_base -> meta_term -> unit
 val string_of_mterm : dform_base -> meta_term -> string
 
 (*
- * $Log$
- * Revision 1.2  1998/06/01 13:54:51  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/05/28 15:00:44  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.3  1998/05/27 15:13:43  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.2  1998/04/29 20:53:34  jyh
- * Initial working display forms.
- *
- * Revision 1.1  1997/04/28 15:51:17  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.4  1996/09/02 19:42:43  jyh
- * Semi working package management.
- *
- * Revision 1.3  1996/05/21 02:13:38  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.2  1996/04/11 13:29:18  jyh
- * This is the final version with the old syntax for terms.
- *
- * Revision 1.1  1996/04/07 18:27:03  jyh
- * Intermediate checking while updating dform commands.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

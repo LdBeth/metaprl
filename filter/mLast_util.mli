@@ -38,14 +38,6 @@ val fold_class : 'a fold -> 'a -> MLast.class_decl -> 'a
 val fold_class_field : 'a fold -> 'a -> MLast.class_field -> 'a
 
 (*
- * $Log$
- * Revision 1.2  1998/04/06 19:50:41  jyh
- * Fixed match error in mLast_util.ml
- *
- * Revision 1.1  1998/02/19 17:14:05  jyh
- * Splitting filter_parse.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

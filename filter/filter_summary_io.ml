@@ -163,51 +163,6 @@ struct
 end
 
 (*
- * $Log$
- * Revision 1.10  1998/06/22 19:45:20  jyh
- * Rewriting in contexts.  This required a change in addressing,
- * and the body of the context is the _last_ subterm, not the first.
- *
- * Revision 1.9  1998/06/15 22:32:13  jyh
- * Added CZF.
- *
- * Revision 1.8  1998/06/01 13:53:15  jyh
- * Proving twice one is two.
- *
- * Revision 1.7  1998/05/27 15:13:04  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.6  1998/04/24 19:38:35  jyh
- * Updated debugging.
- *
- * Revision 1.5  1998/04/24 02:42:11  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.4  1998/02/23 14:46:22  jyh
- * First implementation of binary file compilation.
- *
- * Revision 1.3  1998/02/19 17:14:01  jyh
- * Splitting filter_parse.
- *
- * Revision 1.2  1997/08/06 16:17:34  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:50:59  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.1  1996/09/02 19:43:16  jyh
- * Semi working package management.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -36,41 +36,6 @@ module MakeFilterCache
    with type select     = Base.select
 
 (*
- * $Log$
- * Revision 1.4  1998/06/12 13:46:25  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.3  1998/06/01 13:52:52  jyh
- * Proving twice one is two.
- *
- * Revision 1.2  1998/05/27 15:12:44  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.1  1998/02/19 17:13:56  jyh
- * Splitting filter_parse.
- *
- * Revision 1.2  1997/08/06 16:17:28  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:50:52  jyh
- * This is the initial checkin of Nuprl-LighStrMarshal.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.2  1996/10/23 15:17:55  jyh
- * First working version of dT tactic.
- *
- * Revision 1.1  1996/09/02 19:42:47  jyh
- * Semi working package managemenStrMarshal.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

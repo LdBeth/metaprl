@@ -27,12 +27,3 @@
  * http://www.cs.cornell.edu/home/jyh/ejb/index.html
  */
 
-/*
- * $Log$
- * Revision 1.1  1998/04/24 02:41:18  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1997/11/04 01:49:19  jyh
- * Initial version of debugging.
- *
- */

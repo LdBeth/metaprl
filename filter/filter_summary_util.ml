@@ -122,45 +122,6 @@ let mem_resource { resource_name = name } resources =
       search resources
 
 (*
- * $Log$
- * Revision 1.11  1998/06/12 18:36:24  jyh
- * Working factorial proof.
- *
- * Revision 1.10  1998/06/12 13:46:40  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.9  1998/05/27 15:13:07  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.8  1998/04/24 19:38:36  jyh
- * Updated debugging.
- *
- * Revision 1.7  1998/04/24 02:42:13  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.6  1998/02/21 20:57:57  jyh
- * Two phase parse/extract.
- *
- * Revision 1.5  1998/02/19 17:14:04  jyh
- * Splitting filter_parse.
- *
- * Revision 1.2  1997/08/06 16:17:35  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:51:00  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

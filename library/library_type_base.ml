@@ -117,36 +117,6 @@ struct
 end
 
 (*
- * $Log$
- * Revision 1.9  1998/06/15 22:32:18  jyh
- * Added CZF.
- *
- * Revision 1.8  1998/05/28 13:46:45  jyh
- * Updated the editor to use new Refiner structure.
- * ITT needs dform names.
- *
- * Revision 1.7  1998/05/27 15:13:26  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.6  1998/05/05 20:05:53  eaton
- * .
- *
- * Revision 1.5  1998/04/08 18:10:34  eaton
- * .
- *
- * Revision 1.4  1998/04/03 18:07:33  eaton
- * .
- *
-; Revision 1.3  1998/02/19  17:24:13  jyh
-; Splitting filter_parse.
-;
- * Revision 1.2  1998/02/18 18:46:37  jyh
- * Initial ocaml semantics.
- *
- * Revision 1.1  1998/02/12 23:35:44  jyh
- * Added base Nuprl-Light interface to the library.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

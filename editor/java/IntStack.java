@@ -49,9 +49,3 @@ class IntStack
     }
 }
 
-/*
- * $Log$
- * Revision 1.1  1998/02/05 15:46:26  jyh
- * This is a simple term display in an applet.
- *
- */

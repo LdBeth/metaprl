@@ -131,39 +131,6 @@ let output_path oport =
       aux
 
 (*
- * $Log$
- * Revision 1.6  1998/07/02 18:35:00  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- * Revision 1.5  1998/05/27 15:13:11  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.4  1998/04/24 19:38:38  jyh
- * Updated debugging.
- *
- * Revision 1.3  1998/04/24 02:42:14  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.2  1998/02/21 20:58:01  jyh
- * Two phase parse/extract.
- *
- * Revision 1.1  1997/04/28 15:51:02  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.1  1996/09/02 19:43:07  jyh
- * Semi working package management.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -56,37 +56,6 @@ and 'term proof_child =
  | ChildProof of 'term proof
 
 (*
- * $Log$
- * Revision 1.5  1998/07/03 22:05:09  jyh
- * IO terms are now in term_std format.
- *
- * Revision 1.4  1998/06/09 20:51:10  jyh
- * Propagated refinement changes.
- * New tacticals module.
- *
- * Revision 1.3  1998/06/03 22:19:08  jyh
- * Nonpolymorphic refiner.
- *
- * Revision 1.2  1998/06/01 13:52:10  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/05/28 13:45:38  jyh
- * Updated the editor to use new Refiner structure.
- * ITT needs dform names.
- *
- * Revision 1.2  1998/04/21 20:58:04  jyh
- * Fixed typing problems introduced by refiner msequents.
- *
- * Revision 1.1  1998/04/17 01:31:06  jyh
- * Editor is almost constructed.
- *
- * Revision 1.2  1998/04/13 21:11:03  jyh
- * Added interactive proofs to filter.
- *
- * Revision 1.1  1998/04/13 17:08:38  jyh
- * Adding interactive proofs.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

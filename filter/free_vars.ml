@@ -149,26 +149,6 @@ let new_vars expr l =
       List.map (new_var 0) l
 
 (*
- * $Log$
- * Revision 1.3  1998/04/24 19:38:39  jyh
- * Updated debugging.
- *
- * Revision 1.2  1998/04/24 02:42:15  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1997/04/28 15:51:03  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

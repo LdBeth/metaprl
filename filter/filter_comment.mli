@@ -37,11 +37,6 @@ val create_str : (int * string) list -> MLast.str_item list -> t
 val get : t -> MLast.loc -> int * string
 
 (*
- * $Log$
- * Revision 1.1  1998/02/19 17:13:57  jyh
- * Splitting filter_parse.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

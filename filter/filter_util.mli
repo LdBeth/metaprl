@@ -32,28 +32,6 @@ val string_of_opname_list : string list -> string
 val translate_opname : opname -> string
 
 (*
- * $Log$
- * Revision 1.3  1998/05/27 15:13:12  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.2  1998/02/21 20:58:03  jyh
- * Two phase parse/extract.
- *
- * Revision 1.1  1997/04/28 15:51:02  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.1  1996/09/02 19:43:08  jyh
- * Semi working package management.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

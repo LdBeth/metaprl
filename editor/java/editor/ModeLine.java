@@ -27,9 +27,3 @@ implements Marshalable
     }
 }
 
-/*
- * $Log$
- * Revision 1.1  1998/02/05 15:49:10  jyh
- * This is a simple term display in an applet.
- *
- */

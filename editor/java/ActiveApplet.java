@@ -23,9 +23,3 @@ extends NetscapeApplet
     }
 }
 
-/*
- * $Log$
- * Revision 1.1  1998/02/09 15:43:38  jyh
- * Prelimnary semi-working version.
- *
- */

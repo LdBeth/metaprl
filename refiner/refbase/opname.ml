@@ -1,48 +1,6 @@
 (*
  * Opnames are basically just lists of strings, although
  * they may be hash-consed.
- *
- * $Log$
- * Revision 1.6  1998/07/04 22:31:13  nogin
- * Set GC parameters
- *
- * Revision 1.5  1998/06/22 19:45:34  jyh
- * Rewriting in contexts.  This required a change in addressing,
- * and the body of the context is the _last_ subterm, not the first.
- *
- * Revision 1.4  1998/06/15 22:32:27  jyh
- * Added CZF.
- *
- * Revision 1.3  1998/06/12 18:36:29  jyh
- * Working factorial proof.
- *
- * Revision 1.2  1998/06/01 13:54:44  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/05/28 15:00:17  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.2  1998/04/24 02:42:44  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1997/04/28 15:51:27  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.2  1996/09/02 19:43:20  jyh
- * Semi working package management.
- *
- * Revision 1.1  1996/04/07 18:27:08  jyh
- * Intermediate checking while updating dform commands.
- *
  *)
 
 open Printf

@@ -5,7 +5,8 @@ INCLUDE :=
 
 # Types files
 MLZFILES :=\
-	file_base_type
+	file_base_type\
+	dag
 
 # Library files
 LMFILES :=\

@@ -44,21 +44,6 @@ val format_implementation : string -> buffer -> Package.package -> unit
 val format_packages : buffer -> Package.t -> unit
 
 (*
- * $Log$
- * Revision 1.4  1998/07/03 22:05:11  jyh
- * IO terms are now in term_std format.
- *
- * Revision 1.3  1998/05/28 13:45:40  jyh
- * Updated the editor to use new Refiner structure.
- * ITT needs dform names.
- *
- * Revision 1.2  1998/04/23 20:03:40  jyh
- * Initial rebuilt editor.
- *
- * Revision 1.1  1998/04/17 20:48:13  jyh
- * Updating refiner for extraction.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"

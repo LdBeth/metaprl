@@ -16,12 +16,6 @@ module MakeFileBase (Info : FileBaseInfoSig) :
    with type cooked = Info.cooked
 
 (*
- * $Log$
- * Revision 1.1  1997/08/06 16:17:55  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

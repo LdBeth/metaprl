@@ -358,29 +358,6 @@ EXTEND
 END
 
 (*
- * $Log$
- * Revision 1.7  1998/06/16 16:25:25  jyh
- * Added itt_test.
- *
- * Revision 1.6  1998/06/12 13:45:16  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.5  1998/06/01 19:53:11  jyh
- * Working addition proof.  Removing polymorphism from refiner(?)
- *
- * Revision 1.4  1998/06/01 13:52:30  jyh
- * Proving twice one is two.
- *
- * Revision 1.3  1998/05/28 13:46:00  jyh
- * Updated the editor to use new Refiner structure.
- * ITT needs dform names.
- *
- * Revision 1.2  1998/04/28 18:29:56  jyh
- * ls() works, adding display.
- *
- * Revision 1.1  1998/04/23 20:04:14  jyh
- * Initial rebuilt editor.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

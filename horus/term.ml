@@ -2,15 +2,6 @@
  * This is the simple term module, where the
  * implementation of the term mirrors the interface.
  * Destructors are identiy functions.
- *
- * $Log$
- * Revision 1.2  1998/06/01 13:53:30  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1997/08/06 16:17:43  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
  *)
 
 open List;;

@@ -255,44 +255,6 @@ let print_exn db out s exn =
       raise exn
 
 (*
- * $Log$
- * Revision 1.4  1998/07/02 18:35:40  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- * Revision 1.3  1998/07/01 04:37:01  nogin
- * Moved Refiner exceptions into a separate module RefineErrors
- *
- * Revision 1.2  1998/06/12 13:46:59  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.1  1998/05/28 15:01:04  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.6  1998/05/27 15:13:54  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.5  1998/05/18 18:28:10  nogin
- * Removed standardize_apart function, compare_* functions
- *     and BadParamMatch exception
- *
- * Revision 1.4  1998/04/28 18:30:43  jyh
- * ls() works, adding display.
- *
- * Revision 1.3  1998/04/24 02:42:48  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.2  1998/04/21 19:53:59  jyh
- * Upgraded refiner for program extraction.
- *
- * Revision 1.1  1998/04/09 15:26:40  jyh
- * Added strip_mfunction.
- *
- * Revision 1.1  1998/04/08 14:57:33  jyh
- * ImpDag is in mllib.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

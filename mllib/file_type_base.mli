@@ -54,18 +54,6 @@ module MakeFileBase (Types : FileTypeSummarySig)
    with type cooked = Types.cooked
 
 (*
- * $Log$
- * Revision 1.3  1998/02/19 17:13:21  jyh
- * Splitting filter_parse.
- *
- * Revision 1.2  1998/02/12 23:35:19  jyh
- * Generalized file base to allow the library.
- *
- * Revision 1.1  1997/08/06 16:17:57  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

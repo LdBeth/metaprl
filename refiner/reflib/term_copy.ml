@@ -437,14 +437,6 @@ let denormalize_meta_term_single t =
 *)
 
 (*
- * $Log$
- * Revision 1.2  1998/07/03 22:05:46  jyh
- * IO terms are now in term_std format.
- *
- * Revision 1.1  1998/07/02 22:24:58  jyh
- * Created term_copy module to copy and normalize terms.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -293,18 +293,6 @@ let restore inx name magic resources tacs =
          raise (Failure "Package.restore: premature end of file")
 
 (*
- * $Log$
- * Revision 1.3  1998/06/01 13:52:16  jyh
- * Proving twice one is two.
- *
- * Revision 1.2  1998/04/24 02:41:27  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1997/08/06 16:17:17  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

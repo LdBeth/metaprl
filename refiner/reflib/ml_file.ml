@@ -103,58 +103,6 @@ module MLPrint = MakePrinter (MLFile)
 module IOPrint = MakePrinter (IOFile)
 
 (*
- * $Log$
- * Revision 1.2  1998/06/01 13:54:54  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/05/28 15:00:49  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.3  1998/05/27 15:13:45  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.2  1998/04/24 02:42:38  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1997/04/28 15:51:23  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.8  1996/05/21 02:13:56  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.7  1996/04/07 18:24:48  jyh
- * This is an intermediate commit while adjusting the dforms.
- * We intend that dform printers just return a list of terms.
- *
- * Revision 1.6  1996/03/25 20:50:41  jyh
- * Intermediate commit while modifying grammer.  Restricting
- * ML hooks to condition terms.
- *
- * Revision 1.5  1996/03/05 19:48:30  jyh
- * Preliminary version with logical framework.
- *
- * Revision 1.4  1996/02/25 15:16:15  jyh
- * This is a partial checkin as filterModule is being developed.
- * After the meta-logical framework is developed, sequent.* will go away.
- *
- * Revision 1.3  1996/02/18 23:32:28  jyh
- * Changin Format module to more Nuprl-like format.
- *
- * Revision 1.2  1996/02/13 21:32:22  jyh
- * This is an intermediate checkin while matching is being added to the rewriter.
- *
- * Revision 1.1  1996/02/10 20:19:54  jyh
- * Initial checkin of filter (prlcomp).
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner.run"

@@ -105,30 +105,6 @@ sig
 end
 
 (*
- * $Log$
- * Revision 1.6  1998/06/15 21:58:03  jyh
- * Added a few new functions.
- *
- * Revision 1.5  1998/06/09 20:52:26  jyh
- * Propagated refinement changes.
- * New tacticals module.
- *
- * Revision 1.4  1998/06/03 22:19:28  jyh
- * Nonpolymorphic refiner.
- *
- * Revision 1.3  1998/06/03 15:23:25  jyh
- * Generalized many the term_addr, term_man, and term_shape modules.
- *
- * Revision 1.2  1998/06/01 13:55:13  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/05/28 15:01:45  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.1  1998/05/27 15:14:29  jyh
- * Functorized the refiner over the Term module.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

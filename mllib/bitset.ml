@@ -35,14 +35,6 @@ let get bits i =
       (bits.(index) land (1 lsl bit)) <> 0
 
 (*
- * $Log$
- * Revision 1.2  1998/04/24 19:38:47  jyh
- * Updated debugging.
- *
- * Revision 1.1  1998/04/08 14:57:13  jyh
- * ImpDag is in mllib.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

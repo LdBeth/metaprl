@@ -59,49 +59,6 @@ module MakeExtract (Convert : ConvertProofSig) :
    ExtractSig with type proof = Convert.t
 
 (*
- * $Log$
- * Revision 1.13  1998/07/03 21:04:17  nogin
- * Specified the full "path" to the Refine module:
- * open Refiner.Refiner.Refine
- *
- * Revision 1.12  1998/07/02 22:24:48  jyh
- * Created term_copy module to copy and normalize terms.
- *
- * Revision 1.11  1998/06/01 13:53:11  jyh
- * Proving twice one is two.
- *
- * Revision 1.10  1998/05/28 13:46:23  jyh
- * Updated the editor to use new Refiner structure.
- * ITT needs dform names.
- *
- * Revision 1.9  1998/05/27 15:12:56  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.8  1998/05/07 16:02:44  jyh
- * Adding interactive proofs.
- *
- * Revision 1.7  1998/04/21 19:53:39  jyh
- * Upgraded refiner for program extraction.
- *
- * Revision 1.6  1998/04/17 20:48:28  jyh
- * Updating refiner for extraction.
- *
- * Revision 1.5  1998/04/15 12:40:01  jyh
- * Updating editor packages to Filter_summarys.
- *
- * Revision 1.4  1998/04/13 17:08:36  jyh
- * Adding interactive proofs.
- *
- * Revision 1.3  1998/04/09 18:25:52  jyh
- * Working compiler once again.
- *
- * Revision 1.2  1998/02/23 14:46:16  jyh
- * First implementation of binary file compilation.
- *
- * Revision 1.1  1998/02/21 20:57:49  jyh
- * Two phase parse/extract.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -302,52 +302,6 @@ let lookup { ext_lrtable = lrbase;
       aux (t1, t2)
 
 (*
- * $Log$
- * Revision 1.4  1998/07/02 18:35:44  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- * Revision 1.3  1998/06/09 20:52:19  jyh
- * Propagated refinement changes.
- * New tacticals module.
- *
- * Revision 1.2  1998/06/01 13:55:04  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/05/28 15:01:16  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.4  1998/05/27 15:14:22  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.3  1998/04/29 14:48:27  jyh
- * Added ocaml_sos.
- *
- * Revision 1.2  1998/04/24 02:43:00  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1997/04/28 15:51:44  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.1  1996/11/13 22:58:36  jyh
- * Initial version of forward/backward chaining cache.
- *
- * Revision 1.2  1996/05/21 02:14:25  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.1  1996/04/07 18:27:09  jyh
- * Intermediate checking while updating dform commands.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

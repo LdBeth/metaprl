@@ -204,45 +204,6 @@ let rec concat s = function
       ""
 
 (*
- * $Log$
- * Revision 1.8  1998/06/17 15:45:58  jyh
- * Optimizing compiler.
- *
- * Revision 1.7  1998/06/16 16:25:48  jyh
- * Added itt_test.
- *
- * Revision 1.6  1998/06/14 22:58:52  nogin
- * Make it faster
- *
- * Revision 1.5  1998/06/01 13:54:42  jyh
- * Proving twice one is two.
- *
- * Revision 1.4  1998/04/28 18:30:32  jyh
- * ls() works, adding display.
- *
- * Revision 1.3  1998/04/24 19:39:01  jyh
- * Updated debugging.
- *
- * Revision 1.2  1998/02/23 14:46:38  jyh
- * First implementation of binary file compilation.
- *
- * Revision 1.1  1997/08/06 16:18:02  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:51:40  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

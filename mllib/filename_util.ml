@@ -57,20 +57,6 @@ let suffix s =
          ""
 
 (*
- * $Log$
- * Revision 1.4  1998/06/16 16:25:47  jyh
- * Added itt_test.
- *
- * Revision 1.3  1998/04/24 19:38:55  jyh
- * Updated debugging.
- *
- * Revision 1.2  1998/04/15 12:40:06  jyh
- * Updating editor packages to Filter_summarys.
- *
- * Revision 1.1  1998/02/24 05:33:14  jyh
- * Added filename utilities.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -142,11 +142,6 @@ let tree_of_list { flist_head = head; flist_middle = middle; flist_tail = tail }
             append_tree middle (Leaf tail)
 
 (*
- * $Log$
- * Revision 1.1  1998/06/23 22:12:12  jyh
- * Improved rewriter speed with conversion tree and flist.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

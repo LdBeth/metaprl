@@ -23,17 +23,6 @@ val mem_resource : 'ctyp resource_info -> 'ctyp resource_info list -> bool
 
 
 (*
- * $Log$
- * Revision 1.8  1998/07/02 22:24:53  jyh
- * Created term_copy module to copy and normalize terms.
- *
- * Revision 1.7  1998/05/27 15:13:08  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.6  1998/02/21 20:58:00  jyh
- * Two phase parse/extract.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -38,9 +38,3 @@ extends ScrollGroup
     }
 }
 
-/*
- * $Log$
- * Revision 1.1  1998/02/09 15:44:11  jyh
- * Prelimnary semi-working version.
- *
- */

@@ -66,23 +66,6 @@ let gets { buf_str = str; buf_index = i } =
    String.sub str 0 i
 
 (*
- * $Log$
- * Revision 1.5  1998/06/16 16:25:28  jyh
- * Added itt_test.
- *
- * Revision 1.4  1998/06/01 13:52:43  jyh
- * Proving twice one is two.
- *
- * Revision 1.3  1998/04/24 19:38:11  jyh
- * Updated debugging.
- *
- * Revision 1.2  1998/04/24 02:41:41  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1998/02/19 17:13:54  jyh
- * Splitting filter_parse.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

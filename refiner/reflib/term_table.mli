@@ -36,46 +36,6 @@ val dest_table : 'a term_table -> 'a table_entry * 'a term_table
 val print_table : 'a term_table -> unit
 
 (*
- * $Log$
- * Revision 1.3  1998/06/16 16:25:56  jyh
- * Added itt_test.
- *
- * Revision 1.2  1998/06/15 22:32:35  jyh
- * Added CZF.
- *
- * Revision 1.1  1998/05/28 15:01:25  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.4  1998/05/27 15:15:03  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.3  1998/05/01 14:59:44  jyh
- * Updating display forms.
- *
- * Revision 1.2  1998/04/29 14:48:32  jyh
- * Added ocaml_sos.
- *
- * Revision 1.1  1997/04/28 15:51:47  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.3  1996/11/13 22:59:01  jyh
- * Initial version of forward/backward chaining cache.
- *
- * Revision 1.2  1996/05/21 02:14:27  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.1  1996/04/07 18:27:10  jyh
- * Intermediate checking while updating dform commands.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

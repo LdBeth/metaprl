@@ -12,11 +12,6 @@ val clear : t -> unit
 val gets : t -> string
 
 (*
- * $Log$
- * Revision 1.1  1998/02/19 17:13:54  jyh
- * Splitting filter_parse.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -71,18 +71,3 @@ implements DrawingSequenceOwner
     }
 }
 
-/*
- * $Log$
- * Revision 1.1  1998/02/09 15:43:46  jyh
- * Prelimnary semi-working version.
- *
- * Revision 1.3  1997/12/15 22:16:40  jyh
- * First working version using ocaml-1.07
- *
- * Revision 1.2  1997/12/15 15:25:52  jyh
- * Upgrading to ocaml-1.07.
- *
- * Revision 1.1  1997/10/15 01:25:13  jyh
- * Converted from ranks to abstract handles (Appl_handle).
- *
- */

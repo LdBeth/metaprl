@@ -141,27 +141,6 @@ sig
 end
 
 (*
- * $Log$
- * Revision 1.4  1998/06/15 22:32:22  jyh
- * Added CZF.
- *
- * Revision 1.3  1998/06/01 13:54:36  jyh
- * Proving twice one is two.
- *
- * Revision 1.2  1998/02/19 17:13:21  jyh
- * Splitting filter_parse.
- *
- * Revision 1.1  1998/02/18 18:46:47  jyh
- * Initial ocaml semantics.
- *
- * Revision 1.2  1998/02/12 23:35:17  jyh
- * Generalized file base to allow the library.
- *
- * Revision 1.1  1997/08/06 16:17:56  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -75,65 +75,6 @@ sig
 end
 
 (*
- * $Log$
- * Revision 1.13  1998/07/02 18:34:51  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- * Revision 1.12  1998/06/15 22:32:05  jyh
- * Added CZF.
- *
- * Revision 1.11  1998/06/01 13:52:49  jyh
- * Proving twice one is two.
- *
- * Revision 1.10  1998/05/28 13:46:13  jyh
- * Updated the editor to use new Refiner structure.
- * ITT needs dform names.
- *
- * Revision 1.9  1998/05/27 15:12:42  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.8  1998/05/07 16:02:36  jyh
- * Adding interactive proofs.
- *
- * Revision 1.7  1998/04/17 01:30:59  jyh
- * Editor is almost constructed.
- *
- * Revision 1.6  1998/04/15 12:39:50  jyh
- * Updating editor packages to Filter_summarys.
- *
- * Revision 1.5  1998/04/13 17:08:29  jyh
- * Adding interactive proofs.
- *
- * Revision 1.4  1998/02/19 21:08:20  jyh
- * Adjusted proof type to be primitive or derived.
- *
- * Revision 1.3  1998/02/19 17:13:55  jyh
- * Splitting filter_parse.
- *
- * Revision 1.2  1997/08/06 16:17:28  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:50:52  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.2  1996/10/23 15:17:55  jyh
- * First working version of dT tactic.
- *
- * Revision 1.1  1996/09/02 19:42:47  jyh
- * Semi working package management.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

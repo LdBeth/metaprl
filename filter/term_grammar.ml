@@ -914,59 +914,6 @@ struct
 end
 
 (*
- * $Log$
- * Revision 1.13  1998/07/02 18:35:02  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- * Revision 1.12  1998/06/15 22:32:16  jyh
- * Added CZF.
- *
- * Revision 1.11  1998/06/12 13:46:41  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.10  1998/06/01 13:53:24  jyh
- * Proving twice one is two.
- *
- * Revision 1.9  1998/05/27 15:13:13  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.8  1998/04/24 19:38:43  jyh
- * Updated debugging.
- *
- * Revision 1.7  1998/04/24 02:42:21  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.6  1998/03/20 22:15:45  eli
- * Eli: Changed integer parameters to Num.num's.
- *
- * Revision 1.5  1998/02/21 20:58:04  jyh
- * Two phase parse/extract.
- *
- * Revision 1.4  1998/02/18 18:46:33  jyh
- * Initial ocaml semantics.
- *
- * Revision 1.3  1997/09/08 15:02:21  jyh
- * This version compiles Ensemble.
- *
- * Revision 1.2  1997/08/06 16:17:40  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:51:06  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

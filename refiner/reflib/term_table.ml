@@ -503,67 +503,6 @@ let lookup name table t =
       triple
 
 (*
- * $Log$
- * Revision 1.5  1998/06/16 16:25:54  jyh
- * Added itt_test.
- *
- * Revision 1.4  1998/06/15 22:32:34  jyh
- * Added CZF.
- *
- * Revision 1.3  1998/06/12 13:47:03  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.2  1998/06/01 13:55:07  jyh
- * Proving twice one is two.
- *
- * Revision 1.1  1998/05/28 15:01:23  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.10  1998/05/27 15:15:02  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.9  1998/05/04 13:01:21  jyh
- * Ocaml display without let rec.
- *
- * Revision 1.8  1998/05/01 14:59:42  jyh
- * Updating display forms.
- *
- * Revision 1.6  1998/04/29 20:53:38  jyh
- * Initial working display forms.
- *
- * Revision 1.5  1998/04/29 14:48:30  jyh
- * Added ocaml_sos.
- *
- * Revision 1.4  1998/04/28 21:38:11  jyh
- * Adjusted uppercasing.
- *
- * Revision 1.3  1998/04/28 18:30:49  jyh
- * ls() works, adding display.
- *
- * Revision 1.2  1998/04/24 02:43:03  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.1  1997/04/28 15:51:46  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.3  1996/11/13 22:59:01  jyh
- * Initial version of forward/backward chaining cache.
- *
- * Revision 1.2  1996/05/21 02:14:25  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.1  1996/04/07 18:27:09  jyh
- * Intermediate checking while updating dform commands.
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

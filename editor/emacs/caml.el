@@ -1177,39 +1177,3 @@ Return nil if there are no more tokens"
 
 (run-hooks 'caml-load-hook)
 
-;;
-;; $Log$
-;; Revision 1.4  1998/05/29 14:52:43  jyh
-;; Better Makefiles.
-;;
-;; Revision 1.3  1998/04/21 20:57:52  jyh
-;; Fixed typing problems introduced by refiner msequents.
-;;
-;; Revision 1.2  1997/08/06 16:17:01  jyh
-;; This is an ocaml version with subtyping, type inference,
-;; d and eqcd tactics.  It is a basic system, but not debugged.
-;;
-;; Revision 1.1  1997/04/28 15:50:43  jyh
-;; This is the initial checkin of Nuprl-Light.
-;; I am porting the editor, so it is not included
-;; in this checkin.
-;;
-;; Directories:
-;;     refiner: logic engine
-;;     filter: front end to the Ocaml compiler
-;;     editor: Emacs proof editor
-;;     util: utilities
-;;     mk: Makefile templates
-;;
-;; Revision 1.8  1996/09/25 22:51:52  jyh
-;; Initial "tactical" commit.
-;;
-;; Revision 1.7  1996/09/02 19:34:47  jyh
-;; Semi working package management.
-;;
-;; Revision 1.6  1996/05/21 02:24:40  jyh
-;; This is a semi-working version before Wisconsin vacation.
-;;
-;; Revision 1.5  1996/05/09 14:09:12  jyh
-;; This version of cam.el is the first version that really works.
-;;

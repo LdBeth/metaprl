@@ -25,26 +25,6 @@ let init () =
    check_debug ()
 
 (*
- * $Log$
- * Revision 1.6  1998/06/12 13:46:48  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.5  1998/06/01 13:54:31  jyh
- * Proving twice one is two.
- *
- * Revision 1.4  1998/05/01 14:59:30  jyh
- * Updating display forms.
- *
- * Revision 1.3  1998/04/28 18:30:26  jyh
- * ls() works, adding display.
- *
- * Revision 1.2  1998/04/24 19:38:49  jyh
- * Updated debugging.
- *
- * Revision 1.1  1998/04/24 02:42:29  jyh
- * Added more extensive debugging capabilities.
- *
- *
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

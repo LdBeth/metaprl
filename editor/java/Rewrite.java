@@ -314,9 +314,3 @@ public class Rewrite
     }
 }        
 
-/*
- * $Log$
- * Revision 1.1  1998/02/05 15:47:37  jyh
- * This is a simple term display in an applet.
- *
- */
