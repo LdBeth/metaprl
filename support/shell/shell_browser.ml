@@ -242,7 +242,9 @@ struct
    let chdir state dir =
       if !debug_http then
          eprintf "Changing directory to %s@." dir;
-      ignore (Shell.cd state.state_shell dir)
+      try ignore (Shell.cd state.state_shell dir); true with
+         Not_found | Failure _ ->
+            false
 
    let flush state =
       Shell.flush state.state_shell
@@ -267,14 +269,15 @@ struct
                state
        | ["login"; key] when key = state.state_response ->
             print_access_granted_page outx state
-       | _ ->
+       | uri ->
             if is_valid_response state header then
-               let uri = "" :: decode_uri uri in
-               let dirname = String.concat "/" uri in
+               let dirname = String.concat "/" ("" :: uri) in
                let width = get_window_width header in
-                  chdir state dirname;
-                  flush state;
-                  print_page outx width state dirname;
+                  if chdir state dirname then begin
+                     flush state;
+                     print_page outx width state dirname
+                  end else
+                     print_error_page outx NotFoundCode;
                   state
             else
                print_login_page outx state
