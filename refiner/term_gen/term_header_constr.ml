@@ -40,7 +40,7 @@ open Term_hash
 module TermHeaderConstr (**)
    (FromTerm : Termmod_sig.TermModuleSig)
    (ToTerm : Termmod_sig.TermModuleSig)
-   (TermHash : Term_hash_sig.TermHashInternalSig
+   (TermHash : Term_hash_sig.TermHashSig
     with type param = ToTerm.TermType.param
     with type param' = ToTerm.TermType.param'
     with type term = ToTerm.TermType.term
@@ -60,30 +60,32 @@ struct
       let { FType.le_const = c; FType.le_vars = vars } = FTerm.dest_level level in
          TTerm.make_level { TType.le_const=c; TType.le_vars=List.map make_level_var vars }
 
-   let rec make_param info param =
-      TermHash.p_constr_param info
-      (match FTerm.dest_param param with
-          FType.Number n1 ->            TType.Number n1
-        | FType.String s1 ->            TType.String s1
-        | FType.Token s1 ->             TType.Token s1
-        | FType.Var v1 ->               TType.Var v1
-        | FType.MNumber s1 ->           TType.MNumber s1
-        | FType.MString s1 ->           TType.MString s1
-        | FType.MToken s1 ->            TType.MToken s1
-        | FType.MLevel l1 ->
-            (* HACK! remove this when we convert to ASCII .prlb files *)
-            if Obj.tag (Obj.repr l1) = Obj.string_tag then
-               TType.MLevel (TTerm.make_level { TType.le_const = 0;
-                                                TType.le_vars = [TTerm.make_level_var { TType.le_var = Obj.magic l1;
-                                                                                        TType.le_offset = 0 }]
-                             })
-            else
-               TType.MLevel (make_level l1)
-       | FType.BackwardsCompatibleLevel l1 -> TType.MLevel (make_level l1)
-       | FType.MVar s1 ->              TType.MVar s1
-       | FType.ObId oid1 ->            TType.ObId (List.map TermHash.dest_hparam (List.map (make_param info) oid1))
-       | FType.ParamList p1 ->         TType.ParamList (List.map TermHash.dest_hparam (List.map (make_param info) p1))
-      )
+   let rec make_param' = function
+       FType.Number n1 ->            TType.Number n1
+     | FType.String s1 ->            TType.String s1
+     | FType.Token s1 ->             TType.Token s1
+     | FType.Var v1 ->               TType.Var v1
+     | FType.MNumber s1 ->           TType.MNumber s1
+     | FType.MString s1 ->           TType.MString s1
+     | FType.MToken s1 ->            TType.MToken s1
+     | FType.MLevel l1 ->
+         (* HACK! remove this when we convert to ASCII .prlb files *)
+         if Obj.tag (Obj.repr l1) = Obj.string_tag then
+            TType.MLevel (TTerm.make_level { TType.le_const = 0;
+                                             TType.le_vars = [TTerm.make_level_var { TType.le_var = Obj.magic l1;
+                                                                                     TType.le_offset = 0 }]
+                          })
+         else
+            TType.MLevel (make_level l1)
+    | FType.BackwardsCompatibleLevel l1 -> TType.MLevel (make_level l1)
+    | FType.MVar s1 ->              TType.MVar s1
+    | FType.ObId oid1 ->            TType.ObId (List.map make_param_aux oid1)
+    | FType.ParamList p1 ->         TType.ParamList (List.map make_param_aux p1)
+
+   and make_param_aux param = TTerm.make_param (make_param' (FTerm.dest_param param))
+
+   let make_param info param =
+      TermHash.p_constr_param info (make_param' (FTerm.dest_param param))
 
    let rec make_context_header info x =
       TermHash.p_lookup info (make_term_header info x)

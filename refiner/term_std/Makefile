@@ -16,7 +16,7 @@ MAIN := reflib
 # Flags
 CCLIBS := -cclib -lnums
 
-# Run C preprocessor
+# Run Eli's preprocessor
 OCAMLFLAGS = -pp "$(CAMLP4MACRO) -I../refsig"
 
 all: lib

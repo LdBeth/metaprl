@@ -37,7 +37,7 @@ module TermHash (ToTerm : Termmod_sig.TermModuleInternalSig) :
       with type param' = ToTerm.TermType.param'
       with type term = ToTerm.TermType.term
       with type meta_term = ToTerm.TermType.meta_term
-      with type msequent = ToTerm.Refine .msequent
+      with type msequent = ToTerm.Refine.msequent
 
 (*
  * -*-

@@ -30,6 +30,9 @@
  *)
 open Opname
 
+(*
+ * We use read-only arrays for sequents.
+ *)
 module type MinLinSet = sig
    type elt
    type t
@@ -41,54 +44,55 @@ module type MinLinSet = sig
    val to_list : t -> elt list
 end
 
-(*
- * We use read-only arrays for sequents.
- *)
+#define TERM_BASE_MIN_SIG \
+ \
+   (************************************************************************ \
+    * TYPES                                                                * \
+    ************************************************************************) \
+ \
+   type level_exp_var \
+   type level_exp \
+   type param \
+   type operator \
+   type term \
+   type bound_term \
+   type seq_hyps \
+   type seq_goals \
+ \
+   type hypothesis \
+   type level_exp_var' \
+   type level_exp' \
+   type param' \
+   type operator' \
+   type term' \
+   type bound_term' \
+ \
+   module SeqHyp : MinLinSet with type elt = hypothesis with type t = seq_hyps \
+   module SeqGoal : MinLinSet with type elt = term with type t = seq_goals \
+ \
+   (************************************************************************ \
+    * De/Constructors                                                      * \
+    ************************************************************************) \
+ \
+   (* \
+    * General interface. \
+    *) \
+   val make_term : term' -> term \
+   val dest_term : term -> term' \
+   val make_op : operator' -> operator \
+   val dest_op : operator -> operator' \
+   val make_bterm : bound_term' -> bound_term \
+   val dest_bterm : bound_term -> bound_term' \
+   val make_param : param' -> param \
+   val dest_param : param -> param' \
+   val make_level : level_exp' -> level_exp \
+   val dest_level : level_exp -> level_exp' \
+   val make_level_var : level_exp_var' -> level_exp_var \
+   val dest_level_var : level_exp_var -> level_exp_var'
+
 module type TermBaseMinimalSig =
 sig
-   (************************************************************************
-    * TYPES                                                                *
-    ************************************************************************)
-
-   type level_exp_var
-   type level_exp
-   type param
-   type operator
-   type term
-   type bound_term
-   type seq_hyps
-   type seq_goals
-
-   type hypothesis
-   type level_exp_var'
-   type level_exp'
-   type param'
-   type operator'
-   type term'
-   type bound_term'
-
-   module SeqHyp : MinLinSet with type elt = hypothesis with type t = seq_hyps
-   module SeqGoal : MinLinSet with type elt = term with type t = seq_goals
-
-   (************************************************************************
-    * De/Constructors                                                      *
-    ************************************************************************)
-
-   (*
-    * General interface.
-    *)
-   val make_term : term' -> term
-   val dest_term : term -> term'
-   val make_op : operator' -> operator
-   val dest_op : operator -> operator'
-   val make_bterm : bound_term' -> bound_term
-   val dest_bterm : bound_term -> bound_term'
-   val make_param : param' -> param
-   val dest_param : param -> param'
-   val make_level : level_exp' -> level_exp
-   val dest_level : level_exp -> level_exp'
-   val make_level_var : level_exp_var' -> level_exp_var
-   val dest_level_var : level_exp_var -> level_exp_var'
+   TERM_BASE_MIN_SIG
 end
 
 (*
@@ -96,49 +100,7 @@ end
  *)
 module type TermBaseInternalSig =
 sig
-   (************************************************************************
-    * TYPES                                                                *
-    ************************************************************************)
-
-   type level_exp_var
-   type level_exp
-   type param
-   type operator
-   type term
-   type bound_term
-   type seq_hyps
-   type seq_goals
-
-   type hypothesis
-   type level_exp_var'
-   type level_exp'
-   type param'
-   type operator'
-   type term'
-   type bound_term'
-
-   module SeqHyp : MinLinSet with type elt = hypothesis with type t = seq_hyps
-   module SeqGoal : MinLinSet with type elt = term with type t = seq_goals
-
-   (************************************************************************
-    * De/Constructors                                                      *
-    ************************************************************************)
-
-   (*
-    * General interface.
-    *)
-   val make_term : term' -> term
-   val dest_term : term -> term'
-   val make_op : operator' -> operator
-   val dest_op : operator -> operator'
-   val make_bterm : bound_term' -> bound_term
-   val dest_bterm : bound_term -> bound_term'
-   val make_param : param' -> param
-   val dest_param : param -> param'
-   val make_level : level_exp' -> level_exp
-   val dest_level : level_exp -> level_exp'
-   val make_level_var : level_exp_var' -> level_exp_var
-   val dest_level_var : level_exp_var -> level_exp_var'
+   TERM_BASE_MIN_SIG
 
    (*
     * This function is not exported by the refiner,

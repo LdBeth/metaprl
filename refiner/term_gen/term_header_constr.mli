@@ -33,7 +33,7 @@ module TermHeaderConstr
    (FromTerm : Termmod_sig.TermModuleSig)
    (ToTerm : Termmod_sig.TermModuleSig)
 
-   (TermHash : Term_hash_sig.TermHashInternalSig
+   (TermHash : Term_hash_sig.TermHashSig
       with type param = ToTerm.TermType.param
       with type param' = ToTerm.TermType.param'
       with type term = ToTerm.TermType.term
