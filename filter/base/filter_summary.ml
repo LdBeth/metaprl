@@ -916,8 +916,7 @@ struct
     * All parameters should be strings.
     *)
    let dest_string_param_list t =
-      let l = dest_xlist t in
-         List.map dest_string_param (dest_xlist t)
+      List.map dest_string_param (dest_xlist t)
 
    (*
     * Get a parameter.
@@ -1093,7 +1092,7 @@ struct
       Prec (dest_string_param t)
 
    and dest_prec_rel convert t =
-      match dest_string_param_list t with
+      match dest_string_param_list (one_subterm t) with
          [rel; left; right] ->
             let rel =
                match rel with
@@ -1343,7 +1342,7 @@ struct
           | GTRelation ->
                "gt"
       in
-         mk_strings_term prec_rel_op [rel; left; right]
+         mk_simple_term prec_rel_op [mk_strings_term prec_rel_op [rel; left; right]]
 
    (*
     * Term conversions.

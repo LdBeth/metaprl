@@ -588,8 +588,11 @@ struct
           | Failure _ ->
                0
       in
-         if not (List.mem magic magics) then
-            raise (Failure (sprintf "Filter_cache: %s: file magic number is wrong: %08x" filename magic));
+      let magic =
+         try List_util.find_index magic magics with
+            Not_found ->
+               raise (Failure (sprintf "Filter_cache: %s: file magic number is wrong: %08x" filename magic))
+      in
          let table = PreAsciiIO.read_table inx in
             close_in inx;
             table, magic

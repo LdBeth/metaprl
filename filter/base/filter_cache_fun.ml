@@ -742,7 +742,13 @@ struct
       in
       let path = [name] in
       let info' = Base.find_file base.lib barg path my_select (OnlySuffixes ["prlb"; "prla"]) in
+      let _ =
+         (* Save the .prlb if the loaded file is newer *)
+         Base.set_magic base.lib info' 1;
+         Base.save_if_newer base.lib barg info' (OnlySuffixes ["prlb"])
+      in
       let info' = StrMarshal.unmarshal (Base.info base.lib info') in
+         (* Copy the proofs *)
          cache.info <- FilterSummaryTerm.copy_proofs copy_proof info info'
 
    (*

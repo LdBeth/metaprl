@@ -90,6 +90,7 @@ sig
    val find_file : t -> arg -> module_path -> select -> alt_suffix -> info
    val find_match : t -> arg -> info -> select -> alt_suffix -> info
    val save : t -> arg -> info -> alt_suffix -> unit
+   val save_if_newer : t -> arg -> info -> alt_suffix -> unit
 
    (* Info about a module *)
    val info : t -> info -> cooked

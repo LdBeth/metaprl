@@ -155,6 +155,14 @@ struct
        | _ ->
             raise (Invalid_argument "Filter_summary_io.save")
 
+   let save_if_newer base arg info suffix =
+      match info with
+         { info_info = info; info_path = [_]; info_root = root } ->
+            FileBase.set_info base root info;
+            FileBase.save_if_newer base arg root suffix
+       | _ ->
+            raise (Invalid_argument "Filter_summary_io.save")
+
    (************************************************************************
     * MODULE INFO                                                          *
     ************************************************************************)
