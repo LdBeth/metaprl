@@ -433,7 +433,7 @@ let venv_add_vars venv vars tyl =
 let venv_find_var venv v =
    try SymbolTable.find venv v with
       Not_found ->
-         raise (RefineError ("Term_ty_infer.venv_find_var: unbound variable", VarError v))
+         raise (RefineError ("Term_ty_infer.venv_find_var: unbound variable", RewriteFreeSOVar v))
 
 let venv_find_var_opt venv v =
    try Some (SymbolTable.find venv v) with
@@ -1606,12 +1606,13 @@ let venv_of_terms tl =
 
 (*
  * Get the initial env from the mterm.
+ * Only include the terms in the redex.
  *)
-let venv_of_mterm mt args =
+let venv_of_redices args redices =
    let venv = venv_empty in
 
    (* Filter out arguments that are context vars *)
-   let cvars = TermMeta.context_vars_info SymbolTable.empty mt in
+   let cvars = context_vars_info_list SymbolTable.empty redices in
    let args =
       List.fold_left (fun args arg ->
             if is_fso_var_term arg && SymbolTable.mem cvars (dest_fso_var arg) then
@@ -1621,8 +1622,9 @@ let venv_of_mterm mt args =
    in
 
    (* Get additional info about the vars *)
-   let fv = SymbolSet.union (free_vars_mterm mt) (free_vars_terms args) in
-   let so_vars = TermMeta.so_vars_info (so_vars_info_list SymbolTable.empty args) mt in
+   let terms = args @ redices in
+   let fv = free_vars_terms terms in
+   let so_vars = so_vars_info_list SymbolTable.empty terms in
 
    (* Add type for all the vars *)
    let venv =
@@ -1657,9 +1659,9 @@ let venv_of_mterm mt args =
  * Check a rule.
  *)
 let check_rule tenv mt args =
-   let args, venv = venv_of_mterm mt args in
    let subst = new_subst Strict in
    let subgoals, goal = unzip_mfunction mt in
+   let args, venv = venv_of_redices args [goal] in
    let subst = check_arg_list tenv venv subst args in
 
    (* The goal must be a judgment *)
@@ -1688,10 +1690,10 @@ let check_rule tenv mt args =
  * Get the type of a rewrite.
  *)
 let infer_rewrite tenv mt args =
-   let args, venv = venv_of_mterm mt args in
    let subst = new_subst Strict in
-   let subst = check_arg_list tenv venv subst args in
    let subgoals, redex, contractum = unzip_mrewrite mt in
+   let args, venv = venv_of_redices args [redex] in
+   let subst = check_arg_list tenv venv subst args in
 
    (* Verify the rewrite in the reverse direction *)
    let _ =
@@ -1739,14 +1741,11 @@ let check_type_rewrite tenv redex contractum =
 (*
  * Check a display form.
  *)
-let check_dform tenv t form =
-   let terms = [t; form] in
-   let venv = venv_of_terms terms in
+let check_dform tenv redex contractum =
+   let venv = venv_of_terms [redex; contractum] in
    let subst = new_subst Relaxed in
-   let subst =
-      List.fold_left (fun subst e ->
-            infer_term_type tenv venv subst e ty_dform) subst terms
-   in
+   let subst = infer_term_type tenv venv subst redex ty_dform in
+   let subst = infer_term_type tenv venv subst contractum ty_dform in
    let _ = solve_constraints tenv venv subst in
       ()
 
@@ -1756,10 +1755,10 @@ let check_dform tenv t form =
  * There is no effort to match the types.
  *)
 let check_iform tenv mt args =
-   let args, venv = venv_of_mterm mt args in
    let subst = new_subst Relaxed in
-   let subst = check_arg_list tenv venv subst args in
    let subgoals, redex, contractum = unzip_mrewrite mt in
+   let args, venv = venv_of_redices args [redex; contractum] in
+   let subst = check_arg_list tenv venv subst args in
 
    (* It is ok if the types change *)
    let subst, _ = infer_term tenv venv subst redex in

@@ -254,7 +254,7 @@ let format_refine_error db buf printers name error =
          format_space buf;
          format_string buf ("'" ^ string_of_symbol s);
          format_ezone buf;
-         format_explanation buf "Meta-variables (second-order, context, and free first-order ones) that occur in assumptions of a rule (right hand side of a rewrite), but not in rule conclusion (left hand side of a rewrite) need to occur in rule (rewrite) argument(s)."
+         format_explanation buf "The meta-variable is a second-order, context, or first-order variable that occurs free.  For rules, each meta-variable must appear in the goal or as an argument to the rule.  For rewrites, each meta-variable must occur in the redex (left-hand side of the rewrite), or as an argument to the rewrite."
     | RewriteSOVarArity s ->
          format_string buf "SOVarArity:";
          format_space buf;
