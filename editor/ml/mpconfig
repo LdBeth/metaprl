@@ -84,6 +84,7 @@ INCLUDES="\
 	-I ../../theories/mmc/arch/ra\
 	-I ../../theories/mmc/arch/util\
 	-I ../../theories/mmc/arch/x86\
+        -I ../../theories/mmc/arch/ppc\
 	-I ../../theories/mmc/util\
 	-I ../../theories/mmc/main\
 	-I ../../theories/mmc/test\

@@ -10,4 +10,4 @@ cd `dirname $0`
 #
 # Start the program
 #
-exec ./mp.opt $INCLUDES $*
+exec ./mp.opt $INCLUDES "$@"
