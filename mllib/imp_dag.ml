@@ -219,7 +219,7 @@ struct
          else
             let entry = entries.(i) in
                if entry.entry_in_edges = [] then
-                  entry :: collect (i + 1)
+                  i :: collect (i + 1)
                else
                   collect (i + 1)
       in
@@ -306,6 +306,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.2  1998/04/17 01:31:16  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.1  1998/04/08 14:57:21  jyh
  * ImpDag is in mllib.
  *

@@ -35,7 +35,7 @@ open Printf
 
 open Term
 open Refine
-open Proof_type
+open Filter_proof_type
 
 include Proof_step
 
@@ -691,25 +691,25 @@ let remove_children pf =
  * Make an io proof.
  *)
 let io_status_of_status = function
-   StatusBad -> Proof_type.StatusBad
- | StatusPartial -> Proof_type.StatusPartial
- | StatusAsserted -> Proof_type.StatusAsserted
- | StatusComplete -> Proof_type.StatusComplete
+   StatusBad -> Filter_proof_type.StatusBad
+ | StatusPartial -> Filter_proof_type.StatusPartial
+ | StatusAsserted -> Filter_proof_type.StatusAsserted
+ | StatusComplete -> Filter_proof_type.StatusComplete
 
 let rec io_child_of_child = function
    ChildGoal (t, { ref_label = label; ref_args = args }) ->
-      Proof_type.ChildGoal { aterm_goal = t;
+      Filter_proof_type.ChildGoal { aterm_goal = t;
                              aterm_label = label;
                              aterm_args = args
                            }
  | ChildNode node ->
-      Proof_type.ChildProof (io_proof_of_node node)
+      Filter_proof_type.ChildProof (io_proof_of_node node)
 
 and io_node_of_item = function
    NodeStep step ->
-      Proof_type.ProofStep (io_step_of_step step)
+      Filter_proof_type.ProofStep (io_step_of_step step)
  | NodeNode node ->
-      Proof_type.ProofNode (io_proof_of_node node)
+      Filter_proof_type.ProofNode (io_proof_of_node node)
       
 and io_proof_of_node
     { node_status = status;
@@ -717,10 +717,10 @@ and io_proof_of_node
       node_children = children;
       node_extras = extras
     } =
-   { Proof_type.proof_status = io_status_of_status status;
-     Proof_type.proof_step = io_node_of_item item;
-     Proof_type.proof_children = List.map io_child_of_child children;
-     Proof_type.proof_extras = List.map io_proof_of_node extras
+   { Filter_proof_type.proof_status = io_status_of_status status;
+     Filter_proof_type.proof_step = io_node_of_item item;
+     Filter_proof_type.proof_children = List.map io_child_of_child children;
+     Filter_proof_type.proof_extras = List.map io_proof_of_node extras
    }
 
 let io_proof_of_proof { pf_node = node } =
@@ -730,14 +730,14 @@ let io_proof_of_proof { pf_node = node } =
  * Restore an io proof.
  *)
 let status_of_io_status = function
-   Proof_type.StatusBad -> StatusBad
- | Proof_type.StatusPartial -> StatusPartial
- | Proof_type.StatusAsserted -> StatusAsserted
- | Proof_type.StatusComplete -> StatusComplete
+   Filter_proof_type.StatusBad -> StatusBad
+ | Filter_proof_type.StatusPartial -> StatusPartial
+ | Filter_proof_type.StatusAsserted -> StatusAsserted
+ | Filter_proof_type.StatusComplete -> StatusComplete
 
 let proof_of_io_proof resources fcache pf =
    let rec child_of_io_child = function
-      Proof_type.ChildGoal ({ aterm_goal = t;
+      Filter_proof_type.ChildGoal ({ aterm_goal = t;
                               aterm_label = label;
                               aterm_args = args
                             }) ->
@@ -746,20 +746,20 @@ let proof_of_io_proof resources fcache pf =
                          ref_fcache = fcache;
                          ref_rsrc = resources
                     })
-    | Proof_type.ChildProof pf ->
+    | Filter_proof_type.ChildProof pf ->
          ChildNode (node_of_io_proof pf)
 
    and item_of_io_node = function
-      Proof_type.ProofStep step ->
+      Filter_proof_type.ProofStep step ->
          NodeStep (step_of_io_step resources fcache step)
-    | Proof_type.ProofNode node ->
+    | Filter_proof_type.ProofNode node ->
          NodeNode (node_of_io_proof node)
 
    and node_of_io_proof
-       { Proof_type.proof_status = status;
-         Proof_type.proof_step = item;
-         Proof_type.proof_children = children;
-         Proof_type.proof_extras = extras
+       { Filter_proof_type.proof_status = status;
+         Filter_proof_type.proof_step = item;
+         Filter_proof_type.proof_children = children;
+         Filter_proof_type.proof_extras = extras
        } =
       { node_status = status_of_io_status status;
         node_item = item_of_io_node item;
@@ -775,6 +775,9 @@ let proof_of_io_proof resources fcache pf =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/17 01:30:44  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.3  1998/04/13 21:10:53  jyh
  * Added interactive proofs to filter.
  *

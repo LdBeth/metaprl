@@ -154,6 +154,7 @@ sig
    val info : info -> str_info
    val name : info -> string
    val filename : t -> info -> string
+   val sig_info : info -> select -> sig_info
    val sub_info : info -> module_path -> sig_info
 
    (* Expand a partial path specification to a complete one *)
@@ -193,6 +194,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/17 01:31:10  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.7  1998/04/15 22:29:02  jyh
  * Converting packages from summaries.
  *

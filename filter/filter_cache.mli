@@ -7,6 +7,7 @@
 open Term
 
 open Filter_summary_type
+open Filter_proof_type
 
 (*
  * For this compiler, we only use two summaries.
@@ -24,7 +25,7 @@ type select_type =
 type proof_type =
    Primitive of term
  | Derived of MLast.expr
- | Interactive of Proof_type.proof
+ | Interactive of proof
    
 (*
  * The summary_cache for interfaces and implementations.
@@ -55,6 +56,9 @@ module StrFilterCache :
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/17 01:30:59  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.6  1998/04/15 12:39:50  jyh
  * Updating editor packages to Filter_summarys.
  *

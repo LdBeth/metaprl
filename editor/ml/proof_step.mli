@@ -6,7 +6,7 @@
  *)
 
 open Term
-open Proof_type
+open Filter_proof_type
 
 include Tactic_type
 
@@ -33,6 +33,9 @@ val step_of_io_step : tactic_resources -> cache -> proof_step -> t
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/17 01:30:48  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.3  1998/04/13 21:10:57  jyh
  * Added interactive proofs to filter.
  *

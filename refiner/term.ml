@@ -168,6 +168,11 @@ let subterms_of_term t =
  ************************************************************************)
 
 (*
+ * Native terms are injected into the "perv" module.
+ *)
+let xperv = make_opname ["perv"]
+
+(*
  * "Simple" terms have no parameters and no binding variables.
  *)
 let is_simple_term_opname name = function
@@ -1075,8 +1080,8 @@ let mk_context_term v term terms =
 (*
  * Lists.
  *)
-let xnil_opname = make_opname ["nil"]
-let xcons_opname = make_opname ["cons"]
+let xnil_opname = mk_opname "nil" xperv
+let xcons_opname = mk_opname "cons" xperv
 
 let xnil_term = mk_simple_term xnil_opname []
 let is_xnil_term t = t = xnil_term
@@ -1118,7 +1123,7 @@ let rec mk_xlist_term = function
 (*
  * Strings.
  *)
-let string_opname = make_opname ["string"]
+let string_opname = mk_opname "string" xperv
 
 let is_xstring_term = function
    { term_op = { op_name = opname; op_params = [String _] };
@@ -1145,7 +1150,7 @@ let mk_xstring_term s =
  * LAMBDA                               *
  ****************************************)
 
-let xlambda_opname = make_opname ["lambda"]
+let xlambda_opname = mk_opname "lambda" xperv
 
 let mk_xlambda_term = mk_dep1_term xlambda_opname
 
@@ -2114,9 +2119,9 @@ let unify subst t1 t2 =
  *************************)
 
 (* Sequents operator name *)
-let hyp_opname = make_opname ["hyp"]
-let concl_opname = make_opname ["concl"]
-let sequent_opname = make_opname ["sequent"]
+let hyp_opname = mk_opname "hyp" xperv
+let concl_opname = mk_opname "concl" xperv
+let sequent_opname = mk_opname "sequent" xperv
 
 (* Dependent hypotheses *)
 let is_hyp_term = is_dep0_dep1_term hyp_opname
@@ -2406,7 +2411,7 @@ let print_shape { shape_opname = name; shape_params = params; shape_arities = ar
  *
  *)
  
-let canon_var_opname = make_opname ["canon_var"]
+let canon_var_opname = mk_opname "canon_var" xperv
 
 (*
  * See if a term is a "canon_var".
@@ -2434,7 +2439,7 @@ let mk_canon_var_term v =
      term_terms = []
    }
    
-let subst_opname = make_opname ["subst"]
+let subst_opname = mk_opname "subst" xperv
 
 (*
  * See if a term is a "subst" term.
@@ -2499,6 +2504,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.11  1998/04/17 01:31:18  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.10  1998/03/20 22:16:21  eli
  * Eli: Changed integer parameters to Num.num's.
  *

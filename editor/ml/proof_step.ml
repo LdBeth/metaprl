@@ -6,7 +6,7 @@
  *)
 
 open Term
-open Proof_type
+open Filter_proof_type
 
 include Tactic_type
 
@@ -80,20 +80,20 @@ let io_step_of_step
       step_text = text;
       step_ast = ast
     } =
-   { Proof_type.step_goal = aterm_of_goal goal;
-     Proof_type.step_subgoals = List.map aterm_of_goal subgoals;
-     Proof_type.step_text = text;
-     Proof_type.step_ast = ast
+   { Filter_proof_type.step_goal = aterm_of_goal goal;
+     Filter_proof_type.step_subgoals = List.map aterm_of_goal subgoals;
+     Filter_proof_type.step_text = text;
+     Filter_proof_type.step_ast = ast
    }
 
 (*
  * Add the resource information.
  *)
 let step_of_io_step resources fcache
-    { Proof_type.step_goal = goal;
-      Proof_type.step_subgoals = subgoals;
-      Proof_type.step_text = text;
-      Proof_type.step_ast = ast
+    { Filter_proof_type.step_goal = goal;
+      Filter_proof_type.step_subgoals = subgoals;
+      Filter_proof_type.step_text = text;
+      Filter_proof_type.step_ast = ast
     } =
    { step_goal = goal_of_aterm resources fcache goal;
      step_subgoals = List.map (goal_of_aterm resources fcache) subgoals;
@@ -103,6 +103,9 @@ let step_of_io_step resources fcache
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/17 01:30:47  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.3  1998/04/13 21:10:56  jyh
  * Added interactive proofs to filter.
  *

@@ -19,10 +19,9 @@ OCAMLFLAGS := -pp "camlp4o q_MLast.cmo pa_extend.cmo"
 MLZFILES :=\
 	filter_type\
 	filter_summary_type\
-	proof_type
+	filter_proof_type
 
 LMFILES :=\
-	proof_type\
 	filter_debug\
 	buffer\
 	mLast_util\
@@ -34,6 +33,8 @@ LMFILES :=\
 	filter_util\
 	filter_comment\
 	filter_ocaml\
+	filter_proof_type\
+	filter_proof\
 	filter_summary\
 	filter_summary_type\
 	filter_summary_io\

@@ -665,7 +665,9 @@ let add_command { info_list = info } item =
 (*
  * These are the possible opnames.
  *)
-let mk_opname s = Opname.mk_opname s Opname.nil_opname
+let mk_opname =
+   let op = Opname.mk_opname "summary" Opname.nil_opname in
+      fun s -> Opname.mk_opname s op
 
 let rewrite_op                  = mk_opname "rewrite"
 let cond_rewrite_op             = mk_opname "cond_rewrite"
@@ -1200,7 +1202,7 @@ let mk_prec_rel_term rel left right =
        | GTRelation ->
             "gt"
    in
-      mk_strings_term magic_block_op [rel; left; right]
+      mk_strings_term prec_rel_op [rel; left; right]
 
 (*
  * Convert a resource.
@@ -1705,6 +1707,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.12  1998/04/17 01:31:08  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.11  1998/04/15 22:28:59  jyh
  * Converting packages from summaries.
  *

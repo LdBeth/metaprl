@@ -55,7 +55,16 @@ struct
    type str_elem  = (str_proof, str_ctyp, str_expr, str_item) summary_item
    
    type select = Base.select
-   type t = Base.t
+   
+   (*
+    * The main base keeps the filesystem base,
+    * as well as a list of summaries that have been loaded so far.
+    *)
+   type t =
+      { lib : Base.t;
+        mutable str_summaries : Base.info list;
+        mutable sig_summaries : Base.info list
+      }
 
    (*
     * This is the extra info we keep for each module.
@@ -77,11 +86,9 @@ struct
         mutable resources : (module_path * str_ctyp resource_info) list;
 
         (*
-         * Summaries of modules.
-         * summaries is the list of inlined module summaries
+         * Info about self.
          * info is the summary of this module.
          *)
-        mutable summaries : Base.info list;
         mutable info : str_info;
         self : Base.info;
         name : string;
@@ -89,7 +96,7 @@ struct
         (*
          * Keep a link to the summary base.
          *)
-        base : Base.t
+        base : t
       }
 
    (* Hook that is called whenever a module is loaded *)
@@ -102,8 +109,14 @@ struct
    (*
     * Create the bases.
     *)
-   let create = Base.create
-   let set_path = Base.set_path
+   let create path = 
+      { lib = Base.create path;
+        str_summaries = [];
+        sig_summaries = []
+      }
+
+   let set_path { lib = base } path =
+      Base.set_path base path
 
    (*
     * Take a partial pathname and expand it with all the intervening modules.
@@ -164,7 +177,7 @@ struct
    let expand_path cache path =
       if debug_filter_cache then
          eprintf "Filter_cache.expand_path: %s%t" (string_of_path path) eflush;
-      let { base = base } = cache in
+      let { base = { lib = base; sig_summaries = summaries } } = cache in
          match path with
             modname::modpath ->
                (* First search for head module in top level modules *)
@@ -186,7 +199,6 @@ struct
                         try modname' :: (expand_in_summary path (SigMarshal.unmarshal (Base.info base info))) with
                            Not_found -> mod_search tl
                in
-               let summaries = cache.summaries in
                let path' =
                   match head_search summaries with
                      Some info ->
@@ -285,55 +297,40 @@ struct
    (*
     * Projection.
     *)
-   let info { info = info } = info
+   let info { info = info } =
+      info
 
    (*
-    * Find a summary in a list.
+    * Find a summary by its module path.
     *)
-   let find_summary cache name =
-      let { base = base; summaries = summaries } = cache in
-      let rec search = function
-         h::t ->
-            let name' = Base.name base h in
-               if name' = name then
-                  Some (Base.info base h)
-               else
-                  search t
-       | [] ->
-            None
+   let find_summarized_sig_module cache path =
+      let { base = { lib = base; sig_summaries = summaries } } = cache in
+      let compare info =
+         Base.pathname base info = path
       in
-         search summaries
-
-   (*
-    * Find a summry by its module path.
-    *)
-   let find_summarized_module cache path =
-      let { base = base; summaries = summaries } = cache in
-      let rec search = function
-         info::tl ->
-            let fullname = Base.pathname base info in
-               if fullname = path then
-                  Some info
-               else
-                  search tl
-       | [] -> None
-      in
-         search summaries
+         List_util.find summaries compare
 
    (*
     * Get a previous module.
     *)
    let sub_info cache path =
-      match find_summarized_module cache path with
-         None ->
-            raise Not_found
-       | Some info ->
-            SigMarshal.unmarshal (Base.info cache.base info)
+      let info = find_summarized_sig_module cache path in
+         SigMarshal.unmarshal (Base.info cache.base.lib info)
+
+   (*
+    * Find a summary by its module path.
+    *)
+   let find_summarized_str_module base path =
+      let { lib = base; str_summaries = summaries } = base in
+      let compare info =
+         Base.pathname base info = path
+      in
+         List_util.find summaries compare
 
    (*
     * Inherited access.
     *)
-   let parents              = Filter_summary.parents cache.info
+   let parents cache        = Filter_summary.parents cache.info
    let find_axiom cache     = Filter_summary.find_axiom cache.info
    let find_rewrite cache   = Filter_summary.find_rewrite cache.info
    let find_mlterm cache    = Filter_summary.find_mlterm cache.info
@@ -390,21 +387,14 @@ struct
          match item with
             Module (n, _) ->
                (* The contained summaries become top level *)
-               let info' = Base.sub_info cache.base self n in
-                  cache.summaries <- info' :: cache.summaries
+               let base = cache.base in
+               let info' = Base.sub_info base.lib self n in
+                  base.sig_summaries <- info' :: base.sig_summaries
 
           | Opname { opname_name = str; opname_term = t } ->
                (* Hash this name to the full opname *)
                let opname = Opname.mk_opname str opprefix in
                   Hashtbl.add cache.optable str opname
-
-(*
- * NOTE: check for missing prec in the implementation,
- * if the interface defines it.
-       | Prec name ->
-            (* This becomes a local prec *)
-            cache.precs <- name :: cache.precs
-*)
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
@@ -427,21 +417,14 @@ struct
          match item with
             Module (n, _) ->
                (* The contained summaries become top level *)
-               let info' = Base.sub_info cache.base self n in
-                  cache.summaries <- info' :: cache.summaries
+               let base = cache.base in
+               let info' = Base.sub_info base.lib self n in
+                  base.sig_summaries <- info' :: base.sig_summaries
 
           | Opname { opname_name = str; opname_term = t } ->
                (* Hash this name to the full opname *)
                let opname = Opname.mk_opname str opprefix in
                   Hashtbl.add cache.optable str opname
-
-(*
- * NOTE: check for missing prec in the implementation,
- * if the interface defines it.
-       | Prec name ->
-            (* This becomes a local prec *)
-            cache.precs <- name :: cache.precs
-*)
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
@@ -457,15 +440,20 @@ struct
       let cache, inline_hook, vals = arg in
          if debug_filter_cache then
             eprintf "FilterCache.inline_module': %s%t" (string_of_path path) eflush;
-         match find_summarized_module cache path with
-            None ->
+         try
+            let info = find_summarized_sig_module cache path in
+               if debug_filter_cache then
+                  eprintf "FilterCache.inline_module': %s: already loaded%t" (string_of_path path) eflush;
+               info
+         with
+            Not_found ->
                if debug_filter_cache then
                   eprintf "FilterCache.inline_module': finding: %s%t" (string_of_path path) eflush;
-               let { base = base; summaries = summaries } = cache in
+               let { base = { lib = base; sig_summaries = summaries } } = cache in
                let info = Base.find base path SigMarshal.select in
                let info' = SigMarshal.unmarshal (Base.info base info) in
                   (* This module gets listed in the inline stack *)
-                  cache.summaries <- info :: summaries;
+                  cache.base.sig_summaries <- info :: summaries;
 
                   (* Inline the subparts *)
                   inline_sig_components arg path info (info_items info');
@@ -480,15 +468,10 @@ struct
 
                   info
 
-          | Some info ->
-               if debug_filter_cache then
-                  eprintf "FilterCache.inline_module': %s: already loaded%t" (string_of_path path) eflush;
-               info
-
    let inline_module cache path inline_hook arg =
       let vals = ref arg in
       let info = inline_sig_module (cache, inline_hook, vals) path in
-         SigMarshal.unmarshal (Base.info cache.base info), !vals
+         SigMarshal.unmarshal (Base.info cache.base.lib info), !vals
    
    (*
     * To create, need:
@@ -499,10 +482,9 @@ struct
       { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
         optable = create_optable ();
         precs = [];
-        summaries = [];
         resources = [];
         info = new_module_info ();
-        self = Base.create_info base self_select "." name;
+        self = Base.create_info base.lib self_select "." name;
         name = name;
         base = base
       }
@@ -514,13 +496,18 @@ struct
    let load base (name : module_name) (my_select : select) (child_select : select) (hook : 'a hook) (arg : 'a) =
       let vals = ref arg in
       let path = [name] in
-      let info = Base.find base path my_select in
-      let info' = StrMarshal.unmarshal (Base.info base info) in
+      let info =
+         try find_summarized_str_module base path with
+            Not_found ->
+               let info = Base.find base.lib path my_select in
+                  base.str_summaries <- info :: base.str_summaries;
+                  info
+      in
+      let info' = StrMarshal.unmarshal (Base.info base.lib info) in
       let cache =
          { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
            optable = create_optable ();
            precs = [];
-           summaries = [info];
            resources = [];
            info = info';
            self = info;
@@ -539,18 +526,32 @@ struct
    (*
     * Get the filename of the info.
     *)
-   let filename base { self = info } =
+   let filename { lib = base } { self = info } =
       Base.file_name base info
    
    let name { name = name } =
       name
+   
+   (*
+    * Get the signature for the module.
+    *)
+   let sig_info cache alt_select =
+      let { base = base; self = self; name = name } = cache in
+      let { lib = lib; sig_summaries = summaries } = base in
+      let info =
+         try find_summarized_sig_module cache [name] with
+            Not_found ->
+               let info = Base.find_match lib self alt_select in
+                  base.sig_summaries <- info :: summaries;
+                  info
+      in
+         SigMarshal.unmarshal (Base.info lib info) 
 
    (*
     * Check the implementation with its interface.
     *)
    let check cache alt_select =
-      let { base = base; self = self } = cache in
-      let sig_info = SigMarshal.unmarshal (Base.info base (Base.find_match base self alt_select)) in
+      let sig_info = sig_info cache alt_select in
       let id = find_id sig_info in
          add_command cache (Id id, (0, 0));
          check_implementation cache.info sig_info
@@ -559,7 +560,7 @@ struct
     * Save the cache.
     *)
    let save cache =
-      let { base = base; self = self; info = info } = cache in
+      let { base = { lib = base }; self = self; info = info } = cache in
          if debug_filter_cache then
             begin
                eprintf "Filter_cache.save: begin%t" eflush;
@@ -573,6 +574,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.7  1998/04/17 01:31:00  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.6  1998/04/15 22:28:57  jyh
  * Converting packages from summaries.
  *

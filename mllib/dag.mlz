@@ -2,6 +2,9 @@
  * Imperative DAGs.
  *
  * $Log$
+ * Revision 1.2  1998/04/17 01:31:14  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.1  1998/04/08 14:57:17  jyh
  * ImpDag is in mllib.
  *
@@ -44,6 +47,7 @@ sig
    val equate : 'a t -> 'a node -> 'a node -> unit
    
    (* Graph operations *)
+   val roots : 'a t -> 'a node list
    val node_value : 'a t -> 'a node -> 'a
    val node_out_edges : 'a t -> 'a node -> 'a node list
    val node_in_edges : 'a t -> 'a node -> 'a node list

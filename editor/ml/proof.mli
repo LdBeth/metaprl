@@ -140,11 +140,14 @@ val remove_children : proof -> proof
 (*
  * IO
  *)
-val io_proof_of_proof : proof -> Proof_type.proof
-val proof_of_io_proof : tactic_resources -> cache -> Proof_type.proof -> proof
+val io_proof_of_proof : proof -> Filter_proof_type.proof
+val proof_of_io_proof : tactic_resources -> cache -> Filter_proof_type.proof -> proof
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/17 01:30:46  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.3  1998/04/13 21:10:54  jyh
  * Added interactive proofs to filter.
  *

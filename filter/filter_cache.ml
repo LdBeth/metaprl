@@ -17,6 +17,8 @@ open Filter_debug
 open Filter_type
 open Filter_util
 open Filter_ocaml
+open Filter_proof_type
+open Filter_proof
 open Filter_summary
 open Filter_summary_type
 open Filter_summary_io
@@ -40,7 +42,7 @@ type select_type =
 type proof_type =
    Primitive of term
  | Derived of MLast.expr
- | Interactive of Proof_type.proof
+ | Interactive of proof
 
 (*
  * This is the common summary type for interface between IO
@@ -147,8 +149,11 @@ let term_of_str_item = Filter_ocaml.term_of_str_item comment
 (*
  * Marshaling proofs.
  *)
-let prim_op = mk_opname "prim" nil_opname
-let derived_op = mk_opname "derived" nil_opname
+let summary_opname = mk_opname "summary"     nil_opname
+
+let prim_op        = mk_opname "prim"        summary_opname
+let derived_op     = mk_opname "derived"     summary_opname
+let interactive_op = mk_opname "interactive" summary_opname
 
 let marshal_proof = function
    Primitive t ->
@@ -156,7 +161,7 @@ let marshal_proof = function
  | Derived expr ->
       mk_simple_term derived_op [term_of_expr expr]
  | Interactive pf ->
-      raise (Failure "Filter_cache.marshal_proof(Interactive _): not implemented")
+      mk_simple_term interactive_op [term_of_proof pf]
 
 let unmarshal_proof t =
    let opname = opname_of_term t in
@@ -165,6 +170,8 @@ let unmarshal_proof t =
          Primitive expr
       else if opname == derived_op then
          Derived (expr_of_term expr)
+      else if opname == interactive_op then
+         Interactive (proof_of_term (one_subterm t))
       else
          raise (Failure "Filter_cache.unmarshal")
 
@@ -457,6 +464,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.14  1998/04/17 01:30:57  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.13  1998/04/15 12:39:49  jyh
  * Updating editor packages to Filter_summarys.
  *

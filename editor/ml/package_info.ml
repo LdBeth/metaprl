@@ -30,8 +30,8 @@ struct
    type package =
       { mutable pack_status : status;
         pack_name : string;
-        pack_sig  : StrFilterCache.sig_info option;
-        pack_info : StrFilterCache.info option
+        mutable pack_sig  : StrFilterCache.sig_info option;
+        mutable pack_info : StrFilterCache.info option
       }
    
    (*
@@ -85,16 +85,14 @@ struct
    (*
     * Get the refiner.
     *)
-   let refiner { pack_info = info } =
-      let name = StrFilterCache.name info in
-         (get_theory name).thy_refiner
+   let refiner { pack_name = name } =
+      (get_theory name).thy_refiner
 
    (*
     * Get the list of display forms.
     *)
-   let dforms { pack_info = info } =
-      let name = StrFilterCache.name info in
-         (get_theory name).thy_dformer
+   let dforms { pack_name = name } =
+      (get_theory name).thy_dformer
    
    (*
     * Get the name of the package.
@@ -105,8 +103,11 @@ struct
    (*
     * Get the filename for the package.
     *)
-   let filename pack { pack_info = info } =
-      StrFilterCache.filename pack.pack_cache info
+   let filename pack = function
+      { pack_info = Some info } ->
+         StrFilterCache.filename pack.pack_cache info
+    | { pack_info = None } ->
+         raise (Failure "Package_info.filename: package is not implemented")
    
    (*
     * Get the status of the package.
@@ -123,15 +124,57 @@ struct
    (*
     * Get the items in the module.
     *)
-   let info { pack_info = info } =
-      info_items (StrFilterCache.info info)
+   let info = function
+      { pack_info = Some info } ->
+         StrFilterCache.info info
+    | { pack_info = None } ->
+         raise (Failure "Package_info.info: package is not implemented")
    
+   let sig_info = function
+      { pack_sig = Some info } ->
+         info
+    | { pack_sig = None; pack_info = Some info } as pack ->
+         let info = StrFilterCache.sig_info info InterfaceType in
+            pack.pack_sig <- Some info;
+            info
+    | { pack_sig = None; pack_info = None } ->
+         raise (Failure "Package_info.sig_info: package not implemented")
+   
+   (*
+    * DAG access.
+    *)
+   let get_node { pack_dag = dag; pack_packages = packages } info =
+      let rec search = function
+         node :: t ->
+            let info' = ImpDag.node_value dag node in
+               if info' == info then
+                  node
+               else
+                  search t
+       | [] ->
+            raise Not_found
+      in
+         search packages
+
+   let roots { pack_dag = dag } =
+      List.map (ImpDag.node_value dag) (ImpDag.roots dag)
+
+   let parents pack info =
+      let { pack_dag = dag } = pack in
+      let node = get_node pack info in
+         List.map (ImpDag.node_value dag) (ImpDag.node_out_edges dag node)
+   
+   let children pack info =
+      let { pack_dag = dag } = pack in
+      let node = get_node pack info in
+         List.map (ImpDag.node_value dag) (ImpDag.node_in_edges dag node)
+
    (*
     * Get a node by its name.
     *)
    let load_check dag name node =
-      let { pack_info = info } = ImpDag.node_value dag node in
-         StrFilterCache.name info = name
+      let { pack_name = name' } = ImpDag.node_value dag node in
+         name' = name
 
    let is_loaded { pack_dag = dag; pack_packages = packages } name =
       List.exists (load_check dag name) packages
@@ -163,11 +206,11 @@ struct
     *)
    let add_implementation pack info =
       let { pack_dag = dag; pack_packages = packages } = pack in
-      let name = StrFilterCache.name info.pack_info in
+      let { pack_name = name; pack_info = info' } = info in
       let rec remove = function
          node :: t ->
-            let { pack_info = info' } = ImpDag.node_value dag node in
-               if StrFilterCache.name info' = name then
+            let { pack_name = name' } = ImpDag.node_value dag node in
+               if name' = name then
                   begin
                      ImpDag.delete dag node;
                      t
@@ -178,7 +221,13 @@ struct
             []
       in
       let node = ImpDag.insert dag info in
-      let parents = StrFilterCache.parents info.pack_info in
+      let parents =
+         match info' with
+            Some info ->
+               StrFilterCache.parents info
+          | None ->
+               raise (Invalid_argument "Package_info.add_implementation")
+      in
          pack.pack_packages <- node :: (remove packages);
          List.iter (insert_parent pack node) parents
    
@@ -188,15 +237,24 @@ struct
     * otherwise it adds the package, and creates
     * the edges to the parents.
     *)
-   let maybe_add_package pack info =
-      let name = StrFilterCache.name info in
-         if not (is_loaded pack name) then
-            let { pack_dag = dag; pack_packages = packages } = pack in
-            let parents = StrFilterCache.parents info in
-            let pinfo = { pack_status = ReadOnly; pack_info = info } in
-            let node = ImpDag.insert dag pinfo in
-               pack.pack_packages <- node :: packages;
-               List.iter (insert_parent pack node) parents
+   let maybe_add_package pack path sig_info =
+      match path with
+         [name] ->
+            if not (is_loaded pack name) then
+               let { pack_dag = dag; pack_packages = packages } = pack in
+               let parents = Filter_summary.parents sig_info in
+               let pinfo =
+                  { pack_status = ReadOnly;
+                    pack_sig = Some sig_info;
+                    pack_info = None;
+                    pack_name = name
+                  }
+               in
+               let node = ImpDag.insert dag pinfo in
+                  pack.pack_packages <- node :: packages;
+                  List.iter (insert_parent pack node) parents
+       | _ ->
+            raise (Failure "Package_info.maybe_add_package: nested modules are not implemented")
 
    (*
     * When a module is inlined, add the resources and infixes.
@@ -234,7 +292,7 @@ struct
          List.iter add_infix (get_infixes info);
          
          (* Add this node to the pack *)
-         maybe_add_package pack info;
+         maybe_add_package pack path info;
          
          (* Add the path to the list of parents *)
          path :: paths, nresources
@@ -243,22 +301,38 @@ struct
     * Get a loaded theory.
     *)
    let get pack name =
-      get_package pack name
+      let { pack_dag = dag } = pack in
+         ImpDag.node_value dag (get_package pack name)
 
    (*
     * Save a package.
     * This happens only if it is modified.
     *)
-   let save pack info =
-      let { pack_status = status; pack_info = info } = info in
-         match status with
-            ReadOnly ->
-               raise (Failure "Package is read-only")
-          | Unmodified ->
-               ()
-          | Modified ->
-               StrFilterCache.save info
+   let save pack = function
+      { pack_status = ReadOnly } ->
+         raise (Failure "Package is read-only")
+    | { pack_status = Unmodified } ->
+         ()
+    | { pack_status = Modified; pack_info = Some info } ->
+         StrFilterCache.save info
+    | { pack_status = Modified; pack_info = None } ->
+         raise (Invalid_argument "Package_info.save")
 
+   (*
+    * Create an empty package.
+    *)
+   let create_package pack name =
+      let info =
+         { pack_status = Modified;
+           pack_sig = None;
+           pack_info = Some (StrFilterCache.create_cache pack.pack_cache (**)
+                                name ImplementationType InterfaceType);
+           pack_name = name
+         }
+      in
+         add_implementation pack info;
+         info
+   
    (*
     * Load a package.
     * We search for the description, and load it.
@@ -272,7 +346,7 @@ struct
          let { pack_cache = cache } = pack in
          let path = [name] in
          let info, _ =
-            StrFilterCache.load cache name ImplementationType InterfaceType (inline_hook path) ([], [])
+            StrFilterCache.load cache name ImplementationType InterfaceType (inline_hook pack path) ([], [])
          in
          let mlexists =
             let filename = StrFilterCache.filename cache info in
@@ -281,10 +355,12 @@ struct
          in
          let info' =
             { pack_status = if mlexists then ReadOnly else Unmodified;
-              pack_info = info
+              pack_sig = None;
+              pack_info = Some info;
+              pack_name = name
             }
          in
-            add_package pack info';
+            add_implementation pack info';
             if is_theory_loaded name then
                let unit = <:expr< () >> in
                   (<:str_item< $exp: unit$ >>)
@@ -301,6 +377,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/17 01:30:41  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.4  1998/04/16 14:55:44  jyh
  * Upgrading packages.
  *

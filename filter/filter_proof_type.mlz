@@ -61,6 +61,9 @@ and proof_child =
    
 (*
  * $Log$
+ * Revision 1.1  1998/04/17 01:31:06  jyh
+ * Editor is almost constructed.
+ *
  * Revision 1.2  1998/04/13 21:11:03  jyh
  * Added interactive proofs to filter.
  *
