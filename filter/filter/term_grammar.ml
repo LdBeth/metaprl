@@ -1041,15 +1041,8 @@ struct
 
       (* Parameters and bterm lists *)
       opname:
-         [[ op = rev_opname ->
-             List.rev op
-          ]];
-
-      rev_opname:
-         [[ w = word_or_string ->
-             [w]
-           | l = rev_opname; sl_exclamation; w = word_or_string ->
-             w :: l
+         [[ op = LIST1 word_or_string SEP sl_exclamation ->
+             op
           ]];
 
       optparams:
