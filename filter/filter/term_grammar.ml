@@ -259,16 +259,16 @@ struct
    let mk_pair_term loc a b =
       mk_dep0_dep0_term (mk_dep0_dep0_opname loc "pair") a b
 
-   (*
-    * Turn a reversed list of terms into a tuple.
-    *)
+   let get_aterm loc at =
+      if at.aname != None then
+         Stdpp.raise_with_loc loc (Invalid_argument "Syntax Error: Named term where unnamed one is expected")
+      else at.aterm
+
    let make_term = function
       ST_String (s, loc) ->
          mk_term (mk_op (mk_0opname loc s) []) []
-    | ST_Term ({aname = Some _}, loc) ->
-         Stdpp.raise_with_loc loc (Invalid_argument "Syntax Error: Named term where unnamed is expected")
-    | ST_Term (t, _) ->
-         t.aterm
+    | ST_Term (at, loc) ->
+         get_aterm loc at
 
    let make_aterm = function
       ST_Term(at, _) -> at
@@ -277,6 +277,9 @@ struct
    let wrap_term loc t =
       ST_Term ({ aname = None; aterm = t}, loc)
 
+   (*
+    * Turn a reversed list of terms into a tuple.
+    *)
    let rec tupelize loc = function
       [h] -> make_term h
     | h::t -> mk_pair_term loc (make_term h) (tupelize loc t)
@@ -385,32 +388,34 @@ struct
             let loc = shift_pos loc offset in
                Stdpp.raise_with_loc (adjust_pos loc l1, adjust_pos loc l2) exn
 
-   let rec parse_quotation loc curr = function
-      nm, _ when nm = curr ->
-         Stdpp.raise_with_loc loc (Failure (nm ^ " quotation inside a " ^ curr ^ " quotation"))
-    | "ext", s ->
-         Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
-    | "desc", s ->
-         Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
-    | ("term"|"") as nm, s ->
-         (try
-             let cs = Stream.of_string s in
-                term_of_parsed_term (Grammar.Entry.parse TermGrammar.term_eoi cs)
-          with
-             Stdpp.Exc_located ((l1, l2), exn) ->
-                let offset =
-                  if nm = "" then String.length "<<" else (String.length "<:") + (String.length nm) + (String.length "<")
-                in
-                let pos = shift_pos (fst loc) offset in
-                   Stdpp.raise_with_loc (adjust_pos pos l1, adjust_pos pos l2) exn)
-    | "doc", s ->
-         parse_comment loc true  SpellOn  true s
-    | "topdoc", s ->
-         parse_comment loc false SpellOn  true s
-    | "dform", s ->
-         parse_comment loc false SpellOff false s
-    | nm, _ ->
-         Stdpp.raise_with_loc loc (Invalid_argument ("Camlp4 term grammar: unknown " ^ nm ^ " quotation"))
+   let q_shift_loc loc nm =
+      shift_pos (fst loc) (if nm = "" then String.length "<<" else (String.length "<:") + (String.length nm) + (String.length "<")), (snd loc)
+
+   let rec parse_quotation loc curr (nm, s) =
+      if nm = curr then
+         Stdpp.raise_with_loc loc (Failure (nm ^ " quotation inside a " ^ curr ^ " quotation"));
+      match nm with
+         "ext" ->
+            Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
+       | "desc"->
+            Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
+       | "term"
+       | "" ->
+            (try
+                let cs = Stream.of_string s in
+                   term_of_parsed_term (Grammar.Entry.parse TermGrammar.term_eoi cs)
+             with
+                Stdpp.Exc_located ((l1, l2), exn) ->
+                   let pos = fst (q_shift_loc loc nm) in
+                      Stdpp.raise_with_loc (adjust_pos pos l1, adjust_pos pos l2) exn)
+       | "doc" ->
+            parse_comment (q_shift_loc loc nm) true SpellOn true s
+       | "topdoc" ->
+            parse_comment (q_shift_loc loc nm) false SpellOn  true s
+       | "dform" ->
+            parse_comment (q_shift_loc loc nm) false SpellOff false s
+       | _ ->
+            Stdpp.raise_with_loc loc (Invalid_argument ("Camlp4 term grammar: unknown " ^ nm ^ " quotation"))
 
    and parse_comment loc math spell space s =
       let pos = fst loc in
@@ -517,7 +522,7 @@ struct
 
    let convert_comment loc t =
       if is_string_term comment_string_op t then
-         parse_comment loc false SpellOn true (dest_string_term comment_string_op t)
+         parse_comment (q_shift_loc loc "doc") false SpellOn true (dest_string_term comment_string_op t)
       else
          t
 
@@ -642,11 +647,9 @@ struct
 
       term:
          [[ x = aterm ->
-               x.aterm
+               get_aterm loc x
           ]|[ s = ANTIQUOT ->
                Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
-          ]|[ x = QUOTATION ->
-            parse_quotation loc "term" (dest_quot x)
          ]];
 
       aterm:
@@ -655,8 +658,6 @@ struct
              make_aterm x
            | x = noncommaterm; sl_comma; y = noncommaterm ->
              { aname = None; aterm = mk_pair_term loc (make_term x) (make_term y) }
-          ]|[ x = QUOTATION ->
-             { aname = None; aterm = parse_quotation loc "term" (dest_quot x)}
          ]];
 
       noncommaterm:
@@ -733,7 +734,7 @@ struct
                 mk_arith_term loc op t1 t2
               (* t1 =[g] t2, t1 <>[g] t2  - algebraic relations for g *)
             | t1 = SELF; (_,op) = sl_equal_rel; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
-               make_application loc [mk_field_term loc g.aterm op; make_term t1; make_term t2]
+               make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
             | (* t1 ~ t2 - squiggle equality  *)
               t1 = SELF; sl_tilde; t2 = SELF ->
                (* XXX: HACK - Perv!rewrite should be eventially replaced by mk_opname loc ["sqeq"] *)
@@ -755,7 +756,7 @@ struct
                make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
             |(* t1 <[g] t2, t1 >[g] t2, ...  - algebraic relations for g *)
                t1 = SELF; (_,op) = sl_rel; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
-               make_application loc [mk_field_term loc g.aterm op; make_term t1; make_term t2]
+               make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
             ]
 
           (* Other operations *)
@@ -785,7 +786,7 @@ struct
           | "plus" RIGHTA
             [  (* t1 +[g] t2  - algebraic plus *)
                t1 = SELF; sl_plus; sl_open_brack; g = aterm;  sl_close_brack; t2 = SELF ->
-               make_application loc [mk_field_term loc g.aterm "+"; make_term t1; make_term t2]
+               make_application loc [mk_field_term loc (get_aterm loc g) "+"; make_term t1; make_term t2]
              | (* t1 + t2 - disjoint union *)
                t1 = SELF; op = sl_plus; t2 = SELF ->
                mk_arith_term loc op t1 t2
@@ -802,7 +803,7 @@ struct
                make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
             |(* t1 -[g] t2   - algebraic minus for g *)
                t1 = SELF; op = sl_add; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
-               make_application loc [mk_field_term loc g.aterm op; make_term t1; make_term t2 ]
+               make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2 ]
             ]
           | "uminus"
             [ op = sl_minus; x = SELF ->
@@ -811,7 +812,7 @@ struct
           | "prod" RIGHTA
             [  (* t1 *[g] t2  - algebraic multiplication (e.g. group operation) *)
                t1 = SELF; sl_star; sl_open_brack; g = aterm;  sl_close_brack; t2 = SELF ->
-               make_application loc [mk_field_term loc g.aterm "*"; make_term t1; make_term t2]
+               make_application loc [mk_field_term loc (get_aterm loc g) "*"; make_term t1; make_term t2]
              | (* t1 * t2 - type product *)
                t1 = SELF; op = sl_star; t2 = SELF ->
                mk_type_term loc op t1 t2
@@ -828,7 +829,7 @@ struct
                make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
             |(* t1 /[g] t2   - algebraic right division for g *)
                t1 = SELF; op = sl_div; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
-               make_application loc [mk_field_term loc g.aterm op; make_term t1; make_term t2]
+               make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
             ]
           | "apply" LEFTA
             [ t = applyterm ->
@@ -871,7 +872,7 @@ struct
                make_application loc [mk_field_self_term loc op; (make_term t1); (make_term t2)]
             |(* t1 ^[g] t2   - algebraic power for g *)
                t1 = applyterm; op = sl_power; sl_open_brack; g = aterm; sl_close_brack; t2 = applyterm ->
-               make_application loc [mk_field_term loc g.aterm op; (make_term t1); (make_term t2)]
+               make_application loc [mk_field_term loc (get_aterm loc g) op; (make_term t1); (make_term t2)]
             |(* r ^ lab - field selection for records *)
               r = applyterm; sl_power; lab = word_or_string  ->
                wrap_term loc (mk_field_term loc (make_term r) lab)
@@ -907,14 +908,11 @@ struct
           | [ s = ANTIQUOT ->
                { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s}
             ]
-          | [ x = QUOTATION ->
-               { aname = None; aterm = parse_quotation loc "term" (dest_quot x) }
-            ]
          ];
 
       bound_term:
          [ [ sl_open_paren; v = varterm; sl_colon; t = aterm; sl_close_paren ->
-               { aname = Some v; aterm = t.aterm }
+               { aname = Some v; aterm = (get_aterm loc t) }
            ]
           | [ t = singleterm ->
               t
@@ -957,37 +955,37 @@ struct
 
              (* Parenthesized terms *)
            | sl_open_paren; t = aterm; sl_close_paren ->
-             t.aterm
+             get_aterm loc t
              (* records {x1=a1;x2=a2;...} *)
            | sl_open_curly; lab = word_or_string; sl_equal; t = aterm; rest = LIST0 rcrdterm; sl_close_curly ->
                 let r0 =   mk_term (mk_op (mk_opname loc ["rcrd"] [] []) []) [] in
                 let aux = fun r -> function (lab,t) ->
                            mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
-                               [make_param (Token lab )])  [mk_simple_bterm t.aterm; mk_simple_bterm  r]
+                               [make_param (Token lab )])  [mk_simple_bterm (get_aterm loc t); mk_simple_bterm  r]
                 in
                    List.fold_left aux r0 ((lab,t)::rest)
              (* record typess {x1:A1;x2:a2;...} *)
            | sl_open_curly; lab = word_or_string; sl_colon; t = aterm; ";"; r = LIST0 recordterm SEP ";"; sl_close_curly ->
                 let r0 =   mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
-                               [make_param (Token lab )])  [mk_simple_bterm t.aterm] in
+                               [make_param (Token lab )])  [mk_simple_bterm (get_aterm loc t)] in
                 let aux = fun r -> function
                       (Some lab,t) ->
                            mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [1;0])
-                               [make_param (Token lab )])  [mk_bterm [Lm_symbol.add "self"] t.aterm; mk_simple_bterm  r]
+                               [make_param (Token lab )])  [mk_bterm [Lm_symbol.add "self"] (get_aterm loc t); mk_simple_bterm  r]
                    |  (None,t) ->
-                           mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add "self") r t.aterm
+                           mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add "self") r (get_aterm loc t)
                 in
                     List.fold_left aux r0 r
              (* single record types {x1:A1} *)
            | sl_open_curly; lab = word_or_string; sl_colon; t = aterm; sl_close_curly ->
                 mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
-                        [make_param (Token lab )])  [mk_simple_bterm t.aterm]
+                        [make_param (Token lab )])  [mk_simple_bterm (get_aterm loc t)]
              (* sets {x:A | P[x]} *)
            | sl_open_curly; v = word_or_string; sl_colon; ty = aterm; sl_pipe; b = aterm; sl_close_curly ->
-             mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add v) ty.aterm b.aterm
+             mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add v) (get_aterm loc ty) (get_aterm loc b)
              (* very dependent functions {f | x:A -> B[x]} *)
            | sl_open_curly; f =  word_or_string; sl_pipe; t = aterm; sl_close_curly ->
-             let t = t.aterm in let f = Lm_symbol.add f in
+             let t = get_aterm loc t in let f = Lm_symbol.add f in
              let rfun_op = mk_dep0_dep2_opname loc "rfun" in
                 if is_dep0_dep1_term (mk_dep0_dep1_opname loc "fun") t then
                    let v, a, b = dest_dep0_dep1_any_term t in
@@ -996,9 +994,11 @@ struct
                    let a, b = two_subterms t in
                       mk_dep0_dep2_term rfun_op f (mk_gensym ()) a b
                 else
-                   raise (ParseError "body of <rfun> is not a function")
+                   Stdpp.raise_with_loc loc (ParseError "body of <rfun> is not a function")
             | sl_exclamation; v = var ->
                encode_free_var v
+            | x = QUOTATION ->
+               parse_quotation loc "term" (dest_quot x)
           ]];
 
       var: [[ v = word_or_string -> Lm_symbol.add v ]];
@@ -1154,12 +1154,12 @@ struct
           | v = word_or_string; rest = hyp_suffix ->
               rest v
           | t = aterm ->
-              Hypothesis (empty_var, t.aterm)
+              Hypothesis (empty_var, get_aterm loc t)
           ]];
 
       hyp_suffix:
          [[ sl_colon; t = aterm ->
-               fun v -> Hypothesis (Lm_symbol.add v, t.aterm)
+               fun v -> Hypothesis (Lm_symbol.add v, get_aterm loc t)
           | (params, bterms) = termsuffix ->
                fun op -> Hypothesis (empty_var, mk_term (mk_op (mk_bopname loc [op] params bterms) params) bterms)
           | ->
@@ -1189,7 +1189,7 @@ struct
 
       df_item:
          [[ t = singleterm ->
-             term_of_parsed_term t.aterm
+             term_of_parsed_term (get_aterm loc t)
            | sl_back_quote; name = STRING ->
              mk_xstring_term (Token.eval_string loc name)
           ]];

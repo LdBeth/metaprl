@@ -101,7 +101,7 @@ type token =
  | TokMath of bool
  | TokString of bool * string
  | TokVariable of string
- | TokQuote of string * string
+ | TokQuote of Lexing.position * string * string
  | TokName of string
  | TokLeftBrace
  | TokRightBrace
@@ -223,11 +223,11 @@ let string_of_term = function
  * we upgrade to 3.0.7+.
  *)
 let level = ref 0
-let tag = ref ""
+let tag = ref (Lexing.dummy_pos, "")
 let buffer = Buffer.create 19
 
-let set_tag tag' =
-   tag := tag';
+let set_tag lexbuf tag' =
+   tag := (Lexing.lexeme_start_p lexbuf, tag');
    Buffer.clear buffer
 
 let add_string s =
@@ -235,8 +235,9 @@ let add_string s =
 
 let flush_buffer () =
    let s = Buffer.contents buffer in
+   let pos, tag = !tag in
       Buffer.clear buffer;
-      TokQuote (!tag, s)
+      TokQuote (pos, tag, s)
 
 let flush_string () =
    let s = Buffer.contents buffer in
@@ -290,12 +291,12 @@ rule main = parse
 
    (* Quotations *)
  | "<<"
-   { set_tag "";
+   { set_tag lexbuf "";
      quotation lexbuf
    }
  | "<:" name '<'
    { let buf = Lexing.lexeme lexbuf in
-        set_tag (String.sub buf 2 (pred (String.length buf)));
+        set_tag lexbuf (String.sub buf 2 (pred (String.length buf)));
         quotation lexbuf
    }
 
@@ -559,9 +560,9 @@ and parse_item mode buf =
                   ItemItem (Term (([opname], loc), [], [items]))
        | TokName s ->
             parse_term mode s buf
-       | TokQuote (tag, next) ->
+       | TokQuote (pos, tag, next) ->
             let loc = loc_of_buf buf in
-            let item = Quote (loc, tag, next) in
+            let item = Quote ((pos, (snd loc)), tag, next) in
             if is_math_mode mode then ItemItem item
             else ItemItem (Term ((["math"], loc), [], [[item]]))
        | TokQString s ->

@@ -61,25 +61,32 @@ let dummy_loc =
  * XXX: TODO: This converts the old-style location data into modern one.
  * Ideally, we should be able to embed location data as comments (bug 256).
  *)
-let mk_proper_loc =
-   let mk_pos i = {
-      pos_cnum = Lm_num.int_of_num i;
-      pos_lnum = 1;
-      pos_bol = 0;
-      pos_fname = "";
-   } in
-      fun i j -> (mk_pos i, mk_pos j)
+let mk_pos i = {
+   pos_cnum = i;
+   pos_lnum = 1;
+   pos_bol = 0;
+   pos_fname = "";
+}
 
-let shift_pos loc offset =
-   {loc with pos_cnum = loc.pos_cnum + offset}
+let mk_proper_loc i j =
+   (mk_pos (Lm_num.int_of_num i), mk_pos (Lm_num.int_of_num j))
+
+let shift_pos pos offset =
+   {pos with pos_cnum = pos.pos_cnum + offset}
 
 let adjust_pos globpos local_pos =
-   {
-      globpos with
-      pos_lnum = if local_pos.pos_lnum > 0 then globpos.pos_lnum + local_pos.pos_lnum - 1 else globpos.pos_lnum;
-      pos_bol = if local_pos.pos_lnum <= 1 then globpos.pos_bol else local_pos.pos_bol + globpos.pos_cnum;
-      pos_cnum = globpos.pos_cnum + local_pos.pos_cnum;
-   }
+(*
+ * XXX: TODO: Because of Camlp4 bugs (OCaml PR#2953 and PR#2954), we can only
+ * trust pos_cnum for now.
+ *
+ *  {
+ *     globpos with
+ *     pos_lnum = if local_pos.pos_lnum > 0 then globpos.pos_lnum + local_pos.pos_lnum - 1 else globpos.pos_lnum;
+ *     pos_bol = if local_pos.pos_lnum <= 1 then globpos.pos_bol else local_pos.pos_bol + globpos.pos_cnum;
+ *     pos_cnum = globpos.pos_cnum + local_pos.pos_cnum;
+ *  }
+ *)
+   mk_pos (globpos.pos_cnum + local_pos.pos_cnum)
 
 (*
  * Get the context vars from a list.
