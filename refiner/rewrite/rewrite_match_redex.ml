@@ -140,6 +140,25 @@ struct
    let extract_stack_bvars stack conts vars =
       extract_cont_bvars stack (extract_some_bvars stack vars) conts
 
+   let check_term_free_vars vars t =
+      if is_some_var_free vars t then
+         REF_RAISE(RefineError ("Rewrite_match_redex.check_term_free_vars",
+                                StringTermError("term has free occurrences of some variables it is not allowed to have", t)))
+
+   let rec check_hyp_free_vars vars hyps i len =
+      if i <> len then
+         match SeqHyp.get hyps i with
+            Hypothesis (var, term) ->
+               check_term_free_vars vars term;
+               let vars = Lm_list_util.tryremove var vars in
+                  if vars != [] then
+                     check_hyp_free_vars vars hyps (succ i) len
+          | Context (var, _, terms) ->
+               List.iter (check_term_free_vars vars) terms;
+               let vars = Lm_list_util.tryremove var vars in
+                  if vars != [] then
+                     check_hyp_free_vars vars hyps (succ i) len
+
    let check_instance_term vars t =
       if SymbolSet.intersectp vars (free_vars_set t) then
          REF_RAISE(RefineError("Rewrite_match_redex.check_instance_term", StringTermError("term in the inner sequent is bound by the outer context", t)))
@@ -658,25 +677,6 @@ struct
                REF_RAISE(RefineError ("match_redex_sequent_goals", RewriteBadMatch (GoalMatch goals)));
             match_redex_term addrs stack all_bvars goal' (SeqGoal.get goals i);
             match_redex_sequent_goals addrs stack all_bvars goals' goals (succ i) len
-
-   and check_hyp_free_vars vars hyps i len =
-      if i <> len then
-         match SeqHyp.get hyps i with
-            Hypothesis (var, term) ->
-               check_term_free_vars vars term;
-               let vars = Lm_list_util.tryremove var vars in
-                  if vars != [] then
-                     check_hyp_free_vars vars hyps (succ i) len
-          | Context (var, _, terms) ->
-               List.iter (check_term_free_vars vars) terms;
-               let vars = Lm_list_util.tryremove var vars in
-                  if vars != [] then
-                     check_hyp_free_vars vars hyps (succ i) len
-
-   and check_term_free_vars vars t =
-      if is_some_var_free vars t then
-         REF_RAISE(RefineError ("Rewrite_match_redex.check_term_free_vars",
-                                StringTermError("term has free occurrences of some variables it is not allowed to have", t)))
 
    let match_redex addrs stack vars t tl = function
       [] ->
