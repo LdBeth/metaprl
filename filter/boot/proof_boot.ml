@@ -109,6 +109,13 @@ let debug_proof_normalize =
         debug_value = false
       }
 
+let debug_proof_pending =
+   create_debug (**)
+      { debug_name = "proof_pending";
+        debug_description = "show proof Pending operations";
+        debug_value = false
+      }
+
 let debug_unjustified =
    create_debug (**)
       { debug_name = "unjustified";
@@ -257,10 +264,6 @@ struct
          print_to_channel 80 buf stderr;
          flush stderr
 
-   let print proof =
-      print_ext proof.pf_node;
-      proof
-
    (************************************************************************
     * NORMALIZATION                                                        *
     ************************************************************************)
@@ -338,6 +341,10 @@ struct
    let rec replace_subg_aux gs node =
       match node with
          Goal _ | RuleBox _ | Pending _ ->
+            if !debug_proof_normalize then begin
+               eprintf "Proof_boot.replace_subg_aux: found Goal _ | RuleBox _ | Pending _ :\n";
+               print_ext node
+            end;
             raise (Invalid_argument "Proof_boot.replace_subg_aux")
        | Unjustified (g,sgs) ->
             let gs, res = replace_list gs sgs in
@@ -398,17 +405,36 @@ struct
     | _ -> raise (Invalid_argument "Proof_boot.dest_ids")
 
    let replace_subg ext sgs =
+      if !debug_proof_normalize then begin
+         eprintf "replace_subg called on:\n";
+         print_ext ext
+      end;
       match replace_subg_aux (dest_ids sgs) ext with
          [], ext -> ext
        | _ -> raise (Invalid_argument "Proof_boot.replace_subg")
 
    let rec normalize ext = match ext with
       Pending f ->
-         normalize (f ())
+         let pext = f () in
+         if !debug_proof_pending then begin
+            eprintf "Normalizing Pending:\n";
+            print_ext pext
+         end;
+         let next = normalize pext in
+            if (pext != next) then begin
+               if !debug_proof_pending then begin
+                  eprintf "Normalized Pending to:\n";
+                  print_ext next
+               end;
+               next
+            end else begin
+               if !debug_proof_pending then eprintf "Normalizing left Pending unchanged!\n";
+               ext
+            end
     | Wrapped (l,e) ->
          let e' = normalize e in
          if (e == e') then ext else Wrapped (l,e')
-    | (Compose ci) ->
+    | Compose ci ->
          let c_goal = normalize ci.comp_goal in
          let c_subgs = normalize_list ci.comp_subgoals in begin
             match c_goal with
@@ -436,12 +462,14 @@ struct
                   if (c_goal==ci.comp_goal) && (c_subgs == ci.comp_subgoals) then ext else
                   Compose { ci with comp_goal = c_goal; comp_subgoals = c_subgs }
             end
-    | (RuleBox ri) ->
+    | RuleBox ri ->
          if not ri.rule_extract_normalized then begin
-            let res = normalize ri.rule_extract in
             if !debug_proof_normalize then begin
                eprintf "Normalizing RuleBox's rule_extract:\n";
                print_ext ri.rule_extract;
+            end;
+            let res = normalize ri.rule_extract in
+            if !debug_proof_normalize then begin
                if res == ri.rule_extract then eprintf "Normalization left it unchanged!%t" eflush
                else begin
                   eprintf "Normalized to:\n";
@@ -978,21 +1006,26 @@ struct
                   Unjustified (goal, subgoals)
             in
                false, false, node
-       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            let goal, subgoals, extras, unchanged = replace_subgoal proof node raddr goal subgoals extras i node' in
-            let node =
-               if unchanged then
-                  node
-               else
-                  Compose {
-                     comp_status = LazyStatusDelayed;
-                     comp_goal = goal;
-                     comp_subgoals = subgoals;
-                     comp_extras = extras;
-                     comp_leaves = LazyLeavesDelayed
-                  }
-            in
-               false, false, node
+       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } -> begin
+            match node' with
+               RuleBox _ ->
+                  raise_replace_error proof node raddr i
+             | _ ->
+                  let goal, subgoals, extras, unchanged = replace_subgoal proof node raddr goal subgoals extras i node' in
+                  let node =
+                     if unchanged then
+                        node
+                     else
+                        Compose {
+                           comp_status = LazyStatusDelayed;
+                           comp_goal = goal;
+                           comp_subgoals = subgoals;
+                           comp_extras = extras;
+                           comp_leaves = LazyLeavesDelayed
+                        }
+                  in
+                     false, false, node
+            end
        | Wrapped (label, node'') ->
             if i = 0 then
                let node =
@@ -1728,15 +1761,22 @@ struct
       let compute_ext () =
          try
             let new_proof = f () in
-            let new_proof = index (root new_proof) addr in
             let proof =
-               if msequent_alpha_equal (goal new_proof).ref_goal old_goal then
-                  begin
-                     old_proof := new_proof;
-                     new_proof
-                  end
-               else
-                  !old_proof
+               if !old_proof.pf_root==new_proof.pf_root then !old_proof else
+                  let new_proof = index (root new_proof) addr in
+                  if msequent_alpha_equal (goal new_proof).ref_goal old_goal then
+                     begin
+                        if !debug_proof_pending then begin
+                           eprintf "Replacing old :\n";
+                           print_ext !old_proof.pf_node;
+                           eprintf "with new :\n";
+                           print_ext new_proof.pf_node
+                        end;
+                        old_proof := new_proof;
+                        new_proof
+                     end
+                  else
+                     !old_proof
             in
                proof.pf_node
          with
@@ -1794,12 +1834,12 @@ struct
    (*
     * For the goal, append all cached proofs.
     *)
-   let proof_goal proof goal =
+   let proof_goal cache proof goal =
       let { pf_root = root; pf_address = address } = proof in
          { pf_root = root;
            pf_address = address @ [0];
            pf_node = goal
-         } :: get_cache proof
+         } :: if cache then get_cache proof else []
 
    (*
     * Remove duplicates in the subgoals, and append cached proofs.
@@ -1822,13 +1862,13 @@ struct
             []
       in
       let subgoals = collect 1 [] subgoals in
-         List.map (fun subgoal -> subgoal :: get_cache subgoal) subgoals
+         List.map (fun subgoal -> [subgoal]) subgoals
 
    (*
     * Get the list of subgoals with cached entries.
     * Make sure extras are in the cache.
     *)
-   let proof_subgoals_extras proof subgoals extras =
+   let proof_subgoals_extras cache proof subgoals extras =
       let { pf_root = root; pf_address = address } = proof in
       let rec wrap i = function
          subgoal :: subgoals ->
@@ -1845,7 +1885,7 @@ struct
       let _ = List.iter set_cache extras in
       let subgoals = wrap 1 subgoals in
       let extras = wrap (succ (List.length subgoals)) extras in
-      let subgoals = List.map (fun subgoal -> subgoal :: get_cache subgoal) subgoals in
+      let subgoals = List.map (fun subgoal -> subgoal :: if cache then get_cache subgoal else []) subgoals in
          subgoals, extras
 
    (*
@@ -1950,50 +1990,50 @@ struct
               step_extras = []
             }
        | Identity goal ->
-            let proofs = proof_goal proof (Goal goal) in
+            let proofs = proof_goal false proof (Goal goal) in
                { step_goal = proofs;
                  step_expr = ExprIdentity;
                  step_subgoals = [proofs];
                  step_extras = []
                }
        | Unjustified (goal, subgoals) ->
-            { step_goal = proof_goal proof (Goal goal);
+            { step_goal = proof_goal false proof (Goal goal);
               step_expr = ExprUnjustified;
               step_subgoals = proof_subgoals proof subgoals;
               step_extras = []
             }
        | Extract (goal, subgoals, ext) ->
-            { step_goal = proof_goal proof (Goal goal);
+            { step_goal = proof_goal false proof (Goal goal);
               step_expr = make_extract_expr ext;
               step_subgoals = proof_subgoals proof subgoals;
               step_extras = []
             }
        | ExtractRewrite (goal, subgoal, addr, ext) ->
-            { step_goal = proof_goal proof (Goal goal);
+            { step_goal = proof_goal false proof (Goal goal);
               step_expr = make_rw_extract_expr addr ext;
               step_subgoals = proof_subgoals proof [subgoal];
               step_extras = []
             }
        | ExtractCondRewrite (goal, subgoals, addr, ext) ->
-            { step_goal = proof_goal proof (Goal goal);
+            { step_goal = proof_goal false proof (Goal goal);
               step_expr = make_crw_extract_expr addr ext;
               step_subgoals = proof_subgoals proof subgoals;
               step_extras = []
             }
        | ExtractNthHyp (goal, i) ->
-            { step_goal = proof_goal proof (Goal goal);
+            { step_goal = proof_goal false proof (Goal goal);
               step_expr = make_nth_hyp_expr i;
               step_subgoals = [];
               step_extras = []
             }
        | ExtractCut (goal, hyp, subgoal1, subgoal2) ->
-            { step_goal = proof_goal proof (Goal goal);
+            { step_goal = proof_goal false proof (Goal goal);
               step_expr = make_cut_expr hyp;
               step_subgoals = proof_subgoals proof [subgoal1; subgoal2];
               step_extras = []
             }
        | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            let new_subgoals, extras = proof_subgoals_extras proof subgoals extras in
+            let new_subgoals, extras = proof_subgoals_extras false proof subgoals extras in
             if compose_flag then
                let goal = info_ext false proof goal in
                   { step_goal = goal.step_goal;
@@ -2002,7 +2042,7 @@ struct
                     step_extras = extras
                   }
             else
-               { step_goal = proof_goal proof goal;
+               { step_goal = proof_goal false proof goal;
                  step_expr = ExprCompose ExprIdentity;
                  step_subgoals = List.flatten (List.map (fun goal -> (info_ext false proof goal).step_subgoals) subgoals);
                  step_extras = extras
@@ -2027,8 +2067,8 @@ struct
                    rule_subgoals = subgoals;
                    rule_extras = extras
          } ->
-            let subgoals, extras = proof_subgoals_extras proof subgoals extras in
-               { step_goal = proof_goal proof goal;
+            let subgoals, extras = proof_subgoals_extras true proof subgoals extras in
+               { step_goal = proof_goal true proof goal;
                  step_expr = ExprRule (text, expr ());
                  step_subgoals = subgoals;
                  step_extras = extras

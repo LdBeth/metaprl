@@ -448,8 +448,8 @@ struct
       Path addr ->
          collect_string_of_path_address addr
     | ArgAddr -> "Arg"
-    | HypAddr i -> "Hyp(" ^ string_of_int i ^ ")"
-    | GoalAddr i -> "Goal(" ^ string_of_int i ^ ")"
+    | HypAddr i -> "Hyp(" ^ string_of_int (i+1) ^ ")"
+    | GoalAddr i -> "Goal(" ^ string_of_int (i+1) ^ ")"
     | Compose (addr1, addr2) ->
          let addr1 = collect_string_of_address addr1 in
          let addr2 = collect_string_of_address addr2 in

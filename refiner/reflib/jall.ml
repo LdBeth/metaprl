@@ -1,3 +1,5 @@
+open Mp_debug
+
 open Refiner.Refiner
 open Term
 open TermType
@@ -24,7 +26,7 @@ let ruletable = function
  | Exl ->   "Exl"
  | Exr ->   "Exr"
  | Alll ->   "Alll"
- | Allr ->   "Allr";;
+ | Allr ->   "Allr"
 
 module JProver (JLogic : JLogicSig) =
 
@@ -33,12 +35,10 @@ type polarity = I | O
 
 type connective = And | Or | Neg | Imp | All | Ex | At | Null
 
-
 type ptype = Alpha | Beta | Gamma | Delta | Phi | Psi | PNull
 
 type stype = Alpha_1 | Alpha_2 | Beta_1 | Beta_2 | Gamma_0 | Delta_0 |
              Phi_0 | Psi_0 | PNull_0
-
 
 type pos  = {name : string;
 	     address : int list;
@@ -48,34 +48,23 @@ type pos  = {name : string;
              st : stype;
              label : term}
 
-
-
-type 'pos ftree = Empty |
-                  NodeAt of 'pos |
-		  NodeA of 'pos * ('pos ftree) array;;
-
-
-
-
-
-
+type 'pos ftree =
+   Empty
+ | NodeAt of 'pos
+ | NodeA of 'pos * ('pos ftree) array
 
 type atom  = {aname : string;
-	      aaddress : int list;
+              aaddress : int list;
               aprefix : string list;
               apredicate :  operator;
               apol : polarity;
               ast : stype;
               alabel : term}
 
-
-
-
 type atom_relations = atom * atom list * atom list
 (* all atoms except atom occur in alpha_set and beta_set of atom*)
 
 (* beta proofs *)
-
 
 type bproof = BEmpty
              |RNode of string list * bproof
@@ -90,53 +79,49 @@ type inf = rule * term  * term
 type 'inf ptree = PEmpty |
                   PNodeAx of 'inf |
                   PNodeA of 'inf * 'inf ptree |
-                  PNodeB of 'inf * 'inf ptree * 'inf ptree;;
+                  PNodeB of 'inf * 'inf ptree * 'inf ptree
 
 module OrderedAtom =
  struct
   type t = atom
   let compare a1 a2 = if (a1.aname) = (a2.aname) then 0 else
                        if (a1.aname) < (a2.aname) then -1 else 1
- end;;
+ end
 
-module AtomSet = Set.Make(OrderedAtom);;
+module AtomSet = Set.Make(OrderedAtom)
 
 module OrderedString =
  struct
   type t = string
   let compare a1 a2 = if a1 = a2 then 0 else
                        if a1 < a2 then -1 else 1
- end;;
+ end
 
-module StringSet = Set.Make(OrderedString);;
+module StringSet = Set.Make(OrderedString)
 
+let _ =
+   show_loading "Loading Jall%t"
 
+let debug_jprover =
+   create_debug (**)
+      { debug_name = "jprover";
+        debug_description = "Display Jprover operations";
+        debug_value = false
+      }
 
 (*****************************************************************)
 
-
-
 (************* printing function *************************************)
-
-
-
 
 (************ printing T-string unifiers ****************************)
 
-
-
-
 (* ******* printing ********** *)
-
 
 let rec list_to_string s =
  match s with
   [] -> ""
  |f::r ->
   f^"."^(list_to_string r)
-
-
-
 
 let rec print_eqlist eqlist =
  match eqlist with
@@ -152,8 +137,6 @@ let rec print_eqlist eqlist =
    print_eqlist r
   end
 
-
-
 let print_equations eqlist =
  begin
   Format.open_box 0;
@@ -162,9 +145,6 @@ let print_equations eqlist =
   print_eqlist eqlist;
   Format.force_newline ();
  end
-
-
-
 
 let rec print_subst sigma =
  match sigma with
@@ -178,7 +158,6 @@ let rec print_subst sigma =
    print_subst r
   end
 
-
 let print_tunify sigma =
  let (n,subst) = sigma in
  begin
@@ -190,16 +169,9 @@ let print_tunify sigma =
   print_endline " "
  end
 
-
 (*****************************************************)
 
-
-
-
 (********* printing atoms and their relations ***********************)
-
-
-
 
 let print_stype st =
  match st with
@@ -213,16 +185,11 @@ let print_stype st =
   |Psi_0   -> Format.print_string "Psi_0"
   |PNull_0 -> Format.print_string "PNull_0"
 
-
-
-
 let print_pol pol =
   if pol = O then
     Format.print_string "O"
   else
     Format.print_string "I"
-
-
 
 let rec print_address int_list =
  match int_list with
@@ -234,8 +201,6 @@ let rec print_address int_list =
      print_address rest
     end
 
-
-
 let rec print_prefix prefix_list =
   match prefix_list with
     [] -> Format.print_string ""
@@ -244,7 +209,6 @@ let rec print_prefix prefix_list =
      Format.print_string f;
      print_prefix r
     end
-
 
 let print_atom at tab =
  let ({aname=x; aaddress=y; aprefix=z; apredicate=p; apol=a; ast=b; alabel=label}) = at in
@@ -267,8 +231,6 @@ let print_atom at tab =
    Format.print_string "}"
   end
 
-
-
 let rec print_atom_list set tab =
    match set with
     []  -> Format.print_string ""
@@ -279,7 +241,6 @@ let rec print_atom_list set tab =
       print_atom f tab;
       print_atom_list r (tab)
      end
-
 
 let rec print_atom_info atom_relation =
   match atom_relation with
@@ -304,12 +265,7 @@ let rec print_atom_info atom_relation =
       print_atom_info r
     end
 
-
-
-
 (*************** print formula tree, tree ordering etc. ***********)
-
-
 
 let print_ptype pt =
  match pt with
@@ -321,9 +277,6 @@ let print_ptype pt =
   |Psi   -> Format.print_string "Psi"
   |PNull -> Format.print_string "PNull"
 
-
-
-
 let print_op op =
  match op with
   At   -> Format.print_string "Atom"
@@ -334,9 +287,6 @@ let print_op op =
  |Ex   -> Format.print_string "Ex"
  |All  -> Format.print_string "All"
  |Null -> Format.print_string "Null"
-
-
-
 
 let print_position position tab =
  let ({name=x; address=y; op=z; pol=a; pt=b; st=c; label=t}) = position in
@@ -365,12 +315,6 @@ let print_position position tab =
    print_term stdout t;
    Format.print_string "}"
   end
-
-
-
-
-
-
 
 let rec pp_ftree_list tree_list tab =
 
@@ -413,17 +357,13 @@ in
      pp_ftree_list rest tab
     end
 
-
-
 let print_ftree ftree =
  begin
   Format.open_box 0;
   Format.print_break 3 0;
   pp_ftree_list [ftree] 0;
   Format.print_flush ()
- end;;
-
-
+ end
 
 let rec stringlist_to_string stringlist =
   match stringlist with
@@ -431,8 +371,6 @@ let rec stringlist_to_string stringlist =
   |f::r ->
    let  rest_s = stringlist_to_string r in
      (f^"."^rest_s)
-
-
 
 let rec print_stringlist slist =
   match slist with
@@ -443,8 +381,6 @@ let rec print_stringlist slist =
       Format.print_string (f^".");
       print_stringlist r
      end
-
-
 
 let rec pp_bproof_list tree_list tab =
 
@@ -519,8 +455,6 @@ let rec pp_bproof ftree new_tab =
       Format.print_flush();
       pp_bproof_list [bproof1;bproof2] (new_tab-3)
      end
-
-
 in
  let new_tab = tab+5 in
   match tree_list with
@@ -531,9 +465,6 @@ in
      pp_bproof_list rest tab
     end
 
-
-
-
 let rec print_pairlist pairlist =
  match pairlist with
   [] -> Format.print_string ""
@@ -543,9 +474,6 @@ let rec print_pairlist pairlist =
     Format.print_string ("("^a^","^b^")");
     print_pairlist rest
    end
-
-
-
 
 let print_beta_proof bproof =
  begin
@@ -558,9 +486,7 @@ let print_beta_proof bproof =
   Format.force_newline ();
   Format.force_newline ();
   Format.print_flush ()
- end;;
-
-
+ end
 
 let rec print_treelist treelist =
   match treelist with
@@ -579,9 +505,6 @@ let rec print_treelist treelist =
      Format.print_flush ()
     end
 
-
-
-
 let rec print_set_list set_list =
  match set_list with
   [] -> ""
@@ -594,25 +517,9 @@ let print_set  set =
   else
    print_set_list set_list
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 let print_string_set  set =
  let set_list = StringSet.elements set in
    print_stringlist set_list
-
-
-
 
 let rec print_list_sets list_of_sets =
  match list_of_sets with
@@ -625,20 +532,12 @@ let rec print_list_sets list_of_sets =
     print_list_sets r
   end
 
-
 let print_ordering list_of_sets =
   begin
    Format.open_box 0;
    print_list_sets list_of_sets;
    Format.print_flush ()
   end
-
-
-
-
-
-
-
 
 let rec print_triplelist triplelist =
  match triplelist with
@@ -650,16 +549,8 @@ let rec print_triplelist triplelist =
     print_triplelist rest
    end
 
-
-
-
-
-
-
-
 let print_pos_n  pos_n =
   Format.print_int pos_n
-
 
 let print_formula_info ftree ordering pos_n =
 begin
@@ -676,9 +567,6 @@ begin
  print_endline "";
  Format.print_flush ()
 end
-
-
-
 
 (* print sequent proof tree *)
 
@@ -722,21 +610,17 @@ let pp_rule (pos,r,formula,term) tab =
           Format.force_newline ()
         end
 
-
 let last addr =
  if addr = ""
   then ""
  else
-  String.make 1 (String.get addr (String.length addr-1));;
-
+  String.make 1 (String.get addr (String.length addr-1))
 
 let rest addr =
  if addr = ""
   then ""
  else
-  String.sub addr 0 ((String.length addr) - 1);;
-
-
+  String.sub addr 0 ((String.length addr) - 1)
 
 let rec get_r_chain addr =
  if addr = "" then
@@ -747,10 +631,7 @@ let rec get_r_chain addr =
     0
    else (* l = "r" *)
    let rs = rest addr in
-     1 + (get_r_chain rs);;
-
-
-
+     1 + (get_r_chain rs)
 
 let rec tpp seqtree tab addr =
  match seqtree with
@@ -778,9 +659,7 @@ let rec tpp seqtree tab addr =
 (*       Format.print_break 100 newtab; *)
          (tpp left newtab (addr^"l"));
          (tpp right newtab (addr^"r"))
-        end;;
-
-
+        end
 
 let tt seqtree =
  begin
@@ -789,23 +668,11 @@ let tt seqtree =
   Format.force_newline ();
   Format.close_box ();
   Format.print_newline ()
- end;;
-
-
-
-
-
-
-
-
-
+ end
 
 (************ END printing functions  *********************************)
 
-
-
 (************ Beta proofs and redundancy deletion **********************)
-
 
 let rec remove_dups_connections connection_list =
  match connection_list with
@@ -1349,9 +1216,9 @@ let construct_opt_beta_proof ftree ext_proof =
 
 (* REAL PERMUTATION STAFF *)
 
-let subf1 n m  subrel = List.mem ((n,m),1) subrel;;
-let subf2 n m  subrel = List.mem ((n,m),2) subrel;;
-let tsubf n m  tsubrel = List.mem (n,m) tsubrel;;
+let subf1 n m  subrel = List.mem ((n,m),1) subrel
+let subf2 n m  subrel = List.mem ((n,m),2) subrel
+let tsubf n m  tsubrel = List.mem (n,m) tsubrel
 
 
 
@@ -1401,7 +1268,7 @@ let rec modify prooftree (subrel,tsubrel) =
               else t,qpos
        else                           (* x= Orl *)
         let s,rpos = modify right (subrel,tsubrel) in
-          PNodeB((pos,inf,form,term),t,s),"Orl-True";;
+          PNodeB((pos,inf,form,term),t,s),"Orl-True"
 
 
 
@@ -1450,8 +1317,7 @@ let rec rec_modify ptree (subrel,tsubrel) =
               if  (subf1 pos qpos subrel) then
                let s,rpos = rec_modify right (subrel,tsubrel) in
                  PNodeB((pos,inf,form,term),t,s),"" (* empty string *)
-              else t,qpos;;
-
+              else t,qpos
 
 let weak_modify rule ptree (subrel,tsubrel) =   (* recall rule = or_l  *)
  let (pos,inf,formlua,term) = rule in
@@ -1462,16 +1328,9 @@ let weak_modify rule ptree (subrel,tsubrel) =   (* recall rule = or_l  *)
     if (subf1 pos qpos subrel) then  (* weak_modify will always be applied on left branches *)
       ptreem,true
     else
-      ptreem,false;;
-
-
-
-
+      ptreem,false
 
 (* Now, the permutation stuff .... *)
-
-
-
 
 (* Permutation schemes *)
 
@@ -1517,8 +1376,6 @@ let make_new_eigenvariable term =
   let v_term = var_subst term oldt "dummy_var" in
     subst1 v_term "dummy_var" rept
 
-
-
 let rec eigen_rename old_parameter new_parameter ptree =
     match ptree with
       PEmpty -> raise (Failure "invalid argument")
@@ -1534,9 +1391,7 @@ let rec eigen_rename old_parameter new_parameter ptree =
        let new_form = replace_subterm form old_parameter new_parameter in
         let ren_left  = eigen_rename old_parameter new_parameter left  in
          let ren_right  = eigen_rename old_parameter new_parameter right  in
-          PNodeB((pos,inf,new_form,term), ren_left, ren_right);;
-
-
+          PNodeB((pos,inf,new_form,term), ren_left, ren_right)
 
 let rec update_ptree rule subtree direction tsubrel =
     match subtree with
@@ -1573,12 +1428,7 @@ let rec update_ptree rule subtree direction tsubrel =
          else
            let left_del = update_ptree rule left direction tsubrel in
              let right_del = update_ptree rule right direction tsubrel in
-               PNodeB((pos,inf,formula,term),left_del,right_del);;
-
-
-
-
-
+               PNodeB((pos,inf,formula,term),left_del,right_del)
 
 let permute r1 r2 ptree  la tsubrel =
 (*  print_endline "permute in"; *)
@@ -1615,23 +1465,16 @@ let permute r1 r2 ptree  la tsubrel =
                                      (* two-over-two right *)
   | _ -> raise (Failure "invalid argument")
 
-
-
 (* permute layers, isolate addmissible branches *)
 
-
 (* computes if an Andr is d-generatives *)
-
-
 
 let layer_bound rule =
   let (pos,inf,formula,term) = rule in
    if List.mem inf [Impr;Negr;Allr] then
     true
    else
-    false;;
-
-
+    false
 
 let rec orl_free ptree  =
   match ptree with
@@ -1648,10 +1491,7 @@ let rec orl_free ptree  =
      if inf = Orl then
       false
      else
-      (&) (orl_free left) (orl_free right);;
-
-
-
+      (&) (orl_free left) (orl_free right)
 
 let rec dgenerative rule dglist ptree tsubrel =
  let (pos,inf,formula,term) = rule in
@@ -1670,7 +1510,7 @@ let rec dgenerative rule dglist ptree tsubrel =
   else if inf = Impl then
     not (orl_free ptree)
   else
-   false;;
+   false
 
 
 
@@ -1732,34 +1572,29 @@ let rec top_addmissible_pair ptree dglist act_r act_o act_addr tsubrel dummyt =
     begin
 (*    print_endline "orl_full"; *)
     search_pair ptree dglist act_r act_o act_addr tsubrel
-    end;;
-
-
-
-
+    end
 
 let next_direction addr act_addr =
-  String.make 1 (String.get addr (String.length act_addr));;
+  String.make 1 (String.get addr (String.length act_addr))
         (* get starts with count 0*)
 
 let change_last addr d =
   let split = (String.length addr) - 1 in
    let prec,last =
     (String.sub addr 0 split),(String.sub addr split 1) in
-     prec^d^last;;
+     prec^d^last
 
 let last addr =
  if addr = ""
   then ""
  else
-  String.make 1 (String.get addr (String.length addr-1));;
-
+  String.make 1 (String.get addr (String.length addr-1))
 
 let rest addr =
  if addr = ""
   then ""
  else
-  String.sub addr 0 ((String.length addr) - 1);;
+  String.sub addr 0 ((String.length addr) - 1)
 
 
 
@@ -1781,7 +1616,7 @@ let rec permute_layer ptree dglist (subrel,tsubrel) =
           let pbleft = permute_branch r addr act_addr left2 dglist (subrel,tsubrel) in
              PNodeA(r2,pbleft)
        | _ -> raise (Failure "invalid argument")
-      )	
+      )
   | PNodeA(o,PNodeB(rule,left,right)),la ->                (* one-over-two *)
 (*     print_endline " one-over-two ";                  *)
      if rule = r then  (* left,right are or_l free *)
@@ -1875,7 +1710,7 @@ let rec permute_layer ptree dglist (subrel,tsubrel) =
          else  (* d = "r", that is left is or_l free *)
           let left1,bool = weak_modify rule left (subrel,tsubrel) in
             if bool then  (* rule is relevant *)
-             let permute_result = 		
+             let permute_result =
                     permute o rule (PNodeB(o,PNodeB(rule,left1,right),right1)) la tsubrel in
               (match permute_result with
                 PNodeB(r2,PNodeB(r3,left3,right3),right2) ->
@@ -2003,15 +1838,10 @@ in
 (*   print_endline ("top or_l: "^x1);
    print_endline ("or_l address: "^addr);
    print_endline ("top dgen-rule: "^y1); *)
-   trans_add_branch r o addr "" ptree dglist (subrel,tsubrel);;
-
-
-
-
+   trans_add_branch r o addr "" ptree dglist (subrel,tsubrel)
 
 (* Isolate layer and outer recursion structure *)
 (* uses weaker layer boundaries: ONLY critical inferences *)
-
 
 let rec trans_layer ptree (subrel,tsubrel) =
 let rec isol_layer ptree (subrel,tsubrel) =
@@ -2037,18 +1867,9 @@ let rec isol_layer ptree (subrel,tsubrel) =
     let back = permute_layer  top_tree [] (subrel,tsubrel) in
 (*     print_endline "translauer out"; *)
      back
- end;;
-
-
-
-
-
+ end
 
 (* REAL PERMUTATION STAFF  --- End *)
-
-
-
-
 
 (* build the proof tree from a list of inference rules *)
 
@@ -2057,9 +1878,7 @@ let rec unclosed subtree =
        PEmpty -> true
      | PNodeAx(y) -> false
      | PNodeA(y,left) -> (unclosed left)
-     | PNodeB(y,left,right) -> (or) (unclosed left) (unclosed right);;
-
-
+     | PNodeB(y,left,right) -> (or) (unclosed left) (unclosed right)
 
 let rec extend prooftree element =
    match prooftree with
@@ -2080,8 +1899,7 @@ let rec extend prooftree element =
         if (unclosed left) then
           PNodeB(y, (extend left element), right)
         else
-          PNodeB(y, left, (extend right element));;
-
+          PNodeB(y, left, (extend right element))
 
 let rec bptree prooftree nodelist nax=
    match nodelist with
@@ -2093,7 +1911,7 @@ let rec bptree prooftree nodelist nax=
        else
          0
       in
-        bptree (extend prooftree (pos,rule,formula,term)) rest (nax+newax);;
+        bptree (extend prooftree (pos,rule,formula,term)) rest (nax+newax)
 
 
 let bproof nodelist =
@@ -2243,9 +2061,7 @@ in
                     (srel @ rest_rel),(sren @ rest_renlist)
          |PNull ->
            raise (Failure "invalid argument")
-         )		
-
-
+         )
 
 let rec rename_gamma ljmc_proof rename_list =
   match ljmc_proof with
@@ -2257,11 +2073,6 @@ let rec rename_gamma ljmc_proof rename_list =
       else
        ((inst,pos),(rule,formula,term))::(rename_gamma r rename_list)
 
-
-
-
-
-
 let rec compare_pair (s,sf) list =
   if list = [] then
     list
@@ -2270,31 +2081,25 @@ let rec compare_pair (s,sf) list =
     if sf = s_1 then
      (@) [(s,sf_1)] (compare_pair (s,sf) restlist)
     else
-     compare_pair (s,sf) restlist;;
-
+     compare_pair (s,sf) restlist
 
 let rec compare_pairlist list1 list2 =
  if list1 = [] then
   list1
  else
   let (s1,sf1),restlist1  =  (List.hd list1),(List.tl list1) in
-   (@) (compare_pair (s1,sf1) list2) (compare_pairlist restlist1 list2);;
-
-
+   (@) (compare_pair (s1,sf1) list2) (compare_pairlist restlist1 list2)
 
 let rec trans_rec pairlist translist =
    let tlist = compare_pairlist pairlist translist in
     if tlist = [] then
      translist
    else
-    (@) (trans_rec pairlist tlist) translist;;
-
+    (@) (trans_rec pairlist tlist) translist
 
 let transitive_closure subrel =
  let pairlist,nlist = List.split subrel in
-   trans_rec pairlist pairlist;;
-
-
+   trans_rec pairlist pairlist
 
 let pt ptree subrel =
    let tsubrel = transitive_closure subrel in
@@ -2302,7 +2107,7 @@ let pt ptree subrel =
     print_endline "";
    fst (modify transptree (subrel,tsubrel))
 (*     let mtree = fst (modify transptree (subrel,tsubrel)) in *)
-(*       pretty_print mtree ax;; *)
+(*       pretty_print mtree ax *)
 
 
 
@@ -2444,14 +2249,8 @@ let build_sigmaQ sigmaQ ftree =
 
 *)
 
-
-
-
 (* subformula relation subrel is assumed to be represented in pairs
    (a,b) *)
-
-
-
 
 let rec delete e list =     (* e must not necessarily occur in list *)
  match list with
@@ -2460,7 +2259,7 @@ let rec delete e list =     (* e must not necessarily occur in list *)
     if e = first then
       rest
     else
-      first::(delete e rest);;
+      first::(delete e rest)
 
 
 let rec key_delete fname pos_list =   (* in key_delete, f is a pos name (key) but sucs is a list of positions *)
@@ -2472,9 +2271,6 @@ let rec key_delete fname pos_list =   (* in key_delete, f is a pos name (key) bu
    else
     f::(key_delete fname r)
 
-
-
-
 let rec get_roots treelist =
  match treelist with
    [] -> []
@@ -2482,9 +2278,7 @@ let rec get_roots treelist =
    match f with
      Empty -> (get_roots r)    (* Empty is posible below alpha-nodes after purity *)
    | NodeAt(pos) -> pos::(get_roots r)
-   | NodeA(pos,trees) ->  pos::(get_roots r);;
-
-
+   | NodeA(pos,trees) ->  pos::(get_roots r)
 
 let rec comp_ps padd ftree =
  match ftree with
@@ -2500,18 +2294,11 @@ let rec comp_ps padd ftree =
        else
          comp_ps r (Array.get strees (f-1))
 
-
-
 (* computes a list: first element predecessor, next elements successoes of p *)
 
 let tpredsucc p ftree =
  let padd = p.address in
   comp_ps padd ftree
-
-
-
-
-
 
 (* set an element in an array, without side effects *)
 
@@ -2519,10 +2306,7 @@ let myset array int element =
  let length = Array.length array in
   let firstpart = Array.sub array 0 (int) in
    let secondpart = Array.sub array (int+1) (length-(int+1)) in
-    (Array.append firstpart (Array.append [|element|] secondpart));;
-
-
-
+    (Array.append firstpart (Array.append [|element|] secondpart))
 
 let rec compute_open treelist slist =
  match treelist with
@@ -2542,9 +2326,7 @@ let rec compute_open treelist slist =
          else
 	   compute_open (Array.to_list suctrees) slist
   in
-   elements @ (compute_open rest slist);;
-
-
+   elements @ (compute_open rest slist)
 
 let rec select_connection pname connections slist =
  match connections with
@@ -2562,10 +2344,7 @@ let rec select_connection pname connections slist =
    if ((partner = "none") or (List.mem partner slist)) then
     select_connection pname r slist
    else
-    f;;
-
-
-
+    f
 
 let rec replace_element element element_set redord =
   match redord with
@@ -2665,7 +2444,6 @@ let build_rule pos spos csigmaQ orr_flag calculus =
 
 (* %%%%%%%%%%%%%%%%%%%% Split begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% *)
 
-
 let rec nonemptys treearray j n =
  if j = n then
   0
@@ -2676,9 +2454,7 @@ let rec nonemptys treearray j n =
    else
     0
   in
-  count + (nonemptys treearray (j+1) n);;
-
-
+  count + (nonemptys treearray (j+1) n)
 
 let rec collect_pure ftreelist (flist,slist) =
 
@@ -2775,9 +2551,6 @@ let rec slist_to_set slist =
  |f::r ->
    StringSet.add f (slist_to_set r)
 
-
-
-
 let rec print_purelist pr =
  match pr with
   [] ->
@@ -2787,10 +2560,7 @@ let rec print_purelist pr =
    end
  |f::r ->
    print_string ((f.name)^", ");
-   print_purelist r;;
-
-
-
+   print_purelist r
 
 let update_relations deltree redord connections unsolved_list =
   let pure_names = get_position_names [deltree] in
@@ -2983,15 +2753,7 @@ let rec reduce_tree addr actual_node ftree beta_flag =
 		let nstrees = myset strees (a-1) ft in
 (*                 print_endline ("way back "^pos.name); *)
                    (NodeA(pos,nstrees),dt,an,bf)
-          end;;
-
-
-
-
-
-
-
-
+          end
 
 let rec purity ftree redord connections unsolved_list =
 
@@ -3461,9 +3223,7 @@ in
 
 in
 let po  = compute_open [ftree] slist in
-  tot ftree redord connections po slist;;
-
-
+  tot ftree redord connections po slist
 
 let reconstruct ftree redord sigmaQ ext_proof logic calculus =
  let min_connections = remove_dups_connections ext_proof in
@@ -3472,12 +3232,13 @@ let reconstruct ftree redord sigmaQ ext_proof logic calculus =
   let bproof,beta_exp,closures = construct_beta_proof ftree connections in
    let (opt_bproof,min_connections) = bproof_purity bproof in
 *)
+if !debug_jprover then
 begin
    print_endline "";
    print_endline ("Beta proof with number of closures = "^(string_of_int closures)^" and number of beta expansions = "^(string_of_int beta_exp));
+(*   print_endline "";
    print_endline "";
-   print_endline "";
-(*   print_beta_proof bproof;
+   print_beta_proof bproof;
    print_endline "";
    print_endline "";
    print_endline "Optimal beta proof: ";
@@ -3490,9 +3251,9 @@ begin
    Format.open_box 0;
    print_pairlist min_connections;
    print_endline ".";
-   Format.print_flush();
+   Format.print_flush(); *)
    print_endline "";
-*)
+end;
    let  (newroot_name,unsolved_list) =  build_unsolved ftree in
     let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
       let (init_tree,init_redord,init_connections,init_unsolved_list) =
@@ -3517,7 +3278,6 @@ begin
           Failure("redundancy") ->     (* this case should not occur with beta-proofs *)
              failwith "not_reconstructible"
          )
- end
 end
 
 
