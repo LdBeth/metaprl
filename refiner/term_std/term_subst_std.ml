@@ -644,36 +644,6 @@ struct
          List.rev (match_terms subst [] t1 t2)
       ENDIF
 
-(* for compatibility  only; never used here *)
-   type eqnlist = (term*term) list
-
-   let eqnlist_empty = []
-   let eqnlist_append_var_eqn _ _ _ = raise (Failure "eqnlist_append_var_eqn: not implemented in Term_std")
-   let eqnlist_append_eqn _ _ _ = raise (Failure "eqnlist_append_eqn: not implemented in Term_std")
-   let eqnlist_append_eqns _ _ = raise (Failure "eqnlist_append_eqns: not implemented in Term_std")
-   let eqnlist2ttlist _ = raise (Failure "eqnlist2ttlist: not implemented in Term_std")
-
-   let new_eqns_var _ _ = raise (Failure "new_eqns_var: not implemented in Term_std")
-
-   let unifiable _ _ _  =  raise (Failure "unifiable: not implemented in Term_std")
-   let unifiable_eqnl _ _ =  raise (Failure "unifiable_eqnl: not implemented in Term_std")
-
-   let unify_mm _ _ _ = raise (Failure "unify_mm: not implemented in Term_std")
-   let unify_mm_eqnl _ _ =  raise (Failure "unify_mm_eqnl : not implemented in Term_std")
-   let unify_mm_eqnl_eqnl _ _ =  raise (Failure "unify_mm_eqnl_eqnl : not implemented in Term_std")
-
-
-(* ------- *)
-
-(***********************)
-(* Rob_ds tests; not implemented for term_std *)
-
-type sacktype = (term*term) list
-let initsack = []
-let unifiable_rob _ _ _ _ = raise (Failure "unify_mm_eqnl_eqnl : not implemented in Term_std")
-let unifytosack _ _ _ _ = raise (Failure "unify_mm_eqnl_eqnl : not implemented in Term_std")
-
-(***********************)
    (************************************************************************
     * Term generalization                                                  *
     ************************************************************************)

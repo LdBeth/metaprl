@@ -41,8 +41,9 @@ open TermMan
 open RefineError
 open Opname
 
-open Jlogic_sig
+open Unify_mm
 
+open Jlogic_sig
 open Jtunify
 
 let ruletable = function
@@ -3259,7 +3260,7 @@ struct
    print_term stdout app_term2;
 *)
       try
-         let tauQ = unify_mm app_term1 app_term2 String_set.StringSet.empty in
+         let tauQ = unify app_term1 app_term2 String_set.StringSet.empty in
          let (mult,oel) = multiply sigmaQ tauQ in
   (*   print_sigmaQ mult; *)
          (mult,oel)

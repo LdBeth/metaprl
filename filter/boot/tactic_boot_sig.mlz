@@ -38,13 +38,13 @@ open String_set
 open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermSubst
 open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 
 open Refiner_sig
 open Refiner_io
 open Mp_resource
+open Unify_mm
 
 open Rformat
 open Dform

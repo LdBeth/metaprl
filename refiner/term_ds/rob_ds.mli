@@ -1,3 +1,5 @@
+(* This is an EXPERIMENTAL module that is not currently being used *)
+
 (* The unification of terms with bindings based on the ideas of
  * Robinson's  unification algorithm and lasy convertion into dag representation*)
 

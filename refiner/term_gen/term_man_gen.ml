@@ -590,8 +590,11 @@ struct
       in
          aux 1 (goal_of_sequent t)
 
-   let clause_address _ =
-      raise (Invalid_argument "Term_man_gen.clause_address - not implemented. Use Term_ds if you need it")
+   let clause_address i =
+      if (i>0) then
+         nth_hd_address (i-1)
+      else
+         raise (Invalid_argument "Term_man_gen.clause_address - arg must be positive")
 
    let make_nth_clause_addr nth_address count i =
       if i < 0 then
