@@ -292,7 +292,10 @@ let () = ();;
                else
                   mk_var_term v
             else if terms = [] && SymbolSet.mem bvars v then
-               mk_var_term v
+               if parsing then
+                  mk_var_term v
+               else
+                  t
             else
                let conts' = f bconts v conts in
                let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
