@@ -350,7 +350,12 @@ struct
               core_term (SOVar(v', conts, List.map (var_subst t' fv v) ts))
          | SOContext(v', t, conts, ts) ->
               core_term (SOContext(v', var_subst t' fv v t, conts, List.map (var_subst t' fv v) ts))
-         | Sequent _ -> raise (Invalid_argument "Term_ds.var_subst: sequents not supported")
+         | Sequent e ->
+              let hyps, concl = var_subst_hyps e.sequent_hyps e.sequent_concl (SeqHyp.length e.sequent_hyps) 0 [] [] t' fv v in
+                 core_term (Sequent {
+                    sequent_args = var_subst t' fv v e.sequent_args;
+                    sequent_hyps = SeqHyp.of_list (List.rev hyps);
+                    sequent_concl = concl })
          | Hashed _ | Subst _ -> fail_core "var_subst"
 
    and var_subst_bterms bterms t' fv v =
@@ -365,6 +370,26 @@ struct
       let bt = dest_bterm_and_rename bt fv in
       let term' = var_subst t' fv v bt.bterm in
          if bt.bterm == term' then bt else mk_bterm bt.bvars term'
+
+   and var_subst_hyps hyps concl len i hlist sub t' fv v =
+      if i = len then
+         hlist, var_subst t' fv v (apply_subst sub concl)
+      else
+         match SeqHyp.get hyps i with
+            Hypothesis(var, term) when SymbolSet.mem fv var ->
+               let var' = new_name var (SymbolSet.mem fv) in
+               let term = var_subst t' fv v (apply_subst sub term) in
+               let sub = (var, mk_var_term var') :: sub in
+               let hlist = Hypothesis(var', term) :: hlist in
+                  var_subst_hyps hyps concl len (i+1) hlist sub t' fv v
+          | Hypothesis(var, term) ->
+               let term = var_subst t' fv v (apply_subst sub term) in
+               let hlist = Hypothesis(var, term) :: hlist in
+                  var_subst_hyps hyps concl len (i+1) hlist sub t' fv v
+          | Context(v, conts, ts) ->
+               let ts = List.map (fun term -> var_subst t' fv v (apply_subst sub term)) ts in
+               let hlist = Context(v, conts, ts) :: hlist in
+                  var_subst_hyps hyps concl len (i+1) hlist sub t' fv v
 
    let var_subst t t' v =
       var_subst t' (SymbolSet.add (free_vars_set t') v) v t
