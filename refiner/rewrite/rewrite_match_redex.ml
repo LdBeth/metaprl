@@ -527,8 +527,8 @@ struct
       if (i=len) then () else
       match SeqHyp.get hyps i with
          Hypothesis (var, term) ->
-            let vars = List_util.remove var vars in
             check_term_free_vars vars term;
+            let vars = List_util.tryremove var vars in
             check_hyp_free_vars vars hyps (succ i) len
        | Context (var, terms) ->
             List.iter (check_term_free_vars vars) terms;

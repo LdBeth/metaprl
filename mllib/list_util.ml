@@ -155,6 +155,15 @@ let rec remove x = function
  | [] ->
       raise (Failure "List_util.remove")
 
+let rec tryremove x = function
+   (h :: t) as l ->
+      if h = x then
+         t
+      else
+         let res = tryremove x t in
+         if res == t then l else h::res
+ | [] -> []
+
 (*
  * Iterated tail.
  *)
