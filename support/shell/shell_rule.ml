@@ -306,6 +306,9 @@ let rec edit pack parse_arg name window obj =
    let edit_find addr i =
       List.map string_of_int (Proof.find_subgoal (Proof_edit.proof_of_ped (get_ped ())) (mk_addr addr) i)
    in
+   let edit_is_enabled name =
+      Proof_edit.is_enabled_ped (get_ped ()) name
+   in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
         edit_get_terms = edit_get_terms;
@@ -324,6 +327,7 @@ let rec edit pack parse_arg name window obj =
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;
         edit_find = edit_find;
+        edit_is_enabled = edit_is_enabled
       }
 
 let create pack parse_arg window name =

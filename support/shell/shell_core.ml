@@ -905,8 +905,11 @@ let edit_find info i =
       DirProof (modname, name) ->
          info.shell_subdir <- info.shell_proof.edit_find info.shell_subdir i;
          pwd info
-   | _ ->
+    | _ ->
          raise (Invalid_argument "Shell.find_subgoal: not in a proof")
+
+let edit_is_enabled shell name =
+   shell.shell_proof.edit_is_enabled name
 
 (************************************************************************
  * MODULES                                                              *

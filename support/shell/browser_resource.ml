@@ -35,6 +35,8 @@ open Mp_resource
 
 open Browser_state
 
+open Shell_sig
+
 (************************************************************************
  * Different kinds of elements to display.
  *
@@ -65,11 +67,17 @@ declare style[text:s]
  *)
 
 (*
+ * Menu element description.
+ *)
+type menu_item = term * (unit -> bool)
+
+(*
  * The resource info.
  *)
 type command =
-   { command_label : string;
-     command_value : string
+   { command_label   : string;
+     command_value   : string;
+     command_enabled : unit -> bool
    }
 
 type menu =
@@ -121,6 +129,9 @@ let int_of_pid debug pid =
          eprintf "Browser_resource.int_of_pid: %s: non-browser id: %s.%d%t" debug id i eflush;
       i
 
+let always_enabled () =
+   true
+
 (************************************************************************
  * Proxyedit names.
  *)
@@ -166,10 +177,15 @@ let menu_replace info name f =
 (*
  * Figure out what kind of item to add to the resource.
  *)
-let improve info t =
+let improve info (t, test) =
    match explode_term t with
       << button[label:s, arg:s] >> ->
-         let command = { command_label = label; command_value = arg } in
+         let command =
+            { command_label   = label;
+              command_value   = arg;
+              command_enabled = test
+            }
+         in
             { info with info_buttons = command :: info.info_buttons }
     | << menu[menuname:s, label:s] >> ->
          let menu = { menu_name = menuname; menu_label = label; menu_items = [] } in
@@ -177,7 +193,12 @@ let improve info t =
     | << menuitem[menuname:s, label:s, arg:s] >> ->
          (try
              menu_replace info menuname (fun menu ->
-                   let command = { command_label = label; command_value = arg } in
+                   let command =
+                      { command_label   = label;
+                        command_value   = arg;
+                        command_enabled = test
+                      }
+                   in
                       { menu with menu_items = command :: menu.menu_items })
           with
              Not_found ->
@@ -211,10 +232,18 @@ let extract info =
    let buf  = Buffer.create 32 in
    let buttoncommands = StringTable.empty in
    let buttoncommands =
-      List.fold_left (fun buttoncommands { command_label = label; command_value = command } ->
-            let sym = sprintf "id%d" (StringTable.cardinal buttoncommands) in
-            let buttoncommands = StringTable.add buttoncommands sym command in
-               bprintf buf "\t\t<td class=\"menulabel\" id=\"%s\">%s</td>\n" sym label;
+      List.fold_left (fun buttoncommands command ->
+            let { command_label = label;
+                  command_value = command;
+                  command_enabled = enabled
+                } = command
+            in
+            if enabled () then
+               let sym = sprintf "id%d" (StringTable.cardinal buttoncommands) in
+               let buttoncommands = StringTable.add buttoncommands sym command in
+                  bprintf buf "\t\t<td class=\"menulabel\" id=\"%s\">%s</td>\n" sym label;
+                  buttoncommands
+            else
                buttoncommands) buttoncommands (List.rev buttons)
    in
 
@@ -224,11 +253,15 @@ let extract info =
             let { menu_name = name; menu_label = label; menu_items = items } = menu in
             let items, menulabels, menucommands =
                bprintf buf "\t\t<td class=\"menulabel\" id=\"%s\">&#8227;%s</td>\n" name label;
-               List.fold_left (fun (items, menulabels, menucommands)
-                                   { command_label = label; command_value = command } ->
+               List.fold_left (fun (items, menulabels, menucommands) command ->
+                     let { command_label = label;
+                           command_value = command;
+                           command_enabled = enabled
+                         } = command
+                     in
                      let sym = sprintf "id%d" (StringTable.cardinal menulabels) in
                      let items = sym :: items in
-                     let menulabels = StringTable.add menulabels sym label in
+                     let menulabels = StringTable.add menulabels sym (label, enabled ()) in
                      let menucommands = StringTable.add menucommands sym command in
                         items, menulabels, menucommands) ([], menulabels, menucommands) (List.rev items)
             in
@@ -247,8 +280,10 @@ let extract info =
       StringTable.iter (fun name items ->
             bprintf macros_buf "\tmenus['%s'] = new Array(%a);\n" name pp_print_id_list items) menus;
 
+      bprintf macros_buf "\tvar menuenabled = new Array();\n";
       bprintf macros_buf "\tvar menulabels = new Array();\n";
-      StringTable.iter (fun id s ->
+      StringTable.iter (fun id (s, enabled) ->
+            bprintf macros_buf "\tmenuenabled['%s'] = %b;\n" id enabled;
             bprintf macros_buf "\tmenulabels['%s'] = \"%s\";\n" id (String.escaped s)) menulabels;
 
       bprintf macros_buf "\tvar menucommands = new Array();\n";
@@ -277,8 +312,9 @@ let add_directories info dirs =
             let items =
                List.fold_left (fun items s ->
                      let item =
-                        { command_label = s;
-                          command_value = sprintf "Command('cd \"%s\"')" s
+                        { command_label   = s;
+                          command_value   = sprintf "Command('cd \"%s\"')" s;
+                          command_enabled = always_enabled
                         }
                      in
                         item :: items) menu.menu_items dirs
@@ -297,8 +333,9 @@ let add_history info lines =
             let items =
                List.fold_left (fun items s ->
                      let item =
-                        { command_label = s;
-                          command_value = sprintf "Prompt('%s')" s
+                        { command_label   = s;
+                          command_value   = sprintf "Prompt('%s')" s;
+                          command_enabled = always_enabled
                         }
                      in
                         item :: items) menu.menu_items lines
@@ -327,8 +364,9 @@ let add_sessions state info ids =
                               in
                               let label = sprintf "%s Session %d (%s)" key i cwd in
                               let item =
-                                 { command_label = label;
-                                   command_value = sprintf "Session(%d)" i
+                                 { command_label   = label;
+                                   command_value   = sprintf "Session(%d)" i;
+                                   command_enabled = always_enabled
                                  }
                               in
                                  item :: items
@@ -354,12 +392,14 @@ let add_edit state info =
                let flag = String.contains options 'E' in
                let item =
                   if flag then
-                     { command_label = "Use Browser editor";
-                       command_value = "Command('clear_view_options \"E\"')"
+                     { command_label   = "Use Browser editor";
+                       command_value   = "Command('clear_view_options \"E\"')";
+                       command_enabled = always_enabled
                      }
                   else
-                     { command_label = "Use External editor";
-                       command_value = "Command('set_view_options \"E\"')"
+                     { command_label   = "Use External editor";
+                       command_value   = "Command('set_view_options \"E\"')";
+                       command_enabled = always_enabled
                      }
                in
                let items = item :: menu.menu_items in
@@ -368,8 +408,9 @@ let add_edit state info =
                         let item =
                            { command_label = "Open " ^ Filename.basename file;
                              command_value =
-                                sprintf "Edit(%b, '/session/%d/edit/%s')" (**)
-                                   flag (int_of_pid "add_edit" id) (proxyedit_of_filename file)
+                                sprintf "Edit(%b, '/session/%d/edit/%s')"
+                                   flag (int_of_pid "add_edit" id) (proxyedit_of_filename file);
+                             command_enabled = always_enabled
                            }
                         in
                            item :: items) items files
@@ -402,12 +443,14 @@ let add_view info view =
                List.fold_left (fun items (flag, pre, show, hide) ->
                      let item =
                         if String.contains view flag then
-                           { command_label = sprintf "%s %s" pre hide;
-                             command_value = sprintf "Command('clear_view_options \"%c\"')" flag
+                           { command_label   = sprintf "%s %s" pre hide;
+                             command_value   = sprintf "Command('clear_view_options \"%c\"')" flag;
+                             command_enabled = always_enabled
                            }
                         else
-                           { command_label = sprintf "%s %s" pre show;
-                             command_value = sprintf "Command('set_view_options \"%c\"')" flag
+                           { command_label   = sprintf "%s %s" pre show;
+                             command_value   = sprintf "Command('set_view_options \"%c\"')" flag;
+                             command_enabled = always_enabled
                            }
                      in
                         item :: items) (List.rev menu.menu_items) view_table
@@ -435,7 +478,7 @@ let extract info state =
  * Commandbar.
  *)
 let commandbar_init =
-   [<< menu["history", "History"] >>]
+   [<< menu["history", "History"] >>, always_enabled]
 
 let default_commandbar = List.fold_left improve info_empty commandbar_init
 
@@ -449,33 +492,42 @@ let commandbar_collection =
         fp_retr  = extract
       }
 
-let resource (term, browser_state -> browser_info) commandbar =
+let resource (menu_item, browser_state -> browser_info) commandbar =
    commandbar_collection
 
 (*
  * Default menubar resource.
  *)
+let refine_is_enabled () =
+   Shell.is_enabled MethodRefine
+
+let paste_is_enabled () =
+   Shell.is_enabled (MethodPaste "clipboard")
+
+let undo_is_enabled () =
+   Shell.is_enabled MethodUndo
+
 let menubar_init =
-   [<< menu["file", "File"] >>;
-    << menuitem["file", "Rebuild",    "Command('!omake')"] >>;
-    << menuitem["file", "Restart",    "Command('!restart')"] >>;
-    << menuitem["file", "CVS Update", "Command('!cvs \"update\"')"] >>;
-    << menuitem["file", "Save",       "Command('save ()')"] >>;
-    << menuitem["file", "-",          ""] >>;
-    << menuitem["file", "New Window", "NewWindow()"] >>;
-    << menuitem["file", "New Session", "NewSession()"] >>;
-    << menu["edit", "Edit"] >>;
-    << menuitem["edit", "Copy", "Command('copy \"clipboard\"')"] >>;
-    << menuitem["edit", "Paste", "Command('paste \"clipboard\"')"] >>;
-    << menuitem["edit", "-", ""] >>;
-    << menuitem["edit", "Undo", "Command('undo ()')"] >>;
-    << menuitem["edit", "Redo", "Command('redo ()')"] >>;
-    << menuitem["edit", "-", ""] >>;
-    << menu["view", "View"] >>;
-    << menu["dir", "Directory"] >>;
-    << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>;
-    << menu["help", "Help"] >>;
-    << menuitem["help", "MetaPRL Home", "URL('http://www.metaprl.org/')"] >>]
+   [<< menu["file", "File"] >>,                                            always_enabled;
+    << menuitem["file", "Rebuild",    "Command('!omake')"] >>,             always_enabled;
+    << menuitem["file", "Restart",    "Command('!restart')"] >>,           always_enabled;
+    << menuitem["file", "CVS Update", "Command('!cvs \"update\"')"] >>,    always_enabled;
+    << menuitem["file", "Save",       "Command('save ()')"] >>,            always_enabled;
+    << menuitem["file", "-",          ""] >>,                              always_enabled;
+    << menuitem["file", "New Window", "NewWindow()"] >>,                   always_enabled;
+    << menuitem["file", "New Session", "NewSession()"] >>,                 always_enabled;
+    << menu["edit", "Edit"] >>,                                            always_enabled;
+    << menuitem["edit", "Copy", "Command('copy \"clipboard\"')"] >>,       refine_is_enabled;
+    << menuitem["edit", "Paste", "Command('paste \"clipboard\"')"] >>,     paste_is_enabled;
+    << menuitem["edit", "-", ""] >>,                                       always_enabled;
+    << menuitem["edit", "Undo", "Command('undo ()')"] >>,                  undo_is_enabled;
+    << menuitem["edit", "Redo", "Command('redo ()')"] >>,                  undo_is_enabled;
+    << menuitem["edit", "-", ""] >>,                                       always_enabled;
+    << menu["view", "View"] >>,                                            always_enabled;
+    << menu["dir", "Directory"] >>,                                        always_enabled;
+    << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>,                always_enabled;
+    << menu["help", "Help"] >>,                                            always_enabled;
+    << menuitem["help", "MetaPRL Home", "URL('http://www.metaprl.org/')"] >>, always_enabled]
 
 let default_menubar = List.fold_left improve info_empty menubar_init
 
@@ -489,7 +541,7 @@ let menubar_collection =
         fp_retr  = extract
       }
 
-let resource (term, browser_state -> browser_info) menubar =
+let resource (menu_item, browser_state -> browser_info) menubar =
    menubar_collection
 
 (*!

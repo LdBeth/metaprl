@@ -151,6 +151,14 @@ type display_method =
 type display_fun = unit -> display_method
 
 (*
+ * What things can we request as enabled?
+ *)
+type method_name =
+   MethodRefine
+ | MethodPaste of string
+ | MethodUndo
+
+(*
  * Info for proof-type objects.
  *)
 type edit_info =
@@ -189,6 +197,9 @@ type edit_object =
      edit_check_addr: string list -> unit; (* Raise exn if the address is not found; must accept an empty list *)
      edit_info      : string list -> edit_info;
      edit_find      : string list -> int -> string list; (* find a subgoal; edit_addr is a side-effect *)
+
+     (* State checking *)
+     edit_is_enabled : method_name -> bool
    }
 
 (*

@@ -81,6 +81,11 @@ val undo_ped : ped -> Proof.address -> Proof.address
 val redo_ped : ped -> Proof.address -> Proof.address
 
 (*
+ * Test whether some methods are enabled.
+ *)
+val is_enabled_ped : ped -> method_name -> bool
+
+(*
  * Navigation.
  *)
 val check_addr_ped : ped -> Proof.address -> unit

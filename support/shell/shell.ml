@@ -112,6 +112,7 @@ type commands =
      mutable set_view_options : string -> unit;
      mutable clear_view_options : string -> unit;
      mutable find_subgoal : int -> string;
+     mutable is_enabled : method_name -> bool
    }
 
 let uninitialized _ = raise (Invalid_argument "The Shell module has not been instantiated")
@@ -151,6 +152,7 @@ let commands =
      set_view_options = uninitialized;
      clear_view_options = uninitialized;
      find_subgoal = uninitialized;
+     is_enabled = uninitialized
    }
 
 (*
@@ -638,6 +640,7 @@ struct
          commands.set_view_options    <- set_view_options;
          commands.clear_view_options  <- clear_view_options;
          commands.find_subgoal        <- wrap edit_find;
+         commands.is_enabled          <- wrap edit_is_enabled;
          ()
    end
 
@@ -709,6 +712,7 @@ let get_view_options _ = commands.get_view_options ()
 let set_view_options s = commands.set_view_options s
 let clear_view_options s = commands.clear_view_options s
 let find_subgoal i = commands.find_subgoal i
+let is_enabled name = commands.is_enabled name
 
 let kreitz _ = commands.interpret ProofKreitz
 let clean _ = commands.interpret ProofClean

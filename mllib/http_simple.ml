@@ -42,7 +42,7 @@ let debug_http =
         debug_value = false
       }
 
-let http_threads = Env_arg.int "threads" 1 "number of threads for the web service" Env_arg.set_int_int
+let http_threads = Env_arg.int "threads" 4 "number of threads for the web service" Env_arg.set_int_int
 
 let eflush out =
    output_char out '\n';

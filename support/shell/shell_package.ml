@@ -279,6 +279,18 @@ let rec edit pack_info parse_arg get_dfm =
    let edit_save () =
       Package_info.save parse_arg pack_info
    in
+
+   (*
+    * This function always returns false.
+    * However, it is wise to keep it because
+    * we may add more methods.
+    *)
+   let edit_is_enabled = function
+      MethodRefine
+    | MethodPaste _
+    | MethodUndo ->
+         false
+   in
    let not_a_rule _ =
       raise_edit_error "this is not a rule or rewrite"
    in
@@ -300,6 +312,7 @@ let rec edit pack_info parse_arg get_dfm =
         edit_redo = not_a_rule;
         edit_interpret = raise_edit_error_fun "this is not a proof";
         edit_find = not_a_rule;
+        edit_is_enabled = edit_is_enabled
       }
 
 let create = edit

@@ -56,7 +56,7 @@ function MenuMouseDown(event)
 	var items = menus[src.id];
         if(items) {
             var pos = mojave.GetPagePosition(menuserver, self, src);
-            menuserver.MenuSetItems(items, menulabels, menucommands);
+            menuserver.MenuSetItems(items, menuenabled, menulabels, menucommands);
             menuserver.MenuSetPosition(pos);
             menuserver.MenuShow(true);
         }

@@ -174,6 +174,8 @@ open Term_match_table
 open Tactic_type
 open Tactic_type.Tacticals
 
+open Shell_sig
+
 open Auto_tactic
 open Simp_typeinf
 open Typeinf
@@ -543,8 +545,11 @@ let intro_univ_arg = IntroArgsOption (univ_arg_fun, None)
 (*
  * Add autoT to the browser.
  *)
+let refine_is_enabled () =
+   Shell.is_enabled MethodRefine
+
 let resource commandbar +=
-    << button["dT 0", "Command('refine dT 0')"] >>
+    [<< button["dT 0", "Command('refine dT 0')"] >>, refine_is_enabled]
 
 (*
  * -*-

@@ -20,7 +20,6 @@ MPFILES =\
   	browser_sig\
 	browser_state\
 	browser_copy\
-	browser_resource\
 	shell_tex\
 	proof_edit\
 	package_info\
@@ -37,5 +36,6 @@ MPFILES =\
 	shell_current\
 	shell\
 	shell_syscall\
+	browser_resource\
 	shell_browser\
 	shell_theory

@@ -120,6 +120,7 @@ open Tactic_type.Sequent
 open Tactic_type.Tacticals
 open Top_conversionals
 open Browser_resource
+open Shell_sig
 
 (*
  * Debugging.
@@ -397,8 +398,11 @@ let resource auto += {
 (*
  * Add autoT to the browser.
  *)
+let refine_is_enabled () =
+   Shell.is_enabled MethodRefine
+
 let resource commandbar +=
-    << button["autoT", "Command('refine autoT')"] >>
+    [<< button["autoT", "Command('refine autoT')"] >>, refine_is_enabled]
 
 (*
  * -*-

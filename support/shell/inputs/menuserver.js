@@ -30,17 +30,20 @@ var menuscroll      = false;
 /*
  * Build a menu from the array of menuitems.
  */
-function MenuSetItems(ids, labels, commands)
+function MenuSetItems(ids, enabled, labels, commands)
 {
     if(menufloat) {
         var text = '';
         for(var i = 0; i < ids.length; i++) {
             var id = ids[i];
             var label = labels[id];
+            var is_enabled = enabled[id];
             if(label == '-')
                 text += '<div class="menurule"></div>';
-            else
+            else if(is_enabled)
                 text += '<div class="menuitem" id="' + id +  '">' + label + '</div>';
+            else
+                text += '<div class="menushade" id="' + id +  '">' + label + '</div>';
         }
         menufloat.innerHTML = text;
         menucommands = commands;

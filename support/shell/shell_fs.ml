@@ -31,14 +31,18 @@
  *)
 extends Shell_sig
 extends Package_info
+extends Nuprl_font
+extends Base_dform
 extends Summary
 
 open Lm_printf
 
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Dform
 
 open Summary
+
 open Shell_sig
 open Shell_util
 
@@ -381,6 +385,18 @@ let rec edit get_dfm info =
    let edit_get_contents addr =
       raise_edit_error "can only retrieve contents of an individual item, not of a file"
    in
+
+   (*
+    * This function always returns false.
+    * However, it is wise to keep it because
+    * we may add more methods.
+    *)
+   let edit_is_enabled = function
+      MethodRefine
+    | MethodPaste _
+    | MethodUndo ->
+         false
+   in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
         edit_get_terms = not_a_rule;
@@ -399,6 +415,7 @@ let rec edit get_dfm info =
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;
         edit_find = not_a_rule;
+        edit_is_enabled = edit_is_enabled
       }
 
 let create get_dfm =

@@ -133,11 +133,6 @@ val mk_implementation_term : term list -> term
 val mk_package_term : string -> term
 val mk_packages_term : term list -> term
 
-val mk_direntry_term : string -> string -> term
-val mk_dirlisting_term : string -> term list -> term
-val mk_fileline_term : Lm_num.num -> string -> term
-val mk_filelisting_term : string -> term list -> term
-
 (*
  * Proofs.
  *)
@@ -163,6 +158,14 @@ val append_rule_box : term -> string -> term
 val mk_proof_term : term -> term -> term -> term -> term -> term
 val dest_rule_box : term -> string
 val dest_proof : term -> term * term * term * term * term
+
+(*
+ * BUG JYH: these should move to Shell_fs.
+ *)
+val mk_direntry_term : string -> string -> term
+val mk_dirlisting_term : string -> term list -> term
+val mk_fileline_term : Lm_num.num -> string -> term
+val mk_filelisting_term : string -> term list -> term
 
 (*
  * -*-

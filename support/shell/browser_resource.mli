@@ -89,8 +89,12 @@ val default_commandbar_info : browser_state -> browser_info
  *   The menubar goes at the top of the page.
  *   The commandbar goes by the input area.
  *)
-resource (term, browser_state -> browser_info) menubar
-resource (term, browser_state -> browser_info) commandbar
+type menu_item = term * (unit -> bool)
+
+val always_enabled : unit -> bool
+
+resource (menu_item, browser_state -> browser_info) menubar
+resource (menu_item, browser_state -> browser_info) commandbar
 
 (*!
  * @docoff

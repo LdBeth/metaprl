@@ -123,6 +123,11 @@ topval term_of_extract : term list -> term
 val init : unit -> unit
 
 (*
+ * Test whether a method is enabled.
+ *)
+val is_enabled : method_name -> bool
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"

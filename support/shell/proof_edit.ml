@@ -356,6 +356,9 @@ let set_goal ped mseq =
 (*
  * Move down the undo stack.
  *)
+let undo_is_enabled ped =
+   ped.ped_undo <> []
+
 let undo_ped ped addr =
    match ped.ped_undo with
       (proof, addr') :: proofs ->
@@ -412,6 +415,10 @@ let copy_ped ped addr s =
                      copy_buffer := (s, proof) :: !copy_buffer
             end)
 
+let paste_is_enabled ped s =
+   State.read copy_entry (fun copy_buffer ->
+         List.mem_assoc s !copy_buffer)
+
 let paste_ped ped addr s =
    let proof2 =
       State.read copy_entry (fun copy_buffer ->
@@ -436,6 +443,14 @@ let clean_ped ped addr =
 
 let squash_ped ped addr =
    push_proof ped (Proof.squash (update_fun ped addr) (proof_of_ped ped) addr) addr
+
+let is_enabled_ped ped = function
+   MethodRefine ->
+      true
+ | MethodPaste name ->
+      paste_is_enabled ped name
+ | MethodUndo ->
+      undo_is_enabled ped
 
 (************************************************************************
  * Windowed operations.

@@ -314,6 +314,13 @@ DIV.menuitem {
     width: 100%
 }
 
+DIV.menushade {
+    width: 100%;
+    color: #666699;
+    font-style: italic;
+    background: #c3d4eA
+}
+
 DIV.menuitemhover {
     width: 100%;
     background-color: #f0e0d0

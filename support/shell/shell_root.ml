@@ -91,6 +91,18 @@ let rec edit pack get_dfm =
    let edit_get_contents addr =
       raise_edit_error "can only retrieve contents of an individual item, not of a root package"
    in
+
+   (*
+    * This function always returns false.
+    * However, it is wise to keep it because
+    * we may add more methods.
+    *)
+   let edit_is_enabled = function
+      MethodRefine
+    | MethodPaste _
+    | MethodUndo ->
+         false
+   in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
         edit_get_terms = not_a_rule;
@@ -109,6 +121,7 @@ let rec edit pack get_dfm =
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;
         edit_find = not_a_rule;
+        edit_is_enabled = edit_is_enabled
       }
 
 let create = edit

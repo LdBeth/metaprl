@@ -111,6 +111,7 @@ val extract : parse_arg -> shell -> shell_dir -> unit -> Refiner.Refiner.Refine.
 val term_of_extract : shell -> term list -> term
 
 val edit_find : shell -> int -> string
+val edit_is_enabled : shell -> method_name -> bool
 
 val undo : shell -> unit
 val redo : shell -> unit
