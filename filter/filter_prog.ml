@@ -97,6 +97,18 @@ let rewriter_expr loc =
 let rewriter_patt loc =
    <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Rewrite"$ >>
 
+let tactic_type_expr loc =
+   <:expr< $uid:"Tactic_type"$ >>
+
+let tactic_type_ctyp loc =
+   <:ctyp< $uid:"Tactic_type"$ >>
+
+let rewrite_type_expr loc =
+   <:expr< $uid:"Rewrite_type"$ >>
+
+let rewrite_type_ctyp loc =
+   <:ctyp< $uid:"Rewrite_type"$ >>
+
 let create_axiom_expr loc =
    <:expr< $refiner_expr loc$ . $lid:"create_axiom"$ >>
 
@@ -134,16 +146,16 @@ let ml_rule_extract_expr loc =
    <:expr< $refiner_expr loc$ . $lid:"ml_rule_extract"$ >>
 
 let tactic_of_rule_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"tactic_of_rule"$ >>
+   <:expr< $tactic_type_expr loc$ . $lid:"tactic_of_rule"$ >>
 
 let tactic_ctyp loc =
-   <:ctyp< $refiner_ctyp loc$ . $lid:"tactic"$ '$"a"$ >>
+   <:ctyp< $tactic_type_ctyp loc$ . $lid:"tactic"$ >>
 
 (*
  * Rewrite.
  *)
 let rewrite_ctyp loc =
-   <:ctyp< $refiner_ctyp loc$ . $lid:"rw"$ '$"a"$ >>
+   <:ctyp< $rewrite_type_ctyp loc$ . $lid:"conv"$ >>
 
 let create_rewrite_expr loc =
    <:expr< $refiner_expr loc$ . $lid:"create_rewrite"$ >>
@@ -158,7 +170,7 @@ let delayed_rewrite_expr loc =
    <:expr< $refiner_expr loc$ . $lid:"delayed_rewrite"$ >>
 
 let rewrite_of_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"rewrite_of_rewrite"$ >>
+   <:expr< $rewrite_type_expr loc$ . $lid:"rewrite_of_rewrite"$ >>
 
 (*
  * Conditional rewrite.
@@ -183,7 +195,7 @@ let delayed_cond_rewrite_expr loc =
    <:expr< $refiner_expr loc$ . $lid:"delayed_cond_rewrite"$ >>
 
 let rewrite_of_cond_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"rewrite_of_cond_rewrite"$ >>
+   <:expr< $rewrite_type_expr loc$ . $lid:"rewrite_of_cond_rewrite"$ >>
 
 let apply_redex_expr loc =
    <:expr< $rewriter_expr loc$ . $lid:"apply_redex"$ >>
@@ -200,8 +212,8 @@ let compile_contractum_expr loc =
 (*
  * Other expressions.
  *)
-let make_seq_addr_expr loc =
-   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermAddr"$ . $lid:"make_seq_address"$ >>
+let nth_addr_expr loc =
+   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermAddr"$ . $lid:"nth_address"$ >>
 
 let thy_name_expr loc =
    <:expr< $uid:"Theory"$ . $lid:"thy_name"$ >>
@@ -694,7 +706,7 @@ struct
        let name_let =
           <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
        in
-          [name_rewrite_let; name_let ]
+          [name_rewrite_let; name_let]
 
    let ()  = ()
 
@@ -940,7 +952,7 @@ struct
             $lid:"tvars"$ $lid:"params"$ $lid:"avars"$ $lid:"extract"$ >>
       in
       let name_value =
-         let addr_expr id = <:expr< $make_seq_addr_expr loc$ $lid:id$ >> in
+         let addr_expr id = <:expr< $nth_addr_expr loc$ $lid:id$ $uid:"true"$ >> in
          let cvars_id_expr = <:expr< [| $list:List.map addr_expr cvar_ids$ |] >> in
          let tvars_id_expr = <:expr< [| $list:List.map lid_expr tvar_ids$ |] >> in
          let tparams_ids_expr = list_expr loc lid_expr tparam_ids in
@@ -1551,6 +1563,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.17  1998/06/03 22:19:16  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.16  1998/06/01 13:53:07  jyh
  * Proving twice one is two.
  *

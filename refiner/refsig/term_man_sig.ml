@@ -1,5 +1,10 @@
 (*
+ * Operations on "manifest" terms.  These are
+ * terms that have a pervasive definition.
  *
+ * Sequents are manifest only for efficiency.
+ * The refiner does not use them, but they are
+ * included because many logics use sequents.
  *)
 
 module type TermManSig =
@@ -7,6 +12,7 @@ sig
    type term
    type operator
    type level_exp
+   type address
 
    (************************************************************************
     * Simplified operations on manifest terms                              *
@@ -15,8 +21,8 @@ sig
    (* Level expression operations *)
    val mk_const_level_exp : int -> level_exp
    val mk_var_level_exp : string -> level_exp
-   val incr_level_exp : level_exp -> level_exp
    val max_level_exp : level_exp -> level_exp -> level_exp
+   val incr_level_exp : level_exp -> level_exp
 
    val level_cumulativity : level_exp -> level_exp -> bool
 
@@ -45,9 +51,10 @@ sig
    val get_decl_number : term -> string -> int
    val is_free_seq_var : int -> string -> term -> bool
 
-   val concl_addr : term -> int * int
+   val nth_hyp_addr : term -> int -> address
+   val nth_concl_addr : term -> int -> address
    val replace_concl : term -> term -> term
-   val replace_goal : term -> term -> term          (* One subgoal *)
+   val replace_goal : term -> term -> term          (* One concl *)
 
    val is_xrewrite_term : term -> bool
    val mk_xrewrite_term : term -> term -> term
@@ -87,6 +94,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/03 22:19:28  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.3  1998/06/03 15:23:25  jyh
  * Generalized many the term_addr, term_man, and term_shape modules.
  *

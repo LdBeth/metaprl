@@ -135,13 +135,14 @@ let ped_arg { ped_goal = goal } =
 let display_children db buf =
    let rec aux i = function
       h::t ->
-	 let { tac_goal = goal } =
+	 let goal =
 	    match h with
 	       Proof.ChildTerm goal ->
                   goal
 	     | Proof.ChildProof pf ->
                   Proof.goal pf
 	 in
+         let goal = Sequent.goal goal in
 	    format_string buf "\n-<subgoal>-\n";
 	    format_int buf i;
 	    format_string buf ". ";
@@ -199,7 +200,7 @@ let display_goal db buffer goal status =
 
    (* Goal *)
    format_string buffer "\n-<main>-\n";
-   format_term db buffer goal.tac_goal;
+   format_term db buffer (Sequent.goal goal);
 
    (* Rule *)
    format_string buffer "\n\n-<beginrule>-\n";
@@ -210,7 +211,7 @@ let display_goal db buffer goal status =
  * Display a proof with an inference.
  *)
 let display_proof db buffer pf =
-   let { tac_goal = goal } = Proof.goal pf in
+   let goal = Sequent.goal (Proof.goal pf) in
    let item = Proof.item pf in
    let children = Proof.children pf in
    let status = Proof.status pf in
@@ -267,7 +268,7 @@ let format db buffer { ped_goal = goal; ped_undo = undo } =
  *)
 let refine_ped ped text ast tac =
    let { ped_goal = goal; ped_undo = undo; ped_stack = stack } = ped in
-   let subgoals, _ = Refine.refine tac goal in
+   let subgoals, _ = Tactic_type.refine tac goal in
    let step = Proof_step.create goal subgoals text ast tac in
    let pf' =
       match undo with
@@ -446,6 +447,9 @@ let expand_ped df ped =
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/03 22:19:11  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.8  1998/06/01 19:53:10  jyh
  * Working addition proof.  Removing polymorphism from refiner(?)
  *

@@ -4,12 +4,15 @@
 
 open Term_simple_sig
 open Term_op_sig
+open Term_addr_sig
 open Term_subst_sig
 open Term_man_sig
 
 module TermMan (**)
    (Term : TermSimpleSig)
    (TermOp : TermOpSig
+    with type term = Term.term)
+   (TermAddr : TermAddrSig
     with type term = Term.term)
    (TermSubst : TermSubstSig
     with type term = Term.term
@@ -18,9 +21,13 @@ module TermMan (**)
   with type term = Term.term
   with type operator = Term.operator
   with type level_exp = Term.level_exp
+  with type address = TermAddr.address
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/03 22:19:36  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.1  1998/06/03 15:23:45  jyh
  * Generalized many the term_addr, term_man, and term_shape modules.
  *

@@ -11,7 +11,6 @@ open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
-open Refiner.Refiner.Refine
 
 open Filter_ocaml
 
@@ -26,7 +25,7 @@ let _ =
       eprintf "Loading Filter_proof%t" eflush
 
 
-let summary_opname = mk_opname "Summary" nil_opname
+let summary_opname         = mk_opname "Summary" nil_opname
 
 let interface_op           = mk_opname "interface"         summary_opname
 let implementation_op      = mk_opname "implementation"    summary_opname
@@ -69,16 +68,6 @@ let mk_simple_int_term opname i terms =
    let bterms = List.map (fun t -> mk_bterm [] t) terms in
       mk_term op bterms
 
-let mk_msequent_term { mseq_goal = goal; mseq_hyps = hyps } =
-   mk_xlist_term (goal :: hyps)
-
-let dest_msequent t =
-   match dest_xlist t with
-      h::t ->
-         { mseq_goal = h; mseq_hyps = t }
-    | [] ->
-         raise (Failure "dest_msequent")
-
 let comment _ t = t
 
 (*
@@ -115,8 +104,8 @@ and term_of_proof_step = function
                step_ast = ast;
                step_text = text
    } ->
-      mk_simple_term proof_step_op [term_of_aterm_tactic_arg goal;
-                                    mk_xlist_term (List.map term_of_aterm_tactic_arg subgoals);
+      mk_simple_term proof_step_op [term_of_aterm goal;
+                                    mk_xlist_term (List.map term_of_aterm subgoals);
                                     term_of_expr [] comment ast;
                                     mk_simple_string_term proof_step_op text []]
  | ProofNode proof ->
@@ -124,16 +113,15 @@ and term_of_proof_step = function
 
 and term_of_proof_child = function
    ChildGoal goal ->
-      mk_simple_term proof_child_goal_op [term_of_aterm_tactic_arg goal]
+      mk_simple_term proof_child_goal_op [term_of_aterm goal]
  | ChildProof proof ->
       mk_simple_term proof_child_proof_op [term_of_proof proof]
 
-and term_of_aterm_tactic_arg
-    { tac_goal = goal;
-      tac_hyps = hyps;
-      tac_arg = { aterm_label = label;
-                  aterm_args = args
-                }
+and term_of_aterm
+    { aterm_goal = goal;
+      aterm_hyps = hyps;
+      aterm_label = label;
+      aterm_args = args
     } =
    mk_simple_term proof_aterm_op [goal;
                                   mk_xlist_term hyps;
@@ -191,8 +179,8 @@ and step_of_term t =
    let op = opname_of_term t in
       if op == proof_step_op then
          let goal, subgoals, ast, text = four_subterms t in
-            ProofStep { step_goal = aterm_tactic_arg_of_term goal;
-                        step_subgoals = List.map aterm_tactic_arg_of_term (dest_xlist subgoals);
+            ProofStep { step_goal = aterm_of_term goal;
+                        step_subgoals = List.map aterm_of_term (dest_xlist subgoals);
                         step_ast = expr_of_term ast;
                         step_text = dest_string_param text
             }
@@ -204,19 +192,18 @@ and step_of_term t =
 and child_of_term t =
    let op = opname_of_term t in
       if op == proof_child_goal_op then
-         ChildGoal (aterm_tactic_arg_of_term (one_subterm t))
+         ChildGoal (aterm_of_term (one_subterm t))
       else if op == proof_child_proof_op then
          ChildProof (proof_of_term (one_subterm t))
       else
          raise (Failure "Filter_proof.child_of_term")
 
-and aterm_tactic_arg_of_term t =
+and aterm_of_term t =
    let goal, hyps, label, args = four_subterms t in
-      { tac_goal = goal;
-        tac_hyps = dest_xlist hyps;
-        tac_arg = { aterm_label = dest_string_param label;
-                    aterm_args = List.map attribute_of_term (dest_xlist args)
-                  }
+      { aterm_goal = goal;
+        aterm_hyps = dest_xlist hyps;
+        aterm_label = dest_string_param label;
+        aterm_args = List.map attribute_of_term (dest_xlist args)
       }
 
 and attribute_of_term t =
@@ -281,34 +268,15 @@ let tactics_of_proof proof =
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/03 22:19:07  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.2  1998/06/01 13:52:08  jyh
  * Proving twice one is two.
  *
  * Revision 1.1  1998/05/28 13:45:34  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.
- *
- * Revision 1.7  1998/05/04 13:01:13  jyh
- * Ocaml display without let rec.
- *
- * Revision 1.6  1998/04/28 21:37:59  jyh
- * Adjusted uppercasing.
- *
- * Revision 1.5  1998/04/24 19:38:31  jyh
- * Updated debugging.
- *
- * Revision 1.4  1998/04/24 02:42:05  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.3  1998/04/22 22:44:26  jyh
- * *** empty log message ***
- *
- * Revision 1.2  1998/04/21 20:58:03  jyh
- * Fixed typing problems introduced by refiner msequents.
- *
- * Revision 1.1  1998/04/17 01:31:02  jyh
- * Editor is almost constructed.
- *
  *
  * -*-
  * Local Variables:

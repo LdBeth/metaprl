@@ -12,20 +12,21 @@
 include Tactic_type
 
 open Refiner.Refiner.Term
-open Refiner.Refiner.Refine
 
 (*
  * An IO step does not save the tactic,
  * and saves only part of the goal.
  *)
 type aterm =
-   { aterm_label : string;              (* Label describes the step in the proof *)
-     aterm_args : Tactic_type.attribute list        (* Proof annotations *)
+   { aterm_goal : term;                        (* Goal of this step *)
+     aterm_hyps : term list;                   (* Assumptions in this proof *)
+     aterm_label : string;                     (* Label describes the step in the proof *)
+     aterm_args : Tactic_type.attribute list   (* Proof annotations *)
    }
 
 type proof_step =
-   { step_goal : aterm tactic_arg;
-     step_subgoals : aterm tactic_arg list;
+   { step_goal : aterm;
+     step_subgoals : aterm list;
      step_ast : MLast.expr;             (* Parsed expression *)
      step_text : string                 (* String representation of text *)
    }
@@ -53,11 +54,14 @@ and proof_node =
  | ProofNode of proof
 
 and proof_child =
-   ChildGoal of aterm tactic_arg
+   ChildGoal of aterm
  | ChildProof of proof
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/03 22:19:08  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.2  1998/06/01 13:52:10  jyh
  * Proving twice one is two.
  *

@@ -13,6 +13,9 @@ sig
 
    (*
     * Operators have a name and parameters.
+    *
+    * When this file is copied to term_std.mli, the
+    * following for type definitions become abstract.
     *)
    type level_exp_var = level_exp_var'
    and level_exp = level_exp'
@@ -116,17 +119,23 @@ sig
    val make_object_id : param list -> object_id
    val dest_object_id : object_id  ->  param list
 
+   (*
+    * A term should be "normalized" after it is read back in from a
+    * file.  This function normalizes all opnames.
+    *)
    val normalize_term : term -> term
 
    (* Projections *)
    val opname_of_term : term -> opname
    val subterms_of_term : term -> term list
    val subterm_count : term -> int
+   val subterm_arities : term -> int list
 
    (*
     * A variable is a term with opname "var", and a single
     * var parameter that is the name of the variable.
     *)
+   val var_opname : opname
    val is_var_term : term -> bool
    val dest_var : term -> string
    val mk_var_term : string -> term
@@ -135,7 +144,8 @@ sig
    val is_so_var_term : term -> bool
    val dest_so_var : term -> string * term list
    val mk_so_var_term : string -> term list -> term
-
+   
+   val context_opname : opname
    val is_context_term : term -> bool
    val dest_context : term -> string * term * term list
    val mk_context_term : string -> term -> term list -> term
@@ -156,6 +166,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/03 22:19:30  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.1  1998/06/03 15:23:28  jyh
  * Generalized many the term_addr, term_man, and term_shape modules.
  *

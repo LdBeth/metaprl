@@ -6,6 +6,7 @@ INCLUDE :=
 LCFILES :=\
 	truncate\
 	putenv\
+	execvp\
 	debug\
 	ml_debug
 

@@ -26,6 +26,7 @@ val nth_tl : int -> 'a list -> 'a list
 
 (* Functional replacement *)
 val replacef_nth : int -> ('a -> 'a) -> 'a list -> 'a list
+val replacef_arg_nth : int -> ('a -> 'a * 'b) -> 'a list -> 'a list * 'b
 val replace_nth : int -> 'a -> 'a list -> 'a list
 val replaceq : 'a -> 'a -> 'a list -> 'a list
 val remove_nth : int -> 'a list -> 'a list
@@ -71,6 +72,9 @@ val last : 'a list -> 'a
 
 (*
  * $Log$
+ * Revision 1.8  1998/06/03 22:19:22  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.7  1998/04/28 18:30:31  jyh
  * ls() works, adding display.
  *

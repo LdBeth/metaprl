@@ -308,6 +308,9 @@ struct
    let subterm_count t =
       List.length (dest_term t).term_terms
 
+   let subterm_arities term =
+      let aux bterm = List.length (dest_bterm bterm).bvars in
+         List.map aux (dest_term term).term_terms
    (*
     * Operator names.
     *)

@@ -74,14 +74,12 @@ let tactic { step_tactic = tac } = tac
  * Make an error term.
  * Just a string.
  *)
-let mk_error_subgoal db { tac_hyps = hyps; tac_arg = arg } err =
+let mk_error_subgoal db arg err =
+   let { mseq_hyps = hyps }, arg = dest_arg arg in
    let buf = new_buffer () in
    let _ = format_refine_error db buf err in
    let t = mk_string_term nil_opname (print_to_string 80 buf) in
-      { tac_goal = t;
-        tac_hyps = hyps;
-        tac_arg = arg
-      }
+      create_arg { mseq_goal = t; mseq_hyps = hyps } arg
 
 (*
  * Apply the tactic and compute the extract.
@@ -99,7 +97,7 @@ let expand db step =
        } = step
    in
       try
-         let subgoals', _ = Refine.refine tac goal in
+         let subgoals', _ = refine tac goal in
             if List_util.for_all2 tactic_arg_alpha_equal subgoals' subgoals then
                step
             else
@@ -124,7 +122,7 @@ let check step =
          step_subgoals = subgoals
        } = step
    in
-   let subgoals', ext = Refine.refine tac goal in
+   let subgoals', ext = refine tac goal in
       if List_util.for_all2 tactic_arg_alpha_equal subgoals' subgoals then
          ext
       else
@@ -137,29 +135,29 @@ let check step =
 (*
  * Throw away extra information from the goal.
  *)
-let aterm_tactic_arg_of_goal
-    { tac_goal = goal;
-      tac_hyps = hyps;
-      tac_arg = { ref_label = label; ref_args = args; ref_fcache = fcache }
-    } =
-   { tac_goal = goal;
-     tac_hyps = hyps;
-     tac_arg = { aterm_label = label; aterm_args = args }
-   }
+let aterm_tactic_arg_of_goal arg =
+   let { mseq_goal = goal; mseq_hyps = hyps },
+       { ref_label = label; ref_args = args; ref_fcache = fcache } =
+      dest_arg arg
+   in
+      { aterm_goal = goal;
+        aterm_hyps = hyps;
+        aterm_label = label;
+        aterm_args = args
+      }
 
 let goal_of_aterm_tactic_arg resources fcache
-    { tac_goal = goal;
-      tac_hyps = hyps;
-      tac_arg = { aterm_label = label; aterm_args = args }
+    { aterm_goal = goal;
+      aterm_hyps = hyps;
+      aterm_label = label;
+      aterm_args = args
     } =
-   { tac_goal = goal;
-     tac_hyps = hyps;
-     tac_arg = { ref_label = label;
-                 ref_args = args;
-                 ref_fcache = fcache;
-                 ref_rsrc = resources
-               }
-   }
+   create_arg { mseq_goal = goal; mseq_hyps = hyps} (**)
+      { ref_label = label;
+        ref_args = args;
+        ref_fcache = fcache;
+        ref_rsrc = resources
+      }
 
 (*
  * Throw away information.
@@ -194,6 +192,9 @@ let step_of_io_step { ref_fcache = fcache; ref_rsrc = resources } tactics
 
 (*
  * $Log$
+ * Revision 1.13  1998/06/03 22:19:12  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.12  1998/06/01 13:52:23  jyh
  * Proving twice one is two.
  *

@@ -31,7 +31,7 @@ let comment_depth = ref 0
 (*
  * These are the implicit names.
  *)
-let prl_names =
+let prl_init_names =
    ["Printf";
     "Debug";
     "Refiner";
@@ -41,9 +41,14 @@ let prl_names =
     "Theory";
     "Dform";
     "Dform_print";
+    "Tactic";
     "Resource";
     "Precedence";
     "Filter_summary"]
+
+let prl_names =
+   ["Tactic_type";
+    "Rewrite_type"]
 }
 
 rule main = parse
@@ -124,6 +129,8 @@ let opt_flag = ref true
 
 let prl_flag = ref false
 
+let prl_init_flag = ref false
+
 let find_dependency modname (byt_deps, opt_deps) =
   let name = String.uncapitalize modname in
   try
@@ -172,6 +179,8 @@ let file_dependencies source_file =
     let ic = open_in source_file in
     let lb = Lexing.from_channel ic in
     main lb;
+    if !prl_flag or !prl_init_flag then
+      List.iter add_structure prl_init_names;
     if !prl_flag then
       List.iter add_structure prl_names;
     if Filename.check_suffix source_file ".ml" then begin
@@ -206,8 +215,10 @@ let _ =
            "<dir>  Add <dir> to the list of include directories";
      "-opt", Arg.Set opt_flag, " (undocumented)";
      "-noopt", Arg.Clear opt_flag, " (undocumented)";
+     "-prl_init", Arg.Set prl_init_flag, "add dependencies for PRL files, no Tactic_type";
+     "-noprl_init", Arg.Set prl_init_flag, "add dependencies for PRL files, no Tactic_type";
      "-prl", Arg.Set prl_flag, "add dependencies for PRL files";
-     "-noprl", Arg.Set prl_flag, "add dependencies for PRL files"
+     "-noprl", Arg.Clear prl_flag, "add dependencies for PRL files"
     ] file_dependencies usage;
   exit 0
     

@@ -504,8 +504,8 @@ let join_ordered_children =
       ChildGoal _ ->
          ChildGoal subgoal
     | ChildNode node ->
-	 let { tac_goal = subgoal' } = node_goal node in
-	    if alpha_equal subgoal' subgoal.tac_goal then
+	 let subgoal' = Sequent.goal (node_goal node) in
+	    if alpha_equal subgoal' (Sequent.goal subgoal) then
 	       ChildNode node
 	    else
 	       raise Match
@@ -531,11 +531,11 @@ let join_ordered_children =
 let join_permuted_children subgoals children =
    (* Use a hash function to help matching *)
    let make_index1 subgoal =
-      Hashtbl.hash subgoal.tac_goal, subgoal
+      Hashtbl.hash (Sequent.goal subgoal), subgoal
    in
    let make_index2 node =
       let goal = node_goal node in
-	 Hashtbl.hash goal.tac_goal, goal, node
+	 Hashtbl.hash (Sequent.goal goal), goal, node
    in
    let indices1 = List.map make_index1 subgoals in
    let indices2 = List.map make_index2 children in
@@ -639,15 +639,15 @@ let replace_child pf i { pf_node = child' } =
          node_extras = extras
        } = node
    in
-   let { tac_goal = goal' } = node_goal child' in
+   let goal' = Sequent.goal (node_goal child') in
    let replace = function
       ChildGoal goal ->
-         if alpha_equal goal.tac_goal goal' then
+         if alpha_equal (Sequent.goal goal) goal' then
             ChildNode child'
          else
             raise Match
     | ChildNode node ->
-         if alpha_equal (node_goal node).tac_goal goal' then
+         if alpha_equal (Sequent.goal (node_goal node)) goal' then
             ChildNode child'
          else
             raise Match
@@ -906,16 +906,16 @@ let io_status_of_status = function
       Io_proof_type.StatusComplete
 
 let rec io_child_of_child = function
-   ChildGoal { tac_goal = t;
-               tac_hyps = hyps;
-               tac_arg = { ref_label = label; ref_args = args } } ->
-      Io_proof_type.ChildGoal (**)
-         { tac_goal = t;
-           tac_hyps = hyps;
-           tac_arg = { Io_proof_type.aterm_label = label;
-                       Io_proof_type.aterm_args = args
-                     }
-         }
+   ChildGoal goal ->
+      let ({ mseq_goal = t; mseq_hyps = hyps }, { ref_label = label; ref_args = args }) =
+         dest_arg goal
+      in
+         Io_proof_type.ChildGoal (**)
+            { Io_proof_type.aterm_goal = t;
+              Io_proof_type.aterm_hyps = hyps;
+              Io_proof_type.aterm_label = label;
+              Io_proof_type.aterm_args = args
+            }
  | ChildNode node ->
       Io_proof_type.ChildProof (io_proof_of_node node)
 
@@ -959,20 +959,17 @@ let proof_of_io_proof arg tacs pf =
    let _ = Array.iter (function (name, tac) -> Hashtbl.add hash name tac) tacs in
    let rec child_of_io_child = function
       Io_proof_type.ChildGoal (**)
-         { tac_goal = goal;
-           tac_hyps = hyps;
-           tac_arg = { Io_proof_type.aterm_label = label;
-                       Io_proof_type.aterm_args = args
-                     }
+         { Io_proof_type.aterm_goal = goal;
+           Io_proof_type.aterm_hyps = hyps;
+           Io_proof_type.aterm_label = label;
+           Io_proof_type.aterm_args = args
          } ->
-         ChildGoal { tac_goal = goal;
-                     tac_hyps = hyps;
-                     tac_arg = { ref_label = label;
-                                 ref_args = args;
-                                 ref_fcache = fcache;
-                                 ref_rsrc = resources
-                               }
-         }
+         ChildGoal (create_arg { mseq_goal = goal; mseq_hyps = hyps } (**)
+                       { ref_label = label;
+                         ref_args = args;
+                         ref_fcache = fcache;
+                         ref_rsrc = resources
+                       })
     | Io_proof_type.ChildProof pf ->
          ChildNode (node_of_io_proof pf)
 
@@ -1002,6 +999,9 @@ let proof_of_io_proof arg tacs pf =
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/03 22:19:09  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.10  1998/06/01 13:52:19  jyh
  * Proving twice one is two.
  *

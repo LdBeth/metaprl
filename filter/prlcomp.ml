@@ -227,7 +227,7 @@ let main () =
        | Unix.WSTOPPED _ ->
             exit 1
 *)
-      Unix.execvp argv'.(0) argv';
+      Punix.execvp argv'.(0) argv';
       eprintf "Execution failed: %s%t" argv'.(0) eflush;
       exit 1
 
@@ -235,6 +235,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.15  1998/06/03 22:19:18  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.14  1998/06/01 13:53:22  jyh
  * Proving twice one is two.
  *

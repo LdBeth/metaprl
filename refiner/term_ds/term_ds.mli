@@ -131,6 +131,7 @@ sig
    val opname_of_term : term -> opname
    val subterms_of_term : term -> term list
    val subterm_count : term -> int
+   val subterm_arities : term -> int list
 
    (* These are trivial identity functions *)
    val make_op : operator' -> operator

@@ -113,6 +113,7 @@ sig
    val opname_of_term : term -> opname
    val subterms_of_term : term -> term list
    val subterm_count : term -> int
+   val subterm_arities : term -> int list
 
    (*
     * A variable is a term with opname "var", and a single
@@ -150,6 +151,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/03 22:19:38  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.4  1998/06/03 15:23:59  jyh
  * Generalized many the term_addr, term_man, and term_shape modules.
  *

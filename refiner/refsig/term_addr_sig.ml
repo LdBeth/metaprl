@@ -14,10 +14,14 @@ sig
    (*
     * Constructors.
     *)
-   val string_of_address : address -> string
    val make_address : int list -> address
-   val make_seq_address : int -> address
-   val nth_cdr_addr : int -> address
+   val nth_address : int -> bool -> address
+   val compose_address : address -> address -> address
+
+   (*
+    * Destructors.
+    *)
+   val string_of_address : address -> string
 
    (*
     * Addressed operations.
@@ -26,13 +30,13 @@ sig
    val replace_subterm : term -> address -> term -> term
    val apply_fun_at_addr : (term -> term) -> address -> (term -> term)
    val apply_fun_arg_at_addr : (term -> term * 'a) -> address -> (term -> term * 'a)
-   val compose_addr : address -> address -> address
-   (* val remove_addr_prefix : address -> address -> address *)
-   val subterm_arities : term -> int list
 end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/03 22:19:27  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.3  1998/06/03 15:23:24  jyh
  * Generalized many the term_addr, term_man, and term_shape modules.
  *

@@ -51,18 +51,12 @@ let seq = << sequent { 'H >- 'rw } >>
 
 let mk_goal arg redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
-      { tac_goal = rw;
-        tac_hyps = [];
-        tac_arg = arg
-      }
+      create_arg { mseq_goal = rw; mseq_hyps = [] } arg
 
 let mk_cond_goal arg assums redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
    let assums = List.map (replace_goal seq) assums in
-      { tac_goal = rw;
-        tac_hyps = assums;
-        tac_arg = arg
-      }
+      create_arg { mseq_goal = rw; mseq_hyps = assums } arg
 
 let mk_rw_goal arg assums redex contractum =
    if assums = [] then
@@ -86,7 +80,8 @@ let comment loc t =
 (*
  * Format the tactic text.
  *)
-let format_tac db buf { tac_goal = rw; tac_hyps = hyps } =
+let format_tac db buf arg =
+   let { mseq_goal = rw; mseq_hyps = hyps } = tactic_seq arg in
    let format_hyp hyp =
       format_term db buf hyp;
       format_newline buf
@@ -299,6 +294,9 @@ let view_crw pack
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/03 22:19:13  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.10  1998/06/01 13:52:33  jyh
  * Proving twice one is two.
  *

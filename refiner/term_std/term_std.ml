@@ -160,9 +160,12 @@ struct
     *)
    let subterms_of_term t =
       List.map (fun { bterm = t } -> t) t.term_terms
-   
+
    let subterm_count { term_terms = terms } =
       List.length terms
+   
+   let subterm_arities { term_terms = terms } =
+      List.map (fun { bvars = vars } -> List.length vars) terms
 
    (************************************************************************
     * Variables                                                            *
@@ -317,7 +320,7 @@ struct
     *)
    let mk_simple_bterm bterm =
       { bvars = []; bterm = bterm }
-   
+
    let dest_simple_bterm t = function
       { bvars = []; bterm = bterm } ->
          bterm
@@ -343,6 +346,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/03 22:19:37  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.6  1998/06/03 15:23:58  jyh
  * Generalized many the term_addr, term_man, and term_shape modules.
  *

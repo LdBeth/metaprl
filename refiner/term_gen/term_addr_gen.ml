@@ -29,21 +29,15 @@ struct
    (*
     * Constructor.
     *)
-   let make_address l = Path l
+   let make_address l =
+      Path l
 
-   let make_seq_address i = NthPath (i + 1, true)
+   let nth_address i flag =
+      NthPath (i, flag)
 
-   let nth_cdr_addr i = NthPath (i, false)
-
-   let compose_addr path1 path2 = Compose (path1, path2)
+   let compose_address path1 path2 =
+      Compose (path1, path2)
    
-   (*
-    * Compute arities of subterms.
-    *)
-   let subterm_arities term =
-      let aux bterm = List.length (dest_bterm bterm).bvars in
-         List.map aux (dest_term term).term_terms
-
    (*
     * Get a subterm.
     *)
@@ -52,11 +46,14 @@ struct
          Path addr ->
             begin
                let rec aux t = function
-                  [] -> t
-                | i::tl -> aux (dest_bterm (List.nth (dest_term t).term_terms i)).bterm tl
+                  [] ->
+                     t
+                | i::tl ->
+                     aux (dest_bterm (List.nth (dest_term t).term_terms i)).bterm tl
                in
                   try aux term addr with
-                     Not_found -> raise (IncorrectAddress (a, term))
+                     Not_found ->
+                        raise (IncorrectAddress (a, term))
             end
        | NthPath (addr, flag) ->
             begin

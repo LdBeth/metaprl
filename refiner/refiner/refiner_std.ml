@@ -7,8 +7,8 @@ struct
    module Term = Term_std.Term
    module TermOp = Term_op_std.TermOp
    module TermSubst = Term_subst_std.TermSubst
-   module TermMan = Term_man_gen.TermMan (Term) (TermOp) (TermSubst)
    module TermAddr = Term_addr_gen.TermAddr (Term) (TermOp)
+   module TermMan = Term_man_gen.TermMan (Term) (TermOp) (TermAddr) (TermSubst)
    module TermShape = Term_shape_gen.TermShape (Term)
    module TermEval = Term_eval_std.TermEval
 
@@ -19,6 +19,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/03 22:19:24  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.3  1998/06/03 15:23:19  jyh
  * Generalized many the term_addr, term_man, and term_shape modules.
  *

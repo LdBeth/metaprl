@@ -134,6 +134,20 @@ let replacef_nth i f l =
    in
       replace i l
 
+let replacef_arg_nth i f l =
+   let rec replace i = function
+      h::t ->
+         if i = 0 then
+            let h, arg = f h in
+               h :: t, arg
+         else
+            let t, arg = replace (i - 1) t in
+               h :: t, arg
+    | [] ->
+         raise (Failure "replacef_arg_nth")
+   in
+      replace i l
+
 (*
  * Functional replacement.
  *)
@@ -529,6 +543,9 @@ let existsp = List.exists
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/03 22:19:21  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.10  1998/06/01 13:54:40  jyh
  * Proving twice one is two.
  *

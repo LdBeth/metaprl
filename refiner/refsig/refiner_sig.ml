@@ -23,12 +23,13 @@ sig
                    with type term = Term.term
                    with type operator = Term.operator
                    with type level_exp = Term.level_exp
+   module TermAddr : TermAddrSig
+                     with type term = Term.term
    module TermMan : TermManSig
                     with type term = Term.term
                     with type operator = Term.operator
                     with type level_exp = Term.level_exp
-   module TermAddr : TermAddrSig
-                     with type term = Term.term
+                    with type address = TermAddr.address
    module TermSubst : TermSubstSig
                       with type term = Term.term
                       with type param = Term.param
@@ -59,6 +60,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/03 22:19:26  jyh
+ * Nonpolymorphic refiner.
+ *
  * Revision 1.1  1998/05/28 15:01:37  jyh
  * Partitioned refiner into subdirectories.
  *
