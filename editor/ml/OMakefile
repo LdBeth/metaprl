@@ -3,7 +3,8 @@
 #
 OCAMLINCLUDES[] +=
         $(ROOT)/$(ENSEMBLE_DIR)
-        $(MP_DIRS)
+	$(split ' ',$(MP_DIRS))
+
 
 # Name of main librariws
 MP = mp
