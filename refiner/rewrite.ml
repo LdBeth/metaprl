@@ -591,17 +591,17 @@ let array_rstack_p_mem v = Array_util.exists (rstack_p_mem_prop v)
 (*
  * Indexing.
  *)
-let rstack_index v l = List_util.find_item l (rstack_mem_prop v)
-let rstack_so_index v l = List_util.find_item l (rstack_so_mem_prop v)
-let rstack_fo_index v l = List_util.find_item l (rstack_fo_mem_prop v)
-let rstack_p_index v l = List_util.find_item l (rstack_p_mem_prop v)
-let rstack_c_index v l = List_util.find_item l (rstack_c_mem_prop v)
+let rstack_index v l = List_util.find_item (rstack_mem_prop v) l
+let rstack_so_index v l = List_util.find_item (rstack_so_mem_prop v) l
+let rstack_fo_index v l = List_util.find_item (rstack_fo_mem_prop v) l
+let rstack_p_index v l = List_util.find_item (rstack_p_mem_prop v) l
+let rstack_c_index v l = List_util.find_item (rstack_c_mem_prop v) l
 
-let array_rstack_index v l = Array_util.find_index l (rstack_mem_prop v)
-let array_rstack_so_index v l = Array_util.find_index l (rstack_so_mem_prop v)
-let array_rstack_fo_index v l = Array_util.find_index l (rstack_fo_mem_prop v)
-let array_rstack_p_index v l = Array_util.find_index l (rstack_p_mem_prop v)
-let array_rstack_c_index v l = Array_util.find_index l (rstack_c_mem_prop v)
+let array_rstack_index v l = Array_util.find_index (rstack_mem_prop v) l
+let array_rstack_so_index v l = Array_util.find_index (rstack_so_mem_prop v) l
+let array_rstack_fo_index v l = Array_util.find_index (rstack_fo_mem_prop v) l
+let array_rstack_p_index v l = Array_util.find_index (rstack_p_mem_prop v) l
+let array_rstack_c_index v l = Array_util.find_index (rstack_c_mem_prop v) l
 
 (*
  * Find the index of a binding var into the stack
@@ -814,7 +814,7 @@ let compile_so_contractum names stack =
                if subterms <> [] then
                   raise (RewriteError (BoundSOVar v))
                else
-                  RWCheckVar(List_util.find_index bvars v)
+                  RWCheckVar(List_util.find_index v bvars)
    
             else if array_rstack_so_mem v stack then
                (*
@@ -951,7 +951,7 @@ let compile_so_contractum names stack =
  * Naming function.
  *)
 let compute_namer stack names =
-   (* Compute a arrayor of names to change *)
+   (* Compute an array of names to change *)
    let compute_index v =
       if array_rstack_fo_mem v stack then
          Some (array_rstack_fo_index v stack)
@@ -967,10 +967,13 @@ let compute_namer stack names =
                Some j ->
                   begin
                      match stack'.(j) with
-                        StackString s -> names''.(j) <- s
-                      | x -> raise (RewriteError (StackError x))
+                        StackString s ->
+                           names''.(j) <- s
+                      | x ->
+                           raise (RewriteError (StackError x))
                   end
-             | None -> ()
+             | None ->
+                  ()
          done;
          names''
    in
@@ -1393,7 +1396,8 @@ let apply_rewrite
       match_redex addrs gstack redex terms;
       let names' = namer gstack names in
 	 match contractum with
-	    RWCTerm c -> List.map (build_contractum names gstack) c, names'
+	    RWCTerm c ->
+               List.map (build_contractum names gstack) c, names'
 	  | RWCFunction f ->
                match terms with
                   [t] -> [f t], names'
@@ -1629,6 +1633,9 @@ let rewrite_eval_flags = function
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/21 19:54:08  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.4  1998/03/20 22:16:19  eli
  * Eli: Changed integer parameters to Num.num's.
  *

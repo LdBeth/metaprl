@@ -8,28 +8,34 @@ val filter : ('a -> bool) -> 'a list -> 'a list
 (* Lexicographic comparison of two lists *)
 val compare_lists : ('a -> 'b -> int) -> 'a list -> 'b list -> int
 
+(*
+ * These function raise Failure, not Invalid_argument.
+ *)
+val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+
 (* Remove items marked by a vector of bools *)
-val remove_elements : 'a list -> bool list -> 'a list
+val remove_elements : bool list -> 'a list -> 'a list
 val remove_suffix : 'a list -> 'a list -> 'a list
 
 (* Interated forms *)
-val nth_tl : 'a list -> int -> 'a list
+val nth_tl : int -> 'a list -> 'a list
 
 (* Functional replacement *)
-val replacef_nth : 'a list -> int -> ('a -> 'a) -> 'a list
-val replace_nth : 'a list -> int -> 'a -> 'a list
-val replaceq : 'a list -> 'a -> 'a -> 'a list
-val remove_nth : 'a list -> int -> 'a list
-val insert_nth : 'a list -> int -> 'a -> 'a list
-val removeq : 'a list -> 'a -> 'a list
+val replacef_nth : int -> ('a -> 'a) -> 'a list -> 'a list
+val replace_nth : int -> 'a -> 'a list -> 'a list
+val replaceq : 'a -> 'a -> 'a list -> 'a list
+val remove_nth : int -> 'a list -> 'a list
+val insert_nth : int -> 'a -> 'a list -> 'a list
+val removeq : 'a -> 'a list -> 'a list
 
-(* find the index of the element that satisfies a predicate *)
-val find : 'a list -> ('a -> bool) -> 'a
-val find_item : 'a list -> ('a -> bool) -> int
-val find_index : 'a list -> 'a -> int
-val find_indexq : 'a list -> 'a -> int
+(* Find the index of the element that satisfies a predicate *)
+val find : ('a -> bool) -> 'a list -> 'a
+val find_item : ('a -> bool) -> 'a list -> int
+val find_index : 'a -> 'a list -> int
+val find_indexq : 'a -> 'a list -> int
 
-(* subtract an elenet from a list *)
+(* Subtract an elenet from a list *)
 val intersect : 'a list -> 'a list -> 'a list
 val intersectq : 'a list -> 'a list -> 'a list
 val subtract : 'a list -> 'a list -> 'a list
@@ -62,6 +68,9 @@ val last : 'a list -> 'a
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/21 19:53:54  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.4  1998/04/17 20:48:36  jyh
  * Updating refiner for extraction.
  *

@@ -36,17 +36,49 @@ let sig_open loc path = <:sig_item< open $path$ >>
 let str_open loc path = <:str_item< open $path$ >>
 
 (*
- * Special words.
+ * Axiom.
+ *)
+let create_axiom_expr loc =
+   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_axiom"$ >>
+
+let prim_axiom_expr loc =
+   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"prim_axiom"$ >>
+
+let derived_axiom_expr loc =
+   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"derived_axiom"$ >>
+
+(*
+ * Rule.
+ *)
+let create_rule_expr loc =
+   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_rule"$ >>
+
+let prim_rule_expr loc =
+   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"prim_rule"$ >>
+
+let derived_rule_expr loc =
+   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"derived_rule"$ >>
+
+let create_ml_rule_expr loc =
+   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_ml_rule"$ >>
+
+let ml_rule_rewrite_expr loc =
+   <:expr< $uid:"Refine_sig"$ . $lid:"ml_rule_rewrite"$ >>
+
+let ml_rule_extract_expr loc =
+   <:expr< $uid:"Refine_sig"$ . $lid:"ml_rule_extract"$ >>
+
+let tactic_of_rule_expr loc =
+   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"tactic_of_rule"$ >>
+
+let tactic_ctyp loc =
+   <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"tactic"$ '$"a"$ >>
+
+(*
+ * Rewrite.
  *)
 let rewrite_ctyp loc =
    <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"rw"$ '$"a"$ >>
-
-let cond_rewrite_ctyp loc =
-   let result = <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"cond_rewrite"$ '$"a"$ >> in
-   let sarray = <:ctyp< $lid:"array"$ $lid:"string"$ >> in
-   let term = <:ctyp< $lid:"list"$ ($uid:"Term"$ . $lid:"term"$) >> in
-   let arg = <:ctyp< ($sarray$ * $term$) >> in
-      <:ctyp< $arg$ -> $result$ >>
 
 let create_rewrite_expr loc =
    <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_rewrite"$ >>
@@ -54,8 +86,21 @@ let create_rewrite_expr loc =
 let prim_rewrite_expr loc =
    <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"prim_rewrite"$ >>
 
+let derived_rewrite_expr loc =
+   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"derived_rewrite"$ >>
+
 let rewrite_of_rewrite_expr loc =
    <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"rewrite_of_rewrite"$ >>
+
+(*
+ * Conditional rewrite.
+ *)
+let cond_rewrite_ctyp loc =
+   let result = <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"cond_rewrite"$ '$"a"$ >> in
+   let sarray = <:ctyp< $lid:"array"$ $lid:"string"$ >> in
+   let term = <:ctyp< $lid:"list"$ ($uid:"Term"$ . $lid:"term"$) >> in
+   let arg = <:ctyp< ($sarray$ * $term$) >> in
+      <:ctyp< $arg$ -> $result$ >>
 
 let create_cond_rewrite_expr loc =
    <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_cond_rewrite"$ >>
@@ -63,32 +108,11 @@ let create_cond_rewrite_expr loc =
 let prim_cond_rewrite_expr loc =
    <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"prim_cond_rewrite"$ >>
 
+let derived_cond_rewrite_expr loc =
+   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"derived_cond_rewrite"$ >>
+
 let rewrite_of_cond_rewrite_expr loc =
    <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"rewrite_of_cond_rewrite"$ >>
-
-let prim_cond_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"prim_cond_rewrite"$ >>
-
-let rewrite_theorem_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"rewrite_theorem"$ >>
-
-let cond_rewrite_theorem_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"cond_rewrite_theorem"$ >>
-
-let prim_theorem_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"prim_theorem"$ >>
-
-let create_axiom_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_axiom"$ >>
-
-let create_rule_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_rule"$ >>
-
-let theorem_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"theorem"$ >>
-
-let create_ml_term_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_ml_condition"$ >>
 
 let apply_redex_expr loc =
    <:expr< $uid:"Rewrite"$ . $lid:"apply_redex"$ >>
@@ -96,14 +120,17 @@ let apply_redex_expr loc =
 let construct_redex_expr loc =
    <:expr< $uid:"Term_util"$ . $lid:"construct_redex"$ >>
 
-let make_seq_addr_expr loc =
-   <:expr< $uid:"Term"$ . $lid:"make_seq_address"$ >>
-
 let compile_redex_expr loc =
    <:expr< $uid:"Rewrite"$ . $lid:"compile_redex"$ >>
 
 let compile_contractum_expr loc =
    <:expr< $uid:"Rewrite"$ . $lid:"compile_contractum"$ >>
+
+(*
+ * Other expressions.
+ *)
+let make_seq_addr_expr loc =
+   <:expr< $uid:"Term"$ . $lid:"make_seq_address"$ >>
 
 let thy_name_expr loc =
    <:expr< $uid:"Theory"$ . $lid:"thy_name"$ >>
@@ -137,12 +164,6 @@ let resource_rsrc_ctyp loc =
 
 let resource_join_expr loc =
    <:expr< $uid:"Resource"$ . $lid:"resource_join"$ >>
-
-let tactic_ctyp loc =
-   <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"tactic"$ '$"a"$ >>
-
-let tactic_of_rule_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"tactic_of_rule"$ >>
 
 let dform_pattern_expr loc =
    <:expr< $uid:"Dform"$ . $lid:"dform_pattern"$ >>
@@ -642,7 +663,7 @@ let () = ()
 (*
  * Justify a rewrite with a tactic.
  *)
-let rewrite_theorem proc loc
+let derived_rewrite proc loc
     { rw_name = name;
       rw_redex = redex;
       rw_contractum = contractum
@@ -651,13 +672,13 @@ let rewrite_theorem proc loc
    (* Check that this tactic actually works *)
    let redex_expr = build_ml_term loc redex in
    let con_expr = build_ml_term loc contractum in
-   let expr = <:expr< $rewrite_theorem_expr loc$ $lid:local_refiner_id$ (**)
+   let expr = <:expr< $derived_rewrite_expr loc$ $lid:local_refiner_id$ (**)
                       $str:name$ $redex_expr$ $con_expr$ $expr$
               >>
    in
       [<:str_item< $exp:expr$ >>]
 
-let cond_rewrite_theorem proc loc
+let derived_cond_rewrite proc loc
     { crw_name = name;
       crw_params = params;
       crw_args = args;
@@ -670,7 +691,7 @@ let cond_rewrite_theorem proc loc
    let redex_expr = build_ml_term loc redex in
    let con_expr = build_ml_term loc contractum in
    let params_expr' = <:expr< [| $list:params_expr$ |] >> in
-   let expr = <:expr< $cond_rewrite_theorem_expr loc$ $lid:local_refiner_id$ (**)
+   let expr = <:expr< $derived_cond_rewrite_expr loc$ $lid:local_refiner_id$ (**)
                       $str:name$ $params_expr'$
                       $args_expr$ $redex_expr$ $con_expr$ $expr$ >>
    in
@@ -698,12 +719,12 @@ let define_axiom code proc loc { axiom_name = name; axiom_stmt = stmt } extract 
       [axiom_item; thm_item]
 
 let prim_axiom proc loc ax extract =
-   let code = prim_theorem_expr loc in
+   let code = prim_axiom_expr loc in
    let extract_expr = build_ml_term loc extract in
       define_axiom code proc loc ax extract_expr
 
-let thm_axiom proc loc ax tac =
-   let code = theorem_expr loc in
+let derived_axiom proc loc ax tac =
+   let code = derived_axiom_expr loc in
       define_axiom code proc loc ax tac
 
 let () = ()
@@ -720,7 +741,7 @@ let () = ()
  *    and extract = extract_expr
  *    in
  *    let rule = create_rule refiner "name" cvars tvars params assums
- *    and _ = prim_theorem refiner "name" tvars params avars extract
+ *    and _ = prim_rule refiner "name" tvars params avars extract
  *    in
  *       rule
  * let name params x = tactic_of_rule name_rule ([| cvars |], [| vars |]) [non_vars] x
@@ -792,12 +813,12 @@ let define_rule code proc loc
       [rule_def; tac_def]
 
 let prim_rule proc loc ax extract =
-   let code = prim_theorem_expr loc in
+   let code = prim_rule_expr loc in
    let extract_expr = build_ml_term loc extract in
       define_rule code proc loc ax extract_expr
 
-let thm_rule proc loc ax tac =
-   let code = theorem_expr loc in
+let derived_rule proc loc ax tac =
+   let code = derived_rule_expr loc in
       define_rule code proc loc ax tac
 
 let () = ()
@@ -873,16 +894,21 @@ let () = ()
  *       let value_id = construct_redex [||] [] [arg_id] in
  *       let stack_id = apply_redex redex_id [||] value_id in
  *          code
+ *    and ext_id arg_id =
+ *       let value_id = construct_redex [||] [] [arg_id] in
+ *       let stack_id = apply_redex redex_id [||] value_id in
+ *          ext
  *    in
  *       create_ml_term refiner redex rewrite_id
  *)
-let define_ml_term proc loc t cons code =
+let define_ml_term proc loc t cons (code, ext) =
    let vars       = free_vars code in
    let term_id    = new_var loc "term" vars in
    let redex_id   = new_var loc "redex" vars in
    let rewrite_id = new_var loc "rewrite" vars in
    let value_id   = new_var loc "value" vars in
    let arg_id     = new_var loc "arg" vars in
+   let names_params_id = new_var loc "names_params" vars in
    
    let term_patt    = <:patt< $lid:term_id$ >> in
    let redex_patt   = <:patt< $lid:redex_id$ >> in
@@ -898,25 +924,33 @@ let define_ml_term proc loc t cons code =
    let arg_expr     = <:expr< $lid:arg_id$ >> in
    
    (* Build the program *)
+   let mlrec_expr =
+      <:expr< { $list:[ ml_rule_rewrite_expr loc, rewrite_expr;
+                        ml_rule_extract_expr loc, ext ]$
+              } >>
+   in
    let body_expr =
-      <:expr< $create_ml_term_expr loc$ $lid:local_refiner_id$ $term_expr$ $rewrite_expr$ >>
+      <:expr< $create_ml_rule_expr loc$ $lid:local_refiner_id$ $term_expr$ $mlrec_expr$ >>
    in
    let stack_value_expr =
       <:expr< $apply_redex_expr loc$ $redex_expr$ $nil_array loc$ $value_expr$ >>
    in
-   let stack_let_expr =
-      <:expr< let $rec:false$ $list:[stack_patt, stack_value_expr]$ in $code$ >>
-   in
    let value_value_expr =
       <:expr< $construct_redex_expr loc$ $nil_array loc$ $nil_list loc$ [ $arg_expr$ :: [] ] >>
    in
-   let value_let_expr =
+   let stack_let_expr =
+      <:expr< let $rec:false$ $list:[stack_patt, stack_value_expr]$ in $code$ >>
+   in
+   let let_rewrite_expr =
       <:expr< let $rec:false$ $list:[value_patt, value_value_expr]$ in $stack_let_expr$ >>
    in
-   let rewrite_let_expr =
-      <:expr< let $rec:false$ $list:[rewrite_patt, fun_expr loc [arg_id] value_let_expr]$ in $body_expr$ >>
+   let let_expr =
+      <:expr< let $rec:false$ $list:[rewrite_patt, fun_expr loc [names_params_id; arg_id] let_rewrite_expr]$
+              in
+                 $body_expr$
+      >>
    in
-      define_ml_program proc loc term_id redex_id t cons rewrite_let_expr
+      define_ml_program proc loc term_id redex_id t cons let_expr
 
 let () = ()
 
@@ -1203,7 +1237,7 @@ let extract_str_item proc (item, loc) =
     | Rewrite ({ rw_name = name; rw_proof = Derived tac } as rw) ->
          if debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwthm: %s%t" name eflush;
-         rewrite_theorem proc loc rw tac
+         derived_rewrite proc loc rw tac
     | Rewrite ({ rw_name = name; rw_proof = Interactive pf } as rw) ->
          if debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwinteractive: %s%t" name eflush;
@@ -1215,7 +1249,7 @@ let extract_str_item proc (item, loc) =
     | CondRewrite ({ crw_name = name; crw_proof = Derived tac } as crw) ->
          if debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm condrw: %s%t" name eflush;
-         cond_rewrite_theorem proc loc crw tac
+         derived_cond_rewrite proc loc crw tac
     | CondRewrite ({ crw_name = name; crw_proof = Interactive pf } as crw) ->
          if debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive condrw: %s%t" name eflush;
@@ -1227,7 +1261,7 @@ let extract_str_item proc (item, loc) =
     | Axiom ({ axiom_name = name; axiom_proof = Derived tac } as ax) ->
          if debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm axiom: %s%t" name eflush;
-         thm_axiom proc loc ax tac
+         derived_axiom proc loc ax tac
     | Axiom ({ axiom_name = name; axiom_proof = Interactive tac } as ax) ->
          if debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive axiom: %s%t" name eflush;
@@ -1239,7 +1273,7 @@ let extract_str_item proc (item, loc) =
     | Rule ({ rule_name = name; rule_proof = Derived tac } as rule) ->
          if debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm rule: %s%t" name eflush;
-         thm_rule proc loc rule tac
+         derived_rule proc loc rule tac
     | Rule ({ rule_name = name; rule_proof = Interactive pf } as rule) ->
          if debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive rule: %s%t" name eflush;
@@ -1321,6 +1355,9 @@ let extract_str info resources name =
    
 (*
  * $Log$
+ * Revision 1.7  1998/04/21 19:53:36  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.6  1998/04/17 20:48:26  jyh
  * Updating refiner for extraction.
  *

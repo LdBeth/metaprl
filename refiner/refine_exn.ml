@@ -73,6 +73,8 @@ let string_of_refine_error error =
             s
        | TermError t ->
             string_of_term t
+       | StringIntError (s, i) ->
+            sprintf "%s %d" s i
        | StringStringError (s1, s2) ->
             sprintf "%s %s" s1 s2
        | StringTermError (s, t) ->
@@ -128,6 +130,9 @@ let print_exn f x =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/21 19:53:59  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.1  1998/04/09 15:26:40  jyh
  * Added strip_mfunction.
  *

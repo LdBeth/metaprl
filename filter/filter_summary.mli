@@ -102,7 +102,7 @@ and 'ctyp parent_info =
 and 'expr mlterm_info =
    { mlterm_term : term;
      mlterm_contracta : term list;
-     mlterm_def : 'expr option
+     mlterm_def : ('expr * 'expr) option
    }
 
 and opname_info =
@@ -330,6 +330,9 @@ val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.10  1998/04/21 19:53:43  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.9  1998/04/17 20:48:31  jyh
  * Updating refiner for extraction.
  *

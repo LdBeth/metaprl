@@ -26,25 +26,33 @@ val extract_str :
  *)
 type t
 
-val prim_rewrite : t -> loc -> 'proof rewrite_info -> MLast.str_item list
-val prim_cond_rewrite : t -> loc -> 'proof cond_rewrite_info -> MLast.str_item list
-val rewrite_theorem : t -> loc -> 'proof rewrite_info -> MLast.expr -> MLast.str_item list
-val cond_rewrite_theorem : t -> loc -> 'proof cond_rewrite_info -> MLast.expr -> MLast.str_item list
 val prim_axiom : t -> loc -> 'proof axiom_info -> term -> MLast.str_item list
-val thm_axiom : t -> loc -> 'proof axiom_info -> MLast.expr -> MLast.str_item list
+val derived_axiom : t -> loc -> 'proof axiom_info -> MLast.expr -> MLast.str_item list
+
 val prim_rule : t -> loc -> 'proof rule_info -> term -> MLast.str_item list
-val thm_rule : t -> loc -> 'proof rule_info -> MLast.expr -> MLast.str_item list
+val derived_rule : t -> loc -> 'proof rule_info -> MLast.expr -> MLast.str_item list
+
+val prim_rewrite : t -> loc -> 'proof rewrite_info -> MLast.str_item list
+val derived_rewrite : t -> loc -> 'proof rewrite_info -> MLast.expr -> MLast.str_item list
+
+val prim_cond_rewrite : t -> loc -> 'proof cond_rewrite_info -> MLast.str_item list
+val derived_cond_rewrite : t -> loc -> 'proof cond_rewrite_info -> MLast.expr -> MLast.str_item list
+
 val define_dform : t -> loc -> MLast.expr dform_info -> term -> MLast.str_item list
 val define_prec : t -> loc -> string -> MLast.str_item list
 val define_prec_rel : t -> loc -> prec_rel_info -> MLast.str_item list
 val define_resource : t -> loc -> MLast.ctyp resource_info -> MLast.str_item list
 val define_parent : t -> loc -> MLast.ctyp parent_info -> MLast.str_item list
 val define_magic_block : t -> loc -> MLast.str_item magic_info -> MLast.str_item list
+
 val implem_prolog : t -> loc -> MLast.str_item list
 val implem_postlog : t -> loc -> string -> MLast.str_item list
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/21 19:53:39  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.6  1998/04/17 20:48:28  jyh
  * Updating refiner for extraction.
  *

@@ -33,76 +33,105 @@ let compare_lists cmp l1 l2 =
       aux (l1, l2)
 
 (*
+ * Test two lists.
+ *)
+let for_all2 f l1 l2 =
+   let rec compare = function
+      h1::t1, h2::t2 ->
+         f h1 h2 & compare (t1, t2)
+    | [], [] ->
+         true
+    | _ ->
+         raise (Failure "for_all2")
+   in
+      compare (l1, l2)
+
+(*
+ * Exists a pair in the two lists.
+ *)
+let exists2 f l1 l2 =
+   let rec compare = function
+      h1::t1, h2::t2 ->
+         f h1 h2 or compare (t1, t2)
+    | [], [] ->
+         false
+    | _ ->
+         raise (Failure "exists2")
+   in
+      compare (l1, l2)
+
+(*
  * Remove marked elements.
  *)
 let rec remove_elements l1 l2 =
    match l1, l2 with
-      h::t, flag::ft ->
+      flag::ft, h::t ->
          if flag then
-            remove_elements t ft
+            remove_elements ft t
          else
-            h::(remove_elements t ft)
-    | l, _ -> l
+            h :: remove_elements ft t
+    | _, l ->
+         l
 
-let removeq l x =
-   let rec aux = function
+let removeq x l =
+   let rec remove = function
       h::t ->
          if h == x then
             t
          else
-            h::(aux t)
+            h :: remove t
     | [] ->
          raise (Invalid_argument "removeq")
    in
-      aux l
+      remove l
 
 (*
  * Iterated tail.
  *)
-let rec nth_tl l i =
+let rec nth_tl i l =
    if i = 0 then
       l
    else
       match l with
          h::t ->
-            nth_tl t (i - 1)
+            nth_tl (i - 1) l
        | [] ->
             raise (Invalid_argument "nth_tl")
 
 (*
  * Functional replacement.
  *)
-let rec replacef_nth l i f =
-   let rec aux i = function
+let replacef_nth i f l =
+   let rec replace i = function
       h::t ->
          if i = 0 then
-            (f h)::t
+            f h :: t
          else
-            h::(aux (i - 1) t)
+            h :: replace (i - 1) t
     | [] ->
          raise (Invalid_argument "replacef_nth")
    in
-      aux i l
+      replace i l
 
 (*
  * Functional replacement.
  *)
-let replace_nth l i x =
-   let rec aux i = function
+let replace_nth i x l =
+   let rec replace i = function
       h::t ->
          if i = 0 then
-            x::t
+            x :: t
          else
-            h::(aux (i - 1) t)
+            h :: replace (i - 1) t
     | [] ->
          raise (Invalid_argument "replace_nth")
    in
-      aux i l
+      replace i l
 
 (*
  * Functional replacement.
  *)
-let replaceq l x1 x2 =
+let replaceq x1 x2 l =
    let rec replace = function
       h::t ->
          if h == x1 then
@@ -117,79 +146,82 @@ let replaceq l x1 x2 =
 (*
  * Remove an element.
  *)
-let rec remove_nth l i =
+let rec remove_nth i l =
    match l with
       h::t ->
          if i = 0 then
             t
          else
-            h::(remove_nth t (i - 1))
+            h :: remove_nth (i - 1) t
     | [] ->
          raise (Invalid_argument "remove_nth")
 
 (*
  * Insert an element into a position.
  *)
-let insert_nth l i x =
-   let rec aux i l =
+let insert_nth i x l =
+   let rec insert i l =
       if i = 0 then
-         x::l
+         x :: l
       else
          match l with
             h::t ->
-               h::(aux (i - 1) t)
+               h :: insert (i - 1) t
           | [] ->
                raise (Invalid_argument "insert_nth")
    in
-      aux i l
+      insert i l
 
 (*
  * Find the elemnt.
  *)
-let find l f =
-   let rec aux = function
+let find f l =
+   let rec find = function
       h::t ->
          if f h then
             h
          else
-            aux t
+            find t
     | [] ->
          raise Not_found
    in
-      aux l
+      find l
 
-let find_item l f =
-   let rec aux i = function
+let find_item f l =
+   let rec find i = function
       h::t ->
          if f h then
             i
          else
-            aux (i + 1) t
-    | [] -> raise Not_found
+            find (i + 1) t
+    | [] ->
+         raise Not_found
    in
-      aux 0 l
+      find 0 l
 
-let find_index l v =
-   let rec aux i = function
+let find_index v l =
+   let rec find i = function
       h::t ->
          if h = v then
             i
          else
-            aux (i + 1) t
-    | [] -> raise Not_found
+            find (i + 1) t
+    | [] ->
+         raise Not_found
    in
-      aux 0 l
+      find 0 l
 
-let find_indexq l v =
-   let rec aux i = function
+let find_indexq v l =
+   let rec find i = function
       h::t ->
          if h == v then
             i
          else
-            aux (i + 1) t
-    | [] -> raise Not_found
+            find (i + 1) t
+    | [] ->
+         raise Not_found
    in
-      aux 0 l
+      find 0 l
 
 (*
  * Intersect two lists.
@@ -336,34 +368,39 @@ let add_assoc (v1, v2) l =
  * Split a list.
  *)
 let split_list i l =
-   let rec aux = function
-      0, l -> [], l
+   let rec split = function
+      0, l ->
+         [], l
     | i, h::t ->
-         let l, l' = aux (i - 1, t) in
+         let l, l' = split (i - 1, t) in
             h::l, l'
     | i, [] ->
-         raise (Invalid_argument "split_list: list is too short")
+         raise (Failure "split_list")
    in
-      aux (i, l)
+      split (i, l)
 
 (*
  * Split off the last item.
  *)
 let rec split_last = function
-   [h] -> [], h
+   [h] ->
+      [], h
  | h::t ->
       let l, x = split_last t in
          h::l, x
  | [] ->
-      raise (Invalid_argument "split_last: list is empty")
+      raise (Failure "split_last")
 
 (*
  * Split off the last item.
  *)
 let rec last = function
-   [h] -> h
- | h::t -> last t
- | [] -> raise (Invalid_argument "last: list is empty")
+   [h] ->
+      h
+ | h::t ->
+      last t
+ | [] ->
+      raise (Invalid_argument "last: list is empty")
 
 (*
  * Remove the specified suffix from the list.
@@ -465,6 +502,9 @@ let fold_left f x l =
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/21 19:53:53  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.4  1998/04/17 20:48:35  jyh
  * Updating refiner for extraction.
  *

@@ -29,6 +29,7 @@ exception FreeContextVars of string list
 type refine_err =
    StringError of string
  | TermError of term
+ | StringIntError of string * int
  | StringStringError of string * string
  | StringTermError of string * term
  | GoalError of string * refine_err
@@ -41,6 +42,39 @@ type refine_err =
 
 exception RefineError of refine_err
 
+(*
+ * A ML rewrite replaces a term with another,
+ * no extract.
+ *)
+type ml_rewrite = (string array * term list) -> term -> term
+
+(*
+ * A condition relaces an goal with a list of subgoals,
+ * and it provides a function to compute the extract.
+ *)
+type ml_rule =
+   { ml_rule_rewrite : (string array * term list) -> term -> term list;
+     ml_rule_extract : (string array * term list) -> term list -> term * term list
+   }
+
+(*
+ * Refinements are on meta-sequents,
+ * which are a restricted form of meta terms,
+ * having only dependent functions format.
+ *
+ * Each hyp is labelled by its first argument.
+ *)
+type msequent =
+   { mseq_goal : term;
+     mseq_hyps : term list
+   }
+
+type 'a tactic_arg =
+   { tac_goal : term;
+     tac_hyps : term list;
+     tac_arg : 'a
+   }
+
 (************************************************************************
  * REFINER MODULE                                                       *
  ************************************************************************)
@@ -52,17 +86,11 @@ sig
     ************************************************************************)
 
    (*
-    * A proof is an abstract type proofs of statements.
-    * A "validation" is a function on proofs.
-    *)
-   type proof
-
-   (*
     * An extract is an abstract validation that is generated during
     * proof refinement using tactics.
     *)
    type extract
-
+   
    (************************************************************************
     * TACTICS                                                              *
     ************************************************************************)
@@ -72,17 +100,27 @@ sig
     * given a validation A -> B, that tactic would
     * prove B by asking for a subgoal A.
     *
+    * Tactics operate on lists of terms.  These lists
+    * represent meta-implications: the head term
+    * is the goal, and the remainder are the assumptions.
+    *
     * safe_tactic is a subtype of (term -> term list)
     * where the inference is always correct.
     *)
    type 'a safe_tactic
      
-   type 'a tactic_arg = term * 'a
-     
    type 'a tactic = 'a tactic_arg -> 'a safe_tactic
 
    (* Tactic application *)
    val refine : 'a tactic -> 'a tactic_arg -> 'a tactic_arg list * extract
+   
+   (* Compose extract tree *)
+   val compose : extract -> extract list -> extract
+   
+   (*
+    * The base case tactic proves a goal by assumption.
+    *)
+   val nth_hyp : int -> 'a tactic
 
    (*
     * The basic composition tacticals.
@@ -183,26 +221,42 @@ sig
    type prim_tactic
    type prim_rewrite
    type prim_cond_rewrite
-   type ml_rewrite = (string array * term list) -> term -> term
-   type ml_rule = term -> term list
-   type ml_condition = term -> term list
    
    (*
     * Get the term corresponding to an extract.
-    * This will fail if some of the rules are not justified.
-   val term_of_extract : extract -> term
+    * This will fail if some of the rules are not justified
+    * or if the extract is not complete.  The extract terms
+    * for the arguments are included.
     *)
-
+   val term_of_extract : refiner -> extract -> term list -> term
+   
    (*
     * An axiom is a term that is true.
     * This adds the theorem, and returns a tactic to prove a
     * goal that is the theorem.  This is used only in a sequent calculus.
+    *
+    * Once an axiom is defined, it can be justified as
+    *    1. primitive (an term extract is given)
+    *    2. derived (an extract from a proof is given)
+    *    3. delayed (an extract can be computed on request)
     *)
    val create_axiom : refiner ref ->
-      string ->             (* name *)
-      term ->               (* statement *)
-      'a tactic
+      string ->                 (* name *)
+      term ->                   (* statement *)
+      prim_tactic
    val check_axiom : term -> bool
+   val prim_axiom : refiner ref ->
+      string ->                 (* name *)
+      term ->                   (* extract *)
+      unit
+   val derived_axiom : refiner ref ->
+      string ->                 (* name *)
+      extract ->                (* derivation *)
+      unit
+   val delayed_axiom : refiner ref ->
+      string ->                 (* name *)
+      (unit -> extract) ->      (* derivation *)
+      unit
 
    (*
     * A rule is an implication on terms (the conclusion
@@ -216,6 +270,10 @@ sig
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       prim_tactic
+   val create_ml_rule : refiner ref ->
+      term ->                    (* term to be expanded *)
+      ml_rule ->                 (* the rule definition *)
+      prim_tactic
    val tactic_of_rule : prim_tactic ->
       address array * string array ->
       term list ->
@@ -228,35 +286,27 @@ sig
       meta_term ->         (* rule definition *)
       bool
    
-   (*
-    * Once an axiom or rule is defined, it can be justified as
-    *    1. primitive (an extract is given)
-    *    2. derived (a tactic is given)
-    *    3. interactive (an extract can be computed)
-    *)
-   val prim_theorem : refiner ref ->
+   val prim_rule : refiner ref ->
       string ->                    (* name *)
       string array ->              (* vars *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       term ->                      (* extract *)
       unit
-(*
-   val derived_theorem : refiner ref ->
+   val derived_rule : refiner ref ->
       string ->                    (* name *)
       string array ->              (* vars *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       extract ->                   (* derived justification *)
       unit
-*)
-   val check_theorem :
+   val delayed_rule : refiner ref ->
       string ->                    (* name *)
       string array ->              (* vars *)
       term list ->                 (* params *)
-      term list ->                 (* args *)
-      term ->                      (* goal *)
-      bool
+      term list ->                 (* args (binding vars) *)
+      (unit -> extract) ->         (* derived justification *)
+      unit
    
    (*
     * Rewrites.
@@ -267,6 +317,24 @@ sig
       term ->              (* contractum *)
       prim_rewrite
    val rewrite_of_rewrite : prim_rewrite -> 'a rw
+   val prim_rewrite : refiner ref ->
+      string ->            (* name *)
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      unit
+   val derived_rewrite : refiner ref ->
+      string ->            (* name *)
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      extract ->           (* proof *)
+      unit
+   val delayed_rewrite : refiner ref ->
+      string ->            (* name *)
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      (unit -> extract) -> (* proof *)
+      unit
+
    val create_cond_rewrite : refiner ref ->
       string ->            (* name *)
       string array ->      (* vars *)
@@ -275,14 +343,13 @@ sig
       term ->              (* redex *)
       term ->              (* contractum *)
       prim_cond_rewrite
+   val create_ml_rewrite : refiner ref -> string ->
+      term list ->         (* subgoals *)
+      ml_rewrite ->        (* rewriter *)
+      prim_cond_rewrite
    val rewrite_of_cond_rewrite : prim_cond_rewrite ->
       string array * term list ->
       'a cond_rewrite
-   val prim_rewrite : refiner ref ->
-      string ->            (* name *)
-      term ->              (* redex *)
-      term ->              (* contractum *)
-      unit
    val prim_cond_rewrite : refiner ref ->
       string ->            (* name *)
       string array ->      (* vars *)
@@ -290,6 +357,24 @@ sig
       term list ->         (* subgoals *)        
       term ->              (* redex *)
       term ->              (* contractum *)
+      unit
+   val derived_cond_rewrite : refiner ref ->
+      string ->            (* name *)
+      string array ->      (* vars *)
+      term list ->         (* params *)
+      term list ->         (* subgoals *)        
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      extract ->           (* proof *)
+      unit
+   val delayed_cond_rewrite : refiner ref ->
+      string ->            (* name *)
+      string array ->      (* vars *)
+      term list ->         (* params *)
+      term list ->         (* subgoals *)        
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      (unit -> extract) -> (* proof *)
       unit
    val check_rewrite :
       string ->            (* string *)
@@ -301,28 +386,8 @@ sig
       bool
    
    (*
-    * Side conditions.
-    *)
-(*
-   val create_ml_rule : refiner ref ->
-      string ->            (* name *)
-      ml_rule ->            (* rule definition *)
-      'a tactic
-   val create_ml_rewrite : refiner ref -> string ->
-      term list ->         (* subgoals *)
-      ml_rewrite ->        (* rewriter *)
-      prim_cond_rewrite
-*)
-   val create_ml_condition : refiner ref ->
-      term ->                    (* term to be expanded *)
-      ml_condition ->            (* the checker *)
-      (term -> term list)        (* returned checker *)
-
-   (*
     * Merge refiners.
     *)
-   exception BadTheorem of string * refiner
-
    val join_refiner : refiner ref -> refiner -> unit
    val label_refiner : refiner ref -> string -> unit
 
@@ -331,40 +396,47 @@ sig
     ************************************************************************)
 
    type refiner_item =
-      RIAxiom of axiom_type
-    | RIRule of rule_type
-    | RIRewrite of rewrite_type
-    | RICondRewrite of cond_rewrite_type
-    | RIPrimRewrite of prim_rewrite_type
-    | RIMLRewrite of ml_rewrite_type
-    | RIMLRule of ml_rule_type
-    | RIMLCondition of ml_condition_type
-    | RIPrimTheorem of prim_theorem_type
+      RIAxiom of ri_axiom
+    | RIRule of ri_rule
+    | RIPrimTheorem of ri_prim_theorem
+    | RIMLRule of ri_ml_rule
+
+    | RIRewrite of ri_rewrite
+    | RICondRewrite of ri_cond_rewrite
+    | RIPrimRewrite of ri_prim_rewrite
+    | RIMLRewrite of ri_ml_rewrite
+
     | RIParent of refiner
     | RILabel of string
 
-   and axiom_type =
-      { ri_axiom_name : string; ri_axiom_term : term }
-   and rule_type =
-      { ri_rule_name : string; ri_rule_rule : meta_term }
-   and rewrite_type =
-      { ri_rw_name : string; ri_rw_redex : term; ri_rw_contractum : term }
-   and cond_rewrite_type =
+   and ri_axiom =
+      { ri_axiom_name : string;
+        ri_axiom_term : term
+      }
+   and ri_rule =
+      { ri_rule_name : string;
+        ri_rule_rule : msequent
+      }
+   and ri_ml_rule =
+      { ri_ml_rule_arg : term }
+   and ri_prim_theorem =
+      { ri_pthm_axiom : refiner }
+
+   and ri_rewrite =
+      { ri_rw_name : string;
+        ri_rw_redex : term;
+        ri_rw_contractum : term
+      }
+   and ri_cond_rewrite =
       { ri_crw_name : string;
         ri_crw_conds : term list;
         ri_crw_redex : term;
         ri_crw_contractum : term
       }
-   and prim_rewrite_type =
+   and ri_prim_rewrite =
       { ri_prw_rewrite : refiner }
-   and ml_rewrite_type =
+   and ri_ml_rewrite =
       { ri_ml_rw_name : string }
-   and ml_rule_type =
-      { ri_ml_rule_name : string }
-   and ml_condition_type =
-      { ri_ml_cond_arg : term }
-   and prim_theorem_type =
-      { ri_pthm_axiom : refiner }
 
    (*
     * Destructors.
@@ -376,6 +448,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/21 19:54:00  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.3  1998/04/17 20:48:40  jyh
  * Updating refiner for extraction.
  *

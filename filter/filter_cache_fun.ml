@@ -308,7 +308,7 @@ struct
       let compare info =
          Base.pathname base info = path
       in
-         List_util.find summaries compare
+         List_util.find compare summaries
 
    (*
     * Get a previous module.
@@ -325,7 +325,7 @@ struct
       let compare info =
          Base.pathname base info = path
       in
-         List_util.find summaries compare
+         List_util.find compare summaries
 
    (*
     * Inherited access.
@@ -574,6 +574,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.8  1998/04/21 19:53:30  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.7  1998/04/17 01:31:00  jyh
  * Editor is almost constructed.
  *

@@ -134,7 +134,7 @@ let add_child buf buf' =
  * This is called when buf' is removed from buf.
  *)
 let remove_parent buf' buf =
-   buf.parents <- List_util.removeq buf.children buf'
+   buf.parents <- List_util.removeq buf' buf.children
 
 (*
  * Empty the buffer.
@@ -669,6 +669,9 @@ let print_to_string rmargin buf =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/21 19:54:16  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.2  1998/03/20 22:16:20  eli
  * Eli: Changed integer parameters to Num.num's.
  *

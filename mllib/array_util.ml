@@ -50,7 +50,7 @@ let exists f v =
    in
       aux 0
 
-let find_index v f =
+let find_index f v =
    let l = Array.length v in
    let rec aux j =
       if j < l then
@@ -65,6 +65,9 @@ let find_index v f =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/21 19:53:50  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.1  1997/08/06 16:17:48  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -6,10 +6,13 @@
 val mem : 'a -> 'a array -> bool
 val index : 'a -> 'a array -> int
 val exists : ('a -> bool) -> 'a array -> bool
-val find_index : 'a array -> ('a -> bool) -> int
+val find_index : ('a -> bool) -> 'a array -> int
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/21 19:53:51  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.1  1997/08/06 16:17:50  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

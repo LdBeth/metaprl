@@ -824,8 +824,8 @@ EXTEND
              (args, goal) = opt_binding_arglist; "="; tac = expr ->
           define_thm (StrFilter.get_proc loc) loc name params args goal.aterm tac;
           empty_str_item loc
-        | "mlterm"; t = quote_term; rewrite_equal; code = expr ->
-          StrFilter.declare_mlterm (StrFilter.get_proc loc) loc t (Some code);
+        | "mlterm"; t = quote_term; rewrite_equal; code = expr; "|"; ext = expr ->
+          StrFilter.declare_mlterm (StrFilter.get_proc loc) loc t (Some (code, ext));
           empty_str_item loc
         | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ")"; name = LIDENT ->
           StrFilter.declare_resource (StrFilter.get_proc loc) loc (**)
@@ -989,6 +989,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.16  1998/04/21 19:53:33  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.15  1998/04/15 12:39:56  jyh
  * Updating editor packages to Filter_summarys.
  *

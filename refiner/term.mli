@@ -357,7 +357,8 @@ val get_decl_number : term -> string -> int
 val is_free_seq_var : int -> string -> term -> bool
 
 val concl_addr : term -> int * int
-val mk_seq_subgoals : term -> term list -> term list
+val replace_concl : term -> term -> term
+val replace_goal : term -> term -> term          (* One subgoal *)
 
 (*
  * Primitive lists.
@@ -425,6 +426,9 @@ val make_2subst_term : term -> string -> string -> term -> term -> term
 
 (*
  * $Log$
+ * Revision 1.12  1998/04/21 19:54:33  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.11  1998/03/20 22:16:22  eli
  * Eli: Changed integer parameters to Num.num's.
  *

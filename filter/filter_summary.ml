@@ -101,7 +101,7 @@ and 'ctyp parent_info =
 and 'expr mlterm_info =
    { mlterm_term : term;
      mlterm_contracta : term list;
-     mlterm_def : 'expr option
+     mlterm_def : ('expr * 'expr) option
    }
 
 and opname_info =
@@ -341,7 +341,7 @@ let find_axiom { info_list = summary } name =
        | _ ->
             false
    in
-      try Some (List_util.find summary test) with
+      try Some (List_util.find test summary) with
          _ -> None
 
 (*
@@ -357,7 +357,7 @@ let find_rewrite { info_list = summary } name =
        | _ ->
             false
    in
-      try Some (List_util.find summary test) with
+      try Some (List_util.find test summary) with
          _ -> None
 
 (*
@@ -372,7 +372,7 @@ let find_mlterm { info_list = summary } t =
        | _ ->
             false
    in
-      try Some (List_util.find summary test) with
+      try Some (List_util.find test summary) with
          _ -> None
 
 (*
@@ -387,7 +387,7 @@ let find_condition { info_list = summary } t =
        | _ ->
             false
    in
-      try Some (List_util.find summary test) with
+      try Some (List_util.find test summary) with
          _ -> None
 
 (*
@@ -402,7 +402,7 @@ let find_dform { info_list = summary } t =
        | _ ->
             false
    in
-      try Some (List_util.find summary test) with
+      try Some (List_util.find test summary) with
          _ -> None
 
 (*
@@ -416,7 +416,7 @@ let find_prec { info_list = summary } name =
        | _ ->
             false
    in
-      try Some (List_util.find summary test) with
+      try Some (List_util.find test summary) with
          _ -> None
 
 (*
@@ -485,6 +485,10 @@ let opt_apply f = function
    Some x -> Some (f x)
  | None -> None
 
+(* Convert a pair definition *)
+let convert_expr_pair convert (rw, ext) =
+   convert.expr_f rw, convert.expr_f ext
+   
 (*
  * Convert a resource.
  *)
@@ -574,13 +578,13 @@ let summary_map convert =
           | MLTerm { mlterm_term = term; mlterm_contracta = cons; mlterm_def = def }  ->
                MLTerm { mlterm_term = convert.term_f term;
                         mlterm_contracta = List.map convert.term_f cons;
-                        mlterm_def = opt_apply convert.expr_f def
+                        mlterm_def = opt_apply (convert_expr_pair convert) def
                }
       
           | Condition { mlterm_term = term; mlterm_contracta = cons; mlterm_def = def } ->
                Condition { mlterm_term = convert.term_f term;
                            mlterm_contracta = List.map convert.term_f cons;
-                           mlterm_def = opt_apply convert.expr_f def
+                           mlterm_def = opt_apply (convert_expr_pair convert) def
                }
       
           | Parent { parent_name = path;
@@ -659,7 +663,7 @@ let add_command { info_list = info } item =
    { info_list = item::info }
 
 let replace_command { info_list = info } item1 item2 =
-   { info_list = List_util.replaceq info item1 item2 }
+   { info_list = List_util.replaceq item1 item2 info }
 
 (************************************************************************
  * TERMS                                                                *
@@ -765,6 +769,15 @@ let dest_opt f t =
    let opname = opname_of_term t in
       if opname == some_op then
          Some (f (one_subterm t))
+      else if opname == none_op then
+         None
+      else
+         raise (Failure "not an option")
+
+let dest_opt_pair f t =
+   let opname = opname_of_term t in
+      if opname == some_op then
+         Some (f (two_subterms t))
       else if opname == none_op then
          None
       else
@@ -912,7 +925,7 @@ and dest_mlterm convert t =
    let term, cons, expr = three_subterms t in
       MLTerm { mlterm_term = term;
                mlterm_contracta = dest_xlist cons;
-               mlterm_def = dest_opt convert.expr_f expr
+               mlterm_def = dest_opt_pair (convert_expr_pair convert) expr
       }
 
 (*
@@ -922,7 +935,7 @@ and dest_condition convert t =
    let term, cons, expr = three_subterms t in
       Condition { mlterm_term = term;
                   mlterm_contracta = dest_xlist cons;
-                  mlterm_def = dest_opt convert.expr_f expr
+                  mlterm_def = dest_opt_pair (convert_expr_pair convert) expr
       }
 (*
  * Parent declaration.
@@ -1115,6 +1128,13 @@ let mk_opt f = function
  | None ->
       mk_simple_term none_op []
 
+let mk_opt_pair f = function
+   Some (t1, t2) ->
+      let t1, t2 = f (t1, t2) in
+         mk_simple_term some_op [t1; t2]
+ | None ->
+      mk_simple_term none_op []
+
 (*
  * Make a term with a string parameter.
  *)
@@ -1243,10 +1263,14 @@ and term_of_opname { opname_name = name; opname_term = term } =
    mk_string_param_term opname_op name [term]
 
 and term_of_mlterm convert { mlterm_term = term; mlterm_contracta = cons; mlterm_def = expr_opt } =
-   mk_simple_term mlterm_op [term; mk_xlist_term cons; mk_opt convert.expr_f expr_opt ]
+   mk_simple_term mlterm_op [term;
+                             mk_xlist_term cons;
+                             mk_opt_pair (convert_expr_pair convert) expr_opt ]
 
 and term_of_condition convert { mlterm_term = term; mlterm_contracta = cons; mlterm_def = expr_opt } =
-   mk_simple_term condition_op [term; mk_xlist_term cons; mk_opt convert.expr_f expr_opt ]
+   mk_simple_term condition_op [term;
+                                mk_xlist_term cons;
+                                mk_opt_pair (convert_expr_pair convert) expr_opt ]
 
 and term_of_parent convert { parent_name = path; parent_opens = opens; parent_resources = resources } =
    mk_simple_term parent_op (**)
@@ -1750,6 +1774,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.14  1998/04/21 19:53:41  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.13  1998/04/17 20:48:29  jyh
  * Updating refiner for extraction.
  *

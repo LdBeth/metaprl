@@ -1222,9 +1222,10 @@ let apply_fun_at_addr f a term =
                      { term_op = op; term_terms = bterms } ->
                         { term_op = op;
                           term_terms =
-                             List_util.replacef_nth bterms i
-                             (function { bvars = vars; bterm = term } ->
-                                   { bvars = vars; bterm = aux term tl })
+                             let f { bvars = vars; bterm = term } =
+                                { bvars = vars; bterm = aux term tl }
+                             in
+                                List_util.replacef_nth i f bterms
                         }
             in
                try aux term addr with
@@ -1946,8 +1947,9 @@ let subst term terms vars =
       { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t when opname == var_opname->
          (* Var case *)
          begin
-             try let i = List_util.find_index vars v in List.nth terms i with
-                Not_found -> t
+            try List.nth terms (List_util.find_index v vars) with
+               Not_found ->
+                  t
          end
     | { term_op = op; term_terms = bterms } ->
          (* Other term *)
@@ -1963,9 +1965,9 @@ let subst term terms vars =
        | { bvars = bvars; bterm = term } ->
             (* First subtract bound instances *)
             let flags = List.map (function v -> List.mem v bvars) vars in
-            let vars' = List_util.remove_elements vars flags in
-            let fv' = List_util.remove_elements fv flags in
-            let terms' = List_util.remove_elements terms flags in
+            let vars' = List_util.remove_elements flags vars in
+            let fv' = List_util.remove_elements flags fv in
+            let terms' = List_util.remove_elements flags terms in
 
             (* If any of the binding variables are free, rename them *)
             let renames = List_util.subtract bvars (fsubtract bvars fv') in
@@ -1988,7 +1990,7 @@ let subst term terms vars =
 
    and subst_bvars renames' renames bvars =
       let subst_bvar v =
-         try (let i = List_util.find_index renames v in List.nth renames' i) with
+         try List.nth renames' (List_util.find_index v renames) with
             Not_found -> v
       in
          List.map subst_bvar bvars
@@ -2295,23 +2297,19 @@ let is_free_seq_var i v t =
 (*
  * Generate a list of sequents with replaced goals.
  *)
-let mk_seq_subgoals seq subgoals =
-   let replace_concl goal =
-      let rec aux = function
-         { term_op = { op_name = opname; op_params = [] };
-           term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = t2 }]
-         } when opname == hyp_opname ->
-            { term_op = { op_name = hyp_opname; op_params = [] };
-              term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = aux t2 }]
-            }
-       | _ -> goal
-      in
-         aux
-   in
-   let replace_goal goal =
-      replace_concl (mk_concl_term goal null_concl) seq
-   in
-      List.map replace_goal subgoals
+let rec replace_concl seq goal =
+   match seq with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = t2 }]
+      } when opname == hyp_opname ->
+         { term_op = { op_name = hyp_opname; op_params = [] };
+           term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = replace_concl t2 goal }]
+         }
+    | _ ->
+         goal
+
+let replace_goal seq goal =
+   replace_concl (mk_concl_term goal null_concl) seq
 
 (************************************************************************
  * NORMALIZATION                                                        *
@@ -2504,6 +2502,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.12  1998/04/21 19:54:22  jyh
+ * Upgraded refiner for program extraction.
+ *
  * Revision 1.11  1998/04/17 01:31:18  jyh
  * Editor is almost constructed.
  *
