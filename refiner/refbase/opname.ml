@@ -66,7 +66,7 @@ let nil_opname = { opname_token = opname_token; opname_name = [] }
 
 let _ = Hashtbl.add optable [] nil_opname
 
-let rec mk_opname s { opname_token = token; opname_name = name } =
+let rec mk_opname s ({ opname_token = token; opname_name = name } as opname) =
    if token == opname_token then
       let name = s :: name in
          try Hashtbl.find optable name with
@@ -75,7 +75,7 @@ let rec mk_opname s { opname_token = token; opname_name = name } =
                   Hashtbl.add optable name op;
                   op
    else
-      make_opname name
+      mk_opname s (normalize_opname opname)
 
 and make_opname = function
    [] ->
@@ -83,7 +83,7 @@ and make_opname = function
  | h :: t ->
       mk_opname h (make_opname t)
 
-let normalize_opname { opname_token = token; opname_name = name } =
+and normalize_opname { opname_token = token; opname_name = name } =
    if token = opname_token then
       (*
        * This is for reverse compatibility with opnames made
