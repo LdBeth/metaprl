@@ -152,14 +152,16 @@ let item_of_obj pack name
       Filter_type.Axiom (**)
          { Filter_type.axiom_name = name;
            Filter_type.axiom_stmt = goal;
-           Filter_type.axiom_proof = proof
+           Filter_type.axiom_proof = proof;
+           Filter_type.axiom_resources = []
          }
    else
       Filter_type.Rule (**)
          { Filter_type.rule_name = name;
            Filter_type.rule_params = params;
            Filter_type.rule_stmt = zip_mimplies (assums @ [goal]);
-           Filter_type.rule_proof = proof
+           Filter_type.rule_proof = proof;
+           Filter_type.rule_resources = []
          }
 
 (*
@@ -343,7 +345,8 @@ let create pack name =
    let rule =
       { Filter_type.axiom_name = name;
         Filter_type.axiom_stmt = unit_term;
-        Filter_type.axiom_proof = Incomplete
+        Filter_type.axiom_proof = Incomplete;
+        Filter_type.axiom_resources = []
       }
    in
    let obj =

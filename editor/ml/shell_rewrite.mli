@@ -53,12 +53,12 @@ val create :
 
 val view_rw :
    Package.package ->
-   (term, Package.proof proof_type) rewrite_info ->
+   (term, Package.proof proof_type, MLast.expr) rewrite_info ->
    edit_object
 
 val view_crw :
    Package.package ->
-   (term, Package.proof proof_type) cond_rewrite_info ->
+   (term, Package.proof proof_type, MLast.expr) cond_rewrite_info ->
    edit_object
 
 (*

@@ -144,22 +144,22 @@ val meta_term_of_term : term -> meta_term
 val term_of_rewrite :
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
     term, term, term, term, term, term) convert ->
-   ('term, 'proof) rewrite_info ->
+   ('term, 'proof, 'expr) rewrite_info ->
    term
 val term_of_cond_rewrite :
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
     term, term, term, term, term, term) convert ->
-   ('term, 'proof) cond_rewrite_info ->
+   ('term, 'proof, 'expr) cond_rewrite_info ->
    term
 val term_of_axiom :
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
     term, term, term, term, term, term) convert ->
-   ('term, 'proof) axiom_info ->
+   ('term, 'proof, 'expr) axiom_info ->
    term
 val term_of_rule :
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
     term, term, term, term, term, term) convert ->
-   ('term, 'meta_term, 'proof) rule_info ->
+   ('term, 'meta_term, 'proof, 'expr) rule_info ->
    term
 val term_of_opname :
    ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,

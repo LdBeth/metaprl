@@ -368,7 +368,7 @@ struct
     * must be provable _in the current context_.  In a sequent calculus,
     * the current context would be the assumption list.
     *)
-   let simple_rewrite proc name redex contractum pf =
+   let simple_rewrite proc name redex contractum pf res =
       (* Check that rewrite will succeed *)
       Refine.check_rewrite name [||] [] [] redex contractum;
 
@@ -376,10 +376,11 @@ struct
       Rewrite { rw_name = name;
                 rw_redex = redex;
                 rw_contractum = contractum;
-                rw_proof = pf
+                rw_proof = pf;
+                rw_resources = res
       }
 
-   let cond_rewrite proc name params args pf =
+   let cond_rewrite proc name params args pf res =
       (* Print the type to the .mli file *)
       let cvars = context_vars args in
       let bvars = binding_vars args in
@@ -398,30 +399,31 @@ struct
                        crw_args = args';
                        crw_redex = redex;
                        crw_contractum = contractum;
-                       crw_proof = pf
+                       crw_proof = pf;
+                       crw_resources = res
          }
 
    (*
     * Compile the rewrite.
     *)
-   let rewrite_command proc name params args pf =
+   let rewrite_command proc name params args pf res =
       match params, args with
          [], MetaIff (MetaTheorem redex, MetaTheorem contractum) ->
             (* This is a simple rewrite *)
-            simple_rewrite proc name redex contractum pf
+            simple_rewrite proc name redex contractum pf res
        | _ ->
             (* Conditional rewrite *)
-            cond_rewrite proc name params args pf
+            cond_rewrite proc name params args pf res
 
    (*
     * Add the command and return the declaration.
     *)
-   let declare_rewrite_error proc loc name params args pf =
-      let cmd = rewrite_command proc name params args pf in
+   let declare_rewrite_error proc loc name params args pf res =
+      let cmd = rewrite_command proc name params args pf res in
          FilterCache.add_command proc.cache (cmd, loc)
 
-   let declare_rewrite proc loc name params args pf =
-      print_exn (declare_rewrite_error proc loc name params args) pf
+   let declare_rewrite proc loc name params args pf res =
+      print_exn (declare_rewrite_error proc loc name params args) pf res
 
    (*
     * Declare a term, and define a rewrite in one step.
@@ -437,12 +439,12 @@ struct
     * Declare an axiom in an interface.  This has a similar flavor
     * as rewrites, but context args have to be extracted from the args.
     *)
-   let simple_axiom proc name arg pf =
+   let simple_axiom proc name arg pf res =
       (* Check it *)
       Refine.check_axiom arg;
 
       (* Save it in the transcript *)
-      Axiom { axiom_name = name; axiom_stmt = arg; axiom_proof = pf }
+      Axiom { axiom_name = name; axiom_stmt = arg; axiom_proof = pf; axiom_resources = res }
 
    let rec print_terms out = function
       h::t ->
@@ -464,7 +466,7 @@ struct
    let print_non_vars out params =
       print_terms out (collect_non_vars params)
 
-   let cond_axiom proc name params args pf =
+   let cond_axiom proc name params args pf res =
       (* Extract context names *)
       let cvars = context_vars args in
       let bvars = binding_vars args in
@@ -490,18 +492,19 @@ struct
          Rule { rule_name = name;
                 rule_params = params';
                 rule_stmt = args;
-                rule_proof = pf
+                rule_proof = pf;
+                rule_resources = res
          }
 
-   let axiom_command proc name params args pf =
+   let axiom_command proc name params args pf res =
       match params, args with
          [], MetaTheorem a ->
-            simple_axiom proc name a pf
+            simple_axiom proc name a pf res
        | _ ->
-            cond_axiom proc name params args pf
+            cond_axiom proc name params args pf res
 
-   let declare_axiom_error proc loc name params args pf =
-      let cmd = axiom_command proc name params args pf in
+   let declare_axiom_error proc loc name params args pf res =
+      let cmd = axiom_command proc name params args pf res in
          FilterCache.add_command proc.cache (cmd, loc)
 
    let declare_axiom proc loc name params args pf =
@@ -862,11 +865,12 @@ let define_rule_error proc loc name
     (params : term list)
     (args : aterm list)
     (goal : term)
-    (extract : Convert.t proof_type) =
+    (extract : Convert.t proof_type) 
+    (res : MLast.expr resource_def) =
    let avars = collect_anames args in
    let assums = List.map (function { aname = name; aterm = t } -> name, t) args in
    let mterm = zip_mfunction assums goal in
-   let cmd = StrFilter.axiom_command proc name params mterm extract in
+   let cmd = StrFilter.axiom_command proc name params mterm extract res in
       StrFilter.add_command proc (cmd, loc)
 
 let define_rule proc loc name params args goal extract =
@@ -976,13 +980,13 @@ EXTEND
           let _ = SigFilter.declare_term (SigFilter.get_proc loc) loc t in
           empty_sig_item loc
         | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = term ->
-          SigFilter.define_term (SigFilter.get_proc loc) loc name t def ();
+          SigFilter.define_term (SigFilter.get_proc loc) loc name t def () [];
           empty_sig_item loc
         | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
-          SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t ();
+          SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t () [];
           empty_sig_item loc
         | "axiom"; name = LIDENT; args = optarglist; ":"; t = mterm ->
-          SigFilter.declare_axiom (SigFilter.get_proc loc) loc name args t ();
+          SigFilter.declare_axiom (SigFilter.get_proc loc) loc name args t () [];
           empty_sig_item loc
         | "mlterm"; t = quote_term ->
           SigFilter.declare_mlterm (SigFilter.get_proc loc) loc t None;
@@ -1025,26 +1029,26 @@ EXTEND
           let _ = StrFilter.declare_term (StrFilter.get_proc loc) loc t in
           empty_str_item loc
         | "primrw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
-          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term);
+          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res;
           empty_str_item loc
         | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
-          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete;
+          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res;
           empty_str_item loc
-        | "rwthm"; name = LIDENT; args = optarglist; ":"; t = mterm; "="; body = expr ->
-          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body);
+        | "rwthm"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
+          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body) res;
           empty_str_item loc
         | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
              (args, goal) = opt_binding_arglist; "="; (**)
              extract = term ->
-          define_prim (StrFilter.get_proc loc) loc name params args goal.aterm extract;
+          define_prim (StrFilter.get_proc loc) loc name params args goal.aterm extract res;
           empty_str_item loc
         | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
              (args, goal) = opt_binding_arglist; "="; tac = expr ->
-          define_thm (StrFilter.get_proc loc) loc name params args goal.aterm tac;
+          define_thm (StrFilter.get_proc loc) loc name params args goal.aterm tac res;
           empty_str_item loc
         | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
              (args, goal) = opt_binding_arglist ->
-          define_int_thm (StrFilter.get_proc loc) loc name params args goal.aterm;
+          define_int_thm (StrFilter.get_proc loc) loc name params args goal.aterm res;
           empty_str_item loc
         | "mlterm"; t = quote_term; rewrite_equal; code = expr; "|"; ext = expr ->
           StrFilter.declare_mlterm (StrFilter.get_proc loc) loc t (Some (code, ext));

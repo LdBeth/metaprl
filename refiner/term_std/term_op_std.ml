@@ -179,6 +179,24 @@ struct
       } when Opname.eq opname' opname -> t1, t2, t3
     | t -> ref_raise(RefineError ("dest_dep0_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
+   let is_two_subterm opname = function
+      { term_op = { op_name = opname' };
+        term_terms = [{ bvars = [] }; { bvars = [] }]
+      } -> Opname.eq opname' opname
+    | _ -> false
+
+   let is_three_subterm opname = function
+      { term_op = { op_name = opname' };
+        term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [] }]
+      } -> Opname.eq opname' opname
+    | _ -> false
+
+   let is_five_subterm opname = function
+      { term_op = { op_name = opname' };
+        term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [] }; { bvars = [] }; { bvars = [] }]
+      } -> Opname.eq opname' opname
+    | _ -> false
+
    let three_subterms = function
       { term_terms = [{ bvars = []; bterm = a };
                       { bvars = []; bterm = b };
@@ -204,6 +222,17 @@ struct
          a, b, c, d, e
     | t ->
          ref_raise(RefineError ("five_subterms", TermMatchError (t, "bad arity")))
+
+   let six_subterms = function
+      { term_terms = [{ bvars = []; bterm = a };
+                      { bvars = []; bterm = b };
+                      { bvars = []; bterm = c };
+                      { bvars = []; bterm = d };
+                      { bvars = []; bterm = e };
+                      { bvars = []; bterm = f }]} ->
+         a, b, c, d, e, f
+    | t ->
+         ref_raise(RefineError ("six_subterms", TermMatchError (t, "bad arity")))
 
    (************************************************************************
     * Nonsimple but useful forms                                           *

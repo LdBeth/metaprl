@@ -53,12 +53,12 @@ val create :
 
 val view_axiom :
    Package.package ->
-   (term, Package.proof proof_type) axiom_info ->
+   (term, Package.proof proof_type, MLast.expr) axiom_info ->
    edit_object
 
 val view_rule :
    Package.package ->
-   (term, meta_term, Package.proof proof_type) rule_info ->
+   (term, meta_term, Package.proof proof_type, MLast.expr) rule_info ->
    edit_object
 
 (*

@@ -86,36 +86,42 @@ type aterm = { aname : term option; aterm : term }
  * 'item: type of summary items
  *)
 
+type 'expr resource_def = (string * 'expr list) list
+
 (*
  * Proof is type unit in interface.
  *)
-type ('term, 'proof) rewrite_info =
+type ('term, 'proof, 'expr) rewrite_info =
    { rw_name : string;
      rw_redex : 'term;
      rw_contractum : 'term;
-     rw_proof : 'proof
+     rw_proof : 'proof;
+     rw_resources : 'expr resource_def
    }
 
-type ('term, 'proof) axiom_info =
+type ('term, 'proof, 'expr) axiom_info =
    { axiom_name : string;
      axiom_stmt : 'term;
-     axiom_proof : 'proof
+     axiom_proof : 'proof;
+     axiom_resources : 'expr resource_def
    }
 
-type ('term, 'proof) cond_rewrite_info =
+type ('term, 'proof, 'expr) cond_rewrite_info =
    { crw_name : string;
      crw_params : 'term param list;
      crw_args : 'term list;
      crw_redex : 'term;
      crw_contractum : 'term;
-     crw_proof : 'proof
+     crw_proof : 'proof;
+     crw_resources : 'expr resource_def
    }
 
-and ('term, 'meta_term, 'proof) rule_info =
+and ('term, 'meta_term, 'proof, 'expr) rule_info =
    { rule_name : string;
      rule_params : 'term param list;
      rule_stmt : 'meta_term;
-     rule_proof : 'proof
+     rule_proof : 'proof;
+     rule_resources : 'expr resource_def
    }
 
 (*
@@ -218,8 +224,6 @@ type ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1,
      item_f       : 'item1  -> 'item2
    }
 
-type 'expr resource_def = (string * 'expr list) list
-
 (*
  * The summary contains information about everything in the file.
  * We use the summary for both interfaces and implementations.
@@ -232,10 +236,10 @@ type 'expr resource_def = (string * 'expr list) list
  *)
 
 type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, 'module_info) summary_item_type =
-   Rewrite of ('term, 'proof) rewrite_info
- | CondRewrite of ('term, 'proof) cond_rewrite_info
- | Axiom of ('term, 'proof) axiom_info
- | Rule of ('term, 'meta_term, 'proof) rule_info
+   Rewrite of ('term, 'proof, 'expr) rewrite_info
+ | CondRewrite of ('term, 'proof, 'expr) cond_rewrite_info
+ | Axiom of ('term, 'proof, 'expr) axiom_info
+ | Rule of ('term, 'meta_term, 'proof, 'expr) rule_info
  | Opname of 'term opname_info
  | MLTerm of ('term, 'expr) mlterm_info
  | Condition of ('term, 'expr) mlterm_info

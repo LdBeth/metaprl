@@ -165,7 +165,8 @@ let item_of_obj pack name
          { Filter_type.rw_name = name;
            Filter_type.rw_redex = redex;
            Filter_type.rw_contractum = contractum;
-           Filter_type.rw_proof = proof
+           Filter_type.rw_proof = proof;
+           Filter_type.rw_resources = []
          }
    else
       Filter_type.CondRewrite (**)
@@ -174,7 +175,8 @@ let item_of_obj pack name
            Filter_type.crw_args = assums;
            Filter_type.crw_redex = redex;
            Filter_type.crw_contractum = contractum;
-           Filter_type.crw_proof = proof
+           Filter_type.crw_proof = proof;
+           Filter_type.crw_resources = []
          }
 
 (*
@@ -359,7 +361,8 @@ let create pack name =
       { Filter_type.rw_name = name;
         Filter_type.rw_redex = unit_term;
         Filter_type.rw_contractum = unit_term;
-        Filter_type.rw_proof = Interactive proof
+        Filter_type.rw_proof = Interactive proof;
+        Filter_type.rw_resources = []
       }
    in
    let obj =

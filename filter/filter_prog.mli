@@ -61,17 +61,17 @@ sig
     *)
    type t
 
-   val prim_axiom : t -> loc -> (term, 'proof) axiom_info -> term -> MLast.str_item list
-   val derived_axiom : t -> loc -> (term, 'proof) axiom_info -> MLast.expr -> MLast.str_item list
+   val prim_axiom : t -> loc -> (term, 'proof, 'expr) axiom_info -> term -> MLast.str_item list
+   val derived_axiom : t -> loc -> (term, 'proof, 'expr) axiom_info -> MLast.expr -> MLast.str_item list
 
-   val prim_rule : t -> loc -> (term, meta_term, 'proof) rule_info -> term -> MLast.str_item list
-   val derived_rule : t -> loc -> (term, meta_term, 'proof) rule_info -> MLast.expr -> MLast.str_item list
+   val prim_rule : t -> loc -> (term, meta_term, 'proof, 'expr) rule_info -> term -> MLast.str_item list
+   val derived_rule : t -> loc -> (term, meta_term, 'proof, 'expr) rule_info -> MLast.expr -> MLast.str_item list
 
-   val prim_rewrite : t -> loc -> (term, 'proof) rewrite_info -> MLast.str_item list
-   val derived_rewrite : t -> loc -> (term, 'proof) rewrite_info -> MLast.expr -> MLast.str_item list
+   val prim_rewrite : t -> loc -> (term, 'proof, 'expr) rewrite_info -> MLast.str_item list
+   val derived_rewrite : t -> loc -> (term, 'proof, 'expr) rewrite_info -> MLast.expr -> MLast.str_item list
 
-   val prim_cond_rewrite : t -> loc -> (term, 'proof) cond_rewrite_info -> MLast.str_item list
-   val derived_cond_rewrite : t -> loc -> (term, 'proof) cond_rewrite_info -> MLast.expr -> MLast.str_item list
+   val prim_cond_rewrite : t -> loc -> (term, 'proof, 'expr) cond_rewrite_info -> MLast.str_item list
+   val derived_cond_rewrite : t -> loc -> (term, 'proof, 'expr) cond_rewrite_info -> MLast.expr -> MLast.str_item list
 
    val define_dform : t -> loc -> (term, MLast.expr) dform_info -> term -> MLast.str_item list
    val define_prec : t -> loc -> string -> MLast.str_item list

@@ -133,7 +133,7 @@ struct
     *)
    let is_dep0_dep0_dep0_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
-             term_terms = ([b1; b2; b3] as bterms)
+             term_terms = ([_; _; _] as bterms)
            } when Opname.eq opname' opname -> no_bvars bterms
     | _ -> false
 
@@ -151,26 +151,51 @@ struct
          dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3
     | _ -> ref_raise(RefineError ("dest_dep0_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
+   let is_two_subterm opname t = match get_core t with
+      Term { term_op = { op_name = opname' };
+             term_terms = ([_; _] as bterms)
+           } when Opname.eq opname' opname -> no_bvars bterms
+    | _ -> false
+
+   let is_three_subterm opname t = match get_core t with
+      Term { term_op = { op_name = opname' };
+             term_terms = ([_; _; _] as bterms)
+           } when Opname.eq opname' opname -> no_bvars bterms
+    | _ -> false
+
+   let is_five_subterm opname t = match get_core t with
+      Term { term_op = { op_name = opname' };
+             term_terms = ([_; _; _; _; _] as bterms)
+           } when Opname.eq opname' opname -> no_bvars bterms
+    | _ -> false
+
    let three_subterms t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
+      { term_op = { op_name = opname' };
         term_terms = [bt1; bt2; bt3]
       } ->
          dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3
     | _ -> ref_raise(RefineError ("three_subterms", TermMatchError (t, "bad arity")))
 
    let four_subterms t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
+      { term_op = { op_name = opname' };
         term_terms = [bt1; bt2; bt3; bt4]
       } ->
          dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3, dest_simple_bterm bt4
     | _ -> ref_raise(RefineError ("four_subterms", TermMatchError (t, "bad arity")))
 
    let five_subterms t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
+      { term_op = { op_name = opname' };
         term_terms = [bt1; bt2; bt3; bt4; bt5]
       } ->
           dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3, dest_simple_bterm bt4, dest_simple_bterm bt5
     | _ -> ref_raise(RefineError ("five_subterms", TermMatchError (t, "bad arity")))
+
+   let six_subterms t = match dest_term t with
+      { term_op = { op_name = opname' };
+        term_terms = [bt1; bt2; bt3; bt4; bt5; bt6]
+      } ->
+          dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3, dest_simple_bterm bt4, dest_simple_bterm bt5, dest_simple_bterm bt6
+    | _ -> ref_raise(RefineError ("six_subterms", TermMatchError (t, "bad arity")))
 
    (************************************************************************
     * Nonsimple but useful forms                                           *
