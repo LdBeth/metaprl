@@ -29,10 +29,8 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
 open Dform
 
-val backtrace : bool
 val format_exn : dform_base -> buffer -> exn -> unit
 
 (*

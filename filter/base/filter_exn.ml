@@ -141,7 +141,7 @@ let rec format_exn db buf exn =
          format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
          format_newline buf;
          format_string buf "! and possibly export the data to a different format."
-    | Bad_version(s,versions,version) ->
+    | Bad_version (s, versions, version) ->
          format_string buf "! File ";
          format_string buf s;
          format_string buf " has an unsupported version.";
@@ -200,9 +200,6 @@ let rec format_exn db buf exn =
 (*
  * Print an exception if it occurs, then reraise it.
  *)
-let dont_print_exn _ _ f x =
-   f x
-
 let format_message buf s =
    match s with
       None ->
@@ -224,7 +221,10 @@ let print_exn db s f x =
             format_newline buf;
             output_rbuffer stderr buf;
             flush stderr;
-            raise exn
+            if Refine_exn.backtrace then
+               raise exn
+            else
+               raise (Refine_exn.ToploopIgnoreExn exn)
 
 let handle_exn db s loc f =
    try f () with
@@ -256,12 +256,6 @@ let handle_exn db s loc f =
             output_rbuffer stderr buf;
             flush stderr;
             exit 2
-
-let print_exn =
-   if Exn_boot.backtrace then
-      dont_print_exn
-   else
-      print_exn
 
 (*
  * -*-

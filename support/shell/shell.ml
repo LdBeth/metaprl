@@ -448,7 +448,7 @@ struct
          with
             End_of_file as exn ->
                raise exn
-          | _ when not backtrace ->
+          | _ when not Refine_exn.backtrace ->
                ()
 
       let chdir text =
@@ -457,7 +457,7 @@ struct
                   ignore (cd parse_arg shell text);
                   true)
          with
-            exn when not backtrace ->
+            exn when not Refine_exn.backtrace ->
                false
 
       let get_resource () =

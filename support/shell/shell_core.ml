@@ -455,7 +455,7 @@ let refine shell tac =
    let str, ast = Shell_state.get_tactic () in
       if !debug_refine then
          eprintf "Starting refinement%t" eflush;
-      if shell.shell_proof.edit_interpret shell.shell_subdir (ProofRefine(str, ast, tac)) then
+      if shell.shell_proof.edit_interpret shell.shell_subdir (ProofRefine (str, ast, tac)) then
          touch shell;
       if !debug_refine then
          eprintf "Displaying proof%t" eflush;

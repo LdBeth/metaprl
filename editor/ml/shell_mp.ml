@@ -38,6 +38,7 @@ open Pcaml
 open Basic_tactics
 open Mptop
 
+open Refine_exn
 open Exn_boot
 open Shell_sig
 
@@ -221,6 +222,7 @@ struct
                         End_of_file ->
                            loop := false
 
+                      | ToploopIgnoreExn _
                       | RefineError (_, ToploopIgnoreError) ->
                            ()
 
@@ -234,13 +236,14 @@ struct
                      End_of_file ->
                         loop := false
 
+                   | ToploopIgnoreExn _
                    | RefineError (_, ToploopIgnoreError) ->
                         ()
 
                    | exn ->
-                        (try print_exn exn
-                         with _ ->
-                           eprintf "ERROR: Exception printer raised an exception%t" eflush))
+                        (try print_exn exn with
+                            _ ->
+                               eprintf "ERROR: Exception printer raised an exception%t" eflush))
       in
       let () =
          (* Ignore initialization errors *)

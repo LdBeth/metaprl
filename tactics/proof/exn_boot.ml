@@ -34,14 +34,6 @@ open Lm_rformat
 open Proof_boot.Proof
 open Tactic_boot.TacticInternal
 
-(*
- * Flag is true if we don't want to catch exceptions.
- *)
-let backtrace =
-   try String.contains (Sys.getenv "OCAMLRUNPARAM") 'b' with
-      Not_found ->
-         false
-
 let format_exn db buf = function
    ExtRefineError (name, proof, ref_error) ->
       format_szone buf;

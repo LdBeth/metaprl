@@ -45,11 +45,18 @@ open Refiner.Refiner.RefineError
 open Simple_print.SimplePrint
 open Dform
 
+exception ToploopIgnoreExn of exn
+
 (*
  * Show the file loading.
  *)
 let _ =
    show_loading "Loading Refine_exn%t"
+
+let backtrace =
+   try String.contains (Sys.getenv "OCAMLRUNPARAM") 'b' with
+      Not_found ->
+         false
 
 (*
  * Default printer uses the Simple_print.
@@ -449,7 +456,10 @@ let print_exn db f x =
             format_newline buf;
             output_rbuffer stderr buf;
             flush stderr;
-            raise exn
+            if backtrace then
+               raise exn
+            else
+               raise (ToploopIgnoreExn exn)
 
 let stderr_exn s exn =
    let buf = new_buffer () in
@@ -463,7 +473,10 @@ let stderr_exn s exn =
       format_newline buf;
       output_rbuffer stderr buf;
       flush stderr;
-      raise exn
+      if backtrace then
+         raise exn
+      else
+         raise (ToploopIgnoreExn exn)
 
 (*
  * -*-
