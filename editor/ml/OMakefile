@@ -106,19 +106,21 @@ OPTTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
 ########################################################################
 
 #
-# If LIBJOAVE is enabled, add the libraries
+# If LIBMOJAVE is enabled, add the libraries
 #
 LMXADEPS =
 LMADEPS =
 TLMADEPS =
 if $(not $(equal $(LIBMOJAVE), undefined))
+    LMARDEPS = $(LIBMOJAVE)/naml/stdlib/lmstdlib.a\
+               $(LIBMOJAVE)/util/lmutil.a
     LMXADEPS = $(LIBMOJAVE)/naml/stdlib/lmstdlib.cmxa\
                $(LIBMOJAVE)/util/lmutil.cmxa
     LMADEPS  = $(LIBMOJAVE)/naml/stdlib/lmstdlib.cma\
                $(LIBMOJAVE)/util/lmutil.cma
     TLMADEPS = $(LIBMOJAVE)/naml/stdlib/lmstdlib.cma\
                $(LIBMOJAVE)/util/lmutil.cma
-    OTHER_CCLIBS += -cclib $(LIBMOJAVE)/cutil/liblmcutil.a
+    LIBS = $(LIBMOJAVE)/cutil/liblmcutil.a
     export
 
 CMXADEPS =\
@@ -137,6 +139,16 @@ CMXADEPS =\
 	$(CAMLP4LIB)/pa_o.cmx\
 	$(CAMLP4LIB)/pa_op.cmx\
 	$(MAIN).cmxa
+
+ARDEPS =\
+        $(LMARDEPS)\
+	$(ROOT)/lib/util.a\
+	$(ROOT)/lib/refiner.a\
+	$(ROOT)/lib/library.a\
+	$(CMXALIBS_ens)\
+	$(ROOT)/lib/prlc.a\
+	$(addsuffix /theory.a, $(MP_DIRS))\
+	$(MAIN).a
 
 CMXALIBS =\
 	$(CMXADEPS)
@@ -204,17 +216,17 @@ NATIVE_CCLIBS =\
 	$(addprefix -cclib , $(NATIVE_CLIBS))\
 	$(OTHER_CCLIBS)
 
-$(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS) $(THREADSLIB) $(BYTE_CLIBS)
+$(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS) $(THREADSLIB) $(BYTE_CLIBS) $(LIBS)
 	$(RM) -f $@
-	$(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
+	$(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS) $(LIBS)
 
-$(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS) $(THREADSLIB) $(BYTE_CLIBS)
+$(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS) $(THREADSLIB) $(BYTE_CLIBS) $(LIBS)
 	$(RM) -f $@
-	$(OCAMLLINK) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
+	$(OCAMLLINK) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS) $(LIBS)
 
-$(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(NATIVE_CLIBS)
+$(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(NATIVE_CLIBS) $(ARDEPS) $(LIBS)
 	$(RM) -f $@
-	$(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
+	$(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS) $(LIBS)
 
 mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi
 	echo -n "let version = \"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses $(REFINER) Refiner_$(TERMS)\"" > mp_version.ml
@@ -263,3 +275,8 @@ $(TEXDIR)/%/theory.tex: $(TEXBIN) $(TEXDIR)/%/print.ml $(ROOT)/theories/%/$(THEL
 #
 clean:
     $(CLEAN)
+
+#
+# All defaults
+#
+all: $(MP)$(OBJ_SUFFIX)

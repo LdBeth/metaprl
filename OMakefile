@@ -10,6 +10,7 @@ BIN     = $(dir bin)
 # Library suffix
 #
 LIB_SUFFIX = $(if $(NATIVE_ENABLED), .cmxa, .cma)
+OBJ_SUFFIX = $(if $(NATIVE_ENABLED), .opt, .run)
 
 #
 # If this is the root directory of the project,
@@ -44,7 +45,7 @@ if $(equal $(OLDROOT), $(ROOT))
 #
 # Generic phony targets
 #
-.PHONY: all opt install clean realclean depend local
+.PHONY: all opt install clean realclean depend
 
 #
 # Default clean line
