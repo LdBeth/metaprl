@@ -110,7 +110,7 @@ MFILES_PRLC =\
 	filter/filter_bin
 
 MFILES_CONVERT =\
-	filter/convert
+	filter/filter_convert
 
 CMOFILES_CAMLP4 = $(addsuffix .cmo, $(MFILES_CAMLP4))
 CMXFILES_CAMLP4 = $(addsuffix .cmx, $(MFILES_CAMLP4))
@@ -118,9 +118,6 @@ CMOFILES_PRLC = $(addsuffix .cmo, $(MFILES_PRLC))
 CMXFILES_PRLC = $(addsuffix .cmx, $(MFILES_PRLC))
 CMOFILES_CONVERT = $(addsuffix .cmo, $(MFILES_CONVERT))
 CMXFILES_CONVERT = $(addsuffix .cmx, $(MFILES_CONVERT))
-
-PFILES =\
-	filter/prlcomp
 
 #
 # Libraries for prlc

@@ -2,5 +2,5 @@ FILTER_FILES =\
 	filter_parse\
 	filter_main\
 	filter_bin\
-	convert\
+	filter_convert\
 	prlcomp
