@@ -2,6 +2,9 @@
 ;; This is a major mode for editing CAML files.
 ;;
 ;; $Log$
+;; Revision 1.3  1998/04/21 20:57:52  jyh
+;; Fixed typing problems introduced by refiner msequents.
+;;
 ;; Revision 1.2  1997/08/06 16:17:01  jyh
 ;; This is an ocaml version with subtyping, type inference,
 ;; d and eqcd tactics.  It is a basic system, but not debugged.
@@ -326,6 +329,7 @@ point is outside the region."
     (5  t   (alt define rewrite axiom primrw) & : &)
     (4  t   (alt all exists) & : & \. &)
     (5  t   prim & : & : & = &)
+    (5  t   mlterm & = & | &)
 
     ;; Extra syntax for Camlp4
     (1   t   (opt &+) EXTEND & END)
@@ -335,7 +339,7 @@ point is outside the region."
 (defconst caml-initial-terminals
   '(let type val value open include exception module
 	dform condition prec declare define rewrite axiom primrw prim
-	infix external magic_block)
+	infix external magic_block mlterm)
   "Tokens that may start a top level production")
 
 (defconst caml-special-terminals

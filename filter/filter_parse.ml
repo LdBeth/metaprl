@@ -487,10 +487,14 @@ struct
             begin
                let modes, options = compile_options tl in
                   match Opname.dest_opname (opname_of_term hd) with
-                     ["parens"] -> modes, DFormParens :: options
-                   | ["prec"] -> modes, (DFormPrec (get_string_param loc hd)) :: options
-                   | ["inherit"] -> modes, DFormParens :: options
-                   | ["mode"] -> (get_string_param loc hd)::modes, options
+                     "parens" :: _ ->
+                        modes, DFormParens :: options
+                   | "prec" :: _ ->
+                        modes, (DFormPrec (get_string_param loc hd)) :: options
+                   | "inherit" :: _ ->
+                        modes, DFormParens :: options
+                   | "mode" :: _ ->
+                        (get_string_param loc hd)::modes, options
                    | _ ->
                         eprintf "warning: unknown option %s%t" (string_of_term hd) eflush;
                         modes, options
@@ -989,6 +993,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.17  1998/04/21 20:58:01  jyh
+ * Fixed typing problems introduced by refiner msequents.
+ *
  * Revision 1.16  1998/04/21 19:53:33  jyh
  * Upgraded refiner for program extraction.
  *

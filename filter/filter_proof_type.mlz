@@ -3,6 +3,7 @@
  *)
 
 open Term
+open Refine_sig
 
 (*
  * Many tactics wish to examine their argument, so
@@ -21,14 +22,13 @@ type attribute =
  * and saves only part of the goal.
  *)
 type aterm =
-   { aterm_goal : term;
-     aterm_label : string;              (* Label describes the step in the proof *)
+   { aterm_label : string;              (* Label describes the step in the proof *)
      aterm_args : attribute list        (* Proof annotations *)
    }
 
 type proof_step =
-   { step_goal : aterm;
-     step_subgoals : aterm list;
+   { step_goal : aterm tactic_arg;
+     step_subgoals : aterm tactic_arg list;
      step_ast : MLast.expr;             (* Parsed expression *)
      step_text : string                 (* String representation of text *)
    }
@@ -56,11 +56,14 @@ and proof_node =
  | ProofNode of proof
 
 and proof_child =
-   ChildGoal of aterm
+   ChildGoal of aterm tactic_arg
  | ChildProof of proof
    
 (*
  * $Log$
+ * Revision 1.2  1998/04/21 20:58:04  jyh
+ * Fixed typing problems introduced by refiner msequents.
+ *
  * Revision 1.1  1998/04/17 01:31:06  jyh
  * Editor is almost constructed.
  *

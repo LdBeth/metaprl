@@ -31,7 +31,7 @@ let create pack prog name =
         rw_proof =
       }
    in
-   let mk_rewrite () =
+   let mk_goal () =
       let { rw_assums = assums;
             rw_params = params;
             rw_redex = redex;
@@ -48,7 +48,7 @@ let create pack prog name =
    in
    let edit_format db buf =
       (* Convert to a term *)
-      let t = term_of_rewrite convert_impl (mk_rewrite ()) in
+      let t = term_of_rewrite convert_impl (mk_rewrite_for_display ()) in
          format_term db buf t
    in
    let edit_set_goal t =
@@ -67,6 +67,10 @@ let create pack prog name =
       obj.rw_params <- pl
    in
    let edit_check () =
+      (*
+       * Install the proof.
+       * Get the extract from the proof, and add the rule to the refiner.
+       *)
       let { rw_assums = assums;
             rw_params = params;
             rw_redex = redex;
@@ -74,22 +78,15 @@ let create pack prog name =
             rw_ped = ped
           } = obj
       in
-      let tac =
-         match 
-         { crw_name = name;
-           crw_params = params;
-           crw_args = assums;
-           crw_redex = redex;
-           crw_contractum = contractum;
-           crw_proof = null_proof
-         }
-   in
       
       
 
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/21 20:57:58  jyh
+ * Fixed typing problems introduced by refiner msequents.
+ *
  * Revision 1.1  1998/04/17 20:48:16  jyh
  * Updating refiner for extraction.
  *

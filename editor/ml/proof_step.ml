@@ -6,6 +6,8 @@
  *)
 
 open Term
+open Refine_sig
+
 open Filter_proof_type
 
 include Tactic_type
@@ -54,22 +56,29 @@ let step_ast { step_ast = ast } = ast
 (*
  * Throw away extra information from the goal.
  *)
-let aterm_of_goal (t, { ref_label = label; ref_args = args; ref_fcache = fcache }) =
-   { aterm_goal = t;
-     aterm_label = label;
-     aterm_args = args
+let aterm_tactic_arg_of_goal
+    { tac_goal = goal;
+      tac_hyps = hyps;
+      tac_arg = { ref_label = label; ref_args = args; ref_fcache = fcache }
+    } =
+   { tac_goal = goal;
+     tac_hyps = hyps;
+     tac_arg = { aterm_label = label; aterm_args = args }
    }
 
-let goal_of_aterm resources fcache
-    { aterm_goal = t;
-      aterm_label = label;
-      aterm_args = args
+let goal_of_aterm_tactic_arg resources fcache
+    { tac_goal = goal;
+      tac_hyps = hyps;
+      tac_arg = { aterm_label = label; aterm_args = args }
     } =
-   (t, { ref_label = label;
-         ref_args = args;
-         ref_fcache = fcache;
-         ref_rsrc = resources
-    })
+   { tac_goal = goal;
+     tac_hyps = hyps;
+     tac_arg = { ref_label = label;
+                 ref_args = args;
+                 ref_fcache = fcache;
+                 ref_rsrc = resources
+               }
+   }
 
 (*
  * Throw away information.
@@ -80,8 +89,8 @@ let io_step_of_step
       step_text = text;
       step_ast = ast
     } =
-   { Filter_proof_type.step_goal = aterm_of_goal goal;
-     Filter_proof_type.step_subgoals = List.map aterm_of_goal subgoals;
+   { Filter_proof_type.step_goal = aterm_tactic_arg_of_goal goal;
+     Filter_proof_type.step_subgoals = List.map aterm_tactic_arg_of_goal subgoals;
      Filter_proof_type.step_text = text;
      Filter_proof_type.step_ast = ast
    }
@@ -95,14 +104,17 @@ let step_of_io_step resources fcache
       Filter_proof_type.step_text = text;
       Filter_proof_type.step_ast = ast
     } =
-   { step_goal = goal_of_aterm resources fcache goal;
-     step_subgoals = List.map (goal_of_aterm resources fcache) subgoals;
+   { step_goal = goal_of_aterm_tactic_arg resources fcache goal;
+     step_subgoals = List.map (goal_of_aterm_tactic_arg resources fcache) subgoals;
      step_text = text;
      step_ast = ast
    }
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/21 20:57:57  jyh
+ * Fixed typing problems introduced by refiner msequents.
+ *
  * Revision 1.4  1998/04/17 01:30:47  jyh
  * Editor is almost constructed.
  *
