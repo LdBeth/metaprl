@@ -146,7 +146,8 @@ type clash_info =
  | ClashMterms of multiterm * multiterm
  | ClashBvars of bound_variable * bound_variable
  | ClashConsts of var_name * var_name
- | ClashTerms of term * term
+ | ClashTerms of string * term * term
+ | ClashTermsWrap of string * term * term * clash_info
 
 exception Cycle
 exception Clash of clash_info
@@ -552,13 +553,13 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                      check_header_equality multit0 multit1 (-1);
                      { m_t = [multit0]; s_t = Queue.create () }
                 else
-                  raise(Clash(ClashTerms(t0,t1)))
+                  raise(Clash(ClashTerms("terms2temp_multieq:1", t0,t1)))
             else begin
-               if (List.mem_assoc y b_asslist1) then raise(Clash(ClashTerms(t0,t1)));
+               if (List.mem_assoc y b_asslist1) then raise(Clash(ClashTerms("terms2temp_multieq:2", t0,t1)));
                let q = Queue.create () in
                if SymbolSet.mem consts x then begin
                   begin if SymbolSet.mem consts y then
-                     if x <> y then raise(Clash(ClashTerms(t0,t1))) else ()
+                     if x <> y then raise(Clash(ClashTerms("terms2temp_multieq:3", t0,t1))) else ()
                   else
                      Queue.add (get_variable y u var_hashtbl) q
                   end;
@@ -575,7 +576,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
          end
       else begin
          if (List.mem_assoc x b_asslist0)||(SymbolSet.mem consts x)
-            then raise(Clash(ClashTerms(t0,t1)));
+            then raise(Clash(ClashTerms("term2temp_multieq:4",t0,t1)));
          let q = Queue.create () in
          Queue.add (get_variable x u var_hashtbl) q;
          { m_t = [cterm2multiterm t1 consts u var_hashtbl b_asslist1];
@@ -585,7 +586,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
       if is_var_term t1 then
          let y = dest_var t1 in
             if (List.mem_assoc y b_asslist1)||(SymbolSet.mem consts y)
-               then raise(Clash(ClashTerms(t0,t1)));
+               then raise(Clash(ClashTerms("terms2temp_multieq:5",t0,t1)));
             let q = Queue.create () in
                Queue.add (get_variable y u var_hashtbl) q;
                { m_t = [cterm2multiterm t0 consts u var_hashtbl b_asslist0];
@@ -593,17 +594,17 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
       else begin
          let op0, terms0 = my_dest_term t0 in
          let op1, terms1 = my_dest_term t1 in
-         if not (opsymb_equal op0 op1) then raise(Clash(ClashTerms(t0,t1)));
+         if not (opsymb_equal op0 op1) then raise(Clash(ClashTerms("terms2temp_multieq:6",t0,t1)));
          let tbvs_list0 = get_bvars terms0
          and tbvs_list1 = get_bvars terms1
          and tbcore_list0 = get_bterms terms0
          and tbcore_list1 = get_bterms terms1 in
          let op_n0 =List.length tbvs_list0
          and op_n1 =List.length tbvs_list1 in
-         if not (op_n0=op_n1) then raise(Clash(ClashTerms(t0,t1)));
+         if not (op_n0=op_n1) then raise(Clash(ClashTerms("terms2temp_multieq:7",t0,t1)));
          let op_a0 = Array.of_list (List.map List.length tbvs_list0)
          and op_a1 = Array.of_list (List.map List.length tbvs_list1) in
-         if not (op_a0=op_a1) then raise(Clash(ClashTerms(t0,t1)));
+         if not (op_a0=op_a1) then raise(Clash(ClashTerms("terms2temp_multieq:8",t0,t1)));
          let fs = { opsymb = op0;
                     oparity_n = op_n0;
                     oparity_a = op_a0 ;
@@ -665,8 +666,8 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                          * the correct multit.fsymb
                          * as a side effect
                          *)
-                     with Clash _ ->
-                        raise(Clash(ClashTerms(t0,t1)))
+                     with Clash exn ->
+                        raise(Clash(ClashTermsWrap("terms2temp_multieq:9",t0,t1,exn)))
             }
          in
             { m_t = [multit]; s_t = Queue.create () }
@@ -876,13 +877,13 @@ let unify t0 t1 consts=
             let y = dest_var t1 in
                if SymbolSet.mem consts x then
                   if SymbolSet.mem consts y then
-                     if(x=y) then [] else raise(Clash(ClashTerms(t0,t1)))
+                     if(x=y) then [] else raise(Clash(ClashTerms("unify:1",t0,t1)))
                   else
                      [y,t0]
                else
                   [x,t1]
          else if SymbolSet.mem consts x then
-            raise(Clash(ClashTerms(t0,t1)))
+            raise(Clash(ClashTerms("unify:2",t0,t1)))
          else if (is_free_var x t1) then
             raise Cycle
          else
@@ -890,7 +891,7 @@ let unify t0 t1 consts=
    else if is_var_term t1 then
       let y = dest_var t1 in
          if SymbolSet.mem consts y then
-            raise(Clash(ClashTerms(t0,t1)))
+            raise(Clash(ClashTerms("unify:3",t0,t1)))
          else if (is_free_var y t0) then
             raise Cycle
          else
@@ -1008,19 +1009,25 @@ let clash_error_aux =
       { fsymb = Op op } -> term_of_op op
     | { fsymb = Bvar bv } -> mk_var_term (var_name bv.name_bv)
     | { fsymb = Cnst c } -> mk_var_term (var_name c)
-   in function
-      ClashBvar bv ->
-         StringVarError("bound variable mismatch", var_name bv.name_bv)
-    | ClashOps(op1,op2) ->
-         StringWrapError("operator mismatch", TermPairError(term_of_op op1, term_of_op op2))
-    | ClashMterms(mt1,mt2) ->
-         StringWrapError("internal terms mismatch", TermPairError(term_of_multi mt1, term_of_multi mt2))
-    | ClashTerms(t1,t2) ->
-         StringWrapError("terms do not match", TermPairError(t1,t2))
-    | ClashConsts(c1,c2) ->
-         StringWrapError("constants mismatch", TermPairError(mk_var_term (var_name c1), mk_var_term (var_name c2)))
-    | ClashBvars(bv1,bv2) ->
-         StringWrapError("bound variables mismatch", TermPairError(mk_var_term (var_name bv1.name_bv),mk_var_term (var_name bv2.name_bv)))
+   in
+   let rec build exn =
+      match exn with
+         ClashBvar bv ->
+            StringVarError("bound variable mismatch", var_name bv.name_bv)
+       | ClashOps(op1,op2) ->
+            StringWrapError("operator mismatch", TermPairError(term_of_op op1, term_of_op op2))
+       | ClashMterms(mt1,mt2) ->
+            StringWrapError("internal terms mismatch", TermPairError(term_of_multi mt1, term_of_multi mt2))
+       | ClashTerms(s,t1,t2) ->
+            StringWrapError(s, StringWrapError("terms do not match", TermPairError(t1,t2)))
+       | ClashTermsWrap(s,t1,t2,exn) ->
+            StringWrapError(s, StringWrapError("terms do not match", TermErrorError(t1, TermErrorError (t1, build exn))))
+       | ClashConsts(c1,c2) ->
+            StringWrapError("constants mismatch", TermPairError(mk_var_term (var_name c1), mk_var_term (var_name c2)))
+       | ClashBvars(bv1,bv2) ->
+            StringWrapError("bound variables mismatch", TermPairError(mk_var_term (var_name bv1.name_bv),mk_var_term (var_name bv2.name_bv)))
+   in
+      build
 
 let clash_error ce =
    RefineError("unify_mm", clash_error_aux ce)
