@@ -1055,12 +1055,14 @@ EXTEND
                   Not_found ->
                      "", x
             in
+               eprintf "kind=[%s], s=[%s]%t" kind s eflush; 
                match kind with
                   "ext" ->
                      Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
                 | "term" | "" ->
-                     let cs = Stream.of_string s in
-                        Grammar.Entry.parse TermGrammar.term_eoi cs
+                     raise (Failure "Term quotation inside a term")
+(*                     let cs = Stream.of_string s in
+                        Grammar.Entry.parse TermGrammar.term_eoi cs*)
                 | _ ->
                      raise (Invalid_argument "Invalid term quotation")
         ]

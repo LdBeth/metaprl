@@ -10,8 +10,8 @@ INCLUDE = -I . -I $(ROOT)/lib -I $(CAMLP4LIB)
 
 OCAMLFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
 
-YACCFILES =\
-	phobos_parser.mly
+MLZFILES =\
+	phobos_parser
 
 # Library files
 include Files
@@ -35,5 +35,5 @@ opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES) Files
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)
 
-Makefile.dep: $(YACCFILES) Files
-# DO NOT DELETE
+clean::
+	$(RM) phobos_lexer.ml
