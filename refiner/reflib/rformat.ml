@@ -95,16 +95,10 @@ type 'tag zone_tag =
  *   2. a Break
  *      Either all Breaks are taken in a zone, or all are not
  *      a. the number of the corresponding zone
- *      b. a string to append to the current line if the break is taken
- *      c. a string to append if it is not
- *      d. a string to append to the next line if the break is taken
- *
- *   3. a soft SBreak
- *      Soft breaks are optional, and all are independent of one another
- *      a. a unique number
- *      b. a string to append to the current line if the break is taken
- *      c. a string to append if it is not
- *      d. a string to append to the next line if the break is taken
+ *      b. the length to begin the next line if the break is taken
+ *      c. the length to append to the current line if it is not
+ *      d. a string to insert on the next line if the break is taken
+ *      e. a string to append if it is not
  *
  *   4. zone control
  *      LZone: no line breaks are allowed in a linear zone
@@ -646,20 +640,20 @@ let get_formatted buf =
 (*
  * Search for the next Text item.
  *)
-let rec next_text_len = function
+let rec next_text_len stack = function
    Text (len, _) :: _ when len > 0 ->
       len
  | Inline buf :: t when buf.buf_tag <> IZoneTag ->
       let { unformatted_commands = commands } = get_unformatted buf in
-      let len = next_text_len commands in
-         if len = 0 then
-            next_text_len t
-         else
-            len
+         next_text_len (t :: stack) commands
  | _ :: t ->
-      next_text_len t
+      next_text_len stack t
  | [] ->
-      0
+      match stack with
+         t :: tl ->
+            next_text_len tl t
+       | [] ->
+            0
 
 (*
  * Breaks are never taken in a linear zone.
@@ -712,7 +706,7 @@ let rec search_lzone buf lmargin rmargin col maxx search =
  * function is both for tagged zones, and as the inner
  * search of hard/soft breaking zones.
  *)
-and search_tzone buf ((lmargin, _) as lmargin') rmargin col maxx breaks search =
+and search_tzone buf stack ((lmargin, _) as lmargin') rmargin col maxx breaks search =
    if !debug_rformat then
       eprintf "Rformat.search_tzone%t" eflush;
    let rec collect col maxx search = function
@@ -740,7 +734,7 @@ and search_tzone buf ((lmargin, _) as lmargin') rmargin col maxx breaks search =
                      collect (lmargin + take_len) maxx search t
 
                   else
-                     let len = next_text_len t in
+                     let len = next_text_len stack t in
                      let col' = col + notake_len in
                         if col' + len >= rmargin then
                            begin
@@ -779,7 +773,7 @@ and search_tzone buf ((lmargin, _) as lmargin') rmargin col maxx breaks search =
                   collect lmargin maxx search t
 
              | Inline buf' ->
-                  let col, maxx = search_zone buf' lmargin' rmargin col maxx breaks search in
+                  let col, maxx = search_zone buf' (t :: stack) lmargin' rmargin col maxx breaks search in
                      collect col maxx search t
          end
 
@@ -804,47 +798,48 @@ and search_tzone buf ((lmargin, _) as lmargin') rmargin col maxx breaks search =
  * Hard breaks are always taken in a hard zone.
  * Soft breaks are taken only if the margin would be exceeded otherwise.
  *)
-and search_hzone buf lmargin rmargin col maxx search =
+and search_hzone buf stack lmargin rmargin col maxx search =
    let { unformatted_index = index } = get_unformatted buf in
    let breaks = Array.create (succ index) false in
       breaks.(0) <- true;
-      search_tzone buf lmargin rmargin col maxx breaks search
+      search_tzone buf stack lmargin rmargin col maxx breaks search
 
-and search_szone buf lmargin rmargin col maxx search =
+and search_szone buf stack lmargin rmargin col maxx search =
    let { unformatted_index = index } = get_unformatted buf in
    let breaks = Array.create (succ index) false in
       if search then
-         search_tzone buf lmargin rmargin col maxx breaks search
+         search_tzone buf stack lmargin rmargin col maxx breaks search
       else
-         try search_tzone buf lmargin rmargin col maxx breaks true with
+         try search_tzone buf stack lmargin rmargin col maxx breaks true with
             MarginError ->
                breaks.(0) <- true;
-               search_tzone buf lmargin rmargin col maxx breaks false
+               search_tzone buf stack lmargin rmargin col maxx breaks false
 
 (*
  * Generic zone searcher.
  *)
-and search_zone buf lmargin rmargin col maxx breaks search =
+and search_zone buf stack lmargin rmargin col maxx breaks search =
    if !debug_rformat then
       eprintf "Rformat.search_zone%t" eflush;
    match buf.buf_tag with
       LZoneTag ->
          search_lzone buf lmargin rmargin col maxx search
     | HZoneTag ->
-         search_hzone buf lmargin rmargin col maxx search
+         search_hzone buf stack lmargin rmargin col maxx search
     | SZoneTag ->
-         search_szone buf lmargin rmargin col maxx search
+         search_szone buf stack lmargin rmargin col maxx search
     | IZoneTag ->
          (* All text inside is invisible to margin calculations *)
          col, maxx
     | TZoneTag _ ->
          (* Tag doesn't affect the breaking *)
-         search_tzone buf lmargin rmargin col maxx breaks search
+         search_tzone buf stack lmargin rmargin col maxx breaks search
     | MZoneTag (off, str) ->
          (* Adjust the left margin *)
          let lmargin, str' = lmargin in
-         let lmargin = col + off, str' ^ str in
-            search_tzone buf lmargin rmargin col maxx breaks search
+         let space = col - lmargin in
+         let lmargin = col + off, str' ^ String.make space ' ' ^ str in
+            search_tzone buf stack lmargin rmargin col maxx breaks search
 
 (*
  * Calculate all the line breaks.
@@ -853,7 +848,7 @@ let compute_breaks buf width =
    if !debug_rformat then
       eprintf "Rformat.compute_breaks%t" eflush;
    flush_formatting buf;
-   search_zone buf (0, "") width 0 0 [||] false
+   search_zone buf [] (0, "") width 0 0 [||] false
 
 (*
  * Refresh a buffer.
@@ -867,7 +862,7 @@ let refresh_breaks buf =
                   formatted_lmargin = lmargin;
                   formatted_search = search
       } ->
-         search_zone buf lmargin rmargin col col breaks false
+         search_zone buf [] lmargin rmargin col col breaks false
 
     | Unformatted _
     | Formatting _ ->
