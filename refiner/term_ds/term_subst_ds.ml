@@ -174,7 +174,7 @@ struct
             let v' = String_util.vnewname v (StringSet.mem avoid') in
             let vs', ts = compute_renames avoid (StringSet.add avoid' v') vs in
                (v'::vs'), ((v, (mk_var_term v')) :: ts)
-         else 
+         else
             let vs', ts = compute_renames avoid avoid' vs in
             (v::vs'), ts
 
@@ -286,8 +286,8 @@ struct
                if i = len then [] else
                   (context_vars (SeqGoal.get goals i) @ goals_context_vars (succ i))
             in (context_vars seq.sequent_args) @ (hyp_context_vars 0) @ (goals_context_vars 0)
-       | Term { term_terms = bts } -> 
-            terms_context_vars (List.map (fun bt -> bt.bterm ) bts) 
+       | Term { term_terms = bts } ->
+            terms_context_vars (List.map (fun bt -> bt.bterm ) bts)
        | _ -> []
 
    (************************************************************************
@@ -591,7 +591,52 @@ struct
          BODY
       ENDIF
 
-  (************************************************************************
+   (************************************************************************
+    * Term standardizing.
+    ************************************************************************)
+
+   (*
+    * Make all the vars different by giving them a unique numeric suffix.
+    *)
+   let rec standardize_bterm index { bvars = bvars; bterm = t } =
+      let bvars, subst, index =
+         List.fold_left (fun (bvars, subst, index) v ->
+            let v' =
+               try String.sub v 0 (String.rindex v '_') with
+                  Not_found ->
+                     v
+            in
+            let v' = v' ^ "_" ^ string_of_int index in
+            let t = mk_var_term v' in
+            let bvars = v' :: bvars in
+            let subst = (v, t) :: subst in
+            let index = succ index in
+               bvars, subst, index) ([], [], index) bvars
+      in
+      let bvars = List.rev bvars in
+      let t = apply_subst t subst in
+      let t, index = standardize_term index t in
+         { bvars = bvars; bterm = t }, index
+
+   and standardize_term index t =
+      match get_core t with
+         Term { term_op = op; term_terms = bterms } ->
+            let bterms, index =
+               List.fold_left (fun (bterms, index) bterm ->
+                  let bterm, index = standardize_bterm index bterm in
+                     bterm :: bterms, index) ([], index) bterms
+            in
+            let t = mk_term op (List.rev bterms) in
+               t, index
+       | FOVar _ ->
+            t, index
+       | _ ->
+          raise (Invalid_argument "standardize_term")
+
+   let standardize t =
+      fst (standardize_term 0 t)
+
+   (************************************************************************
     * Term generalization                                                  *
     ************************************************************************)
 

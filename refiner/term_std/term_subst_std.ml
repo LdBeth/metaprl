@@ -515,8 +515,8 @@ struct
     | v::vs ->
          StringSet.mem avoid v or
          need_to_rename (StringSet.add avoid v) vs
-   
-   let rec compute_renames avoid avoid' = function 
+
+   let rec compute_renames avoid avoid' = function
       [] -> [], [], []
     | v::vs ->
          if List.mem v vs then
@@ -643,6 +643,46 @@ struct
       ELSE
          List.rev (match_terms subst [] t1 t2)
       ENDIF
+
+   (************************************************************************
+    * Term standardizing.
+    ************************************************************************)
+
+   (*
+    * Make all the vars different by giving them a unique numeric suffix.
+    *)
+   let rec standardize_bterm index { bvars = bvars; bterm = t } =
+      let bvars, subst, index =
+         List.fold_left (fun (bvars, subst, index) v ->
+            let v' =
+               try String.sub v 0 (String.rindex v '_') with
+                  Not_found ->
+                     v
+            in
+            let v' = v' ^ "_" ^ string_of_int index in
+            let t = mk_var_term v' in
+            let bvars = v' :: bvars in
+            let subst = (v, t) :: subst in
+            let index = succ index in
+               bvars, subst, index) ([], [], index) bvars
+      in
+      let bvars = List.rev bvars in
+      let t = apply_subst t subst in
+      let t, index = standardize_term index t in
+         { bvars = bvars; bterm = t }, index
+
+   and standardize_term index t =
+      let { term_op = op; term_terms = bterms } = t in
+         let bterms, index =
+            List.fold_left (fun (bterms, index) bterm ->
+               let bterm, index = standardize_bterm index bterm in
+                  bterm :: bterms, index) ([], index) bterms
+         in
+         let t = mk_term op (List.rev bterms) in
+            t, index
+
+   let standardize t =
+      fst (standardize_term 0 t)
 
    (************************************************************************
     * Term generalization                                                  *

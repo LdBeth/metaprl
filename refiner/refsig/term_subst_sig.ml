@@ -101,6 +101,13 @@ sig
       bool
 
    (*
+    * standardize t =
+    * generates a term alpha-equal to t, but all binding vars
+    * have been renamed.
+    *)
+   val standardize : term -> term
+
+   (*
     * Get the list of free variables.
     *)
    val is_var_free : string -> term -> bool
