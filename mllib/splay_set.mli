@@ -11,6 +11,7 @@ sig
    val remove : elt -> t -> t
    val union : t -> t -> t
    val elements : t -> elt list
+   val cardinal : t -> int
 end
 
 module Make (Ord: Set.OrderedType) : S with type elt = Ord.t
