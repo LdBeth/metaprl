@@ -123,5 +123,3 @@ subst: L () (r; l)
 <printer Shell_p4.print_term raised an exception>
 
 without even explaining which display form caused an error message.
-
-*) We no longer need @ for meta-parameters.

@@ -219,7 +219,7 @@ let collect_anames args =
       avar 0 args
 
 (*
- * There should be only one param, of String type.
+ * There should be only one param, of [M]String type.
  * Get it.
  *)
 let get_string_param loc t =
@@ -228,15 +228,14 @@ let get_string_param loc t =
          { op_params = [param] } ->
             begin
                match dest_param param with
-                  String s ->
-                     s
-                | _ ->
-                     Stdpp.raise_with_loc loc (RefineError ("get_string_param", TermMatchError (t, "param type")))
+                  String s -> s
+                | MString s -> s
+                | _ -> Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "param type")))
             end
        | { op_params = [] } ->
-            Stdpp.raise_with_loc loc (RefineError ("get_string_param", TermMatchError (t, "no params")))
+            Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "no params")))
        | _ ->
-            Stdpp.raise_with_loc loc (RefineError ("get_string_param", TermMatchError (t, "too many params")))
+            Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "too many params")))
 
 (************************************************************************
  * GENERIC CONSTRUCTION                                                 *

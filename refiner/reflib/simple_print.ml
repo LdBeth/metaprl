@@ -157,15 +157,15 @@ struct
        | String s -> format_quoted_string buf s; format_string buf ":s"
        | Token t -> format_quoted_string buf t; format_string buf ":t"
        | Var v -> format_quoted_string buf v; format_string buf ":v"
-       | MNumber v -> format_quoted_string buf v; format_string buf ":n"
-       | MString v -> format_quoted_string buf v; format_string buf ":s"
-       | MToken v -> format_quoted_string buf v; format_string buf ":t"
+       | MNumber v -> format_string buf v; format_string buf ":n"
+       | MString v -> format_string buf v; format_string buf ":s"
+       | MToken v -> format_string buf v; format_string buf ":t"
        | MLevel l -> format_level_exp buf l; format_string buf ":l"
        | BackwardsCompatibleLevel l ->
             format_quoted_string buf "BackwardsCompatibleLevel:";
             format_level_exp buf l;
             format_string buf ":l"
-       | MVar v -> format_quoted_string buf v; format_string buf ":v"
+       | MVar v -> format_string buf v; format_string buf ":v"
        | ObId a -> format_string buf "<object-id>"
        | ParamList l ->
             let rec format = function

@@ -58,8 +58,8 @@ syntax:</P>
         <TD WIDTH="5%" ALIGN="CENTER">
         ::=</TD> 
         <TD WIDTH="70%">
-        number <TT>:n</TT> | string <TT>:s</TT> | string <TT>:t</TT>
-        | string <TT>:v</TT> | <B>level</B> <TT>:l</TT> | <B>meta-param</B></TD> 
+        number <TT>:n</TT> | "string" <TT>:s</TT> | "string" <TT>:t</TT>
+        | "string" <TT>:v</TT> | <B>level</B> <TT>:l</TT> | <B>meta-param</B></TD> 
       </TR>
       <TR>
         <TD WIDTH="21%">
@@ -67,8 +67,8 @@ syntax:</P>
         <TD WIDTH="5%" ALIGN="CENTER">
         ::=</TD> 
         <TD WIDTH="70%">
-        <TT>@</TT>var <TT>:n</TT> | <TT>@</TT>var<TT>:s</TT> | <TT>@</TT>var<TT>:t</TT>
-        | <TT>@</TT>var <TT>:v</TT> | <TT>@</TT>var <TT>:l</TT></TD> 
+        var <TT>:n</TT> | var<TT>:s</TT> | var<TT>:t</TT>
+        | var <TT>:v</TT> | var <TT>:l</TT></TD> 
       </TR>
       <TR>
         <TD WIDTH="21%">
@@ -134,8 +134,8 @@ constants defined in <TT>Itt_int</TT> for numbers and <TT>Itt_atom</TT>
 for strings.</P>
 
 <BLOCKQUOTE>
-  <PRE><B>declare </B>natural_number[@i:n]
-<B>declare </B>token[@s:t]</PRE>
+  <PRE><B>declare </B>natural_number[i:n]
+<B>declare </B>token[s:t]</PRE>
 </BLOCKQUOTE>
 
 <P>The declarations use <I>meta-syntax</I> for the parameters:
@@ -157,7 +157,7 @@ to define type universes. For example, in the <TT>Itt_equal</TT>
 module, type universes are declared as:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>declare</B> univ[@i:l]</PRE>
+  <PRE><B>declare</B> univ[i:l]</PRE>
 </BLOCKQUOTE>
 
 <P>and specific instances of type universes are the <I>base</I>

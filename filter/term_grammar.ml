@@ -139,8 +139,6 @@ struct
       match dest_param p with
          Number (Mp_num.Int n) ->
            mk_const_level_exp n
-       | String s -> mk_var_level_exp s
-       | Token t -> mk_var_level_exp t
        | Var v -> mk_var_level_exp v
        | MLevel l -> l
        | MNumber v -> mk_var_level_exp v
@@ -587,9 +585,9 @@ struct
 
       (* Parameters *)
       param:
-         [[ sl_at; w = sl_word ->
+         [[  w = sl_word ->
              make_param (MString w)
-           | w = word_or_string ->
+           | w = STRING ->
              make_param (String w)
            | n = sl_number ->
              make_param (Number n)
@@ -786,9 +784,6 @@ struct
 
       sl_pipe:
          [[ "|" -> () ]];
-
-      sl_at:
-         [[ "@" -> () ]];
 
       sl_single_quote:
          [[ "'" -> () ]];

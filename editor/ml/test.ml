@@ -54,19 +54,19 @@ let dest_level_param t =
        | _ ->
             raise (RefineError ("dest_level_param", TermMatchError (t, "too many params")))
 
-ml_rw test_rw : add{number[@i:n]; number[@j:n]} == fun
+ml_rw test_rw : add{number[i:n]; number[j:n]} == fun
    goal ->
-   let i = dest_number <:con< number[@i:n] >> in
-   let j = dest_number <:con< number[@j:n] >> in
+   let i = dest_number <:con< number[i:n] >> in
+   let j = dest_number <:con< number[j:n] >> in
       mk_number_term (Mp_num.add_num i j), []
  | fun _ extracts ->
    << it >>, extracts
 
 ml_rule cumulativity 'H :
-   sequent ['ext] { 'H >- cumulativity[@j:l, @i:l] } == fun
+   sequent ['ext] { 'H >- cumulativity[j:l, i:l] } == fun
    goal ->
-   let i = dest_level_param <:con< univ[@i:l] >> in
-   let j = dest_level_param <:con< univ[@j:l] >> in
+   let i = dest_level_param <:con< univ[i:l] >> in
+   let j = dest_level_param <:con< univ[j:l] >> in
       if level_le j i then
          []
       else
