@@ -116,7 +116,6 @@ STANDARD_LIBS =\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CMADEPS)\
 	$(ROOT)/refiner/refiner.cma\
-	$(ROOT)/library/library.cma\
 	$(MAIN).cma
 
 STANDARDX_LIBS =\
@@ -125,7 +124,6 @@ STANDARDX_LIBS =\
 	$(CAMLP4LIB)/camlp4.cmxa\
 	$(CMXADEPS)\
 	$(ROOT)/refiner/refiner.cmxa\
-	$(ROOT)/library/library.cmxa\
 	$(MAIN).cmxa
 
 CAMLP4N_CMOBJS =\

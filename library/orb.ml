@@ -88,7 +88,7 @@ let orb_open name =
 			; name
 			; "orb"
 			; string_of_int (getpid ())
-			; string_of_int (time ())
+			; string_of_int (truncate (time ()))
 			]
 	; connections = []
 	; environments = []

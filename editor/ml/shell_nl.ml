@@ -630,8 +630,8 @@ struct
 
    let main () =
       install_debug_printer print_term_fp;
-      Thread.create main_loop_aux ();
-      Tactic_type.main_loop ()
+      Tactic_type.main_loop ();
+      main_loop_aux ()
 end
 
 (*

@@ -14,8 +14,7 @@ REFINER_DIRS :=\
 	util\
 	clib\
 	mllib\
-	refiner\
-	library
+	refiner
 
 NL_DIRS :=\
 	ensemble\

@@ -125,7 +125,6 @@ CMXDEPS =\
 	$(CMXADEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
-	$(ROOT)/lib/library.cmxa\
 	$(ROOT)/lib/prlc.cmxa\
 	$(CMXLIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cmxa\
@@ -144,7 +143,6 @@ CMXADEPS =\
 	$(CMXADEPS_ens)\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
-	$(ROOT)/lib/library.cmxa\
 	$(ROOT)/lib/prlc.cmxa\
 	$(CMXALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cmxa\
@@ -168,7 +166,6 @@ CMADEPS =\
 	$(CMADEPS_ens)\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
-	$(ROOT)/lib/library.cma\
 	$(ROOT)/lib/prlc.cma\
 	$(CMALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cma\
@@ -188,7 +185,6 @@ TCMADEPS =\
 	$(CMADEPS_ens)\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
-	$(ROOT)/lib/library.cma\
 	$(ROOT)/lib/prlc.cma\
 	$(CMALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cma\

@@ -1059,8 +1059,12 @@ struct
     * Main loop is just the Appl main loop,
     * but we print exceptions.
     *)
-   let main_loop _ =
+   let main_loop_aux _ =
       Printexc.catch (Unix.handle_unix_error Appl.main_loop) ()
+
+   let main_loop _ =
+      Thread.create main_loop_aux ();
+      ()
 
    (************************************************************************
     * QUEUE IMPLEMENTATION                                                 *

@@ -371,7 +371,7 @@ let stamp_data =
 	; pid = String.concat "_"
 			[ string_of_inet_addr get_inet_addr
 			; string_of_int (getpid())
-			; string_of_int (time())
+			; string_of_int (truncate (time()))
 			]
 	}
 
