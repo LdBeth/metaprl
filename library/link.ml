@@ -4,7 +4,7 @@
  *)
 
 open Printf
-open Nl_debug
+open Mp_debug
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -40,7 +40,7 @@ let local_host =
 
 let iconnect_term port host =
  mk_term (mk_op nuprl5_opname
-	     [(make_param (Token "!connect")); (make_param (Number (Nl_num.Int port)));
+	     [(make_param (Token "!connect")); (make_param (Number (Mp_num.Int port)));
 	       (make_param (String host))])
       []
 
@@ -48,7 +48,7 @@ let idisconnect_term error_p =
 	mk_term (mk_op nuprl5_opname
 		       [(make_param (Token "!disconnect"));
 			(make_param (ParamList [(make_param (Token "bool"));
-					       (make_param (Number (Nl_num.Int (if error_p then 1 else 0))))]))]) []
+					       (make_param (Number (Mp_num.Int (if error_p then 1 else 0))))]))]) []
 
 let cautious_in = ref Unix.stderr
 let cautious_out = ref Unix.stderr

@@ -1,5 +1,5 @@
 (*
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -44,8 +44,8 @@ open Utils
 open Library
 
 open Printf
-open Nl_debug
-open Nl_num
+open Mp_debug
+open Mp_num
 
 let _ =
    if !debug_load then
@@ -81,27 +81,27 @@ let lib_open_eval env ehook host localport remoteport =
  * 
  * NL cmd syntax
  *
- * !nl_list_root{}() returns !tok_cons 
- * !nl_list_module{}(tok_cons) returns !cons{}(!cons(!token{thm:t}(); sequent); !cons ...
- * !nl_thm_create{}(!msequent) returns !void()  
- * !nl_create_set{}(!tok_cons; sequent) returns !void()  
- * !nl_set_goal{}(!tok_cons; sequent) returns !void()  
- * !nl_lookup_proof{}(symaddr) returns !nl_prf(goal; tactic; children; extras) g and ex are sequent, ch are nl_prf
- * !nl_refine{}(symaddr; address; tactic) returns !nl_ref(goal; subgoals; extras) g, subs and ex are sequent terms
- * !nl_undo{}(symb) returns !nl_prf(goal; tactic; children; extras) 
+ * !mp_list_root{}() returns !tok_cons 
+ * !mp_list_module{}(tok_cons) returns !cons{}(!cons(!token{thm:t}(); sequent); !cons ...
+ * !mp_thm_create{}(!msequent) returns !void()  
+ * !mp_create_set{}(!tok_cons; sequent) returns !void()  
+ * !mp_set_goal{}(!tok_cons; sequent) returns !void()  
+ * !mp_lookup_proof{}(symaddr) returns !mp_prf(goal; tactic; children; extras) g and ex are sequent, ch are mp_prf
+ * !mp_refine{}(symaddr; address; tactic) returns !mp_ref(goal; subgoals; extras) g, subs and ex are sequent terms
+ * !mp_undo{}(symb) returns !mp_prf(goal; tactic; children; extras) 
  * 
  *)
 
 
-let nl_list_root_op = mk_nuprl5_op [ make_param (Token "!nl_list_root")]
-let nl_list_module_op = mk_nuprl5_op [ make_param (Token "!nl_list_module")]
-let nl_create_op = mk_nuprl5_op [ make_param (Token "!nl_create")]
-let nl_create_set_op = mk_nuprl5_op [ make_param (Token "!nl_create_set")]
-let nl_set_goal_op = mk_nuprl5_op [ make_param (Token "!nl_set_goal")]
-let nl_lookup_op = mk_nuprl5_op [ make_param (Token "!nl_lookup_proof")]
-let nl_refine_op = mk_nuprl5_op [ make_param (Token "!nl_refine")]
-let nl_undo_op = mk_nuprl5_op [ make_param (Token "!nl_undo")]
-let nl_node_op = mk_nuprl5_op [ make_param (Token "!nl_node")]
+let mp_list_root_op = mk_nuprl5_op [ make_param (Token "!mp_list_root")]
+let mp_list_module_op = mk_nuprl5_op [ make_param (Token "!mp_list_module")]
+let mp_create_op = mk_nuprl5_op [ make_param (Token "!mp_create")]
+let mp_create_set_op = mk_nuprl5_op [ make_param (Token "!mp_create_set")]
+let mp_set_goal_op = mk_nuprl5_op [ make_param (Token "!mp_set_goal")]
+let mp_lookup_op = mk_nuprl5_op [ make_param (Token "!mp_lookup_proof")]
+let mp_refine_op = mk_nuprl5_op [ make_param (Token "!mp_refine")]
+let mp_undo_op = mk_nuprl5_op [ make_param (Token "!mp_undo")]
+let mp_node_op = mk_nuprl5_op [ make_param (Token "!mp_node")]
 
 let refiner_op = mk_nuprl5_op [ make_param (Token "!refine")]
 
@@ -120,12 +120,12 @@ let refine_args t =
 let iinf_sequent_op = mk_nuprl5_op [make_param (Token "!inf_sequent"); Basic.inil_parameter]
 let iinf_sequent_term hyp term = mk_term iinf_sequent_op [(mk_bterm [] hyp); (mk_bterm [""] term)]
 
-let nl_prf_term g tac s e =
-  mk_term (mk_nuprl5_op [make_param (Token "!nl_prf")])
+let mp_prf_term g tac s e =
+  mk_term (mk_nuprl5_op [make_param (Token "!mp_prf")])
     [(mk_bterm [] g); (mk_bterm [] tac); (mk_bterm [] s); (mk_bterm [] e)]
 
-let nl_ref_term g s e =
-  mk_term (mk_nuprl5_op [make_param (Token "!nl_ref")])
+let mp_ref_term g s e =
+  mk_term (mk_nuprl5_op [make_param (Token "!mp_ref")])
     [(mk_bterm [] g); (mk_bterm [] s); (mk_bterm [] e)]
 
 let inatural_cons_op = (mk_nuprl5_op [make_param (Token "!natural_cons")])
@@ -135,7 +135,7 @@ let int_list_of_term t =
 let string_list_of_term t =
   map_isexpr_to_list_by_op icons_op string_of_itoken_term t
 
-let inl_msequent_op = (mk_nuprl5_op [make_param (Token "!nl_msequent")])
+let inl_msequent_op = (mk_nuprl5_op [make_param (Token "!mp_msequent")])
 let inl_msequent_term a g = mk_term inl_msequent_op [(mk_bterm [] a); (mk_bterm [] g)]
     
 let msequent_to_term mseq = 
@@ -163,29 +163,29 @@ let refine_ehook rhook =
        let length = List.length subgoals
 	      in let vps i = 
 		 visit_proof (i :: root_il) in
-		(nl_prf_term (msequent_to_term goal) (itext_term ss) 
+		(mp_prf_term (msequent_to_term goal) (itext_term ss) 
 		    (list_to_ilist (List.map vps (list_of_ints length))) 
 		    (list_to_ilist (List.map msequent_to_term extras)))
-      | None -> (nl_prf_term (msequent_to_term goal) ivoid_term inil_term 
+      | None -> (mp_prf_term (msequent_to_term goal) ivoid_term inil_term 
 		(list_to_ilist (List.map msequent_to_term extras))))	 
        in 
   (match dest_term t with
     {term_op = op; term_terms = goal :: tac :: r } when (opeq op refiner_op) -> 
       list_to_ilist (rhook (term_of_unbound_term goal) (term_of_unbound_term tac))
   	
-  | {term_op = op; term_terms = symaddr :: addr :: tac :: r } when (opeq op nl_refine_op) ->
+  | {term_op = op; term_terms = symaddr :: addr :: tac :: r } when (opeq op mp_refine_op) ->
       (let l = string_list_of_term (term_of_unbound_term symaddr)
       in if l = !current_symaddr then () else Shell.edit_cd_thm (hd (tl l)) (hd (tl (tl l)));
       eprintf "%s %t" (string_of_itext_term (term_of_unbound_term tac)) eflush;
       let (gg, subgoals, extras) = 
       	Shell.edit_refine (int_list_of_term (term_of_unbound_term addr))
   	  (string_of_itext_term (term_of_unbound_term tac)) in
-      nl_ref_term (msequent_to_term gg)
+      mp_ref_term (msequent_to_term gg)
       	(list_to_ilist (List.map msequent_to_term subgoals)) 
 	   (list_to_ilist (List.map msequent_to_term extras)))
 
   (* node not needed at command call level*)
-  (*| {term_op = op; term_terms = addr :: tac :: r } when (opeq op nl_node_op) -> 
+  (*| {term_op = op; term_terms = addr :: tac :: r } when (opeq op mp_node_op) -> 
       let (goal, subgoals, extras) = 
       	Shell.edit_refine (int_list_of_term (term_of_unbound_term addr))
   	  (string_of_itext_term tac) 
@@ -195,17 +195,17 @@ let refine_ehook rhook =
 	   (list_to_ilist (List.map msequent_to_term extras)))
    *)
 
-  | {term_op = op; term_terms = symaddr :: r } when (opeq op nl_undo_op) ->
+  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_undo_op) ->
       (let l = string_list_of_term (term_of_unbound_term symaddr)
       in 
       if l = !current_symaddr then () else Shell.edit_cd_thm (hd (tl l)) (hd (tl (tl l)));
       Shell.edit_undo ();  
       visit_proof [])
 
-  | {term_op = op; term_terms = [] } when (opeq op nl_list_root_op) ->
+  | {term_op = op; term_terms = [] } when (opeq op mp_list_root_op) ->
       list_to_ilist (map itoken_term (Shell.edit_list_modules ()))
 
-  | {term_op = op; term_terms = symaddr :: r } when (opeq op nl_list_module_op) ->
+  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_module_op) ->
       let name = (hd (map_isexpr_to_list string_of_itoken_term
 			(term_of_unbound_term symaddr)))
       in 
@@ -214,30 +214,30 @@ let refine_ehook rhook =
 		ipair_term (itoken_term x) (msequent_to_term goal))
       in list_to_ilist (List.map f (Shell.edit_list_module name))
 
-  (*| {term_op = op; term_terms = symaddr :: goal :: r} when (opeq op nl_set_goal_op) ->
+  (*| {term_op = op; term_terms = symaddr :: goal :: r} when (opeq op mp_set_goal_op) ->
       let l = string_list_of_term (term_of_unbound_term symaddr)
       in 
       (if l = !current_symaddr then () else Shell.edit_cd_thm (hd (tl l)) (hd (tl (tl l)));
        Shell.edit_set_goal (term_to_msequent goal); ivoid_term)
  
-  | {term_op = op; term_terms = symaddr :: r} when (opeq op nl_thm_create_op) ->
+  | {term_op = op; term_terms = symaddr :: r} when (opeq op mp_thm_create_op) ->
       let l = string_list_of_term (term_of_unbound_term symaddr)
       in 
       (Shell.edit_create_thm (hd (tl l)) (hd (tl (tl l))); ivoid_term)
  *)
  (* cd not needed at command call level*)
  (*
-  | {term_op = op; term_terms = symaddr :: r} when (opeq op nl_cd_thm_op) ->
+  | {term_op = op; term_terms = symaddr :: r} when (opeq op mp_cd_thm_op) ->
       let l = string_list_of_term (term_of_unbound_term symaddr)
       in 
       (current_symaddr := l; Shell.edit_cd_thm (hd (tl l)) (hd (tl (tl l))); ivoid_term)
   *)  
-  | {term_op = op; term_terms = mname :: name :: r} when (opeq op nl_create_op) ->
+  | {term_op = op; term_terms = mname :: name :: r} when (opeq op mp_create_op) ->
      (Shell.edit_create_thm (string_of_itoken_term (term_of_unbound_term mname))
 			(string_of_itoken_term (term_of_unbound_term name));
      ivoid_term)
   
-  | {term_op = op; term_terms = symaddr :: r} when (opeq op nl_lookup_op) ->
+  | {term_op = op; term_terms = symaddr :: r} when (opeq op mp_lookup_op) ->
       let l = string_list_of_term (term_of_unbound_term symaddr)
       in 
       (if l = !current_symaddr then () 

@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -66,7 +66,7 @@ sig
     * Parameters have a number of simple types.
     *)
    and param' =
-      Number of Nl_num.num
+      Number of Mp_num.num
     | String of string
     | Token of string
     | Level of level_exp

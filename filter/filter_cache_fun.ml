@@ -5,7 +5,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -34,10 +34,10 @@
 
 open Printf
 
-open Nl_debug
+open Mp_debug
 open Opname
 open Refiner.Refiner.TermType
-open Nl_resource
+open Mp_resource
 open Simple_print
 
 open File_base_type

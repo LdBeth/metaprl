@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -32,7 +32,7 @@
 
 open Printf
 
-open Nl_debug
+open Mp_debug
 open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -137,7 +137,7 @@ struct
     *)
    let cast_level p =
       match dest_param p with
-         Number (Nl_num.Int n) ->
+         Number (Mp_num.Int n) ->
            mk_const_level_exp n
        | String s -> mk_var_level_exp s
        | Token t -> mk_var_level_exp t
@@ -167,7 +167,7 @@ struct
     | "s" as x ->
          begin
             match dest_param p with
-               Number(n) -> make_param (String (Nl_num.string_of_num n))
+               Number(n) -> make_param (String (Mp_num.string_of_num n))
              | String(s) -> p
              | Token(t) -> make_param (String t)
              | Var(v) -> make_param (String v)
@@ -177,7 +177,7 @@ struct
     | "t" as x ->
          begin
             match dest_param p with
-               Number(n) -> make_param (Token (Nl_num.string_of_num n))
+               Number(n) -> make_param (Token (Mp_num.string_of_num n))
              | String(s) -> make_param (Token s)
              | Token(t) -> p
              | Var(v) -> make_param (Token v)
@@ -188,7 +188,7 @@ struct
     | "v" as x ->
          begin
             match dest_param p with
-               Number(n) -> make_param (Var (Nl_num.string_of_num n))
+               Number(n) -> make_param (Var (Mp_num.string_of_num n))
              | String(s) -> make_param (Var s)
              | Token(t) -> make_param (Var t)
              | Var(v) -> p
@@ -912,7 +912,7 @@ struct
 
       sl_number:
          [[ n = INT ->
-             Nl_num.num_of_string n
+             Mp_num.num_of_string n
           ]];
 
       (* Take a word or a string as an identifier *)

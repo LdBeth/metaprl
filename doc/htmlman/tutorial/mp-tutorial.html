@@ -1,0 +1,56 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL Tutorial</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>MetaPRL Tutorial</H1>
+
+<P>In this tutorial we develop an account of classical first-order
+logic, and we relate it to the Nuprl type theory <TT>Itt_theory</TT>.
+The theory we develop is fully modular. It contains modules for
+each of the logical operators, and the constructive logic is a
+subtheory of the classical logic. We also investigate proof automation.
+Each module defines proof procedures for its operator, and the
+final logic defines an automated proof procedure for the logic.</P>
+
+<P>The first step in creating a logic is creating a module for
+each of the logical operators. Initially, the framework has no
+notion of truth or falsehood in the logic; these concepts are
+defined by declaring syntax and logical rules. Our logic will
+include the logical operators in first-order logic (FOL), and
+it will include terms to represent <I>true</I> and <I>false</I>.
+We will use a single-conclusion sequent calculus (a multi-conclusion
+sequent calculus is also possible, but this choice will make it
+easier to relate the logic to the type theory).</P>
+
+<P>These are the parts to the tutorial:</P>
+
+<UL>
+  <LI><A HREF="mp-getting-started.html">Getting started</A>
+  <LI>A constructive logic
+  <UL>
+    <LI><A HREF="mp-type.html">Well-formedness of terms</A>
+    <LI><A HREF="mp-base.html">True, false</A>
+    <LI><A HREF="mp-base.html">and, or, implies</A>
+    <LI><A HREF="mp-not.html">negation</A>
+    <LI><A HREF="mp-base-auto.html">Proof automation</A>
+    <LI><A HREF="mp-all.html">The quantifiers</A>
+    <LI><A HREF="mp-ctheory.html">The constructive theory</A>
+  </UL>
+  <LI>Adding classical reasoning
+  <UL>
+    <LI><A HREF="mp-class.html">Classical reasoning</A>
+    <LI><A HREF="mp-ctheory.html">A classical theory</A>
+  </UL>
+  <LI>Relating the logic to Intuitionistic Type Theory
+  <UL>
+    <LI>Intrepreting True, False
+    <LI>Interpreting Negation, and, or implies
+    <LI>Interpreting the quantifiers
+  </UL>
+</UL>
+
+</BODY>
+</HTML>

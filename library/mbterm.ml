@@ -1,5 +1,5 @@
 (*
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -28,11 +28,11 @@
 (*conversion between nuprl-light terms and mathbus terms*)
 
 open Printf
-open Nl_debug
-open Nl_pervasives
+open Mp_debug
+open Mp_pervasives
 
 open Int32
-open Nl_num
+open Mp_num
 open MathBus
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType

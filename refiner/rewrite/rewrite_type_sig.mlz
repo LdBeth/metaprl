@@ -4,7 +4,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -47,7 +47,7 @@ sig
     * order variables.
     *)
    type rwparam =
-      RWNumber of Nl_num.num
+      RWNumber of Mp_num.num
     | RWString of string
     | RWToken of string
     | RWLevel of level_exp
@@ -143,7 +143,7 @@ sig
     *)
    type stack =
       StackVoid
-    | StackNumber of Nl_num.num
+    | StackNumber of Mp_num.num
     | StackString of string
     | StackMString of string
     | StackLevel of level_exp

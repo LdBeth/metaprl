@@ -1,0 +1,420 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL Terms</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>MetaPRL Terms</H1>
+
+<P><I>Terms</I> are the logical <I>syntax.</I> All logical statements
+are expressed as terms, and new term syntax is introduced with
+the <TT>declare</TT> directive. All operations in the system are
+defined on terms: all formal programs are interpreted as terms,
+and all logical statements in the system are defined with terms.</P>
+
+<P>Terms have a single uniform syntax, defined by the following
+syntax:</P>
+
+<BLOCKQUOTE>
+  <DL>
+    <DT>&nbsp;
+    <DT><TABLE WIDTH="506" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+      <TR>
+        <TD WIDTH="21%">
+        <B>term</B></TD> 
+        <TD WIDTH="5%" ALIGN="CENTER">
+        ::=</TD> 
+        <TD WIDTH="70%">
+        <B>operator</B> <TT>{</TT> <B>bterms</B> <TT>}</TT></TD> 
+      </TR>
+      <TR>
+        <TD WIDTH="21%">
+        <B>bterm</B></TD> 
+        <TD WIDTH="5%" ALIGN="CENTER">
+        ::=</TD> 
+        <TD WIDTH="70%">
+        <B>term</B> | vars <TT>.</TT> <B>term</B></TD> 
+      </TR>
+      <TR>
+        <TD WIDTH="21%">
+        <B>operator</B></TD> 
+        <TD WIDTH="5%" ALIGN="CENTER">
+        ::=</TD> 
+        <TD WIDTH="70%">
+        <B>opname</B> <TT>[</TT> <B>params</B> <TT>]</TT></TD> 
+      </TR>
+      <TR>
+        <TD WIDTH="21%">
+        <B>opname</B></TD> 
+        <TD WIDTH="5%" ALIGN="CENTER">
+        ::=</TD> 
+        <TD WIDTH="70%">
+        literal | literal <TT>.</TT> <B>opname</B></TD> 
+      </TR>
+      <TR>
+        <TD WIDTH="21%">
+        <B>param</B></TD> 
+        <TD WIDTH="5%" ALIGN="CENTER">
+        ::=</TD> 
+        <TD WIDTH="70%">
+        number <TT>:n</TT> | string <TT>:s</TT> | string <TT>:t</TT>
+        | string <TT>:v</TT> | <B>level</B> <TT>:l</TT> | <B>meta-param</B></TD> 
+      </TR>
+      <TR>
+        <TD WIDTH="21%">
+        <B>meta-param</B></TD> 
+        <TD WIDTH="5%" ALIGN="CENTER">
+        ::=</TD> 
+        <TD WIDTH="70%">
+        <TT>@</TT>var <TT>:n</TT> | <TT>@</TT>var<TT>:s</TT> | <TT>@</TT>var<TT>:t</TT>
+        | <TT>@</TT>var <TT>:v</TT> | <TT>@</TT>var <TT>:l</TT></TD> 
+      </TR>
+      <TR>
+        <TD WIDTH="21%">
+        <B>level</B></TD> 
+        <TD WIDTH="5%" ALIGN="CENTER">
+        ::=</TD> 
+        <TD WIDTH="70%">
+        number | literal |<B> level</B> number | <B>level</B> <TT>'</TT>
+        | <B>level</B> &quot;|&quot; <B>level</B></TD> 
+      </TR>
+    </TABLE>
+  </DL>
+</BLOCKQUOTE>
+
+<P>A <I>simple</I> literal is any sequence of alphabetic and numeric
+characters beginning with a letter. Additional literals are defined
+as any sequence characters from the ASCII character set enclosed
+in double quotes. A <I>string</I> is any sequence of characters
+enclosed in double-quotes, and a <I>number</I> is any sequence
+of digits. A <I>var</I> is a simple literal. The <B>bterms</B>
+and <B>params</B> lists use the semicolon (<TT>;</TT>) as a separator
+character, and the <I>vars</I> list uses a comma (<TT>,</TT>)
+as a separator character.</P>
+
+<P>The <I>operator</I> represents the <I>name</I> of a term, which
+includes constant values defined by the parameters. The <I>opname</I>
+is name, the <I>params</I> are the constant values, and the <I>bterms</I>
+are the (possibly bound) subterms. If either of the <I>bterms</I>
+and <I>params</I> list are empty in a term, the brackets may be
+omitted.</P>
+
+<H4>Variables</H4>
+
+<P>Variables are a built-in term with the opname <TT>variable</TT>.
+There are two types of variables. <I>First-order</I> variables
+are defined with the syntax <TT>variable[&quot;v&quot;:v]</TT>
+(which represents the variable <I>v</I>). <I>Second-order</I>
+variables represent terms with substitutions (second order variables
+are used to define computational rewrites and inference rules).
+The syntax of second-order variables represents substituions with
+subterms. For example, the term <TT>variable[&quot;v&quot;:v]{variable[&quot;v1&quot;:v];
+variable[&quot;v2&quot;:v]}</TT> is a second-order variable with
+two variables <I>v1</I> and <I>v2</I> as subterms.</P>
+
+<P>The parser includes a simplifying syntax for variables: if
+a simple literal is prefixed with an apostrophe (<TT>'</TT>),
+the literal is interpreted as a variable. For example, the variable
+<I>v</I> is also represented with the syntax <TT>'v</TT>, which
+is expanded by the parser into the full form <TT>variable[&quot;v&quot;:v]</TT>.
+Second order variables include their subterms in square brackets,
+so <TT>'v['v1; 'v2]</TT> is the short form for the second-order
+variable in the last paragraph.</P>
+
+<H3>Examples</H3>
+
+<H4>Constants</H4>
+
+<P>Term syntax is added to a module with the <TT>declare</TT>
+directive. The <I>meaning</I> of the term is not defined at the
+time of declaration; the meaning is defined with rewrites and
+inference rules. Terms can represent constants, like the following
+constants defined in <TT>Itt_int</TT> for numbers and <TT>Itt_atom</TT>
+for strings.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>declare </B>natural_number[@i:n]
+<B>declare </B>token[@s:t]</PRE>
+</BLOCKQUOTE>
+
+<P>The declarations use <I>meta-syntax</I> for the parameters:
+the natural number includes a <I>number</I> parameter, and the
+token contains a <I>token</I> parameter. Once the meta-syntax
+has been defined, terms can be included in ML programs as quotations:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>let</B> one = &lt;&lt; natural_number[1:n] &gt;&gt;
+<B>let</B> hello = &lt;&lt; token[&quot;hello&quot;:t] &gt;&gt;</PRE>
+</BLOCKQUOTE>
+
+<P>There is also a simplifying syntax for numbers: the parser
+expands numbers to the <TT>natural_number</TT> form when a term
+is expected.</P>
+
+<P><I>Level-expressions</I> are included in the parameter syntax
+to define type universes. For example, in the <TT>Itt_equal</TT>
+module, type universes are declared as:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>declare</B> univ[@i:l]</PRE>
+</BLOCKQUOTE>
+
+<P>and specific instances of type universes are the <I>base</I>
+universe <TT>univ[1:l]</TT>, an <I>arbitrary</I> universe with
+index <I>i</I> <TT>univ[i:l]</TT>, and relative universes like
+<TT>univ[i':l]</TT> (which is the type universe containing <TT>univ[i:l]</TT>)
+or <TT>univ[(i | 3) : l]</TT>, which is the smallest type universe
+containing both <TT>univ[3:l</TT>] and <TT>univ[i:l]</TT>. Level
+expressions can contain multiple indices: the universe <TT>univ[(i
+| j'):l]</TT> is the minimum type universe containing both <TT>univ[i:l]</TT>
+and <TT>univ[j':l]</TT>.</P>
+
+<H4>Expressions</H4>
+
+<P>Expressions are also defined with the term syntax. For example,
+the <TT>Itt_int</TT> module declares terms to represent arithmetic,
+including the following:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>declare</B> add{'x; 'y}
+<B>declare </B>sub{'x; 'y}</PRE>
+</BLOCKQUOTE>
+
+<P>For these terms, the <I>opname</I> describes the arithmetic
+operator, and the subterms represent numbers. The logical syntax
+is <I>untyped</I>, the following terms are valid <I>syntax</I>,
+although the second term has no meaning defined in the <TT>Itt_logic</TT>
+module.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>let </B>two = &lt;&lt; add{1; 1} &gt;&gt;
+<B>let</B> error = &lt;&lt; sub{3; token[&quot;hello&quot;:s]} &gt;&gt;</PRE>
+</BLOCKQUOTE>
+
+<P>Expressions may also include binding. The <TT>Itt_rfun</TT>
+module defines syntax for function abstraction and application.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>declare </B>lambda{x. 'b['x]}
+<B>declare </B>apply{'f; 'a}</PRE>
+</BLOCKQUOTE>
+
+<P><I>Binding</I> variables are simple literals (so they are not
+quoted). The meta-syntax for <TT>lambda</TT> includes a second
+order variable, indictaing that the variable <TT>'x</TT> is <I>bound</I>
+in the body <TT>'b['x]</TT> of the function. The following function
+is an example of valid syntax in the <TT>Itt_rfun</TT> module:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>let</B> four = &lt;&lt; apply{lambda{x. add{'x; 'x}}; 2} &gt;&gt;.</PRE>
+</BLOCKQUOTE>
+
+<P>This just syntax at this point: term evaluation has not yet
+been defined.</P>
+
+<P>Types are also declared as terms. The syntax does not differentiate
+between types and programs; the <I>meaning</I> of terms is defined
+by computational rewriting and inference rules. The following
+are some of the types defined in the <TT>Itt_logic</TT> module:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>declare </B>true
+<B>declare</B> false
+<B>declare </B>and{'A; 'B}
+<B>declare </B>all{'A; x. 'B['x]}</PRE>
+</BLOCKQUOTE>
+
+<H3>Simplified Syntax</H3>
+
+<P>The uniform syntax is verbose: each term contains an operator,
+and brackets for subterms. The verbosity can obscure the menaing
+implied by term expressions. The page on <A HREF="mp-dform.html">display
+forms</A> discusses the pretty-printing mechanism for displaying
+terms. The parser also provides a simplified syntax for commonly
+occurring terms. The following tables list the simplied syntax
+in the left column, and the right column gives term in the uniform
+syntax. The simplified form is just an abbreviation; the term
+must still be declared. For example, the use of the term <TT>true
+<B>or</B> false</TT> requires that the term for <TT>or</TT> be
+declared,as in the following sequence:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>declare</B> true
+<B>declare</B> false
+<B>declare </B>or{'A; 'B}
+<B>let </B>t = &lt;&lt; true <B>or </B>false &gt;&gt;</PRE>
+</BLOCKQUOTE>
+
+<H4>Logic syntax</H4>
+
+<BLOCKQUOTE>
+  <P><TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> <B>and</B> <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>and{<I>t1; t2</I></TT>}</TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> &amp; <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>and{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> /\ <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>and{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> <B>or</B> <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>or{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> \/ <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>or{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> =&gt; <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>implies{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<B><TT>all </TT></B><TT><I>x: t1. t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>all{<I>t1; x. t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<B><TT>exst</TT></B><TT> <I>x: t1. t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>exists{<I>t1; x. t2</I>}</TT></TD>
+    </TR>
+  </TABLE></P>
+</BLOCKQUOTE>
+
+<H4>Type syntax</H4>
+
+<BLOCKQUOTE>
+  <P><TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> + <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>union{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> * <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>prod{<I>t1; t2}</I></TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> -&gt; <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>fun{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>x:t1</TT></I><TT> * <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>prod{<I>t1; x. t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>x:t1 -&gt; t2</TT></I></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>fun{<I>t1; x. t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>x, y: t1 </TT></I><TT>// <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>quot{<I>t1; x, y. t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> = <I>t2</I> <B>in </B><I>t3</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>equal{<I>t3; t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1 </TT></I><TT>!= <I>t2 </I><B>in</B> <I>t3</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>nequal{<I>t3; t2; t1</I>}</TT></TD>
+    </TR>
+  </TABLE></P>
+</BLOCKQUOTE>
+
+<H4>Arithmetic syntax</H4>
+
+<BLOCKQUOTE>
+  <P><TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1 </TT></I><TT>+@ <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>add{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> -@ <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>sub{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1 </TT></I><TT>*@ <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>mul{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1 </TT></I><TT><B>div</B> <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>div{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1 </TT></I><TT><B>mod </B><I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>mod{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> &lt; <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>lt{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1 </TT></I><TT>&lt;= <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>le{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1</TT></I><TT> &gt;= <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>ge{<I>t1; t2</I>}</TT></TD>
+    </TR>
+    <TR>
+      <TD WIDTH="50%">
+      &nbsp;<I><TT>t1 </TT></I><TT>&gt; <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      &nbsp;<TT>gt{<I>t1; t2</I>}</TT></TD>
+    </TR>
+  </TABLE></BLOCKQUOTE>
+
+</BODY>
+</HTML>

@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -32,7 +32,7 @@
 
 open Arg
 open Printf
-open Nl_debug
+open Mp_debug
 
 open Filter_parse
 
@@ -89,7 +89,7 @@ let spec =
  *)
 let main () =
    Arg.current := 1;
-   Env_arg.parse spec add_anon_arg "Nuprl-Light compiler";
+   Env_arg.parse spec add_anon_arg "MetaPRL compiler";
    set_include_path !include_path;
       try !Odyl_main.go () with
          exn ->

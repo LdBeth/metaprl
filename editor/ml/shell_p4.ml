@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -36,8 +36,8 @@ open Lexing
 open Longident
 open Parsetree
 
-open Nl_debug
-open Nl_pervasives
+open Mp_debug
+open Mp_pervasives
 
 open Pcaml
 
@@ -51,7 +51,7 @@ open Term_grammar
 open Filter_grammar
 
 open Tacticals
-open Nl_version
+open Mp_version
 
 (*
  * Ref cell for returning the tactic value.
@@ -197,7 +197,7 @@ struct
 
    let _ =
       Arg.current := 0;
-      Env_arg.parse spec handle_anon_arg "Nuprl-Light toploop"
+      Env_arg.parse spec handle_anon_arg "MetaPRL toploop"
 
    (************************************************************************
     * TOPLEVEL                                                             *
@@ -512,7 +512,7 @@ struct
 
       str_item:
          [[ "refine"; e = refine_item ->
-             let e = <:expr< $uid:"Nl"$ . $lid:"refine"$ $e$ >> in
+             let e = <:expr< $uid:"Mp"$ . $lid:"refine"$ $e$ >> in
                 <:str_item< $exp: e$ >>
           ]];
 
@@ -542,7 +542,7 @@ struct
             eval_include nllib;
             List.iter eval_include !includes;
             Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_p4", "print_term"))));
-            Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Nl");
+            Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp");
                                                       pstr_loc = Location.none
                                                     }]);
             Tactic_type.main_loop ();

@@ -1,0 +1,103 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRLTutorial: Basic Logic operators</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<P>Our logic initially has seven modules, one for each of the
+logical operators. Each module has an <I>interface</I> defined
+in a <TT>.mli</TT> file, and an <I>implementation</I> defined
+in a <TT>.ml</TT> file. The interface defines the syntax, and
+the implementation provides the rules, display, and tactics that
+implement the module.</P>
+
+<H4>The <TT>False</TT> interface</H4>
+
+<P>First, define the interface for the <I>false</I> operator in
+the module <TT>Fol_false</TT>.</P>
+
+<BLOCKQUOTE>
+  <P>1. <I>Create the file </I><TT>fol_false.mli</TT>, <I>containing
+  the line:</I></P>
+  <PRE><B><TT>    declare </TT></B><TT>&quot;false&quot;</TT></PRE>
+</BLOCKQUOTE>
+
+<P>The declaration defines a term <TT>&quot;false&quot;</TT> to
+represent the <I>false</I> operator. Next, compile the interface.</P>
+
+<BLOCKQUOTE>
+  <P>2. <I>Compile the interface:</I></P>
+  <BLOCKQUOTE>
+    <PRE>% prlc -c fol_false.mli</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>This command produces two files. The <TT>fol_false.cmi</TT>
+file contains the ML signature, and <TT>fol_false.ml</TT> contains
+the logical signature for the module.</P>
+
+<H4>The <TT>False</TT> implementation</H4>
+
+<P>The implementation for false contains the same syntax declaration,
+it includes a display form, and it defines the basic rules for
+falsehood.</P>
+
+<BLOCKQUOTE>
+  <P>3. <I>Create the file </I><TT>fol_false.ml</TT>, <I>containing
+  the following lines:</I></P>
+  <BLOCKQUOTE>
+    <PRE><B>include </B>Fol_type
+
+<B>declare </B>&quot;false&quot;
+<B>dform</B> false_df : &quot;false&quot; = `&quot;false&quot;
+
+<B>prim </B>false_type 'H : :
+    <B>sequent </B>['ext] { 'H &gt;- &quot;type&quot;{.&quot;false&quot;} } = trivial
+
+<B>prim </B>false_elim 'H 'J : :
+    <B>sequent </B>['ext] { 'H; x: &quot;false&quot;; 'J['x] &gt;- 'C['x] } = trivial</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>The <TT>include</TT> directive establishes the dependency of
+the <TT>Fol_false</TT> module on the <TT>Fol_type</TT> module,
+which is used in the well-formedness rule <TT>false_type</TT>.
+The display form for <TT>false</TT> is the string literal &quot;false.&quot;
+The first inference rule, <TT>false_type</TT>, declares that <TT>false</TT>
+is a well-formed formula, and the second rule, <TT>false_elim</TT>,
+states that anything can be derived from a false assumption.</P>
+
+<P>The rules are declared as <I>primitive</I>, since they are
+axioms in the first-order logic. There is no computational content
+to either rule, and the proof terms are the trivial proof <TT>trivial</TT>.</P>
+
+<H4>The <TT>True</TT> interface</H4>
+
+<P>The module defining <I>true</I> is similar to the <I>false</I>
+module. Try defining it yourself (the distribution contains example
+files in the <TT>fol</TT> directory). The <TT>Fol_true</TT> module
+should declare a new term for <TT>true</TT>, and it should also
+include an inhabitant for <TT>true</TT> called <TT>it</TT>:</P>
+
+<BLOCKQUOTE>
+  <PRE><B><TT>declare </TT></B><TT>&quot;true&quot;</TT>
+<B>declare </B>it</PRE>
+</BLOCKQUOTE>
+
+<P>and it should define the well-formedness of the <TT>true</TT>
+term, and the introduction rule stating that the term <TT>true</TT>
+is provable.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>prim</B> true_type 'H : :
+   <B>sequent</B> ['ext] { 'H &gt;- &quot;type&quot;{.&quot;true&quot;} } = trivial
+<B>prim</B> true_intro 'H : :
+   <B>sequent </B>['ext] { 'H &gt;- &quot;true&quot; } = it</PRE>
+</BLOCKQUOTE>
+
+<P>You should also define a display form for the <TT>true</TT>
+term.
+
+</BODY>
+</HTML>

@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-module StringSet : Nl_set.S
+module StringSet : Mp_set.S
                    with type elt = string
 
 (*

@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -32,7 +32,7 @@
 
 open Printf
 
-open Nl_debug
+open Mp_debug
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
@@ -40,7 +40,7 @@ open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Precedence
 open Simple_print
-open Nl_resource
+open Mp_resource
 
 open Free_vars
 open Filter_type
@@ -283,10 +283,10 @@ let dformer_ctyp loc =
    <:ctyp< $uid:"Dform_print"$ . $lid:"dform_mode_base"$ >>
 
 let resource_rsrc_ctyp loc =
-   <:ctyp< $uid:"Nl_resource"$ . $lid:"rsrc"$ >>
+   <:ctyp< $uid:"Mp_resource"$ . $lid:"rsrc"$ >>
 
 let resource_join_expr loc =
-   <:expr< $uid:"Nl_resource"$ . $lid:"resource_join"$ >>
+   <:expr< $uid:"Mp_resource"$ . $lid:"resource_join"$ >>
 
 let ext_resource_name name =
    "ext_" ^ name
@@ -423,9 +423,9 @@ let wrap_exn loc name e =
    let wrapped = <:expr< try $e$ with [ $list: [exn_patt, None, printer]$ ] >> in
 
    (* Print a message before the execution *)
-   let debug_load_ref = <:expr< $uid: "Nl_debug"$ . $lid: "debug_load"$ >> in
+   let debug_load_ref = <:expr< $uid: "Mp_debug"$ . $lid: "debug_load"$ >> in
    let debug_load = <:expr< $debug_load_ref$ . $lid: "val"$ >> in
-   let eflush = <:expr< $uid: "Nl_debug"$ . $lid: "eflush"$ >> in
+   let eflush = <:expr< $uid: "Mp_debug"$ . $lid: "eflush"$ >> in
    let msg = <:expr< $str: "Loading " ^ name ^ "%t"$ >> in
    let eprintf = <:expr< $uid: "Printf"$ . $lid: "eprintf"$ >> in
    let print_msg = <:expr< $eprintf$ $msg$ $eflush$ >> in
@@ -528,9 +528,9 @@ let interactive_exn loc name =
  *)
 let toploop_rewrite loc name =
    let patt = <:patt< $lid: "toploop_resource"$ >> in
-   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Nl_resource"$ . $lid: "resource_improve"$
+   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Mp_resource"$ . $lid: "resource_improve"$
                       $lid: "toploop_resource"$
-                      ($str: name$, $uid: "Nltop"$ . $uid: "ConvExpr"$ $lid: name$) >>
+                      ($str: name$, $uid: "Mptop"$ . $uid: "ConvExpr"$ $lid: name$) >>
    in
       <:str_item< value $rec: false$ $list: [ patt, expr ]$ >>
 
@@ -540,7 +540,7 @@ let toploop_rewrite loc name =
 let raise_toploop_exn loc =
    Stdpp.raise_with_loc loc (RefineError ("topval", StringError
                                           "The types allowed in toploop expressions are limited.\n\
-Your type is not understood.  See the module Nltop for allowed types."))
+Your type is not understood.  See the module Mptop for allowed types."))
 
 let add_toploop_item loc name ctyp =
    let rec collect index expr = function
@@ -594,16 +594,16 @@ let add_toploop_item loc name ctyp =
        | _ ->
             raise_toploop_exn loc
    and nltop name expr =
-      <:expr< $uid: "Nltop"$ . $uid: name$ $expr$ >>
+      <:expr< $uid: "Mptop"$ . $uid: name$ $expr$ >>
    and nlfun index name expr t2 =
       let v = sprintf "v%d" index in
       let patt = <:patt< $lid: v$ >> in
       let expr = collect (index + 1) <:expr< $expr$ $lid: v$ >> t2 in
-         <:expr< $uid: "Nltop"$ . $uid: name$ (fun [ $list: [ patt, None, expr ]$ ]) >>
+         <:expr< $uid: "Mptop"$ . $uid: name$ (fun [ $list: [ patt, None, expr ]$ ]) >>
    in
    let expr = collect 0 <:expr< $lid: name$ >> ctyp in
    let patt = <:patt< $lid: "toploop_resource"$ >> in
-   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Nl_resource"$ . $lid: "resource_improve"$
+   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Mp_resource"$ . $lid: "resource_improve"$
                       $lid: "toploop_resource"$ ($str: name$, $expr$)
               >>
    in
@@ -697,9 +697,9 @@ let interf_resources resources loc =
        } as rsrc)::t ->
          if !debug_resource then
             if mname = [] then
-               eprintf "Nl_resource: %s%t" name eflush
+               eprintf "Mp_resource: %s%t" name eflush
             else
-               eprintf "Nl_resource: %s/%s%t" (string_of_path mname) name eflush;
+               eprintf "Mp_resource: %s/%s%t" (string_of_path mname) name eflush;
          if not (List.mem name names) then
             let ctyp =
                if mname = [] then
@@ -1624,7 +1624,7 @@ struct
       let loc = 0, 0 in
       let bind_of_resource { resource_name = name' } =
          let patt = <:patt< $lid: ext_resource_name name'$ >> in
-         let expr = <:expr< $lid: name'$ . $uid: "Nl_resource"$ . $lid: "resource_close"$ $lid: name'$ $str:name$ >> in
+         let expr = <:expr< $lid: name'$ . $uid: "Mp_resource"$ . $lid: "resource_close"$ $lid: name'$ $str:name$ >> in
             patt, expr
       in
       let values = List.map bind_of_resource resources in

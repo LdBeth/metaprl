@@ -1,0 +1,63 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL Compiler</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>MetaPRL Compiler</H1>
+
+<P>MetaPRL is implemented as an extension of the OCaml compiler.
+The syntax of OCaml is extended by using CamlP4 to add a syntax
+for terms and a syntax for logical objects in modules. MetaPRL
+files have the same <TT>.ml</TT> and <TT>.mli</TT> suffixes as
+normal OCaml files. The MetaPRL compiler is called <TT>prlc</TT>.
+The usage is as follows:</P>
+
+<BLOCKQUOTE>
+  <PRE>% prlc [OCaml options] file.ml
+% prlc [OCaml options] file.mli</PRE>
+</BLOCKQUOTE>
+
+<P>The MetaPRL compiler produces additional files that summarize
+the <I>logical</I> content of the files that were compiled. For
+each interface <TT>file.mli</TT>, an file <TT>file.cmiz</TT> file
+is created that summarizes the logical content of the interface.
+The <TT>file.cmi</TT> file is still created, containing ML definitions
+used by the compiler for interface checking.</P>
+
+<P>For each implementation file <TT>file.ml</TT>, a file <TT>file.cmoz</TT>
+is created that summarizes the logical content of the module (the
+<TT>file.cmo</TT> file is still created for the ML content). The
+logical files with the <TT>.cmiz</TT> and <TT>.cmoz</TT> suffixes
+are used during compilation for determining compile-time logical
+consistency. They are also used by the <A HREF="http://x/">proof
+editor</A> to navigate the logical theories. They represent a
+<I>complete</I> summary of the source: they can be compiled directly
+with the <TT>prlc</TT> compiler.</P>
+
+<PRE>    % prlc [OCaml options] file.cmiz
+    % prlc [OCaml options] file.cmoz</PRE>
+
+<H2>Implementation</H2>
+
+<P>The compiler is implemented in the <TT>filter</TT> directory.
+There are five main parts to the &quot;filter.&quot;</P>
+
+<OL>
+  <LI>The <TT>filter_parse</TT> module defines the extended logical
+  syntax.
+  <LI>The <TT>filter_summary</TT> module defines the components
+  of compiled files that are saved in the <TT>.cmiz</TT> and <TT>.cmoz</TT>
+  files.
+  <LI>The <TT>filter_cache</TT> module defines the logical data
+  structures used to maintain the logical consistency of compiled
+  modules.
+  <LI>The <TT>filter_prog</TT> module defines the output routines
+  that translate <I>logical</I> objects to their ML representations.
+  <LI>The <TT>filter_ocaml</TT> module defines the translation
+  between ML programs and logical <I>terms.</I>
+</OL>
+
+</BODY>
+</HTML>

@@ -1,5 +1,5 @@
 (*
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -28,7 +28,7 @@
 (*34567890123456789012345678901234567890123456789012345 *)
 
 open Printf
-open Nl_debug
+open Mp_debug
 
 let _ =
    if !debug_load then

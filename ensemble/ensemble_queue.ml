@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Nl_debug
+open Mp_debug
 open Thread_util
 
 open Hsys
@@ -152,7 +152,7 @@ struct
     * This is the info we keep about the local queue.
     *)
    type ('a, 'b, 'c) t =
-      { nl_lock : Mutex.t;
+      { mp_lock : Mutex.t;
 
         (*
          * Queues:
@@ -161,10 +161,10 @@ struct
          *    remote: entries locked by a remote process
          *    index: the number of the last entry we locked
          *)
-        mutable nl_unlocked : 'a entry list;
-        mutable nl_local : 'a entry list;
-        mutable nl_remote : 'a remote_entry list;
-        mutable nl_index : int;
+        mutable mp_unlocked : 'a entry list;
+        mutable mp_local : 'a entry list;
+        mutable mp_remote : 'a remote_entry list;
+        mutable mp_index : int;
 
         (*
          * Shared memory.
@@ -175,10 +175,10 @@ struct
          * the keys, so we can delete the entries event after the
          * key is dropped.
          *)
-        mutable nl_keys : 'c key Weak.t;
-        mutable nl_key_index : int;
-        mutable nl_key_numbers : int array;
-        mutable nl_values : 'c key_value list;
+        mutable mp_keys : 'c key Weak.t;
+        mutable mp_key_index : int;
+        mutable mp_key_numbers : int array;
+        mutable mp_values : 'c key_value list;
 
         (*
          * Client info:
@@ -187,10 +187,10 @@ struct
          *   upcalls: a list of messages to be sent as upcalls (in reverse order)
          *   upcall_chan: the channel for communicating the upcall
          *)
-        nl_quick_lock : bool;
-        mutable nl_pending_lock : ('a, 'b) lock option;
-        mutable nl_upcalls : ('a, 'b) upcall list;
-        nl_upcall_chan : ('a, 'b) upcall Thread_event.channel;
+        mp_quick_lock : bool;
+        mutable mp_pending_lock : ('a, 'b) lock option;
+        mutable mp_upcalls : ('a, 'b) upcall list;
+        mp_upcall_chan : ('a, 'b) upcall Thread_event.channel;
 
         (*
          * Server info:
@@ -199,20 +199,20 @@ struct
          *    rank_flags: a flag indicating which ranks have sent their stack
          *       to the coordinator after a view change.
          *)
-        mutable nl_queue : ('a, 'b, 'c) message New.naction list;
-        mutable nl_new_view : bool;
-        mutable nl_rank_flags : bool array;
+        mutable mp_queue : ('a, 'b, 'c) message New.naction list;
+        mutable mp_new_view : bool;
+        mutable mp_rank_flags : bool array;
 
         (*
          * Ensemble info:
-         *    nl_global_state: state shared by all views
-         *    nl_local_state: state local to this member
-         *    nl_heartbeat: function to invoke a heartbeat
+         *    mp_global_state: state shared by all views
+         *    mp_local_state: state local to this member
+         *    mp_heartbeat: function to invoke a heartbeat
          *)
-        mutable nl_global_state : View.state;
-        mutable nl_local_state : View.local;
-        mutable nl_handles : Appl_handle.handle Arrayf.t;
-        mutable nl_hbeat : unit -> unit;
+        mutable mp_global_state : View.state;
+        mutable mp_local_state : View.local;
+        mutable mp_handles : Appl_handle.handle Arrayf.t;
+        mutable mp_hbeat : unit -> unit;
       }
 
    (************************************************************************
@@ -265,9 +265,9 @@ struct
     * Check all the possible places for the entry.
     *)
    let entry_exists info id =
-      (mem_entry id info.nl_unlocked) ||
-      (mem_entry id info.nl_local) ||
-      (mem_remote id info.nl_remote)
+      (mem_entry id info.mp_unlocked) ||
+      (mem_entry id info.mp_local) ||
+      (mem_remote id info.mp_remote)
 
    (*
     * Remove entries from their queues.
@@ -311,7 +311,7 @@ struct
          search 0
 
    let handle_of_rank info rank =
-      Arrayf.get info.nl_handles rank
+      Arrayf.get info.mp_handles rank
 
    (************************************************************************
     * ENSEMBLE INTERFACE                                                   *
@@ -330,7 +330,7 @@ struct
                eprintf "Ensemble_queue.issue_upcall%t" eflush;
                unlock_printer ()
             end;
-         Thread_event.sync 0 (Thread_event.send info.nl_upcall_chan upcall)
+         Thread_event.sync 0 (Thread_event.send info.mp_upcall_chan upcall)
       in
          if upcalls <> [] then
             begin
@@ -350,7 +350,7 @@ struct
             end
 
    let send_upcall info upcall =
-      info.nl_upcalls <- upcall :: info.nl_upcalls
+      info.mp_upcalls <- upcall :: info.mp_upcalls
 
    let send_message info debug message =
       if !debug_marshal then
@@ -369,7 +369,7 @@ struct
             end;
             unlock_printer ()
          end;
-      info.nl_queue <- message :: info.nl_queue
+      info.mp_queue <- message :: info.mp_queue
 
    (*
     * Add a new entry to the unlocked queue.
@@ -391,7 +391,7 @@ struct
          if not (entry_exists info id) then
             let entry = { entry_id = id; entry_value = x } in
                send_upcall info UpcallView;
-               info.nl_unlocked <- entry :: info.nl_unlocked
+               info.mp_unlocked <- entry :: info.mp_unlocked
 
    (*
     * When a lock message arrives, check if it
@@ -406,14 +406,14 @@ struct
             unlock_printer ()
          end;
       try
-         let entry, entries = remove_entry id info.nl_unlocked in
+         let entry, entries = remove_entry id info.mp_unlocked in
          let remote =
             { remote_entry = entry;
               remote_lock = endpt_of_handle srchand
             }
          in
-            info.nl_unlocked <- entries;
-            info.nl_remote <- remote :: info.nl_remote
+            info.mp_unlocked <- entries;
+            info.mp_remote <- remote :: info.mp_remote
       with
          Not_found ->
             ()
@@ -426,11 +426,11 @@ struct
                (Endpt.string_of_id id.id_id) id.id_number eflush;
             unlock_printer ()
          end;
-      let entry, entries = remove_entry id info.nl_unlocked in
-         info.nl_unlocked <- entries;
-         info.nl_local <- entry :: info.nl_local;
-         info.nl_pending_lock <- None;
-         if not info.nl_quick_lock then
+      let entry, entries = remove_entry id info.mp_unlocked in
+         info.mp_unlocked <- entries;
+         info.mp_local <- entry :: info.mp_local;
+         info.mp_pending_lock <- None;
+         if not info.mp_quick_lock then
             send_upcall info (UpcallLock entry)
 
    let cancel_lock info srchand entry =
@@ -443,15 +443,15 @@ struct
                unlock_printer ()
             end;
          remote_lock info srchand id;
-         info.nl_pending_lock <- None;
-         if info.nl_quick_lock then
+         info.mp_pending_lock <- None;
+         if info.mp_quick_lock then
             send_upcall info (UpcallCancel entry)
 
    let handle_lock info srchand id =
-      match info.nl_pending_lock with
+      match info.mp_pending_lock with
          Some entry ->
             if entry.entry_id = id then
-               if endpt_of_handle srchand = info.nl_local_state.endpt then
+               if endpt_of_handle srchand = info.mp_local_state.endpt then
                   (* We got the lock *)
                   install_lock info id
                else
@@ -468,17 +468,17 @@ struct
     *)
    let unlock_remote info id =
       try
-         let { remote_entry = entry }, remotes = remove_remote id info.nl_remote in
-            info.nl_remote <- remotes;
-            info.nl_unlocked <- entry :: info.nl_unlocked;
+         let { remote_entry = entry }, remotes = remove_remote id info.mp_remote in
+            info.mp_remote <- remotes;
+            info.mp_unlocked <- entry :: info.mp_unlocked;
             true
       with
          Not_found ->
             false
 
    let unlock_local info id =
-      let _, entries = remove_entry id info.nl_local in
-         info.nl_local <- entries
+      let _, entries = remove_entry id info.mp_local in
+         info.mp_local <- entries
 
    let handle_unlock info srchand id =
       if !debug_ensemble then
@@ -498,9 +498,9 @@ struct
     *)
    let remote_result info id x =
       try
-         let { remote_entry = entry }, remotes = remove_remote id info.nl_remote in
-            info.nl_remote <- remotes;
-            if entry.entry_id.id_id = info.nl_local_state.endpt then
+         let { remote_entry = entry }, remotes = remove_remote id info.mp_remote in
+            info.mp_remote <- remotes;
+            if entry.entry_id.id_id = info.mp_local_state.endpt then
                begin
                   if !debug_ensemble then
                      begin
@@ -518,9 +518,9 @@ struct
 
    let local_result info id x =
       try
-         let entry, entries = remove_entry id info.nl_local in
-            info.nl_local <- entries;
-            if entry.entry_id.id_id = info.nl_local_state.endpt then
+         let entry, entries = remove_entry id info.mp_local in
+            info.mp_local <- entries;
+            if entry.entry_id.id_id = info.mp_local_state.endpt then
                begin
                   if !debug_ensemble then
                      begin
@@ -553,8 +553,8 @@ struct
     *)
    let delete_remote info id =
       try
-         let _, remotes = remove_remote id info.nl_remote in
-            info.nl_remote <- remotes;
+         let _, remotes = remove_remote id info.mp_remote in
+            info.mp_remote <- remotes;
             true
       with
          Not_found ->
@@ -562,8 +562,8 @@ struct
 
    let delete_local info id =
       try
-         let entry, entries = remove_entry id info.nl_local in
-            info.nl_local <- entries;
+         let entry, entries = remove_entry id info.mp_local in
+            info.mp_local <- entries;
             send_upcall info (UpcallCancel entry);
             true
       with
@@ -572,8 +572,8 @@ struct
 
    let delete_unlocked info id =
       try
-         let _, entries = remove_entry id info.nl_unlocked in
-            info.nl_unlocked <- entries;
+         let _, entries = remove_entry id info.mp_unlocked in
+            info.mp_unlocked <- entries;
             true
       with
          Not_found ->
@@ -592,12 +592,12 @@ struct
           * If a lock was being reqested, delete it.
           * The next lock request will restart it.
           *)
-         match info.nl_pending_lock with
+         match info.mp_pending_lock with
             Some entry ->
                if entry.entry_id = id then
                   begin
-                     info.nl_pending_lock <- None;
-                     if info.nl_quick_lock then
+                     info.mp_pending_lock <- None;
+                     if info.mp_quick_lock then
                         send_upcall info (UpcallCancel entry)
                   end
           | None ->
@@ -630,7 +630,7 @@ struct
             unlock_printer ()
          end;
       let id = endpt_of_handle srchand in
-         if not (share_exists id number info.nl_values) then
+         if not (share_exists id number info.mp_values) then
             let keyv =
                { keyv_id = id;
                  keyv_index = number;
@@ -638,7 +638,7 @@ struct
                  keyv_local = x
                }
             in
-               info.nl_values <- keyv :: info.nl_values
+               info.mp_values <- keyv :: info.mp_values
 
    let handle_delete_share info srchand number =
       if !debug_ensemble then
@@ -657,7 +657,7 @@ struct
        | [] ->
             []
       in
-         info.nl_values <- remove info.nl_values
+         info.mp_values <- remove info.mp_values
 
    (*
     * State locking.
@@ -670,20 +670,20 @@ struct
     * client to starve for a short period of time.
     *)
    let lock_info info =
-      Mutex.lock info.nl_lock
+      Mutex.lock info.mp_lock
 
    let unlock_info info =
-      if info.nl_new_view then
+      if info.mp_new_view then
          begin
-            Mutex.unlock info.nl_lock;
+            Mutex.unlock info.mp_lock;
             [||]
          end
       else
-         let upcalls = List.rev info.nl_upcalls in
-         let messages = Array.of_list (List.rev info.nl_queue) in
-            info.nl_upcalls <- [];
-            info.nl_queue <- [];
-            Mutex.unlock info.nl_lock;
+         let upcalls = List.rev info.mp_upcalls in
+         let messages = Array.of_list (List.rev info.mp_queue) in
+            info.mp_upcalls <- [];
+            info.mp_queue <- [];
+            Mutex.unlock info.mp_lock;
             issue_upcalls info upcalls;
             messages
 
@@ -704,14 +704,14 @@ struct
                   remote :: prune remotes
                else
                   let { remote_entry = entry } = remote in
-                     info.nl_unlocked <- entry :: info.nl_unlocked;
+                     info.mp_unlocked <- entry :: info.mp_unlocked;
                      prune remotes
             else
                prune remotes
        | [] ->
             []
       in
-         info.nl_remote <- prune info.nl_remote
+         info.mp_remote <- prune info.mp_remote
 
    (*
     * If the owner of a local entry fails, send a cancelation
@@ -730,7 +730,7 @@ struct
        | [] ->
             []
       in
-         info.nl_local <- prune info.nl_local
+         info.mp_local <- prune info.mp_local
 
    (*
     * If the owner of an unlocked entry fails,
@@ -746,18 +746,18 @@ struct
        | [] ->
             []
       in
-         info.nl_unlocked <- prune info.nl_unlocked
+         info.mp_unlocked <- prune info.mp_unlocked
 
    (*
     * Delete the pending lock if the owner fails.
     *)
    let prune_lock info view =
-      match info.nl_pending_lock with
+      match info.mp_pending_lock with
          Some entry ->
             if not (Arrayf.mem entry.entry_id.id_id view) then
                begin
-                  info.nl_pending_lock <- None;
-                  if info.nl_quick_lock then
+                  info.mp_pending_lock <- None;
+                  if info.mp_quick_lock then
                      send_upcall info (UpcallCancel entry)
                end
        | None ->
@@ -776,7 +776,7 @@ struct
        | [] ->
             []
       in
-         info.nl_values <- prune info.nl_values
+         info.mp_values <- prune info.mp_values
 
    (*
     * Merge a list of entries into the main list.
@@ -818,10 +818,10 @@ struct
          shares
 
    let merge_queue info unlocked local remote shares =
-      info.nl_unlocked <- merge_entries info.nl_unlocked unlocked;
-      info.nl_local <- merge_entries info.nl_local local;
-      info.nl_remote <- merge_remote info.nl_remote remote;
-      info.nl_values <- merge_share info.nl_values shares
+      info.mp_unlocked <- merge_entries info.mp_unlocked unlocked;
+      info.mp_local <- merge_entries info.mp_local local;
+      info.mp_remote <- merge_remote info.mp_remote remote;
+      info.mp_values <- merge_share info.mp_values shares
 
    (*
     * Don't send local values of shares.
@@ -840,18 +840,18 @@ struct
     * The coordinator has rank 0.
     *)
    let send_stack info =
-      let { nl_unlocked = unlocked;
-            nl_local = local;
-            nl_remote = remote;
-            nl_local_state = { rank = rank };
-            nl_values = values
+      let { mp_unlocked = unlocked;
+            mp_local = local;
+            mp_remote = remote;
+            mp_local_state = { rank = rank };
+            mp_values = values
           } = info
       in
       let coord_handle = handle_of_rank info 0 in
          if !debug_ensemble then
             begin
                lock_printer ();
-               eprintf "Ensemble_queue.send_stack: %s%t" (Endpt.string_of_id info.nl_local_state.endpt) eflush;
+               eprintf "Ensemble_queue.send_stack: %s%t" (Endpt.string_of_id info.mp_local_state.endpt) eflush;
                unlock_printer ()
             end;
          [|Send ([|coord_handle|], (SendQueue (unlocked, local, remote, strip_share values)))|]
@@ -861,11 +861,11 @@ struct
     * This should be the first queued message to go out.
     *)
    let cast_stack info =
-      if Array_util.all_true info.nl_rank_flags then
-         let { nl_unlocked = unlocked;
-               nl_local = local;
-               nl_remote = remote;
-               nl_values = values
+      if Array_util.all_true info.mp_rank_flags then
+         let { mp_unlocked = unlocked;
+               mp_local = local;
+               mp_remote = remote;
+               mp_values = values
              } = info
          in
             if !debug_ensemble then
@@ -874,9 +874,9 @@ struct
                   eprintf "Ensemble_queue.cast_stack%t" eflush;
                   unlock_printer ()
                end;
-            info.nl_rank_flags <- [||];
-            info.nl_new_view <- false;
-            info.nl_queue <- info.nl_queue @ [Cast (CastQueue (unlocked, local, remote, strip_share values))]
+            info.mp_rank_flags <- [||];
+            info.mp_new_view <- false;
+            info.mp_queue <- info.mp_queue @ [Cast (CastQueue (unlocked, local, remote, strip_share values))]
 
    (*
     * Merge the communicated stack with our stack.
@@ -884,14 +884,14 @@ struct
     * broadcast the new stack.
     *)
    let handle_queue_send info srchand unlocked local remote shares =
-      let rank = rank_of_handle info.nl_global_state.view srchand in
+      let rank = rank_of_handle info.mp_global_state.view srchand in
          if !debug_ensemble then
             begin
                lock_printer ();
                eprintf "Ensemble_queue.handle_queue_send: %d%t" rank eflush;
                unlock_printer ()
             end;
-         info.nl_rank_flags.(rank) <- true;
+         info.mp_rank_flags.(rank) <- true;
          merge_queue info unlocked local remote shares;
          cast_stack info
 
@@ -901,15 +901,15 @@ struct
    let handle_queue_cast info unlocked local remote shares =
       merge_queue info unlocked local remote shares;
       send_upcall info UpcallView;
-      info.nl_new_view <- false;
+      info.mp_new_view <- false;
       if !debug_ensemble then
          begin
             lock_printer ();
-            eprintf "Ensemble_queue.new_view: %s\n" (Endpt.string_of_id info.nl_local_state.endpt);
-            eprintf "\tUnlocked: %a\n" print_entry_list info.nl_unlocked;
-            eprintf "\tLocal: %a\n" print_entry_list info.nl_local;
-            eprintf "\tRemote: %a\n" print_remote_list info.nl_remote;
-            eprintf "\tShares: %a%t" print_share_list info.nl_values eflush;
+            eprintf "Ensemble_queue.new_view: %s\n" (Endpt.string_of_id info.mp_local_state.endpt);
+            eprintf "\tUnlocked: %a\n" print_entry_list info.mp_unlocked;
+            eprintf "\tLocal: %a\n" print_entry_list info.mp_local;
+            eprintf "\tRemote: %a\n" print_remote_list info.mp_remote;
+            eprintf "\tShares: %a%t" print_share_list info.mp_values eflush;
             unlock_printer ()
          end
 
@@ -930,23 +930,23 @@ struct
          begin
             lock_printer ();
             eprintf "Ensemble_queue.handle_view_change: %d%t" (**)
-               (Arrayf.length info.nl_global_state.view) eflush;
+               (Arrayf.length info.mp_global_state.view) eflush;
             unlock_printer ()
          end;
-      let view = info.nl_global_state.view in
+      let view = info.mp_global_state.view in
       let length = Arrayf.length view in
-      let rank = info.nl_local_state.rank in
+      let rank = info.mp_local_state.rank in
          prune_remote info view;
          prune_local info view;
          prune_unlocked info view;
          prune_shares info view;
          if length > 1 then
             begin
-               info.nl_new_view <- true;
+               info.mp_new_view <- true;
                if rank = 0 then
                   let flags = Array.create length false in
                      flags.(0) <- true;
-                     info.nl_rank_flags <- flags;
+                     info.mp_rank_flags <- flags;
                      [||]
                else
                   send_stack info
@@ -994,7 +994,7 @@ struct
       if false && !debug_ensemble then
          begin
             lock_printer ();
-            eprintf "Nlapp.heartbeat%t" eflush;
+            eprintf "Mpapp.heartbeat%t" eflush;
             unlock_printer ()
          end;
       unlock_info info
@@ -1007,7 +1007,7 @@ struct
       if !debug_ensemble then
          begin
             lock_printer ();
-            eprintf "Nlapp.block%t" eflush;
+            eprintf "Mpapp.block%t" eflush;
             unlock_printer ()
          end;
       [||]
@@ -1016,7 +1016,7 @@ struct
       if !debug_ensemble then
          begin
             lock_printer ();
-            eprintf "Nlapp.disable%t" eflush;
+            eprintf "Mpapp.disable%t" eflush;
             unlock_printer ()
          end
 
@@ -1031,13 +1031,13 @@ struct
       if !debug_ensemble then
          begin
             lock_printer ();
-            eprintf "Nlapp.install%t" eflush;
+            eprintf "Mpapp.install%t" eflush;
             unlock_printer ()
          end;
       lock_info info;
-      info.nl_global_state <- vs;
-      info.nl_local_state <- ls;
-      info.nl_handles <- handles;
+      info.mp_global_state <- vs;
+      info.mp_local_state <- ls;
+      info.mp_handles <- handles;
       let msgs = handle_view_change info in
       let handlers = make_handlers info in
       let msgs' = unlock_info info in
@@ -1047,7 +1047,7 @@ struct
       if !debug_ensemble then
          begin
             lock_printer ();
-            eprintf "Nlapp.exit%t" eflush;
+            eprintf "Mpapp.exit%t" eflush;
             unlock_printer ()
          end;
       ()
@@ -1056,31 +1056,31 @@ struct
     * Create the initial state for the application.
     *)
    let open_nl quick ls vs =
-      { nl_lock = Mutex.create ();
+      { mp_lock = Mutex.create ();
 
-        nl_unlocked = [];
-        nl_local = [];
-        nl_remote = [];
-        nl_index = 0;
+        mp_unlocked = [];
+        mp_local = [];
+        mp_remote = [];
+        mp_index = 0;
 
-        nl_keys = Weak.create 0;
-        nl_key_index = 0;
-        nl_key_numbers = [||];
-        nl_values = [];
+        mp_keys = Weak.create 0;
+        mp_key_index = 0;
+        mp_key_numbers = [||];
+        mp_values = [];
 
-        nl_quick_lock = quick;
-        nl_pending_lock = None;
-        nl_upcalls = [];
-        nl_upcall_chan = Thread_event.new_channel ();
+        mp_quick_lock = quick;
+        mp_pending_lock = None;
+        mp_upcalls = [];
+        mp_upcall_chan = Thread_event.new_channel ();
 
-        nl_queue = [];
-        nl_new_view = false;
-        nl_rank_flags = [||];
+        mp_queue = [];
+        mp_new_view = false;
+        mp_rank_flags = [||];
 
-        nl_global_state = vs;
-        nl_local_state = ls;
-        nl_handles = Arrayf.empty;
-        nl_hbeat = Appl.async ls.async
+        mp_global_state = vs;
+        mp_local_state = ls;
+        mp_handles = Arrayf.empty;
+        mp_hbeat = Appl.async ls.async
       }
 
    (*
@@ -1154,19 +1154,19 @@ struct
     * send queue is nonempty.
     *)
    let lock_queue info =
-      Mutex.lock info.nl_lock
+      Mutex.lock info.mp_lock
 
    let unlock_queue info =
-      let flag = info.nl_queue <> [] in
-         Mutex.unlock info.nl_lock;
+      let flag = info.mp_queue <> [] in
+         Mutex.unlock info.mp_lock;
          if flag then
-            info.nl_hbeat ()
+            info.mp_hbeat ()
 
    (*
     * Get the upcall event queue.
     *)
    let event_of_queue info =
-      Thread_event.receive info.nl_upcall_chan
+      Thread_event.receive info.mp_upcall_chan
 
    (*
     * Add a new element to the queue.
@@ -1182,11 +1182,11 @@ struct
             eprintf "Ensemble_queue.add%t" eflush;
             unlock_printer ()
          end;
-      let index = info.nl_index in
-      let id = { id_id = info.nl_local_state.endpt; id_number = index } in
+      let index = info.mp_index in
+      let id = { id_id = info.mp_local_state.endpt; id_number = index } in
       let entry = { entry_id = id; entry_value = x } in
-         info.nl_index <- succ index;
-         info.nl_unlocked <- entry :: info.nl_unlocked;
+         info.mp_index <- succ index;
+         info.mp_unlocked <- entry :: info.mp_unlocked;
          send_message info "add" (Cast (CastEntry (index, x)));
          unlock_queue info;
          entry
@@ -1216,9 +1216,9 @@ struct
    let lock info =
       lock_queue info;
       begin
-         let { nl_quick_lock = quick;
-               nl_pending_lock = pending;
-               nl_unlocked = unlocked
+         let { mp_quick_lock = quick;
+               mp_pending_lock = pending;
+               mp_unlocked = unlocked
              } = info
          in
             if pending = None && unlocked <> [] then
@@ -1231,7 +1231,7 @@ struct
                            (Endpt.string_of_id id.id_id) id.id_number eflush;
                         unlock_printer ()
                      end;
-                  info.nl_pending_lock <- Some entry;
+                  info.mp_pending_lock <- Some entry;
                   send_message info "lock" (Cast (CastLock id));
                   if quick then
                      send_upcall info (UpcallPreLock entry)
@@ -1278,16 +1278,16 @@ struct
             unlock_printer ()
          end;
       begin
-         match info.nl_pending_lock with
+         match info.mp_pending_lock with
             Some entry ->
                if entry.entry_id = lock.entry_id then
-                  let _, entries = remove_entry entry.entry_id info.nl_unlocked in
+                  let _, entries = remove_entry entry.entry_id info.mp_unlocked in
                      (*
                       * Remove this entry from the lock and also
                       * the unblocked queue.
                       *)
-                     info.nl_pending_lock <- None;
-                     info.nl_unlocked <- entries
+                     info.mp_pending_lock <- None;
+                     info.mp_unlocked <- entries
           | None ->
                ()
       end;
@@ -1302,13 +1302,13 @@ struct
     * Find a share by its value.
     *)
    let find_share info x =
-      let numbers = info.nl_key_numbers in
+      let numbers = info.mp_key_numbers in
       let length = Array.length numbers in
       let rec find_key id number i =
          if i = length then
             raise Not_found
          else if numbers.(i) = number then
-            match Weak.get info.nl_keys i with
+            match Weak.get info.mp_keys i with
                Some key ->
                   key
              | None ->
@@ -1325,15 +1325,15 @@ struct
        | [] ->
             raise Not_found
       in
-         search info.nl_values
+         search info.mp_values
 
    (*
     * Remove all old keys from the key list.
     * Return the number of a free entry.
     *)
    let cleanup_shares info =
-      let id = info.nl_local_state.endpt in
-      let weak = info.nl_keys in
+      let id = info.mp_local_state.endpt in
+      let weak = info.mp_keys in
       let length = Weak.length weak in
       let rec remove number = function
          { keyv_id = id'; keyv_index =  number' } as h :: t ->
@@ -1353,7 +1353,7 @@ struct
                Some _ ->
                   cleanup (succ i) j
              | None ->
-                  info.nl_values <- remove info.nl_key_numbers.(i) info.nl_values;
+                  info.mp_values <- remove info.mp_key_numbers.(i) info.mp_values;
                   cleanup (succ i) i
          else
             j
@@ -1368,15 +1368,15 @@ struct
     * Append an entry to the weak queue.
     *)
    let append_share info key =
-      let length = Weak.length info.nl_keys in
+      let length = Weak.length info.mp_keys in
       let weak' = Weak.create (succ length) in
       let numbers' = Array.create (succ length) 0 in
-         Weak.blit info.nl_keys 0 weak' 0 length;
+         Weak.blit info.mp_keys 0 weak' 0 length;
          Weak.set weak' length (Some key);
-         Array.blit info.nl_key_numbers 0 numbers' 0 length;
+         Array.blit info.mp_key_numbers 0 numbers' 0 length;
          numbers'.(length) = key.key_index;
-         info.nl_keys <- weak';
-         info.nl_key_numbers <- numbers'
+         info.mp_keys <- weak';
+         info.mp_key_numbers <- numbers'
 
    (*
     * Broadcast a new entry.
@@ -1395,14 +1395,14 @@ struct
             key
       with
          Not_found ->
-            let id = info.nl_local_state.endpt in
-            let number = info.nl_key_index in
+            let id = info.mp_local_state.endpt in
+            let number = info.mp_key_index in
             let key = { key_id = id; key_index = number } in
             let _ =
                match cleanup_shares info with
                   Some i ->
-                     Weak.set info.nl_keys i (Some key);
-                     Array.set info.nl_key_numbers i number
+                     Weak.set info.mp_keys i (Some key);
+                     Array.set info.mp_key_numbers i number
                 | None ->
                      append_share info key
             in
@@ -1413,8 +1413,8 @@ struct
                  keyv_local = x
                }
             in
-               info.nl_key_index <- succ number;
-               info.nl_values <- keyv :: info.nl_values;
+               info.mp_key_index <- succ number;
+               info.mp_values <- keyv :: info.mp_values;
                send_message info "new_share" (Cast (CastNewShare (number, x)));
                unlock_queue info;
                key
@@ -1432,7 +1432,7 @@ struct
        | [] ->
             raise Not_found
       in
-         search info.nl_values
+         search info.mp_values
 
    (*
     * Get the value associated with a key.
@@ -1454,7 +1454,7 @@ struct
                eprintf "Ensemble_queue.arg_of_key%t" eflush;
                unlock_printer ()
             end;
-         let values = info.nl_values in
+         let values = info.mp_values in
             unlock_queue info;
             search values
 end

@@ -1,0 +1,270 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL Tacticals</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>MetaPRL Tacticals</H1>
+
+<P>Each rule in a logic defines a tactic. For example, the following
+and-elimination rule defines a tactic called <TT>and_elim</TT>:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>axiom</B> and_elim 'H 'J 'y 'z :
+   <B>sequent</B> { 'H; y: 'A; z: 'B; 'J[('y, 'z)] &gt;- C[('y, 'z)] } --&gt;
+   <B>sequent</B> { 'H; x: 'A &amp; 'B; 'J['x] &gt;- 'C['x] }</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>and_elim</TT> tactic has the following ML type:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> and_elim : address -&gt; address -&gt; string -&gt; string -&gt; tactic</PRE>
+</BLOCKQUOTE>
+
+<P>The extra arguments are for the <I>parameters</I> of the tactic:
+two arguments that defined the hypotheses matched by <TT>'H</TT>
+and <TT>'J</TT>, and two arguments for the variable names <TT>'y</TT>
+and <TT>'z</TT>.</P>
+
+<H3>Tactic arguments</H3>
+
+<P>The <TT>tactic</TT> type defined in the <TT>Tacticals</TT>
+module differs from the tactic type of the refiner. The <TT>Tacticals.tactic</TT>
+type includes an extra argument that represents information about
+the current goal, including the goal term, the state of the proof
+cache, and various annotations that are inherited in the proof
+tree. The <TT>tactic</TT> type is defined as:</P>
+
+<BLOCKQUOTE>
+  <P><B><TT>type</TT></B><TT> tactic = tactic_arg -&gt; tactic_value</TT></P>
+</BLOCKQUOTE>
+
+<P>The following operations are defined on values of type <TT>tactic_arg</TT>.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> goal        : tactic_arg -&gt; term
+<B>val</B> msequent    : tactic_arg -&gt; msequent
+<B>val</B> nth_hyp     : tactic_arg -&gt; int -&gt; string * term
+<B>val</B> nth_concl   : tactic_arg -&gt; int -&gt; term
+<B>val</B> cache       : tactic_arg -&gt; cache
+<B>val</B> label       : tactic_arg -&gt; string</PRE>
+</BLOCKQUOTE>
+
+<P>These functions have the obvious definitions: the <TT>goal</TT>
+function produces the goal term of the argument, the <TT>cache</TT>
+function produces the proof cache, the <TT>nth_hyp</TT>, and <TT>nth_concl</TT>
+functions are provided for sequent calculi: they produces the
+sequent parts of the goal. The <TT>msequent</TT> function produces
+the goal, <I>including</I> derived rule assumptions (see the section
+on <TT><A HREF="mp-tactic.html#anchor228099">nthAssumT</A></TT>).</P>
+
+<P>Proof tree nodes are labeled with annotations that describe
+properties of the node. Values of type <TT>tactic_arg</TT> also
+contain these annotations. One example is the <TT>label</TT> function,
+which produces a string describing the &quot;type&quot; of the
+argument. This values are typically used:</P>
+
+<BLOCKQUOTE>
+  <DL>
+    <DT><TT>&quot;main&quot;</TT>: the proof node is a normal node
+    of the proof
+    <DT><TT>&quot;wf&quot;</TT>: the proof node is part of a well-formedness
+    proof
+    <DT><TT>&quot;aux&quot;</TT>: the proof node is a &quot;less-important&quot;
+    auxiliary part of a proof
+    <DT><TT>&quot;assertion&quot;</TT>: the proof node was introduced
+    using a <I>cut</I> rule
+  </DL>
+</BLOCKQUOTE>
+
+<P>There are additional proof node annotations defined by the
+following functions:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> get_term       : tactic_arg -&gt; string -&gt; term
+<B>val</B> get_type       : tactic_arg -&gt; string -&gt; term
+<B>val</B> get_int        : tactic_arg -&gt; string -&gt; int
+<B>val</B> get_bool       : tactic_arg -&gt; string -&gt; bool
+<B>val</B> get_subst      : tactic_arg -&gt; term_subst
+<B>val</B> get_tactic     : tactic_arg -&gt; string -&gt; tactic
+<B>val</B> get_int_tactic : tactic_arg -&gt; string -&gt; (int -&gt; tactic)
+<B>val</B> get_arg_tactic : tactic_arg -&gt; string -&gt; (tactic_arg -&gt; tactic)
+<B>val</B> get_typeinf    : tactic_arg -&gt; string -&gt; (unify_subst -&gt; term -&gt; unify_subst * term)</PRE>
+</BLOCKQUOTE>
+
+<P>Each attribute is associated with a string (the &quot;name&quot;
+of the attribute). Each <TT>get_&lt;kind&gt;</TT> function get
+the named attribute from the argument. There are also tactics
+to modify the attribute list during refinement:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> setLabelT : string -&gt; tactic
+<B>val</B> withTermT : string -&gt; term -&gt; tactic -&gt; tactic
+<B>val</B> withTypeT : string -&gt; term -&gt; tactic -&gt; tactic
+<B>val</B> withBoolT : string -&gt; bool -&gt; tactic -&gt; tactic
+<B>val</B> withIntT : string -&gt; int -&gt; tactic -&gt; tactic
+<B>val</B> withSubstT : term_subst -&gt; tactic -&gt; tactic
+<B>val</B> withTacticT : string -&gt; tactic -&gt; tactic -&gt; tactic</PRE>
+</BLOCKQUOTE>
+
+<P>Not all of the attributes can be modified: some are constant
+values that are initialized by the proof editor when a proof tree</P>
+
+<H4>Simple tactics</H4>
+
+<P>There are several simple tactics. The <B><TT>topval</TT></B>
+declaration declares a value that is available to the MetaPRL
+toploop.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>topval</B> idT : tactic
+<B>topval</B> failT : tactic</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>idT</TT> tactic is the identity: given a goal <TT>T</TT>,
+the <TT>idT</TT> tactic produces the single subgoal <TT>T</TT>.
+The <TT>failT</TT> tactic always fails.</P>
+
+<H4><A NAME="anchor228099"></A>Assumption tactics</H4>
+
+<P>Proofs in MetaPRL are proofs of <I>derived rules</I>. There
+are two kinds of hypotheses in a derived rule. The subgoals of
+a derived rule are called <I>assumptions</I>, and the hypotheses
+of the sequent goal are called <I>hypotheses</I>. For instance,
+in the proof of the derived rule for <TT>and_elim</TT>, has one
+assumption:</P>
+
+<BLOCKQUOTE>
+  <P><TT>sequent { 'H; y: 'A; z: 'B; 'J[('y, 'z)] &gt;- 'C[('y,
+  'z)] }</TT></P>
+</BLOCKQUOTE>
+
+<P>and it has three initial hypotheses: the hypotheses of the
+goal sequent:</P>
+
+<BLOCKQUOTE>
+  <P><TT>'H</TT>, <TT>x: 'A &amp; 'B</TT>, and <TT>'J['x]</TT>.</P>
+</BLOCKQUOTE>
+
+<P>The <TT>tacticals</TT> module defines a tactic for a proof
+by assumption (the corresponding <TT>nthHyp</TT> tactic is not
+valid in all logics; the <TT>ITT</TT> version is in the module
+<TT>Itt_struct</TT>):</P>
+
+<BLOCKQUOTE>
+  <P><B><TT>topval</TT></B><TT> nthAssumT : int -&gt; tactic</TT></P>
+</BLOCKQUOTE>
+
+<P>This tactic proves a goal only if it matches the assumption
+exactly (with possible alpha-renaming). For instance, the following
+proof is valid:</P>
+
+<BLOCKQUOTE>
+  <PRE><TT>Assums:</TT>
+<TT>1.  sequent { 'H; x: 'A &gt;- 'B['x] }</TT>
+<TT>2.  sequent { 'H &gt;- 'A type }</TT>
+<TT>Goal:</TT>
+<TT>sequent { 'H &gt;- all x: 'A. 'B['x] }</TT>
+<B><TT>BY</TT></B><TT> D 0</TT>
+<TT></TT>
+<TT>Subgoal 1:</TT>
+<TT>   Assums: </TT><I>same</I>
+<I>   </I>Goal: sequent { 'H &gt;- 'A type }
+   <B>BY</B> nthAssumT 2
+
+Subgoal 2:
+   Assums: <I>same</I>
+   Goal: sequent { 'H; a: 'A &gt;- 'B['a] }
+   <B>BY </B>nthAssumT 1</PRE>
+</BLOCKQUOTE>
+
+<H4>Tactic composition</H4>
+
+<P>There are several tactics for composition. Most of these tactics
+are defined as <I>infix</I> operators by the MetaPRL compiler.
+The prefix form for a tactic named <TT>tacT</TT> is named <TT>prefix_tacT</TT>.
+Here is a list of these tactics:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>topval</B> prefix_orelseT : tactic -&gt; tactic -&gt; tactic
+<B>topval</B> prefix_orthenT : tactic -&gt; tactic -&gt; tactic
+<B>topval</B> prefix_thenT : tactic -&gt; tactic -&gt; tactic
+<B>topval</B> prefix_thenLT : tactic -&gt; tactic list -&gt; tactic
+<B>val</B> prefix_thenFLT : tactic -&gt; (tactic_arg list -&gt; tactic_value list) -&gt; tactic</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>orelseT</TT> tactical is used for selection. The application
+of the tactic <TT>(tac1 orelseT tac2)</TT> first tries <TT>tac1</TT>.
+If the tactic succeeds, the subgoals are returned without applying
+<TT>tac2</TT>. Otherwise, if <TT>tac1</TT> raises and exception,
+the exception is discarded and <TT>tac2</TT> is applied instead.</P>
+
+<P>The <TT>orthenT</TT> tactical has a similar behavior, but <TT>tac2</TT>
+is <I>always</I> applied. An application of <TT>(tac1 orthenT
+tac2)</TT> first applies <TT>tac1</TT>. If <TT>tac1</TT> fails,
+the result is discarded. The <TT>tac2</TT> tactic is applied to
+the resulting subgoal.</P>
+
+<P>The <TT>thenT</TT> tactic is used for tactic sequencing. An
+application of <TT>(tac1 thenT tac2)</TT> first applies <TT>tac1</TT>
+to the goal, and then applies <TT>tac2</TT> to all the subgoals.
+The sequence fails if either <TT>tac1</TT> or <TT>tac2</TT> fail.</P>
+
+<P>The <TT>thenLT</TT> tacticalso performs sequencing, but it
+allows different tactics to be applied to the subgoals generated
+by the first tactic. When <TT>(tac thenLT [tac</TT><I>1</I><TT>;
+...; tac</TT><I>n</I><TT>])</TT> is applied, <TT>tac</TT> must
+produce <I>n</I> subgoals. Then <TT>tac</TT><I>i</I> is applied
+to subgoal <I>i</I>. The tactic fails if any of the tactics fail,
+or the number of subgoals is not equal to the length of the tactic
+list.</P>
+
+<P>The <TT>thenFLT</TT> tactic is similar to <TT>thenLT</TT>,
+but it allows the use of a function to compute the tactic list.
+The type <TT>tactic</TT> is defined as <TT>tactic_arg -&gt; tactic_list</TT>;
+the <TT>thenFLT</TT> tactic performs the partial tactic application
+for the subgoal list.</P>
+
+<H4>Conditional tactics and looping</H4>
+
+<P>There are several tactics for conditional application and looping.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> ifT : (tactic_arg -&gt; bool) -&gt; tactic -&gt; tactic -&gt; tactic
+<B>val</B> ifThenT : (term -&gt; bool) -&gt; tactic -&gt; tactic
+<B>val</B> whileT : (term -&gt; bool) -&gt; tactic -&gt; tactic
+<B>val</B> untilT : (term -&gt; bool) -&gt; tactic -&gt; tactic</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>ifT</TT> tactic takes a predicate on an argument. If
+the predicate holds, the first tactic is applied to the proof
+node, otherwise the second tactic is applied. The <TT>ifThenT</TT>
+tactic is similar, with the following equivalence:</P>
+
+<BLOCKQUOTE>
+  <P><TT>ifThenT pred tac = ifT pred tac idT.</TT></P>
+</BLOCKQUOTE>
+
+<P>The <TT>whileT</TT> and <TT>untilT</TT> tacticals perform the
+standard looping operations.</P>
+
+<P>There are also tactics for constrained looping.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>topval</B> progressT : tactic -&gt; tactic
+<B>topval</B> repeatT : tactic -&gt; tactic
+<B>topval</B> repeatForT : int -&gt; tactic -&gt; tactic</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>(progressT tac)</TT> tactic performs the same refinement
+as <TT>tac</TT>, except it fails if <TT>tac</TT> does not change
+the <TT>goal</TT> of the proof node. For instance <TT>(progress
+idT)</TT> always fails. The (<TT>repeatT tac</TT>) tactic applies
+<TT>tac</TT> recursively until a fixpoint is reached. The tactic
+<TT>(repeatForT i tac)</TT> repeats the application of <TT>tac</TT>
+exactly <TT>i</TT> times.<BR>
+<BR>
+
+</BODY>
+</HTML>

@@ -6,7 +6,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -43,7 +43,7 @@ include Shell_rewrite
 include Shell_rule
 
 open Printf
-open Nl_debug
+open Mp_debug
 
 open Opname
 open Precedence
@@ -57,7 +57,7 @@ open Rformat
 open Filter_summary
 
 open Tacticals
-open Nltop
+open Mptop
 
 open Proof_type
 open Package_type
@@ -991,7 +991,7 @@ struct
     * Print out an initialization file, and parse it.
     *)
    let main () =
-      ShellP4.set_module "Nltop" commands;
+      ShellP4.set_module "Mptop" commands;
       ShellP4.main ()
 end
 

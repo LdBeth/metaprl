@@ -6,7 +6,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -33,7 +33,7 @@
  * Modified by: Eli Barzilay, Alexey Nogin
  *)
 
-open Nl_debug
+open Mp_debug
 open Printf
 
 open Opname
@@ -93,7 +93,7 @@ struct
 
    let compare_param param1 param2 =
       match param1, param2 with
-         TType.Number    n1,         TType.Number    n2         -> Nl_num.eq_num n1 n2
+         TType.Number    n1,         TType.Number    n2         -> Mp_num.eq_num n1 n2
        | TType.String    s1,         TType.String    s2         -> s1 = s2
        | TType.Token     s1,         TType.Token     s2         -> s1 = s2
        | TType.Level     l1,         TType.Level     l2         -> l1 == l2

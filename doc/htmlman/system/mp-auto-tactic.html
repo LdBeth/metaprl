@@ -1,0 +1,99 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL autoT tactic</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>MetaPRL <TT>trivialT</TT> and <TT>autoT</TT> tactics</H1>
+
+<P>The <TT>trivialT</TT> and <TT>autoT</TT> tactics are tactics
+for <I>automated reasoning</I>. The <TT>trivialT</TT> tactic performs
+&quot;trivial&quot; reasoning: in the <TT>ITT</TT> type theory,
+it solves sequent goals that meet one of the following requirements:</P>
+
+<UL>
+  <LI>The sequent goal is the term <TT>true</TT>.
+  <LI>The sequent contains <TT>false</TT> as a hypothesis.
+  <LI>The sequent can be proved by <TT>nthHypT</TT>.
+</UL>
+
+<P>The <TT>autoT</TT> tactic performs all the reasoning of <TT>trivialT</TT>,
+and it adds recursive application. The <TT>trivialT</TT> and <TT>autoT</TT>
+tactics have the following resource definitions.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>type</B> auto_prec
+<B>type</B> auto_tac =
+   AutoTac of (tactic_arg -&gt; (tactic * auto_tac) list)
+
+<B>type</B> 'a auto_info =
+   { auto_name : string;
+     auto_prec : auto_prec;
+     auto_tac : 'a
+   }
+
+<B>resource</B> (tactic auto_info, tactic, tactic auto_data) trivial_resource
+<B>resource</B> (auto_tac auto_info, tactic, auto_tac auto_data) auto_resource</PRE>
+</BLOCKQUOTE>
+
+<P>The resources are augmented with values of type <TT>auto_info</TT>.
+The <TT>auto_name</TT> is a string describing the component of
+the tactic. Tactics are given <I>precedences:</I> all tactics
+with lower precedences are tried first. Finally, the <TT>auto_tac</TT>
+field provides the function the implements part of the resource.
+For the <TT>trivialT</TT> tactic, this is just a tactic, but for
+the <TT>autoT</TT> tactic, a function is provided to compute a
+tactic and a continuation based on the tactic argument, allowing
+the parts of the <TT>autoT</TT> tactic to &quot;remember&quot;
+how they have been applied.</P>
+
+<P>Precedences are created with the function:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> create_auto_prec : auto_prec list -&gt; auto_prec list -&gt; auto_prec</PRE>
+</BLOCKQUOTE>
+
+<P>The first argument is a list of precedences that the new precedence
+should be <I>larger</I> than, and the second list is the precedences
+that the new value should be <I>smaller</I> than.</P>
+
+<P>There are several wrappers that make the construction of <TT>autoT</TT>
+components easier.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> auto_wrap : tactic -&gt; auto_tac
+<B>val</B> auto_progress : tactic -&gt; auto_tac</PRE>
+</BLOCKQUOTE>
+
+<P>The <TT>auto_wrap</TT> function produces an <TT>auto_tac</TT>
+component from a normal tactic. The <TT>auto_progress</TT> wrapper
+computes an <TT>auto_tac</TT> component that remembers the goals
+that the components has been applied to, and fails if a goal ever
+repeats. This is used to add the <TT>backThruHypT</TT> and <TT>backThruAssumT</TT>
+tactics in the <TT><A HREF="xxx">Itt_logic</A></TT> module.</P>
+
+<P>There are several tactics that are defined as part of the <TT>autoT</TT>
+tactic.</P>
+
+<P>The <TT>backThruHypT</TT> tactic performs &quot;backward-chaining&quot;
+through a hypothesis. The hypothesis should be a chain of universal
+quantifications and implications, and the sequent goal should
+match the remainder of the hypothesis. For example, the following
+proof fragment uses backward-chaining.</P>
+
+<BLOCKQUOTE>
+  <PRE>Goal: sequent { 'H; x: all x, y: x &gt; y =&gt; int. x - y &gt; 0 ... &gt;- 2 - 1 &gt; 0 }
+<B>BY</B> backThruHypT 2
+Subgoal 1: sequent { 'H; ... &gt;- 2 &gt; 1 }
+Subgoal 2: sequent { 'H; ... &gt;- int type }</PRE>
+</BLOCKQUOTE>
+
+<P>There is a similar tactic for backward chaining through an
+<I>assumption</I>, called <TT>backThruAssumT</TT>.</P>
+
+<P>The <TT>autoT</TT> tactic performs the reasoning of <TT>trivialT</TT>,
+and also 
+
+</BODY>
+</HTML>

@@ -1,0 +1,44 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL Tutorial: Getting Started</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H2>MetaPRL Tutorial: Getting Started</H2>
+
+<P>We will define the logic in a separate directory <TT>theories/tutorial</TT>.
+The distribution contains a version of this tutorial. During the
+tutorial, you will need to build the MetaPRL proof editor.
+The <TT>editor/ml</TT> directory already includes the tutorial
+files in the <TT>Makefile</TT>. After each module definition,
+you can rebuild the tutorial directory as follows:</P>
+
+<BLOCKQUOTE>
+  <PRE>% <B>cd theories/fol</B>
+% <B>make</B>
+<I>Compiling messages</I></PRE>
+</BLOCKQUOTE>
+
+<P>If the compilation is successful, you will then need to build
+the proof editor:</P>
+
+<BLOCKQUOTE>
+  <PRE>% <B>cd ../../editor/ml</B>
+% <B>make</B>
+<I>Compiling messages</I></PRE>
+</BLOCKQUOTE>
+
+<P>You can then invoke the editor with the command:</P>
+
+<BLOCKQUOTE>
+  <PRE>% <B>./nl</B>
+<I>Version message</I>
+# <B>#use &quot;tutorial.ml&quot;;;</B></PRE>
+</BLOCKQUOTE>
+
+<P>You can then use the editor to navigate the tutorial, as described
+in the page on the <A HREF="../user-guide/mp-editor.html">editor</A>.
+
+</BODY>
+</HTML>

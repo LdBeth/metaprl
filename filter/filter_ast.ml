@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -31,7 +31,7 @@
  *)
 
 open Printf
-open Nl_debug
+open Mp_debug
 
 open Ml_format_sig
 open Ml_format
@@ -83,7 +83,7 @@ let build_printed_term loc t =
          let i' = string_of_int i in
             <:expr< $int:i'$ >>
     | ML_Num n ->
-         <:expr< $uid:"Nl_num"$ . $lid:"num_of_string"$ $str:Nl_num.string_of_num n$ >>
+         <:expr< $uid:"Mp_num"$ . $lid:"num_of_string"$ $str:Mp_num.string_of_num n$ >>
     | ML_String s ->
          <:expr< $str:s$ >>
     | ML_List l ->

@@ -1,5 +1,5 @@
 #
-# Nuprl-light editor.
+# MetaPRL editor.
 #
 DIR = editor/ml
 ROOT = ../..
@@ -54,25 +54,25 @@ NLFILES =\
 
 NL2FILES =\
 	shell_p4\
-	shell_nl\
+	shell_mp\
 	test\
-	nl\
-	nl_top\
+	mp\
+	mp_top\
 	library_eval\
 	library_test
 
 RUNFILES =\
-	nl_version\
+	mp_version\
 	shell_p4\
 	test\
-	nl\
+	mp\
 	library_eval\
 	library_test
 
 TOPFILES =\
-	nl_version\
-	shell_nl\
-	nl_top
+	mp_version\
+	shell_mp\
+	mp_top
 
 RCMOFILES = $(addsuffix .cmo, $(RUNFILES))
 TCMOFILES = $(addsuffix .cmo, $(TOPFILES))
@@ -141,7 +141,7 @@ CMXDEPS =\
 	$(ROOT)/theories/tactic/tactics.cmxa\
 	$(ROOT)/theories/ocaml/ocaml_df.cmxa\
 	$(ROOT)/theories/base/base.cmxa\
-	nl.cmxa
+	mp.cmxa
 
 CMXLIBS =\
 	$(CMXDEPS)
@@ -236,7 +236,7 @@ CCLIBS =\
 
 # Name of main libraris
 MAIN = nuprl-light
-NL = nl
+NL = mp
 
 all: $(MAIN).cma $(NL).top $(NL).run
 opt: $(MAIN).cmxa $(NL).opt
@@ -257,16 +257,16 @@ $(NL).opt: $(CMXOBJS) $(TCMXFILES)
 clean::
 	$(RM) -f *.p4* *.pp*
 
-nl_version.cmo: $(CMOBJS) $(filter-out nl_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out nl_version.%, $(TCMOFILES)) $(TCMADEPS) nl_version.cmi
-	echo -n "let version = \"Nuprl-Light 2.00.1:\\n\\t\\tbuild [`date`]\\n\\t\\ton `hostname`\"" > nl_version.ml
-	$(OCAMLC) -c $(OCAMLCFLAGS) nl_version.ml
+mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi
+	echo -n "let version = \"MetaPRL 0.5:\\n\\t\\tbuild [`date`]\\n\\t\\ton `hostname`\"" > mp_version.ml
+	$(OCAMLC) -c $(OCAMLCFLAGS) mp_version.ml
 
-nl_version.cmx: $(CMXOBJS) nl_version.cmi
-	echo -n "let version = \"Nuprl-Light 2.00.1:\\n\\t\\tbuild [`date`]\\n\\t\\ton `hostname`\"" > nl_version.ml
-	$(OCAMLOPT) -c $(OCAMLOPTFLAGS) nl_version.ml
+mp_version.cmx: $(CMXOBJS) mp_version.cmi
+	echo -n "let version = \"MetaPRL 0.5:\\n\\t\\tbuild [`date`]\\n\\t\\ton `hostname`\"" > mp_version.ml
+	$(OCAMLOPT) -c $(OCAMLOPTFLAGS) mp_version.ml
 
-nl_version.cmi: nl_version.mli
-	$(OCAMLC) $(OCAMLCFLAGS) nl_version.mli
+mp_version.cmi: mp_version.mli
+	$(OCAMLC) $(OCAMLCFLAGS) mp_version.mli
 
 # Real makefile
 include $(ROOT)/mk/config

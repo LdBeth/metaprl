@@ -1,0 +1,129 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL Tutorial: Basic Automation</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H2>MetaPRL Tutorial: Basic Automation</H2>
+
+<P>The <I>rules</I> for <I>true</I> and <I>false</I> are unwieldy.
+To apply the rule, that arguments for the parameters have to be
+constructed explicitely, and the rules have to chosen explicitely
+for the two constructors. MetaPRL provides a resource that
+addresses this very problem. The <TT>dT</TT> tactic is a general
+tactic for applying introduction and elimination rules. The following
+steps describe how to add the <TT>true</TT> and <TT>false</TT>
+terms to the <TT>dT</TT> tactic.</P>
+
+<H4><TT>False</TT> automation</H4>
+
+<P>The rules are added to the <TT>dT</TT> tactic by providing
+a <I>tactic</I> that performs the <TT>dT</TT> operation. The <TT>dT</TT>
+tactic is declared as follows:</P>
+
+<BLOCKQUOTE>
+  <P><B><TT>val</TT></B><TT> dT : int -&gt; tactic</TT></P>
+</BLOCKQUOTE>
+
+<P>The <I>argument</I> of the tactic is the <I>clause</I> number
+that the tactic is applied to: if the argument is 0, the tactic
+applies the introduction rule to the conclusion. Otherwise, the
+clause number specifies the hypthesis number for application of
+an elimination rule.</P>
+
+<P>First, we need to open some extra modules that will allow adding
+to the <TT>dT</TT> tactic.</P>
+
+<BLOCKQUOTE>
+  <P>1. <I>Add the following lines after the </I><TT>include Fol_type</TT>
+  <I>line in the file </I><TT>fol_false.ml</TT></P>
+  <BLOCKQUOTE>
+    <PRE><B>open </B>Nl_resource<B>
+open </B>Base_dtactic<B>
+open </B>Refiner.Refiner.RefineError</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>The next step is to add reasoning for the well-formedness of
+the <TT>false</TT> term. The <TT>dT</TT> tactic is extended by
+providing a tactic to do reasoning specifically for the <TT>false</TT>
+term.</P>
+
+<BLOCKQUOTE>
+  <P>2.<I> Add a </I><TT>dT</TT> <I>component for proving well-formedness
+  to the </I><TT>Fol_false</TT> <I>module, by adding the following
+  function to the </I><TT>fol_false.ml</TT><I> file:</I></P>
+  <BLOCKQUOTE>
+    <PRE><B>let</B> d_false_type i p =
+   <B>if</B> i = 0 <B>then</B>
+      false_type (Sequent.hyp_count_addr p) p
+   <B>else</B>
+      <B>raise</B> (RefineError (&quot;d_false_type&quot;, StringError &quot;no elimination form&quot;))</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>This tactic checks the clause number, and applies the tactic
+only if the clause refers to the conclusion. Otherwise, the tactic
+raises an error. The errors are defined in the <TT>refiner/refsig/refine_error.mlz</TT>
+file. Each error includes the name of the function raising the
+exception, and a message describing the error.</P>
+
+<P>The <TT>false_type</TT> rule is applied as a tactic. It takes
+two arguments: the address for the context <TT>'H</TT>, and a
+tactic argument. The <TT>Sequent</TT> module defines functions
+to compute address values from the tactic argument. In this case,
+the context <TT>'H</TT> refers to all of the hypotheses, and the
+address can be computed with the <TT>Sequent.hyp_count_addr</TT>
+function.</P>
+
+<P>The next step is to add this tactic to the <TT>dT</TT> tactic.
+This is accomplished by calling the <TT>resource_improve</TT>
+method of the <TT>d_resource</TT> resource. Resources are managed
+functionally, and the <TT>d_resource</TT> is improved by binding
+it to a new value.</P>
+
+<BLOCKQUOTE>
+  <P>3. <I>Add the </I><TT>d_false_type</TT><I> component to the
+  </I><TT>dT</TT><I> resource, by adding the following lines after
+  the definition of </I><TT>d_false_type</TT>:</P>
+  <BLOCKQUOTE>
+    <PRE><B>let</B> false_type_term = &lt;&lt; &quot;type&quot;{.&quot;false&quot;} &gt;&gt;
+<B>let</B> d_resource = d_resource.resource_improve d_resource
+                    (false_type_term, d_false_type)</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>The resource is &quot;improved&quot; by providing the <I>pattern</I>
+<TT>false_type_term</TT>, and associating the <TT>d_false_type</TT>
+tactic with the pattern. We'll see an example of using the <TT>dT</TT>
+tactic when we add binary logical operators to FOL.</P>
+
+<P>As the last step in this module, add the elimination for to
+the <TT>dT tactic.</TT></P>
+
+<BLOCKQUOTE>
+  <P><TT>4.</TT><I> Add the elimination form to the </I><TT>dT</TT><I>
+  tactic, by adding the following lines to the </I><TT>fol_false.ml</TT><I>
+  file:</I></P>
+  <BLOCKQUOTE>
+    <PRE><B>let</B> d_false i p =
+   <B>if</B> i = 0 <B>then</B>
+      <B>raise</B> (RefineError (&quot;d_false_type&quot;, StringError &quot;no introduction form&quot;))
+   <B>else</B>
+      <B>let</B> j, k = Sequent.hyp_indices p i <B>in</B>
+         false_elim j k p
+
+<B>let</B> false_term = &lt;&lt; &quot;false&quot; &gt;&gt;
+<B>let</B> d_resource = d_resource.resource_improve d_resource (false_term, d_false)</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<H4><TT>True</TT> automation</H4>
+
+<P>The <TT>Fol_true</TT> module has similar tactics for automation.
+After you are finished with the <TT>Fol_false</TT> module, see
+if you can add automation to the <TT>Fol_true</TT> module.
+
+</BODY>
+</HTML>

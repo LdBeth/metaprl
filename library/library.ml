@@ -1,5 +1,5 @@
 (*
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -26,7 +26,7 @@
  *)
 
 open Printf
-open Nl_debug
+open Mp_debug
 
 
 open Utils
@@ -414,7 +414,7 @@ let require_remote_transaction t =
  *   - One is to code cororallies for each nuprl-light function which unmarshalls
  *     predictable args and then calls appropriate v5 function.
  *   - Another method is to write abstract v5 unmarshall funcs and then in
- *     nuprl-light construct text to call unmarshall funcs. Nl funcs
+ *     nuprl-light construct text to call unmarshall funcs. Mp funcs
  *	which construct unmarshall call will do marshall as arg as well.
  *	This is less error prone then first method.
  *  - third method is to make abstraction which expands to call. Avoids

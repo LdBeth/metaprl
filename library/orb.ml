@@ -1,5 +1,5 @@
 (*
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -26,7 +26,7 @@
  *)
 
 open Printf
-open Nl_debug
+open Mp_debug
 
 
 open Unix
@@ -54,7 +54,7 @@ let _ =
 (*
  * 	Some simplyfying assumtpions FTTB :
  *
- * 	 only one library per Nuprl-Light Process.
+ * 	 only one library per MetaPRL Process.
  * 	 only connected to a single Library process and a single environment in the process.
  *
  *)
@@ -131,7 +131,7 @@ let orb_open name =
 let ireq_parameter = make_param (Token "!req")
 let ireq_op pl = mk_nuprl5_op (ireq_parameter :: pl)
 let ireq_term seq addr t tid =
-  mk_term (ireq_op (make_param (Number (Nl_num.Int seq))
+  mk_term (ireq_op (make_param (Number (Mp_num.Int seq))
 			:: (make_param (Token "NUPRL5-type"))
 			:: (map (function s -> make_param (Token s)) addr)))
 	  [mk_bterm [] t; mk_bterm [] tid]
@@ -484,7 +484,7 @@ let iconnect_parameter = make_param (Token "!connect")
 let iconnect_op localhost sock =
   mk_nuprl5_op
     [ iconnect_parameter
-    ; make_param (Number (Nl_num.Int sock))
+    ; make_param (Number (Mp_num.Int sock))
     ; make_param (String localhost)
     ]
 let iconnect_term localhost sock = mk_term (iconnect_op localhost sock) []

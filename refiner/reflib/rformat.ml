@@ -24,7 +24,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -54,7 +54,7 @@
 
 open Printf
 
-open Nl_debug
+open Mp_debug
 
 (*
  * Show the file loading.
@@ -437,7 +437,7 @@ let format_int buf i =
  * Num.num numbers.
  *)
 let format_num buf n =
-   let s = Nl_num.string_of_num n in
+   let s = Mp_num.string_of_num n in
       push_command buf (Text (String.length s, s))
 
 (*

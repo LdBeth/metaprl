@@ -1,4 +1,4 @@
-open Nl_pervasives
+open Mp_pervasives
 
 (*
  * Magic numbers for interactive files.

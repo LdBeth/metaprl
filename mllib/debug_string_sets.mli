@@ -4,7 +4,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -30,9 +30,9 @@
  * Author: Alexey Nogin
  *)
 module Make
-   (Set1: Nl_set.S with type elt = string)
-   (Set2: Nl_set.S with type elt = string)
-      : Nl_set.S with type elt = string
+   (Set1: Mp_set.S with type elt = string)
+   (Set2: Mp_set.S with type elt = string)
+      : Mp_set.S with type elt = string
 
 (*
  * -*-

@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -124,9 +124,9 @@ sig
    val dest_string_string_dep0_any_term : term -> string * string * term
 
    val is_number_number_dep0_term : opname -> term -> bool
-   val mk_number_number_dep0_term : opname -> Nl_num.num -> Nl_num.num -> term -> term
-   val dest_number_number_dep0_term : opname -> term -> Nl_num.num * Nl_num.num * term
-   val dest_number_number_dep0_any_term : term -> Nl_num.num * Nl_num.num * term
+   val mk_number_number_dep0_term : opname -> Mp_num.num -> Mp_num.num -> term -> term
+   val dest_number_number_dep0_term : opname -> term -> Mp_num.num * Mp_num.num * term
+   val dest_number_number_dep0_any_term : term -> Mp_num.num * Mp_num.num * term
 
    val is_string_string_dep0_dep0_term : opname -> term -> bool
    val mk_string_string_dep0_dep0_term : opname -> string -> string -> term -> term -> term
@@ -134,9 +134,9 @@ sig
    val dest_string_string_dep0_dep0_any_term : term -> string * string * term * term
 
    val is_number_term : opname -> term -> bool
-   val mk_number_term : opname -> Nl_num.num -> term
-   val dest_number_term : opname -> term -> Nl_num.num
-   val dest_number_any_term : term -> Nl_num.num
+   val mk_number_term : opname -> Mp_num.num -> term
+   val dest_number_term : opname -> term -> Mp_num.num
+   val dest_number_any_term : term -> Mp_num.num
 
    val is_univ_term : opname -> term -> bool
    val mk_univ_term : opname -> level_exp -> term

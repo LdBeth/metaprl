@@ -1,0 +1,154 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>Nuprl--Light tutorial: structural rules</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H2>MetaPRL Tutorial: structural rules</H2>
+
+<P>At this point, we have defined the <I>operators</I> for the
+first-order logic. To complete the constructive version of the
+logic, we still need two structural rules: <I>weakening</I> and
+<I>cut</I>. <I>Weakening</I> provides thinning of hypotheses,
+and the <I>cut</I> rule allows lemma introduction.</P>
+
+<H3>The <TT>Fol_struct</TT> interface</H3>
+
+<P>The interface for the structural rules declares the <I>tactics</I>
+for the module. We need three tactics, </P>
+
+<UL>
+  <LI>the <I>axiom</I> rule (called <TT>nthHypT</TT>), for proving
+  assumed goals,
+  <LI>a weakening rule (called <TT>thinT</TT>), then &quot;thins&quot;
+  a hypothesis by number,
+  <LI>and a tactic for cut (called <TT>assertT</TT>) that introduces
+  a lemma.
+</UL>
+
+<BLOCKQUOTE>
+  <P>1. <I>Declare the tactics in the interface </I><TT>fol_struct.mli:</TT></P>
+  <BLOCKQUOTE>
+    <PRE><B>open</B> Refiner.Refiner.TermType
+<B>open</B> Tacticals
+
+<B>val</B> nthHypT : int -&gt; tactic
+<B>val</B> thinT : int -&gt; tactic
+<B>val</B> assertT : term -&gt; tactic</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>The module <TT>Refiner.Refiner.TermType</TT> defines the <TT>term</TT>
+type, and the <TT>Tacticals</TT> module defines the <TT>tactic</TT>
+type.</P>
+
+<H3>The <TT>Fol_struct</TT> implementation</H3>
+
+<P>The <I>hypothesis</I> rule proves a goal by assumption.</P>
+
+<BLOCKQUOTE>
+  <P>2.<I> Define the </I>hypothesis<I> rule in the </I><TT>fol_struct.ml</TT><I>
+  file:</I></P>
+  <BLOCKQUOTE>
+    <PRE><B>prim</B> hypothesis 'H 'J 'x : :
+   <B>sequent</B> ['ext] { 'H; x: 'T; 'J['x] &gt;- 'T } = 'x</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>The <I>hypothesis</I> rule illustrates the use of equality
+patterns. When this rule is applied, the two terms matched by
+the variable <TT>'T</TT> must be alpha-equal.</P>
+
+<P>The tactic for hypothesis is just a wrapper for computing the
+hypothesis indices.</P>
+
+<BLOCKQUOTE>
+  <P>3. <I>Define the </I><TT>nthHypT</TT> <I>tactic:</I></P>
+  <BLOCKQUOTE>
+    <PRE><B>let</B> nthHypT i p =
+   <B>let</B> v, _ = Sequent.nth_hyp p i <B>in</B>
+   <B>let</B> j, k = Sequent.hyp_indices p i <B>in</B>
+      hypothesis j k v p</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>Reasoning with <TT>nthHypT</TT> occurs at the leaves of most
+proofs in FOL, and it is useful to add this tactic to <TT>trivialT</TT>
+reasoning.</P>
+
+<BLOCKQUOTE>
+  <P>4. <I>Add the </I><TT>nthHypT</TT><I> tactic to the </I><TT>trivial</TT><I>
+  resource:</I></P>
+  <BLOCKQUOTE>
+    <PRE><B>let</B> trivial_resource =
+   trivial_resource.resource_improve trivial_resource (**)
+      { auto_name = &quot;nthHypT&quot;;
+        auto_prec = trivial_prec;
+        auto_tac = onSomeHypT nthHypT
+      }</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>The thinning rule thins a hypothesis (<I>weakening</I> the
+goal). The rule for thinning produces arbitrary thinning--application
+of the rule may produce a free variable.</P>
+
+<BLOCKQUOTE>
+  <P>5.<I> Define the rule for thinning in the file </I><TT>fol_struct.ml:</TT></P>
+  <BLOCKQUOTE>
+    <PRE><B>prim</B> thin 'H 'J :
+   ('t : <B>sequent</B> ['ext] { 'H; 'J['x] &gt;- 'C['x] }) --&gt;
+   <B>sequent</B> ['ext] { 'H; x: 'T; 'J['x] &gt;- 'C['x] } = 't</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>The introduction of a free variable by the thinning rule is
+logically valid. The <I>semantics</I> of the logic provides no
+specific interpretation of free variables, and there are no rules
+for reasoning about free variables. Still, introduction of free
+variables with the thinning rule is usually a mistake. The <I>tactic</I>
+for thinning should check before apply the rule.</P>
+
+<BLOCKQUOTE>
+  <P>6. <I>Define the tactic for thinning:</I></P>
+  <BLOCKQUOTE>
+    <PRE><B>let</B> thinT i p =
+   <B>let</B> x, _ = Sequent.nth_hyp p i in
+      <B>if</B> Sequent.is_free_seq_var i x p <B>then</B>
+         <B>raise</B> (RefineError (&quot;thinT&quot;, StringStringError (&quot;free variable: &quot;, x)))
+      <B>else</B>
+         <B>let</B> i, j = Sequent.hyp_indices p i <B>in</B>
+            thin i j p</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>The <I>cut</I> rule introduces a lemma, provided as an argument
+to the cut rule. The proof term for the rule <I>substitutes</I>
+the lemma proof for the lemma assumption.</P>
+
+<BLOCKQUOTE>
+  <P>7.<I> Define the cut rule:</I></P>
+  <BLOCKQUOTE>
+    <PRE><B>prim</B> cut 'H 'T 'x :
+   ('a : <B>sequent</B> ['ext] { 'H &gt;- 'T }) --&gt;
+   ('b['x] : <B>sequent</B> ['ext] { 'H; x: 'T &gt;- 'C }) --&gt;
+   <B>sequent</B> ['ext] { 'H &gt;- 'C } =
+   'b['a]</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+<P>The tactic for the cut rule is just a wrapper for producing
+a new variable for the hypothesis.</P>
+
+<BLOCKQUOTE>
+  <P>8. <I>Define the </I><TT>assertT</TT> <I>tactic:</I></P>
+  <BLOCKQUOTE>
+    <PRE><B>let</B> assertT t p =
+   <B>let</B> v = Var.maybe_new_vars1 p &quot;v&quot; <B>in</B>
+      cut (Sequent.hyp_count_addr p) t v p</PRE>
+  </BLOCKQUOTE>
+</BLOCKQUOTE>
+
+</BODY>
+</HTML>

@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -34,7 +34,7 @@ open Printf
 
 open MLast
 
-open Nl_debug
+open Mp_debug
 
 open Opname
 open Refiner.Refiner
@@ -58,7 +58,7 @@ let _ =
 (*
  * Location is a pair of bignums.
  *)
-type loc = Nl_num.num * Nl_num.num
+type loc = Mp_num.num * Mp_num.num
 
 (*
  * A comment function takes a term,
@@ -128,7 +128,7 @@ let dest_loc t =
          { op_params = p1 :: p2 :: _ } ->
             begin
                match dest_param p1, dest_param p2 with
-                  Number (Nl_num.Int start), Number (Nl_num.Int finish) ->
+                  Number (Mp_num.Int start), Number (Mp_num.Int finish) ->
                     start, finish
                 | _ ->
                      raise (FormatError ("dest_loc: needs two numbers", t))
@@ -146,7 +146,7 @@ let dest_loc_string t =
    let { term_op = op } = dest_term t in
    let { op_params = params } = dest_op op in
       match List.map dest_param params with
-         [Number (Nl_num.Int start); Number (Nl_num.Int finish); String s] ->
+         [Number (Mp_num.Int start); Number (Mp_num.Int finish); String s] ->
             (start, finish), s
        | _ ->
             raise (FormatError ("dest_loc_string: needs two numbers and a string", t))
@@ -190,8 +190,8 @@ let dest_loc_int t =
    let { term_op = op } = dest_term t in
    let { op_params = params } = dest_op op in
       match List.map dest_param params with
-         [Number (Nl_num.Int start); Number (Nl_num.Int finish); Number i] ->
-            (start, finish), Nl_num.string_of_num i
+         [Number (Mp_num.Int start); Number (Mp_num.Int finish); Number i] ->
+            (start, finish), Mp_num.string_of_num i
        | _ ->
             raise (FormatError ("dest_loc_int: needs three numbers", t))
 
@@ -211,7 +211,7 @@ let loc_of_expr,
     loc_of_module_expr =
    let loc_of_aux f x =
       let i, j = f x in
-         Nl_num.Int i, Nl_num.Int j
+         Mp_num.Int i, Mp_num.Int j
    in
       loc_of_aux loc_of_expr,
       loc_of_aux loc_of_patt,
@@ -222,11 +222,11 @@ let loc_of_expr,
       loc_of_aux loc_of_module_expr
 
 let num_of_loc (i, j) =
-  Nl_num.Int i, Nl_num.Int j
+  Mp_num.Int i, Mp_num.Int j
 
 let raise_with_loc loc exn =
   match loc with
-     (Nl_num.Int i, Nl_num.Int j) ->
+     (Mp_num.Int i, Mp_num.Int j) ->
         Stdpp.raise_with_loc (i, j) exn
    | _ ->
         raise (Failure "Filter_ocaml.raise_with_loc: got a big number")
@@ -1425,7 +1425,7 @@ let mk_simple_string =
 let mk_loc_int_aux opname (start, finish) i tl =
    let p1 = make_param (Number start) in
    let p2 = make_param (Number finish) in
-   let p3 = make_param (Number (Nl_num.num_of_string i)) in
+   let p3 = make_param (Number (Mp_num.num_of_string i)) in
    let op = mk_op opname [p1; p2; p3] in
       mk_term op (List.map (mk_bterm []) tl)
 
@@ -1774,7 +1774,7 @@ and mk_wc comment = function
       let sl2' = mk_list_term (List.map mk_simple_string sl2) in
          comment WithClauseTerm loc (mk_simple_term wc_type_op loc [sl1'; sl2'; mk_type comment t])
  | WcMod ((i, j), sl1, mt) ->
-      let loc = (Nl_num.Int i, Nl_num.Int j) in
+      let loc = (Mp_num.Int i, Mp_num.Int j) in
       let sl1' = mk_list_term (List.map mk_simple_string sl1) in
          comment WithClauseTerm loc (mk_simple_term wc_module_op loc [sl1'; mk_module_type comment mt])
 

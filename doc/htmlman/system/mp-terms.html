@@ -1,0 +1,109 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL Terms</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>MetaPRL Terms</H1>
+
+<P>The <TT>TermType</TT> module defines the type of terms. For
+an explanation of the term syntax, see <A HREF="http://x/">the
+term syntax</A>. The <TT>TermType</TT> module implements terms
+as an abstract type. The visible parts of the terms are given
+types that end in a quote (for instance, the type of abstract
+terms is <TT>term</TT> and the visible terms are of type <TT>term'</TT>).
+Functions are provided in the <TT>Term</TT> module to both fold
+and unfold terms to their visible representations. Each term has
+a name of type <TT>operator</TT> and a list of (possibly bound)
+subterms:</P>
+
+<PRE>   <B>type</B> term' = { term_op : operator; term_terms : bound_term list }
+   <B>type</B> bound_term' = { bvars : string list; bterm : term }</PRE>
+
+<P>Binding variables are represented a strings. The operator type
+itself is used to include a name for the term, and a possible
+list of <I>parameters</I>, which are just constant values that
+the term represents.</P>
+
+<PRE>   <B>type</B> operator' = { op_name : opname; op_params : param list }</PRE>
+
+<P>The <TT>opname</TT> is the name of the term, an abstract type
+defined in the <TT>Opname</TT> module. Opnames provide the means
+of giving names to terms that differ between modules. For the
+next few examples, we'll represent terms are string pairs <I>module-name:term-name.</I>
+Let <TT>var_x</TT> represent the term for the variable &quot;x.&quot;
+Here are some possible representations for terms:</P>
+
+<BLOCKQUOTE>
+  <PRE><FONT FACE="Symbol">l</FONT>x.x =
+   { term_op = { op_name = Itt_rfun:lambda; op_params = [] };
+     term_terms = [{ bvars = &quot;x&quot;; bterm = var_x }]
+   }
+
+0 = { term_op = { op_name = Itt_int:natural_number;
+                  op_params = [Int 0]
+                };
+      term_terms = []
+    }</PRE>
+</BLOCKQUOTE>
+
+<P>Variables have representations like other terms. The opname
+for a variable is the global opname <TT>var</TT>, and a variable
+&quot;x&quot; has the following representation:</P>
+
+<BLOCKQUOTE>
+  <PRE>x = { term_op = { op_name = var; op_params = [Var &quot;x&quot;] };
+      term_terms = []
+    }</PRE>
+</BLOCKQUOTE>
+
+<H2>Term Operations</H2>
+
+<P>The <TT>Term</TT> module defines the basic operations on terms,
+including folding and unfolding terms:</P>
+
+<BLOCKQUOTE>
+  <PRE><B>val</B> make_term : term' -&gt; term
+<B>val</B> dest_term : term -&gt; term'</PRE>
+</BLOCKQUOTE>
+
+<P>Several of the remaining modules define more complex operations
+on terms. The <TT>TermOp</TT> module defines more extensive operations
+that are used to construct fold/unfold operations on terms with
+specific opnames. The <TT>TermAddr</TT> module defines <I>addresses
+</I>that are used to denote specific subterms of a term, so the
+that subterm may be extracted or replaced. The <TT>TermMan</TT>
+module defines &quot;manifest&quot; terms: terms that have a common
+meaning across the system. This module is strictly for efficiency,
+so that specialized term representations can be constructed from
+common terms. For instance, <I>sequents</I> are given a special
+representation and operations in the <TT>TermMan</TT> module.</P>
+
+<P>The <TT>TermSubst</TT> module defines substitution and unification
+of terms. Substitution is first order: the defined operation is
+simulateous substitution of terms for variables:</P>
+
+<PRE>   <B>val</B> subst : term -&gt; term list -&gt; string list -&gt; term</PRE>
+
+<P>The <TT>subst</TT> function replaces the variables with the
+terms in the argument term. For instance, the substitution</P>
+
+<BLOCKQUOTE>
+  <PRE>subst &lt;&lt;'x, 'y&gt;&gt; [&lt;&lt; 1 + 1 &gt;&gt;; &lt;&lt; 'z &gt;&gt;] [&lt;&lt; 'x &gt;&gt;; &lt;&lt; 'y &gt;&gt;]</PRE>
+</BLOCKQUOTE>
+
+<P>produces the value <TT>&lt;&lt; 1 + 1, 'z &gt;&gt;</TT>.</P>
+
+<P>The <TT>TermMeta</TT> module defines meta-implication, used
+by the refiner for defining inference rules. The <TT>TermShape</TT>
+module provides a &quot;hash&quot; function on terms: it reduces
+a term to an opname, a list of parameter types, and the arities
+of its subterms. The &quot;shape&quot; is used as an index into
+tables based on term types.</P>
+
+<P>The <TT>TermEval</TT> module is used to define efficient evaluation
+of terms with arbitrary computation rules.
+
+</BODY>
+</HTML>

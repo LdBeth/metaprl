@@ -1,0 +1,132 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H3><CENTER><A NAME="anchor2478875"></A><IMG SRC="images/mp-logo.gif"
+WIDTH="549" HEIGHT="97" ALIGN="BOTTOM" BORDER="0" NATURALSIZEFLAG="3"></CENTER></H3>
+
+<P>MetaPRL is two things: it is a <I>logical framework</I>
+where multiple logics can be defined and related, and it is a
+<I>system implementation</I> with support for interactive proof
+and automated reasoning. A primary feature of MetaPRL is a
+semantic connection to programming languages, that allows the
+system to be used as a <I>logical programming environment</I>,
+where programs are constructed as a mixture of specifications,
+implementations, and verifications.</P>
+
+<H4><A NAME="anchor2479740"></A>System goals</H4>
+
+<P>The MetaPRL system was implemented with the purpose of
+supporting <I>relations</I> between logics. There is a huge investment
+in formal work in systems like PVS, HOL, Coq, ELF, Nuprl, and
+others. These systems use different logics and different methodologies,
+but they have common goals and their results share fundamental
+mathematical underpinnings. Mathematical developments are expensive;
+our first goal is to expose the logical foundations that the systems
+share, to allow the <I>results</I> to be shared between systems.
+MetaPRL supports sharing with three features:</P>
+
+<UL>
+  <LI>Programs and logics are developed as modules that define
+  <I>computational, heuristic,</I> and <I>mathematical</I> properties.
+  <LI>Modules are constructed <I>incrementally</I> by adding formal
+  properties to existing modules (the empty module is the root
+  of every logic). Just as object-oriented programming allows code
+  re-use, incremental module construction allows <I>logical</I>
+  re-use: logics can share a common core with properties that are
+  <I>inherited</I> as the logics are extended.
+  <LI>Modules are <I>first-class:</I> relations between logics
+  are either constructed by inheritance, or explicitly constructed
+  as functions between modules.
+</UL>
+
+<P>This first goal give formal underpinnings to logical sharing;
+our next goal is to provide practical impact. Work is underway
+to relate the PVS, HOL, Isabelle, and Nuprl mathematical foundations.
+Precursors to these developments are available in the MetaPRL
+distribution, including logics for:</P>
+
+<UL>
+  <LI>constructive type theory (ITT), based on the Martin-Lof style
+  Nuprl type theory,
+  <LI>constructive set theory, based on Aczel's axiomatization,
+  <LI>the LF logical framework,
+  <LI>first order logic.
+</UL>
+
+<P>These logics provide the principles of formal logical relations.
+Aczel's set theory is modeled in the type theory (as is first-order
+logic). The LF work is less complete.</P>
+
+<P>Our work focuses specifically on <I>programming:</I> even though
+large-scale programming is unreliable, the advantage of high-speed
+automation has pushed computation into our safety-critical infrastructure,
+including the telephone system, the power grid, the financial
+sector, and the transportation industry. The reliability of critical
+systems must be ensured--while retaining productivity. MetaPRL
+addresses the problem in two ways:</P>
+
+<UL>
+  <LI>The system provides a semantic framework to allow program
+  <I>development</I> in an environment of mixed specification and
+  implementation. Logical foundations are used both to guide the
+  development and to ensure the reliability of developing software.
+  The distribution contains a semantic account of core OCaml that
+  allows ML programs to be intermixed with specifications in type
+  theory.
+  <LI>The majority of existing code is poorly documented and poorly
+  structured. While this is the most speculative of our projects,
+  MetaPRL supports the <I>hardening</I> of existing code by
+  developing program-specific type systems that verify program
+  abstractions.
+</UL>
+
+<P>Finally, our goal is <I>speed.</I> Higher-order formal systems
+require a mixture of interactive and automated proving; the load
+on the programmer is proportional to how efficient the system
+is in deriving formal properties. MetaPRL focuses on this
+problem at its foundation (hence the name &quot;light&quot;) with
+these features:</P>
+
+<UL>
+  <LI>Modularity is used to provide domain-specific heuristics
+  and algorithms, and to restrict the logical search complexity.
+  <LI>The implementation language, OCaml, provides performance
+  close to C, but with a formal semantics, type safety, modularity,
+  and extensive checking to assist code modification and development.
+  <LI>Abstract data structures provide optimized domain-specific
+  logical operations.
+  <LI>MetaPRL is a fully-distributed, fault-tolerant theorem
+  prover. The distribution over Ensemble scales to over 100 machines
+  over a wide-area network (depending on the parallel properties
+  of the domain problem). Faults are tolerated transparently: processors
+  may join and leave a process group arbitrarily--problem outcomes
+  are not affected by process failures. Furthermore, the distribution
+  is transparent: programmers use the standard search language.
+</UL>
+
+<H4>Documentation</H4>
+
+<P>Here are some places where you can find out more about MetaPRL.</P>
+
+<UL>
+  <DL>
+    <DT><A HREF="mp-people.html" TARGET="_self">People</A> gives
+    a list of people know to be working on the project.
+    <DT><A HREF="mp-links.html" TARGET="_self">Links</A> provides
+    links to the other related systems and software.
+    <DT><A HREF="mp-install.html" TARGET="_self">Downloading</A>
+    describes how to download, configure, and install MetaPRL.
+    <DT><A HREF="mp-framework.html" TARGET="_self">Logical framework</A>
+    presents the logical properties of the system.
+    <DT><A HREF="mp-system.html" TARGET="_self">System description</A>
+    gives an overview of MetaPRL's architecture and features.
+    <DT>User guide provides instructions on using MetaPRL.
+  </DL>
+</UL>
+
+</BODY>
+</HTML>

@@ -5,7 +5,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -35,7 +35,7 @@
 open Arg
 open Printf
 
-open Nl_debug
+open Mp_debug
 
 open File_base_type
 
@@ -256,7 +256,7 @@ let spec =
  *)
 let main () =
    Pcaml.input_file := "/dev/null";
-   Arg.parse spec process_file "Compile a Nuprl-Light binary file"
+   Arg.parse spec process_file "Compile a MetaPRL binary file"
 
 let _ = Printexc.catch main ()
 

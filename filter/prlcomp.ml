@@ -18,7 +18,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -48,7 +48,7 @@
 open Printf
 open Arg
 
-open Nl_debug
+open Mp_debug
 
 open Filter_magic
 
@@ -277,7 +277,7 @@ let print_command_line argv =
  *)
 let main () =
    let spec = spec @ Env_arg.args () in
-   let _ = Env_arg.parse spec add_anon_arg "Nuprl-Light compiler" in
+   let _ = Env_arg.parse spec add_anon_arg "MetaPRL compiler" in
    let _ = set_includes () in
    let argv = mk_command () in
    let argv' = Array.of_list argv in

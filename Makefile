@@ -24,6 +24,7 @@ NL_DIRS :=\
 	theories/base\
 	theories/itt\
 	theories/tptp\
+	theories/reflect_itt\
 	theories/fol
 
 DIRS := $(REFINER_DIRS) filter $(NL_DIRS) editor/ml

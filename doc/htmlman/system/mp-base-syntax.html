@@ -1,0 +1,257 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL Base Syntax</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>MetaPRL Base Syntax</H1>
+
+<P>The MetaPRL compiler defines syntax in two modules: the
+<TT>Perv</TT> module, defined in the directory <TT>theories/tactic/perv.mli</TT>,
+and the <TT>Summary</TT> module, defined in <TT>theories/base/summary.mli</TT>.
+These modules have two different purposes: the <TT>Perv</TT> module
+defines terms that are commonly use to represent refiner primitives:
+it includes a list construction with <TT>cons</TT> and <TT>nil</TT>
+terms, a primitive <TT>lambda</TT> abstraction, and a sequent
+representation.</P>
+
+<P>The <TT>Summary</TT> module provides the syntax for <I>theories</I>.
+It contains one or more term declarations for each of the syntax
+constructions in a MetaPRL theory module. These constructions
+may contain OCaml programs; the programs are defined in the file
+<TT>theories/ocaml/ocaml.mli</TT>.</P>
+
+<P>The <TT>Nuprl_font</TT> module defines the character set used
+in MetaPRL for displaying terms. The character set defined
+for MetaPRL 2.00.1 is the following:</P>
+
+<BLOCKQUOTE>
+  <DL>
+    <DT>mathbbA : <IMG SRC="chars/CHAR129.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbB : <IMG SRC="chars/CHAR130.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbC : <IMG SRC="chars/CHAR131.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbD : <IMG SRC="chars/CHAR132.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbE : <IMG SRC="chars/CHAR133.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbF : <IMG SRC="chars/CHAR134.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbG : <IMG SRC="chars/CHAR135.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbH : <IMG SRC="chars/CHAR136.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbI : <IMG SRC="chars/CHAR137.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbJ : <IMG SRC="chars/CHAR138.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbK : <IMG SRC="chars/CHAR139.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbM : <IMG SRC="chars/CHAR141.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbN : <IMG SRC="chars/CHAR142.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbO : <IMG SRC="chars/CHAR143.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbP : <IMG SRC="chars/CHAR144.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbQ : <IMG SRC="chars/CHAR145.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbR : <IMG SRC="chars/CHAR146.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbS : <IMG SRC="chars/CHAR147.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbT : <IMG SRC="chars/CHAR148.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbU : <IMG SRC="chars/CHAR149.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbV : <IMG SRC="chars/CHAR150.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbW : <IMG SRC="chars/CHAR151.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbX : <IMG SRC="chars/CHAR152.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    mathbbY : <IMG SRC="chars/CHAR153.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    shortLeftarrow : <IMG SRC="chars/CHAR156.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM">5<BR>
+    leftarrow : <IMG SRC="chars/CHAR220.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG SRC="chars/CHAR221.gif"
+    WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    middlearrow : <IMG SRC="chars/CHAR221.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    shortRightarrow : <IMG SRC="chars/CHAR158.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    rightarrow : <IMG SRC="chars/CHAR157.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG SRC="chars/CHAR158.gif"
+    WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    leftrightarrow : <IMG SRC="chars/CHAR220.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG SRC="chars/CHAR221.gif"
+    WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG 
+    SRC="chars/CHAR222.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    ulcorner : <IMG SRC="chars/CHAR154.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    urcorner : <IMG SRC="chars/CHAR155.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    vdash<IMG SRC="chars/CHAR159.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    integral : <IMG SRC="chars/CHAR160.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    cdot<IMG SRC="chars/CHAR204.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    downarrow : <IMG SRC="chars/CHAR205.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    uparrow : <IMG SRC="chars/CHAR206.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    alpha<IMG SRC="chars/CHAR161.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    beta : <IMG SRC="chars/CHAR162.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    pi : <IMG SRC="chars/CHAR176.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    lambda : <IMG SRC="chars/CHAR171.gif" WIDTH="8" HEIGHT="12" 
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    gamma : <IMG SRC="chars/CHAR163.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    delta : <IMG SRC="chars/CHAR164.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    rho : <IMG SRC="chars/CHAR177.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    sigma : <IMG SRC="chars/CHAR178.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    epsilon : <IMG SRC="chars/CHAR165.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    eta : <IMG SRC="chars/CHAR167.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    theta : <IMG SRC="chars/CHAR168.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    iota : <IMG SRC="chars/CHAR169.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    kappa : <IMG SRC="chars/CHAR170.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    mu : <IMG SRC="chars/CHAR172.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    nu : <IMG SRC="chars/CHAR173.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    omicron : <IMG SRC="chars/CHAR175.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    tau : <IMG SRC="chars/CHAR179.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    phi : <IMG SRC="chars/CHAR181.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    xi : <IMG SRC="chars/CHAR182.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    omega : <IMG SRC="chars/CHAR184.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    wedge : <IMG SRC="chars/CHAR207.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    tneg : <IMG SRC="chars/CHAR191.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    member : <IMG SRC="chars/CHAR209.gif" WIDTH="8" HEIGHT="12" 
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    plusminus : <IMG SRC="chars/CHAR210.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    oplus : XXX<BR>
+    infty : XXX<BR>
+    partial : <IMG SRC="chars/CHAR211.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    subset : <IMG SRC="chars/CHAR212.gif" WIDTH="8" HEIGHT="12" 
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    supset : <IMG SRC="chars/CHAR213.gif" WIDTH="8" HEIGHT="12" 
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    cap : <IMG SRC="chars/CHAR214.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    cup : <IMG SRC="chars/CHAR215.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    forall : <IMG SRC="chars/CHAR216.gif" WIDTH="8" HEIGHT="12" 
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    exists : <IMG SRC="chars/CHAR217.gif" WIDTH="8" HEIGHT="12" 
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    oinfty : XXX<BR>
+    shortleftrightarrow : <IMG SRC="chars/CHAR165.gif" WIDTH="8"
+    HEIGHT="12" NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    shortleftarrow : <IMG SRC="chars/CHAR220.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    shortrightarrow : <IMG SRC="chars/CHAR222.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    longleftrightarrow : <IMG SRC="chars/CHAR223.gif" WIDTH="8" 
+    HEIGHT="12" NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG 
+    SRC="chars/CHAR221.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><IMG SRC="chars/CHAR221.gif" WIDTH="8"
+    HEIGHT="12" NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG 
+    SRC="chars/CHAR222.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    longleftarrow : <IMG SRC="chars/CHAR220.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG SRC="chars/CHAR221.gif"
+    WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG 
+    SRC="chars/CHAR221.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    longrightarrow : <IMG SRC="chars/CHAR221.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG SRC="chars/CHAR221.gif"
+    WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG 
+    SRC="chars/CHAR222.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    neq : 225<BR>
+    sim : XXX<BR>
+    le : <IMG SRC="chars/CHAR218.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    ge : <IMG SRC="chars/CHAR219.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    equiv : <IMG SRC="chars/CHAR226.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    vee : <IMG SRC="chars/CHAR208.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    leftarrow : <IMG SRC="chars/CHAR223.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG SRC="chars/CHAR221.gif"
+    WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    middlearrow : <IMG SRC="chars/CHAR221.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    rightarrow : <IMG SRC="chars/CHAR221.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><IMG SRC="chars/CHAR222.gif"
+    WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    sigma : <IMG SRC="chars/CHAR199.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    delta : <IMG SRC="chars/CHAR194.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    pi : <IMG SRC="chars/CHAR198.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    times : <IMG SRC="chars/CHAR227.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    div<IMG SRC="chars/CHAR228.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    supplus : <IMG SRC="chars/CHAR229.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    supminus : <IMG SRC="chars/CHAR230.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    supcirc : <IMG SRC="chars/CHAR231.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    subseteq : <IMG SRC="chars/CHAR232.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    supseteq : <IMG SRC="chars/CHAR233.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    subzero : <IMG SRC="chars/CHAR240.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    subone : <IMG SRC="chars/CHAR241.gif" WIDTH="8" HEIGHT="12" 
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    subtwo : <IMG SRC="chars/CHAR242.gif" WIDTH="8" HEIGHT="12" 
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    subthree : <IMG SRC="chars/CHAR244.gif" WIDTH="8" HEIGHT="12"
+    NATURALSIZEFLAG="0" BORDER="0" ALIGN="BOTTOM"><BR>
+    suba : <IMG SRC="chars/CHAR237.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    subb : <IMG SRC="chars/CHAR236.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    subc : <IMG SRC="chars/CHAR238.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM"><BR>
+    subq : XXX<BR>
+    subz : <IMG SRC="chars/CHAR235.gif" WIDTH="8" HEIGHT="12" NATURALSIZEFLAG="0"
+    BORDER="0" ALIGN="BOTTOM">
+  </DL>
+</BLOCKQUOTE>
+
+</BODY>
+</HTML>

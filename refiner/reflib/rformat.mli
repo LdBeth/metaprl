@@ -24,7 +24,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -99,7 +99,7 @@ val format_char : buffer -> char -> unit
 val format_string : buffer -> string -> unit
 val format_quoted_string : buffer -> string -> unit
 val format_int : buffer -> int -> unit
-val format_num : buffer -> Nl_num.num -> unit
+val format_num : buffer -> Mp_num.num -> unit
 val format_buffer : buffer -> buffer -> unit
 
 (*

@@ -1,0 +1,1196 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MetaPRL Display Forms</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<H1>MetaPRL Display Forms</H1>
+
+<P>MetaPRL provides built-in support for <I>pretty-printing</I>
+logical expressions, as well as ML programs. The display form
+mechanism provides automatic introduction of parentheses based
+on <I>precedences</I> of display forms, it provides control over
+indentation and line breaking, and it provides a special character
+set for display of logical operators.</P>
+
+<P>A display form is defined with the <B><TT>dform</TT></B> directive.
+The syntax of a display form has the following form:</P>
+
+<BLOCKQUOTE>
+  <P><B><TT>dform</TT></B><TT> </TT><I>name </I><TT>:</TT> [<I>options</I>]
+  <I>term<TT> </TT></I><TT>= </TT><I>definition</I></P>
+</BLOCKQUOTE>
+
+<P>Display form precedences are declared with two additional forms:</P>
+
+<BLOCKQUOTE>
+  <DL>
+    <DT><B><TT>prec</TT></B> <I>name</I>
+    <DT><B><TT>prec</TT></B> <I>name </I><TT>&lt;</TT>&nbsp;<I>name</I>
+  </DL>
+</BLOCKQUOTE>
+
+<P>The <I>term</I> part of a display form is a term expressed
+in the <I>uniform</I> syntax; the term must be defined with the
+<TT><A HREF="mp-terms.html">declare</A></TT> directive. The <I>definition</I>
+is another term that is the display form expansion. Term display
+is a process of <I>evaluation</I>: a term is displayed by selecting
+the closest-matching display form, replacing it with its expansion,
+and recursively displaying the result. Nuturally, there is a condition
+for termination, and the definition uses a syntax that includes
+terms representing strings, line breaking information, and other
+<I>control</I> terms, as well as recursive display. The <I>options</I>
+provide information about <I>predecedence</I> and <I>parenthesization</I>.</P>
+
+<P>Display is part of the <I>logical</I> context of a module,
+and different modules can define different display mechanisms.
+The following display forms illustrate some of the basic display
+form mechanism for terms in the <TT>Itt_logic</TT> module.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>include</B> Nuprl_font
+<B>prec </B>prec_and
+<B>prec</B> prec_or
+<B>prec</B> prec_or &lt; prec_and
+
+<B>dform </B>true_df : true = `&quot;True&quot;
+<B>dform</B> false_df : false = `&quot;False&quot;
+<B>dform </B>and_df : parens :: prec[&quot;prec_and&quot;] :: and{'t1; 't2} =
+   slot{'t1} `&quot; &quot; wedge `&quot; &quot; slot{'t2}
+
+<B>dform </B>or_df : parens :: prec[&quot;prec_or&quot;] :: or{'t1; 't2} =
+   slot{'t1} `&quot; &quot; vee `&quot; &quot; slot{'t2}</PRE>
+</BLOCKQUOTE>
+
+<P>These definitions produce the following display for the term
+<TT>&quot;and&quot;{true; .&quot;or&quot;{false; true}}</TT>:</P>
+
+<BLOCKQUOTE>
+  <P><IMG SRC="../chars/CHAR35.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR60.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR60.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR34.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR97.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR110.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR100.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR34.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR123.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR34.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR117.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR34.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR46.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR34.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR111.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR34.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR123.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR34.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR117.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR34.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR34.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR97.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR115.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR34.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR125.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR125.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR62.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR62.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR59.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR45.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR58.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR82.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR110.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR46.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR82.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR110.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR84.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR109.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR109.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR61.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR84.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR117.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR207.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR40.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR84.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR117.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR208.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR70.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR97.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR115.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR41.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"></P>
+</BLOCKQUOTE>
+
+<P>This module uses the display definitions in the <TT>Nuprl_font</TT>
+module, used to define the display of <TT>wedge</TT> and <TT>vee</TT>.
+IT also establishes display precedences to control parenthesization,
+with the precedence of <TT>or</TT> being less than the precedence
+of <TT>and</TT>. The display form for <TT>and</TT> has two options:
+the <TT>parens</TT> option declares that parentheses should be
+used to enclose the display if the term <I>context</I> has a higher
+precedence, and the <TT>prec[&quot;prec_and&quot;]</TT> specifies
+the precedence of the display form. The term <TT>and{'t1; 't2}</TT>
+gives the pattern for terms defined with this display.</P>
+
+<P>The <I>definition</I> provides the expansion. Display is usually
+defined as a sequence of terms for each part of the display. The
+<TT>slot</TT> for is used to parenthesize recursive display, so
+that the <TT>slot{'t1}</TT> in the <TT>and_df</TT> display form
+places parenteses around the <TT>'t1</TT> subterm if the precedence
+is <I>less</I> that <TT>prec_and</TT>. The string <TT>`&quot;
+&quot;</TT> is a <I>literal</I> string that is printed verbatim;
+in this case a space character.</P>
+
+<P>The <TT>wedge</TT> term is another recursive display. The display
+form for <TT>wedge</TT> is defined in the <TT>Nuprl_font</TT>
+module; its definition is the literal string <TT>`&quot;\203&quot;</TT>,
+which correspond to the &quot;wedge&quot; character in the Nuprl
+font.</P>
+
+<BLOCKQUOTE>
+  <P><B><TT>dform</TT></B><TT> wedge_df : wedge = `&quot;\203&quot;</TT></P>
+</BLOCKQUOTE>
+
+<H4>Options</H4>
+
+<P>Display form <I>options</I> are used to provide precedence
+information. There are three options:</P>
+
+<OL>
+  <LI><TT>parens</TT>
+  <LI><TT>prec[</TT><I>prec</I><TT>]</TT>
+  <LI><TT>inherit</TT>
+</OL>
+
+<P>The <TT>parens</TT> option specifies that the display may be
+parenthesized. No parentheses are ever added to the display form
+if this option is not included. The <TT>prec[</TT><I>prec</I><TT>]</TT>
+option specifies the precedence to be used in the precedence computation.
+The <TT>inherit</TT> option is an alternative to <TT>prec[</TT><I>prec</I><TT>]</TT>:
+it specifies that the precedence should be inherited from the
+context. The <TT>inherit</TT>option is used for creating <I>transparent</I>
+display form, such as the <TT>slot</TT> term, which passes the
+precedence ot its context to its subterm.</P>
+
+<H4>The <TT>slot</TT> epression</H4>
+
+<P>The <TT>slot</TT> performs the precedence computation for parenthesizing
+subterms. The general slot stntax includes an optional parameter:</P>
+
+<BLOCKQUOTE>
+  <P><TT>slot[</TT><I>option</I><TT>]{</TT><I>subterm</I><TT>}</TT></P>
+</BLOCKQUOTE>
+
+<P>The <I>option</I> is a string parameter, with two possible
+values: <TT>slot[&quot;le&quot;:s]{</TT><I>t</I><TT>}</TT>, specifies
+that subterm <I>t</I> should be parenthesized if its precedence
+is less than <I>or equal to</I> the precedence of the enclosing
+term. The <TT>slot[&quot;lt&quot;:s]{</TT><I>t</I><TT>}</TT> term
+specifies that the term <I>t</I> should be parenthesized only
+if its precedence is strictly less than the precedence of the
+current term. If the slot option is not given, the value defaults
+to <TT>&quot;lt&quot;</TT>.</P>
+
+<P>There is also a <TT>slot</TT> form for displaying parameters.
+If the slot body is empty, the parameter is displayed using a
+&quot;standard&quot; display:</P>
+
+<UL>
+  <LI><TT>slot[<I>i</I>:n]</TT> displays the number <I>i</I> in
+  decimal,
+  <LI><TT>slot[<I>s</I>:s]</TT> display the string <I>s</I> without
+  quotes,
+  <LI><TT>slot[<I>t</I>:t]</TT> displays the string <I>t</I> without
+  quotes,
+  <LI><TT>slot[<I>v</I>:v]</TT> displays the string <I>v</I> for
+  the variable,
+  <LI><TT>slot[<I>l</I>:l]</TT> displays the level expression in
+  normalized form.
+</UL>
+
+<H4>Literals</H4>
+
+<P>The <TT>`&quot;<I>s</I>&quot;</TT> form displays the string
+<I>s</I>. It is equivalent to <TT>slot[<I>s</I>:s]</TT>.</P>
+
+<H4>Line breaking and <I>zones</I></H4>
+
+<P>The display mechanism divides the output into <I>zones</I>
+that specify line breaking behavior. There are two types of line
+breaks:</P>
+
+<UL>
+  <LI><I>Soft</I> breaks are optional. They are taken only if the
+  page margins would be exceeded without line breaking.
+  <LI><I>Hard</I> breaks are specified by the zone. By default
+  <I>hard</I> breaks are always taken.
+</UL>
+
+<P>There are three types of zones.</P>
+
+<UL>
+  <LI><I>No</I> line breaking is allowed in <I>linear</I> zones.
+  Soft and hard breaks are never taken.
+  <LI>A <I>soft</I> zone defines behavior of <I>hard</I> breaks,
+  <I>soft</I> breaks are optional. In a soft zone, hard breaks
+  are not taken if the display in the zone fits on a single line.
+  Otherwise, <I>all</I> hard breaks are taken.
+  <LI>A <I>hard</I> zone also defines behavior for <I>hard</I>
+  breaks: <I>all</I> hard breaks are taken in a <I>hard</I> zone;
+  <I>soft</I> breaks are still optional.
+</UL>
+
+<P>Zones are defined with the terms <TT>lzone</TT>, <TT>szone</TT>,
+<TT>hzone</TT>, and <TT>ezone</TT>. Zones can be nested; when
+a zone is terminated, the enclosing zone is resumed. The <TT>lzone</TT>
+term begins a linear zone, the <TT>szone</TT> a soft zone, the
+<TT>hzone</TT> are hard zone, and the <TT>ezone</TT> term terminates
+the most recently entered zone, and returns to the previous zone.</P>
+
+<P>Line breaking is specified with the terms <TT>sbreak[</TT><I>inline</I><TT>:s,</TT><I>take</I><TT>:s]</TT>
+and <TT>hbreak[</TT><I>inline</I><TT>:s,</TT><I>take</I><TT>:s]</TT>.
+The <I>inline</I> string specifies a string to be displayed if
+the break is <I>not</I> taken, and the <I>take</I> string is printed
+<I>before</I> the end of the line if the line break is taken.
+The string arguments can be ommitted; they default to the empty
+string <TT>&quot;&quot;</TT>. For convenience, the <TT>hspace</TT>
+term is defined in the <TT>Nuprl_font</TT> module as <TT>hbreak[&quot;
+&quot;:s,&quot;&quot;:s]</TT>.</P>
+
+<H4>Indentation</H4>
+
+<P>Indentation is specified with the left-margin operators <TT>pushm[</TT><I>tab</I><TT>:n]</TT>
+and <TT>popm</TT>. These operations establish the location of
+the left margin. They can be nested; when the left margin is removed
+with the term <TT>popm</TT>, the left margin is replaced with
+its previous value. The <TT>pushm[</TT><I>tab</I><TT>:n]</TT>
+term pushes a new left margin at the <I>current</I> display position
+plus <I>tab</I> characters. The <I>tab</I> option can be omitted;
+it defaults to 0. The <TT>popm</TT> term removes the margin installed
+with the last <TT>pushm</TT>.</P>
+
+<H4>Example</H4>
+
+<P>As an example, we give the display form for the if-then-else
+term defined in the module <TT>Itt_bool</TT>.</P>
+
+<BLOCKQUOTE>
+  <PRE><B>dform</B> ifthenelse_df : <B>parens</B> :: &quot;<B>prec</B>&quot;[prec_or] 
+                   :: ifthenelse{'e1; 'e2; 'e3} =
+   <B>pushm</B>[0] <B>szone</B> push_indent `&quot;if&quot; `&quot; &quot; slot{'e1} `&quot; &quot; `&quot;then&quot; <B>hspace</B>
+   <B>szone</B> slot{'e2} <B>ezone</B> <B>popm</B> <B>hspace</B>
+   push_indent `&quot;else&quot; <B>hspace</B>
+   <B>szone</B> slot{'e3} <B>ezone ezone popm popm</B></PRE>
+</BLOCKQUOTE>
+
+<P>This is a fairly complicated display form. The options specify
+that the <TT>ifthenelse</TT> term may be parenthesized, and it
+has precedence <TT>prec_or</TT>. The display immediately pushes
+the current left magin, and enters a soft zone so that the <TT>ifthenelse
+</TT>is either displayed on a single line, or all display breaks
+are taken. The <TT>push_indent</TT> term pushes the left margin
+again to indent the body of the <TT>ifthenelse</TT>; it is defined
+in <TT>Nuprl_font</TT> as the term <TT>pushm[3:n]</TT>.</P>
+
+<P>The <I>condition</I> is displayed on the first line, followed
+by a possible line break. The <I>body</I> of the conditional is
+displayed in an additional soft zone. After the body is displayed,
+the margin is popped so that a line break will return to the margin
+for the conditional. The <I>else</I> string is printed and the
+left margin ispushed again for the body of the <I>else</I>. Once
+the else-body is displayed, both soft zone are timinated, and
+both margins are popped, returning the display state to its original
+state.</P>
+
+<P>The following two examples show how the conditional is displayed
+without line breaks, and with line breaks:</P>
+
+<BLOCKQUOTE>
+  <P><IMG SRC="../chars/CHAR35.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR60.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR60.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR104.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR110.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR115.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR123.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR34.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR117.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR34.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR49.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR50.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR125.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR62.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR62.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR59.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR45.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR58.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR82.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR110.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR46.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR82.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR110.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR84.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR109.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR109.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR61.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR84.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR117.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR104.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR110.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR49.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR115.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR50.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+<BR>
+  <IMG SRC="../chars/CHAR35.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR60.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR60.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR104.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR110.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR115.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR123.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR40.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR120.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR123.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR97.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR109.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR98.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR100.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR97.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR123.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR46.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR116.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR104.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR110.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR108.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR115.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR123.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR46.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR39.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR60.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR61.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR48.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR49.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR39.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR42.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR64.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR40.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR39.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR40.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR39.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR45.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR64.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR49.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR41.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR41.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR125.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR125.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR125.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR49.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR55.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR41.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR62.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR49.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR48.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR48.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR48.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR39.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR97.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR99.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR111.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR97.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR95.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR115.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR95.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR98.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR103.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR39.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR97.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR99.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR111.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR97.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR95.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR115.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR95.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR115.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR109.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR97.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR125.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR62.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR62.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR59.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR59.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR45.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR58.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR82.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR110.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR46.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR82.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR110.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR84.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR114.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR109.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR109.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR61.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR40.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR40.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR120.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR40.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR46.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR40.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR171.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR46.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR40.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR40.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR218.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR48.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR41.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR104.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR110.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR49.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR108.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR115.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR40.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR42.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR40.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR40.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR45.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR49.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR41.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR41.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR41.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR41.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR41.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR41.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR49.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR55.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR41.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR62.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR49.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR48.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR48.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR48.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR41.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR104.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR110.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR97.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR99.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR111.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR97.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR95.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR115.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR95.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR98.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR103.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR101.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR115.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR101.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+  <IMG SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR102.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR97.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR99.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR111.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR114.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR105.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR97.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR95.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR105.gif" WIDTH="8" HEIGHT="12" BORDER="0" 
+  NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR115.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR95.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR115.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR109.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG 
+  SRC="../chars/CHAR97.gif" WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0"
+  ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif" WIDTH="8" HEIGHT="12"
+  BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR108.gif"
+  WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"><BR>
+</BLOCKQUOTE>
+
+</BODY>
+</HTML>

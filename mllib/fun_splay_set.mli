@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -30,7 +30,7 @@
  *)
 
 module Make (Ord : Set.OrderedType)
-: Nl_set.S
+: Mp_set.S
   with type elt = Ord.t
 
 (*

@@ -1,12 +1,12 @@
 (*
  * Filter an ML file.
  *
- * The grammar of OCaml is extended to include Nuprl-Light commands.
+ * The grammar of OCaml is extended to include MetaPRL commands.
  * This file contains all of the extensions.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -35,7 +35,7 @@
 open Printf
 open Pcaml
 
-open Nl_debug
+open Mp_debug
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -45,7 +45,7 @@ open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Precedence
 open Simple_print.SimplePrint
-open Nl_resource
+open Mp_resource
 
 open File_base_type
 

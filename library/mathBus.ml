@@ -1,5 +1,5 @@
 (*
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -28,9 +28,9 @@
 (*ocaml mathbus implementation*)
 
 open Printf
-open Nl_debug
+open Mp_debug
 
-open Nl_num
+open Mp_num
 open Registry
 open Int32
 
@@ -236,7 +236,7 @@ let mb_number num =
    print_string "m n "; print_string (string_of_num num);
   let a = abs_num num and b = num_of_int 1000000000 in
   let rec loop c l =
-    if Nl_num.lt_num c b then
+    if Mp_num.lt_num c b then
       (Mbint (mk_bint (int_of_num c)))::l
     else loop (quo_num c b) ((Mbint (mk_bint (int_of_num (mod_num c b))))::l) in
   let ints = try (loop a []) with _ -> 
@@ -250,7 +250,7 @@ let mb_number num =
       (Array.set node i (List.hd l);
        assign (i+1) (List.tl l)) in
   assign 1 ints;
-  (if Nl_num.lt_num num (num_of_int 0) then
+  (if Mp_num.lt_num num (num_of_int 0) then
     let bval = (match node.(1) with
       Mbint b -> b
     | Mnode n -> failwith "node ") in
@@ -261,7 +261,7 @@ let mb_number num =
 let mb_numberq num label =
   let a = abs_num num and b = num_of_int 1000000000 in
   let rec loop c l =
-    if Nl_num.lt_num c b then
+    if Mp_num.lt_num c b then
       (Mbint (mk_bint (int_of_num num)))::l
     else loop (quo_num c b) ((Mbint (mk_bint (int_of_num (mod_num c b))))::l) in
   let ints = loop a [] in
@@ -273,7 +273,7 @@ let mb_numberq num label =
       (Array.set node i (List.hd l);
        assign (i+1) (List.tl l)) in
   assign 0 ints;
-  (if Nl_num.lt_num num (num_of_int 0) then
+  (if Mp_num.lt_num num (num_of_int 0) then
     let bval = (match node.(1) with
       Mbint b -> b
     | Mnode n -> failwith "node") in
@@ -344,8 +344,8 @@ let number_value node=
   match (mbnode_subtermq node 1) with
     Mbint b -> let base = num_of_int (dest_bint b) in if nsubterms = 1 then base
     else (match (mbnode_subtermq node 2) with
-      Mbint c -> let int = Nl_num.add_num (Nl_num.mult_num (abs_num base) (num_of_int 1000000000)) (num_of_int (dest_bint c)) in
-      if Nl_num.ge_num base (num_of_int 0) then int else (Nl_num.sub_num (num_of_int 0) int)
+      Mbint c -> let int = Mp_num.add_num (Mp_num.mult_num (abs_num base) (num_of_int 1000000000)) (num_of_int (dest_bint c)) in
+      if Mp_num.ge_num base (num_of_int 0) then int else (Mp_num.sub_num (num_of_int 0) int)
     | Mnode n -> failwith "integer_value")
   | Mnode n -> failwith "integer_value"
 

@@ -6,7 +6,7 @@
  *
  * ----------------------------------------------------------------
  *
- * This file is part of Nuprl-Light, a modular, higher order
+ * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -35,7 +35,7 @@
 
 open Printf
 
-open Nl_debug
+open Mp_debug
 open File_util
 open Opname
 open Refiner.Refiner.Term
@@ -898,7 +898,7 @@ let loc_op = mk_opname "location"
 
 let dest_loc t =
    match (dest_number_number_dep0_any_term t) with
-       (Nl_num.Int i, Nl_num.Int j, t) -> t, (i, j)
+       (Mp_num.Int i, Mp_num.Int j, t) -> t, (i, j)
      | _ -> raise (Failure "dest_loc: location is not an integer")
 
 (*
@@ -1165,8 +1165,8 @@ and dest_prec_rel convert t =
 and dest_id convert t =
   let n = (dest_number_any_term t) in
     match n with
-        Nl_num.Int i -> Id i
-      | _ -> raise (Failure "dest_id: can't handle things other than Nl_num.Int")
+        Mp_num.Int i -> Id i
+      | _ -> raise (Failure "dest_id: can't handle things other than Mp_num.Int")
 
 (*
  * Resource.
@@ -1286,7 +1286,7 @@ and of_term_list
  * Make a location.
  *)
 let mk_loc (i, j) t =
-   mk_number_number_dep0_term loc_op (Nl_num.Int i) (Nl_num.Int j) t
+   mk_number_number_dep0_term loc_op (Mp_num.Int i) (Mp_num.Int j) t
 
 (*
  * Make a optional arg.
@@ -1474,7 +1474,7 @@ and term_of_prec_rel { prec_rel = rel; prec_left = left; prec_right = right } =
    mk_prec_rel_term rel left right
 
 and term_of_id id =
-   mk_number_term id_op (Nl_num.Int id)
+   mk_number_term id_op (Mp_num.Int id)
 
 and term_of_resource convert
     { resource_name = name;
