@@ -28,9 +28,11 @@
     ("ls|0"   . "ls()")
     ("ls|1"   . "view \"$1\"")
     ("by"     . "refine $*")
+    ("BY"     . "refine $*")
     ("up|0"   . "up 1")
     ("root|0" . "root()")
-    ("load|1" . "load \"$1\""))
+    ("load|1" . "load \"$1\"")
+    ("save|0" . "save()"))
   "*An alias list to use inside the MetaPRL shell.
 This is a list of conses, each holding the alias and its expansion.  The alias
 is a string with an optional |n attached - each input line entered when
@@ -202,7 +204,7 @@ it is changed, make sure you change the occurrence of CURDIR below.")
               args
               (null (cdr args))
               (eq (aref (car args) (1- (length input))) ?/)
-              (setq input (concat "cd(\"" (car args) "\")")))
+              (setq input (concat "cd(\"" (car args) "\");ls()")))
          ;; Append a prompt-directory synchronization command.
          (if (string-match metaprl-dir-command input)
            (setq input (concat input " ; " metaprl-dir-sync)))
@@ -220,13 +222,14 @@ it is changed, make sure you change the occurrence of CURDIR below.")
        (setq metaprl-cur-prompt (format metaprl-prompt "?"))))))
 
 ;; Set a shell for MetaPRL.
-(defun metaprl ()
+(defun meta-prl ()
   "Start a shell with a nice interface to MetaPRL.
 It is a simple shell so you can do whatever you want in it.  If \"MP\" is
 entered, then the shell will automatically go to the meta-prl/editor/ml
 directory, run mp and enter an automatic #use command.  Once in MetaPRL, a
 special prompt will be displayed, and alias convertion will be performed."
   (interactive)
+  (require 'comint)
   (if (comint-check-proc "*metaprl*")
     ;; Have a MetaPRL shell running, use it.
     (pop-to-buffer "*metaprl*")
