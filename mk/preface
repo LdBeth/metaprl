@@ -66,6 +66,9 @@ endif
 ifeq ($(OSTYPE),linux)
    OSTYPE=Linux
 endif
+ifeq ($(OSTYPE),linux-gnu)
+   OSTYPE=Linux
+endif
 ifeq ($(OSTYPE),solaris)
    OSTYPE=Solaris
 endif
