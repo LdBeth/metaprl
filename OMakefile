@@ -313,14 +313,8 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
 #
 # For theory files, generate intermediate .ppo files
 #
-%.ppo %.cmoz: %.ml $(CAMLP4N)
+%.ppo %.cmoz: %.ml $(CAMLP4N) $(optional %.prla) $(optional %.prlb)
         $(CAMLP4NC) $(CAMLP4NFLAGS) -o $*.ppo $<
-
-%.prla: %.cmoz
-        $(CONVERT) $(OCAMLINCLUDES) -impl $<
-
-%.prlb: %.prla
-        $(CONVERT) $(OCAMLINCLUDES) -raw -impl $*<
 
 %.cmi %.cmiz: %.mli
         $(PRLCC) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(OCAMLINCLUDES) -c $<
@@ -358,6 +352,10 @@ OCAMLINCLUDES += -I $(CAMLP4LIB) -I $(LIB)
 # These directories use prlc
 THEORIES = $(if $(equal $(THEORIES), all), $(THEORIES_ALL), $(THEORIES))
 MP_DIRS  = $(SUPPORT_DIRS) $(dir $(addprefix theories/, $(THEORIES)))
+
+Theory(files) =
+    .DEFAULT: $(addsuffix .cmoz, $(files))
+    OCamlLibrary(theory, $(files))
 
 ########################################################################
 # LaTeX documentation
