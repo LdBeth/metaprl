@@ -122,14 +122,14 @@ struct
       [v,t] as l ->
          if StringSet.mem fvs v then l else []
     | ((v,t) :: tl) as l ->
-         if StringSet.mem fvs v then 
+         if StringSet.mem fvs v then
             let res = fst_flt_nodups (StringSet.remove v fvs) tl in
             if res == tl then l else (v,t) :: res
          else
             fst_flt_nodups fvs tl
     | _ ->
             raise (Invalid_argument "Term_subst_ds.fst_flt_nodups")
-         
+
    let apply_subst t = function
       [] -> t
     | s ->
@@ -141,7 +141,7 @@ struct
 
    let subst1 term v t =
       if StringSet.mem (free_vars_set term) v then
-         {free_vars = VarsDelayed; core = Subst (term,[v,t])} 
+         {free_vars = VarsDelayed; core = Subst (term,[v,t])}
       else
          term
 
@@ -544,23 +544,35 @@ open Term_unif_ds
 module Unification = Term_unif_ds.TermSubstMm(Term)(RefineError)
 
 type eqnlist = Unification.eqnlist
-        
+
 let eqnlist_empty = Unification.eqnlist_empty
 let eqnlist_append_eqn = Unification.eqnlist_append_eqn
 let eqnlist_append_var_eqn = Unification.eqnlist_append_var_eqn
 let eqnlist_append_eqns = Unification.eqnlist_append_eqns
-let eqnlist2ttlist = Unification.eqnlist2ttlist  
- 
+let eqnlist2ttlist = Unification.eqnlist2ttlist
+
 let new_eqns_var = Unification.new_eqns_var
 
 let unifiable = Unification.unifiable
 let unifiable_eqnl = Unification.unifiable_eqnl
 
 let unify_mm = Unification.unify
-let unify_mm_eqnl = Unification.unify_eqnl 
-let unify_mm_eqnl_eqnl = Unification.unify_eqnl_eqnl 
+let unify_mm_eqnl = Unification.unify_eqnl
+let unify_mm_eqnl_eqnl = Unification.unify_eqnl_eqnl
 
-   (************************************************************************
+(***********************)
+(* Rob_ds tests *)
+open Rob_ds
+module Rob = Rob_ds.TermSubstRob(Term)(RefineError)
+
+type sacktype = Rob.sacktype
+let initsack = Rob.initsack
+let unifiable_rob = Rob.unifiable_rob
+let unifytosack = Rob. unifytosack
+
+(***********************)
+
+  (************************************************************************
     * Term generalization                                                  *
     ************************************************************************)
 
