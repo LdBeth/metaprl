@@ -330,8 +330,9 @@ let flatten_term shape t =
 (*
  * XXX HACK (nogin 10/13/2003): When a term is inserted, we have to simplify
  * it to erase the distinction between different kinds of external variables.
- * We especially want to make sure that terms that differ only by contexts
- * they are in end up placed in the same cell of the table.
+ * We especially want to make sure that terms that differ only by external
+ * contexts end up placed in the same cell of the table, but internal contexts
+ * are properly kept.
  *
  * We should probably be able to get rid of this once a proper fall-back mechanism
  * (beyond the current single-cell one) is implemented.
@@ -339,17 +340,18 @@ let flatten_term shape t =
  * XXX HACK (nogin 10/13/2003): In addition, we remove all arguments from SO
  * variables to avoid getting an "AllSOInstances" error from the rewriter.
  *)
-let simplify_term t =
+let simplify_term =
+   let nmem vars v = not (SymbolSet.mem vars v) in
    let simplify_var vars t =
       if is_var_term t then
          let v = dest_var t in
             if SymbolSet.mem vars v then mk_so_var_term v [] [] else t
       else if is_so_var_term t then
-         let v, _, _ = dest_so_var t in mk_so_var_term v [] []
+         let v, conts, _ = dest_so_var t in mk_so_var_term v (List.filter (nmem vars) conts) []
       else
          t
    in
-      map_up (simplify_var (free_vars_set t)) t
+      fun t -> map_up (simplify_var (free_vars_set t)) t
 
 (*
  * Add an entry.
