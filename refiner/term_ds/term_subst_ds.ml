@@ -118,6 +118,27 @@ struct
        | sub ->
             {free_vars = VarsDelayed; core = Subst (t,sub)}
 
+   let rec fst_flt_nodups fvs = function
+      [v,t] as l ->
+         if StringSet.mem fvs v then l else []
+    | ((v,t) :: tl) as l ->
+         if StringSet.mem fvs v then 
+            let res = fst_flt_nodups (StringSet.remove v fvs) tl in
+            if res == tl then l else (v,t) :: res
+         else
+            fst_flt_nodups fvs tl
+    | _ ->
+            raise (Invalid_argument "Term_subst_ds.fst_flt_nodups")
+         
+   let apply_subst t = function
+      [] -> t
+    | s ->
+         begin match fst_flt_nodups (free_vars_set t) s with
+            [] -> t
+          | sub ->
+               {free_vars = VarsDelayed; core = Subst (t,sub)}
+         end
+
    let subst1 term v t =
       if StringSet.mem (free_vars_set term) v then
          {free_vars = VarsDelayed; core = Subst (term,[v,t])} 

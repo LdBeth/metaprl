@@ -504,6 +504,10 @@ struct
       else
          t
 
+   let apply_subst t s =
+      let vs,ts = List.split s in
+      subst t vs ts
+
    (*
     * Inverse substitution.
     *)

@@ -61,6 +61,7 @@ sig
     *)
    val subst : term -> string list -> term list -> term
    val subst1 : term -> string -> term -> term
+   val apply_subst : term -> term_subst -> term
 
    (*
     * var_subst: subst of var for a term.
