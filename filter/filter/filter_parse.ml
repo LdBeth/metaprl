@@ -242,21 +242,6 @@ let _ = Quotation.default := "term"
  ************************************************************************)
 
 (*
- * Collect the argument names, or make up wildcards.
- *)
-let collect_anames args =
-   let rec avar i = function
-      [] -> []
-    | h::t ->
-         match h with
-            { aname = Some v } ->
-               v :: avar i t
-          | { aname = None } ->
-               mk_var_term (sprintf "_%d" i) :: avar (i + 1) t
-   in
-      avar 0 args
-
-(*
  * There should be only one param, of [M]String type.
  * Get it.
  *)
@@ -273,15 +258,6 @@ let get_string_param loc t =
             Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "no params")))
        | _ ->
             Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "too many params")))
-
-(*
- * Make a term with a string parameter.
- *)
-let mk_string_param_term opname s terms =
-   let param = make_param (String s) in
-   let op = mk_op opname [param] in
-   let bterms = List.map (fun t -> mk_bterm [] t) terms in
-      mk_term op bterms
 
 (*
  * Terms for representing comments.
@@ -328,7 +304,7 @@ let parse_comment loc t =
                      if not (Filter_spell.check s) then
                         misspelled := s :: !misspelled
             end;
-         mk_string_param_term comment_string_op s []
+         mk_string_term comment_string_op s
     | Comment_parse.Term (opname, params, args) ->
          let spelling =
             if !debug_spell then
@@ -359,7 +335,7 @@ let parse_comment loc t =
          if tag = "" then
             mk_simple_term comment_term_op [parse_term s]
          else
-            mk_string_param_term comment_string_op s []
+            mk_string_term comment_string_op s
 
    and build_term spelling tl =
       mk_xlist_term (List.map (build_comment_term spelling) tl)
@@ -842,7 +818,7 @@ struct
     * A toplevel structured comment is converted to a term.
     *)
    let declare_comment proc loc s =
-      FilterCache.add_command proc.cache (Comment (mk_string_param_term comment_string_op s []), loc)
+      FilterCache.add_command proc.cache (Comment (mk_string_term comment_string_op s), loc)
 
    (*
     * A magic block computes a hash value from the definitions
