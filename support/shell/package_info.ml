@@ -368,12 +368,12 @@ let set_status pack status =
 (*
  * "Touch" the package, meaning update its writable status.
  *)
-let touch pack =
-   match pack.pack_status with
-      PackReadOnly ->
-         raise (Failure "touch")
-    | _ ->
-         pack.pack_status <- PackModified
+let touch pack_info =
+   synchronize_node pack_info (fun pack ->
+      if pack.pack_status = PackIncomplete then
+         raise (Failure "Package_info.touch: package is incomplete")
+      else
+         pack.pack_status <- PackModified)
 
 (*
  * Get the items in the module.
@@ -543,18 +543,15 @@ let group_of_module pack name =
  * Three versions of saving.
  *)
 let save_aux code arg pack_info =
-   auto_loading_str arg pack_info (fun package ->
-         match package with
-            { pack_status = PackReadOnly; pack_name = name } ->
-               raise (Failure (sprintf "Package_info.save: package '%s' is read-only" name))
-          | { pack_status = PackIncomplete; pack_name = name } ->
-               raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
-          | { pack_str = Some { pack_str_info = info } } ->
-               Cache.StrFilterCache.set_mode info InteractiveSummary;
-               Cache.StrFilterCache.save info arg (OnlySuffixes [code]);
-               package.pack_status <- PackUnmodified
-          | { pack_str = None; pack_name = name } ->
-               raise (NotLoaded name))
+   auto_loading_str arg pack_info (function
+         { pack_status = PackIncomplete; pack_name = name } ->
+            raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
+       | { pack_str = Some { pack_str_info = info } } as package ->
+            Cache.StrFilterCache.set_mode info InteractiveSummary;
+            Cache.StrFilterCache.save info arg (OnlySuffixes [code]);
+            package.pack_status <- PackUnmodified
+       | { pack_str = None; pack_name = name } ->
+            raise (NotLoaded name))
 
 let export = save_aux "prla"
 let save   = save_aux "prlb"
@@ -564,16 +561,13 @@ let backup = save_aux "cmoz"
  * Revert a file the the .prlb backup
  *)
 let revert pack_info =
-   synchronize_node pack_info (fun package ->
-         match package with
-            { pack_status = PackReadOnly; pack_name = name } ->
-               raise (Failure (sprintf "Package_info.backup: package '%s' is read-only" name))
-          | { pack_info = pack_entry; pack_str = Some str_info } ->
-               let { pack_str_info = info; pack_parse = parse_arg } = str_info in
-                  Cache.StrFilterCache.revert_proofs info parse_arg;
-                  package.pack_status <- PackUnmodified
-          | { pack_str = None } ->
-               eprintf "File is already reverted@.")
+   synchronize_node pack_info (function
+         { pack_info = pack_entry; pack_str = Some str_info } as package ->
+            let { pack_str_info = info; pack_parse = parse_arg } = str_info in
+               Cache.StrFilterCache.revert_proofs info parse_arg;
+               package.pack_status <- PackUnmodified
+       | { pack_str = None } ->
+            eprintf "File is already reverted@.")
 
 (*
  * Create an empty package.

@@ -265,7 +265,6 @@ type shell_commands =
 type package_status =
    PackUnmodified
  | PackModified
- | PackReadOnly (* XXX: BUG? We only ever check for this, but never actually set it! nogin 2004/06/03 *)
  | PackIncomplete
 
 (*
