@@ -34,7 +34,10 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Lm_string_set
+
 open Opname
+open Term_sig
 open Term_shape_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermType
@@ -125,14 +128,19 @@ val check_dform        : package -> check_dform_fun
 val check_production   : package -> check_production_fun
 
 (*
+ * Grammar.
+ *)
+val get_start          : package -> shape StringTable.t
+val check_input_term   : package -> check_input_term_fun
+val check_input_mterm  : package -> check_input_mterm_fun
+val apply_iforms       : package -> apply_iforms_fun
+val apply_iforms_mterm : package -> apply_iforms_mterm_fun
+val term_of_string     : package -> term_of_string_fun
+
+(*
  * Infixes/suffixes declared in the package
  *)
 val get_infixes : package -> Infix.Set.t
-
-(*
- * Quotation expander used by this module.
- *)
-val get_grammar : package -> Filter_grammar.t
 
 (*
  * Collection of objects in the module.

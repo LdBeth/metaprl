@@ -62,6 +62,7 @@ sig
    val unzip_mrewrite : meta_term -> term list * term * term
 
    (* Mappins *)
+   val iter_mterm : (term -> unit) -> meta_term -> unit
    val map_mterm : (term -> term) -> meta_term -> meta_term
 
    (*

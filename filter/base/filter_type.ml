@@ -300,6 +300,13 @@ type typeclass_parent =
  | ParentInclude of opname
 
 (*
+ * Declarations have multiple classes.
+ *)
+type shape_class =
+   ShapeNormal
+ | ShapeIForm
+
+(*
  * The summary contains information about everything in the file.
  * We use the summary for both interfaces and implementations.
  * If the implementation requires a term for the definition,
@@ -332,10 +339,10 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  | PRLGrammar  of Filter_grammar.t
 
    (* JYH: added opname classes 2004/01/16 *)
- | DeclareTypeClass   of opname * opname * typeclass_parent
- | DeclareType        of ('term, 'term) poly_ty_term * opname
- | DeclareTerm        of ('term, 'term) poly_ty_term
- | DefineTerm         of ('term, 'term) poly_ty_term * ('term, 'expr) term_def
+ | DeclareTypeClass   of shape_class * opname * opname * typeclass_parent
+ | DeclareType        of shape_class * ('term, 'term) poly_ty_term * opname
+ | DeclareTerm        of shape_class * ('term, 'term) poly_ty_term
+ | DefineTerm         of shape_class * ('term, 'term) poly_ty_term * ('term, 'expr) term_def
  | DeclareTypeRewrite of 'term * 'term
 (* %%MAGICEND%% *)
 
@@ -361,6 +368,14 @@ type check_dform_fun        = term -> term -> unit
 type check_iform_fun        = meta_term -> unit
 type check_production_fun   = term list -> term -> unit
 
+type quotation_expander     = Filter_grammar.quotation_expander
+type check_input_term_fun   = MLast.loc -> term -> unit
+type check_input_mterm_fun  = MLast.loc -> meta_term -> unit
+
+type apply_iforms_fun       = MLast.loc -> quotation_expander -> term -> term
+type apply_iforms_mterm_fun = MLast.loc -> quotation_expander -> meta_term -> term list -> meta_term * term list
+type term_of_string_fun     = MLast.loc -> quotation_expander -> string -> string -> term
+
 (*
  * Grammars to extend.
  *)
@@ -377,6 +392,14 @@ sig
    val check_dform        : MLast.loc -> check_dform_fun
    val check_iform        : MLast.loc -> check_iform_fun
    val check_production   : MLast.loc -> check_production_fun
+
+   (* Filter_grammar *)
+   val check_input_term   : check_input_term_fun
+   val check_input_mterm  : check_input_mterm_fun
+
+   val apply_iforms       : apply_iforms_fun
+   val apply_iforms_mterm : apply_iforms_mterm_fun
+   val term_of_string     : term_of_string_fun
 
    (* Grammar *)
    val opname            : opname Grammar.Entry.e
@@ -442,7 +465,7 @@ sig
 
    (************************************************
     * !!! WARNING, UNSAFE !!!
-    * !!! The following three functions bypass
+    * !!! The following functions bypass
     * !!! either the parser or the type checker.
     *)
 

@@ -243,7 +243,7 @@ let get_item parse_arg info modname name =
             Shell_rule.view_crw pack parse_arg display_mode crw
        | Rule rl ->
             Shell_rule.view_rule pack parse_arg display_mode rl
-       | DefineTerm (term, def) ->
+       | DefineTerm (_, term, def) ->
             Shell_rule.view_def pack parse_arg display_mode term def
        | DeclareTypeClass _
        | DeclareType _
@@ -605,6 +605,7 @@ let mount_root parse_arg shell force_flag need_shell verbose =
       shell.shell_proof <- proof;
       Shell_state.set_mk_opname None;
       Shell_state.set_infer_term None;
+      Shell_state.set_grammar None;
       Shell_state.set_so_var_context None;
       Shell_state.set_infixes None;
       Shell_state.set_grammar None;
@@ -620,6 +621,7 @@ let mount_fs parse_arg shell force_flag need_shell verbose =
       shell.shell_proof <- proof;
       Shell_state.set_mk_opname None;
       Shell_state.set_infer_term None;
+      Shell_state.set_grammar None;
       Shell_state.set_so_var_context None;
       Shell_state.set_infixes None;
       Shell_state.set_grammar None;
@@ -659,8 +661,13 @@ let mount_current_module modname parse_arg shell force_flag need_shell verbose =
                                                  Package_info.check_iform pack,
                                                  Package_info.check_dform pack,
                                                  Package_info.check_production pack));
+               Shell_state.set_grammar (Some (Package_info.get_start pack,
+                                              Package_info.check_input_term pack,
+                                              Package_info.check_input_mterm pack,
+                                              Package_info.apply_iforms pack,
+                                              Package_info.apply_iforms_mterm pack,
+                                              Package_info.term_of_string pack));
                Shell_state.set_infixes (Some (Package_info.get_infixes pack));
-               Shell_state.set_grammar (Some (Package_info.get_grammar pack));
                Shell_state.set_module modname;
                if verbose then
                   printf "Module: /%s%t" modname eflush

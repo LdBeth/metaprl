@@ -640,7 +640,7 @@ let extract_sig_item (item, loc) =
          declare_ml_axiom loc item
     | Module (name, _) ->
          Stdpp.raise_with_loc loc (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
-    | DefineTerm (class_term, term_def) ->
+    | DefineTerm (_, class_term, term_def) ->
          declare_define_term loc class_term term_def
 
 (*
@@ -1670,7 +1670,7 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: infix%t" eflush;
          raise (Failure "Filter_prog.extract_str_item: nested modules are not implemented")
-    | DefineTerm (class_term, def) ->
+    | DefineTerm (_, class_term, def) ->
          define_term proc loc class_term def
 
 (*

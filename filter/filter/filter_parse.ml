@@ -199,7 +199,12 @@ type cache_funs =
      check_type_rewrite : check_type_rewrite_fun;
      check_dform        : check_dform_fun;
      check_iform        : check_iform_fun;
-     check_production   : check_production_fun
+     check_production   : check_production_fun;
+     check_input_term   : check_input_term_fun;
+     check_input_mterm  : check_input_mterm_fun;
+     apply_iforms       : apply_iforms_fun;
+     apply_iforms_mterm : apply_iforms_mterm_fun;
+     term_of_string     : term_of_string_fun
    }
 
 let cache_funs_ref =
@@ -261,6 +266,26 @@ struct
    let check_production loc redices contractum =
       with_cache_funs loc (fun funs ->
             funs.check_production redices contractum)
+
+   let check_input_term loc t =
+      with_cache_funs loc (fun funs ->
+            funs.check_input_term loc t)
+
+   let check_input_mterm loc mt =
+      with_cache_funs loc (fun funs ->
+            funs.check_input_mterm loc mt)
+
+   let apply_iforms loc quote t =
+      with_cache_funs loc (fun funs ->
+            funs.apply_iforms loc quote t)
+
+   let apply_iforms_mterm loc quote mt args =
+      with_cache_funs loc (fun funs ->
+            funs.apply_iforms_mterm loc quote mt args)
+
+   let term_of_string loc quote name s =
+      with_cache_funs loc (fun funs ->
+            funs.term_of_string loc quote name s)
 
    (*
     * Term grammar.
@@ -445,13 +470,11 @@ struct
        | None ->
             raise (Invalid_argument "Input grammar is not initialized")
 
-   let add_start shape =
-      let name, _ = dst_opname (opname_of_shape shape) in
-         Filter_grammar.set_start name shape;
-         Quotation.add name (Quotation.ExAst (input_exp shape name, input_patt shape name))
+   let add_start name shape =
+      Quotation.add name (Quotation.ExAst (input_exp shape name, input_patt shape name))
 
-   let add_starts opnames =
-      ShapeSet.iter add_start opnames
+   let add_starts starts =
+      StringTable.iter add_start starts
 
    (*
     * Our version of add_command - make sure there are no name clashes.
@@ -471,7 +494,7 @@ struct
           | MLAxiom { mlterm_name = name }
           | MLGramUpd (Infix name)
           | MLGramUpd (Suffix name)
-          | DefineTerm (_, { term_def_name = name }) ->
+          | DefineTerm (_, _, { term_def_name = name }) ->
                if StringSet.mem proc.names name then
                   raise (Invalid_argument ("Filter_parse.add_command: duplicate name " ^ name));
                proc.names <- StringSet.add proc.names name
@@ -541,38 +564,37 @@ struct
          }
       in
          add_starts (FilterCache.get_start proc.cache);
-         FilterCache.set_grammar proc.cache;
          add_command proc (Parent info, loc)
 
    (*
     * Declarations.
     *)
-   let declare_typeclass proc loc kind_name typeclass_type typeclass_parent =
+   let declare_typeclass proc loc shapeclass kind_name typeclass_type typeclass_parent =
       let kind_opname = Opname.mk_opname kind_name (FilterCache.op_prefix proc.cache) in
-         FilterCache.declare_typeclass proc.cache kind_opname typeclass_type typeclass_parent;
-         add_command proc (DeclareTypeClass (kind_opname, typeclass_type, typeclass_parent), loc)
+         FilterCache.declare_typeclass proc.cache shapeclass kind_opname typeclass_type typeclass_parent;
+         add_command proc (DeclareTypeClass (shapeclass, kind_opname, typeclass_type, typeclass_parent), loc)
 
-   let declare_type proc loc ty_term ty_parent =
-      FilterCache.declare_type proc.cache ty_term ty_parent;
-      add_command proc (DeclareType (ty_term, ty_parent), loc)
+   let declare_type proc loc shapeclass ty_term ty_parent =
+      FilterCache.declare_type proc.cache shapeclass ty_term ty_parent;
+      add_command proc (DeclareType (shapeclass, ty_term, ty_parent), loc)
 
-   let declare_term proc loc ty_term =
-      FilterCache.declare_term proc.cache ty_term;
-      add_command proc (DeclareTerm ty_term, loc)
+   let declare_term proc loc shapeclass ty_term =
+      FilterCache.declare_term proc.cache shapeclass ty_term;
+      add_command proc (DeclareTerm (shapeclass, ty_term), loc)
 
-   let declare_type_cases proc loc ty_term ty_parent cases =
+   let declare_type_cases proc loc shapeclass ty_term ty_parent cases =
       let ty_type = term_of_ty ty_term in
-         FilterCache.declare_type proc.cache ty_term ty_parent;
-         add_command proc (DeclareType (ty_term, ty_parent), loc);
+         FilterCache.declare_type proc.cache shapeclass ty_term ty_parent;
+         add_command proc (DeclareType (shapeclass, ty_term, ty_parent), loc);
          List.iter (fun ty_term ->
                let ty_term = { ty_term with ty_type = ty_type } in
-                  FilterCache.declare_term proc.cache ty_term;
-                  add_command proc (DeclareTerm ty_term, loc)) cases
+                  FilterCache.declare_term proc.cache shapeclass ty_term;
+                  add_command proc (DeclareTerm (shapeclass, ty_term), loc)) cases
 
-   let declare_define_term proc ty_term =
-      FilterCache.declare_term proc.cache ty_term
+   let declare_define_term proc shapeclass ty_term =
+      FilterCache.declare_term proc.cache shapeclass ty_term
 
-   let define_term proc loc name ty_term contractum res =
+   let define_term proc loc shapeclass name ty_term contractum res =
       let redex = term_of_ty ty_term in
       let term_def =
          { term_def_name = name;
@@ -580,7 +602,7 @@ struct
            term_def_resources = res
          }
       in
-         add_command proc (DefineTerm (ty_term, term_def), loc)
+         add_command proc (DefineTerm (shapeclass, ty_term, term_def), loc)
 
    let declare_type_rewrite proc loc redex contractum =
       FilterCache.declare_type_rewrite proc.cache redex contractum;
@@ -922,12 +944,16 @@ struct
                  mk_var_contexts    = (fun _ _ -> None);
                  check_iform        = FilterCache.check_iform info;
                  check_dform        = FilterCache.check_dform info;
-                 check_production   = FilterCache.check_production info
+                 check_production   = FilterCache.check_production info;
+                 check_input_term   = FilterCache.check_input_term info;
+                 check_input_mterm  = FilterCache.check_input_mterm info;
+                 apply_iforms       = FilterCache.apply_iforms info;
+                 apply_iforms_mterm = FilterCache.apply_iforms_mterm info;
+                 term_of_string     = FilterCache.term_of_string info
                }
             in
                if select = ImplementationType then
                   FilterCache.load_sig_grammar info () InterfaceType;
-               FilterCache.set_grammar info;
                add_starts (FilterCache.get_start info);
                set_cache_funs funs;
                proc_ref := Some proc;
@@ -988,16 +1014,13 @@ struct
       Lm_symbol.new_symbol_string proc.gensym
 
    let add_token proc loc lexer_id s t =
-      FilterCache.add_token proc.cache lexer_id (gensym proc) s t;
-      FilterCache.set_grammar proc.cache
+      FilterCache.add_token proc.cache lexer_id (gensym proc) s t
 
    let add_token_pair proc loc lexer_id s1 s2 t =
-      FilterCache.add_token_pair proc.cache lexer_id (gensym proc) s1 s2 t;
-      FilterCache.set_grammar proc.cache
+      FilterCache.add_token_pair proc.cache lexer_id (gensym proc) s1 s2 t
 
    let add_production proc loc args opt_prec t =
-      FilterCache.add_production proc.cache (gensym proc) args opt_prec t;
-      FilterCache.set_grammar proc.cache
+      FilterCache.add_production proc.cache (gensym proc) args opt_prec t
 
    let input_prec proc loc assoc tl rel =
       let info = proc.cache in
@@ -1018,17 +1041,16 @@ struct
           | exn ->
                Stdpp.raise_with_loc loc exn
       in
-         List.iter (FilterCache.add_input_prec info pre) tl;
-         FilterCache.set_grammar proc.cache
+         List.iter (FilterCache.add_input_prec info pre) tl
 
    let add_parser proc loc t lexer_id =
-      FilterCache.add_start proc.cache t lexer_id;
-      add_start (shape_of_term t);
-      FilterCache.set_grammar proc.cache
+      let shape = shape_of_term t in
+      let name = fst (dst_opname (opname_of_term t)) in
+         FilterCache.add_start proc.cache name t lexer_id;
+         add_start name shape
 
    let add_iform proc loc redex contractum =
-      FilterCache.add_iform proc.cache (gensym proc) redex contractum;
-      FilterCache.set_grammar proc.cache
+      FilterCache.add_iform proc.cache (gensym proc) redex contractum
 
    let compile_parser proc loc =
       FilterCache.compile_parser proc.cache
@@ -1536,41 +1558,41 @@ EXTEND
           (************************************************************************
            * Opname classes.
            *)
-        | "declare"; "typeclass"; name = id_or_string; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
+        | "declare"; "typeclass"; sc = shapeclass; name = id_or_string; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
-             SigFilter.declare_typeclass (SigFilter.get_proc loc) loc name typeclass_type typeclass_parent
+             SigFilter.declare_typeclass (SigFilter.get_proc loc) loc sc name typeclass_type typeclass_parent
           in
              handle_exn f "declare-typeclass" loc;
              empty_sig_item loc
-        | "declare"; "type"; quote = quote_term; ty_parent = opt_type_parent ->
+        | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent ->
           let f () =
              let quote = parse_declare_type loc quote in
-                SigFilter.declare_type (SigFilter.get_proc loc) loc quote ty_parent
+                SigFilter.declare_type (SigFilter.get_proc loc) loc sc quote ty_parent
           in
              handle_exn f "declare-type" loc;
              empty_sig_item loc
-        | "declare"; "type"; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
+        | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
           let f () =
              let quote = parse_declare_type loc quote in
              let cases = List.map (parse_declare_term loc) cases in
-                SigFilter.declare_type_cases (SigFilter.get_proc loc) loc quote ty_parent cases
+                SigFilter.declare_type_cases (SigFilter.get_proc loc) loc sc quote ty_parent cases
           in
              handle_exn f "declare-type-cases" loc;
              empty_sig_item loc
-        | "declare"; quote = quote_term ->
+        | "declare"; sc = shapeclass; quote = quote_term ->
           let f () =
              let quote = parse_declare_term loc quote in
-                SigFilter.declare_term (SigFilter.get_proc loc) loc quote
+                SigFilter.declare_term (SigFilter.get_proc loc) loc sc quote
           in
              handle_exn f "declare" loc;
              empty_sig_item loc
-        | "define"; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
+        | "define"; sc = shapeclass; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
           let f () =
              let proc = SigFilter.get_proc loc in
              let quote = parse_define_quote loc quote in
-             let () = SigFilter.declare_define_term proc (parse_define_redex loc quote) in
+             let () = SigFilter.declare_define_term proc sc (parse_define_redex loc quote) in
              let quote, def = parse_define_term loc name quote def in
-                SigFilter.define_term proc loc name quote def res
+                SigFilter.define_term proc loc sc name quote def res
            in
               handle_exn f ("define " ^ name) loc;
               empty_sig_item loc
@@ -1762,41 +1784,41 @@ EXTEND
           (************************************************************************
            * Opname classes.
            *)
-        | "declare"; "typeclass"; name = id_or_string; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
+        | "declare"; "typeclass"; sc = shapeclass; name = id_or_string; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
-             StrFilter.declare_typeclass (StrFilter.get_proc loc) loc name typeclass_type typeclass_parent
+             StrFilter.declare_typeclass (StrFilter.get_proc loc) loc sc name typeclass_type typeclass_parent
           in
              handle_exn f "declare-typeclass" loc;
              empty_str_item loc
-        | "declare"; "type"; quote = quote_term; ty_parent = opt_type_parent ->
+        | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent ->
           let f () =
              let quote = parse_declare_type loc quote in
-                StrFilter.declare_type (StrFilter.get_proc loc) loc quote ty_parent
+                StrFilter.declare_type (StrFilter.get_proc loc) loc sc quote ty_parent
           in
              handle_exn f "declare-type" loc;
              empty_str_item loc
-        | "declare"; "type"; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
+        | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
           let f () =
              let quote = parse_declare_type loc quote in
              let cases = List.map (parse_declare_term loc) cases in
-                StrFilter.declare_type_cases (StrFilter.get_proc loc) loc quote ty_parent cases
+                StrFilter.declare_type_cases (StrFilter.get_proc loc) loc sc quote ty_parent cases
           in
              handle_exn f "declare-type-cases" loc;
              empty_str_item loc
-        | "declare"; quote = quote_term ->
+        | "declare"; sc = shapeclass; quote = quote_term ->
           let f () =
              let quote = parse_declare_term loc quote in
-                StrFilter.declare_term (StrFilter.get_proc loc) loc quote
+                StrFilter.declare_term (StrFilter.get_proc loc) loc sc quote
           in
              handle_exn f "declare" loc;
              empty_str_item loc
-        | "define"; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
+        | "define"; sc = shapeclass; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
           let f () =
              let proc = StrFilter.get_proc loc in
              let quote = parse_define_quote loc quote in
-             let () = StrFilter.declare_define_term proc (parse_define_redex loc quote) in
+             let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
              let quote, def = parse_define_term loc name quote def in
-                StrFilter.define_term proc loc name quote def res
+                StrFilter.define_term proc loc sc name quote def res
            in
               handle_exn f ("define " ^ name) loc;
               empty_str_item loc
@@ -2197,6 +2219,16 @@ EXTEND
       [[ l = LIST1 singleterm SEP "::" ->
           Lm_list_util.split_last (List.map (function { aterm = t } -> t) l)
        ]];
+
+   (*
+    * Shapeclass.
+    *)
+   shapeclass:
+      [[ sc = OPT "iform" ->
+            match sc with
+               Some _ -> ShapeIForm
+             | None -> ShapeNormal
+      ]];
 
    (*
     * Upper or lowercase identifier.

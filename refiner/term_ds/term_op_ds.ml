@@ -1075,6 +1075,63 @@ struct
    (*
     * Sweep a function down through the term.
     *)
+   let rec iter_down f t =
+      f t;
+      match get_core t with
+         Term t ->
+            List.iter (fun bterm -> iter_down f bterm.bterm) t.term_terms
+       | FOVar _ ->
+            ()
+       | SOVar (_, _, terms) ->
+            List.iter (iter_down f) terms
+       | SOContext (_, t, _, terms) ->
+            iter_down f t;
+            List.iter (iter_down f) terms
+       | Sequent { sequent_hyps = hyps;
+                   sequent_concl = concl;
+                   sequent_args = args
+         } ->
+            iter_down f args;
+            SeqHyp.iter (function
+               Hypothesis (_, t) ->
+                  iter_down f t
+             | Context (_, _, args) ->
+                  List.iter (iter_down f) args) hyps;
+            iter_down f concl
+       | Subst _
+       | Hashed _ ->
+            fail_core "Term_op_ds.map_down"
+
+   let rec iter_up f t =
+      (match get_core t with
+          Term t ->
+             List.iter (fun bterm -> iter_up f bterm.bterm) t.term_terms
+        | FOVar _ ->
+             ()
+        | SOVar (_, _, terms) ->
+             List.iter (iter_up f) terms
+        | SOContext (_, t, _, terms) ->
+             iter_up f t;
+             List.iter (iter_up f) terms
+        | Sequent { sequent_hyps = hyps;
+                    sequent_concl = concl;
+                    sequent_args = args
+          } ->
+             iter_up f args;
+             SeqHyp.iter (function
+                Hypothesis (_, t) ->
+                   iter_up f t
+              | Context (_, _, args) ->
+                   List.iter (iter_up f) args) hyps;
+             iter_up f concl
+        | Subst _
+        | Hashed _ ->
+             fail_core "Term_op_ds.map_down");
+      f t
+
+   (*
+    * Sweep a function down through the term.
+    *)
    let rec bterm_down f btrm =
       { bvars = btrm.bvars; bterm = map_down f btrm.bterm }
 

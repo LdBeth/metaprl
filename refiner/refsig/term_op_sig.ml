@@ -39,6 +39,9 @@ sig
    open OpTypes
 
    (* Map a function over the term *)
+   val iter_down : (term -> unit) -> term -> unit
+   val iter_up : (term -> unit) -> term -> unit
+
    val map_down : (term -> term) -> term -> term
    val map_up : (term -> term) -> term -> term
 

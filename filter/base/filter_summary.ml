@@ -158,13 +158,13 @@ let eprint_entry print_info = function
       eprintf "CondRewrite: %s\n" name
  | Rule { rule_name = name } ->
       eprintf "Rule: %s\n" name
- | DeclareTypeClass (opname, _, _) ->
+ | DeclareTypeClass (_, opname, _, _) ->
       eprintf "DeclareTypeClass: %s" (string_of_opname opname)
- | DeclareType (ty_term, _) ->
+ | DeclareType (_, ty_term, _) ->
       eprintf "DeclareType: %a" print_ty_term ty_term
- | DeclareTerm ty_term ->
+ | DeclareTerm (_, ty_term) ->
       eprintf "DeclareTerm: %a" print_ty_term ty_term
- | DefineTerm (ty_term, _) ->
+ | DefineTerm (_, ty_term, _) ->
       eprintf "DefineTerm: %a" print_ty_term ty_term
  | DeclareTypeRewrite _ ->
       eprintf "DeclareTypeRewrite"
@@ -670,12 +670,12 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                       rule_resources = res_map res
                }
 
-          | DeclareType (ty_term, ty_opname) ->
-               DeclareType (convert_ty_term ty_term, ty_opname)
-          | DeclareTerm ty_term ->
-               DeclareTerm (convert_ty_term ty_term)
-          | DefineTerm (ty_term, term_def) ->
-               DefineTerm (convert_ty_term ty_term, convert_term_def term_def)
+          | DeclareType (sclass, ty_term, ty_opname) ->
+               DeclareType (sclass, convert_ty_term ty_term, ty_opname)
+          | DeclareTerm (sclass, ty_term) ->
+               DeclareTerm (sclass, convert_ty_term ty_term)
+          | DefineTerm (sclass, ty_term, term_def) ->
+               DefineTerm (sclass, convert_ty_term ty_term, convert_term_def term_def)
           | DeclareTypeRewrite (redex, contractum) ->
                DeclareTypeRewrite (convert.term_f redex, convert.term_f contractum)
 
@@ -799,6 +799,8 @@ let opname_binding_op          = mk_opname "opname_binding"
 let num_binding_op             = mk_opname "num_binding"
 let toploop_item_op            = mk_opname "toploop_item"
 let improve_op                 = mk_opname "improve"
+let shape_normal_op            = mk_opname "shape_normal"
+let shape_iform_op             = mk_opname "shape_iform"
 
 (* XXX HACK: ASCII_IO format <= 1.0.17 had "opname" and "definition" *)
 let opname_op                  = mk_opname "opname"
@@ -1161,25 +1163,70 @@ struct
           | _ ->
                raise (Failure ("bad kind parent: " ^ s))
 
+   let dest_shapeclass_term t =
+      let op = opname_of_term t in
+         if Opname.eq op shape_normal_op then
+            ShapeNormal
+         else if Opname.eq op shape_iform_op then
+            ShapeIForm
+         else
+            raise (Failure ("bad shape class: " ^ string_of_opname op))
+
    let dest_declare_typeclass convert t =
-      let typeclass_opname, typeclass_type_opname, parent = three_subterms t in
+      let shapeclass, typeclass_opname, typeclass_type_opname, parent =
+         match subterms_of_term t with
+            [typeclass_opname; typeclass_type_opname; parent] ->
+               ShapeNormal, typeclass_opname, typeclass_type_opname, parent
+          | [shapeclass; typeclass_opname; typeclass_type_opname; parent] ->
+               dest_shapeclass_term shapeclass, typeclass_opname, typeclass_type_opname, parent
+          | _ ->
+               raise (RefineError ("dest_declare_typeclass", StringTermError ("malformed term", t)))
+      in
       let typeclass_opname = opname_of_term typeclass_opname in
       let typeclass_type_opname = opname_of_term typeclass_type_opname in
       let parent = dest_typeclass_parent parent in
-         DeclareTypeClass (typeclass_opname, typeclass_type_opname, parent)
+         DeclareTypeClass (shapeclass, typeclass_opname, typeclass_type_opname, parent)
 
    let dest_declare_type convert t =
-      let ty_def, ty_opname = two_subterms t in
+      let shapeclass, ty_def, ty_opname =
+         match subterms_of_term t with
+            [ty_def; ty_opname] ->
+               ShapeNormal, ty_def, ty_opname
+          | [shapeclass; ty_def; ty_opname] ->
+               dest_shapeclass_term shapeclass, ty_def, ty_opname
+          | _ ->
+               raise (RefineError ("dest_declare_type", StringTermError ("malformed term", t)))
+      in
       let ty_def = dest_ty_def convert ty_def in
       let ty_opname = opname_of_term ty_opname in
-         DeclareType (ty_def, ty_opname)
+         DeclareType (shapeclass, ty_def, ty_opname)
 
    let dest_declare_term convert t =
-      DeclareTerm (dest_ty_def convert (one_subterm t))
+      let shapeclass, ty_def =
+         match subterms_of_term t with
+            [ty_def] ->
+               ShapeNormal, ty_def
+          | [shapeclass; ty_def] ->
+               dest_shapeclass_term shapeclass, ty_def
+          | _ ->
+               raise (RefineError ("dest_declare_term", StringTermError ("malformed term", t)))
+      in
+      let ty_def = dest_ty_def convert ty_def in
+         DeclareTerm (shapeclass, ty_def)
 
    let dest_define_term convert t =
-      let ty_def, term_def = two_subterms t in
-         DefineTerm (dest_ty_def convert ty_def, dest_term_def convert term_def)
+      let shapeclass, ty_def, term_def =
+         match subterms_of_term t with
+            [ty_def; term_def] ->
+               ShapeNormal, ty_def, term_def
+          | [shapeclass; ty_def; term_def] ->
+               dest_shapeclass_term shapeclass, ty_def, term_def
+          | _ ->
+               raise (RefineError ("dest_define_term", StringTermError ("malformed term", t)))
+      in
+      let ty_def = dest_ty_def convert ty_def in
+      let term_def = dest_term_def convert term_def in
+         DefineTerm (shapeclass, ty_def, term_def)
 
    let dest_declare_type_rewrite_term convert t =
       let redex, contractum = two_subterms t in
@@ -1622,11 +1669,21 @@ struct
     | ParentNone ->
          mk_string_param_term parent_kind_op "none" []
 
-   let term_of_declare_typeclass convert opname type_opname parent =
+   let shape_normal_term = mk_term (mk_op shape_normal_op []) []
+   let shape_iform_term = mk_term (mk_op shape_iform_op []) []
+
+   let mk_shapeclass_term = function
+      ShapeNormal ->
+         shape_normal_term
+    | ShapeIForm ->
+         shape_iform_term
+
+   let term_of_declare_typeclass convert shapeclass opname type_opname parent =
+      let t0 = mk_shapeclass_term shapeclass in
       let t1 = mk_term (mk_op opname []) [] in
       let t2 = mk_term (mk_op type_opname []) [] in
       let p = term_of_typeclass_parent parent in
-         mk_simple_term declare_typeclass_op [t1; t2; p]
+         mk_simple_term declare_typeclass_op [t0; t1; t2; p]
 
    let mk_ty_param_term convert param =
       match param with
@@ -1676,19 +1733,22 @@ struct
       let res = term_of_resources convert res in
          mk_string_param_term term_def_op name [term; res]
 
-   let term_of_declare_type convert ty_term ty_opname =
+   let term_of_declare_type convert shapeclass ty_term ty_opname =
+      let shapeclass = mk_shapeclass_term shapeclass in
       let term = mk_ty_term_term convert ty_term in
       let ty_opname = mk_term (mk_op ty_opname []) [] in
-         mk_simple_term declare_type_op [term; ty_opname]
+         mk_simple_term declare_type_op [shapeclass; term; ty_opname]
 
-   let term_of_declare_term convert ty_term =
+   let term_of_declare_term convert shapeclass ty_term =
+      let shapeclass = mk_shapeclass_term shapeclass in
       let term = mk_ty_term_term convert ty_term in
-         mk_simple_term declare_term_op [term]
+         mk_simple_term declare_term_op [shapeclass; term]
 
-   let term_of_define_term convert ty_term term_def =
+   let term_of_define_term convert shapeclass ty_term term_def =
+      let shapeclass = mk_shapeclass_term shapeclass in
       let ty_term = mk_ty_term_term convert ty_term in
       let term_def = mk_term_def_term convert term_def in
-         mk_simple_term define_term_op [ty_term; term_def]
+         mk_simple_term define_term_op [shapeclass; ty_term; term_def]
 
    let term_of_declare_type_rewrite convert redex contractum =
       mk_simple_term declare_type_rewrite_op  [convert.term_f redex; convert.term_f contractum]
@@ -1713,14 +1773,14 @@ struct
          term_of_cond_rewrite convert crw
     | Rule rw ->
          term_of_rule convert rw
-    | DeclareTypeClass (opname, type_opname, parent) ->
-         term_of_declare_typeclass convert opname type_opname parent
-    | DeclareType (ty_term, ty_opname) ->
-         term_of_declare_type convert ty_term ty_opname
-    | DeclareTerm ty_term ->
-         term_of_declare_term convert ty_term
-    | DefineTerm (ty_term, term_def) ->
-         term_of_define_term convert ty_term term_def
+    | DeclareTypeClass (shapeclass, opname, type_opname, parent) ->
+         term_of_declare_typeclass convert shapeclass opname type_opname parent
+    | DeclareType (shapeclass, ty_term, ty_opname) ->
+         term_of_declare_type convert shapeclass ty_term ty_opname
+    | DeclareTerm (shapeclass, ty_term) ->
+         term_of_declare_term convert shapeclass ty_term
+    | DefineTerm (shapeclass, ty_term, term_def) ->
+         term_of_define_term convert shapeclass ty_term term_def
     | DeclareTypeRewrite (redex, contractum) ->
          term_of_declare_type_rewrite convert redex contractum
     | MLRewrite t ->
@@ -1813,7 +1873,7 @@ struct
             implem_error (sprintf "Rewrite %s: not implemented" name)
        | Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _ when name = name' ->
             redex', con'
-       | DefineTerm (ty_term, { term_def_name = name'; term_def_value = con' }) :: _ when name = name' ->
+       | DefineTerm (_, ty_term, { term_def_name = name'; term_def_value = con' }) :: _ when name = name' ->
             (term_of_ty ty_term), con'
        | _ :: t ->
             search t
@@ -1924,6 +1984,7 @@ struct
          items
 
    let check_declare_typeclass loc (**)
+          (shapeclass : shape_class)
           (opname : opname)
           (type_opname : opname)
           (parent : typeclass_parent)
@@ -1931,8 +1992,8 @@ struct
           (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
-            (DeclareTypeClass (opname, type_opname, parent), loc) :: items
-       | DeclareTypeClass (opname', type_opname', parent') :: _
+            (DeclareTypeClass (shapeclass, opname, type_opname, parent), loc) :: items
+       | DeclareTypeClass (shapeclass', opname', type_opname', parent') :: _
          when Opname.eq opname' opname ->
             let parent_matches =
                match parent, parent' with
@@ -1944,7 +2005,7 @@ struct
                 | _ ->
                      false
             in
-               if Opname.eq type_opname type_opname' && parent_matches then
+               if Opname.eq type_opname type_opname' && parent_matches && shapeclass' = shapeclass then
                   items
                else
                   implem_error (sprintf "declare kind '%s' mismatch" (string_of_opname opname))
@@ -1954,6 +2015,7 @@ struct
          search implem
 
    let check_declare_type loc (**)
+          (shapeclass : shape_class)
           (ty_term : ('term1, 'term1) poly_ty_term)
           (ty_opname : opname)
           (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
@@ -1962,12 +2024,12 @@ struct
       let shape = shape_of_term term in
       let rec search = function
          [] ->
-            (DeclareType (ty_term, ty_opname), loc) :: items
-       | DeclareType (ty_term', ty_opname') :: t ->
+            (DeclareType (shapeclass, ty_term, ty_opname), loc) :: items
+       | DeclareType (shapeclass', ty_term', ty_opname') :: t ->
             let term' = term_of_ty ty_term' in
             let shape' = shape_of_term term' in
                if ToTerm.TermShape.eq shape' shape then
-                  if ToTerm.TermTy.eq_ty ty_term' ty_term && Opname.eq ty_opname' ty_opname then
+                  if ToTerm.TermTy.eq_ty ty_term' ty_term && Opname.eq ty_opname' ty_opname && shapeclass' = shapeclass then
                      items
                   else
                      implem_error (sprintf "declare type '%s' mismatch" (string_of_opname (opname_of_term term)))
@@ -1979,6 +2041,7 @@ struct
          search implem
 
    let check_declare_term loc (**)
+          (shapeclass : shape_class)
           (ty_term : ty_term)
           (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
           (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
@@ -1986,13 +2049,13 @@ struct
       let shape = shape_of_term term in
       let rec search = function
          [] ->
-            (DeclareTerm ty_term, loc) :: items
-       | DeclareTerm ty_term' :: t
-       | DefineTerm (ty_term', _) :: t ->
+            (DeclareTerm (shapeclass, ty_term), loc) :: items
+       | DeclareTerm (shapeclass', ty_term') :: t
+       | DefineTerm (shapeclass', ty_term', _) :: t ->
             let term' = term_of_ty ty_term' in
             let shape' = shape_of_term term' in
                if ToTerm.TermShape.eq shape' shape then
-                  if ToTerm.TermTy.eq_ty ty_term' ty_term then
+                  if ToTerm.TermTy.eq_ty ty_term' ty_term && shapeclass' = shapeclass then
                      items
                   else
                      implem_error (sprintf "declare '%s' type annotations mismatch" (string_of_shape shape))
@@ -2004,6 +2067,7 @@ struct
          search implem
 
    let check_define_term loc (**)
+          (shapeclass : shape_class)
           (ty_term : ty_term)
           (term_def : ('expr1, 'term1) term_def)
           (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
@@ -2013,11 +2077,11 @@ struct
       let rec search = function
          [] ->
             implem_error (sprintf "Definition %s: not implemented" (string_of_shape shape))
-       | DefineTerm (ty_term', term_def') :: t ->
+       | DefineTerm (shapeclass', ty_term', term_def') :: t ->
             let term' = term_of_ty ty_term' in
             let shape' = shape_of_term term' in
                if ToTerm.TermShape.eq shape' shape then begin
-                  if not (ToTerm.TermTy.eq_ty ty_term' ty_term) then
+                  if not (ToTerm.TermTy.eq_ty ty_term' ty_term) || shapeclass' <> shapeclass then
                      implem_error (sprintf "define '%s' mismatch" (string_of_shape shape));
                   if not (alpha_equal term_def'.term_def_value term_def.term_def_value) then
                      implem_error (sprintf "define '%s' definition mismatch" (string_of_shape shape))
@@ -2244,14 +2308,14 @@ struct
             check_cond_rewrite loc info implem items
        | Rule info ->
             check_rule loc info implem items
-       | DeclareTypeClass (opname, type_opname, parent) ->
-            check_declare_typeclass loc opname type_opname parent implem items
-       | DeclareType (ty_term, ty_opname) ->
-            check_declare_type loc ty_term ty_opname implem items
-       | DeclareTerm ty_term ->
-            check_declare_term loc ty_term implem items
-       | DefineTerm (ty_term, term_def) ->
-            check_define_term loc ty_term term_def implem items
+       | DeclareTypeClass (shapeclass, opname, type_opname, parent) ->
+            check_declare_typeclass loc shapeclass opname type_opname parent implem items
+       | DeclareType (shapeclass, ty_term, ty_opname) ->
+            check_declare_type loc shapeclass ty_term ty_opname implem items
+       | DeclareTerm (shapeclass, ty_term) ->
+            check_declare_term loc shapeclass ty_term implem items
+       | DefineTerm (shapeclass, ty_term, term_def) ->
+            check_define_term loc shapeclass ty_term term_def implem items
        | DeclareTypeRewrite (redex, contractum) ->
             check_declare_type_rewrite loc redex contractum implem items
        | MLRewrite info ->

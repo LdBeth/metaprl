@@ -651,7 +651,7 @@ struct
                parse_quotation loc nm name s
             in
                try
-                  Filter_grammar.term_of_string parse_quotation nm (fst (q_shift_loc loc nm)) s
+                  term_of_string (q_shift_loc loc nm) parse_quotation nm s
                with
                   Not_found ->
                      Stdpp.raise_with_loc loc (Failure ("parse_quotation: grammar is not defined: " ^ nm))
@@ -778,22 +778,25 @@ struct
       let parse_quotation name s =
          parse_quotation dummy_loc "unknown" name s
       in
-         Filter_grammar.apply_iforms parse_quotation t
+         apply_iforms dummy_loc parse_quotation t
 
    let apply_iforms loc t =
       if !debug_grammar then
          eprintf "Term_grammar.apply_iforms <- %a%t" debug_print t eflush;
       let parse_quotation name s = parse_quotation loc "unknown" name s in
-      let t = Filter_grammar.apply_iforms parse_quotation t in
+      let t = apply_iforms loc parse_quotation t in
          if !debug_grammar then
             eprintf "Term_grammar.apply_iforms -> %a%t" debug_print t eflush;
          t
 
-   let apply_iforms_mterm loc mt =
+   let apply_iforms_mterm loc mt args =
       let parse_quotation name s =
          parse_quotation loc "unknown" name s
       in
-         Filter_grammar.apply_iforms_mterm parse_quotation mt
+         apply_iforms_mterm loc parse_quotation mt args
+
+   let check_input_terms loc terms =
+      List.iter (check_input_term loc) terms
 
    (*
     * Parse the terms, and perform a type check.
@@ -805,12 +808,14 @@ struct
       let t = apply_iforms loc t in
       let t = term_of_parsed_term t in
       let _ = infer_term loc t in
+         check_input_term loc t;
          t
 
    let parse_term_with_vars loc t =
       let t = apply_iforms loc t in
       let t = term_of_parsed_term_with_vars t in
       let _ = infer_term loc t in
+         check_input_term loc t;
          t
 
    let parse_bound_term loc bt =
@@ -826,6 +831,8 @@ struct
       let terms = collect_terms params in
          Refine.check_rule name (collect_cvars params) terms (strip_mfunction mt);
          (* Then check for type errors *)
+         check_input_mterm loc mt;
+         check_input_terms loc terms;
          check_rule loc mt terms;
          mt, List.map erase_arg_term args, f
 
@@ -840,6 +847,8 @@ struct
       let terms = collect_terms params in
          Refine.check_rewrite name (collect_cvars params) terms args' redex contractum;
          (* Then check for type errors *)
+         check_input_mterm loc mt;
+         check_input_terms loc args;
          check_rewrite loc mt terms;
          mt, List.map erase_arg_term args, f
 
@@ -847,6 +856,9 @@ struct
       let redex = apply_iforms loc redex in
       let contractum = apply_iforms loc contractum in
       let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+         check_input_term loc redex;
+         check_input_term loc contractum;
+
          (* Check with the rewriter first *)
          Refine.check_definition name redex contractum;
          (* Check the types of both parts *)
@@ -857,6 +869,8 @@ struct
       let redex = apply_iforms loc redex in
       let contractum = apply_iforms loc contractum in
       let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+         check_input_term loc redex;
+         check_input_term loc contractum;
          Refine.check_rewrite "type" empty_args_spec [] [] redex contractum;
          check_type_rewrite loc redex contractum;
          redex, contractum
@@ -883,6 +897,8 @@ struct
       let () = check_dform loc redex contractum in
       let redex = erase_term redex in
       let contractum = erase_term contractum in
+         check_input_term loc redex;
+         check_input_term loc contractum;
          redex, contractum
 
    let parse_production loc redices contractum =

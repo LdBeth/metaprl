@@ -595,11 +595,54 @@ let get_infixes = function
    { pack_str = Some _; pack_infixes = infixes } -> infixes
  | _ -> invalid_arg "Package_info.get_infixes: package not loaded"
 
-let get_grammar pack_info =
+(*
+ * Grammar.
+ *)
+let get_start pack_info =
    synchronize_node pack_info (fun pack_info ->
-         match pack_info.pack_str with
+          match pack_info.pack_str with
             Some { pack_str_info = info } ->
-               Cache.StrFilterCache.get_grammar info
+               Cache.StrFilterCache.get_start info
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let check_input_term pack_info loc t =
+   synchronize_node pack_info (fun pack_info ->
+          match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.check_input_term info loc t
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let check_input_mterm pack_info loc t =
+   synchronize_node pack_info (fun pack_info ->
+          match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.check_input_mterm info loc t
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let apply_iforms pack_info loc quote t =
+   synchronize_node pack_info (fun pack_info ->
+          match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.apply_iforms info loc quote t
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let apply_iforms_mterm pack_info loc quote mt args =
+   synchronize_node pack_info (fun pack_info ->
+          match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.apply_iforms_mterm info loc quote mt args
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
+let term_of_string pack_info loc quote name s =
+   synchronize_node pack_info (fun pack_info ->
+          match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.term_of_string info loc quote name s
           | None ->
                raise (NotLoaded pack_info.pack_name))
 

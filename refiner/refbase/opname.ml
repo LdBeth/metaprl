@@ -189,6 +189,21 @@ let rec string_of_opname opname =
             collect h t
 
 (*
+ * Get the root of the opname.
+ *)
+let opname_root =
+   let rec search names =
+      match names with
+         [] ->
+            ""
+       | [name] ->
+            name
+       | _ :: names ->
+            search names
+   in
+      (fun opname -> search opname.opname_name)
+
+(*
  * A few "special" opnames.
  *)
 let var_opname     = make_opname ["var"]

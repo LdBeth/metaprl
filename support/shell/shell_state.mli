@@ -29,7 +29,10 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Lm_string_set
+
 open Opname
+open Term_sig
 open Refiner.Refiner.TermType
 
 open Dform
@@ -67,7 +70,12 @@ val set_infer_term : (infer_term_fun
 val set_infixes : Infix.Set.t option -> unit
 
 (* Set the quotation expander *)
-val set_grammar : Filter_grammar.t option -> unit
+val set_grammar : (shape StringTable.t
+                   * check_input_term_fun
+                   * check_input_mterm_fun
+                   * apply_iforms_fun
+                   * apply_iforms_mterm_fun
+                   * term_of_string_fun) option -> unit
 
 (* Scan (lazily) terms for SO variable contexts and use that for SO var parsing *)
 val set_so_var_context : term list option -> unit

@@ -1053,6 +1053,17 @@ struct
       bterm -> { term_op = { op_name = opname; op_params = [] }; term_terms = [bterm] }
 
    (*
+    * Iterate through the term.
+    *)
+   let rec iter_down f t =
+      f t;
+      List.iter (fun bterm -> iter_down f bterm.bterm) t.term_terms
+
+   let rec iter_up f t =
+      List.iter (fun bterm -> iter_up f bterm.bterm) t.term_terms;
+      f t
+
+   (*
     * Sweep a function down through the term.
     *)
    let rec map_down f t =

@@ -35,6 +35,8 @@
  *
  *)
 open Lm_symbol
+open Lm_string_set
+
 open Opname
 open Term_sig
 open Refiner.Refiner.TermType
@@ -154,6 +156,8 @@ end
  * The sig_* types parameterize the signatures, and the str_* types
  * parameterize the module_info being constructed.
  *)
+type quotation_expander = Filter_grammar.quotation_expander
+
 type summary_mode =
    CompiledSummary
  | InteractiveSummary
@@ -216,9 +220,9 @@ sig
    val op_prefix            : info -> opname
    val mk_opname            : info -> opname_fun
    val mk_opname_kind       : info -> op_kind -> opname_fun
-   val declare_typeclass    : info -> opname -> opname -> typeclass_parent -> unit
-   val declare_type         : info -> ty_term -> opname -> unit
-   val declare_term         : info -> ty_term -> unit
+   val declare_typeclass    : info -> shape_class -> opname -> opname -> typeclass_parent -> unit
+   val declare_type         : info -> shape_class -> ty_term -> opname -> unit
+   val declare_term         : info -> shape_class -> ty_term -> unit
    val declare_type_rewrite : info -> term -> term -> unit
    val infer_term           : info -> term -> term   (* Returns the type of the term *)
    val check_term           : info -> term -> term   (* This is the identity *)
@@ -283,12 +287,18 @@ sig
    val input_prec_gt     : info -> term -> Filter_grammar.assoc -> precedence
    val input_prec_new    : info -> Filter_grammar.assoc -> precedence
    val add_input_prec    : info -> precedence -> term -> unit
-   val add_start         : info -> term -> opname -> unit
-   val get_start         : info -> ShapeSet.t
+   val add_start         : info -> string -> term -> opname -> unit
+   val get_start         : info -> shape StringTable.t
    val parse             : (string -> string -> term) -> info -> Lexing.position -> shape -> string -> term
    val compile_parser    : info -> unit
-   val get_grammar       : info -> Filter_grammar.t
-   val set_grammar       : info -> unit  (* Set the grammar to be used by quotations *)
+
+   (* Grammar functions *)
+   val check_input_term   : info -> check_input_term_fun
+   val check_input_mterm  : info -> check_input_mterm_fun
+
+   val apply_iforms       : info -> apply_iforms_fun
+   val apply_iforms_mterm : info -> apply_iforms_mterm_fun
+   val term_of_string     : info -> term_of_string_fun
 end
 
 (*

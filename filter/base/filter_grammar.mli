@@ -24,6 +24,8 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_string_set
+
 open Opname
 open Term_sig
 open Refiner.Refiner.TermType
@@ -103,8 +105,8 @@ val add_prec        : t -> precedence -> shape -> t
 (*
  * Start symbols.
  *)
-val add_start       : t -> shape -> opname -> t
-val get_start       : t -> ShapeSet.t
+val add_start       : t -> string -> shape -> opname -> t
+val get_start       : t -> shape StringTable.t
 
 (*
  * Input forms.
@@ -147,15 +149,13 @@ val parse           : quotation_expander -> t -> shape -> Lexing.position -> str
  * The Filter_cache_fun should try and make sure these functions
  * are called each time the grammar is modified.
  *)
-val set_grammar     : t -> unit
-val set_start       : string -> shape -> unit
-val term_of_string  : quotation_expander -> string -> Lexing.position -> string -> term
+val term_of_string  : quotation_expander -> t -> string -> Lexing.position -> string -> term
 
 (*
  * Iform expansion.
  *)
-val apply_iforms       : quotation_expander -> term -> term
-val apply_iforms_mterm : quotation_expander -> meta_term -> term list -> meta_term * term list
+val apply_iforms       : quotation_expander -> t -> term -> term
+val apply_iforms_mterm : quotation_expander -> t -> meta_term -> term list -> meta_term * term list
 
 (*!
  * @docoff

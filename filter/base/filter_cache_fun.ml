@@ -42,10 +42,13 @@ open Term_ty_sig
 open Rewrite_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.TermTy
 open Refiner.Refiner.Rewrite
+open Refiner.Refiner.RefineError
 
 open Simple_print
 open File_base_type
@@ -233,10 +236,10 @@ struct
         sig_grammar      : Filter_grammar.t;
         sig_includes     : sig_summary list;
 
-        sig_typeclasses  : (opname * opname * typeclass_parent) list;
-        sig_typereduce   : (term * term) list;
-        sig_typeenv      : (ty_term * opname) list;
-        sig_termenv      : ty_term list
+        sig_typeclasses  : (shape_class * opname * opname * typeclass_parent) list;
+        sig_typeenv      : (shape_class * ty_term * opname) list;
+        sig_termenv      : (shape_class * ty_term) list;
+        sig_typereduce   : (term * term) list
       }
 
    (*
@@ -277,7 +280,7 @@ struct
         mutable typereductions : typereductions;
         mutable typeenv        : typeenv;
         mutable termenv        : termenv;
-        mutable shapes         : ShapeSet.t;
+        mutable shapes         : (bool * shape_class) ShapeTable.t;
 
         (* Input grammar *)
         mutable grammar : Filter_grammar.t;
@@ -419,10 +422,10 @@ struct
          [modname] ->
             (* If only one name left, it should name a term *)
             let rec search = function
-               (DeclareTypeClass (opname, _, _), _) :: tl
-             | (DeclareType ({ ty_opname = opname }, _), _) :: tl
-             | (DeclareTerm { ty_opname = opname }, _) :: tl
-             | (DefineTerm ({ ty_opname = opname }, _), _) :: tl
+               (DeclareTypeClass (_, opname, _, _), _) :: tl
+             | (DeclareType (_, { ty_opname = opname }, _), _) :: tl
+             | (DeclareTerm (_, { ty_opname = opname }), _) :: tl
+             | (DefineTerm (_, { ty_opname = opname }, _), _) :: tl
                when fst (dst_opname opname) = modname ->
                   modname :: path
              | _ :: tl ->
@@ -630,11 +633,14 @@ struct
    (*
     * Check that the shape is never seen before.
     *)
-   let check_redeclaration watch cache shape t =
-      if ShapeSet.mem cache.shapes shape then
-         raise (Failure ("Filter_cache_fun.check_redeclaration: redefining term " ^ SimplePrint.string_of_term t));
-      if watch then
-         cache.shapes <- ShapeSet.add cache.shapes shape
+   let check_redeclaration watch cache shapeclass shape t =
+      let shapes = cache.shapes in
+         if ShapeTable.mem shapes shape then begin
+            let watch', shapeclass' = ShapeTable.find shapes shape in
+               if watch' && watch || shapeclass' <> shapeclass then
+                  raise (Failure ("Filter_cache_fun.check_redeclaration: redefining term " ^ SimplePrint.string_of_term t))
+         end;
+         cache.shapes <- ShapeTable.add shapes shape (watch, shapeclass)
 
    (*
     * Check that the opname denotes a typeclass.
@@ -692,7 +698,7 @@ struct
     *      << current_type >>, which must be a sub-typeclass
     *      of Ty.
     *)
-   let declare_typeclass_env watch cache current_opname current_type current_parent =
+   let declare_typeclass_env watch cache shapeclass current_opname current_type current_parent =
       let current_term = mk_term (mk_op current_opname []) [] in
       let current_name = fst (dst_opname current_opname) in
       let current_shape = shape_of_term current_term in
@@ -728,7 +734,7 @@ struct
          }
       in
          (* Make sure never seen before *)
-         check_redeclaration watch cache current_shape current_term;
+         check_redeclaration watch cache shapeclass current_shape current_term;
 
          (* Make sure the type is a typeclass *)
          check_is_typeclass cache current_type;
@@ -760,14 +766,14 @@ struct
     *    1. Declare the type << current >> with parent typeclass << current_parent >>
     *    2. Declare the term << current >> with type << current_type >>
     *)
-   let declare_type_env watch cache current_class current_parent =
+   let declare_type_env watch cache shapeclass current_class current_parent =
       let current_term = term_of_ty current_class in
       let current_opname = opname_of_term current_term in
       let current_shape = shape_of_term current_term in
       let current_name = fst (dst_opname current_opname) in
       let current_op_shape = op_shape_of_term current_name current_term in
          (* Check that the term has never been defined before *)
-         check_redeclaration watch cache current_shape current_term;
+         check_redeclaration watch cache shapeclass current_shape current_term;
 
          (* Check that the term is a typeclass *)
          check_is_typeclass_term cache current_class.ty_type;
@@ -797,7 +803,7 @@ struct
     *       b. Otherwise, it is NormalKind
     *    2. Add the entry
     *)
-   let declare_term_env watch cache current_class =
+   let declare_term_env watch cache shapeclass current_class =
       (* Get the class *)
       let ty_term = current_class.ty_type in
       let current_kind =
@@ -842,7 +848,7 @@ struct
       let current_name = fst (dst_opname current_opname) in
       let current_op_shape = op_shape_of_term_kind current_name current_kind current_term in
          (* Check the the term has nver been seen before *)
-         check_redeclaration watch cache current_shape current_term;
+         check_redeclaration watch cache shapeclass current_shape current_term;
 
          (* Add the type *)
          if !debug_opname then
@@ -1025,8 +1031,8 @@ struct
    let add_input_prec cache pre t =
       cache.grammar <- Filter_grammar.add_prec cache.grammar pre (shape_of_term t)
 
-   let add_start cache t lexer_id =
-      cache.grammar <- Filter_grammar.add_start cache.grammar (shape_of_term t) lexer_id
+   let add_start cache s t lexer_id =
+      cache.grammar <- Filter_grammar.add_start cache.grammar s (shape_of_term t) lexer_id
 
    let get_start cache =
       Filter_grammar.get_start cache.grammar
@@ -1041,11 +1047,50 @@ struct
       Filter_grammar.compile cache.grammar;
       eprintf "%a@." Filter_grammar.pp_print_grammar cache.grammar
 
-   let get_grammar cache =
-      cache.grammar
+   (*
+    * Check that a term does not contain resudial input forms.
+    *)
+   let check_input_term_error debug t1 t2 =
+      raise (RefineError ("check_term", StringErrorError (debug,
+                                        StringErrorError ("parsed term",
+                                        TermErrorError (t1,
+                                        StringErrorError ("illegal subterm",
+                                        TermError t2))))))
 
-   let set_grammar cache =
-      Filter_grammar.set_grammar cache.grammar
+   let check_input_term cache loc t_root =
+      let shapes = cache.shapes in
+         iter_down (fun t ->
+               if not (is_var_term t || is_so_var_term t || is_context_term t || is_sequent_term t) then
+                  let info =
+                     try snd (ShapeTable.find shapes (shape_of_term t)) with
+                        Not_found ->
+                           (* XXX: JYH: we should probably try to make sure *all* terms are declared *)
+                           match opname_root (opname_of_term t) with
+                              "$unknown" ->
+                                 ShapeNormal
+                            | _ ->
+                                 check_input_term_error "undeclared term" t_root t
+                  in
+                     match info with
+                        ShapeNormal ->
+                           ()
+                      | ShapeIForm ->
+                           check_input_term_error "unexpected iform term" t_root t) t_root
+
+   let check_input_mterm cache loc mt =
+      iter_mterm (fun t -> check_input_term cache loc t) mt
+
+   (*
+    * Grammar.
+    *)
+   let apply_iforms cache loc quote t =
+      Filter_grammar.apply_iforms quote cache.grammar t
+
+   let apply_iforms_mterm cache loc quote mt args =
+      Filter_grammar.apply_iforms_mterm quote cache.grammar mt args
+
+   let term_of_string cache loc quote name s =
+      Filter_grammar.term_of_string quote cache.grammar name (fst loc) s
 
    (************************************************************************
     * Hashing.
@@ -1179,12 +1224,12 @@ struct
             sig_typereduce  = typereduce
           } = summ
       in
-         List.iter (fun (opname, typeclass_type, typeclass_parent) ->
-               declare_typeclass_env watch cache opname typeclass_type typeclass_parent) (List.rev typeclasses);
-         List.iter (fun (ty_term, ty_opname) ->
-               declare_type_env watch cache ty_term ty_opname) (List.rev typeenv);
-         List.iter (fun ty_term ->
-               declare_term_env watch cache ty_term) (List.rev termenv);
+         List.iter (fun (shapeclass, opname, typeclass_type, typeclass_parent) ->
+               declare_typeclass_env watch cache shapeclass opname typeclass_type typeclass_parent) (List.rev typeclasses);
+         List.iter (fun (shapeclass, ty_term, ty_opname) ->
+               declare_type_env watch cache shapeclass ty_term ty_opname) (List.rev typeenv);
+         List.iter (fun (shapeclass, ty_term) ->
+               declare_term_env watch cache shapeclass ty_term) (List.rev termenv);
          List.iter (fun (redex, contractum) ->
                declare_type_rewrite cache redex contractum) (List.rev typereduce)
 
@@ -1238,13 +1283,13 @@ struct
                   base.sig_summaries <- info :: base.sig_summaries;
                   summ
 
-          | DeclareTypeClass (opname, type_opname, parent) ->
-               { summ with sig_typeclasses = (opname, type_opname, parent) :: summ.sig_typeclasses }
-          | DeclareType (ty_term, type_opname) ->
-               { summ with sig_typeenv = (ty_term, type_opname) :: summ.sig_typeenv }
-          | DeclareTerm ty_term
-          | DefineTerm (ty_term, _) ->
-               { summ with sig_termenv = ty_term :: summ.sig_termenv }
+          | DeclareTypeClass (shapeclass, opname, type_opname, parent) ->
+               { summ with sig_typeclasses = (shapeclass, opname, type_opname, parent) :: summ.sig_typeclasses }
+          | DeclareType (shapeclass, ty_term, type_opname) ->
+               { summ with sig_typeenv = (shapeclass, ty_term, type_opname) :: summ.sig_typeenv }
+          | DeclareTerm (shapeclass, ty_term)
+          | DefineTerm (shapeclass, ty_term, _) ->
+               { summ with sig_termenv = (shapeclass, ty_term) :: summ.sig_termenv }
           | DeclareTypeRewrite (redex, contractum) ->
                { summ with sig_typereduce = (redex, contractum) :: summ.sig_typereduce }
 
@@ -1337,13 +1382,13 @@ struct
                   base.sig_summaries <- info :: base.sig_summaries;
                   summ
 
-          | DeclareTypeClass (opname, type_opname, parent) ->
-               { summ with sig_typeclasses = (opname, type_opname, parent) :: summ.sig_typeclasses }
-          | DeclareType (ty_term, type_opname) ->
-               { summ with sig_typeenv = (ty_term, type_opname) :: summ.sig_typeenv }
-          | DeclareTerm ty_term
-          | DefineTerm (ty_term, _) ->
-               { summ with sig_termenv = ty_term :: summ.sig_termenv }
+          | DeclareTypeClass (shapeclass, opname, type_opname, parent) ->
+               { summ with sig_typeclasses = (shapeclass, opname, type_opname, parent) :: summ.sig_typeclasses }
+          | DeclareType (shapeclass, ty_term, type_opname) ->
+               { summ with sig_typeenv = (shapeclass, ty_term, type_opname) :: summ.sig_typeenv }
+          | DeclareTerm (shapeclass, ty_term)
+          | DefineTerm (shapeclass, ty_term, _) ->
+               { summ with sig_termenv = (shapeclass, ty_term) :: summ.sig_termenv }
           | DeclareTypeRewrite (redex, contractum) ->
                { summ with sig_typereduce = (redex, contractum) :: summ.sig_typereduce }
 
@@ -1462,7 +1507,7 @@ struct
            typereductions = Shape2Table.empty;
            typeenv        = root_typeenv;
            termenv        = root_termenv;
-           shapes         = ShapeSet.empty
+           shapes         = ShapeTable.empty
          }
 
    (*
@@ -1516,7 +1561,7 @@ struct
            typereductions = Shape2Table.empty;
            typeenv        = root_typeenv;
            termenv        = root_termenv;
-           shapes         = ShapeSet.empty
+           shapes         = ShapeTable.empty
          }
       in
          if !debug_filter_cache then begin

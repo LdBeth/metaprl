@@ -36,6 +36,7 @@ open Lm_debug
 open Lm_printf
 open Lm_printf_rbuffer
 open Lm_thread
+open Lm_string_set
 
 open Opname
 
@@ -150,6 +151,11 @@ type state =
      mutable state_check_iform        : check_iform_fun;
      mutable state_check_dform        : check_dform_fun;
      mutable state_check_production   : check_production_fun;
+     mutable state_check_input_term   : check_input_term_fun;
+     mutable state_check_input_mterm  : check_input_mterm_fun;
+     mutable state_apply_iforms       : apply_iforms_fun;
+     mutable state_apply_iforms_mterm : apply_iforms_mterm_fun;
+     mutable state_term_of_string     : term_of_string_fun;
      mutable state_df_base            : dform_base;
      mutable state_inline_terms       : (int * term) list;
      mutable state_inline_var         : int;
@@ -159,7 +165,6 @@ type state =
      mutable state_input_info         : info;
      mutable state_interactive        : bool;
      mutable state_infixes            : Infix.Set.t;
-     mutable state_grammar            : Filter_grammar.t;
      mutable state_prompt1            : string;
      mutable state_prompt2            : string
    }
@@ -201,6 +206,21 @@ let default_saved_tactic =
    let loc = dummy_loc in
       ("\"no saved tactic\"", <:expr< $str: "no saved tactic"$ >>)
 
+let check_input_term_null loc t =
+   raise (Failure "Shell_mp.check_input_term: no current package")
+
+let check_input_mterm_null loc mt =
+   raise (Failure "Shell_mp.check_input_mterm: no current package")
+
+let apply_iforms_null loc quote t =
+   raise (Failure "Shell_mp.apply_iforms: no current package")
+
+let apply_iforms_mterm_null loc quote mt args =
+   raise (Failure "Shell_mp.apply_iforms_mterm: no current package")
+
+let term_of_string_null loc quote name s =
+   raise (Failure "Shell_mp.term_of_string_null: no current package")
+
 (*
  * Global state is a private variable.
  *)
@@ -226,9 +246,13 @@ let state_entry =
         state_input_info         = Buffered [];
         state_interactive        = true;
         state_infixes            = Infix.Set.empty;
-        state_grammar            = Filter_grammar.empty;
         state_prompt1            = "# ";
-        state_prompt2            = "  "
+        state_prompt2            = "  ";
+        state_check_input_term   = check_input_term_null;
+        state_check_input_mterm  = check_input_mterm_null;
+        state_apply_iforms       = apply_iforms_null;
+        state_apply_iforms_mterm = apply_iforms_mterm_null;
+        state_term_of_string     = term_of_string_null
       }
    in
    let fork state =
@@ -349,6 +373,36 @@ module TermGrammar = MakeTermGrammar
                exn ->
                   Stdpp.raise_with_loc loc exn)
 
+   let check_input_term loc t =
+      synchronize_state (function state ->
+            try state.state_check_input_term loc t with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
+   let check_input_mterm loc mt =
+      synchronize_state (function state ->
+            try state.state_check_input_mterm loc mt with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
+   let apply_iforms loc quote t =
+      synchronize_state (function state ->
+            try state.state_apply_iforms loc quote t with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
+   let apply_iforms_mterm loc quote mt args =
+      synchronize_state (function state ->
+            try state.state_apply_iforms_mterm loc quote mt args with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
+   let term_of_string loc quote name s =
+      synchronize_state (function state ->
+            try state.state_term_of_string loc quote name s with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
    (*
     * Term grammar.
     *)
@@ -414,13 +468,11 @@ let input_exp id s =
 let input_patt id s =
    raise (Failure "Input grammar does not support patterns")
 
-let add_start shape =
-   let name, _ = dst_opname (opname_of_shape shape) in
-      Filter_grammar.set_start name shape;
-      Quotation.add name (Quotation.ExAst (input_exp name, input_patt name))
+let add_start name shape =
+   Quotation.add name (Quotation.ExAst (input_exp name, input_patt name))
 
-let add_starts shapes =
-   ShapeSet.iter add_start shapes
+let add_starts starts =
+   StringTable.iter add_start starts
 
 (*
  * The client also saves the most recent tactic.
@@ -534,16 +586,20 @@ let set_infixes infixes =
 
 let set_grammar grammar =
    synchronize_write (fun state ->
-         let gram =
-            match grammar with
-               Some gram ->
-                  gram
-             | None ->
-                  Filter_grammar.empty
-         in
-            state.state_grammar <- gram;
-            Filter_grammar.set_grammar gram;
-            add_starts (Filter_grammar.get_start gram))
+         match grammar with
+            Some (starts, check_input_term, check_input_mterm, apply_iforms, apply_iforms_mterm, term_of_string) ->
+               state.state_check_input_term <- check_input_term;
+               state.state_check_input_mterm <- check_input_mterm;
+               state.state_apply_iforms <- apply_iforms;
+               state.state_apply_iforms_mterm <- apply_iforms_mterm;
+               state.state_term_of_string <- term_of_string;
+               add_starts starts
+          | None ->
+               state.state_check_input_term <- check_input_term_null;
+               state.state_check_input_mterm <- check_input_mterm_null;
+               state.state_apply_iforms <- apply_iforms_null;
+               state.state_apply_iforms_mterm <- apply_iforms_mterm_null;
+               state.state_term_of_string <- term_of_string_null)
 
 let set_so_var_context context =
    synchronize_write (fun state ->
@@ -555,8 +611,10 @@ let set_so_var_context context =
                      match f v i with
                         Some _ as conts -> conts
                       | None ->
-                           if i = 0 then None else
-                              raise(Failure "Unknown SO variable, please specify contexts explicitly")
+                           if i = 0 then
+                              None
+                           else
+                              raise (Failure "Unknown SO variable, please specify contexts explicitly")
                   in
                      state.state_mk_var_contexts <- f;
                      f v i

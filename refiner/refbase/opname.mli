@@ -52,6 +52,7 @@ val normalize_opname : opname -> opname
 val dst_opname : opname -> string * opname
 val dest_opname : opname -> string list
 val string_of_opname : opname -> string
+val opname_root : opname -> string
 
 (*
  * A few "special" opnames.

@@ -147,7 +147,7 @@ let is_formal_item = function
  | DefineTerm _
  | DeclareTypeRewrite _ ->
       true
- | DeclareTerm ty_term ->
+ | DeclareTerm (_, ty_term) ->
       not (Perv.is_dform_type ty_term)
  | Parent _
  | SummaryItem _
@@ -175,7 +175,7 @@ let is_display_item = function
  | DForm _
  | InputForm _ ->
       true
- | DeclareTerm ty_term ->
+ | DeclareTerm (_, ty_term) ->
      Perv.is_dform_type ty_term
  | _ ->
       false

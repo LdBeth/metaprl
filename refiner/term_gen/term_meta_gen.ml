@@ -576,6 +576,24 @@ let () = ();;
    (*
     * Sweeping and mapping.
     *)
+   let rec iter_mterm f mt =
+      match mt with
+         MetaTheorem t ->
+            f t
+       | MetaImplies (mt1, mt2)
+       | MetaIff (mt1, mt2) ->
+            iter_mterm f mt1;
+            iter_mterm f mt2
+       | MetaFunction (t, mt1, mt2) ->
+            f t;
+            iter_mterm f mt1;
+            iter_mterm f mt2
+       | MetaLabeled (_, mt) ->
+            iter_mterm f mt
+
+   (*
+    * Sweeping and mapping.
+    *)
    let rec map_mterm f mt =
       match mt with
          MetaTheorem t ->
