@@ -1349,6 +1349,34 @@ struct
       let set_window_width   = wrap      set_window_width
       let get_resource       = wrap_unit get_resource
       let flush              = wrap_unit flush
+
+      let _ =
+         if commands.cd != uninitialized then
+            raise (Invalid_argument "The Shell module was initialized twice");
+         commands.cd <- wrap cd;
+         commands.pwd <- (fun () -> synchronize (fun shell -> shell.shell_dir));
+         commands.set_dfmode <- set_dfmode;
+         commands.create_pkg <- wrap create_pkg;
+         commands.save <- wrap_unit save;
+         commands.export <- wrap_unit export;
+         commands.view <- wrap view;
+         commands.check <- wrap_unit check;
+         commands.expand <- wrap_unit expand;
+         commands.expand_all <- wrap_unit expand_all;
+         commands.apply_all <- wrap apply_all;
+         commands.interpret <- wrap interpret;
+         commands.undo <- wrap_unit undo;
+         commands.redo <- wrap_unit redo;
+         commands.create_ax_statement <- wrap create_ax_statement;
+         commands.refine <- wrap refine;
+         commands.print_theory <- wrap print_theory;
+         commands.extract <- (fun path () -> synchronize (fun shell -> extract shell path ()));
+         commands.term_of_extract <- wrap term_of_extract;
+         commands.get_view_options <- get_view_options;
+         commands.set_view_options <- set_view_options;
+         commands.clear_view_options <- clear_view_options;
+         commands.find_subgoal <- wrap edit_find;
+         ()
    end
 
    (************************************************************************
@@ -1366,48 +1394,6 @@ struct
          in
             ShellP4.main state
    end
-
-   (*
-    * Work with the current pid.
-    *)
-   let synchronize f =
-      State.write current (fun shell ->
-            Filter_exn.print_exn (get_db shell) None f shell)
-
-   let wrap cmd arg =
-      synchronize (fun shell ->
-            cmd shell arg)
-
-   let wrap_unit cmd () =
-      synchronize cmd
-
-   let _ =
-      if commands.cd != uninitialized then
-         raise (Invalid_argument "The Shell module was initialized twice");
-      commands.cd <- wrap cd;
-      commands.pwd <- (fun () -> synchronize (fun shell -> shell.shell_dir));
-      commands.set_dfmode <- wrap set_dfmode;
-      commands.create_pkg <- wrap create_pkg;
-      commands.save <- wrap_unit save;
-      commands.export <- wrap_unit export;
-      commands.view <- wrap view;
-      commands.check <- wrap_unit check;
-      commands.expand <- wrap_unit expand;
-      commands.expand_all <- wrap_unit expand_all;
-      commands.apply_all <- wrap apply_all;
-      commands.interpret <- wrap interpret;
-      commands.undo <- wrap_unit undo;
-      commands.redo <- wrap_unit redo;
-      commands.create_ax_statement <- wrap create_ax_statement;
-      commands.refine <- wrap refine;
-      commands.print_theory <- wrap print_theory;
-      commands.extract <- (fun path () -> synchronize (fun shell -> extract shell path ()));
-      commands.term_of_extract <- wrap term_of_extract;
-      commands.get_view_options <- wrap_unit get_view_options;
-      commands.set_view_options <- wrap set_view_options;
-      commands.clear_view_options <- wrap clear_view_options;
-      commands.find_subgoal <- wrap edit_find;
-      ()
 end
 
 let extract path () = commands.extract path ()
