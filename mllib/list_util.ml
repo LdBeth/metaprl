@@ -482,17 +482,15 @@ let fold_left f x l = fold_left_aux f x [] l
 let allp = List.for_all
 let existsp = List.exists
 
-let iter2 f al bl =
-   let rec apply = function
+let rec iter2 f al bl =
+   match (al, bl) with
       h1::t1, h2::t2 ->
          f h1 h2;
-         apply (t1, t2)
+         iter2 f t1 t2
     | [], [] ->
          ()
     | _ ->
          raise (Failure "iter2")
-   in
-      apply (al, bl)
 
 let rec rev_iter2 f a b =
    match (a,b) with
@@ -503,19 +501,20 @@ let rec rev_iter2 f a b =
 (*
  * Fold left over two lists.
  *)
-let fold_left2 f x al bl =
-   let rec apply x = function
+let rec fold_left2 f x al bl =
+   match (al, bl) with
       (h1::t1, h2::t2) ->
-         apply (f x h1 h2) (t1, t2)
+         fold_left2 f (f x h1 h2) t1 t2
     | [], [] ->
          x
     | _ ->
          raise (Failure "fold_left2")
-   in
-      apply x (al, bl)
 
 (*
  * $Log$
+ * Revision 1.19  1998/06/15 22:57:57  nogin
+ * .
+ *
  * Revision 1.18  1998/06/15 22:32:24  jyh
  * Added CZF.
  *
