@@ -13,3 +13,6 @@ if $(SSL_ENABLED)
    OCAML_LINK_FLAGS += $(OTHER_CCLIBS)
 
    OCamlProgramInstall(.DEFAULT, $(BIN), proxyedit, $(PROXYEDIT_FILES))
+
+clean:
+   $(CLEAN) proxyedit_lex.ml
