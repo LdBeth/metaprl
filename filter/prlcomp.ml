@@ -191,7 +191,7 @@ let main () =
    let argv = mk_command () in
    let argv' = Array.of_list argv in
    let _ =
-      if !verbose_mode <> 0 then
+      if true or !verbose_mode <> 0 then
          print_command_line argv
    in
 (*
@@ -212,6 +212,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.13  1998/05/29 21:12:27  jyh
+ * Need to update ocamldep.
+ *
  * Revision 1.12  1998/05/29 14:53:06  jyh
  * Better Makefiles.
  *
