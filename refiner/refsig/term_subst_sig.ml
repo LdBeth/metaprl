@@ -69,7 +69,7 @@ sig
 
    (*
     * In all alpha_equal* functions:
-    * for bound terms with duplicate variables: x,x.t =alpha x,new_var.t
+    * for bound terms with duplicate variables: x,x.t =alpha new_var,x.t
     *)
    val alpha_equal : term -> term -> bool
 

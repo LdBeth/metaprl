@@ -237,8 +237,8 @@ struct
          ([],[]) -> vars
        | (v1::vt1,v2::vt2) ->
             if (v1=v2)
-            then remove_var v1 (join_vars vars vt1 vt2)
-            else (v1,v2)::(join_vars vars vt1 vt2)
+            then join_vars (remove_var v1 vars) vt1 vt2
+            else join_vars ((v1,v2)::vars) vt1 vt2
        | _ -> raise (Failure ("join_vars"))
 
    let rec eq_filt_vars set1 set2 = function

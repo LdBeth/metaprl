@@ -105,6 +105,7 @@ val fold_left : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
 (*
  * Association lists.
  *)
+(* zip_list a b c zips b and c and puts the result in front of a in reverce order *)
 val zip_list : ('a * 'b) list -> 'a list -> 'b list -> ('a * 'b) list
 val zip : 'a list -> 'b list -> ('a * 'b) list
 val assoc_index : ('a * 'b) list -> 'a -> int

@@ -405,17 +405,23 @@ let rec unionq l = function
  | [] ->
       l
 
-(*
- * Zip two lists.
- *)
 let rec zip_list l l1 l2 = match (l1,l2) with
    (h1::t1), (h2::t2) ->
-      (h1, h2)::(zip_list l t1 t2)
+      zip_list ((h1,h2)::l) t1 t2
  | [], [] ->
       l
  | _ -> raise (Failure "zip")
 
-let zip a b = zip_list [] a b
+(*
+ * Zip two lists. Sapme as List.combine, but rauses Failure instead of Invalid_argument
+ *)
+let rec zip a b = match (a,b) with
+   (h1::t1), (h2::t2) ->
+      (h1, h2) :: zip t1 t2
+ | [], [] ->
+      []
+ | 
+   _ -> raise (Failure "zip")
 
 (*
  * Find index of association.
