@@ -112,6 +112,7 @@ depend::
 ########################################################################
 
 MFILES_CAMLP4 =\
+	filter/filter_prog\
 	filter/filter_parse\
 	filter/filter_main\
 
@@ -119,6 +120,7 @@ PFILES =\
 	filter/prlcomp\
 
 MFILES_PRLC = $(PFILES)\
+	filter/filter_prog\
 	filter/filter_bin\
 
 MFILES_CONVERT =\

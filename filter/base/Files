@@ -17,6 +17,5 @@ BASE_FILES =\
 	filter_cache_fun\
 	filter_magic\
 	filter_cache\
-	filter_prog\
 	filter_spell\
 	filter_grammar\

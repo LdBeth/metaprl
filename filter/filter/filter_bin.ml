@@ -47,6 +47,7 @@ open Filter_summary
 open Filter_summary_type
 open Filter_cache
 open Filter_prog
+open Proof_convert
 
 (*
  * Show the file loading.
@@ -128,21 +129,6 @@ struct
 end
 
 (*
- * Interactive proofs are handled as raw objects.
- *)
-module Convert = Proof_convert.Convert
-
-(*
- * Extractors.
- *)
-module Extract = MakeExtract (Convert)
-
-(*
- * Caches.
- *)
-module Cache = MakeCaches (Convert)
-
-(*
  * The two caches.
  *)
 module SigCompileInfo =
@@ -154,7 +140,7 @@ struct
    type str_item = MLast.sig_item
    type str_resource = MLast.ctyp resource_sig
 
-   let extract check = Extract.extract_sig ()
+   let extract check = extract_sig ()
    let compile items =
       (!Pcaml.print_interf) items
 end
@@ -168,15 +154,15 @@ struct
    type str_item = MLast.str_item
    type str_resource = MLast.expr
 
-   let extract check = Extract.extract_str () (check ())
+   let extract check = extract_str () (check ())
    let compile items =
       (!Pcaml.print_implem) items;
       eprintf "Writing output file%t" eflush;
       flush stdout
 end
 
-module SigCompile = MakeCompile (SigCompileInfo) (Cache.SigFilterCache)
-module StrCompile = MakeCompile (StrCompileInfo) (Cache.StrFilterCache)
+module SigCompile = MakeCompile (SigCompileInfo) (ProofCaches.SigFilterCache)
+module StrCompile = MakeCompile (StrCompileInfo) (ProofCaches.StrFilterCache)
 
 (*
  * Utility to replace a suffix.

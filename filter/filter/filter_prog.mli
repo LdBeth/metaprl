@@ -34,36 +34,25 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.Refine
 
 open Filter_type
-open Filter_summary_type
 open Filter_summary
-open Filter_cache
+open Filter_summary_type
+open Proof_convert
 
-(*
- * Signature for extract module.
- *)
-module type ExtractSig =
-sig
-   type proof
-   type arg
+val extract_sig :
+   Convert.t ->
+   (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+   (module_path * string * MLast.ctyp resource_sig) list ->
+   string -> (MLast.sig_item * (int * int)) list
 
-   val extract_sig :
-      arg ->
-      (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
-      (module_path * string * MLast.ctyp resource_sig) list ->
-      string -> (MLast.sig_item * (int * int)) list
+val extract_str :
+   Convert.t ->
+   (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+   (term, meta_term, Convert.cooked proof_type, MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
+   (module_path * string * MLast.ctyp resource_sig) list ->
+   string -> (MLast.str_item * (int * int)) list
 
-   val extract_str :
-      arg ->
-      (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
-      (term, meta_term, proof proof_type, MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
-      (module_path * string * MLast.ctyp resource_sig) list ->
-      string -> (MLast.str_item * (int * int)) list
-end
-
-module MakeExtract (Convert : ConvertProofSig) :
-   ExtractSig
-   with type arg = Convert.t
-   with type proof = Convert.cooked
+module ProofCaches : 
+   CachesSig with type t = Convert.t and type cooked = Convert.cooked
 
 (*
  * -*-

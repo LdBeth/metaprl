@@ -973,11 +973,11 @@ struct
          match info.package with
             Some pkg ->
                let ped_of_proof = function
-                  Filter_cache.Primitive _
-                | Filter_cache.Derived _
-                | Filter_cache.Incomplete ->
+                  Filter_summary_type.Primitive _
+                | Filter_summary_type.Derived _
+                | Filter_summary_type.Incomplete ->
                      ()
-                | Filter_cache.Interactive proof ->
+                | Filter_summary_type.Interactive proof ->
                      let _ = Package.ped_of_proof pkg parse_arg proof in
                         ()
                in

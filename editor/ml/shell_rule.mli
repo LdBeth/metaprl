@@ -36,7 +36,7 @@ extends Package_info
 open Refiner.Refiner.TermType
 
 open Filter_type
-open Filter_cache
+open Filter_summary_type
 
 open Shell_sig
 open Package_sig

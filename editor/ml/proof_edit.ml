@@ -194,13 +194,13 @@ let node_count_of_ped ped =
    Proof.node_count (proof_of_ped ped)
 
 let ped_status = function
-   Filter_cache.Primitive _ ->
+   Filter_summary_type.Primitive _ ->
       ObjPrimitive
- | Filter_cache.Derived _ ->
+ | Filter_summary_type.Derived _ ->
       ObjDerived
- | Filter_cache.Incomplete ->
+ | Filter_summary_type.Incomplete ->
       ObjIncomplete(0,0)
- | Filter_cache.Interactive ped ->
+ | Filter_summary_type.Interactive ped ->
       begin match status_of_ped ped with
          Proof.StatusBad ->
             ObjBad

@@ -65,6 +65,7 @@ open Filter_summary_util
 open Filter_cache
 open Filter_prog
 open Filter_magic
+open Proof_convert
 
 (*
  * Show loading of the file.
@@ -759,21 +760,6 @@ struct
 end
 
 (*
- * Use proof conversion module.
- *)
-module Convert = Proof_convert.Convert
-
-(*
- * Extractors.
- *)
-module Extract = MakeExtract (Convert)
-
-(*
- * Caches.
- *)
-module Cache = MakeCaches (Convert)
-
-(*
  * The two caches.
  *)
 module SigFilterInfo =
@@ -786,7 +772,7 @@ struct
    type sig_info = unit
 
    let copy_proof proof1 proof2 = proof1
-   let extract = Extract.extract_sig
+   let extract = extract_sig
 end
 
 module StrFilterInfo =
@@ -807,11 +793,11 @@ struct
        | _ ->
             proof1
 
-   let extract = Extract.extract_str ()
+   let extract = extract_str ()
 end
 
-module SigFilter = MakeFilter (SigFilterInfo) (Cache.SigFilterCache)
-module StrFilter = MakeFilter (StrFilterInfo) (Cache.StrFilterCache)
+module SigFilter = MakeFilter (SigFilterInfo) (ProofCaches.SigFilterCache)
+module StrFilter = MakeFilter (StrFilterInfo) (ProofCaches.StrFilterCache)
 
 (************************************************************************
  * DEFINITION COMMANDS                                                  *

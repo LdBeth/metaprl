@@ -55,7 +55,7 @@ open Package_info
 
 open Filter_type
 open Filter_summary
-open Filter_cache
+open Filter_summary_type
 open Filter_ocaml
 
 (*

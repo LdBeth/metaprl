@@ -30,8 +30,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *
  *)
 
@@ -243,6 +243,80 @@ sig
     * the hierarchy, calling the hook on each.
     *)
    val inline_module : info -> arg -> module_path -> 'a hook -> 'a -> sig_info * 'a
+end
+
+(*
+ * For this compiler, we only use two summaries.
+ *)
+type select_type =
+   InterfaceType
+ | ImplementationType
+
+(*
+ * Proofs are:
+ *   1. primitive terms,
+ *   2. tactics.
+ *   3. inferred from interactive proofs
+ *)
+type 'a proof_type =
+   Primitive of term
+ | Derived of MLast.expr
+ | Incomplete
+ | Interactive of 'a
+
+(*
+ * Proof conversion.
+ *)
+module type ConvertProofSig =
+sig
+   type t
+   type raw
+   type cooked
+
+   val to_raw  : t -> string -> cooked -> raw
+   val of_raw  : t -> string -> raw -> cooked
+   val to_expr : t -> string -> cooked -> MLast.expr
+   val to_term : t -> string -> cooked -> term
+   val of_term : t -> string -> term -> cooked
+   val to_term_io : t -> string -> cooked -> Refiner_io.Refiner_io.TermType.term
+   val of_term_io : t -> string -> Refiner_io.Refiner_io.TermType.term -> cooked
+end
+
+module type CachesSig =
+sig
+   type t
+   type cooked
+
+   (*
+    * The summary_cache for interfaces and implementations.
+    *)
+   module SigFilterCache :
+      SummaryCacheSig
+      with type sig_proof  = unit
+      with type sig_ctyp   = MLast.ctyp
+      with type sig_expr   = MLast.expr
+      with type sig_item   = MLast.sig_item
+      with type str_proof  = unit
+      with type str_ctyp   = MLast.ctyp
+      with type str_expr   = MLast.expr
+      with type str_item   = MLast.sig_item
+      with type str_resource = MLast.ctyp resource_sig
+      with type select     = select_type
+      with type arg        = t
+
+   module StrFilterCache :
+      SummaryCacheSig
+      with type sig_proof  = unit
+      with type sig_ctyp   = MLast.ctyp
+      with type sig_expr   = MLast.expr
+      with type sig_item   = MLast.sig_item
+      with type str_proof  = cooked proof_type
+      with type str_ctyp   = MLast.ctyp
+      with type str_expr   = MLast.expr
+      with type str_item   = MLast.str_item
+      with type str_resource = MLast.expr
+      with type select     = select_type
+      with type arg        = t
 end
 
 (*

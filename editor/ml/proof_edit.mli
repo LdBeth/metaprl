@@ -134,7 +134,7 @@ val squash_ped : ped -> unit
  *)
 val check_ped : ped -> term
 val expand_ped : dform_base -> ped -> unit
-val ped_status : ped Filter_cache.proof_type -> obj_status
+val ped_status : ped Filter_summary_type.proof_type -> obj_status
 
 (*
  * Put all the commands into a single argument for interpretation.

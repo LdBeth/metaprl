@@ -45,7 +45,7 @@ open Dform_print
 
 open Filter_ocaml
 open Filter_type
-open Filter_cache
+open Filter_summary_type
 
 open Tactic_type
 

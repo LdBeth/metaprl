@@ -117,20 +117,11 @@ struct
 end
 
 (*
- * Interactive proofs are handled as raw objects.
+ * The two caches. Interactive proofs are handled as raw objects.
  *)
-module Convert = Proof_convert.Convert
-
-(*
- * Caches.
- *)
-module Cache = MakeCaches (Convert)
-
-(*
- * The two caches.
- *)
-module SigConvert = MakeConvert (Cache.SigFilterCache)
-module StrConvert = MakeConvert (Cache.StrFilterCache)
+module ProofCaches = MakeCaches (Proof_convert.Convert)
+module SigConvert = MakeConvert (ProofCaches.SigFilterCache)
+module StrConvert = MakeConvert (ProofCaches.StrFilterCache)
 
 (*
  * Convert a file.
