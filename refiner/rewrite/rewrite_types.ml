@@ -118,7 +118,6 @@ DEFTOPMACRO BODY =
       RWSeqHypBnd of varname * rwterm
     | RWSeqHyp of rwterm
     | RWSeqContext of int * int * int list
-    | RWSeqContextMatch of int * rwterm list
     | RWSeqContextSubst of int * rwterm list
     | RWSeqFreeVarsContext of int list * int * int * int list
 

@@ -141,7 +141,6 @@ struct
     | RWSeqFreeVarsContext (rs, i, l, vs) -> RWSeqFreeVarsContext (v::rs, i, l, vs)
     | RWSeqHypBnd (v', RWFreeVars(t, rs)) -> RWSeqHypBnd (v', RWFreeVars(t, v::rs))
     | RWSeqHypBnd (v', t) -> RWSeqHypBnd (v', RWFreeVars(t, [v]))
-    | RWSeqContextMatch _ as c -> c (* XXX BUG TODO: should actually restrict! *)
     | _ -> raise(Invalid_argument("Rewrite_compile_redex.restrict_free_in_hyp"))
 
    (* Add an extra free variable restriction to a term *)
@@ -342,11 +341,7 @@ struct
          match SeqHyp.get hyps i with
             Context (v, vars) ->
                if rstack_c_mem v stack then
-                  let index = rstack_c_index v stack in
-                  let stack, terms = compile_so_redex_terms false strict addrs stack bvars vars in
-                  let stack, hyps, goals = compile_so_redex_sequent_inner strict addrs stack bvars (i + 1) len hyps goals in
-                  (* XXX BUG: strictly speaking, should check fro free vars here *)
-                     stack, RWSeqContextMatch(index,terms) :: hyps, goals 
+                  raise(Invalid_argument("Rewrite_compile_redex.compile_so_redex_sequent: context " ^ v ^ " appears more than once in redeces, which is currently unsupported"))
                else if rstack_mem v stack then
                   (* The context should have a unique name *)
                   REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))

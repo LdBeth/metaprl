@@ -459,7 +459,7 @@ struct
                   let hyp = build_contractum_term names bnames stack bvars hyp in
                   let part = Array_util.ArrayElement (Hypothesis hyp) in
                      build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
-             | RWSeqContext _ | RWSeqContextMatch _ | RWSeqFreeVarsContext _ ->
+             | RWSeqContext _ | RWSeqFreeVarsContext _ ->
                   raise(Invalid_argument "Rewrite_build_contractum.build_contractum_sequent_hyps: found an invalid context")
 
    let build_contractum names bnames stack prog =

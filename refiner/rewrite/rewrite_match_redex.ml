@@ -551,50 +551,8 @@ struct
              | Context _ ->
                   REF_RAISE(RefineError ("get_sequent_hyp", StringIntError ("hyp index refers to a context", i)))
             end
-       | RWSeqContextMatch (j, terms) :: hyps' ->
-            begin match stack.(j) with
-               StackSeqContext (oldvars, (i', count, oldhyps)) ->
-                  if count + i > len then
-                     REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
-                  else
-                     check_context_match addrs stack goals' goals all_bvars hyps' hyps terms oldhyps oldvars i i' count len 
-             | _ ->
-                  (* XXX TODO: in case the stack entry is void, we should still accept it and check the match later *)
-                  REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "stack entry is not a context"))
-            end
        | RWSeqContextSubst _ :: _ | RWSeqHyp _ :: _ ->
             raise(Invalid_argument("Invalid context in redex program"))
-
-   (* XXX BUG TODO: check_context_match is incomplete; does not get nearly close to checking all that it needs to check *)
-   and check_context_match addrs stack goals' goals all_bvars hyps' hyps terms oldhyps oldvars i i' count len =
-      if count = 0 then
-         match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps i len
-      else begin
-         match SeqHyp.get hyps i, SeqHyp.get oldhyps i' with
-            Context(c1, ts1), Context(c2, ts2) when c1 = c2 ->
-               (* check_match addrs stack all_bvars (mk_xlist_term ts2) oldvars [mk_xlist_term ts1, terms]; *)
-               check_context_match addrs stack goals' goals all_bvars hyps' hyps terms oldhyps oldvars (i+1) (i'+1) (count-1) len
-          (* XXX BIG TODO The second case below is non-trivial, not really handled yet *)
-          | Hypothesis t, (Hypothesis t' | HypBinding (_,t')) | (HypBinding (_, t), Hypothesis t') ->
-               (* check_match addrs stack all_bvars t' oldvars [t, terms]; *)
-               check_context_match addrs stack goals' goals all_bvars hyps' hyps terms oldhyps oldvars (i+1) (i'+1) (count-1) len
-          | HypBinding (v, t), HypBinding (v',t') ->
-               (* check_match addrs stack all_bvars t' oldvars [t, terms]; *)
-               let newv = mk_var_term v' in
-               let sbst t = subst1 t v newv in
-               let maphyps num hyp =
-                  if num<i then hyp
-                  else if num=i then HypBinding (v', t)
-                  else match hyp with
-                     Context(c,ts) -> Context(c, List.map sbst ts)
-                   | HypBinding (v'', t) -> HypBinding (v'', sbst t)
-                   | Hypothesis t -> Hypothesis (sbst t)
-               in 
-               let mapgoals _ goal = sbst goal in
-                  check_context_match addrs stack goals' (SeqGoal.mapi mapgoals goals) all_bvars hyps' (SeqHyp.mapi maphyps hyps) terms oldhyps oldvars (i+1) (i'+1) (count-1) len
-          | _ ->
-               REF_RAISE(RefineError ("Rewrite_match_redex.check_context_match", StringError "mismatch"))
-      end
 
    and match_redex_sequent_goals addrs stack all_bvars goals' goals i len =
       match goals' with
