@@ -65,8 +65,8 @@ type edit_info =
 type obj_status =
    ObjPrimitive
  | ObjDerived
- | ObjComplete
- | ObjIncomplete
+ | ObjComplete of int*int
+ | ObjIncomplete of int*int
  | ObjBad
  | ObjUnknown
 

@@ -1069,10 +1069,10 @@ struct
             "is a primitive axiom"
        | ObjDerived ->
             "is an internally derived object"
-       | ObjComplete ->
-            "is a derived object with a complete proof"
-       | ObjIncomplete ->
-            "is a derived object with an incomplete proof"
+       | ObjComplete(c1,c2) ->
+            sprintf "is a derived object with a complete proof (%i rule boxes, %i primitive steps)" c1 c2
+       | ObjIncomplete(c1,c2) ->
+            sprintf "is a derived object with an incomplete proof (%i rule boxes, %i primitive steps)" c1 c2
        | ObjBad ->
             "is a derived object with a broken proof"
        | ObjUnknown ->

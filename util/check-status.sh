@@ -36,27 +36,14 @@ until [ -n "$LOG" -a -f "$LOG" -a -s "$LOG" ]; do
    DAYS=`expr "$DAYS" + 1`
 done
 TEMP=`mktemp /tmp/mkstatus.XXXXXX`
-TEMP2=`mktemp /tmp/mkstatus2.XXXXXX`
-TIME=`mktemp /tmp/mktime.XXXXXX`
 umask 002
 cd $1
 rm -f editor/ml/mp.opt
 ( cvs -q update 2>&1
 (make -s depend > /dev/null && make -s opt > /dev/null) 2>&1 | egrep -v -- "-jN forced in submake|Makefile.dep: No such file or directory"
-if [ -f editor/ml/mp.opt ]; then
 sleep 10
-echo 'set_dfmode "src";; status_all ();;' | /usr/bin/time -o $TIME editor/ml/mpopt > /dev/null 2>$TEMP2
-echo ""
-echo "Expand time:"
-cat $TIME
-rm -f $TIME
-echo "Complete proofs:" > $TEMP
-grep "derived object with a complete proof" $TEMP2 | wc -l >> $TEMP
-echo "" >> $TEMP
-echo "Incomplete proofs:" >> $TEMP
-grep "derived object with an incomplete proof" $TEMP2 | wc -l >> $TEMP
-echo "" >> $TEMP
-cat $TEMP2 >> $TEMP
+if [ -f editor/ml/mp.opt ]; then
+util/status-all.sh > $TEMP
 if diff -q -I '^User time' $TEMP $LOG > /dev/null; then
    echo ""
    echo NO PROOF STATUS CHANGES

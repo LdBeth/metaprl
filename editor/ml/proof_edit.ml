@@ -130,8 +130,8 @@ type proof_command =
 type obj_status =
    ObjPrimitive
  | ObjDerived
- | ObjComplete
- | ObjIncomplete
+ | ObjComplete of int*int
+ | ObjIncomplete of int*int
  | ObjBad
  | ObjUnknown
 
@@ -190,26 +190,26 @@ let proof_of_ped { ped_undo = undo } =
 let status_of_ped ped =
    Proof.status (proof_of_ped ped)
 
+let node_count_of_ped ped =
+   Proof.node_count (proof_of_ped ped)
+
 let ped_status = function
    Filter_cache.Primitive _ ->
       ObjPrimitive
  | Filter_cache.Derived _ ->
       ObjDerived
  | Filter_cache.Incomplete ->
-      ObjIncomplete
+      ObjIncomplete(0,0)
  | Filter_cache.Interactive ped ->
       begin match status_of_ped ped with
          Proof.StatusBad ->
             ObjBad
        | Proof.StatusIncomplete
        | Proof.StatusPartial ->
-            ObjIncomplete
+            let (c1,c2)=node_count_of_ped ped in ObjIncomplete(c1,c2)
        | Proof.StatusComplete ->
-            ObjComplete
+            let (c1,c2)=node_count_of_ped ped in ObjComplete(c1,c2)
       end
-
-let node_count_of_ped ped =
-   Proof.node_count (proof_of_ped ped)
 
 let goal_of_ped ped =
    Proof.goal (proof_of_ped ped)
