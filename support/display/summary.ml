@@ -465,18 +465,22 @@ dform rule_df : "rule"[name:s]{'params; 'stmt; 'proof; 'res} =
    hzone pushm[4]
    ensuremath{'proof} info[" rule"] " " szone rule_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] ezone hspace ensuremath{'stmt}
    ezone popm
+   
+declare displayed_as{'t}
+
+dform displayed_as_df : displayed_as{'t} =
+   szone info["(displayed as"] hspace ensuremath{slot["decl"]{'t}} info[")"] ezone
 
 dform opname_df : "opname"[name:s]{'term} =
    pushm[4] szone
-   info["declare"] hspace szone tt{slot["raw"]{'term}} hspace
-   szone info["(displayed as"] hspace ensuremath{slot["decl"]{'term}} info[")"] ezone
-   ezone ezone popm
+   info["declare"] hspace szone tt{slot["raw"]{'term}} hspace displayed_as{'term} ezone
+   ezone popm
 
 dform definition_df : "definition"[name:s]{'term; 'definition; 'res} =
    szone pushm[4]
    info["define"] " " szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
    szone pushm[4]
-   tt{slot["raw"]{'term}} `" " ensuremath{longleftrightarrow} hspace ensuremath{'definition}
+   tt{slot["raw"]{'term}} space displayed_as{'term} `" " ensuremath{longleftrightarrow} hspace ensuremath{'definition}
    popm ezone
    popm ezone
 
