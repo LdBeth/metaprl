@@ -70,6 +70,7 @@ SYSTEM =\
 DEVELOPER-GUIDE =\
 	mp-developer-guide\
 	indentation_and_spacing\
+	exceptions\
 	debugging\
 	refiner_verb_and_simp\
 	term_modules\
