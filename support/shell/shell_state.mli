@@ -118,7 +118,8 @@ val get_input_files : unit -> string list
 (*
  * We may start this as a command-line interface, or as a web service.
  *)
-val cli_flag : bool ref
+val cli_flag : unit -> bool
+val batch_flag : bool ref
 
 val protocol_name     : string
 

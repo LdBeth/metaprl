@@ -71,6 +71,8 @@ let protocol_name =
       "http"
 
 let cli_flag = Env_arg.bool "cli" false "use command-line interface instead of the browser one" Env_arg.set_bool_bool
+let batch_flag = Env_arg.bool "batch" false "supress the interactive prompting (implies -cli)" Env_arg.set_bool_bool
+let cli_flag () = !cli_flag or !batch_flag
 
 let browser_port_name = "port"
 let browser_port      = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int
@@ -497,7 +499,7 @@ let get_toploop () =
  * Return interactive flag.
  *)
 let is_interactive () =
-   synchronize_read (fun state -> state.state_interactive)
+   (not !batch_flag) && synchronize_read (fun state -> state.state_interactive)
 
 let set_interactive flag =
    synchronize_write (fun state -> state.state_interactive <- flag)
@@ -694,7 +696,7 @@ let stdin_stream () =
    let buf = create_buffer () in
    let refill loc =
       let state = State.get state_entry in
-      let str = unsynchronize Lm_readline.readline state.state_prompt1 ^ "\n" in
+      let str = unsynchronize Lm_readline.readline (if !batch_flag then "" else state.state_prompt1) ^ "\n" in
          state.state_prompt1 <- state.state_prompt2;
          buf.buf_index <- 0;
          buf.buf_buffer <- str;

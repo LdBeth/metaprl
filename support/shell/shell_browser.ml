@@ -1559,7 +1559,7 @@ struct
     * Start the web server.
     *)
    let main () =
-      if not (!Shell_state.cli_flag) then
+      if not (Shell_state.cli_flag ()) then
          let password = init_password () in
          let shared =
             { shared_challenge  = "unknown";

@@ -177,14 +177,14 @@ struct
       let stream = Shell_state.stream_of_channel inx in
       let flush () = Stream.iter (fun _ -> ()) stream in
          Shell_state.set_interactive false;
-         toploop false stream flush;
+         toploop stream flush;
          Shell_state.set_interactive int_flag;
          close_in inx
 
    (*
     * Toploop reads phrases, then prints errors.
     *)
-   and toploop prompt instream inflush =
+   and toploop instream inflush =
       let loop = ref true in
       let print_exn exn =
          let df = Shell_state.get_dfbase () in
@@ -260,8 +260,8 @@ struct
       match Shell_state.get_input_files () with
          [] ->
             let instream, flush = Shell_state.stdin_stream () in
-               printf "%s\n@." Mp_version.version;
-               toploop true instream flush
+               if not !Shell_state.batch_flag then printf "%s\n@." Mp_version.version;
+               toploop instream flush
         | files ->
             use_files files
 

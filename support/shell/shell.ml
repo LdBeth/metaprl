@@ -521,7 +521,8 @@ struct
          refresh_packages ();
          Shell_current.restore_sessions ();
          Shell_state.set_module "shell_theory";
-         synchronize (fun shell ->
+         if not !Shell_state.batch_flag then
+            synchronize (fun shell ->
                eprintf "Current directory: %s@." (string_of_dir (shell.shell_fs, shell.shell_subdir)))
 
       (*
