@@ -502,7 +502,8 @@ module NuprlRun (Nuprl : NuprlSig) = struct
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
   let run_jprover lport host name dbpath =
-    (Registry.read_registry ();
+    (Registry.read_tokens ();
+     Registry.read_registry ();
      MathBus.assign_mbs_vals ();
      Mbterm.assign_mbs_terms ();
      Orb.current_description_term := Orb.jprover_description_term;
@@ -512,7 +513,8 @@ module NuprlRun (Nuprl : NuprlSig) = struct
        (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
 
   let run_connection lport host name dbpath =
-    (Registry.read_registry ();
+    (Registry.read_tokens ();
+     Registry.read_registry ();
      MathBus.assign_mbs_vals ();
      Mbterm.assign_mbs_terms ();
      Orb.current_description_term := Orb.metaprl_description_term;

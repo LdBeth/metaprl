@@ -506,7 +506,7 @@ OCamlGeneratedFiles(files) =
 #
 # For theory files, generate intermediate .ppo files
 #
-%.ppo %.cmoz: %.ml %.cmiz :exists: $(CAMLP4N) :optional: %.prla :effects: %.prlb
+%.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb
         $(CAMLP4NC) $(CAMLP4NFLAGS) -o $*.ppo $*.ml
 
 %.cmi %.cmiz: %.mli
@@ -538,16 +538,18 @@ SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 #
 if $(SLOPPY_DEPENDENCIES)
    MPFILTER = $(file .sloppy)
-   $(MPFILTER): $(MPINSTALL) $(PRLC)
-	echo "Sloppy filter dependencies" > $@
+   $(MPFILTER): $(PRLC) $(CAMLP4N)
+      echo "Sloppy filter dependencies" > $@
+
+   %.cmi %.cmiz: $(MPFILTER)
+   %.ppo %.cmoz: $(MPFILTER)
+
    export
 else
-   MPFILTER = $(MPINSTALL) $(PRLC)
+   %.cmi %.cmiz: $(PRLC) $(CAMLP4N)
+   %.ppo %.cmoz: $(CAMLP4N)
    export
 
-%.cmi: $(MPFILTER)
-%.cmo: $(MPFILTER)
-%.cmx: $(MPFILTER)
 
 # Dependency analysis uses -prl flag by default
 OCAMLDEPFLAGS = -prl -omake

@@ -60,12 +60,9 @@ let registry_types = ref []
 (*
  * The registry file should be stored in the lib directory.
  *)
-let get_registry_file () =
-   Filename.concat (Setup.lib ()) "registry.txt"
 
 let token_table = (Hashtbl.create 3)
 let index_table = (Hashtbl.create 3)
-let token_file = Filename.concat (Setup.lib ()) "mbs-mpl.txt"
 
 (*
  * Define a particular type of registry.
@@ -209,7 +206,7 @@ let read_int32 stream =
  * Load the entire registry file.
  *)
 let read_registry () =
-   let stream = open_in (get_registry_file ()) in
+   let stream = open_in (Filename.concat (Setup.lib()) "registry.txt") in
    let p = read_string stream in
    let rec loop ident =
       if ident = "" then
@@ -260,8 +257,8 @@ let generate_registry_declarations ofile file =
 
 *)
 
-let read_tokens =
-   let stream = open_in token_file in
+let read_tokens () =
+   let stream = open_in (Filename.concat (Setup.lib()) "mbs-mpl.txt") in
    let p = read_string stream in
    let rec loop ident =
       if ident = "" then

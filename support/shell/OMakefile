@@ -12,7 +12,7 @@ Theory($(MPFILES))
 # Clean up
 #
 clean:
-    $(CLEAN) browser_copy.ml
+    $(CLEAN) browser_copy.ml browser_session_io.ml
 
 all: theory$(LIB_SUFFIX)
 
