@@ -86,14 +86,15 @@ struct
 
    type strict = RewriteTypes.strict
 
-   (*
-    *
-    * The bvars is an association list of the binding
-    * variables at the current point being compiled, mapping
-    * binding names to stack locations.
-    *
-    * Return the stack and the compiled term.
-    *)
+   type state = {
+      st_addrs: var array;
+      st_strict: bool; (* Whether we should be using the strict semantics *)
+      st_patterns: bool; (* Whether SO variable instances are allowed to define patterns *)
+      st_svars: SymbolSet.t;  (* Stack variables to avoid clashing with *)
+      st_bvars: (var * int) list; (* All the bindings we are under, and their stack locations *)
+      st_bconts: (var * int) list (* All the contexts we are in, and their stack locations  *)
+   }
+
    let bname i _ =
       StackName i
 
@@ -140,31 +141,31 @@ struct
             Context _ -> i
           | Hypothesis _ -> lastcontext hyps i
 
-   let rec compile_so_redex_term allow_so_patterns restrict addrs stack svars bconts bvars term =
+   let rec compile_so_redex_term st stack term =
       (* Check for variables and contexts *)
       if is_var_term term then
          let v = dest_var term in
-            if List.mem_assoc v bvars then
-               stack, RWCheckVar(svar_index bvars v)
+            if List.mem_assoc v st.st_bvars then
+               stack, RWCheckVar(svar_index st.st_bvars v)
             else
                let stack =
                   let mem = rstack_freefo_mem v stack in
                   if not mem && rstack_mem v stack then
                      REF_RAISE(RefineError ("compile_so_redex_term", StringVarError("Free FO variable clashes with another variable ", v)));
-                  if allow_so_patterns && not (rstack_pattern_mem v stack) then
+                  if st.st_patterns && not (rstack_pattern_mem v stack) then
                      if mem then rstack_upgrade v stack else stack @ [ FreeFOVarPattern v ]
                   else if mem then stack else stack @ [ FreeFOVarInstance v ]
                in
                   stack, RWMatchFreeFOVar(
                      rstack_freefo_index v stack,
-                     (if restrict then List.map bvar_ind bconts else []),
-                     (if restrict then List.map bvar_ind bvars else [])
+                     (if st.st_strict then List.map bvar_ind st.st_bconts else []),
+                     (if st.st_strict then List.map bvar_ind st.st_bvars else [])
                   )
       else if is_so_var_term term then
          let v, conts, subterms = dest_so_var term in
-            if List.mem_assoc v bvars then
+            if List.mem_assoc v st.st_bvars then
                REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
-            else if allow_so_patterns && are_bound_vars bvars subterms && not (rstack_pattern_mem v stack) then
+            else if st.st_patterns && are_bound_vars st.st_bvars subterms && not (rstack_pattern_mem v stack) then
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)
                let so_mem = rstack_so_mem v stack in
@@ -175,31 +176,31 @@ struct
                let stack = if so_mem then rstack_upgrade v stack else
                   stack @ [SOVarPattern (v, conts, List.length subterms)] in
                let v' = rstack_so_index v stack in
-               let args = if subterms = [] then [] else List.map (var_index bvars) subterms in
+               let args = if subterms = [] then [] else List.map (var_index st.st_bvars) subterms in
                let term = RWSOVar(v', args) in
                let restrict_free =
-                  if restrict then
-                     let bvars = List.map bvar_ind bvars in
+                  if st.st_strict then
+                     let bvars = List.map bvar_ind st.st_bvars in
                         if args = [] then bvars else Lm_list_util.subtract bvars args
                   else []
                in
-               let restrict_conts = if restrict then restricted_conts v bconts conts else [] in
+               let restrict_conts = if st.st_strict then restricted_conts v st.st_bconts conts else [] in
                   stack, if restrict_free = [] && restrict_conts = [] then term
                          else RWFreeVars(term,restrict_conts,restrict_free)
 
             (* This is a second order variable instance *)
             else if rstack_so_mem v stack then begin
                rstack_check_arity v conts (List.length subterms) stack;
-               (* we set allow_so_patterns to false here since the term that is going to
+               (* we set st_patterns to false here since the term that is going to
                   match the SO variable v may have no free occurences of this argument
                   and this would prevent us from establishing an SO pattern *)
-               let stack, terms = compile_so_redex_terms false restrict addrs stack svars bconts bvars subterms in
+               let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack subterms in
                stack, RWSOInstance(rstack_so_index v stack, terms)
             end else
-               let stack' = (stack @ [SOVarInstance (v, conts, List.length subterms)]) in
-               let stack', terms =
-                  compile_so_redex_terms false restrict addrs stack' svars bconts bvars subterms in
-               stack', RWSOInstance(List.length stack, terms)
+               let index = List.length stack in
+               let stack = (stack @ [SOVarInstance (v, conts, List.length subterms)]) in
+               let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack subterms in
+               stack, RWSOInstance(index, terms)
 
       else if is_context_term term then
          let v, term, conts, vars = dest_context term in
@@ -207,15 +208,15 @@ struct
                (* The context should have a unique name *)
                REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
 
-            else if Lm_array_util.mem v addrs then
+            else if Lm_array_util.mem v st.st_addrs then
                (* All the vars should be free variables *)
-               let vars' = List.map (var_index bvars) vars in
+               let vars' = List.map (var_index st.st_bvars) vars in
                let index = List.length stack in
                let stack = stack @ [CVar (v, conts, List.length vars)] in
-               let stack, term = compile_so_redex_term allow_so_patterns restrict addrs stack svars ((v,index)::bconts) bvars term in
-               let term = RWSOContext(Lm_array_util.index v addrs, index, term, vars') in
-               let restrict_free = if restrict then Lm_list_util.subtract (List.map bvar_ind bvars) vars' else [] in
-               let restrict_conts = if restrict then restricted_conts v bconts conts else [] in
+               let stack, term = compile_so_redex_term { st with st_bconts = (v,index)::st.st_bconts } stack term in
+               let term = RWSOContext(Lm_array_util.index v st.st_addrs, index, term, vars') in
+               let restrict_free = if st.st_strict then Lm_list_util.subtract (List.map bvar_ind st.st_bvars) vars' else [] in
+               let restrict_conts = if st.st_strict then restricted_conts v st.st_bconts conts else [] in
                   stack, if restrict_free = [] && restrict_conts = [] then term else
                      (* RWFreeVars(term,restrict_conts,restrict_free) *)
                      raise (Invalid_argument "compile_so_redex_term: free variable restrictions on SO contexts are not implemented")
@@ -225,28 +226,37 @@ struct
 
       else if is_sequent_term term then
          (* Sequents are handled specially *)
-         compile_so_redex_sequent restrict addrs stack svars bconts bvars term
+         let { sequent_args = arg;
+               sequent_hyps = hyps;
+               sequent_goals = goals;
+             } = explode_sequent term
+         in
+         let stack, arg = compile_so_redex_term st stack arg in
+         let l = SeqHyp.length hyps in
+         let stack, hyps, goals =
+            compile_so_redex_sequent_inner st stack 0 l (lastcontext hyps l) hyps goals in
+            stack, RWSequent (arg, hyps, goals)
 
       else
          (* This is normal term--not a var *)
          let { term_op = op; term_terms = bterms } = dest_term term in
          let { op_name = name; op_params = params } = dest_op op in
-         let stack2, params2 = compile_so_redex_params stack restrict params in
-         let stack3, bterms3 = compile_so_redex_bterms allow_so_patterns restrict addrs stack2 svars bconts bvars bterms in
-            stack3, RWComposite { rw_op = { rw_name = name; rw_params = params2 };
-                                  rw_bterms = bterms3 }
+         let stack, params = compile_so_redex_params st stack params in
+         let stack, bterms = compile_so_redex_bterms st stack bterms in
+            stack, RWComposite { rw_op = { rw_name = name; rw_params = params };
+                                  rw_bterms = bterms }
 
    (*
     * We also compile parameters, and bind meta-variables.
     *)
-   and compile_so_redex_params stack restrict = function
+   and compile_so_redex_params st stack = function
       [] ->
          stack, []
     | param::params ->
          (* Do this param *)
-         let stack', param' = compile_so_redex_param stack restrict param in
-         let stack'', params' = compile_so_redex_params stack' restrict params in
-            stack'', param'::params'
+         let stack, param = compile_so_redex_param st stack param in
+         let stack, params = compile_so_redex_params st stack params in
+            stack, param::params
 
    and meta_param' stack ptype v =
       if rstack_p_mem ptype v stack then
@@ -282,12 +292,12 @@ struct
                let stack, vars = collect stack vars in
                   stack, RWMLevel2 { rw_le_const = c; rw_le_vars = vars }
 
-   and compile_so_redex_param stack restrict param =
+   and compile_so_redex_param st stack param =
       match dest_param param with
          MNumber v -> meta_param stack (fun i -> RWMNumber i) ShapeNumber v
        | MString v -> meta_param stack (fun s -> RWMString s) ShapeString v
        | MToken v -> meta_param stack (fun t -> RWMToken t) ShapeToken v
-       | Var v when not restrict -> meta_param stack (fun v -> RWMVar v) ShapeVar v
+       | Var v when not st.st_strict -> meta_param stack (fun v -> RWMVar v) ShapeVar v
        | MLevel l -> meta_level stack l
        | Number i -> stack, RWNumber i
        | String s -> stack, RWString s
@@ -298,13 +308,13 @@ struct
    (*
     * In bterms, have to add these vars to the binding stack.
     *)
-   and compile_so_redex_bterms allow_so_patterns restrict addrs stack svars bconts bvars = function
+   and compile_so_redex_bterms st stack = function
       [] ->
          stack, []
     | bterm::bterms ->
-         let stack', bterm' = compile_so_redex_bterm allow_so_patterns restrict addrs stack svars bconts bvars bterm in
-         let stack'', bterms' = compile_so_redex_bterms allow_so_patterns restrict addrs stack' svars bconts bvars bterms in
-            stack'', bterm'::bterms'
+         let stack, bterm = compile_so_redex_bterm st stack bterm in
+         let stack, bterms = compile_so_redex_bterms st stack bterms in
+            stack, bterm::bterms
 
    and rename_repeated_vars i stack bnames bvars = function
       [] ->
@@ -312,34 +322,18 @@ struct
     | v::vs ->
          rename_repeated_vars (succ i) (stack @ [FOVar v]) (bnames @ [bname i v]) ((new_bvar_item i v) :: bvars) vs
 
-   and compile_so_redex_bterm allow_so_patterns restrict addrs stack svars bconts bvars bterm =
-      let svars = SymbolSet.add_list svars (List.map rstack_var stack) in
+   and compile_so_redex_bterm st stack bterm =
+      let svars = SymbolSet.add_list st.st_svars (List.map rstack_var stack) in
       let { bvars = vars; bterm = term } = dest_bterm_and_rename bterm svars in
-      let stack', bnames, bvars' = rename_repeated_vars (List.length stack) stack [] bvars vars in
+      let stack, bnames, bvars = rename_repeated_vars (List.length stack) stack [] st.st_bvars vars in
       (* Compile the term *)
-      let stack'', term' = compile_so_redex_term allow_so_patterns restrict addrs stack' svars bconts bvars' term in
-         stack'', { rw_bvars = List.length vars; rw_bnames = bnames; rw_bterm = term' }
+      let stack, term = compile_so_redex_term { st with st_bvars = bvars; st_svars = svars } stack term in
+         stack, { rw_bvars = List.length vars; rw_bnames = bnames; rw_bterm = term }
 
-   (*
-    * The contexts are handled differently within sequents.
-    * Each context refers to a subrange of hypotheses or goals.
-    *)
-   and compile_so_redex_sequent restrict addrs stack svars bconts bvars term =
-      let { sequent_args = arg;
-            sequent_hyps = hyps;
-            sequent_goals = goals;
-          } = explode_sequent term
-      in
-      let stack, arg = compile_so_redex_term true restrict addrs stack svars bconts bvars arg in
-      let l = SeqHyp.length hyps in
-      let stack, hyps, goals =
-         compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars 0 l (lastcontext hyps l) hyps goals in
-         stack, RWSequent (arg, hyps, goals)
-
-   and compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars i len mc hyps goals =
+   and compile_so_redex_sequent_inner st stack i len mc hyps goals =
       if i = len then
          let stack, goals =
-            compile_so_redex_goals restrict addrs stack svars bconts bvars 0 (SeqGoal.length goals) goals
+            compile_so_redex_goals st stack 0 (SeqGoal.length goals) goals
          in
             stack, [], goals
       else
@@ -353,27 +347,27 @@ struct
                let stack, term, ind =
                   if instance then begin
                      rstack_check_arity v conts (List.length terms) stack;
-                     let stack, terms = compile_so_redex_terms false restrict addrs stack svars bconts bvars terms in
+                     let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack terms in
                      let ind = rstack_c_index v stack in
                         stack, RWSeqContextInstance (ind, terms), ind
                   end else
                      let index =
                         if i = mc then
-                           if Lm_array_util.mem v addrs then
+                           if Lm_array_util.mem v st.st_addrs then
                               REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringVarError("Last context of the sequent does not need to be passed in as an argument",v)))
                            else
                               i - len
                         else
-                           if Lm_array_util.mem v addrs then
-                              Lm_array_util.index v addrs
+                           if Lm_array_util.mem v st.st_addrs then
+                              Lm_array_util.index v st.st_addrs
                            else
                               REF_RAISE(RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
                      in
                      (* All the vars should be free variables *)
-                     let vars' = List.map (var_index bvars) terms in
+                     let vars' = List.map (var_index st.st_bvars) terms in
                      let stack = stack @ [CVar (v, conts, List.length terms)] in
-                     let restrict_free = if restrict then Lm_list_util.subtract (List.map bvar_ind bvars) vars' else [] in
-                     let restrict_conts = if restrict then restricted_conts v bconts conts else [] in
+                     let restrict_free = if st.st_strict then Lm_list_util.subtract (List.map bvar_ind st.st_bvars) vars' else [] in
+                     let restrict_conts = if st.st_strict then restricted_conts v st.st_bconts conts else [] in
                      let stack_ind = List.length stack - 1 in
                      let term =
                         if restrict_free = [] && restrict_conts = [] then
@@ -384,37 +378,37 @@ struct
                         stack, term, stack_ind
                in
                let stack, hyps, goals =
-                  compile_so_redex_sequent_inner restrict addrs stack svars ((v, ind)::bconts) bvars (i + 1) len mc hyps goals
+                  compile_so_redex_sequent_inner { st with st_bconts = (v, ind)::st.st_bconts } stack (i + 1) len mc hyps goals
                in
                   stack, term :: hyps, goals
 
           | Hypothesis (v, term) ->
-               if List.mem_assoc v bvars then
+               if List.mem_assoc v st.st_bvars then
                   REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringVarError ("repeated variable", v)));
-               let stack, term = compile_so_redex_term true restrict addrs stack svars bconts bvars term in
+               let stack, term = compile_so_redex_term st stack term in
                let l = List.length stack in
                let stack = stack @ [FOVar v] in
-               let bvars = (new_bvar_item l v) :: bvars in
+               let st = { st with st_bvars = (new_bvar_item l v) :: st.st_bvars } in
                let stack, hyps, goals =
-                  compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars (i + 1) len mc hyps goals
+                  compile_so_redex_sequent_inner st stack (i + 1) len mc hyps goals
                in
                   stack, RWSeqHyp (bname l v, term) :: hyps, goals
 
-   and compile_so_redex_goals restrict addrs stack svars bconts bvars i len goals =
+   and compile_so_redex_goals st stack i len goals =
       if i = len then
          stack, []
       else
-         let stack, goal = compile_so_redex_term true restrict addrs stack svars bconts bvars (SeqGoal.get goals i) in
-         let stack, goals = compile_so_redex_goals restrict addrs stack svars bconts bvars (i + 1) len goals in
+         let stack, goal = compile_so_redex_term st stack (SeqGoal.get goals i) in
+         let stack, goals = compile_so_redex_goals st stack (i + 1) len goals in
             stack, goal :: goals
 
-   and compile_so_redex_terms allow_so_patterns restrict addrs stack svars bconts bvars = function
+   and compile_so_redex_terms st stack = function
       [] ->
          stack, []
-    | term::t ->
-         let stack', term' = compile_so_redex_term allow_so_patterns restrict addrs stack svars bconts bvars term in
-         let stack'', terms' = compile_so_redex_terms allow_so_patterns restrict addrs stack' svars bconts bvars t in
-            stack'', term'::terms'
+    | term::terms ->
+         let stack, term = compile_so_redex_term st stack term in
+         let stack, terms = compile_so_redex_terms st stack terms in
+            stack, term::terms
 
    let check_stack = function
       SOVarInstance (n, _, _)
@@ -431,10 +425,16 @@ struct
    let compile_so_redex strict addrs = function
       [] -> [||], []
     | (goal::args) as all ->
-         let restrict = (strict=Strict) in
-         let svars = free_vars_terms all in
-         let stack, goal = compile_so_redex_term true restrict addrs [] svars [] [] goal in
-         let stack, args = compile_so_redex_terms true restrict addrs stack svars (stack_cvars 0 stack) [] args in
+         let st = {
+            st_patterns = true;
+            st_strict = (strict=Strict);
+            st_addrs = addrs;
+            st_svars = free_vars_terms all;
+            st_bvars = [];
+            st_bconts = []
+         } in
+         let stack, goal = compile_so_redex_term st [] goal in
+         let stack, args = compile_so_redex_terms { st with st_bconts = stack_cvars 0 stack } stack args in
             List.iter check_stack stack;
             Array.of_list stack, (goal::args)
 end
