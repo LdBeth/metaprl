@@ -15,6 +15,8 @@ open Utils
 open Basic
 open Library
 
+open Ascii_scan
+
 open Library_type_base
 
 exception Testfailed of int
@@ -449,13 +451,20 @@ let jointest remote_port local_port =
  raise (Test "Join Test Successful") 
 ;;
 
+
+special_error_handler
+  (function () ->
+ 	let s = (make_scanner "[|]"  "\n\t\r " (Stream.of_string "[0]")) in
+          print_string (List.hd (scan_char_delimited_list s (function () -> scan_string s) '[' ']' '|'))
+	   ;())
+  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
 (*
+
+
 special_error_handler (function () -> testall "DENEB" 3444 4444)
-*)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
-
-(*
 special_error_handler (function () -> testall "DENEB" 5289 2895)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 

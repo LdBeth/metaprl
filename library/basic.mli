@@ -1,6 +1,7 @@
  
 open Term
 open Int32
+open Num
 
 (*
  * common terms
@@ -23,12 +24,15 @@ val number_of_inatural_term	: term -> int
 val oid_of_ioid_term		: term -> object_id
 val string_of_itoken_term	: term -> string
 
+val operator_of_term		: term -> operator
+val bound_terms_of_term		: term -> bound_term list
 val parameters_of_term		: term -> param list
 val token_parameter_to_string	: param -> string
 
 val dest_obid_param 		: param -> object_id
 val dest_token_param		: param -> string
 val dest_int_param		: param -> int
+val dest_num_param		: param -> num
 
 (*
  * failure
@@ -64,6 +68,8 @@ val term_to_stamp	: term -> stamp
 val stamp_to_term	: stamp -> term
 val stamp_to_object_id	: stamp -> object_id
  
+val equal_stamps_p	: stamp -> stamp ->  bool
+
 (* (in_transaction_p a b) = true <-> (in_transaction_p b a = true) *)
 val in_transaction_p 	: stamp -> stamp -> bool
 
@@ -75,6 +81,7 @@ val transaction_less	: stamp -> stamp -> bool
 
 val new_stamp 		: unit ->  stamp
 val get_stamp 		: unit ->  stamp
+
 
 val sequence		: unit -> int
 val tid			: unit -> term

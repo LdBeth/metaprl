@@ -108,6 +108,14 @@ let parameters_of_term t =
    -> match dest_op op with
     { op_name = _; op_params = parms } -> parms
 
+let operator_of_term t =
+  match dest_term t with
+   { term_op = op; term_terms = _} -> op
+
+let bound_terms_of_term t =
+  match dest_term t with
+   { term_op = _; term_terms = bterms} -> bterms
+
 let term_of_unbound_term bterm = 
   match dest_bterm bterm with
     { bvars = []; bterm = t }
@@ -186,8 +194,12 @@ let dest_token_param p =
 let dest_int_param p =
   match dest_param p with
     Number (Num.Int n) -> n
-  |_ -> error ["parameter"; "token"] [] []
+  |_ -> error ["parameter"; "int"] [] []
 
+let dest_num_param p =
+  match dest_param p with
+    Number n -> n
+  |_ -> error ["parameter"; "num"] [] []
 
 
 (*
@@ -290,6 +302,12 @@ let make_stamp pid tseq seq time =
 	; seq = seq
 	; time = time
 	}
+
+let equal_stamps_p a b =
+ a.process_id = b.process_id
+ & a.transaction_seq = b.transaction_seq
+ & a.seq = b.seq
+ & a.time = b.time
 
 let new_stamp () = 
   stamp_data.count <- stamp_data.count + 1;
@@ -400,7 +418,6 @@ let option_of_ioption_term t =
               { term_op = op; term_terms = [s] } when op = isome_op
                ->  Some (term_of_unbound_term s)
 	      |_ -> error ["isome"; "not"] [] [t]
-
 
 let iproperty_parameter = make_param (Token "!property")
 let iproperty_term name_prop =
