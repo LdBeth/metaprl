@@ -710,7 +710,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
             if op_n0 = 0 then
                targs2args_for2 [] [] consts u var_hashtbl []
             else
-               let i =ref 0 in
+               let i = ref (-1) in
                let conv_lists l0 l1 =
                  (* uses lists l0 l1 to set the values in
                   *        fs.opbinding.(!i) :array[1..length(l0)]of bound_variable;
@@ -718,6 +718,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                   * the bound variable names from l0 l1 with corresponding
                   * bound_variables; finally increments (!i)
                   *)
+                  incr i;
                   if (l0=[]) && (l1=[]) then b_asslist0,b_asslist1 else
                   let j = ref 0
                   and b_aslist_ref0 = ref b_asslist0
@@ -741,7 +742,6 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                         b_aslist_ref1:= (v1,bv1)::(!b_aslist_ref1);
                         incr j
                      ) l0 l1;
-                  incr i;
                   (!b_aslist_ref0),(!b_aslist_ref1)
                in
                   targs2args_for2 tbcore_list0 tbcore_list1 consts u var_hashtbl
