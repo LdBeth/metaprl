@@ -20,6 +20,13 @@ TERMS=ds
 SEQ_SET=Lm_array
 
 #
+# Which method do you want to use for display?  The choices are
+# Format and Lm_format.  You should use Lm_format unless you
+# are experiencing trouble with output from MetaPRL.
+#
+FORMAT=Lm_format
+
+#
 # Refiner verbosity: VERBOSE or SIMPLE
 # See doc/htmlman/developer-guide/refiner_verb_and_simp.html or
 # http://cvs.metaprl.org:12000/metaprl/developer-guide/refiner_verb_and_simp.html
