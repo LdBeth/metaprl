@@ -2,7 +2,7 @@
  * Display all the elements in a particular theory.
  *)
 
-include Itt_logic
+include Itt_prop_decide
 
 open Printf
 open Nl_debug

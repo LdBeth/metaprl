@@ -78,10 +78,10 @@ CMXLIBS =\
 	$(CMXDEPS)
 
 CMXADEPS =\
-	$(CAMLP4LIB)/odyl.cmxa\
 	$(CAMLLIB)/unix.cmxa\
-        $(CAMLLIB)/nums.cmxa\
 	$(OPTTHREADSLIB)\
+	$(CAMLP4LIB)/odyl.cmxa\
+        $(CAMLLIB)/nums.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
@@ -154,7 +154,6 @@ CMXOBJS =\
 	$(CMXALIBS)
 
 CCLIBS =\
-	-cclib -lunix\
         -cclib -lnums\
 	-cclib $(ROOT)/lib/clib.a
 
@@ -177,7 +176,7 @@ $(NL).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS)
 
 $(NL).opt: $(CMXOBJS) $(TCMXFILES)
 	rm -f $@
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
+	$(OCAMLOPT) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
 
 clean::
 	$(RM) -f *.p4* *.pp*

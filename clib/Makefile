@@ -10,14 +10,22 @@ LCFILES :=\
 	execvp\
 	exit\
 	debug\
-	ml_debug
+	ml_debug\
+	getrusage
 
 # Name of library
+.PHONY: pthread
+
 MAIN := clib
 
-all: $(ROOT)/lib/$(MAIN).a
+all: $(ROOT)/lib/$(MAIN).a pthread
 
-opt: $(ROOT)/lib/$(MAIN).a
+opt: $(ROOT)/lib/$(MAIN).a pthread
+
+pthread:
+	if [ -f libpthread-$(HOSTTYPE).lib ]; then\
+		ln -sf $(ROOT)/$(DIR)/libpthread-$(HOSTTYPE).lib $(ROOT)/lib/libpthread.a;\
+	fi
 
 install:: $(MAIN).a
 	$(INSTALL) $(MAIN).a $(NLLIB)

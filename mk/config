@@ -70,8 +70,8 @@ endif
 THREADS = -thread
 THREADSLIB = $(CAMLLIB)/threads/threads.cma
 OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
-LIBTHREADS = -cclib -lthreads -cclib -lunix -cclib -lpthread
-OPTTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
+LIBTHREADS = -ccopt -L$(ROOT)/lib -cclib -lthreads -cclib -lunix -cclib -lpthread
+OPTTHREADS = -ccopt -L$(ROOT)/lib -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
 
 #
 # Configuration

@@ -14,6 +14,7 @@ LMFILES :=\
 	nl_debug\
 	env_arg\
 	punix\
+	getrusage\
 	array_util\
 	string_util\
 	list_util\
