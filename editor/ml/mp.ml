@@ -49,7 +49,6 @@ let run_nuprljp = NuprlRun.run_jprover
 let create_rw = create_rw (get_current_shell ())
 let create_axiom = create_axiom (get_current_shell ())
 let create_thm = create_thm (get_current_shell ())
-let create_ax_statement = create_ax_statement (get_current_shell ())
 let create_opname = create_opname (get_current_shell ())
 let create_condition = create_condition (get_current_shell ())
 let create_parent = create_parent (get_current_shell ())
@@ -61,13 +60,6 @@ let create_infix = create_infix (get_current_shell ())
 let create_ml = create_ml (get_current_shell ())
 
 (*
- * View, close, check object.
- * An object is not installed until it is checked.
- *)
-let view = view (get_current_shell ())
-let ls s = ls (get_current_shell ()) s
-
-(*
  * Editing commands.
  *)
 let set_goal = set_goal (get_current_shell ())
@@ -75,28 +67,11 @@ let set_redex = set_redex (get_current_shell ())
 let set_contractum = set_contractum (get_current_shell ())
 let set_assumptions = set_assumptions (get_current_shell ())
 let set_params = set_params (get_current_shell ())
-let check () = check (get_current_shell ())
-let expand () = expand (get_current_shell ())
-let expand_all () = expand_all (get_current_shell ())
 
 (*
  * Proof editing.
  *)
-let root () = root (get_current_shell ())
-let up = up (get_current_shell ())
-let down = down (get_current_shell ())
 let goal () = goal (get_current_shell ())
-let refine = refine (get_current_shell ())
-let undo () = undo (get_current_shell ())
-let redo () = redo (get_current_shell ())
-let nop () = nop (get_current_shell ())
-let unfold () = unfold (get_current_shell ())
-let copy s = copy (get_current_shell ()) s
-let paste s = paste (get_current_shell ()) s
-let kreitz () = kreitz (get_current_shell ())
-let clean () = clean (get_current_shell ())
-let squash () = squash (get_current_shell ())
-let make_assum () = make_assum (get_current_shell ())
 
 (*
  * Nuprl5 interface.

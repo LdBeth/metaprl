@@ -402,7 +402,7 @@ let unsynchronize state' f x =
  * Collect the toplevel commands to use.
  * Shell commands are always added in.
  *)
-let set_module state name commands =
+let set_module state name =
    let name = String.capitalize name in
    let rsrc =
       try Mp_resource.find (Mp_resource.theory_bookmark name) with
@@ -413,7 +413,7 @@ let set_module state name commands =
    in
    let top = Mptop.get_toploop_resource rsrc in
    let shell_expr = IntFunExpr (fun i -> TermExpr (get_term_state state i)) in
-      Mptop.add_commands top (("shell_get_term", shell_expr) :: commands);
+      Mptop.add_commands top ["shell_get_term", shell_expr];
       state.state_toploop <- top
 
 let get_toploop state =

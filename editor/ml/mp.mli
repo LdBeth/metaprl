@@ -54,12 +54,6 @@ val create_resource : string -> unit
 val create_infix : string -> unit
 val create_ml : string -> unit
 
-(*
- * View, close, check object.
- * An object is not installed until it is checked.
- *)
-val view : string -> unit
-val ls : string -> unit
 
 (*
  * Editing commands.
@@ -69,28 +63,11 @@ val set_redex : term -> unit
 val set_contractum : term -> unit
 val set_assumptions : term list -> unit
 val set_params : term Filter_type.param list -> unit
-val check : unit -> unit
-val expand : unit -> unit
-val expand_all : unit -> unit
-val kreitz : unit -> unit
-val clean : unit -> unit
-val squash : unit -> unit
 
 (*
  * Proof editing.
  *)
-val root : unit -> unit
-val up : int -> unit
-val down : int -> unit
 val goal : unit -> tactic_arg
-val refine : tactic -> unit
-val undo : unit -> unit
-val redo : unit -> unit
-val nop : unit -> unit
-val unfold : unit -> unit
-val copy : string -> unit
-val paste : string -> unit
-val make_assum : unit -> unit
 
 (*
  * Nuprl5.

@@ -156,13 +156,6 @@ sig
    val create_ml : t -> string -> unit
 
    (*
-    * View, close, check object.
-    * An object is not installed until it is checked.
-    *)
-   val view : t -> string -> unit
-   val ls : t -> string -> unit
-
-   (*
     * Editing commands.
     *)
    val set_goal : t -> term -> unit
@@ -176,21 +169,10 @@ sig
    (*
     * Proof editing.
     *)
-   val root : t -> unit
-   val up : t -> int -> unit
-   val down : t -> int -> unit
    val goal : t -> tactic_arg
    val refine : t -> tactic -> unit
    val undo : t -> unit
    val redo : t -> unit
-   val nop : t -> unit
-   val unfold : t -> unit
-   val copy : t -> string -> unit
-   val paste : t -> string -> unit
-   val make_assum : t -> unit
-   val kreitz : t -> unit
-   val clean : t -> unit
-   val squash : t -> unit
    val sync : t -> unit
    val expand_all : t -> unit
 

@@ -69,7 +69,7 @@ val set_mk_opname : t -> opname_fun option -> unit
 (*
  * Set the current module.
  *)
-val set_module : t -> string -> (string * Mptop.expr) list -> unit
+val set_module : t -> string -> unit
 
 (*
  * Current display form base.

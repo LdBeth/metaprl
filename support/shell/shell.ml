@@ -90,13 +90,30 @@ type commands = {
    mutable set_writeable : unit -> unit;
    mutable save : unit -> unit;
    mutable export : unit -> unit;
+   mutable view : ls_option list -> string -> unit;
+   mutable expand : unit -> unit;
+   mutable expand_all : unit -> unit;
+   mutable interpret : proof_command -> unit;
+   mutable interpret_all : proof_command -> unit;
+   mutable undo : unit -> unit;
+   mutable redo : unit -> unit;
+   mutable create_ax_statement : term -> string -> unit;
+   mutable refine : tactic -> unit;
+   mutable check : unit -> unit;
+   mutable check_all : unit -> unit;
+   mutable status_all : unit -> unit;
+   mutable print_theory : string -> unit;
 }
 
 let uninitialized _ = raise (Invalid_argument "The Shell module was not instantiated")
 
 let commands = {
    cd = uninitialized; pwd = uninitialized; set_dfmode = uninitialized; create_pkg = uninitialized;
-   set_writeable = uninitialized; save = uninitialized; export = uninitialized;
+   set_writeable = uninitialized; save = uninitialized; export = uninitialized; view = uninitialized;
+   check = uninitialized; check_all = uninitialized; expand = uninitialized; expand_all = uninitialized;
+   interpret = uninitialized; interpret_all = uninitialized; undo = uninitialized; redo = uninitialized;
+   create_ax_statement = uninitialized; refine = uninitialized; status_all = uninitialized;
+   print_theory = uninitialized;
 }
 
 (************************************************************************
@@ -452,46 +469,16 @@ struct
     *)
    let view info options name =
       let dir = parse_path info name in
+      let view =
          match dir with
             [] ->
-               view_packages info options
+               view_packages info
           | [modname] ->
-               view_package info modname options
+               view_package info modname
           | modname :: item :: _ ->
-               view_item info modname item options
-
-   let ls info s =
-      let len = String.length s in
-      let rec collect options i =
-         if i = len then
-            List.rev options
-         else
-            let options =
-               match s.[i] with
-                  '-' ->
-                     options
-                | 'R' ->
-                     (LsRules :: options)
-                | 'r' ->
-                     (LsRewrites :: options)
-                | 'u' ->
-                     (LsUnjustified :: options)
-                | 'f' ->
-                     (LsFormal :: options)
-                | 'a' ->
-                     (LsAll :: options)
-                | _ ->
-                     raise (RefineError ("ls", StringStringError ("unrecognized option", s)))
-            in
-               collect options (succ i)
+               view_item info modname item
       in
-      let view () =
-         view info (collect [] 0) "."
-      in
-         print_exn info view ()
-
-   let view info name =
-      view info [] name
+         print_exn info view options
 
    (*
     * Window width.
@@ -624,7 +611,7 @@ struct
    let set_port port =
       global.port <- port;
       try
-         print_exn global (fun info -> ls info "") global
+         print_exn global (fun info -> view info [] ".") global
       with
          exn ->
             ()
@@ -646,7 +633,7 @@ struct
                            ()
                   end;
                   ShellP4.eval_expr shell.shell text;
-                  ls shell "") text
+                  view shell [] ".") text
          with
             exn ->
                ()
@@ -664,7 +651,7 @@ struct
          [modname] ->
             (* Top level *)
             let _ = Package.create_package packages (get_parse_arg info) modname in
-               view info name
+               view info [] name
        | [] ->
             raise (Failure "Shell.create_package: can't create root package")
        | _ ->
@@ -859,27 +846,6 @@ struct
       in
          print_exn info set info
 
-   (*
-    * Redefined below as a shortcut for cd
-    * let root () =
-    *    let set () =
-    *       info.proof.edit_root ();
-    *       display_proof ()
-    *    in
-    *       print_exn info set ()
-    * let up i =
-    *    let set () =
-    *       info.proof.edit_up i;
-    *       display_proof ()
-    *    in
-    *       print_exn info set ()
-    * let down i =
-    *    let set i =
-    *       info.proof.edit_down i;
-    *       display_proof ()
-    *    in
-    *       print_exn info set i
-    *)
    let refine info tac =
       let set info =
          let str, ast = Shell_state.get_tactic info.shell in
@@ -929,30 +895,6 @@ struct
          display_proof info info.proof []
       in
          print_exn info set info
-
-   let nop info =
-      interpret info ProofNop
-
-   let unfold info =
-      interpret info ProofUnfold
-
-   let kreitz info =
-      interpret info ProofKreitz
-
-   let clean info =
-      interpret info ProofClean
-
-   let squash info =
-      interpret info ProofSquash
-
-   let copy info s =
-      interpret info (ProofCopy s)
-
-   let paste info s =
-      interpret info (ProofPaste s)
-
-   let make_assum info =
-      interpret info ProofMakeAssum
 
    (*
     * Load all the ped's for the current module.
@@ -1033,11 +975,11 @@ struct
                let expand pack =
                   let name = Package.name pack in
                      eprintf "Entering %s%t" name eflush;
-                     chdir info [name];
+                     chdir info false [name];
                      apply_all f info false
                in
                   List.iter expand (all_packages());
-                  chdir info []
+                  chdir info false []
       in
          print_exn info apply_all_exn info
 
@@ -1079,19 +1021,16 @@ struct
       in
          apply_all f info true
 
-   and interpret_all command info =
+   and interpret_all info command =
       let f item db =
          item.edit_interpret command
       in
          apply_all f info true
 
-   and clean_all info = interpret_all ProofClean info
-   and squash_all info = interpret_all ProofSquash info
-
    (*
     * Change directory.
     *)
-   and chdir info path =
+   and chdir info need_shell path =
       let shell = info.shell in
       match path with
          [] ->
@@ -1101,13 +1040,13 @@ struct
             set_packages info;
             Shell_state.set_dfbase shell None;
             Shell_state.set_mk_opname shell None;
-            Shell_state.set_module shell "Shell" (deprecated_commands info);
+            Shell_state.set_module shell "Shell";
             eprintf "Module: /%t" eflush
        | (modname :: item) as dir ->
             (* change module only if in another (or at top) *)
             if info.dir = [] or List.hd info.dir <> modname then
                begin
-                  if modname <> String.uncapitalize modname then
+                  if need_shell && (modname <> String.uncapitalize modname) then
                      raise(Invalid_argument "Shell.chdir: module name should not be capitalized");
                   let pkg = Package.get packages modname in
                      if not (shell_package pkg) then
@@ -1115,7 +1054,7 @@ struct
                      info.package <- Some pkg;
                      Shell_state.set_dfbase shell (Some (get_db info));
                      Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
-                     Shell_state.set_module shell modname (deprecated_commands info);
+                     Shell_state.set_module shell modname;
                      eprintf "Module: /%s%t" modname eflush;
                      (* HACK!!! I do not know a better way to initialize a package - AN *)
                      ignore (Package.info pkg (get_parse_arg info))
@@ -1147,100 +1086,22 @@ struct
                end
 
    and cd info name =
-      print_exn info (chdir info) (parse_path info name);
+      print_exn info (chdir info true) (parse_path info name);
       pwd info
-
-   and root info =
-      let set info =
-         let _ = cd info (String.make ((List.length info.dir) - 1) '.') in
-            display_proof info info.proof []
-      in
-         if List.length info.dir >= 2 then
-            set info
-
-   and up info i =
-      let set info =
-         let _ = cd info (String.make (i + 1) '.') in
-            display_proof info info.proof []
-      in
-         set info
-
-   and down info i =
-      let set i =
-         let _ = cd info (string_of_int i) in
-            display_proof info info.proof []
-      in
-         set i
 
    (*
     * TeX functions.
     *)
-   and set_tex_file info name =
-      Shell_tex.set_file name
-
    and print_theory info name =
       let f () =
          let mode = info.df_mode in
             info.df_mode <- "tex";
-            ignore (cd info ("/" ^ name));
+            chdir info false [name];
             expand_all info;
-            view info ".";
+            view info [] ".";
             info.df_mode <- mode
       in
          print_exn info f ()
-
-   (*
-    * Commands.
-    *)
-   and deprecated_commands info =
-      ["create_rw",        StringFunExpr   (fun s  -> UnitExpr (create_rw info s));
-       "create_axiom",     StringFunExpr   (fun s  -> UnitExpr (create_axiom info s));
-       "create_thm",       StringFunExpr   (fun s  -> UnitExpr (create_thm info s));
-       "create_ax_statement", TermFunExpr  (fun st -> StringFunExpr (fun s  -> UnitExpr (create_ax_statement info st s)));
-       "create_opname",    StringFunExpr   (fun s  -> UnitExpr (create_opname info s));
-       "create_condition", StringFunExpr   (fun s  -> UnitExpr (create_condition info s));
-       "create_parent",    StringFunExpr   (fun s  -> UnitExpr (create_parent info s));
-       "create_dform",     StringFunExpr   (fun s  -> UnitExpr (create_dform info s));
-       "create_prec",      StringFunExpr   (fun s  -> UnitExpr (create_prec info s));
-       "create_prec_rel", (**)
-          StringFunExpr (fun s1 ->
-                StringFunExpr (fun s2 ->
-                      StringFunExpr (fun s3 ->
-                            UnitExpr (create_prec_rel info s1 s2 s3))));
-       "create_resource",  StringFunExpr   (fun s  -> UnitExpr (create_resource info s));
-       "create_infix",     StringFunExpr   (fun s  -> UnitExpr (create_infix info s));
-       "create_ml",        StringFunExpr   (fun s  -> UnitExpr (create_ml info s));
-       "view",             StringFunExpr   (fun s  -> UnitExpr (view info s));
-       "ls",               StringFunExpr   (fun s  -> UnitExpr (ls info s));
-       "set_goal",         TermFunExpr     (fun t  -> UnitExpr (set_goal info t));
-       "set_redex",        TermFunExpr     (fun t  -> UnitExpr (set_redex info t));
-       "set_contractum",   TermFunExpr     (fun t  -> UnitExpr (set_contractum info t));
-       "set_assumptions",  TermListFunExpr (fun tl -> UnitExpr (set_assumptions info tl));
-       "check",            UnitFunExpr     (fun () -> UnitExpr (check info));
-       "expand",           UnitFunExpr     (fun () -> UnitExpr (expand info));
-       "status",           UnitFunExpr     (fun () -> UnitExpr (status info.proof));
-       "root",             UnitFunExpr     (fun () -> UnitExpr (root info));
-       "up",               IntFunExpr      (fun i  -> UnitExpr (up info i));
-       "down",             IntFunExpr      (fun i  -> UnitExpr (down info i));
-       "refine",           TacticFunExpr   (fun t  -> UnitExpr (refine info t));
-       "undo",             UnitFunExpr     (fun () -> UnitExpr (undo info));
-       "redo",             UnitFunExpr     (fun () -> UnitExpr (redo info));
-       "nop",              UnitFunExpr     (fun () -> UnitExpr (nop info));
-       "unfold",           UnitFunExpr     (fun () -> UnitExpr (unfold info));
-       "kreitz",           UnitFunExpr     (fun () -> UnitExpr (kreitz info));
-       "clean",            UnitFunExpr     (fun () -> UnitExpr (clean info));
-       "squash",           UnitFunExpr     (fun () -> UnitExpr (squash info));
-       "copy",             StringFunExpr   (fun s  -> UnitExpr (copy info s));
-       "paste",            StringFunExpr   (fun s  -> UnitExpr (paste info s));
-       "make_assum",       UnitFunExpr     (fun () -> UnitExpr (make_assum info));
-       "sync",             UnitFunExpr     (fun () -> UnitExpr (sync info));
-       "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all info));
-       "check_all",        UnitFunExpr     (fun () -> UnitExpr (check_all info));
-       "status_all",       UnitFunExpr     (fun () -> UnitExpr (status_all info));
-       "clean_all",        UnitFunExpr     (fun () -> UnitExpr (clean_all info));
-       "squash_all",       UnitFunExpr     (fun () -> UnitExpr (squash_all info));
-       "set_tex_file",     StringFunExpr   (fun s  -> UnitExpr (set_tex_file info s));
-       "print_theory",     StringFunExpr   (fun s  -> UnitExpr (print_theory info s))]
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *
@@ -1432,7 +1293,7 @@ struct
    let edit_cd_list_contents info mname =
       let objs = ref [] in
       let f obj _ = objs := (obj.edit_get_contents ())::(!objs) in begin
-         print_exn info (chdir info) [mname];
+         print_exn info (chdir info false) [mname];
          apply_all f info false
       end;
       List.rev !objs
@@ -1452,11 +1313,11 @@ struct
                   collect t
       in
       let opens = collect (info_items (edit_info info mname)) in
-      ignore (print_exn info (chdir info) [mname; name]; ShellP4.eval_opens info.shell opens)
+      ignore (print_exn info (chdir info false) [mname; name]; ShellP4.eval_opens info.shell opens)
 
    let edit_create_thm info mname name =
-      let _ = edit_info info mname in
-      let _ = cd info ("/" ^ mname) in
+      ignore(edit_info info mname);
+      chdir info false [mname];
       let create name =
          let package = get_current_package info in
          let item = Shell_rule.create package (get_parse_arg info) (get_display_mode info) name in
@@ -1467,8 +1328,8 @@ struct
          edit_cd_thm info mname name
 
    let edit_create_rw info mname name =
-      let _ = edit_info info mname in
-      let _ = cd info ("/" ^ mname) in
+      ignore(edit_info info mname);
+      chdir info false [mname];
       let create name =
          let package = get_current_package info in
          let item = Shell_rewrite.create package (get_parse_arg info) (get_display_mode info) name in
@@ -1559,7 +1420,7 @@ struct
    let main () =
       Package.refresh packages (Shell_state.get_includes ());
       let info = global in
-         Shell_state.set_module info.shell "Shell" (deprecated_commands info);
+         Shell_state.set_module info.shell "Shell";
          ShellP4.main info.shell
 
    let wrap cmd arg = cmd !current_shell arg
@@ -1574,6 +1435,19 @@ struct
       commands.create_pkg <- wrap create_pkg;
       commands.save <- wrap_unit save;
       commands.export <- wrap_unit export;
+      commands.view <- wrap view;
+      commands.check <- wrap_unit check;
+      commands.check_all <- wrap_unit check_all;
+      commands.status_all <- wrap_unit status_all;
+      commands.expand <- wrap_unit expand;
+      commands.expand_all <- wrap_unit expand_all;
+      commands.interpret <- wrap interpret;
+      commands.interpret_all <- wrap interpret_all;
+      commands.undo <- wrap_unit undo;
+      commands.redo <- wrap_unit redo;
+      commands.create_ax_statement <- wrap create_ax_statement;
+      commands.refine <- wrap refine;
+      commands.print_theory <- wrap print_theory;
       ()
 end
 
@@ -1595,6 +1469,29 @@ let create_pkg s = commands.create_pkg s
 let set_writeable _ = commands.set_writeable ()
 let save _ = commands.save ()
 let export _ = commands.export ()
+let check _ = commands.check ()
+let check_all _ = commands.check_all ()
+let expand _ = commands.expand ()
+let expand_all _ = commands.expand_all ()
+let undo _ = commands.undo ()
+let redo _ = commands.redo ()
+let create_ax_statement t s = commands.create_ax_statement t s
+let refine t = commands.refine t
+let status_all _ = commands.status_all ()
+let print_theory s = commands.print_theory s
+
+let nop _ = commands.interpret ProofNop
+let unfold _ = commands.interpret ProofUnfold
+let kreitz _ = commands.interpret ProofKreitz
+let clean _ = commands.interpret ProofClean
+let squash _ = commands.interpret ProofSquash
+let copy s = commands.interpret (ProofCopy s)
+let paste s = commands.interpret (ProofPaste s)
+let make_assum _ = commands.interpret ProofMakeAssum
+let clean_all _ = commands.interpret_all ProofClean
+let squash_all _ = commands.interpret_all ProofSquash
+
+let set_tex_file = Shell_tex.set_file
 
 let save_all _ =
    let save pack =
@@ -1603,6 +1500,52 @@ let save_all _ =
    in
       List.iter save (all_packages ())
 
+let ls s =
+   let len = String.length s in
+   let rec collect options i =
+      if i = len then
+         List.rev options
+      else
+         let options =
+            match s.[i] with
+               '-' ->
+                  options
+             | 'R' ->
+                  (LsRules :: options)
+             | 'r' ->
+                  (LsRewrites :: options)
+             | 'u' ->
+                  (LsUnjustified :: options)
+             | 'f' ->
+                  (LsFormal :: options)
+             | 'a' ->
+                  (LsAll :: options)
+             | _ ->
+                  raise (RefineError ("ls", StringStringError ("unrecognized option", s)))
+         in
+            collect options (succ i)
+   in
+      commands.view (collect [] 0) "."
+
+let view name =
+   commands.view [] name
+
+let up i =
+   ignore(cd (String.make (i + 1) '.'));
+   ls ""
+
+let down i =
+   ignore(cd (string_of_int i));
+   ls ""
+
+let root () =
+   begin try
+      let pwd = pwd () in
+      let ind = String.index_from pwd (String.index_from pwd 1 '/' + 1) '/' in
+         ignore(cd (String.sub pwd 0 (ind - 1)))
+   with Not_found -> () end;
+   ls ""
+      
 (*
  * -*-
  * Local Variables:
