@@ -343,10 +343,7 @@ let flatten_term shape t =
 let simplify_term =
    let nmem vars v = not (SymbolSet.mem vars v) in
    let simplify_var vars t =
-      if is_var_term t then
-         let v = dest_var t in
-            if SymbolSet.mem vars v then mk_so_var_term v [] [] else t
-      else if is_so_var_term t then
+      if is_so_var_term t then
          let v, conts, _ = dest_so_var t in mk_so_var_term v (List.filter (nmem vars) conts) []
       else
          t
@@ -356,12 +353,17 @@ let simplify_term =
 (*
  * Add an entry.
  *)
-let make_info (t, v) =
-   let t = simplify_term t in
-   let redex = compile_redex Relaxed [||] t in
-      { info_term = t;
-        info_redex = redex;
-        info_value = v
+let make_info =
+   let mk_vterm v = mk_so_var_term v [] [] in
+   fun (t, v) ->
+      let t = simplify_term t in
+      let fv = free_vars_list t in
+      let fvt = List.map mk_vterm fv in
+      let t' = subst t fv fvt in
+      let redex = compile_redex Relaxed [||] t' in {
+         info_term = t;
+         info_redex = redex;
+         info_value = v
       }
 
 (************************************************************************

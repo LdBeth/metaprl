@@ -262,13 +262,22 @@ struct
          [] -> t
        | sub' -> core_term (Subst (t,sub'))
 
+   (* Filter out any shadowed substs *)
    let rec filter_sub_vars bvars = function
       [] -> []
-    | (((v,t) as sb)::tail) as l ->
-         if (List.mem v bvars) then filter_sub_vars bvars tail
-         else
-            let ftail = filter_sub_vars bvars tail in
-            if ftail == tail then l else sb::ftail
+    | ((v,_)::t) when List.mem v bvars -> filter_sub_vars bvars t
+    | [_] as l -> l
+    | (h :: t) as l ->
+         let t' = filter_sub_vars bvars t in
+         if t' == t then l else h::t'
+
+   let rec filter_sub_var v = function
+      [] -> []
+    | (v', _) :: t when v = v' -> filter_sub_var v t
+    | [_] as l -> l
+    | (h :: t) as l ->
+         let t' = filter_sub_var v t in
+         if t' == t then l else h::t'
 
    (*
     * Make a variable.
@@ -385,8 +394,7 @@ struct
       match SeqHyp.get hyps i with
          HypBinding (v,t) as hyp ->
             let t' = do_term_subst sub t in
-            (* Filter out any shadowed substs *)
-            let sub = List.filter (fun (v', _) -> v <> v') sub in
+            let sub = filter_sub_var v sub in
             (* Rename v if it might capture a free var in the subst *)
             if SymbolSet.mem sub_vars v then
                let v' = new_name v (SymbolSet.mem all_vars) in
@@ -403,13 +411,10 @@ struct
             let hyp = if t == t' then hyp else Hypothesis t' in
                hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
        | Context (v,conts,ts) as hyp ->
-            if check_conts sub conts; List.mem_assoc v sub then
-               REF_RAISE(RefineError("Term_base_ds.get_core",
-                           StringVarError("substitution captures SO context",v)))
-            else
-               let ts' = Lm_list_util.smap (do_term_subst sub) ts in
-               let hyp = if ts == ts' then hyp else Context (v, conts, ts) in
-                  hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
+            let ts' = Lm_list_util.smap (do_term_subst sub) ts in
+            let sub = filter_sub_var v sub in
+            let hyp = if ts == ts' then hyp else Context (v, conts, ts) in
+               hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
 
    let mk_op name params = { op_name = name; op_params = params }
 
