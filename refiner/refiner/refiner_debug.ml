@@ -2914,19 +2914,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p3_1, p3_2 = split p3 in
          merge merge_terms "Rewrite.apply_rewrite" (wrap4 Rewrite1.apply_rewrite p0_1 p1_1 p2_1 p3_1) (wrap4 Rewrite2.apply_rewrite p0_2 p1_2 p2_2 p3_2)
 
-      let relevant_rule (p0 : operator) (p1 : int list) (p2 : rewrite_rule) =
-         let p0_1, p0_2 = p0 in
-         let p2_1, p2_2 = p2 in
-         merge merge_bool "Rewrite.relevant_rule" (wrap3 Rewrite1.relevant_rule p0_1 p1 p2_1) (wrap3 Rewrite2.relevant_rule p0_2 p1 p2_2)
-
-      let rewrite_operator (p0 : rewrite_rule) =
-         let p0_1, p0_2 = p0 in
-         merge merge_op "Rewrite.rewrite_operator" (wrap1 Rewrite1.rewrite_operator p0_1) (wrap1 Rewrite2.rewrite_operator p0_2)
-
-      let rewrite_eval_flags (p0 : rewrite_rule) =
-         let p0_1, p0_2 = p0 in
-         merge merge_ibl "Rewrite.rewrite_eval_flags" (wrap1 Rewrite1.rewrite_eval_flags p0_1) (wrap1 Rewrite2.rewrite_eval_flags p0_2)
-
       let print_rewrite_redex (p0 : out_channel) (p1 : rewrite_redex) =
          let p1_1, p1_2 = p1 in
          merge merge_unit "Rewrite.print_rewrite_redex" (wrap2 Rewrite1.print_rewrite_redex p0 p1_1) (wrap2 Rewrite2.print_rewrite_redex p0 p1_2)

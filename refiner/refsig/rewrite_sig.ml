@@ -149,18 +149,6 @@ sig
       term list       (* contracta *)
 
    (*
-    * See if a rule may apply to a particular term
-    * described by its operator and it arities.
-    *)
-   val relevant_rule : operator -> int list -> rewrite_rule -> bool
-
-   (*
-    * Get some info for the evaluator.
-    *)
-   val rewrite_operator : rewrite_rule -> operator
-   val rewrite_eval_flags : rewrite_rule -> (int * bool) list
-
-   (*
     * For debugging.
     *)
    val print_rewrite_redex : out_channel -> rewrite_redex -> unit

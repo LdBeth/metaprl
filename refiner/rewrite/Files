@@ -8,5 +8,4 @@ REWRITE_FILES[] =
 	rewrite_compile_contractum
 	rewrite_match_redex
 	rewrite_build_contractum
-	rewrite_meta
 	rewrite

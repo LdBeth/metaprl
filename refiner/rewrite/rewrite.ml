@@ -58,7 +58,6 @@ open Rewrite_compile_redex
 open Rewrite_compile_contractum
 open Rewrite_match_redex
 open Rewrite_build_contractum
-open Rewrite_meta
 
 (*
  * Show the file loading.
@@ -110,8 +109,6 @@ struct
    module RewriteBuildContractum =
       MakeRewriteBuildContractum (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (**)
          (RefineError) (RewriteUtil) (RewriteDebug)
-   module RewriteMeta =
-      MakeRewriteMeta (TermType) (TermAddr) (Term) (TermMan) (RefineError)
 
    open RwTypes
    open RewriteTypes
@@ -138,14 +135,6 @@ struct
     | RewriteNum of Lm_num.num rewrite_param
     | RewriteLevel of level_exp
     | RewriteUnsupported
-
-   (************************************************************************
-    * IMPORTS                                                              *
-    ************************************************************************)
-
-   let relevant_rule = RewriteMeta.relevant_rule
-   let rewrite_operator = RewriteMeta.rewrite_operator
-   let rewrite_eval_flags = RewriteMeta.rewrite_eval_flags
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
