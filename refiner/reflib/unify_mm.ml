@@ -33,12 +33,80 @@ open Lm_symbol
 open Printf
 open Lm_debug
 
+open Opname
 open Refiner.Refiner
 open RefineError
 open TermType
 open Term
 open TermSubst
 open TermMan
+
+(***********************
+ * COMPATIBILTY
+ ***********************)
+
+(*
+ * Helper terms.
+ *)
+let pair_opname = make_opname ["pair"]
+
+let mk_pair_term t1 t2 =
+   mk_simple_term pair_opname [t1; t2]
+
+(*
+ * A term to represent contexts.
+ *)
+let context_opname = make_opname ["context"]
+
+let mk_context_term t =
+   mk_simple_term context_opname [t]
+
+(*
+ * Default hyp symbol.
+ *)
+let v_hyp = Lm_symbol.add "v"
+
+(*
+ * This is the easy way to get around sequent unification.
+ * We turn the sequent into a normal term.
+ *)
+let dest_term t =
+   let t =
+      if is_sequent_term t then
+         let { sequent_hyps = hyps;
+               sequent_goals = goals;
+               sequent_args = arg
+             } = explode_sequent t
+         in
+
+      (* Collect goals into a list *)
+         let t = mk_xlist_term (SeqGoal.to_list goals) in
+
+      (* Collect hyps as a lambda term *)
+         let rec collect_hyps t i =
+            let i = pred i in
+               if i < 0 then
+                  mk_pair_term arg t
+               else
+                  let t =
+                     match SeqHyp.get hyps i with
+                        HypBinding (v, e) ->
+                           mk_pair_term e (mk_xbind_term v t)
+                      | Hypothesis e ->
+                           let fv = free_vars_set t in
+                           let v = new_name v_hyp (SymbolSet.mem fv) in
+                              mk_pair_term e (mk_xbind_term v t)
+                      | Context _ ->
+                           mk_context_term t
+                  in
+                     collect_hyps t i
+         in
+            collect_hyps t (SeqHyp.length hyps)
+
+      else
+         t
+   in
+      dest_term t
 
 (***********************
  * BASIC SUBSTITUTIONS *

@@ -42,6 +42,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
+open Refiner.Refiner.RefineError
 open Term_match_table
 open Simple_print.SimplePrint
 
@@ -474,7 +475,7 @@ let format_short_term base shortener =
          else if is_so_var_term t then
             let v, conts, terms = dest_so_var t in
                mk_term (mk_op dsovar_opname [make_param (Var v)])
-                       [mk_simple_bterm (mk_xlist_term (List.map make_cont conts)); mk_simple_bterm (mk_xlist_term terms)]
+               [mk_simple_bterm (mk_xlist_term (List.map make_cont conts)); mk_simple_bterm (mk_xlist_term terms)]
          else
             t
       in
@@ -484,7 +485,7 @@ let format_short_term base shortener =
                    df_printer = printer;
                    df_external = is_external
           } =
-            lookup base t
+         lookup base t
       in
       let pr, parenflag =
          if pr' = inherit_prec then
@@ -521,35 +522,40 @@ let format_short_term base shortener =
       in
          if parenflag then
             format_string buf "(";
-         begin try
-            match printer with
-               DFPrinter f ->
-                  let entry =
-                     { dform_term = t;
-                       dform_items = items;
-                       dform_printer = print_term pr;
-                       dform_buffer = buf
-                     }
-                  in
-                     if !debug_dform then
-                        eprintf "Dform fun %s: %s%t" name (short_string_of_term t) eflush;
-                        f entry
-             | DFExpansion (r) ->
-                  begin match apply_rewrite r empty_args t [] with
-                     [t] ->
+
+         begin
+            try
+               match printer with
+                  DFPrinter f ->
+                     let entry =
+                        { dform_term = t;
+                          dform_items = items;
+                          dform_printer = print_term pr;
+                          dform_buffer = buf
+                        }
+                     in
                         if !debug_dform then
-                           eprintf "Dform %s%t" name eflush;
-                        print_entry pr buf eq t
-                   | _ -> raise (Invalid_argument("Dform.format_short_term"))
-                  end
-         with
-            (Invalid_argument _) as exn ->
-               raise exn
-          | exn ->
-               raise (Invalid_argument ("Dform "^ name ^ " raised an exception when trying to print "^ (short_string_of_term t) ^ ": " ^ (Printexc.to_string exn)))
+                           eprintf "Dform fun %s: %s%t" name (short_string_of_term t) eflush;
+                        f entry
+                | DFExpansion (r) ->
+                     begin
+                        match apply_rewrite r empty_args t [] with
+                           [t] ->
+                              if !debug_dform then
+                                 eprintf "Dform %s%t" name eflush;
+                              print_entry pr buf eq t
+                         | _ ->
+                              raise (Invalid_argument ("Dform.format_short_term"))
+                     end
+            with
+               exn when (match exn with
+                            Invalid_argument _ -> false
+                          | _ -> true) ->
+                  raise (Invalid_argument ("Dform " ^ name ^ " raised an exception when trying to print " ^ short_string_of_term t ^ ": " ^ Printexc.to_string exn))
          end;
+
          if parenflag then
-            format_string buf ")";
+            format_string buf ")"
 
    (* If there is no template, use the standard printer *)
    and print_term pprec buf eq t =
@@ -558,13 +564,8 @@ let format_short_term base shortener =
       try print_term' pprec buf eq t with
          Not_found ->
             if !debug_dform then
-               let rec format t =
-                  format_term buf shortener format t
-               in
-                  eprintf "Default display form: %s%t" (short_string_of_term t) eflush;
-                  format t
-            else
-               format_term buf shortener (print_term max_prec buf NOParens) t
+               eprintf "Default display form: %s%t" (short_string_of_term t) eflush;
+            format_term buf shortener (print_term max_prec buf NOParens) t
 
    (* Print an entry in the list of terms being displayed *)
    and print_entry pprec buf eq =
@@ -579,9 +580,7 @@ let format_short_term base shortener =
                else
                   print_term pprec buf eq hd;
                aux tl
-         else if is_xnil_term t then
-            ()
-         else
+         else if not (is_xnil_term t) then
             print_term pprec buf eq t
       in
          aux

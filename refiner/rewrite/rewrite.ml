@@ -310,6 +310,12 @@ struct
     *    4. A param variable becaome the param that was matched.
     *)
    let extract_exn = RefineError ("extract_redex_values", RewriteStringError "stack entry is not valid")
+   let extract_exn1 = RefineError ("extract_redex_values.1", RewriteStringError "stack entry is not valid")
+   let extract_exn2 = RefineError ("extract_redex_values.2", RewriteStringError "stack entry is not valid")
+   let extract_exn3 = RefineError ("extract_redex_values.3", RewriteStringError "stack entry is not valid")
+   let extract_exn4 = RefineError ("extract_redex_values.4", RewriteStringError "stack entry is not valid")
+   let extract_exn5 = RefineError ("extract_redex_values.5", RewriteStringError "stack entry is not valid")
+   let extract_exn6 = RefineError ("extract_redex_values.6", RewriteStringError "stack entry is not valid")
    let extract_exn_seq_context = RefineError ("extract_redex_values", RewriteStringError "can't extract an entry from a sequent context")
 
    let extract_redex_values_aux gstack = function
@@ -317,14 +323,14 @@ struct
          begin
             match gstack with
                StackBTerm (t, []) -> RewriteTerm t
-             | _ -> REF_RAISE(extract_exn)
+             | _ -> REF_RAISE(extract_exn1)
          end
     | SOVarPattern _ ->
          begin
             match gstack with
                StackBTerm (t, l) ->
                   RewriteFun (subst t l)
-             | _ -> REF_RAISE(extract_exn)
+             | _ -> REF_RAISE(extract_exn2)
          end
     | SOVarInstance _ ->
          failwith "extract_redex_values: SOVarInstance"
@@ -336,14 +342,14 @@ struct
              | StackSeqContext _ ->
                   RewriteContext (fun _ _ -> REF_RAISE(extract_exn_seq_context))
              | _ ->
-                  REF_RAISE(extract_exn)
+                  REF_RAISE(extract_exn3)
          end
     | PVar (_, ShapeNumber) ->
          RewriteNum begin
             match gstack with
                StackNumber i -> RewriteParam i
              | StackVar v -> RewriteMetaParam v
-             | _ -> REF_RAISE(extract_exn)
+             | _ -> REF_RAISE(extract_exn4)
          end
     | FOVar _
     | PVar (_, (ShapeString | ShapeToken | ShapeVar)) ->
@@ -351,14 +357,24 @@ struct
             match gstack with
                StackString s -> RewriteParam s
              | StackVar v -> RewriteMetaParam v
-             | _ -> REF_RAISE(extract_exn)
+
+               (*
+                * BUG: Aleksey should look at this 8/12/03.
+                * The problem is that non-named Hypothesis will
+                * leave this value blank.
+                *)
+             | StackVoid -> RewriteMetaParam (Lm_symbol.add "_")
+
+             | _ ->
+               eprintf "stack item: %a%t" print_stack_item gstack eflush;
+               REF_RAISE(extract_exn5)
          end
     | PVar (_, ShapeLevel) ->
          RewriteLevel begin
             match gstack with
                StackLevel l -> l
              | StackVar v -> mk_var_level_exp v
-             | _ -> REF_RAISE(extract_exn)
+             | _ -> REF_RAISE(extract_exn6)
          end
 
    let extract_redex_values gstack stack=
