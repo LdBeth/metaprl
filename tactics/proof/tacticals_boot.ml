@@ -34,9 +34,12 @@
 open Lm_debug
 open Lm_printf
 
+open Term_sig
+open Refiner.Refiner
 open Refiner.Refiner.Refine
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.RefineError
+open Refiner.Refiner.TermType
 
 open Tactic_boot
 open Sequent_boot
@@ -579,6 +582,7 @@ struct
 
    let onMHypsT = onMClausesT
 
+(*
    let rec onAllT thenT tac = function
       0 -> idT
     | 1 -> tac 1
@@ -592,16 +596,60 @@ struct
             idT
       in
          funT (aux 1)
+*)
+
+	let rec onAllT baseT thenT tac i = function
+	 | [hd] ->
+			let i' = pred i in
+			(match hd with
+				Hypothesis _ ->
+					tac i
+			 | Context _ ->
+					baseT
+			)
+	 | [] ->
+			baseT
+	 | hd::tl ->
+			let i' = pred i in
+			(match hd with
+				Hypothesis _ ->
+					thenT (tac i) (onAllT baseT thenT tac i' tl)
+			 | Context _ ->
+					onAllT baseT thenT tac i' tl
+			)
+
+
+  	let rec onAllCumulativeT_aux thenT tac i = funT (fun p ->
+		if i < (Sequent.hyp_count p) then
+			let i' = succ i in
+			let hyps = (Sequent.explode_sequent p).sequent_hyps in
+			match Term.SeqHyp.get hyps i with
+				Hypothesis (_, t) ->
+					thenT (tac i') (onAllCumulativeT_aux thenT tac i')
+			 | Context _ ->
+					onAllCumulativeT_aux thenT tac i'
+		else
+			idT
+	)
 
    (*
     * Work on all hyps.
     *)
+(*
    let onAllHypsT tac =
-      funT (fun p -> onAllT prefix_thenT tac (Sequent.hyp_count p))
+      funT (fun p -> onAllT idT prefix_thenT tac (Sequent.hyp_count p))
 
 	let onAllCumulativeHypsT = onAllCumulativeT prefix_thenT
+*)
 
-   (*
+	let onAllHypsT tac = funT (fun p ->
+		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
+		onAllT idT prefix_thenT tac (Sequent.hyp_count p) (List.rev hyps)
+	)
+
+	let onAllCumulativeHypsT tac = onAllCumulativeT_aux prefix_thenT tac 0
+
+	(*
     * Include conclusion.
     *)
    let onAllClausesT tac =
@@ -627,24 +675,29 @@ struct
    (*
     * Labelled forms.
     *)
-   let onAllMHypsT tac =
-      funT (fun p -> onAllT prefix_thenMT tac (Sequent.hyp_count p))
+(*
+	let onAllMHypsT tac =
+      funT (fun p -> onAllT idT prefix_thenMT tac (Sequent.hyp_count p))
 
 	let onAllMCumulativeHypsT tac =
 		funT (fun p -> onAllCumulativeT prefix_thenMT tac)
+*)
+
+	let onAllMHypsT tac = funT (fun p ->
+		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
+		onAllT idT prefix_thenMT tac (Sequent.hyp_count p) (List.rev hyps)
+	)
+
+	let onAllMCumulativeHypsT tac = onAllCumulativeT_aux prefix_thenMT tac 0
 
    let tryOnAllMCumulativeHypsT tac =
-      onAllMHypsT (function i -> tryT (tac i))
+      onAllMCumulativeHypsT (function i -> tryT (tac i))
 
    let tryOnAllMHypsT tac =
       onAllMHypsT (function i -> tryT (tac i))
 
    let tryOnAllMClausesT tac =
-      funT (fun p ->
-         prefix_thenMT
-            (onAllT prefix_thenMT (function i -> tryT (tac i)) (Sequent.hyp_count p))
-            (tryT (onConclT tac))
-      )
+      prefix_thenMT (tryOnAllMHypsT tac) (tryT (onConclT tac))
 
    (*
     * These tactics work with assumptions.
@@ -663,8 +716,10 @@ struct
 
    let onAllMClausesOfAssumT tac assum =
       funT (fun p ->
+			let assumption = List.nth (snd (dest_msequent (Sequent.msequent p))) assum in
+			let hyps = Term.SeqHyp.to_list (TermMan.explode_sequent assumption).sequent_hyps in
          prefix_thenMT
-            (onAllT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum))
+            (onAllT idT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum) (List.rev hyps))
             (onConclT (tac assum))
       )
 
@@ -700,12 +755,20 @@ struct
    (*
     * Make sure one of the hyps works.
     *)
+(*
    let onSomeHypT tac =
       funT (fun p ->
+			let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
          match Sequent.hyp_count p with
             0 -> failT
           | 1 -> tac 1
-          | count -> onAllT prefix_orelseT tac count)
+          | count -> onAllT failT prefix_orelseT tac count (List.rev hyps))
+*)
+
+   let onSomeHypT tac = funT (fun p ->
+		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
+		onAllT failT prefix_orelseT tac (Sequent.hyp_count p) (List.rev hyps)
+	)
 
    (************************************************************************
     * ARGUMENTS                                                            *
