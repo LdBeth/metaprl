@@ -1,7 +1,13 @@
-To compile Nuprl-light, you need to set the environment variable
-CAMMLIB to the ocaml library.  On mojave, this is
+To compile Nuprl-Light for the first time:
+   1. You need to set the CAMLLIB directory.
+      On mojave:
+      % setenv CAMLLIB /usr/local/lib/ocaml-1.05
 
-/usr/local/lib/ocaml-1.05
+   2. Make the dependencies:
+      % make depend
+
+   3. Build it
+      % make
 
 TODO:
 
