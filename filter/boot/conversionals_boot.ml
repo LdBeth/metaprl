@@ -96,11 +96,11 @@ struct
    (*
     * Failure.
     *)
-   let failC err =
-      funC (fun _ -> raise (RefineError ("failC", StringError err)))
 
-   let failWithC (name, err) =
-      funC (fun _ -> raise (RefineError (name, err)))
+   let failWithC s =
+      funC (fun _ -> raise (RefineError ("failWithC", StringError s)))
+
+   let failC  =  failWithC "Fail"
 
    (*
     * Trial.
@@ -117,7 +117,7 @@ struct
          let count = subterm_count t in
          let rec subC i =
             if i = count then
-               failWithC ("subC", StringError "all subterms failed")
+               funC (fun _ -> raise (RefineError ("subC", StringError "all subterms failed")))
             else
                prefix_orelseC (addrC [i] conv) (subC (i + 1))
          in
@@ -199,28 +199,45 @@ struct
    (*
     * Repeat the conversion until nothing more happens.
     *)
-   let repeatC conv =
+   let whileProgressC conv =
       let repeatCE env =
          let rec repeat t env =
             let t' = env_term env in
                if alpha_equal t t' then
                   idC
                else
-                  prefix_andthenC conv (tryC (funC (repeat t')))
+                  prefix_andthenC conv (funC (repeat t'))
          in
          let t = env_term env in
             prefix_andthenC conv (funC (repeat t))
       in
          funC repeatCE
 
-   let rec repeatForC i conv =
-      let repeatForCE env =
-         if i = 0 then
-            idC
-         else
-            prefix_andthenC conv (repeatForC (i - 1) conv)
+   (*
+    * Repeat the conversion until fails nothing more happens.
+    *)
+   let repeatC conv = whileProgressC (tryC conv)
+
+   (*
+    * Repeat the conversion until fails.
+    *)
+   let untilFailC conv =
+      let rec aux env =
+          (tryC (prefix_andthenC conv (funC aux)))
       in
-         funC repeatForCE
+         funC aux
+
+   let rec repeatForC i conv =
+      if i < 0 then
+         raise (Invalid_argument "repeatForC: the argument should be not negative")
+      else
+         let repeatForCE env =
+            if i = 0 then
+               idC
+            else
+               prefix_andthenC conv (repeatForC (i - 1) conv)
+         in
+            funC repeatForCE
 end
 
 (*

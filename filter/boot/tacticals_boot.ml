@@ -198,12 +198,16 @@ struct
       in
          start
 
+
    (*
     * Repeat, spreading out over subgoals.
     * Stop when the tactic fails.
     *)
    let untilFailT tac =
-      raise (Invalid_argument "untilFailT: not implemented")
+      let rec aux p =
+          (tryT (prefix_thenT tac aux)) p
+      in
+         aux
 
    (*
     * Repeat, spreading out over subgoals.
@@ -215,7 +219,9 @@ struct
     * Repeat a tactic for a fixed number of times.
     *)
    let repeatForT i tac =
-      if i = 0 then
+      if i < 0 then
+         raise (Invalid_argument "repeatForT: the argument should be not negative")
+      else if i = 0 then
          idT
       else
          let rec aux i =

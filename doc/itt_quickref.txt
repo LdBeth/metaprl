@@ -374,10 +374,16 @@ innermost.
 * firstC : conv list -> conv
 Apply the first conversion from the list that succeeds.
 
-* repeatC : conv -> conv
-Apply the conversion at least once.  Keep applying it until it either
-fails or makes no change (returns a term alpha-equivalent to the term
+* untilFailC : conv -> conv
+Apply the conversion repeatedly until it fails.
+
+* whileProgressC : conv -> conv
+Apply the conversion repeatedly until it fails until it makes no change
+(returns a term alpha-equivalent to the term
 it was applied to).
+
+* repeatC : conv -> conv
+Apply the conversion until it either fails or makes no change.
 
 * repeatForC : int -> conv -> conv
 repeatForC n c applies c n times.

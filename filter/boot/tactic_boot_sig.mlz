@@ -877,11 +877,11 @@ sig
    (* Allow tactic only if no subgoals *)
    val completeT : tactic -> tactic
 
-   (*
-    * Repeatedly apply the tactic as long as there
-    * is only one subgoal, and there is progress.
-    *)
    val progressT : tactic -> tactic
+
+   (*
+    * Repeatedly apply the tactic
+    *)
    val whileProgressT : tactic -> tactic
    val untilFailT : tactic -> tactic
    val repeatT : tactic -> tactic
@@ -1141,8 +1141,8 @@ sig
    (*
     * Fail with a message.
     *)
-   val failC : string -> conv
-   val failWithC : (string * refine_error) -> conv
+   val failC : conv
+   val failWithC : string -> conv
 
    (*
     * Try a conversion.
@@ -1183,6 +1183,9 @@ sig
    (*
     * Repeat the conversion until nothing more happens.
     *)
+
+   val whileProgressC : conv -> conv
+   val untilFailC : conv -> conv
    val repeatC : conv -> conv
    val repeatForC : int -> conv -> conv
 end
