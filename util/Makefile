@@ -1,8 +1,9 @@
 ROOT = ..
 OCAMLC = ocamlc
+OCAMLOPT = ocamlopt
 OCAMLLEX = ocamllex
 
-OCAMLDEP = misc.cmo ocamldep.cmo
+OCAMLDEP = misc.cmx ocamldep.cmx
 
 .PHONY: all opt install clean depend
 
@@ -10,16 +11,16 @@ all: $(ROOT)/bin/ocamldep
 opt: all
 
 install: ocamldep
-	install ocamldep $(NLBIN)
+	cp -pf ocamldep $(NLBIN)
 
 ocamldep: $(OCAMLDEP)
-	$(OCAMLC) -o $@ $(OCAMLDEP)
+	$(OCAMLOPT) -o $@ $(OCAMLDEP)
 
 $(ROOT)/bin/ocamldep: ocamldep
 	/bin/cp -pf ocamldep $@
 
-%.cmo: %.ml
-	$(OCAMLC) -c $*.ml
+%.cmx: %.ml
+	$(OCAMLOPT) -c $*.ml
 
 %.cmi: %.mli
 	$(OCAMLC) -c $*.mli
@@ -32,5 +33,5 @@ clean:
 
 depend:
 
-ocamldep.cmo: misc.cmi
-misc.cmo: misc.cmi
+ocamldep.cmx: misc.cmi
+misc.cmx: misc.cmi
