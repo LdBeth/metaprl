@@ -843,6 +843,21 @@ struct
          raise (ProofRefineError ("replace", proof, StringIntError ("illegal address", i)))
 
    (*
+    * Replace the current goal of a node.
+    *)
+   let rec replace_goal_ext goal = function
+      Goal _ ->
+         Goal goal
+    | RuleBox rb ->
+         RuleBox { rb with
+            rule_status = LazyStatusDelayed;
+            rule_extract_normalized = true;
+            rule_extract = replace_goal_ext goal rb.rule_extract
+         }
+    | node ->
+         Unjustified (goal, leaves_ext node)
+
+   (*
     * Match the subgoal list with the existing subgoals.
     * Split them into children and extras that don't match up.
     * Be careful not to change the arguments if not necessary.
@@ -910,7 +925,8 @@ struct
                   Goal _, _ -> find_leaf tactic_arg_alpha_equal_concl leaf subgoals
                 | answer -> answer
             with
-               RuleBox rb, subgoals -> RuleBox { rb with rule_extract = Goal leaf}, subgoals
+               RuleBox _ as node , subgoals ->
+                  replace_goal_ext leaf node, subgoals
              | answer -> answer
             end
        | answer ->
@@ -1674,18 +1690,7 @@ struct
     * Set the goal of the current node.
     *)
    let set_goal_ext node mseq =
-      let goal = goal_ext node in
-      let arg = Goal { goal with ref_goal = mseq } in
-      match node with
-         RuleBox ri ->
-            RuleBox { ri with
-               rule_status = LazyStatusDelayed;
-               rule_extract_normalized = true;
-               rule_extract = arg;
-               rule_leaves = LazyLeavesDelayed;
-            }
-       | _ ->
-         arg
+      replace_goal_ext { (goal_ext node) with ref_goal = mseq } node
 
    let set_goal postf proof mseq =
       let node = set_goal_ext proof.pf_node mseq in
