@@ -49,7 +49,8 @@ if $(NATIVE_PROFILING_ENABLED)
 #
 # Other libraries that we always want to include
 #
-OCAML_CLIBS = $(ROOT)/clib/clib $(ROOT)/libmojave/cutil/liblmcutil
+#OCAML_CLIBS = $(ROOT)/clib/clib $(ROOT)/libmojave/cutil/liblmcutil
+OCAML_CLIBS = $(LIB)/clib $(LIB)/liblmcutil
 OCAML_OTHER_LIBS += str
 OCAML_LIBS =\
         $(LIB)/lm\
