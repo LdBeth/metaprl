@@ -31,6 +31,7 @@
  *)
 extends Nuprl_font
 extends Base_dform
+extends Ocaml
 
 open Lm_debug
 

@@ -82,18 +82,18 @@ let _ =
 (*
  * Special forms.
  *)
-declare "as"{'a;'b}
-declare wildcard
-declare choice{'a;'b}
-declare range{'a;'b}
-declare patt_let
-declare patt_fix
-declare patt_reverse
-declare patt_else
-declare patt_char[s:s]{'p1}
-declare patt_int[i:n]{'p1}
-declare patt_string[s:s]{'p1}
-declare patt_float[s:s]{'p1}
+declare "as"{'a : Ocaml;'b : Ocaml} : Ocaml
+declare wildcard : Ocaml
+declare choice{'a : Ocaml;'b : Ocaml} : Ocaml
+declare range{'a : Ocaml;'b : Ocaml} : Ocaml
+declare patt_let : Ocaml
+declare patt_fix : Ocaml
+declare patt_reverse : Ocaml
+declare patt_else : Ocaml
+declare patt_char[s:s]{'p1 : Ocaml} : Ocaml
+declare patt_int[i:n]{'p1 : Ocaml} : Ocaml
+declare patt_string[s:s]{'p1 : Ocaml} : Ocaml
+declare patt_float[s:s]{'p1 : Ocaml} : Ocaml
 
 (*
  * Final form.
@@ -293,7 +293,7 @@ dform patt_list_end_df2 : patt_format{patt_list_end[start:n, finish:n]{'p1}; 'p2
 (*
  * Tuple pattern.
  *)
-declare patt_tuple{'p1; 'p2; 'p3; 'p4}
+declare patt_tuple{'p1 : Ocaml; 'p2 : Ocaml; 'p3 : Ocaml; 'p4 : Ocaml} : Ocaml
 
 dform patt_tuple_df1 : patt_format{patt_tuple{'p1}; 'p2} =
    patt_format{'p1; ocons{onil; 'p2}}
@@ -371,7 +371,7 @@ dform patt_in_df2 : patt_format{patt_in[start:n, finish:n]{'e1}; 'e2} =
 (*
  * "Fix" forms.
  *)
-declare patt_fix_arg
+declare patt_fix_arg : Ocaml
 
 dform patt_fix_and_df1 : patt_format{patt_fix_and{'p1}; 'p2} =
    patt_format{'p1; 'p2}

@@ -31,6 +31,7 @@
  *)
 extends Nuprl_font
 extends Base_dform
+extends Ocaml
 
 (************************************************************************
  * DISPLAY UTILITIES                                                    *
@@ -39,84 +40,84 @@ extends Base_dform
 (*
  * Operators.
  *)
-declare "[" : Dform
-declare "]" : Dform
-declare "[|" : Dform
-declare "|]" : Dform
-declare "[<" : Dform
-declare ">]" : Dform
-declare "{" : Dform
-declare "}" : Dform
-declare "(" : Dform
-declare ")" : Dform
+declare "[" : Ocaml
+declare "]" : Ocaml
+declare "[|" : Ocaml
+declare "|]" : Ocaml
+declare "[<" : Ocaml
+declare ">]" : Ocaml
+declare "{" : Ocaml
+declare "}" : Ocaml
+declare "(" : Ocaml
+declare ")" : Ocaml
 
-declare "+" : Dform
-declare "-" : Dform
-declare "*" : Dform
-declare "/" : Dform
-declare "mod" : Dform
+declare "+" : Ocaml
+declare "-" : Ocaml
+declare "*" : Ocaml
+declare "/" : Ocaml
+declare "mod" : Ocaml
 
-declare "&" : Dform
-declare "or" : Dform
-declare "=" : Dform
-declare "==" : Dform
-declare "::" : Dform
-declare ":=" : Dform
-declare "." : Dform
-declare ".(" : Dform
-declare ".[" : Dform
-declare ":>" : Dform
-declare ";" : Dform
-declare "->" : Dform
-declare "|" : Dform
-declare "<>" : Dform
-declare ":" : Dform
-declare "_" : Dform
-declare "#" : Dform
-declare "'" : Dform
-declare "\"" : Dform
+declare "&" : Ocaml
+declare "or" : Ocaml
+declare "=" : Ocaml
+declare "==" : Ocaml
+declare "::" : Ocaml
+declare ":=" : Ocaml
+declare "." : Ocaml
+declare ".(" : Ocaml
+declare ".[" : Ocaml
+declare ":>" : Ocaml
+declare ";" : Ocaml
+declare "->" : Ocaml
+declare "|" : Ocaml
+declare "<>" : Ocaml
+declare ":" : Ocaml
+declare "_" : Ocaml
+declare "#" : Ocaml
+declare "'" : Ocaml
+declare "\"" : Ocaml
 
-declare "_if" : Dform
-declare "_then" : Dform
-declare "_else" : Dform
+declare "_if" : Ocaml
+declare "_then" : Ocaml
+declare "_else" : Ocaml
 
-declare "_for" : Dform
-declare "_while" : Dform
-declare "_to" : Dform
-declare "_downto" : Dform
-declare "_do" : Dform
-declare "_done" : Dform
+declare "_for" : Ocaml
+declare "_while" : Ocaml
+declare "_to" : Ocaml
+declare "_downto" : Ocaml
+declare "_do" : Ocaml
+declare "_done" : Ocaml
 
-declare "_new" : Dform
-declare "_fun" : Dform
-declare "_match" : Dform
-declare "_try" : Dform
-declare "_type" : Dform
-declare "_exception" : Dform
-declare "_let" : Dform
-declare "_letrec" : Dform
-declare "_in" : Dform
-declare "_and" : Dform
-declare "_with" : Dform
-declare "_val" : Dform
-declare "_as" : Dform
-declare "_external" : Dform
-declare "_of" : Dform
+declare "_new" : Ocaml
+declare "_fun" : Ocaml
+declare "_match" : Ocaml
+declare "_try" : Ocaml
+declare "_type" : Ocaml
+declare "_exception" : Ocaml
+declare "_let" : Ocaml
+declare "_letrec" : Ocaml
+declare "_in" : Ocaml
+declare "_and" : Ocaml
+declare "_with" : Ocaml
+declare "_val" : Ocaml
+declare "_as" : Ocaml
+declare "_external" : Ocaml
+declare "_of" : Ocaml
 
-declare "_module" : Dform
-declare "_moduletype" : Dform
-declare "_open" : Dform
-declare "_sig" : Dform
-declare "_struct" : Dform
-declare "_functor" : Dform
-declare "_end" : Dform
+declare "_module" : Ocaml
+declare "_moduletype" : Ocaml
+declare "_open" : Ocaml
+declare "_sig" : Ocaml
+declare "_struct" : Ocaml
+declare "_functor" : Ocaml
+declare "_end" : Ocaml
 
-declare push_indent : Dform
+declare push_indent : Ocaml
 
 (*
  * Display control tags.
  *)
-declare patt_format{'a : Dform; 'b} : Dform
+declare patt_format{'a : Ocaml; 'b : Ocaml} : Ocaml
 
 (*
  * -*-

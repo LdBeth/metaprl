@@ -36,10 +36,10 @@ extends Ocaml_base_df
 (*
  * Display flags.
  *)
-declare ident_expr{'expr}
-declare list_expr{'l}
-declare se_list{'l}
-declare ee_list{'l}
+declare ident_expr{'expr : Ocaml} : Ocaml
+declare list_expr{'l : Ocaml} : Ocaml
+declare se_list{'l : Ocaml} : Ocaml
+declare ee_list{'l : Ocaml} : Ocaml
 
 (*
  * Precedences.

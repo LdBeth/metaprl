@@ -105,8 +105,8 @@ dform str_type_df2 : str_type[start:n, finish:n]{'tdl} =
 (*
  * Value definition.
 *)
-declare and_let{'pel}
-declare str_let{'e}
+declare and_let{'pel : Ocaml} : Ocaml
+declare str_let{'e : Ocaml} : Ocaml
 
 dform str_let_df1 : str_let{patt_var[s1:n, f1:n]{v. patt_in[s2:n, f2:n]{'p}}; 'e} =
    (* slot{'v} *) "=" slot{'e}

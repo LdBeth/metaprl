@@ -42,12 +42,12 @@ let _ =
 (*
  * Special flags.
  *)
-declare ident_expr{'expr}
-declare list_expr{'l}
-declare se_list{'l}
-declare ee_list{'l}
-declare ee_list'{'l}
-declare e_list{'l}
+declare ident_expr{'expr : Ocaml} : Ocaml
+declare list_expr{'l : Ocaml} : Ocaml
+declare se_list{'l : Ocaml} : Ocaml
+declare ee_list{'l : Ocaml} : Ocaml
+declare ee_list'{'l : Ocaml} : Ocaml
+declare e_list{'l : Ocaml}
 
 (*
  * Precedences.
@@ -96,7 +96,7 @@ dform df_rev_concat_onil2 : mode[src] :: mode[html] :: mode[prl] :: mode[tex] ::
 (*
  * Type hacking.
  *)
-declare df_term{'t : Dform} : Term
+declare df_term{'t : Dform} : Ocaml
 
 dform df_term_df : df_term{'t} =
    't
@@ -158,8 +158,8 @@ dform proj_df2 : "proj"[start:n, finish:n]{'A; 'B} =
 (*
  * Application.
  *)
-declare "apply"[lid:s]{'e1; 'e2} : Dform
-declare apply_cons_list_parse{'reversed_parsed; 'tail : Dform} : Dform
+declare "apply"[lid:s]{'e1 : Ocaml; 'e2 : Ocaml} : Ocaml
+declare apply_cons_list_parse{'reversed_parsed : Ocaml; 'tail : Ocaml} : Ocaml
 
 dform apply_df1 : parens :: "prec"[prec_apply] :: "apply"{'e1; 'e2} =
    pushm[0] slot{'e1} hspace slot{'e2} popm
@@ -167,7 +167,7 @@ dform apply_df1 : parens :: "prec"[prec_apply] :: "apply"{'e1; 'e2} =
 dform apply_df2 : "apply"[start:n, finish:n]{'e1; 'e2} =
    "apply"{'e1; 'e2}
 
-dform apply_df3 : "apply"{."apply"{.lid{lid[name:s]}; 'e1}; 'e2} =
+dform apply_df3 : "apply"{"apply"{lid{lid[name:s]}; 'e1}; 'e2} =
    szone{"apply"[name:s]{'e1; 'e2}}
 
 dform apply_df4 : "apply"{."apply"[start1:n, finish1:n]{.lid[start2:n, finish2:n]{lid[name:s]}; 'e1}; 'e2} =
@@ -405,7 +405,7 @@ dform class_coerce_df2 : class_coerce[start:n, finish:n]{'e1; 'e2} =
 (*
  * New object.
  *)
-declare "new"{'e1}
+declare "new"{'e1 : Ocaml}
 
 dform new_df1 : parens :: "prec"[prec_not] :: "new"{'e1} =
    "_new" slot{'e1}
