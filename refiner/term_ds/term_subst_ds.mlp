@@ -143,7 +143,7 @@ struct
          if (v1=v2)
          then join_vars (remove_var v1 vars) (vt1,vt2)
          else (v1,v2)::(join_vars vars (vt1,vt2))
-    | _ -> raise (Invalid_argument ("join_vars"))
+    | _ -> raise (Failure ("join_vars"))
 
    let rec equal_term vars t t' =
       let vars = StringSet.fst_mem_filt t.free_vars vars in
@@ -178,11 +178,11 @@ struct
 
    let alpha_equal t1 t2 = 
       try equal_term [] t1 t2 with
-         Invalid_argument _ -> false
+         Failure _ -> false
 
    let alpha_equal_vars (t, v) (t', v') =
       try equal_term (List_util.zip v v') t t' with
-         Invalid_argument _ -> false
+         Failure _ -> false
 
    (*
     * The meaning of
