@@ -357,10 +357,13 @@ struct
     * Count the hyps.
     *)
    let num_hyps_name = "Term_man_ds.num_hyps"
-   let num_hyps t =
-      match get_core t with
+   let rec num_hyps t =
+      match t.core with
          Sequent s ->
             SeqHyp.length s.sequent_hyps
+       | Subst _ ->
+            get_core t;
+            num_hyps t
        | _ ->
             ref_raise(RefineError (num_hyps_name, TermMatchError (t, "not a sequent")))
 
@@ -384,13 +387,13 @@ struct
     * Fast access to hyp and concl. Counting starts from 1.
     *)
    let nth_hyp_name = "Term_man_ds.nth_hyp"
-   let nth_hyp t i =
-      if i <= 0 then
-         ref_raise(RefineError (nth_hyp_name, StringError "negative address"))
-      else
-         let i = pred i in
-            match get_core t with
-               Sequent s ->
+   let rec nth_hyp t i =
+      match t.core with
+         Sequent s ->
+            if i <= 0 then
+               ref_raise(RefineError (nth_hyp_name, StringError "negative address"))
+            else
+               let i = pred i in
                   if i < SeqHyp.length s.sequent_hyps then
                      match s.sequent_hyps.(i) with
                         Hypothesis (v, t) ->
@@ -399,8 +402,11 @@ struct
                            ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
                   else
                      ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not enough hyps")))
-             | _ ->
-                  ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
+       | Subst _ ->
+            get_core t;
+            nth_hyp t i
+       | _ ->
+            ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
 
    let nth_concl_name = "Term_man_ds.nth_concl"
    let nth_concl t i =
