@@ -18,6 +18,13 @@
    note     = ""
 }
 
+@InProceedings{Hic99b,
+  author =       {Hickey, Jason J.},
+  title =        {Fault-Tolerant Distributed Theorem Proving},
+  pages =        {227--231},
+  crossref =     {CADE99}
+}
+
 @inproceedings{NH02,
    author   = "Aleksey Nogin and Jason Hickey",
    title    = "Sequent Schema for Derived Rules",
@@ -87,6 +94,21 @@
    author = "Jason J. Hickey and Brian Aydemir and Yegor Bryukhov and Alexei Kopylov and Aleksey Nogin and Xin Yu",
    title  = "A Listing of {\MetaPRL} Theories",
    note   = "\url{http://metaprl.org/theories.pdf}"
+}
+
+@Proceedings{CADE99,
+  title =        {Proceedings of the 16$^{th}$ International Conference on
+Automated Deduction},
+  booktitle =    {Proceedings of the 16$^{th}$ International Conference on
+Automated Deduction},
+  editor =       {Harald Ganzinger},
+  volume =       1632,
+  series =       LNAI,
+  year =         1999,
+  publisher =    {Trento, Italy},
+  address =      {Berlin},
+  month =        {July 7--10},
+  ISBN =         {3-540-66222-7}
 }
 
 @proceedings{CSL01,
