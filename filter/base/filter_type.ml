@@ -38,6 +38,13 @@ open TermMeta
 open Opname
 open Dform
 
+(*
+ * OMakefile instructs omake to watch this file for changes and warn
+ * that filter_magic.ml may need to be updated when the types in this file
+ * change. _Do not delete_ the following marker.
+ * %%MAGICBEGIN%%
+ *)
+
 (************************************************************************
  * COMMON ERRORS                                                        *
  ************************************************************************)
@@ -320,6 +327,8 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  | Comment of 'term
  | InputForm of ('term, 'proof, 'expr) rewrite_info
  | Definition of ('term, 'expr) opname_definition
+
+(* %%MAGICEND%% *)
 
 (*
  * These type define what info do we need during parsing to identify opnames and context bindings

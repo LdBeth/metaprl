@@ -59,6 +59,7 @@ FILTER_MAGIC[] =
     $(ROOT)/refiner/refsig/term_sig.mlz
     $(ROOT)/refiner/term_ds/term_ds_sig.mlz
     $(ROOT)/refiner/reflib/ascii_io.ml
+    filter_type.mlz
 
 filter_magic.cmo: .magic
 filter_magic.cmx: .magic
