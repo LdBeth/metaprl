@@ -85,7 +85,8 @@ struct
    open RewriteUtil
 
    type state =
-      { st_addrs : var array;
+      { st_ints : var array;
+        st_addrs : var array;
         st_strict : bool;               (* Whether we should be using the strict semantics *)
         st_patterns : bool;             (* Whether SO variable instances are allowed to define patterns *)
         st_svars : SymbolSet.t;         (* Stack variables to avoid clashing with *)
@@ -264,7 +265,7 @@ struct
                let index = List.length stack in
                let stack = stack @ [CVar (v, conts, List.length vars)] in
                let stack, term = compile_so_redex_term { st with st_bconts = (v,index)::st.st_bconts } stack term in
-               let term = RWSOContext(Lm_array_util.index v st.st_addrs, index, term, vars') in
+               let aindex = Lm_array_util.index v st.st_addrs in
                let restrict_free = if st.st_strict then Lm_list_util.subtract (List.map bvar_ind st.st_bvars) vars' else [] in
                let restrict_conts =
                   if st.st_strict then
@@ -278,11 +279,9 @@ struct
                in
                let t =
                   if restrict_free = [] && restrict_conts = [] then
-                     term
+                     RWSOContext(aindex, index, term, vars')
                   else
-                     (* RWFreeVars(term,restrict_conts,restrict_free) *)
-                     (* XXX: TODO *)
-                     raise (Invalid_argument "compile_so_redex_term: free variable restrictions on SO contexts are not implemented")
+                     RWSOFreeVarsContext(restrict_conts, restrict_free, aindex, index, term, vars')
                in
                   stack, t
             else
@@ -421,12 +420,12 @@ struct
                   else
                      let index =
                         if i = mc then
-                           if Lm_array_util.mem v st.st_addrs then
+                           if Lm_array_util.mem v st.st_ints then
                               REF_RAISE (RefineError ("compile_so_redex_sequent_inner", StringVarError("Last context of the sequent does not need to be passed in as an argument",v)))
                            else
                               i - len
-                        else if Lm_array_util.mem v st.st_addrs then
-                           Lm_array_util.index v st.st_addrs
+                        else if Lm_array_util.mem v st.st_ints then
+                           Lm_array_util.index v st.st_ints
                         else
                            REF_RAISE (RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
                      in
@@ -509,11 +508,17 @@ struct
     | RWSOInstance _ as t ->
          t (* No need to map the subterms since there can not be any patterns there *)
     | RWSOContext (i, j, t, il) ->
-         let t = RWSOContext (i, j, map_restricts_term restr t, il) in
+         let t = map_restricts_term restr t in
             if List.mem_assoc j restr then
-               RWFreeVars(t, List.assoc j restr, [])
+               RWSOFreeVarsContext (List.assoc j restr, [], i, j, t, il)
             else
-               t
+               RWSOContext (i, j, t, il)
+    | RWSOFreeVarsContext(rconts, rvars, i, j, t, il) ->
+         let t = map_restricts_term restr t in
+            if List.mem_assoc j restr then
+               RWSOFreeVarsContext((List.assoc i restr) @ rconts, rvars, i, j, t, il)
+            else
+               RWSOFreeVarsContext(rconts, rvars, i, j, t, il)
     | RWFreeVars(t, rconts, rvars) ->
          begin match map_restricts_term restr t with
             RWFreeVars(t, rconts', rvars') ->
@@ -552,13 +557,14 @@ struct
     | RWSeqContextInstance (i, ts) ->
          RWSeqContextInstance (i, List.map (map_restricts_term restr) ts)
 
-   let compile_so_redex strict addrs = function
+   let compile_so_redex strict params = function
       [] -> [||], []
     | (goal :: args) as allargs ->
          let st =
             { st_patterns = true;
               st_strict = (strict=Strict);
-              st_addrs = addrs;
+              st_ints = params.spec_ints;
+              st_addrs = params.spec_addrs;
               st_svars = free_vars_terms allargs;
               st_bvars = [];
               st_bconts = [];

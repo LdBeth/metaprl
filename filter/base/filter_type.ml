@@ -159,7 +159,8 @@ type ('ctyp, 'expr) resource_str = {
 }
 
 type 'term param =
-   ContextParam of var
+   IntParam of var
+ | AddrParam of var
  | TermParam of 'term
 
 (*

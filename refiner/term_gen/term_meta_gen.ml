@@ -162,7 +162,9 @@ struct
     | MetaImplies (a, b)
     | MetaFunction (_, a, b)
     | MetaIff (a, b) ->
-         SymbolSet.union (context_vars a) (context_vars b)
+         let i1, a1 = context_vars a in
+         let i2, a2 = context_vars b in
+            (SymbolSet.union i1 i2), (SymbolSet.union a1 a2)
     | MetaLabeled (_, t) ->
          context_vars t
 

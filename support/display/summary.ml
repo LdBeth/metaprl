@@ -77,6 +77,7 @@ extends Ocaml_df
 
 open Lm_debug
 
+open Term_addr_sig
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 
@@ -258,14 +259,19 @@ doc <:doc< @docoff >>
 declare "context_param"[name:v]
 declare "term_param"{'t}
 
+declare addr_subterm[i:n]
+declare addr_arg
+declare addr_clause[i:n]
+
 (* Arguments *)
-declare "int_arg"[i:n]
-declare "term_arg"{'t}
-declare "type_arg"{'t}
-declare "bool_arg"[s:t]
-declare "string_arg"[s:s]
-declare "term_list_arg"{'t}
-declare "arglist"{'t}
+declare int_arg[i:n]
+declare term_arg{'t}
+declare type_arg{'t}
+declare addr_arg{'t}
+declare bool_arg[s:t]
+declare string_arg[s:s]
+declare term_list_arg{'t}
+declare arglist{'t}
 
 (* Proofs *)
 
@@ -635,6 +641,11 @@ dform term_arg_df : term_arg{'t} =
 dform type_arg_df : type_arg{'t} =
    't
 
+dform addr_arg_df : addr_arg{'t} =
+   szone pushm[2] `"[ " df_concat{hspace; 't} popm hspace `"]" ezone
+
+dform addr_arg_nil : addr_arg{nil} = `"[]"
+
 dform bool_arg_df : bool_arg[s:t] =
    slot[s:t]
 
@@ -646,6 +657,11 @@ dform term_list_arg_df : term_list_arg{'terms} =
 
 dform arglist_df1 : arglist{'args} =
    szone pushm df_concat{slot[" "];'args} popm ezone
+
+dform addr_subterm_df : addr_subterm[i:n] = slot[i:n]
+dform addr_arg_df : addr_arg = `"Arg"
+dform addr_clause_df : addr_clause[i:n] = `"Hyp " slot[i:n]
+dform addr_clause_df2 : addr_clause[0] = `"Goal"
 
 (********************************
  * Proofs.
@@ -883,12 +899,18 @@ let dest_rule_box t =
 let mk_proof_term main goal status text subgoals = <:con< "proof"{$main$; $goal$; $status$; $text$; $subgoals$} >>
 let dest_proof = five_subterms
 
+let mk_addr_term = function
+   Subterm i -> <:con< addr_subterm[$int:i$] >>
+ | ArgAddr -> << addr_arg >>
+ | ClauseAddr i -> <:con< addr_clause[$int:i$] >>
+
 let mk_int_arg_term i = <:con< int_arg[$int:i$] >>
 let mk_term_arg_term t = <:con< term_arg{$t$} >>
 let mk_type_arg_term t = <:con< type_arg{$t$} >>
 let mk_bool_arg_term b = if b then << bool_arg["true":t] >> else << bool_arg["false":t] >>
 let mk_string_arg_term s = <:con< string_arg[$s$:s] >>
 let mk_term_list_arg_term tl = <:con< term_list_arg{$mk_xlist_term tl$} >>
+let mk_addr_arg_term al = <:con< addr_arg{$mk_xlist_term (List.map mk_addr_term al)$} >>
 let mk_arglist_term tl = <:con< arglist{$mk_xlist_term tl$} >>
 
 (*

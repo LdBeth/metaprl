@@ -36,6 +36,7 @@ open Term_base_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
+open Rewrite_sig
 open Refine_error_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
@@ -60,7 +61,7 @@ module MakeRewriteMatchRedex
    open TermType
    open RewriteDebug
 
-   val match_redex : int array -> stack array -> SymbolSet.t -> term -> term list -> rwterm list -> unit
+   val match_redex : TermAddr.address rw_args_poly -> stack array -> SymbolSet.t -> term -> term list -> rwterm list -> unit
 end
 
 (*

@@ -41,9 +41,9 @@ open Filter_type
  *)
 val collect_cvars : term param list -> rewrite_args_spec
 val collect_terms : term param list -> term list
-val split_params : term param list -> var list * term list
-val name_params : term param list -> string list * string list * string list
-val extract_params : SymbolSet.t -> term list -> term param list
+val split_params : term param list -> var list * var list * term list
+val name_params : term param list -> string list * string list * string list * string list
+val extract_params : SymbolSet.t * SymbolSet.t -> term list -> term param list
 
 (*
  * -*-

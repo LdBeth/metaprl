@@ -45,6 +45,7 @@ open Lm_thread
 
 open Opname
 open Refiner.Refiner
+open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
@@ -150,6 +151,8 @@ let term_of_arg = function
       Summary.mk_string_arg_term s
  | TermListArg tl ->
       Summary.mk_term_list_arg_term tl
+ | AddrArg a ->
+      Summary.mk_addr_arg_term (dest_address a)
 
 let term_of_arglist args =
    Summary.mk_arglist_term (List.map term_of_arg (Tactic.expand_arglist args))

@@ -119,13 +119,15 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          MatchTerm of string list * match_param list * bound_term' list
        | MatchSequent of string list * match_term list * hypothesis list * term
 
-      type term_extract = int array -> term list -> term -> term list -> term
+      type rw_args = address rw_args_poly
+      type rewrite_args = rw_args * SymbolSet.t
+      type term_extract = rw_args -> term list -> term -> term list -> term
       type ml_rewrite = term -> term
       type ml_cond_rewrite = SymbolSet.t -> term list -> term -> term * term list * term_extract
-      type ml_rule = int array -> msequent -> term list -> msequent list *  term_extract
+      type ml_rule = rw_args -> msequent -> term list -> msequent list *  term_extract
 
       type extract_description =
-         EDRule of opname * int list * term list
+         EDRule of opname * int list * address list * term list
        | EDRewrite
        | EDCondREwrite
        | EDComposition
@@ -133,10 +135,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
        | EDCut of term
        | EDIdentity
 
-      type prim_tactic = int array -> term list -> tactic
+      type prim_tactic = rw_args -> term list -> tactic
       type prim_rewrite =
          PrimRW of rw
-       | CondRW of (int array -> term list -> cond_rewrite)
+       | CondRW of (rw_args -> term list -> cond_rewrite)
 
       let sequent_shape = TermShape1.sequent_shape, TermShape2.sequent_shape
       let var_shape = TermShape1.var_shape, TermShape2.var_shape
@@ -328,9 +330,17 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
     | Err1.BTermMatch bt -> BTermMatch (bterm_of_bterm1 bt)
     | Err1.HypMatch h -> HypMatch (hyps_of_hyps1 h)
 
-   let addr_of_addr1 _ =
-      (* XXX: HACK: this is fake *)
-      TermAddr1.make_address [], TermAddr2.make_address []
+   let addr_of_addr1 a =
+      a, (TermAddr2.make_address (TermAddr1.dest_address a))
+
+   let addr_of_addr2 a =
+      (TermAddr1.make_address (TermAddr2.dest_address a)), a
+
+   let rwargs_of_rwargs1 a =
+      { a with arg_addrs = Array.map addr_of_addr1 a.arg_addrs }
+
+   let rwargs_of_rwargs2 a =
+      { a with arg_addrs = Array.map addr_of_addr2 a.arg_addrs }
 
    let rec re_of_re1 = function
     | Err1.GenericError -> GenericError
@@ -410,6 +420,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       None -> None, None
     | Some (a, b) -> Some a, Some b
 
+   let split_array a =
+      (Array.map fst a), (Array.map snd a)
+
    let split_pop (po, (p1, p2)) =
       let po1, po2 = split_opt po in ((po1, p1), (po2, p2))
 
@@ -482,6 +495,14 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
     | MetaLabeled (s, mt) ->
          let mt1, mt2 = split_meta_term mt in MetaLabeled (s, mt1), MetaLabeled (s, mt2)
 
+   let split_args a =
+      let aa1, aa2 = split_array a.arg_addrs in
+         { a with arg_addrs = aa1 }, { a with arg_addrs = aa2 }
+
+   let split_rewrite_args (a, ss) =
+      let a1, a2 = split_args a in
+         (a1, ss), (a2, ss)
+
    let split_taf f =
       (fun t1 -> f (term_of_term1 t1)), (fun t2 -> f (term_of_term2 t2))
 
@@ -509,8 +530,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       (fun ia ms tl -> raise (Invalid_argument "Refine_debug.split_ml_rule: not implemented"))
 
    let split_term_extract e =
-      (fun ia tla t tlb -> fst (e ia (List.map term_of_term1 tla) (term_of_term1 t) (List.map term_of_term1 tlb))),
-      (fun ia tla t tlb -> snd (e ia (List.map term_of_term2 tla) (term_of_term2 t) (List.map term_of_term2 tlb)))
+      (fun a tla t tlb ->
+         fst (e (rwargs_of_rwargs1 a) (List.map term_of_term1 tla) (term_of_term1 t) (List.map term_of_term1 tlb))),
+      (fun a tla t tlb ->
+         snd (e (rwargs_of_rwargs2 a) (List.map term_of_term2 tla) (term_of_term2 t) (List.map term_of_term2 tlb)))
 
    let split_ml_cond_rewrite crw =
       (fun s tl t ->
@@ -645,6 +668,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let merge_msequents =  merge_list merge_msequent "msequent"
    let merge_addresss = merge_list merge_address "address"
    let merge_params = merge_list merge_param "param"
+   let merge_address_arr = merge_array merge_address "address"
 
    let merge_param' x p1 p2 =
       match p1, p2 with
@@ -822,11 +846,18 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    and merge_match_terms x mtl1 mtl2 = merge_list merge_match_term "match term" x mtl1 mtl2
 
-   let merge_rwspecs x (sp1: rewrite_args_spec) sp2 =
-      merge_var_arr x sp1 sp2
+   let merge_rwspecs x sp1 sp2 = {
+      spec_addrs = merge_var_arr x sp1.spec_addrs sp2.spec_addrs;
+      spec_ints = merge_var_arr x sp1.spec_ints sp2.spec_ints
+   }
 
-   let merge_rwargs x (ia1, ss1) (ia2, ss2) =
-      (merge_int_arr x ia1 ia2), (merge_ss x ss1 ss2)
+   let merge_rwargs x a1 a2 = {
+      arg_ints = merge_int_arr x a1.arg_ints a2.arg_ints;
+      arg_addrs = merge_address_arr x a1.arg_addrs a2.arg_addrs
+   }
+
+   let merge_rewrite_args x (a1, ss1) (a2, ss2) =
+      (merge_rwargs x a1 a2), (merge_ss x ss1 ss2)
 
    let merge_rwtyp x (rwt1: rewrite_type) rwt2 =
       if rwt1 <> rwt2 then
@@ -869,8 +900,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let merge_extract_description x ed1 ed2 =
       match ed1, ed2 with
-         Refine1.EDRule (o1, il1, tl1), Refine2.EDRule (o2, il2, tl2) ->
-            EDRule (merge_opname x o1 o2, merge_ints x il1 il2, merge_terms x tl1 tl2)
+         Refine1.EDRule (o1, il1, al1, tl1), Refine2.EDRule (o2, il2, al2, tl2) ->
+            EDRule (merge_opname x o1 o2, merge_ints x il1 il2, merge_addresss x al1 al2, merge_terms x tl1 tl2)
        | Refine1.EDRewrite, Refine2.EDRewrite -> EDRewrite
        | Refine1.EDCondREwrite, Refine2.EDCondREwrite -> EDCondREwrite
        | Refine1.EDComposition, Refine2.EDComposition -> EDComposition
@@ -884,14 +915,20 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let merge_dos = merge_list merge_do "dependency * opname"
 
-   let merge_prim_tactic x pt1 pt2 ia tl =
-      let tl1, tl2 = split tl in merge merge_triv x (wrap2 pt1 ia tl1) (wrap2 pt2 ia tl2)
+   let merge_prim_tactic x pt1 pt2 a tl =
+      let a1, a2 = split_args a in
+      let tl1, tl2 = split tl in merge merge_triv x (wrap2 pt1 a1 tl1) (wrap2 pt2 a2 tl2)
 
    let merge_prim_rewrite x pr1 pr2 =
       match pr1, pr2 with
          Refine1.PrimRW rw1, Refine2.PrimRW rw2 -> PrimRW (rw1, rw2)
        | Refine1.CondRW rw1, Refine2.CondRW rw2 ->
-            CondRW (fun ia tl -> let tl1, tl2 = split tl in merge merge_triv x (wrap2 rw1 ia tl1) (wrap2 rw2 ia tl2))
+            let rw a tl =
+               let tl1, tl2 = split tl in
+               let a1, a2 = split_args a in
+                  merge merge_triv x (wrap2 rw1 a1 tl1) (wrap2 rw2 a2 tl2)
+            in
+               CondRW rw
        | _ -> report_error x "prim_rewrite kind mismatch"
 
    module SeqHyp = struct
@@ -2067,7 +2104,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       let context_vars (p0 : term) =
          let p0_1, p0_2 = p0 in
-         merge merge_ss "TermMan.context_vars" (wrap1 TermMan1.context_vars p0_1) (wrap1 TermMan2.context_vars p0_2)
+         let res1 = wrap1 TermMan1.context_vars p0_1 in
+         let res2 = wrap1 TermMan2.context_vars p0_2 in
+         let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermMan.context_vars" res1 res2 in
+         (merge_ss "TermMan.context_vars - 0" res0_1 res0_2),
+         (merge_ss "TermMan.context_vars - 1" res1_1 res1_2)
 
       let explode_term (p0 : term) =
          let p0_1, p0_2 = p0 in
@@ -2358,7 +2399,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       let context_vars (p0 : meta_term) =
          let p0_1, p0_2 = split_meta_term p0 in
-         merge merge_ss "TermMeta.context_vars" (wrap1 TermMeta1.context_vars p0_1) (wrap1 TermMeta2.context_vars p0_2)
+         let res1 = wrap1 TermMeta1.context_vars p0_1 in
+         let res2 = wrap1 TermMeta2.context_vars p0_2 in
+         let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermMeta.context_vars" res1 res2 in
+         (merge_ss "TermMeta.context_vars - 0" res0_1 res0_2),
+         (merge_ss "TermMeta.context_vars - 1" res1_1 res1_2)
 
       let meta_alpha_equal (p0 : meta_term) (p1 : meta_term) =
          let p0_1, p0_2 = split_meta_term p0 in
@@ -2439,6 +2484,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    end
 
    module Rewrite = struct
+      module RwTypes = TermType
       include TermType
 
       (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
@@ -2446,8 +2492,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let empty_args_spec =
          merge_rwspecs "Rewrite.empty_args_spec" (Rewrite1.empty_args_spec) (Rewrite2.empty_args_spec)
 
+      let empty_rw_args =
+         merge_rwargs "Rewrite.empty_rw_args" (Rewrite1.empty_rw_args) (Rewrite2.empty_rw_args)
+
       let empty_args =
-         merge_rwargs "Rewrite.empty_args" (Rewrite1.empty_args) (Rewrite2.empty_args)
+         merge_rewrite_args "Rewrite.empty_args" (Rewrite1.empty_args) (Rewrite2.empty_args)
 
       let compile_redex (p0 : strict) (p1 : rewrite_args_spec) (p2 : term) =
          let p2_1, p2_2 = p2 in
@@ -2461,17 +2510,19 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_rwtvl "Rewrite.extract_redex_types" (wrap1 Rewrite1.extract_redex_types p0_1) (wrap1 Rewrite2.extract_redex_types p0_2)
 
-      let test_redex_applicability (p0 : rewrite_redex) (p1 : int array) (p2 : term) (p3 : term list) =
+      let test_redex_applicability (p0 : rewrite_redex) (p1 : rw_args) (p2 : term) (p3 : term list) =
          let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = split_args p1 in
          let p2_1, p2_2 = p2 in
          let p3_1, p3_2 = split p3 in
-         merge merge_unit "Rewrite.test_redex_applicability" (wrap4 Rewrite1.test_redex_applicability p0_1 p1 p2_1 p3_1) (wrap4 Rewrite2.test_redex_applicability p0_2 p1 p2_2 p3_2)
+         merge merge_unit "Rewrite.test_redex_applicability" (wrap4 Rewrite1.test_redex_applicability p0_1 p1_1 p2_1 p3_1) (wrap4 Rewrite2.test_redex_applicability p0_2 p1_2 p2_2 p3_2)
 
-      let apply_redex (p0 : rewrite_redex) (p1 : int array) (p2 : term) (p3 : term list) =
+      let apply_redex (p0 : rewrite_redex) (p1 : rw_args) (p2 : term) (p3 : term list) =
          let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = split_args p1 in
          let p2_1, p2_2 = p2 in
          let p3_1, p3_2 = split p3 in
-         merge merge_rewrite_items "Rewrite.apply_redex" (wrap4 Rewrite1.apply_redex p0_1 p1 p2_1 p3_1) (wrap4 Rewrite2.apply_redex p0_2 p1 p2_2 p3_2)
+         merge merge_rewrite_items "Rewrite.apply_redex" (wrap4 Rewrite1.apply_redex p0_1 p1_1 p2_1 p3_1) (wrap4 Rewrite2.apply_redex p0_2 p1_2 p2_2 p3_2)
 
       let term_rewrite (p0 : strict) (p1 : rewrite_args_spec) (p2 : term list) (p3 : term list) =
          let p2_1, p2_2 = split p2 in
@@ -2485,9 +2536,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       let apply_rewrite (p0 : rewrite_rule) (p1 : rewrite_args) (p2 : term) (p3 : term list) =
          let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = split_rewrite_args p1 in
          let p2_1, p2_2 = p2 in
          let p3_1, p3_2 = split p3 in
-         merge merge_terms "Rewrite.apply_rewrite" (wrap4 Rewrite1.apply_rewrite p0_1 p1 p2_1 p3_1) (wrap4 Rewrite2.apply_rewrite p0_2 p1 p2_2 p3_2)
+         merge merge_terms "Rewrite.apply_rewrite" (wrap4 Rewrite1.apply_rewrite p0_1 p1_1 p2_1 p3_1) (wrap4 Rewrite2.apply_rewrite p0_2 p1_2 p2_2 p3_2)
 
       let relevant_rule (p0 : operator) (p1 : int list) (p2 : rewrite_rule) =
          let p0_1, p0_2 = p0 in

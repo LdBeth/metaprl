@@ -566,29 +566,38 @@ struct
       in
          mk_term (mk_op context_opname [Var v]) (collect terms)
 
-   let rec terms_context_vars = function
-      [] -> SymbolSet.empty
-    | t::ts -> SymbolSet.union (context_vars t) (terms_context_vars ts)
-
-   and context_vars t =
+   let rec context_vars vars t =
       match get_core t with
          Sequent seq ->
             let hyps = seq.sequent_hyps in
             let len = SeqHyp.length hyps in
-            let rec hyp_context_vars i =
-               if i = len then SymbolSet.empty else
-               match SeqHyp.get hyps i with
-                  Hypothesis (_, h) -> SymbolSet.union (context_vars h) (hyp_context_vars (succ i))
-                | Context (v,_,ts) -> SymbolSet.add (SymbolSet.union (terms_context_vars ts) (hyp_context_vars (succ i))) v
-            in SymbolSet.union (SymbolSet.union (hyp_context_vars 0) (context_vars seq.sequent_concl)) (context_vars seq.sequent_args)
+            let rec hyp_context_vars vars i =
+               if i = len then
+                   context_vars (context_vars vars seq.sequent_args) seq.sequent_concl
+               else
+                  match SeqHyp.get hyps i with
+                     Hypothesis (_, h) ->
+                        context_vars (hyp_context_vars vars (succ i)) h
+                   | Context (v,_,ts) ->
+                        let ints, addrs = vars in
+                        let vars = SymbolSet.add ints v, addrs in
+                           List.fold_left context_vars (hyp_context_vars vars (succ i)) ts
+            in
+               hyp_context_vars vars 0
        | Term { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bts }
             when Opname.eq opname Opname.context_opname ->
-            SymbolSet.add (terms_context_vars (List.map (fun bt -> bt.bterm) bts)) v
+            let ints, addrs = vars in
+               List.fold_left bterm_context_vars (ints, SymbolSet.add addrs v) bts
        | Term { term_terms = bts } ->
-            terms_context_vars (List.map (fun bt -> bt.bterm) bts)
-       | SOVar(_, _, ts) -> terms_context_vars ts
-       | FOVar _ -> SymbolSet.empty
+            List.fold_left bterm_context_vars vars bts
+       | SOVar(_, _, ts) -> List.fold_left context_vars vars ts
+       | FOVar _ -> vars
        | Hashed _| Subst _ -> fail_core "context_vars"
+
+   and bterm_context_vars vars bt =
+      context_vars vars bt.bterm
+
+   let context_vars = context_vars (SymbolSet.empty, SymbolSet.empty)
 
    let rec free_meta_variables vars t = match get_core t with
       FOVar _ -> vars

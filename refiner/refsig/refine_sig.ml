@@ -81,7 +81,7 @@ sig
     * An ML rewrite replaces a term with another.
     * inputs: rule parameters (addrs, terms), goal, subgoal extracts
     *)
-   type term_extract = int array -> term list -> term -> term list -> term
+   type term_extract = address rw_args_poly -> term list -> term -> term list -> term
 
    type ml_rewrite = term -> term
 
@@ -96,7 +96,7 @@ sig
     * and it provides a function to compute the extract.
     *)
    type ml_rule =
-      int array ->                             (* sequent context addresses *)
+      address rw_args_poly ->                  (* sequent context addresses *)
       msequent ->                              (* goal *)
       term list ->                             (* params *)
       msequent list *  term_extract            (* subgoals, new variable names *)
@@ -165,7 +165,7 @@ sig
     * what it did in a proof step
     *)
    type extract_description =
-      EDRule of opname * int list * term list
+      EDRule of opname * int list * address list * term list
     | EDRewrite
     | EDCondREwrite
     | EDComposition (* any compilcated steps will fall into this category *)
@@ -279,10 +279,10 @@ sig
     * These are the forms created at compile time with
     * extra arguments.
     *)
-   type prim_tactic = int array -> term list -> tactic
+   type prim_tactic = address rw_args_poly -> term list -> tactic
    type prim_rewrite =
       PrimRW of rw
-    | CondRW of (int array -> term list -> cond_rewrite)
+    | CondRW of (address rw_args_poly -> term list -> cond_rewrite)
 
    (*
     * Get the term corresponding to an extract from the named proof.

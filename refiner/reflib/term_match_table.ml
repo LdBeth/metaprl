@@ -429,11 +429,11 @@ let lookup_aux get tbl f t =
    execute (search_infos get f t) [] [t] tbl
 
 let get_val info _ t _ _ =
-   ignore(apply_redex info.info_redex [||] t []);
+   ignore(apply_redex info.info_redex empty_rw_args t []);
    info.info_value
 
 let get_val_rwi info _ t _ _ =
-   (apply_redex info.info_redex [||] t []), info.info_value
+   (apply_redex info.info_redex empty_rw_args t []), info.info_value
 
 let rec get_val_all info f t tl fallbacks =
    (get_val info f t tl fallbacks), get_val_all_aux f t tl fallbacks
@@ -445,7 +445,7 @@ let rec get_val_bucket =
     | info :: tl when f info.info_value ->
          let tl = aux f t tl in
          begin try
-            ignore(apply_redex info.info_redex [||] t []);
+            ignore(apply_redex info.info_redex empty_rw_args t []);
             info.info_value :: tl
          with RefineError _ ->
             tl

@@ -86,6 +86,11 @@ struct
    open TermSubst
    open RefineError
 
+   module RwTypes = struct
+      include TermType
+      type address = TermAddr.address
+   end
+
    module RewriteTypes = MakeRewriteTypes (TermType) (TermAddr)
    module RewriteUtil = MakeRewriteUtil (TermType) (TermAddr) (Term) (RefineError)
    module RewriteDebug = MakeRewriteDebug (TermType) (Term) (TermAddr) (RefineError)
@@ -104,6 +109,7 @@ struct
    module RewriteMeta =
       MakeRewriteMeta (TermType) (TermAddr) (Term) (TermMan) (RefineError)
 
+   open RwTypes
    open RewriteTypes
    open RewriteCompileRedex
    open RewriteCompileContractum
@@ -115,10 +121,8 @@ struct
     * TYPES                                                                *
     ************************************************************************)
 
-   type term = TermType.term
-   type level_exp = TermType.level_exp
-   type operator = TermType.operator
-   type address = TermAddr.address
+   type rw_args = address rw_args_poly
+   type rewrite_args = rw_args * SymbolSet.t
 
    type rewrite_rule = RewriteTypes.rewrite_rule
    type rewrite_redex = RewriteTypes.rewrite_redex
@@ -145,8 +149,9 @@ struct
 
    let opname_exn = RefineError ("Rewrite.apply_rewrite", RewriteStringError "opnames do not match")
 
-   let empty_args_spec = [||]
-   let empty_args = [||], SymbolSet.empty
+   let empty_args_spec = { spec_ints = [||]; spec_addrs = [||] }
+   let empty_rw_args = { arg_ints = [||]; arg_addrs = [||] }
+   let empty_args = empty_rw_args, SymbolSet.empty
 
    let rec collect_hyp_bnames hyps bnames len i =
       if (len=0) then bnames else

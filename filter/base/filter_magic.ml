@@ -38,7 +38,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 0x182c68375b579b67e9924d55d6f6777d
+ * FILTER_MD5: 0x64020d7281b77ea99cd7080bef6a8f59
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -64,10 +64,11 @@ open File_type_base
  * Rev 11: added the "Quote" parameter
  * Rev 12: added the "Grammar" choice to the summary_item type
  * Rev 13: switched to single-conclusion sequents
+ * Rev 14: address arguments to rules and rewrites
  *)
-let raw_versions = List.map (pack_version 1 0) [13]
+let raw_versions = List.map (pack_version 1 0) [14]
 
-let term_versions = List.map (pack_version 1 0) [13]
+let term_versions = List.map (pack_version 1 0) [14;13]
 
 (*
  * ASCII IO format revision history:
@@ -88,20 +89,21 @@ let term_versions = List.map (pack_version 1 0) [13]
  * Rev 13: added input/optput types to resource definitions (bug 168)
  * Rev 14: added a Quote parameter
  * Rev 15: switched to single-conclusion sequents
+ * Rev 16: address arguments to rules and rewrites
  *
- * Filter_summary has a HACK needed to read some rev 0-1 files
  * Ascii_io has a HACK needed to read some rev 0-5 files
  * Ascii_io has another set of HACKs to read sequents in rev 0-6 files
  * Ascii_io has yet another set of HACKs to try to guess bound contexts for rev 0-7 files
  * Term_man_minimal_sig has extra stuff for rev 0-7 file support.
- * Filter_summary has another HACK needed to read rev 0-8 files.
+ * Filter_summary has a HACK needed to read rev 0-8 files.
  * Proof_term_boot has a HACK needed to read rev 0-9 files.
  * Ascii_io has another HACK needed to read some rev 0-10 files.
  * Filter_summary has another HACK needed to read some rev 0-11 files.
  * Filter_ocaml has a HACK needed to read some rev 0-12 files.
  * Ascii_io has another HACK needed to read some rev 0-14 files.
+ * Filter_summary has another HACK needed to read some rev 0-15 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *

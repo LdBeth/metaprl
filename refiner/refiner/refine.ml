@@ -122,8 +122,8 @@ module Refine (**)
    (TermShape : TermShapeSig
     with type term = TermType.term)
    (Rewrite : RewriteSig
-    with type term = TermType.term
-    with type address = TermAddr.address)
+    with type RwTypes.term = TermType.term
+    with type RwTypes.address = TermAddr.address)
    (RefineError : RefineErrorSig
     with module ErrTypes.Types = TermType
     with type ErrTypes.address = TermAddr.address) =
@@ -163,7 +163,7 @@ struct
     * Term extract computation.
     * inputs: rule parameters (addrs, terms), goal, subgoal extracts
     *)
-   type term_extract = int array -> term list -> term -> term list -> term
+   type term_extract = rw_args -> term list -> term -> term list -> term
 
    type ml_rewrite = term -> term
 
@@ -178,7 +178,7 @@ struct
     * and it provides a function to compute the extract.
     *)
    type ml_rule =
-      int array ->                                   (* sequent context addresses *)
+      rw_args ->                                   (* sequent context addresses *)
       msequent ->                                    (* goal *)
       term list ->                                   (* params *)
       msequent list * term_extract                   (* subgoals, extractor *)
@@ -261,7 +261,7 @@ struct
 
    and rule_just =
       { just_goal : msequent;
-        just_addrs : int array;
+        just_addrs : rw_args;
         just_params : term list;
         just_refiner : opname;
       }
@@ -294,7 +294,7 @@ struct
 
    and cond_rewrite_here =
       { cjust_goal : term;
-        cjust_addrs : int array;
+        cjust_addrs : rw_args;
         cjust_params : term list;
         cjust_refiner : opname;
       }
@@ -422,8 +422,8 @@ struct
    (*
     * These are the forms created at compile time.
     *)
-   type prim_tactic = int array -> term list -> tactic
-   type prim_cond_rw = int array -> term list -> cond_rewrite
+   type prim_tactic = rw_args -> term list -> tactic
+   type prim_cond_rw = rw_args -> term list -> cond_rewrite
    type prim_rewrite =
       PrimRW of rw
     | CondRW of prim_cond_rw
@@ -432,7 +432,7 @@ struct
     * Extract decription for UI purposes.
     *)
    type extract_description =
-       EDRule of opname * int list * term list
+       EDRule of opname * int list * address list * term list
      | EDRewrite
      | EDCondREwrite
      | EDComposition (* any compilcated steps will fall into this category *)
@@ -872,7 +872,7 @@ struct
    let describe_extract ext =
       match ext.ext_just with
          RuleJust j | MLJust (j, _, _) ->
-            EDRule (j.just_refiner, Array.to_list j.just_addrs, j.just_params)
+            EDRule (j.just_refiner, Array.to_list j.just_addrs.arg_ints, Array.to_list j.just_addrs.arg_addrs, j.just_params)
        | RewriteJust _ -> EDRewrite
        | CondRewriteJust _ -> EDCondREwrite
        | ComposeJust _ -> EDComposition
@@ -1477,11 +1477,11 @@ struct
             in aux 0 (concl arg) 0 prog
       in
       let id_combine _ goal _ = goal in
-      fun name addrs params goal args result ->
+      fun name (spec:rewrite_args_spec) params goal args result ->
          let combine =
             if args = [] then id_combine
             else if is_sequent_term goal then
-               let arg_progs = List.map (mk_arg_prog addrs goal) args in
+               let arg_progs = List.map (mk_arg_prog spec.spec_ints goal) args in
                let args_length = List.length args in
                fun addrs goal args ->
                   if List.length args <> args_length then
@@ -1490,20 +1490,20 @@ struct
                      replace_concl goal (simple_combine () (concl goal) args)
             else simple_combine
          in
-         let goal = combine (Array.create (Array.length addrs) 2) goal args in
+         let goal = combine (Array.create (Array.length spec.spec_ints) 2) goal args in
          IFDEF VERBOSE_EXN THEN
             if !debug_refine then
-               eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list addrs))) (print_any_list print_term) params print_term result eflush
+               eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list spec.spec_ints))) (print_any_list print_term) params print_term result eflush
          ENDIF;
-         let rw = Rewrite.term_rewrite Strict addrs (goal :: params) [result] in
+         let rw = Rewrite.term_rewrite Strict spec (goal :: params) [result] in
          if !debug_refine then eprintf "\nDone\n%t" eflush;
          fun addrs' params' goal' args' ->
-            DEFINE compute = List.hd (apply_rewrite rw (addrs', free_vars_terms args') (combine addrs' goal' args') params') IN
+            DEFINE compute = List.hd (apply_rewrite rw (addrs', free_vars_terms args') (combine addrs'.arg_ints goal' args') params') IN
             IFDEF VERBOSE_EXN THEN
                if !debug_refine then
                   try compute with exn ->
-                     let arg = combine addrs' goal' args' in
-                     eprintf "Refiner.compute_rule_ext: rewrite failed: %s: %a + [%s] [%a] -> %a appplied to %a [%a]%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list addrs))) (print_any_list print_term) params print_term result print_term arg (print_any_list print_term) params' eflush;
+                     let arg = combine addrs'.arg_ints goal' args' in
+                     eprintf "Refiner.compute_rule_ext: rewrite failed: %s: %a + [%s] [%a] -> %a appplied to %a [%a]%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list spec.spec_ints))) (print_any_list print_term) params print_term result print_term arg (print_any_list print_term) params' eflush;
                      raise exn
                else compute
             ELSE compute ENDIF

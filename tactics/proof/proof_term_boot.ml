@@ -37,7 +37,9 @@ open Weak_memo
 open Mp_resource
 
 open Term_sig
+open Term_addr_sig
 open Refiner_sig
+open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
 
 open Term_copy2_weak
@@ -79,6 +81,7 @@ struct
    let string_arg_op          = mk_opname "arg_string"        summary_opname
    let term_list_arg_op       = mk_opname "arg_term_list"     summary_opname
    let named_arg_op           = mk_opname "arg_named"         summary_opname
+   let address_arg_op         = mk_opname "arg_address"       summary_opname
 
    let goal_op                = mk_opname "ext_goal"          summary_opname
    let identity_op            = mk_opname "ext_identity"      summary_opname
@@ -91,6 +94,10 @@ struct
    let status_incomplete_op   = mk_opname "status_incomplete" summary_opname
    let status_partial_op      = mk_opname "status_partial"    summary_opname
    let status_complete_op     = mk_opname "status_complete"   summary_opname
+
+   let addr_subterm_op        = mk_opname "addr_subterm"      summary_opname
+   let addr_arg_op            = mk_opname "addr_arg"          summary_opname
+   let addr_clause_op         = mk_opname "addr_clause"       summary_opname
 
    (*
     * Make a term with a string parameter.
@@ -159,7 +166,23 @@ struct
          else if Opname.eq opname status_complete_op then
             LazyStatusComplete
          else
-            raise (RefineError ("Proof_boot.term_lookup_msequent", StringError "ill-formed proof"))
+            raise (RefineError ("Proof_boot.dest_status", StringError "ill-formed proof"))
+
+   let mk_addr_term = function
+      Subterm i -> mk_simple_int_term addr_subterm_op i []
+    | ArgAddr -> mk_simple_term addr_arg_op []
+    | ClauseAddr i -> mk_simple_int_term addr_clause_op i []
+
+   let dest_addr t =
+      let opname = opname_of_term t in
+         if Opname.eq opname addr_subterm_op then
+            Subterm (dest_int_term t)
+         else if Opname.eq opname addr_arg_op then
+            ArgAddr
+         else if Opname.eq opname addr_clause_op then
+            ClauseAddr (dest_int_term t)
+         else
+            raise (RefineError ("Proof_boot.dest_addr", StringError "ill-formed proof"))
 
    (*
     * Versions of the extract.
@@ -176,6 +199,7 @@ struct
       HeadTermArg of 'term_index
     | HeadTypeArg of 'term_index
     | HeadIntArg of int
+    | HeadAddrArg of address
     | HeadBoolArg of bool
     | HeadStringArg of string
     | HeadTermListArg of 'term_index list
@@ -285,12 +309,10 @@ struct
          HeadTermArg (weaken_term t)
     | HeadTypeArg t ->
          HeadTypeArg (weaken_term t)
-    | HeadIntArg i ->
-         HeadIntArg i
-    | HeadBoolArg b ->
-         HeadBoolArg b
-    | HeadStringArg s ->
-         HeadStringArg s
+    | HeadIntArg _
+    | HeadAddrArg _
+    | HeadBoolArg _
+    | HeadStringArg _ as h -> h
     | HeadTermListArg tl ->
          HeadTermListArg (List.map weaken_term tl)
 
@@ -344,6 +366,8 @@ struct
             compare_terms t1 t2
        | HeadIntArg i1, HeadIntArg i2 ->
             i1 = i2
+       | HeadAddrArg a1, HeadAddrArg a2 ->
+            a1 = a2
        | HeadBoolArg b1, HeadBoolArg b2 ->
             b1 = b2
        | HeadStringArg s1, HeadStringArg s2 ->
@@ -412,6 +436,8 @@ struct
          HeadTypeArg (ext_add_term t)
     | IntArg i ->
          HeadIntArg i
+    | AddrArg a ->
+         HeadAddrArg a
     | BoolArg b ->
          HeadBoolArg b
     | StringArg s ->
@@ -493,6 +519,8 @@ struct
          TypeArg (ext_retrieve_term t)
     | HeadIntArg i ->
          IntArg i
+    | HeadAddrArg a ->
+         AddrArg a
     | HeadBoolArg b ->
          BoolArg b
     | HeadStringArg s ->
@@ -508,6 +536,8 @@ struct
             Tactic.type_attribute name t
        | IntArg i ->
             Tactic.int_attribute name i
+       | AddrArg a ->
+            Tactic.addr_attribute name a
        | BoolArg b ->
             Tactic.bool_attribute name b
        | StringArg s ->
@@ -611,6 +641,8 @@ struct
          mk_simple_term type_arg_op [term_retrieve_term t]
     | HeadIntArg i ->
          mk_simple_int_term int_arg_op i []
+    | HeadAddrArg a ->
+         mk_simple_term address_arg_op [mk_xlist_term (List.map mk_addr_term (dest_address a))]
     | HeadBoolArg b ->
          mk_string_term bool_arg_op (if b then "true" else "false")
     | HeadStringArg s ->
@@ -700,6 +732,8 @@ struct
             HeadStringArg (dest_string_param t)
          else if Opname.eq op term_list_arg_op then
             HeadTermListArg (List.map term_add_term (dest_xlist (one_subterm t)))
+         else if Opname.eq op address_arg_op then
+            HeadAddrArg (make_address (List.map dest_addr (dest_xlist (one_subterm t))))
          else
             raise (RefineError ("Proof_boot.attribute_header_of_term", StringError "ill-formed proof"))
 

@@ -35,6 +35,7 @@
 open Lm_symbol
 
 open Refiner.Refiner
+open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 
@@ -52,6 +53,7 @@ type attribute =
    TermArg of term
  | TypeArg of term
  | IntArg of int
+ | AddrArg of address
  | BoolArg of bool
  | StringArg of string
  | TermListArg of term list
@@ -257,6 +259,7 @@ sig
    val term_list_attribute : string -> term list -> raw_attribute
    val type_attribute : string -> term -> raw_attribute
    val int_attribute : string -> int -> raw_attribute
+   val addr_attribute : string -> address -> raw_attribute
    val bool_attribute : string -> bool -> raw_attribute
    val string_attribute : string -> string -> raw_attribute
 
@@ -266,7 +269,7 @@ sig
     *)
    val compile_rule : build -> string option list -> prim_tactic -> pre_tactic
    val compile_ml_rule : build -> prim_tactic -> pre_tactic
-   val tactic_of_rule : pre_tactic -> int array -> term list -> tactic
+   val tactic_of_rule : pre_tactic -> rw_args -> term list -> tactic
 
    (*
     * Also convert rewrites.
@@ -1000,7 +1003,7 @@ sig
     * Create a conversion from a basic rewrite.
     * This function is required by filter_prog.
     *)
-   val rewrite_of_pre_rewrite : prim_rewrite -> int array -> term list -> conv
+   val rewrite_of_pre_rewrite : prim_rewrite -> rw_args -> term list -> conv
 
    (*
     * Standard rewrite annotatetion processor: return a pair of the redex and the conv
@@ -1152,7 +1155,7 @@ sig
     * Create a conversion from a basic rewrite.
     * This function is required by filter_prog.
     *)
-   val rewrite_of_pre_rewrite : prim_rewrite -> int array -> term list -> conv
+   val rewrite_of_pre_rewrite : prim_rewrite -> rw_args -> term list -> conv
 
    (*
     * Standard rewrite annotatetion processor: return a pair of the redex and the conv

@@ -87,15 +87,6 @@ declare "meta_labeled"[label:s]{'meta}
 declare "context_param"[name:v]
 declare "term_param"{'t}
 
-(* Arguments *)
-declare "int_arg"[i:n]
-declare "term_arg"{'t}
-declare "type_arg"{'t}
-declare "bool_arg"[s:t]
-declare "string_arg"[s:s]
-declare "term_list_arg"{'t}
-declare "arglist"{'t}
-
 (* Proofs *)
 declare "href"[command:s]{'t}
 
@@ -141,6 +132,7 @@ val mk_type_arg_term : term -> term
 val mk_bool_arg_term : bool -> term
 val mk_string_arg_term : string -> term
 val mk_term_list_arg_term : term list -> term
+val mk_addr_arg_term : Term_addr_sig.addr_item list -> term
 val mk_arglist_term : term list -> term
 
 val mk_goal_label_term : string -> term

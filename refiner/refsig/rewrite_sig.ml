@@ -36,11 +36,17 @@ open Lm_symbol
 type out_channel = Lm_printf.out_channel
 
 (* Names of the sequent and regular contexts to be passed as arguments *)
-type rewrite_args_spec = var array
+type rewrite_args_spec = {
+   spec_ints: var array;
+   spec_addrs: var array
+}
 
 (* Sizes (+1) for sequent contexts, bound variables *)
 (* Non-positive sizes mean counting the hyps to skip from the end *)
-type rewrite_args = int array * SymbolSet.t
+type 'addr rw_args_poly = {
+   arg_ints: int array;
+   arg_addrs: 'addr array
+}
 
 (*
  * In "Strict" mode the rewriter should behave as described in the
@@ -48,8 +54,10 @@ type rewrite_args = int array * SymbolSet.t
  * In "Strict" mode the rewriter is guaranteed to always preserve
  * the binding structure on the terms, no matter what rules are being
  * applied.
- * (XXX Note: right now it does not behave quite that way, but it's
- * a bug).
+ * Note - when the rewriter takes a term list as inputs, only the first element
+ * of the list (the "real" redex) is taken to be fully Strict, the rest of the
+ * list (rule/rewrite "parameters") are allowed to have variables that are going
+ * to be captured.
  *
  * The "Relaxed" mode is a hack that does not have an exact semantics.
  *
@@ -80,13 +88,19 @@ type 'a rewrite_param =
    RewriteParam of 'a
  | RewriteMetaParam of var
 
+module type RwTypesSig =
+sig
+   include Term_sig.TermSig
+   type address
+end
+
 module type RewriteSig =
 sig
-   (* Import the term types *)
-   type term
-   type level_exp
-   type operator
-   type address
+   module RwTypes : RwTypesSig
+   open RwTypes
+
+   type rw_args = address rw_args_poly
+   type rewrite_args = rw_args * SymbolSet.t
 
    (* Packaged rewrite rule *)
    type rewrite_rule
@@ -104,6 +118,7 @@ sig
 
    (* Rewrites with no arguments *)
    val empty_args_spec : rewrite_args_spec
+   val empty_rw_args : rw_args
    val empty_args : rewrite_args
 
    (*
@@ -113,10 +128,10 @@ sig
    val compile_redices : strict -> rewrite_args_spec -> term list -> rewrite_redex
    val extract_redex_types : rewrite_redex -> (rewrite_type * var) list
    val test_redex_applicability :
-      rewrite_redex -> int array ->
+      rewrite_redex -> rw_args ->
       term -> term list -> unit
    val apply_redex :
-      rewrite_redex -> int array ->
+      rewrite_redex -> rw_args ->
       term -> term list -> rewrite_item list
 
    (* Rewrite constructor/destructors *)

@@ -260,6 +260,11 @@ struct
             fprintf out "RWSOContext (%d, %d, [%a])\n%a" (**)
                i j print_int_list il
                (print_prog (tabstop + 3)) t
+       | RWSOFreeVarsContext (ilc, ilv, i, j, t, il) ->
+            fprintf out "RWSOContext (<%a>%a: %d, %d, [%a])\n%a" (**)
+               print_int_list ilc print_int_list ilv
+               i j print_int_list il
+               (print_prog (tabstop + 3)) t
        | RWSOContextSubst (i, t, tl) ->
             fprintf out "RWSOContextSubst %d\n%a\n%a" (**)
                i

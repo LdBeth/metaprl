@@ -114,8 +114,9 @@ struct
       RawTerm of term
     | RawTermList of term list
     | RawType of term
-    | RawInt of int
     | RawBool of bool
+    | RawAddr of address
+    | RawInt of int
     | RawString of string
     | RawSentinal of sentinal
 
@@ -732,6 +733,9 @@ struct
 
    let int_attribute name i =
       name, RawInt i
+
+   let addr_attribute name a =
+      name, RawAddr a
 
    let bool_attribute name flag =
       name, RawBool flag

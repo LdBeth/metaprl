@@ -68,10 +68,10 @@ sig
                         with type ErrTypes.address = TermAddr.address
 
    module Rewrite : RewriteSig
-                    with type term = TermType.term
-                    with type level_exp = TermType.level_exp
-                    with type operator = TermType.operator
-                    with type address = TermAddr.address
+                    with type RwTypes.term = TermType.term
+                    with type RwTypes.level_exp = TermType.level_exp
+                    with type RwTypes.operator = TermType.operator
+                    with type RwTypes.address = TermAddr.address
 
    module Refine : RefineSig
                    with type term = TermType.term

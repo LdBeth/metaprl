@@ -3,8 +3,8 @@ REFSIG_FILES =\
 	refine_error_sig\
 	term_base_sig\
 	term_op_sig\
-	term_man_sig\
 	term_addr_sig\
+	term_man_sig\
 	term_subst_sig\
 	term_shape_sig\
 	term_meta_sig\

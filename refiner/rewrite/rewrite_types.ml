@@ -102,6 +102,7 @@ struct
     | RWSOVar of int * int list
     | RWSOInstance of int * rwterm list
     | RWSOContext of int * int * rwterm * int list
+    | RWSOFreeVarsContext of int list * int list * int * int * rwterm * int list
     | RWSOContextSubst of int * rwterm * rwterm list
     | RWFreeVars of rwterm * int list * int list
     | RWCheckVar of int

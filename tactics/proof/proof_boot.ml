@@ -1207,11 +1207,12 @@ struct
    let make_extract_expr ext =
       let arglist =
          match Refine.describe_extract ext with
-            EDRule (opname, addrs, params) ->
-               let addrs = Array.of_list (List.map (fun addr -> IntArg addr) addrs) in
+            EDRule (opname, ints, addrs, params) ->
+               let ints = Array.of_list (List.map (fun addr -> IntArg addr) ints) in
+               let addrs = Array.of_list (List.map (fun addr -> AddrArg addr) addrs) in
                let params = Array.of_list (List.map (fun t -> TermArg t) params) in
                let name = [|StringArg (string_of_opname opname)|] in
-                  GeneralArgList (Array.concat [name; addrs; params])
+                  GeneralArgList (Array.concat [name; ints; addrs; params])
           | EDRewrite ->
                NoneArgList "<rewrite>"
           | EDCondREwrite ->

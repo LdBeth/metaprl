@@ -44,6 +44,7 @@ open Term_addr_sig
 open Term_subst_sig
 open Refine_error_sig
 
+open Rewrite_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
 open Rewrite_types
@@ -541,7 +542,7 @@ struct
        | RWSOContext (addr, i, term', l) ->
             (* Pull an address out of the addr argument *)
             (* XXX: TODO *)
-            let addr' = raise(Invalid_argument("Non-sequent contexts not currently supported")) addr in
+            let addr = addrs.arg_addrs.(addr) in
                begin match stack.(i) with
                   StackVoid -> ()
                 | StackContextRestrict (vars) ->
@@ -551,13 +552,17 @@ struct
                end;
                IFDEF VERBOSE_EXN THEN
                   if !debug_rewrite then
-                     eprintf "Rewrite.match_redex.RWSOContext: %s%t" (string_of_address addr') eflush
+                     eprintf "Rewrite.match_redex.RWSOContext: %s%t" (string_of_address addr) eflush
                ENDIF;
-               let term = term_subterm t addr' in
+               let term = term_subterm t addr in
                   if !debug_rewrite then
                      eprintf "Rewrite.match_redex.RWSOContext: stack(%d)/%d%t" i (Array.length stack) eflush;
-                  stack.(i) <- StackContext (extract_bvars stack l, t, addr');
+                  stack.(i) <- StackContext (extract_bvars stack l, t, addr);
                   match_redex_term addrs stack all_bvars term' term
+
+       | RWSOFreeVarsContext _ ->
+            (* XXX: TODO *)
+            raise(Invalid_argument "Rewrite_match_redex: RWSOFreeVarsContext: not implemented")
 
        | _ ->
             REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
@@ -596,7 +601,7 @@ struct
                      else
                         REF_RAISE(RefineError ("match_redex_sequent_hyps", RewriteBadMatch (HypMatch hyps)))
                else
-                  let count = addrs.(addr) in
+                  let count = addrs.arg_ints.(addr) in
                      if count > 0 then count - 1 else len - i + count
             in
                IFDEF VERBOSE_EXN THEN

@@ -37,6 +37,7 @@
  *
  *)
 
+open Refiner.Refiner.TermType
 open Refiner.Refiner.Rewrite
 open Mp_resource
 

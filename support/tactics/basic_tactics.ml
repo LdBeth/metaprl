@@ -1,6 +1,7 @@
 include Lm_symbol
 include Term_sig
 include Term_addr_sig
+include Rewrite_sig
 include Opname
 include Term_match_table
 include Refiner.Refiner
@@ -11,6 +12,7 @@ include Refiner.Refiner.TermMan
 include Refiner.Refiner.TermMeta
 include Refiner.Refiner.TermOp
 include Refiner.Refiner.TermSubst
+include Refiner.Refiner.Rewrite
 include Refiner.Refiner.RefineError
 include Mp_resource
 include Top_tacticals

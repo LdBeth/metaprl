@@ -33,6 +33,7 @@
 open Lm_debug
 open Lm_symbol
 
+open Rewrite_sig
 open Refiner.Refiner.TermMan
 
 open Filter_type
@@ -47,15 +48,19 @@ let _ =
  * Extract the context var arguments.
  *)
 let collect_cvars =
-   let rec aux = function
-      ContextParam v::t ->
-         v :: aux t
+   let rec aux ints addrs = function
+      IntParam v::t ->
+         aux (v::ints) addrs t
+    | AddrParam v::t ->
+         aux ints (v::addrs) t
     | _::t ->
-         aux t
+         aux ints addrs t
     | [] ->
-         []
+         { spec_ints = Array.of_list (List.rev ints);
+           spec_addrs = Array.of_list (List.rev addrs)
+         }
    in
-      fun l -> Array.of_list (aux l)
+      aux [] []
 
 let rec collect_terms = function
    TermParam x :: t ->
@@ -70,16 +75,18 @@ let rec collect_terms = function
  *)
 let rec split_params = function
    h::t ->
-      let cvars, tparams = split_params t in
+      let ivars, avars, tparams = split_params t in
          begin
             match h with
-               ContextParam v ->
-                  v :: cvars, tparams
+               IntParam v ->
+                  v :: ivars, avars, tparams
+             | AddrParam v ->
+                  ivars, v :: avars, tparams
              | TermParam t ->
-                  cvars, t :: tparams
+                  ivars, avars, t :: tparams
          end
  | [] ->
-      [], []
+      [], [], []
 
 (*
  * Give names to all the parameters.
@@ -87,29 +94,34 @@ let rec split_params = function
 let name_params =
    let rec loop i = function
       h::t ->
-         let aids, cids, xids = loop (i + 1) t in
+         let allids, iids, aids, tids = loop (i + 1) t in
          let name = "id_" ^ (string_of_int i) in
             begin
                match h with
-                  ContextParam _ ->
-                     name :: aids, name :: cids, xids
+                  IntParam _ ->
+                     name :: allids, name :: iids, aids, tids
+                | AddrParam _ ->
+                     name :: allids, iids, name :: aids, tids
                 | TermParam _ ->
-                     name :: aids, cids, name :: xids
+                     name :: allids, iids, aids, name :: tids
             end
     | [] ->
-         [], [], []
+         [], [], [], []
    in
       loop 0
 
 (*
  * Distinguish between context var parameters, and other parameters.
  *)
-let extract_params cvars =
+let extract_params (ivars, avars) =
    let aux h =
       if is_so_var_term h then
          let v, conts, terms = dest_so_var h in
-            if SymbolSet.mem cvars v then
-               ContextParam v
+            if terms = [] && SymbolSet.mem ivars v then
+               IntParam v
+            else
+            if terms = [] && SymbolSet.mem avars v then
+               AddrParam v
             else
                TermParam h
       else

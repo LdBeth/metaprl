@@ -105,6 +105,7 @@ open Lm_dag_sig
 open Lm_imp_dag
 
 open Term_sig
+open Rewrite_sig
 open Refiner.Refiner
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Term
@@ -112,6 +113,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermSubst
+open Refiner.Refiner.Rewrite
 open Mp_resource
 open Term_match_table
 
@@ -204,13 +206,13 @@ let explode t =
    let t = TermMan.explode_sequent t in
       SeqHyp.to_list t.sequent_hyps, t.sequent_concl
 
-let process_nth_hyp_resource_annotation name context_args term_args statement pre_tactic =
+let process_nth_hyp_resource_annotation name args term_args statement pre_tactic =
    let assums, goal = unzip_mfunction statement in
-      match context_args, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
-         [| _ |], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], t2) ->
-            [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] []]
-       | [||], [], [ [Context _], t1 ], ( [Context _], t2) ->
-            [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [||] [] thenT nthHypT i]
+      match args.spec_ints, args.spec_addrs, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
+         [| _ |], [||], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], t2) ->
+            [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } []]
+       | [||], [||], [], [ [Context _], t1 ], ( [Context _], t2) ->
+            [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args [] thenT nthHypT i]
        | _ ->
             raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" name))
 

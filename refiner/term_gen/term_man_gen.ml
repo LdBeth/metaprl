@@ -747,24 +747,26 @@ struct
    let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
    let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
 
-   let rec context_vars_term cvars t =
+   let rec context_vars_term vars t =
       let t' = dest_term t in
       let op = dest_op t'.term_op in
          if Opname.eq op.op_name context_opname then
-            match dest_params op.op_params with
-               [Var v] ->
-                  context_vars_bterms (SymbolSet.add cvars v) t'.term_terms
-             | _ ->
-                  REF_RAISE(RefineError ("Term_man_gen.context_vars_term", TermMatchError (t, "mailformed context")))
+            let v, t, _, args = dest_context t in
+            let ints, addrs = vars in
+            let vars =
+               if is_concl_term t || is_hyp_term t then
+                  (SymbolSet.add ints v), addrs
+               else
+                  ints, (SymbolSet.add addrs v)
+            in
+               List.fold_left context_vars_term vars (t::args)
          else
-            context_vars_bterms cvars t'.term_terms
+            List.fold_left context_vars_bterm vars t'.term_terms
 
-   and context_vars_bterms cvars = function
-      bt::l ->
-         context_vars_bterms (context_vars_term cvars (dest_bterm bt).bterm) l
-    | [] -> cvars
+   and context_vars_bterm vars bt =
+      context_vars_term vars (dest_bterm bt).bterm
 
-   let context_vars = context_vars_term SymbolSet.empty
+   let context_vars = context_vars_term (SymbolSet.empty, SymbolSet.empty)
 
    let rec free_meta_variables vars t =
       if is_so_var_term t then

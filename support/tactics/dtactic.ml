@@ -161,12 +161,14 @@ open Lm_debug
 open Lm_printf
 
 open Term_sig
+open Rewrite_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Simple_print
 open Term_match_table
@@ -307,7 +309,9 @@ let rec get_sel_arg = function
 (*
  * Improve the intro resource from a rule.
  *)
-let process_intro_resource_annotation name context_args term_args statement (pre_tactic, options) =
+let process_intro_resource_annotation name args term_args statement (pre_tactic, options) =
+   if args.spec_addrs <> [||] then
+      raise (Invalid_argument (sprintf "intro annotation: %s: context arguments not supported yet" name));
    let assums, goal = unzip_mfunction statement in
    let goal = TermMan.explode_sequent goal in
    let t =
@@ -315,7 +319,7 @@ let process_intro_resource_annotation name context_args term_args statement (pre
          [ Context _ ] ->
             goal.sequent_concl
        | _ ->
-            raise (Invalid_argument (sprintf "Dtactic.improve_intro: %s: must be an introduction rule" name))
+            raise (Invalid_argument (sprintf "intro annotation: %s: must be an introduction rule" name))
    in
    let term_args =
       match term_args with
@@ -346,9 +350,9 @@ let process_intro_resource_annotation name context_args term_args statement (pre
                                  raise (RefineError (name, StringIntError ("wrong number of arguments", length')));
                               args)
    in
-      match context_args with
+      match args.spec_ints with
          [||] ->
-            let tac = funT (fun p -> Tactic_type.Tactic.tactic_of_rule pre_tactic [||] (term_args p)) in
+            let tac = funT (fun p -> Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args (term_args p)) in
             let sel_opts = get_sel_arg options in
             let rec auto_aux = function
                [] ->
@@ -356,11 +360,11 @@ let process_intro_resource_annotation name context_args term_args statement (pre
              | AutoMustComplete :: _ ->
                   [t, (name, sel_opts, AutoComplete, tac)]
              | CondMustComplete f :: _ ->
-                  let auto_exn = RefineError("intro_annotation " ^ name, StringError("not appropriate in weakAutoT")) in
+                  let auto_exn = RefineError("intro_annotation: " ^ name, StringError("not appropriate in weakAutoT")) in
                   let tac' =
                      funT (fun p ->
                         if f p then raise auto_exn
-                        else Tactic_type.Tactic.tactic_of_rule pre_tactic [||] (term_args p))
+                        else Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args (term_args p))
                   in [
                      t, (name, sel_opts, AutoNormal, tac');
                      t, (name, sel_opts, AutoComplete, tac)
@@ -383,7 +387,9 @@ let rec get_elim_args_arg = function
  | [] ->
       None
 
-let process_elim_resource_annotation name context_args term_args statement (pre_tactic, options) =
+let process_elim_resource_annotation name args term_args statement (pre_tactic, options) =
+   if args.spec_addrs <> [||] then
+      raise (Invalid_argument (sprintf "elim annotation: %s: context arguments not supported yet" name));
    let assums, goal = unzip_mfunction statement in
    match SeqHyp.to_list (TermMan.explode_sequent goal).sequent_hyps with
       [ Context _; Hypothesis(v,t); Context _ ] ->
@@ -428,12 +434,12 @@ let process_elim_resource_annotation name context_args term_args statement (pre_
                collect options
          in
          let tac =
-            match context_args, thinT with
+            match args.spec_ints, thinT with
                [| _ |], None ->
                   argfunT (fun i p ->
                      if !debug_dtactic then
                         eprintf "dT elim: trying %s%t" name eflush;
-                     Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] (term_args i p))
+                     Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } (term_args i p))
 
              | [| _ |], Some thinT ->
                   let rec find_thin_num_aux hyps len i =
@@ -463,7 +469,7 @@ let process_elim_resource_annotation name context_args term_args statement (pre_
                   argfunT (fun i p ->
                      if !debug_dtactic then
                         eprintf "dT elim: trying %s%t" name eflush;
-                     let tac = Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] (term_args i p)
+                     let tac = Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } (term_args i p)
                      in
                         if get_thinning_arg p then
                            tac thenT tryT (thinT (i + thin_incr))

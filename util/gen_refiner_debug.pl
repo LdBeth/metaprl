@@ -29,7 +29,8 @@ foreach my $ty ("rewrite_rule", "rewrite_redex", "sentinal", "tactic", "extract"
     $merges{"$ty"} = "merge_triv"
 };
 $merges{"rewrite_args_spec"} = "merge_rwspecs";
-$merges{"rewrite_args"} = "merge_rwargs";
+$merges{"rw_args"} = "merge_rwargs";
+$merges{"rewrite_args"} = "merge_rewrite_args";
 $merges{"Lm_num.num"} = "merge_num";
 $merges{"SymbolSet.t"} = "merge_ss";
 $merges{"(int * bool) list"} = "merge_ibl";
@@ -41,7 +42,7 @@ $merges{"'a list"} = "merge_poly";
 $merges{"term -> term"} = $merges{"ml_rewrite"} = "merge_ttf";
 
 # Non-refiner types
-foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "unit", "strict", "rewrite_args", "rewrite_args_spec", "addr_item") {
+foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "unit", "strict", "rewrite_args_spec", "addr_item") {
     $splits{$ty} = $splits{"$ty list"} = $splits{"$ty array"} = "";
 };
 # Fully abstract types
@@ -49,18 +50,20 @@ foreach my $ty ("term", "bound_term", "param", "operator", "level_exp", "level_e
     $splits{$ty} = "identity";
     $splits{"$ty list"} = "split";
     $splits{"$ty option"} = "split_opt";
+    $splits{"$ty array"} = "split_array";
 };
 foreach my $ty ("term", "param", "level_exp", "level_exp_var") {
     my $ty = $ty . "'";
     $splits{$ty} = "split_$ty";
 }
-foreach my $ty ("term_subst", "meta_term", "ml_rule", "term_extract", "ml_cond_rewrite") {
+foreach my $ty ("term_subst", "meta_term", "ml_rule", "term_extract", "ml_cond_rewrite", "rewrite_args") {
     $splits{$ty} = "split_$ty";
 }
 $splits{"esequent"} = "split_eseq";
 $splits{"bound_term'"} = "split_bterm'";
 $splits{"operator'"} = "split_op'";
 $splits{"(term option * term) list"} = "split_popl";
+$splits{"address rw_args_poly"} = $splits{"rw_args"} = "split_args";
 $splits{"term -> term"} = $splits{"ml_rewrite"} = "split_ttf";
 $splits{"SymbolSet.t -> term"} = "split_atf";
 $splits{"SymbolSet.t -> term -> term"} = "split_attf";

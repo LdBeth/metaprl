@@ -33,6 +33,7 @@
 open Lm_debug
 open Lm_printf
 
+open Rewrite_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
@@ -77,7 +78,7 @@ struct
     *)
    let rewrite_of_pre_rewrite rw addrs args =
       match rw, addrs, args with
-         PrimRW rw, [||], [] -> RewriteConv rw
+         PrimRW rw, { arg_ints = [||]; arg_addrs = [||] }, [] -> RewriteConv rw
        | PrimRW _, _, _ -> raise(Invalid_argument "Rewrite_boot.rewrite_of_pre_rewrite: PrimRW rewrites do not take arguments")
        | CondRW crw, _, _ -> CondRewriteConv (crw addrs args)
 
@@ -357,7 +358,7 @@ struct
     * This is a Relaxed rewrite with no justification.
     *)
    let create_iform name strictp redex contractum =
-      rewrite_of_pre_rewrite (create_input_form (null_refiner name) name strictp redex contractum) [||] []
+      rewrite_of_pre_rewrite (create_input_form (null_refiner name) name strictp redex contractum) empty_rw_args []
 
    (*
     * Rewrite a term.
@@ -374,7 +375,7 @@ struct
 
    let redex_and_conv_of_rw_annotation name _ redex _ _ addrs args rw =
       match addrs, args with
-         [||], [] -> [redex, rewrite_of_pre_rewrite rw [||] []]
+         { spec_ints = [||]; spec_addrs = [||] }, [] -> [redex, rewrite_of_pre_rewrite rw empty_rw_args []]
        | _ -> raise (Invalid_argument(name ^ " resource does not support annotations on rewrites that take arguments"))
 end
 

@@ -518,7 +518,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
    (* Map the terms inside of params *)
    let param_map = function
       TermParam t -> TermParam (convert.term_f t)
-    | ContextParam s -> ContextParam s
+    | (IntParam _ | AddrParam _) as p -> p
    in
 
    let convert_bnd = function
@@ -919,7 +919,8 @@ struct
    (*
     * Get a parameter.
     *)
-   let context_param_op    = mk_opname "context_param"
+   let int_param_op    = mk_opname "int_param"
+   let addr_param_op    = mk_opname "addr_param"
    let term_param_op       = mk_opname "term_param"
 
    let dest_rule_param =
@@ -930,8 +931,10 @@ struct
       in fun convert t ->
       let { term_op = op } = dest_term t in
       let { op_name = opname; op_params = params } = dest_op op in
-         if Opname.eq opname context_param_op then
-            ContextParam (var_param params)
+         if Opname.eq opname int_param_op then
+            IntParam (var_param params)
+         else if Opname.eq opname addr_param_op then
+            AddrParam (var_param params)
          else if Opname.eq opname term_param_op then
             TermParam (convert.term_f (one_subterm t))
          else
@@ -940,7 +943,7 @@ struct
    (*
     * Get the parameter list.
     * XXX HACK: the try wrapper is only there for backwards compativility with
-    * old files (ASCII formats v. 1.0.0 and 1.0.1)
+    * old files (ASCII formats <= 1.0.15)
     *)
    let dest_rule_params convert t =
       try
@@ -1039,7 +1042,7 @@ struct
    (*
     * Parent declaration.
     * XXX HACK: The "if" is here because parent terms used to have 3 subterms in old files
-    * (ASCII IO format <= 1.0.8; raw term IO format <= 1.0.5)
+    * (ASCII IO format <= 1.0.8)
     *)
    and dest_parent convert t =
       let path, resources =
@@ -1282,8 +1285,10 @@ struct
     * Parameters.
     *)
    let mk_param convert = function
-      ContextParam v ->
-         mk_term (mk_op context_param_op [make_param (Var v)]) []
+      IntParam v ->
+         mk_term (mk_op int_param_op [make_param (Var v)]) []
+    | AddrParam v ->
+         mk_term (mk_op addr_param_op [make_param (Var v)]) []
     | TermParam t ->
          mk_simple_term term_param_op [convert.term_f t]
 
@@ -1556,7 +1561,8 @@ struct
    let check_params int_params imp_params =
       let check int_param imp_param =
          match int_param, imp_param with
-            ContextParam _, ContextParam _
+            IntParam _, IntParam _
+          | AddrParam _, AddrParam _
           | TermParam _, TermParam _ ->
                true
           | _ ->
