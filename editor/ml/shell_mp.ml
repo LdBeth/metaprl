@@ -46,7 +46,6 @@ open Rformat
 open Filter_grammar
 
 open Mptop
-open Mp_version
 
 open Exn_boot
 open Shell_sig
@@ -270,7 +269,7 @@ struct
       match Shell_state.get_input_files () with
          [] ->
             let instream, flush = Shell_state.stdin_stream state in
-               printf "%s\n%t" version eflush;
+               printf "%s\n%t" Mp_version.version eflush;
                toploop state true instream flush
         | files ->
             use_files state files

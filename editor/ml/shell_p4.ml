@@ -53,7 +53,6 @@ open Filter_grammar
 open Tactic_type
 open Tactic_type.Tacticals
 open Shell_p4_sig
-open Mp_version
 
 (*
  * Ref cell for returning the tactic value.
@@ -107,7 +106,7 @@ struct
    let _ =
       let wrapped = !Toploop.parse_toplevel_phrase in
       let motd lb =
-         eprintf "\t%s\n%t" version eflush;
+         eprintf "\t%s\n%t" Mp_version.version eflush;
          Toploop.parse_toplevel_phrase := wrap_once !current_state wrapped;
          !Toploop.parse_toplevel_phrase lb
       in
