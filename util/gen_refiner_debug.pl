@@ -106,10 +106,10 @@ sub process ($) {
 	$args1 .= " $arg1";
 	$args2 .= " $arg2";
     }
+    if ($tyres =~ /^\([^()]*\)$/) { $tyres =~ s/^\([[:space:]]*//; $tyres =~ s/[[:space:]]*\)$// };
     if (defined $merges{$tyres}) {
 	print "         ", $merges{$tyres}, " \"$modname.$name\" (" , $modname, "1.$name$args1) (", $modname, "2.$name$args2)\n\n";
     } else {
-	if ($tyres =~ /^\([^()]*\)$/) { $tyres =~ s/^\([[:space:]]*//; $tyres =~ s/[[:space:]]*\)$// };
 	if ($tyres =~ /\*/) {
 	    my @tyress = split(/[[:space:]]*\*[[:space:]]*/,$tyres);
 	    my $let1 = $let2 = "         let ";

@@ -58,6 +58,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    module TermShape2 = Refiner2.TermShape
    module SeqHyp1 = Refiner1.Term.SeqHyp
    module SeqHyp2 = Refiner2.Term.SeqHyp
+   module Err1 = Refiner1.RefineError
+   module Err2 = Refiner2.RefineError
 
    module TermType = struct
       type term = Type1.term * Type2.term
@@ -97,6 +99,66 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    open TermType
 
+   module RefineError = struct
+      module ErrTypes = struct
+         module Types = TermType
+         type address = TermType.address
+      end
+
+      type match_type =
+         ParamMatch of param
+       | VarMatch of var
+       | TermMatch of term
+       | TermMatch2 of term * term
+       | BTermMatch of bound_term
+       | HypMatch of seq_hyps
+
+      type refine_error =
+         GenericError
+
+       | ToploopIgnoreError
+
+       | StringError of string
+       | IntError of int
+       | TermError of term
+       | StringIntError of string * int
+       | StringStringError of string * string
+       | StringVarError of string * var
+       | StringTermError of string * term
+       | StringWrapError of string * refine_error
+       | SubgoalError of int * string * refine_error
+       | PairError of string * refine_error * string * refine_error
+
+       | NodeError of string * term * (string * refine_error) list
+       | AddressError of address * term
+
+       | TermMatchError of term * string
+       | TermPairError of term * term
+       | MetaTermMatchError of meta_term
+
+       | RewriteBoundSOVar of var
+       | RewriteFreeSOVar of var
+       | RewriteSOVarArity of var
+       | RewriteBoundParamVar of var
+       | RewriteFreeParamVar of var
+       | RewriteBadRedexParam of param
+       | RewriteNoRuleOperator
+       | RewriteBadMatch of match_type
+       | RewriteAllSOInstances of var
+       | RewriteMissingContextArg of var
+       | RewriteStringError of string
+       | RewriteStringOpnameOpnameError of string * opname * opname
+       | RewriteAddressError of address * string * refine_error
+       | RewriteFreeContextVar of var * var
+
+      exception RefineError of string * refine_error
+
+      let generic_refiner_exn = RefineError("generic", GenericError)
+
+   end
+
+   open RefineError
+
    (* Helper functions *)
    let lev2_of_lev1 lev =
       let { Type1.le_var = v; Type1.le_offset = i } = Term1.dest_level_var lev in
@@ -121,12 +183,32 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          Term2.mk_op name (List.map param2_of_param1 pl)
 
    let rec term2_of_term1 t =
-      let { Type1.term_op = op; Type1.term_terms = btl } = Term1.dest_term t in
-         Term2.mk_term (op2_of_op1 op) (List.map bterm2_of_bterm1 btl)
+      if Term1.is_var_term t then
+         Term2.mk_var_term (Term1.dest_var t)
+      else if TermMan1.is_so_var_term t then
+         let v, vs, ts = TermMan1.dest_so_var t in
+            TermMan2.mk_so_var_term v vs (List.map term2_of_term1 ts)
+      else if TermMan1.is_sequent_term t then
+         let { Type1.sequent_args = a; Type1.sequent_hyps = h; Type1.sequent_concl = c } = TermMan1.explode_sequent t in
+            TermMan2.mk_sequent_term {
+               Type2.sequent_args = term2_of_term1 a;
+               Type2.sequent_hyps = hyps2_of_hyps1 h;
+               Type2.sequent_concl = term2_of_term1 c
+            }
+      else
+         let { Type1.term_op = op; Type1.term_terms = btl } = Term1.dest_term t in
+            Term2.mk_term (op2_of_op1 op) (List.map bterm2_of_bterm1 btl)
 
    and bterm2_of_bterm1 bt =
       let { Type1.bvars = vs; Type1.bterm = bt } = Term1.dest_bterm bt in
          Term2.mk_bterm vs (term2_of_term1 bt)
+
+   and hyp2_of_hyp1 = function
+      Hypothesis (v, t) -> Hypothesis(v, term2_of_term1 t)
+    | Context (v, vs, ts) -> Context (v, vs, List.map term2_of_term1 ts)
+
+   and hyps2_of_hyps1 h =
+      SeqHyp2.of_list (List.map hyp2_of_hyp1 (SeqHyp1.to_list h))
 
    let lev1_of_lev2 lev =
       let { Type2.le_var = v; Type2.le_offset = i } = Term2.dest_level_var lev in
@@ -151,15 +233,94 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          Term1.mk_op name (List.map param1_of_param2 pl)
 
    let rec term1_of_term2 t =
-      let { Type2.term_op = op; Type2.term_terms = btl } = Term2.dest_term t in
-         Term1.mk_term (op1_of_op2 op) (List.map bterm1_of_bterm2 btl)
+      if Term2.is_var_term t then
+         Term1.mk_var_term (Term2.dest_var t)
+      else if TermMan2.is_so_var_term t then
+         let v, vs, ts = TermMan2.dest_so_var t in
+            TermMan1.mk_so_var_term v vs (List.map term1_of_term2 ts)
+      else if TermMan2.is_sequent_term t then
+         let { Type2.sequent_args = a; Type2.sequent_hyps = h; Type2.sequent_concl = c } = TermMan2.explode_sequent t in
+            TermMan1.mk_sequent_term {
+               Type1.sequent_args = term1_of_term2 a;
+               Type1.sequent_hyps = hyps1_of_hyps2 h;
+               Type1.sequent_concl = term1_of_term2 c
+            }
+      else
+         let { Type2.term_op = op; Type2.term_terms = btl } = Term2.dest_term t in
+            Term1.mk_term (op1_of_op2 op) (List.map bterm1_of_bterm2 btl)
 
    and bterm1_of_bterm2 bt =
       let { Type2.bvars = vs; Type2.bterm = bt } = Term2.dest_bterm bt in
          Term1.mk_bterm vs (term1_of_term2 bt)
 
+   and hyp1_of_hyp2 = function
+      Hypothesis (v, t) -> Hypothesis(v, term1_of_term2 t)
+    | Context (v, vs, ts) -> Context (v, vs, List.map term1_of_term2 ts)
+
+   and hyps1_of_hyps2 h =
+      SeqHyp1.of_list (List.map hyp1_of_hyp2 (SeqHyp2.to_list h))
+
+   let hyps_of_hyps1 h = h, (hyps2_of_hyps1 h)
+   let param_of_param1 p = p, (param2_of_param1 p)
+   let bterm_of_bterm1 bt = bt, (bterm2_of_bterm1 bt)
+
    let term_of_term1 t = t, (term2_of_term1 t)
    let term_of_term2 t = (term1_of_term2 t), t
+
+   let rec mterm_of_mterm1 = function
+      MetaTheorem t -> MetaTheorem (term_of_term1 t)
+    | MetaImplies (mt1, mt2) -> MetaImplies (mterm_of_mterm1 mt1, mterm_of_mterm1 mt2)
+    | MetaFunction (t, mt1, mt2) -> MetaFunction (term_of_term1 t, mterm_of_mterm1 mt1, mterm_of_mterm1 mt2)
+    | MetaIff (mt1, mt2) -> MetaIff (mterm_of_mterm1 mt1, mterm_of_mterm1 mt2)
+    | MetaLabeled (s, mt) -> MetaLabeled (s, mterm_of_mterm1 mt)
+
+   let mtype_of_mtype1 = function
+      Err1.ParamMatch p -> ParamMatch (param_of_param1 p)
+    | Err1.VarMatch v -> VarMatch v
+    | Err1.TermMatch t -> TermMatch (term_of_term1 t)
+    | Err1.TermMatch2 (t1, t2) -> TermMatch2 (term_of_term1 t1, term_of_term1 t2)
+    | Err1.BTermMatch bt -> BTermMatch (bterm_of_bterm1 bt)
+    | Err1.HypMatch h -> HypMatch (hyps_of_hyps1 h)
+
+   let addr_of_addr1 _ =
+      (* XXX: HACK: this is fake *)
+      TermAddr1.make_address [], TermAddr2.make_address []
+
+   let rec re_of_re1 = function
+    | Err1.GenericError -> GenericError
+    | Err1.ToploopIgnoreError -> ToploopIgnoreError
+    | Err1.StringError s -> StringError (s)
+    | Err1.IntError i -> IntError (i)
+    | Err1.TermError t -> TermError (term_of_term1 t)
+    | Err1.StringIntError (s0, i1) -> StringIntError (s0, i1)
+    | Err1.StringStringError (s0, s1) -> StringStringError (s0, s1)
+    | Err1.StringVarError (s0, v1) -> StringVarError (s0, v1)
+    | Err1.StringTermError (s0, t1) -> StringTermError (s0, term_of_term1 t1)
+    | Err1.StringWrapError (s0, re1) -> StringWrapError (s0, re_of_re1 re1)
+    | Err1.SubgoalError (i0, s1, re2) -> SubgoalError (i0, s1, re_of_re1 re2)
+    | Err1.PairError (s0, re1, s2, re3) -> PairError (s0, re_of_re1 re1, s2, re_of_re1 re3)
+    | Err1.NodeError (s0, t1, srel) -> NodeError (s0, term_of_term1 t1, List.map sre_of_sre1 srel)
+    | Err1.AddressError (a0, t1) -> AddressError (addr_of_addr1 a0, term_of_term1 t1)
+    | Err1.TermMatchError (t0, s1) -> TermMatchError (term_of_term1 t0, s1)
+    | Err1.TermPairError (t0, t1) -> TermPairError (term_of_term1 t0, term_of_term1 t1)
+    | Err1.MetaTermMatchError mt -> MetaTermMatchError (mterm_of_mterm1 mt)
+    | Err1.RewriteBoundSOVar v -> RewriteBoundSOVar (v)
+    | Err1.RewriteFreeSOVar v -> RewriteFreeSOVar (v)
+    | Err1.RewriteSOVarArity v -> RewriteSOVarArity (v)
+    | Err1.RewriteBoundParamVar v -> RewriteBoundParamVar (v)
+    | Err1.RewriteFreeParamVar v -> RewriteFreeParamVar (v)
+    | Err1.RewriteBadRedexParam p -> RewriteBadRedexParam (param_of_param1 p)
+    | Err1.RewriteNoRuleOperator -> RewriteNoRuleOperator
+    | Err1.RewriteBadMatch mt -> RewriteBadMatch (mtype_of_mtype1 mt)
+    | Err1.RewriteAllSOInstances v -> RewriteAllSOInstances (v)
+    | Err1.RewriteMissingContextArg v -> RewriteMissingContextArg (v)
+    | Err1.RewriteStringError s -> RewriteStringError (s)
+    | Err1.RewriteStringOpnameOpnameError (s0, o1, o2) -> RewriteStringOpnameOpnameError (s0, o1, o2)
+    | Err1.RewriteAddressError (a0, s1, re2) -> RewriteAddressError (addr_of_addr1 a0, s1, re_of_re1 re2)
+    | Err1.RewriteFreeContextVar (v0, v1) -> RewriteFreeContextVar (v0, v1)
+
+   and sre_of_sre1 (s, re) =
+      s, re_of_re1 re
 
    let print_term_ref = ref (fun _ _ -> raise (Failure "Refiner_debug.Term.print_term: printer not installed"))
 
@@ -176,12 +337,22 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
     | [] ->
          ()
 
-   (*
-    * We use a separate error reporting function to have a single breakpoint
-    * location that can be used to catch _all_ error in the debugger
-    *)
-   let report_error x msg =
-      raise (Invalid_argument ("Found a mismatch in function " ^ x ^ ": " ^ msg))
+   type 'a wrap =
+      Val of 'a
+    | Err of exn
+
+   let wrap1 f a =
+      try Val (f a) with exn -> Err exn
+
+   let wrap_plus f a =
+      match f with
+         Val f -> wrap1 f a
+       | (Err _) as err -> err
+
+   let wrap2 f a1 = wrap_plus (wrap1 f a1)
+   let wrap3 f a1 a2 = wrap_plus (wrap2 f a1 a2)
+   let wrap4 f a1 a2 a3 = wrap_plus (wrap3 f a1 a2 a3)
+   let wrap5 f a1 a2 a3 a4 = wrap_plus (wrap4 f a1 a2 a3 a4)
 
    let split = List.split
 
@@ -282,6 +453,28 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let split_attaf f =
       (fun a t1 -> let t, res = f a (term_of_term1 t1) in fst t, res),
       (fun a t2 -> let t, res = f a (term_of_term2 t2) in snd t, res)
+
+   (*
+    * We use a separate error reporting function to have a single breakpoint
+    * location that can be used to catch _all_ error in the debugger
+    *)
+   let report_error x msg =
+      raise (Invalid_argument ("Found a mismatch in function " ^ x ^ ": " ^ msg))
+
+   let merge merge_fun x v1 v2 =
+      match v1, v2 with
+         Val v1, Val v2 -> merge_fun x v1 v2
+       | Err (Err1.RefineError (s1, err1)), Err (Err2.RefineError _) -> raise (RefineError (s1, re_of_re1 err1))
+       | Err (RefineError _ as exn), Err (RefineError _) -> raise exn
+       | Err (Err1.RefineError _), _
+       | _, Err (Err2.RefineError _)
+       | Err (RefineError _), _
+       | _, Err (RefineError _) -> report_error x "One implementation raise RE, another did not"
+       | Err exn1, Err exn2 when exn1 = exn2 -> raise exn1
+       | Err (Failure s1), Err (Failure s2) -> raise (Failure ("Impl1: " ^ s1 ^ "; Impl2: " ^ s2))
+       | Err (Invalid_argument s1), Err (Invalid_argument s2) -> raise (Invalid_argument ("Impl1: " ^ s1 ^ "; Impl2: " ^ s2))
+       | Err exn, _
+       | _, Err exn -> raise exn
 
    let merge_poly x v1 v2 =
       if v1 <> v2 then
@@ -1993,17 +2186,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge_var "TermMeta.decode_free_var" (TermMeta1.decode_free_var p0_1) (TermMeta2.decode_free_var p0_2)
 
-   end
-
-   module TermEval = struct
-      type term = TermType.term
-   end
-
-   module RefineError = struct
-      module ErrTypes = struct
-         module Types = TermType
-         type address = TermType.address
-      end
    end
 
    module Rewrite = struct
