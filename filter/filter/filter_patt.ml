@@ -63,15 +63,18 @@ let xconcl_opname = mk_opname "xconcl" (mk_opname "Perv" nil_opname)
 let is_xconcl_term = is_no_subterms_term xconcl_opname
 
 (*
- * Translate the "_" variable to the wildcard pattern,
+ * Translate the following variables into wildcards.
+ *    (empty)
+ *    _
+ *    __.*
  *)
-let wild_sym = Lm_symbol.add "_"
-
 let patt_of_var loc v =
-   if Lm_symbol.eq v wild_sym then
-      <:patt< _ >>
-   else
-      <:patt< $lid: string_of_symbol v$ >>
+   let s = Lm_symbol.to_string v in
+   let len = String.length s in
+      if len = 0 || s.[0] = '_' && (len = 1 || s.[1] = '_') then
+         <:patt< _ >>
+      else
+         <:patt< $lid: string_of_symbol v$ >>
 
 (*
  * Utilities.
