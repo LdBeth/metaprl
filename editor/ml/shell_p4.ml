@@ -448,26 +448,41 @@ struct
    let eval_expr loc expr =
       eval_str_item loc (<:str_item< $exp: expr$ >>)
 
+   type ('a, 'b) once =
+      OnceInitial of 'a
+    | OnceFinal of 'b
+
+   let eval_tactic_once tacv =
+      let tac p =
+         match !tacv with
+            OnceFinal tac ->
+               tac p
+          | OnceInitial pt_item ->
+               inline_tactic := None;
+               try
+                  if Toploop.execute_phrase false (Parsetree.Ptop_def pt_item) then
+                     match !inline_tactic with
+                        Some tac ->
+                           tacv := OnceFinal tac;
+                           tac p
+                      | None ->
+                           raise (RefineError ("eval_tactic", StringError "evaluation failed"))
+                  else
+                     raise (RefineError ("eval_tactic", StringError "evaluation failed"))
+               with
+                  Typecore.Error (_, err) ->
+                     Typecore.report_error err;
+                     eflush stdout;
+                     raise (RefineError ("eval_tactic", StringError "evaluation failed"))
+      in
+         tac
+
    let eval_tactic expr =
       let loc = 0, 0 in
       let expr = (<:expr< $uid: "Shell_p4"$ . $lid: "install_tactic"$ $expr$ >>) in
       let item = (<:str_item< $exp: expr$ >>) in
       let pt_item = Ast2pt.str_item item [] in
-          inline_tactic := None;
-          try
-             if Toploop.execute_phrase false (Parsetree.Ptop_def pt_item) then
-                match !inline_tactic with
-                   Some tac ->
-                      tac
-                 | None ->
-                      raise (RefineError ("eval_tactic", StringError "evaluation failed"))
-             else
-                raise (RefineError ("eval_tactic", StringError "evaluation failed"))
-          with
-             Typecore.Error (_, err) ->
-                Typecore.report_error err;
-                eflush stdout;
-                raise (RefineError ("eval_tactic", StringError "evaluation failed"))
+         eval_tactic_once (ref (OnceInitial pt_item))
 
    let parse_string str =
       let instream = Stream.of_string str in
@@ -476,7 +491,6 @@ struct
    let eval_opens opens =
       let eval_open path =
          let loc = 0, 0 in
-            eprintf "Open %a%t" print_string_list path eflush;
             eval_str_item loc (<:str_item< open $path$ >>)
       in
          List.iter eval_open opens
