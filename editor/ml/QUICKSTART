@@ -119,3 +119,19 @@ Every time:
      start any toploop  (mptop, mp,  mpopt)
        
 
+For Connection to Nuprl5 using Jprover:
+
+  Below we assume that: 
+    - Nuprl is running on host, hostname.
+    - The Nuprl library environment is named libenv.
+    - Nuprl is listening for connections on port, xxxx.  
+
+  1) Set the environment variables:  
+     NUPRL_HOST = hostname, NUPRL_PORT = xxxx, and MP_PORT.  
+     The first 2 are determined by your running nuprl session, and the third 
+     is an arbitrary open port number that you will set.
+  2) Start editor/ml/mp
+  3) Execute   #use "nuprl.txt";;
+  4) Execute   run_jprover "libenv";;
+
+  To use jprover from nuprl, simply call the tactic, Jprover, on your proof.

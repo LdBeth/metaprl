@@ -7,29 +7,29 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
- *	
+ *
  *	Compile test.ml : should only be called when library.cma is up-to-date
  * 	ocamlc -c test.ml
  *
  *	Create test executable
  *	ocamlc -o test -custom -I ../../nuprl5/sys/io/mathbus unix.cma io.cma library.cma test.cmo -cclib -lunix
- *	
+ *
  *)
 
 open Printf
@@ -79,7 +79,7 @@ let oiljgs connection =
 		 let oid = root t "demo" in
 		   (print_string "oiljgs 2");
 		   (child t oid "test1"); (print_string "oiljgs 3");
-		
+
 		   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
 		        then (print_string "check"; raise (Test "check"))))
 	; cookie := (lib_close lib))
@@ -89,7 +89,7 @@ let oiljgs connection =
     print_endline "open insert leave join get successful.";
 
     !cookie
-	
+
 (* restore
    save
    oid_export
@@ -111,7 +111,7 @@ let seri connection cookie =
 		     child t (root t "demo") "test1") in
 	   ncookie := save lib (function t -> ex := oid_export t oid);
 	   lib_close lib)
-	
+
       (function () -> lib_close lib));
 
     let oid = null_oref () in
@@ -151,7 +151,6 @@ let ptest connection =
 	        then (print_string "check"; raise (Test "check"))
 	   ; ()));
 
-	
 	let noid = (with_transaction lib
 		     (function t ->
  		       create t "TERM" (Some (inatural_term 2)) [("foo", inatural_term 3)] ))
@@ -159,7 +158,7 @@ let ptest connection =
   	  try
 	  (with_transaction lib
 	    (function t ->
-	      (* monkey with properties and then fail*)		
+	      (* monkey with properties and then fail*)
 	      (let ps = get_properties t noid in
 
 		if not (2 = number_of_inatural_term (get_term t noid))
@@ -184,7 +183,7 @@ let ptest connection =
 		  if (not !failp) then raise (Testfailed 8));
 
  		raise Pleasefail)))
-		
+
 	  with
 	    Pleasefail ->
 	     (with_transaction lib
@@ -235,7 +234,7 @@ let dtest connection =
   let lib = join connection ["testall"] in
     (unwind_error
       (function () ->
-	
+
 	(* test get *)
 	let doid = (with_transaction lib
 		   (function t ->
@@ -262,7 +261,7 @@ let dtest connection =
 	   (function t ->
              let toid = child t doid "test" in
 		if (directory_p t toid) then raise (Testfailed 16)));
-	
+
 	(with_transaction lib
 	   (function t ->
              let toid = child t doid "test" in
@@ -298,7 +297,7 @@ let dtest connection =
 		delete_strong t toid;
 		try (get_term t toid; raise (Testfailed 23)) with e -> ()
 	    ));
-		
+
      (lib_close lib); ())
 
      (function () -> (lib_close lib)))
@@ -533,7 +532,7 @@ special_error_handler (function () -> testall "ALFHEIM" 3448 4688)
 
 
 special_error_handler (function () ->
-			( Db.db_init "/usr/u/nuprl/nuprl5/NuPrlDBa" true	
+			( Db.db_init "/usr/u/nuprl/nuprl5/NuPrlDB" true
 			; Mbterm.print_term (Db.session_string_to_term "l!l{1:n}ltvoid()t")
 			;()
 			))

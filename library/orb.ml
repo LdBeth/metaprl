@@ -7,21 +7,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
@@ -249,12 +249,12 @@ let ipassport_param = make_param (Token "!passport")
  * apply to table
  *)
 let broadcast_eval env tstamp commit_stamp bcasts =
-  print_string "num bcasts "; print_string (string_of_int (List.length bcasts));  print_newline(); 
+  print_string "num bcasts "; print_string (string_of_int (List.length bcasts));  print_newline();
   let count = ref 1 in
   map (function bipass ->
 	print_string ".";
-	(*print_string "eval_bcast "; print_string (string_of_int !count); print_newline(); 
-        count := !count + 1;*)  
+	(*print_string "eval_bcast "; print_string (string_of_int !count); print_newline();
+        count := !count + 1;*)
 	let ipass = term_of_unbound_term bipass in
 	(*Mbterm.print_term ipass; print_newline(); *)
         match dest_term ipass with
@@ -297,7 +297,7 @@ let cmd_of_icommand_term t =
 *)
 
 let cmd_of_icommand_term t =
- match dest_term t with { term_op = o; term_terms = [cmd] } 
+ match dest_term t with { term_op = o; term_terms = [cmd] }
     -> (match dest_op o with
         { op_name = opn; op_params = cmdparm :: oppl } when (parmeq cmdparm icommand_parameter)
 	  -> term_of_unbound_term cmd
@@ -312,7 +312,7 @@ let local_eval f t =
 (*
 let local_eval_new f t =
   unconditional_error_handler
-    (function () -> 
+    (function () ->
      (match dest_term t with {term_op = { op_name = opn; op_params = p :: oppl} ; term_terms = bts }
 	-> if parmeq p icommand_parameter then (ivalue_term (f (cmd_of_icommand_term t)))
        	   else if parmeq p iexpression_parameter
@@ -520,7 +520,7 @@ let connect_aux orb host hsock sock =
 
 let connect orb host hsock sock =
 
-  db_init "/usr/u/nuprl/nuprl5/NuPrlDBa" true;
+  db_init "/usr/u/nuprl/nuprl5/NuPrlDB" true;
   let link = connect_aux orb host hsock sock in
   let tcon = { link = link; orb = orb; ro_address = [] } in
     config_send_state tcon (iinform_term (ienvironment_address_term orb.lo_address));
@@ -531,7 +531,6 @@ let connect orb host hsock sock =
 
     let connection =  { link = link; orb = orb; ro_address = address } in
       orb.connections <- (connection :: orb.connections);
-      
       connection
 
 let irevoke_parameter = make_param (Token "!revoke")
@@ -694,7 +693,7 @@ let start_broadcasts e =
 			  (* nfg if we allow mulitple envs *)
 		     nl0_description))
 
-	in  print_string "start_broadcasts : "; 
+	in  print_string "start_broadcasts : ";
 		let _ = orb_broadcast e (broadcasts_of_istart_term
                             (info_of_iinform_term t))
       in ()
@@ -730,7 +729,7 @@ let open_library_environment connection lib_id ehook =
 
 let join_library_environment connection tags ehook =
   let lib_env_address = library_environment_join connection tags in
-    
+
     let env =
 	{ connection = connection
 	; re_address = lib_env_address
@@ -801,7 +800,7 @@ let orb_eval result_p env expr tid ehook=
 
 
 let eval_string e tid s =
-  let _ = 
+  let _ =
     orb_eval
       false
       e
@@ -843,7 +842,7 @@ let itransaction_parameter = make_param (Token "!transaction")
 let itransaction_term b = mk_term (mk_nuprl5_op [itransaction_parameter; make_bool_parameter b]) []
 
 let eval_callback checkpointp e tid f =
-  let _ = 
+  let _ =
     orb_eval false e (icommand_term (itransaction_term checkpointp))
 	   tid
 	   (function term ->
@@ -856,8 +855,7 @@ let with_fail_protect g f =
 
   try (
     g (function b ->
-         let _ = 
-	         oref_set a
+         let _ = oref_set a
 	            (try f b
 	             with e -> let _ = oref_set err e in raise e)
          in ()

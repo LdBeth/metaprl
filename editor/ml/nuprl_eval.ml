@@ -413,9 +413,9 @@ module Nuprl = struct
 
   let library_open_eval name rhook =
     if not (oref_p library) then
-      let host = Sys.getenv "NUPRLLIB_HOST"
-      and port = int_of_string (Sys.getenv "NUPRLLIB_PORT")
-      and mport = int_of_string (Sys.getenv "MPLIB_PORT") in
+      let host = Sys.getenv "NUPRL_HOST"
+      and port = int_of_string (Sys.getenv "NUPRL_PORT")
+      and mport = int_of_string (Sys.getenv "MP_PORT") in
       print_string "before lib_open_eval";
       try (lib_open_eval name rhook host port mport); ()
       with e -> (lib_open_eval name rhook host port (mport+2));
