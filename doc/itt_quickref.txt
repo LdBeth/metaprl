@@ -432,6 +432,9 @@ conversion to apply.
 * reduceC : conv
 = repeatC (higherC reduceTopC)
 
+* reduceT : tactic
+= rwAll reduceC  - reduces the goal sequent
+
 ----------------------------------------
 dtactic:
 

@@ -131,7 +131,7 @@ struct
          fun conv -> funC (someSubCE conv)
 
    let allSubThenC conv1  conv2 =
-      progressC (prefix_thenC (allSubC (tryC conv1)) conv2)
+       prefix_thenC (progressC (allSubC (tryC conv1))) conv2
 
    (*
     * Outermost terms.

@@ -97,6 +97,7 @@ val process_reduce_resource_rw_annotation : (prim_rewrite, term*conv) rw_annotat
 
 topval reduceTopC : conv
 topval reduceC : conv
+topval reduceT : tactic
 
 (************************************************************************
  * DEBUGGING

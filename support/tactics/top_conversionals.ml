@@ -373,8 +373,10 @@ doc <:doc<
    @bf{The @Comment!resource[reduce_resource]}
 
    The @tt{reduce} resource provides a generic method for
-   defining @emph{evaluation}.  The @conv[reduceC] conversion
+   defining @emph{evaluation}.  The @conv[reduceTopC] conversion
    can be used to apply this evaluator.
+   The @conv[reduceC] conversion repeatedly applies @tt[reduceTopC] to any subterm.
+   The @tactic[reduceT] tectic applies @tt[reduceC] to the goal sequent.
 
    For example, the @Nuprl type theory describes several
    generic reductions:
@@ -444,6 +446,9 @@ let reduceTopC = funC reduceTopC_env
 
 let reduceC =
    repeatC (higherC reduceTopC)
+
+let reduceT =
+   rwAll reduceC
 
 (*
  * Debugging.
