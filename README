@@ -29,9 +29,14 @@ To run MetaPRL for the first time:
       or
       % cd editor/ml; ./mpopt  (native code)
 
+The file  editor/ml/QUICKSTART contains some hints on the usage
+of MetaPRL proof editor.
+
 Refer to doc/htmlman/install.html or to
 http://cvs.metaprl.org:12000/metaprl/install.html
 for more information.
+
+
 
 If you plan to write some code, take a look the Developer Guide before you start.
 Go to either doc/htmlman/developer-guide/default.html or to
