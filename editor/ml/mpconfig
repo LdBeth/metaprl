@@ -27,7 +27,7 @@ setenv MPLIB ../../lib
 # in funny places like the .prla files (since is_printable function used by String.escape is
 # locale-aware). To avoid these problems, we'd better work with LC_ALL=C
 #
-setenv LC_ALL en_US.UTF-8
+setenv LC_ALL C
 
 #
 # Camlp4 directory
