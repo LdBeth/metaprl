@@ -28,21 +28,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -293,10 +293,10 @@ struct
     * Perform all the checks.
     *)
    let check tree =
-      let _ = 
-         check_red tree; 
-         check_black tree; 
-         check_sort tree; 
+      let _ =
+         check_red tree;
+         check_black tree;
+         check_sort tree;
          check_size tree
       in tree
 
@@ -586,9 +586,18 @@ struct
          (* Leaf is colored red *)
          Red (key, Leaf, Leaf, 1)
 
-    | Red _ ->
+    | (Red _) as tree ->
          (* Red nodes will not come up *)
          raise (Invalid_argument "Red_black_set.insert")
+
+(*
+   let insert key tree =
+      try insert key tree with
+         (Invalid_argument _) as exn ->
+            print tree;
+            print_newline ();
+            raise exn
+*)
 
    (*
     * Add an element to the set.
@@ -776,7 +785,7 @@ struct
                               lift key path (**)
                                  (Black (key2,
                                          new_red key3 (**)
-                                            (new_red key0 left c)
+                                            (new_black key0 left c)
                                             (Black (key4, left4, right4, size4)),
                                             right2,
                                             pred size0))

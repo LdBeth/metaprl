@@ -144,6 +144,14 @@ let status_of_ped { ped_undo = undo } =
          Proof.node_status pf
     | [] ->
          raise (Failure "status_of_ped")
+
+let node_count_of_ped { ped_undo = undo } =
+   match undo with
+      { ped_proof = pf } :: _ ->
+         Proof.node_count pf
+    | [] ->
+         raise (Failure "node_count_of_ped")
+
 (*
  * Get the goal of a proof.
  *)

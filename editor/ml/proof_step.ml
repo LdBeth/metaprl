@@ -14,21 +14,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -104,6 +104,7 @@ type 'a norm =
      global_args : raw_attributes;
      fcache : raw_cache;
      sentinal : sentinal;
+     parser : string -> MLast.expr;
      create_tactic : MLast.expr -> tactic;
      step_of_proof_step : ('a norm, 'a proof_step, 'a proof_step, t) Memo.t;
      tactic_arg_of_aterm : ('a norm, 'a aterm, 'a aterm, tactic_arg) Memo.t;
@@ -329,7 +330,7 @@ let make_step info { Io_proof_type.step_goal = goal;
      step_subgoals = List.map (Memo.apply info.tactic_arg_of_aterm info) subgoals;
      step_text = text;
      step_ast = ast;
-     step_tactic = info.create_tactic ast
+     step_tactic = info.create_tactic (info.parser text)
    }
 
 let make_tactic_arg info { aterm_goal = goal;
@@ -365,11 +366,12 @@ let rec make_raw_attributes info = function
 (*
  * Create the info.
  *)
-let create_norm norm { ref_fcache = fcache; ref_args = args } create_tactic sentinal =
+let create_norm norm { ref_fcache = fcache; ref_args = args } parser create_tactic sentinal =
    { norm = norm;
      global_args = args;
      fcache = fcache;
      sentinal = sentinal;
+     parser = parser;
      create_tactic = create_tactic;
      step_of_proof_step = Memo.create id make_step compare_step;
      tactic_arg_of_aterm = Memo.create id make_tactic_arg compare_aterm;

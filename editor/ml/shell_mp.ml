@@ -184,6 +184,7 @@ struct
    let shell_get_term i =
       try List.assoc i !inline_terms with
          Not_found ->
+            eprintf "Term %d not found%t" i eflush;
             xnil_term
 
    (*
@@ -640,6 +641,11 @@ struct
                      eflush stderr
              | End_of_file ->
                   loop := false
+
+             | (Pcaml.Qerror _) as exn ->
+                  Pcaml.report_error exn;
+                  eflush stderr
+
              | exn ->
                   let df = get_dfbase () in
                   let buf = new_buffer () in

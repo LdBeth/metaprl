@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -697,7 +697,7 @@ let proof_of_term term_f global_args proof =
       Memo.apply info.proof_of_term info proof
 
 (************************************************************************
- * TACTIC HANDLING                                                      *
+ * PROOF STATS                                                          *
  ************************************************************************)
 
 (*
@@ -738,6 +738,32 @@ let tactics_of_proof proof =
    let _ = collect_proof proof in
    let _ = Hashtbl.iter collect hash in
       <:expr< [| $list: !entries$ |] >>
+
+(*
+ * Count total number of nodes.
+ *)
+let node_count_of_proof proof =
+   let rec collect_proof count
+       { proof_step = step;
+         proof_children = children;
+         proof_extras = extras
+       } =
+      let count = collect_proof_step count step in
+         List.fold_left collect_proof_child count children
+
+   and collect_proof_step count = function
+      ProofStep _ ->
+         succ count
+    | ProofNode proof ->
+         collect_proof count proof
+
+   and collect_proof_child count = function
+      ChildGoal goal ->
+         count
+    | ChildProof proof ->
+         collect_proof count proof
+   in
+      collect_proof 0 proof
 
 (*
  * -*-

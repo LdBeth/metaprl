@@ -30,8 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-load "refl_free_vars";;
-cd "refl_free_vars";;
+load "refl_term";;
+cd "refl_term/eq_alpha_term_trans";;
 
 (*
  * -*-

@@ -608,44 +608,29 @@ let join_ordered_children =
 
 (*
  * Try permutations, where matching is equality.
- * NOTE: may later upgrade this to alpha-equality, or
- * generalization, or something else.
+ * This function is quadratic in the number of subgoals.
  *)
 let join_permuted_children subgoals children =
-   (* Use a hash function to help matching *)
-   let make_index1 subgoal =
-      Hashtbl.hash (Sequent.goal subgoal), subgoal
+   let rec search subgoal = function
+      child :: children ->
+         if alpha_equal (Sequent.goal subgoal) (Sequent.goal (node_goal child)) then
+            ChildNode child, children
+         else
+            let goal, children' = search subgoal children in
+               goal, child :: children'
+    | [] ->
+         ChildGoal subgoal, []
    in
-   let make_index2 node =
-      let goal = node_goal node in
-	 Hashtbl.hash (Sequent.goal goal), goal, node
-   in
-   let indices1 = List.map make_index1 subgoals in
-   let indices2 = List.map make_index2 children in
-
-   (* Cross reference index1 to index2 *)
-   let find_match index subgoal =
-      let rec find = function
-	 (index', goal, node) :: indices2 ->
-	    if index = index' & subgoal = goal then
-	       ChildNode node, indices2
-	    else
-	       let child, indices' = find indices2 in
-		  child, (index', goal, node) :: indices'
+   let rec crossref subgoals children =
+      match subgoals with
+         subgoal :: subgoals ->
+            let subgoal, children = search subgoal children in
+            let subgoals, children = crossref subgoals children in
+               subgoal :: subgoals, children
        | [] ->
-	    ChildGoal subgoal, []
-      in
-	 find
+            [], children
    in
-      let rec crossref indices2 = function
-	 (index, subgoal) :: indices1 ->
-	    let child, indices2' = find_match index subgoal indices2 in
-	    let children', extras = crossref indices2' indices1 in
-	       child :: children', extras
-       | [] ->
-	    [], List.map (function _, _, node -> node) indices2
-   in
-      crossref indices2 indices1
+      crossref subgoals children
 
 (*
  * Combine them.
@@ -971,6 +956,29 @@ let expand df pf =
    in
       replace_node pf (expand_node node)
 
+(*
+ * Count the number of nodes in the proof.
+ *)
+let node_count { pf_address = addr; pf_node = node } =
+   let rec count_node count node =
+      let { node_item = item; node_children = children } = node in
+      let count =
+         match item with
+            Step step ->
+               succ count
+          | Node node ->
+               count_node count node
+      in
+         List.fold_left count_child count children
+
+   and count_child count = function
+      ChildGoal goal ->
+         count
+    | ChildNode node ->
+         count_node count node
+   in
+      count_node 0 node
+
 (************************************************************************
  * IO                                                                   *
  ************************************************************************)
@@ -1120,13 +1128,13 @@ let make_child_node info = function
 (*
  * Create the state.
  *)
-let proof_of_io_proof arg create_tactic sentinal pf =
+let proof_of_io_proof arg parser create_tactic sentinal pf =
    let { ref_fcache = fcache; ref_args = args } = arg in
    let term_info = Term_copy.create_norm () in
    let norm = Term_copy.normalize_term term_info in
    let info =
       { norm = norm;
-        step_norm = Proof_step.create_norm norm arg create_tactic sentinal;
+        step_norm = Proof_step.create_norm norm arg parser create_tactic sentinal;
         node_of_proof = Memo.create id make_proof compare_proof;
         node_item_of_proof_node = Memo.create id make_node_item compare_proof_node;
         child_node_of_proof_child = Memo.create id make_child_node compare_proof_child

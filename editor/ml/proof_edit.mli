@@ -70,6 +70,7 @@ val ped_tactic : t -> (string * MLast.expr * tactic) option
  *)
 val proof_of_ped : t -> Proof.t
 val status_of_ped : t -> Proof.status
+val node_count_of_ped : t -> int
 
 (*
  * Display operation.

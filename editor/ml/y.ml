@@ -57,13 +57,14 @@ open Itt_bisect
 open Itt_bunion
 open Itt_set
 open Itt_subtype
+open Itt_fset
 
 open Refl_term
 
 open Mp
 
-let _ = load "refl_term"
-let _ = cd "refl_term"
+let _ = load "itt_fset";;
+let _ = cd "itt_fset";;
 
 (*
  * -*-

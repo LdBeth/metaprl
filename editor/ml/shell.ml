@@ -117,7 +117,7 @@ struct
         df_mode = "prl";
         dir = [];
         package = None;
-        packages = Package.create ShellP4.eval_tactic (ShellP4.get_includes ());
+        packages = Package.create ShellP4.parse_string ShellP4.eval_tactic (ShellP4.get_includes ());
         proof = Shell_null.null_object
       }
 
@@ -592,12 +592,24 @@ struct
 
    let expand () =
       let set () =
-         info.proof.edit_expand (get_db null_mode_base);
-         display_proof ()
+         let start = Unix.times () in
+         let start_time = Unix.gettimeofday () in
+         let _ = info.proof.edit_expand (get_db null_mode_base) in
+         let finish = Unix.times () in
+         let finish_time = Unix.gettimeofday () in
+            display_proof ();
+            eprintf "User time %f; System time %f; Real time %f%t" (**)
+               ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
+                -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
+               ((finish.Unix.tms_stime +. finish.Unix.tms_cstime)
+                -. (start.Unix.tms_stime +. finish.Unix.tms_cstime))
+               (finish_time -. start_time)
+               eflush
       in
          print_exn set ()
 
-   (* Redefined below as a shortcut for cd
+   (*
+    * Redefined below as a shortcut for cd
     * let root () =
     *    let set () =
     *       info.proof.edit_root ();
@@ -617,7 +629,6 @@ struct
     *    in
     *       print_exn set i
     *)
-
    let refine tac =
       let set () =
          let str, ast = ShellP4.get_tactic () in

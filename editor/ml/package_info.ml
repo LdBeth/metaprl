@@ -207,6 +207,7 @@ struct
     *)
    type package =
       { mutable pack_status : status;
+        pack_parse : string -> MLast.expr;
         pack_eval : MLast.expr -> tactic;
         pack_name : string;
         mutable pack_sig  : Cache.StrFilterCache.sig_info option;
@@ -219,6 +220,7 @@ struct
     *)
    type t =
       { pack_cache : Cache.StrFilterCache.t;
+        pack_eval_string : string -> MLast.expr;
         pack_create_tactic : MLast.expr -> tactic;
         pack_dag : package ImpDag.t;
         mutable pack_packages : package ImpDag.node list
@@ -233,11 +235,12 @@ struct
     * Create the cache.
     * Add placeholders for all the theories.
     *)
-   let create create_tactic path =
+   let create parser create_tactic path =
       let dag = ImpDag.create () in
       let hash = Hashtbl.create 17 in
       let mk_package name =
          { pack_status = Incomplete;
+           pack_parse = parser;
            pack_eval = create_tactic;
            pack_name = name;
            pack_sig = None;
@@ -263,6 +266,7 @@ struct
             node
       in
          { pack_cache = Cache.StrFilterCache.create path;
+           pack_eval_string = parser;
            pack_create_tactic = create_tactic;
            pack_dag = dag;
            pack_packages = List.map add_theory (get_theories ())
@@ -501,7 +505,12 @@ struct
    let maybe_add_package pack path sig_info =
       match path with
          [name] ->
-            let { pack_create_tactic = eval; pack_dag = dag; pack_packages = packages } = pack in
+            let { pack_eval_string = parser;
+                  pack_create_tactic = eval;
+                  pack_dag = dag;
+                  pack_packages = packages
+                } = pack
+            in
             let node =
                try
                   let node = get_package pack name in
@@ -514,6 +523,7 @@ struct
                   Not_found ->
                      let pinfo =
                         { pack_status = ReadOnly;
+                          pack_parse = parser;
                           pack_eval = eval;
                           pack_sig = Some sig_info;
                           pack_info = None;
@@ -575,6 +585,7 @@ struct
    let create_package pack name =
       let info =
          { pack_status = Modified;
+           pack_parse = pack.pack_eval_string;
            pack_eval = pack.pack_create_tactic;
            pack_sig = None;
            pack_info = Some (Cache.StrFilterCache.create_cache pack.pack_cache (**)
@@ -613,8 +624,8 @@ struct
       match !proof with
          ProofEdit ped ->
             Proof_edit.status_of_ped ped
-       | ProofRaw (_, { proof_status = status }) ->
-            match status with
+       | ProofRaw (_, proof) ->
+            match proof.proof_status with
                Io_proof_type.StatusBad ->
                   Proof.Bad
              | Io_proof_type.StatusPartial ->
@@ -624,16 +635,23 @@ struct
              | Io_proof_type.StatusComplete ->
                   Proof.Complete
 
+   let node_count_of_proof proof =
+      match !proof with
+         ProofEdit ped ->
+            Proof_edit.node_count_of_ped ped
+       | ProofRaw (_, proof) ->
+            node_count_of_proof proof
+
    (*
     * Convert a proof on demand.
     *)
-   let ped_of_proof { pack_name = name; pack_eval = eval; pack_arg = arg } proof =
+   let ped_of_proof { pack_name = name; pack_parse = parse; pack_eval = eval; pack_arg = arg } proof =
       match !proof with
          ProofEdit ped ->
             ped
        | ProofRaw (name', proof') ->
             let sentinal = Sequent.sentinal_of_refiner_object name name' in
-            let proof' = Proof.proof_of_io_proof arg eval sentinal proof' in
+            let proof' = Proof.proof_of_io_proof arg parse eval sentinal proof' in
             let ped = Proof_edit.ped_of_proof [] proof' in
                proof := ProofEdit ped;
                ped
@@ -737,6 +755,7 @@ struct
    let build_package pack name status info =
       let info =
          { pack_status = status;
+           pack_parse = pack.pack_eval_string;
            pack_eval = pack.pack_create_tactic;
            pack_sig = None;
            pack_info = Some info;
