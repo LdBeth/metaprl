@@ -114,7 +114,7 @@ else
 #
 # Inline more aggressively
 #
-OCAMLOPTFLAGS += -inline 3
+OCAMLOPTFLAGS += -inline $(OCAMLOPT_INLINE)
 
 #
 # Do not compile MetaPRL with threads.
