@@ -317,4 +317,27 @@ APPLY_FUN_NOARG
 
    let string_of_address addr =
       "[" ^ collect_string_of_address addr ^ "]"
+
+   let rec apply_fun_higher_term f coll term =
+      try let (t,arg) = f term in
+         t, (arg::coll)
+      with RefineError _ ->
+         let dt = dest_term term in
+         let (btrms, args) = apply_fun_higher_bterms f coll dt.term_terms in
+         if args == coll 
+            then (term,coll)
+            else (mk_term dt.term_op btrms, args)
+
+   and apply_fun_higher_bterms f coll = function
+      [] -> 
+         ([],coll)
+    | (bt::btrms) as bterms ->
+         let (btrms_new, args) = apply_fun_higher_bterms f coll btrms in
+         let dbt = dest_bterm bt in
+         let (bt_new, args) = apply_fun_higher_term f args dbt.bterm in
+         if args == coll 
+            then (bterms, coll) 
+            else ((mk_bterm dbt.bvars bt_new)::btrms_new, args)
+
+   let apply_fun_higher f term = apply_fun_higher_term f [] term
 end

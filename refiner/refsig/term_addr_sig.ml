@@ -36,6 +36,11 @@ sig
    val apply_fun_arg_at_addr : (term -> term * 'a) -> address -> term -> term * 'a
    val apply_var_fun_at_addr : (string list list -> term -> term) -> address -> string list list -> term -> term
    val apply_var_fun_arg_at_addr : (string list list -> term -> term * 'a) -> address -> string list list -> term -> term * 'a
+
+   (*
+    * higherC low-level implementation
+    *)
+   val apply_fun_higher : (term -> term * 'a) -> term -> term * 'a list
 end
 
 (*
