@@ -3104,7 +3104,7 @@ let rec select_pos search_po po redord ftree connections slist logic calculus ca
         else 
   !!!!  but preserve first found candidate !!!!!!!
          candidates
-       in 
+       in  
   !!!!!!! this strategy is not sure the best -- back to old !!!!!!!!!
 *)
         select_pos r po redord  ftree connections slist logic calculus 
@@ -3115,7 +3115,7 @@ let rec select_pos search_po po redord ftree connections slist logic calculus ca
 
 
 
-let rec get_position_in_tree pname treelist =
+(* let rec get_position_in_tree pname treelist =
   match treelist with 
    [] -> raise (Failure "invalid argument")
   |f::r -> 
@@ -3130,6 +3130,8 @@ let rec get_position_in_tree pname treelist =
          get_position_in_tree pname ((Array.to_list suctrees) @ r)
 
      )
+*)
+
 
 
 (* total corresponds to tot in the thesis, 
@@ -3192,13 +3194,7 @@ let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
                    else 
                        (c1,c2)
                 in
-let inst_p = 
-  if inst_pos = p.name then 
-    p
-  else
-   get_position_in_tree inst_pos [ftree] 
-in 
-  rback @ [(("",ass_pos),(build_rule inst_p inst_p csigmaQ orr_flag calculus))] 
+       rback @ [(("",ass_pos),(build_rule p p csigmaQ orr_flag calculus))] 
    (* one possibility of recursion end *)
          | Alpha -> 
              rback @ ((("",p.name),(build_rule p p csigmaQ orr_flag calculus))::(tot  ftree redord connections pnew newslist))
