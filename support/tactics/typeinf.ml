@@ -110,10 +110,8 @@ type typeinf_resource_info = term * typeinf_comp
 (*
  * Infer the type of a term from the table.
  *)
-let identity x = x
-
 let collect tbl subst (so, t) =
-   try (snd (lookup tbl t)) subst (so, t) with
+   try (lookup tbl select_all t) subst (so, t) with
       Not_found ->
          raise (RefineError ("Typeinf.collect", StringTermError ("can't collect type for", t)))
 
@@ -121,7 +119,7 @@ let collect tbl subst (so, t) =
  * Resource.
  *)
 let resource typeinf_subst =
-   table_resource_info identity collect
+   table_resource_info collect
 
 (*
  * Projector.
@@ -182,7 +180,7 @@ let infer tbl =
                   raise (RefineError ("typeinf", StringVarError ("Undeclared variable", v)))
       else
          let inf =
-            try snd (lookup tbl t) with
+            try lookup tbl select_all t with
                Not_found ->
                   raise (RefineError ("typeinf", StringTermError ("Don't know how to infer type for", t)))
          in
@@ -194,7 +192,7 @@ let infer tbl =
  * The resource itself.
  *)
 let resource typeinf =
-   table_resource_info identity infer
+   table_resource_info infer
 
 (*
  * Projector.

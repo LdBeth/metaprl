@@ -51,7 +51,6 @@ open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
 open Dform
-open Dform_print
 
 open Filter_type
 open Filter_summary
@@ -155,11 +154,7 @@ let packages = Package.create (Shell_state.get_includes ())
 let all_packages () =
    List.filter shell_package (Package.packages packages)
 
-let default_mode_base =
-   try Package.get_dforms "summary" with
-      Not_found ->
-         eprintf "Can't install Summary display forms%t" eflush;
-         Dform_print.null_mode_base
+let default_mode_base = Mp_resource.theory_bookmark "summary"
 
 (*
  * Display possible exceptions.
@@ -204,7 +199,7 @@ struct
          Some mod_info ->
             if !debug_shell then
                eprintf "Selecting display forms from %s%t" (Package.name mod_info) eflush;
-            Package.dforms mod_info
+            Mp_resource.theory_bookmark (Package.name mod_info)
        | None ->
             if !debug_shell then
                eprintf "Restoring default display forms%t" eflush;
@@ -1216,8 +1211,6 @@ struct
       mk_simple_term (mk_opname "inherit" summary_opname) []
    let parens_term =
       mk_simple_term (mk_opname "parens" summary_opname) []
-   let internal_term =
-      mk_simple_term (mk_opname "internal" summary_opname) []
 
    let edit_list_dforms info name =
       let opname = make_opname [name] in
@@ -1228,8 +1221,6 @@ struct
             mk_simple_term prec_op [mk_simple_term (make_opname [name'; name]) []]
        | DFormParens ->
             parens_term
-       | DFormInternal ->
-            internal_term
       in
       let rec collect = function
          [] ->

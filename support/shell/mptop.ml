@@ -63,9 +63,6 @@ open Mp_resource
 
 open Shell_sig
 
-(* XXX Bootstrapping HACK *)
-let _ = Theory.substitute_dforms "comment" "summary"
-
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)

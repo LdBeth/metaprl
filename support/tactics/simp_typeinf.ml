@@ -112,12 +112,10 @@ type simp_typeinf_resource_info = term * simp_typeinf_comp
 (*
  * Infer the type of a term from the table.
  *)
-let identity x = x
-
 let infer tbl =
    let rec infer_term consts tenv venv eqs t =
       let inf =
-         try snd (lookup tbl t) with
+         try lookup tbl select_all t with
             Not_found ->
                raise (RefineError ("simp_typeinf", StringTermError ("Don't know how to infer type for", t)))
       in
@@ -129,7 +127,7 @@ let infer tbl =
  * The resource itself.
  *)
 let resource simp_typeinf =
-   table_resource_info identity infer
+   table_resource_info infer
 
 let typeinf_final consts eqs t ty =
    let subst = unify_eqnl eqs consts in

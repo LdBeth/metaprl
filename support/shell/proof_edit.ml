@@ -51,7 +51,6 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Dform
-open Dform_print
 
 open Tactic_type
 open Tactic_type.TacticType

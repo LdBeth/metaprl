@@ -42,7 +42,7 @@ open Opname
 open Term_shape_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermType
-open Dform_print
+open Dform
 
 open Filter_type
 open Filter_summary
@@ -112,8 +112,6 @@ sig
    (*
     * Access.
     *)
-   val get_dforms : string -> dform_mode_base
-   val dforms     : package -> dform_mode_base
    val name       : package -> string
    val filename   : package -> parse_arg -> string
 

@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2004, MetaPRL Group
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,15 +26,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *
  *)
 
 open Lm_debug
 
 open Refiner.Refiner.Refine
-open Dform_print
 
 (*
  * Show the file loading.
@@ -48,7 +47,6 @@ let _ =
 type theory =
    { thy_name : string;
      thy_refiner : refiner;
-     thy_dformer : dform_mode_base
    }
 
 (*
@@ -61,11 +59,6 @@ let base = ref ([] : theory list)
  *)
 let record_theory thy =
    Lm_ref_util.push thy base
-
-let substitute_dforms orig upd =
-   let df = (List.find (fun b -> b.thy_name = upd) (!base)).thy_dformer in
-   let update b = if b.thy_name = orig then { b with thy_dformer = df } else b in
-      base := List.map update (!base)
 
 (*
  * Get all the theories.

@@ -10,7 +10,7 @@
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
- * logical framework that provides a logical programming
+ * logical framework that provides a logical term_programming
  * environment for OCaml and other languages.
  *
  * See the file doc/index.html for information on Nuprl,
@@ -18,18 +18,18 @@
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
  *
- * This program is free software; you can redistribute it and/or
+ * This term_program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This term_program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * along with this term_program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
@@ -44,45 +44,52 @@ open Mp_resource
  * Table type.
  *)
 type 'a term_table
+type 'a term_map_table
+
+(* Raises Not_found *)
+type 'a lazy_lookup = unit -> ('a * 'a lazy_lookup)
 
 (*
- * This is the info we keep for the entries in the table.
+ * Table management. Most recently added items will be preffered in lookups
  *)
-type 'a info_entry =
-   { info_term : term;
-     info_redex : rewrite_redex;
-     info_value : 'a
-   }
+val empty_table : 'a term_table
+val empty_map_table : 'a term_table
 
 (*
- * Create a new table.
+ * Standard interface.
  *
- * The function argument is a function that takes the list
- * of entries for a term and compacts them.  It is perfectly fine
- * for this function to be the identity.
- *
- * Earlier items in the list (term * 'a) list will be preffered in lookups
+ * Lookup functions raise Not_found (except for lookup_all, which is lazy)
+ * Lookup functions take an additional selector function; only selected items
+ * could be returned.
+ * The lookup_bucket find the most specific _pattern_ that has matching entries
+ * end returns all the matching entries for that pattern. The list is always
+ * non-nil and the failure is still signalled by Not_found.
  *)
-val create_table :
-   (term * 'a) list ->
-   ('a info_entry list -> 'b info_entry list) ->
-   'b term_table
-
-val print_term_match : term list -> unit
-val eval_term_match : term -> unit
+val add_item : 'a term_table -> term -> 'a -> 'a term_table
+val lookup_rwi : 'a term_table -> ('a -> bool) -> term -> rewrite_item list * 'a
+val lookup : 'a term_table -> ('a -> bool) -> term -> 'a
+val lookup_all : 'a term_table -> ('a -> bool) -> term -> 'a lazy_lookup
+val lookup_bucket : 'a term_table -> ('a -> bool) -> term -> 'a list
 
 (*
- * Create a resource_info that can be used to create a resource
- * As an input this function takes a compactor (same as the second arg to
- * create_table) and the extractor function that uses table to do the actual
+ * Create a resource_info that can be used to create a resource As an input
+ * this function takes the extractor function that uses table to do the actual
  * resource work.
  *)
 val table_resource_info :
-   ('a info_entry list -> 'b info_entry list) ->
-   ('b term_table -> 'c) ->
-   (term * 'a, (term * 'a) list, 'c) resource_info
+   ('a term_table -> 'b) ->
+   (term * 'a, 'a term_table, 'b) resource_info
 
-val lookup : 'a term_table -> term -> rewrite_item list * 'a
+(* term -> term  mappings *)
+val add_map : 'a term_map_table -> term -> term list -> 'a -> 'a term_map_table
+val lookup_rmap : 'a term_map_table -> ('a -> bool) -> term -> term list * 'a
+
+val rmap_table_resource_info:
+   ('a term_map_table -> 'b) ->
+   (term * term list * 'a, 'a term_map_table, 'b) resource_info
+
+(* Always returns true *)
+val select_all : 'a -> bool
 
 (*
  * -*-

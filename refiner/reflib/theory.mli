@@ -32,7 +32,6 @@
  *)
 
 open Refiner.Refiner.Refine
-open Dform_print
 
 (*
  * Info is saved in this format.
@@ -40,15 +39,10 @@ open Dform_print
 type theory =
    { thy_name : string;
      thy_refiner : refiner;
-     thy_dformer : dform_mode_base
    }
 
 (* Save the theory *)
 val record_theory : theory -> unit
-
-(* XXX: bootstrapping HACK:
- * replace the dforms in a theory with something more complete *)
-val substitute_dforms : string -> string -> unit
 
 (* Get back all the theories that have been recorded *)
 val get_theories : unit -> theory list

@@ -401,7 +401,6 @@ let set_dfbase state df =
        | None ->
             Dform.null_base
    in
-      Dform.debug_base := df;
       state.state_df_base <- df
 
 let get_dfbase state =

@@ -221,146 +221,57 @@ type elim_option =
  ************************************************************************)
 
 (*
- * Merge the entries for the tactics.
- * First, separate them into alpha equal terms.
- *)
-let intro_compact entries =
-   (* Collect all the entries with the same term value *)
-   let rec separate t = function
-      hd :: tl ->
-         let t' = hd.info_term in
-         let entries, tl = separate t tl in
-            if alpha_equal t t' then
-               hd :: entries, tl
-            else
-               entries, hd :: tl
-    | [] ->
-         [], []
-   in
-
-   (* Divide the entries into sets that have the same term values *)
-   let rec divide = function
-      info :: tl ->
-         let entries, tl = separate info.info_term tl in
-            (info, (info :: entries)) :: divide tl
-    | [] ->
-         []
-   in
-
-   (* Split into normal/select versions *)
-   let rec split normal select = function
-      { info_value = (name, Some sel, tac) } as hd :: tl ->
-         split normal ((name, sel, tac) :: select) tl
-    | { info_value = (_, None, tac) } as hd :: tl ->
-         split (tac :: normal) select tl
-    | [] ->
-         List.rev normal, List.rev select
-   in
-
-   (* Find a selected tactic in the list *)
-   let rec assoc name sel = function
-      (sel', tac) :: tl ->
-         if sel' = sel then
-            tac
-         else
-            assoc name sel tl
-    | [] ->
-         raise (RefineError (name, StringIntError ("selT argument is out of range", sel)))
-   in
-
-   (* Compile the select version of the tactic *)
-   let compile_select name entries =
-      funT (fun p ->
-         let sel =
-            try get_sel_arg p with
-               RefineError _ ->
-                  raise (RefineError (name, StringError "selT argument required"))
-         in
-            assoc name sel entries)
-   in
-
-   (* Compile the non-selected version of the tactic *)
-   let compile_normal entries =
-      firstT entries
-   in
-
-   (* Compile the most general form *)
-   let compile_general name normal select =
-      funT (fun p ->
-         begin try assoc name (get_sel_arg p) select with
-            RefineError _ ->
-               firstT normal
-         end)
-   in
-
-   (* Merge the entries *)
-   let compile ({ info_term = t; info_redex = rw; info_value = (name, _, _) }, entries) =
-      let tac =
-         let normal, select = split [] [] entries in
-         let selname = String.concat ":" (List.map (fun (name, _, _) -> name) select) in
-         let select = List.map (fun (_, sel, tac) -> sel, tac) select in
-            match normal, select with
-               [], [] ->
-                  raise (Invalid_argument "Dtactic: intro_merge")
-             | [], select ->
-                  compile_select selname select
-             | normal, [] ->
-                  compile_normal normal
-             | normal, select ->
-                  compile_general selname normal select
-      in
-         { info_term = t;
-           info_redex = rw;
-           info_value = tac
-         }
-   in
-      if entries != [] then List.map compile (divide entries) else []
-
-(*
  * Extract a D tactic from the data.
  * The tactic checks for an optable.
  *)
-let extract_elim_data tbl =
+let extract_elim_data =
+   let rec firstiT i = function
+      [] -> raise (Invalid_argument "extract_elim_data: internal error")
+    | [tac] -> tac i
+    | tac :: tacs -> tac i orelseT firstiT i tacs
+   in
+   (fun tbl ->
    argfunT (fun i p ->
       let t = Sequent.nth_hyp p i in
-      let tac =
+      if !debug_dtactic then
+         eprintf "Dtactic: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
+      let tacs =
          try
-            (* Find and apply the right tactic *)
-            if !debug_dtactic then
-               eprintf "Dtactic: lookup %s%t" (SimplePrint.string_of_opname (opname_of_term t)) eflush;
-            snd (Term_match_table.lookup tbl t)
+            lookup_bucket tbl select_all t
          with
             Not_found ->
                raise (RefineError ("extract_elim_data", StringTermError ("D tactic doesn't know about", t)))
-      in
-         if !debug_dtactic then
-            eprintf "Dtactic: applying elim %s%t" (SimplePrint.string_of_opname (opname_of_term t)) eflush;
-         tac i)
+      in firstiT i tacs))
 
-let extract_intro_data tbl =
+let extract_intro_data =
+   let select_intro sel (_, sel', _) =
+      match sel, sel' with
+         _, None -> true
+       | Some i, Some i' when i = i' -> true
+       | _ -> false
+   in
+   let extract (name, _, tac) =
+      if !debug_dtactic then eprintf "Dtactic: intro: found %s%t" name eflush; tac
+   in
+   (fun tbl ->
    funT (fun p ->
       let t = Sequent.concl p in
+      let sel_arg = get_sel_arg p in
+      if !debug_dtactic then
+         eprintf "Dtactic: intro: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
+      let tacs =
          try
-            (* Find and apply the right tactic *)
-            if !debug_dtactic then begin
-               eprintf "Dtactic: intro: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
-               let sv_deb_table = !debug_term_table in
-               debug_term_table:=true;
-               try
-                  let tac = snd (Term_match_table.lookup tbl t) in
-                  debug_term_table:=sv_deb_table;
-                  eprintf "Dtactic: intro: applying %s%t" (SimplePrint.short_string_of_term t) eflush;
-                  tac
-               with
-                  Not_found ->
-                     debug_term_table:=sv_deb_table;
-                     eprintf "Dtactic: intro: not found%t" eflush;
-                     raise Not_found
-            end else
-               snd (Term_match_table.lookup tbl t)
+            lookup_bucket tbl (select_intro sel_arg) t
          with
             Not_found ->
-               raise (RefineError ("extract_intro_data", StringTermError ("D tactic doesn't know about", t))))
+               let sel_err =
+                  match sel_arg with
+                     Some _ -> "out of range"
+                   | None -> "required"
+               in
+                  raise (RefineError ("extract_intro_data", StringTermError ("D tactic doesn't know about or select argument is " ^ sel_err, t)))
+      in
+         firstT (List.map extract tacs)))
 
 (*
  * Options for intro rule.
@@ -385,8 +296,7 @@ let rec get_sel_arg = function
  * Improve the intro resource from a rule.
  *)
 let in_auto p =
-   try Sequent.get_bool_arg p "d_auto"
-   with RefineError _ -> false
+   (Sequent.get_bool_arg p "d_auto") = (Some true)
 
 let process_intro_resource_annotation name context_args term_args statement (pre_tactic, options) =
    let goal = TermMan.explode_sequent (snd (unzip_mfunction statement)) in
@@ -509,6 +419,8 @@ let process_elim_resource_annotation name context_args term_args statement (pre_
             match context_args, thinT with
                [| _ |], None ->
                   argfunT (fun i p ->
+                     if !debug_dtactic then
+                        eprintf "dT elim: trying %s%t" name eflush;
                      Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] (term_args i p))
 
              | [| _ |], Some thinT ->
@@ -537,6 +449,8 @@ let process_elim_resource_annotation name context_args term_args statement (pre_
                   in
                   let thin_incr = (check_thin_nums thin_nums) - 1 in
                   argfunT (fun i p ->
+                     if !debug_dtactic then
+                        eprintf "dT elim: trying %s%t" name eflush;
                      let tac = Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] (term_args i p)
                      in
                         if get_thinning_arg p then
@@ -556,8 +470,8 @@ let wrap_intro tac =
 (*
  * Resources
  *)
-let resource elim = table_resource_info compact_arg_table_data extract_elim_data
-let resource intro = table_resource_info intro_compact extract_intro_data
+let resource elim = table_resource_info extract_elim_data
+let resource intro = table_resource_info extract_intro_data
 
 let dT =
    argfunT (fun i p ->

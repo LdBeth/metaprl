@@ -33,7 +33,6 @@
 open Refiner.Refiner.Refine
 open Refiner.Refiner
 open Dform
-open Dform_print
 
 open Tactic_type.Tactic
 open Proof_edit
@@ -234,7 +233,7 @@ sig
    val edit_list_module : t -> string -> string list * string list * string list * string list
    val edit_list_module_rw : t -> string -> string list
    val edit_list_parents : t -> string -> string list
-   val edit_list_dforms : t -> string -> (string * Filter_type.dform_modes * term list * term * term) list
+   val edit_list_dforms : t -> string -> (string * dform_modes * term list * term * term) list
    val edit_list_precs : t -> string -> term list
    val edit_list_prec_rels : t -> string -> (string * term * term) list
    val edit_cd_list_contents : t -> string -> obj_contents list (* side-effect: cd's into the specified module *)

@@ -36,6 +36,7 @@ open Refiner.Refiner
 open Term
 open TermMeta
 open Opname
+open Dform
 
 (************************************************************************
  * COMMON ERRORS                                                        *
@@ -203,16 +204,10 @@ type ('term, 'expr) opname_definition =
      opdef_resources : ('expr, 'term) resource_def
    }
 
-type dform_modes =
-   Modes of string list       (* include these modes *)
- | ExceptModes of string list (* exclude these modes *)
- | AllModes
-
 type dform_option =
    DFormInheritPrec
  | DFormPrec of string
  | DFormParens
- | DFormInternal
 
 type ('term, 'expr) dform_ml_def =
    { dform_ml_printer : string;

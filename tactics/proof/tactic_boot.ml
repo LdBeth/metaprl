@@ -782,13 +782,14 @@ struct
     * Fetch the attributes.
     *)
    let rec assoc name = function
-      (name', h) :: t ->
-         if name = name' then
-            h
-         else
-            assoc name t
-    | [] ->
-         raise (RefineError ("get_attribute", StringStringError ("attribute not found", name)))
+      (name', h) :: _ when name = name' -> h
+    | _ :: t -> assoc name t
+    | [] -> raise (RefineError ("get_attribute", StringStringError ("attribute not found", name)))
+
+   let rec assoc_option name = function
+      (name', h) :: _ when name = name' -> Some h
+    | _ :: t -> assoc_option name t
+    | [] -> None
 
    let get_term arg name =
       assoc name arg.ref_attributes.attr_terms
@@ -800,13 +801,13 @@ struct
       assoc name arg.ref_attributes.attr_types
 
    let get_int arg name =
-      assoc name arg.ref_attributes.attr_ints
+      assoc_option name arg.ref_attributes.attr_ints
 
    let get_bool arg name =
-      assoc name arg.ref_attributes.attr_bools
+      assoc_option name arg.ref_attributes.attr_bools
 
    let get_string arg name =
-      assoc name arg.ref_attributes.attr_strings
+      assoc_option name arg.ref_attributes.attr_strings
 
    let get_resource arg get_res =
       get_res arg.ref_bookmark

@@ -415,8 +415,6 @@ doc <:doc<
    @docoff
    @end[doc]
 >>
-let identity x = x
-
 let extract_data tbl =
    let rw t =
       let conv =
@@ -424,7 +422,7 @@ let extract_data tbl =
             (* Find and apply the right tactic *)
             if !debug_reduce then
                eprintf "Conversionals: lookup %a%t" debug_print t eflush;
-            snd (Term_match_table.lookup tbl t)
+            Term_match_table.lookup tbl select_all t
          with
             Not_found ->
                raise (RefineError ("Conversionals.extract_data", StringTermError ("no reduction for", t)))
@@ -441,7 +439,7 @@ let process_reduce_resource_rw_annotation = redex_and_conv_of_rw_annotation "red
  * Resource.
  *)
 let resource reduce =
-   table_resource_info identity extract_data
+   table_resource_info extract_data
 
 let reduceTopC_env e =
    get_resource_arg (env_arg e) get_reduce_resource

@@ -45,7 +45,7 @@ open Refiner.Refiner.Rewrite
  * The display database is functional, and display formas
  * are added for term templates.
  *)
-type dform_base
+type dform_table
 
 (*
  * Print to term tagged buffers.
@@ -86,27 +86,42 @@ type dform_option =
    DFormInheritPrec
  | DFormPrec of precedence
  | DFormParens
- | DFormInternal
+
+type dform_modes =
+   Modes of string list       (* include these modes *)
+ | ExceptModes of string list (* exclude these modes *)
+ | AllModes
 
 (*
  * This is the info needed for each display form.
  *)
-type dform_info =
-   { dform_name : string;
-     dform_pattern : term;
-     dform_options : dform_option list;
-     dform_print : dform_printer
-   }
+type dform_info = {
+   dform_modes : dform_modes;
+   dform_pattern : term;
+   dform_options : dform_option list;
+   dform_print : dform_printer;
+   dform_name : string;
+}
+
+type dform_base = string * dform_table
 
 (*
  * Display form installation.
  *)
+val null_table : dform_table
 val null_base : dform_base
-(* Earlier items are preffered *)
-val create_dfbase : dform_info list -> dform_base
 
-(* DEBUGGING *)
-val debug_base : dform_base ref
+(*
+ * The main dform table interface
+ *)
+val find_dftable : Mp_resource.bookmark -> dform_table
+val add_dform : dform_info -> unit
+
+(*
+ * XXX: Backwards compativility with the old API.
+ *)
+type dform_mode_base = Mp_resource.bookmark
+val get_mode_base : dform_mode_base -> string -> dform_base
 
 (************************************************************************
  * PRINTERS                                                             *

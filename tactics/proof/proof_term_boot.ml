@@ -11,7 +11,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1999 Jason Hickey, Cornell University
+ * Copyright (C) 1999-2004, MetaPRL Group
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,8 +27,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Lm_debug
@@ -49,14 +49,6 @@ open Tactic_boot
 open Tactic_boot.TacticType
 open Tactic_boot.TacticInternalType
 open Tactic_boot.TacticInternal
-
-let test_arg name goal =
-   if (squash_attributes goal.ref_attributes) <> empty_attribute then begin
-      let buf = new_buffer () in
-      format_arg !debug_base buf goal;
-      eprintf "Warning: Proof_term_boot.%s: non-empty attribute list:\n%t%t"
-         name (print_to_channel default_width buf) eflush
-   end
 
 module ProofTerm (ToTerm : RefinerSig) =
 struct

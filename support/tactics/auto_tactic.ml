@@ -185,23 +185,23 @@ let process_nth_hyp_resource_annotation name context_args term_args statement pr
 
 let extract_nth_hyp_data =
    let err = RefineError ("extract_nth_hyp_data", StringError "nthHypT tactic doesn't have an entry for this hypothesis/conclusion combination") in
-   fun data ->
-      let tbl = create_table data compact_arg_table_data in
+   let rec iterate i (c: (int -> tactic) lazy_lookup) _ =
+      try
+         let tac, cont = c () in tac i orelseT funT (iterate i cont)
+      with
+         Not_found ->
+            raise err
+   in
+   fun tbl ->
       argfunT (fun i p ->
          let t = mk_pair_term (Sequent.nth_hyp p i) (Sequent.concl p) in
-         let tac =
-            try
-               snd (Term_match_table.lookup tbl t)
-            with Not_found ->
-               raise err
-         in
-            tac i)
+            iterate i (Term_match_table.lookup_all tbl select_all t) p)
 
-let add_nth_hyp_data datas (hyp,concl,tac) =
-   (mk_pair_term hyp concl, tac) :: datas
+let add_nth_hyp_data tbl (hyp,concl,tac) =
+   add_item tbl (mk_pair_term hyp concl) tac
 
 let resource nth_hyp = Functional {
-   fp_empty = [];
+   fp_empty = empty_table;
    fp_add = add_nth_hyp_data;
    fp_retr = extract_nth_hyp_data;
 }
@@ -231,7 +231,7 @@ let successT i s = funT (fun p ->
    if !i = 0 then
       eprintf " -> succeded on -------------\n%s%t" s eflush;
    incr i;
-   eprintf "-------- and got subgoal %i ---------\n%s\n----------------%t" (!i) (Simple_print.SimplePrint.string_of_term (Sequent.goal p)) eflush;
+   eprintf "-------- and got subgoal %i ---------\n%s\n----------------%t" (!i) (Dform.string_of_term (Dform.get_mode_base top_bookmark "prl") (Sequent.goal p)) eflush;
    idT)
 
 (*
@@ -240,7 +240,7 @@ let successT i s = funT (fun p ->
 let debugT auto_tac =
    { auto_tac with
      auto_tac = funT (fun p ->
-        let s = Simple_print.SimplePrint.string_of_term (Sequent.goal p) in
+        let s = Dform.string_of_term (Dform.get_mode_base top_bookmark "prl") (Sequent.goal p) in
         eprintf "Auto: trying %s%t" auto_tac.auto_name eflush;
         (progressT auto_tac.auto_tac) thenT successT (ref 0) s)
    }

@@ -756,14 +756,10 @@ struct
       Sequent.get_int_arg arg "sel"
 
    let get_thinning_arg arg =
-      try Sequent.get_bool_arg arg "thin" with
-         RefineError _ ->
-            true
+      match Sequent.get_bool_arg arg "thin" with Some v -> v | None -> true
 
    let get_alt_arg arg =
-      try Sequent.get_bool_arg arg "alt" with
-         RefineError _ ->
-            false
+      match Sequent.get_bool_arg arg "alt" with Some v -> v | None -> false
 
 end
 

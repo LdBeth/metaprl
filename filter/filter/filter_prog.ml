@@ -290,9 +290,6 @@ let relaxed_expr loc =
 let refiner_ctyp loc =
    <:ctyp< $refiner_ctyp loc$ . refiner >>
 
-let dformer_ctyp loc =
-   <:ctyp< Dform_print.dform_mode_base >>
-
 let get_resource_name name =
    "get_" ^ name ^ "_resource"
 
@@ -302,23 +299,9 @@ let input_type name =
 let res_fqn path name =
    (String.concat "!" (List.map String.capitalize path)) ^ "!" ^ name
 
-let dform_name_patt loc =
-   <:patt< Dform.dform_name >>
-
-let dform_pattern_patt loc =
-   <:patt< Dform.dform_pattern >>
-
-let dform_options_patt loc =
-   <:patt< Dform.dform_options >>
-
-let dform_print_patt loc =
-   <:patt< Dform.dform_print >>
-
 let refiner_id = "refiner"
-let dformer_id = "dformer"
 
 let local_refiner_id = "_$global_refiner"
-let local_dformer_id = "_$global_dformer"
 let stack_id = "_$rewrite_stack"
 
 let add_lt_expr loc =
@@ -357,7 +340,6 @@ let rule_id             = "_$rule"
 let addrs_id            = "_$addrs"
 let msequent_goal_id    = "_$mseq_goal"
 let msequent_hyps_id    = "_$mseq_hyps"
-let dprinter_id         = "_$dprinter"
 let rule_name_id        = "_$rule_name"
 
 let expr_of_label loc = function
@@ -415,7 +397,6 @@ let dform_option_expr loc = function
    DFormParens -> <:expr< Dform.DFormParens >>
  | DFormPrec p -> <:expr< Dform.DFormPrec $lid:p$ >>
  | DFormInheritPrec -> <:expr< Dform.DFormInheritPrec >>
- | DFormInternal -> <:expr< Dform.DFormInternal >>
 
 (*
  * Convert a module path to an expression.
@@ -562,8 +543,7 @@ let declare_magic_block loc { magic_code = items } =
  * Trailer declares a new refiner.
  *)
 let interf_postlog info loc =
-   [ <:sig_item< value $refiner_id$ : $refiner_ctyp loc$ >>;
-     <:sig_item< value $dformer_id$ : $dformer_ctyp loc$ >> ]
+   [ <:sig_item< value $refiner_id$ : $refiner_ctyp loc$ >> ]
 
 (*
  * Extract a signature item.
@@ -1279,25 +1259,30 @@ let define_ml_rule want_checkpoint proc loc
    let name_let = <:str_item< value $name_patt$ = $bindings_let proc loc code rule_fun_expr$ >> in
       checkpoint_resources want_checkpoint loc name [name_rule_let; name_let; refiner_let loc]
 
-let create_dform_expr loc modes =
+let create_dform_expr loc name modes options term expr =
    let string_expr s = <:expr< $str:s$ >> in
-   match modes with
-      Modes modes -> <:expr< Dform_print.create_dform_modes $list_expr loc string_expr modes$ >>
-    | ExceptModes modes -> <:expr< Dform_print.create_dform_except_modes $list_expr loc string_expr modes$ >>
-    | AllModes -> <:expr< Dform_print.create_dform_all >>
+   let modes =
+      match modes with
+         Dform.Modes modes -> <:expr< Dform.Modes $list_expr loc string_expr modes$ >>
+       | Dform.ExceptModes modes -> <:expr< Dform.ExceptModes $list_expr loc string_expr modes$ >>
+       | Dform.AllModes -> <:expr< Dform.AllModes >>
+   in
+      <:expr< Dform.add_dform {
+         Dform.dform_modes = $modes$;
+         Dform.dform_name = $str: name$;
+         Dform.dform_pattern = $term$;
+         Dform.dform_options = $list_expr loc (dform_option_expr loc) options$;
+         Dform.dform_print = $expr$
+      } >>
 
 (*
  * Define a display form expansion.
  *)
 let define_dform proc loc df expansion =
-   let expr = <:expr<
-      $create_dform_expr loc df.dform_modes$ $lid:local_dformer_id$ {
-         $dform_name_patt loc$ = $str: df.dform_name$;
-         $dform_pattern_patt loc$ = $expr_of_term proc loc df.dform_redex$;
-         $dform_options_patt loc$ = $list_expr loc (dform_option_expr loc) df.dform_options$;
-         $dform_print_patt loc$ = Dform.DFormExpansion $expr_of_term proc loc expansion$
-      }
-   >> in
+   let expr =
+      create_dform_expr loc df.dform_name df.dform_modes df.dform_options (expr_of_term proc loc df.dform_redex)
+         <:expr< Dform.DFormExpansion $expr_of_term proc loc expansion$  >>
+   in
       [<:str_item< $exp: wrap_exn proc loc df.dform_name expr$ >>]
 
 (*
@@ -1360,9 +1345,9 @@ let define_ml_dform proc loc
       dform_ml_code = code
     } =
    let items = extract_redex_types (compile_redex Relaxed [||] t) in
-   let dprinter_let_expr = <:expr<
-      let $lid:dprinter_id$ =
-         fun [
+   let dform_expr = create_dform_expr loc name modes options <:expr< $lid:term_id$ >> <:expr<
+      Dform.DFormPrinter
+         (fun [
             { Dform.dform_term = $lid:term_id$;
               Dform.dform_items = $list_patt loc (rewrite_type_patt loc) items$;
               Dform.dform_printer = $lid:printer$;
@@ -1370,16 +1355,11 @@ let define_ml_dform proc loc
                $code.item_item$ $lid:term_id$
           | _ ->
                raise (Invalid_argument $str:"ML dform " ^ name ^ " (generated code)"$)
-         ]
-      in
-         $create_dform_expr loc modes$ $lid:local_dformer_id$ {
-            $dform_name_patt loc$ = $str: name$;
-            $dform_pattern_patt loc$ = $lid:term_id$;
-            $dform_options_patt loc$ = $list_expr loc (dform_option_expr loc) options$;
-            $dform_print_patt loc$ = Dform.DFormPrinter $lid:dprinter_id$
-         }
+         ])
    >> in
-      [<:str_item< $exp: define_ml_program proc loc relaxed_expr [] name t code dprinter_let_expr$ >>]
+      [<:str_item<
+         $exp: define_ml_program proc loc relaxed_expr [] name t code dform_expr$
+       >>]
 
 (*
  * Record a resource.
@@ -1446,7 +1426,6 @@ let define_parent proc loc
             <:str_item< Mp_resource.extends_theory $str:name$ >>;
             <:str_item< $exp:refiner_expr loc$.join_refiner $lid: local_refiner_id$ $parent_path$.$lid: refiner_id$ >>;
             refiner_let loc;
-            <:str_item< Dform_print.join_mode_base $lid: local_dformer_id$ $parent_path$.$lid: dformer_id$ >>
          ]
        | _ ->
             Stdpp.raise_with_loc loc (Invalid_argument "Including sub-theories not implemented")
@@ -1553,8 +1532,7 @@ let implem_prolog proc loc name =
                                 $lid:global_num_var$) =
                             Ml_term.term_arrays_of_string $str:String.escaped marshalled_terms$>>]
    in
-      <:str_item< value $lid:local_refiner_id$ = $refiner_expr loc$ . null_refiner $str: name$
-                  and   $lid:local_dformer_id$ = ref Dform_print.null_mode_base >> :: term_let
+      <:str_item< value $lid:local_refiner_id$ = $refiner_expr loc$ . null_refiner $str: name$ >> :: term_let
 
 (*
  * Trailing declarations.
@@ -1565,13 +1543,11 @@ let implem_postlog proc loc =
     | [] ->
          let name = <:expr< $str:proc.imp_name$ >> in [
             <:str_item< Mp_resource.close_theory $name$ >>;
-            <:str_item< value $lid:refiner_id$ = $refiner_expr loc$.label_refiner $lid:local_refiner_id$ $name$ and
-                              $lid:dformer_id$ = $lid:local_dformer_id$.val >>;
+            <:str_item< value $lid:refiner_id$ = $refiner_expr loc$.label_refiner $lid:local_refiner_id$ $name$ >>;
             <:str_item<
                Theory.record_theory {
                   Theory.thy_name = $name$;
-                  Theory.thy_refiner = $lid:refiner_id$;
-                  Theory.thy_dformer = $lid:dformer_id$
+                  Theory.thy_refiner = $lid:refiner_id$
                }>>]
 
 (*

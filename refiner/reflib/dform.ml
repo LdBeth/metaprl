@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2004, MetaPRL Group
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -104,17 +104,22 @@ type dform_option =
    DFormInheritPrec
  | DFormPrec of precedence
  | DFormParens
- | DFormInternal
+
+type dform_modes =
+   Modes of string list       (* include these modes *)
+ | ExceptModes of string list (* exclude these modes *)
+ | AllModes
 
 (*
  * This is the info needed for each display form.
  *)
-type dform_info =
-   { dform_name : string;
-     dform_pattern : term;
-     dform_options : dform_option list;
-     dform_print : dform_printer
-   }
+type dform_info = {
+   dform_modes : dform_modes;
+   dform_pattern : term;
+   dform_options : dform_option list;
+   dform_print : dform_printer;
+   dform_name : string;
+}
 
 (*
  * The display database is just a table matching terms
@@ -125,20 +130,15 @@ type df_printer =
  | DFPrinter of (dform_printer_info -> unit)
 
 type dform_item =
-   { df_name : string;
+   { df_modes : dform_modes;
      df_precedence : precedence;
      df_printer : df_printer;
-     df_external : bool
+     df_name : string;
    }
 
-type dform_base = dform_item term_table
+type dform_table = dform_item term_table
 
-(*
- * Destruct a base.
- *)
-type dform_entry =
-   DFormEntry of dform_info
- | DFormBase of dform_base
+type dform_base = string * dform_table
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -158,40 +158,40 @@ let inherit_prec = new_prec ()
 (*
  * Display form installation.
  *)
-let rec process_options precedence parens internal = function
+let rec process_options precedence parens = function
    [] ->
       if parens then
-         precedence, internal
+         precedence
       else
-         max_prec, internal
+         max_prec
  | h::t ->
       match h with
          DFormInheritPrec ->
-            process_options inherit_prec true internal t
+            process_options inherit_prec true t
        | DFormPrec p ->
-            process_options p true internal t
+            process_options p true t
        | DFormParens ->
-            process_options precedence true internal t
-       | DFormInternal ->
-            process_options precedence parens true t
+            process_options precedence true t
 
-let make_dform { dform_name = name;
-                     dform_pattern = t;
-                     dform_options = options;
-                     dform_print = printer
-                   } =
-   let precedence, internal = process_options min_prec false false options in
+let add_dform tbl df =
+   begin match df.dform_modes with
+      AllModes -> ()
+    | ExceptModes l | Modes l ->
+         if List.mem "raw" l then raise (Invalid_argument("Dform.add_dform: raw mode is built-in and can not be mentioned"))
+   end;
+   let precedence = process_options min_prec false df.dform_options in
    let printer' =
-      match printer with
+      match df.dform_print with
          DFormExpansion e ->
-            DFExpansion (term_rewrite Relaxed empty_args_spec [t] [e])
+            DFExpansion (term_rewrite Relaxed empty_args_spec [df.dform_pattern] [e])
        | DFormPrinter f ->
             DFPrinter f
    in
-      t, { df_name = name;
-                  df_precedence = precedence;
-                  df_printer = printer';
-                  df_external = not internal
+      add_item tbl df.dform_pattern {
+         df_modes = df.dform_modes;
+         df_name = df.dform_name;
+         df_precedence = precedence;
+         df_printer = printer';
       }
 
 (*
@@ -440,10 +440,15 @@ let dcont_opname = mk_opname "df_context_var" base_opname
 
 let make_cont v = mk_term (mk_op dcont_opname [make_param (Var v)]) []
 
+let mode_selector mode = function
+   { df_modes = ExceptModes l } -> not (List.mem mode l)
+ | { df_modes = Modes l } -> List.mem mode l
+ | { df_modes = AllModes } -> true
+
 (*
  * Print a term to a buffer.
  *)
-let format_short_term base shortener =
+let format_short_term (mode,table) shortener =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
       (* Convert a variable into a display_var *)
@@ -462,29 +467,25 @@ let format_short_term base shortener =
             t
       in
       (* Check for a display form entry *)
-      let items, { df_name = name;
-                   df_precedence = pr';
-                   df_printer = printer;
-                   df_external = is_external
-          } =
-         lookup base t
-      in
+      if mode = "raw" then raise Not_found;
+      let items, df = lookup_rwi table (mode_selector mode) t in
+      let name = df.df_name in
       let pr, parenflag =
-         if pr' = inherit_prec then
+         if df.df_precedence = inherit_prec then
             begin
                if !debug_dform then
-                  eprintf "Dform %s: inherit_prec%t" name eflush;
+                  eprintf "Dform %s: inherit_prec%t" df.df_name eflush;
                pprec, false
             end
          else
-            pr', (if eq = NOParens or get_prec pr' max_prec = EQRelation then
+            df.df_precedence, (if eq = NOParens or get_prec df.df_precedence max_prec = EQRelation then
                      begin
                         if !debug_dform then
                            eprintf "Dform %s: NOParens%t" name eflush;
                         false
                      end
                   else
-                     match get_prec pprec pr' with
+                     match get_prec pprec df.df_precedence with
                         NoRelation ->
                            if !debug_dform then
                               eprintf "Dform %s: NoRelation%t" name eflush;
@@ -507,7 +508,7 @@ let format_short_term base shortener =
 
          begin
             try
-               match printer with
+               match df.df_printer with
                   DFPrinter f ->
                      let entry =
                         { dform_term = t;
@@ -689,36 +690,78 @@ let init_list =
 let null_list =
    let v_bterms = [mk_bterm [] (mk_so_var_term v_sym [] []) ] in
    let rec aux (name, params, f) =
-         let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in
-            { dform_name = name;
-              dform_pattern = term;
-              dform_options = [DFormInheritPrec; DFormInternal];
-              dform_print = DFormPrinter f
-            }
+         let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in {
+            dform_modes = AllModes;
+            dform_name = name;
+            dform_pattern = term;
+            dform_options = [DFormInheritPrec];
+            dform_print = DFormPrinter f
+         }
    in
-   let slot_entry1 =
-      { dform_name = "slot_entry1";
-        dform_pattern =
-           mk_term (mk_op slot_opname [make_param (MString eq_sym)]) v_bterms;
-        dform_options = [DFormInheritPrec; DFormInternal];
-        dform_print = DFormPrinter slot
-      }
+   let slot_entry1 = {
+      dform_name = "slot_entry1";
+      dform_pattern =
+         mk_term (mk_op slot_opname [make_param (MString eq_sym)]) v_bterms;
+      dform_options = [DFormInheritPrec];
+      dform_print = DFormPrinter slot;
+      dform_modes = AllModes;
+   }
    in
-   let slot_entry2 =
-      { dform_name = "slot_entry2";
-        dform_pattern =
-           mk_term (mk_op slot_opname []) v_bterms;
-        dform_options = [DFormInheritPrec; DFormInternal];
-        dform_print = DFormPrinter slot
-      }
+   let slot_entry2 = {
+      dform_name = "slot_entry2";
+      dform_pattern =
+         mk_term (mk_op slot_opname []) v_bterms;
+      dform_options = [DFormInheritPrec];
+      dform_print = DFormPrinter slot;
+      dform_modes = AllModes;
+   }
    in
       slot_entry1 :: slot_entry2 :: (List.map aux init_list)
 
-let identity x = x
-let create_dfbase items =
-   create_table (List.map make_dform (items @ null_list)) identity
+let null_table =
+   List.fold_left add_dform empty_table null_list
 
-let null_base = create_dfbase []
+let null_base =
+   "src", null_table
+
+(*
+ * The display form tables for different theories are managed as a resource.
+ * The resource interface is not fully type safe (normally filter insures the
+ * type safety by inserting appropriate checks), so we have to be very careful.
+ *
+ * XXX: TODO: The reason we are creating the resource manually (as opposed
+ * to putting in into a PRL file and having filter do it) is that we do not want
+ * people to be able to use "let resource +=" on it. One the private resources
+ * are implemented (see Bug 168), this code should be moved into a PRL file.
+ *)
+let dform_resource =
+   Mp_resource.create_resource "dform" (
+      Mp_resource.Functional {
+         Mp_resource.fp_empty = null_table;
+         Mp_resource.fp_add = add_dform;
+         Mp_resource.fp_retr = ((fun tbl -> tbl) : (dform_table -> dform_table));
+      })
+
+let find_dftable bk =
+   let bk =
+      (* XXX: HACK: use "summary" dforms in the "comment" module *)
+      if (fst bk) = "comment" then Mp_resource.theory_bookmark "summary" else bk
+   in
+      dform_resource (Mp_resource.find bk)
+
+let add_dform df =
+   Mp_resource.improve "dform" (Obj.repr (df : dform_info))
+
+(*
+ * XXX: Backwards compativility with the old API.
+ *)
+type dform_mode_base = Mp_resource.bookmark
+
+let get_mode_base dfbase dfmode =
+   try
+      dfmode, (find_dftable dfbase)
+   with Not_found ->
+      raise(Failure("Dform.get_mode_base: can not find display forms for " ^ (String.capitalize (fst dfbase)) ^ "." ^ (snd dfbase)))
 
 (************************************************************************
  * SIMPLIFIED PRINTERS                                                  *
@@ -826,8 +869,6 @@ let string_of_mterm base mterm =
    let buf = new_buffer () in
       format_mterm base buf mterm;
       print_to_string 80 buf
-
-let debug_base = ref null_base
 
 (*
  * -*-

@@ -30,9 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-open Dform_print
-
 open Refiner.Refiner.TermType
+open Dform
 
 (*
  * A generic term window.

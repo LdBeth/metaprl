@@ -674,6 +674,11 @@ struct
     * Extract the options and return the mode paired with
     * the list of string defining the forms.
     *)
+   let get_dfmode loc t =
+      let mode = get_string_param loc t in
+         if mode = "raw" then Stdpp.raise_with_loc loc (Invalid_argument "Attempts to refer to the built-in \"raw\" mode");
+         mode
+
    let get_dform_options proc loc options =
       let rec compile_options = function
          hd::tl ->
@@ -685,23 +690,31 @@ struct
                         modes, except_modes, DFormParens :: options
                    | "prec" :: _ ->
                         modes, except_modes, (DFormPrec (get_string_param loc hd)) :: options
-                   | "internal" :: _ ->
-                        modes, except_modes, DFormInternal :: options
                    | "mode" :: _ ->
-                        (get_string_param loc hd)::modes, except_modes, options
+                        (get_dfmode loc hd)::modes, except_modes, options
                    | "except_mode" :: _ ->
-                        modes, (get_string_param loc hd)::except_modes, options
-                   | _ ->
-                        eprintf "warning: unknown display form option %s%t" (string_of_term hd) eflush;
+                        modes, (get_dfmode loc hd)::except_modes, options
+                   | "internal" :: _ ->
+                        (*
+                         * XXX: TODO: Currently the "internal" annotations are simply silently ignored.
+                         * They used to be propagated into the Dform module and ignore there, which
+                         * only makes things slower - for no good reason.
+                         *
+                         * The original idea was to use the flag in the Java interface to separate
+                         * the real "clickable/selectable" terms from the internal helper ones. This
+                         * was never implemented
+                         *)
                         modes, except_modes, options
+                   | _ ->
+                        Stdpp.raise_with_loc loc (Failure("warning: unknown display form option " ^ (string_of_term hd)))
             end
        | [] ->
             [], [], []
       in
       match compile_options options with
-         [], [], options -> AllModes, List.rev options
-       | modes, [], options -> Modes modes, List.rev options
-       | [], except_modes, options -> ExceptModes except_modes, List.rev options
+         [], [], options -> Dform.AllModes, List.rev options
+       | modes, [], options -> Dform.Modes modes, List.rev options
+       | [], except_modes, options -> Dform.ExceptModes except_modes, List.rev options
        | _ -> Stdpp.raise_with_loc loc (Failure "Both \"mode\" and \"except_mode\" flags on the same display form")
 
    (*
@@ -730,7 +743,7 @@ struct
     *)
    let define_dform proc loc name options t expansion =
       let modes, options' = get_dform_options proc loc options in
-         if (!debug_dform) && (modes=AllModes) then
+         if (!debug_dform) && (modes=Dform.AllModes) then
             eprintf "Warning: display form %s - no modes specified%t" name eflush;
          begin try
             ignore(term_rewrite Relaxed empty_args_spec [t] [expansion])
@@ -752,7 +765,7 @@ struct
     *)
    let define_ml_dform proc loc name options t printer buffer code =
       let modes, options' = get_dform_options proc loc options in
-      if (!debug_dform) && (modes=AllModes) then eprintf "Warning: ML display form %s - no modes specified%t" name eflush;
+      if (!debug_dform) && (modes=Dform.AllModes) then eprintf "Warning: ML display form %s - no modes specified%t" name eflush;
       let ml_def =
          { dform_ml_printer = printer;
            dform_ml_buffer = buffer;

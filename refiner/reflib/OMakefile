@@ -1,4 +1,5 @@
 OCAMLPPFLAGS =
+OCAMLFLAGS += -rectypes
 
 OCAMLINCLUDES +=\
 	-I ../refbase\

@@ -361,9 +361,9 @@ sig
    val get_term      : tactic_arg -> string -> term
    val get_term_list : tactic_arg -> string -> term list
    val get_type      : tactic_arg -> string -> term
-   val get_int       : tactic_arg -> string -> int
-   val get_bool      : tactic_arg -> string -> bool
-   val get_string    : tactic_arg -> string -> string
+   val get_int       : tactic_arg -> string -> int option
+   val get_bool      : tactic_arg -> string -> bool option
+   val get_string    : tactic_arg -> string -> string option
    val get_resource  : tactic_arg -> (global_resource -> 'a) -> 'a
 
    (*
@@ -780,9 +780,9 @@ sig
    val get_term_arg       : tactic_arg -> string -> term
    val get_term_list_arg  : tactic_arg -> string -> term list
    val get_type_arg       : tactic_arg -> string -> term
-   val get_int_arg        : tactic_arg -> string -> int
-   val get_bool_arg       : tactic_arg -> string -> bool
-   val get_string_arg     : tactic_arg -> string -> string
+   val get_int_arg        : tactic_arg -> string -> int option
+   val get_bool_arg       : tactic_arg -> string -> bool option
+   val get_string_arg     : tactic_arg -> string -> string option
    val get_resource_arg   : tactic_arg -> (global_resource -> 'a) -> 'a
 end
 
@@ -948,7 +948,7 @@ sig
    val get_with_arg : tactic_arg -> term
    val get_with_args : tactic_arg -> term list
    val get_univ_arg : tactic_arg -> term
-   val get_sel_arg : tactic_arg -> int
+   val get_sel_arg : tactic_arg -> int option
    val get_thinning_arg : tactic_arg -> bool
    val get_alt_arg : tactic_arg -> bool
 end

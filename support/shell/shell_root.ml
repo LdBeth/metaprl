@@ -35,8 +35,7 @@ extends Package_info
 extends Summary
 
 open Refiner.Refiner.RefineError
-
-open Dform_print
+open Dform
 
 open Summary
 open Shell_sig

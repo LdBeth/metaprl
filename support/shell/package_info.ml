@@ -83,11 +83,6 @@ type 'a proof_info =
  ************************************************************************)
 
 (*
- * For debugging, we keep a display form base.
- *)
-let debug_forms = ref Dform_print.null_mode_base
-
-(*
  * The proofs are marshaled into the file as IO_proof.proof.
  *)
 module Convert =
@@ -279,15 +274,6 @@ struct
     *)
    let refiner { pack_name = name } =
       (get_theory name).thy_refiner
-
-   (*
-    * Get the list of display forms.
-    *)
-   let get_dforms name =
-      (get_theory name).thy_dformer
-
-   let dforms { pack_name = name } =
-      get_dforms name
 
    (************************************************************************
     * LOADING                                                              *

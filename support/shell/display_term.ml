@@ -34,7 +34,7 @@ open Printf
 open Lm_debug
 
 open Refiner.Refiner.TermMan
-open Dform_print
+open Dform
 
 open Mux_channel
 

@@ -12,7 +12,6 @@ REFLIB_FILES =\
 	term_dtable\
 	mp_resource\
 	dform\
-	dform_print\
 	refine_exn\
 	ascii_io_sig\
 	ascii_io\

@@ -243,7 +243,7 @@ struct
 
    let print_ext ext =
       let buf = Rformat.new_buffer () in
-         format_extract !debug_base buf ext;
+         format_extract ("prl", find_dftable Mp_resource.top_bookmark) buf ext;
          format_newline buf;
          print_to_channel default_width buf stderr;
          flush stderr
@@ -589,19 +589,20 @@ struct
                leaves_ext ext
       in
          if !debug_proof then begin
+            let db = ("prl", find_dftable Mp_resource.top_bookmark) in
             let buf = Rformat.new_buffer () in
             format_hzone buf;
             format_string buf "Leaves of";
             format_space buf;
             format_szone buf;
-            format_extract !debug_base buf goal;
+            format_extract db buf goal;
             format_ezone buf;
             format_space buf;
             print_ext goal;
             format_space buf;
             format_string buf "are";
             format_space buf;
-            List.iter (format_arg !debug_base buf) leaves;
+            List.iter (format_arg db buf) leaves;
             format_ezone buf;
             print_to_channel default_width buf stderr;
             eprintf "%t" eflush

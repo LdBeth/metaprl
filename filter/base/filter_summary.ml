@@ -41,6 +41,7 @@ open Opname
 open Term_sig
 open Refiner_sig
 open Precedence
+open Dform
 
 open Filter_util
 open Filter_type
@@ -811,13 +812,16 @@ struct
 
    (*
     * Dform options.
+    *
+    * XXX HACK: the dform_internal_op is there only for backwards compativility with
+    * old files (ASCII formats v. <= 1.0.11)
     *)
    let dform_inherit_op     = mk_opname "inherit_df"
    let dform_prec_op        = mk_opname "prec_df"
    let dform_parens_op      = mk_opname "parens_df"
-   let dform_internal_op    = mk_opname "internal_df"
    let dform_mode_op        = mk_opname "mode_df"
    let dform_except_mode_op = mk_opname "except_mode_df"
+   let dform_internal_op    = mk_opname "internal_df" (* XXX: HACK: obsolete *)
 
    let dest_dform_opt tl =
       let modes = ref [] in
@@ -832,12 +836,11 @@ struct
                push options (DFormPrec (dest_string_param t))
             else if Opname.eq opname dform_parens_op then
                push options DFormParens
-            else if Opname.eq opname dform_internal_op then
-               push options DFormInternal
             else if Opname.eq opname dform_mode_op && (!except)=[] then
                push modes (dest_string_param t)
             else if Opname.eq opname dform_except_mode_op && (!modes)=[] then
                push except (dest_string_param t)
+            else if Opname.eq opname dform_internal_op then () (* XXX: HACK: obsolete *)
             else
                raise (Invalid_argument "Dform option is not valid")
       in
@@ -1306,8 +1309,6 @@ struct
          mk_string_param_term dform_prec_op s []
     | DFormParens ->
          mk_simple_term dform_parens_op []
-    | DFormInternal ->
-         mk_simple_term dform_internal_op []
 
    (*
     * Dform definitions.
