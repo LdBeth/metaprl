@@ -466,6 +466,14 @@ struct
 
    let repeatMT tac =  whileProgressMT (tryT tac)
 
+   let untilFailMT tac =
+      let rec aux p =
+          (tryT (prefix_thenMT tac aux)) p
+      in
+         aux
+
+
+
    (*
     * Repeat a fixed number of times on main subgoals.
     *)

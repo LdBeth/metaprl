@@ -941,6 +941,8 @@ sig
 
    val repeatMT : tactic -> tactic
    val repeatMForT : int -> tactic -> tactic
+   val whileProgressMT : tactic -> tactic
+   val untilFailMT : tactic -> tactic
    val seqOnMT : tactic list -> tactic
    val seqT : tactic list -> tactic
    val completeMT : tactic -> tactic

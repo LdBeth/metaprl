@@ -164,6 +164,7 @@ Applies the first tactic, then pairs up the members of the tactic list
 with the "main" subgoals (it is an error if the number of "main"
 subgoals is not the same as the length of the tactic list).
 
+
 * thenAT (infix) : tactic -> tactic -> tactic
 Applies the first tactic, then applies the second tactic to non-main
 subgoals.
@@ -187,8 +188,10 @@ subgoals labeled "set predicate", "rewrite subgoal", "assertion", or
 "antecedent".
 
 * repeatMT : tactic -> tactic
-Apply the tactic, then apply it recursively to "main" subgoals
-(stopping on each branch whenever no more progress is made).
+* whileProgressMT : tactic -> tactic
+* untilFailMT : tactic -> tactic
+Work the same as repeatT, whileProgressT, untilFailT, repeatForT, but apply the
+tactic only to "main" subgoals.
 
 * repeatMForT : int -> tactic -> tactic
 Apply the tactic, then apply it recursively to "main" subgoals, to the
