@@ -315,7 +315,9 @@ struct
    (*
     * Operator names.
     *)
-   let opname_of_term t = (dest_term t).term_op.op_name
+   let opname_of_term = function 
+      { core = Term t } -> t.term_op.op_name
+    | t -> (dest_term t).term_op.op_name
 
    (* These are trivial identity functions *)
 
