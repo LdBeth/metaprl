@@ -152,7 +152,11 @@ else
 endif
 
 ifndef CAMLLIB
-   CAMLLIB = $(CAMLLIB_DEFAULT)
+   ifdef OCAMLLIB
+      CAMLLIB = $(OCAMLLIB)
+   else
+      CAMLLIB = $(CAMLLIB_DEFAULT)
+   endif
 endif
 
 ifndef CAMLP4LIB
