@@ -31,8 +31,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 INCLUDE "refine_error.mlh"
@@ -109,6 +109,7 @@ struct
    type term = TermType.term
    type rstack = RewriteTypes.rstack
    type rwterm = RewriteTypes.rwterm
+   type strict = RewriteTypes.strict
 
    (*
     *
@@ -138,7 +139,7 @@ struct
             if List.mem_assoc v bvars then
                (* This is a first order variable instance *)
                if subterms <> [] then
-                  REF_RAISE(RefineError ("compile_so_redex_term strict", RewriteBoundSOVar v))
+                  REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
                else
                   stack, RWCheckVar(svar_index bvars v)
 
@@ -165,6 +166,9 @@ struct
             (* This is a second order variable instance *)
             else if rstack_so_mem v stack then begin
                rstack_check_arity v (List.length subterms) stack;
+               (* we set allow_so_patterns to false here since the term that is going to 
+                  match the SO variable v may have no free occurences of this argument
+                  and this would prevent us from establishing an SO pattern *)
                let stack, terms = compile_so_redex_terms false strict addrs stack bvars subterms in
                stack, RWSOMatch(rstack_so_index v stack, terms)
             end else
@@ -346,11 +350,11 @@ struct
                      stack, term :: hyps, goals
                else
                   (* No argument for this context *)
-                  REF_RAISE(RefineError ("compile_so_redex_sequent_inner strict", RewriteMissingContextArg v))
+                  REF_RAISE(RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
 
           | Hypothesis (v, term) ->
                if rstack_mem v stack then
-                  REF_RAISE(RefineError ("compile_so_redex_sequent_inner strict", StringStringError ("repeated variable", v)));
+                  REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringStringError ("repeated variable", v)));
                let stack, term = compile_so_redex_term true strict addrs stack bvars term in
                let l = List.length stack in
                let stack = stack @ [FOVar v] in
@@ -383,7 +387,7 @@ struct
          ()
 
    let compile_so_redex strict addrs terms =
-      let stack, terms = compile_so_redex_terms true strict addrs [] [] terms in
+      let stack, terms = compile_so_redex_terms true (strict=Strict) addrs [] [] terms in
          List.iter check_stack stack;
          Array.of_list stack, terms
 end

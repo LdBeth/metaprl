@@ -269,6 +269,9 @@ let compile_contractum_expr loc =
 let make_contractum_expr loc =
    <:expr< $rewriter_expr loc$ . $lid:"make_contractum"$ >>
 
+let strict_expr loc =
+   <:expr< $rewriter_expr loc$ . $uid:"Strict"$ >>
+
 (*
  * Other expressions.
  *)
@@ -1199,7 +1202,7 @@ struct
             <:expr< let $rec:false$ $list:contracta_binding$ in $code$ >>
       in
       let redex_namer_expr =
-         <:expr< $compile_redices_expr loc$ $lid:bvars_id$ $lid:args_id$ >>
+         <:expr< $compile_redices_expr loc$ $strict_expr loc$ $lid:bvars_id$ $lid:args_id$ >>
       in
       let redex_namer_let =
          <:expr< let $rec:false$ $list:[redex_namer_patt,
@@ -1948,7 +1951,7 @@ struct
       let buffer_expr = <:expr< $lid:buffer$ >> in
 
       (* Items *)
-      let redex, _ = compile_redex [||] t in
+      let redex, _ = compile_redex Relaxed [||] t in
       let items = extract_redex_types redex in
       let items_patt = list_patt loc (rewrite_type_patt loc) items in
 

@@ -70,11 +70,22 @@ sig
 
    type rewrite_namer = rewrite_stack -> string array -> string array
 
+   (* 
+    * Specifies whether instances of bound variables should be explicitly mentioned
+    *
+    * In "Strict" mode, <<lambda{x.'t}>> would only match a term where "t" does not have
+    * free instances of "x". In "Relaxed" mode there is no such restriction.
+    *
+    * By default, the rules and rewrites are compiled in "Strict" mode
+    * and display forms - in "Relaxed" mode
+    *)
+   type strict = Strict | Relaxed
+
    (*
     * Separate analysis.
     *)
-   val compile_redex : string array -> term -> rewrite_redex * rewrite_namer
-   val compile_redices : string array -> term list -> rewrite_redex * rewrite_namer
+   val compile_redex : strict -> string array -> term -> rewrite_redex * rewrite_namer
+   val compile_redices : strict -> string array -> term list -> rewrite_redex * rewrite_namer
    val compile_contractum : rewrite_redex -> term -> rewrite_contractum
    val extract_redex_types : rewrite_redex -> rewrite_type list
    val apply_redex :
@@ -86,9 +97,9 @@ sig
    val make_contractum : rewrite_contractum -> rewrite_stack -> term
 
    (* Rewrite constructor/destructors *)
-   val term_rewrite : string array * string array ->
+   val term_rewrite : strict -> string array * string array ->
       term list -> term list -> rewrite_rule
-   val fun_rewrite : term -> (term -> term) -> rewrite_rule
+   val fun_rewrite : strict -> term -> (term -> term) -> rewrite_rule
 
    (* Apply a rewrite to a term *)
    val apply_rewrite :

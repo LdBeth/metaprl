@@ -84,6 +84,7 @@ module MakeRewriteCompileRedex
    with type term = TermType.term
    with type rstack = RewriteTypes.rstack
    with type rwterm = RewriteTypes.rwterm
+   with type strict = RewriteTypes.strict
 
 (*
  * -*-

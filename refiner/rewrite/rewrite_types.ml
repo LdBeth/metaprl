@@ -192,6 +192,8 @@ DEFTOPMACRO BODY =
         con_new_vars : string array
       }
 
+   type strict = Strict | Relaxed
+
 END
 
 IFIMPLEMENTATION THEN

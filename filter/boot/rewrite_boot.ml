@@ -237,7 +237,7 @@ struct
                      [redex], _ ->
                         (* Unfolded it, so create a rewrite that reverses it *)
                         let redex, _ = dest_msequent redex in
-                        let rw' = term_rewrite ([||], [||]) [redex] [contractum] in
+                        let rw' = term_rewrite Strict ([||], [||]) [redex] [contractum] in
                         let doCE env =
                            match apply_rewrite rw' ([||], [||], []) (env_term env) [] with
                               [contractum], _ ->

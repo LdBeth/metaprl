@@ -2032,7 +2032,7 @@ struct
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
       let seq = mk_msequent goal subgoals in
-      let rw = Rewrite.term_rewrite (addrs, names) (goal :: params) subgoals in
+      let rw = Rewrite.term_rewrite Strict (addrs, names) (goal :: params) subgoals in
       let opname = mk_opname name opname in
       let ref_rule =
          { rule_name = opname;
@@ -2086,7 +2086,7 @@ struct
          in
             aux 0
       in
-      let rw = Rewrite.term_rewrite ar0_ar0 (create_redex vars args :: params) [result] in
+      let rw = Rewrite.term_rewrite Strict ar0_ar0 (create_redex vars args :: params) [result] in
       let compute_ext vars params args =
          match apply_rewrite rw ar0_ar0_null (create_redex vars args) params with
             [c], x when Array.length x = 0 ->
@@ -2176,7 +2176,7 @@ struct
    let check_rule name addrs names params mterm =
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
-      let _ = Rewrite.term_rewrite (addrs, names) (goal::params) subgoals in
+      let _ = Rewrite.term_rewrite Strict (addrs, names) (goal::params) subgoals in
          ()
 
    (************************************************************************
@@ -2187,7 +2187,7 @@ struct
     * See if the rewrite will compile.
     *)
    let check_rewrite name vars params subgoals redex contractum =
-      ignore(Rewrite.term_rewrite ([||], vars) (redex::params) [contractum])
+      ignore(Rewrite.term_rewrite Strict ([||], vars) (redex::params) [contractum])
 
    (*
     * Create a simple rewrite from a meta-term.
@@ -2199,7 +2199,7 @@ struct
             eprintf "Refiner.add_rewrite: %s%t" name eflush
       ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
-      let rw = Rewrite.term_rewrite ar0_ar0 [redex] [contractum] in
+      let rw = Rewrite.term_rewrite Strict ar0_ar0 [redex] [contractum] in
       let opname = mk_opname name opname in
       let ref_rewrite =
          { rw_name = opname;
@@ -2310,7 +2310,7 @@ struct
             eprintf "Refiner.add_cond_rewrite: %s%t" name eflush
       ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
-      let rw = Rewrite.term_rewrite ([||], vars) (redex::params) (contractum :: subgoals) in
+      let rw = Rewrite.term_rewrite Strict ([||], vars) (redex::params) (contractum :: subgoals) in
       let opname = mk_opname name opname in
       let ref_crw =
          { crw_name = opname;

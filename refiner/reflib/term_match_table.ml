@@ -202,7 +202,7 @@ let simplify_term t =
  *)
 let insert { tbl_items = items } t v =
    let t = simplify_term t in
-   let redex, _ = compile_redex [||] t in
+   let redex, _ = compile_redex Relaxed [||] t in
    let entry =
       { info_term = t;
         info_redex = redex;

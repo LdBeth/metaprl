@@ -175,6 +175,8 @@ struct
 
    type rewrite_namer = rewrite_stack -> string array -> string array
 
+   type strict = RewriteTypes.strict = Strict | Relaxed
+
    (************************************************************************
     * IMPORTS                                                              *
     ************************************************************************)
@@ -414,12 +416,10 @@ struct
       in
          namer
 
-   let strict = false
-
    (*
     * Compile redex and contractum, and form a rewrite rule.
     *)
-   let term_rewrite (addrs, names) redex contracta =
+   let term_rewrite strict (addrs, names) redex contracta =
       let stack, redex' = compile_so_redex strict addrs redex in
       let namer = compute_namer stack names in
       let enames, contracta' = compile_so_contracta names stack contracta in
@@ -432,7 +432,7 @@ struct
    (*
     * Make a ML function rewrite.
     *)
-   let fun_rewrite redex f =
+   let fun_rewrite strict redex f =
       let stack, redex' = compile_so_redex strict [||] [redex] in
          { rr_redex = redex';
            rr_namer = (fun stack names -> names);
@@ -443,13 +443,13 @@ struct
    (*
     * Compile just the redex.
     *)
-   let compile_redices addrs redices =
+   let compile_redices strict addrs redices =
       let stack, redices = compile_so_redex strict addrs redices in
       let namer = compute_namer stack [||] in
          { redex_stack = stack; redex_redex = redices }, namer
 
-   let compile_redex addrs redex =
-      let redex, namer = compile_redices addrs [redex] in
+   let compile_redex strict addrs redex =
+      let redex, namer = compile_redices strict addrs [redex] in
          match redex.redex_redex with
             [_] ->
                redex, namer

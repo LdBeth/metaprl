@@ -81,16 +81,6 @@ Example:
 test{x.test{y.'C['x; 'y]}} <--> 'C[1; 2] 
 rewrites <<test{x.test{x.'x}}>> to 1 instead of 2.
 
-3.5) (Confirmed on 1999.10.16 by nogin)
-Rewriter should support "strict" matching - in a redex, when a bound variable
-is not explicity mentioned as an argument of a SO variable, the matching term should
-not have free occurences of the correspondent variable. 
-
-The "strict" mode would also eliminate the bug no 4.3
-
-(1999.10.16, nogin) Currently the "strict" mode is implemented in rewriter,
-but not yet enambled in the refiner.
-
 3.6) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
 
 3.7) Currently rewriter does not enforce building contractum to be against the same redex
