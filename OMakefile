@@ -37,6 +37,13 @@ ABORT_ON_DEPENDENCY_ERRORS = true
 OCAMLDEPFLAGS =
 
 #
+# Do not use ocamlfind
+#
+OCAMLFIND = $(EMPTY)
+OCAMLC = $(if $(exists-in-path ocamlc.opt), ocamlc.opt, ocamlc)
+OCAMLOPT = $(if $(exists-in-path ocamlopt.opt), ocamlopt.opt, ocamlopt)
+
+#
 # Configuration defaults
 #
 include mk/defaults
