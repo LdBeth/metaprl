@@ -248,10 +248,20 @@ let debug_status_all () =
    in
       apply_all f true clean_resources clean_and_abandon
 
-declare refiner_status[name:s]
+declare refiner_status[name:s] : Dform
+declare status_bf[s] : Dform
 
-dform refiner_status_df : refiner_status[name:s] =
+dform refiner_status_df : except_mode[src] :: refiner_status[name:s] =
    szone pushm[3] info["Refiner status:"] space bf[name] space
+
+dform refiner_status_df : mode[src] :: refiner_status[name:s] =
+   szone pushm[3] `"Refiner status: " slot[name] `" "
+
+dform status_df : except_mode[src] :: status_bf[s] =
+   bf[s]
+
+dform status_df : mode[src] :: status_bf[s] =
+   `"*" slot[s] `"*"
 
 let check_all () =
    let check item db =
@@ -264,15 +274,15 @@ let check_all () =
                format_string buf "is a primitive axiom"
           | RefIncomplete (c1, c2) ->
                format_string buf "is a derived object with an ";
-               Dform.format_term db buf << bf["incomplete"] >>;
+               Dform.format_term db buf << status_bf["incomplete"] >>;
                format_string buf (sprintf " proof (%i rule boxes, %i primitive steps)" c1 c2)
           | RefComplete (c1, c2, l) ->
                format_string buf (sprintf "is a derived object with a complete grounded proof (%i rule boxes, %i primitive steps, %i dependencies)" c1 c2 (List.length l))
           | RefUngrounded (c1, c2, op) ->
                format_string buf "is a derived object with a complete ";
-               Dform.format_term db buf << bf["ungrounded"] >>;
+               Dform.format_term db buf << status_bf["ungrounded"] >>;
                format_string buf (sprintf " proof (%i rule boxes, %i primitive steps) that depends on an incomplete " c1 c2);
-               Dform.format_term db buf <:con< bf[$mk_dep_name op$:s] >>
+               Dform.format_term db buf <:con< status_bf[$mk_dep_name op$:s] >>
          end;
          format_popm buf;
          format_ezone buf;

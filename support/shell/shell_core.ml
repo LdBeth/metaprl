@@ -663,7 +663,7 @@ let mount_current_module modname parse_arg shell force_flag need_shell verbose =
                Shell_state.set_grammar (Some (Package_info.get_grammar pack));
                Shell_state.set_module modname;
                if verbose then
-                  eprintf "Module: /%s%t" modname eflush
+                  printf "Module: /%s%t" modname eflush
          end
 
 (*
@@ -919,7 +919,7 @@ let rec apply_all parse_arg shell (f : item_fun) (time : bool) (clean_item : cle
                raise (Failure "Shell_core.apply_all: not applicable inside an individual proof")
    and apply_all_packages_exn names =
       let expand name =
-         eprintf "Entering %s%t" name eflush;
+         printf "Entering %s%t" name eflush;
          chdir parse_arg shell false true (module_dir name);
          apply_all_exn false
       in
