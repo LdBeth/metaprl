@@ -31,7 +31,7 @@ all: $(MAIN).cma
 opt: $(MAIN).cmxa
 
 install:: $(MAIN).cma $(CMIFILES)
-	$(INSTALL) $(MAIN).cma $(CMIFILES) $(NLLIB)
+	$(INSTALL) $(MAIN).cma $(MLIFILES) $(CMIFILES) $(NLLIB)
 
 # Actual makefile
 include ../mk/config

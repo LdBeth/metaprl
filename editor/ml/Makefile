@@ -1,5 +1,5 @@
 # Libraries
-INCLUDE := -I . -I ../../theories/tactic -I /usr/local/lib/camlp4
+INCLUDE := -I . -I ../../theories/tactic -I $(NLLIB) -I /usr/local/lib/camlp4
 
 # Common files
 MLZFILES :=\

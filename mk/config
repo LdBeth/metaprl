@@ -61,6 +61,13 @@ PCMIFILES    := $(addsuffix .cmi,  $(PFILES))
 PCMOFILES    := $(addsuffix .cmo,  $(PFILES))
 PCMXFILES    := $(addsuffix .cmx,  $(PFILES))
 
+LMLIFILES    = $(addsuffix .mli,  $(LMFILES))
+LMLFILES     = $(addsuffix .ml,   $(LMFILES))
+MMLFILES     = $(addsuffix .mli,  $(MFILES))
+MMLIFILES    = $(addsuffix .ml,   $(MFILES))
+PMLIFILES    = $(addsuffix .mli,  $(PFILES))
+PMLFILES     = $(addsuffix .ml,   $(PFILES))
+
 REG_CMIFILES := $(LCMIFILES) $(MCMIFILES) $(PCMIFILES)
 REG_CMOFILES := $(LCMOFILES) $(MCMOFILES) $(PCMOFILES)
 REG_CMXFILES := $(LCMXFILES) $(MCMXFILES) $(PCMXFILES)

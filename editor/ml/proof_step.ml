@@ -6,6 +6,7 @@
  *)
 
 open Term
+open Proof_type
 
 include Tactic_type
 
@@ -21,55 +22,7 @@ type t =
    { step_goal : tactic_arg;
      step_subgoals : tactic_arg list;
      step_text : string;
-     step_ast : MLast.expr;
-     step_tactic : tactic
-   }
-
-(*
- * Compute a magic number from these types because we marshal
- * them to a file.
- *)
-magic_block magic_number =
-struct
-   (*
-    * An IO step does not save the tactic,
-    * and saves only part of the goal.
-    *)
-   type aterm =
-      { aterm_goal : term;
-        aterm_label : string;
-        aterm_args : refine_attribute list;
-        aterm_cache : cache
-      }
-
-   type io_proof_step =
-      { io_step_goal : aterm;
-        io_step_subgoals : aterm list;
-        io_step_ast : MLast.expr;
-        io_step_text : string
-      }
-
-   (*
-    * A handle is just a number used to lookup the
-    * step from the database.
-    *)
-   type handle = int
-
-   (*
-    * The base stored in the file is an array of steps.
-    *)
-   type in_base = io_proof_step array
-end
-
-(*
- * The output base is used to collect steps to
- * save to a file.  The out base is a list,
- * and it is converted to an array for saving
- * in the file.
- *)
-type out_base =
-   { mutable out_steps : io_proof_step list;
-     mutable out_count : int
+     step_ast : MLast.expr
    }
 
 (************************************************************************
@@ -79,10 +32,9 @@ type out_base =
 (*
  * Constructor.
  *)
-let create goal subgoals text ast tac =
+let create goal subgoals text ast =
    { step_goal = goal;
      step_subgoals = subgoals;
-     step_tactic = tac;
      step_ast = ast;
      step_text = text
    }
@@ -94,7 +46,6 @@ let step_goal { step_goal = goal } = goal
 let step_subgoals { step_subgoals = goals } = goals
 let step_text { step_text = text } = text
 let step_ast { step_ast = ast } = ast
-let step_tactic { step_tactic = tac } = tac
 
 (************************************************************************
  * BASE OPERATIONS                                                      *
@@ -106,15 +57,13 @@ let step_tactic { step_tactic = tac } = tac
 let aterm_of_goal (t, { ref_label = label; ref_args = args; ref_fcache = fcache }) =
    { aterm_goal = t;
      aterm_label = label;
-     aterm_args = args;
-     aterm_cache = fcache
+     aterm_args = args
    }
 
-let goal_of_aterm resources
+let goal_of_aterm resources fcache
     { aterm_goal = t;
       aterm_label = label;
-      aterm_args = args;
-      aterm_cache = fcache
+      aterm_args = args
     } =
    (t, { ref_label = label;
          ref_args = args;
@@ -128,93 +77,35 @@ let goal_of_aterm resources
 let io_step_of_step 
     { step_goal = goal;
       step_subgoals = subgoals;
-      step_tactic = tac;
       step_text = text;
       step_ast = ast
     } =
-   { io_step_goal = aterm_of_goal goal;
-     io_step_subgoals = List.map aterm_of_goal subgoals;
-     io_step_text = text;
-     io_step_ast = ast
+   { Proof_type.step_goal = aterm_of_goal goal;
+     Proof_type.step_subgoals = List.map aterm_of_goal subgoals;
+     Proof_type.step_text = text;
+     Proof_type.step_ast = ast
    }
 
 (*
  * Add the resource information.
  *)
-let step_of_io_step resources tactic
-    { io_step_goal = goal;
-      io_step_subgoals = subgoals;
-      io_step_text = text;
-      io_step_ast = ast
+let step_of_io_step resources fcache
+    { Proof_type.step_goal = goal;
+      Proof_type.step_subgoals = subgoals;
+      Proof_type.step_text = text;
+      Proof_type.step_ast = ast
     } =
-   { step_goal = goal_of_aterm resources goal;
-     step_subgoals = List.map (goal_of_aterm resources) subgoals;
-     step_tactic = tactic;
+   { step_goal = goal_of_aterm resources fcache goal;
+     step_subgoals = List.map (goal_of_aterm resources fcache) subgoals;
      step_text = text;
      step_ast = ast
    }
 
 (*
- * New output base.
- *)
-let create_out_base () =
-   { out_steps = [];
-     out_count = 0
-   }
-
-(*
- * To save a step, add it to the list and
- * increment the counter.
- *)
-let save_step base step =
-   let { out_steps = steps; out_count = count } = base in
-      base.out_steps <- (io_step_of_step step) :: steps;
-      base.out_count <- count + 1;
-      count
-
-(*
- * In base is an array.
- *)
-let in_base_of_out_base (l : out_base) : in_base =
-   Array.of_list (List.rev l.out_steps)
-
-(*
- * To save the base, marshal it with a magic number.
- *)
-let save_base base out =
-   output_binary_int out magic_number;
-   output_value out (in_base_of_out_base base)
-
-(*
- * Restore the marshaled base.
- *)
-let restore_base inx =
-   try 
-      let magic' = input_binary_int inx in
-         if magic' = magic_number then
-            (input_value inx : in_base)
-         else
-            raise (Failure "Proof_step.restore_base: bad magic number")
-   with
-      End_of_file ->
-         raise (Failure "Proof_step.restore_base: premature end of file")
-
-(*
- * Extract the tactic expressions from the base.
- *)
-let restore_tactics inx =
-   let base = restore_base inx in
-   let extract { io_step_ast = ast } = ast in
-      Array.map extract base
-
-(*
- * Restore a proof step, given the resources for this proof.
- *)
-let restore_step base resources tacs hand =
-   step_of_io_step resources tacs.(hand) base.(hand)
-
-(*
  * $Log$
+ * Revision 1.3  1998/04/13 21:10:56  jyh
+ * Added interactive proofs to filter.
+ *
  * Revision 1.2  1998/04/09 19:07:27  jyh
  * Updating the editor.
  *

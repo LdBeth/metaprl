@@ -76,13 +76,6 @@ type proof_status =
 type address = int list
 
 (*
- * IO tables.
- *)
-type handle
-type out_base
-type in_base
-
-(*
  * This exception is raised when composed proofs don't match.
  * The goal if the subproof must be alpha-equal to the child
  * of the parent.
@@ -145,22 +138,16 @@ val remove_child : proof -> int -> proof
 val remove_children : proof -> proof
 
 (*
- * Marshaling.
+ * IO
  *)
-val create_out_base : unit -> out_base
-val save_proof : out_base -> proof -> handle
-val save_base : out_base -> out_channel -> unit
-
-(*
- * As in proof_step, the tactics can be extracted spearately for
- * pre-compilation.
- *)
-val restore_tactics : in_channel -> MLast.expr array
-val restore_base : in_channel -> in_base
-val restore_proof : in_base -> tactic_resources -> tactic array -> handle -> proof
+val io_proof_of_proof : proof -> Proof_type.proof
+val proof_of_io_proof : tactic_resources -> cache -> Proof_type.proof -> proof
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/13 21:10:54  jyh
+ * Added interactive proofs to filter.
+ *
  * Revision 1.2  1998/04/09 19:07:25  jyh
  * Updating the editor.
  *

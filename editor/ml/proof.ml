@@ -35,7 +35,9 @@ open Printf
 
 open Term
 open Refine
-open Proof_step
+open Proof_type
+
+include Proof_step
 
 include Tactic_type
 
@@ -112,39 +114,6 @@ and proof =
    { pf_root : proof_node;
      pf_address : address;
      pf_node : proof_node
-   }
-
-(*
- * IO tree uses handles to proof steps.
- *)
-magic_block magic_number =
-struct
-   type io_node_item =
-      IONodeStep of Proof_step.handle
-    | IONodeNode of io_proof_node
-   
-   and io_proof_node =
-      { io_node_item : io_node_item;
-        io_node_children : io_proof_node list
-      }
-   
-   (* A handle is an index into the array *)
-   type handle = int
-
-   (* The in_base is an array mapping numbers to proofs *)
-   type in_base =
-      { in_proofs : io_proof_node array;
-        in_steps : Proof_step.in_base
-      }
-end
-
-(*
- * The out_base is just a list of proofs.
- *)
-type out_base =
-   { mutable out_proofs : io_proof_node list;
-     mutable out_count : int;
-     out_steps : Proof_step.out_base
    }
 
 (*
@@ -719,109 +688,86 @@ let remove_children pf =
  ************************************************************************)
 
 (*
- * An out_base is just a collection of the proofs.
+ * Make an io proof.
  *)
-let create_out_base () =
-   { out_proofs = []; out_count = 0; out_steps = Proof_step.create_out_base () }
+let io_status_of_status = function
+   StatusBad -> Proof_type.StatusBad
+ | StatusPartial -> Proof_type.StatusPartial
+ | StatusAsserted -> Proof_type.StatusAsserted
+ | StatusComplete -> Proof_type.StatusComplete
+
+let rec io_child_of_child = function
+   ChildGoal (t, { ref_label = label; ref_args = args }) ->
+      Proof_type.ChildGoal { aterm_goal = t;
+                             aterm_label = label;
+                             aterm_args = args
+                           }
+ | ChildNode node ->
+      Proof_type.ChildProof (io_proof_of_node node)
+
+and io_node_of_item = function
+   NodeStep step ->
+      Proof_type.ProofStep (io_step_of_step step)
+ | NodeNode node ->
+      Proof_type.ProofNode (io_proof_of_node node)
+      
+and io_proof_of_node
+    { node_status = status;
+      node_item = item;
+      node_children = children;
+      node_extras = extras
+    } =
+   { Proof_type.proof_status = io_status_of_status status;
+     Proof_type.proof_step = io_node_of_item item;
+     Proof_type.proof_children = List.map io_child_of_child children;
+     Proof_type.proof_extras = List.map io_proof_of_node extras
+   }
+
+let io_proof_of_proof { pf_node = node } =
+   io_proof_of_node node
 
 (*
- * Save a proof in the table.
- * Convert it to an IO proof.
- * We just save the node, not the main proof.
+ * Restore an io proof.
  *)
-let save_proof base { pf_node = node } =
-   let { out_proofs = proofs; out_count = count; out_steps = steps } = base in
-   let rec convert { node_item = item; node_children = children; node_extras = extras } =
-      let item' =
-         match item with
-            NodeStep step ->
-               IONodeStep (save_step steps step)
-          | NodeNode node' ->
-               IONodeNode (convert node')
-      in
-      let rec convert_children = function
-         [] ->
-            List.map convert extras
-       | child::t ->
-            match child with
-               ChildGoal _ ->
-                  convert_children t
-             | ChildNode node ->
-                  convert node :: convert_children t
-      in
-         { io_node_item = item';
-           io_node_children = convert_children children
-         }
+let status_of_io_status = function
+   Proof_type.StatusBad -> StatusBad
+ | Proof_type.StatusPartial -> StatusPartial
+ | Proof_type.StatusAsserted -> StatusAsserted
+ | Proof_type.StatusComplete -> StatusComplete
+
+let proof_of_io_proof resources fcache pf =
+   let rec child_of_io_child = function
+      Proof_type.ChildGoal ({ aterm_goal = t;
+                              aterm_label = label;
+                              aterm_args = args
+                            }) ->
+         ChildGoal (t, { ref_label = label;
+                         ref_args = args;
+                         ref_fcache = fcache;
+                         ref_rsrc = resources
+                    })
+    | Proof_type.ChildProof pf ->
+         ChildNode (node_of_io_proof pf)
+
+   and item_of_io_node = function
+      Proof_type.ProofStep step ->
+         NodeStep (step_of_io_step resources fcache step)
+    | Proof_type.ProofNode node ->
+         NodeNode (node_of_io_proof node)
+
+   and node_of_io_proof
+       { Proof_type.proof_status = status;
+         Proof_type.proof_step = item;
+         Proof_type.proof_children = children;
+         Proof_type.proof_extras = extras
+       } =
+      { node_status = status_of_io_status status;
+        node_item = item_of_io_node item;
+        node_children = List.map child_of_io_child children;
+        node_extras = List.map node_of_io_proof extras
+      }
    in
-   let ionode = convert node in
-      base.out_proofs <- ionode :: proofs;
-      base.out_count <- count + 1;
-      count
-
-(*
- * Save the base into a file.
- *)
-let save_base { out_proofs = proofs; out_steps = steps } out =
-   output_binary_int out magic_number;
-   Proof_step.save_base steps out;
-   output_value out (Array.of_list (List.rev proofs))
-
-(*
- * Get the tactics from the step base.
- *)
-let restore_tactics inx =
-   try 
-      let magic' = input_binary_int inx in
-         if magic' = magic_number then
-            Proof_step.restore_tactics inx
-         else
-            raise (Failure "Proof.restore_tactics: bad magic number")
-   with
-      End_of_file ->
-         raise (Failure "Proof.restore_tactics: premature end of file")
-
-(*
- * Restore the entire base.
- *)
-let restore_base inx =
-   try 
-      let magic' = input_binary_int inx in
-         if magic' = magic_number then
-            let steps = Proof_step.restore_base inx in
-            let proofs = (input_value inx : io_proof_node array) in
-               { in_proofs = proofs; in_steps = steps }
-         else
-            raise (Failure "Proof.restore_base: bad magic number")
-   with
-      End_of_file ->
-         raise (Failure "Proof.restore_base: premature end of file")
-
-(*
- * Restore a proof from its handle.
- * Have to match the children with the subgoals.
- *)
-let restore_proof { in_proofs = proofs; in_steps = steps } resources tacs hand =
-   let rec restore { io_node_item = item; io_node_children = children } =
-      let item', subgoals =
-         match item with
-            IONodeStep hand ->
-               let step = restore_step steps resources tacs hand in
-               let subgoals = step_subgoals step in
-                  NodeStep step, subgoals
-          | IONodeNode node ->
-               let node' = restore node in
-               let subgoals = node_subgoals node' in
-                  NodeNode node', subgoals
-      in
-      let children' = List.map restore children in
-      let children'', extras = join_permuted_children subgoals children' in
-         { node_status = compute_status item' children'';
-           node_item = item';
-           node_children = children'';
-           node_extras = extras
-         }
-   in
-   let node = restore proofs.(hand) in
+   let node = node_of_io_proof pf in
       { pf_root = node;
         pf_address = [];
         pf_node = node
@@ -829,6 +775,9 @@ let restore_proof { in_proofs = proofs; in_steps = steps } resources tacs hand =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/13 21:10:53  jyh
+ * Added interactive proofs to filter.
+ *
  * Revision 1.2  1998/04/09 19:07:23  jyh
  * Updating the editor.
  *

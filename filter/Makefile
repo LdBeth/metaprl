@@ -3,7 +3,14 @@
 #
 include ../mk/preface
 
+#
+# Name of main program
+#
+MAIN := prlc
+
+#
 # Flags
+#
 REF_ROOT := ../
 INCLUDE := -I ../clib -I ../mllib -I ../refiner -I ../library -I /usr/local/lib/camlp4
 OCAMLFLAGS := -pp "camlp4o q_MLast.cmo pa_extend.cmo"
@@ -15,8 +22,8 @@ MLZFILES :=\
 	filter_cache_type\
 	proof_type
 
-# Program files
-MFILES_COMMON :=\
+LMFILES :=\
+	proof_type\
 	filter_debug\
 	buffer\
 	mLast_util\
@@ -35,21 +42,17 @@ MFILES_COMMON :=\
 	filter_cache_type\
 	filter_cache_fun\
 	filter_cache\
-	filter_prog\
-	proof_type
+	filter_prog
 
 MFILES_CAMLP4 :=\
-	$(MFILES_COMMON)\
 	term_grammar\
 	filter_parse\
 	filter_main
 
 MFILES_PRLC :=\
-	$(MFILES_COMMON)\
 	filter_bin
 
 MFILES :=\
-	$(MFILES_COMMON)\
 	term_grammar\
 	filter_parse\
 	filter_main\
@@ -97,7 +100,8 @@ STANDARD_LIBS =\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CMADEPS)\
 	../refiner/refiner.cma\
-	../library/library.cma
+	../library/library.cma\
+	$(MAIN).cma
 
 CAMLP4N_CMOBJS =\
 	$(CAMLP4LIB)/odyl.cma\
@@ -141,17 +145,13 @@ PRLCO_CMOBJS =\
 
 PRLCX_CCLIBS := $(CCLIBS)
 
-#
-# Name of main program
-#
-MAIN := prlc
-
 .PHONY: all opt install
 
-all: $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAIN).run
-opt: $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAIN).opt
+all: $(MAIN).cma $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAIN).run
+opt: $(MAIN).cmxa $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAIN).opt
 
-install:: $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAIN).run
+install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAIN).run
+	$(INSTALL) $(MAIN).cma $(LMLIFILES) $(LCMIFILES) $(NLLIB)
 	$(INSTALL) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(NLLIB)
 	$(INSTALL) $(MAIN).run $(LOCALBIN)/$(MAIN)
 

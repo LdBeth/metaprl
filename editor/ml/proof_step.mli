@@ -6,20 +6,12 @@
  *)
 
 open Term
+open Proof_type
 
 include Tactic_type
 
 (* Abstract type for steps *)
 type t
-
-(*
- * An out base compresses the steps for marshaling.
- * The in base collects them, and the handle maps
- * them to handles.
- *)
-type handle
-type out_base
-type in_base
 
 (* Constructor *)
 val create :
@@ -27,7 +19,6 @@ val create :
        tactic_arg list ->       (* Subgoals *)
        string ->                (* Text in rule box *)
        MLast.expr ->            (* Parsed ML expression *)
-       tactic ->                (* Keep the tactic too *)
        t
      
 (* Destructors *)
@@ -35,26 +26,16 @@ val step_goal : t -> tactic_arg
 val step_subgoals : t -> tactic_arg list
 val step_text : t -> string
 val step_ast : t -> MLast.expr
-val step_tactic : t -> tactic
 
-(* Saving proof steps *)
-val create_out_base : unit -> out_base
-val save_step : out_base -> t -> handle
-val save_base : out_base -> out_channel -> unit
-
-(*
- * Restoring proof steps.
- * The tactic expressions can be extracted separately
- * for compilation.
- *
- * restore_tactics can be compiled to a tactic array.
- *)
-val restore_tactics : in_channel -> MLast.expr array
-val restore_base : in_channel -> in_base
-val restore_step : in_base -> tactic_resources -> tactic array -> handle -> t
+(* IO *)
+val io_step_of_step : t -> proof_step
+val step_of_io_step : tactic_resources -> cache -> proof_step -> t
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/13 21:10:57  jyh
+ * Added interactive proofs to filter.
+ *
  * Revision 1.2  1998/04/09 19:07:29  jyh
  * Updating the editor.
  *

@@ -35,18 +35,35 @@ type proof_step =
 
 (*
  * A proof is a recursive tree of steps.
+ * The status is redundant, except for "asserted" proofs.
+ * Asserted proofs are incomplete, but they are marked as complete.
  *)
 type proof =
+   { proof_status : proof_status;
+     proof_step : proof_node;
+     proof_children : proof_child list;
+     proof_extras : proof list
+   }
+
+and proof_status =
+   StatusBad
+ | StatusPartial
+ | StatusAsserted
+ | StatusComplete
+
+and proof_node =
    ProofStep of proof_step
  | ProofNode of proof
-   
-and proof_node =
-   { proof_step : proof_step;
-     proof_children : proof list
-   }
+
+and proof_child =
+   ChildGoal of aterm
+ | ChildProof of proof
    
 (*
  * $Log$
+ * Revision 1.2  1998/04/13 21:11:03  jyh
+ * Added interactive proofs to filter.
+ *
  * Revision 1.1  1998/04/13 17:08:38  jyh
  * Adding interactive proofs.
  *
