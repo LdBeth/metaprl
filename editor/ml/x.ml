@@ -15,6 +15,8 @@ open Conversionals
 open Base_rewrite
 open Base_dtactic
 open Base_auto_tactic
+open Itt_rfun
+open Itt_int
 open Itt_equal
 open Itt_struct
 open Itt_logic
@@ -24,25 +26,13 @@ open Itt_prod
 open Nl
 open Test
 
-let zT, z =
-   let pf = ref None in
-   let zT p =
-      pf := Some p;
-      idT p
-   in
-   let z () =
-      match !pf with
-         Some p ->
-            p
-       | None ->
-            raise Not_found
-   in
-      zT, z
+let _ = set_debug "prove_int" true
 
-(*
-let _ = load "test"
-let _ = cd "test.test_and_elim"
-        *)
+let zi i =
+  (let z = goal() in
+     if (i=0) then Sequent.concl z
+     else          snd(Sequent.nth_hyp z i))
+
 let _ = load "test"
 let _ = cd "test"
 
