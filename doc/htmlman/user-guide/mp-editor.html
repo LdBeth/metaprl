@@ -5,9 +5,9 @@
 </HEAD>
 <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
-<H1>MetaPRL Module Editor</H1>
+<H2>MetaPRL Module Editor</H2>
 
-<H2><A NAME="intro">Introduction</A></H2>
+<H3><A NAME="intro">Introduction</A></H3>
 
 <P>The <I>module editor</I> is used to navigate the module hierarchy,
 and to fulfill <TT>interactive</TT> proof obligations. The modules
@@ -17,7 +17,7 @@ multiple proofs that are being edited. Proofs are saved as complete
 <I>tactic-trees</I>, allowing proofs to be later navigated and
 modified if necessary.</P>
 
-<H2>Getting started</H2>
+<H3>Getting started</H3>
 
 <P>The editor provides a top-loop that is compiled with the modules
 to the edited. The standard editor, in the directory <TT>editor/ml</TT>
@@ -72,7 +72,7 @@ MetaPRL version 0.1
 # <B>#use &quot;x.ml&quot;</B></PRE>
 </BLOCKQUOTE>
 
-<H2><A NAME="navigation">Module navigation</a></H2>
+<H3><A NAME="navigation">Module navigation</a></H3>
 
 <P>All editor commands are declared in the interface <TT>editor/ml/mp.mli</TT>.
 The editor maintains a state value representing the &quot;current
@@ -850,7 +850,7 @@ its status:</P>
   <LI><TT>!</TT> if no proof required (primitive rewrite or primitive rule).
 </UL>
 
-<H2>Proof editing</H2>
+<H3>Proof editing</H3>
 
 <P>Proof editing is performed by changing the current directory
 to be the proof to be edited. The <TT>ls</TT> command then produces
@@ -1666,7 +1666,7 @@ ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR32.gif"
 WIDTH="8" HEIGHT="12" BORDER="0" ALIGN="BOTTOM"></P>
 </BLOCKQUOTE>
 
-<H2>Creating new objects</H2>
+<H3>Creating new objects</H3>
 
 <P>New objects are created in a module with the following <TT>create_</TT>
 commands (note that these functions are mostly disabled in the
@@ -1707,7 +1707,7 @@ inference rule. The <TT>set_assumptions</TT> function sets the
 assumptions for the rule. The <TT>set_redex</TT> and <TT>set_contractum</TT>
 functions are used just for rewrite rules.</P>
 
-<H2>Proof checking</H2>
+<H3>Proof checking</H3>
 
 <P>There are two functions for checking proofs. A proof checks
 only if all the logical rules it uses are valid rules of its logic,

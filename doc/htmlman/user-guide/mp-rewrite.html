@@ -5,16 +5,16 @@
 </HEAD>
 <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
-<H1>MetaPRL Computational Rewriting</H1>
+<H2>MetaPRL Computational Rewriting</H2>
 
-<H2>Introduction</H2>
+<H3>Introduction</H3>
 
 <P>MetaPRL defines two kinds of logical inferences: <I>computational
 rewriting</I> and <I>inference rules</I>. This page describes
 computational rewriting. <A HREF="mp-axiom.html">Inference rules</A>
 are described on the next page.</P>
 
-<H2>Declarations</H2>
+<H3>Declarations</H3>
 
 <P>Rewrites are declared with the following form:</P>
 
@@ -57,7 +57,7 @@ and also the argument of the application.</P>
    'b['a] &lt;--&gt; (lambda{v. 'b['v]} 'a)</PRE>
 </BLOCKQUOTE>
 
-<H2>Implementations</H2>
+<H3>Implementations</H3>
 
 <P>Rewrites are <I>implemented</I> with two forms: rewrites that
 are primitive to a logic use the <TT>prim_rw</TT> form:</P>

@@ -5,7 +5,7 @@
 </HEAD>
 <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
-<H1>MetaPRL Tacticals</H1>
+<H2>MetaPRL Tacticals</H2>
 
 <P>Each rule in a logic defines a tactic. For example, the following
 and-elimination rule defines a tactic called <TT>and_elim</TT>:</P>
@@ -27,7 +27,7 @@ two arguments that defined the hypotheses matched by <TT>'H</TT>
 and <TT>'J</TT>, and two arguments for the variable names <TT>'y</TT>
 and <TT>'z</TT>.</P>
 
-<H2>Tactic arguments</H2>
+<H3>Tactic arguments</H3>
 
 <P>The <TT>tactic</TT> type defined in the <TT>Tacticals</TT>
 module differs from the tactic type of the refiner. The <TT>Tacticals.tactic</TT>
@@ -109,7 +109,7 @@ to modify the attribute list during refinement:</P>
 values that are initialized by the proof editor when a proof tree
 is constructed.</P>
 
-<H2>Simple tactics</H2>
+<H3>Simple tactics</H3>
 
 <P>There are several simple tactics. The <B><TT>topval</TT></B>
 declaration declares a value that is available to the MetaPRL
@@ -124,7 +124,7 @@ toploop.</P>
 the <TT>idT</TT> tactic produces the single subgoal <TT>T</TT>.
 The <TT>failT</TT> tactic always fails.</P>
 
-<H2><A NAME="anchor228099">Assumption tactics</A></H2>
+<H3><A NAME="anchor228099">Assumption tactics</A></H3>
 
 <P>Proofs in MetaPRL are proofs of <I>derived rules</I>. There
 are two kinds of hypotheses in a derived rule. The subgoals of
@@ -176,7 +176,7 @@ Subgoal 2:
    <B>BY </B>nthAssumT 1</PRE>
 </BLOCKQUOTE>
 
-<H2>Tactic composition</H2>
+<H3>Tactic composition</H3>
 
 <P>There are several tactics for composition. Most of these tactics
 are defined as <I>infix</I> operators by the MetaPRL compiler.
@@ -223,7 +223,7 @@ The type <TT>tactic</TT> is defined as <TT>tactic_arg -&gt; tactic_value</TT>;
 the <TT>thenFLT</TT> tactical performs the partial tactic application
 for the subgoal list.</P>
 
-<H2>Conditional tactics and looping</H2>
+<H3>Conditional tactics and looping</H3>
 
 <P>There are several tactics for conditional application and looping.</P>
 

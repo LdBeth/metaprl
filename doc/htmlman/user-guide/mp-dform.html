@@ -4,9 +4,9 @@
 </HEAD>
 <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
-<H1>MetaPRL Display Forms</H1>
+<H2>MetaPRL Display Forms</H2>
 
-<H2>Introduction</H2>
+<H3>Introduction</H3>
 
 <P>MetaPRL provides built-in support for <I>pretty-printing</I>
 logical expressions, as well as ML programs. The display form
@@ -234,7 +234,7 @@ font.</P>
   <PRE><B>dform</B> wedge_df : mode[prl] :: wedge = `&quot;\203&quot;</PRE>
 </BLOCKQUOTE>
 
-<H2>Options</H2>
+<H3>Options</H3>
 
 <P>Display form <I>options</I> are used to provide precedence
 information. There are five options:</P>
@@ -275,7 +275,7 @@ undesirable since few display forms are intended for <TT>src</TT> mode.</P>
 
 <P>When MetaPRL is started, the <TT>prl</TT> mode is active. <TT>set_dfmode</TT> command may be used to switch between modes.</P>
 
-<H2>The <TT>slot</TT> expression</H2>
+<H3>The <TT>slot</TT> expression</H3>
 
 <P>The <TT>slot</TT> performs the precedence computation for parenthesizing
 subterms. The general slot syntax includes an optional parameter:</P>
@@ -307,12 +307,12 @@ If the slot body is empty, the parameter is displayed using a
   normalized form.
 </UL>
 
-<H2>Literals</H2>
+<H3>Literals</H3>
 
 <P>The <TT>`&quot;<I>s</I>&quot;</TT> form displays the string
 <I>s</I>. It is equivalent to <TT>slot[<I>&quot;s&quot;</I>]</TT>.</P>
 
-<H2>Line breaking and <I>zones</I></H2>
+<H3>Line breaking and <I>zones</I></H3>
 
 <P>The display mechanism divides the output into <I>zones</I>
 that specify line breaking behavior. There are two types of line
@@ -356,7 +356,7 @@ string <TT>&quot;&quot;</TT>. For convenience, the <TT>space</TT> term
 is defined as <TT>sbreak[&quot;&quot;:s,&quot;&nbsp;&quot;:s]</TT> and the <TT>hspace</TT>
 term is defined as <TT>hbreak[&quot;&quot;:s,&quot;&nbsp;&quot;:s]</TT>.</P>
 
-<H2>Indentation</H2>
+<H3>Indentation</H3>
 
 <P>Indentation is specified with the left-margin operators <TT>pushm[</TT><I>tab</I><TT>:n]</TT>
 and <TT>popm</TT>. These operations establish the location of
@@ -368,7 +368,7 @@ plus <I>tab</I> characters. The <I>tab</I> option can be omitted;
 it defaults to 0. The <TT>popm</TT> term removes the margin installed
 with the last <TT>pushm</TT>.</P>
 
-<H2>Example</H2>
+<H3>Example</H3>
 
 <P>As an example, we give the display form for the if-then-else
 term defined in the module <TT>Itt_bool</TT>.</P>

@@ -9,7 +9,7 @@
 # You would probably need weblint >= 1.9
 
 HTMLDOC = htmldoc
-OPTS = --no-title --size letter --bodycolor white
+OPTS = --no-title --size letter --bodycolor white --toclevel 4
 GEN-PS = $(HTMLDOC) -t ps2 $(OPTS)
 GEN-PDF = $(HTMLDOC) -t pdf $(OPTS)
 RM = rm -f

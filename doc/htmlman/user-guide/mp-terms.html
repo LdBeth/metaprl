@@ -4,9 +4,9 @@
 </HEAD>
 <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
-<H1>MetaPRL Terms</H1>
+<H2>MetaPRL Terms</H2>
 
-<H2>Introduction</H2>
+<H3>Introduction</H3>
 
 <P><I>Terms</I> are the logical <I>syntax.</I> All logical statements
 are expressed as terms, and new term syntax is introduced with
@@ -99,7 +99,7 @@ are the (possibly bound) subterms. If either of the <I>bterms</I>
 and <I>params</I> list are empty in a term, the brackets may be
 omitted.</P>
 
-<H2>Variables</H2>
+<H3>Variables</H3>
 
 <P>Variables are a built-in term with the opname <TT>variable</TT>.
 There are two types of variables. <I>First-order</I> variables
@@ -121,9 +121,9 @@ Second order variables include their subterms in square brackets,
 so <TT>'v['v1; 'v2]</TT> is the short form for the second-order
 variable in the last paragraph.</P>
 
-<H2>Examples</H2>
+<H3>Examples</H3>
 
-<H3>Constants</H3>
+<H4>Constants</H4>
 
 <P>Term syntax is added to a module with the <TT>declare</TT>
 directive. The <I>meaning</I> of the term is not defined at the
@@ -169,7 +169,7 @@ expressions can contain multiple indices: the universe <TT>univ[(i
 | j'):l]</TT> is the minimum type universe containing both <TT>univ[i:l]</TT>
 and <TT>univ[j':l]</TT>.</P>
 
-<H3>Expressions</H3>
+<H4>Expressions</H4>
 
 <P>Expressions are also defined with the term syntax. For example,
 the <TT>Itt_int</TT> module declares terms to represent arithmetic,
@@ -227,7 +227,7 @@ are some of the types defined in the <TT>Itt_logic</TT> module:</P>
 <P> The <TT>true</TT>, <TT>false</TT> and <TT>and</TT> opnames have to be quoted here
 so that the parser would not confuse them with OCaml keywords.
 
-<H2>Simplified Syntax</H2>
+<H3>Simplified Syntax</H3>
 
 <P>The uniform syntax is verbose: each term contains an operator,
 and brackets for subterms. The verbosity can obscure the meaning
@@ -249,35 +249,7 @@ declared,as in the following sequence:</P>
 <B>let </B>t = &lt;&lt; &quot;true&quot; <B>or </B>&quot;false&quot; &gt;&gt;</PRE>
 </BLOCKQUOTE>
 
-<BLOCKQUOTE>
-
-<H3>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</H3>
-
-</BLOCKQUOTE>
-
-<H3>Low priority operators</H3>
-
-<BLOCKQUOTE>
-  <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
-    <TR>
-      <TD WIDTH="50%">
-      <TT>
-      &nbsp;<b>if</b> <I>t1</I> <b>then</b> <I>t2</I> <b>else</b>
-      <I>t3<br>
-      &nbsp;</I><b>let</b> <i>x = t1 </i><b>in</b> <i>t2<br>
-      &nbsp;t2 </i><b>where </b><i>x = t1<br>
-      &nbsp;</i><b>open </b><i>t1 </i><b>in </b><i>t2</i></TT></TD>
-      <TD WIDTH="50%">
-      <TT>
-      &nbsp;ifthenelse{<I>t1; t2; t3</I>}<br>
-      &nbsp;let{<i>t1;x.t2</i>}<br>
-      &nbsp;let{<i>t1;x.t2</i>}<br>
-      &nbsp;let{<i>t1;self.t2</i>}</TT></TD>
-    </TR>
-  </TABLE>
-</BLOCKQUOTE>
-
-<H3>Logical connectives</H3>
+<H4>Logical connectives</H4>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0" height="138">
@@ -347,7 +319,7 @@ declared,as in the following sequence:</P>
   </TABLE>
 </BLOCKQUOTE>
 
-<H3>Relations</H3>
+<H4>Relations</H4>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
@@ -396,7 +368,7 @@ declared,as in the following sequence:</P>
   </TABLE>
 </BLOCKQUOTE>
 
-<H3>Mathematical operators</H3>
+<H4>Mathematical operators</H4>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
@@ -418,7 +390,7 @@ declared,as in the following sequence:</P>
   </TABLE>
 </BLOCKQUOTE>
 
-<H3>Type operators</H3>
+<H4>Type operators</H4>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
@@ -466,7 +438,7 @@ declared,as in the following sequence:</P>
   </TABLE>
 </BLOCKQUOTE>
 
-<H3>Arithmetic operations</H3>
+<H4>Arithmetic operations</H4>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
@@ -506,7 +478,29 @@ declared,as in the following sequence:</P>
     </tr>
   </TABLE></BLOCKQUOTE>
 
-<H3>Other operators</H3>
+<H4>Low priority operators</H4>
+
+<BLOCKQUOTE>
+  <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <TR>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;<b>if</b> <I>t1</I> <b>then</b> <I>t2</I> <b>else</b>
+      <I>t3<br>
+      &nbsp;</I><b>let</b> <i>x = t1 </i><b>in</b> <i>t2<br>
+      &nbsp;t2 </i><b>where </b><i>x = t1<br>
+      &nbsp;</i><b>open </b><i>t1 </i><b>in </b><i>t2</i></TT></TD>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;ifthenelse{<I>t1; t2; t3</I>}<br>
+      &nbsp;let{<i>t1;x.t2</i>}<br>
+      &nbsp;let{<i>t1;x.t2</i>}<br>
+      &nbsp;let{<i>t1;self.t2</i>}</TT></TD>
+    </TR>
+  </TABLE>
+</BLOCKQUOTE>
+
+<H4>Other operators</H4>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
@@ -528,7 +522,7 @@ declared,as in the following sequence:</P>
   </TABLE>
 </BLOCKQUOTE>
 
-<H3>Parenthesis&nbsp;</H3>
+<H4>Parenthesis&nbsp;</H4>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">

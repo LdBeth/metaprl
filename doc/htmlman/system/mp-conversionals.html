@@ -5,7 +5,7 @@
 </HEAD>
 <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
-<H1>MetaPRL Conversionals</H1>
+<H2>MetaPRL Conversionals</H2>
 
 <P>The word &quot;conversion&quot; is used to describe rewriting
 rules. Like a &quot;tactical,&quot; a &quot;conversional&quot;
@@ -24,7 +24,7 @@ definition of <I>beta</I> reduction defines a conversion called
   <PRE><B>val</B> beta : conv</PRE>
 </BLOCKQUOTE>
 
-<H2>Conversion application</H2>
+<H3>Conversion application</H3>
 
 <P>A conversion is applied to the current goal by using the rw
 function:</P>
@@ -52,7 +52,7 @@ proof fragment:</P>
 Subgoal 1: sequent { 'H; x: 1 &lt; 0 &gt;- false }</PRE>
 </BLOCKQUOTE>
 
-<H2>Simple conversions</H2>
+<H3>Simple conversions</H3>
 
 <P>There are several simple conversions:</P>
 
@@ -65,7 +65,7 @@ Subgoal 1: sequent { 'H; x: 1 &lt; 0 &gt;- false }</PRE>
 is applied to a term, the result of the rewriting is the argument,
 unchanged. The <TT>failC</TT> conversion always fails.</P>
 
-<H2>Simple conversionals</H2>
+<H3>Simple conversionals</H3>
 
 <P>There are several standard conversionals:</P>
 
@@ -128,7 +128,7 @@ is to be performed on, and the <TT>env_goal</TT> returns the entire
 goal (so, for instance, the results will be different if rewriting
 is being performed on a subterm of the goal with <TT>addrC</TT>).</P>
 
-<H2>Search conversionals</H2>
+<H3>Search conversionals</H3>
 
 <P>Typically, rewriting is performed by search. For example, it
 is often useful to reduce <I>all</I> beta redices in the goal.

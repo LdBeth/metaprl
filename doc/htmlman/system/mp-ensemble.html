@@ -5,7 +5,7 @@
 </HEAD>
 <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
-<H1>MetaPRL Distributed Prover</H1>
+<H2>MetaPRL Distributed Prover</H2>
 
 <P>MetaPRL is a <I>distributed</I> theorem prover. The distribution
 mechanism is implemented as a layer just above the refiner, and
@@ -39,7 +39,7 @@ fragment is shown at the right. The root node produces an and-branch
 with two subgoals. The right subchild is an or-node, and either
 of the subgoals is sufficient to prove the goal.</P>
 
-<H2>Tactics</H2>
+<H3>Tactics</H3>
 
 <P>The <I>tactic</I> mechanism is used to generate proof trees.
 Each rule in a logic produces a primitive tactic. Primitive tactics
@@ -103,7 +103,7 @@ in turn until the first one succeeds.</P>
 <P ALIGN="CENTER"><IMG ALT="choose" SRC="choose.gif" WIDTH="285" HEIGHT="118" ALIGN="BOTTOM"
 BORDER="0"></P>
 
-<H2>Scheduler</H2>
+<H3>Scheduler</H3>
 
 <P><IMG ALT="sched2" SRC="sched2.gif" WIDTH="281" HEIGHT="345" ALIGN="RIGHT"
 BORDER="0">There is a great deal of parallelism
@@ -186,7 +186,7 @@ scheduler loop:</P>
   </UL>
 </BLOCKQUOTE>
 
-<H2>Proof tree pruning</H2>
+<H3>Proof tree pruning</H3>
 
 <P>The most complex operation in the scheduler is tree pruning.
 There are five cases for inserting a result into the proof tree,
@@ -227,7 +227,7 @@ the basic algorithm for handling a returned result:</P>
 <P>After a result has been propagated, the parent is processed
 recursively.</P>
 
-<H2>Ensemble Support</H2>
+<H3>Ensemble Support</H3>
 
 <P>The Ensemble support for MetaPRL is implemented in the
 module <TT>Ensemble_queue</TT>. The abstraction that the Ensemble
@@ -282,7 +282,7 @@ Finally, the <TT>View</TT> message is a general wakeup meaning
 that the status of the memory has changed. The <TT>View</TT> message
 is used only for debugging.</P>
 
-<H2>Ensemble Implementation</H2>
+<H3>Ensemble Implementation</H3>
 
 <P>Each process in a MetaPRL process group maintains a copy
 of the shared memory. When a process <I>adds</I> an entry, the
@@ -306,7 +306,7 @@ All entries in the other partition are deleted, and all computation
 ceases. It would be reasonable to continue computation in the
 hope that the partition will heal (which remains as future work).+</P>
 
-<H2>Scheduling with Ensemble</H2>
+<H3>Scheduling with Ensemble</H3>
 
 <P><IMG ALT="lock" SRC="lock.gif" WIDTH="474" HEIGHT="404" ALIGN="RIGHT"
 BORDER="0">The scheduler treats the Ensemble

@@ -5,7 +5,7 @@
 </HEAD>
 <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
-<H2>MetaPRL Refiner</H2>
+<H3>MetaPRL Refiner</H3>
 
 <P>The MetaPRL refiner uses the term rewriter to implement
 four kinds of formal objects:</P>
@@ -17,7 +17,7 @@ four kinds of formal objects:</P>
   <LI>Inference rules: relations between the provable statements.
 </OL>
 
-<H3>Computational Rewrites</H3>
+<H4>Computational Rewrites</H4>
 
 <P>Computational rewrites represent equivalences between terms
 that hold in any context. For example, in our currently implemented
@@ -31,7 +31,7 @@ logics, beta-equivalence holds in every context:</P>
 complexity, or in logics that allow effects or require an explicit
 evaluation order.</P>
 
-<H3>Conditional Rewrites</H3>
+<H4>Conditional Rewrites</H4>
 
 <P>Conditional rewrites are defined specifically for sequent calculi.
 An example of a conditional rewrite is a rewrite for division:</P>
@@ -43,7 +43,7 @@ An example of a conditional rewrite is a rewrite for division:</P>
 <P>The application of this rewrite requires a proof that the term
 being divided is not zero.</P>
 
-<H3>Axioms</H3>
+<H4>Axioms</H4>
 
 <P>Axioms are a degenerate form of inference rules that represent
 true statements of a logic. An axiom is usually just a term that
@@ -59,7 +59,7 @@ represents a valid proposition. For instance:</P>
 interpretation: it would be <I>proved</I> by any function over
 the integers.</P>
 
-<H3>Inference Rules</H3>
+<H4>Inference Rules</H4>
 
 <P>Inference rules are used to specify &quot;conditional&quot;
 axioms. Most logical statements have the form of a rule. An example
@@ -82,7 +82,7 @@ are necessary arguments to enable the application: <TT>'H</TT>
 represents the list of hypotheses of the sequent, and the <TT>'x</TT>
 parameter provides the new variable name used in the subgoal.</P>
 
-<H3>Refiner types</H3>
+<H4>Refiner types</H4>
 
 <P>Refiners are constructed recursively as objects of type <TT>refiner</TT>.
 The <TT>null_refiner</TT> value is the empty refiner containing
