@@ -327,25 +327,43 @@ struct
     * by moving these opnames into a global file,
     * or by making nothing global.
     *)
-   let standard_opnames = [
-      (* No subterms, no params *)
-      "lzone"  , [], []; "hzone"   , [], []; "szone"   , [], []; "izone"  , [], [];
-      "ezone"  , [], []; "space"   , [], []; "hspace" , [], [];
-      "newline", [], []; "popm"    , [], []; "pushfont", [ShapeString], []; "popfont", [], [];
-      "parens" , [], []; "internal", [], [];
-      (* Some params *)
-      "cbreak", [ShapeString; ShapeString], [];
-      "hbreak", [ShapeString; ShapeString], [];
-      "sbreak", [ShapeString; ShapeString], [];
-      "mode", [ShapeString], []; "except_mode", [ShapeString], [];
-      "prec", [ShapeString], []; "tzone", [ShapeString], [];
-      (* Multi-shape operators *)
-      "slot", [ShapeString], []; "slot", [ShapeVar], []; "slot", [ShapeToken], [];
-      "slot", [ShapeLevel] , []; "slot", [ShapeNumber], [];
-      "slot", [ShapeString; ShapeString], [];
-      "slot", [ShapeString], [0]; "slot", [], [0];
-      "pushm", [], []; "pushm", [ShapeNumber], []; "pushm", [ShapeString], [];
-   ]
+   let standard_opnames =
+      ["lzone"  , [], [];
+       "hzone"   , [], [];
+       "szone"   , [], [];
+       "izone"  , [], [];
+       "ezone"  , [], [];
+       "space"   , [], [];
+       "hspace" , [], [];
+       "newline", [], [];
+       "popm"    , [], [];
+       "pushfont", [ShapeString], [];
+       "popfont", [], [];
+       "parens" , [], [];
+       "internal", [], [];
+
+       (* Some params *)
+       "cbreak", [ShapeString; ShapeString], [];
+       "hbreak", [ShapeString; ShapeString], [];
+       "sbreak", [ShapeString; ShapeString], [];
+       "mode", [ShapeString], [];
+       "except_mode", [ShapeString], [];
+       "prec", [ShapeString], [];
+       "tzone", [ShapeString], [];
+
+       (* Multi-shape operators *)
+       "slot", [ShapeString], [];
+       "slot", [ShapeVar], [];
+       "slot", [ShapeToken], [];
+       "slot", [ShapeLevel] , [];
+       "slot", [ShapeNumber], [];
+       "slot", [ShapeString; ShapeString], [];
+       "slot", [ShapeString; ShapeNumber], [];
+       "slot", [ShapeString], [0];
+       "slot", [], [0];
+       "pushm", [], [];
+       "pushm", [ShapeNumber], [];
+       "pushm", [ShapeString], []]
 
    (*
     * Make a new hashtable for mapping opnames.

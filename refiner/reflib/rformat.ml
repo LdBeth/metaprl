@@ -517,6 +517,9 @@ let rec get_hard_binder buf =
 let format_raw_string buf s =
    push_command buf (Text (String.length s, s))
 
+let format_string_width buf s i =
+   push_command buf (Text (i, s))
+
 let format_cbreak buf str str' =
    let l = String.length str in
    let l' = String.length str' in

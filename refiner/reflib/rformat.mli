@@ -118,6 +118,7 @@ val format_popm : buffer -> unit
  *)
 val format_char : buffer -> char -> unit
 val format_string : buffer -> string -> unit
+val format_string_width : buffer -> string -> int -> unit
 val format_raw_string : buffer -> string -> unit
 val format_quoted_string : buffer -> string -> unit
 val format_int : buffer -> int -> unit

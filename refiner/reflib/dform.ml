@@ -240,7 +240,8 @@ let pushm = function
       format_pushm_str buf (string_of_param s)
  | { dform_items = []; dform_buffer = buf } ->
       format_pushm buf 0
- | _ -> raise (Invalid_argument "Dform.pushm")
+ | _ ->
+      raise (Invalid_argument "Dform.pushm")
 
 let popm df = format_popm df.dform_buffer
 
@@ -616,11 +617,15 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
          if !debug_dform then
             eprintf "Dform.slot: str: %s%t" (string_of_param s) eflush;
          format_string buf (string_of_param s)
-    | [RewriteString(RewriteParam "raw"); RewriteString s] ->
+    | [RewriteString s; RewriteNum (RewriteParam n)] ->
+         if !debug_dform then
+            eprintf "Dform.slot: width str: %s/%s%t" (string_of_param s) (Lm_num.string_of_num n) eflush;
+         format_string_width buf (string_of_param s) (Lm_num.int_of_num n)
+    | [RewriteString (RewriteParam "raw"); RewriteString s] ->
          if !debug_dform then
             eprintf "Dform.slot: raw str: %s%t" (string_of_param s) eflush;
          format_raw_string buf (string_of_param s)
-    | [RewriteNum(RewriteParam n)] ->
+    | [RewriteNum (RewriteParam n)] ->
          let s = Lm_num.string_of_num n in
          if !debug_dform then
              eprintf "Dform.slot: num: %s%t" s eflush;
@@ -682,12 +687,12 @@ let init_list =
     "pushfont", [MString plain_sym], pushfont;
     "popfont", [], popfont;
     "slot", [MString raw_sym; MString s_sym], slot;
+    "slot", [MString s_sym; MNumber n_sym], slot;
     "slot", [MString s_sym], slot;
     "slot", [MLevel (mk_var_level_exp l_sym)], slot;
     "slot", [MToken t_sym], slot;
     "slot", [MNumber n_sym], slot;
-    "slot", [Var v_sym], slot;
-   ]
+    "slot", [Var v_sym], slot]
 
 let null_list =
    let v_bterms = [mk_bterm [] (mk_so_var_term v_sym [] []) ] in
