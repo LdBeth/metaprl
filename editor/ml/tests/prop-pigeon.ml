@@ -364,7 +364,7 @@ and internalPropDecideT max_depth count p =
 
 (* Convert all "not X" terms to "X => False" *)
 let notToImpliesFalseC =
-   sweepUpC (unfold_not andthenC fold_implies andthenC (addrC [1] fold_false))
+   sweepUpC (unfold_not thenC fold_implies thenC (addrC [1] fold_false))
 
 (*
  * Toplevel tactic:

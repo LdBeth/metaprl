@@ -1947,7 +1947,7 @@ struct
           | ReverseRewriteExtract _ ->
                StringArgList ("foldC", "<rewrite>")
           | ComposeRewriteExtract _ ->
-               StringStringArgList ("<rewrite>", "andthenC", "<rewrite>")
+               StringStringArgList ("<rewrite>", "thenC", "<rewrite>")
           | AddressRewriteExtract (_, addr', _, _) ->
                StringStringArgList ("addrC", TermAddr.string_of_address (TermAddr.compose_address addr addr'), "<rewrite>")
           | HigherRewriteExtract _ ->
@@ -1969,7 +1969,7 @@ struct
           | ReverseCondRewriteExtract _ ->
                StringArgList ("foldC", "<conditional-rewrite>")
           | ComposeCondRewriteExtract _ ->
-               StringStringArgList ("<conditional-rewrite>", "andthenC", "<conditional-rewrite>")
+               StringStringArgList ("<conditional-rewrite>", "thenC", "<conditional-rewrite>")
           | AddressCondRewriteExtract (_, addr', _, _) ->
                StringStringArgList ("addrC", TermAddr.string_of_address (TermAddr.compose_address addr addr'), "<conditional-rewrite>")
           | HigherCondRewriteExtract _ ->

@@ -1057,7 +1057,7 @@ sig
    (*
     * Sequencing.
     *)
-   val prefix_andthenC : conv -> conv -> conv
+   val prefix_thenC : conv -> conv -> conv
    val prefix_orelseC : conv -> conv -> conv
 
    (*
@@ -1142,7 +1142,7 @@ sig
    val rwaAllAll : conv list -> tactic
 
 
-   val prefix_andthenC : conv -> conv -> conv
+   val prefix_thenC : conv -> conv -> conv
    val prefix_orelseC : conv -> conv -> conv
    val addrC : int list -> conv -> conv
    val clauseC : int -> conv -> conv

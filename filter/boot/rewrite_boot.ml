@@ -125,7 +125,7 @@ struct
    let choose clist1 clist2 =
       combine orelserw corelserw (fun l -> ChooseConv l) clist1 clist2
 
-   let prefix_andthenC conv1 conv2 =
+   let prefix_thenC conv1 conv2 =
       let clist1 =
          match conv1 with
             ComposeConv clist1 ->
@@ -204,7 +204,7 @@ struct
             if i = count then
                idC
             else
-               prefix_andthenC (addrC [i] conv) (subC conv count (i + 1))
+               prefix_thenC (addrC [i] conv) (subC conv count (i + 1))
          in
             subC conv count 0
       in

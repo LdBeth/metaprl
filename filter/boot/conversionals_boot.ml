@@ -82,7 +82,7 @@ struct
    let env_arg = RewriteInternal.env_arg
    let get_conv = Sequent.get_conv_arg
 
-   let prefix_andthenC = RewriteInternal.prefix_andthenC
+   let prefix_thenC = RewriteInternal.prefix_thenC
    let prefix_orelseC = RewriteInternal.prefix_orelseC
    let addrC = RewriteInternal.addrC
    let clauseC = RewriteInternal.clauseC
@@ -139,7 +139,7 @@ struct
             if i = count then
                idC
             else
-               prefix_andthenC (addrC [i] conv) (subC conv count (i + 1))
+               prefix_thenC (addrC [i] conv) (subC conv count (i + 1))
          in
             subC conv count 0
       in
@@ -166,13 +166,13 @@ struct
     *)
    let rec sweepUpC rw =
       let sweepUpCE e =
-         prefix_andthenC (allSubC (sweepUpC rw)) (tryC rw)
+         prefix_thenC (allSubC (sweepUpC rw)) (tryC rw)
       in
          funC sweepUpCE
 
    let rec sweepDnC rw =
       let sweepDnCE e =
-         prefix_andthenC (tryC rw) (allSubC (sweepDnC rw))
+         prefix_thenC (tryC rw) (allSubC (sweepDnC rw))
       in
          funC sweepDnCE
 
@@ -203,10 +203,10 @@ struct
                if alpha_equal t t' then
                   idC
                else
-                  prefix_andthenC conv (funC (repeat t'))
+                  prefix_thenC conv (funC (repeat t'))
          in
          let t = env_term env in
-            prefix_andthenC conv (funC (repeat t))
+            prefix_thenC conv (funC (repeat t))
       in
          funC repeatCE
 
@@ -220,7 +220,7 @@ struct
     *)
    let untilFailC conv =
       let rec aux env =
-          (tryC (prefix_andthenC conv (funC aux)))
+          (tryC (prefix_thenC conv (funC aux)))
       in
          funC aux
 
@@ -232,7 +232,7 @@ struct
             if i = 0 then
                idC
             else
-               prefix_andthenC conv (repeatForC (i - 1) conv)
+               prefix_thenC conv (repeatForC (i - 1) conv)
          in
             funC repeatForCE
 

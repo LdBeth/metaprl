@@ -64,34 +64,6 @@ sig
       (term, meta_term, proof proof_type, MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
       (module_path * string * MLast.ctyp resource_sig) list ->
       string -> (MLast.str_item * (int * int)) list
-
-   (*
-    * Defining implementations.
-    *)
-   type t
-
-   val prim_axiom : t -> loc -> (term, 'proof, MLast.expr) axiom_info -> term -> MLast.str_item list
-   val derived_axiom : t -> loc -> (term, 'proof, MLast.expr) axiom_info -> MLast.expr -> MLast.str_item list
-
-   val prim_rule : t -> loc -> (term, meta_term, 'proof, MLast.expr) rule_info -> term -> MLast.str_item list
-   val derived_rule : t -> loc -> (term, meta_term, 'proof, MLast.expr) rule_info -> MLast.expr -> MLast.str_item list
-
-   val prim_rewrite : t -> loc -> (term, 'proof, MLast.expr) rewrite_info -> MLast.str_item list
-   val derived_rewrite : t -> loc -> (term, 'proof, MLast.expr) rewrite_info -> MLast.expr -> MLast.str_item list
-
-   val prim_cond_rewrite : t -> loc -> (term, 'proof, MLast.expr) cond_rewrite_info -> MLast.str_item list
-   val derived_cond_rewrite : t -> loc -> (term, 'proof, MLast.expr) cond_rewrite_info -> MLast.expr -> MLast.str_item list
-
-   val define_dform : t -> loc -> (term, MLast.expr) dform_info -> term -> MLast.str_item list
-   val define_prec : t -> loc -> string -> MLast.str_item list
-   val define_prec_rel : t -> loc -> prec_rel_info -> MLast.str_item list
-   val define_resource : t -> loc -> string -> MLast.expr -> MLast.str_item list
-   val improve_resource : t -> loc -> MLast.expr improve_info -> MLast.str_item list
-   val define_parent : t -> loc -> MLast.ctyp parent_info -> MLast.str_item list
-   val define_magic_block : t -> loc -> MLast.str_item magic_info -> MLast.str_item list
-
-   val implem_prolog : t -> loc -> string -> MLast.str_item list
-   val implem_postlog : t -> loc -> string -> MLast.str_item list
 end
 
 module MakeExtract (Convert : ConvertProofSig) :

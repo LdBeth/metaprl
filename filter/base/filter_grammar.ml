@@ -104,7 +104,7 @@ struct
              make_infix loc op t1 t2
            | t1 = expr; op = "thenPT"; t2 = expr ->
              make_infix loc op t1 t2
-           | t1 = expr; op = "andthenC"; t2 = expr ->
+           | t1 = expr; op = "thenC"; t2 = expr ->
              make_infix loc op t1 t2
            | t1 = expr; op = "orelseC"; t2 = expr ->
              make_infix loc op t1 t2

@@ -314,7 +314,7 @@ the given assumption.
 * rwch : conv -> int -> int -> tactic
 rwch conv = rwc (higherC conv)
 
-* andthenC (infix) : conv -> conv -> conv
+* thenC (infix) : conv -> conv -> conv
 Apply the first conversion and then the second.
 
 * orelseC (infix) : conv -> conv -> conv
@@ -456,6 +456,9 @@ applies all the available auto tactics in turn, until none of them
 succeed.
 
 In its initial configuration, it applies trivialT.
+
+* byDefT : conv -> tactic
+Applies conv everywhere, then runs autoT.
 
 ----------------------------------------
 itt_squash:
