@@ -632,9 +632,8 @@ let eq_exn = RefineError ("dT", StringError "elim rule not suitable for autoT")
 
 let not_equal t i =
    funT (fun p ->
-    if i <= Sequent.hyp_count p then
-      if alpha_equal t (Sequent.nth_hyp p i) then raise eq_exn
-      else idT  else idT
+            if (i <= Sequent.hyp_count p) && (alpha_equal t (Sequent.nth_hyp p i))
+            then raise eq_exn else idT
         )
 
 let auto_dT =
