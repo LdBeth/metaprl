@@ -106,58 +106,58 @@ PARSING_FILES =\
 	location
 
 asttypes.mlz: $(OCAMLSRC)/parsing/asttypes.mli
-	$(LN) $(OCAMLSRC)/parsing/asttypes.mli $@
+   $(symlink $<, $@)
 
 parser_aux.mlz: $(OCAMLSRC)/debugger/parser_aux.mli
-	$(LN) $(OCAMLSRC)/debugger/parser_aux.mli $@
+   $(symlink $<, $@)
 
 opcodes.ml: $(OCAMLSRC)/bytecomp/opcodes.ml
-	$(LN) $(OCAMLSRC)/bytecomp/opcodes.ml $@
+   $(symlink $<, $@)
 
 opcodes.mli: opcodes.ml
 	sed -e 's,let \(.*\)=.*,val \1 : int,' < opcodes.ml > opcodes.mli
 
 clflags.ml: $(OCAMLSRC)/utils/clflags.ml
-	$(LN) $(OCAMLSRC)/utils/clflags.ml $@
+   $(symlink $<, $@)
 
 clflags.mli: clflags.ml
-	$(OCAMLC) $(OCAMLCFLAGS) -i clflags.ml > clflags.mli
+   $(symlink $<, $@)
 
 lexer.ml: $(OCAMLSRC)/debugger/lexer.ml
-	$(LN) $(OCAMLSRC)/debugger/lexer.ml $@
+   $(symlink $<, $@)
 
 lexer.mli: lexer.ml
 	$(OCAMLC) $(OCAMLCFLAGS) -i lexer.ml > lexer.mli
 
 $(addsuffix .ml, $(DEBUG_FILES)): %.ml: $(OCAMLSRC)/debugger/%.ml
-	$(LN) $(OCAMLSRC)/debugger/$*.ml $@
+   $(symlink $<, $@)
 
 $(addsuffix .mli, $(DEBUG_FILES)): %.mli: $(OCAMLSRC)/debugger/%.mli
-	$(LN) $(OCAMLSRC)/debugger/$*.mli $@
+   $(symlink $<, $@)
 
 $(addsuffix .ml, $(TYPING_FILES)): %.ml: $(OCAMLSRC)/typing/%.ml
-	$(LN) $(OCAMLSRC)/typing/$*.ml $@
+   $(symlink $<, $@)
 
 $(addsuffix .mli, $(TYPING_FILES)): %.mli: $(OCAMLSRC)/typing/%.mli
-	$(LN) $(OCAMLSRC)/typing/$*.mli $@
+   $(symlink $<, $@)
 
 $(addsuffix .ml, $(BYTECOMP_FILES)): %.ml: $(OCAMLSRC)/bytecomp/%.ml
-	$(LN) $(OCAMLSRC)/bytecomp/$*.ml $@
+   $(symlink $<, $@)
 
 $(addsuffix .mli, $(BYTECOMP_FILES)): %.mli: $(OCAMLSRC)/bytecomp/%.mli
-	$(LN) $(OCAMLSRC)/bytecomp/$*.mli $@
+   $(symlink $<, $@)
 
 $(addsuffix .ml, $(UTIL_FILES)): %.ml: $(OCAMLSRC)/utils/%.ml
-	$(LN) $(OCAMLSRC)/utils/$*.ml $@
+   $(symlink $<, $@)
 
 $(addsuffix .mli, $(UTIL_FILES)): %.mli: $(OCAMLSRC)/utils/%.mli
-	$(LN) $(OCAMLSRC)/utils/$*.mli $@
+   $(symlink $<, $@)
 
 $(addsuffix .ml, $(PARSING_FILES)): %.ml: $(OCAMLSRC)/parsing/%.ml
-	$(LN) $(OCAMLSRC)/parsing/$*.ml $@
+   $(symlink $<, $@)
 
 $(addsuffix .mli, $(PARSING_FILES)): %.mli: $(OCAMLSRC)/parsing/%.mli
-	$(LN) $(OCAMLSRC)/parsing/$*.mli $@
+   $(symlink $<, $@)
 
 #
 # Clean up
