@@ -1,0 +1,59 @@
+(*
+ * This defines raw proof that is saved in the file.
+ *)
+
+open Term
+
+(*
+ * Many tactics wish to examine their argument, so
+ * the real type of tactic includes an argument.
+ *)
+type attribute =
+   VarArgs of string list
+ | TermArgs of term list
+ | TypeArg of term 
+ | IntArgs of int list
+ | ThinArg of bool 
+ | SubstArg of (string * term) list
+
+(*
+ * An IO step does not save the tactic,
+ * and saves only part of the goal.
+ *)
+type aterm =
+   { aterm_goal : term;
+     aterm_label : string;              (* Label describes the step in the proof *)
+     aterm_args : attribute list        (* Proof annotations *)
+   }
+
+type proof_step =
+   { step_goal : aterm;
+     step_subgoals : aterm list;
+     step_ast : MLast.expr;             (* Parsed expression *)
+     step_text : string                 (* String representation of text *)
+   }
+
+(*
+ * A proof is a recursive tree of steps.
+ *)
+type proof =
+   ProofStep of proof_step
+ | ProofNode of proof
+   
+and proof_node =
+   { proof_step : proof_step;
+     proof_children : proof list
+   }
+   
+(*
+ * $Log$
+ * Revision 1.1  1998/04/13 17:08:38  jyh
+ * Adding interactive proofs.
+ *
+ *
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

@@ -2,27 +2,17 @@
  * Conversion form filter_summary to program text.
  *)
 
-open Term
+open Filter_cache_type
 
-open Filter_type
-open Filter_summary
-open Filter_cache
-
-(*
- * Program extraction from sepc.
- *)
-val extract_sig :
-   (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
-   (module_path * MLast.ctyp resource_info) list ->
-   string -> (MLast.sig_item * (int * int)) list
-
-val extract_str :
-   (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
-   (module_path * MLast.ctyp resource_info) list ->
-   string -> (MLast.str_item * (int * int)) list
+module MakeFilterProg (Cache : FilterCacheSig)
+: ExtractSig
+  with type proof_type = Cache.proof_type
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/13 17:08:36  jyh
+ * Adding interactive proofs.
+ *
  * Revision 1.3  1998/04/09 18:25:52  jyh
  * Working compiler once again.
  *

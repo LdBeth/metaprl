@@ -11,7 +11,9 @@ OCAMLFLAGS := -pp "camlp4o q_MLast.cmo pa_extend.cmo"
 # Type files
 MLZFILES :=\
 	filter_type\
-	filter_summary_type
+	filter_summary_type\
+	filter_cache_type\
+	proof_type
 
 # Program files
 MFILES_COMMON :=\
@@ -30,10 +32,11 @@ MFILES_COMMON :=\
 	filter_summary_type\
 	filter_summary_io\
 	filter_summary_util\
+	filter_cache_type\
 	filter_cache_fun\
 	filter_cache\
 	filter_prog\
-	filter_html
+	proof_type
 
 MFILES_CAMLP4 :=\
 	$(MFILES_COMMON)\

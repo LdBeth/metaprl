@@ -35,6 +35,7 @@ open Filter_ast
 open Filter_summary
 open Filter_summary_type
 open Filter_summary_util
+open Filter_cache_type
 open Filter_cache
 open Filter_prog
 
@@ -213,13 +214,14 @@ end
  *)
 module MakeFilter (**)
    (Info : FilterInfoSig)
+   (Cache : FilterCacheSig)
    (FilterCache : SummaryCacheSig
     with type sig_ctyp  = Info.ctyp
     with type str_proof = Info.proof
     with type str_expr  = Info.expr
     with type str_ctyp  = Info.ctyp
     with type str_item  = Info.item
-    with type select    = select_type) =
+    with type select    = Cache.select_type) =
 struct
    (*
     * Processors include both the cache and the name of the module.
@@ -605,14 +607,14 @@ struct
             let select, module_name =
                let name = !Pcaml.input_file in
                   if Filename.check_suffix name ".ml" then
-                     ImplementationType, Filename.chop_suffix name ".ml"
+                     Cache.ImplementationType, Filename.chop_suffix name ".ml"
                   else if Filename.check_suffix name ".mli" then
-                     InterfaceType, Filename.chop_suffix name ".mli"
+                     Cache.InterfaceType, Filename.chop_suffix name ".mli"
                   else
                      Stdpp.raise_with_loc loc (Failure "Input is not a .ml or .mli file")
             in
             let cache = FilterCache.create !include_path in
-            let info = FilterCache.create_cache cache module_name select InterfaceType in
+            let info = FilterCache.create_cache cache module_name select Cache.InterfaceType in
             let proc = { cache = info;
                          name = module_name
                        }
@@ -649,6 +651,14 @@ end
 (*
  * The two caches.
  *)
+module Proof =
+struct
+   type proof = Proof_type.proof
+end
+
+module Cache = MakeFilterCache (Proof)
+module Extract = MakeFilterProg (Cache)
+
 module SigFilterInfo =
 struct
    type proof = unit
@@ -656,21 +666,21 @@ struct
    type ctyp  = MLast.ctyp
    type item  = MLast.sig_item
 
-   let extract = extract_sig
+   let extract = Extract.extract_sig
 end
 
 module StrFilterInfo =
 struct
-   type proof = proof_type
+   type proof = Cache.proof_type
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.str_item
 
-   let extract = extract_str
+   let extract = Extract.extract_str
 end
 
-module SigFilter = MakeFilter (SigFilterInfo) (SigFilterCache)
-module StrFilter = MakeFilter (StrFilterInfo) (StrFilterCache)
+module SigFilter = MakeFilter (SigFilterInfo) (Cache) (Cache.SigFilterCache)
+module StrFilter = MakeFilter (StrFilterInfo) (Cache) (Cache.StrFilterCache)
                    
 (************************************************************************
  * DEFINITION COMMANDS                                                  *
@@ -683,7 +693,7 @@ let define_rule proc loc name
     (params : term list)
     (args : aterm list)
     (goal : term)
-    (extract : proof_type) =
+    (extract : Cache.proof_type) =
    let avars = collect_anames args in
    let assums = List.map (function { aname = name; aterm = t } -> name, t) args in
    let mterm = zip_mfunction assums goal in
@@ -691,10 +701,10 @@ let define_rule proc loc name
       StrFilter.add_command proc (cmd, loc)
    
 let define_prim proc loc name params args goal extract =
-   define_rule proc loc name params args goal (Primitive extract)
+   define_rule proc loc name params args goal (Cache.Primitive extract)
    
 let define_thm proc loc name params args goal tac =
-   define_rule proc loc name params args goal (Derived tac)
+   define_rule proc loc name params args goal (Cache.Derived tac)
    
 (************************************************************************
  * GRAMMAR EXTENSION                                                    *
@@ -745,7 +755,7 @@ EXTEND
       [[ implem_opening; st = LIST0 implem_item; EOI ->
           let proc = StrFilter.get_proc loc in
              StrFilter.save proc;
-             StrFilter.check proc InterfaceType;
+             StrFilter.check proc Cache.InterfaceType;
              StrFilter.extract proc
        ]];
    
@@ -810,10 +820,10 @@ EXTEND
           StrFilter.declare_term (StrFilter.get_proc loc) loc t;
           empty_str_item loc
         | "primrw"; name = LIDENT; args = optarglist; ":"; t = mterm ->
-          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term);
+          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Cache.Primitive xnil_term);
           empty_str_item loc
         | "rwthm"; name = LIDENT; args = optarglist; ":"; t = mterm; "="; body = expr ->
-          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body);
+          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Cache.Derived body);
           empty_str_item loc
         | "prim"; name = LIDENT; params = optarglist; ":"; (**)
              (args, goal) = opt_binding_arglist; "="; (**)
@@ -989,6 +999,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.14  1998/04/13 17:08:32  jyh
+ * Adding interactive proofs.
+ *
  * Revision 1.13  1998/04/09 18:25:50  jyh
  * Working compiler once again.
  *
