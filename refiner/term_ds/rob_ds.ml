@@ -77,14 +77,22 @@ struct
    type param = TermType.param
    type term_subst = TermType.term_subst
 
+(*
+*   Nodes with children relation (field children) give a tree.
+*   Sack contains links which make a DAG from it. Sack also contains
+*   looping links for variable nodes which means that this variable
+*   is not eliminated yet; these loops shouldn't be followed (in DAG).
+*)
    type node= nodeknown ref
    and nodeknown={mutable nodeterm:term;
                   mutable children:childrentype;
-                  mutable bindings:caseofb}
+                  mutable bindings:caseofb;
+                  mutable bound:bool}
    and childrentype=ChildrenDelayed
                   | ChildrenKnown of node list
    and caseofb =  BindingPoint of bnode list list
                 | BoundOc of (node*int*int)
+                | Constant
                 | BindingNone
                 | BindingDelayed of brunch_bindings_delayed
    and bnode = dummy ref
@@ -98,15 +106,19 @@ struct
    and brunch_bindings_delayed = (string * (node*int*int)) list
 
 
-let rec cr_dummylist l = match l with []->[] | h::t ->(ref Dummy)::cr_dummylist t
 
+
+let rec cr_dummylist l =
+   match l with
+      []->[]
+    | h::t ->(ref Dummy)::cr_dummylist t
 
 let bbd_diff l n i =
-  let rec bbd_d ll j =
+   let rec bbd_d ll j =
       match ll with
-        [] -> []
-      | h::t -> (h , (n,i,j))::(bbd_d t (j+1))
-  in bbd_d l 0
+         [] -> []
+       | h::t -> (h , (n,i,j))::(bbd_d t (j+1))
+   in bbd_d l 0
 
 (* val destruct: (bound_term list) -> brunch_bindings_delayed -> node -> int ->unit  *)
 
@@ -117,52 +129,131 @@ let rec destruct l bbd n i =
               let b=(cr_dummylist hh.bvars)::b0 in
               let ch=(ref {nodeterm=hh.bterm;
                            children=ChildrenDelayed;
-                           bindings=BindingDelayed  ((bbd_diff hh.bvars n i)@ bbd)}
+                           bindings=BindingDelayed  ((bbd_diff hh.bvars n i)@ bbd);
+                           bound=false}
                      )::ch0
-              in
-              b,ch
+              in b,ch
 
-(*  A variant with  brunch_bindings_delayed list stored in BindingDelayed
+(*  One step of conversion from term to DAG.
 *   val calc_node : node -> sacktype -> unit
-*   We suppose the invariant:
-*      bindings!=BindingDelayed _ => children!=ChildrenDelayed
+*   Almost free when the node is already calculated!
+*   We suppose the invariants:
+*      1) bindings!=BindingDelayed _ ==>
+*          children!=ChildrenDelayed and bound is correct;
+*      2) sack does not contain links to a node with
+*         bindings = BindingDelayed _ .
 *)
-   let calc_node n  =
-    match (!n).bindings with
-     BindingDelayed bbd ->
-       begin
-       match get_core (!n).nodeterm with
-         FOVar x ->(if List.mem_assoc x bbd then
-                     (!n).bindings <- BoundOc (List.assoc x bbd)
-                    else (!n).bindings <- BindingNone
-                   );
-                   (!n).children <- ChildrenKnown []
+let calc_node n  sack consts =
+   match (!n).bindings with
+      BindingDelayed bbd ->
+      begin
+      match bbd with
+         h::t -> ( (!n).bound <- true )
+       | _ ->();
+      match get_core (!n).nodeterm with
+         FOVar x ->if List.mem_assoc x bbd then
+                      begin
+                      (!n).bindings <- BoundOc (List.assoc x bbd);
+                      (!n).children <- ChildrenKnown []
+                      end
+                   else let unlinked = not (Hashtbl.mem sack x)
+                        in
+                        if unlinked && (StringSet.mem consts x) then
+                           begin
+                           (!n).bindings <- Constant;
+                           (!n).children <- ChildrenKnown []
+                           end
+                        else
+                           begin
+                           (!n).bindings <- BindingNone;
+                           (!n).children <- ChildrenKnown [];
+                           if unlinked then Hashtbl.add sack x n
+                           end
+(* GOAL: lasy initialization of stack: for every free variable name x
+*  we need a node n with (x,n) in sack; it may be a looping edge as
+*  we did here. *)
        | Term t -> begin
-                   (*calculate (!n).bindings and
-                     replace in children ChildrenDelayed by ChildrenKnown:
-                   *)
                    let b,ch = destruct t.term_terms bbd n 0
                    in
-                    (!n).bindings <- (match b with
+                   (!n).bindings <- (match b with
                                         [] -> BindingNone
                                       | _  -> BindingPoint b);
-                    (!n).children <- ChildrenKnown ch
+                   (!n).children <- ChildrenKnown ch
                    end;
-
        | _ -> REF_RAISE ( RefineError("unify_rob", StringError "Fail to convert term"))
-       end
-
+      end
     | _ ->()
 
-let rec nodeoper n sack = calc_node n;
-   let trmcore=get_core (!n).nodeterm in
-   match trmcore with
-     FOVar x ->(try  nodeoper (Hashtbl.find sack x) sack
-                with Not_found -> mk_op var_opname [Var x])
-   | Term t  ->t.term_op
-   | _ -> REF_RAISE ( RefineError("unify_rob", StringError "Fail to get nodeoper"))
+(* we have to deal with looping edges in sack too !! *)
+let rec follow_links n sack consts = calc_node n sack consts;
+   match (!n).bindings with
+      BindingNone ->
+      (match get_core (!n).nodeterm with
+          FOVar x ->let nn = Hashtbl.find sack x in
+                    if n==nn then n
+                    else (follow_links nn sack consts)
+        | _ -> n)
+    | _ -> n
 
+
+let is_bvar_n n = match (!n).bindings with
+                    BoundOc _ -> true
+                  | _ -> false
+
+let is_const_n n = match (!n).bindings with
+                    Constant  -> true
+                  | _ -> false
+
+let is_fvar_n n = (is_var_term (!n).nodeterm) &&
+                  (not (is_bvar_n n)) &&
+                  (not (is_const_n n))
+
+let links_fvar_n n sack consts = is_fvar_n (follow_links n sack consts)
+
+let fvarstr_n n sack consts =
+   let nn = follow_links n sack consts in
+   dest_var (!nn).nodeterm
+
+let is_fsymb_n n = (not (is_var_term (!n).nodeterm)) ||
+                   is_const_n n
+
+let links_fsymb_n n sack consts  = is_fsymb_n (follow_links n sack consts)
+
+let fsymboper_n n sack consts =
+   let nn = follow_links n sack consts in
+   match get_core (!nn).nodeterm with
+      FOVar x -> (mk_op var_opname [Var x]) (* for constsnts *)
+    | Term t -> t.term_op
+    | _ ->REF_RAISE ( RefineError("unify_rob", StringError "Fail to get oper_n"))
+
+let succs n sack consts =
+   let nn = follow_links n sack consts in
+      match (!nn).children with
+         ChildrenKnown l -> l
+       | _ -> raise generic_refiner_exn
+
+(* substfree checks whether the link (v,n) can be added to sack.
+*  The problem is to check that the node n is not inside the bound
+*  part of the DAG, i.e. there is no bound occurances under n which
+*  refer to binding points not under n. We should add a special boolean
+*  field to nodeknown type which will mark the bound part of DAG.
+*)
+(*
+let substfree v n sack consts =
+   let is_link = Hashtbl.mem sack v in
+   let rec free v n sack consts =
+      match (!n).bindings with
+         BindingDelayed _ ->
+
+   in free v n sack consts
+*)
 end     (* end TermSubstRob  *)
+
+
+
+
+
+
 
 
 

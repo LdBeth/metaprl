@@ -39,14 +39,22 @@ sig
    type term = Term_ds.TermType.term
    and term_subst = Term_ds.TermType.term_subst
 
+(*
+*   Nodes with children relation (field children) give a tree.
+*   Sack contains links which make a DAG from it. Sack also contains
+*   looping links for variable nodes which means that this variable
+*   is not eliminated yet; these loops shouldn't be followed (in DAG).
+*)
    type node= nodeknown ref
    and nodeknown={mutable nodeterm:term;
                   mutable children:childrentype;
-                  mutable bindings:caseofb}
+                  mutable bindings:caseofb;
+                  mutable bound:bool}
    and childrentype=ChildrenDelayed
                   | ChildrenKnown of node list
    and caseofb =  BindingPoint of bnode list list
                 | BoundOc of (node*int*int)
+                | Constant
                 | BindingNone
                 | BindingDelayed of brunch_bindings_delayed
    and bnode = dummy ref
@@ -59,7 +67,8 @@ sig
 *)
    and brunch_bindings_delayed = (string*(node*int*int)) list
 (*
-*
+*    *                                                                   *
+*    *                                                                   *
 * ***********************************      ***********************************
 * *  nodeterm<--> op1               *      *  nodeterm<--> op2               *
 * *                *                *      *                *                *
@@ -81,7 +90,7 @@ sig
 *
 *   *                                                                      *
 *   *                     ********************************************     *
-* ***********************************      **********************************¿
+* ***********************************      ***********************************
 * *  nodeterm<--> op1     *         *      *  nodeterm<--> op2       *       *
 * *                *      *         *      *                *        *       *
 * *       *****************         *      *       ****************  *       *
@@ -121,14 +130,37 @@ sig
 *
 *)
 
-(*  A variant with  brunch_bindings_delayed list stored in BindingDelayed
-*   val calc_node : node -> unit
-*   We suppose the invariant:
-*      bindings!=BindingDelayed _ => children!=ChildrenDelayed
+(*  calc_node is one step of conversion from term to DAG.
+*   Almost free when the node is already calculated!
+*   We suppose the invariants:
+*      1) bindings!=BindingDelayed _ => children!=ChildrenDelayed;
+*      2) sack does not contain links to a node with
+*         bindings = BindingDelayed _ .
 *)
-   val calc_node : node -> unit
-   val nodeoper : node -> sacktype -> Term.operator
+
+   val calc_node : node -> sacktype -> StringSet.t -> unit
+   val follow_links : node -> sacktype -> StringSet.t -> node
+
+   val is_bvar_n : node -> bool
+   val is_const_n : node -> bool
+
+   val is_fvar_n : node -> bool
+   val links_fvar_n : node -> sacktype -> StringSet.t -> bool
+   val fvarstr_n :  node -> sacktype -> StringSet.t -> string
+
+   val is_fsymb_n : node -> bool
+   val links_fsymb_n : node -> sacktype -> StringSet.t -> bool
+   val fsymboper_n : node -> sacktype -> StringSet.t -> TermType.operator
+   val succs : node -> sacktype -> StringSet.t -> node list
 end
+
+
+
+
+
+
+
+
 
 
 
