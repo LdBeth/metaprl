@@ -1,5 +1,7 @@
 #!/bin/csh -f
 
+cd `dirname $0`
+
 #
 # Configuration
 #
