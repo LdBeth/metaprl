@@ -24,6 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+extends Summary
 extends Mptop
 
 open Lm_debug

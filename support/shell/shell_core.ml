@@ -70,7 +70,7 @@ let packages = Package_info.create (Shell_state.get_includes ())
 let all_packages () =
    List.filter shell_package (Package_info.packages packages)
 
-let default_mode_base = Mp_resource.theory_bookmark "summary"
+let default_mode_base = Mp_resource.theory_bookmark "shell_theory"
 
 (*
  * Get the current printing base.
