@@ -709,7 +709,8 @@ let is_quote_char = function
    '<'
  | '>'
  | '-'
- | '+' ->
+ | '+'
+ | ':' ->
       true
  | _ ->
       false
@@ -728,9 +729,9 @@ let trim_quotation_name default name =
       if i = len then
          i
       else if is_quote_char name.[i] then
-         search_right (succ i)
-      else
          i
+      else
+         search_right (succ i)
    in
    let left = search_left 0 in
    let right = search_right left in
