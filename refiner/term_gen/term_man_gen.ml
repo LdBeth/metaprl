@@ -90,6 +90,7 @@ struct
    type operator = Term.operator
    type level_exp = Term.level_exp
    type hypothesis = Term.hypothesis
+   type match_term = Term.match_term
 
    type esequent = Term.esequent
 
@@ -466,6 +467,7 @@ struct
     * Explode the sequent into a list of hyps and concls.
     *)
    let explode_sequent_name = "explode_sequent"
+
    let explode_sequent t =
       let rec collect (args : term) hyps concls term =
          let { term_op = op; term_terms = bterms } = dest_term term in
@@ -697,6 +699,51 @@ struct
    let is_xrewrite_term = is_dep0_dep0_term xrewrite_op
    let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
    let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
+
+   (************************************************************************
+    * General term destruction.
+    *)
+   let dest_match_param param =
+      match dest_param param with
+         Number n ->
+            if Lm_num.is_integer_num n then
+               MatchNumber (n, Some (Lm_num.int_of_num n))
+            else
+               MatchNumber (n, None)
+       | String s ->
+            MatchString s
+       | Token s ->
+            MatchToken s
+       | Var v ->
+            MatchVar v
+       | MLevel l ->
+            MatchLevel l
+       | MNumber _
+       | MString _
+       | MToken _
+       | ObId _
+       | ParamList _ ->
+            MatchUnsupported
+
+   let explode_term t =
+      if is_var_term t then
+         let v = dest_var t in
+            MatchTerm (["var"], [MatchVar v], [])
+      else if is_sequent_term t then
+         let { sequent_args = args;
+               sequent_hyps = hyps;
+               sequent_goals = goals
+             } = explode_sequent t in
+         let hyps = SeqHyp.to_list hyps in
+         let goals = SeqGoal.to_list goals in
+            MatchSequent (args, hyps, goals)
+      else
+         let { term_op = op; term_terms = bterms } = dest_term t in
+         let { op_name = op; op_params = params } = dest_op op in
+         let op = dest_opname op in
+         let params = List.map dest_match_param params in
+         let bterms = List.map dest_bterm bterms in
+            MatchTerm (op, params, bterms)
 
    (************************************************************************
     * Rewrite rules                                                        *

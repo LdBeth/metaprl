@@ -65,6 +65,7 @@ module TermMan (**)
     with type term = Term.term)
 : TermManSig
   with type term = Term.term
+  with type match_term = TermType.match_term
   with type operator = Term.operator
   with type level_exp = Term.level_exp
   with type esequent = TermType.esequent

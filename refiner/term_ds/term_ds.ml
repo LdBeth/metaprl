@@ -79,20 +79,6 @@ struct
    and param = param'
 
    (*
-    * Define a type of parameters used in pattern matching.
-    * The main difference is lack of meta-variables, numbers
-    * have an optional constant representation for small numbers,
-    * and there are no Nuprl5 params.
-    *)
-   type match_param =
-      MatchNumber of Lm_num.num * int option
-    | MatchString of string
-    | MatchToken of string
-    | MatchVar of var
-    | MatchLevel of level_exp
-    | MatchUnsupported
-
-   (*
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
@@ -135,6 +121,24 @@ struct
     | VarsDelayed
 
    (*
+    * Define a type of parameters used in pattern matching.
+    * The main difference is lack of meta-variables, numbers
+    * have an optional constant representation for small numbers,
+    * and there are no Nuprl5 params.
+    *)
+   type match_param =
+      MatchNumber of Lm_num.num * int option
+    | MatchString of string
+    | MatchToken of string
+    | MatchVar of var
+    | MatchLevel of level_exp
+    | MatchUnsupported
+
+   type match_term =
+      MatchTerm of string list * match_param list * bound_term' list
+    | MatchSequent of term * hypothesis list * term list
+
+   (*
     * The terms in the framework include
     * a meta-implication and met-iff.
     *)
@@ -144,5 +148,4 @@ struct
     | MetaFunction of term * meta_term * meta_term
     | MetaIff of meta_term * meta_term
     | MetaLabeled of string * meta_term
-
 end

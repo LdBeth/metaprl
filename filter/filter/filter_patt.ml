@@ -55,14 +55,21 @@ open Filter_type
 open Filter_util
 
 (*
+ * Utilities.
+ *)
+let dest_so_var_string t =
+   let v, _ = dest_so_var t in
+      string_of_symbol v
+
+(*
  * Turn a term into a pattern expression.
  * The bterms should all be vars.
  *)
-let build_term_nonvar_patt loc t =
-
+let build_term_patt loc t =
    let { term_op = op; term_terms = bterms } = dest_term t in
    let { op_name = op; op_params = params } = dest_op op in
 
+   (* String form of the operator name *)
    let ops = Opname.dest_opname op in
    let ops = List.fold_right (fun x l -> <:patt< [$str:String.escaped x$ :: $l$] >>) ops <:patt< [] >> in
 
@@ -129,16 +136,68 @@ let build_term_nonvar_patt loc t =
    let bterms = List.fold_right (fun x l -> <:patt< [$x$ :: $l$] >>) bterms <:patt< [] >> in
 
       (* Full pattern match is a triple *)
-      <:patt< ( $ops$ , $params$ , $bterms$ ) >>
+      <:patt< Refiner.Refiner.TermType.MatchTerm ( $ops$ , $params$ , $bterms$ ) >>
 
+(*
+ * Sequent matching.
+ * The _final_ context matches all the rest of the hyps.
+ * If there is no context, then the match must be exact.
+ *)
+let build_sequent_patt loc t =
+   let { sequent_args = args;
+         sequent_hyps = hyps;
+         sequent_goals = goals
+       } = explode_sequent t
+   in
+   let hyps = SeqHyp.to_list hyps in
+   let goals = SeqGoal.to_list goals in
+
+   (* For now, the arg must be a var *)
+   let arg = dest_so_var_string args in
+
+   (* Collect the hyps: if there is a context, it should be final *)
+   let rec build_hyps hyps =
+      match hyps with
+         [] ->
+            <:patt< [] >>
+       | HypBinding (v, t) :: hyps ->
+            let v = string_of_symbol v in
+            let t = dest_so_var_string t in
+               <:patt< [Refiner.Refiner.TermType.HypBinding ($lid:v$, $lid:t$) :: $build_hyps hyps$] >>
+       | Hypothesis t :: hyps ->
+            let t = dest_so_var_string t in
+               <:patt< [Refiner.Refiner.TermType.Hypothesis $lid:t$ :: $build_hyps hyps$] >>
+       | [Context (v, _)] ->
+            let v = string_of_symbol v in
+               <:patt< $lid:v$ >>
+       | Context (v, _) :: _ ->
+            raise (Invalid_argument ("Context var " ^ string_of_symbol v ^ " should be the final hyp"))
+   in
+   let hyps = build_hyps hyps in
+
+   (* Collect the goals *)
+   let goals =
+      List.map (fun t ->
+         let v = dest_so_var_string t in
+            <:patt< $lid:v$ >>) goals
+   in
+   let goals = List.fold_right (fun x l -> <:patt< [$x$ :: $l$] >>) goals <:patt< [] >> in
+
+      <:patt< Refiner.Refiner.TermType.MatchSequent ($lid:arg$, $hyps$, $goals$) >>
+
+(*
+ * General matching.
+ *)
 let build_term_patt t =
    (* Fake the location for now *)
    let loc = 0, 0 in
 
    if is_var_term t then
       <:patt< $lid: string_of_symbol (dest_var t)$ >>
+   else if is_sequent_term t then
+      build_sequent_patt loc t
    else
-      build_term_nonvar_patt loc t
+      build_term_patt loc t
 
 (*!
  * @docoff

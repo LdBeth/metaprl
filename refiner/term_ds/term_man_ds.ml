@@ -99,6 +99,7 @@ struct
    type level_exp = Term.level_exp
    type esequent = TermType.esequent
    type hypothesis = TermType.hypothesis
+   type match_term = TermType.match_term
 
    (************************************************************************
     * Level expressions                                                    *
@@ -522,6 +523,48 @@ struct
    let is_xrewrite_term = is_dep0_dep0_term xrewrite_op
    let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
    let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
+
+   (************************************************
+    * General term destruction.
+    *)
+   let dest_match_param param =
+      match param with
+         Number n ->
+            if Lm_num.is_integer_num n then
+               MatchNumber (n, Some (Lm_num.int_of_num n))
+            else
+               MatchNumber (n, None)
+       | String s ->
+            MatchString s
+       | Token s ->
+            MatchToken s
+       | Var v ->
+            MatchVar v
+       | MLevel l ->
+            MatchLevel l
+       | MNumber _
+       | MString _
+       | MToken _
+       | ObId _
+       | ParamList _ ->
+            MatchUnsupported
+
+   let explode_term t =
+      match get_core t with
+         Term t ->
+            let op = dest_opname t.term_op.op_name in
+            let params = List.map dest_match_param t.term_op.op_params in
+               MatchTerm (op, params, t.term_terms)
+       | FOVar v ->
+            MatchTerm (["var"], [MatchVar v], [])
+       | Sequent { sequent_args = args;
+                   sequent_hyps = hyps;
+                   sequent_goals = goals
+         } ->
+            MatchSequent (args, SeqHyp.to_list hyps, SeqGoal.to_list goals)
+       | Subst _
+       | Hashed _ ->
+            fail_core "explode_term"
 
    (************************************************************************
     * Rewrite rules                                                        *

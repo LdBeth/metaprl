@@ -43,6 +43,7 @@ sig
    type level_exp
    type esequent
    type hypothesis
+   type match_term
 
    (************************************************************************
     * Simplified operations on manifest terms                              *
@@ -56,6 +57,14 @@ sig
 
    val level_le : level_exp -> level_exp -> bool
    val level_lt : level_exp -> level_exp -> bool
+
+   (*
+    * Destruct a term for easy pattern-matching.
+    *
+    * For variables (both FO and SO) we use the "standard"
+    * form with opname ["var"] and a MatchVar parameter.
+    *)
+   val explode_term : term -> match_term
 
    (*
     * Sequents.

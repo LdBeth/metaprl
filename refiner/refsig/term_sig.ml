@@ -104,20 +104,6 @@ sig
    and bound_term' = { bvars : var list; bterm : term }
 
    (*
-    * Define a type of parameters used in pattern matching.
-    * The main difference is lack of meta-variables, numbers
-    * have an optional constant representation for small numbers,
-    * and there are no Nuprl5 params.
-    *)
-   type match_param =
-      MatchNumber of Lm_num.num * int option
-    | MatchString of string
-    | MatchToken of string
-    | MatchVar of var
-    | MatchLevel of level_exp
-    | MatchUnsupported
-
-   (*
     * The terms in the framework include
     * a meta-implication and met-iff.
     *)
@@ -145,6 +131,28 @@ sig
         sequent_hyps : seq_hyps;
         sequent_goals : seq_goals
       }
+
+   (************************************************************************
+    * DESTRUCTION
+    *)
+
+   (*
+    * Define a type of parameters used in pattern matching.
+    * The main difference is lack of meta-variables, numbers
+    * have an optional constant representation for small numbers,
+    * and there are no Nuprl5 params.
+    *)
+   type match_param =
+      MatchNumber of Lm_num.num * int option
+    | MatchString of string
+    | MatchToken of string
+    | MatchVar of var
+    | MatchLevel of level_exp
+    | MatchUnsupported
+
+   type match_term =
+      MatchTerm of string list * match_param list * bound_term' list
+    | MatchSequent of term * hypothesis list * term list
 end
 
 (*

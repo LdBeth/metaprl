@@ -79,7 +79,6 @@ struct
    type level_exp'     = TermType.level_exp'
    type object_id      = TermType.object_id
    type param'         = TermType.param'
-   type match_param    = TermType.match_param
    type operator'      = TermType.operator'
    type term'          = TermType.term'
    type bound_term'    = TermType.bound_term'
@@ -163,33 +162,6 @@ struct
    let make_param x = x (* external make_param : param' -> param = "%identity" *)
    let dest_param x = x (* external dest_param : param -> param' = "%identity" *)
    let dest_params x = x (* external dest_params : param list -> param' list = "%identity" *)
-
-   let dest_match_param param =
-      match param with
-         Number n ->
-            if Lm_num.is_integer_num n then
-               MatchNumber (n, Some (Lm_num.int_of_num n))
-            else
-               MatchNumber (n, None)
-       | String s ->
-            MatchString s
-       | Token s ->
-            MatchToken s
-       | Var v ->
-            MatchVar v
-       | MLevel l ->
-            MatchLevel l
-       | MNumber _
-       | MString _
-       | MToken _
-       | ObId _
-       | ParamList _ ->
-            MatchUnsupported
-
-   let explode_term t =
-      let op = dest_opname t.term_op.op_name in
-      let params = List.map dest_match_param t.term_op.op_params in
-         op, params, t.term_terms
 
    let mk_level_var v i =
       { le_var = v; le_offset = i }

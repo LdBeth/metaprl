@@ -61,8 +61,6 @@ module Term (**)
   with type term' = TermType.term'
   with type bound_term' = TermType.bound_term'
 
-  with type match_param = TermType.match_param
-
 (*
  * -*-
  * Local Variables:

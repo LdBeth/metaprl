@@ -57,7 +57,6 @@ sig
    type level_exp'
    type object_id
    type param'
-   type match_param
    type operator'
    type term'
    type bound_term'
@@ -133,16 +132,6 @@ sig
 
    val mk_simple_bterm : term -> bound_term
    val dest_simple_bterm : bound_term -> term
-
-   (*
-    * Destruct a term for easy pattern-matching.
-    *
-    * For variables (both FO and SO) we use the "standard"
-    * form with opname ["var"] and a MatchVar parameter.
-    *
-    * Sequents are not handled yet.
-    *)
-   val explode_term : term -> string list * match_param list * bound_term' list
 
    (*
     * We allow a term printer to be injected.

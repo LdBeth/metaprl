@@ -94,20 +94,6 @@ sig
    and bound_term' = { bvars : var list; bterm : term }
 
    (*
-    * Define a type of parameters used in pattern matching.
-    * The main difference is lack of meta-variables, numbers
-    * have an optional constant representation for small numbers,
-    * and there are no Nuprl5 params.
-    *)
-   type match_param =
-      MatchNumber of Lm_num.num * int option
-    | MatchString of string
-    | MatchToken of string
-    | MatchVar of var
-    | MatchLevel of level_exp
-    | MatchUnsupported
-
-   (*
     * The terms in the framework include
     * a meta-implication and met-iff.
     *)
@@ -132,6 +118,23 @@ sig
         sequent_goals : seq_goals
       }
 
+   (*
+    * Define a type of parameters used in pattern matching.
+    * The main difference is lack of meta-variables, numbers
+    * have an optional constant representation for small numbers,
+    * and there are no Nuprl5 params.
+    *)
+   type match_param =
+      MatchNumber of Lm_num.num * int option
+    | MatchString of string
+    | MatchToken of string
+    | MatchVar of var
+    | MatchLevel of level_exp
+    | MatchUnsupported
+
+   type match_term =
+      MatchTerm of string list * match_param list * bound_term' list
+    | MatchSequent of term * hypothesis list * term list
 end
 
 (*
@@ -160,7 +163,6 @@ sig
    type operator'
    type term'
    type bound_term'
-   type match_param
 
    module SeqHyp : Lm_linear_set_sig.LinearSetSig with type elt = hypothesis with type t = seq_hyps
    module SeqGoal : Lm_linear_set_sig.LinearSetSig with type elt = term with type t = seq_goals
@@ -241,11 +243,6 @@ sig
    val print_term : out_channel -> term -> unit
    val print_term_list : out_channel -> term list -> unit
    val install_debug_printer : (out_channel -> term -> unit) -> unit
-
-   (*
-    * Destruct a term for easy pattern-matching
-    *)
-   val explode_term : term -> string list * match_param list * bound_term' list
 
    (*
     * This function is not implemented, and it always returns the

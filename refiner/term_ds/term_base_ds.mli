@@ -57,7 +57,6 @@ module Term (**)
   with type level_exp' = TermType.level_exp'
   with type object_id = TermType.object_id
   with type param' = TermType.param'
-  with type match_param = TermType.match_param
   with type operator' = TermType.operator'
   with type term' = TermType.term'
   with type bound_term' = TermType.bound_term'
