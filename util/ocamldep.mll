@@ -158,13 +158,11 @@ let modules_flag = ref false
 
 let syntaxdef_prereq = "syntax.pho"
 
-let find_in_path path name name' =
+let find_in_path path name =
    let rec try_dir = function
       [] -> raise Not_found
     | dir::rem ->
         let fullname = Filename.concat dir name in
-        if Sys.file_exists fullname then fullname else
-        let fullname = Filename.concat dir name' in
         if Sys.file_exists fullname then fullname else try_dir rem
     in try_dir path
 
@@ -172,7 +170,7 @@ let rec find_file name = function
    [] ->
       raise Not_found
  | ext::exts ->
-      try Filename.chop_suffix (find_in_path !load_path ((String.uncapitalize name) ^ ext) (name ^ ext)) ext
+      try Filename.chop_suffix (find_in_path !load_path ((String.uncapitalize name) ^ ext)) ext
       with Not_found -> find_file name exts
 
 let find_dependency_cmi modname deps =
