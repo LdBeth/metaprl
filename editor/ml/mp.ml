@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-module Shell = Shell.Shell (Shell_p4.ShellP4 (Shell_state.ShellState))
+module Shell = Shell.Shell (Shell_p4.ShellP4)
 module ShellHTTP = Shell_http.ShellHTTP (Shell)
 
 open Shell
@@ -147,7 +147,7 @@ let edit_node = edit_node (get_current_shell ())
 let edit_save = edit_save (get_current_shell ())
 let edit_undo () = edit_undo (get_current_shell ())
 
-let shell_get_term = Shell_state.ShellState.get_term
+let shell_get_term = Shell_state.get_term
 
 let _ = ShellHTTP.main ()
 

@@ -36,7 +36,7 @@ open Mp_debug
 let _ =
    show_loading "Loading Mp_top%t"
 
-module Shell = Shell.Shell (Shell_mp.ShellP4 (Shell_state.ShellState))
+module Shell = Shell.Shell (Shell_mp.ShellP4)
 
 let _ =
    show_loading "Loaded Shell%t"

@@ -37,7 +37,7 @@ open Shell_p4_sig
 (*
  * Toploop implementation.
  *)
-module ShellP4 (State : ShellStateSig) : ShellP4Sig
+module ShellP4 : ShellP4Sig
 
 (*
  * -*-

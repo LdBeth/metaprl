@@ -63,18 +63,17 @@ let inline_tactic = ref None
 let install_tactic tac =
    inline_tactic := Some tac
 
-module ShellP4 (State : ShellStateSig) =
+module ShellP4 =
 struct
-   (*
-    * Inherit from global state.
-    *)
-   type t = State.t
+   (************************************************************************
+    * STATE FUNCTIONS                                                      *
+    ************************************************************************)
 
    (*
     * No notion of current state, since the toploop evaluates all
     * shell call relative to the Mp module.
     *)
-   let current_state = ref (State.create ())
+   let current_state = ref (Shell_state.create ())
 
    let get_current_state () =
       !current_state
@@ -83,26 +82,12 @@ struct
       current_state := state
 
    (************************************************************************
-    * STATE FUNCTIONS                                                      *
-    ************************************************************************)
-
-   let create = State.create
-   let fork = State.fork
-   let get_includes = State.get_includes
-   let get_tactic = State.get_tactic
-   let print_term = State.print_term
-   let set_module = State.set_module
-   let set_mk_opname = State.set_mk_opname
-   let set_df = State.set_dfbase
-   let is_interactive = State.is_interactive
-
-   (************************************************************************
     * TOPLEVEL                                                             *
     ************************************************************************)
 
    let wrap_once state f lb =
-      let x = State.wrap state f lb in
-         Toploop.parse_toplevel_phrase := State.wrap state !Toploop.parse_toplevel_phrase;
+      let x = Shell_state.wrap state f lb in
+         Toploop.parse_toplevel_phrase := Shell_state.wrap state !Toploop.parse_toplevel_phrase;
          x
 
    (*
@@ -113,7 +98,7 @@ struct
     * input hasn't been evaluated yet.
     *)
    let wrap_file state f lb =
-      State.set_file state !Toploop.input_name;
+      Shell_state.set_file state !Toploop.input_name;
       f lb
 
    (*
@@ -191,7 +176,7 @@ struct
          tac
 
    let eval_tactic state =
-      State.synchronize state (function expr ->
+      Shell_state.synchronize state (function expr ->
             let loc = 0, 0 in
             let expr = (<:expr< Shell_p4.install_tactic $expr$ >>) in
             let item = (<:str_item< $exp: expr$ >>) in
@@ -199,19 +184,19 @@ struct
                eval_tactic_once (ref (OnceInitial pt_item)))
 
    let parse_string state =
-      State.synchronize state (function str ->
+      Shell_state.synchronize state (function str ->
           let instream = Stream.of_string str in
              Grammar.Entry.parse Pcaml.expr instream)
 
    let eval_expr state =
-      State.synchronize state (function str ->
+      Shell_state.synchronize state (function str ->
             let instream = Stream.of_string str in
             let expr = Grammar.Entry.parse Pcaml.expr instream in
             let loc = 0, 0 in
                eval_str_item loc <:str_item< $exp: expr$ >>)
 
    let eval_opens state =
-      State.synchronize state (function opens ->
+      Shell_state.synchronize state (function opens ->
             let eval_open path =
                let loc = 0, 0 in
                   eval_str_item loc (<:str_item< open $path$ >>)
@@ -255,7 +240,7 @@ struct
 
       refine_item:
          [[ e = expr ->
-             State.set_tactic (State.get_text loc) e;
+             Shell_state.set_tactic (Shell_state.get_text loc) e;
              e
           ]];
    END
@@ -276,7 +261,7 @@ struct
                ()
          in
             eval_include mplib;
-            List.iter eval_include (State.get_includes ());
+            List.iter eval_include (Shell_state.get_includes ());
             let _ = Toploop.execute_phrase false Format.std_formatter
                (Ptop_dir ("install_printer", Pdir_ident (Ldot (Ldot (Lident "Shell_state", "ShellState"), "term_printer")))) in
             let _ = Toploop.execute_phrase false Format.std_formatter
@@ -284,7 +269,7 @@ struct
             let _ = Tactic.main_loop () in
                ()
       in
-         install_debug_printer State.print_term_fp;
+         install_debug_printer Shell_state.print_term_fp;
          Printexc.catch init ()
 end
 

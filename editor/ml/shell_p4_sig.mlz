@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Opname
@@ -39,130 +39,27 @@ open Filter_type
 open Tactic_type.Tactic
 
 (*
- * These are the global functions that a shell requires.
- *)
-module type ShellStateSig =
-sig
-   type t
-
-   (*
-    * Create a copy of the shell.
-    *)
-   val create : unit -> t
-   val fork : t -> t
-
-   (*
-    * Client functions called somewhere within a toploop.
-    * Client functions are global, and they are only valid
-    * within a toploop call.  These functions usually fail if the
-    * toploop is not active.
-    *)
-   val term_printer : term -> unit  (* uses Format library *)
-   val print_term_fp : out_channel -> term -> unit
-   val set_tactic : string -> MLast.expr -> unit
-   val get_term : int -> term
-
-   (*
-    * Toploop functions.
-    *)
-   val set_mk_opname : t -> opname_fun option -> unit
-   val set_module : t -> string -> (string * Mptop.expr) list -> unit
-   val set_dfbase : t -> dform_base option -> unit
-   val get_dfbase : t -> dform_base
-   val get_tactic : t -> string * MLast.expr
-   val get_toploop : t -> Mptop.top_table
-   val print_term : t -> term -> unit
-   val is_interactive : t -> bool
-   val set_interactive : t -> bool -> unit
-   val reset_terms : t -> unit
-   val synchronize : t -> ('a -> 'b) -> 'a -> 'b
-
-   (*
-    * File parsing.
-    *)
-   val stream_of_channel : t -> in_channel -> char Stream.t
-   val set_prompt : t -> string -> unit
-   val set_prompt2 : t -> string -> unit
-   val stdin_stream : t -> char Stream.t * (unit -> unit)
-   val get_text : int * int -> string
-   val wrap : t -> (Lexing.lexbuf -> 'a) -> Lexing.lexbuf -> 'a
-   val set_file : t -> string -> unit
-
-   (*
-    * Additional global functions.
-    *)
-   val get_includes : unit -> string list
-   val get_input_files : unit -> string list
-end
-
-(*
  * These are the functions provided by the shell.
  *)
 module type ShellP4Sig =
 sig
    (*
-    * Can have multiple instances of the shell.
-    *)
-   type t
-
-   (*
-    * Create an instance of the shell.
-    *)
-   val create : unit -> t
-   val fork : t -> t
-
-   (*
     * Current toploop state.
     *)
-   val set_current_state : t -> unit
-   val get_current_state : unit -> t
-
-   (*
-    * Flag for whether currently in interactive mode.
-    *)
-   val is_interactive : t -> bool
-
-   (*
-    * Set the current display form base.
-    *)
-   val set_df : t -> dform_base option -> unit
-
-   (*
-    * This is the opname function used when terms are built.
-    *)
-   val set_mk_opname : t -> opname_fun option -> unit
-
-   (*
-    * Set the current module.
-    *)
-   val set_module : t -> string -> (string * Mptop.expr) list -> unit
-
-   (*
-    * Printers.
-    *)
-   val print_term : t -> term -> unit
-
-   (*
-    * Get the tactic for the last refinement.
-    *)
-   val get_tactic : t -> string * MLast.expr
+   val set_current_state : Shell_state.t -> unit
+   val get_current_state : unit -> Shell_state.t
 
    (*
     * Expression evaluation.
     *)
-   val parse_string : t -> string -> MLast.expr
-   val eval_tactic : t -> MLast.expr -> tactic
-   val eval_expr : t -> string -> unit
+   val parse_string : Shell_state.t -> string -> MLast.expr
+   val eval_tactic : Shell_state.t -> MLast.expr -> tactic
+   val eval_expr : Shell_state.t -> string -> unit
 
    (*
     * Open all the obvious modules.
     *)
-   val eval_opens : t -> string list list -> unit
-
-   (*
-    * Include directory list.
-    *)
-   val get_includes : unit -> string list
+   val eval_opens : Shell_state.t -> string list list -> unit
 
    (*
     * Main loop.
@@ -170,7 +67,7 @@ sig
     * will exit.  Otherwise, it will only exit when the toploop
     * is finished.
     *)
-   val main : t -> unit
+   val main : Shell_state.t -> unit
 end
 
 (*

@@ -116,7 +116,7 @@ struct
          mutable proof : edit_object;
 
          (* Handle to current shell *)
-         shell : ShellP4.t
+         shell : Shell_state.t
       }
 
    (************************************************************************
@@ -126,7 +126,7 @@ struct
    (*
     * All loaded modules.
     *)
-   let packages = Package.create (ShellP4.get_includes ())
+   let packages = Package.create (Shell_state.get_includes ())
 
    let default_mode_base =
       try Package.get_dforms "summary" with
@@ -520,7 +520,7 @@ struct
                   None
          in
          let new_proof = old_proof.edit_copy () in
-         let new_shell = ShellP4.fork old_shell in
+         let new_shell = Shell_state.fork old_shell in
          let new_shell =
             { width = old_width;
               df_mode = old_mode;
@@ -891,14 +891,14 @@ struct
     *)
    let refine info tac =
       let set info =
-         let str, ast = ShellP4.get_tactic info.shell in
+         let str, ast = Shell_state.get_tactic info.shell in
             touch info;
             if !debug_refine then
                eprintf "Starting refinement%t" eflush;
             info.proof.edit_refine str ast tac;
             if !debug_refine then
                eprintf "Displaying proof%t" eflush;
-            if ShellP4.is_interactive info.shell then
+            if Shell_state.is_interactive info.shell then
                display_proof info info.proof [];
             if !debug_refine then
                eprintf "Proof displayed%t" eflush
@@ -1108,8 +1108,8 @@ struct
             info.dir <- [];
             info.package <- None;
             set_packages info;
-            ShellP4.set_df shell None;
-            ShellP4.set_mk_opname shell None;
+            Shell_state.set_dfbase shell None;
+            Shell_state.set_mk_opname shell None;
             eprintf "Module: /%t" eflush
        | (modname :: item) as dir ->
             (* change module only if in another (or at top) *)
@@ -1117,9 +1117,9 @@ struct
                begin
                   let pkg = Package.get packages modname in
                      info.package <- Some pkg;
-                     ShellP4.set_df shell (Some (get_db info));
-                     ShellP4.set_mk_opname shell (Some (Package.mk_opname pkg));
-                     ShellP4.set_module shell modname (commands info);
+                     Shell_state.set_dfbase shell (Some (get_db info));
+                     Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
+                     Shell_state.set_module shell modname (commands info);
                      eprintf "Module: /%s%t" modname eflush;
                      (* HACK!!! I do not know a better way to initialize a package - AN *)
                      ignore (Package.info pkg (get_parse_arg info))
@@ -1579,7 +1579,7 @@ struct
     *)
    let main () =
       let info = global in
-         ShellP4.set_module info.shell "Mptop" (commands info);
+         Shell_state.set_module info.shell "Mptop" (commands info);
          ShellP4.main info.shell
 end
 

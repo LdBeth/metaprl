@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modifed By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 extends Proof_edit
@@ -41,7 +41,7 @@ extends Shell_p4_sig
 open Shell_sig
 open Shell_p4_sig
 
-module Shell (ShellP4 : ShellP4Sig) : ShellSig
+module Shell (ShellP4 : ShellP4Sig): ShellSig
 
 (*
  * -*-

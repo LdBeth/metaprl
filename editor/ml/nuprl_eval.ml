@@ -42,7 +42,7 @@ open Mp_debug
 open Mp_num
 open Shell_sig
 
-module Shell = Shell.Shell (Shell_mp.ShellP4 (Shell_state.ShellState))
+module Shell = Shell.Shell (Shell_mp.ShellP4)
 
 open Shell
 

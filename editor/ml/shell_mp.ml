@@ -57,19 +57,10 @@ open Mp_version
 
 open Shell_p4_sig
 
-module ShellP4 (State : ShellStateSig) =
+module ShellP4 =
 struct
    let _ =
       show_loading "Loading Shell_mp%t"
-
-   (************************************************************************
-    * TYPES                                                                *
-    ************************************************************************)
-
-   (*
-    * Our state is just the global state.
-    *)
-   type t = State.t
 
    (************************************************************************
     * STATE FUNCTIONS                                                      *
@@ -78,26 +69,13 @@ struct
    (*
     * State for evaluating toploop expressions.
     *)
-   let current_state = ref (State.create ())
+   let current_state = ref (Shell_state.create ())
 
    let get_current_state () =
       !current_state
 
    let set_current_state state =
       current_state := state
-
-   (*
-    * We take these directly from the state.
-    *)
-   let create = State.create
-   let fork = State.fork
-   let get_includes = State.get_includes
-   let get_tactic = State.get_tactic
-   let print_term = State.print_term
-   let set_module = State.set_module
-   let set_mk_opname = State.set_mk_opname
-   let set_df = State.set_dfbase
-   let is_interactive = State.is_interactive
 
    (************************************************************************
     * SHELL GRAMMAR                                                        *
@@ -120,7 +98,7 @@ struct
 
       refine_item:
          [[ e = expr ->
-             State.set_tactic (State.get_text loc) e;
+             Shell_state.set_tactic (Shell_state.get_text loc) e;
              e
           ]];
    END
@@ -133,23 +111,23 @@ struct
     * Evaluate a tactic through the toploop resource.
     *)
    let eval_tactic state =
-      State.synchronize state (function expr ->
-          match expr_of_ocaml_expr (State.get_toploop state) expr with
+      Shell_state.synchronize state (function expr ->
+          match expr_of_ocaml_expr (Shell_state.get_toploop state) expr with
              TacticExpr tac ->
                 tac
            | _ ->
                raise (RefineError ("eval_tactic", StringError "expression is not a tactic")))
 
    let parse_string state =
-      State.synchronize state (function str ->
+      Shell_state.synchronize state (function str ->
           let instream = Stream.of_string str in
              Grammar.Entry.parse Pcaml.expr instream)
 
    let eval_expr state =
-      State.synchronize state (function str ->
+      Shell_state.synchronize state (function str ->
          let instream = Stream.of_string str in
          let expr = Grammar.Entry.parse Pcaml.expr instream in
-         let _ = expr_of_ocaml_expr (State.get_toploop state) expr in
+         let _ = expr_of_ocaml_expr (Shell_state.get_toploop state) expr in
             ())
 
    (************************************************************************
@@ -230,7 +208,7 @@ struct
          ()
 
    let print_expr state out expr =
-      let df = State.get_dfbase state in
+      let df = Shell_state.get_dfbase state in
       let buf = new_buffer () in
          format_expr_type buf df expr;
          print_to_channel default_width buf out;
@@ -240,8 +218,8 @@ struct
     * Evaluate a struct item.
     *)
    let eval_str_item state item =
-      let expr = expr_of_ocaml_str_item (State.get_toploop state) item in
-         if State.is_interactive state then
+      let expr = expr_of_ocaml_str_item (Shell_state.get_toploop state) item in
+         if Shell_state.is_interactive state then
             begin
                print_expr state stdout expr;
                flush stdout
@@ -257,12 +235,12 @@ struct
 
    let rec use state name =
       let inx = open_in name in
-      let int_flag = State.is_interactive state in
-      let stream = State.stream_of_channel state inx in
+      let int_flag = Shell_state.is_interactive state in
+      let stream = Shell_state.stream_of_channel state inx in
       let flush () = Stream.iter (fun _ -> ()) stream in
-         State.set_interactive state false;
+         Shell_state.set_interactive state false;
          toploop state false stream flush;
-         State.set_interactive state int_flag;
+         Shell_state.set_interactive state int_flag;
          close_in inx
 
    (*
@@ -277,10 +255,10 @@ struct
                else
                   state
             in
-               State.set_prompt state "# ";
-               State.reset_terms state;
+               Shell_state.set_prompt state "# ";
+               Shell_state.reset_terms state;
                try
-                  match State.synchronize state (Grammar.Entry.parse Pcaml.top_phrase) instream with
+                  match Shell_state.synchronize state (Grammar.Entry.parse Pcaml.top_phrase) instream with
                      Some phrase ->
                         eval_str_item state phrase
                    | None ->
@@ -293,7 +271,7 @@ struct
                      ()
 
                 | exn ->
-                     let df = State.get_dfbase state in
+                     let df = Shell_state.get_dfbase state in
                      let buf = new_buffer () in
                         begin match exn with
                            Stdpp.Exc_located _ | Pcaml.Qerror _ -> inflush ()
@@ -315,16 +293,16 @@ struct
     * the toploop resource.
     *)
    let main_loop_aux state =
-      match State.get_input_files () with
+      match Shell_state.get_input_files () with
          [] ->
-            let instream, flush = State.stdin_stream state in
+            let instream, flush = Shell_state.stdin_stream state in
                printf "%s\n%t" version eflush;
                toploop state true instream flush
         | files ->
             use_files state files
 
    let main state =
-      install_debug_printer State.print_term_fp;
+      install_debug_printer Shell_state.print_term_fp;
       Sys.catch_break true;
       Tactic_type.Tactic.main_loop ();
       main_loop_aux state
