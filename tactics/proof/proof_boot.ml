@@ -1872,10 +1872,13 @@ struct
                   let attrs = squash_attributes attrs in
                   if squash then begin
                      if attrs <> empty_attribute then begin
+                     (* This is too verbose
                         let buf = Rformat.new_buffer () in
                         format_arg !debug_base buf arg;
                         eprintf "Warning: Proof_boot.io_proof_of_proof: an attribute list in unjustified node was non-empty before IO:\n%t%t"
                            (print_to_channel default_width buf) eflush
+                      *)
+                      eprintf "Warning: Proof_boot.io_proof_of_proof: unexpected attribute list. If the .prla file is old, ignore this warning\n"
                      end;
                      empty_attribute
                  end else attrs
