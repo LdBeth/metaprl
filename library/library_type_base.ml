@@ -5,8 +5,6 @@
 open Printf
 open Lm_debug
 
-open File_base_type
-
 open Refiner.Refiner.Term
 open Basic
 
@@ -29,7 +27,6 @@ let library_close () =
 
 open Printf
 open Lm_debug
-
 
 let library_open host localport remoteport =
 

@@ -34,7 +34,6 @@
 
 open Printf
 open Lm_debug
-open Lm_pervasives
 open File_base_type
 
 (*

@@ -30,7 +30,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Refiner.Refiner.TermType
 
 open Tactic_boot_sig
 

@@ -33,9 +33,6 @@ INCLUDE "refine_error.mlh"
 
 open Lm_symbol
 
-open Printf
-open Lm_debug
-
 open Refine_error_sig
 open Term_ds_sig
 open Term_ds
@@ -88,7 +85,6 @@ struct
    open TermType
    open Term
    open TermSubst
-   open TermOp
    open RefineError
 
    type term = TermType.term
@@ -397,7 +393,6 @@ struct
                MY_NAME FAIL (MY_NAME FAIL f addr2) addr1 BVARS term
           | _ -> DO_FAIL
 
-
    DEFMACRO BVARS = NOTHING
    DEFMACRO VARS_BVARS = NOTHING
    DEFMACRO HYP_BVARS = NOTHING
@@ -651,4 +646,3 @@ struct
        | _ ->
             REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
 end
-

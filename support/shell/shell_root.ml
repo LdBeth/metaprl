@@ -34,16 +34,11 @@ extends Shell_sig
 extends Package_info
 extends Summary
 
-open Printf
-
-open Lm_debug
-
 open Refiner.Refiner.RefineError
 
 open Dform_print
 
 open Summary
-
 open Shell_sig
 open Package_info
 

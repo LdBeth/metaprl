@@ -29,9 +29,6 @@
  * Email: granicz@cs.caltech.edu
  *)
 
-open Printf
-open Lm_debug
-
 open Phobos_debug
 open Phobos_type
 open Phobos_parse_state
@@ -42,11 +39,8 @@ open Phobos_util
 open Phobos_print
 open Phobos_report
 open Phobos_debug
-open Phobos_tokenizer
 open Phobos_rewrite
-open Phobos_marshal
 open Phobos_grammar
-open Xstr_search
 
 (*****************************************************
  * Generic parser routines.
@@ -373,7 +367,6 @@ let rec iterate penv (all_states: state_list_struct) (new_states: state_with_id_
       end
       else
          all_states, actions', accepts
-
 
 let create_parser_states penv =
    let start_prod = grammar_table_find penv.parser_grammar global_start_symbol in

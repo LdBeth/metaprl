@@ -36,7 +36,6 @@ open Term_base_minimal_sig
 open Term_subst_minimal_sig
 open Term_man_minimal_sig
 open Refine_minimal_sig
-open Refine_error_sig
 
 module type TermModuleSig =
 sig

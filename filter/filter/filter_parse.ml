@@ -43,7 +43,6 @@ open Mp_resource
 open File_base_type
 open Term_shape_sig
 
-open Refiner_io
 open Refiner.Refiner
 open Term
 open TermOp
@@ -54,17 +53,13 @@ open Rewrite
 open RefineError
 
 open Infix
-open Free_vars
 open Term_grammar
 open Filter_grammar
 open Filter_type
 open Filter_util
-open Filter_patt
-open Filter_ast
 open Filter_summary
 open Filter_summary_type
 open Filter_summary_util
-open Filter_cache
 open Filter_prog
 open Filter_magic
 open Proof_convert
@@ -637,7 +632,6 @@ struct
             FilterCache.add_command proc.cache (cmd, loc)
       with exn ->
          Stdpp.raise_with_loc loc exn
-
 
    (*
     * Infix directive.

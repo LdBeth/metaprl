@@ -25,9 +25,7 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-
 open Refiner.Refiner.Term
-open Basic
 open Definition
 open Link
 
@@ -38,7 +36,6 @@ type connection =
 	  ro_address	: string list	(* remote orb *)
 	}	
 type environment
-
 
 val orb_open	: string (* mnemonic *)  -> orb
 val connect	: orb -> string (*servername*) -> string (* remote hostname *) -> int (* remote socket *)

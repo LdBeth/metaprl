@@ -34,10 +34,7 @@
  *)
 open Lm_symbol
 
-open Opname
 open Refiner.Refiner
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermSubst
 open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 
@@ -45,7 +42,6 @@ open Refiner_sig
 open Refiner_io
 open Mp_resource
 
-open Rformat
 open Dform
 
 (*
@@ -1098,7 +1094,6 @@ sig
    val rwcaAll : conv list -> int -> tactic
    val rwaAllAll : conv list -> tactic
 
-
    val prefix_thenC : conv -> conv -> conv
    val prefix_orelseC : conv -> conv -> conv
    val addrC : int list -> conv -> conv
@@ -1190,9 +1185,6 @@ end
  *)
 module type TacticExnSig =
 sig
-   open Rformat
-   open Dform
-   open Dform_print
 
    val format_exn : dform_base -> buffer -> exn -> unit
 

@@ -31,13 +31,11 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
 open Printf
 
 open Lm_debug
 open Opname
 
-open File_base_type
 open File_type_base
 
 open Refiner_sig
@@ -46,7 +44,6 @@ open Refiner.Refiner
 open Refiner.Refiner.TermType
 
 open Filter_type
-open Filter_util
 open Filter_summary
 open Filter_summary_type
 open Filter_summary_io
@@ -58,7 +55,6 @@ open Filter_magic
  *)
 let _ =
    show_loading "Loading Filter_cache%t"
-
 
 (************************************************************************
  * IO MODULES                                                           *

@@ -41,11 +41,7 @@
  * @end[license]
  *)
 
-open Printf
 open Lm_debug
-open Lm_string_util
-
-open Refiner.Refiner
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
@@ -94,7 +90,6 @@ declare "bind"{x,y,z,u,v. 'b}
 declare "bind"{x,y,z,u,v,w. 'b}
 declare "bind"{x,y,z,u,v,w,t. 'b}
 declare "bind"{x,y,z,u,v,w,t,s. 'b}
-
 
 let bind_opname = opname_of_term <<"bind"{x. 'b}>>
 

@@ -29,7 +29,6 @@
 (*
  * This implements a filesystem interface to the Nuprl library.
  *)
-
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Refine
@@ -39,10 +38,7 @@ open Library
 open Nuprl5
 open Printf
 open Lm_debug
-open Lm_num
 open Shell_sig
-
-open Shell
 
 module Nuprl (Shell : ShellSig) = struct
   open Shell

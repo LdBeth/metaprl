@@ -34,9 +34,6 @@
  *)
 
 open Lm_debug
-open Printf
-
-open Opname
 
 open Termmod_sig
 open Term_compare_sig
@@ -142,5 +139,3 @@ end
  * End:
  * -*-
  *)
-
-

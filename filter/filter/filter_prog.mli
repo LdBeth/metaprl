@@ -30,7 +30,6 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-open Refiner.Refiner.TermType
 open Refiner.Refiner.Refine
 
 open Filter_type

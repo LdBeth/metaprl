@@ -33,7 +33,6 @@
 extends Tactic_cache
 extends Summary
 
-open Refiner.Refiner
 open Mp_resource
 
 open Tactic_cache

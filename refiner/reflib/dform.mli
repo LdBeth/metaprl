@@ -32,7 +32,6 @@
  *)
 
 open Precedence
-open Rformat
 open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta

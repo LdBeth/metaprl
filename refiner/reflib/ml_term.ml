@@ -32,9 +32,6 @@
 open Opname
 open Refiner_io
 
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMeta
-open Refiner.Refiner.TermMan
 open Term_io
 
 (*

@@ -23,9 +23,7 @@
  *)
 
 open Phobos_type
-open Phobos_parse_state
 open Refiner.Refiner.TermType
-open Opname
 
 type conv_exn =
    ParamError of param' * string

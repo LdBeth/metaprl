@@ -40,13 +40,11 @@ open Lm_symbol
 open Printf
 open Lm_debug
 
-open Opname
 open Term_sig
 open Term_base_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
-open Term_meta_sig
 open Term_shape_sig
 open Refine_error_sig
 
@@ -138,13 +136,11 @@ struct
       MakeRewriteMeta (TermType) (Term) (TermMan) (RefineError) (RewriteTypes)
 
    open RewriteTypes
-   open RewriteUtil
    open RewriteDebug
    open RewriteCompileRedex
    open RewriteCompileContractum
    open RewriteMatchRedex
    open RewriteBuildContractum
-   open RewriteMeta
 
    (************************************************************************
     * TYPES                                                                *

@@ -31,10 +31,8 @@
  *
  *)
 
-open Printf
 open Lm_debug
 
-open Refiner.Refiner
 open Refiner.Refiner.Refine
 open Dform_print
 

@@ -44,7 +44,6 @@ open Term_norm_sig
 open Refine_error_sig
 open Rewrite_sig
 open Refine_sig
-open Weak_memo
 open Termmod_sig
 
 module type RefinerSig =
@@ -149,7 +148,3 @@ sig
       val make_msequent_header : TermHash.t -> FromTerm.Refine .msequent -> TermHash.msequent_header
    end
 end
-
-
-(*
- *)

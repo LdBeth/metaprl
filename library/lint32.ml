@@ -25,11 +25,10 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Printf
 open Lm_debug
 
 let _ =
-   show_loading "Loading Lint32%t"
+   show_loading "Loading Llint32%t"
 
  (*module type BigIntSig =
 sig
@@ -37,29 +36,29 @@ sig
  * Types                                                                *
  ************************************************************************)
 
-type int32
+type lint32
 
 exception IntSize of string * int
 
-val create : int -> int32
+val create : int -> lint32
 
-val lband : int32 -> int32 -> int32
-val lbor : int32 -> int32 -> int32
-val lbsl : int32 -> int -> int32
- (*val lbsr : int32 -> int -> int32*)
-val basr : int32 -> int -> int32
+val lband : lint32 -> lint32 -> lint32
+val lbor : lint32 -> lint32 -> lint32
+val lbsl : lint32 -> int -> lint32
+ (*val lbsr : lint32 -> int -> lint32*)
+val basr : lint32 -> int -> lint32
 
-val bequal : int32 -> int32 -> bool
-val blt : int32 -> int32 -> bool
-val bgt : int32 -> int32 -> bool
-val blte : int32 -> int32 -> bool
-val bgte : int32 -> int32 -> bool
+val bequal : lint32 -> lint32 -> bool
+val blt : lint32 -> lint32 -> bool
+val bgt : lint32 -> lint32 -> bool
+val blte : lint32 -> lint32 -> bool
+val bgte : lint32 -> lint32 -> bool
  end
 
 module Int32:Int32Sig =
  struct*)
 
-type int32 = int * int
+type lint32 = int * int
 
 exception IntSize of string * int
 
@@ -71,17 +70,17 @@ let mk_bint i =
   let a = abs i in let b = ((a asr 16) land 0xFFFF) and c = (a land 0xFFFF) in
   if i >= 0 then (b, c) else (if b = 0 then (b, -c) else (-b, c))
 
-let make_int32 (i, k) =
-  if ((i > 0xFFFF) or (k > 0xFFFF)) then raise (IntSize ("make_int32", i))
+let make_lint32 (i, k) =
+  if ((i > 0xFFFF) or (k > 0xFFFF)) then raise (IntSize ("make_lint32", i))
   else (i, k)
 let dest_bint (a, b) =
   let c = abs a in
-  if c > 0x3FFF then failwith "int32 too big"
+  if c > 0x3FFF then failwith "lint32 too big"
   else let i = (c lsl 16) lor b in if a >= 0 then i else (-i)
-let dest_int32 (a, b) = (a, b)
+let dest_lint32 (a, b) = (a, b)
 
-let int_of_int32 (a, b) = b
-let int32_of_int int = mk_bint int
+let int_of_lint32 (a, b) = b
+let lint32_of_int int = mk_bint int
 
 let lband (x, w) (y, z) = ((x land y),(w land z))
 let lbor (x, w) (y, z) = ((x lor y), (w lor z))
@@ -119,12 +118,9 @@ let bdecr b = let (x, y) = !b
 in if y > 0 then b:=  (x, y-1) else b:= (x-1, 0xffff)
 (* end ;;*)
 
-let print_int32 b =
-  let (a, c) = dest_int32 b in
+let print_lint32 b =
+  let (a, c) = dest_lint32 b in
   print_char '(';
   print_int a;
   print_char ',';
   print_int c; print_char ')'
-
-
-

@@ -36,7 +36,6 @@ open Refine_error_sig
 open Term_sig
 open Term_base_sig
 open Term_man_sig
-open Term_meta_sig
 open Term_subst_sig
 
 open Lm_symbol

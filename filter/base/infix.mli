@@ -30,8 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Filter_type
-
 val make_infix : MLast.loc -> string -> MLast.expr -> MLast.expr -> MLast.expr
 val add_infix : string -> unit
 val remove_infix : string -> unit

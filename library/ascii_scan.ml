@@ -25,7 +25,6 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Printf
 open Lm_debug
 
 open Lm_num
@@ -50,7 +49,6 @@ let ilcurly	= code '{'
 let irsquare	= code ']'
 let ilsquare	= code '['
 
-
 type scanner =
 	{ stream	: char t
 
@@ -64,7 +62,6 @@ type scanner =
 	; mutable eofp		: bool
 	}
 
-
 let explode str =
  let l = String.length str in
 
@@ -74,7 +71,6 @@ let explode str =
   in
 
  aux 0
-
 
 (* chars are reversed *)
 let implode_rev chars =
@@ -88,10 +84,7 @@ let implode_rev chars =
      i := !i - 1;
      rest := tl !rest
   done
-
  ; s
-
-
 
 let make_scanner escape white stream =
  (* print_string "make_scanner  "; *)
@@ -106,7 +99,6 @@ let make_scanner escape white stream =
  ; eofp = emptyp
  }
 
-
 let scan_stream_eof_p s = try (empty s.stream; true) with _ -> false
 
 let scan_bump s =
@@ -120,13 +112,10 @@ let scan_bump s =
  (* ; print_string (Char.escaped s.cchar);
  print_newline () *)
 
-
-
 let scan_next s =
  scan_bump s;
  if (chareq s.cchar '\\')  then (scan_bump s; s.escapep <- true);
  ()
-
 
 let scan_at_eof_p s = s.eofp (*or scan_stream_eof_p s *)
 
@@ -143,7 +132,6 @@ let scan_char s c =
  else error ["scanner"; "char"; (Char.escaped c); (Char.escaped s.cchar)] [] []
  ; ()
 
-
 let scan_cur_byte s = code s.cchar
 let scan_at_byte_p s c = (not (scan_at_eof_p s)) & (code s.cchar) = c  & not (scan_escape_p s)
 
@@ -155,7 +143,6 @@ let scan_byte s c =
 	    then  error ["scanner"; "byte"; Char.escaped (chr c); "eof"] [] []
    else error ["scanner"; "byte"; Char.escaped (chr c); Char.escaped s.cchar] [] []
 
-
 let numeric_digits = ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9']
 
 let scan_at_digit_p s =
@@ -165,7 +152,6 @@ let rec scan_whitespace s =
  if (not (scan_at_eof_p s)) & (mem s.cchar s.whitespace)
     then (scan_next s; scan_whitespace s)
  ; ()
-
 
 let scan_string s =
  (* print_string " sstr "; *)
@@ -178,7 +164,6 @@ let scan_string s =
     in
     (* print_string ss; print_newline(); *)
 	ss)
-
 
 (* arg digits are in reverse order *)
 let digits_to_num digits =
@@ -193,7 +178,6 @@ let digits_to_num digits =
 
     in aux (num_of_int 0) (num_of_int 0) digits
 
-
 let scan_num s =
  let acc = ref [] in
 
@@ -202,7 +186,6 @@ let scan_num s =
   done
 
  ; digits_to_num !acc
-
 
 let scan_char_delimited_list s itemf ld rd sep =
 
@@ -219,7 +202,6 @@ let scan_char_delimited_list s itemf ld rd sep =
 	  then  error ["scanner"; "delimited_list"; "eof"; Char.escaped rd] [] []
 	else error ["scanner"; "delimited_list"; Char.escaped s.cchar; Char.escaped rd] [] []
 
-
 let scan_delimited_list s itemf ld rd sep =
 
  scan_byte s ld;
@@ -234,10 +216,3 @@ let scan_delimited_list s itemf ld rd sep =
 	else if (scan_at_eof_p s)
 	  then  error ["scanner"; "delimited_list"; "eof"; Char.escaped (chr rd)] [] []
 	else error ["scanner"; "delimited_list"; Char.escaped s.cchar; Char.escaped (chr rd)] [] []
-
-
-
-
-
-
-

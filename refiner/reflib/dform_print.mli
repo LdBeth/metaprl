@@ -32,9 +32,6 @@
  *
  *)
 
-open Rformat
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMeta
 open Dform
 
 (*

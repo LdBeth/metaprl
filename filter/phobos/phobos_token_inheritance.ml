@@ -24,13 +24,9 @@
 
 open Smap
 (*open Mc_string_util*)
-open Phobos_parse_state
 open Phobos_type
-open Phobos_constants
 open Phobos_exn
 open Phobos_util
-open Phobos_print
-open Phobos_debug
 
 module OrderedString = struct
    type t = string

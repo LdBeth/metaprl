@@ -34,7 +34,6 @@ INCLUDE "refine_error.mlh"
 
 open Lm_symbol
 
-open Printf
 open Lm_debug
 
 open Opname

@@ -37,9 +37,7 @@ open Lm_symbol
 
 open Printf
 open Lm_debug
-open Lm_string_util
 
-open Opname
 open Term_sig
 open Term_base_sig
 open Term_man_sig
@@ -115,9 +113,7 @@ struct
    open TermMan
    open TermAddr
    open TermSubst
-   open RefineError
    open RewriteTypes
-   open RewriteUtil
    open RewriteDebug
 
    let rec print_term_list out = function

@@ -31,7 +31,6 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-open Lm_pervasives
 open File_type_base
 
 (************************************************************************

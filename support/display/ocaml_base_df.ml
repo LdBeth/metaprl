@@ -33,9 +33,6 @@ extends Nuprl_font
 extends Base_dform
 
 open Lm_debug
-open Printf
-
-open Refiner.Refiner
 
 let _ =
    show_loading "Loading Ocaml_base_df%t"

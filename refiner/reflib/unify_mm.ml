@@ -30,14 +30,8 @@
  *)
 open Lm_symbol
 
-open Printf
-open Lm_debug
-
-open Opname
-
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError

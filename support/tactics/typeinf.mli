@@ -41,8 +41,6 @@ open Refiner.Refiner.Term
 
 open Unify_mm
 
-open Tactic_type
-open Tactic_type.Sequent
 open Tactic_type.Tacticals
 
 (*

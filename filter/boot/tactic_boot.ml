@@ -45,11 +45,9 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_symbol
 
 open Lm_debug
 open Printf
-open Lm_thread_util
 open Rformat
 open Dform
 
@@ -57,15 +55,11 @@ open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
-open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 
 open Theory
-open Term_eq_table
-
-open Tactic_boot_sig
 
 (*
  * Show that the file is loading.

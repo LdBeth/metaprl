@@ -41,18 +41,14 @@ open Refiner.Refiner
 open TermType
 open Term
 open TermShape
-open Mp_resource
 open Simple_print
 
 open File_base_type
-open File_type_base
 
 open Filter_type
 open Filter_util
-open Filter_ocaml
 open Filter_summary
 open Filter_summary_type
-open Filter_summary_io
 
 (*
  * Show the file loading.

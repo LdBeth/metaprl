@@ -44,7 +44,6 @@
  *
  * @end[license]
  *)
-open Printf
 open Lm_symbol
 open Lm_debug
 
@@ -53,14 +52,10 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermSubst
-open Refiner.Refiner.TermAddr
 open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 open Term_match_table
-open Mp_resource
 open Unify_mm
-
-open Tactic_boot_sig
 
 open Tactic_type
 open Tactic_type.Tacticals

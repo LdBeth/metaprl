@@ -30,9 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
-open Filter_type
 
 val build_ml_term : MLast.loc -> term -> MLast.expr
 val build_ml_mterm : MLast.loc -> meta_term -> MLast.expr

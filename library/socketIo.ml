@@ -25,12 +25,10 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Printf
 open Lm_debug
 
 let _ =
    show_loading "Loading SocketIo%t"
-
 
 let open_client port host =
   let {Unix.h_name = name; Unix.h_aliases = a; Unix.h_addrtype = atype; Unix.h_addr_list = l} =

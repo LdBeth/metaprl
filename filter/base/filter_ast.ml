@@ -26,11 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
  *)
-
-open Printf
 open Lm_debug
 
 open Ml_format_sig
@@ -41,7 +38,6 @@ open Ml_format
  *)
 let _ =
    show_loading "Loading Filter_ast%t"
-
 
 (*
  * ML expression converter.

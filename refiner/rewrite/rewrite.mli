@@ -38,7 +38,6 @@ open Term_base_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
-open Term_meta_sig
 open Refine_error_sig
 open Rewrite_sig
 

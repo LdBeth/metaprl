@@ -25,7 +25,6 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Printf
 open Lm_debug
 
 open Unix
@@ -37,18 +36,15 @@ open Link
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
-open Refiner.Refiner.TermSubst
 open Basic
 
 open Mbterm
-open Opname
 
 open Db
 open Definition
 
 let _ =
    show_loading "Loading Orb%t"
-
 
 (*
  * 	Some simplyfying assumtpions FTTB :

@@ -3,7 +3,6 @@
  * Link module: provides nuprl/nuprl-light link functionality
  *)
 
-open Printf
 open Lm_debug
 
 open Refiner.Refiner.Term
@@ -29,7 +28,6 @@ let local_host =
 	Unix.h_addrtype = atype; Unix.h_addr_list = l} =
     Unix.gethostbyname (Unix.gethostname ())
   in name
-
 
 let iconnect_term port host =
   mk_term (mk_op nuprl5_opname

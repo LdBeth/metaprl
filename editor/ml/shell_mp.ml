@@ -33,31 +33,22 @@
 extends Shell
 
 open Printf
-open Lexing
 
 open Lm_debug
-open Lm_pervasives
 
 open Pcaml
-open MLast
 
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
-open Mp_resource
 open Rformat
 
-open Filter_ast
-open Term_grammar
 open Filter_grammar
 
 open Mptop
-open Mp_version
 
 open Exn_boot
 open Shell_sig
-open Shell_p4_sig
 
 module ShellP4 =
 struct

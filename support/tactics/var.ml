@@ -61,10 +61,8 @@ doc <:doc<
 extends Summary
 doc docoff
 
-open Printf
 open Lm_symbol
 open Lm_debug
-open Lm_string_util
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermSubst

@@ -35,8 +35,6 @@ open Lexing
 
 open Lm_debug
 
-open Opname
-open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.RefineError

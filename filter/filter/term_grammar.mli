@@ -30,11 +30,8 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-open Lm_symbol
 open Opname
 open Refiner.Refiner
-open Term
-open TermMeta
 open TermShape
 open Filter_type
 

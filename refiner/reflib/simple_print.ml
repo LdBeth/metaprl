@@ -65,7 +65,6 @@ struct
    open Refiner.TermType
    open Refiner.TermAddr
    open Refiner.TermMan
-   open Refiner.TermMeta
 
    type term = TermType.term
    type level_exp = TermType.level_exp

@@ -22,14 +22,11 @@
  * Email: granicz@cs.caltech.edu
  *)
 
-open Printf
-open Lm_debug
 open Mp_resource
 
 open Conversionals_boot.Conversionals
 
 open Phobos_type
-open Phobos_constants
 open Phobos_util
 open Phobos_exn
 open Refiner.Refiner.TermType
@@ -149,7 +146,6 @@ let compile_lexer_rewrites lex_rewrites =
    PSymbolMTable.fold_all (fun new_lex_rewrites key rewrites ->
       let c_rewrites = compile_pattern_list rewrites in
          lex_rewrite_add_list new_lex_rewrites key c_rewrites) lex_rewrite_empty lex_rewrites
-
 
 (* Compile all parser {terms}->term rewrites to c_redex->c_contractum. *)
 let compile_parser_rewrites parser_rewrites =

@@ -31,7 +31,6 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Opname
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
 
 val term_arrays_of_string : string -> term array * meta_term array * opname array * Lm_num.num array

@@ -38,7 +38,6 @@
 open Refiner.Refiner
 open Opname
 open TermType
-open TermShape
 
 open File_base_type
 

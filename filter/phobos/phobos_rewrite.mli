@@ -22,11 +22,7 @@
  * Email: granicz@cs.caltech.edu
  *)
 
-open Opname
 open Conversionals_boot.Conversionals
-open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
-open Refiner.Refiner.Rewrite
 open Phobos_type
 
 val empty_term : mp_term

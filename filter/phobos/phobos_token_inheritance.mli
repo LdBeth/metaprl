@@ -22,13 +22,7 @@
  * Email: granicz@cs.caltech.edu
  *)
 
-open Phobos_parse_state
 open Phobos_type
-open Phobos_constants
-open Phobos_exn
-open Phobos_util
-open Phobos_print
-open Phobos_debug
 
 val apply_token_inheritance : grammar_state -> lexer_env -> (grammar_state * lexer_env)
 

@@ -29,7 +29,6 @@
  *)
 open Termmod_hash_sig
 
-open Term_norm
 open Term_copy_weak
 
 module TermCopy2Weak

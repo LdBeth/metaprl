@@ -36,8 +36,6 @@ open Printf
 
 open Lm_debug
 
-open Refiner.Refiner.Term
-
 open File_base_type
 
 open Filter_type
@@ -49,7 +47,6 @@ open Filter_summary_type
  *)
 let _ =
    show_loading "Loading Filter_summary_io%t"
-
 
 (*
  * Make the summary from the file base.

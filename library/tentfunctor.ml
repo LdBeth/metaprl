@@ -27,7 +27,6 @@
 
 (*34567890123456789012345678901234567890123456789012345 *)
 
-open Printf
 open Lm_debug
 
 let _ =
@@ -38,7 +37,6 @@ module type OID_TYPE =
   type t
   val equal : t -> t -> bool
  end
-
 
 module type TENTFUNCTOR =
  functor (Id: OID_TYPE) ->
@@ -68,7 +66,6 @@ module type TENTFUNCTOR =
  val tent_collect 	: 'a tent -> stamp list -> unit
 
 end
-
 
 module TentFunctor =
  functor (OID : OID_TYPE) ->

@@ -30,9 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Rformat
 open Dform
-open Dform_print
 
 val format_exn : dform_base -> buffer -> exn -> unit
 

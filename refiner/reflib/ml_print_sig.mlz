@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
 
 (*

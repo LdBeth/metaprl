@@ -35,7 +35,6 @@ extends Ocaml_base_df
 extends Ocaml_expr_df
 
 open Lm_debug
-open Printf
 
 open Ocaml_expr_df
 

@@ -31,8 +31,6 @@
  *)
 extends Summary
 
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermAddr
 open Tactic_type.Tactic
 
 open Shell_sig

@@ -29,7 +29,6 @@
  * Authors: Jason Hickey, Alexey Nogin
  *)
 
-open Opname
 open Refine_error_sig
 open Term_sig
 open Term_base_sig

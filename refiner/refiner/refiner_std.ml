@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 open Termmod_sig
-open Refiner_sig
 
 module Refiner =
 struct

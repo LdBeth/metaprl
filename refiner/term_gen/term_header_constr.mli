@@ -27,7 +27,6 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Weak_memo
 
 module TermHeaderConstr
    (FromTerm : Termmod_sig.TermModuleSig)

@@ -32,8 +32,6 @@
 open Lm_symbol
 
 open Opname
-open Refine_error_sig
-open Term_base_sig
 
 (*
  * The types for the standard refiner.

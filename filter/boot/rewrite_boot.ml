@@ -35,15 +35,11 @@ open Printf
 open Lm_debug
 
 open Refiner.Refiner
-open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
 
-open Tactic_boot_sig
 open Tactic_boot
 open Sequent_boot
 open Tacticals_boot.Tacticals

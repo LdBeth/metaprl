@@ -27,7 +27,6 @@
 
 open Lint32
 
-
 type regtb
 
 val global_registry: regtb
@@ -44,13 +43,13 @@ val define_registry_type: string -> bool -> unit
 
 val clear_registry: bool -> bool -> unit
 
-val registry_lookup_value: string -> string -> int32
-val registry_lookup_identifier: string -> int32 -> string
-val registry_store_local: string -> string -> int32 -> unit
+val registry_lookup_value: string -> string -> lint32
+val registry_lookup_identifier: string -> lint32 -> string
+val registry_store_local: string -> string -> lint32 -> unit
 
 val read_string: in_channel -> string
  (*val read_number: in_channel -> num*)
-val read_int32 : in_channel -> int32
+val read_int32 : in_channel -> lint32
 
 val read_registry: unit
 val read_tokens: unit

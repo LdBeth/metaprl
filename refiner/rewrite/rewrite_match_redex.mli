@@ -31,7 +31,6 @@
  *)
 open Lm_symbol
 
-open Opname
 open Term_sig
 open Term_base_sig
 open Term_man_sig

@@ -50,11 +50,9 @@ extends Perv
 extends Nuprl_font
 (* @docoff *)
 
-open Printf
 open Lm_symbol
 open Lm_debug
 
-open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermType

@@ -62,7 +62,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Printf
 open Lm_symbol
 open Lm_debug
 open Refiner.Refiner
@@ -71,7 +70,6 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.TermSubst
-open Refiner.Refiner.RefineError
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
 

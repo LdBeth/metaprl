@@ -31,7 +31,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
 open Lm_debug
 
 open MLast
@@ -41,7 +40,6 @@ open MLast
  *)
 let _ =
    show_loading "Loading Filter_hash%t"
-
 
 (*
  * Basic hash functions.

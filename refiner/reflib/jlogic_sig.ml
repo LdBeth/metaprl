@@ -1,9 +1,5 @@
 open Refiner.Refiner
-open Term
-open TermOp
-open TermType
 open TermSubst
-open Opname
 
 (* definition: rules, inferences for LJ, LJmc, and LK *)
 

@@ -14,8 +14,6 @@
 {
 (* Remember the possibly free structure identifiers *)
 
-open Printf
-
 module StringSet =
   Set.Make(struct type t = string let compare = compare end)
 

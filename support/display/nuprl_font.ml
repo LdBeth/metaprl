@@ -43,9 +43,7 @@
  * @end[license]
  *)
 
-open Printf
 open Lm_debug
-open Perv
 
 open Lm_string_util
 open Refiner.Refiner.TermOp

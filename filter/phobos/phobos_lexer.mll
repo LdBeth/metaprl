@@ -27,7 +27,6 @@ open Phobos_parser
 open Phobos_parse_state
 open Phobos_type
 open Phobos_constants
-open Phobos_util
 
 (*
  * File position.

@@ -33,7 +33,6 @@
 open Lm_symbol
 
 open Opname
-open Refine_error_sig
 
 module type TermSig =
 sig

@@ -35,7 +35,6 @@ open Printf
 open Lm_string_set
 
 open Refiner.Refiner
-open Term
 open Refine
 
 (*

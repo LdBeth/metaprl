@@ -35,7 +35,6 @@ open Refiner_sig
 open Refiner.Refiner.Refine
 
 open Mp_resource
-open Tactic_boot
 open Tactic_boot.TacticInternalType
 
 module ProofTerm (ToTerm : RefinerSig) :

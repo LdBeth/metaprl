@@ -27,7 +27,6 @@
  * Author: Yegor Bryukhov
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Format
 
 (*
  * BUG WEAK: 8/22/2003 JYH

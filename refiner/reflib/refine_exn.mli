@@ -31,7 +31,6 @@
  *)
 
 open Refiner.Refiner.RefineError
-open Rformat
 open Dform
 open Dform_print
 

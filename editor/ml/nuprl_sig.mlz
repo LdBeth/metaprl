@@ -25,9 +25,7 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
-
 
 (*
  *	uses NUPRL_PORT & NUPRL_HOST environment variables.

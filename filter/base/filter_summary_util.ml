@@ -30,14 +30,10 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
-
 open Lm_debug
 
 open Refiner.Refiner.TermMan
-open Mp_resource
 
-open Filter_summary
 open Filter_type
 
 (*

@@ -31,7 +31,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
 open Lm_debug
 
 (*

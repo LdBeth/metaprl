@@ -45,11 +45,7 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Printf
 open Lm_debug
-open Opname
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 

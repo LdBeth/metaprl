@@ -31,7 +31,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Rformat
 open Opname
 
 module type SimplePrintSig =

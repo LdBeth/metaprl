@@ -27,16 +27,7 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Printf
-open Lm_debug
-open Lm_string_set
-
-open List
-open Term_sig
-open Termmod_sig
-open Weak_memo
 open Opname
-open Term_hash
 
 module TermHeaderConstr (**)
    (FromTerm : Termmod_sig.TermModuleSig)

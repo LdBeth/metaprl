@@ -36,9 +36,6 @@ extends Package_info
 open Printf
 open Lm_debug
 
-open Rformat
-open Dform
-open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
@@ -47,17 +44,13 @@ open Refiner.Refiner.Refine
 open Opname
 
 open Tactic_type
-open Tactic_type.Tacticals
 
 open Shell_sig
-open Package_sig
 open Package_info
 
 open Filter_type
 open Filter_util
-open Filter_summary
 open Filter_summary_type
-open Filter_ocaml
 
 (*
  * Show that the file is loading.

@@ -200,8 +200,6 @@ let grammar_table_add_once table key data =
       Not_found ->
          grammar_table_add table key data
 
-
-
 (*
  * Items, productions.
  *)
@@ -297,7 +295,6 @@ let lex_rewrite_add = PSymbolMTable.add
 let lex_rewrite_add_list table key lst =
    List.fold_left (fun table entry ->
       lex_rewrite_add table key entry) table lst
-
 
 (*
  * Don't add more than one set of rewrites for the same symbol.

@@ -28,9 +28,7 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Term_hash
 open Term_header_constr
-open Weak_memo
 
 module TermNorm
    (ToTerm : Termmod_sig.TermModuleInternalSig)

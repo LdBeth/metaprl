@@ -32,7 +32,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  *)
 open Lm_symbol
-open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
 
 (*

@@ -100,21 +100,14 @@ open Printf
 open Lm_debug
 open Lm_dag_sig
 open Lm_imp_dag
-open Lm_string_set
 
-open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermSubst
-open Refiner.Refiner.Refine
-open Refiner.Refiner.RefineError
 open Mp_resource
 
 open Tactic_type
 open Tactic_type.Tacticals
 open Tactic_type.Sequent
 open Top_conversionals
-open Mptop
 
 (*
  * Debugging.

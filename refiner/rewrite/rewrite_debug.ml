@@ -81,7 +81,6 @@ struct
    open TermType
    open Term
    open TermAddr
-   open RefineError
    open RewriteTypes
 
    type rwterm  = RewriteTypes.rwterm

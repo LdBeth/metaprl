@@ -28,7 +28,6 @@
  *
  * Author: Alexey Nogin <nogin@cs.cornell.edu>
  *)
-open Opname
 open Lm_symbol
 
 (*

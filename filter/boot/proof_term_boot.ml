@@ -60,7 +60,6 @@ let test_arg name goal =
 
 module ProofTerm (ToTerm : RefinerSig) =
 struct
-   open ToTerm
    open ToTerm.TermType
    open ToTerm.Term
    open ToTerm.TermOp

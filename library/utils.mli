@@ -25,7 +25,6 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-
   (* reference with option *)
 type 'a oref
 
@@ -39,9 +38,6 @@ val oref_nullify	: 'a oref -> unit
 val oref_p	: 'a oref -> bool
 val oref_val	: 'a oref -> 'a		(* fails if None *)
 val oref_option	: 'a oref -> 'a option
-
-
-open List
 
 (* some useful list hacking funcs *)
 

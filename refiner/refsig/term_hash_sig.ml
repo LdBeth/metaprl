@@ -28,8 +28,6 @@
  *)
 open Lm_symbol
 
-open Weak_memo
-
 module type TermHashSig =
 sig
    DEFTOPMACRO TERM_HASH_SIG =
@@ -196,7 +194,6 @@ sig
    val lookup_term : (term -> term_header) -> term -> term_index
 
 end
-
 
 (*
  * -*-

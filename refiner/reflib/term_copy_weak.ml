@@ -29,7 +29,6 @@
  *)
 open Termmod_sig
 open Termmod_hash_sig
-open Term_header_constr
 
 module TermCopyWeak
    (FromTerm : TermModuleSig)

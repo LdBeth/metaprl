@@ -31,12 +31,9 @@
  *
  *)
 
-open Printf
 open Lm_debug
 
 open Refiner.Refiner.Refine
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.RefineError
 

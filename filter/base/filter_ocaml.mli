@@ -29,7 +29,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_symbol
 
 open MLast
 

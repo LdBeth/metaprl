@@ -32,7 +32,6 @@ INCLUDE "refine_error.mlh"
 
 open Lm_symbol
 
-open Printf
 open Lm_debug
 
 open Opname
@@ -41,7 +40,6 @@ open Term_ds_sig
 open Term_ds
 open Term_op_sig
 open Term_subst_sig
-
 
 (*
  * Show that the file is loading.
@@ -155,7 +153,6 @@ struct
                l1
          in
             { le_const = max c1 (c2 + o3); le_vars = join (l1, l2) }
-
 
    (*
     * See if the first level is contained in the second.
@@ -604,4 +601,3 @@ struct
       in
          aux 0
 end
-

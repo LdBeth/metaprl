@@ -57,14 +57,9 @@ open MLast
 
 open Lm_string_set
 
-open Refiner.Refiner.TermType
 open Refiner.Refiner.TermAddr
-open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Mp_resource
-
-open Tactic_type.Tacticals
-open Tactic_type.Conversionals
 
 open Shell_sig
 

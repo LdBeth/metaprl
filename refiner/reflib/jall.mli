@@ -44,8 +44,6 @@
        of "LJ" proofs from matrix proofs fails.
 
 
-
-
    Literature:
    ==========
 
@@ -67,7 +65,6 @@
    }
 
    The implementation of JProver is based on the following publications:
-
 
 
    Slides of PRL-seminar talks:
@@ -266,9 +263,6 @@
    }
 *)
 
-open Refiner.Refiner
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
 open Refiner.Refiner.TermSubst
 
 open Jlogic_sig

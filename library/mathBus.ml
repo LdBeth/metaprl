@@ -27,7 +27,6 @@
 
 (*ocaml mathbus implementation*)
 
-open Printf
 open Lm_debug
 
 open Lm_num
@@ -37,9 +36,8 @@ open Lint32
 let _ =
    show_loading "Loading MathBus%t"
 
-type mbnode = Mbint of int32 | Mnode of mbterm
+type mbnode = Mbint of lint32 | Mnode of mbterm
  and mbterm = mbnode array ;;
-
 
 let use_unicode = ref false
 
@@ -53,7 +51,6 @@ let maximum_local_numeric_label = lbor (lbsl (create 0XFFFF) 16) (create 0XFFFF)
    ;; implementations.  The precise allocations of local labels should
    ;; be transparent to the user.
 
-
    ;; All of the information about labels is contained in the registry.
    *)
 let next_local_label = ref maximum_local_numeric_label
@@ -64,7 +61,6 @@ let mBS_Attributes = numeric_label "Attributes"
 let mbs_String = numeric_label "String"
 let mbs_LongInteger = numeric_label "LongInteger"
 let mbs_Token = numeric_label "Token"
-
 
 (* ;; Subterm_Types returns the subtypes of a node ie. which sub_terms are
    ;; 32_bit integers and which are nodes themselves. The meansings are:
@@ -121,7 +117,6 @@ let mbnode_label node =
     | Mnode n -> mbnode_labelq n)
   else i
 
-
 let mbnode_nSubtermsq node = Array.length node - 1
 let mbnode_nSubterms node =
   mbnode_nSubtermsq
@@ -131,7 +126,6 @@ let mbnode_nSubterms node =
 	Mbint b -> failwith "node following attributes is an int"
       | Mnode n -> n)
     else node)
-
 
 let mbnode_subtermq node i =Array.get node i ;;
 let mbnode_subterm node index =
@@ -211,7 +205,7 @@ let loop_over_subterms node f =
     else if bequal c (create (-7)) then
       alternate (Some "stringId") None
     else if blt c (create (-7)) then
-      failwith "Illegal SUBTYPES field" else let (a, x) = dest_int32 c in
+      failwith "Illegal SUBTYPES field" else let (a, x) = dest_lint32 c in
       (for i = 1 to x
       do f i (Some "32bit") done;
        for i = (1 + x) to len
@@ -285,7 +279,6 @@ let mb_numberq num label =
       (Mbint (bminus (mk_bint 0) (dest_bint bval))));
   node
 
-
 (* call with regular integer*)
 let mb_integer int =
   let a = abs int in
@@ -323,7 +316,6 @@ let mb_integerq int label =
     Array.set node 2 (Mbint (mk_bint (a mod 1000000000)));
     node
 
-
  (*return bigint
 let integer_value node=
   let base = integer_valueb node in
@@ -353,13 +345,12 @@ let number_value node=
     | Mnode n -> failwith "integer_value")
   | Mnode n -> failwith "integer_value"
 
-
 let integer_value node=
   let nsubterms = (mbnode_nSubterms node) in
   match (mbnode_subtermq node 1) with
-    Mbint b -> let base = int_of_int32 b in if nsubterms = 1 then base
+    Mbint b -> let base = int_of_lint32 b in if nsubterms = 1 then base
     else (match (mbnode_subtermq node 2) with
-      Mbint c -> let int = ((abs base) * 1000000000) + (int_of_int32 c) in
+      Mbint c -> let int = ((abs base) * 1000000000) + (int_of_lint32 c) in
       if base >= 0 then int else (-int)
     | Mnode n -> failwith "integer_value")
   | Mnode n -> failwith "integer_value"
@@ -418,12 +409,12 @@ let mb_string s =
 
 let string_value_with_unicode node =
   match (mbnode_subtermq node 1) with
-    Mbint b -> let (x, y) = dest_int32 b in
+    Mbint b -> let (x, y) = dest_lint32 b in
     let str = if y < 0 then failwith "string_value" else Lm_string_util.create "MathBus.string_value" y in
     let rec loop i j =
       if (i >= y) or (j > (mbnode_nSubterms node)) then str else
       (match node.(j) with
-	Mbint c -> let (a, b) = dest_int32 c in
+	Mbint c -> let (a, b) = dest_lint32 c in
 	(Lm_string_util.set "MathBus.string_value_with_unicode" str i (Char.chr a);
 	 if (i + 1) < y then
 	   Lm_string_util.set "MathBus.string_value_with_unicode" str (i + 1) (Char.chr b);
@@ -436,12 +427,12 @@ let string_value_with_unicode node =
 let string_value node =
   if !use_unicode then string_value_with_unicode node
   else match (mbnode_subtermq node 1) with
-    Mbint b -> let (x, y) = dest_int32 b in
+    Mbint b -> let (x, y) = dest_lint32 b in
     let str = if y < 0 then failwith "string_value" else Lm_string_util.create "MathBus.string_value" y in
     let rec loop i j =
       if (i >= y) or (j > (mbnode_nSubterms node)) then str else
       (match node.(j) with
-	Mbint c -> let (a, b) = dest_int32 c in let a1 = (a asr 8) land 0xFF and a2 = a land 0xFF and b1 = (b asr 8) land 0xFF and b2 = b land 0xFF in
+	Mbint c -> let (a, b) = dest_lint32 c in let a1 = (a asr 8) land 0xFF and a2 = a land 0xFF and b1 = (b asr 8) land 0xFF and b2 = b land 0xFF in
 	(Lm_string_util.set "MathBus.string_value" str i (Char.chr a1);
 	 if (i + 1) < y then
 	   Lm_string_util.set "MathBus.string_value" str (i + 1) (Char.chr a2);
@@ -477,7 +468,7 @@ let rec print_node node =
       	| Some s ->
 	    if s = "32bit" then
 	      (match (mbnode_subtermq node i) with
-	      	Mbint b -> (print_string " ("; print_int32 b; print_string ")")
+	      	Mbint b -> (print_string " ("; print_lint32 b; print_string ")")
 	      | Mnode n -> failwith "print node bint")
       	    else (match (mbnode_subtermq node i) with
 	      Mbint b -> (print_char '('; print_string (registry_lookup_identifier "StringId" b); print_char ')')
@@ -638,7 +629,7 @@ let print_byte64 byte =
 
  (*;;; Byte stream output*)
 let write_32bit num stream =
-  let (a, b) = dest_int32 num in
+  let (a, b) = dest_lint32 num in
   match stream_mode  with
     "binary_byte" -> failwith "not yet ready binary"
 	  (*write_char logand ash num _24 0XFF stream
@@ -672,7 +663,7 @@ let write_32bit num stream =
   |_-> failwith "Don't know how to write streams in mode"
 
 let print_32bit  num =
-  let (a, b) = dest_int32 num in
+  let (a, b) = dest_lint32 num in
   match stream_mode with
     "binary_byte" -> failwith "not yet ready binary"
 	  (*write_char logand ash num _24 0XFF stream
@@ -746,11 +737,11 @@ let read_32bit stream =
 	  let a2 = base64_read_8bit stream in
 	  let a3 = base64_read_8bit stream in
 	  let a4 = base64_read_8bit stream in
-	  make_int32 (((a1 lsl 8) lor a2), ((a3 lsl 8) lor a4)))
+	  make_lint32 (((a1 lsl 8) lor a2), ((a3 lsl 8) lor a4)))
       | 0xFE -> (
 	  let a1 = base64_read_8bit stream in
 	  let a2 = base64_read_8bit stream in let a3 = base64_read_8bit stream in
-	   make_int32 (a1, ((a2 lsl 8) lor a3)))
+	   make_lint32 (a1, ((a2 lsl 8) lor a3)))
       | 0xFD -> (
 	  let a1 =(base64_read_8bit stream) in
 	  let a2 =(base64_read_8bit stream) in
@@ -823,7 +814,7 @@ let stringID_translation = Hashtbl.create 7
 
 let rec read_node_internal stream =
   let op = read_32bit stream and
-      (a, b) = (dest_int32 (read_32bit stream)) in
+      (a, b) = (dest_lint32 (read_32bit stream)) in
   let node = make_mbnode op b in
   (let loop i stype =
     Array.set node i
@@ -855,8 +846,8 @@ let read_node stream =
   base64_ibuffer  := 0;
   base64_icount := 0;
 
-  let (a, b) = dest_int32 (read_32bit stream) in (* print_int a; print_int b;*)
-  if not (bequal (make_int32 (a, b)) header_num) then
+  let (a, b) = dest_lint32 (read_32bit stream) in (* print_int a; print_int b;*)
+  if not (bequal (make_lint32 (a, b)) header_num) then
     failwith "Bad header word for MathBus stream" else
      (*;; This implementation doesn't need to know the depth or width of the
        ;; node being constructed a priori.*)

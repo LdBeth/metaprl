@@ -37,14 +37,12 @@ open Lm_symbol
 open Printf
 
 open Lm_debug
-open Lm_file_util
 open Opname
 open Refiner_sig
 open Precedence
 
 open Filter_util
 open Filter_type
-(* open Filter_ocaml *)
 
 (*
  * Show the file loading.
@@ -1805,7 +1803,6 @@ struct
             implem_error ("Definition " ^ def.opdef_name ^": RHS mismatch")
     | _ :: t ->
          check_definition def t
-
 
    (*
     * Module definitions.

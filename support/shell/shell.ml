@@ -52,14 +52,12 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
 open Dform
 open Dform_print
-open Rformat
 
 open Filter_type
 open Filter_summary
 
 open Tactic_type
 open Tactic_type.Tacticals
-open Mptop
 
 open Package_sig
 open Package_info

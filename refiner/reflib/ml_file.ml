@@ -31,13 +31,7 @@
  *
  *)
 
-open Printf
-
 open Lm_debug
-open Opname
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMeta
-open Ml_print_sig
 open Ml_print
 
 (*
@@ -57,8 +51,6 @@ let header =
 "(*
  * Term definitions.
  *)
-
-open Term
 
 "
 

@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Opname
 open Term_sig
 open Term_base_sig
 open Refine_error_sig

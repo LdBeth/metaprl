@@ -33,9 +33,7 @@
 
 extends Shell
 
-open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
-open Refiner.Refiner.RefineError
 open Mp_resource
 
 open Tactic_type.Conversionals
@@ -61,7 +59,6 @@ topval rwca : conv list -> int -> int -> tactic
 topval rwaAll : conv list -> tactic
 topval rwcaAll : conv list -> int -> tactic
 topval rwaAllAll : conv list -> tactic
-
 
 topval prefix_thenC : conv -> conv -> conv
 topval prefix_orelseC : conv -> conv -> conv

@@ -35,17 +35,12 @@
  *)
 
 open Lm_debug
-open Printf
 
 open Refiner.Refiner
-open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.RefineError
 
-open Tactic_boot_sig
 open Tactic_boot
 open Rewrite_boot
 open Sequent_boot
@@ -229,7 +224,6 @@ struct
                prefix_thenC conv (repeatForC (i - 1) conv)
          in
             funC repeatForCE
-
 
    let rwc conv assum clause =
       Tacticals.funT

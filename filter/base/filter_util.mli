@@ -33,7 +33,6 @@
 open Lm_symbol
 
 open Opname
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
 open Filter_type
 

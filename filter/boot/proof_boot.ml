@@ -61,25 +61,18 @@
 
 open Printf
 open Lm_debug
-open Weak_memo
 
 open Opname
 open Refiner.Refiner
-open TermType
-open Term
-open TermOp
 open TermMan
-open TermSubst
 open RefineError
 open Refine
-open Refine_exn
 
 open Refiner_sig
 open Refiner_io
 
 open Rformat
 open Dform
-open Dform_print
 
 open Term_eq_table
 open Mp_resource
@@ -88,7 +81,6 @@ open Tactic_boot
 open Tactic_boot.TacticType
 open Tactic_boot.TacticInternalType
 open Tactic_boot.TacticInternal
-open Sequent_boot
 
 (*
  * Show that the file is loading.

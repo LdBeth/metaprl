@@ -25,19 +25,14 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Printf
 open Lm_debug
 
 open Unix
 open List
-open Utils
-open Opname
 open Lm_num
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5
-open Lib_term  (* allows Lib_term.dest_term on special terms - I replaced all instances in this file *)
-
 
 let _ =
    show_loading "Loading Basic%t"
@@ -60,7 +55,6 @@ let rec parmeq p q =
   | ObId poid, ObId qoid	-> listeq parmeq poid qoid
 
   |_ -> p = q
-
 
 let oideq = listeq parmeq
 
@@ -133,7 +127,6 @@ let imessage_term sl ol tl =
       ))
     (map (function t -> mk_bterm [] t) tl)
 
-
 let iterm_term t = mk_term iterm_op [mk_bterm [] t]
 let iterm_bterms bterms = mk_term iterm_op bterms
 let ivoid_op = (mk_nuprl5_op [make_param (Token "!void")])
@@ -144,7 +137,6 @@ let ivoid_term_p t =
   { term_op = op; term_terms = []} when opeq op ivoid_op
      -> true
   |_ -> false
-
 
 (*
  * failure
@@ -265,7 +257,6 @@ let string_of_itoken_term t =
 	 error ["term"; "!string"; "parameter type"] [] [t]
 	 )
 
-
 let oid_of_ioid_term t =
   match dest_param (parameter_of_carrier ioid_parameter t) with
     ObId o -> o
@@ -274,15 +265,12 @@ let oid_of_ioid_term t =
 	   *)
      error ["term"; "!oid"; "parameter type"] [] [t]
 
-
 let dest_obid_param p =
   match dest_param p with
     ObId o -> o
   |_ -> error ["parameter"; "obid"] [] []
 
-
 let oids_of_ioid_term t = map dest_obid_param (parameters_of_carrier ioid_parameter t)
-
 
 let dest_token_param p =
   match dest_param p with
@@ -298,7 +286,6 @@ let dest_num_param p =
   match dest_param p with
     Number n -> n
   |_ -> error ["parameter"; "num"] [] []
-
 
 (*
  * stamps
@@ -321,8 +308,6 @@ let print_stamp s =
   print_string ",";
   print_int s.seq;
   print_string "}"
-
-
 
 let dest_stamp stamp = stamp
 
@@ -374,7 +359,6 @@ let in_transaction_p = fun
   { process_id = pid1; transaction_seq = tseq1 }
   { process_id = pid2; transaction_seq = tseq2 } ->
     pid1 = pid2 & tseq1 = tseq2
-
 
 let transaction_less = fun
   { term = term1; process_id = pid1; seq = seq1; time = time1 }
@@ -450,7 +434,6 @@ let tid () =
 let tideq s t =
  opeq (operator_of_term s) (operator_of_term t)
 
-
 (* expect Fatal error: uncaught exception Incomparable_Stamps
    should try other tests and make outcome more apparent ie print test ok
  *)
@@ -462,7 +445,6 @@ let test () =
       (transaction_less s1 s3) &
       (transaction_less s3 s2)
 ;;
-
 
 let icons_op = (mk_nuprl5_op [make_param (Token "!cons")])
 let icons_term op h t = mk_term op [mk_bterm [] h; mk_bterm [] t]
@@ -544,7 +526,6 @@ let iproperty_term name_prop =
   mk_term (mk_nuprl5_op [iproperty_parameter; make_param (Token (fst name_prop))])
 	  [mk_bterm [] (snd name_prop)]
 
-
 let string_of_token_parameter p =
   match dest_param p with
     Token s -> s
@@ -559,6 +540,5 @@ let property_of_iproperty_term pt =
 	  -> (string_of_token_parameter name, term_of_unbound_term prop)
 	|_ -> error ["iproperty"; "op"; "not"; ""] [] [pt])
     |_ -> error ["iproperty"; "term"; "not"; ""] [] [pt]
-
 
 let debug_term = ref ivoid_term

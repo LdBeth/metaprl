@@ -28,7 +28,6 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Weak_memo
 open Term_hash_sig
 
 module TermHash (ToTerm : Termmod_sig.TermModuleInternalSig) :

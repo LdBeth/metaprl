@@ -43,7 +43,6 @@ doc <:doc<
    @end[license]
 >>
 
-open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermSubst
@@ -275,7 +274,6 @@ doc <:doc<
 
    The (@tt[whileProgressT] $@i[tac]$) tactic repeatedly executes the given tactic on all subgoals
    while there is a progress. If $@i[tac]$ fails, then @tt[whileProgressT] also fails.
-
 
    The (@tt[repeatT] $@i[tac]$) tactic is equal to  (@tt{whileProgressT tryT} $@i[tac]$).
    It repeats the application of its argument until it fails or no more progress is made.

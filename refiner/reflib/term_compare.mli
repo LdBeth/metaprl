@@ -33,7 +33,6 @@
  * Derived from: Term_copy
  *)
 
-open Termmod_sig
 open Term_compare_sig
 
 module TermCompare : TermCompareSig

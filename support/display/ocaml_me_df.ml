@@ -36,7 +36,6 @@ extends Ocaml_expr_df
 extends Ocaml_mt_df
 
 open Lm_debug
-open Printf
 
 let _ =
    show_loading "Loading Ocaml_me_df%t"

@@ -33,7 +33,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
 open Lm_debug
 
 open MLast
@@ -43,7 +42,6 @@ open MLast
  *)
 let _ =
    show_loading "Loading MLast_util%t"
-
 
 (*
  * Iteration functions.

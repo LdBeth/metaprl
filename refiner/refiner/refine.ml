@@ -77,7 +77,6 @@ open Term_meta_sig
 open Term_shape_sig
 open Refine_error_sig
 open Rewrite_sig
-open Refine_sig
 
 (*
  * Show the file loading.

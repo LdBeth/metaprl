@@ -34,9 +34,6 @@ INCLUDE "refine_error.mlh"
 
 open Lm_symbol
 
-open Printf
-open Lm_debug
-
 open Refine_error_sig
 open Term_sig
 open Term_base_sig
@@ -81,7 +78,6 @@ struct
    open TermType
    open Term
    open TermSubst
-   open TermOp
    open TermMan
    open RefineError
 

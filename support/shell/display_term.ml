@@ -33,12 +33,8 @@
 open Printf
 open Lm_debug
 
-open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Dform_print
-open Simple_print
 
 open Mux_channel
 

@@ -26,11 +26,9 @@ open Phobos_debug
 
 open Phobos_type
 open Phobos_constants
-open Phobos_parse_state
 open Phobos_exn
 open Phobos_print
 open Phobos_util
-open Phobos_rewrite
 open Phobos_marshal
 open Phobos_tokenizer
 open Phobos_token_inheritance

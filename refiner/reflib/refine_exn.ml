@@ -31,16 +31,11 @@
  *)
 open Lm_symbol
 
-open Printf
-
 open Lm_debug
 
-open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
-open Refiner.Refiner.TermMeta
-open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Rformat
 open Simple_print.SimplePrint

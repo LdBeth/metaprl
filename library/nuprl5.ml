@@ -25,15 +25,11 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Refine_error_sig
-
-open Printf
 open Lm_debug
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Opname
-open Lm_num
 
 let _ =
    show_loading "Loading Nuprl5%t"

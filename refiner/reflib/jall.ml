@@ -41,7 +41,6 @@ open TermSubst
 open TermMan
 open RefineError
 open Opname
-open Lm_string_set
 
 open Unify_mm
 
@@ -982,7 +981,6 @@ struct
       (RNode(root_node,beta_proof)),beta_exp,closures
 *)
 
-
 (* *********** New Version with direct computation from extension proof **** *)
 (* follows a DIRECT step from proof histories via pr-connection orderings to opt. beta-proofs *)
 
@@ -1331,7 +1329,6 @@ struct
 (* eigenvariablen renaming and branch modification over *)
 (* the whole proofs, i.e. over layer boundaries, too *)
 
-
 (* global variable vor eigenvariable renaming during permutations *)
 
    let eigen_counter = ref 1
@@ -1495,7 +1492,6 @@ struct
          not (orl_free ptree)
       else
          false
-
 
 (* to compute a topmost addmissible pair r,o  with
    the address addr of r in the proof tree
@@ -1884,7 +1880,6 @@ struct
             in
             bptree (extend prooftree (pos,rule,formula,term)) rest (nax+newax)
 
-
    let bproof nodelist =
       bptree PEmpty nodelist 0
 
@@ -1969,7 +1964,6 @@ struct
                       else
                          rest_rel,rest_ren
                )
-
 
       in
       match dir_treelist with
@@ -2345,7 +2339,6 @@ struct
        | All,O -> Allr,(inst_label),(mk_string_term jprover_op spos.name) (* must be a proper term *)
        | Ex,I -> Exl,(inst_label),(mk_string_term jprover_op spos.name) (* must be a proper term *)
 
-
 (* %%%%%%%%%%%%%%%%%%%% Split begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% *)
 
    let rec nonemptys treearray j n =
@@ -2529,7 +2522,6 @@ struct
                let (new_term,next_diffs) = check_delta_terms (v,term) r dterms in
                (new_term,((var,dname)::next_diffs))
 
-
    let rec localize_sigma zw_sigma ass_delta_diff =
       match zw_sigma with
          [] -> []
@@ -2668,9 +2660,6 @@ struct
                   and zw2trees = myset strees (f-1) zw2ft in
                   (NodeA(pos,zw1trees),zw1red,zw1conn,zw1uslist),(NodeA(pos,zw2trees),zw2red,zw2conn,zw2uslist)
 
-
-
-
    let split addr pname ftree redord connections unsolved_list opt_bproof =
       let (opt_bp1,min_con1),(opt_bp2,min_con2) = split_permutation pname opt_bproof in
       begin
@@ -2730,9 +2719,7 @@ struct
          end
       end
 
-
 (* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Splitting end %%%%%%%%%%%%%%%%  *)
-
 
 (* for wait labels we collect all solved atoms with pol=0 *)
 
@@ -3219,7 +3206,6 @@ struct
       with Reflexive ->
          raise Failed                (* new connection, please *)
 
-
 (* ************* quantifier ordering  END ********************************************** *)
 
 (* ****** Quantifier unification ************** *)
@@ -3485,8 +3471,6 @@ struct
             else
                let new_ordering = build_orderingJ (v::compose_vars) (ft @ [c1]) ordering atom_rel in
                tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma new_ordering
-
-
          in
          let apply_r8 fs ft rt rest_eq sigma =
 (* print_endline "r8"; *)
@@ -3563,8 +3547,6 @@ struct
                else
                   raise Not_unifiable (* simply back propagation *)
             )
-
-
          else
             if r_10 fs ft rt then  (* not ri, i<10, and r10 possible if for instance *)
                          (* (s=[] and x=v1) or (z<>[] and xt=C1V1t') *)
@@ -3825,7 +3807,6 @@ let rec add_multiplicity ftree pos_n  mult logic =
          else
             let final_ordering = combine_ordering_list new_ordering_list (pos.name) in
             ((NodeA(pos,new_suctrees)),final_ordering,new_pos_n)
-
 
 (**************  Path checker   ****************************************************)
 
@@ -4337,7 +4318,6 @@ let init_prover ftree =
 (*      print_atom_info atom_relation;  *)
    let atom_sets = make_atom_sets atom_relation in
    (atom_relation,atom_sets,qprefixes)
-
 
 let rec try_multiplicity consts mult_limit ftree ordering pos_n mult logic =
    try

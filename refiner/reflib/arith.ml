@@ -221,7 +221,6 @@ let collect f gl =
 
 module Test = struct
     module SG = Graph(SimpleHyps)
-    open SimpleHyps
     open SG
 
     let h = Array.of_list [

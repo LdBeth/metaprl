@@ -35,7 +35,6 @@ open Printf
 
 open Lm_symbol
 open Lm_debug
-open Opname
 open Term_shape_sig
 open Refiner.Refiner
 open Term
@@ -44,13 +43,8 @@ open TermOp
 open TermMan
 open TermMeta
 open TermShape
-open RefineError
-open Ml_string
-open Simple_print
-open Simple_print.SimplePrint
 
 open Filter_type
-open Filter_summary
 
 (*
  * Show the file loading.
@@ -301,7 +295,6 @@ struct
    let mk_arith_term loc name t1 t2 =
       { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc name) t1.aterm t2.aterm }
 
-
    (*
     * Make record terms
     *)
@@ -312,7 +305,6 @@ struct
    let mk_field_self_term =
       let self_term = mk_var_term (Lm_symbol.add "self") in
          fun loc field -> mk_field_term loc self_term field
-
 
    (*
     * Check that all are strings.
@@ -707,7 +699,6 @@ struct
                { aname = None; aterm = make_application loc [mk_field_term loc g.aterm op; t1.aterm; t2.aterm] }
             ]
 
-
           (* Other operations *)
           | "cons" RIGHTA
             [ t1 = noncommaterm; op = sl_double_colon; t2 = noncommaterm ->
@@ -880,7 +871,6 @@ struct
            | sl_open_curly; bterms = btermslist; sl_close_curly ->
              [], bterms
           ]];
-
 
       rcrdterm:
          [[ ";"; lab = word_or_string; sl_equal; t = aterm  ->
@@ -1304,7 +1294,6 @@ struct
 
       con_brtermlist:
          [[ sl_open_brack; l = con_termlist; sl_close_brack -> l ]];
-
 
       (* Terminals *)
       sl_contexts_left: [[ "<|" -> () ]];

@@ -176,7 +176,6 @@ open Tactic_type.Tacticals
 open Auto_tactic
 open Simp_typeinf
 open Typeinf
-open Mptop
 
 (*
  * Show that the file is loading.
@@ -370,7 +369,6 @@ let extract_intro_data data =
          with
             Not_found ->
                raise (RefineError ("extract_intro_data", StringTermError ("D tactic doesn't know about", t))))
-
 
 (*
  * Add a new tactic.

@@ -35,7 +35,6 @@ extends Ocaml_base_df
 extends Ocaml_sig_df
 
 open Lm_debug
-open Printf
 
 let _ =
    show_loading "Loading Ocaml_str_df%t"

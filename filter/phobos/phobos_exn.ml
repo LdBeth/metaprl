@@ -26,9 +26,7 @@ open Phobos_constants
 open Phobos_parse_state
 open Phobos_type
 open Refiner.Refiner.TermType
-open Opname
 open Simple_print.SimplePrint
-open Format
 
 type conv_exn = 
    ParamError of param' * string
@@ -153,7 +151,6 @@ let print_exn = function
  | exn ->
 (*      Fc_ir_exn_print.pp_print_exn err_formatter exn*)
       raise exn
-
 
 let print_exn_chan out exn =
    flush stdout;

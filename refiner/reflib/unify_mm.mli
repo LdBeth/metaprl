@@ -55,10 +55,6 @@
 
 open Lm_symbol
 
-open Refine_error_sig
-open Term_ds_sig
-open Term_ds
-
 open Refiner.Refiner.TermType
 
 type term_subst = (var * term) list

@@ -30,7 +30,6 @@
  *)
 open Refiner_io
 
-open Term_copy2_weak
 
 module NormalizeTerm = Term_copy2_weak.TermCopy2Weak (Refiner_io) (Refiner.Refiner)
 

@@ -30,13 +30,8 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-open Printf
-
-open Lm_debug
-
 open Rformat
 open Dform
-open Dform_print
 open Simple_print.SimplePrint
 open File_type_base
 

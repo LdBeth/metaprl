@@ -30,14 +30,12 @@
  * Modified By: Alksey Nogin <nogin@cs.caltech.edu>
  *)
 
-open Opname
 open Term_sig
 open Term_base_sig
 open Term_man_sig
 open Refine_error_sig
 
 open Rewrite_type_sig
-open Rewrite_util_sig
 
 module MakeRewriteMeta
    (TermType : TermSig)

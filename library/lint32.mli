@@ -31,38 +31,37 @@ sig*)
  * Types                                                                *
  ************************************************************************)
 
-type int32
+type lint32
 
 exception IntSize of string * int
 
-val create : int -> int32
-val mk_bint : int -> int32
-val make_int32 : int * int -> int32
-val dest_bint : int32 -> int
-val dest_int32 : int32 -> int * int
+val create : int -> lint32
+val mk_bint : int -> lint32
+val make_lint32 : int * int -> lint32
+val dest_bint : lint32 -> int
+val dest_lint32 : lint32 -> int * int
 
-val int_of_int32 : int32 -> int
-val int32_of_int : int -> int32
+val int_of_lint32 : lint32 -> int
+val lint32_of_int : int -> lint32
 
-val print_int32 : int32 -> unit
+val print_lint32 : lint32 -> unit
 
-val lband : int32 -> int32 -> int32
-val lbor : int32 -> int32 -> int32
-val lbsl : int32 -> int -> int32
+val lband : lint32 -> lint32 -> lint32
+val lbor : lint32 -> lint32 -> lint32
+val lbsl : lint32 -> int -> lint32
 (*
-val lbsr : int32 -> int -> int32
-val basr : int32 -> int -> int32
+val lbsr : lint32 -> int -> lint32
+val basr : lint32 -> int -> lint32
 *)
-val bplus : int32 -> int -> int32
-val bminus : int32 -> int -> int32
+val bplus : lint32 -> int -> lint32
+val bminus : lint32 -> int -> lint32
 
+val bequal : lint32 -> lint32 -> bool
+val blt : lint32 -> lint32 -> bool
+val bgt : lint32 -> lint32 -> bool
+val blte : lint32 -> lint32 -> bool
+val bgte : lint32 -> lint32 -> bool
 
-val bequal : int32 -> int32 -> bool
-val blt : int32 -> int32 -> bool
-val bgt : int32 -> int32 -> bool
-val blte : int32 -> int32 -> bool
-val bgte : int32 -> int32 -> bool
-
-val bdecr : int32 ref -> unit
+val bdecr : lint32 ref -> unit
 
  (* end*)

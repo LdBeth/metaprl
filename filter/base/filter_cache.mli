@@ -32,7 +32,6 @@
  * Modified By: Aleksey Nogin: <nogin@cs.caltech.edu>
  *)
 
-open Filter_type
 open Filter_summary_type
 
 (*

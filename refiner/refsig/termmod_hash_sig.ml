@@ -33,7 +33,6 @@
 
 open Term_hash_sig
 open Term_norm_sig
-open Weak_memo
 open Termmod_sig
 
 module type TermModuleHashSig =

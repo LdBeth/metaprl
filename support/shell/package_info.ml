@@ -33,8 +33,6 @@
 
 extends Package_sig
 
-open Parsetree
-
 open Printf
 
 open Lm_debug
@@ -43,21 +41,16 @@ open Lm_string_set
 
 open File_base_type
 
-open Refiner.Refiner.TermMan
 open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
-open Mp_resource
 open Theory
 
 open Filter_summary_type
 open Filter_summary
-open Filter_summary_util
 open Filter_cache
 open Filter_util
-open Infix
 
 open Tactic_type
-open Tactic_type.Tacticals
 
 open Package_sig
 
@@ -334,7 +327,6 @@ struct
 
    let dforms { pack_name = name } =
       get_dforms name
-
 
    (************************************************************************
     * LOADING                                                              *

@@ -25,7 +25,6 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Printf
 open Lm_debug
 
 open Utils
@@ -36,7 +35,6 @@ open Refiner.Refiner.TermSubst
 open Basic
 open Nuprl5
 open Orb
-open Definition
 
 let _ =
    show_loading "Loading Library%t"
@@ -75,7 +73,6 @@ let connect servername remote_host remote_port =
  Orb.connect (oref_val orbr) servername remote_host remote_port 
 
 let disconnect c = Orb.disconnect (oref_val orbr) c
-
 
 (*	test_ehook
  *
@@ -267,7 +264,6 @@ let save l f =
       f t;
       t.cookie)
 
-
 (*
   let tid = tid () in
 
@@ -291,7 +287,6 @@ let save l f =
 (* TODO: FTTB, this is a callback to lib, however oids should be cached locally, ie oid table
  *  or lib-table with oids.
  *)
-
 
 let lib_close lib = close_library_environment lib.environment
 let leave lib = leave_library_environment lib.environment
@@ -341,12 +336,9 @@ let require_remote_transaction t =
   if (t.ttype = LOCAL) then error ["library"; "transaction"; "local"] [] [];
   ()
 
-
 (*
  todo whoever calls commit needs to add tent to collect queue
 *)
-
-
 
 (* tree notes.
  *
@@ -359,7 +351,6 @@ let require_remote_transaction t =
  *  we can prevent dup roots by locking all roots at make_root or equivalently by having
  *  special root object which contains all roots and locking that.
  *)
-
 
 (*
  val make_root		: transaction -> string -> object_id
@@ -417,7 +408,6 @@ let make_ap remote_termto toterm =
   (fun m v ->
     wrap_parens (iml_cons_term unmarshall_ap_itext (fst m)), (toterm v) :: snd m)
 
-
 let abstract_prefix_itext = (itext_term "\\l. ")
 let abstract_suffix_itext = (itext_term " l")
 
@@ -425,7 +415,6 @@ let with_abstract f g =
   wrap_parens (iml_cons_term abstract_prefix_itext
 			     (iml_cons_term f
 					    (wrap_parens (iml_cons_term g abstract_suffix_itext))))
-
 
 let oid_return_itext = itext_term "ioid_term "
 let oid_return m = (with_abstract oid_return_itext (fst m), (snd m))
@@ -454,8 +443,6 @@ let eval_to_string t m = string_of_istring_term (eval_m_to_term t (string_return
 let eval_to_token t m = string_of_istring_term (eval_m_to_term t (token_return m))
 let eval_to_object_id t m = oid_of_ioid_term (eval_m_to_term t (oid_return m))
 
-
-
 let make_eval remote_toterm termto =
   let marshall_result_itext = (itext_term remote_toterm) in
   (fun t m ->
@@ -465,7 +452,6 @@ let make_eval remote_toterm termto =
 	       (snd m))))
 
 let server_loop lib = orb_req_loop lib.environment
-
 
 let oid_export_ap = null_ap (itext_term "oid_export ")
 let oid_import_ap = null_ap (itext_term "oid_import ")
@@ -497,7 +483,6 @@ let allow_collection t oid = eval t (oid_ap allow_ap oid)
 
 let disallow_ap = null_ap (itext_term "disallow_collection ")
 let disallow_collection t oid = eval t (oid_ap disallow_ap oid)
-
 
 let create_ap = null_ap (itext_term "create_with_some_term ")
 let create t ttype init_term init_props =
@@ -539,7 +524,6 @@ let get_property t oid s =
   eval_to_term t
     (token_ap (oid_ap get_property_ap oid) s)
 
-
 let put_properties_ap = null_ap (itext_term "\\oid iprops. set_properties oid (term_to_property_list iprops) ")
 let put_properties t oid props =
   eval t
@@ -552,7 +536,6 @@ let get_properties t oid =
     (eval_to_term t
       (oid_ap get_properties_ap oid))
 
-
 let make_root_ap = null_ap (itext_term "dag_make_root ")
 let make_root t name =
   eval_to_object_id t
@@ -562,7 +545,6 @@ let remove_root_ap = null_ap (itext_term "dag_remove_root ")
 let remove_root t oid =
   eval t
     (oid_ap remove_root_ap oid)
-
 
 let make_directory_ap = null_ap (itext_term "dag_make_directory ")
 let make_directory t oid s =
@@ -577,7 +559,6 @@ let remove_directory t oid s =
     (token_ap
       (oid_ap remove_directory_ap oid)
       s)
-
 
 let make_leaf_ap = null_ap (itext_term "dag_make_leaf ")
 let make_leaf t oid name ttype =

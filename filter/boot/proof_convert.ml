@@ -33,13 +33,9 @@
 open Printf
 open Lm_debug
 
-open Refiner_sig
 open Refiner_io
 open Refiner.Refiner.TermType
 
-open Tactic_boot
-open Tactic_boot.TacticType
-open Tactic_boot.TacticInternalType
 open Proof_boot
 
 type term_io = Refiner_io.TermType.term

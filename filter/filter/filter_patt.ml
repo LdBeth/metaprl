@@ -42,18 +42,10 @@
  * @end[license]
  *)
 open Lm_symbol
-open Lm_debug
 
-open Opname
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
-open Refiner.Refiner.TermMeta
-open Refiner.Refiner.RefineError
-
-open Filter_type
-open Filter_util
 
 (*
  * Utilities.

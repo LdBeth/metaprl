@@ -31,16 +31,12 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
 open Lm_debug
 open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta
-open Ml_file
-open Simple_print
-open Filter_ast
 open Filter_type
 
 (*
@@ -48,7 +44,6 @@ open Filter_type
  *)
 let _ =
    show_loading "Loading Filter_util%t"
-
 
 (************************************************************************
  * UTILS								*

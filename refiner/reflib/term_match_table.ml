@@ -40,7 +40,6 @@
  *)
 open Format
 
-open Lm_symbol
 open Lm_debug
 open Opname
 
@@ -49,7 +48,6 @@ open TermType
 open Term
 open TermOp
 open TermMan
-open TermMeta
 open Rewrite
 
 open Simple_print.SimplePrint

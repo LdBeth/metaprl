@@ -28,10 +28,8 @@
  * Authors: Alexey Nogin
  *)
 
-open Opname
 open Refine_error_sig
 open Term_ds_sig
-open Term_base_sig
 open Term_ds
 
 module Term (**)

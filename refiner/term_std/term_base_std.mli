@@ -30,10 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-open Opname
 open Refine_error_sig
 open Term_std_sig
-open Term_base_sig
 open Term_std
 
 module Term (**)

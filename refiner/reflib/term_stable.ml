@@ -33,9 +33,6 @@
 open Printf
 open Lm_debug
 
-open Opname
-open Refiner.Refiner
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermShape
 
 open Mp_resource

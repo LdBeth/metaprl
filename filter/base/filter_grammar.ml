@@ -31,9 +31,7 @@
  *)
 
 open Lm_debug
-open Printf
 
-open MLast
 open Pcaml
 
 open Infix

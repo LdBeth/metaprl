@@ -38,9 +38,7 @@ INCLUDE "refine_error.mlh"
 
 open Lm_symbol
 
-open Printf
 open Lm_debug
-open Opname
 open Term_sig
 open Term_base_sig
 open Term_man_sig
@@ -108,8 +106,6 @@ struct
    open TermType
    open Term
    open TermMan
-   open TermAddr
-   open TermSubst
    open RefineError
    open RewriteTypes
    open RewriteUtil

@@ -25,8 +25,6 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-
-open Printf
 open Lm_debug
 
 let _ =
@@ -50,12 +48,6 @@ let oref_option a = a.ocontents
 let oref_val = function
  { ocontents = None} -> raise OrefNone
  | { ocontents = Some a } -> a
-
-
-
-
-
-open List
 
 
 let assoc_if f l =

@@ -24,7 +24,6 @@
  *)
 
 open Phobos_type
-open Phobos_print
 
 val save_parser_report : grammar_state -> parser_env -> state_list_struct -> parsing_table
  -> parsing_table_error -> string -> unit

@@ -25,9 +25,7 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-
 open Refiner.Refiner.Term
-open Opname
 open Lm_num
 
 val debug_term: term ref
@@ -118,7 +116,6 @@ val transaction_less	: stamp -> stamp -> bool
 val new_stamp 		: unit ->  stamp
 val get_stamp 		: unit ->  stamp
 
-
 val sequence		: unit -> int
 val tid			: unit -> term
 val tideq		: term -> term -> bool
@@ -127,13 +124,10 @@ val term_of_unbound_term	: bound_term -> term
 val unbound_bterm_p		: bound_term -> bool
 val string_of_itext_term	: term -> string
 
-
-
 val icons_op			: operator
 val icons_term			: operator -> term -> term -> term
 val hd_of_icons_term		: operator -> term -> term
 val tl_of_icons_term		: operator -> term -> term
-
 
 val list_to_ilist_by_op_map	: operator -> ('a -> term) -> 'a list -> term
 val list_to_ilist_by_op		: operator -> term list -> term
@@ -153,7 +147,6 @@ val property_of_iproperty_term	: term -> (string * term)
 
 val istring_term		: string -> term
 val string_of_istring_term	: term -> string
-
 
 val nullp			: 'a list -> bool
 val chareq			: char -> char -> bool

@@ -30,10 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
 open Lm_debug
 
-open Ml_print_sig
 open Ml_print
 
 (*

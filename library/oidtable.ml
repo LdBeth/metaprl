@@ -25,18 +25,16 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Printf
 open Lm_debug
 
 let _ =
    show_loading "Loading Oidtable%t"
 
+open Basic
+open Refiner.Refiner.Term
 
- open Basic
- open Refiner.Refiner.Term
-
- open Tentfunctor
- open Hashtbl
+open Tentfunctor
+open Hashtbl
 
 module type Oid =
  sig

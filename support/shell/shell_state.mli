@@ -30,13 +30,9 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-open Opname
 open Refiner.Refiner.TermType
-open Rformat
 open Dform
 open Filter_type
-
-open Tactic_type.Tactic
 
 type t
 

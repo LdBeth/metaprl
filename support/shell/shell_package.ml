@@ -34,23 +34,17 @@ extends Shell_sig
 extends Package_info
 extends Summary
 
-open Printf
-
-open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 
 open Dform_print
 
-open Filter_ocaml
 open Filter_type
 open Filter_summary_type
 
 open Tactic_type
 
 open Summary
-
 open Shell_sig
 open Package_info
 

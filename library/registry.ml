@@ -29,9 +29,7 @@
  * registries, one for the global information, and one for the local
  * information.
  *)
-open Printf
 open Lm_debug
-open Lm_pervasives
 
 open Lint32
 
@@ -41,11 +39,11 @@ let _ =
 (*
  * jyh: we need documentation for these types.
  * Unidirectional or Bidirectional (pair of) hash tables.
- * String is a symbolic label and int32 is its numeric label.
+ * String is a symbolic label and lint32 is its numeric label.
  *)
 type tb =
-   Uni of (string, int32) Hashtbl.t
- | Bi of (string, int32) Hashtbl.t * (int32, string) Hashtbl.t
+   Uni of (string, lint32) Hashtbl.t
+ | Bi of (string, lint32) Hashtbl.t * (lint32, string) Hashtbl.t
 
 (*
  * Registry hash table.
@@ -206,9 +204,9 @@ let read_int32 stream =
    let s = read_string stream in
    let v = int_of_string s in
       if v < -9 then (*LAL hack-subtypes can be neg...number too big to convert from string*)
-         (print_int v; failwith "fg" )  (*"not yet ready to read in int32s"*)
+         (print_int v; failwith "fg" )  (*"not yet ready to read in lint32s"*)
       else
-         int32_of_int v
+         lint32_of_int v
 
 (*
  * Load the entire registry file.

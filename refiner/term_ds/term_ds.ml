@@ -32,7 +32,6 @@
  *)
 open Lm_symbol
 
-open Printf
 open Lm_debug
 open Opname
 

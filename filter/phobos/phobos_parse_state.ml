@@ -22,8 +22,6 @@
  * Email: granicz@cs.caltech.edu
  *)
 
-open Phobos_type
-
 let tabstop = 8
 
 (*

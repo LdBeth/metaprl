@@ -31,7 +31,6 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Printf
 open Lm_debug
 
 open Dform

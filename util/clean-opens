@@ -1,0 +1,57 @@
+#!/bin/sh
+omake clean
+cvs update
+IFS=::::::
+TMP=`mktemp /tmp/clop.XXXXXX`
+TMP2=`mktemp /tmp/clop2.XXXXXX`
+grep -r -l --include=\*.ml --include=\*.mli --include=\*.mlz --include=\*.mll --include=\*.mly '^ *open ' . > $TMP
+omake || exit 1
+while read FILE; do
+   BINFILE=`echo $FILE|sed -e 's/\.mli$/.cmi/' -e 's/\.mlz$/.cmi/' -e 's/\.ml.*$/.cmx/'`
+   if [ "$BINFILE" == "$FILE" ]; then 
+      echo "$FILE" "???"
+      exit 1
+   fi
+   if [ ! -e "$BINFILE" ]; then
+      echo "Skiping file $FILE as it is not compiled by \"omake\""
+   else
+      if echo "$BINFILE" | grep -q cmx; then
+         PPO=`echo $BINFILE|sed -e 's/\.cmx$/.ppo/'`
+      else
+         PPO=""
+      fi
+      grep '^ *open ' $FILE > $TMP2
+      while read OPEN; do
+         echo -n "Trying to remove \"$OPEN\" from $FILE: "
+         mv -f "$FILE" "$FILE.save"
+         fgrep -v -x "$OPEN" $FILE.save > $FILE
+         if cmp -s $FILE $FILE.save; then
+            echo "Warning: grep -v did not remove anything"
+            rm -f $FILE.save
+         else
+            rm -f $BINFILE $PPO
+            if omake "$BINFILE" 2>&1 >/dev/null && [ -f $BINFILE ]; then
+               echo success!
+               rm -f $FILE.save
+            else
+               echo failed.
+               mv -f $FILE.save $FILE
+               touch $FILE
+               rm -f "$BINFILE" $PPO
+            fi
+         fi
+      done < $TMP2 
+      omake "$BINFILE" 2>&1 >/dev/null
+      if [ ! -f $BINFILE ]; then
+         omake "$BINFILE" 2>&1 >/dev/null
+         if [ ! -f $BINFILE ]; then
+            echo "*** Execution of"
+            echo "*** omake \"$BINFILE\" 2>&1 >/dev/null"
+            echo "*** did not create $BINFILE"
+            echo "*** Aborting"
+            exit 1
+         fi
+      fi
+   fi
+done < $TMP
+rm -f $TMP $TMP2

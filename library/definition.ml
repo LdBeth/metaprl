@@ -25,9 +25,7 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Printf
 open Lm_debug
-
 
 open Basic
 open Refiner.Refiner.Term
@@ -70,7 +68,6 @@ let term_of_idata_term t =
     { term_op = op; term_terms = [subterm] } when opeq op idata_op
       -> term_of_unbound_term subterm
     |_ -> error ["term"; "!data"] [] [t]
-
 
 open Mbterm
 
@@ -133,7 +130,6 @@ let term_to_data t =
 
 type substance_type = TermSubstance | Substance
 
-
 (* to avoid making substance fields mutable. substance import will be peformed
    at initialization.
  *)
@@ -146,7 +142,6 @@ let term_of_isubstance_term t =
 	-> term_of_unbound_term sub
    |_ -> error ["term"; "!substance"] [] [t]
 
-
 class substance (t : term) =
  object
   val term = term_of_isubstance_term t
@@ -154,12 +149,10 @@ class substance (t : term) =
   method get_term = term
 end
 
-
 class term_substance (t : term) =
  object
   inherit substance t
 end
-
 
 (*
  *	due to the difficulties of initializing class instances I think using
@@ -204,7 +197,6 @@ end
  *	need supertype)
  *)
 
-
 (* testing 1,2,3 *)
 (*
 class sub_substance t =
@@ -225,7 +217,6 @@ class sub_substance t =
 end
 *)
 
-
 (*
  *	definitions will be subclassed but need to be able to recover subclass
  *	from a superclass.
@@ -243,7 +234,6 @@ end
  *)
 
 (* exception UnexpectedSubstanceType of substance_type *)
-
 
 let substance_import def stype data =
   print_string "subimp ";
@@ -281,7 +271,6 @@ class term_dyneval (t: term) =
   method get_term = self#get_term*)
 
 end
-
 
 exception NoDyneval
 
@@ -327,7 +316,6 @@ let idyneval_term_p t =
      )
   (* | _ -> false *)
 
-
 let children_of_idirectory_term t =
  match dest_term t with
   { term_op = op; term_terms = [children]} when unbound_bterm_p children
@@ -345,7 +333,6 @@ let children_of_idirectory_term t =
 		(term_of_unbound_term children)
   |_ -> error ["term"; "!directory"; "children"] [] [t]
 
-
 (* assumes idirectory_p true *)
 let iroot_directory_term_p t =
  match dest_term t with
@@ -360,7 +347,6 @@ let iroot_directory_term_p t =
 	  |_ -> false
 	)
 
-
 (* assumes iroot_directory_p true *)
 let name_of_iroot_directory_term t =
  match dest_term t with
@@ -371,13 +357,11 @@ let name_of_iroot_directory_term t =
 	  |_ -> error ["term"; "!directory"; "root"; "op"] [] [t]
 	)
 
-
 exception NotRootDirectory
 
 (* need to merge with term_def as term def must have term_defs since cannot cast to sub class.
    au contraire, it would seem that a variant of dir_def and term_def as term entry would be suitable.
  *)
-
 
 class ['a] directory_definition d dat st =
  let datterm = dat#get_term in
@@ -406,18 +390,15 @@ class ['a] directory_definition d dat st =
   method get_root_name = if rootp then root_name else (print_string "nonroot"; raise NotRootDirectory)
 end
 
-
 type term_entry
 	= DirectoryDefinition of term_substance directory_definition
 	| TermDefinition of term_substance term_definition
-
 
 let dag_description_p t =
   if ivoid_term_p t
      then false
      else let purposes = (purposes_of_idescription_term t) in
        ((mem "ObjectIdDAG" purposes) & not (mem "Derived" purposes))
-
 
 let idefinition_op = mk_nuprl5_op [make_param (Token "!definition")]
 
@@ -493,10 +474,7 @@ let import_term idef idesc =
 		else error ["import"; "term"; "not"] [] [idir]*)
 		
 	)
-
     |_ -> error ["term"; "!definition"] [] [idef]
-
-
 
 open Oidtable
 
@@ -518,7 +496,6 @@ let definition_of_entry entry =
   match entry with
     DirectoryDefinition def -> (def : term_substance directory_definition :> term_substance definition)
   | TermDefinition def -> (def : term_substance term_definition :> term_substance definition)
-
 
 let oid_of_term_entry e = ((definition_of_entry e)#get_dependency).oid
 
@@ -568,7 +545,6 @@ let apply_broadcast ttable ibcast idesc stamp commit_stamp =
 		)		
 	   |_ -> error ["term"; "broadcast"] [] [ibcast]
 
-
 let termtable_lookup ttable stamp oid = lookup ttable stamp oid
 let termtable_unit_map tt st f =  oidtable_unit_map tt st f
 let termtable_map tt st f = oidtable_map tt st f
@@ -583,14 +559,11 @@ let roots tt stamp =
 		else None)
     | TermDefinition def -> None)
 
-
 let root_p tt stamp oid =
  let te = termtable_lookup tt stamp oid in
     match te with
       DirectoryDefinition def -> def#rootp
     | TermDefinition def -> false
-
-
 
 let root_name tt stamp oid =
  let te = termtable_lookup tt stamp oid in
@@ -608,7 +581,6 @@ let directory_p tt stamp oid =
       DirectoryDefinition def -> true
     | TermDefinition def -> false)
  with e -> false
-
 
 let directory_children tt stamp oid =
  let te = termtable_lookup tt stamp oid in

@@ -32,7 +32,6 @@
 
 extends Auto_tactic
 
-open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
 
 open Tactic_type

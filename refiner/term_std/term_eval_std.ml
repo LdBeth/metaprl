@@ -69,7 +69,6 @@ module TermEval
 struct
    open RefineError
    open TermType
-   open Term
 
    type term = Term.term
 

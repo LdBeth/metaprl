@@ -43,7 +43,6 @@
  *)
 open MLast
 
-open Opname
 open Refiner.Refiner.TermType
 
 val build_term_patt : term -> patt

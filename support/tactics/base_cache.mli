@@ -33,8 +33,6 @@
 extends Tactic_cache
 extends Summary
 
-open Refiner.Refiner
-
 open Tactic_cache
 open Tactic_type.Tacticals
 

@@ -30,11 +30,8 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
 open Refiner.Refiner.Refine
 open Refiner.Refiner
-open Rformat
 open Dform
 open Dform_print
 

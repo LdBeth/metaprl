@@ -41,8 +41,7 @@ extends Proof_edit
 open Opname
 open Term_shape_sig
 open Refiner.Refiner
-open TermType
-open Refine
+open Refiner.Refiner.TermType
 open Dform_print
 
 open Filter_type
@@ -50,8 +49,6 @@ open Filter_summary
 open Filter_summary_type
 
 open Tactic_type
-open Tactic_type.Tactic
-open Tactic_type.Tacticals
 
 open Proof_edit
 
@@ -67,7 +64,7 @@ type status =
 (*
  * Values needed for parsing.
  *)
-type parse_arg = ((string -> MLast.expr) * (MLast.expr -> tactic))
+type parse_arg = ((string -> MLast.expr) * (MLast.expr -> Tactic.tactic))
 
 (*
  * This exception is raised when a package is requested,
@@ -160,7 +157,7 @@ sig
     *)
    val arg_resource : package -> parse_arg -> string -> Mp_resource.global_resource
    val new_proof : package -> parse_arg -> string -> term list -> term -> proof
-   val ped_of_proof : package -> parse_arg -> proof -> msequent -> ped
+   val ped_of_proof : package -> parse_arg -> proof -> Refine.msequent -> ped
    val status_of_proof : proof -> Proof.status
    val node_count_of_proof : proof -> int * int
 end

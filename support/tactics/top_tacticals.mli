@@ -32,13 +32,8 @@
 
 extends Shell
 
-open Refiner.Refiner
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermSubst
-open Refiner.Refiner.Refine
-
-open Tactic_type
-open Tactic_type.Sequent
+open Refiner.Refiner.TermType
+open Tactic_type.Tactic
 
 (*
  * Toploop values.

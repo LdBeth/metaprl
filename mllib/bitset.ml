@@ -2,7 +2,6 @@
  * Packed boolean array.
  *)
 
-open Printf
 open Lm_debug
 
 (*

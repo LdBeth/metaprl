@@ -32,18 +32,10 @@
  * jyh@cs.cornell.edu
  *)
 
-open Arg
-open Printf
-
 open Lm_debug
 
 open File_base_type
 
-open Refiner.Refiner.TermType
-open Refiner_io
-
-open Filter_type
-open Filter_summary
 open Filter_summary_type
 open Filter_cache
 

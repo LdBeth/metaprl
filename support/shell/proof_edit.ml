@@ -43,19 +43,14 @@ extends Summary
 open Printf
 open Lm_debug
 
-open Refiner.Refiner
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
-open Rformat
 open Dform
 open Dform_print
-open Simple_print
 
 open Tactic_type
 open Tactic_type.TacticType
-open Tactic_type.Sequent
 open Tactic_type.Tacticals
 
 open Summary

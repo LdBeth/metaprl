@@ -29,7 +29,6 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Weak_memo
 
 module TermNorm
    (ToTerm : Termmod_sig.TermModuleInternalSig)

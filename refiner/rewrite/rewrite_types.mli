@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Opname
 open Term_sig
 open Term_addr_sig
 

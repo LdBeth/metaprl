@@ -31,18 +31,12 @@
  *	ocamlc -o test -custom -I ../../nuprl5/sys/io/mathbus unix.cma io.cma library.cma test.cmo -cclib -lunix
  *
  *)
-
-open Printf
 open Lm_debug
 
 open Utils
 open Basic
 open Library
 open Nuprl5
-
-open Ascii_scan
-
-open Library_type_base
 
 let _ =
    show_loading "Loading Nuprl_run%t"
@@ -313,7 +307,6 @@ let dtest connection =
 
 *)
 
-
 (* old test purposes *)
 (*
 let looptest connection =
@@ -500,10 +493,6 @@ let jointest remote_port local_port =
  raise (Test "Join Test Successful")
 
 *)
-open List
-open Opname
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
 open Nuprl_sig
 
 module NuprlRun (Nuprl : NuprlSig) = struct

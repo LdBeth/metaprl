@@ -36,7 +36,6 @@
  *)
 open Lm_symbol
 open Refiner.Refiner
-open Term
 open Refine
 
 (************************************************************************

@@ -37,9 +37,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
 open Lm_debug
-open Lm_pervasives
 
 open MLast
 open MLast_util

@@ -29,10 +29,7 @@
  *)
 open Lm_symbol
 
-open List
 open Opname
-open Term_sig
-open Termmod_sig
 
 module TermHash (ToTerm : Termmod_sig.TermModuleInternalSig) =
 struct
@@ -261,7 +258,6 @@ struct
       { TType.op_name = opname_index;
         TType.op_params = params
       }
-
 
    let p_constr_bterm info { bvars=bvs; bterm=term_index } =
       TTerm.make_bterm

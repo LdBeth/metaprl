@@ -74,11 +74,8 @@ extends Nuprl_font
 extends Base_dform
 extends Comment
 
-open Printf
 open Lm_debug
 
-open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 

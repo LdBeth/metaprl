@@ -33,11 +33,8 @@
  * jyh@cs.cornell.edu
  *)
 
-open Refiner.Refiner.Term
-
 open File_base_type
 
-open Filter_summary
 open Filter_summary_type
 
 (*

@@ -61,7 +61,6 @@ module TermOp
 struct
    open RefineError
    open TermType
-   open Term
 
    type term = TermType.term
    type operator = TermType.operator

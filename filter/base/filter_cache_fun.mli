@@ -32,8 +32,6 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Refiner.Refiner.Term
-
 open Filter_type
 open Filter_summary_type
 

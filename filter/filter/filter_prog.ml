@@ -35,16 +35,11 @@ open Lm_symbol
 open Lm_debug
 
 open Opname
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
-open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Precedence
-open Simple_print
-open Mp_resource
 
-open Free_vars
 open Filter_type
 open Filter_util
 open Filter_ast

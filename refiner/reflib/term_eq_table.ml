@@ -31,7 +31,6 @@
  *)
 
 open Lm_splay_table
-open Term_norm
 open Termmod_hash_sig
 
 (*
