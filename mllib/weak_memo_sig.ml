@@ -31,6 +31,11 @@
 module type WeakMemoSig = 
 sig
 
+(*
+ * Weak_descriptors are hash-table entries permiting GC
+ *)
+    type 'a weak_descriptor
+
 (* Memo-type
  * 'param - the way for recursion
  * 'header - already transformed argument where all recursive references replaced with
@@ -42,15 +47,16 @@ sig
    type ('param, 'header, 'weak_header, 'image) t
 
 (*
- * External kind of descriptors to prevent GC
+ * Descriptors are analog of weak_descriptor but they prevent GC
  *)
-   type 'a descriptor 
+   type 'a descriptor
+   val weaking : 'a descriptor -> 'a weak_descriptor
 
 (*
  * Creates new memo-structure
  *)
-   val create : int -> int ->              (* This numbers are sizes of headers' hash table *)
-                                           (* and results' array *)
+   val create : int -> int ->              (* This numbers are size of headers' hash table (and halfsize of array of target objects) *)
+                                           (* and critical level of holes to restart GC *)
           ('header -> 'weak_header) ->     (* Convert 'header to 'weak_header *)
           ('weak_header -> 'weak_header -> bool) ->  (* Headers' comparision function *)
           ('param -> 'header -> 'image) -> (* Converter from header to result *)
@@ -78,6 +84,10 @@ sig
  
    val unsafe_retrieve : ('param, 'header, 'weak_header, 'image) t -> 'param -> 'image weak_descriptor  -> 'image
  *)
+
+   val gc_on : unit -> unit
+
+   val gc_off : unit -> unit
 
 end
 

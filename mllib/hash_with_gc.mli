@@ -1,8 +1,8 @@
-(* This file is an interface for infinite array of weak pointers
- * to objects.
+(* This file is an interface for hash table with GC feature
+ * 
+ * ----------------------------------------------------------------
  *
- * -----------------------------------------------------------------
- * This file is part of MetaPRL, a modular, higher order
+ * This file is part of Nuprl-Light, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -28,12 +28,15 @@
  * Author: Yegor Bryukhov
  *)
 
-module InfiniteWeakArray : Infinite_weak_array_sig.InfiniteWeakArraySig
+open Hash_with_gc_sig 
+
+module HashWithGC : HashWithGCSig
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "weak_memo, term_header"
+ * Caml-master: ""
  * End:
  * -*-
  *)
+

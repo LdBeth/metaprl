@@ -48,11 +48,11 @@ struct
    module TermMod = struct
       module TermType = TermType
       module Term = Term
+      module TermSubst = TermSubst
       module TermMan = TermMan
    end
-   module TermHeader = Term_header.TermHeader (TermMod)
-   module TermHash = Term_hash.TermHash (TermMod) (TermHeader)
-   module TermNorm = Term_norm.TermNorm (TermMod) (TermHeader) (TermHash)
+   module TermHash = Term_hash.TermHash (TermMod) 
+   module TermNorm = Term_norm.TermNorm (TermMod) (TermHash)
    module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
    module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineError)
 end

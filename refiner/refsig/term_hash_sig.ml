@@ -32,14 +32,8 @@ open Weak_memo
 module type TermHashSig =
 sig
    
-   type param_header
-   type param_weak_header
-   type term_header
-   type term_weak_header
-   type meta_term_header
-   type meta_term_weak_header
-
    type param
+   type param'
    type term
    type meta_term
 
@@ -50,39 +44,53 @@ sig
    type term_index
    type meta_term_index
 
+   type hypothesis_header =
+      Hypothesis of string * term_index
+    | Context of string * term_index list
+
+   type bound_term_header = {
+                         bvars: string list;
+                         bterm: term_index
+                       }
+
+   type true_term_header = {
+                             op_name: Opname.opname;
+                             op_params: param list;
+                             term_terms: bound_term_header list
+                           }
+
+   type seq_header = {
+                       seq_arg: term_index;
+                       seq_hyps: hypothesis_header list;
+                       seq_goals: term_index list
+                     }
+
+   type term_header = Term of true_term_header
+                    | Seq of seq_header
+                                                                              
+   type meta_term_header =
+      MetaTheorem of term_index
+    | MetaImplies of meta_term_index * meta_term_index
+    | MetaFunction of term_index * meta_term_index * meta_term_index
+    | MetaIff of meta_term_index * meta_term_index
+    | MetaLabeled of string * meta_term_index
+
 (*
  * term's hashing structure
  *)
-   type t =
-      { param_hash     : (t, param_header,
-                             param_weak_header,
-                             param
-                         ) TheWeakMemo.t;
-        opname_hash    : (t, Opname.opname,
-                             Opname.opname,
-                             Opname.opname
-                         ) TheWeakMemo.t;
-        term_hash      : (t, term_header,
-                             term_weak_header,
-                             term
-                         ) TheWeakMemo.t;
-        meta_term_hash : (t, meta_term_header,
-                             meta_term_weak_header,
-                             meta_term
-                         ) TheWeakMemo.t
-      }
+   type t
 
 (*
  * Construct term-objects from headers
  *)    
-   val p_constr_param : t -> param_header -> param
+   val p_constr_param : t -> param' -> param
    val p_constr_term : t -> term_header -> term
    val p_constr_meta_term : t -> meta_term_header -> meta_term
 
 (*
  * Creates new hashing structure
  *)
-   val p_create : int -> int -> t
+   val p_create : int -> t
 
 (*
  * Functions for storing and accessing objects to hashing structure

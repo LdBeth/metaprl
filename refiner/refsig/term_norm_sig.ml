@@ -27,8 +27,6 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Infinite_weak_array
-
 module type TermNormSig =
 sig
 

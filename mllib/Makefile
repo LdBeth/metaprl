@@ -17,6 +17,8 @@ MLZFILES :=\
 	remote_queue_sig\
 	remote_lazy_queue_sig\
 	simplehash_sig\
+	hash_with_gc_sig\
+	weak_memo_sig\
 	register
 
 # Library files
@@ -68,10 +70,8 @@ LMFILES :=\
 	linear_set\
 	splay_linear_set\
 	array_linear_set\
-	infinite_weak_array_sig\
-	infinite_weak_array\
 	simplehashtbl\
-	weak_memo_sig\
+	hash_with_gc\
 	weak_memo
 
 # Name of library

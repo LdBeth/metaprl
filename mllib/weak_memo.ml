@@ -28,92 +28,160 @@
  *)
 
 module WeakMemo =
-  functor(Hash : Simplehash_sig.SimpleHashSig) ->
-  functor(IAr : Infinite_weak_array_sig.InfiniteWeakArraySig) ->
+  functor(Hash : Hash_with_gc_sig.HashWithGCSig) ->
 struct
 
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
 
-   type 'a descriptor = 'a IAr.descriptor
-(*   type 'a weak_descriptor = 'a IAr.weak_descriptor *)
+   type 'a weak_descriptor = int
+
+   type 'a descriptor = { 
+                           descriptor: 'a weak_descriptor;
+                           anchor: 'a 
+                        }
+
+   let weaking d = d.descriptor
+
+   exception Cell_is_full
+   exception Inconsistency
+
+   let counter = ref 0
+   let is_gc = ref true
 
    type ('param, 'header, 'weak_header, 'image) t =
       {
         header_weaking : 'header -> 'weak_header;
         compare_header : 'weak_header -> 'weak_header -> bool; 
         make_result : 'param -> 'header -> 'image;
-        index_table : ( 'weak_header, 'image IAr.weak_descriptor ) Hash.t;
-        image_array : 'image IAr.t;
+        index_table : ( 'weak_header, 'image weak_descriptor ) Hash.t;
+        mutable image_array : 'image Weak.t;
+        mutable count : int;
+
+        mutable gc_on : bool;
+
+        id: int;
+
       }
 
-   let gc tbl ar =
-      let new_holes = ref [] in
-      let list_length = ref 0 in
-      let agent (header, wd) =
-         match IAr.weak_get ar wd with
-            Some item ->
-               true
-          | None ->
-               new_holes:= wd::!new_holes;
-               incr list_length;
-               false
-         in
-         Hash.gc Hashtbl.hash agent tbl;
-         (!list_length, !new_holes)
+   let gc_tst id ar (wh, wd) = 
+      !is_gc &&
+      match Weak.get ar wd with
+         Some _ -> false
+       | None -> true
 
-   let create hash_size iar_size hd_weaking cmp_hd mk_rslt =
-      let tbl = Hash.create hash_size cmp_hd in
+   let create halfsize crit_lev hd_weaking cmp_hd mk_rslt =
+     incr(counter);
+     let iar = Weak.create (2*halfsize) in 
       {
         header_weaking = hd_weaking;
         compare_header = cmp_hd;
         make_result = mk_rslt;
-        index_table = tbl;
-	(* Real GC temporarily removed due error in it*)
-        image_array = IAr.create iar_size (*(gc tbl)*) (fun _ -> (-1,[]));
+        image_array = iar;
+        index_table = Hash.create halfsize crit_lev Hashtbl.hash cmp_hd;
+        count = 0;
+        gc_on = false;
+
+        id = !counter;
       }
 
-   let ar_get ar d =
-      match IAr.get ar d with
-         Some a -> a
-       | None -> raise Not_found
+   let guard_get ar wd = 
+if (Weak.length ar) <= wd then invalid_arg "WeakMemo.guard_get: out of range";
+   match Weak.get ar wd with
+      Some item -> item
+    | None -> raise Not_found
 
+   let subscribe info i = 
+      { descriptor = i; anchor = guard_get info.image_array i }
+
+   let expand_weak_array wa id new_size =
+      let old_ar_length = Weak.length wa in
+      if new_size <= old_ar_length then
+         invalid_arg "Can't expand weak array to less size"
+      else
+         let new_ar = Weak.create new_size in
+                  (Weak.blit wa 0 new_ar 0 old_ar_length);
+            new_ar
+
+   let set info wd item = 
+      match Weak.get info.image_array wd with
+         Some _ -> invalid_arg "WeakMemo.set: entry is not empty"
+       | None -> Weak.set info.image_array wd (Some item)
+            
    let rec lookup info param header =
       let weak_header = info.header_weaking header in
-      let hash = Hashtbl.hash weak_header in
       let table = info.index_table in
+      let hash = Hash.hash table weak_header in
          match Hash.seek table hash weak_header with
-            None -> 
-               let img_index = IAr.store info.image_array ( info.make_result param header ) in
-                  Hash.insert table hash weak_header ( IAr.weaking img_index );
-                  img_index
-          | Some weak_index ->
-               try IAr.subscribe info.image_array weak_index with
-                  Not_found ->
-                     IAr.set info.image_array weak_index ( info.make_result param header )
+            Some weak_index -> 
+               begin match Weak.get info.image_array weak_index with
+                  Some item ->
+                     { descriptor = weak_index; anchor = item }
+                | None ->
+                     let item = info.make_result param header in
+                     set info weak_index item;
+                     { descriptor = weak_index; anchor = item }
+               end
+          | None ->
+               let result = info.make_result param header in
+                  if info.gc_on then begin
+                     if ((Weak.length info.image_array) <> info.count) then raise Inconsistency;
+                     match Hash.gc_iter (gc_tst info.id info.image_array) info.index_table with
+                        Some (whd, wd) ->
+                           Hash.insert info.index_table hash weak_header wd;
+                           set info wd result;
+                           subscribe info wd
+                      | None ->
+                           let length = Weak.length info.image_array in
+                           info.gc_on <- false;
+                           Hash.insert info.index_table hash weak_header length;
+                           info.image_array <- expand_weak_array info.image_array info.id ( 2*(length +1) - 1 );
+                           info.count <- succ length;
+                           set info length result;
+                           subscribe info length
+                  end else begin
+                     let count = info.count in
+                     let count' = succ(count) in
+                        begin
+                           Hash.insert info.index_table hash weak_header count;
+                           set info count result;
+                           info.count <- count';
+                           if count' = (Weak.length info.image_array) then
+                              begin
+                                 Hash.gc_start table;
+                                 info.gc_on <- true
+                              end;
+                           subscribe info count
+                        end
+                  end
 
    let rec unsafe_lookup info param header =
       let weak_header = info.header_weaking header in
-      let hash = Hashtbl.hash weak_header in
+      let hash = Hash.hash info.index_table weak_header in
       let table = info.index_table in
          match Hash.seek table hash weak_header with
             None -> 
                raise Not_found
           | Some weak_index ->
-               IAr.subscribe info.image_array weak_index 
+               subscribe info weak_index
 
    let retrieve info param index =
-      IAr.get info.image_array index
+if (Weak.length info.image_array) <= index.descriptor then invalid_arg "WeakMemo.retrieve: out of range";
+      match Weak.get info.image_array index.descriptor with
+         Some item -> if index.anchor == item then item
+                         else raise Inconsistency
+       | None -> raise Inconsistency
 
    let unsafe_retrieve info param weak_index =
-      match IAr.weak_get info.image_array weak_index with
-      	 Some item -> item
-       | None -> raise Not_found
+      snd (guard_get info.image_array weak_index)
+
+   let gc_on info = is_gc := true
+   let gc_off info = is_gc := false 
 
 end
 
-module TheWeakMemo = WeakMemo(Simplehashtbl.Simplehashtbl)(Infinite_weak_array.InfiniteWeakArray)
+module TheWeakMemo = WeakMemo(Hash_with_gc.HashWithGC)
 
 (*
  * -*-

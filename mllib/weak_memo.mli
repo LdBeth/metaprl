@@ -31,11 +31,9 @@
 open Weak_memo_sig
 
 module WeakMemo 
-   (Hash : Simplehash_sig.SimpleHashSig) 
-   (IAr : Infinite_weak_array_sig.InfiniteWeakArraySig) :
-      (WeakMemoSig with type 'a descriptor = 'a IAr.descriptor)
+   (Hash : Hash_with_gc_sig.HashWithGCSig) : WeakMemoSig
 
-module TheWeakMemo : WeakMemoSig with type 'a descriptor = 'a Infinite_weak_array.InfiniteWeakArray.descriptor
+module TheWeakMemo : WeakMemoSig
 
 (*
  * -*-

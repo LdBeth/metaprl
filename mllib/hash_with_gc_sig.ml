@@ -1,8 +1,8 @@
-(* This file is an interface for terms' conversion
- * From one Term-module to another
+(* This file is an interface for hash table with GC feature
+ * 
+ * ----------------------------------------------------------------
  *
- * -----------------------------------------------------------------
- * This file is part of MetaPRL, a modular, higher order
+ * This file is part of Nuprl-Light, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -25,30 +25,42 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov, Alexey Nogin
+ * Author: Yegor Bryukhov
  *)
 
-open Term_hash
-
-module TermCopyWeak
-   (FromTerm : Termmod_sig.TermModuleSig)
-   (ToTerm : Termmod_hash_sig.TermModuleHashSig) :
+module type HashWithGCSig =
 sig
 
 (*
- * Convert terms and meta_terms from FromTerm-module to ToTerm-module
+ * Hash-code type
  *)
-   val p_convert :
-      ToTerm.TermHash.t -> FromTerm.TermType.term -> ToTerm.TermType.term
-   val p_convert_meta :
-      ToTerm.TermHash.t -> FromTerm.TermType.meta_term -> ToTerm.TermType.meta_term
+   type ('key, 'value) hash
 
 (*
- * Same functions operating with global hashing structure
+ * Hash-table type
  *)
-   val convert : FromTerm.TermType.term -> ToTerm.TermType.term
-   val convert_meta :
-      FromTerm.TermType.meta_term -> ToTerm.TermType.meta_term
+   type ('key, 'value) t
+
+   exception GC_Not_Finished
+   exception GC_Not_Started
+   exception Expand_During_GC
+
+   val create : int -> int -> ('key -> int) -> ('key -> 'key -> bool) -> ('key, 'value) t
+
+   val hash : ('key, 'value) t -> 'key -> ('key, 'value) hash
+
+   val seek : ('key, 'value) t -> ('key, 'value) hash  -> 'key -> 'value option
+
+   val insert : ('key, 'value) t -> ('key, 'value) hash -> 'key -> 'value -> unit
+
+   val iter : ('key * 'value -> unit) -> ('key, 'value) t -> unit
+
+   val gc_start : ('key, 'value) t -> unit
+
+   val is_gc : ('key, 'value) t -> bool
+
+   val gc_iter : (('key * 'value) -> bool) -> ('key, 'value) t -> ('key * 'value) option
+
 end
 
 (*

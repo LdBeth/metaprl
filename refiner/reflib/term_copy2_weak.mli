@@ -28,8 +28,6 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Infinite_weak_array
-
 module TermCopy2Weak 
    (FromTerm : Termmod_hash_sig.TermModuleHashSig)
    (ToTerm : Termmod_hash_sig.TermModuleHashSig) :
@@ -40,7 +38,7 @@ sig
  *)
    type t
 
-   val p_create : int -> int -> t
+   val p_create : int -> t
 
    val p_convert :
       t -> FromTerm.TermType.term -> ToTerm.TermType.term

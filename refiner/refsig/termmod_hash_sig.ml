@@ -33,11 +33,11 @@
 
 open Term_sig
 open Tm_base_sig
+open Tm_subst_sig
 open Tm_man_sig
-open Term_header_sig
 open Term_hash_sig
 open Term_norm_sig
-open Infinite_weak_array
+open Weak_memo
 
 module type TermModuleHashSig =
 sig
@@ -63,27 +63,16 @@ sig
       with type term' = TermType.term'
       with type bound_term' = TermType.bound_term'
 
+   module TermSubst : TmSubstSig
+      with type param = TermType.param
+
    module TermMan : TmManSig
       with type term = TermType.term
       with type esequent = TermType.esequent
 
-   module TermHeader : TermHeaderSig
-      with type term = TermType.term
-      with type param = TermType.param
-      with type meta_term = TermType.meta_term
-
-      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
-      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor
-
    module TermHash : TermHashSig
-      with type param_header = TermHeader.param_header
-      with type param_weak_header = TermHeader.param_weak_header
-      with type term_header = TermHeader.term_header
-      with type term_weak_header = TermHeader.term_weak_header
-      with type meta_term_header = TermHeader.meta_term_header
-      with type meta_term_weak_header = TermHeader.meta_term_weak_header
-
       with type param = TermType.param
+      with type param' = TermType.param'
       with type term = TermType.term
       with type meta_term = TermType.meta_term
 

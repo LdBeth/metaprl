@@ -31,7 +31,6 @@
 open Term_hash
 open Term_norm
 open Term_copy_weak
-open Infinite_weak_array
 
 module TermCopy2Weak
    (SourceTerm : Termmod_hash_sig.TermModuleHashSig)
@@ -46,31 +45,46 @@ struct
    module Backward = TermCopyWeak(TargetTerm)(SourceTerm)
 
    type t = { source_hash : SourceHash.t; 
-              target_hash : TargetHash.t
+              target_hash : TargetHash.t;
+              locker: Mutex.t
             }
 
-   let p_create i j = { source_hash = SourceHash.p_create i j;
-                        target_hash = TargetHash.p_create i j;
+   let p_create i = { source_hash = SourceHash.p_create i;
+                        target_hash = TargetHash.p_create i;
+                        locker = Mutex.create ()
                       }
 
-   let p_convert info t = 
+   let p_convert info t =
+      Mutex.lock info.locker; 
       let _ = SourceNorm.p_add info.source_hash t in
-      Forward.p_convert info.target_hash t
+      let r = Forward.p_convert info.target_hash t in
+         Mutex.unlock info.locker;
+         r
    
    let p_revert info t = 
+      Mutex.lock info.locker; 
       let _ = TargetNorm.p_add info.target_hash t in
-      Backward.p_convert info.source_hash t
+      let r = Backward.p_convert info.source_hash t in
+         Mutex.unlock info.locker;
+         r
 
    let p_convert_meta info t = 
+      Mutex.lock info.locker; 
       let _ = SourceNorm.p_add_meta info.source_hash t in 
-      Forward.p_convert_meta info.target_hash t
+      let r = Forward.p_convert_meta info.target_hash t in
+         Mutex.unlock info.locker;
+         r
 
    let p_revert_meta info t = 
+      Mutex.lock info.locker; 
       let _ = TargetNorm.p_add_meta info.target_hash t in 
-      Backward.p_convert_meta info.source_hash t
+      let r = Backward.p_convert_meta info.source_hash t in
+         Mutex.unlock info.locker;
+         r
 
    let global_hash = { source_hash = SourceHash.global_hash;
                        target_hash = TargetHash.global_hash;
+                       locker = Mutex.create ()
                      }
 
    let convert = p_convert global_hash

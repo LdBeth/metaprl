@@ -33,6 +33,7 @@
 
 open Term_sig
 open Tm_base_sig
+open Tm_subst_sig
 open Tm_man_sig
 open Refine_error_sig
 
@@ -60,8 +61,11 @@ sig
       with type term' = TermType.term'
       with type bound_term' = TermType.bound_term'
 
+   module TermSubst: TmSubstSig
+      with type param = TermType.param
+
    module TermMan : TmManSig
-                    with type term = TermType.term
+      with type term = TermType.term
                     with type esequent = TermType.esequent
 
 end

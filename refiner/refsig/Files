@@ -13,9 +13,9 @@ REFSIG_FILES :=\
 	rewrite_sig\
 	refine_sig\
 	tm_base_sig\
+	tm_subst_sig\
 	tm_man_sig\
 	termmod_sig\
-	term_header_sig\
 	term_hash_sig\
 	term_norm_sig\
 	termmod_hash_sig\

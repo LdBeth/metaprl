@@ -1,7 +1,8 @@
-(* This file is an interface for recursiveless denotation
- * of term types
+(*
+ * Minimal term module: parameter equality
  *
- * -----------------------------------------------------------------
+ * ----------------------------------------------------------------
+ *
  * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
@@ -9,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Yegor Bryukhov, Moscow State University
+ * Copyright (C) 1998 Alexey Nogin, Cornell University
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,26 +26,20 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov, Alexey Nogin
+ * Author: Alexey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Infinite_weak_array
-open Termmod_sig
-open Term_header_sig
+module type TmSubstSig =
+sig
+   type param
 
-module TermHeader (ToTerm : TermModuleSig) :
-   TermHeaderSig
-      with type term = ToTerm.TermType.term
-      with type param = ToTerm.TermType.param
-      with type meta_term = ToTerm.TermType.meta_term
-
-      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
-      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor
+   val equal_params : param -> param -> bool
+end
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "term_hash, term_header_constr"
+ * Caml-master: "refiner"
  * End:
  * -*-
  *)

@@ -30,7 +30,6 @@
 
 open Term_hash
 open Term_header_constr
-open Infinite_weak_array
 
 module TermCopyWeak
    (FromTerm : Termmod_sig.TermModuleSig)
@@ -38,7 +37,7 @@ module TermCopyWeak
 struct
    
    module TermHash = ToTerm.TermHash
-   module THC = TermHeaderConstr(FromTerm)(ToTerm)(ToTerm.TermHeader)(TermHash)
+   module THC = TermHeaderConstr(FromTerm)(ToTerm)(TermHash)
 
    let p_add info t = TermHash.p_lookup info (THC.make_term_header info t)
    let p_convert info t = TermHash.p_retrieve info (p_add info t)
