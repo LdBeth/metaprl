@@ -2,10 +2,15 @@
  * Test some terms.
  *)
 
-let t = << sequent [] { x: 'A; y: 'B['x]; z: 'C['x; 'y] >- 'D['x; 'y; 'z] } >>
+declare int
+
+prim intFormation 'H : : sequent ['ext] { 'H >- int } = int
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/08 20:47:25  jyh
+ * Errnoneous label.
+ *
  * Revision 1.2  1998/04/06 21:39:54  jyh
  * Test program with a sequent.
  *

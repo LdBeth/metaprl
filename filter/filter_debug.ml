@@ -5,7 +5,7 @@
 (*
  * Debug the term grammar.
  *)
-let debug_grammar = true
+let debug_grammar = false
 
 (*
  * Resource and inheritance debugging.
@@ -39,6 +39,9 @@ let debug_filter_cache = false
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/08 20:47:22  jyh
+ * Errnoneous label.
+ *
  * Revision 1.4  1998/04/08 14:57:08  jyh
  * ImpDag is in mllib.
  *
