@@ -1261,7 +1261,7 @@ struct
                        debug_print t (List.length op.op_params) (List.length trm.term_terms)
                        eflush;
 #endif
-                 if op.op_name == name' then
+                 if Opname.eq op.op_name name' then
                     begin
                        match_redex_params_iter stack params' op.op_params;
                        rev_iter2 (match_redex_bterms addrs stack) bterms' trm.term_terms;

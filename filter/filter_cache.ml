@@ -199,13 +199,13 @@ let marshal_proof name to_term = function
 let unmarshal_proof name of_term t =
    let opname = opname_of_term t in
    let expr = one_subterm t in
-      if opname == prim_op then
+      if Opname.eq opname prim_op then
          Primitive expr
-      else if opname == derived_op then
+      else if Opname.eq opname derived_op then
          Derived (expr_of_term expr)
-      else if opname == incomplete_op then
+      else if Opname.eq opname incomplete_op then
          Incomplete
-      else if opname == interactive_op then
+      else if Opname.eq opname interactive_op then
          Interactive (of_term name (one_subterm t))
       else
          raise (Failure "Filter_cache.unmarshal")

@@ -828,15 +828,15 @@ let meta_iff_op         = mk_opname "meta_iff"
 
 let rec meta_term_of_term t =
    let opname = opname_of_term t in
-      if opname == meta_theorem_op then
+      if Opname.eq opname meta_theorem_op then
          MetaTheorem (one_subterm t)
-      else if opname == meta_implies_op then
+      else if Opname.eq opname meta_implies_op then
          let a, b = two_subterms t in
             MetaImplies (meta_term_of_term a, meta_term_of_term b)
-      else if opname == meta_function_op then
+      else if Opname.eq opname meta_function_op then
          let v, a, b = three_subterms t in
             MetaFunction (v, meta_term_of_term a, meta_term_of_term b)
-      else if opname == meta_iff_op then
+      else if Opname.eq opname meta_iff_op then
          let a, b = two_subterms t in
             MetaIff (meta_term_of_term a, meta_term_of_term b)
       else
@@ -880,13 +880,13 @@ let dest_dform_opt tl =
    let push l x = l := x :: !l in
    let dest_opt t =
       let opname = opname_of_term t in
-         if opname == dform_inherit_op then
+         if Opname.eq opname dform_inherit_op then
             push options DFormInheritPrec
-         else if opname == dform_prec_op then
+         else if Opname.eq opname dform_prec_op then
             push options (DFormPrec (dest_string_param t))
-         else if opname == dform_parens_op then
+         else if Opname.eq opname dform_parens_op then
             push options DFormParens
-         else if opname == dform_mode_op then
+         else if Opname.eq opname dform_mode_op then
             push modes (dest_string_param t)
          else
             raise (Failure "Dform option is not valid")
@@ -903,11 +903,11 @@ let dform_ml_op     = mk_opname "df_ml"
 
 let dest_dform_def convert t =
    let opname = opname_of_term t in
-      if opname == dform_none_op then
+      if Opname.eq opname dform_none_op then
          NoDForm
-      else if opname == dform_term_op then
+      else if Opname.eq opname dform_term_op then
          TermDForm (convert.term_f (one_subterm t))
-      else if opname == dform_ml_op then
+      else if Opname.eq opname dform_ml_op then
          let printer, buffer, cons, expr = dest_string_string_dep0_dep0_any_term t in
             MLDForm { dform_ml_printer   = printer;
                       dform_ml_buffer    = buffer;
@@ -925,18 +925,18 @@ let none_op = mk_opname "none"
 
 let dest_opt f t =
    let opname = opname_of_term t in
-      if opname == some_op then
+      if Opname.eq opname some_op then
          Some (f (one_subterm t))
-      else if opname == none_op then
+      else if Opname.eq opname none_op then
          None
       else
          raise (Failure "not an option")
 
 let dest_opt_pair f t =
    let opname = opname_of_term t in
-      if opname == some_op then
+      if Opname.eq opname some_op then
          Some (f (two_subterms t))
-      else if opname == none_op then
+      else if Opname.eq opname none_op then
          None
       else
          raise (Failure "not an option")
@@ -970,11 +970,11 @@ let dest_param convert t =
    in
    let { term_op = op } = dest_term t in
    let { op_name = opname; op_params = params } = dest_op op in
-      if opname == context_param_op then
+      if Opname.eq opname context_param_op then
          ContextParam (string_param params)
-      else if opname == var_param_op then
+      else if Opname.eq opname var_param_op then
          VarParam (string_param params)
-      else if opname == term_param_op then
+      else if Opname.eq opname term_param_op then
          TermParam (convert.term_f (one_subterm t))
       else
          raise (Failure "Illegal parameter")
@@ -1178,39 +1178,39 @@ and dest_term_aux
    let opname = opname_of_term t in
       try
          let info =
-            if opname == rewrite_op then
+            if Opname.eq opname rewrite_op then
                dest_rewrite convert t
-            else if opname == cond_rewrite_op then
+            else if Opname.eq opname cond_rewrite_op then
                dest_cond_rewrite convert t
-            else if opname == axiom_op then
+            else if Opname.eq opname axiom_op then
                dest_axiom convert t
-            else if opname == rule_op then
+            else if Opname.eq opname rule_op then
                dest_rule convert t
-            else if opname == opname_op then
+            else if Opname.eq opname opname_op then
                dest_opname convert t
-            else if opname == mlterm_op then
+            else if Opname.eq opname mlterm_op then
                dest_mlterm convert t
-            else if opname == condition_op then
+            else if Opname.eq opname condition_op then
                dest_condition convert t
-            else if opname == parent_op then
+            else if Opname.eq opname parent_op then
                dest_parent convert t
-            else if opname == module_op then
+            else if Opname.eq opname module_op then
                dest_module convert t
-            else if opname == dform_op then
+            else if Opname.eq opname dform_op then
                dest_dform convert t
-            else if opname == prec_op then
+            else if Opname.eq opname prec_op then
                dest_prec convert t
-            else if opname == prec_rel_op then
+            else if Opname.eq opname prec_rel_op then
                dest_prec_rel convert t
-            else if opname == id_op then
+            else if Opname.eq opname id_op then
                dest_id convert t
-            else if opname == resource_op then
+            else if Opname.eq opname resource_op then
                dest_resource convert t
-            else if opname == infix_op then
+            else if Opname.eq opname infix_op then
                dest_infix convert t
-            else if opname == magic_block_op then
+            else if Opname.eq opname magic_block_op then
                dest_magic_block convert t
-            else if opname == summary_item_op then
+            else if Opname.eq opname summary_item_op then
                dest_summary_item convert t
             else
                raise (Failure "term is not found")

@@ -134,7 +134,7 @@ let dest_loc_string_term t =
 let dest_opt f =
    let dest t =
       let op = opname_of_term t in
-         if op == none_op then
+         if Opname.eq op none_op then
             None
          else
             Some (f (one_subterm "dest_opt" t))
@@ -368,7 +368,7 @@ and dest_int_expr t =
 and dest_let_expr t =
    let loc = dest_loc t in
    let rec dest t =
-      if opname_of_term t == patt_in_op then
+      if Opname.eq (opname_of_term t) patt_in_op then
          [], one_subterm "dest_let_expr" t
       else
          let p, t = dest_patt t in
@@ -386,7 +386,7 @@ and dest_let_expr t =
 and dest_fix_expr t =
    let loc = dest_loc t in
    let rec dest t =
-      if opname_of_term t == patt_in_op then
+      if Opname.eq (opname_of_term t) patt_in_op then
          [], dest_expr (one_subterm "dest_fix_expr" t)
       else
          let p, t = dest_patt t in
@@ -469,7 +469,7 @@ and dest_while_expr t =
 and dest_fun_aux t =
    let dest_pwe t =
       let p, e = dest_patt t in
-         if opname_of_term e == patt_with_op then
+         if Opname.eq (opname_of_term e) patt_with_op then
             let w, e = two_subterms e in
                p, Some (dest_expr w), dest_expr e
          else
@@ -477,11 +477,11 @@ and dest_fun_aux t =
    in
    let rec dest t =
       let op = opname_of_term t in
-         if op == patt_fail_op then
+         if Opname.eq op patt_fail_op then
             []
-         else if op == patt_if_op then
+         else if Opname.eq op patt_if_op then
             [dest_pwe (one_subterm "dest_fun_aux" t)]
-         else if op == patt_ifelse_op then
+         else if Opname.eq op patt_ifelse_op then
             let pe, pel = two_subterms t in
                dest_pwe pe :: dest pel
          else
@@ -538,7 +538,7 @@ and dest_range_patt t =
 and dest_record_patt t =
    let loc = dest_loc t in
    let rec dest_record t =
-      if opname_of_term t == patt_record_end_op then
+      if Opname.eq (opname_of_term t) patt_record_end_op then
          [], one_subterm "dest_record_patt" t
       else
          let n, p = two_subterms t in
@@ -556,7 +556,7 @@ and dest_string_patt t =
 and dest_tuple_patt t =
    let loc = dest_loc t in
    let rec dest_tuple t =
-      if opname_of_term t == patt_tuple_end_op then
+      if Opname.eq (opname_of_term t) patt_tuple_end_op then
          [], one_subterm "dest_tuple_patt" t
       else
          let p, t = dest_patt (one_subterm "dest_tuple_patt" t) in
@@ -769,7 +769,7 @@ and dest_type_str t =
 and dest_fix_str t =
    let loc = dest_loc t in
    let rec dest t =
-      if opname_of_term t == patt_done_op then
+      if Opname.eq (opname_of_term t) patt_done_op then
          []
       else
          let p, t = dest_patt t in
@@ -783,7 +783,7 @@ and dest_fix_str t =
 and dest_let_str t =
    let loc = dest_loc t in
    let rec dest t =
-      if opname_of_term t == patt_done_op then
+      if Opname.eq (opname_of_term t) patt_done_op then
          []
       else
          let p, t = dest_patt t in
@@ -1024,7 +1024,7 @@ and dest_type_opt t = dest_opt dest_type t
 
 and dest_bool t =
    let op = opname_of_term t in
-      not (op == false_op)
+      not (Opname.eq op false_op)
 
 (*
  * Destruction uses hashtables.

@@ -10,6 +10,9 @@ val nil_opname : opname
 val mk_opname : string -> opname -> opname
 val make_opname : string list -> opname
 
+(* Opnames should always be compared with this equality *)
+val eq : opname -> opname -> bool
+
 val normalize_opname : opname -> opname
 
 (* Destructors *)

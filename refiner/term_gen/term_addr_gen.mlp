@@ -102,7 +102,7 @@ struct
          if flag then
             match dest_term t with
                { term_op = op; term_terms = bterm :: _ } ->
-                  if (dest_op op).op_name == context_opname then
+                  if Opname.eq (dest_op op).op_name context_opname then
                      t
                   else
                      (dest_bterm bterm).bterm
@@ -116,7 +116,7 @@ struct
                [bterm] ->
                   term_subterm_nthpath ATERM flag (dest_bterm bterm).bterm (i - 1)
              | ((_ :: bterm2 :: _) as bterms) ->
-                  if (dest_op op).op_name == context_opname then
+                  if Opname.eq (dest_op op).op_name context_opname then
                      term_subterm_nthpath ATERM flag (dest_bterm (List_util.last bterms)).bterm (i - 1)
                   else
                      term_subterm_nthpath ATERM flag (dest_bterm bterm2).bterm (i - 1)
@@ -177,7 +177,7 @@ struct
          if flag then \
             match dest_term t with \
                { term_op = op; term_terms = bterm :: bterms } -> \
-                  if (dest_op op).op_name == context_opname then \
+                  if Opname.eq (dest_op op).op_name context_opname then \
                      f BVARS t \
                   else \
                      let { bvars = vars; bterm = term } = dest_bterm bterm in \
@@ -197,7 +197,7 @@ struct
                let bterm = mk_bterm vars term in \
                   mk_term op [bterm], arg \
           | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms') } -> \
-               if (dest_op op).op_name == context_opname then \
+               if Opname.eq (dest_op op).op_name context_opname then \
                   let args, bterm = List_util.split_last bterms' in \
                   let { bvars = vars; bterm = trm } = dest_bterm bterm in \
                   let term, arg = nthpath_replace_term FAIL flag f VARS_BVARS trm (i - 1) in \

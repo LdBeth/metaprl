@@ -532,13 +532,13 @@ type 'a from_term =
  *)
 let make_status t =
    let op = opname_of_term t in
-      if op == status_bad_op then
+      if Opname.eq op status_bad_op then
          StatusBad
-      else if op == status_partial_op then
+      else if Opname.eq op status_partial_op then
          StatusPartial
-      else if op == status_asserted_op then
+      else if Opname.eq op status_asserted_op then
          StatusAsserted
-      else if op == status_complete_op then
+      else if Opname.eq op status_complete_op then
          StatusComplete
       else
          raise (Failure "Filter_proof.status_of_term")
@@ -553,7 +553,7 @@ let make_proof info t =
 
 let make_proof_node info t =
    let op = opname_of_term t in
-      if op == proof_step_op then
+      if Opname.eq op proof_step_op then
          let goal, subgoals, ast, text = four_subterms t in
          let step =
             { term_step_goal = goal;
@@ -563,16 +563,16 @@ let make_proof_node info t =
             }
          in
             TermProofStep step
-      else if op == proof_node_op then
+      else if Opname.eq op proof_node_op then
          TermProofNode (one_subterm t)
       else
          raise (Failure "Filter_proof.step_of_term")
 
 let make_proof_child info t =
    let op = opname_of_term t in
-      if op == proof_child_goal_op then
+      if Opname.eq op proof_child_goal_op then
          TermChildGoal (one_subterm t)
-      else if op == proof_child_proof_op then
+      else if Opname.eq op proof_child_proof_op then
          TermChildProof (one_subterm t)
       else
          raise (Failure "Filter_proof.child_of_term")
@@ -642,19 +642,19 @@ let attributes_of_term info t =
     | t :: tl ->
          let op = opname_of_term t in
          let att =
-            if op == proof_term_arg_op then
+            if Opname.eq op proof_term_arg_op then
                let name, t = dest_string_dep0_term op t in
                   name, TermArg (info.term_f t)
-            else if op == proof_type_arg_op then
+            else if Opname.eq op proof_type_arg_op then
                let name, t = dest_string_dep0_term op t in
                   name, TypeArg (info.term_f t)
-            else if op == proof_int_arg_op then
+            else if Opname.eq op proof_int_arg_op then
                let name, i = dest_string_int_term t in
                   name, IntArg i
-            else if op == proof_bool_arg_op then
+            else if Opname.eq op proof_bool_arg_op then
                let name, flag = dest_string_string_term t in
                   name, BoolArg (flag <> "false")
-            else if op == proof_subst_arg_op then
+            else if Opname.eq op proof_subst_arg_op then
                let name, t = dest_string_dep0_term op t in
                   name, SubstArg (info.term_f t)
             else

@@ -172,7 +172,7 @@ struct
       match dest_term t with
          { term_op = { op_name = opname; op_params = [] };
            term_terms = [bterm1; bterm2]
-         } when opname == xcons_opname ->
+         } when Opname.eq opname xcons_opname ->
             begin
                match (dest_bterm bterm1, dest_bterm bterm2) with
                   ({ bvars = []; bterm = _ }, { bvars = []; bterm = b }) ->
@@ -180,7 +180,7 @@ struct
                 | _ ->
                      false
             end
-       | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname ->
+       | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
             true
        | _ ->
             false
@@ -190,14 +190,14 @@ struct
          match dest_term trm with
             { term_op = { op_name = opname; op_params = [] };
               term_terms = [bterm1; bterm2]
-            } when opname == xcons_opname ->
+            } when Opname.eq opname xcons_opname ->
                begin
                   match (dest_bterm bterm1, dest_bterm bterm2) with
                      ({ bvars = []; bterm = a },
                       { bvars = []; bterm = b }) -> a::(aux b)
                    | _ -> ref_raise(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
                end
-          | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname ->
+          | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
                []
           | _ ->
                ref_raise(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
@@ -221,7 +221,7 @@ struct
       match dest_term t with
          { term_op = { op_name = opname; op_params = [String _] };
            term_terms = []
-         } when opname == string_opname ->
+         } when Opname.eq opname string_opname ->
             true
        | _ ->
             false
@@ -230,7 +230,7 @@ struct
       match dest_term t with
          { term_op = { op_name = opname; op_params = [String s] };
            term_terms = []
-         } when opname == string_opname ->
+         } when Opname.eq opname string_opname ->
             s
        | _ ->
             ref_raise(RefineError ("dest_xstring", TermMatchError (t, "not a string")))
@@ -321,7 +321,7 @@ struct
       match dest_term t with
          { term_op = { op_name = name; op_params = [] };
            term_terms = [_; bgoal]
-         } when name == sequent_opname ->
+         } when Opname.eq name sequent_opname ->
             dest_simple_bterm t bgoal
        | _ ->
             ref_raise(RefineError ("goal_of_sequent", TermMatchError (t, "not a sequent")))
@@ -394,13 +394,13 @@ struct
    let explode_sequent t =
       let rec collect (args : term) hyps concls term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if opname == hyp_opname then
+            if Opname.eq opname hyp_opname then
                let t, x, term = match_hyp_all explode_sequent_name t bterms in
                   collect args (Hypothesis (x, t) :: hyps) concls term
-            else if opname == context_opname then
+            else if Opname.eq opname context_opname then
                let name, term, args' = dest_context term in
                   collect args (Context (name, args') :: hyps) concls term
-            else if opname == concl_opname then
+            else if Opname.eq opname concl_opname then
                if bterms = [] then
                   { sequent_args = args;
                     sequent_hyps =  Array.of_list (List.rev hyps);
@@ -430,7 +430,7 @@ struct
                      addr
                   else
                      skip_hyps (i - 1) term
-            else if opname == context_opname then
+            else if Opname.eq opname context_opname then
                let term = match_context nth_hyp_addr_name t bterms in
                   if i = 0 then
                      addr
@@ -455,7 +455,7 @@ struct
             match dest_term term with
                { term_op = { op_name = opname };
                  term_terms = [bterm1; bterm2]
-               } when opname == concl_opname ->
+               } when Opname.eq opname concl_opname ->
                   begin
                      match dest_bterm bterm1, dest_bterm bterm2 with
                         ({ bvars = [] }, { bvars = []; bterm = term }) ->
@@ -468,13 +468,13 @@ struct
       in
       let rec skip_hyps i term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if opname == hyp_opname then
+            if Opname.eq opname hyp_opname then
                let term = match_hyp nth_concl_addr_name t bterms in
                   skip_hyps (i + 1) term
-            else if opname == context_opname then
+            else if Opname.eq opname context_opname then
                let term = match_context nth_concl_addr_name t bterms in
                   skip_hyps (i - 1) term
-            else if opname == concl_opname then
+            else if Opname.eq opname concl_opname then
                let term = match_concl nth_concl_addr_name t bterms in
                   skip_concl i n term
             else
@@ -490,13 +490,13 @@ struct
    let nth_clause_addr_aux make_address t =
       let rec aux i term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if opname == hyp_opname then
+            if Opname.eq opname hyp_opname then
                let term = match_hyp nth_clause_addr_name t bterms in
                   aux (i + 1) term
-            else if opname == context_opname then
+            else if Opname.eq opname context_opname then
                let term = match_context nth_clause_addr_name t bterms in
                   aux (i + 1) term
-            else if opname == concl_opname then
+            else if Opname.eq opname concl_opname then
                make_address i
             else
                ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "malformed sequent")))
@@ -538,19 +538,19 @@ struct
    let nth_hyp t i =
       let rec aux i term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if opname == hyp_opname then
+            if Opname.eq opname hyp_opname then
                let t, x, term = match_hyp_all nth_hyp_name t bterms in
                   if i = 0 then
                      x, t
                   else
                      aux (i - 1) term
-            else if opname == context_opname then
+            else if Opname.eq opname context_opname then
                let term = match_context nth_hyp_name t bterms in
                   if i = 0 then
                      ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "nth hyp is a context var")))
                   else
                      aux (i - 1) term
-            else if opname == concl_opname then
+            else if Opname.eq opname concl_opname then
                raise Not_found
             else
                ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "malformed sequent")))
@@ -561,13 +561,13 @@ struct
    let nth_concl t i =
       let rec aux i term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if opname == hyp_opname then
+            if Opname.eq opname hyp_opname then
                let term = match_hyp nth_concl_name t bterms in
                   aux i term
-            else if opname == context_opname then
+            else if Opname.eq opname context_opname then
                let term = match_context nth_concl_name t bterms in
                   aux i term
-            else if opname == concl_opname then
+            else if Opname.eq opname concl_opname then
                let t, term = match_concl_all nth_concl_name t bterms in
                   if i = 0 then
                      t
@@ -586,13 +586,13 @@ struct
    let num_hyps t =
       let rec aux i term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if opname == hyp_opname then
+            if Opname.eq opname hyp_opname then
                let term = match_hyp num_hyps_name t bterms in
                   aux (i + 1) term
-            else if opname == context_opname then
+            else if Opname.eq opname context_opname then
                let term = match_context num_hyps_name t bterms in
                   aux (i + 1) term
-            else if opname == concl_opname then
+            else if Opname.eq opname concl_opname then
                i
             else
                ref_raise(RefineError (num_hyps_name, TermMatchError (t, "malformed sequent")))
@@ -606,13 +606,13 @@ struct
    let declared_vars t =
       let rec aux vars term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if opname == hyp_opname then
+            if Opname.eq opname hyp_opname then
                let _, x, term = match_hyp_all declared_vars_name t bterms in
                   aux (x :: vars) term
-            else if opname == context_opname then
+            else if Opname.eq opname context_opname then
                let term = match_context declared_vars_name t bterms in
                   aux vars term
-            else if opname == concl_opname then
+            else if Opname.eq opname concl_opname then
                vars
             else
                ref_raise(RefineError (declared_vars_name, TermMatchError (t, "malformed sequent")))
@@ -627,16 +627,16 @@ struct
    let get_decl_number t v =
       let rec aux i term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if opname == hyp_opname then
+            if Opname.eq opname hyp_opname then
                let _, x, term = match_hyp_all get_decl_number_name t bterms in
                   if x = v then
                      i
                   else
                      aux (i + 1) term
-            else if opname == context_opname then
+            else if Opname.eq opname context_opname then
                let term = match_context get_decl_number_name t bterms in
                   aux (i + 1) term
-            else if opname == concl_opname then
+            else if Opname.eq opname concl_opname then
                ref_raise(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
             else
                ref_raise(RefineError (get_decl_number_name, TermMatchError (t, "malformed sequent")))
@@ -653,13 +653,13 @@ struct
             is_free_var v t
          else
             let { term_op = { op_name = opname }; term_terms = bterms } = dest_term t in
-               if opname == hyp_opname then
+               if Opname.eq opname hyp_opname then
                   let term = match_hyp is_free_seq_var_name t bterms in
                      aux (i - 1) term
-               else if opname == context_opname then
+               else if Opname.eq opname context_opname then
                   let term = match_context is_free_seq_var_name t bterms in
                      aux (i - 1) term
-               else if opname == concl_opname then
+               else if Opname.eq opname concl_opname then
                   ref_raise(RefineError (is_free_seq_var_name, TermMatchError (t, "index is not a hypothesis")))
                else
                   ref_raise(RefineError (is_free_seq_var_name, TermMatchError (t, "malformed sequent")))
@@ -672,13 +672,13 @@ struct
    let replace_concl_name = "replace_concl"
    let rec replace_concl seq goal =
       let { term_op = ({ op_name = opname } as op); term_terms = bterms } = dest_term seq in
-         if opname == hyp_opname then
+         if Opname.eq opname hyp_opname then
             let t, x, term = match_hyp_all replace_concl_name seq bterms in
                mk_term op [mk_simple_bterm t; mk_bterm [x] (replace_concl term goal)]
-         else if opname == context_opname then
+         else if Opname.eq opname context_opname then
             let name, term, args = dest_context seq in
                mk_context_term name (replace_concl term goal) args
-         else if opname == concl_opname then
+         else if Opname.eq opname concl_opname then
             goal
          else
             ref_raise(RefineError (replace_concl_name, TermMatchError (seq, "malformed sequent")))

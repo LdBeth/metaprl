@@ -340,7 +340,7 @@ and format_term buf shortener printer term =
          begin
             match dest_opname name with
                h::_ ->
-                  if shortener h == name then
+                  if Opname.eq (shortener h) name then
                      format_string buf h
                   else
                      format_quoted_string buf (string_of_opname name)

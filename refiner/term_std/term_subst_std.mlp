@@ -60,7 +60,7 @@ struct
     * of bound variables.
     *)
    let rec free_vars_term gvars bvars = function
-      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bterms } when opname == var_opname ->
+      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bterms } when Opname.eq opname var_opname ->
          (* This is a variable *)
          let gvars' =
             if List.mem v bvars or List.mem v gvars then
@@ -99,7 +99,7 @@ struct
       let rec free_vars_term bvars = function
          { term_op = { op_name = opname; op_params = [Var v'] };
            term_terms = []
-         } when opname == var_opname ->
+         } when Opname.eq opname var_opname ->
             v' = v
        | { term_terms = bterms } ->
             free_vars_bterms bvars bterms
@@ -121,7 +121,7 @@ struct
    let rec context_vars_term cvars = function
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = bterms
-      } when opname == context_opname ->
+      } when Opname.eq opname context_opname ->
          let cvars' =
             if List.mem v cvars then
                cvars
@@ -174,7 +174,7 @@ struct
          },
          { term_op = { op_name = opname2; op_params = [Var v'] };
            term_terms = []
-         } when opname1 == var_opname & opname2 == var_opname ->
+         } when Opname.eq opname1 var_opname & Opname.eq opname2 var_opname ->
             let flag =
                try
                   let flag = List.assoc v vars = v' in
@@ -191,7 +191,7 @@ struct
        | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             let flag =
-               (name1 == name2)
+               (Opname.eq name1 name2)
                & (List.length params1 = List.length params2)
                & (List_util.for_all2 equal_params params1 params2)
                & (equal_bterms_debug vars bterms1 bterms2)
@@ -233,7 +233,7 @@ struct
          },
          { term_op = { op_name = opname2; op_params = [Var v'] };
            term_terms = []
-         } when opname1 == var_opname & opname2 == var_opname ->
+         } when Opname.eq opname1 var_opname & Opname.eq opname2 var_opname ->
             begin
                try List.assoc v vars = v' with
                   Not_found ->
@@ -241,7 +241,7 @@ struct
             end
        | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-            (name1 == name2)
+            (Opname.eq name1 name2)
             & (List_util.for_all2 equal_params params1 params2)
             & (equal_bterms vars bterms1 bterms2)
 
@@ -279,7 +279,7 @@ struct
       match dest_term t with
          { term_op = { op_name = opname; op_params = [Var v'] };
            term_terms = []
-         } when opname == var_opname ->
+         } when Opname.eq opname var_opname ->
             v' = v
        | _ ->
             false
@@ -288,21 +288,21 @@ struct
       let rec equal_comp_term vars = function
          { term_op = { op_name = opname; op_params = [Var v] };
            term_terms = []
-         }, t' when opname == var_opname ->
+         }, t' when Opname.eq opname var_opname ->
             begin
                try equal_term vars' t' (List.assoc v vars) with
                   Not_found ->
                      match t' with
                         { term_op = { op_name = opname; op_params = [Var v'] };
                           term_terms = []
-                        } when opname == var_opname ->
+                        } when Opname.eq opname var_opname ->
                            not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
                       | _ ->
                            false
             end
        | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-            name1 == name2 & params1 = params2 & equal_comp_bterms vars bterms1 bterms2
+            Opname.eq name1 name2 & params1 = params2 & equal_comp_bterms vars bterms1 bterms2
 
       and equal_comp_bterms vars bterms1 bterms2 =
          let equal_comp_bterm = fun
@@ -386,7 +386,7 @@ struct
    let subst term terms vars =
       let rec subst_term terms fv vars = function
          { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t
-         when opname == var_opname->
+         when Opname.eq opname var_opname->
             (* Var case *)
             begin
                try List.nth terms (List_util.find_index v vars) with
@@ -451,7 +451,7 @@ struct
            term_terms = bterms
          } as t ->
             (* Check if this is the same *)
-            if opname' == opname & alpha_equal t t' then
+            if Opname.eq opname' opname & alpha_equal t t' then
                vt
             else
                { term_op = { op_name = opname'; op_params = params };
@@ -527,7 +527,7 @@ struct
                term_terms = bterms2
              } = dest_term tm2
          in
-            if opname1 == opname2 & params1 = params2 then
+            if Opname.eq opname1 opname2 & params1 = params2 then
                unify_bterms subst bvars bterms1 bterms2
             else
                raise_generic_exn
@@ -582,7 +582,7 @@ struct
                term_terms = bterms2
              } = dest_term tm2
          in
-            if opname1 == opname2 & params1 = params2 then
+            if Opname.eq opname1 opname2 & params1 = params2 then
                match_bterms subst bvars bterms1 bterms2
             else
                raise_generic_exn
@@ -647,7 +647,7 @@ struct
             let { term_op = op2; term_terms = bterms2 } = dest_term t2 in
             let { op_name = name1; op_params = params1 } = dest_op op1 in
             let { op_name = name2; op_params = params2 } = dest_op op2 in
-               if name1 == name2 then
+               if Opname.eq name1 name2 then
                   try
                      List_util.iter2 generalizes_param params1 params2;
                      List_util.fold_left2 generalizes_bterm vars bterms1 bterms2

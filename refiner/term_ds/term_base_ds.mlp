@@ -139,7 +139,7 @@ struct
    let is_var_term_nods = function
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
-      } when opname == var_opname -> true
+      } when Opname.eq opname var_opname -> true
     | _ -> false
 
    (*
@@ -148,7 +148,7 @@ struct
    let dest_var_nods = function
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
-      } when opname == var_opname -> v
+      } when Opname.eq opname var_opname -> v
      | _ -> raise Not_var
 
    (************************************************************************
@@ -181,7 +181,7 @@ struct
    let make_term = function
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
-      } when opname == var_opname -> 
+      } when Opname.eq opname var_opname -> 
          mk_var_term v
     | t ->
          {free_vars = bterms_free_vars t.term_terms;
@@ -189,7 +189,7 @@ struct
 
    let mk_term op bterms =
       match op, bterms with 
-         { op_name = opname; op_params = [Var v] }, [] when opname == var_opname ->
+         { op_name = opname; op_params = [Var v] }, [] when Opname.eq opname var_opname ->
             mk_var_term v
        | _ -> 
             { free_vars = bterms_free_vars bterms;
@@ -357,13 +357,13 @@ struct
     *)
    let is_so_var_term t = match dest_term t with
       { term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms }
-      when opname == var_opname -> no_bvars bterms
+      when Opname.eq opname var_opname -> no_bvars bterms
     | _ -> false
 
    let dest_so_var t = match dest_term t with
       { term_op = { op_name = opname; op_params = [Var(v)] };
          term_terms = bterms
-      } when opname == var_opname ->
+      } when Opname.eq opname var_opname ->
          v, dest_simple_bterms t bterms
     | _ -> ref_raise(RefineError ("dest_so_var", TermMatchError (t, "not a so_var")))
 
@@ -387,7 +387,7 @@ struct
       match dest_term t with
          { term_op = { op_name = opname; op_params = [Var _] };
            term_terms = bterms
-         } when opname == context_opname ->
+         } when Opname.eq opname context_opname ->
             bterms <> [] & no_bvars bterms
        | _ ->
             false
@@ -396,7 +396,7 @@ struct
       match dest_term term with
          { term_op = { op_name = opname; op_params = [Var v] };
            term_terms = bterms
-         } when opname == context_opname ->
+         } when Opname.eq opname context_opname ->
             let rec collect term = function
                [bterm] ->
                   [], dest_simple_bterm term bterm
@@ -431,7 +431,7 @@ struct
    let is_simple_term_opname name t = match dest_term t with
       { term_op = { op_name = name'; op_params = [] };
         term_terms = bterms
-      } when name' == name -> no_bvars bterms
+      } when Opname.eq name' name -> no_bvars bterms
     | _ -> false
 
    let mk_any_term op terms = mk_term op (List.map mk_simple_bterm terms)
@@ -448,7 +448,7 @@ struct
    let dest_simple_term_opname name t = match dest_term t with
       { term_op = { op_name = name'; op_params = [] };
          term_terms = bterms } ->
-         if name == name' then dest_simple_bterms t bterms
+         if Opname.eq name name' then dest_simple_bterms t bterms
          else
             ref_raise(RefineError ("dest_simple_term_opname", TermMatchError (t, "opname mismatch")))
     | _ -> ref_raise(RefineError ("dest_simple_term_opname", TermMatchError (t, "params exist")))

@@ -60,7 +60,7 @@ struct
    let is_canon_var_term t = match dest_term t with
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
-      } when opname == canon_var_opname -> true
+      } when Opname.eq opname canon_var_opname -> true
     | _ -> false
 
    (*
@@ -69,7 +69,7 @@ struct
    let dest_canon_var t = match dest_term t with
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
-      } when opname == canon_var_opname -> v
+      } when Opname.eq opname canon_var_opname -> v
      | _ -> ref_raise(RefineError ("dest_canon_var", TermMatchError (t, "bad arity")))
 
    (*
@@ -96,7 +96,7 @@ struct
    let is_subst_term t = match dest_term t with
       { term_op = { op_name = opname; op_params = [] };
         term_terms = bt::bterms
-      } when opname == subst_opname ->
+      } when Opname.eq opname subst_opname ->
          is_subst_term_args ((dest_bterm bt).bvars,bterms)
     | _ -> false
 
@@ -114,7 +114,7 @@ struct
    let dest_subst t = match dest_term t with
       { term_op = { op_name = opname; op_params = [] };
         term_terms = btrm::bterms
-      } when opname == subst_opname ->
+      } when Opname.eq opname subst_opname ->
          let bt = dest_bterm btrm in
          (bt.bterm, dest_subst_args t (bt.bvars,bterms))
      | _ -> ref_raise(RefineError ("dest_subst", TermMatchError (t, "bad arity")))

@@ -97,7 +97,7 @@ struct
    let rec context_vars_term cvars t = match dest_term t with
                                           { term_op = { op_name = opname; op_params = [Var v] };
                                             term_terms = bterms
-                                          } when opname == context_opname ->
+                                          } when Opname.eq opname context_opname ->
                                              let cvars' =
                                                 if List.mem v cvars then
                                                    cvars
@@ -154,14 +154,14 @@ struct
          },
          { term_op = { op_name = opname2; op_params = [Var v'] };
            term_terms = []
-         } when opname1 == var_opname & opname2 == var_opname ->
+         } when Opname.eq opname1 var_opname & Opname.eq opname2 var_opname ->
             begin
                try List.assoc v vars = v' with
                   Not_found -> v = v'
             end
        | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-            name1 == name2
+            Opname.eq name1 name2
                     & List_util.for_all2 equal_params params1 params2
                     & equal_bterms vars bterms1 bterms2 )
 
@@ -225,7 +225,7 @@ struct
       match dest_term t with
          { term_op = { op_name = opname; op_params = [Var v'] };
            term_terms = []
-         } when opname == var_opname ->
+         } when Opname.eq opname var_opname ->
             v' = v
        | _ ->
             false
@@ -234,7 +234,7 @@ struct
       match dest_term t with
          { term_op = { op_name = opname; op_params = [Var v] };
            term_terms = []
-         } when opname == var_opname ->
+         } when Opname.eq opname var_opname ->
 #ifdef VERBOSE_EXN
             if !debug_subst_ds then
                eprintf "Term_subst_ds.equal_comp: check var %s: (%a)%t" (**)
@@ -245,7 +245,7 @@ struct
                    match dest_term t' with
                       { term_op = { op_name = opname; op_params = [Var v'] };
                         term_terms = []
-                      } when opname == var_opname ->
+                      } when Opname.eq opname var_opname ->
 #ifdef VERBOSE_EXN
                          if !debug_subst_ds then
                             eprintf "\tCheck with %s%t" v' eflush;
@@ -258,7 +258,7 @@ struct
                   term_terms = bterms2
                 } = dest_term t'
             in
-               name1 == name2 & params1 = params2 & equal_comp_bterms vars' vars bterms1 bterms2
+               Opname.eq name1 name2 & params1 = params2 & equal_comp_bterms vars' vars bterms1 bterms2
 
    and equal_comp_bterms vars' vars bterms1 bterms2 =
       let equal_comp_bterm btrm1 btrm2 =
@@ -352,7 +352,7 @@ struct
                term_terms = bterms2
              } = dest_term tm2
          in
-            if opname1 == opname2 & params1 = params2 then
+            if Opname.eq opname1 opname2 & params1 = params2 then
                unify_bterms subst bvars bterms1 bterms2
             else
                raise_generic_exn
@@ -413,7 +413,7 @@ struct
                term_terms = bterms2
              } = dest_term tm2
          in
-            if opname1 == opname2 & params1 = params2 then
+            if Opname.eq opname1 opname2 & params1 = params2 then
                match_bterms subst bvars bterms1 bterms2
             else
                raise_generic_exn
@@ -481,7 +481,7 @@ struct
          let { term_op = op2; term_terms = bterms2 } = dest_term t2 in
          let { op_name = name1; op_params = params1 } = dest_op op1 in
          let { op_name = name2; op_params = params2 } = dest_op op2 in
-            if name1 == name2 then
+            if Opname.eq name1 name2 then
                try
                   List_util.iter2 generalizes_param params1 params2;
                   List_util.fold_left2 generalizes_bterm vars bterms1 bterms2

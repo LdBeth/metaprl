@@ -153,7 +153,7 @@ struct
    let is_var_term = function
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
-      } when opname == var_opname -> true
+      } when Opname.eq opname var_opname -> true
     | _ ->
          false
 
@@ -163,7 +163,7 @@ struct
    let dest_var = function
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
-      } when opname == var_opname -> v
+      } when Opname.eq opname var_opname -> v
     | t ->
          ref_raise(RefineError ("dest_var", TermMatchError (t, "not a variable")))
 
@@ -182,14 +182,14 @@ struct
     *)
    let is_so_var_term = function
       ({ term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms } : term)
-      when opname == var_opname ->
+      when Opname.eq opname var_opname ->
          List.for_all (function { bvars = [] } -> true | _ -> false) bterms
     | _ -> false
 
    let dest_so_var = function
       ({ term_op = { op_name = opname; op_params = [Var(v)] };
          term_terms = bterms
-       } : term) as term when opname == var_opname ->
+       } : term) as term when Opname.eq opname var_opname ->
          v, List.map (function
             { bvars = []; bterm = t } ->
                t
@@ -218,7 +218,7 @@ struct
 
    let is_context_term = function
       ({ term_op = { op_name = opname; op_params = [Var _] }; term_terms = bterms } : term)
-      when opname == context_opname ->
+      when Opname.eq opname context_opname ->
          List.for_all (function { bvars = [] } -> true | _ -> false) bterms
     | term ->
          false
@@ -226,7 +226,7 @@ struct
    let dest_context = function
       ({ term_op = { op_name = opname; op_params = [Var v] };
          term_terms = bterms
-       } : term) as term when opname == context_opname ->
+       } : term) as term when Opname.eq opname context_opname ->
          let rec collect = function
             [{ bvars = []; bterm = t }] ->
                [], t
@@ -262,7 +262,7 @@ struct
    let is_simple_term_opname name = function
       { term_op = { op_name = name'; op_params = [] };
         term_terms = bterms
-      } when name' == name ->
+      } when Opname.eq name' name ->
          let rec aux = function
             { bvars = []; bterm = _ }::t -> aux t
           | _::t -> false
@@ -298,7 +298,7 @@ struct
       ({ term_op = { op_name = name'; op_params = [] };
          term_terms = bterms
        } : term) as t ->
-         if name == name' then
+         if Opname.eq name name' then
             let aux = function
                { bvars = []; bterm = t } -> t
              | _ -> ref_raise(RefineError ("dest_simple_term_opname", TermMatchError (t, "binding vars exist")))
