@@ -14,7 +14,7 @@ opt: all
 install: ocamldep
 	cp -pf ocamldep $(MPBIN)
 
-macro.cmo: $(OCAMLDEP)
+macro.cmo: macro.ml
 	ocamlc -pp 'camlp4o pa_extend.cmo q_MLast.cmo' -I `camlp4 -where` -c macro.ml
 
 ocamldep: $(OCAMLDEP)
