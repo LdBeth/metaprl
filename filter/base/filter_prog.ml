@@ -593,7 +593,7 @@ let toploop_item_expr loc name ctyp =
    and collect_fun index expr t1 t2 =
       match t1 with
          <:ctyp< unit >> ->
-            mpfun index "UnitFunExpr" expr t1
+            mpfun index "UnitFunExpr" expr t2
        | <:ctyp< bool >> ->
             mpfun index "BoolFunExpr" expr t2
        | <:ctyp< int >> ->
@@ -626,7 +626,7 @@ let toploop_item_expr loc name ctyp =
    and mpfun index name expr t2 =
       let v = sprintf "v%d" index in
       let patt = <:patt< $lid: v$ >> in
-      let expr = collect (index + 1) <:expr< $expr$ $lid: v$ >> t2 in
+      let expr = collect (succ index) <:expr< $expr$ $lid: v$ >> t2 in
          <:expr< Mptop. $uid: name$ (fun [ $list: [ patt, None, expr ]$ ]) >>
    in
       collect 0 <:expr< $lid: name$ >> ctyp

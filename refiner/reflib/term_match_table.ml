@@ -236,7 +236,7 @@ let rec compile_select compact (shape, selections) =
       DtreeMatch (shape, DtreeFlatten (compile_stacks compact stacks))
 
 and compile_stacks compact stacks =
-   match collect_stacks compact stacks with
+   match collect_stacks compact (List.rev stacks) with
       complete, [], [], [] ->
          DtreeAccept complete
     | [], now, [], [] ->
@@ -256,7 +256,7 @@ let compile_prog compact terms =
    let mk_stack info =
       (subterms_of_term info.info_term) @ [end_marker], info
    in
-   let stacks = List.map mk_stack terms in
+   let stacks = List.rev_map mk_stack terms in
       compile_stacks compact stacks
 
 (*
