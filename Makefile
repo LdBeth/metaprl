@@ -111,8 +111,9 @@ clean: check_config
 depend: check_config
 	@$(MAKE) -C util
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i && touch Makefile.dep && $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done
+	@$(MAKE) -C refiner depend
 
 mk/config: mk/make_config.sh
 	TERMS=$(TERMS) REFINER=$(REFINER) MAKE_JOBS=$(MAKE_JOBS) SEQ_SET=$(SEQ_SET) mk/make_config.sh > mk/config

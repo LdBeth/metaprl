@@ -110,11 +110,8 @@ clean::
 	done
 
 depend::
-	$(RM) Makefile.tmp
-	touch Makefile.tmp
-	$(ROOT)/bin/ocamldep $(IDIRS) -I ../mllib $(MLFILES) $(MLIFILES) >> Makefile.tmp
-	mv Makefile.tmp Makefile.dep
+	$(RM) Makefile.dep
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i && touch Makefile.dep && $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done
 
