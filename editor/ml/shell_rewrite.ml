@@ -105,8 +105,8 @@ let mk_rw_goal assums redex contractum =
       end;
       mk_msequent rw assums
 
-let mk_goal sentinal bookmark assums redex contractum =
-   Tactic.create sentinal (mk_rw_goal assums redex contractum) bookmark
+let mk_bare_goal assums redex contractum =
+   Tactic.create Tactic.null_sentinal (mk_rw_goal assums redex contractum) (Mp_resource.find Mp_resource.top_bookmark)
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -153,7 +153,7 @@ let item_of_obj pack name
  *)
 let unit_term = mk_simple_term nil_opname []
 
-let rec edit pack parse_arg sentinal arg name window obj =
+let rec edit pack parse_arg name window obj =
    (* Copy the edit object *)
    let edit_copy () =
       let { rw_params = params;
@@ -177,7 +177,7 @@ let rec edit pack parse_arg sentinal arg name window obj =
            rw_name = name
          }
       in
-         edit pack parse_arg sentinal arg name (Proof_edit.new_window window) obj
+         edit pack parse_arg name (Proof_edit.new_window window) obj
    in
    let update_ped () =
       obj.rw_ped <- Primitive unit_term
@@ -196,13 +196,13 @@ let rec edit pack parse_arg sentinal arg name window obj =
       in
          match ped with
             Primitive t ->
-               let goal = mk_goal sentinal arg assums redex contractum in
+               let goal = mk_bare_goal assums redex contractum in
                   Proof_edit.format_incomplete window (Proof_edit.Primitive goal)
           | Derived expr ->
-               let goal = mk_goal sentinal arg assums redex contractum in
+               let goal = mk_bare_goal assums redex contractum in
                   Proof_edit.format_incomplete window (Proof_edit.Derived (goal, expr))
           | Incomplete ->
-               let goal = mk_goal sentinal arg assums redex contractum in
+               let goal = mk_bare_goal assums redex contractum in
                   Proof_edit.format_incomplete window (Proof_edit.Incomplete goal)
           | Interactive ped ->
                Proof_edit.format window ped
@@ -369,10 +369,8 @@ let create pack parse_arg window name =
         rw_name = name
       }
    in
-   let sentinal = Package.sentinal pack in
-   let arg = Package.arg_resource pack parse_arg name in
       Package.set pack parse_arg (Filter_type.Rewrite rw);
-      edit pack parse_arg sentinal arg name (create_window window) obj
+      edit pack parse_arg name (create_window window) obj
 
 let ped_of_proof pack parse_arg goal = function
    Primitive proof ->
@@ -402,9 +400,7 @@ let view_rw pack parse_arg window
         rw_name = name
       }
    in
-   let sentinal = Package.sentinal_object pack name in
-   let arg = Package.arg_resource pack parse_arg name in
-      edit pack parse_arg sentinal arg name (create_window window) obj
+      edit pack parse_arg name (create_window window) obj
 
 let view_crw pack parse_arg window
     { crw_name = name;
@@ -426,9 +422,7 @@ let view_crw pack parse_arg window
         rw_name = name
       }
    in
-   let sentinal = Package.sentinal_object pack name in
-   let arg = Package.arg_resource pack parse_arg name in
-      edit pack parse_arg sentinal arg name (create_window window) obj
+      edit pack parse_arg name (create_window window) obj
 
 (*
  * -*-

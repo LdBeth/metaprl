@@ -44,9 +44,15 @@ rm -f editor/ml/mp.opt
 sleep 10
 if [ -f editor/ml/mp.opt ]; then
 util/status-all.sh > $TEMP
-if diff -q -I '^User time' $TEMP $LOG > /dev/null; then
+if diff -q -I '^Expand time:' $TEMP $LOG > /dev/null; then
    echo ""
    echo NO PROOF STATUS CHANGES
+   echo ""
+   echo -n Was: 
+   grep '^Expand time:' $LOG
+   echo -n Now:
+   grep '^Expand time:' $TEMP
+   echo ""
 else
    echo ""
    echo PROOF STATUS CHANGES:

@@ -198,8 +198,8 @@ let rec compute_aux name = function
       if not (Hashtbl.mem theory_includes name') then compute_data name';
       (theory_bookmark name'), Table.empty, (Hashtbl.find theory_includes name')
  | DatData data :: tail ->
-      let bookmark, _ , includes = compute_aux name tail in
-      bookmark, List.fold_right add_data data Table.empty, includes
+      let bookmark, incr , includes = compute_aux name tail in
+      bookmark, List.fold_right add_data data incr, includes
  | DatBookmark bk :: tail ->
       let bookmark, incr, includes = compute_aux name tail in
       let bkmrk = (name, bk) in

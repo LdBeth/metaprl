@@ -863,8 +863,10 @@ struct
         | f ->
            var, <:expr< $f$ $lid:var$ >>
 
-    let checkpoint_resources loc rule_name =
-      <:str_item< (Mp_resource.bookmark $str:rule_name$) >>
+    let checkpoint_resources want_checkpoint loc rule_name rest =
+      if want_checkpoint then
+         <:str_item< (Mp_resource.bookmark $str:rule_name$) >> :: rest
+      else rest
 
    let res_type proc loc name =
       try
@@ -1163,7 +1165,7 @@ struct
     *       create_rewrite refiner name redex contractum
     * let name x = rewrite_of_rewrite name_rewrite x
     *)
-   let define_input_form proc loc
+   let define_input_form want_checkpoint proc loc
        { rw_name = name;
          rw_redex = redex;
          rw_contractum = contractum
@@ -1200,10 +1202,9 @@ struct
        let name_rewrite_let =
           <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc rw_id body ]$ >>
        in
-       let name_let =
-          <:str_item< value $rec:false$ $list:[ name_patt, rw_body_expr ]$ >>
-       in
-          [checkpoint_resources loc name; name_rewrite_let; name_let; toploop_rewrite proc loc name []]
+       let name_let = <:str_item< value $rec:false$ $list:[ name_patt, rw_body_expr ]$ >> in
+          checkpoint_resources want_checkpoint loc name (**)
+             [name_rewrite_let; name_let; toploop_rewrite proc loc name []]
 
    let ()  = ()
 
@@ -1218,7 +1219,7 @@ struct
     *       rw
     * let name x = rewrite_of_rewrite name_rewrite x
     *)
-   let define_rewrite code proc loc
+   let define_rewrite want_checkpoint code proc loc
        { rw_name = name;
          rw_redex = redex;
          rw_contractum = contractum
@@ -1263,10 +1264,9 @@ struct
        let name_rewrite_let =
           <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc rw_id body ]$ >>
        in
-       let name_let =
-          <:str_item< value $rec:false$ $list:[ name_patt, rw_body_expr ]$ >>
-       in
-          [checkpoint_resources loc name; name_rewrite_let; name_let; refiner_let loc; toploop_rewrite proc loc name []]
+       let name_let = <:str_item< value $rec:false$ $list:[ name_patt, rw_body_expr ]$ >> in
+          checkpoint_resources want_checkpoint loc name (**)
+             [name_rewrite_let; name_let; refiner_let loc; toploop_rewrite proc loc name []]
 
    let ()  = ()
 
@@ -1283,7 +1283,7 @@ struct
     *       rw
     * let name x = rewrite_of_cond_rewrite name_rewrite x
     *)
-   let define_cond_rewrite code proc loc
+   let define_cond_rewrite want_checkpoint code proc loc
        { crw_name       = name;
          crw_params     = params;
          crw_args       = args;
@@ -1360,48 +1360,45 @@ struct
                  in
                     $lid:name$ >>
        in
-       let name_rewrite_let =
-          <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc name body ]$ >>
-       in
-       let name_let =
-          <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
-       in
-          [checkpoint_resources loc name; name_rewrite_let; name_let; refiner_let loc; toploop_rewrite proc loc name params]
+       let name_rewrite_let = <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc name body ]$ >> in
+       let name_let = <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >> in
+          checkpoint_resources want_checkpoint loc name  (**)
+             [name_rewrite_let; name_let; refiner_let loc; toploop_rewrite proc loc name params]
 
    let () = ()
 
    let prim_rewrite proc loc rw =
-      define_rewrite (prim_rewrite_expr loc) proc loc rw None
+      define_rewrite false (prim_rewrite_expr loc) proc loc rw None
 
    let prim_cond_rewrite proc loc crw =
-      define_cond_rewrite (prim_cond_rewrite_expr loc) proc loc crw None
+      define_cond_rewrite false (prim_cond_rewrite_expr loc) proc loc crw None
 
    (*
     * Justify a rewrite with a tactic.
     *)
    let derived_rewrite proc loc rw expr =
-      define_rewrite (derived_rewrite_expr loc) proc loc rw (Some expr)
+      define_rewrite true (derived_rewrite_expr loc) proc loc rw (Some expr)
 
    let derived_cond_rewrite proc loc crw expr =
-      define_cond_rewrite (derived_cond_rewrite_expr loc) proc loc crw (Some expr)
+      define_cond_rewrite true (derived_cond_rewrite_expr loc) proc loc crw (Some expr)
 
    (*
     * Interactive forms.
     *)
    let interactive_rewrite proc loc rw expr =
-      define_rewrite (delayed_rewrite_expr loc) proc loc rw (Some (Convert.to_expr proc.imp_arg rw.rw_name expr))
+      define_rewrite true (delayed_rewrite_expr loc) proc loc rw (Some (Convert.to_expr proc.imp_arg rw.rw_name expr))
 
    let interactive_cond_rewrite proc loc crw expr =
-      define_cond_rewrite (delayed_cond_rewrite_expr loc) proc loc crw (Some (Convert.to_expr proc.imp_arg crw.crw_name expr))
+      define_cond_rewrite true (delayed_cond_rewrite_expr loc) proc loc crw (Some (Convert.to_expr proc.imp_arg crw.crw_name expr))
 
    (*
     * Incomplete forms.
     *)
    let incomplete_rewrite proc loc rw =
-      define_rewrite (delayed_rewrite_expr loc) proc loc rw (Some (interactive_exn loc "rewrite"))
+      define_rewrite true (delayed_rewrite_expr loc) proc loc rw (Some (interactive_exn loc "rewrite"))
 
    let incomplete_cond_rewrite proc loc crw =
-      define_cond_rewrite (delayed_cond_rewrite_expr loc) proc loc crw (Some (interactive_exn loc "rewrite"))
+      define_cond_rewrite true (delayed_cond_rewrite_expr loc) proc loc crw (Some (interactive_exn loc "rewrite"))
 
    (*
     * An ML rewrite performs the same action as a conditional rewrite,
@@ -1418,7 +1415,7 @@ struct
     *        create_ml_cond_rewrite refiner name info rewrite
     * let name x = rewrite_of_cond_rewrite name_rewrite x
     *)
-   let define_ml_rewrite proc loc
+   let define_ml_rewrite want_checkpoint proc loc
        { mlterm_name       = name;
          mlterm_params     = params;
          mlterm_term       = redex;
@@ -1502,13 +1499,9 @@ struct
             fun_expr loc all_ids body
       in
 
-      let name_rewrite_let =
-         <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc name body ]$ >>
-      in
-      let name_let =
-         <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
-      in
-         [checkpoint_resources loc name; name_rewrite_let; name_let; refiner_let loc ]
+      let name_rewrite_let = <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc name body ]$ >> in
+      let name_let = <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >> in
+         checkpoint_resources want_checkpoint loc name [name_rewrite_let; name_let; refiner_let loc]
 
    (************************************************************************
     * RULES                                                                *
@@ -1556,7 +1549,7 @@ struct
     *       compile_rule !refiner rule
     * let name params x = tactic_of_rule name_rule ([| cvars |], [| vars |]) [non_vars] x
     *)
-   let define_rule code proc loc
+   let define_rule want_checkpoint code proc loc
        { rule_name = name;
          rule_params = params;
          rule_stmt = stmt;
@@ -1632,24 +1625,25 @@ struct
       in
       let rule_def = <:str_item< value $rec:false$ $list:[ name_rule_patt, wrap_exn loc name rule_expr ]$ >> in
       let tac_def = <:str_item< value $rec:false$ $list:[ name_patt, name_value ]$ >> in
-         [checkpoint_resources loc name; rule_def; tac_def; refiner_let loc; toploop_rule proc loc name params]
+         checkpoint_resources want_checkpoint loc name (**)
+            [rule_def; tac_def; refiner_let loc; toploop_rule proc loc name params]
 
    let prim_rule proc loc ax extract =
       let code = prim_rule_expr loc in
       let extract_expr = expr_of_term loc extract in
-         define_rule code proc loc ax extract_expr
+         define_rule false code proc loc ax extract_expr
 
    let derived_rule proc loc ax tac =
       let code = derived_rule_expr loc in
-         define_rule code proc loc ax tac
+         define_rule true code proc loc ax tac
 
    let interactive_rule proc loc ax expr =
       let code = delayed_rule_expr loc in
-         define_rule code proc loc ax (Convert.to_expr proc.imp_arg ax.rule_name expr)
+         define_rule true code proc loc ax (Convert.to_expr proc.imp_arg ax.rule_name expr)
 
    let incomplete_rule proc loc ax =
       let code = delayed_rule_expr loc in
-         define_rule code proc loc ax (interactive_exn loc "rule")
+         define_rule true code proc loc ax (interactive_exn loc "rule")
 
    let () = ()
 
@@ -1676,7 +1670,7 @@ struct
     *        create_ml_rewrite refiner name info
     * let name x = rewrite_of_cond_rewrite name_rewrite x
     *)
-   let define_ml_rule proc loc
+   let define_ml_rule want_checkpoint proc loc
        { mlterm_name       = name;
          mlterm_params     = params;
          mlterm_term       = redex;
@@ -1756,7 +1750,7 @@ struct
       let name_let =
          <:str_item< value $rec:false$ $list:[ name_patt, rule_fun_expr ]$ >>
       in
-         [checkpoint_resources loc name; name_rule_let; name_let; refiner_let loc]
+         checkpoint_resources want_checkpoint loc name [name_rule_let; name_let; refiner_let loc]
 
    let create_dform_expr loc modes =
       let string_expr s = <:expr< $str:s$ >> in
@@ -2127,7 +2121,7 @@ struct
        | InputForm ({ rw_name = name } as rw) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: primrw: %s%t" name eflush;
-            define_input_form proc loc rw
+            define_input_form false proc loc rw
        | CondRewrite ({ crw_name = name; crw_proof = Primitive _ } as crw) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: prim condrw: %s%t" name eflush;
@@ -2147,7 +2141,7 @@ struct
        | MLRewrite ({ mlterm_name = name; mlterm_def = Some rewrite_expr } as mlrw) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: ML rewrite: %s%t" name eflush;
-            define_ml_rewrite proc loc mlrw rewrite_expr
+            define_ml_rewrite false proc loc mlrw rewrite_expr
        | MLRewrite ({ mlterm_name = name; mlterm_def = None }) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: ML rewrite (unimplemented): %s%t" name eflush;
@@ -2171,7 +2165,7 @@ struct
        | MLAxiom ({ mlterm_name = name; mlterm_def = Some rule_expr } as mlrule) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: ML axiom: %s%t" name eflush;
-            define_ml_rule proc loc mlrule rule_expr
+            define_ml_rule false proc loc mlrule rule_expr
        | MLAxiom ({ mlterm_name = name; mlterm_def = None }) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: ML axiom unimplemented: %s%t" name eflush;

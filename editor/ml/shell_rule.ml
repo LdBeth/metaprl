@@ -84,11 +84,8 @@ type info =
  * Make a rewrite goal from the assumptions,
  * and the rewrite.
  *)
-let mk_rule_goal sentinal bookmark assums goal =
-   Tactic.create sentinal (mk_msequent goal assums) bookmark
-
-let mk_ped sentinal arg params assums goal =
-   Proof_edit.create params (mk_rule_goal sentinal arg assums goal)
+let mk_bare_goal assums goal =
+   Tactic.create Tactic.null_sentinal (mk_msequent goal assums) (Mp_resource.find Mp_resource.top_bookmark)
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -122,9 +119,9 @@ let item_of_obj pack name
 (*
  * The object has a package in scope.
  *)
-let unit_term = mk_simple_term (make_opname ["unit"]) []
+let unit_term = mk_simple_term nil_opname []
 
-let rec edit pack parse_arg sentinal arg name window obj =
+let rec edit pack parse_arg name window obj =
    let edit_copy () =
       let { rule_params = params;
             rule_assums = assums;
@@ -145,7 +142,7 @@ let rec edit pack parse_arg sentinal arg name window obj =
            rule_name = name
          }
       in
-         edit pack parse_arg sentinal arg name (Proof_edit.new_window window) obj
+         edit pack parse_arg name (Proof_edit.new_window window) obj
    in
    let update_ped () =
       obj.rule_ped <- Primitive unit_term
@@ -163,13 +160,13 @@ let rec edit pack parse_arg sentinal arg name window obj =
       in
          match ped with
             Primitive t ->
-               let goal = mk_rule_goal sentinal arg assums goal in
+               let goal = mk_bare_goal assums goal in
                   Proof_edit.format_incomplete window (Proof_edit.Primitive goal)
           | Derived expr ->
-               let goal = mk_rule_goal sentinal arg assums goal in
+               let goal = mk_bare_goal assums goal in
                   Proof_edit.format_incomplete window (Proof_edit.Derived (goal, expr))
           | Incomplete ->
-               let goal = mk_rule_goal sentinal arg assums goal in
+               let goal = mk_bare_goal assums goal in
                   Proof_edit.format_incomplete window (Proof_edit.Incomplete goal)
           | Interactive ped ->
                Proof_edit.format window ped
@@ -332,9 +329,7 @@ let create pack parse_arg window name =
         rule_name = name
       }
    in
-   let sentinal = Package.sentinal pack in
-   let arg = Package.arg_resource pack parse_arg name in
-      edit pack parse_arg sentinal arg name (create_window window) obj
+      edit pack parse_arg name (create_window window) obj
 
 let ped_of_proof pack parse_arg goal = function
    Primitive proof ->
@@ -365,9 +360,7 @@ let view_rule pack parse_arg window
         rule_name = name
       }
    in
-   let sentinal = Package.sentinal_object pack name in
-   let arg = Package.arg_resource pack parse_arg name in
-      edit pack parse_arg sentinal arg name (create_window window) obj
+      edit pack parse_arg name (create_window window) obj
 
 (*
  * -*-
