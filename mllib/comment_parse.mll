@@ -215,6 +215,12 @@ let string_of_term = function
 
 (*
  * State for parsing quotations.
+ *
+ * BUG JYH: this code is not thread-safe.
+ * It is unlikely that we use threads with
+ * the parser.  However, we should be sure
+ * to pass the state as an argument once
+ * we upgrade to 3.0.7+.
  *)
 let level = ref 0
 let tag = ref ""

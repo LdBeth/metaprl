@@ -30,6 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 open Lm_debug
+open Lm_thread
 open Printf
 
 open Http_server_type
@@ -41,7 +42,7 @@ let debug_http =
         debug_value = false
       }
 
-let http_threads = Env_arg.int "threads" 4 "number of threads for the web service" Env_arg.set_int_int
+let http_threads = Env_arg.int "threads" 1 "number of threads for the web service" Env_arg.set_int_int
 
 let eflush out =
    output_char out '\n';
@@ -953,6 +954,10 @@ let serve_http start connect info port =
       Lm_ssl.listen ssl dh_name 10
    in
    let info = start ssl info in
+      if Thread.enabled then
+         for i = 2 to !http_threads do
+            ignore (Thread.create (serve connect ssl) info)
+         done;
       serve connect ssl info;
       close_http ssl
 

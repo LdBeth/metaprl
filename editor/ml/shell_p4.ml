@@ -47,7 +47,7 @@ open Tactic_type.Tacticals
  * Ref cell for returning the tactic value.
  *)
 let inline_tactic =
-   State.private_val (ref None) (fun x -> ref !x)
+   State.private_val "Shell_p4.inline_tactic" (ref None) (fun x -> ref !x)
 
 let install_tactic tac =
    State.write inline_tactic (fun x -> x := Some tac)
