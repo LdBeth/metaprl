@@ -20,6 +20,7 @@ DIRS :=\
 	theories/tactic\
 	theories/ocaml\
 	theories/base\
+	theories/itt\
 	editor/ml
 
 .PHONY: all install depend clean
