@@ -149,25 +149,6 @@ struct
       iter2 (set_bvar stack) vars names
 
    (*
-    * Check that two terms are equal under the given var equivalence
-    *)
-   let check_simple_match ((t, v) as tv) tv' =
-      if not (alpha_equal_vars tv tv') then
-         ref_raise(RefineError ("check_simple_match", RewriteBadMatch (TermMatch t)))
-
-   (*
-    * Check that the terms are all equivalent under the given instantiations
-    *)
-   let rec check_match tv = function
-      h::tl ->
-         if alpha_equal_match tv h then
-            check_match tv tl
-         else
-            ref_raise(RefineError ("check_match", RewriteBadMatch (TermMatch (fst tv))))
-    | [] ->
-         ()
-
-   (*
     * Matching functions.
     *)
    let match_redex_level stack l' l p =
@@ -317,10 +298,33 @@ struct
        | [], [] -> ()
        | _ -> ref_raise(redex_params_iter_exn)
 
+   (*
+    * Check that two terms are equal under the given var equivalence
+    *)
+   let check_simple_match t vs t' vs' =
+      if not (alpha_equal_vars t vs t' vs') then
+         ref_raise(RefineError ("check_simple_match", RewriteBadMatch (TermMatch t)))
+
+   (*
+    * Check that the terms are all equivalent under the given instantiations
+    *)
+   let rec check_match addrs stack t' vs = function
+      (t, subterms)::tl ->
+         if alpha_equal_fun (match_redex_term_pred addrs stack) t' vs t subterms then
+            check_match addrs stack t' vs tl
+         else
+            ref_raise(RefineError ("check_match", RewriteBadMatch (TermMatch t)))
+    | [] ->
+         ()
+
+   and match_redex_term_pred addrs stack t t' =
+      match_redex_term addrs stack t' t;
+      true
+
     (*
      * Match a term against the redex.
      *)
-   let rec match_redex_term addrs stack t' t =
+   and match_redex_term addrs stack t' t =
       match t' with
          RWFreeVars (t'',vars) ->
             check_term_free_vars (extract_bvars stack vars) t;
@@ -382,7 +386,7 @@ struct
                let vars = extract_bvars stack l in
 #ifdef VERBOSE_EXN
                   if !debug_rewrite then
-                     eprintf "Rewrite.match_redex.RWSOVar: stack(%d)/%d%t" i (Array.length stack) eflush;
+                     eprintf "Rewrite.match_redex.RWSOVar: stack(%d)/%d with %a%t" i (Array.length stack) print_term t eflush;
 #endif
                   match stack.(i) with
                      StackVoid ->
@@ -396,7 +400,7 @@ struct
                         if !debug_rewrite then
                            eprintf "\tRWSOVar: Bterm: check_simple_match%t" eflush;
 #endif
-                        check_simple_match (t, vars) (t', vars');
+                        check_simple_match t vars t' vars';
 #ifdef VERBOSE_EXN
                         if !debug_rewrite then
                            eprintf "\tRWSOVar: Bterm: check_simple_match: ok%t" eflush;
@@ -406,7 +410,7 @@ struct
                         if !debug_rewrite then
                            eprintf "\tRWSOVar: ITerm: check_match%t" eflush;
 #endif
-                        check_match (t, vars) l;
+                        check_match addrs stack t vars l;
 #ifdef VERBOSE_EXN
                         if !debug_rewrite then
                            eprintf "\tRWSOVar: ITerm: check_match: ok%t" eflush;
@@ -416,23 +420,22 @@ struct
                         ref_raise(RefineError ("match_redex_term", RewriteStringError "stack entry is not valid"))
             end
 
-       | RWSOMatch (i, (ivars, vars, subterms)) ->
+       | RWSOMatch (i, subterms) ->
               (* See if the term matches *)
             begin
-               let vars' = extract_bvars stack ivars in
 #ifdef VERBOSE_EXN
                   if !debug_rewrite then
-                     eprintf "Rewrite.match_redex.RWSOMatch: stack(%d)/%d%t" i (Array.length stack) eflush;
+                     eprintf "Rewrite.match_redex.RWSOMatch: stack(%d)/%d with %a%t" i (Array.length stack) print_term t eflush;
 #endif
                   match stack.(i) with
                      StackVoid ->
-                        stack.(i) <- StackITerm [t, vars', vars, subterms]
+                        stack.(i) <- StackITerm [t, subterms]
                    | StackBTerm (t'', vars'') ->
-                        check_match (t'', vars'') [t, vars', vars, subterms]
+                        check_match addrs stack t'' vars'' [t, subterms]
                    | StackITerm l ->
-                        stack.(i) <- StackITerm ((t, vars', vars, subterms)::l)
+                        stack.(i) <- StackITerm ((t, subterms)::l)
                    | _ ->
-                        ref_raise(RefineError ("match_redex_term", RewriteStringError "stack entry is not valid"))
+                        raise(Invalid_argument "match_redex_term: stack entry is not valid")
             end
 
        | RWSOContext (addr, i, term', l) ->

@@ -256,7 +256,6 @@ struct
          begin
             match stack.(i) with
                StackBTerm(term, []) -> term
-             | StackITerm ((term, [], _, _) :: _) -> term
              | _ -> ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
          end
     | RWSOSubst(i, terms) ->
@@ -289,12 +288,6 @@ struct
 #ifdef VERBOSE_EXN
                      if !debug_subst then
                         eprintf "RWSOSubst: BTerm: %a: %a%t" debug_print term print_string_list vars eflush;
-#endif
-                     subst term vars
-                | StackITerm ((term, vars, _, _) :: _) ->
-#ifdef VERBOSE_EXN
-                     if !debug_subst then
-                        eprintf "RWSOSubst: ITerm: %a: %a%t" debug_print term print_string_list vars eflush;
 #endif
                      subst term vars
                 | _ ->

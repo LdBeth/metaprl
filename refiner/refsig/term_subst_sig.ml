@@ -77,15 +77,18 @@ sig
     * alpha_equal_vars: alpha equality on destructed bound terms
     * If one of the "string list"s has duplicate entries, the first entry is used.
     *)
-   val alpha_equal_vars : (term * string list) -> (term * string list) -> bool
+   val alpha_equal_vars : term -> string list -> term -> string list -> bool
    
    (* 
-    * alpha_equal_match (t1,vs1) (t2,vs2,vs2',terms) = 
-    * t2 =alpha t1[terms[vs2/vs2']/vs1]
+    * alpha_equal_fun f t1 vs t2 os =
+    * t2 is alpha equal to t1 where for each free occurence of v_i 
+    * some term t is substituted, such that (f t o_i) is true
     *)
-   val alpha_equal_match : (term * string list) ->
-          (term * string list * string list * term list) ->
-          bool
+   val alpha_equal_fun :
+      ( term -> 'a -> bool ) ->
+      term -> string list ->
+      term -> 'a list ->
+      bool
 
    (*
     * Get the list of free variables.

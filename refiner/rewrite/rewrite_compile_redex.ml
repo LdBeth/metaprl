@@ -129,14 +129,9 @@ struct
    let is_bound_var bvars v =
       is_var_term v & List.mem_assoc (dest_var v) bvars
 
-   (* Find the free variables and their indices *)
-   let gen_subterms bvars subterms =
-      let fv = List_util.intersect (free_vars_terms subterms) (List_util.fst_split bvars) in
-         List.map (svar_index bvars) fv, fv, subterms
-   
    let bvar_ind ((_:string),(i:int)) = i
 
-   let rec compile_so_redex_term strict addrs stack bvars term =
+   let rec compile_so_redex_term allow_so_patterns strict addrs stack bvars term =
       (* Check for variables and contexts *)
       if is_so_var_term term then
          let v, subterms = dest_so_var term in
@@ -148,21 +143,22 @@ struct
                else
                   stack, RWCheckVar(svar_index bvars v)
 
-            else if List.for_all (is_bound_var bvars) subterms && not (rstack_pattern_mem v stack) then
+            else if allow_so_patterns && List.for_all (is_bound_var bvars) subterms && not (rstack_pattern_mem v stack) then
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)
                let so_mem = rstack_so_mem v stack in
                if so_mem then rstack_check_arity v (List.length subterms) stack; 
-               let stack = if so_mem then rstack_upgrade v stack else stack in
-               let stack, term, restrict_free =
+               let stack = if so_mem then rstack_upgrade v stack else
+                  if subterms = [] then stack @ [FOVarPattern v] else 
+                     stack @ [SOVarPattern (v, List.length subterms)] in
+               let v = rstack_so_index v stack in
+               let term, restrict_free =
                   if subterms = [] then
-                     (stack @ [FOVarPattern v]),
-                     RWSOVar(List.length stack, []),
+                     RWSOVar(v, []),
                      if strict then List.map bvar_ind bvars else []
                   else
                      let args = List.map (var_index bvars) subterms in
-                     (stack @ [SOVarPattern (v, List.length subterms)]),
-                     RWSOVar(List.length stack, args),
+                     RWSOVar(v, args),
                      if strict then List_util.subtract (List.map bvar_ind bvars) args else []
                in
                   if restrict_free = [] then stack, term else stack, RWFreeVars(term,restrict_free)
@@ -170,10 +166,13 @@ struct
             (* This is a second order variable instance *)
             else if rstack_so_mem v stack then begin
                rstack_check_arity v (List.length subterms) stack;
-               stack, RWSOMatch(rstack_so_index v stack, gen_subterms bvars subterms)
+               let stack, terms = compile_so_redex_terms false strict addrs stack bvars subterms in
+               stack, RWSOMatch(rstack_so_index v stack, terms)
             end else
-               (stack @ [SOVarInstance (v, List.length subterms)]),
-               RWSOMatch(List.length stack, gen_subterms bvars subterms)
+               let stack' = (stack @ [SOVarInstance (v, List.length subterms)]) in
+               let stack', terms =
+                  compile_so_redex_terms false strict addrs stack' bvars subterms in
+               stack', RWSOMatch(List.length stack, terms)
 
       else if is_context_term term then
          let v, term, vars = dest_context term in
@@ -185,7 +184,7 @@ struct
                (* All the vars should be free variables *)
                let vars' = List.map (var_index bvars) vars in
                let stack' = stack @ [CVar v] in
-               let stack'', term' = compile_so_redex_term strict addrs stack' bvars term in
+               let stack'', term' = compile_so_redex_term allow_so_patterns strict addrs stack' bvars term in
                let term'' = RWSOContext(Array_util.index v addrs,
                                         List.length stack,
                                         term', vars') in
@@ -206,7 +205,7 @@ struct
          let { term_op = op; term_terms = bterms } = dest_term term in
          let { op_name = name; op_params = params } = dest_op op in
          let stack2, params2 = compile_so_redex_params stack params in
-         let stack3, bterms3 = compile_so_redex_bterms strict addrs stack2 bvars bterms in
+         let stack3, bterms3 = compile_so_redex_bterms allow_so_patterns strict addrs stack2 bvars bterms in
             stack3, RWComposite { rw_op = { rw_name = name; rw_params = params2 };
                                   rw_bterms = bterms3 }
 
@@ -269,15 +268,15 @@ struct
    (*
     * In bterms, have to add these vars to the binding stack.
     *)
-   and compile_so_redex_bterms strict addrs stack bvars = function
+   and compile_so_redex_bterms allow_so_patterns strict addrs stack bvars = function
       [] ->
          stack, []
     | bterm::bterms ->
-         let stack', bterm' = compile_so_redex_bterm strict addrs stack bvars bterm in
-         let stack'', bterms' = compile_so_redex_bterms strict addrs stack' bvars bterms in
+         let stack', bterm' = compile_so_redex_bterm allow_so_patterns strict addrs stack bvars bterm in
+         let stack'', bterms' = compile_so_redex_bterms allow_so_patterns strict addrs stack' bvars bterms in
             stack'', bterm'::bterms'
    
-   (* This is not absolutely safe - we may accidentally "capture" an SO variable *)
+   (* HACK! This is not absolutely safe - we may accidentally "capture" an SO variable *)
    and rename_repeated_vars i stack bnames bvars term = function
       [] ->
          stack,bnames,bvars,term
@@ -291,11 +290,11 @@ struct
          in
          rename_repeated_vars (succ i) (stack @ [FOVar v']) (bnames @ [bname i v']) (bvars @ [new_bvar_item i v']) term' vs
 
-   and compile_so_redex_bterm strict addrs stack bvars bterm =
+   and compile_so_redex_bterm allow_so_patterns strict addrs stack bvars bterm =
       let { bvars = vars; bterm = term } = dest_bterm bterm in
       let stack', bnames, bvars', term' = rename_repeated_vars (List.length stack) stack [] bvars term vars in
       (* Compile the term *)
-      let stack'', term'' = compile_so_redex_term strict addrs stack' bvars' term' in
+      let stack'', term'' = compile_so_redex_term allow_so_patterns strict addrs stack' bvars' term' in
          stack'', { rw_bvars = List.length vars; rw_bnames = bnames; rw_bterm = term'' }
 
    (*
@@ -308,7 +307,7 @@ struct
             sequent_goals = goals
           } = explode_sequent term
       in
-      let stack, arg = compile_so_redex_term strict addrs stack bvars arg in
+      let stack, arg = compile_so_redex_term true strict addrs stack bvars arg in
       let stack, hyps, goals =
          compile_so_redex_sequent_inner strict addrs stack bvars 0 (SeqHyp.length hyps) hyps goals in
          stack, RWSequent (arg, hyps, goals)
@@ -353,7 +352,7 @@ struct
           | Hypothesis (v, term) ->
                if rstack_mem v stack then
                   ref_raise(RefineError ("compile_so_redex_sequent_inner strict", StringStringError ("repeated variable", v)));
-               let stack, term = compile_so_redex_term strict addrs stack bvars term in
+               let stack, term = compile_so_redex_term true strict addrs stack bvars term in
                let l = List.length stack in
                let stack = stack @ [FOVar v] in
                let bvars = bvars @ [new_bvar_item l v] in
@@ -366,19 +365,16 @@ struct
       if i = len then
          stack, []
       else
-         let stack, goal = compile_so_redex_term strict addrs stack bvars (SeqGoal.get goals i) in
+         let stack, goal = compile_so_redex_term true strict addrs stack bvars (SeqGoal.get goals i) in
          let stack, goals = compile_so_redex_goals strict addrs stack bvars (i + 1) len goals in
             stack, goal :: goals
 
-   (*
-    * This is the final version.
-    *)
-   let rec compile_so_redex_aux strict addrs stack = function
+   and compile_so_redex_terms allow_so_patterns strict addrs stack bvars = function
       [] ->
          stack, []
     | term::t ->
-         let stack', term' = compile_so_redex_term strict addrs stack [] term in
-         let stack'', terms' = compile_so_redex_aux strict addrs stack' t in
+         let stack', term' = compile_so_redex_term allow_so_patterns strict addrs stack bvars term in
+         let stack'', terms' = compile_so_redex_terms allow_so_patterns strict addrs stack' bvars t in
             stack'', term'::terms'
 
    let check_stack = function
@@ -387,8 +383,8 @@ struct
     | _ ->
          ()
 
-   let compile_so_redex strict addrs t =
-      let stack, terms = compile_so_redex_aux strict addrs [] t in
+   let compile_so_redex strict addrs terms =
+      let stack, terms = compile_so_redex_terms true strict addrs [] [] terms in
          List.iter check_stack stack;
          Array.of_list stack, terms
 end

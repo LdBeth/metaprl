@@ -313,7 +313,7 @@ struct
       result
 #endif
 
-   let alpha_equal_vars (t, v) (t', v') =
+   let alpha_equal_vars t v t' v' =
 #ifdef VERBOSE_EXN
       if !debug_alpha_equal then
          try 
@@ -368,55 +368,44 @@ struct
        | _ ->
             false
 
-   (*
-    * Check the following:
-    * subst t' =alpha subst t (subst_in_snd vars' vars) in a context of bound variables vars''
-    * where subst_in_snd vars' = List.map (v,t -> v, subst t vars')
-    *)
-   let rec equal_comp vars'' vars' vars t t' =
+   let rec equal_fun f bvars sub t t' =
       match get_core t, get_core t' with
          FOVar v, FOVar v' ->
-            ( try List_util.try_check_assoc v v' vars'' with Not_found ->
-               ( try equal_term vars' t' (List.assoc v vars) with Not_found ->
-                  not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
+            ( try List_util.try_check_assoc v v' bvars with Not_found ->
+               ( try f t' (List.assoc v sub) with Not_found ->
+                  v = v'
             ))
        | FOVar v,_ ->
-            not (List.mem_assoc v vars'') &&
-            not (List_util.assoc_in_range StringSet.mem (term_free_vars t') vars'') &&
-            equal_term vars' t' (List.assoc v vars)
+            not (List.mem_assoc v bvars) &&
+            not (List_util.assoc_in_range StringSet.mem (term_free_vars t') bvars) &&
+            f t' (List.assoc v sub)
        | Term t1, Term t2 ->
             Opname.eq t1.term_op.op_name t2.term_op.op_name &&
             List_util.for_all2 equal_params t1.term_op.op_params t2.term_op.op_params &&
-            equal_comp_bterms vars'' vars' vars t1.term_terms t2.term_terms
+            equal_fun_bterms f bvars sub t1.term_terms t2.term_terms
        | _ -> false
 
-   and equal_comp_bterms vars'' vars' vars bterms1 bterms2 =
-      let equal_comp_bterm bt1 bt2 =
-         equal_comp
-            (List_util.zip_list vars'' bt1.bvars bt2.bvars)
-            vars' vars
-            bt1.bterm bt2.bterm
+   and equal_fun_bterms f bvars sub bterms1 bterms2 =
+      let equal_fun_bterm bt1 bt2 =
+         equal_fun f
+            (List_util.zip_list bvars bt1.bvars bt2.bvars)
+            sub bt1.bterm bt2.bterm
       in
-         List_util.for_all2 equal_comp_bterm bterms1 bterms2
+         List_util.for_all2 equal_fun_bterm bterms1 bterms2
 
-   (*
-    * Check the following:
-    *   that t' =alpha t[terms[v''/v''']/v]
-    *)
-   let alpha_equal_match (t, v) (t', v'', v''', terms) =
+   (* See refiner/refsig/term_subst_sig.mlz for explanation of this function *)
+   let alpha_equal_fun f t vs t' items =
 #ifdef VERBOSE_EXN
       if !debug_subst_ds then
          begin
-            eprintf "Term_subst_ds.alpha_equal_match:\n\t";
+            eprintf "Term_subst_ds.alpha_equal_fun:\n\t";
             eprintf "\tt: %a\n" debug_print t;
-            eprintf "\tv: %a\n" print_string_list v;
+            eprintf "\tvs: %a\n" print_string_list vs;
             eprintf "\tt': %a\n" debug_print t';
-            eprintf "\tv'': %a\n" print_string_list v'';
-            eprintf "\tv''': %a\n" print_string_list v''';
-            eprintf "\tterms: %a%t" (print_any_list debug_print) terms eflush
+            eprintf "\titems: ...%t" eflush
          end;
 #endif
-      try equal_comp [] (List_util.zip v''' v'') (List_util.zip v terms) t t'  with
+      try equal_fun f [] (List_util.zip vs items) t t'  with
          Failure _ -> false
        | Not_found -> false
 

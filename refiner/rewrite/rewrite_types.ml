@@ -101,7 +101,7 @@ sig
       RWComposite of rwcterm
     | RWSequent of rwterm * rw_seq_term list * rwterm list
     | RWSOVar of int * int list
-    | RWSOMatch of int * (int list * string list * term list)
+    | RWSOMatch of int * rwterm list
     | RWSOSubst of int * rwterm list
     | RWSOContext of int * int * rwterm * int list
     | RWSOContextSubst of int * rwterm * rwterm list
@@ -164,7 +164,7 @@ sig
     | StackMString of string
     | StackLevel of level_exp
     | StackBTerm of term * string list
-    | StackITerm of (term * string list * string list * term list) list
+    | StackITerm of (term * rwterm list) list
     | StackContext of string list * term * address
     | StackSeqContext of string list * hyp_array
 

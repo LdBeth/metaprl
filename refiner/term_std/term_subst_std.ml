@@ -327,7 +327,7 @@ struct
       try equal_term [] t1 t2 with
          Failure _ -> false
 
-   let alpha_equal_vars (t, v) (t', v') =
+   let alpha_equal_vars t v t' v' =
 #ifdef VERBOSE_EXN
       if !debug_alpha_equal then
          try 
@@ -342,58 +342,42 @@ struct
          try equal_term (List_util.zip v v') t t' with
             Failure _ -> false
 
-   let eq_comp_var v = function
-      { term_op = { op_name = opname; op_params = [Var v'] };
-        term_terms = []
-      } when Opname.eq opname var_opname ->
-         v' = v
-    | _ ->
-         false
-
    let rev_mem a b = List.mem b a
 
-   (*
-    * Check the following:
-    * subst t' =alpha subst t (subst_in_snd vars' vars) in a context of bound variables vars''
-    * where subst_in_snd vars' = List.map (v,t -> v, subst t vars')
-    *)
-   let equal_comp vars' vars =
-      let rec equal_comp_term vars'' = function
+   let equal_fun f sub =
+      let rec equal_fun_term bvars = function
          { term_op = { op_name = opname; op_params = [Var v] };
            term_terms = [] } ,
          ({ term_op = { op_name = opname'; op_params = [Var v'] };
            term_terms = []
          } as t') when Opname.eq opname var_opname && Opname.eq opname' var_opname ->
-            ( try List_util.try_check_assoc v v' vars'' with Not_found ->
-               ( try equal_term vars' t' (List.assoc v vars) with Not_found ->
-                  not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
+            ( try List_util.try_check_assoc v v' bvars with Not_found ->
+               ( try f t' (List.assoc v sub) with Not_found ->
+                  v = v'
             ))
        | { term_op = { op_name = opname; op_params = [Var v] };
            term_terms = []
          }, t' when Opname.eq opname var_opname ->
-            not (List.mem_assoc v vars'') &&
-            not (List_util.assoc_in_range rev_mem (free_vars t') vars'') &&
-            equal_term vars' t' (List.assoc v vars)
+            not (List.mem_assoc v bvars) &&
+            not (List_util.assoc_in_range rev_mem (free_vars t') bvars) &&
+            f t' (List.assoc v sub)
        | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-            Opname.eq name1 name2 & params1 = params2 & equal_comp_bterms vars'' bterms1 bterms2
+            Opname.eq name1 name2 & params1 = params2 & equal_fun_bterms bvars bterms1 bterms2
 
-      and equal_comp_bterms vars'' bterms1 bterms2 =
-         let equal_comp_bterm = fun
+      and equal_fun_bterms bvars bterms1 bterms2 =
+         let equal_fun_bterm = fun
             { bvars = bvars1; bterm = term1 }
             { bvars = bvars2; bterm = term2 } ->
-               equal_comp_term (List_util.zip_list vars'' bvars1 bvars2) (term1, term2)
+               equal_fun_term (List_util.zip_list bvars bvars1 bvars2) (term1, term2)
          in
-            List_util.for_all2 equal_comp_bterm bterms1 bterms2
+            List_util.for_all2 equal_fun_bterm bterms1 bterms2
       in
-         equal_comp_term
+         equal_fun_term
 
-   (*
-    * Check the following:
-    *   that t' = t[terms[v''/v''']/v]
-    *)
-   let alpha_equal_match (t, v) (t', v'', v''', terms) =
-      try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) [] (t, t') with
+   (* See refiner/refsig/term_subst_sig.mlz for explanation of this function *)
+   let alpha_equal_fun f t v t' items =
+      try equal_fun f (List_util.zip v items) [] (t, t') with
          Failure _ -> false
        | Not_found -> false
 

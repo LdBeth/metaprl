@@ -144,8 +144,8 @@ struct
          fprintf out "Level"
     | StackBTerm (t, vars) ->
          fprintf out "BTerm %a[%a]" print_term t print_string_list vars
-    | StackITerm _ ->
-         fprintf out "ITerm"
+    | StackITerm ts ->
+         fprintf out "ITerm %a" (print_any_list (fun out (t, subterms) -> fprintf out "%a[%d] " print_term t (List.length subterms))) ts
     | StackContext (vars, t, addr) ->
          fprintf out "Context (%a/%a/%s)" (**)
             print_string_list vars
@@ -174,7 +174,7 @@ struct
       FOVarPattern s ->
          fprintf out "FOVarPattern %s" s
     | SOVarPattern (s, i) ->
-         fprintf out "SOVarPatterm %s[%d]" s i
+         fprintf out "SOVarPattern %s[%d]" s i
     | SOVarInstance (s, i) ->
          fprintf out "SOVarInstance %s[%d]" s i
     | FOVar s ->
@@ -268,12 +268,10 @@ struct
                (print_prog_list (tabstop + 3)) goals
        | RWSOVar (i, il) ->
             fprintf out "RWSOVar (%d, %a)\n" i print_int_list il
-       | RWSOMatch (i, (il, sl, tl)) ->
-            fprintf out "RWSOMatch (%d, (%a, %a, %a))\n" (**)
+       | RWSOMatch (i, tl) ->
+            fprintf out "RWSOMatch (%d)\n%a" (**)
                i
-               print_int_list il
-               print_string_list sl
-               print_term_list tl
+               (print_prog_list (tabstop + 3)) tl
        | RWSOSubst (i, tl) ->
             fprintf out "RWSOSubst %d\n%a" i (print_prog_list (tabstop + 3)) tl
        | RWSOContext (i, j, t, il) ->
