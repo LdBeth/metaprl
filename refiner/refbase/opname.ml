@@ -53,8 +53,8 @@ let _ =
    let r = Gc.get () in
       (* r.verbose <- 1; *)
       r.Gc.minor_heap_size <- 196608;
-      r.Gc.major_heap_increment <- 393216;
-      r.Gc.space_overhead <- 70;
+      r.Gc.major_heap_increment <- 1048576;
+      r.Gc.space_overhead <- 85;
       r.Gc.stack_limit <- 524288;
       Gc.set r
 
