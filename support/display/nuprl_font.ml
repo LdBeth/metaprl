@@ -366,10 +366,10 @@ dform it_end_df : internal :: mode[html] :: it_end =
    izone `"</b>" ezone
 
 dform it_begin_df : internal :: mode[prl] :: it_begin =
-   `""
+   pushfont["it"]
 
 dform it_end_df : internal :: mode[prl] :: it_end =
-   `""
+   popfont
 
 dform it_df1 : internal :: it[text:s] =
    it_begin slot[text:s] it_end

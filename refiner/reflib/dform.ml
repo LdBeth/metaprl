@@ -243,39 +243,22 @@ let pushm = function
 
 let popm df = format_popm df.dform_buffer
 
-(*
- * BUG: how do we get terminfo?
- *)
-let can_control_font =
-   try
-      match Sys.getenv "TERM" with
-         "xterm"
-       | "eterm"
-       | "vt100"
-       | "vt102" ->
-            true
-       | _ ->
-            false
-   with
-      Not_found ->
-         false
-
 let translate_font s =
    match s with
-      "bf" ->
-         "[1m"
-    | "it"
-    | "em" ->
-         "[2m"
-    | _ ->
-         "[0m"
+      "bf" -> Lm_terminfo.enter_bold_mode
+    | "it" | "em" -> "snrmq" (* enter_italics_mode *)
+    | "rm" -> "snrmq" (* enter_normal_quality *)
+    | "sub" -> "ssubm" (* enter_subscript_mode *)
+    | "sup" -> "ssupm" (* enter_superscript_mode *)
+    | _ -> Lm_terminfo.exit_attribute_mode
 
 let changefont buf s =
-   if can_control_font then
-      let s' = translate_font s in
+   match Lm_terminfo.tgetstr (translate_font s) with
+      Some s' ->
          format_izone buf;
          format_raw_string buf s';
          format_ezone buf
+    | None -> ()
 
 let pushfont df =
    let font, buf =
@@ -288,7 +271,7 @@ let pushfont df =
       changefont buf font
 
 let popfont { dform_buffer = buf } =
-   changefont buf "rm"
+   changefont buf "exit"
 
 (************************************************************************
  * FORMATTERS                                                           *

@@ -102,17 +102,15 @@ struct
    let main () =
       if !http_enabled then begin
          let host = Http_server.start_http http_connect !http_port in
-         try
-            if Sys.getenv "TERM" = "xterm" then
+         match Lm_terminfo.xterm_escape_begin () , Lm_terminfo.xterm_escape_begin () with
+            Some b, Some e ->
                let { Http_server.http_host = host;
                      Http_server.http_port = port;
                      Http_server.http_password = pass
                    } = Http_server.http_info host
                in
-                  printf "\027]0;MetaPRL http://%s:%d/%s\007%t" host port pass eflush
-         with
-            Not_found ->
-               ()
+                  printf "%sMetaPRL http://%s:%d/%s%s%t" b host port pass e eflush
+          | _ -> ()
       end;
       Shell.main ()
 end
