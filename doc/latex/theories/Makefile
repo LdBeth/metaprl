@@ -18,7 +18,11 @@ DEFTEXTHEORIES=\
 	czf\
 	fir
 
-.PHONY: doc theories all-theories ocaml ocaml-book compile m-paper mtr m-paper-tr
+.PHONY: doc all-doc theories all-theories ocaml ocaml-book compile m-paper mtr m-paper-tr
+
+all: all-doc
+opt: all-doc
+all-doc: all-theories ocaml-book m-paper
 
 theories all-theories:
 	+ @ $(MAKE) NAME=all-theories GOAL=theories TEXTHEORIES="$(DEFTEXTHEORIES)" doc
@@ -31,9 +35,6 @@ compile m-paper:
 
 mtr m-paper-tr:
 	+ @ $(MAKE) NAME=m-paper-tr GOAL=m-paper-tr TEXTHEORIES=experimental/compile doc
-
-all: doc
-opt: doc
 
 INPUTS = $(MOREINPUTS)\
 	../inputs/rc.bib\
@@ -67,12 +68,14 @@ $(NAME).ind: $(INPUTS) $(TEXFILES)
 	+ @ $(MAKE) NAME=$(NAME) TEXTHEORIES="$(TEXTHEORIES)" $(NAME).aux
 	TEXINPUTS=$(TEXINPUTS) makeindex $(NAME)
 
-$(NAME).pdf: $(INPUTS) $(TEXFILES) $(NAME).ind
-	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
+#$(NAME).pdf: $(INPUTS) $(TEXFILES) $(NAME).ind
+#	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
+$(NAME).pdf: $(INPUTS) $(TEXFILES) $(NAME).dvi
+	dvipdfm -p letter -o $@ $(NAME).dvi
 	echo $(NAME).pdf : `grep -a '/Type /Page$$' $(NAME).pdf | wc -l` pages 1>&2
 
 $(NAME).ps: $(INPUTS) $(TEXFILES) $(NAME).dvi
-	dvips -o $@ $(NAME).dvi
+	dvips -t letter -o $@ $(NAME).dvi
 
 $(NAME).dvi: $(INPUTS) $(TEXFILES) $(NAME).ind
 	TEXINPUTS=$(TEXINPUTS) latex $(NAME)
