@@ -1,0 +1,11 @@
+Also, most files in refiner directory have a verbose (_verb) and a simple
+(_simp) versions. The verbose version tries to keep track and raise
+verbose exceptions while simple version usually raises a "generic"
+exception (take a look at ref_raise macro an
+refiner/refsig/refine_error.h). Verbose version is great for debugging
+(and we place all debugging in the verbose version only), but sometimes it
+is much slower. Since _verb and _simp files are usually very similar, we
+usually generate them with the cpp C preprocessor from a single file
+(.ml's are generated from .mlp and .mli's - from .mlip). _verb file is
+generated with VERBOSE_EXN defined while _simp file is generated with
+VERBOSE_EXN undefined.
