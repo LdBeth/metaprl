@@ -64,7 +64,7 @@ THEORIES=$THEORIES
 READLINE=$READLINE
 
 #
-# The GNU ncurses package (available in Linix at least) (yes/no)
+# The GNU ncurses package (available in Linux at least) (yes/no)
 #
 NCURSES=$NCURSES
 
@@ -86,7 +86,7 @@ TESTS=$TESTS
 #
 # If ENSROOT is defined, it should point
 # to the root of the Ensemble source tree
-# In this case Ensemble support would be compiled into Meta-PRL
+# In this case Ensemble support would be compiled into MetaPRL
 #
 ENSROOT=$ENSROOT
 
@@ -94,15 +94,15 @@ ENSROOT=$ENSROOT
 # If OCAMLSRC is defined, it should point
 # to the root of the OCaml source tree
 # In this case Jason's marshaller debugging code
-# would be compiled into Meta-PRL
+# would be compiled into MetaPRL
 # Do not enable this unless you know what you are doing!
 #
 OCAMLSRC=$OCAMLSRC
 
 #
 # Do you want to use sloppy dependencies?  If enabled, then updating
-# the refiner will not force theory files to be reomcpiled.  If
-# in doubt, you showld use "false".
+# the refiner will not force theory files to be recompiled.  If
+# in doubt, you should use "false".
 #
 SLOPPY_DEPENDENCIES=$SLOPPY_DEPENDENCIES
 
@@ -117,7 +117,7 @@ if [ "$CONFIG_EXISTED" != "yes" ]; then
 
 A new config file mk/config was created for you.
 
-You should edit it before contunuing.
+You should edit it before continuing.
 
 end_of_cat
    exit 1
