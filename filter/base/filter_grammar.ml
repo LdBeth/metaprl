@@ -144,7 +144,7 @@ struct
    let eof_term = mk_simple_term (mk_opname "<eof>" nil_opname) []
    let eof = shape_of_term eof_term
 
-   let to_string = string_of_shape
+   let to_string = short_string_of_shape
 
    let pp_print_symbol buf op =
       pp_print_string buf (to_string op)

@@ -2622,6 +2622,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let string_of_shape (s1, s2) =
          sprintf "Impl1 shape: %s; Impl2 shape: %s" (TermShape1.string_of_shape s1) (TermShape2.string_of_shape s2)
 
+      let short_string_of_shape (s1, s2) =
+         sprintf "Impl1 shape: %s; Impl2 shape: %s" (TermShape1.short_string_of_shape s1) (TermShape2.short_string_of_shape s2)
+
       (* XXX: BUG: we are reimplementing the modules instead of debugging the underlying implementation *)
       module ShapeCompare =
       struct

@@ -401,10 +401,10 @@ let format_exn_aux db printers exn =
              format_string buf ("Invalid Argument:\n" ^ s)
         | Failure s ->
              format_string buf ("Failure:\n" ^ s)
-        | Lm_parser.ParseError loc ->
+        | Lm_parser.ParseError (loc, s) ->
              format_string buf (Lm_location.string_of_location loc);
              format_space buf;
-             format_string buf "Syntax error"
+             format_string buf s
         | exn ->
              format_string buf (Printexc.to_string exn));
       format_popm buf;

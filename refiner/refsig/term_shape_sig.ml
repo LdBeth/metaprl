@@ -65,6 +65,7 @@ sig
    val print_shape : out_channel -> shape -> unit
    val pp_print_shape : formatter -> shape -> unit
    val string_of_shape : shape -> string
+   val short_string_of_shape : shape -> string
 
    val shape_compare : shape -> shape -> int
 

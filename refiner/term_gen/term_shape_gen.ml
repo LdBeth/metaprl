@@ -160,6 +160,56 @@ struct
          Buffer.add_string buf "}";
          Buffer.contents buf
 
+   (*
+    * Try to be a bit more brief about the printout.
+    *)
+   let short_string_of_shape { shape_opname = name; shape_params = params; shape_arities = arities } =
+      let buf = Buffer.create 32 in
+      let print_param param =
+         let s =
+            match param with
+               ShapeNumber ->
+                  "N"
+             | ShapeString ->
+                  "S"
+             | ShapeToken  ->
+                  "T"
+             | ShapeLevel  ->
+                  "L"
+             | ShapeVar    ->
+                  "V"
+             | ShapeQuote  ->
+                  "Q"
+         in
+            Buffer.add_string buf s
+      in
+      let rec print_arity = function
+         [i] ->
+            Buffer.add_string buf (string_of_int i)
+       | i :: t ->
+            Buffer.add_string buf (string_of_int i);
+            Buffer.add_char buf ';';
+            print_arity t
+       | [] ->
+            ()
+      in
+         Buffer.add_string buf (fst (dst_opname name));
+         (match params with
+             [] ->
+                ()
+           | _ ->
+                Buffer.add_char buf '[';
+                List.iter print_param params;
+                Buffer.add_string buf "]");
+         (match arities with
+             [] ->
+                ()
+           | _ ->
+                Buffer.add_string buf "{";
+                print_arity arities;
+                Buffer.add_string buf "}");
+         Buffer.contents buf
+
    let print_shape out shape =
       output_string out (string_of_shape shape)
 

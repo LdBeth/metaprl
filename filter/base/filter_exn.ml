@@ -186,13 +186,13 @@ let rec format_exn db buf exn =
             format_exn db buf exn;
             format_ezone buf;
             format_popm buf
-    | Lm_parser.ParseError loc ->
+    | Lm_parser.ParseError (loc, s) ->
          format_pushm buf 3;
          format_string buf "Syntax error:";
          format_space buf;
-         (* XXX: HACK (jyh, nogin) The next two lines are a BIG hack, not threads-safe *)
-         Lm_location.pp_print_location Lm_printf.stdstr loc;
-         format_string buf (Lm_printf.flush_stdstr ());
+         format_string buf (Lm_location.string_of_location loc);
+         format_space buf;
+         format_string buf s;
          format_popm  buf
     | exn ->
          Exn_boot.format_exn db buf exn
