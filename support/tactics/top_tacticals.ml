@@ -534,7 +534,7 @@ let nameHypT i v =
    funT (fun p ->
    let v = Lm_symbol.add v in
    let i = Sequent.get_pos_hyp_num p i - 1 in
-   let eseq = Sequent.explode_sequent p in
+   let eseq = Sequent.explode_sequent_arg p in
       match SeqHyp.get eseq.sequent_hyps i with
          Hypothesis (v',hyp) ->
             if v' = v then

@@ -606,7 +606,7 @@ struct
   	let rec onAllCumulativeT_aux thenT tac i = funT (fun p ->
 		if i < (Sequent.hyp_count p) then
 			let i' = succ i in
-			let hyps = (Sequent.explode_sequent p).sequent_hyps in
+			let hyps = (Sequent.explode_sequent_arg p).sequent_hyps in
 			match Term.SeqHyp.get hyps i with
 				Hypothesis (_, t) ->
 					thenT (tac i') (onAllCumulativeT_aux thenT tac i')
@@ -621,7 +621,7 @@ struct
     *)
 
 	let onAllHypsT tac = funT (fun p ->
-		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
+		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent_arg p).sequent_hyps in
 		onAllT idT prefix_thenT tac (Sequent.hyp_count p) (List.rev hyps)
 	)
 
@@ -655,7 +655,7 @@ struct
     *)
 
 	let onAllMHypsT tac = funT (fun p ->
-		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
+		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent_arg p).sequent_hyps in
 		onAllT idT prefix_thenMT tac (Sequent.hyp_count p) (List.rev hyps)
 	)
 
@@ -727,7 +727,7 @@ struct
     * Make sure one of the hyps works.
     *)
    let onSomeHypT tac = funT (fun p ->
-		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent p).sequent_hyps in
+		let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent_arg p).sequent_hyps in
 		onAllT failT prefix_orelseT tac (Sequent.hyp_count p) (List.rev hyps)
 	)
 

@@ -743,7 +743,7 @@ sig
    (*
     * Get info about the sequent.
     *)
-   val explode_sequent : tactic_arg -> TermType.esequent
+   val explode_sequent_arg : tactic_arg -> TermType.esequent
 
    (*
     * Argument functions.

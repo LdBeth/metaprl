@@ -99,7 +99,7 @@ struct
    let get_hyp_number arg t =
       TermMan.get_hyp_number (goal arg) t
 
-   let explode_sequent arg =
+   let explode_sequent_arg arg =
       TermMan.explode_sequent (goal arg)
 
    let rec all_hyps_aux hyps l i =
@@ -112,7 +112,7 @@ struct
                all_hyps_aux hyps l i
 
    let all_hyps arg =
-      let hyps = (explode_sequent arg).sequent_hyps in
+      let hyps = (explode_sequent_arg arg).sequent_hyps in
          all_hyps_aux hyps [] (Term.SeqHyp.length hyps)
 
    (*

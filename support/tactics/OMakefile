@@ -21,7 +21,6 @@ MPFILES =\
 PRLFiles($(MPFILES))
 OCamlLibrary(theory, $(MPFILES) basic_tactics)
 
-
 #
 # Clean up
 #

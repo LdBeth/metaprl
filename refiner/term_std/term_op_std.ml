@@ -656,9 +656,7 @@ struct
     | t -> REF_RAISE(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
 
    let dest_token_param = function
-      { term_op = { op_params = [Token n] };
-        term_terms = []
-      } -> n
+      { term_op = { op_params = [Token n] } } -> n
     | t -> REF_RAISE(RefineError ("dest_token_param", TermMatchError (t, "bad arity")))
 
    let mk_token_term opname = function
