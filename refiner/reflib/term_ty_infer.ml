@@ -1937,8 +1937,9 @@ let check_production tenv redices contractum =
    let subst = new_subst Relaxed in
    let subst =
       List.fold_left (fun subst e ->
-            infer_term_type tenv venv subst e ty_nonterminal) subst terms
+            infer_term_type tenv venv subst e ty_nonterminal) subst redices
    in
+   let subst = infer_term_type tenv venv subst contractum ty_nonterminal in
    let _ = solve_constraints tenv venv subst in
       ()
 

@@ -150,6 +150,10 @@ sig
    val mk_var_param_term : opname -> var -> term
    val dest_var_param_term : opname -> term -> var
 
+   val is_var_dep0_dep0_term : opname -> term -> bool
+   val mk_var_dep0_dep0_term : opname -> var -> term -> term -> term
+   val dest_var_dep0_dep0_term : opname -> term -> var * term * term
+
    val is_string_dep0_term : opname -> term -> bool
    val mk_string_dep0_term : opname -> string -> term -> term
    val dest_string_dep0_term : opname -> term -> string * term

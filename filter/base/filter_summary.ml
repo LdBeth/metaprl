@@ -1846,7 +1846,7 @@ struct
        | InputForm { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _ when name = name' ->
             if alpha_equal redex' redex then
                if alpha_equal con' con then
-                  ()
+                  items
                else
                   implem_error (sprintf "InputForm %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
                                    name (string_of_term con') (string_of_term con))
@@ -1856,8 +1856,7 @@ struct
        | _ :: t ->
             search t
       in
-         search implem;
-         items
+         search implem
 
    (*
     * Conditions in implementation must be weaker than in the interface.

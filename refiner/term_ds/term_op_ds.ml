@@ -272,6 +272,32 @@ struct
          { term_op = { op_name = opname; op_params = [Var s] }; term_terms = [] }}
 
    (*
+    * One var parameter.
+    *)
+   let is_var_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Var _] };
+             term_terms = [{ bvars = [] }; { bvars = [] }]
+           } when Opname.eq opname opname' ->
+         true
+    | _ ->
+         false
+
+   let dest_var_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Var v] };
+             term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+      } when Opname.eq opname opname' ->
+         v, t1, t2
+    | _ ->
+         REF_RAISE(RefineError ("dest_var_dep0_dep0_term", TermMatchError (t, "not a var param term")))
+
+   let mk_var_dep0_dep0_term opname s t1 t2 =
+      { free_vars = VarsDelayed;
+        core = Term { term_op = { op_name = opname; op_params = [Var s] };
+                      term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]
+               }
+      }
+
+   (*
     * One string parameter, and one simple subterm.
     *)
    let is_string_dep0_term opname t = match get_core t with

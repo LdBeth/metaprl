@@ -33,8 +33,10 @@ open Lm_string_set
 
 open Opname
 open Term_sig
+open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
@@ -540,18 +542,115 @@ let conv_of_iforms gram =
  *)
 let () = Mp_resource.recompute_top ()
 
+(*
+ * The primitive so-var terms.
+ *)
+let perv_opname = mk_opname "Perv" nil_opname
+let xsovar_opname = mk_opname "xsovar" perv_opname
+let xhypcontext_opname = mk_opname "xhypcontext" perv_opname
+
+let is_xsovar_term t =
+   if is_var_dep0_dep0_term xsovar_opname t then
+      let _, cvars, args = dest_var_dep0_dep0_term xsovar_opname t in
+         is_xlist_term cvars && is_xlist_term args
+   else
+      false
+
+let dest_xsovar_term t =
+   let v, cvars, args = dest_var_dep0_dep0_term xsovar_opname t in
+   let cvars = List.map dest_var (dest_xlist cvars) in
+   let args = dest_xlist args in
+      v, cvars, args
+
+let is_xhypcontext_term t =
+   if is_dep0_dep0_term xhypcontext_opname t then
+      let cvars, args = dest_dep0_dep0_term xsovar_opname t in
+         is_xlist_term cvars && is_xlist_term args
+   else
+      false
+
+let dest_xhypcontext_term t =
+   let cvars, args = dest_dep0_dep0_term xsovar_opname t in
+   let cvars = List.map dest_var (dest_xlist cvars) in
+   let args = dest_xlist args in
+      cvars, args
+
+(*
+ * The so-var iforms are primitive, because hyps are rewritten to contexts.
+ *)
+let rec apply_so_var_iforms_term t =
+   if is_var_term t then
+      t
+   else if is_so_var_term t then
+      let v, cvars, args = dest_so_var t in
+         mk_so_var_term v cvars (apply_so_var_iforms_term_list args)
+   else if is_context_term t then
+      let v, arg, cvars, args = dest_context t in
+         mk_context_term v (apply_so_var_iforms_term arg) cvars (apply_so_var_iforms_term_list args)
+   else if is_sequent_term t then
+      let { sequent_args = arg;
+            sequent_hyps = hyps;
+            sequent_concl = concl
+          } = explode_sequent t
+      in
+      let arg = apply_so_var_iforms_term arg in
+      let concl = apply_so_var_iforms_term concl in
+      let hyps =
+         SeqHyp.map (fun hyp ->
+               match hyp with
+                  Hypothesis (v, t) ->
+                     if is_xhypcontext_term t then
+                        let cvars, args = dest_xhypcontext_term t in
+                        let args = apply_so_var_iforms_term_list args in
+                           Context (v, cvars, args)
+                     else
+                        Hypothesis (v, apply_so_var_iforms_term t)
+                | Context (v, cvars, args) ->
+                     Context (v, cvars, apply_so_var_iforms_term_list args)) hyps
+      in
+      let seq =
+         { sequent_args = arg;
+           sequent_hyps = hyps;
+           sequent_concl = concl
+         }
+      in
+         mk_sequent_term seq
+   else if is_xsovar_term t then
+      let v, cvars, args = dest_xsovar_term t in
+      let args = apply_so_var_iforms_term_list args in
+         mk_so_var_term v cvars args
+   else
+      let { term_op = op; term_terms = bterms } = dest_term t in
+      let bterms = apply_so_var_iforms_bterm_list bterms in
+         mk_term op bterms
+
+and apply_so_var_iforms_term_list terms =
+   List.map apply_so_var_iforms_term terms
+
+and apply_so_var_iforms_bterm bterm =
+   let { bvars = bvars; bterm = t } = dest_bterm bterm in
+      mk_bterm bvars (apply_so_var_iforms_term t)
+
+and apply_so_var_iforms_bterm_list bterms =
+   List.map apply_so_var_iforms_bterm bterms
+
+let apply_sovar_iforms = apply_so_var_iforms_term
+
+(*
+ * Now actually apply the input forms.
+ *)
 let apply_iforms gram t =
    let conv = conv_of_iforms gram in
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
-      Conversionals.apply_rewrite book conv t
+      apply_sovar_iforms (Conversionals.apply_rewrite book conv t)
 
 let apply_iforms_mterm gram mt args =
    let conv = conv_of_iforms gram in
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
    let apply_term t =
-      Conversionals.apply_rewrite book conv t
+      apply_sovar_iforms (Conversionals.apply_rewrite book conv t)
    in
    let rec apply mt =
       match mt with

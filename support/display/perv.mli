@@ -127,6 +127,25 @@ declare type ty_hyp{'ty_var : Ty; 'ty_hyp : Ty} : ty_hyp
 declare type ty_exists{'a : Ty; v : 'a. 'ty['v] : ty_hyp} : ty_hyp
 
 (************************************************************************
+ * Builtin input forms.
+ *)
+
+(*
+ * For constructing a second-order variables and contexts.
+ * The arguments are of type Dform because they are xlists.
+ *
+ * xsovar[v:v]{[v1; ...; vn]; [t1; ...; tn]} is rewritten to
+ *     v<|v1, ..., vn|>[t1; ...; tn]
+ *
+ * A hyp of the form
+ *    x: xhypcontext{[v1; ...; vn]; [t1; ...; tn]}
+ * is rewritten to
+ *    <x<|v1, ..., vn|>[t1; ...; tn]>
+ *)
+declare xsovar[v:v]{'contexts : Dform; 'args : Dform} : 'a
+declare xhypcontext{'contexts : Dform; 'args : Dform} : 'a
+
+(************************************************************************
  * Normal terms.
  *)
 

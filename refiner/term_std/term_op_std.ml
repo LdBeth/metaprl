@@ -307,10 +307,34 @@ struct
       } when Opname.eq opname opname' ->
          v
     | t ->
-         REF_RAISE(RefineError ("dest_string_term", TermMatchError (t, "not a var param term")))
+         REF_RAISE(RefineError ("dest_var_param_term", TermMatchError (t, "not a var param term")))
 
    let mk_var_param_term opname v =
       { term_op = { op_name = opname; op_params = [Var v] }; term_terms = [] }
+
+   (*
+    * One variable param, and two simple subterms.
+    *)
+   let is_var_dep0_dep0_term opname = function
+      { term_op = { op_name = opname'; op_params = [Var _] };
+        term_terms = [{ bvars = [] }; { bvars = [] }]
+      } when Opname.eq opname opname' ->
+         true
+    | _ ->
+         false
+
+   let dest_var_dep0_dep0_term opname = function
+      { term_op = { op_name = opname'; op_params = [Var v] };
+        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+      } when Opname.eq opname opname' ->
+         v, t1, t2
+    | t ->
+         REF_RAISE(RefineError ("dest_var_dep0_dep0_term", TermMatchError (t, "not a var param term")))
+
+   let mk_var_dep0_dep0_term opname v t1 t2 =
+      { term_op = { op_name = opname; op_params = [Var v] };
+        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+      }
 
    (*
     * One string parameter, and one simple subterm.
