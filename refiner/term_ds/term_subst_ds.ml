@@ -573,26 +573,31 @@ struct
    (*
     * Make all the vars different by giving them a unique numeric suffix.
     *)
+   let subst_var subst v =
+      try dest_var (List.assoc v subst) with
+         Not_found ->
+            v
+
+   let standardize_var index v =
+      let v_str = string_of_symbol v in
+      let v' =
+         try String.sub v_str 0 (String.rindex v_str '_') with
+            Not_found ->
+               v_str
+      in
+         Lm_symbol.make v' index
+
    let rec standardize_bterm index { bvars = bvars; bterm = t } =
       let bvars, subst, index =
          List.fold_left (fun (bvars, subst, index) v ->
-            let v_str = string_of_symbol v in
-            let v' =
-               try String.sub v_str 0 (String.rindex v_str '_') with
-                  Not_found ->
-                     v_str
-            in
-            let v' = Lm_symbol.make v' index in
-            let t = mk_var_term v' in
-            let bvars = v' :: bvars in
-            let subst = (v, t) :: subst in
-            let index = succ index in
-               bvars, subst, index) ([], [], index) bvars
+               let v' = standardize_var index v in
+               let bvars = v' :: bvars in
+               let subst = (v, mk_var_term v') :: subst in
+               let index = succ index in
+                  bvars, subst, index) ([], [], index) bvars
       in
-      let bvars = List.rev bvars in
-      let t = apply_subst subst t in
-      let t, index = standardize_term index t in
-         { bvars = bvars; bterm = t }, index
+      let t, index = standardize_term index (apply_subst subst t) in
+         { bvars = List.rev bvars; bterm = t }, index
 
    and standardize_bterms_step (bterms, index) bterm =
       let bterm, index = standardize_bterm index bterm in
@@ -601,6 +606,21 @@ struct
    and standardize_terms_step (terms, index) term =
       let term, index = standardize_term index term in
          term :: terms, index
+
+   and standardize_hyps_step (hyps, subst, index) hyp =
+      match hyp with
+         Hypothesis (v, t) ->
+            let v' = standardize_var index v in
+            let t, index = standardize_term (succ index) (apply_subst subst t) in
+            let subst = (v, mk_var_term v') :: subst in
+            let hyps = Hypothesis (v', t) :: hyps in
+               hyps, subst, index
+       | Context (cv, vars, args) ->
+             let vars = List.map (subst_var subst) vars in
+             let args = List.fold_left (fun args arg -> apply_subst subst arg :: args) [] args in
+             let args, index = List.fold_left standardize_terms_step ([], index) args in
+             let hyps = Context (cv, vars, List.rev args) :: hyps in
+                hyps, subst, index
 
    and standardize_term index t =
       match get_core t with
@@ -612,8 +632,31 @@ struct
        | SOVar(v, conts, ts) ->
             let ts, index = List.fold_left standardize_terms_step ([], index) ts in
                core_term(SOVar(v, conts, List.rev ts)), index
-       | Sequent _ -> raise (Invalid_argument "standardize_term")
-       | Subst _| Hashed _ -> fail_core "standardize_term"
+       | Sequent seq ->
+            (*
+             * BUG: this could be more efficient if the Array module
+             * contained a fold_map function.
+             *)
+            let { sequent_hyps = hyps; sequent_goals = goals } = seq in
+            let hyps, subst, index =
+               List.fold_left standardize_hyps_step ([], [], index) (SeqHyp.to_list hyps)
+            in
+            let goals =
+               List.fold_left (fun goals goal -> apply_subst subst goal :: goals) [] (SeqGoal.to_list goals)
+            in
+            let goals, index =
+               List.fold_left standardize_terms_step ([], index) goals
+            in
+            let seq =
+               { seq with sequent_hyps = SeqHyp.of_list (List.rev hyps);
+                          sequent_goals = SeqGoal.of_list goals
+               }
+            in
+               core_term (Sequent seq), index
+
+       | Subst _
+       | Hashed _ ->
+            fail_core "standardize_term"
 
    let standardize t =
       fst (standardize_term 0 t)
