@@ -364,8 +364,8 @@ struct
     * Create an input form.
     * This is a Relaxed rewrite with no justification.
     *)
-   let create_iform name redex contractum =
-      let rw = create_input_form (null_refiner name) name redex contractum in
+   let create_iform name strictp redex contractum =
+      let rw = create_input_form (null_refiner name) name strictp redex contractum in
          rewrite_of_rewrite rw
 
    (*

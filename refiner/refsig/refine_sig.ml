@@ -383,6 +383,7 @@ sig
       prim_rewrite
    val create_input_form : build ->
       string ->            (* name *)
+      bool ->              (* relaxed/strict *)
       term ->              (* redex *)
       term ->              (* contractum *)
       prim_rewrite

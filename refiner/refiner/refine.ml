@@ -2180,13 +2180,14 @@ struct
     * so they will fail if you every try to use
     * them in a proof.  Use any_sentinal for input_forms.
     *)
-   let add_input_form build name redex contractum =
+   let add_input_form build name strictp redex contractum =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.add_input_form: %s%t" name eflush
       ENDIF;
       let { build_opname = opname } = build in
-      let rw = Rewrite.term_rewrite Relaxed ar0_ar0 [redex] [contractum] in
+      let strictp = if strictp then Strict else Relaxed in
+      let rw = Rewrite.term_rewrite strictp ar0_ar0 [redex] [contractum] in
       let opname = mk_opname name opname in
       let rw sent t =
          IFDEF VERBOSE_EXN THEN

@@ -1104,7 +1104,7 @@ sig
     * Create an input form.  This is a rewrite with
     * no justification.
     *)
-   val create_iform : string -> term -> term -> conv
+   val create_iform : string -> bool -> term -> term -> conv
 
    (*
     * Debugging.
@@ -1225,7 +1225,7 @@ sig
     * Create an input form.  This is a rewrite with
     * no justification.
     *)
-   val create_iform : string -> term -> term -> conv
+   val create_iform : string -> bool -> term -> term -> conv
 
    (*
     * Debugging.
