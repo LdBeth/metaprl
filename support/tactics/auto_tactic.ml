@@ -107,12 +107,22 @@ open Lm_debug
 open Lm_dag_sig
 open Lm_imp_dag
 
+open Term_sig
+open Refiner.Refiner
+open Refiner.Refiner.RefineError
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermSubst
 open Mp_resource
+open Term_match_table
 
 open Tactic_type
-open Tactic_type.Tacticals
 open Tactic_type.Sequent
+open Tactic_type.Tactic
+open Tactic_type.Tacticals
+open Top_tacticals
 open Top_conversionals
 
 (*
@@ -156,7 +166,53 @@ and auto_type =
  | AutoComplete
 
 (************************************************************************
- * IMPLEMENTATION                                                       *
+ * IMPLEMENTATION - nthHypT                                             *
+ ************************************************************************)
+
+(*
+ * Opname for pairing a hypothesis and a conclusion into a single term
+ *)
+declare pair{'hyp;'concl}
+
+let mk_pair_term =
+   mk_dep0_dep0_term (opname_of_term <<pair{'hyp;'concl}>>)
+
+let process_nth_hyp_resource_annotation name context_args term_args statement pre_tactic =
+   let assums, goal = unzip_mfunction statement in
+   let goal = TermMan.explode_sequent goal in
+      match context_args, term_args, assums, SeqHyp.to_list goal.sequent_hyps with
+         [| _ |], [], [], [ Context _; (HypBinding(_,t)|Hypothesis t); Context _ ] ->
+            (t, SeqGoal.get goal.sequent_goals 0, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] [])
+       | _ ->
+            raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" name))
+
+let extract_nth_hyp_data =
+   let err = RefineError ("extract_nth_hyp_data", StringError "nthHypT tactic doesn't have an entry for this hypothesis/conclusion combination") in
+   fun data ->
+      let tbl = create_table data compact_arg_table_data in
+      argfunT (fun i p ->
+         let t = mk_pair_term (Sequent.nth_hyp p i) (Sequent.concl p) in
+         let tac =
+            try
+               snd (Term_match_table.lookup tbl t)
+            with Not_found ->
+               raise err
+         in
+            tac i)
+
+let add_nth_hyp_data datas (hyp,concl,tac) =
+   (mk_pair_term hyp concl, tac) :: datas
+
+let resource nth_hyp = Functional {
+   fp_empty = [];
+   fp_add = add_nth_hyp_data;
+   fp_retr = extract_nth_hyp_data;
+}
+
+let nthHypT = argfunT (fun i p -> get_resource_arg p get_nth_hyp_resource i)
+
+(************************************************************************
+ * IMPLEMENTATION - autoT                                               *
  ************************************************************************)
 
 (*
@@ -334,9 +390,9 @@ let trivial_prec = create_auto_prec [] []
  * Some trivial tactics.
  *)
 let resource auto += {
-   auto_name = "nthAssumT";
+   auto_name = "nthHypT/nthAssumT";
    auto_prec = trivial_prec;
-   auto_tac = onSomeAssumT nthAssumT;
+   auto_tac = onSomeHypT nthHypT orelseT onSomeAssumT nthAssumT;
    auto_type = AutoTrivial;
 }
 

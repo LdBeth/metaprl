@@ -34,6 +34,7 @@ extends Shell
 
 open Refiner.Refiner.TermType
 open Tactic_type.Tactic
+open Term_match_table
 
 (*
  * Toploop values.
@@ -137,6 +138,7 @@ infix thenET
 infix thenPT
 
 val thinMatchT : (int -> int -> tactic) -> term -> tactic
+val compact_arg_table_data : ('a -> tactic) info_entry list -> ('a -> tactic) info_entry list
 
 (*
  * -*-

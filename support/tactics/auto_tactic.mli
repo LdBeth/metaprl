@@ -40,19 +40,31 @@
 
 extends Shell
 
-open Tactic_type.Sequent
+open Mp_resource
+open Refiner.Refiner.Term
+open Tactic_type.Tactic
 
 (*
- * The info provided is a name,
+ * The nthHypT resource is used to match the conclusion against the given
+ * hypothesis. The nthHypT tactic is not supposed to produce subgoals - it
+ * fails, or succeeds right away.
+ *)
+topval nthHypT : int -> tactic
+
+(*
+ * The input for the nth_hyp resource is the hypothesis term, conclusion term
+ * and the tactic nthHypT should use when applying
+ *)
+resource (term * term * (int -> tactic), int -> tactic) nth_hyp
+
+val process_nth_hyp_resource_annotation :
+   (pre_tactic, term * term * (int -> tactic)) annotation_processor
+
+(*
+ * The info provided is a name (used for debugging),
  * a precedence, and a function
  * to produce a tactic.  The function
  * is called once per run of the auto tactic.
- *
- * One problem we have is that some tactics
- * may wish to keep some state.  The type system
- * won't allow us to make the struct polymorphic,
- * so we have the tactic produce a tactic
- * and a continuation.
  *)
 type auto_prec
 
@@ -68,9 +80,6 @@ and auto_type =
  | AutoNormal
  | AutoComplete
 
-(*
- * The string is for debugging.
- *)
 resource (auto_info, tactic * tactic * tactic) auto
 
 (*
@@ -95,33 +104,22 @@ topval autoT : tactic (* weakAutoT thenT tcaT *)
 
 (*
  * "tac ttca" is a short for "tac thenT tcaT"
- *)
-topval prefix_ttca : tactic -> tactic
-suffix ttca
-
-(*
  * "tac tatca" is a short for "tac thenAT tryT (completeT autoT)"
- *)
-topval prefix_tatca : tactic -> tactic
-suffix tatca
-
-(*
  * "tac twtca" is a short for "tac thenWT tryT (completeT autoT)"
- *)
-topval prefix_twtca : tactic -> tactic
-suffix twtca
-
-(*
  * "tac taa" is a short for "tac thenAT autoT"
- *)
-topval prefix_taa : tactic -> tactic
-suffix taa
-
-(*
  * "tac twa" is a short for "tac thenWT autoT"
  *)
-topval prefix_twa : tactic -> tactic
+suffix ttca
+suffix tatca
+suffix twtca
+suffix taa
 suffix twa
+
+topval prefix_ttca : tactic -> tactic
+topval prefix_tatca : tactic -> tactic
+topval prefix_twtca : tactic -> tactic
+topval prefix_taa : tactic -> tactic
+topval prefix_twa : tactic -> tactic
 
 topval byDefT: conv -> tactic
 topval byDefsT: conv list -> tactic

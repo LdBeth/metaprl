@@ -585,13 +585,10 @@ struct
 
    let onMHypsT = onMClausesT
 
-   let rec onAllT thenT tac count =
-      if count > 1 then
-         thenT (tac count) (onAllT thenT tac (count - 1))
-      else if count = 1 then
-         tac 1
-      else
-         idT
+   let rec onAllT thenT tac = function
+      0 -> idT
+    | 1 -> tac 1
+    | count ->  thenT (tac count) (onAllT thenT tac (count - 1))
 
    let onAllCumulativeT thenT tac =
    	let rec aux i p =
@@ -608,8 +605,7 @@ struct
    let onAllHypsT tac =
       funT (fun p -> onAllT prefix_thenT tac (Sequent.hyp_count p))
 
-	let onAllCumulativeHypsT tac =
-		funT (fun p -> onAllCumulativeT prefix_thenT tac)
+	let onAllCumulativeHypsT = onAllCumulativeT prefix_thenT
 
    (*
     * Include conclusion.
@@ -711,7 +707,11 @@ struct
     * Make sure one of the hyps works.
     *)
    let onSomeHypT tac =
-      funT (fun p -> onAllT prefix_orelseT tac (Sequent.hyp_count p))
+      funT (fun p ->
+         match Sequent.hyp_count p with
+            0 -> failT
+          | 1 -> tac 1
+          | count -> onAllT prefix_orelseT tac count)
 
    (************************************************************************
     * ARGUMENTS                                                            *

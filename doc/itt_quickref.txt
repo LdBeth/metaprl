@@ -456,6 +456,12 @@ Applies (dT 0) the given number of times on "main" subgoals.
 ----------------------------------------
 auto_tactic:
 
+* nthHypT : int -> tactic
+This is a simple resource-driven tactic that is supposed to finish the proof
+when the conclusion is "similar enough" to the given hypothesis. For example,
+in type theory if i'th hypothesis is << x: 'A >>, and the conclusion is << 'A >>,
+<< 'x in 'A >> or << 'A Type >>, then (nthHypT i) succeeds with no subgoals.
+
 Auto family of tactics perform resource-based automated reasoning.
 They apply all the all the available tactics in turn, until none of
 them succeed:
@@ -463,7 +469,7 @@ them succeed:
 * trivialT : tactic
 Applies AutoTrivial tactics. Normally AutoTrivial tactics (and
 consequentally the trivialT itself) do not produce suggoals when
-successfull.
+successfull. "onSomeHypT nthHypT" is one of the AutoTrivial tactics.
 
 * weakAutoT : tactic (not exported, use autoT instead)
 Applies AutoTrivial and AutoNormal tactics
@@ -491,7 +497,6 @@ Applies conv everywhere, then runs autoT.
 Tries to apply some conversional from  the @i{convs} list to the goal
 and in case of a progress applies the tactic @i{tac},
 then repeats it as far as possible.
-
 
 ----------------------------------------
 base_rewrite:
@@ -619,10 +624,6 @@ itt_struct:
 new terms:
 bind{x. 'T['x]} (Note that this is only used for syntactic purposes;
       it has no semantic meaning.)
-
-* nthHypT : int -> tactic
-If the i'th hypothesis is << x: 'A >>, and the conclusion is << 'A >>,
-then (nthHypT i) succeeds with no subgoals.
 
 * thinT : int -> tactic
 If the i'th hypothesis is << x: 'A >>, and x does not appear free in

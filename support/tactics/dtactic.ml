@@ -178,6 +178,7 @@ open Term_match_table
 
 open Tactic_type
 open Tactic_type.Tacticals
+open Top_tacticals
 
 open Auto_tactic
 open Simp_typeinf
@@ -319,21 +320,8 @@ let intro_compact entries =
  * Extract a D tactic from the data.
  * The tactic checks for an optable.
  *)
-let rec first_with_argT i = function
-   [] -> raise (Invalid_argument "Dtactic.first_with_argT")
- | [tac] -> tac i
- | tac :: tacs -> tac i orelseT first_with_argT i tacs
-
-let rec compact_elim_data = function
-   [] | [_] as entry -> entry
- | tac :: tacs ->
-      let same_term tac' = alpha_equal tac.info_term tac'.info_term in
-      let tacs1, tacs2 = List.partition same_term tacs in
-      let tacs = List.map (fun tac -> tac.info_value) (tac::tacs1) in
-         { tac with info_value = fun i -> first_with_argT i tacs } :: (compact_elim_data tacs2)
-
 let extract_elim_data data =
-   let tbl = create_table data compact_elim_data in
+   let tbl = create_table data compact_arg_table_data in
    argfunT (fun i p ->
       let t = Sequent.nth_hyp p i in
       let tac =
@@ -408,10 +396,12 @@ let in_auto p =
    with RefineError _ -> false
 
 let process_intro_resource_annotation name context_args term_args statement (pre_tactic, options) =
-   let _, goal = unzip_mfunction statement in
+   let goal = TermMan.explode_sequent (snd (unzip_mfunction statement)) in
    let t =
-      try TermMan.nth_concl goal 1 with
-         RefineError _ ->
+      match SeqHyp.to_list goal.sequent_hyps with
+         [ Context _ ] ->
+            SeqGoal.get goal.sequent_goals 0
+       | _ ->
             raise (Invalid_argument (sprintf "Dtactic.improve_intro: %s: must be an introduction rule" name))
    in
    let term_args =
@@ -480,25 +470,14 @@ let rec get_elim_args_arg = function
 
 let process_elim_resource_annotation name context_args term_args statement (pre_tactic, options) =
    let assums, goal = unzip_mfunction statement in
-   let { sequent_hyps = hyps } =
-      try TermMan.explode_sequent goal with
-         RefineError _ ->
-            raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: must be a sequent" name))
-   in
-   let v, t, hnum =
-      let rec search i len =
-         if i = len then
+   let v, t =
+      match SeqHyp.to_list (TermMan.explode_sequent goal).sequent_hyps with
+         [ Context _; HypBinding(v,t); Context _ ] ->
+            Some v, t
+       | [ Context _; Hypothesis t; Context _ ] ->
+            None, t
+       | _ ->
             raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: must be an elimination rule" name))
-         else
-            match SeqHyp.get hyps i with
-               HypBinding (v, t) ->
-                  Some v, t, i
-             | Hypothesis t ->
-                  None, t, i
-             | Context _ ->
-                  search (succ i) len
-      in
-         search 0 (SeqHyp.length hyps)
    in
    let term_args =
       match term_args with
@@ -570,7 +549,7 @@ let process_elim_resource_annotation name context_args term_args statement (pre_
                   raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: should not use ThinOption in a rule with no assumptions" name))
              | _ -> raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: ThinOption: different assumptions have the eliminated hypothesis in a different place" name))
             in
-            let thin_incr = (check_thin_nums thin_nums) - hnum in
+            let thin_incr = (check_thin_nums thin_nums) - 1 in
             argfunT (fun i p ->
                let tac = Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] (term_args i p)
                in

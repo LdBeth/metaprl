@@ -68,6 +68,7 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 
 open Tactic_type
+open Term_match_table
 
 doc <:doc<
    @begin[doc]
@@ -564,6 +565,22 @@ let rec nameHypsT is vs =
       [i], [v] -> nameHypT i v
     | i::is, v::vs -> nameHypT i v thenT nameHypsT is vs
     | _ -> raise (Invalid_argument("nameHypsT"))
+
+(*
+ * Merging tactics in int -> tactic tables
+ *)
+let rec first_with_argT i = function
+   [] -> raise (Invalid_argument "Dtactic.first_with_argT")
+ | [tac] -> tac i
+ | tac :: tacs -> tac i orelseT first_with_argT i tacs
+
+let rec compact_arg_table_data = function
+   [] | [_] as entry -> entry
+ | tac :: tacs ->
+      let same_term tac' = alpha_equal tac.info_term tac'.info_term in
+      let tacs1, tacs2 = List.partition same_term tacs in
+      let tacs = List.map (fun tac -> tac.info_value) (tac::tacs1) in
+         { tac with info_value = fun i -> first_with_argT i tacs } :: (compact_arg_table_data tacs2)
 
 (*
  * -*-
