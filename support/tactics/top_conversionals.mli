@@ -97,7 +97,8 @@ infix thenTC
  ************************************************************************)
 
 resource (term * conv, conv) reduce
-val process_reduce_resource_rw_annotation : (prim_rewrite, term*conv) rw_annotation_processor
+
+val process_reduce_resource_rw_annotation : (prim_rewrite, term * conv) rw_annotation_processor
 
 topval reduceTopC : conv
 topval reduceC : conv
