@@ -7,9 +7,10 @@
  *
  * For text:
  *    1. Whitespace is ignored
- *    2. Strings are any sequence on non-special chars
- *    3. Quoted strings are surrounded by double-quotes
- *    4. There are three types of terms:
+ *    2. Strings are any sequence of non-special chars
+ *    3. Variables are alphanumeric names preceded by a single quote
+ *    4. Quoted strings are surrounded by double-quotes
+ *    5. There are three types of terms:
  *       a. @opname[params]{args}
  *          Opname is an alphnumeric sequence, or a quoted string
  *          [params] are optional; a param is a string or quoted string
@@ -23,8 +24,7 @@
  *
  *       c. $literal-str$
  *          This builds the term @math[str]
- *
- *    5. Quotations have the form
+ *    6. Quotations have the form
  *       <<literal-str>> and <:tag<literal-str>>
  *       are also allowed.
  *
@@ -34,8 +34,10 @@
  *    TokQuote ("", text):   << text >>
  *    TokQuote (tag, text):  <:tag< text >>
  *
- * TokName:        	     @opname
- * TokString s:              any sequence of non-whitespace, non-special chars
+ * TokName:                  @opname
+ * TokString (b, s):         any sequence of non-whitespace, non-special chars;
+ *                           b is true iff the string can be used in opname position
+ * TokVariable s:            a variable name
  * TokQString s:             any text between double-quotes
  * TokMath s:                any literal text between $
  *
@@ -81,6 +83,7 @@ type t = item list
 and item =
    White
  | String of string
+ | Variable of string
  | Term of opname * string list * t list
  | Quote of loc * string * string
  | Block of t
@@ -97,6 +100,7 @@ type token =
  | TokQString of string
  | TokMath of bool
  | TokString of bool * string
+ | TokVariable of string
  | TokQuote of string * string
  | TokName of string
  | TokLeftBrace
@@ -130,6 +134,15 @@ type mode =
  | ModeArg
  | ModeMath
  | ModeArgMath
+
+(*
+ * Turn a variable into a string.
+ *)
+let varname_of_string s =
+   let len = String.length s in
+      if len = 0 then
+          raise (Invalid_argument "varname_of_string");
+      String.sub s 1 (len - 1)
 
 (*
  * Test for special chars.
@@ -238,7 +251,7 @@ type token_buffer =
 exception Parse_error of string * loc
 
 let loc_of_lexbuf lexbuf =
-   Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf 
+   Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf
 
 let loc_of_buf buf =
    loc_of_lexbuf buf.lexbuf
@@ -256,6 +269,7 @@ let newline = ['\r' '\n']
 let name = ['a'-'z''A'-'Z']+
 let number = ['0'-'9']+
 let special = ['[' ']' ';' ',' '_' '^' '!']
+let varname = '\'' ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9']*
 
 rule main = parse
    (* White space *)
@@ -286,6 +300,10 @@ rule main = parse
    (* Strings *)
  | '"'
    { TokQString (string lexbuf) }
+ | '\'' varname '\''
+   { TokString (false, Lexing.lexeme lexbuf) }
+ | '\'' varname
+   { TokVariable (Lexing.lexeme lexbuf) }
 
    (* Special tokens *)
  | "$$"
@@ -302,7 +320,8 @@ rule main = parse
    { TokSpecial (Lexing.lexeme_char lexbuf 0) }
 
    (* Alphanumeric names *)
- | name | number
+ | name
+ | number
    { TokString (true, Lexing.lexeme lexbuf) }
  | _
    { TokString (false, Lexing.lexeme lexbuf) }
@@ -412,6 +431,7 @@ and code_string_end = parse
       { CodeString "\n" }
  | "@end[verbatim]"
  | "@end[literal]"
+ | "@end[html]"
       { CodeEnd }
  | _
       { CodeString (Lexing.lexeme lexbuf) }
@@ -542,6 +562,8 @@ and parse_item mode buf =
             ItemItem (String ("\"" ^ s ^ "\""))
        | TokString (_, s) ->
             ItemItem (String s)
+       | TokVariable s ->
+            ItemItem (Variable (varname_of_string s))
        | TokLeftBrace ->
             let _, items = parse_block [TermBrace] (non_arg_mode mode) [] buf in
                ItemItem (Block items)
@@ -592,6 +614,7 @@ and parse_strings' mode buffer buf =
             else
                add_char mode c buffer buf
        | TokWhite _
+       | TokVariable _
        | TokMath _
        | TokQString _
        | TokQuote _
@@ -618,16 +641,16 @@ and flush_string token buffer buf =
  * There are several mode cases to consider.
  *)
 and parse_term mode s buf =
-   let (l1,_) = loc_of_buf buf in
+   let l1, _ = loc_of_buf buf in
    let opname = parse_opname mode s buf in
-   let (_,l2) = loc_of_buf buf in
-   let loc = (l1,l2) in
+   let _, l2 = loc_of_buf buf in
+   let loc = l1, l2 in
    let params = parse_params mode false buf in
       if opname = ["code"] || opname = ["email"] then
          let s = parse_code_arg buf in
             ItemItem (Term ((opname, loc), [s], []))
       else
-         let args = 
+         let args =
             if opname = ["mbox"] || opname = ["hbox"] then
                parse_args ModeNormal false buf
             else
@@ -640,7 +663,9 @@ and parse_term mode s buf =
          in
             (* Mode cases *)
             match opname, params, args with
-                ["begin"], [[tag]], [] when tag = "verbatim" || tag = "literal" ->
+                ["begin"], [["verbatim" as tag]], []
+              | ["begin"], [["literal" as tag]], []
+              | ["begin"], [["html" as tag]], [] ->
                    let s = parse_code_block buf in
                       ItemItem (Term (([tag], loc), [s], []))
               | ["begin"], tag :: params, [] ->
@@ -697,7 +722,8 @@ and parse_opname mode s buf =
 and parse_opname_name mode buffer opname buf =
    let token = parse_token buf in
       match token with
-         TokString (true, s) | TokQString s ->
+         TokString (true, s)
+       | TokQString s ->
             add_opname_string mode buffer opname s buf
        | TokSpecial '_' ->
             if is_math_mode mode then
@@ -771,6 +797,7 @@ and parse_inner_params mode buffer items buf =
                List.rev items
           | TokName _
           | TokString _
+          | TokVariable _
           | TokQString _
           | TokSpecial _
           | TokMath _

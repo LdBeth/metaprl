@@ -31,6 +31,7 @@ type t = item list
 and item =
    White
  | String of string
+ | Variable of string
  | Term of opname * string list * t list
  | Quote of loc * string * string
  | Block of t

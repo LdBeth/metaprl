@@ -74,6 +74,7 @@ declare esquash{'t}
 (*
  * HTML control.
  *)
+declare html[content:s]
 declare cd_begin[command:s]
 declare cd_end
 

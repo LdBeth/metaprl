@@ -125,6 +125,7 @@ declare esquash{'t}
 (*
  * HTML control.
  *)
+declare html[content:s]
 declare cd_begin[command:s]
 declare cd_end
 
@@ -294,6 +295,15 @@ dform pagebreak_df2 : mode[prl] :: pagebreak =
  ************************************************************************)
 
 (*
+ * Print the string in invis mode.
+ *)
+dform html_df1 : internal :: mode[html] :: html[content:s] =
+   izone slot[content:s] ezone
+
+dform html_df2 : internal :: except_mode[html] :: html[content:s] =
+   `""
+
+(*
  * Change directory.
  *)
 dform cd_begin_df1 : internal :: except_mode[html] :: cd_begin[name:s] =
@@ -316,10 +326,10 @@ dform cd_end_df2 : internal :: mode[html] :: cd_end =
  ************************************************************************)
 
 dform info_begin_df : internal :: mode[html] :: info_begin =
-   izone `"<font color=\"#115599\"><b>" ezone
+   html["<font color=\"#115599\"><b>"]
 
 dform info_end_df : internal :: mode[html] :: info_end =
-   izone `"</b></font>" ezone
+   html["</b></font>"]
 
 dform info_df1 : internal :: info[text:s] =
    info_begin slot[text:s] info_end
@@ -328,10 +338,10 @@ dform info_df2 : internal :: info{'t} =
    info_begin 't info_end
 
 dform keyword_begin_df : internal :: mode[html] :: keyword_begin =
-   izone `"<font color=\"#551155\"><b>" ezone
+   html["<font color=\"#551155\"><b>"]
 
 dform keyword_end_df : internal :: mode[html] :: keyword_end =
-   izone `"</b></font>" ezone
+   html["</b></font>"]
 
 dform info_begin_df_all : internal :: mode [src] :: info_begin = `""
 dform info_end_df_all : internal :: mode[src] :: info_end = `""
@@ -349,10 +359,10 @@ dform keyword_df2 : internal :: keyword{'t} =
    keyword_begin 't keyword_end
 
 dform bf_begin_df : internal :: mode[html] :: bf_begin =
-   izone `"<b>" ezone
+   html["<b>"]
 
 dform bf_end_df : internal :: mode[html] :: bf_end =
-   izone `"</b>" ezone
+   html["</b>"]
 
 dform bf_begin_df : internal :: mode[prl] :: bf_begin =
    pushfont["bf"]
@@ -367,10 +377,10 @@ dform bf_df2 : internal :: bf{'t} =
    bf_begin 't bf_end
 
 dform it_begin_df : internal :: mode[html] :: it_begin =
-   izone `"<b>" ezone
+   html["<b>"]
 
 dform it_end_df : internal :: mode[html] :: it_end =
-   izone `"</b>" ezone
+   html["</b>"]
 
 dform it_begin_df : internal :: mode[prl] :: it_begin =
    pushfont["it"]
@@ -396,6 +406,10 @@ dform math_it_df2 : internal :: except_mode[tex] :: math_it{'t} =
 dform math_it_df2 : internal :: except_mode[tex] :: math_it[text:s] =
    it[text:s]
 
+(*
+ * BUG HTML: we should probably hide the entire text.  But this
+ * invisible zone has nonzero width...
+ *)
 dform html_sym_df : internal ::  mode[html] :: html_sym[text:s] =
    izone `"<b>&" ezone slot[text:s] izone `";</b>" ezone
 
@@ -403,10 +417,10 @@ dform html_uni_df : internal :: mode[html] :: html_uni[num:n] =
    izone `"<b>&#" ezone slot[num:n] izone `";</b>" ezone
 
 dform em_begin_df : internal :: mode[html] :: em_begin =
-   izone `"<em>" ezone
+   html["<em>"]
 
 dform em_end_df : internal :: mode[html] :: em_end =
-   izone `"</em>" ezone
+   html["</em>"]
 
 dform em_begin_df : internal :: mode[prl] :: em_begin =
    `""
@@ -424,10 +438,10 @@ dform emph_df1 : internal :: emph{'t} =
    em_begin 't em_end
 
 dform tt_begin_df : internal :: mode[html] :: tt_begin =
-   izone `"<tt>" ezone
+   html["<tt>"]
 
 dform tt_end_df : internal :: mode[html] :: tt_end =
-   izone `"</tt>" ezone
+   html["</tt>"]
 
 dform tt_begin_df : internal :: mode[prl] :: tt_begin =
    `""
@@ -451,10 +465,10 @@ dform url_df3 : internal :: mode[prl] :: mode [src] :: url[url:s] =
    `"@url[" slot[url:s] `"]"
 
 dform sub_begin_df : internal :: mode[html] :: sub_begin =
-   izone `"<sub><font size=\"-5\">" ezone
+   html["<sub><font size=\"-5\">"]
 
 dform sub_end_df : internal :: mode[html] :: sub_end =
-   izone `"</sub></font>" ezone
+   html["</sub></font>"]
 
 dform sub_df1 : internal :: sub[text:s] =
    sub_begin slot[text:s] sub_end
@@ -463,10 +477,10 @@ dform sub_df2 : internal :: sub{'t} =
    sub_begin 't sub_end
 
 dform sup_begin_df : internal :: mode[html] :: sup_begin =
-   izone `"<sup>" ezone
+   html["<sup>"]
 
 dform sup_end_df : internal :: mode[html] :: sup_end =
-   izone `"</sup>" ezone
+   html["</sup>"]
 
 dform sup_df1 : internal :: sup[text:s] =
    sup_begin slot[text:s] sup_end
@@ -487,10 +501,10 @@ dform sup_end_df : internal :: mode[prl] :: sup_end =
    `""
 
 dform small_begin_df : internal :: mode[html] :: small_begin =
-   izone `"<small>" ezone
+   html["<small>"]
 
 dform small_end_df : internal :: mode[html] :: small_end =
-   izone `"</small>" ezone
+   html["</small>"]
 
 dform small_df1 : internal :: small[text:s] =
    small_begin slot[text:s] small_end
@@ -541,17 +555,18 @@ dform info_end_df : internal :: mode[prl] :: info_end =
    popfont
 
 let not_alnum c = not (is_alnum c)
+
 ml_dform keyword_tex_df : internal :: mode[tex] :: keyword[text:s] format_term buf =
    fun term ->
      let text = dest_string_param term in
      let font = if Lm_string_util.for_all not_alnum text then "tt" else "bf" in
-     format_izone buf;
-     format_string buf ("\\mbox{\\" ^ font ^ " ");
-     format_ezone buf;
-     format_string buf text;
-     format_izone buf;
-     format_string buf "}";
-     format_ezone buf
+        format_izone buf;
+        format_string buf ("\\mbox{\\" ^ font ^ " ");
+        format_ezone buf;
+        format_string buf text;
+        format_izone buf;
+        format_string buf "}";
+        format_ezone buf
 
 dform keyword_begin_df : internal :: mode[tex] :: keyword_begin =
    izone `"\\textbf{" ezone

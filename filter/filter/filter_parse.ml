@@ -780,10 +780,10 @@ struct
     *)
    let define_dform proc loc name options t expansion =
       let modes, options' = get_dform_options proc loc options in
-         if (!debug_dform) && (modes=Dform.AllModes) then
+         if !debug_dform && modes = Dform.AllModes then
             eprintf "Warning: display form %s - no modes specified%t" name eflush;
          begin try
-            ignore(term_rewrite Relaxed empty_args_spec [t] [expansion])
+            ignore (term_rewrite Relaxed empty_args_spec [t] [expansion])
          with
             exn ->
                Stdpp.raise_with_loc loc exn

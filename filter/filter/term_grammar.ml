@@ -380,7 +380,7 @@ struct
          Stdpp.Exc_located ((l1, l2), exn) ->
             let offset = loc + String.length "$" in
             let offset = if name = "" then offset else offset + 1 + (String.length name) in
-               Stdpp.raise_with_loc (offset+l1, offset+l2) exn
+               Stdpp.raise_with_loc (offset + l1, offset + l2) exn
 
    let rec parse_quotation loc curr = function
       nm, _ when nm = curr ->
@@ -389,83 +389,115 @@ struct
          Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
     | "desc", s ->
          Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
-    | ("term" | ""), s -> begin
-         try
-            let cs = Stream.of_string s in
-               term_of_parsed_term (Grammar.Entry.parse TermGrammar.term_eoi cs)
-         with Stdpp.Exc_located ((l1, l2), exn) ->
-            let offset = fst(loc) in
-            Stdpp.raise_with_loc (offset+l1, offset+l2) exn
-      end
+    | "term", s
+    | "", s ->
+         (try
+             let cs = Stream.of_string s in
+                term_of_parsed_term (Grammar.Entry.parse TermGrammar.term_eoi cs)
+          with
+             Stdpp.Exc_located ((l1, l2), exn) ->
+                let offset = fst(loc) in
+                   Stdpp.raise_with_loc (offset + l1, offset + l2) exn)
     | "doc", s ->
-         parse_comment loc true s
+         parse_comment loc true  SpellOn  true s
     | "topdoc", s ->
-         parse_comment loc false s
+         parse_comment loc false SpellOn  true s
+    | "dform", s ->
+         parse_comment loc false SpellOff false s
     | nm, _ ->
          Stdpp.raise_with_loc loc (Invalid_argument ("Camlp4 term grammar: unknown " ^ nm ^ " quotation"))
 
-   and parse_comment (loc, _) math s =
-      if !debug_spell && not(!dict_inited) then begin
-         Filter_spell.init ();
-         dict_inited:=true
-      end;
+   and parse_comment (loc, _) math spell space s =
+      if !debug_spell && not !dict_inited then
+         begin
+            Filter_spell.init ();
+            dict_inited := true
+         end;
+
       (*
        * Convert the result of the Comment_parse.
        *)
-      let rec build_comment_term spelling = function
-         Comment_parse.White ->
-            mk_simple_term comment_white_op []
-       | Comment_parse.String s ->
-            if !debug_spell then
-               begin
-                  match spelling with
-                     SpellOff ->
-                        ()
-                   | SpellAdd ->
-                        Filter_spell.add s
-                   | SpellOn ->
-                        if not (Filter_spell.check s) then
-                           misspelled := (s,(loc,0)) :: !misspelled
-               end;
-            mk_string_term comment_string_op s
-       | Comment_parse.Term ((opname, (l1, l2)), params, args) ->
-            let spelling =
+      let rec build_comment_term spelling space item =
+         match item with
+            Comment_parse.White ->
+               mk_simple_term comment_white_op []
+          | Comment_parse.String s ->
                if !debug_spell then
+                  begin
+                     match spelling with
+                        SpellOff ->
+                           ()
+                      | SpellAdd ->
+                           Filter_spell.add s
+                      | SpellOn ->
+                           if not (Filter_spell.check s) then
+                              misspelled := (s, (loc, 0)) :: !misspelled
+                  end;
+               mk_string_term comment_string_op s
+          | Comment_parse.Variable s ->
+               mk_var_term (Lm_symbol.add s)
+          | Comment_parse.Term ((opname, (l1, l2)), params, args) ->
+               let spelling =
+                  if !debug_spell then
+                     match opname with
+                        ["spelling"] ->
+                           SpellAdd
+                      | ["misspelled"]
+                      | ["math_misspelled"]
+                      | ["license"]
+                      | ["url"]
+                      | ["comment"] ->
+                           SpellOff
+                      | _ ->
+                           spelling
+                  else
+                     spelling
+               in
+               let space =
                   match opname with
-                     ["spelling"] ->
-                        SpellAdd
-                   | ["misspelled"]
-                   | ["math_misspelled"]
-                   | ["license"]
-                   | ["url"]
-                   | ["comment"] ->
-                        SpellOff
+                     ["space"] ->
+                        true
                    | _ ->
-                        spelling
-               else
-                  spelling
-            in
-            let opname =
-               mk_opname (loc+l1, loc+l2) opname (string_params params) (fake_arities args)
-            in let params = List.map (fun s -> make_param (String s)) params in
-            let args = List.map (fun t -> mk_simple_bterm (build_term spelling t)) args in
-            let op = mk_op opname params in
-            let t = mk_term op args in
-               mk_simple_term comment_term_op [t]
-       | Comment_parse.Block items ->
-            mk_simple_term comment_block_op [build_term spelling items]
-       | Comment_parse.Quote ((l1,l2), tag, s) ->
-            mk_simple_term comment_term_op [parse_quotation (loc+l1, loc+l2) "doc" (tag,s)]
+                        space
+               in
+               let opname =
+                  mk_opname (loc + l1, loc + l2) opname (string_params params) (fake_arities args)
+               in
+               let params = List.map (fun s -> make_param (String s)) params in
+               let args = List.map (fun t -> mk_simple_bterm (build_term spelling space t)) args in
+               let op = mk_op opname params in
+               let t = mk_term op args in
+                  mk_simple_term comment_term_op [t]
+          | Comment_parse.Block items ->
+               mk_simple_term comment_block_op [build_term spelling space items]
+          | Comment_parse.Quote ((l1, l2), tag, s) ->
+               mk_simple_term comment_term_op [parse_quotation (loc + l1, loc + l2) "doc" (tag, s)]
 
-      and build_term spelling tl =
-         mk_xlist_term (List.map (build_comment_term spelling) tl)
+      (*
+       * If spacing is ignored, ignore spaces.
+       *)
+      and build_inner_term items' spelling space items =
+         match items with
+            Comment_parse.White :: items when not space ->
+               build_inner_term items' spelling space items
+          | item :: items ->
+               let item = build_comment_term spelling space item in
+                  build_inner_term (item :: items') spelling space items
+          | [] ->
+               List.rev items'
+      and build_term spelling space items =
+         mk_xlist_term (build_inner_term [] spelling space items)
       in
+
+      (*
+       * Parse the input string, and turn it into a term
+       *)
       let items =
          try Comment_parse.parse math s with
             Comment_parse.Parse_error (s, (l1, l2)) ->
                Stdpp.raise_with_loc (loc + l1, loc + l2) (ParseError s)
       in
-         mk_simple_term comment_term_op [build_term SpellOn items]
+         mk_simple_term comment_term_op [build_term spell space items]
 
    let mk_comment_term tl =
       let mk_comment t =
@@ -475,8 +507,9 @@ struct
 
    let convert_comment loc t =
       if is_string_term comment_string_op t then
-         parse_comment loc false (dest_string_term comment_string_op t)
-      else t
+         parse_comment loc false SpellOn true (dest_string_term comment_string_op t)
+      else
+         t
 
    (************************************************************************
     * GRAMMAR                                                              *
@@ -1173,7 +1206,7 @@ struct
       xdform:
          [[ l = LIST0 df_item ->
              mk_xlist_term l
-          ]];
+         ]];
 
       df_item:
          [[ t = singleterm ->
