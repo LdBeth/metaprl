@@ -1,4 +1,5 @@
 #!/bin/sh
+export NLLIB=../../lib
 ./nl.run -I . -I ../../theories/base -I ../../theories/ocaml -I ../../theories/tactic
 
 #
