@@ -12,7 +12,7 @@ $merges{"operator"}="merge_op";
 $merges{"operator'"}="merge_op'";
 $merges{"bound_term"}="merge_bterm";
 $merges{"bound_term'"}="merge_bterm'";
-foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address", "match_param", "match_term", "esequent", "term_subst", "shape", "shape_param", "meta_term", "rewrite_item") {
+foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address", "match_param", "match_term", "esequent", "term_subst", "shape", "shape_param", "meta_term", "rewrite_item", "msequent", "extract_description", "prim_tactic") {
     $merges{$ty}="merge_$ty";
     $merges{"$ty list"}="merge_" . $ty . "s";
     $merges{"$ty array"}="merge_" . $ty . "_arr";
@@ -24,8 +24,10 @@ foreach my $ty ("term", "param", "level_exp", "level_exp_var") {
     $merges{$ty2} = "merge_$ty2";
     $merges{"$ty2 list"} = "merge_$ty" . "s'";
 }
-$merges{"rewrite_rule"} = "merge_triv";
-$merges{"rewrite_redex"} = "merge_triv";
+# Fully abstract type, from which we have no hope (or need) for consistency checks
+foreach my $ty ("rewrite_rule", "rewrite_redex", "sentinal", "tactic", "extract", "refiner", "build", "rw", "cond_rewrite") {
+    $merges{"$ty"} = "merge_triv"
+};
 $merges{"rewrite_args_spec"} = "merge_rwspecs";
 $merges{"rewrite_args"} = "merge_rwargs";
 $merges{"Lm_num.num"} = "merge_num";
@@ -33,14 +35,17 @@ $merges{"SymbolSet.t"} = "merge_ss";
 $merges{"(int * bool) list"} = "merge_ibl";
 $merges{"string list * term option * term"} = "merge_sltot";
 $merges{"(rewrite_type * var) list"} = "merge_rwtvl";
+$merges{"(dependency * opname) list"} = "merge_dos";
 $merges{"'a"} = "merge_poly";
 $merges{"'a list"} = "merge_poly";
 $merges{"term -> term"} = "merge_ttf";
 
+# Non-refiner types
 foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "unit", "strict", "rewrite_args", "rewrite_args_spec") {
     $splits{$ty} = $splits{"$ty list"} = $splits{"$ty array"} = "";
 };
-foreach my $ty ("term", "bound_term", "param", "operator", "level_exp", "level_exp_var", "address", "shape", "rewrite_rule", "rewrite_redex") {
+# Fully abstract types
+foreach my $ty ("term", "bound_term", "param", "operator", "level_exp", "level_exp_var", "address", "shape", "rewrite_rule", "rewrite_redex", "sentinal", "tactic", "msequent", "extract", "refiner", "build", "rw", "cond_rewrite") {
     $splits{$ty} = "identity";
     $splits{"$ty list"} = "split";
     $splits{"$ty option"} = "split_opt";

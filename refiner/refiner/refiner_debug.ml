@@ -63,6 +63,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    module Err2 = Refiner2.RefineError
    module Rewrite1 = Refiner1.Rewrite
    module Rewrite2 = Refiner2.Rewrite
+   module Refine1 = Refiner1.Refine
+   module Refine2 = Refiner2.Refine
 
    module TermType = struct
       type term = Type1.term * Type2.term
@@ -76,6 +78,14 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       type shape = TermShape1.shape * TermShape2.shape
       type rewrite_rule = Rewrite1.rewrite_rule * Rewrite2.rewrite_rule
       type rewrite_redex = Rewrite1.rewrite_redex * Rewrite2.rewrite_redex
+      type sentinal = Refine1.sentinal * Refine2.sentinal
+      type tactic = Refine1.tactic * Refine2.tactic
+      type rw = Refine1.rw * Refine2.rw
+      type cond_rewrite = Refine1.cond_rewrite * Refine2.cond_rewrite
+      type msequent = Refine1.msequent * Refine2.msequent
+      type extract = Refine1.extract * Refine2.extract
+      type refiner = Refine1.refiner * Refine2.refiner
+      type build = Refine1.build * Refine2.build
 
       type level_exp_var' = { le_var : var; le_offset : int }
       type level_exp' = { le_const : int; le_vars : level_exp_var list }
@@ -107,6 +117,25 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       type match_term =
          MatchTerm of string list * match_param list * bound_term' list
        | MatchSequent of string list * match_term list * hypothesis list * term
+
+      type term_extract = int array -> term list -> term -> term list -> term
+      type ml_rewrite = term -> term
+      type ml_cond_rewrite = SymbolSet.t -> term list -> term -> term * term list * term_extract
+      type ml_rule = int array -> msequent -> term list -> msequent list *  term_extract
+
+      type extract_description =
+         EDRule of opname * int list * term list
+       | EDRewrite
+       | EDCondREwrite
+       | EDComposition
+       | EDNthHyp of int
+       | EDCut of term
+       | EDIdentity
+
+      type prim_tactic = int array -> term list -> tactic
+      type prim_rewrite =
+         PrimRW of rw
+       | CondRW of (int array -> term list -> cond_rewrite)
 
    end
 
@@ -577,6 +606,15 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       (* XXX: TODO: need some consistency checks *)
       a1, a2
 
+   let merge_msequent x ms1 ms2 =
+      let t1, ts1 = Refine1.dest_msequent ms1 in
+      let t2, ts2 = Refine2.dest_msequent ms2 in
+         if not (List.length ts1 = List.length ts2) then
+            report_error x "assumption number mismatch in msequent";
+         (* XXX: TODO: need some more consistency checks *)
+         ms1, ms2
+
+   let merge_msequents =  merge_list merge_msequent "msequent"
    let merge_addresss = merge_list merge_address "address"
    let merge_params = merge_list merge_param "param"
 
@@ -769,6 +807,26 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let merge_rewrite_items = merge_list merge_rewrite_item "rewrite_item"
    let merge_ibl = merge_list merge_ib "int * bool"
+
+   let merge_extract_description x ed1 ed2 =
+      match ed1, ed2 with
+         Refine1.EDRule (o1, il1, tl1), Refine2.EDRule (o2, il2, tl2) ->
+            EDRule (merge_opname x o1 o2, merge_ints x il1 il2, merge_terms x tl1 tl2)
+       | Refine1.EDRewrite, Refine2.EDRewrite -> EDRewrite
+       | Refine1.EDCondREwrite, Refine2.EDCondREwrite -> EDCondREwrite
+       | Refine1.EDComposition, Refine2.EDComposition -> EDComposition
+       | Refine1.EDNthHyp i1, Refine2.EDNthHyp i2 -> EDNthHyp (merge_int x i1 i2)
+       | Refine1.EDCut t1, Refine2.EDCut t2 -> EDCut (merge_term x t1 t2)
+       | Refine1.EDIdentity, Refine2.EDIdentity -> EDIdentity
+       | _ -> report_error x "extract_description kind mismatch"
+
+   let merge_do x (d1, o1) (d2, o2) =
+      (merge_poly x d1 d2), (merge_opname x o1 o2)
+
+   let merge_dos = merge_list merge_do "dependency * opname"
+
+   let merge_prim_tactic x pt1 pt2 ia tl =
+      let tl1, tl2 = split tl in (pt1 ia tl1), (pt2 ia tl2)
 
    module SeqHyp = struct
       type elt = hypothesis
