@@ -31,15 +31,15 @@
  *
  *)
 
+include Tactic_type
+
+include Proof_step
+
 open Printf
 
 open Term
 open Refine
 open Filter_proof_type
-
-include Proof_step
-
-include Tactic_type
 
 (************************************************************************
  * TYPES                                                                *
@@ -775,6 +775,9 @@ let proof_of_io_proof resources fcache pf =
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/22 22:44:17  jyh
+ * *** empty log message ***
+ *
  * Revision 1.4  1998/04/17 01:30:44  jyh
  * Editor is almost constructed.
  *

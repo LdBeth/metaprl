@@ -5,12 +5,16 @@
  *
  *)
 
+include Tactic_type
+
 open Term
 open Refine_sig
+open Refine_util
+open Refine
 
 open Filter_proof_type
 
-include Tactic_type
+open Tactic_type
 
 (************************************************************************
  * TYPES                                                                *
@@ -46,20 +50,27 @@ let create goal subgoals text ast tac =
 (*
  * Destructors.
  *)
-let step_goal { step_goal = goal } = goal
-let step_subgoals { step_subgoals = goals } = goals
-let step_text { step_text = text } = text
-let step_ast { step_ast = ast } = ast
-let step_tactic { step_tactic = tac } = tac
+let goal { step_goal = goal } = goal
+let subgoals { step_subgoals = goals } = goals
+let text { step_text = text } = text
+let ast { step_ast = ast } = ast
+let tactic { step_tactic = tac } = tac
 
 (*
  * Apply the tactic and compute the extract.
+ * Usually the subgoals will be exactly the same.
+ * We use hash functions to make the search a little simpler.
  *)
-let check refiner { step_goal = goal;
-                    step_subgoals = subgoals;
-                    step_tactic = tac
-    } =
-   let subgoals' = Refine.refine refiner tac in
+let expand { step_goal = goal; step_tactic = tac } =
+   Refiner.refine tac goal
+
+let check step =
+   let { step_subgoals = subgoals } = step in
+   let subgoals', ext = expand step in
+      if List_util.for_all2 tactic_arg_alpha_equal subgoals subgoals' then
+         ext
+      else
+         raise (RefineError (StringError "Proof_step.check: refinement mismatch"))
 
 (************************************************************************
  * BASE OPERATIONS                                                      *
@@ -110,7 +121,7 @@ let io_step_of_step
 (*
  * Add the resource information.
  *)
-let step_of_io_step resources fcache
+let step_of_io_step resources fcache tactics
     { Filter_proof_type.step_goal = goal;
       Filter_proof_type.step_subgoals = subgoals;
       Filter_proof_type.step_text = text;
@@ -119,11 +130,15 @@ let step_of_io_step resources fcache
    { step_goal = goal_of_aterm_tactic_arg resources fcache goal;
      step_subgoals = List.map (goal_of_aterm_tactic_arg resources fcache) subgoals;
      step_text = text;
-     step_ast = ast
+     step_ast = ast;
+     step_tactic = Hashtbl.find tactics text
    }
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/22 22:44:20  jyh
+ * *** empty log message ***
+ *
  * Revision 1.6  1998/04/22 14:06:25  jyh
  * Implementing proof editor.
  *

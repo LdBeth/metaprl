@@ -30,12 +30,6 @@ let list_str_item loc l =
    <:str_item< declare $list:l$ end >>
 
 (*
- * Various constructors.
- *)
-let sig_open loc path = <:sig_item< open $path$ >>
-let str_open loc path = <:str_item< open $path$ >>
-
-(*
  * Axiom.
  *)
 let create_axiom_expr loc =
@@ -360,11 +354,8 @@ let declare_resource loc { resource_name = name;
 (*
  * When a parent is declared, we need to open all the ancestors.
  *)
-let declare_parent loc { parent_opens = opens } =
-   let mk_open path =
-      <:sig_item< open $path$ >>
-   in
-      List.map mk_open opens
+let declare_parent loc _ =
+   []
 
 (*
  * Standard summary item.
@@ -1156,10 +1147,8 @@ let define_parent proc loc
    in
    let { imp_resources = resources } = proc in
    let resources, items = List_util.fold_left print_resource resources nresources in
-   let mk_str_open path = (<:str_item< open $path$ >>) in
-   let opens = List.map mk_str_open opens in
       proc.imp_resources <- resources;
-      items @ opens
+      items
 
 (*
  * An regular item.
@@ -1355,6 +1344,9 @@ let extract_str info resources name =
    
 (*
  * $Log$
+ * Revision 1.8  1998/04/22 22:44:24  jyh
+ * *** empty log message ***
+ *
  * Revision 1.7  1998/04/21 19:53:36  jyh
  * Upgraded refiner for program extraction.
  *

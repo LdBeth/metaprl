@@ -5,10 +5,15 @@
  *
  *)
 
+include Tactic_type
+
 open Term
+open Refine_sig
+open Refine
+
 open Filter_proof_type
 
-include Tactic_type
+open Tactic_type
 
 (* Abstract type for steps *)
 type t
@@ -23,21 +28,29 @@ val create :
    t
      
 (* Destructors *)
-val step_goal : t -> tactic_arg
-val step_subgoals : t -> tactic_arg list
-val step_text : t -> string
-val step_ast : t -> MLast.expr
-val step_tactic : t -> tactic
+val goal : t -> tactic_arg
+val subgoals : t -> tactic_arg list
+val text : t -> string
+val ast : t -> MLast.expr
+val tactic : t -> tactic
 
-(* Check the tactic in a particular refiner *)
-val check : refiner -> t -> extract
+(*
+ * Check the tactic in a particular refiner.
+ *   check: raises RefineError if the refinement changes
+ *   expand: allow arbitrary changes in the refinement
+ *)
+val check : t -> Refiner.extract
+val expand : t -> tactic_arg list * Refiner.extract
 
 (* IO *)
 val io_step_of_step : t -> proof_step
-val step_of_io_step : tactic_resources -> cache -> proof_step -> t
+val step_of_io_step : tactic_resources -> cache -> (string, tactic) Hashtbl.t -> proof_step -> t
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/22 22:44:21  jyh
+ * *** empty log message ***
+ *
  * Revision 1.5  1998/04/22 14:06:26  jyh
  * Implementing proof editor.
  *

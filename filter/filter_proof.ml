@@ -221,8 +221,48 @@ and attribute_of_term t =
       else
          raise (Failure "Filter_proof.attribute_of_term")
 
+(************************************************************************
+ * TACTIC HANDLING                                                      *
+ ************************************************************************)
+
+(*
+ * Get tactic array.
+ *)
+let tactics_of_proof proof =
+   let hash = Hashtbl.create 107 in
+   let rec collect_proof
+       { proof_step = step;
+         proof_children = children
+       } =
+      collect_proof_step step;
+      List.iter collect_proof_child children
+
+   and collect_proof_step = function
+      ProofStep { step_ast = ast; step_text = text } ->
+         Hashtbl.remove hash text;
+         Hashtbl.add hash text ast
+    | ProofNode proof ->
+         collect_proof proof
+
+   and collect_proof_child = function
+      ChildGoal goal ->
+         ()
+    | ChildProof proof ->
+         collect_proof proof
+   in
+   let entries = ref [] in
+   let collect name tac =
+      entries := (name, tac) :: !entries
+   in
+      collect_proof proof;
+      Hashtbl.iter collect hash;
+      Array.of_list !entries
+
 (*
  * $Log$
+ * Revision 1.3  1998/04/22 22:44:26  jyh
+ * *** empty log message ***
+ *
  * Revision 1.2  1998/04/21 20:58:03  jyh
  * Fixed typing problems introduced by refiner msequents.
  *

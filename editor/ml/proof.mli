@@ -28,32 +28,35 @@
  *
  *)
 
-open Term
-open Refine
-
 include Tactic_type
 
 include Proof_step
 
+open Term
+open Refine
+
+open Filter_proof_type
+open Tactic_type
+
 (* Abstract type *)
-type proof
+type t
 
 (*
  * Head of a proof is a single step, or another proof.
  * This is the "justification" between the goal of the
  * proof and the first children.
  *)
-type proof_item =
-   ProofStep of Proof_step.t
- | ProofProof of proof
+type item =
+   Step of Proof_step.t
+ | Proof of t
 
 (*
  * Children are either leaves, or they
  * are subproofs.
  *)
-type proof_child =
-   ProofChildTerm of tactic_arg
- | ProofChildProof of proof
+type child =
+   ChildTerm of tactic_arg
+ | ChildProof of t
 
 (*
  * Status of a proof node is cached,
@@ -64,11 +67,11 @@ type proof_child =
  *    asserted: force the proof to be accepted
  *    complete: all the children are complete
  *)
-type proof_status =
-   StatusBad
- | StatusPartial
- | StatusAsserted
- | StatusComplete
+type status =
+   Bad
+ | Partial
+ | Asserted
+ | Complete
 
 (*
  * An address is a integer path.
@@ -80,7 +83,7 @@ type address = int list
  * The goal if the subproof must be alpha-equal to the child
  * of the parent.
  *)
-exception ProofMatch
+exception Match
 
 (*
  * This exception is raised when a subgoal does
@@ -91,7 +94,7 @@ exception InvalidAddress of proof * int
 (*
  * Constructors
  *)
-val proof_of_step : Proof_step.t -> proof
+val of_step : Proof_step.t -> t
 
 (*
  * Destructors of three types:
@@ -107,24 +110,24 @@ val proof_of_step : Proof_step.t -> proof
  *   c. proof_status: trace status of proof up the tree to root
  *   d. proof_address: return address of current proof relative to root
  *)
-val proof_goal : proof -> tactic_arg
-val proof_subgoals : proof -> tactic_arg list
+val goal : t -> tactic_arg
+val subgoals : t -> tactic_arg list
 
-val proof_item : proof -> proof_item
-val proof_children : proof -> proof_child list
+val item : t -> item
+val children : t -> child list
 
-val proof_parent : proof -> proof option
-val proof_main : proof -> proof
-val proof_status : proof -> (proof_status * int) list
-val proof_address : proof -> address
+val parent : t -> t
+val main : t -> t
+val status : t -> (status * int) list
+val address : t -> address
 
 (*
  * Addressed subgoal.  The address is the
  * path to the subgoal -- raises InvalidAddress
  * if the address is bad.
  *)
-val proof_index : proof -> address -> proof
-val proof_child : proof -> int -> proof
+val index : t -> address -> t
+val child : t -> int -> t
 
 (*
  * Functional updates.
@@ -132,10 +135,10 @@ val proof_child : proof -> int -> proof
  *    and subgoals must match the previous values.
  * For replace_child, the goal must match the given child goal.
  *)
-val replace_item : proof -> proof_item -> proof
-val replace_child : proof -> int -> proof -> proof
-val remove_child : proof -> int -> proof
-val remove_children : proof -> proof
+val replace_item : t -> item -> t
+val replace_child : t -> int -> t -> t
+val remove_child : t -> int -> t
+val remove_children : t -> t
 
 (*
  * Check the proof and return its extract.
@@ -144,17 +147,20 @@ val remove_children : proof -> proof
  *    expand_proof: check as much of the proof as possible,
  *       no exceptions are raised
  *)
-val check_proof : refiner -> proof -> extract
-val expand_proof : refiner -> proof -> unit
+val check : t -> Refiner.extract
+val expand : t -> unit
 
 (*
  * IO
  *)
-val io_proof_of_proof : proof -> Filter_proof_type.proof
-val proof_of_io_proof : tactic_resources -> cache -> Filter_proof_type.proof -> proof
+val io_proof_of_proof : t -> proof
+val proof_of_io_proof : tactic_resources -> cache -> (string * tactic) array -> proof -> t
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/22 22:44:18  jyh
+ * *** empty log message ***
+ *
  * Revision 1.5  1998/04/22 14:06:23  jyh
  * Implementing proof editor.
  *
