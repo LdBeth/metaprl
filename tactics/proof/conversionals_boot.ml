@@ -88,6 +88,7 @@ struct
    let funC = RewriteInternal.funC
    let termC = RewriteInternal.termC
    let allSubC = RewriteInternal.allSubC
+   let prefix_thenTC = RewriteInternal.prefix_thenTC
 
    (************************************************************************
     * SEARCH                                                               *

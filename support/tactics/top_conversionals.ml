@@ -1,6 +1,6 @@
 doc <:doc<
    @begin[spelling]
-   addrC applyAllC conv convs higherC idC orelseC rw rwa rwh thenC th
+   addrC applyAllC conv convs higherC idC orelseC rw rwa rwh thenC thenTC th
    @end[spelling]
 
    @begin[doc]
@@ -234,9 +234,11 @@ let ifEqualC = Tactic_type.Conversionals.ifEqualC
 let progressC = Tactic_type.Conversionals.progressC
 let replaceUsingC = Tactic_type.Conversionals.replaceUsingC
 let allSubThenC = Tactic_type.Conversionals.allSubThenC
+let prefix_thenTC = Tactic_type.Conversionals.prefix_thenTC
 
 infix thenC
 infix orelseC
+infix thenTC
 
 doc <:doc<
    @begin[doc]

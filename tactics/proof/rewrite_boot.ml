@@ -203,6 +203,12 @@ struct
       FoldConv (t, conv)
 
    (*
+    * Apply a tactic on all the auxillary subgoals
+    *)
+   let prefix_thenTC conv tac =
+      ThenTC (conv, tac)
+
+   (*
     * Build a fold conversion from the contractum
     * and the unfolding conversion.
     *)
@@ -284,6 +290,10 @@ struct
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Cut%t" eflush;
             rwcutT assum addr t
+       | ThenTC (conv, tac) ->
+            if !debug_rewrite then
+               printf "Rewrite_type.apply: ThenTC%t" eflush;
+            applyThenTC assum addr conv tac
 
    and composeT assum addr tree =
       match tree with
@@ -321,6 +331,13 @@ struct
       funT (fun p ->
       let len = List.length (snd (Refine.dest_msequent (Sequent.msequent p))) in
          (prefix_thenMT (apply len addr conv) (nthAssumT len)))
+
+   and applyThenTC_aux tac = function
+      [] -> []
+    | _ :: tl -> idT :: (List.map (fun _ -> tac) tl)
+
+   and applyThenTC assum addr conv tac =
+      prefix_thenFLT (apply assum addr conv) (applyThenTC_aux tac)
 
    (*
     * Apply the rewrite.

@@ -267,6 +267,7 @@ struct
     | CutConv of term
     | FunConv of (env -> conv)
     | HigherConv of conv
+    | ThenTC of conv * tactic
     | IdentityConv
 
    (*
@@ -1060,17 +1061,17 @@ struct
       if tac1 == idT then tac2 else if tac2 == idT then tac1 else
             ThreadRefinerTacticals.compose1 tac1 tac2
 
-   let prefix_thenLT tac1 tacl = 
+   let prefix_thenLT tac1 tacl =
       if tac1 == idT then
-         match tacl with 
+         match tacl with
             [tac] -> tac
           | _ -> raise (RefineError("thenLT", StringError "tactic list length is wrong"))
       else ThreadRefinerTacticals.compose2 tac1 tacl
-   
+
    let firstT =
       let non_id tac = (tac != idT) in
          fun tacl ->
-            match Lm_list_util.filter non_id tacl with 
+            match Lm_list_util.filter non_id tacl with
                [tac] -> tac
              | tacl -> ThreadRefinerTacticals.first tacl
 

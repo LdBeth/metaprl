@@ -86,9 +86,11 @@ topval ifEqualC : term -> conv -> conv -> conv
 topval replaceUsingC : term -> conv -> conv
 topval progressC : conv -> conv
 topval allSubThenC : conv -> conv -> conv
+topval prefix_thenTC : conv -> tactic -> conv
 
 infix thenC
 infix orelseC
+infix thenTC
 
 (************************************************************************
  * REDUCTION RESOURCE                                                   *

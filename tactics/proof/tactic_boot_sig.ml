@@ -200,6 +200,7 @@ sig
     | CutConv of term
     | FunConv of (env -> conv)
     | HigherConv of conv
+    | ThenTC of conv * tactic
     | IdentityConv
 
    module ParentTable
@@ -1046,6 +1047,9 @@ sig
    (* Subterm application. *)
    val allSubC : conv -> conv
 
+   (* Apply a tactic on all the auxillary subgoals *)
+   val prefix_thenTC : conv -> tactic -> conv
+
    (*
     * Informal rewriting.
     * Create an input form.  This is a rewrite with
@@ -1106,6 +1110,7 @@ sig
    val cutC : term -> conv
    val funC : (env -> conv) -> conv
    val termC : (term -> conv) -> conv
+   val prefix_thenTC : conv -> tactic -> conv
 
    (************************************************************************
     * SEARCH                                                               *
