@@ -298,25 +298,44 @@ extends JScrollPane
         if(buffer != null) {
             String filename =
                 "nocache/"
-                + random.nextInt() 
+                + random.nextInt()
                 + "/cache/"
                 + endpoint.getHost()
                 + endpoint.getPort()
                 + ".html";
             System.err.println("Loading file: " + filename);
             try {
-                textPane.setPage(new URL(document.getBase(), filename));
-                                         
+               Thread load_url = new LoadURLThread(new URL(document.getBase(), filename));
+               load_url.start();
             }
             catch(MalformedURLException e) {
                 System.err.println("URL is malformed" + document.getBase().toString() + "/" + filename);
             }
-            catch(IOException e) {
-                System.err.println("Can't load page: " + e.getMessage());
-            }
             buffer = null;
         }
     }
+
+    class LoadURLThread
+    extends Thread {
+        protected URL url;
+
+        public LoadURLThread(URL url)
+        {
+            super();
+            this.url = url;
+        }
+
+        public void run()
+        {
+            try {
+                textPane.setPage(url);
+            }
+            catch(IOException e) {
+                System.err.println("Can't load page: " + e.getMessage());
+            }
+        }
+    }
+
 
     /**
      * Handle commands.
@@ -376,7 +395,7 @@ extends JScrollPane
             Poll(endpt);
         }
     }
-            
+
     /**
      * This is the client interface.
      */
