@@ -401,9 +401,9 @@ innermost (it does not apply conversions recursively).
 Apply the conversion repeatedly until it fails.
 
 * whileProgressC : conv -> conv
-Apply the conversion repeatedly until it fails until it makes no change
-(returns a term alpha-equivalent to the term
-it was applied to).
+Apply the conversion repeatedly until it makes no change
+(returns a term alpha-equivalent to the term it was applied to).
+Will fail if conv fails on one of the iterations.
 
 * repeatC : conv -> conv
 Apply the conversion until it either fails or makes no change.
