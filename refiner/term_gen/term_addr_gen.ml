@@ -199,10 +199,10 @@ struct
       REF_RAISE(RefineError ("apply_*_fun_*", AddressError (addr, term)))
 
    DEFINE MAKE_PATH_REPLACE_TERM(bvars, path_replace_bterm) =
-      fun fail f bvars t -> function
+      fun FAIL f bvars t -> function
          i::tl ->
             let { term_op = op; term_terms = bterms } = dest_term t in
-            let bterms, arg = path_replace_bterm fail f tl i bvars bterms in
+            let bterms, arg = path_replace_bterm FAIL f tl i bvars bterms in
                mk_term op bterms, arg
        | [] ->
             f bvars t
