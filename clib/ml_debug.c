@@ -3,10 +3,6 @@
  * manipulating them from ML.
  */
 
-#ifdef __GNUC__
-#pragma implementation
-#endif /* __GNUC__ */
-
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
@@ -69,7 +65,7 @@ value ml_debug(value name, value flag)
  */
 value ml_get_debug(value name, value flag)
 {
-    value rval;
+    value rval = 0;
 #ifdef INFO_LEN
     char *l_name;
     int l_flag, i;
@@ -96,8 +92,8 @@ value ml_get_debug(value name, value flag)
 #undef tuple
 #undef dinfo
     Pop_roots();
-    if(rval == 0)
 #endif
+    if(rval == 0)
         failwith("ml_get_debug");
     return rval;
 }

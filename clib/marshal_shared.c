@@ -30,13 +30,10 @@
  * jyh@cs.cornell.edu
  */
 
-#ifdef __GNUC__
-#pragma implementation
-#endif /* __GNUC__ */
-
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
 #include <caml/fail.h>
+#include <string.h>
 
 /*
  * Write the contents of the block to the string.
@@ -84,6 +81,13 @@ value ml_pointer_hash_lookup(value table, value weak_array, value obj)
  *
  *
  * $Log$
+ * Revision 1.3  2002/05/22 17:45:49  justins
+ * Fixing numerous compiler warnings in clib.  Most of these have to do with
+ * the #pragma directives that were obsoleted; I checked with Jason and he said
+ * it was okay to remove them.  The rest are adding header files and function
+ * prototypes for missing symbols, and working around a few uninitialized var
+ * warnings.  This should not change the semantics of anything in clib.
+ *
  * Revision 1.2  2001/05/14 20:53:50  nogin
  * Cosmetic changes to avoid warnings with newer versions of GCC.
  *

@@ -28,10 +28,6 @@
  * http://www.cs.cornell.edu/home/jyh/ejb/index.html
  */
 
-#ifdef __GNUC__
-#pragma implementation
-#endif /* __GNUC__ */
-
 /* Standard includes */
 #include <stdio.h>
 #include <memory.h>

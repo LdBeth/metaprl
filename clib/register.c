@@ -35,10 +35,6 @@
  *
  */
 
-#ifdef __GNUC__
-#pragma implementation
-#endif /* __GNUC__ */
-
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
@@ -96,11 +92,15 @@ value ml_get_register(value id)
     int index = Int_val(id);
     if(index < 0 || index >= MAX_REGISTRY_SIZE)
         failwith("ml_get_register: invalid index");
-    else {
-        v = Field(entries, index);
-        if(v == Val_unit)
-            failwith("ml_get_register: bogus index");
-    }
+
+    v = Field(entries, index);
+    if(v == Val_unit)
+        failwith("ml_get_register: bogus index");
+
+    /* JDS:  This function didn't return *anything* in original
+       version; I'm adding this return because this seems to be
+       what is expected, but... *shrug* */
+    return v;
 }
 
 /*

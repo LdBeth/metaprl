@@ -8,6 +8,8 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 
+extern void failwith(const char *s);
+
 value caml_term_size(value arg)
 {
     CAMLparam1(arg);

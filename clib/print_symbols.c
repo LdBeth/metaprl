@@ -35,10 +35,6 @@
  *
  */
 
-#ifdef __GNUC__
-#pragma implementation
-#endif /* __GNUC__ */
-
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
@@ -66,7 +62,7 @@ value ml_extern_symbols(value symbols)
  */
 void print_symbol(int pc)
 {
-    int i, j, k, pos, cpos, length;
+    int i, j, k, pos = 0, cpos, length;
     char *modname;
     value symbol;
 

@@ -12,6 +12,12 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 
+/* JDS: this isn't defined in any OCaml header, seems to be 
+        an internal function.  Oh well... *shrug* */
+extern void uerror(char *cmdname, value arg) Noreturn;
+
+#define  Nothing  ((value) 0)
+
 /*
  * Get the resources consumed.
  */
@@ -25,7 +31,7 @@ value ml_getrusage(value unit_val)
 
     ret = getrusage(RUSAGE_SELF, &rsrc);
     if(ret < 0)
-        uerror("getrusage", "request failed");
+        uerror("getrusage", Nothing);
     rval = alloc_tuple(16);
     for(i = 0; i != 16; i++)
         Field(rval, i) = Val_unit;
