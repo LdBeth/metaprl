@@ -47,8 +47,6 @@ open Term_grammar
 
 open Mptop
 
-open Shell_p4_sig
-
 let debug_lock =
    create_debug (**)
       { debug_name = "lock";
