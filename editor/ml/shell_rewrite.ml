@@ -330,6 +330,8 @@ let rec edit pack parse_arg sentinal arg name window obj =
 let create_window = function
    DisplayText (base, mode) ->
       Proof_edit.create_text_window base mode
+ | DisplayTex base ->
+      Proof_edit.create_tex_window base
  | DisplayGraphical (port, base) ->
       Proof_edit.create_proof_window port base
 

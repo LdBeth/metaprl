@@ -193,7 +193,6 @@ let set window term =
          let s =
             match Mux_channel.url_of_channel chan with
                Some url ->
-                  eprintf "Setting URL to: %s%t" url eflush;
                   sprintf "\027]0;%s\007\027]1;%s\007Hello" url dir
              | None ->
                   sprintf "\027]1;%s\007Hello" dir

@@ -1163,7 +1163,6 @@ let html_end_tag buf _ _ =
 (*
  * An HTML printer.
  *)
-
 let make_html_printer out =
    let buf =
       { html_current_line = [];
@@ -1186,6 +1185,177 @@ let make_html_printer out =
       let tags = buf.html_tags in
          buf.html_tags <- [];
          buf.html_prefix <- "";
+         tags
+   in
+      get_info, printer
+
+(*
+ * We hack the indentation in the HTML printer.
+ * Format the data into lines, and print the tabstops in
+ * the background color.
+ *
+ * The prefix is the white space that is inserted to
+ * get the left margin right.
+ *)
+type 'tag tex_buffer =
+   { mutable tex_current_line : (bool * string) list;
+     mutable tex_prefix : string;
+     mutable tex_tags : (int * 'tag) list;
+     tex_out : out_channel
+   }
+
+(*
+ * Have to escape special characters.
+ *)
+let tex_escape_string s =
+   let len = String.length s in
+   let rec collect i j =
+      if j = len then
+         if i = 0 then
+             s
+         else if i < j then
+            String.sub s i (j - i)
+         else
+            ""
+      else
+         match s.[j] with
+            ' ' ->
+               collect_escape i j "{\\ }"
+          | '_' ->
+               collect_escape i j "\\_"
+          | '^' ->
+               collect_escape i j "\\^"
+          | '&' ->
+               collect_escape i j "\\&"
+          | '{' ->
+                 collect_escape i j "\\{"
+          | '}' ->
+               collect_escape i j "\\}"
+          | '\\' ->
+               collect_escape i j "\\verb+\\+"
+          | '$' ->
+               collect_escape i j "\\$"
+          | _ ->
+               collect i (succ j)
+   and collect_escape i j s' =
+      if i < j then
+         String.sub s i (j - i) ^ s' ^ collect (succ j) (succ j)
+      else
+         s' ^ collect (succ j) (succ j)
+   in
+      collect 0 0
+
+(*
+ * Print strings.
+ *)
+let tex_print_string buf s =
+   buf.tex_current_line <- (true, s) :: buf.tex_current_line
+
+let tex_print_invis buf s =
+   buf.tex_current_line <- (false, s) :: buf.tex_current_line
+
+(*
+ * Extract the entire line.
+ *)
+let tex_line buf =
+   let rec collect line = function
+      (vis, h) :: t ->
+         if vis then
+            collect (tex_escape_string h ^ line) t
+         else
+            collect (h ^ line) t
+    | [] ->
+         line
+   in
+      collect "" buf.tex_current_line
+
+let tex_visible buf =
+   let rec collect line = function
+      (true, h) :: t ->
+         collect (h ^ line) t
+    | _ :: t ->
+         collect line t
+    | [] ->
+         line
+   in
+      collect "" buf.tex_current_line
+
+let tex_push_line buf =
+   let line = tex_line buf in
+      output_string buf.tex_out line;
+      buf.tex_current_line <- []
+
+(*
+ * Set up all pending tabstops.
+ *)
+let tex_tab_line buf =
+   buf.tex_prefix ^ tex_visible buf
+
+(*
+ * Newline.
+ * Compute all pending tabstops,
+ * then push the line and the new tabstop.
+ *)
+let tex_tab buf col =
+   if col = 0 then
+      begin
+         tex_push_line buf;
+         output_string buf.tex_out "\\\\\n";
+         buf.tex_prefix <- ""
+      end
+   else
+      let tabline = buf.tex_prefix ^ tex_visible buf in
+         tex_push_line buf;
+         let prefix =
+            if col >= String.length tabline then
+               tabline
+            else
+               String.sub tabline 0 col
+         in
+         let spacer = sprintf "\\phantom{%s}" (tex_escape_string prefix) in
+            buf.tex_prefix <- prefix;
+            output_string buf.tex_out "\\\\\n";
+            output_string buf.tex_out spacer
+
+(*
+ * Begin a tagged block.
+ *)
+let tex_begin_tag buf buffer _ =
+   match buffer.buf_tag with
+      TZoneTag t ->
+         let index = buffer.buf_index in
+            buf.tex_tags <- (index, t) :: buf.tex_tags
+    | _ ->
+         raise (Invalid_argument "tex_begin_tag")
+
+let tex_end_tag buf _ _ =
+   ()
+
+(*
+ * A TeX printer.
+ *)
+let make_tex_printer out =
+   let buf =
+      { tex_current_line = [];
+        tex_out = out;
+        tex_tags = [];
+        tex_prefix = ""
+      }
+   in
+   let printer =
+      { print_string = tex_print_string buf;
+        print_invis = tex_print_invis buf;
+        print_tab = tex_tab buf;
+        print_begin_block = print_arg2_invis;
+        print_end_block = print_arg2_invis;
+        print_begin_tag = tex_begin_tag buf;
+        print_end_tag = tex_end_tag buf;
+      }
+   in
+   let get_info () =
+      let tags = buf.tex_tags in
+         buf.tex_tags <- [];
+         buf.tex_prefix <- "";
          tags
    in
       get_info, printer
@@ -1215,6 +1385,13 @@ let print_to_html rmargin buf out =
    let get_info, printer = make_html_printer out in
       print_to_printer buf rmargin printer;
       get_info ()
+
+(*
+ * TeX formatting.
+ *)
+let print_to_tex rmargin buf out =
+   let get_info, printer = make_tex_printer out in
+      print_to_printer buf rmargin printer
 
 (*
  * -*-

@@ -319,7 +319,7 @@ struct
        | Flist.Leaf conv ->
             apply clause addr conv p
        | Flist.Append (tree1, tree2) ->
-            (prefix_thenT (composeT clause addr tree1) (composeT clause addr tree2)) p
+            (prefix_then_OnFirstT (composeT clause addr tree1) (composeT clause addr tree2)) p
 
    and chooseT clause addr tree p =
       match tree with

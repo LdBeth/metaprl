@@ -165,7 +165,11 @@ struct
             Some port ->
                DisplayGraphical (port, dfbase)
           | None ->
-               DisplayText (dfbase, info.df_mode)
+               match info.df_mode with
+                  "tex" ->
+                     DisplayTex dfbase
+                | mode ->
+                     DisplayText (dfbase, mode)
 
    let get_db info =
       let dfbase = get_dfbase info in
@@ -173,6 +177,9 @@ struct
 
    let set_db info mode =
       info.df_mode <- mode
+
+   let set_tex info =
+      info.df_mode <- "tex"
 
    (*
     * Create a new sub-shell.
@@ -1126,6 +1133,7 @@ struct
        "fg",               IntFunExpr      (fun i ->  StringExpr (fg info i));
        "cd",               StringFunExpr   (fun s  -> StringExpr (cd info s));
        "pwd",              UnitFunExpr     (fun () -> StringExpr (pwd info));
+       "set_tex",          UnitFunExpr     (fun () -> UnitExpr (set_tex info));
        "set_window_width", IntFunExpr      (fun i  -> UnitExpr (set_window_width info i));
        "load",             StringFunExpr   (fun s  -> UnitExpr (load info s));
        "create_pkg",       StringFunExpr   (fun s  -> UnitExpr (create_pkg info s));

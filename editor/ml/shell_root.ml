@@ -69,6 +69,7 @@ type text_window =
 type window =
    ProofWindow of proof_window
  | TextWindow of text_window
+ | TexWindow of text_window
 
 (************************************************************************
  * WINDOWS                                                              *
@@ -83,6 +84,12 @@ let create_text_window base mode =
                 df_width = 80
    }
 
+let create_tex_window base =
+   TexWindow { df_base = base;
+               df_mode = "tex";
+               df_width = 80
+   }
+
 let create_proof_window port dfbase =
    let menu = Display_term.create_term port dfbase in
    let window =
@@ -94,23 +101,13 @@ let create_proof_window port dfbase =
       ProofWindow window
 
 (*
- * Fork the current window.
- *)
-let new_window = function
-   ProofWindow { pw_port = port; pw_base = base } ->
-      ProofWindow { pw_port = port;
-                    pw_base = base;
-                    pw_menu = Display_term.create_term port base
-      }
- | (TextWindow _) as window ->
-      window
-
-(*
  * Create a window from the description.
  *)
 let create_window = function
    DisplayText (base, mode) ->
       TextWindow { df_base = base; df_mode = mode; df_width = 80 }
+ | DisplayTex base ->
+      TexWindow { df_base = base; df_mode = "tex"; df_width = 80 }
  | DisplayGraphical (port, base) ->
       let menu = Display_term.create_term port base in
          ProofWindow { pw_port = port; pw_base = base; pw_menu = menu }
@@ -121,7 +118,7 @@ let create_window = function
 let new_window = function
    ProofWindow { pw_port = port; pw_base = base } ->
       ProofWindow { pw_port = port; pw_base = base; pw_menu = Display_term.create_term port base }
- | (TextWindow _) as window ->
+ | (TextWindow _ | TexWindow _) as window ->
       window
 
 (*
@@ -134,6 +131,12 @@ let display_term window term =
          let buf = Rformat.new_buffer () in
             Dform.format_term df buf term;
             Rformat.print_to_channel width buf stdout;
+            flush stdout
+    | TexWindow { df_base = base; df_mode = mode; df_width = width } ->
+         let df = get_mode_base base mode in
+         let buf = Rformat.new_buffer () in
+            Dform.format_term df buf term;
+            Rformat.print_to_tex width buf stdout;
             flush stdout
     | ProofWindow { pw_menu = menu } ->
          Display_term.set_dir menu "/";
@@ -155,7 +158,11 @@ let raise_edit_error s =
 let rec edit pack window =
    let edit_display _ =
       (* Display the roots of the package *)
-      let term = mk_packages_term (List.map (fun root -> mk_package_term (Package.name root)) (Package.roots pack)) in
+      let compare pack1 pack2 =
+         (Package.name pack1) < (Package.name pack2)
+      in
+      let packs = Sort.list compare (Package.packages pack) in
+      let term = mk_packages_term (List.map (fun root -> mk_package_term (Package.name root)) packs) in
          display_term window term
    in
    let edit_copy () =

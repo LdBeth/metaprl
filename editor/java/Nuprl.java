@@ -22,7 +22,7 @@ implements WindowListener, ComponentListener, NuprlContext
     /**
      * Default size of the application.
      */
-    static final int WIDTH = 800;
+    static final int WIDTH  = 900;
     static final int HEIGHT = 750;
 
     /*
@@ -66,6 +66,7 @@ implements WindowListener, ComponentListener, NuprlContext
     /**
      * Flag if the applet has started.
      */
+    protected boolean initialized = false;
     protected boolean started = false;
 
     /**
@@ -397,7 +398,7 @@ implements WindowListener, ComponentListener, NuprlContext
     public static void main(String[] args)
     {
         // Frame
-        JFrame frame = new JFrame("Nuprl");
+        JFrame frame = new JFrame("MetaPRL");
         frame.setSize(WIDTH, HEIGHT);
 
         // Applet construction
@@ -413,11 +414,13 @@ implements WindowListener, ComponentListener, NuprlContext
 
         // Start the applet
         applet.init();
-        applet.start();
 
         // Now show it
         frame.pack();
         frame.setVisible(true);
+
+        // Start it
+        applet.start();
     }
 
     /**
@@ -454,7 +457,7 @@ implements WindowListener, ComponentListener, NuprlContext
      */
     public synchronized void init()
     {
-        if(started == false) {
+        if(initialized == false) {
             // Set all options from the parameters
             getParameters(argv);
 
@@ -472,7 +475,7 @@ implements WindowListener, ComponentListener, NuprlContext
             manager = new NuprlManager(this, auth);
 
             // State that we are initialized
-            started = true;
+            initialized = true;
         }
     }
 
@@ -488,6 +491,10 @@ implements WindowListener, ComponentListener, NuprlContext
      */
     public void start()
     {
+        if(started == false) {
+            manager.start();
+            started = true;
+        }
     }
 	
     /**

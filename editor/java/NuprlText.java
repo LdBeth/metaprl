@@ -198,7 +198,7 @@ implements KeyListener, ComponentListener
 
         stdin_style = document.getStyle("default");
         StyleConstants.setFontFamily(stdin_style, "SansSerif");
-        StyleConstants.setFontSize(stdin_style, 12);
+        StyleConstants.setFontSize(stdin_style, 18);
         StyleConstants.setBold(stdin_style, true);
         StyleConstants.setForeground(stdin_style, new Color((float) 0.1, (float) 0.3, (float) 0.5));
 
@@ -207,7 +207,7 @@ implements KeyListener, ComponentListener
          */
         Style fixed_style = document.addStyle("terminal", stdout_style);
         StyleConstants.setFontFamily(fixed_style, "Monospaced");
-        StyleConstants.setFontSize(fixed_style, 12);
+        StyleConstants.setFontSize(fixed_style, 18);
 
         for(int i = 0; i != 4; i++)
             terminal_styles[i] = document.addStyle("terminal" + i, fixed_style);

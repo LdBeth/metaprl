@@ -619,14 +619,12 @@ struct
         ref_sentinal = (fst info).sentinal
       }
 
-   let lazy_apply f1 f2 a =
+   let lazy_apply f x =
       let cell = ref None in
       let f () =
          match !cell with
             None ->
-               let x = f1 a in
-               let y = f2 x in
-               let p = (x, y) in
+               let p = f x in
                   cell := Some p;
                   p
           | Some x ->
@@ -650,13 +648,14 @@ struct
          }
     | HeadRule (_, text, goal, subgoals, extras) ->
          let arg = fst info in
-         let content = lazy_apply arg.parse_expr arg.parse_tactic text in
-         let expr () = fst (content ()) in
-         let tactic () = snd (content ()) in
+         let parse = arg.parse_expr in
+         let eval = arg.parse_tactic in
+         let expr = lazy_apply parse text in
+         let tac = lazy_apply (fun text -> eval (parse text)) text in
             RuleBox { rule_status = LazyStatusDelayed;
                       rule_string = text;
                       rule_expr = expr;
-                      rule_tactic = tactic;
+                      rule_tactic = tac;
                       rule_extract = ext_retrieve_extract info goal;
                       rule_subgoals = List.map (ext_retrieve_extract info) subgoals;
                       rule_leaves = LazyLeavesDelayed;

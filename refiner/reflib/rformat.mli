@@ -108,6 +108,7 @@ val format_num : 'tag buffer -> Mp_num.num -> unit
 val print_to_channel : int -> 'tag buffer -> out_channel -> unit
 val print_to_string : int -> 'tag buffer -> string
 val print_to_html : int -> 'tag buffer -> out_channel -> (int * 'tag) list
+val print_to_tex : int -> 'tag buffer -> out_channel -> unit
 
 (*
  * -*-

@@ -424,6 +424,7 @@ type text_window =
 type window =
    ProofWindow of proof_window
  | TextWindow of text_window
+ | TexWindow of text_window
 
 type incomplete_ped =
    Primitive of tactic_arg
@@ -437,6 +438,12 @@ let create_text_window base mode =
    TextWindow { df_base = base;
                 df_mode = mode;
                 df_width = 80
+   }
+
+let create_tex_window base =
+   TexWindow { df_base = base;
+               df_mode = "tex";
+               df_width = 80
    }
 
 let create_proof_window port dfbase =
@@ -463,7 +470,7 @@ let create_proof_window port dfbase =
 let new_window = function
    ProofWindow { pw_port = port; pw_base = base } ->
       create_proof_window port base
- | (TextWindow _) as window ->
+ | (TextWindow _ | TexWindow _) as window ->
       window
 
 (************************************************************************
@@ -591,6 +598,13 @@ let format_aux window proof =
             Dform.format_term df buf proof;
             Rformat.format_newline buf;
             Rformat.print_to_channel width buf stdout;
+            flush stdout
+    | TexWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
+         let df = get_mode_base dfbase mode in
+         let buf = Rformat.new_buffer () in
+            Dform.format_term df buf proof;
+            Rformat.format_newline buf;
+            Rformat.print_to_tex width buf stdout;
             flush stdout
     | ProofWindow { pw_goal = pw_goal;
                     pw_rule = pw_rule;

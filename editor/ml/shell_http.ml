@@ -64,7 +64,6 @@ struct
                   command :: _ ->
                      let command = Http_server.decode_hex command in
                      let port = Mux_channel.id_of_session port in
-                        eprintf "Command: %d: %s%t" port command eflush;
                         Shell.eval port command
                 | [] ->
                      ()
@@ -100,7 +99,6 @@ struct
     * Start the web server.
     *)
    let main () =
-(*
       let host = Http_server.start_http http_connect !http_port in
       let _ =
          try
@@ -115,7 +113,6 @@ struct
             Not_found ->
                ()
       in
-*)
          Shell.main ()
 end
 

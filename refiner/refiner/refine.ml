@@ -802,6 +802,7 @@ struct
        *)
       let replace_subgoal addr t' =
          (* Allowed vars are the bindings in the sequent up until the addressed clause *)
+         eprintf "Address: %s%t" (TermAddr.string_of_address addr) eflush;
          let i = TermAddr.clause_of_address addr in
          let allowed_vars =
             if i <= 0 || i >= declared_len then
@@ -956,14 +957,14 @@ struct
     *)
    let crwaddr addr crw sent bvars t =
       LETMACRO BODY =
-         let t, (subgoals, just) =
+         let t', (subgoals, just) =
             let f sent bvars t =
                let t, subgoals, just = crw sent bvars t in
                   t, (subgoals, just)
             in
                apply_var_fun_arg_at_addr (f sent) addr bvars t
          in
-            t, subgoals, just
+            t', CondRewriteSubgoalsAddr (addr, subgoals), CondRewriteAddress (t, addr, just, t')
       IN
       IFDEF VERBOSE_EXN THEN
          try BODY

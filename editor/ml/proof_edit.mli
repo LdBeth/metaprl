@@ -164,6 +164,7 @@ type incomplete_ped =
  * Create text or HTML.
  *)
 val create_text_window : dform_mode_base -> string -> window
+val create_tex_window : dform_mode_base -> window
 val create_proof_window : Mux_channel.session -> dform_mode_base -> window
 
 (*

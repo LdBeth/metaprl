@@ -46,6 +46,7 @@ open Proof_edit
  *)
 type display_mode =
    DisplayText of dform_mode_base * string
+ | DisplayTex of dform_mode_base
  | DisplayGraphical of Mux_channel.session * dform_mode_base
 
 (*

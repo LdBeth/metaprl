@@ -109,6 +109,12 @@ class NuprlManager
         this.auth = auth;
         this.context = context;
 
+        // Watch the window size
+        context.getDesktop().addComponentListener(new NuprlComponentListener());
+    }
+
+    void start()
+    {
         // Start the communication channel
         bus = new NuprlBus();
         bus.Manage(new NuprlClientManager());
@@ -133,11 +139,7 @@ class NuprlManager
             }
             else
                 state = STATE_LOGIN;
-            autoLayout();
         }
-
-        // Watch the window size
-        context.getDesktop().addComponentListener(new NuprlComponentListener());
     }
 
     /**

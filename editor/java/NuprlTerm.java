@@ -93,7 +93,19 @@ extends JScrollPane
     + "border-bottom-width:0;"
     + "font-family:LucidaSansUnicode};";
 
-    private final static String hacked_style = "tt {font-family:monospaced}; i {font-family:LucidaSansUnicode;font-size:18};"
+    private final static String text_style_body =
+       "{font-family:LucidaSans;font-style:normal;font-size:18};";
+
+    private final static String text_style_bold =
+       "{font-family:LucidaSans;font-style:normal;font-size:18};";
+
+    private final static String text_style_italic =
+       "{font-family:LucidaSansUnicode;font-style:normal;font-size:18};";
+
+    private final static String hacked_style = "tt {font-family:monospaced};"
+    + "body " + text_style_body
+    + "b " + text_style_bold
+    + "i" + text_style_italic
     + "table " + table_style
     + "tr" + table_style
     + "td" + table_style;
@@ -159,7 +171,7 @@ extends JScrollPane
         catch(IOException e) {
             // Ignore it
         }
-        ShowStyles(document);
+        // ShowStyles(document);
 
         // Get cursors
         default_cursor = textPane.getCursor();

@@ -951,7 +951,7 @@ struct
           } = arg
       in
       let subgoals, ext = Refine.refine (get_sentinal sentinal) rl goal in
-      let make_subgoal goal =
+      let make_subgoal label goal =
          { ref_goal = goal;
            ref_label = label;
            ref_parent = ParentLazy arg;
@@ -959,7 +959,13 @@ struct
            ref_sentinal = sentinal
          }
       in
-      let subgoals = List.map make_subgoal subgoals in
+      let subgoals =
+         match subgoals with
+            subgoal :: subgoals ->
+               make_subgoal label subgoal :: List.map (make_subgoal "assertion") subgoals
+          | [] ->
+               raise (Invalid_argument "tactic_of_cond_rewrite: produced no subgoals")
+      in
          ThreadRefinerTacticals.create_value subgoals (Extract (arg, subgoals, ext))
 
    (************************************************************************

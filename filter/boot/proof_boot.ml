@@ -2565,19 +2565,17 @@ struct
             IOIdentity (make_tactic_arg arg)
       in
          update proof;
-         convert proof.pf_node
+         convert (snd (squash_ext proof.pf_node))
 
    (*
     * Convert from an io proof.
     *)
-   let lazy_apply f1 f2 a =
+   let lazy_apply f x =
       let cell = ref None in
       let f () =
          match !cell with
             None ->
-               let x = f1 a in
-               let y = f2 x in
-               let p = (x, y) in
+               let p = f x in
                   cell := Some p;
                   p
           | Some x ->
@@ -2643,9 +2641,8 @@ struct
                      io_rule_subgoals = subgoals;
                      io_rule_extras = extras
          } ->
-            let content = lazy_apply parse eval text in
-            let expr () = fst (content ()) in
-            let tactic () = snd (content ()) in
+            let expr = lazy_apply parse text in
+            let tactic = lazy_apply (fun text -> eval (parse text)) text in
                RuleBox { rule_status = LazyStatusDelayed;
                          rule_string = text;
                          rule_expr = expr;
