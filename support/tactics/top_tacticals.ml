@@ -57,7 +57,7 @@ doc <:doc<
    @parents
    @end[doc]
 >>
-extends Mptop
+extends Shell
 
 doc <:doc< ************************************************************************
    @begin[doc]

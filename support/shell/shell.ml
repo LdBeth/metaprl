@@ -33,6 +33,7 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
+extends Mptop
 extends Proof_edit
 extends Package_info
 extends Shell_rewrite
@@ -80,12 +81,6 @@ let debug_shell =
         debug_description = "Display shell operations";
         debug_value = false
       }
-
-(*
- * Control profiling.
- *)
-external restart_gmon : unit -> unit = "restart_gmon"
-external stop_gmon : unit -> unit = "stop_gmon"
 
 (*
  * Shell takes input parser as an argument.
@@ -1115,6 +1110,7 @@ struct
             set_packages info;
             Shell_state.set_dfbase shell None;
             Shell_state.set_mk_opname shell None;
+            Shell_state.set_module shell "Shell" (commands info);
             eprintf "Module: /%t" eflush
        | (modname :: item) as dir ->
             (* change module only if in another (or at top) *)
@@ -1261,10 +1257,6 @@ struct
        "status_all",       UnitFunExpr     (fun () -> UnitExpr (status_all info));
        "clean_all",        UnitFunExpr     (fun () -> UnitExpr (clean_all info));
        "squash_all",       UnitFunExpr     (fun () -> UnitExpr (squash_all info));
-       "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)));
-       "stop_gmon",        UnitFunExpr     (fun () -> UnitExpr (stop_gmon ()));
-       "restart_gmon",     UnitFunExpr     (fun () -> UnitExpr (restart_gmon ()));
-       "print_gc_stats",   UnitFunExpr     (fun () -> UnitExpr (Gc.print_stat stdout));
        "set_tex_file",     StringFunExpr   (fun s  -> UnitExpr (set_tex_file info s));
        "print_theory",     StringFunExpr   (fun s  -> UnitExpr (print_theory info s))]
 
@@ -1584,9 +1576,21 @@ struct
     *)
    let main () =
       let info = global in
-         Shell_state.set_module info.shell "Mptop" (commands info);
+         Shell_state.set_module info.shell "Shell" (commands info);
          ShellP4.main info.shell
 end
+
+(*
+ * Control profiling.
+ *)
+external restart_gmon : unit -> unit = "restart_gmon"
+external stop_gmon : unit -> unit = "stop_gmon"
+
+(*
+ * Toploop functions
+ *)
+let set_debug = set_debug
+let print_gc_stats () = Gc.print_stat stdout
 
 (*
  * -*-

@@ -75,7 +75,7 @@ let debug_filter_prog =
  *)
 type t = {
    imp_sig_info : (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info;
-   imp_toploop : (string * (MLast.ctyp * loc)) list;
+   mutable imp_toploop : (string * MLast.ctyp) list;
    imp_arg : Convert.t;
    imp_name : string;
    mutable imp_resources : (string * MLast.ctyp) list;
@@ -781,13 +781,6 @@ let wrap_toploop_item loc name ctyp expr =
    in
       collect [] ctyp
 
-(*
- * This function creates str_items for the toploop.
- *)
-let add_toploop_item proc loc name ctyp =
-   let expr = toploop_item_expr loc name ctyp in
-      [impr_toploop proc loc name expr]
-
 (************************************************************************
  * ML RULE                                                              *
  ************************************************************************)
@@ -1388,8 +1381,8 @@ let define_parent proc loc
  *)
 let implem_toploop info =
    let rec collect = function
-      (ToploopItem <:sig_item< value $s$ : $t$ >>, loc) :: tl ->
-         (s, (t, loc)) :: collect tl
+      (ToploopItem <:sig_item< value $s$ : $t$ >>, _) :: tl ->
+         (s, t) :: collect tl
     | _ :: tl ->
          collect tl
     | [] ->
@@ -1398,20 +1391,22 @@ let implem_toploop info =
       collect (info_items info)
 
 (*
+ * This function creates str_items for the toploop.
+ *)
+let add_toploop_item proc loc name ctyp =
+   let expr = toploop_item_expr loc name ctyp in
+      impr_toploop proc loc name expr
+
+(*
  * An regular item.
  *)
 let wrap_toploop_item proc loc ((patt, expr) as item) =
    match patt with
-      <:patt< $lid:name$ >> ->
-         begin
-            try
-               let ctyp, _ = List.assoc name proc.imp_toploop in
-               let expr1 = wrap_toploop_item loc name ctyp expr in
-                  (patt, expr1), add_toploop_item proc loc name ctyp
-            with
-               Not_found ->
-                  item, []
-         end
+      <:patt< $lid:name$ >> when List.mem_assoc name proc.imp_toploop ->
+         let ctyp = List.assoc name proc.imp_toploop in
+         proc.imp_toploop <- List.remove_assoc name proc.imp_toploop;
+         let expr1 = wrap_toploop_item loc name ctyp expr in
+            (patt, expr1), [add_toploop_item proc loc name ctyp]
      | _ ->
          item, []
 
@@ -1419,13 +1414,17 @@ let wrap_toploop_items proc loc pel =
    let pel, resources = List.split (List.map (wrap_toploop_item proc loc) pel) in
       pel, List.flatten resources
 
-let define_summary_item proc loc item =
-   match item with
-      <:str_item< value $rec:rec_flag$ $list:pel$ >> ->
-         let pel, toploop = wrap_toploop_items proc loc pel in
-            <:str_item< value $rec:rec_flag$ $list:pel$ >> :: toploop
-    | _ ->
-      [item]
+let rec wrap_summary_items proc = function
+   [] -> []
+ | item::items ->
+      let items = wrap_summary_items proc items in
+      begin match item with
+         MLast.StVal (loc, rec_flag, pel) ->
+            let pel, toploop = wrap_toploop_items proc loc pel in
+               <:str_item< value $rec:rec_flag$ $list:pel$ >> :: (toploop @ items)
+       | _ ->
+         item::items
+      end
 
 (*
  * A magic block computes a hash value from the definitions
@@ -1445,18 +1444,19 @@ let implem_prolog proc loc name =
 (*
  * Trailing declarations.
  *)
-let implem_postlog { imp_name = name } loc = [
-   <:str_item< Mp_resource.close_theory $str:name$ >>;
-   <:str_item< value $lid:refiner_id$ = $refiner_expr loc$.label_refiner $lid:local_refiner_id$ $str:name$ and
-                     $lid:dformer_id$ = $lid:local_dformer_id$.val >>;
-   <:str_item<
-      Theory.record_theory {
-         Theory.thy_name = $str:name$;
-         Theory.thy_refiner = $lid:refiner_id$;
-         Theory.thy_dformer = $lid:dformer_id$
-      }
-   >>
-]
+let implem_postlog proc loc = 
+   let name = <:expr< $str:proc.imp_name$ >> in
+      <:str_item< Mp_resource.close_theory $name$ >> ::
+      <:str_item< value $lid:refiner_id$ = $refiner_expr loc$.label_refiner $lid:local_refiner_id$ $name$ and
+                        $lid:dformer_id$ = $lid:local_dformer_id$.val >> ::
+      <:str_item<
+         Theory.record_theory {
+            Theory.thy_name = $name$;
+            Theory.thy_refiner = $lid:refiner_id$;
+            Theory.thy_dformer = $lid:dformer_id$
+         }
+      >> ::
+      (List.map (fun (name,ctyp) -> add_toploop_item proc loc name ctyp) proc.imp_toploop)
 
 (*
  * Now extract the program.
@@ -1566,11 +1566,11 @@ let extract_str_item proc (item, loc) =
     | SummaryItem item ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: summary item%t" eflush;
-         define_summary_item proc loc item
+         [item]
     | ToploopItem item ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: toploop item%t" eflush;
-         define_summary_item proc loc item
+         [item]
     | MagicBlock block ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: magic block%t" eflush;
@@ -1598,6 +1598,7 @@ let extract_str arg sig_info info resources name =
    in
    let prolog = implem_prolog proc (0, 0) name in
    let items = List_util.flat_map (extract_str_item proc) (info_items info) in
+   let items = wrap_summary_items proc items in
    let postlog = implem_postlog proc (0, 0) in
       List.map (fun item -> item, (0, 0)) (prolog @ items @ postlog)
 

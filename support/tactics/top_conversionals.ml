@@ -71,7 +71,7 @@ doc <:doc<
    @parents
    @end[doc]
 >>
-extends Mptop
+extends Shell
 doc <:doc< @docoff >>
 
 open Mp_debug

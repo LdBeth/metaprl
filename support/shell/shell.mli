@@ -30,6 +30,7 @@
  * Modifed By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
+extends Mptop
 extends Proof_edit
 extends Package_info
 extends Shell_rewrite
@@ -42,6 +43,11 @@ open Shell_sig
 open Shell_p4_sig
 
 module Shell (ShellP4 : ShellP4Sig): ShellSig
+
+topval set_debug : string -> bool -> unit
+topval stop_gmon : unit -> unit
+topval restart_gmon : unit -> unit
+topval print_gc_stats : unit -> unit
 
 (*
  * -*-

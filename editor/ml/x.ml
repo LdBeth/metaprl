@@ -31,7 +31,6 @@
  *)
 
 open Printf
-open Mp_debug
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
@@ -53,7 +52,8 @@ open Itt_prod
 open Itt_prop_decide
 open Itt_bool
 
-open Mp
+open Mp (* Should go away soon! *)
+open Shell
 
 (*
  * -*-

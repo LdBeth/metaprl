@@ -93,7 +93,7 @@ doc <:doc<
    @parents
    @end[doc]
 >>
-extends Mptop
+extends Shell
 doc <:doc< @docoff >>
 
 open Printf
@@ -184,7 +184,7 @@ let successT =
 let debugT auto_tac =
    { auto_tac with 
      auto_tac = funT (fun p ->
-	let s = Simple_print.SimplePrint.short_string_of_term (Sequent.concl p) in
+        let s = Simple_print.SimplePrint.short_string_of_term (Sequent.concl p) in
         eprintf "Auto: trying %s on %s%t" auto_tac.auto_name s eflush;
         (progressT auto_tac.auto_tac) thenT successT)
    }

@@ -31,7 +31,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-extends Mptop
+extends Shell
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.Refine

@@ -30,7 +30,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-extends Mptop
+extends Shell
 
 open Printf
 open Lexing
