@@ -42,12 +42,11 @@ print_theory "mfir_list";;
 print_theory "mfir_int_set";;
 print_theory "mfir_ty";;
 print_theory "mfir_exp";;
-(*
-print_theory "mfir_util";;
 print_theory "mfir_sequent";;
+print_theory "mfir_util";;
 print_theory "mfir_tr_base";;
 print_theory "mfir_tr_types";;
+print_theory "mfir_tr_atom_base";;
 print_theory "mfir_tr_atom";;
 print_theory "mfir_tr_store";;
 print_theory "mfir_tr_exp";;
-*)
