@@ -118,7 +118,7 @@ let r_4 s ft rt =
       && is_const (List.hd s)
       && is_var (List.hd rt)
 
-let r_5 s ft rt =
+let r_5 s rt =
    rt=[]
       && (List.length s >= 1)
       && is_var (List.hd s)
@@ -130,7 +130,7 @@ let r_6 s ft rt =
       && is_var (List.hd s)
       && is_const (List.hd rt)
 
-let r_7 s ft rt =
+let r_7 s rt =
    List.length s >= 1
       && (List.length rt >= 2)
       && is_var (List.hd s)
@@ -151,7 +151,7 @@ let r_9 s ft rt =
          and v1 = (List.hd rt) in
          (is_var v) & (is_var v1) & (v <> v1)
 
-let r_10 s ft rt =
+let r_10 s rt =
    (List.length s >= 1) && (List.length rt >= 1)
    && let v = List.hd s
       and x = List.hd rt in
@@ -250,19 +250,19 @@ let rec apply_subst_list eq_rest (v,slist) =
             [],[] ->
                let (bool,new_eq_rest) = apply_subst_list r (v,slist) in
                (bool,((atomnames,([],[]))::new_eq_rest))
-          | [],(fft::rft) ->
+          | [],(fft::_) ->
                if (is_const fft) then
                   (false,[])
                else
                   let (bool,new_eq_rest) = apply_subst_list r (v,slist) in
                   (bool,((atomnames,([],new_ft))::new_eq_rest))
-          | (ffs::rfs),[] ->
+          | (ffs::_),[] ->
                if (is_const ffs) then
                   (false,[])
                else
                   let (bool,new_eq_rest) = apply_subst_list r (v,slist) in
                   (bool,((atomnames,(new_fs,[]))::new_eq_rest))
-          | (ffs::rfs),(fft::rft) ->
+          | (ffs::_),(fft::_) ->
                if (is_const ffs) & (is_const fft) then
                   (false,[])
         (* different first constants cause local fail *)
@@ -299,7 +299,7 @@ let apply_subst eq_rest (v,slist) atomnames =
 
 let rec  tunify_list eqlist init_sigma =
    let rec tunify atomnames fs ft rt rest_eq sigma =
-      let apply_r1 fs ft rt rest_eq sigma =
+      let apply_r1 rest_eq sigma =
       (* print_endline "r1"; *)
          tunify_list rest_eq sigma
 
@@ -355,7 +355,7 @@ let rec  tunify_list eqlist init_sigma =
          else
             tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma
       in
-      let apply_r8 fs ft rt rest_eq sigma =
+      let apply_r8 fs rt rest_eq sigma =
       (* print_endline "r8"; *)
          tunify atomnames  rt [(List.hd fs)] (List.tl fs) rest_eq sigma
 
@@ -380,20 +380,20 @@ let rec  tunify_list eqlist init_sigma =
 
       in
       if r_1 fs ft rt then
-         apply_r1 fs ft rt rest_eq sigma
+         apply_r1 rest_eq sigma
       else if r_2 fs ft rt then
          apply_r2 fs ft rt rest_eq sigma
       else if r_3 fs ft rt then
          apply_r3 fs ft rt rest_eq sigma
       else if r_4 fs ft rt then
          apply_r4 fs ft rt rest_eq sigma
-      else if r_5 fs ft rt then
+      else if r_5 fs rt then
          apply_r5 fs ft rt rest_eq sigma
       else if r_6 fs ft rt then
          (try
             apply_r6 fs ft rt rest_eq sigma
          with Not_unifiable ->
-            if r_7 fs ft rt then (* r7 applicable if r6 was and tr6 = C2t' *)
+            if r_7 fs rt then (* r7 applicable if r6 was and tr6 = C2t' *)
                (try
                   apply_r7 fs ft rt rest_eq sigma
                with Not_unifiable ->
@@ -404,7 +404,7 @@ let rec  tunify_list eqlist init_sigma =
       (* but looking at the transformation rules, r10 should be tried at last in any case *)
                apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable r6 was *)
          )
-      else if r_7 fs ft rt then  (* not r6 and r7 possible if z <> [] *)
+      else if r_7 fs rt then  (* not r6 and r7 possible if z <> [] *)
          (try
             apply_r7 fs ft rt rest_eq sigma
          with Not_unifiable ->
@@ -412,9 +412,9 @@ let rec  tunify_list eqlist init_sigma =
          )
       else if r_8 fs ft rt then
          (try
-            apply_r8 fs ft rt rest_eq sigma
+            apply_r8 fs rt rest_eq sigma
          with Not_unifiable ->
-            if r_10 fs ft rt then (* r10 applicable if r8 was and tr8 <> [] *)
+            if r_10 fs rt then (* r10 applicable if r8 was and tr8 <> [] *)
                apply_r10 fs ft rt rest_eq sigma
             else
                raise Not_unifiable (* simply back propagation *)
@@ -423,12 +423,12 @@ let rec  tunify_list eqlist init_sigma =
          (try
             apply_r9 fs ft rt rest_eq sigma
          with Not_unifiable ->
-            if r_10 fs ft rt then (* r10 applicable if r9 was and tr9 <> [] *)
+            if r_10 fs rt then (* r10 applicable if r9 was and tr9 <> [] *)
                apply_r10 fs ft rt rest_eq sigma
             else
                raise Not_unifiable (* simply back propagation *)
          )
-      else if r_10 fs ft rt then  (* not ri, i<10, and r10 possible if for instance *)
+      else if r_10 fs rt then  (* not ri, i<10, and r10 possible if for instance *)
                          (* (s=[] and x=v1) or (z<>[] and xt=C1V1t') *)
          apply_r10 fs ft rt rest_eq sigma
       else  (* NO rule applicable *)
@@ -461,7 +461,7 @@ let rec test_apply_eqsubst eqlist subst =
          let applied_element  = test_apply_eq atomnames eqs eqt subst in
          (atomnames,applied_element)::(test_apply_eqsubst r subst)
 
-let ttest us ut ns nt eqlist orderingQ atom_rel =
+let ttest us ut ns nt eqlist =
    let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 *)
                                            (* to eliminate common beginning *)
    let new_element = ([ns;nt],(short_us,short_ut)) in
@@ -471,8 +471,7 @@ let ttest us ut ns nt eqlist orderingQ atom_rel =
       else
          new_element::eqlist
    in
-   let sigma = tunify_list full_eqlist (1,[]) in
-   let (n,subst) = sigma in
+   let (_, subst) as sigma = tunify_list full_eqlist (1,[]) in
    let test_apply  = test_apply_eqsubst full_eqlist subst in
    begin
       print_endline "";

@@ -214,7 +214,7 @@ let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
          cmi :: cmo_deps, cmx :: cmx_deps
     | Some cmi, None ->
          cmi :: cmo_deps, cmi :: cmx_deps
-    | None, Some cmx ->
+    | None, Some _ ->
          raise(Invalid_argument "Ocamldep.find_dependency_cmo_cmx: bug!")
     | None, None ->
          cmo_deps, cmx_deps
@@ -279,7 +279,7 @@ let file_dependencies source_file =
         StringSet.fold find_dependency_cmo_cmx !free_structures init_deps in
       let ppo_deps =
          if !omake_flag then
-            StringSet.fold find_dependency_cmiz !prl_structures (fst init_deps)
+            StringSet.fold find_dependency_cmiz !prl_structures init_ppo_dep
          else cmo_deps
       in
       let ppo_deps =
@@ -308,7 +308,7 @@ let file_dependencies source_file =
       raise(Invalid_argument("Unknown suffix in a file " ^ source_file))
     end;
     close_in ic
-  with Sys_error msg ->
+  with Sys_error _ ->
     ()
 
 (* Entry point *)

@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Alexey Nogin <nogin@cs.cornell.edu>
  *)
 
@@ -33,7 +33,7 @@
 type permutation = int array
 
 (* identity element *)
-let id_perm n = 
+let id_perm n =
    let result = Array.create n 0 in
    for i=0 to pred n do
       Array.unsafe_set result i i
@@ -45,7 +45,7 @@ let permute_list p = function
    [] -> if (p<>[||]) then raise (Invalid_argument "Permutations.permute_list") else []
  | hd::tl ->
       let l = Array.length p in
-      if succ (List.length tl) = l then 
+      if succ (List.length tl) = l then
          let res = Array.create l hd in
          let rec aux i = function
             [] -> ()
@@ -56,29 +56,29 @@ let permute_list p = function
          Array.to_list res
       else raise (Invalid_argument "Permutations.permute_list")
 
-(* if l1 contains all elements of l2 and, possibly, some other elements, than 
- * (permute (get_permut l1 l2) l2) is a list whose elements appear in the same order as in l1 
- * If l1 does not contain all of l2's elements or if l2 has repeated elements, get_permut would 
+(* if l1 contains all elements of l2 and, possibly, some other elements, than
+ * (permute (get_permut l1 l2) l2) is a list whose elements appear in the same order as in l1
+ * If l1 does not contain all of l2's elements or if l2 has repeated elements, get_permut would
  * raise a Failure "Permutations.get_permut"
  * If l1 has dumplicated elements, the first occurence of the element in l1 is used  *)
 let rec get_permut_set (res: int array) i j elem = function
    [] ->
       i
- | hd::tl when (hd = elem) ->
+ | hd :: _ when (hd = elem) ->
       if res.(j)<0 then begin
          res.(j) <- i;
          (succ i)
       end else i
- | _ ::tl ->
+ | _ :: tl ->
       get_permut_set res i (succ j) elem tl
 
 let rec get_permut_aux res l2 i = function
    [] -> ()
- | hd::tl -> 
+ | hd::tl ->
        let i'=get_permut_set res i 0 hd l2 in
        get_permut_aux res l2 i' tl
 
-let get_permut l1 l2 = 
+let get_permut l1 l2 =
    let l = List.length l2 in
    let res = Array.create l (-1) in
    get_permut_aux res l2 0 l1;

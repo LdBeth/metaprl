@@ -101,7 +101,7 @@ value rec no_nothingp =
     | [hd :: tl] -> [hd :: no_nothingp tl] ]
 ;
 
-value subst mloc env =
+value subst env =
   let rec loop =
     fun
     [ <:expr< let $opt:rf$ $list:pel$ in $e$ >> ->
@@ -114,7 +114,7 @@ value subst mloc env =
         [ <:patt< NOTHING >> -> loop e
         | p -> <:expr< fun $p$ -> $loop e$ >> ]
     | <:expr< fun [ $list: peoel$ ] >> -> <:expr< fun [ $list: (List.map loop_peoel peoel)$ ] >>
-    | <:expr< $e1$ $e2$ >> as e ->
+    | <:expr< $e1$ $e2$ >> ->
         match loop e2 with
         [ <:expr< NOTHING >> -> loop e1
         | e2 -> <:expr< $loop e1$ $e2$ >> ]
@@ -182,7 +182,7 @@ value substp mloc env =
     | <:expr< { $list:pel$ } >> ->
         let ppl = List.map (fun (p, e) -> (p, loop e)) pel in
         <:patt< { $list:ppl$ } >>
-    | x ->
+    | _ ->
         Stdpp.raise_with_loc mloc
           (Failure
              "this macro cannot be used in a pattern (see its definition)") ]
@@ -230,7 +230,7 @@ value define eo x =
                   in
                   if List.length el = List.length sl then
                     let env = List.combine sl el in
-                    let e = subst loc env e in
+                    let e = subst env e in
                     Pcaml.expr_reloc (fun _ -> loc) (fst loc) e
                   else
                     incorrect_number loc el sl ] ]
@@ -376,7 +376,7 @@ EXTEND
       | "IFNDEF"; i = uident; "THEN"; e1 = expr; e2 = else_expr ->
           if is_defined i then e2 else e1
       | "DEFINE"; i = LIDENT; "="; def = expr; "IN"; body = expr ->
-          subst loc [(i, def)] body
+          subst [(i, def)] body
       ]]
   ;
   expr: LEVEL "simple"
