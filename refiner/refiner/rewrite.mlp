@@ -375,7 +375,7 @@ struct
     * Print a term by printing its opname.
     *)
    let print_term out t =
-      output_string out (string_of_opname (opname_of_term t))
+      debug_print out t
 
    (*
     * Name in the stack.
@@ -656,11 +656,10 @@ struct
                      RWSOMatch(rstack_so_index v stack, gen_subterms bvars subterms)
                else if subterms = [] then
                   (stack @ [FOVarPattern v]),
-                  RWSOVar(List.length stack, List.map (var_index bvars) subterms)
+                  RWSOVar(List.length stack, [])
                else
                   (stack @ [SOVarPattern (v, List.length subterms)]),
                   RWSOVar(List.length stack, List.map (var_index bvars) subterms)
-
 
             (* This is a second order variable instance *)
             else if rstack_so_mem v stack then
@@ -1013,11 +1012,11 @@ struct
                               names'.(i) <- s
                          | x ->
                               ref_raise(RefineError ("compute_namer", RewriteStringError "stack entry is not a string"))
-                  end
-             | None ->
-                  ()
-         done;
-         names'
+                     end
+                | None ->
+                     ()
+            done;
+            names'
       in
          namer
 
@@ -1162,8 +1161,8 @@ struct
                           if !debug_rewrite then
                              eprintf "Rewrite.match_redex.RWCheckVar: %s/%s%t" v' v eflush;
 #endif
-                           if v' <> v then
-                              ref_raise(RefineError ("match_redex_term", RewriteBadMatch (VarMatch v)))
+                          if v' <> v then
+                             ref_raise(RefineError ("match_redex_term", RewriteBadMatch (VarMatch v)))
                       | x ->
                          ref_raise(RefineError ("match_redex_term", RewriteStringError "stack entry is not a string"))
               end
@@ -1301,18 +1300,18 @@ struct
 
          | _ -> ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
 
-   and match_redex_bterms addrs stack bt' bt =
-       match bt', dest_bterm bt with
-          { rw_bvars = vars'; rw_bnames = names; rw_bterm = bterm' },
-          { bvars = vars; bterm = bterm } ->
-             set_bvars stack names vars;
-             if vars' = List.length vars then
-                match_redex_term addrs stack bterm' bterm
-             else
-                ref_raise(RefineError ("match_redex_bterms", RewriteBadMatch (BTermMatch bt)))
+    and match_redex_bterms addrs stack bt' bt =
+        match bt', dest_bterm bt with
+            { rw_bvars = vars'; rw_bnames = names; rw_bterm = bterm' },
+            { bvars = vars; bterm = bterm } ->
+               set_bvars stack names vars;
+               if vars' = List.length vars then
+                  match_redex_term addrs stack bterm' bterm
+               else
+                  ref_raise(RefineError ("match_redex_bterms", RewriteBadMatch (BTermMatch bt)))
 
    let match_redex addrs stack t tl = function
-      [] -> 
+      [] ->
          ref_raise(RefineError ("match_redex", StringError "progs list is empty"))
     | prg::progs ->
 #ifdef VERBOSE_EXN
@@ -1408,8 +1407,16 @@ struct
             in
                match stack.(i) with
                   StackBTerm(term, vars) ->
+#ifdef VERBOSE_EXN
+                     if !debug_subst then
+                        eprintf "RWSOSubst: BTerm: %a\n\t%a%t" debug_print term print_string_list vars eflush;
+#endif
                      subst term vars
                 | StackITerm ((term, vars, _, _) :: _) ->
+#ifdef VERBOSE_EXN
+                     if !debug_subst then
+                        eprintf "RWSOSubst: ITerm: %a\n\t%a%t" debug_print term print_string_list vars eflush;
+#endif
                      subst term vars
                 | _ ->
                      ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
@@ -1611,7 +1618,11 @@ struct
             List.mem v vars or check_bnames v bnames
          in
          let rec new_var vars bnames v i =
-            let v' = v ^ string_of_int 1 in
+            let v' = v ^ string_of_int i in
+#ifdef VERBOSE_EXN
+               if !debug_rewrite then
+                  eprintf "contracta_enames: try new name %s%t" v' eflush;
+#endif
                if check vars bnames v' then
                   new_var vars bnames v (i + 1)
                else
