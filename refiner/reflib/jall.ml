@@ -32,6 +32,7 @@
  *)
 open Lm_symbol
 open Lm_debug
+open Lm_string_set
 
 open Refiner.Refiner
 open Term
@@ -161,20 +162,10 @@ struct
    module OrderedAtom =
    struct
       type t = atom
-      let compare a1 a2 = if (a1.aname) = (a2.aname) then 0 else
-      if (a1.aname) < (a2.aname) then -1 else 1
+      let compare a1 a2 = String.compare a1.aname a2.aname
    end
 
-   module AtomSet = Set.Make(OrderedAtom)
-
-   module OrderedString =
-   struct
-      type t = string
-      let compare a1 a2 = if a1 = a2 then 0 else
-      if a1 < a2 then -1 else 1
-   end
-
-   module StringSet = Set.Make(OrderedString)
+   module AtomSet = Lm_set.LmMake(OrderedAtom)
 
    let jprover_bug = Invalid_argument "Jprover bug (Jall module)"
 
@@ -2275,7 +2266,7 @@ struct
             if (List.length sucs) = (List.length new_sucs) then   (* position with name f did not occur in sucs -- no deletion *)
                (collect_succ_sets sucs r)
             else
-               StringSet.union (StringSet.add f fset) (collect_succ_sets new_sucs r)
+               StringSet.union (StringSet.add fset f) (collect_succ_sets new_sucs r)
 
    let replace_ordering psucc_name sucs redord =
       let new_psucc_set = collect_succ_sets sucs redord in
@@ -2399,7 +2390,7 @@ struct
       match redord with
          [] -> []
        | (f,fset)::r ->
-            if (StringSet.mem f delset) then
+            if (StringSet.mem delset f) then
                update_redord delset r   (* delete all key elements f from redord which are in delset *)
             else
                let new_fset  = StringSet.diff fset delset in  (* no successor of f from delset should remain in fset *)
@@ -2415,13 +2406,6 @@ struct
                   (pos.name)::get_position_names rests
              | NodeA(pos,strees) ->
                   (pos.name)::(get_position_names ((Array.to_list strees) @ rests))
-
-   let rec slist_to_set slist =
-      match slist with
-         [] ->
-            StringSet.empty
-       | f::r ->
-            StringSet.add f (slist_to_set r)
 
    let rec print_purelist pr =
       match pr with
@@ -2444,7 +2428,7 @@ struct
    Format.force_newline ();
    Format.print_flush ();
 *)
-         let rednew = update_redord (slist_to_set pure_names) redord
+         let rednew = update_redord (StringSet.of_list pure_names) redord
          and connew = update_connections pure_names connections
          and unsolnew = update_list pure_names unsolved_list in
          (rednew,connew,unsolnew)
@@ -2744,10 +2728,10 @@ struct
       match redord with
          [] -> false
        | (f,fset)::r ->
-            if ((f = pname) or (not (StringSet.mem pname fset))) then
+            if ((f = pname) or (not (StringSet.mem fset pname))) then
                red_ord_block pname r
             else
-               true   (* then, we have (StringSet.mem pname fset) *)
+               true   (* then, we have (StringSet.mem fset pname) *)
 
    let rec check_wait_succ_LJ faddress ftree =
       match ftree with
@@ -3080,9 +3064,9 @@ struct
          [] ->
             []
        | (pos,fset)::r ->
-            if (pos = const) or (StringSet.mem const fset) then
+            if (pos = const) or (StringSet.mem fset const) then
 (* check reflexsivity during transitive closure wrt. addset ONLY!!! *)
-               if StringSet.mem pos addset then
+               if StringSet.mem addset pos then
                   raise Reflexive
                else
                   (pos,(StringSet.union fset addset))::(transitive_irreflexive_closure addset const r)
@@ -3096,7 +3080,7 @@ struct
             raise (Invalid_argument "Jprover: element in ordering missing")
        | (pos,fset)::r ->
             if pos = var then
-               StringSet.add pos fset
+               StringSet.add fset pos
             else
                search_set var r
 
@@ -3736,7 +3720,7 @@ let rec union_orderings first_orderings =
       [] ->
          StringSet.empty
     | (pos,fset)::r ->
-         StringSet.union (StringSet.add pos fset) (union_orderings r)
+         StringSet.union (StringSet.add fset pos) (union_orderings r)
 
 let rec select_orderings add_orderings =
    match add_orderings with
@@ -3810,14 +3794,10 @@ let rec add_multiplicity ftree pos_n  mult logic =
 
 (**************  Path checker   ****************************************************)
 
-let rec get_sets atom atom_sets =
-   match atom_sets with
-      [] -> raise (Invalid_argument "Jprover bug: atom not found")
-    | f::r ->
-         let (a,b,c) = f in
-         if atom = a then f
-         else
-            get_sets atom r
+let rec get_alpha atom = function
+   [] -> raise (Invalid_argument "Jprover bug: atom not found")
+ | (a, alpha, _) :: _ when atom = a -> alpha
+ | _ :: r -> get_alpha atom r
 
 let rec get_connections a alpha tabulist =
    match alpha with
@@ -3831,55 +3811,51 @@ let rec get_connections a alpha tabulist =
 let rec connections atom_rel tabulist =
    match atom_rel with
       [] -> []
-    | f::r ->
-         let (a,alpha,beta) = f in
+    | (a,alpha,_)::r ->
          (get_connections a alpha tabulist) @ (connections r (a::tabulist))
 
 let check_alpha_relation atom set atom_sets =
-   let (a,alpha,beta) = get_sets atom atom_sets in
-   AtomSet.subset set alpha
+   AtomSet.subset set (get_alpha atom atom_sets)
 
-let rec extset  atom_sets path closed =
+let rec extset atom_sets path closed =
    match atom_sets with
       [] -> AtomSet.empty
-    | f::r ->
-         let (at,alpha,beta) = f in
+    | (at,alpha,beta)::r ->
          if (AtomSet.subset path alpha) & (AtomSet.subset closed beta) then
-            AtomSet.add at (extset r path closed)
+            AtomSet.add (extset r path closed) at
          else
-            (extset r path closed)
+            extset r path closed
 
 let rec check_ext_list ext_list fail_set atom_sets =  (* fail_set consists of one atom only *)
    match ext_list with
       [] -> AtomSet.empty
     | f::r ->
          if (check_alpha_relation f fail_set atom_sets) then
-            AtomSet.add f (check_ext_list r fail_set  atom_sets)
+            AtomSet.add (check_ext_list r fail_set  atom_sets) f
          else
             (check_ext_list r fail_set atom_sets)
 
 let fail_ext_set ext_atom ext_set atom_sets =
    let ext_list = AtomSet.elements ext_set
-   and fail_set  = AtomSet.add ext_atom AtomSet.empty in
+   and fail_set = AtomSet.singleton ext_atom in
    check_ext_list ext_list fail_set atom_sets
 
 let rec ext_partners con path ext_atom (reduction_partners,extension_partners) atom_sets =
    match con with
       [] ->
          (reduction_partners,extension_partners)
-    | f::r ->
-         let (a,b) = f in
+    | (a,b)::r ->
          if List.mem ext_atom [a;b] then
             let ext_partner =
                if ext_atom = a then b else a
             in
             let (new_red_partners,new_ext_partners) =
 (* force reduction steps first *)
-               if (AtomSet.mem ext_partner path) then
-                  ((AtomSet.add ext_partner reduction_partners),extension_partners)
+               if (AtomSet.mem path ext_partner) then
+                  ((AtomSet.add reduction_partners ext_partner),extension_partners)
                else
                   if (check_alpha_relation ext_partner path atom_sets) then
-                     (reduction_partners,(AtomSet.add ext_partner extension_partners))
+                     (reduction_partners,(AtomSet.add extension_partners ext_partner))
                   else
                      (reduction_partners,extension_partners)
             in
@@ -3900,8 +3876,8 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
 
       let rec check_connections (reduction_partners,extension_partners) ext_atom =
          let try_one =
-            if reduction_partners = AtomSet.empty then
-               if extension_partners = AtomSet.empty then
+            if AtomSet.is_empty reduction_partners then
+               if AtomSet.is_empty extension_partners then
                   raise Failed_connections
                else
                   AtomSet.choose extension_partners
@@ -3922,14 +3898,14 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
                stringunify ext_atom try_one eqlist relate_pairs logic new_orderingQ atom_rel qprefixes
             in
 (*           print_endline ("make reduction ordering "^((string_of_int (List.length new_ordering)))); *)
-            let new_closed = AtomSet.add ext_atom closed in
+            let new_closed = AtomSet.add closed ext_atom in
             let ((next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),subproof) =
-               if AtomSet.mem try_one path then
+               if AtomSet.mem path try_one then
                   provable path new_closed (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ)
                      (* always use old first-order ordering for recursion *)
                else
-                  let new_path = AtomSet.add ext_atom path
-                  and extension = AtomSet.add try_one AtomSet.empty in
+                  let new_path = AtomSet.add path ext_atom
+                  and extension = AtomSet.singleton try_one in
                   let ((norderingQ,nredordering),neqlist,(nsigmaQ,nsigmaJ),p1) =
                      provable new_path extension (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ) in
                   let ((nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),p2) =
@@ -3941,14 +3917,14 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
          with Failed ->
 (*          print_endline ("new connection for "^(ext_atom.aname)); *)
 (*            print_endline ("Failed"); *)
-            check_connections ((AtomSet.remove try_one reduction_partners),
-                               (AtomSet.remove try_one extension_partners)
+            check_connections ((AtomSet.remove reduction_partners try_one),
+                               (AtomSet.remove extension_partners try_one)
                               ) ext_atom
          )
 
       in
-      let rec check_extension  extset =
-         if extset = AtomSet.empty then
+      let rec check_extension extset =
+         if AtomSet.is_empty extset then
             raise Failed             (* go directly to a new entry connection *)
          else
             let select_one = AtomSet.choose extset in
@@ -3967,7 +3943,7 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
 
       in
       let extset = extset atom_sets path closed in
-      if extset = AtomSet.empty then
+      if AtomSet.is_empty extset then
          ((orderingQ,reduction_ordering),eqlist,(sigmaQ,sigmaJ),[])
       else
          check_extension extset
@@ -3986,19 +3962,12 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
 
 (*************************** prepare and init prover *******************************************************)
 
-let rec list_to_set list =
-   match list with
-      [] -> AtomSet.empty
-    | f::r ->
-         let rest_set = list_to_set r in
-         AtomSet.add f rest_set
-
 let rec make_atom_sets atom_rel =
    match atom_rel with
       [] -> []
     | f::r ->
          let (a,alpha,beta) =  f in
-         (a,(list_to_set alpha),(list_to_set beta))::(make_atom_sets r)
+         (a,(AtomSet.of_list alpha),(AtomSet.of_list beta))::(make_atom_sets r)
 
 let rec predecessor address_1 address_2 ftree =
    match ftree with
@@ -4159,7 +4128,7 @@ let rec build_ftree (variable,old_term) pol stype address pos_n =
       let (succ_left,whole_left) = List.hd ordering_left
       and (succ_right,whole_right) = List.hd ordering_right in
       let pos_succs =
-         (StringSet.add succ_left (StringSet.add succ_right (StringSet.union whole_left whole_right)))
+         StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left
       in
       (NodeA(position,[|subtree_left;subtree_right|]),
        ((position.name,pos_succs)::(ordering_left @ ordering_right)),
@@ -4181,7 +4150,7 @@ let rec build_ftree (variable,old_term) pol stype address pos_n =
          let (succ_left,whole_left) = List.hd ordering_left
          and (succ_right,whole_right) = List.hd ordering_right in
          let pos_succs =
-            StringSet.add succ_left (StringSet.add succ_right (StringSet.union whole_left whole_right)) in
+            StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left in
          (NodeA(position,[|subtree_left;subtree_right|]),
           ((position.name),pos_succs) :: (ordering_left @ ordering_right),
           posn_right
@@ -4205,10 +4174,10 @@ let rec build_ftree (variable,old_term) pol stype address pos_n =
             let (succ_left,whole_left) = List.hd ordering_left
             and (succ_right,whole_right) = List.hd ordering_right in
             let pos_succs =
-               StringSet.add succ_left (StringSet.add succ_right (StringSet.union whole_left whole_right)) in
+               StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left in
             let pos_ordering = (position.name,pos_succs) :: (ordering_left @ ordering_right) in
             (NodeA(sposition,[|NodeA(position,[|subtree_left;subtree_right|])|]),
-             ((sposition.name,(StringSet.add position.name pos_succs))::pos_ordering),
+             ((sposition.name,(StringSet.add pos_succs position.name))::pos_ordering),
              posn_right
             )
          else
@@ -4227,10 +4196,10 @@ let rec build_ftree (variable,old_term) pol stype address pos_n =
                      (pos_n+2) in
                let (succ_left,whole_left) = List.hd ordering_left in
                let pos_succs =
-                  StringSet.add succ_left whole_left in
+                  StringSet.add whole_left succ_left in
                let pos_ordering = (position.name,pos_succs) :: ordering_left in
                (NodeA(sposition,[|NodeA(position,[| subtree_left|])|]),
-                ((sposition.name,(StringSet.add position.name pos_succs))::pos_ordering),
+                ((sposition.name,(StringSet.add pos_succs position.name))::pos_ordering),
                 posn_left
                )
             else
@@ -4246,7 +4215,7 @@ let rec build_ftree (variable,old_term) pol stype address pos_n =
                   let subtree_left,ordering_left,posn_left = build_ftree (v,t) pol stype_1 (address@[1]) (pos_n+1) in
                   let (succ_left,whole_left) = List.hd ordering_left in
                   let pos_succs =
-                     StringSet.add succ_left whole_left in
+                     StringSet.add whole_left succ_left in
                   (NodeA(position,[|subtree_left|]),
                    ((position.name,pos_succs) :: ordering_left),
                    posn_left
@@ -4268,10 +4237,10 @@ let rec build_ftree (variable,old_term) pol stype address pos_n =
                            (pos_n+2) in
                      let (succ_left,whole_left) = List.hd ordering_left in
                      let pos_succs =
-                        StringSet.add succ_left whole_left in
+                        StringSet.add whole_left succ_left in
                      let pos_ordering = (position.name,pos_succs) :: ordering_left in
                      (NodeA(sposition,[|NodeA(position,[|subtree_left|])|]),
-                      ((sposition.name,(StringSet.add position.name pos_succs))::pos_ordering),
+                      ((sposition.name,(StringSet.add pos_succs position.name))::pos_ordering),
                       posn_left
                      )
                   else      (* finally, term is atomic *)
@@ -4285,7 +4254,7 @@ let rec build_ftree (variable,old_term) pol stype address pos_n =
                      let sposition = {name=pos_name; address=address; op=At; pol=pol; pt=ptype_0; st=stype; label=term}
                      and position = {name=pos2_name; address=address@[1]; op=At; pol=pol; pt=PNull; st=stype_0; label=term} in
                      (NodeA(sposition,[|NodeAt(position)|]),
-                      [(sposition.name,(StringSet.add position.name StringSet.empty));(position.name,StringSet.empty)],
+                      [(sposition.name,(StringSet.singleton position.name));(position.name,StringSet.empty)],
                       pos_n+1
                      )
 
