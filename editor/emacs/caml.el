@@ -294,7 +294,7 @@ point is outside the region."
     (5  t   (alt prec infix) &)
     (5  t   (opt &+) declare & (opt end))
     (5  t   (alt define rewrite axiom primrw) & : &)
-    (4  t   (alt all exists) & : & \. &)
+    (4  t   (alt all exst) & : & \. &)
     (5  t   prim & : & : & = &)
     (5  t   mlterm & = & | &)
 

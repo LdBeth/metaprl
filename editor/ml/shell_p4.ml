@@ -69,6 +69,12 @@ struct
    let print_term t =
       Format.print_string (string_of_term t)
 
+   let print_term_fp out t =
+      let db = get_df (fun x -> x) Dform.null_base in
+      let buf = Rformat.new_buffer () in
+         Dform.format_term db buf t;
+         Rformat.print_to_channel 80 buf out
+
    (************************************************************************
     * QUOTATIONS                                                           *
     ************************************************************************)
@@ -449,7 +455,7 @@ struct
 
       str_item:
          [[ "refine"; e = refine_item ->
-             let e = <:expr< $uid:"Shell"$ . $lid:"refine"$ $e$ >> in
+             let e = <:expr< $uid:"Nl"$ . $lid:"refine"$ $e$ >> in
                 <:str_item< $exp: e$ >>
           ]];
 
@@ -479,13 +485,16 @@ struct
             eval_include nllib;
             List.iter eval_include !includes;
             Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_p4", "print_term"))));
-            Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Shell");
+            Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Nl");
                                                       pstr_loc = Location.none
                                                     }]);
             ()
       in
+         install_debug_printer print_term_fp;
          Printexc.catch init ()
 end
+
+let print_term = ShellP4.print_term
 
 (*
  * -*-

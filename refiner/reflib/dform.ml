@@ -357,13 +357,28 @@ and format_term buf shortener printer term =
  ************************************************************************)
 
 (*
+ * Sequents are handled specially.
+ *)
+let sequent_term =
+   let opname = mk_opname "sequent" nil_opname in
+      mk_simple_term opname [mk_var_term "ext"; mk_var_term "hyps"]
+
+(*
  * Print a term to a buffer.
  *)
 let format_short_term base shortener =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
       (* Check for a display form entry *)
-      let stack, items, { df_name = name; df_precedence = pr'; df_printer = printer } = lookup "format_short_term" base t in
+      let stack, items, { df_name = name; df_precedence = pr'; df_printer = printer } =
+         let t =
+            if is_sequent_term t then
+               sequent_term
+            else
+               t
+         in
+            lookup "format_short_term" base t
+      in
       let pr, parenflag =
          if pr' = inherit_prec then
             begin

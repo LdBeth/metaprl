@@ -277,25 +277,29 @@ let rec intersectq l = function
  * Subtract an element from a list.
  * Quadratic algorithm.
  *)
-let rec subtract l1 l2 = match l1 with
-   h::t ->
-      if List.mem h l2 then
-         t
-      else
-         h::(subtract t l2)
- | [] -> []
+let rec subtract l1 l2 =
+   match l1 with
+      h::t ->
+         if List.mem h l2 then
+            subtract t l2
+         else
+            h :: subtract t l2
+    | [] ->
+         []
 
 (*
  * Subtract an element from a list.
  * Quadratic algorithm.
  *)
-let rec subtractq l1 l2 = match l1 with
-   h::t ->
-      if List.memq h l2 then
-         t
-      else
-         h::(subtractq t l2)
- | [] -> []
+let rec subtractq l1 l2 =
+   match l1 with
+      h::t ->
+         if List.memq h l2 then
+            subtractq t l2
+         else
+            h :: subtractq t l2
+    | [] ->
+         []
 
 (*
  * Union of lists by structural equality.

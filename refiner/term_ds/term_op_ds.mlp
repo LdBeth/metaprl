@@ -378,6 +378,34 @@ struct
            term_terms = [] }}
 
    (*
+    * One token param.
+    *)
+   let is_token_simple_term opname t =
+      match dest_term t with
+         { term_op = { op_name = opname'; op_params = [Token _] };
+           term_terms = terms
+         } when Opname.eq opname opname' ->
+            no_bvars terms
+       | _ ->
+            false
+
+   let dest_token_simple_term opname t =
+      match dest_term t with
+         { term_op = { op_name = opname'; op_params = [Token n] };
+           term_terms = terms
+         } when Opname.eq opname opname' ->
+            n, List.map (dest_simple_bterm t) terms
+       | _ ->
+            ref_raise(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
+
+   let mk_token_simple_term opname n terms =
+      { free_vars = StringSet.empty;
+        core = Term { term_op = { op_name = opname; op_params = [Token n] };
+                      term_terms = List.map mk_simple_bterm terms
+               }
+      }
+
+   (*
     * Bound term.
     *)
    let is_dep1_term opname t = match get_core t with

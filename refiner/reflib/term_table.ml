@@ -14,6 +14,7 @@
 open Printf
 open Nl_debug
 open Opname
+open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
@@ -424,10 +425,18 @@ let rec execute prog stack =
             if !debug_term_table then
                eprintf "Term_table.execute: DtreeMatch: %a vs %a%t" (**)
                   print_shape shape print_shape shape' eflush;
-            if shape = shape' then
-               execute prog stack
+            if TermShape.eq shape shape' then
+               begin
+                  if !debug_term_table then
+                     eprintf "Term_table.execute: DtreeMatch: succeeded%t" eflush;
+                  execute prog stack
+               end
             else
-               raise Not_found
+               begin
+                  if !debug_term_table then
+                     eprintf "Term_table.execute: DtreeMatch: failed%t" eflush;
+                  raise Not_found
+               end
     | DtreeFlatten prog ->
          let h, t = split stack in
             if !debug_term_table then

@@ -1257,7 +1257,7 @@ struct
 #ifdef VERBOSE_EXN
                  if !debug_rewrite then
                     eprintf "Rewrite.match_redex.RWComposite: %s[%d](%d)/%a[%d](%d)%t" (**)
-                       (flat_opname name') (List.length params') (List.length bterms')
+                       (string_of_opname name') (List.length params') (List.length bterms')
                        debug_print t (List.length op.op_params) (List.length trm.term_terms)
                        eflush;
 #endif
@@ -1822,6 +1822,7 @@ struct
          begin
             match gstack with
                StackString s -> RewriteString s
+             | StackMString s -> RewriteString s
              | _ -> ref_raise(extract_exn)
          end
     | CVar _ ->
@@ -1835,18 +1836,21 @@ struct
          begin
             match gstack with
                StackNumber i -> RewriteInt (Num.int_of_num i)
+             | StackMString s -> RewriteString s
              | _ -> ref_raise(extract_exn)
          end
     | PSVar _ ->
          begin
             match gstack with
                StackString s -> RewriteString s
+             | StackMString s -> RewriteString s
              | _ -> ref_raise(extract_exn)
          end
     | PLVar _ ->
          begin
             match gstack with
                StackLevel l -> RewriteLevel l
+             | StackMString s -> RewriteString s
              | _ -> ref_raise(extract_exn)
          end
 

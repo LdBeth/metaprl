@@ -38,34 +38,44 @@ struct
     | ShapeVar
 
    (*
-    * When computing the shape, we don't allow meta-parameters.
-    * Raises Invalid_argument if this happens.
+    * Fold together meta-parameters and parameters.
     *)
+   let param_type = function
+      Number _ -> ShapeNumber
+    | String _ -> ShapeString
+    | Token _ -> ShapeToken
+    | Level _ -> ShapeLevel
+    | Var _ -> ShapeVar
+    | MNumber _ -> ShapeNumber
+    | MString _ -> ShapeString
+    | MToken _ -> ShapeToken
+    | MLevel _ -> ShapeLevel
+    | MVar _ -> ShapeVar
+    | _ ->
+         raise (Invalid_argument "Term.shape_of_term")
+
+   let bterm_type bt =
+      List.length (dest_bterm bt).bvars
 
    let shape_of_term trm =
       let t = dest_term trm in
       let op = t.term_op in
-      let param_type = function
-         Number _ -> ShapeNumber
-       | String _ -> ShapeString
-       | Token _ -> ShapeToken
-       | Level _ -> ShapeLevel
-       | Var _ -> ShapeVar
-       | MNumber _ -> ShapeNumber
-       | MString _ -> ShapeString
-       | MToken _ -> ShapeToken
-       | MLevel _ -> ShapeLevel
-       | MVar _ -> ShapeVar
-       | _ ->
-            raise (Invalid_argument "Term.shape_of_term")
-      in
-      let bterm_type bt =
-         List.length (dest_bterm bt).bvars
-      in
          { shape_opname = op.op_name;
            shape_params = List.map param_type op.op_params;
            shape_arities = List.map bterm_type t.term_terms
          }
+
+   let eq { shape_opname = name1;
+            shape_params = params1;
+            shape_arities = arities1
+       }
+       { shape_opname = name2;
+         shape_params = params2;
+         shape_arities = arities2
+       } =
+      (Opname.eq name1 name2)
+      & (params1 = params2)
+      & (arities1 = arities2)
 
    let print_shape out { shape_opname = name; shape_params = params; shape_arities = arities } =
       let print_param param =
@@ -92,7 +102,7 @@ struct
        | [] ->
             ()
       in
-         output_string out (flat_opname name);
+         output_string out (string_of_opname name);
          output_string out "[";
          List.iter print_param params;
          output_string out "]{";

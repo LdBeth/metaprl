@@ -9,7 +9,7 @@ INCLUDE = -I .\
 	-I $(ROOT)/theories/ocaml\
 	-I $(ROOT)/theories/base\
 	-I $(ROOT)/theories/itt\
-	-I $(ROOT)/theories/czf\
+	-I $(ROOT)/theories/tptp\
 	-I $(ROOT)/lib\
 	-I $(CAMLP4LIB)
 
@@ -81,6 +81,7 @@ CMXADEPS =\
 	$(CAMLP4LIB)/odyl.cmxa\
 	$(CAMLLIB)/unix.cmxa\
         $(CAMLLIB)/nums.cmxa\
+	$(OPTTHREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cmxa\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
@@ -90,7 +91,7 @@ CMXADEPS =\
 	$(ROOT)/theories/ocaml/ocaml_df.cmxa\
 	$(ROOT)/theories/base/base.cmxa\
 	$(ROOT)/theories/itt/itt.cmxa\
-	$(ROOT)/theories/czf/czf.cmxa\
+	$(ROOT)/theories/tptp/tptp.cmxa\
 	$(CAMLP4LIB)/pa_o.cmx\
 	$(CAMLP4LIB)/pa_op.cmx\
 	$(MAIN).cmxa
@@ -102,6 +103,7 @@ CMADEPS =\
 	$(CAMLP4LIB)/odyl.cma\
 	$(CAMLLIB)/unix.cma\
         $(CAMLLIB)/nums.cma\
+	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CAMLP4LIB)/camlp4_top.cma\
 	$(ROOT)/lib/util.cma\
@@ -112,7 +114,7 @@ CMADEPS =\
 	$(ROOT)/theories/ocaml/ocaml_df.cma\
 	$(ROOT)/theories/base/base.cma\
 	$(ROOT)/theories/itt/itt.cma\
-	$(ROOT)/theories/czf/czf.cma\
+	$(ROOT)/theories/tptp/tptp.cma\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(MAIN).cma
@@ -121,6 +123,7 @@ TCMADEPS =\
 	$(CAMLP4LIB)/odyl.cma\
 	$(CAMLLIB)/unix.cma\
         $(CAMLLIB)/nums.cma\
+	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
@@ -130,7 +133,7 @@ TCMADEPS =\
 	$(ROOT)/theories/ocaml/ocaml_df.cma\
 	$(ROOT)/theories/base/base.cma\
 	$(ROOT)/theories/itt/itt.cma\
-	$(ROOT)/theories/czf/czf.cma\
+	$(ROOT)/theories/tptp/tptp.cma\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(MAIN).cma
@@ -160,21 +163,21 @@ CCLIBS =\
 MAIN = nuprl-light
 NL = nl
 
-all: $(MAIN).cma $(NL).top
+all: $(MAIN).cma $(NL).run
 opt: $(MAIN).cmxa $(NL).opt
 install:: all
 
 $(NL).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS)
 	rm -f $@
-	$(OCAMLMKTOP) -o $@ -custom -linkall $(CMOBJS) $(RCMOFILES) $(CCLIBS)
+	$(OCAMLMKTOP) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(CCLIBS) $(LIBTHREADS)
 
 $(NL).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS)
 	rm -f $@
-	$(OCAMLC) -o $@ -custom -linkall $(TCMOBJS) $(TCMOFILES) $(CCLIBS)
+	$(OCAMLC) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(CCLIBS) $(LIBTHREADS)
 
 $(NL).opt: $(CMXOBJS) $(TCMXFILES)
 	rm -f $@
-	$(OCAMLOPT) -o $@ -linkall $(CMXOBJS) $(TCMXFILES) $(CCLIBS)
+	$(OCAMLOPT) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
 
 clean::
 	$(RM) -f *.p4* *.pp*

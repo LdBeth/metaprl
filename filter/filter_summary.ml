@@ -559,9 +559,9 @@ let find { info_list = summary } name =
        | CondRewrite { crw_name = n } ->
             n = name
        | MLTerm { mlterm_term = t' } ->
-            flat_opname (opname_of_term t') = name
+            string_of_opname (opname_of_term t') = name
        | Condition { mlterm_term = t' } ->
-            flat_opname (opname_of_term t') = name
+            string_of_opname (opname_of_term t') = name
        | DForm { dform_name = name' } ->
             name' = name
        | Prec s ->

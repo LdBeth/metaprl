@@ -40,6 +40,30 @@ struct
    type level_exp = TermType.level_exp
 
    (*
+    * Helper functins for simple terms.
+    *)
+   let is_simple_bterm bterm =
+      bterm.bvars = []
+
+   let mk_simple_bterm t =
+      { bvars = []; bterm = t }
+
+   let dest_simple_bterm t = function
+      { bvars = []; bterm = t } ->
+         t
+    | _ ->
+         ref_raise(RefineError ("dest_simple_bterm", TermMatchError (t, "not a simple term")))
+
+   let is_simple_bterms terms =
+      List.for_all is_simple_bterm terms
+
+   let mk_simple_bterms terms =
+      List.map mk_simple_bterm terms
+
+   let dest_simple_bterms t bterms =
+      List.map (dest_simple_bterm t) bterms
+
+   (*
     * Terms with no subterms.
     *)
    let is_no_subterms_term opname = function
@@ -375,6 +399,30 @@ struct
          { term_op = { op_name = opname; op_params = [Token n] };
            term_terms = []
          }
+
+   (*
+    * One token param, and no bound subterms.
+    *)
+   let is_token_simple_term opname = function
+      { term_op = { op_name = opname'; op_params = [Token _] };
+        term_terms = terms
+      } when Opname.eq opname opname' ->
+         is_simple_bterms terms
+    | _ ->
+         false
+
+   let dest_token_simple_term opname = function
+      { term_op = { op_name = opname'; op_params = [Token n] };
+        term_terms = terms
+      } as t when Opname.eq opname opname' ->
+         n, dest_simple_bterms t terms
+    | t ->
+         ref_raise(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
+
+   let mk_token_simple_term opname n terms =
+      { term_op = { op_name = opname; op_params = [Token n] };
+        term_terms = mk_simple_bterms terms
+      }
 
    (*
     * Bound term.

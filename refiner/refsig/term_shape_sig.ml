@@ -11,6 +11,7 @@ sig
 
    val shape_of_term : term -> shape
    val print_shape : out_channel -> shape -> unit
+   val eq : shape -> shape -> bool
 end
 
 (*

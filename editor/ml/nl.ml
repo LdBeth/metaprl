@@ -28,6 +28,7 @@ let save_all = save_all
 let create_rw = create_rw
 let create_axiom = create_axiom
 let create_thm = create_thm
+let create_tptp = create_tptp
 let create_opname = create_opname
 let create_condition = create_condition
 let create_parent = create_parent
@@ -66,6 +67,8 @@ let refine = refine
 let undo = undo
 let fold = fold
 let fold_all = fold_all
+
+let _ = Shell.main ()
 
 (*
  * -*-

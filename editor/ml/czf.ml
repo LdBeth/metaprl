@@ -26,10 +26,22 @@ open Itt_struct
 open Itt_w
 open Itt_derive
 
-open Tptp
-open Tptp_prove
-
 open Nl
+open Test
+
+open Czf_itt_set
+open Czf_itt_eq
+open Czf_itt_member
+open Czf_itt_sep
+open Czf_itt_union
+open Czf_itt_map
+open Czf_itt_all
+open Czf_itt_exists
+open Czf_itt_dall
+open Czf_itt_dexists
+open Czf_itt_sall
+open Czf_itt_sexists
+open Czf_itt_rel
 
 (*
  * Proof saving.
@@ -49,15 +61,9 @@ let zT, z =
    in
       zT, z
 
-let _ = load "tptp_prove"
-let _ = cd "tptp_prove"
+let _ = load "czf_itt_axioms"
+let _ = cd "czf_itt_axioms.subset_collection"
 let _ = set_writeable ()
-let _ = create_tptp "GEN"
-let _ = cd "GEN"
-(*
-let _ = create_tptp "ALG001-1"
-let _ = cd "ALG001-1"
-*)
 
 (*
  * -*-

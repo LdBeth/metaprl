@@ -83,7 +83,8 @@ struct
     * Use format library for term printing.
     *)
    let print_term t =
-      Format.print_string (string_of_term t)
+      Format.print_string (string_of_term t);
+      flush stdout
 
    (************************************************************************
     * QUOTATIONS                                                           *
@@ -132,18 +133,40 @@ struct
    module TermGrammar = MakeTermGrammar (TermGrammarBefore)
 
    (*
+    * Save terms in a table, and return a function to
+    * fetch the term.
+    *)
+   let (inline_terms : (int * term) list ref) = ref []
+   let inline_var = ref 0
+
+   let save_term t =
+      let loc = 0, 0 in
+      let v = !inline_var in
+         incr inline_var;
+         inline_terms := (v, t) :: !inline_terms;
+         <:expr< $lid: "shell_get_term"$ $int: string_of_int v$ >>
+
+   let reset_terms () =
+      inline_terms := []
+
+   let shell_get_term i =
+      try List.assoc i !inline_terms with
+         Not_found ->
+            raise (RefineError ("shell_get_term", StringIntError ("term is not found", i)))
+
+   (*
     * String -> string translator.
     *)
-                        let term_exp s =
-                           let cs = Stream.of_string s in
-                           let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
-                              build_ml_term (0, 0) t
+   let term_exp s =
+      let cs = Stream.of_string s in
+      let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
+         save_term t
 
-                        let term_patt s =
-                           raise (Failure "Shell_p4.term_patt: not implemented yet")
+   let term_patt s =
+      raise (Failure "Shell_p4.term_patt: not implemented yet")
 
-                        let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
-                        let _ = Quotation.default := "term"
+   let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
+   let _ = Quotation.default := "term"
 
    (************************************************************************
     * MODULE                                                               *
@@ -152,16 +175,16 @@ struct
    (*
     * Reference to current command set.
     *)
-                        let toploop =
-                           let rsrc = Nltop.ext_toploop_resource in
-                              ref (rsrc.resource_extract rsrc)
+   let toploop =
+      let rsrc = Nltop.ext_toploop_resource in
+         ref (rsrc.resource_extract rsrc)
 
    (*
     * Set the module.
     * Collect the toplevel commands to use.
     * Shell commands are always added in.
     *)
-                        let set_module name commands =
+   let set_module name commands =
       let name = String.capitalize name in
       let rsrc =
          try Nltop.get_resource name with
@@ -170,6 +193,7 @@ struct
                Nltop.ext_toploop_resource
       in
       let rsrc = toploop_add rsrc commands in
+      let rsrc = toploop_add rsrc ["shell_get_term", IntFunExpr (fun i -> TermExpr (shell_get_term i))] in
          toploop := rsrc.resource_extract rsrc
 
    (************************************************************************
@@ -481,11 +505,22 @@ struct
    (*
     * Evaluate a directive.
     *)
-   let eval_directive loc str = function
+   let rec use name =
+      let inx = open_in name in
+         toploop false (stream_of_channel inx);
+         close_in inx
+
+   and eval_directive loc str = function
       DpNon ->
          eprintf "Directive DpNon: %s%t" str eflush
     | DpStr str' ->
-         eprintf "Directive DpStr: %s/%s%t" str str' eflush
+         begin
+            match str with
+               "use" ->
+                  use str'
+             | _ ->
+                  raise (Failure (sprintf "Unknown %s %s" str str'))
+         end
     | DpInt str' ->
          eprintf "Directive DpInt: %s/%s%t" str str' eflush
     | DpIde strs ->
@@ -496,28 +531,30 @@ struct
    (*
     * Evaluate a toplevel phrase.
     *)
-   let eval_phrase = function
+   and eval_phrase = function
       PhStr (loc, item) ->
          eval_str_item loc item
     | PhDir (loc, str, param) ->
          eval_directive loc str param
 
    (*
-    * We just loop on the input.  Evaluation is performed by
-    * the toploop resource.
+    * Toploop reads phrases, then prints errors.
     *)
-   let main () =
-      let instream = stream_of_channel stdin in
-         printf "Nuprl-Light %s\n%t" version eflush;
-         while true do
-            output_string stdout "# ";
-            flush stdout;
+   and toploop prompt instream =
+      let loop = ref true in
+         while !loop do
+            if prompt then
+               begin
+                  output_string stdout "# ";
+                  flush stdout
+               end;
+            reset_terms ();
             try
                match Grammar.Entry.parse Pcaml.top_phrase instream with
                   Some phrase ->
                      eval_phrase phrase
                 | None ->
-                     exit 0
+                     loop := false
             with
                Stdpp.Exc_located ((start, finish), exn) ->
                   let df = get_dfbase () in
@@ -537,7 +574,16 @@ struct
                      Filter_exn.format_exn df buf exn;
                      print_to_channel 80 buf stderr;
                      eflush stderr
-         done
+             done
+
+   (*
+    * We just loop on the input.  Evaluation is performed by
+    * the toploop resource.
+    *)
+   let main () =
+      let instream = stream_of_channel stdin in
+         printf "Nuprl-Light %s\n%t" version eflush;
+         toploop true instream
 end
 
 (*

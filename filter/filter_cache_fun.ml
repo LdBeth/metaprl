@@ -269,7 +269,7 @@ struct
    let create_optable () =
       let t = Hashtbl.create 79 in
       let add s =
-         Hashtbl.add t s (make_opname [s])
+         Hashtbl.add t s (mk_opname s nil_opname)
       in
          List.iter add standard_opnames;
          t
@@ -417,7 +417,9 @@ struct
       cache.info <- Filter_summary.add_command cache.info item
 
    let set_command cache item =
-      cache.info <- Filter_summary.set_command cache.info item
+      try cache.info <- Filter_summary.set_command cache.info item with
+         Not_found ->
+            add_command cache item
 
    (*
     * Add a resource.

@@ -137,20 +137,6 @@ let dest_opname { opname_name = name } =
    name
 
 (*
- * Flatten the opname into a single string.
- *)
-let flat_opname op =
-   let rec flatten = function
-      [h] ->
-         h
-    | h::t ->
-         h ^ "!" ^ (flatten t)
-    | [] ->
-         "<null-opname>"
-   in
-      flatten op.opname_name
-
-(*
  * Print as a string.
  * The opname has to be reversed.
  * This function is overly long,

@@ -349,7 +349,7 @@ struct
             raise (NotLoaded name)
 
    let set info item =
-      eprintf "Setting item%t" eflush;
+      eprintf "Package_info.set%t" eflush;
       match info with
          { pack_info = Some info } ->
             Cache.StrFilterCache.set_command info (item, (0, 0))
@@ -562,31 +562,25 @@ struct
    (*
     * A new proof cannot be saved.
     *)
-   let new_proof { pack_arg = { ref_label = label; ref_args = args } } name hyps goal =
-      let denorm = Term_copy.denormalize_term (Term_copy.create_denorm ()) in
-      let aterm =
-         { aterm_goal = denorm goal;
-           aterm_hyps = List.map denorm hyps;
-           aterm_label = label;
-           aterm_args = Tactic_type.map_attributes denorm args
-         }
+   let new_proof { pack_name = mod_name;
+                   pack_arg = { ref_fcache = fcache; ref_label = label; ref_args = args }
+       } name hyps goal =
+      let loc = 0, 0 in
+      let refiner =
+         if !debug_sentinal then
+            eprintf "Find refiner for %s.%s%t" mod_name name eflush;
+         let refiner = (get_theory mod_name).thy_refiner in
+            try snd (dest_refiner (find_refiner refiner name)) with
+               Not_found ->
+                  eprintf "Warning: using default refiner for %s%t" name eflush;
+                  refiner
       in
-      let step =
-         let loc = 0, 0 in
-            { step_goal = aterm;
-              step_subgoals = [aterm];
-              step_ast = (<:expr< $lid: "idT"$ >>);
-              step_text = "idT"
-            }
-      in
-      let proof =
-         { proof_status = StatusPartial;
-           proof_step = ProofStep step;
-           proof_children = [ChildGoal aterm];
-           proof_extras = []
-         }
-      in
-         ref (ProofRaw (name, proof))
+      let sentinal = sentinal_of_refiner refiner in
+      let seq = Sequent.create sentinal label (mk_msequent goal hyps) fcache args in
+      let step = Proof_step.create seq [seq] "idT" (<:expr< $lid: "idT"$ >>) idT in
+      let proof = Proof.of_step step in
+      let ped = Proof_edit.ped_of_proof [] proof in
+         ref (ProofEdit ped)
 
    (*
     * Get the status of the proof.
@@ -625,9 +619,11 @@ struct
             let refiner =
                if !debug_sentinal then
                   eprintf "Find refiner for %s.%s%t" name name' eflush;
-               try find_refiner (get_theory name).thy_refiner name' with
-                  Not_found ->
-                     raise (RefineError ("ped_of_proof", StringStringError ("refiner not found", name')))
+               let refiner = (get_theory name).thy_refiner in
+                  try snd (dest_refiner (find_refiner refiner name')) with
+                     Not_found ->
+                        eprintf "Warning: using default refiner for %s%t" name eflush;
+                        refiner
             in
             let sentinal = sentinal_of_refiner refiner in
             let proof' = Proof.proof_of_io_proof arg eval sentinal proof' in

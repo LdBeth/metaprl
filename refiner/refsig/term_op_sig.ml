@@ -117,5 +117,9 @@ sig
    val is_token_term : opname -> term -> bool
    val mk_token_term : opname -> string -> term
    val dest_token_term : opname -> term -> string
+
+   val is_token_simple_term : opname -> term -> bool
+   val mk_token_simple_term : opname -> string -> term list -> term
+   val dest_token_simple_term : opname -> term -> string * term list
 end
 

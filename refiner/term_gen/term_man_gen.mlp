@@ -620,7 +620,7 @@ struct
             else
                ref_raise(RefineError (get_decl_number_name, TermMatchError (t, "malformed sequent")))
       in
-         aux 0 (goal_of_sequent t)
+         aux 1 (goal_of_sequent t)
 
    (*
     * See if a var is free in the rest of the sequent.

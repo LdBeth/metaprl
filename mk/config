@@ -50,6 +50,12 @@ endif
 ifndef OCAMLOPT
    OCAMLOPT = ocamlopt$(EXE)
 endif
+ifndef OCAMLLEX
+   OCAMLLEX = ocamllex$(EXE)
+endif
+ifndef OCAMLYACC
+   OCAMLYACC = ocamlyacc$(EXE)
+endif
 ifndef PRLC
    PRLC = $(ROOT)/bin/prlc$(EXE) -lib $(ROOT)/lib
 endif
@@ -62,7 +68,10 @@ endif
 # This is tested only on Linux i386.
 #
 THREADS = -thread
-LIBTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
+THREADSLIB = $(CAMLLIB)/threads/threads.cma
+OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
+LIBTHREADS = -cclib -lthreads -cclib -lunix -cclib -lpthread
+OPTTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
 
 #
 # Configuration
@@ -172,7 +181,7 @@ $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
 	fi
 
 $(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES)
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(CCLIBS) $(LIBTHREADS)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(CCLIBS) $(OPTTHREADS)
 	if [ -f $(MAIN).exe ]; then\
 		mv $(MAIN).exe $(MAIN).bak;\
 		mv $(MAIN).bak $(MAIN);\
@@ -266,18 +275,15 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 	$(CC) $(CFLAGS) -c $*.c
 
 #
-# Don't remove *.cmoz or *.cmot files because they
-# may contain proofs.
-#
 clean::
-	$(RM) *.run *.cma *.cmxa *.cmx *.cmi* *.cmo *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
+	$(RM) *.run *.cma *.cmxa *.cmx *.cmi* *.cmo* *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
 	$(RM) gmon.out $(ZMLFILES) $(ZMLIFILES) $(PMLFILES) $(PMLIFILES)
 
 depend:: $(MLFILES) $(MLIFILES)
 	$(RM) Makefile.tmp
 	touch Makefile.tmp
 ifneq ($(MLFILES),)
-	$(OCAMLDEP) -I $(CAMLLIB) $(OCAMLDEPFLAGS) $(INCLUDE) $(MLFILES) $(MLIFILES) >> Makefile.tmp
+	$(OCAMLDEP) $(OCAMLDEPFLAGS) $(INCLUDE) $(MLFILES) $(MLIFILES) >> Makefile.tmp
 endif
 ifneq ($(CFILES),)
 	$(CC) $(CFLAGS) -MM $(CFILES) >> Makefile.tmp

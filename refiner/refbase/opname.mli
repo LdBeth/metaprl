@@ -22,7 +22,6 @@ val normalize_opname : opname -> opname
 
 (* Destructors *)
 val dest_opname : opname -> string list
-val flat_opname : opname -> string
 val string_of_opname : opname -> string
 
 (*

@@ -2,6 +2,8 @@
  * Define the additional grammar for the shell.
  *)
 
+open Refiner.Refiner.TermType
+
 open Tacticals
 open Shell_p4_type
 
@@ -15,6 +17,11 @@ module ShellP4 : ShellP4Sig
  * the tactic that was compiled during eval_tactic.
  *)
 val install_tactic : tactic -> unit
+
+(*
+ * Print a term.
+ *)
+val print_term : term -> unit
 
 (*
  * -*-

@@ -179,7 +179,6 @@ struct
     * Update the current item being edited.
     *)
    let set_item modname name =
-      let _ = eprintf "View item %s.%s%t" modname name eflush in
       let pack = Package.get info.packages modname in
       let item =
          try Package.find pack name with
@@ -426,6 +425,17 @@ struct
       in
          print_exn create name
 
+   let create_tptp name =
+      let create name =
+         let seq = Tptp_load.load name in
+         let package = get_current_package info in
+         let item = Shell_rule.create package name in
+            item.edit_set_goal seq;
+            item.edit_save ();
+            touch ()
+      in
+         print_exn create name
+
    let create_opname name =
       let create name =
          touch ();
@@ -635,7 +645,6 @@ struct
                   ShellP4.set_df None;
                   ShellP4.set_mk_opname None;
          end;
-         view ".";
          pwd ()
 
    (*
@@ -652,6 +661,7 @@ struct
        "create_rw", StringFunExpr (fun s -> UnitExpr (create_rw s));
        "create_axiom", StringFunExpr (fun s -> UnitExpr (create_axiom s));
        "create_thm", StringFunExpr (fun s -> UnitExpr (create_thm s));
+       "create_tptp", StringFunExpr (fun s -> UnitExpr (create_tptp s));
        "create_opname", StringFunExpr (fun s -> UnitExpr (create_opname s));
        "create_condition", StringFunExpr (fun s -> UnitExpr (create_condition s));
        "create_parent", StringFunExpr (fun s -> UnitExpr (create_parent s));
