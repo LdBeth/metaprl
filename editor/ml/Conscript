@@ -7,7 +7,7 @@ $env = $env->clone(
 		    "#refiner/refiner", "#refiner/reflib", "#library", "#ensemble",
 		    "#filter/boot", "#filter/base", "#filter/filter",
                     "#theories/tactic", "#theories/ocaml", "#theories/base",
-                    "#theories/itt"],
+                    "#theories/itt", "#theories/mc"],
 	ENV => {
 		PATH => "$ENV{'PATH'}:./filter/filter",
 		MPLIB => "lib",
@@ -49,7 +49,8 @@ OCamlSources $env
 	'nuprl_run.ml',
 	'mp_top.ml';
 
-OCamlDepends $env 'shell', 'itt_theory';
+OCamlDepends $env 'shell', 'itt_theory',
+                  'mc_theory', 'fir_test';
 
 OCamlProgram $env 'mp.opt', 'mp_top';
 
