@@ -866,7 +866,8 @@ struct
        "fold_all",         UnitFunExpr     (fun () -> UnitExpr (fold_all ()));
        "kreitz",           UnitFunExpr     (fun () -> UnitExpr (kreitz ()));
        "sync",             UnitFunExpr     (fun () -> UnitExpr (sync ()));
-       "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all ()))]
+       "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all ()));
+       "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)))]
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *

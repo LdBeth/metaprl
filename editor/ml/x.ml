@@ -53,6 +53,8 @@ open Itt_prod
 open Itt_prop_decide
 open Itt_bool
 
+open Refl_term
+
 open Mp
 
 (*

@@ -256,7 +256,7 @@ $(MP).opt: $(CMXOBJS) $(TCMXFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
 
 clean::
-	$(RM) -f *.p4* *.pp*
+	$(RM) -f *.p4* *.pp* mp_version.ml
 
 mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi
 	echo -n "let version = \"MetaPRL 0.5:\\n\\t\\tbuild [`date`]\\n\\t\\ton `hostname`\"" > mp_version.ml

@@ -137,3 +137,6 @@ opt: $(RMLIFILES) $(RCMIFILES) $(RMLIFILES2) $(RCMIFILES2) $(RCMXAFILES) $(ROPT_
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MAIN).cma $(MAIN).cmxa $(MLIFILES) $(CMIFILES) $(MPLIB)
+
+clean::
+	$(RM) thread_refiner.ml
