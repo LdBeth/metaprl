@@ -1,153 +1,12 @@
-module StringBase : sig type t = string val compare : 'a -> 'a -> int end
-module StringSet :
-  sig
-    type elt = StringBase.t
-    and t = Mc_set.McMake(StringBase).t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : t -> elt -> bool
-    val add : t -> elt -> t
-    val singleton : elt -> t
-    val remove : t -> elt -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val fold : ('a -> elt -> 'a) -> 'a -> t -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val max_elt : t -> elt
-    val choose : t -> elt
-    val add_list : t -> elt list -> t
-    val subtract_list : t -> elt list -> t
-    val of_list : elt list -> t
-    val to_list : t -> elt list
-  end
-module StringTable :
-  sig
-    type key = StringBase.t
-    and 'a t = 'a Mc_map.McMake(StringBase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-  end
-module IntBase : sig type t = int val compare : 'a -> 'a -> int end
-module IntSet :
-  sig
-    type elt = IntBase.t
-    and t = Mc_set.McMake(IntBase).t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : t -> elt -> bool
-    val add : t -> elt -> t
-    val singleton : elt -> t
-    val remove : t -> elt -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val fold : ('a -> elt -> 'a) -> 'a -> t -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val max_elt : t -> elt
-    val choose : t -> elt
-    val add_list : t -> elt list -> t
-    val subtract_list : t -> elt list -> t
-    val of_list : elt list -> t
-    val to_list : t -> elt list
-  end
-module IntTable :
-  sig
-    type key = IntBase.t
-    and 'a t = 'a Mc_map.McMake(IntBase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-  end
-module IntMTable :
-  sig
-    type key = IntBase.t
-    and 'a t = 'a Mc_map.McMakeList(IntBase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-    val filter : 'a t -> key -> ('a list -> 'a list) -> 'a t
-    val find_all : 'a t -> key -> 'a list
-    val iter_all : (key -> 'a list -> unit) -> 'a t -> unit
-    val mapi_all : (key -> 'a list -> 'b list) -> 'a t -> 'b t
-    val fold_all : ('a -> key -> 'b list -> 'a) -> 'a -> 'b t -> 'a
-    val data_all : 'a t -> 'a list list
-  end
+open Lm_set_sig
+open Lm_map_sig
+
+module StringSet : LmSet with type elt = string
+module StringTable : LmMap with type key = string
+module IntSet : LmSet with type elt = int
+module IntTable : LmMap with type key = int
+module IntMTable : LmMapList with type key = int
+
 type pos = string * int * int * int * int
 and id = string * pos
 and token_option =
@@ -172,101 +31,15 @@ exception ParseError of pos * string
 type cregexp = bool * string * Str.regexp
 and multi_regexp = bool * string * string list
 and psymbol = NonTerminal of string | Terminal of string | Empty | Eof
+
 val compare_strings : 'a -> 'a -> int
 val psymbol_compare : psymbol -> psymbol -> int
 val psymbol_list_compare : psymbol list -> psymbol list -> int
-module PSymbolBase :
-  sig type t = psymbol val compare : psymbol -> psymbol -> int end
-module PSymbolSet :
-  sig
-    type elt = PSymbolBase.t
-    and t = Mc_set.McMake(PSymbolBase).t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : t -> elt -> bool
-    val add : t -> elt -> t
-    val singleton : elt -> t
-    val remove : t -> elt -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val fold : ('a -> elt -> 'a) -> 'a -> t -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val max_elt : t -> elt
-    val choose : t -> elt
-    val add_list : t -> elt list -> t
-    val subtract_list : t -> elt list -> t
-    val of_list : elt list -> t
-    val to_list : t -> elt list
-  end
-module PSymbolTable :
-  sig
-    type key = PSymbolBase.t
-    and 'a t = 'a Mc_map.McMake(PSymbolBase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-  end
-module PSymbolMTable :
-  sig
-    type key = PSymbolBase.t
-    and 'a t = 'a Mc_map.McMakeList(PSymbolBase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-    val filter : 'a t -> key -> ('a list -> 'a list) -> 'a t
-    val find_all : 'a t -> key -> 'a list
-    val iter_all : (key -> 'a list -> unit) -> 'a t -> unit
-    val mapi_all : (key -> 'a list -> 'b list) -> 'a t -> 'b t
-    val fold_all : ('a -> key -> 'b list -> 'a) -> 'a -> 'b t -> 'a
-    val data_all : 'a t -> 'a list list
-  end
+
+module PSymbolSet : LmSet with type elt = psymbol
+module PSymbolTable : LmMap with type key = psymbol
+module PSymbolMTable : LmMapList with type key = psymbol
+
 val psymbol_set_compare : PSymbolSet.t -> PSymbolSet.t -> int
 type mp_pre_term = Refiner.Refiner.Term.term * pos
 and mp_term = Refiner.Refiner.Term.term
@@ -284,97 +57,11 @@ val production_id_compare : int -> int -> int
 type production = psymbol * psymbol list
 val production_compare :
   psymbol * psymbol list -> psymbol * psymbol list -> int
-module ProductionBase :
-  sig
-    type t = production
-    val compare : psymbol * psymbol list -> psymbol * psymbol list -> int
-  end
-module ProductionIdBase :
-  sig type t = production_id val compare : int -> int -> int end
-module ProductionTable :
-  sig
-    type key = ProductionBase.t
-    and 'a t = 'a Mc_map.McMake(ProductionBase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-  end
-module ProductionIdTable :
-  sig
-    type key = ProductionIdBase.t
-    and 'a t = 'a Mc_map.McMake(ProductionIdBase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-  end
-module ProductionIdMTable :
-  sig
-    type key = ProductionIdBase.t
-    and 'a t = 'a Mc_map.McMakeList(ProductionIdBase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-    val filter : 'a t -> key -> ('a list -> 'a list) -> 'a t
-    val find_all : 'a t -> key -> 'a list
-    val iter_all : (key -> 'a list -> unit) -> 'a t -> unit
-    val mapi_all : (key -> 'a list -> 'b list) -> 'a t -> 'b t
-    val fold_all : ('a -> key -> 'b list -> 'a) -> 'a -> 'b t -> 'a
-    val data_all : 'a t -> 'a list list
-  end
+
+module ProductionTable : LmMap with type key = production
+module ProductionIdTable : LmMap with type key = production_id
+module ProductionIdMTable : LmMapList with type key = production_id
+
 type production_table = production_id ProductionTable.t
 and production_id_table = (psymbol * psymbol list * string option)
                           ProductionIdTable.t
@@ -387,69 +74,19 @@ and crewrites = {
   rw_parser : crewrite_table;
 } 
 and item = production_id * int
+
 val item_compare : int * int -> int * int -> int
-module ItemBase :
-  sig type t = item val compare : int * int -> int * int -> int end
+
 type comp_item = int
 val item_of_comp_item : int -> int * int
 val comp_item_of_item : int * int -> int
 val comp_item_compare : int -> int -> int
 exception IntSetCompareResult of int
 val int_set_compare : IntSet.t -> IntSet.t -> int
-module IntSetBase :
-  sig type t = IntSet.t val compare : IntSet.t -> IntSet.t -> int end
-module IntSetMap :
-  sig
-    type key = IntSetBase.t
-    and 'a t = 'a Mc_map.McMake(IntSetBase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-  end
-module Parser_state :
-  sig
-    type key = ItemBase.t
-    and 'a t = 'a Mc_map.McMake(ItemBase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-  end
+
+module IntSetMap : LmMap with type key = IntSet.t
+module Parser_state : LmMap with type key = item
+
 type parser_state = PSymbolSet.t Parser_state.t
 and state_struct = { state_map : parser_state; state_cache : IntSet.t; } 
 and state_list = parser_state list
@@ -461,76 +98,10 @@ and state_with_id_list_struct = (state_struct * int) list
 and state_id = int
 and action_edge = state_id * state_id * psymbol
 val action_edge_compare : 'a * 'b * psymbol -> 'a * 'b * psymbol -> int
-module ActionEdgeBase :
-  sig
-    type t = action_edge
-    val compare : 'a * 'b * psymbol -> 'a * 'b * psymbol -> int
-  end
-module Action_edges :
-  sig
-    type elt = ActionEdgeBase.t
-    and t = Mc_set.McMake(ActionEdgeBase).t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : t -> elt -> bool
-    val add : t -> elt -> t
-    val singleton : elt -> t
-    val remove : t -> elt -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val fold : ('a -> elt -> 'a) -> 'a -> t -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val max_elt : t -> elt
-    val choose : t -> elt
-    val add_list : t -> elt list -> t
-    val subtract_list : t -> elt list -> t
-    val of_list : elt list -> t
-    val to_list : t -> elt list
-  end
-module AcceptBase : sig type t = state_id val compare : 'a -> 'a -> int end
-module Accepts :
-  sig
-    type elt = AcceptBase.t
-    and t = Mc_set.McMake(AcceptBase).t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : t -> elt -> bool
-    val add : t -> elt -> t
-    val singleton : elt -> t
-    val remove : t -> elt -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val fold : ('a -> elt -> 'a) -> 'a -> t -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val max_elt : t -> elt
-    val choose : t -> elt
-    val add_list : t -> elt list -> t
-    val subtract_list : t -> elt list -> t
-    val of_list : elt list -> t
-    val to_list : t -> elt list
-  end
+
+module Action_edges : LmSet with type elt = action_edge
+module Accepts : LmSet with type elt = state_id
+
 type token_info = id * token_option list
 and grammar_state = {
   grammar_nonterminals : StringSet.t;
@@ -567,40 +138,9 @@ and parser_env = {
 } 
 and ploc = state_id * psymbol
 val ploc_compare : 'a * psymbol -> 'a * psymbol -> int
-module FABase :
-  sig type t = ploc val compare : 'a * psymbol -> 'a * psymbol -> int end
-module ParserFA :
-  sig
-    type key = FABase.t
-    and 'a t = 'a Mc_map.McMakeList(FABase).t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : 'a t -> key -> 'a -> 'a t
-    val find : 'a t -> key -> 'a
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> key -> 'b -> 'a) -> 'a -> 'b t -> 'a
-    val fold_map : ('a -> key -> 'b -> 'a * 'c) -> 'a -> 'b t -> 'a * 'c t
-    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
-    val forall : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val isect_mem : 'a t -> (key -> bool) -> 'a t
-    val union : 'a t -> 'a t -> 'a t
-    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
-    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
-    val keys : 'a t -> key list
-    val data : 'a t -> 'a list
-    val filter : 'a t -> key -> ('a list -> 'a list) -> 'a t
-    val find_all : 'a t -> key -> 'a list
-    val iter_all : (key -> 'a list -> unit) -> 'a t -> unit
-    val mapi_all : (key -> 'a list -> 'b list) -> 'a t -> 'b t
-    val fold_all : ('a -> key -> 'b list -> 'a) -> 'a -> 'b t -> 'a
-    val data_all : 'a t -> 'a list list
-  end
+
+module ParserFA : LmMapList with type key = ploc
+
 type pentry =
     Shift of state_id
   | Goto of state_id

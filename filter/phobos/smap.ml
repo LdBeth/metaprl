@@ -24,7 +24,8 @@
  * granicz@cs.caltech.edu
  *)
 
-open Mc_map
+open Lm_map_sig
+open Lm_map
 
 (*
  * These are the functions provided by the table.
@@ -60,8 +61,8 @@ struct
       let compare = Pervasives.compare
    end
 
-   module SMap2 = McMake (IntModule)
-   module SMapShadow = McMake (Base)
+   module SMap2 = LmMake (IntModule)
+   module SMapShadow = LmMake (Base)
 
    type key = Base.t
    type 'elt tt = (key SMap2.t * ('elt * int) SMapShadow.t)

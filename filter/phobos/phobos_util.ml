@@ -427,7 +427,7 @@ let states_contain_and_id states state =
  *)
 (*let state_cache = ref Parser_state.empty*)
 
-exception IntSetRetrieve of IntSetBase.t
+exception IntSetRetrieve of IntSet.t
 
 let int_set_retrieve_key map res =
    try

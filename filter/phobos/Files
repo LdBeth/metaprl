@@ -1,6 +1,4 @@
 PHOBOS_FILES =\
-	mc_map\
-	mc_set\
 	xstr_search\
 	smap\
 	phobos_state\
