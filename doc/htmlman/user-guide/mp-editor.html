@@ -7,6 +7,8 @@
 
 <H1>MetaPRL Module Editor</H1>
 
+<H2>Introduction</H2>
+
 <P>The <I>module editor</I> is used to navigate the module hierarchy,
 and to fulfill <TT>interactive</TT> proof obigations. The modules
 are presented as a module hierarchy, and the editor includes commands
@@ -15,7 +17,7 @@ multiple proofs that are being edited. Proofs are saved as complete
 <I>tactic-trees</I>, allowing proofs to be later navigated and
 modified if necessary.</P>
 
-<H4>Getting started</H4>
+<H2>Getting started</H2>
 
 <P>The editor provides a top-loop that is compiled with the modules
 to the edited. The standard editor, in the directory <TT>editor/ml</TT>
@@ -71,7 +73,7 @@ MetaPRL version 0.1
 # <B>#use &quot;x.ml&quot;</B></PRE>
 </BLOCKQUOTE>
 
-<H4>Module navigation</H4>
+<H2>Module navigation</H2>
 
 <P>All editor commands are declared in the interface <TT>editor/ml/mp.mli</TT>.
 The editor maintains a state value representing the &quot;current
@@ -1064,7 +1066,7 @@ its status:</P>
   <LI><TT>*</TT> if the proof is complete.
 </UL>
 
-<H4>Proof editing</H4>
+<H2>Proof editing</H2>
 
 <P>Proof editing is performed by changing the current directory
 to be the proof to be edited. The <TT>ls</TT> command then produces
@@ -2120,7 +2122,7 @@ NATURALSIZEFLAG="0" ALIGN="BOTTOM"><IMG SRC="../chars/CHAR32.gif"
 WIDTH="8" HEIGHT="12" BORDER="0" NATURALSIZEFLAG="0" ALIGN="BOTTOM"></PRE>
 </BLOCKQUOTE>
 
-<H4>Creating new objects</H4>
+<H2>Creating new objects</H2>
 
 <P>New objects are created in a module with the following <TT>create_</TT>
 commands (note that these functions are mostly disabled in the
@@ -2161,7 +2163,7 @@ inference rule. The <TT>set_assumptions</TT> function sets the
 assumptions for the rule. The <TT>set_redex</TT> and <TT>set_contractum</TT>
 functions are used just for rewrite rules.</P>
 
-<H4>Proof checking</H4>
+<H2>Proof checking</H2>
 
 <P>There are two functions for checking proofs. A proof checks
 only if all the logical rules it uses are valid rules of its logic,

@@ -6,6 +6,8 @@
 
 <H1>MetaPRL Display Forms</H1>
 
+<H2>Introduction</H2>
+
 <P>MetaPRL provides built-in support for <I>pretty-printing</I>
 logical expressions, as well as ML programs. The display form
 mechanism provides automatic introduction of parentheses based
@@ -244,7 +246,7 @@ font.</P>
   <P><B><TT>dform</TT></B><TT> wedge_df : wedge = `&quot;\203&quot;</TT></P>
 </BLOCKQUOTE>
 
-<H4>Options</H4>
+<H2>Options</H2>
 
 <P>Display form <I>options</I> are used to provide precedence
 information. There are three options:</P>
@@ -265,7 +267,7 @@ context. The <TT>inherit</TT>option is used for creating <I>transparent</I>
 display form, such as the <TT>slot</TT> term, which passes the
 precedence of its context to its subterm.</P>
 
-<H4>The <TT>slot</TT> expression</H4>
+<H2>The <TT>slot</TT> expression</H2>
 
 <P>The <TT>slot</TT> performs the precedence computation for parenthesizing
 subterms. The general slot syntax includes an optional parameter:</P>
@@ -297,12 +299,12 @@ If the slot body is empty, the parameter is displayed using a
   normalized form.
 </UL>
 
-<H4>Literals</H4>
+<H2>Literals</H2>
 
 <P>The <TT>`&quot;<I>s</I>&quot;</TT> form displays the string
 <I>s</I>. It is equivalent to <TT>slot[<I>&quot;s&quot;</I>]</TT>.</P>
 
-<H4>Line breaking and <I>zones</I></H4>
+<H2>Line breaking and <I>zones</I></H2>
 
 <P>The display mechanism divides the output into <I>zones</I>
 that specify line breaking behavior. There are two types of line
@@ -346,7 +348,7 @@ string <TT>&quot;&quot;</TT>. For convenience, the <TT>hspace</TT>
 term is defined in the <TT>Nuprl_font</TT> module as <TT>hbreak[&quot;
 &quot;:s,&quot;&quot;:s]</TT>.</P>
 
-<H4>Indentation</H4>
+<H2>Indentation</H2>
 
 <P>Indentation is specified with the left-margin operators <TT>pushm[</TT><I>tab</I><TT>:n]</TT>
 and <TT>popm</TT>. These operations establish the location of
@@ -358,7 +360,7 @@ plus <I>tab</I> characters. The <I>tab</I> option can be omitted;
 it defaults to 0. The <TT>popm</TT> term removes the margin installed
 with the last <TT>pushm</TT>.</P>
 
-<H4>Example</H4>
+<H2>Example</H2>
 
 <P>As an example, we give the display form for the if-then-else
 term defined in the module <TT>Itt_bool</TT>.</P>

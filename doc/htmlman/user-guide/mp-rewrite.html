@@ -7,12 +7,14 @@
 
 <H1>MetaPRL Computational Rewriting</H1>
 
+<H2>Intoroduction</H2>
+
 <P>MetaPRL defines two kinds of logical inferences: <I>computational
 rewriting</I> and <I>inference rules</I>. This page describes
 computational rewriting. <A HREF="mp-axiom.html">Inference rules</A>
-are described on the next page.</P>
+are described on the previous page.</P>
 
-<H4>Declarations</H4>
+<H2>Declarations</H2>
 
 <P>Rewrites are declared with the following form:</P>
 
@@ -58,7 +60,7 @@ and also the argument of the application.</P>
 <TT>   'b['a] &lt;--&gt; (lambda{v. 'b['v]} 'a)</TT></PRE>
 </BLOCKQUOTE>
 
-<H4>Implementations</H4>
+<H2>Implementations</H2>
 
 <P>Rewrites are <I>implemented</I> with two forms: rewrites that
 are primitive to a logic use the <TT>prim_rw</TT> form:</P>

@@ -6,6 +6,8 @@
 
 <H1>MetaPRL Terms</H1>
 
+<H2>Introduction</H2>
+
 <P><I>Terms</I> are the logical <I>syntax.</I> All logical statements
 are expressed as terms, and new term syntax is introduced with
 the <TT>declare</TT> directive. All operations in the system are
@@ -100,7 +102,7 @@ are the (possibly bound) subterms. If either of the <I>bterms</I>
 and <I>params</I> list are empty in a term, the brackets may be
 omitted.</P>
 
-<H4>Variables</H4>
+<H2>Variables</H2>
 
 <P>Variables are a built-in term with the opname <TT>variable</TT>.
 There are two types of variables. <I>First-order</I> variables
@@ -122,9 +124,9 @@ Second order variables include their subterms in square brackets,
 so <TT>'v['v1; 'v2]</TT> is the short form for the second-order
 variable in the last paragraph.</P>
 
-<H3>Examples</H3>
+<H2>Examples</H2>
 
-<H4>Constants</H4>
+<H3>Constants</H3>
 
 <P>Term syntax is added to a module with the <TT>declare</TT>
 directive. The <I>meaning</I> of the term is not defined at the
@@ -170,7 +172,7 @@ expressions can contain multiple indices: the universe <TT>univ[(i
 | j'):l]</TT> is the minimum type universe containing both <TT>univ[i:l]</TT>
 and <TT>univ[j':l]</TT>.</P>
 
-<H4>Expressions</H4>
+<H3>Expressions</H3>
 
 <P>Expressions are also defined with the term syntax. For example,
 the <TT>Itt_int</TT> module declares terms to represent arithmetic,
@@ -225,7 +227,7 @@ are some of the types defined in the <TT>Itt_logic</TT> module:</P>
 <B>declare </B>all{'A; x. 'B['x]}</PRE>
 </BLOCKQUOTE>
 
-<H3>Simplified Syntax</H3>
+<H2>Simplified Syntax</H2>
 
 <P>The uniform syntax is verbose: each term contains an operator,
 and brackets for subterms. The verbosity can obscure the meaning
@@ -246,7 +248,7 @@ declared,as in the following sequence:</P>
 <B>let </B>t = &lt;&lt; true <B>or </B>false &gt;&gt;</PRE>
 </BLOCKQUOTE>
 
-<H4>Logic syntax</H4>
+<H3>Logic syntax</H3>
 
 <BLOCKQUOTE>
   <P><TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
@@ -301,7 +303,7 @@ declared,as in the following sequence:</P>
   </TABLE></P>
 </BLOCKQUOTE>
 
-<H4>Type syntax</H4>
+<H3>Type syntax</H3>
 
 <BLOCKQUOTE>
   <P><TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
@@ -356,7 +358,7 @@ declared,as in the following sequence:</P>
   </TABLE></P>
 </BLOCKQUOTE>
 
-<H4>Arithmetic syntax</H4>
+<H3>Arithmetic syntax</H3>
 
 <BLOCKQUOTE>
   <P><TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">

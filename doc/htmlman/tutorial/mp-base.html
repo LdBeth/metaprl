@@ -5,7 +5,9 @@
 </HEAD>
 <BODY BGCOLOR="#ffffff">
 
-<H3>MetaPRLTutorial: Basic Logic operators</H3>
+<H2>MetaPRLTutorial: Basic Logic operators</H2>
+
+<H3>Introduction</H3>
 
 <P>Our logic initially has seven modules, one for each of the
 logical operators. Each module has an <I>interface</I> defined
@@ -14,7 +16,7 @@ in a <TT>.ml</TT> file. The interface defines the syntax, and
 the implementation provides the rules, display, and tactics that
 implement the module.</P>
 
-<H4>The <TT>False</TT> interface</H4>
+<H3>The <TT>False</TT> interface</H3>
 
 <P>First, define the interface for the <I>false</I> operator in
 the module <TT>Fol_false</TT>.</P>
@@ -39,7 +41,7 @@ represent the <I>false</I> operator. Next, compile the interface.</P>
 file contains the ML signature, and <TT>fol_false.ml</TT> contains
 the logical signature for the module.</P>
 
-<H4>The <TT>False</TT> implementation</H4>
+<H3>The <TT>False</TT> implementation</H3>
 
 <P>The implementation for false contains the same syntax declaration,
 it includes a display form, and it defines the basic rules for
@@ -74,7 +76,7 @@ states that anything can be derived from a false assumption.</P>
 axioms in the first-order logic. There is no computational content
 to either rule, and the proof terms are the trivial proof <TT>trivial</TT>.</P>
 
-<H4>The <TT>True</TT> interface</H4>
+<H3>The <TT>True</TT> interface</H3>
 
 <P>The module defining <I>true</I> is similar to the <I>false</I>
 module. Try defining it yourself (the distribution contains example

@@ -7,6 +7,8 @@
 
 <H1>MetaPRL Axioms and Inference Rules</H1>
 
+<H2>Introduction</H2>
+
 <P>The MetaPRL <I>meta</I>-logic defines a higher order logic
 of <I>Horn</I> formulas. The logic includes a <I>term</I> language,
 described in the page on <A HREF="mp-terms.html">MetaPRL terms</A>,
@@ -27,7 +29,7 @@ each module defines a logic that contains the rules defined in
 the module, and in all ancestor modules. The module system is
 discussed in the <A HREF="mp-modules.html">module system page</A>.</P>
 
-<H4>Interface</H4>
+<H2>Interface</H2>
 
 <P>A module interface declares the <I>signature</I> of a logic;
 it includes declarations for each of the <I>public</I> axioms
@@ -114,7 +116,7 @@ to prove the conjunction <TT>'a1 &amp; 'a2</TT> in any context
 <TT>'H</TT>, it is sufficient to prove <TT>'a1</TT> and <TT>'a2</TT>
 in the same context.</P>
 
-<H4>Implementation</H4>
+<H2>Implementation</H2>
 
 <P>Axioms and inference rules are implemented two ways: they can
 be derived from previous rules, are they can be as <I>primitive</I>
@@ -169,7 +171,7 @@ following form:</P>
 and it introduces a proof obligation. The proof is constructed
 with the <A HREF="mp-editor.html">proof editor</A>.</P>
 
-<H4>Tactics</H4>
+<H2>Tactics</H2>
 
 <P>When an <TT>rule</TT> is declared, the system creates a <I>tactic</I>
 that can be used to apply the rule. Tactics are the general reasoning
