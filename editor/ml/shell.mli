@@ -127,6 +127,11 @@ sig
    val edit_list_prec_rels : string -> (string * term * term) list
    val edit_create_thm : string -> string -> unit
    val edit_cd_thm : string -> string -> unit
+   val edit_set_goal : string -> string -> term -> unit
+   val edit_set_redex : string -> string -> term -> unit
+   val edit_set_contractum : string -> string -> term -> unit
+   val edit_set_assumptions : string -> string -> term list -> unit
+   val edit_set_params : string -> string -> term Filter_summary.param list -> unit
    val edit_refine : int list -> string -> msequent * msequent list * msequent list
    val edit_node : int list -> string option * msequent * msequent list * msequent list
    val edit_undo : unit -> unit

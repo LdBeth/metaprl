@@ -214,7 +214,7 @@ NATIVE_CCLIBS =\
 MAIN = meta-prl
 MP = mp
 
-all: $(MAIN).cma $(MP).top # $(MP).run
+all: $(MAIN).cma $(MP).top $(MP).run
 opt: $(MAIN).cmxa $(MP).opt
 install:: all
 

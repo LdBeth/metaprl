@@ -1045,6 +1045,29 @@ struct
          edit_cd_thm mname name
 
    (*
+    * Wrappers because Nuprl5 doesn't know about loading packages.
+    *)
+   let edit_set_goal modname thmname t =
+      edit_cd_thm modname thmname;
+      set_goal t
+
+   let edit_set_redex modname thmname t =
+      edit_cd_thm modname thmname;
+      set_redex t
+
+   let edit_set_contractum modname thmname t =
+      edit_cd_thm modname thmname;
+      set_contractum t
+
+   let edit_set_assumptions modname thmname tl =
+      edit_cd_thm modname thmname;
+      set_assumptions tl
+
+   let edit_set_params modname thmname pl =
+      edit_cd_thm modname thmname;
+      set_params pl
+
+   (*
     * Return the current node.
     *)
    let edit_addr addr =
