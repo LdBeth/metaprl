@@ -224,6 +224,7 @@ let spec =
     "-c", Unit (add_argv "-c"), "produce object file";
     "-o", String (add_string_argv "-o"), "specify output file";
     "-a", Unit (add_argv "-a"), "produce archive file";
+    "-compact", Unit (add_argv "-compact"), "produce a smaller but slower code";
     "-custom", Unit (add_argv "-custom"), "generate custom executable";
     "-ccopt", String (add_string_argv "-ccopt"), "C option";
     "-cclib", String (add_string_argv "-cclib"), "C library";
@@ -283,6 +284,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.18  1998/06/27 02:25:06  nogin
+ * Added -compact option
+ *
  * Revision 1.17  1998/06/16 16:25:35  jyh
  * Added itt_test.
  *
