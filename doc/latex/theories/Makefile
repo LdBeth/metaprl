@@ -72,7 +72,7 @@ $(NAME).ind: $(INPUTS) $(TEXFILES)
 #	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
 $(NAME).pdf: $(INPUTS) $(TEXFILES) $(NAME).dvi
 	dvipdfm -p letter -o $@ $(NAME).dvi
-	echo $(NAME).pdf : `grep -a '/Type /Page$$' $(NAME).pdf | wc -l` pages 1>&2
+	echo $(NAME).pdf : `grep -a '/Type */Page$$' $(NAME).pdf | wc -l` pages 1>&2
 
 $(NAME).ps: $(INPUTS) $(TEXFILES) $(NAME).dvi
 	dvips -t letter -o $@ $(NAME).dvi
