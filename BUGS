@@ -156,6 +156,10 @@ a) Make sure that nobody can cheat the system by starting to mute strings.
 b) Let the compiler and GC know that we are not going to mute strings (which should allow
 them to be more efficient).
 
+4.8) (2000.06.09 nogin)
+When autoT is ran on <<sequent [squash] { >- "type"{'O} } >> (with no assumtions),
+MetaPRL crashes with segmentation fault!
+
 PARSER & FILTER
 
 5.1) Rules and rewrites should be added to toploop. 
