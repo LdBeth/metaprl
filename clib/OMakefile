@@ -10,10 +10,6 @@ CFILES =\
 	termsize\
 	locale
 
-if $(not $(equal $(OSTYPE), Win32))
-   CFLAGS += -Wno-unused-variable
-   export
-
 StaticCLibraryInstall($(MPINSTALL), $(LIB), clib, $(CFILES))
 
 #

@@ -138,10 +138,10 @@ depend: check_config
 
 mk/config: mk/make_config.sh
 	@echo Making mk/config...
-	@ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" READLINE="$(READLINE)" NCURSES="$(NCURSES)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" mk/make_config.sh
+	@ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" READLINE="$(READLINE)" NCURSES="$(NCURSES)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" mk/make_config.sh
 
 mk/config.local:
-	@touch mk/config.local
+	@cp -f mk/config.local.empty mk/config.local
 
 check_omake::
 	@if [ -e .omakedb ]; then \

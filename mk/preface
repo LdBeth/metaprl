@@ -4,20 +4,13 @@
 #    ROOT: root directory of the source tree
 #
 
+include $(ROOT)/mk/defaults
+
 #
 # User definitions - TERMS, REFINER, SEQ_SET, ENSROOT, OCAMLSRC, CCC, THEORIES
 #
 include $(ROOT)/mk/config
 include $(ROOT)/mk/config.local
-
-MP_VERSION=0.9.0
-
-#
-# Versions of Ocaml/Camlp4 that are compatible with MetaPRL
-# CAML_VERSIONS shoud be a space-separated list of versions
-#
-CAML_VERSIONS=3.06
-CAMLP4_VERSIONS=3.06
 
 # All the names for "yes"
 YESFLAGS=1 true True t T TRUE Y y yes Yes YES
@@ -27,25 +20,25 @@ ALL_THEORIES = base ocaml_doc itt ocaml_sos fol czf phobos sil tptp fir experime
 # Outdated and does not currently compile: lf
 
 ifndef TERMS
-   TERMS=undefined
+   TERMS=$(TERMS_DEFAULT)
 endif
 ifndef REFINER
-   REFINER=undefined
+   REFINER=$(REFINER_DEFAULT)
 endif
 ifndef MAKE_OPTS
    MAKE_OPTS=-s
 endif
 ifndef SEQ_SET
-   SEQ_SET=Lm_array
+   SEQ_SET=$(SEQ_SET_DEFAULT)
 endif
 ifndef ENSROOT
-   ENSROOT=undefined
+   ENSROOT=$(ENSROOT_DEFAULT)
 endif
 ifndef OCAMLSRC
-   OCAMLSRC=undefined
+   OCAMLSRC=$(OCAMLSRC_DEFAULT)
 endif
 ifndef TESTS
-   TESTS=no
+   TESTS=$(TESTS_DEFAULT)
 endif
 ifneq (,$(findstring $(TESTS),$(YESFLAGS)))
    TESTS=YES
@@ -53,7 +46,7 @@ else
    TESTS=no
 endif
 ifndef CCC
-   CCC=gcc -O2 -Wall -Wno-unused-variable
+   CCC=$(CCC_DEFAULT)
 endif
 CC=$(CCC)
 
@@ -71,6 +64,17 @@ ifeq ($(OSTYPE),posix)
 endif
 ifeq ($(OSTYPE),solaris)
    OSTYPE=Solaris
+endif
+
+#
+# NATIVE_ENABLED and BYTE_ENABLED are only set here in case
+# the mk/config is created in make and then used by omake
+#
+ifndef NATIVE_ENABLED
+   NATIVE_ENABLED=$(NATIVE_ENABLED_DEFAULT)
+endif
+ifndef BYTE_ENABLED
+   BYTE_ENABLED=$(BYTE_ENABLED_DEFAULT)
 endif
 
 #
@@ -94,7 +98,7 @@ endif
 # Theory directories to compile
 #
 ifndef THEORIES
-   THEORIES = $(DEFAULT_THEORIES)
+   THEORIES = $(THEORIES_DEFAULT)
 endif
 
 ifeq ($(ROOT),.) 
@@ -105,7 +109,7 @@ endif
 
 SUPPORT_DIRS =  $(addprefix $(ADDROOT)support/, display shell tactics)
 ifeq ($(THEORIES),all)
-   MP_DIRS = $(SUPPORT_DIRS) $(addprefix $(ADDROOT)theories/, $(ALL_THEORIES))
+   MP_DIRS = $(SUPPORT_DIRS) $(addprefix $(ADDROOT)theories/, $(THEORIES_ALL))
 else
    MP_DIRS = $(SUPPORT_DIRS) $(addprefix $(ADDROOT)theories/, $(THEORIES))
 endif
@@ -145,11 +149,11 @@ else
 endif
 
 ifndef CAMLLIB
-   CAMLLIB = /usr/lib/ocaml
+   CAMLLIB = $(CAMLLIB_DEFAULT)
 endif
 
 ifndef CAMLP4LIB
-   CAMLP4LIB := /usr/lib/ocaml/camlp4
+   CAMLP4LIB = $(CAMLP4LIB_DEFAULT)
 endif
 
 ifndef MPLIB

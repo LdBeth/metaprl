@@ -14,6 +14,11 @@ if $(not $(defined VERBOSE))
    OMakeFlags(-S --progress)
 
 #
+# Configuration defaults
+#
+.INCLUDE: mk/defaults
+
+#
 # We always need threads
 #
 OCAMLFLAGS += -thread
@@ -25,7 +30,10 @@ OCAMLFLAGS += -thread
 #
 if $(equal $(OSTYPE), Win32)
    .INCLUDE: mk/config
-       copy mk\config.win32 mk\config
+      copy mk\config.win32 mk\config
+
+   .INCLUDE: mk/config.local
+      copy mk\config.local.empty mk\config.local 
 
    #
    # No native-code version of camlp4 on windows
@@ -47,20 +55,28 @@ if $(equal $(OSTYPE), Win32)
 
 else
    .INCLUDE: mk/config
-       ROOT=$(ROOT) mk/make_config.sh
-       $(CP) mk/config mk/config.win32
+      ROOT="$(ROOT)" TERMS="$(TERMS_DEFAULT)" REFINER="$(REFINER_DEFAULT)" MAKE_OPTS="" SEQ_SET="$(SEQ_SET_DEFAULT)" CCC="$(CCC_DEFAULT)" ENSROOT="$(ENSROOT_DEFAULT)" OCAMLSRC="$(OCAMLSRC_DEFAULT)" THEORIES="$(THEORIES_DEFAULT)" TESTS="$(TESTS_DEFAULT)" READLINE="yes" NCURSES="no" SLOPPY_DEPENDENCIES="no" NATIVE_ENABLED="$(NATIVE_ENABLED_DEFAULT)" BYTE_ENABLED="$(BYTE_ENABLED_DEFAULT)" mk/make_config.sh
+      $(CP) mk/config mk/config.win32
 
-   #
-   # JYH: I'm not sure why these are not set in mk/config...
-   #
-   CAMLLIB = $(dir /usr/lib/ocaml)
-   CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
+   mk/config: mk/make_config.sh
+      ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" READLINE="$(READLINE)" NCURSES="$(NCURSES)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" mk/make_config.sh
+
+   .INCLUDE: mk/config.local
+      $(CP) mk/config.local.empty mk/config.local
+
+   if $(not $(defined CAMLLIB))
+      CAMLLIB = $(dir $(CAMLLIB_DEFAULT))
+      export
+   
+   if $(not $(defined CAMLP4LIB))
+      CAMLP4LIB = $(dir $(CAMLP4LIB_DEFAULT))
+      export
 
    #
    # Generic CC options
    #
    CC = $(CCC)
-   CFLAGS = -Wall -g -O2
+   CFLAGS =
    export
 
 #
@@ -176,15 +192,6 @@ SUPPORT_DIRS = $(dir $(addprefix support/, display shell tactics))
 SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 
 #
-# Theories also have special options
-#
-DEFAULT_THEORIES = base itt
-
-MC_THEORIES = mojave
-
-ALL_THEORIES = base itt fol czf phobos sil experimental/compile
-
-#
 # Commands to compile theory files
 #
 PRLC = $(file lib/prlc$(EXE))
@@ -212,8 +219,7 @@ if true
     OCAMLINCLUDES = $(OCAMLINCLUDES) -I $(CAMLP4LIB) -I $(LIB)
 
     # These directories use prlc
-    THEORIES = $(if $(equal $(THEORIES), all), $(ALL_THEORIES), $(THEORIES))
-    THEORIES = $(if $(equal $(THEORIES), default), $(DEFAULT_THEORIES), $(THEORIES))
+    THEORIES = $(if $(equal $(THEORIES), all), $(THEORIES_ALL), $(THEORIES))
     MP_DIRS  = $(SUPPORT_DIRS) $(dir $(addprefix theories/, $(THEORIES)))
 
     .SUBDIRS: $(MP_DIRS) editor/ml

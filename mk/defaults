@@ -1,0 +1,41 @@
+#
+# Note: this file is read both by omake and make build systems
+#
+
+#
+# The version of the MetaPRL program.
+#
+MP_VERSION=0.9.1
+
+#
+# Versions of Ocaml/Camlp4 that are compatible with MetaPRL
+# CAML_VERSIONS shoud be a space-separated list of versions
+#
+CAML_VERSIONS=3.06
+CAMLP4_VERSIONS=3.06
+
+#
+# Theories to compile - default and all
+#
+THEORIES_DEFAULT = base itt
+THEORIES_ALL = base ocaml_doc itt ocaml_sos fol czf phobos sil tptp fir experimental/compile mojave
+# Outdated and does not currently compile: lf
+
+#
+# Location of OCAML libraries
+#
+CAMLLIB_DEFAULT=/usr/lib/ocaml
+CAMLP4LIB_DEFAULT=$(CAMLLIB_DEFAULT)/camlp4
+
+#
+# Defaults for the mk/config variables
+#
+TERMS_DEFAULT=undefined
+REFINER_DEFAULT=undefined
+SEQ_SET_DEFAULT=Lm_array
+ENSROOT_DEFAULT=undefined
+OCAMLSRC_DEFAULT=undefined
+TESTS_DEFAULT=no
+CCC_DEFAULT=gcc -O2 -Wall -Wno-unused-variable
+NATIVE_ENABLED_DEFAULT=yes
+BYTE_ENABLED_DEFAULT=no

@@ -1,0 +1,9 @@
+#
+# Put extra variable definitions in here.
+#
+
+#
+# Examples:
+#
+# CAMLLIB = /usr/local/lib/ocaml
+# CAMLP4LIB = /usr/local/lib/ocaml/camlp4

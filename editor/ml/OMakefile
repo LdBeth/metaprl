@@ -76,7 +76,6 @@ CMALIBS_ens =  $(LIB)/trefiner.cma
 CMXALIBS_ens = $(LIB)/trefiner.cmxa
 
 # JYH: have to update these to match $(ROOT)/OMakefile
-MP_VERSION=0.7.2
 THREADS = -thread
 THREADSLIB = $(CAMLLIB)/threads/threads.cma
 OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
@@ -219,11 +218,11 @@ $(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(NATIVE_CLIBS) $(ARDEPS) $(
 # Dumb Windows doesnt know about quotes
 #
 if $(equal $(OSTYPE), Win32)
-    mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi
+    mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi $(ROOT)/mk/defaults
         echo let version = "MetaPRL $(MP_VERSION):\n\t\tbuild [%DATE% %TIME%]\n\t\ton %COMPUTERNAME%\n\t\tUses $(REFINER) Refiner_$(TERMS)" > mp_version.ml
         $(OCAMLC) -c $(OCAMLCFLAGS) mp_version.ml
 
-    mp_version.cmx: $(CMXOBJS) $(CMXADEPS) mp_version.cmi
+    mp_version.cmx: $(CMXOBJS) $(CMXADEPS) mp_version.cmi $(ROOT)/mk/defaults
         echo let version = "MetaPRL $(MP_VERSION):\n\t\tbuild [%DATE% %TIME%]\n\t\ton %COMPUTERNAME%\n\t\tUses $(REFINER) Refiner_$(TERMS)" > mp_version.ml
         $(OCAMLOPT) -c $(OCAMLOPTFLAGS) mp_version.ml
 
