@@ -335,31 +335,6 @@ struct
          BODY
       ENDIF
 
-   let alpha_equal_vars (t, v) (t', v') =
-      LETMACRO BODY = try equal_term (List_util.zip v v') t t' with Failure _ -> false
-      IN
-      IFDEF VERBOSE_EXN THEN
-         if !debug_alpha_equal then
-            try
-               let _ = equal_term (List_util.zip v v') t t' in
-               eprintf "alpha_equal_vars: true%t" eflush;
-               true
-            with Failure _ ->
-               eprintf "alpha_equal_vars: false%t" eflush;
-               false
-         else BODY
-      ELSE
-         BODY
-      ENDIF
-
-   let eq_comp_var v = function
-      { term_op = { op_name = opname; op_params = [Var v'] };
-        term_terms = []
-      } when Opname.eq opname var_opname ->
-         v' = v
-    | _ ->
-         false
-
    let alpha_equal_vars t v t' v' =
       LETMACRO BODY = try equal_term (List_util.zip v v') t t' with Failure _ -> false
       IN
