@@ -1,127 +1,104 @@
 DOCUMENTATION:
 
-*) Documentation suggests to use mp and x.mp
+1.1) Documentation suggests to use mp and x.mp
 while mpopt and mptop should be used instead
 
-*) Make system is not documented
+1.2) Make system is not documented
 
 EDITOR
 
-*) Shell.cd function tries to expand proofs, it should not
+2.1) Shell.cd function tries to expand proofs, it should not
 
-*) Currently there is no way to change the statement of a theorem once
+2.2) Currently there is no way to change the statement of a theorem once
 you started proving it. We need to be able to do it without 
 erasing the proof. 
 
-*) Loading two theories that both include the same theory produces unexpected results.
+2.3) (Confirmed on 1999.10.08 by nogin)
+Loading two theories that both include the same theory produces unexpected results.
 For example,
 
-        MetaPRL 0.5.2:
-                build [Sun May 16 16:50:01 EDT 1999]
+        Objective Caml version 2.02
+
+        MetaPRL 0.6.0:
+                build [Fri Oct  8 18:20:11 EDT 1999]
                 on tulare.cs.cornell.edu
+                Uses VERBOSE Refiner_ds
 
         Camlp4 Parsing version 2.02
 
 # #use "x.ml";;
-# load "itt_dfun";;
-- : unit = ()
 # cd "itt_dfun";;
 - : string = "/itt_dfun"
+# ls "";;
+[...]
 # <<'a->'b>>;;
-- : Refiner.Refiner.Term.term = a но b
-# load "itt_list";;
-- : unit = ()
+a но b- : Refiner.Refiner.Term.term =
 # cd "/itt_list";;
 - : string = "/itt_list"
+# ls "";;
+[...]
 # <<'a->'b>>;;
 # While expanding quotation "term":
 Failure: undeclared name: fun
 
 (Running this example in mpopt produces similar result).
 
-This error also raised when we cd <theory>, and then load <theory>:
-> # cd "dec_eq";;
-> /dec_eq : string
-> # load "dec_eq";;
-> () : unit
-> # <<it>>;;
-> chars 32-34: Pcaml.Qerror("", 0, _)
-> # chars 36-38: Stream.Error("illegal begin of toplevel phrase")
-> #
-> # MetaPRL exiting
->
-> [kopylov@tulare ml]$ ./mpopt
-> MetaPRL 0.5.2:
->   build [Fri May 21 19:06:08 EDT 1999]
->   on tulare.cs.cornell.edu
->   Uses VERBOSE Refiner_ds
-> # load "dec_eq";;
-> () : unit
-> # cd "dec_eq";;
-> /dec_eq : string
-> # <<it>>;;
+2.4) (Confirmed on 1999.09.02 by jyh and nogin)
+There is no way to override display forms right now.
+Could be that term_match_table listing needs to be reversed.
 
-*) There is no way to override display forms right now.
-   Could be that term_match_table listing needs to be reversed.
-
-*) Display form mode generality is not working.
+2.5) Display form mode generality is not working.
 
 REWRITER
 
-*) If a variable is bound in a context, rewriter may handle it incorrectly.
+3.1) If a variable is bound in a context, rewriter may handle it incorrectly.
 
-*) If the same variable is bound several times in redex or contractum specification, rewriter
+3.2) If the same variable is bound several times in redex or contractum specification, rewriter
 may handle it incorrectly. We can not prohibit repeated bound variable in redeces
 specification because of two-way rewrites.
 
-*) If the same variabe is bound several times in the matched term, rewriter may handle
+3.3) If the same variabe is bound several times in the matched term, rewriter may handle
 it incorrectly.
 
 Example:
 test{x.test{y.'C['x; 'y]}} <--> 'C[1; 2] 
 rewrites <<test{x.test{x.'x}}>> to 1 instead of 2.
 
-*) Rewriter should support "strict" matching - in a redex, when a abound variable
+3.4) Binding x,x.x is currently understood as x,y.x . We should understand it as y,x.x
+if we want to be compatible with Nuprl
+
+3.5) Rewriter should support "strict" matching - in a redex, when a abound variable
 is not explicity mentioned as an argument of a SO variable, the matching term should
 not have free occurences of the correspondent variable. 
 
 The "strict" mode would also eliminate the problem rhw bug mentioned below in the REFINER
 section.
 
-*) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
+3.6) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
 
-*) Currently rewriter does not enforce building contractum to be against the same redex
+3.7) Currently rewriter does not enforce building contractum to be against the same redex
 the contractum was compiled against. Hopefully we never do this wrong, but we still
 should enforce it.
 
-*) SO contexts that are not a part of a sequent are corrently never used and as a result
+3.8) SO contexts that are not a part of a sequent are currently never used and as a result
 the corresponding rewriter code is undebugged.
 
 REFINER
 
-*) alpha_equal_match is incorrect. According to 
-alpha_equal_match (t, v) (t', v'', v''', terms) ==
-   t' =alpha t[terms[v''/v''']/v]
-specification, alpha_equal_match should return true when t and t' and alpha-equal
-closed terms. However:
-# alpha_equal_match (<<lambda{x.'x}>>,[]) (<<lambda{y.'y}>>,["y"],["x"],[]);;
-- : bool = false
-# alpha_equal_match (<<lambda{x.'x}>>,[]) (<<lambda{y.'y}>>,["x"],["y"],[]);;
-- : bool = false
-
-*) There is no clear semantics for the hidden hypothesis. As a result,
+4.1) (Confirmed 1999.10.08 by nogin)
+There is no clear semantics for the hidden hypothesis. As a result,
 many rules deal with hidden hypothesis incorrectly. Currently, one
 can prove 0=1 using those unsound rules.
 
-*) Repeated bound variables (when the same variable is bound more than once) is
+4.2) Repeated bound variables (when the same variable is bound more than once) is
 handled incorrectly. For example, thinning rule does not check if the variable
 is bound only once (which may be used to prove incorrect results).
 
-*) rwh does not do matching correctly - for example, it allows to use reduceEta
+4.3) rwh does not do matching correctly - for example, it allows to use reduceEta
 on <<lambda{x.('x 'x)}>>. This may be fixed by using rewriter in "strict" mode, when
 implemented (see REWRITER section above).
 
-*) "Understanding" extracts seems broken. When refiner passes extracts to rewriter,
+4.4) "Understanding" extracts seems broken. When refiner passes extracts to rewriter,
 it "forgets to mention" that they are in the scope of hypothesis variables.
 
 One of the side-effects of this problem is that we have to pass unnecessary arguments
@@ -129,35 +106,36 @@ to some of the rules (such as srecElimination).
 
 PARSER & FILTER
 
-*) Rules and rewrites should be added to toploop. 
+5.1) Rules and rewrites should be added to toploop. 
 
-*) When rule is added, the appropriate tactic should be added automatically
+5.2) When rule is added, the appropriate tactic should be added automatically
 (assuming sequent calculus).
 
   --jyh: the tactic _is_ defined, but not (yet) added to Mptop toploop.
 
-*) Some times parser requires too many brackets.
+5.3) Some times parser requires too many brackets.
 
-*) Parsing or printing bug that can be seen using ASCII files:
-   sometimes string arguments in params gets unquoted too many times.
-   Reproduce this bug by loading an old ASCII file, then saving it
-   and seeing that some parameters have been unquoted.
+5.4) Parsing or printing bug that can be seen using ASCII files:
+     sometimes string arguments in params gets unquoted too many times.
+     Reproduce this bug by loading an old ASCII file, then saving it
+     and seeing that some parameters have been unquoted.
 
 RULES & REWRITES
 
-*) reduceEta is too strong
-   should be moved to a new module not included in Itt_theory.
+6.1) reduceEta is too strong
+     should be moved to a new module not included in Itt_theory.
 
-*) The rule interactive bunionElimination in the theory itt_bunion is not correct.
+6.2) (Confirmed on 1999.09.27 by kopylov and nogin)
+The rule interactive bunionElimination in the theory itt_bunion is not correct.
 (This is a result of non-understanding hidden hypothesis)
 
 BUILD SYSTEM
 
-*) Dependencies between .prla, .prlb, .cmiz, .cmoz, etc., are all messed up
+7.1) Dependencies between .prla, .prlb, .cmiz, .cmoz, etc., are all messed up
    Solution: have MetaPRL maintain a file in each directory
      with the list of valid files.  Have only one of .prla, .prlb, or .cmoz file
      present at any time.  These files should not be in CVS.
    Better solution: keep only one .prl file, can contain either binary or
      ASCII.  Make CVS check that file is in ASCII before a commit.
 
-*) Make sure saving .prl* files is done safely (not in place).
+7.2) Make sure saving .prl* files is done safely (not in place).
