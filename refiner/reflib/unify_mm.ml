@@ -233,7 +233,7 @@ let check_header_equality multit0 multit1 current_ts =
         | Bvar bv0 , Bvar bv1 ->
             if not (
              (
-              ((bv0.fsymb_bv.opbinding).(bv0.arg_numb)).(bv0.binding_numb) =
+              ((bv0.fsymb_bv.opbinding).(bv0.arg_numb)).(bv0.binding_numb) ==
               ((bv1.fsymb_bv.opbinding).(bv1.arg_numb)).(bv1.binding_numb)
              )
              && (bv0.fsymb_bv.timestamp = current_ts )
