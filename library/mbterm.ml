@@ -168,15 +168,15 @@ let rec param_of_mbparameter mbparameter =
     in make_param (ObId (make_object_id (loop (mbnode_nSubtermsq mbparameter) [])))
 
   else if bequal b mbs_Level or bequal b mbs_MLevel then
-    let nsubterms = (mbnode_nSubtermsq mbparameter) in
-    match (mbnode_subtermq mbparameter 1) with
+    let nsubterms = mbnode_nSubtermsq mbparameter in
+    match mbnode_subtermq mbparameter 1 with
       Mnode n1 -> let constant = integer_value n1 and
 	    le_vars = let rec loop i l =
 	      if i <= 1 then l
-	      else (match (mbnode_subtermq mbparameter i) with
-	      	Mnode n -> let s = (string_value n) in
-	      	(match (mbnode_subtermq mbparameter (i-1)) with
-	      	  Mnode n2-> loop (i-2) ((mk_level_var s (integer_value n2))::l)
+	      else (match mbnode_subtermq mbparameter i with
+	      	Mnode n -> let x = integer_value n in
+	      	(match mbnode_subtermq mbparameter (i-1) with
+	      	  Mnode n2-> loop (i-2) ((mk_level_var (string_value n2) x)::l)
 	      	| Mbint b -> failwith "subterm should be a node")
 	      | Mbint b -> failwith "subterm should be a node")
 
@@ -247,9 +247,9 @@ let bterms_of_sb subterms bindings =
   List.map2  mk_bterm (List.map f bindings) subterms
 
 let rec term_of_mbterm mbterm =
-  let b = (mbnode_label mbterm) in
+  let b = mbnode_label mbterm in
   if not (bequal b mbs_Term) then failwith "term of mbterm label"
-  else let nsubterms = (mbnode_nSubtermsq mbterm) in
+  else let nsubterms = mbnode_nSubtermsq mbterm in
   let rec loop index leaves  =
     match mbterm.(index) with
       Mnode node -> if
