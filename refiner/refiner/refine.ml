@@ -2001,14 +2001,10 @@ struct
    let check_rule name addrs params mterm =
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
-         ignore (Rewrite.term_rewrite Strict addrs (goal::params) subgoals)
-      (*
-       * XXX HACK: This is a weird thing to check and we do not really have to.
-       * The 3 lines below should go away once we are used to no longer having var args.
-       *)
-      ; let vars = free_vars_terms terms in
-        if List.exists (fun p -> is_var_term p && not (StringSet.mem vars (dest_var p))) params then
-           REF_RAISE(RefineError("check_rule", StringError("Unused var param")))
+      let vars = free_vars_terms terms in
+         ignore (Rewrite.term_rewrite Strict addrs (goal::params) subgoals);
+         List.iter (fun p -> if is_var_term p && not (StringSet.mem vars (dest_var p)) then
+            REF_RAISE(RefineError("check_rule", StringStringError("Unused parameter", dest_var p)))) params
 
    (************************************************************************
     * REWRITE                                                              *
@@ -2018,7 +2014,7 @@ struct
     * See if the rewrite will compile.
     *)
    let check_rewrite name params subgoals redex contractum =
-      ignore(Rewrite.term_rewrite Strict empty_args_spec (redex::params) [contractum])
+      ignore(Rewrite.term_rewrite Strict empty_args_spec (redex::params) (contractum::subgoals))
 
    (*
     * Create a simple rewrite from a meta-term.
