@@ -21,21 +21,12 @@ SATISFYING DEPENDENCIES
    Connection.  See <http://developer.apple.com/membership/index.html>
    for more information.
 
-2. MetaPRL requires a customized version of the OCaml programming
-   language tools version 3.06.  Follow the directions at
+2. MetaPRL requires the OCaml programming language tools version 3.08.
+   Follow the directions at
 
-      <http://caml.inria.fr/caml-macosx-howto/index.html>
+      <http://caml.inria.fr/ocaml/distrib-3.08.html>
 
-   for downloading the OCaml sources and Mac OS X patch.  Go ahead and
-   unpack the source tarball and apply the patch as directed.  Follow
-   the directions in the INSTALL file for increasing the limit on the
-   stack size.  After you have done this, copy the MetaPRL patch from
-
-      metaprl/patches/camlp4-3.06-opt.patch
-
-   into the directory with the OCaml sources.  Apply the patch, e.g.
-
-      patch -p0 < camlp4-3.06-opt.patch
+   for downloading the OCaml sources.
 
    Now run ./configure with the -with-pthreads option.  You may also
    want to specify other options, such as -prefix.  Compile the OCaml
@@ -76,9 +67,6 @@ BUILDING METAPRL
    and run "omake mk/config".  A new "config" file should be created in the
    mk/ directory.  Go ahead and edit it (directions are provided in the file
    itself).
-
-   At the moment, due to a bug in OS X posix thread semantics, MetaPRL must be
-   built with threads disabled.
 
    If OCaml was not installed into /usr, you will need to create a
    file mk/config.local and define CAMLLIB and CAMLP4LIB to point to where
