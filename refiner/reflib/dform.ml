@@ -261,7 +261,6 @@ let translate_font s =
 let changefont buf s =
    if can_control_font then
       let s' = translate_font s in
-         eprintf "Changing font to %s%t" s eflush;
          format_izone buf;
          format_raw_string buf s';
          format_ezone buf
