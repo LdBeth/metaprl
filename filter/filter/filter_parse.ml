@@ -1032,20 +1032,40 @@ let _ =
 
 let operator = Pa_o.operator_rparen
 
+let pho_grammar_filename =
+   try
+      Sys.getenv "LANG_FILE"
+   with
+      Not_found ->
+         !Phobos_state.mp_grammar_filename
+
 EXTEND
    GLOBAL: term interf implem sig_item str_item expr;
 
    term: LAST
       [[ "$"; s = STRING; "$" ->
-            let grammar_filename =
+            Phobos_compile.term_of_string [] pho_grammar_filename s
+      ]
+      | [ x = QUOTATION ->
+            print_string x;
+            let kind, s =
                try
-                  Sys.getenv "LANG_FILE"
+                  let i = String.index x ':' in
+                     String.sub x 0 i, String.sub x (i+1) (String.length x-i-1)
                with
                   Not_found ->
-                     !Phobos_state.mp_grammar_filename
+                     "", x
             in
-               Phobos_compile.term_of_string [] grammar_filename s
-      ]];
+               match kind with
+                  "ext" ->
+                     Phobos_compile.term_of_string [] pho_grammar_filename s
+                | "term" | "" ->
+                     let cs = Stream.of_string s in
+                        Grammar.Entry.parse TermGrammar.term_eoi cs
+                | _ ->
+                     raise (Invalid_argument "Invalid term quotation")
+        ]
+      ];
 
    interf:
       [[ interf_opening; st = LIST0 interf_item; EOI ->

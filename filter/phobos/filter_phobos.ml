@@ -73,12 +73,6 @@ let ext_patt s =
 
 let _ = Quotation.add "ext" (Quotation.ExAst (ext_exp, ext_patt))
 
-let exts_exp _ s =
-   let t = term_of_string [] !Phobos_state.mp_grammar_filename s in
-      Simple_print.SimplePrint.string_of_term t
-
-let _ = Quotation.add "exts" (Quotation.ExStr exts_exp)
-
 (*
  * -*-
  * Local Variables:
