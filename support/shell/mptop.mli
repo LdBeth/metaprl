@@ -83,6 +83,7 @@ type top_table
 resource (string * string * expr, top_table) toploop
 
 val add_commands : top_table -> (string * expr) list -> unit
+val mem : top_table -> string -> bool
 
 (*
  * A resource for compiling expressions from OCaml input.

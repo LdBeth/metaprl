@@ -127,10 +127,19 @@ type info =
  * GLOBAL VALUES                                                        *
  ************************************************************************)
 
+(* We should skip the packages that do not have basic shell commands in them *)
+let shell_package pkg =
+   let name = String.capitalize (Package.name pkg) in
+   try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name))) "cd"
+   with Not_found -> false
+
 (*
  * All loaded modules.
  *)
 let packages = Package.create (Shell_state.get_includes ())
+
+let all_packages () =
+   List.filter shell_package (Package.packages packages)
 
 let default_mode_base =
    try Package.get_dforms "summary" with
@@ -1027,7 +1036,7 @@ struct
                      chdir info [name];
                      apply_all f info false
                in
-                  List.iter expand (Package.packages packages);
+                  List.iter expand (all_packages());
                   chdir info []
       in
          print_exn info apply_all_exn info
@@ -1098,7 +1107,11 @@ struct
             (* change module only if in another (or at top) *)
             if info.dir = [] or List.hd info.dir <> modname then
                begin
+                  if modname <> String.uncapitalize modname then
+                     raise(Invalid_argument "Shell.chdir: module name should not be capitalized");
                   let pkg = Package.get packages modname in
+                     if not (shell_package pkg) then
+                        failwith ("Module " ^ modname ^ " does not contain shell commands");
                      info.package <- Some pkg;
                      Shell_state.set_dfbase shell (Some (get_db info));
                      Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
@@ -1238,7 +1251,7 @@ struct
     *)
    let edit_list_modules info =
       let list info =
-         List.map Package.name (Package.packages packages)
+         List.map Package.name (all_packages ())
       in
          print_exn info list info
 
@@ -1588,7 +1601,7 @@ let save_all _ =
       if Package.status pack = Modified then
          Package.save pack
    in
-      List.iter save (Package.packages packages)
+      List.iter save (all_packages ())
 
 (*
  * -*-

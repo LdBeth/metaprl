@@ -167,6 +167,7 @@ let add_commands tbl =
    List.iter (fun (name, expr) -> Hashtbl.add tbl name ("",expr))
 
 let retr tbl = tbl
+let mem = Hashtbl.mem
 
 doc <:doc< 
    @begin[doc]
