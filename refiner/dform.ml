@@ -40,6 +40,7 @@ type dform_printer_info =
    { dform_term : term;
      dform_stack : rewrite_stack;
      dform_items : rewrite_item list;
+     
      dform_printer : buffer -> parens -> term -> unit;
      dform_buffer : buffer
    }
@@ -251,81 +252,6 @@ let init_list =
     "pushfont", [MString "plain"], pushfont;
     "popfont", [], popfont]
 
-(*
- * The "slot" term is special because it has a subterm.
- *)
-let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
-   match items with
-      [RewriteString parens; RewriteTerm body] ->
-      let eq =
-         match parens with
-            "le" -> LEParens
-          | "lt" -> LTParens
-          | _ -> NOParens
-      in
-         printer buf eq body
- | [RewriteTerm body] ->
-      if !debug_dform then
-         eprintf "Dform.slot: %s%t" (string_of_term body) eflush;
-      printer buf NOParens body
- | [RewriteString s] ->
-      if !debug_dform then
-         eprintf "Dform.slot: %s%t" s eflush;
-      format_string buf s
- | _ ->
-      raise (Invalid_argument "slot")
-
-(*
- * Install initial commands.
- *)
-let null_base =
-   let rec aux = function
-      (name, params, f)::t ->
-         let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in
-         let entry =
-            { dform_name = name;
-              dform_pattern = term;
-              dform_options = [DFormInheritPrec];
-              dform_print = DFormPrinter f
-            }
-         in
-            add_dform (aux t) entry
-    | [] ->
-         new_table ()
-   in
-   let base = aux init_list in
-   let slot_entry1 =
-      { dform_name = "slot_entry1";
-        dform_pattern =
-           mk_term (mk_op slot_opname [make_param (MString "eq")])
-              [mk_bterm [] (mk_var_term "v")];
-        dform_options = [DFormInheritPrec];
-        dform_print = DFormPrinter slot
-      }
-   in
-   let slot_entry2 =
-      { dform_name = "slot_entry2";
-        dform_pattern =
-           mk_term (mk_op slot_opname [])
-              [mk_bterm [] (mk_var_term "v")];
-        dform_options = [DFormInheritPrec];
-        dform_print = DFormPrinter slot
-      }
-   in
-   let slot_entry3 =
-      { dform_name = "slot_entry3";
-        dform_pattern = mk_term (mk_op slot_opname [make_param (MString "eq")]) [];
-        dform_options = [];
-        dform_print = DFormPrinter slot
-      }
-   in
-   let base = add_dform base slot_entry1 in
-   let base = add_dform base slot_entry2 in
-   let base = add_dform base slot_entry3 in
-      base
-
-let is_null_dfbase = equal_tables null_base
-
 (************************************************************************
  * FORMATTERS                                                           *
  ************************************************************************)
@@ -525,11 +451,97 @@ let format_short_term base shortener =
       print
 
 (************************************************************************
- * SIMPLIFIED PRINTERS                                                  *
+ * BASE                                                                 *
  ************************************************************************)
 
-                                                        (* Terms *)
+(* Terms *)
 let null_shortener _ = nil_opname
+
+(*
+ * The "slot" term is special because it has a subterm.
+ *)
+let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
+   match items with
+      [RewriteString parens; RewriteTerm body] ->
+         begin
+            match parens with
+               "le" ->
+                  printer buf LEParens body
+             | "lt" ->
+                  printer buf LTParens body
+             | "raw" ->
+                  let rec format t =
+                     format_term buf null_shortener format t
+                  in
+                     format body
+             | _ ->
+                  printer buf NOParens body
+         end
+    | [RewriteTerm body] ->
+         if !debug_dform then
+            eprintf "Dform.slot: %s%t" (string_of_term body) eflush;
+         printer buf NOParens body
+    | [RewriteString s] ->
+         if !debug_dform then
+            eprintf "Dform.slot: %s%t" s eflush;
+         format_string buf s
+    | _ ->
+         raise (Invalid_argument "slot")
+
+(*
+ * Install initial commands.
+ *)
+let null_base =
+   let rec aux = function
+      (name, params, f)::t ->
+         let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in
+         let entry =
+            { dform_name = name;
+              dform_pattern = term;
+              dform_options = [DFormInheritPrec];
+              dform_print = DFormPrinter f
+            }
+         in
+            add_dform (aux t) entry
+    | [] ->
+         new_table ()
+   in
+   let base = aux init_list in
+   let slot_entry1 =
+      { dform_name = "slot_entry1";
+        dform_pattern =
+           mk_term (mk_op slot_opname [make_param (MString "eq")])
+              [mk_bterm [] (mk_var_term "v")];
+        dform_options = [DFormInheritPrec];
+        dform_print = DFormPrinter slot
+      }
+   in
+   let slot_entry2 =
+      { dform_name = "slot_entry2";
+        dform_pattern =
+           mk_term (mk_op slot_opname [])
+              [mk_bterm [] (mk_var_term "v")];
+        dform_options = [DFormInheritPrec];
+        dform_print = DFormPrinter slot
+      }
+   in
+   let slot_entry3 =
+      { dform_name = "slot_entry3";
+        dform_pattern = mk_term (mk_op slot_opname [make_param (MString "eq")]) [];
+        dform_options = [];
+        dform_print = DFormPrinter slot
+      }
+   in
+   let base = add_dform base slot_entry1 in
+   let base = add_dform base slot_entry2 in
+   let base = add_dform base slot_entry3 in
+      base
+
+let is_null_dfbase = equal_tables null_base
+
+(************************************************************************
+ * SIMPLIFIED PRINTERS                                                  *
+ ************************************************************************)
 
 let format_quoted_term base buf t =
    format_term buf null_shortener
@@ -629,6 +641,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.10  1998/05/01 18:43:31  jyh
+ * Added raw display.
+ *
  * Revision 1.9  1998/05/01 14:59:33  jyh
  * Updating display forms.
  *

@@ -10,6 +10,13 @@
 #    editor/ml: interactive proof editor
 #
 
+PRLC :=\
+	clib\
+	mllib\
+	refiner\
+	library\
+	filter
+
 DIRS :=\
 	clib\
 	mllib\
@@ -41,4 +48,9 @@ clean:
 depend:
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i; touch Makefile.dep; $(MAKE) $@); then true; else exit 1; fi;\
+	done
+
+prlc:
+	@for i in $(PRLC); do\
+		if (echo Making $$i...; cd $$i; $(MAKE) install); then true; else exit 1; fi;\
 	done

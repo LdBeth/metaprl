@@ -27,13 +27,13 @@ let _ =
  * about the opname, the order and types of params,
  * and the arties of the subterms.
  *)
-type local_term_template =
+type template =
    { template_opname : opname;
-     template_params : local_param_template array;
+     template_params : param_template array;
      template_arities : int array
    }
 
-and local_param_template =
+and param_template =
    Number
  | String
  | Token
@@ -91,7 +91,7 @@ let print_arities out arities =
 (*
  * Compute the template for a particular term.
  *)
-let local_compute_template t =
+let template_of_term t =
    let { term_op = op; term_terms = bterms } = dest_term t in
    let { op_name = opname; op_params = params } = dest_op op in
    let compute_arity bterm =
@@ -150,7 +150,7 @@ let local_compute_template t =
  * Integer index from template.
  *)
 let of_term t =
-   let t = local_compute_template t in
+   let t = template_of_term t in
       if !debug_dform then
          begin
             let { template_opname = opname;
@@ -167,7 +167,7 @@ let of_term t =
       Hashtbl.hash_param 25 250 t
 
 let of_term_list tl =
-   let tl = List.map local_compute_template tl in
+   let tl = List.map template_of_term tl in
       if !debug_dform then
          begin
             let print_template 
@@ -192,6 +192,9 @@ let to_int t = t
 
 (*
  * $Log$
+ * Revision 1.8  1998/05/01 18:43:34  jyh
+ * Added raw display.
+ *
  * Revision 1.7  1998/04/29 20:53:40  jyh
  * Initial working display forms.
  *
