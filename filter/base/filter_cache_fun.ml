@@ -138,7 +138,7 @@ let string_of_op_shape shape =
       Buffer.add_string buf "}";
       (match kind with
           NormalKind ->
-             Buffer.add_string buf ":normal"
+             ()
         | TokenKind ->
              Buffer.add_string buf ":token");
       Buffer.contents buf

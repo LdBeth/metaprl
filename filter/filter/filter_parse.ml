@@ -2091,7 +2091,11 @@ EXTEND
       [[ mt = bmterm; "="; extract = term ->
             mt, raw_term_of_parsed_term extract
        | mt = bmterm ->
-            mt, mk_simple_term (TermGrammarBefore.mk_opname_kind loc NormalKind ["default_extract"] [] []) []
+            try
+               mt, mk_simple_term (TermGrammarBefore.mk_opname_kind loc NormalKind ["default_extract"] [] []) []
+            with
+               Stdpp.Exc_located (_, Failure _) ->
+                  Stdpp.raise_with_loc loc (Failure "No computational witness (\"extract\") specified for a prim rule and the default_extract{} opname is not declared")
       ]];
 
    (*
