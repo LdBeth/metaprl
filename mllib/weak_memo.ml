@@ -75,7 +75,6 @@ ENDIF
          * that have been created before this table.
          *)
         name : string;
-        id : int
       }
 
    (************************************************************************
@@ -95,16 +94,6 @@ ENDIF
       d.descriptor
 
    (*
-    * Total number of weak tables.
-    *)
-   let counter = ref 0
-
-   (*
-    * Is GC active?
-    *)
-   let is_gc = ref true
-
-   (*
     * Descriptors remain static and anchored,
     * so this comparison is always valid.
     * NOTE: if desciptor becomes mutable, fix this.
@@ -115,7 +104,7 @@ ENDIF
    (*
     * Has the value been collected by GC?
     *)
-   let gc_tst weak_id image_array (_, weak_descriptor) =
+   let gc_tst image_array (_, weak_descriptor) =
       match Weak.get image_array weak_descriptor with
           Some _ -> false
         | None -> true
@@ -124,9 +113,7 @@ ENDIF
     * Create a new table.
     *)
    let create halfsize critical_level name make_header header_weaken compare_header make_result =
-      incr counter;
       let image_array = Weak.create (2 * halfsize) in
-      let id = !counter in
          { make_header = make_header;
            header_weaken = header_weaken;
            compare_header = compare_header;
@@ -136,7 +123,6 @@ ENDIF
            count = 0;
            gc_on = false;
            name = name;
-           id = id
          }
 
    let create_default name weaken compare make =
@@ -160,7 +146,7 @@ ENDIF
    (*
     * Grow the weak array so we can add more entries.
     *)
-   let expand_weak_array wa id new_size =
+   let expand_weak_array wa new_size =
       let old_ar_length = Weak.length wa in
          if new_size <= old_ar_length then
             invalid_arg "Can't expand weak array to less size"
@@ -210,7 +196,7 @@ ENDIF
                            raise (Inconsistency "weak table length does not match expected value");
 
                         (* Search for a free location in the hash table *)
-                        match Hash.gc_iter (gc_tst info.id info.image_array) info.index_table with
+                        match Hash.gc_iter (gc_tst info.image_array) info.index_table with
                            Some (_, weak_index) ->
                               (* Found a free entry in the hash table *)
                               Hash.insert info.index_table hash weak_header weak_index;
@@ -224,7 +210,7 @@ ENDIF
                               let length = Weak.length info.image_array in
                                  info.gc_on <- false;
                                  Hash.insert info.index_table hash weak_header length;
-                                 info.image_array <- expand_weak_array info.image_array info.id ((length * 2) + 1);
+                                 info.image_array <- expand_weak_array info.image_array ((length * 2) + 1);
                                  info.count <- succ length;
                                  set info length result
                      end
