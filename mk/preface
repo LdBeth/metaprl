@@ -101,7 +101,11 @@ ifndef INLINE
    INLINE=5
 endif
 
-MAKE:=$(MAKE) -j$(MAKE_JOBS) $(MAKE_OPTS)
+ifeq ($(MAKE_JOBS),1)
+	MAKE:=$(MAKE) $(MAKE_OPTS)
+else
+	MAKE:=$(MAKE) -j$(MAKE_JOBS) $(MAKE_OPTS)
+endif
 
 #
 # Config

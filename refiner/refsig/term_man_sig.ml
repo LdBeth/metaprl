@@ -90,6 +90,9 @@ sig
    val concl_range_addr : term -> int -> address
    val replace_goal : term -> term -> term          (* One concl *)
 
+   (* The following function is only intended for use from MP top-loop *)
+   val clause_address : int -> address
+
    val is_xrewrite_term : term -> bool
    val mk_xrewrite_term : term -> term -> term
    val dest_xrewrite : term -> term * term

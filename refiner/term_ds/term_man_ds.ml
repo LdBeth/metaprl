@@ -406,6 +406,14 @@ struct
        | _ ->
             REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
 
+   let clause_address i =
+      if (i = 0) then
+         GoalAddr 0
+      else if (i > 0) then
+         HypAddr (pred i)
+      else
+         raise (Invalid_argument "Term_man_ds.clause_address - arg must be non-negative")
+
    (*
     * Count the hyps.
     *)
