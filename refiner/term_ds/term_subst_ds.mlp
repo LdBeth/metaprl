@@ -50,6 +50,13 @@ let debug_subst_ds =
         debug_value = false
       }
 
+let debug_alpha_equal =
+   create_debug (**)
+      { debug_name = "alpha_equal";
+        debug_description = "display alpha equality operations";
+        debug_value = false
+      }
+
 let debug_unify =
    create_debug (**)
       { debug_name = "unify";
@@ -265,11 +272,15 @@ struct
         equal_goals goals1 goals2 vars (pred i) )
 
    let alpha_equal t1 t2 =
+#ifdef VERBOSE_EXN
+      let result = (
+#endif
       match get_core t1, get_core t2 with
          Term _, Term _ ->
             (try equal_term [] t1 t2 with
                Failure _ -> false)
        | Sequent s1, Sequent s2 ->
+
             (try
                (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
                (SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals) &&
@@ -284,10 +295,28 @@ struct
             (v1=v2)
        | _ ->
             false
+#ifdef VERBOSE_EXN
+      ) in
+      if !debug_alpha_equal then
+         if result then eprintf "alpha_equal_vars: true%t" eflush else
+            eprintf "alpha_equal_vars: false%t" eflush;
+      result
+#endif
 
    let alpha_equal_vars (t, v) (t', v') =
-      try equal_term (List_util.zip v v') t t' with
-         Failure _ -> false
+#ifdef VERBOSE_EXN
+      if !debug_alpha_equal then
+         try 
+            let _ = equal_term (List_util.zip v v') t t' in
+            eprintf "alpha_equal_vars: true%t" eflush;
+            true
+         with Failure _ ->
+            eprintf "alpha_equal_vars: false%t" eflush;
+            false
+      else
+#endif
+         try equal_term (List_util.zip v v') t t' with
+            Failure _ -> false
 
    (*
     * The meaning of

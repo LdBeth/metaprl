@@ -323,22 +323,34 @@ struct
          List_util.for_all2 equal_bterm bterms1 bterms2
 
    let alpha_equal t1 t2 =
-      let equal_term =
 #ifdef VERBOSE_EXN
-         if !debug_alpha_equal then
-            equal_term_debug
-         else
+      if !debug_alpha_equal then
+         try 
+            let _ = equal_term /*_debug*/ [] t1 t2 in
+            eprintf "alpha_equal: true%t" eflush;
+            true
+         with Failure _ ->
+            eprintf "alpha_equal: false%t" eflush;
+            false
+      else
 #endif
-            equal_term
-      in
-         try equal_term [] t1 t2 with
-            Failure _ ->
-               false
+      try equal_term [] t1 t2 with
+         Failure _ -> false
 
    let alpha_equal_vars (t, v) (t', v') =
-      try equal_term (List_util.zip v v') t t' with
-         Failure _ ->
+#ifdef VERBOSE_EXN
+      if !debug_alpha_equal then
+         try 
+            let _ = equal_term (List_util.zip v v') t t' in
+            eprintf "alpha_equal_vars: true%t" eflush;
+            true
+         with Failure _ ->
+            eprintf "alpha_equal_vars: false%t" eflush;
             false
+      else
+#endif
+         try equal_term (List_util.zip v v') t t' with
+            Failure _ -> false
 
    (*
     * Check the following:
