@@ -122,6 +122,8 @@ CMXFILES_CONVERT = $(addsuffix .cmx, $(MFILES_CONVERT))
 #
 # Libraries for prlc
 #
+PRLCOMP = filter/prlcomp
+
 CMXADEPS =\
 	$(ROOT)/lib/util.cmxa
 
@@ -138,11 +140,11 @@ CMALIBS =\
 	$(THREADSLIB)\
 	$(CMADEPS)
 
-BYTE_CCLIBS =\
+BYTE_CCLIBS = $(PRLCOMP).cmo \
 	-cclib -lunix\
 	-cclib $(ROOT)/clib/clib-byte$(EXT_LIB)
 
-NATIVE_CCLIBS =\
+NATIVE_CCLIBS = $(PRLCOMP).cmx \
 	-cclib -lunix\
 	-cclib $(ROOT)/clib/clib-native$(EXT_LIB)
 
