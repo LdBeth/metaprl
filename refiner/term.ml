@@ -362,13 +362,13 @@ let mk_string_term opname s =
 let is_string_dep0_term opname = function
    { term_op = { op_name = opname'; op_params = [String _] };
      term_terms = [{ bvars = [] }]
-   } when opname = opname' -> true
+   } when opname == opname' -> true
  | _ -> false
 
 let dest_string_dep0_term opname = function
    { term_op = { op_name = opname'; op_params = [String s] };
      term_terms = [{ bvars = []; bterm = t }]
-   } when opname = opname' -> s, t
+   } when opname == opname' -> s, t
  | t -> raise (TermMatch ("dest_string_dep0_term", t, ""))
 
 let mk_string_dep0_term opname = fun
@@ -383,7 +383,7 @@ let mk_string_dep0_term opname = fun
 let is_string_string_dep0_term opname = function
    { term_op = { op_name = opname'; op_params = [String _; String _] };
      term_terms = [{ bvars = [] }]
-   } when opname = opname' ->
+   } when opname == opname' ->
       true
  | _ ->
       false
@@ -391,7 +391,7 @@ let is_string_string_dep0_term opname = function
 let dest_string_string_dep0_term opname = function
    { term_op = { op_name = opname'; op_params = [String s1; String s2] };
      term_terms = [{ bvars = []; bterm = t }]
-   } when opname = opname' ->
+   } when opname == opname' ->
       s1, s2, t
  | t ->
       raise (TermMatch ("dest_string_string_dep0_term", t, ""))
@@ -416,7 +416,7 @@ let mk_string_string_dep0_term opname = fun
 let is_number_number_dep0_term opname = function
    { term_op = { op_name = opname'; op_params = [Number _; Number _] };
      term_terms = [{ bvars = [] }]
-   } when opname = opname' ->
+   } when opname == opname' ->
       true
  | _ ->
       false
@@ -424,7 +424,7 @@ let is_number_number_dep0_term opname = function
 let dest_number_number_dep0_term opname = function
    { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
      term_terms = [{ bvars = []; bterm = t }]
-   } when opname = opname' ->
+   } when opname == opname' ->
       s1, s2, t
  | t ->
       raise (TermMatch ("dest_number_number_dep0_term", t, ""))
@@ -449,7 +449,7 @@ let mk_number_number_dep0_term opname = fun
 let is_string_string_dep0_dep0_term opname = function
    { term_op = { op_name = opname'; op_params = [String _; String _] };
      term_terms = [{ bvars = [] }; { bvars = [] }]
-   } when opname = opname' ->
+   } when opname == opname' ->
       true
  | _ ->
       false
@@ -457,7 +457,7 @@ let is_string_string_dep0_dep0_term opname = function
 let dest_string_string_dep0_dep0_term opname = function
    { term_op = { op_name = opname'; op_params = [String s1; String s2] };
      term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
-   } when opname = opname' ->
+   } when opname == opname' ->
       s1, s2, t1, t2
  | t ->
       raise (TermMatch ("dest_string_string_dep0_dep0_term", t, ""))
@@ -482,13 +482,13 @@ let mk_string_string_dep0_dep0_term opname = fun
 let is_number_term opname = function
    { term_op = { op_name = opname'; op_params = [Number _] };
      term_terms = []
-   } when opname = opname' -> true
+   } when opname == opname' -> true
  | _ -> false
 
 let dest_number_term opname = function
    { term_op = { op_name = opname'; op_params = [Number n] };
      term_terms = []
-   } when opname = opname' -> n
+   } when opname == opname' -> n
  | t -> raise (TermMatch ("dest_number_term", t, ""))
 
 let dest_number_any_term = function
@@ -511,13 +511,13 @@ let mk_number_term opname = function
 let is_univ_term opname = function
    { term_op = { op_name = opname'; op_params = [Level _] };
      term_terms = []
-   } when opname = opname' -> true
+   } when opname == opname' -> true
  | _ -> false
 
 let dest_univ_term opname = function
    { term_op = { op_name = opname'; op_params = [Level n] };
      term_terms = []
-   } when opname = opname' -> n
+   } when opname == opname' -> n
  | t -> raise (TermMatch ("dest_univ_term", t, ""))
 
 let mk_univ_term opname = function
@@ -532,13 +532,13 @@ let mk_univ_term opname = function
 let is_token_term opname = function
    { term_op = { op_name = opname'; op_params = [Token _] };
      term_terms = []
-   } when opname = opname' -> true
+   } when opname == opname' -> true
  | _ -> false
 
 let dest_token_term opname = function
    { term_op = { op_name = opname'; op_params = [Token n] };
      term_terms = []
-   } when opname = opname' -> n
+   } when opname == opname' -> n
  | t -> raise (TermMatch ("dest_token_term", t, ""))
 
 let mk_token_term opname = function
@@ -1828,7 +1828,7 @@ let concl_addr t =
       { term_op = { op_name = opname; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = []; bterm = term }]
       } ->
-         if opname = concl_opname then
+         if opname == concl_opname then
             aux' (i + 1) term
          else
             i
@@ -1838,14 +1838,14 @@ let concl_addr t =
    let rec aux i = function
       { term_op = { op_name = opname; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = [_]; bterm = term }]
-      } when opname = hyp_opname ->
+      } when opname == hyp_opname ->
          aux (i + 1) term
     | { term_op = { op_name = opname; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = []; bterm = term }]
       } ->
-         if opname = concl_opname then
+         if opname == concl_opname then
             i, aux' 0 term
-         else if opname = hyp_opname then
+         else if opname == hyp_opname then
             aux (i + 1) term
          else
             raise (TermMatch ("concl_addr", t, ""))
@@ -2192,6 +2192,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.22  1998/05/25 15:22:31  nogin
+ * Use == for comparing opnames
+ *
  * Revision 1.21  1998/05/25 05:19:12  nogin
  * Fixed more typos
  *
