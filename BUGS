@@ -179,6 +179,18 @@ RULES & REWRITES
 The rule interactive bunionElimination in the theory itt_bunion is not correct.
 (This is a result of non-understanding hidden hypothesis)
 
+6.3) (Formulated by krupski and confirmed by nogin - 2000.05.12)
+After the membership rule is postulated, the corresponding ext rule can often
+be proven using Itt_struct.introduction rule. There is no need to postulate
+the ext rule and it should be actually proven only when it's useful.
+
+Example: After <<'H >- univ[i:l] in int>> is postulated, there is no need 
+to postulate <<'H >- univ[i:l]>> with <<int>> extract since it can always
+be proven in the unlikely event that it is actually needed.
+
+P.S. Unfortunatelly, there seems to be no mechanism to do similar trick
+for rules with assumptions. May be it would be a good idea to create one.
+
 BUILD SYSTEM
 
 7.1) Dependencies between .prla, .prlb, .cmiz, .cmoz, etc., are all messed up
