@@ -107,15 +107,12 @@ let format_hypothesis db buf printers = function
             format_newline buf) subterms;
       format_string buf ")"
 
- | HypBinding (v, term) ->
-      format_string buf "HypBinding(";
-      format_string buf (string_of_symbol v);
-      format_string buf ", ";
-      printers.format_term db buf term;
-      format_string buf ")"
-
- | Hypothesis term ->
+ | Hypothesis (v, term) ->
       format_string buf "Hypothesis(";
+      if Lm_symbol.to_string v <> "" then begin
+         format_string buf (string_of_symbol v);
+         format_string buf ", ";
+      end;
       printers.format_term db buf term;
       format_string buf ")"
 

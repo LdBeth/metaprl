@@ -1136,16 +1136,16 @@ struct
           | v = word_or_string; rest = hyp_suffix ->
               rest v
           | t = aterm ->
-              Hypothesis t.aterm
+              Hypothesis (empty_var, t.aterm)
           ]];
 
       hyp_suffix:
          [[ sl_colon; t = aterm ->
-               fun v -> HypBinding (Lm_symbol.add v, t.aterm)
+               fun v -> Hypothesis (Lm_symbol.add v, t.aterm)
           | (params, bterms) = termsuffix ->
-               fun op -> Hypothesis (mk_term (mk_op (mk_bopname loc [op] params bterms) params) bterms)
+               fun op -> Hypothesis (empty_var, mk_term (mk_op (mk_bopname loc [op] params bterms) params) bterms)
           | ->
-               fun op -> Hypothesis (mk_term (mk_op (mk_opname loc [op] [] []) []) [])
+               fun op -> Hypothesis (empty_var, mk_term (mk_op (mk_opname loc [op] [] []) []) [])
           ]];
 
       contslist: [[ sl_contexts_left; vl = LIST0 var SEP ";" ; sl_contexts_right -> vl ]];
@@ -1279,21 +1279,21 @@ struct
           | v = word_or_string; rest = con_hyp_suffix ->
               rest v
           | v = ANTIQUOT; sl_colon; t = con_term ->
-              ConHypBinding (expr_of_anti loc "" v, t)
+              ConHypothesis (expr_of_anti loc "" v, t)
           | t = con_term ->
-              ConHypothesis t
+              ConHypothesis (<:expr< Lm_symbol.empty_var >>, t)
           ]];
 
       con_hyp_suffix:
          [[ sl_colon; t = con_term ->
-               fun v -> ConHypBinding (<:expr< $str:v$ >>, t)
+               fun v -> ConHypothesis (<:expr< Lm_symbol.add $str:v$ >>, t)
           | (params, bterms) = con_term_suffix ->
                (fun op ->
                   let param_types = List.map snd params in
                   let bterm_arities = List.map (fun (bvars, _) -> List.length bvars) bterms in
-                     ConHypothesis (ConConstruct (mk_opname loc [op] param_types bterm_arities, params, bterms)))
+                     ConHypothesis (<:expr< Lm_symbol.empty_var >>, ConConstruct (mk_opname loc [op] param_types bterm_arities, params, bterms)))
           | ->
-               fun op -> ConHypothesis (ConTerm (mk_term (mk_op (mk_opname loc [op] [] []) []) []))
+               fun op -> ConHypothesis (<:expr< Lm_symbol.empty_var >>, ConTerm (mk_term (mk_op (mk_opname loc [op] [] []) []) []))
           ]];
 
       con_optbrtermlist:

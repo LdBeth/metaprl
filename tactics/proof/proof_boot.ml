@@ -760,11 +760,8 @@ struct
       in
          raise (ProofRefineError ("replace", proof, StringIntError ("illegal address", i)))
 
-   let norm_mseq mseq =
-      TermNorm.normalize_msequent (msequent_remove_redundant_hypbindings mseq)
-
    let norm_goal goal =
-      let mseq = norm_mseq goal.ref_goal in
+      let mseq = TermNorm.normalize_msequent goal.ref_goal in
          if mseq == goal.ref_goal then goal else {goal with ref_goal = mseq}
 
    (*

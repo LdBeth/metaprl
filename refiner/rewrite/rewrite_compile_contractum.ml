@@ -379,7 +379,7 @@ struct
                   (* Free second order context *)
                   REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", RewriteFreeSOVar v))
 
-          | HypBinding (v, term) ->
+          | Hypothesis (v, term) ->
                if List.mem v bvars then
                   REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", StringVarError("double binding", v)));
                let enames, term = compile_so_contractum_term strict enames stack bconts bvars term in
@@ -387,15 +387,7 @@ struct
                let enames, hyps, goals =
                   compile_so_contractum_sequent_inner strict enames stack bconts (bvars @ [v]) (i + 1) len hyps goals
                in
-               let hyp = RWSeqHypBnd (v', term) in
-                  enames, hyp :: hyps, goals
-
-          | Hypothesis term ->
-               let enames, term = compile_so_contractum_term strict enames stack bconts bvars term in
-               let enames, hyps, goals =
-                  compile_so_contractum_sequent_inner strict enames stack bconts bvars (i + 1) len hyps goals
-               in
-               let hyp = RWSeqHyp term in
+               let hyp = RWSeqHyp (v', term) in
                   enames, hyp :: hyps, goals
 
    and compile_so_contractum_goals strict enames stack bconts bvars i len goals =

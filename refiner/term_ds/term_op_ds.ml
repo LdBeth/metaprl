@@ -983,10 +983,8 @@ struct
          } ->
             let hyps =
                SeqHyp.map (function
-                  HypBinding (v, t) ->
-                     HypBinding (v, map_down f t)
-                | Hypothesis t ->
-                     Hypothesis (map_down f t)
+                  Hypothesis (v, t) ->
+                     Hypothesis (v, map_down f t)
                 | Context (v, vl, args) ->
                      Context (v, vl, List.map (map_down f) args)) hyps
             in
@@ -1013,10 +1011,8 @@ struct
          } ->
             let hyps =
                SeqHyp.map (function
-                  HypBinding (v, t) ->
-                     HypBinding (v, map_up f t)
-                | Hypothesis t ->
-                     Hypothesis (map_up f t)
+                  Hypothesis (v, t) ->
+                     Hypothesis (v, map_up f t)
                 | Context (v, vl, args) ->
                      Context (v, vl, List.map (map_up f) args)) hyps
             in

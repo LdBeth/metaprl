@@ -304,27 +304,19 @@ struct
                format_pushm buf 1;
                begin
                   match SeqHyp.get hyps i with
-                     HypBinding (v,t) ->
-                        begin
+                     Hypothesis (v,t) ->
+                        if Lm_symbol.to_string v <> "" then begin
                            format_string buf (string_of_symbol v);
                            format_string buf " :";
                            format_pushm buf 1;
-                           format_term buf t;
-                           format_popm buf
-                        end
-                   | Hypothesis t ->
-                        begin
-                           format_pushm buf 0;
-                           format_term buf t;
-                           format_popm buf
-                        end
+                        end else format_pushm buf 0;
+                        format_term buf t;
+                        format_popm buf
                    | Context (v,conts,ts) ->
-                        begin
-                           format_string buf ("<" ^ (string_of_symbol v));
-                           if conts <> [v] then format_contexts buf conts;
-                           format_terms buf ts;
-                           format_string buf (">");
-                        end
+                        format_string buf ("<" ^ (string_of_symbol v));
+                        if conts <> [v] then format_contexts buf conts;
+                        format_terms buf ts;
+                        format_string buf (">");
                end;
                format_popm buf;
                format_hyps (succ i)

@@ -203,8 +203,7 @@ struct
       if (len=0) then bnames else
          let bnames =
             match SeqHyp.get hyps i with
-               HypBinding (v, _) | Context (v, _, _) -> SymbolSet.add bnames v
-             | Hypothesis _ -> bnames
+               Hypothesis (v, _) | Context (v, _, _) -> SymbolSet.add bnames v
          in
             collect_hyp_bnames hyps bnames (len-1) (i+1)
 

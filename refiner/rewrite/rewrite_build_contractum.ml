@@ -176,10 +176,8 @@ struct
     * Perform a substitution on a sequence of hyps.
     *)
    let subst_hyp terms vars = function
-      HypBinding (v, term) ->
-         HypBinding (v, subst term vars terms)
-    | Hypothesis term ->
-         Hypothesis (subst term vars terms)
+      Hypothesis (v, term) ->
+         Hypothesis (v, subst term vars terms)
     | Context (v, conts, subterms) ->
          Context (v, conts, List.map (fun t -> subst t vars terms) subterms)
 
@@ -433,10 +431,10 @@ struct
                       | _ ->
                            raise(Invalid_argument("Rewrite_build_contractum.build_contractum_sequent_hyps: stack entry is not valid"))
                   end
-             | RWSeqHypBnd (v, hyp) ->
+             | RWSeqHyp (v, hyp) ->
                   IFDEF VERBOSE_EXN THEN
                      if !debug_rewrite then
-                        eprintf "RWSeqHypBnd: (%a)%t" print_varname v eflush
+                        eprintf "RWSeqHyp: (%a)%t" print_varname v eflush
                   ENDIF;
                   let v = build_bname names bnames stack v in
                   let bnames = SymbolSet.add bnames v in
@@ -450,15 +448,7 @@ struct
                    *)
                   let hyp = build_contractum_term names bnames stack bvars hyp in
                   let bvars = append_vars bvars [v] in
-                  let part = Lm_array_util.ArrayElement (HypBinding (v, hyp)) in
-                     build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
-             | RWSeqHyp hyp ->
-                  IFDEF VERBOSE_EXN THEN
-                     if !debug_rewrite then
-                        eprintf "RWSeqHyp: %t" eflush
-                  ENDIF;
-                  let hyp = build_contractum_term names bnames stack bvars hyp in
-                  let part = Lm_array_util.ArrayElement (Hypothesis hyp) in
+                  let part = Lm_array_util.ArrayElement (Hypothesis (v, hyp)) in
                      build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
              | RWSeqContext _ | RWSeqFreeVarsContext _ ->
                   raise(Invalid_argument "Rewrite_build_contractum.build_contractum_sequent_hyps: found an invalid context")

@@ -154,13 +154,15 @@ struct
      | _ ->
          fail "add_bterm"
 
+   let v1010 = Lm_symbol.make "" 1010 (* XXX HACK: format versions <= 1.0.10 compatibility *)
+
    let add_hyp r = function
       (_, name, [[var;term]]) ->
          let term = Hashtbl.find r.io_terms term in
-         hash_add_new r.io_hyps name (HypBinding(Lm_symbol.add var,term))
-    | (_, name, [[term]]) ->
+         hash_add_new r.io_hyps name (Hypothesis(Lm_symbol.add var,term))
+    | (_, name, [[term]]) -> (* XXX HACK: format versions <= 1.0.10 compatibility *)
          let term = Hashtbl.find r.io_terms term in
-         hash_add_new r.io_hyps name (Hypothesis term)
+         hash_add_new r.io_hyps name (Hypothesis(v1010, term))
     | _ ->
          fail "add_hyp"
 
@@ -606,23 +608,22 @@ struct
             (name, ind)
 
    and out_hyp ctrl data = function
-      (Term_sig.HypBinding (_,t) | Term_sig.Hypothesis t as h) -> begin
+      Term_sig.Hypothesis (v,t) as h -> begin
          let (t_name, t_ind) = out_term ctrl data t in
-         let hyp, i_data = match h with
-            Term_sig.HypBinding(v, _) ->
-               HypBinding (v,t_ind), [[string_of_symbol v; t_name]]
-          | _ -> Hypothesis t_ind, [[t_name]]
-         in try
+         let hyp = Hypothesis (v,t_ind) in
+         let i_data = [[string_of_symbol v; t_name]] in
+         try
             let name = HashHyp.find data.out_hyps hyp in
             check_old data name i_data;
             (name, hyp)
-         with Not_found ->
+         with Not_found -> begin
             let (lname, name) = ctrl.out_name_hyp h in
             let name = rename name data in
             HashHyp.add data.out_hyps hyp name;
             data.out_items <-
                New ("H" ^ lname, name, i_data) :: data.out_items;
             (name, hyp)
+         end
       end
     | Term_sig.Context (v,conts,ts) as h -> begin
          let terms = List.map (out_term ctrl data) ts in

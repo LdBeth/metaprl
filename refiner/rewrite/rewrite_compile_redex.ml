@@ -140,8 +140,8 @@ struct
    let restrict_free_in_hyp v = function
       RWSeqContext (i, l, vs) -> RWSeqFreeVarsContext ([], [v], i, l, vs)
     | RWSeqFreeVarsContext (cs, rs, i, l, vs) -> RWSeqFreeVarsContext (cs, v::rs, i, l, vs)
-    | RWSeqHypBnd (v', RWFreeVars(t, cs, rs)) -> RWSeqHypBnd (v', RWFreeVars(t, cs, v::rs))
-    | RWSeqHypBnd (v', t) -> RWSeqHypBnd (v', RWFreeVars(t, [], [v]))
+    | RWSeqHyp (v', RWFreeVars(t, cs, rs)) -> RWSeqHyp (v', RWFreeVars(t, cs, v::rs))
+    | RWSeqHyp (v', t) -> RWSeqHyp (v', RWFreeVars(t, [], [v]))
     | _ -> raise(Invalid_argument("Rewrite_compile_redex.restrict_free_in_hyp"))
 
    (* Add an extra free variable restriction to a term *)
@@ -163,7 +163,7 @@ struct
       if i < 0 then i else
          match SeqHyp.get hyps i with
             Context _ -> i
-          | Hypothesis _ | HypBinding _ -> lastcontext hyps i
+          | Hypothesis _ -> lastcontext hyps i
 
    let rec compile_so_redex_term allow_so_patterns restrict addrs stack svars bconts bvars term =
       (* Check for variables and contexts *)
@@ -398,7 +398,7 @@ struct
                in
                   stack, term :: hyps, goals
 
-          | HypBinding (v, term) ->
+          | Hypothesis (v, term) ->
                if List.mem_assoc v bvars then
                   REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringVarError ("repeated variable", v)));
                let stack, term = compile_so_redex_term true restrict addrs stack svars bconts bvars term in
@@ -408,16 +408,7 @@ struct
                let stack, hyps, goals =
                   compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars (i + 1) len mc hyps goals
                in
-                  stack, RWSeqHypBnd (bname l v, term) :: hyps, goals
-
-          | Hypothesis term ->
-               let stack, term = compile_so_redex_term true restrict addrs stack svars bconts bvars term in
-               let stack, hyps, goals =
-                  compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars (i + 1) len mc hyps goals
-               in
-               let l = List.length stack in
-               let hyps = RWSeqHypBnd (bname l "", term) :: List.map (restrict_free_in_hyp l) hyps in
-                  stack @ [FOVar (Lm_symbol.add "")], hyps, List.map (restrict_free_in_term l) goals
+                  stack, RWSeqHyp (bname l v, term) :: hyps, goals
 
    and compile_so_redex_goals restrict addrs stack svars bconts bvars i len goals =
       if i = len then

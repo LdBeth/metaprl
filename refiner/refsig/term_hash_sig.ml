@@ -8,7 +8,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Yegor Bryukhov, Moscow State University
+ * Copyright (C) 1998-2004, MetaPRL Group
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -56,11 +56,10 @@ sig
    *)
 
    (*
-    * XXX HACK! jyh: these are here temporarily until Alexey gets rid of them.
+    * XXX HACK! jyh: these are here temporarily until Aleksey gets rid of them.
     *)
    type hypothesis_header =
-      Hypothesis of term_index
-    | HypBinding of var * term_index
+      Hypothesis of var * term_index
     | Context of var * var list * term_index list
 
    type bound_term_header =

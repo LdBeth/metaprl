@@ -74,8 +74,7 @@ struct
 
    and make_hyp_header info hyp =
       match hyp with
-         Term_sig.Hypothesis t -> TermHash.Hypothesis (TermHash.p_lookup info (make_term_header info t))
-       | Term_sig.HypBinding (v, t) -> TermHash.HypBinding (v, TermHash.p_lookup info (make_term_header info t))
+         Term_sig.Hypothesis (v, t) -> TermHash.Hypothesis (v, TermHash.p_lookup info (make_term_header info t))
        | Term_sig.Context (v, conts, trms) -> TermHash.Context (v, conts, List.map (make_context_header info) trms)
 
    and make_goal_header info goal =

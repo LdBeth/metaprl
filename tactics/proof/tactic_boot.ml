@@ -325,7 +325,7 @@ struct
       { attrs with attr_keys = Lm_list_util.some_map (function (name, RawSentinal k)   -> Some (name, k) | _ -> None) raws }
 
    let create sentinal goal bookmark =
-      { ref_goal = msequent_remove_redundant_hypbindings goal;
+      { ref_goal = goal;
         ref_label = "main";
         ref_attributes = empty_attribute;
         ref_bookmark = bookmark;

@@ -457,39 +457,13 @@ struct
       else
          mk_concl_term (SeqGoal.get goals i) (mk_goals goals (i + 1) len)
 
-   let rec remove_redundant_hbs vars = function
-      [] -> [], vars
-    | Context (_, _, ts) as hyp :: hyps ->
-         let hyps, vars = remove_redundant_hbs vars hyps in
-            (hyp :: hyps), SymbolSet.union (free_vars_terms ts) vars
-    | Hypothesis(t) as hyp :: hyps ->
-         let hyps, vars = remove_redundant_hbs vars hyps in
-            (hyp :: hyps), SymbolSet.union (free_vars_set t) vars
-    | HypBinding (v, t) as hyp :: hyps ->
-         let hyps, vars = remove_redundant_hbs vars hyps in
-            if SymbolSet.mem vars v then
-               (hyp :: hyps), SymbolSet.union (free_vars_set t) (SymbolSet.remove vars v)
-            else
-               Hypothesis t :: hyps, SymbolSet.union (free_vars_set t) vars
-
-   let remove_redundant_hypbindings hyps goals =
-      fst (remove_redundant_hbs (free_vars_terms goals) hyps)
-
-   let fake_var = Lm_symbol.add "_@bh@_"
-
    let rec mk_sequent_inner_term hyps goals vars i len =
       if i = len then
          mk_goals goals 0 (SeqGoal.length goals)
       else
          match SeqHyp.get hyps i with
-            HypBinding (v, t') ->
+            Hypothesis (v, t') ->
                mk_hyp_term v t' (mk_sequent_inner_term hyps goals vars (i + 1) len)
-          | Hypothesis t' ->
-               let v =
-                  if SymbolSet.mem vars fake_var
-                  then new_name fake_var (SymbolSet.mem vars)
-                  else fake_var
-               in mk_hyp_term v t' (mk_sequent_inner_term hyps goals vars (i + 1) len)
           | Context (v, conts, subterms) ->
                mk_context_term v (mk_sequent_inner_term hyps goals vars (i + 1) len) conts subterms
 
@@ -498,9 +472,7 @@ struct
          vars
     | Context (v, conts, ts) :: hyps ->
          hyp_vars (SymbolSet.add (SymbolSet.add_list (SymbolSet.union (free_vars_terms ts) vars) conts) v) hyps
-    | Hypothesis(t) :: hyps ->
-         hyp_vars (SymbolSet.union (free_vars_set t) vars) hyps
-    | HypBinding (v, t) :: hyps ->
+    | Hypothesis (v, t) :: hyps ->
          hyp_vars (SymbolSet.add (SymbolSet.union (free_vars_set t) vars) v) hyps
 
    let mk_sequent_term
@@ -616,23 +588,15 @@ struct
          let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
                let t, x, term = match_hyp_all explode_sequent_name t bterms in
-                  collect args (HypBinding (x, t) :: hyps) concls term
+                  collect args (Hypothesis (x, t) :: hyps) concls term
             else if Opname.eq opname context_opname then
                let name, term, conts, args' = dest_context term in
                   collect args (Context (name, conts, args') :: hyps) concls term
             else if Opname.eq opname concl_opname then
                if bterms = [] then
-                  (*
-                   * XXX HACK:
-                   * The code below will remove double-bindings (e.g. same variable bound twice in the
-                   * hypothesis list, but only used after the second binding) and hyp bindings with fake_var
-                   *)
                   let vars = free_vars_terms concls in
                   let hyps = List.rev hyps in
-                  let hyps =
-                     if SymbolSet.mem vars fake_var then hyps
-                     else fst (remove_redundant_hbs (SymbolSet.remove (hyp_vars vars hyps) fake_var) hyps)
-                  in args, hyps, concls
+                     args, hyps, concls
                else
                   let goal, term = match_concl_all explode_sequent_name t bterms in
                      collect args hyps (goal :: concls) term
@@ -657,10 +621,7 @@ struct
             if SymbolSet.mem vars c then invalid_arg "Bound context in explode_sequent_and_rename";
             let hyps', sub' = collect (SymbolSet.add vars c) sub hyps in
                Context(c, cts, List.map (apply_subst sub) ts) :: hyps', sub'
-       | Hypothesis t :: hyps ->
-            let hyps', sub' = collect vars sub hyps in
-               Hypothesis (apply_subst sub t) :: hyps', sub'
-       | HypBinding (v,t) :: hyps ->
+       | Hypothesis (v,t) :: hyps ->
             let v', sub' =
                if SymbolSet.mem vars v then
                   let v' = new_name v (SymbolSet.mem vars) in
@@ -668,7 +629,7 @@ struct
                else v, sub
             in
             let hyps', sub' = collect (SymbolSet.add vars v') sub' hyps in
-               HypBinding(v', apply_subst sub t) :: hyps', sub'
+               Hypothesis(v', apply_subst sub t) :: hyps', sub'
       in
       let hyps, sub = collect vars [] hyps in {
          sequent_args = args;

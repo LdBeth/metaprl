@@ -163,7 +163,7 @@ struct
       if i = len then find_subterm_goals arg s 0 (SeqGoal.length s.sequent_goals)
       else match
          match SeqHyp.get s.sequent_hyps i with
-            Hypothesis t | HypBinding (_, t) -> find_subterm_term [] arg t
+            Hypothesis (_, t) -> find_subterm_term [] arg t
           | Context(_, _, ts) -> find_subterm_terms [] arg 0 ts
       with
          Some(Path[]) -> Some(HypAddr i)
@@ -226,7 +226,7 @@ struct
        | Sequent s, HypAddr i ->
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
                match SeqHyp.get s.sequent_hyps i with
-                  HypBinding (_, t) | Hypothesis t -> t
+                  Hypothesis (_, t) -> t
                 | Context _ -> REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
             else REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
        | Sequent s, GoalAddr i ->
@@ -238,7 +238,7 @@ struct
              *)
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
                match SeqHyp.get s.sequent_hyps i with
-                  HypBinding (_, t) | Hypothesis t ->
+                  Hypothesis (_, t) ->
                      term_subterm t addr2
                 | Context (_, _, subterms) ->
                      term_subterm_path ATERM (getnth ATERM subterms j) path
@@ -262,7 +262,7 @@ struct
          if i = 0 then addrs else let i = pred i in
             make_hyp_list i hyps (
                match SeqHyp.get hyps i with
-                  Hypothesis _ | HypBinding _ -> HypAddr i :: addrs
+                  Hypothesis _ -> HypAddr i :: addrs
                 | Context(_,_,ts) -> make_hyppath_list (List.length ts) (HypAddr i) addrs
             )
       in fun t -> match get_core t with
@@ -292,8 +292,8 @@ struct
    let rec collect_hyp_bvars i hyps bvars =
       if i < 0 then bvars
       else match SeqHyp.get hyps i with
-         HypBinding (v,_) -> collect_hyp_bvars (pred i) hyps (SymbolSet.add bvars v)
-       | Hypothesis _ | Context _ -> collect_hyp_bvars (pred i) hyps bvars
+         Hypothesis (v,_) -> collect_hyp_bvars (pred i) hyps (SymbolSet.add bvars v)
+       | Context _ -> collect_hyp_bvars (pred i) hyps bvars
 
    let collect_goal_bvars hyps = collect_hyp_bvars (SeqHyp.length hyps - 1) hyps
 
@@ -353,12 +353,9 @@ struct
           | (Sequent s, HypAddr i) ->
                if i>=0 && i < SeqHyp.length s.sequent_hyps then
                   let hyp, arg = match SeqHyp.get s.sequent_hyps i with
-                     HypBinding (v,t) as hyp ->
+                     Hypothesis (v,t) as hyp ->
                         let term, arg = f hyp_bvars t in
-                           HypBinding (v,term), arg
-                   | Hypothesis t as hyp ->
-                        let term, arg = f hyp_bvars t in
-                           Hypothesis term, arg
+                           Hypothesis (v,term), arg
                    | Context (v, conts, subterms) ->
                         let slot = mk_var_term v in
                         let t = mk_context_term v slot conts subterms in

@@ -229,10 +229,8 @@ struct
       if i < 0 then fvs else
       hyp_fv hyps (pred i) (
       match SeqHyp.get hyps i with
-         HypBinding (v,t) ->
+         Hypothesis (v,t) ->
             SymbolSet.union (free_vars_set t) (SymbolSet.remove fvs v)
-       | Hypothesis t ->
-            SymbolSet.union (free_vars_set t) fvs
        | Context (v,conts,subterms) ->
             SymbolSet.remove (SymbolSet.add_list (SymbolSet.union fvs (terms_free_vars subterms)) conts) v)
 
@@ -392,7 +390,7 @@ struct
    and hyps_subst hyps len sub all_vars sub_vars new_hyps i =
       if i = len then sub, new_hyps else
       match SeqHyp.get hyps i with
-         HypBinding (v,t) as hyp ->
+         Hypothesis (v,t) as hyp ->
             let t' = do_term_subst sub t in
             let sub = filter_sub_var v sub in
             (* Rename v if it might capture a free var in the subst *)
@@ -402,14 +400,10 @@ struct
                (* XXX: These would not be needed if new_name was guaranteed unique *)
                let sub_vars = SymbolSet.add sub_vars v' in
                let all_vars = SymbolSet.add all_vars v' in
-                  hyps_subst hyps len sub all_vars sub_vars (HypBinding (v', t) :: new_hyps) (i + 1)
+                  hyps_subst hyps len sub all_vars sub_vars (Hypothesis (v', t) :: new_hyps) (i + 1)
             else
-               let hyp = if t == t' then hyp else HypBinding (v, t') in
+               let hyp = if t == t' then hyp else Hypothesis (v, t') in
                   hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
-       | Hypothesis t  as hyp ->
-            let t' = do_term_subst sub t in
-            let hyp = if t == t' then hyp else Hypothesis t' in
-               hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
        | Context (v,conts,ts) as hyp ->
             if SymbolSet.mem sub_vars v then
                raise(Invalid_argument "Term_base_ds.get_core: free variable got captured by a context");

@@ -102,8 +102,7 @@ struct
    let rec compare_hyps hyp1 hyp2 i =
       (i < 0) ||
       ((match (CTerm.SeqHyp.get hyp1 i), (CTerm.SeqHyp.get hyp2 i) with
-           Term_sig.HypBinding (v1,t1),       Term_sig.HypBinding (v2,t2)       -> v1 = v2 && t1 == t2
-         | Term_sig.Hypothesis t1,            Term_sig.Hypothesis t2            ->            t1 == t2
+           Term_sig.Hypothesis (v1,t1),       Term_sig.Hypothesis (v2,t2)       -> v1 = v2 && t1 == t2
          | Term_sig.Context    (v1,cts1,ts1), Term_sig.Context    (v2,cts2,ts2) -> v1 = v2 && cts1=cts2 && list_mem_eq ts1 ts2
          | _ -> false) &&
        (compare_hyps hyp1 hyp2 (pred i)))

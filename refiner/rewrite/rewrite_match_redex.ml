@@ -135,7 +135,7 @@ struct
    let rec extract_cont_bvars_aux hyps vars i count =
       if count = 0 then vars else
       extract_cont_bvars_aux hyps (**)
-         (match SeqHyp.get hyps i with Context(v,_,_) | HypBinding (v, _) -> (v::vars) | Hypothesis _ -> vars)
+         (match SeqHyp.get hyps i with Context(v,_,_) | Hypothesis (v, _) -> (v::vars))
          (i+1) (count-1)
 
    let rec extract_cont_bvars stack vars = function
@@ -527,7 +527,7 @@ struct
                   raise (Invalid_argument "Rewrite_match_redex.match_redex_sequent_hyps: RWSeqContextInstance: invalid stack entry")
             end
 
-       | RWSeqHypBnd (name, term') :: hyps' ->
+       | RWSeqHyp (name, term') :: hyps' ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
                   eprintf "RWSeqHyp (%i out of %i)%t" i len eflush
@@ -535,7 +535,7 @@ struct
             if i = len then
                REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringIntError ("not enough hypotheses when matching hypothesis number", succ i)))
             else begin match SeqHyp.get hyps i with
-               HypBinding (v, term) ->
+               Hypothesis (v, term) ->
                   set_bvar stack v name;
                   let new_bvars = SymbolSet.add all_bvars v in
                   (*
@@ -548,29 +548,21 @@ struct
                    *)
                   match_redex_term addrs stack new_bvars term' term;
                   match_redex_sequent_hyps addrs stack goals' goals new_bvars hyps' hyps (succ i) len
-             | Hypothesis term ->
-                  match_redex_term addrs stack all_bvars term' term;
-                  match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps (succ i) len
              | Context _ ->
                   REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringIntError ("hypothesis index refers to a context", i)))
             end
-       | RWSeqHyp _ :: _ ->
-            raise(Invalid_argument("Invalid context in redex program"))
 
    and match_context_instance addrs stack all_bvars hyps i hyps' k bvars ts count =
       if count = 0 then () else
       let all_bvars =
          match SeqHyp.get hyps i, SeqHyp.get hyps' k with
-            (Context _, (Hypothesis _ | HypBinding _)) | ((Hypothesis _ | HypBinding _), Context _) ->
+            (Context _, Hypothesis _) | (Hypothesis _, Context _) ->
                REF_RAISE(RefineError ("Rewrite_match_redex.match_context_instance", StringError ("hypothesis/context mismatch")))
-          | Hypothesis t1, Hypothesis t2 ->
-               check_match addrs stack all_bvars t2 bvars t1 ts;
-               all_bvars
-          | HypBinding (v, t1), HypBinding(v', t2) when v=v' && not (List.mem v bvars) ->
+          | Hypothesis (v, t1), Hypothesis(v', t2) when v=v' ->
                check_match addrs stack all_bvars t2 bvars t1 ts;
                (SymbolSet.add all_bvars v)
           | Context (v, conts, ts1), Context(v', conts', ts2)
-            when v=v' && conts=conts' && (List.length ts1 = List.length ts2) && not (List.mem v bvars) ->
+            when v=v' && conts=conts' && (List.length ts1 = List.length ts2) ->
                List.iter2 (fun t1 t2 -> check_match addrs stack all_bvars t2 bvars t1 ts) ts1 ts2;
                (SymbolSet.add all_bvars v)
           | _ ->
@@ -592,13 +584,10 @@ struct
    and check_hyp_free_vars vars hyps i len =
       if (i=len) then () else
       match SeqHyp.get hyps i with
-         HypBinding (var, term) ->
+         Hypothesis (var, term) ->
             check_term_free_vars vars term;
             let vars = Lm_list_util.tryremove var vars in
             if vars != [] then check_hyp_free_vars vars hyps (succ i) len
-       | Hypothesis term ->
-            check_term_free_vars vars term;
-            check_hyp_free_vars vars hyps (succ i) len
        | Context (var, _, terms) ->
             List.iter (check_term_free_vars vars) terms;
             let vars = Lm_list_util.tryremove var vars in

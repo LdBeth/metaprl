@@ -253,7 +253,6 @@ sig
    val msequent_num_assums : msequent -> int
    val msequent_nth_assum :  msequent -> int -> term
    val msequent_free_vars : msequent -> SymbolSet.t
-   val msequent_remove_redundant_hypbindings : msequent -> msequent
 
    (*
     * Alpha equality on sequent objects.

@@ -279,11 +279,8 @@ and expr_of_hyps_con loc hyps =
                      <:expr< [ $e$ :: $hyps$ ] >>
              | ConHypList l ->
                   <:expr< $l$ @ $hyps$ >>
-             | ConHypothesis t ->
-                  let e = <:expr< Refiner.Refiner.TermType.Hypothesis $expr_of_term_con loc t$ >> in
-                     <:expr< [ $e$ :: $hyps$ ] >>
-             | ConHypBinding (v, t) ->
-                  let e = <:expr< Refiner.Refiner.TermType.HypBinding (Lm_symbol.add $v$, $expr_of_term_con loc t$) >> in
+             | ConHypothesis (v, t) ->
+                  let e = <:expr< Refiner.Refiner.TermType.HypBinding ($v$, $expr_of_term_con loc t$) >> in
                      <:expr< [ $e$ :: $hyps$ ] >>
 
 let con_exp s =

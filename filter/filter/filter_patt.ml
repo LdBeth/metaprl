@@ -163,13 +163,10 @@ let build_sequent_patt loc t =
       match hyps with
          [] ->
             <:patt< [] >>
-       | HypBinding (v, t) :: hyps ->
+       | Hypothesis (v, t) :: hyps ->
             let v = string_of_symbol v in
             let t = dest_fso_var_string t in
                <:patt< [Refiner.Refiner.TermType.HypBinding ($lid:v$, $lid:t$) :: $build_hyps hyps$] >>
-       | Hypothesis t :: hyps ->
-            let t = dest_fso_var_string t in
-               <:patt< [Refiner.Refiner.TermType.Hypothesis $lid:t$ :: $build_hyps hyps$] >>
        | [Context (v, _, _)] ->
             let v = string_of_symbol v in
                <:patt< $lid:v$ >>

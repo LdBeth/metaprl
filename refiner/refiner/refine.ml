@@ -490,25 +490,9 @@ struct
                mseq.mseq_vars <- FreeVars vars;
                vars
 
-   let remove_red_hbs t =
-      if is_sequent_term t then
-         let eseq = explode_sequent t in
-         let hyps = SeqHyp.to_list eseq.sequent_hyps in
-         let hyps' = remove_redundant_hypbindings hyps (SeqGoal.to_list eseq.sequent_goals) in
-            if (hyps==hyps') then t else
-               mk_sequent_term {eseq with sequent_hyps = SeqHyp.of_list hyps' }
-      else
-         t
-
-   let msequent_remove_redundant_hypbindings mseq = {
-      mseq with
-      mseq_goal = remove_red_hbs mseq.mseq_goal;
-      mseq_hyps = Lm_list_util.smap remove_red_hbs mseq.mseq_hyps
-   }
-
    let mk_msequent goal subgoals =
-      { mseq_goal = remove_red_hbs goal;
-        mseq_hyps = Lm_list_util.smap remove_red_hbs subgoals;
+      { mseq_goal = goal;
+        mseq_hyps = subgoals;
         mseq_vars = FreeVarsDelayed
       }
 
@@ -1220,26 +1204,16 @@ struct
     ************************************************************************)
 
    let make_wildcard_ext_arg =
-      let v = Lm_symbol.make "v" 0 in
-      let fold (avoid, vars, conts, hyps) = function
+      let fold (vars, conts, hyps) = function
          Context (c, _, _) as hyp ->
-            (avoid, vars, c::conts, hyp::hyps)
-       | Hypothesis t ->
-            let v = Lm_symbol.new_name v (SymbolSet.mem avoid) in
-               (SymbolSet.add avoid v, mk_var_term v :: vars , conts, HypBinding(v,t) :: hyps)
-       | HypBinding (v,t) as hyp ->
-            (avoid, mk_var_term v :: vars , conts, hyp::hyps)
-      in
-      let vfold vars = function
-         Context (v, _, _) | HypBinding(v, _) -> SymbolSet.add vars v
-       | Hypothesis _ -> vars
+            (vars, c::conts, hyp::hyps)
+       | Hypothesis (v,t) as hyp ->
+            (mk_var_term v :: vars , conts, hyp::hyps)
       in fun i t ->
          let v = Lm_symbol.make "ext_arg" i in
             if is_sequent_term t then
                let eseq = explode_sequent t in
-               let hyps = SeqHyp.to_list eseq.sequent_hyps in
-               let vars = List.fold_left vfold (free_vars_set t) hyps in
-               let _, vars, conts, hyps = List.fold_left fold (vars,[],[],[]) hyps in
+               let vars, conts, hyps = List.fold_left fold ([],[],[]) (SeqHyp.to_list eseq.sequent_hyps) in
                let goal = mk_so_var_term v conts vars in
                   mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_goals = SeqGoal.of_list [goal] }
             else mk_so_var_term v [] []
@@ -1426,12 +1400,12 @@ struct
     *)
    let compute_rule_ext =
       let rec only_hyps = function
-         (HypBinding _| Hypothesis _) :: rest -> only_hyps rest
+         Hypothesis _ :: rest -> only_hyps rest
        | Context _ :: _ -> false
        | [] -> true
       in
       let rec skip_hyps = function
-         (HypBinding _| Hypothesis _) :: rest ->
+         Hypothesis _ :: rest ->
             let i, rest = skip_hyps rest in i + 1, rest
        | rest ->
             1, rest
@@ -1440,10 +1414,10 @@ struct
          match ghyps, ahyps with
             _, [] ->
                []
-          | (HypBinding _| Hypothesis _) :: rest, _ ->
+          | Hypothesis _ :: rest, _ ->
                let i, rest = skip_hyps rest in
                   ECSkip i :: (prog_of_hyps addrs all_ghyps rest ahyps)
-          | _, (HypBinding _| Hypothesis _) :: rest ->
+          | _, Hypothesis _ :: rest ->
                ECBind :: prog_of_hyps addrs all_ghyps ghyps rest
           | (Context(c,_,_)) :: rest, (Context(c',_,_) :: rest') when c = c' ->
                let h =
@@ -1478,22 +1452,6 @@ struct
       let simple_combine _ goal args =
          mk_xlist_term (goal :: args)
       in
-      let bv = Lm_symbol.add "v" in
-      let rec add_hyp_bindings vars = function
-         ((Context _ | HypBinding _) as hyp :: rest) as hyps ->
-            let rest' = add_hyp_bindings vars rest in
-               if rest' == rest then hyps else hyp :: rest'
-       | Hypothesis t :: rest ->
-            let v = Lm_symbol.new_name bv (SymbolSet.mem vars) in
-               HypBinding(v, t) :: add_hyp_bindings (SymbolSet.add vars v) rest
-       | [] -> []
-      in
-      let add_bindings t =
-         let eseq = explode_sequent t in
-         let hyps = SeqHyp.to_list eseq.sequent_hyps in
-         let hyps' = add_hyp_bindings (SymbolSet.add_list (free_vars_set t) (declared_vars t)) hyps in
-            if hyps' == hyps then t else mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list hyps' }
-      in
       (* Debugging output *)
       let string_of_prog_item = function
          ECBind -> "Bind"
@@ -1511,14 +1469,11 @@ struct
          let rec aux goal_ind t arg_ind = function
             [] -> t
           | ECBind :: rest ->
-               let v =
-                  if arg_ind >= alen then REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
-                  match SeqHyp.get argh arg_ind with
-                     Hypothesis _ -> bv
-                   | HypBinding(v, _) -> v
-                   | Context _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyp, got context")))
-               in
-                  aux goal_ind (mk_xbind_term v t) (arg_ind + 1) rest
+               if arg_ind >= alen then REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
+               begin match SeqHyp.get argh arg_ind with
+                  Hypothesis(v, _) -> aux goal_ind (mk_xbind_term v t) (arg_ind + 1) rest
+                | Context _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyp, got context")))
+               end
           | ECSkip i :: rest ->
                aux (goal_ind + i) t arg_ind rest
           | ECSkipCont i :: rest ->
@@ -1543,9 +1498,8 @@ struct
                if arg_ind >= alen || goal_ind >= glen then
                   REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
                match SeqHyp.get goalh goal_ind, SeqHyp.get argh arg_ind with
-                  HypBinding(vh, _), HypBinding(ah, _) ->
+                  Hypothesis(vh, _), Hypothesis(ah, _) ->
                      subst1 t ah (mk_var_term vh)
-                | HypBinding _, Hypothesis _ -> t
                 | Context(c1, _, _), Context(c2, _, _) when c1=c2 -> t
                 | _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyps, got something wrong")))
             in
@@ -1562,7 +1516,6 @@ struct
                fun addrs goal args ->
                   if List.length args <> args_length then
                      REF_RAISE(RefineError("compute_rule_ext", StringError "wrong number of extract inputs"));
-                  let goal = add_bindings goal in
                   let args = List.map2 (apply_arg_prog addrs goal) args arg_progs in
                      replace_goal goal (simple_combine () (nth_concl goal 1) args)
             else simple_combine
@@ -1650,10 +1603,7 @@ struct
          if i = len then aux conts vars sgoal agoal else
          match SeqHyp.get hyps i with
             Context (c, _, _) -> check_hyps (SymbolSet.add conts c) vars (i+1) len hyps sgoal agoal
-          | HypBinding (v, _) -> check_hyps conts (SymbolSet.add vars v) (i+1) len hyps sgoal agoal
-          | Hypothesis t ->
-               raise (RefineError("Refine.check_subgoal_arg",
-                  StringTermError("Extract term is not general enough (hypothesis does not introduce a variable)", t)))
+          | Hypothesis (v, _) -> check_hyps conts (SymbolSet.add vars v) (i+1) len hyps sgoal agoal
       in
          aux SymbolSet.empty SymbolSet.empty
 

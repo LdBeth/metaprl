@@ -46,8 +46,6 @@ let fail_match _ = raise cant_match_hyp
 
 let aev v1 v2 t1 t2 = alpha_equal_vars t1 v1 t2 v2
 
-let fake_var = Lm_symbol.add "__@@match_seq_var_HACK@@__"
-
 let try_match_hyps relaxed big small =
    let big_hyp = big.sequent_hyps in
    let small_hyp = small.sequent_hyps in
@@ -59,7 +57,7 @@ let try_match_hyps relaxed big small =
    let all_hyps = if relaxed then
          let rec aux small_skip =
             small_skip = small_length || match SeqHyp.get small_hyp small_skip with
-               Hypothesis _ | HypBinding _ -> aux (succ small_skip)
+               Hypothesis _ -> aux (succ small_skip)
              | Context _ -> false
          in aux
       else fail_match in
@@ -75,10 +73,8 @@ let try_match_hyps relaxed big small =
                (v1 = v2) && (List.for_all2 (aev big_vars small_vars) terms1 terms2) ->
                result.(big_skip) <- Some small_skip;
                aux (succ big_skip) (succ small_skip) big_vars small_vars
-          | (Hypothesis t1 | HypBinding(_, t1) as h1), (Hypothesis t2 | HypBinding(_, t2) as h2) ->
+          | Hypothesis (v1, t1), Hypothesis (v2, t2) ->
                if alpha_equal_vars t1 big_vars t2 small_vars then
-                  let v1 = match h1 with HypBinding(v,_) -> v | _ -> fake_var in
-                  let v2 = match h2 with HypBinding(v,_) -> v | _ -> fake_var in
                   if aux (succ big_skip) (succ small_skip) (v1::big_vars) (v2::small_vars) then begin
                      result.(big_skip) <- Some small_skip;
                      true
@@ -86,7 +82,7 @@ let try_match_hyps relaxed big small =
                      aux (succ big_skip) small_skip big_vars small_vars
                else
                   aux (succ big_skip) small_skip big_vars small_vars
-          | (Hypothesis _| HypBinding _), Context _ ->
+          | Hypothesis _, Context _ ->
                aux (succ big_skip) small_skip big_vars small_vars
           | _ ->
             false

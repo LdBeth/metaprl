@@ -59,13 +59,11 @@ struct
    type msequent_weak_index = Refinex.msequent WM.weak_descriptor
 
    type hypothesis_header =
-      Hypothesis of term_index
-    | HypBinding of var * term_index
+      Hypothesis of var * term_index
     | Context of var * var list * term_index list
 
    type hypothesis_weak_header =
-      Hypothesis_weak of TType.term WM.weak_descriptor
-    | HypBinding_weak of var * TType.term WM.weak_descriptor
+      Hypothesis_weak of var * TType.term WM.weak_descriptor
     | Context_weak of var * var list * TType.term WM.weak_descriptor list
 
    type bound_term_header =
@@ -156,8 +154,7 @@ struct
 
    let weak_hyp_header () hyp =
       match hyp with
-         Hypothesis t -> Hypothesis_weak (WM.weaken t)
-       | HypBinding (v, t) -> HypBinding_weak (v, WM.weaken t)
+         Hypothesis (v, t) -> Hypothesis_weak (v, WM.weaken t)
        | Context (v, conts, trms) -> Context_weak (v, conts, List.map WM.weaken trms)
 
    let weak_hyp_header' = weak_hyp_header ()
@@ -211,8 +208,7 @@ struct
 
    let compare_hyp_header hyp1 hyp2 =
       match hyp1, hyp2 with
-         Hypothesis_weak t1,       Hypothesis_weak t2        ->            t1 == t2
-       | HypBinding_weak (v1,t1),  HypBinding_weak (v2,t2)   -> v1 = v2 && t1 == t2
+         Hypothesis_weak (v1,t1),  Hypothesis_weak (v2,t2)   -> v1 = v2 && t1 == t2
        | Context_weak    (v1,conts1,ts1), Context_weak    (v2,conts2,ts2)  -> v1 = v2 && conts1 = conts2 && list_mem_eq ts1 ts2
        | _ -> false
 
@@ -267,8 +263,7 @@ struct
 
    let p_constr_hyp info hyp =
       match hyp with
-         Hypothesis t -> Term_sig.Hypothesis (WM.retrieve info.term_hash info t)
-       | HypBinding (v, t) -> Term_sig.HypBinding (v, WM.retrieve info.term_hash info t)
+         Hypothesis (v, t) -> Term_sig.Hypothesis (v, WM.retrieve info.term_hash info t)
        | Context (v, conts, trms) -> Term_sig.Context (v, conts, List.map (WM.retrieve info.term_hash info) trms)
 
    let p_constr_tterm info { op_name = op; op_params = params; term_terms = bterms } =
@@ -401,18 +396,14 @@ struct
       type t = hypothesis_header
 
       let equal h1 h2 = match h1,h2 with
-         Hypothesis t1, Hypothesis t2 ->
-            HashedTerm.equal t1 t2
-       | HypBinding (v1,t1), HypBinding (v2,t2) ->
+         Hypothesis (v1,t1), Hypothesis (v2,t2) ->
             v1=v2 && HashedTerm.equal t1 t2
        | Context (v1, conts1, ts1), Context (v2, conts2, ts2) ->
             v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 HashedTerm.equal ts1 ts2
        | _ -> false
 
       let hash = function
-         Hypothesis t ->
-            (65599 * (HashedTerm.hash t)) land 0x3FFFFFFF
-       | HypBinding (v,t) ->
+         Hypothesis (v,t) ->
             ((Hashtbl.hash v) + (65599 * (HashedTerm.hash t))) land 0x3FFFFFFF
        | Context (v,conts,ts) ->
             (((Hashtbl.hash v) + (Hashtbl.hash conts)) * 65599 + Hashtbl.hash (List.map HashedTerm.hash ts)) land 0x3FFFFFFF

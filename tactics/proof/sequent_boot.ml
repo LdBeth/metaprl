@@ -124,7 +124,7 @@ struct
       if i = 0 then l else
       let i = pred i in
          match Term.SeqHyp.get hyps i with
-            Hypothesis t | HypBinding (_, t) ->
+            Hypothesis (_, t) ->
                all_hyps_aux hyps (t::l) i
           | Context _ ->
                all_hyps_aux hyps l i

@@ -122,8 +122,7 @@ struct
     * or the number of hyps to leave at the end (-1 - 0 hyps, -2 - 1 hyps, etc).
     *)
    and rw_seq_term =
-      RWSeqHypBnd of varname * rwterm
-    | RWSeqHyp of rwterm
+      RWSeqHyp of varname * rwterm
     | RWSeqContext of int * int * int list
     | RWSeqContextInstance of int * rwterm list
     | RWSeqFreeVarsContext of int list * int list * int * int * int list

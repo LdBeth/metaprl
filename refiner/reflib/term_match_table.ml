@@ -195,7 +195,6 @@ let is_context_hyp hyps i =
    match SeqHyp.get hyps i with
       Context _ ->
          true
-    | HypBinding _
     | Hypothesis _ ->
          false
 
@@ -250,8 +249,7 @@ let context_term =
  * using the flatten_arg to tell between sequents and other terms.
  *)
 let term_of_hyp = function
-   HypBinding (_, t)
- | Hypothesis t ->
+   Hypothesis (_, t) ->
       t
  | Context _ ->
       context_term

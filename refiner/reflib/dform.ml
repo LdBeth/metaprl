@@ -365,12 +365,12 @@ and format_sequent buf format_term term =
          in
          let _ =
             match SeqHyp.get hyps i with
-               HypBinding (v, a) ->
+               Hypothesis (v, a) ->
                   format_space buf;
-                  format_string buf (string_of_symbol v);
-                  format_string buf ". ";
-                  format_term a
-             | Hypothesis a ->
+                  if Lm_symbol.to_string v <> "" then begin
+                     format_string buf (string_of_symbol v);
+                     format_string buf ". ";
+                  end;
                   format_term a
              | Context (v, conts, values) ->
                   format_string buf "<";

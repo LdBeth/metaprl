@@ -178,7 +178,7 @@ let process_nth_hyp_resource_annotation name context_args term_args statement pr
    let assums, goal = unzip_mfunction statement in
    let goal = TermMan.explode_sequent goal in
       match context_args, term_args, assums, SeqHyp.to_list goal.sequent_hyps with
-         [| _ |], [], [], [ Context _; (HypBinding(_,t)|Hypothesis t); Context _ ] ->
+         [| _ |], [], [], [ Context _; Hypothesis(_,t); Context _ ] ->
             (t, SeqGoal.get goal.sequent_goals 0, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] [])
        | _ ->
             raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" name))

@@ -66,7 +66,7 @@ sig
    (* An FO var or an SO var without subterms, but possibly with contexts *)
    val is_fso_var_term : term -> bool
    val dest_fso_var : term -> var
-   
+
    val is_context_term : term -> bool
    val dest_context : term -> var * term * var list * term list
    val mk_context_term : var -> term -> var list -> term list -> term
@@ -90,7 +90,6 @@ sig
    val explode_sequent : term -> esequent
    (* explode_sequent_and_rename is analoguos to dest_bterm_and_rename *)
    val explode_sequent_and_rename : term -> SymbolSet.t -> esequent
-   val remove_redundant_hypbindings : hypothesis list -> term list -> hypothesis list
 
    (* Indexing starts at 1 *)
    (* Functions will raise RefineError when int is out of range *)

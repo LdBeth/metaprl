@@ -223,7 +223,7 @@ struct
             let rec hyp_context_vars i =
                if i = len then [] else
                match SeqHyp.get hyps i with
-                  HypBinding (_,h) | Hypothesis h -> context_vars h @ hyp_context_vars (succ i)
+                  Hypothesis (_, h) -> context_vars h @ hyp_context_vars (succ i)
                 | Context (v,_,ts) -> v :: (terms_context_vars ts @ hyp_context_vars (succ i))
             in let goals = seq.sequent_goals in
             let len = SeqGoal.length goals in
@@ -283,8 +283,6 @@ struct
                if (res==tl) then l else p::res
             else res
 
-   let fake_var=Lm_symbol.add "__@@nosuchvarHACK@@__"
-
    let rec equal_term vars t t' =
       let vars = eq_filt_vars (free_vars_set t) (free_vars_set t') vars in
       (vars == [] && t==t') || (
@@ -319,10 +317,8 @@ struct
    and equal_hyps hyps1 hyps2 vars i =
       if i = SeqHyp.length hyps1 then Some vars else
          match SeqHyp.get hyps1 i, SeqHyp.get hyps2 i with
-            (Hypothesis t1 | HypBinding (_,t1)) as h1, (Hypothesis t2 | HypBinding(_,t2) as h2) ->
+            Hypothesis (v1,t1), Hypothesis (v2,t2) ->
                if equal_term vars t1 t2 then
-                  let v1 = match h1 with HypBinding(v,_) -> v | _ -> fake_var in
-                  let v2 = match h2 with HypBinding(v,_) -> v | _ -> fake_var in
                   let vars = if v1=v2 then remove_var v1 vars else (v1,v2)::vars in
                      equal_hyps hyps1 hyps2 vars (succ i)
                else None
@@ -469,11 +465,9 @@ struct
    and equal_fun_hyps hyps1 hyps2 f bvars sub i =
       if i = SeqHyp.length hyps1 then Some bvars else
          match SeqHyp.get hyps1 i, SeqHyp.get hyps2 i with
-            (Hypothesis t1 | HypBinding (_,t1)) as h1, (Hypothesis t2 | HypBinding(_,t2) as h2) ->
+            Hypothesis (v1,t1), Hypothesis (v2,t2) ->
                if equal_fun f bvars sub t1 t2 then
-                  let v1 = match h1 with HypBinding(v,_) -> v | _ -> fake_var in
-                  let v2 = match h2 with HypBinding(v,_) -> v | _ -> fake_var in
-                     equal_fun_hyps hyps1 hyps2 f ((v1,v2)::bvars) sub (succ i)
+                  equal_fun_hyps hyps1 hyps2 f ((v1,v2)::bvars) sub (succ i)
                else None
           | Context (v1,conts1,ts1), Context (v2,conts2,ts2) ->
             if v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2 then

@@ -103,8 +103,7 @@ and ('term, 'expr) bterm_constructor =
 and ('term, 'expr) hyp_constructor =
    ConContext of 'expr * ('term, 'expr) term_constructor list
  | ConHypList of 'expr
- | ConHypothesis of ('term, 'expr) term_constructor
- | ConHypBinding of 'expr * ('term, 'expr) term_constructor
+ | ConHypothesis of 'expr * ('term, 'expr) term_constructor
 
 (************************************************************************
  * Summary (filter_summary) TYPES                                      *

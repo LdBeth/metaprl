@@ -537,18 +537,14 @@ let nameHypT i v =
    let eseq = explode_sequent goal in
    let eseq =
       match SeqHyp.get eseq.sequent_hyps i with
-         Hypothesis hyp ->
-            let map i' hyp' = if i = i' then HypBinding (v, hyp) else hyp' in
-               { eseq with sequent_hyps = SeqHyp.mapi map eseq.sequent_hyps }
-       | HypBinding (v',hyp) ->
+         Hypothesis (v',hyp) ->
             let vt = mk_var_term v in
             let s1 t = subst1 t v' vt in
             let map i' hyp' =
                if i'<i then hyp'
-               else if i=i' then HypBinding(v,hyp)
+               else if i=i' then Hypothesis(v,hyp)
                else begin match hyp' with
-                  Hypothesis hyp' -> Hypothesis (subst1 hyp' v' vt)
-                | HypBinding (vv,hyp') -> HypBinding (vv, subst1 hyp' v' vt)
+                  Hypothesis (vv,hyp') -> Hypothesis (vv, subst1 hyp' v' vt)
                 | Context (vv, conts, ts) -> Context (vv, conts, List.map s1 ts)
                end
             in

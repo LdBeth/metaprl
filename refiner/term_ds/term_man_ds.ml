@@ -315,17 +315,14 @@ struct
     | Context(c, cts, ts) :: hyps ->
          let hyps', sub' = rename_hyps (SymbolSet.add vars c) sub hyps in
             Context(c, cts, List.map (apply_subst sub) ts) :: hyps', sub'
-    | Hypothesis t :: hyps ->
-         let hyps', sub' = rename_hyps vars sub hyps in
-            Hypothesis (apply_subst sub t) :: hyps', sub'
-    | HypBinding (v,t) :: hyps when SymbolSet.mem vars v ->
+    | Hypothesis (v,t) :: hyps when SymbolSet.mem vars v ->
          let v' = new_name v (SymbolSet.mem vars) in
          let sub' = (v, mk_var_term v') :: sub in
          let hyps', sub' = rename_hyps (SymbolSet.add vars v') sub' hyps in
-            HypBinding(v', apply_subst sub t) :: hyps', sub'
-    | HypBinding (v,t) :: hyps ->
+            Hypothesis(v', apply_subst sub t) :: hyps', sub'
+    | Hypothesis (v,t) :: hyps ->
          let hyps', sub' = rename_hyps (SymbolSet.add vars v) sub hyps in
-            HypBinding(v, apply_subst sub t) :: hyps', sub'
+            Hypothesis(v, apply_subst sub t) :: hyps', sub'
 
    let explode_sequent_and_rename t vars =
       let s = explode_sequent t in
@@ -335,25 +332,6 @@ struct
                sequent_hyps = SeqHyp.of_list hyps;
                sequent_goals = SeqGoal.lazy_apply (apply_subst subst) s.sequent_goals
             }
-
-   let rec remove_redundant_hbs vars = function
-      [] -> [], vars
-    | (Context (_, _, ts) as hyp :: hyps) as ohyps ->
-         let hyps', vars = remove_redundant_hbs vars hyps in
-            (if hyps'==hyps then ohyps else hyp :: hyps'), SymbolSet.union (free_vars_terms ts) vars
-    | (Hypothesis(t) as hyp :: hyps) as ohyps ->
-         let hyps', vars = remove_redundant_hbs vars hyps in
-            (if hyps'==hyps then ohyps else hyp :: hyps'), SymbolSet.union (free_vars_set t) vars
-    | (HypBinding (v, t) as hyp :: hyps) as ohyps ->
-         let hyps', vars = remove_redundant_hbs vars hyps in
-            if SymbolSet.mem vars v then
-               (if hyps'==hyps then ohyps else hyp :: hyps'),
-                  SymbolSet.union (free_vars_set t) (SymbolSet.remove vars v)
-            else
-               Hypothesis t :: hyps', SymbolSet.union (free_vars_set t) vars
-
-   let remove_redundant_hypbindings hyps goals =
-      fst (remove_redundant_hbs (free_vars_terms goals) hyps)
 
    (*
     * Count the hyps.
@@ -382,7 +360,7 @@ struct
                let i = pred i in
                   if i < SeqHyp.length s.sequent_hyps then
                      match SeqHyp.get s.sequent_hyps i with
-                        HypBinding (_, t) | Hypothesis t -> t
+                        Hypothesis (_, t) -> t
                       | Context _ ->
                            REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
                   else
@@ -393,7 +371,6 @@ struct
        | _ ->
             REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
 
-   let v_sym = Lm_symbol.add "v"
    let rec nth_binding t i =
       match t.core with
          Sequent s ->
@@ -403,8 +380,7 @@ struct
                let i = pred i in
                   if i < SeqHyp.length s.sequent_hyps then
                      match SeqHyp.get s.sequent_hyps i with
-                        HypBinding (v, _) -> v
-                      | Hypothesis _ -> v_sym
+                        Hypothesis (v, _) -> v
                       | Context _ ->
                            REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
                   else
@@ -437,8 +413,8 @@ struct
       if i < 0 then [] else
          let rem = declared_vars_aux hyps (pred i) in
             match SeqHyp.get hyps i with
-               HypBinding (v,_) -> v::rem
-             | Hypothesis _ | Context _ -> rem
+               Hypothesis (v,_) -> v::rem
+             | Context _ -> rem
 
    let declared_vars_name = "Term_man_ds.declared_vars"
    let declared_vars t =
@@ -457,18 +433,17 @@ struct
       match get_core t with
          Sequent s ->
             let hyps = s.sequent_hyps in
-            let hlen = SeqHyp.length hyps in
             let rec aux i =
-               if i = hlen then
+               if i = 0 then
                   REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
                else
-                  match SeqHyp.get hyps i with
-                     HypBinding (v',_) when v' = v ->
-                        succ i
-                   | _ ->
-                        aux (succ i)
+                  match SeqHyp.get hyps (i - 1) with
+                     Hypothesis (v',_) when v' = v ->
+                        i
+                  | _ ->
+                        aux (i - 1)
             in
-               aux 0
+               aux (SeqHyp.length hyps)
        | _ ->
             REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "not a sequent")))
 
