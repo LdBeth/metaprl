@@ -1,7 +1,7 @@
 (*
  * We add a layer to filterSummry, to allow inlined modules
  * and cached info about opnames, axioms, and precedences.
- *
+ * Can write to library, raw marshaled files, or marhaled term files.
  *)
 
 open Printf
@@ -77,6 +77,7 @@ let set_lib _ _ v =
    if v then
       begin
          nofile := true;
+         noraw := true;
          nolib := false
       end
    else
@@ -100,9 +101,9 @@ let set_raw _ _ v =
    else
       noraw := true
 
-let _ = Env_arg.bool "lib"    false "Use the Nuprl5 library"  set_lib
 let _ = Env_arg.bool "file"   true  "Use the filesystem"      set_file
 let _ = Env_arg.bool "raw"    false "Use the raw filesystem"  set_raw
+let _ = Env_arg.bool "lib"    false "Use the Nuprl5 library"  set_lib
 
 (************************************************************************
  * IMPLEMTATION                                                         *
@@ -325,7 +326,7 @@ struct
    type cooked  = summary_type
    
    let select   = ImplementationType
-   let suffix   = "cmoz"
+   let suffix   = "cmot"
    let magic    = 0x73ac6be6
    let disabled = nolib
 
@@ -424,8 +425,8 @@ module RawSigCombo    = MakeSingletonCombo (RawSigInfo)
 module RawStrCombo    = MakeSingletonCombo (RawStrInfo)
 module TermSigCombo   = MakeSingletonCombo (TermSigInfo)
 module TermStrCombo   = MakeSingletonCombo (TermStrInfo)
-module LibSigCombo    = MakeSingletonCombo (LibSigInfo)
-module LibStrCombo    = MakeSingletonCombo (LibStrInfo)
+module LibSigCombo    = MakeIOSingletonCombo (Library_type_base.IO) (LibSigInfo)
+module LibStrCombo    = MakeIOSingletonCombo (Library_type_base.IO) (LibStrInfo)
 module RawCombo       = CombineCombo (FileTypes) (RawSigCombo)  (RawStrCombo)
 module TermCombo      = CombineCombo (FileTypes) (TermSigCombo) (TermStrCombo)
 module LibCombo       = CombineCombo (FileTypes) (LibSigCombo)  (LibStrCombo)
@@ -440,6 +441,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.8  1998/03/06 17:05:08  jyh
+ * Fixed library choice.
+ *
  * Revision 1.7  1998/02/23 14:46:00  jyh
  * First implementation of binary file compilation.
  *
