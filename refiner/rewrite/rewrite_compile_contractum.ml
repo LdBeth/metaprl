@@ -322,21 +322,21 @@ struct
    and compile_so_contractum_sequent strict enames (stack : rstack array) bconts bvars term =
       let { sequent_args = arg;
             sequent_hyps = hyps;
-            sequent_goals = goals
+            sequent_concl = concl
           } = explode_sequent term
       in
       let enames, arg = compile_so_contractum_term strict enames stack bconts bvars arg in
-      let enames, hyps, goals =
-         compile_so_contractum_sequent_inner strict enames stack bconts bvars 0 (SeqHyp.length hyps) hyps goals
+      let enames, hyps, concl =
+         compile_so_contractum_sequent_inner strict enames stack bconts bvars 0 (SeqHyp.length hyps) hyps concl
       in
-         enames, RWSequent (arg, hyps, goals)
+         enames, RWSequent (arg, hyps, concl)
 
-   and compile_so_contractum_sequent_inner strict enames stack bconts bvars i len hyps goals =
+   and compile_so_contractum_sequent_inner strict enames stack bconts bvars i len hyps concl =
       if i = len then
-         let enames, goals =
-            compile_so_contractum_goals strict enames stack bconts bvars 0 (SeqGoal.length goals) goals
+         let enames, concl =
+            compile_so_contractum_term strict enames stack bconts bvars concl
          in
-            enames, [], goals
+            enames, [], concl
       else
          match SeqHyp.get hyps i with
             Context (v, conts, subterms) ->
@@ -353,10 +353,10 @@ struct
                      compile_so_contractum_terms strict enames stack bconts bvars subterms
                   in
                   let term = RWSeqContextInstance (index, subterms) in
-                  let enames, hyps, goals =
-                     compile_so_contractum_sequent_inner strict enames stack (v::bconts) bvars (i + 1) len hyps goals
+                  let enames, hyps, concl =
+                     compile_so_contractum_sequent_inner strict enames stack (v::bconts) bvars (i + 1) len hyps concl
                   in
-                     enames, term :: hyps, goals
+                     enames, term :: hyps, concl
                end else
                   (* Free second order context *)
                   REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", RewriteFreeSOVar v))
@@ -366,19 +366,11 @@ struct
                   REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", StringVarError("double binding", v)));
                let enames, term = compile_so_contractum_term strict enames stack bconts bvars term in
                let enames, v' = compile_bname strict enames stack v in
-               let enames, hyps, goals =
-                  compile_so_contractum_sequent_inner strict enames stack bconts (bvars @ [v]) (i + 1) len hyps goals
+               let enames, hyps, concl =
+                  compile_so_contractum_sequent_inner strict enames stack bconts (bvars @ [v]) (i + 1) len hyps concl
                in
                let hyp = RWSeqHyp (v', term) in
-                  enames, hyp :: hyps, goals
-
-   and compile_so_contractum_goals strict enames stack bconts bvars i len goals =
-      if i = len then
-         enames, []
-      else
-         let enames, goal = compile_so_contractum_term strict enames stack bconts bvars (SeqGoal.get goals i) in
-         let enames, goals = compile_so_contractum_goals strict enames stack bconts bvars (i + 1) len goals in
-            enames, goal :: goals
+                  enames, hyp :: hyps, concl
 
    (*
     * Toplevel compilation.

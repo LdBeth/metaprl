@@ -345,7 +345,7 @@ sig
    val nth_binding : tactic_arg -> int -> var
    val num_assums  : tactic_arg -> int
    val nth_assum   : tactic_arg -> int -> term
-   val nth_concl   : tactic_arg -> int -> term
+   val concl       : tactic_arg -> term
    val label       : tactic_arg -> string
 
    (*

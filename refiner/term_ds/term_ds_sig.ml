@@ -94,10 +94,9 @@ sig
    and esequent =
       { sequent_args : term;
         sequent_hyps : seq_hyps;
-        sequent_goals : seq_goals
+        sequent_concl : term;
       }
    and seq_hyps = hypothesis Seq_set.linear_set
-   and seq_goals = term Seq_set.linear_set
    and lazy_vars =
       Vars of SymbolSet.t
     | VarsDelayed
@@ -119,7 +118,7 @@ sig
 
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list
-    | MatchSequent of string list * match_term list * hypothesis list * term list
+    | MatchSequent of string list * match_term list * hypothesis list * term
 
    (*
     * The terms in the framework include
@@ -140,9 +139,6 @@ sig
    module SeqHyp : Lm_linear_set_sig.LinearSetSig
                    with type elt = hypothesis
                    with type t = seq_hyps
-   module SeqGoal : Lm_linear_set_sig.LinearSetSig
-                    with type elt = term
-                    with type t = seq_goals
 
    (************************************************************************
     * De/Constructors                                                      *

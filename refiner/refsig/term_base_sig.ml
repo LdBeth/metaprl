@@ -48,7 +48,6 @@ sig
    open TermTypes
 
    module SeqHyp : LinearSetSig with type elt = hypothesis with type t = seq_hyps
-   module SeqGoal : LinearSetSig with type elt = term with type t = seq_goals
 
    (************************************************************************
     * De/Constructors                                                      *

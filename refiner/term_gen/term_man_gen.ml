@@ -415,63 +415,42 @@ struct
    let dest_hyp = dest_dep0_dep1_term hyp_opname
 
    (* Conclusions *)
-   let is_concl_term = is_dep0_dep0_term concl_opname
-   let mk_concl_term = mk_dep0_dep0_term concl_opname
-   let dest_concl = dest_dep0_dep0_term concl_opname
-   let null_concl = mk_simple_term concl_opname []
+   let is_concl_term = is_dep0_term concl_opname
+   let mk_concl_term = mk_dep0_term concl_opname
+   let dest_concl = dest_dep0_term concl_opname
 
-   let mk_sequent_outer_term goal args =
-      mk_simple_term sequent_opname [args; goal]
+   let mk_sequent_outer_term body args =
+      mk_simple_term sequent_opname [args; body]
 
-   let rec mk_goals goals i len =
+   let rec mk_sequent_inner_term hyps concl i len =
       if i = len then
-         null_concl
-      else
-         mk_concl_term (SeqGoal.get goals i) (mk_goals goals (i + 1) len)
-
-   let rec mk_sequent_inner_term hyps goals vars i len =
-      if i = len then
-         mk_goals goals 0 (SeqGoal.length goals)
+         mk_concl_term concl
       else
          match SeqHyp.get hyps i with
             Hypothesis (v, t') ->
-               mk_hyp_term v t' (mk_sequent_inner_term hyps goals vars (i + 1) len)
+               mk_hyp_term v t' (mk_sequent_inner_term hyps concl (i + 1) len)
           | Context (v, conts, subterms) ->
-               mk_context_term v (mk_sequent_inner_term hyps goals vars (i + 1) len) conts subterms
-
-   let rec hyp_vars vars = function
-      [] ->
-         vars
-    | Context (v, conts, ts) :: hyps ->
-         hyp_vars (SymbolSet.add (SymbolSet.add_list (SymbolSet.union (free_vars_terms ts) vars) conts) v) hyps
-    | Hypothesis (v, t) :: hyps ->
-         hyp_vars (SymbolSet.add (SymbolSet.union (free_vars_set t) vars) v) hyps
+               mk_context_term v (mk_sequent_inner_term hyps concl (i + 1) len) conts subterms
 
    let mk_sequent_term
        { sequent_args = args;
          sequent_hyps = hyps;
-         sequent_goals = goals
+         sequent_concl = concl
        } =
-      let vars = hyp_vars (free_vars_terms (SeqGoal.to_list goals)) (SeqHyp.to_list hyps) in
-         mk_sequent_outer_term (mk_sequent_inner_term hyps goals vars 0 (SeqHyp.length hyps)) args
+         mk_sequent_outer_term (mk_sequent_inner_term hyps concl 0 (SeqHyp.length hyps)) args
 
    let dest_sequent_outer_term seq =
       match dest_simple_term_opname sequent_opname seq with
-         [args; goal] ->
-            goal, args
+         [args; body] ->
+            body, args
        | _ ->
             REF_RAISE(RefineError ("dest_sequent", TermMatchError (seq, "sequent must have two subterms")))
 
    (*
     * Helper function to unwrap the surrounding sequent term.
     *)
-   let goal_of_sequent t =
-      let t' = dest_term t in let op = dest_op t'.term_op in
-         match t'.term_terms, op.op_params with
-            [_; bgoal], [] when Opname.eq op.op_name sequent_opname ->
-               dest_simple_bterm bgoal
-       | _ ->
-            REF_RAISE(RefineError ("goal_of_sequent", TermMatchError (t, "not a sequent")))
+   let body_of_sequent seq =
+      fst (dest_sequent_outer_term seq)
 
    (*
     * Get the second term in the hyp.
@@ -533,56 +512,42 @@ struct
     | _ ->
          REF_RAISE(RefineError (name, TermMatchError (t, "malformed conclusion")))
 
-   let match_concl_all name t = function
-      [bterm1; bterm2] ->
-         begin
-            match dest_bterm bterm1, dest_bterm bterm2 with
-               ({ bvars = []; bterm = t }, { bvars = []; bterm = term }) ->
-                  t, term
-             | _ ->
-                  REF_RAISE(RefineError (name, TermMatchError (t, "malformed conclusion")))
-         end
-    | _ ->
-         REF_RAISE(RefineError (name, TermMatchError (t, "malformed conclusion")))
-
    (*
     * Explode the sequent into a list of hyps and concls.
     *)
    let explode_sequent_name = "explode_sequent"
 
    let explode_sequent_aux t =
-      let rec collect (args : term) hyps concls term =
+      let rec collect (args : term) hyps term =
          let { term_op = op; term_terms = bterms } = dest_term term in
          let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
                let t, x, term = match_hyp_all explode_sequent_name t bterms in
-                  collect args (Hypothesis (x, t) :: hyps) concls term
+                  collect args (Hypothesis (x, t) :: hyps) term
             else if Opname.eq opname context_opname then
                let name, term, conts, args' = dest_context term in
-                  collect args (Context (name, conts, args') :: hyps) concls term
+                  collect args (Context (name, conts, args') :: hyps) term
             else if Opname.eq opname concl_opname then
-               if bterms = [] then
-                  let vars = free_vars_terms concls in
-                  let hyps = List.rev hyps in
-                     args, hyps, concls
-               else
-                  let goal, term = match_concl_all explode_sequent_name t bterms in
-                     collect args hyps (goal :: concls) term
+               match bterms with
+                  [bterm] ->
+                     args, List.rev hyps, dest_simple_bterm bterm
+                | _ ->
+                     REF_RAISE(RefineError (explode_sequent_name, TermMatchError (t, "malformed sequent")))
             else
                REF_RAISE(RefineError (explode_sequent_name, TermMatchError (t, "malformed sequent")))
       in
-      let goal, args = dest_sequent_outer_term t in
-         collect args [] [] goal
+      let body, args = dest_sequent_outer_term t in
+         collect args [] body
 
    let explode_sequent t =
-      let args, hyps, concls = explode_sequent_aux t in {
+      let args, hyps, concl = explode_sequent_aux t in {
          sequent_args = args;
          sequent_hyps = SeqHyp.of_list hyps;
-         sequent_goals = SeqGoal.of_list concls;
+         sequent_concl = concl;
       }
 
    let explode_sequent_and_rename t vars =
-      let args, hyps, concls = explode_sequent_aux t in
+      let args, hyps, concl = explode_sequent_aux t in
       let rec collect vars sub = function
          [] -> [], sub
        | Context(c, cts, ts) :: hyps ->
@@ -602,7 +567,7 @@ struct
       let hyps, sub = collect vars [] hyps in {
          sequent_args = args;
          sequent_hyps = SeqHyp.of_list hyps;
-         sequent_goals = SeqGoal.of_list (List.map (apply_subst sub) concls);
+         sequent_concl = apply_subst sub concl
       }
 
    (*
@@ -625,7 +590,7 @@ struct
             else
                REF_RAISE(RefineError (num_hyps_name, TermMatchError (t, "malformed sequent")))
       in
-         aux 0 (goal_of_sequent t)
+         aux 0 (body_of_sequent t)
 
    (*
     * Fast access to hyp and concl.
@@ -652,7 +617,7 @@ struct
             else
                REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "malformed sequent")))
       in
-         aux (pred i) (goal_of_sequent t)
+         aux (pred i) (body_of_sequent t)
 
    let nth_binding t i =
       let rec aux i term =
@@ -675,29 +640,27 @@ struct
             else
                REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "malformed sequent")))
       in
-         aux (pred i) (goal_of_sequent t)
+         aux (pred i) (body_of_sequent t)
 
-   let nth_concl_name = "nth_concl"
-   let nth_concl t i =
-      let rec aux i term =
+   let concl_name = "concl"
+   let concl t =
+      let rec aux term =
          let { term_op = op; term_terms = bterms } = dest_term term in
          let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
-               let term = match_hyp nth_concl_name t bterms in
-                  aux i term
+               let term = match_hyp concl_name t bterms in
+                  aux term
             else if Opname.eq opname context_opname then
-               let term = match_context op nth_concl_name t bterms in
-                  aux i term
+               let term = match_context op concl_name t bterms in
+                  aux term
             else if Opname.eq opname concl_opname then
-               let t, term = match_concl_all nth_concl_name t bterms in
-                  if i = 0 then
-                     t
-                  else
-                     aux (i - 1) term
+               match bterms with
+                  [bterm] -> dest_simple_bterm bterm
+                | _ -> REF_RAISE(RefineError (concl_name, TermMatchError (t, "mailformed conclusion")))
             else
-               REF_RAISE(RefineError (nth_concl_name, TermMatchError (t, "malformed sequent")))
+               REF_RAISE(RefineError (concl_name, TermMatchError (t, "malformed sequent")))
       in
-         aux (pred i) (goal_of_sequent t)
+         aux (body_of_sequent t)
 
    (*
     * Collect the vars.
@@ -718,7 +681,7 @@ struct
             else
                REF_RAISE(RefineError (declared_vars_name, TermMatchError (t, "malformed sequent")))
       in
-         aux [] (goal_of_sequent t)
+         aux [] (body_of_sequent t)
 
    (*
     * Get the number of the hyp with the given var.
@@ -742,7 +705,7 @@ struct
             else
                REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "malformed sequent")))
       in
-         aux 1 (goal_of_sequent t)
+         aux 1 (body_of_sequent t)
 
    let get_hyp_number_name = "get_hyp_number"
    let get_hyp_number t hyp =
@@ -763,7 +726,7 @@ struct
             else
                REF_RAISE(RefineError (get_hyp_number_name, TermMatchError (t, "malformed sequent")))
       in
-         aux 1 (goal_of_sequent t)
+         aux 1 (body_of_sequent t)
 
    (*
     * Generate a list of sequents with replaced goals.
@@ -783,10 +746,10 @@ struct
          else
             REF_RAISE(RefineError (replace_concl_name, TermMatchError (seq, "malformed sequent")))
 
-   let replace_goal_name = "replace_goal"
-   let replace_goal seq goal =
+   let replace_concl_name = "replace_concl"
+   let replace_concl seq goal =
       let seq, args = dest_sequent_outer_term seq in
-         mk_sequent_outer_term (replace_concl seq (mk_concl_term goal null_concl)) args
+         mk_sequent_outer_term (replace_concl seq (mk_concl_term goal)) args
 
    (*
     * Rewrite
@@ -843,13 +806,12 @@ struct
       else if is_sequent_term t then
          let { sequent_args = args;
                sequent_hyps = hyps;
-               sequent_goals = goals
+               sequent_concl = concl
              } = explode_sequent t in
          let op = dest_opname (opname_of_term args) in
          let args = List.map explode_term (subterms_of_term args) in
          let hyps = SeqHyp.to_list hyps in
-         let goals = SeqGoal.to_list goals in
-            MatchSequent (op, args, hyps, goals)
+            MatchSequent (op, args, hyps, concl)
       else
          let { term_op = op; term_terms = bterms } = dest_term t in
          let { op_name = op; op_params = params } = dest_op op in

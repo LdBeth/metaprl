@@ -317,21 +317,6 @@ dform context_src : mode[src] :: df_context{'t} =
  * display form to be implemented in ML.
  *)
 let format_seq_src format_term buf =
-   let rec format_goal goals i len =
-      if i = 0 then begin
-         format_string buf " >-";
-         format_space buf
-      end;
-      if i <> len then
-         begin
-            if i > 0 then begin
-               format_string buf ";";
-               format_space buf;
-            end;
-            format_term buf NOParens (SeqGoal.get goals i);
-            format_goal goals (succ i) len
-         end
-   in
    let rec format_hyp hyps i len =
       if i <> len then
          let _ =
@@ -355,7 +340,7 @@ let format_seq_src format_term buf =
    let format term =
       let { sequent_args = arg;
             sequent_hyps = hyps;
-            sequent_goals = goals
+            sequent_concl = concl
           } = explode_sequent term
       in
          format_szone buf;
@@ -364,7 +349,9 @@ let format_seq_src format_term buf =
          format_term buf NOParens arg;
          format_string buf ") {";
          format_hyp hyps 0 (SeqHyp.length hyps);
-         format_goal goals 0 (SeqGoal.length goals);
+         format_string buf " >-";
+         format_space buf;
+         format_term buf NOParens concl;
          format_string buf " }";
          format_popm buf;
          format_ezone buf
@@ -416,17 +403,10 @@ let format_seq_prl format_term buf =
          in
             format_hyp hyps (succ i) len
    in
-   let rec format_goal goals i len =
-      if i < len then
-         let a = SeqGoal.get goals i in
-            if i > 0 then format_hbreak buf "; " "";
-            format_term buf NOParens a;
-            format_goal goals (succ i) len
-   in
    let format term =
       let { sequent_args = args;
             sequent_hyps = hyps;
-            sequent_goals = goals
+            sequent_concl = concl
           } = explode_sequent term
       in
          format_szone buf;
@@ -440,7 +420,7 @@ let format_seq_prl format_term buf =
          format_term buf NOParens args;
          format_string buf " ";
          format_pushm buf 0;
-         format_goal goals 0 (SeqGoal.length goals);
+         format_term buf NOParens concl;
          format_popm buf;
          format_popm buf;
          format_ezone buf
@@ -477,18 +457,10 @@ let format_seq_html format_term buf =
          in
             format_hyp hyps (succ i) len
    in
-   let rec format_goal goals i len =
-      if i <> len then
-         let a = SeqGoal.get goals i in
-            if i > 0 then
-               format_hbreak buf "; " "  ";
-            format_term buf NOParens (mk_tslot a);
-            format_goal goals (succ i) len
-   in
    let format term =
       let { sequent_args = arg;
             sequent_hyps = hyps;
-            sequent_goals = goals
+            sequent_concl = concl
           } = explode_sequent term
       in
          format_szone buf;
@@ -502,7 +474,7 @@ let format_seq_html format_term buf =
          format_term buf NOParens (mk_tslot arg);
          format_string buf " ";
          format_pushm buf 0;
-         format_goal goals 0 (SeqGoal.length goals);
+         format_term buf NOParens (mk_tslot concl);
          format_popm buf;
          format_popm buf;
          format_ezone buf
@@ -542,18 +514,10 @@ let format_seq_tex format_term buf =
          in
             format_hyp hyps (succ i) len
    in
-   let rec format_goal goals i len =
-      if i <> len then
-         let a = SeqGoal.get goals i in
-            if i > 0 then
-               format_hbreak buf "; " "";
-            format_term buf NOParens a;
-            format_goal goals (succ i) len
-   in
    let format term =
       let { sequent_args = arg;
             sequent_hyps = hyps;
-            sequent_goals = goals
+            sequent_concl = concl
           } = explode_sequent term
       in
          format_szone buf;
@@ -570,7 +534,7 @@ let format_seq_tex format_term buf =
          format_ezone buf;
          format_pushm buf 0;
          format_space buf;
-         format_goal goals 0 (SeqGoal.length goals);
+         format_term buf NOParens concl;
          format_popm buf;
          format_popm buf;
          format_ezone buf

@@ -462,7 +462,7 @@ struct
             else
                REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
       in
-         skip_hyps (pred n) (goal_of_sequent t)
+         skip_hyps (pred n) (body_of_sequent t)
 
    (*
     * Find the address of the conclusion.
@@ -471,35 +471,24 @@ struct
     *
     * Conclusions are numbered from 1.
     *)
-   let nth_concl_addr_name = "nth_concl_addr"
-   let nth_concl_addr t n =
-      let rec skip_concl i n term =
-         if n <= 1 then
-            nth_hd_address i
-         else
-            match dest_term term with
-               { term_op = op; term_terms = bterms }
-                  when Opname.eq (dest_op op).op_name concl_opname ->
-                  skip_concl (i + 1) (n - 1) (match_concl nth_concl_addr_name t bterms)
-             | _ ->
-                  REF_RAISE(RefineError (nth_concl_addr_name, (TermMatchError (t, "malformed conclusion"))))
-      in
+   let concl_addr_name = "concl_addr"
+   let concl_addr t =
       let rec skip_hyps i term =
          let { term_op = op; term_terms = bterms } = dest_term term in
          let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
-               let term = match_hyp nth_concl_addr_name t bterms in
+               let term = match_hyp concl_addr_name t bterms in
                   skip_hyps (i + 1) term
             else if Opname.eq opname context_opname then
-               let term = match_context op nth_concl_addr_name t bterms in
+               let term = match_context op concl_addr_name t bterms in
                   skip_hyps (i + 1) term
             else if Opname.eq opname concl_opname then
-               let term = match_concl nth_concl_addr_name t bterms in
-                  skip_concl (i + 1) n term
+               let term = match_concl concl_addr_name t bterms in
+                  nth_hd_address (i + 1)
             else
-               REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed sequent")))
+               REF_RAISE(RefineError (concl_addr_name, TermMatchError (t, "malformed sequent")))
       in
-         skip_hyps 0 (goal_of_sequent t)
+         skip_hyps 0 (body_of_sequent t)
 
    (*
     * Conclusion is number 0,
@@ -521,7 +510,7 @@ struct
             else
                REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "malformed sequent")))
       in
-         aux 1 (goal_of_sequent t)
+         aux 1 (body_of_sequent t)
 
    let make_nth_clause_addr nth_address count i =
       if i < 0 then
@@ -559,7 +548,7 @@ struct
                else
                   REF_RAISE(RefineError (subterm_addresses_name, TermMatchError (t, "malformed sequent")))
          in
-            aux 1 (goal_of_sequent t)
+            aux 1 (body_of_sequent t)
       else make_path_list (List.length (dest_term t).term_terms)
 
 end

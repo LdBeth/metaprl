@@ -108,7 +108,7 @@ type ('term, 'expr) term_constructor =
  | ConExpr of 'expr
  | ConVar of 'expr
  | ConConstruct of opname * 'expr param_constructor list * ('term, 'expr) bterm_constructor list
- | ConSequent of ('term, 'expr) term_constructor * ('term, 'expr) hyp_constructor list * ('term, 'expr) term_constructor list
+ | ConSequent of ('term, 'expr) term_constructor * ('term, 'expr) hyp_constructor list * ('term, 'expr) term_constructor
 
 and ('term, 'expr) bterm_constructor =
    'expr bvar_constructor list * ('term, 'expr) term_constructor

@@ -273,8 +273,7 @@ struct
     * Server is created at file execution time.
     *)
    let print_tactic_arg out arg =
-      let goal = TermMan.nth_concl (msequent_goal arg.ref_goal) 1 in
-         debug_print out goal
+      debug_print out (TermMan.concl (msequent_goal arg.ref_goal))
 
    (*
     * Composition function on extracts.
@@ -349,8 +348,8 @@ struct
    let nth_hyp arg i = TermMan.nth_hyp (msequent_goal arg.ref_goal) i
    let nth_binding arg i = TermMan.nth_binding (msequent_goal arg.ref_goal) i
 
-   let nth_concl arg i =
-      TermMan.nth_concl (msequent_goal arg.ref_goal) i
+   let concl arg =
+      TermMan.concl (msequent_goal arg.ref_goal)
 
    let num_assums arg =
       msequent_num_assums arg.ref_goal
@@ -368,7 +367,7 @@ struct
 
    let set_concl arg concl =
       let goal, hyps = dest_msequent arg.ref_goal in
-         { arg with ref_goal = mk_msequent (replace_goal goal concl) hyps }
+         { arg with ref_goal = mk_msequent (replace_concl goal concl) hyps }
 
    let set_label arg label =
       { arg with ref_label = label }
@@ -830,13 +829,13 @@ struct
       let goal2 = msequent_goal arg2.ref_goal in
       let goal1 =
          if TermMan.is_sequent_term goal1 then
-            TermMan.nth_concl goal1 1
+            TermMan.concl goal1
          else
             goal1
       in
       let goal2 =
          if TermMan.is_sequent_term goal2 then
-            TermMan.nth_concl goal2 1
+            TermMan.concl goal2
          else
             goal2
       in

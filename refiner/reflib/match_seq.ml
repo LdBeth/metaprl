@@ -64,8 +64,7 @@ let try_match_hyps relaxed big small =
       else fail_match in
    let rec aux big_skip small_skip big_vars small_vars =
       if small_skip = small_length then
-         relaxed || alpha_equal_vars (SeqGoal.get big.sequent_goals 0) big_vars
-                                     (SeqGoal.get small.sequent_goals 0) small_vars
+         relaxed || alpha_equal_vars big.sequent_concl big_vars small.sequent_concl small_vars
       else if big_skip = big_length then relaxed && all_hyps small_skip
       else if (not relaxed) && (big_skip - small_skip) > may_skip then false
       else

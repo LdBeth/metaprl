@@ -67,7 +67,6 @@ sig
     | TermMatch2 of term * term
     | BTermMatch of bound_term
     | HypMatch of seq_hyps
-    | GoalMatch of seq_goals
 
    (*
     * We declare the general exception type for all the

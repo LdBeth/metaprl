@@ -91,13 +91,13 @@ struct
    type seq_header =
       { seq_arg: term_index;
         seq_hyps: hypothesis_header list;
-        seq_goals: term_index list
+        seq_concl: term_index
       }
 
    type seq_weak_header =
       { seq_arg_weak: TType.term WM.weak_descriptor;
         seq_hyps_weak: hypothesis_weak_header list;
-        seq_goals_weak: TType.term WM.weak_descriptor list
+        seq_concl_weak: TType.term WM.weak_descriptor
       }
 
    type term_header =
@@ -168,10 +168,10 @@ struct
 
    let weak_term_header _ th =
       match th with
-         Seq { seq_arg = arg; seq_hyps = hyps; seq_goals = goals } ->
+         Seq { seq_arg = arg; seq_hyps = hyps; seq_concl = concl } ->
             Seq_weak { seq_arg_weak = WM.weaken arg;
                        seq_hyps_weak = List.map weak_hyp_header' hyps;
-                       seq_goals_weak = List.map WM.weaken goals
+                       seq_concl_weak = WM.weaken concl
             }
        | Term th -> Term_weak (weak_tterm_header' th)
        | FOVar v -> FOVar_weak v
@@ -221,11 +221,11 @@ struct
       match (t1,t2) with
          Term_weak t1, Term_weak t2 ->
             compare_tterm_header t1 t2
-       | Seq_weak { seq_arg_weak = arg1; seq_hyps_weak = hyp1; seq_goals_weak = goal1 },
-         Seq_weak { seq_arg_weak = arg2; seq_hyps_weak = hyp2; seq_goals_weak = goal2 } ->
+       | Seq_weak { seq_arg_weak = arg1; seq_hyps_weak = hyp1; seq_concl_weak = concl1 },
+         Seq_weak { seq_arg_weak = arg2; seq_hyps_weak = hyp2; seq_concl_weak = concl2 } ->
             (arg1 == arg2)
+            && (concl1 == concl2)
             && list_compare (compare_hyp_header) hyp1 hyp2
-            && list_mem_eq goal1 goal2
        | FOVar_weak v1, FOVar_weak v2 -> v1 = v2
        | SOVar_weak (v1,conts1,ts1), SOVar_weak (v2,conts2,ts2)  -> v1 = v2 && conts1 = conts2 && list_mem_eq ts1 ts2
        | _ -> false
@@ -273,11 +273,11 @@ struct
 
    let p_constr_term info th =
       match th with
-         Seq { seq_arg = arg; seq_hyps = hyps; seq_goals = goals } ->
+         Seq { seq_arg = arg; seq_hyps = hyps; seq_concl = concl } ->
             ToTerm.TermMan.mk_sequent_term
             { TType.sequent_args = WM.retrieve info.term_hash info arg;
               TType.sequent_hyps  = TTerm.SeqHyp.of_list  (List.map (p_constr_hyp info) hyps);
-              TType.sequent_goals = TTerm.SeqGoal.of_list (List.map (WM.retrieve info.term_hash info) goals)
+              TType.sequent_concl = WM.retrieve info.term_hash info concl
             }
        | Term th -> p_constr_tterm info th
        | FOVar v -> TTerm.mk_var_term v

@@ -147,12 +147,6 @@ let format_match_type db buf printers = function
       format_string buf "HypMatch:";
       format_newline buf;
       SeqHyp.iter (format_hypothesis db buf printers) hyps
- | GoalMatch goals ->
-      format_string buf "GoalMatch:";
-      SeqGoal.iter (fun t ->
-            format_string buf ", ";
-            printers.format_term db buf t) goals;
-      format_string buf ")"
 
 let format_explanation buf s =
    format_newline buf;

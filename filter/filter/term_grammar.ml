@@ -123,7 +123,7 @@ let create_meta_function t left right =
        * There is a complimentary HACK in Filter_parse.parse_mtlre
        *)
       let left = unfold_mlabeled "Term_grammar.create_meta_function" left in
-         if is_sequent_term left && not (is_sequent_term t) then replace_goal left t else t
+         if is_sequent_term left && not (is_sequent_term t) then replace_concl left t else t
    in
       MetaFunction(t, left, right)
 
@@ -888,10 +888,10 @@ struct
 
           (* short form for sequents *)
           | "sequent" NONA
-            [ arg = SELF; "{|"; (hyps, concls) = sequent_body; "|}" ->
+            [ arg = SELF; "{|"; (hyps, concl) = sequent_body; "|}" ->
                   let arg_bt = [mk_simple_bterm (make_term arg)] in
                   let arg = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] arg_bt) []) arg_bt in
-                     wrap_term loc (mk_sequent_term { sequent_args = arg; sequent_hyps = hyps; sequent_goals = concls })
+                     wrap_term loc (mk_sequent_term { sequent_args = arg; sequent_hyps = hyps; sequent_concl = concl })
             ]
 
           | "type" NONA
@@ -1112,28 +1112,28 @@ struct
 
       (* Special forms *)
       sequent:
-         [[ sl_sequent; "{"; (hyps, concls) = sequent_body; "}" ->
+         [[ sl_sequent; "{"; (hyps, concl) = sequent_body; "}" ->
                mk_sequent_term {
                   sequent_args = mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) [];
                   sequent_hyps = hyps;
-                  sequent_goals = concls;
+                  sequent_concl = concl;
                }
           | sl_sequent; "["; args = LIST1 term SEP ";"; "]";
-            "{"; (hyps, concls) = sequent_body; "}" ->
+            "{"; (hyps, concl) = sequent_body; "}" ->
                let args_bt = List.map mk_simple_bterm args in
                mk_sequent_term {
                   sequent_args = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] args_bt) []) args_bt;
                   sequent_hyps = hyps;
-                  sequent_goals = concls
+                  sequent_concl = concl
                }
           | sl_sequent; "("; arg = term; ")";
-               "{"; (hyps, concls) = sequent_body; "}" ->
-               mk_sequent_term { sequent_args = arg; sequent_hyps = hyps; sequent_goals = concls }
+               "{"; (hyps, concl) = sequent_body; "}" ->
+               mk_sequent_term { sequent_args = arg; sequent_hyps = hyps; sequent_concl = concl }
           ]];
 
       sequent_body:
-         [[ hyps = LIST0 hyp SEP ";"; sl_turnstile; concls = LIST0 term SEP ";" ->
-               (SeqHyp.of_list hyps, SeqGoal.of_list concls)
+         [[ hyps = LIST0 hyp SEP ";"; sl_turnstile; concl = OPT term ->
+               (SeqHyp.of_list hyps, match concl with Some t -> t | None -> xnil_term)
           ]];
 
       hyp:
@@ -1269,19 +1269,16 @@ struct
 
       (* Special forms *)
       con_sequent:
-         [[ sl_sequent; "{"; hyps = con_hyps;
-            concl = LIST0 con_term SEP ";"; "}" ->
+         [[ sl_sequent; "{"; hyps = con_hyps; concl = con_concl; "}" ->
                let arg = ConTerm (mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) []) in
                   ConSequent (arg, hyps, concl)
-          | sl_sequent; "["; args = con_termlist; "]"; "{"; hyps = con_hyps;
-            concl = LIST0 con_term SEP ";"; "}" ->
+          | sl_sequent; "["; args = con_termlist; "]"; "{"; hyps = con_hyps; concl = con_concl; "}" ->
                let bterm_arities = List.map (fun _ -> 0) args in
                let op = mk_opname loc ["sequent_arg"] [] bterm_arities in
                let bterms = List.map (fun t -> [], t) args in
                let arg = ConConstruct (op, [], bterms) in
                   ConSequent (arg, hyps, concl)
-          | sl_sequent; "("; arg = con_term; ")"; "{"; hyps = con_hyps;
-            concl = LIST0 con_term SEP ";"; "}" ->
+          | sl_sequent; "("; arg = con_term; ")"; "{"; hyps = con_hyps; concl = con_concl; "}" ->
                   ConSequent (arg, hyps, concl)
           ]];
 
@@ -1310,6 +1307,11 @@ struct
                      ConHypothesis (<:expr< Lm_symbol.empty_var >>, ConConstruct (mk_opname loc [op] param_types bterm_arities, params, bterms)))
           | ->
                fun op -> ConHypothesis (<:expr< Lm_symbol.empty_var >>, ConTerm (mk_term (mk_op (mk_opname loc [op] [] []) []) []))
+          ]];
+
+      con_concl:
+         [[ con = OPT con_term ->
+               match con with Some con -> con | None -> ConTerm xnil_term
           ]];
 
       con_optbrtermlist:

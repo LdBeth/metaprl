@@ -203,12 +203,7 @@ struct
                match SeqHyp.get hyps i with
                   Hypothesis (_, h) -> context_vars h @ hyp_context_vars (succ i)
                 | Context (v,_,ts) -> v :: (terms_context_vars ts @ hyp_context_vars (succ i))
-            in let goals = seq.sequent_goals in
-            let len = SeqGoal.length goals in
-            let rec goals_context_vars i =
-               if i = len then [] else
-                  (context_vars (SeqGoal.get goals i) @ goals_context_vars (succ i))
-            in (context_vars seq.sequent_args) @ (hyp_context_vars 0) @ (goals_context_vars 0)
+            in (context_vars seq.sequent_args) @ (hyp_context_vars 0) @ (context_vars seq.sequent_concl)
        | Term { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bts }
             when Opname.eq opname Opname.context_opname ->
             v :: terms_context_vars (List.map (fun bt -> bt.bterm) bts)
@@ -278,11 +273,10 @@ struct
                     & equal_bterms vars bterms1 bterms2
        | Sequent s1, Sequent s2 ->
             (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
-            (SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals) &&
             (equal_term vars s1.sequent_args s2.sequent_args) &&
             (match equal_hyps s1.sequent_hyps s2.sequent_hyps vars 0 with
                 None -> false
-              | Some vars -> equal_goals s1.sequent_goals s2.sequent_goals vars (SeqGoal.length s1.sequent_goals - 1))
+              | Some vars -> equal_term vars s1.sequent_concl s2.sequent_concl)
        | SOVar(v,conts,ts), SOVar(v',conts',ts') ->
             v=v' && conts = conts' && Lm_list_util.for_all2 (equal_term vars) ts ts'
        | _ -> false )
@@ -309,11 +303,6 @@ struct
                equal_hyps hyps1 hyps2 vars (succ i)
             else None
           | _ -> None
-
-   and equal_goals goals1 goals2 vars i =
-      i < 0 ||
-      ( equal_term vars (SeqGoal.get goals1 i) (SeqGoal.get goals2 i) &&
-        equal_goals goals1 goals2 vars (pred i) )
 
    let alpha_equal t1 t2 =
       DEFINE body =
@@ -432,12 +421,11 @@ struct
             equal_fun_bterms f bvars sub t1.term_terms t2.term_terms
        | Sequent s1, Sequent s2 ->
             (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
-            (SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals) &&
             (equal_fun f bvars sub s1.sequent_args s2.sequent_args) &&
             (match equal_fun_hyps s1.sequent_hyps s2.sequent_hyps f bvars sub 0 with
                None -> false
              | Some bvars ->
-                  equal_fun_goals s1.sequent_goals s2.sequent_goals f bvars sub (SeqGoal.length s1.sequent_goals - 1))
+                  equal_fun f bvars sub s1.sequent_concl s2.sequent_concl)
        | SOVar(v1, conts1, ts1), SOVar(v2, conts2, ts2) ->
             v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2
        | _ -> false
@@ -462,11 +450,6 @@ struct
                equal_fun_hyps hyps1 hyps2 f bvars sub (succ i)
             else None
           | _ -> None
-
-   and equal_fun_goals goals1 goals2 f bvars sub i =
-      i < 0 ||
-      ( equal_fun f bvars sub (SeqGoal.get goals1 i) (SeqGoal.get goals2 i) &&
-        equal_fun_goals goals1 goals2 f bvars sub (pred i) )
 
    (* See refiner/refsig/term_subst_sig.mlz for explanation of this function *)
    let alpha_equal_fun f t vs t' items =
@@ -622,24 +605,19 @@ struct
                core_term(SOVar(v, conts, List.rev ts)), index
        | Sequent seq ->
             (*
-             * BUG: this could be more efficient if the Array module
+             * XXX: TODO: this could be more efficient if the Array module
              * contained a fold_map function.
              *)
-            let { sequent_hyps = hyps; sequent_goals = goals } = seq in
+            let arg, index = standardize_term index seq.sequent_args in
             let hyps, subst, index =
-               List.fold_left standardize_hyps_step ([], [], index) (SeqHyp.to_list hyps)
+               List.fold_left standardize_hyps_step ([], [], index) (SeqHyp.to_list seq.sequent_hyps)
             in
-            let goals =
-               List.fold_left (fun goals goal -> apply_subst subst goal :: goals) [] (SeqGoal.to_list goals)
-            in
-            let goals, index =
-               List.fold_left standardize_terms_step ([], index) goals
-            in
-            let seq =
-               { seq with sequent_hyps = SeqHyp.of_list (List.rev hyps);
-                          sequent_goals = SeqGoal.of_list goals
-               }
-            in
+            let concl, index = standardize_term index (apply_subst subst seq.sequent_concl) in
+            let seq = {
+               sequent_args = arg;
+               sequent_hyps = SeqHyp.of_list (List.rev hyps);
+               sequent_concl = concl
+            } in
                core_term (Sequent seq), index
 
        | Subst _

@@ -156,7 +156,7 @@ struct
                         (hyp_fv
                            seq.sequent_hyps
                            (SeqHyp.length seq.sequent_hyps - 1)
-                           (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)))
+                           (free_vars_set seq.sequent_concl))
                 | Subst (t,sub) ->
                      DEFINE body =
                         SymbolSet.union
@@ -197,10 +197,6 @@ struct
       [] -> SymbolSet.empty
     | [bt] -> bterm_free_vars bt
     | bt::tl -> SymbolSet.union (bterms_free_vars tl) (bterm_free_vars bt)
-
-   and goal_fv goals i =
-      if i < 0 then SymbolSet.empty else
-      SymbolSet.union (free_vars_set (SeqGoal.get goals i)) (goal_fv goals (pred i))
 
    and terms_free_vars = function
       [] -> SymbolSet.empty
@@ -348,7 +344,7 @@ struct
                             term_terms = List.map (do_bterm_subst sub) ttt.term_terms }
                 | Sequent { sequent_args = args;
                             sequent_hyps = hyps;
-                            sequent_goals = goals } ->
+                            sequent_concl = concl } ->
                      let sub_vars = subst_free_vars sub in
                      let all_vars = SymbolSet.union sub_vars (free_vars_set tt) in
                      (* XXX: n8gray: I'd like to be able to fold directly here but there's no Seq_set.fold_left *)
@@ -356,7 +352,7 @@ struct
                         Sequent {
                            sequent_args = do_term_subst sub args;
                            sequent_hyps = SeqHyp.of_list (List.rev hyp_list);
-                           sequent_goals = SeqGoal.lazy_apply (do_term_subst sub') goals;
+                           sequent_concl = do_term_subst sub' concl;
                         }
                 | Subst _ | Hashed _ -> fail_core "get_core"
             in

@@ -87,12 +87,11 @@ struct
    type meta_term = term poly_meta_term
    type hypothesis = term poly_hypothesis
    type seq_hyps = hypothesis Seq_set.linear_set
-   type seq_goals = term Seq_set.linear_set
 
    type esequent =
       { sequent_args : term;
         sequent_hyps : seq_hyps;
-        sequent_goals : seq_goals
+        sequent_concl : term
       }
 
    (*
@@ -111,7 +110,7 @@ struct
 
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list
-    | MatchSequent of string list * match_term list * hypothesis list * term list
+    | MatchSequent of string list * match_term list * hypothesis list * term
 end
 
 (*

@@ -182,14 +182,20 @@ struct
     | _ ->
          fail "add_context"
 
+   let find_concl = function (* XXX HACK: file format version <= 1.0.14 comatibility *)
+      [concl] -> concl (* This is the only possibility in formats >= 1.0.15 *)
+    | concl :: _ -> concl
+    | [] -> "t4" (* XXX HACK squared - t4 is what xnil_term happens to be in mmc_core_cps.prla *)
+
    let add_seq r = function
-      (_, name, [[args];hyps;goals]) ->
+      (_, name, [[args];hyps;concls]) ->
+         let concl = find_concl concls in (* XXX HACK: file format version <= 1.0.14 comatibility; in >= 1.0.15 concls is a singleton list *)
          let args = Hashtbl.find r.io_terms args in
          let hyps = List.map (Hashtbl.find r.io_hyps) hyps in
-         let goals = List.map (Hashtbl.find r.io_terms) goals in
+         let concl = Hashtbl.find r.io_terms concl in
          let t = lookup ( Seq { seq_arg = args;
                                 seq_hyps = hyps;
-                                seq_goals = goals
+                                seq_concl = concl
                               } ) in
          hash_add_new r.io_terms name t;
          t
@@ -203,11 +209,12 @@ struct
 
    let add_goal r (_, name, goals) = (* XXX HACK: function needed only for file format versions 1.0.6 and below compatibility *)
          match goals, r.io_seq with
-            [goals], Some (name',args,hyps) when name = name' ->
-               let goals = List.map (Hashtbl.find r.io_terms) goals in
+            [concls], Some (name',args,hyps) when name = name' ->
+               let concl = find_concl concls in
+               let concl = Hashtbl.find r.io_terms concl in
                let t = lookup ( Seq { seq_arg = args;
                                       seq_hyps = hyps;
-                                      seq_goals = goals
+                                      seq_concl = concl
                                     } ) in
                hash_add_new r.io_terms name t;
                t
@@ -559,13 +566,13 @@ struct
             (name, ind)
       else if is_sequent_term t then
          let seq = explode_sequent t in
-         let (arg_name, arg_ind) = out_term ctrl data seq.sequent_args in
+         let arg_name, arg_ind = out_term ctrl data seq.sequent_args in
          let hyps = List.map (out_hyp ctrl data) (SeqHyp.to_list seq.sequent_hyps) in
-         let goals = List.map (out_term ctrl data) (SeqGoal.to_list seq.sequent_goals) in
+         let concl_name, concl_ind = out_term ctrl data seq.sequent_concl in
          let ind = lookup ( Seq { seq_arg = arg_ind;
                                   seq_hyps = List.map snd hyps;
-                                  seq_goals = List.map snd goals } ) in
-         let i_data3 = List.map fst goals in
+                                  seq_concl = concl_ind } ) in
+         let i_data3 = [concl_name] in
          let i_data2 = List.map fst hyps in
          try
             let name = HashTerm.find data.out_terms ind in

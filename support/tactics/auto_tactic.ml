@@ -203,14 +203,14 @@ let nthHypT = argfunT (fun i p -> get_resource_arg p get_nth_hyp_resource i)
 
 let explode t =
    let t = TermMan.explode_sequent t in
-      SeqHyp.to_list t.sequent_hyps, SeqGoal.to_list t.sequent_goals
+      SeqHyp.to_list t.sequent_hyps, t.sequent_concl
 
 let process_nth_hyp_resource_annotation name context_args term_args statement pre_tactic =
    let assums, goal = unzip_mfunction statement in
       match context_args, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
-         [| _ |], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], [t2]) ->
+         [| _ |], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], t2) ->
             [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] []]
-       | [||], [], [ [Context _], [t1] ], ( [Context _], [t2]) ->
+       | [||], [], [ [Context _], t1 ], ( [Context _], t2) ->
             [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [||] [] thenT nthHypT i]
        | _ ->
             raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" name))

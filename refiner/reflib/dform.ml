@@ -398,15 +398,6 @@ and format_bterms buf printer = function
  * A special format for sequents.
  *)
 and format_sequent buf format_term term =
-   let rec format_goal goals i len =
-      if i <> len then
-         begin
-            format_string buf (if i = 0 then " >-" else ";");
-            format_space buf;
-            format_term (SeqGoal.get goals i);
-            format_goal goals (succ i) len
-         end
-   in
    let rec format_hyp hyps i len =
       if i <> len then
          let _ =
@@ -440,7 +431,7 @@ and format_sequent buf format_term term =
    in
    let { sequent_args = arg;
          sequent_hyps = hyps;
-         sequent_goals = goals
+         sequent_concl = concl
        } = explode_sequent term
    in
       format_szone buf;
@@ -453,7 +444,9 @@ and format_sequent buf format_term term =
       format_space buf;
       format_string buf "{";
       format_hyp hyps 0 (SeqHyp.length hyps);
-      format_goal goals 0 (SeqGoal.length goals);
+      format_string buf " >-";
+      format_space buf;
+      format_term concl;
       format_popm buf;
       format_space buf;
       format_string buf "}";

@@ -1010,9 +1010,10 @@ struct
        | FOVar _ -> t
        | SOVar(v, conts, ts) -> { free_vars = VarsDelayed; core = SOVar(v, conts, List.map (map_down f) ts) }
        | Sequent { sequent_hyps = hyps;
-                   sequent_goals = goals;
+                   sequent_concl = concl;
                    sequent_args = args
          } ->
+            let args = map_down f args in
             let hyps =
                SeqHyp.map (function
                   Hypothesis (v, t) ->
@@ -1020,10 +1021,9 @@ struct
                 | Context (v, vl, args) ->
                      Context (v, vl, List.map (map_down f) args)) hyps
             in
-            let goals = SeqGoal.map (map_down f) goals in
-            let args = map_down f args in
+            let concl = map_down f concl in
                mk_sequent_term { sequent_hyps = hyps;
-                                 sequent_goals = goals;
+                                 sequent_concl = concl;
                                  sequent_args = args
                }
        | Subst _ | Hashed _ -> fail_core "Term_op_ds.map_down"
@@ -1038,9 +1038,10 @@ struct
        | FOVar _ -> f t
        | SOVar(v, conts, ts) -> f { free_vars = VarsDelayed; core = SOVar(v, conts, List.map (map_up f) ts) }
        | Sequent { sequent_hyps = hyps;
-                   sequent_goals = goals;
+                   sequent_concl = concl;
                    sequent_args = args
          } ->
+            let args = map_up f args in
             let hyps =
                SeqHyp.map (function
                   Hypothesis (v, t) ->
@@ -1048,10 +1049,9 @@ struct
                 | Context (v, vl, args) ->
                      Context (v, vl, List.map (map_up f) args)) hyps
             in
-            let goals = SeqGoal.map (map_up f) goals in
-            let args = map_up f args in
+            let concl = map_up f concl in
                f (mk_sequent_term { sequent_hyps = hyps;
-                                 sequent_goals = goals;
+                                 sequent_concl = concl;
                                  sequent_args = args
                   })
        | Subst _ | Hashed _ -> fail_core "Term_op_ds.map_up"

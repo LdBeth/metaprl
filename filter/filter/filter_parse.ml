@@ -299,14 +299,14 @@ let rec expr_of_term_con loc = function
             let bterms = mk_list_expr loc (List.map (expr_of_bterm_con loc) bterms) in
             let params = mk_list_expr loc (List.map (expr_of_pcon loc) params) in
                <:expr< Refiner.Refiner.Term.mk_term (Refiner.Refiner.Term.mk_op $op$ $params$) $bterms$ >>
- | ConSequent (arg, hyps, goals) ->
+ | ConSequent (arg, hyps, concl) ->
       let arg = expr_of_term_con loc arg in
       let hyps = expr_of_hyps_con loc hyps in
-      let goals = mk_list_expr loc (List.map (expr_of_term_con loc) goals) in
+      let concl = expr_of_term_con loc concl in
          <:expr< Refiner.Refiner.TermMan.mk_sequent_term
                     { Refiner.Refiner.TermType.sequent_args = $arg$;
                       Refiner.Refiner.TermType.sequent_hyps = Refiner.Refiner.Term.SeqHyp.of_list $hyps$;
-                      Refiner.Refiner.TermType.sequent_goals = Refiner.Refiner.Term.SeqGoal.of_list $goals$
+                      Refiner.Refiner.TermType.sequent_concl = $concl$
          } >>
 
 and expr_of_bterm_con loc (bvars, bt) =
@@ -387,7 +387,7 @@ let parse_mtlre mt tl rs extract =
        * There is a complimentary HACK in Term_grammar.create_meta_function
        *)
       let _, goal = unzip_mfunction mt in
-         if is_sequent_term goal && not (is_sequent_term extract) then replace_goal goal extract else extract
+         if is_sequent_term goal && not (is_sequent_term extract) then replace_concl goal extract else extract
    in
       mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }, f extract
 

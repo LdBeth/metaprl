@@ -315,7 +315,7 @@ let process_intro_resource_annotation name context_args term_args statement (pre
    let t =
       match SeqHyp.to_list goal.sequent_hyps with
          [ Context _ ] ->
-            SeqGoal.get goal.sequent_goals 0
+            goal.sequent_concl
        | _ ->
             raise (Invalid_argument (sprintf "Dtactic.improve_intro: %s: must be an introduction rule" name))
    in

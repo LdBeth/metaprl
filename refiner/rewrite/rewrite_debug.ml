@@ -242,14 +242,14 @@ struct
             fprintf out "RWCompositeSimple %a\n%a" (**)
                print_sop op
                (print_bterms (tabstop + 3)) bterms
-       | RWSequent (arg, hyps, goals) ->
+       | RWSequent (arg, hyps, concl) ->
             fprintf out "RWSequent:\n%aArg:\n%a%aHyps:\n%a%aGoals:\n%a" (**)
                tab tabstop
                (print_prog (tabstop + 3)) arg
                tab tabstop
                (print_seq_prog (tabstop + 3)) hyps
                tab tabstop
-               (print_prog_list (tabstop + 3)) goals
+               (print_prog (tabstop + 3)) concl
        | RWSOVar (i, il) ->
             fprintf out "RWSOVar (%d, %a)\n" i print_int_list il
        | RWSOInstance (i, tl) ->

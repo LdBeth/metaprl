@@ -85,12 +85,11 @@ sig
    type meta_term = term poly_meta_term
    type hypothesis = term poly_hypothesis
    type seq_hyps = hypothesis Seq_set.linear_set
-   type seq_goals = term Seq_set.linear_set
 
    type esequent =
       { sequent_args : term;
         sequent_hyps : seq_hyps;
-        sequent_goals : seq_goals
+        sequent_concl : term
       }
 
    (*
@@ -109,7 +108,7 @@ sig
 
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list
-    | MatchSequent of string list * match_term list * hypothesis list * term list
+    | MatchSequent of string list * match_term list * hypothesis list * term
 end
 
 (*
@@ -125,7 +124,6 @@ sig
    open TermTypes
 
    module SeqHyp : Lm_linear_set_sig.LinearSetSig with type elt = hypothesis with type t = seq_hyps
-   module SeqGoal : Lm_linear_set_sig.LinearSetSig with type elt = term with type t = seq_goals
 
    (************************************************************************
     * De/Constructors                                                      *

@@ -186,14 +186,14 @@ struct
     | RWCompositeSimple { rws_op = op; rws_bterms = bterms } ->
          (* Build a regular term from the parts *)
          mk_term op (build_contractum_bterms names bnames stack bvars bterms)
-    | RWSequent (arg, hyps, goals) ->
+    | RWSequent (arg, hyps, concl) ->
          let arg = build_contractum_term names bnames stack bvars arg in
          let bnames, bvars, hyps = build_contractum_sequent_hyps names bnames stack bvars [] hyps in
-         let goals = List.map (build_contractum_term names bnames stack bvars) goals in
+         let concl = build_contractum_term names bnames stack bvars concl in
          let seq =
             { sequent_args = arg;
               sequent_hyps = hyps;
-              sequent_goals = SeqGoal.of_list goals
+              sequent_concl = concl
             }
          in
             mk_sequent_term seq

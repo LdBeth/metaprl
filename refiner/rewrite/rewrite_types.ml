@@ -120,7 +120,7 @@ struct
    and rwterm =
       RWComposite of rwcterm
     | RWCompositeSimple of rwcterm_simple
-    | RWSequent of rwterm * rw_seq_term list * rwterm list
+    | RWSequent of rwterm * rw_seq_term list * rwterm
     | RWSOVar of int * int list
     | RWSOInstance of int * rwterm list
     | RWSOContext of int * int * rwterm * int list

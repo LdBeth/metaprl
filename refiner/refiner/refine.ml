@@ -666,7 +666,7 @@ struct
          (* Now we can replace the goal without fear *)
             { mseq_vars = FreeVarsDelayed;
               mseq_hyps = hyps;
-              mseq_goal = replace_goal seq t';
+              mseq_goal = replace_concl seq t';
             }
       in
 
@@ -1475,7 +1475,7 @@ struct
                    | _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyps, got something wrong")))
                in
                   rename (goal_ind + 1) t (arg_ind + 1) prog (count - 1)
-            in aux 0 (nth_concl arg 1) 0 prog
+            in aux 0 (concl arg) 0 prog
       in
       let id_combine _ goal _ = goal in
       fun name addrs params goal args result ->
@@ -1488,7 +1488,7 @@ struct
                   if List.length args <> args_length then
                      REF_RAISE(RefineError("compute_rule_ext", StringError "wrong number of extract inputs"));
                   let args = List.map2 (apply_arg_prog addrs goal) args arg_progs in
-                     replace_goal goal (simple_combine () (nth_concl goal 1) args)
+                     replace_concl goal (simple_combine () (concl goal) args)
             else simple_combine
          in
          let goal = combine (Array.create (Array.length addrs) 2) goal args in
@@ -1555,9 +1555,7 @@ struct
                      StringTermError("Extract does not match the subgoal (sequent arg mismatch)", arg'.sequent_args)));
                let len = SeqHyp.length arg'.sequent_hyps in
                   (* XXX TODO: To be completely safe, also need to make sure that hyps match between the sub' and arg' *)
-                  check_hyps conts vars 0 len arg'.sequent_hyps (**)
-                     (SeqGoal.get sub'.sequent_goals 0)
-                     (SeqGoal.get arg'.sequent_goals 0)
+                  check_hyps conts vars 0 len arg'.sequent_hyps sub'.sequent_concl arg'.sequent_concl
          end else
             let sub' = dest_term sub in
             let arg' = dest_term arg in
@@ -1622,8 +1620,8 @@ struct
             if is_sequent_term t then
                let eseq = explode_sequent t in
                let vars, conts, hyps = List.fold_left fold ([],[],[]) (SeqHyp.to_list eseq.sequent_hyps) in
-               let goal = mk_so_var_term v conts vars in
-                  mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_goals = SeqGoal.of_list [goal] }
+               let concl = mk_so_var_term v conts vars in
+                  mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_concl = concl }
             else mk_so_var_term v [] []
       in List.map make_wildcard_ext_arg
 
@@ -1850,7 +1848,7 @@ struct
    let hack_arg = mk_simple_term (make_opname ["sequent_arg";"Base_rewrite"]) []
    let hack_hyps = SeqHyp.of_list [Context(Lm_symbol.add "H",[],[])]
    let mk_rewrite_hack term =
-      mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_goals = SeqGoal.of_list [term] }
+      mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_concl = term }
 
    let delayed_rewrite build name redex contractum extf =
       IFDEF VERBOSE_EXN THEN

@@ -545,7 +545,7 @@ let nameHypT i v =
                end
             in
                { eseq with sequent_hyps = SeqHyp.mapi map eseq.sequent_hyps;
-                           sequent_goals = SeqGoal.lazy_apply s1 eseq.sequent_goals }
+                           sequent_concl = s1 eseq.sequent_concl }
        | _ -> raise(RefineError("nameHypT",StringError "is a context"))
    in
    let goal = mk_sequent_term eseq in

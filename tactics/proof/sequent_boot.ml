@@ -64,12 +64,8 @@ struct
     * Addressing.
     *)
    let goal = TacticInternal.goal
-
    let msequent = TacticInternal.msequent
-
-   let concl arg =
-      TacticInternal.nth_concl arg 1
-
+   let concl = TacticInternal.concl
    let label = TacticInternal.label
 
    let args p =

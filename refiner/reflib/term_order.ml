@@ -45,8 +45,7 @@ sig
 	val compare_operators : operator -> operator -> comparison
 	val compare_terms : term -> term -> comparison
 	val compare_bterms : bound_term -> bound_term -> comparison
-	(*val compare_hyps : Term.Term.SeqHyp.t -> Term.Term.SeqHyp.t -> int -> comparison
-	val compare_goals : Term.Term.SeqGoal.t -> Term.Term.SeqGoal.t -> int -> comparison*)
+	(*val compare_hyps : Term.Term.SeqHyp.t -> Term.Term.SeqHyp.t -> int -> comparison*)
 end
 
 module TermOrder(R: Refiner_sig.RefinerSig)=

@@ -38,7 +38,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 0x2b416e288e5c64bba8bbb42717b0b304
+ * FILTER_MD5: 0x63768bf03792ce4e9884bd4beb4d7599
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -63,10 +63,11 @@ open File_type_base
  * Rev 10: added input/optput types to resource definitions (bug 168).
  * Rev 11: added the "Quote" parameter
  * Rev 12: added the "Grammar" choice to the summary_item type
+ * Rev 13: switched to single-conclusion sequents
  *)
-let raw_versions = List.map (pack_version 1 0) [12;11;10]
+let raw_versions = List.map (pack_version 1 0) [13]
 
-let term_versions = List.map (pack_version 1 0) [12;11;10;9;8]
+let term_versions = List.map (pack_version 1 0) [13]
 
 (*
  * ASCII IO format revision history:
@@ -86,6 +87,7 @@ let term_versions = List.map (pack_version 1 0) [12;11;10;9;8]
  * Rev 12: removed the "internal_df" operator from the list of the valid dform options
  * Rev 13: added input/optput types to resource definitions (bug 168)
  * Rev 14: added a Quote parameter
+ * Rev 15: switched to single-conclusion sequents
  *
  * Filter_summary has a HACK needed to read some rev 0-1 files
  * Ascii_io has a HACK needed to read some rev 0-5 files
@@ -97,8 +99,9 @@ let term_versions = List.map (pack_version 1 0) [12;11;10;9;8]
  * Ascii_io has another HACK needed to read some rev 0-10 files.
  * Filter_summary has another HACK needed to read some rev 0-11 files.
  * Filter_ocaml has a HACK needed to read some rev 0-12 files.
+ * Ascii_io has another HACK needed to read some rev 0-14 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *

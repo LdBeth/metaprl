@@ -76,7 +76,7 @@ sig
    type seq_header =
       { seq_arg: term_index;
         seq_hyps: hypothesis_header list;
-        seq_goals: term_index list
+        seq_concl: term_index
       }
 
    type term_header =

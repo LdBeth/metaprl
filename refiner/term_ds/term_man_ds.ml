@@ -303,7 +303,7 @@ struct
             if subst == [] then s else {
                s with
                sequent_hyps = SeqHyp.of_list hyps;
-               sequent_goals = SeqGoal.lazy_apply (apply_subst subst) s.sequent_goals
+               sequent_concl = apply_subst subst s.sequent_concl
             }
 
    (*
@@ -364,20 +364,13 @@ struct
        | _ ->
             REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
 
-   let nth_concl_name = "Term_man_ds.nth_concl"
-   let nth_concl t i =
-      if i <= 0 then
-         REF_RAISE(RefineError (nth_concl_name, StringError "negative address"))
-      else
-         let i = pred i in
-            match get_core t with
-               Sequent s ->
-                  if i < SeqGoal.length s.sequent_goals then
-                     SeqGoal.get s.sequent_goals i
-                  else
-                     REF_RAISE(RefineError (nth_concl_name, TermMatchError (t, "not enough hyps")))
-             | _ ->
-                  REF_RAISE(RefineError (nth_concl_name, TermMatchError (t, "not a sequent")))
+   let concl_name = "Term_man_ds.concl"
+   let concl t =
+      match get_core t with
+         Sequent s ->
+            s.sequent_concl
+       | _ ->
+            REF_RAISE(RefineError (concl_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Collect the vars.
@@ -439,13 +432,13 @@ struct
        | _ ->
             REF_RAISE(RefineError (get_hyp_number_name, TermMatchError (t, "not a sequent")))
 
-   let replace_goal_name = "Term_man_ds.replace_goal"
-   let replace_goal t goal =
+   let replace_concl_name = "Term_man_ds.replace_concl"
+   let replace_concl t concl =
       match get_core t with
          Sequent s ->
-            mk_sequent_term {sequent_args = s.sequent_args; sequent_hyps = s.sequent_hyps; sequent_goals = SeqGoal.singleton goal}
+            mk_sequent_term {sequent_args = s.sequent_args; sequent_hyps = s.sequent_hyps; sequent_concl = concl}
        | _ ->
-            REF_RAISE(RefineError (replace_goal_name, TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError (replace_concl_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Rewrite
@@ -494,11 +487,11 @@ struct
             MatchTerm (["var"], [MatchVar v], List.map mk_simple_bterm terms)
        | Sequent { sequent_args = args;
                    sequent_hyps = hyps;
-                   sequent_goals = goals
+                   sequent_concl = concl
          } ->
             let op = dest_opname (opname_of_term args) in
             let args = List.map explode_term (subterms_of_term args) in
-               MatchSequent (op, args, SeqHyp.to_list hyps, SeqGoal.to_list goals)
+               MatchSequent (op, args, SeqHyp.to_list hyps, concl)
        | Subst _ | Hashed _ ->
             fail_core "explode_term"
 
@@ -582,19 +575,12 @@ struct
     | Sequent eseq ->
          free_meta_variables (
             free_meta_variables_hyps (
-               free_meta_variables_goals vars eseq.sequent_goals (SeqGoal.length eseq.sequent_goals)
+               free_meta_variables vars eseq.sequent_concl
             ) eseq.sequent_hyps (SeqHyp.length eseq.sequent_hyps)
          ) eseq.sequent_args
     | Hashed _ | Subst _ -> fail_core "free_meta_variables"
 
    and free_meta_variables_bterm vars bt = free_meta_variables vars bt.bterm
-
-   and free_meta_variables_goals vars goals i =
-      if i = 0 then
-         vars
-      else
-         let i = pred i in
-            free_meta_variables_goals (free_meta_variables vars (SeqGoal.get goals i)) goals i
 
    and free_meta_variables_hyps vars hyps i =
       if i = 0 then

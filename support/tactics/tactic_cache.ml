@@ -187,7 +187,7 @@ and 'a inference =
  * They represent one vertex in the or-and tree of backward
  * chaining (which is type 'a goalnode below).
  *
- *    goal_goal: this is the term to be proved
+ *    goal_concl: this is the term to be proved
  *    goal_assums: these are extra hypotheses that can be
  *       assumed at this point the in the backward chaining
  *    goal_subgoals: the subgoals are set when backwward
@@ -212,7 +212,7 @@ and assumption =
    }
 
 and 'a goal =
-   { goal_goal : term;
+   { goal_concl : term;
      goal_hash : shape;
      goal_assums : assumption list;
      mutable goal_subgoals : 'a subgoals
@@ -654,11 +654,11 @@ let push_extract_inf { ext_base = base } inf =
  * Don't compare subgoals.
  *)
 let eq_goal
-    { goal_goal = t;
+    { goal_concl = t;
       goal_hash = hash;
       goal_assums = assums
     }
-    { goal_goal = t';
+    { goal_concl = t';
       goal_hash = hash';
       goal_assums = assums'
     } =
@@ -887,7 +887,7 @@ let find_nodes
     ({ inf_value = t; inf_hash = hash } as inf) =
    let world = world_of_inf inf in
    let rec filter_goals = function
-      ({ goal_goal = t' } as goal)::tl ->
+      ({ goal_concl = t' } as goal)::tl ->
          if alpha_equal t t' then
             goal :: filter_goals tl
          else
@@ -916,7 +916,7 @@ let find_nodes
  *)
 let find_inf_for_node
     { ext_base = { ext_terms = terms } }
-    { node_goal = { goal_goal = t; goal_hash = hash }; node_world = world } =
+    { node_goal = { goal_concl = t; goal_hash = hash }; node_world = world } =
    let rec aux = function
       ({ inf_value = t' } as inf)::tl ->
          let world' = world_of_inf inf in
@@ -941,7 +941,7 @@ let is_provable extract goal =
  * See if a goal is already known.
  *)
 let hash_goal { ext_base = { ext_terms = terms } }
-    ({ goal_goal = t; goal_hash = hash } as goal) =
+    ({ goal_concl = t; goal_hash = hash } as goal) =
    let { entry_goals = goals } = Hashtbl.find terms hash in
       Lm_list_util.find (eq_goal goal) goals
 
@@ -1108,7 +1108,7 @@ let construct_subgoals extract just ants =
    in
    let aux (args, t) =
       let goal =
-         { goal_goal = t;
+         { goal_concl = t;
            goal_hash = shape_of_term t;
            goal_assums = List.map make_assum args;
            goal_subgoals = Unexplored
@@ -1125,7 +1125,7 @@ let construct_subgoals extract just ants =
  * Set the subgoals of a goal given a list of bcache_info
  * that may match this goal.
  *)
-let set_subgoals extract ({ goal_goal = t } as goal) binfo =
+let set_subgoals extract ({ goal_concl = t } as goal) binfo =
    let rec aux = function
       { binfo_rw = rw; binfo_just = just }::tl ->
          begin
@@ -1908,7 +1908,7 @@ let name_hyp extract i gname =
  * This also resets the backward chaining queue
  * to be only those goals that the current goal depends upon.
  *)
-let set_goal extract t =
+let set_goal extract concl =
    let { ext_used = used;
          ext_hcount = hcount;
          ext_names = names;
@@ -1918,11 +1918,11 @@ let set_goal extract t =
          ext_base = base
        } = extract
    in
-   let t = subst t gnames (List.map mk_var_term names) in
+   let t = subst concl gnames (List.map mk_var_term names) in
    let hash = shape_of_term t in
    let goal =
       let goal =
-         { goal_goal = t;
+         { goal_concl = t;
            goal_hash = hash;
            goal_assums = [];
            goal_subgoals = Unexplored
@@ -1970,8 +1970,8 @@ let set_msequent extract seq =
    in
    let goal, _ = dest_msequent seq in
       match explode_sequent goal with
-         { sequent_hyps = hyps; sequent_goals = goals } ->
-            set_goal (collect 0 (SeqHyp.length hyps) (del_hyp extract 0) hyps) (SeqGoal.get goals 0)
+         { sequent_hyps = hyps; sequent_concl = concl } ->
+            set_goal (collect 0 (SeqHyp.length hyps) (del_hyp extract 0) hyps) concl
 
 (************************************************************************
  * LOOKUP                                                               *

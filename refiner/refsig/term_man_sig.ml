@@ -92,12 +92,12 @@ sig
    (* nth_hyp and nth_binding will raise RefineError when index refers to a context *)
    val nth_hyp : term -> int -> term
    val nth_binding : term -> int -> var
-   val nth_concl : term -> int -> term
+   val concl : term -> term
    val num_hyps : term -> int
    val declared_vars : term -> var list
    val get_decl_number : term -> var -> int
    val get_hyp_number : term -> term -> int
-   val replace_goal : term -> term -> term     (* Single-concl seqs*)
+   val replace_concl : term -> term -> term
 
    val is_xrewrite_term : term -> bool
    val mk_xrewrite_term : term -> term -> term

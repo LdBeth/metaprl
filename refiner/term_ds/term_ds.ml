@@ -93,11 +93,10 @@ struct
    and bound_term' = { bvars : var list; bterm : term }
    and hypothesis = term poly_hypothesis
    and seq_hyps = hypothesis Seq_set.linear_set
-   and seq_goals = term Seq_set.linear_set
    and esequent =
       { sequent_args : term;
         sequent_hyps : seq_hyps;
-        sequent_goals : seq_goals
+        sequent_concl : term
       }
    and lazy_vars =
       Vars of SymbolSet.t
@@ -119,7 +118,7 @@ struct
 
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list
-    | MatchSequent of string list * match_term list * hypothesis list * term list
+    | MatchSequent of string list * match_term list * hypothesis list * term
 
    type meta_term = term poly_meta_term
 end

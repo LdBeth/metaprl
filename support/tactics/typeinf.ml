@@ -145,12 +145,12 @@ let collect_decls p =
    in
    let goal, assums = dest_msequent (Sequent.msequent p) in
    let { sequent_hyps = hyps } = TermMan.explode_sequent goal in
-   let num_hyps = TermMan.num_hyps goal in
+   let num_hyps = SeqHyp.length hyps in
    let rec filter_assums subst = function
       assum :: tl ->
          let num_hyps' = TermMan.num_hyps assum in
             if num_hyps' <= num_hyps then
-               let concl = TermMan.nth_concl assum 1 in
+               let concl = TermMan.concl assum in
                let subst =
                   try collect subst (None, concl) with
                      RefineError _ ->

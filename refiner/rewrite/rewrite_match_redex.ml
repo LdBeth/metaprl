@@ -163,19 +163,19 @@ struct
       if SymbolSet.intersectp vars (free_vars_set t) then
          REF_RAISE(RefineError("Rewrite_match_redex.check_instance_term", StringTermError("term in the inner sequent is bound by the outer context", t)))
 
-   let rec check_instance_hyps goals vars hyps i len =
+   let rec check_instance_hyps concl vars hyps i len =
       if i = len then
-         SeqGoal.iter (check_instance_term vars) goals
+         check_instance_term vars concl
       else
          match SeqHyp.get hyps i with
             Context(_, _, ts) ->
                List.iter (check_instance_term vars) ts;
-               check_instance_hyps goals vars hyps (i+1) len
+               check_instance_hyps concl vars hyps (i+1) len
           | Hypothesis (v,t) ->
                check_instance_term vars t;
                let vars = SymbolSet.remove vars v in
                   if not (SymbolSet.is_empty vars) then
-                     check_instance_hyps goals vars hyps (i+1) len
+                     check_instance_hyps concl vars hyps (i+1) len
 
    (*
     * Assign the bvars.
@@ -389,11 +389,11 @@ struct
             else
                REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
 
-       | RWSequent (arg, hyps, goals) ->
+       | RWSequent (arg, hyps, concl) ->
             let s = explode_sequent_and_rename t all_bvars in
                match_redex_term addrs stack all_bvars arg s.sequent_args;
                let hyps' = s.sequent_hyps in
-                  match_redex_sequent_hyps addrs stack goals s.sequent_goals all_bvars hyps hyps' 0 (SeqHyp.length hyps')
+                  match_redex_sequent_hyps addrs stack concl s.sequent_concl all_bvars hyps hyps' 0 (SeqHyp.length hyps')
 
        | RWCheckVar i ->
             begin
@@ -541,27 +541,23 @@ struct
             else
                REF_RAISE(RefineError ("match_redex_bterms", RewriteBadMatch (BTermMatch bt)))
 
-   and match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps i len =
+   and match_redex_sequent_hyps addrs stack concl' concl all_bvars hyps' hyps i len =
       match hyps' with
          [] ->
             if i <> len then
                REF_RAISE(RefineError ("match_redex_sequent_hyps", RewriteBadMatch (HypMatch hyps)));
-            match_redex_sequent_goals addrs stack all_bvars goals' goals 0 (SeqGoal.length goals)
+            match_redex_term addrs stack all_bvars concl' concl
        | (RWSeqContext (addr, j, l) as hyp') :: hyps'
        | (RWSeqFreeVarsContext (_, _, addr, j, l) as hyp') :: hyps' ->
             let count =
                if addr < 0 then
                   let count = len - i + addr + 1 in
-                     if count >= 0 then
-                        count
+                     if count >= 0 then count
                      else
                         REF_RAISE(RefineError ("match_redex_sequent_hyps", RewriteBadMatch (HypMatch hyps)))
                else
                   let count = addrs.(addr) in
-                     if count > 0 then
-                        count - 1
-                     else
-                        len - i + count
+                     if count > 0 then count - 1 else len - i + count
             in
                IFDEF VERBOSE_EXN THEN
                   if !debug_rewrite then
@@ -578,7 +574,7 @@ struct
                end;
                let bvars = extract_bvars stack l in
                   stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
-                  match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps (i+count) len
+                  match_redex_sequent_hyps addrs stack concl' concl all_bvars hyps' hyps (i+count) len
 
        | RWSeqContextInstance (j, ts) :: hyps' ->
             begin
@@ -586,8 +582,8 @@ struct
                   StackSeqContext (bvars, (k, count, hyps'')) ->
                      if count + i > len then
                         REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringError "not enough hypotheses"));
-                     let sub = match_context_instance addrs stack all_bvars goals hyps i hyps'' k bvars ts SymbolSet.empty [] count in
-                        match_redex_sequent_hyps addrs stack goals' (SeqGoal.lazy_apply (apply_subst sub) goals) (**)
+                     let sub = match_context_instance addrs stack all_bvars concl hyps i hyps'' k bvars ts SymbolSet.empty [] count in
+                        match_redex_sequent_hyps addrs stack concl' (apply_subst sub concl) (**)
                            all_bvars hyps' (SeqHyp.lazy_apply (hyp_apply_subst sub) hyps) (i+count) len
                 | _ ->
                      raise (Invalid_argument "Rewrite_match_redex.match_redex_sequent_hyps: RWSeqContextInstance: invalid stack entry")
@@ -615,7 +611,7 @@ struct
                             * clashes.
                             *)
                            match_redex_term addrs stack new_bvars term' term;
-                           match_redex_sequent_hyps addrs stack goals' goals new_bvars hyps' hyps (succ i) len
+                           match_redex_sequent_hyps addrs stack concl' concl new_bvars hyps' hyps (succ i) len
                    | Context _ ->
                         REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringIntError ("hypothesis index refers to a context", i)))
                end
@@ -640,11 +636,11 @@ struct
     * only reasonable solution is trying to prevent such a clash in the first place, but that can not
     * be done in any straightforward way in the current rewriter framework.
     *)
-   and match_context_instance addrs stack all_bvars goals hyps i hyps' k bvars ts vars sub count =
+   and match_context_instance addrs stack all_bvars concl hyps i hyps' k bvars ts vars sub count =
       if count = 0 then
          begin
             if not (SymbolSet.is_empty vars) then
-               check_instance_hyps goals vars hyps i (SeqHyp.length hyps);
+               check_instance_hyps concl vars hyps i (SeqHyp.length hyps);
             sub
          end
       else
@@ -655,29 +651,17 @@ struct
                   check_match addrs stack all_bvars t2 bvars t1 ts;
                   let all_bvars = SymbolSet.add all_bvars v' in
                      if v = v' then
-                        match_context_instance addrs stack all_bvars goals hyps (i+1) hyps' (k+1) bvars ts vars sub (count-1)
+                        match_context_instance addrs stack all_bvars concl hyps (i+1) hyps' (k+1) bvars ts vars sub (count-1)
                      else
-                        match_context_instance addrs stack all_bvars goals hyps (i+1) hyps' (k+1) bvars ts (SymbolSet.add (SymbolSet.remove vars v) v') ((v, mk_var_term v') :: sub) (count-1)
+                        match_context_instance addrs stack all_bvars concl hyps (i+1) hyps' (k+1) bvars ts (SymbolSet.add (SymbolSet.remove vars v) v') ((v, mk_var_term v') :: sub) (count-1)
           | Context (v, conts, ts1), Context(v', conts', ts2)
             when v=v' && conts=conts' && (List.length ts1 = List.length ts2) ->
                List.iter (check_instance_term vars) ts1;
                let ts1 = Lm_list_util.smap (apply_subst sub) ts1 in
                   List.iter2 (fun t1 t2 -> check_match addrs stack all_bvars t2 bvars t1 ts) ts1 ts2;
-                  match_context_instance addrs stack all_bvars goals hyps (i+1) hyps' (k+1) bvars ts (SymbolSet.remove vars v) sub (count-1)
+                  match_context_instance addrs stack all_bvars concl hyps (i+1) hyps' (k+1) bvars ts (SymbolSet.remove vars v) sub (count-1)
           | _ ->
                REF_RAISE(RefineError ("Rewrite_match_redex.match_context_instance", StringError ("hypothesis/context mismatch")))
-
-   and match_redex_sequent_goals addrs stack all_bvars goals' goals i len =
-      match goals' with
-         [] ->
-            if i <> len then
-               REF_RAISE(RefineError ("match_redex_sequent_goals", RewriteBadMatch (GoalMatch goals)))
-       | goal' :: goals' ->
-            if i = len then
-               REF_RAISE(RefineError ("match_redex_sequent_goals", RewriteBadMatch (GoalMatch goals)));
-            match_redex_term addrs stack all_bvars goal' (SeqGoal.get goals i);
-            match_redex_sequent_goals addrs stack all_bvars goals' goals (succ i) len
-
    let match_redex addrs stack vars t tl = function
       [] ->
          REF_RAISE(RefineError ("match_redex", StringError "progs list is empty"))

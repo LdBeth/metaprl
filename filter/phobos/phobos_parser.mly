@@ -129,11 +129,11 @@ let pho_make_number_term num =
 let mk_sequent_arg terms pos =
    mk_simple_term (make_opname (term_name_of ("sequent_arg", pos))) terms
 
-let pho_make_sequent arg hyps goal =
+let pho_make_sequent arg hyps concl =
    mk_sequent_term {
       sequent_args = arg;
       sequent_hyps = SeqHyp.of_list hyps;
-      sequent_goals = SeqGoal.of_list [goal];
+      sequent_concl = concl;
    }
 
 let rec make_rules (id, pos) = function

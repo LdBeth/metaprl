@@ -110,22 +110,16 @@ struct
          | _ -> false) &&
        (compare_hyps hyp1 hyp2 (pred i)))
 
-   let rec compare_goals goal1 goal2 i =
-      (i<0) ||
-      (((CTerm.SeqGoal.get goal1 i) == (CTerm.SeqGoal.get goal2 i)) &&
-       (compare_goals goal1 goal2 (pred i)))
-
    let compare_cterm t1 t2 =
       match (t1,t2) with
          CTerm t1, CTerm t2 ->
             compare_term t1 t2
-       | CSeq { CType.sequent_args = arg1; CType.sequent_hyps = hyp1; CType.sequent_goals = goal1},
-         CSeq { CType.sequent_args = arg2; CType.sequent_hyps = hyp2; CType.sequent_goals = goal2} ->
+       | CSeq { CType.sequent_args = arg1; CType.sequent_hyps = hyp1; CType.sequent_concl = concl1},
+         CSeq { CType.sequent_args = arg2; CType.sequent_hyps = hyp2; CType.sequent_concl = concl2} ->
             (arg1 == arg2) &&
+            (concl1 == concl2) &&
             (CTerm.SeqHyp.length hyp1 = CTerm.SeqHyp.length hyp2) &&
-            (compare_hyps hyp1 hyp2 (CTerm.SeqHyp.length hyp1 - 1)) &&
-            (CTerm.SeqGoal.length goal1 = CTerm.SeqGoal.length goal2) &&
-            (compare_goals goal1 goal2 (CTerm.SeqGoal.length goal1 - 1))
+            (compare_hyps hyp1 hyp2 (CTerm.SeqHyp.length hyp1 - 1))
        | _ -> false
 
    let compare_bterm { CType.bvars = bvars1; CType.bterm = bterm1 }

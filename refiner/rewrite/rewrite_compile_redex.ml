@@ -270,14 +270,14 @@ struct
          (* Sequents are handled specially *)
          let { sequent_args = arg;
                sequent_hyps = hyps;
-               sequent_goals = goals;
+               sequent_concl = concl;
              } = explode_sequent term
          in
          let stack, arg = compile_so_redex_term st stack arg in
          let l = SeqHyp.length hyps in
-         let stack, hyps, goals =
-            compile_so_redex_sequent_inner st stack 0 l (lastcontext hyps l) hyps goals in
-            stack, RWSequent (arg, hyps, goals)
+         let stack, hyps, concl =
+            compile_so_redex_sequent_inner st stack 0 l (lastcontext hyps l) hyps concl in
+            stack, RWSequent (arg, hyps, concl)
 
       else
          (* This is normal term--not a var *)
@@ -372,12 +372,12 @@ struct
       let stack, term = compile_so_redex_term { st with st_bvars = bvars; st_svars = svars } stack term in
          stack, { rw_bvars = List.length vars; rw_bnames = bnames; rw_bterm = term }
 
-   and compile_so_redex_sequent_inner st stack i len mc hyps goals =
+   and compile_so_redex_sequent_inner st stack i len mc hyps concl =
       if i = len then
-         let stack, goals =
-            compile_so_redex_goals st stack 0 (SeqGoal.length goals) goals
+         let stack, concl =
+            compile_so_redex_term st stack concl
          in
-            stack, [], goals
+            stack, [], concl
       else
          match SeqHyp.get hyps i with
             Context (v, conts, terms) ->
@@ -421,10 +421,10 @@ struct
                      in
                         stack, term, stack_ind
                in
-               let stack, hyps, goals =
-                  compile_so_redex_sequent_inner { st with st_bconts = (v, ind) :: st.st_bconts } stack (i + 1) len mc hyps goals
+               let stack, hyps, concl =
+                  compile_so_redex_sequent_inner { st with st_bconts = (v, ind) :: st.st_bconts } stack (i + 1) len mc hyps concl
                in
-                  stack, term :: hyps, goals
+                  stack, term :: hyps, concl
 
           | Hypothesis (v, term) ->
                if List.mem_assoc v st.st_bvars then
@@ -433,18 +433,10 @@ struct
                let l = List.length stack in
                let stack = stack @ [FOVar v] in
                let st = { st with st_bvars = (new_bvar_item l v) :: st.st_bvars } in
-               let stack, hyps, goals =
-                  compile_so_redex_sequent_inner st stack (i + 1) len mc hyps goals
+               let stack, hyps, concl =
+                  compile_so_redex_sequent_inner st stack (i + 1) len mc hyps concl
                in
-                  stack, RWSeqHyp (bname l v, term) :: hyps, goals
-
-   and compile_so_redex_goals st stack i len goals =
-      if i = len then
-         stack, []
-      else
-         let stack, goal = compile_so_redex_term st stack (SeqGoal.get goals i) in
-         let stack, goals = compile_so_redex_goals st stack (i + 1) len goals in
-            stack, goal :: goals
+                  stack, RWSeqHyp (bname l v, term) :: hyps, concl
 
    and compile_so_redex_terms st stack = function
       [] ->

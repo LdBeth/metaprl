@@ -83,8 +83,8 @@ struct
       MetaTheorem t ->
          [], t
     | MetaImplies (a, t) ->
-         let hyps, goal = unzip_mimplies t in
-            unfold_mlabeled "unzip_mimplies" a :: hyps, goal
+         let assums, goal = unzip_mimplies t in
+            unfold_mlabeled "unzip_mimplies" a :: assums, goal
     | MetaLabeled (_, t) ->
          unzip_mimplies t
     | MetaIff _ as t ->
@@ -205,12 +205,12 @@ struct
    (*
     * Rename hypothesis bound variables --- use empty names for variables not actually used
     *)
-   let rec rename_hyp_bvars parsing bvars goals seqfvars count sub = function
-      [] -> [], Lm_list_util.smap (apply_subst sub) goals
+   let rec rename_hyp_bvars parsing bvars concl seqfvars count sub = function
+      [] -> [], apply_subst sub concl
     | (Context(c, conts, terms) as hd :: tl) as hyps ->
-         let tl', goals' = rename_hyp_bvars parsing (SymbolSet.add bvars c) goals seqfvars count sub tl in
+         let tl', concl = rename_hyp_bvars parsing (SymbolSet.add bvars c) concl seqfvars count sub tl in
          let hd' = if sub = [] || terms = [] then hd else Context(c, conts, Lm_list_util.smap (apply_subst sub) terms) in
-         (if hd' == hd && tl' == tl then hyps else hd'::tl'), goals'
+         (if hd' == hd && tl' == tl then hyps else hd'::tl'), concl
     | (Hypothesis (v,t) as hd :: tl) as hyps ->
          let mem = SymbolSet.mem seqfvars v in
          let empt = (Lm_symbol.to_string v = "") in
@@ -223,9 +223,9 @@ struct
          in
          let t' = apply_subst sub t in
          let sub = if v == v' then sub else (v, mk_var_term v') :: sub in
-         let tl', goals' = rename_hyp_bvars parsing (SymbolSet.add bvars v') goals seqfvars count sub tl in
+         let tl', concl = rename_hyp_bvars parsing (SymbolSet.add bvars v') concl seqfvars count sub tl in
          let hd' = if v==v' && t==t' then hd else Hypothesis (v',t') in
-         (if hd' == hd && tl' == tl then hyps else hd'::tl'), goals'
+         (if hd' == hd && tl' == tl then hyps else hd'::tl'), concl
 
    (*
     * Go down the term, mapping the context bindings
@@ -258,12 +258,11 @@ struct
             let eseq = explode_sequent t in
             let arg' = convert_term bvars fvars bconts eseq.sequent_args in
             let hyps = SeqHyp.to_list eseq.sequent_hyps in
-            let goals = SeqGoal.to_list eseq.sequent_goals in
-            let hyps', goals', seqfvars = convert_hyps bvars fvars bconts goals hyps in
-            let hyps', goals' = rename_hyp_bvars parsing (SymbolSet.add_list bvars bconts) goals' seqfvars (ref (-1)) [] hyps' in
-            if arg' == eseq.sequent_args && hyps' == hyps && goals' == goals then t
+            let hyps', concl', seqfvars = convert_hyps bvars fvars bconts eseq.sequent_concl hyps in
+            let hyps', concl' = rename_hyp_bvars parsing (SymbolSet.add_list bvars bconts) concl' seqfvars (ref (-1)) [] hyps' in
+            if arg' == eseq.sequent_args && hyps' == hyps && concl' == eseq.sequent_concl then t
             else mk_sequent_term {
-               sequent_args = arg'; sequent_hyps = SeqHyp.of_list hyps'; sequent_goals = SeqGoal.of_list goals'
+               sequent_args = arg'; sequent_hyps = SeqHyp.of_list hyps'; sequent_concl = concl'
             }
          else
             let t' = dest_term t in
@@ -275,20 +274,20 @@ struct
          let t' = convert_term (SymbolSet.add_list bvars bt'.bvars)(SymbolSet.subtract_list fvars bt'.bvars) bconts bt'.bterm in
          if t' == bt'.bterm then bt else mk_bterm bt'.bvars t'
 
-      and convert_hyps bvars fvars bconts goals = function
+      and convert_hyps bvars fvars bconts concl = function
          [] ->
-            let goals = Lm_list_util.smap (convert_term bvars fvars bconts) goals in
-               [], goals, free_vars_terms goals
+            let concl = convert_term bvars fvars bconts concl in
+               [], concl, free_vars_set concl
        | ((Hypothesis (v, t)) as hd :: tl) as hyps ->
             let t' = convert_term bvars fvars bconts t in
-            let tl', goals', seqfvars = convert_hyps (SymbolSet.add bvars v) (SymbolSet.remove fvars v) bconts goals tl in
+            let tl', concl', seqfvars = convert_hyps (SymbolSet.add bvars v) (SymbolSet.remove fvars v) bconts concl tl in
             (if t'==t && tl' == tl then hyps else
             let hd' = if t' == t then hd else Hypothesis(v, t') in
-               hd' :: tl'), goals', SymbolSet.union seqfvars (free_vars_set t')
+               hd' :: tl'), concl', SymbolSet.union seqfvars (free_vars_set t')
       | (Context (c, conts, terms) as hd :: tl) as hyps ->
             let conts' = f bconts c conts in
             let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
-            let tl', goals', seqfvars = convert_hyps bvars fvars (c::bconts) goals tl in
+            let tl', concl', seqfvars = convert_hyps bvars fvars (c::bconts) concl tl in
             let hd' =
                if conts' == conts && terms == terms' && parsing then
                   hd
@@ -297,7 +296,7 @@ struct
                else
                   Hypothesis(Lm_symbol.new_symbol_string "", mk_simple_term df_context_op [mk_so_var_term c conts' terms'])
             in
-            (if hd' == hd && tl' == tl then hyps else hd'::tl'), goals', SymbolSet.union seqfvars (free_vars_terms terms')
+            (if hd' == hd && tl' == tl then hyps else hd'::tl'), concl', SymbolSet.union seqfvars (free_vars_terms terms')
 
       in
          fun t -> convert_term SymbolSet.empty (free_vars_set t) [] t
@@ -376,7 +375,7 @@ struct
                let eseq = explode_sequent t in
                   scan_term eseq.sequent_args;
                   SeqHyp.iter scan_hyp eseq.sequent_hyps;
-                  SeqGoal.iter scan_term eseq.sequent_goals
+                  scan_term eseq.sequent_concl
             end else if is_context_term t then begin
                let v, t, conts, ts = dest_context t in
                   upd_map v conts ts;

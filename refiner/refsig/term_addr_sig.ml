@@ -86,7 +86,7 @@ sig
     * count hypotheses from the end of the list.
     *)
    val nth_hyp_addr : term -> int -> address
-   val nth_concl_addr : term -> int -> address
+   val concl_addr : term -> address
    val nth_clause_addr : term -> int -> address
 end
 

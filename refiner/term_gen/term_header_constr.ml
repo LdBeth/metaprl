@@ -96,15 +96,14 @@ struct
       else if FromTerm.TermMan.is_sequent_term t then
          let { FType.sequent_args = arg;
                FType.sequent_hyps = hyps;
-               FType.sequent_goals = goals } = FromTerm.TermMan.explode_sequent t
+               FType.sequent_concl = concl } = FromTerm.TermMan.explode_sequent t
          in
-         let goals = FTerm.SeqGoal.to_list goals in
          (* let hyps = FromTerm.TermMan.remove_redundant_hypbindings (FTerm.SeqHyp.to_list hyps) goals in *)
          let hyps = FTerm.SeqHyp.to_list hyps in
             TermHash.Seq
             { TermHash.seq_arg = TermHash.p_lookup info (make_term_header info arg);
               TermHash.seq_hyps = List.map (make_hyp_header info) hyps;
-              TermHash.seq_goals = List.map (make_goal_header info) goals;
+              TermHash.seq_concl = TermHash.p_lookup info (make_term_header info concl);
             }
       else
          TermHash.Term (make_true_term_header info t)
