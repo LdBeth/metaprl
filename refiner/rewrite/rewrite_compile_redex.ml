@@ -93,7 +93,7 @@ struct
         st_bvars : (var * int) list;    (* All the bindings we are under, and their stack locations *)
         st_bconts : (var * int) list;   (* All the contexts we are in, and their stack locations  *)
         st_arg : bool;                  (* Whether we are compiling an argument ("semiformal") term *)
-        mutable st_restricts : (int * var list) list
+        st_restricts : (int * var list) list ref
                                         (* Output: additional restrictions: SO var location * SO conts locations *)
       }
 
@@ -174,7 +174,7 @@ struct
                let restrict_conts =
                   if st.st_strict then
                      if st.st_arg then begin
-                        st.st_restricts <- (index, []) :: st.st_restricts;
+                        st.st_restricts := (index, []) :: !(st.st_restricts);
                         []
                      end else
                         List.map bvar_ind st.st_bconts
@@ -220,7 +220,7 @@ struct
                let restrict_conts =
                   if st.st_strict then
                      if st.st_arg then begin
-                        st.st_restricts <- (v', conts) :: st.st_restricts;
+                        st.st_restricts := (v', conts) :: !(st.st_restricts);
                         []
                      end else
                         restricted_conts v st.st_bconts conts
@@ -270,7 +270,7 @@ struct
                let restrict_conts =
                   if st.st_strict then
                      if st.st_arg then begin
-                        st.st_restricts <- (index, conts) :: st.st_restricts;
+                        st.st_restricts := (index, conts) :: !(st.st_restricts);
                         []
                      end else
                         restricted_conts v st.st_bconts conts
@@ -437,7 +437,7 @@ struct
                      let restrict_conts =
                         if st.st_strict then
                            if st.st_arg then begin
-                              st.st_restricts <- (stack_ind, conts) :: st.st_restricts;
+                              st.st_restricts := (stack_ind, conts) :: !(st.st_restricts);
                               []
                            end else
                               restricted_conts v st.st_bconts conts
@@ -569,7 +569,7 @@ struct
               st_bvars = [];
               st_bconts = [];
               st_arg = true;
-              st_restricts = []
+              st_restricts = ref []
             }
          in
          let stack, args = compile_so_redex_terms st [] args in
@@ -577,7 +577,7 @@ struct
          let stack, goal = compile_so_redex_term st stack goal in
          let () = List.iter check_stack stack in
          let bconts = stack_cvars 0 stack in
-         let extra_restricts = Lm_list_util.some_map (filter_restricts bconts) st.st_restricts in
+         let extra_restricts = Lm_list_util.some_map (filter_restricts bconts) !(st.st_restricts) in
          let args = if extra_restricts = [] then args else List.map (map_restricts_term extra_restricts) args in
             Array.of_list stack, goal :: args
 end
