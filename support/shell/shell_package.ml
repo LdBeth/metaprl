@@ -329,7 +329,7 @@ let rec edit pack_info parse_arg window =
       Package.save pack_info
    in
    let edit_check _ =
-      raise_edit_error "check the entire package?"
+      raise_edit_error "check the entire package? Use check_all."
    in
    let edit_expand _ =
       raise_edit_error "expand all the proofs in the package? Use expand_all."
@@ -373,6 +373,7 @@ let rec edit pack_info parse_arg window =
         edit_set_contractum = not_a_rule;
         edit_set_assumptions = not_a_rule;
         edit_set_params = not_a_rule;
+        edit_get_extract = not_a_rule;
         edit_save = edit_save;
         edit_check = edit_check;
         edit_expand = edit_expand;

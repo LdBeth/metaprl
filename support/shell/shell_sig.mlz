@@ -131,7 +131,8 @@ type edit_object =
      edit_set_params : term Filter_type.param list -> unit;
      edit_save : unit -> unit;
      edit_expand : dform_base -> unit;
-     edit_check : dform_base -> Refine.extract;
+     edit_get_extract : dform_base -> Refine.extract;
+     edit_check : dform_base -> ref_status;
 
      (* Navigation if there is a proof *)
      edit_interpret : proof_command -> unit;

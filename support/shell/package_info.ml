@@ -284,12 +284,6 @@ struct
    let refiner { pack_name = name } =
       (get_theory name).thy_refiner
 
-   let sentinal { pack_name = name } =
-      Tactic_type.Tactic.sentinal_of_refiner name
-
-   let sentinal_object { pack_name = name } name' =
-      Tactic_type.Tactic.sentinal_of_refiner_object name name'
-
    (*
     * Get the list of display forms.
     *)

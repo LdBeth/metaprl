@@ -121,8 +121,6 @@ sig
     * Refiners and sentinals.
     *)
    val refiner  : package -> Refine.refiner
-   val sentinal : package -> Sequent.sentinal
-   val sentinal_object : package -> string -> Sequent.sentinal
 
    (*
     * Navigation.

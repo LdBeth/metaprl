@@ -167,10 +167,10 @@ let rec edit pack window =
       raise_edit_error "list of packages can't be saved"
    in
    let edit_check _ =
-      raise_edit_error "check the complete set of packages?"
+      raise_edit_error "check the complete set of packages? Use check_all."
    in
    let edit_expand _ =
-      raise_edit_error "expand all the proofs in all packages?"
+      raise_edit_error "expand all the proofs in all packages? Use exapnd_all."
    in
    let edit_root () =
       ()
@@ -211,6 +211,7 @@ let rec edit pack window =
         edit_set_contractum = not_a_rule;
         edit_set_assumptions = not_a_rule;
         edit_set_params = not_a_rule;
+        edit_get_extract = not_a_rule;
         edit_save = edit_save;
         edit_check = edit_check;
         edit_expand = edit_expand;

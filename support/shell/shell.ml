@@ -179,6 +179,9 @@ let rec string_of_path = function
  | [] ->
       "/"
 
+let mk_dep_name opname =
+   "/" ^ (String.concat "/" (List.rev (dest_opname opname)))
+
 (*
  * Shell takes input parser as an argument.
  *)
@@ -813,7 +816,6 @@ struct
          print_exn info set pl
 
    let check info =
-      let mk_name opname = String.concat "/" (List.rev (dest_opname opname)) in
       let check = function
          { package = Some pack; dir = mod_name :: name :: _ } ->
             begin try
@@ -827,11 +829,11 @@ struct
                          | Refine_sig.DepRewrite -> "Rewrite"
                          | Refine_sig.DepCondRewrite -> "Conditional Rewrite"
                      in
-                        printf "\t%s /%s\n" kind (mk_name opname)
+                        printf "\t%s %s\n" kind (mk_dep_name opname)
                   in
                      List.iter print_dep deps
             with Refine_sig.Incomplete opname ->
-               eprintf "Error: Proof of /%s/%s depends on incomplete proof of /%s!%t" mod_name name (mk_name opname) eflush
+               eprintf "Error: Proof of /%s/%s depends on incomplete proof of %s!%t" mod_name name (mk_dep_name opname) eflush
             end
        | _ ->
             raise (Invalid_argument "check - must be inside a proof")
@@ -1087,17 +1089,13 @@ struct
 
    let extract info path () =
       let dir = info.dir in
-      let extract info =
-         try
-            chdir info false false path;
-            let res = info.proof.edit_check (get_db info) in
-            chdir info false false dir; res
-         with exn ->
-            eprintf "Extracting from /%s failed%t" (String.concat "/" path) eflush;
-            chdir info false false dir;
-            raise exn
-      in
-         print_exn info extract info
+      try
+         chdir info false false path;
+         let res = info.proof.edit_get_extract (get_db info) in
+         chdir info false false dir; res
+      with exn ->
+         chdir info false false dir;
+         raise exn
 
    let term_of_extract info terms =
       match info with
@@ -1587,11 +1585,19 @@ let status_all () =
 
 let check_all () =
    let check item db =
-      begin match item.edit_get_contents () with
-         _, (ObjPrimitive | ObjDerived), _, _ -> ()
-       | _ -> ignore (item.edit_check db)
-      end;
-      status item
+      let name, _, _, _ = item.edit_get_contents () in
+      let status =
+         match item.edit_check db with
+            RefPrimitive ->
+               "is a primitive axiom"
+          | RefIncomplete(c1,c2) ->
+               sprintf "is a derived object with an incomplete proof (%i rule boxes, %i primitive steps)" c1 c2
+          | RefComplete(c1,c2,l) ->
+               sprintf "is a derived object with a complete grounded proof (%i rule boxes, %i primitive steps, %i dependencies)" c1 c2 (List.length l)
+          | RefUngrounded(c1,c2,op) ->
+               sprintf "is a derived object with a complete (%i rule boxes, %i primitive steps) that depends on an incomplete %s" c1 c2 (mk_dep_name op)
+      in
+         eprintf "Refiner status: `%s' %s%t" name status eflush
    in
    let f item db =
       print_exn_db db (check item) db

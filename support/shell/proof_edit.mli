@@ -38,6 +38,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
+open Opname
 open Refiner.Refiner.TermType
 open Refiner.Refiner
 open Dform_print
@@ -68,6 +69,12 @@ type obj_status =
  | ObjIncomplete of int*int
  | ObjBad
  | ObjUnknown
+
+type ref_status =
+   RefPrimitive
+ | RefComplete of int * int * ((Refine_sig.dependency * opname) list)
+ | RefUngrounded of int * int * opname
+ | RefIncomplete of int * int
 
 type obj_contents = string * obj_status * meta_term * term Filter_type.param list
 
@@ -131,7 +138,8 @@ val squash_ped : ped -> unit
  *       no exceptions are raised
  *)
 val expand_ped : dform_base -> ped -> unit
-val check_ped : dform_base -> ped -> Refine.extract
+val refiner_extract_of_ped : dform_base -> ped -> Refine.extract
+val check_ped : Refine.refiner -> opname -> dform_base -> ped -> ref_status
 val ped_status : ped Filter_summary_type.proof_type -> obj_status
 
 (*

@@ -45,6 +45,8 @@ open Printf
 open Lm_debug
 open Lm_threads
 
+open Opname
+open Refiner.Refiner
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
@@ -130,6 +132,12 @@ type obj_status =
  | ObjIncomplete of int*int
  | ObjBad
  | ObjUnknown
+
+type ref_status =
+   RefPrimitive
+ | RefComplete of int * int * ((Refine_sig.dependency * opname) list)
+ | RefUngrounded of int * int * opname
+ | RefIncomplete of int * int
 
 type obj_contents = string * obj_status * meta_term * term Filter_type.param list
 
@@ -338,10 +346,29 @@ let expand_ped dforms ped =
 (*
  * Check a proof.
  *)
-let check_ped dforms ped =
+let refiner_extract_of_ped dforms ped =
    if status_of_ped ped <> Proof.StatusComplete then
       expand_ped dforms ped;
    Proof.refiner_extract_of_proof (proof_of_ped ped)
+
+let check_ped refiner opname dforms ped =
+   if status_of_ped ped <> Proof.StatusComplete then
+      expand_ped dforms ped;
+   match status_of_ped ped with
+      Proof.StatusBad
+    | Proof.StatusIncomplete
+    | Proof.StatusPartial ->
+         let (c1,c2)=node_count_of_ped ped in RefIncomplete(c1,c2)
+    | Proof.StatusComplete ->
+         let proof = proof_of_ped ped in
+         let (c1,c2)=node_count_of_ped ped in
+         try
+            RefComplete(c1,c2,Refine.compute_dependencies refiner opname)
+         with
+            Refine_sig.Incomplete opname ->
+               RefUngrounded(c1,c2,opname)
+          | Not_found ->
+               raise(RefineError("Proof_edit.check_ped",StringStringError("could not find",string_of_opname opname)))
 
 (*
  * We keep a global copy/paste buffer.

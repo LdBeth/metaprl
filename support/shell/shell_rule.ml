@@ -235,7 +235,7 @@ let rec edit pack parse_arg name window obj =
             ()
 *)
    in
-   let edit_check df =
+   let edit_get_extract df =
       match obj.rule_ped with
          Primitive _ ->
             raise (RefineError ("Shell_rule.check", StringError "can't check primitive rules"))
@@ -244,9 +244,16 @@ let rec edit pack parse_arg name window obj =
        | Incomplete ->
             raise (RefineError ("Shell_rule.check", StringError "proof is incomplete"))
        | Interactive ped ->
-            try Proof_edit.check_ped df ped with
+            try Proof_edit.refiner_extract_of_ped df ped with
                RefineError (name', err) ->
                   raise (RefineError (name, StringWrapError (name', err)))
+   in
+   let edit_check df =
+      match obj.rule_ped with
+         Primitive _ -> Proof_edit.RefPrimitive
+       | Derived _ | Incomplete -> Proof_edit.RefIncomplete(0,0)
+       | Interactive ped ->
+            Proof_edit.check_ped (Package.refiner pack) (make_opname [obj.rule_name; Package.name pack]) df ped
    in
    let get_ped obj =
       match obj.rule_ped with
@@ -337,6 +344,7 @@ let rec edit pack parse_arg name window obj =
         edit_set_contractum = edit_set_contractum;
         edit_set_assumptions = edit_set_assumptions;
         edit_set_params = edit_set_params;
+        edit_get_extract = edit_get_extract;
         edit_save = edit_save;
         edit_check = edit_check;
         edit_expand = edit_expand;
