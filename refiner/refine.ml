@@ -303,9 +303,7 @@ struct
      *)
    let equal_hyps hyps t =
       let check hyps' =
-         try List.for_all2 alpha_equal hyps' hyps with
-            Failure "for_all2" ->
-               false
+         List.for_all2 alpha_equal hyps' hyps
       in
          List.for_all check t
    
@@ -344,12 +342,8 @@ struct
       let { ext_goal = goal; ext_just = just; ext_subgoals = subgoals } = ext in
       let subgoals' = List.map (fun ext -> ext.ext_goal) extl in
       let _ =
-         try
-            if not (List_util.for_all2 msequent_alpha_equal subgoals subgoals') then
-               raise (RefineError (StringError "Refine.compose: goal mistmatch"))
-         with
-            Failure "for_all2" ->
-               raise (RefineError (StringError "Refine.compose: goal mistmatch"))
+         if not (List_util.for_all2 msequent_alpha_equal subgoals subgoals') then
+            raise (RefineError (StringError "Refine.compose: goal mistmatch"))
       in
       let justl = List.map (fun ext -> ext.ext_just) extl in
       let just = ComposeJust (just, justl) in
@@ -1354,14 +1348,13 @@ struct
                let redex = replace_goal goal redex in
                let contractum = replace_goal goal contractum in
                let subgoals = List.map (replace_goal goal) subgoals in
-                  try
-                     equal_hyps goal_hyps sub_hyps;
-                     List_util.for_all2 alpha_equal (redex :: contractum :: subgoals) (goal :: subgoals);
-                     term_of_extract refiner ext [];
-                     ()
-                  with
-                     Failure "for_all2" ->
-                        raise (RefineError (StringError "Refine.add_delayed_cond_rewrite: derivation does not match"))
+                  if equal_hyps goal_hyps sub_hyps &
+                     List_util.for_all2 alpha_equal (redex :: contractum :: subgoals) (goal :: subgoals)
+                  then
+                     term_of_extract refiner ext []
+                  else
+                     raise (RefineError (StringError "Refine.add_delayed_cond_rewrite: derivation does not match"));
+                  ()
             in
                PrimCondRewriteRefiner { pcrw_proof = Delayed compute_ext;
                                         pcrw_rewrite = crw;
@@ -1548,6 +1541,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.9  1998/04/29 14:48:16  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.8  1998/04/28 18:30:40  jyh
  * ls() works, adding display.
  *

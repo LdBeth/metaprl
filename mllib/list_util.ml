@@ -51,7 +51,7 @@ let for_all2 f l1 l2 =
     | [], [] ->
          true
     | _ ->
-         raise (Failure "for_all2")
+         false
    in
       compare (l1, l2)
 
@@ -62,10 +62,8 @@ let exists2 f l1 l2 =
    let rec compare = function
       h1::t1, h2::t2 ->
          f h1 h2 or compare (t1, t2)
-    | [], [] ->
-         false
     | _ ->
-         raise (Failure "exists2")
+         false
    in
       compare (l1, l2)
 
@@ -531,6 +529,9 @@ let existsp = List.exists
 
 (*
  * $Log$
+ * Revision 1.9  1998/04/29 14:48:12  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.8  1998/04/28 18:30:29  jyh
  * ls() works, adding display.
  *

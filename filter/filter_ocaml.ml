@@ -36,7 +36,9 @@ exception FormatError of string * term
 (*
  * OCaml operators.
  *)
-let mk_ocaml_op s = mk_opname s nil_opname
+let mk_ocaml_op =
+   let ocaml_op = mk_opname "Ocaml" nil_opname in
+      fun s -> mk_opname s ocaml_op
 
 let one_subterm s t =
    if false then
@@ -1502,6 +1504,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.9  1998/04/29 14:48:01  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.8  1998/04/24 19:38:24  jyh
  * Updated debugging.
  *

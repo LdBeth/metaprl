@@ -148,7 +148,7 @@ type rewrite_rule =
  *)
 type rewrite_redex =
    { redex_stack : rstack array;
-     redex_redex : rwterm
+     redex_redex : rwterm list
    }
 
 type rewrite_contractum =
@@ -1014,18 +1014,24 @@ let fun_rewrite redex f =
 (*
  * Compile just the redex.
  *)
+let compile_redices addrs redices =
+   let stack, redices = compile_so_redex addrs redices in
+      { redex_stack = stack; redex_redex = redices }
+
 let compile_redex addrs redex =
-   match compile_so_redex addrs [redex] with
-      stack, [redex'] ->
-         { redex_stack = stack; redex_redex = redex' }
-    | _ -> failwith "compile_redex: too many redices"
+   let redex = compile_redices addrs [redex] in
+      match redex.redex_redex with
+         [_] ->
+            redex
+       | _ ->
+            failwith "compile_redex: too many redices"
 
 (*
  * Compile a contractum, given the previous redex.
  *)
 let compile_contractum { redex_stack = stack } contractum =
-   let contractum' = compile_so_contractum [||] stack contractum in
-      { con_contractum = contractum' }
+   let contractum = compile_so_contractum [||] stack contractum in
+      { con_contractum = contractum }
 
 (************************************************************************
  * REWRITE RULE APPLICATION
@@ -1506,14 +1512,14 @@ let extract_redex_values gstack stack=
 (*
  * Match with a redex, and extract the forms to be bound.
  *)
-let apply_redex { redex_stack = stack; redex_redex = redex } addrs term =
+let apply_redex { redex_stack = stack; redex_redex = redex } addrs terms =
    let gstack = Array.create (Array.length stack) StackVoid in
-      match_redex addrs gstack [redex] [term];
+      match_redex addrs gstack redex terms;
       gstack
 
-let apply_redex' { redex_stack = stack; redex_redex = redex } addrs term =
+let apply_redex' { redex_stack = stack; redex_redex = redex } addrs terms =
    let gstack = Array.create (Array.length stack) StackVoid in
-      match_redex addrs gstack [redex] [term];
+      match_redex addrs gstack redex terms;
       gstack, extract_redex_values gstack stack
 
 (*
@@ -1641,6 +1647,9 @@ let rewrite_eval_flags = function
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/29 14:48:19  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.6  1998/04/24 02:42:50  jyh
  * Added more extensive debugging capabilities.
  *

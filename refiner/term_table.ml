@@ -23,7 +23,6 @@ open Debug
 open Opname
 open Term
 open Term_util
-open Term_template
 open Rewrite
 
 open Simple_print
@@ -43,8 +42,8 @@ let _ =
  * pre-entries just contain the pattern/value pair.
  *)
 type 'a info_entry =
-   { info_term : term;
-     info_pattern : term_template;
+   { info_terms : term list;
+     info_pattern : Term_template.t;
      info_redex : rewrite_redex;
      info_value : 'a
    }
@@ -61,7 +60,7 @@ type 'a table_item =
 (*
  * A compiled table is a hashtable of entries.
  *)
-type 'a term_extract = (term_template, ('a info_entry) list) Hashtbl.t
+type 'a term_extract = (Term_template.t, ('a info_entry) list) Hashtbl.t
 
 (*
  * A table has a list of pairs, plus an position for a compute
@@ -76,7 +75,7 @@ type 'a term_table =
  * Destruction.
  *)
 type 'a table_entry =
-   TableEntry of term * 'a
+   TableEntry of term list * 'a
  | TableTable of 'a term_table
 
 (************************************************************************
@@ -92,31 +91,36 @@ let new_table () = { tbl_items = []; tbl_base = None }
  * Destruction.
  *)
 let is_empty_table = function
-   { tbl_items = [] } -> true
- | _ -> false
+   { tbl_items = [] } ->
+      true
+ | _ ->
+      false
 
 let equal_tables { tbl_items = items1 } { tbl_items = items2 } =
    items1 == items2
 
 let dest_table { tbl_items = items } =
    match items with
-      [] -> raise (Invalid_argument "dest_table")
+      [] ->
+         raise (Invalid_argument "dest_table")
     | x::tl ->
          let entry =
             match x with
-               Entry { info_term = t; info_value = x } -> TableEntry (t, x)
-             | Table t -> TableTable { tbl_items = t; tbl_base = None }
+               Entry { info_terms = tl; info_value = x } ->
+                  TableEntry (tl, x)
+             | Table t ->
+                  TableTable { tbl_items = t; tbl_base = None }
          in
             entry, { tbl_items = tl; tbl_base = None }
 
 (*
  * Add an entry.
  *)
-let insert { tbl_items = items } t v =
-   let template = compute_template t in
-   let redex = compile_redex [||] t in
+let insert { tbl_items = items } tl v =
+   let template = Term_template.of_term_list tl in
+   let redex = compile_redices [||] tl in
    let entry =
-      { info_term = t;
+      { info_terms = tl;
         info_pattern = template;
         info_redex = redex;
         info_value = v
@@ -141,13 +145,13 @@ let compute_base entries =
    let base = Hashtbl.create 97 in
 
    (* Insert a new entry into the table *)
-   let insert_entry ({ info_term = term; info_pattern = pattern } as info) =
+   let insert_entry ({ info_terms = terms; info_pattern = pattern } as info) =
       let entries = 
          try Hashtbl.find base pattern with
             Not_found -> []
       in
-      let gen_filter { info_term = term' } =
-         generalizes term term'
+      let gen_filter { info_terms = terms' } =
+         List_util.for_all2 generalizes terms terms'
       in
       let entries' = info :: (List_util.filter gen_filter entries) in
          Hashtbl.remove base pattern;
@@ -191,11 +195,23 @@ let get_base = function
 (*
  * Second level of lookup.
  *)
-let find_entry entries t =
-   let match_entry { info_term = t'; info_redex = redex; info_value = v } =
+let find_entry entries tl =
+   let match_entry { info_terms = tl'; info_redex = redex; info_value = v } =
       if !debug_dform then
-         eprintf "Term_table.find_entry.match_entry: %s%t" (string_of_term t') eflush;
-      let stack, items = apply_redex' redex [||] t in
+         begin
+            let rec print_terms out = function
+               [h] ->
+                  output_string out (string_of_term h)
+             | h::t ->
+                  output_string out (string_of_term h);
+                  output_string out "; ";
+                  print_terms out t
+             | [] ->
+                  ()
+            in
+               eprintf "Term_table.find_entry.match_entry: (%a)%t" print_terms tl' eflush;
+         end;
+      let stack, items = apply_redex' redex [||] tl in
          stack, items, v
    in
    let rec aux = function
@@ -213,16 +229,19 @@ let find_entry entries t =
 (*
  * Lookup an entry.
  *)
-let lookup tbl t =
+let lookup tbl tl =
    (* First level of lookup *)
    let base = get_base tbl in
-   let template = compute_template t in
+   let template = Term_template.of_term_list tl in
    let entries = Hashtbl.find base template in
       (* Second level of lookup *)
-      find_entry entries t
+      find_entry entries tl
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/29 14:48:30  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.4  1998/04/28 21:38:11  jyh
  * Adjusted uppercasing.
  *

@@ -5,7 +5,7 @@
 # Libraries
 REF_ROOT := ..
 INCLUDE := -I . -I $(REF_ROOT)/mllib -I $(REF_ROOT)/refiner
-OCAMLFLAGS := -g
+OCAMLFLAGS :=
 OCAMLC := ocamlc
 
 # Main files

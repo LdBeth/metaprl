@@ -30,7 +30,7 @@ let _ =
 type local_term_template =
    { template_opname : opname;
      template_params : local_param_template array;
-     template_arities : (int * opname) array
+     template_arities : int array
    }
 
 and local_param_template =
@@ -41,7 +41,7 @@ and local_param_template =
  | Var
  | ObId
 
-type term_template = int
+type t = int
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -71,7 +71,7 @@ let print_params out params =
       Array.iter print params
 
 let print_arities out arities =
-   let print_arity (arity, op) =
+   let print_arity arity =
       output_string out (string_of_int arity)
    in
    let length = Array.length arities in
@@ -95,9 +95,8 @@ let local_compute_template t =
    let { term_op = op; term_terms = bterms } = dest_term t in
    let { op_name = opname; op_params = params } = dest_op op in
    let compute_arity bterm =
-      let { bvars = bvars; bterm = t } = dest_bterm bterm in
-         List.length bvars, nil_opname (* opname_of_term t *)
-
+      let { bvars = bvars } = dest_bterm bterm in
+         List.length bvars
    in
    let rec compute_param l = function
       [] ->
@@ -150,7 +149,7 @@ let local_compute_template t =
 (*
  * Integer index from template.
  *)
-let compute_template t =
+let of_term t =
    let t = local_compute_template t in
       if !debug_dform then
          begin
@@ -167,8 +166,30 @@ let compute_template t =
          end;
       Hashtbl.hash t
 
+let of_term_list tl =
+   let tl = List.map local_compute_template tl in
+      if !debug_dform then
+         begin
+            let print_template 
+                { template_opname = opname;
+                  template_params = params;
+                  template_arities = arities
+                } =
+               eprintf "Term_template.compute_template: %s[%a]{%a}%t" (**)
+                  (string_of_opname opname)
+                  print_params params
+                  print_arities arities
+                  eflush
+            in
+               List.iter print_template tl
+         end;
+      Hashtbl.hash tl
+
 (*
  * $Log$
+ * Revision 1.6  1998/04/29 14:48:34  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.5  1998/04/28 21:38:13  jyh
  * Adjusted uppercasing.
  *

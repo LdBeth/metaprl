@@ -1383,7 +1383,7 @@ let implem_error s =
  * List version generalizing terms.
  *)
 let generalizes_list tl1 tl2 =
-   List.for_all2 generalizes tl1 tl2
+   List_util.for_all2 generalizes tl1 tl2
 
 (*
  * Check parameter lists.
@@ -1398,7 +1398,7 @@ let check_params int_params imp_params =
        | _ ->
             false
    in
-      List.for_all2 check int_params imp_params
+      List_util.for_all2 check int_params imp_params
 
 (*
  * Check that a rewrite is justified.
@@ -1782,6 +1782,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.18  1998/04/29 14:48:04  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.17  1998/04/28 21:38:01  jyh
  * Adjusted uppercasing.
  *

@@ -1,7 +1,7 @@
 #
 # Nuprl-light editor.
 #
-INCLUDE := -I . -I ../../theories/tactic -I ../../theories/base -I $(NLLIB) -I /usr/local/lib/camlp4
+INCLUDE := -I . -I ../../theories/tactic -I ../../theories/ocaml -I ../../theories/base -I $(NLLIB) -I /usr/local/lib/camlp4
 OCAMLDEPFLAGS := -prl
 
 # Common files
@@ -39,6 +39,7 @@ CMXDEPS =\
 	$(NLLIB)/refiner.cmxa\
 	$(NLLIB)/prlc.cmxa\
 	../../theories/tactic/tactics.cmxa\
+	../../theories/ocaml/ocaml_df.cmxa\
 	../../theories/base/base.cmxa\
 	nl.cmxa
 
@@ -58,6 +59,7 @@ CMADEPS =\
 	$(NLLIB)/refiner.cma\
 	$(NLLIB)/prlc.cma\
 	../../theories/tactic/tactics.cma\
+	../../theories/ocaml/ocaml_df.cma\
 	../../theories/base/base.cma\
 	$(MAIN).cma
 

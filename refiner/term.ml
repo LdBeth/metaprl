@@ -1823,8 +1823,14 @@ let compare_pattern_operators = fun
 
 (*
  * Recursive computation of alpha equality.
- * BUG: fix equality on parameters.
  *)
+let equal_params p1 p2 =
+   match p1, p2 with
+      Number n1, Number n2 ->
+         Num.eq_num n1 n2
+    | _ ->
+         p1 = p2
+
 let rec equal_term vars t t' =
    match t, t' with
       { term_op = { op_name = opname1; op_params = [Var v] };
@@ -1839,7 +1845,9 @@ let rec equal_term vars t t' =
          end
     | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
       { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-         name1 = name2 & params1 = params2 & equal_bterms vars bterms1 bterms2
+         name1 = name2
+                 & List_util.for_all2 equal_params params1 params2
+                 & equal_bterms vars bterms1 bterms2
 
 and equal_bterms vars bterms1 bterms2 =
    let equal_bterm = fun
@@ -1847,7 +1855,7 @@ and equal_bterms vars bterms1 bterms2 =
       { bvars = bvars2; bterm = term2 } ->
          equal_term (List_util.zip_list vars bvars1 bvars2) term1 term2
    in
-      List.for_all2 equal_bterm bterms1 bterms2
+      List_util.for_all2 equal_bterm bterms1 bterms2
 
 let alpha_equal t1 t2 =
    try equal_term [] t1 t2 with
@@ -1887,7 +1895,7 @@ let equal_comp vars' =
          { bvars = bvars2; bterm = term2 } ->
             equal_comp_term (List_util.zip_list vars bvars1 (List.map mk_var_term bvars2)) (term1, term2)
       in
-         List.for_all2 equal_comp_bterm bterms1 bterms2
+         List_util.for_all2 equal_comp_bterm bterms1 bterms2
    in
        equal_comp_term
    
@@ -2519,6 +2527,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.16  1998/04/29 14:48:23  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.15  1998/04/28 21:38:09  jyh
  * Adjusted uppercasing.
  *

@@ -62,14 +62,15 @@ exception RewriteError of rewrite_error
  * Separate analysis.
  *)
 val compile_redex : string array -> term -> rewrite_redex
+val compile_redices : string array -> term list -> rewrite_redex
 val compile_contractum : rewrite_redex -> term -> rewrite_contractum
 val extract_redex_types : rewrite_redex -> rewrite_type list
 val apply_redex :
    rewrite_redex -> address array ->
-   term -> rewrite_stack
+   term list -> rewrite_stack
 val apply_redex' :
    rewrite_redex -> address array ->
-   term -> rewrite_stack * rewrite_item list
+   term list -> rewrite_stack * rewrite_item list
 val make_contractum : rewrite_contractum -> rewrite_stack -> term
 
 (* Rewrite constructor/destructors *)
@@ -95,6 +96,9 @@ val rewrite_eval_flags : rewrite_rule -> (int * bool) list
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/29 14:48:21  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.2  1997/08/07 19:43:48  jyh
  * Updated and added Lori's term modifications.
  * Need to update all pattern matchings.

@@ -157,19 +157,19 @@ install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(
 # Compile a special camlp4 to run Nuprl.
 #
 $(CAMLP4N).run: $(CAMLP4N_CMOBJS)
-	$(OCAMLC) -g -o $@ -linkall -custom $(CAMLP4N_CMOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLC) -o $@ -linkall -custom $(CAMLP4N_CMOBJS) $(CAMLP4X_CCLIBS)
 
 $(CAMLP4O).run: $(CAMLP4O_CMOBJS)
-	$(OCAMLC) -g -o $@ -linkall -custom $(CAMLP4O_CMOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLC) -o $@ -linkall -custom $(CAMLP4O_CMOBJS) $(CAMLP4X_CCLIBS)
 
 #
 # Binary compiler
 #
 $(PRLCN).run: $(PRLCN_CMOBJS)
-	$(OCAMLC) -g -o $@ -custom $(PRLCN_CMOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLC) -o $@ -custom $(PRLCN_CMOBJS) $(PRLCX_CCLIBS)
 
 $(PRLCO).run: $(PRLCO_CMOBJS)
-	$(OCAMLC) -g -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLC) -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_CCLIBS)
 
 #
 # Infix file is preprocessed.

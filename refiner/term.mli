@@ -262,6 +262,7 @@ val subterm_arities : term -> int list
  *)
 val subst : term -> term list -> string list -> term
 val var_subst : term -> term -> string -> term
+val equal_params : param -> param -> bool
 val alpha_equal : term -> term -> bool
 val alpha_equal_vars : (term * string list) -> (term * string list) -> bool
 val alpha_equal_match : (term * string list) ->
@@ -430,6 +431,9 @@ val make_2subst_term : term -> string -> string -> term -> term -> term
 
 (*
  * $Log$
+ * Revision 1.14  1998/04/29 14:48:26  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.13  1998/04/23 20:04:45  jyh
  * Initial rebuilt editor.
  *

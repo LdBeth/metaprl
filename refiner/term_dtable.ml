@@ -14,7 +14,7 @@
  *
  * The interface is functional, so to make this a little
  * less expensive, we compile a regular table on the first access,
- * and just keep around a list of entreis normally.
+ * and just keep around a list of entries normally.
  *
  *)
 
@@ -23,7 +23,6 @@ open Debug
 open Opname
 open Term
 open Term_util
-open Term_template
 open Rewrite
 
 (*
@@ -49,7 +48,7 @@ type 'a pair_fun = (term * term * 'a) list -> term * term -> 'a
  * subgoals.
  *)
 type 'a info_entry =
-   { info_pattern : term_template list;
+   { info_pattern : Term_template.t list;
      info_rw : rewrite_rule;
      info_value : 'a pair_fun
    }
@@ -73,7 +72,7 @@ type 'a table_entry =
 type 'a term_dtable =
    { table_items : 'a table_entry list }
 
-type 'a lookup_table = (term_template list, 'a info_entry list) Hashtbl.t
+type 'a lookup_table = (Term_template.t list, 'a info_entry list) Hashtbl.t
 
 type 'a term_dextract =
    { ext_lrtable : 'a lookup_table;
@@ -89,17 +88,22 @@ type 'a term_dextract =
  * Spread out the pairs in the list.
  *)
 let rec unzip_list = function
-   (x, y)::tl -> x::y::(unzip_list tl)
- | [] -> []
+   (x, y)::tl ->
+      x :: y :: unzip_list tl
+ | [] ->
+      []
 
 (*
  * Map f over pairs of values in the list.
  *)
 let map_pair f =
    let rec aux = function
-      a::b::t -> (a, b, (f (a, b)))::(aux t)
-    | [] -> []
-    | [_] -> raise (Invalid_argument "map_pair")
+      a::b::t ->
+         (a, b, (f (a, b))) :: (aux t)
+    | [] ->
+         []
+    | [_] ->
+         raise (Invalid_argument "map_pair")
    in
       aux
 
@@ -107,22 +111,28 @@ let map_pair f =
  * Pair function.
  *)
 let shift_pair = function
-   h, [a; b] -> h, (a, b)
- | _ -> raise (Invalid_argument "shift_pair")
+   h, [a; b] ->
+      h, (a, b)
+ | _ ->
+      raise (Invalid_argument "shift_pair")
 
 (*
  * Shift hd to fst.
  *)
 let shift_fst = function
-   h::t, [b] -> t, (h, b)
- | _ -> raise (Invalid_argument "shift_left")
+   h::t, [b] ->
+      t, (h, b)
+ | _ ->
+      raise (Invalid_argument "shift_left")
  
 (*
  * Shift hd to snd.
  *)
 let shift_snd = function
-   h::t, [b] -> t, (b, h)
- | _ -> raise (Invalid_argument "shift_right")
+   h::t, [b] ->
+      t, (b, h)
+ | _ ->
+      raise (Invalid_argument "shift_right")
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -131,14 +141,15 @@ let shift_snd = function
 (*
  * Empty table contains nothing.
  *)
-let new_dtable () = { table_items = [] }
+let new_dtable () =
+   { table_items = [] }
 
 (*
  * Add an entry.
  *)
 let insert_aux t1 t2 v =
    let rw = term_rewrite ([||], [||]) t1 t2 in
-   let template = List.map compute_template t1 in
+   let template = List.map Term_template.of_term t1 in
       { info_pattern = template;
         info_rw = rw;
         info_value = v
@@ -148,9 +159,9 @@ let insert_left { table_items = items } l v =
    match l with
       (t1, t2)::t ->
          let suffix = unzip_list t in
-         let entry1 = LREntry (insert_aux [t1] (t2::suffix) v) in
+         let entry1 = LREntry (insert_aux [t1] (t2 :: suffix) v) in
          let entry2 = DEntry (insert_aux [t1; t2] suffix v) in
-            { table_items = entry1::entry2::items }
+            { table_items = entry1 :: entry2 :: items }
             
     | [] ->
          raise (Invalid_argument "insert_left")
@@ -159,9 +170,9 @@ let insert_right { table_items = items } l v =
    match l with
       (t1, t2)::t ->
          let suffix = unzip_list t in
-         let entry1 = RLEntry (insert_aux [t2] (t1::suffix) v) in
+         let entry1 = RLEntry (insert_aux [t2] (t1 :: suffix) v) in
          let entry2 = DEntry (insert_aux [t1; t2] suffix v) in
-            { table_items = entry1::entry2::items }
+            { table_items = entry1 :: entry2 :: items }
             
     | [] ->
          raise (Invalid_argument "insert_left")
@@ -272,8 +283,8 @@ let lookup { ext_lrtable = lrbase;
     } t1 t2 =
    let rec aux (t1, t2) =
       let arg = [t1; t2] in
-      let temp1 = compute_template t1 in
-      let temp2 = compute_template t2 in
+      let temp1 = Term_template.of_term t1 in
+      let temp2 = Term_template.of_term t2 in
       let template = [temp1; temp2] in
          try
             find_entry aux shift_pair (Hashtbl.find dbase template) arg
@@ -291,6 +302,9 @@ let lookup { ext_lrtable = lrbase;
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/29 14:48:27  jyh
+ * Added ocaml_sos.
+ *
  * Revision 1.2  1998/04/24 02:43:00  jyh
  * Added more extensive debugging capabilities.
  *
