@@ -108,7 +108,7 @@ struct
              make_infix loc op t1 t2
            | t1 = expr; op = "orelseC"; t2 = expr ->
              make_infix loc op t1 t2
-           | t1 = expr; op = "..." ->
+           | t1 = expr; op = "ttca" ->
              <:expr< $lid:"tryAutoT"$ $t1$ >>
           ]];
    END

@@ -228,7 +228,7 @@ struct
             if i = 1 then
                tac
             else
-               prefix_thenT tac (aux (i - 1))
+               prefix_thenT tac (aux (pred i))
          in
             aux i
 
@@ -583,7 +583,7 @@ struct
          if i = 1 then
             tac i
          else if i > 1 then
-            prefix_thenT (tac i) (aux (i - 1))
+            prefix_thenT (tac i) (aux (pred i))
          else
             idT
       in
@@ -617,7 +617,7 @@ struct
          if i = 1 then
             tac i
          else if i > 1 then
-            prefix_thenMT (tac i) (aux (i - 1))
+            prefix_thenMT (tac i) (aux (pred i))
          else
             idT
       in
@@ -640,7 +640,7 @@ struct
       let rec all i assums p =
          match assums with
           | _ :: assums ->
-               prefix_thenT (tac i) (all (i + 1) assums) p
+               prefix_thenT (tac i) (all (succ i) assums) p
           | [] ->
                idT p
       in
@@ -654,7 +654,7 @@ struct
       let rec all i assums p =
          match assums with
           | assum :: assums ->
-               prefix_thenMT (tac i) (all (i + 1) assums) p
+               prefix_thenMT (tac i) (all (succ i) assums) p
           | [] ->
                idT p
       in

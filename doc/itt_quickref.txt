@@ -454,28 +454,36 @@ not all occurrences of << 'a >>, you can wrap the tactic in
 ----------------------------------------
 base_auto_tactic:
 
+Auto family of tactics perform resource-based automated reasoning.
+They apply all the all the available tactics in turn, until none of
+them succeed:
+
 * trivialT : tactic
-Performs "trivial" reasoning steps.  This is a resource-based tactic.
-It applies all the available trivial tactics in turn, stopping if one
-succeeds. In its initial configuration, it checks whether the goal
-sequent is the same as some assumption sequent.
+Applies AutoTrivial tactics. Normally AutoTrivial tactics (and
+consequentally the trivialT itself) do not produce suggoals when
+successfull.
+
+* weakAutoT : tactic (not exported, use autoT instead)
+Applies AutoTrivial and AutoNormal tactics
+
+* strongAutoT : tactic
+Applies AutoTrivial, AutoNormal and AutoComplete tactics
+
+* tcaT : tactic
+Equivalent to "tryT (completeT strongAutoT)"
 
 * autoT : tactic
-Performs automatic reasoning.  This is a resource-based tactic.  It
-applies all the available auto tactics in turn, until none of them
-succeed.
+Equivalent to "weakAutoT thenT tcaT". In other words, it first applies
+AutoTrivial and AutoNormal and then it starts applying all awailable
+tactics (includeing AutoComplete ones), but falls back it this fails
+to completely prove the subgoal.
 
-In its initial configuration, it applies trivialT.
+* tryAutoT : tactic -> tactic
+tryAutoT tac is equivalent to tac thenT tcaT. Note that one can use a
+macro "tac ttca" instead of "tryAutoT tac".
 
 * byDefT : conv -> tactic
 Applies conv everywhere, then runs autoT.
-
-----------------------------------------
-itt_squash:
-
-* squashT : tactic
-Tries to convert the current sequent into a "squash" sequent.  This is
-a resource-based tactic.
 
 ----------------------------------------
 itt_equal:
@@ -508,23 +516,8 @@ In its initial state, it can handle
 << univ[j:l] = univ[j:l] in univ[i:l] >> and
 << it = it in ('a = 'b in 'T) >>.
 
-* squash_equalT : tactic
-Changes the goal to be a "squash" sequent if the conclusion is an
-equality.  This is part of the squashT tactic.
-
-* squash_typeT : tactic
-Changes the goal to be a "squash" sequent if the conclusion is of the
-form << "type"{'T} >>.  This is part of the squashT tactic.
-
-* squash_rewriteT : tactic
-Changes the goal to be a "squash" sequent if the conclusion is of the
-form << Perv!"rewrite"{'a; 'b} >>.
-
 * typeAssertT : tactic
 Deduces << "type"{'T} >> from << 'T >>.
-
-* unsquashT : term -> tactic
-Removes any "squash" attribute from the goal sequent.
 
 * equalAssumT : int -> tactic
 (equalAssumT i) deduces << 'x = 'x in 'T >> if << 'x: 'T >> is the i'th
@@ -599,6 +592,133 @@ trivialT can use equalRefT and equalSymT to match an
 equality conclusion against an equality hypothesis.
 
 ----------------------------------------
+itt_struct:
+
+new terms:
+bind{x. 'T['x]} (Note that this is only used for syntactic purposes;
+		it has no semantic meaning.)
+
+* nthHypT : int -> tactic
+If the i'th hypothesis is << x: 'A >>, and the conclusion is << 'A >>,
+then (nthHypT i) succeeds with no subgoals.
+
+* thinT : int -> tactic
+If the i'th hypothesis is << x: 'A >>, and x does not appear free in
+the rest of the sequent, then (thinT i) deletes the hypothesis.
+
+* thinAllT : int -> int -> tactic
+(thinAllT i j) deletes the hypotheses numbered i through j
+(inclusive).
+
+* assertT : term -> tactic
+(assertT t) creates two subgoals; one where << t >> is the conclusion,
+and one which adds << x: t >> as a new hypothesis (at the end of the
+hypothesis list).
+
+* assertAtT : int -> term -> tactic
+As assertT, but lets you specify where the new hypothesis is to be
+added.
+
+* tryAssertT : term -> tactic -> tactic -> tactic
+Runs assertT, then runs the two tactics on the two subgoals
+correspondingly. Hoewever, if the goal already has the right
+conslusion, it will only run the first tactic.
+
+* dupT : tactic
+Creates two subgoals, both the same as the current goal.  (This might
+be useful for performance testing or debugging; it is useless in a
+normal proof.)
+
+* useWitnessT : term -> tactic
+(useWitnessT t) changes a conclusion << 'T >> into
+<< t = t in 'T >>.
+
+* substT : term -> int -> tactic
+(substT << 'a = 'b in 'T >> n) substitutes << 'b >> for << 'a >> in
+the n'th clause of the sequent, creating several subgoals.  If you
+want to substitute for some but not all occurrences of a, you can wrap
+the tactic in (withT << bind{x. 'B['x]} >> ...), where the n'th clause
+must be << 'B['a] >>.
+
+* hypSubstT : int -> int -> tactic
+(hypSubsT j n) is like (substT ... n) where the equality comes from
+the j'th hypothesis (so you don't need to prove the equality as one of
+the subgoals).  (You can still use withT to specify which occurrences
+to substitute.)
+
+* revHypSubstT : int -> int -> tactic
+Like hypSubstT, but substitutes in the other direction.
+
+* replaceHypT : term -> int -> tactic
+(atT << univ[i:l] >> (replaceHypT t i)) changes the i'th hypothesis
+from << x: 'A >> to << x: t >>, and adds an extra subgoal
+<< 'A = t in univ[i:l] >>.
+
+* equalTypeT : term -> term -> tactic
+Replaces a goal << "type"{'T} >> with << 'a = 'b in 'T >>
+
+* memberTypeT : term -> tactic
+Replaces a goal << "type"{'T} >> with << 'a IN 'T>> then tries to
+prove it using tcaT
+
+This file adds to the trivialT tactic.
+trivialT can solve goals with a hypothesis << x: 'A >> and a goal
+<< 'A >>.
+
+----------------------------------------
+itt_squash:
+
+new term:
+squash{'A}
+
+Based on a squash resource:
+
+* squashT : tactic
+Squashes the conclusion terms
+
+* unsquashT : int -> tactic
+Unsquashes the hypothesys
+
+* unsquashAllT : tactic
+Tries unsquashing all the hypotheses.
+
+* sqsquashT : tactic
+Squashed the sequent argument
+
+* unsqsquashT : term -> tactic
+If the current goal sequent is squashed, replaces the sequent argument
+with the given term.
+
+* nthAssumT : int -> tactic
+Matches the current goal against an assumption, doing thinning and
+squashing/unsquashing if necessary.
+
+This theory adds to dT tactic:
+If the conclusion is of the form <<squash{'A1} = squash{'A2} in univ[i:l] >>,
+(dT 0) reduces it to << 'A1 = 'A2 in univ[i:l] >>
+
+If the conclusion is of the form << "type"{.squash{'A}} >>,
+(dT 0) reduces it to << "type"{'A} >>
+
+If the conclusion is of the form << squash{'A} >>,
+(dT 0) will replace if with just <<'A>> (this rule is only added to
+strongAuto).
+
+If the conclusion is of the form << it IN squash{'A} >>,
+(dT 0) will replace it with << squash{'A} >>
+
+If the hypothesis i is of the form << squash{'A} >>,
+(dT i) is equivalent to (unsquashT i)
+
+This theory adds to trivialT tactic:
+trivialT will use the improved nthAssumT to match the goal against an
+assumption.
+
+This theory adds to autoT:
+autoT will attempt to run unsquashAllT and sqsquashT thus unsquashing
+all the hypothesis and squashing the goal sequent whenever possible.
+
+----------------------------------------
 itt_subtype:
 
 new terms:
@@ -665,73 +785,6 @@ If the n'th hypothesis is of the form << x: void >>, then
 
 This file adds to the subtypeT tactic.
 subtypeT proves << void >> is a subtype of every type directly.
-
-----------------------------------------
-itt_struct:
-
-new terms:
-bind{x. 'T['x]} (Note that this is only used for syntactic purposes;
-		it has no semantic meaning.)
-
-* nthHypT : int -> tactic
-If the i'th hypothesis is << x: 'A >>, and the conclusion is << 'A >>,
-then (nthHypT i) succeeds with no subgoals.
-
-* thinT : int -> tactic
-If the i'th hypothesis is << x: 'A >>, and x does not appear free in
-the rest of the sequent, then (thinT i) deletes the hypothesis.
-
-* nthAssumT : int -> tactic
-A tactic that succeeds if the goal sequent matches the given
-hypothesis sequent (after possible thinning).
-
-* thinAllT : int -> int -> tactic
-(thinAllT i j) deletes the hypotheses numbered i through j
-(inclusive).
-
-* assertT : term -> tactic
-(assertT t) creates two subgoals; one where << t >> is the conclusion,
-and one which adds << x: t >> as a new hypothesis (at the end of the
-hypothesis list).
-
-* assertAtT : int -> term -> tactic
-As assertT, but lets you specify where the new hypothesis is to be
-added.
-
-* dupT : tactic
-Creates two subgoals, both the same as the current goal.  (This might
-be useful for performance testing or debugging; it is useless in a
-normal proof.)
-
-* useWitnessT : term -> tactic
-(useWitnessT t) changes a conclusion << 'T >> into
-<< t = t in 'T >>.
-
-* substT : term -> int -> tactic
-(substT << 'a = 'b in 'T >> n) substitutes << 'b >> for << 'a >> in
-the n'th clause of the sequent, creating several subgoals.  If you
-want to substitute for some but not all occurrences of a, you can wrap
-the tactic in (withT << bind{x. 'B['x]} >> ...), where the n'th clause
-must be << 'B['a] >>.
-
-* hypSubstT : int -> int -> tactic
-(hypSubsT j n) is like (substT ... n) where the equality comes from
-the j'th hypothesis (so you don't need to prove the equality as one of
-the subgoals).  (You can still use withT to specify which occurrences
-to substitute.)
-
-* revHypSubstT : int -> int -> tactic
-Like hypSubstT, but substitutes in the other direction.
-
-* replaceHypT : term -> int -> tactic
-(atT << univ[i:l] >> (replaceHypT t i)) changes the i'th hypothesis
-from << x: 'A >> to << x: t >>, and adds an extra subgoal
-<< 'A = t in univ[i:l] >>.
-
-This file adds to the trivialT tactic.
-trivialT can solve goals with a hypothesis << x: 'A >> and a goal
-<< 'A >>.
-trivialT can now do thinning when matching agains an assumption.
 
 ----------------------------------------
 itt_rfun:
