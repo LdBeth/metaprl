@@ -325,7 +325,7 @@ struct
             RequestCookies cookies :: rest ->
                if !debug_http then
                   List.iter (fun (name, v) ->
-                        eprintf "Cookie: %s=%s@." name v) cookies;
+                        eprintf "Cookie[1]: %s=%s@." name v) cookies;
                (try List.assoc "MetaPRL.response" cookies with
                    Not_found ->
                       search rest)
@@ -334,6 +334,9 @@ struct
           | [] ->
                raise Not_found
       in
+      let flag =
+         if !debug_http then
+            eprintf "is_valid_response: begin@.";
          try
             let response = search header in
                if !debug_http then
@@ -344,6 +347,10 @@ struct
          with
             Not_found ->
                false
+      in
+         if !debug_http then
+            eprintf "is_valid_response: %b@." flag;
+         flag
 
    (*
     * Get the window width (approximately in characters) from the header.
@@ -361,7 +368,7 @@ struct
             RequestCookies cookies :: rest ->
                if !debug_http then
                   List.iter (fun (name, v) ->
-                        eprintf "Cookie: %s=%s@." name v) cookies;
+                        eprintf "Cookie[2]: %s=%s@." name v) cookies;
                (try int_of_string (List.assoc "MetaPRL.width" cookies) / char_width with
                    Not_found
                  | Failure "int_of_string" ->
@@ -371,10 +378,17 @@ struct
           | [] ->
                raise Not_found
       in
+      let width =
+         if !debug_http then
+            eprintf "get_window_width: begin@.";
          try max default_width (search header) with
             Not_found ->
                (* Some default width *)
                default_width
+      in
+         if !debug_http then
+            eprintf "get_window_width: %d@." width;
+         width
 
    (*
     * Close an exit the process.
@@ -1287,6 +1301,8 @@ struct
                print_error_page outx BadRequestCode;
                eprintf "Shell_simple_http: null command@."
       in
+         if !debug_http then
+            eprintf "Shell_browser.http_connect: connection finished@.";
          state
 
    (*

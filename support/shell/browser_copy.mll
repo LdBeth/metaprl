@@ -152,7 +152,6 @@ let unix_of_dos s =
  *)
 let save_root_file filename contents =
    let contents = unix_of_dos contents in
-      eprintf "save_root_file: save file %s@." filename;
       match out_channel_of_file mproot filename with
          Some out ->
             eprintf "save_root_file: saving file %s@." filename;
@@ -310,7 +309,8 @@ let other = [^ '%']+
 rule main = parse
    "%%" name "%%"
    { let s = Lexing.lexeme lexbuf in
-     let v = Lm_symbol.add (String.sub s 2 (String.length s - 4)) in
+     let name = String.sub s 2 (String.length s - 4) in
+     let v = Lm_symbol.add name in
      let lex = State.get lex_entry in
      let () =
         try BrowserTable.append_to_buffer lex.lex_buffer lex.lex_table v with

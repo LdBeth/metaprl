@@ -230,8 +230,9 @@ struct
                       | RefineError (_, ToploopIgnoreError) ->
                            ()
 
-                      | RefineError _ as exn ->
-                           print_exn exn)
+                      | exn ->
+                           print_exn exn;
+                           raise exn)
             end
          else
             (fun f ->

@@ -849,6 +849,10 @@ let close_http server =
  * Handle a connection to the server.
  *)
 let handle server client connect info =
+   let _ =
+      if !debug_http then
+         eprintf "Http_simple.handle: begin%t" eflush
+   in
    let inx  = Lm_ssl.in_channel_of_ssl client in
    let outx = Lm_ssl.out_channel_of_ssl client in
    let line = Lm_ssl.input_line inx in
@@ -867,7 +871,7 @@ let handle server client connect info =
    let body = read_body inx header in
    let _ =
       if !debug_http then
-         eprintf "Httpd_simple.handle: %s%t" line eflush
+         eprintf "Http_simple.handle: %s%t" line eflush
    in
    let state = connect server info outx inx args header body in
       Lm_ssl.flush outx;

@@ -41,6 +41,8 @@ extends Shell_root
 extends Shell_p4_sig
 extends Shell_syscall
 
+open Exn_boot
+
 open Lm_debug
 open Lm_rprintf
 open Lm_thread
@@ -1316,7 +1318,7 @@ struct
          with
             End_of_file as exn ->
                raise exn
-          | exn ->
+          | _ when not backtrace ->
                ()
 
       let chdir text =
@@ -1325,8 +1327,11 @@ struct
                   ignore (cd shell text);
                   true)
          with
-            exn ->
+            exn when not backtrace ->
                false
+
+      let get_resource () =
+         State.write current get_resource
 
       (*
        * Wrap the remaining commands.
@@ -1347,7 +1352,6 @@ struct
       let get_shortener      = wrap_unit get_shortener
       let set_dfmode         = wrap      set_dfmode
       let set_window_width   = wrap      set_window_width
-      let get_resource       = wrap_unit get_resource
       let flush              = wrap_unit flush
 
       let _ =
