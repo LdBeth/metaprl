@@ -53,6 +53,24 @@ let _ =
 type ('arg, 'select, 'cooked) common_info = ('arg, 'select, 'cooked) file_info list
 
 (************************************************************************
+ * UTILITIES                                                            *
+ ************************************************************************)
+
+let pack_version major minor rev =
+   if (major < 0) or (minor < 0) or (rev < 0) then
+      raise(Invalid_argument "File_type_base.pack_version: version components must be non-negative");
+   if (major >= 1 lsl 15) then
+      raise(Invalid_argument "File_type_base.pack_version: major number is too big");
+   if (minor >= 255) then
+      raise(Invalid_argument "File_type_base.pack_version: minor number is too big");
+   if (rev >= 255) then
+      raise(Invalid_argument "File_type_base.pack_version: revision number is too big");
+   0x00000000 + (major lsl 16) + (minor lsl 8) + rev
+
+let unpack_version v =
+   v lsr 16, (v lsr 8) land 255, v land 255
+
+(************************************************************************
  * MODULE IMPLEMENTATIONS                                               *
  ************************************************************************)
 
@@ -72,24 +90,28 @@ struct
    type arg = Info.arg
    type info = (arg, select, cooked) common_info
 
-   let marshal magics magic arg filename info =
-      IO.write magics magic filename (Info.marshal arg info)
+   let marshal magics magic versions arg filename info =
+      IO.write magics magic versions filename (Info.marshal arg info)
 
-   let unmarshal magics arg filename =
-      let t, magic = IO.read magics filename in
+   let unmarshal magics versions arg filename =
+      let t, magic = IO.read magics versions filename in
          Info.unmarshal arg t, magic
 
    let info =
+      if Info.versions = [] then
+         raise(Invalid_argument "File_base_type.MakeIOSingletonCombo: Info.versions should be non-empty");
       [{ info_marshal = marshal;
          info_unmarshal = unmarshal;
          info_disabled = Info.disabled;
          info_suffix = Info.suffix;
          info_magics = Info.magics;
-         info_select = Info.select
+         info_select = Info.select;
+         info_versions = Info.versions;
        }]
 end
 
 exception Bad_magic of string
+exception Bad_version of string * int list * int
 
 (*
  * The Combo contans all the data to construct a FileBaseInfoSig.
@@ -124,11 +146,12 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
              | Not_found ->
                   raise (Bad_magic filename)
 
-         let write magics magic filename info =
+         let write magics magic versions filename info =
             let _ = check magics magic filename in
             let outx = open_out_bin filename in
                try
                   output_binary_int outx (List.nth magics magic);
+                  output_binary_int outx (List.hd versions);
                   output_value outx (info : t);
                   close_out outx
                with
@@ -136,18 +159,26 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
                      close_out outx;
                      raise exn
 
-         let read magics filename =
+         let read magics versions filename =
             let inx = open_in_bin filename in
                try
-                  let magic = input_binary_int inx in
-                     (input_value inx : t), List_util.find_index magic magics
+                  let magic = List_util.find_index (input_binary_int inx) magics in
+                  let version = input_binary_int inx in
+                  if not (List.mem version versions) then
+                     raise (Bad_version(filename, versions, version));
+                  let out = (input_value inx : t) in
+                     close_in inx;
+                     out, magic
                with
                   Not_found ->
                      close_in inx;
                      raise (Bad_magic filename)
+                | Bad_version _ as exn ->
+                     close_in inx;
+                     raise exn
                 | exn ->
                      close_in inx;
-                     raise (Sys_error "load_file")
+                     raise (Sys_error "File_type_base.read")
       end)
       (Info)
 

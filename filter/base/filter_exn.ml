@@ -62,6 +62,14 @@ let rec format_arg_list db buf = function
  | [] ->
       ()
 
+let format_version buf i =
+   let major, minor, rev = unpack_version i in
+      format_int buf major;
+      format_char buf '.';
+      format_int buf minor;
+      format_char buf '.';
+      format_int buf rev
+
 (*
  * Convert an exception to a string.
  *)
@@ -113,19 +121,35 @@ let rec format_exn db buf = function
       format_space buf;
       format_string buf s
  | Bad_magic s ->
-      format_string buf "File ";
+      format_string buf "! File ";
       format_string buf s;
       format_string buf " has a wrong magic number.";
       format_newline buf;
-      format_string buf "This means that is is either not a MetaPRL file";
+      format_string buf "! This means that is is either not a MetaPRL file";
       format_newline buf;
-      format_string buf "or is not compatible with the version of the MetaPRL you are trying to use.";
+      format_string buf "! or is not compatible with the version of the MetaPRL you are trying to use.";
       format_newline buf;
-      format_string buf "If you are sure this file does not contain any unsaved data, delete it.";
+      format_string buf "! If you are sure this file does not contain any unsaved data, delete it.";
       format_newline buf;
-      format_string buf "If it does contain unsaved data, you might need to get a different version of MetaPRL";
+      format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
       format_newline buf;
-      format_string buf "and possibly export the data to a different format."
+      format_string buf "! and possibly export the data to a different format."
+ | Bad_version(s,versions,version) ->
+      format_string buf "! File ";
+      format_string buf s;
+      format_string buf " has an unsupported version.";
+      format_newline buf;
+      format_string buf "! MetaPRL currently supports version(s) ";
+      List.iter (fun v -> format_version buf v; format_string buf ", ") versions;
+      format_newline buf;
+      format_string buf "! but the file has version ";
+      format_version buf version;
+      format_newline buf;
+      format_string buf "! If you are sure this file does not contain any unsaved data, delete it.";
+      format_newline buf;
+      format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
+      format_newline buf;
+      format_string buf "! and possibly export the data to a different format."
  | Stdpp.Exc_located ((start, finish), exn) ->
       format_pushm buf 3;
       format_string buf "Chars ";

@@ -181,17 +181,12 @@ struct
     *)
    let load_file save_flag base specs arg dir name =
       let spec, time = newest_spec specs dir name in
-      let { info_unmarshal = unmarshal;
-            info_magics = magics;
-            info_select = select
-          } = spec
-      in
       let filename = spec_filename spec dir name in
       let _ =
          if !debug_file_base then
             eprintf "File_base.load_file: trying to load file %s%t" filename eflush
       in
-      let info, magic = unmarshal magics arg filename in
+      let info, magic = spec.info_unmarshal spec.info_magics spec.info_versions arg filename in
       let _ =
          if !debug_file_base then
             eprintf "File_base.load_file: loaded file %s%t" filename eflush
@@ -199,7 +194,7 @@ struct
       let info' =
          { info_info = info;
            info_file = name;
-           info_type = select;
+           info_type = spec.info_select;
            info_dir = dir;
            info_magic = magic;
            info_time = time
@@ -334,23 +329,17 @@ struct
     * Try saving in all the valid formats until one of them succeeds.
     *)
    let save base arg info suffix =
-      let { info_dir = dir; info_file = file; info_type = select; info_info = data; info_magic = magic } = info in
-      let { info_magics = magics; info_marshal = marshal; info_suffix = suffix } = find_spec select suffix in
-      let filename =
-         sprintf "%s/%s.%s" dir file suffix
-      in
-         marshal magics magic arg filename data
+      let spec = find_spec info.info_type suffix in
+      let filename = sprintf "%s/%s.%s" info.info_dir info.info_file spec.info_suffix in
+         spec.info_marshal spec.info_magics info.info_magic spec.info_versions arg filename info.info_info
 
    (*
     * Save a module specification.
     * Try saving in all the valid formats until one of them succeeds.
     *)
    let save_if_newer base arg info suffix =
-      let { info_dir = dir; info_file = file; info_type = select; info_info = data; info_magic = magic; info_time = time } = info in
-      let { info_magics = magics; info_marshal = marshal; info_suffix = suffix } = find_spec select suffix in
-      let filename =
-         sprintf "%s/%s.%s" dir file suffix
-      in
+      let spec = find_spec info.info_type suffix in
+      let filename = sprintf "%s/%s.%s" info.info_dir info.info_file spec.info_suffix in
       let time' =
          try
             let stat = Unix.stat filename in
@@ -359,8 +348,8 @@ struct
             Unix.Unix_error _ ->
                0.0
       in
-         if time' < time then
-            marshal magics magic arg filename data
+         if time' < info.info_time then
+            spec.info_marshal spec.info_magics info.info_magic spec.info_versions arg filename info.info_info
 
    (*
     * Inject a new module.

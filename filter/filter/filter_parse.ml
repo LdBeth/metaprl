@@ -171,19 +171,7 @@ let term_exp s =
 let term_patt s =
    raise (Failure "Filter_parse.term_patt: not implemented yet")
 
-(*
- * Documentation strings are converted to identifable ocaml code.
- *)
-let string_exp s =
-   let loc = 0, 0 in
-      <:expr< $str:s$ >>
-
-let string_patt s =
-   let loc = 0, 0 in
-      <:patt< $str: s$ >>
-
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
-let _ = Quotation.add "string" (Quotation.ExAst (string_exp, string_patt))
 let _ = Quotation.default := "term"
 
 (************************************************************************

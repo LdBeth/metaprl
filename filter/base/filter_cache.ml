@@ -89,6 +89,29 @@ sig
 end
 
 (************************************************************************
+ * FILE FORMAT VERSIONS SUPPORTED                                       *
+ ************************************************************************)
+(*
+ * The arguments for pack_version are: major version number, minor sub-version number, revision number
+ *)
+
+let raw_versions = List.map (pack_version 1 0) [0]
+let term_versions = List.map (pack_version 1 0) [0]
+
+(*
+ * ASCII IO format revision history:
+ *
+ * Rev 0: original syntax
+ * Rev 1: added new hypothesis syntax (hyps with and w/o bindings)
+ * Rev 2: removed support for variable name (string) arguments to rules/rewrites
+ * Rev 3: added a real summary item for "define" directives (instead of declare + prim_rw implementation)
+ * Rev 4: corrected term representation for prec_rel
+ *
+ * Filter_summary has a HACK needed to read some rev 0-1 files
+ *)
+let ascii_versions = List.map (pack_version 1 0) [4;3;2;1;0]
+
+(************************************************************************
  * CONFIG                                                               *
  ************************************************************************)
 
@@ -178,6 +201,7 @@ struct
    let select   = InterfaceType
    let suffix   = Convert.interface_suffix
    let magics   = [0x73ac6be6; int_raw_sig_magic]
+   let versions = raw_versions
    let disabled = noraw
 
    let marshal arg = function
@@ -221,6 +245,7 @@ struct
    let select   = ImplementationType
    let suffix   = Convert.implementation_suffix
    let magics   = [0x73ac6be8; int_raw_str_magic]
+   let versions = raw_versions
    let disabled = noraw
 
    let interactive_proof to_raw name proof =
@@ -269,6 +294,7 @@ end
  *)
 module type MagicInfo =
 sig
+   val versions : int list
    val sig_magics : int list
    val str_magics : int list
 end
@@ -350,6 +376,7 @@ struct
       let select   = InterfaceType
       let suffix   = Convert.interface_suffix
       let magics   = Magic.sig_magics
+      let versions = Magic.versions
       let disabled = nofile
 
       let marshal arg = function
@@ -395,6 +422,7 @@ struct
       let select   = ImplementationType
       let suffix   = Convert.implementation_suffix
       let magics   = Magic.str_magics
+      let versions = Magic.versions
       let disabled = nofile
 
       let marshal arg = function
@@ -430,6 +458,7 @@ end
 
 module StandardMagic =
 struct
+   let versions = term_versions
    let sig_magics = [0x73ac6be1; int_term_sig_magic]
    let str_magics = [0x73ac6be3; int_term_str_magic]
 end
@@ -439,30 +468,9 @@ end
  *)
 module AsciiMagic =
 struct
-   let magic_of_version major minor rev =
-      0x00000000 + (major lsl 8) + ((min minor 15) lsl 4) + (min rev 15)
-
-   let version_of_magic magic =
-      let major = (magic lsr 8) land 255 in
-      let minor = (magic lsr 4) land 15 in
-      let rev = magic land 15 in
-         major, minor, rev
-
-   let ascii_major = 1
-   let ascii_minor = 0
-   (*
-    * Rev 0: original syntax
-    * Rev 1: added new hypothesis syntax (hyps with and w/o bindings)
-    * Rev 2: removed support for variable name (string) arguments to rules/rewrites
-    * Rev 3: added a real summary item for "define" directives (instead of declare + prim_rw implementation)
-    * Rev 4: corrected term representation for prec_rel
-    *
-    * Filter_summary has a HACK needed to read some rev 0-1 files
-    *)
-   let ascii_revs  = [4;3;2;1;0]
-
-   let sig_magics = List.map (magic_of_version ascii_major ascii_minor) ascii_revs
-   let str_magics = List.map (magic_of_version ascii_major ascii_minor) ascii_revs
+   let versions = ascii_versions
+   let sig_magics = [0]
+   let str_magics = [0]
 end
 
 (*
@@ -545,9 +553,9 @@ struct
    (*
     * Read the term, checking the file format.
     *)
-   let read_table magics filename =
+   let read_table magics versions filename =
       let inx = open_in filename in
-      let magic =
+      let magic, version =
          try
             match List.map String.uppercase (String_util.parse_args (input_line inx)) with
                "#PRL" :: "VERSION" :: code :: _ ->
@@ -562,20 +570,28 @@ struct
                       | major :: minor :: rev :: _ ->
                            major, minor, rev
                   in
-                     AsciiMagic.magic_of_version major minor rev
+                     0, pack_version major minor rev
 
              | _ ->
-                  0
+                  -1, 0
          with
             End_of_file
           | Failure _ ->
-               0
+               -1, 0
+          | exn ->
+               close_in inx;
+               raise exn
       in
       let magic =
          try List_util.find_index magic magics with
             Not_found ->
-               raise (Failure (sprintf "Filter_cache: %s: file magic number is wrong: %08x" filename magic))
+               close_in inx;
+               raise (Bad_magic filename)
       in
+         if not (List.mem version versions) then begin
+            close_in inx;
+            raise (Bad_version(filename, versions, version))
+         end;
          let table = PreAsciiIO.read_table inx in
             close_in inx;
             table, magic
@@ -583,18 +599,18 @@ struct
    (*
     * Read a term from the file.
     *)
-   let read magics filename =
-      let table, magic = read_table magics filename in
+   let read magics versions filename =
+      let table, magic = read_table magics versions filename in
          PreAsciiIO.get_term table, magic
 
    (*
     * Write a term to the file.
     * First read the table, then write the new term.
     *)
-   let write magics magic filename term =
+   let write magics magic versions filename term =
       (* First read the table *)
       let table =
-         try fst (read_table magics filename) with
+         try fst (read_table magics versions filename) with
             Failure _
           | Sys_error _ ->
                PreAsciiIO.initialize ()
@@ -603,8 +619,7 @@ struct
       (* Now write the term *)
       let newname = filename ^ ".new" in
       let outx = open_out newname in
-      let magic = List.hd magics in
-      let major, minor, rev = AsciiMagic.version_of_magic magic in
+      let major, minor, rev = unpack_version (List.hd versions) in
          fprintf outx "#PRL version %d.%d.%d ASCII term\n" major minor rev;
          PreAsciiIO.write_term outx table term;
          close_out outx;

@@ -59,10 +59,11 @@ let lib_get () =
 (*
  * Save a term to the library.
  * "Magic" is a magic number that is sued to identify the
- * version of the file.
+ * type of the file.
+ * nogin: BUG? does the library have a notion of a propocol version?
  *)
 
-let library_set magics magic filename term =
+let library_set magics magic versions filename term =
   let _ =
     (with_transaction (lib_get())
 
@@ -86,9 +87,10 @@ let library_set magics magic filename term =
 (*
  * Get a term from the library.
  * BUG: Rich, we need to search the magic numbers from the end.
+ * nogin: BUG? does the library have a notion of a propocol version?
  *)
 
-let library_get magics filename =
+let library_get magics versions filename =
 
   with_transaction (lib_get())
 

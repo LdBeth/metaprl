@@ -35,11 +35,18 @@
 open File_base_type
 
 exception Bad_magic of string
+exception Bad_version of string * int list * int
 
 (*
  * Type used for common info.
  *)
 type ('arg, 'select, 'cooked) common_info
+
+(*
+ * Version number represents a major, minor, revision tripple.
+ *)
+val pack_version : int -> int -> int -> int
+val unpack_version : int -> int * int * int
 
 (*
  * Combo construction.

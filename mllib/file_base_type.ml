@@ -51,12 +51,13 @@ type alt_suffix =
  * File type selection info.
  *)
 type ('arg, 'select, 'cooked) file_info =
-   { info_marshal : int list -> int -> 'arg -> string -> 'cooked -> unit;
-     info_unmarshal : int list -> 'arg -> string -> 'cooked * int;
+   { info_marshal : int list -> int -> int list -> 'arg -> string -> 'cooked -> unit;
+     info_unmarshal : int list -> int list -> 'arg -> string -> 'cooked * int;
      info_disabled : bool ref;
      info_select : 'select;
      info_suffix : string;
-     info_magics : int list
+     info_magics : int list;
+     info_versions : int list;
    }
 
 (*
@@ -146,6 +147,7 @@ sig
    val select : select
    val suffix : string
    val magics : int list
+   val versions : int list
    val disabled : bool ref
 
    (* Conversion functions *)
@@ -179,8 +181,8 @@ module type IOSig =
 sig
    type t
 
-   val write : int list -> int -> string -> t -> unit
-   val read : int list -> string -> t * int
+   val write : int list -> int -> int list -> string -> t -> unit
+   val read : int list -> int list -> string -> t * int
 end
 
 (*
