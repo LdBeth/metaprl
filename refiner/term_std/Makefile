@@ -5,7 +5,8 @@ ROOT := ../..
 include $(ROOT)/mk/preface
 
 INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig -I ../term_gen
-OCAMLFLAGS := $(OCAMLFLAGS) -rectype
+OCAMLFLAGS = -pp "$(CAMLP4MACRO) -I../refsig" -rectypes
+
 
 # Library files
 include Files
@@ -19,9 +20,6 @@ MAIN := reflib
 
 # Flags
 CCLIBS := -cclib -lnums
-
-# Run Eli's preprocessor
-OCAMLFLAGS = -pp "$(CAMLP4MACRO) -I../refsig"
 
 all: lib
 

@@ -48,6 +48,22 @@ ifneq (,$(findstring $(TESTS_ENABLED),$(YESFLAGS)))
 else
    TESTS_ENABLED=NO
 endif
+ifndef THREADS_ENABLED
+   THREADS_ENABLED=$(THREADS_ENABLED_DEFAULT)
+endif
+ifneq (,$(findstring $(THREADS_ENABLED),$(YESFLAGS)))
+   THREADS_ENABLED=YES
+else
+   THREADS_ENABLED=NO
+endif
+ifndef SSL_ENABLED
+   SSL_ENABLED=$(SSL_ENABLED_DEFAULT)
+endif
+ifneq (,$(findstring $(THREADS_ENABLED),$(YESFLAGS)))
+   SSL_ENABLED=YES
+else
+   SSL_ENABLED=NO
+endif
 ifndef CCC
    CCC=$(CCC_DEFAULT)
 endif

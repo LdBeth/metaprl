@@ -13,6 +13,7 @@ include $(ROOT)/mk/preface
 # Use this when compiling with threads.
 # This is tested only on Linux i386 and Solaris 2.5
 #
+ifeq ($(THREADS_ENABLED),YES)
 ifndef OCAMLCPOPT
    THREADS = -thread
    THREADSLIB = $(CAMLLIB)/threads/threads.cma
@@ -44,6 +45,12 @@ threads:
 	@exit 1
 endif
 endif
+endif
+else
+   THREADS =
+   THREADSLIB =
+   OPTTHREADS =
+   LIBTHREADS =
 endif
 
 #
