@@ -595,7 +595,7 @@ itt_struct:
 
 new terms:
 bind{x. 'T['x]} (Note that this is only used for syntactic purposes;
-		it has no semantic meaning.)
+      it has no semantic meaning.)
 
 * nthHypT : int -> tactic
 If the i'th hypothesis is << x: 'A >>, and the conclusion is << 'A >>,
@@ -1231,18 +1231,18 @@ squashT succeeds if the conclusion is of the form << unit >>.
 itt_logic:
 
 new terms, conversions:
-unfold_prop:	"prop"[i:l]		--> "univ"[i:l]
-unfold_true:    "true"			--> unit
-unfold_false:	"false"			--> void
-unfold_not:	"not"{'a}		--> 'a -> void
-unfold_and:	"and"{'a; 'b}		--> 'a * 'b
-unfold_or:	"or"{'a; 'b}		--> 'a + 'b
-unfold_implies: "implies"{'a; 'b}	--> 'a -> 'b
-unfold_iff:	"iff"{'a; 'b}		--> (('a -> 'b) & ('b -> 'a))
-unfold_cand:	"cand"{'a; 'b}		--> "and"{'a; 'b}
-unfold_cor:	"cor"{'a; 'b}		--> "or"{'a; ("cand"{("not"{'a}); 'b})}
-unfold_all:	"all"{'A; x. 'B['x]}	--> x: 'A -> 'B['x]
-unfold_exists:	"exists"{'A; x. 'B['x]}	--> x: 'A * 'B['x]
+unfold_prop:   "prop"[i:l]    --> "univ"[i:l]
+unfold_true:    "true"        --> unit
+unfold_false:  "false"        --> void
+unfold_not: "not"{'a}      --> 'a -> void
+unfold_and: "and"{'a; 'b}     --> 'a * 'b
+unfold_or:  "or"{'a; 'b}      --> 'a + 'b
+unfold_implies: "implies"{'a; 'b}   --> 'a -> 'b
+unfold_iff: "iff"{'a; 'b}     --> (('a -> 'b) & ('b -> 'a))
+unfold_cand:   "cand"{'a; 'b}    --> "and"{'a; 'b}
+unfold_cor: "cor"{'a; 'b}     --> "or"{'a; ("cand"{("not"{'a}); 'b})}
+unfold_all: "all"{'A; x. 'B['x]} --> x: 'A -> 'B['x]
+unfold_exists: "exists"{'A; x. 'B['x]} --> x: 'A * 'B['x]
 
 * fold_true, fold_false, fold_not, fold_implies, fold_iff, fold_and,
 fold_or, fold_cand, fold_cor, fold_all, fold_exists : conv
@@ -2743,3 +2743,57 @@ It reduces terms of the following forms in the obvious way:
 #
 #I left off documenting at the definition of d_fsubseteq_assertT...
 
+----------------------------------------
+itt_int_base
+
+Introduces additive ordered integers with induction:
+
+int - type of integers
++@,-@(sub), minus - addition, subtraction and unary minus
+ind - recursion over integers
+beq_int - boolean equality over integers
+lt_bool - boolean less-relation
+< - propositional less-relation, defined as assert(lt_bool)
+
+Integers are defined to be canonical, i.e. equality is computational 
+meaning that any integer may be replaced with equal in any context.
+That's why we use rewrites for most of axioms.
+
+In this module we define group properties of addition; 
+irreflexivity, transitivity, descreteness of <-rel., etc.
+
+No high-level tactics defiend here, see itt_int_arith for them.
+
+----------------------------------------
+itt_int_ext
+
+Continues definition of integers by multiplicative properties and
+other common order relations:
+
+*@ - multiplication
+/@ - division, defined recursively
+%@ - remainder, defined recursively
+<=, >=, >, <> - boolean and propositional versions of remaining order relations
+
+No high-level tactics defiend here, see itt_int_arith for them.
+
+----------------------------------------
+itt_int_arith
+
+normalizeC - converts any polynomial (it may actually contain any functional 
+symbols, they will be treated as variables) to its canonical form
+
+arithT - proves simple systems of inequalities (linear fragment without
+monotonicity, i.e. does not use a<b & c<d => a+c<b+d ).
+
+The following tactics are also defined but they actually should be moved 
+somewhere outside:
+
+thenLocalMT
+thenLocalMElseT
+thenLocalAT
+onAllLocalMHypsT
+onAllLocalMCumulativeHypsT
+
+They may sure that local assigments of subgoal labels are visible 
+instead of labels inheritted from the upper levels of proof tree.
