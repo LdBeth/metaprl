@@ -223,7 +223,7 @@ OCAMLDEP = $(file bin/ocamldep$(EXE))
 .SCANNER: %.cmi: %.mli $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
 
-.SCANNER: %.cmo %.cmx: %.ml $(optional %.mli) $(OCAMLDEP)
+.SCANNER: %.cmo %.cmx: %.ml $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
 
 #
@@ -293,7 +293,7 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
 #
 # Add dependency scanning for .ppo files
 #
-.SCANNER: %.ppo: %.ml $(optional %.mli) $(OCAMLDEP)
+.SCANNER: %.ppo: %.ml $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(replacesuffixes .ppo, .ml, $^)
 
 #
