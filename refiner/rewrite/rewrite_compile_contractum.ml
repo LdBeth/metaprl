@@ -165,12 +165,25 @@ struct
                (* This is a second order variable that is free *)
                ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteFreeSOVar v))
 
+      else if is_context_term term then
+         (* This is a second order context *)
+         let v, term', subterms = dest_context term in
+            if array_rstack_c_mem v stack then
+               (*
+                * Second order context and the v is bound.
+                * We generate a substitution instance.
+                *)
+               let enames, term' = compile_so_contractum_term names enames stack bvars term' in
+               let enames, subterms = compile_so_contractum_terms names enames stack bvars subterms in
+                 enames, RWSOContextSubst(array_rstack_c_index v stack, term', subterms)
+
+            else
+               (* Free second order context *)
+               ref_raise(RefineError ("Rewrite_compile_contractum.is_context_term", RewriteFreeSOVar v))
+
       else if is_sequent_term term then
          (* Sequents are handled specially *)
          compile_so_contractum_sequent names enames stack bvars term
-
-      else if is_context_term term then
-         raise (Invalid_argument "Rewrite_compile_redex.compile_so_contractum_term: got a context term")
 
       else
          (* This is a normal term--not a var *)
