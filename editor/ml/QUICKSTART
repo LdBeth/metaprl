@@ -104,28 +104,27 @@ WHERE AND HOW TO TRY:
 HOW TO USE prl-hack.el
 
 Once:
-  1) You need the mp12 font to be instaled. It is in editor/fonts directory. 
-  2) Make a symbolic link in your home directory to meta-prl/   :
+  1) Make a symbolic link in your home directory to meta-prl/   :
        cd
        ln -s <path>/meta-prl/ ./   
 
 Every time:
-  3) Start emacs.
-  4) Load prl_hack (in emacs, M-... usually means Alt-... ):
+  2) Start emacs
+  3) Load prl_hack (in emacs, M-... usually means Alt-... ):
        M-x load-file                                  
        meta-prl/editor/emacs/prl-hack.el   
      
      Comments:
-               3+4) alternative:
+               2+3) alternative:
                emacs -l meta-prl/editor/emacs/prl-hack.el
 
-               Another substitution for 4):
+               Another substitution for 3):
                Add the following line to your ~/.emacs
                (load-file "~/meta-prl/editor/emacs/prl-hack.el")
 
-  5) Start the shell for MetaPrl in emacs (uses mp12 font) :
+  4) Start the shell for MetaPrl in emacs (uses Unicode font) :
        M-x meta-prl    
-  6) In this shell cd to meta-prl/editor/ml/ and 
+  5) In this shell cd to meta-prl/editor/ml/ and 
      start any toploop  (mptop, mp,  mpopt)
        
 

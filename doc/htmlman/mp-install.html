@@ -124,11 +124,14 @@ or<BR>
 </BLOCKQUOTE>
 
 <P>The MetaPRL programs are <TT>&lt;meta-prl&gt;/editor/ml/mptop</TT> (bytecode) and  <TT>&lt;meta-prl&gt;/editor/ml/mpopt</TT> (native code).
-You will need to install the &quot;MetaPRL font&quot; to be able
-to interact with some sense. The MetaPRL font is in <TT>&lt;meta-prl&gt;/editor/fonts/mp12.bdf</TT>.
-You'll get the best success if you use MetaPRL from a shell
-window within Emacs. You can start Emacs with the MetaPRL font by
-running <TT>emacs -fn mp12</TT>.</P>
+You will need to use a Unicode (<tt>iso10646-1</tt>) font to be able
+to interact with some sense. We currently recommend using the
+<TT>-misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1</TT> font, but
+in some cases another font may work better. If you going to run MetaPRL in
+<TT>xterm</TT> (or Emacs), you can start <tt>xterm</tt> (Emacs) with the <tt>-fn
+-misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1</tt> to get it to
+use the right font.</P>
+
 
 <P>That's it. To navigate the MetaPRL logics and programs,
 you will need to read the <A TARGET="_top" HREF="user-guide/default.html">User Guide</A>.

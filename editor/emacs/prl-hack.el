@@ -317,16 +317,7 @@ special prompt will be displayed, and alias convertion will be performed."
         (setq metaprl-initialized-emacs t)
         ;; Display all chars correctly.
         (standard-display-8bit 128 255)
-        ;; Set the MetaPRL font.
-        ;; My copy of emacs20 (Debian package version 20.3-8) has a
-        ;; bug where set-default-font removes the inverse-video from the
-        ;; modeline.  This ugly workaround lets me avoid set-default-font
-        ;; and shouldn't affect anyone else.  -- cwitty, 6/5/99
-        (if (not (and (fboundp 'frame-parameters)
-                      (equal (cdr (assoc 'font (frame-parameters))) "mp12")))
-          (set-default-font (if (eq window-system 'nt)
-                              "-*-mp12-r-normal-*-12-96-*-*-c-*-*-ansi-*"
-                              "mp12")))))
+        (set-default-font "-misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1")))
     ;; Initialize the meta-prl buffer once.
     (make-local-variable 'metaprl-new-buffer)
     (if (not (and (boundp 'metaprl-new-buffer) metaprl-new-buffer))
