@@ -210,8 +210,11 @@ if $(NATIVE_PROFILING_ENABLED)
 # Check the configuration
 #
 
-if $(BYTE_ENABLED)
-   if $(not $(file-exists $(CAMLLIB)/parsetree.cmi))
+if $(file-exists $(CAMLLIB)/../compiler-lib/parsetree.cmi)
+   OCAMLINCLUDES += $(dir $(CAMLLIB)/../compiler-lib)
+   export
+else
+   if $(and $(BYTE_ENABLED) $(not $(file-exists $(CAMLLIB)/parsetree.cmi)))
       eprintln(!!! The file $(CAMLLIB)/parsetree.cmi does not exist \(or is not readable\))
       eprintln(!!!)
       eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
@@ -219,6 +222,7 @@ if $(BYTE_ENABLED)
       eprintln(!!!)
       exit(1)
 
+if $(BYTE_ENABLED)
    if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cma), $(file-exists $(CAMLP4LIB)/pa_op.cmo)))
       eprintln(!!! One of the files)
       eprintln(!!!    $(CAMLP4LIB)/camlp4.cma)
