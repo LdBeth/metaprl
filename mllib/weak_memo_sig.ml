@@ -31,15 +31,6 @@
  * Author: Yegor Bryukhov
  *)
 
-(*
- * Data used for garbage collection
- *)
-type gc_info =
-	{
-		counters: (unit -> int) list;
-		gcollectors : (unit -> unit) list;
-  	}
-
 module type WeakMemoSig =
 sig
    (*
@@ -94,7 +85,6 @@ sig
       ('param -> 'header -> 'weak_header) ->         (* Convert 'header to 'weak_header *)
       ('weak_header -> 'weak_header -> bool) ->      (* Headers' comparision function *)
       ('param -> 'header -> 'image) ->               (* Converter from header to result *)
-      gc_info ->								  				  (* Data used for garbage collection *)
       ('param, 'arg, 'header, 'weak_header, 'image) t
 
    (*
@@ -106,11 +96,7 @@ sig
       ('param -> 'header -> 'weak_header) ->         (* Convert 'header to 'weak_header *)
       ('weak_header -> 'weak_header -> bool) ->      (* Headers' comparision function *)
       ('param -> 'header -> 'image) ->               (* Converter from header to result *)
-      gc_info ->								  				  (* Data used for garbage collection *)
       ('param, 'arg, 'header, 'weak_header, 'image) t
-
-	val add_gci : ('param, 'arg, 'header, 'weak_header, 'image) t -> gc_info -> unit
-	val get_gci : ('param, 'arg, 'header, 'weak_header, 'image) t -> gc_info
 
    (*
     * Looks for header and returns result's descriptor if succeed otherwise evaluate the result
@@ -147,14 +133,6 @@ sig
     *)
    val apply : ('param, 'arg, 'header, 'weak_header, 'image) t -> 'param -> 'arg -> 'image
 
-   (*
-    * Don't understand/remember what's the point in global is_gc
-    *)
-(*
-   val gc_on : unit -> unit
-
-   val gc_off : unit -> unit
-*)
 end
 
 (*

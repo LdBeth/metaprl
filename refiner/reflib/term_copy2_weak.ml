@@ -29,8 +29,6 @@
  *)
 open Lm_threads
 
-open Weak_memo
-
 open Termmod_hash_sig
 
 open Term_copy_weak
@@ -76,24 +74,11 @@ struct
    (*
     * Create the bi-directional table.
     *)
-   let p_create i l =
-   	let sh=SourceHash.p_create i empty_gci in
-   	let th=TargetHash.p_create i empty_gci in
-(* There is no mutual recursion between direct and backward conversion memos
- * so it looks safe not to merge them for GC purposes
- *  	let th=TargetHash.p_create i (SourceHash.p_get_gci sh) in
-      	TargetHash.p_add_gci th l;
-      	SourceHash.p_add_gci sh (TargetHash.p_get_gci th);
- *)
-	      { source_hash = sh;
-   	     target_hash = th;
-      	  locker = Mutex.create ()
-	      }
-(*
-	let p_add_gci info1 gci2 = SourceHash.p_add_gci info1.source_hash gci2
-
-	let p_get_gci info = SourceHash.p_get_gci info.source_hash
-*)
+   let p_create i =
+      { source_hash = SourceHash.p_create i;
+        target_hash = TargetHash.p_create i;
+        locker = Mutex.create ()
+      }
 
    (*
     * Terms.
@@ -224,20 +209,10 @@ struct
          Mutex.unlock info.locker;
          r
 
-   let global_hash =
-   let sh=SourceHash.global_hash in
-   let th=TargetHash.global_hash in
-(* There is no mutual recursion between direct and backward conversion memos
- * so it looks safe not to merge them for GC purposes
- *  let sgci=SourceHash.p_get_gci sh in
- *  let tgci=TargetHash.p_get_gci th in
- *  	SourceHash.p_add_gci sh tgci;
- *  	TargetHash.p_add_gci th sgci;
- *)
-	   { source_hash = sh;
-   	  target_hash = th;
-	     locker = Mutex.create ()
-   	}
+   let global_hash = { source_hash = SourceHash.global_hash;
+                       target_hash = TargetHash.global_hash;
+                       locker = Mutex.create ()
+                     }
 
    let add_src = p_add_src global_hash
    let add_dst = p_add_dst global_hash

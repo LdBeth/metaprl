@@ -27,7 +27,6 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 open Lm_symbol
-open Weak_memo_sig
 
 module type TermHashSig =
 sig
@@ -126,10 +125,7 @@ sig
       (*
        * Creates new hashing structure
        *)
-      val p_create : int -> gc_info -> t
-
-      val p_add_gci : t -> gc_info -> unit
-      val p_get_gci : t -> gc_info
+      val p_create : int -> t
 
       (*
        * Functions for storing and accessing objects to hashing structure

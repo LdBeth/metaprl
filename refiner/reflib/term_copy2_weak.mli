@@ -27,7 +27,6 @@
  *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
-open Weak_memo_sig
 open Termmod_hash_sig
 
 module TermCopy2Weak (**)
@@ -64,7 +63,7 @@ sig
    (*
     * Parameterized versions.
     *)
-   val p_create : int -> gc_info -> t
+   val p_create : int -> t
 
    val p_add_src :
       t -> FromTerm.TermType.term -> term_index
