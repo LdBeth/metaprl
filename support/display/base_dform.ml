@@ -119,8 +119,11 @@ dform so_var2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v
 dform so_var3 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{'conts; 't} =
    szone df_var[v:v] df_bconts{'conts} `"[" pushm[0] var_list{'t} popm `"]" ezone
 
-dform conts_left_df : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_bconts{'conts} =
+dform conts_left_df : mode[src] :: mode[prl] :: df_bconts{'conts} =
    `"<|" df_concat{slot[";"]; 'conts} `"|>"
+
+dform conts_left_df : mode[html] :: df_bconts{'conts} =
+   sub_begin `"<|" df_concat{slot[";"]; 'conts} `"|>" sub_end
 
 dform conts_left_df : mode[tex] :: df_bconts{'conts} =
    izone `"{}_{" ezone
@@ -401,6 +404,8 @@ let format_seq_prl format_term buf =
 ml_dform sequent_prl_df : mode["prl"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
    format_seq_prl format_term buf
 
+let context_op = opname_of_term <<df_context{'t}>>
+
 let format_seq_html format_term buf =
    let rec format_hyp hyps i len =
       if i <> len then
@@ -420,7 +425,10 @@ let format_seq_html format_term buf =
                      format_string buf ":";
                      format_space buf;
                   end;
-                  format_term buf NOParens (mk_tslot a);
+                  if Opname.eq (opname_of_term a) context_op then
+                     format_term buf NOParens a
+                  else
+                     format_term buf NOParens (mk_tslot a);
                   format_ezone buf
          in
             format_hyp hyps (succ i) len

@@ -85,10 +85,6 @@ declare em_begin : Dform
 declare em_end : Dform
 declare tt_begin : Dform
 declare tt_end : Dform
-declare sub_begin : Dform
-declare sub_end : Dform
-declare sup_begin : Dform
-declare sup_end : Dform
 declare small_begin : Dform
 declare small_end : Dform
 declare esq_l : Dform
@@ -778,9 +774,9 @@ dform oinfty_df			: mode[html] :: oinfty                    = html_uni[8733]
 dform shortleftrightarrow_df	: mode[html] :: shortleftrightarrow       = html_uni[8596]
 dform shortleftarrow_df		: mode[html] :: shortleftarrow            = html_uni[8592]
 dform shortrightarrow_df	: mode[html] :: shortrightarrow           = html_uni[8594]
-dform longleftrightarrow_df	: mode[html] :: longleftrightarrow        = html_uni[8592] html_sym["ndash"] html_uni[8594] (* html_uni[0x27F5] html_sym["ndash"] html_uni[0x27F6] *) (* html_uni[0x27F7] *)
-dform longleftarrow_df		: mode[html] :: longleftarrow             = html_uni[8592] html_sym["ndash"] (* html_uni[0x27F5] html_sym["ndash"] *)
-dform longrightarrow_df		: mode[html] :: longrightarrow            = html_sym["ndash"] html_uni[8594] (* html_sym["ndash"] html_uni[0x27F6] *)
+dform longleftrightarrow_df	: mode[html] :: longleftrightarrow        = html_uni[8592] html_uni[9472] html_uni[8594] (* html_uni[0x27F5] html_uni[0x2500] html_uni[0x27F6] *) (* html_uni[0x27F7] *)
+dform longleftarrow_df		: mode[html] :: longleftarrow             = html_uni[8592] html_uni[9472] (* html_uni[0x27F5] html_uni[0x2500] *)
+dform longrightarrow_df		: mode[html] :: longrightarrow            = html_uni[9472] html_uni[8594] (* html_uni[0x2500] html_uni[0x27F6] *)
 dform neq_df			: mode[html] :: neq                       = html_uni[8800]
 dform sim_df			: mode[html] :: sim                       = html_uni[8764]
 dform cong_df			: mode[html] :: cong                      = html_uni[8773]

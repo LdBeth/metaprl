@@ -83,13 +83,20 @@ SPAN.slotClick {
 }
 
 /*
- * Subscripts.
+ * Sub/superscripts.
  */
 SUB {
     color: #888888;
     font-size: smaller;
     position: relative;
-    top: -3pt;
+    bottom: -2pt;
+}
+
+SUP {
+    color: #888888;
+    font-size: smaller;
+    position: relative;
+    top: 2pt;
 }
 
 /*

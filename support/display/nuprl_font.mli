@@ -69,8 +69,12 @@ declare tt{'t : Dform} : Dform
 declare url[url:s] : Dform
 declare sub{'t : Dform} : Dform
 declare sub[name:s] : Dform
+declare sub_begin : Dform
+declare sub_end : Dform
 declare sub[i:l] : Dform
 declare sup{'t : Dform} : Dform
+declare sup_begin : Dform
+declare sup_end : Dform
 declare sup[name:s] : Dform
 declare small[name:s] : Dform
 declare small{'t : Dform} : Dform
