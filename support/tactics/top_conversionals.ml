@@ -173,6 +173,7 @@ doc <:doc<
 let idC = Tactic_type.Conversionals.idC
 let failC = Tactic_type.Conversionals.failC
 let failWithC = Tactic_type.Conversionals.failWithC
+let forceC = Tactic_type.Conversionals.forceC
 
 doc <:doc<
    @begin[doc]

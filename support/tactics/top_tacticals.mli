@@ -114,6 +114,7 @@ topval selT : int -> tactic -> tactic
 topval altT : tactic -> tactic
 topval thinningT : bool -> tactic -> tactic
 topval doNotThinT : tactic -> tactic
+topval forceT : string -> tactic -> tactic
 
 topval nameHypT : int -> string -> tactic
 topval nameHypsT : int list -> string list -> tactic

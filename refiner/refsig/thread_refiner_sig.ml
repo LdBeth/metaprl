@@ -45,6 +45,9 @@ sig
    (* Fold a value *)
    val create_value : 'term list -> 'extract -> ('term, 'arg, 'extract) t
 
+   (* Force the tactic application *)
+   val force : string -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
+
    (* Postprocess the tactic *)
    val wrap : 'arg -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
 
@@ -82,6 +85,9 @@ sig
 
    (* Fold a value *)
    val create_value : 'term list -> 'extract -> ('term, 'arg, 'extract) t
+
+   (* Force the tactic application *)
+   val force : string -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
 
    (* Post-process the extract *)
    val wrap : 'arg -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic

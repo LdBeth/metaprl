@@ -225,6 +225,7 @@ struct
     | ThenTC of conv * tactic
     | IdentityConv
     | TacticConv of (address -> tactic)
+    | ForceConv of string * conv
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
@@ -988,8 +989,12 @@ struct
     * Sequencing tactics.
     *)
    let prefix_thenT tac1 tac2 =
-      if tac1 == idT then tac2 else if tac2 == idT then tac1 else
-            ThreadRefinerTacticals.compose1 tac1 tac2
+      if tac1 == idT then
+         tac2
+      else if tac2 == idT then
+         tac1
+      else
+         ThreadRefinerTacticals.compose1 tac1 tac2
 
    let emptyLabel=""
 
@@ -1023,6 +1028,8 @@ struct
              | tacl -> ThreadRefinerTacticals.first tacl
 
    let wrapT = ThreadRefinerTacticals.wrap
+
+   let forceT = ThreadRefinerTacticals.force
 
    let prefix_orelseT tac1 tac2 =
       if tac1 == idT then idT else ThreadRefinerTacticals.first [tac1; tac2]

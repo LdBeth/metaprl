@@ -88,6 +88,7 @@ topval replaceUsingC : term -> conv -> conv
 topval progressC : conv -> conv
 topval allSubThenC : conv -> conv -> conv
 topval prefix_thenTC : conv -> tactic -> conv
+topval forceC : string -> conv -> conv
 
 infix thenC
 infix orelseC

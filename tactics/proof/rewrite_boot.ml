@@ -88,7 +88,7 @@ struct
    let idC = IdentityConv
 
    (*
-    * Combine two lissts of conversion.
+    * Combine two lists of conversions.
     * Note if the adjacent conversion can be combined.
     *)
    let combine rw_f crw_f make clist1 clist2 =
@@ -115,40 +115,46 @@ struct
       combine orelserw corelserw (fun l -> ChooseConv l) clist1 clist2
 
    let prefix_thenC conv1 conv2 =
-      if conv1 == idC then conv2 else if conv2 == idC then conv1 else
-      let clist1 =
-         match conv1 with
-            ComposeConv clist1 ->
-               clist1
-          | _ ->
-               Flist.create conv1
-      in
-      let clist2 =
-         match conv2 with
-            ComposeConv clist2 ->
-               clist2
-          | _ ->
-               Flist.create conv2
-      in
-         compose clist1 clist2
+      if conv1 == idC then
+         conv2
+      else if conv2 == idC then
+         conv1
+      else
+         let clist1 =
+            match conv1 with
+               ComposeConv clist1 ->
+                  clist1
+             | _ ->
+                  Flist.create conv1
+         in
+         let clist2 =
+            match conv2 with
+               ComposeConv clist2 ->
+                  clist2
+             | _ ->
+                  Flist.create conv2
+         in
+            compose clist1 clist2
 
    let prefix_orelseC conv1 conv2 =
-      if conv1 == idC then idC else
-      let clist1 =
-         match conv1 with
-            ChooseConv clist1 ->
-               clist1
-          | _ ->
-               Flist.create conv1
-      in
-      let clist2 =
-         match conv2 with
-            ChooseConv clist2 ->
-               clist2
-          | _ ->
-               Flist.create conv2
-      in
-         choose clist1 clist2
+      if conv1 == idC then
+         idC
+      else
+         let clist1 =
+            match conv1 with
+               ChooseConv clist1 ->
+                  clist1
+             | _ ->
+                  Flist.create conv1
+         in
+         let clist2 =
+            match conv2 with
+               ChooseConv clist2 ->
+                  clist2
+             | _ ->
+                  Flist.create conv2
+         in
+            choose clist1 clist2
 
    (*
     * Function conversion needs an argument.
@@ -160,6 +166,9 @@ struct
 
    let tacticC tac =
       TacticConv tac
+
+   let forceC debug conv =
+      ForceConv (debug, conv)
 
    (*
     * Apply the conversion at the specified address.
@@ -313,6 +322,8 @@ struct
          if assum <> 0 then
             raise (RefineError ("rw", StringError "tacticC conversion can not be applied to an assumption"));
          tac addr
+    | ForceConv (debug, conv) ->
+         forceT debug (apply assum addr conv)
 
    and composeT assum addr = function
       Flist.Empty ->

@@ -187,6 +187,7 @@ sig
     | ThenTC of conv * tactic
     | IdentityConv
     | TacticConv of (address -> tactic)
+    | ForceConv of string * conv
 
    type pre_tactic
    type prim_tactic = Refiner.Refiner.Refine.prim_tactic
@@ -392,6 +393,7 @@ sig
    val withIntT : string -> int -> tactic -> tactic
    val withStringT : string -> string -> tactic -> tactic
    val wrapT : arglist -> tactic -> tactic
+   val forceT : string -> tactic -> tactic
 
    (*
     * Print timing information.
@@ -777,6 +779,7 @@ sig
    (* Print timing information *)
    val timingT : tactic -> tactic
    val finalT : (unit -> unit) -> tactic
+   val forceT : string -> tactic -> tactic
 
    (* Allow tactic only if no subgoals *)
    val completeT : tactic -> tactic
@@ -973,6 +976,12 @@ sig
    val higherC : conv -> conv
 
    (*
+    * "Force" application of a simple rewrite.
+    * This just raises a special exception if the rewrite does not work.
+    *)
+   val forceC : string -> conv -> conv
+
+   (*
     * Two versions of cut.
     * foldC t conv: cuts in the new term t, and uses conv to
     *    solve the resulting goal.
@@ -1080,6 +1089,12 @@ sig
     * Try a conversion.
     *)
    val tryC : conv -> conv
+
+   (*
+    * "Force" application of a simple rewrite.
+    * This just raises a special exception if the rewrite does not work.
+    *)
+   val forceC : string -> conv -> conv
 
    (*
     * Progress

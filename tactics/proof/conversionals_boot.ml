@@ -91,6 +91,7 @@ struct
    let termC = Rewrite.termC
    let allSubC = Rewrite.allSubC
    let prefix_thenTC = Rewrite.prefix_thenTC
+   let forceC = Rewrite.forceC
 
    (************************************************************************
     * SEARCH                                                               *

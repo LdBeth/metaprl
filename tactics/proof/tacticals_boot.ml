@@ -736,6 +736,7 @@ struct
     ************************************************************************)
 
    let wrapT         = TacticInternal.wrapT
+   let forceT        = TacticInternal.forceT
 
    let withTermT     = TacticInternal.withTermT
    let withTermListT = TacticInternal.withTermListT

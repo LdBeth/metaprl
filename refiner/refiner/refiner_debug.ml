@@ -238,6 +238,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
        | MetaTermErrorError of meta_term * refine_error
 
       exception RefineError of string * refine_error
+      exception RefineForceError of string * string * refine_error
 
       let generic_refiner_exn = RefineError("generic", GenericError)
 

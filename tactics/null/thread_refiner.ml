@@ -29,9 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Refiner.Refiner.RefineError
-
 
 module ThreadRefinerTacticals =
 struct
@@ -46,7 +44,15 @@ struct
     * Constructors.
     *)
    let create_value args ext =
-      (args, Leaf ext)
+      args, Leaf ext
+
+   (*
+    * Forced error.
+    *)
+   let force debug tac arg =
+      try tac arg with
+         RefineError (name, err) ->
+            raise (RefineForceError (debug, name, err))
 
    (*
     * Choice.
@@ -97,9 +103,9 @@ struct
       let args, ext = tac arg in
          args, Wrap (wrap_arg, ext)
 
-	let wrap_terms f tac arg =
-		let args, ext = tac arg in
-			(List.map f args), ext
+   let wrap_terms f tac arg =
+      let args, ext = tac arg in
+         List.map f args, ext
 
    let compose1 tac1 tac2 arg =
       let args, ext = tac1 arg in
@@ -150,6 +156,7 @@ struct
 
    let wrap = ThreadRefinerTacticals.wrap
    let first = ThreadRefinerTacticals.first
+   let force = ThreadRefinerTacticals.force
    let compose1 = ThreadRefinerTacticals.compose1
    let compose2 = ThreadRefinerTacticals.compose2
    let composef = ThreadRefinerTacticals.composef

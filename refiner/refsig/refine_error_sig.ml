@@ -152,6 +152,7 @@ sig
     * the function that raised it.
     *)
    exception RefineError of string * refine_error
+   exception RefineForceError of string * string * refine_error
 
    (*
     * A default exception.

@@ -395,6 +395,10 @@ let format_exn_aux db printers exn =
           RefineError (name, msg) ->
              format_string buf "Refine error:";
              format_refine_error db buf printers name msg
+        | RefineForceError (debug, name, msg) ->
+             format_string buf "Forced refine error: ";
+             format_string buf debug;
+             format_refine_error db buf printers name msg
         | Incomplete opname ->
              format_string buf ("Incomplete proof: /" ^ (String.concat "/" (List.rev (dest_opname opname))))
         | Invalid_argument s ->

@@ -280,6 +280,7 @@ doc <:doc<
 >>
 let tryT = Tacticals.tryT
 let completeT = Tacticals.completeT
+let forceT = Tacticals.forceT
 
 doc <:doc<
    @begin[doc]
