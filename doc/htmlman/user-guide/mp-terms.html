@@ -18,9 +18,7 @@ and all logical statements in the system are defined with terms.</P>
 syntax:</P>
 
 <BLOCKQUOTE>
-  <DL>
-    <DT>&nbsp;
-    <DT><TABLE WIDTH="506" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <TABLE WIDTH="506" BORDER="1" CELLSPACING="2" CELLPADDING="0">
       <TR>
         <TD WIDTH="21%">
         <B>term</B></TD> 
@@ -59,8 +57,8 @@ syntax:</P>
         <TD WIDTH="5%" ALIGN="CENTER">
         ::=</TD> 
         <TD WIDTH="70%">
-        number <TT>:n</TT> | "string" <TT>:s</TT> | "string" <TT>:t</TT>
-        | "string" <TT>:v</TT> | <B>level</B> <TT>:l</TT> | <B>meta-param</B></TD> 
+        number <TT>:n</TT> | string <TT>:s</TT> | string <TT>:t</TT>
+        | string <TT>:v</TT> | <B>level</B> <TT>:l</TT> | <B>meta-param</B></TD> 
       </TR>
       <TR>
         <TD WIDTH="21%">
@@ -81,7 +79,6 @@ syntax:</P>
         | <B>level</B> &quot;|&quot; <B>level</B></TD> 
       </TR>
     </TABLE>
-  </DL>
 </BLOCKQUOTE>
 
 <P>A <I>simple</I> literal is any sequence of alphabetic and numeric
@@ -90,8 +87,8 @@ as any sequence characters from the ASCII character set enclosed
 in double quotes. A <I>string</I> is any sequence of characters
 enclosed in double-quotes, and a <I>number</I> is any sequence
 of digits. A <I>var</I> is a simple literal. The <B>bterms</B>
-and <B>params</B> lists use the semicolon (<TT>;</TT>) as a separator
-character, and the <I>vars</I> list uses a comma (<TT>,</TT>)
+list uses the semicolon (<TT>;</TT>) as a separator
+character, and the <I>vars</I> and <B>params</B> lists use a comma (<TT>,</TT>)
 as a separator character. <TT>:s</TT> in parameters and meta-parameters
 can be omitted.</P>
 
@@ -136,7 +133,7 @@ constants defined in <TT>Itt_int</TT> for numbers and <TT>Itt_atom</TT>
 for strings.</P>
 
 <BLOCKQUOTE>
-  <PRE><B>declare </B>natural_number[i:n]
+  <PRE><B>declare </B>number[i:n]
 <B>declare </B>token[s:t]</PRE>
 </BLOCKQUOTE>
 
@@ -146,12 +143,12 @@ token contains a <I>token</I> parameter. Once the meta-syntax
 has been defined, terms can be included in ML programs as quotations:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>let</B> one = &lt;&lt; natural_number[1:n] &gt;&gt;
+  <PRE><B>let</B> one = &lt;&lt; number[1:n] &gt;&gt;
 <B>let</B> hello = &lt;&lt; token[&quot;hello&quot;:t] &gt;&gt;</PRE>
 </BLOCKQUOTE>
 
 <P>There is also a simplifying syntax for numbers: the parser
-expands numbers to the <TT>natural_number</TT> form when a term
+expands numbers to the <TT>number</TT> form when a term
 is expected.</P>
 
 <P><I>Level-expressions</I> are included in the parameter syntax
@@ -164,7 +161,7 @@ module, type universes are declared as:</P>
 
 <P>and specific instances of type universes are the <I>base</I>
 universe <TT>univ[1:l]</TT>, an <I>arbitrary</I> universe with
-index <I>i</I> <TT>univ[i:l]</TT>, and relative universes like
+index <I>i</I>&nbsp; <TT>univ[i:l]</TT>, and relative universes like
 <TT>univ[i':l]</TT> (which is the type universe containing <TT>univ[i:l]</TT>)
 or <TT>univ[(i | 3) : l]</TT>, which is the smallest type universe
 containing both <TT>univ[3:l</TT>] and <TT>univ[i:l]</TT>. Level
@@ -186,7 +183,7 @@ including the following:</P>
 <P>For these terms, the <I>opname</I> describes the arithmetic
 operator, and the subterms represent numbers. The logical syntax
 is <I>untyped</I>, the following terms are valid <I>syntax</I>,
-although the second term has no meaning defined in the <TT>Itt_logic</TT>
+although the second term has no meaning defined in the <TT>Itt_theory</TT>
 module.</P>
 
 <BLOCKQUOTE>
@@ -221,11 +218,14 @@ by computational rewriting and inference rules. The following
 are some of the types defined in the <TT>Itt_logic</TT> module:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>declare </B>true
-<B>declare</B> false
-<B>declare </B>and{'A; 'B}
+  <PRE><B>declare </B>"true"
+<B>declare</B> "false"
+<B>declare </B>"and"{'A; 'B}
 <B>declare </B>all{'A; x. 'B['x]}</PRE>
 </BLOCKQUOTE>
+
+<P> The <TT>true</TT>, <TT>false</TT> and <TT>and</TT> opnames have to be quoted here
+so that the parser would not confuse them with OCaml keywords.
 
 <H2>Simplified Syntax</H2>
 
@@ -242,10 +242,10 @@ must still be declared. For example, the use of the term <TT>true
 declared,as in the following sequence:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>declare</B> true
-<B>declare</B> false
-<B>declare </B>or{'A; 'B}
-<B>let </B>t = &lt;&lt; true <B>or </B>false &gt;&gt;</PRE>
+  <PRE><B>declare</B> "true"
+<B>declare</B> "false"
+<B>declare </B>"or"{'A; 'B}
+<B>let </B>t = &lt;&lt; "true" <B>or </B>"false" &gt;&gt;</PRE>
 </BLOCKQUOTE>
 
 <H3>Logic syntax</H3>

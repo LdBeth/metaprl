@@ -19,17 +19,14 @@ set for display of logical operators.</P>
 The syntax of a display form has the following form:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>dform</TT></B> <I>name </I><TT>:</TT> [<I>options</I>]
-  <I>term</I> <TT>=</TT> <I>definition</I></P>
+<PRE><B>dform</B> <I>name </I>: [<I>options</I>] <I>term</I> = <I>definition</I></PRE>
 </BLOCKQUOTE>
 
 <P>Display form precedences are declared with two additional forms:</P>
 
 <BLOCKQUOTE>
-  <DL>
-    <DT><B><TT>prec</TT></B> <I>name</I>
-    <DT><B><TT>prec</TT></B> <I>name </I><TT>&lt;</TT>&nbsp;<I>name</I>
-  </DL>
+  <PRE><B>prec</B> <I>name</I></PRE>
+  <PRE><B>prec</B> <I>name </I>&lt; <I>name</I></PRE>
 </BLOCKQUOTE>
 
 <P>The <I>term</I> part of a display form is a term expressed
@@ -232,7 +229,7 @@ which correspond to the &quot;wedge&quot; character in the Nuprl
 font.</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>dform</TT></B><TT> wedge_df : wedge = `&quot;\203&quot;</TT></P>
+  <PRE><B>dform</B> wedge_df : wedge = `&quot;\203&quot;</PRE>
 </BLOCKQUOTE>
 
 <H2>Options</H2>
@@ -370,7 +367,7 @@ the current left margin, and enters a soft zone so that the <TT>ifthenelse
 </TT>is either displayed on a single line, or all display breaks
 are taken. The <TT>push_indent</TT> term pushes the left margin
 again to indent the body of the <TT>ifthenelse</TT>; it is defined
-in <TT>Nuprl_font</TT> as the term <TT>pushm[3:n]</TT>.</P>
+in <TT>Ocaml_base_df</TT> module as the term <TT>pushm[3:n]</TT>.</P>
 
 <P>The <I>condition</I> is displayed on the first line, followed
 by a possible line break. The <I>body</I> of the conditional is
