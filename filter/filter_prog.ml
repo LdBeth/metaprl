@@ -335,6 +335,15 @@ let add_eq_expr loc =
    <:expr< $uid:"Precedence"$ . $lid:"add_eq"$ >>
 
 (*
+ * Convert between expressions and terms.
+ *)
+let expr_of_term loc t =
+   <:expr< $uid: "Ml_term"$ . $lid: "term_of_string"$ $str: Ml_term.string_of_term t$ >>
+
+let expr_of_mterm loc t =
+   <:expr< $uid: "Ml_term"$ . $lid: "mterm_of_string"$ $str: Ml_term.string_of_mterm t$ >>
+
+(*
  * Print a message on loading, and catch errors.
  *    if !Debug.debug_load then
  *       Printf.eprintf "Loading name%t" eflush;
@@ -386,7 +395,7 @@ let param_expr loc = function
  | VarParam v ->
       <:expr< $uid:"Filter_summary"$ . $uid:"VarParam"$ $str:v$ >>
  | TermParam t ->
-      let t' = build_ml_term loc t in
+      let t' = expr_of_term loc t in
          <:expr< $uid:"Filter_summary"$ . $uid:"TermParam"$ $t'$ >>
 
 (*
@@ -687,8 +696,8 @@ struct
       let con_patt   = <:patt< $lid:"contractum"$ >> in
 
       (* Expressions *)
-      let redex_term = build_ml_term loc redex in
-      let con_term = build_ml_term loc contractum in
+      let redex_term = expr_of_term loc redex in
+      let con_term = expr_of_term loc contractum in
       let create_expr =
          <:expr< $create_rewrite_expr loc$ $lid:local_refiner_id$ $str:name$ (**)
             $lid:"redex"$ $lid:"contractum"$ >>
@@ -764,9 +773,9 @@ struct
       let string_expr s = <:expr< $str:s$ >> in
       let vars_val = <:expr< [| $list:List.map string_expr (cvars @ bvars)$ |] >> in
       let params_val = list_expr loc (param_expr loc) params in
-      let subgoals_val = list_expr loc (build_ml_term loc) args in
-      let redex_val = build_ml_term loc redex in
-      let con_val = build_ml_term loc contractum in
+      let subgoals_val = list_expr loc (expr_of_term loc) args in
+      let redex_val = expr_of_term loc redex in
+      let con_val = expr_of_term loc contractum in
       let create_expr =
          <:expr< $create_cond_rewrite_expr loc$ $lid:local_refiner_id$ $str:name$ (**)
             $vars_expr$ $params_expr$ $subgoals_expr$ $redex_expr$ $con_expr$ >>
@@ -811,8 +820,8 @@ struct
        }
        expr =
       (* Check that this tactic actually works *)
-      let redex_expr = build_ml_term loc redex in
-      let con_expr = build_ml_term loc contractum in
+      let redex_expr = expr_of_term loc redex in
+      let con_expr = expr_of_term loc contractum in
       let expr = <:expr< $derived_rewrite_expr loc$ $lid:local_refiner_id$ (**)
                          $str:name$ $redex_expr$ $con_expr$ $expr$
                  >>
@@ -828,9 +837,9 @@ struct
        }
        expr =
       let params_expr = List.map (param_expr loc) params in
-      let args_expr = list_expr loc (build_ml_term loc) args in
-      let redex_expr = build_ml_term loc redex in
-      let con_expr = build_ml_term loc contractum in
+      let args_expr = list_expr loc (expr_of_term loc) args in
+      let redex_expr = expr_of_term loc redex in
+      let con_expr = expr_of_term loc contractum in
       let params_expr' = <:expr< [| $list:params_expr$ |] >> in
       let expr = <:expr< $derived_cond_rewrite_expr loc$ $lid:local_refiner_id$ (**)
                          $str:name$ $params_expr'$
@@ -850,8 +859,8 @@ struct
        }
        expr =
       (* Check that this tactic actually works *)
-      let redex_expr = build_ml_term loc redex in
-      let con_expr = build_ml_term loc contractum in
+      let redex_expr = expr_of_term loc redex in
+      let con_expr = expr_of_term loc contractum in
       let expr = Convert.to_expr name expr in
       let expr = <:expr< $delayed_rewrite_expr loc$ $lid:local_refiner_id$ (**)
                          $str:name$ $redex_expr$ $con_expr$ $expr$
@@ -868,9 +877,9 @@ struct
        }
        expr =
       let params_expr = List.map (param_expr loc) params in
-      let args_expr = list_expr loc (build_ml_term loc) args in
-      let redex_expr = build_ml_term loc redex in
-      let con_expr = build_ml_term loc contractum in
+      let args_expr = list_expr loc (expr_of_term loc) args in
+      let redex_expr = expr_of_term loc redex in
+      let con_expr = expr_of_term loc contractum in
       let params_expr' = <:expr< [| $list:params_expr$ |] >> in
       let expr = Convert.to_expr name expr in
       let expr = <:expr< $delayed_cond_rewrite_expr loc$ $lid:local_refiner_id$ (**)
@@ -883,7 +892,7 @@ struct
     * A primitive rule specifies the extract.
     *)
    let define_axiom code proc loc { axiom_name = name; axiom_stmt = stmt } extract =
-      let goal_expr = build_ml_term loc stmt in
+      let goal_expr = expr_of_term loc stmt in
       let goals = list_expr loc (function x -> x) [goal_expr] in
       let axiom_value =
          <:expr< $create_axiom_expr loc$ $lid:local_refiner_id$ $str:name$ $goal_expr$ >>
@@ -900,7 +909,7 @@ struct
 
    let prim_axiom proc loc ax extract =
       let code = prim_axiom_expr loc in
-      let extract_expr = build_ml_term loc extract in
+      let extract_expr = expr_of_term loc extract in
          define_axiom code proc loc ax extract_expr
 
    let derived_axiom proc loc ax tac =
@@ -950,9 +959,9 @@ struct
       let tvars_expr = List.map string tvars in
       let tvars_expr' = <:expr< [| $list:tvars_expr$ |] >> in
       let avars, mterm = split_mfunction stmt in
-      let avars_expr = list_expr loc (build_ml_term loc) avars in
-      let tparams_expr = list_expr loc (build_ml_term loc) tparams in
-      let assums_expr = build_ml_mterm loc mterm in
+      let avars_expr = list_expr loc (expr_of_term loc) avars in
+      let tparams_expr = list_expr loc (expr_of_term loc) tparams in
+      let assums_expr = expr_of_mterm loc mterm in
       let axiom_value =
          <:expr< $create_rule_expr loc$ $lid:local_refiner_id$ $str:name$ (**)
             $lid:"cvars"$ $lid:"tvars"$ $lid:"params"$ $lid:"assums"$ >>
@@ -998,7 +1007,7 @@ struct
 
    let prim_rule proc loc ax extract =
       let code = prim_rule_expr loc in
-      let extract_expr = build_ml_term loc extract in
+      let extract_expr = expr_of_term loc extract in
          define_rule code proc loc ax extract_expr
 
    let derived_rule proc loc ax tac =
@@ -1049,7 +1058,7 @@ struct
       (* Build a contractum *)
       let rec contracta_bind index = function
          t::tl ->
-            let term_expr = build_ml_term loc t in
+            let term_expr = expr_of_term loc t in
             let name = sprintf "contractum_%d" index in
             let let_patt = <:patt< $lid:name$ >> in
             let let_value =
@@ -1074,7 +1083,7 @@ struct
       let redex_value_expr =
          <:expr< let $rec:false$ $list:[redex_patt, wrap_exn loc tname redex_let_expr]$ in $contracta_expr$ >>
       in
-      let t_expr = build_ml_term loc t in
+      let t_expr = expr_of_term loc t in
       let code_value_expr =
          <:expr< let $rec:false$ $list:[term_patt, wrap_exn loc tname t_expr]$ in $redex_value_expr$ >>
       in
@@ -1175,8 +1184,8 @@ struct
       let name_expr = <:expr< $str: name$ >> in
       let modes_expr = list_expr loc string_expr modes in
       let options_expr = list_expr loc (dform_option_expr loc) options in
-      let expansion_expr = <:expr< $dform_expansion_expr loc$ $build_ml_term loc expansion$ >> in
-      let t_expr = build_ml_term loc t in
+      let expansion_expr = <:expr< $dform_expansion_expr loc$ $expr_of_term loc expansion$ >> in
+      let t_expr = expr_of_term loc t in
       let rec_value =
          <:expr< { $list:[ dform_name_expr loc, name_expr;
                            dform_pattern_expr loc, t_expr;
@@ -1606,6 +1615,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.21  1998/06/17 13:19:43  jyh
+ * Using marshaler for terms.
+ *
  * Revision 1.20  1998/06/16 16:25:32  jyh
  * Added itt_test.
  *
