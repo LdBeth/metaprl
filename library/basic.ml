@@ -53,7 +53,16 @@ let imessage_term sl ol tl =
 
 let iterm_term t = mk_term iterm_op [mk_bterm [] t]
 let iterm_bterms bterms = mk_term iterm_op bterms
-let ivoid_term = mk_term (mk_nuprl5_op [make_param (Token "!void")]) []
+let ivoid_op = (mk_nuprl5_op [make_param (Token "!void")])
+let ivoid_term = mk_term ivoid_op []
+
+let ivoid_term_p t = 
+  match dest_term t with
+  { term_op = op; term_terms = []} when op = ivoid_op
+     -> true
+  |_ -> false   
+
+
 
 (*
  * failure
@@ -104,6 +113,12 @@ let term_of_unbound_term bterm =
     -> t
   | _ -> error ["unbound"; "bound"] [] [(mk_term iterm_op [bterm])]
 
+let unbound_bterm_p bterm = 
+  match dest_bterm bterm with
+    { bvars = []; bterm = t }
+    -> true
+  | _ -> false
+
 
 let parameter_of_carrier p t =
   match dest_term t with
@@ -123,7 +138,7 @@ let token_parameter_to_string p =
 let number_of_inatural_term t =
   match dest_param (parameter_of_carrier inatural_parameter t) with
     Number n -> n
-  |_ -> error ["term"; "!text"; "parameter type"] [] [t]
+  |_ -> error ["term"; "!natural"; "parameter type"] [] [t]
 
 let string_of_itext_term t =
   match dest_param (parameter_of_carrier itext_parameter t) with
@@ -135,6 +150,11 @@ let string_of_istring_term t =
     String s -> s
   |_ -> error ["term"; "!string"; "parameter type"] [] [t]
 
+let string_of_itoken_term t =
+  match dest_param (parameter_of_carrier itoken_parameter t) with
+    Token s -> s
+  |_ -> error ["term"; "!string"; "parameter type"] [] [t]
+
 open Mbterm
 
 let oid_of_ioid_term t =
@@ -142,6 +162,21 @@ let oid_of_ioid_term t =
     ObId o -> o
   |_ -> print_string "failing here"; print_term t;
  print_newline(); error ["term"; "!oid"; "parameter type"] [] [t]
+
+let dest_obid_param p =
+  match dest_param p with
+    ObId o -> o
+  |_ -> error ["parameter"; "obid"] [] []
+
+let dest_token_param p =
+  match dest_param p with
+    Token s -> s
+  |_ -> error ["parameter"; "token"] [] []
+
+let dest_int_param p =
+  match dest_param p with
+    Number n -> n
+  |_ -> error ["parameter"; "token"] [] []
 
 
 
@@ -157,6 +192,17 @@ type stamp = {term: term;
 	      seq: int;
 	      time: bigint
 	      }
+
+let print_stamp s =
+  print_string "STAMP{";
+  print_string s.process_id;
+  print_string ",";
+  print_int s.transaction_seq;
+  print_string ",";
+  print_int s.seq;
+  print_string "}"
+
+ 
 
 let dest_stamp stamp = stamp
 
@@ -201,7 +247,7 @@ let transaction_less = fun
     else if (bequal time1 time2) then seq1 < seq2
          else (blt time1 time2)
 
-let get_inet_addr () =
+let get_inet_addr =
 	let {h_addr_list=l} = gethostbyname (gethostname ())
 	in l.(0)
 
@@ -211,7 +257,7 @@ type stamp_data = {mutable count : int; pid : string}
 let stamp_data = 
 	{ count = 0
 	; pid = String.concat "_"
-			[ string_of_inet_addr (get_inet_addr())
+			[ string_of_inet_addr get_inet_addr
 			; string_of_int (getpid())
 			; string_of_int (time())
 			]
@@ -270,19 +316,18 @@ let test () =
 ;;
 
 
-
 let icons_op = (mk_nuprl5_op [make_param (Token "!cons")])
-let icons_term h t = mk_term icons_op [mk_bterm [] h; mk_bterm [] t]
+let icons_term op h t = mk_term op [mk_bterm [] h; mk_bterm [] t]
 
-let hd_of_icons_term t =
+let hd_of_icons_term iop t =
   match dest_term t with
-    { term_op = op; term_terms = [l; r] } when op = icons_op
+    { term_op = op; term_terms = [l; r] } when op = iop
        ->  term_of_unbound_term l
     |_ -> error ["icons"; "not"] [] [t]
 
-let tl_of_icons_term t =
+let tl_of_icons_term iop t =
   match dest_term t with
-    { term_op = op; term_terms = [l; r] } when op = icons_op
+    { term_op = op; term_terms = [l; r] } when op = iop
        ->  term_of_unbound_term r
     |_ -> error ["icons"; "not"] [] [t]
 
@@ -300,6 +345,34 @@ let list_to_ilist_by_op op l =
 let list_to_ilist l = list_to_ilist_by_op icons_op l
 
 let list_to_ilist_map f l = list_to_ilist_by_op_map icons_op f l
+
+let map_isexpr_to_list_by_op iop f t =
+ let rec aux t acc =
+  match dest_term t with
+    { term_op = op; term_terms = [] } when op = iop
+       -> acc
+    | { term_op = op; term_terms = [] } when not (op = iop)
+       -> (f t) :: acc
+    | { term_op = op; term_terms = [l; r] } when ((op = iop) & (unbound_bterm_p l) & (unbound_bterm_p r))
+       -> aux (term_of_unbound_term l) (aux (term_of_unbound_term r) acc)
+    |_ -> (f t) :: acc  
+  in
+ aux t []
+
+let map_isexpr_by_op iop f t =
+ let rec aux t =
+  match dest_term t with
+    { term_op = op; term_terms = [] } when op = iop
+       -> ()
+    | { term_op = op; term_terms = [] } when not (op = iop)
+       -> (f t); ()
+    | { term_op = op; term_terms = [l; r] } when ((op = iop) & (unbound_bterm_p l) & (unbound_bterm_p r))
+       -> aux (term_of_unbound_term l); aux (term_of_unbound_term r); ()
+    |_ -> (f t); ()
+  in
+ aux t
+
+let map_isexpr_to_list f t = map_isexpr_to_list_by_op icons_op f t
 
 let isome_op = (mk_nuprl5_op [make_param (Token "!some")])
 let isome_term t = mk_term isome_op [mk_bterm [] t]
@@ -337,4 +410,5 @@ let property_of_iproperty_term pt =
 	  -> (string_of_token_parameter name, term_of_unbound_term prop)
 	|_ -> error ["iproperty"; "op"; "not"; ""] [] [pt])
     |_ -> error ["iproperty"; "term"; "not"; ""] [] [pt]
+
 

@@ -23,9 +23,9 @@ let db_init stamp master =
 
 let db_read stamp object_type =
  let {process_id = pid; seq = seq}  = dest_stamp stamp in
- let filename = String.concat "" [!master_pathname; "/"; pid; (string_of_int seq); "."; object_type] in
+ let filename = String.concat "" [!master_pathname; "/"; pid; "/"; (string_of_int seq); "."; object_type] in
  let in_channel = try open_in filename with
- Sys_error e -> error ["db_read"; "file"; "not"; "exist"] [] [] in
+ Sys_error e -> error (filename :: ["db_read"; "file"; "not"; "exist"]) [] [] in
  let term = term_of_mbterm (read_node in_channel) in
  close_in in_channel;
  Hashtbl.add db_cache (stamp, object_type) term;

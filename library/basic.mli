@@ -17,13 +17,18 @@ val iterm_term		: term -> term
 val iterm_bterms	: bound_term list -> term
 
 val ivoid_term		: term
+val ivoid_term_p	: term -> bool
 
-val number_of_inatural_term : term -> int
-val oid_of_ioid_term	: term -> object_id
+val number_of_inatural_term	: term -> int
+val oid_of_ioid_term		: term -> object_id
+val string_of_itoken_term	: term -> string
 
 val parameters_of_term		: term -> param list
 val token_parameter_to_string	: param -> string
 
+val dest_obid_param 		: param -> object_id
+val dest_token_param		: param -> string
+val dest_int_param		: param -> int
 
 (*
  * failure
@@ -52,6 +57,7 @@ type stamp = {term: term;
 	      time: bigint
 	      }
 
+val print_stamp		: stamp -> unit
 
 val dest_stamp		: stamp -> stamp
 val term_to_stamp	: term -> stamp
@@ -74,16 +80,15 @@ val sequence		: unit -> int
 val tid			: unit -> bound_term
 
 val term_of_unbound_term	: bound_term -> term
+val unbound_bterm_p		: bound_term -> bool
 val string_of_itext_term	: term -> string
 
 
 val mk_nuprl5_op	: param list -> operator
 
-
-
-val icons_term			: term -> term -> term
-val hd_of_icons_term		: term -> term
-val tl_of_icons_term		: term -> term
+val icons_term			: operator -> term -> term -> term
+val hd_of_icons_term		: operator -> term -> term
+val tl_of_icons_term		: operator -> term -> term
 
 
 val list_to_ilist_by_op_map	: operator -> ('a -> term) -> 'a list -> term
@@ -92,6 +97,9 @@ val list_to_ilist_by_op		: operator -> term list -> term
 val list_to_ilist		: term list -> term
 val list_to_ilist_map		: ('a -> term) -> 'a list -> term
 
+val map_isexpr_to_list_by_op	: operator -> (term -> 'a) -> term -> 'a list
+val map_isexpr_to_list		: (term -> 'a) -> term -> 'a list
+val map_isexpr_by_op		: operator -> (term -> unit) -> term -> unit
 
 val ioption_term		: term option -> term
 val option_of_ioption_term	: term -> term option
@@ -101,3 +109,4 @@ val property_of_iproperty_term	: term -> (string * term)
 
 val istring_term		: string -> term
 val string_of_istring_term	: term -> string
+

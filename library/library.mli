@@ -11,7 +11,8 @@
   *	Library
   *)
 
- val connect	: string (* remote hostname *) -> int (* remote socket *)
+ val connect	: string (* remote hostname *)
+			-> int (* remote socket *)
 			-> int (* local socket *)
 			-> connection
 
@@ -20,6 +21,9 @@
  val temp_lib_open	: connection -> string -> library
  (* string must be string returned from a lib_close or "" *)
  val temp_lib_close	: library -> string
+
+ val lib_join	: connection -> string list -> library
+ val lib_leave	: library -> unit
 
 (*
  val lib_open	: connection -> library
@@ -69,6 +73,38 @@
 
 
  (*
+  *	Remote evaluation:
+  *	
+  *	Eg : make_directory	: transaction -> object_id -> string -> object_id
+  *	 == dag_make_directory	: object_id -> string -> object_id
+  *	
+  *	make_directory t oid s =
+  *	 eval_to_object_id t 
+  *	   (String_ap (Oid_ap (Null_ap (itext_term "dag_make_directory ")) oid s))
+  *)
+
+ val eval			: transaction -> (term * term list) -> unit
+
+ val eval_to_term		: transaction -> (term * term list) -> term
+ val eval_to_token		: transaction -> (term * term list) -> string
+ val eval_to_string		: transaction -> (term * term list) -> string
+ val eval_to_object_id		: transaction -> (term * term list) -> object_id
+
+ val null_ap			: term -> (term * term list)
+ val string_ap			: (term * term list) -> string -> (term * term list)
+ val token_ap			: (term * term list) -> string -> (term * term list)
+ val object_id_ap		: (term * term list) -> object_id -> (term * term list)
+
+ val make_ap	: string 		(* remote unmarshall function name *)
+			-> ('a -> term)	(* local marshall function *)
+			-> ((term * term list) -> 'a -> (term * term list))
+
+ val make_eval	: string	 	(* remote marshall function name *)
+			-> (term -> 'a)	(* local unmarshall function *)
+			-> transaction -> (term * term list) -> 'a
+
+
+ (*
   *	Generic object manipulation 
   *)
 
@@ -91,18 +127,15 @@
  val get_property 	: transaction -> object_id -> string -> term
  val remove_property 	: transaction -> object_id -> string -> unit
 
-(*
  val get_properties 	: transaction -> object_id -> (string * term) list
  val put_properties 	: transaction -> object_id -> (string * term) list -> unit
-*)
 
  (* activation allows data derived from objects to be distributed. 
     The data distributed depends on object type.
   *) 
-(*
  val activate		: transaction -> object_id -> unit
  val deactivate		: transaction -> object_id -> unit
-*)
+
  
  (* Objects can be tagged as collectable. If a collectable object is not
   * referenced by a non-collectable object and is not active then it may be
@@ -112,10 +145,8 @@
   * At the moment, GC is not being performed. GC implementation will
   * will be accompanied by a recovery method as well.
   *)
-(*
  val allow_collection	 : transaction -> object_id -> unit
  val disallow_collection : transaction -> object_id -> unit
-*)
 
 
  (*	
@@ -142,49 +173,50 @@
   * 
   *)
 
-(*
  val make_root		: transaction -> string -> object_id
  val remove_root	: transaction -> object_id -> unit
 
  val make_directory	: transaction -> object_id -> string -> object_id
  val remove_directory	: transaction -> object_id -> string -> unit
-*)
+
 
  (* We allow insertion of objects into the tree. The object inserted may be a dir.
   * If an insertion would cause a cycle, then an error is thrown. 
   *)
-(*
+
+ val make_leaf		: transaction -> object_id -> string -> object_id
+ val remove_leaf	: transaction -> object_id -> string -> unit
+
+ val insert_leaf	: transaction -> object_id -> string (* name *) -> string (* type *) -> term -> object_id
+
+ (* cycle prevention not yet implemented. *)
  val insert		: transaction -> object_id -> string -> object_id -> unit
 
- val leaf_make		: transaction -> object_id -> string -> object_id
- val leaf_insert	: transaction -> object_id -> string -> term -> object_id
- val leaf_remove	: transaction -> object_id -> string -> unit
-
- val leaf_set_term	: transaction -> object_id -> term -> unit
- val leaf_get_term	: transaction -> object_id -> term
+ val root		: transaction (* local *) -> string -> object_id
+ val roots		: transaction (* local *) -> (string * object_id) list
 
  val directory_p	: transaction (* local *) -> object_id -> bool
+ val children		: transaction (* local *) -> object_id -> (string * object_id) list
 
- val parents		: transaction (* local *) -> object_id -> object_id list
- val children		: transaction (* local *) -> object_id -> object_id list
+
+(*
+
+ val find_root_path	: transaction (* local *) -> object_id -> string list
+ val find_root_paths	: transaction (* local *) -> object_id -> (string list) list
+
  val child		: transaction (* local *) -> object_id -> string -> object_id
+ val parents		: transaction (* local *) -> object_id -> object_id list
 
  val lookup		: transaction (* local *)
 				-> object_id -> string list -> object_id
+
+ (* The list of paths from one object to another. 
+  * First object_id arg is start and second is end.
+  *)
 
  val find_path		: transaction (* local *)
 				-> object_id -> object_id -> string list
  val find_paths		: transaction (* local *)
 				-> object_id -> object_id -> (string list) list
-*)
- (* The list of paths from one object to another. 
-  * First object_id arg is start and second is end.
-  *)
-
-(*
- val find_root_path	: transaction (* local *) -> object_id -> string list
- val find_root_paths	: transaction (* local *) -> object_id -> (string list) list
-
- val roots		: (string * object_id) list
 *)
 

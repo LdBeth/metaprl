@@ -1,6 +1,7 @@
 
 open Term
 open Basic
+open Definition
 
 type connection
 type environment
@@ -26,6 +27,16 @@ val open_library_environment	: connection
 
 val close_library_environment	: environment -> string
 
+val join_library_environment	: connection			
+				-> string list			
+				(* broadcast hook *)
+				-> (stamp -> stamp option -> bound_term list -> unit)
+				-> (term -> term) 		(* local eval *)
+				-> environment
+
+val leave_library_environment	: environment -> unit
+
+
 (*
 val open_library_environment	: connection		
 				-> string			(* "" means new lib env, otherwise -> restore *)
@@ -34,6 +45,9 @@ val open_library_environment	: connection
 				-> (environment -> term (* stamp *) -> unit)	(* start hook *)
 				-> environment
 *)
+
+val resource			: environment -> string -> termtable
+
 
 val eval_string		: environment -> bound_term (* tid *) -> string -> unit
 val eval		: environment -> bound_term (* tid *) -> term -> unit
