@@ -307,7 +307,12 @@ let rec edit pack parse_arg name window obj =
       List.map string_of_int (Proof.find_subgoal (Proof_edit.proof_of_ped (get_ped ())) (mk_addr addr) i)
    in
    let edit_is_enabled name =
-      Proof_edit.is_enabled_ped (get_ped ()) name
+      match obj.rule_ped with
+         Primitive _ -> false
+       | Derived _
+       | Incomplete
+       | Interactive _ ->
+            Proof_edit.is_enabled_ped (get_ped ()) name
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;

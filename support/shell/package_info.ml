@@ -510,6 +510,11 @@ let save_aux code arg pack_info =
           | { pack_status = PackIncomplete; pack_name = name } ->
                raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
           | { pack_str = Some { pack_str_info = info } } ->
+               (* XXX: (nogin) the "cmoz are non-interactive" is an _igly_ HACK!!! *)
+               if code = "cmoz" then
+                  Cache.StrFilterCache.set_mode info CompiledSummary
+               else
+                  Cache.StrFilterCache.set_mode info InteractiveSummary;
                Cache.StrFilterCache.save info arg (OnlySuffixes [code]);
                package.pack_status <- PackUnmodified
           | { pack_str = None; pack_name = name } ->
