@@ -135,7 +135,7 @@ doc <:doc<
    expands to and @it[res] lists the resource annotations.
    @end[doc]
 >>
-declare "parent"{'path; 'opens; 'resources}
+declare "parent"{'path; 'resources}
 declare "opname"[name:s]{'term}
 declare "definition"[name:s]{'term; 'definition; 'res}
 
@@ -540,10 +540,10 @@ dform path_parent_nil_df : internal :: path{cons{."parent"[name:s]; nil}} =
 dform path_parent_cons_df : internal :: path{cons{."parent"[name:s]; .cons{'n1; 'n2}}} =
    slot[name:s] keyword["."] cons{'n1; 'n2}
 
-dform parent_df : except_mode[tex] :: "parent"{'path; 'opens; 'resources} =
+dform parent_df : except_mode[tex] :: "parent"{'path; 'resources} =
    info["extends"] " " begin_cd{'path} path{'path} end_cd
 
-dform parent_df2 : mode[tex] :: "parent"{'path; 'opens; 'resources} =
+dform parent_df2 : mode[tex] :: "parent"{'path; 'resources} =
    info["Extends"] " " cdinternal{'path}
 
 (*

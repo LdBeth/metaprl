@@ -87,7 +87,9 @@ let _ = match rl_history_file with
          try
             Lm_readline.read_history name
          with
-            Sys_error err ->
+            Not_found ->
+               ()
+          | Sys_error err ->
                eprintf "Couldn't load readline history file: \"%s\"\n%s\n" name err;
                flush_all ()
 
@@ -148,7 +150,7 @@ let mk_opname_null _ =
    raise (Failure "Shell_mp.mk_opname: no current package")
 
 let mk_var_contexts_null v i =
-   if i=0 then None else raise(Failure "No context know for SO variables (need to specify contexts explicitly when not inside a rule")
+   if i=0 then None else raise(Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
 
 let default_saved_tactic =
    let loc = 0, 0 in

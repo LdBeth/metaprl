@@ -1,3 +1,7 @@
+************************************************************************
+* THIS FILE IS OUTDATED. PLASE USE BUGZILLA FOR FILING NEW BUG REPORTS *
+************************************************************************
+
 Note - some non-critical bugs may be documented as TODO items.
 (You need to have MetaPRL CVS account to be able to access the doc/private/TODO file.)
 
@@ -59,36 +63,13 @@ Because of that we stopped doing anything in the middle of reimplementations tha
 some cases working incorrectly. This resulted in several bugs that we should be able
 to fix pretty quickly if somebody would want us to).
 
-3.1) If a variable is bound in a context, rewriter may handle it incorrectly.
+3.1) (fixed)
 
 3.2) If the same variable is bound several times in redex or contractum specification, rewriter
 may handle it incorrectly. We can not prohibit repeated bound variable in redeces
 specifications because of two-way rewrites.
 
-3.3) If the same variable is bound several times in the matched term, rewriter may handle
-it incorrectly.
-
-Example:
-test{x.test{y.'C['x; 'y]}} <--> 'C[1; 2]
-rewrites <<test{x.test{x.'x}}>> to 1 instead of 2.
-
-(3.4-3.5 - fixed)
-
-3.6) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
-More specifically, if some SO variable occurs under some bound variable in
-contractum, but not in the redex, then we need to check whatever matched that
-SO variable for free vars and rename the bvar accordingly. Currently we never
-do this.
-   A particular case of this situation happens when we introduce a bound variable
-in contractum that didn't exist in the redex. In this case a possible workaround
-is to pass the variable name explicitly as an argument to the rule and than to
-compute the correct name ourselves (using the maybe_new_var function) in a
-tactic before calling the rule.
-   When the workaround is not used (such as with x in Itt_prod.unfold_prod and
-x1 in Itt_rfun.rfunctionEqualityA), the Rewrite_compile_redex.compile_bname
-will produce the SaveName variant.
-   After this bug is fixed, we should probably kill all the usage of the
-maybe_new_var function in tactics.
+(3.3-3.6 - fixed)
 
 3.7) Currently rewriter does not enforce building contractum to be against the same redex
 the contractum was compiled against. Hopefully we never do this wrong, but we still
@@ -108,7 +89,7 @@ Example: <<lambda{x.lambda{y.'S['x;'x] +@ 'S['x;'y]}}>> should match
 Nuprl's way is more natural and we should convert. I already wrote the new type
 inference (only for spread) with Nuprl's understanding in mind.
 
-3.11) (nogin; 2000.08.08)
+3.11) (nogin: 2000.08.08; nogin: still there 2003.11.24)
 When dT is ran on hypothesys x: exists i:'T..., y is used as a name of the new hypothesys
 variable instead of i. I am not sure whether it's a rewriter problem or a bad tactic.
 In particular, this breaks lots of proofs in itt_collection.
@@ -136,34 +117,12 @@ of applyAllC (conversionals_boot.ml).
 
 REFINER
 
-4.1) (fixed)
-
-4.2) Repeated bound variables (when the same variable is bound more than once) is
-handled incorrectly. For example, thinning rule does not check if the variable
-is bound only once (which may be used to prove incorrect results). This is probably the
-same bug as 3.3 (see also 4.11)
+(4.1-4.2 - fixed)
 
 4.3) rwh does not do matching correctly - for example, it allows to use reduceEta
 on <<lambda{x.('x 'x)}>>. This may be already fixed by the "strict" rewriter mode.
 
-4.4) "Understanding" of extracts seems broken. When refiner passes extracts to rewriter,
-it "forgets to mention" that they are in the scope of hypothesis variables.
-
-One of the side-effects of this problem is that we have to pass unnecessary arguments
-to some of the rules (such as Itt_struct.hypothesis and srecElimination;
-note: Itt_struct.hypothesis is mentioned in doc/htmlman/user-guide/mp-axiom.html).
-
-We may try to fix it using meta-variables - see TODO #1.05.1
-
-4.5) Since unification is only used in proof search, but not proof checking, it should be OK
-that we do not have any unification in term_std, but this may create problems,
-so we may need to create some unification for term_std.
-
-4.6) (Discovered 2000.04 by kopylov, confirmed by nogin)
-Until by-context free variable restriction is implemented and its usage is enforced
-when necessary (see doc/sequents.tex for more information), the rule chaining is not
-necessarily valid (e.g. even when S1 --> S2 and S2 --> S3 are valid rules, S1 --> S3 is not
-necessarily valid). See also TODO #6.01
+(4.4-4.6 - fixed)
 
 4.7) (nogin)
 In Ocaml, string is a mutable data structure. In MetaPRL, we use strings everywhere (variable
@@ -190,15 +149,9 @@ PARSER & FILTER
 
 5.1-5.2) (fixed)
 
-5.3) Some times parser requires too many brackets.
+5.3) The term grammar is very messy. In particular, sometimes parser requires too many brackets.
 
-5.4) (fixed)
-
-5.5) Toploop_resource seems to be added into .p4 file even if
-   base_theory is not included.
-
-5.6) (2000.05.30) Resource annotations on axioms (rules that have neither parameters nor
-assumptions) are currently silently ignored.
+(5.4-5.6 - fixed)
 
 5.7) (2001.07.18 nogin) Currently .prla ASCII IO requires stack size
 proportional to the file size. This means that we will have a stack overflow
@@ -215,9 +168,7 @@ RULES & REWRITES
 Unfortunatelly, we were not (yet) able to prove productElimination. We should
 think whether it's true and if not, then define dprod differently.
 
-6.5) Fixed
-
-6.6) See Itt_bugs.bug1
+(6.5-6.6 - fixed)
 
 BUILD SYSTEM
 
@@ -233,7 +184,7 @@ Another problem is that when .prla is removed from the repository and
 after "cvs update" removes it from the working copy, the old .prlb
 becomes active instead of being deleted.
 
-P.S. It's possible that cons (with its MD5 checksums) would be able to help
+P.S. It's possible that omake (with its MD5 checksums) would be able to help
 with this problem.
 
 7.2-7.3) (fixed)
