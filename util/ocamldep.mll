@@ -125,30 +125,49 @@ and string = parse
 
 let load_path = ref [""]
 
-let opt_flag = ref true
-
 let prl_flag = ref false
 
 let prl_init_flag = ref false
 
-let find_dependency modname (byt_deps, opt_deps) =
-  let name = String.uncapitalize modname in
-  try
-    let filename = Misc.find_in_path !load_path (name ^ ".mli") in
-    let basename = Filename.chop_suffix filename ".mli" in
-    ((basename ^ ".cmi") :: byt_deps,
-     (if !opt_flag & Sys.file_exists (basename ^ ".ml")
-      then basename ^ ".cmx"
-      else basename ^ ".cmi") :: opt_deps)
-  with Not_found ->
-  try
-    let filename = Misc.find_in_path !load_path (name ^ ".ml") in
-    let basename = Filename.chop_suffix filename ".ml" in
-    ((basename ^ ".cmo") :: byt_deps,
-     (basename ^ ".cmx") :: opt_deps)
-  with Not_found ->
-    (byt_deps, opt_deps)
+let rec find_file name = function
+   [] -> 
+      raise Not_found
+ | ext::exts ->
+      try
+         Filename.chop_suffix (Misc.find_in_path !load_path (name ^ ext)) ext
+      with Not_found ->
+         find_file name exts
 
+let find_dependency_cmi modname deps =
+   try
+      ((find_file (String.uncapitalize modname) [".mli"; ".cmi"])^".cmi")::deps
+   with Not_found ->
+      deps
+
+let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
+   let name = String.uncapitalize modname in
+   let cmi_file =
+      try 
+         Some ((find_file name [".mli"; ".cmi"])^".cmi")
+      with Not_found ->
+         None
+   in 
+   let cmx_file =
+      try
+         Some ((find_file name [".ml"; ".cmx"; ".cmo"])^".cmx")
+      with Not_found ->
+         None
+   in
+   match cmi_file, cmx_file with
+      Some cmi, Some cmx ->
+         cmi :: cmo_deps, cmx :: cmx_deps
+    | Some cmi, None ->
+         cmi :: cmo_deps, cmi :: cmx_deps
+    | None, Some cmx ->
+         cmo_deps, cmx :: cmx_deps
+    | None, None ->
+         cmo_deps, cmx_deps
+   
 let (depends_on, escaped_eol) =
   match Sys.os_type with
   | "Unix" | "Win32" -> (": ", "\\\n    ")
@@ -189,17 +208,17 @@ let file_dependencies source_file =
         if Sys.file_exists (basename ^ ".mli")
         then let cmi_name = basename ^ ".cmi" in ([cmi_name], [cmi_name])
         else ([], []) in
-      let (byt_deps, opt_deps) =
-        StringSet.fold find_dependency !free_structure_names init_deps in
-      print_dependencies (basename ^ ".cmo") byt_deps;
-      print_dependencies (basename ^ ".ppo") byt_deps;
-      print_dependencies (basename ^ ".cmx") opt_deps
+      let (cmo_deps, cmx_deps) =
+        StringSet.fold find_dependency_cmo_cmx !free_structure_names init_deps in
+      print_dependencies (basename ^ ".cmo") cmo_deps;
+      print_dependencies (basename ^ ".ppo") cmo_deps;
+      print_dependencies (basename ^ ".cmx") cmx_deps
     end else
     if Filename.check_suffix source_file ".mli" then begin
       let basename = Filename.chop_suffix source_file ".mli" in
-      let (byt_deps, opt_deps) =
-        StringSet.fold find_dependency !free_structure_names ([], []) in
-      print_dependencies (basename ^ ".cmi") byt_deps
+      let deps =
+        StringSet.fold find_dependency_cmi !free_structure_names [] in
+      print_dependencies (basename ^ ".cmi") deps
     end else
       ();
     close_in ic
@@ -214,8 +233,6 @@ let _ =
   Arg.parse [
      "-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
            "<dir>  Add <dir> to the list of include directories";
-     "-opt", Arg.Set opt_flag, " (undocumented)";
-     "-noopt", Arg.Clear opt_flag, " (undocumented)";
      "-prl_init", Arg.Set prl_init_flag, "add dependencies for PRL files, no Tactic_type";
      "-noprl_init", Arg.Set prl_init_flag, "add dependencies for PRL files, no Tactic_type";
      "-prl", Arg.Set prl_flag, "add dependencies for PRL files";
