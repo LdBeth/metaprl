@@ -1,20 +1,12 @@
 
-open Term
-open Basic
-open Filename
-open MathBus
-open Mbterm
-open Unix
-open Ascii_scan
-
-
-
-(* read_ascii_term *)
-
 open Array
 open List
 
 open Opname
+open Term
+
+open Basic
+open Ascii_scan
 
 let mask_p mask code  = (((land) code mask) = mask)
 
@@ -75,12 +67,9 @@ let level_add l itemf =
   
 let level_get l i = get l.items i
 
-type lscanner = { scanner : scanner; mutable levels : level list
-					; stb : string -> string list
-					; stp : string -> string -> param
-}
+type lscanner = { scanner : scanner; mutable levels : level list}
 
-let new_lscanner scanner stb stp = { scanner = scanner; levels = []; stb = stb; stp = stp }
+let new_lscanner scanner = { scanner = scanner; levels = [] }
 
 (* important that itemf not be called until after index allocated for item. *)
 let rec levels_assign scanner code itemf =
@@ -115,7 +104,7 @@ let make_operator opid parameters =
      else mk_nuprl5_op ((make_param (String opid)) :: parameters)
 
 
-let scan_binding scanner = (scanner.stb (scan_string scanner.scanner))
+let scan_binding scanner = (string_to_bindings (scan_string scanner.scanner))
 
 
 let rec scan_item stype scanner =
@@ -145,7 +134,7 @@ and scan_parameter scanner =
 	|_ -> error ["read_term"; "parameter"] [] []
     else let s = (scan_string scanner.scanner) in
 	  scan_byte scanner.scanner icolon;
-	  scanner.stp s (scan_string scanner.scanner)
+	  string_to_parameter s (scan_string scanner.scanner)
 
 and scan_parameters scanner = 
   if scan_at_byte_p scanner.scanner ilcurly
@@ -193,7 +182,7 @@ and scan_bound_term scanner =
     else let s = (scan_string scanner.scanner) in
 	  (* should be match (scan_cur_byte scanner.scanner) with ... *)
 	  if (scan_at_byte_p scanner.scanner icomma)
-		then mk_bterm (flatten ((scanner.stb s)
+		then mk_bterm (flatten ((string_to_bindings s)
 					  :: (scan_delimited_list
 						scanner.scanner
 						(function () -> (scan_binding scanner))
@@ -201,7 +190,7 @@ and scan_bound_term scanner =
 				(scan_term scanner)
 	  else if (scan_at_byte_p scanner.scanner idot)
 		then ((scan_next scanner.scanner);
-			 mk_bterm (scanner.stb s) (scan_term scanner))
+			 mk_bterm (string_to_bindings s) (scan_term scanner))
 	
 	  else if (scan_at_byte_p scanner.scanner ilcurly)
 		then mk_bterm [] (mk_term (make_operator s (scan_parameters scanner))
@@ -233,179 +222,8 @@ and scan_term scanner =
 
 (*let read_static_level scanner 
  let ilevel = read_term scanner in
- le)
+ le
 *)
 
-let read_term_aux scanner stb stp =
- scan_term (new_lscanner scanner stb stp)
-
-
-let string_to_term s = 
-  read_term_aux
-	(make_scanner "\\ \n\r\t()[]{}:;.," "\n\t\r " (Stream.of_string s))
-	(function s -> error ["string_to_term"; "string_to_binding"] [] [])
-	(function s -> error ["string_to_term"; "string_to_parameter"] [] [])
-
-(* db *)
-
-
-
-type dbtable = (stamp * string, term) Hashtbl.t
-
-let db_cache = (Hashtbl.create 7:dbtable)
-let master_pathname = ref ""
-
-let db_init master =
-  let name = if String.get master (String.length master - 1) = '/' then master
-  else String.concat "" [master; "/"] in
-  master_pathname := name
-
- (*let {process_id = pid} = dest_stamp stamp in
- process_pathname := String.concat "" [name ; pid];
- mkdir !process_pathname 999*)
-
-(*let db_query string =*)
-
-let db_read stamp object_type =
-  let {process_id = pid; seq = seq}  = dest_stamp stamp in
-  let filename = String.concat ""
-      [!master_pathname; "/"; pid; "/"; (string_of_int seq); "."; object_type] in
-  let in_channel = try open_in filename with
-    Sys_error e -> error (filename :: ["db_read"; "file"; "not"; "exist"]) [] [] in
-  let term = term_of_mbterm (read_node in_channel) in
-  close_in in_channel;
-  Hashtbl.add db_cache (stamp, object_type) term;
-  term
-
-let db_write stamp object_type term =
-  let {process_id = pid; seq = seq} = dest_stamp stamp in
-  let filename = String.concat ""
-      [!master_pathname; "/"; pid; (string_of_int seq); "."; object_type] in
-  let descr = openfile filename [O_EXCL; O_WRONLY; O_CREAT] 999 in
-  (write_node (mbterm_of_term term) (out_channel_of_descr descr));
-  close descr
-
-
-(* start db ascii*)
-
-let ascii_special_header = "%"
-let ash_length = String.length (ascii_special_header)
-
-let is_first_char char string =
-  (String.get string 0) = char
-
-let level_expression_escape_string = "\\ \n\t\'[]"
-
-let scan_level_expression s =
-  let le = ref (mk_const_level_exp 0) in
-
-  let rec scan_expression () = 
-    if (scan_at_byte_p s ilsquare) then
-      (scan_char_delimited_list s scan_expression '[' ']' '|';
-       scan_whitespace s)
-    else if scan_at_digit_p s then 
-      (le := max_level_exp (mk_const_level_exp (Num.int_of_num (scan_num s))) !le; ())
-    else (let v = scan_string s in
-    scan_whitespace s; 
-    le := max_level_exp (mk_var_level_exp v) !le); () in 
-
-  scan_expression ();
-  !le
-
-let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
-
-let mk_real_param_from_strings value ptype =
-  match ptype with "n" -> (Number (Num.num_of_string value))
-  | "time" -> (ParmList [(make_param (String "time"));
-			  (make_param (Number (Num.num_of_string value)))])
-  | "t" -> (Token value)
-  | "s" -> (String value)
-  | "q" -> (ParmList [(make_param (String "quote")); (make_param (String value))])
-  | "b" -> (ParmList [(make_param (String "bool")); (make_param (Number (Num.num_of_string value)))])
-  | "v" -> (Var value)
-  | "o" -> let term = string_to_term value in
-    (ObId (stamp_to_object_id (term_to_stamp term)))
-  | "l" -> let level = 
-      scan_level_expression (make_le_scanner (Stream.of_string value)) in 
-    (ParmList [(make_param (Level level)); (make_param (String value))])
-  | t -> failwith "unknown special op-param"
- 
-let mk_meta_param_from_strings value ptype =
-  match ptype with "n" -> (MNumber value)
-  | "t" -> (MToken value)
-  | "s" -> (MString value)
-  | "q" -> (ParmList [(make_param (String "quote")); (make_param (String value))])
-  | "b" -> (ParmList [(make_param (String "bool")); (make_param (Number (Num.num_of_string value)))])
-  | "v" -> (MVar value)
-  | "l" -> (MLevel value)
-  |  t -> failwith "unknown special meta op-param"
- 
-let string_to_bindings value = 
-  let l = String.length value in
-  if l > ash_length then 
-    let v = String.sub value 0 ash_length in
-    let l'= String.length v in 
-    (if v = ascii_special_header then 
-      let c = String.sub v 0 1 and v' = String.sub v 1 (l' - 1) in
-      match c with 
-	"A" -> ["nuprl5_implementation3"; "extended"; "meta"; v']
-      | "D" -> ["nuprl5_implementation3"; "extended"; "meta"; v']
-      | "S" -> ["nuprl5_implementation2"; "extended"; v']
-      | "d" -> ["nuprl5_implementation2"; "display"; v']
-      | "a" -> ["nuprl5_implementation1"; v']
-      | "%" -> [v']
-      | t -> failwith "unknown special binding"
-    else [value])
-  else [value]
-
-
-let string_to_parameter value ptype =
- let l = String.length value in
-  if ash_length < l then 
-    let v = String.sub value 0 ash_length in
-    let l'= String.length v in 
-    let pv = (if v = ascii_special_header then 
-      let c = String.sub v 0 1 and v' = String.sub v 1 (l' - 1) in
-      match c with 
-	"A" -> (ParmList [(make_param (String "extended"));
-			   (make_param (String "slot"));
-			   (make_param (String ptype)); 
-			   (make_param (Token v'))] (*type-of-meta-variable-id v'*)
-		  )
-      | "D" ->  (ParmList [(make_param (String "extended"));
-			    (make_param (String "slot"));
-			    (make_param (String ptype)); 
-			    (make_param (Token v'))])
-      | "S" ->  (ParmList [(make_param (String "extended"));
-			    (make_param (String "slot"));
-			    (make_param (String ptype))
-			  ])
-      | "d" ->  (ParmList [(make_param (String "display"));
-			    (make_param (String "slot"));
-			    (make_param (String ptype));
-			  ])
-      | "a" ->  (mk_meta_param_from_strings value ptype)
-      | "%" ->  (mk_real_param_from_strings v' ptype)
-      | t -> failwith "unknown special op-param"
-    else (mk_real_param_from_strings value ptype))
-    in make_param pv
-  else make_param (mk_real_param_from_strings value ptype)
-
-(* end db ascii*)
-
-
-let read_term stream =
- read_term_aux
- 	(make_scanner "\\ \n\r\t()[]{}:;.," "\n\t\r " stream)
-	string_to_bindings
-	string_to_parameter
-
- 
-
-(*
-let db_lib_read stamp object_type =
-  let sterm = stamp_to_term stamp and oterm = istring_term object_type in
-   Orb.eval_args_to_term tid sterm [oterm]
-*)
-
-
+let read_term scanner =
+ scan_term (new_lscanner scanner)

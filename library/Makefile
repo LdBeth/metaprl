@@ -35,6 +35,7 @@ LMFILES :=\
 	basic\
 	socketIo\
 	link\
+	ascii_scan\
 	db\
 	tentfunctor\
 	oidtable\
