@@ -1,6 +1,6 @@
 The directions below outline the process for compiling MetaPRL under Mac
-OS X.  They were developed by Brian Emre Aydemir (emre@cs.caltech.edu)
-and Nathan Gray (n8gray@cs.caltech.edu).
+OS X.  They were developed by Brian Emre Aydemir (emre /@/ cs.caltech.edu)
+and Nathan Gray (n8gray /@/ cs.caltech.edu).
 
 Note: All the commands below need to be run from a command line, such as
 the Terminal program in /Applications/Utilities.
