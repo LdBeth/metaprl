@@ -65,7 +65,6 @@ type parens =
 
 type dform_printer_info =
    { dform_term : term;
-     dform_stack : rewrite_stack;
      dform_items : rewrite_item list;
      dform_printer : buffer -> parens -> term -> unit;
      dform_buffer : buffer

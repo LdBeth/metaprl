@@ -327,9 +327,6 @@ let dform_print_expr loc =
 let dform_term_patt loc =
    <:patt< $uid:"Dform"$ . $lid:"dform_term"$ >>
 
-let dform_stack_patt loc =
-   <:patt< $uid:"Dform"$ . $lid:"dform_stack"$ >>
-
 let dform_printer_patt loc =
    <:patt< $uid:"Dform"$ . $lid:"dform_printer"$ >>
 
@@ -1885,8 +1882,8 @@ struct
     * This is the code we create:
     * let _ =
     *    ... define_ml_program proc loc t ...
-    *    let printer { dform_stack = stack_id;
-    *                  dform_items = [items];
+    *    let printer { dform_term = term
+    *                  dform_items = items;
     *                  dform_printer = printer;
     *                  dform_buffer = buffer
     *                } =
@@ -1946,7 +1943,6 @@ struct
       in
       let dprinter_rec_patt =
          <:patt< { $list:[ dform_term_patt loc, term_patt;
-                           dform_stack_patt loc, stack_patt;
                            dform_items_patt loc, items_patt;
                            dform_printer_patt loc, printer_patt;
                            dform_buffer_patt loc, buffer_patt ]$ } >>

@@ -72,7 +72,7 @@ val join_tables : ('a, 'b) term_table -> ('a, 'b) term_table -> ('a, 'b) term_ta
  *)
 val lookup : string -> ('a, 'b) term_table ->
    ('a info_entry list -> 'b info_entry list) ->
-   term -> rewrite_stack * rewrite_item list * 'b
+   term -> rewrite_item list * 'b
 
 (*
  * Destruction.

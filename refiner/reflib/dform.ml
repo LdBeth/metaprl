@@ -80,7 +80,6 @@ type parens =
 
 type dform_printer_info =
    { dform_term : term;
-     dform_stack : rewrite_stack;
      dform_items : rewrite_item list;
 
      dform_printer : buffer -> parens -> term -> unit;
@@ -115,7 +114,7 @@ type dform_info =
  * with their precedence and printer.
  *)
 type df_printer =
-   DFExpansion of rewrite_contractum
+   DFExpansion of rewrite_redex * rewrite_contractum
  | DFPrinter of (dform_printer_info -> unit)
 
 type dform_item =
@@ -180,7 +179,7 @@ let add_dform base { dform_name = name;
          DFormExpansion e ->
             let redex, _ = compile_redex [||] t in
             let contractum = compile_contractum redex e in
-               DFExpansion contractum
+               DFExpansion (redex, contractum)
        | DFormPrinter f ->
             DFPrinter f
    in
@@ -390,7 +389,7 @@ let format_short_term base shortener =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
       (* Check for a display form entry *)
-      let stack, items, { df_name = name;
+      let items, { df_name = name;
                           df_precedence = pr';
                           df_printer = printer;
                           df_external = is_external
@@ -445,7 +444,6 @@ let format_short_term base shortener =
                DFPrinter f ->
                   let entry =
                      { dform_term = t;
-                       dform_stack = stack;
                        dform_items = items;
                        dform_printer = print_term pr;
                        dform_buffer = buf
@@ -454,7 +452,8 @@ let format_short_term base shortener =
                      if !debug_dform then
                         eprintf "Dform fun %s: %s%t" name (string_of_term t) eflush;
                      f entry
-             | DFExpansion c ->
+             | DFExpansion (r, c) ->
+                  let stack = apply_redex r [||] t [] in
                   let t = make_contractum c stack in
                      if !debug_dform then
                         eprintf "Dform %s%t" name eflush;
