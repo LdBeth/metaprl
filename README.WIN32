@@ -74,7 +74,7 @@ Installation:
    your installation---for example, if you do not have OpenSSL installed,
    set "SSL_ENABLED" to "false".
 
-   If you get any errors, send mail to onlynews@metaprl.org, and
+   If you get any errors, send mail to metaprl(at)metaprl.org, and
    we'll try to help you out.
 
 6. Running MetaPRL
