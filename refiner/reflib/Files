@@ -25,4 +25,10 @@ REFLIB_FILES :=\
 	mp_resource\
 	term_compare_sig\
 	term_compare\
-	match_seq
+	match_seq\
+        jlogic_sig\
+	jall\
+
+
+
+
