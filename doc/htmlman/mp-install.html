@@ -18,7 +18,7 @@
   <LI>Objective Caml: our version contains a small patch to CamlP4 to compile the
       CamlP4 distribution in native code.
   <LI>The OMake build system.
-  <LI>OpenSSL libraries and header files are optional, but hightly recommended.
+  <LI>OpenSSL libraries and header files are optional, but highly recommended.
   <LI>Ensemble: you need Ensemble only if you want to use the distributed prover.
   <LI>MetaPRL sources.
 </OL>
@@ -36,8 +36,11 @@ HREF="http://cvs.metaprl.org:12000/cvsweb/metaprl/patches/">http://cvs.metaprl.o
 file</A> for the list of patches you need to apply).</P>
 
 <P>The Win32 binaries of OCaml and OMake are available at <A
-HREF="http://files.metaprl.org/win32/">http://files.metaprl.org/win32/</A>.  Under Winodws you will
-need Microsoft Visual C/C++ installed, as well as the Microsoft Macro Assembler. Alternatively, you
+HREF="http://files.metaprl.org/win32/">http://files.metaprl.org/win32/</A>.  Under Windows you will
+need Microsoft Visual C/C++ installed, as well as the Microsoft Macro Assembler
+(<a href="http://msdn.microsoft.com/visualc/vctoolkit2003/">Microsoft Visual C++ Toolkit 2003</a>
+is available for free and is hopefully enough but we didn't try it).
+Alternatively, you
 can use <a href="http://www.cygwin.org/">the Cygnus Systems GNU-Win32 distribution</a>, but the
 performance (especially the compilation time) is likely to be noticeably worse.
 
@@ -45,7 +48,7 @@ performance (especially the compilation time) is likely to be noticeably worse.
 
 <P>You can download Ensemble from <A HREF="ftp://ftp.cs.cornell.edu/pub/ensemble/">ftp://ftp.cs.cornell.edu/pub/ensemble/</A>.</P>
 
-<P> If you are using a Unix-like operation system, you probably already have a copy of openssl
+<P> If you are using a Unix-like operation system, you probably already have a copy of OpenSSL
 around (note that you need the development files as well, which are often distributed in a separate
 <tt>openssl-devel</tt> binary package).  OpenSSL for Windows is available at <a
 href="http://www.slproweb.com/products/Win32OpenSSL.html">http://www.slproweb.com/products/Win32OpenSSL.html</a>.
@@ -167,6 +170,10 @@ respectively.</P>
 
 <P>MetaPRL can be run with the <p>&lt;metaprl&gt;/editor/ml/mpopt<p> script (if <tt>NATIVE_ENABLED</tt> is switched on in <tt>mk/config</tt>), or <tt>&lt;metaprl&gt;/editor/ml/mptopt</tt> (if you have compiled MetaPRL with <tt>BYTECODE_ENABLED</tt>).
 By default, this will attempt to start your browser or prompt you to connect using your browser. MetaPRL looks better if you use Mozilla, but other browsers (including Konqueror and IE) are likely to work as well.
+Internet Explorer is known to work well when "Arial Unicode MS" font is installed
+(arialuni.ttf is available on Microsoft Office CD inside office1.cab;
+note that it is not always installed automatically with MS Office) otherwise some symbols
+might not by displayed; some other "rich" font might work as well.
 
 <P>You don't have to use the browser.  You can also use the command-line
    interface by running MetaPRL with the <tt>-cli</tt> option, which will expect to be running in a console with Unicode fonts. To run <tt>mpopt -cli</tt> in an <tt>xterm</tt> with the correct fonts, use
@@ -179,7 +186,7 @@ By default, this will attempt to start your browser or prompt you to connect usi
 Unicode (<tt>iso10646-1</tt>) font to be able to interact with some sense. We
 currently recommend using the
 <TT>-misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1</TT> font
-(wihich is what <TT>mpxterm</TT> script uses), but in some cases another font
+(which is what <TT>mpxterm</TT> script uses), but in some cases another font
 may work better.</P>
 
 <P>That's it. To navigate the MetaPRL logics and programs, you will need to
