@@ -29,76 +29,6 @@
  *)
 open Printf
 
-(*
- * For Debug: Weak's double uses two copies of Weak and compares their behaviour.
- *)
-module DoubledWeak =
-struct
-
-   exception Inconsistency of string
-
-   type 'a t =
-      {
-         first : 'a Weak.t;
-         second : 'a Weak.t;
-         }
-
-   let create i = {first=Weak.create i; second=Weak.create i}
-
-   let length ar = Weak.length ar.first
-
-   let set ar i opt =
-      begin
-         Weak.set ar.first i opt;
-         Weak.set ar.second i opt
-      end
-
-   let get ar i =
-      let opt1 = Weak.get ar.first i in
-      let opt2 = Weak.get ar.second i in
-      match opt1 with
-         Some v1 ->
-            (match opt2 with
-               Some v2 ->
-                  if v1==v2 then
-                     opt1
-                  else
-                     raise (Inconsistency "Different values in different copies of array")
-             | None -> opt2)
-       | None -> opt1
-
-   let get_copy ar i =
-      let opt1 = Weak.get_copy ar.first i in
-      let opt2 = Weak.get_copy ar.second i in
-      match opt1 with
-         Some v1 ->
-            (match opt2 with
-               Some v2 ->
-                  if v1=v2 then
-                     opt1
-                  else
-                     raise (Inconsistency "Different values in different copies of array")
-             | None -> opt2)
-       | None -> opt1
-
-   let check ar i =
-      (Weak.check ar.first i) &&
-      (Weak.check ar.second i)
-
-   let fill ar i j v =
-      begin
-         Weak.fill ar.first i j v;
-         Weak.fill ar.second i j v
-      end
-
-   let blit ar1 i1 ar2 i2 n =
-      begin
-         Weak.blit ar1.first i1 ar2.first i2  n;
-         Weak.blit ar1.second i1 ar2.second i2 n;
-      end
-
-end
-
 module WeakMemo (Hash : Hash_with_gc_sig.HashWithGCSig) =
 struct
    (************************************************************************
@@ -122,8 +52,6 @@ ENDIF
 
    exception Cell_is_full
    exception Inconsistency of string
-
-   module Weak = DoubledWeak
 
    type ('param, 'arg, 'header, 'weak_header, 'image) t =
       { make_header : 'param -> 'arg -> 'header;
