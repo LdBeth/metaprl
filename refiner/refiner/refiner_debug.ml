@@ -33,6 +33,7 @@ open Term_sig
 open Term_shape_sig
 open Refiner_sig
 open Termmod_sig
+open Rewrite_sig
 
 open Lm_symbol
 open Lm_printf
@@ -60,6 +61,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    module SeqHyp2 = Refiner2.Term.SeqHyp
    module Err1 = Refiner1.RefineError
    module Err2 = Refiner2.RefineError
+   module Rewrite1 = Refiner1.Rewrite
+   module Rewrite2 = Refiner2.Rewrite
 
    module TermType = struct
       type term = Type1.term * Type2.term
@@ -71,6 +74,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       type level_exp = Type1.level_exp * Type2.level_exp
       type seq_hyps = Type1.seq_hyps * Type2.seq_hyps
       type shape = TermShape1.shape * TermShape2.shape
+      type rewrite_rule = Rewrite1.rewrite_rule * Rewrite2.rewrite_rule
+      type rewrite_redex = Rewrite1.rewrite_redex * Rewrite2.rewrite_redex
 
       type level_exp_var' = { le_var : var; le_offset : int }
       type level_exp' = { le_const : int; le_vars : level_exp_var list }
@@ -82,6 +87,14 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       type meta_term = term poly_meta_term
       type hypothesis = term poly_hypothesis
       type esequent = { sequent_args : term; sequent_hyps : seq_hyps; sequent_concl : term }
+
+      type rewrite_item =
+         RewriteTerm of term
+       | RewriteFun of (term list -> term)
+       | RewriteContext of (term -> term list -> term)
+       | RewriteString of string rewrite_param
+       | RewriteNum of Lm_num.num rewrite_param
+       | RewriteLevel of level_exp
 
       type match_param =
          MatchNumber of Lm_num.num * int option
@@ -525,6 +538,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          report_error x (name ^ " lists length mismatch");
       List.map2 (merge x) l1 l2
 
+   let merge_array merge name x a1 a2 =
+      if not (Array.length a1 = Array.length a2) then
+         report_error x (name ^ " array length mismatch");
+      Array.of_list (List.map2 (merge x) (Array.to_list a1) (Array.to_list a2))
+
    let merge_opt merge name x o1 o2 =
       match o1, o2 with
          None, None -> None
@@ -533,6 +551,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let merge_ints = merge_list merge_int "integer"
    let merge_vars = merge_list merge_var "var"
+   let merge_int_arr = merge_array merge_int "integer"
+   let merge_var_arr = merge_array merge_var "var"
    let merge_strings = merge_list merge_string "string"
    let merge_var_lo = merge_opt merge_vars "var list"
 
@@ -704,6 +724,51 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
        | _ -> report_error x "match_term kind mismatch"
 
    and merge_match_terms x mtl1 mtl2 = merge_list merge_match_term "match term" x mtl1 mtl2
+
+   let merge_rwspecs x (sp1: rewrite_args_spec) sp2 =
+      merge_var_arr x sp1 sp2
+
+   let merge_rwargs x (ia1, ss1) (ia2, ss2) =
+      (merge_int_arr x ia1 ia2), (merge_ss x ss1 ss2)
+
+   let merge_rwtyp x (rwt1: rewrite_type) rwt2 =
+      if rwt1 <> rwt2 then
+         report_error x "rewrite_type mismatch";
+      rwt1
+
+   let merge_rwtv x (rt1, v1) (rt2, v2) =
+      (merge_rwtyp x rt1 rt2), (merge_var x v1 v2)
+
+   let merge_rwtvl = merge_list merge_rwtv "rewrite_type * var"
+
+   let merge_rwp merge x p1 p2 =
+      match p1, p2 with
+         RewriteParam p1, RewriteParam p2 -> RewriteParam (merge x p1 p2)
+       | RewriteMetaParam v1, RewriteMetaParam v2 -> RewriteMetaParam (merge_var x v1 v2)
+       | _ -> report_error x "rewrite_param kind mismatch"
+
+   let merge_rewrite_item x i1 i2 =
+      match i1, i2 with
+         Rewrite1.RewriteTerm t1, Rewrite2.RewriteTerm t2 ->
+             RewriteTerm (merge_term x t1 t2)
+       | Rewrite1.RewriteFun f1, Rewrite2.RewriteFun f2 ->
+            RewriteFun (fun tl -> let tl1, tl2 = split tl in merge merge_term x (wrap1 f1 tl1) (wrap1 f2 tl2))
+       | Rewrite1.RewriteContext f1, Rewrite2.RewriteContext f2 ->
+            RewriteContext (fun (t1, t2) tl -> let tl1, tl2 = split tl in merge merge_term x (wrap2 f1 t1 tl1) (wrap2 f2 t2 tl2))
+       | Rewrite1.RewriteString s1, Rewrite2.RewriteString s2 ->
+            RewriteString (merge_rwp merge_string x s1 s2)
+       | Rewrite1.RewriteNum n1, Rewrite2.RewriteNum n2 ->
+            RewriteNum (merge_rwp merge_num x n1 n2)
+       | Rewrite1.RewriteLevel le1, Rewrite2.RewriteLevel le2 ->
+            RewriteLevel (merge_level_exp x le1 le2)
+       | _ ->
+            report_error x "rewrite_item kind mismatch"
+
+   let merge_ib x (i1, b1) (i2, b2) =
+      (merge_int x i1 i2), (merge_bool x b1 b2)
+
+   let merge_rewrite_items = merge_list merge_rewrite_item "rewrite_item"
+   let merge_ibl = merge_list merge_ib "int * bool"
 
    module SeqHyp = struct
       type elt = hypothesis
@@ -2251,6 +2316,76 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    module Rewrite = struct
       include TermType
+
+      (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
+
+      let empty_args_spec =
+         merge_rwspecs "Rewrite.empty_args_spec" (Rewrite1.empty_args_spec) (Rewrite2.empty_args_spec)
+
+      let empty_args =
+         merge_rwargs "Rewrite.empty_args" (Rewrite1.empty_args) (Rewrite2.empty_args)
+
+      let compile_redex (p0 : strict) (p1 : rewrite_args_spec) (p2 : term) =
+         let p2_1, p2_2 = p2 in
+         merge merge_triv "Rewrite.compile_redex" (wrap3 Rewrite1.compile_redex p0 p1 p2_1) (wrap3 Rewrite2.compile_redex p0 p1 p2_2)
+
+      let compile_redices (p0 : strict) (p1 : rewrite_args_spec) (p2 : term list) =
+         let p2_1, p2_2 = split p2 in
+         merge merge_triv "Rewrite.compile_redices" (wrap3 Rewrite1.compile_redices p0 p1 p2_1) (wrap3 Rewrite2.compile_redices p0 p1 p2_2)
+
+      let extract_redex_types (p0 : rewrite_redex) =
+         let p0_1, p0_2 = p0 in
+         merge merge_rwtvl "Rewrite.extract_redex_types" (wrap1 Rewrite1.extract_redex_types p0_1) (wrap1 Rewrite2.extract_redex_types p0_2)
+
+      let test_redex_applicability (p0 : rewrite_redex) (p1 : int array) (p2 : term) (p3 : term list) =
+         let p0_1, p0_2 = p0 in
+         let p2_1, p2_2 = p2 in
+         let p3_1, p3_2 = split p3 in
+         merge merge_unit "Rewrite.test_redex_applicability" (wrap4 Rewrite1.test_redex_applicability p0_1 p1 p2_1 p3_1) (wrap4 Rewrite2.test_redex_applicability p0_2 p1 p2_2 p3_2)
+
+      let apply_redex (p0 : rewrite_redex) (p1 : int array) (p2 : term) (p3 : term list) =
+         let p0_1, p0_2 = p0 in
+         let p2_1, p2_2 = p2 in
+         let p3_1, p3_2 = split p3 in
+         merge merge_rewrite_items "Rewrite.apply_redex" (wrap4 Rewrite1.apply_redex p0_1 p1 p2_1 p3_1) (wrap4 Rewrite2.apply_redex p0_2 p1 p2_2 p3_2)
+
+      let term_rewrite (p0 : strict) (p1 : rewrite_args_spec) (p2 : term list) (p3 : term list) =
+         let p2_1, p2_2 = split p2 in
+         let p3_1, p3_2 = split p3 in
+         merge merge_triv "Rewrite.term_rewrite" (wrap4 Rewrite1.term_rewrite p0 p1 p2_1 p3_1) (wrap4 Rewrite2.term_rewrite p0 p1 p2_2 p3_2)
+
+      let fun_rewrite (p0 : strict) (p1 : term) (p2 : (term -> term)) =
+         let p1_1, p1_2 = p1 in
+         let p2_1, p2_2 = split_ttf p2 in
+         merge merge_triv "Rewrite.fun_rewrite" (wrap3 Rewrite1.fun_rewrite p0 p1_1 p2_1) (wrap3 Rewrite2.fun_rewrite p0 p1_2 p2_2)
+
+      let apply_rewrite (p0 : rewrite_rule) (p1 : rewrite_args) (p2 : term) (p3 : term list) =
+         let p0_1, p0_2 = p0 in
+         let p2_1, p2_2 = p2 in
+         let p3_1, p3_2 = split p3 in
+         merge merge_terms "Rewrite.apply_rewrite" (wrap4 Rewrite1.apply_rewrite p0_1 p1 p2_1 p3_1) (wrap4 Rewrite2.apply_rewrite p0_2 p1 p2_2 p3_2)
+
+      let relevant_rule (p0 : operator) (p1 : int list) (p2 : rewrite_rule) =
+         let p0_1, p0_2 = p0 in
+         let p2_1, p2_2 = p2 in
+         merge merge_bool "Rewrite.relevant_rule" (wrap3 Rewrite1.relevant_rule p0_1 p1 p2_1) (wrap3 Rewrite2.relevant_rule p0_2 p1 p2_2)
+
+      let rewrite_operator (p0 : rewrite_rule) =
+         let p0_1, p0_2 = p0 in
+         merge merge_op "Rewrite.rewrite_operator" (wrap1 Rewrite1.rewrite_operator p0_1) (wrap1 Rewrite2.rewrite_operator p0_2)
+
+      let rewrite_eval_flags (p0 : rewrite_rule) =
+         let p0_1, p0_2 = p0 in
+         merge merge_ibl "Rewrite.rewrite_eval_flags" (wrap1 Rewrite1.rewrite_eval_flags p0_1) (wrap1 Rewrite2.rewrite_eval_flags p0_2)
+
+      let print_rewrite_redex (p0 : out_channel) (p1 : rewrite_redex) =
+         let p1_1, p1_2 = p1 in
+         merge merge_unit "Rewrite.print_rewrite_redex" (wrap2 Rewrite1.print_rewrite_redex p0 p1_1) (wrap2 Rewrite2.print_rewrite_redex p0 p1_2)
+
+      let print_rewrite_rule (p0 : out_channel) (p1 : rewrite_rule) =
+         let p1_1, p1_2 = p1 in
+         merge merge_unit "Rewrite.print_rewrite_rule" (wrap2 Rewrite1.print_rewrite_rule p0 p1_1) (wrap2 Rewrite2.print_rewrite_rule p0 p1_2)
+
    end
 
    module Refine = struct

@@ -12,9 +12,10 @@ $merges{"operator"}="merge_op";
 $merges{"operator'"}="merge_op'";
 $merges{"bound_term"}="merge_bterm";
 $merges{"bound_term'"}="merge_bterm'";
-foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address", "match_param", "match_term", "esequent", "term_subst", "shape", "shape_param", "meta_term") {
+foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address", "match_param", "match_term", "esequent", "term_subst", "shape", "shape_param", "meta_term", "rewrite_item") {
     $merges{$ty}="merge_$ty";
     $merges{"$ty list"}="merge_" . $ty . "s";
+    $merges{"$ty array"}="merge_" . $ty . "_arr";
     $merges{"$ty option"}="merge_" . $ty . "_opt";
     $merges{"$ty list option"}="merge_" . $ty . "_lo";
 };
@@ -23,17 +24,23 @@ foreach my $ty ("term", "param", "level_exp", "level_exp_var") {
     $merges{$ty2} = "merge_$ty2";
     $merges{"$ty2 list"} = "merge_$ty" . "s'";
 }
+$merges{"rewrite_rule"} = "merge_triv";
+$merges{"rewrite_redex"} = "merge_triv";
+$merges{"rewrite_args_spec"} = "merge_rwspecs";
+$merges{"rewrite_args"} = "merge_rwargs";
 $merges{"Lm_num.num"} = "merge_num";
 $merges{"SymbolSet.t"} = "merge_ss";
+$merges{"(int * bool) list"} = "merge_ibl";
 $merges{"string list * term option * term"} = "merge_sltot";
+$merges{"(rewrite_type * var) list"} = "merge_rwtvl";
 $merges{"'a"} = "merge_poly";
 $merges{"'a list"} = "merge_poly";
 $merges{"term -> term"} = "merge_ttf";
 
-foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "unit") {
+foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "unit", "strict", "rewrite_args", "rewrite_args_spec") {
     $splits{$ty} = $splits{"$ty list"} = $splits{"$ty array"} = "";
 };
-foreach my $ty ("term", "bound_term", "param", "operator", "level_exp", "level_exp_var", "address", "shape") {
+foreach my $ty ("term", "bound_term", "param", "operator", "level_exp", "level_exp_var", "address", "shape", "rewrite_rule", "rewrite_redex") {
     $splits{$ty} = "identity";
     $splits{"$ty list"} = "split";
     $splits{"$ty option"} = "split_opt";
@@ -112,7 +119,7 @@ sub process ($) {
     if (defined $merges{$tyres}) {
 	print "         ", $merge, $merges{$tyres}, " \"$modname.$name\" ($wrap" , $modname, "1.$name$args1) ($wrap", $modname, "2.$name$args2)\n\n";
     } else {
-	if ($tyres =~ /\*/) {
+	if ($tyres =~ /^[^(]*\*/) {
 	    my @tyress = split(/[[:space:]]*\*[[:space:]]*/,$tyres);
 	    print "         let res1 = " , $wrap, $modname, "1.$name$args1 in\n";
 	    print "         let res2 = " , $wrap, $modname, "2.$name$args2 in\n";
