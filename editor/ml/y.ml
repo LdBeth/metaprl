@@ -33,6 +33,7 @@ open Czf_itt_set
 open Czf_itt_eq
 open Czf_itt_member
 open Czf_itt_sep
+open Czf_itt_all
 
 (*
  * Proof saving.
@@ -59,7 +60,7 @@ let _ = load "itt_derive"
 let _ = cd "itt_derive.independentApplyIntro2"
 *)
 let _ = load "czf_itt_all"
-let _ = cd "czf_itt_all.dfun_res"
+let _ = cd "czf_itt_all.dfun_res2"
 let _ = set_writeable ()
 
 (*
