@@ -428,8 +428,9 @@ Tries to solve goals with conclusions of the form
 the form of 'a to determine the correct tactic to apply.
 
 In its initial state, it can handle 
-<< univ[j:l] = univ[j:l] in univ[i:l] >> and
-<< it = it in ('a = 'b in 'T) >>
+<< univ[j:l] = univ[j:l] in univ[i:l] >>,
+<< it = it in ('a = 'b in 'T) >>, and
+<< ('a1 = 'b1 in 'T1) = ('a2 = 'b2 in 'T2) in univ[i:l] >>.
 
 * squash_equalT : tactic
 
@@ -1688,8 +1689,15 @@ and << member{'A; 'x} >>.
 
 This file adds to the eqcdT tactic.
 eqcdT can handle conclusions of the form
-<< quot x1, y1: 'A1 // 'E1['x1; 'y1] = quot x2, y2: 'A2 // 'E2['x2; 'y2] in univ[i:l] >>
-(generating five subgoals).
+<< quot x1, y1: 'A1 // 'E1['x1; 'y1] = quot x2, y2: 'A2 // 'E2['x2; 'y2] in univ[i:l] >>.
+This generates 5 subgoals (3 of which specify that << 'E1['x; 'y] >>
+is an equivalence relation).  There is an alternate form (altT eqcdT)
+or (altT (dT 0)) which requires that you prove each of the quotient
+type is a type individually; you then don't have to prove that
+<< 'E1['x; 'y] >> is an equivalence relation.  In fact, this alternate
+form is even more powerful than the original; it proves quotient types
+equal if the predicates are equivalent (in the sense of iff), whereas
+the original requires that the predicates be equal.
 
 This file adds to the subtypeT tactic.
 subtypeT proves that << quot x1, y1: 'A1 // 'E1['x1; 'y1] >> is a
