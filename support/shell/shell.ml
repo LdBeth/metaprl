@@ -1079,7 +1079,8 @@ struct
                      Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
                      Shell_state.set_infixes shell (Some (Package.get_infixes pkg));
                      Shell_state.set_module shell modname;
-                     if verbose then eprintf "Module: /%s%t" modname eflush
+                     if verbose then
+                        eprintf "Module: /%s%t" modname eflush
                end;
 
             if item = [] then

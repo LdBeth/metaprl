@@ -33,7 +33,8 @@
  *)
 open Lm_debug
 open Lm_symbol
-open Lm_printf
+
+open Format
 
 open Http_simple
 open Http_server_type
@@ -121,6 +122,37 @@ struct
                false
 
    (*
+    * Get the window width (approximately in characters) from the header.
+    * We assume some kind of character width.  Of course, this is quite wrong,
+    * but the formatter needs a right margin in terms of characters.  Be
+    * conservative, and choose to make the right margin smaller than it
+    * might be.  We assume, on average, each char takes 10 pixels (bogus).
+    *)
+   let char_width = 10
+   let default_width = 140
+
+   let get_window_width header =
+      let rec search header =
+         match header with
+            RequestCookies cookies :: rest ->
+               if !debug_http then
+                  List.iter (fun (name, v) ->
+                        eprintf "Cookie: %s=%s@." name v) cookies;
+               (try int_of_string (List.assoc "MetaPRL.width" cookies) / char_width with
+                   Not_found
+                 | Failure "int_of_string" ->
+                      search rest)
+          | _ :: rest ->
+               search rest
+          | [] ->
+               raise Not_found
+      in
+         try search header with
+            Not_found ->
+               (* Some default width *)
+               default_width
+
+   (*
     * Add the info to the table.
     *)
    let table_of_state state =
@@ -154,10 +186,10 @@ struct
    (*
     * This is the default printer that uses tables for display.
     *)
-   let print_page out state location =
+   let print_page out width state location =
       let table = add_title_location state "MetaPRL display" location in
-      let table = BrowserTable.add_fun table body_sym Browser_display_term.format_main in
-      let table = BrowserTable.add_fun table message_sym Browser_display_term.format_message in
+      let table = BrowserTable.add_fun table body_sym (Browser_display_term.format_main width) in
+      let table = BrowserTable.add_fun table message_sym (Browser_display_term.format_message width) in
       let filename =
          if state.state_long then
             "pagelong.html"
@@ -202,8 +234,10 @@ struct
     *)
    let eval state outx command =
       let command = command ^ ";;" in
-         Browser_display_term.set_message_string ("# " ^ command);
-         Shell.eval state.state_shell command
+      let state = add_rulebox state "" in
+         Browser_display_term.add_prompt ("# " ^ command);
+         Shell.eval state.state_shell command;
+         state
 
    let chdir state dir =
       if !debug_http then
@@ -237,9 +271,10 @@ struct
             if is_valid_response state header then
                let uri = "" :: decode_uri uri in
                let dirname = Lm_string_util.concat "/" uri in
+               let width = get_window_width header in
                   chdir state dirname;
                   flush state;
-                  print_page outx state dirname;
+                  print_page outx width state dirname;
                   state
             else
                begin
@@ -276,19 +311,27 @@ struct
             Not_found ->
                None
       in
+      let redisplay state =
+         let { http_host     = host;
+               http_port     = port
+             } = http_info server
+         in
+         let uri = sprintf "http://%s:%d%s" host port (Shell.pwd state.state_shell) in
+            print_redirect_page outx SeeOtherCode uri;
+            state
+      in
          match button with
             Some ("Long" as s)
           | Some ("Short" as s) ->
                let state = { state with state_long = s = "Long" } in
-               let state' =
+               let state =
                   match command with
                      Some command ->
                         add_rulebox state command
                    | None ->
                         state
                in
-                  print_page outx state' dirname;
-                  state
+                  redisplay state
           | Some "Submit"
           | None ->
                (match macro, command with
@@ -296,23 +339,15 @@ struct
                  | None, Some command ->
                       if !debug_http then
                          eprintf "Command: \"%s\"@." (String.escaped command);
-                      eval state outx command;
-                      let { http_host     = host;
-                            http_port     = port
-                          } = http_info server
-                      in
-                      let uri = sprintf "http://%s:%d%s" host port (Shell.pwd state.state_shell) in
-                         print_redirect_page outx SeeOtherCode uri;
-                         state
+                      let state = eval state outx command in
+                         redisplay state
                  | None, None ->
                       print_error_page outx BadRequestCode;
                       eprintf "Shell_simple_http: null command@.";
                       state)
           | Some button ->
-               (* BUG HTML: this width constant should be fixed *)
-               Browser_display_term.set_message_string (sprintf "Unknown button %s" button);
-               print_page outx state dirname;
-               state
+               Browser_display_term.add_prompt (sprintf "Unknown button %s" button);
+               redisplay state
 
    (*
     * Handle a connection.
@@ -478,6 +513,7 @@ You may change this password to something you can remember if you like.@ @]@." p
          let state = update_challenge state in
             Shell.refresh_packages ();
             Shell.set_dfmode shell "html";
+            Browser_display_term.divert ();
             serve_http http_start http_connect state !browser_port
 end
 

@@ -135,11 +135,11 @@ let display_term pack window term =
     | JavaWindow { pw_menu = menu } ->
          Java_display_term.set_dir menu ("/" ^ Package.name pack);
          Java_display_term.set menu term
-    | BrowserWindow { df_base = base; df_mode = mode; df_width = width } ->
+    | BrowserWindow { df_base = base; df_mode = mode } ->
          let df = get_mode_base base mode in
          let buf = Lm_rformat.new_buffer () in
             Dform.format_term df buf term;
-            Browser_display_term.set_main width buf
+            Browser_display_term.set_main buf
 
 (************************************************************************
  * FORMATTING                                                           *

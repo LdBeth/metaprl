@@ -21,7 +21,7 @@ if $(not $(defined OCAMLCPPFLAGS))
     eprintln(OCAMLCPPFLAGS is not defined.)
     eprintln(At some point you will want to upgrade omake.)
     eprintln(Don't do it yet though\, until omake works with the new libmojave.)
-    eprintln(This message will me changed at that point.)
+    eprintln(This message will be changed at that point.)
 
     OCAMLCPPFLAGS =
 

@@ -414,12 +414,12 @@ let format_aux window proof =
             if !debug_edit then
                eprintf "Proof_edit.format_aux: set_subgoals%t" eflush;
             Java_display_term.set pw_subgoals subgoals
-    | BrowserWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
+    | BrowserWindow { df_base = dfbase; df_mode = mode } ->
          let df = get_mode_base dfbase mode in
          let buf = Lm_rformat.new_buffer () in
             Dform.format_term df buf proof;
             Lm_rformat.format_newline buf;
-            Browser_display_term.set_main width buf
+            Browser_display_term.set_main buf
 
 (*
  * Display the error.

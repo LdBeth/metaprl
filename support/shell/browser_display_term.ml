@@ -29,6 +29,8 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_rformat
+open Lm_format
 
 (*
  * Line-based buffer.
@@ -38,13 +40,13 @@ sig
    type t
 
    val create : unit -> t
-   val add_buffer : t -> Buffer.t -> unit
-   val add_to_buffer : t -> Buffer.t -> unit
+   val add_buffer : t -> buffer -> unit
+   val add_to_buffer : t -> int -> Buffer.t -> unit
 end
 
 module LineBuffer : LineBufferSig =
 struct
-   type t = string Queue.t
+   type t = Lm_rformat.buffer Queue.t
 
    let max_queue_length = 100
 
@@ -53,48 +55,64 @@ struct
    let add_buffer queue buf =
       if Queue.length queue = max_queue_length then
          ignore (Queue.take queue);
-      Queue.add (Buffer.contents buf) queue
+      Queue.add buf queue
 
-   let add_to_buffer queue buf =
-      Queue.iter (fun s ->
-            Buffer.add_string buf s;
-            Buffer.add_string buf "<br>\n") queue
+   let add_to_buffer queue width buf =
+      Queue.iter (fun buffer ->
+            Lm_rformat_html.print_html_buffer width buffer buf) queue
 end
 
 let message = LineBuffer.create ()
 
 (*
- * The display buffer is global.
+ * Simplify invis strings.
  *)
-let buffer = Buffer.create 1024
+let format_invis buf s =
+   format_izone buf;
+   format_string buf s;
+   format_ezone buf
 
 (*
- * Set the rule text.
+ * Add the prompt to the output box.
  *)
-let set_message width buf =
-   let buffer = Buffer.create 100 in
-      Lm_rformat_html.print_html_buffer width buf buffer;
+let add_prompt str =
+   let buffer = new_buffer () in
+      format_invis buffer "<b>";
+      format_string buffer str;
+      format_invis buffer "</b><br>\n";
       LineBuffer.add_buffer message buffer
 
-let set_message_string str =
-   let buffer = Buffer.create 100 in
-      Buffer.add_string buffer "<b>";
-      Buffer.add_string buffer str;
-      Buffer.add_string buffer "</b>";
-      LineBuffer.add_buffer message buffer
+(*
+ * Capture output channels.
+ *)
+let add_channel color buf =
+   if not (Lm_rformat.buffer_is_empty buf) then
+      let buffer = new_buffer () in
+         format_invis buffer (Printf.sprintf "<font color=\"%s\">" color);
+         format_buffer buffer buf;
+         format_invis buffer "</font>";
+         LineBuffer.add_buffer message buffer
 
-let format_message buf =
-   LineBuffer.add_to_buffer message buf
+let divert () =
+   Lm_format.divert std_formatter (Some (add_channel "#0022aa"));
+   Lm_format.divert err_formatter (Some (add_channel "#aa2222"))
+
+(*
+ * Format it.
+ *)
+let format_message width buf =
+   LineBuffer.add_to_buffer message width buf
 
 (*
  * Display a term in the window.
  *)
-let set_main width buf =
-   Buffer.clear buffer;
-   Lm_rformat_html.print_html_buffer width buf buffer
+let buffer = ref (new_buffer ())
 
-let format_main buf =
-   Buffer.add_buffer buf buffer
+let set_main buf =
+   buffer := buf
+
+let format_main width buf =
+   Lm_rformat_html.print_html_buffer width !buffer buf
 
 (*
  * -*-
