@@ -169,26 +169,45 @@ type bookmark = string * string (* theory name + local name *)
 (* We assume that x_finish_theory bookmarks the theory end by using an empty
 local name *)
 
-type 'data increment = bookmark option * 'data list (* option will be None in
-case the bookmark is the first one *)
+type 'data increment = {
+   (* None if we are at the beginning of a leaf theory
+      Some if the place can be reached by incrementing to some existing
+      bookmark *)
+   inc_base_bookmark: bookmark option;
+   (* increment shoul be always non-empty, except for the empty bookmars,
+      those may need to be handled specially *)
+   inc_increment: 'data list;
+   (* non-empty inc_bookmarks list all bookmarks of this increment *)
+   mutable inc_bookmarks: bookmark list
+}
 
-val x_global_bookmarker: (bookmark, x_data increment) Hashtbl.t
-val x_compute_bookmarks: string -> unit (* Gets theory data from
-x_global_data, computes all bookmark increments for that theory and stores
-them in the x_global_bookmarker *)
+type 'data global_bookmarker = (bookmark, 'data increment) Hashtbl.t
 
-(* x_compute_bookmarks needs some compilcated processing to make sure that no
+(* Default bookmark for an empty resource with nothing added *)
+val empty_bookmark : bookmark
+
+(* creates a hash table and puts an entry for an empty_bookmark in there *)
+val create_global_data: unit -> 'data global_data
+
+(* Gets theory data from global_data, computes all bookmark increments for
+   the specified theory and stores them in the increments hashtable *)
+val compute_bookmarks:
+   'data global_data -> 'data global_bookmarker -> string -> unit
+
+(* compute_bookmarks needs some complicated processing to make sure that no
 theory is included twice, but that can be done relatively easy *)
+
+val x_global_bookmarker: x_data global_bookmarker
+val x_compute_bookmarks: string -> unit
 
 Module 3: Creating results.
 
 (* Solves Problem 3.2 and the rest of Problem 1.3, 1.4 & 1.5 *)
 
-('data, 'result) processor = {
+type ('data, 'result) processor = {
    proc_add: 'data -> unit;
    proc_retrieve: unit -> 'result
-   proc_clone: ('data, 'result) processor option (* None for imperative, Some
-      for functional *)
+   proc_clone: unit -> ('data, 'result) processor
 }
 
 type ('data, 'intermediate, 'result) funct_processor = {
@@ -203,6 +222,17 @@ type ('data, 'intermediate, 'result) imper_processor = {
    imp_retr: 'intermediate -> 'result
 }
 
+type ('data, 'result) proc_result = {
+   (* res_proc contains the result of feeding all data to a functional
+      processor *)
+   res_proc: ('data, 'result) processor;
+   (* lazy result container *)
+   mutable res_result: 'result option
+}
+
+type ('data, 'result) global_procesed_data =
+   (bookmark, ('data, 'result) proc_result) Hashtbl.t
+
 (* The following two functions help solving Problem 3.2 by hiding the
    'intermediate type *)
 
@@ -211,21 +241,51 @@ type ('data, 'intermediate, 'result) imper_processor = {
 val make_fun_proc:
    ('data, 'intermediate, 'result) funct_processor -> ('data, 'result) processor
 
-(* Runs imp_create and makes closures for proc_add and proc_retrieve *)
+(* "functionalize an imperative processor *)
+val make_proc_functional:
+   ('data, 'intermediate, 'result) imper_processor ->
+   ('data, 'data list   , 'result) funct_processor
+(* Creates a record where fp_empty is an empty list, fp_add is just an append
+   and fp_retr does all the work *)
+
+(* Combines make_fun_proc with make_proc_functional *)
 val make_imp_proc:
    ('data, 'intermediate, 'result) imper_processor -> ('data, 'result) processor
 
-(* combining the above two: *)
+(* Creates a hashtable and adds the specified processor as a proc_result for
+   empty_bookmark (and all equivalent to it *)
+val create_global_processed_data:
+   ('data, 'result) processor ->
+   ('data, 'result) global_processed_data
 
-type ('data, 'intermediate, 'result) resource_info =
-   Imperative of ('data, 'intermediate, 'result) imperative_processor
- | Functional of ('data, 'intermediate, 'result) functional_processor
+(* Get the actual result *)
+val get_result: ('data, 'result) proc_result -> 'result
+(* Will try using res_result field, else will call res_proc.proc_retrieve,
+   save the result in res_result and return it *)
 
-val make_processor:
-   ('data, 'intermediate, 'result) resource_info -> ('data, 'result) processor
+(* Adds a bookmark to the global_procesed_data hashtable.
+   May raise Not_found exception *)
+val extract_bookmark:
+    bookmark ->
+    'data global_data ->
+    ('data, 'result) global_processed_data ->
+    ('data, 'result) proc_result
 
-val x_global_procesed_data:
-   (bookmark, x_result * (x_data, x_result) processor option) Hashtbl.t
+(* extract_bookmark would be implemented as follows:
+   1) Try looking up global_processed_data to see if we already know the
+   result.
+   2) Retrieve the increment, run extract_bookmark for its base.
+   3) Clone the resulting (from 2) proc_result.
+   4) Feed all increment data to cloned proc_result.proc_add
+   5) Return {res_proc=proc_result; res_result=None}
+*)
+
+(* extract_bookmark, then get_result *)
+val find_bookmark:
+    bookmark ->
+    'data global_data ->
+    ('data, 'result) global_processed_data ->
+    'result
 
 Module 4: Dealing with multiple resources with the same 'data and 'result
 types.
@@ -241,6 +301,10 @@ Module 5: Dealing with multiple resources with different 'data types.
 
 I propose to handle the multitude of 'data types by marshalling all the data
 to strings and keeping it internally as a string.
+
+(* resulting processor would unmarshal data before adding it *)
+val marshal_processor:
+   ('data, 'result) processor -> (string, 'result) processor
 
 -------------------------------------------------------------------------------
 
