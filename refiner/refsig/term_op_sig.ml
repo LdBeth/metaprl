@@ -10,7 +10,13 @@ sig
    type operator
    type level_exp
 
+   (* Map a function over the term *)
+   val map_down : (term -> term) -> term -> term
+   val map_up : (term -> term) -> term -> term
+
    (* Special cases *)
+   val is_no_subterms_term : opname -> term -> bool
+
    val is_dep0_term : opname -> term -> bool
    val mk_dep0_term : opname -> term -> term
    val dest_dep0_term : opname -> term -> term
@@ -111,6 +117,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/15 21:58:05  jyh
+ * Added a few new functions.
+ *
  * Revision 1.2  1998/06/01 13:55:16  jyh
  * Proving twice one is two.
  *

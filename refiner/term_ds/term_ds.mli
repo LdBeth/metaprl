@@ -71,7 +71,7 @@ sig
     * The order of params is significant.
     *)
    type operator' = { op_name : opname; op_params : param list }
-   type operator = operator'
+   type operator =  { mutable imp_op_name : opname; imp_op_params : param list }
 
    (*
     * A term has an operator, and a finite number of subterms
@@ -83,11 +83,11 @@ sig
     *)
 
    type term_subst = (string * term) list
-   and term_core = 
+   and term_core =
       Term of term'
     | Subst of term * term_subst
    and term = { free_vars : StringSet.t; mutable core : term_core }
-   and bound_term_core = 
+   and bound_term_core =
       BTerm of bound_term'
     | BSubst of bound_term * term_subst
    and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
@@ -126,7 +126,7 @@ sig
    val dest_simple_bterm : term -> bound_term -> term
    val dest_simple_bterms : term -> bound_term list -> term list
 
-   val normalize_term : term -> term
+   val normalize_term : term -> unit
 
    (* Projections *)
    val opname_of_term : term -> opname

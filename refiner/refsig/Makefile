@@ -37,10 +37,10 @@ install:: $(MAIN).cma $(CMIFILES)
 #
 SIG_EDIT :=\
 	-e "s,TermSimpleSig,TermSig,"\
-	-e "s,level_exp_var = level_exp_var',level_exp_var,"\
-	-e "s,level_exp = level_exp',level_exp,"\
-	-e "s,param = param',param,"\
-	-e "s,operator = operator',operator,"
+	-e "s,type level_exp_var =.*,type level_exp_var,"\
+	-e "s,and level_exp =.*,and level_exp,"\
+	-e "s,and param =.*,and param,"\
+	-e "s,and operator =.*,and operator,"
 
 term_sig.mli: term_simple_sig.mlz
 	rm -f $@

@@ -17,7 +17,7 @@ sig
    type level_exp_var = level_exp_var'
    and level_exp = level_exp'
    and param = param'
-   and operator = operator'
+   and operator =  { mutable imp_op_name : opname; imp_op_params : param list }
 
    and term = term'
    and bound_term = bound_term'
@@ -107,7 +107,7 @@ sig
    val make_object_id : param list -> object_id
    val dest_object_id : object_id  ->  param list
 
-   val normalize_term : term -> term
+   val normalize_term : term -> unit
 
    (* Projections *)
    val opname_of_term : term -> opname
@@ -151,6 +151,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/15 21:57:22  jyh
+ * Added a few new functions.
+ *
  * Revision 1.5  1998/06/03 22:19:38  jyh
  * Nonpolymorphic refiner.
  *

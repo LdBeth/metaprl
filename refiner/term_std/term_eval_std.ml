@@ -31,7 +31,7 @@ struct
     * See if a term is a "canon_var".
     *)
    let is_canon_var_term = function
-      { term_op = { op_name = opname; op_params = [Var v] };
+      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
         term_terms = []
       } when opname == canon_var_opname -> true
     | _ -> false
@@ -40,7 +40,7 @@ struct
     * Destructor for a "canon_var".
     *)
    let dest_canon_var = function
-      { term_op = { op_name = opname; op_params = [Var v] };
+      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
         term_terms = []
       } when opname == canon_var_opname -> v
      | t -> raise (TermMatch ("dest_canon_var", t, ""))
@@ -49,7 +49,7 @@ struct
     * Make a "canon_var".
     *)
    let mk_canon_var_term v =
-      { term_op = { op_name = canon_var_opname; op_params = [Var v] };
+      { term_op = { imp_op_name = canon_var_opname; imp_op_params = [Var v] };
         term_terms = []
       }
 
@@ -65,7 +65,7 @@ struct
     | _ -> false
 
    let is_subst_term = function
-      { term_op = { op_name = opname; op_params = [] };
+      { term_op = { imp_op_name = opname; imp_op_params = [] };
         term_terms = {bvars = vars; bterm = main_term}::bterms
       } when opname == subst_opname -> is_subst_term_args (vars,bterms)
     | _ -> false
@@ -82,7 +82,7 @@ struct
     | _ -> raise (TermMatch ("dest_subst", t, ""))
 
    let dest_subst = function
-      { term_op = { op_name = opname; op_params = [] };
+      { term_op = { imp_op_name = opname; imp_op_params = [] };
         term_terms = {bvars = vars; bterm = main_term}::bterms
       } as t when opname == subst_opname -> (main_term, dest_subst_args t (vars,bterms))
      | t -> raise (TermMatch ("dest_subst", t, ""))
@@ -95,30 +95,33 @@ struct
       let sub = List.split subst in
       let vars = fst sub in
       let terms = List.map (function term -> {bvars=[]; bterm = term}) (snd sub) in
-      { term_op = { op_name = subst_opname; op_params = [] };
+      { term_op = { imp_op_name = subst_opname; imp_op_params = [] };
         term_terms = {bvars=vars; bterm=main_term}::terms
       }
 
    let make_subst_term main_term vars trms =
       if List.length vars != List.length trms then raise (Invalid_argument "make_subst_term") else
       let terms = List.map (function term -> {bvars=[]; bterm = term}) trms in
-      { term_op = { op_name = subst_opname; op_params = [] };
+      { term_op = { imp_op_name = subst_opname; imp_op_params = [] };
         term_terms = {bvars=vars; bterm=main_term}::terms
       }
 
    let make_1subst_term main_term v t =
-      { term_op = { op_name = subst_opname; op_params = [] };
+      { term_op = { imp_op_name = subst_opname; imp_op_params = [] };
         term_terms = [ {bvars=[v]; bterm=main_term};{bvars=[]; bterm=t} ]
       }
 
    let make_2subst_term main_term v1 v2 t1 t2 =
-      { term_op = { op_name = subst_opname; op_params = [] };
+      { term_op = { imp_op_name = subst_opname; imp_op_params = [] };
         term_terms = [ {bvars=[v1;v2]; bterm=main_term};{bvars=[]; bterm=t1};{bvars=[]; bterm=t2} ]
       }
 end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/15 21:57:18  jyh
+ * Added a few new functions.
+ *
  * Revision 1.2  1998/05/30 19:18:47  nogin
  * Eliminated white space in empty lines.
  *

@@ -36,7 +36,7 @@ struct
 
    let compose_address path1 path2 =
       Compose (path1, path2)
-   
+
    (*
     * Get a subterm.
     *)
@@ -65,12 +65,16 @@ struct
                      else
                         t
                 | i ->
+                     let { term_op = op; term_terms = bterms } = dest_term t in
                      begin
                         match (dest_term t).term_terms with
                            [bterm] ->
                               aux (dest_bterm bterm).bterm (i - 1)
-                         | _::bterm::_ ->
-                              aux (dest_bterm bterm).bterm (i - 1)
+                         | bterm1::bterm2::_ ->
+                              if (dest_op op).op_name == context_opname then
+                                 aux (dest_bterm bterm1).bterm (i - 1)
+                              else
+                                 aux (dest_bterm bterm2).bterm (i - 1)
                          | _ ->
                               raise (IncorrectAddress (a, term))
                      end
@@ -140,11 +144,17 @@ struct
                            let term, arg = replace term (i - 1) in
                            let bterm = mk_bterm vars term in
                               mk_term op [bterm], arg
-                      | { term_op = op; term_terms = h :: bterm :: bterms } ->
-                           let { bvars = vars; bterm = term } = dest_bterm bterm in
-                           let term, arg = replace term (i - 1) in
-                           let bterm = mk_bterm vars term in
-                              mk_term op (h :: bterm :: bterms), arg
+                      | { term_op = op; term_terms = bterm1 :: bterm2 :: bterms } ->
+                           if (dest_op op).op_name == context_opname then
+                              let { bvars = vars; bterm = term } = dest_bterm bterm1 in
+                              let term, arg = replace term (i - 1) in
+                              let bterm = mk_bterm vars term in
+                                 mk_term op (bterm :: bterm2 :: bterms), arg
+                           else
+                              let { bvars = vars; bterm = term } = dest_bterm bterm2 in
+                              let term, arg = replace term (i - 1) in
+                              let bterm = mk_bterm vars term in
+                                 mk_term op (bterm1 :: bterm :: bterms), arg
                       | _ ->
                            raise (IncorrectAddress (a, term))
                in

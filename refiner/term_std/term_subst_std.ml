@@ -24,12 +24,13 @@ struct
     * of bound variables.
     *)
    let rec free_vars_term gvars bvars = function
-      { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = bterms } when opname == var_opname ->
+      { term_op = { imp_op_name = opname; imp_op_params = [Var v] }; term_terms = bterms } when opname == var_opname ->
          (* This is a variable *)
-         let gvars' = if List.mem v bvars or List.mem v gvars then
-                         gvars
-                      else
-                         v::gvars
+         let gvars' =
+            if List.mem v bvars or List.mem v gvars then
+               gvars
+            else
+               v::gvars
          in
             free_vars_bterms gvars' bvars bterms
     | { term_terms = bterms } ->
@@ -41,7 +42,8 @@ struct
          let gvars' = free_vars_term gvars bvars' term in
             free_vars_bterms gvars' bvars l
 
-    | [] -> gvars
+    | [] ->
+         gvars
 
    (* Actual function *)
    let free_vars = free_vars_term [] []
@@ -59,7 +61,7 @@ struct
     *)
    let is_free_var v =
       let rec free_vars_term bvars = function
-         { term_op = { op_name = opname; op_params = [Var v'] };
+         { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
            term_terms = []
          } when opname == var_opname ->
             v' = v
@@ -81,7 +83,7 @@ struct
     * Similar operation on contexts.
     *)
    let rec context_vars_term cvars = function
-      { term_op = { op_name = opname; op_params = [Var v] };
+      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
         term_terms = bterms
       } when opname == context_opname ->
          let cvars' =
@@ -131,18 +133,18 @@ struct
 
    let rec equal_term vars t t' =
       match t, t' with
-         { term_op = { op_name = opname1; op_params = [Var v] };
+         { term_op = { imp_op_name = opname1; imp_op_params = [Var v] };
            term_terms = []
          },
-         { term_op = { op_name = opname2; op_params = [Var v'] };
+         { term_op = { imp_op_name = opname2; imp_op_params = [Var v'] };
            term_terms = []
          } when opname1 == var_opname & opname2 == var_opname ->
             begin
                try List.assoc v vars = v' with
                   Not_found -> v = v'
             end
-       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
-         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
+       | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 },
+         { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
             name1 = name2
                     & List_util.for_all2 equal_params params1 params2
                     & equal_bterms vars bterms1 bterms2
@@ -169,7 +171,7 @@ struct
     *)
    let equal_comp vars' =
       let rec equal_comp_term vars = function
-         { term_op = { op_name = opname; op_params = [Var v] };
+         { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
            term_terms = []
          }, t' when opname == var_opname ->
             begin
@@ -177,14 +179,14 @@ struct
                   Not_found ->
                      begin
                         match t' with
-                           { term_op = { op_name = opname; op_params = [Var v'] };
+                           { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
                              term_terms = []
                            } when opname == var_opname -> v = v'
                          | _ -> false
                      end
             end
-       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
-         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
+       | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 },
+         { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
             name1 = name2 & params1 = params2 & equal_comp_bterms vars bterms1 bterms2
 
       and equal_comp_bterms vars bterms1 bterms2 =
@@ -267,7 +269,7 @@ struct
     *)
    let subst term terms vars =
       let rec subst_term terms fv vars = function
-         { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t
+         { term_op = { imp_op_name = opname; imp_op_params = [Var(v)] }; term_terms = [] } as t
          when opname == var_opname->
             (* Var case *)
             begin
@@ -326,17 +328,17 @@ struct
     * Inverse substitution.
     *)
    let var_subst t t' v =
-      let { term_op = { op_name = opname } } = t' in
+      let { term_op = { imp_op_name = opname } } = t' in
       let vt = mk_var_term v in
       let rec subst_term = function
-         { term_op = { op_name = opname'; op_params = params };
+         { term_op = { imp_op_name = opname'; imp_op_params = params };
            term_terms = bterms
          } as t ->
             (* Check if this is the same *)
             if opname' == opname & alpha_equal t t' then
                vt
             else
-               { term_op = { op_name = opname'; op_params = params };
+               { term_op = { imp_op_name = opname'; imp_op_params = params };
                  term_terms = List.map subst_bterm bterms
                }
 
@@ -372,7 +374,7 @@ struct
     * Unify two terms.
     *)
    let rec unify_terms subst bvars = function
-      ({ term_op = { op_name = opname; op_params = [Var v] };
+      ({ term_op = { imp_op_name = opname; imp_op_params = [Var v] };
          term_terms = []
        } as t1), t2
       when opname == var_opname ->
@@ -394,7 +396,7 @@ struct
                   raise (BadMatch (t1, t2))
          end
 
-    | t1, ({ term_op = { op_name = opname; op_params = [Var v] };
+    | t1, ({ term_op = { imp_op_name = opname; imp_op_params = [Var v] };
              term_terms = []
            } as t2)
       when opname == var_opname ->
@@ -416,10 +418,10 @@ struct
                   raise (BadMatch (t1, t2))
          end
 
-    | ({ term_op = { op_name = opname1; op_params = params1 };
+    | ({ term_op = { imp_op_name = opname1; imp_op_params = params1 };
          term_terms = bterms1
        } as t1),
-      ({ term_op = { op_name = opname2; op_params = params2 };
+      ({ term_op = { imp_op_name = opname2; imp_op_params = params2 };
          term_terms = bterms2
        } as t2) ->
          (* General case *)
@@ -449,7 +451,7 @@ struct
     * See if the first term generalizes the second, and
     * compute the alpha conversion.  If the generalization
     * is _not_ true, then raise the exception:
-    * Invalid_argument "generalization".
+    * Failure "generalization".
     *
     * The generalization is with respect to matching:
     *    1. A variable matches anything
@@ -468,9 +470,9 @@ struct
                let _, t2', _ = dest_context t2 in
                   generalizes_term vars t1' t2'
             else
-               raise (Invalid_argument "generalization")
+               raise (Failure "generalization")
          else if is_so_var_term t2 or is_context_term t2 then
-            raise (Invalid_argument "generalization")
+            raise (Failure "generalization")
          else
             (* Regular terms *)
             let { term_op = op1; term_terms = bterms1 } = dest_term t1 in
@@ -479,17 +481,17 @@ struct
             let { op_name = name2; op_params = params2 } = dest_op op2 in
                if name1 = name2 then
                   try
-                     List.iter2 generalizes_param params1 params2;
-                     List.fold_left2 generalizes_bterm vars bterms1 bterms2
+                     List_util.iter2 generalizes_param params1 params2;
+                     List_util.fold_left2 generalizes_bterm vars bterms1 bterms2
                   with
-                     Invalid_argument _ ->
-                        raise (Invalid_argument "generalization")
+                     Failure _ ->
+                        raise (Failure "generalization")
                else
-                  raise (Invalid_argument "generalization")
+                  raise (Failure "generalization")
 
       and generalizes_param param1 param2 =
          if param1 <> param2 then
-            raise (Invalid_argument "generalization")
+            raise (Failure "generalization")
 
       and generalizes_bterm vars bterm1 bterm2 =
          (* Keep track of binding vars *)
@@ -500,7 +502,7 @@ struct
                if v2 = List.assoc v1 vars then
                   vars
                else
-                  raise (Invalid_argument "generalization")
+                  raise (Failure "generalization")
             with _ ->
                   (v1, v2)::vars
          in
@@ -512,11 +514,15 @@ struct
 
    let generalizes t1 t2 =
       try generalization [] t1 t2; true with
-         Invalid_argument "generalization" -> false
+         Failure "generalization" ->
+            false
 end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/15 21:57:23  jyh
+ * Added a few new functions.
+ *
  * Revision 1.3  1998/05/30 19:18:49  nogin
  * Eliminated white space in empty lines.
  *

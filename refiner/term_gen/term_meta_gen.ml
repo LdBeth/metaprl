@@ -39,13 +39,16 @@ struct
     *)
    let rec normalize_mterm = function
       MetaTheorem t ->
-         MetaTheorem (normalize_term t)
+         normalize_term t
     | MetaImplies (a, b) ->
-         MetaImplies (normalize_mterm a, normalize_mterm b)
-    | MetaFunction (v, a, b) ->
-         MetaFunction (v, normalize_mterm a, normalize_mterm b)
+         normalize_mterm a;
+         normalize_mterm b
+    | MetaFunction (_, a, b) ->
+         normalize_mterm a;
+         normalize_mterm b
     | MetaIff (a, b) ->
-         MetaIff (normalize_mterm a, normalize_mterm b)
+         normalize_mterm a;
+         normalize_mterm b
 
    (*
     * Unzip a metaimplication into a list of terms.
@@ -174,6 +177,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/15 21:57:39  jyh
+ * Added a few new functions.
+ *
  * Revision 1.2  1998/06/01 13:55:25  jyh
  * Proving twice one is two.
  *

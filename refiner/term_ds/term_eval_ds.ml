@@ -31,7 +31,7 @@ struct
     * See if a term is a "canon_var".
     *)
    let is_canon_var_term t = match dest_term t with
-      { term_op = { op_name = opname; op_params = [Var v] };
+      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
         term_terms = []
       } when opname == canon_var_opname -> true
     | _ -> false
@@ -40,7 +40,7 @@ struct
     * Destructor for a "canon_var".
     *)
    let dest_canon_var t = match dest_term t with
-      { term_op = { op_name = opname; op_params = [Var v] };
+      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
         term_terms = []
       } when opname == canon_var_opname -> v
      | _ -> raise (TermMatch ("dest_canon_var", t, ""))
@@ -51,7 +51,7 @@ struct
    let mk_canon_var_term v =
       { free_vars = StringSet.add v StringSet.empty;
         core = Term
-         { term_op = { op_name = canon_var_opname; op_params = [Var v] };
+         { term_op = { imp_op_name = canon_var_opname; imp_op_params = [Var v] };
            term_terms = []}}
 
    let subst_opname = mk_opname "subst" xperv
@@ -67,7 +67,7 @@ struct
     | _ -> false
 
    let is_subst_term t = match dest_term t with
-      { term_op = { op_name = opname; op_params = [] };
+      { term_op = { imp_op_name = opname; imp_op_params = [] };
         term_terms = bt::bterms
       } when opname == subst_opname ->
          is_subst_term_args ((dest_bterm bt).bvars,bterms)
@@ -85,7 +85,7 @@ struct
     | _ -> raise (TermMatch ("dest_subst", t, ""))
 
    let dest_subst t = match dest_term t with
-      { term_op = { op_name = opname; op_params = [] };
+      { term_op = { imp_op_name = opname; imp_op_params = [] };
         term_terms = btrm::bterms
       } when opname == subst_opname ->
          let bt = dest_bterm btrm in
@@ -101,21 +101,21 @@ struct
       let vars = fst sub in
       let terms = List.map mk_simple_bterm (snd sub) in
       mk_term
-         { op_name = subst_opname; op_params = [] }
+         { imp_op_name = subst_opname; imp_op_params = [] }
          (mk_bterm vars main_term::terms)
 
    let make_subst_term main_term vars trms =
       if List.length vars != List.length trms then raise (Invalid_argument "make_subst_term") else
       let terms = List.map mk_simple_bterm trms in
       mk_term
-         { op_name = subst_opname; op_params = [] }
+         { imp_op_name = subst_opname; imp_op_params = [] }
          (mk_bterm vars main_term::terms)
 
    let make_1subst_term main_term v t =
       let fvm = StringSet.remove v main_term.free_vars in
       { free_vars = StringSet.union fvm t.free_vars;
         core = Term
-         { term_op = { op_name = subst_opname; op_params = [] };
+         { term_op = { imp_op_name = subst_opname; imp_op_params = [] };
            term_terms =
             [ { bfree_vars = fvm;
                 bcore = BTerm {bvars=[v]; bterm=main_term}};
@@ -126,7 +126,7 @@ struct
       let fvm = StringSet.remove v1 (StringSet.remove v2 main_term.free_vars) in
       { free_vars = StringSet.union fvm (StringSet.union t1.free_vars t2.free_vars);
         core = Term
-         { term_op = { op_name = subst_opname; op_params = [] };
+         { term_op = { imp_op_name = subst_opname; imp_op_params = [] };
            term_terms =
             [ { bfree_vars = fvm;
                 bcore = BTerm {bvars=[v1;v2]; bterm=main_term}};

@@ -29,7 +29,7 @@ sig
    (*
     * Some operations on meta_term.
     *)
-   val normalize_mterm : meta_term -> meta_term
+   val normalize_mterm : meta_term -> unit
 
    val binding_vars : meta_term -> string list
    val context_vars : meta_term -> string list
@@ -43,6 +43,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/15 21:58:04  jyh
+ * Added a few new functions.
+ *
  * Revision 1.2  1998/06/01 13:55:15  jyh
  * Proving twice one is two.
  *

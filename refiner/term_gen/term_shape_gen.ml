@@ -54,8 +54,8 @@ struct
       let bterm_type bt =
          List.length (dest_bterm bt).bvars
       in
-         { shape_opname = op.op_name;
-           shape_params = List.map param_type op.op_params;
+         { shape_opname = op.imp_op_name;
+           shape_params = List.map param_type op.imp_op_params;
            shape_arities = List.map bterm_type t.term_terms
          }
 

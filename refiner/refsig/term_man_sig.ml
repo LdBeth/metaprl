@@ -13,13 +13,14 @@ sig
    type operator
    type level_exp
    type address
-   
+
    type hypothesis =
       Hypothesis of string * term
     | Context of string * term list
-   
+
    type esequent =
-      { sequent_hyps : hypothesis list;
+      { sequent_args : term list;
+        sequent_hyps : hypothesis list;
         sequent_goals : term list
       }
 
@@ -49,9 +50,9 @@ sig
    val null_concl : term
 
    val is_sequent_term : term -> bool
-   val dest_sequent : term -> term list
    val explode_sequent : term -> esequent
-   val mk_sequent_term : term list -> term
+   val dest_sequent : term -> term * term       (* goal * args *)
+   val mk_sequent_term : term -> term -> term   (* goal -> args -> seq *)
 
    val nth_hyp : term -> int -> string * term
    val nth_concl : term -> int -> term
@@ -105,6 +106,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/15 21:58:03  jyh
+ * Added a few new functions.
+ *
  * Revision 1.5  1998/06/09 20:52:26  jyh
  * Propagated refinement changes.
  * New tacticals module.
