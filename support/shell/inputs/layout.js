@@ -26,6 +26,25 @@ function ButtonFocus()
     setTimeout(ButtonFocusTimeout, 100);
 }
 
+function OnKey(event)
+{
+    var ruleframe = parent.ruleframe;
+    if(ruleframe) {
+        var commandform = ruleframe.document.commandform;
+        if(commandform) {
+            commandform.command.focus();
+            if (event) {
+               var ch = String.fromCharCode(event.keyCode);
+               if (event.shiftKey)
+                  ch = ch.toLocaleUpperCase();
+               else
+                  ch = ch.toLocaleLowerCase();
+               commandform.command.value += ch;
+            }
+        }
+    }
+}
+
 /*
  * The styles depend on the window size.
  */
