@@ -215,9 +215,7 @@ $(MP_CMIFILES) $(MP2_CMIFILES): %.cmi: %.mli $(ROOT)/mk/config
 $(MP_PPOFILES) $(MP2_PPOFILES): %.ppo: %.cmi %.ml $(ROOT)/mk/config
 	MPLIB=$(MPLIB) $(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
 
-# For now, Ascii IO has a bug to prevent updates
 $(MP_PRLAFILES) $(MP2_PRLAFILES): %.prla: %.cmoz $(ROOT)/mk/config
-	rm -f $*.prla
 	MPLIB=$(MPLIB) $(CONVERT) $(INCLUDE) -impl $*.cmoz
 
 $(MP_PRLBFILES) $(MP2_PRLBFILES): %.prlb: %.prla $(ROOT)/mk/config

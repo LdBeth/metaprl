@@ -524,19 +524,20 @@ struct
             New ("P"^lname, name, new_rec) :: data.out_items;
          name, param'
 
-   let rec print_out out_line names o n =
+   let rec print_out out_line printed names o n =
       match n, o with
          [], _ ->
             ()
        | (New item :: rest), _ ->
             out_line item;
-            print_out out_line names o rest
-       | (Old name :: nrest), ((_, name', _) as item :: orest) when name = name' ->
+            print_out out_line printed names o rest
+       | (Old name :: nrest), _ when StringSet.mem printed name ->
+            print_out out_line printed names o nrest
+       | (Old _ :: _), ((_, name, _) as item :: orest) when StringSet.mem names name ->
             out_line item;
-            print_out out_line names orest nrest
-       | (Old _ :: _), ((_, name, _) as item :: orest) ->
-            if StringSet.mem names name then out_line item;
-            print_out out_line names orest n
+            print_out out_line (StringSet.add name printed) names orest n
+       | (Old _ :: _), _ :: orest ->
+            print_out out_line printed names orest n
        | (Old _ :: _), [] ->
             raise (Invalid_argument "Ascii_io.print_out")
 
@@ -545,7 +546,7 @@ struct
       add_items r !inputs;
       let data = init_data r in
       ignore (out_term ctrl data t);
-      print_out ctrl.out_line data.io_names (List.rev !inputs) (List.rev data.out_items)
+      print_out ctrl.out_line StringSet.empty data.io_names (List.rev !inputs) (List.rev data.out_items)
 
    let simple_name_op _ _ = "","o"
    let simple_name_param _ = "","p"
