@@ -497,6 +497,14 @@ struct
             Opname.eq t1.term_op.op_name t2.term_op.op_name &&
             Lm_list_util.for_all2 equal_params t1.term_op.op_params t2.term_op.op_params &&
             equal_fun_bterms f bvars sub t1.term_terms t2.term_terms
+       | Sequent s1, Sequent s2 ->
+            (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
+            (SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals) &&
+            (equal_fun f bvars sub s1.sequent_args s2.sequent_args) &&
+            (match equal_fun_hyps s1.sequent_hyps s2.sequent_hyps f bvars sub 0 with
+               None -> false
+             | Some bvars ->
+                  equal_fun_goals s1.sequent_goals s2.sequent_goals f bvars sub (SeqGoal.length s1.sequent_goals - 1))
        | SOVar(v1, conts1, ts1), SOVar(v2, conts2, ts2) ->
             v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2
        | _ -> false
@@ -509,6 +517,26 @@ struct
       in
          Lm_list_util.for_all2 equal_fun_bterm bterms1 bterms2
 
+   and equal_fun_hyps hyps1 hyps2 f bvars sub i =
+      if i = SeqHyp.length hyps1 then Some bvars else
+         match SeqHyp.get hyps1 i, SeqHyp.get hyps2 i with
+            (Hypothesis t1 | HypBinding (_,t1)) as h1, (Hypothesis t2 | HypBinding(_,t2) as h2) ->
+               if equal_fun f bvars sub t1 t2 then
+                  let v1 = match h1 with HypBinding(v,_) -> v | _ -> fake_var in
+                  let v2 = match h2 with HypBinding(v,_) -> v | _ -> fake_var in
+                     equal_fun_hyps hyps1 hyps2 f ((v1,v2)::bvars) sub (succ i)
+               else None
+          | Context (v1,conts1,ts1), Context (v2,conts2,ts2) ->
+            if v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2 then
+               equal_fun_hyps hyps1 hyps2 f bvars sub (succ i)
+            else None
+          | _ -> None
+
+   and equal_fun_goals goals1 goals2 f bvars sub i =
+      i < 0 ||
+      ( equal_fun f bvars sub (SeqGoal.get goals1 i) (SeqGoal.get goals2 i) &&
+        equal_fun_goals goals1 goals2 f bvars sub (pred i) )
+   
    (* See refiner/refsig/term_subst_sig.mlz for explanation of this function *)
    let alpha_equal_fun f t vs t' items =
       IFDEF VERBOSE_EXN THEN
