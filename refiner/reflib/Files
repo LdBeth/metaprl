@@ -21,4 +21,5 @@ REFLIB_FILES :=\
    term_compare_sig\
 	term_compare\
    term_transfer\
-   term_copy2
+   term_copy2\
+   match_seq
