@@ -298,8 +298,7 @@ struct
 #ifdef VERBOSE_EXN
       ) in
       if !debug_alpha_equal then
-         if result then eprintf "alpha_equal_vars: true%t" eflush else
-            eprintf "alpha_equal_vars: false%t" eflush;
+         eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
       result
 #endif
 

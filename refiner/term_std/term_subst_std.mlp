@@ -327,10 +327,10 @@ struct
       if !debug_alpha_equal then
          try 
             let _ = equal_term /*_debug*/ [] t1 t2 in
-            eprintf "alpha_equal: true%t" eflush;
+            eprintf "alpha_equal: true:\n%a\n%a%t" debug_print t1 debug_print t2 eflush;
             true
          with Failure _ ->
-            eprintf "alpha_equal: false%t" eflush;
+            eprintf "alpha_equal: false:\n%a\n%a%t" debug_print t1 debug_print t2 eflush;
             false
       else
 #endif
