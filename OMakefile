@@ -13,6 +13,26 @@ OMakeVersion(0.7.11, 0.7.30)
 # needs.
 #
 
+#
+# Requires version 0.7.14
+#
+if $(not $(defined SYSNAME))
+    if $(equal $(OSTYPE), Win32)
+        SYSNAME  = "Win32"
+        NODENAME = "unknown"
+        VERSION  = "unknown"
+        RELEASE  = "unknown"
+        MACHINE  = i386
+        export
+    else
+        SYSNAME  = $(OS)
+        NODENAME = "unknown"
+        VERSION  = "unknown"
+        RELEASE  = "release"
+        MACHINE  = $(shell uname -m)
+        export
+    export
+
 ########################################################################
 # Begin real makefile.
 #
@@ -22,6 +42,19 @@ OLDROOT = $(ROOT)
 ROOT    = $(dir .)
 LIB     = $(dir lib)
 BIN     = $(dir bin)
+
+#
+# Simplify the machine name
+#
+ARCH = $(MACHINE)
+
+if $(equal $(ARCH), Power Macintosh)
+    ARCH = ppc
+    export
+
+if $(mem $(ARCH), x86 i386 i486 i586 i686)
+    ARCH = x86
+    export
 
 #
 # Default compile options are to be quiet
@@ -234,9 +267,9 @@ VersionCheck(versionfile, command) =
             version = $(concat _, $(shell $(command) -version))
             if $(mem $(version), $(CAML_VERSIONS))
                 fd = $(fopen $(versionfile), w)
-		fprintln($(fd), $(version))
-		close($(fd))
-	    else
+                fprintln($(fd), $(version))
+                close($(fd))
+            else
                 eprintln(!!! Wrong CAML version.)
                 eprintln(!!! $(command) -version produced the version string $(version))
                 eprintln(!!! You need this version to be compatible with MetaPRL\,)
