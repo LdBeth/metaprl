@@ -66,7 +66,7 @@ sig
     * dest_bterm_and_rename is the same as dest_bterm, except it will also
     * do alpha-renaming to avoid reusing the specified variables
     *)
-   val dest_bterm_and_rename : bound_term -> SymbolSet.t -> bound_term'
+   val dest_bterm_and_rename : SymbolSet.t -> bound_term -> bound_term'
 
    (*
     * var_subst: subst of var for a term.

@@ -2547,9 +2547,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p1_1, p1_2 = p1 in
          merge merge_term "TermSubst.apply_subst" (wrap2 TermSubst1.apply_subst p0_1 p1_1) (wrap2 TermSubst2.apply_subst p0_2 p1_2)
 
-      let dest_bterm_and_rename (p0 : bound_term) (p1 : SymbolSet.t) =
-         let p0_1, p0_2 = p0 in
-         merge merge_bterm' "TermSubst.dest_bterm_and_rename" (wrap2 TermSubst1.dest_bterm_and_rename p0_1 p1) (wrap2 TermSubst2.dest_bterm_and_rename p0_2 p1)
+      let dest_bterm_and_rename (p0 : SymbolSet.t) (p1 : bound_term) =
+         let p1_1, p1_2 = p1 in
+         merge merge_bterm' "TermSubst.dest_bterm_and_rename" (wrap2 TermSubst1.dest_bterm_and_rename p0 p1_1) (wrap2 TermSubst2.dest_bterm_and_rename p0 p1_2)
 
       let var_subst (p0 : term) (p1 : term) (p2 : var) =
          let p0_1, p0_2 = p0 in

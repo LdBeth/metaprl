@@ -576,7 +576,7 @@ struct
             else
                REF_RAISE(RefineError ("match_redex_bterms", RewriteBadMatch (BTermMatch bt)))
       else
-         let dbt = dest_bterm_and_rename bt all_bvars in
+         let dbt = dest_bterm_and_rename all_bvars bt in
             if bt'.rw_bvars = List.length dbt.bvars then
                begin
                   set_bvars stack bt'.rw_bnames dbt.bvars;

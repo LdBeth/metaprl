@@ -362,7 +362,7 @@ struct
 
    let rec path_var_replace_terms = MAKE_PATH_REPLACE_TERMS(bvars, path_var_replace_terms)
    let rec path_var_replace_bterm = MAKE_PATH_REPLACE_BTERM(bvars,
-      (let bt = TermSubst.dest_bterm_and_rename bt bvars in
+      (let bt = TermSubst.dest_bterm_and_rename bvars bt in
        let t, arg = f (SymbolSet.add_list bvars bt.bvars) bt.bterm in
           mk_bterm bt.bvars t :: bterms, arg),
       path_var_replace_bterm)

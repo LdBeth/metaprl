@@ -158,7 +158,7 @@ struct
             let vs', ts = compute_renames avoid avoid' vs in
             (v::vs'), ts
 
-   let dest_bterm_and_rename bt avoid =
+   let dest_bterm_and_rename avoid bt =
       if need_to_rename avoid bt.bvars then
          let avoid' = SymbolSet.add_list (SymbolSet.union avoid (free_vars_set bt.bterm)) bt.bvars in
          let bvars, ts = compute_renames avoid avoid' bt.bvars in
@@ -367,7 +367,7 @@ struct
        | [] -> bterms
 
    and var_subst_bterm bt t' fv v =
-      let bt = dest_bterm_and_rename bt fv in
+      let bt = dest_bterm_and_rename fv bt in
       let term' = var_subst t' fv v bt.bterm in
          if bt.bterm == term' then bt else mk_bterm bt.bvars term'
 

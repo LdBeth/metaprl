@@ -394,7 +394,7 @@ struct
 
    and compile_so_redex_bterm st stack bterm =
       let svars = SymbolSet.add_list st.st_svars (List.map rstack_var stack) in
-      let { bvars = vars; bterm = term } = dest_bterm_and_rename bterm svars in
+      let { bvars = vars; bterm = term } = dest_bterm_and_rename svars bterm in
       let stack, bnames, bvars = collect_bvars (List.length stack) stack [] st.st_bvars vars in
       (* Compile the term *)
       let stack, term = compile_so_redex_term { st with st_bvars = bvars; st_svars = svars } stack term in
