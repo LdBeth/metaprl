@@ -2680,32 +2680,32 @@ struct
    (*
     * Count up the number of nodes.
     *)
-   let rec node_count_of_io_proof_node nodes rules = function
+   let rec node_count_of_io_proof_node rules nodes = function
       IOGoal _
     | IOUnjustified _
     | IOExtractNthHyp _
     | IOExtractCut _
     | IOIdentity _ ->
-         succ nodes, rules
+         rules, succ nodes
     | IOWrapped (_, node) ->
-         node_count_of_io_proof_node (succ nodes) rules node
+         node_count_of_io_proof_node rules (succ nodes) node
     | IOCompose { io_comp_goal = goal;
                   io_comp_subgoals = subgoals
       } ->
-         let nodes, rules = node_count_of_io_proof_node (succ nodes) rules goal in
-            node_count_of_io_subgoals nodes rules subgoals
+         let rules, nodes = node_count_of_io_proof_node rules (succ nodes) goal in
+            node_count_of_io_subgoals rules nodes subgoals
     | IORuleBox { io_rule_goal = goal;
                   io_rule_subgoals = subgoals
       } ->
-         let nodes, rules = node_count_of_io_proof_node (succ nodes) (succ rules) goal in
-            node_count_of_io_subgoals nodes rules subgoals
+         let rules, nodes = node_count_of_io_proof_node (succ rules) (succ nodes) goal in
+            node_count_of_io_subgoals rules nodes subgoals
 
-   and node_count_of_io_subgoals nodes rules = function
+   and node_count_of_io_subgoals rules nodes = function
       node :: tl ->
-         let nodes, rules = node_count_of_io_proof_node nodes rules node in
-            node_count_of_io_subgoals nodes rules tl
+         let rules, nodes = node_count_of_io_proof_node rules nodes node in
+            node_count_of_io_subgoals rules nodes tl
     | [] ->
-         nodes, rules
+         rules, nodes
 
    let node_count_of_io_proof proof =
       node_count_of_io_proof_node 0 0 proof
