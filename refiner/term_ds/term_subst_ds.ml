@@ -37,8 +37,8 @@ struct
    let binding_vars = binding_vars_term []
 
    let free_vars_terms = function
-      [] -> [] |
-      hd::tl ->
+      [] -> []
+    | hd::tl ->
          StringSet.elements
             (List.fold_left
                (function vars -> function trm -> StringSet.union vars trm.free_vars)
@@ -88,8 +88,8 @@ struct
     | (v1::vt1,v2::vt2) ->
          if (v1=v2)
             then join_vars (remove_var v1 vars) (vt1,vt2)
-            else (v1,v2)::(join_vars vars (vt1,vt2)) |
-      _ -> raise (Invalid_argument ("join_vars"))
+            else (v1,v2)::(join_vars vars (vt1,vt2))
+    | _ -> raise (Invalid_argument ("join_vars"))
    
    let rec equal_term_main vars t t' =
       match (dest_term t, dest_term t') with
@@ -113,8 +113,8 @@ struct
       [] ->
          (function t1  ->
             function t2 ->
-               (t1 == t2) || equal_term_main [] t1 t2) |
-      vars -> equal_term_main vars
+               (t1 == t2) || equal_term_main [] t1 t2)
+    | vars -> equal_term_main vars
    
    and equal_bterm_main vars btrm1 btrm2 =
       let bt1 = dest_bterm btrm1 in
@@ -125,8 +125,8 @@ struct
       [] ->
          (function bt1 ->
             function bt2 ->
-               (bt1 == bt2) || equal_bterm_main [] bt1 bt2) |
-      vars -> equal_bterm_main vars
+               (bt1 == bt2) || equal_bterm_main [] bt1 bt2)
+    | vars -> equal_bterm_main vars
    
    and equal_bterms vars = List_util.for_all2 (equal_bterm vars)
    

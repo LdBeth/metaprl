@@ -95,12 +95,12 @@ struct
 
    type term_subst = (string * term) list
    and term_core =
-      Term of term' |
-      Subst of term * term_subst
+      Term of term'
+    | Subst of term * term_subst
    and term = { free_vars : StringSet.t; mutable core : term_core }
    and bound_term_core =
-      BTerm of bound_term' |
-      BSubst of bound_term * term_subst
+      BTerm of bound_term'
+    | BSubst of bound_term * term_subst
    and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : string list; bterm : term }
@@ -124,8 +124,8 @@ struct
 
    let do_term_subst sub t =
       match List_util.filter (fun (v,_) -> StringSet.mem v t.free_vars) sub with
-         [] -> t|
-         sub' ->
+         [] -> t
+       | sub' ->
             {free_vars = 
                StringSet.union
                   (List.fold_right
@@ -137,8 +137,8 @@ struct
 
    let do_bterm_subst sub bt =
       match List_util.filter (fun (v,_) -> StringSet.mem v bt.bfree_vars) sub with
-         [] -> bt|
-         sub' ->
+         [] -> bt
+       | sub' ->
             {bfree_vars =
                StringSet.union
                   (List.fold_right
@@ -178,8 +178,8 @@ struct
 
    let rec dest_term t = 
       match t.core with
-         Term tt -> tt |
-         Subst (tt,sub) -> 
+         Term tt -> tt
+       | Subst (tt,sub) -> 
             let ttt = dest_term tt in
             let t4 = 
                try dest_term (List.assoc (dest_var_nods ttt) sub)
@@ -234,8 +234,8 @@ struct
          else v'
 
    and new_vars av = function 
-      [] -> ([],[]) |
-      v::vt ->
+      [] -> ([],[])
+    | v::vt ->
          match (new_vars av vt) with
             (vs,ts) -> 
                let v' = new_var av v 0 in
@@ -243,13 +243,13 @@ struct
 
    let rec dest_bterm bt = 
       match bt.bcore with
-         BTerm tt -> tt |
-         BSubst (tt,sub) -> 
+         BTerm tt -> tt
+       | BSubst (tt,sub) -> 
             let ttt = dest_bterm tt in
             let t4 =
                match ttt.bvars with
-                  [] -> { bvars = []; bterm = do_term_subst sub ttt.bterm } |
-                  bvrs -> 
+                  [] -> { bvars = []; bterm = do_term_subst sub ttt.bterm }
+                | bvrs -> 
                      let sub_fvars = subst_free_vars sub in
                      let capt_vars = List_util.filter (function v -> StringSet.mem v sub_fvars) bvrs in
                      match capt_vars with
@@ -261,8 +261,8 @@ struct
                 * 
                 * Similar inefficiency in the "captured" case.
                 *)
-                        [] -> { bvars = bvrs; bterm = do_term_subst sub ttt.bterm } |
-                        captured -> 
+                        [] -> { bvars = bvrs; bterm = do_term_subst sub ttt.bterm }
+                      | captured -> 
                            let avoidvars = StringSet.union sub_fvars ttt.bterm.free_vars in
                            let (vs,ts) = new_vars avoidvars captured in
                            { bvars = 
@@ -281,13 +281,13 @@ struct
       List.for_all
          (function bt ->
             match dest_bterm bt with
-               { bvars = [] } -> true |
-               _ -> false)
+               { bvars = [] } -> true
+             | _ -> false)
 
    let dest_simple_bterm term bt =
       match dest_bterm bt with
-         { bvars = []; bterm = tt } -> tt |
-         _ -> raise (TermMatch ("dest_simple_bterm", term, "bvars exist"))
+         { bvars = []; bterm = tt } -> tt
+       | _ -> raise (TermMatch ("dest_simple_bterm", term, "bvars exist"))
 
    let dest_simple_bterms term = 
       List.map (function bt -> dest_simple_bterm term bt)

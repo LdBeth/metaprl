@@ -84,12 +84,12 @@ sig
 
    type term_subst = (string * term) list
    and term_core = 
-      Term of term' |
-      Subst of term * term_subst
+      Term of term'
+    | Subst of term * term_subst
    and term = { free_vars : StringSet.t; mutable core : term_core }
    and bound_term_core = 
-      BTerm of bound_term' |
-      BSubst of bound_term * term_subst
+      BTerm of bound_term'
+    | BSubst of bound_term * term_subst
    and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
    and term' = { term_op : operator; term_terms : bound_term list } 
    and bound_term' = { bvars : string list; bterm : term }
