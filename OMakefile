@@ -10,8 +10,8 @@ BIN     = $(dir bin)
 # Default compile options are to be quiet
 # and print a progress bar.
 #
-if $(not $(defined VERBOSE))
-   OMakeFlags(-S --progress)
+# if $(not $(defined VERBOSE))
+#    OMakeFlags(-S --progress)
 
 #
 # Configuration defaults
@@ -36,15 +36,18 @@ if $(equal $(OSTYPE), Win32)
       copy mk\config.local.empty mk\config.local
 
    #
+   # System params
+   #
+   SEP = \
+
+   #
    # No native-code version of camlp4 on windows
    #
    NATIVE_ENABLED = false
    BYTE_ENABLED = true
-   READLINE = NO
-   NCURSES = NO
+   READLINE = false
+   NCURSES = false
    CFLAGS += /MT
-   WIN32LIB = h:\home\jyh\lib\win32
-   OCAML_LINK_FLAGS += -ccopt /link -ccopt /LIBPATH:$(WIN32LIB)
 
    #
    # CAMLLIB should be set in the environment
@@ -63,6 +66,14 @@ else
    .INCLUDE: mk/config.local
       $(CP) mk/config.local.empty mk/config.local
 
+   #
+   # System parameters
+   #
+   SEP = /
+
+   #
+   # Location of OCaml root
+   #
    if $(not $(defined CAMLLIB))
       CAMLLIB = $(dir $(CAMLLIB_DEFAULT))
       export
@@ -152,7 +163,7 @@ MLZFILES =
 CLEAN = $'(RM) *.opt *.run *.o *.cm* *.a *~ .\#* $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES))
 
 clean:
-    $(CLEAN) bin/ocamldep lib/camlp4* lib/convert lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/prlc*
+    $(CLEAN) bin$(SEP)ocamldep lib$(SEP)camlp4* lib$(SEP)convert lib$(SEP)*.cm* lib$(SEP)*.ml* lib$(SEP)*.txt lib$(SEP)*.dat lib$(SEP)*.a lib$(SEP)prlc*
 
 realclean: clean
     $'(RM) theories/*/*.prlb theories/*/*/*.prlb # This is a temporary HACK

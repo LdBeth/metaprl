@@ -216,23 +216,22 @@ $(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(NATIVE_CLIBS) $(ARDEPS) $(
         $(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 #
-# Dumb Windows doesnt know about quotes
+# Generate the mp_version.ml file
 #
-if $(equal $(OSTYPE), Win32)
-    VERSION_FLAGS=-pp "$(CAMLP4MACROPRINT) -D VERSION=\"MetaPRL $(MP_VERSION):\n\t\tbuild [%DATE% %TIME%]\n\t\ton %COMPUTERNAME%\n\t\tUses $(REFINER) Refiner_$(TERMS)\""
-    export
-else
-    VERSION_FLAGS=-pp '$(CAMLP4MACROPRINT) -D "VERSION=\"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses $(REFINER) Refiner_$(TERMS)\""'
-    export
+if true
+	LIBS =
+	OCAMLC = ocamlc
+	OCAMLOPT = ocamlopt
+	OCAML_OTHER_LIBS = unix
 
-mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi $(ROOT)/mk/defaults $(OCAMLMACROS)
-    $(OCAMLC) $(VERSION_FLAGS) -c $(OCAMLCFLAGS) mp_version.ml
+	make_mp_version.cmo:
+	make_mp_version.cmi:
+	make_mp_version.cmx:
 
-mp_version.cmx: $(CMXOBJS) $(CMXADEPS) mp_version.cmi $(ROOT)/mk/defaults $(OCAMLMACROS)
-    $(OCAMLOPT) $(VERSION_FLAGS) -c $(OCAMLOPTFLAGS) mp_version.ml
+	OCamlProgram(make_mp_version, make_mp_version)
 
-mp_version.cmi: mp_version.mli
-    $(OCAMLC) $(OCAMLCFLAGS) -pp cat mp_version.mli
+mp_version.ml: make_mp_version$(EXE) $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi $(ROOT)/mk/defaults $(OCAMLMACROS)
+	make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
 
 #
 # Phony targets
