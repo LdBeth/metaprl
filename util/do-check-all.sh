@@ -22,7 +22,7 @@ if [ -f editor/ml/mp.opt ]; then
    TIME=`mktemp /tmp/mktime.XXXXXX`
    export TERM=dumb
    echo 'set_dfmode "src";; check_all ();;' | \
-   /usr/bin/time -f 'Check time: %Uuser %Ssystem %Eelapsed (%PCPU); pagefaults: %Fmajor+%Rminor; %Wswaps' -o $TIME editor/ml/mpopt > /dev/null 2>$TEMP
+   /usr/bin/time -f 'Check time: %Uuser %Ssystem %Eelapsed (%PCPU); pagefaults: %Fmajor+%Rminor; %Wswaps' -o $TIME editor/ml/mpopt -batch > /dev/null 2>$TEMP
    cat $TIME
    rm -f $TIME
    gawk -F ' proof [(]| rule boxes,| primitive steps' -f "util/do-check-all.awk" < $TEMP
