@@ -326,9 +326,9 @@ struct
 #ifdef VERBOSE_EXN
       if !debug_alpha_equal then
          try 
-            let _ = equal_term /*_debug*/ [] t1 t2 in
-            eprintf "alpha_equal: true:\n%a\n%a%t" debug_print t1 debug_print t2 eflush;
-            true
+            let result = equal_term /*_debug*/ [] t1 t2 in
+            eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
+            result
          with Failure _ ->
             eprintf "alpha_equal: false:\n%a\n%a%t" debug_print t1 debug_print t2 eflush;
             false
