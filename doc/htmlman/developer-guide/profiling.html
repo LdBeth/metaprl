@@ -33,13 +33,10 @@ the MetaPRL top loop. In order to do that you have to either declare
 you functions as <TT>topval</TT> in one of the <TT>prlc</TT>-compiled modules or to add it
 to the <TT>commands</TT> variable in the <TT>editor/ml/shell.ml</TT>
 
-<P>After you've made all the necessary modifications to the code, run 
-<PRE>make clean; make profile</PRE>
-However, if the source tree was already compiled with "<TT>make profile</TT>", you can
-recompile it just by running "<TT>make profile</TT>" without "<TT>make clean</TT>".
+<P>After you've made all the necessary modifications to the code, set the <TT>NATIVE_PROFILING_ENABLED</TT> variable in <TT>mk/config</TT> and run <TT>omake</TT>.
 
 After the code was compiled:<OL>
-<LI>Start native-code version of MetaPRL: "<TT>cd editor/ml; ./mpopt</TT>"
+<LI>Start native-code version of MetaPRL: "<TT>editor/ml/mpopt</TT>"
 <LI>Do all necessary preparation steps
 <LI>Reset the profiling counters, so that the MetaPRL startup code and your
   preparation code does not get included into the profiling information:
@@ -61,17 +58,16 @@ It would also include some comments that would help you understand its contents.
 <H3>Bytecode Profiling</H3>
 
 <P>This is currently broken since <TT>ocamlprof</TT> does not know how to deal with preprocessed
-files. However, this may give you some idea of what is going on in case you want to 
+files. However, this may give you some idea of what is going on in case you want to
 do bytecode profiling by-hands.
 
 <OL>
-<LI>Do a "<TT>make profile_byte</TT>". You do not have to run "<TT>make clean</TT>",
-it will run it for you.
-<LI>Start a bytecode version of MetaPRL: <TT>cd editor/ml; ./mptop</TT>
+<LI>Set the appropriate flags in <TT>mk/config</TT> and run <TT>omake</TT>
+<LI>Start a bytecode version of MetaPRL: <TT>editor/ml/mptop</TT>
 <LI>Do all necessary preparation steps
 <LI>At this point you may want to try to reset all profiling counters to zero to
   avoid including startup and preparation into the profiling information. I am
-  not sure how to do that, you probably need to go through the 
+  not sure how to do that, you probably need to go through the
     <PRE>Profiling.counters: (string * (string * int array)) list ref</PRE>
   and reset all the arrays to 0.
 <LI>Run the code you want to profile

@@ -1,49 +1,16 @@
-To run MetaPRL for the first time:
+In order to compile MetaPRL, you need:
 
-   0. Make sure that you have OCaml (including Camlp4) installed.
-      If you are using Red Hat Linux, you can download OCaml binary
-      packages from http://files.metaprl.org/RPM/
-      Otherwise you need to build OCaml from sources yourself,
-      applying the patch(es) from the patches directory.
+   1. The OCaml compiler
+   2. The OMake build system
+   3. Optional, but highly recommended - openssl library with header files
+      (provided by the openssl-devel package on some systems).
 
-      Note: MetaPRL needs a specific version of OCaml. The mk/defaults
-      file lists the version(s) of OCaml that would work with
-      the version of MetaPRL you have downloaded.
-
-   1. Create the make configuration files
-      % make mk/config mk/config.local
-
-   2. If you did not use our RPMs and installed OCaml and/or Camlp4 yourself,
-      you may need to set the variables for CAMLLIB and CAMLP4LIB directories.
-      You can either set them in the mk/config.local file, for example:
-      CAMLLIB=/usr/lib/ocaml
-      CAMLP4LIB=/usr/lib/ocaml/camlp4
-      or in the environment. If a variable is set in both, mk/config.local
-      takes precedence over the environment.
-      By default, /usr/lib/ocaml and /usr/lib/ocaml/camlp4 are used
-
-   3. Edit mk/config (instructions are provided in the file itself).
-
-   4. Build MetaPRL
-      % make opt  (native code version - compiles a little slower,
-                   but runs much faster)
-      or
-      % make    (bytecode version)
-
-   5. Run MetaPRL
-      % editor/ml/mpxterm (native code in a new xterm using a correct font)
-      or 
-      % editor/ml/mpopt   (native code)
-      or
-      % editor/ml/mptop   (bytecode)
-     
-
-The file  editor/ml/QUICKSTART contains some hints on the usage
-of MetaPRL proof editor.
-
+Note that MetaPRL is likely to require very specific versions of OCaml and OMake.
 Refer to doc/htmlman/install.html or to http://metaprl.org/install.html
-for more information.
+for detaled instructions and more information.
 
+For additional information on Win32 and Mac OS X installation see README.WIN32
+and README.MACOSX respectively.
 
 If you plan to write some code, take a look the Developer Guide
 before you start. Go to either doc/htmlman/developer-guide/default.html

@@ -365,7 +365,7 @@ Tries to apply the given conversion.  If it fails, succeed and do
 nothing.
 
 * progressC : conv -> conv
-Runs the argument conv.  Fails if it does not make yny progress.
+Runs the argument conv.  Fails if it does not make any progress.
 
 * someSubC : conv -> conv
 Applies the conversion to the first subterm of the current term on

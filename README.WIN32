@@ -4,8 +4,8 @@ To install MetaPRL on Windows, you will need the following:
    Note that the version of the OCaml we provide contains additonal binaries
    not present by default in the INRIA distribution.
 
-2. The Omake build system, available at
-   http://mojave.caltech.edu/download.html
+2. The Omake build system, binaries available at http://files.metaprl.org/win32
+   Source can be downloaded by cvs from :pserver:anoncvs@cvs.metaprl.org:/cvsroot
 
 3 (optional).  The OpenSSL distribution.  You will need this if
    you plan to use MetaPRL over the network.  Available at
@@ -40,7 +40,9 @@ Installation:
 
 2. Installing omake.
 
-   To build omake, go to the omake directory, and edit the first
+   Unzip the omake distribution into the c:\omake, or some other location.
+
+   To build omake from sources, go to the omake directory, and edit the first
    three lines of Makefile.nt to choose the install location.
    Then run the following command:
 

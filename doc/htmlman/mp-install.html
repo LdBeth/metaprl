@@ -15,43 +15,45 @@
 <P>In order to compile and run MetaPRL you are going to need the following packages:</P>
 
 <OL>
-  <LI>GNU make. Make 3.77 has a bug and may not work, but make 3.76.1, 3.78.1,
-  or later should work fine.
   <LI>Objective Caml: our version contains a small patch to CamlP4 to compile the
       CamlP4 distribution in native code.
+  <LI>The OMake build system.
+  <LI>OpenSSL libraries and header files are optional, but hightly recommended.
   <LI>Ensemble: you need Ensemble only if you want to use the distributed prover.
   <LI>MetaPRL sources.
-  <LI>HTMLDOC: you will only need Htmldoc if you want to be able to convert
-  MetaPRL documentation into Postscript or PDF format yourself. (Note: <a
-  href="http://files.metaprl.org/doc/"><tt>http://files.metaprl.org/doc/</tt></a>
-  should already contain the latest version of documentation in Postscript and
-  PDF format, so you are unlikely to need Htmldoc).
 </OL>
 
-<P>OCaml and Htmldoc are available as source, and RedHat 6.x, 7.x, 8.x and 9
-<A HREF="http://www.rpm.org">RPM</A> files for Linux x86. You can get the
-<a href="http://rpmfind.net/linux/rpm2html/">rpm2html</a> listing of available RPMs and download them from <A
-HREF="http://rpm.nogin.org/ocaml.html">http://rpm.nogin.org/ocaml.html</A>
-and <A
-HREF="http://rpm.nogin.org/htmldoc.html">http://rpm.nogin.org/htmldoc.html</A>
-respectively or a plain listing directly from <A
-HREF="http://rpmbin.nogin.org/MetaPRL/">http://rpmbin.nogin.org/MetaPRL/</a>.
-If you are going to build OCaml yourself, you can get our patches at <A
+<P>OCaml and OMake and are currently available as source, Red Hat Linux 7.x, 8.x and 9, and Fedora
+Core 1 and 2 <A HREF="http://www.rpm.org">RPM</A> files for Linux x86. You can get the <a
+href="http://rpmfind.net/linux/rpm2html/">rpm2html</a> listing of available RPMs and download them
+from <A HREF="http://rpm.nogin.org/ocaml.html">http://rpm.nogin.org/ocaml.html</A> and <A
+HREF="http://rpm.nogin.org/omake.html">http://rpm.nogin.org/omake.html</A> respectively or a plain
+listing directly from <A
+HREF="http://rpmbin.nogin.org/MetaPRL/">http://rpmbin.nogin.org/MetaPRL/</a>.  If you are going to
+build OCaml yourself, you can get our patches at <A
 HREF="http://cvs.metaprl.org:12000/cvsweb/metaprl/patches/">http://cvs.metaprl.org:12000/cvsweb/metaprl/patches/</A>
-(see the <A
-HREF="http://cvs.metaprl.org:12000/cvsweb/~checkout~/metaprl/patches/README">README
+(see the <A HREF="http://cvs.metaprl.org:12000/cvsweb/~checkout~/metaprl/patches/README">README
 file</A> for the list of patches you need to apply).</P>
+
+<P>The Win32 binaries of OCaml and OMake are available at <A
+HREF="http://files.metaprl.org/win32/">http://files.metaprl.org/win32/</A>.  Under Winodws you will
+need Microsoft Visual C/C++ installed, as well as the Microsoft Macro Assembler. Alternatively, you
+can use <a href="http://www.cygwin.org/">the Cygnus Systems GNU-Win32 distribution</a>, but the
+performance (especially the compilation time) is likely to be noticeably worse.
+
+<P>The OMake sources may also be downloaded via CVS (see <a href="#cvs">CVS instructions</a> below).
 
 <P>You can download Ensemble from <A HREF="ftp://ftp.cs.cornell.edu/pub/ensemble/">ftp://ftp.cs.cornell.edu/pub/ensemble/</A>.</P>
 
-<P>You should be able to download MetaPRL sources tarball from <A
-HREF="http://files.metaprl.org/">http://files.metaprl.org/</A>,
-but if you plan to participate in MetaPRL development, you should consider using <A HREF="#cvs">the CVS access</A> to MetaPRL sources.</P>
+<P> If you are using a Unix-like operation system, you probably already have a copy of openssl
+around (note that you need the development files as well, which are often distributed in a separate
+<tt>openssl-devel</tt> binary package).  OpenSSL for Windows is available at <a
+href="http://www.slproweb.com/products/Win32OpenSSL.html">http://www.slproweb.com/products/Win32OpenSSL.html</a>.
 
-<P>There is also a Win32 distribution
-that we have not placed online yet (if you want it, contact
-<A HREF="mailto:jyh@cs.caltech.edu">Jason Hickey</A>). You will
-need the Cygnus Systems GNU-Win32 distribution.</P>
+<P>You should be able to download MetaPRL sources tarball from <A
+HREF="http://files.metaprl.org/">http://files.metaprl.org/</A>, but if you plan to participate in
+MetaPRL development, you should consider using <A HREF="#cvs">the CVS access</A> to MetaPRL
+sources.</P>
 
 <H3><A NAME="cvs">CVS Access to MetaPRL Sources</A></H3>
 
@@ -71,13 +73,19 @@ First log into the server by running
   <PRE>% cvs -d :pserver:anoncvs@cvs.metaprl.org:/cvsroot login</PRE>
 </BLOCKQUOTE>
 
-The password is <TT>anoncvs</TT>. It will be stored on your computer,
+The password is empty. It will be stored on your computer,
 so you only have to run the login command once.
 
 <P>Now you can checkout the distribution by running:</P>
 
 <BLOCKQUOTE>
-  <PRE>% cvs -d :pserver:anoncvs@cvs.metaprl.org:/cvsroot checkout MetaPRL</PRE>
+  <PRE>% cvs -d :pserver:anoncvs@cvs.metaprl.org:/cvsroot checkout metaprl</PRE>
+</BLOCKQUOTE>
+
+From the same server you can also checkout the OMake distribution by running:
+
+<BLOCKQUOTE>
+  <PRE>% cvs -d :pserver:anoncvs@cvs.metaprl.org:/cvsroot checkout omake</PRE>
 </BLOCKQUOTE>
 
 <P>You can find more information on CVS from
@@ -111,6 +119,9 @@ tree and copy the following files:
 <LI><TT>typing/typecore.mli</TT>
 </UL> into the OCaml library directory.
 
+<h3>OMake</h3>
+To build OMake from sources change to the OMake source directory and run <tt>./configure</tt> followed by <tt>make</tt> and <tt>make install</tt>
+
 <h3>Ensemble</h3>
 
 <P>To install Ensemble, unpack the distribution, and edit the
@@ -130,16 +141,13 @@ Home Page</A>.</P>
 
 <BLOCKQUOTE>
 <TT>% cd &lt;metaprl&gt;</TT><BR>
-<TT>% make opt</TT> &nbsp; (builds native code, you need pthreads to be
-supported by your OS and compiled into OCaml)<BR>
-or<BR>
-<TT>% make all</TT> &nbsp; (builds bytecode)
+<TT>% omake</TT>
 </BLOCKQUOTE>
 
-<P>After you run <TT>make</tt> for the first time, it will create the
+<P>After you run <TT>omake</tt> for the first time, it will create the
 <tt>mk/config</tt> file (as well as an empty <TT>mk/config.local</TT> file)
-that you will need to customize, before the rest of the <TT>make</TT> process
-can go through. The <tt>mk/config</tt> file is self-documenting.</P>
+that you will need to customize, before the <TT>omake</TT> process
+can continue. The <tt>mk/config</tt> file is self-documenting.</P>
 
 <P> If you are using Ensemble, set <TT>ENSROOT=&lt;root of the ensemble
 source tree&gt;</TT> in the <TT>mk/config</TT> file.
@@ -155,9 +163,15 @@ or in the environment. If a variable is set in both,
 The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/ocaml/camlp4</TT>
 respectively.</P>
 
-<P>To run the native code version of MetaPRL in an <tt>xterm</tt> with the correct fonts, use
-<TT>&lt;metaprl&gt;/editor/ml/mpxterm</TT> (normal fonts) or
-<TT>&lt;metaprl&gt;/editor/ml/mpxterm-large</TT> (larger font).</P>
+<P> Additional configuration options might be necessary on Windows and Mac OS X. See the corresponding <tt>README</tt> files in the top-level MetaPRL directory for more information.</P>
+
+<P>MetaPRL can be run with the <p>&lt;metaprl&gt;/editor/ml/mpopt<p> script (if <tt>NATIVE_ENABLED</tt> is switched on in <tt>mk/config</tt>), or <tt>&lt;metaprl&gt;/editor/ml/mptopt</tt> (if you have compiled MetaPRL with <tt>BYTECODE_ENABLED</tt>).
+By default, this will attempt to start your browser or prompt you to connect using your browser. MetaPRL looks better if you use Mozilla, but other browsers (including Konqueror and IE) are likely to work as well.
+
+<P>You don't have to use the browser.  You can also use the command-line
+   interface by running MetaPRL with the <tt>-cli</tt> option, which will expect to be running in a console with Unicode fonts. To run <tt>mpopt -cli</tt> in an <tt>xterm</tt> with the correct fonts, use
+<TT>&lt;metaprl&gt;/editor/ml/mpxterm</TT> (normal fonts),
+<TT>&lt;metaprl&gt;/editor/ml/mpxterm-large</TT> (larger font), or <TT>&lt;metaprl&gt;/editor/ml/mpkonsole</TT> (to run in KDE's <tt>konsole</tt>)</P>
 
 <P>If starting MetaPRL by hands (or from Emacs), the programs to use are
 <TT>&lt;metaprl&gt;/editor/ml/mpopt</TT> (native code) and
@@ -173,11 +187,6 @@ read the <TT>&lt;metaprl&gt;/editor/ml/QUICKSTART</TT> file or the <A
 TARGET="_top" HREF="user-guide/default.html">User Guide</A>.  To start
 developing new code, read the <A TARGET="_top"
 HREF="developer-guide/default.html">Developer Guide</A>.</P>
-
-<h3>Htmldoc</h3>
-
-<P> If you want to use Htmldoc, download it from
-<A HREF="http://www.easysw.com/htmldoc/">http://www.easysw.com/htmldoc/</A></P>
 
 </BODY>
 </HTML>

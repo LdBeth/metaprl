@@ -83,7 +83,7 @@ are active.</LI>
 grep -l -r --include='*.ml' create_debug . | xargs grep -h -A 4 create_debug | tr '\n' % | sed -e 's/\([^-]\)%/\1/g;s/-+%/%/g' | tr % '\n' | gawk -F '"' '{print "<LI><TT>" $2 "</TT>: " $4 "\n" }' | sort -u
 and some manual editing
 -->
-The following is the current list of debug variables defined in MetaPRL.
+The following is the current list of debug variables currently defined in MetaPRL.
 <UL>
 <LI><TT>address</TT>: show term addressing operations
 <LI><TT>alpha_equal</TT>: display alpha equality operations
@@ -92,16 +92,21 @@ The following is the current list of debug variables defined in MetaPRL.
 <LI><TT>cache</TT>: Show TPTP cache operations
 <LI><TT>convert</TT>: show proof format conversions
 <LI><TT>conv</TT>: display conversion operation
-<LI><TT>core_reduce</TT>: display reductions during core conversion
-<LI><TT>core_type_infer</TT>: print debugging info during type inference
 <LI><TT>czf_set</TT>: display czf_set operations
-<LI><TT>debug_int_arith</TT>: Print out some debug info as tactics proceed
-<LI><TT>dform_depth</TT>: check zone depth to catch unballanced buffers
+<LI><TT>debug_arith_dtactic</TT>: display operations of conversion to >= in Arith
+<LI><TT>debug_arith_unfold</TT>: display arith_unfold steps in Arith
+<LI><TT>debug_graph_arith1</TT>: Report input of solve function in Arith
+<LI><TT>debug_graph_arith2</TT>: Report output of solve function in Arith
+<LI><TT>debug_graph_arith3</TT>: Report input converted to internal representation in Arith
+<LI><TT>debug_int_arith</TT>: Print out some debug info as Arith tactics proceed
+<LI><TT>debug_mpoly_eval</TT>: display mpoly_eval steps
+<LI><TT>debug_supinf_steps</TT>: Print out (high-level) steps to be proved by Supinf
+<LI><TT>debug_supinf_trace</TT>: Print out (low-level) trace of supinf execution
+<LI><TT>dform_depth</TT>: check zone depth to catch unbalanced buffers
 <LI><TT>dform</TT>: show display form formatting
 <LI><TT>dtactic</TT>: display dT tactic operations
 <LI><TT>edit</TT>: show editing commands
 <LI><TT>ensemble</TT>: Display MP Ensemble Application actions
-<LI><TT>eqcd</TT>: display eqcd operations
 <LI><TT>file_base</TT>: display file operations on logic files
 <LI><TT>filter_cache</TT>: display cache operations during compiling
 <LI><TT>filter_parse</TT>: display compiling operations
@@ -124,7 +129,6 @@ The following is the current list of debug variables defined in MetaPRL.
 <LI><TT>opname</TT>: display opname construction
 <LI><TT>outboard</TT>: Ensemble outboard operations
 <LI><TT>package_info</TT>: display package operations
-<LI><TT>phobos</TT>: print debugging information for Phobos
 <LI><TT>phobos</TT>: print Phobos debugging information
 <LI><TT>pipe</TT>: Debug shared memory pipe operations
 <LI><TT>pos</TT>: print verbose position information for debugging
@@ -132,7 +136,6 @@ The following is the current list of debug variables defined in MetaPRL.
 <LI><TT>proof_pending</TT>: show proof Pending operations
 <LI><TT>proof</TT>: show proof operations
 <LI><TT>prop_decide</TT>: show propDecide operations
-<LI><TT>queue</TT>: Remote queue operations
 <LI><TT>queue</TT>: Show remote queue operations
 <LI><TT>reduce</TT>: display reductions
 <LI><TT>refine</TT>: Display refiner and refinement operations
@@ -146,13 +149,13 @@ The following is the current list of debug variables defined in MetaPRL.
 <LI><TT>sentinal</TT>: Display sentinal operations
 <LI><TT>share</TT>: Display MP Ensemble Application memory sharing
 <LI><TT>shell</TT>: Display shell operations
+<LI><TT>show_all_subgoals</TT>: show the full suggoals list, even when it is very long
 <LI><TT>simple_print</TT>: show simple printing operations
 <LI><TT>spell</TT>: check spelling
 <LI><TT>strategy</TT>: Show tactic strategy
 <LI><TT>string</TT>: check string bounds
 <LI><TT>subgoals</TT>: Report subgoals observed with may be some additional info
 <LI><TT>subst_ds</TT>: display term_ds substitution operations
-<LI><TT>subst</TT>: Substition operations
 <LI><TT>subst</TT>: Substitution operations
 <LI><TT>summary</TT>: display prl summary operations
 <LI><TT>sync</TT>: Show event synchronization
