@@ -42,7 +42,7 @@ let start_code = 4
 (*
  * Directory and filename of the shared data.
  *)
-let shared_dir = "/tmp/meta-prl"
+let shared_dir = "/tmp/metaprl"
 
 (*
  * -*-

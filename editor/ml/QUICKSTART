@@ -106,27 +106,27 @@ WHERE AND HOW TO TRY:
 HOW TO USE prl-hack.el
 
 Once:
-  1) Make a symbolic link in your home directory to meta-prl/   :
+  1) Make a symbolic link in your home directory to metaprl/   :
        cd
-       ln -s <path>/meta-prl/ ./   
+       ln -s <path>/metaprl/ ./   
 
 Every time:
   2) Start emacs
   3) Load prl_hack (in emacs, M-... usually means Alt-... ):
        M-x load-file                                  
-       meta-prl/editor/emacs/prl-hack.el   
+       metaprl/editor/emacs/prl-hack.el   
      
      Comments:
                2+3) alternative:
-               emacs -l meta-prl/editor/emacs/prl-hack.el
+               emacs -l metaprl/editor/emacs/prl-hack.el
 
                Another substitution for 3):
                Add the following line to your ~/.emacs
-               (load-file "~/meta-prl/editor/emacs/prl-hack.el")
+               (load-file "~/metaprl/editor/emacs/prl-hack.el")
 
   4) Start the shell for MetaPrl in emacs (uses Unicode font) :
-       M-x meta-prl    
-  5) In this shell cd to meta-prl/editor/ml/ and 
+       M-x metaprl    
+  5) In this shell cd to metaprl/editor/ml/ and 
      start any toploop  (mptop, mp,  mpopt)
        
 

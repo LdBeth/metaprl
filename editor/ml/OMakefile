@@ -10,7 +10,7 @@ OCAMLINCLUDES =\
 	$(addprefix -I , $(MP_DIRS))
 
 # Name of main librariws
-MAIN = meta-prl
+MAIN = metaprl
 MP = mp
 
 ########################################################################

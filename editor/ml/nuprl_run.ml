@@ -438,7 +438,7 @@ let test remote_port local_port =
 
     unwind_error
       (function () ->
-        (let lib = lib_new connection "meta-prl" in
+        (let lib = lib_new connection "metaprl" in
 
  	  unwind_error
 	    (function () -> (demo lib))
@@ -484,7 +484,7 @@ let jointest remote_port local_port =
 
     unwind_error
       (function () ->
-        (let lib = join connection ["meta-prl"] in
+        (let lib = join connection ["metaprl"] in
  	  unwind_error
 	    (function () -> (demo_get_put_test lib))
 **

@@ -37,7 +37,7 @@ HREF="http://rpm.nogin.org/htmldoc.html">http://rpm.nogin.org/htmldoc.html</A>
 respectively or a plain listing directly from <A
 HREF="http://rpmbin.nogin.org/MetaPRL/">http://rpmbin.nogin.org/MetaPRL/</a>.
 If you are going to build OCaml yourself, you can get our patches at <A
-HREF="http://cvs.metaprl.org:12000/cvsweb/meta-prl/patches/">http://cvs.metaprl.org:12000/cvsweb/meta-prl/patches/</A></P>
+HREF="http://cvs.metaprl.org:12000/cvsweb/metaprl/patches/">http://cvs.metaprl.org:12000/cvsweb/metaprl/patches/</A></P>
 
 <P>You can download Ensemble from <A HREF="ftp://ftp.cs.cornell.edu/pub/ensemble/">ftp://ftp.cs.cornell.edu/pub/ensemble/</A>.</P>
 
@@ -52,7 +52,7 @@ need the Cygnus Systems GNU-Win32 distribution.</P>
 
 <H3><A NAME="cvs">CVS Access to MetaPRL Sources</A></H3>
 
-<p> You can <A TARGET="_top" HREF="http://cvs.metaprl.org:12000/cvsweb/meta-prl/">browse the MetaPRL CVS repository</a>.
+<p> You can <A TARGET="_top" HREF="http://cvs.metaprl.org:12000/cvsweb/metaprl/">browse the MetaPRL CVS repository</a>.
 
 <P>If you plan any development in MetaPRL or if you want to download the latest
 version of MetaPRL, you may consider
@@ -89,7 +89,7 @@ and from <A HREF="http://cvsbook.red-bean.com/">The CVS Book</A>.
 <A HREF="http://rpmbin.nogin.org/MetaPRL/">the provided RPMs</A>, then in order
 to install OCaml and CamlP4 download and
 unpack the distributions, than apply the <A
-HREF="http://cvs.metaprl.org:12000/cvsweb/meta-prl/patches/">patches</A>. After that, proceed as described in the
+HREF="http://cvs.metaprl.org:12000/cvsweb/metaprl/patches/">patches</A>. After that, proceed as described in the
 <TT>INSTALL</TT> files in the distributions. If your OS supports pthreads, run OCaml configure
 script with <TT>-with-pthread</TT> option in order to get pthreads support in OCaml.
 After you have compiled and installed OCaml and Camlp4, go to the OCaml source tree and copy the following files:
@@ -119,10 +119,10 @@ Home Page</A>.</P>
 <h3>MetaPRL</h3>
 
 <P>To install MetaPRL, unpack the distribution into some directory
-<TT>&lt;meta-prl&gt;</TT> and build the distribution with these steps:</P>
+<TT>&lt;metaprl&gt;</TT> and build the distribution with these steps:</P>
 
 <BLOCKQUOTE>
-<TT>% cd &lt;meta-prl&gt;</TT><BR>
+<TT>% cd &lt;metaprl&gt;</TT><BR>
 <TT>% make opt</TT> &nbsp; (builds native code, you need pthreads to be
 supported by your OS and compiled into OCaml)<BR>
 or<BR>
@@ -149,12 +149,12 @@ The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/ocaml/camlp4</TT>
 respectively.</P>
 
 <P>To run the native code version of MetaPRL in an <tt>xterm</tt> with the correct fonts, use
-<TT>&lt;meta-prl&gt;/editor/ml/mpxterm</TT> (normal fonts) or
-<TT>&lt;meta-prl&gt;/editor/ml/mpxterm-large</TT> (larger font).</P>
+<TT>&lt;metaprl&gt;/editor/ml/mpxterm</TT> (normal fonts) or
+<TT>&lt;metaprl&gt;/editor/ml/mpxterm-large</TT> (larger font).</P>
 
 <P>If starting MetaPRL by hands (or from Emacs), the programs to use are
-<TT>&lt;meta-prl&gt;/editor/ml/mpopt</TT> (native code) and
-<TT>&lt;meta-prl&gt;/editor/ml/mptop</TT> (bytecode).  You will need to use a
+<TT>&lt;metaprl&gt;/editor/ml/mpopt</TT> (native code) and
+<TT>&lt;metaprl&gt;/editor/ml/mptop</TT> (bytecode).  You will need to use a
 Unicode (<tt>iso10646-1</tt>) font to be able to interact with some sense. We
 currently recommend using the
 <TT>-misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1</TT> font
@@ -162,7 +162,7 @@ currently recommend using the
 may work better.</P>
 
 <P>That's it. To navigate the MetaPRL logics and programs, you will need to
-read the <TT>&lt;meta-prl&gt;/editor/ml/QUICKSTART</TT> file or the <A
+read the <TT>&lt;metaprl&gt;/editor/ml/QUICKSTART</TT> file or the <A
 TARGET="_top" HREF="user-guide/default.html">User Guide</A>.  To start
 developing new code, read the <A TARGET="_top"
 HREF="developer-guide/default.html">Developer Guide</A>.</P>

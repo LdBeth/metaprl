@@ -2132,7 +2132,7 @@ struct
             if List.exists (fun x -> (fst x = vf)) sigmaQ then
                extend_sigmaQ sigmaQ r
             else
-(* first and second component are var terms in meta-prl *)
+(* first and second component are var terms in MetaPRL *)
                [(vf,vf)] @ (extend_sigmaQ sigmaQ r)
 
    let build_sigmaQ sigmaQ ftree =

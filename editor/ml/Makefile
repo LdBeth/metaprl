@@ -217,7 +217,7 @@ NATIVE_CCLIBS := $(NATIVE_CCLIBS)\
 	$(OTHER_CCLIBS)
 
 # Name of main librariws
-MAIN = meta-prl
+MAIN = metaprl
 MP = mp
 
 all: $(MAIN).cma $(MP).top $(MP).run

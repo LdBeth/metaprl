@@ -62,7 +62,7 @@ The string should contain %s which will be replaced by the current-path.")
 (defvar metaprl-start-alias "MP"
   "*The shell `alias' that will be used to start MetaPRL.")
 
-(defvar metaprl-home-directory (expand-file-name "~/meta-prl")
+(defvar metaprl-home-directory (expand-file-name "~/metaprl")
   "*The MetaPRL root directory.")
 
 (defvar metaprl-editor-directory
@@ -91,7 +91,7 @@ This print a string that is captured by this mode for setting the prompt, so if
 it is changed, make sure you change the occurrence of CURDIR below.")
 
 (defvar metaprl-window-size 20
-  "*The size of the `meta-prl' buffer.
+  "*The size of the `metaprl' buffer.
 An integer smaller than 100, the precent of buffer heigh, or nil - default.")
 
 (defvar metaprl-should-init-ml    nil "Internal.  Do not change.")
@@ -202,7 +202,7 @@ initialization - must wait until the process is ready to initialize."
   (if metaprl-should-init-ml
     (progn
       (process-send-string
-       "*meta-prl*"
+       "*metaprl*"
        (format
         "open %s;;\n%s;;\nprintf \"\\n\\n\";%s;;\n"
         ;; Open modules (note: need at least one for this)
@@ -224,7 +224,7 @@ Expand aliases etc...  (the good stuff is in here.)"
   ;; not taken as the new input.
   (let (;; Get the contents of the current line.
         (line (save-excursion
-                (set-buffer "*meta-prl*")
+                (set-buffer "*metaprl*")
                 (forward-line -1)
                 (buffer-substring (progn (beginning-of-line) (point))
                                   (progn (end-of-line) (point))))))
@@ -265,19 +265,19 @@ Expand aliases etc...  (the good stuff is in here.)"
        (setq metaprl-cur-prompt nil)))))
 
 (defun metaprl-shell ()
-  "Same as `shell', modified to use *meta-prl* as the buffer name."
+  "Same as `shell', modified to use *metaprl* as the buffer name."
   (interactive)
-  (if (not (comint-check-proc "*meta-prl*"))
+  (if (not (comint-check-proc "*metaprl*"))
     (let* ((prog (or explicit-shell-file-name
                      (getenv "ESHELL")
                      (getenv "SHELL")
                      "/bin/sh"))
-           (name "meta-prl")
+           (name "metaprl")
            (startfile (concat "~/.emacs_" name))
            (xargs-name (intern-soft (concat "explicit-" name "-args")))
            shell-buffer)
       (save-excursion
-        (set-buffer (apply 'make-comint "meta-prl" prog
+        (set-buffer (apply 'make-comint "metaprl" prog
                            (if (file-exists-p startfile) startfile)
                            (if (and xargs-name (boundp xargs-name))
                              (symbol-value xargs-name)
@@ -285,13 +285,13 @@ Expand aliases etc...  (the good stuff is in here.)"
         (setq shell-buffer (current-buffer))
         (shell-mode))
       (pop-to-buffer shell-buffer))
-    (pop-to-buffer "*meta-prl*")))
+    (pop-to-buffer "*metaprl*")))
 
 ;; Set a shell for MetaPRL.
-(defun meta-prl ()
+(defun metaprl ()
   "Start a shell with a nice interface to MetaPRL.
 It is a simple shell so you can do whatever you want in it.  If \"MP\" is
-entered, then the shell will automatically go to the meta-prl/editor/ml
+entered, then the shell will automatically go to the metaprl/editor/ml
 directory, run mp and enter an automatic #use command.  Once in MetaPRL, a
 special prompt will be displayed, and alias convertion will be performed."
   (interactive)
@@ -299,10 +299,10 @@ special prompt will be displayed, and alias convertion will be performed."
   (require 'shell)
   (let ((shell-mode-hook
          ;; Rename the shell-buffer as soon as it is created.  This method
-         ;; will cause problems when there is no *meta-prl* buffer, but there
+         ;; will cause problems when there is no *metaprl* buffer, but there
          ;; is a *shell*  already - that *shell* will be used and renamed as
-         ;; the *meta-prl* buffer.
-         '(lambda (&rest args) (rename-buffer "*meta-prl*"))))
+         ;; the *metaprl* buffer.
+         '(lambda (&rest args) (rename-buffer "*metaprl*"))))
     ;; Start the shell, or switch to an existing one.
     (metaprl-shell)
     ;; Make the window no more than metaprl-window-size precent of the frame.
@@ -318,7 +318,7 @@ special prompt will be displayed, and alias convertion will be performed."
         ;; Display all chars correctly.
         (standard-display-8bit 128 255)
         (set-default-font "-misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1")))
-    ;; Initialize the meta-prl buffer once.
+    ;; Initialize the metaprl buffer once.
     (make-local-variable 'metaprl-new-buffer)
     (if (not (and (boundp 'metaprl-new-buffer) metaprl-new-buffer))
       (progn

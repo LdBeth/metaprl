@@ -43,9 +43,9 @@ to shadow b which is clearly wrong. If fact, with opnames we used to have the
 problem that Nuprl_font could shadow some of Itt modules in some cases which
 lead to incorrect parsing. This particular problem was fixed last summer (by
 Jason and me)  - see
-http://cvs.cs.cornell.edu:12000/commitlogs/meta-prl/2000-07.html#00/07/25.13:24:20
+http://cvs.cs.cornell.edu:12000/commitlogs/metaprl/2000-07.html#00/07/25.13:24:20
 and
-http://cvs.cs.cornell.edu:12000/commitlogs/meta-prl/2000-07.html#00/07/25.19:10:51
+http://cvs.cs.cornell.edu:12000/commitlogs/metaprl/2000-07.html#00/07/25.19:10:51
 
 There are currently 4 separate pieces of code that solve this problem for
 resources, sentinel, display forms and opnames. It may be reasonable for the

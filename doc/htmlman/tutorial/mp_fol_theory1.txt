@@ -1,4 +1,4 @@
-<yukon:~/meta-prl/editor/ml 25>./mp
+<yukon:~/metaprl/editor/ml 25>./mp
 # #use "tutorial.ml";;
 # load "fol_theory";;
 - : unit = ()

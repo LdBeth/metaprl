@@ -31,7 +31,7 @@ User &lt;your login on cvs.metaprl.org&gt;</PRE>
    <LI>Make sure you are using cvs version &gt;=1.9 (<TT>cvs -v</TT> prints version).
 
    <LI>To create new working copy:
-   <PRE>cvs -d :ext:metaprl-cvs:/cvsroot checkout meta-prl</PRE>
+   <PRE>cvs -d :ext:metaprl-cvs:/cvsroot checkout metaprl</PRE>
    If for some reason you can not connect to port 80 on metaprl-cvs, try using port 3000 instead.
 
    <LI>To fix an old repository:
@@ -40,7 +40,7 @@ User &lt;your login on cvs.metaprl.org&gt;</PRE>
 
 <PRE>#!/bin/sh
 echo :ext:metaprl-cvs:/cvsroot &gt; $1/Root
-(echo 's|/meta-prl|/--meta-prl-root-dir--|'; echo 's|^.*/--meta-prl-root-dir--|/cvsroot/meta-prl|'; echo w; echo q) | ed $1/Repository</PRE>
+(echo 's|/metaprl|/--metaprl-root-dir--|'; echo 's|^.*/--metaprl-root-dir--|/cvsroot/metaprl|'; echo w; echo q) | ed $1/Repository</PRE>
 
       <LI><PRE>chmod 755 /tmp/fixrep.sh</PRE>
 
