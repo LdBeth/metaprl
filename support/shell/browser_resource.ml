@@ -77,8 +77,8 @@ type menu_item = term * (unit -> bool)
  * The resource info.
  *)
 type command =
-   { command_label   : string;
-     command_value   : string;
+   { command_label   : string; (* HTML code *)
+     command_value   : string; (* JS code *)
      command_enabled : unit -> bool
    }
 
@@ -301,7 +301,7 @@ let add_directories info dirs =
             let items =
                List.fold_left (fun items s ->
                      let item =
-                        { command_label   = s;
+                        { command_label   = Lm_string_util.html_escaped s;
                           command_value   = sprintf "Command('cd \"%s\"')" (Lm_string_util.js_escaped s);
                           command_enabled = always_enabled
                         }
@@ -322,7 +322,7 @@ let add_history info lines =
             let items =
                List.fold_left (fun items s ->
                      let item =
-                        { command_label   = s;
+                        { command_label   = Lm_string_util.html_escaped s;
                           command_value   = sprintf "Prompt('%s')" (Lm_string_util.js_escaped s);
                           command_enabled = always_enabled
                         }
@@ -353,7 +353,7 @@ let add_sessions state info ids =
                               in
                               let label = sprintf "%s Session %d (%s)" key i cwd in
                               let item =
-                                 { command_label   = label;
+                                 { command_label   = Lm_string_util.html_escaped label;
                                    command_value   = sprintf "Session(%d)" i;
                                    command_enabled = always_enabled
                                  }
@@ -401,7 +401,7 @@ let add_edit state info =
                let items =
                   List.fold_left (fun items file ->
                         let item =
-                           { command_label = "Open " ^ file;
+                           { command_label = "Open " ^ (Lm_string_util.html_escaped file);
                              command_value =
                                 sprintf "Edit(%b, '/session/%d/edit/%s')"
                                    flag (int_of_pid "add_edit" id) (Lm_string_util.js_escaped (proxyedit_of_filename file));

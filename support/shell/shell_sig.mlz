@@ -338,6 +338,7 @@ sig
    val set_view_options   : string -> unit
    val clear_view_options : string -> unit
    val get_shortener      : unit -> Dform.shortener
+   val get_dforms         : display_fun
 
    (* General display options *)
    val set_dfmode : string -> unit

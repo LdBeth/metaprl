@@ -497,6 +497,7 @@ struct
       let set_view_options   = wrap      set_view_options
       let clear_view_options = wrap      clear_view_options
       let get_shortener      = wrap_unit get_shortener
+      let get_dforms         = wrap      get_display_mode
       let set_dfmode         = wrap      set_dfmode
       let set_dftype         = wrap      set_dftype
       let set_window_width   = wrap      set_window_width

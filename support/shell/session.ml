@@ -328,42 +328,16 @@ let synchronize f x =
 (*
  * Perform the command, and add the output to the message window.
  *)
-let add_html_string buf s =
-   let len = String.length s in
-   let rec copy col i =
-      if i < len then
-         let col =
-            match s.[i] with
-               '<' -> Buffer.add_string buf "&lt;"; succ col
-             | '>' -> Buffer.add_string buf "&gt;"; succ col
-             | '&' -> Buffer.add_string buf "&amp;"; succ col
-             | ' ' -> Buffer.add_string buf "&nbsp;"; succ col
-             | '\r'
-             | '\n' -> Buffer.add_string buf "<br>\n"; 0
-             | '\t' ->
-                  let col' = (col + 8) land (lnot 7) in
-                     for i = col to pred col' do
-                        Buffer.add_string buf "&nbsp;"
-                     done;
-                     col'
-             | c -> Buffer.add_char buf c; succ col
-         in
-            copy col (succ i)
-   in
-      copy 0 0
-
 let add_command io =
    State.write session_entry (fun session ->
          let s =
             Browser_syscall.flush io;
             Browser_syscall.contents io
          in
-         let buf = Buffer.create (String.length s * 2) in
          let buffer = new_buffer () in
-            Buffer.add_string buf "<span class=\"system\">\n";
-            add_html_string buf s;
-            Buffer.add_string buf "\n</span>\n";
-            format_invis buffer (Buffer.contents buf);
+            format_invis buffer "<span class=\"system\">\n";
+            format_invis buffer (Lm_string_util.html_escaped s);
+            format_invis buffer "\n</span>\n";
             LineBuffer.add session.session_messages buffer)
 
 (*
