@@ -143,7 +143,7 @@ let prl_init_flag = ref false
 
 let modules_flag = ref false
 
-let syntaxdef_prereq = "syntax.cph"
+let syntaxdef_prereq = "syntax.pho"
 
 let rec find_file name = function
    [] ->
