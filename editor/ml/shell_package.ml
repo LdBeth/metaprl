@@ -214,7 +214,7 @@ let convert_impl =
                   "*"
          in
          let rcount, ncount = Package.node_count_of_proof proof in
-            mk_var_term (sprintf "%s[%d,%d]" code ncount rcount)
+            mk_var_term (sprintf "%s[%d,%d]" code rcount ncount)
    in
       { term_f      = identity;
         meta_term_f = term_of_meta_term;
