@@ -33,27 +33,27 @@ DIRS := $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 
 all:
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 opt:
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 filter:
 	@for i in $(REFINER_DIRS) filter; do\
-		if (echo Making $$i...; cd $$i; $(MAKE) all); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
 profile_clean: 
 	@for i in $(REFINER_DIRS) editor/ml; do\
-		if (echo Making $$i...; cd $$i; $(MAKE) clean); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i clean); then true; else exit 1; fi;\
 	done
 
 profile_all: 
 	@for i in $(REFINER_DIRS) editor/ml; do\
-		if (echo Making $$i...; cd $$i; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(MAKE) all); then true; else exit 1; fi;\
+		if (echo Making $$i...; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
 profile_byte: clean all profile_clean profile_all
@@ -64,25 +64,25 @@ profile:
 
 profile_opt:
 	@for i in $(REFINER_DIRS); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
-	@if (echo Making filter...; cd filter; $(MAKE) PROFILE=-p INLINE=0 profile); then true; else exit 1; fi
+	@if (echo Making filter...; $(MAKE) -C filter PROFILE=-p INLINE=0 profile); then true; else exit 1; fi
 	@for i in $(MP_DIRS) editor/ml; do\
-		if (echo Making $$i...; cd $$i; $(MAKE) PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
 
 install:
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 clean:
 	@for i in lib bin $(DIRS); do\
-		if (echo Cleaning $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 depend:
-	(cd util; $(MAKE))
+	@$(MAKE) -C util
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; touch Makefile.dep; $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; cd $$i && touch Makefile.dep && $(MAKE) $@); then true; else exit 1; fi;\
 	done

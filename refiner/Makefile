@@ -90,23 +90,23 @@ $(MAINLIB).cmxa: $(CMXFILES)
 #
 lib:
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 optlib:
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) opt); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
 	done
 
 install::
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 	$(INSTALL) $(MAINLIB).cma $(INSTALLLIB)
 
 clean::
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 depend::
@@ -115,7 +115,7 @@ depend::
 	$(ROOT)/bin/ocamldep $(IDIRS) -I ../mllib $(MLFILES) $(MLIFILES) >> Makefile.tmp
 	mv Makefile.tmp Makefile.dep
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; touch Makefile.dep; $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; cd $$i && touch Makefile.dep && $(MAKE) $@); then true; else exit 1; fi;\
 	done
 
 #
