@@ -128,7 +128,12 @@ if true
 # Theories also have special options
 #
 DEFAULT_THEORIES = tactic ocaml base itt
-LM_THEORIES = $(if $(equal $(LIBMOJAVE), undefined), $(EMPTY), mc experimental/compile)
+
+MC_THEORIES =\
+	experimental/mcc/fir/util
+
+LM_THEORIES = $(if $(equal $(LIBMOJAVE), undefined), $(EMPTY), $(MC_THEORIES))
+
 ALL_THEORIES = tactic ocaml base ocaml_doc itt ocaml_sos fol czf phobos sil $(LM_THEORIES)
 
 #
