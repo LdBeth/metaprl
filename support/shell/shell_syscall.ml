@@ -183,7 +183,7 @@ let deref_cvs () command =
     | "update"
     | "co"
     | "commit" ->
-         exec (SyscallCVS (absname ".", command))
+         exec (SyscallCVS (relname ".", command))
     | _ ->
          eprintf "CVS command '%s' not allowed@." command;
          -1
