@@ -72,8 +72,6 @@ let debug_lock =
 (*
  * We may start this as a web service.
  *)
-let browser_flag      = Shell_state.browser_flag
-
 let browser_port_name = Shell_state.browser_port_name
 let browser_port      = Shell_state.browser_port
 
@@ -1556,7 +1554,7 @@ struct
     * Start the web server.
     *)
    let main () =
-      if !browser_flag then
+      if not (!Shell_state.cli_flag) then
          let password = init_password () in
          let shared =
             { shared_challenge  = "unknown";

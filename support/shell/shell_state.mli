@@ -116,9 +116,9 @@ val get_includes : unit -> string list
 val get_input_files : unit -> string list
 
 (*
- * We may start this as a web service.
+ * We may start this as a command-line interface, or as a web service.
  *)
-val browser_flag : bool ref
+val cli_flag : bool ref
 
 val browser_port_name : string
 val browser_port      : int ref

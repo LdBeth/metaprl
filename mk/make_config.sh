@@ -86,27 +86,30 @@ REFINER=$REFINER
 THEORIES=$THEORIES
 
 #
+# The OpenSSL package (available in Linux at least) (yes/no)
+# Note: the browser interface currently does not work without SSL.
+#
+SSL_ENABLED=$SSL_ENABLED
+
+#
+# Do you want to use threads (yes/no)?
+# Highly recommended for the browser interface.
+#
+THREADS_ENABLED=$THREADS_ENABLED
+
+#
 # Use GNU readline package (available on Linux at least) (yes/no).
 # Requires "NCURSES_ENABLED=yes" (below) in order to work.
+# Highly recommended for the command-line interface
 #
 READLINE_ENABLED=$READLINE_ENABLED
 
 #
 # The GNU ncurses package (available in Linux at least) (yes/no)
 # Should be set to "yes" for readline support (above) to be enabled.
+# Highly recommended for the command-line interface
 #
 NCURSES_ENABLED=$NCURSES_ENABLED
-
-#
-# The OpenSSL package (available in Linux at least) (yes/no)
-# Should be set to "yes" for secure server support to be enabled.
-#
-SSL_ENABLED=$SSL_ENABLED
-
-#
-# Do you want to use threads (yes/no)?
-#
-THREADS_ENABLED=$THREADS_ENABLED
 
 #
 # C compiler

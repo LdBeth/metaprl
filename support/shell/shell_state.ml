@@ -63,7 +63,8 @@ let debug_lock =
 (*
  * We may start this as a web service.
  *)
-let browser_flag     = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool
+(* let browser_flag     = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool *)
+let cli_flag = Env_arg.bool "cli" false "use command-line interface instead of the browser one" Env_arg.set_bool_bool
 
 let browser_port_name = "port"
 let browser_port      = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int
