@@ -619,8 +619,7 @@ struct
        * Regular terms.
        * term: any possible term
        * aterm: annotated term
-       * nocommaterm: any possible term that is not a pair
-       * noncommaterm: a term that is not an operator or a pair
+       * noncommaterm: any possible term that is not a pair
        * nonsimpleterm: a term that is not an expression, and
        *     not a simple operator
        * simpleterm: a term that is just an operator
@@ -1076,7 +1075,7 @@ struct
              make_param (Number n)
            | "-"; n = sl_number ->
              make_param (Number (Lm_num.mult_num n (Lm_num.num_of_int (-1))))
-	   | sl_quote ->
+	   | sl_atsign ->
              make_param (Quote)
           ]
           | [ p = param; sl_colon; w = sl_word ->
@@ -1102,20 +1101,8 @@ struct
           ]];
 
       btermslist:
-         [[ l = OPT btermlist ->
-             let l' =
-                match l with
-                   Some l' -> l'
-                 | None -> []
-             in
-                List.map mk_bterm' l'
-          ]];
-
-      btermlist:
-         [[ t = bterm ->
-             [t]
-           | l = btermlist; sl_semi_colon; t = bterm ->
-             l @ [t]
+         [[ bterms = LIST0 bterm SEP sl_semi_colon ->
+                List.map mk_bterm' bterms
           ]];
 
       bterm:
@@ -1145,31 +1132,28 @@ struct
 
       (* Special forms *)
       sequent:
-         [[ sl_sequent; sl_open_curly;
-            hyps = LIST0 hyp SEP ";"; sl_turnstile;
-            concl = LIST0 term SEP ";"; sl_close_curly ->
+         [[ sl_sequent; sl_open_curly; (hyps, concls) = sequent_body; sl_close_curly ->
                mk_sequent_term {
                   sequent_args = mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) [];
-                  sequent_hyps = SeqHyp.of_list hyps;
-                  sequent_goals = SeqGoal.of_list concl
+                  sequent_hyps = hyps;
+                  sequent_goals = concls;
                }
-          | sl_sequent; sl_open_brack; args = termlist; sl_close_brack; sl_open_curly;
-            hyps = LIST0 hyp SEP ";"; sl_turnstile;
-            concl = LIST0 term SEP ";"; sl_close_curly ->
+          | sl_sequent; sl_open_brack; args = termlist; sl_close_brack;
+            sl_open_curly; (hyps, concls) = sequent_body; sl_close_curly ->
                let args_bt = List.map mk_simple_bterm args in
                mk_sequent_term {
                   sequent_args = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] args_bt) []) args_bt;
-                  sequent_hyps = SeqHyp.of_list hyps;
-                  sequent_goals = SeqGoal.of_list concl
+                  sequent_hyps = hyps;
+                  sequent_goals = concls
                }
-          | sl_sequent; sl_open_paren; arg = term; sl_close_paren; sl_open_curly;
-            hyps = LIST0 hyp SEP ";"; sl_turnstile;
-            concl = LIST0 term SEP ";"; sl_close_curly ->
-               mk_sequent_term {
-                  sequent_args = arg;
-                  sequent_hyps = SeqHyp.of_list hyps;
-                  sequent_goals = SeqGoal.of_list concl
-               }
+          | sl_sequent; sl_open_paren; arg = term; sl_close_paren;
+               sl_open_curly; (hyps, concls) = sequent_body; sl_close_curly ->
+               mk_sequent_term { sequent_args = arg; sequent_hyps = hyps; sequent_goals = concls }
+          ]];
+
+      sequent_body:
+         [[ hyps = LIST0 hyp SEP ";"; sl_turnstile; concls = LIST0 term SEP ";" ->
+               (SeqHyp.of_list hyps, SeqGoal.of_list concls)
           ]];
 
       hyp:
@@ -1522,7 +1506,7 @@ struct
       sl_or:
          [[ "or" -> "or" ]];
 
-      sl_quote:
+      sl_atsign:
          [[ "@" -> ()]];
 
       sl_and:
