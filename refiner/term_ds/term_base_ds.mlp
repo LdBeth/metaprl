@@ -25,6 +25,13 @@ let debug_subst =
         debug_value = false
       }
 
+let debug_fv =
+   create_debug (**)
+      { debug_name = "free_vars";
+        debug_description = "Display free variables calculation";
+        debug_value = false
+      }
+
 module Term
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
@@ -141,21 +148,51 @@ struct
        | VarsDelayed ->
             let vars =
                match t.core with
-                  Term t -> bterms_free_vars t.term_terms
+                  Term t' -> 
+#ifdef VERBOSE_EXN
+                     if !debug_fv then
+                        eprintf "Request for Term fvs: Term: %a%t" debug_print t eflush;
+                     let res =
+#endif
+                     bterms_free_vars t'.term_terms
+#ifdef VERBOSE_EXN
+                     in
+                        if !debug_fv then begin
+                           eprintf "Result: ";
+                           List.map (eprintf "%s ") (StringSet.elements res);
+                           eprintf "%t" eflush;
+                        end; res
+#endif
                 | Sequent seq ->
                      StringSet.union
                         (term_free_vars seq.sequent_args)
                         (hyp_fv
                            seq.sequent_hyps
                            (SeqHyp.length seq.sequent_hyps - 1)
-                           (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)));
+                           (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)))
                 | Subst (t,sub) ->
+#ifdef VERBOSE_EXN
+                     if !debug_fv then begin
+                        eprintf "Request for Subst fvs: Term: %a; Subst: " debug_print t;
+                        List.map (fun (v,t) -> eprintf "(%s : %a) " v debug_print t) sub;
+                        eprintf "%t" eflush;
+                     end;
+                     let res =
+#endif
                      StringSet.union
                         (List.fold_right
                            StringSet.remove
                            (List_util.fst_split sub)
                            (term_free_vars t))
-                        (subst_free_vars sub);
+                        (subst_free_vars sub)
+#ifdef VERBOSE_EXN
+                     in 
+                        if !debug_fv then begin
+                           eprintf "Result: ";
+                           List.map (eprintf "%s ") (StringSet.elements res);
+                           eprintf "%t" eflush;
+                        end; res
+#endif
             in t.free_vars <- Vars vars; vars
 
    and bterm_free_vars bt =
@@ -171,7 +208,7 @@ struct
                            StringSet.remove
                            (List_util.fst_split sub)
                            (bterm_free_vars bt))
-                        (subst_free_vars sub);
+                        (subst_free_vars sub)
             in bt.bfree_vars <- Vars vars; vars
 
    and bterms_free_vars = function
@@ -211,6 +248,7 @@ struct
             eprintf "\tfree_vars:";
             List.iter (fun name -> eprintf " %s" name) (StringSet.elements (term_free_vars t));
             eflush stderr;
+            if sub == [] then eprintf "\t empty substitution\n" else
             List.iter (fun (v, t) -> eprintf "\t%s: %a\n" v debug_print t) sub;
             eprintf "}%t" eflush;
             debug_subst := true
@@ -219,17 +257,13 @@ struct
       match StringSet.fst_mem_filt (term_free_vars t) sub with
          [] -> t
        | sub' ->
-            let t = {free_vars = VarsDelayed; core = Subst (t,sub')} in
-               term_free_vars t;
-               t
+            {free_vars = VarsDelayed; core = Subst (t,sub')}
 
    let do_bterm_subst sub bt =
       match StringSet.fst_mem_filt (bterm_free_vars bt) sub with
          [] -> bt
        | sub' ->
-            let bt = {bfree_vars = VarsDelayed; bcore = BSubst (bt,sub')} in
-               bterm_free_vars bt;
-               bt
+            {bfree_vars = VarsDelayed; bcore = BSubst (bt,sub')}
 
    (************************************************************************
     * De/Constructors                                                 *
@@ -265,7 +299,10 @@ struct
                   Term { term_op = { op_name = opname; op_params = [Var v] };
                          term_terms = [] } when Opname.eq opname var_opname ->
                      (* since sub was not eliminated, v should be in sub *)
-                     get_core (List.assoc v sub)
+                     let new_term = List.assoc v sub in
+                        if t.free_vars == VarsDelayed && new_term.free_vars!=VarsDelayed then 
+                           t.free_vars <- new_term.free_vars;
+                        get_core (new_term)
                 | Term ttt ->
                      Term { term_op = ttt.term_op;
                             term_terms = List.map (do_bterm_subst sub) ttt.term_terms }
