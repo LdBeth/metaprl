@@ -42,7 +42,7 @@ endif
 
 # For cleaning the directory
 ifdef MAIN
-   CLEAN_MAIN = $(MAIN) $(MAIN).run
+   CLEAN_MAIN = $(MAIN) $(MAIN).run $(MAIN).opt $(MAIN).top
 endif
 
 # Library file names

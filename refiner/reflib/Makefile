@@ -5,6 +5,7 @@ INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig -I ../refiner
 
 # Signatures
 MLZFILES :=\
+	simple_print_sig\
 	ml_format_sig\
 	ml_print_sig\
 	term_compare_sig

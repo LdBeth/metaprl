@@ -6,6 +6,7 @@ INCLUDE := -I .
 
 # Types files
 MLZFILES :=\
+	mp_set\
 	file_base_type\
 	dag\
 	remote_queue_sig\
@@ -28,7 +29,6 @@ LMFILES := $(MLZFILES)\
 	mp_big_int\
 	mp_num\
 	ctype\
-	mp_set\
 	debug_set\
 	bitset\
 	imp_dag\
