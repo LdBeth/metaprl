@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.7.0)
+OMakeVersion(0.7.1)
 
 #
 # Override the root directory
@@ -65,7 +65,7 @@ if $(equal $(OSTYPE), Win32)
 else
    #
    # Defaults (in case mk/config does not define them)
-   #    
+   #
    TERMS=$(TERMS_DEFAULT)
    REFINER=$(REFINER_DEFAULT)
    MAKE_OPTS=
@@ -73,14 +73,14 @@ else
    CCC=$(CCC_DEFAULT)
    ENSROOT=$(ENSROOT_DEFAULT)
    OCAMLSRC=$(OCAMLSRC_DEFAULT)
-   THEORIES=$(THEORIES_DEFAULT) 
+   THEORIES=$(THEORIES_DEFAULT)
    TESTS_ENABLED=$(TESTS_ENABLED_DEFAULT)
    READLINE_ENABLED=true
    NCURSES_ENABLED=true
    NATIVE_ENABLED=$(NATIVE_ENABLED_DEFAULT)
    BYTE_ENABLED=$(BYTE_ENABLED_DEFAULT)
    SLOPPY_DEPENDENCIES=false
-   
+
    .INCLUDE: mk/config
       ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" mk/make_config.sh
 
@@ -185,7 +185,7 @@ INCLUDES += -I$(CAMLLIB)
 # Default clean line
 #
 MLZFILES =
-CLEAN = $'(RM) *.opt *.run *.o *.cm* *.a *~ .\#* *.ppo *.p4i *.p4o $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES))
+CLEAN = $'(RM) *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .\#* *.ppo *.p4i *.p4o $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES))
 
 clean:
     $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a bin/prlc*)

@@ -2,3 +2,8 @@
 # Include the standard configuration
 #
 include $(STDROOT)
+
+#
+# Start in the current directory
+#
+.SUBDIRS: .
