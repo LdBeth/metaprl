@@ -30,7 +30,7 @@ DEP_DIRS :=\
 	filter\
 
 ifneq ($(LIBMOJAVE),undefined)
-	 REFINER_DIRS := $(LIBMOJAVE) $(REFINER_DIRS)
+	REFINER_DIRS := $(LIBMOJAVE) $(REFINER_DIRS)
 	DEP_DIRS := $(LIBMOJAVE) $(DEP_DIRS)
 endif
 
