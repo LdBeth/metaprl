@@ -49,6 +49,8 @@
 open Mp_debug
 open Printf
 open Thread_util
+open Rformat
+open Dform
 
 open Opname
 open Refiner.Refiner
@@ -337,6 +339,71 @@ struct
 
    let get_remote_server () =
       (* Register.get *) remote_server
+
+   let format_alist1 buf ffunc (s,data) =
+      format_string buf ";";
+      format_space buf;
+      format_string buf (s ^ "->");
+      ffunc buf data
+
+   let format_alist name buf ffunc = function
+      [] -> ()
+    | [s,data] ->
+         format_space buf;
+         format_pushm buf 2;
+         format_string buf (name ^ " =");
+         format_space buf;
+         format_string buf ("[ " ^ s ^"->");
+         ffunc buf data;
+         format_string buf " ];";
+         format_popm buf
+    | (s,data)::rest -> 
+         format_space buf;
+         format_pushm buf 2;
+         format_string buf (name ^ " =");
+         format_space buf;
+         format_pushm buf 2;
+         format_string buf ("[ " ^ s ^"->");
+         ffunc buf data;
+         List.iter (format_alist1 buf ffunc) rest;
+         format_popm buf;
+         format_space buf;
+         format_string buf "];";
+         format_popm buf
+
+   let format_term1 db buf t =
+      format_string buf ";";
+      format_space buf;
+      format_term db buf t
+
+   let format_tlist db buf = function
+      [] -> format_string buf "[]"
+    | [t] ->
+         format_string buf "[ ";
+         format_term db buf t;
+         format_string buf " ]"
+    | t::rest -> 
+         format_pushm buf 2;
+         format_string buf "[ ";
+         format_term db buf t;
+         List.iter (format_term1 db buf) rest;
+         format_popm buf;
+         format_space buf;
+         format_string buf "]"
+
+   let format_attrs db buf attrs =
+      format_pushm buf 2;
+      format_string buf "<";
+      format_alist "terms" buf (format_term db) attrs.attr_terms;
+      format_alist "term_lists" buf (format_tlist db) attrs.attr_term_lists;
+      format_alist "types" buf (format_term db) attrs.attr_types;
+      format_alist "ints" buf format_int attrs.attr_ints;
+      (* format_alist "bools" buf format_bool attrs.attr_bools; *)
+      format_alist "strings" buf format_string attrs.attr_strings;
+      format_alist "types" buf (format_term db) attrs.attr_subst;
+      format_popm buf;
+      format_space buf;
+      format_string buf ">"
 
    (*
     * Create an initial tactic_arg for a proof.

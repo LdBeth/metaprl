@@ -4,10 +4,6 @@
  * type so that we can have partial extract object
  * with annotations for tactic applications.
  *
- * The type defined here is polymorphic over a 'key type.
- * The 'key will be bound to the shared_key type
- * defined by the threaded refiner.
- *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
@@ -379,6 +375,8 @@ sig
    val squash_attributes : attribute_info -> attribute_info
    val update_attributes : attribute_info -> raw_attributes -> attribute_info
 
+   val format_attrs : Dform.dform_base -> term Rformat.buffer -> attribute_info -> unit
+
    (*
     * Two tactic_arguments are equal when they have
     * equal msequent parts.  Their labels, etc, are
@@ -558,6 +556,7 @@ sig
    (* Formatting functions *)
    val format_proof : Dform.dform_base -> term Rformat.buffer -> proof -> unit
    val format_extract : Dform.dform_base -> term Rformat.buffer -> extract -> unit
+   val format_arg : Dform.dform_base -> term Rformat.buffer -> tactic_arg -> unit
 
    (********************************
     * DESTRUCTION

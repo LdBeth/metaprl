@@ -86,6 +86,7 @@ open Term_eq_table
 open Tactic_boot
 open Tactic_boot.TacticType
 open Tactic_boot.TacticInternalType
+open Tactic_boot.TacticInternal
 open Sequent_boot
 
 (*
@@ -243,7 +244,14 @@ struct
          format_string buf "Unjustified"
 
     | Extract (goal, subgoals, _) ->
-         format_string buf "Extract"
+         format_pushm buf 2;
+         format_string buf "Extract:";
+         format_hspace buf;
+         format_arg db buf goal;
+         format_hspace buf;
+         format_string buf "->...";
+         format_popm buf
+
     | ExtractRewrite _ ->
          format_string buf "ExtractRewrite"
     | ExtractCondRewrite _ ->
@@ -329,9 +337,15 @@ struct
     | [] ->
          index
 
-   and format_arg db buf { ref_goal = goal } =
+   and format_arg db buf { ref_goal = goal; ref_attributes = attrs } =
       let goal, _ = Refine.dest_msequent goal in
-         format_term db buf goal
+         format_pushm buf 2;
+         format_term db buf goal;
+         format_space buf;
+         format_string buf "with attrs";
+         format_space buf;
+         format_attrs db buf attrs;
+         format_popm buf
 
    (*
     * Format a proof.
