@@ -1482,7 +1482,6 @@ let status_all _ = commands.status_all ()
 let print_theory s = commands.print_theory s
 
 let nop _ = commands.interpret ProofNop
-let unfold _ = commands.interpret ProofUnfold
 let kreitz _ = commands.interpret ProofKreitz
 let clean _ = commands.interpret ProofClean
 let squash _ = commands.interpret ProofSquash

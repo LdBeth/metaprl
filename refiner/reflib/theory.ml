@@ -80,12 +80,10 @@ let get_theories () =
  *)
 let get_parents thy =
    let rec find_parent parent = function
-      thy :: tl ->
-         let { thy_refiner = refiner } = thy in
-            if refiner == parent then
-               thy
-            else
-               find_parent parent tl
+      thy :: _ when thy.thy_refiner == parent ->
+         thy
+    | _ :: tl ->
+         find_parent parent tl
     | [] ->
          raise Not_found
    in
@@ -104,8 +102,7 @@ let get_parents thy =
              | _ ->
                   search refiner'
    in
-   let { thy_refiner = refiner } = thy in
-      search refiner
+      search thy.thy_refiner
 
 (*
  * -*-

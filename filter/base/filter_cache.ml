@@ -220,7 +220,7 @@ struct
 
    let select   = ImplementationType
    let suffix   = Convert.implementation_suffix
-   let magics   = [0x73ac6be7; int_raw_str_magic]
+   let magics   = [0x73ac6be8; int_raw_str_magic]
    let disabled = noraw
 
    let interactive_proof to_raw name proof =

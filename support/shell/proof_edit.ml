@@ -109,7 +109,6 @@ type edit_info =
  *)
 type proof_command =
    ProofRefine of string * MLast.expr * tactic
- | ProofUnfold
  | ProofUndo
  | ProofRedo
  | ProofNop
@@ -316,12 +315,6 @@ let addr_ped ped addr =
    set_proof ped (Proof.index (Proof.root (proof_of_ped ped)) addr)
 
 (*
- * Unfold the extract at the current node.
- *)
-let unfold_ped ped =
-   push_proof ped (Proof.unfold (update_fun ped) (proof_of_ped ped))
-
-(*
  * Refinement, and undo lists.
  * A finite number of undo's are allowed.
  * After a refine_ped or nop_ped, the undo stack gets reset.
@@ -397,8 +390,6 @@ let squash_ped ped =
 let interpret ped = function
    ProofRefine (text, expr, tac) ->
       refine_ped ped text expr tac
- | ProofUnfold ->
-      unfold_ped ped
  | ProofUndo ->
       undo_ped ped
  | ProofRedo ->

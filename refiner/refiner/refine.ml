@@ -1585,6 +1585,9 @@ struct
     * Get the term from an extract.
     * This will fail if some of the rules are not justified.
     *)
+   let invalid_exn = Invalid_argument "Refine.term_of_extract: extract is ill-formed"
+   let incomplete_exn = RefineError ("Refine.term_of_extract", StringError "proof is incomplete")
+
    let term_of_extract refiner { ext_just = just } (args : term list) =
       let find = find_of_hash (hash_refiner refiner) in
       let { find_refiner = find_refiner } = find in
@@ -1596,13 +1599,6 @@ struct
       let check_rewrite just =
          check_rewrite_just (fun opname -> ignore (find_refiner opname)) just
       in
-      let invalid_exn =
-         Invalid_argument "Refine.term_of_extract: extract is ill-formed"
-      in
-      let incomplete_exn =
-         RefineError ("Refine.term_of_extract", StringError "proof is incomplete")
-      in
-
       let rec construct args (rest : (term list -> term) list) = function
          SingleJust { just_params = params; just_refiner = name } ->
             begin

@@ -259,12 +259,9 @@ struct
     ************************************************************************)
 
    let rec count_leaves = function
-      Goal _ | Identity _ | ExtractRewrite _ -> 1
+      Goal _ | Identity _ -> 1
     | Unjustified (_, leaves)
-    | Extract (_, leaves, _)
-    | ExtractCondRewrite (_, leaves, _, _) -> List.length leaves
-    | ExtractNthHyp _ -> 0
-    | ExtractCut _ -> 2
+    | Extract (_, leaves, _) -> List.length leaves
     | Wrapped (_, goal) -> count_leaves goal
     | Compose ci -> count_leaves_aux ci.comp_subgoals
     | RuleBox ri -> count_leaves_aux ri.rule_subgoals
@@ -289,14 +286,6 @@ struct
             if g==goal then node else Unjustified (goal,sgs)
        | Extract (g,sgs,ext) ->
             if g==goal then node else Extract (goal,sgs,ext)
-       | ExtractRewrite (g,sg,addr,ext) ->
-            if g==goal then node else ExtractRewrite (goal,sg,addr,ext)
-       | ExtractCondRewrite (g,sgs,addr,ext) ->
-            if g==goal then node else ExtractCondRewrite (goal,sgs,addr,ext)
-       | ExtractNthHyp (g,i) ->
-            if g==goal then node else ExtractNthHyp (goal,i)
-       | ExtractCut (g,t,sg1,sg2) ->
-            if g==goal then node else ExtractCut (goal,t,sg1,sg2)
        | Wrapped (args,ext) ->
             let res = replace_goal ext goal in
             if res == ext then node else Wrapped (args,res)
@@ -342,23 +331,6 @@ struct
        | Extract (g,sgs,ext) ->
             let gs, res = replace_list gs sgs in
             if res==sgs then gs,node else gs, Extract (g,res,ext)
-       | ExtractRewrite (g,sg,addr,ext) ->
-            begin match gs with
-               res::gs ->
-                  if res==sg then gs,node else gs, ExtractRewrite (g,res,addr,ext)
-             | _ -> raise (Invalid_argument "Proof_boot.replace_subg_aux")
-            end
-       | ExtractCondRewrite (g,sgs,addr,ext) ->
-            let gs, res = replace_list gs sgs in
-            if res==sgs then gs,node else gs, ExtractCondRewrite (g,res,addr,ext)
-       | ExtractNthHyp _ ->
-            gs,node
-       | ExtractCut (g,t,sg1,sg2) ->
-            begin match gs with
-               res1::res2::gs ->
-                  if res1==sg1 && res2==sg2 then gs,node else gs, ExtractCut (g,t,res1,res2)
-             | _ -> raise (Invalid_argument "Proof_boot.replace_subg_aux")
-            end
        | Wrapped (args,ext) ->
             let gs, res = replace_subg_aux gs ext in
             if res==ext then gs, node else gs, Wrapped (args,res)
@@ -548,11 +520,7 @@ struct
       Goal t
     | Identity t
     | Unjustified (t, _)
-    | Extract (t, _, _)
-    | ExtractRewrite (t, _, _, _)
-    | ExtractCondRewrite (t, _, _, _)
-    | ExtractNthHyp (t, _)
-    | ExtractCut (t, _, _, _) ->
+    | Extract (t, _, _) ->
          t
     | Compose { comp_goal = ext }
     | Wrapped (_, ext)
@@ -612,15 +580,8 @@ struct
           | Identity t ->
                [t]
           | Unjustified (_, leaves)
-          | Extract (_, leaves, _)
-          | ExtractCondRewrite (_, leaves, _, _) ->
+          | Extract (_, leaves, _) ->
                leaves
-          | ExtractRewrite (_, leaf, _, _) ->
-               [leaf]
-          | ExtractNthHyp _ ->
-               []
-          | ExtractCut (_, _, leaf1, leaf2) ->
-               [leaf1; leaf2]
           | Wrapped (_, goal) ->
                leaves_ext goal
           | Compose ({ comp_leaves = leaves; comp_subgoals = subgoals } as comp) ->
@@ -697,11 +658,7 @@ struct
       Goal _ ->
          LazyStatusPartial
     | Identity _
-    | Extract _
-    | ExtractRewrite _
-    | ExtractCondRewrite _
-    | ExtractNthHyp _
-    | ExtractCut _ ->
+    | Extract _ ->
          LazyStatusComplete
     | Unjustified _ ->
          LazyStatusIncomplete
@@ -793,10 +750,6 @@ struct
       match node with
          Goal _
        | Extract _
-       | ExtractRewrite _
-       | ExtractCondRewrite _
-       | ExtractNthHyp _
-       | ExtractCut _
        | Identity _
        | Unjustified _ ->
             raise_select_error proof node raddr i
@@ -977,36 +930,8 @@ struct
        | Identity _ ->
             raise_replace_error proof node raddr i
        | Extract (goal, subgoals, _)
-       | ExtractCondRewrite (goal, subgoals, _, _)
        | Unjustified (goal, subgoals) ->
             let goal, subgoals, unchanged = replace_subterm proof node raddr goal subgoals i node' in
-            let node =
-               if unchanged then
-                  node
-               else
-                  Unjustified (goal, subgoals)
-            in
-               false, false, node
-       | ExtractRewrite (goal, subgoal, _, _) ->
-            let goal, subgoals, unchanged = replace_subterm proof node raddr goal [subgoal] i node' in
-            let node =
-               if unchanged then
-                  node
-               else
-                  Unjustified (goal, subgoals)
-            in
-               false, false, node
-       | ExtractNthHyp (goal, _) ->
-            let goal, subgoals, unchanged = replace_subterm proof node raddr goal [] i node' in
-            let node =
-               if unchanged then
-                  node
-               else
-                  Unjustified (goal, subgoals)
-            in
-               false, false, node
-       | ExtractCut (goal, _, leaf1, leaf2) ->
-            let goal, subgoals, unchanged = replace_subterm proof node raddr goal [leaf1; leaf2] i node' in
             let node =
                if unchanged then
                   node
@@ -1169,15 +1094,8 @@ struct
        | Identity arg ->
             Identity (f arg)
        | Unjustified (goal, subgoals)
-       | Extract (goal, subgoals, _)
-       | ExtractCondRewrite (goal, subgoals, _, _) ->
+       | Extract (goal, subgoals, _) ->
             Unjustified (f goal, List.map f subgoals)
-       | ExtractRewrite (goal, subgoal, _, _) ->
-            Unjustified (f goal, [f subgoal])
-       | ExtractNthHyp (arg, i) ->
-            ExtractNthHyp (f arg, i)
-       | ExtractCut (goal, hyp, cut_lemma, cut_then) ->
-            ExtractCut (f goal, hyp, f cut_lemma, f cut_then)
        | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
             Compose {
                comp_status = LazyStatusDelayed;
@@ -1217,303 +1135,6 @@ struct
          fold_proof postf proof node
 
    (************************************************************************
-    * EXTRACT UNFOLDING                                                    *
-    ************************************************************************)
-
-   (*
-    * Faster map2 with a normal exception.
-    *)
-   let rec map2 f l1 l2 =
-      match l1, l2 with
-         h1 :: t1, h2 :: t2 ->
-            f h1 h2 :: map2 f t1 t2
-       | _ ->
-            raise (RefineError ("Proof_boot.map2", StringError "proof is ill-formed"))
-
-   (*
-    * Build a tactic arg from an msequent returned from the extract.
-    *)
-   let replace_msequent arg goal =
-      { arg with ref_goal = goal }
-
-   let replace_msequent_goal arg goal' =
-      let goal, hyps = dest_msequent arg.ref_goal in
-      let goal = mk_msequent goal' hyps in
-         { arg with ref_goal = goal }
-
-   let replace_msequent_addr arg addr goal' =
-      if TermAddr.is_null_address addr then
-         replace_msequent_goal arg goal'
-      else
-         let goal, hyps = dest_msequent arg.ref_goal in
-         let goal = TermAddr.replace_subterm goal addr goal' in
-         let goal = mk_msequent goal hyps in
-            { arg with ref_goal = goal }
-
-   let cut_goal arg hyp =
-      let goal, hyps = dest_msequent arg.ref_goal in
-      let goal = mk_msequent goal (hyps @ [hyp]) in
-         { arg with ref_goal = goal }
-
-   (*
-    * Get the goals and subgoals of the Refine.extract and
-    * build an extract.
-    *)
-   let extract_of_refine_extract goal ext =
-      Extract (replace_msequent goal (Refine.goal_of_extract ext),
-               List.map (replace_msequent goal) (Refine.subgoals_of_extract ext),
-               ext)
-
-   let extract_of_rewrite_extract goal addr ext =
-      ExtractRewrite (replace_msequent_addr goal addr (Refine.goal_of_rw_extract ext),
-                      replace_msequent_addr goal addr (Refine.subgoal_of_rw_extract ext),
-                      addr,
-                      ext)
-
-   let extract_of_cond_rewrite_extract goal addr ext =
-      ExtractCondRewrite (replace_msequent_addr goal addr (Refine.goal_of_crw_extract ext),
-                          List.map (fun (addr, t) -> replace_msequent_addr goal addr t) (Refine.subgoals_of_crw_extract ext),
-                          addr,
-                          ext)
-
-   let extract_failure_exn = RefineError ("Proof_boot.unfold_extract", StringError "extract is atomic")
-   let rw_extract_failure_exn = RefineError ("Proof_boot.unfold_rw_extract", StringError "extract is atomic")
-   let crw_extract_failure_exn = RefineError ("Proof_boot.unfold_crw_extract", StringError "extract is atomic")
-   let index_exn = RefineError ("Proof_boot.index", StringError "there is no proof node with such address")
-
-   (*
-    * Unfold the Refine.extract into a normal extract.
-    *)
-   let unfold_extract goal subgoals ext =
-      if !debug_proof then
-         eprintf "Proof_boot.unfold_extract%t" eflush;
-      match Refine.dest_extract ext with
-         AtomicExtract _ ->
-            raise extract_failure_exn
-       | RewriteExtract (goal', ext, subgoal') ->
-            begin
-               match subgoals with
-                  [subgoal] ->
-                     ExtractRewrite (replace_msequent goal goal',
-                                     replace_msequent subgoal subgoal',
-                                     TermAddr.make_address [],
-                                     ext)
-                | _ ->
-                     raise extract_failure_exn
-            end
-       | CondRewriteExtract (goal', ext, subgoals') ->
-            ExtractCondRewrite (replace_msequent goal goal',
-                                map2 replace_msequent subgoals subgoals',
-                                TermAddr.make_address [],
-                                ext)
-       | ComposeExtract (ext, extl) ->
-            Compose {
-               comp_status = LazyStatusDelayed;
-               comp_goal = extract_of_refine_extract goal ext;
-               comp_subgoals = List.map (extract_of_refine_extract goal) extl;
-               comp_leaves = LazyLeavesDelayed;
-               comp_extras = []
-            }
-       | NthHypExtract (goal', i) ->
-            begin
-               match subgoals with
-                  [] ->
-                     ExtractNthHyp (replace_msequent goal goal', i)
-                | _ ->
-                     raise extract_failure_exn
-            end
-       | CutExtract { cut_goal = cut_goal;
-                      cut_hyp = hyp;
-                      cut_lemma = cut_lemma;
-                      cut_then = cut_then
-         } ->
-            begin
-               match subgoals with
-                  [subgoal1; subgoal2] ->
-                     ExtractCut (goal,
-                                 hyp,
-                                 replace_msequent subgoal1 cut_lemma,
-                                 replace_msequent subgoal2 cut_then)
-                | _ ->
-                     raise extract_failure_exn
-            end
-
-   (*
-    * Flatten a higherC rewrite.
-    *)
-   let flatten_higher get_goal get_subgoal make_goal goal addr =
-      let rec search addr' t ext exts results t' =
-         if alpha_equal t t' then
-            let addr' = TermAddr.make_address (List.rev addr') in
-            let addr'' = TermAddr.compose_address addr addr' in
-            let ext =
-               make_goal (replace_msequent_addr goal addr'' t) (**)
-                  (replace_msequent_addr goal addr'' (get_subgoal ext))
-                  addr''
-                  ext
-            in
-               if !debug_proof then
-                  eprintf "Proof_boot.flatten_higher: addr=%s rel=%s final=%s%t" (**)
-                     (TermAddr.string_of_address addr)
-                     (TermAddr.string_of_address addr')
-                     (TermAddr.string_of_address addr'')
-                     eflush;
-               exts, ext :: results
-
-         else if is_var_term t then
-            ext :: exts, results
-
-         else
-            let rec search' index t ext exts results = function
-               bterm :: bterms ->
-                  let { bterm = t' } = dest_bterm bterm in
-                  let exts, results = search (index :: addr') t ext exts results t' in
-                     begin
-                        match exts with
-                           ext :: exts ->
-                              search' (succ index) (get_goal ext) ext exts results bterms
-                         | [] ->
-                              [], results
-                     end
-             | [] ->
-                  exts, results
-            in
-               search' 0 t ext exts results (dest_term t).term_terms
-      in
-      let rec compose = function
-         [ext] ->
-            ext
-       | ext :: exts ->
-            Compose {
-               comp_status = LazyStatusDelayed;
-               comp_goal = ext;
-               comp_subgoals = [compose exts];
-               comp_leaves = LazyLeavesDelayed;
-               comp_extras = []
-            }
-       | [] ->
-            Identity goal
-      in
-      let collect exts goal' =
-         match exts with
-            ext :: exts ->
-               compose (snd (search [] (get_goal ext) ext exts [] goal'))
-          | [] ->
-               Identity goal
-      in
-         collect
-
-   (*
-    * Reverse the extract.
-    * The reversal becomes a cut.
-    *)
-   let reverse_extract get_goal make_ext goal subgoal addr ext =
-      let goal_term, hyps = dest_msequent goal.ref_goal in
-      let rw_goal = get_goal ext in
-      let hyp = TermAddr.replace_subterm goal_term addr rw_goal in
-      let cut_lemma = replace_msequent_goal goal hyp in
-      let cut_then = cut_goal goal hyp in
-      let ext_cut = ExtractCut (goal, hyp, cut_lemma, cut_then) in
-      let ext_lemma = make_ext cut_lemma goal addr ext in
-      let comp_lemma =
-         Compose {
-            comp_status = LazyStatusDelayed;
-            comp_goal = ext_cut;
-            comp_subgoals = [ExtractNthHyp (goal, List.length hyps)];
-            comp_leaves = LazyLeavesDelayed;
-            comp_extras = []
-         }
-      in
-         Compose {
-            comp_status = LazyStatusDelayed;
-            comp_goal = ext_cut;
-            comp_subgoals = [Goal cut_lemma; comp_lemma];
-            comp_leaves = LazyLeavesDelayed;
-            comp_extras = []
-         }
-
-   (*
-    * Unfold the rewrite.
-    *)
-   let make_rw_extract goal subgoal addr ext =
-      ExtractRewrite (goal, subgoal, addr, ext)
-
-   let unfold_rw_extract goal subgoal addr ext =
-      if !debug_proof then
-         eprintf "Proof_boot.unfold_rw_extract: begin%t" eflush;
-      let ext =
-         match Refine.dest_rw_extract ext with
-            AtomicRewriteExtract _ ->
-               if !debug_proof then
-                  eprintf "Proof_boot.unfold_rw_extract: atomic%t" eflush;
-               raise rw_extract_failure_exn
-          | ReverseRewriteExtract ext ->
-               if !debug_proof then
-                  eprintf "Proof_boot.unfold_rw_extract: reverse%t" eflush;
-               reverse_extract Refine.goal_of_rw_extract make_rw_extract goal subgoal addr ext
-          | ComposeRewriteExtract (ext1, ext2) ->
-               if !debug_proof then
-                  eprintf "Proof_boot.unfold_rw_extract: compose%t" eflush;
-               Compose {
-                  comp_status = LazyStatusDelayed;
-                  comp_goal = extract_of_rewrite_extract goal addr ext1;
-                  comp_subgoals = [extract_of_rewrite_extract goal addr ext2];
-                  comp_leaves = LazyLeavesDelayed;
-                  comp_extras = []
-               }
-          | AddressRewriteExtract (goal', addr', ext, subgoal') ->
-               if !debug_proof then
-                  eprintf "Proof_boot.unfold_rw_extract: address: %s/%s%t" (**)
-                     (TermAddr.string_of_address addr)
-                     (TermAddr.string_of_address addr')
-                     eflush;
-               ExtractRewrite (goal,
-                               subgoal,
-                               TermAddr.compose_address addr addr',
-                               ext)
-          | HigherRewriteExtract (goal', exts, subgoal') ->
-               if !debug_proof then
-                  eprintf "Proof_boot.unfold_rw_extract: higher: %s%t" (TermAddr.string_of_address addr) eflush;
-               flatten_higher Refine.goal_of_rw_extract Refine.subgoal_of_rw_extract make_rw_extract goal addr exts goal'
-      in
-         if !debug_proof then
-            eprintf "Proof_boot.unfold_rw_extract: done%t" eflush;
-         ext
-
-   (*
-    * Unfold the conditional rewrite.
-    *)
-   let make_crw_extract goal _ addr ext =
-      ExtractCondRewrite (goal,
-                          List.map (fun (addr, t) -> replace_msequent_addr goal addr t) (Refine.subgoals_of_crw_extract ext),
-                          addr,
-                          ext)
-
-   let unfold_crw_extract goal subgoal addr ext =
-      if !debug_proof then
-         eprintf "Proof_boot.unfold_crw_extract%t" eflush;
-      match Refine.dest_crw_extract ext with
-         AtomicCondRewriteExtract _ ->
-            raise crw_extract_failure_exn
-       | ReverseCondRewriteExtract ext ->
-            reverse_extract Refine.goal_of_crw_extract make_crw_extract goal subgoal addr ext
-       | ComposeCondRewriteExtract (ext1, ext2) ->
-            Compose {
-               comp_status = LazyStatusDelayed;
-               comp_goal = extract_of_cond_rewrite_extract goal addr ext1;
-               comp_subgoals = [extract_of_cond_rewrite_extract goal addr ext2];
-               comp_leaves = LazyLeavesDelayed;
-               comp_extras = []
-            }
-       | AddressCondRewriteExtract (goal', addr', ext, subgoal') ->
-            ExtractCondRewrite (replace_msequent_addr goal addr goal',
-                                List.map (fun (addr, t) -> replace_msequent_addr goal addr t) (Refine.subgoals_of_crw_extract ext),
-                                TermAddr.compose_address addr addr',
-                                ext)
-       | HigherCondRewriteExtract (goal', exts, subgoal') ->
-            flatten_higher Refine.goal_of_crw_extract Refine.subgoal_of_crw_extract make_crw_extract goal addr exts goal'
-
-   (************************************************************************
     * NAVIGATION                                                           *
     ************************************************************************)
 
@@ -1538,33 +1159,6 @@ struct
                   map_path (fun proof node -> translate_status (status_ext node)) proof addr
 
    (*
-    * If the current node is an extract, unfold it.
-    *)
-   let unfold_ext node =
-      match node with
-         Goal _
-       | Identity _
-       | Unjustified _
-       | ExtractNthHyp _
-       | ExtractCut _
-       | Compose _
-       | Wrapped _
-       | RuleBox _
-       | Pending _
-       | Locked _ ->
-            node
-
-       | Extract (goal, subgoals, ext) ->
-            unfold_extract goal subgoals ext
-       | ExtractRewrite (goal, subgoal, addr, ext) ->
-            unfold_rw_extract goal subgoal addr ext
-       | ExtractCondRewrite (goal, subgoals, addr, ext) ->
-            unfold_crw_extract goal subgoals addr ext
-
-   let unfold postf proof =
-      fold_proof postf proof (unfold_ext proof.pf_node)
-
-   (*
     * Go the a particular path.
     *)
    let rec index_ext proof node raddr = function
@@ -1573,6 +1167,8 @@ struct
     | [] ->
          node
 
+   let index_exn = RefineError ("Proof_boot.index", StringError "there is no proof node with such address")
+   
    let index proof path =
       let { pf_root = root;
             pf_address = addr;
@@ -1643,7 +1239,7 @@ struct
    let make_assum_arg goal i arg =
       let goal, hyps = Refine.dest_msequent arg.ref_goal in
       let hyps = List_util.insert_nth i goal hyps in
-        replace_msequent arg (Refine.mk_msequent goal hyps)
+        { arg with ref_goal = Refine.mk_msequent goal hyps }
 
    let make_assum postf proof =
       (* Add the goal as an assumption to all proof nodes *)
@@ -1654,7 +1250,6 @@ struct
       let len = List.length hyps in
       let root = map_tactic_arg_ext (make_assum_arg goal len) proof.pf_root in
 
-      (* Replace the current node with ExtractNthHyp *)
       let address = proof.pf_address in
       let node = index_ext proof root [] address in
       let proof =
@@ -1860,51 +1455,6 @@ struct
 
    let null_address = TermAddr.make_address []
 
-   let make_rw_extract_expr addr ext =
-      let arglist =
-         match Refine.dest_rw_extract ext with
-            AtomicRewriteExtract (_, opname, _) ->
-               if addr = null_address then
-                  NoneArgList (string_of_opname opname)
-               else
-                  StringStringArgList ("addrC", TermAddr.string_of_address addr, string_of_opname opname)
-          | ReverseRewriteExtract _ ->
-               StringArgList ("foldC", "<rewrite>")
-          | ComposeRewriteExtract _ ->
-               StringStringArgList ("<rewrite>", "thenC", "<rewrite>")
-          | AddressRewriteExtract (_, addr', _, _) ->
-               StringStringArgList ("addrC", TermAddr.string_of_address (TermAddr.compose_address addr addr'), "<rewrite>")
-          | HigherRewriteExtract _ ->
-               StringArgList ("higherC", "<rewrite>")
-      in
-         ExprExtract arglist
-
-   let make_crw_extract_expr addr ext =
-      let arglist =
-         match Refine.dest_crw_extract ext with
-            AtomicCondRewriteExtract { cjust_params = params;
-                                       cjust_refiner = opname
-            } ->
-               let params = Array.of_list (List.map (fun t -> TermArg t) params) in
-               let name = [|StringArg (string_of_opname opname)|] in
-                  GeneralArgList (Array.concat [name; params])
-          | ReverseCondRewriteExtract _ ->
-               StringArgList ("foldC", "<conditional-rewrite>")
-          | ComposeCondRewriteExtract _ ->
-               StringStringArgList ("<conditional-rewrite>", "thenC", "<conditional-rewrite>")
-          | AddressCondRewriteExtract (_, addr', _, _) ->
-               StringStringArgList ("addrC", TermAddr.string_of_address (TermAddr.compose_address addr addr'), "<conditional-rewrite>")
-          | HigherCondRewriteExtract _ ->
-               StringArgList ("higherC", "<conditional-rewrite>")
-      in
-         ExprExtract arglist
-
-   let make_nth_hyp_expr i =
-      ExprExtract (IntArgList ("nthAssumT", i))
-
-   let make_cut_expr hyp =
-      ExprExtract (TermArgList ("cutT", hyp))
-
    (*
     * Describe all the parts of this step.
     *)
@@ -1933,30 +1483,6 @@ struct
             { step_goal = proof_goal false proof (Goal goal);
               step_expr = make_extract_expr ext;
               step_subgoals = proof_subgoals proof subgoals;
-              step_extras = []
-            }
-       | ExtractRewrite (goal, subgoal, addr, ext) ->
-            { step_goal = proof_goal false proof (Goal goal);
-              step_expr = make_rw_extract_expr addr ext;
-              step_subgoals = proof_subgoals proof [subgoal];
-              step_extras = []
-            }
-       | ExtractCondRewrite (goal, subgoals, addr, ext) ->
-            { step_goal = proof_goal false proof (Goal goal);
-              step_expr = make_crw_extract_expr addr ext;
-              step_subgoals = proof_subgoals proof subgoals;
-              step_extras = []
-            }
-       | ExtractNthHyp (goal, i) ->
-            { step_goal = proof_goal false proof (Goal goal);
-              step_expr = make_nth_hyp_expr i;
-              step_subgoals = [];
-              step_extras = []
-            }
-       | ExtractCut (goal, hyp, subgoal1, subgoal2) ->
-            { step_goal = proof_goal false proof (Goal goal);
-              step_expr = make_cut_expr hyp;
-              step_subgoals = proof_subgoals proof [subgoal1; subgoal2];
               step_extras = []
             }
        | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
@@ -2046,11 +1572,7 @@ struct
          Goal _
        | Identity _
        | Unjustified _
-       | Extract _
-       | ExtractRewrite _
-       | ExtractCondRewrite _
-       | ExtractNthHyp _
-       | ExtractCut _ ->
+       | Extract _ ->
             step
        | Compose { comp_subgoals = subgoals'; comp_extras = extras' }
        | RuleBox { rule_subgoals = subgoals'; rule_extras = extras' } ->
@@ -2101,11 +1623,7 @@ struct
          Goal _
        | Identity _
        | Unjustified _
-       | Extract _
-       | ExtractRewrite _
-       | ExtractCondRewrite _
-       | ExtractNthHyp _
-       | ExtractCut _ ->
+       | Extract _ ->
             node
        | Wrapped (label, node) ->
             Wrapped (label, clean_extras_ext node)
@@ -2156,15 +1674,10 @@ struct
       match node with
          Goal _
        | Identity _
-       | Unjustified _
-       | ExtractNthHyp _
-       | ExtractCut _ ->
+       | Unjustified _ ->
             false, node
-       | Extract (goal, subgoals, _)
-       | ExtractCondRewrite (goal, subgoals, _, _) ->
+       | Extract (goal, subgoals, _) ->
             false, Unjustified (goal, subgoals)
-       | ExtractRewrite (goal, subgoal, _, _) ->
-            false, Unjustified (goal, [subgoal])
        | Wrapped (label, node) ->
             let (flag, node') as res = squash_ext node in
                if flag then flag, Wrapped (label, node')
@@ -2231,29 +1744,19 @@ struct
     ************************************************************************)
 
    (*
-    * Ask the refiner for the extract term.
-    *)
-   let term_of_proof refiner proof terms =
-      term_of_extract refiner proof.pf_node terms
-
-   (*
     * Re-expand all the rule boxes.
     *)
-   let rec expand_ext dforms proof node =
+   let rec expand_ext dforms node =
       match node with
          Goal _
        | Identity _
        | Unjustified _
-       | Extract _
-       | ExtractRewrite _
-       | ExtractCondRewrite _
-       | ExtractNthHyp _
-       | ExtractCut _ ->
+       | Extract _ ->
             node
        | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            let goal = expand_ext dforms proof goal in
-            let subgoals = List.map (expand_ext dforms proof) subgoals in
-            let extras = List.map (expand_ext dforms proof) extras in
+            let goal = expand_ext dforms goal in
+            let subgoals = List.map (expand_ext dforms) subgoals in
+            let extras = List.map (expand_ext dforms) extras in
             let subgoals, extras = match_subgoals (leaves_ext goal) subgoals extras in
                Compose { comp_status = LazyStatusDelayed;
                          comp_goal = goal;
@@ -2262,7 +1765,7 @@ struct
                          comp_leaves = LazyLeavesDelayed
                }
        | Wrapped (label, goal) ->
-            Wrapped (label, expand_ext dforms proof goal)
+            Wrapped (label, expand_ext dforms goal)
        | RuleBox { rule_expr = expr;
                    rule_string = text;
                    rule_extract_normalized = normal;
@@ -2279,8 +1782,8 @@ struct
             in
             let leaves = leaves_ext new_goal in
             let subgoals, extras = update_subgoals leaves subgoals extras in
-            let subgoals = List.map (expand_ext dforms proof) subgoals in
-            let extras = List.map (expand_ext dforms proof) extras in
+            let subgoals = List.map (expand_ext dforms) subgoals in
+            let extras = List.map (expand_ext dforms) extras in
             let subgoals, extras = match_subgoals leaves subgoals extras in
                RuleBox { rule_status = LazyStatusDelayed;
                          rule_expr = expr;
@@ -2293,12 +1796,21 @@ struct
                          rule_extras = extras
                }
        | Pending f ->
-            expand_ext dforms proof (f ())
+            expand_ext dforms (f ())
        | Locked ext ->
-            expand_ext dforms proof ext
+            expand_ext dforms ext
 
    let expand postf dforms proof =
-      fold_proof postf proof (expand_ext dforms proof.pf_node proof.pf_node)
+      fold_proof postf proof (expand_ext dforms proof.pf_node)
+
+   let rec refiner_extract_of_proof_ext = function
+      Goal _ | Unjustified _ ->
+         raise(RefineError("Proof_boot.refiner_extract_of_proof_ext", StringError "The proof is incomplete or unexpanded"))
+    | Wrapped(_,ext) -> refiner_extract_of_proof_ext ext
+    | Extract(_,_,re) -> re
+    | _ -> raise (Invalid_argument "Proof_boot.refiner_extract_of_proof_ext: not fully implemented yet") (*XXX TODO*)
+
+   let refiner_extract_of_proof proof = refiner_extract_of_proof_ext proof.pf_root
 
    (************************************************************************
     * CONVERSIONS                                                          *
@@ -2318,8 +1830,6 @@ struct
    type io_proof =
       IOGoal of simple_tactic_arg
     | IOUnjustified of simple_tactic_arg * simple_tactic_arg list
-    | IOExtractNthHyp of simple_tactic_arg * int
-    | IOExtractCut of simple_tactic_arg * term * simple_tactic_arg * simple_tactic_arg
     | IOWrapped of arglist * io_proof
     | IOCompose of io_compose_info
     | IORuleBox of io_rule_info
@@ -2400,18 +1910,8 @@ struct
                IOGoal (make_tactic_arg arg)
           | Unjustified (goal, subgoals) ->
                IOUnjustified (make_tactic_arg_squash goal, List.map make_tactic_arg_squash subgoals)
-          | Extract (goal, subgoals, _)
-          | ExtractCondRewrite (goal, subgoals, _, _) ->
+          | Extract (goal, subgoals, _) ->
                IOUnjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
-          | ExtractRewrite (goal, subgoal, _, _) ->
-               IOUnjustified (make_tactic_arg goal, [make_tactic_arg subgoal])
-          | ExtractNthHyp (goal, i) ->
-               IOExtractNthHyp (make_tactic_arg goal, i)
-          | ExtractCut (goal, term, cut_lemma, cut_then) ->
-               IOExtractCut (make_tactic_arg goal,
-                             term,
-                             make_tactic_arg cut_lemma,
-                             make_tactic_arg cut_then)
           | Wrapped (args, node) ->
                IOWrapped (args, convert node)
           | Compose { comp_status = status;
@@ -2504,10 +2004,6 @@ struct
             Goal (make_tactic_arg arg)
        | IOUnjustified (goal, subgoals) ->
             Unjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
-       | IOExtractNthHyp (goal, i) ->
-            ExtractNthHyp (make_tactic_arg goal, i)
-       | IOExtractCut (goal, term, cut_lemma, cut_then) ->
-            ExtractCut (make_tactic_arg goal, term, make_tactic_arg cut_lemma, make_tactic_arg cut_then)
        | IOWrapped (args, node) ->
             Wrapped (args, convert node)
        | IOCompose { io_comp_goal = goal;
@@ -2552,8 +2048,6 @@ struct
    let rec status_of_io_proof = function
       IOGoal _
     | IOUnjustified _
-    | IOExtractNthHyp _
-    | IOExtractCut _
     | IOIdentity _ ->
          StatusPartial
     | IOWrapped (_, node) ->
@@ -2568,8 +2062,6 @@ struct
    let rec node_count_of_io_proof_node rules nodes = function
       IOGoal _
     | IOUnjustified _
-    | IOExtractNthHyp _
-    | IOExtractCut _
     | IOIdentity _ ->
          rules, succ nodes
     | IOWrapped (_, node) ->
@@ -2659,11 +2151,7 @@ struct
       Goal _
     | Identity _
     | Unjustified _
-    | Extract _
-    | ExtractRewrite _
-    | ExtractCondRewrite _
-    | ExtractNthHyp _
-    | ExtractCut _ ->
+    | Extract _ ->
          rcount, succ ncount
     | Wrapped (label, ext) ->
          node_count_ext (rcount, succ ncount) ext
@@ -2701,10 +2189,6 @@ struct
        | Identity _
        | Unjustified _
        | Extract _
-       | ExtractRewrite _
-       | ExtractCondRewrite _
-       | ExtractNthHyp _
-       | ExtractCut _
        | Wrapped _
        | Compose _ ->
             "idT", (<:expr< $lid: "idT"$ >>), TacticInternal.idT, [goal_ext node]

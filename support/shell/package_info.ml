@@ -162,7 +162,7 @@ struct
     * so that they can be compiled with the theory.  The term we produce
     * has type (unit -> extract).  Expands to:
     *
-    *    (Package_info/prove name tactics)
+    *    (Package_info.prove name tactics)
     *
     * XXX: BUG: jyh: I backed this out, and right now proofs
     * always fail.

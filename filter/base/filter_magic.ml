@@ -1,6 +1,6 @@
 open Mp_pervasives
 
-(* Previously used somewhere: 0x63ac6be3, 0x63ac6be7, 0x73ac6be2, 0x73ac6be4, 0x73ac6be5 *)
+(* Previously used somewhere: 0x63ac6be3, 0x63ac6be7, 0x63ac6be9, 0x73ac6be2, 0x73ac6be4, 0x73ac6be5, 0x73ac6be7 *)
 
 (*
  * Magic numbers for interactive files.
@@ -10,7 +10,7 @@ let int_term_str_magic = 0x63ac6be3
 let int_lib_sig_magic  = 0x63ac6be5
 let int_lib_str_magic  = 0x63ac6be6
 let int_raw_sig_magic  = 0x63ac6be8
-let int_raw_str_magic  = 0x63ac6be9
+let int_raw_str_magic  = 0x63ac6bea
 let interactive_magics =
    [int_term_sig_magic;
     int_raw_sig_magic;

@@ -99,7 +99,6 @@ val node_count_of_ped : ped -> int * int
  * The nop_ped does nothing but reset the undo stack.
  *)
 val refine_ped : ped -> string -> MLast.expr -> tactic -> unit
-val unfold_ped : ped -> unit
 val undo_ped : ped -> unit
 val redo_ped : ped -> unit
 val nop_ped : ped -> unit
@@ -141,7 +140,6 @@ val ped_status : ped Filter_summary_type.proof_type -> obj_status
  *)
 type proof_command =
    ProofRefine of string * MLast.expr * tactic
- | ProofUnfold
  | ProofUndo
  | ProofRedo
  | ProofNop

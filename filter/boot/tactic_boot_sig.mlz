@@ -182,10 +182,6 @@ sig
       Goal of tactic_arg
     | Unjustified of tactic_arg * tactic_arg list
     | Extract of tactic_arg * tactic_arg list * Refine.extract
-    | ExtractRewrite of tactic_arg * tactic_arg * address * Refine.rw_extract
-    | ExtractCondRewrite of tactic_arg * tactic_arg list * address * Refine.crw_extract
-    | ExtractNthHyp of tactic_arg * int
-    | ExtractCut of tactic_arg * term * tactic_arg * tactic_arg
     | Wrapped of arglist * extract
     | Compose of compose_info
     | RuleBox of rule_info
@@ -390,7 +386,6 @@ sig
     *)
    val refine : tactic -> tactic_arg -> tactic_arg list * extract
    val compose : extract -> extract list -> extract
-   val term_of_extract : Refine.refiner -> extract -> term list -> term
 
    (*
     * Access to the argument.
@@ -638,11 +633,6 @@ sig
    val post : (unit -> proof) -> proof
 
    (*
-    * Unfold the current proof node.
-    *)
-   val unfold : update_fun -> proof -> proof
-
-   (*
     * Set the goal of the proof.
     *)
    val set_goal : update_fun -> proof -> msequent -> proof
@@ -691,15 +681,15 @@ sig
     *)
 
    (*
-    * Check the proof and return its extract term.
-    *)
-   val term_of_proof : Refine.refiner -> proof -> term list -> term
-
-   (*
     * Reapply all the tactics in the proof, adjusting the
     * status as appropriate.  This function never fails.
     *)
    val expand : update_fun -> dform_base -> proof -> proof
+   
+   (*
+    * Get the low-level Refiner format of the proof
+    *)
+   val refiner_extract_of_proof : proof -> Refine.extract
 
    (********************************
     * I/O proofs are preserved for compatibility.

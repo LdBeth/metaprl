@@ -66,7 +66,6 @@ topval squash_all : unit -> unit
 topval undo : unit -> unit
 topval redo : unit -> unit
 topval nop : unit -> unit
-topval unfold : unit -> unit
 topval copy : string -> unit
 topval paste : string -> unit
 topval make_assum : unit -> unit

@@ -509,16 +509,8 @@ struct
       Goal arg ->
          HeadGoal (ext_add_tactic_arg info arg)
     | Unjustified (goal, subgoals)
-    | Extract (goal, subgoals, _)
-    | ExtractCondRewrite (goal, subgoals, _, _) ->
+    | Extract (goal, subgoals, _) ->
          HeadUnjustified (ext_add_tactic_arg info goal, List.map (ext_add_tactic_arg info) subgoals)
-    | ExtractRewrite (goal, subgoal, _, _) ->
-         HeadUnjustified (ext_add_tactic_arg info goal, [ext_add_tactic_arg info subgoal])
-    | ExtractNthHyp (goal, _) ->
-         HeadUnjustified (ext_add_tactic_arg info goal, [])
-    | ExtractCut (goal, _, subgoal1, subgoal2) ->
-         HeadUnjustified (ext_add_tactic_arg info goal, [ext_add_tactic_arg info subgoal1;
-                                                         ext_add_tactic_arg info subgoal2])
     | Wrapped (label, ext) ->
          HeadWrapped (ext_add_arglist info (Tactic.expand_arglist label), ext_add_extract info ext)
     | Compose { comp_goal = goal;

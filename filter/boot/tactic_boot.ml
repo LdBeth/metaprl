@@ -220,10 +220,6 @@ struct
       Goal of tactic_arg
     | Unjustified of tactic_arg * tactic_arg list
     | Extract of tactic_arg * tactic_arg list * Refine.extract
-    | ExtractRewrite of tactic_arg * tactic_arg * address * Refine.rw_extract
-    | ExtractCondRewrite of tactic_arg * tactic_arg list * address * Refine.crw_extract
-    | ExtractNthHyp of tactic_arg * int
-    | ExtractCut of tactic_arg * term * tactic_arg * tactic_arg
     | Wrapped of arglist * extract
     | Compose of compose_info
     | RuleBox of rule_info
@@ -690,14 +686,6 @@ struct
          format_step buf db "Unjustified" goal subgoals
     | Extract (goal, subgoals, _) ->
          format_step buf db "Extract" goal subgoals
-    | ExtractRewrite _ ->
-         format_string buf "ExtractRewrite"
-    | ExtractCondRewrite _ ->
-         format_string buf "ExtractCondRewrite"
-    | ExtractNthHyp _ ->
-         format_string buf "ExtractNthHyp"
-    | ExtractCut _ ->
-         format_string buf "ExtractCut"
 
     | Wrapped (label, ext) ->
          format_pushm buf 2;
@@ -1042,22 +1030,6 @@ struct
                raise (Invalid_argument "tactic_of_cond_rewrite: produced no subgoals")
       in
          ThreadRefinerTacticals.create_value subgoals (Extract (arg, subgoals, ext))
-
-   (************************************************************************
-    * EXTRACTS                                                             *
-    ************************************************************************)
-
-   (*
-    * Compose two extracts.
-    *)
-   let term_of_extract ext =
-      raise (Failure "term_of_extract: not implemented")
-
-   let extract_boot_of_extract ext =
-      ext
-
-   let extract_of_extract_boot ext =
-      ext
 
    (************************************************************************
     * TACTICALS                                                            *
