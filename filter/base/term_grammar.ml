@@ -1119,7 +1119,6 @@ struct
       sl_label_self_power:
          [[ "^^" -> "^" ]];
 
-
       sl_arrow:
          [[ "->" -> "fun" ]];
 

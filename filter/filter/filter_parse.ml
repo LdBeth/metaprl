@@ -93,6 +93,10 @@ let debug_spell =
         debug_value = false
       }
 
+let _ =
+   Grammar.error_verbose:=true;
+   Grammar.warning_verbose:=true
+
 (************************************************************************
  * PATHS                                                                *
  ************************************************************************)
@@ -1047,6 +1051,14 @@ let pho_desc_grammar_filename =
       Not_found ->
          !Phobos_state.mp_desc_grammar_filename
 
+let dest_quot quot =
+   try
+      let i = String.index quot ':' in
+         String.sub quot 0 i, String.sub quot (i+1) (String.length quot-i-1)
+   with
+      Not_found ->
+         "", quot
+
 EXTEND
    GLOBAL: singleterm term interf implem sig_item str_item expr;
 
@@ -1055,52 +1067,36 @@ EXTEND
             Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
       ]
       | [ x = QUOTATION ->
-            let kind, s =
-               try
-                  let i = String.index x ':' in
-                     String.sub x 0 i, String.sub x (i+1) (String.length x-i-1)
-               with
-                  Not_found ->
-                     "", x
-            in
-               match kind with
-                  "ext" ->
-                     Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
-                | "desc" ->
-                     Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
-                | "term" | "" ->
-                     raise (Failure "Term quotation inside a term")
-(*                     let cs = Stream.of_string s in
-                        Grammar.Entry.parse TermGrammar.term_eoi cs*)
-                | _ ->
-                     raise (Invalid_argument "Invalid term quotation")
+            match dest_quot x with
+               "ext", s ->
+                  Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
+             | "desc", s ->
+                  Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
+             | ("term" | ""), s ->
+                  raise (Failure "Term quotation inside a term")
+(*                let cs = Stream.of_string s in
+                     Grammar.Entry.parse TermGrammar.term_eoi cs*)
+             | nm, _ ->
+                  raise (Invalid_argument (nm ^ " quotation inside singleterm (Camlp4 term grammar)"))
         ]
       ];
 
-   singleterm: FIRST
+   singleterm: LAST
       [[ "$"; s = STRING; "$" ->
             { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s}
       ]
       | [ x = QUOTATION ->
-            let kind, s =
-               try
-                  let i = String.index x ':' in
-                     String.sub x 0 i, String.sub x (i+1) (String.length x-i-1)
-               with
-                  Not_found ->
-                     "", x
-            in
-               match kind with
-                  "ext" ->
-                     { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s }
-                | "desc" ->
-                     { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s }
-                | "term" | "" ->
-                     raise (Failure "Term quotation inside a term")
-(*                     let cs = Stream.of_string s in
-                        Grammar.Entry.parse TermGrammar.term_eoi cs*)
-                | _ ->
-                     raise (Invalid_argument "Invalid singleterm quotation")
+            match dest_quot x with
+               "ext", s ->
+                  { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s }
+             | "desc", s ->
+                  { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s }
+             | ("term" | ""), s ->
+                  raise (Failure "Term quotation inside a term")
+(*                let cs = Stream.of_string s in
+                     Grammar.Entry.parse TermGrammar.term_eoi cs*)
+             | nm, _ ->
+                  raise (Invalid_argument (nm ^ " quotation inside singleterm (Camlp4 term grammar)"))
         ]
       ];
 
@@ -1266,9 +1262,13 @@ EXTEND
            in
               print_exn f "topval" loc;
               empty_sig_item loc
-        | com = COMMENT ->
+        | "doc"; q = QUOTATION ->
            let f () =
-              StrFilter.declare_comment (StrFilter.get_proc loc) loc com
+               match dest_quot q with
+                  "doc", com -> 
+                     StrFilter.declare_comment (StrFilter.get_proc loc) loc com
+                | nm, _ ->
+                     raise(Invalid_argument("Quootation \"" ^ nm ^ "\" on top level"))
            in
               print_exn f "comment" loc;
               empty_sig_item loc
@@ -1431,9 +1431,17 @@ EXTEND
            in
               print_exn f "magic_block" loc;
               empty_str_item loc
-        | com = COMMENT ->
+        | "doc"; q = QUOTATION ->
+           (* 
+            * XXX This is a quick HACK. Strictly speaking this should just be: `` "doc"; comm = term ''
+            * and that we need to support "doc" quotations inside terms
+            *)
            let f () =
-              StrFilter.declare_comment (StrFilter.get_proc loc) loc com
+               match dest_quot q with
+                  "doc", com -> 
+                     StrFilter.declare_comment (StrFilter.get_proc loc) loc com
+                | nm, _ ->
+                     raise(Invalid_argument("Quootation \"" ^ nm ^ "\" on top level"))
            in
               print_exn f "comment" loc;
               empty_str_item loc
