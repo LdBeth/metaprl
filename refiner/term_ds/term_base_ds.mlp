@@ -413,11 +413,6 @@ struct
          let v' = new_var av v 0 in
             ((v,v')::vs, (v,mk_var_term v')::ts)
 
-   let rec addsvars av = function
-      [] -> av
-    | [(v,t)] -> StringSet.add v av
-    | (v,t)::sub -> addsvars (StringSet.add v av) sub
-
    let rec dest_bterm bt =
       match bt.bcore with
          BTerm tt -> tt
@@ -440,7 +435,7 @@ struct
                              bterm =
                               { free_vars = VarsDelayed; core = Subst (btrm,sub) }}
                       | _ ->
-                           let avoidvars = addsvars (StringSet.union sub_fvars (term_free_vars btrm)) sub in
+                           let avoidvars = StringSet.union sub_fvars (term_free_vars btrm) in
                            let (vs,ts) = new_vars avoidvars capt_vars in
                            let new_t = do_term_subst ts btrm in
                            { bvars =
