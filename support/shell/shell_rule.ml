@@ -300,7 +300,6 @@ let rec edit pack parse_arg name window obj =
             let ped = Package_info.ped_of_proof pack parse_arg proof (mk_msequent goal assums) in
                obj.rule_proof <- Interactive proof;
                obj.rule_ped <- Interactive ped;
-               Proof_edit.set_params ped obj.rule_params;
                save_ped ();
                ped
        | Interactive ped ->

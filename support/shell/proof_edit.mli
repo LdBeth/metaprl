@@ -55,9 +55,8 @@ type ped
 (*
  * Constructors.
  *)
-val create : term Filter_type.param list -> tactic_arg -> ped
-val ped_of_proof : term Filter_type.param list -> Proof.proof -> ped
-val set_params : ped -> term Filter_type.param list -> unit
+val create : tactic_arg -> ped
+val ped_of_proof : Proof.proof -> ped
 val set_goal : ped -> Refine.msequent -> unit
 
 val edit_info_of_ped : ped -> edit_info

@@ -193,8 +193,7 @@ let update_terminal_width window =
 type ped_proof = Proof.proof
 
 type ped =
-   { mutable ped_params : term Filter_type.param list;
-     mutable ped_undo : ped_proof list;
+   { mutable ped_undo : ped_proof list;
      mutable ped_stack : ped_proof list
    }
 
@@ -399,18 +398,15 @@ let print_exn window f x =
 (*
  * Constructors.
  *)
-let ped_of_proof params proof =
+let ped_of_proof proof =
    let stack = [proof] in
-      { ped_params = params;
+      {
         ped_undo = stack;
         ped_stack = stack
       }
 
-let create params t =
-   ped_of_proof params (Proof.create t)
-
-let set_params ped params =
-   ped.ped_params <- params
+let create t =
+   ped_of_proof (Proof.create t)
 
 (*
  * Push a new proof into the ped.
