@@ -3,6 +3,16 @@
 @preamble{ \def\MetaPRL{\textsf{MetaPRL}} }
 @preamble{ \def\JProver{\textsf{JProver}} }
 
+@InProceedings{GTNH03,
+   Author =      {Nathaniel Gray and Cristian Tapus and Aleksey Nogin and Jason Hickey},
+   Title =       {Building Reliable Compilers with a Formal Methods Framework},
+   Pages =       {319--320},
+   Publisher =   {Chillarege Press},
+   BookTitle =   {The 14$^{th}$ International Symposium on Software Reliability Engineering (ISSRE 2003). Sumpplementary Proceedings},
+   Editor =      {Dr. Indrakshi Ray},
+   Year =        2003
+}
+
 @inproceedings{HN00,
    crossref = "tphols2000",
    title    = "Fast Tactic-based Theorem Proving",
