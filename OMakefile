@@ -199,6 +199,7 @@ realclean: clean
 #
 INSTALL_INTERFACES = true
 MPINSTALL = mp.install
+LMINSTALL = $(MPINSTALL)
 
 .PHONY: $(MPINSTALL)
 
