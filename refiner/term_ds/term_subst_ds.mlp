@@ -81,7 +81,6 @@ struct
                        eflush;
                     true
                  end);
-      if tl==[] then t else
       do_term_subst (List.combine vl tl) t
 
    let is_free_var v t = StringSet.mem (term_free_vars t) v

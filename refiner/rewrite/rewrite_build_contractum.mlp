@@ -221,6 +221,13 @@ struct
          in
             mk_sequent_term seq
 
+    | RWSOSubst(i, []) ->
+         begin
+            match stack.(i) with
+               StackBTerm(term, []) -> term
+             | StackITerm ((term, [], _, _) :: _) -> term
+             | _ -> ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+         end
     | RWSOSubst(i, terms) ->
          begin
              (*
