@@ -19,6 +19,14 @@ open Filter_util
 open Filter_type
 open Filter_ocaml
 
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -1774,6 +1782,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.15  1998/04/24 02:42:07  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.14  1998/04/21 19:53:41  jyh
  * Upgraded refiner for program extraction.
  *

@@ -4,24 +4,64 @@
  *)
 
 (*
+ * Debug during load.
+ *)
+val debug_load : bool ref
+
+(*
  * Debug the rewriter.
  *)
-val debug_rewrite : bool
+val debug_rewrite : bool ref
 
 (*
  * Debug the refiner.
  *)
-val debug_refiner : bool
+val debug_refiner : bool ref
 
 (*
  * Debug the printer.
  *)
-val debug_simple_print : bool
+val debug_simple_print : bool ref
 
 (*
  * Debug Files
  *)
-val debug_file_base : bool
+val debug_file_base : bool ref
+
+(*
+ * Debug the term grammar.
+ *)
+val debug_grammar : bool ref
+
+(*
+ * Resource and inheritance debugging.
+ *)
+val debug_resource : bool ref
+
+(*
+ * Library debugging.
+ *)
+val debug_library_base : bool ref
+
+(*
+ * Summary debugging.
+ *)
+val debug_summary : bool ref
+
+(*
+ * Conversion to program code.
+ *)
+val debug_filter_prog : bool ref
+
+(*
+ * Parser.
+ *)
+val debug_filter_parse : bool ref
+
+(*
+ * Debug FilterCache.
+ *)
+val debug_filter_cache : bool ref
 
 (*
  * Print a list of strings.
@@ -35,6 +75,9 @@ val eflush : out_channel -> unit
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 02:42:27  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1998/02/23 14:46:32  jyh
  * First implementation of binary file compilation.
  *

@@ -2,8 +2,19 @@
  * Term quotation tester.
  *)
 
+open Printf
+open Debug
+
 open Ml_string
 open Term_grammar
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (************************************************************************
  * GRAMMAR                                                              *
@@ -51,6 +62,9 @@ let _ = Quotation.default := "term"
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:42:23  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1997/04/28 15:51:07  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -13,13 +13,20 @@ open Precedence
 open Rewrite
 
 open Free_vars
-open Filter_debug
 open Filter_util
 open Filter_ast
 open Filter_cache
 open Filter_summary_type
 open Filter_summary_util
 open Filter_summary
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (*************************************************************************
  * BUFFERS                                                               
@@ -329,71 +336,71 @@ let print_item buf declare_item (item, _) =
    let _ =
       match item with
          Rewrite ({ rw_name = name } as rw) ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: rewrite: %s%t" name eflush;
             declare_rewrite buf rw
        | CondRewrite ({ crw_name = name } as crw) ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: cond rewrite: %s%t" name eflush;
             declare_cond_rewrite buf crw
        | Axiom ({ axiom_name = name } as ax) ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: axiom: %s%t" name eflush;
             declare_axiom buf ax
        | Rule ({ rule_name = name } as rule) ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: rule: %s%t" name eflush;
             declare_rule buf rule
        | Prec name ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: prec: %s%t" name eflush;
             declare_prec buf name
        | Resource ({ resource_name = name } as rsrc) ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: resource: %s%t" name eflush;
             declare_resource buf rsrc
        | Parent ({ parent_name = name } as parent) ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: parent: %s%t" (string_of_path name) eflush;
             declare_parent buf parent
        | SummaryItem item ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: summary_item%t" eflush;
             declare_item buf item
        | MagicBlock block ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: magic block%t" eflush;
             declare_magic_block buf declare_item block
        | Opname name ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: opname%t" eflush;
             declare_opname buf name
        | MLTerm term ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: mlterm%t" eflush;
             declare_mlterm buf term
        | Condition term ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: condition%t" eflush;
             declare_mlterm buf term
        | DForm df ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: dform%t" eflush;
             declare_dform buf df
        | PrecRel rel ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: prec rel%t" eflush;
             declare_prec_rel buf rel
        | Id id ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: id: 0x%08x%t" id eflush;
             ""
        | Infix name ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: infix: %s%t" name eflush;
             declare_infix buf name
        | Module (name, _) ->
-            if debug_filter_prog then
+            if !debug_filter_prog then
                eprintf "Filter_html.extract_sig_item: module: %s%t" name eflush;
             raise (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
    in
@@ -404,7 +411,7 @@ let print_item buf declare_item (item, _) =
  *)
 let print_sig out info =
    let _ =
-      if debug_filter_prog then
+      if !debug_filter_prog then
          eprintf "Filter_html.extract_sig: begin%t" eflush
    in
    let buf =
@@ -420,7 +427,7 @@ let print_sig out info =
  *)
 let print_str out info =
    let _ =
-      if debug_filter_prog then
+      if !debug_filter_prog then
          eprintf "Filter_html.extract_sig: begin%t" eflush
    in
    let buf =
@@ -433,6 +440,9 @@ let print_str out info =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:41:53  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1998/03/12 00:27:04  jyh
  * Added filter_html, but its not finished yet.
  *

@@ -18,12 +18,20 @@
  *
  *)
 
+open Printf
 open Debug
 open Opname
 open Term
 open Term_util
 open Term_template
 open Rewrite
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Term_dtable%t" eflush
 
 (************************************************************************
  * TYPES                                                                *
@@ -283,6 +291,9 @@ let lookup { ext_lrtable = lrbase;
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:43:00  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1997/04/28 15:51:44  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

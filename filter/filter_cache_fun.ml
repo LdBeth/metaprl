@@ -13,13 +13,20 @@ open Term
 open File_base_type
 open File_type_base
 
-open Filter_debug
 open Filter_type
 open Filter_util
 open Filter_ocaml
 open Filter_summary
 open Filter_summary_type
 open Filter_summary_io
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (*
  * Make the enhanced base from a normal summary base.
@@ -160,10 +167,10 @@ struct
             raise (Invalid_argument "expand_in_summary")
       in
       let aux path sum =
-         if debug_filter_cache then
+         if !debug_filter_cache then
             eprintf "Filter_cache.expand_in_summary: %s%t" (string_of_path path) eflush;
          let path' = List.rev (aux [] sum path) in
-            if debug_filter_cache then
+            if !debug_filter_cache then
                eprintf "Filter_cache.expand_in_summary: expanded to %s%t" (string_of_path path') eflush;
             path'
       in
@@ -175,7 +182,7 @@ struct
     * if that fails, search for the module in all submodules.
     *)
    let expand_path cache path =
-      if debug_filter_cache then
+      if !debug_filter_cache then
          eprintf "Filter_cache.expand_path: %s%t" (string_of_path path) eflush;
       let { base = { lib = base; sig_summaries = summaries } } = cache in
          match path with
@@ -438,16 +445,16 @@ struct
 
    and inline_sig_module arg path =
       let cache, inline_hook, vals = arg in
-         if debug_filter_cache then
+         if !debug_filter_cache then
             eprintf "FilterCache.inline_module': %s%t" (string_of_path path) eflush;
          try
             let info = find_summarized_sig_module cache path in
-               if debug_filter_cache then
+               if !debug_filter_cache then
                   eprintf "FilterCache.inline_module': %s: already loaded%t" (string_of_path path) eflush;
                info
          with
             Not_found ->
-               if debug_filter_cache then
+               if !debug_filter_cache then
                   eprintf "FilterCache.inline_module': finding: %s%t" (string_of_path path) eflush;
                let { base = { lib = base; sig_summaries = summaries } } = cache in
                let info = Base.find base path SigMarshal.select in
@@ -459,7 +466,7 @@ struct
                   inline_sig_components arg path info (info_items info');
 
                   (* Call the hook *)
-                  if debug_resource then
+                  if !debug_resource then
                      begin
                         eprintf "Summary: %s%t" (string_of_path path) eflush;
                         eprint_info info'
@@ -515,7 +522,7 @@ struct
            base = base
          }
       in
-         if debug_filter_cache then
+         if !debug_filter_cache then
             begin
                eprintf "Filter_cache.load: loaded %s%t" name eflush;
                eprint_info info'
@@ -561,19 +568,22 @@ struct
     *)
    let save cache =
       let { base = { lib = base }; self = self; info = info } = cache in
-         if debug_filter_cache then
+         if !debug_filter_cache then
             begin
                eprintf "Filter_cache.save: begin%t" eflush;
                eprint_info info
             end;
          Base.set_info base self (StrMarshal.marshal info);
          Base.save base self;
-         if debug_filter_cache then
+         if !debug_filter_cache then
             eprintf "Filter_cache.save: done%t" eflush
 end
    
 (*
  * $Log$
+ * Revision 1.9  1998/04/24 02:41:48  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.8  1998/04/21 19:53:30  jyh
  * Upgraded refiner for program extraction.
  *

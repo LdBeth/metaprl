@@ -12,10 +12,17 @@ open Term
 
 open File_base_type
 
-open Filter_debug
 open Filter_type
 open Filter_summary
 open Filter_summary_type
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (*
  * Make the summary from the file base.
@@ -62,7 +69,7 @@ struct
     * Find a specific module given a full pathname.
     *)
    let find base name select =
-      if debug_summary then
+      if !debug_summary then
          eprintf "Filter_summary_io.find: %a%t" (print_strings "/") name eflush;
       match name with
          [] ->
@@ -151,6 +158,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.5  1998/04/24 02:42:11  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.4  1998/02/23 14:46:22  jyh
  * First implementation of binary file compilation.
  *

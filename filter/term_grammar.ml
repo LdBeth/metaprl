@@ -11,9 +11,16 @@ open Term_util
 open Ml_string
 open Simple_print
 
-open Filter_debug
 open Filter_type
 open Filter_summary
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (*
  * Grammars to extend.
@@ -398,7 +405,7 @@ struct
             | op = opname; sl_colon; t = applyterm ->
               match op with
                  [name] ->
-                    if debug_grammar then
+                    if !debug_grammar then
                        eprintf "Got bound term: %s%t" name eflush;
                     { aname = Some (mk_var_term name); aterm = t.aterm }
                | _ ->
@@ -638,7 +645,7 @@ struct
                 [] ->
                    null_concl
               | h::t ->
-                   if debug_grammar then
+                   if !debug_grammar then
                       eprintf "Got concl: %s%t" (string_of_term h) eflush;
                    mk_concl_term h (proc_concl t)
              in
@@ -646,7 +653,7 @@ struct
                 [] ->
                    proc_concl concl
               | h::tl ->
-                   if debug_grammar then
+                   if !debug_grammar then
                       eprintf "Got hyp: %s%t" (Simple_print.string_of_term h.aterm) eflush;
                    match h with
                       { aname = Some v; aterm = t } ->
@@ -660,7 +667,7 @@ struct
                                Stdpp.raise_with_loc loc (**)
                                   (Failure (sprintf "Not a variable: %s" (Simple_print.string_of_term t)))
              in
-                if debug_grammar then
+                if !debug_grammar then
                    eprintf "Constructing sequent: %d, %d%t" (List.length hyps) (List.length concl) eflush;
                 mk_sequent_term (proc_hyps hyps :: args)
           ]];
@@ -898,6 +905,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/24 02:42:21  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.6  1998/03/20 22:15:45  eli
  * Eli: Changed integer parameters to Num.num's.
  *

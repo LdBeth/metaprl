@@ -10,7 +10,17 @@
  *   4. IO list
  *)
 
+open Printf
+open Debug
+
 include Package_type
+
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Package_int%t" eflush
 
 (************************************************************************
  * TYPES                                                                *
@@ -284,6 +294,9 @@ let restore inx name magic resources tacs =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:41:27  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1997/08/06 16:17:17  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

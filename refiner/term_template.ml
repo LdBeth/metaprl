@@ -2,6 +2,9 @@
  * This module computes term templates for use by hashtables.
  *
  * $Log$
+ * Revision 1.3  1998/04/24 02:43:05  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1997/09/12 17:21:47  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:
@@ -25,8 +28,18 @@
  *
  *)
 
+open Printf
+open Debug
+
 open Opname
 open Term
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Term_template%t" eflush
 
 (************************************************************************
  * TYPES                                                                *

@@ -53,7 +53,7 @@ CMADEPS =\
 	$(NLLIB)/prlc.cma\
 	../../theories/tactic/tactics.cma\
 	../../theories/base/base.cma\
-	nl.cma
+	$(MAIN).cma
 
 CMALIBS =\
 	$(CMADEPS)

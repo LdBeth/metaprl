@@ -10,6 +10,13 @@ open Printf
 open Debug
 open Opname
 
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Term%t" eflush
+
 (************************************************************************
  * Type definitions                                                     *
  ************************************************************************)
@@ -2511,6 +2518,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.14  1998/04/24 02:42:58  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.13  1998/04/23 20:04:42  jyh
  * Initial rebuilt editor.
  *

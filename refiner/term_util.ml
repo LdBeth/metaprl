@@ -2,6 +2,9 @@
  * Utilities on terms.
  *
  * $Log$
+ * Revision 1.6  1998/04/24 02:43:07  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.5  1998/04/09 18:26:01  jyh
  * Working compiler once again.
  *
@@ -50,6 +53,13 @@ open Printf
 open Debug
 open Term
 open Opname
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Term_util%t" eflush
 
 (************************************************************************
  * TYPES                                                                *

@@ -4,6 +4,15 @@
  *)
 
 open Printf
+open Debug
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (*
  * Compute the binding variables.
@@ -141,6 +150,9 @@ let new_vars expr l =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:42:15  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1997/04/28 15:51:03  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

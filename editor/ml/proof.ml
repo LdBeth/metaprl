@@ -36,6 +36,7 @@ include Tactic_type
 include Proof_step
 
 open Printf
+open Debug
 
 open Term
 open Refine_sig
@@ -43,6 +44,13 @@ open Refine_util
 open Refine_exn
 open Refine
 open Tactic_type
+
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Proof%t" eflush
 
 (************************************************************************
  * TYPES                                                                *
@@ -992,6 +1000,9 @@ let proof_of_io_proof resources fcache tacs pf =
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/24 02:41:29  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.6  1998/04/23 20:03:47  jyh
  * Initial rebuilt editor.
  *

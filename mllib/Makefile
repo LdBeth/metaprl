@@ -16,6 +16,7 @@ LMFILES :=\
 	file_util\
 	filename_util\
 	ctype\
+	debug_set\
 	bitset\
 	dag\
 	imp_dag\

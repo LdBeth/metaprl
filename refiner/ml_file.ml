@@ -12,6 +12,13 @@ open Term_util
 open Ml_print_sig
 open Ml_print
 
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Ml_file%t" eflush
+
 (************************************************************************
  * FILE                                                                 *
  ************************************************************************)
@@ -97,6 +104,9 @@ module IOPrint = MakePrinter (IOFile)
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:42:38  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1997/04/28 15:51:23  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

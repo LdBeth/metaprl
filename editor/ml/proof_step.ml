@@ -7,6 +7,9 @@
 
 include Tactic_type
 
+open Printf
+open Debug
+
 open Term
 open Opname
 open Refine_sig
@@ -17,6 +20,13 @@ open Refine
 open Filter_proof_type
 
 open Tactic_type
+
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Proof_step%t" eflush
 
 (************************************************************************
  * TYPES                                                                *
@@ -181,6 +191,9 @@ let step_of_io_step resources fcache tactics
 
 (*
  * $Log$
+ * Revision 1.9  1998/04/24 02:41:33  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.8  1998/04/23 20:03:57  jyh
  * Initial rebuilt editor.
  *

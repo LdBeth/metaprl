@@ -9,6 +9,14 @@ open Debug
 open Filter_parse
 
 (*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
+
+(*
  * string -> path commands
  *)
 let set_path doc var path =
@@ -30,6 +38,9 @@ let _ = set_include_path !include_path
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:41:54  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1997/04/28 15:50:54  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

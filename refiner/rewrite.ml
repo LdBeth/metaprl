@@ -5,11 +5,19 @@
  *
  *)
 
+open Printf
 open Debug
 open Opname
 open Term
 open Rformat
 open Simple_print
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Rewrite%t" eflush
 
 (************************************************************************
  * Rewrites
@@ -1378,7 +1386,7 @@ let apply_rewrite
       rr_namer = namer;
       rr_gstacksize = gstacksize
     } (addrs, names) terms =
-   if debug_rewrite then
+   if !debug_rewrite then
       begin
          let buf = new_buffer () in
             format_string buf "apply_rewrite:";
@@ -1633,6 +1641,9 @@ let rewrite_eval_flags = function
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/24 02:42:50  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.5  1998/04/21 19:54:08  jyh
  * Upgraded refiner for program extraction.
  *

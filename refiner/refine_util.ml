@@ -2,8 +2,18 @@
  * Some utilities for refiners.
  *)
 
+open Printf
+open Debug
+
 open Term
 open Refine_sig
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Refine_util%t" eflush
 
 (*
  * Compare two sequents for alpha eqivalence.
@@ -56,6 +66,9 @@ let msequent_of_tactic_arg { tac_goal = goal; tac_hyps = hyps } =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:42:49  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1998/04/22 14:14:30  jyh
  * Utilities for the refiner.
  *

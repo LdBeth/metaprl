@@ -22,7 +22,6 @@ MLZFILES :=\
 	filter_proof_type
 
 LMFILES :=\
-	filter_debug\
 	buffer\
 	mLast_util\
 	free_vars\

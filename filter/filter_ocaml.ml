@@ -12,6 +12,14 @@ open Opname
 open Term
 
 (*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
+
+(*
  * Location is a pair of bignums.
  *)
 type loc = Num.num * Num.num
@@ -1494,6 +1502,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/24 02:41:56  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.6  1998/03/20 22:15:43  eli
  * Eli: Changed integer parameters to Num.num's.
  *

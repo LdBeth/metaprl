@@ -8,8 +8,15 @@ open Debug
 
 open Term
 
-open Filter_debug
 open Filter_summary
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (*
  * Extract the context var arguments.
@@ -103,7 +110,7 @@ let extract_params cvars bvars =
 let mem_resource { resource_name = name } resources =
    let rec search = function
       { resource_name = name' } :: t ->
-         if debug_resource then
+         if !debug_resource then
             eprintf "Resource: %s%t" name' eflush;
          if name = name' then
             true
@@ -116,6 +123,9 @@ let mem_resource { resource_name = name } resources =
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/24 02:42:13  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.6  1998/02/21 20:57:57  jyh
  * Two phase parse/extract.
  *

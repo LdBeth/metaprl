@@ -4,10 +4,20 @@
 
 include Shell_type
 
+open Printf
+open Debug
+
 open Rformat
 open Refine_sig
 
 open Shell_type
+
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Shell_null%t" eflush
 
 let null_object =
    let edit_format _ buf =
@@ -38,6 +48,9 @@ let null_object =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:41:36  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1998/04/23 20:04:07  jyh
  * Initial rebuilt editor.
  *

@@ -14,6 +14,7 @@ include Shell_null
 include Shell_rewrite
 
 open Printf
+open Debug
 
 open Term
 open Dform
@@ -25,6 +26,13 @@ open Package_type
 open Package_info
 open Package_df
 open Shell_type
+
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Shell%t" eflush
 
 (************************************************************************
  * TYPES                                                                *
@@ -389,6 +397,9 @@ let fold_all () =
 (*
  *
  * $Log$
+ * Revision 1.5  1998/04/24 02:41:34  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.4  1998/04/23 20:04:02  jyh
  * Initial rebuilt editor.
  *

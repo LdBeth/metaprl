@@ -2,6 +2,17 @@
  * An "infinite" buffer.  The buffer grows as the space requirements
  * increase.
  *)
+
+open Printf
+open Debug
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 type t =
    { mutable buf_str : string;
      mutable buf_index : int
@@ -56,6 +67,9 @@ let gets { buf_str = str; buf_index = i } =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:41:41  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1998/02/19 17:13:54  jyh
  * Splitting filter_parse.
  *

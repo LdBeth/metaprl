@@ -24,6 +24,14 @@ open Arg
 open Debug
 
 (*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
+
+(*
  * Environment.
  *)
 let lib =
@@ -196,6 +204,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.9  1998/04/24 02:42:20  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.8  1998/02/23 14:46:26  jyh
  * First implementation of binary file compilation.
  *

@@ -16,6 +16,14 @@ open Filter_cache
 open Filter_prog
 
 (*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
+
+(*
  * Include directories.
  *)
 let include_path = ref ["."]
@@ -144,6 +152,9 @@ let _ = Printexc.catch main ()
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/24 02:41:44  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.4  1998/04/15 12:39:47  jyh
  * Updating editor packages to Filter_summarys.
  *

@@ -9,8 +9,19 @@
  * The comments can then be queried through the table.
  *)
 
+open Printf
+open Debug
+
 open MLast
 open MLast_util
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (************************************************************************
  * TYPES                                                                *
@@ -266,6 +277,9 @@ let get = Hashtbl.find
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 02:41:49  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1998/04/06 19:50:37  jyh
  * Fixed match error in mLast_util.ml
  *

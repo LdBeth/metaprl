@@ -92,7 +92,7 @@ struct
       let filename = sprintf "%s/%s.%s" dir name suffix in
       let info = unmarshal magic filename in
       let _ =
-         if debug_file_base then
+         if !debug_file_base then
             eprintf "File_base.load_file: loaded file %s%t" filename eflush
       in
       let info' =
@@ -112,15 +112,15 @@ struct
     * given by the ordering of Combo info items.
     *)
    let load_specific base spec name =
-      if debug_file_base then
+      if !debug_file_base then
          eprintf "File_base.load_specific: %s: begin%t" name eflush;
       let rec search = function
          [] ->
-            if debug_file_base then
+            if !debug_file_base then
                eprintf "File_base.load_specific: %s: not found%t" name eflush;
             raise Not_found
        | dir::path' ->
-            if debug_file_base then
+            if !debug_file_base then
                eprintf "File_base.load_specific: try %s/%s%t" dir name eflush;
             try load_file base spec dir name with
                Sys_error _ ->
@@ -150,13 +150,13 @@ struct
     *)
    let find base name select =
       let { io_table = table } = base in
-         if debug_file_base then
+         if !debug_file_base then
             eprintf "File_base.find: %s%t" name eflush;
          try
             let rec search = function
                info::tl ->
                   let { info_type = select'; info_file = file; info_dir = dir } = info in
-                     if debug_file_base then
+                     if !debug_file_base then
                         eprintf "File_base.find: checking %s/%s%t" dir file eflush;
                      if select' = select then
                         info
@@ -166,12 +166,12 @@ struct
                   raise Not_found
             in
             let info = search !(Hashtbl.find table name) in
-               if debug_file_base then
+               if !debug_file_base then
                   eprintf "File_base.find: %s: found%t" name eflush;
                info
          with
             Not_found ->
-               if debug_file_base then
+               if !debug_file_base then
                   eprintf "File_base.find: %s: loading%t" name eflush;
                load_specific base (find_spec select) name
    
@@ -212,7 +212,7 @@ struct
     *)
    let create_info base data select dir file =
       let _ =
-         if debug_file_base then
+         if !debug_file_base then
             eprintf "File_base.create_info: %s/%s%t" dir file eflush
       in
       let { io_table = table } = base in
@@ -271,6 +271,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/24 02:42:32  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.4  1998/02/23 14:46:34  jyh
  * First implementation of binary file compilation.
  *

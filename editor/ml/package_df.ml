@@ -6,6 +6,9 @@ include Base_theory
 
 include Package_info
 
+open Printf
+open Debug
+
 open Opname
 open Term
 open Rformat
@@ -19,6 +22,13 @@ open Filter_proof
 
 open Package_info
 open Package
+
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Package_df%t" eflush
 
 (*
  * Our display parameters.
@@ -112,6 +122,9 @@ let format_packages buf pack =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 02:41:24  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1998/04/23 20:03:37  jyh
  * Initial rebuilt editor.
  *

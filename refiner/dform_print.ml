@@ -4,7 +4,17 @@
  *
  *)
 
+open Printf
+open Debug
+
 open Dform
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Dform_print%t" eflush
 
 (************************************************************************
  * TYPES                                                                *
@@ -159,6 +169,9 @@ let string_of_mterm t = Dform.string_of_mterm !base t
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:42:36  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1997/04/28 15:51:18  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

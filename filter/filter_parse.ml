@@ -28,7 +28,6 @@ open Simple_print
 open Infix
 open Free_vars
 open Term_grammar
-open Filter_debug
 open Filter_type
 open Filter_util
 open Filter_ast
@@ -98,6 +97,14 @@ end
  *)
 module TermGrammar = MakeTermGrammar (TermGrammarBefore)
 open TermGrammar
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (************************************************************************
  * QUOTATIONS                                                           *
@@ -234,10 +241,10 @@ struct
     *)
    let inline_hook root_path cache (path, info) (paths, resources) =
       (* Include all the resources *)
-      if debug_resource then
+      if !debug_resource then
          eprintf "Inline_hook: %s, %s%t" (string_of_path root_path) (string_of_path path) eflush;
       let add_resource rsrc =
-         if debug_resource then
+         if !debug_resource then
             eprintf "Adding resource: %s.%s%t" (string_of_path path) rsrc.resource_name eflush;
          FilterCache.add_resource cache path rsrc
       in
@@ -406,7 +413,7 @@ struct
       let bvars = binding_vars args in
       let params' = extract_params cvars bvars params in
          (* Do some checking on the rule *)
-         if debug_grammar then
+         if !debug_grammar then
             begin
                let args, result = unzip_mfunction args in
                   eprintf "Checking rule: %s\n" name;
@@ -419,7 +426,7 @@ struct
             (Array.of_list (collect_vars params'))
             (collect_non_vars params')
             (strip_mfunction args);
-         if debug_grammar then
+         if !debug_grammar then
             eprintf "Checked rule: %s%t" name eflush;
    
          (* If checking completes, add the rule *)
@@ -739,7 +746,7 @@ EXTEND
    
    interf_item:
       [[ s = sig_item; OPT ";;" ->
-          if debug_filter_parse then
+          if !debug_filter_parse then
              eprintf "Filter_parse.interf_item: adding item%t" eflush;
           SigFilter.add_command (SigFilter.get_proc loc) (SummaryItem s, loc);
           s, loc
@@ -993,6 +1000,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.18  1998/04/24 02:41:59  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.17  1998/04/21 20:58:01  jyh
  * Fixed typing problems introduced by refiner msequents.
  *

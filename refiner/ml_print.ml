@@ -13,6 +13,13 @@ open Ml_format_sig
 open Ml_format
 open Ml_print_sig
 
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading ML_print%t" eflush
+
 module MakePrinter (File : FileSig) =
 struct
    (************************************************************************
@@ -138,6 +145,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 02:42:41  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1998/03/20 22:16:18  eli
  * Eli: Changed integer parameters to Num.num's.
  *

@@ -3,7 +3,9 @@ INCLUDE :=
 
 # Library files
 LCFILES :=\
-	putenv
+	putenv\
+	debug\
+	ml_debug
 
 LMFILES :=\
 	punix

@@ -2,12 +2,23 @@
  * Marshal proofs to terms.
  *)
 
+open Printf
+open Debug
+
 open Opname
 open Term
 open Refine_sig
 
 open Filter_proof_type
 open Filter_ocaml
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 let summary_opname = mk_opname "summary" nil_opname
 
@@ -260,6 +271,9 @@ let tactics_of_proof proof =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/24 02:42:05  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.3  1998/04/22 22:44:26  jyh
  * *** empty log message ***
  *

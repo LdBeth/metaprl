@@ -2,6 +2,9 @@
  * Debugging utilities.
  *
  * $Log$
+ * Revision 1.3  1998/04/24 02:42:26  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1998/02/23 14:46:30  jyh
  * First implementation of binary file compilation.
  *
@@ -44,24 +47,64 @@
 open Printf
 
 (*
+ * Debug during loading.
+ *)
+let debug_load = ref false
+
+(*
  * Debug the rewriter.
  *)
-let debug_rewrite = false
+let debug_rewrite = ref false
 
 (*
  * Debug the refiner.
  *)
-let debug_refiner = false
+let debug_refiner = ref false
 
 (*
  * Debug the printer.
  *)
-let debug_simple_print = false
+let debug_simple_print = ref false
 
 (*
  * Debug files.
  *)
-let debug_file_base = false
+let debug_file_base = ref false
+
+(*
+ * Debug the term grammar.
+ *)
+let debug_grammar = ref false
+
+(*
+ * Resource and inheritance debugging.
+ *)
+let debug_resource = ref false
+
+(*
+ * Library debugging.
+ *)
+let debug_library_base = ref false
+
+(*
+ * Summary debugging.
+ *)
+let debug_summary = ref false
+
+(*
+ * Conversion to program code.
+ *)
+let debug_filter_prog = ref false
+
+(*
+ * Parser.
+ *)
+let debug_filter_parse = ref false
+
+(*
+ * Debug FilterCache.
+ *)
+let debug_filter_cache = ref false
 
 (*
  * Print some strings.

@@ -3,6 +3,9 @@
  *
  *)
 
+open Printf
+open Debug
+
 open Precedence
 open Rformat
 open Opname
@@ -11,6 +14,13 @@ open Term_util
 open Term_table
 open Rewrite
 open Simple_print
+
+(*
+ * Show loading of the file.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Dform%t" eflush
 
 (************************************************************************
  * TYPES                                                                *
@@ -568,6 +578,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/24 02:42:35  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.3  1998/02/21 20:58:16  jyh
  * Two phase parse/extract.
  *

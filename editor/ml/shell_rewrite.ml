@@ -6,6 +6,9 @@ include Shell_type
 include Package_info
 include Package_df
 
+open Printf
+open Debug
+
 open Term
 open Opname
 open Refine_sig
@@ -15,6 +18,13 @@ open Filter_summary
 open Tactic_type
 open Tactic_cache
 open Shell_type
+
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Shell_rewrite%t" eflush
 
 (*
  * This is the actual rewrite object.
@@ -171,6 +181,9 @@ let create pack prog resources name =
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/24 02:41:38  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.4  1998/04/23 20:04:20  jyh
  * Initial rebuilt editor.
  *

@@ -13,6 +13,9 @@
 
 include Proof
 
+open Printf
+open Debug
+
 open Term
 open Rformat
 open Dform
@@ -22,6 +25,13 @@ open Refine
 open Tactic_type
 open Proof_step
 open Proof
+
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Proof_edit%t" eflush
 
 (************************************************************************
  * TYPES                                                                *
@@ -430,6 +440,9 @@ let expand_ped ped =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/24 02:41:31  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.3  1998/04/23 20:03:52  jyh
  * Initial rebuilt editor.
  *

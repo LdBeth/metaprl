@@ -3,7 +3,18 @@
  * We just want to remove location info.
  *)
 
+open Printf
+open Debug
+
 open MLast
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (*
  * Basic hash functions.
@@ -331,6 +342,9 @@ and hash_sslt index (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/24 02:41:51  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.5  1998/02/12 23:38:07  jyh
  * Added support for saving intermediate files to the library.
  *

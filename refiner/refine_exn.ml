@@ -13,6 +13,13 @@ open Rewrite
 open Refine_sig
 
 (*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Refine_exn%t" eflush
+
+(*
  * Just print out a bunch of strings.
  *)
 let rec print_string_list out = function
@@ -130,6 +137,9 @@ let print_exn f x =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 02:42:48  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1998/04/21 19:53:59  jyh
  * Upgraded refiner for program extraction.
  *

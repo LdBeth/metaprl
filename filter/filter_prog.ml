@@ -12,13 +12,20 @@ open Precedence
 open Rewrite
 
 open Free_vars
-open Filter_debug
 open Filter_util
 open Filter_ast
 open Filter_cache
 open Filter_summary_type
 open Filter_summary_util
 open Filter_summary
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (*
  * Empty sig_item.
@@ -379,7 +386,7 @@ let interf_resources resources loc =
                 resource_improve_type = improve_type;
                 resource_data_type = data_type
        } as rsrc)::t ->
-         if debug_resource then
+         if !debug_resource then
             if mname = [] then
                eprintf "Resource: %s%t" name eflush
             else
@@ -416,71 +423,71 @@ let interf_postlog info loc =
 let extract_sig_item (item, loc) =
    match item with
       Rewrite ({ rw_name = name } as rw) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: rewrite: %s%t" name eflush;
          declare_rewrite loc rw
     | CondRewrite ({ crw_name = name } as crw) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: cond rewrite: %s%t" name eflush;
          declare_cond_rewrite loc crw
     | Axiom ({ axiom_name = name } as ax) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: axiom: %s%t" name eflush;
          declare_axiom loc ax
     | Rule ({ rule_name = name } as rule) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: rule: %s%t" name eflush;
          declare_rule loc rule
     | Prec name ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: prec: %s%t" name eflush;
          declare_prec loc name
     | Resource ({ resource_name = name } as rsrc) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: resource: %s%t" name eflush;
          declare_resource loc rsrc
     | Parent ({ parent_name = name } as parent) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: parent: %s%t" (string_of_path name) eflush;
          declare_parent loc parent
     | SummaryItem item ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: summary_item%t" eflush;
          declare_summary_item loc item
     | MagicBlock block ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: magic block%t" eflush;
          declare_magic_block loc block
     | Opname _ ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: opname%t" eflush;
          []
     | MLTerm _ ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: mlterm%t" eflush;
          []
     | Condition _ ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: condition%t" eflush;
          []
     | DForm _ ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: dform%t" eflush;
          []
     | PrecRel _ ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: prec rel%t" eflush;
          []
     | Id id ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: id: 0x%08x%t" id eflush;
          []
     | Infix name ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: infix: %s%t" name eflush;
          []
     | Module (name, _) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: module: %s%t" name eflush;
          raise (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
 
@@ -489,7 +496,7 @@ let extract_sig_item (item, loc) =
  *)
 let extract_sig info resources path =
    let _ =
-      if debug_filter_prog then
+      if !debug_filter_prog then
          eprintf "Filter_prog.extract_sig: begin%t" eflush
    in
    let items = List_util.flat_map extract_sig_item (info_items info) in
@@ -1220,115 +1227,115 @@ let _ = ()
 let extract_str_item proc (item, loc) =
    match item with
       Rewrite ({ rw_name = name; rw_proof = Primitive _ } as rw) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: primrw: %s%t" name eflush;
          prim_rewrite proc loc rw
     | Rewrite ({ rw_name = name; rw_proof = Derived tac } as rw) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwthm: %s%t" name eflush;
          derived_rewrite proc loc rw tac
     | Rewrite ({ rw_name = name; rw_proof = Interactive pf } as rw) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwinteractive: %s%t" name eflush;
          raise (Failure "Filter_prog.extract_str_item.Rewrite(Interactive _): not implemented")
     | CondRewrite ({ crw_name = name; crw_proof = Primitive _ } as crw) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: prim condrw: %s%t" name eflush;
          prim_cond_rewrite proc loc crw
     | CondRewrite ({ crw_name = name; crw_proof = Derived tac } as crw) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm condrw: %s%t" name eflush;
          derived_cond_rewrite proc loc crw tac
     | CondRewrite ({ crw_name = name; crw_proof = Interactive pf } as crw) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive condrw: %s%t" name eflush;
          raise (Failure "Filter_prog.extract_str_item.CondRewrite(Interactive _): not implemented")
     | Axiom ({ axiom_name = name; axiom_proof = Primitive t } as ax) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: prim axiom: %s%t" name eflush;
          prim_axiom proc loc ax t
     | Axiom ({ axiom_name = name; axiom_proof = Derived tac } as ax) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm axiom: %s%t" name eflush;
          derived_axiom proc loc ax tac
     | Axiom ({ axiom_name = name; axiom_proof = Interactive tac } as ax) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive axiom: %s%t" name eflush;
          raise (Failure "Filter_prog.extract_str_item.Axiom(Interactive _): not implemented") 
     | Rule ({ rule_name = name; rule_proof = Primitive t } as rule) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: prim rule: %s%t" name eflush;
          prim_rule proc loc rule t
     | Rule ({ rule_name = name; rule_proof = Derived tac } as rule) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm rule: %s%t" name eflush;
          derived_rule proc loc rule tac
     | Rule ({ rule_name = name; rule_proof = Interactive pf } as rule) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive rule: %s%t" name eflush;
          raise (Failure "Filter_prog.extract_str_item.Rule(Interactive _): not implemented") 
     | MLTerm { mlterm_term = term; mlterm_contracta = cons; mlterm_def = Some def } ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: mlterm%t" eflush;
          define_ml_term proc loc term cons def
     | MLTerm { mlterm_def = None } ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: mlterm%t" eflush;
          raise (Failure "Filter_proof.extract_str_item: mlterm is not defined")
     | Condition _ ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: condition%t" eflush;
          raise (Failure "Filter_proof.extract_str_item: condition is not implemented")
     | DForm ({ dform_def = TermDForm expansion} as df) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: dform%t" eflush;
          define_dform proc loc df expansion
     | DForm ({ dform_def = MLDForm code} as df) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: dform%t" eflush;
          define_ml_dform proc loc df code
     | DForm { dform_def = NoDForm } ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: dform%t" eflush;
          raise (Failure "Filter_proof.extract_str_item: dform is not defined")
     | Prec name ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: prec: %s%t" name eflush;
          define_prec proc loc name
     | PrecRel rel ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: prec_rel%t" eflush;
          define_prec_rel proc loc rel
     | Resource ({ resource_name = name } as rsrc) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: resource: %s%t" name eflush;
          define_resource proc loc rsrc
     | Parent ({ parent_name = name } as parent) ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: parent: %s%t" (string_of_path name) eflush;
          define_parent proc loc parent
     | SummaryItem item ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: summary item%t" eflush;
          define_summary_item proc loc item
     | MagicBlock block ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: magic block%t" eflush;
          define_magic_block proc loc block
     | Opname _ ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: opname%t" eflush;
          []
     | Id _ ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: id%t" eflush;
          []
     | Infix _ ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: infix%t" eflush;
          []
     | Module _ ->
-         if debug_filter_prog then
+         if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: infix%t" eflush;
          raise (Failure "Filter_prog.extract_str_item: nested modules are not implemented")
 
@@ -1344,6 +1351,9 @@ let extract_str info resources name =
    
 (*
  * $Log$
+ * Revision 1.9  1998/04/24 02:42:02  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.8  1998/04/22 22:44:24  jyh
  * *** empty log message ***
  *

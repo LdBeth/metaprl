@@ -5,6 +5,7 @@
 
 open Pcaml;;
 
+
 (*
  * Make an infix expression.
  *)
@@ -32,6 +33,9 @@ let add_infix (keyword : string) =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 02:42:17  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.1  1997/08/06 16:17:37  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

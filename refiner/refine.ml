@@ -41,6 +41,13 @@ open Term_util
 open Refine_sig
 open Refine_util
 
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Refine%t" eflush
+
 module Refiner =
 struct
    (************************************************************************
@@ -956,7 +963,7 @@ struct
             raise (FreeContextVars l)
    
    let add_axiom refiner name term =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.add_axiom: %s%t" name eflush;
       let refiner' =
          AxiomRefiner { axiom_name = name;
@@ -974,7 +981,7 @@ struct
          refiner', tac
    
    let add_prim_axiom refiner name term =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.prim_axiom: %s%t" name eflush;
       match find_refiner refiner name with
          AxiomRefiner ax ->
@@ -986,7 +993,7 @@ struct
             raise (RefineError (StringStringError (name, "not an axiom")))
    
    let add_delayed_axiom refiner name extf =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.delayed_axiom: %s%t" name eflush;
       match find_refiner refiner name with
          AxiomRefiner ax ->
@@ -1016,7 +1023,7 @@ struct
     * and there are no dependencies.
     *)
    let add_rule refiner name addrs names params mterm =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.add_rule: %s%t" name eflush;
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
@@ -1088,7 +1095,7 @@ struct
          compute_ext
    
    let add_prim_rule refiner name vars params args result =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.add_prim_theorem: %s%t" name eflush;
       match find_refiner refiner name with
          RuleRefiner rule ->
@@ -1101,7 +1108,7 @@ struct
             raise (RefineError (StringStringError (name, "not a rule")))
    
    let add_delayed_rule refiner name vars params args ext =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.delayed_rule: %s%t" name eflush;
       match find_refiner refiner name with
          RuleRefiner rule ->
@@ -1127,7 +1134,7 @@ struct
     * An ML condition.
     *)
    let add_ml_rule refiner arg rule =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.add_ml_rule%t" eflush;
       let refiner' =
          MLRuleRefiner { ml_rule_arg = arg;
@@ -1192,7 +1199,7 @@ struct
     * The rewrite must be a MetaIff.
     *)
    let add_rewrite refiner name redex contractum =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.add_rewrite: %s%t" name eflush;
       let rw =
          try Rewrite.term_rewrite ([||], [||]) [redex] [contractum] with
@@ -1221,7 +1228,7 @@ struct
          refiner', rw
    
    let add_prim_rewrite refiner name redex contractum =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.add_prim_rewrite: %s%t" name eflush;
       match find_refiner refiner name with
          RewriteRefiner rw ->
@@ -1239,7 +1246,7 @@ struct
             raise (RefineError (StringStringError (name, "not a rewrite")))
    
    let add_delayed_rewrite refiner name redex contractum ext =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.add_delayed_rewrite: %s%t" name eflush;
       match find_refiner refiner name with
          RewriteRefiner rw ->
@@ -1282,7 +1289,7 @@ struct
     * Conditional rewrite.
     *)
    let add_cond_rewrite refiner name vars params subgoals redex contractum =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.add_cond_rewrite: %s%t" name eflush;
       let rw =
          try Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] with
@@ -1318,7 +1325,7 @@ struct
          refiner', rw'
    
    let add_prim_cond_rewrite refiner name vars params subgoals redex contractum =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.add_prim_cond_rewrite: %s%t" name eflush;
       match find_refiner refiner name with
          CondRewriteRefiner crw ->
@@ -1336,7 +1343,7 @@ struct
                raise (RefineError (StringStringError (name, "not a conditional rewrite")))
    
    let add_delayed_cond_rewrite refiner name vars params subgoals redex contractum ext =
-      if debug_refiner then
+      if !debug_refiner then
          eprintf "Refiner.add_delayed_cond_rewrite: %s%t" name eflush;
       match find_refiner refiner name with
          CondRewriteRefiner crw ->
@@ -1543,6 +1550,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/24 02:42:45  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.6  1998/04/22 14:06:35  jyh
  * Implementing proof editor.
  *

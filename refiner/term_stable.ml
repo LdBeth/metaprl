@@ -2,6 +2,9 @@
  * This is a simplified version of termTable.
  *
  * $Log$
+ * Revision 1.3  1998/04/24 02:43:02  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1997/09/12 17:21:46  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:
@@ -25,9 +28,19 @@
  *
  *)
 
+open Printf
+open Debug
+
 open Opname
 open Term
 open Hashtbl
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Term_stable%t" eflush
 
 (************************************************************************
  * TYPES                                                                *

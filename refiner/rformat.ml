@@ -28,6 +28,13 @@ open Printf
 
 open Debug
 
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Rformat%t" eflush
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -307,7 +314,7 @@ let format_quoted_string buf str =
           | _ -> format_char buf c
    in
    let quote_flag = (length = 0) or (quotep 0) or (str.[0] = '\'') in
-      if debug_simple_print then
+      if !debug_simple_print then
          eprintf "Rformat.format_quoted_string: quote_flag: %b%t" quote_flag eflush;
       if quote_flag then
          begin
@@ -669,6 +676,9 @@ let print_to_string rmargin buf =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/24 02:42:54  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.3  1998/04/21 19:54:16  jyh
  * Upgraded refiner for program extraction.
  *

@@ -2,8 +2,19 @@
  * Build expressions.
  *)
 
+open Printf
+open Debug
+
 open Ml_format_sig
 open Ml_format
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (*
  * ML expression converter.
@@ -133,6 +144,9 @@ let () = ()
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/24 02:41:43  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.3  1998/04/09 18:25:47  jyh
  * Working compiler once again.
  *

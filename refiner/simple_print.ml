@@ -11,6 +11,13 @@ open Opname
 open Term
 open Term_util
 
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Simple_print%t" eflush
+
 let max_column = 120
 
 (************************************************************************
@@ -19,7 +26,7 @@ let max_column = 120
 
 (* Level expression *)
 let format_level_exp buf l =
-   if debug_simple_print then
+   if !debug_simple_print then
       eprintf "Simple_print.format_level_exp%t" eflush;
    let rec format_quotes = function
       0 -> ()
@@ -81,7 +88,7 @@ let format_level_exp buf l =
  * Operator name.
  *)
 let string_of_opname opname =
-   if debug_simple_print then
+   if !debug_simple_print then
       eprintf "Simple_print.string_of_opname%t" eflush;
    let rec aux v = function
       [] -> v
@@ -98,7 +105,7 @@ let string_of_opname opname =
 
 (* General parameter *)
 let rec format_param buf p =
-   if debug_simple_print then
+   if !debug_simple_print then
       eprintf "Simple_print.format_param%t" eflush;
    match dest_param p with
       Number n -> format_num buf n; format_string buf ":n"
@@ -159,7 +166,7 @@ let format_params buf = function
 
 (* Print a single bterm *)
 let rec format_bterm buf bterm =
-   if debug_simple_print then
+   if !debug_simple_print then
       eprintf "Simple_print.format_bterm%t" eflush;
    match dest_bterm bterm with
       { bvars = []; bterm = term } ->
@@ -203,11 +210,11 @@ and format_bterms buf = function
  * Top level print function.
  *)
 and format_term buf term =
-   if debug_simple_print then
+   if !debug_simple_print then
       eprintf "Simple_print.format_term%t" eflush;
    if is_so_var_term term then
       let _ =
-         if debug_simple_print then
+         if !debug_simple_print then
             eprintf "Simple_print.format_term: got a variable%t" eflush
       in
       let v, subterms = dest_so_var term in
@@ -229,24 +236,24 @@ and format_term buf term =
             format_string buf "]";
             format_popm buf
       in
-         if debug_simple_print then
+         if !debug_simple_print then
             eprintf "Simple_print.format_term: var: %s%t" v eflush;
          if subterms = [] then
             format_char buf '\'';
          format_quoted_string buf v;
-         if debug_simple_print then
+         if !debug_simple_print then
             eprintf "Simple_print.format_terms%t" eflush;
          format_terms subterms
    
    else
       (* Standard term *)
       let _ =
-         if debug_simple_print then
+         if !debug_simple_print then
             eprintf "Simple_print.format_term: regular term%t" eflush
       in
       let { term_op = op; term_terms = bterms } = dest_term term in
       let { op_name = name; op_params = params } = dest_op op in
-         if debug_simple_print then
+         if !debug_simple_print then
             eprintf "Simple_print.format_term: destructed term%t" eflush;
          format_pushm buf 4;
          format_quoted_string buf (string_of_opname name);
@@ -414,6 +421,9 @@ let prerr_simple_address = print_simple_address_fp stderr
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/24 02:42:56  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.5  1998/04/09 18:26:00  jyh
  * Working compiler once again.
  *

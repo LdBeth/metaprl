@@ -5,7 +5,18 @@
  * locations with the comments.
  *)
 
+open Printf
+open Debug
+
 open MLast
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (*
  * Iteration functions.
@@ -343,6 +354,9 @@ and fold_sslt iter x (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 02:42:18  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1998/04/06 19:50:40  jyh
  * Fixed match error in mLast_util.ml
  *

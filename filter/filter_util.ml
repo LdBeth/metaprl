@@ -4,6 +4,7 @@
  *)
 
 open Printf
+open Debug
 open Opname
 open Term
 open Term_util
@@ -11,6 +12,14 @@ open Ml_file
 open Simple_print
 open Filter_ast
 open Filter_type
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (************************************************************************
  * UTILS								*
@@ -121,6 +130,9 @@ let output_path oport =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 02:42:14  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1998/02/21 20:58:01  jyh
  * Two phase parse/extract.
  *

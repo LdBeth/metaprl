@@ -13,7 +13,6 @@ open Term
 open File_base_type
 open File_type_base
 
-open Filter_debug
 open Filter_type
 open Filter_util
 open Filter_ocaml
@@ -23,6 +22,14 @@ open Filter_summary
 open Filter_summary_type
 open Filter_summary_io
 open Filter_cache_fun
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading xyz%t" eflush
+
 
 (************************************************************************
  * IO MODULES                                                           *
@@ -464,6 +471,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.15  1998/04/24 02:41:46  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.14  1998/04/17 01:30:57  jyh
  * Editor is almost constructed.
  *

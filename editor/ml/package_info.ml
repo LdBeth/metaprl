@@ -16,12 +16,18 @@ open Filter_summary_type
 open Filter_summary
 open Filter_summary_util
 open Filter_cache
-open Filter_debug
 open Filter_util
 open Filter_prog
 open Infix
 
 open Package_type
+
+(*
+ * Show that the file is loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Package_info%t" eflush
 
 module Package : PackageSig =
 struct
@@ -268,10 +274,10 @@ struct
     *)
    let inline_hook pack root_path cache (path, info) (paths, resources) =
       (* Include all the resources *)
-      if debug_resource then
+      if !debug_resource then
          eprintf "Inline_hook: %s, %s%t" (string_of_path root_path) (string_of_path path) eflush;
       let add_resource rsrc =
-         if debug_resource then
+         if !debug_resource then
             eprintf "Adding resource: %s.%s%t" (string_of_path path) rsrc.resource_name eflush;
          StrFilterCache.add_resource cache path rsrc
       in
@@ -382,6 +388,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/24 02:41:26  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.7  1998/04/23 20:03:41  jyh
  * Initial rebuilt editor.
  *

@@ -3,8 +3,18 @@
  *
  *)
 
+open Printf
+open Debug
+
 open Refine
 open Dform_print
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Theory%t" eflush
 
 (*
  * Info is saved in this format.
@@ -33,6 +43,9 @@ let get_theories () = !base
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 02:43:08  jyh
+ * Added more extensive debugging capabilities.
+ *
  * Revision 1.2  1998/02/23 14:46:42  jyh
  * First implementation of binary file compilation.
  *
