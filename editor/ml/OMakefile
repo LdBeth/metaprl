@@ -232,25 +232,25 @@ OCamlGeneratedFiles(mp_version.ml)
 #
 # Defaults
 #
-.PHONY: test-metaprl-startup
-.DEFAULT: test-metaprl-startup
+.DEFAULT: .test-metaprl-startup
 if $(NATIVE_ENABLED)
-   test-metaprl-startup: $(MP).opt
+   .test-metaprl-startup: $(MP).opt
 
 if $(BYTE_ENABLED)
-   test-metaprl-startup: $(MP).top $(MP).run
+   .test-metaprl-startup: $(MP).top $(MP).run
 
 section
    EXT=$(if $(NATIVE_ENABLED), opt, top)
    EXT=$(if $(equal $(OSTYPE), Win32), $(EXT).bat, $(EXT))
-   test-metaprl-startup: $(MP)$(EXT) $(MP)config $(THEORIES_CONF) $(MLDEBUG_CONF)
+   .test-metaprl-startup: $(MP)$(EXT) $(MP)config $(THEORIES_CONF) $(MLDEBUG_CONF)
       echo | ./$(MP)$(EXT) -batch
+      touch $@
 
 #
 # Clean up
 #
 clean:
-    $(CLEAN) $(MP).top mp_version.ml make_mp_version$(EXE) native_profile.txt
+    $(CLEAN) $(MP).top mp_version.ml make_mp_version$(EXE) native_profile.txt .test-metaprl-startup
 
 #
 # All defaults
