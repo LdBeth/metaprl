@@ -901,7 +901,7 @@ struct
              Context(name,args)
              (* XXX HACK!!! OPT sl_period is here to have a way to tell camlp4 that opname *
               * is not a hyp variabe and it should not expect a : after it                 *)
-          | bvar = OPT [ name = word_or_string; sl_colon -> name]; OPT sl_period; t = aterm ->
+          | bvar = OPT [ name = LIDENT; sl_colon -> name]; OPT sl_period; t = aterm ->
              match bvar with
                 Some v ->
                    HypBinding (v, t.aterm)      
