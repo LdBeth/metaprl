@@ -25,6 +25,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Yegor Bryukhov
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Printf
 
@@ -215,26 +216,15 @@ ENDIF
       in
          create 17 17 name fail weaken compare make
 
-   (*
-    * Get the value from the table.
-    *)
-   let guard_get ar wd =
-      match Weak.get ar wd with
-         Some item -> item
-       | None -> raise Not_found
-
-   (*
-    * Get the value back from the table.
-    *)
-   let subscribe info i =
+   let make_descriptor info i item =
 IFDEF VERBOSE_EXN THEN
       { descriptor = i;
         desc_name = info.name;
-        anchor = guard_get info.image_array i
+        anchor = item
       }
 ELSE
       { descriptor = i;
-        anchor = guard_get info.image_array i
+        anchor = item
       }
 ENDIF
 
@@ -257,7 +247,9 @@ ENDIF
    let set info wd item =
       match Weak.get info.image_array wd with
          Some _ -> invalid_arg "WeakMemo.set: entry is not empty"
-       | None -> Weak.set info.image_array wd (Some item)
+       | None ->
+            Weak.set info.image_array wd (Some item);
+            make_descriptor info wd item
 
    (*
     * Find a value in the table.
@@ -273,21 +265,11 @@ ENDIF
                   match Weak.get info.image_array weak_index with
                      Some item ->
                         (* It has not been collected, so return the value *)
-IFDEF VERBOSE_EXN THEN
-                        { descriptor = weak_index;
-                          desc_name = info.name;
-                          anchor = item
-                        }
-ELSE
-                        { descriptor = weak_index;
-                          anchor = item
-                        }
-ENDIF
+                        make_descriptor info weak_index item
                    | None ->
                         (* It has been collected, so create a new value *)
                         let item = info.make_result param header in
-                           set info weak_index item;
-                           subscribe info weak_index
+                           set info weak_index item
                end
           | None ->
                (* This is a new call to the function *)
@@ -303,8 +285,7 @@ ENDIF
                            Some (_, weak_index) ->
                               (* Found a free entry in the hash table *)
                               Hash.insert info.index_table hash weak_header weak_index;
-                              set info weak_index result;
-                              subscribe info weak_index
+                              set info weak_index result
                          | None ->
                               (*
                                * The weak array is totally full.
@@ -316,15 +297,12 @@ ENDIF
                                  Hash.insert info.index_table hash weak_header length;
                                  info.image_array <- expand_weak_array info.image_array info.id ((length * 2) + 1);
                                  info.count <- succ length;
-                                 set info length result;
-                                 subscribe info length
+                                 set info length result
                      end
                   else
                      (* Store the entry in the next free position in the array *)
                      let count = info.count in
                      let count' = succ count in
-                        Hash.insert info.index_table hash weak_header count;
-                        set info count result;
                         info.count <- count';
                         if count' = (Weak.length info.image_array) then
                            begin
@@ -332,7 +310,8 @@ ENDIF
                               Hash.gc_start table;
                               info.gc_on <- true
                            end;
-                        subscribe info count
+                        Hash.insert info.index_table hash weak_header count;
+                        set info count result
 
    (*
     * Lookup a value that was previously stored in the table.
@@ -348,8 +327,11 @@ ENDIF
          match Hash.seek table hash weak_header with
             None ->
                raise Not_found
-          | Some weak_index ->
-               subscribe info weak_index
+          | Some weak_index -> begin
+               match Weak.get info.image_array weak_index with
+                  Some item -> make_descriptor info weak_index item
+                | None -> raise Not_found
+            end
 
    (*
     * Get the value associated with a descriptor.
