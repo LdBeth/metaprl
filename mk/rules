@@ -35,11 +35,11 @@ else
 .PHONY: threads
 $(THREADSLIB) $(OPTTHREADSLIB): threads
 threads:
-	@echo "!!! "
-	@echo "!!! The value of your OSTYPE enviroment variable, \"$(OSTYPE)\", is unknown."
-	@echo "!!! I do not know how to link POSIX threads on your OS"
-	@echo "!!! If you know how to do it, add it to mk/rules file"
-	@echo "!!! "
+	@echo "!!! " > /dev/stderr
+	@echo "!!! The value of your OSTYPE enviroment variable, \"$(OSTYPE)\", is unknown." > /dev/stderr
+	@echo "!!! I do not know how to link POSIX threads on your OS" > /dev/stderr
+	@echo "!!! If you know how to do it, add it to mk/rules file" > /dev/stderr
+	@echo "!!! " > /dev/stderr
 	@exit 1
 endif
 endif
