@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
@@ -156,21 +156,16 @@ struct
          Number n -> format_num buf n; format_string buf ":n"
        | String s -> format_quoted_string buf s; format_string buf ":s"
        | Token t -> format_quoted_string buf t; format_string buf ":t"
-       | Level l -> format_level_exp buf l; format_string buf ":l"
        | Var v -> format_quoted_string buf v; format_string buf ":v"
-       | MNumber v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":n"
-       | MString v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":s"
-       | MToken v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":t"
-       | MLevel v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":l"
-       | MVar v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":v"
-       | MSum (a, b) -> format_param buf a; format_string buf " + "; format_param buf b; format_string buf ":n"
-       | MDiff (a, b) -> format_param buf a; format_string buf " - "; format_param buf b; format_string buf ":n"
-       | MProduct (a, b) -> format_param buf a; format_string buf " * "; format_param buf b; format_string buf ":n"
-       | MQuotient(a, b) -> format_param buf a; format_string buf " / "; format_param buf b; format_string buf ":n"
-       | MRem (a, b) -> format_param buf a; format_string buf " % "; format_param buf b; format_string buf ":n"
-       | MLessThan (a, b) -> format_param buf a; format_string buf " < "; format_param buf b; format_string buf ":n"
-       | MEqual (a, b) -> format_param buf a; format_string buf " = "; format_param buf b; format_string buf ":n"
-       | MNotEqual (a, b) -> format_param buf a; format_string buf " <> "; format_param buf b; format_string buf ":n"
+       | MNumber v -> format_quoted_string buf v; format_string buf ":n"
+       | MString v -> format_quoted_string buf v; format_string buf ":s"
+       | MToken v -> format_quoted_string buf v; format_string buf ":t"
+       | MLevel l -> format_level_exp buf l; format_string buf ":l"
+       | BackwardsCompatibleLevel l ->
+            format_quoted_string buf "BackwardsCompatibleLevel:";
+            format_level_exp buf l;
+            format_string buf ":l"
+       | MVar v -> format_quoted_string buf v; format_string buf ":v"
        | ObId a -> format_string buf "<object-id>"
        | ParamList l ->
             let rec format = function

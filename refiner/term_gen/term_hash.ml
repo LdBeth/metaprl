@@ -10,21 +10,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Yegor Bryukhov, Moscow State University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
@@ -35,9 +35,9 @@ open Weak_memo
 open Opname
 
 module TermHash
-   (ToTerm : Termmod_sig.TermModuleSig) 
+   (ToTerm : Termmod_sig.TermModuleSig)
 
-   (TermHeader : Term_header_sig.TermHeaderSig 
+   (TermHeader : Term_header_sig.TermHeaderSig
       with type term = ToTerm.TermType.term
       with type param = ToTerm.TermType.param
       with type meta_term = ToTerm.TermType.meta_term
@@ -94,7 +94,7 @@ struct
     ************************************************************************)
 
    let constr_level_var {TermHeader.le_var=var; TermHeader.le_offset=offset} =
-      TTerm.make_level_var 
+      TTerm.make_level_var
       { TType.le_var = var;
         TType.le_offset = offset
       }
@@ -107,29 +107,20 @@ struct
 
    let p_constr_param info param_header =
      TTerm.make_param
-     (
+     begin
       match param_header with
          TermHeader.Number n1 ->            TType.Number n1
        | TermHeader.String s1 ->            TType.String s1
        | TermHeader.Token s1 ->             TType.Token s1
-       | TermHeader.Level l1 ->             TType.Level (constr_level l1)
        | TermHeader.Var v1 ->               TType.Var v1
        | TermHeader.MNumber s1 ->           TType.MNumber s1
        | TermHeader.MString s1 ->           TType.MString s1
        | TermHeader.MToken s1 ->            TType.MToken s1
-       | TermHeader.MLevel s1 ->            TType.MLevel s1
+       | TermHeader.MLevel l1 ->            TType.MLevel (constr_level l1)
        | TermHeader.MVar s1 ->              TType.MVar s1
        | TermHeader.ObId oid1 ->            TType.ObId (List.map (TheWeakMemo.retrieve info.param_hash info) oid1)
        | TermHeader.ParamList p1 ->         TType.ParamList (List.map (TheWeakMemo.retrieve info.param_hash info) p1)
-       | TermHeader.MSum (p11, p21) ->      TType.MSum (TheWeakMemo.retrieve info.param_hash info p11, TheWeakMemo.retrieve info.param_hash info p21)
-       | TermHeader.MDiff (p11, p21) ->     TType.MDiff (TheWeakMemo.retrieve info.param_hash info p11, TheWeakMemo.retrieve info.param_hash info p21)
-       | TermHeader.MProduct (p11, p21) ->  TType.MProduct (TheWeakMemo.retrieve info.param_hash info p11, TheWeakMemo.retrieve info.param_hash info p21)
-       | TermHeader.MQuotient (p11, p21) -> TType.MQuotient (TheWeakMemo.retrieve info.param_hash info p11, TheWeakMemo.retrieve info.param_hash info p21)
-       | TermHeader.MRem (p11, p21) ->      TType.MRem (TheWeakMemo.retrieve info.param_hash info p11, TheWeakMemo.retrieve info.param_hash info p21)
-       | TermHeader.MLessThan (p11, p21) -> TType.MLessThan (TheWeakMemo.retrieve info.param_hash info p11, TheWeakMemo.retrieve info.param_hash info p21)
-       | TermHeader.MEqual (p11, p21) ->    TType.MEqual (TheWeakMemo.retrieve info.param_hash info p11, TheWeakMemo.retrieve info.param_hash info p21)
-       | TermHeader.MNotEqual (p11, p21) -> TType.MNotEqual (TheWeakMemo.retrieve info.param_hash info p11, TheWeakMemo.retrieve info.param_hash info p21)
-     )
+     end
 
    let p_constr_operator info (opname_index, param_indices) =
       TTerm.make_op
@@ -209,7 +200,7 @@ struct
    let lookup_meta mth = p_lookup_meta global_hash mth
    let unsafe_lookup_meta mth = p_unsafe_lookup_meta global_hash mth
    let retrieve_meta mti = p_retrieve_meta global_hash mti
-end   
+end
 
 (*
  * -*-

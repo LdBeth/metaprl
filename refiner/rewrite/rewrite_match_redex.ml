@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -68,6 +68,8 @@ module MakeRewriteMatchRedex
     with type param' = TermType.param'
     with type level_exp = TermType.level_exp
     with type level_exp' = TermType.level_exp'
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp_var' = TermType.level_exp_var'
     with type object_id = TermType.object_id
     with type seq_hyps = TermType.seq_hyps
     with type seq_goals = TermType.seq_goals
@@ -168,6 +170,39 @@ struct
    (*
     * Matching functions.
     *)
+   let match_redex_level stack l' l p =
+      let { rw_le_const = c'; rw_le_vars = vars' } = l' in
+      let { le_const = c; le_vars = vars } = dest_level l in
+      let rec collect_var o' = function
+         { le_var = v; le_offset = o } as h :: t ->
+            let found, notfound = collect_var o' t in
+               if o >= o' then
+                  mk_level_var v (o - o') :: found, notfound
+               else
+                  found, h :: notfound
+       | [] ->
+            [], []
+      in
+      let rec collect c notfound = function
+         { rw_le_var = v'; rw_le_offset = o' } :: t ->
+            let found, notfound = collect_var o' notfound in
+            let l = mk_level (max (c - o') 0) found in
+               stack.(v') <- StackLevel l;
+               collect c notfound t
+       | [] ->
+            if notfound <> [] then
+               ref_raise(RefineError ("Rewrite_match_redex.match_redex_level", RewriteBadMatch (ParamMatch p)))
+      in
+      let c =
+         if c <= c' then
+            0
+         else if vars' = [] then
+            ref_raise(RefineError ("Rewrite_match_redex.match_redex_level", RewriteBadMatch (ParamMatch p)))
+         else
+            c
+      in
+         collect c (List.map dest_level_var vars) vars'
+
    let match_redex_params stack p' p =
       match p', dest_param p with
            (* Literal matches *)
@@ -179,9 +214,6 @@ struct
                ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
        | RWToken t', Token t ->
             if not (t' = t) then
-               ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
-       | RWLevel i', Level i ->
-            if not (i' = i) then
                ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
        | RWVar v', Var v ->
             if not (v' = v) then
@@ -216,13 +248,20 @@ struct
                   i (Array.length stack) v eflush;
 #endif
             stack.(i) <- StackString v
-       | RWMLevel i, Level l ->
+       | RWMLevel1 i, MLevel l ->
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
-               eprintf "Rewrite.match_redex_params.RWMLevel: stack(%d)/%d%t" (**)
+               eprintf "Rewrite.match_redex_params.RWMLevel1: stack(%d)/%d%t" (**)
                   i (Array.length stack) eflush;
 #endif
             stack.(i) <- StackLevel l
+       | RWMLevel2 l', MLevel l ->
+#ifdef VERBOSE_EXN
+            if !debug_rewrite then
+               eprintf "Rewrite.match_redex_params.RWMLevel2: stack/%d%t" (**)
+                  (Array.length stack) eflush;
+#endif
+            match_redex_level stack l' l p
        | RWMNumber i, MNumber s ->
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
@@ -251,13 +290,6 @@ struct
                   i (Array.length stack) v eflush;
 #endif
             stack.(i) <- StackMString v
-       | RWMLevel i, MLevel s ->
-#ifdef VERBOSE_EXN
-            if !debug_rewrite then
-               eprintf "Rewrite.match_redex_params.RWMLevel: stack(%d)/%d%t" (**)
-                  i (Array.length stack) eflush;
-#endif
-            stack.(i) <- StackMString s
 
        | _ -> ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
 

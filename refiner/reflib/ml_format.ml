@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
@@ -261,59 +261,17 @@ struct
             Number n -> print_num_param (newv ()) number_expr n
           | String s -> print_string_param (newv ()) string_expr s
           | Token t -> print_string_param (newv ()) token_expr t
-          | Level l ->
-               let v1 = print_level_exp ofile l in
-                  print_le_param (newv ()) level_expr v1
           | Var v -> print_string_param (newv ()) var_expr v
           | MNumber v -> print_string_param (newv ()) mnumber_expr v
           | MString v -> print_string_param (newv ()) mstring_expr v
           | MToken v -> print_string_param (newv ()) mtoken_expr v
-          | MLevel v -> print_string_param (newv ()) mlevel_expr v
+          | MLevel l ->
+               let v1 = print_level_exp ofile l in
+                  print_le_param (newv ()) level_expr v1
+          | BackwardsCompatibleLevel l ->
+               let v1 = print_level_exp ofile l in
+                  print_le_param (newv ()) level_expr v1
           | MVar v -> print_string_param (newv ()) mvar_expr v
-          | MSum (a, b) ->
-               let v1 = print_param ofile a in
-               let v2 = print_param ofile b in
-               let v = newv () in
-                  print_pair_param v msum_expr v1 v2
-          | MDiff (a, b) ->
-               let v1 = print_param ofile a in
-               let v2 = print_param ofile b in
-               let v = newv () in
-                  print_pair_param v mdiff_expr v1 v2
-          | MProduct (a, b) ->
-               let v1 = print_param ofile a in
-               let v2 = print_param ofile b in
-               let v = newv () in
-                  print_pair_param v mproduct_expr v1 v2
-          | MQuotient (a, b) ->
-               let v1 = print_param ofile a in
-               let v2 = print_param ofile b in
-               let v = newv () in
-                  print_pair_param v mquotient_expr v1 v2
-          | MRem (a, b) ->
-               let v1 = print_param ofile a in
-               let v2 = print_param ofile b in
-               let v = newv () in
-                  print_pair_param v mrem_expr v1 v2
-
-          | MLessThan (a, b) ->
-               let v1 = print_param ofile a in
-               let v2 = print_param ofile b in
-               let v = newv () in
-                  print_pair_param v mless_than_expr v1 v2
-
-          | MEqual (a, b) ->
-               let v1 = print_param ofile a in
-               let v2 = print_param ofile b in
-               let v = newv () in
-                  print_pair_param v mequal_expr v1 v2
-
-          | MNotEqual (a, b) ->
-               let v1 = print_param ofile a in
-               let v2 = print_param ofile b in
-               let v = newv () in
-                  print_pair_param v mnot_equal_expr v1 v2
-
           | ObId _ ->
                (* We don't allow these fancy terms *)
                raise (Failure "Ml_format.print_param: can't do term with ObId parameter")

@@ -1,0 +1,11 @@
+-f *#*
+-f *~
+-f *.o
+-f *.a
+-f *.pp*
+-f *.cm*
+-f *.run
+-f *.top
+-f *.opt
+-f */lib
+-f */doc

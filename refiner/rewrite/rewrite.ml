@@ -80,12 +80,15 @@ module Rewrite (**)
     with type param' = TermType.param'
     with type level_exp = TermType.level_exp
     with type level_exp' = TermType.level_exp'
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp_var' = TermType.level_exp_var'
     with type object_id = TermType.object_id
     with type seq_hyps = TermType.seq_hyps
     with type seq_goals = TermType.seq_goals
     with type hypothesis = TermType.hypothesis)
    (TermMan : TermManSig
     with type term = TermType.term
+    with type level_exp = TermType.level_exp
     with type esequent = TermType.esequent)
    (TermAddr : TermAddrSig
     with type term = TermType.term)
@@ -127,7 +130,7 @@ struct
       MakeRewriteBuildContractum (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (**)
          (RefineError) (RewriteTypes) (RewriteUtil) (RewriteDebug)
    module RewriteMeta =
-      MakeRewriteMeta (TermType) (Term) (RefineError) (RewriteTypes)
+      MakeRewriteMeta (TermType) (Term) (TermMan) (RefineError) (RewriteTypes)
 
    open RewriteTypes
    open RewriteUtil

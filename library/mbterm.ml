@@ -7,21 +7,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
@@ -77,7 +77,12 @@ let rec mbparameter_of_param param =
     Number p -> mb_number p
   | String p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_string p) else mb_integerq v mbs_StringIndex) else mb_string p
   | Token p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_stringq p mbs_Token) else mb_integerq v mbs_TokenIndex) else mb_stringq p mbs_Token
-  | Level p ->
+  | Var p -> mb_stringq p mbs_Variable
+  | ObId p -> mbnode mbs_ObjectId (List.map mbparameter_of_param (dest_object_id p))
+  | MNumber p -> mb_stringq p mbs_MLongInteger
+  | MString p -> mb_stringq p mbs_MString
+  | MToken p -> mb_stringq p mbs_MToken
+  | MLevel p ->
       let aux = function
 	  {le_const = i; le_vars = vars } ->
 	    (let rec loop l nodes=
@@ -89,15 +94,10 @@ let rec mbparameter_of_param param =
 	      in aux2 (dest_level_var hd))
 	    in loop vars [])
       in aux (dest_level p)
-  | Var p -> mb_stringq p mbs_Variable
-  | ObId p -> mbnode mbs_ObjectId (List.map mbparameter_of_param (dest_object_id p))
-  | MNumber p -> mb_stringq p mbs_MLongInteger
-  | MString p -> mb_stringq p mbs_MString
-  | MToken p -> mb_stringq p mbs_MToken
-  | MLevel p -> mb_stringq p mbs_MLevel
+  | BackwardsCompatibleLevel _ ->
+       raise (Invalid_argument "Mbterm.mbparameter.BackwardsCompatibleLevel")
   | MVar p -> mb_stringq p mbs_MVariable
   | ParamList p -> mbnode mbs_ParamList (List.map mbparameter_of_param p)
-  | _ -> failwith "unauthorized parameter type"
 
 let mbbinding_of_binding binding = mb_stringq binding mbs_Variable (* term in the future?*)
 
@@ -168,7 +168,7 @@ let rec param_of_mbparameter mbparameter =
       |	Mbint b -> failwith "subterm should be a node"
     in make_param (ObId (make_object_id (loop (mbnode_nSubtermsq mbparameter) [])))
 
-  else if bequal b mbs_Level then
+  else if bequal b mbs_Level or bequal b mbs_MLevel then
     let nsubterms = (mbnode_nSubtermsq mbparameter) in
     match (mbnode_subtermq mbparameter 1) with
       Mnode n1 -> let constant = integer_value n1 and
@@ -183,14 +183,13 @@ let rec param_of_mbparameter mbparameter =
 
 	    in loop nsubterms []
 
-      	in make_param (Level (mk_level constant le_vars))
+      	in make_param (MLevel (mk_level constant le_vars))
       | Mbint b -> failwith "subterm should be a node"
 
   else if bequal b mbs_MString then make_param (MString (string_value mbparameter))
   else if bequal b mbs_MVariable then make_param (MVar (string_value mbparameter))
   else if bequal b mbs_MToken then make_param (MToken (string_value mbparameter))
   else if bequal b mbs_MLongInteger then make_param (MNumber (string_value mbparameter))
-  else if bequal b mbs_MLevel then make_param (MLevel (string_value mbparameter))
   else let ((x, y) as fg) = dest_int32 b in failwith "param_of_mbparameter1"(* ["mbparameter_of_parameter1"; "not"] [] [(inatural_term x); (inatural_term y)]*)
 
 
@@ -298,36 +297,37 @@ let rec term_of_mbterm mbterm =
 (* printing functions *)
 
 let rec print_param param =
-  match (dest_param param) with
-    Number p -> (print_string (string_of_num p)  ; print_string ":n ")
-  | String p -> (print_string p ; print_string ":s ")
-  | Token p -> (print_string p ; print_string ":t ")
-  | Level p -> let rec loop l =
-      (match l with
-	[] -> print_string "]}"
-      | hd::tl -> let
-	    { le_var = v; le_offset = i2 } = (dest_level_var hd) in
- 	print_string "(";
-	print_string v; print_string ", ";print_int i2;
-	print_string ")";
-	loop tl)
-  in let aux = function
-      {le_const = i; le_vars = vars } ->
-	(print_string "{"; print_int i ;print_string " [";
-	 loop vars)
+   match (dest_param param) with
+      Number p -> (print_string (string_of_num p)  ; print_string ":n ")
+    | String p -> (print_string p ; print_string ":s ")
+    | Token p -> (print_string p ; print_string ":t ")
+    | Var p -> (print_string p ; print_string ":v ")
+    | ObId p -> (print_string "["; List.iter print_param (dest_object_id p); print_string "]";
+                 print_string ":obid")
+    | MNumber p -> (print_string p; print_string ":mn ")
+    | MString p -> (print_string p; print_string ":ms ")
+    | MToken p -> (print_string p; print_string ":mt ")
+    | MLevel p ->
+         let rec loop l =
+            (match l with
+                [] -> print_string "]}"
+              | hd::tl -> let
+                             { le_var = v; le_offset = i2 } = (dest_level_var hd) in
+                             print_string "(";
+                             print_string v; print_string ", ";print_int i2;
+                             print_string ")";
+                             loop tl)
+         in let aux = function
+            {le_const = i; le_vars = vars } ->
+               (print_string "{"; print_int i ;print_string " [";
+                loop vars)
 
-  in aux (dest_level p)
-  | Var p -> (print_string p ; print_string ":v ")
-  | ObId p -> (print_string "["; List.iter print_param (dest_object_id p); print_string "]";
-	       print_string ":obid")
-  | MNumber p -> (print_string p; print_string ":mn ")
-  | MString p -> (print_string p; print_string ":ms ")
-  | MToken p -> (print_string p; print_string ":mt ")
-  | MLevel p -> (print_string p; print_string ":ml ")
-  | MVar p ->  (print_string p; print_string ":mv ")
-  | ParamList p -> (print_string "["; List.iter print_param p; print_string "]";
-		   print_string ":pl ")
-  | _ -> failwith "unauthorized parameter type"
+         in aux (dest_level p)
+    | BackwardsCompatibleLevel _ ->
+         raise (Invalid_argument "Mbterm.mbparameter.BackwardsCompatibleLevel")
+    | MVar p ->  (print_string p; print_string ":mv ")
+    | ParamList p -> (print_string "["; List.iter print_param p; print_string "]";
+                      print_string ":pl ")
 
 let rec print_term term =
   let { term_op = operator; term_terms = bterms} = Lib_term.dest_term term in

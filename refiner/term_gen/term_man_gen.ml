@@ -123,28 +123,39 @@ struct
     * Build a level expression out of the max of two level
     * expressions.
     *)
-   let max_level_exp = fun
+   let max_level_exp
       ({ le_const = c1; le_vars = l1 } : level_exp)
-      ({ le_const = c2; le_vars = l2 } : level_exp) ->
+      ({ le_const = c2; le_vars = l2 } : level_exp)
+      o3 =
          (* Max of two expressions; sort the variables *)
          let rec join = function
-            ({ le_var = v1; le_offset = o1 }::t1 as l1),
-            ({ le_var = v2; le_offset = o2 }::t2 as l2) ->
+            ({ le_var = v1; le_offset = o1 } as h1::t1 as l1),
+            ({ le_var = v2; le_offset = o2 } as h2::t2 as l2) ->
                if v1 = v2 then
-                  { le_var = v1; le_offset = max o1 o2 }::(join (t1, t2))
+                  { le_var = v1; le_offset = max o1 (o2 + o3) } :: join (t1, t2)
                else if v1 < v2 then
-                  { le_var = v1; le_offset = o1 }::(join (t1, l2))
+                  h1 :: join (t1, l2)
+               else if o3 = 0 then
+                  h2 :: join (l1, t2)
                else
-                  { le_var = v2; le_offset = o2 }::(join (l1, t2))
-          | [], l2 -> l2
-          | l1, [] -> l1
+                  { le_var = v2; le_offset = o2 + o3 } :: join (l1, t2)
+          | [], l2 ->
+               if o3 = 0 then
+                  l2
+               else
+                  let add_off { le_var = v2; le_offset = o2 } =
+                     { le_var = v2; le_offset = o2 + o3 }
+                  in
+                     List.map add_off l2
+          | l1, [] ->
+               l1
          in
             { le_const = max c1 c2; le_vars = join (l1, l2) }
 
    (*
     * See if the first level is contained in the second.
     *)
-   let level_cumulativity = fun
+   let level_le = fun
       { le_const = const1; le_vars = vars1 }
       { le_const = const2; le_vars = vars2 } ->
          let rec caux = function
@@ -164,6 +175,31 @@ struct
          in
             if const1 <= const2 then
                caux (vars1, vars2)
+            else
+               false
+
+   let level_lt = fun
+      { le_const = const1; le_vars = vars1 }
+      { le_const = const2; le_vars = vars2 } ->
+         let rec caux lt_flag = function
+            ({ le_var = v1; le_offset = o1 }::t1 as l1),
+            { le_var = v2; le_offset = o2 }::t2 ->
+               if v1 = v2 then
+                  if o1 <= o2 then
+                     caux (lt_flag || o1 < o2) (t1, t2)
+                  else
+                     false
+               else if v1 < v2 then
+                  caux true (l1, t2)
+               else
+                  false
+          | [], _ ->
+               true
+          | _, [] ->
+               false
+         in
+            if const1 <= const2 then
+               caux (const1 < const2) (vars1, vars2)
             else
                false
 

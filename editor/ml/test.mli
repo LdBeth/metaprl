@@ -32,7 +32,7 @@
 
 include Itt_theory
 
-ml_rw test_rw : add{natural_number[@i:n]; natural_number[@j:n]}
+ml_rw test_rw : add{number[@i:n]; number[@j:n]}
 
 ml_rule cumulativity 'H :
    sequent ['ext] { 'H >- cumulativity[@j:l, @i:l] }

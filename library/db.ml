@@ -7,21 +7,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
@@ -184,6 +184,7 @@ let rec scan_item stype scanner =
   | CParameter -> Parameter (scan_parameter scanner)
   | COperator -> Operator (scan_operator scanner)
   | CTerm -> Term (scan_term scanner)
+  | CNumeral -> raise (Invalid_argument "Db.scan_item: CNumeral case is not implemented")
 
 and scan_numeral_parameter scanner =
  let l = scan_cur_byte scanner.scanner in
@@ -207,13 +208,13 @@ and scan_numeral_parameter scanner =
       | _ -> error ["read_term"; "numeral_parameter"; "MetaPRL"; ptype] [] []
 
 
-and scan_numeral_parameter_old scanner = 
+and scan_numeral_parameter_old scanner =
  let l = scan_cur_byte scanner.scanner in
  let mp256 = num_of_int 256 in
 
-  let rec aux i acc = 
+  let rec aux i acc =
    scan_next scanner.scanner;
-   if i = 0 
+   if i = 0
       then acc
       else aux (i - 1) (add_num (mult_num acc mp256) (num_of_int (scan_cur_byte scanner.scanner)))
    in
@@ -458,17 +459,17 @@ let scan_level_expression scanner =
   let rec scan_atom s =
      let scan_expression_q () = scan_expression s in
      if (scan_whitespace s; scan_at_byte_p s ilsquare) then
-      let _ = scan_char_delimited_list s scan_expression_q '[' ']' '|' 
+      let _ = scan_char_delimited_list s scan_expression_q '[' ']' '|'
       in scan_whitespace s
     else if (scan_whitespace s; scan_at_digit_p s) then
-      (le := max_level_exp (mk_const_level_exp (Mp_num.int_of_num (scan_num s))) !le; ())
+      (le := max_level_exp (mk_const_level_exp (Mp_num.int_of_num (scan_num s))) !le 0; ())
     else (let v = scan_string s in
     scan_whitespace s;
-    le := max_level_exp (mk_var_level_exp v) !le); s
+    le := max_level_exp (mk_var_level_exp v) !le 0); s
    and scan_expression s2 =
     let _ = scan_numbers (scan_atom s2)
     in s2
-  in 
+  in
     let _ = scan_expression scanner
     in !le
 
@@ -487,11 +488,11 @@ let mk_real_param_from_strings stp value ptype =
 			  else error ["real_parameter_from_string"; value][][]
 		      ])
   | "v" -> (Var value)
-  | "oid" -> let term = string_to_trivial_term value stp in
-    (ObId (stamp_to_object_id (term_to_stamp term)))
   | "l" -> let level =
       scan_level_expression (make_le_scanner (Stream.of_string value)) in
-    (ParamList [(make_param (Token "nuprl5_level_expression")); (make_param (Level level)); (make_param (String value))])
+    (ParamList [(make_param (Token "nuprl5_level_expression")); (make_param (MLevel level)); (make_param (String value))])
+  | "oid" -> let term = string_to_trivial_term value stp in
+    (ObId (stamp_to_object_id (term_to_stamp term)))
   | t -> failwith "unknown special op-param"
 
 let mk_meta_param_from_strings value ptype =
@@ -501,7 +502,9 @@ let mk_meta_param_from_strings value ptype =
   | "q" -> (ParamList [(make_param (Token "quote")); (make_param (Token value))])
   | "b" -> (ParamList [(make_param (Token "bool")); (make_param (Number (Mp_num.num_of_string value)))])
   | "v" -> (MVar value)
-  | "l" -> (MLevel value)
+  | "l" -> let level =
+      scan_level_expression (make_le_scanner (Stream.of_string value)) in
+    (ParamList [(make_param (Token "nuprl5_level_expression")); (make_param (MLevel level)); (make_param (String value))])
   |  t -> failwith "unknown special meta op-param"
 
 let extract_binding3 pl =

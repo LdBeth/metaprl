@@ -15,21 +15,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -70,6 +70,8 @@ module MakeRewriteCompileContractum
     with type param' = TermType.param'
     with type level_exp = TermType.level_exp
     with type level_exp' = TermType.level_exp'
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp_var' = TermType.level_exp_var'
     with type object_id = TermType.object_id
     with type seq_hyps = TermType.seq_hyps
     with type seq_goals = TermType.seq_goals
@@ -124,6 +126,8 @@ struct
             enames, bname :: bnames
     | [] ->
          enames, []
+
+   let param_error = "Rewrite_compile_contractum.compile_so_contractum_param"
 
    let rec compile_so_contractum_term
           (names : string array)
@@ -210,7 +214,7 @@ struct
                RWMNumber (array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_param", RewriteFreeParamVar v))
+               ref_raise(RefineError (param_error, RewriteFreeParamVar v))
 
        | MString v ->
             if array_rstack_p_mem v stack then
@@ -218,7 +222,7 @@ struct
                RWMString (array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_param", RewriteFreeParamVar v))
+               ref_raise(RefineError (param_error, RewriteFreeParamVar v))
 
        | MToken v ->
             if array_rstack_p_mem v stack then
@@ -226,15 +230,27 @@ struct
                RWMToken (array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_param", RewriteFreeParamVar v))
+               ref_raise(RefineError (param_error, RewriteFreeParamVar v))
 
-       | MLevel v ->
-            if array_rstack_p_mem v stack then
-               (* New param *)
-               RWMLevel (array_rstack_p_index v stack)
-            else
-               (* Free param *)
-               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_param", RewriteFreeParamVar v))
+       | MLevel l ->
+            let { le_const = c; le_vars = vars } = dest_level l in
+            let vars = List.map dest_level_var vars in
+               (match c, vars with
+                  0, [{ le_var = v; le_offset = 0 }] ->
+                      if array_rstack_p_mem v stack then
+                         RWMLevel1 (array_rstack_p_index v stack)
+                      else
+                         ref_raise(RefineError (param_error, RewriteFreeParamVar v))
+                 | _ ->
+                      let collect { le_var = v; le_offset = off } =
+                         if array_rstack_p_mem v stack then
+                            { rw_le_var = array_rstack_p_index v stack; rw_le_offset = off }
+                         else
+                            ref_raise(RefineError (param_error, RewriteFreeParamVar v))
+                      in
+                         RWMLevel2 { rw_le_const = c;
+                                     rw_le_vars = List.map collect vars
+                         })
 
        | MVar v ->
             if array_rstack_p_mem v stack then
@@ -242,36 +258,21 @@ struct
                RWMVar(array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_param", RewriteFreeParamVar v))
+               ref_raise(RefineError (param_error, RewriteFreeParamVar v))
 
        | Number i -> RWNumber i
        | String s -> RWString s
        | Token t -> RWToken t
-       | Level i -> RWLevel i
        | Var v -> RWVar v
-
-       | MSum (a, b) -> RWSum (compile_so_contractum_param stack a,
-                               compile_so_contractum_param stack b)
-       | MDiff (a, b) -> RWDiff (compile_so_contractum_param stack a,
-                                 compile_so_contractum_param stack b)
-       | MProduct (a, b) -> RWProduct (compile_so_contractum_param stack a,
-                                       compile_so_contractum_param stack b)
-       | MQuotient (a, b) -> RWQuotient (compile_so_contractum_param stack a,
-                                         compile_so_contractum_param stack b)
-       | MRem (a, b) -> RWRem (compile_so_contractum_param stack a,
-                               compile_so_contractum_param stack b)
-       | MLessThan (a, b) -> RWLessThan (compile_so_contractum_param stack a,
-                                         compile_so_contractum_param stack b)
-       | MEqual (a, b) -> RWEqual (compile_so_contractum_param stack a,
-                                   compile_so_contractum_param stack b)
-       | MNotEqual (a, b) -> RWNotEqual (compile_so_contractum_param stack a,
-                                         compile_so_contractum_param stack b)
 
        | ObId id ->
             RWObId id
 
        | ParamList l ->
             RWParamList (List.map (compile_so_contractum_param stack) l)
+
+       | BackwardsCompatibleLevel _ ->
+            ref_raise(RefineError (param_error, StringError "BackwardsCompatibleLevel"))
 
    (*
     * In bterms, have to add these vars to the binding stack.

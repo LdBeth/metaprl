@@ -182,18 +182,21 @@ let end_rewrite () =
 
 let stack_id = "rewrite_stack"
 
-let contractum_exp patt s =
+let contractum_exp s =
    if !contract_flag then
       let cs = Stream.of_string s in
       let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
       let index = List.length !contracta in
          contracta := t :: !contracta;
-         sprintf "(Refiner.Refiner.Rewrite.make_contractum contractum_%d %s)" index stack_id
+         expr_of_contractum (0, 0) index
    else
       Stdpp.raise_with_loc (0, String.length s) (Failure "not in a rewrite block")
 
+let contractum_patt s =
+   raise (Failure "Filter_parse.term_patt: not implemented yet")
+
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
-let _ = Quotation.add "con" (Quotation.ExStr contractum_exp)
+let _ = Quotation.add "con" (Quotation.ExAst (contractum_exp, contractum_patt))
 let _ = Quotation.default := "term"
 
 (************************************************************************

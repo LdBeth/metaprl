@@ -9,23 +9,26 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Yegor Bryukhov, Moscow State University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
+
+open Printf
+open Mp_debug
 
 open List
 open Term_sig
@@ -81,23 +84,15 @@ struct
          FType.Number n1 ->            TermHeader.Number n1
        | FType.String s1 ->            TermHeader.String s1
        | FType.Token s1 ->             TermHeader.Token s1
-       | FType.Level l1 ->             TermHeader.Level (make_level_header l1)
        | FType.Var v1 ->               TermHeader.Var v1
        | FType.MNumber s1 ->           TermHeader.MNumber s1
        | FType.MString s1 ->           TermHeader.MString s1
        | FType.MToken s1 ->            TermHeader.MToken s1
-       | FType.MLevel s1 ->            TermHeader.MLevel s1
+       | FType.MLevel l1 ->            TermHeader.MLevel (make_level_header l1)
+       | FType.BackwardsCompatibleLevel l1 -> TermHeader.MLevel (make_level_header l1)
        | FType.MVar s1 ->              TermHeader.MVar s1
        | FType.ObId oid1 ->            TermHeader.ObId (List.map (fun x -> TheWeakMemo.lookup param_hash info (make_param_header info x)) oid1)
        | FType.ParamList p1 ->         TermHeader.ParamList (List.map (fun x -> TheWeakMemo.lookup param_hash info (make_param_header info x)) p1)
-       | FType.MSum (p11, p21) ->      TermHeader.MSum (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MDiff (p11, p21) ->     TermHeader.MDiff (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MProduct (p11, p21) ->  TermHeader.MProduct (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MQuotient (p11, p21) -> TermHeader.MQuotient (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MRem (p11, p21) ->      TermHeader.MRem (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MLessThan (p11, p21) -> TermHeader.MLessThan (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MEqual (p11, p21) ->    TermHeader.MEqual (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MNotEqual (p11, p21) -> TermHeader.MNotEqual (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
 
 (*   let make_operator_header info op =
       let { FType.op_name = opname; FType.op_params = params } = FTerm.dest_op op in
@@ -111,7 +106,7 @@ struct
             let { FType.sequent_args = arg;
                   FType.sequent_hyps = hyps;
                   FType.sequent_goals = goals } = (FromTerm.TermMan.explode_sequent t)
-            in 
+            in
             let make_hyp_header info hyp =
                let {TermHash.term_hash = term_hash} = info in
                   match hyp with
@@ -137,7 +132,7 @@ struct
                     TermHeader.op_params = List.map (fun x -> TheWeakMemo.lookup param_hash info (make_param_header info x)) params;
                     TermHeader.term_terms = (List.map (make_bterm_header info) term_terms)
                   }
-            in 
+            in
                TermHeader.Term (make_true_term_header info t)
 
    let rec make_meta_term_header info mt =
@@ -158,4 +153,4 @@ struct
        | FType.MetaLabeled (l, mt) ->
             TermHeader.MetaLabeled (l, TheWeakMemo.lookup meta_term_hash info (make_meta_term_header info mt))
 
-end   
+end

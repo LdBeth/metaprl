@@ -12,21 +12,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -70,12 +70,15 @@ module MakeRewriteBuildContractum
     with type param' = TermType.param'
     with type level_exp = TermType.level_exp
     with type level_exp' = TermType.level_exp'
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp_var' = TermType.level_exp_var'
     with type object_id = TermType.object_id
     with type seq_hyps = TermType.seq_hyps
     with type seq_goals = TermType.seq_goals
     with type hypothesis = TermType.hypothesis)
    (TermMan : TermManSig
     with type term = TermType.term
+    with type level_exp = TermType.level_exp
     with type esequent = TermType.esequent)
    (TermAddr : TermAddrSig
     with type term = TermType.term)
@@ -358,6 +361,18 @@ struct
    and raise_param p =
       ref_raise(RefineError ("build_contractum_param", RewriteBadMatch (ParamMatch (make_param p))))
 
+   and build_contractum_level stack l = function
+      { rw_le_var = v; rw_le_offset = o } :: t ->
+         let l' =
+            match stack.(v) with
+               StackLevel l' -> l'
+             | StackMString s -> mk_var_level_exp s
+             | _ -> ref_raise(build_con_exn)
+         in
+            build_contractum_level stack (max_level_exp l l' o) t
+    | [] ->
+         l
+
    and build_contractum_param stack = function
       RWNumber i ->
          Number i
@@ -365,8 +380,6 @@ struct
          String s
     | RWToken s ->
          Token s
-    | RWLevel l ->
-         Level l
     | RWVar v ->
          Var v
     | RWMNumber i ->
@@ -393,13 +406,15 @@ struct
               | StackMString s -> MToken s
               | t -> ref_raise(build_con_exn)
          end
-    | RWMLevel i ->
+    | RWMLevel1 i ->
          begin
              match stack.(i) with
-                StackLevel l -> Level l
-              | StackMString s -> MLevel s
+                StackLevel l -> MLevel l
+              | StackMString s -> MLevel (mk_var_level_exp s)
               | t -> ref_raise(build_con_exn)
          end
+    | RWMLevel2 { rw_le_const = c; rw_le_vars = vars } ->
+         MLevel (build_contractum_level stack (mk_const_level_exp c) vars)
     | RWMVar i ->
          begin
              match stack.(i) with
@@ -407,62 +422,6 @@ struct
               | StackNumber j -> Var (Mp_num.string_of_num j)
               | StackMString s -> MVar s
               | t -> ref_raise(build_con_exn)
-         end
-    | RWSum (p1, p2) ->
-         begin
-             match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Number (Mp_num.add_num i j)
-              | (Number i, p) -> raise_param p
-              | (p, _) -> raise_param p
-         end
-    | RWDiff (p1, p2) ->
-         begin
-             match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Number (Mp_num.sub_num i j)
-              | (Number i, p) -> raise_param p
-              | (p, _) -> raise_param p
-         end
-    | RWProduct (p1, p2) ->
-         begin
-             match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Number (Mp_num.mult_num i j)
-              | (Number i, p) -> raise_param p
-              | (p, _) -> raise_param p
-         end
-    | RWQuotient (p1, p2) ->
-         begin
-             match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Number (Mp_num.quo_num i j)
-              | (Number i, p) -> raise_param p
-              | (p, _) -> raise_param p
-         end
-    | RWRem (p1, p2) ->
-         begin
-             match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Number (Mp_num.mod_num i j)
-              | (Number i, p) -> raise_param p
-              | (p, _) -> raise_param p
-         end
-    | RWLessThan (p1, p2) ->
-         begin
-             match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Token (if i < j then "true" else "false")
-              | (Number i, p) -> raise_param p
-              | (p, _) -> raise_param p
-         end
-    | RWEqual (p1, p2) ->
-         begin
-             match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Token (if i = j then "true" else "false")
-              | (Number i, p) -> raise_param p
-              | (p, _) -> raise_param p
-         end
-    | RWNotEqual (p1, p2) ->
-         begin
-             match (build_contractum_param stack p1, build_contractum_param stack p2) with
-                (Number i, Number j) -> Token (if i = j then "false" else "true")
-              | (Number i, p) -> raise_param p
-              | (p, _) -> raise_param p
          end
     | RWObId id ->
          ObId id

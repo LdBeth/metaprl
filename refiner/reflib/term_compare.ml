@@ -14,21 +14,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * Modified by: Eli Barzilay, Alexey Nogin, Yegor Bryukhov
  *)
@@ -85,23 +85,14 @@ struct
          CType.Number    n1,         CType.Number    n2         -> Mp_num.eq_num n1 n2
        | CType.String    s1,         CType.String    s2         -> s1 = s2
        | CType.Token     s1,         CType.Token     s2         -> s1 = s2
-       | CType.Level     l1,         CType.Level     l2         -> l1 == l2
        | CType.Var       v1,         CType.Var       v2         -> v1 = v2
        | CType.MNumber   s1,         CType.MNumber   s2         -> s1 = s2
        | CType.MString   s1,         CType.MString   s2         -> s1 = s2
        | CType.MToken    s1,         CType.MToken    s2         -> s1 = s2
-       | CType.MLevel    s1,         CType.MLevel    s2         -> s1 = s2
+       | CType.MLevel    l1,         CType.MLevel    l2         -> l1 == l2
        | CType.MVar      s1,         CType.MVar      s2         -> s1 = s2
        | CType.ObId      oid1,       CType.ObId      oid2       -> list_mem_eq oid1 oid2
        | CType.ParamList params1,    CType.ParamList params2    -> list_mem_eq params1 params2
-       | CType.MSum      (p11, p12), CType.MSum      (p21, p22) -> p11 == p21 & p12 == p22
-       | CType.MDiff     (p11, p12), CType.MDiff     (p21, p22) -> p11 == p21 & p12 == p22
-       | CType.MProduct  (p11, p12), CType.MProduct  (p21, p22) -> p11 == p21 & p12 == p22
-       | CType.MQuotient (p11, p12), CType.MQuotient (p21, p22) -> p11 == p21 & p12 == p22
-       | CType.MRem      (p11, p12), CType.MRem      (p21, p22) -> p11 == p21 & p12 == p22
-       | CType.MLessThan (p11, p12), CType.MLessThan (p21, p22) -> p11 == p21 & p12 == p22
-       | CType.MEqual    (p11, p12), CType.MEqual    (p21, p22) -> p11 == p21 & p12 == p22
-       | CType.MNotEqual (p11, p12), CType.MNotEqual (p21, p22) -> p11 == p21 & p12 == p22
        | _ -> false
 
    let compare_operator { CType.op_name = opname1; CType.op_params = params1 }

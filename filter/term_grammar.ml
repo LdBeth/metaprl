@@ -142,7 +142,7 @@ struct
        | String s -> mk_var_level_exp s
        | Token t -> mk_var_level_exp t
        | Var v -> mk_var_level_exp v
-       | Level l -> l
+       | MLevel l -> l
        | MNumber v -> mk_var_level_exp v
        | MString v -> mk_var_level_exp v
        | MVar v -> mk_var_level_exp v
@@ -199,8 +199,8 @@ struct
     | "l" ->
          begin
             match dest_param p with
-               MString v -> make_param (MLevel v)
-             | _ -> make_param (Level (cast_level p))
+               MString v -> make_param (MLevel (mk_var_level_exp v))
+             | _ -> make_param (MLevel (cast_level p))
          end
 
     | x -> raise (BadParamCast (p, x))
@@ -495,7 +495,7 @@ struct
 
              (* Abbreviations *)
            | i = sl_number ->
-             { aname = None; aterm = mk_term (mk_op (mk_opname loc ["natural_number"])
+             { aname = None; aterm = mk_term (mk_op (mk_opname loc ["number"])
                                               [make_param (Number i)]) (**)
                   []
              }
@@ -597,27 +597,9 @@ struct
           | [ p = param; sl_colon; w = sl_word ->
                cast_param p w
              | p = param; sl_single_quote ->
-               make_param (Level (incr_level_exp (cast_level p)))
+               make_param (MLevel (incr_level_exp (cast_level p)))
              | p1 = param; sl_pipe; p2 = param ->
-               make_param (Level (max_level_exp (cast_level p1) (cast_level p2)))
-             | p1 = param; sl_plus; p2 = param ->
-               make_param (MSum (cast_number p1, cast_number p2))
-             | p1 = param; sl_minus; p2 = param ->
-               make_param (MDiff (cast_number p1, cast_number p2))
-             | p1 = param; sl_star; p2 = param ->
-               make_param (MProduct (cast_number p1, cast_number p2))
-             | p1 = param; sl_slash; p2 = param ->
-               make_param (MQuotient(cast_number p1, cast_number p2))
-             | p1 = param; sl_percent; p2 = param ->
-               make_param (MRem (cast_number p1, cast_number p2))
-             | p1 = param; sl_not_equal; p2 = param ->
-               make_param (MNotEqual (cast_number p1, cast_number p2))
-             | p1 = param; sl_equal; p2 = param ->
-               make_param (MEqual (cast_number p1, cast_number p2))
-             | p1 = param; sl_less_than; p2 = param ->
-               make_param (MLessThan (cast_number p1, cast_number p2))
-             | sl_open_paren; p = param; sl_close_paren ->
-               p
+               make_param (MLevel (max_level_exp (cast_level p1) (cast_level p2) 0))
             ]
          ];
 
@@ -793,9 +775,6 @@ struct
       sl_semi_colon:
          [[ ";" -> () ]];
 
-      sl_slash:
-         [[ "/" -> () ]];
-
       sl_double_slash:
          [[ "//" -> () ]];
 
@@ -852,9 +831,6 @@ struct
 
       sl_star:
          [[ "*" -> "prod" ]];
-
-      sl_percent:
-         [[ "%" -> "rem" ]];
 
       sl_arrow:
          [[ "->" -> "fun" ]];

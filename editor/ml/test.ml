@@ -44,7 +44,8 @@ let dest_level_param t =
          { op_params = [param] } ->
             begin
                match dest_param param with
-                  Level s -> s
+                  MLevel s ->
+                     s
                 | _ ->
                      raise (RefineError ("dest_level_param", TermMatchError (t, "param type")))
             end
@@ -53,18 +54,20 @@ let dest_level_param t =
        | _ ->
             raise (RefineError ("dest_level_param", TermMatchError (t, "too many params")))
 
-ml_rw test_rw : add{natural_number[@i:n]; natural_number[@j:n]} ==
-   let i = dest_natural_number <:con< natural_number[@i:n] >> in
-   let j = dest_natural_number <:con< natural_number[@j:n] >> in
-      mk_natural_number_term (Mp_num.add_num i j), []
+ml_rw test_rw : add{number[@i:n]; number[@j:n]} == fun
+   goal ->
+   let i = dest_number <:con< number[@i:n] >> in
+   let j = dest_number <:con< number[@j:n] >> in
+      mk_number_term (Mp_num.add_num i j), []
  | fun _ extracts ->
    << it >>, extracts
 
 ml_rule cumulativity 'H :
-   sequent ['ext] { 'H >- cumulativity[@j:l, @i:l] } ==
+   sequent ['ext] { 'H >- cumulativity[@j:l, @i:l] } == fun
+   goal ->
    let i = dest_level_param <:con< univ[@i:l] >> in
    let j = dest_level_param <:con< univ[@j:l] >> in
-      if level_cumulativity j i then
+      if level_le j i then
          []
       else
          raise (RefineError ("cumulativity", StringError "failed"))

@@ -16,21 +16,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -71,6 +71,8 @@ module MakeRewriteCompileRedex
     with type param' = TermType.param'
     with type level_exp = TermType.level_exp
     with type level_exp' = TermType.level_exp'
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp_var' = TermType.level_exp_var'
     with type object_id = TermType.object_id
     with type seq_hyps = TermType.seq_hyps
     with type seq_goals = TermType.seq_goals
@@ -210,56 +212,78 @@ struct
     * We also compile parameters, and bind meta-variables.
     *)
    and compile_so_redex_params stack = function
-      [] -> stack, []
+      [] ->
+         stack, []
     | param::params ->
          (* Do this param *)
          let stack', param' = compile_so_redex_param stack param in
          let stack'', params' = compile_so_redex_params stack' params in
             stack'', param'::params'
 
-   and meta_param stack const pvar v =
+   and meta_param' stack pvar v =
       if rstack_p_mem v stack then
          (* This param is not free, do a match *)
-         stack, const (rstack_p_index v stack)
+         stack, rstack_p_index v stack
       else
          (* Add it *)
-         stack @ [pvar v], const (List.length stack)
+         stack @ [pvar v], List.length stack
+
+   and meta_param stack const pvar v =
+      let stack, v = meta_param' stack pvar v in
+         stack, const v
+
+   and meta_level stack l =
+      let { le_const = c; le_vars = vars } = dest_level l in
+      let vars = List.map dest_level_var vars in
+         match c, vars with
+            0, [{ le_var = v; le_offset = 0 }] ->
+               meta_param stack (fun l -> RWMLevel1 l) (fun l -> PLVar l) v
+          | _ ->
+               let rec collect stack = function
+                  { le_var = v; le_offset = i } :: tl ->
+                     let stack, v = meta_param' stack (fun l -> PLVar l) v in
+                     let v = { rw_le_var = v; rw_le_offset = i } in
+                     let stack, vars = collect stack tl in
+                        stack, v :: vars
+                | [] ->
+                     stack, []
+               in
+               let stack, vars = collect stack vars in
+                  stack, RWMLevel2 { rw_le_const = c; rw_le_vars = vars }
 
    and compile_so_redex_param stack param =
       match dest_param param with
          MNumber v -> meta_param stack (fun i -> RWMNumber i) (fun v -> PIVar v) v
-       | MString(v) -> meta_param stack (fun s -> RWMString s) (fun s -> PSVar s) v
-       | MToken(v) -> meta_param stack (fun t -> RWMToken t) (fun s -> PSVar s) v
-       | MLevel(v) -> meta_param stack (fun l -> RWMLevel l) (fun l -> PLVar l) v
-       | MVar(v) -> meta_param stack (fun v -> RWMVar v) (fun v -> PSVar v) v
-       | Number(i) -> stack, RWNumber(i)
-       | String(s) -> stack, RWString(s)
-       | Token(t) -> stack, RWToken(t)
-       | Level(i) -> stack, RWLevel(i)
-       | Var(v) -> stack, RWVar(v)
+       | MString v -> meta_param stack (fun s -> RWMString s) (fun s -> PSVar s) v
+       | MToken v -> meta_param stack (fun t -> RWMToken t) (fun s -> PSVar s) v
+       | MLevel l -> meta_level stack l
+       | MVar v -> meta_param stack (fun v -> RWMVar v) (fun v -> PSVar v) v
+       | Number i -> stack, RWNumber i
+       | String s -> stack, RWString s
+       | Token t -> stack, RWToken t
+       | Var v -> stack, RWVar v
        | _ -> ref_raise(RefineError ("compile_so_redex_param", RewriteBadMatch (ParamMatch param)))
 
    (*
     * In bterms, have to add these vars to the binding stack.
     *)
    and compile_so_redex_bterms addrs stack bvars = function
-      [] -> stack, []
+      [] ->
+         stack, []
     | bterm::bterms ->
          let stack', bterm' = compile_so_redex_bterm addrs stack bvars bterm in
          let stack'', bterms' = compile_so_redex_bterms addrs stack' bvars bterms in
             stack'', bterm'::bterms'
 
    and compile_so_redex_bterm addrs stack bvars bterm =
-      match dest_bterm bterm with
-         { bvars = vars; bterm = term } ->
-            (* Add vars to the stack *)
-            let stack' = stack @ (List.map (fun v -> FOVar v) vars) in
-            let l = List.length stack in
-            let bvars' = bvars @ (new_bvar_items l vars) in
+      let { bvars = vars; bterm = term } = dest_bterm bterm in
+      let stack' = stack @ (List.map (fun v -> FOVar v) vars) in
+      let l = List.length stack in
+      let bvars' = bvars @ (new_bvar_items l vars) in
 
-            (* Compile the term *)
-            let stack'', term' = compile_so_redex_term addrs stack' bvars' term in
-               stack'', { rw_bvars = List.length vars; rw_bnames = bnames l vars; rw_bterm = term' }
+      (* Compile the term *)
+      let stack'', term' = compile_so_redex_term addrs stack' bvars' term in
+         stack'', { rw_bvars = List.length vars; rw_bnames = bnames l vars; rw_bterm = term' }
 
    (*
     * The contexts are handled differently within sequents.

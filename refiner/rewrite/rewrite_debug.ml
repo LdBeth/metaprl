@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -207,8 +207,6 @@ struct
          fprintf out "%s:s" s
     | RWToken s ->
          fprintf out "%s:t" s
-    | RWLevel l ->
-         fprintf out "x:l"
     | RWVar s ->
          fprintf out "%s:v" s
     | RWMNumber i ->
@@ -217,26 +215,15 @@ struct
          fprintf out "@%d:s" i
     | RWMToken i ->
          fprintf out "@%d:t" i
-    | RWMLevel i ->
+    | RWMLevel1 i ->
          fprintf out "@%d:l" i
+    | RWMLevel2 { rw_le_const = c; rw_le_vars = vars } ->
+         fprintf out "(%d" c;
+         List.iter (fun { rw_le_var = v; rw_le_offset = o } ->
+               fprintf out " [%d %d]" v o) vars;
+         fprintf out ")"
     | RWMVar i ->
          fprintf out "@%d:v" i
-    | RWSum (p1, p2) ->
-         fprintf out "(%a + %a)" print_param p1 print_param p2
-    | RWDiff (p1, p2) ->
-         fprintf out "(%a - %a)" print_param p1 print_param p2
-    | RWProduct (p1, p2) ->
-         fprintf out "(%a * %a)" print_param p1 print_param p2
-    | RWQuotient (p1, p2) ->
-         fprintf out "(%a / %a)" print_param p1 print_param p2
-    | RWRem (p1, p2) ->
-         fprintf out "(%a %% %a)" print_param p1 print_param p2
-    | RWLessThan (p1, p2) ->
-         fprintf out "(%a < %a)" print_param p1 print_param p2
-    | RWEqual (p1, p2) ->
-         fprintf out "(%a = %a)" print_param p1 print_param p2
-    | RWNotEqual (p1, p2) ->
-         fprintf out "(%a != %a)" print_param p1 print_param p2
     | RWObId id ->
          fprintf out "ObId"
     | RWParamList pl ->

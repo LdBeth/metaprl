@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -36,6 +36,7 @@ open Mp_debug
 open Opname
 open Term_sig
 open Term_base_sig
+open Term_man_sig
 open Refine_error_sig
 
 open Rewrite_type_sig
@@ -53,7 +54,13 @@ module MakeRewriteMeta
     with type param' = TermType.param'
     with type level_exp = TermType.level_exp
     with type level_exp' = TermType.level_exp'
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp_var' = TermType.level_exp_var'
     with type object_id = TermType.object_id)
+   (TermMan : TermManSig
+    with type term = TermType.term
+    with type level_exp = TermType.level_exp
+    with type esequent = TermType.esequent)
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param
@@ -66,6 +73,7 @@ module MakeRewriteMeta
 struct
    open TermType
    open Term
+   open TermMan
    open RefineError
    open RewriteTypes
 
@@ -75,21 +83,40 @@ struct
    (*
     * See if an operator generalizes another.
     *)
+   let compare_levels a b =
+      let { le_const = c; le_vars = vars } = dest_level a in
+      let { rw_le_const = c'; rw_le_vars = vars' } = b in
+      let rec prune o' = function
+         { le_offset = o } as h :: t ->
+            if o < o' then
+               h :: prune o' t
+            else
+               prune o' t
+       | [] ->
+            []
+      in
+      let rec compare_level_vars notfound = function
+         { rw_le_offset = o' } :: t ->
+            compare_level_vars (prune o' notfound) t
+       | [] ->
+            notfound = []
+      in
+         not (c > c' && vars' = []) && compare_level_vars (List.map dest_level_var vars) vars'
+
    let compare_params p rwp =
       match dest_param p, rwp with
          Number a, RWNumber b -> a = b
        | String a, RWString b -> a = b
        | Token a, RWToken b -> a = b
        | Var a, RWVar b -> a = b
-       | Level a, RWLevel b -> a = b
        | MNumber a, RWNumber b -> true
        | MNumber a, RWMNumber b -> true
        | MString a, RWString b -> true
        | MString a, RWMString b -> true
        | MToken a, RWToken b -> true
        | MToken a, RWMToken b -> true
-       | MLevel a, RWLevel b -> true
-       | MLevel a, RWMLevel b -> true
+       | MLevel a, RWMLevel1 b -> true
+       | MLevel a, RWMLevel2 b -> compare_levels a b
        | MVar a, RWVar b -> true
        | MVar a, RWMVar b -> true
        | _ -> false
@@ -128,25 +155,23 @@ struct
    (*
     * Get the operator of a rewrite rule.
     *)
+   let convert_level { rw_le_const = c; rw_le_vars = vars } =
+      let convert { rw_le_var = v; rw_le_offset = o } =
+         mk_level_var ("v" ^ string_of_int v) o
+      in
+         mk_level c (List.map convert vars)
+
    let rec convert_param' = function
       RWNumber i -> Number(i)
     | RWString s -> String s
     | RWToken t -> Token t
-    | RWLevel i -> Level i
     | RWVar v -> Var v
     | RWMNumber i -> MNumber ("v" ^ (string_of_int i))
     | RWMString i -> MString ("v" ^ (string_of_int i))
     | RWMToken i -> MToken ("v" ^ (string_of_int i))
-    | RWMLevel i -> MLevel ("v" ^ (string_of_int i))
+    | RWMLevel1 i -> MLevel (mk_var_level_exp ("v" ^ (string_of_int i)))
+    | RWMLevel2 l -> MLevel (convert_level l)
     | RWMVar i -> MVar ("v" ^ (string_of_int i))
-    | RWSum (i, j) -> MSum (convert_param i, convert_param j)
-    | RWDiff (i, j) -> MDiff (convert_param i, convert_param j)
-    | RWProduct (i, j) -> MProduct (convert_param i, convert_param j)
-    | RWQuotient (i, j) -> MQuotient (convert_param i, convert_param j)
-    | RWRem (i, j) -> MRem (convert_param i, convert_param j)
-    | RWLessThan (i, j) -> MLessThan (convert_param i, convert_param j)
-    | RWEqual (i, j) -> MEqual (convert_param i, convert_param j)
-    | RWNotEqual (i, j) -> MNotEqual (convert_param i, convert_param j)
     | RWObId id -> ObId id
     | RWParamList l -> ParamList (List.map convert_param l)
    and convert_param p =

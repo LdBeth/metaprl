@@ -383,13 +383,13 @@ struct
     * One universe param.
     *)
    let is_univ_term opname t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [Level _] };
+      Term { term_op = { op_name = opname'; op_params = [MLevel _] };
              term_terms = []
            } when Opname.eq opname opname' -> true
     | _ -> false
 
    let dest_univ_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Level n] };
+      { term_op = { op_name = opname'; op_params = [MLevel n] };
         term_terms = []
       } when Opname.eq opname opname' -> n
     | _ -> ref_raise(RefineError ("dest_univ_term", TermMatchError (t, "")))
@@ -397,7 +397,7 @@ struct
    let mk_univ_term opname n =
       { free_vars = Vars StringSet.empty;
         core = Term
-         { term_op = { op_name = opname; op_params = [Level n] };
+         { term_op = { op_name = opname; op_params = [MLevel n] };
            term_terms = [] }}
 
    (*

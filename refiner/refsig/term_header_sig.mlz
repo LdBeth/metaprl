@@ -10,21 +10,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Yegor Bryukhov, Moscow State University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
@@ -66,57 +66,31 @@ sig
       Number of Mp_num.num
     | String of string
     | Token of string
-    | Level of level_exp_header
     | Var of string
     | MNumber of string
     | MString of string
     | MToken of string
-    | MLevel of string
+    | MLevel of level_exp_header
     | MVar of string
 
       (* Special Nuprl5 values *)
     | ObId of param descriptor list
     | ParamList of param descriptor list
 
-      (* Num operations *)
-    | MSum of param descriptor * param descriptor
-    | MDiff of param descriptor * param descriptor
-    | MProduct of param descriptor * param descriptor
-    | MQuotient of param descriptor * param descriptor
-    | MRem of param descriptor * param descriptor
-    | MLessThan of param descriptor * param descriptor
-
-      (* Comparisons *)
-    | MEqual of param descriptor * param descriptor
-    | MNotEqual of param descriptor * param descriptor
-
    type param_weak_header =
       Number_weak of Mp_num.num
     | String_weak of string
     | Token_weak of string
-    | Level_weak of level_exp_header
     | Var_weak of string
     | MNumber_weak of string
     | MString_weak of string
     | MToken_weak of string
-    | MLevel_weak of string
+    | MLevel_weak of level_exp_header
     | MVar_weak of string
 
       (* Special Nuprl5 values *)
     | ObId_weak of param weak_descriptor list
     | ParamList_weak of param weak_descriptor list
-
-      (* Num operations *)
-    | MSum_weak of param weak_descriptor * param weak_descriptor
-    | MDiff_weak of param weak_descriptor * param weak_descriptor
-    | MProduct_weak of param weak_descriptor * param weak_descriptor
-    | MQuotient_weak of param weak_descriptor * param weak_descriptor
-    | MRem_weak of param weak_descriptor * param weak_descriptor
-    | MLessThan_weak of param weak_descriptor * param weak_descriptor
-
-      (* Comparisons *)
-    | MEqual_weak of param weak_descriptor * param weak_descriptor
-    | MNotEqual_weak of param weak_descriptor * param weak_descriptor
 
    type hypothesis_header =
       Hypothesis of string * term descriptor
@@ -148,13 +122,13 @@ sig
                              term_terms_weak: bound_term_weak_header list
                            }
 
-   type seq_header = { 
+   type seq_header = {
                        seq_arg: term descriptor;
                        seq_hyps: hypothesis_header list;
                        seq_goals: term descriptor list
                      }
 
-   type seq_weak_header = { 
+   type seq_weak_header = {
                        seq_arg_weak: term weak_descriptor;
                        seq_hyps_weak: hypothesis_weak_header list;
                        seq_goals_weak: term weak_descriptor list

@@ -276,7 +276,7 @@ point is outside the region."
     (8  t   if & then & (opt else &if))
     (1  t   for & (alt to downto) & do & done)
     (1  t   while & do & done)
-    (5  t   (opt &+) (alt val value open include exception) &)
+    (5  t   (opt &+) (alt val value open include exception external) &)
     (4  t   (opt &+) module (opt type) word (* \( & : & \)) (opt : &) (opt = &))
     (5  t   (opt &+) magic_block word = &)
     (1  nil sig & end)
@@ -293,9 +293,10 @@ point is outside the region."
     (5  t   (alt dform condition) & (opt = &))
     (5  t   (alt prec infix) &)
     (5  t   (opt &+) declare & (opt end))
-    (5  t   (alt define rewrite axiom primrw) & : &)
+    (5  t   ml_rewrite & : & (opt == &))
+    (5  t   (alt define rewrite axiom primrw rule) & : &)
     (4  t   (alt all exst) & : & \. &)
-    (5  t   prim & : & : & = &)
+    (5  t   (alt prim interactive ml_rule) & : & : & = &)
     (5  t   mlterm & = & | &)
 
     ;; Extra syntax for Camlp4

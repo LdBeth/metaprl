@@ -419,20 +419,20 @@ struct
     * One universe param.
     *)
    let is_univ_term opname = function
-      { term_op = { op_name = opname'; op_params = [Level _] };
+      { term_op = { op_name = opname'; op_params = [MLevel _] };
         term_terms = []
       } when Opname.eq opname opname' -> true
     | _ -> false
 
    let dest_univ_term opname = function
-      { term_op = { op_name = opname'; op_params = [Level n] };
+      { term_op = { op_name = opname'; op_params = [MLevel n] };
         term_terms = []
       } when Opname.eq opname opname' -> n
     | t -> ref_raise(RefineError ("dest_univ_term", TermMatchError (t, "bad arity")))
 
    let mk_univ_term opname = function
       n ->
-         { term_op = { op_name = opname; op_params = [Level n] };
+         { term_op = { op_name = opname; op_params = [MLevel n] };
            term_terms = []
          }
 

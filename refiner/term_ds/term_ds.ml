@@ -12,21 +12,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Alexey Nogin, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -77,29 +77,17 @@ struct
       Number of Mp_num.num
     | String of string
     | Token of string
-    | Level of level_exp
+    | BackwardsCompatibleLevel of level_exp
     | Var of string
     | MNumber of string
     | MString of string
     | MToken of string
-    | MLevel of string
+    | MLevel of level_exp
     | MVar of string
 
       (* Special Nuprl5 values *)
     | ObId of object_id
     | ParamList of param list
-
-      (* Num operations *)
-    | MSum of param * param
-    | MDiff of param * param
-    | MProduct of param * param
-    | MQuotient of param * param
-    | MRem of param * param
-    | MLessThan of param * param
-
-      (* Comparisons *)
-    | MEqual of param * param
-    | MNotEqual of param * param
 
    and object_id = param list
    and param = param'

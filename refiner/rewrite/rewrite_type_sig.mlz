@@ -12,21 +12,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -42,6 +42,12 @@ sig
    type seq_hyps
 
    (*
+    * For matching level expressions.
+    *)
+   type rw_level_exp_var = { rw_le_var : int; rw_le_offset : int }
+   type rw_level_exp = { rw_le_const : int; rw_le_vars : rw_level_exp_var list }
+
+   (*
     * We need to define a term for matching rewrite rules.
     * This is similar to a DeBruijn term, but it includes second
     * order variables.
@@ -50,21 +56,13 @@ sig
       RWNumber of Mp_num.num
     | RWString of string
     | RWToken of string
-    | RWLevel of level_exp
     | RWVar of string
     | RWMNumber of int
     | RWMString of int
     | RWMToken of int
-    | RWMLevel of int
+    | RWMLevel1 of int
+    | RWMLevel2 of rw_level_exp
     | RWMVar of int
-    | RWSum of rwparam * rwparam
-    | RWDiff of rwparam * rwparam
-    | RWProduct of rwparam * rwparam
-    | RWQuotient of rwparam * rwparam
-    | RWRem of rwparam * rwparam
-    | RWLessThan of rwparam * rwparam
-    | RWEqual of rwparam * rwparam
-    | RWNotEqual of rwparam * rwparam
     | RWObId of object_id
     | RWParamList of rwparam list
    and rwoperator = { rw_name : opname; rw_params : rwparam list }

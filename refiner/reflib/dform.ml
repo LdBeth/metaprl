@@ -597,7 +597,7 @@ let null_base =
    in
    let slot_entry4 =
       { dform_name = "slot_entry4";
-        dform_pattern = mk_term (mk_op slot_opname [make_param (MLevel "l")]) [];
+        dform_pattern = mk_term (mk_op slot_opname [make_param (MLevel (mk_var_level_exp "l"))]) [];
         dform_options = [];
         dform_print = DFormPrinter slot
       }
