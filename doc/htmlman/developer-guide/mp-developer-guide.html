@@ -1,0 +1,36 @@
+<HTML>
+<HEAD>
+  <TITLE>MetaPRL Developer Guide</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
+
+<H1>MetaPRL Developer Guide</H1>
+
+<P>Currently this guide is just a collection of information that might be useful
+for MetaPRL developers and advanced users. It is not organized in any meaningful way.</P>
+
+<P>This guide contains:
+<UL>
+  <LI><A HREF="indentation_and_spacing.html" TARGET="_self">Indentation and spacing guidelines</A>. Please read them before you start writing any code for MetaPRL.
+  <LI><A HREF="debugging.html" TARGET="_self">Introduction to MetaPRL Debugging</A>. Please read
+it before you start debugging your code and especially before you start writing any debugging
+code yourself.
+  <LI><A HREF="refiner_verb_and_simp.html" TARGET="_self">Refiners</A> section explains
+  the difference between the "Simple" and "Verbose" refiners.
+  <LI><A HREF="term_modules.html" TARGET="_self">MetaPRL Term Modules</A> section explains
+  the difference between the <TT>Term_std</TT> and <TT>Term_ds</TT> term modules. It also
+  provides some in-depth information on <TT>Term_ds</TT> module that you may need if you 
+  would want to write some <TT>Term_ds</TT>-specific code or if you would want to write the code
+  capable of fully utilizing the efficiency advantages of <TT>Term_ds</TT>: <UL>
+    <LI><A HREF="term_ds_types.html">The Definition of Term Types in <TT>Term_ds</TT> Module</A>
+    <LI><A HREF="term_ds_free_vars.html">Free Variables Calculation in the <TT>Term_ds</TT> Module</A>
+    <LI><A HREF="term_ds_safety.html">Safety Constraints and Invariants of the <TT>Term_ds</TT> Module</A>
+    <LI>The TP-HOLs'2000 paper <A HREF="XXX"><I>"Fast Tactic-based Theorem Proving"</I></A> by A.Nogin and J.Hickey
+  </UL>
+  <LI><A HREF="profiling.html" TARGET="_self">Introduction to MetaPRL Profiling</A>.
+  Read it if you want to know where the time gets spent in your code and which branches of
+  your code are taken and how often.
+</UL>
+
+</BODY>
+</HTML>

@@ -1,0 +1,46 @@
+<HTML>
+<HEAD>
+  <TITLE>MetaPRL Term Modules and Types</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
+
+<H2>MetaPRL Term Modules and Types</H2>
+
+<P>MetaPRL terms have an interface (type <TT>term'</TT>) and an abstract (type <TT>term</TT>)   
+representations. The <TT>term'</TT> type is defined in
+<A HREF="../../../refiner/refsig/term_simple_sig.mlz"><TT>refiner/refsig/term_simple_sig.mlz</TT></A>
+and is fixed while the <TT>term</TT> type may be
+different in different modules.
+
+<P>The <TT>Term_std</TT> module (actually, it is
+not a single module, but a collection of several modules, files in
+<TT>refiner/term_std/</TT>) can be considered a reference implementation.
+In <TT>Term_std</TT>, <TT>term</TT> is just equal to <TT>term'</TT>.
+
+<P>In the <TT>Term_ds</TT> module   
+("ds" stands for delayed substitutions", files in <TT>refiner/term_ds/</TT>) <TT>term</TT>
+type is different from <TT>term'</TT> - <TT>term</TT> has a field for set of free variables
+(which is computed lazily) and a field <TT>core</TT> that carries either <TT>term'</TT> or
+a delayed substitution or a sequent or a variable (in <TT>Term_std</TT> variables
+and sequents are encoded with <TT>term'</TT>s, but it turned out to be more
+efficient to handle them specially).
+
+<P>There are also some parts of the term
+module that do not have to know what the <TT>term</TT> is as they work through the
+<TT>term'</TT> interface type - these files are located in <TT>refiner/term_gen</TT>. For
+most (if not all) of these files it was possible to write a more efficient implementation
+for <TT>Term_ds</TT>, so <TT>Term_ds</TT> may have its own version of these files.
+
+<P>The
+parts of the term module are collected together and packed with refiner
+and rewriter in <TT>refiner/refiner/refiner_*.ml</TT> files. Few parts of the system
+specify which of the term modules they want. The <TT>REFINER</TT> variable
+in the <TT>mk/config</TT> file decides which term module would be used in the rest of the system.
+
+<P> For more information see:
+<UL>
+<LI><A HREF="term_ds_types.html">The Definition of Term Types in <TT>Term_ds</TT> Module</A>
+<LI><A HREF="term_ds_free_vars.html">Free Variables Calculation in the <TT>Term_ds</TT> Module</A>
+<LI><A HREF="term_ds_safety.html">Safety Constraints and Invariants of the <TT>Term_ds</TT> Module</A>
+<LI>The TP-HOLs'2000 paper <A HREF="XXX"><I>"Fast Tactic-based Theorem Proving"</I></A> by A.Nogin and J.Hickey
+</UL>

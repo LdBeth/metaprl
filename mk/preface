@@ -30,7 +30,7 @@ ifndef MAKE_OPTS
    MAKE_OPTS=-s
 endif
 ifndef SEQ_SET
-   SEQ_SET=undefined
+   SEQ_SET=Array
 endif
 ifndef ENSROOT
    ENSROOT=undefined

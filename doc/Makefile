@@ -67,16 +67,29 @@ SYSTEM =\
 	mp-editor-imp\
 	mp-itt
 
+DEVELOPER-GUIDE =\
+	mp-developer-guide\
+	indentation_and_spacing\
+	debugging\
+	refiner_verb_and_simp\
+	term_modules\
+	term_ds_types\
+	term_ds_free_vars\
+	term_ds_safety\
+	profiling
+
 W-FILES = $(addprefix htmlman/, $(addsuffix .html, $(WELCOME)))
 UG-FILES = $(addprefix htmlman/user-guide/, $(addsuffix .html, $(USER-GUIDE)))
 T-FILES = $(addprefix htmlman/tutorial/, $(addsuffix .html, $(TUTORIAL)))
 S-FILES = $(addprefix htmlman/system/, $(addsuffix .html, $(SYSTEM)))
+D-FILES = $(addprefix htmlman/developer-guide/, $(addsuffix .html, $(DEVELOPER-GUIDE)))
 
 GENERATED-FILES =\
 	introduction\
 	user-guide\
 	tutorial\
-	system
+	system\
+	developer-guide
 
 DOCFILES = $(addsuffix .ps, $(GENERATED-FILES)) $(addsuffix .pdf, $(GENERATED-FILES))
 
@@ -106,6 +119,12 @@ system.ps: $(S-FILES)
 
 system.pdf: $(S-FILES)
 	$(GEN-PDF) $(S-FILES) -f $@
+
+developer-guide.ps: $(D-FILES)
+	$(GEN-PS) $(D-FILES) -f $@
+
+developer-guide.pdf: $(D-FILES)
+	$(GEN-PDF) $(D-FILES) -f $@
 
 clean::
 	$(RM) $(DOCFILES) *.log *.dvi *.aux *~

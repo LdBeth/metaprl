@@ -1,0 +1,76 @@
+<HTML>
+<HEAD>
+  <TITLE>MetaPRL Indentation and Spacing Guidelines</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
+<H2>MetaPRL Indentation and Spacing Guidelines</H2>
+<P> Here is the list of basic indentation and spacing principles
+that we try to observe in MetaPRL:
+<UL>
+  <LI>All indentation steps are 3 spaces.
+  <LI>No tab symbols in the code.
+  <LI>No spaces at the end of a line.
+  <LI>It's OK to use spaces to make sure pieces of code are nicely aligned
+  and/or indented, but in all other case at most one single space
+  should be use, not several consecutive ones
+  <LI>No empty lines at the beginning of a file, at the end of a file,
+  or in the middle of a function. 
+  <LI>Functions are usually separated by an empty line.
+  <LI>No more than one or two consecutive empty lines.
+  <LI>Patterns are indented as follows:
+<PRE>match
+   expression
+with
+   Choice<SUB>1</SUB> -&gt;
+      code<SUB>1</SUB>
+ | Choice<SUB>2</SUB> -&gt;
+      code<SUB>2</SUB>
+ | Choice<SUB>3</SUB> ...</PRE>
+
+When expression is short, its OK to use
+<PRE>match expression with
+   Choice<SUB>1</SUB> -&gt;
+...</PRE>
+When <TT>code<SUB>i</SUB></TT> is short, it's usually OK to put it on the same
+line with <TT>Code<SUB>i</SUB></TT> (but not with <TT>Code<SUB>i+1</SUB></TT>).
+
+<LI>let constructions should be aligned as follows:
+<PRE>let variable = 
+   expression
+in
+   code</PRE>
+if expression is short, it's OK to use either
+
+<PRE>let variable = expression in
+code</PRE>
+
+or
+
+<PRE>let variable = expression in code</PRE>
+
+or even
+
+<PRE>let variable = expression
+in code</PRE>
+
+On the other hand, the following is discouraged:
+
+<PRE>let very_long_variable_name = { field<SUB>1</SUB> = code<SUB>1</SUB>;
+                                field<SUB>2</SUB> = code<SUB>2<SUB>1</SUB></SUB>...
+                                         code<SUB>2<SUB>2</SUB></SUB>...
+                                    .....</PRE>
+
+since it pushes the code to far to the right and makes it very
+hard to read in a narrow window.
+
+Instead, use
+
+<PRE>let very_long_variable_name = 
+ { field<SUB>1</SUB> = code<SUB>1</SUB>;
+   field<SUB>2</SUB> = 
+      code<SUB>2<SUB>1</SUB></SUB>...
+      code<SUB>2<SUB>2</SUB></SUB>...
+    ...</PRE>
+</UL>
+</BODY>
+</HTML>

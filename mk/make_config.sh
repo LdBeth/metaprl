@@ -15,7 +15,10 @@ cat << end_of_cat
 # Main MetaPRL configuration file.
 
 # Term module to use: ds or std
-# See doc/term_modules.txt for more information
+# See doc/htmlman/developer-guide/term_modules.html or 
+# http://ensemble01.cs.cornell.edu:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/
+term_modules.html
+# for more information.
 # If not sure, use ds
 #
 TERMS=$TERMS
@@ -29,7 +32,9 @@ SEQ_SET=$SEQ_SET
 
 #
 # Refiner verbosity: VERBOSE or SIMPLE
-# See doc/refiner_verb_and_simp.txt for more information.
+# See doc/htmlman/developer-guide/refiner_verb_and_simp.html or
+# http://ensemble01.cs.cornell.edu:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/refiner_verb_and_simp.html
+# for more information.
 # If not sure, use VERBOSE
 #
 REFINER=$REFINER

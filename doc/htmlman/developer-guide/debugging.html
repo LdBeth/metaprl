@@ -1,0 +1,78 @@
+<HTML>
+<HEAD>
+  <TITLE>Introduction to MetaPRL Debugging</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000"> 
+
+<H2>Introduction to MetaPRL Debugging</H2>
+
+<P>First, before you start debugging your code, it may be a good idea to make sure
+you are using <A HREF="refiner_verb_and_simp.html">the "verbose" refiner</A>.
+
+<P>In the process of debugging your code, you may end up adding some statements that
+print some debugging information or perform some sanity checks (and notify you
+if something went wrong). Usually you would want some way of temporarily enabling and
+disabling such debugging code. Of course, you can always comment it out when you do not
+need it and uncomment it back when you need it again. But instead of this playing with
+comments, please consider using the <TT>Mp_debug</TT> module.
+
+<P> Add the following to your code:<UL>
+<LI>At the beginning of the file:
+<PRE>open Printf
+open Mp_debug
+open Refiner.Refiner.Term
+
+let debug_&lt;name&gt; =
+   create_debug (**)
+      { debug_name = "&lt;name&gt;";
+        debug_description = "Some description of what is debugged by it";
+        debug_value = false
+      }</PRE>
+
+This will create an object of type <TT>bool ref</TT> that you can use to switch the debugging
+code on and off:
+
+<LI>In the code you want to debug you add, for example:
+<PRE>  if !debug_&lt;name&gt; then begin
+      some_debugging_code...;
+      eprintf "Integer i is %d and term t is %a" i print_term t;
+      eflush ();
+   end;</PRE>
+
+It is important that you do not forget to flush the output, otherwise if you code later 
+crashes or raises an exception, you may never see it.
+</UL>
+
+<P>By default, the <TT>!debug_&lt;name&gt;</TT> would be false. There are several ways to make it
+true:<OL>
+<LI>By setting the <TT>MP_DEBUG</TT> environment variable in your shell before you start
+MetaPRL. <TT>MP_DEBUG</TT> should be a colon-separated list of names (without the 
+<TT>debug_</TT> prefix).
+<LI>By running the "<TT>set_debug "&lt;name&gt;" true</TT>" command from the MetaPRL toploop.
+<LI>By using <TT>debug_value = true</TT> instead of <TT>false</TT> in <TT>create_debug</TT>.
+Usually, it's not a good idea to do so, unless you want all MetaPRL users to participate
+in the debugging.
+<LI>By using <TT>debug_&lt;name&gt;:=true</TT> in your code. It is rarely a good idea, but here is
+an example when it may be a good idea to use it:
+<PRE>   if !debug_my_code then begin
+      let save=!debug_other_code in
+      debug_other_code:=true;
+      other_code ();
+      debug_other_code:=save
+   end else
+      other_code () </PRE>
+
+Note that whoever wrote the <TT>other_code</TT> does not have to export debug_other_code
+in their <TT>.mli</TT> file - see <A HREF="#note1">Note 1</A>.
+</OL>
+
+<P><B>Notes</B>:<OL>
+<LI><A NAME="note1"> If you run <TT>create_debug</TT> more that once with the same <TT>debug_name</TT> (for example, in several modules or in several instances of the same module), you'll
+get the pointer to the same boolean. If you are sure that the debug with that name is already
+created, you can use a shorter <TT>load_debug "&lt;name&gt;"</TT> instead of
+<TT>create_debug { ... }</TT> to get a reference to that debug variable.
+<LI>If you are creating lots of debugging code, you may want to create several debug variables
+with different names to have finer control over what pieces of debugging code are active.
+</OL>
+
+

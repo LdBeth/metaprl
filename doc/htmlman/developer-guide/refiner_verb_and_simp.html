@@ -1,0 +1,25 @@
+<HTML>
+<HEAD>
+  <TITLE>MetaPRL Refiners</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
+
+<H2>The "Simple" and "Verbose" Versions of the Refiner</H2>
+
+<P>For each version of the <A HREF="term_modules.html">term module</A> two
+versions of the refiner can be built - a "simple" and a "verbose" one.
+The verbose version tries to keep track and raise verbose exceptions
+while simple version usually raises a "generic" exception (take a look
+at the <TT>REF_RAISE</TT> macro in
+<A HREF="../../../refiner/refsig/refine_error.mlh"><TT>refiner/refsig/refine_error.mlh</TT></A>).
+
+<P>The verbose version contains more debugging code and produces more verbose error messages.
+As a result, verbose version is great for debugging, but sometimes it is much slower.
+To get the verbose version, set <TT>REFINER</TT> to be <TT>VERBOSE</TT> in <TT>mk/config</TT>
+and to get the simple version, set <TT>REFINER</TT> to be <TT>SIMPLE</TT>.
+
+<P>Since the simple and verbose versions of the refiner files are
+very similar, we use a preprocessor to generate them.
+For the verbose version, the refiner files are preprocessed
+with the <TT>VERBOSE_EXN</TT> macro defined and for the simple version -
+with the <TT>SIMPLE_EXN</TT> macro defined.

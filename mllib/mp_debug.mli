@@ -30,6 +30,13 @@
  * jyh@cs.cornell.edu
  *)
 
+(*
+ * See doc/htmlman/developer-guide/debugging.html or
+ * http://ensemble01.cs.cornell.edu:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/debugging.html
+ * for more information on how to use this module
+ * and on MetaPRL debugging in general.
+ *)
+
 (* if "load" debug is true, `show_load (s ^ "%t")' will print s to stderr and flush stderr *)
 val show_loading : ((out_channel -> unit) -> unit, out_channel, unit) format -> unit
 
