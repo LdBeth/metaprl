@@ -22,6 +22,8 @@ open Test;;
 load "test";;
 cd "test.test";;
 
+set_writeable ();;
+
 refine rw (higherC reduceFact) 0;;
 down 0;;
 
@@ -34,6 +36,9 @@ refine dT 0;;
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/16 16:14:13  nogin
+ * Added set_writable ()
+ *
  * Revision 1.4  1998/06/12 20:46:02  jyh
  * Switched to term_ds.
  *
