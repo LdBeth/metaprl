@@ -1,35 +1,41 @@
-CFILES =\
-	print_symbols\
-	truncate\
-	putenv\
-	execvp\
-	profile\
-	exit\
-	debug\
-	ml_debug\
-	termsize\
-	locale
+if $(not $(equal $(PREBUILT_CLIBS), undefined))
+   $(MPINSTALL): $(LIB)/clib$(EXT_LIB)
+   $(LIB)/clib$(EXT_LIB): $(ROOT)/$(PREBUILT_CLIBS)/clib$(EXT_LIB)
+      $(CP) $^ $@
 
-StaticCLibraryInstall($(MPINSTALL), $(LIB), clib, $(CFILES))
+else
+   CFILES =\
+        print_symbols\
+        truncate\
+        putenv\
+        execvp\
+        profile\
+        exit\
+        debug\
+        ml_debug\
+        termsize\
+        locale
 
-#
-# Patched OCaml files
-#
-.PHONY: patches patch
+   StaticCLibraryInstall($(MPINSTALL), $(LIB), clib, $(CFILES))
 
-if $(not $(equal $(OCAMLSRC), undefined))
-    CINCLUDE = -I$(OCAMLSRC)/byterun
+   #
+   # Patched OCaml files
+   #
+   .PHONY: patches patch
 
-    patches: $(OCAMLSRC)/byterun/intern.c $(OCAMLSRC)/byterun/extern.c
-	diff -c $(OCAMLSRC)/byterun/extern.c extern.c > extern.patch
-	diff -c $(OCAMLSRC)/byterun/intern.c intern.c > intern.patch
+   if $(not $(equal $(OCAMLSRC), undefined))
+       CINCLUDE = -I$(OCAMLSRC)/byterun
 
-    patch:
-	patch -o extern.c $(OCAMLSRC)/byterun/extern.c extern.patch
-	patch -o intern.c $(OCAMLSRC)/byterun/intern.c intern.patch
+       patches: $(OCAMLSRC)/byterun/intern.c $(OCAMLSRC)/byterun/extern.c
+          diff -c $(OCAMLSRC)/byterun/extern.c extern.c > extern.patch
+          diff -c $(OCAMLSRC)/byterun/intern.c intern.c > intern.patch
 
-#
-# Clean up
-#
-clean:
-    $(CLEAN)
+       patch:
+          patch -o extern.c $(OCAMLSRC)/byterun/extern.c extern.patch
+          patch -o intern.c $(OCAMLSRC)/byterun/intern.c intern.patch
+
+   #
+   # Clean up
+   #
+   clean:
+       $(CLEAN)

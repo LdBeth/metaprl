@@ -48,6 +48,9 @@ open Shell_p4_sig
 
 module Shell (ShellP4 : ShellP4Sig): ShellSig
 
+(* Quit *)
+topval exit : unit -> unit
+
 (* Proof navigation. *)
 topval cd : string -> string
 topval pwd : unit -> string

@@ -1448,6 +1448,7 @@ external stop_gmon : unit -> unit = "stop_gmon"
 (*
  * Toploop functions
  *)
+let exit () = raise End_of_file
 let set_debug = set_debug
 let print_gc_stats () = Gc.print_stat stdout
 let cd s = commands.cd s

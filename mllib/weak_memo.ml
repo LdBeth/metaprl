@@ -37,7 +37,7 @@
  * to see what is going on.  In the meantime, we can use real
  * arrays.  This is probably very inefficient.
  *)
-module Weak =
+module Weak2 =
 struct
    type 'a t = 'a option array
 
