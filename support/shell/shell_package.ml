@@ -238,24 +238,22 @@ let term_of_implementation pack filter parse_arg =
  * Filter the entries for ls.
  *)
 let is_not_summary_item = function
-   SummaryItem _ | Improve _ | Resource _ ->
-      false
- | _ ->
-      true
+   SummaryItem _ | Improve _ | Resource _ -> false
+ | _ -> true
 
 let is_rewrite_item = function
-   Rewrite _
- | CondRewrite _
- | MLRewrite _ ->
-      true
- | _ ->
-      false
+   Rewrite _ | CondRewrite _ | MLRewrite _ | Definition _ -> true
+ | _ -> false
 
 let is_rule_item = function
-   Rule _
- | MLAxiom  _ ->
+   Rule _ | MLAxiom  _ -> true
+ | _ -> false
+
+let is_formal_item = function
+   Rewrite _ | CondRewrite _ | MLRewrite _ | Rule _ | MLAxiom  _ | Definition _ | Parent _ | Opname _ ->
       true
- | _ ->
+ | SummaryItem _ | Improve _ | Resource _ | InputForm _ | Comment _ | MagicBlock _ 
+ | ToploopItem _ | Infix _ | Prec _ | DForm _ | Module _ | Id _ | PrecRel _ ->
       false
 
 let is_unjustified_item item =
@@ -299,6 +297,8 @@ let rec mk_ls_filter predicate = function
       mk_ls_filter (is_rule_item :: predicate) tl
  | LsUnjustified :: tl ->
       mk_ls_filter (is_unjustified_item :: predicate) tl
+ | LsFormal :: tl ->
+      mk_ls_filter (is_formal_item :: predicate) tl
  | LsNoSummaryItems :: tl ->
       mk_ls_filter (is_not_summary_item :: predicate) tl
  | [] ->

@@ -15,11 +15,13 @@ Navigation:
 
 ls: string -> unit
     lists the contents of the current  module (theory, proof)
-  Variants:
-  ls "";;   -- lists everything (in proof lists current proof node),
+  The string argument currently affect only top-level theory listings:
+  ls "";;   -- lists everything, except for ML items,
+  ls "a";;  -- lists everything,
   ls "R";;  -- lists rules,
   ls "r";;  -- lists rewrites, 
-  ls "u";;  -- lists everything unproved.
+  ls "u";;  -- lists everything unproved,
+  ls "f";;  -- lists all formal contents.
 
 pwd ();;   returnes current path in the _loaded_module_ tree.  
 

@@ -456,6 +456,8 @@ struct
                      (LsRewrites :: options)
                 | 'u' ->
                      (LsUnjustified :: options)
+                | 'f' ->
+                     (LsFormal :: options)
                 | 'a' ->
                      (LsAll :: options)
                 | _ ->

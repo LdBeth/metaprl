@@ -58,6 +58,7 @@ type ls_option =
  | LsRules
  | LsUnjustified
  | LsNoSummaryItems
+ | LsFormal
  | LsAll
 
 (*
