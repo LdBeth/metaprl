@@ -101,6 +101,7 @@ let set_assumptions = set_assumptions (get_current_shell ())
 let set_params = set_params (get_current_shell ())
 let check () = check (get_current_shell ())
 let expand () = expand (get_current_shell ())
+let expand_all () = expand_all (get_current_shell ())
 
 (*
  * Proof editing.

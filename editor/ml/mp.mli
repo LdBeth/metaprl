@@ -88,6 +88,7 @@ val set_assumptions : term list -> unit
 val set_params : term Filter_type.param list -> unit
 val check : unit -> unit
 val expand : unit -> unit
+val expand_all : unit -> unit
 val kreitz : unit -> unit
 val clean : unit -> unit
 val squash : unit -> unit
