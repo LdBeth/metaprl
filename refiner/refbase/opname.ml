@@ -3,6 +3,9 @@
  * they may be hash-consed.
  *
  * $Log$
+ * Revision 1.6  1998/07/04 22:31:13  nogin
+ * Set GC parameters
+ *
  * Revision 1.5  1998/06/22 19:45:34  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.
@@ -44,6 +47,7 @@
 
 open Printf
 open Debug
+open Gc
 
 (*
  * Show the file loading.
@@ -58,6 +62,17 @@ let debug_opname =
         debug_description = "display opname construction";
         debug_value = false
       }
+
+open Gc;;
+
+(* This changes the GC parameters for the whole Nuprl-Light system *)
+
+let r = Gc.get () in
+(*   r.verbose <- true;  *)
+   r.minor_heap_size <- 196608;
+   r.major_heap_increment <- 393216;
+   r.space_overhead <- 70;
+   Gc.set r;;
 
 (************************************************************************
  * TYPES                                                                *
