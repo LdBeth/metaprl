@@ -263,19 +263,6 @@ struct
         ext_sentinal : sentinal;
       }
 
-   and rw_extract =
-      { rw_goal : term;
-        rw_just : rewrite_just;
-        rw_subgoal : term
-      }
-
-   and crw_extract =
-      { crw_goal : term;
-        crw_just : cond_rewrite_just;
-        crw_subgoal_term : term;
-        crw_subgoals : cond_rewrite_subgoals
-      }
-
    and ext_just =
       RuleJust of rule_just
     | MLJust of rule_just * term_extract * int
