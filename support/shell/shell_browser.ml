@@ -151,26 +151,6 @@ struct
          print_channel out table "start.html"
 
    (*
-    * Frame stuff.
-    *)
-   let print_frameset out state location =
-      let table = add_title_location state "Frameset" location in
-         print_http out table "frameset.html"
-
-   let print_shortcommand out state location =
-      let table = add_title_location state "Rulebox" location in
-         print_http out table "shortcommand.html"
-
-   let print_longcommand out state location =
-      let table = add_title_location state "Rulebox" location in
-         print_http out table "longcommand.html"
-
-   let print_content out state location =
-      let table = add_title_location state "MetaPRL display" location in
-      let table = BrowserTable.add_buffer table body_sym Browser_display_term.buffer in
-         print_http out table "content.html"
-
-   (*
     * This is the default printer that uses tables for display.
     *)
    let print_page out state location =
@@ -218,32 +198,10 @@ struct
       if !debug_http then
          eprintf "Get: %s@." uri;
       let uri = "" :: decode_uri uri in
-      let dir, file = Lm_list_util.split_last uri in
-      let () =
-         match file with
-            (* These cases are for backwards compatibility with frames *)
-            "content.html" ->
-               let dirname = Lm_string_util.concat "/" dir in
-                  print_content outx state dirname
-          | "shortcommand.html" ->
-               let dirname = Lm_string_util.concat "/" dir in
-                  print_shortcommand outx state dirname
-          | "longcommand.html" ->
-               let dirname = Lm_string_util.concat "/" dir in
-                  print_longcommand outx state dirname
-          | "frameset.html" ->
-               let dirname = Lm_string_util.concat "/" dir in
-                  chdir state dirname;
-                  flush state;
-                  print_frameset outx state dirname
-
-            (* This is the usual case: display everything on the same page using <div> *)
-          | _ ->
-               let dirname = Lm_string_util.concat "/" uri in
-                  chdir state dirname;
-                  flush state;
-                  print_page outx state dirname
-      in
+      let dirname = Lm_string_util.concat "/" uri in
+         chdir state dirname;
+         flush state;
+         print_page outx state dirname;
          state
 
    (*
