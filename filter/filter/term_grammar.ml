@@ -1002,13 +1002,13 @@ struct
              begin match mk_var_contexts loc v 0 with Some conts -> mk_so_var_term v conts [] | None -> mk_var_term v end
            | sl_single_quote; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right ->
                mk_so_var_term v conts []
-           | sl_single_quote; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right; sl_open_brack; terms = opttermlist; sl_close_brack ->
+           | sl_single_quote; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right; sl_open_brack; terms = termlist; sl_close_brack ->
                mk_so_var_term v conts terms
            | sl_single_quote; v = var; sl_contexts_empty ->
                mk_so_var_term v [] []
-           | sl_single_quote; v = var; sl_contexts_empty; sl_open_brack; terms = opttermlist; sl_close_brack ->
+           | sl_single_quote; v = var; sl_contexts_empty; sl_open_brack; terms = termlist; sl_close_brack ->
                mk_so_var_term v [] terms
-           | sl_single_quote; v = var; sl_open_brack; terms = opttermlist; sl_close_brack ->
+           | sl_single_quote; v = var; sl_open_brack; terms = termlist; sl_close_brack ->
                mk_so_var_term v (get_var_contexts loc v terms) terms
           ]];
 
@@ -1018,15 +1018,8 @@ struct
           ]];
 
       (* List of terms *)
-      opttermlist:
-         [[ l = OPT termlist ->
-             match l with
-                Some l' -> l'
-              | None -> []
-          ]];
-
       termlist:
-         [[ l = LIST1 term SEP ";" -> l ]];
+         [[ l = LIST0 term SEP ";" -> l ]];
 
       (* Parameters and bterm lists *)
       opname:
@@ -1108,7 +1101,7 @@ struct
                   sequent_hyps = hyps;
                   sequent_goals = concls;
                }
-          | sl_sequent; sl_open_brack; args = termlist; sl_close_brack;
+          | sl_sequent; sl_open_brack; args = LIST1 term SEP ";"; sl_close_brack;
             sl_open_curly; (hyps, concls) = sequent_body; sl_close_curly ->
                let args_bt = List.map mk_simple_bterm args in
                mk_sequent_term {
@@ -1130,6 +1123,8 @@ struct
          [[ "<"; name = var; conts = OPT contslist; args=optbrtermlist; ">" ->
              let conts = match conts with Some conts -> conts | None -> get_var_contexts loc name args in
              Context(name, conts, args)
+          | "<"; name = var; sl_contexts_empty; args=optbrtermlist; ">" ->
+             Context(name, [], args)
           | v = LIDENT; ":"; t = aterm ->
              Hypothesis(Lm_symbol.add v, get_aterm loc t)
           | v = UIDENT; ":"; t = aterm ->
