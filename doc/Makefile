@@ -59,11 +59,11 @@ SYSTEM =\
 	mp-conversionals\
 	mp-ocaml\
 	mp-base\
-   mp-base-syntax\
-   mp-auto-tactic\
-   mp-d-tactic\
-   mp-type-inf-rsrc\
-   mp-base-cache\
+	mp-base-syntax\
+	mp-auto-tactic\
+	mp-d-tactic\
+	mp-type-inf-rsrc\
+	mp-base-cache\
 	mp-editor-imp\
 	mp-itt
 

@@ -38,7 +38,7 @@ doc:
 
 $(NAME).aux: $(INPUTS) $(TEXFILES)
 	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
-	if [ grep -q \\\citation $(NAME).aux ]; then \
+	if grep -q \\\citation $(NAME).aux; then \
 		TEXINPUTS=$(TEXINPUTS) bibtex $(NAME); \
 		TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME); \
 		TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME); \
