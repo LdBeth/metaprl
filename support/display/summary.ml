@@ -268,7 +268,6 @@ declare "term_list_arg"{'t}
 declare "arglist"{'t}
 
 (* Proofs *)
-declare "interactive"{'t}
 
 declare "href"[command:s]{'t}
 
