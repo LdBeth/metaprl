@@ -52,6 +52,7 @@ type param' =
  | MToken of string
  | MLevel of string
  | MVar of string
+
  | ObId of object_id
  | ParmList of param list
    
@@ -130,11 +131,13 @@ val nth_cdr_addr : int -> address
 
 (* Projections *)
 val opname_of_term : term -> opname
+val subterms_of_term : term -> term list
 
 (*
  * Simple terms have no paramaters and
  * all subterms have no binding vars.
  *)
+val mk_any_term : operator -> term list -> term
 val mk_simple_term : opname -> term list -> term
 val dest_simple_term : term -> (opname * term list)
 
@@ -153,14 +156,18 @@ val is_dep0_dep0_dep0_term : opname -> term -> bool
 val mk_dep0_dep0_dep0_term : opname -> term -> term -> term -> term
 val dest_dep0_dep0_dep0_term : opname -> term -> term * term * term
 val three_subterms : term -> term * term * term
+val four_subterms : term -> term * term * term * term
 
 val is_dep1_term : opname -> term -> bool
 val mk_dep1_term : opname -> string -> term -> term
 val dest_dep1_term : opname -> term -> string * term
 
 val is_dep0_dep1_term : opname -> term -> bool
+val is_dep0_dep1_any_term : term -> bool
 val mk_dep0_dep1_term : opname -> string -> term -> term -> term
+val mk_dep0_dep1_any_term : operator -> string -> term -> term -> term
 val dest_dep0_dep1_term : opname -> term -> string * term * term
+val dest_dep0_dep1_any_term : term -> string * term * term
 
 val is_dep0_dep2_term : opname -> term -> bool
 val mk_dep0_dep2_term : opname -> string -> string -> term -> term -> term
@@ -169,6 +176,14 @@ val dest_dep0_dep2_term : opname -> term -> string * string * term * term
 val is_dep2_dep0_term : opname -> term -> bool
 val mk_dep2_dep0_term : opname -> string -> string -> term -> term -> term
 val dest_dep2_dep0_term : opname -> term -> string * string * term * term
+
+val is_dep0_dep0_dep1_term : opname -> term -> bool
+val mk_dep0_dep0_dep1_term : opname -> term -> term -> string -> term -> term
+val dest_dep0_dep0_dep1_term : opname -> term -> term * term * string * term
+
+val is_dep0_dep0_dep1_any_term : term -> bool
+val mk_dep0_dep0_dep1_any_term : operator -> term -> term -> string -> term -> term
+val dest_dep0_dep0_dep1_any_term : term -> term * term * string * term
 
 val is_dep0_dep1_dep1_term : opname -> term -> bool
 val mk_dep0_dep1_dep1_term : opname -> term -> string -> term -> string -> term -> term
@@ -186,6 +201,11 @@ val is_dep0_dep0_dep3_term : opname -> term -> bool
 val mk_dep0_dep0_dep3_term : opname -> term -> term -> string -> string -> string -> term -> term
 val dest_dep0_dep0_dep3_term : opname -> term -> term * term * string * string * string * term
 
+val is_string_term : opname -> term -> bool
+val mk_string_term : opname -> string -> term
+val dest_string_term : opname -> term -> string
+val dest_string_param : term -> string
+
 val is_string_dep0_term : opname -> term -> bool
 val mk_string_dep0_term : opname -> string -> term -> term
 val dest_string_dep0_term : opname -> term -> string * term
@@ -193,6 +213,7 @@ val dest_string_dep0_term : opname -> term -> string * term
 val is_number_term : opname -> term -> bool
 val mk_number_term : opname -> int -> term
 val dest_number_term : opname -> term -> int
+val dest_number_any_term : term -> int
 
 val is_univ_term : opname -> term -> bool
 val mk_univ_term : opname -> level_exp -> term
@@ -388,6 +409,12 @@ val make_2subst_term : term -> string -> string -> term -> term -> term
 
 (*
  * $Log$
+ * Revision 1.6  1997/09/12 17:21:46  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
  * Revision 1.5  1997/08/16 00:18:59  nogin
  *  * Added several functions (used in evaluator)
  *  * Fixed mk_dep0_dep2_dep0_dep2_term

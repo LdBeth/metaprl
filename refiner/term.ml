@@ -5,6 +5,8 @@
  *
  *)
 
+open Printf
+
 open Debug
 open Opname
 
@@ -139,17 +141,27 @@ let make_level l = l
 
 let dest_level l = l
 
-
-
 let make_object_id object_id  = object_id 
 let dest_object_id object_id  = object_id
-
  
 (*
  * Operator names.
  *)
 let opname_of_term = function
    { term_op = { op_name = name } } -> name
+
+(*
+ * Get the subterms.
+ * None of the subterms should be bound.
+ *)
+let subterms_of_term t =
+   let aux = function
+      { bvars = []; bterm = t } ->
+         t
+    | _ ->
+         raise (TermMatch ("subterms_of_term", t, "binding vars exist"))
+   in
+      List.map aux t.term_terms
 
 (************************************************************************
  * Tools for "simple" terms                                             *
@@ -170,12 +182,14 @@ let is_simple_term_opname name = function
          aux bterms
  | _ -> false
 
-let mk_simple_term name terms =
-   let aux t = { bvars = []; bterm = t }
+let mk_any_term op terms =
+   let aux t =
+      { bvars = []; bterm = t }
    in
-      { term_op = { op_name = name; op_params = [] };
-        term_terms = List.map aux terms
-      }
+      { term_op = op; term_terms = List.map aux terms }
+   
+let mk_simple_term name terms =
+   mk_any_term { op_name = name; op_params = [] } terms
 
 let dest_simple_term = function
    ({ term_op = { op_name = name; op_params = [] };
@@ -286,9 +300,46 @@ let three_subterms = function
       a, b, c
  | t -> raise (TermMatch ("three_subterms", t, ""))
 
+let four_subterms = function
+   { term_terms = [{ bvars = []; bterm = a };
+                   { bvars = []; bterm = b };
+                   { bvars = []; bterm = c };
+                   { bvars = []; bterm = d }]} ->
+      a, b, c, d
+ | t ->
+      raise (TermMatch ("four_subterms", t, ""))
+
 (************************************************************************
  * Nonsimple but useful forms                                           *
  ************************************************************************)
+
+(*
+ * One string param.
+ *)
+let is_string_term opname = function
+   { term_op = { op_name = opname'; op_params = [String _] };
+     term_terms = []
+   } when opname == opname' ->
+      true
+ | _ ->
+      false
+
+let dest_string_term opname = function
+   { term_op = { op_name = opname'; op_params = [String s] };
+     term_terms = []
+   } when opname == opname' ->
+      s
+ | t ->
+      raise (TermMatch ("dest_string_term", t, "not a string term"))
+
+let dest_string_param = function
+   { term_op = { op_params = String s :: _ } } ->
+      s
+ | t ->
+      raise (TermMatch ("dest_string_param", t, "no string parameter"))
+
+let mk_string_term opname s =
+   { term_op = { op_name = opname; op_params = [String s] }; term_terms = [] }
 
 (*
  * One string parameter, and one simple subterm.
@@ -325,6 +376,14 @@ let dest_number_term opname = function
      term_terms = []
    } when opname = opname' -> n
  | t -> raise (TermMatch ("dest_number_term", t, ""))
+
+let dest_number_any_term = function
+   { term_op = { op_params = [Number n] };
+     term_terms = []
+   } ->
+      n
+ | t ->
+      raise (TermMatch ("dest_number_any_term", t, ""))
 
 let mk_number_term opname = function
    n ->
@@ -400,8 +459,20 @@ let is_dep0_dep1_term opname = function
    } when opname' = opname -> true
  | _ -> false
 
+let is_dep0_dep1_any_term = function
+   { term_op = { op_params = [] };
+     term_terms = [{ bvars = [] }; { bvars = [_] }]
+   } -> true
+ | _ -> false
+
 let mk_dep0_dep1_term opname = fun
    v t1 t2 -> { term_op = { op_name = opname; op_params = [] };
+                term_terms = [{ bvars = []; bterm = t1 };
+                              { bvars = [v]; bterm = t2 }]
+              }
+
+let mk_dep0_dep1_any_term op = fun
+   v t1 t2 -> { term_op = op;
                 term_terms = [{ bvars = []; bterm = t1 };
                               { bvars = [v]; bterm = t2 }]
               }
@@ -411,6 +482,13 @@ let dest_dep0_dep1_term opname = function
      term_terms = [{ bvars = []; bterm = t1 };
                    { bvars = [v]; bterm = t2 }]
    } when opname' = opname -> v, t1, t2
+ | t -> raise (TermMatch ("dest_dep0_dep1_term", t, ""))
+
+let dest_dep0_dep1_any_term = function
+   { term_op = { op_params = [] };
+     term_terms = [{ bvars = []; bterm = t1 };
+                   { bvars = [v]; bterm = t2 }]
+   } -> v, t1, t2
  | t -> raise (TermMatch ("dest_dep0_dep1_term", t, ""))
 
 (*
@@ -510,6 +588,53 @@ let dest_dep0_dep2_dep0_dep2_term opname = function
 (*
  * Three subterms.
  *)
+let is_dep0_dep0_dep1_term opname = function
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_] }]
+   } when opname' == opname ->
+      true
+ | _ ->
+      false
+
+let mk_dep0_dep0_dep1_term opname = fun
+   t0 t1 v2 t2 -> { term_op = { op_name = opname; op_params = [] };
+                       term_terms = [{ bvars = []; bterm = t1 };
+                                     { bvars = []; bterm = t1 };
+                                     { bvars = [v2]; bterm = t2 }]
+                     }
+
+let dest_dep0_dep0_dep1_term opname = function
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [{ bvars = []; bterm = t0 };
+                   { bvars = []; bterm = t1 };
+                   { bvars = [v2]; bterm = t2 }]
+   } when opname' == opname ->
+      t0, t1, v2, t2
+ | t ->
+      raise (TermMatch ("dest_dep0_dep0_dep1_term opname", t, ""))
+
+let is_dep0_dep0_dep1_any_term = function
+   { term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_] }] } ->
+      true
+ | _ ->
+      false
+
+let mk_dep0_dep0_dep1_any_term op = fun
+   t0 t1 v2 t2 -> { term_op = op;
+                    term_terms = [{ bvars = []; bterm = t1 };
+                                  { bvars = []; bterm = t1 };
+                                  { bvars = [v2]; bterm = t2 }]
+                  }
+
+let dest_dep0_dep0_dep1_any_term = function
+   { term_terms = [{ bvars = []; bterm = t0 };
+                   { bvars = []; bterm = t1 };
+                   { bvars = [v2]; bterm = t2 }]
+   } ->
+      t0, t1, v2, t2
+ | t ->
+      raise (TermMatch ("dest_dep0_dep0_dep1_any_term opname", t, ""))
+
 let is_dep0_dep1_dep1_term opname = function
    { term_op = { op_name = opname'; op_params = [] };
      term_terms = [{ bvars = [] }; { bvars = [_] }; { bvars = [_] }]
@@ -1379,6 +1504,8 @@ let param_index = function
  | MLessThan _ -> 15
  | MEqual _ -> 16
  | MNotEqual _ -> 17
+ | ObId _ -> 18
+ | ParmList _ -> 19
 
 let rec compare_param_values = function
    Number i, Number j -> i - j
@@ -1421,7 +1548,39 @@ let rec compare_param_values = function
             compare_params b1 b2
          else
             i
- | p, q -> raise (BadParamMatch (p, q))
+ | ObId a, ObId b ->
+      (*
+       * BUG:
+       * This is really allowable.
+       * We assume ObIds do not change over the course of
+       * the program, or that such terms do not need to be
+       * compared.
+       *)
+      eprintf "Term.compare_param_values: comparing ObIds%t" eflush;
+      if a < b then
+         -1
+      else if a = b then
+         0
+      else
+         1
+ | ParmList a, ParmList b ->
+      let rec compare = function
+         ha :: ta, hb :: tb ->
+            let i = compare_params ha hb in
+               if i = 0 then
+                  compare (ta, tb)
+               else
+                  i
+       | [], [] ->
+            0
+       | [], _ ->
+            -1
+       | _, [] ->
+            1
+      in
+         compare (a, b)
+ | p, q ->
+      raise (BadParamMatch (p, q))
 
 and compare_params p1 p2 =
    let i = param_index p1
@@ -1455,6 +1614,8 @@ let param_pattern_index = function
  | MLessThan _ -> 0
  | MEqual _ -> 0
  | MNotEqual _ -> 0
+ | ObId _ -> 0
+ | ParmList _ -> 0
 
 let rec compare_pattern_param_values = function
    Number i, Number j ->     i - j
@@ -1462,6 +1623,8 @@ let rec compare_pattern_param_values = function
  | Token s, Token t ->       compare s t
  | Var s, Var t ->           compare s t
  | Level i, Level j ->       compare_level_exps i j
+ | ObId a, ObId b ->         compare_obid a b
+ | ParmList a, ParmList b -> compare_pattern_param_list a b
  | _ -> 0
 
 and compare_pattern_params p1 p2 =
@@ -1472,6 +1635,33 @@ and compare_pattern_params p1 p2 =
          compare_pattern_param_values (p1, p2)
       else
          i - j
+
+and compare_pattern_param_list pl1 pl2 =
+   match pl1, pl2 with
+      ha :: ta, hb :: tb ->
+         let i = compare_pattern_params ha hb in
+            if i = 0 then
+               compare_pattern_param_list pl1 pl2
+            else
+               i
+    | [], [] ->
+         0
+    | [], _ ->
+         -1
+    | _, [] ->
+         1
+
+(*
+ * As before, this is not completely kosher.
+ *)
+and compare_obid a b =
+   eprintf "Term.compare_obid: comparing object ids%t" eflush;
+   if a < b then
+      -1
+   else if a = b then
+      0
+   else
+      1
 
 (*
  * Add name comparisons.
@@ -2200,6 +2390,12 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.6  1997/09/12 17:21:45  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
  * Revision 1.5  1997/08/16 00:18:58  nogin
  *  * Added several functions (used in evaluator)
  *  * Fixed mk_dep0_dep2_dep0_dep2_term

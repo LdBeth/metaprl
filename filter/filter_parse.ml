@@ -1,5 +1,18 @@
 (*
  * Filter an ML file.
+ *
+ * The grammar of OCaml is extended to include Nuprl-Light commands.
+ * This file contains all of the extensions.
+ *
+ * Bogus note: whenever a Nuprl-Light term is read, a placeholder
+ * is returned to the parser for the item that was read.  We keep track
+ * of a list of Nuprl commands in Filter-Cache.  After the entire file
+ * is read, we postprocess the parse tree, and remove these Nuprl
+ * annotations.
+ *
+ * The reason for this is that we also want to capture all the normal
+ * OCaml syntax as Nuprl commands, but Camlp4 does not let us do this
+ * easily.
  *)
 open Printf
 open Pcaml
@@ -7,9 +20,6 @@ open Pcaml
 open Debug
 open Term
 open Term_util
-open Ml_format_sig
-open Ml_format
-open Ml_string
 open Rewrite
 open Refine
 open Simple_print
@@ -22,6 +32,7 @@ open Filter_debug
 open Filter_type
 open Filter_util
 open Filter_ast
+open Filter_ocaml
 open Filter_summary
 open Filter_summary_io
 open Filter_cache
@@ -62,14 +73,8 @@ let end_rewrite () =
 let list_sig_item loc l =
    <:sig_item< declare $list:l$ end >>
 
-let null_sig_item loc =
-   list_sig_item loc []
-
 let list_str_item loc l =
    <:str_item< declare $list:l$ end >>
-
-let null_str_item loc =
-   list_str_item loc []
 
 (*
  * Various constructors.
@@ -272,8 +277,214 @@ let new_var loc v vars =
       find 0
 
 (************************************************************************
+ * ITEM EMBEDDING                                                       *
+ ************************************************************************)
+
+(*
+ * Flatten the sig_item list.
+ * Extract the Nuprl commands.
+ * Place normal items in a SummaryItem item.
+ *
+ * is_prl_item: item -> bool: determine if the item is a nuprl command
+ * dest_prl_item: item -> command * (item list): pull it apart
+ * dest_item: item -> item flatten_item: get part of the normal item
+ *)
+type 'a flatten_item =
+   FlattenList of 'a list
+ | FlattenItem of 'a
+
+let flatten_item_list
+    (is_prl_item : 'a -> bool)
+    (dest_prl_item : FilterCache.info -> 'a -> FilterCache.proof summary_item * 'a list)
+    (dest_item : 'a -> 'a flatten_item)
+    (term_of_item : 'a -> term)
+    (info : FilterCache.info)
+    (l : ('a * (int * int)) list)
+=
+   (* Capture functions may record the expression *)
+   let null_capture item loc (commands, items) =
+      commands, (item, loc) :: items
+   in
+   let item_capture item loc (commands, items) =
+      SummaryItem (term_of_item item) :: commands, (item, loc) :: items
+   in
+
+   (* Add the items to the item list *)
+   let rec flatten capture ((commands, items) as commands_items) loc item =
+      if is_prl_item item then
+         let command, items' = dest_prl_item info item in
+            flatten_list null_capture (command :: commands, items) loc items'
+      else
+         match dest_item item with
+            FlattenList items' ->
+               flatten_list capture commands_items loc items'
+          | FlattenItem item ->
+               capture item loc commands_items
+   and flatten_list capture commands_items loc = function
+      [] ->
+         commands_items
+    | h::t ->
+         flatten_list capture (flatten capture commands_items loc h) loc t
+   in
+   
+   (* Flatten the entire list *)
+   let rec flatten_top result = function
+      [] ->
+         result
+    | (s, loc)::tl ->
+         if is_prl_item s then
+            let command, items = dest_prl_item info s in
+            let commands, items' = result in
+               flatten_top (flatten_list null_capture (command :: commands, items') loc items) tl
+         else
+            flatten_top (flatten item_capture result loc s) tl
+   in
+   let commands, items = flatten_top ([], []) l in
+      List.rev commands, List.rev items
+
+(*
+ * HACK:
+ *
+ * This is a total and complete hack.
+ * We want to extend the sig_item type with
+ * new elements (commands that specify Nuprl
+ * constructs).  We keep a table on the side
+ * that contains the commands, and then embed
+ * the commands as the special sig_item:
+ *    declare val $prl_item : <index>; exprs end
+ * where $prl_item is a special symbol, and
+ * index is a type name that is the number of the
+ * item we want to use.
+ *)
+let prl_item_placeholder = "$prl_item"
+
+let prl_sig_item loc items index =
+   let t = <:ctyp< $lid: string_of_int index$ >> in
+   let head = <:sig_item< value $prl_item_placeholder$ : $t$ >> in
+      <:sig_item< declare $list: head :: items$ end >>
+
+let is_prl_sig_item = function
+   <:sig_item< declare $list:l$ end >> ->
+      begin
+         match l with
+            <:sig_item< value $name$ : $_$ >> :: _ ->
+               name = prl_item_placeholder
+          | _ ->
+               false
+      end
+ | _ ->
+      false
+
+(*
+ * If this is a PRL item,
+ * return the command and the exprs that accompany it.
+ *)
+let dest_prl_sig_item info = function
+   <:sig_item< declare $list:l$ end >> ->
+      begin
+         match l with
+            <:sig_item< value $name$ : $t$ >> :: items
+            when name = prl_item_placeholder ->
+               begin
+                  match t with
+                     <:ctyp< $lid:s$ >> ->
+                        let index = int_of_string s in
+                           FilterCache.get_command info index, items
+                    | _ ->
+                        raise Not_found
+               end
+          | _ ->
+               raise Not_found
+     end
+ | _ ->
+      raise Not_found
+
+let dest_sig_item = function
+   <:sig_item< declare $list:l'$ end >> ->
+       FlattenList l'
+ | item ->
+       FlattenItem item
+
+let flatten_sig_item_list =
+   flatten_item_list
+   is_prl_sig_item
+   dest_prl_sig_item
+   dest_sig_item
+   term_of_sig_item
+
+(*
+ * Structure items.
+ *)
+let prl_str_item loc items index =
+   let patt = <:patt< $lid: prl_item_placeholder$ >> in
+   let expr = <:expr< $int: string_of_int index$ >> in
+   let head = <:str_item< value $rec:false$ $list: [ (patt, expr) ]$ >> in
+      <:str_item< declare $list: head :: items$ end >>
+
+let is_prl_str_item = function
+   <:str_item< declare $list:l$ end >> ->
+      begin
+         match l with
+            <:str_item< value $rec:false$ $list: [ (patt, expr) ]$ >> :: _ ->
+               begin
+                  match patt with
+                     <:patt< $lid: name$ >> ->
+                         name = prl_item_placeholder
+                    | _ ->
+                         false
+               end
+          | _ ->
+               false
+      end
+ | _ ->
+      false
+
+(*
+ * If this is a PRL item,
+ * return the command and the exprs that accompany it.
+ *)
+let dest_prl_str_item info = function
+   <:str_item< declare $list:l$ end >> ->
+      begin
+         match l with
+            <:str_item< value $rec:false$ $list: [ pe ]$ >> :: items ->
+               begin
+                  match pe with
+                     <:patt< $lid: name$ >>, <:expr< $int: s$ >>
+                     when name = prl_item_placeholder ->
+                        let index = int_of_string s in
+                        let command = FilterCache.get_command info index in
+                           command, items
+                    | _ ->
+                        raise Not_found
+               end
+          | _ ->
+               raise Not_found
+     end
+ | _ ->
+      raise Not_found
+
+(*
+ * A Flattener returns a sublist or a regular item.
+ *)
+let dest_str_item = function
+   <:str_item< declare $list:l'$ end >> ->
+      FlattenList l'
+ | item ->
+      FlattenItem item
+
+let flatten_str_item_list =
+   flatten_item_list
+   is_prl_str_item
+   dest_prl_str_item
+   dest_str_item
+   term_of_str_item
+
+(************************************************************************
  * INTERFACE IMPLEMENTATION                                             *
  ************************************************************************)
+
+let () = ()
 
 (*
  * Convert a module path to an expression.
@@ -332,23 +543,26 @@ let inline_hook proc root_path open_f cache (path, info) (paths, resources) =
  * This incorporates the parent names into this module, as well
  * as opening the ML module.
  *)
-let declare_parent proc open_f path =
+let declare_parent proc loc open_f path =
    (* Lots of errors can occur here *)
    let info, (opens, _) = FilterCache.inline_module proc.cache path (inline_hook proc path open_f) ([], []) in
-      FilterCache.add_command proc.cache (Parent path);
-      opens
+   let index = FilterCache.add_command proc.cache (Parent path) in
+      prl_sig_item loc opens index
 
 (*
  * Declare a term.
  * Just given the opname for now.
  *)
-let declare_term proc loc (s, params, bterms) =
+let declare_term prl_item proc loc (s, params, bterms) =
    let opname' = Opname.mk_opname s (FilterCache.op_prefix proc.cache) in
    let t = mk_term (mk_op opname' params) bterms in
-      FilterCache.rm_opname proc.cache s;
-      FilterCache.add_opname proc.cache s opname';
-      FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t });
-      t
+   let _ = FilterCache.rm_opname proc.cache s in
+   let _ = FilterCache.add_opname proc.cache s opname' in
+   let index = FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t }) in
+      prl_item loc [] index, t
+
+let declare_sig_term = declare_term prl_sig_item
+let declare_str_term = declare_term prl_str_item
 
 (*
  * Define a rewrite in an interface.
@@ -410,7 +624,7 @@ let rewrite_command proc name params args pf =
  *)
 let declare_rewrite proc loc name params args =
    let cmd = rewrite_command proc name params args InterfaceProof in
-   let _ = FilterCache.add_command proc.cache cmd in
+   let index = FilterCache.add_command proc.cache cmd in
    let ctyp =
       match cmd with
          Rewrite _ ->
@@ -420,14 +634,15 @@ let declare_rewrite proc loc name params args =
        | _ ->
             failwith "define_rewrite"
    in
-      <:sig_item< value $name$ : $ctyp$ >>
+      prl_sig_item loc [<:sig_item< value $name$ : $ctyp$ >>] index
 
 (*
  * Declare a term, and define a rewrite in one step.
  *)
 let define_term proc loc name redex contractum =
-   let redex' = declare_term proc loc redex in
-      declare_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum))
+   let command, redex' = declare_sig_term proc loc redex in
+   let command' = declare_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum)) in
+      <:sig_item< declare $list: [command; command']$ end >>
 
 (*
  * Declare an axiom in an interface.  This has a similar flavor
@@ -488,7 +703,7 @@ let axiom_command proc name params args pf =
       
 let declare_axiom proc loc name params args =
    let cmd = axiom_command proc name params args InterfaceProof in
-   let _ = FilterCache.add_command proc.cache cmd in
+   let index = FilterCache.add_command proc.cache cmd in
    let params' =
       match cmd with
          Axiom _ -> []
@@ -496,31 +711,47 @@ let declare_axiom proc loc name params args =
        | _ -> failwith "declare_axiom"
    in
    let ctyp = params_ctyp loc (tactic_ctyp loc) params' in
-         <:sig_item< value $name$ : $ctyp$ >>
+      prl_sig_item loc [<:sig_item< value $name$ : $ctyp$ >>] index
 
 (*
  * Infix directive.
  *)
-let declare_infix proc s =
-   FilterCache.add_command proc.cache (Infix s);
-   add_infix s
+let declare_infix prl_item proc loc s =
+   let index = FilterCache.add_command proc.cache (Infix s) in
+      add_infix s;
+      prl_item loc [] index
+
+let declare_sig_infix = declare_infix prl_sig_item
+let declare_str_infix = declare_infix prl_str_item
 
 (*
  * Declare an ML term rewrite.
  *)
-let declare_mlterm proc loc ((name, _, _) as t) =
-   let t' = declare_term proc loc t in
-      (* The condition creates an ml value for checking *)
-      FilterCache.add_command proc.cache (MLTerm t');
-      t'
+let declare_mlterm prl_item prl_pair proc loc ((name, _, _) as t) =
+   let command, t' = declare_term prl_item proc loc t in
+   let index = FilterCache.add_command proc.cache (MLTerm t') in
+   let command' = prl_item loc [] index in
+      prl_pair loc command command', t'
+
+let declare_sig_mlterm =
+   let pair loc command command' =
+      <:sig_item< declare $list: [command; command']$ end >>
+   in
+      declare_mlterm prl_sig_item pair
+
+let declare_str_mlterm =
+   let pair loc command command' =
+      <:str_item< declare $list: [command; command']$ end >>
+   in
+      declare_mlterm prl_str_item pair
 
 (*
  * Declare a condition term for a rule.
  *)
 let declare_ml_condition proc loc ((name, _, _) as t) =
-   let t' = declare_term proc loc t in
-      (* The condition creates an ml value for checking *)
-      FilterCache.add_command proc.cache (Condition t')
+   let command, t' = declare_sig_term proc loc t in
+   let index = FilterCache.add_command proc.cache (Condition t') in
+      prl_sig_item loc [command] index
 
 (*
  * Record a resource.
@@ -536,18 +767,20 @@ let declare_resource proc loc r =
    in
    let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$>> in
    let decl = (<:sig_item< type $list:[name, [], rsrc_type]$ >>) in
-      FilterCache.add_command proc.cache (Resource r);
+   let index = FilterCache.add_command proc.cache (Resource r) in
       FilterCache.add_resource proc.cache [] r;
-      decl
+      prl_sig_item loc [decl] index
 
 (*
  * Dform declaration.
  *)
-let declare_dform proc options t =
-   FilterCache.add_command proc.cache (DForm { dform_options = options;
-                                               dform_redex = t;
-                                               dform_def = None
-                                       })
+let declare_dform proc loc options t =
+   let index = FilterCache.add_command proc.cache (DForm { dform_options = options;
+                                                           dform_redex = t;
+                                                           dform_def = None
+                                                   })
+   in
+      prl_sig_item loc [] index
 
 (*
  * Precedence declaration.
@@ -556,11 +789,9 @@ let declare_prec proc loc s =
    if FilterCache.find_prec proc.cache s then
       Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' already declared" s))
    else
-      begin
-         FilterCache.add_command proc.cache (Prec s);
+      let index = FilterCache.add_command proc.cache (Prec s) in
          FilterCache.add_prec proc.cache s;
-         <:sig_item< value $s$ : $precedence_ctyp loc$ >>
-      end
+         prl_sig_item loc [<:sig_item< value $s$ : $precedence_ctyp loc$ >>] index
 
 (*
  * List the resource in the postlog.
@@ -579,7 +810,10 @@ let interf_resources proc loc =
                   <:ctyp< $parent_path_ctyp loc path$ . $lid:name$ >>
             in
             let rsrc_item = (<:sig_item< value $name$ : $name_ctyp$ >>) in
-               FilterCache.add_command proc.cache (InheritedResource rsrc);
+(*
+            let index = FilterCache.add_command proc.cache (InheritedResource rsrc) in
+            let command = prl_sig_item loc [rsrc_item] index in
+ *)
                print (name :: names) (rsrc_item :: stmts) t
 
     | [] ->
@@ -679,17 +913,18 @@ let define_parent proc loc open_f path =
          eprintf "Adding parent %s: %d%t" (string_of_path path) (List.length resources) eflush
    in
    let items = print_resources proc loc path nresources resources in
-      FilterCache.add_command proc.cache (Parent path);
-   opens @ [<:str_item< $exp:join_refiner$ >>; <:str_item< $exp:join_dformer$ >>] @ items
+   let index = FilterCache.add_command proc.cache (Parent path) in
+   let items = opens @ [<:str_item< $exp:join_refiner$ >>; <:str_item< $exp:join_dformer$ >>] @ items in
+   let item = list_str_item loc items in
+      prl_str_item loc [item] index
 
 (*
  * A primitive rewrite is taken a true by fiat.
  *)
 let prim_rewrite proc loc name params args =
    let cmd = rewrite_command proc name params args (ImplementationProof <:expr< () >>) in
-      (* Declare it *)
-      FilterCache.add_command proc.cache cmd;
-
+   let index = FilterCache.add_command proc.cache cmd in
+   let item =
       (* Analyze the rewrite term to decide what type of rewrite *)
       match cmd with
          Rewrite { rw_redex = redex; rw_contractum = contractum } ->
@@ -823,15 +1058,16 @@ let prim_rewrite proc loc name params args =
                 <:str_item< declare $list:[ name_rewrite_let; name_let ]$ end >>
        | _ ->
             failwith "prim_rewrite"
+   in
+      prl_str_item loc [item] index
 
 (*
  * Justify a rewrite with a tactic.
  *)
 let rewrite_theorem proc loc name params args expr =
    let cmd = rewrite_command proc name params args (ImplementationProof expr) in
-      (* Declare it *)
-      FilterCache.add_command proc.cache cmd;
-
+   let index = FilterCache.add_command proc.cache cmd in
+   let item =
       (* Analyze the rewrite term to decide what type of rewrite *)
       match cmd with
          Rewrite { rw_redex = redex; rw_contractum = contractum } ->
@@ -860,6 +1096,8 @@ let rewrite_theorem proc loc name params args expr =
                <:str_item< $exp:expr$ >>
        | _ ->
             failwith "rewrite_theorem"
+   in
+      prl_str_item loc [item] index
 
 (*
  * Split the parameters into those that:
@@ -956,9 +1194,8 @@ let define_rule (code : MLast.expr) proc loc name
    let assums = List.map (function { aterm = t } -> t) args in
    let mterm = zip_mimplies (assums @ [goal]) in
    let cmd = axiom_command proc name params mterm (ImplementationProof extract) in
-      (* Record this axiom *)
-      FilterCache.add_command proc.cache cmd;
-      
+   let index = FilterCache.add_command proc.cache cmd in
+   let item =
       (* Pass it to the refiner *)
       match cmd with
          Axiom { axiom_stmt = stmt } ->
@@ -1053,6 +1290,8 @@ let define_rule (code : MLast.expr) proc loc name
                <:str_item< declare $list:[ rule_def; tac_def ]$ end >>
        | _ ->
             failwith "define_rule"
+   in
+      prl_str_item loc [item] index
 
 let prim_rule proc loc name params args goal extract =
    let code = prim_theorem_expr loc in
@@ -1138,7 +1377,7 @@ let _ = ()
  *       create_ml_term refiner redex rewrite_id
  *)
 let define_ml_term proc loc ((name, _, _) as t) code =
-   let t' = declare_mlterm proc loc t in
+   let command, t' = declare_str_mlterm proc loc t in
    
    (* Identifier names *)
    let vars = free_vars code in
@@ -1180,7 +1419,8 @@ let define_ml_term proc loc ((name, _, _) as t) code =
    let rewrite_let_expr =
       <:expr< let $rec:false$ $list:[rewrite_patt, fun_expr loc [arg_id] value_let_expr]$ in $body_expr$ >>
    in
-      define_ml_program proc loc t' term_id redex_id rewrite_let_expr
+   let item = define_ml_program proc loc t' term_id redex_id rewrite_let_expr in
+      <:str_item< declare $list:[ command; item ]$ end >>
 
 let _ = ()
 
@@ -1265,9 +1505,10 @@ let define_prec proc loc s =
    else
       let prec_patt = <:patt< $lid:s$ >> in
       let new_prec = <:expr< $new_prec_expr loc$ () >> in
-         FilterCache.add_command proc.cache (Prec s);
-         FilterCache.add_prec proc.cache s;
-         (<:str_item< value $rec:false$ $list:[ prec_patt, new_prec ]$ >>)
+      let index = FilterCache.add_command proc.cache (Prec s) in
+      let _ = FilterCache.add_prec proc.cache s in
+      let item = (<:str_item< value $rec:false$ $list:[ prec_patt, new_prec ]$ >>) in
+         prl_str_item loc [item] index
 
 let define_prec_rel proc loc s s' rel =
    if not (FilterCache.find_prec proc.cache s) then
@@ -1397,9 +1638,9 @@ let define_resource proc loc r =
    in
    let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$>> in
    let decl = (<:str_item< type $list:[name, [], rsrc_type]$ >>) in
-      FilterCache.add_command proc.cache (Resource r);
+   let index = FilterCache.add_command proc.cache (Resource r) in
       FilterCache.add_resource proc.cache [] r;
-      decl
+      prl_str_item loc [decl] index
 
 (*
  * A magic block computes a hash value from the definitions
@@ -1462,8 +1703,6 @@ let implem_postlog proc loc name id =
    in
       <:str_item< declare $list:stmts$ end >>
 
-let _ = ()
-
 (************************************************************************
  * INPUT PROCESSING                                                     *
  ************************************************************************)
@@ -1471,21 +1710,27 @@ let _ = ()
 (*
  * File saving.
  *)
-let save_interface proc loc =
+let interface_postlog proc loc =
    let { name = name } = proc in
    let id = Hashtbl.hash proc in
-      FilterCache.add_command proc.cache (Id id);
-      FilterCache.save proc.cache;
-      interf_postlog proc loc
+   let index = FilterCache.add_command proc.cache (Id id) in
+      prl_sig_item loc [interf_postlog proc loc] index
+
+let save_interface proc commands =
+   FilterCache.set_commands proc.cache commands;
+   FilterCache.save proc.cache
 
 (*
  * Check that the implementation matches the interfaces.
  * BUG: Need to adjust the id (it shouldn't be 0).
  *)
-let save_implementation proc loc =
+let implementation_postlog proc loc =
    let { name = name; cache = cache } = proc in
-      FilterCache.save cache;
       implem_postlog proc loc name 0
+
+let save_implementation proc commands =
+   FilterCache.set_commands proc.cache commands;
+   FilterCache.save proc.cache
 
 (*
  * Save the include path.
@@ -1585,6 +1830,10 @@ let _ = Quotation.add "con" (Quotation.ExStr contractum_exp)
 let _ = Quotation.default := "term"
 
 (************************************************************************
+ * GRAMMAR MUNGING                                                      *
+ ************************************************************************)
+
+(************************************************************************
  * GRAMMAR EXTENSION                                                    *
  ************************************************************************)
 
@@ -1595,33 +1844,16 @@ let _ =
    Grammar.Unsafe.clear_entry interf;
    Grammar.Unsafe.clear_entry implem
 
-(*
- * Flatten the str_item list.
- *)
-let flatten_str_item_list l =
-   let rec flatten result loc = function
-      <:str_item< declare $list:l'$ end >> ->
-         flatten_list result loc l'
-    | item ->
-         (item, loc) :: result
-   and flatten_list result loc = function
-      [] -> result
-    | h::t ->
-         flatten_list (flatten result loc h) loc t
-   in
-   let rec flatten_top result = function
-      [] -> result
-    | (s, loc)::tl ->
-         flatten_top (flatten result loc s) tl
-   in
-      List.rev (flatten_top [] l)
-
 EXTEND
    GLOBAL: interf implem sig_item str_item expr;
 
    interf:
       [[ interf_opening; st = LIST0 [ s = sig_item; OPT ";;" -> (s, loc) ]; EOI ->
-          st @ [save_interface (get_proc loc) loc, loc]
+          let proc = get_proc loc in
+          let l = st @ [interface_postlog proc loc, loc] in
+          let commands, items = flatten_sig_item_list proc.cache l in
+             save_interface proc commands;
+             items
        ]];
    
    interf_opening:
@@ -1631,8 +1863,11 @@ EXTEND
    
    implem:
       [[ o = implem_opening; st = LIST0 [ s = str_item; OPT ";;" -> (s, loc) ]; EOI ->
-          let l = o @ st @ [save_implementation (get_proc loc) loc, loc] in
-             flatten_str_item_list l
+          let proc = get_proc loc in
+          let l = o @ st @ [implementation_postlog proc loc, loc] in
+          let commands, items = flatten_str_item_list proc.cache l in
+             save_implementation proc commands;
+             items
        ]];
    
    implem_opening:
@@ -1642,11 +1877,9 @@ EXTEND
 
    sig_item:
       [[ "include"; path = mod_ident ->
-          let opens = declare_parent (get_proc loc) (sig_open loc) path in
-             list_sig_item loc opens
+          declare_parent (get_proc loc) loc (sig_open loc) path
         | "declare"; t = quote_term ->
-          declare_term (get_proc loc) loc t;
-          null_sig_item loc
+          fst (declare_sig_term (get_proc loc) loc t)
         | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = term ->
           define_term (get_proc loc) loc name t def
         | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
@@ -1654,11 +1887,9 @@ EXTEND
         | "axiom"; name = LIDENT; args = optarglist; ":"; t = mterm ->
           declare_axiom (get_proc loc) loc name args t
         | "mlterm"; t = quote_term ->
-          declare_mlterm (get_proc loc) loc t;
-          null_sig_item loc
+          fst (declare_sig_mlterm (get_proc loc) loc t)
         | "mlcondition"; t = quote_term ->
-          declare_ml_condition (get_proc loc) loc t;
-          null_sig_item loc
+          declare_ml_condition (get_proc loc) loc t
         | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ")"; name = LIDENT ->
           declare_resource (get_proc loc) loc (**)
              { resource_name = name;
@@ -1668,22 +1899,18 @@ EXTEND
              }
         | "dform"; options = df_options ->
           let options', t = options in
-             declare_dform (get_proc loc) options' t;
-             null_sig_item loc
+             declare_dform (get_proc loc) loc options' t
         | "infix"; name = ident ->
-          declare_infix (get_proc loc) name;
-          null_sig_item loc
+          declare_sig_infix (get_proc loc) loc name
         | "prec"; name = LIDENT ->
           declare_prec (get_proc loc) loc name
        ]];
    
    str_item:
       [[ "include"; path = mod_ident ->
-          let opens = define_parent (get_proc loc) loc (str_open loc) path in
-             list_str_item loc opens
+          define_parent (get_proc loc) loc (str_open loc) path
         | "declare"; t = quote_term ->
-          declare_term (get_proc loc) loc t;
-          null_str_item loc
+          fst (declare_str_term (get_proc loc) loc t)
         | "primrw"; name = LIDENT; args = optarglist; ":"; t = mterm ->
           prim_rewrite (get_proc loc) loc name args t
         | "rwthm"; name = LIDENT; args = optarglist; ":"; t = mterm; "="; body = expr ->
@@ -1711,8 +1938,7 @@ EXTEND
           let options', t = options in
              define_ml_dform (get_proc loc) loc options' t buf format code
         | "infix"; name = ident ->
-          declare_infix (get_proc loc) name;
-          null_str_item loc
+          declare_str_infix (get_proc loc) loc name
         | "prec"; name = LIDENT ->
           define_prec (get_proc loc) loc name
         | "prec"; name1 = LIDENT; "<"; name2 = LIDENT ->
@@ -1830,6 +2056,12 @@ END
 
 (*
  * $Log$
+ * Revision 1.4  1997/09/12 17:21:37  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
  * Revision 1.3  1997/08/07 19:43:41  jyh
  * Updated and added Lori's term modifications.
  * Need to update all pattern matchings.

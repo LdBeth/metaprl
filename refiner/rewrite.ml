@@ -39,6 +39,8 @@ type rwparam =
  | RWLessThan of rwparam * rwparam
  | RWEqual of rwparam * rwparam
  | RWNotEqual of rwparam * rwparam
+ | RWObId of object_id
+ | RWParmList of rwparam list
 and rwoperator = { rw_name : opname; rw_params : rwparam list }
 
 (*
@@ -267,6 +269,23 @@ let rec format_param buf = function
       format_string buf " <> ";
       format_param buf b;
       format_char buf ')'
+ | RWObId _ ->
+      format_string buf "<object-id>"
+
+ | RWParmList l ->
+      let rec format = function
+         [h] ->
+            format_param buf h
+       | h::t ->
+            format_param buf h;
+            format_string buf "; ";
+            format t
+       | [] ->
+            ()
+      in
+         format_string buf "[";
+         format l;
+         format_string buf "]"
 
 let rec format_params buf = function
    [] -> ()
@@ -909,6 +928,12 @@ let compile_so_contractum names stack =
                                    compile_so_contractum_param b)
        | MNotEqual (a, b) -> RWNotEqual (compile_so_contractum_param a,
                                          compile_so_contractum_param b)
+
+       | ObId id ->
+            RWObId id
+
+       | ParmList l ->
+            RWParmList (List.map compile_so_contractum_param l)
    
    (*
     * In bterms, have to add these vars to the binding stack.
@@ -1320,6 +1345,10 @@ let build_contractum names stack =
                  | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
                  | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
             end
+       | RWObId id ->
+            ObId id
+       | RWParmList l ->
+            ParmList (build_contractum_params l)
       in
       let build_contractum_param' p =
          make_param (build_contractum_param p)
@@ -1571,6 +1600,8 @@ let rec convert_param' = function
  | RWLessThan (i, j) -> MLessThan (convert_param i, convert_param j)
  | RWEqual (i, j) -> MEqual (convert_param i, convert_param j)
  | RWNotEqual (i, j) -> MNotEqual (convert_param i, convert_param j)
+ | RWObId id -> ObId id
+ | RWParmList l -> ParmList (List.map convert_param l)
 and convert_param p =
    make_param (convert_param' p)
 
@@ -1598,6 +1629,12 @@ let rewrite_eval_flags = function
 
 (*
  * $Log$
+ * Revision 1.3  1997/09/12 17:21:44  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
  * Revision 1.2  1997/08/07 19:43:47  jyh
  * Updated and added Lori's term modifications.
  * Need to update all pattern matchings.

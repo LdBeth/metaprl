@@ -21,6 +21,7 @@ LMFILES :=\
 	filter_ast\
 	filter_hash\
 	filter_util\
+	filter_ocaml\
 	filter_summary\
 	filter_summary_type\
 	filter_summary_io\

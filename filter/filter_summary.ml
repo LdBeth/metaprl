@@ -48,6 +48,7 @@ type 'a summary_item =
  | Resource of resource_info
  | InheritedResource of resource_info
  | Infix of string
+ | SummaryItem of term
    
 and 'a rewrite_info =
    { rw_name : string;
@@ -97,7 +98,10 @@ and param =
 (*
  * The info about a specific module is just a list of items.
  *)
-and 'a module_info = 'a summary_item list
+and 'a module_info =
+   { info_list : 'a summary_item list;
+     info_length : int
+   }
 
 (************************************************************************
  * MODULE PATHS                                                         *
@@ -125,6 +129,83 @@ let output_path oport =
       aux
 
 (************************************************************************
+ * PRINTING                                                             *
+ ************************************************************************)
+
+(*
+ * Printing.
+ *)
+let rec tab i =
+   if i = 0 then
+      ()
+   else
+      begin
+         output_char stderr ' ';
+         tab (i - 1)
+      end
+
+(*
+ * Print a single entry.
+ *)
+let eprint_entry print_info = function
+   SummaryItem _ ->
+      eprintf "SummaryItem\n"
+ | Rewrite { rw_name = name } ->
+      eprintf "Rewrite: %s\n" name
+ | CondRewrite { crw_name = name } ->
+      eprintf "CondRewrite: %s\n" name
+ | Axiom { axiom_name = name } ->
+      eprintf "Axiom: %s\n" name
+ | Rule { rule_name = name } ->
+      eprintf "Rule: %s\n" name
+ | Opname { opname_name = name } ->
+      eprintf "Opname: %s\n" name
+ | MLTerm t ->
+      eprintf "MLTerm: %s\n" (string_of_term t)
+ | Condition t ->
+      eprintf "Condition: %s\n" (string_of_term t)
+ | Parent path ->
+      eprintf "Parent: %s\n" (string_of_path path)
+ | Module (name, { info_list = info }) ->
+      eprintf "Module: %s\n" name;
+      print_info info
+ | DForm { dform_redex = t } ->
+      eprintf "Dform: %s\n" (string_of_term t)
+ | Prec name ->
+      eprintf "PRecedence: %s\n" name
+ | Resource { resource_name = name } ->
+      eprintf "Resource: %s\n" name
+ | InheritedResource { resource_name = name } ->
+      eprintf "InheritedResource: %s\n" name
+ | Infix name ->
+      eprintf "Infix: %s\n" name
+ | Id id ->
+      eprintf "Id: 0x%08x\n" id
+
+(*
+ * Non-recursive print.
+ *)
+let eprint_command command =
+   let print_info info =
+      ()
+   in
+      eprint_entry print_info command
+
+(*
+ * Recursive printing.
+ *)
+let eprint_info { info_list = l } =
+   let rec print tabstop entry =
+      let print_info info =
+         List.iter (print (tabstop + 3)) info
+      in
+         tab tabstop;
+         eprint_entry print_info entry
+   in
+      List.iter (print 2) l;
+      flush stderr
+
+(************************************************************************
  * MODULE SUMMARY                                                       *
  ************************************************************************)
 
@@ -142,7 +223,7 @@ let find_sub_module summary path =
           | _::t ->
                search t
          in
-            search sum
+            search sum.info_list
    in
       walk summary path
 
@@ -153,7 +234,7 @@ let find_sub_module summary path =
 (*
  * Find an axiom from the summary.
  *)
-let find_axiom summary name =
+let find_axiom { info_list = summary } name =
    let test = function
       Axiom { axiom_name = n } -> n = name
     | Rule { rule_name = n } -> n = name
@@ -165,7 +246,7 @@ let find_axiom summary name =
 (*
  * Find a rewrite in the summary.
  *)
-let find_rewrite summary name =
+let find_rewrite { info_list = summary } name =
    let test = function
       Rewrite { rw_name = n } -> n = name
     | CondRewrite { crw_name = n } -> n = name
@@ -177,7 +258,7 @@ let find_rewrite summary name =
 (*
  * Find a condition.
  *)
-let find_mlterm summary t =
+let find_mlterm { info_list = summary } t =
    let name = opname_of_term t in
    let test = function
       MLTerm t' -> (opname_of_term t') = name
@@ -189,7 +270,7 @@ let find_mlterm summary t =
 (*
  * Find a condition.
  *)
-let find_condition summary t =
+let find_condition { info_list = summary } t =
    let name = opname_of_term t in
    let test = function
       Condition t' -> (opname_of_term t') = name
@@ -201,7 +282,7 @@ let find_condition summary t =
 (*
  * Find a display form.
  *)
-let find_dform summary t =
+let find_dform { info_list = summary } t =
    let name = opname_of_term t in
    let test = function
       DForm { dform_options = options; dform_redex = t' } -> generalizes t t'
@@ -213,7 +294,7 @@ let find_dform summary t =
 (*
  * Find a precedence.
  *)
-let find_prec summary name =
+let find_prec { info_list = summary } name =
    let test = function
       Prec s -> s = name
     | _ -> false
@@ -224,38 +305,49 @@ let find_prec summary name =
 (*
  * Find the identifier.
  *)
-let rec find_id = function
-   h::t ->
-      begin
-         match h with
-            Id i -> i
-          | _ -> find_id t
-      end
- | [] -> raise Not_found
+let find_id { info_list = summary } =
+   let rec search = function
+      h::t ->
+         begin
+            match h with
+               Id i -> i
+             | _ -> search t
+         end
+    | [] ->
+         raise Not_found
+   in
+      search summary
 
 (*
  * Get all the resources.
  *)
-let rec get_resources = function
-   (Resource x)::t ->
-      x::(get_resources t)
- | (InheritedResource x)::t ->
-      x::(get_resources t)
- | _::t ->
-      get_resources t
- | [] -> []
+let get_resources { info_list = summary } =
+   let rec search = function
+      (Resource x)::t ->
+         x::search t
+    | (InheritedResource x)::t ->
+         x::search t
+    | _::t ->
+         search t
+    | [] -> []
+   in
+      search summary
 
 (*
  * Get infix directives.
  *)
-let rec get_infixes = function
-   h::t ->
-      begin
-         match h with
-            Infix s -> s::(get_infixes t)
-          | _ -> get_infixes t
-      end
- | [] -> []
+let get_infixes { info_list = summary } =
+   let rec search = function
+      h::t ->
+         begin
+            match h with
+               Infix s -> s::search t
+             | _ -> search t
+         end
+    | [] ->
+         []
+   in
+      search summary
 
 (************************************************************************
  * CREATION/MODIFICATION						*
@@ -264,12 +356,12 @@ let rec get_infixes = function
 (*
  * New info struct.
  *)
-let new_module_info () = []
+let new_module_info () = { info_list = []; info_length = 0 }
 
 (*
  * Coerce the info.
  *)
-let info_items info = info
+let info_items { info_list = info } = info
 
 (*
  * Normalize all terms in the info.
@@ -279,7 +371,10 @@ let normalize_param = function
  | p -> p
 
 let rec normalize_info_item normalize_proof = function
-   Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
+   SummaryItem t ->
+      SummaryItem (normalize_term t)
+
+ | Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
       Rewrite { rw_name = name;
                 rw_redex = normalize_term redex;
                 rw_contractum = normalize_term con;
@@ -362,20 +457,66 @@ let rec normalize_info_item normalize_proof = function
  | (Infix _) as p ->
       p
 
-and normalize_info info normalize_proof =
-   List.map (normalize_info_item normalize_proof) info
+and normalize_info { info_list = info; info_length = index } normalize_proof =
+   { info_list = List.map (normalize_info_item normalize_proof) info;
+     info_length = index
+   }
 
 (*
  * Add a command to the info.
  *)
-let add_command info item =
-   item::info
+let add_command { info_list = info; info_length = length } item =
+   { info_list = item::info; info_length = length + 1 }, length
+
+let get_command { info_list = info; info_length = length } index =
+   List.nth info (length - index - 1)
+
+(*
+ * Join some new commands to the list.
+ * The new commands are expected to be in the same order
+ * as the old commands, and all the old commands must appear in the
+ * new list.  Check it!
+ *)
+let set_commands { info_list = info } items =
+   let items = List.rev items in
+   let rec check = function
+      (item::items) as l, item'::items' ->
+         if item = item' then
+            check (items, items')
+         else
+            check (l, items')
+    | [], _ ->
+         ()
+    | (entry :: _), [] ->
+         let eprint_info _ =
+            ()
+         in
+            eprintf "Filter_summary.set_commands: new command list is not a superset\n";
+            eprintf "This command is not included: ";
+            eprint_entry eprint_info entry;
+            eflush stderr;
+            raise (Failure "Filter_summary.set_commands")
+   in
+      if debug_filter_cache then
+         begin
+            eprintf "Saved commands:\n";
+            List_util.rev_iter eprint_command info;
+            eprintf "\nNew commands:\n";
+            List_util.rev_iter eprint_command items;
+            flush stderr
+         end;
+
+      check (info, items);
+      { info_list = items; info_length = List.length items }
 
 (*
  * Convert the proofs.
  *)
 let rec proof_map_item f = function
-   Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
+   SummaryItem t ->
+      SummaryItem t
+
+ | Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
       Rewrite { rw_name = name;
                 rw_redex = redex;
                 rw_contractum = con;
@@ -438,8 +579,10 @@ let rec proof_map_item f = function
  | Infix op ->
       Infix op
 
-and proof_map f info =
-   List.map (proof_map_item f) info
+and proof_map f { info_list = info; info_length = index } =
+   { info_list = List.map (proof_map_item f) info;
+     info_length = index
+   }
 
 (************************************************************************
  * UTILITIES								*
@@ -813,7 +956,9 @@ let rec check_module name info implem =
  *)
 and check_implemented implem interf =
    match interf with
-      Rewrite info ->
+      SummaryItem _ ->
+         ()
+    | Rewrite info ->
          check_rewrite info implem
     | CondRewrite info ->
          check_cond_rewrite info implem
@@ -848,62 +993,17 @@ and check_implemented implem interf =
  * Check that the implementation satisfies the interface.
  * This means that every item in the interface must be implemented.
  *)
-and check_implementation implem interf =
+and check_implementation { info_list = implem } { info_list = interf } =
    List.iter (check_implemented implem) interf
 
 (*
- * Printing.
- *)
-let rec tab i =
-   if i = 0 then
-      ()
-   else
-      begin
-         output_char stderr ' ';
-         tab (i - 1)
-      end
-
-let eprint_info l =
-   let rec print tabstop entry =
-      tab tabstop;
-      match entry with
-         Rewrite { rw_name = name } ->
-            eprintf "Rewrite: %s\n" name
-       | CondRewrite { crw_name = name } ->
-            eprintf "CondRewrite: %s\n" name
-       | Axiom { axiom_name = name } ->
-            eprintf "Axiom: %s\n" name
-       | Rule { rule_name = name } ->
-            eprintf "Rule: %s\n" name
-       | Opname { opname_name = name } ->
-            eprintf "Opname: %s\n" name
-       | MLTerm t ->
-            eprintf "MLTerm: %s\n" (string_of_term t)
-       | Condition t ->
-            eprintf "Condition: %s\n" (string_of_term t)
-       | Parent path ->
-            eprintf "Parent: %s\n" (string_of_path path)
-       | Module (name, info) ->
-            eprintf "Module: %s\n" name;
-            List.iter (print (tabstop + 3)) info
-       | DForm { dform_redex = t } ->
-            eprintf "Dform: %s\n" (string_of_term t)
-       | Prec name ->
-            eprintf "PRecedence: %s\n" name
-       | Resource { resource_name = name } ->
-            eprintf "Resource: %s\n" name
-       | InheritedResource { resource_name = name } ->
-            eprintf "InheritedResource: %s\n" name
-       | Infix name ->
-            eprintf "Infix: %s\n" name
-       | Id id ->
-            eprintf "Id: 0x%08x\n" id
-   in
-      List.iter (print 2) l;
-      flush stderr
-
-(*
  * $Log$
+ * Revision 1.3  1997/09/12 17:21:38  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
  * Revision 1.2  1997/08/06 16:17:32  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -2,6 +2,12 @@
  * This is a simplified version of termTable.
  *
  * $Log$
+ * Revision 1.2  1997/09/12 17:21:46  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
  * Revision 1.1  1997/04/28 15:51:45  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included
@@ -45,6 +51,7 @@ and paramTemplate =
  | Token
  | Level
  | Var
+ | ObId
 
 (*
  * A table is just a list of items.
@@ -75,33 +82,51 @@ let compute_template t =
       let { bvars = bvars } = dest_bterm bterm in
          List.length bvars
    in
-   let compute_param param =
-      match dest_param param with
-         Term.Number _ -> Number
-       | Term.String _ -> String
-       | Term.Token _ -> Token
-       | Term.Level _ -> Level
-       | Term.Var _ -> Var
-       | Term.MNumber _ -> Number
-       | Term.MString _ -> String
-       | Term.MToken _ -> Token
-       | Term.MLevel _ -> Level
-       | Term.MVar _ -> Var
-       | Term.MSum _
-       | Term.MDiff _
-       | Term.MProduct _
-       | Term.MQuotient _
-       | Term.MRem _ -> Number
-       | Term.MLessThan _
-       | Term.MEqual _
-       | Term.MNotEqual _ -> Token
+   let rec compute_param l = function
+      [] ->
+         l
+    | param::t ->
+         match dest_param param with
+            Term.Number _
+          | Term.MNumber _
+          | Term.MSum _
+          | Term.MDiff _
+          | Term.MProduct _
+          | Term.MQuotient _
+          | Term.MRem _ ->
+               compute_param (Number :: l) t
+
+          | Term.String _
+          | Term.MString _ ->
+               compute_param (String :: l) t
+
+          | Term.Token _
+          | Term.MToken _
+          | Term.MNotEqual _
+          | Term.MLessThan _
+          | Term.MEqual _ ->
+               compute_param (Token :: l) t
+
+          | Term.Level _
+          | Term.MLevel _ ->
+               compute_param (Level :: l) t
+
+          | Term.Var _
+          | Term.MVar _ ->
+               compute_param (Var :: l) t
+
+          | Term.ObId _ ->
+               compute_param (ObId :: l) t
+
+          | Term.ParmList l' ->
+               compute_param (compute_param l l') t
    in
       { template_opname = opname;
         template_params =
            if params = [] then
               [||]
            else
-              Array.of_list (List.map compute_param params);
+              Array.of_list (compute_param [] params);
         template_arities = Array.of_list (List.map compute_arity bterms)
       }
 

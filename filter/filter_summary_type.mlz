@@ -121,8 +121,15 @@ sig
    val find_prec : info -> string -> bool
    val resources : info -> (module_path * resource_info) list
 
-   (* Update *)
-   val add_command : info -> proof summary_item -> proof summary_item
+   (*
+    * Update.
+    * add_command returns a number that can be used to
+    * look up the command.  (Sorry, but we need this so that
+    * the commands can be embeddied in MLast).
+    *)
+   val add_command : info -> proof summary_item -> int
+   val set_commands : info -> proof summary_item list -> unit
+   val get_command : info -> int -> proof summary_item
    val add_resource : info -> module_path -> resource_info -> unit
    val add_prec : info -> string -> unit
 
@@ -131,6 +138,12 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1997/09/12 17:21:39  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
  * Revision 1.1  1997/08/06 16:17:35  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -334,9 +334,16 @@ struct
     * Add a command to the summary.
     *)
    let add_command cache item =
-      let info' = Filter_summary.add_command cache.info item in
+      let info', index = Filter_summary.add_command cache.info item in
          cache.info <- info';
-         item
+         index
+   
+   let set_commands cache items =
+      let info' = Filter_summary.set_commands cache.info items in
+         cache.info <- info'
+   
+   let get_command cache index =
+      Filter_summary.get_command cache.info index
 
    (*
     * Add a precedence.
@@ -485,6 +492,12 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1997/09/12 17:21:35  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
  * Revision 1.2  1997/08/06 16:17:27  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

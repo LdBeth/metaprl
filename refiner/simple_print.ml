@@ -117,6 +117,21 @@ let rec format_param buf p =
     | MLessThan (a, b) -> format_param buf a; format_string buf " < "; format_param buf b; format_string buf ":n"
     | MEqual (a, b) -> format_param buf a; format_string buf " = "; format_param buf b; format_string buf ":n"
     | MNotEqual (a, b) -> format_param buf a; format_string buf " <> "; format_param buf b; format_string buf ":n"
+    | ObId a -> format_string buf "<object-id>"
+    | ParmList l ->
+         let rec format = function
+            [h] ->
+               format_param buf h
+          | h::t ->
+               format_param buf h;
+               format_string buf "; ";
+               format t
+          | [] ->
+               ()
+         in
+            format_string buf "[";
+            format l;
+            format_string buf "]"
 
 (* List of params *)
 let rec format_paramlist buf = function
@@ -397,6 +412,12 @@ let prerr_simple_address = print_simple_address_fp stderr
 
 (*
  * $Log$
+ * Revision 1.2  1997/09/12 17:21:44  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
  * Revision 1.1  1997/04/28 15:51:38  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

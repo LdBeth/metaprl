@@ -41,6 +41,7 @@ type 'a summary_item =
  | Resource of resource_info
  | InheritedResource of resource_info
  | Infix of string
+ | SummaryItem of term
    
 and 'a rewrite_info =
    { rw_name : string;
@@ -111,7 +112,9 @@ val get_resources : 'a module_info -> resource_info list
 val get_infixes : 'a module_info -> string list
 
 (* Update *)
-val add_command : 'a module_info -> 'a summary_item -> 'a module_info
+val add_command : 'a module_info -> 'a summary_item -> 'a module_info * int
+val set_commands : 'a module_info -> 'a summary_item list -> 'a module_info
+val get_command : 'a module_info -> int -> 'a summary_item
 
 (* Utilities *)
 val collect_cvars : param list -> string array
@@ -133,10 +136,17 @@ val output_path : out_channel -> module_path -> unit
 (*
  * Debugging.
  *)
+val eprint_command : 'a summary_item -> unit
 val eprint_info : 'a module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.3  1997/09/12 17:21:39  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
  * Revision 1.2  1997/08/06 16:17:33  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
