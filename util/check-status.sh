@@ -46,7 +46,7 @@ if [ "$2" = "update" ]; then
    echo ""
 fi
 # cvs -q update 2>&1
-if [ -e .omakedb ]; then
+if [ -e .omakedb -o -x /usr/bin/omake -o -x /usr/local/bin/omake ]; then
    omake VERBOSE=1 -S editor/ml/mp.opt
 else
    (make -s depend > /dev/null && make -s opt > /dev/null) 2>&1 | egrep -v -- "-jN forced in submake|Makefile.dep: No such file or directory"
