@@ -8,67 +8,73 @@
 
 ### Default environment
 
-$native = 1;	# 0 for bytecodes, 1 for native
+$native = 1;    # 0 for bytecodes, 1 for native
 
 ## Cons environments come from the cons module.
 $env = new cons(
+
     #
     # Configuration
     #
-    MP_VERSION => "0.7.1",
-    REFINER => "VERBOSE",
-    TERMS => "ds",
-    MC => "$ENV{'MC_ROOT'}",
-
-    #
-    # Always use stdlib from MC
-    #
-    INCPATH => ["@{$env->{INCPATH}}", "$ENV{'MC_ROOT'}/lib/naml/stdlib"],
+    MP_VERSION  => "0.7.1",
+    REFINER     => "VERBOSE",
+    TERMS       => "ds",
+    MC          => "$ENV{'MC_ROOT'}",
+    INCPATH     => ["@{$env->{INCPATH}}"],
 
     ## Overrides
-    OCAMLC	=> $native ? "ocamlopt.opt" : "ocamlc",	# The OCaml compiler
-    OCAMLLINK	=> $native ? "ocamlopt.opt" : "ocamlc",	# The OCaml compiler
-    SUFOBJ	=> $native ? ".cmx"  : ".cmo",		# Object suffix
-    SUFLIB	=> $native ? ".cmxa" : ".cma",		# Library suffix
+    OCAMLC      => $native ? "ocamlopt.opt" : "ocamlc", # The OCaml compiler
+    OCAMLLINK   => $native ? "ocamlopt.opt" : "ocamlc", # The OCaml compiler
+    SUFOBJ      => $native ? ".cmx"  : ".cmo",          # Object suffix
+    SUFLIB      => $native ? ".cmxa" : ".cma",          # Library suffix
 
-    SUFSRC	=> ".ml",	# The suffix for source files
-    SUFSIG	=> ".mli",	# The suffix for signature files
-    SUFCSIG	=> ".cmi",	# The suffix for compiled signature files
+    SUFSRC      => ".ml",       # The suffix for source files
+    SUFSIG      => ".mli",      # The suffix for signature files
+    SUFCSIG     => ".cmi",      # The suffix for compiled signature files
 
-    OCAMLCFLAGS => "-thread",					# Basic options
-    OCAMLCOM	=> "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1",	# How to compile files
-    SIGCOM	=> "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1",	# How to compile signatures
-    LINKCOM	=> "%OCAMLLINK %OCAMLCFLAGS -o %> %MLLIBS %< %CCLIBS",	# How to link objects
-    ARCOM	=> "%OCAMLLINK %OCAMLCFLAGS -a -o %> %<",	# How to archive objects
-    LEXCOM	=> "ocamllex %1",		# How to lex a file
-    YACCCOM	=> "ocamlyacc %1",		# How to yacc a file
-    LNCOM       => "ln -sf %1:f %>",		# How to link a file
-    LNCOM2      => "ln -sf %1:f %>:b.ml; ln -sf %1:f %>:b.mli",		# How to link a file
+    OCAMLCFLAGS => "-thread",                             # Basic options
+    OCAMLCOM    => "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1", # How to compile files
+    SIGCOM      => "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1", # How to compile signatures
+    LINKCOM     => "%OCAMLLINK %OCAMLCFLAGS -o %> %MLLIBS %< %CCLIBS", # How to link objects
+    ARCOM       => "%OCAMLLINK %OCAMLCFLAGS -a -o %> %<", # How to archive objects
+    LEXCOM      => "ocamllex %1",                         # How to lex a file
+    YACCCOM     => "ocamlyacc %1",                        # How to yacc a file
+    LNCOM       => "ln -sf %1:f %>",                      # How to link a file
+    LNCOM2      => "ln -sf %1:f %>:b.ml; ln -sf %1:f %>:b.mli", # How to link a file
 
     PPFLAGS     => "",
     CAMLP4MACRO => "camlp4o %PPFLAGS",
     CAMLP4MACROPRINT => "camlp4o pr_o.cmo %PPFLAGS",
 
     ENV  => {
-      PATH      => $ENV{'PATH'}        # Use user's path instead of the cons default
-      },
+      PATH      => $ENV{'PATH'} # Use user's path instead of the cons default
+    },
 
 );
+
+#
+# Use the stdlib from MC if available (i.e. if MC_ROOT is defined.)
+#
+if(defined($ENV{'MC_ROOT'})) {
+    $env = $env->clone(
+        INCPATH => [@{$env->{INCPATH}}, "$ENV{'MC_ROOT'}/lib/naml/stdlib"]
+    )
+};
 
 ## Export env for use by the rest of the Conscript files
 Export qw( env );
 
 ## Execute the given Conscript files
 Build qw(
-	util/Conscript
-	clib/Conscript
-	mllib/Conscript
-	refiner/Conscript
-	library/Conscript
-	ensemble/Conscript
-	filter/Conscript
-	lib/Conscript
-	theories/Conscript
-	editor/Conscript
-	mc/Conscript
+   util/Conscript
+   clib/Conscript
+   mllib/Conscript
+   refiner/Conscript
+   library/Conscript
+   ensemble/Conscript
+   filter/Conscript
+   lib/Conscript
+   theories/Conscript
+   editor/Conscript
+   mc/Conscript
 );

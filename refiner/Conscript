@@ -1,20 +1,20 @@
 Import qw( env );
 
 $env = $env->clone(
-	INCPATH	=> [@{$env->{INCPATH}}, "#mllib"],
-	OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
-	PPFLAGS => "$env->{PPFLAGS} ./util/macro.cmo -D$env->{REFINER}_EXN -DSEQ_SET=Array_linear_set"
+   INCPATH     => [@{$env->{INCPATH}}, "#mllib"],
+   OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
+   PPFLAGS     => "$env->{PPFLAGS} ./util/macro.cmo -D$env->{REFINER}_EXN -DSEQ_SET=Array_linear_set"
 );
 
 Export qw( env );
 
 Build qw(
-	refbase/Conscript
- 	refsig/Conscript
-	refiner/Conscript
-	reflib/Conscript
-	rewrite/Conscript
-	term_ds/Conscript
-	term_gen/Conscript
-	term_std/Conscript
+   refbase/Conscript
+   refsig/Conscript
+   refiner/Conscript
+   reflib/Conscript
+   rewrite/Conscript
+   term_ds/Conscript
+   term_gen/Conscript
+   term_std/Conscript
 );

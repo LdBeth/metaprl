@@ -1,29 +1,32 @@
 Import qw( env );
 
 $env = $env->clone(
-    INCPATH	=> [@{$env->{INCPATH}}, "../refbase", "../refsig", "../term_gen", "../term_std", "../term_ds", "../rewrite"],
-    PPFLAGS     => "$env->{PPFLAGS} -Irefiner/refsig"
+    INCPATH => [@{$env->{INCPATH}},
+                "../refbase",  "../refsig",  "../term_gen",
+                "../term_std", "../term_ds", "../rewrite"
+               ],
+    PPFLAGS => "$env->{PPFLAGS} -Irefiner/refsig"
 );
 
 Command $env "refiner.ml", "#mk/config", qq(
-	echo "module Refiner = Refiner_%TERMS.Refiner" > %>
+   echo "module Refiner = Refiner_%TERMS.Refiner" > %>
 );
 
 OCamlSources $env
-	'refine.ml',
-	'refine_error.ml',
-	'refiner_std.ml',
-	'refiner_ds.ml',
-	'refiner_io.ml',
-	'refiner.ml';
+   'refine.ml',
+   'refine_error.ml',
+   'refiner_std.ml',
+   'refiner_ds.ml',
+   'refiner_io.ml',
+   'refiner.ml';
 
 OCamlLibrary $env 'refiner',
-	'refine',
-	'refine_error',
-	'refiner_std',
-	'refiner_ds',
-	'refiner_io',
-	'refiner';
+   'refine',
+   'refine_error',
+   'refiner_std',
+   'refiner_ds',
+   'refiner_io',
+   'refiner';
 
 ## Add the library to the default target list
 Default qw( refiner.cmxa );
