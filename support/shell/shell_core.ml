@@ -176,7 +176,7 @@ let fg shell pid =
  *)
 let set_packages info =
    info.shell_proof.edit_addr [];
-   info.shell_proof <- Shell_root.view packages (get_display_mode info)
+   info.shell_proof <- Shell_root.create packages (get_display_mode info)
 
 let set_package parse_arg info modname =
    let pack = Package_info.get packages modname in
@@ -615,7 +615,7 @@ let mount_current_module modname parse_arg shell need_shell verbose =
          begin
             (* Make sure the module name is well-formed *)
             if modname <> String.uncapitalize modname then
-               raise (Failure "Shell.chdir: module name should not be capitalized");
+               raise (Failure "Shell_core: module name should not be capitalized");
 
             (* See if the theory exists *)
             let _ = Theory.get_theory modname in
@@ -713,15 +713,11 @@ let rec chdir parse_arg shell need_shell verbose path =
 
          (* Save the directory *)
          shell.shell_dir <- path;
-
-         (* Print directory *)
-         if verbose then
-            eprintf "CWD: %s@." (string_of_dir path)
       with
          exn ->
             (* Some kind of failure happened, so change back to where we came from *)
-            eprintf "Chdir failed: %s@." (string_of_dir path);
-            eprintf "Current dir: %s@." (string_of_dir dir);
+            eprintf "Chdir to \"%s\" failed@." (string_of_dir path);
+            eprintf "Going back to \"%s\"@." (string_of_dir dir);
             chdir parse_arg shell false verbose dir;
             raise exn
 
@@ -799,7 +795,7 @@ let get_shortener shell =
  * This is just a list of the "important" packages.
  *)
 let view_packages info options =
-   let proof = Shell_root.view packages (get_display_mode info) in
+   let proof = Shell_root.create packages (get_display_mode info) in
       display_proof info proof options
 
 (*

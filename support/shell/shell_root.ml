@@ -194,10 +194,6 @@ let rec edit pack window =
       }
 
 let create pack window =
-   let window = create_window window in
-      edit pack window
-
-let view pack window =
    edit pack (create_window window)
 
 (*
