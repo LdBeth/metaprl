@@ -531,7 +531,7 @@ struct
                   eprintf "RWSeqContext/RWSeqFreeVarsContext (%d, %d, [%a])%t" count j print_int_list l eflush
             ENDIF;
             if count + i > len then
-               REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
+               REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringError "not enough hypotheses"))
             else
                begin match hyp' with
                   RWSeqFreeVarsContext (rconts, rvars, _, _, _) ->
@@ -545,10 +545,10 @@ struct
        | RWSeqHypBnd (name, term') :: hyps' ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
-                  eprintf "RWSeqHyp%t" eflush
+                  eprintf "RWSeqHyp (%i out of %i)%t" i len eflush
             ENDIF;
             if i = len then
-               REF_RAISE(RefineError ("get_sequent_hyp", StringIntError ("hyp index is out of range", i)))
+               REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringIntError ("not enough hypotheses when matching hypothesis number", succ i)))
             else begin match SeqHyp.get hyps i with
                HypBinding (v, term) ->
                   set_bvar stack v name;
@@ -567,7 +567,7 @@ struct
                   match_redex_term addrs stack all_bvars term' term;
                   match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps (succ i) len
              | Context _ ->
-                  REF_RAISE(RefineError ("get_sequent_hyp", StringIntError ("hyp index refers to a context", i)))
+                  REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringIntError ("hypothesis index refers to a context", i)))
             end
        | RWSeqContextSubst _ :: _ | RWSeqHyp _ :: _ ->
             raise(Invalid_argument("Invalid context in redex program"))
