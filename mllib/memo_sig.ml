@@ -65,6 +65,7 @@ sig
       ('param -> 'header -> 'weak_header) ->            (* Delete all collectable values *)
       ('weak_header -> 'weak_header -> bool) ->         (* Compare arguments *)
       ('param -> 'header -> 'result) ->                 (* Compute the value of the function *)
+      (unit -> unit) list ->									  (* List of GCors for all mutually recursive memo tables *)
       ('param, 'arg, 'header, 'weak_header, 'result) t
 
    (*

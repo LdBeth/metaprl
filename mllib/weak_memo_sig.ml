@@ -85,6 +85,7 @@ sig
       ('param -> 'header -> 'weak_header) ->         (* Convert 'header to 'weak_header *)
       ('weak_header -> 'weak_header -> bool) ->      (* Headers' comparision function *)
       ('param -> 'header -> 'image) ->               (* Converter from header to result *)
+      (unit -> unit) list ->								  (* Connected component - list of GCors for all weak tables that might have mutually recursive data *)
       ('param, 'arg, 'header, 'weak_header, 'image) t
 
    (*
@@ -96,7 +97,11 @@ sig
       ('param -> 'header -> 'weak_header) ->         (* Convert 'header to 'weak_header *)
       ('weak_header -> 'weak_header -> bool) ->      (* Headers' comparision function *)
       ('param -> 'header -> 'image) ->               (* Converter from header to result *)
+      (unit -> unit) list ->								  (* Connected component - list of GCors for all weak tables that might have mutually recursive data *)
       ('param, 'arg, 'header, 'weak_header, 'image) t
+
+	val add_cc : ('param, 'arg, 'header, 'weak_header, 'image) t -> (unit -> unit) list -> unit
+	val get_cc : ('param, 'arg, 'header, 'weak_header, 'image) t -> (unit -> unit) list
 
    (*
     * Looks for header and returns result's descriptor if succeed otherwise evaluate the result
@@ -133,9 +138,14 @@ sig
     *)
    val apply : ('param, 'arg, 'header, 'weak_header, 'image) t -> 'param -> 'arg -> 'image
 
+   (*
+    * Don't understand/remember what's the point in global is_gc
+    *)
+(*
    val gc_on : unit -> unit
 
    val gc_off : unit -> unit
+*)
 end
 
 (*

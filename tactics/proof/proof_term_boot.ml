@@ -886,32 +886,32 @@ struct
     *)
    let ext_memo =
       { attribute = WeakMemo.create_default "Proof_term_boot.ext_memo.attribute" (**)
-           weaken_attribute_header compare_attribute ext_make_attribute;
+           weaken_attribute_header compare_attribute ext_make_attribute [];
         attributes = WeakMemo.create_default "Proof_term_boot.ext_memo.attributes" (**)
-           weaken_attributes_header compare_attributes ext_make_attributes;
+           weaken_attributes_header compare_attributes ext_make_attributes [];
         arglist = WeakMemo.create_default "Proof_term_boot.ext_memo.arglist" (**)
-           weaken_arglist_header compare_arglist ext_make_arglist;
+           weaken_arglist_header compare_arglist ext_make_arglist [];
         tactic_parent = WeakMemo.create_default "Proof_term_boot.ext_memo.tactic_parent" (**)
-           weaken_tactic_parent_header compare_tactic_parent ext_make_tactic_parent;
+           weaken_tactic_parent_header compare_tactic_parent ext_make_tactic_parent [];
         tactic_arg = WeakMemo.create_default "Proof_term_boot.ext_memo.tactic_arg" (**)
-           weaken_tactic_arg_header compare_tactic_arg ext_make_tactic_arg;
+           weaken_tactic_arg_header compare_tactic_arg ext_make_tactic_arg [];
         extract = WeakMemo.create_default "Proof_term_boot.ext_memo.extract" (**)
-           weaken_extract_header compare_extract ext_make_extract
+           weaken_extract_header compare_extract ext_make_extract []
       }
 
    let term_memo =
       { attribute = WeakMemo.create_default "Proof_term_boot.term_memo.attribute" (**)
-           weaken_attribute_header compare_attribute term_make_attribute;
+           weaken_attribute_header compare_attribute term_make_attribute [];
         attributes = WeakMemo.create_default "Proof_term_boot.term_memo.attributes" (**)
-           weaken_attributes_header compare_attributes term_make_attributes;
+           weaken_attributes_header compare_attributes term_make_attributes [];
         arglist = WeakMemo.create_default "Proof_term_boot.term_memo.arglist" (**)
-           weaken_arglist_header compare_arglist term_make_arglist;
+           weaken_arglist_header compare_arglist term_make_arglist [];
         tactic_parent = WeakMemo.create_default "Proof_term_boot.term_memo.tactic_parent" (**)
-           weaken_tactic_parent_header compare_tactic_parent term_make_tactic_parent;
+           weaken_tactic_parent_header compare_tactic_parent term_make_tactic_parent [];
         tactic_arg = WeakMemo.create_default "Proof_term_boot.term_memo.tactic_arg" (**)
-           weaken_tactic_arg_header compare_tactic_arg term_make_tactic_arg;
+           weaken_tactic_arg_header compare_tactic_arg term_make_tactic_arg [];
         extract = WeakMemo.create_default "Proof_term_boot.term_memo.extract" (**)
-           weaken_extract_header compare_extract term_make_extract
+           weaken_extract_header compare_extract term_make_extract []
       }
 
    (*

@@ -63,7 +63,7 @@ sig
    (*
     * Parameterized versions.
     *)
-   val p_create : int -> t
+   val p_create : int -> (unit -> unit) list -> t
 
    val p_add_src :
       t -> FromTerm.TermType.term -> term_index

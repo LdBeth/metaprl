@@ -74,11 +74,19 @@ struct
    (*
     * Create the bi-directional table.
     *)
-   let p_create i =
-      { source_hash = SourceHash.p_create i;
-        target_hash = TargetHash.p_create i;
-        locker = Mutex.create ()
-      }
+   let p_create i l =
+   	let sh=SourceHash.p_create i [] in
+   	let th=TargetHash.p_create i (SourceHash.p_get_cc sh) in
+      	TargetHash.p_add_cc th l;
+      	SourceHash.p_add_cc sh (TargetHash.p_get_cc th);
+	      { source_hash = sh;
+   	     target_hash = th;
+      	  locker = Mutex.create ()
+	      }
+
+	let p_add_cc info1 cc2 = SourceHash.p_add_cc info1.source_hash cc2
+
+	let p_get_cc info = SourceHash.p_get_cc info.source_hash
 
    (*
     * Terms.
@@ -209,10 +217,17 @@ struct
          Mutex.unlock info.locker;
          r
 
-   let global_hash = { source_hash = SourceHash.global_hash;
-                       target_hash = TargetHash.global_hash;
-                       locker = Mutex.create ()
-                     }
+   let global_hash =
+   let sh=SourceHash.global_hash in
+   let th=TargetHash.global_hash in
+   let scc=SourceHash.p_get_cc sh in
+   let tcc=TargetHash.p_get_cc th in
+   	SourceHash.p_add_cc sh tcc;
+   	TargetHash.p_add_cc th scc;
+	   { source_hash = sh;
+   	  target_hash = th;
+	     locker = Mutex.create ()
+   	}
 
    let add_src = p_add_src global_hash
    let add_dst = p_add_dst global_hash

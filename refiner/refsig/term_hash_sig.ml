@@ -125,7 +125,10 @@ sig
       (*
        * Creates new hashing structure
        *)
-      val p_create : int -> t
+      val p_create : int -> (unit -> unit) list -> t
+
+      val p_add_cc : t -> (unit -> unit) list -> unit
+      val p_get_cc : t -> (unit -> unit) list
 
       (*
        * Functions for storing and accessing objects to hashing structure

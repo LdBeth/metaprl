@@ -187,6 +187,23 @@ struct
       else
          scan_for_release test info
 
+   let rec collect_from_list test input = 
+      List.partition test input
+
+   let rec collect_for_release test info i collected =
+      if i<Array.length info.table then
+         let (c,rest)=collect_from_list test info.table.(i) in
+         let clen=List.length c in
+            begin
+               info.table.(i) <- rest;
+               info.count <- info.count - clen;
+               collect_for_release test info (i+1) (List.rev_append c collected)
+            end
+      else
+         collected
+
+   let gc_all test info = collect_for_release test info 0 []
+
    let is_gc info = info.gc_on
 end
 

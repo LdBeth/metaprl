@@ -320,12 +320,31 @@ struct
    let make_msequent_header _ _ =
       raise (Invalid_argument "Term_hash.make_msequent_header")
 
-   let p_create hash_size =
-      { param_hash = Hashtbl.create hash_size;
-        term_hash = WM.create hash_size 20 "Term_hash.term_hash" make_term_header weak_term_header compare_term_header p_constr_term;
-        meta_term_hash = WM.create hash_size 20 "Term_hash.meta_term_hash" make_meta_term_header weak_meta_term_header compare_meta_term_header p_constr_meta_term;
-        msequent_hash = WM.create hash_size 20 "Term_hash.msequent_hash" make_msequent_header weak_msequent_header compare_msequent_header p_constr_msequent
-      }
+   let p_create hash_size l =
+   	let th=WM.create hash_size 20 "Term_hash.term_hash" make_term_header weak_term_header compare_term_header p_constr_term [] in
+   	let mth=WM.create hash_size 20 "Term_hash.meta_term_hash" make_meta_term_header weak_meta_term_header compare_meta_term_header p_constr_meta_term (WM.get_cc th) in
+   	let msh=WM.create hash_size 20 "Term_hash.msequent_hash" make_msequent_header weak_msequent_header compare_msequent_header p_constr_msequent (WM.get_cc mth) in
+      	WM.add_cc msh l;
+      	WM.add_cc th (WM.get_cc msh);
+      	WM.add_cc mth (WM.get_cc msh);
+	      { param_hash = Hashtbl.create hash_size;
+   	     term_hash = th;
+      	  meta_term_hash = mth;
+	        msequent_hash = msh
+   	   }
+
+
+   (*
+    * Merges "connect components" of two instances of type t.
+    * Connected component - list of weak tables that might me mutually recursive.
+    *)
+   let p_add_cc info1 cc2 =
+   	WM.add_cc info1.term_hash cc2;
+   	WM.add_cc info1.meta_term_hash cc2;
+   	WM.add_cc info1.msequent_hash cc2
+
+   let p_get_cc info =
+   	WM.get_cc info.term_hash
 
    let p_lookup info th = WM.lookup info.term_hash info th
 
@@ -345,7 +364,7 @@ struct
 
    let p_retrieve_msequent info mseq = WM.retrieve info.msequent_hash info mseq
 
-   let global_hash = p_create 17
+   let global_hash = p_create 17 []
 
    let constr_param p = p_constr_param global_hash p
    let lookup th = p_lookup global_hash th
