@@ -1,7 +1,7 @@
 To compile Nuprl-Light for the first time:
    1. You need to set the CAMLLIB directory.
       On mojave:
-      % setenv CAMLLIB /usr/local/lib/ocaml-1.07
+      % setenv CAMLLIB /usr/lib/ocaml-1.07
 
    2. Make the dependencies:
       % make depend
