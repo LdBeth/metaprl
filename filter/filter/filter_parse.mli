@@ -26,18 +26,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Refiner.Refiner.Term
 
 (* Add an include directory *)
 val set_include_path : string list -> unit
-
-(* Initialization *)
-val init : unit -> unit
-val close : unit -> unit
 
 (*
  * -*-

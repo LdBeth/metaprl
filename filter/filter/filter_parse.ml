@@ -30,7 +30,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
- * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 open Printf
 open Pcaml
@@ -86,16 +86,12 @@ let debug_dform =
         debug_value = false
       }
 
-let debug_spell =
+let debug_grammar =
    create_debug (**)
-      { debug_name = "spell";
-        debug_description = "check spelling";
+      { debug_name = "grammar";
+        debug_description = "display term parsing operations";
         debug_value = false
       }
-
-let _ =
-   Grammar.error_verbose:=true;
-   Grammar.warning_verbose:=true
 
 (************************************************************************
  * PATHS                                                                *
@@ -109,54 +105,12 @@ let include_path = ref ["."]
 let set_include_path path =
    include_path := path
 
-(*
- * Spelling.
- *)
-let misspelled = ref []
-
-let init () =
-   if !debug_spell then
-      Filter_spell.init ()
-
-let close () =
-   let rec print col word = function
-      h :: t ->
-         if h = word then
-            print col word t
-         else
-            let len = String.length h in
-            let col =
-               if col + len >= 80 then
-                  begin
-                     eprintf "\n\t%s" h;
-                     len + 9
-                  end
-               else
-                  begin
-                     eprintf " %s" h;
-                     col + len + 1
-                  end
-            in
-               print col h t
-    | [] ->
-         ()
-   in
-   let l = Sort.list (<) !misspelled in
-      misspelled := [];
-      if l <> [] then
-         begin
-            eprintf "The following words may be misspelled:";
-            print 80 "" l;
-            eflush stderr;
-            raise (Failure "spelling")
-         end
-
 (************************************************************************
  * TERM GRAMMAR                                                         *
  ************************************************************************)
 
 (*
- * This is a hack!
+ * XXX This is a HACK!
  * We have to get around the type system somehow.
  * The FilterCache modules have different type for
  * signatures and implementations, but their mk_opname
@@ -193,6 +147,7 @@ struct
    let mterm = Grammar.Entry.create gram "mterm"
    let bmterm = Grammar.Entry.create gram "mterm"
    let singleterm = Grammar.Entry.create gram "singleterm"
+   let applytermlist = Grammar.Entry.create gram "applytermlist"
    let bound_term = Grammar.Entry.create gram "bound_term"
    let xdform = Grammar.Entry.create gram "xdform"
 end
@@ -206,13 +161,6 @@ open TermGrammar
 (************************************************************************
  * QUOTATIONS                                                           *
  ************************************************************************)
-
-(*
- * String -> string translator.
- *)
-let parse_term s =
-   let cs = Stream.of_string s in
-      Grammar.Entry.parse TermGrammar.term_eoi cs
 
 let term_exp s =
    let cs = Stream.of_string s in
@@ -258,96 +206,6 @@ let get_string_param loc t =
             Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "no params")))
        | _ ->
             Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "too many params")))
-
-(*
- * Terms for representing comments.
- *)
-let mk_comment_opname =
-   let op = Opname.mk_opname "Comment" Opname.nil_opname in
-      fun s -> Opname.mk_opname s op
-
-let comment_white_op = mk_comment_opname "comment_white"
-let comment_string_op = mk_comment_opname "comment_string"
-let comment_block_op = mk_comment_opname "comment_block"
-let comment_term_op = mk_comment_opname "comment_term"
-
-(*
- * Parse a comment string.
- *)
-type spelling =
-   SpellOff
- | SpellOn
- | SpellAdd
-
-let fake_arities =
-   List.map ( fun _ -> 0)
-
-let string_params =
-   List.map ( fun _ -> ShapeString)
-
-let parse_comment loc t =
-   (*
-    * Convert the result of the Comment_parse.
-    *)
-   let rec build_comment_term spelling = function
-      Comment_parse.White ->
-         mk_simple_term comment_white_op []
-    | Comment_parse.String s ->
-         if !debug_spell then
-            begin
-               match spelling with
-                  SpellOff ->
-                     ()
-                | SpellAdd ->
-                     Filter_spell.add s
-                | SpellOn ->
-                     if not (Filter_spell.check s) then
-                        misspelled := s :: !misspelled
-            end;
-         mk_string_term comment_string_op s
-    | Comment_parse.Term (opname, params, args) ->
-         let spelling =
-            if !debug_spell then
-               match opname with
-                  ["spelling"] ->
-                     SpellAdd
-                | ["misspelled"]
-                | ["math_misspelled"]
-                | ["license"]
-                | ["url"]
-                | ["comment"] ->
-                     SpellOff
-                | _ ->
-                     spelling
-            else
-               spelling
-         in
-         let opname =
-            mk_opname loc opname (string_params params) (fake_arities args)
-         in let params = List.map (fun s -> make_param (String s)) params in
-         let args = List.map (fun t -> mk_simple_bterm (build_term spelling t)) args in
-         let op = mk_op opname params in
-         let t = mk_term op args in
-            mk_simple_term comment_term_op [t]
-    | Comment_parse.Block items ->
-         mk_simple_term comment_block_op [build_term spelling items]
-    | Comment_parse.Quote (tag, s) ->
-         if tag = "" then
-            mk_simple_term comment_term_op [parse_term s]
-         else
-            mk_string_term comment_string_op s
-
-   and build_term spelling tl =
-      mk_xlist_term (List.map (build_comment_term spelling) tl)
-   in
-   let s = dest_string_param t in
-   let loc1, loc2 = loc in
-   let items =
-      try Comment_parse.parse s with
-         Comment_parse.Parse_error (s, loc1', loc2') ->
-            Stdpp.raise_with_loc (loc1 + loc1', loc1 + loc2') (ParseError s)
-   in
-      mk_simple_term comment_term_op [build_term SpellOn items]
 
 (*
  * Wrap a code block with a binding variable.
@@ -817,8 +675,8 @@ struct
    (*
     * A toplevel structured comment is converted to a term.
     *)
-   let declare_comment proc loc s =
-      FilterCache.add_command proc.cache (Comment (mk_string_term comment_string_op s), loc)
+   let declare_comment proc loc t =
+      FilterCache.add_command proc.cache (Comment t, loc)
 
    (*
     * A magic block computes a hash value from the definitions
@@ -886,7 +744,7 @@ struct
       let sig_info = FilterCache.check proc.cache alt_select in
       let _ =
          (* Read the comments *)
-         FilterCache.parse_comments proc.cache parse_comment;
+         FilterCache.parse_comments proc.cache convert_comment;
 
          (* Also copy the proofs if they exist *)
          if proc.select = ImplementationType then
@@ -1013,68 +871,8 @@ let _ =
 
 let operator = Pa_o.operator_rparen
 
-let pho_grammar_filename =
-   try
-      Sys.getenv "LANG_FILE"
-   with
-      Not_found ->
-         !Phobos_state.mp_grammar_filename
-
-let pho_desc_grammar_filename =
-   try
-      Sys.getenv "DESC_LANG_FILE"
-   with
-      Not_found ->
-         !Phobos_state.mp_desc_grammar_filename
-
-let dest_quot quot =
-   try
-      let i = String.index quot ':' in
-         String.sub quot 0 i, String.sub quot (i+1) (String.length quot-i-1)
-   with
-      Not_found ->
-         "", quot
-
 EXTEND
-   GLOBAL: singleterm term interf implem sig_item str_item expr;
-
-   term: LAST
-      [[ "$"; s = STRING; "$" ->
-            Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
-      ]
-      | [ x = QUOTATION ->
-            match dest_quot x with
-               "ext", s ->
-                  Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
-             | "desc", s ->
-                  Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
-             | ("term" | ""), s ->
-                  raise (Failure "Term quotation inside a term")
-(*                let cs = Stream.of_string s in
-                     Grammar.Entry.parse TermGrammar.term_eoi cs*)
-             | nm, _ ->
-                  raise (Invalid_argument (nm ^ " quotation inside singleterm (Camlp4 term grammar)"))
-        ]
-      ];
-
-   singleterm: LAST
-      [[ "$"; s = STRING; "$" ->
-            { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s}
-      ]
-      | [ x = QUOTATION ->
-            match dest_quot x with
-               "ext", s ->
-                  { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s }
-             | "desc", s ->
-                  { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s }
-             | ("term" | ""), s ->
-                  raise (Failure "Term quotation inside a term")
-(*                let cs = Stream.of_string s in
-                     Grammar.Entry.parse TermGrammar.term_eoi cs*)
-             | nm, _ ->
-                  raise (Invalid_argument (nm ^ " quotation inside singleterm (Camlp4 term grammar)"))
-        ]
-      ];
+   GLOBAL: interf implem sig_item str_item expr;
 
    interf:
       [[ interf_opening; st = LIST0 interf_item; EOI ->
@@ -1238,16 +1036,22 @@ EXTEND
            in
               print_exn f "topval" loc;
               empty_sig_item loc
-        | "doc"; q = QUOTATION ->
+        | "doc"; doc_sig ->
+           empty_sig_item loc
+       ]];
+
+   doc_sig:
+      [[ q = QUOTATION ->
            let f () =
                match dest_quot q with
                   "doc", com -> 
-                     StrFilter.declare_comment (StrFilter.get_proc loc) loc com
-                | nm, _ ->
-                     raise(Invalid_argument("Quootation \"" ^ nm ^ "\" on top level"))
+                     SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_string_term comment_string_op com)
+                | q ->
+                     SigFilter.declare_comment (SigFilter.get_proc loc) loc (parse_quotation loc "doc" q)
            in
               print_exn f "comment" loc;
-              empty_sig_item loc
+        | tl = applytermlist ->
+           SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_comment_term tl) 
        ]];
 
    str_item:
@@ -1407,20 +1211,23 @@ EXTEND
            in
               print_exn f "magic_block" loc;
               empty_str_item loc
-        | "doc"; q = QUOTATION ->
-           (* 
-            * XXX This is a quick HACK. Strictly speaking this should just be: `` "doc"; comm = term ''
-            * and that we need to support "doc" quotations inside terms
-            *)
+        | "doc"; doc_str ->
+           empty_str_item loc
+       ]];
+        
+    doc_str:
+       [[ q = QUOTATION ->
            let f () =
                match dest_quot q with
+                  (* XXX HACK: this makes sure parsing of top-level "doc" quotations is lazy *)
                   "doc", com -> 
-                     StrFilter.declare_comment (StrFilter.get_proc loc) loc com
-                | nm, _ ->
-                     raise(Invalid_argument("Quootation \"" ^ nm ^ "\" on top level"))
+                     StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_string_term comment_string_op com)
+                | q ->
+                     StrFilter.declare_comment (StrFilter.get_proc loc) loc (parse_quotation loc "doc" q)
            in
-              print_exn f "comment" loc;
-              empty_str_item loc
+              print_exn f "comment" loc
+        | tl = applytermlist ->
+           StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_comment_term tl) 
        ]];
 
    mod_ident:

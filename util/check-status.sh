@@ -63,10 +63,10 @@ echo ""
 echo "A complete log can be found in $TEMP on `hostname -s`"
 echo ""
 echo "Complete list off all rules with incomplete proofs:"
-gawk -F"[[:blank:]\`']+" '/Module: / {MOD=$2}; /incomplete/ { print MOD "/" $2}; {next}' < $TEMP
+gawk -F"[[:blank:]\`']+" '/incomplete/ { print $2}; {next}' < $TEMP
 else
-echo ""
-echo BUILD FAILED!
+   echo ""
+   echo BUILD FAILED!
 fi
  ) | mail -s "MetaPRL proofs status update (`hostname -s`, `pwd`)" "$LOGNAME"
 rm -rf $TMPDIR

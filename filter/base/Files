@@ -18,6 +18,5 @@ BASE_FILES :=\
 	filter_magic\
 	filter_cache\
 	filter_prog\
-	term_grammar\
+	filter_spell\
 	filter_grammar\
-	filter_spell

@@ -54,6 +54,8 @@ let white = [' ' '\010' '\013' '\009' '\012']
 let modname = ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
               (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
                 '\'' '0'-'9' ]) *
+let quotestart = '<' ':' (['a'-'z'])+ '<'
+
 rule main = parse
     "open" white+ | "include" white+ | "derive" white+ | "extends" white+
   | "module" white+ modname white+ '=' white+
@@ -64,7 +66,7 @@ rule main = parse
         main lexbuf }
   | "\""
       { string lexbuf; main lexbuf }
-  | "(*"
+  | "(*" | "<<" | quotestart
       { comment_depth := 1; comment lexbuf; main lexbuf }
   | "'" [^ '\\'] "'"
   | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'"
@@ -82,9 +84,9 @@ and struct_name = parse
       { () }
 
 and comment = parse
-    "(*"
+    "(*" | "<<" | quotestart
       { comment_depth := succ !comment_depth; comment lexbuf }
-  | "*)"
+  | "*)" | ">>"
       { comment_depth := pred !comment_depth;
         if !comment_depth > 0 then comment lexbuf }
   | "\""

@@ -32,14 +32,25 @@ OCAMLFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
 
 LIBDIRS :=\
 	base\
-	boot
+	boot\
+	phobos
 
 DIRS := $(LIBDIRS)\
-	phobos\
 	filter
 
-SUB_CMALIBS := $(addsuffix /filterlib.cma, $(LIBDIRS))
-SUB_CMXALIBS := $(addsuffix /filterlib.cmxa, $(LIBDIRS))
+SUB_CMALIBS := \
+	$(addsuffix /filterlib.cma, $(LIBDIRS))\
+	filter/term_grammar.cmo
+
+include base/Files
+include boot/Files
+include phobos/Files
+
+SUB_CMXFILES :=\
+	$(addprefix base/, $(addsuffix .cmx, $(BASE_FILES)))\
+	$(addprefix boot/, $(addsuffix .cmx, $(BOOT_FILES)))\
+	$(addprefix phobos/, $(addsuffix .cmx, $(PHOBOS_FILES)))\
+	filter/term_grammar.cmx
 
 .PHONY: allbin optbin
 
@@ -55,17 +66,6 @@ opt: optlib
 profile: optlib
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB)$(EXT_LIB)
-
-include base/Files
-include boot/Files
-include filter/Files
-
-BASE_CMXFILES   := $(addprefix base/, $(addsuffix .cmx, $(BASE_FILES)))
-BOOT_CMXFILES   := $(addprefix boot/, $(addsuffix .cmx, $(BOOT_FILES)))
-
-SUB_CMXFILES :=\
-	$(BASE_CMXFILES)\
-	$(BOOT_CMXFILES)
 
 #
 # Libraries
@@ -124,8 +124,8 @@ MFILES_PRLC = $(PFILES)\
 MFILES_CONVERT =\
 	filter/filter_convert
 
-CMOFILES_CAMLP4 = $(CAMLLIB)/str.cma phobos/filterlib.cma $(addsuffix .cmo, $(MFILES_CAMLP4))
-CMXFILES_CAMLP4 = $(CAMLLIB)/str.cmxa phobos/filterlib.cmxa $(addsuffix .cmx, $(MFILES_CAMLP4))
+CMOFILES_CAMLP4 = $(addsuffix .cmo, $(MFILES_CAMLP4))
+CMXFILES_CAMLP4 = $(addsuffix .cmx, $(MFILES_CAMLP4))
 CMOFILES_PRLC = $(addsuffix .cmo, $(MFILES_PRLC))
 CMXFILES_PRLC = $(addsuffix .cmx, $(MFILES_PRLC))
 CMOFILES_CONVERT = $(addsuffix .cmo, $(MFILES_CONVERT))
@@ -168,6 +168,7 @@ CAMLP4O = camlp4o
 
 STANDARD_LIBS =\
 	$(CAMLLIB)/unix.cma\
+	$(CAMLLIB)/str.cma\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CMADEPS)\
@@ -178,6 +179,7 @@ STANDARD_LIBS =\
 
 STANDARDX_LIBS =\
 	$(CAMLLIB)/unix.cmxa\
+	$(CAMLLIB)/str.cmxa\
 	$(OPTTHREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cmxa\
 	$(CMXADEPS)\

@@ -1,4 +1,5 @@
 FILTER_FILES =\
+   term_grammar\
 	filter_parse\
 	filter_main\
 	filter_bin\

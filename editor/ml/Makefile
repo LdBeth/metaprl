@@ -1,4 +1,4 @@
-#
+#L
 # MetaPRL editor.
 #
 DIR = editor/ml
@@ -128,6 +128,7 @@ endif
 
 CMXDEPS =\
 	$(CAMLLIB)/unix.cmxa\
+	$(CAMLLIB)/str.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
@@ -142,6 +143,7 @@ CMXLIBS =\
 
 CMXADEPS =\
 	$(CAMLLIB)/unix.cmxa\
+	$(CAMLLIB)/str.cmxa\
 	$(OPTTHREADSLIB)\
 	$(CAMLP4LIB)/odyl.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
@@ -161,6 +163,7 @@ CMXALIBS =\
 CMADEPS =\
 	$(CAMLP4LIB)/odyl.cma\
 	$(CAMLLIB)/unix.cma\
+	$(CAMLLIB)/str.cma\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CAMLP4LIB)/camlp4_top.cma\
@@ -177,6 +180,7 @@ CMADEPS =\
 TCMADEPS =\
 	$(CAMLP4LIB)/odyl.cma\
 	$(CAMLLIB)/unix.cma\
+	$(CAMLLIB)/str.cma\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(ROOT)/lib/util.cma\

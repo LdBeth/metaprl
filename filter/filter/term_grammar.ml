@@ -26,8 +26,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
+ * Modified By: Alexei Kopylov <kopylov@cs.cornell.edu>
+ * Modified By: Adam Granicz <granicz@cs.caltech.edu>
  *)
 
 open Printf
@@ -63,6 +65,64 @@ let debug_grammar =
         debug_value = false
       }
 
+let debug_spell =
+   create_debug (**)
+      { debug_name = "spell";
+        debug_description = "check spelling";
+        debug_value = false
+      }
+
+let _ =
+   Grammar.error_verbose:=true;
+   Grammar.warning_verbose:=true
+
+(*
+ * Terms for representing comments.
+ *)
+let mk_comment_opname =
+   let op = Opname.mk_opname "Comment" Opname.nil_opname in
+      fun s -> Opname.mk_opname s op
+
+let comment_white_op = mk_comment_opname "comment_white"
+let comment_string_op = mk_comment_opname "comment_string"
+let comment_block_op = mk_comment_opname "comment_block"
+let comment_term_op = mk_comment_opname "comment_term"
+  
+let misspelled = ref []
+let dict_inited = ref false
+
+let raise_spelling_error () =
+   if !misspelled <> [] then begin
+      let rec print col word = function
+         h :: t ->
+            if h = word then
+               print col word t
+            else
+               let len = String.length h in
+               let col =
+                  if col + len >= 80 then
+                     begin
+                        eprintf "\n\t%s" h;
+                        len + 9
+                     end
+                  else
+                     begin
+                        eprintf " %s" h;
+                        col + len + 1
+                     end
+               in
+                  print col h t
+       | [] ->
+            ()
+      in
+      let l = Sort.list (<) !misspelled in
+         misspelled := [];
+         eprintf "The following words may be misspelled:";
+         print 80 "" l;
+         eflush stderr;
+         raise (Failure "spelling")
+      end
+
 (*
  * Grammars to extend.
  *)
@@ -75,6 +135,7 @@ sig
    val mterm : meta_term Grammar.Entry.e
    val bmterm : meta_term Grammar.Entry.e
    val singleterm : aterm Grammar.Entry.e
+   val applytermlist : (term list) Grammar.Entry.e
    val bound_term : aterm Grammar.Entry.e
    val xdform : term Grammar.Entry.e
 end
@@ -282,11 +343,144 @@ struct
          List.map check l
 
    (************************************************************************
+    * QUOTATIONS                                                           *
+    ************************************************************************)
+   
+   let parse_term s =
+      let cs = Stream.of_string s in
+         Grammar.Entry.parse TermGrammar.term_eoi cs
+   
+   let pho_grammar_filename =
+      try
+         Sys.getenv "LANG_FILE"
+      with
+         Not_found ->
+            !Phobos_state.mp_grammar_filename
+   
+   let pho_desc_grammar_filename =
+      try
+         Sys.getenv "DESC_LANG_FILE"
+      with
+         Not_found ->
+            !Phobos_state.mp_desc_grammar_filename
+   
+   let dest_quot quot =
+      try
+         let i = String.index quot ':' in
+            String.sub quot 0 i, String.sub quot (i+1) (String.length quot-i-1)
+      with
+         Not_found ->
+            "term", quot
+   
+   (*
+    * Parse a comment string.
+    *)
+   type spelling =
+      SpellOff
+    | SpellOn
+    | SpellAdd
+   
+   let fake_arities =
+      List.map ( fun _ -> 0)
+   
+   let string_params =
+      List.map ( fun _ -> ShapeString)
+
+   let rec parse_quotation loc curr = function
+      nm, _ when nm = curr ->
+         Stdpp.raise_with_loc loc (Failure (nm ^ " quotation inside a " ^ curr ^ " quotation"))
+    | "ext", s ->
+         Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
+    | "desc", s ->
+         Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
+    | ("term" | ""), s ->
+         parse_term s
+    | "doc", s ->
+         parse_comment loc s
+    | nm, _ ->
+         Stdpp.raise_with_loc loc (Invalid_argument ("Camlp4 term grammar: unknown " ^ nm ^ " quotation"))
+   
+   and parse_comment loc s =
+      if !debug_spell && not(!dict_inited) then begin
+         Filter_spell.init ();
+         dict_inited:=true
+      end;
+      (*
+       * Convert the result of the Comment_parse.
+       *)
+      let rec build_comment_term spelling = function
+         Comment_parse.White ->
+            mk_simple_term comment_white_op []
+       | Comment_parse.String s ->
+            if !debug_spell then
+               begin
+                  match spelling with
+                     SpellOff ->
+                        ()
+                   | SpellAdd ->
+                        Filter_spell.add s
+                   | SpellOn ->
+                        if not (Filter_spell.check s) then
+                           misspelled := s :: !misspelled
+               end;
+            mk_string_term comment_string_op s
+       | Comment_parse.Term (opname, params, args) ->
+            let spelling =
+               if !debug_spell then
+                  match opname with
+                     ["spelling"] ->
+                        SpellAdd
+                   | ["misspelled"]
+                   | ["math_misspelled"]
+                   | ["license"]
+                   | ["url"]
+                   | ["comment"] ->
+                        SpellOff
+                   | _ ->
+                        spelling
+               else
+                  spelling
+            in
+            let opname =
+               mk_opname loc opname (string_params params) (fake_arities args)
+            in let params = List.map (fun s -> make_param (String s)) params in
+            let args = List.map (fun t -> mk_simple_bterm (build_term spelling t)) args in
+            let op = mk_op opname params in
+            let t = mk_term op args in
+               mk_simple_term comment_term_op [t]
+       | Comment_parse.Block items ->
+            mk_simple_term comment_block_op [build_term spelling items]
+       | Comment_parse.Quote (tag, s) ->
+            parse_quotation loc "doc" (tag,s)
+   
+      and build_term spelling tl =
+         mk_xlist_term (List.map (build_comment_term spelling) tl)
+      in
+      let loc1, loc2 = loc in
+      let items =
+         try Comment_parse.parse s with
+            Comment_parse.Parse_error (s, loc1', loc2') ->
+               Stdpp.raise_with_loc (loc1 + loc1', loc1 + loc2') (ParseError s)
+      in
+         mk_simple_term comment_term_op [build_term SpellOn items]
+
+   let mk_comment_term tl =
+      let mk_comment t =
+         mk_simple_term comment_term_op [t]
+      in
+         mk_comment (mk_xlist_term (List.map mk_comment tl))
+
+   let convert_comment loc t =
+      if is_string_term comment_string_op t then
+         parse_comment loc (dest_string_term comment_string_op t)
+      else t
+   
+   (************************************************************************
     * GRAMMAR                                                              *
     ************************************************************************)
 
    EXTEND
-      GLOBAL: term_eoi term quote_term mterm bmterm singleterm bound_term xdform;
+      GLOBAL: term_eoi term quote_term mterm bmterm singleterm applytermlist bound_term xdform;
 
       (*
        * Meta-terms include meta arrows.
@@ -398,8 +592,12 @@ struct
 
       term:
          [[ x = aterm ->
-             x.aterm
-          ]];
+               x.aterm
+          ]|[ "$"; s = STRING; "$" ->
+               Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
+          ]|[ x = QUOTATION ->
+            parse_quotation loc "term" (dest_quot x)
+         ]];
 
       aterm:
          ["comma" LEFTA
@@ -643,6 +841,12 @@ struct
            ]
           | [ t = nonwordterm ->
                t
+            ]
+          | [ "$"; s = STRING; "$" ->
+               { aname = None; aterm = Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s}
+            ]
+          | [ x = QUOTATION ->
+               { aname = None; aterm = parse_quotation loc "term" (dest_quot x) }
             ]
          ];
 
@@ -1183,6 +1387,7 @@ struct
    let term = term
    let term_eoi = term_eoi
    let singleterm = singleterm
+   let applytermlist = applytermlist
    let bound_term = bound_term
    let mk_opname = mk_opname
    let xdform = xdform

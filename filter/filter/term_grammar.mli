@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Opname
@@ -49,16 +49,21 @@ sig
    val mterm : meta_term Grammar.Entry.e
    val bmterm : meta_term Grammar.Entry.e
    val singleterm : aterm Grammar.Entry.e
+   val applytermlist : (term list) Grammar.Entry.e
    val bound_term : aterm Grammar.Entry.e
    val xdform : term Grammar.Entry.e
 end
 
-module MakeTermGrammar (TermGrammar : TermGrammarSig) : TermGrammarSig
+val comment_string_op : opname
+val raise_spelling_error: unit -> unit
 
-(*
- * Debugging.
- *)
-val debug_grammar : bool ref
+module MakeTermGrammar (TermGrammar : TermGrammarSig) : sig
+   include TermGrammarSig
+   val dest_quot : string -> string * string
+   val parse_quotation: MLast.loc -> string -> string * string -> term
+   val mk_comment_term : term list -> term
+   val convert_comment: MLast.loc -> term -> term
+end
 
 (*
  * -*-

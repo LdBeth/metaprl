@@ -219,6 +219,7 @@ struct
       let mterm = Grammar.Entry.create gram "mterm"
       let bmterm = Grammar.Entry.create gram "bmterm"
       let singleterm = Grammar.Entry.create gram "singleterm"
+      let applytermlist = Grammar.Entry.create gram "applytermlist"
       let bound_term = Grammar.Entry.create gram "bound_term"
       let xdform = Grammar.Entry.create gram "xdform"
    end
