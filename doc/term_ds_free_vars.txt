@@ -1,0 +1,32 @@
+Free Variables Calculation in the Term_ds Module
+
+In the Term_ds module term and bound_term types have a field for storing the set
+of free variables. This field is supposed to be either VarsDelayed if the set
+was not computed yet or (Vars s) where s is the set variable names (strings) of
+all first-order variables occurring free in the term (bound_term). 
+
+The rules for calculating free variables sets are simple:
+ - Free variables set of an ordinary term is a union of the free variables of
+   its term_terms
+ - Free variables set of an ordinary bound_term contains all variables of 
+   its bterm excepts for those that become bound in this bound_term (its bvars).
+ - Free variables set of a TVar v is a singleton set consisting of v.
+ - Free variables set of a substitution is equal to the free variables set
+   of the result of this substitution (cf. also Note 2)
+
+Notes:
+
+1) Term_ds tries to distinguish a first-order variable "x" (has a free occurrence
+of "x") and 0-ary second-order variable "x" (does not have any free variables).
+FO variable "x" is represented as a "special" term (core = TVar "x") while 
+SO variable "x" is represented as a "usual" term (core = Term t, where t 
+is a term with opname "var", parameter (Var "x") and no subterms)
+
+Since both are indistinguishable in the Term_std, sometimes Term_ds would use
+TVar "x" (and consider it a free occurrence of "x") when "x" is actually an SO
+variable.
+
+2) When the Subst (or BSubst) is created, we first remove all "garbage" from
+the substitution making sure that all variables that are being substituted 
+for actually occur in the term. That makes computing the free variables set
+of the substitution easier.
