@@ -5,7 +5,7 @@
 #
 
 #
-# User definitions - TERMS, REFINER, MAKE_JOBS
+# User definitions - TERMS, REFINER, MAKE_JOBS, SEQ_SET, ENSROOT, OCAMLSRC, CCC
 #
 include $(ROOT)/mk/config
 
@@ -33,6 +33,16 @@ ifndef CCC
    CCC=gcc
 endif
 CC=$(CCC)
+
+ifndef OSTYPE
+   OSTYPE=
+endif
+ifeq ($(OSTYPE),linux)
+   OSTYPE=Linux
+endif
+ifeq ($(OSTYPE),solaris)
+   OSTYPE=Solaris
+endif 
 
 #
 # Options for simp and verb variations

@@ -218,15 +218,15 @@ all: $(MAIN).cma $(MP).top $(MP).run
 opt: $(MAIN).cmxa $(MP).opt
 install:: all
 
-$(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS)
+$(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS) threads
 	$(RM) $@
 	$(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 
-$(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS)
+$(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS) threads
 	$(RM) $@
 	$(OCAMLC) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 
-$(MP).opt: $(CMXOBJS) $(TCMXFILES)
+$(MP).opt: $(CMXOBJS) $(TCMXFILES) threads
 	$(RM) $@
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
 

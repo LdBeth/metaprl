@@ -9,21 +9,28 @@
 
 include $(ROOT)/mk/preface
 
+.PHONY: threads
+threads:
+
 #
 # Use this when compiling with threads.
-# This is tested only on Linux i386.
+# This is tested only on Linux i386 and Solaris 2.5
 #
-ifeq ($(OSTYPE),linux)
+ifeq ($(OSTYPE),Linux)
    OPTTHREADS = -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(EXT_PROF) -cclib -lpthread
    LIBTHREADS = -cclib -lthreads -cclib -lunix -cclib -lpthread
-else 
-ifeq ($(OSTYPE),solaris)
+else
+ifeq ($(OSTYPE),Solaris)
    OPTTHREADS = -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(EXT_PROF) -cclib -lpthread -cclib -lposix4
    LIBTHREADS = -cclib -lthreads -cclib -lunix -cclib -lpthread -cclib -lposix4
 else
-.DEFAULT:
-	echo "Do not know how to link POXIS threads on your OS
-	exit 1
+threads:
+	@echo "!!! "
+	@echo "!!! The value of your OSTYPE enviroment variable, \"$(OSTYPE)\", is unknown."
+	@echo "!!! I do not know how to link POSIX threads on your OS"
+	@echo "!!! If you know how to do it, add it to mk/rules file"
+	@echo "!!! "
+	@exit 1
 endif
 endif
 ifndef OCAMLCPOPT
@@ -67,7 +74,7 @@ ifeq ($(CC),gcc)
    CPPFLAGS := -traditional -nostdinc -nostdinc++ $(CPPFLAGS) -xc
    CPP = $(CC) -E $(CPPFLAGS) 
 else
-ifeq ($(OSTYPE),solaris)
+ifeq ($(OSTYPE),Solaris)
    CCDEPEND=-xM1
    CPP = /usr/ccs/lib/cpp -C $(CPPFLAGS)
 else
@@ -165,14 +172,14 @@ $(MAIN).cma: $(LCMOFILES) $(MP_CMOFILES) $(ROOT)/mk/config
 $(MAIN).cmxa: $(LCMXFILES) $(MP_CMXFILES) $(ROOT)/mk/config
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(MP_CMXFILES)
 
-$(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES) $(ROOT)/mk/config
+$(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES) $(ROOT)/mk/config threads
 	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 	if [ -f $(MAIN).run.exe ]; then\
 		mv $(MAIN).run.exe $(MAIN).run.bak;\
 		mv $(MAIN).run.bak $(MAIN).run;\
 	fi
 
-$(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES) $(ROOT)/mk/config
+$(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES) $(ROOT)/mk/config threads
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
 	if [ -f $(MAIN).exe ]; then\
 		mv $(MAIN).exe $(MAIN).bak;\

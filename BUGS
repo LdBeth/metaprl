@@ -74,12 +74,12 @@ figure out how to join them together, we no longer need @ for meta in parameters
 handled incorrectly. For example, thinning rule does not check if the variable
 is bound only once (which may be used to prove incorrect results).
 
-4) Substitution on sequents seems broken, does not always correctly renames
-variables.
+4) rwh does not do matching correctly - for example, it allows to use reduceEta
+on <<lambda{x.('x 'x)}>>
 
 PARSER
 
-1) Rules should be added to toploop. 
+1) Rules and rewrites should be added to toploop. 
 
 2) When rule is added, the appropriate tactic should be added automatically
 (assuming sequent calculus).
@@ -90,3 +90,16 @@ PARSER
 should be sufficient (it means that we should remove an alternative rule
 syntax of
 interactive name: A1 A2 ... : An)
+
+5) Parser should check display forms for correctness. Currently it accepts
+many incorrect display forms and later we get (in mp):
+
+# ls();;
+subst: L () (r; l)
+Uncaught exception: Invalid_argument("List.combine")
+# << rfun{'L; r,l.'L}>>;;
+subst: L () (r; l)
+- : Refiner.Refiner.Term.term =
+<printer Shell_p4.print_term raised an exception>
+
+without even explaining which display form caused an error message.
