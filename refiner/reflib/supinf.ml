@@ -6,7 +6,7 @@ open Refiner.Refiner.TermSubst
 
 let debug_supinf_trace =
    create_debug (**)
-      { debug_name = "debug_supinf_trace";
+      { debug_name = "supinf_trace";
         debug_description = "Print out (low-level) trace of supinf execution";
         debug_value = false
       }

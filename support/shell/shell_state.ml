@@ -58,7 +58,7 @@ let debug_full_terms =
 let debug_lock =
    create_debug (**)
       { debug_name = "lock";
-        debug_description = "show locking operations";
+        debug_description = "Show locking operations";
         debug_value = false
       }
 

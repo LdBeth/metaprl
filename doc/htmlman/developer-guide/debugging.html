@@ -80,28 +80,25 @@ are active.</LI>
 
 <H3>Debug variables</H3>
 <!-- The variable list created using
-grep -l -r --include='*.ml' create_debug . | xargs grep -h -A 4 create_debug | tr '\n' % | sed -e 's/\([^-]\)%/\1/g;s/-+%/%/g' | tr % '\n' | gawk -F '"' '{print "<LI><TT>" $2 "</TT>: " $4 "\n" }' | sort -u
+grep -l -r -\-include='*.ml' create_debug . | xargs grep -h -A 4 create_debug | tr '\n' % | sed -e 's/\([^-]\)%/\1/g;s/-+%/%/g' | tr % '\n' | gawk -F '"' '{print "<LI><TT>" $2 "</TT>: " $4 "\n" }' | sort -u
 and some manual editing
 -->
 The following is the current list of debug variables currently defined in MetaPRL.
 <UL>
 <LI><TT>address</TT>: show term addressing operations
 <LI><TT>alpha_equal</TT>: display alpha equality operations
+<LI><TT>arith_dtactic</TT>: Itt_int_arith.arithT: display operations of conversion to &gt;=
+<LI><TT>arith_unfold</TT>: display Itt_int_base.arith_unfold steps
 <LI><TT>ascii_io</TT>: report ASCII IO errors verbosely
 <LI><TT>auto</TT>: Display auto tactic operations
 <LI><TT>cache</TT>: Show TPTP cache operations
 <LI><TT>convert</TT>: show proof format conversions
 <LI><TT>conv</TT>: display conversion operation
 <LI><TT>czf_set</TT>: display czf_set operations
-<LI><TT>debug_arith_dtactic</TT>: display operations of conversion to >= in Arith
-<LI><TT>debug_arith_unfold</TT>: display arith_unfold steps in Arith
-<LI><TT>debug_graph_arith1</TT>: Report input of solve function in Arith
-<LI><TT>debug_graph_arith2</TT>: Report output of solve function in Arith
-<LI><TT>debug_graph_arith3</TT>: Report input converted to internal representation in Arith
-<LI><TT>debug_int_arith</TT>: Print out some debug info as Arith tactics proceed
-<LI><TT>debug_mpoly_eval</TT>: display mpoly_eval steps
-<LI><TT>debug_supinf_steps</TT>: Print out (high-level) steps to be proved by Supinf
-<LI><TT>debug_supinf_trace</TT>: Print out (low-level) trace of supinf execution
+<LI><TT>debug-lexgen</TT>: Debug the lexer generator
+<LI><TT>debug-lex</TT>: Debug the lexer
+<LI><TT>debug-parsegen</TT>: Debug the parseer generator
+<LI><TT>debug-parse</TT>: Debug the parseer
 <LI><TT>dform_depth</TT>: check zone depth to catch unbalanced buffers
 <LI><TT>dform</TT>: show display form formatting
 <LI><TT>dtactic</TT>: display dT tactic operations
@@ -116,14 +113,20 @@ The following is the current list of debug variables currently defined in MetaPR
 <LI><TT>free_vars</TT>: Display free variables calculation
 <LI><TT>full_terms</TT>: Print terms fully in debug messages
 <LI><TT>grammar</TT>: display term parsing operations
+<LI><TT>graph_arith1</TT>: Report input of Arith's solve function
+<LI><TT>graph_arith2</TT>: Report output of Arith's solve function
+<LI><TT>graph_arith3</TT>: Report Arith's input converted to internal representation
 <LI><TT>http</TT>: HTTP server operations
 <LI><TT>inet</TT>: Display internet socket operations
+<LI><TT>int2rat</TT>: display int-to-rat conversion
+<LI><TT>int_arith</TT>: Print out some debug info as Itt_int_arith.arithT tactics proceed
 <LI><TT>jprover</TT>: Display Jprover operations
 <LI><TT>load</TT>: Print file names as they load
-<LI><TT>lock</TT>: show locking operations
+<LI><TT>lock</TT>: Show locking operations
 <LI><TT>match</TT>: print term on proof copying errors
 <LI><TT>memo</TT>: Display memo operations
 <LI><TT>message</TT>: Display Ensemble messages
+<LI><TT>mpoly_eval</TT>: display mpoly_eval steps (evaluting multi-variable polynomials in ITT)
 <LI><TT>m_reduce</TT>: display reductions during M conversion
 <LI><TT>ocaml</TT>: debug ocaml term parsing
 <LI><TT>opname</TT>: display opname construction
@@ -158,12 +161,16 @@ The following is the current list of debug variables currently defined in MetaPR
 <LI><TT>subst_ds</TT>: display term_ds substitution operations
 <LI><TT>subst</TT>: Substitution operations
 <LI><TT>summary</TT>: display prl summary operations
+<LI><TT>supinf_steps</TT>: Itt_supinf.supinfT: print out (high-level) steps to be proved
+<LI><TT>supinf_trace</TT>: Print out (low-level) trace of supinf execution
 <LI><TT>sync</TT>: Show event synchronization
 <LI><TT>tactic</TT>: display primitive tactic operations
 <LI><TT>terminal</TT>: show terminal size operations
 <LI><TT>term_table</TT>: Display Term_table (term hashtable) operations
+<LI><TT>thread</TT>: Display thread debugging
 <LI><TT>tptp_prove</TT>: show TPTP proof steps
 <LI><TT>tptp</TT>: show TPTP tactic operations
 <LI><TT>trace_pos</TT>: print position trace for debugging
 </UL>
-
+</BODY>
+</HTML>

@@ -42,14 +42,3 @@ let compiled_grammar_filename = ref ""
 let use_fc_ast = ref false
 let apply_no_rewrites = ref false
 let phobos_paths = ref [""]
-
-(*
- * Phobos debugging.
- *)
-
-let debug_phobos =
-   create_debug (**)
-      { debug_name = "phobos";
-        debug_description = "print debugging information for Phobos";
-        debug_value = false
-      }

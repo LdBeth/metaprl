@@ -95,20 +95,20 @@ end
 
 let debug_graph_arith1 =
    create_debug (**)
-      { debug_name = "debug_graph_arith1";
-        debug_description = "Report input of solve function";
+      { debug_name = "graph_arith1";
+        debug_description = "Report input of Arith's solve function";
         debug_value = false
       }
 let debug_graph_arith2 =
    create_debug (**)
-      { debug_name = "debug_graph_arith2";
-        debug_description = "Report output of solve function";
+      { debug_name = "graph_arith2";
+        debug_description = "Report output of Arith's solve function";
         debug_value = false
       }
 let debug_graph_arith3 =
    create_debug (**)
-      { debug_name = "debug_graph_arith3";
-        debug_description = "Report input converted to internal representation";
+      { debug_name = "graph_arith3";
+        debug_description = "Report Arith's input converted to internal representation";
         debug_value = false
       }
 

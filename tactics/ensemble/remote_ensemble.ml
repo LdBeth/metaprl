@@ -41,7 +41,7 @@ open Remote_queue_sig
 let debug_queue =
    create_debug (**)
       { debug_name = "queue";
-        debug_description = "Remote queue operations";
+        debug_description = "Show remote queue operations";
         debug_value = false
       }
 
