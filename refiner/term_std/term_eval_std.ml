@@ -154,7 +154,7 @@ struct
 
    let make_subst_term main_term vars trms =
       if List.length vars != List.length trms then
-         ref_raise(Invalid_argument "make_subst_term")
+         raise(Invalid_argument "make_subst_term")
       else
          let terms = List.map (function term -> {bvars=[]; bterm = term}) trms in
             { term_op = { op_name = subst_opname; op_params = [] };

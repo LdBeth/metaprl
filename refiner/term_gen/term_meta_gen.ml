@@ -77,7 +77,7 @@ struct
    let rec zip_mimplies = function
       [h] -> MetaTheorem h
     | h::t -> MetaImplies (MetaTheorem h, zip_mimplies t)
-    | [] -> ref_raise(Invalid_argument "zip_mimplies")
+    | [] -> raise(Invalid_argument "zip_mimplies")
 
    (*
     * Implication with bindings.
@@ -189,7 +189,7 @@ struct
        | _, MetaLabeled (_, t) ->
             meta_for_all2 f t1 t
        | _ ->
-         ref_raise(Failure "meta_for_all2")
+         raise(Failure "meta_for_all2")
 
    (*
     * Alpha equality.
