@@ -29,10 +29,10 @@ open Phobos_type
 open Refiner.Refiner.TermType
 open Simple_print.SimplePrint
 
-type conv_exn = 
+type conv_exn =
    ParamError of param' * string
  | ParamError2 of param' * param' * string
- | TermError of bound_term * string * string 
+ | TermError of bound_term * string * string
 
 type conv_loc =
    LocString of string * bound_term * conv_loc
@@ -148,10 +148,10 @@ let format_exn buf = function
       format_string buf "*** Syntax error:\n";
       format_pos buf pos
  | (Refiner.Refiner.RefineError.RefineError _) as exn ->
-      Refine_exn.print_exn Dform_print.null_mode_base stderr "*** MetaPRL error:" exn  
+      format_string buf "*** MetaPRL error:\n";
+      Refine_exn.format_exn Dform.null_base buf exn
  | exn ->
       Filter_exn.format_exn Dform.null_base buf exn
-
 
 let format_exn_chan out exn =
    let buf = new_buffer () in

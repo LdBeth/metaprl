@@ -65,7 +65,7 @@ topval prefix_orelseC : conv -> conv -> conv
 topval addrC : int list -> conv -> conv
 topval idC : conv
 topval foldC : term -> conv -> conv
-topval makeFoldC : term -> conv -> conv
+val makeFoldC : term -> conv -> conv
 topval cutC : term -> conv
 topval failC : conv
 topval failWithC : string -> conv

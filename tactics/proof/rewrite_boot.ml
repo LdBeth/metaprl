@@ -209,36 +209,45 @@ struct
       ThenTC (conv, tac)
 
    (*
-    * Build a fold conversion from the contractum
-    * and the unfolding conversion.
+    * Build a fold conversion from the contractum and the unfolding conversion.
+    * This function is often called from the top level of an .ml file, so we print
+    * all the exceptions right away.
     *)
-   let makeFoldC contractum conv =
-      let fold_aux = function
-         RewriteConv rw ->
-            let mseq = mk_msequent contractum [] in
-            let tac = rwtactic 0 rw in
-               begin
-                  (* Apply the unfold conversion *)
-                  match Refine.refine any_sentinal tac mseq with
-                     [redex], _ ->
-                        (* Unfolded it, so create a rewrite that reverses it *)
-                        let redex, _ = dest_msequent redex in
-                        let rw' = term_rewrite Strict empty_args_spec [redex] [contractum] in
-                        let doCE env =
-                           match apply_rewrite rw' empty_args (env_term env) [] with
-                              [contractum] ->
-                                 FoldConv (contractum, conv)
-                            | _ ->
-                                 raise (RefineError ("Rewrite_type.fold", StringTermError ("rewrite failed", redex)))
-                        in
-                           FunConv doCE
-                   | _ ->
-                        raise (RefineError ("Rewrite_type.fold", StringTermError ("fold failed", contractum)))
-               end
-       | _ ->
-            raise (RefineError ("Rewrite_type.fold", StringError "can't fold nontrivial rewrites"))
-      in
-         Refine_exn.print Dform.null_base fold_aux conv
+   let makeFoldC contractum = function
+      (RewriteConv rw) as conv ->
+         let mseq = mk_msequent contractum [] in
+         let tac = rwtactic 0 rw in
+            begin
+               (* Apply the unfold conversion *)
+               match
+                  begin try
+                     Refine.refine any_sentinal tac mseq
+                  with RefineError(n, err) ->
+                     Refine_exn.stderr_exn "" (RefineError("Rewrite_boot.makeFoldC", PairError("applying rewrite to the term failed", TermError contractum, n, err)))
+                  end
+               with
+                  [redex], _ ->
+                     (* Unfolded it, so create a rewrite that reverses it *)
+                     let redex, _ = dest_msequent redex in
+                     let rw' =
+                        try
+                           term_rewrite Strict empty_args_spec [redex] [contractum]
+                        with RefineError(n, err) ->
+                           Refine_exn.stderr_exn "" (RefineError("Rewrite_boot.makeFoldC", PairError("creating a rewrite from term to term failed",TermPairError(redex,contractum), n, err)))
+                     in
+                     let doCE env =
+                        match apply_rewrite rw' empty_args (env_term env) [] with
+                           [contractum] ->
+                              FoldConv (contractum, conv)
+                         | _ ->
+                              Refine_exn.stderr_exn "" (RefineError ("Rewrite_boot.makeFoldC", StringTermError ("rewrite failed", redex)))
+                     in
+                        FunConv doCE
+                | _ ->
+                     Refine_exn.stderr_exn "" (RefineError ("Rewrite_boot.makeFoldC", StringTermError ("fold failed", contractum)))
+            end
+    | _ ->
+         Refine_exn.stderr_exn "" (RefineError ("Rewrite_boot.makeFoldC", StringTermError("can't fold nontrivial rewrites",contractum)))
 
    (*
     * Cut just replaces the term an generates a rewrite
@@ -247,71 +256,68 @@ struct
    let cutC t =
       CutConv t
 
-   let rec apply assum addr conv =
-      match conv with
-         RewriteConv rw ->
+   let rec apply assum addr = function
+      RewriteConv rw ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: Rewrite%t" eflush;
+         Tactic.tactic_of_rewrite assum (rwaddr addr rw)
+    | CondRewriteConv crw ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: CondRewrite%t" eflush;
+         Tactic.tactic_of_cond_rewrite assum (crwaddr addr crw)
+    | ComposeConv clist ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: Compose%t" eflush;
+         composeT assum addr (Flist.tree_of_list clist)
+    | ChooseConv clist ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: Choose%t" eflush;
+         chooseT assum addr (Flist.tree_of_list clist)
+    | AddressConv (addr', conv) ->
+         let addr = compose_address addr addr' in
             if !debug_rewrite then
-               eprintf "Rewrite_type.apply: Rewrite%t" eflush;
-            Tactic.tactic_of_rewrite assum (rwaddr addr rw)
-       | CondRewriteConv crw ->
-            if !debug_rewrite then
-               eprintf "Rewrite_type.apply: CondRewrite%t" eflush;
-            Tactic.tactic_of_cond_rewrite assum (crwaddr addr crw)
-       | ComposeConv clist ->
-            if !debug_rewrite then
-               eprintf "Rewrite_type.apply: Compose%t" eflush;
-            composeT assum addr (Flist.tree_of_list clist)
-       | ChooseConv clist ->
-            if !debug_rewrite then
-               eprintf "Rewrite_type.apply: Choose%t" eflush;
-            chooseT assum addr (Flist.tree_of_list clist)
-       | AddressConv (addr', conv) ->
-            let addr = compose_address addr addr' in
-               if !debug_rewrite then
-                  eprintf "Rewrite_type.apply: Address %s%t" (string_of_address addr') eflush;
-               apply assum addr conv
-       | IdentityConv ->
-            if !debug_rewrite then
-               eprintf "Rewrite_type.apply: Identity%t" eflush;
-            TacticInternal.idT
-       | FunConv f ->
-            if !debug_rewrite then
-               eprintf "Rewrite_type.apply: Fun%t" eflush;
-            funT (fun p -> apply assum addr (f (p, assum, addr)))
-       | HigherConv conv ->
-            if !debug_rewrite then
-               eprintf "Rewrite_type.apply: Higher%t" eflush;
-            apply assum addr (higherLC conv)
-       | FoldConv (t, conv) ->
-            if !debug_rewrite then
-               eprintf "Rewrite_type.apply: Fold%t" eflush;
-            (prefix_thenLT (rwcutT assum addr t) [addHiddenLabelT "main"; solveCutT addr conv])
-       | CutConv t ->
-            if !debug_rewrite then
-               eprintf "Rewrite_type.apply: Cut%t" eflush;
-            rwcutT assum addr t
-       | ThenTC (conv, tac) ->
-            if !debug_rewrite then
-               printf "Rewrite_type.apply: ThenTC%t" eflush;
-            applyThenTC assum addr conv tac
-
-   and composeT assum addr tree =
-      match tree with
-         Flist.Empty ->
-            idT
-       | Flist.Leaf conv ->
+               eprintf "Rewrite_type.apply: Address %s%t" (string_of_address addr') eflush;
             apply assum addr conv
-       | Flist.Append (tree1, tree2) ->
-            (prefix_then_OnFirstT (composeT assum addr tree1) (composeT assum addr tree2))
+    | IdentityConv ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: Identity%t" eflush;
+         TacticInternal.idT
+    | FunConv f ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: Fun%t" eflush;
+         funT (fun p -> apply assum addr (f (p, assum, addr)))
+    | HigherConv conv ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: Higher%t" eflush;
+         apply assum addr (higherLC conv)
+    | FoldConv (t, conv) ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: Fold%t" eflush;
+         (prefix_thenLT (rwcutT assum addr t) [addHiddenLabelT "main"; solveCutT addr conv])
+    | CutConv t ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: Cut%t" eflush;
+         rwcutT assum addr t
+    | ThenTC (conv, tac) ->
+         if !debug_rewrite then
+            printf "Rewrite_type.apply: ThenTC%t" eflush;
+         applyThenTC assum addr conv tac
 
-   and chooseT assum addr tree =
-      match tree with
-         Flist.Empty ->
-            idT
-       | Flist.Leaf conv ->
-            apply assum addr conv
-       | Flist.Append (tree1, tree2) ->
-            (prefix_orelseT (chooseT assum addr tree1) (chooseT assum addr tree2))
+   and composeT assum addr = function
+      Flist.Empty ->
+         idT
+    | Flist.Leaf conv ->
+         apply assum addr conv
+    | Flist.Append (tree1, tree2) ->
+         (prefix_then_OnFirstT (composeT assum addr tree1) (composeT assum addr tree2))
+
+   and chooseT assum addr = function
+      Flist.Empty ->
+         idT
+    | Flist.Leaf conv ->
+         apply assum addr conv
+    | Flist.Append (tree1, tree2) ->
+         (prefix_orelseT (chooseT assum addr tree1) (chooseT assum addr tree2))
 
    and rwcutT assum addr t =
       funT (fun p ->

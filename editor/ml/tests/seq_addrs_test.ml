@@ -30,5 +30,5 @@ try
    eprintf "t@hyp_count_addr+1: %s%t" (addr_term_str (nth_hyp_addr t) ((num_hyps t) + 1) term_subterm t) eflush;
    eprintf "t@hyp_count_addr+2: %s%t" (addr_term_str (nth_hyp_addr t) ((num_hyps t) + 2) term_subterm t) eflush;
 with
-   exn -> Refine_exn.print_exn Dform_print.null_mode_base stderr "Uncaught exception when testing: " exn; raise exn
+   exn -> Refine_exn.stderr_exn "Uncaught exception when testing: " exn; raise exn
 

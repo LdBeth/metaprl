@@ -163,12 +163,10 @@ let format_match_type db buf printers = function
 let format_refine_error db buf printers name error =
    let rec format indent name error =
       format_newline buf;
-      for i = 0 to indent do
-         format_char buf ' ';
-      done;
+      format_pushm buf indent;
       format_string buf name;
       format_string buf ": ";
-      match error with
+      begin match error with
          GenericError ->
             format_string buf "Generic refiner error"
        | ToploopIgnoreError ->
@@ -196,14 +194,14 @@ let format_refine_error db buf printers name error =
             format_space buf;
             printers.format_term db buf t
        | StringWrapError (name, e) ->
-            format (indent + 3) name e
+            format 3 name e
        | SubgoalError (i, name, e) ->
             format_int buf i;
             format_space buf;
-            format (indent + 3) name e
+            format 3 name e
        | PairError (name1, e1, name2, e2) ->
-            format (indent + 3) name1 e1;
-            format (indent + 3) name2 e2
+            format 3 name1 e1;
+            format 3 name2 e2
        | NodeError (s, t, el) ->
             format_string buf s;
             format_space buf;
@@ -278,13 +276,15 @@ let format_refine_error db buf printers name error =
        | RewriteAddressError (a, name, e) ->
             format_address buf a;
             format_space buf;
-            format (indent + 3) name e
+            format 3 name e
        | RewriteFreeContextVar(v1,v2) ->
             format_string buf "FreeContextVar: ";
             format_string buf (string_of_symbol v1);
             format_string buf " (in context or variable: ";
             format_string buf (string_of_symbol v2);
             format_string buf ")";
+      end;
+      format_popm buf
    in
       format 0 name error
 
@@ -295,7 +295,6 @@ let format_exn db buf printers exn =
    let format = function
       RefineError (name, msg) ->
          format_string buf "Refine error:";
-         format_space buf;
          format_refine_error db buf printers name msg
     | exn ->
          format_string buf (Printexc.to_string exn)
@@ -326,19 +325,18 @@ let print db f x =
             flush stderr;
             raise exn
 
-let print_exn db out s exn =
-   let db = get_mode_base db "prl" in
+let stderr_exn s exn =
    let buf = new_buffer () in
       format_szone buf;
       format_pushm buf 4;
       format_string buf s;
       format_space buf;
-      format_exn db buf exn;
+      format_exn Dform.null_base buf exn;
       format_popm buf;
       format_ezone buf;
       format_newline buf;
-      print_to_channel default_width buf out;
-      flush out;
+      print_to_channel default_width buf stderr;
+      flush stderr;
       raise exn
 
 (*

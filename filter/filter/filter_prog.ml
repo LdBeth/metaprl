@@ -306,7 +306,7 @@ let expr_of_label loc = function
  *    Lm_debug.show_loading "Loading name%t";
  *    try e with
  *       exn ->
- *          Refine_exn.print_exn name exn
+ *          Refine_exn.stderr_exn name exn
  *)
 let wrap_exn proc loc name e =
    let name = (String.capitalize proc.imp_name) ^ "." ^ name in
@@ -317,7 +317,7 @@ let wrap_exn proc loc name e =
          (* Wrap the body to catch exceptions *)
          try $e$ with
          $lid: exn_id$ ->
-            Refine_exn.print_exn $lid: local_dformer_id$.val Pervasives.stderr $str: name$ $lid: exn_id$
+            Refine_exn.stderr_exn $str: name$ $lid: exn_id$
       }
    >>
 
