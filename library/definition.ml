@@ -73,7 +73,8 @@ let mydb_read s f =
     print_term t;
     t
 
-class data (s : stamp) ft as self =
+class data (s : stamp) ft  =
+ object (self)
   val stamp = s
   val ftype = ft
   val mutable term = None
@@ -88,7 +89,8 @@ end
 
 exception InlineDataRead
 
-class inline_data (s : stamp) (inl : term) as self =
+class inline_data (s : stamp) (inl : term) =
+ object (self)
  inherit data s ""
 
  val inline = inl
@@ -139,6 +141,7 @@ let term_of_isubstance_term t =
 
 
 class substance (t : term) =
+ object
   val term = term_of_isubstance_term t
 
   method get_term = term
@@ -146,6 +149,7 @@ end
 
 
 class term_substance (t : term) =
+ object
   inherit substance t
 end
 
@@ -195,7 +199,9 @@ end
 
 
 (* testing 1,2,3 *)
-class sub_substance t as self =
+(*
+class sub_substance t =
+ object (self)
  inherit term_substance t as super
 
  (* super does not work in following. Thus derived val's will have to be mutable and provided
@@ -210,7 +216,7 @@ class sub_substance t as self =
 
  method myterm = if provided then derived else (self#provide; derived)
 end
-
+*)
 
 
 (*
@@ -239,7 +245,8 @@ let substance_import def stype data =
 
 exception NoSubstance
 
-class 'a definition (d : dependency) (da : data) st as self =
+class ['a] definition (d : dependency) (da : data) st =
+ object (self)
   val dep = d
   val dat = da
   val mutable sub = None
@@ -257,8 +264,9 @@ class 'a definition (d : dependency) (da : data) st as self =
 end
 
 
-class 'a term_definition d da st as self =
-  inherit ('a) definition d da st
+class ['a] term_definition d da st =
+ object (self)
+  inherit ['a] definition d da st
 
   method set_substance (s : term_substance) = sub <- Some s
   method get_term = (self#get_substance)#get_term
@@ -333,8 +341,10 @@ exception NotRootDirectory
  *)
 
 
-class 'a directory_definition d dat st=
-  inherit ('a) term_definition d dat st as super
+class ['a] directory_definition d dat st =
+ let datterm = dat#get_term in
+ object
+  inherit ['a] term_definition d dat st as super
 
   (* instantiation of values could be lazy, but seems like inconsequential space savings *)
   (*
@@ -345,11 +355,11 @@ class 'a directory_definition d dat st=
 			   then name_of_iroot_directory_term term
 			   else ""
   *)
-  val children = children_of_idirectory_term (term_of_isubstance_term dat#get_term)
+  val children = children_of_idirectory_term (term_of_isubstance_term datterm)
   val rootp = iroot_directory_term_p (term_of_isubstance_term
-				      dat#get_term
+				      datterm
 				      )
-  val root_name = let term = (term_of_isubstance_term dat#get_term) in
+  val root_name = let term = (term_of_isubstance_term datterm) in
 			if (iroot_directory_term_p term)
 			   then name_of_iroot_directory_term term
 			   else ""
@@ -368,7 +378,8 @@ type term_entry
 let dag_description_p t =
   if ivoid_term_p t
      then false
-     else mem "ObjectIdDAG" (purposes_of_idescription_term t)
+     else let purposes = (purposes_of_idescription_term t) in
+       ((mem "ObjectIdDAG" purposes) & not (mem "Derived" purposes))
 
 
 let idefinition_op = mk_nuprl5_op [make_param (Token "!definition")]
