@@ -1,0 +1,73 @@
+A Quick Guide to MetaPRL Profiling
+----------------------------------
+
+There are two ways to get the profiling information for MetaPRL - native code
+profiling and bytecode profiling. Native code profiling would give the amount
+of time spent in and inside a function, number of calls for each function
+and for each pair of functions - f1 and f2 - how many times f1 called f2. The
+bytecode profiling would give the number of calls for each function and for each
+branching operator (such as if, match, try ... with) it would give information
+on how many times each branch was taken. Bytecode profiling information would
+be available only for mllib, refiner and some filter files, but theories and
+editor files would be unprofiled, while in native code everything (including the
+standard OCaml libraries and even the garbage collection) would be profiled.
+The bytecode profiling should work on any system capable of compiling and
+running MetaPRL. The native code profiling should work on any Linux system that
+uses glibc 2 library. It may also work on other Linux systems and Digital Unix
+systems.
+
+Native Code Profiling
+---------------------
+
+In order to profile some code, you have to be able to call that code from
+the MetaPRL top loop. AFAIK, in order to do that you have to either declare
+you functions as "topval" in one of the prlc-compiled modules of to add it
+to the commands variable in the editor/ml/shell.ml
+
+After you've made all the necessary modifications to the code, run 
+make clean; make profile
+However, if the source tree was already compiled with make profile, you can
+recompile it just by running "make profile" without "make clean".
+
+After the code was compiled:
+- Start native-code version of MetaPRL: "cd editor/ml; ./mpopt"
+- Do all necessary preparation steps
+- Reset the profiling counters, so that the MetaPRL startup code and your
+  preparation code does not get included into the profiling information:
+  "restart_gmon ();;"
+- Run the code you want to profile
+- Dump the profiling information: "stop_gmon ();;". This should create a
+  gmon.out file in the editor/ml directory
+- Do the cleanup, if necessary
+- Exit MetaPRL
+
+Now you can produce the actual profiling information by running "gprof mp.opt".
+Warning: this can produce lots of output (up to couple of megabytes) and you
+may want to redirect the output.
+
+The output of gprof would contain two parts - "flat profile" and "call graph".
+It would also include some comments that would help you understand its contents.
+
+ByteCode Profiling
+------------------
+
+- Do a "make profile_byte". You do not have to run "make clean", it will run it
+  for you.
+- Start a bytecode version of MetaPRL: "cd editor/ml; ./mptop"
+- Do all necessary preparation steps
+- At this point you may want to try to reset all profiling counters to zero to
+  avoid including startup and preparation into the profiling information. I am
+  not sure how to do that, you probably need to go through the 
+    Profiling.counters: (string * (string * int array)) list ref
+  and reset all the arrays to 0.
+- Run the code you want to profile
+- Exit MetaPRL
+
+At this point you should have ocamlprof.dump file in your editor/ml directory.
+Now you can run "ocamlprof <file you want to profile>.ml". That would give you
+the contents on the original .ml file with all the branches marked with the
+number. Note - if you want to profile the preprocessed file (such as .mlp file),
+you have to call ocamlprof on the .ml file created by the preprocessor, not on
+the .mlp file.
+
+
