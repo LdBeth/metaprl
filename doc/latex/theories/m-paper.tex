@@ -51,7 +51,8 @@
 \usepackage[dvipdfm]{hyperref}
 \usepackage{makeidx}
 \makeindex
-\usepackage{draftfooter}\pagestyle{draft}\newcommand{\thepage}{\arabic{page}}
+\pagenumbering{arabic}
+%\usepackage{draftfooter}\pagestyle{draft}
 
 \input{../inputs/metaprl}
 \setlength{\commentwidth}{0.5\textwidth}
@@ -114,8 +115,9 @@
   University Research Initiative (MURI) program administered by the
   Office of Naval Research (ONR) under Grant N00014-01-1-0765, the
   Defense Advanced Research Projects Agency (DARPA), the United States
-  Air Force, the Lee Center, and by NSF Grant CCR 0204193.}\\
-       \affaddr{California Institute of Technology}\\
+  Air Force, the Lee Center, and by NSF Grant CCR
+  0204193.}\\[\baselineskip]
+       \affaddr{California Institute of Technology, M/C 256-80}\\
        \affaddr{1200 E. California Blvd.}\\
        \affaddr{Pasadena, CA 91125, USA}\\
        \email{\{jyh,nogin,granicz,emre\}@cs.caltech.edu}
