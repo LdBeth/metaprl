@@ -1022,13 +1022,14 @@ struct
       let subgoals, ext = Refine.refine (get_sentinal arg.ref_sentinal) rl arg.ref_goal in
       let make_subgoal label goal = {
          arg with
+         ref_label = label;
          ref_goal = goal;
          ref_parent = ParentLazy arg
       } in
       let subgoals =
          match subgoals with
             subgoal :: subgoals ->
-               make_subgoal label subgoal :: List.map (make_subgoal "assertion") subgoals
+               make_subgoal arg.ref_label subgoal :: List.map (make_subgoal "assertion") subgoals
           | [] ->
                raise (Invalid_argument "tactic_of_cond_rewrite: produced no subgoals")
       in
