@@ -11,6 +11,8 @@ include Refiner.Refiner.TermMeta
 include Refiner.Refiner.TermOp
 include Refiner.Refiner.TermSubst
 include Mp_resource
+include Top_tacticals
+include Top_conversionals
 include Tactic_type.Tactic
 include Tactic_type.Conversionals
 module Sequent = Tactic_type.Sequent
@@ -18,8 +20,6 @@ include Sequent
 include Tactic_type.Tacticals
 include Perv
 include Var
-include Top_tacticals
-include Top_conversionals
 include Typeinf
 include Auto_tactic
 include Dtactic
