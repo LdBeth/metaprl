@@ -10,44 +10,71 @@
 
 <H2>History</H2>
 
-<P>MetaPRL is part of a suite of projects under the heading
-PRL. The <A HREF="http://www.cs.cornell.edu/Info/Projects/NuPrl/nuprl.html">PRL project</A>
-is managed by <A HREF="http://www.cs.cornell.edu/Info/People/rc/DefaultRC.htm">Robert Constable</A>.
-MetaPRL
-was conceived in January 1996 to address the concerns of scalability
-in formal systems. In the early part of the decade, Nuprl formalizations
-were mostly limited to smaller problems that focused on basic
-data structures and mathematical foundations. As the foundations
-were implemented, it became possible to formalize larger problems,
-like the verification of Ensemble being performed by Kreitz, Hayden,
-and Hickey. As with any growing system, <I>scalability</I> became
-a major concern: how do we share our results with other systems;
-how do we design domain-specific logics; how do we get the computational
-speed for proving properties of large systems? These questions
-led to the modular design on MetaPRL, where logical theories
-are treated as formal objects that include both the logical knowledge
-and domain-specific heuristics needed to use that knowledge.</P>
+<P>MetaPRL is the latest in the PRL family of systems developed over the last
+25 years as a part of the Cornell <A HREF="http://www.nuprl.org/">PRL
+project</A>. MetaPRL was conceived in January 1996 to address the concerns of
+scalability in formal systems. In the early part of the decade, NuPRL
+formalizations were mostly limited to smaller problems that focused on basic
+data structures and mathematical foundations. As the foundations were
+implemented, it became possible to formalize larger problems, like the
+verification of Ensemble being performed by Kreitz, Hayden, and Hickey. As
+with any growing system, <I>scalability</I> became a major concern: how do we
+share our results with other systems; how do we design domain-specific logics;
+how do we get the computational speed for proving properties of large systems?
+These questions led to the modular design on MetaPRL, where logical theories
+are treated as formal objects that include both the logical knowledge and
+domain-specific heuristics needed to use that knowledge. As more effort was
+put into the system MetaPRL eventually grew into a very general modern system
+whose modularity on all levels gives it flexibility to support a very wide
+range of applications.</P>
 
 <H2><A NAME="people">People</A></H2>
-<P><A HREF="http://www.cs.caltech.edu/~jyh/">Jason Hickey</A> is the main author and architect of MetaPRL.
-The system is a large part of his PhD thesis &quot;Frameworks
-for sharing mathematics and programming.&quot;.</P>
+<P><A HREF="http://www.cs.caltech.edu/~jyh/">Jason Hickey</A> is the main
+author and architect of MetaPRL. The system was a large part of his PhD thesis
+&quot;The MetaPRL Logical Programming Environment&quot;.</P>
 
-<P><A HREF="http://nogin.org/">Aleksey Nogin</A> is also a major contributor to MetaPRL.
-He took over the coordination of the MetaPRL project after Jason Hickey
-graduated from Cornell.</P>
+<P><A HREF="http://nogin.org/">Aleksey Nogin</A> is also a major contributor
+to MetaPRL.  He took over the coordination of the MetaPRL project after Jason
+Hickey graduated from Cornell. The system was a large part of his PhD thesis
+&quot;Theory and Implementation of an Efficient Tactic-Based Logical
+Framework&quot;.</P>
 
-<P><A HREF="http://www.cs.cornell.edu/People/kopylov/">Alexei Kopylov</A> is working on better understanding and improving MetaPRL Type Theory.</P>
+<P><A HREF="http://www.cs.cornell.edu/Info/People/rc/">Robert Constable</A> is
+the head of the <a href="http://www.nuprl.org/">Cornell PRL Group.</a>
 
-<P><A HREF="http://www.cs.cornell.edu/eli/">Eli Barzilay</A> is working on implementing reflection in NuPRL and MetaPRL.</P>
+<P><A HREF="http://www.cs.cornell.edu/People/kopylov/">Alexei Kopylov</A> is
+working on better understanding and improving MetaPRL Type Theory. In
+particular, he came up with and have implemented in MetaPRL a novel theory of
+extensible records.</P>
 
-<P><A HREF="mailto:lolorigo@cs.cornell.edu">Lori Lorigo</A> is working on connecting MetaPRL and NuPRL-5 systems.</P>
+<P><A HREF="http://www.cs.gc.cuny.edu/~sartemov/">Sergei Artemov</A> is the
+head of the CUNY branch of the MetaPRL group.
 
-<P><A HREF="http://spain.slu.edu/people_at_slu/faculty/schmitt/schmitt.html">Stephan Schmitt</A> implemented a first order prover in MetaPRL.</P>
+<p><A HREF="http://www.cs.caltech.edu/~xiny/">Xin Yu</a> is working on
+formalizing abstract algebra in MetaPRL.
 
-<P><A HREF="http://markov.math.msu.ru/~krupski/">Vladimir Krupski</A> is working on improving MetaPRL unification algorithms.</P>
+<P><A HREF="http://www.cs.cornell.edu/Info/People/lorigo/index.html">Lori
+Lorigo</A> and <a
+href="http://www.cs.cornell.edu/Info/Projects/NuPrl/html/eaton/eaton.html">Richard
+Eaton</a> are working on connecting MetaPRL and NuPRL LPE systems.</P>
 
-<P><A HREF="mailto:yegor@lpcs.math.msu.ru">Yegor Bryuhov</A> implemented term cons-hashing using weak pointers and explicit DAG representations for terms. He is currently working on the arithmetical theories in MetaPRL Type Theory</P>
+<P><A
+HREF="http://spain.slu.edu/people_at_slu/faculty/schmitt/schmitt.html">Stephan
+Schmitt</A> and <a
+href="http://www.cs.cornell.edu/Info/People/kreitz/">Christoph Kreitz</a>
+implemented a first order prover ("JProver") in MetaPRL.</p>
+
+<P><A HREF="http://markov.math.msu.ru/~krupski/">Vladimir Krupski</A> is
+the coordinator of the Moscow branch of the MetaPRL group. He is working on
+improving MetaPRL unification algorithms.</P>
+
+<P><A HREF="http://www.cs.gc.cuny.edu/~yegor/">Yegor Bryuhov</A> implemented
+term cons-hashing using weak pointers and explicit DAG representations for
+terms.  He is currently working on the arithmetical theories in MetaPRL Type
+Theory.</P>
+
+<P><A HREF="http://www.cs.cornell.edu/eli/">Eli Barzilay</A> is working on
+implementing reflection in NuPRL and MetaPRL.</P>
 
 <P><A HREF="mailto:cwitty@newtonlabs.com">Carl Witty</A> have contributed an extensive
 reference to MetaPRL Type Theory and lots of very helpful feedback.</P>
@@ -57,6 +84,9 @@ formalizing the functional intermediate reprsentation (FIR) of the MC
 compiler being developed at the California Institue of Technology by
 Jason Hickey.  The goal is to be able to reason about code and code
 transformations.</P>
+
+<P><a HREF="http://www.adam-granicz.org/">Adam Granicz</a> is working on
+generic parsing and formal compilation using the MetaPRL rewriring engine.</p>
 
 </BODY>
 </HTML>
