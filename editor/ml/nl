@@ -1,0 +1,10 @@
+#!/bin/sh
+./nl.run -I . -I ../../theories/base -I ../../theories/ocaml -I ../../theories/tactic
+
+#
+# Perform these commands.
+#
+# open Shell;;
+# load "shell";;
+# cd "shell";;
+#
