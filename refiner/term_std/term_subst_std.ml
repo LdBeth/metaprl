@@ -430,6 +430,7 @@ struct
          t
 
    let apply_subst s t =
+      if s = [] then t else
       let vs,ts = List.split s in
       subst t vs ts
 

@@ -150,6 +150,21 @@ struct
    let extract_stack_bvars stack conts vars =
       extract_cont_bvars stack (extract_some_bvars stack vars) conts
 
+   let check_instance_term vars t =
+      if SymbolSet.intersectp vars (free_vars_set t) then
+         raise (RefineError("Rewrite_match_redex.check_instance_term", StringTermError("term in the inner sequent is bound by the outer context", t)))
+
+   let rec check_instance_hyps goals vars hyps i len =
+      if i = len then SeqGoal.iter (check_instance_term vars) goals else
+      match SeqHyp.get hyps i with
+         Context(_, _, ts) ->
+            List.iter (check_instance_term vars) ts;
+            check_instance_hyps goals vars hyps (i+1) len
+       | Hypothesis (v,t) ->
+            check_instance_term vars t;
+            let vars = SymbolSet.remove vars v in
+            if not (SymbolSet.is_empty vars) then check_instance_hyps goals vars hyps (i+1) len
+
    (*
     * Assign the bvars.
     *)
@@ -169,6 +184,10 @@ struct
             eprintf "Rewrite.set_bvars %d/%d%t" (List.length vars) (List.length names) eflush
       ENDIF;
       iter2_1 set_bvar stack vars names
+
+   let hyp_apply_subst sub = function
+      Hypothesis (v, t) -> Hypothesis (v, apply_subst sub t)
+    | Context(v, conts, ts) -> Context (v, conts, Lm_list_util.smap (apply_subst sub) ts)
 
    (*
     * Matching functions.
@@ -521,8 +540,8 @@ struct
                StackSeqContext (bvars, (k, count, hyps'')) ->
                   if count + i > len then
                      REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringError "not enough hypotheses"));
-                  match_context_instance addrs stack all_bvars hyps i hyps'' k bvars ts count;
-                  match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps (i+count) len
+                  let sub = match_context_instance addrs stack all_bvars goals hyps i hyps'' k bvars ts SymbolSet.empty [] count in
+                     match_redex_sequent_hyps addrs stack goals' (SeqGoal.lazy_apply (apply_subst sub) goals) all_bvars hyps' (SeqHyp.lazy_apply (hyp_apply_subst sub) hyps) (i+count) len
              | _ ->
                   raise (Invalid_argument "Rewrite_match_redex.match_redex_sequent_hyps: RWSeqContextInstance: invalid stack entry")
             end
@@ -552,23 +571,50 @@ struct
                   REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringIntError ("hypothesis index refers to a context", i)))
             end
 
-   and match_context_instance addrs stack all_bvars hyps i hyps' k bvars ts count =
-      if count = 0 then () else
-      let all_bvars =
-         match SeqHyp.get hyps i, SeqHyp.get hyps' k with
-            (Context _, Hypothesis _) | (Hypothesis _, Context _) ->
-               REF_RAISE(RefineError ("Rewrite_match_redex.match_context_instance", StringError ("hypothesis/context mismatch")))
-          | Hypothesis (v, t1), Hypothesis(v', t2) when v=v' ->
-               check_match addrs stack all_bvars t2 bvars t1 ts;
-               (SymbolSet.add all_bvars v)
-          | Context (v, conts, ts1), Context(v', conts', ts2)
-            when v=v' && conts=conts' && (List.length ts1 = List.length ts2) ->
-               List.iter2 (fun t1 t2 -> check_match addrs stack all_bvars t2 bvars t1 ts) ts1 ts2;
-               (SymbolSet.add all_bvars v)
-          | _ ->
-               raise (Invalid_argument "Rewrite_match_redex.match_context_instance: not fully implemented (see bug 165)")
-      in
-         match_context_instance addrs stack all_bvars hyps (i+1) hyps' (k+1) bvars ts (count-1)
+   (*
+    * This function checks whether a given instance of a sequent contex matches the first instance
+    * of that context, as recorded in the stack. It will also attempt to alpha-rename the current
+    * sequent so that the current context exactly matches tha one recorder in the stack. This takes
+    * care of "context substitution" (e.g. in "<H> >- (<H> >- t) <--> <H> >- t" the inner sequent of
+    * the redex needs to be alpha-renamed, so that the free variables of t get matched up with the
+    * variables of the outer H (which is the one that will get recorded on the stack), so that when
+    * H and t from the stack are put back together in the contractum, the binding structure is still
+    * correct.
+    *
+    * When doing the alpha-renaming we also check (check_instance_hyps) that the remainder of the
+    * sequent (e.g. t in the example above) does not have any variables bound by the _outer_ instance
+    * (since that would not be a legal match).
+    *
+    * XXX BUG: When the current instance is _not_ in scope of the original one, any errors reported by
+    * check_instance_hyps would be a result of an accidental variable name clash and thus a bug. This
+    * is _not_ an easy to fix bug - in case such a clash does happen we are pretty much stuck and the
+    * only reasonable solution is trying to prevent such a clash in the first place, but that can not
+    * be done in any straightforward way in the current rewriter framework.
+    *)
+   and match_context_instance addrs stack all_bvars goals hyps i hyps' k bvars ts vars sub count =
+      if count = 0 then begin
+         if not (SymbolSet.is_empty vars) then
+            check_instance_hyps goals vars hyps i (SeqHyp.length hyps);
+         sub
+      end else
+      match SeqHyp.get hyps i, SeqHyp.get hyps' k with
+         Hypothesis (v, t1), Hypothesis(v', t2) ->
+            check_instance_term vars t1;
+            let t1 = apply_subst sub t1 in
+            check_match addrs stack all_bvars t2 bvars t1 ts;
+            let all_bvars = SymbolSet.add all_bvars v' in
+            if v = v' then
+               match_context_instance addrs stack all_bvars goals hyps (i+1) hyps' (k+1) bvars ts vars sub (count-1)
+            else
+               match_context_instance addrs stack all_bvars goals hyps (i+1) hyps' (k+1) bvars ts (SymbolSet.add (SymbolSet.remove vars v) v') ((v, mk_var_term v') :: sub) (count-1)
+       | Context (v, conts, ts1), Context(v', conts', ts2)
+         when v=v' && conts=conts' && (List.length ts1 = List.length ts2) ->
+            List.iter (check_instance_term vars) ts1;
+            let ts1 = Lm_list_util.smap (apply_subst sub) ts1 in
+            List.iter2 (fun t1 t2 -> check_match addrs stack all_bvars t2 bvars t1 ts) ts1 ts2;
+            match_context_instance addrs stack all_bvars goals hyps (i+1) hyps' (k+1) bvars ts (SymbolSet.remove vars v) sub (count-1)
+       | _ ->
+            REF_RAISE(RefineError ("Rewrite_match_redex.match_context_instance", StringError ("hypothesis/context mismatch")))
 
    and match_redex_sequent_goals addrs stack all_bvars goals' goals i len =
       match goals' with

@@ -208,7 +208,7 @@ struct
     * Rename hypothesis bound variables --- use empty names for variables not actually used
     *)
    let rec rename_hyp_bvars bvars goals seqfvars count sub = function
-      [] -> [], if sub = [] then goals else Lm_list_util.smap (apply_subst sub) goals
+      [] -> [], Lm_list_util.smap (apply_subst sub) goals
     | (Context(c, conts, terms) as hd :: tl) as hyps ->
          let tl', goals' = rename_hyp_bvars (SymbolSet.add bvars c) goals seqfvars count sub tl in
          let hd' = if sub = [] || terms = [] then hd else Context(c, conts, Lm_list_util.smap (apply_subst sub) terms) in
@@ -223,7 +223,7 @@ struct
                Lm_symbol.new_name (Lm_symbol.make "" !count) (SymbolSet.mem (SymbolSet.union bvars seqfvars))
             end else v
          in
-         let t' = if sub = [] then t else apply_subst sub t in
+         let t' = apply_subst sub t in
          let sub = if v == v' then sub else (v, mk_var_term v') :: sub in
          let tl', goals' = rename_hyp_bvars (SymbolSet.add bvars v') goals seqfvars count sub tl in
          let hd' = if v==v' && t==t' then hd else Hypothesis (v',t') in
