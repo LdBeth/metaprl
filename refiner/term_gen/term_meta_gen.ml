@@ -195,7 +195,7 @@ struct
    let encode_free_var v = mk_so_var_term v bang []
 
    let is_encoded_free_var t =
-      is_so_var_term t && let v,conts,terms = dest_so_var t in conts = bang && terms = []
+      is_so_var_term t && let _,conts,terms = dest_so_var t in conts = bang && terms = []
 
    let decode_free_var t =
       let v,conts,terms = dest_so_var t in
