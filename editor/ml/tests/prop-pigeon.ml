@@ -76,7 +76,7 @@ end
 
 module PigeonTable = MakeTable (StringTableBase)
 
-let dT i p = thinningT false (dT i) p
+let dT i = thinningT false (dT i)
 
 (*
  * Proving well-formedness.
@@ -95,30 +95,30 @@ let rec prove_wf p =
 (*
  * Step 5: prove a disjunct.
  *)
-let rec prove_disjunct pigeons p =
+let rec prove_disjunct pigeons = funT (fun p ->
    let t = Sequent.concl p in
-      (if is_or_term t then
-          (selT 1 (dT 0) thenMT prove_disjunct pigeons thenWT prove_wf)
-          orelseT (selT 2 (dT 0) thenMT prove_disjunct pigeons thenWT prove_wf)
-       else
-          try
-             nthHypT (PigeonTable.find pigeons (dest_var t))
-          with
-             Not_found ->
-                raise (RefineError ("prove_disjunct", StringError "disjunct not provable"))) p
+      if is_or_term t then
+         (selT 1 (dT 0) thenMT prove_disjunct pigeons thenWT prove_wf)
+         orelseT (selT 2 (dT 0) thenMT prove_disjunct pigeons thenWT prove_wf)
+      else
+         try
+            nthHypT (PigeonTable.find pigeons (dest_var t))
+         with
+            Not_found ->
+               raise (RefineError ("prove_disjunct", StringError "disjunct not provable")))
 
 (*
  * Step 4: prove one of the negations.
  *)
-let rec prove_negation pigeons i p =
-   ((dT i thenT prove_disjunct pigeons) orelseT prove_negation pigeons (pred i)) p
+let rec prove_negation pigeons i =
+   (dT i thenT prove_disjunct pigeons) orelseT prove_negation pigeons (pred i)
 
 (*
  * Step 3: forward chain through the possible pigeon locations.
  *)
-let rec forward_chain pigeons i p =
+let rec forward_chain pigeons = argfunT (fun i p ->
    let t = Sequent.nth_hyp p i in
-      (if is_implies_term t then
+      if is_implies_term t then
          let t, _ = dest_implies t in
             try
                let j = PigeonTable.find pigeons (dest_var t) in
@@ -129,7 +129,7 @@ let rec forward_chain pigeons i p =
       else if is_univ_term t then
          idT
       else
-         forward_chain pigeons (pred i)) p
+         forward_chain pigeons (pred i))
 
 (*
  * Step 2: collect the pigeon placements.
@@ -144,29 +144,29 @@ let rec collect_pigeons pigeons i p =
 (*
  * Step 1: decompose all the disjunctions.
  *)
-let rec decompose_disjuncts i p =
+let rec decompose_disjuncts i = funT (fun p ->
    let t = Sequent.nth_hyp p i in
-      (if is_or_term t then
-          dT i thenT decompose_disjuncts i
-       else if is_var_term t then
-          decompose_disjuncts (pred i)
-       else
-          idT) p
+      if is_or_term t then
+         dT i thenT decompose_disjuncts i
+      else if is_var_term t then
+         decompose_disjuncts (pred i)
+      else
+         idT)
 
 (*
  * Put it all together.
  *)
-let prove3T pigeons p =
-   prove_negation pigeons (Sequent.hyp_count p) p
+let prove3T pigeons =
+   funT (fun p -> prove_negation pigeons (Sequent.hyp_count p))
 
-let prove2T p =
+let prove2T = funT (fun p ->
    let length = Sequent.hyp_count p in
    let pigeons = collect_pigeons PigeonTable.empty length p in
-      (forward_chain pigeons length thenT prove3T pigeons) p
+      forward_chain pigeons length thenT prove3T pigeons)
 
-let proveT p =
+let proveT = funT (fun p ->
    let length = Sequent.hyp_count p in
-      (decompose_disjuncts length thenT prove2T) p
+      decompose_disjuncts length thenT prove2T)
 
 (************************************************************************
  * GENERAL CONSTRUCTIVE PROCEDURE                                       *
@@ -186,7 +186,7 @@ let debug_prop_decide =
      }
 
 (* Like onSomeHyp, but works backwards. *)
-let revOnSomeHypT tac p =
+let revOnSomeHypT tac =
    let rec aux i =
       if i = 1 then
          tac i
@@ -195,14 +195,10 @@ let revOnSomeHypT tac p =
       else
          idT
    in
-      aux (Sequent.hyp_count p) p
+      funT (fun p -> aux (Sequent.hyp_count p))
 
 (* Operate on all non-wf subgoals *)
-let ifNotWT tac p =
-   (if Sequent.label p = "wf" then
-       autoT
-    else
-       tac) p
+let ifNotWT = ifLabT "wf" autoT
 
 (* Select a clause in the disjunction *)
 let rec dorT i =
@@ -268,94 +264,94 @@ interactive imp_imp_rule 'H :
    sequent ['ext] { <H>; x: "implies"{'C; 'D} => 'B; <J['x]> >- 'T['x] }
 
 (* Create a tactic for the X-implication-elimination. *)
-let d_and_impT i p =
+let d_and_impT = argfunT (fun i p ->
    if i = 0 then
       raise (RefineError ("d_and_impT", StringError "no introduction form"))
    else
       let i = Sequent.get_pos_hyp_num p i in
-         (imp_and_rule i
-          thenLT [autoT (* addHiddenLabelT "wf" *);
-                  autoT (* addHiddenLabelT "wf" *);
-                  thinT i]) p
+         imp_and_rule i
+         thenLT [autoT (* addHiddenLabelT "wf" *);
+                 autoT (* addHiddenLabelT "wf" *);
+                 thinT i])
 
-let d_or_impT i p =
+let d_or_impT = argfunT (fun i p ->
    if i = 0 then
       raise (RefineError ("d_or_impT", StringError "no introduction form"))
    else
       let i = Sequent.get_pos_hyp_num p i in
-         (imp_or_rule i
-          thenLT [addHiddenLabelT "wf";
-                  addHiddenLabelT "wf";
-                  thinT i]) p
+         imp_or_rule i
+         thenLT [addHiddenLabelT "wf";
+                 addHiddenLabelT "wf";
+                 thinT i])
 
-let d_imp_impT i p =
+let d_imp_impT = argfunT (fun i p ->
    if i = 0 then
       raise (RefineError ("d_and_impT", StringError "no introduction form"))
    else
       let i = Sequent.get_pos_hyp_num p i in
-         (imp_and_rule i
-          thenLT [addHiddenLabelT "wf";
-                  addHiddenLabelT "wf";
-                  thinT i]) p
+         imp_and_rule i
+         thenLT [addHiddenLabelT "wf";
+                 addHiddenLabelT "wf";
+                 thinT i])
 
 (* Try to decompose a hypothesis *)
-let rec decompPropDecideHyp1T max_depth count i p =
+let rec decompPropDecideHyp1T max_depth count i = funT (fun p ->
    let term = Sequent.nth_hyp p i in
-      (if is_false_term term then
-          dT i
-       else if is_and_term term or is_or_term term then
-          dT i thenT ifNotWT (internalPropDecideT max_depth count)
-       else if is_imp_and_term term then
-          (* {C & D => B} => {C => D => B} *)
-          d_and_impT i thenT ifNotWT (internalPropDecideT max_depth count)
-       else if is_imp_imp_term term then
-          (* {(C => D) => B} => {D => B} *)
-          d_imp_impT i thenT ifNotWT (internalPropDecideT max_depth count)
-       else
-          (* Nothing recognized, try to see if we're done. *)
-          nthHypT i) p
+      if is_false_term term then
+         dT i
+      else if is_and_term term or is_or_term term then
+         dT i thenT ifNotWT (internalPropDecideT max_depth count)
+      else if is_imp_and_term term then
+         (* {C & D => B} => {C => D => B} *)
+         d_and_impT i thenT ifNotWT (internalPropDecideT max_depth count)
+      else if is_imp_imp_term term then
+         (* {(C => D) => B} => {D => B} *)
+         d_imp_impT i thenT ifNotWT (internalPropDecideT max_depth count)
+      else
+         (* Nothing recognized, try to see if we're done. *)
+         nthHypT i)
 
-and decompPropDecideHyp2T max_depth count i p =
+and decompPropDecideHyp2T max_depth count i = funT (fun p ->
    let term = Sequent.nth_hyp p i in
-      (if is_imp_or_term term then
-          (* {C or D => B} => {(C => B) & (D => B)} *)
-          d_or_impT i thenT ifNotWT (internalPropDecideT max_depth count)
-       else
-          failT) p
+      if is_imp_or_term term then
+         (* {C or D => B} => {(C => B) & (D => B)} *)
+         d_or_impT i thenT ifNotWT (internalPropDecideT max_depth count)
+      else
+         failT)
 
-and decompPropDecideHyp3T max_depth count i p =
+and decompPropDecideHyp3T max_depth count i = funT (fun p ->
    let term = Sequent.nth_hyp p i in
-      (if is_implies_term term then
-          let t, _ = dest_implies term in
-             if is_hyp_term p t then
-                dT i thenT thinT i thenT ifNotWT (internalPropDecideT max_depth count)
-             else
-                failT
-       else
-          failT) p
+      if is_implies_term term then
+         let t, _ = dest_implies term in
+            if is_hyp_term p t then
+               dT i thenT thinT i thenT ifNotWT (internalPropDecideT max_depth count)
+            else
+               failT
+      else
+         failT)
 
 (* Decompose the goal *)
-and decompPropDecideConclT max_depth count p =
+and decompPropDecideConclT max_depth count = funT (fun p ->
    let goal = Sequent.concl p in
-      (if is_or_term goal then
-          (selT 1 (dT 0) thenT ifNotWT (internalPropDecideT max_depth count))
-          orelseT (selT 2 (dT 0) thenT ifNotWT (internalPropDecideT max_depth count))
-       else if is_and_term goal or is_implies_term goal then
-          dT 0 thenT ifNotWT (internalPropDecideT max_depth count)
-       else
-          trivialT) p
+      if is_or_term goal then
+         (selT 1 (dT 0) thenT ifNotWT (internalPropDecideT max_depth count))
+         orelseT (selT 2 (dT 0) thenT ifNotWT (internalPropDecideT max_depth count))
+      else if is_and_term goal or is_implies_term goal then
+         dT 0 thenT ifNotWT (internalPropDecideT max_depth count)
+      else
+         trivialT)
 
 (* Prove the proposition - internal version that does not handle negation *)
-and internalPropDecideT max_depth count p =
+and internalPropDecideT max_depth count =
    if count = max_depth then
       raise (RefineError ("internalPropDecideT", StringIntError ("depth bound exceeded", count)))
    else
       let count = succ count in
-         (trivialT
-          orelseT revOnSomeHypT (decompPropDecideHyp1T max_depth count)
-          orelseT revOnSomeHypT (decompPropDecideHyp2T max_depth count)
-          orelseT revOnSomeHypT (decompPropDecideHyp3T max_depth count)
-          orelseT decompPropDecideConclT max_depth count) p
+         trivialT
+         orelseT revOnSomeHypT (decompPropDecideHyp1T max_depth count)
+         orelseT revOnSomeHypT (decompPropDecideHyp2T max_depth count)
+         orelseT revOnSomeHypT (decompPropDecideHyp3T max_depth count)
+         orelseT decompPropDecideConclT max_depth count
 
 (* Convert all "not X" terms to "X => False" *)
 let notToImpliesFalseC =
@@ -365,9 +361,9 @@ let notToImpliesFalseC =
  * Toplevel tactic:
  * Unfold all negations, then run Dyckoff's algorithm.
  *)
-let rec iterativeDeepeningPropDecideT max_depth p =
+let rec iterativeDeepeningPropDecideT max_depth = funT (fun _ ->
    eprintf "iterativeDeepeningPropDecideT: depth = %d%t" max_depth eflush;
-   (internalPropDecideT max_depth 0 orelseT iterativeDeepeningPropDecideT (succ max_depth)) p
+   internalPropDecideT max_depth 0 orelseT iterativeDeepeningPropDecideT (succ max_depth))
 
 let propDecideT =
    onAllClausesT (fun i -> tryT (rw notToImpliesFalseC i))

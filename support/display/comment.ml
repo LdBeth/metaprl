@@ -1969,6 +1969,13 @@ dform array_sp  : slot["decl"]{math_array[s1,s2]{'t}} = special
 dform foot_sp   : slot["decl"]{footnote{'t}} = special
 dform target_sp : slot["decl"]{target[name]{'t}} = special
 dform target_sp : slot["decl"]{hreftarget[name]} = special
+dform hrefm_sp  : slot["decl"]{hrefmodule[name:s]} = special
+dform hreft_sp  : slot["decl"]{hrefterm[name:s]} = special
+dform hrefr_sp  : slot["decl"]{hrefresource[name:s]} = special
+dform hrefrw_sp : slot["decl"]{hrefrewrite[name:s]} = special
+dform hrefrl_sp : slot["decl"]{hrefrule[name:s]} = special
+dform hrefta_sp : slot["decl"]{hreftactic[name:s]} = special
+dform hrefco_sp : slot["decl"]{hrefconv[name:s]} = special
 
 (*
  * -*-
