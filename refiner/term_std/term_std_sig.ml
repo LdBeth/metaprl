@@ -140,6 +140,7 @@ sig
    val mk_op : opname -> param list -> operator
    val make_op : operator' -> operator
    val dest_op : operator -> operator'
+   val ops_eq : operator -> operator -> bool
    val mk_bterm : var list -> term -> bound_term
    val make_bterm : bound_term' -> bound_term
    val dest_bterm : bound_term -> bound_term'

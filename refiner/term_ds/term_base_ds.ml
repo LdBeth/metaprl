@@ -396,6 +396,8 @@ struct
 
    let mk_op name params = { op_name = name; op_params = params }
 
+   let ops_eq op1 op2 = Opname.eq op1.op_name op2.op_name && op1.op_params = op2.op_params
+
    let is_simple_bterm bt = (bt.bvars = [])
    let no_bvars = List.for_all is_simple_bterm
    let mk_simple_bterm term = { bvars = []; bterm = term }

@@ -135,6 +135,8 @@ struct
    let make_op x = x (* external make_op : operator' -> operator = "%identity" *)
    let dest_op x = x (* external dest_op : operator -> operator' = "%identity" *)
 
+   let ops_eq op1 op2 = Opname.eq op1.op_name op2.op_name && op1.op_params = op2.op_params
+
    let mk_bterm bvars term = { bvars = bvars; bterm = term }
 
    let make_bterm x = x (* external make_bterm : bound_term' -> bound_term = "%identity" *)

@@ -180,6 +180,8 @@ sig
    val mk_simple_bterm : term -> bound_term
    val dest_simple_bterm : bound_term -> term
 
+   val ops_eq : operator -> operator -> bool
+
    (* Projections *)
    val opname_of_term : term -> opname
    val subterms_of_term : term -> term list
