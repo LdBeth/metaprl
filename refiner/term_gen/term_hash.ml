@@ -211,7 +211,7 @@ struct
    let compare_tterm_header
        { op_name_weak = opn1; op_params_weak = ops1; term_terms_weak = bterms1 }
        { op_name_weak = opn2; op_params_weak = ops2; term_terms_weak = bterms2 } =
-      opn1 == opn2 & list_mem_eq ops1 ops2 & list_compare (compare_bterm_header) bterms1 bterms2
+      Opname.eq opn1 opn2 & list_mem_eq ops1 ops2 & list_compare (compare_bterm_header) bterms1 bterms2
 
    let compare_term_header t1 t2 =
       match (t1,t2) with

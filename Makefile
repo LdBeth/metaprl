@@ -59,6 +59,11 @@ filter: check_config
 		if (echo Making $$i...; $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
+filter_opt: check_config
+	@for i in $(REFINER_DIRS) filter; do\
+		if (echo Making $$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
+	done
+
 profile_byte: check_config
 	@$(MAKE) profile_clean
 	@$(MAKE) all

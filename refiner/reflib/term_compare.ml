@@ -97,7 +97,7 @@ struct
 
    let compare_operator { CType.op_name = opname1; CType.op_params = params1 }
                         { CType.op_name = opname2; CType.op_params = params2 } =
-      opname1 == opname2 & list_mem_eq params1 params2
+      Opname.eq opname1 opname2 & list_mem_eq params1 params2
 
    let compare_term { CType.term_op = op1; CType.term_terms = bterms1 }
                     { CType.term_op = op2; CType.term_terms = bterms2 } =

@@ -111,15 +111,16 @@ and make_opname = function
  | h :: t ->
       mk_opname h (make_opname t)
 
-and normalize_opname { opname_token = token; opname_name = name } =
-   if token = opname_token then
-      (*
-       * This is for reverse compatibility with opnames made
-       * from lists.
-       *)
-      make_opname name
+and normalize_opname opname =
+   if opname.opname_token == opname_token then
+      (* This opname is already normalized *)
+      opname
    else
-      make_opname (token :: name)
+      let res = make_opname opname.opname_name
+      in 
+         opname.opname_name <- res.opname_name;
+         opname.opname_token <- opname_token;
+         res
 
 (*
  * Atoms are the inner string list.
@@ -148,10 +149,10 @@ let intern opname =
  * because opnames are usually small.
  *)
 let eq_inner op1 op2 =
-   op1.opname_token <- opname_token;
    op1.opname_name <- (normalize_opname op1).opname_name;
-   op2.opname_token <- opname_token;
+   op1.opname_token <- opname_token;
    op2.opname_name <- (normalize_opname op2).opname_name;
+   op2.opname_token <- opname_token;
    op1.opname_name == op2.opname_name
 
 let eq op1 op2 =
