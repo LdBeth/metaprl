@@ -47,7 +47,7 @@ sig
    (*
     * Some operations on meta_term.
     *)
-   val context_vars : meta_term -> var list
+   val context_vars : meta_term -> SymbolSet.t
    val meta_alpha_equal : meta_term -> meta_term -> bool
    val unfold_mlabeled : string -> meta_term -> term
    val unzip_mimplies : meta_term -> term list * term

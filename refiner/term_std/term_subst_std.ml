@@ -183,13 +183,7 @@ struct
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = bterms
       } when Opname.eq opname context_opname ->
-         let cvars' =
-            if List.mem v cvars then
-               cvars
-            else
-               v::cvars
-         in
-            context_vars_bterms cvars' bterms
+         context_vars_bterms (SymbolSet.add cvars v) bterms
     | { term_terms = bterms } ->
          context_vars_bterms cvars bterms
 
@@ -198,7 +192,7 @@ struct
          context_vars_bterms (context_vars_term cvars t) l
     | [] -> cvars
 
-   let context_vars = context_vars_term []
+   let context_vars = context_vars_term SymbolSet.empty
 
    (************************************************************************
     * ALPHA EQUALITY                                                       *

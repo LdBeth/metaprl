@@ -162,7 +162,7 @@ struct
     | MetaImplies (a, b)
     | MetaFunction (_, a, b)
     | MetaIff (a, b) ->
-         Lm_list_util.union (context_vars a) (context_vars b)
+         SymbolSet.union (context_vars a) (context_vars b)
     | MetaLabeled (_, t) ->
          context_vars t
 

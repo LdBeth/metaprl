@@ -190,8 +190,8 @@ struct
             List.exists (SymbolSet.mem (free_vars_terms terms)) vars
 
    let rec terms_context_vars = function
-      [] -> []
-    | t::ts -> (context_vars t) @ (terms_context_vars ts)
+      [] -> SymbolSet.empty
+    | t::ts -> SymbolSet.union (context_vars t) (terms_context_vars ts)
 
    and context_vars t =
       match get_core t with
@@ -199,18 +199,18 @@ struct
             let hyps = seq.sequent_hyps in
             let len = SeqHyp.length hyps in
             let rec hyp_context_vars i =
-               if i = len then [] else
+               if i = len then SymbolSet.empty else
                match SeqHyp.get hyps i with
-                  Hypothesis (_, h) -> context_vars h @ hyp_context_vars (succ i)
-                | Context (v,_,ts) -> v :: (terms_context_vars ts @ hyp_context_vars (succ i))
-            in (context_vars seq.sequent_args) @ (hyp_context_vars 0) @ (context_vars seq.sequent_concl)
+                  Hypothesis (_, h) -> SymbolSet.union (context_vars h) (hyp_context_vars (succ i))
+                | Context (v,_,ts) -> SymbolSet.add (SymbolSet.union (terms_context_vars ts) (hyp_context_vars (succ i))) v
+            in SymbolSet.union (SymbolSet.union (hyp_context_vars 0) (context_vars seq.sequent_concl)) (context_vars seq.sequent_args)
        | Term { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bts }
             when Opname.eq opname Opname.context_opname ->
-            v :: terms_context_vars (List.map (fun bt -> bt.bterm) bts)
+            SymbolSet.add (terms_context_vars (List.map (fun bt -> bt.bterm) bts)) v
        | Term { term_terms = bts } ->
             terms_context_vars (List.map (fun bt -> bt.bterm) bts)
        | SOVar(_, _, ts) -> terms_context_vars ts
-       | FOVar _ -> []
+       | FOVar _ -> SymbolSet.empty
        | Hashed _| Subst _ -> fail_core "context_vars"
 
    (************************************************************************

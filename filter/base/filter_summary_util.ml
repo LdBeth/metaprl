@@ -31,6 +31,7 @@
  *)
 
 open Lm_debug
+open Lm_symbol
 
 open Refiner.Refiner.TermMan
 
@@ -104,7 +105,7 @@ let extract_params cvars =
    let aux h =
       if is_so_var_term h then
          let v, conts, terms = dest_so_var h in
-            if List.mem v cvars then
+            if SymbolSet.mem cvars v then
                ContextParam v
             else
                TermParam h

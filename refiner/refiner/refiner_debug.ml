@@ -2264,7 +2264,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       let context_vars (p0 : term) =
          let p0_1, p0_2 = p0 in
-         merge merge_vars "TermSubst.context_vars" (wrap1 TermSubst1.context_vars p0_1) (wrap1 TermSubst2.context_vars p0_2)
+         merge merge_ss "TermSubst.context_vars" (wrap1 TermSubst1.context_vars p0_1) (wrap1 TermSubst2.context_vars p0_2)
 
       let match_terms (p0 : term_subst) (p1 : term) (p2 : term) =
          let p0_1, p0_2 = split_term_subst p0 in
@@ -2329,7 +2329,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       let context_vars (p0 : meta_term) =
          let p0_1, p0_2 = split_meta_term p0 in
-         merge merge_vars "TermMeta.context_vars" (wrap1 TermMeta1.context_vars p0_1) (wrap1 TermMeta2.context_vars p0_2)
+         merge merge_ss "TermMeta.context_vars" (wrap1 TermMeta1.context_vars p0_1) (wrap1 TermMeta2.context_vars p0_2)
 
       let meta_alpha_equal (p0 : meta_term) (p1 : meta_term) =
          let p0_1, p0_2 = split_meta_term p0 in
