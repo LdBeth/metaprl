@@ -56,7 +56,7 @@ struct
          if flag then
             match dest_term t with
                { term_terms = bterm::_ } -> (dest_bterm bterm).bterm
-             | _ -> raise Not_found
+             | _ -> raise (IncorrectAddress (a,term))
          else
             t
     | i ->
@@ -99,8 +99,8 @@ struct
    and path_replace_bterm a term f tl i = function
       bterm::bterms ->
          if (i=0) then
-            let { bvars = vars; bterm = term } = dest_bterm bterm in
-            let term, arg = path_replace_term a term f term tl in
+            let { bvars = vars; bterm = trm } = dest_bterm bterm in
+            let term, arg = path_replace_term a term f trm tl in
                mk_bterm vars term :: bterms, arg
          else
             let bterms, arg = path_replace_bterm a term f tl (i - 1) bterms in
