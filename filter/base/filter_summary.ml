@@ -1019,18 +1019,14 @@ struct
       Prec (dest_string_param t)
 
    and dest_prec_rel convert t =
-      match dest_string_param_list (one_subterm t) with
-         [rel; left; right] ->
+      match List.map ToTerm.Term.dest_param (dest_op (dest_term t).term_op).op_params with
+         [String rel; String left; String right] ->
             let rel =
                match rel with
-                  "none" ->
-                     NoRelation
-                | "lt" ->
-                     LTRelation
-                | "eq" ->
-                     EQRelation
-                | "gt" ->
-                     GTRelation
+                  "none" -> NoRelation
+                | "lt" -> LTRelation
+                | "eq" -> EQRelation
+                | "gt" -> GTRelation
                 | _ ->
                      raise (Failure ("dest_prec_rel: undefined relation: " ^ rel))
             in
@@ -1264,16 +1260,12 @@ struct
    let mk_prec_rel_term rel left right =
       let rel =
          match rel with
-            NoRelation ->
-               "none"
-          | LTRelation ->
-               "lt"
-          | EQRelation ->
-               "eq"
-          | GTRelation ->
-               "gt"
+            NoRelation -> "none"
+          | LTRelation -> "lt"
+          | EQRelation -> "eq"
+          | GTRelation -> "gt"
       in
-         mk_simple_term prec_rel_op [mk_strings_term prec_rel_op [rel; left; right]]
+         mk_term (mk_op prec_rel_op (List.map ToTerm.Term.make_param [String rel; String left; String right])) []
 
    (*
     * Term conversions.
