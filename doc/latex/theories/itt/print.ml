@@ -63,7 +63,6 @@ print_theory "itt_well_founded";;
 print_theory "itt_singleton";;
 print_theory "itt_subset";;
 print_theory "itt_subset2";;
-print_theory "itt_record_label";;
 print_theory "itt_record";;
 print_theory "itt_record_exm";;
 print_theory "itt_grouplikeobj";;
