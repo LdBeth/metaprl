@@ -266,7 +266,7 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 # may contain proofs.
 #
 clean::
-	rm -f *.cmi* *.cmo *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
+	rm -f *.run *.cma *.cmxa *.cmi* *.cmo *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
 	rm -f gmon.out $(ZMLFILES) $(ZMLIFILES) $(PMLFILES) $(PMLIFILES)
 
 depend:: $(MLFILES) $(MLIFILES)

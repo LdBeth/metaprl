@@ -315,5 +315,3 @@ test.cmiz: test.mli prlcomp.run
 #
 lib:: $(RMLIFILES) $(RCMIFILES)	$(RCMAFILES)
 
-clean::
-	rm -f filter_type.ml filter_summary_type.ml filter_process_type.ml filter_type.mli filter_summary_type.mli filter_process_type.mli filter_summary_spec.mli filter_summary_spec.ml infix.ml
