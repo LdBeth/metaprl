@@ -72,7 +72,7 @@ include Makefile.dep
 # Rules
 #
 lib: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES) $(ROOT)/lib/registry.txt
-opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(ROOT)/lib/registry.txt
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(ROOT)/lib/registry.txt $(ROOT)/lib/mbs-mpl.txt
 	@ $(MAKE) $(RAFILES)
 
 install:: $(MAIN).cma
