@@ -478,20 +478,21 @@ let expr_of_label loc = function
 
 let collect_terms () =
    let collect_term (loc, name, s) =
+      let loc = 0,0 in
       let p = <:patt< $lid:name$ >> in
       let e = <:expr< $uid: "Ml_term"$ . $lid: "term_of_string"$ $str: s$ >> in
-         (p, e)
+      <:str_item< value $rec:false$ $list:[p,e]$ >>
    in
    let collect_mterm (loc, name, s) =
+      let loc = 0,0 in
       let p = <:patt< $lid:name$ >> in
       let e = <:expr< $uid: "Ml_term"$ . $lid: "mterm_of_string"$ $str: s$ >> in
-         (p, e)
+      <:str_item< value $rec:false$ $list:[p,e]$ >>
    in
-   let values = (List.map collect_term !term_list) @ (List.map collect_mterm !mterm_list) in
-   let loc = 0, 0 in
-      term_list := [];
-      mterm_list := [];
-      <:str_item< value $rec:false$ $list:values$ >>
+   let terms = (List.map collect_term !term_list) @ (List.map collect_mterm !mterm_list) in
+   term_list := [];
+   mterm_list := [];
+   terms
 
 let expr_of_contractum loc index =
    <:expr< $make_contractum_expr loc$ $lid:sprintf "%s%d" contractum_id index$ $lid:stack_id$ >>
@@ -2341,7 +2342,7 @@ struct
       let items = List_util.flat_map (extract_str_item proc) (info_items info) in
       let postlog = implem_postlog proc (0, 0) name in
       let terms = collect_terms () in
-         List.map (fun item -> item, (0, 0)) (terms :: (prolog @ items @ postlog))
+         List.map (fun item -> item, (0, 0)) (terms @ prolog @ items @ postlog)
 end
 
 (*
