@@ -43,8 +43,8 @@ let zT, z =
 let _ = load "test"
 let _ = cd "test.test_and_elim"
         *)
-let _ = load "itt_logic"
-let _ = cd "itt_logic.cor_elim"
+let _ = load "test"
+let _ = cd "test"
 
 (*
  * -*-

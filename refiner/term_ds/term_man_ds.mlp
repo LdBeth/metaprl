@@ -293,12 +293,7 @@ struct
          match get_core t with
             Sequent s ->
                if n <= SeqHyp.length s.sequent_hyps then
-                  let pn = pred n in
-                     match s.sequent_hyps.(pn) with
-                        Hypothesis _ ->
-                           HypAddr pn
-                      | Context _ ->
-                           ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "it's a context")))
+                  HypAddr (pred n)
                else
                   ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
           | _ ->
@@ -334,17 +329,11 @@ struct
                   GoalAddr 0
                else if (i > 0) then
                   if i <= hlen then
-                     let pi = pred i in
-                        match s.sequent_hyps.(pi) with
-                           Hypothesis _ -> HypAddr pi
-                         | Context _ -> ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "it's a context")))
+                     HypAddr (pred i)
                   else
                      ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps")))
                else if (-i) <= hlen then
-                  let pi = hlen + i in
-                     match s.sequent_hyps.(pi) with
-                        Hypothesis _ -> HypAddr pi
-                      | Context _ -> ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "it's a context")))
+                  HypAddr (hlen + i)
                else
                   ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps for a negative addressing")))
        | _ ->

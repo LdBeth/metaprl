@@ -138,6 +138,21 @@ struct
        | (Sequent s, GoalAddr i) ->
             if i >= 0 && i < SeqGoal.length s.sequent_goals then s.sequent_goals.(i)
             else ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
+       | (Sequent s, Compose (HypAddr i, ((Path (j :: path)) as addr2))) ->
+            (*
+             * Special case to address through contexts.
+             *)
+            if i >= 0 && i < SeqHyp.length s.sequent_hyps then
+               match s.sequent_hyps.(i) with
+                  Hypothesis (_, t) ->
+                     term_subterm t addr2
+                | Context (_, subterms) ->
+                     if j >= 0 && j < List.length subterms then
+                        term_subterm (List.nth subterms j) (Path path)
+                     else
+                        ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
+            else
+               ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
        | (_, Compose (addr1, addr2)) ->
             term_subterm (term_subterm term addr1) addr2
        | _ -> ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
@@ -187,34 +202,64 @@ struct
        | _, [] -> \
             DO_FAIL
 
-#define APPLY_FUN_AUX \
-   let rec apply_fun_arg_at_addr_aux FAIL f addr BVARS term = \
-      match (get_core term, addr) with \
-         (Term _, Path addr) -> \
-            path_replace_term FAIL f BVARS term addr \
-       | (Sequent s, ArgAddr) -> \
-            let term, arg = f BVARS s.sequent_args in \
-            mk_sequent_term {sequent_args = term; sequent_hyps = s.sequent_hyps; sequent_goals = s.sequent_goals}, arg \
-       | (Sequent s, HypAddr i) -> \
-            if i>=0 && i < SeqHyp.length s.sequent_hyps then \
-               match s.sequent_hyps.(i) with \
-                  Hypothesis (v,t) -> \
-                     let term, arg = f HYP_BVARS t in \
-                     let aux i' t' = \
-                       if i' = i then Hypothesis (v,term) else t' \
-                     in mk_sequent_term {sequent_args = s.sequent_args; sequent_hyps = SeqHyp.mapi aux s.sequent_hyps; sequent_goals = s.sequent_goals}, arg \
-                | Context _ -> DO_FAIL \
-            else DO_FAIL \
-       | (Sequent s, GoalAddr i) -> \
-            if i>=0 && i < SeqGoal.length s.sequent_goals then \
-               let term, arg = f GOAL_BVARS s.sequent_goals.(i) in \
-               let aux i' t' = \
-                 if i' = i then term else t' \
-               in mk_sequent_term {sequent_args = s.sequent_args; sequent_hyps = s.sequent_hyps; sequent_goals = SeqGoal.mapi aux s.sequent_goals}, arg \
-            else DO_FAIL \
-       | (_, Compose (addr1, addr2)) -> \
-            apply_fun_arg_at_addr_aux FAIL (**) \
-               (apply_fun_arg_at_addr_aux FAIL f addr2) addr1 BVARS term \
+#define APPLY_FUN_AUX                                                                                                   \
+   let rec apply_fun_arg_at_addr_aux FAIL f addr BVARS term =                                                           \
+      match (get_core term, addr) with                                                                                  \
+         (Term _, Path addr) ->                                                                                         \
+            path_replace_term FAIL f BVARS term addr                                                                    \
+       | (Sequent s, ArgAddr) ->                                                                                        \
+            let term, arg = f BVARS s.sequent_args in                                                                   \
+               mk_sequent_term (**)                                                                                     \
+                  { sequent_args = term;                                                                                \
+                    sequent_hyps = s.sequent_hyps;                                                                      \
+                    sequent_goals = s.sequent_goals                                                                     \
+                  }, arg                                                                                                \
+       | (Sequent s, HypAddr i) ->                                                                                      \
+            if i>=0 && i < SeqHyp.length s.sequent_hyps then                                                            \
+               match s.sequent_hyps.(i) with 										\
+                  Hypothesis (v,t) -> 											\
+                     let term, arg = f HYP_BVARS t in 									\
+                     let aux i1 t1 = 											\
+                       if i1 = i then Hypothesis (v,term) else t1 							\
+                     in 												\
+                        mk_sequent_term (**) 										\
+                           { sequent_args = s.sequent_args; 								\
+                             sequent_hyps = SeqHyp.mapi aux s.sequent_hyps; 						\
+                             sequent_goals = s.sequent_goals 								\
+                           }, arg 											\
+                | Context (v, subterms) -> 										\
+                     let slot = mk_var_term v in                                                                        \
+                     let t = mk_context_term v slot subterms in 							\
+                     let t, arg = f BVARS t in 										\
+                     let v1, term1, subterms = dest_context t in 							\
+                        if v1 = v && is_var_term term1 && dest_var term1 = v then					\
+                           let aux i1 t1 = 										\
+                              if i1 = i then 										\
+                                 Context (v, subterms) 									\
+                              else 											\
+                                 t1 											\
+                           in 												\
+                              mk_sequent_term (**) 									\
+                                 { sequent_args = s.sequent_args; 							\
+                                   sequent_hyps = SeqHyp.mapi aux s.sequent_hyps; 					\
+                                   sequent_goals = s.sequent_goals 							\
+                                 }, arg 										\
+                        else DO_FAIL                                                                                    \
+            else DO_FAIL                                                                                                \
+       | (Sequent s, GoalAddr i) -> 											\
+            if i>=0 && i < SeqGoal.length s.sequent_goals then 								\
+               let term, arg = f GOAL_BVARS s.sequent_goals.(i) in 							\
+               let aux i' t' = 												\
+                 if i' = i then term else t' 										\
+               in mk_sequent_term (**)                                                                                  \
+                     { sequent_args = s.sequent_args;                                                                   \
+                       sequent_hyps = s.sequent_hyps;                                                                   \
+                       sequent_goals = SeqGoal.mapi aux s.sequent_goals                                                 \
+                     }, arg 												\
+            else DO_FAIL 												\
+       | (_, Compose (addr1, addr2)) -> 										\
+            apply_fun_arg_at_addr_aux FAIL (**) 									\
+               (apply_fun_arg_at_addr_aux FAIL f addr2) addr1 BVARS term 						\
        | _ -> DO_FAIL
 
 #ifdef VERBOSE_EXN

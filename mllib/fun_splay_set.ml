@@ -11,28 +11,30 @@ struct
 
    (*
     * Table is a binary tree.
-    * Each node has five fields:
+    * Each node has four fields:
     *    1. a key
-    *    2. a list of values associated with the key
-    *    3. a left child
-    *    4. a right child
-    *    5. the total number of keys in the tree
+    *    2. a left child
+    *    3. a right child
+    *    4. the total number of elements in the tree
     *)
    type tree =
       Leaf
     | Node of elt * tree * tree * int
 
    (*
-    * We keep an argument for the comparison,
-    * and the aplay tree.  The tree is mutable
+    * The tree is mutable
     * so that we can rearrange the tree in place.
     * However, we all splay operations are functional,
     * and we assume that the rearranged tree can be
     * assigned atomically to this field.
+    *
+    * The timer is used to count splay operations.
+    * When the timer goes off, we assume that the
+    * tree is balanced, and membership does not
+    * splay the tree any more.
     *)
    type t =
-      { mutable splay_tree : tree;
-      }
+      { mutable splay_tree : tree }
 
    (*
     * Directions are used to define
@@ -231,14 +233,13 @@ struct
     * Check if a key is listed in the table.
     *)
    let mem t key =
-      let { splay_tree = tree } = t in
-         match splay key [] tree with
-            SplayFound tree ->
-               t.splay_tree <- tree;
-               true
-          | SplayNotFound tree ->
-               t.splay_tree <- tree;
-               false
+      match splay key [] t.splay_tree with
+         SplayFound tree ->
+            t.splay_tree <- tree;
+            true
+       | SplayNotFound tree ->
+            t.splay_tree <- tree;
+            false
 
    (*
     * Add an entry to the table.
@@ -273,9 +274,8 @@ struct
     * entire entry from the tree.
     *)
    let remove key t =
-      let { splay_tree = tree } = t in
       let tree =
-         match splay key [] tree with
+         match splay key [] t.splay_tree with
             SplayFound tree ->
                begin
                   match tree with
@@ -410,8 +410,8 @@ struct
     | Leaf ->
          ()
 
-   let iter f { splay_tree = t } =
-      iter_aux f t
+   let iter f t =
+      iter_aux f t.splay_tree
 
    (*
     * Convert the set to a list.
@@ -422,8 +422,8 @@ struct
     | Leaf ->
          l
 
-   let elements { splay_tree = tree } =
-      elements_aux [] tree
+   let elements t =
+      elements_aux [] t.splay_tree
 
    (*
     * Intersection.
