@@ -281,7 +281,7 @@ let create_table items compact =
       in
          Ref_util.push info entries
    in
-   let _ = List_util.rev_iter insert_entry items in
+   let _ = List.iter insert_entry items in
 
    (* Compile the hastable into a collection of programs *)
    let base' = Hashtbl.create 97 in
