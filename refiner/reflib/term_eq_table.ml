@@ -97,6 +97,7 @@ struct
       let is_empty = Table.is_empty
 		let length = Table.length
       let add table term data = Table.add table (Extra.hash term) data
+      let replace table term data = Table.replace table (Extra.hash term) data
       let union = Table.union
       let mem table term = Table.mem table (Extra.hash term)
       let find table term = Table.find table (Extra.hash term)
@@ -104,6 +105,8 @@ struct
       let remove table term = Table.remove table (Extra.hash term)
       let iter f table =
          Table.iter (fun index data -> f (Extra.unhash index) data) table
+      let fold_map f a table =
+         Table.fold_map (fun index data acc -> f (Extra.unhash index) data acc) a table
       let map f table =
          Table.map (fun index data -> f (Extra.unhash index) data) table
 		let list_of table =

@@ -152,6 +152,16 @@ struct
             ignore(find_all t' key');
             raise(Invalid_argument "DebugTables.add - something funny")
 
+   let replace (t1, t2 as t) key data =
+      try
+         check (Table1.replace t1 key data, Table2.replace t2 key data)
+      with
+         Mismatch (t',key') ->
+            eprintf "@[<v 3>Replace made different tables:@ @[<v 3>Old table: %a@]@" (**)
+               print t;
+            ignore(find_all t' key');
+            raise(Invalid_argument "DebugTables.replace - something funny")
+
    let union (t1, t2) (t1', t2') =
       try
          check(Table1.union t1 t1', Table2.union t2 t2')
@@ -172,6 +182,21 @@ struct
 
    let iter f (t1, _) =
       Table1.iter f t1
+
+	let fold_map f (a1,a2) (t1, t2) =
+		raise (Invalid_argument "With current TableSig it seems impossible to implement fold_map in DebugTables")
+(*
+		let t1' = Table1.fold_map f a1 t1 in
+		let t2' = Table2.fold_map f a2 t2 in
+		if check(t1', t2') then
+			(t1', t2')
+		else
+            begin
+               eprintf "@[<v 3>fold_map returned different results:@ %a" (**)
+                  print (t1, t2);
+               raise(Invalid_argument "DebugTables.fold_map - something funny")
+            end
+*)
 
    let list_of (t1, t2) =
       let l1=Table1.list_of t1 in
