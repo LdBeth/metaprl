@@ -1124,19 +1124,8 @@ EXTEND
       ]];
 
    updresource:
-      [[ name = LIDENT; args = LIST0 resarg ->
+      [[ name = LIDENT; args = LIST0 expr ->
           name, args (* should be an application *)
-      ]];
-
-   resarg:
-      [[ i = INT ->
-          ResourceInt (int_of_string i)
-       | s = LIDENT ->
-          ResourceString s
-       | s = STRING ->
-          ResourceString s
-       | t = term ->
-          ResourceTerm t
       ]];
 
    (*
