@@ -301,6 +301,9 @@ argument.
 * rwh : conv -> int -> tactic
 = rw (higherC conv) i
 
+* rwa : conv list -> int -> tactic
+= rw (applyAllC convs)
+
 * rwc : conv -> int -> int -> tactic
 (rwc conv assump clause) applies the conversion to the given clause of
 the given assumption.
@@ -333,7 +336,7 @@ foldC t c replaces the current subterm by t, if c can convert t to the
 current subterm.  Otherwise, it fails.
 
 * makeFoldC : term -> conv -> conv
-As makeFoldC, but doesn't work on all conversions.  However, when it
+As foldC, but doesn't work on all conversions.  However, when it
 does work, it's more efficient than foldC.
 
 * cutC : term -> conv
@@ -373,6 +376,13 @@ innermost.
 
 * firstC : conv list -> conv
 Apply the first conversion from the list that succeeds.
+
+* applyAllC : conv list -> conv
+= sweepUpC (firstC convs)
+Apply all conversions to all terms possible from outermost to
+innermost (it does not apply conversions recursively).
+
+
 
 * untilFailC : conv -> conv
 Apply the conversion repeatedly until it fails.
@@ -1138,7 +1148,7 @@ unfold_iff:	"iff"{'a; 'b}		--> (('a -> 'b) & ('b -> 'a))
 unfold_cand:	"cand"{'a; 'b}		--> "and"{'a; 'b}
 unfold_cor:	"cor"{'a; 'b}		--> "or"{'a; ("cand"{("not"{'a}); 'b})}
 unfold_all:	"all"{'A; x. 'B['x]}	--> x: 'A -> 'B['x]
-unfold_exists:	"exists{'A; x. 'B['x]}	--> x: 'A * 'B['x]
+unfold_exists:	"exists"{'A; x. 'B['x]}	--> x: 'A * 'B['x]
 
 * fold_true, fold_false, fold_not, fold_implies, fold_iff, fold_and,
 fold_or, fold_cand, fold_cor, fold_all, fold_exists : conv

@@ -1123,6 +1123,7 @@ sig
    val rwh : conv -> int -> tactic
    val rwc : conv -> int -> int -> tactic
    val rwch : conv -> int -> int -> tactic
+   val rwa  :  conv list -> int -> tactic
 
    val prefix_andthenC : conv -> conv -> conv
    val prefix_orelseC : conv -> conv -> conv
@@ -1179,6 +1180,8 @@ sig
     * Use the first conversion that works.
     *)
    val firstC : conv list -> conv
+
+   val applyAllC : conv list -> conv
 
    (*
     * Repeat the conversion until nothing more happens.

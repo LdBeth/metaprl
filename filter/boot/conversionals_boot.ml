@@ -197,6 +197,14 @@ struct
          raise (RefineError ("firstC", StringError "empty argument list"))
 
    (*
+    * Apply all to all terms the first conversion that works
+    *)
+   let applyAllC convs =
+      tryC (sweepUpC (firstC convs))
+
+   let rwa convs = rw (applyAllC convs)
+
+   (*
     * Repeat the conversion until nothing more happens.
     *)
    let whileProgressC conv =
