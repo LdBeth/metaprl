@@ -37,7 +37,7 @@ ifndef OCAMLC
    OCAMLC = ocamlc$(EXE)
 endif
 ifndef OCAMLCP
-   OCAMLCP=$(OCAMLC)
+   OCAMLCP = $(OCAMLC)
 endif
 ifndef OCAMLMKTOP
    OCAMLMKTOP = ocamlmktop
@@ -127,7 +127,7 @@ $(MAIN).cmxa: $(LCMXFILES) $(ML_CMXFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(NL_CMXFILES)
 
 $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
-	$(OCAMLC) -custom $(OCAMLCFLAGS) -o $@ $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(CCLIBS)
+	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(CCLIBS)
 	if [ -f $(MAIN).run.exe ]; then\
 		mv $(MAIN).run.exe $(MAIN).run.bak;\
 		mv $(MAIN).run.bak $(MAIN).run;\

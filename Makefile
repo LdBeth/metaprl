@@ -10,25 +10,35 @@
 #    editor/ml: interactive proof editor
 #
 
-DIRS :=\
+REFINER_DIRS :=\
 	util\
 	clib\
 	mllib\
 	refiner\
-	library\
+	library
+
+NL_DIRS :=\
 	filter\
 	theories/tactic\
 	theories/ocaml\
 	theories/base\
 	theories/itt\
 	theories/czf\
-	editor/ml
 
-.PHONY: all install depend clean
+DIRS := $(REFINER_DIRS) $(NL_DIRS) editor/ml
+
+.PHONY: all install depend clean profile
 
 all:
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+	done
+
+profile: 
+	$(MAKE) clean
+	$(MAKE) all
+	@for i in $(REFINER_DIRS) editor/ml; do\
+		if (echo Making $$i...; cd $$i; make clean; OCAMLCP=ocamlcp OCAMLMKTOP="ocamlcp -linkall toplevellib.cma" $(MAKE) all); then true; else exit 1; fi;\
 	done
 
 install:
