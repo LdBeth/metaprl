@@ -26,7 +26,7 @@ and t = tree * int
 
 type direction = LEFT | RIGHT ;;
 
-let cardinal (_,c) -> c
+let cardinal (_,c) = c
 
 let rotate_left = function
    { contents = key,(NODE({ contents = left_key,left_left,((_,slr) as left_right) }),_),((_,sr) as right) } as node -> 
