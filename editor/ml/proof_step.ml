@@ -24,7 +24,8 @@ type t =
    { step_goal : tactic_arg;
      step_subgoals : tactic_arg list;
      step_text : string;
-     step_ast : MLast.expr
+     step_ast : MLast.expr;
+     step_tactic : tactic
    }
 
 (************************************************************************
@@ -34,11 +35,12 @@ type t =
 (*
  * Constructor.
  *)
-let create goal subgoals text ast =
+let create goal subgoals text ast tac =
    { step_goal = goal;
      step_subgoals = subgoals;
      step_ast = ast;
-     step_text = text
+     step_text = text;
+     step_tactic = tac
    }
 
 (*
@@ -48,6 +50,16 @@ let step_goal { step_goal = goal } = goal
 let step_subgoals { step_subgoals = goals } = goals
 let step_text { step_text = text } = text
 let step_ast { step_ast = ast } = ast
+let step_tactic { step_tactic = tac } = tac
+
+(*
+ * Apply the tactic and compute the extract.
+ *)
+let check refiner { step_goal = goal;
+                    step_subgoals = subgoals;
+                    step_tactic = tac
+    } =
+   let subgoals' = Refine.refine refiner tac in
 
 (************************************************************************
  * BASE OPERATIONS                                                      *
@@ -112,6 +124,9 @@ let step_of_io_step resources fcache
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/22 14:06:25  jyh
+ * Implementing proof editor.
+ *
  * Revision 1.5  1998/04/21 20:57:57  jyh
  * Fixed typing problems introduced by refiner msequents.
  *

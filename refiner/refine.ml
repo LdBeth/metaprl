@@ -39,6 +39,7 @@ open Debug
 open Term
 open Term_util
 open Refine_sig
+open Refine_util
 
 module Refiner =
 struct
@@ -290,35 +291,9 @@ struct
     * SEQUENT OPERATIONS                                                   *
     ************************************************************************)
    
-   (*
-    * Compare two sequents for alpha eqivalence.
-    *)
-   let sequent_alpha_equal
-       { mseq_goal = goal1; mseq_hyps = hyps1 }
-       { mseq_goal = goal2; mseq_hyps = hyps2 } =
-      let rec compare = function
-         hyp1::hyps1, hyp2::hyps2 ->
-            alpha_equal hyp1 hyp2 & compare (hyps1, hyps2)
-       | [], [] ->
-            true
-       | _ ->
-            false
-      in
-         alpha_equal goal1 goal2 & compare (hyps1, hyps2)
-   
-   (*
-    * Split the goals from the hyps.
-    *)
-   let rec split_sequent_list = function
-      { mseq_goal = goal; mseq_hyps = hyps }::t ->
-         let goals, hypsl = split_sequent_list t in
-            goal :: goals, hyps :: hypsl
-    | [] ->
-         [], []
-   
-   (*
-    * Check that all the hyps in the list are equal.
-    *)
+    (*
+     * Check that all the hyps in the list are equal.
+     *)
    let equal_hyps hyps t =
       let check hyps' =
          try List.for_all2 alpha_equal hyps' hyps with
@@ -326,13 +301,6 @@ struct
                false
       in
          List.for_all check t
-   
-   (*
-    * Get the sequent from a tactic.
-    * If the compiler were smarter, this wouldn't have to do anything.
-    *)
-   let seq_of_tac { tac_goal = goal; tac_hyps = hyps } =
-      { mseq_goal = goal; mseq_hyps = hyps }
    
    (*
     * Collapse the two arguments to a tactic.
@@ -356,8 +324,8 @@ struct
     *)
    let refine (tac : 'a tactic) (arg : 'a tactic_arg) =
       let subgoals, just = tac arg arg in
-      let seq = seq_of_tac arg in
-      let subgoals' = List.map seq_of_tac subgoals in
+      let seq = msequent_of_tactic_arg arg in
+      let subgoals' = List.map msequent_of_tactic_arg subgoals in
          subgoals, { ext_goal = seq; ext_just = just; ext_subgoals = subgoals' }
    
    (*
@@ -370,7 +338,7 @@ struct
       let subgoals' = List.map (fun ext -> ext.ext_goal) extl in
       let _ =
          try
-            if not (List_util.for_all2 sequent_alpha_equal subgoals subgoals') then
+            if not (List_util.for_all2 msequent_alpha_equal subgoals subgoals') then
                raise (RefineError (StringError "Refine.compose: goal mistmatch"))
          with
             Failure "for_all2" ->
@@ -1142,7 +1110,7 @@ struct
                let { rule_rule = goal } = rule in
                let { ext_goal = goal'; ext_subgoals = subgoals } = ext in
                let _ =
-                  if not (sequent_alpha_equal goal' goal) or subgoals <> [] then
+                  if not (msequent_alpha_equal goal' goal) or subgoals <> [] then
                      raise (RefineError (StringError "Refine.add_derived_rule: extract does not match"))
                in
                let t = term_of_extract refiner ext args in
@@ -1575,6 +1543,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/22 14:06:35  jyh
+ * Implementing proof editor.
+ *
  * Revision 1.5  1998/04/21 19:53:57  jyh
  * Upgraded refiner for program extraction.
  *

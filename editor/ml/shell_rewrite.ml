@@ -12,11 +12,11 @@ include Package_df
  * This is the actual rewrite object.
  *)
 type rewrite =
-   { mutable rw_assums : term list;
-     mutable rw_params : param list;
+   { mutable rw_params : param list;
+     mutable rw_assums : term list;
      mutable rw_redex : term;
      mutable rw_contractum : term;
-     mutable rw_ped : Proof_edit.t option
+     mutable rw_ped : Proof_edit.t
    }
 
 (*
@@ -28,7 +28,7 @@ let create pack prog name =
         rw_params = [];
         rw_redex = unit_term;
         rw_contractum = unit_term;
-        rw_proof =
+        rw_proof = null_proof
       }
    in
    let mk_goal () =
@@ -84,6 +84,9 @@ let create pack prog name =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/22 14:06:28  jyh
+ * Implementing proof editor.
+ *
  * Revision 1.2  1998/04/21 20:57:58  jyh
  * Fixed typing problems introduced by refiner msequents.
  *

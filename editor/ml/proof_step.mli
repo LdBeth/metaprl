@@ -15,17 +15,22 @@ type t
 
 (* Constructor *)
 val create :
-       tactic_arg ->            (* Goal *)
-       tactic_arg list ->       (* Subgoals *)
-       string ->                (* Text in rule box *)
-       MLast.expr ->            (* Parsed ML expression *)
-       t
+   tactic_arg ->            (* Goal *)
+   tactic_arg list ->       (* Subgoals *)
+   string ->                (* Text in rule box *)
+   MLast.expr ->            (* Parsed ML expression *)
+   tactic ->                (* Corresponding tactic *)
+   t
      
 (* Destructors *)
 val step_goal : t -> tactic_arg
 val step_subgoals : t -> tactic_arg list
 val step_text : t -> string
 val step_ast : t -> MLast.expr
+val step_tactic : t -> tactic
+
+(* Check the tactic in a particular refiner *)
+val check : refiner -> t -> extract
 
 (* IO *)
 val io_step_of_step : t -> proof_step
@@ -33,6 +38,9 @@ val step_of_io_step : tactic_resources -> cache -> proof_step -> t
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/22 14:06:26  jyh
+ * Implementing proof editor.
+ *
  * Revision 1.4  1998/04/17 01:30:48  jyh
  * Editor is almost constructed.
  *

@@ -27,6 +27,7 @@ LMFILES :=\
 	term_stable\
 	term_dtable\
 	refine_sig\
+	refine_util\
 	refine\
 	refine_exn\
 	dform\

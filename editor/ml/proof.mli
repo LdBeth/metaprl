@@ -138,6 +138,16 @@ val remove_child : proof -> int -> proof
 val remove_children : proof -> proof
 
 (*
+ * Check the proof and return its extract.
+ * Two versions for handling refinement errors:
+ *    check_proof: expand until first error, exceptions propagate
+ *    expand_proof: check as much of the proof as possible,
+ *       no exceptions are raised
+ *)
+val check_proof : refiner -> proof -> extract
+val expand_proof : refiner -> proof -> unit
+
+(*
  * IO
  *)
 val io_proof_of_proof : proof -> Filter_proof_type.proof
@@ -145,6 +155,9 @@ val proof_of_io_proof : tactic_resources -> cache -> Filter_proof_type.proof -> 
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/22 14:06:23  jyh
+ * Implementing proof editor.
+ *
  * Revision 1.4  1998/04/17 01:30:46  jyh
  * Editor is almost constructed.
  *
