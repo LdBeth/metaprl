@@ -1,0 +1,58 @@
+(*
+ * Manifest terms.
+ *)
+
+open Refine_error_sig
+open Term_ds_sig
+open Term_ds
+open Term_op_sig
+open Term_addr_sig
+open Term_subst_sig
+open Term_man_sig
+
+module TermMan (**)
+   (Term : TermDsSig
+        with type level_exp_var = TermType.level_exp_var
+        with type level_exp = TermType.level_exp
+        with type param = TermType.param
+        with type operator = TermType.operator
+        with type term = TermType.term
+        with type term_core = TermType.term_core
+        with type bound_term = TermType.bound_term
+
+        with type level_exp_var' = TermType.level_exp_var'
+        with type level_exp' = TermType.level_exp'
+        with type object_id = TermType.object_id
+        with type param' = TermType.param'
+        with type operator' = TermType.operator'
+        with type term' = TermType.term'
+        with type bound_term' = TermType.bound_term')
+   (TermOp : TermOpSig
+    with type term = Term.term)
+   (TermAddr : TermAddrSig
+    with type term = Term.term
+#ifdef VERBOSE_EXN
+    with type address = Term_addr_ds_verb.addr)
+#else
+    with type address = Term_addr_ds_simp.addr)
+#endif
+   (TermSubst : TermSubstSig
+    with type term = Term.term
+    with type param = Term.param)
+   (RefineError : RefineErrorSig
+    with type term = Term.term
+    with type address = TermAddr.address)
+: TermManSig
+  with type term = Term.term
+  with type operator = Term.operator
+  with type level_exp = Term.level_exp
+  with type address = TermAddr.address
+  with type esequent = TermType.esequent
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)
