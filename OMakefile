@@ -10,8 +10,8 @@ BIN     = $(dir bin)
 # Default compile options are to be quiet
 # and print a progress bar.
 #
-# if $(not $(defined VERBOSE))
-#    OMakeFlags(-S --progress)
+if $(not $(defined VERBOSE))
+   OMakeFlags(-S --progress)
 
 #
 # Configuration defaults
