@@ -48,6 +48,7 @@ struct
    type param = TermType.param
 
    type term_subst = (string * term) list
+   type unify_subst = term_subst
 
    (************************************************************************
     * Free variable calculations                                           *
@@ -543,6 +544,14 @@ struct
     | (v,_)::tl ->
          if List.mem v fvars then raise unify_exn
          else bvars_occurs_check fvars tl
+
+   let unify_empty = []
+
+   let subst_of_unify_subst s = s
+   let unify_subst_of_subst s = s
+   let add_unify_subst v t s = (v, t) :: s
+   let new_unify_var s v =
+      raise (Failure "new_unify_var: not implemented")
 
    let rec unify_terms subst constants bvars term1 term2 =
       if bvars == [] && term1 == term2 then subst else

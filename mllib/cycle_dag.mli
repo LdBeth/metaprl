@@ -21,6 +21,11 @@ type ('node, 'edge) t
 val create : unit -> ('node, 'edge) t
 
 (*
+ * Make it from a previous subst.
+ *)
+val make : ('node list * ('edge * 'node list) option) list -> ('node, 'edge) t
+
+(*
  * Find an edge.
  *)
 val find : ('node, 'edge) t -> 'node -> 'edge

@@ -8,6 +8,11 @@ sig
    type param
 
    (*
+    * Unification uses its own substition type.
+    *)
+   type unify_subst
+
+   (*
     * Substitution, matching, unification.
     *)
    type term_subst = (string * term) list
@@ -45,7 +50,12 @@ sig
     * the first term match terms in the second,
     * but not vice-versa.
     *)
-   val unify : term_subst -> String_set.StringSet.t -> term -> term -> term_subst
+   val unify_empty : unify_subst
+   val subst_of_unify_subst : unify_subst -> term_subst
+   val unify_subst_of_subst : term_subst -> unify_subst
+   val add_unify_subst : string -> term -> unify_subst -> unify_subst
+   val new_unify_var : unify_subst -> string -> string
+   val unify : unify_subst -> String_set.StringSet.t -> term -> term -> unify_subst
    val match_terms : term_subst -> term -> term -> term_subst
 
    (*

@@ -70,6 +70,31 @@ let find { dag_table = table } node =
          raise Not_found
 
 (*
+ * Make a dag from previous info.
+ * We assume the info has no cycles.
+ *)
+let make items =
+   let table = Hashtbl.create 19 in
+   let insert (nodes, edge) =
+      let vert =
+         match edge with
+            Some (edge, children) ->
+               { vert_mark = 0;
+                 vert_nodes = nodes;
+                 vert_data = Node (edge, List.map (find_or_insert table) children)
+               }
+          | None ->
+               { vert_mark = 0;
+                 vert_nodes = nodes;
+                 vert_data = Leaf
+               }
+      in
+         List.iter (fun node -> Hashtbl.add table node vert) nodes
+   in
+      List.iter insert items;
+      { dag_mark = 0; dag_table = table }
+
+(*
  * Check for path from the first node to the second.
  * Depth-first-search.
  *)

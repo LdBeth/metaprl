@@ -65,6 +65,8 @@ struct
    type term = TermType.term
    type param = TermType.param
 
+   type unify_subst = (string list * term option) list
+
    type term_subst = TermType.term_subst
 
    let subst t tl vl =
@@ -386,12 +388,14 @@ struct
     * Substitution is managed as a DAG.
     *)
    let make_subst subst =
-      let dag = Cycle_dag.create () in
-      let insert (v, term) =
-         Cycle_dag.insert dag v term (free_vars term)
+      let convert (vars, edge) =
+         match edge with
+            Some edge ->
+               (vars, Some (edge, free_vars edge))
+          | None ->
+               (vars, None)
       in
-         List.iter insert subst;
-         dag
+         Cycle_dag.make (List.map convert subst)
 
    let equate_vars subst v1 v2 =
       try
@@ -411,7 +415,9 @@ struct
 
    let subst_assoc = Cycle_dag.find
 
-   let get_subst subst =
+   let get_subst = Cycle_dag.sort
+
+   let subst_of_unify_subst =
       let rec flatten = function
          (nodes, term) :: terms ->
             begin
@@ -440,7 +446,21 @@ struct
           | [] ->
                raise (Invalid_argument "Term_subst_ds.get_subst")
       in
-         flatten (Cycle_dag.sort subst)
+         flatten
+
+   let unify_empty = []
+
+   let unify_subst_of_subst subst =
+      let convert (v, t) =
+         ([v], Some t)
+      in
+         List.map convert subst
+
+   let add_unify_subst v t s =
+      ([v], Some t) :: s
+
+   let new_unify_var s v =
+      raise (Failure "new_unify_var: not implemented")
 
    (*
     * The unification works over the subst.
