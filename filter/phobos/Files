@@ -1,6 +1,7 @@
 PHOBOS_FILES =\
 	xstr_search\
 	smap\
+	phobos_header\
 	phobos_state\
 	phobos_type\
 	phobos_parse_state\

@@ -277,9 +277,6 @@ $(REG_CMXFILES): %.cmx: %.ml $(ROOT)/mk/config
 	$(RM) $@
 	$(LN) $*.mlz $@
 
-%.cph: %.pho
-	$(RM) syntax.cph
-
 %-byte.o: %.c $(ROOT)/mk/config
 	$(MPTIME) $(CC) $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 

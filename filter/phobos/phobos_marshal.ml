@@ -23,6 +23,7 @@
  *)
 
 open Phobos_type
+open Phobos_header
 
 let marshal_write channel data options =
    let s = Marshal.to_string data options in
@@ -41,8 +42,9 @@ let marshal_read channel =
          raise (Invalid_argument "checksum does not match");
       Marshal.from_string buf 0
 
-let save_grammar gst lenv penv ptable fname =
+let save_grammar header gst lenv penv ptable fname =
    let outx = open_out_bin fname in
+      marshal_write outx header [];
       marshal_write outx gst [];
       marshal_write outx lenv [];
       marshal_write outx penv [];
@@ -51,8 +53,9 @@ let save_grammar gst lenv penv ptable fname =
 
 let load_grammar fname =
    let inx = open_in_bin fname in
+   let (header: header) = marshal_read inx in
    let (gst: grammar_state) = marshal_read inx in
    let (lenv: lexer_env) = marshal_read inx in
    let (penv: parser_env) = marshal_read inx in
    let (ptable: parsing_table) = marshal_read inx in
-      gst, lenv, penv, ptable
+      header, (gst, lenv, penv, ptable)

@@ -1,8 +1,8 @@
 (*
- * Save compiled grammar.
+ * Utilities for headers.
  * ----------------------------------------------------------------
  *
- * Copyright (C) 2002 Adam Granicz, Caltech
+ * Copyright (C) 2003 Adam Granicz, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,22 @@
  *)
 
 open Phobos_type
-open Phobos_header
+open Phobos_exn
 
-val save_grammar : header -> grammar_state -> lexer_env -> parser_env -> parsing_table -> string -> unit
-val load_grammar : string -> header * (grammar_state * lexer_env * parser_env * parsing_table)
+type digest
+
+type header
+
+(* Version *)
+val version_string : string
+
+(* Digests *)
+val create_digest : string -> digest
+
+(* Headers *)
+val version_of_header : header -> string
+val digest_of_header : header -> digest
+val timestamp_of_header : header -> float
+val sizestamp_of_header : header -> int
+
+val create_header : digest -> float -> int -> header

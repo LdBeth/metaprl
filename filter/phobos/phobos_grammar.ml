@@ -233,7 +233,7 @@ let include_grammars paths includes =
    in
    let gst =
       List.fold_left (fun gst incl ->
-         let gst', _, _, _ = load_grammar (find_file paths incl) in
+         let _, (gst', _, _, _) = load_grammar (find_file paths incl) in
          (* Remove redefined start productions *)
          let old_grammar = remove_start_productions gst in
          (* Keep old start symbol if no new one is given *)

@@ -175,7 +175,7 @@ let process_includes paths includes =
    List.iter (fun s ->
       if !debug_phobos then
          Format.print_string (Printf.sprintf "Loading %s..." s);
-      let gst, _, _, _ = load_grammar (find_file paths s) in
+      let _, (gst, _, _, _) = load_grammar (find_file paths s) in
       if !debug_phobos then
          Format.print_string "done\n";
       let termsets = gst.grammar_termsets in

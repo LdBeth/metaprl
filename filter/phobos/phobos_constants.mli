@@ -24,3 +24,5 @@ val breakup_bterm :
   Refiner.Refiner.Term.bound_term ->
   Opname.opname * Refiner.Refiner.Term.param' list *
   Refiner.Refiner.TermType.bound_term list
+val timestamp_of : string -> float
+val size_of : string -> int

@@ -110,3 +110,12 @@ let breakup_bterm bterm =
       breakup_term term
 
  
+(* File operations *)
+let timestamp_of file =
+   let stats = Unix.stat file in
+      stats.Unix.st_mtime
+
+let size_of file =
+   let stats = Unix.stat file in
+      stats.Unix.st_size
+
