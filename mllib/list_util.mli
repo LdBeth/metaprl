@@ -47,8 +47,11 @@ val subtractq : 'a list -> 'a list -> 'a list
 val union : 'a list -> 'a list -> 'a list
 val unionq : 'a list -> 'a list -> 'a list
 
-(* Reverse iteration *)
+(*
+ * Reverse iteration
+ *)
 val rev_iter : ('a -> 'b) -> 'a list -> unit
+val rev_iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
 val flat_map : ('a -> 'b list) -> 'a list -> 'b list
 val fail_map : ('a -> 'b) -> 'a list -> 'b list
 val some_map : ('a -> 'b option) -> 'a list -> 'b list
@@ -73,6 +76,9 @@ val fst_split : ('a * 'b) list -> 'a list
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/13 22:48:11  nogin
+ * Added rev_iter2
+ *
  * Revision 1.9  1998/06/04 19:52:50  nogin
  * Efficiency
  *

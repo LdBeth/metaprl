@@ -553,8 +553,16 @@ let fold_left f x l =
 let allp = List.for_all
 let existsp = List.exists
 
+let rec rev_iter2 f a b = match (a,b) with
+   ([],[]) -> ()
+ | (ha::ta,hb::tb) -> rev_iter2 f ta tb; f ha hb
+ | _ -> raise (Invalid_argument "List_util.rev_iter2")
+
 (*
  * $Log$
+ * Revision 1.15  1998/06/13 22:48:10  nogin
+ * Added rev_iter2
+ *
  * Revision 1.14  1998/06/12 18:36:28  jyh
  * Working factorial proof.
  *
