@@ -271,7 +271,7 @@ struct
                 { aname = None; aterm = t } ->
                    { mname = None; mterm = MetaTheorem t }
               | { aname = Some n; aterm = t } ->
-                   { mname = Some (dest_var n); mterm = MetaTheorem t }
+                   { mname = Some (dest_var n); mterm = MetaLabeled (dest_var n, MetaTheorem t) }
           ]
           | "meta_implies" LEFTA
             [ t1 = amterm; sl_meta_right_arrow; t2 = amterm ->
@@ -302,6 +302,7 @@ struct
                t
             ]
          ];
+
 
       (*
        * Regular terms.

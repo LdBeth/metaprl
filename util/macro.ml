@@ -374,7 +374,7 @@ and process_ctyp x =
     | TySum (loc, x)       -> TySum (loc, List.map process_string_ctyplist x)
     | TyTup (loc, x)       -> TyTup (loc, List.map process_ctyp x)
     | TyUid (loc, x)       -> TyUid (loc, x)
-    | TyXnd (loc, s, x)    -> TyXnd (loc, s, List.map process_ctyp x)
+    | TyXnd (loc, s, x)    -> TyXnd (loc, s, process_ctyp x)
 
 and process_patt x =
    let x = substitute_patt_macros x in
