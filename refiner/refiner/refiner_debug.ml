@@ -3188,6 +3188,13 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p5_1, p5_2 = p5 in
          merge merge_unit "Refine.check_rewrite" (wrap6 Refine1.check_rewrite p0 p1 p2_1 p3_1 p4_1 p5_1) (wrap6 Refine2.check_rewrite p0 p1 p2_2 p3_2 p4_2 p5_2)
 
+      let check_iform (p0 : string) (p1 : rewrite_args_spec) (p2 : term list) (p3 : term list) (p4 : term) (p5 : term) =
+         let p2_1, p2_2 = split p2 in
+         let p3_1, p3_2 = split p3 in
+         let p4_1, p4_2 = p4 in
+         let p5_1, p5_2 = p5 in
+         merge merge_unit "Refine.check_iform" (wrap6 Refine1.check_iform p0 p1 p2_1 p3_1 p4_1 p5_1) (wrap6 Refine2.check_iform p0 p1 p2_2 p3_2 p4_2 p5_2)
+
       let check_definition (p0 : string) (p1 : term) (p2 : term) =
          let p1_1, p1_2 = p1 in
          let p2_1, p2_2 = p2 in

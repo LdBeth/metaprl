@@ -45,6 +45,8 @@ open Tactic_type
 
 open Term_hash_code
 
+type quotation_expander = string -> string -> term
+
 (*
  * Show that the file is loading.
  *)
@@ -576,81 +578,128 @@ let dest_xhypcontext_term t =
       cvars, args
 
 (*
+ * Also expand quotations.
+ * For an xquotation, the string parameter should
+ * have the form <:name<...>>.
+ *)
+let xquotation_opname = mk_opname "xquotation" perv_opname
+let is_xquotation_term = is_string_term xquotation_opname
+let dest_xquotation = dest_string_term xquotation_opname
+
+let dest_xquotation_term t =
+   let s = Lm_string_util.trim (dest_xquotation t) in
+   let len = String.length s in
+   let () =
+      if len < 4 then
+         raise (Failure ("bad quotation: " ^ s))
+   in
+   let name, left =
+      if s.[0] = '<' && s.[1] = '<' then
+         "term", 2
+      else if s.[0] = '<' && s.[1] = ':' then
+         let rec search_left i =
+            if i = len then
+               raise (Failure ("bad quotation: " ^ s))
+            else if s.[i] = '<' then
+               succ i
+            else
+               search_left (succ i)
+         in
+         let stop = search_left 2 in
+         let name = String.sub s 2 (stop - 2) in
+            name, stop
+      else
+         raise (Failure ("bad quotation: " ^ s))
+   in
+   let right =
+      if s.[len - 1] = '>' && s.[len - 2] = '>' then
+         len - 3
+      else
+         raise (Failure ("bad quotation: " ^ s))
+   in
+   let s = String.sub s left (right - left) in
+     name, s
+
+(*
  * The so-var iforms are primitive, because hyps are rewritten to contexts.
  *)
-let rec apply_so_var_iforms_term t =
-   if is_var_term t then
-      t
-   else if is_so_var_term t then
-      let v, cvars, args = dest_so_var t in
-         mk_so_var_term v cvars (apply_so_var_iforms_term_list args)
-   else if is_context_term t then
-      let v, arg, cvars, args = dest_context t in
-         mk_context_term v (apply_so_var_iforms_term arg) cvars (apply_so_var_iforms_term_list args)
-   else if is_sequent_term t then
-      let { sequent_args = arg;
-            sequent_hyps = hyps;
-            sequent_concl = concl
-          } = explode_sequent t
-      in
-      let arg = apply_so_var_iforms_term arg in
-      let concl = apply_so_var_iforms_term concl in
-      let hyps =
-         SeqHyp.map (fun hyp ->
-               match hyp with
-                  Hypothesis (v, t) ->
-                     if is_xhypcontext_term t then
-                        let cvars, args = dest_xhypcontext_term t in
-                        let args = apply_so_var_iforms_term_list args in
-                           Context (v, cvars, args)
-                     else
-                        Hypothesis (v, apply_so_var_iforms_term t)
-                | Context (v, cvars, args) ->
-                     Context (v, cvars, apply_so_var_iforms_term_list args)) hyps
-      in
-      let seq =
-         { sequent_args = arg;
-           sequent_hyps = hyps;
-           sequent_concl = concl
-         }
-      in
-         mk_sequent_term seq
-   else if is_xsovar_term t then
-      let v, cvars, args = dest_xsovar_term t in
-      let args = apply_so_var_iforms_term_list args in
-         mk_so_var_term v cvars args
-   else
-      let { term_op = op; term_terms = bterms } = dest_term t in
-      let bterms = apply_so_var_iforms_bterm_list bterms in
-         mk_term op bterms
+let apply_sovar_iforms parse_quotation t =
+   let rec apply_so_var_iforms_term t =
+      if is_var_term t then
+         t
+      else if is_so_var_term t then
+         let v, cvars, args = dest_so_var t in
+            mk_so_var_term v cvars (apply_so_var_iforms_term_list args)
+      else if is_context_term t then
+         let v, arg, cvars, args = dest_context t in
+            mk_context_term v (apply_so_var_iforms_term arg) cvars (apply_so_var_iforms_term_list args)
+      else if is_sequent_term t then
+         let { sequent_args = arg;
+               sequent_hyps = hyps;
+               sequent_concl = concl
+             } = explode_sequent t
+         in
+         let arg = apply_so_var_iforms_term arg in
+         let concl = apply_so_var_iforms_term concl in
+         let hyps =
+            SeqHyp.map (fun hyp ->
+                  match hyp with
+                     Hypothesis (v, t) ->
+                        if is_xhypcontext_term t then
+                           let cvars, args = dest_xhypcontext_term t in
+                           let args = apply_so_var_iforms_term_list args in
+                              Context (v, cvars, args)
+                        else
+                           Hypothesis (v, apply_so_var_iforms_term t)
+                   | Context (v, cvars, args) ->
+                        Context (v, cvars, apply_so_var_iforms_term_list args)) hyps
+         in
+         let seq =
+            { sequent_args = arg;
+              sequent_hyps = hyps;
+              sequent_concl = concl
+            }
+         in
+            mk_sequent_term seq
+      else if is_xsovar_term t then
+         let v, cvars, args = dest_xsovar_term t in
+         let args = apply_so_var_iforms_term_list args in
+            mk_so_var_term v cvars args
+      else if is_xquotation_term t then
+         let name, s = dest_xquotation_term t in
+            parse_quotation name s
+      else
+         let { term_op = op; term_terms = bterms } = dest_term t in
+         let bterms = apply_so_var_iforms_bterm_list bterms in
+            mk_term op bterms
 
-and apply_so_var_iforms_term_list terms =
-   List.map apply_so_var_iforms_term terms
+   and apply_so_var_iforms_term_list terms =
+      List.map apply_so_var_iforms_term terms
 
-and apply_so_var_iforms_bterm bterm =
-   let { bvars = bvars; bterm = t } = dest_bterm bterm in
-      mk_bterm bvars (apply_so_var_iforms_term t)
+   and apply_so_var_iforms_bterm bterm =
+      let { bvars = bvars; bterm = t } = dest_bterm bterm in
+         mk_bterm bvars (apply_so_var_iforms_term t)
 
-and apply_so_var_iforms_bterm_list bterms =
-   List.map apply_so_var_iforms_bterm bterms
-
-let apply_sovar_iforms = apply_so_var_iforms_term
+   and apply_so_var_iforms_bterm_list bterms =
+      List.map apply_so_var_iforms_bterm bterms
+   in
+      apply_so_var_iforms_term t
 
 (*
  * Now actually apply the input forms.
  *)
-let apply_iforms gram t =
+let apply_iforms parse_quotation gram t =
    let conv = conv_of_iforms gram in
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
-      apply_sovar_iforms (Conversionals.apply_rewrite book conv t)
+      apply_sovar_iforms parse_quotation (Conversionals.apply_rewrite book conv t)
 
-let apply_iforms_mterm gram mt args =
+let apply_iforms_mterm parse_quotation gram mt args =
    let conv = conv_of_iforms gram in
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
    let apply_term t =
-      apply_sovar_iforms (Conversionals.apply_rewrite book conv t)
+      apply_sovar_iforms parse_quotation (Conversionals.apply_rewrite book conv t)
    in
    let rec apply mt =
       match mt with
@@ -780,7 +829,7 @@ let parse gram start loc s =
          (), result
    in
    let _, result = Parser.parse parse start lexer_fun eval_fun () in
-      apply_iforms gram result
+      result
 
 (************************************************************************
  * Imperative version.
@@ -810,17 +859,17 @@ let term_of_string name loc s =
     | None ->
          raise (Failure "grammar is not initialized")
 
-let apply_iforms t =
+let apply_iforms parse_quotation t =
    match state.state_grammar with
       Some gram ->
-         apply_iforms gram t
+         apply_iforms parse_quotation gram t
     | None ->
          raise (Failure "grammar is not initialized")
 
-let apply_iforms_mterm mt args =
+let apply_iforms_mterm parse_quotation mt args =
    match state.state_grammar with
       Some gram ->
-         apply_iforms_mterm gram mt args
+         apply_iforms_mterm parse_quotation gram mt args
     | None ->
          raise (Failure "grammar is not initialized")
 

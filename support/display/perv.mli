@@ -145,6 +145,11 @@ declare type ty_exists{'a : Ty; v : 'a. 'ty['v] : ty_hyp} : ty_hyp
 declare xsovar[v:v]{'contexts : Dform; 'args : Dform} : 'a
 declare xhypcontext{'contexts : Dform; 'args : Dform} : 'a
 
+(*
+ * Quotations.
+ *)
+declare xquotation[quote:s] : 'a
+
 (************************************************************************
  * Normal terms.
  *)

@@ -192,148 +192,7 @@ struct
          s
 
    (************************************************************************
-    * Parsing.
-    *)
-
-   (*
-    * Parse the terms, and perform a type check.
-    * In the following four functions, type constraints
-    * are ignored.  That is, constraints are just
-    * comments.
-    *)
-   let parse_term loc t =
-      let t = Filter_grammar.apply_iforms t in
-      let t = term_of_parsed_term t in
-      let _ = infer_term loc t in
-         t
-
-   let parse_term_with_vars loc t =
-      let t = Filter_grammar.apply_iforms t in
-      let t = term_of_parsed_term_with_vars t in
-      let _ = infer_term loc t in
-         t
-
-   let parse_bound_term loc bt =
-      { bt with aterm = parse_term loc bt.aterm }
-
-   let parse_rule loc name mt args =
-      let mt, args = Filter_grammar.apply_iforms_mterm mt args in
-      let mt, args, f = mterms_of_parsed_mterms mt args in
-
-      (* Check with the refiner first for rewrite errors *)
-      let cvars = context_vars mt in
-      let params = extract_params cvars args in
-         Refine.check_rule name (collect_cvars params) (collect_terms params) (strip_mfunction mt);
-
-         (* Then check for type errors *)
-         check_rule loc mt args;
-         mt, List.map erase_arg_term args, f
-
-   let parse_rewrite loc name mt args =
-      let mt, args = Filter_grammar.apply_iforms_mterm mt args in
-      let mt, args, f = mterms_of_parsed_mterms mt args in
-
-      (* Check with the refiner first for rewrite errors *)
-      let cvars = context_vars mt in
-      let params = extract_params cvars args in
-      let args', redex, contractum = unzip_rewrite name mt in
-      let () = Refine.check_rewrite name (collect_cvars params) (collect_terms params) args' redex contractum in
-
-      (* Then check for type errors *)
-      let _ = infer_rewrite loc mt args in
-         mt, List.map erase_arg_term args, f
-
-   let parse_define loc name redex contractum =
-      let redex = Filter_grammar.apply_iforms redex in
-      let contractum = Filter_grammar.apply_iforms contractum in
-      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
-
-      (* Check with the rewriter first *)
-      let () = Refine.check_definition name redex contractum in
-
-      (* Check the types of both parts *)
-      let _ = infer_rewrite loc (MetaIff (MetaTheorem redex, MetaTheorem contractum)) [] in
-         redex, contractum
-
-   let parse_type_rewrite loc redex contractum =
-      let redex = Filter_grammar.apply_iforms redex in
-      let contractum = Filter_grammar.apply_iforms contractum in
-      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
-         Refine.check_rewrite "type" empty_args_spec [] [] redex contractum;
-         check_type_rewrite loc redex contractum;
-         redex, contractum
-
-   (*
-    * In the following functions, type constraints
-    * are erased after inference.  In the informal
-    * code, constraints are legal.
-    *)
-   let parse_iform loc name mt args =
-      let mt, args, f = mterms_of_parsed_mterms mt args in
-
-      (* Check with the refiner for rewrite errors *)
-      let cvars = context_vars mt in
-      let params = extract_params cvars args in
-      let args', redex, contractum = unzip_rewrite name mt in
-      let () = Refine.check_rewrite name (collect_cvars params) (collect_terms params) args' redex contractum in
-
-      (* Check for type errors *)
-      let () = check_iform loc mt args in
-      let mt = erase_meta_term mt in
-      let args = List.map erase_term args in
-         mt, args, f
-
-   let parse_dform loc redex contractum =
-      let redex = Filter_grammar.apply_iforms redex in
-      let contractum = Filter_grammar.apply_iforms contractum in
-      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
-      let () = check_dform loc redex contractum in
-      let redex = erase_term redex in
-      let contractum = erase_term contractum in
-         redex, contractum
-
-   let parse_production loc redices contractum =
-      let redices = List.map Filter_grammar.apply_iforms redices in
-      let contractum = Filter_grammar.apply_iforms contractum in
-      let redices, contractum = mrewrite_of_parsed_mrewrite redices contractum in
-      let () = check_production loc redices contractum in
-      let redices = List.map erase_term redices in
-      let contractum = erase_term contractum in
-         redices, contractum
-
-   (*
-    * For terms from other grammars.
-    * The other grammars will expand their iforms,
-    * so we don't need to do it.
-    *)
-   let mk_parsed_term t =
-      t
-
-   (************************************************
-    * !!! WARNING !!!
-    * !!! The following functions bypass either the
-    * !!! parser or the type checker.
-    *)
-
-   (* For bypassing the type checker *)
-   let raw_term_of_parsed_term t =
-      Filter_grammar.apply_iforms t
-
-   let unparsed_term_of_parsed_term loc t =
-      let t = Filter_grammar.apply_iforms t in
-      let _ = infer_term loc t in
-         erase_term t
-
-   let unchecked_term_of_parsed_term t =
-      let t = Filter_grammar.apply_iforms t in
-      let t = term_of_parsed_term t in
-         erase_term t
-
-   let quoted_term_of_parsed_term _ t =
-      term_of_parsed_term t
-
-   (*
-    * Parameterize declares over default types.
+    * For quoted terms.
     *)
    let unknown_opname = mk_opname "$unknown" nil_opname
 
@@ -348,26 +207,6 @@ struct
    let is_unknown_token_term = is_no_subterms_term unknown_token_opname
    let is_unknown_bvar_term = is_no_subterms_term unknown_bvar_opname
    let is_unknown_type_term = is_no_subterms_term unknown_type_opname
-
-   let subst_unknown token_type bvar_type term_type t =
-      let subst t =
-         if is_unknown_token_term t then
-            token_type
-         else if is_unknown_bvar_term t then
-            bvar_type
-         else if is_unknown_type_term t then
-            term_type
-         else
-            t
-      in
-         map_up subst t
-
-   (* Make sure the declared term has a type *)
-   let parse_quoted_term loc token_type bvar_type term_type t =
-      let t = Filter_grammar.apply_iforms t in
-      let t = subst_unknown token_type bvar_type term_type t in
-      let _ = infer_term loc t in
-         t
 
    (************************************************************************
     * UTILITIES                                                            *
@@ -924,6 +763,188 @@ struct
       if is_string_term comment_string_op t then
          parse_comment (q_shift_loc loc "doc") false SpellOn true (dest_string_term comment_string_op t)
       else
+         t
+
+   (************************************************************************
+    * Parsing.
+    *)
+
+   let apply_iforms_raw t =
+      let parse_quotation name s =
+         parse_quotation dummy_loc "unknown" (name, s)
+      in
+         Filter_grammar.apply_iforms parse_quotation t
+
+   let apply_iforms loc t =
+      let parse_quotation name s =
+         parse_quotation loc "unknown" (name, s)
+      in
+         Filter_grammar.apply_iforms parse_quotation t
+
+   let apply_iforms_mterm loc mt =
+      let parse_quotation name s =
+         parse_quotation loc "unknown" (name, s)
+      in
+         Filter_grammar.apply_iforms_mterm parse_quotation mt
+
+   (*
+    * Parse the terms, and perform a type check.
+    * In the following four functions, type constraints
+    * are ignored.  That is, constraints are just
+    * comments.
+    *)
+   let parse_term loc t =
+      let t = apply_iforms loc t in
+      let t = term_of_parsed_term t in
+      let _ = infer_term loc t in
+         t
+
+   let parse_term_with_vars loc t =
+      let t = apply_iforms loc t in
+      let t = term_of_parsed_term_with_vars t in
+      let _ = infer_term loc t in
+         t
+
+   let parse_bound_term loc bt =
+      { bt with aterm = parse_term loc bt.aterm }
+
+   let parse_rule loc name mt args =
+      let mt, args = apply_iforms_mterm loc mt args in
+      let mt, args, f = mterms_of_parsed_mterms mt args in
+
+      (* Check with the refiner first for rewrite errors *)
+      let cvars = context_vars mt in
+      let params = extract_params cvars args in
+         Refine.check_rule name (collect_cvars params) (collect_terms params) (strip_mfunction mt);
+
+         (* Then check for type errors *)
+         check_rule loc mt args;
+         mt, List.map erase_arg_term args, f
+
+   let parse_rewrite loc name mt args =
+      let mt, args = apply_iforms_mterm loc mt args in
+      let mt, args, f = mterms_of_parsed_mterms mt args in
+
+      (* Check with the refiner first for rewrite errors *)
+      let cvars = context_vars mt in
+      let params = extract_params cvars args in
+      let args', redex, contractum = unzip_rewrite name mt in
+      let () = Refine.check_rewrite name (collect_cvars params) (collect_terms params) args' redex contractum in
+
+      (* Then check for type errors *)
+      let _ = infer_rewrite loc mt args in
+         mt, List.map erase_arg_term args, f
+
+   let parse_define loc name redex contractum =
+      let redex = apply_iforms loc redex in
+      let contractum = apply_iforms loc contractum in
+      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+
+      (* Check with the rewriter first *)
+      let () = Refine.check_definition name redex contractum in
+
+      (* Check the types of both parts *)
+      let _ = infer_rewrite loc (MetaIff (MetaTheorem redex, MetaTheorem contractum)) [] in
+         redex, contractum
+
+   let parse_type_rewrite loc redex contractum =
+      let redex = apply_iforms loc redex in
+      let contractum = apply_iforms loc contractum in
+      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+         Refine.check_rewrite "type" empty_args_spec [] [] redex contractum;
+         check_type_rewrite loc redex contractum;
+         redex, contractum
+
+   (*
+    * In the following functions, type constraints
+    * are erased after inference.  In the informal
+    * code, constraints are legal.
+    *)
+   let parse_iform loc name mt args =
+      let mt, args, f = mterms_of_parsed_mterms mt args in
+
+      (* Check with the refiner for rewrite errors *)
+      let cvars = context_vars mt in
+      let params = extract_params cvars args in
+      let args', redex, contractum = unzip_rewrite name mt in
+      let () = Refine.check_iform name (collect_cvars params) (collect_terms params) args' redex contractum in
+
+      (* Check for type errors *)
+      let () = check_iform loc mt args in
+      let mt = erase_meta_term mt in
+      let args = List.map erase_term args in
+         mt, args, f
+
+   let parse_dform loc redex contractum =
+      let redex = apply_iforms loc redex in
+      let contractum = apply_iforms loc contractum in
+      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+      let () = check_dform loc redex contractum in
+      let redex = erase_term redex in
+      let contractum = erase_term contractum in
+         redex, contractum
+
+   let parse_production loc redices contractum =
+      let redices = List.map (apply_iforms loc) redices in
+      let contractum = apply_iforms loc contractum in
+      let redices, contractum = mrewrite_of_parsed_mrewrite redices contractum in
+      let () = check_production loc redices contractum in
+      let redices = List.map erase_term redices in
+      let contractum = erase_term contractum in
+         redices, contractum
+
+   (*
+    * For terms from other grammars.
+    * The other grammars will expand their iforms,
+    * so we don't need to do it.
+    *)
+   let mk_parsed_term t =
+      t
+
+   (************************************************
+    * !!! WARNING !!!
+    * !!! The following functions bypass either the
+    * !!! parser or the type checker.
+    *)
+
+   (* For bypassing the type checker *)
+   let raw_term_of_parsed_term t =
+      apply_iforms_raw t
+
+   let unparsed_term_of_parsed_term loc t =
+      let t = apply_iforms loc t in
+      let _ = infer_term loc t in
+         erase_term t
+
+   let unchecked_term_of_parsed_term t =
+      let t = apply_iforms_raw t in
+      let t = term_of_parsed_term t in
+         erase_term t
+
+   let quoted_term_of_parsed_term _ t =
+      term_of_parsed_term t
+
+   (*
+    * Parameterize declares over default types.
+    *)
+   let subst_unknown token_type bvar_type term_type t =
+      let subst t =
+         if is_unknown_token_term t then
+            token_type
+         else if is_unknown_bvar_term t then
+            bvar_type
+         else if is_unknown_type_term t then
+            term_type
+         else
+            t
+      in
+         map_up subst t
+
+   (* Make sure the declared term has a type *)
+   let parse_quoted_term loc token_type bvar_type term_type t =
+      let t = apply_iforms loc t in
+      let t = subst_unknown token_type bvar_type term_type t in
+      let _ = infer_term loc t in
          t
 
    (************************************************************************

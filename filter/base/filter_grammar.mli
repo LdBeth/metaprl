@@ -147,8 +147,10 @@ val term_of_string  : string -> Lexing.position -> string -> term
 (*
  * Iform expansion.
  *)
-val apply_iforms       : term -> term
-val apply_iforms_mterm : meta_term -> term list -> meta_term * term list
+type quotation_expander = string -> string -> term
+
+val apply_iforms       : quotation_expander -> term -> term
+val apply_iforms_mterm : quotation_expander -> meta_term -> term list -> meta_term * term list
 
 (*!
  * @docoff

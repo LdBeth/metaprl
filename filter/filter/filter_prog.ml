@@ -928,7 +928,7 @@ let define_input_form proc loc iform =
    let create_input_form = <:expr<
       let $lid:contractum_id$ = $expr_of_term proc loc iform.rw_contractum$ in
          $refiner_expr loc$.create_input_form $lid:local_refiner_id$ $str:name$ (**)
-            $uid:"true"$ ($expr_of_term proc loc iform.rw_redex$) $lid:contractum_id$
+            $uid:"false"$ ($expr_of_term proc loc iform.rw_redex$) $lid:contractum_id$
     >> in
        [
           <:str_item< value $lid:name$ = $rewrite_of_pre_rewrite_expr loc$ ($wrap_exn proc loc name create_input_form$) $empty_rw_args loc$ [] >>;
