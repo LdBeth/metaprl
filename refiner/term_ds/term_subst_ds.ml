@@ -26,7 +26,7 @@
  * Modified by: Jason Hickey
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -35,7 +35,8 @@ open Refine_error_sig
 open Term_ds_sig
 open Term_ds
 
-#ifdef VERBOSE_EXN
+IFDEF VERBOSE_EXN THEN
+
 (*
  * Show that the file is loading.
  *)
@@ -63,7 +64,8 @@ let debug_unify =
         debug_description = "display unification operations";
         debug_value = false
       }
-#endif
+
+ENDIF
 
 module TermSubst
 (Term : TermDsSig
@@ -108,14 +110,14 @@ struct
    type term_subst = TermType.term_subst
 
    let subst t tl vl =
-#ifdef VERBOSE_EXN
-      if List.length tl <> List.length vl then
-           eprintf "subst: %a (%a) (%a)%t" (**)
-           debug_print t
-           print_string_list vl
-           (print_any_list debug_print) tl
-           eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if List.length tl <> List.length vl then
+              eprintf "subst: %a (%a) (%a)%t" (**)
+              debug_print t
+              print_string_list vl
+              (print_any_list debug_print) tl
+              eflush
+      ENDIF;
       do_term_subst (List.combine vl tl) t
 
    let is_free_var v t = StringSet.mem (term_free_vars t) v
@@ -287,50 +289,54 @@ struct
         equal_goals goals1 goals2 vars (pred i) )
 
    let alpha_equal t1 t2 =
-#ifdef VERBOSE_EXN
-      let result = (
-#endif
-      match get_core t1, get_core t2 with
-         Term _, Term _ ->
-            (try equal_term [] t1 t2 with
-               Failure _ -> false)
-       | Sequent s1, Sequent s2 ->
-
-            (try
-               (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
-               (SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals) &&
-               (equal_term [] s1.sequent_args s2.sequent_args) &&
-               (match equal_hyps s1.sequent_hyps s2.sequent_hyps [] 0 with
-                   None -> false
-                 | Some vars -> equal_goals s1.sequent_goals s2.sequent_goals vars (SeqGoal.length s1.sequent_goals - 1))
-             with
-                Failure _ ->
-                   false)
-       | FOVar v1, FOVar v2 ->
-            (v1=v2)
-       | _ ->
-            false
-#ifdef VERBOSE_EXN
-      ) in
-      if !debug_alpha_equal then
-         eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
-      result
-#endif
+      LETMACRO BODY =
+         match get_core t1, get_core t2 with
+            Term _, Term _ ->
+               (try equal_term [] t1 t2 with
+                  Failure _ -> false)
+          | Sequent s1, Sequent s2 ->
+               (try
+                  (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
+                  (SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals) &&
+                  (equal_term [] s1.sequent_args s2.sequent_args) &&
+                  (match equal_hyps s1.sequent_hyps s2.sequent_hyps [] 0 with
+                      None -> false
+                    | Some vars -> equal_goals s1.sequent_goals s2.sequent_goals vars (SeqGoal.length s1.sequent_goals - 1))
+                with
+                   Failure _ ->
+                      false)
+          | FOVar v1, FOVar v2 ->
+               (v1=v2)
+          | _ ->
+               false
+      IN
+      IFDEF VERBOSE_EXN THEN
+         let result = BODY in
+            if !debug_alpha_equal then
+               eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
+            result
+      ELSE
+         BODY
+      ENDIF
 
    let alpha_equal_vars t v t' v' =
-#ifdef VERBOSE_EXN
-      if !debug_alpha_equal then
-         try
-            let _ = equal_term (List_util.zip v v') t t' in
-            eprintf "alpha_equal_vars: true%t" eflush;
-            true
-         with Failure _ ->
-            eprintf "alpha_equal_vars: false%t" eflush;
-            false
-      else
-#endif
-         try equal_term (List_util.zip v v') t t' with
-            Failure _ -> false
+      LETMACRO BODY = try equal_term (List_util.zip v v') t t' with
+                         Failure _ -> false
+      IN
+      IFDEF VERBOSE_EXN THEN
+         if !debug_alpha_equal then
+            try
+               let _ = equal_term (List_util.zip v v') t t' in
+               eprintf "alpha_equal_vars: true%t" eflush;
+               true
+            with Failure _ ->
+               eprintf "alpha_equal_vars: false%t" eflush;
+               false
+         else
+            BODY
+      ELSE
+         BODY
+      ENDIF
 
    (*
     * The meaning of
@@ -399,16 +405,15 @@ struct
 
    (* See refiner/refsig/term_subst_sig.mlz for explanation of this function *)
    let alpha_equal_fun f t vs t' items =
-#ifdef VERBOSE_EXN
-      if !debug_subst_ds then
-         begin
+      IFDEF VERBOSE_EXN THEN
+         if !debug_subst_ds then begin
             eprintf "Term_subst_ds.alpha_equal_fun:\n\t";
             eprintf "\tt: %a\n" debug_print t;
             eprintf "\tvs: %a\n" print_string_list vs;
             eprintf "\tt': %a\n" debug_print t';
             eprintf "\titems: ...%t" eflush
-         end;
-#endif
+         end
+      ENDIF;
       try equal_fun f [] (List_util.zip vs items) t t'  with
          Failure _ -> false
        | Not_found -> false
@@ -520,10 +525,10 @@ struct
     * The unification works over the subst.
     *)
    let rec unify_terms subst constants bvars term1 term2 =
-#ifdef VERBOSE_EXN
-      if !debug_unify then
-         eprintf "Unify: %a/%a%t" print_term term1 print_term term2 eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_unify then
+            eprintf "Unify: %a/%a%t" print_term term1 print_term term2 eflush
+      ENDIF;
       match get_core term1, get_core term2 with
          FOVar v, FOVar v' ->
             begin try
@@ -593,7 +598,7 @@ struct
    let rec check_bvars tvs = function
       [] -> ()
     | (_,v)::tl ->
-         if StringSet.mem tvs v then raise_generic_exn else
+         if StringSet.mem tvs v then RAISE_GENERIC_EXN else
          check_bvars tvs tl
 
    let rec match_terms subst bvars tm1 tm2 =
@@ -604,7 +609,7 @@ struct
                   if v' = dest_var tm2 then
                      subst
                   else
-                     raise_generic_exn
+                     RAISE_GENERIC_EXN
             with
                Not_found ->
                   try
@@ -629,7 +634,7 @@ struct
             if Opname.eq opname1 opname2 & params1 = params2 then
                match_bterms subst bvars bterms1 bterms2
             else
-               raise_generic_exn
+               RAISE_GENERIC_EXN
 
    and match_bterms subst bvars bterms1 bterms2 =
       match bterms1, bterms2 with
@@ -641,16 +646,18 @@ struct
        | [], [] ->
             subst
        | _ ->
-            raise_generic_exn
+            RAISE_GENERIC_EXN
 
    let match_terms subst t1 t2 =
-#ifdef VERBOSE_EXN
-      try List.rev (match_terms subst [] t1 t2) with
-         RefineError (_, GenericError) ->
-            raise (RefineError ("Term_subst_ds.match_terms", TermPairMatchError (t1, t2)))
-#else
-            List.rev (match_terms subst [] t1 t2)
-#endif
+      LETMACRO BODY = List.rev (match_terms subst [] t1 t2)
+      IN
+      IFDEF VERBOSE_EXN THEN
+         try BODY with
+            RefineError (_, GenericError) ->
+               raise (RefineError ("Term_subst_ds.match_terms", TermPairMatchError (t1, t2)))
+      ELSE
+         BODY
+      ENDIF
 
    (************************************************************************
     * Term generalization                                                  *

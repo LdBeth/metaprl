@@ -28,7 +28,7 @@
  * Authors: Alexey Nogin
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -250,7 +250,7 @@ struct
           | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
                []
           | _ ->
-               ref_raise(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
+               REF_RAISE(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
       in
          aux t
 
@@ -283,7 +283,7 @@ struct
          } when Opname.eq opname string_opname ->
             s
        | _ ->
-            ref_raise(RefineError ("dest_xstring", TermMatchError (t, "not a string")))
+            REF_RAISE(RefineError ("dest_xstring", TermMatchError (t, "not a string")))
 
    let mk_xstring_term s =
       let op = { op_name = string_opname; op_params = [String s] } in
@@ -308,7 +308,7 @@ struct
          } when Opname.eq opname string_opname ->
             s, t
        | _ ->
-            ref_raise(RefineError ("dest_xstring_dep0_term", TermMatchError (t, "not a string")))
+            REF_RAISE(RefineError ("dest_xstring_dep0_term", TermMatchError (t, "not a string")))
 
    let mk_xstring_dep0_term s t =
       let op = { op_name = string_opname; op_params = [String s] } in
@@ -325,7 +325,7 @@ struct
       mk_dep1_term xlambda_opname
 
    (*************************
-    * Sequents              *                                              *
+    * Sequents              *
     *************************)
 
    let is_sequent_term t =
@@ -340,14 +340,14 @@ struct
          Sequent s ->
             s
        | _ ->
-            ref_raise(RefineError ("Term_man_ds.explode_sequent", TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError ("Term_man_ds.explode_sequent", TermMatchError (t, "not a sequent")))
 
    let args_of_sequent t =
       match get_core t with
          Sequent s ->
             s.sequent_args
        | _ ->
-            ref_raise(RefineError ("Term_man_ds.args_of_sequent", TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError ("Term_man_ds.args_of_sequent", TermMatchError (t, "not a sequent")))
 
    (*
     * Find the address of the hyp. Numbers start with 1
@@ -356,16 +356,16 @@ struct
    let nth_hyp_addr_name = "Term_man_ds.nth_hyp_addr"
    let nth_hyp_addr t n =
       if n <= 0 then
-         ref_raise(RefineError (nth_hyp_addr_name, StringError "negative address"))
+         REF_RAISE(RefineError (nth_hyp_addr_name, StringError "negative address"))
       else
          match get_core t with
             Sequent s ->
                if n <= SeqHyp.length s.sequent_hyps then
                   HypAddr (pred n)
                else
-                  ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
+                  REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
           | _ ->
-               ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "not a sequent")))
+               REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Find the address of the conclusion. Numbers start with 1
@@ -373,16 +373,16 @@ struct
    let nth_concl_addr_name = "Term_man_ds.nth_concl_addr"
    let nth_concl_addr t n =
       if n <= 0 then
-         ref_raise(RefineError (nth_concl_addr_name, StringError "negative address"))
+         REF_RAISE(RefineError (nth_concl_addr_name, StringError "negative address"))
       else
          match get_core t with
             Sequent s ->
                if n <= SeqGoal.length s.sequent_goals then
                   GoalAddr (pred n)
                else
-                  ref_raise(RefineError (nth_concl_addr_name, TermMatchError (t, "not enough hyps")))
+                  REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "not enough hyps")))
           | _ ->
-               ref_raise(RefineError (nth_concl_addr_name, TermMatchError (t, "not a sequent")))
+               REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Conclusion is number 0,
@@ -399,13 +399,13 @@ struct
                   if i <= hlen then
                      HypAddr (pred i)
                   else
-                     ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps")))
+                     REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps")))
                else if (-i) <= hlen then
                   HypAddr (hlen + i)
                else
-                  ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps for a negative addressing")))
+                  REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps for a negative addressing")))
        | _ ->
-            ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Count the hyps.
@@ -419,7 +419,7 @@ struct
             let _ = get_core t in
             num_hyps t
        | _ ->
-            ref_raise(RefineError (num_hyps_name, TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError (num_hyps_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Addresses to be used in sequent rewriting.
@@ -445,7 +445,7 @@ struct
       match t.core with
          Sequent s ->
             if i <= 0 then
-               ref_raise(RefineError (nth_hyp_name, StringError "negative address"))
+               REF_RAISE(RefineError (nth_hyp_name, StringError "negative address"))
             else
                let i = pred i in
                   if i < SeqHyp.length s.sequent_hyps then
@@ -453,19 +453,19 @@ struct
                         Hypothesis (v, t) ->
                            (v, t)
                       | Context _ ->
-                           ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
+                           REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
                   else
-                     ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not enough hyps")))
+                     REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "not enough hyps")))
        | Subst _ ->
             let _ = get_core t in
             nth_hyp t i
        | _ ->
-            ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
 
    let nth_concl_name = "Term_man_ds.nth_concl"
    let nth_concl t i =
       if i <= 0 then
-         ref_raise(RefineError (nth_concl_name, StringError "negative address"))
+         REF_RAISE(RefineError (nth_concl_name, StringError "negative address"))
       else
          let i = pred i in
             match get_core t with
@@ -473,9 +473,9 @@ struct
                   if i < SeqGoal.length s.sequent_goals then
                      SeqGoal.get s.sequent_goals i
                   else
-                     ref_raise(RefineError (nth_concl_name, TermMatchError (t, "not enough hyps")))
+                     REF_RAISE(RefineError (nth_concl_name, TermMatchError (t, "not enough hyps")))
              | _ ->
-                  ref_raise(RefineError (nth_concl_name, TermMatchError (t, "not a sequent")))
+                  REF_RAISE(RefineError (nth_concl_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Collect the vars.
@@ -494,7 +494,7 @@ struct
             let hyps = s.sequent_hyps in
                declared_vars_aux hyps (SeqHyp.length s.sequent_hyps - 1)
        | _ ->
-            ref_raise(RefineError (declared_vars_name, TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError (declared_vars_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Get the number of the hyp with the given var.
@@ -507,7 +507,7 @@ struct
             let hlen = SeqHyp.length hyps in
             let rec aux i =
                if i = hlen then
-                  ref_raise(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
+                  REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
                else
                   match SeqHyp.get hyps i with
                      Hypothesis (v',_) when v' = v ->
@@ -517,7 +517,7 @@ struct
             in
                aux 0
        | _ ->
-            ref_raise(RefineError (get_decl_number_name, TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "not a sequent")))
 
    (*
     * See if a var is free in the rest of the sequent.
@@ -548,7 +548,7 @@ struct
             in
                is_free_hyp_var i
        | _ ->
-            ref_raise(RefineError (is_free_seq_var_name, TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError (is_free_seq_var_name, TermMatchError (t, "not a sequent")))
 
    let replace_goal_name = "Term_man_ds.replace_goal"
    let replace_goal t goal =
@@ -556,7 +556,7 @@ struct
          Sequent s ->
             mk_sequent_term {sequent_args = s.sequent_args; sequent_hyps = s.sequent_hyps; sequent_goals = SeqGoal.singleton goal}
        | _ ->
-            ref_raise(RefineError (replace_goal_name, TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError (replace_goal_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Rewrite

@@ -29,7 +29,7 @@
  * Authors: Alexey Nogin
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -151,20 +151,22 @@ struct
                match t.core with
                   FOVar v -> StringSet.make v
                 | Term t' ->
-#ifdef VERBOSE_EXN
-                     if !debug_fv then
-                        eprintf "Request for Term fvs: Term: %a%t" debug_print t eflush;
-                     let res =
-#endif
-                     bterms_free_vars t'.term_terms
-#ifdef VERBOSE_EXN
-                     in
-                        if !debug_fv then begin
-                           eprintf "Result: ";
-                           List.iter (eprintf "%s ") (StringSet.elements res);
-                           eprintf "%t" eflush;
-                        end; res
-#endif
+                     LETMACRO BODY = bterms_free_vars t'.term_terms
+                     IN
+                     IFDEF VERBOSE_EXN THEN
+                        if !debug_fv then
+                           eprintf "Request for Term fvs: Term: %a%t" debug_print t eflush;
+                        let res =
+                          BODY
+                        in
+                           if !debug_fv then begin
+                              eprintf "Result: ";
+                              List.iter (eprintf "%s ") (StringSet.elements res);
+                              eprintf "%t" eflush;
+                           end; res
+                     ELSE
+                        BODY
+                     ENDIF
                 | Sequent seq ->
                      StringSet.union
                         (term_free_vars seq.sequent_args)
@@ -173,30 +175,31 @@ struct
                            (SeqHyp.length seq.sequent_hyps - 1)
                            (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)))
                 | Subst (t,sub) ->
-#ifdef VERBOSE_EXN
-                     if !debug_fv then begin
-                        eprintf "Request for Subst fvs: Term: %a; Subst: " debug_print t;
-                        List.iter (fun (v,t) -> eprintf "(%s : %a) " v debug_print t) sub;
-                        eprintf "%t" eflush;
-                     end;
-                     let res =
-#endif
-                     StringSet.union
-                        (List.fold_right
-                           StringSet.remove
-                           (List_util.fst_split sub)
-                           (term_free_vars t))
-                        (subst_free_vars sub)
-#ifdef VERBOSE_EXN
-                     in
-                        if !debug_fv then
-                           begin
+                     LETMACRO BODY =
+                        StringSet.union
+                           (List.fold_right
+                              StringSet.remove
+                              (List_util.fst_split sub)
+                              (term_free_vars t))
+                           (subst_free_vars sub)
+                     IN
+                     IFDEF VERBOSE_EXN THEN
+                        if !debug_fv then begin
+                           eprintf "Request for Subst fvs: Term: %a; Subst: " debug_print t;
+                           List.iter (fun (v,t) -> eprintf "(%s : %a) " v debug_print t) sub;
+                           eprintf "%t" eflush;
+                        end;
+                        let res =
+                           BODY
+                        in
+                           if !debug_fv then begin
                               eprintf "Result: ";
                               List.iter (eprintf "%s ") (StringSet.elements res);
                               eprintf "%t" eflush;
-                           end;
-                        res
-#endif
+                           end; res
+                     ELSE
+                        BODY
+                     ENDIF
                 | Hashed d ->
                      term_free_vars (Weak_memo.TheWeakMemo.retrieve_hack d)
 
@@ -234,20 +237,20 @@ struct
     | (v,t)::tl -> StringSet.union (subst_free_vars tl) (term_free_vars t)
 
    let do_term_subst sub t =
-#ifdef VERBOSE_EXN
-      if !debug_subst then
-         begin
-            debug_subst := false;
-            eprintf "do_term_subst: { %a\n" debug_print t;
-            eprintf "\tfree_vars:";
-            List.iter (fun name -> eprintf " %s" name) (StringSet.elements (term_free_vars t));
-            eflush stderr;
-            if sub == [] then eprintf "\t empty substitution\n" else
-            List.iter (fun (v, t) -> eprintf "\t%s: %a\n" v debug_print t) sub;
-            eprintf "}%t" eflush;
-            debug_subst := true
-         end;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_subst then
+            begin
+               debug_subst := false;
+               eprintf "do_term_subst: { %a\n" debug_print t;
+               eprintf "\tfree_vars:";
+               List.iter (fun name -> eprintf " %s" name) (StringSet.elements (term_free_vars t));
+               eflush stderr;
+               if sub == [] then eprintf "\t empty substitution\n" else
+               List.iter (fun (v, t) -> eprintf "\t%s: %a\n" v debug_print t) sub;
+               eprintf "}%t" eflush;
+               debug_subst := true
+            end
+      ENDIF;
       match StringSet.fst_mem_filt (term_free_vars t) sub with
          [] -> t
        | sub' ->
@@ -408,7 +411,7 @@ struct
 
    let dest_simple_bterm = function
       { bvars = []; bterm = tt } -> tt
-    | _ -> ref_raise(RefineError ("dest_simple_bterm", StringError "bvars exist"))
+    | _ -> REF_RAISE(RefineError ("dest_simple_bterm", StringError "bvars exist"))
 
    let make_term = function
       { term_op = { op_name = opname; op_params = [Var v] };
@@ -499,7 +502,7 @@ struct
       match t.core with
          FOVar v -> v
        | Subst _ -> let _ = get_core t in dest_var t
-       | _ -> ref_raise(RefineError ("dest_var", TermMatchError (t, "not a var")))
+       | _ -> REF_RAISE(RefineError ("dest_var", TermMatchError (t, "not a var")))
 
    (*
     * Second order variables have subterms.
@@ -516,7 +519,7 @@ struct
     | Term { term_op = { op_name = opname; op_params = [Var v] };
              term_terms = terms } when Opname.eq opname var_opname ->
          v, List.map dest_simple_bterm terms
-    | _ -> ref_raise(RefineError ("dest_so_var", TermMatchError (t, "not a so_var")))
+    | _ -> REF_RAISE(RefineError ("dest_so_var", TermMatchError (t, "not a so_var")))
 
    (*
     * Second order variable.
@@ -554,12 +557,12 @@ struct
                   let args, term = collect term bterms in
                      dest_simple_bterm bterm :: args, term
              | _ ->
-                  ref_raise(RefineError ("dest_context", TermMatchError (term, "not a context")))
+                  REF_RAISE(RefineError ("dest_context", TermMatchError (term, "not a context")))
             in
             let args, term = collect term bterms in
                v, term, args
        | _ ->
-            ref_raise(RefineError ("dest_context", TermMatchError (term, "not a context")))
+            REF_RAISE(RefineError ("dest_context", TermMatchError (term, "not a context")))
 
    let mk_context_term v term terms =
       let rec collect term = function
@@ -593,13 +596,13 @@ struct
       { term_op = { op_name = name; op_params = [] };
          term_terms = bterms } ->
             name, List.map dest_simple_bterm bterms
-    | _ -> ref_raise(RefineError ("dest_simple_term", TermMatchError (t, "params exist")))
+    | _ -> REF_RAISE(RefineError ("dest_simple_term", TermMatchError (t, "params exist")))
 
    let dest_simple_term_opname name t = match dest_term t with
       { term_op = { op_name = name'; op_params = [] };
          term_terms = bterms } ->
          if Opname.eq name name' then List.map dest_simple_bterm bterms
          else
-            ref_raise(RefineError ("dest_simple_term_opname", TermMatchError (t, "opname mismatch")))
-    | _ -> ref_raise(RefineError ("dest_simple_term_opname", TermMatchError (t, "params exist")))
+            REF_RAISE(RefineError ("dest_simple_term_opname", TermMatchError (t, "opname mismatch")))
+    | _ -> REF_RAISE(RefineError ("dest_simple_term_opname", TermMatchError (t, "params exist")))
 end

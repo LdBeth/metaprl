@@ -29,7 +29,7 @@
  * Subterm addressing                                                   *
  ************************************************************************)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -96,10 +96,10 @@ struct
       Path l
 
    let nth_hd_address i =
-      ref_raise (RefineError ("Term_addr_ds.nth_hd_address", StringError "not implemented and should not be used"))
+      REF_RAISE (RefineError ("Term_addr_ds.nth_hd_address", StringError "not implemented and should not be used"))
 
    let nth_tl_address i =
-      ref_raise (RefineError ("Term_addr_ds.nth_tl_address", StringError "not implemented and should not be used"))
+      REF_RAISE (RefineError ("Term_addr_ds.nth_tl_address", StringError "not implemented and should not be used"))
 
    let is_null_address = function
       Path [] ->
@@ -123,7 +123,7 @@ struct
     | GoalAddr i ->
          i
     | _ ->
-         ref_raise (RefineError ("Term_addr_ds.depth_of_address", StringError "address is not a sequent address"))
+         REF_RAISE (RefineError ("Term_addr_ds.depth_of_address", StringError "address is not a sequent address"))
 
    let rec clause_of_address = function
       HypAddr i ->
@@ -133,13 +133,13 @@ struct
     | Compose (addr, _) ->
          clause_of_address addr
     | _ ->
-         ref_raise (RefineError ("Term_addr_ds.clause_of_address", StringError "address is not a sequent address"))
+         REF_RAISE (RefineError ("Term_addr_ds.clause_of_address", StringError "address is not a sequent address"))
 
-#ifdef VERBOSE_EXN
-#  define ATERM a term
-#else
-#  define ATERM
-#endif
+   IFDEF VERBOSE_EXN THEN
+      DEFMACRO ATERM = (a, term)
+   ELSE
+      DEFMACRO ATERM = NOTHING
+   ENDIF
 
    (*
     * Get a subterm.
@@ -151,7 +151,7 @@ struct
        | (hd::tl, _) ->
             getnth ATERM tl (pred i)
        | ([], _) ->
-            ref_raise(RefineError ("getnth", AddressError (a, term)))
+            REF_RAISE(RefineError ("getnth", AddressError (a, term)))
 
    (*
     * Follow an explicit path.
@@ -176,11 +176,11 @@ struct
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
                match SeqHyp.get s.sequent_hyps i with
                   Hypothesis (_,t) -> t
-                | Context _ -> ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
-            else ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
+                | Context _ -> REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
+            else REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
        | (Sequent s, GoalAddr i) ->
             if i >= 0 && i < SeqGoal.length s.sequent_goals then SeqGoal.get s.sequent_goals i
-            else ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
+            else REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
        | (Sequent s, Compose (HypAddr i, ((Path (j :: path)) as addr2))) ->
             (*
              * Special case to address through contexts.
@@ -193,14 +193,14 @@ struct
                      if j >= 0 && j < List.length subterms then
                         term_subterm (List.nth subterms j) (Path path)
                      else
-                        ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
+                        REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
             else
-               ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
+               REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
        | (FOVar _, Path []) ->
             term
        | (_, Compose (addr1, addr2)) ->
             term_subterm (term_subterm term addr1) addr2
-       | _ -> ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
+       | _ -> REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
 
    (*
     * Just get the subterm count.
@@ -226,12 +226,12 @@ struct
                 | Context (_, subterms) ->
                      List.length subterms
             else
-               ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
+               REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
        | (Sequent s, GoalAddr i) ->
             if i >= 0 && i < SeqGoal.length s.sequent_goals then
                subterm_count (SeqGoal.get s.sequent_goals i)
             else
-               ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
+               REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
        | (Sequent s, Compose (HypAddr i, ((Path (j :: path)) as addr2))) ->
             (*
              * Special case to address through contexts.
@@ -244,28 +244,29 @@ struct
                      if j >= 0 && j < List.length subterms then
                         term_subterm_count (List.nth subterms j) (Path path)
                      else
-                        ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
+                        REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
             else
-               ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
+               REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
        | (FOVar _, Path []) ->
             subterm_count term
        | (_, Compose (addr1, addr2)) ->
             term_subterm_count (term_subterm term addr1) addr2
        | _ ->
-            ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
+            REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
 
    (*
     * Replace a subterm at the specified address.
     * Capture is not taken into account.  This function
     * allows the replacement to compute an extra value.
     *)
-#ifdef VERBOSE_EXN
-#  define FAIL fail
-#  define DO_FAIL fail_addr fail
-#else
-#  define FAIL
-#  define DO_FAIL raise_generic_exn
-#endif
+
+   IFDEF VERBOSE_EXN THEN
+      DEFMACRO FAIL = fail
+      DEFMACRO DO_FAIL = fail_addr fail
+   ELSE
+      DEFMACRO FAIL = NOTHING
+      DEFMACRO DO_FAIL = RAISE_GENERIC_EXN
+   ENDIF
 
    let rec collect_hyp_bvars i hyps bvars =
       if i < 0 then bvars
@@ -276,135 +277,149 @@ struct
    let collect_goal_bvars hyps = collect_hyp_bvars (SeqHyp.length hyps - 1) hyps
 
    let fail_addr (addr, term) =
-      ref_raise(RefineError ("apply_*_fun_*", AddressError (addr, term)))
+      REF_RAISE(RefineError ("apply_*_fun_*", AddressError (addr, term)))
 
-#define APPLY_FUN \
-   let rec path_replace_term FAIL f BVARS t = function \
-      i::tl -> \
-         let { term_op = op; term_terms = bterms } = dest_term t in \
-         let bterms, arg = path_replace_bterm FAIL f tl i BVARS bterms in \
-            mk_term op bterms, arg \
-    | [] -> \
-         f BVARS t \
-\
-   and path_replace_bterm FAIL f tl i BVARS bterms = \
-      match i, bterms with \
-         (0, { bvars = vars; bterm = term } :: bterms) -> \
-            let term, arg = path_replace_term FAIL f VARS_BVARS term tl in \
-               mk_bterm vars term :: bterms, arg \
-       | (_, bterm :: bterms) -> \
-            let bterms, arg = path_replace_bterm FAIL f tl (pred i) BVARS bterms in \
-               bterm :: bterms, arg \
-       | _, [] -> \
-            DO_FAIL
+   DEFMACRO MAKE_PATH_REPLACE_TERM =
+      fun FAIL f BVARS t -> function
+         i::tl ->
+            let { term_op = op; term_terms = bterms } = dest_term t in
+            let bterms, arg = PATH_REPLACE_BTERM FAIL f tl i BVARS bterms in
+               mk_term op bterms, arg
+       | [] ->
+            f BVARS t
 
-#define APPLY_FUN_AUX                                                                     \
-   let rec apply_fun_arg_at_addr_aux FAIL f addr BVARS term =                             \
-      match (get_core term, addr) with                                                    \
-         (Term _, Path addr) ->                                                           \
-            path_replace_term FAIL f BVARS term addr                                      \
-       | (Sequent s, ArgAddr) ->                                                          \
-            let term, arg = f BVARS s.sequent_args in                                     \
-               mk_sequent_term (**)                                                       \
-                  { sequent_args = term;                                                  \
-                    sequent_hyps = s.sequent_hyps;                                        \
-                    sequent_goals = s.sequent_goals                                       \
-                  }, arg                                                                  \
-       | (Sequent s, HypAddr i) ->                                                        \
-            if i>=0 && i < SeqHyp.length s.sequent_hyps then                              \
-               match SeqHyp.get s.sequent_hyps i with 										\
-                  Hypothesis (v,t) -> 											\
-                     let term, arg = f HYP_BVARS t in 									\
-                     let aux i1 t1 = 											\
-                       if i1 = i then Hypothesis (v,term) else t1 							\
-                     in 												\
-                        mk_sequent_term (**) 										\
-                           { sequent_args = s.sequent_args; 								\
-                             sequent_hyps = SeqHyp.mapi aux s.sequent_hyps; 						\
-                             sequent_goals = s.sequent_goals 								\
-                           }, arg 											\
-                | Context (v, subterms) -> 										\
-                     let slot = mk_var_term v in                                                                        \
-                     let t = mk_context_term v slot subterms in 							\
-                     let t, arg = f BVARS t in 										\
-                     let v1, term1, subterms = dest_context t in 							\
-                        if v1 = v && is_var_term term1 && dest_var term1 = v then					\
-                           let aux i1 t1 = 										\
-                              if i1 = i then 										\
-                                 Context (v, subterms) 									\
-                              else 											\
-                                 t1 											\
-                           in 												\
-                              mk_sequent_term (**) 									\
-                                 { sequent_args = s.sequent_args; 							\
-                                   sequent_hyps = SeqHyp.mapi aux s.sequent_hyps; 					\
-                                   sequent_goals = s.sequent_goals 							\
-                                 }, arg 										\
-                        else DO_FAIL                                                                                    \
-            else DO_FAIL                                                                                                \
-       | (Sequent s, GoalAddr i) -> 											\
-            if i>=0 && i < SeqGoal.length s.sequent_goals then 								\
-               let term, arg = f GOAL_BVARS (SeqGoal.get s.sequent_goals i) in 							\
-               let aux i1 t1 = 												\
-                 if i1 = i then term else t1 										\
-               in mk_sequent_term (**)                                                    \
-                     { sequent_args = s.sequent_args;                                     \
-                       sequent_hyps = s.sequent_hyps;                                     \
-                       sequent_goals = SeqGoal.mapi aux s.sequent_goals                   \
-                     }, arg 												\
-            else DO_FAIL 												\
-       | (FOVar _, Path []) -> \
-            f BVARS term \
-       | (_, Compose (addr1, addr2)) -> 										\
-            apply_fun_arg_at_addr_aux FAIL (**) 									\
-               (apply_fun_arg_at_addr_aux FAIL f addr2) addr1 BVARS term 						\
-       | _ -> DO_FAIL
+   DEFMACRO MAKE_PATH_REPLACE_BTERM =
+      fun FAIL f tl i BVARS bterms ->
+         match i, bterms with
+            (0, { bvars = vars; bterm = term } :: bterms) ->
+               let term, arg = PATH_REPLACE_TERM FAIL f VARS_BVARS term tl in
+                  mk_bterm vars term :: bterms, arg
+          | (_, bterm :: bterms) ->
+               let bterms, arg = PATH_REPLACE_BTERM FAIL f tl (pred i) BVARS bterms in
+                  bterm :: bterms, arg
+          | _, [] ->
+               DO_FAIL
 
-#ifdef VERBOSE_EXN
-#  define APPLY_FUN_MAIN APPLY_FUN_AUX \
-   let apply_fun_arg_at_addr f addr BVARS term = \
-      apply_fun_arg_at_addr_aux (addr, term) f addr BVARS term
-#else
-#  define apply_fun_arg_at_addr_aux apply_fun_arg_at_addr
-#  define APPLY_FUN_MAIN APPLY_FUN_AUX
-#endif
+   DEFMACRO APPLY_FUN_AUX MY_NAME =
+      fun FAIL f addr BVARS term ->
+         match (get_core term, addr) with
+            (Term _, Path addr) ->
+               PATH_REPLACE_TERM FAIL f BVARS term addr
+          | (Sequent s, ArgAddr) ->
+               let term, arg = f BVARS s.sequent_args in
+                  mk_sequent_term (**)
+                     { sequent_args = term;
+                       sequent_hyps = s.sequent_hyps;
+                       sequent_goals = s.sequent_goals
+                     }, arg
+          | (Sequent s, HypAddr i) ->
+               if i>=0 && i < SeqHyp.length s.sequent_hyps then
+                  match SeqHyp.get s.sequent_hyps i with
+                     Hypothesis (v,t) ->
+                        let term, arg = f HYP_BVARS t in
+                        let aux i1 t1 =
+                          if i1 = i then Hypothesis (v,term) else t1
+                        in
+                           mk_sequent_term (**)
+                              { sequent_args = s.sequent_args;
+                                sequent_hyps = SeqHyp.mapi aux s.sequent_hyps;
+                                sequent_goals = s.sequent_goals
+                              }, arg
+                   | Context (v, subterms) ->
+                        let slot = mk_var_term v in
+                        let t = mk_context_term v slot subterms in
+                        let t, arg = f BVARS t in
+                        let v1, term1, subterms = dest_context t in
+                           if v1 = v && is_var_term term1 && dest_var term1 = v then
+                              let aux i1 t1 =
+                                 if i1 = i then
+                                    Context (v, subterms)
+                                 else
+                                    t1
+                              in
+                                 mk_sequent_term (**)
+                                    { sequent_args = s.sequent_args;
+                                      sequent_hyps = SeqHyp.mapi aux s.sequent_hyps;
+                                      sequent_goals = s.sequent_goals
+                                    }, arg
+                           else DO_FAIL
+               else DO_FAIL
+          | (Sequent s, GoalAddr i) ->
+               if i>=0 && i < SeqGoal.length s.sequent_goals then
+                  let term, arg = f GOAL_BVARS (SeqGoal.get s.sequent_goals i) in
+                  let aux i1 t1 =
+                    if i1 = i then term else t1
+                  in mk_sequent_term (**)
+                        { sequent_args = s.sequent_args;
+                          sequent_hyps = s.sequent_hyps;
+                          sequent_goals = SeqGoal.mapi aux s.sequent_goals
+                        }, arg
+               else DO_FAIL
+          | (FOVar _, Path []) ->
+               f BVARS term
+          | (_, Compose (addr1, addr2)) ->
+               MY_NAME FAIL (MY_NAME FAIL f addr2) addr1 BVARS term
+          | _ -> DO_FAIL
 
-#define APPLY_FUN_NOARG \
-   let add_unit_arg f BVARS t = \
-      f BVARS t, () \
-\
-   let apply_fun_at_addr f addr BVARS term = \
+
+   DEFMACRO BVARS = NOTHING
+   DEFMACRO VARS_BVARS = NOTHING
+   DEFMACRO HYP_BVARS = NOTHING
+   DEFMACRO GOAL_BVARS = NOTHING
+   DEFMACRO PATH_REPLACE_TERM = path_replace_term
+   DEFMACRO PATH_REPLACE_BTERM = path_replace_bterm
+
+   let rec path_replace_term = MAKE_PATH_REPLACE_TERM
+   and path_replace_bterm = MAKE_PATH_REPLACE_BTERM
+
+   IFDEF VERBOSE_EXN THEN
+      let rec apply_fun_arg_at_addr_aux =
+         APPLY_FUN_AUX apply_fun_arg_at_addr_aux
+
+      let apply_fun_arg_at_addr =
+         fun f addr BVARS term ->
+            apply_fun_arg_at_addr_aux (addr, term) f addr BVARS term
+   ELSE
+      let rec apply_fun_arg_at_addr =
+         APPLY_FUN_AUX apply_fun_arg_at_addr
+   ENDIF
+
+   let add_unit_arg f BVARS t =
+      f BVARS t, ()
+
+   let apply_fun_at_addr f addr BVARS term =
       fst (apply_fun_arg_at_addr (add_unit_arg f) addr BVARS term)
 
-#define BVARS
-#define VARS_BVARS
-#define HYP_BVARS
-#define GOAL_BVARS
-      APPLY_FUN
-      APPLY_FUN_MAIN
-      APPLY_FUN_NOARG
-#undef BVARS
-#undef VARS_BVARS
-#undef HYP_BVARS
-#undef GOAL_BVARS
-#define BVARS bvars
-#define VARS_BVARS (vars::bvars)
-#define HYP_BVARS (collect_hyp_bvars (pred i) s.sequent_hyps BVARS)
-#define GOAL_BVARS (collect_goal_bvars s.sequent_hyps BVARS)
-#define path_replace_term path_var_replace_term
-#define path_replace_bterm path_var_replace_bterm
-#define nthpath_replace_term nthpath_var_replace_term
-#ifdef VERBOSE_EXN
-#  define apply_fun_arg_at_addr_aux apply_var_fun_at_addr_aux
-#endif
-#define apply_fun_arg_at_addr apply_var_fun_arg_at_addr
-#define add_unit_arg add_var_unit_arg
-#define apply_fun_at_addr apply_var_fun_at_addr
-      APPLY_FUN
-      APPLY_FUN_MAIN
-      APPLY_FUN_NOARG
-#undef apply_fun_arg_at_addr
-#undef apply_fun_at_addr
+   UNDEF BVARS
+   UNDEF VARS_BVARS
+
+   DEFMACRO BVARS = bvars
+   DEFMACRO VARS_BVARS = vars :: bvars
+   DEFMACRO HYP_BVARS = (collect_hyp_bvars (pred i) s.sequent_hyps BVARS)
+   DEFMACRO GOAL_BVARS = (collect_goal_bvars s.sequent_hyps BVARS)
+   DEFMACRO PATH_REPLACE_TERM = path_var_replace_term
+   DEFMACRO PATH_REPLACE_BTERM = path_var_replace_bterm
+
+   let rec path_var_replace_term = MAKE_PATH_REPLACE_TERM
+   and path_var_replace_bterm = MAKE_PATH_REPLACE_BTERM
+
+   IFDEF VERBOSE_EXN THEN
+      let rec apply_var_fun_at_addr_aux =
+         APPLY_FUN_AUX apply_var_fun_at_addr_aux
+
+      let apply_var_fun_arg_at_addr =
+         fun f addr BVARS term ->
+            apply_var_fun_at_addr_aux (addr, term) f addr BVARS term
+   ELSE
+      let rec apply_var_fun_arg_at_addr =
+         APPLY_FUN_AUX apply_var_fun_arg_at_addr
+   ENDIF
+
+   let add_var_unit_arg f BVARS t =
+      f BVARS t, ()
+
+   let apply_var_fun_at_addr f addr BVARS term =
+      fst (apply_var_fun_arg_at_addr (add_var_unit_arg f) addr BVARS term)
 
    let replace_subterm_aux subterm term =
       subterm
@@ -509,3 +524,4 @@ struct
    let apply_var_fun_higher f bvars term =
       apply_var_fun_higher_term f bvars [] term
 end
+

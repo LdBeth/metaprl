@@ -37,7 +37,7 @@
  * Authors: Alexey Nogin
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Opname
 open Refine_error_sig
@@ -96,7 +96,7 @@ struct
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
       } when Opname.eq opname canon_var_opname -> v
-     | _ -> ref_raise(RefineError ("dest_canon_var", TermMatchError (t, "bad arity")))
+     | _ -> REF_RAISE(RefineError ("dest_canon_var", TermMatchError (t, "bad arity")))
 
    (*
     * Make a "canon_var".
@@ -135,14 +135,14 @@ struct
     | var::vars,bt::bterms ->
          let tail = dest_subst_args t (vars,bterms) in
          (var::fst tail),((dest_simple_bterm bt)::snd tail)
-    | _ -> ref_raise(RefineError ("dest_subst", TermMatchError (t, "bad arity")))
+    | _ -> REF_RAISE(RefineError ("dest_subst", TermMatchError (t, "bad arity")))
 
    let dest_subst t = match dest_term t with
       { term_op = { op_name = opname; op_params = [] };
         term_terms = bt::bterms
       } when Opname.eq opname subst_opname ->
          (bt.bterm, dest_subst_args t (bt.bvars,bterms))
-     | _ -> ref_raise(RefineError ("dest_subst", TermMatchError (t, "bad arity")))
+     | _ -> REF_RAISE(RefineError ("dest_subst", TermMatchError (t, "bad arity")))
 
    (*
     * Make a "subst" term.
