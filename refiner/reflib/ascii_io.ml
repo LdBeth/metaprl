@@ -529,7 +529,7 @@ struct
       end
 
    let rec out_term ctrl data t =
-      if is_so_var_term t && not (is_var_term t) then (*XXX is_var_term is temporary here *)
+      if is_so_var_term t then
          let v, conts, ts = dest_so_var t in
          let ts_names, ts_inds = List.split (List.map (out_term ctrl data) ts) in
          let ind = lookup (SOVar(v, conts, ts_inds)) in
