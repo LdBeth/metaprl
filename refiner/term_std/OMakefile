@@ -9,7 +9,5 @@ OCAMLFLAGS += -rectypes
 
 OCamlLibraryInstall(all, $(LIB), termstd, $(TERM_STD_FILES))
 
-MLZFILES = term_std_sig
-
 clean:
     $(CLEAN)

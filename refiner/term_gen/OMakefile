@@ -6,7 +6,5 @@ OCAMLINCLUDES[] +=
 
 OCamlLibraryInstall(all, $(LIB), termgen, $(TERM_GEN_FILES))
 
-MLZFILES = term_man_gen_sig
-
 clean:
     $(CLEAN)

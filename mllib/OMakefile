@@ -1,5 +1,5 @@
-# Types files
-MLZFILES[] =
+# Library files
+FILES[] =
    file_base_type
    remote_queue_sig
    remote_lazy_queue_sig
@@ -8,10 +8,6 @@ MLZFILES[] =
    memo_sig
    weak_memo_sig
    http_server_type
-
-# Library files
-FILES[] =
-   $(MLZFILES)
    ctime
    punix
    setup

@@ -1,21 +1,12 @@
-MLZFILES =\
-	rewrite_util_sig\
-	rewrite_debug_sig\
-	rewrite_compile_redex_sig\
-	rewrite_compile_contractum_sig\
-	rewrite_match_redex_sig\
-	rewrite_build_contractum_sig\
-	rewrite_meta_sig
-
-REWRITE_FILES =\
-	rewrite_util_sig\
-	rewrite_debug_sig\
-	rewrite_types\
-	rewrite_util\
-	rewrite_debug\
-	rewrite_compile_redex\
-	rewrite_compile_contractum\
-	rewrite_match_redex\
-	rewrite_build_contractum\
-	rewrite_meta\
+REWRITE_FILES[] =
+	rewrite_util_sig
+	rewrite_debug_sig
+	rewrite_types
+	rewrite_util
+	rewrite_debug
+	rewrite_compile_redex
+	rewrite_compile_contractum
+	rewrite_match_redex
+	rewrite_build_contractum
+	rewrite_meta
 	rewrite
