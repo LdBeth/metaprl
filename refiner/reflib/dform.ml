@@ -574,20 +574,20 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
          end
     | [RewriteTerm body] ->
          if !debug_dform then
-            eprintf "Dform.slot: %s%t" (short_string_of_term body) eflush;
+            eprintf "Dform.slot: term: %s%t" (short_string_of_term body) eflush;
          printer buf LTParens body
     | [RewriteString s] ->
          if !debug_dform then
-            eprintf "Dform.slot: %s%t" s eflush;
+            eprintf "Dform.slot: str: %s%t" s eflush;
          format_string buf s
     | [RewriteString "raw"; RewriteString s] ->
          if !debug_dform then
-            eprintf "Dform.slot: %s%t" s eflush;
+            eprintf "Dform.slot: raw str: %s%t" s eflush;
          format_raw_string buf s
     | [RewriteNum n] ->
          let s = Mp_num.string_of_num n in
          if !debug_dform then
-             eprintf "Dform.slot: %s%t" s eflush;
+             eprintf "Dform.slot: num: %s%t" s eflush;
          format_string buf s
     | [RewriteLevel l] ->
          if !debug_dform then
@@ -617,7 +617,7 @@ let init_list =
     "popm", [], popm;
     "pushfont", [MString "plain"], pushfont;
     "popfont", [], popfont;
-    "slot", [String "raw"; MString "s"], slot;
+    "slot", [MString "raw"; MString "s"], slot;
     "slot", [MString "s"], slot;
     "slot", [MLevel (mk_var_level_exp "l")], slot;
     "slot", [MToken "t"], slot;
