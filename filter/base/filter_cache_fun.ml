@@ -187,10 +187,8 @@ module MakeFilterCache (**)
     with type resource = MLast.ctyp resource_sig)
    (StrMarshal : MarshalSig
     with type ctyp = SigMarshal.ctyp
-    with type select = SigMarshal.select
     with type cooked = SigMarshal.cooked)
    (Base : SummaryBaseSig
-    with type select = SigMarshal.select
     with type cooked = SigMarshal.cooked) =
 struct
    (************************************************************************
@@ -215,7 +213,6 @@ struct
    type str_info  = (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) module_info
    type str_elem  = (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) summary_item
 
-   type select = Base.select
    type arg = Base.arg
 
    (*
@@ -302,7 +299,7 @@ struct
          * Keep a link to the summary base.
          *)
         base : t;
-        select : select
+        select : select_type
       }
 
    (************************************************************************
@@ -1249,22 +1246,10 @@ struct
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
                let info = inline_sig_module barg cache path in
-
-               (*
-                * The module save a PRLGrammar item only when the
-                * grammar has been modified.  Otherwise, we get the
-                * grammar from the parents.
-                *)
-               let grammar =
-                  if Filter_grammar.is_empty info.sig_grammar then
-                     summ.sig_grammar
-                  else
-                     info.sig_grammar
-               in
                   { summ with sig_resources = merge_resources info.sig_resources summ.sig_resources;
                               sig_infixes   = Infix.Set.union summ.sig_infixes info.sig_infixes;
                               sig_includes  = info :: summ.sig_includes;
-                              sig_grammar   = grammar
+                              sig_grammar   = Filter_grammar.union summ.sig_grammar info.sig_grammar
                   }
 
           | Resource (name, r) ->
@@ -1360,7 +1345,7 @@ struct
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
                let info = inline_sig_module barg cache path in
-                  cache.grammar <- info.sig_grammar;
+                  cache.grammar <- Filter_grammar.union cache.grammar info.sig_grammar;
                   summ
 
           | PRLGrammar gram ->
@@ -1476,10 +1461,29 @@ struct
          }
 
    (*
+    * Include the grammar from the .cmiz file.
+    * Also include the term declarations.
+    *)
+   let load_sig_grammar cache barg alt_select =
+      let { base = base; self = self; name = name } = cache in
+      let { lib = lib; sig_summaries = summaries } = base in
+      let info =
+         try find_summarized_sig_module cache [name] with
+            Not_found ->
+               let base_info = Base.find_match lib barg self alt_select AnySuffix in
+               let info = SigMarshal.unmarshal (Base.info lib base_info) in
+               let info = inline_sig_components false barg cache [name] base_info (info_items info) in
+                  (* This module gets listed in the inline stack *)
+                  cache.base.sig_summaries <- info :: cache.base.sig_summaries;
+                  info
+      in
+         cache.grammar <- info.sig_grammar
+
+   (*
     * When a cache is loaded follow the steps to inline
     * the file into a new cache.
     *)
-   let load base barg (name : module_name) (my_select : select) suffix =
+   let load base barg (name : module_name) (my_select : select_type) suffix =
       let path = [name] in
       let info =
          try find_summarized_str_module base path with
@@ -1510,11 +1514,12 @@ struct
            shapes         = ShapeSet.empty
          }
       in
-         if !debug_filter_cache then
-            begin
-               eprintf "Filter_cache.load: loaded %s%t" name eflush;
-               eprint_info info'
-            end;
+         if !debug_filter_cache then begin
+            eprintf "Filter_cache.load: loaded %s%t" name eflush;
+            eprint_info info'
+         end;
+         if my_select = ImplementationType then
+            load_sig_grammar cache barg InterfaceType;
          inline_str_components barg cache [String.capitalize name] info (info_items info');
          cache
 
@@ -1544,33 +1549,6 @@ struct
                Base.find_match lib barg self alt_select AnySuffix
       in
          SigMarshal.unmarshal (Base.info lib info)
-
-   (*
-    * Include the grammar from the .cmiz file.
-    * Also include the term declarations.
-    *)
-   let load_sig_grammar cache barg alt_select =
-      let { base = base; self = self; name = name } = cache in
-      let { lib = lib; sig_summaries = summaries } = base in
-      let info =
-         try find_summarized_sig_module cache [name] with
-            Not_found ->
-               let base_info = Base.find_match lib barg self alt_select AnySuffix in
-               let info = SigMarshal.unmarshal (Base.info lib base_info) in
-               let info = inline_sig_components false barg cache [name] base_info (info_items info) in
-                  (* This module gets listed in the inline stack *)
-                  cache.base.sig_summaries <- info :: cache.base.sig_summaries;
-                  info
-      in
-      let loc =
-         { Lexing.pos_fname = name ^ ".mli";
-           Lexing.pos_lnum = 0;
-           Lexing.pos_bol = 0;
-           Lexing.pos_cnum = 0
-         }
-      in
-      let loc = loc, loc in
-         cache.grammar <- info.sig_grammar
 
    (*
     * Check the implementation with its interface.

@@ -375,7 +375,6 @@ module MakeFilter (**)
     with type str_ctyp  = Info.ctyp
     with type str_item  = Info.item
     with type str_resource = Info.resource
-    with type select    = select_type
     with type arg       = unit) =
 struct
    (*
@@ -383,7 +382,7 @@ struct
     *)
    type t =
       { cache           : FilterCache.info;
-        select          : FilterCache.select;
+        select          : select_type;
         name            : string; (* Filename, must be globally unique *)
         group           : string; (* e.g. "itt" *)
         groupdsc        : string; (* e.g. "Constructive Type Theory" *)

@@ -53,7 +53,9 @@ let _ =
  *)
 module MakeSummaryBase
    (Address : AddressSig)
-   (FileBase : FileBaseSig with type cooked = Address.t) =
+   (FileBase : FileBaseSig
+    with type select = select_type
+    with type cooked = Address.t) =
 struct
    (************************************************************************
     * TYPES                                                                *

@@ -47,10 +47,8 @@ module MakeFilterCache
       with type resource = MLast.ctyp resource_sig)
    (StrMarshal : MarshalSig
       with type ctyp = SigMarshal.ctyp
-      with type select = SigMarshal.select
       with type cooked = SigMarshal.cooked)
    (Base : SummaryBaseSig
-           with type select = SigMarshal.select
            with type cooked = SigMarshal.cooked) :
    SummaryCacheSig
    with type sig_proof  = SigMarshal.proof
@@ -62,7 +60,6 @@ module MakeFilterCache
    with type str_expr   = StrMarshal.expr
    with type str_item   = StrMarshal.item
    with type str_resource = StrMarshal.resource
-   with type select     = Base.select
    with type arg        = Base.arg
 
 (*

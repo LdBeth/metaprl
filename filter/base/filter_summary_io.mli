@@ -42,10 +42,10 @@ open Filter_summary_type
 module MakeSummaryBase
    (Address : AddressSig)
    (FileBase : FileBaseSig
+               with type select = select_type
                with type cooked = Address.t) :
       (SummaryBaseSig
        with type cooked = FileBase.cooked
-       with type select = FileBase.select
        with type arg = FileBase.arg)
 
 (*

@@ -53,6 +53,13 @@ type module_name = string
 type loc = MLast.loc
 
 (*
+ * For this compiler, we only use two summaries.
+ *)
+type select_type =
+   InterfaceType
+ | ImplementationType
+
+(*
  * This module just provides subaddressing of its objects.
  *)
 module type AddressSig =
@@ -71,12 +78,10 @@ end
 module type SummaryBaseSig =
 sig
    (*
-    * select: a type of tags for typecase on the info
     * info: an abstract type for represeting modules in this base
     * t: the database type
     *)
    type cooked
-   type select
    type arg
    type info
    type t
@@ -86,13 +91,13 @@ sig
    val clear           : t -> unit
    val set_path        : t -> string list -> unit
    val set_magic       : t -> info -> int -> unit
-   val create_info     : t -> select -> dir_name -> file_name -> info
+   val create_info     : t -> select_type -> dir_name -> file_name -> info
    val remove_info     : t -> info -> unit
 
    (* Loading and saving *)
-   val find            : t -> arg -> module_path -> select -> alt_suffix -> info
-   val find_file       : t -> arg -> module_path -> select -> alt_suffix -> info
-   val find_match      : t -> arg -> info -> select -> alt_suffix -> info
+   val find            : t -> arg -> module_path -> select_type -> alt_suffix -> info
+   val find_file       : t -> arg -> module_path -> select_type -> alt_suffix -> info
+   val find_match      : t -> arg -> info -> select_type -> alt_suffix -> info
    val save            : t -> arg -> info -> alt_suffix -> unit
    val save_if_newer   : t -> arg -> info -> alt_suffix -> unit
    val save_if_missing : t -> arg -> info -> alt_suffix -> unit
@@ -105,7 +110,7 @@ sig
    val pathname        : t -> info -> module_path
    val root            : t -> info -> info
    val file_name       : t -> info -> file_name
-   val type_of         : t -> info -> select
+   val type_of         : t -> info -> select_type
 end
 
 (*
@@ -122,8 +127,7 @@ sig
    type resource
 
    (* Type and id for this module *)
-   type select
-   val select : select
+   val select : select_type
 
    (* Marshaling *)
    type cooked
@@ -157,7 +161,6 @@ module type SummaryCacheSig =
 sig
    (*
     * proof, ctyp, expr, item: parameters to module_info
-    * select: a type of tags for typecase on the info
     * info: an abstract type for represeting modules in this base
     * t: the database type
     *)
@@ -177,7 +180,6 @@ sig
    type str_info = (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) module_info
 
    type arg
-   type select
    type info
    type t
 
@@ -188,12 +190,12 @@ sig
    val set_path       : t -> string list -> unit
 
    (* Loading *)
-   val create_cache   : t -> module_name -> select -> info
-   val load           : t -> arg -> module_name -> select -> alt_suffix -> info
+   val create_cache   : t -> module_name -> select_type -> info
+   val load           : t -> arg -> module_name -> select_type -> alt_suffix -> info
    val filename       : t -> info -> string
 
    (* Module operations *)
-   val check          : info -> arg -> select -> sig_info
+   val check          : info -> arg -> select_type -> sig_info
    val parse_comments : info -> (loc -> term -> term) -> unit
    val copy_proofs    : info -> arg -> (str_proof -> str_proof -> str_proof) -> unit
    val revert_proofs  : info -> arg -> unit
@@ -203,7 +205,7 @@ sig
    (* Access *)
    val info           : info -> str_info
    val name           : info -> string
-   val sig_info       : info -> arg -> select -> sig_info
+   val sig_info       : info -> arg -> select_type -> sig_info
    val sub_info       : info -> module_path -> sig_info
 
    (* Expand a partial path specification to a complete one *)
@@ -269,7 +271,7 @@ sig
    (* Grammar functions *)
    type precedence
 
-   val load_sig_grammar  : info -> arg -> select -> unit
+   val load_sig_grammar  : info -> arg -> select_type -> unit
 
    val add_token         : info -> opname -> symbol -> string -> term option -> unit
    val add_token_pair    : info -> opname -> symbol -> string -> string -> term option -> unit
@@ -287,13 +289,6 @@ sig
    val get_grammar       : info -> Filter_grammar.t
    val set_grammar       : info -> unit  (* Set the grammar to be used by quotations *)
 end
-
-(*
- * For this compiler, we only use two summaries.
- *)
-type select_type =
-   InterfaceType
- | ImplementationType
 
 (*
  * Proofs are:
@@ -326,7 +321,6 @@ sig
       with type str_expr   = MLast.expr
       with type str_item   = MLast.sig_item
       with type str_resource = MLast.ctyp resource_sig
-      with type select     = select_type
       with type arg        = t
 
    module StrFilterCache :
@@ -340,7 +334,6 @@ sig
       with type str_expr   = MLast.expr
       with type str_item   = MLast.str_item
       with type str_resource = (MLast.ctyp, MLast.expr) resource_str
-      with type select     = select_type
       with type arg        = t
 end
 
