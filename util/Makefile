@@ -1,4 +1,5 @@
 ROOT = ..
+DIR = util
 OCAMLC = ocamlc
 OCAMLOPT = ocamlopt
 OCAMLLEX = ocamllex
@@ -17,7 +18,7 @@ ocamldep: $(OCAMLDEP)
 	$(OCAMLOPT) -o $@ $(OCAMLDEP)
 
 $(ROOT)/bin/ocamldep: ocamldep
-	/bin/cp -pf ocamldep $@
+	ln -sf $(ROOT)/$(DIR)/ocamldep $@
 
 %.cmx: %.ml
 	$(OCAMLOPT) -c $*.ml
