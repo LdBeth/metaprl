@@ -265,14 +265,15 @@ let push_proof ped pf addr =
    if ped.ped_proof != pf then begin
       ped.ped_undo <- (ped.ped_proof, addr) :: ped.ped_undo;
       ped.ped_redo <- [];
-      ped.ped_proof <- pf
-   end
+      ped.ped_proof <- pf;
+   end;
+   true
 
 (*
  * This is the function we pass to the proof module to track updates.
  *)
 let update_fun ped addr pf =
-   push_proof ped pf addr;
+   ignore (push_proof ped pf addr);
    let post () =
       ped.ped_proof
    in
@@ -351,7 +352,7 @@ let edit_info_of_ped ped addr =
  *)
 let set_goal ped mseq =
    let proof = proof_of_ped ped in
-      push_proof ped (Proof.set_goal (update_fun ped []) proof [] mseq) []
+      ignore(push_proof ped (Proof.set_goal (update_fun ped []) proof [] mseq) [])
 
 (*
  * Move down the undo stack.
@@ -380,22 +381,6 @@ let check_addr_ped ped addr =
    ignore (Proof.index (proof_of_ped ped) addr)
 
 (*
- * Refinement, and undo lists.
- * A finite number of undo's are allowed.
- * After a refine_ped or nop_ped, the undo stack gets reset.
- * The nop_ped does nothing but reset the undo stack.
- *)
-let refine_ped ped addr text ast tac =
-   let proof = Proof.refine (update_fun ped addr) (proof_of_ped ped) addr text ast tac in
-      push_proof ped proof addr
-
-(*
- * Fold the current subgoals into a new proof node.
- *)
-let kreitz_ped ped addr =
-   push_proof ped (Proof.kreitz (update_fun ped addr) (proof_of_ped ped) addr) addr
-
-(*
  * We keep a global copy/paste buffer.
  *)
 let copy_entry =
@@ -403,43 +388,9 @@ let copy_entry =
    let fork l = ref !l in
       State.private_val "Proof_edit.copy" default fork
 
-let copy_ped ped addr s =
-   State.write copy_entry (fun copy_buffer ->
-         let proof = Proof.index (proof_of_ped ped) addr in
-            begin
-               try copy_buffer := Lm_list_util.assoc_replace !copy_buffer s proof with
-                  Not_found ->
-                     copy_buffer := (s, proof) :: !copy_buffer
-            end)
-
 let paste_is_enabled ped s =
    State.read copy_entry (fun copy_buffer ->
          List.mem_assoc s !copy_buffer)
-
-let paste_ped ped addr s =
-   let proof2 =
-      State.read copy_entry (fun copy_buffer ->
-            try List.assoc s !copy_buffer with
-               Not_found ->
-                  raise (RefineError ("paste", StringStringError ("no proof in buffer", s))))
-   in
-   let proof1 = proof_of_ped ped in
-   let proof = Proof.paste (update_fun ped addr) proof1 addr proof2 in
-      push_proof ped proof addr
-
-let cp_ped ped addr from_addr to_addr =
-   let proof = proof_of_ped ped in
-   let proof = Proof.copy (update_fun ped addr) proof from_addr to_addr in
-      push_proof ped proof addr
-
-let make_assum_ped ped addr =
-   push_proof ped (Proof.make_assum (update_fun ped addr) (proof_of_ped ped) addr) addr
-
-let clean_ped ped addr =
-   push_proof ped (Proof.clean (update_fun ped addr) (proof_of_ped ped) addr) addr
-
-let squash_ped ped addr =
-   push_proof ped (Proof.squash (update_fun ped addr) (proof_of_ped ped) addr) addr
 
 let is_enabled_ped ped addr = function
    MethodRefine ->
@@ -477,13 +428,11 @@ let expand_ped window ped addr =
  * Check a proof.
  *)
 let refiner_extract_of_ped window ped =
-   if status_of_ped ped [] <> Proof.StatusComplete then
-      expand_ped window ped [];
-   Proof.refiner_extract_of_proof (proof_of_ped ped)
+   ((status_of_ped ped [] <> Proof.StatusComplete) && (expand_ped window ped [])),
+   (Proof.refiner_extract_of_proof (proof_of_ped ped))
 
 let check_ped window refiner opname ped =
-   if status_of_ped ped [] <> Proof.StatusComplete then
-      expand_ped window ped [];
+   ((status_of_ped ped [] <> Proof.StatusComplete) && (expand_ped window ped [])),
    match status_of_ped ped [] with
       Proof.StatusBad
     | Proof.StatusIncomplete
@@ -506,23 +455,41 @@ let check_ped window refiner opname ped =
  *)
 let interpret window ped addr = function
    ProofRefine (text, expr, tac) ->
-      refine_ped ped addr text expr tac
+      let proof = Proof.refine (update_fun ped addr) (proof_of_ped ped) addr text expr tac in
+         push_proof ped proof addr
  | ProofKreitz ->
-      kreitz_ped ped addr
+      push_proof ped (Proof.kreitz (update_fun ped addr) (proof_of_ped ped) addr) addr
  | ProofCopy s ->
-      copy_ped ped addr s
+      State.write copy_entry (fun copy_buffer ->
+            let proof = Proof.index (proof_of_ped ped) addr in
+               begin
+                  try copy_buffer := Lm_list_util.assoc_replace !copy_buffer s proof with
+                     Not_found ->
+                        copy_buffer := (s, proof) :: !copy_buffer
+               end);
+      false
  | ProofPaste s ->
-      paste_ped ped addr s
+      let proof2 =
+         State.read copy_entry (fun copy_buffer ->
+               try List.assoc s !copy_buffer with
+                  Not_found ->
+                     raise (RefineError ("paste", StringStringError ("no proof in buffer", s))))
+      in
+      let proof1 = proof_of_ped ped in
+      let proof = Proof.paste (update_fun ped addr) proof1 addr proof2 in
+         push_proof ped proof addr;
  | ProofCp (from_addr, to_addr) ->
-      cp_ped ped addr from_addr to_addr
+      let proof = proof_of_ped ped in
+      let proof = Proof.copy (update_fun ped addr) proof from_addr to_addr in
+         push_proof ped proof addr
  | ProofExpand ->
       expand_ped window ped addr
  | ProofMakeAssum ->
-      make_assum_ped ped addr
+      push_proof ped (Proof.make_assum (update_fun ped addr) (proof_of_ped ped) addr) addr
  | ProofClean ->
-      clean_ped ped addr
+      push_proof ped (Proof.clean (update_fun ped addr) (proof_of_ped ped) addr) addr
  | ProofSquash ->
-      squash_ped ped addr
+      push_proof ped (Proof.squash (update_fun ped addr) (proof_of_ped ped) addr) addr
 
 (************************************************************************
  * Display.

@@ -171,6 +171,8 @@ type edit_info =
      edit_extras : tactic_arg list
    }
 
+type was_modified = bool
+
 (*
  * An editable object.
  * Whenever the first arg is the string list, it is the cwd relative to the "mount point"
@@ -198,11 +200,11 @@ type edit_object =
 
      (* Proof operations *)
      edit_save        : unit -> unit;
-     edit_interpret   : string list -> proof_command -> unit;
+     edit_interpret   : string list -> proof_command -> was_modified;
      edit_undo        : string list -> string list; (* Returns the new (old, actually) relative path *)
      edit_redo        : string list -> string list; (* Returns the new relative path *)
-     edit_get_extract : unit -> Refine.extract;
-     edit_check       : unit -> ref_status;
+     edit_get_extract : unit -> was_modified * Refine.extract;
+     edit_check       : unit -> was_modified * ref_status;
 
      (* State checking *)
      edit_is_enabled : string list -> method_name -> bool
@@ -236,7 +238,7 @@ type shell_commands =
      mutable view : LsOptionSet.t -> unit;
      mutable expand : unit -> unit;
      mutable expand_all : unit -> unit;
-     mutable apply_all : (edit_object -> dform_base -> unit) -> bool -> bool -> unit;
+     mutable apply_all : (edit_object -> dform_base -> was_modified) -> bool -> bool -> unit;
      mutable interpret : proof_command -> unit;
      mutable undo : unit -> unit;
      mutable redo : unit -> unit;

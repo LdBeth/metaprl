@@ -405,7 +405,7 @@ let check shell =
 let expand shell =
    let start = Unix.times () in
    let start_time = Unix.gettimeofday () in
-   let () = shell.shell_proof.edit_interpret shell.shell_subdir ProofExpand in
+   let () = if shell.shell_proof.edit_interpret shell.shell_subdir ProofExpand then touch shell in
    let finish = Unix.times () in
    let finish_time = Unix.gettimeofday () in
       display_proof shell LsOptionSet.empty;
@@ -419,10 +419,10 @@ let expand shell =
 
 let refine shell tac =
    let str, ast = Shell_state.get_tactic () in
-      touch shell;
       if !debug_refine then
          eprintf "Starting refinement%t" eflush;
-      shell.shell_proof.edit_interpret shell.shell_subdir (ProofRefine(str, ast, tac));
+      if shell.shell_proof.edit_interpret shell.shell_subdir (ProofRefine(str, ast, tac)) then
+         touch shell;
       if !debug_refine then
          eprintf "Displaying proof%t" eflush;
       if Shell_state.is_interactive () then
@@ -436,23 +436,9 @@ let refine shell tac =
 let goal shell =
    (shell.shell_proof.edit_info shell.shell_subdir).edit_goal
 
-let interpret_modifies = function
-   ProofRefine _
- | ProofKreitz
- | ProofPaste _
- | ProofMakeAssum
- | ProofExpand
- | ProofClean
- | ProofSquash
- | ProofCp _ ->
-      true
- | ProofCopy _ ->
-      false
-
 let interpret shell command =
-   if interpret_modifies command then
+   if shell.shell_proof.edit_interpret shell.shell_subdir command then
       touch shell;
-   shell.shell_proof.edit_interpret shell.shell_subdir command;
    display_proof shell LsOptionSet.empty
 
 (************************************************************************
@@ -830,9 +816,9 @@ let rec apply_all parse_arg shell f (time : bool) (clean_res : bool) =
       (try Shell_state.set_so_var_context (Some (item.edit_get_terms ())) with
           _ ->
              ());
-      (try f item (get_db shell) with
-          _ ->
-             ());
+      if try f item (get_db shell) with _ -> false then
+         touch shell;
+
       if clean_res then
          Mp_resource.clear_results (mod_name, name)
    in
@@ -920,7 +906,8 @@ let extract parse_arg shell path () =
    let dir = shell.shell_fs, shell.shell_subdir in
       try
          chdir parse_arg shell false false path;
-         let res = shell.shell_proof.edit_get_extract () in
+         let modified, res = shell.shell_proof.edit_get_extract () in
+            if modified then touch shell;
             chdir parse_arg shell false false dir;
             res
       with

@@ -71,7 +71,7 @@ let protocol_name =
       "http"
 
 let cli_flag = Env_arg.bool "cli" false "use command-line interface instead of the browser one" Env_arg.set_bool_bool
-let batch_flag = Env_arg.bool "batch" false "supress the interactive prompting (implies -cli)" Env_arg.set_bool_bool
+let batch_flag = Env_arg.bool "batch" false "supress interactive prompting and auto-backups (implies -cli)" Env_arg.set_bool_bool
 let cli_flag () = !cli_flag or !batch_flag
 
 let browser_port_name = "port"

@@ -300,7 +300,8 @@ struct
          synchronize (fun shell ->
                let objs = ref [] in
                let f obj _ =
-                  objs := obj.edit_get_contents shell.shell_subdir:: !objs
+                  objs := obj.edit_get_contents shell.shell_subdir:: !objs;
+                  false
                in
                   chdir parse_arg shell false false (module_dir mname);
                   apply_all parse_arg shell f false false;
@@ -404,7 +405,7 @@ struct
                let expr = ShellP4.parse_string str in
                let tac = ShellP4.eval_tactic expr in
                let addr = List.map string_of_int addr in
-                  proof.edit_interpret addr (ProofRefine (str, expr, tac));
+                  if proof.edit_interpret addr (ProofRefine (str, expr, tac)) then touch shell;
                   let { edit_goal = goal;
                         edit_subgoals = subgoals;
                         edit_extras = extras
@@ -583,7 +584,7 @@ struct
              *)
             ShellP4.main ();
             Shell_current.flush ();
-            Top.backup_all ()
+            if not (!Shell_state.batch_flag) then Top.backup_all ()
    end
 end
 

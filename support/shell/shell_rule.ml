@@ -237,10 +237,10 @@ let rec edit pack parse_arg name window obj =
    let edit_check () =
       match obj.rule_ped with
          Primitive _ ->
-            RefPrimitive
+            false, RefPrimitive
        | Derived _
        | Incomplete ->
-            RefIncomplete (0, 0)
+            false, RefIncomplete (0, 0)
        | Interactive ped ->
             Proof_edit.check_ped window (Package_info.get_refiner pack) (make_opname [obj.rule_name; Package_info.name pack]) ped
    in

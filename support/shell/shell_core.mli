@@ -75,7 +75,7 @@ val clear_view_options : shell -> string -> unit
 
 val view : parse_arg -> shell -> LsOptionSet.t -> unit
 val chdir : parse_arg -> shell -> bool -> bool -> shell_dir -> unit
-val apply_all : parse_arg -> shell -> (edit_object -> dform_base -> unit) -> bool -> bool -> unit
+val apply_all : parse_arg -> shell -> (edit_object -> dform_base -> was_modified) -> bool -> bool -> unit
 val cd : parse_arg -> shell -> string -> string
 val root : parse_arg -> shell -> string
 val refresh : parse_arg -> shell -> unit
@@ -103,7 +103,6 @@ val create_ax_statement : parse_arg -> shell -> term -> string -> unit
 val check : shell -> unit
 val expand : shell -> unit
 val expand_all : parse_arg -> shell -> unit
-val interpret_modifies : proof_command -> bool
 val interpret : shell -> proof_command -> unit
 val refine : shell -> tactic -> unit
 

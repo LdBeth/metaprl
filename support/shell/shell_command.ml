@@ -204,8 +204,9 @@ let status item =
 let status_all () =
    let f item db =
       eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents [] in name) eflush;
-      begin try item.edit_interpret [] ProofExpand with Invalid_argument _ | _ -> () end;
-      status item;
+      let modified = try item.edit_interpret [] ProofExpand with Invalid_argument _ | _ -> false in
+         status item;
+         modified
    in
       apply_all f true true
 
@@ -218,8 +219,9 @@ let check_all () =
    let check item db =
       let name, _, _, _ = item.edit_get_contents [] in
       let buf = new_buffer () in
+      let mofidied, status = item.edit_check () in
          Dform.format_term db buf <:con< refiner_status[$name$:s] >>;
-         begin match item.edit_check () with
+         begin match status with
             RefPrimitive ->
                format_string buf "is a primitive axiom"
           | RefIncomplete (c1, c2) ->
@@ -237,7 +239,8 @@ let check_all () =
          format_popm buf;
          format_ezone buf;
          format_newline buf;
-         print_rbuffer buf
+         print_rbuffer buf;
+         mofidied
    in
       apply_all check true true
 
