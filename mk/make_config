@@ -7,6 +7,7 @@
 # Function to generate the config file
 #
 MakeConfig(name) =
+    fullname = $(in $(ROOT), $(file $(name)))
     CONFIG1 = $"""
 # Main MetaPRL configuration file.
 
@@ -154,13 +155,13 @@ SLOPPY_DEPENDENCIES = $(SLOPPY_DEPENDENCIES)
     # Save the text in the output file
     exists = $(file-exists $(name))
     if $(exists)
-        eprintln(Updating the $(name) file.)
+        eprintln(Updating the $(fullname) file.)
     fp = $(fopen $(name), w)
     fprint($(fp), $(CONFIG))
     close($(fp))
 
     # If it was just created, ask the user to edit it
     if $(not $(exists))
-        eprintln(A new config file $(name) was created for you.)
+        eprintln(A new config file $(fullname) was created for you.)
         eprintln(You should edit it before continuing.)
         exit(1)
