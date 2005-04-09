@@ -147,6 +147,8 @@ let format_match_type db buf printers = function
       format_space buf;
       printers.format_term db buf t1;
       format_space buf;
+      format_string buf "==";
+      format_space buf;
       printers.format_term db buf t2
  | BTermMatch bt ->
       format_string buf "BTermMatch:";
