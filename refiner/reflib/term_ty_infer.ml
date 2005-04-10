@@ -800,8 +800,9 @@ let type_subst v t ty =
             TypeSCVar (List.map subst cvars, List.map subst args, subst ty_hyp)
        | TypeHyp (ty_var, ty_hyp) ->
             TypeHyp (subst ty_var, subst ty_hyp)
-       | TypeExists (v, ty_var, ty) ->
-            TypeExists (v, subst ty_var, subst ty)
+       | TypeExists (v', ty_var, ty) ->
+            let ty = if Lm_symbol.eq v' v then ty else subst ty in
+               TypeExists (v, subst ty_var, subst ty)
        | TypeSequent (ty_hyp, ty_concl, ty_seq) ->
             TypeSequent (subst ty_hyp, subst ty_concl, subst ty_seq)
    in
