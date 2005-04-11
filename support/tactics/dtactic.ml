@@ -93,6 +93,11 @@ doc <:doc<
    The @tt[CondMustComplete] option is a conditional version of @tt[AutoMustComplete];
    it is used to pass in a predicate controlling when to activate the @tt[AutoMustComplete].
 
+   If an @tt[intro] annotation is used on a rule that has a conclusion of the form
+   <<sequent [dummy_arg] { <H>; x: 'T; <J['x]> >- 'C['x] }>> where <<'C['x]>> is not
+   a second-order variable, the rule is added to the @hrefresource[intro] with
+   the @hreftactic[onSomeHypT] tactical applied to it.
+
    The @hrefresource[elim] resource options are defined with the following type:
 
    @begin[center]
@@ -167,6 +172,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermSubst
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
@@ -303,6 +309,9 @@ let rec get_sel_arg = function
  | [] ->
       None
 
+let one_rw_arg i =
+   { arg_ints = [| i |]; arg_addrs = [||] }
+
 (*
  * Improve the intro resource from a rule.
  *)
@@ -311,14 +320,8 @@ let process_intro_resource_annotation name args term_args statement (pre_tactic,
       raise (Invalid_argument (sprintf "intro annotation: %s: context arguments not supported yet" name));
    let assums, goal = unzip_mfunction statement in
    let goal = TermMan.explode_sequent goal in
-   let t =
-      match SeqHyp.to_list goal.sequent_hyps with
-         [ Context _ ] ->
-            goal.sequent_concl
-       | _ ->
-            raise (Invalid_argument (sprintf "intro annotation: %s: must be an introduction rule" name))
-   in
-   let term_args =
+   let t = goal.sequent_concl in
+   let term_args_fun =
       match term_args with
          [] ->
             (fun _ -> [])
@@ -352,31 +355,36 @@ let process_intro_resource_annotation name args term_args statement (pre_tactic,
                                  raise (RefineError (name, StringIntError ("wrong number of arguments", length')));
                               args)
    in
-      match args.spec_ints with
-         [||] ->
-            let tac = funT (fun p -> Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args (term_args p)) in
-            let sel_opts = get_sel_arg options in
-            let rec auto_aux = function
-               [] ->
-                  [t, (name, sel_opts, (if assums = [] then AutoTrivial else AutoNormal), tac)]
-             | AutoMustComplete :: _ ->
-                  [t, (name, sel_opts, AutoComplete, tac)]
-             | CondMustComplete f :: _ ->
-                  let auto_exn = RefineError("intro_annotation: " ^ name, StringError("not appropriate in weakAutoT")) in
-                  let tac' =
-                     funT (fun p ->
-                        if f p then raise auto_exn
-                        else Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args (term_args p))
-                  in [
-                     t, (name, sel_opts, AutoNormal, tac');
-                     t, (name, sel_opts, AutoComplete, tac)
-                  ]
-             | _ :: tl ->
-                  auto_aux tl
-            in
-               auto_aux options
+   let tac =
+      match args.spec_ints, SeqHyp.to_list goal.sequent_hyps with
+         [||], [Context _] ->
+            if term_args = [] then  (* optimization *)
+               Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args []
+            else
+               funT (fun p -> Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args (term_args_fun p))
+       | [|_|], [ Context _; Hypothesis _; Context _ ] when not (is_so_var_term t) ->
+            onSomeHypT (argfunT (fun i p -> Tactic_type.Tactic.tactic_of_rule pre_tactic (one_rw_arg i) (term_args_fun p)))
        | _ ->
             raise (Invalid_argument (sprintf "Dtactic.intro: %s: not an introduction rule" name))
+   in
+      let sel_opts = get_sel_arg options in
+      let rec auto_aux = function
+         [] ->
+            [t, (name, sel_opts, (if assums = [] then AutoTrivial else AutoNormal), tac)]
+       | AutoMustComplete :: _ ->
+            [t, (name, sel_opts, AutoComplete, tac)]
+       | CondMustComplete f :: _ ->
+            let auto_exn = RefineError("intro_annotation: " ^ name, StringError("not appropriate in weakAutoT")) in
+            let tac' =
+               funT (fun p -> if f p then raise auto_exn else tac)
+            in [
+               t, (name, sel_opts, AutoNormal, tac');
+               t, (name, sel_opts, AutoComplete, tac)
+            ]
+       | _ :: tl ->
+            auto_aux tl
+      in
+         auto_aux options
 
 (*
  * Compile an elimination tactic.
@@ -446,7 +454,7 @@ let process_elim_resource_annotation name args term_args statement (pre_tactic, 
                   argfunT (fun i p ->
                      if !debug_dtactic then
                         eprintf "dT elim: trying %s%t" name eflush;
-                     Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } (term_args i p))
+                     Tactic_type.Tactic.tactic_of_rule pre_tactic (one_rw_arg i) (term_args i p))
 
              | [| _ |], Some thinT ->
                   let rec find_thin_num_aux hyps len i =
@@ -476,7 +484,7 @@ let process_elim_resource_annotation name args term_args statement (pre_tactic, 
                   argfunT (fun i p ->
                      if !debug_dtactic then
                         eprintf "dT elim: trying %s%t" name eflush;
-                     let tac = Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } (term_args i p)
+                     let tac = Tactic_type.Tactic.tactic_of_rule pre_tactic (one_rw_arg i) (term_args i p)
                      in
                         if get_thinning_arg p then
                            tac thenT tryT (thinT (i + thin_incr))
