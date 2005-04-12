@@ -45,6 +45,8 @@ open Tactic_type
 
 open Term_hash_code
 
+exception PrecNotFound of shape
+
 type quotation_expander = string -> string -> term
 
 (*
@@ -623,7 +625,11 @@ let prec_min = Parser.prec_min
 let prec_max = Parser.prec_max
 
 let find_prec gram v =
-   Parser.find_prec gram.gram_parser v
+   try
+      Parser.find_prec gram.gram_parser v
+   with
+      Not_found ->
+         raise (PrecNotFound v)
 
 let create_prec_new gram assoc =
    let parse, pre = Parser.create_prec_gt gram.gram_parser prec_min assoc in

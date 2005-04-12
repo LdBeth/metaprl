@@ -1015,21 +1015,15 @@ struct
    let input_prec proc loc assoc tl rel =
       let info = proc.cache in
       let pre =
-         try
-            match rel with
-               PrecEqual t2 ->
-                  FilterCache.find_input_prec info t2
-             | PrecLessThan t2 ->
-                  FilterCache.input_prec_lt info t2 assoc
-             | PrecGreaterThan t2 ->
-                  FilterCache.input_prec_gt info t2 assoc
-             | PrecNone ->
-                  FilterCache.input_prec_new info assoc
-         with
-            Not_found ->
-               Stdpp.raise_with_loc loc (Failure "precedence not found")
-          | exn ->
-               Stdpp.raise_with_loc loc exn
+         match rel with
+            PrecEqual t2 ->
+               FilterCache.find_input_prec info t2
+          | PrecLessThan t2 ->
+               FilterCache.input_prec_lt info t2 assoc
+          | PrecGreaterThan t2 ->
+               FilterCache.input_prec_gt info t2 assoc
+          | PrecNone ->
+               FilterCache.input_prec_new info assoc
       in
          List.iter (FilterCache.add_input_prec info pre) tl
 

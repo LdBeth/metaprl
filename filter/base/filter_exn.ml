@@ -33,11 +33,13 @@ open Lm_rformat
 open Lm_rprintf
 open Lexing
 
+open Refiner.Refiner.TermShape
 open Dform
 open Simple_print.SimplePrint
 open File_type_base
 
 open Filter_ocaml
+open Filter_grammar
 open Filter_type
 
 (*
@@ -114,6 +116,16 @@ let rec format_exn db buf exn =
          format_string buf "Parse error:";
          format_space buf;
          format_string buf s
+    | PrecNotFound v ->
+         format_szone buf;
+         format_pushm buf 3;
+         format_string buf "Precedence not found:";
+         format_hspace buf;
+         format_string buf (string_of_shape v);
+         format_hspace buf;
+         format_string buf "(have you forgotten to write a lex_prec with this precedence on the left hand side?)";
+         format_popm buf;
+         format_ezone buf;
     | IterfImplemMismatch s ->
          format_pushm buf 3;
          format_string buf "Mismatch between the interface and implementation:";
