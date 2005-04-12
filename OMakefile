@@ -550,6 +550,17 @@ PRLEnv() =
    OCAMLDEPFLAGS += -prl
 
    #
+   # Make sure we do not try falling back to an OCaml rule for an .ml without an .mli
+   # See also:
+   #   http://bugzilla.metaprl.org/show_bug.cgi?id=90
+   #   http://bugzilla.metaprl.org/show_bug.cgi?id=420
+   #
+   %.cmx %.o: %.ml
+      @echo $(quote *** Error: MetaPRL file $(in $(ROOT), $(file $<)) $'does not have
+***        a corresponding' $(in $(ROOT), $(file $*.mli)))
+      exit 1
+
+   #
    # For theory files, generate intermediate .ppo files
    #
    %.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb
