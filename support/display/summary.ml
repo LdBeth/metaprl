@@ -260,11 +260,12 @@ doc <:doc<
    @tt{meta_labeled} term is used to add a label to a meta-term.
    @end[doc]
 >>
-declare "meta_theorem"{'A : Dform} : Dform
-declare "meta_implies"{'A : Dform; 'B : Dform} : Dform
-declare "meta_function"{'arg : Dform; 'A : Dform; 'B : Dform} : Dform
-declare "meta_iff"{'A : Dform; 'B : Dform} : Dform
-declare "meta_labeled"[label:s]{'meta : Dform} : Dform
+declare typeclass MTerm -> Dform
+declare "meta_theorem"{'A : Judgment} : MTerm
+declare "meta_implies"{'A : MTerm; 'B : MTerm} : MTerm
+declare "meta_function"{'arg : Judgment; 'A : MTerm; 'B : MTerm} : MTerm
+declare "meta_iff"{'A : 'a; 'B : 'a} : MTerm
+declare "meta_labeled"[label:s]{'meta : MTerm} : MTerm
 doc <:doc< @docoff >>
 
 declare "int_param"[name:v] : Dform
