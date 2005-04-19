@@ -728,17 +728,25 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
     | [RewriteNum ((RewriteMetaParam _) as s)]
     | [RewriteToken ((RewriteMetaParam _) as s)]
     | [RewriteShape ((RewriteMetaParam _) as s)] ->
+         let s = string_of_param s in
          if !debug_dform then
-            eprintf "Dform.slot: str: %s%t" (string_of_param s) eflush;
-         format_string buf (string_of_param s)
+            eprintf "Dform.slot: str: %s%t" s eflush;
+         format_string buf s
     | [RewriteString (RewriteParam "raw"); RewriteString s] ->
+         let s = string_of_param s in
          if !debug_dform then
-            eprintf "Dform.slot: raw str: %s%t" (string_of_param s) eflush;
-         (*
-          * NOTE: (nogin) We need the string _as is_, otherwise TeX and other forms of display
-          * will completely break!
-          *)
-         format_raw_string buf (string_of_param s)
+            eprintf "Dform.slot: raw str: %s%t" s eflush;
+         format_raw_string buf s
+    | [RewriteString (RewriteParam "esc"); RewriteString s] ->
+         let s = string_of_param s in
+         if !debug_dform then
+            eprintf "Dform.slot: escaped str: %s%t" s eflush;
+         format_string buf (String.escaped s)
+    | [RewriteString (RewriteParam "cesc"); RewriteString s] ->
+         let s = string_of_param s in
+         if !debug_dform then
+            eprintf "Dform.slot: C escaped str: %s%t" s eflush;
+         format_string buf (Lm_string_util.c_escaped s)
     | [RewriteToken (RewriteParam opname)] ->
          if !debug_dform then
             eprintf "Dform.slot: token: %s%t" (string_of_opname opname) eflush;
