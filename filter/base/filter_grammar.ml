@@ -263,7 +263,7 @@ type t =
    { mutable gram_info : info }
 (* %%MAGICEND%% *)
 
-let gram_magic = 0x30da61ba
+let gram_magic = 0x2b5e73c6
 
 let empty_name = ".empty"
 
@@ -1030,26 +1030,25 @@ let parse parse_quotation gram start loc s =
 
    (* Lex a matched pair *)
    and lexer_match lexer rw_opt loc buf name level =
-      let text, key = BoolLexer.search lexer input in
-         Buffer.add_string buf text;
-
-         match key with
-            Some (false, arg, _) ->
-               (* Terminator *)
-               if level = 0 then
-                  let name = trim_quotation_name "term" name in
-                  let arg = trim_quotation_name name arg in
-                     lexer_action rw_opt loc (Buffer.contents buf) [name; arg]
-               else begin
-                  Buffer.add_string buf arg;
-                  lexer_match lexer rw_opt loc buf name (pred level)
-               end
-          | Some (true, arg, _) ->
+      match BoolLexer.searchto lexer input with
+         BoolLexer.LexMatched (false, _, skipped, arg, _) ->
+            Buffer.add_string buf skipped;
+            if level = 0 then
+               let name = trim_quotation_name "term" name in
+               let arg = trim_quotation_name name arg in
+                  lexer_action rw_opt loc (Buffer.contents buf) [name; arg]
+            else begin
                Buffer.add_string buf arg;
-               lexer_match lexer rw_opt loc buf name (succ level)
-          | None ->
-               (* Unexpected EOF *)
-               raise (Failure ("unexpected end-of-file in quotation " ^ name))
+               lexer_match lexer rw_opt loc buf name (pred level)
+            end
+       | BoolLexer.LexMatched (true, _, skipped, arg, _) ->
+            Buffer.add_string buf skipped;
+            Buffer.add_string buf arg;
+            lexer_match lexer rw_opt loc buf name (succ level)
+       | BoolLexer.LexSkipped _
+       | BoolLexer.LexEOF ->
+            (* Unexpected EOF *)
+            raise (Failure ("unexpected end-of-file in quotation " ^ name))
 
    (* General lexing *)
    and lexer_fun () =
