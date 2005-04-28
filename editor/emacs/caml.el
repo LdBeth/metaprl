@@ -329,7 +329,7 @@ point is outside the region."
 ;;
 ;; Quotation syntax
 ;;
-(defconst caml-quotation-start "<<\\|<:[A-z]+<"
+(defconst caml-quotation-start "<<\\|<:[A-z0-9_]+<"
   "Beginning of a quotation")
 
 (defconst caml-quotation-end ">>"
