@@ -559,6 +559,10 @@ struct
     | RWSeqContextInstance (i, ts) ->
          RWSeqContextInstance (i, List.map (map_restricts_term restr) ts)
 
+   (*
+    * HACK: the xbinder{!v} term parameters "introduce" !v as a "binding"
+    * in the body of a rule/rewrite
+    *)
    let xbinder_opname = Opname.mk_opname "xbinder" Opname.xperv
 
    let rec find_bvars bvars stack = function
