@@ -243,7 +243,7 @@ let (depends_on, escaped_eol) =
   | x -> invalid_arg ("Ocamldep: unknown system type: " ^ x)
 
 let print_file s =
-   for i=0 to (String.length s) -1 do
+   for i = 0 to String.length s - 1 do
       match s.[i] with
          ' '  -> print_string "\\ "
        | '\t' -> print_string "\\t"
@@ -265,7 +265,7 @@ let print_dependencies target_file deps =
           print_file dep; print_string " ";
           print_items (pos + String.length dep + 1) rem
         end else begin
-          print_string escaped_eol; print_string dep; print_string " ";
+          print_string escaped_eol; print_file dep; print_string " ";
           print_items (String.length dep + 5) rem
         end in
     print_items (String.length target_file + 2) deps;

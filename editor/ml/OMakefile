@@ -244,7 +244,7 @@ section
    EXT=$(if $(NATIVE_ENABLED), opt, top)
    EXT=$(if $(equal $(OSTYPE), Win32), $(EXT).bat, $(EXT))
    .test-metaprl-startup: $(MP)$(EXT) $(MP)config $(THEORIES_CONF) $(MLDEBUG_CONF)
-      echo | ./$(MP)$(EXT) -batch
+      echo | $(CURRENT_EXEC_DIR)$(MP)$(EXT) -batch
       touch $@
 
 #

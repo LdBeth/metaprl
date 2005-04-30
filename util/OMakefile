@@ -29,7 +29,7 @@ ocamldep$(EXT_OBJ) ocamldep.cmx ocamldep.cmo ocamldep.cmi:
 install: $(BINDEP)
 
 clean:
-	$(CLEAN) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep ocamldep.opt ocamldep.run macropp macroprint
+    $(CLEAN) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep ocamldep.opt ocamldep.run macropp macroprint
 
 #
 # Magic numbers
@@ -44,16 +44,16 @@ genmagic$(EXT_OBJ) genmagic.cmx genmagic.cmo genmagic.cmi:
 OCAML_LIBS += $(CAMLP4LIB)/odyl $(CAMLP4LIB)/camlp4
 OCAMLINCLUDES += $(CAMLP4LIB)
 OCAML_LINK_FLAGS += -linkall
-OCAMLFLAGS += -pp "$(CAMLP4R) -I $(CAMLP4LIB) -nolib -loc _loc"
+OCAMLFLAGS += -pp $(quote-argv $(CAMLP4R) -I $(CAMLP4LIB) -nolib -loc _loc)
 
 %.cmx %.o: $(CAMLP4R_VERSION)
 %.cmo: $(CAMLP4R_VERSION)
 %.cmi: $(CAMLP4R_VERSION)
 
-MACRO_FILES =\
-   $(CAMLP4LIB)/pa_o\
-   pa_macro\
-   macro_main\
+MACRO_FILES[] =
+   $(CAMLP4LIB)/pa_o
+   pa_macro
+   macro_main
 
 OCamlProgramInstall($(MPINSTALL), $(LIB), macropp, $(CAMLP4LIB)/pr_dump $(MACRO_FILES))
 OCamlProgramInstall($(MPINSTALL), $(LIB), macroprint, $(CAMLP4LIB)/pr_o $(MACRO_FILES))

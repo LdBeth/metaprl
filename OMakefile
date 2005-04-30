@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.4)
+OMakeVersion(0.9.4.7)
 
 ########################################################################
 # Begin real makefile.
@@ -523,7 +523,7 @@ OCAMLINCLUDES += $(dir filter/base filter/filter)
 # When using native code profiling, no need to build theories to bytecode.
 #
 if $(NATIVE_PROFILING_ENABLED)
-   BYTE_ENABLED=false
+   BYTE_ENABLED = false
    export
 
 #

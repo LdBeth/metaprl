@@ -1,4 +1,6 @@
+#
 # Library files
+#
 FILES[] =
    file_base_type
    remote_queue_sig

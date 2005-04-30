@@ -58,7 +58,7 @@ FILTER_MAGIC[] =
     filter_grammar.ml
 
 filter_magic.cmo: .magic
-filter_magic.cmx filter_magic.o: .magic
+filter_magic.cmx filter_magic$(EXT_OBJ): .magic
 
 .magic.txt: $(FILTER_MAGIC)
    ExtractMagicLines($@, $+)

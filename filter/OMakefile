@@ -1,7 +1,7 @@
 #
 # Generic camlp4 preprocessing
 #
-OCAMLPPFLAGS = -pp "$(CAMLP4O) -I $(CAMLP4LIB) q_MLast.cmo pa_extend.cmo"
+OCAMLPPFLAGS = -pp $(quote-argv $(CAMLP4O) -I $(CAMLP4LIB) q_MLast.cmo pa_extend.cmo)
 
 %.cmx %.o: $(CAMLP4O_VERSION)
 %.cmo: $(CAMLP4O_VERSION)
@@ -60,10 +60,10 @@ OCAML_LIBS[] =
 CAMLP4N = camlp4n
 CAMLP4O = camlp4o
 
-CAMLP4_FILES =\
-	filter/filter_patt\
-	filter/filter_prog\
-	filter/filter_parse\
+CAMLP4_FILES[] =
+	filter/filter_patt
+	filter/filter_prog
+	filter/filter_parse
 	filter/filter_main
 
 STANDARD_LIBS[] =
@@ -108,10 +108,10 @@ CONVERT_FILES =\
 #
 PRLCOMP = prlc
 
-PRLCOMP_FILES =\
+PRLCOMP_FILES[] =
 	filter/prlcomp
 
-PRLCOMP_LIBS =\
+PRLCOMP_LIBS[] =
 	$(STANDARD_LIBS)
 
 #
@@ -120,23 +120,23 @@ PRLCOMP_LIBS =\
 PRLCN = prlcn
 PRLCO = prlco
 
-PRLC_FILES =\
-	$(PRLCOMP_FILES)\
-	filter/filter_prog\
+PRLC_FILES[] =
+	$(PRLCOMP_FILES)
+	filter/filter_prog
 	filter/filter_bin
 
-PRLCN_LIBS =\
+PRLCN_LIBS[] =
 	$(STANDARD_LIBS)
 
-PRLCN_FILES =\
-	$(CAMLP4LIB)/pr_dump\
+PRLCN_FILES[] =
+	$(CAMLP4LIB)/pr_dump
 	$(PRLC_FILES)
 
-PRLCO_LIBS =\
+PRLCO_LIBS[] =
 	$(STANDARD_LIBS)
 
-PRLCO_FILES =\
-	$(CAMLP4LIB)/pr_o\
+PRLCO_FILES[] =
+	$(CAMLP4LIB)/pr_o
 	$(PRLC_FILES)
 
 #

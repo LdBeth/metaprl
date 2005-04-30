@@ -6,7 +6,7 @@ OCAMLINCLUDES += $(dir $(ROOT)/$(ENSEMBLE_DIR))
 #
 # Basic camlp4 preprocessing
 #
-OCAMLPPFLAGS = -pp "camlp4o$(EXE) -I $(CAMLP4LIB) q_MLast.cmo"
+OCAMLPPFLAGS = -pp $(quote-argv camlp4o$(EXE) -I $(CAMLP4LIB) q_MLast.cmo)
 
 #
 # Library files
