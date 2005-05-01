@@ -48,6 +48,7 @@ GENMAGIC = $(BIN)/genmagic$(EXE)
 # Magic text for the grammars.
 #
 FILTER_MAGIC[] =
+    $(ROOT)/libmojave/util/lm_hash.ml
     $(ROOT)/libmojave/util/lm_lexer.ml
     $(ROOT)/libmojave/util/lm_parser.ml
     $(ROOT)/refiner/rewrite/rewrite_types.ml
