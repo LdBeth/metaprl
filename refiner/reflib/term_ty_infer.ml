@@ -611,6 +611,9 @@ let rec wrap_unify_error subst info err =
     | UnifyCompose (info1, info2) ->
          wrap_unify_error subst info1 (wrap_unify_error subst info2 err)
 
+let raise_err subst info err =
+   raise (RefineError ("type error", wrap_unify_error subst info err))
+
 (*
  * Error messages.
  *)
@@ -621,7 +624,7 @@ let raise_type2_error subst info ty1 ty2 =
       StringErrorError ("is not compatible with",
       TermError (subst_type_term subst ty2))))
    in
-      raise (RefineError ("type error", wrap_unify_error subst info err))
+      raise_err subst info err
 
 let raise_term2_error debug subst info t1 t2 =
    let err =
@@ -631,7 +634,7 @@ let raise_term2_error debug subst info t1 t2 =
       StringErrorError ("is not compatible with",
       TermError (subst_term subst t2)))))
    in
-      raise (RefineError ("type error", wrap_unify_error subst info err))
+      raise_err subst info err
 
 let raise_term_type_error subst info t ty =
    let err =
@@ -640,25 +643,19 @@ let raise_term_type_error subst info t ty =
       StringErrorError ("but is used with type",
       TermError (subst_type_term subst ty))))
    in
-      raise (RefineError ("type error", wrap_unify_error subst info err))
+      raise_err subst info err
 
 let raise_param2_error subst info p1 p2 =
-   let err = wrap_unify_error subst info (StringErrorError ("parameter mismatch", Param2Error (p1, p2))) in
-      raise (RefineError ("type error", err))
+   raise_err subst info (StringErrorError ("parameter mismatch", Param2Error (p1, p2)))
 
 let raise_illegal_term_error subst info t =
-   let err = wrap_unify_error subst info (StringErrorError ("illegal type", TermError t)) in
-      raise (RefineError ("type error", err))
+   raise_err subst info (StringErrorError ("illegal type", TermError t))
 
-let raise_unbound_var_error subst info v =
-   let err = wrap_unify_error subst info (StringErrorError ("unbound variable", VarError v)) in
-      raise (RefineError ("type error", err))
+let raise_unbound_hyp_var_error subst info v hyp =
+   raise_err subst info (StringErrorError ("not enough information to infer the type of the hypothesis", VarTermError (v, hyp)))
 
 let raise_expand_type_error subst info s ty =
-   let err =
-      StringErrorError (s, TermError (term_of_ty ty))
-   in
-      raise (RefineError ("type error", wrap_unify_error subst info err))
+   raise_err subst info (StringErrorError (s, TermError (term_of_ty ty)))
 
 (************************************************
  * Type expansion, eliminating variables.
@@ -703,24 +700,22 @@ let normalize_type info subst ty =
 (*
  * The type should be a hyp type.
  *)
-let rec expand_var info subst v =
-   match subst_find_opt subst v with
-      Some ty ->
-         expand_type info subst ty
-    | None ->
-         raise_unbound_var_error subst info v
-
-and expand_type info subst ty =
+let rec expand_type v hyp info subst ty =
    let subst, ty = normalize_type info subst ty in
       match ty with
-         TypeVar v ->
-            expand_var info subst v
+         TypeVar v' ->
+            begin match subst_find_opt subst v' with
+               Some ty ->
+                  expand_type v hyp info subst ty
+             | None ->
+                  raise_unbound_hyp_var_error subst info v hyp
+            end
        | ty ->
             subst, ty
 
-let expand_hyp_type info subst ty =
+let expand_hyp_type v hyp info subst ty =
    let rec expand subst vars ty =
-      let subst, ty = expand_type info subst ty in
+      let subst, ty = expand_type v hyp info subst ty in
          match ty with
             TypeExists (v, ty_var, ty) ->
                expand subst ((v, ty_var) :: vars) ty
@@ -1635,8 +1630,8 @@ and infer_sequent_hyps tenv venv info subst arg ty_hyp' hyps i len =
    else
       match SeqHyp.get hyps i with
          Hypothesis (v, hyp) ->
-            let info' = UnifyCompose (info, UnifyType ty_hyp') in
-            let subst, vars, ty_var, ty_hyp = expand_hyp_type info' subst ty_hyp' in
+            let subst, vars, ty_var, ty_hyp = expand_hyp_type v hyp info subst ty_hyp' in
+            let info' = UnifyCompose (info, UnifyType ty_hyp) in
             let subst, ty_var, ty_hyp = standardize_ty_hyp info' subst vars ty_var ty_hyp in
             let subst = infer_term_type tenv venv info subst hyp ty_hyp in
             let venv = venv_add_var venv v ty_var in

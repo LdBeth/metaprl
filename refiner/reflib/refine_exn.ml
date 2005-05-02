@@ -349,7 +349,7 @@ let format_refine_error db buf printers name error =
          format_string buf "Term 2: ";
          printers.format_term db buf t2
     | VarTermError (v, t) ->
-         format_string buf ("'" ^ string_of_symbol v);
+         format_string buf (string_of_symbol v);
          format_string buf ":";
          format_space buf;
          printers.format_term db buf t
