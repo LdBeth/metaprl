@@ -32,13 +32,6 @@ clean:
     $(CLEAN) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep ocamldep.opt ocamldep.run macropp macroprint
 
 #
-# Magic numbers
-#
-OCamlProgramInstall($(MPINSTALL), $(BIN), genmagic, genmagic)
-
-genmagic$(EXT_OBJ) genmagic.cmx genmagic.cmo genmagic.cmi:
-
-#
 # Macros
 #
 OCAML_LIBS += $(CAMLP4LIB)/odyl $(CAMLP4LIB)/camlp4

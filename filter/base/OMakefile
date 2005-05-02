@@ -40,11 +40,6 @@ ExtractMagic(in, out) =
    close($(stdout))
 
 #
-# The actual program to compute the MD5 digest
-#
-GENMAGIC = $(BIN)/genmagic$(EXE)
-
-#
 # Magic text for the grammars.
 #
 FILTER_MAGIC[] =
@@ -68,9 +63,9 @@ if $(not $(defined CHECK_MAGIC))
     CHECK_MAGIC = true
     export
 
-.magic: .magic.txt $(GENMAGIC) filter_magic.ml
+.magic: .magic.txt filter_magic.ml
    section eval
-      NEW_MAGIC = $(shell $(GENMAGIC) .magic.txt)
+      NEW_MAGIC = $(digest .magic.txt)
       ExtractMagic(filter_magic.ml, $@)
       OLD_MAGIC = $(cat $@)
       if $(and $(CHECK_MAGIC), $(not $(equal $(NEW_MAGIC), $(OLD_MAGIC))))
