@@ -29,21 +29,25 @@
  *
  * Author: Aleksey Nogin
  * nogin@cs.cornell.edu
- *
  *)
 
 (******************************************************************
 
-The format for the ASCII files is the following - each line contains
-either a term or a bound term or an operator or an opname or a parameter
-or a hypothesis or a context hypothesis. Sequents are printed on two lines.
-The lines should be in the following format:
+A file in the ASCII format is a sequence of lines, each describing and naming a
+single value - a term, or a bound term, or an operator, or an opname, or a
+parameter, or a hypothesis, or a hypothesis context. Each line provides a name
+for the new value and described the value by providing all its component
+(roughly following the structure of the "mk_*" API for constructing term
+values). Variables, strings and ints are represented by strings, other values
+are referred to by their names (which must be defined first).
 
-Term:
+For each value being named lines should be in the following format:
+
+Term (not a sequent or SO variable):
 T<comment> <name> <operator_name> [<bterm_name_1> ... <bterm_name_n>]
 
 Bound term:
-B<comment> <name> <term_or_sequent_name> [<var_1> ... <var_n>]
+B<comment> <name> <term_name> [<var_1> ... <var_n>]
 
 Hypothesis:
 H<comment> <name> <variable> <term_name>
@@ -61,22 +65,24 @@ Operator:
 O<comment> <name> <opname_name> [<param_name_1> ... <param_name_n>]
 
 Opname:
-N<comment> <name> <main_part_of_opname> <name_for_the_rest_of_opname>|NIL
+N<comment> <name> <opname_head_string> <opname_tail_name>|NIL
 
 Param - either of:
 P<comment> <name> Number <number>
 P<comment> <name> String <string>
-P<comment> <name> Token <string>
+P<comment> <name> Token <opname_name>
 P<comment> <name> Var <string>
 P<comment> <name> MNumber <string>
 P<comment> <name> MString <string>
 P<comment> <name> MToken <string>
 P<comment> <name> MLevel <int> [<var_1_string> <off_1_int> ... <var_1_string> <off_1_int>]
-P<comment> <name> Quote <string>
+P<comment> <name> Quote
+P<comment> <name> Shape <term_name>
 
-The "name" is typically several characters long, usually - a base short name
-and a serial number. If a string has non-printable characters or spaces, it would
-be printed quoted.
+Each name may be defined at most once. The "name" is typically several
+characters long, usually - a base short name and a serial number. If a string
+has non-printable characters or spaces, it should be quoted and non-printable
+characters escaped.
 
 ******************************************************************)
 
