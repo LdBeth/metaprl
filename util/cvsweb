@@ -33,7 +33,11 @@ if [ "`echo "$REPOSITORY" | cut -b1`" = "/" ]; then
 fi
 
 if [ -z $URLVIEW ]; then
-   if [ -x /usr/bin/mozilla ]; then
+   if [ -x /usr/bin/htmlview ]; then
+      URLVIEW=/usr/bin/htmlview
+   elif [ -x /usr/bin/firefox ]; then
+      URLVIEW=/usr/bin/firefox
+   elif [ -x /usr/bin/mozilla ]; then
       URLVIEW=/usr/bin/mozilla
    elif [ -x /usr/bin/netscape ]; then
       URLVIEW=/usr/bin/netscape
