@@ -6,10 +6,10 @@
  *
  * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
- * environment for OCaml and other languages.
+ * environment for TyOCaml and other languages.
  *
  * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
+ * TyOCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
  *
@@ -37,149 +37,149 @@ extends Perv
  * EXPRESSIONS                                                          *
  ************************************************************************)
 
-declare typeclass OCaml -> Dform
+declare typeclass TyOCaml -> Dform
 
 (*
  * Lists.
  *)
-declare "onil" : OCaml
-declare "ocons"{'hd : OCaml; 'tl : OCaml} : OCaml
+declare "onil" : TyOCaml
+declare "ocons"{'hd : TyOCaml; 'tl : TyOCaml} : TyOCaml
 
 (*
  * Constants.
  *)
-declare "unit" : OCaml
-declare "bool"[f:s] : OCaml
-declare "char"[c:s] : OCaml
-declare "int"[i:n] : OCaml
-declare "string"[s:s] : OCaml
-declare "float"[s:s] : OCaml
-declare "true" : OCaml
-declare "false" : OCaml
+declare "unit" : TyOCaml
+declare "bool"[f:s] : TyOCaml
+declare "char"[c:s] : TyOCaml
+declare "int"[i:n] : TyOCaml
+declare "string"[s:s] : TyOCaml
+declare "float"[s:s] : TyOCaml
+declare "true" : TyOCaml
+declare "false" : TyOCaml
 
-declare "lid"{'v : OCaml} : OCaml
-declare "lid"[s:s] : OCaml
-declare "uid"{'v : OCaml} : OCaml
-declare "uid"[s:s] : OCaml
+declare "lid"{'v : TyOCaml} : TyOCaml
+declare "lid"[s:s] : TyOCaml
+declare "uid"{'v : TyOCaml} : TyOCaml
+declare "uid"[s:s] : TyOCaml
 
 (*
  * Primitive operations on numbers.
  *)
-declare lt_int{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare le_int{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare eq_int{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare ge_int{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare gt_int{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare lt_int{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare le_int{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare eq_int{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare ge_int{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare gt_int{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
-declare add{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare sub{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare mul{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare div{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare "mod"{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare add{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare sub{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare mul{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare div{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare "mod"{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
 (*
  * Primitive operations on booleans.
  *)
-declare "or"{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare "and"{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare "not"{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare "or"{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare "and"{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare "not"{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
 (*
  * Projection.
  *)
-declare proj{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare proj{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
 (*
  * Application.
  *)
-declare apply{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare inj{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare apply{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare inj{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
 (*
  * Subscripting.
  *)
-declare string_subscript{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare array_subscript{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare string_subscript{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare array_subscript{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
-declare string_set{'e1 : OCaml; 'e2 : OCaml; 'e3 : OCaml} : OCaml
-declare array_set{'e1 : OCaml; 'e2 : OCaml; 'e3 : OCaml} : OCaml
+declare string_set{'e1 : TyOCaml; 'e2 : TyOCaml; 'e3 : TyOCaml} : TyOCaml
+declare array_set{'e1 : TyOCaml; 'e2 : TyOCaml; 'e3 : TyOCaml} : TyOCaml
 
 (*
  * Sequences.
  *)
-declare list{'e1 : OCaml} : OCaml
-declare array{'e1 : OCaml} : OCaml
-declare stream{'e1 : OCaml} : OCaml
-declare record{'e1 : OCaml;'e2 : OCaml} : OCaml
+declare list{'e1 : TyOCaml} : TyOCaml
+declare array{'e1 : TyOCaml} : TyOCaml
+declare stream{'e1 : TyOCaml} : TyOCaml
+declare record{'e1 : TyOCaml;'e2 : TyOCaml} : TyOCaml
 
-declare tuple{'e : OCaml} : OCaml
+declare tuple{'e : TyOCaml} : TyOCaml
 
 (*
  * Assignment.
  *)
-declare assign{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare record_set{'e1 : OCaml; 'e2 : OCaml; 'e3 : OCaml} : OCaml
+declare assign{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare record_set{'e1 : TyOCaml; 'e2 : TyOCaml; 'e3 : TyOCaml} : TyOCaml
 
 (*
  * Sequencing.
  *)
-declare sequence{'e1 : OCaml} : OCaml
+declare sequence{'e1 : TyOCaml} : TyOCaml
 
 (*
  * Conditional.
  *)
-declare "ifthenelse"{'e1 : OCaml; 'e2 : OCaml; 'e3 : OCaml} : OCaml
+declare "ifthenelse"{'e1 : TyOCaml; 'e2 : TyOCaml; 'e3 : TyOCaml} : TyOCaml
 
 (*
  * Loops.
  *)
-declare for_upto{'e1 : OCaml; 'e2 : OCaml; x. 'e3 : OCaml} : OCaml
-declare for_downto{'e1 : OCaml; 'e2 : OCaml; x. 'e3 : OCaml} : OCaml
-declare "while"{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare for_upto{'e1 : TyOCaml; 'e2 : TyOCaml; x. 'e3 : TyOCaml} : TyOCaml
+declare for_downto{'e1 : TyOCaml; 'e2 : TyOCaml; x. 'e3 : TyOCaml} : TyOCaml
+declare "while"{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
 (*
  * Type casting.
  *)
-declare cast{'e : OCaml; 't : OCaml} : OCaml
+declare cast{'e : TyOCaml; 't : TyOCaml} : TyOCaml
 
 (*
  * Class coercion.
  *)
-declare class_coerce{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare class_coerce{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
 (*
  * New object.
  *)
-declare "new"{'e1 : OCaml} : OCaml
+declare "new"{'e1 : TyOCaml} : TyOCaml
 
 (*
  * Exceptions.
  *)
-declare "try"{'e : OCaml; 'pwel : OCaml} : OCaml
-declare "raise"{'e : OCaml} : OCaml
+declare "try"{'e : TyOCaml; 'pwel : TyOCaml} : TyOCaml
+declare "raise"{'e : TyOCaml} : TyOCaml
 
 (*
  * "Match" forms.
  *)
-declare "fun"{'pwel : OCaml} : OCaml
-declare "match"{'e : OCaml; 'pwel : OCaml} : OCaml
+declare "fun"{'pwel : TyOCaml} : TyOCaml
+declare "match"{'e : TyOCaml; 'pwel : TyOCaml} : TyOCaml
 
 (*
  * "Let" forms.  The real work is performed in the patterns.
  *)
-declare "let"{'p : OCaml; 'e : OCaml} : OCaml
-declare "fix"{'pel : OCaml} : OCaml
+declare "let"{'p : TyOCaml; 'e : TyOCaml} : TyOCaml
+declare "fix"{'pel : TyOCaml} : TyOCaml
 
 (*
  * Pairing.
  *)
-declare "ee"{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare "ee"{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
 (*
  * Options in AST
  *)
-declare none : OCaml
-declare some{'e : OCaml} : OCaml
+declare none : TyOCaml
+declare some{'e : TyOCaml} : TyOCaml
 
 (************************************************************************
  * PATTERNS                                                             *
@@ -227,85 +227,85 @@ declare some{'e : OCaml} : OCaml
 (*
  * Constant.
  *)
-declare patt_char[c:s] : OCaml
-declare patt_int[i:n] : OCaml
-declare patt_string[s:s] : OCaml
-declare patt_float[f:s] : OCaml
+declare patt_char[c:s] : TyOCaml
+declare patt_int[i:n] : TyOCaml
+declare patt_string[s:s] : TyOCaml
+declare patt_float[f:s] : TyOCaml
 
 (*
  * Binding.
  *)
-declare patt_var{x. 'p : OCaml} : OCaml
-declare patt_lid{'p1 : OCaml; 'p2 : OCaml} : OCaml
-declare patt_lid[name:s] : OCaml
-declare patt_uid{'p1 : OCaml; 'p2 : OCaml} : OCaml
-declare patt_uid[name:s] : OCaml
+declare patt_var{x. 'p : TyOCaml} : TyOCaml
+declare patt_lid{'p1 : TyOCaml; 'p2 : TyOCaml} : TyOCaml
+declare patt_lid[name:s] : TyOCaml
+declare patt_uid{'p1 : TyOCaml; 'p2 : TyOCaml} : TyOCaml
+declare patt_uid[name:s] : TyOCaml
 
 (*
  * Typed pattern.
  *)
-declare patt_coerce{'p : OCaml; 't : OCaml} : OCaml
+declare patt_coerce{'p : TyOCaml; 't : TyOCaml} : TyOCaml
 
 (*
  * Projection.
  *)
-declare patt_proj{'p : OCaml} : OCaml
-declare patt_proj_arg{'p : OCaml} : OCaml
-declare patt_proj_end{'p : OCaml} : OCaml
+declare patt_proj{'p : TyOCaml} : TyOCaml
+declare patt_proj_arg{'p : TyOCaml} : TyOCaml
+declare patt_proj_end{'p : TyOCaml} : TyOCaml
 
 (*
  * Simultaneous match.
  *)
-declare patt_as{'p : OCaml} : OCaml
-declare patt_as_arg{'p : OCaml} : OCaml
-declare patt_as_end{'p : OCaml} : OCaml
+declare patt_as{'p : TyOCaml} : TyOCaml
+declare patt_as_arg{'p : TyOCaml} : TyOCaml
+declare patt_as_end{'p : TyOCaml} : TyOCaml
 
 (*
  * Wildcard.
  *)
-declare patt_wildcard{'p : OCaml} : OCaml
+declare patt_wildcard{'p : TyOCaml} : TyOCaml
 
 (*
  * Application.
  *)
-declare patt_apply{'p : OCaml} : OCaml
-declare patt_apply_arg{'p : OCaml} : OCaml
-declare patt_apply_end{'p : OCaml} : OCaml
+declare patt_apply{'p : TyOCaml} : TyOCaml
+declare patt_apply_arg{'p : TyOCaml} : TyOCaml
+declare patt_apply_end{'p : TyOCaml} : TyOCaml
 
 (*
  * Alternates.
  *)
-declare patt_choice{'p : OCaml} : OCaml
-declare patt_choice_arg{'p : OCaml} : OCaml
-declare patt_choice_end{'p : OCaml} : OCaml
+declare patt_choice{'p : TyOCaml} : TyOCaml
+declare patt_choice_arg{'p : TyOCaml} : TyOCaml
+declare patt_choice_end{'p : TyOCaml} : TyOCaml
 
 (*
  * Range of choices.
  *)
-declare patt_range{'p : OCaml} : OCaml
-declare patt_range_arg{'p : OCaml} : OCaml
-declare patt_range_end{'p : OCaml} : OCaml
+declare patt_range{'p : TyOCaml} : TyOCaml
+declare patt_range_arg{'p : TyOCaml} : TyOCaml
+declare patt_range_end{'p : TyOCaml} : TyOCaml
 
 (*
  * List pattern.
  *)
-declare patt_list{'p : OCaml} : OCaml
-declare patt_list_arg{'p : OCaml} : OCaml
-declare patt_list_end{'p : OCaml} : OCaml
+declare patt_list{'p : TyOCaml} : TyOCaml
+declare patt_list_arg{'p : TyOCaml} : TyOCaml
+declare patt_list_end{'p : TyOCaml} : TyOCaml
 
 (*
  * Tuple pattern.
  *)
-declare patt_tuple{'p : OCaml} : OCaml
-declare patt_tuple_arg{'p : OCaml} : OCaml
-declare patt_tuple_end{'p : OCaml} : OCaml
+declare patt_tuple{'p : TyOCaml} : TyOCaml
+declare patt_tuple_arg{'p : TyOCaml} : TyOCaml
+declare patt_tuple_end{'p : TyOCaml} : TyOCaml
 
 (*
  * Record pattern.
  *)
-declare patt_record{'p : OCaml} : OCaml
-declare patt_record_proj{'n : OCaml; 'p : OCaml} : OCaml
-declare patt_record_end{'p : OCaml} : OCaml
+declare patt_record{'p : TyOCaml} : TyOCaml
+declare patt_record_proj{'n : TyOCaml; 'p : TyOCaml} : TyOCaml
+declare patt_record_end{'p : TyOCaml} : TyOCaml
 
 (*
  * "Let" forms.
@@ -315,20 +315,20 @@ declare patt_record_end{'p : OCaml} : OCaml
  *    patt_and: this is the second or greater clause of a let
  *    patt_fix: this is a clause of a fix
  *)
-declare patt_and{'p : OCaml} : OCaml
-declare patt_in{'e : OCaml} : OCaml
-declare patt_done : OCaml
-declare patt_match{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare patt_fix_and{'p : OCaml} : OCaml
-declare patt_fix_arg{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare patt_and{'p : TyOCaml} : TyOCaml
+declare patt_in{'e : TyOCaml} : TyOCaml
+declare patt_done : TyOCaml
+declare patt_match{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare patt_fix_and{'p : TyOCaml} : TyOCaml
+declare patt_fix_arg{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
 (*
  * "Match" forms.
  *)
-declare patt_ifelse{'pwe : OCaml; 'pwel : OCaml} : OCaml
-declare patt_if{'pwe : OCaml} : OCaml
-declare patt_with{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare patt_body{'e1 : OCaml} : OCaml
+declare patt_ifelse{'pwe : TyOCaml; 'pwel : TyOCaml} : TyOCaml
+declare patt_if{'pwe : TyOCaml} : TyOCaml
+declare patt_with{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare patt_body{'e1 : TyOCaml} : TyOCaml
 
 (************************************************************************
  * TYPES                                                                *
@@ -337,85 +337,85 @@ declare patt_body{'e1 : OCaml} : OCaml
 (*
  * Constant types.
  *)
-declare type_unit : OCaml
-declare type_bool : OCaml
-declare type_char : OCaml
-declare type_string : OCaml
-declare type_int : OCaml
-declare type_float : OCaml
+declare type_unit : TyOCaml
+declare type_bool : TyOCaml
+declare type_char : TyOCaml
+declare type_string : TyOCaml
+declare type_int : TyOCaml
+declare type_float : TyOCaml
 
 (*
  * Projection.
  *)
-declare type_proj{'t1 : OCaml; 't2 : OCaml} : OCaml
+declare type_proj{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
 
 (*
  * "As" type.
  *)
-declare type_as{'t1 : OCaml; 't2 : OCaml} : OCaml
+declare type_as{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
 
 (*
  * Wildcard type.
  *)
-declare type_wildcard : OCaml
+declare type_wildcard : TyOCaml
 
 (*
  * Application.
  *)
-declare type_apply{'t1 : OCaml; 't2 : OCaml} : OCaml
+declare type_apply{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
 
 (*
  * Function type.
  *)
-declare type_fun{'t1 : OCaml; 't2 : OCaml} : OCaml
+declare type_fun{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
 
 (*
  * Class identifier.
  *)
-declare type_class_id{'t1 : OCaml} : OCaml
+declare type_class_id{'t1 : TyOCaml} : TyOCaml
 
 (*
  * Identifiers.
  *)
-declare type_lid[v:s] : OCaml
-declare type_uid[v:s] : OCaml
-declare type_lid{'v : OCaml} : OCaml
-declare type_uid{'v : OCaml} : OCaml
+declare type_lid[v:s] : TyOCaml
+declare type_uid[v:s] : TyOCaml
+declare type_lid{'v : TyOCaml} : TyOCaml
+declare type_uid{'v : TyOCaml} : TyOCaml
 
 (*
  * Type parameter.
  *)
-declare type_param[s:s] : OCaml
+declare type_param[s:s] : TyOCaml
 
 (*
  * Type equivalence.
  *)
-declare type_equal{'t1 : OCaml; 't2 : OCaml} : OCaml
+declare type_equal{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
 
 (*
  * Sequence types.
  *)
-declare type_list{'t : OCaml} : OCaml
-declare type_array{'t : OCaml} : OCaml
+declare type_list{'t : TyOCaml} : TyOCaml
+declare type_array{'t : TyOCaml} : TyOCaml
 
 (*
  * Record type.
  * I'm not sure what the boolean is for.
  *)
-declare type_record{'sbtl : OCaml} : OCaml
-declare type_record_elem[s:s, b:s]{'t : OCaml} : OCaml
-declare type_ref{'t : OCaml} : OCaml
+declare type_record{'sbtl : TyOCaml} : TyOCaml
+declare type_record_elem[s:s, b:s]{'t : TyOCaml} : TyOCaml
+declare type_ref{'t : TyOCaml} : TyOCaml
 
 (*
  * Product types.
  *)
-declare type_prod{'tl : OCaml} : OCaml
+declare type_prod{'tl : TyOCaml} : TyOCaml
 
 (*
  * Pairing.
  *)
-declare sbt{'s : OCaml; 'b : OCaml; 't : OCaml} : OCaml
-declare stl{'s : OCaml; 'tl : OCaml} : OCaml
+declare sbt{'s : TyOCaml; 'b : TyOCaml; 't : TyOCaml} : TyOCaml
+declare stl{'s : TyOCaml; 'tl : TyOCaml} : TyOCaml
 
 (************************************************************************
  * SIGNATURE ITEMS                                                      *
@@ -432,37 +432,37 @@ declare stl{'s : OCaml; 'tl : OCaml} : OCaml
 (*
  * Exception declarations name type constructors.
  *)
-declare sig_exception[name:s]{'tl : OCaml} : OCaml
+declare sig_exception[name:s]{'tl : TyOCaml} : TyOCaml
 
 (*
  * External function declaration.
  *)
-declare sig_external[name:s]{'t : OCaml; 'sl : OCaml} : OCaml
+declare sig_external[name:s]{'t : TyOCaml; 'sl : TyOCaml} : TyOCaml
 
 (*
  * Module declaration.
  *)
-declare sig_module[name:s]{'mt : OCaml} : OCaml
+declare sig_module[name:s]{'mt : TyOCaml} : TyOCaml
 
 (*
  * Module type declaration.
  *)
-declare sig_module_type[name:s]{'mt : OCaml} : OCaml
+declare sig_module_type[name:s]{'mt : TyOCaml} : TyOCaml
 
 (*
  * Open a module in scope.
  *)
-declare sig_open{'sl : OCaml} : OCaml
+declare sig_open{'sl : TyOCaml} : TyOCaml
 
 (*
  * Type declaration.
  *)
-declare sig_type{'tdl : OCaml} : OCaml
+declare sig_type{'tdl : TyOCaml} : TyOCaml
 
 (*
  * Value declaration.
  *)
-declare sig_value[name:s]{'t : OCaml} : OCaml
+declare sig_value[name:s]{'t : TyOCaml} : TyOCaml
 
 (************************************************************************
  * STRUCTURE ITEMS                                                      *
@@ -471,54 +471,54 @@ declare sig_value[name:s]{'t : OCaml} : OCaml
 (*
  * Exception declarations name type constructors.
  *)
-declare str_exception[name:s]{'tl : OCaml} : OCaml
+declare str_exception[name:s]{'tl : TyOCaml} : TyOCaml
 
 (*
  * External function declaration.
  *)
-declare str_external[name:s]{'t : OCaml; 'sl : OCaml} : OCaml
+declare str_external[name:s]{'t : TyOCaml; 'sl : TyOCaml} : TyOCaml
 
 (*
  * Unnamed value.
  *)
-declare str_expr{'e : OCaml} : OCaml
+declare str_expr{'e : TyOCaml} : TyOCaml
 
 (*
  * Module definition.
  *)
-declare str_module[name:s]{'me : OCaml} : OCaml
+declare str_module[name:s]{'me : TyOCaml} : TyOCaml
 
 (*
  * Module type definition.
  *)
-declare str_module_type[name:s]{'mt : OCaml} : OCaml
+declare str_module_type[name:s]{'mt : TyOCaml} : TyOCaml
 
 (*
  * Open a module in scope.
  *)
-declare str_open{'sl : OCaml} : OCaml
+declare str_open{'sl : TyOCaml} : TyOCaml
 
 (*
  * Type definition
  *)
-declare str_type{'tdl : OCaml} : OCaml
+declare str_type{'tdl : TyOCaml} : TyOCaml
 
 (*
  * Value definition.
  *)
-declare str_let{'p : OCaml; 'e : OCaml} : OCaml
-declare str_let{'e : OCaml} : OCaml
-declare str_fix{'p : OCaml} : OCaml
+declare str_let{'p : TyOCaml; 'e : TyOCaml} : TyOCaml
+declare str_let{'e : TyOCaml} : TyOCaml
+declare str_fix{'p : TyOCaml} : TyOCaml
 
 (*
  * Type declaration.
  *)
-declare tdl{'s : OCaml; 'sl : OCaml; 't : OCaml; 'tc : OCaml} : OCaml
+declare tdl{'s : TyOCaml; 'sl : TyOCaml; 't : TyOCaml; 'tc : TyOCaml} : TyOCaml
 
 (*
  * Type constraint in type declaration
  *)
-declare tc{'t1 : OCaml; 't2 : OCaml} : OCaml
+declare tc{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
 
 (************************************************************************
  * MODULE TYPE                                                          *
@@ -527,42 +527,42 @@ declare tc{'t1 : OCaml; 't2 : OCaml} : OCaml
 (*
  * Projection.
  *)
-declare mt_proj{'mt1 : OCaml; 'mt2 : OCaml} : OCaml
+declare mt_proj{'mt1 : TyOCaml; 'mt2 : TyOCaml} : TyOCaml
 
 (*
  * Application.
  *)
-declare mt_apply{'mt1 : OCaml; 'mt2 : OCaml} : OCaml
+declare mt_apply{'mt1 : TyOCaml; 'mt2 : TyOCaml} : TyOCaml
 
 (*
  * Functor.
  *)
-declare mt_functor[name:s]{'mt1 : OCaml; 'mt2 : OCaml} : OCaml
+declare mt_functor[name:s]{'mt1 : TyOCaml; 'mt2 : TyOCaml} : TyOCaml
 
 (*
  * Id.
  *)
-declare mt_lid[name:s] : OCaml
-declare mt_lid{'name : OCaml} : OCaml
-declare mt_uid[name:s] : OCaml
-declare mt_uid{'name : OCaml} : OCaml
+declare mt_lid[name:s] : TyOCaml
+declare mt_lid{'name : TyOCaml} : TyOCaml
+declare mt_uid[name:s] : TyOCaml
+declare mt_uid{'name : TyOCaml} : TyOCaml
 
 (*
  * Signature.
  *)
-declare mt_sig{'sil : OCaml} : OCaml
+declare mt_sig{'sil : TyOCaml} : TyOCaml
 
 (*
  * Module type with clause.
  *)
-declare mt_with{'mt : OCaml; 'wcl : OCaml} : OCaml
+declare mt_with{'mt : TyOCaml; 'wcl : TyOCaml} : TyOCaml
 
 (*
  * With clauses.
  * I'm not sure what these mean.
  *)
-declare wc_type{'sl1 : OCaml; 'sl2 : OCaml; 't : OCaml} : OCaml
-declare wc_module{'sl1 : OCaml; 'mt : OCaml} : OCaml
+declare wc_type{'sl1 : TyOCaml; 'sl2 : TyOCaml; 't : TyOCaml} : TyOCaml
+declare wc_module{'sl1 : TyOCaml; 'mt : TyOCaml} : TyOCaml
 
 (************************************************************************
  * MODULE EXPRESSION                                                    *
@@ -571,144 +571,144 @@ declare wc_module{'sl1 : OCaml; 'mt : OCaml} : OCaml
 (*
  * Projection.
  *)
-declare me_proj{'me1 : OCaml; 'me2 : OCaml} : OCaml
+declare me_proj{'me1 : TyOCaml; 'me2 : TyOCaml} : TyOCaml
 
 (*
  * Application.
  *)
-declare me_apply{'me1 : OCaml; 'me2 : OCaml} : OCaml
+declare me_apply{'me1 : TyOCaml; 'me2 : TyOCaml} : TyOCaml
 
 (*
  * Functor.
  *)
-declare me_functor[name:s]{'mt : OCaml; 'me : OCaml} : OCaml
+declare me_functor[name:s]{'mt : TyOCaml; 'me : TyOCaml} : TyOCaml
 
 (*
  * Structure.
  *)
-declare me_struct{'sil : OCaml} : OCaml
+declare me_struct{'sil : TyOCaml} : TyOCaml
 
 (*
  * Type cast.
  *)
-declare me_cast{'me : OCaml; 'mt : OCaml} : OCaml
+declare me_cast{'me : TyOCaml; 'mt : TyOCaml} : TyOCaml
 
 (*
  * Variables.
  *)
-declare me_lid[name:s] : OCaml
-declare me_uid[name:s] : OCaml
+declare me_lid[name:s] : TyOCaml
+declare me_uid[name:s] : TyOCaml
 
 (*
  * Locations
  *)
 
-declare "apply"[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare "array"[start:n, finish:n]{'e1 : OCaml} : OCaml
-declare "array_subscript"[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare assign[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare cast[start:n, finish:n]{'e : OCaml; 't : OCaml} : OCaml
-declare "char"[start:n, finish:n, c:s] : OCaml
-declare class_coerce[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare "fix"[start:n, finish:n]{'p : OCaml} : OCaml
-declare "float"[start:n, finish:n, f:s] : OCaml
-declare for_downto[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml; x. 'e3 : OCaml} : OCaml
-declare for_upto[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml; x. 'e3 : OCaml} : OCaml
-declare "fun"[start:n, finish:n]{'pwel : OCaml} : OCaml
-declare ifthenelse[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml; 'e3 : OCaml} : OCaml
-declare "int"[start:n, finish:n, i:n] : OCaml
-declare "let"[start:n, finish:n]{'p : OCaml; 'e : OCaml} : OCaml
-declare "lid"[start:n, finish:n]{'v : OCaml} : OCaml
-declare "list"[start:n, finish:n]{'e1 : OCaml} : OCaml
-declare "match"[start:n, finish:n]{'e : OCaml; 'pwel : OCaml} : OCaml
-declare mt_apply[start:n, finish:n]{'mt1 : OCaml; 'mt2 : OCaml} : OCaml
-declare mt_functor[start:n, finish:n, name:s]{'mt1 : OCaml; 'mt2 : OCaml} : OCaml
-declare mt_lid[start:n, finish:n]{'v : OCaml} : OCaml
-declare mt_proj[start:n, finish:n]{'mt1 : OCaml; 'mt2 : OCaml} : OCaml
-declare mt_sig[start:n, finish:n]{'sil : OCaml} : OCaml
-declare mt_uid[start:n, finish:n]{'v : OCaml} : OCaml
-declare mt_with[start:n, finish:n]{'mt : OCaml; 'wcl : OCaml} : OCaml
-declare patt_and[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_apply_arg[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_apply_end[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_apply[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_as_arg[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_as_end[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_as[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_body[start:n, finish:n]{'e : OCaml} : OCaml
-declare patt_char[start:n, finish:n, c:s]{'p1 : OCaml} : OCaml
-declare patt_choice_arg[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_choice_end[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_choice[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_done[start:n, finish:n] : OCaml
-declare patt_fix_and[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_fix_arg[start:n, finish:n]{'e1 : OCaml; 'p1 : OCaml} : OCaml
-declare patt_float[start:n, finish:n, x:s]{'p1 : OCaml} : OCaml
-declare patt_ifelse[start:n, finish:n]{'pwe : OCaml; 'pwel : OCaml} : OCaml
-declare patt_if[start:n, finish:n]{'pwe : OCaml} : OCaml
-declare patt_in[start:n, finish:n]{'e1 : OCaml} : OCaml
-declare patt_int[start:n, finish:n, i:n]{'p1 : OCaml} : OCaml
-declare patt_lid[start:n, finish:n]{'p1 : OCaml; 'p2 : OCaml} : OCaml
-declare patt_list_arg[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_list_end[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_list[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_proj_arg[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_proj_end[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_proj[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_range_arg[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_range_end[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_range[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_record_end[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_record_proj[start:n, finish:n]{'e1 : OCaml; 'p1 : OCaml} : OCaml
-declare patt_record[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_string[start:n, finish:n, s:s]{'p1 : OCaml} : OCaml
-declare patt_tuple_arg[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_tuple_end[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_tuple[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_uid[start:n, finish:n]{'p1 : OCaml; 'p2 : OCaml} : OCaml
-declare patt_var[start:n, finish:n]{x. 'p1 : OCaml} : OCaml
-declare patt_wildcard[start:n, finish:n]{'p1 : OCaml} : OCaml
-declare patt_with[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare "proj"[start:n, finish:n]{'A : OCaml; 'B : OCaml} : OCaml
-declare "record"[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare "sequence"[start:n, finish:n]{'e1 : OCaml} : OCaml
-declare sig_exception[start:n, finish:n, name:s]{'tl : OCaml} : OCaml
-declare sig_external[start:n, finish:n, name:s]{'t : OCaml; 'sl : OCaml} : OCaml
-declare sig_module[start:n, finish:n, name:s]{'mt : OCaml} : OCaml
-declare sig_module_type[start:n, finish:n, name:s]{'mt : OCaml} : OCaml
-declare sig_open[start:n, finish:n]{'sl : OCaml} : OCaml
-declare sig_type[start:n, finish:n]{'tdl : OCaml} : OCaml
-declare sig_value[start:n, finish:n, name:s]{'t : OCaml} : OCaml
-declare "stream"[start:n, finish:n]{'e1 : OCaml} : OCaml
-declare str_exception[start:n, finish:n, name:s]{'tl : OCaml} : OCaml
-declare str_expr[start:n, finish:n]{'e : OCaml} : OCaml
-declare str_external[start:n, finish:n, name:s]{'t : OCaml; 'sl : OCaml} : OCaml
-declare str_fix[start:n, finish:n]{'p : OCaml} : OCaml
-declare "string"[start:n, finish:n, s:s] : OCaml
-declare "string_subscript"[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare str_let[start:n, finish:n]{'p : OCaml; 'e : OCaml} : OCaml
-declare str_let[start:n, finish:n]{'e : OCaml} : OCaml
-declare str_module[name:s, start:n, finish:n]{'me : OCaml} : OCaml
-declare str_module_type[start:n, finish:n, name:s]{'mt : OCaml} : OCaml
-declare str_open[start:n, finish:n]{'sl : OCaml} : OCaml
-declare str_type[start:n, finish:n]{'tdl : OCaml} : OCaml
-declare "try"[start:n, finish:n]{'e : OCaml; 'pwel : OCaml} : OCaml
-declare "tuple"[start:n, finish:n]{'e1 : OCaml} : OCaml
-declare type_apply[start:n, finish:n]{'t1 : OCaml; 't2 : OCaml} : OCaml
-declare type_as[start:n, finish:n]{'t1 : OCaml; 't2 : OCaml} : OCaml
-declare type_class_id[start:n, finish:n]{'t1 : OCaml} : OCaml
-declare type_equal[start:n, finish:n]{'t1 : OCaml; 't2 : OCaml} : OCaml
-declare type_fun[start:n, finish:n]{'t1 : OCaml; 't2 : OCaml} : OCaml
-declare type_lid[start:n, finish:n]{'v : OCaml} : OCaml
-declare type_list[start:n, finish:n]{'stl : OCaml} : OCaml
-declare type_param[start:n, finish:n, s:s] : OCaml
-declare type_prod[start:n, finish:n]{'tl : OCaml} : OCaml
-declare type_proj[start:n, finish:n]{'t1 : OCaml; 't2 : OCaml} : OCaml
-declare type_record[start:n, finish:n]{'t : OCaml} : OCaml
-declare type_uid[start:n, finish:n]{'v : OCaml} : OCaml
-declare type_wildcard[start:n, finish:n] : OCaml
-declare "uid"[start:n, finish:n]{'v : OCaml} : OCaml
-declare "while"[start:n, finish:n]{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare "apply"[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare "array"[start:n, finish:n]{'e1 : TyOCaml} : TyOCaml
+declare "array_subscript"[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare assign[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare cast[start:n, finish:n]{'e : TyOCaml; 't : TyOCaml} : TyOCaml
+declare "char"[start:n, finish:n, c:s] : TyOCaml
+declare class_coerce[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare "fix"[start:n, finish:n]{'p : TyOCaml} : TyOCaml
+declare "float"[start:n, finish:n, f:s] : TyOCaml
+declare for_downto[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml; x. 'e3 : TyOCaml} : TyOCaml
+declare for_upto[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml; x. 'e3 : TyOCaml} : TyOCaml
+declare "fun"[start:n, finish:n]{'pwel : TyOCaml} : TyOCaml
+declare ifthenelse[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml; 'e3 : TyOCaml} : TyOCaml
+declare "int"[start:n, finish:n, i:n] : TyOCaml
+declare "let"[start:n, finish:n]{'p : TyOCaml; 'e : TyOCaml} : TyOCaml
+declare "lid"[start:n, finish:n]{'v : TyOCaml} : TyOCaml
+declare "list"[start:n, finish:n]{'e1 : TyOCaml} : TyOCaml
+declare "match"[start:n, finish:n]{'e : TyOCaml; 'pwel : TyOCaml} : TyOCaml
+declare mt_apply[start:n, finish:n]{'mt1 : TyOCaml; 'mt2 : TyOCaml} : TyOCaml
+declare mt_functor[start:n, finish:n, name:s]{'mt1 : TyOCaml; 'mt2 : TyOCaml} : TyOCaml
+declare mt_lid[start:n, finish:n]{'v : TyOCaml} : TyOCaml
+declare mt_proj[start:n, finish:n]{'mt1 : TyOCaml; 'mt2 : TyOCaml} : TyOCaml
+declare mt_sig[start:n, finish:n]{'sil : TyOCaml} : TyOCaml
+declare mt_uid[start:n, finish:n]{'v : TyOCaml} : TyOCaml
+declare mt_with[start:n, finish:n]{'mt : TyOCaml; 'wcl : TyOCaml} : TyOCaml
+declare patt_and[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_apply_arg[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_apply_end[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_apply[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_as_arg[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_as_end[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_as[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_body[start:n, finish:n]{'e : TyOCaml} : TyOCaml
+declare patt_char[start:n, finish:n, c:s]{'p1 : TyOCaml} : TyOCaml
+declare patt_choice_arg[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_choice_end[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_choice[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_done[start:n, finish:n] : TyOCaml
+declare patt_fix_and[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_fix_arg[start:n, finish:n]{'e1 : TyOCaml; 'p1 : TyOCaml} : TyOCaml
+declare patt_float[start:n, finish:n, x:s]{'p1 : TyOCaml} : TyOCaml
+declare patt_ifelse[start:n, finish:n]{'pwe : TyOCaml; 'pwel : TyOCaml} : TyOCaml
+declare patt_if[start:n, finish:n]{'pwe : TyOCaml} : TyOCaml
+declare patt_in[start:n, finish:n]{'e1 : TyOCaml} : TyOCaml
+declare patt_int[start:n, finish:n, i:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_lid[start:n, finish:n]{'p1 : TyOCaml; 'p2 : TyOCaml} : TyOCaml
+declare patt_list_arg[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_list_end[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_list[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_proj_arg[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_proj_end[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_proj[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_range_arg[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_range_end[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_range[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_record_end[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_record_proj[start:n, finish:n]{'e1 : TyOCaml; 'p1 : TyOCaml} : TyOCaml
+declare patt_record[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_string[start:n, finish:n, s:s]{'p1 : TyOCaml} : TyOCaml
+declare patt_tuple_arg[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_tuple_end[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_tuple[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_uid[start:n, finish:n]{'p1 : TyOCaml; 'p2 : TyOCaml} : TyOCaml
+declare patt_var[start:n, finish:n]{x. 'p1 : TyOCaml} : TyOCaml
+declare patt_wildcard[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
+declare patt_with[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare "proj"[start:n, finish:n]{'A : TyOCaml; 'B : TyOCaml} : TyOCaml
+declare "record"[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare "sequence"[start:n, finish:n]{'e1 : TyOCaml} : TyOCaml
+declare sig_exception[start:n, finish:n, name:s]{'tl : TyOCaml} : TyOCaml
+declare sig_external[start:n, finish:n, name:s]{'t : TyOCaml; 'sl : TyOCaml} : TyOCaml
+declare sig_module[start:n, finish:n, name:s]{'mt : TyOCaml} : TyOCaml
+declare sig_module_type[start:n, finish:n, name:s]{'mt : TyOCaml} : TyOCaml
+declare sig_open[start:n, finish:n]{'sl : TyOCaml} : TyOCaml
+declare sig_type[start:n, finish:n]{'tdl : TyOCaml} : TyOCaml
+declare sig_value[start:n, finish:n, name:s]{'t : TyOCaml} : TyOCaml
+declare "stream"[start:n, finish:n]{'e1 : TyOCaml} : TyOCaml
+declare str_exception[start:n, finish:n, name:s]{'tl : TyOCaml} : TyOCaml
+declare str_expr[start:n, finish:n]{'e : TyOCaml} : TyOCaml
+declare str_external[start:n, finish:n, name:s]{'t : TyOCaml; 'sl : TyOCaml} : TyOCaml
+declare str_fix[start:n, finish:n]{'p : TyOCaml} : TyOCaml
+declare "string"[start:n, finish:n, s:s] : TyOCaml
+declare "string_subscript"[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare str_let[start:n, finish:n]{'p : TyOCaml; 'e : TyOCaml} : TyOCaml
+declare str_let[start:n, finish:n]{'e : TyOCaml} : TyOCaml
+declare str_module[name:s, start:n, finish:n]{'me : TyOCaml} : TyOCaml
+declare str_module_type[start:n, finish:n, name:s]{'mt : TyOCaml} : TyOCaml
+declare str_open[start:n, finish:n]{'sl : TyOCaml} : TyOCaml
+declare str_type[start:n, finish:n]{'tdl : TyOCaml} : TyOCaml
+declare "try"[start:n, finish:n]{'e : TyOCaml; 'pwel : TyOCaml} : TyOCaml
+declare "tuple"[start:n, finish:n]{'e1 : TyOCaml} : TyOCaml
+declare type_apply[start:n, finish:n]{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
+declare type_as[start:n, finish:n]{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
+declare type_class_id[start:n, finish:n]{'t1 : TyOCaml} : TyOCaml
+declare type_equal[start:n, finish:n]{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
+declare type_fun[start:n, finish:n]{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
+declare type_lid[start:n, finish:n]{'v : TyOCaml} : TyOCaml
+declare type_list[start:n, finish:n]{'stl : TyOCaml} : TyOCaml
+declare type_param[start:n, finish:n, s:s] : TyOCaml
+declare type_prod[start:n, finish:n]{'tl : TyOCaml} : TyOCaml
+declare type_proj[start:n, finish:n]{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
+declare type_record[start:n, finish:n]{'t : TyOCaml} : TyOCaml
+declare type_uid[start:n, finish:n]{'v : TyOCaml} : TyOCaml
+declare type_wildcard[start:n, finish:n] : TyOCaml
+declare "uid"[start:n, finish:n]{'v : TyOCaml} : TyOCaml
+declare "while"[start:n, finish:n]{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
 (*
  * -*-

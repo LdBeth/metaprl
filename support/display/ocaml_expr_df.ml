@@ -42,12 +42,12 @@ let _ =
 (*
  * Special flags.
  *)
-declare ident_expr{'expr : OCaml} : OCaml
-declare list_expr{'l : OCaml} : OCaml
-declare se_list{'l : OCaml} : OCaml
-declare ee_list{'l : OCaml} : OCaml
-declare ee_list'{'l : OCaml} : OCaml
-declare e_list{'l : OCaml}
+declare ident_expr{'expr : TyOCaml} : TyOCaml
+declare list_expr{'l : TyOCaml} : TyOCaml
+declare se_list{'l : TyOCaml} : TyOCaml
+declare ee_list{'l : TyOCaml} : TyOCaml
+declare ee_list'{'l : TyOCaml} : TyOCaml
+declare e_list{'l : TyOCaml}
 
 (*
  * Precedences.
@@ -96,7 +96,7 @@ dform df_rev_concat_onil2 : mode[src] :: mode[html] :: mode[prl] :: mode[tex] ::
 (*
  * Type hacking.
  *)
-declare df_term{'t : Dform} : OCaml
+declare df_term{'t : Dform} : TyOCaml
 
 dform df_term_df : df_term{'t} =
    't
@@ -158,8 +158,8 @@ dform proj_df2 : "proj"[start:n, finish:n]{'A; 'B} =
 (*
  * Application.
  *)
-declare "apply"[lid:s]{'e1 : OCaml; 'e2 : OCaml} : OCaml
-declare apply_cons_list_parse{'reversed_parsed : OCaml; 'tail : OCaml} : OCaml
+declare "apply"[lid:s]{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
+declare apply_cons_list_parse{'reversed_parsed : TyOCaml; 'tail : TyOCaml} : TyOCaml
 
 dform apply_df1 : parens :: "prec"[prec_apply] :: "apply"{'e1; 'e2} =
    pushm[0] slot{'e1} hspace slot{'e2} popm
@@ -405,7 +405,7 @@ dform class_coerce_df2 : class_coerce[start:n, finish:n]{'e1; 'e2} =
 (*
  * New object.
  *)
-declare "new"{'e1 : OCaml}
+declare "new"{'e1 : TyOCaml}
 
 dform new_df1 : parens :: "prec"[prec_not] :: "new"{'e1} =
    "_new" slot{'e1}

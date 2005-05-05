@@ -42,9 +42,9 @@ let _ =
 (*
  * Display instructions.
  *)
-declare sig_type_next : OCaml
-declare sig_name : OCaml
-declare sig_slt : OCaml
+declare sig_type_next : TyOCaml
+declare sig_name : TyOCaml
+declare sig_slt : TyOCaml
 
 (*
  * Signatures and structures are treated as records.
@@ -104,9 +104,9 @@ dform sig_open_df2 : sig_open[start:n, finish:n]{'sl} =
 (*
  * Type definition.
  *)
-declare type_arg{'sl : OCaml} : OCaml
-declare type_constraint{'sl : OCaml} : OCaml
-declare sig_type_aux{'tdls : OCaml} : OCaml
+declare type_arg{'sl : TyOCaml} : TyOCaml
+declare type_constraint{'sl : TyOCaml} : TyOCaml
+declare sig_type_aux{'tdls : TyOCaml} : TyOCaml
 
 dform sig_type_df : sig_type{ocons{'tdl; 'tdls}} =
    szone pushm[0] "_type" `" " slot{'tdl} sig_type_aux{'tdls} popm ezone

@@ -924,8 +924,8 @@ declare bound_term{'t : Dform} : Dform
 dform term_binding : term_binding{'t; v. 't2['v]} = 't2[bound_term{'t}]
 dform term_binding2 : resources{term_binding{'t; v. 't2['v]}} = resources{'t2[bound_term{'t}]}
 
-declare opname_of_term : OCaml
-declare opname_bound_term{'t : Dform} : OCaml
+declare opname_of_term : TyOCaml
+declare opname_bound_term{'t : Dform} : TyOCaml
 
 dform opname_of_term_df : opname_of_term =
    Ocaml!lid["opname_of_term"]

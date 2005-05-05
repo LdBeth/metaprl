@@ -40,84 +40,84 @@ extends Ocaml
 (*
  * Operators.
  *)
-declare "[" : OCaml
-declare "]" : OCaml
-declare "[|" : OCaml
-declare "|]" : OCaml
-declare "[<" : OCaml
-declare ">]" : OCaml
-declare "{" : OCaml
-declare "}" : OCaml
-declare "(" : OCaml
-declare ")" : OCaml
+declare "[" : TyOCaml
+declare "]" : TyOCaml
+declare "[|" : TyOCaml
+declare "|]" : TyOCaml
+declare "[<" : TyOCaml
+declare ">]" : TyOCaml
+declare "{" : TyOCaml
+declare "}" : TyOCaml
+declare "(" : TyOCaml
+declare ")" : TyOCaml
 
-declare "+" : OCaml
-declare "-" : OCaml
-declare "*" : OCaml
-declare "/" : OCaml
-declare "mod" : OCaml
+declare "+" : TyOCaml
+declare "-" : TyOCaml
+declare "*" : TyOCaml
+declare "/" : TyOCaml
+declare "mod" : TyOCaml
 
-declare "&" : OCaml
-declare "or" : OCaml
-declare "=" : OCaml
-declare "==" : OCaml
-declare "::" : OCaml
-declare ":=" : OCaml
-declare "." : OCaml
-declare ".(" : OCaml
-declare ".[" : OCaml
-declare ":>" : OCaml
-declare ";" : OCaml
-declare "->" : OCaml
-declare "|" : OCaml
-declare "<>" : OCaml
-declare ":" : OCaml
-declare "_" : OCaml
-declare "#" : OCaml
-declare "'" : OCaml
-declare "\"" : OCaml
+declare "&" : TyOCaml
+declare "or" : TyOCaml
+declare "=" : TyOCaml
+declare "==" : TyOCaml
+declare "::" : TyOCaml
+declare ":=" : TyOCaml
+declare "." : TyOCaml
+declare ".(" : TyOCaml
+declare ".[" : TyOCaml
+declare ":>" : TyOCaml
+declare ";" : TyOCaml
+declare "->" : TyOCaml
+declare "|" : TyOCaml
+declare "<>" : TyOCaml
+declare ":" : TyOCaml
+declare "_" : TyOCaml
+declare "#" : TyOCaml
+declare "'" : TyOCaml
+declare "\"" : TyOCaml
 
-declare "_if" : OCaml
-declare "_then" : OCaml
-declare "_else" : OCaml
+declare "_if" : TyOCaml
+declare "_then" : TyOCaml
+declare "_else" : TyOCaml
 
-declare "_for" : OCaml
-declare "_while" : OCaml
-declare "_to" : OCaml
-declare "_downto" : OCaml
-declare "_do" : OCaml
-declare "_done" : OCaml
+declare "_for" : TyOCaml
+declare "_while" : TyOCaml
+declare "_to" : TyOCaml
+declare "_downto" : TyOCaml
+declare "_do" : TyOCaml
+declare "_done" : TyOCaml
 
-declare "_new" : OCaml
-declare "_fun" : OCaml
-declare "_match" : OCaml
-declare "_try" : OCaml
-declare "_type" : OCaml
-declare "_exception" : OCaml
-declare "_let" : OCaml
-declare "_letrec" : OCaml
-declare "_in" : OCaml
-declare "_and" : OCaml
-declare "_with" : OCaml
-declare "_val" : OCaml
-declare "_as" : OCaml
-declare "_external" : OCaml
-declare "_of" : OCaml
+declare "_new" : TyOCaml
+declare "_fun" : TyOCaml
+declare "_match" : TyOCaml
+declare "_try" : TyOCaml
+declare "_type" : TyOCaml
+declare "_exception" : TyOCaml
+declare "_let" : TyOCaml
+declare "_letrec" : TyOCaml
+declare "_in" : TyOCaml
+declare "_and" : TyOCaml
+declare "_with" : TyOCaml
+declare "_val" : TyOCaml
+declare "_as" : TyOCaml
+declare "_external" : TyOCaml
+declare "_of" : TyOCaml
 
-declare "_module" : OCaml
-declare "_moduletype" : OCaml
-declare "_open" : OCaml
-declare "_sig" : OCaml
-declare "_struct" : OCaml
-declare "_functor" : OCaml
-declare "_end" : OCaml
+declare "_module" : TyOCaml
+declare "_moduletype" : TyOCaml
+declare "_open" : TyOCaml
+declare "_sig" : TyOCaml
+declare "_struct" : TyOCaml
+declare "_functor" : TyOCaml
+declare "_end" : TyOCaml
 
-declare push_indent : OCaml
+declare push_indent : TyOCaml
 
 (*
  * Display control tags.
  *)
-declare patt_format{'a : OCaml; 'b : OCaml} : OCaml
+declare patt_format{'a : TyOCaml; 'b : TyOCaml} : TyOCaml
 
 (*
  * -*-

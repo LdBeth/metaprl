@@ -79,9 +79,9 @@ dform type_wildcard_df2 : type_wildcard[start:n, finish:n] =
 (*
  * Application.
  *)
-declare type_apply_list{'t : OCaml} : OCaml
-declare type_apply_aux{'t1 : OCaml; 't2 : OCaml} : OCaml
-declare type_apply_aux{'t1 : OCaml} : OCaml
+declare type_apply_list{'t : TyOCaml} : TyOCaml
+declare type_apply_aux{'t1 : TyOCaml; 't2 : TyOCaml} : TyOCaml
+declare type_apply_aux{'t1 : TyOCaml} : TyOCaml
 
 dform type_apply_df1 : parens :: "prec"[prec_apply] :: type_apply{'t1; 't2} =
    type_apply_aux{'t1; ocons{'t2; onil}}
@@ -168,7 +168,7 @@ dform type_equal_df2 : type_equal[start:n, finish:n]{'t1; 't2} =
  * Record type.
  * I'm not sure what the boolean is for.
  *)
-declare type_record_aux{'t : OCaml} : OCaml
+declare type_record_aux{'t : TyOCaml} : TyOCaml
 
 dform type_record_df1 : type_record{ocons{'sbt; 'sbtl}} =
    "{" `" " szone pushm[0] slot{'sbt} type_record_aux{'sbtl} popm ezone `" " "}"
@@ -192,7 +192,7 @@ dform type_record_df2 : type_record[start:n, finish:n]{'t} =
 (*
  * Product types.
  *)
-declare type_prod_aux{'t : OCaml} : OCaml
+declare type_prod_aux{'t : TyOCaml} : TyOCaml
 
 dform type_prod_df1 : parens :: "prec"[prec_star] :: type_prod{ocons{'t; 'tl}} =
    szone pushm[0] slot{'t} type_prod_aux{'tl} popm ezone
@@ -209,8 +209,8 @@ dform type_prod_df2 : type_prod[start:n, finish:n]{'tl} =
 (*
  * Disjoint unions.
  *)
-declare stl{'lst : OCaml}
-declare type_list_aux{'stll : OCaml}
+declare stl{'lst : TyOCaml}
+declare type_list_aux{'stll : TyOCaml}
 
 dform type_list_df1 : type_list{ocons{'stl; 'stll}} =
    szone{'stl} type_list_aux{'stll}
