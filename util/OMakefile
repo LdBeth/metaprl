@@ -2,7 +2,7 @@
 # Don't try to scan files in this directory.
 # List the dependencies explicitly.
 #
-.SCANNER: %.cmx %.cmo %.cmi
+.SCANNER: scan-ocaml-%.mli scan-ocaml-%.ml:
     @
 
 if $(NATIVE_PROFILING_ENABLED)
@@ -39,7 +39,7 @@ OCAMLINCLUDES += $(CAMLP4LIB)
 OCAML_LINK_FLAGS += -linkall
 OCAMLFLAGS += -pp $(quote-argv $(CAMLP4R) -I $(CAMLP4LIB) -nolib -loc _loc)
 
-%.cmx %.o: $(CAMLP4R_VERSION)
+%.cmx %$(EXT_OBJ): $(CAMLP4R_VERSION)
 %.cmo: $(CAMLP4R_VERSION)
 %.cmi: $(CAMLP4R_VERSION)
 

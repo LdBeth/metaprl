@@ -29,7 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
 open Tactic_type.Tactic
 
 (*
@@ -38,6 +37,7 @@ open Tactic_type.Tactic
 module type ShellP4Sig =
 sig
    val version : string
+
    (*
     * Expression evaluation.
     *)

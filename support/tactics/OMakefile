@@ -1,7 +1,9 @@
 #
 # Don't need any libraries.
 #
-OCAMLINCLUDES += ../display ../shell
+OCAMLINCLUDES[] +=
+    ../display
+    ../shell
 
 # Common files
 MLZFILES =
@@ -18,7 +20,15 @@ MPFILES[] =
     auto_tactic
     dtactic
 
-PRLFiles($(MPFILES))
+# Files using the normal OCaml compiler
+MLFILES[] =
+    basic_tactics
+
+section
+    export $(STANDARD_BUILD_ENV)
+    files = $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ), $(MLFILES))
+    $(files):
+
 OCamlLibrary(theory, $(MPFILES) basic_tactics)
 
 #

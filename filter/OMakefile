@@ -16,7 +16,7 @@ MAINPROG = prlc
 # Recursive make
 #########################################################################
 
-CamlSubDirs(base filter)
+.SUBDIRS: base filter
 
 #
 # Build combined libraries from subdirs

@@ -63,7 +63,15 @@ FILES[] =
     shell_browser
     shell_theory
 
-PRLFiles($(MPFILES))
+#
+# Some of these files should use the normal OCaml compiler
+#
+section
+    export $(STANDARD_BUILD_ENV)
+    files = $(filter-out $(MPFILES), $(FILES))
+    files = $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ), $(files))
+    $(files):
+
 OCamlLibrary(theory, $(FILES))
 
 OCamlGeneratedFiles(browser_copy.ml browser_session_io.ml session_io.ml)

@@ -40,7 +40,7 @@ OCamlLibraryCopy($(MPINSTALL), $(LIB), refiner, $(EMPTY))
 #
 # Subdirectories
 #
-CamlSubDirs(refbase refsig term_gen term_std term_ds rewrite refiner reflib)
+.SUBDIRS: refbase refsig term_gen term_std term_ds rewrite refiner reflib
 
 #
 # Clean up

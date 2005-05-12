@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.4.8)
+OMakeVersion(0.9.4.13)
 
 ########################################################################
 # Begin real makefile.
@@ -68,7 +68,7 @@ if $(equal $(OSTYPE), Win32)
 
 #
 # Canonize boolean flags
-# This helps in keeping mk/config nice, but can be omited.
+# This helps in keeping mk/config nice, but can be omitted.
 #
 Bool(arg) =
     return $(not $(not $(arg)))
@@ -344,7 +344,7 @@ INCLUDES += $(CAMLLIB)
 #
 # Generic phony targets
 #
-.PHONY: all opt install clean realclean depend tex doc
+.PHONY: all install clean realclean depend tex doc
 
 #
 # Phony target for installing libraries
@@ -383,43 +383,26 @@ if $(NCURSES_ENABLED)
     export
 
 ########################################################################
-# Collect the directories into configuration files.
+# .PHONY targets that depend on all the subdirectories.
+#
 
-WriteLN(f, d) =
-	d = \ -I $(in $(ROOT)/editor/ml, $(dir $d))
-	$f::
-		echo $d>> $f
+#
+# Dependencies are collected in these files
+#
+THEORIES_PATH = $(file editor/ml/theories.dir)
+MLDEBUG_PATH  = $(file editor/ml/mldebug.dir)
 
-THEORIES_CONF = $(file editor/ml/theories.dir)
-MLDEBUG_CONF = $(file editor/ml/mldebug.dir)
+$(THEORIES_PATH):
+    section eval
+        deps = $(dependencies $@)
+        deps = $(quote-argv $(mapprefix -I, $(in editor/ml, $(deps))))
+        fprintln($@, INCLUDES=$(deps))
 
-.DEFAULT: $(THEORIES_CONF) $(MLDEBUG_CONF)
-
-if $(not $(equal $(OSTYPE), Win32))
-	$(THEORIES_CONF) ::
-		echo $'INCLUDES=\"\'> $@
-
-	$(MLDEBUG_CONF) ::
-		echo $'DEBUGINCLUDES=\"\'> $@
-
-CamlDirs(names) =
-   foreach(n, $(names))
-      WriteLN($(MLDEBUG_CONF), $(n))
-
-CamlSubDirs(names) =
-   .SUBDIRS: $(names)
-   CamlDirs($(names))
-
-TheoryDirs(names) =
-   CamlDirs($(names))
-   foreach(n, $(names))
-      WriteLN($(THEORIES_CONF), $(n))
-
-TheorySubDirs(names) =
-   .SUBDIRS: $(names)
-   TheoryDirs($(names))
-
-CamlDirs($(CAMLLIB) $(CAMLP4LIB))
+$(MLDEBUG_PATH):
+    section eval
+        deps = $(project-directories) $(CAMLLIB) $(CAMLP4LIB)
+        deps = $(quote-argv $(mapprefix -I, $(in editor/ml, $(deps))))
+        fprintln($@, DEBUGINCLUDES=$(deps))
 
 ########################################################################
 # Default clean line
@@ -429,7 +412,7 @@ MLPFILES =
 CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
 
 clean:
-    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) bin/genmagic$(EXE) bin/gen_int_bench$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config mk/*.omc) $(THEORIES_CONF) $(MLDEBUG_CONF)
+    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) bin/genmagic$(EXE) bin/gen_int_bench$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config mk/*.omc) $(THEORIES_PATH) $(MLDEBUG_PATH)
 
 realclean: clean
     -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb) # XXX: This is a temporary HACK
@@ -447,13 +430,13 @@ OCAMLDEP = $(file bin/ocamldep$(EXE))
 
 OCAMLDEPFLAGS += -omake
 
-.SCANNER: %.cmi: %.mli $(OCAMLDEP) OCamlGeneratedFilesTarget
-.SCANNER: %.cmo %.cmx: %.ml $(OCAMLDEP) OCamlGeneratedFilesTarget :exists: %.mli
+.SCANNER: scan-ocaml-%.mli: %.mli $(OCAMLDEP) OCamlGeneratedFilesTarget
+.SCANNER: scan-ocaml-%.ml: %.ml $(OCAMLDEP) OCamlGeneratedFilesTarget :exists: %.mli
 
 #
 # Libmojave is using our custom scanner, but otherwise config is normal
 #
-CamlSubDirs(libmojave)
+.SUBDIRS: libmojave
 
 OCAMLINCLUDES += $(dir libmojave/stdlib libmojave/util libmojave/unix)
 
@@ -488,11 +471,14 @@ section
         $(MACROPRINT) $(MACROPPOPTS) $< > $@
 
     # These directories use the macro preprocessor
-    CamlSubDirs(mllib)
+    .SUBDIRS: mllib
 
     OCAMLINCLUDES += $(dir mllib)
 
-    CamlSubDirs(refiner)
+    .SUBDIRS: refiner
+
+    # Do not export
+    return 0
 
 OCAMLINCLUDES += $(dir mllib)
 
@@ -503,15 +489,20 @@ OCAMLINCLUDES += $(dir refiner/refsig refiner/refbase refiner/refiner refiner/re
 ########################################################################
 # Generic directories with no special options
 #
-
-CamlSubDirs(library debug $(ENSEMBLE_DIR) tactics/proof)
+.SUBDIRS: library debug $(ENSEMBLE_DIR) tactics/proof
 
 # Add camlp4 library to include path
 OCAMLINCLUDES += $(dir library tactics/proof)
 
-CamlSubDirs(filter)
+.SUBDIRS: filter
 
 OCAMLINCLUDES += $(dir filter/base filter/filter)
+
+#
+# Capture the current environment so that some files can use it
+# in some places.
+#
+STANDARD_BUILD_ENV = $(export rules)
 
 ########################################################################
 # Theory building
@@ -537,70 +528,54 @@ MPTIME =
 #
 # Add dependency scanning for .ppo files
 #
-.SCANNER: %.ppo %.cmoz: %.ml $(OCAMLDEP) OCamlGeneratedFilesTarget
+.SCANNER: scan-ocaml-%.ml: %.ml $(OCAMLDEP) OCamlGeneratedFilesTarget
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
 
-.SCANNER: %.cmi %.cmiz: %.mli $(OCAMLDEP) OCamlGeneratedFilesTarget
+.SCANNER: scan-ocaml-%.mli: %.mli $(OCAMLDEP) OCamlGeneratedFilesTarget
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
 
-PRLEnv() =
-   # Dependency analysis uses -prl flag by default
-   OCAMLDEPFLAGS += -prl
+# Dependency analysis uses -prl flag by default
+OCAMLDEPFLAGS += -prl
 
-   #
-   # Make sure we do not try falling back to an OCaml rule for an .ml without an .mli
-   # See also:
-   #   http://bugzilla.metaprl.org/show_bug.cgi?id=90
-   #   http://bugzilla.metaprl.org/show_bug.cgi?id=420
-   #
-   %.cmx %.o: %.ml
-      @echo $(quote *** Error: MetaPRL file $(in $(ROOT), $(file $<)) $'does not have
+#
+# Make sure we do not try falling back to an OCaml rule for an .ml without an .mli
+# See also:
+#   http://bugzilla.metaprl.org/show_bug.cgi?id=90
+#   http://bugzilla.metaprl.org/show_bug.cgi?id=420
+#
+%.cmx %.o: %.ml
+   @echo $(quote *** Error: MetaPRL file $(in $(ROOT), $(file $<)) $'does not have
 ***        a corresponding' $(in $(ROOT), $(file $*.mli)))
-      exit 1
-
-   #
-   # For theory files, generate intermediate .ppo files
-   #
-   %.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb
-      $(WrapC $(CAMLP4N)) $(CAMLP4NFLAGS) -o $*.ppo $*.ml
-
-   %.cmi %.cmiz: %.mli
-      $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
-
-   %.cmo: %.ppo
-      $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
-
-   %.cmx %$(EXT_OBJ): %.ppo
-      $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
-
-   if $(SLOPPY_DEPENDENCIES)
-      %.cmi %.cmiz:  :squash: $(CAMLP4N)
-      %.ppo %.cmoz:  :squash: $(CAMLP4N)
-
-   else
-      %.cmi %.cmiz: $(CAMLP4N)
-      %.ppo %.cmoz: $(CAMLP4N)
-
-   %.p4i: %.mli $(CAMLP4O)
-      $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.mli > $@
-
-   %.p4: %.ml $(CAMLP4O)
-      $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.ml > $@
-
-   export
-
-PRLFiles(files) =
-   PRLEnv()
-
-   $(addsuffixes .ppo .cmoz .cmiz .cmi .cmo .cmx $(EXT_OBJ) .p4i .p4, $(files)):
-
-   .DEFAULT: $(addsuffix .cmoz, $(files))
+   exit 1
 
 #
-# Support directories
+# For theory files, generate intermediate .ppo files
 #
-SUPPORT = $(dir support)
-SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, $(array display, shell, tactics, doc)))
+%.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml
+   $(WrapC $(CAMLP4N)) $(CAMLP4NFLAGS) -o $*.ppo $*.ml
+
+%.cmi %.cmiz: %.mli :scanner: scan-ocaml-%.mli
+   $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
+
+%.cmo: %.ppo :scanner: scan-ocaml-%.ml
+   $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+
+%.cmx %$(EXT_OBJ): %.ppo :scanner: scan-ocaml-%.ml
+   $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+
+if $(SLOPPY_DEPENDENCIES)
+   %.cmi %.cmiz:  :squash: $(CAMLP4N)
+   %.ppo %.cmoz:  :squash: $(CAMLP4N)
+
+else
+   %.cmi %.cmiz: $(CAMLP4N)
+   %.ppo %.cmoz: $(CAMLP4N)
+
+%.p4i: %.mli $(CAMLP4O)
+   $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.mli > $@
+
+%.p4: %.ml $(CAMLP4O)
+   $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.ml > $@
 
 #
 # Add the extra dependencies.  If sloppy dependencies
@@ -621,8 +596,10 @@ else
    %.ppo %.cmoz: $(CAMLP4N)
    export
 
-
 # These directories use prlc
+SUPPORT = $(dir support)
+SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, $(array display, shell, tactics, doc)))
+
 THEORIES = $(split ' ', $(THEORIES))
 THEORIES = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all, $(THEORIES)), $(THEORIES))
 THEORY_DIRS = $(dir $(addprefix theories/, $(THEORIES)))
@@ -631,8 +608,9 @@ MP_DIRS[] =
    $(THEORY_DIRS)
 
 Theory(files) =
-    PRLFiles($(files))
     OCamlLibrary(theory, $(files))
+    .DEFAULT: $(addsuffix .cmoz, $(files))
+    $(THEORIES_PATH): $(CWD)
 
 ########################################################################
 # LaTeX documentation
@@ -699,27 +677,19 @@ CLEAN += $`(file *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.ou
 section
    THEORYNAME = support
    THEORYDESCR = MetaPRL Internal "Helper" Modules
-   TheorySubDirs($(SUPPORT_DIRS) editor/ml)
+   .SUBDIRS: $(SUPPORT_DIRS) editor/ml
 
 section
    # Default theory for those directories that do not override it
    THEORYNAME = other
    THEORYDESCR = Miscellaneous Theories
+
    # Always use -linkall on Theory libraries
    OCAML_LIB_FLAGS += -linkall
-   TheorySubDirs($(THEORY_DIRS))
+   .SUBDIRS: $(THEORY_DIRS)
 
 if $(NATIVE_ENABLED)
    .PHONY: check-status
-   check-status: util/check-status util/check-status.sh editor/ml/mp.opt editor/ml/mpopt editor/ml/mpconfig $(THEORIES_CONF) $(MLDEBUG_CONF)
+
+   check-status: util/check-status util/check-status.sh editor/ml/mp.opt editor/ml/mpopt editor/ml/mpconfig $(THEORIES_PATH) $(MLDEBUG_PATH)
       util/check-status nomake
-
-########################################################################
-# Close the directory listing files
-#
-if $(not $(equal $(OSTYPE), Win32))
-    $(THEORIES_CONF) ::
-        echo $'\"'>> $@
-
-    $(MLDEBUG_CONF) ::
-        echo $'\"'>> $@

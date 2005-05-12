@@ -47,8 +47,6 @@ TOPFILES[] =
     nuprl_run
     mp_top
 
-PRLFiles($(MP2FILES))
-
 TESTFILES[] =
 
 if $(TESTS_ENABLED)
@@ -59,7 +57,7 @@ if $(TESTS_ENABLED)
          $(file tests/prop-pigeon)
       export
    if $(TESTFILES)
-      TheorySubDirs(tests)
+      .SUBDIRS: tests
    export
 
 MP2FILES = $(TESTFILES) $(MP2FILES)
@@ -221,6 +219,7 @@ LocalOCamlGeneratedFiles(mp_version.ml)
 # Defaults
 #
 .DEFAULT: .test-metaprl-startup
+
 if $(NATIVE_ENABLED)
    .test-metaprl-startup: $(MP).opt
 
@@ -228,9 +227,9 @@ if $(BYTE_ENABLED)
    .test-metaprl-startup: $(MP).top $(MP).run
 
 section
-   EXT=$(if $(NATIVE_ENABLED), opt, top)
-   EXT=$(if $(equal $(OSTYPE), Win32), $(EXT).bat, $(EXT))
-   .test-metaprl-startup: $(MP)$(EXT) $(MP)config $(THEORIES_CONF) $(MLDEBUG_CONF)
+   EXT = $(if $(NATIVE_ENABLED), opt, top)
+   EXT = $(if $(equal $(OSTYPE), Win32), $(EXT).bat, $(EXT))
+   .test-metaprl-startup: $(MP)$(EXT) $(MP)config $(THEORIES_PATH) $(MLDEBUG_PATH)
       echo | $(CURRENT_EXEC_DIR)$(MP)$(EXT) -batch
       touch $@
 
