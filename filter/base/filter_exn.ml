@@ -34,6 +34,7 @@ open Lm_rprintf
 open Lexing
 
 open Refiner.Refiner.TermShape
+open Refiner.Refiner.RefineError
 open Dform
 open Simple_print.SimplePrint
 open File_type_base
@@ -236,7 +237,13 @@ let print_exn db s f x =
                format_newline buf;
                output_rbuffer stderr buf;
                flush stderr;
-               raise (Refine_exn.ToploopIgnoreExn exn)
+               begin
+                  match exn with
+                     RefineError(s, _) ->
+                        raise(RefineError(s, ToploopIgnoreError))
+                   | _ ->
+                        raise (Refine_exn.ToploopIgnoreExn exn)
+               end
 
 let handle_exn db s loc f =
    if Refine_exn.backtrace then

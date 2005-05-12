@@ -460,8 +460,13 @@ let print_exn db f x =
             flush stderr;
             if backtrace then
                raise exn
-            else
-               raise (ToploopIgnoreExn exn)
+            else begin
+               match exn with
+                  RefineError(s, _) ->
+                     raise(RefineError(s, ToploopIgnoreError))
+                | _ ->
+                     raise (ToploopIgnoreExn exn)
+            end
 
 let stderr_exn s exn =
    let buf = new_buffer () in
@@ -477,8 +482,13 @@ let stderr_exn s exn =
       flush stderr;
       if backtrace then
          raise exn
-      else
-         raise (ToploopIgnoreExn exn)
+      else begin
+         match exn with
+            RefineError(s, _) ->
+               raise(RefineError(s, ToploopIgnoreError))
+          | _ ->
+               raise (ToploopIgnoreExn exn)
+      end
 
 (*
  * -*-
