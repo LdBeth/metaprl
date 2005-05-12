@@ -180,14 +180,12 @@ if $(not $(NATIVE_PROFILING_ENABLED))
 #
 # Do not compile MetaPRL with threads.
 #
-THREADS =
-THREADSLIB =
-OPTTHREADSLIB =
+THREADSLIB[] =
+OPTTHREADSLIB[] =
 OCAML_OTHER_LIBS += unix
 
 if $(THREADS_ENABLED)
-    THREADS = -thread
-    OCAMLFLAGS += $(THREADS)
+    OCAMLFLAGS += -thread
     OCAML_OTHER_LIBS += threads
     THREADSLIB = $(CAMLLIB)/threads/threads.cma
     OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
