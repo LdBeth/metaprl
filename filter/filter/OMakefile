@@ -2,12 +2,20 @@
 # No special includes
 #
 OCAMLINCLUDES[] +=
-	../base
+    ../base
 
 #
 # Library files
 #
-include Files
+FILTER_FILES[] =
+    term_grammar
+    filter_patt
+    filter_prog
+    filter_parse
+    filter_main
+    filter_bin
+    filter_convert
+    prlcomp
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), filterfilter, $(FILTER_FILES))
 

@@ -7,16 +7,16 @@ OCAMLINCLUDES += ../display ../shell
 MLZFILES =
 
 # Library files
-MPFILES =\
-	tactic_cache\
-	base_cache\
-	var\
-	top_tacticals\
-	top_conversionals\
-	simp_typeinf\
-	typeinf\
-	auto_tactic\
-	dtactic\
+MPFILES[] =
+    tactic_cache
+    base_cache
+    var
+    top_tacticals
+    top_conversionals
+    simp_typeinf
+    typeinf
+    auto_tactic
+    dtactic
 
 PRLFiles($(MPFILES))
 OCamlLibrary(theory, $(MPFILES) basic_tactics)

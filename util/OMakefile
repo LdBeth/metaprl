@@ -3,15 +3,15 @@
 # List the dependencies explicitly.
 #
 .SCANNER: %.cmx %.cmo %.cmi
-	@
+    @
 
 if $(NATIVE_PROFILING_ENABLED)
-   NATIVE_ENABLED = false
-   export
+    NATIVE_ENABLED = false
+    export
 
 if $(NATIVE_ENABLED)
-   BYTE_ENABLED = false
-   export
+    BYTE_ENABLED = false
+    export
 
 OCAMLDEP = $(file ocamldep$(EXE))
 BINDEP   = $(file $(BIN)/ocamldep$(EXE))
@@ -44,9 +44,9 @@ OCAMLFLAGS += -pp $(quote-argv $(CAMLP4R) -I $(CAMLP4LIB) -nolib -loc _loc)
 %.cmi: $(CAMLP4R_VERSION)
 
 MACRO_FILES[] =
-   $(CAMLP4LIB)/pa_o
-   pa_macro
-   macro_main
+    $(CAMLP4LIB)/pa_o
+    pa_macro
+    macro_main
 
 OCamlProgramInstall($(MPINSTALL), $(LIB), macropp, $(CAMLP4LIB)/pr_dump $(MACRO_FILES))
 OCamlProgramInstall($(MPINSTALL), $(LIB), macroprint, $(CAMLP4LIB)/pr_o $(MACRO_FILES))

@@ -1,8 +1,8 @@
-TERM_DS_FILES =\
-	term_ds_sig\
-	term_ds\
-	term_base_ds\
-	term_op_ds\
-	term_subst_ds\
-	term_man_ds\
-	term_addr_ds\
+TERM_DS_FILES[] =
+    term_ds_sig
+    term_ds
+    term_base_ds
+    term_op_ds
+    term_subst_ds
+    term_man_ds
+    term_addr_ds

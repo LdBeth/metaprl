@@ -24,15 +24,15 @@ REWRITE_FILES  = $(file $(addprefix rewrite/,  $(REWRITE_FILES)))
 REFINER_FILES  = $(file $(addprefix refiner/,  $(REFINER_FILES)))
 REFLIB_FILES   = $(file $(addprefix reflib/,   $(REFLIB_FILES)))
 
-FILES =\
-	$(REFBASE_FILES)\
-	$(REFSIG_FILES)\
-	$(TERM_GEN_FILES)\
-	$(TERM_STD_FILES)\
-	$(TERM_DS_FILES)\
-	$(REWRITE_FILES)\
-	$(REFINER_FILES)\
-	$(REFLIB_FILES)
+FILES[] =
+    $(REFBASE_FILES)
+    $(REFSIG_FILES)
+    $(TERM_GEN_FILES)
+    $(TERM_STD_FILES)
+    $(TERM_DS_FILES)
+    $(REWRITE_FILES)
+    $(REFINER_FILES)
+    $(REFLIB_FILES)
 
 OCamlLibrary(refiner, $(FILES))
 OCamlLibraryCopy($(MPINSTALL), $(LIB), refiner, $(EMPTY))

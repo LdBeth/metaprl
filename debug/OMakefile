@@ -1,48 +1,48 @@
 # Shared files
-MLZFILES =\
-    asttypes\
+MLZFILES[] =
+    asttypes
     parser_aux
 
-PFILES_SRC =\
-    $(MLZFILES)\
-    ident\
-    config\
-    misc\
-    tbl\
-    primitive\
-    path\
-    types\
-    btype\
-    subst\
-    predef\
-    datarepr\
-    env\
-    lambda\
-    instruct\
-    opcodes\
-    clflags\
-    typedtree\
-    ctype\
-    typeopt\
-    terminfo\
-    linenum\
-    location\
-    matching\
-    translobj\
-    translcore\
-    translclass\
-    translmod\
-    meta\
-    emitcode\
-    runtimedef\
-    symtable\
-    debugger_config\
-    primitives\
-    lexer\
-    input_handling\
-    parser\
-    debugcom\
-    symbols\
+PFILES_SRC[] =
+    $(MLZFILES)
+    ident
+    config
+    misc
+    tbl
+    primitive
+    path
+    types
+    btype
+    subst
+    predef
+    datarepr
+    env
+    lambda
+    instruct
+    opcodes
+    clflags
+    typedtree
+    ctype
+    typeopt
+    terminfo
+    linenum
+    location
+    matching
+    translobj
+    translcore
+    translclass
+    translmod
+    meta
+    emitcode
+    runtimedef
+    symtable
+    debugger_config
+    primitives
+    lexer
+    input_handling
+    parser
+    debugcom
+    symbols
     debug
 
 PFILES_NONE =
@@ -52,7 +52,7 @@ PFILES = $(if $(equal $(OCAMLSRC), undefined), $(PFILES_NONE), $(PFILES_SRC))
 #
 # Standard library files
 #
-LMFILES =\
+LMFILES[] =
     debug_symbols
 
 OCamlLibrary(ldsymbols, $(LMFILES))
@@ -60,50 +60,50 @@ OCamlLibrary(ldsymbols, $(LMFILES))
 #
 # Rules
 #
-DEBUG_FILES =\
-	debugger_config\
-	primitives\
-	input_handling\
-	debugcom\
-	symbols\
-	parser
+DEBUG_FILES[] =
+    debugger_config
+    primitives
+    input_handling
+    debugcom
+    symbols
+    parser
 
-TYPING_FILES =\
-	env\
-	path\
-	types\
-	subst\
-	btype\
-	predef\
-	datarepr\
-	primitive\
-	ident\
-	typedtree\
-	ctype
+TYPING_FILES[] =
+    env
+    path
+    types
+    subst
+    btype
+    predef
+    datarepr
+    primitive
+    ident
+    typedtree
+    ctype
 
-BYTECOMP_FILES =\
-	lambda\
-	instruct\
-	typeopt\
-	matching\
-	translclass\
-	translcore\
-	translobj\
-	translmod\
-	meta\
-	emitcode\
-	runtimedef\
-	symtable
+BYTECOMP_FILES[] =
+    lambda
+    instruct
+    typeopt
+    matching
+    translclass
+    translcore
+    translobj
+    translmod
+    meta
+    emitcode
+    runtimedef
+    symtable
 
-UTIL_FILES =\
-	tbl\
-	config\
-	misc\
-	terminfo
+UTIL_FILES[] =
+    tbl
+    config
+    misc
+    terminfo
 
-PARSING_FILES =\
-	linenum\
-	location
+PARSING_FILES[] =
+    linenum
+    location
 
 asttypes.mlz: $(OCAMLSRC)/parsing/asttypes.mli
    $(symlink $<, $@)
@@ -115,7 +115,7 @@ opcodes.ml: $(OCAMLSRC)/bytecomp/opcodes.ml
    $(symlink $<, $@)
 
 opcodes.mli: opcodes.ml
-	sed -e 's,let \(.*\)=.*,val \1 : int,' < opcodes.ml > opcodes.mli
+    sed -e 's,let \(.*\)=.*,val \1 : int,' < opcodes.ml > opcodes.mli
 
 clflags.ml: $(OCAMLSRC)/utils/clflags.ml
    $(symlink $<, $@)
@@ -127,7 +127,7 @@ lexer.ml: $(OCAMLSRC)/debugger/lexer.ml
    $(symlink $<, $@)
 
 lexer.mli: lexer.ml
-	$(OCAMLC) $(OCAMLCFLAGS) -i lexer.ml > lexer.mli
+    $(OCAMLC) $(OCAMLCFLAGS) -i lexer.ml > lexer.mli
 
 $(addsuffix .ml, $(DEBUG_FILES)): %.ml: $(OCAMLSRC)/debugger/%.ml
    $(symlink $<, $@)

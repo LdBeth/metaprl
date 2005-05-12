@@ -2,11 +2,11 @@ OCAMLPPFLAGS =
 OCAMLFLAGS += -rectypes
 
 OCAMLINCLUDES[] +=
-	../refbase
-	../refsig
-	../refiner
-	../term_ds
-	../term_gen
+    ../refbase
+    ../refsig
+    ../refiner
+    ../term_ds
+    ../term_gen
 
 OCamlLibraryInstall(all, $(LIB), reflib, $(REFLIB_FILES))
 

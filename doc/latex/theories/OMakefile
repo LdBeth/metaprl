@@ -1,11 +1,11 @@
 #
 # Format a document containing all of the theories
 #
-DEF_ALL_THEORIES =\
-    base\
-    fol\
-    itt\
-    czf\
+DEF_ALL_THEORIES[] =
+    base
+    fol
+    itt
+    czf
     fir
 
 ALL_THEORIES = $(intersection $(DEF_ALL_THEORIES), $(THEORIES))
@@ -28,4 +28,4 @@ LaTeXDocumentInstall(tex doc, $(DOCDIR), theories, all-theories, all-bodies)
 # Clean up
 #
 clean:
-	$(CLEAN) all-bodies.tex
+    $(CLEAN) all-bodies.tex

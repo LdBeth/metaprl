@@ -1,11 +1,11 @@
 CAMLP4INCLUDES = ../refsig
 
 OCAMLINCLUDES[] +=
-	../refbase
-	../refsig
-	../term_std
-	../term_gen
-	../term_ds
+    ../refbase
+    ../refsig
+    ../term_std
+    ../term_gen
+    ../term_ds
 
 #
 # Rewriter library

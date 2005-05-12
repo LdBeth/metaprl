@@ -12,17 +12,17 @@ OCAMLPPFLAGS = -pp $(quote-argv camlp4o$(EXE) -I $(CAMLP4LIB) q_MLast.cmo)
 # Library files
 #
 PROOF_FILES[] =
-	tactic_boot_sig
-	tactic_boot
-	sequent_boot
-	tacticals_boot
-	rewrite_boot
-	conversionals_boot
-	proof_term_boot
-	proof_boot
-	exn_boot
-	tactic_type
-	proof_convert
+    tactic_boot_sig
+    tactic_boot
+    sequent_boot
+    tacticals_boot
+    rewrite_boot
+    conversionals_boot
+    proof_term_boot
+    proof_boot
+    exn_boot
+    tactic_type
+    proof_convert
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), prooflib, $(PROOF_FILES))
 

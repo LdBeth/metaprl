@@ -9,4 +9,4 @@
 # Clean up
 #
 clean:
-	$(CLEAN)
+    $(CLEAN)

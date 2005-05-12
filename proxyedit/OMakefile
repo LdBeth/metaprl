@@ -2,10 +2,10 @@
 # External editor
 #
 if $(SSL_ENABLED)
-   PROXYEDIT_FILES =\
-       ../mllib/punix\
-       ../mllib/setup\
-       proxyedit_lex\
+   PROXYEDIT_FILES[] =
+       ../mllib/punix
+       ../mllib/setup
+       proxyedit_lex
        proxyedit_main
 
    LIBS += $(LIBMOJAVE_CLIB) $(file $(ROOT)/clib/clib)

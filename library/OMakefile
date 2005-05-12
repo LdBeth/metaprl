@@ -1,35 +1,31 @@
 # Libraries
 OCAML_OTHER_LIBS = unix
 
-OCAMLLIBS =\
-	$(ROOT)/mllib/util\
-	$(ROOT)/refiner/refiner\
-	$(ROOT)/refiner/refsig/reflib\
-	library
-
-OCAML_LINK_FLAGS =\
-	-cclib $(ROOT)/lib/clib.a\
-	-cclib -lunix
+OCAMLLIBS[] =
+    $(ROOT)/mllib/util
+    $(ROOT)/refiner/refiner
+    $(ROOT)/refiner/refsig/reflib
+    library
 
 # Library files
-LMFILES =\
-	utils\
-	lint32\
-	nuprl5\
-	registry\
-	mathBus\
-	mbterm\
-	basic\
-	socketIo\
-	link\
-	ascii_scan\
-	db\
-	tentfunctor\
-	oidtable\
-	definition\
-	orb\
-	library\
-	library_type_base
+LMFILES[] =
+    utils
+    lint32
+    nuprl5
+    registry
+    mathBus
+    mbterm
+    basic
+    socketIo
+    link
+    ascii_scan
+    db
+    tentfunctor
+    oidtable
+    definition
+    orb
+    library
+    library_type_base
 
 #
 # Library also depends on registry

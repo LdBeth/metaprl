@@ -1,9 +1,9 @@
 CAMLP4INCLUDES = ../refsig
 
 OCAMLINCLUDES[] +=
-	../refbase
-	../refsig
-	../term_gen
+    ../refbase
+    ../refsig
+    ../term_gen
 
 OCAMLFLAGS += -rectypes
 

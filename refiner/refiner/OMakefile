@@ -1,10 +1,10 @@
 OCAMLINCLUDES[] +=
-	../refbase
-	../refsig
-	../term_std
-	../term_gen
-	../term_ds
-	../rewrite
+    ../refbase
+    ../refsig
+    ../term_std
+    ../term_gen
+    ../term_ds
+    ../rewrite
 
 OCamlLibraryInstall(all, $(LIB), refine, $(REFINER_FILES))
 

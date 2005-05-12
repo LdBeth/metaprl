@@ -13,39 +13,39 @@ MP = mp
 ########################################################################
 
 # Common files
-MLZFILES =\
-        proof_sig\
-        display_sig\
-        nuprl_sig
+MLZFILES[] =
+    proof_sig
+    display_sig
+    nuprl_sig
 
-MP2FILES =\
-        shell_mp\
-        shell_p4\
-        nuprl_sig\
-        nuprl_eval\
-        nuprl_jprover\
-        nuprl_run\
-        mp\
-        mp_top
+MP2FILES[] =
+    shell_mp
+    shell_p4
+    nuprl_sig
+    nuprl_eval
+    nuprl_jprover
+    nuprl_run
+    mp
+    mp_top
 
-RUNFILES =\
-        mp_version\
-        shell_mp\
-        shell_p4\
-        nuprl_sig\
-        nuprl_eval\
-        nuprl_jprover\
-        nuprl_run\
-        mp
+RUNFILES[] =
+    mp_version
+    shell_mp
+    shell_p4
+    nuprl_sig
+    nuprl_eval
+    nuprl_jprover
+    nuprl_run
+    mp
 
-TOPFILES =\
-        mp_version\
-        shell_mp\
-        nuprl_sig\
-        nuprl_eval\
-        nuprl_jprover\
-        nuprl_run\
-        mp_top
+TOPFILES[] =
+    mp_version
+    shell_mp
+    nuprl_sig
+    nuprl_eval
+    nuprl_jprover
+    nuprl_run
+    mp_top
 
 PRLFiles($(MP2FILES))
 
@@ -120,66 +120,53 @@ else
    PROF_EXT=
    export
 
-CMXADEPS =\
-        $(CAMLLIB)/unix.cmxa\
-        $(CAMLLIB)/str.cmxa\
-        $(OPTTHREADSLIB)\
-        $(CAMLP4LIB)/odyl$(PROF_EXT).cmxa\
-        $(CAMLP4LIB)/camlp4$(PROF_EXT).cmxa\
-        $(BASE_CMXAS)\
-        $(CAMLP4LIB)/pa_o$(PROF_EXT).cmx\
-        $(CAMLP4LIB)/pa_op$(PROF_EXT).cmx\
-        $(file $(ROOT)/filter/prlc.cmxa)\
-        $(addsuffix /theory.cmxa, $(MP_DIRS))\
+CMXADEPS[] =
+    $(CAMLLIB)/unix.cmxa
+    $(CAMLLIB)/str.cmxa
+    $(OPTTHREADSLIB)
+    $(CAMLP4LIB)/odyl$(PROF_EXT).cmxa
+    $(CAMLP4LIB)/camlp4$(PROF_EXT).cmxa
+    $(BASE_CMXAS)
+    $(CAMLP4LIB)/pa_o$(PROF_EXT).cmx
+    $(CAMLP4LIB)/pa_op$(PROF_EXT).cmx
+    $(file $(ROOT)/filter/prlc.cmxa)
+    $(addsuffix /theory.cmxa, $(MP_DIRS))
 
-ARDEPS =\
-        $(BASE_ARS)\
-        $(file $(ROOT)/filter/prlc$(EXT_LIB))\
-        $(addsuffix /theory$(EXT_LIB), $(MP_DIRS))\
+ARDEPS[] =
+    $(BASE_ARS)
+    $(file $(ROOT)/filter/prlc$(EXT_LIB))
+    $(addsuffix /theory$(EXT_LIB), $(MP_DIRS))
 
-CMXALIBS =\
-        $(CMXADEPS)
+CMADEPS[] =
+    $(CAMLP4LIB)/odyl.cma
+    $(CAMLLIB)/unix.cma
+    $(CAMLLIB)/str.cma
+    $(THREADSLIB)
+    $(CAMLP4LIB)/camlp4.cma
+    $(CAMLP4LIB)/camlp4_top.cma
+    $(BASE_CMAS)
+    $(CAMLP4LIB)/pa_o.cmo
+    $(CAMLP4LIB)/pa_op.cmo
+    $(file $(ROOT)/filter/prlc.cma)
+    $(addsuffix /theory.cma, $(MP_DIRS))
 
-CMADEPS =\
-        $(CAMLP4LIB)/odyl.cma\
-        $(CAMLLIB)/unix.cma\
-        $(CAMLLIB)/str.cma\
-        $(THREADSLIB)\
-        $(CAMLP4LIB)/camlp4.cma\
-        $(CAMLP4LIB)/camlp4_top.cma\
-        $(BASE_CMAS)\
-        $(CAMLP4LIB)/pa_o.cmo\
-        $(CAMLP4LIB)/pa_op.cmo\
-        $(file $(ROOT)/filter/prlc.cma)\
-        $(addsuffix /theory.cma, $(MP_DIRS))\
+TCMADEPS[] =
+    $(CAMLP4LIB)/odyl.cma
+    $(CAMLLIB)/unix.cma
+    $(CAMLLIB)/str.cma
+    $(THREADSLIB)
+    $(CAMLP4LIB)/camlp4.cma
+    $(BASE_CMAS)
+    $(CAMLP4LIB)/pa_o.cmo
+    $(CAMLP4LIB)/pa_op.cmo
+    $(file $(ROOT)/filter/prlc.cma)
+    $(addsuffix /theory.cma, $(MP_DIRS))
 
-TCMADEPS =\
-        $(CAMLP4LIB)/odyl.cma\
-        $(CAMLLIB)/unix.cma\
-        $(CAMLLIB)/str.cma\
-        $(THREADSLIB)\
-        $(CAMLP4LIB)/camlp4.cma\
-        $(BASE_CMAS)\
-        $(CAMLP4LIB)/pa_o.cmo\
-        $(CAMLP4LIB)/pa_op.cmo\
-        $(file $(ROOT)/filter/prlc.cma)\
-        $(addsuffix /theory.cma, $(MP_DIRS))\
-
-
-CMALIBS =\
-        $(CMADEPS)
-
-TCMALIBS =\
-        $(TCMADEPS)
-
-CMOBJS =\
-        $(CMALIBS)
-
-TCMOBJS =\
-        $(TCMALIBS)
-
-CMXOBJS =\
-        $(CMXALIBS)
+CMALIBS = $(CMADEPS)
+TCMALIBS = $(TCMADEPS)
+CMOBJS = $(CMALIBS)
+TCMOBJS = $(TCMALIBS)
+CMXOBJS = $(CMXADEPS)
 
 CLIBS = $(file $(ROOT)/clib/clib)
 BYTE_CLIBS = $(addsuffix $(EXT_LIB), $(CLIBS))
@@ -205,28 +192,28 @@ if $(NATIVE_ENABLED)
     export
 
 $(MP).run: $(BYTE_DEPS) $(RCMOFILES) $(OCAMLMKTOP_VERSION)
-        $(RM) $@
-        $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom $(THREADS)\
-		$(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+    $(RM) $@
+    $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom $(THREADS)\
+        $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).top: $(TOP_DEPS) $(TCMOFILES)
-        $(RM) $@
-        $(OCAMLLINK) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom $(THREADS)\
-		$(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+    $(RM) $@
+    $(OCAMLLINK) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom $(THREADS)\
+        $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).opt: $(OPT_DEPS) $(TCMXFILES) $(TOBJFILES)
-        $(RM) $@
-        $(OCAMLOPTLINK) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) -o $@ $(THREADS)\
-		$(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+    $(RM) $@
+    $(OCAMLOPTLINK) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) -o $@ $(THREADS)\
+        $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 #
 # Generate the mp_version.ml file
 #
 make_mp_version$(EXE): make_mp_version.ml
-	$(OCAMLC) $(OCAMLCFLAGS) -o $@ unix.cma $<
+    $(OCAMLC) $(OCAMLCFLAGS) -o $@ unix.cma $<
 
 mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
-	./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
+    ./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
 
 LocalOCamlGeneratedFiles(mp_version.ml)
 

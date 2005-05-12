@@ -14,46 +14,45 @@ LIBNAME = trefiner
 #
 MLZFILES =
 HOSTTYPE =
-MAIN = x
+MAIN =
 
-
-LMFILES =\
-    appl_outboard_common\
-    appl_outboard_client\
+LMFILES[] =
+    appl_outboard_common
+    appl_outboard_client
     ensemble_queue
-    remote_sig\
-    remote_null\
-    remote_ensemble\
-    remote_monitor\
+    remote_sig
+    remote_null
+    remote_ensemble
+    remote_monitor
     thread_refiner
 
-LIBS =\
+LIBS[] =
     $(LIB)/trefiner
 
 #
 # Server program
 #
-MSFILES =\
-    appl_outboard_common\
+MSFILES[] =
+    appl_outboard_common
     appl_outboard_server
 
-LIBS_serv =\
-    $(CAMLLIB)/unix.cma\
-    $(THREADSLIB)\
-    $(ENSROOT)/lib/$(HOSTTYPE)/socket.cma\
-    $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cma\
-    $(ENSROOT)/lib/$(HOSTTYPE)/_nulldynlink.cmo\
-    $(ENSROOT)/lib/$(HOSTTYPE)/libenscore.cma\
-    $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cma\
-    $(ENSROOT)/lib/$(HOSTTYPE)/libensrest.cma\
-    $(LIB)/util.cma\
+LIBS_serv[] =
+    $(CAMLLIB)/unix.cma
+    $(THREADSLIB)
+    $(ENSROOT)/lib/$(HOSTTYPE)/socket.cma
+    $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cma
+    $(ENSROOT)/lib/$(HOSTTYPE)/_nulldynlink.cmo
+    $(ENSROOT)/lib/$(HOSTTYPE)/libenscore.cma
+    $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cma
+    $(ENSROOT)/lib/$(HOSTTYPE)/libensrest.cma
+    $(LIB)/util.cma
     $(MAIN).cma
 
-OTHERLIBS_serv =\
-    $(ENSROOT)/lib/$(HOSTTYPE)/socket.cmxa\
-    $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cmxa\
-    $(ENSROOT)/lib/$(HOSTTYPE)/libenscore.cmxa\
-    $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cmxa\
+OTHERLIBS_serv[] =
+    $(ENSROOT)/lib/$(HOSTTYPE)/socket.cmxa
+    $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cmxa
+    $(ENSROOT)/lib/$(HOSTTYPE)/libenscore.cmxa
+    $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cmxa
     $(ENSROOT)/lib/$(HOSTTYPE)/libensrest.cmxa
 
 CLIBS_serv = $(LIB)/clib

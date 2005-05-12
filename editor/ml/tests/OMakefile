@@ -1,7 +1,7 @@
 PRLFiles($(TESTFILES))
 
-MPFILES =\
-   test\
+MPFILES[] =
+   test
    prop-pigeon
 
 clean:
