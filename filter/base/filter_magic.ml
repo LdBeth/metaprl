@@ -125,9 +125,8 @@ let ascii_versions = List.map (pack_version 1 0) [21;20;19;18;17;16;15;14;13;12;
  * Magic numbers for interactive files                                  *
  ************************************************************************)
 
-(* Previously used somewhere: 0x63ac6be3, 0x63ac6be7, 0x63ac6be9, 0x73ac6be2, 0x73ac6be4, 0x73ac6be5, 0x73ac6be7 *)
+(* Previously used somewhere: 0x09ac12bd 0x63ac6be3, 0x63ac6be7, 0x63ac6be9, 0x73ac6be2, 0x73ac6be4, 0x73ac6be5, 0x73ac6be7 *)
 (* Currently in use in Filter_cache: 0x73ac6be6, 0x73ac6be8, 0x73ac6be1, 0x73ac6be3 *)
-(* Currently in use by Phobos: 0x09ac12bd *)
 
 let int_term_sig_magic = 0x63ac6be1
 let int_term_str_magic = 0x63ac6be3
