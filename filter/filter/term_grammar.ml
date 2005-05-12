@@ -2078,7 +2078,9 @@ struct
           ]];
 
       sl_implies:
-         [[ "=>" -> "implies" ]];
+         [[ "=>" -> "implies"
+          | "<=>" -> "iff"
+          ]];
 
       sl_open_quantify:
          [[ "forany" -> "all"
