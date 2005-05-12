@@ -39,6 +39,8 @@ open Format
 open Http_simple
 open Http_server_type
 
+open Refiner.Refiner.RefineError
+
 open Browser_copy
 open Browser_edit
 open Browser_state
@@ -1396,34 +1398,39 @@ struct
     * We handle only get and post for now.
     *)
    let http_connect server state outx inx args header body =
-      let state =
-         http_wait server state;
-         update_state state
-      in
-      let () =
-         match args with
-            "get" :: uri :: _ ->
-               get server state outx uri header
-          | "put" :: uri :: _ ->
-               if is_valid_response state header then
-                  put server state outx uri header body
-               else
-                  print_login_page outx state None
-          | "post" :: uri :: _ ->
-               if is_valid_response state header then
-                  post server state outx inx uri header body
-               else
-                  print_login_page outx state None
-          | command :: _ ->
-               print_error_page outx NotImplementedCode;
-               eprintf "Shell_simple_http: unknown command: %s@." command
-          | [] ->
-               print_error_page outx BadRequestCode;
-               eprintf "Shell_simple_http: null command@."
-      in
-         if !debug_http then
-            eprintf "Shell_browser.http_connect: connection finished@.";
-         state
+      try
+         let state =
+            http_wait server state;
+            update_state state
+         in
+         let () =
+            match args with
+               "get" :: uri :: _ ->
+                  get server state outx uri header
+             | "put" :: uri :: _ ->
+                  if is_valid_response state header then
+                     put server state outx uri header body
+                  else
+                     print_login_page outx state None
+             | "post" :: uri :: _ ->
+                  if is_valid_response state header then
+                     post server state outx inx uri header body
+                  else
+                     print_login_page outx state None
+             | command :: _ ->
+                  print_error_page outx NotImplementedCode;
+                  eprintf "Shell_simple_http: unknown command: %s@." command
+             | [] ->
+                  print_error_page outx BadRequestCode;
+                  eprintf "Shell_simple_http: null command@."
+         in
+            if !debug_http then
+               eprintf "Shell_browser.http_connect: connection finished@.";
+            state
+      with
+         RefineError(_, ToploopIgnoreError)
+       | Refine_exn.ToploopIgnoreExn _ ->
+            state
 
    (*
     * Start a browser if possible.
