@@ -230,7 +230,7 @@ section
    EXT = $(if $(NATIVE_ENABLED), opt, top)
    EXT = $(if $(equal $(OSTYPE), Win32), $(EXT).bat, $(EXT))
    .test-metaprl-startup: $(MP)$(EXT) $(MP)config $(THEORIES_PATH) $(MLDEBUG_PATH)
-      echo | $(CURRENT_EXEC_DIR)$(MP)$(EXT) -batch
+      echo | ./$(MP)$(EXT) -batch
       touch $@
 
 #

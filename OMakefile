@@ -108,16 +108,6 @@ SLOPPY_DEPENDENCIES = $(Bool $(SLOPPY_DEPENDENCIES))
 #
 if $(equal $(OSTYPE), Win32)
    #
-   # cmd.exe does not like ./command paths
-   #
-   CURRENT_EXEC_DIR =
-
-   #
-   # Pathname separator
-   #
-   SLASH = \\
-
-   #
    # Compile C files with threads
    #
    CFLAGS += /MT
@@ -130,17 +120,6 @@ if $(equal $(OSTYPE), Win32)
    export
 
 else
-   #
-   # Current directory, for executables.
-   # That is, the current directory, like ./make_mp_config
-   #
-   CURRENT_EXEC_DIR = ./
-
-   #
-   # Pathname separator
-   #
-   SLASH = /
-
    #
    # Location of OCaml root
    #
