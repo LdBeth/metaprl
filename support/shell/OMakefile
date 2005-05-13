@@ -72,6 +72,8 @@ section
     files = $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ), $(files))
     $(files):
 
+$(THEORIES_PATH): $(CWD)
+
 OCamlLibrary(theory, $(FILES))
 
 OCamlGeneratedFiles(browser_copy.ml browser_session_io.ml session_io.ml)

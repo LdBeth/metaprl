@@ -29,6 +29,8 @@ section
     files = $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ), $(MLFILES))
     $(files):
 
+$(THEORIES_PATH): $(CWD)
+
 OCamlLibrary(theory, $(MPFILES) basic_tactics)
 
 #

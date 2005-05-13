@@ -1,8 +1,8 @@
-PRLFiles($(TESTFILES))
-
 MPFILES[] =
    test
    prop-pigeon
+
+$(THEORIES_PATH): $(CWD)
 
 clean:
    $(CLEAN)

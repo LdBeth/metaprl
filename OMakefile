@@ -40,6 +40,7 @@ if $(not $(VERBOSE))
 ABORT_ON_DEPENDENCY_ERRORS = true
 OCAMLDEPFLAGS =
 USE_OCAMLFIND = false
+SCANNER_MODE = error
 
 #
 # Configuration defaults
@@ -395,14 +396,20 @@ MLDEBUG_PATH  = $(file editor/ml/mldebug.dir)
 $(THEORIES_PATH):
     section eval
         deps = $(dependencies $@)
-        deps = $(quote-argv $(mapprefix -I, $(in editor/ml, $(deps))))
-        fprintln($@, INCLUDES=$(deps))
+        deps = $(mapprefix -I, $(in editor/ml, $(deps)))
+        if $(equal $(OSTYPE), Win32)
+            fprintln($@, $(string $(deps)))
+        else
+            fprintln($@, INCLUDES=$(quote-argv $(deps)))
 
 $(MLDEBUG_PATH):
     section eval
         deps = $(project-directories) $(CAMLLIB) $(CAMLP4LIB)
-        deps = $(quote-argv $(mapprefix -I, $(in editor/ml, $(deps))))
-        fprintln($@, DEBUGINCLUDES=$(deps))
+        deps = $(mapprefix -I, $(in editor/ml, $(deps)))
+        if $(equal $(OSTYPE), Win32)
+            fprintln($@, $(string $(deps)))
+        else
+            fprintln($@, DEBUGINCLUDES=$(quote-argv $(deps)))
 
 ########################################################################
 # Default clean line
