@@ -512,15 +512,6 @@ CAMLP4NFLAGS = $`(PREFIXED_OCAMLINCLUDES)
 CAMLP4OFLAGS = $`(PREFIXED_OCAMLINCLUDES)
 MPTIME =
 
-#
-# Add dependency scanning for .ppo files
-#
-.SCANNER: scan-ocaml-%.ml: %.ml $(OCAMLDEP) OCamlGeneratedFilesTarget
-    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
-
-.SCANNER: scan-ocaml-%.mli: %.mli $(OCAMLDEP) OCamlGeneratedFilesTarget
-    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
-
 # Dependency analysis uses -prl flag by default
 OCAMLDEPFLAGS += -prl
 
