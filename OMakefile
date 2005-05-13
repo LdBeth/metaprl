@@ -63,9 +63,10 @@ if $(file-exists mk/config)
 # Things that can not be enabled on Win32.
 #
 if $(equal $(OSTYPE), Win32)
-   READLINE_ENABLED = false
-   NCURSES_ENABLED = false
-   NATIVE_PROFILING_ENABLED = false
+    READLINE_ENABLED = false
+    NCURSES_ENABLED = false
+    NATIVE_PROFILING_ENABLED = false
+    export
 
 #
 # Canonize boolean flags
