@@ -403,7 +403,7 @@ clean:
 
 realclean: clean
     -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb) # XXX: This is a temporary HACK
-    cvs_realclean -i .omakedb -i mk/config -i mk/config.local
+    cvs_realclean -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local
 
 ########################################################################
 # Directories needing only the standard config
