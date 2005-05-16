@@ -901,7 +901,16 @@ let stdin_stream () =
    let buf = create_buffer () in
    let refill loc =
       let state = State.get state_entry in
-      let str = unsynchronize Lm_readline.readline (if !batch_flag then "" else state.state_prompt1) ^ "\n" in
+      let str = unsynchronize Lm_readline.readline (if !batch_flag then "" else state.state_prompt1) in
+      (* XXX HACK (nogin): append ";;" at the end of a line, unless it ends with a '\' *)
+      let str =
+         if !batch_flag then
+            str ^ "\n"
+         else if (str.[String.length str - 1] = '\\')  then
+            String.sub str 0 (String.length str - 1)
+         else
+            str ^ ";;"
+      in
          state.state_prompt1 <- state.state_prompt2;
          buf.buf_index <- 0;
          buf.buf_buffer <- str;
