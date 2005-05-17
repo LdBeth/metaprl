@@ -645,7 +645,7 @@ TheoryDocumentInstall(name, theories) =
 #
 # Also clean up the TeX files in the subdirectories
 #
-CLEAN += $`(file *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc)
+CLEAN += $`(file *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc *.fls)
 
 ########################################################################
 # Subdirectories to build
