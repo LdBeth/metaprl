@@ -481,16 +481,24 @@ dform term_param_df : "term_param"{'t} =
    ensuremath{'t}
    popm ezone
 
+declare df_rewrite_conds{'conds : Dform} : Dform
+
 (*
  * A conditional rewrite requires special handling of the params.
  *)
-dform cond_rewrite_df : "cond_rewrite"[name:s]{'params; 'args; 'redex; 'contractum; 'proof; 'res} =
+dform cond_rewrite_df : "cond_rewrite"[name:s]{'params; 'conds; 'redex; 'contractum; 'proof; 'res} =
    szone pushm[4]
-   ensuremath{'proof} info[" rewrite"] " " szone rewrite_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] ezone hspace ensuremath{'args} " " ensuremath{longrightarrow} hspace
+   ensuremath{'proof} info[" rewrite"] " " szone rewrite_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] ezone
+   hspace df_rewrite_conds{'conds}
    szone pushm[0]
    ensuremath{slot{'redex}} " " ensuremath{longleftrightarrow} hspace ensuremath{slot{'contractum}}
    popm ezone
    popm ezone
+
+dform df_rewrite_conds_nil : df_rewrite_conds{xnil} = `""
+
+dform df_rewrite_conds_cons : df_rewrite_conds{xcons{'c; 'res}} =
+   slot{'c} " " longrightarrow hspace df_rewrite_conds{'res}
 
 dform rule_df : "rule"[name:s]{'params; 'stmt; 'proof; 'res} =
    hzone pushm[4]
