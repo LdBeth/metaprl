@@ -12,6 +12,8 @@ ALL_THEORIES = $(intersection $(DEF_ALL_THEORIES), $(THEORIES))
 
 ALL_BODIES = $(file $(add-wrapper $(ROOT)/theories/, /theory-body.tex, $(ALL_THEORIES)))
 
+LocalTeXGeneratedFiles(all-bodies.tex)
+
 all-bodies.tex: $(ALL_BODIES)
     cat $+ > $@
 

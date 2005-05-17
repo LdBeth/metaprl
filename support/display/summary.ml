@@ -498,7 +498,7 @@ dform cond_rewrite_df : "cond_rewrite"[name:s]{'params; 'conds; 'redex; 'contrac
 dform df_rewrite_conds_nil : df_rewrite_conds{xnil} = `""
 
 dform df_rewrite_conds_cons : df_rewrite_conds{xcons{'c; 'res}} =
-   slot{'c} " " longrightarrow hspace df_rewrite_conds{'res}
+   ensuremath{slot{'c}} " " ensuremath{longrightarrow} hspace df_rewrite_conds{'res}
 
 dform rule_df : "rule"[name:s]{'params; 'stmt; 'proof; 'res} =
    hzone pushm[4]
