@@ -897,6 +897,8 @@ let save_readline_history () =
       Sys_error err ->
          eprintf "Couldn't save readline history file \"%s\"\n%s\n" rl_history_file err
 
+let scscregexp = Str.regexp ".*;;[ \t]*$"
+
 let stdin_stream () =
    let buf = create_buffer () in
    let refill loc =
@@ -906,8 +908,10 @@ let stdin_stream () =
       let str =
          if !batch_flag then
             str ^ "\n"
-         else if (str.[String.length str - 1] = '\\')  then
+         else if str.[String.length str - 1] = '\\'  then
             String.sub str 0 (String.length str - 1)
+         else if Str.string_match scscregexp str 0 then
+            str
          else
             str ^ ";;"
       in
