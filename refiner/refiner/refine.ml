@@ -646,14 +646,14 @@ struct
     * so we need to calculate the binding occurrences to the
     * term in question, and then rename to avoid capture in the goal.
     *)
-   let replace_subgoals mseq subgoals =
+   let replace_subgoals tst mseq subgoals =
       (*
        * We have to rename sequent vars when we substitute into the goal.
        *)
       let replace_subgoal addr t' =
          (* Compute the extra binding variables in the clause *)
          let addr1, addr2 = TermAddr.split_clause_address addr in
-         let tst = term_subterm mseq.mseq_goal addr1 in
+         let tst = term_subterm tst addr1 in
          let f bvars t =
             if SymbolSet.intersectp bvars (free_vars_set t') then
                REF_RAISE(RefineError ("Refine.replace_subgoals",
@@ -704,7 +704,7 @@ struct
          else
             { seq with mseq_assums = Lm_list_util.replace_nth (pred i) t' assums }
       in
-      let subgoals = subgoal :: replace_subgoals seq subgoals in
+      let subgoals = subgoal :: replace_subgoals t' seq subgoals in
          subgoals, CondRewriteJust (seq, just, subgoals)
 
    (*
@@ -713,11 +713,11 @@ struct
    let crwaddr addr (crw: cond_rewrite) sent bvars t =
       DEFINE body =
          let t', (subgoals, just) =
-            let f t =
+            let f bvars t =
                let t, subgoals, just = crw sent bvars t in
                   t, (subgoals, just)
             in
-               apply_fun_arg_at_addr f addr t
+               apply_var_fun_arg_at_addr f addr bvars t
          in
             t', CondRewriteSubgoalsAddr (addr, subgoals), CondRewriteAddress (t, addr, just, t')
       IN
@@ -766,7 +766,7 @@ struct
                      raise (RefineError ("corelserw", PairError (name1, x, name2, y)))
       ELSE
          try crw1 sent bvars t with
-            _ ->
+            RefineError _ ->
                crw2 sent bvars t
       ENDIF
 
