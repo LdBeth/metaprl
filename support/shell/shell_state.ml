@@ -908,7 +908,7 @@ let stdin_stream () =
       let str =
          if !batch_flag then
             str ^ "\n"
-         else if str.[String.length str - 1] = '\\'  then
+         else if str <> "" && str.[String.length str - 1] = '\\'  then
             String.sub str 0 (String.length str - 1)
          else if Str.string_match scscregexp str 0 then
             str
