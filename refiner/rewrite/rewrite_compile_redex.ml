@@ -118,19 +118,6 @@ struct
    let bvar_ind ((_ : var), (i : int)) =
       i
 
-   (* Add an extra free variable restriction to a hypothesis *)
-   let restrict_free_in_hyp v = function
-      RWSeqContext (i, l, vs) -> RWSeqFreeVarsContext ([], [v], i, l, vs)
-    | RWSeqFreeVarsContext (cs, rs, i, l, vs) -> RWSeqFreeVarsContext (cs, v::rs, i, l, vs)
-    | RWSeqHyp (v', RWFreeVars(t, cs, rs)) -> RWSeqHyp (v', RWFreeVars(t, cs, v::rs))
-    | RWSeqHyp (v', t) -> RWSeqHyp (v', RWFreeVars(t, [], [v]))
-    | _ -> raise(Invalid_argument("Rewrite_compile_redex.restrict_free_in_hyp"))
-
-   (* Add an extra free variable restriction to a term *)
-   let restrict_free_in_term v = function
-      RWFreeVars(t, rconts, rs) -> RWFreeVars(t, rconts, v::rs)
-    | t -> RWFreeVars(t, [], [v])
-
    let rec restrict_cont c v = function
       [] -> REF_RAISE(RefineError ("Rewrite_compile_redex", RewriteFreeContextVar(v,c)))
     | ((v', _) as hd) :: tl ->
@@ -217,7 +204,6 @@ struct
                in
                let v' = rstack_so_index v stack in
                let args = if subterms = [] then [] else List.map (var_index st.st_bvars) subterms in
-               let term = RWSOVar(v', args) in
                let restrict_free =
                   if st.st_strict then
                      let bvars = List.map bvar_ind st.st_bvars in
@@ -240,9 +226,9 @@ struct
                in
                let t =
                   if restrict_free = [] && restrict_conts = [] then
-                     term
+                     RWSOVar(v', args)
                   else
-                     RWFreeVars (term, restrict_conts,restrict_free)
+                     RWSOFreeVarsVar(restrict_conts, restrict_free, v', args)
                in
                   stack, t
 
@@ -502,9 +488,14 @@ struct
          RWCompositeSimple { rws_op = t.rws_op; rws_bterms = List.map (map_restricts_bterm restr) t.rws_bterms }
     | RWSequent (t, hyps, concl) ->
          RWSequent (map_restricts_term restr t, List.map (map_restricts_hyp restr) hyps, map_restricts_term restr concl)
-    | RWSOVar (i, _) as t ->
+    | RWSOVar (i, ts) as t ->
          if List.mem_assoc i restr then
-            RWFreeVars(t, List.assoc i restr, [])
+            RWSOFreeVarsVar(List.assoc i restr, [], i, ts)
+         else
+            t
+    | RWSOFreeVarsVar (cts, vs, i, ts) as t ->
+         if List.mem_assoc i restr then
+            RWSOFreeVarsVar((List.assoc i restr) @ cts, vs, i, ts)
          else
             t
     | RWSOInstance _ as t ->
@@ -521,13 +512,6 @@ struct
                RWSOFreeVarsContext((List.assoc i restr) @ rconts, rvars, i, j, t, il)
             else
                RWSOFreeVarsContext(rconts, rvars, i, j, t, il)
-    | RWFreeVars(t, rconts, rvars) ->
-         begin match map_restricts_term restr t with
-            RWFreeVars(t, rconts', rvars') ->
-               RWFreeVars(t, rconts' @ rconts, rvars' @ rvars)
-          | t ->
-               RWFreeVars(t, rconts, rvars)
-         end
     | RWCheckVar _ as t ->
          t
     | RWMatchFreeFOVar (i, conts, vars) as t ->

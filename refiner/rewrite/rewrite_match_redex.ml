@@ -421,10 +421,7 @@ struct
      *)
    and match_redex_term addrs stack all_bvars t' t =
       match t' with
-         RWFreeVars (t'', conts, vars) ->
-            restrict_vars stack (free_vars_set t) conts vars;
-            match_redex_term addrs stack all_bvars t'' t
-       | RWComposite { rw_op = op'; rw_bterms = bterms' } ->
+         RWComposite { rw_op = op'; rw_bterms = bterms' } ->
             if Opname.eq (opname_of_term t) op'.rw_name then
                begin
                   let term = dest_term t in
@@ -499,53 +496,61 @@ struct
                         REF_RAISE(RefineError ("match_redex_term", RewriteStringError "stack entry is not a variable"))
             end
 
-       | RWSOVar (i, l) ->
+       | RWSOVar (i, l)
+       | RWSOFreeVarsVar(_, _, i, l) ->
             (* Save the term at i *)
+            let vars = extract_bvars stack l in
+            begin match t' with
+               RWSOFreeVarsVar(rconts, rvars, _, _) ->
+                  restrict_vars stack (SymbolSet.subtract_list (free_vars_set t) vars) rconts rvars
+             | _ ->
+                  ()
+            end;
             begin
-               let vars = extract_bvars stack l in
-                  IFDEF VERBOSE_EXN THEN
-                     if !debug_rewrite then
-                        eprintf "Rewrite.match_redex.RWSOVar: stack(%d)/%d with %a%t"
-                        i (Array.length stack) print_term t eflush
-                  ENDIF;
-                  match stack.(i) with
-                     StackVoid ->
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_rewrite then
+                     eprintf "Rewrite.match_redex.RWSOVar: stack(%d)/%d with %a%t"
+                     i (Array.length stack) print_term t eflush
+               ENDIF;
+               match stack.(i) with
+                  StackVoid ->
+                     IFDEF VERBOSE_EXN THEN
+                        if !debug_rewrite then
+                           eprintf "\tRWSoVar: Void%t" eflush
+                     ENDIF;
+                     stack.(i) <- StackBTerm (t, vars);
+
+                | StackBTerm (t', vars') ->
+                     begin
                         IFDEF VERBOSE_EXN THEN
                            if !debug_rewrite then
-                              eprintf "\tRWSoVar: Void%t" eflush
-                        ENDIF;
-                        stack.(i) <- StackBTerm (t, vars)
-                   | StackBTerm (t', vars') ->
-                        begin
-                           IFDEF VERBOSE_EXN THEN
-                              if !debug_rewrite then
-                                 eprintf "\tRWSOVar: Bterm: check_simple_match%t" eflush
-                           ENDIF
-                        end;
-                        check_simple_match t vars t' vars';
-                        begin
-                           IFDEF VERBOSE_EXN THEN
-                              if !debug_rewrite then
-                                 eprintf "\tRWSOVar: Bterm: check_simple_match: ok%t" eflush
-                           ENDIF
-                        end
-                   | StackITerm l ->
-                        begin
-                           IFDEF VERBOSE_EXN THEN
-                              if !debug_rewrite then
-                                 eprintf "\tRWSOVar: ITerm: check_matches%t" eflush
-                           ENDIF
-                        end;
-                        check_matches addrs stack all_bvars t vars l;
-                        begin
-                           IFDEF VERBOSE_EXN THEN
-                              if !debug_rewrite then
-                                 eprintf "\tRWSOVar: ITerm: check_matches: ok%t" eflush
-                           ENDIF
-                        end;
-                        stack.(i) <- StackBTerm (t, vars)
-                   | _ ->
-                        REF_RAISE(RefineError ("match_redex_term", RewriteStringError "stack entry is not valid"))
+                              eprintf "\tRWSOVar: Bterm: check_simple_match%t" eflush
+                        ENDIF
+                     end;
+                     check_simple_match t vars t' vars';
+                     begin
+                        IFDEF VERBOSE_EXN THEN
+                           if !debug_rewrite then
+                              eprintf "\tRWSOVar: Bterm: check_simple_match: ok%t" eflush
+                        ENDIF
+                     end
+                | StackITerm l ->
+                     begin
+                        IFDEF VERBOSE_EXN THEN
+                           if !debug_rewrite then
+                              eprintf "\tRWSOVar: ITerm: check_matches%t" eflush
+                        ENDIF
+                     end;
+                     check_matches addrs stack all_bvars t vars l;
+                     begin
+                        IFDEF VERBOSE_EXN THEN
+                           if !debug_rewrite then
+                              eprintf "\tRWSOVar: ITerm: check_matches: ok%t" eflush
+                        ENDIF
+                     end;
+                     stack.(i) <- StackBTerm (t, vars)
+                | _ ->
+                     REF_RAISE(RefineError ("match_redex_term", RewriteStringError "stack entry is not valid"))
             end
 
        | RWSOInstance (i, subterms) ->

@@ -259,6 +259,8 @@ struct
                (print_prog (tabstop + 3)) concl
        | RWSOVar (i, il) ->
             fprintf out "RWSOVar (%d, %a)\n" i print_int_list il
+       | RWSOFreeVarsVar (il1,il2,i,il) ->
+            fprintf out "RWSOFreeVarsVar (%d, %a) <%a> [%a]\n" i print_int_list il print_int_list il1 print_int_list il2
        | RWSOInstance (i, tl) ->
             fprintf out "RWSOInstance (%d)\n%a" i (print_prog_list (tabstop + 3)) tl
        | RWSOContext (i, j, t, il) ->
@@ -275,8 +277,6 @@ struct
                i
                (print_prog (tabstop + 3)) t
                (print_prog_list (tabstop + 3)) tl
-       | RWFreeVars (t,il1,il2) ->
-            fprintf out "RWFreeVars <%a> [%a]\n%a" print_int_list il1 print_int_list il2 (print_prog (tabstop+3)) t
        | RWMatchFreeFOVar (i, cs, is) ->
             fprintf out "RWMatchFreeFOVar <%d> [%a] [%a]\n" i print_int_list cs print_int_list is
        | RWCheckVar i ->
