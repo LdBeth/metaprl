@@ -33,6 +33,11 @@
 open Refiner_sig
 open Simple_print_sig
 
+(*
+ * Display string of a variable (returns "_" for vars with an empty "string" part).
+ *)
+val dstring_of_var : Lm_symbol.var -> string
+
 module MakeSimplePrint (Refiner : RefinerSig)
 : SimplePrintSig
   with type term = Refiner.TermType.term

@@ -49,6 +49,7 @@ open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 open Term_match_table
+open Simple_print
 open Simple_print.SimplePrint
 
 (*
@@ -233,7 +234,7 @@ let ezone df = format_ezone df.dform_buffer
 
 let string_of_param = function
    RewriteParam s -> s
- | RewriteMetaParam v -> string_of_symbol v
+ | RewriteMetaParam v -> dstring_of_var v
 
 let tzone = function
    { dform_items = [RewriteString tag]; dform_buffer = buf } ->
@@ -267,7 +268,7 @@ let pushm = function
    { dform_items = [RewriteNum (RewriteParam n)]; dform_buffer = buf } ->
       format_pushm buf (Lm_num.int_of_num n)
  | { dform_items = [RewriteNum (RewriteMetaParam v)]; dform_buffer = buf } ->
-      format_pushm_str buf (string_of_symbol v)
+      format_pushm_str buf (dstring_of_var v)
  | { dform_items = [RewriteString s]; dform_buffer = buf } ->
       format_pushm_str buf (string_of_param s)
  | { dform_items = []; dform_buffer = buf } ->
@@ -361,9 +362,9 @@ let rec format_bterm' buf printer bterm =
     | { bvars = vars; bterm = term } ->
          let rec format_bvars = function
             [] -> ()
-          | [h] -> format_quoted_string buf (string_of_symbol h)
+          | [h] -> format_quoted_string buf (dstring_of_var h)
           | h::t ->
-               format_quoted_string buf (string_of_symbol h);
+               format_quoted_string buf (dstring_of_var h);
                format_string buf ", ";
                format_bvars t
          in
@@ -418,7 +419,7 @@ and format_sequent buf format_term term =
                Hypothesis (v, a) ->
                   format_space buf;
                   if Lm_symbol.to_string v <> "" then begin
-                     format_string buf (string_of_symbol v);
+                     format_string buf (dstring_of_var v);
                      format_string buf ": ";
                   end;
                   format_term a
@@ -459,7 +460,7 @@ and format_sequent buf format_term term =
  *)
 and format_term buf (shortener : shortener) printer term =
    if is_var_term term then
-      format_string buf ("'" ^ string_of_symbol (dest_var term))
+      format_string buf ("'" ^ dstring_of_var (dest_var term))
    else if is_so_var_term term then
       format_simple_term buf term
    else if is_sequent_term term then

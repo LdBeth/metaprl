@@ -54,12 +54,18 @@ let debug_simple_print =
         debug_value = false
       }
 
+(*
+ * Print "empty" vars as "_"
+ *)
+let dstring_of_var v =
+   if Lm_symbol.to_string v = "" then "_" else Lm_symbol.string_of_symbol v
+
 let format_quoted_var buf v =
    format_string buf "'";
-   format_quoted_string buf (Lm_symbol.string_of_symbol v)
+   format_quoted_string buf (dstring_of_var v)
 
 let format_var buf v =
-   format_string buf (Lm_symbol.string_of_symbol v)
+   format_string buf (dstring_of_var v)
 
 module MakeSimplePrint (Refiner : RefinerSig) =
 struct
@@ -325,7 +331,7 @@ struct
                            Hypothesis (v, t) ->
                               if Lm_symbol.to_string v <> "" then
                                  begin
-                                    format_string buf (string_of_symbol v);
+                                    format_string buf (dstring_of_var v);
                                     format_string buf " :";
                                     format_pushm buf 1;
                                  end
@@ -334,7 +340,7 @@ struct
                               format_term buf t;
                               format_popm buf
                          | Context (v, conts, ts) ->
-                              format_string buf ("<" ^ (string_of_symbol v));
+                              format_string buf ("<" ^ (dstring_of_var v));
                               if conts <> [v] then
                                  format_contexts buf conts;
                               format_terms buf ts;

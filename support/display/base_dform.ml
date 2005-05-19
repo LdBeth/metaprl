@@ -62,6 +62,7 @@ open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Dform
 open Lm_rformat
+open Simple_print
 
 (*
  * Show that the file is loading.
@@ -209,17 +210,17 @@ let mk_tslot t = <:con< slot{$t$} >>
 let mk_mathit s = <:con< math_it[$s$:s] >>
 
 ml_dform var_html_df : mode[html] :: df_var[v:v] format_term buf = fun _ ->
-   print_html_var format_term buf mk_slot (string_of_symbol v)
+   print_html_var format_term buf mk_slot (dstring_of_var v)
 
 ml_dform var_tex_df : mode[tex] :: df_var[v:v] format_term buf = fun _ ->
-   print_tex_var format_term buf mk_mathit (string_of_symbol v)
+   print_tex_var format_term buf mk_mathit (dstring_of_var v)
 
 dform cvar_src_df : mode[src] :: df_context_var[v:v] =
    slot[v:v]
 
 ml_dform cvar_prl_df : mode[prl] :: df_context_var[v:v] format_term buf = fun
    term ->
-      let v = string_of_symbol v in
+      let v = dstring_of_var v in
       if v = "" then raise (Invalid_argument "var_prl_df");
       begin match v.[0] with
          'H' -> format_term buf NOParens <<Gamma>>
@@ -237,16 +238,16 @@ let context_term = function
 
 ml_dform cvar_html_df : mode[html] :: df_context_var[v:v] format_term buf = fun
    term ->
-      print_html_var format_term buf context_term (string_of_symbol v)
+      print_html_var format_term buf context_term (dstring_of_var v)
 
 ml_dform cvar_tex_df : mode[tex] :: df_context_var[v:v] format_term buf = fun
    term ->
-      print_tex_var format_term buf context_term (string_of_symbol v)
+      print_tex_var format_term buf context_term (dstring_of_var v)
 
 ml_dform bvar_df : mode[src] :: bvar{'v} format_term buf = fun
    term ->
       if is_var_term v then
-         format_string buf (string_of_symbol (dest_var v))
+         format_string buf (dstring_of_var (dest_var v))
       else
          format_term buf LTParens v
 
@@ -304,7 +305,7 @@ let format_seq_src format_term buf =
                Hypothesis (v, a) ->
                   format_space buf;
                   if Lm_symbol.to_string v <> "" then begin
-                     format_string buf (string_of_symbol v);
+                     format_string buf (dstring_of_var v);
                      format_string buf ": ";
                   end;
                   format_term buf NOParens a
