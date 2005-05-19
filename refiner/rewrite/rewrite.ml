@@ -334,12 +334,6 @@ struct
          extract_redex_values gstack stack
 
    (*
-    * Build a contractum from the spec and a stack.
-    *)
-   let make_contractum { con_contractum = con } gstack =
-      build_contractum [||] SymbolSet.empty gstack con
-
-   (*
     * Compile redex and contractum, and form a rewrite rule.
     *)
    let term_rewrite strict addrs redex contracta =
