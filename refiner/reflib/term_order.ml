@@ -85,15 +85,17 @@ struct
                      begin match compare_terms s1.sequent_args s2.sequent_args with
                         0 ->
                            let l1 = SeqHyp.length s1.sequent_hyps in
-                           begin match Pervasives.compare l1 (SeqHyp.length s2.sequent_hyps) with
-                              0 ->
+                           let l2 = SeqHyp.length s2.sequent_hyps in
+                              if l1 = l2 then
                                  compare_hyps s1 s2 l1 [] 0
-                            | c -> c
-                           end
+                              else if l1 < l2 then
+                                 -1
+                              else
+                                 1
                       | c -> c
                      end
              | false, false, false, false ->
-                  begin match Pervasives.compare s1 s2 with
+                  begin match shape_compare s1 s2 with
                      0 ->
                         let {term_op=op1; term_terms=subt1} = dest_term t1 in
                         let {term_op=op2; term_terms=subt2} = dest_term t2 in
@@ -168,7 +170,7 @@ struct
           | Var v1       , Var v2        -> Lm_symbol.compare v1 v2
           | Var _        , _             -> -1
           | _            , Var _         -> 1
-          | Shape s1     , Shape s2      -> Pervasives.compare s1 s2
+          | Shape s1     , Shape s2      -> shape_compare s1 s2
           | Shape _      , _             -> -1
           | _            , Shape _       -> 1
           | Quote        , _             -> -1
@@ -211,7 +213,7 @@ struct
       else
          let {le_var=s1; le_offset=o1}=dest_level_var v1 in
          let {le_var=s2; le_offset=o2}=dest_level_var v2 in
-            if s1<s2 then -1
-            else if s1>s2 then 1
-            else Pervasives.compare o1 o2
+            match Lm_symbol.compare s1 s2 with
+               0 -> if o1 = o2 then 0 else if o1 < o2 then -1 else 1
+             | c -> c
 end

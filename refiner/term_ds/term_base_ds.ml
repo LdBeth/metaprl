@@ -137,8 +137,11 @@ struct
                      DEFINE body = bterms_free_vars t'.term_terms
                      IN
                      IFDEF VERBOSE_EXN THEN
-                        if !debug_fv then
+                        if !debug_fv then begin
+                           debug_fv := false;
                            eprintf "Request for Term fvs: Term: %a%t" debug_print t eflush;
+                           debug_fv := true
+                        end;
                         let res =
                           body
                         in
@@ -159,18 +162,17 @@ struct
                            (free_vars_set seq.sequent_concl))
                 | Subst (t,sub) ->
                      DEFINE body =
-                        SymbolSet.union
-                           (List.fold_left
-                              SymbolSet.remove (**)
-                                 (free_vars_set t)
-                                 (Lm_list_util.fst_split sub))
-                             (subst_free_vars sub)
+                        SymbolSet.union (**)
+                           (SymbolSet.subtract_list (free_vars_set t) (Lm_list_util.fst_split sub))
+                           (subst_free_vars sub)
                      IN
                      IFDEF VERBOSE_EXN THEN
                         if !debug_fv then begin
+                           debug_fv := false;
                            eprintf "Request for Subst fvs: Term: %a; Subst: " debug_print t;
                            List.iter (fun (v,t) -> eprintf "(%a : %a) " output_symbol v debug_print t) sub;
                            eprintf "%t" eflush;
+                           debug_fv := true
                         end;
                         let res =
                            body
@@ -191,7 +193,6 @@ struct
                         (SymbolSet.remove (free_vars_set t) v)
                 | Hashed d ->
                      free_vars_set (Weak_memo.TheWeakMemo.retrieve_hack d)
-
             in t.free_vars <- Vars vars; vars
 
    and bterm_free_vars bt =
