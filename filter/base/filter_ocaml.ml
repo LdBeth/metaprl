@@ -1351,7 +1351,7 @@ struct
          in add_type "type_object_ff" dest_object_ff_type
       and type_record_op, type_pvt_record_op =
          let dest_sbt t =
-            let l, s, t = dest_loc_string_term "dest_sbt" t in
+            let l, s = dest_loc_string "dest_sbt" t in
             let b, t = two_subterms t in
                l, s, dest_bool b, dest_type t
          in let dest_record_type t =
