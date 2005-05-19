@@ -684,8 +684,8 @@ struct
          in add_expr "char" dest_char_expr
       and expr_float_op =
          let dest_float_expr t =
-            let loc = dest_loc "dest_float_expr" t in
-               <:expr< $flo: dest_string (one_subterm "dest_float_expr" t)$ >>
+            let loc, s = dest_loc_string "dest_float_expr" t in
+               <:expr< $flo:s$ >>
          in add_expr "float" dest_float_expr
       and expr_int_op =
          let dest_int_expr t =
