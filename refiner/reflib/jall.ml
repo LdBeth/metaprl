@@ -733,24 +733,33 @@ struct
 
 (************ Beta proofs and redundancy deletion **********************)
 
-   let rec remove_dups_connections connection_list =
-      match connection_list with
-         [] -> []
-       | (c1,c2)::r ->
-            if (List.mem (c1,c2) r) or (List.mem (c2,c1) r) then
+   let rec remove_dups_connections = function
+      [] -> []
+    | (c1,c2)::r ->
+         if (List.mem (c1,c2) r) or (List.mem (c2,c1) r) then
   (* only one direction variant of a connection stays *)
-               remove_dups_connections r
-            else
-               (c1,c2)::(remove_dups_connections r)
+            remove_dups_connections r
+         else
+            (c1,c2)::(remove_dups_connections r)
 
-   let rec remove_dups_list list =
-      match list with
-         [] -> []
-       | f::r ->
-            if List.mem f  r then
-               remove_dups_list r
-            else
-               f::(remove_dups_list r)
+   let rec remove_dups_list = function
+      [] -> []
+    | f::r ->
+         if List.mem f r then
+            remove_dups_list r
+         else
+            f::(remove_dups_list r)
+
+   let subst_eq ((s1: string), t1) (s2, t2) =
+      s1 = s2 && alpha_equal t1 t2
+
+   let rec remove_subst_dups = function
+      [] -> []
+    | f::r ->
+         if List.exists (subst_eq f) r then
+            remove_subst_dups r
+         else
+            f::(remove_subst_dups r)
 
    let beta_pure alpha_layer connections beta_expansions =
       let (l1,l2) = List.split connections in
@@ -3914,7 +3923,7 @@ let rec predecessor address_1 address_2 = function
 let rec compute_sets element ftree = function
    [] -> [],[]
  | first::rest ->
-      if first = element then
+      if first.aname = element.aname then
          compute_sets element ftree rest    (* element is neithes alpha- nor beta-related to itself*)
       else
          let (alpha_rest,beta_rest) = compute_sets element ftree rest in
@@ -4235,7 +4244,7 @@ let rec renam_free_vars termlist =
          let mapping = List.combine var_names string_terms
          and new_f = subst f var_names string_terms in
          let (rest_mapping,rest_renamed,rest_conts) = renam_free_vars r in
-         let unique_mapping = remove_dups_list (mapping @ rest_mapping) in
+         let unique_mapping = remove_subst_dups (mapping @ rest_mapping) in
          (unique_mapping,(new_f::rest_renamed),SymbolSet.union conts rest_conts)
 
 let rec apply_var_subst term = function
