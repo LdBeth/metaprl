@@ -204,7 +204,7 @@ struct
           | _, [] ->
                raise (Invalid_argument "Term_addr_gen.replace_bterm: internal error")
 
-   DEFINE MAKE_HYP_REPLACE_TERM(bvars, vars_bvars, replace_term, hyp_replace_term) =
+   DEFINE MAKE_HYP_REPLACE_TERM(bvars, dest_bterm, vars_bvars, replace_term, hyp_replace_term) =
       fun FAIL f addr bvars t i ->
          if i = 0 then
             match dest_term t with
@@ -271,7 +271,7 @@ struct
       MAKE_REPLACE_BTERM(NOTHING, dest_bterm, NOTHING, apply_fun_arg_at_addr_aux, replace_bterm)
 
    and hyp_replace_term =
-      MAKE_HYP_REPLACE_TERM(NOTHING, NOTHING, apply_fun_arg_at_addr_aux, hyp_replace_term)
+      MAKE_HYP_REPLACE_TERM(NOTHING, dest_bterm, NOTHING, apply_fun_arg_at_addr_aux, hyp_replace_term)
 
    IFDEF VERBOSE_EXN THEN
       let apply_fun_arg_at_addr f addr term =
@@ -293,7 +293,7 @@ struct
       MAKE_REPLACE_BTERM(bvars, TermSubst.dest_bterm_and_rename bvars, SymbolSet.add_list bvars vars, apply_var_fun_at_addr_aux, var_replace_bterm)
 
    and hyp_var_replace_term =
-      MAKE_HYP_REPLACE_TERM(bvars, SymbolSet.add_list bvars _vars, apply_var_fun_at_addr_aux, hyp_var_replace_term)
+      MAKE_HYP_REPLACE_TERM(bvars, TermSubst.dest_bterm_and_rename bvars, SymbolSet.add_list bvars _vars, apply_var_fun_at_addr_aux, hyp_var_replace_term)
 
    IFDEF VERBOSE_EXN THEN
       let apply_var_fun_arg_at_addr f addr bvars term =
