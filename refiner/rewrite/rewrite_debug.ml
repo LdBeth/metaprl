@@ -105,11 +105,12 @@ struct
          fprintf out "BTerm %a[%a]" print_term t output_symbol_list vars
     | StackITerm ts ->
          fprintf out "ITerm %a" (print_any_list (fun out (t, subterms) -> fprintf out "%a[%d] " print_term t (List.length subterms))) ts
-    | StackContext (vars, t, addr) ->
-         fprintf out "Context (%a/%a/%s)" (**)
-            output_symbol_list vars
+    | StackContext (ivars, t, addr, sovars) ->
+         fprintf out "Context (%a/%a@%s[%a])" (**)
+            output_symbol_list (SymbolSet.to_list ivars)
             print_term t
             (string_of_address addr)
+            output_symbol_list sovars
     | StackSeqContext (vars, (i, len, _)) ->
          fprintf out "SeqContext (%a/(%d,%d))" (**)
             output_symbol_list vars i len

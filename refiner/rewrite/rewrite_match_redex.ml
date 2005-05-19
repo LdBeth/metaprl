@@ -144,9 +144,11 @@ struct
             stack.(v) <- StackContextRestrict(SymbolSet.union vars' vars)
        | StackSeqContext (_, (ind, count, hyps)) ->
             check_cont_bvars_hyps hyps vars ind count
-       | StackContext _ ->
-            (* XXX: TODO *)
-            raise (Invalid_argument "Rewrite_match_redex.restrict_context_vars: non-sequent contexts not supported")
+       | StackContext ( ivars, _, _, _) ->
+            if SymbolSet.intersectp vars ivars then
+               REF_RAISE(RefineError ("check_cont_bvars_hyps",
+                  StringVarError("Variable appears free where it is not allowed to",
+                     SymbolSet.choose (SymbolSet.inter vars ivars))))
        | StackITerm _
        | StackBTerm _
        | StackLevel _
@@ -285,6 +287,8 @@ struct
             if (sp <> sp') then
                REF_RAISE(RefineError ("update_redex_params", RewriteBadMatch (ParamMatch PARAM_REASON)));
             ()
+
+   let addr_fun vars t = xnil_term, (vars, t)
 
    let match_redex_params stack p' p =
       match p', dest_param p with
@@ -572,31 +576,38 @@ struct
                      raise(Invalid_argument "match_redex_term: stack entry is not valid")
             end
 
-       | RWSOContext (addr, i, term', l) ->
+       | RWSOContext (addr, i, term', [])
+       | RWSOFreeVarsContext (_, _, addr, i, term', []) ->
             (* Pull an address out of the addr argument *)
             (* XXX: TODO *)
             let addr = addrs.arg_addrs.(addr) in
-               begin match stack.(i) with
-                  StackVoid -> ()
-                | StackContextRestrict (vars) ->
-                     (* XXX: TODO *)
-                     raise(Invalid_argument "Delayed restriction on non-sequent contexts not currently supported")
+            let all_bvars' =
+               match stack.(i) with
+                  StackVoid -> all_bvars
+                | StackContextRestrict (vars) -> SymbolSet.union all_bvars vars
                 | _ -> raise(Invalid_argument "Rewrite_match_redex: RWSOContext: internal error")
-               end;
+            in
                IFDEF VERBOSE_EXN THEN
                   if !debug_rewrite then
                      eprintf "Rewrite.match_redex.RWSOContext: %s%t" (string_of_address addr) eflush
                ENDIF;
-               let term = term_subterm t addr in
+               let t'', (new_bvars, term) = apply_var_fun_arg_at_addr addr_fun addr all_bvars' t in
+                  begin match t' with
+                     RWSOFreeVarsContext (conts, vars, _, _, _, _) ->
+                        restrict_vars stack (free_vars_set t'') conts vars
+                   | _ ->
+                        ()
+                  end;
                   if !debug_rewrite then
                      eprintf "Rewrite.match_redex.RWSOContext: stack(%d)/%d%t" i (Array.length stack) eflush;
-                  stack.(i) <- StackContext (extract_bvars stack l, t, addr);
-                  match_redex_term addrs stack all_bvars term' term
+                  stack.(i) <- StackContext (SymbolSet.diff new_bvars all_bvars', t'', addr, []);
+                  match_redex_term addrs stack new_bvars term' term
 
+       | RWSOContext _
        | RWSOFreeVarsContext _ ->
             (* XXX: TODO *)
-            raise(Invalid_argument "Rewrite_match_redex: RWSOFreeVarsContext: not implemented")
-
+            raise(Invalid_argument "Rewrite_match_redex: Non-sequent contexts that take \"extra\" SO arguments: Not implemented yet")
+            (* variable for the extra SO args (StackContext's 4-th component) : extract_bvars stack l *)
        | _ ->
             REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
 

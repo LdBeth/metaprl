@@ -266,13 +266,24 @@ struct
                      raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
          end
 
+    | RWSOContextSubst(i, t, []) ->
+         begin
+            match stack.(i) with
+               StackContext(ivars, term, addr, []) ->
+                  replace_subterm term addr (build_contractum_term names bnames stack bvars t)
+             | _ ->
+                  raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
+         end
+
     | RWSOContextSubst(i, t, terms) ->
+         (* XXX: TODO *)
+         raise(Invalid_argument "Rewrite_build_contractum: Non-sequent contexts that take \"extra\" SO arguments: Not implemented yet")
          begin
              (*
               * Instantiate a context.
               *)
              match stack.(i) with
-                StackContext(vars, term, addr) ->
+                StackContext(ivars, term, addr, ovars) ->
                    let term =
                       replace_subterm term addr (**)
                          (build_contractum_term names bnames stack bvars t)
@@ -284,11 +295,11 @@ struct
                                eprintf "RWSOContextSubst: %a%t" debug_print term eflush;
                                List.iter2 (fun name term ->
                                      eprintf "\t%a: %a%t" output_symbol name debug_print term eflush) (**)
-                                  vars terms
+                                  ovars terms
                             end
                       ENDIF;
                    (* XXX BUG: This subst is too late! *)
-                   subst term vars terms
+                   subst term ovars terms
               | _ ->
                    raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
          end

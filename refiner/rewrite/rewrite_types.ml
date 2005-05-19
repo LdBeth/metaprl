@@ -87,10 +87,12 @@ struct
     *    RWSOContext matches a second order context with an addressed subterm
     *    RWCheckVar matches the specific bound variable
     *    RWFreeVars enforces restrictions on free instances
-    *       of some variables. This is generated only in "strict" mode.
+    *       of some variables. This is generated only in "strict" mode
     *    RWMatchFreeFOVar is an instance of a free variables (with the list of
     *       context and the list of bvars enforcing that the variable is actually
     *       free - in the strict mode only)
+    * In free vars restrictions, the first list is the list of context stack indices
+    *    and the second one is the list of bvars stack indices
     * In a contractum:
     *    RWComposite construct a term with the given pattern
     *    RWSOINstance instantiates a second order variable
@@ -196,6 +198,9 @@ struct
    (*
     * During reduction, we keep a stack of objects of all the
     * possible types.
+    *
+    * StackContext - the SymbolSet.t is the set of the inner (context) bindings;
+    * the var list are the bindings corresponding to the SO ("normal") arguments.
     *)
    type stack =
       StackVoid
@@ -207,7 +212,7 @@ struct
     | StackLevel of level_exp
     | StackBTerm of term * var list
     | StackITerm of (term * rwterm list) list
-    | StackContext of var list * term * address
+    | StackContext of SymbolSet.t * term * address * var list
     | StackSeqContext of var list * hyp_array
     | StackContextRestrict of SymbolSet.t
 
