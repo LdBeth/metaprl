@@ -190,7 +190,7 @@ let opsymb_equal op1 op2 =
          let op2 = dest_op op2 in
             Opname.eq op1.op_name op2.op_name && op1.op_params = op2.op_params
     | FunSOVar(v1,conts1), FunSOVar(v2,conts2) ->
-         v1 = v2 && conts1 = conts2
+         Lm_symbol.eq v1 v2 && conts1 = conts2
     | _ -> false
 
 (*

@@ -107,7 +107,7 @@ struct
          let rec join = function
             ({ le_var = v1; le_offset = o1 } as h1::t1 as l1),
             ({ le_var = v2; le_offset = o2 } as h2::t2 as l2) ->
-               if v1 = v2 then
+               if Lm_symbol.eq v1 v2 then
                   { le_var = v1; le_offset = max o1 (o2 + o3) } :: join (t1, t2)
                else if v1 < v2 then
                   h1 :: join (t1, l2)
@@ -137,7 +137,7 @@ struct
          let rec caux = function
             ({ le_var = v1; le_offset = o1 }::t1 as l1),
             { le_var = v2; le_offset = o2 }::t2 ->
-               if v1 = v2 then
+               if Lm_symbol.eq v1 v2 then
                   if o1 <= o2 then
                      caux (t1, t2)
                   else
@@ -160,7 +160,7 @@ struct
          let rec caux = function
             ({ le_var = v1; le_offset = o1 }::t1 as l1),
             { le_var = v2; le_offset = o2 }::t2 ->
-               if v1 = v2 then
+               if Lm_symbol.eq v1 v2 then
                   if o1 < o2 then
                      caux (t1, t2)
                   else
@@ -413,7 +413,7 @@ struct
                   REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
                else
                   match SeqHyp.get hyps (i - 1) with
-                     Hypothesis (v',_) when v' = v ->
+                     Hypothesis (v',_) when Lm_symbol.eq v' v ->
                         i
                   | _ ->
                         aux (i - 1)

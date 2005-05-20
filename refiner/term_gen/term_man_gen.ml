@@ -97,7 +97,7 @@ struct
       (h1::t1 as l1), (h2::t2 as l2) ->
          let h1' = dest_level_var h1 and h2' = dest_level_var h2 in
          let v1 = h1'.le_var and v2 = h2'.le_var in
-         if v1 = v2 then
+         if Lm_symbol.eq v1 v2 then
             make_level_var { h1' with le_offset = max h1'.le_offset (h2'.le_offset + o) }
                :: join_lvars o (t1, t2)
          else if v1 < v2 then
@@ -133,7 +133,7 @@ struct
       (lv1::t1 as l1), lv2::t2 ->
          let lv1 = dest_level_var lv1 and lv2 = dest_level_var lv2 in
          let v1 = lv1.le_var and v2 = lv2.le_var in
-            if v1 = v2 then
+            if Lm_symbol.eq v1 v2 then
                cmp lv1.le_offset lv2.le_offset && level_var_cmp cmp (t1, t2)
             else (v2 < v1) && level_var_cmp cmp (l1, t2)
           | [], _ -> true
@@ -376,7 +376,7 @@ struct
                            begin match dest_bterm main_term with
                               { bvars = [v']; bterm = t } ->
                                  let t =
-                                    if v=v' then t
+                                    if Lm_symbol.eq v v' then t
                                     else if is_var_free v t then raise (Invalid_argument "Term_man_gen.dest_context: free variable got captured by a context variable")
                                     else subst1 t v' (mk_var_term v)
                                  in
@@ -498,7 +498,7 @@ struct
        | [bt; _] ->
             begin match dest_bterm bt with
                { bvars = [v']; bterm = term } ->
-                  if v = v' then term else subst1 term v' (mk_var_term v)
+                  if Lm_symbol.eq v v' then term else subst1 term v' (mk_var_term v)
              | _ ->
                   REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
             end

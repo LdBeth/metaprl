@@ -214,7 +214,7 @@ struct
                   let t = mk_context_term v slot conts subterms in
                   let t, arg = replace_term FAIL f addr bvars t in
                   let v1, term1, conts, subterms = dest_context t in
-                     if v1 = v && is_var_term term1 && dest_var term1 = v then
+                     if Lm_symbol.eq v1 v && is_var_term term1 && dest_var term1 = v then
                         mk_context_term v term conts subterms, arg
                      else
                         DO_FAIL

@@ -462,7 +462,7 @@ let process_elim_resource_annotation name args term_args statement (pre_tactic, 
                         raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: can not find what to thin in one of the subgoals" name));
                      match SeqHyp.get hyps i with
                         Hypothesis (_, t') when alpha_equal t t' -> i
-                      | Hypothesis (v', _) when v = v' -> i
+                      | Hypothesis (v', _) when Lm_symbol.eq v v' -> i
                       | _ -> find_thin_num_aux hyps len (succ i)
                   in
                   let find_thin_num (_,_,assum) =

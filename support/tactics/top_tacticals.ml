@@ -537,7 +537,7 @@ let nameHypT i v =
    let eseq = Sequent.explode_sequent_arg p in
       match SeqHyp.get eseq.sequent_hyps i with
          Hypothesis (v',hyp) ->
-            if v' = v then
+            if Lm_symbol.eq v' v then
                 idT
             else
                let vt = mk_var_term v in

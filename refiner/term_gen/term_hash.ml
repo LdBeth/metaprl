@@ -208,8 +208,8 @@ struct
 
    let compare_hyp_header hyp1 hyp2 =
       match hyp1, hyp2 with
-         Hypothesis_weak (v1,t1),  Hypothesis_weak (v2,t2)   -> v1 = v2 && t1 == t2
-       | Context_weak    (v1,conts1,ts1), Context_weak    (v2,conts2,ts2)  -> v1 = v2 && conts1 = conts2 && list_mem_eq ts1 ts2
+         Hypothesis_weak (v1,t1),  Hypothesis_weak (v2,t2)   -> Lm_symbol.eq v1 v2 && t1 == t2
+       | Context_weak    (v1,conts1,ts1), Context_weak    (v2,conts2,ts2)  -> Lm_symbol.eq v1 v2 && conts1 = conts2 && list_mem_eq ts1 ts2
        | _ -> false
 
    let compare_tterm_header
@@ -226,8 +226,8 @@ struct
             (arg1 == arg2)
             && (concl1 == concl2)
             && list_compare (compare_hyp_header) hyp1 hyp2
-       | FOVar_weak v1, FOVar_weak v2 -> v1 = v2
-       | SOVar_weak (v1,conts1,ts1), SOVar_weak (v2,conts2,ts2)  -> v1 = v2 && conts1 = conts2 && list_mem_eq ts1 ts2
+       | FOVar_weak v1, FOVar_weak v2 -> Lm_symbol.eq v1 v2
+       | SOVar_weak (v1,conts1,ts1), SOVar_weak (v2,conts2,ts2)  -> Lm_symbol.eq v1 v2 && conts1 = conts2 && list_mem_eq ts1 ts2
        | _ -> false
 
    let compare_meta_term_header mt_a mt_b =
@@ -397,9 +397,9 @@ struct
 
       let equal h1 h2 = match h1,h2 with
          Hypothesis (v1,t1), Hypothesis (v2,t2) ->
-            v1=v2 && HashedTerm.equal t1 t2
+            Lm_symbol.eq v1 v2 && HashedTerm.equal t1 t2
        | Context (v1, conts1, ts1), Context (v2, conts2, ts2) ->
-            v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 HashedTerm.equal ts1 ts2
+            Lm_symbol.eq v1 v2 && conts1 = conts2 && Lm_list_util.for_all2 HashedTerm.equal ts1 ts2
        | _ -> false
 
       let hash = function

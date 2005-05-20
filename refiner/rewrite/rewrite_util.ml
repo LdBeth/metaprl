@@ -168,7 +168,7 @@ struct
     | _ -> false
 
    let rstack_p_mem_prop shape v = function
-      PVar (v', shape') -> v = v' && shape = shape'
+      PVar (v', shape') -> Lm_symbol.eq v v' && shape = shape'
     | _ -> false
 
    let rstack_c_mem_prop v = function

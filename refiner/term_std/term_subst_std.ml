@@ -138,7 +138,7 @@ struct
     *)
    let rec is_var_free v = function
       { term_op = { op_name = opname; op_params = [Var v']}; term_terms = []
-      } when Opname.eq opname var_opname && v' = v ->
+      } when Opname.eq opname var_opname && Lm_symbol.eq v' v ->
          true
     | { term_terms = bterms } ->
          List.exists (is_var_free_bterm v) bterms
@@ -256,7 +256,7 @@ struct
          } as t') when Opname.eq opname var_opname && Opname.eq opname' var_opname ->
             ( try Lm_list_util.try_check_assoc v v' bvars with Not_found ->
                ( try f t' (List.assoc v sub) with Not_found ->
-                  v = v'
+                  Lm_symbol.eq v v'
             ))
        | { term_op = { op_name = opname; op_params = [Var v] };
            term_terms = []

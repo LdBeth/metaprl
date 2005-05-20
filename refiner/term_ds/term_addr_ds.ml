@@ -337,7 +337,7 @@ struct
           | Context (v, conts, ts) ->
                let t, arg = f (core_term (SOVar(v, conts, ts))) in
                let v1, conts, subterms = dest_so_var t in
-                  if v1 = v then
+                  if Lm_symbol.eq v1 v then
                      Context (v, conts, subterms), arg
                   else DO_FAIL
          in
@@ -412,7 +412,7 @@ struct
                       | Context (v, conts, ts) ->
                            let t, arg = f bvars (core_term (SOVar(v, conts, ts))) in
                            let v1, conts, subterms = dest_so_var t in
-                              if v1 = v then
+                              if Lm_symbol.eq v1 v then
                                  Context (v, conts, subterms), arg
                               else DO_FAIL
                   in

@@ -213,7 +213,7 @@ struct
    let rec remove_var v = function
       [] ->
          []
-    | ((v1, v2) :: tl) as l when (v1 = v || v2 = v)->
+    | ((v1, v2) :: tl) as l when (Lm_symbol.eq v1 v || Lm_symbol.eq v2 v)->
          if v1<>v2 then (v,v) :: l else l
     | (hd :: tl) as l ->
          let tl' = remove_var v tl in
@@ -223,7 +223,7 @@ struct
       match vs1,vs2 with
          ([],[]) -> vars
        | (v1::vt1,v2::vt2) ->
-            if (v1=v2)
+            if Lm_symbol.eq v1 v2
             then join_vars (remove_var v1 vars) vt1 vt2
             else join_vars ((v1,v2)::vars) vt1 vt2
        | _ -> raise (Failure ("join_vars"))
@@ -231,12 +231,12 @@ struct
    let rec eq_filt_vars set1 set2 = function
       [] -> []
     | [(v1,v2)] as l ->
-         if v1=v2 then []
+         if Lm_symbol.eq v1 v2 then []
             else if (SymbolSet.mem set1 v1) || (SymbolSet.mem set2 v2)
             then l else []
     | (((v1,v2) as p) :: tl) as l ->
          let res = eq_filt_vars set1 set2 tl in
-         if (res==[]) && (v1=v2) then []
+         if (res==[]) && (Lm_symbol.eq v1 v2) then []
             else if (SymbolSet.mem set1 v1) || (SymbolSet.mem set2 v2) then
                if (res==tl) then l else p::res
             else res
@@ -259,9 +259,9 @@ struct
                 None -> false
               | Some vars -> equal_term vars s1.sequent_concl s2.sequent_concl)
        | SOVar(v,conts,ts), SOVar(v',conts',ts') ->
-            v=v' && conts = conts' && Lm_list_util.for_all2 (equal_term vars) ts ts'
+            Lm_symbol.eq v v' && conts = conts' && Lm_list_util.for_all2 (equal_term vars) ts ts'
        | SOContext(v,t,conts,ts), SOContext(v',t',conts',ts') ->
-            v=v' && conts = conts' && equal_term (remove_var v vars) t t' && Lm_list_util.for_all2 (equal_term vars) ts ts'
+            Lm_symbol.eq v v' && conts = conts' && equal_term (remove_var v vars) t t' && Lm_list_util.for_all2 (equal_term vars) ts ts'
        | _ -> false )
 
    and equal_bterms vars btrms1 btrms2 =
@@ -278,11 +278,11 @@ struct
          match SeqHyp.get hyps1 i, SeqHyp.get hyps2 i with
             Hypothesis (v1,t1), Hypothesis (v2,t2) ->
                if equal_term vars t1 t2 then
-                  let vars = if v1=v2 then remove_var v1 vars else (v1,v2)::vars in
+                  let vars = if Lm_symbol.eq v1 v2 then remove_var v1 vars else (v1,v2)::vars in
                      equal_hyps hyps1 hyps2 vars (succ i)
                else None
           | Context (v1,conts1,ts1), Context (v2,conts2,ts2) ->
-            if v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_term vars) ts1 ts2 then
+            if Lm_symbol.eq v1 v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_term vars) ts1 ts2 then
                equal_hyps hyps1 hyps2 (remove_var v1 vars) (succ i)
             else None
           | _ -> None
@@ -293,11 +293,11 @@ struct
             (Term _, Term _) | (Sequent _, Sequent _) ->
                equal_term [] t1 t2
           | FOVar v1, FOVar v2 ->
-               (v1=v2)
+               (Lm_symbol.eq v1 v2)
           | SOVar(v1, conts1, ts1), SOVar(v2, conts2, ts2) ->
-               v1=v2 && conts1=conts2 && Lm_list_util.for_all2 (equal_term []) ts1 ts2
+               Lm_symbol.eq v1 v2 && conts1=conts2 && Lm_list_util.for_all2 (equal_term []) ts1 ts2
           | SOContext(v1, t1, conts1, ts1), SOContext(v2, t2, conts2, ts2) ->
-               v1=v2 && conts1=conts2 && equal_term [] t1 t2 && Lm_list_util.for_all2 (equal_term []) ts1 ts2
+               Lm_symbol.eq v1 v2 && conts1=conts2 && equal_term [] t1 t2 && Lm_list_util.for_all2 (equal_term []) ts1 ts2
           | _ ->
                false
       IN
@@ -406,7 +406,7 @@ struct
          FOVar v, FOVar v' ->
             ( try Lm_list_util.try_check_assoc v v' bvars with Not_found ->
                ( try f t' (List.assoc v sub) with Not_found ->
-                  v = v'
+                  Lm_symbol.eq v v'
             ))
        | FOVar v,_ ->
             not (List.mem_assoc v bvars) &&
@@ -424,9 +424,9 @@ struct
              | Some bvars ->
                   equal_fun f bvars sub s1.sequent_concl s2.sequent_concl)
        | SOVar(v1, conts1, ts1), SOVar(v2, conts2, ts2) ->
-            v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2
+            Lm_symbol.eq v1 v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2
        | SOContext(v1, t1, conts1, ts1), SOContext(v2, t2, conts2, ts2) ->
-            v1=v2 && conts1 = conts2 && equal_fun f ((v1,v1)::bvars) sub t1 t2 &&
+            Lm_symbol.eq v1 v2 && conts1 = conts2 && equal_fun f ((v1,v1)::bvars) sub t1 t2 &&
                Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2
        | _ -> false
 
@@ -446,7 +446,7 @@ struct
                   equal_fun_hyps hyps1 hyps2 f ((v1,v2)::bvars) sub (succ i)
                else None
           | Context (v1,conts1,ts1), Context (v2,conts2,ts2) ->
-            if v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2 then
+            if Lm_symbol.eq v1 v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2 then
                equal_fun_hyps hyps1 hyps2 f ((v1,v2)::bvars) sub (succ i)
             else None
           | _ -> None
@@ -503,9 +503,9 @@ struct
          Term { term_op = { op_name = opname2; op_params = params2 }; term_terms = bterms2 }
             when Opname.eq opname1 opname2 & params1 = params2 ->
                match_bterms subst bvars bterms1 bterms2
-       | SOVar(v1, cs1, ts1), SOVar(v2, cs2, ts2) when v1=v2 && cs1 = cs2 ->
+       | SOVar(v1, cs1, ts1), SOVar(v2, cs2, ts2) when Lm_symbol.eq v1 v2 && cs1 = cs2 ->
             match_term_lists subst bvars ts1 ts2
-       | SOContext(v1, t1, cs1, ts1), SOContext(v2, t2, cs2, ts2) when v1=v2 && cs1 = cs2 ->
+       | SOContext(v1, t1, cs1, ts1), SOContext(v2, t2, cs2, ts2) when Lm_symbol.eq v1 v2 && cs1 = cs2 ->
             match_term_lists (match_terms subst ((v1,v1)::bvars) t1 t2) bvars ts1 ts2
        | (Sequent _, _) | (_, Sequent _) ->
             raise(Invalid_argument "Term_subst_ds.match_terms called on a sequent")
@@ -533,7 +533,7 @@ struct
     | (v, t) :: tl ->
          let subst =
             match get_core t with
-               FOVar v' when v = v' -> subst
+               FOVar v' when Lm_symbol.eq v v' -> subst
              | _ -> (v,t) :: subst
          in
             clean_subst subst tl

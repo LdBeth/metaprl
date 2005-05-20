@@ -504,7 +504,7 @@ struct
    let rec collect_context v = function
       [ { bvars = [v']; bterm = t }; { bvars = []; bterm = conts }] ->
          [],
-         (if v=v' then
+         (if Lm_symbol.eq v v' then
             t
          else if SymbolSet.mem (free_vars_set t) v then
             raise (Invalid_argument "Term_base_ds.collect_context: variable clash")

@@ -81,12 +81,12 @@ struct
       match param1, param2 with
          Number    n1,         Number    n2         -> Lm_num.eq_num n1 n2
        | String    s1,         String    s2         -> s1 = s2
-       | Token     s1,         Token     s2         -> s1 = s2
-       | Var       v1,         Var       v2         -> v1 = v2
+       | Token     s1,         Token     s2         -> Opname.eq s1 s2
+       | Var       v1,         Var       v2         -> Lm_symbol.eq v1 v2
        | Quote       ,         Quote                -> true
-       | MNumber   s1,         MNumber   s2         -> s1 = s2
-       | MString   s1,         MString   s2         -> s1 = s2
-       | MToken    s1,         MToken    s2         -> s1 = s2
+       | MNumber   s1,         MNumber   s2         -> Lm_symbol.eq s1 s2
+       | MString   s1,         MString   s2         -> Lm_symbol.eq s1 s2
+       | MToken    s1,         MToken    s2         -> Lm_symbol.eq s1 s2
        | MLevel    l1,         MLevel    l2         -> l1 == l2
        | ObId      oid1,       ObId      oid2       -> list_mem_eq oid1 oid2
        | ParamList params1,    ParamList params2    -> list_mem_eq params1 params2
@@ -103,8 +103,8 @@ struct
    let rec compare_hyps hyp1 hyp2 i =
       (i < 0) ||
       ((match (CTerm.SeqHyp.get hyp1 i), (CTerm.SeqHyp.get hyp2 i) with
-           Term_sig.Hypothesis (v1,t1),       Term_sig.Hypothesis (v2,t2)       -> v1 = v2 && t1 == t2
-         | Term_sig.Context    (v1,cts1,ts1), Term_sig.Context    (v2,cts2,ts2) -> v1 = v2 && cts1=cts2 && list_mem_eq ts1 ts2
+           Term_sig.Hypothesis (v1,t1),       Term_sig.Hypothesis (v2,t2)       -> Lm_symbol.eq v1 v2 && t1 == t2
+         | Term_sig.Context    (v1,cts1,ts1), Term_sig.Context    (v2,cts2,ts2) -> Lm_symbol.eq v1 v2 && cts1=cts2 && list_mem_eq ts1 ts2
          | _ -> false) &&
        (compare_hyps hyp1 hyp2 (pred i)))
 

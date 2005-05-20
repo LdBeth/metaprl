@@ -749,12 +749,12 @@ struct
                let t1 = apply_subst sub t1 in
                   check_match addrs stack all_bvars t2 bvars t1 ts;
                   let all_bvars = SymbolSet.add all_bvars v' in
-                     if v = v' then
+                     if Lm_symbol.eq v v' then
                         match_context_instance addrs stack all_bvars concl hyps (i+1) hyps' (k+1) bvars ts vars sub (count-1)
                      else
                         match_context_instance addrs stack all_bvars concl hyps (i+1) hyps' (k+1) bvars ts (SymbolSet.add (SymbolSet.remove vars v) v') ((v, mk_var_term v') :: sub) (count-1)
           | Context (v, conts, ts1), Context(v', conts', ts2)
-            when v=v' && conts=conts' && (List.length ts1 = List.length ts2) ->
+            when Lm_symbol.eq v v' && conts=conts' && (List.length ts1 = List.length ts2) ->
                List.iter (check_instance_term vars) ts1;
                let all_bvars = SymbolSet.add all_bvars v' in
                let ts1 = Lm_list_util.smap (apply_subst sub) ts1 in

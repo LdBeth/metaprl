@@ -794,7 +794,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let merge_level_exp_vars = merge_list merge_level_exp_var "level_exp_var"
 
    let merge_level_exp_var' x { le_var = v1; le_offset = i1 } { le_var = v2; le_offset = i2 } =
-      if not (v1 = v2) then
+      if not (Lm_symbol.eq v1 v2) then
          report_error x "le_var field mismatch";
       if not (i1 = i2) then
          report_error x "le_offset field mismatch";
