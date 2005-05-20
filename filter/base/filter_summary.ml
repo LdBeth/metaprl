@@ -159,15 +159,15 @@ let eprint_entry print_info = function
  | Rule { rule_name = name } ->
       eprintf "Rule: %s\n" name
  | DeclareTypeClass (_, opname, _, _) ->
-      eprintf "DeclareTypeClass: %s" (string_of_opname opname)
+      eprintf "DeclareTypeClass: %s\n" (string_of_opname opname)
  | DeclareType (_, ty_term, _) ->
-      eprintf "DeclareType: %a" print_ty_term ty_term
+      eprintf "DeclareType: %a\n" print_ty_term ty_term
  | DeclareTerm (_, ty_term) ->
-      eprintf "DeclareTerm: %a" print_ty_term ty_term
+      eprintf "DeclareTerm: %a\n" print_ty_term ty_term
  | DefineTerm (_, ty_term, _) ->
-      eprintf "DefineTerm: %a" print_ty_term ty_term
+      eprintf "DefineTerm: %a\n" print_ty_term ty_term
  | DeclareTypeRewrite _ ->
-      eprintf "DeclareTypeRewrite"
+      eprintf "DeclareTypeRewrite\n"
  | MLRewrite { mlterm_name = name } ->
       eprintf "MLRewrite: %s\n" name
  | MLAxiom { mlterm_name = name } ->
@@ -193,7 +193,7 @@ let eprint_entry print_info = function
  | Resource (name, _) ->
       eprintf "Resource: %s\n" name
  | Improve { improve_name = name } ->
-      eprintf "Improve %s with ..." name
+      eprintf "Improve %s with ...\n" name
  | MLGramUpd (Infix name)
  | MLGramUpd (Suffix name) ->
       eprintf "Infix/Suffix: %s\n" name
