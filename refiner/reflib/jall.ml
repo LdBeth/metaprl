@@ -171,6 +171,16 @@ struct
 
    let jprover_bug = Invalid_argument "Jprover bug (Jall module)"
 
+   (* XXX: Nogin: as far as I understand, names are unique, but I am not sure *)
+   let atom_eq a1 a2 =
+      a1.aname = a2.aname
+
+   let pos_eq p1 p2 =
+      p1.name = p2.name
+
+   let string_eq (s1: string) s2 =
+      s1 = s2
+
 (*****************************************************************)
 
 (************* printing function *************************************)
@@ -2158,14 +2168,13 @@ struct
 (* subformula relation subrel is assumed to be represented in pairs
    (a,b) *)
 
-   let rec delete e list =     (* e must not necessarily occur in list *)
-      match list with
-         [] -> []               (* e must not necessarily occur in list *)
-       | first::rest ->
-            if e = first then
-               rest
-            else
-               first::(delete e rest)
+   let rec delete compare e = function    (* e must not necessarily occur in list *)
+      [] -> []               (* e must not necessarily occur in list *)
+    | first::rest ->
+         if compare e first then
+            rest
+         else
+            first::(delete compare e rest)
 
    let rec key_delete fname pos_list =   (* in key_delete, f is a pos name (key) but sucs is a list of positions *)
       match pos_list with
@@ -2358,7 +2367,7 @@ struct
       match testlist with
          [] -> list
        | f::r ->
-            let newlist = delete f list in    (* f may not occur in list; then newlist=list *)
+            let newlist = delete string_eq f list in    (* f may not occur in list; then newlist=list *)
             update_list r newlist
 
    let rec update_pairlist p pairlist =
@@ -2758,7 +2767,7 @@ struct
             false,0  (* ready, in C only redord counts *)
          else
             let pa_O = collect_solved_O_At [ftree] slist      (* solved atoms in ftree *)
-            and po_test = (delete f po) in
+            and po_test = (delete pos_eq f po) in
             if calculus = "LJmc" then (* we provide dynamic wait labels for both sequent calculi *)
 (*       print_endline "wait-2 check"; *)
                if (f.st = Psi_0)  &  (f.pt <> PNull) &
@@ -2790,7 +2799,7 @@ struct
                  wait_label must be set.
               *)
                         let ((_,min_con1),_) = split_permutation f.name opt_bproof in
-                        let slist_fake = delete f.name slist in
+                        let slist_fake = delete string_eq f.name slist in
                         let  ((zw1ft,zw1red,_,zw1uslist),_) =
                            betasplit f.address ftree redord connections slist_fake in
                         let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
@@ -2798,7 +2807,7 @@ struct
                         let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in
 (*                 print_endline ("wait-root "^(ft1_root.name)); *)
                         let po_fake = compute_open [ft1] uslist1 in
-                        let po_fake_test = delete ft1_root po_fake
+                        let po_fake_test = delete pos_eq ft1_root po_fake
                         and pa_O_fake = collect_solved_O_At [ft1] uslist1 in
 (*                  print_purelist (po_fake_test @ pa_O_fake); *)
                         if ((pa_O_fake <> []) or (List.exists (fun x -> x.pol = O) po_fake_test)) then
@@ -2890,7 +2899,7 @@ struct
    let rec total  ftree redord connections csigmaQ slist logic calculus opt_bproof =
       let rec tot  ftree redord connections po slist =
          let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
-            let newslist = delete (p.name) slist in
+            let newslist = delete string_eq (p.name) slist in
             let rback =
                if p.st = Gamma_0 then
                   begin
@@ -2903,7 +2912,7 @@ struct
 (*        print_endline "gamma check finish";  *)
             let pnew =
                if p.pt <> Beta then
-                  succs @ (delete  p po)
+                  succs @ (delete pos_eq p po)
                else
                   po
             in
@@ -3737,7 +3746,7 @@ let rec add_multiplicity ftree pos_n  mult logic =
 
 let rec get_alpha atom = function
    [] -> raise (Invalid_argument "Jprover bug: atom not found")
- | (a, alpha, _) :: _ when a.aname = atom.aname -> alpha
+ | (a, alpha, _) :: _ when atom_eq a atom -> alpha
  | _ :: r -> get_alpha atom r
 
 let rec get_connections a alpha tabulist =

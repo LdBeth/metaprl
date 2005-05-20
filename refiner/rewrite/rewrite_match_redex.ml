@@ -280,13 +280,19 @@ struct
          collect c (List.map dest_level_var vars) vars'
 
    let update_redex_param stack i sp PARAM_REASON =
-      match stack.(i) with
-         StackVoid ->
-            stack.(i) <- sp
-       | sp' ->
-            if (sp <> sp') then
-               REF_RAISE(RefineError ("update_redex_params", RewriteBadMatch (ParamMatch PARAM_REASON)));
-            ()
+      let eq =
+         match stack.(i), sp with
+            StackVoid, _ ->
+               stack.(i) <- sp;
+               true
+           (* This require special equality *)
+          | StackNumber i, StackNumber j -> Lm_num.eq_num i j
+          | StackShape sh1, StackShape sh2 -> TermShape.eq sh1 sh2
+          | StackOpname t1, StackOpname t2 -> Opname.eq t1 t2
+          | sp', _ -> sp = sp'
+      in
+         if not eq then
+            REF_RAISE(RefineError ("update_redex_params", RewriteBadMatch (ParamMatch PARAM_REASON)))
 
    let addr_fun vars t = xnil_term, (vars, t)
 
