@@ -2544,6 +2544,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p1_1, p1_2 = p1 in
          merge merge_bool "TermSubst.equal_params" (wrap2 TermSubst1.equal_params p0_1 p1_1) (wrap2 TermSubst2.equal_params p0_2 p1_2)
 
+      let equal_operators (p0 : operator) (p1 : operator) =
+         let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = p1 in
+         merge merge_bool "TermSubst.equal_operators" (wrap2 TermSubst1.equal_operators p0_1 p1_1) (wrap2 TermSubst2.equal_operators p0_2 p1_2)
+
       let alpha_equal (p0 : term) (p1 : term) =
          let p0_1, p0_2 = p0 in
          let p1_1, p1_2 = p1 in

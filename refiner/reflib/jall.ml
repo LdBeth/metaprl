@@ -181,6 +181,16 @@ struct
    let string_eq (s1: string) s2 =
       s1 = s2
 
+   let rec ftree_eq t1 t2 =
+      match t1, t2 with
+         Empty, Empty -> true
+       | NodeAt p1, NodeAt p2 -> pos_eq p1 p2
+       | NodeA (p1, pa1), NodeA (p2, pa2) -> pos_eq p1 p2 && Lm_array_util.for_all2 ftree_eq pa1 pa2
+       | _ -> false
+
+   let rule_eq (a1, (b1 : rule), c1, d1) (a2, b2, c2, d2) =
+      string_eq a1 a2 && b1 = b2 && alpha_equal c1 c2 && alpha_equal d1 d2
+
 (*****************************************************************)
 
 (************* printing function *************************************)
@@ -816,7 +826,7 @@ struct
                   end
                else
                   let min_conn = remove_dups_connections (min_conn1 @ min_conn2)
-                  and beta_exp = remove_dups_list ([pos] @ beta_exp1 @ beta_exp2) in
+                  and beta_exp = remove_dups_list (pos :: beta_exp1 @ beta_exp2) in
                   (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2)),min_conn,beta_exp)
 
    let bproof_purity bproof =
@@ -1039,7 +1049,7 @@ struct
              | AtNode(_,_) -> raise (Invalid_argument "Jprover bug: invalid beta-proof")
              | BEmpty -> true
              | CNode(_) -> non_closed rbpf
-             | BNode(pos,(_,bp1),(_,bp2)) -> non_closed ([bp1;bp2] @ rbpf)
+             | BNode(pos,(_,bp1),(_,bp2)) -> non_closed (bp1 :: bp2 :: rbpf)
             )
 
    let rec cut_context pos context =
@@ -1392,30 +1402,30 @@ struct
             raise jprover_bug
        | PNodeAx(r) ->
             subtree
-       | PNodeA((pos,inf,formula,term), left) ->
-            if (pos,inf,formula,term) = rule then
+       | PNodeA((_,_,_,term) as r, left) ->
+            if rule_eq r rule then
                left
           (* don't delete rule if subformula belongs to renamed instance of quantifiers; *)
           (* but this can never occur now since (renamed) formula is part of rule *)
             else
                begin match rule with
-                  (_, (Exl | Allr), formn, termn) when term = termn ->
+                  (_, (Exl | Allr), formn, termn) when alpha_equal term termn ->
     (* this can only occur if eigenvariable rule with same term as termn has been permuted; *)
     (* the application of the same eigenvariable introduction on the same subformula with *)
     (* different instantiated variables might occur! *)
     (* termn cannot occur in terms of permuted quantifier rules due to substitution split *)
     (* during reconstruciton of the ljmc proof *)
-                     let new_term =  make_new_eigenvariable term in
+                     let new_term = make_new_eigenvariable term in
 (*              print_endline "Eigenvariable renaming!!!"; *)
                      eigen_rename termn new_term subtree
                 | _ ->
                      let left_del =
                         update_ptree rule left direction tsubrel
                      in
-                     PNodeA((pos,inf,formula,term), left_del)
+                     PNodeA(r, left_del)
                end
-       | PNodeB((pos,inf,formula,term), left, right) ->
-            if (pos,inf,formula,term) = rule then
+       | PNodeB(r, left, right) ->
+            if rule_eq r rule then
                if direction = "l" then
                   left
                else
@@ -1423,7 +1433,7 @@ struct
             else
                let left_del = update_ptree rule left direction tsubrel in
                let right_del = update_ptree rule right direction tsubrel in
-               PNodeB((pos,inf,formula,term),left_del,right_del)
+               PNodeB(r,left_del,right_del)
 
    let permute r1 r2 ptree  la tsubrel =
 (*  print_endline "permute in"; *)
@@ -1596,7 +1606,7 @@ struct
                end
           | PNodeA(o,PNodeB(rule,left,right)),la ->                (* one-over-two *)
 (*     print_endline " one-over-two ";                  *)
-               if rule = r then  (* left,right are or_l free *)
+               if rule_eq rule r then  (* left,right are or_l free *)
                   permute o rule ptree  la tsubrel (* first termination case *)
                else
                   let d = next_direction addr act_addr in
@@ -1646,7 +1656,7 @@ struct
                   leftm  (* optimized termination case (2) *)
           | PNodeB(o,PNodeB(rule,left,right),right1),"l" ->             (* two-over-two, left *)
 (*     print_endline " two-over-two, left"; *)
-               if rule = r then   (* left,right are or_l free *)
+               if rule_eq rule r then   (* left,right are or_l free *)
                   let permute_result = permute o rule ptree  la tsubrel in
                   (match permute_result with
                      PNodeB(r2,PNodeB(r3,left3,right3),PNodeB(r4,left4,right4)) ->
@@ -1709,7 +1719,7 @@ struct
 (*      print_endline " two-over-two, right"; *)
                let leftm1,bool = weak_modify o left1 (subrel,tsubrel) in  (* left1 is or_l free *)
                if bool then  (* o is relevant, even after permutations *)
-                  if rule = r then  (* left, right or_l free *)
+                  if rule_eq rule r then  (* left, right or_l free *)
                      permute o rule (PNodeB(o,leftm1,PNodeB(rule,left,right))) la tsubrel
                   else
                      let d = next_direction addr act_addr in
@@ -1747,8 +1757,8 @@ struct
             (PEmpty| PNodeAx(_)) -> raise jprover_bug
           | PNodeA(rule,left) ->
                if (dgenerative rule dglist left tsubrel) then
-                  let newdg = (@) [rule] dglist in
-                  if rule = o then
+                  let newdg = rule :: dglist in
+                  if rule_eq rule o then
                      begin
 (*             print_endline "one-rule is o"; *)
                         permute_branch r addr act_addr ptree dglist (subrel,tsubrel)
@@ -1766,7 +1776,7 @@ struct
           | PNodeB(rule,left,right) ->
                let d = next_direction addr act_addr in
                let bool = (dgenerative rule dglist left tsubrel) in
-               if rule = o then
+               if rule_eq rule o then
                   begin
 (*          print_endline "two-rule is o"; *)
                      permute_branch r addr (act_addr^d) ptree dglist (subrel,tsubrel)
@@ -1782,7 +1792,7 @@ struct
                      in
                      let tptree =
                         if bool then
-                           let newdg = (@) [rule] dglist in
+                           let newdg = rule :: dglist in
                            (trans_add_branch r o addr (act_addr^d) dbranch newdg (subrel,tsubrel))
                         else
                            (trans_add_branch r o addr (act_addr^d) dbranch dglist (subrel,tsubrel))
@@ -1802,9 +1812,9 @@ struct
       let dummyt = mk_var_term "dummy" in
       let r,o,addr =
          top_addmissible_pair ptree dglist ("",Orl,dummyt,dummyt) ("",Orr,dummyt,dummyt) "" tsubrel dummyt in
-      if r = ("",Orl,dummyt,dummyt) then
+      if rule_eq r ("",Orl,dummyt,dummyt) then
          ptree
-      else  if o = ("",Orr,dummyt,dummyt) then  (* Orr is a dummy for no d-gen. rule *)
+      else if rule_eq o ("",Orr,dummyt,dummyt) then  (* Orr is a dummy for no d-gen. rule *)
          ptree
       else
          let (x1,x2,x3,x4) = r
@@ -1920,7 +1930,7 @@ struct
                      else
                         get_formula_tree ((Array.to_list suctrees) @ rest_trees) f predflag
                   else (* predflag = "" *)
-                     if pos = f then
+                     if pos_eq pos f then
                         NodeA(pos,suctrees),[]
                      else
                         get_formula_tree ((Array.to_list suctrees) @ rest_trees) f predflag
@@ -2041,14 +2051,14 @@ struct
          list1
       else
          let (s1,sf1),restlist1  =  (List.hd list1),(List.tl list1) in
-         (@) (compare_pair s1 sf1 list2) (compare_pairlist restlist1 list2)
+         (compare_pair s1 sf1 list2) @ (compare_pairlist restlist1 list2)
 
    let rec trans_rec pairlist translist =
       let tlist = compare_pairlist pairlist translist in
       if tlist = [] then
          translist
       else
-         (@) (trans_rec pairlist tlist) translist
+         (trans_rec pairlist tlist) @ translist
 
    let transitive_closure subrel =
       let pairlist,nlist = List.split subrel in
@@ -2158,7 +2168,7 @@ struct
                extend_sigmaQ sigmaQ r
             else
 (* first and second component are var terms in MetaPRL *)
-               [(vf,vf)] @ (extend_sigmaQ sigmaQ r)
+               (vf,vf) :: (extend_sigmaQ sigmaQ r)
 
    let build_sigmaQ sigmaQ ftree =
       let vlist = collect_variables [ftree] in
@@ -4213,7 +4223,7 @@ let rec try_multiplicity consts mult_limit ftree ordering pos_n mult logic =
       (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
    with Failed ->
       match mult_limit with
-         Some m when m == mult ->
+         Some m when m = mult ->
             raise mult_limit_exn
        | _ ->
             let new_mult = mult+1 in
@@ -4227,7 +4237,7 @@ let rec try_multiplicity consts mult_limit ftree ordering pos_n mult logic =
             end;
             let (new_ftree,new_ordering,new_pos_n) =
                add_multiplicity ftree pos_n new_mult logic in
-            if (new_ftree = ftree) then
+            if ftree_eq new_ftree ftree then
                raise unprovable
             else
 (*             print_formula_info new_ftree new_ordering new_pos_n;   *)

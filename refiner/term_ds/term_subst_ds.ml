@@ -210,6 +210,9 @@ struct
        | _ ->
             p1 = p2
 
+   let equal_operators op1 op2 =
+      Opname.eq op1.op_name op2.op_name && List.for_all2 equal_params op1.op_params op2.op_params
+
    let rec remove_var v = function
       [] ->
          []
@@ -247,11 +250,9 @@ struct
       match (get_core t, get_core t') with
          FOVar v, FOVar v' ->
             Lm_list_util.check_assoc v v' vars
-       | Term { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
-         Term { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-            Opname.eq name1 name2
-                    & Lm_list_util.for_all2 equal_params params1 params2
-                    & equal_bterms vars bterms1 bterms2
+       | Term { term_op = op1; term_terms = bterms1 },
+         Term { term_op = op2; term_terms = bterms2 } ->
+            equal_operators op1 op2 & equal_bterms vars bterms1 bterms2
        | Sequent s1, Sequent s2 ->
             (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
             (equal_term vars s1.sequent_args s2.sequent_args) &&
@@ -413,8 +414,7 @@ struct
             not (Lm_list_util.assoc_in_range SymbolSet.mem (free_vars_set t') bvars) &&
             f t' (List.assoc v sub)
        | Term t1, Term t2 ->
-            Opname.eq t1.term_op.op_name t2.term_op.op_name &&
-            Lm_list_util.for_all2 equal_params t1.term_op.op_params t2.term_op.op_params &&
+            equal_operators t1.term_op t2.term_op &&
             equal_fun_bterms f bvars sub t1.term_terms t2.term_terms
        | Sequent s1, Sequent s2 ->
             (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
@@ -499,9 +499,9 @@ struct
                   check_bvars (free_vars_set tm2) bvars;
                   (v, tm2) :: subst
             end
-       | Term { term_op = { op_name = opname1; op_params = params1 }; term_terms = bterms1 },
-         Term { term_op = { op_name = opname2; op_params = params2 }; term_terms = bterms2 }
-            when Opname.eq opname1 opname2 & params1 = params2 ->
+       | Term { term_op = op1; term_terms = bterms1 },
+         Term { term_op = op2; term_terms = bterms2 }
+            when equal_operators op1 op2 ->
                match_bterms subst bvars bterms1 bterms2
        | SOVar(v1, cs1, ts1), SOVar(v2, cs2, ts2) when Lm_symbol.eq v1 v2 && cs1 = cs2 ->
             match_term_lists subst bvars ts1 ts2

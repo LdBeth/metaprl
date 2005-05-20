@@ -188,6 +188,9 @@ struct
        | _ ->
             p1 = p2
 
+   let equal_operators op1 op2 =
+      Opname.eq op1.op_name op2.op_name && List.for_all2 equal_params op1.op_params op2.op_params
+
    let rec equal_term vars t t' =
       match t, t' with
          { term_op = { op_name = opname1; op_params = [Var v] };
@@ -197,10 +200,9 @@ struct
            term_terms = []
          } when Opname.eq opname1 var_opname & Opname.eq opname2 var_opname ->
             Lm_list_util.check_assoc v v' vars
-       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
-         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-            (Opname.eq name1 name2)
-            & (Lm_list_util.for_all2 equal_params params1 params2)
+       | { term_op = op1; term_terms = bterms1 },
+         { term_op = op2; term_terms = bterms2 } ->
+            equal_operators op1 op2
             & (equal_bterms vars bterms1 bterms2)
 
    and equal_bterms vars bterms1 bterms2 =
@@ -264,9 +266,9 @@ struct
             not (List.mem_assoc v bvars) &&
             not (Lm_list_util.assoc_in_range rev_mem (free_vars_list t') bvars) &&
             f t' (List.assoc v sub)
-       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
-         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-            Opname.eq name1 name2 & params1 = params2 & equal_fun_bterms bvars bterms1 bterms2
+       | { term_op = op1; term_terms = bterms1 },
+         { term_op = op2; term_terms = bterms2 } ->
+            equal_operators op1 op2 & equal_fun_bterms bvars bterms1 bterms2
 
       and equal_fun_bterms bvars bterms1 bterms2 =
          let equal_fun_bterm = fun
@@ -498,15 +500,9 @@ struct
                         check_bvars (free_vars_list tm2) bvars;
                         (v, tm2) :: subst
       else
-         let { term_op = { op_name = opname1; op_params = params1 };
-               term_terms = bterms1
-             } = tm1
-         in
-         let { term_op = { op_name = opname2; op_params = params2 };
-               term_terms = bterms2
-             } = tm2
-         in
-            if Opname.eq opname1 opname2 & params1 = params2 then
+         let { term_op = op1; term_terms = bterms1 } = tm1 in
+         let { term_op = op2; term_terms = bterms2 } = tm2 in
+            if equal_operators op1 op2 then
                match_bterms subst bvars bterms1 bterms2
             else
                RAISE_GENERIC_EXN

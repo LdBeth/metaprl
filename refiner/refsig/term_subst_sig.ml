@@ -73,6 +73,7 @@ sig
     *)
    val var_subst : term -> term -> var -> term
    val equal_params : param -> param -> bool
+   val equal_operators : operator -> operator -> bool
 
    (*
     * In all alpha_equal* functions:

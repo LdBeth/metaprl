@@ -183,19 +183,10 @@ let init_timestamp_ref = ref 0
 let new_ts () = incr init_timestamp_ref;
                 (!init_timestamp_ref)
 
-let rec parlist_eq pl1 pl2 =
-   match pl1, pl2 with
-      [], [] -> true
-    | p1::pl1, p2::pl2 when equal_params p1 p2 ->
-          parlist_eq pl1 pl2
-    | _ -> false
-
 let opsymb_equal op1 op2 =
    match op1, op2 with
       (FunOp op1, FunOp op2) | (FunSequent op1, FunSequent op2) ->
-         let op1 = dest_op op1 in
-         let op2 = dest_op op2 in
-            Opname.eq op1.op_name op2.op_name && parlist_eq op1.op_params op2.op_params
+         equal_operators op1 op2
     | FunSOVar(v1,conts1), FunSOVar(v2,conts2) ->
          Lm_symbol.eq v1 v2 && conts1 = conts2
     | _ -> false
