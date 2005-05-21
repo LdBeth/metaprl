@@ -554,9 +554,6 @@ struct
    (*
     * Second order context, contains a context term, plus
     * binding variables like so vars.
-    *
-    * XXX TODO: Eventually contexts should probably have their own
-    * choice in the core type.
     *)
    let is_context_term t =
       match get_core t with

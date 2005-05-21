@@ -294,7 +294,12 @@ struct
          if not eq then
             REF_RAISE(RefineError ("update_redex_params", RewriteBadMatch (ParamMatch PARAM_REASON)))
 
-   let addr_fun vars t = xnil_term, (vars, t)
+   let addr_fun vars t =
+      IFDEF VERBOSE_EXN THEN
+         if !debug_rewrite then
+            eprintf "Rewrite_match_redex.addr_fun: term %a under [%a] vars@." print_term t output_symbol_set vars;
+      ENDIF;
+      xnil_term, (vars, t)
 
    let match_redex_params stack p' p =
       match p', dest_param p with
@@ -595,7 +600,7 @@ struct
             in
                IFDEF VERBOSE_EXN THEN
                   if !debug_rewrite then
-                     eprintf "Rewrite.match_redex.RWSOContext: %s%t" (string_of_address addr) eflush
+                     eprintf "Rewrite.match_redex.RWSOContext: %a@@%s under vars %a%t" print_term t (string_of_address addr) output_symbol_set all_bvars' eflush
                ENDIF;
                let t'', (new_bvars, term) = apply_var_fun_arg_at_addr addr_fun addr all_bvars' t in
                   begin match t' with

@@ -312,6 +312,19 @@ struct
                   format_contexts buf conts;
                format_terms buf subterms
          end
+      else if is_context_term term then
+         begin
+            let v, t, conts, subterms = dest_context term in
+               format_quoted_var buf v;
+               if conts <> [v] then
+                  format_contexts buf conts;
+               format_pushm buf 2;
+               format_string buf "[[";
+               format_term buf t;
+               format_string buf "]]";
+               format_popm buf;
+               format_terms buf subterms
+         end
       else if is_sequent_term term then
          begin
             if !debug_simple_print then

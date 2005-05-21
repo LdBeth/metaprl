@@ -461,7 +461,7 @@ and format_sequent buf format_term term =
 and format_term buf (shortener : shortener) printer term =
    if is_var_term term then
       format_string buf ("'" ^ dstring_of_var (dest_var term))
-   else if is_so_var_term term then
+   else if is_so_var_term term || is_context_term term then
       format_simple_term buf term
    else if is_sequent_term term then
       format_sequent buf printer term
@@ -516,6 +516,12 @@ let format_short_term (mode, table, state) (shortener : shortener) =
             let v, conts, terms = dest_so_var t in
                mk_term (mk_op dsovar_opname [make_param (Var v)]) (**)
                   [mk_simple_bterm (mk_xlist_term (List.map make_cont conts)); mk_simple_bterm (mk_xlist_term terms)]
+         else if is_context_term t then
+            let v, t, conts, terms = dest_context t in
+               mk_term (mk_op dcont_opname [make_param (Var v)]) (**)
+                  [mk_simple_bterm t;
+                   mk_simple_bterm (mk_xlist_term (List.map make_cont conts));
+                   mk_simple_bterm (mk_xlist_term terms)]
          else
             t
       in
@@ -536,7 +542,7 @@ let format_short_term (mode, table, state) (shortener : shortener) =
          if cprec = inherit_prec then
             begin
                if !debug_dform then
-                  eprintf "Dform %s: inherit_prec%t" df.df_name eflush;
+                  eprintf "Dform %s: inherit_prec%t" name eflush;
                pprec, false
             end
          else if eq = NOParens then

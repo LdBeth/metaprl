@@ -370,7 +370,7 @@ let () = ();;
             let bconts', conts' = f bconts v conts in
             let ct' = convert_term bvars fvars bconts' ct in
             let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
-            if ct == ct && conts' == conts && terms == terms' then t else mk_context_term v ct' conts' terms'
+            if ct == ct' && conts' == conts && terms == terms' then t else mk_context_term v ct' conts' terms'
           else if is_sequent_term t then
             let eseq = explode_sequent t in
             let arg' = convert_term bvars fvars bconts eseq.sequent_args in

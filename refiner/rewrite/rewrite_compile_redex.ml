@@ -477,8 +477,10 @@ struct
     | _ :: tl -> stack_cvars (i + 1) tl
     | [] -> []
 
+   let rule_arg_var = Lm_symbol.add "rule/rewrite argument"
+
    let filter_restricts bconts (i, conts) =
-      let restrict = restricted_conts empty_var bconts conts in
+      let restrict = restricted_conts rule_arg_var bconts conts in
          if restrict = [] then None else Some (i, restrict)
 
    let rec map_restricts_term restr = function
