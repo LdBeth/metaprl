@@ -52,7 +52,7 @@ if $(SSL_ENABLED)
 #
 # Copy the files in inputs
 #
-LIBINPUTS = $(file $(addprefix $(LIB)/, $(INPUTS)))
+LIBINPUTS = $(addprefix $(LIB)/, $(INPUTS))
 
 $(LIBINPUTS): $(LIB)/%: %
         $(symlink $<, $@)
