@@ -76,7 +76,7 @@ let debug_dform = load_debug "dform"
 declare df_var[var:v] : Dform
 declare df_free_fo_var[var:v] : Dform
 declare df_so_var[var:v]{'conts : Dform; 'termlist : Dform} : Dform
-declare df_cont[var:v]{'t : Dform; 'conts : Dform; 'termlist : Dform} : Dform
+declare df_context[var:v]{'t : Dform; 'conts : Dform; 'termlist : Dform} : Dform
 declare "sequent"{'arg; 'seq} : Dform
 
 (*
@@ -121,18 +121,20 @@ dform so_var2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v
 dform so_var3 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{'conts; 't} =
    szone df_var[v:v] df_bconts{'conts} `"[" pushm[0] var_list{'t} popm `"]" ezone
 
-dform so_conts1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_cont[v:v]{'t; 'conts; 'ts} =
+dform so_conts1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_context[v:v]{'t; 'conts; 'ts} =
    pushm[3] szone df_var[v:v] df_bconts{'conts} `"[[" pushm[0] slot{'t} popm `"]]"
    `"[" pushm[0] var_list{'ts} popm `"]" ezone popm
 
-dform so_conts2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_cont[v:v]{'t; 'conts; xnil} =
+dform so_conts2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_context[v:v]{'t; 'conts; xnil} =
    pushm[3] szone df_var[v:v] df_bconts{'conts} `"[[" pushm[0] slot{'t} popm `"]]" ezone popm
 
-dform so_conts3 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_cont[v:v]{'t; xcons{df_context_var[v:v]; xnil}; 'ts} =
+dform so_conts3 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] ::
+      df_context[v:v]{'t; xcons{df_context_var[v:v]; xnil}; 'ts} =
    pushm[3] szone df_var[v:v] `"[[" pushm[0] slot{'t} popm `"]]"
    `"[" pushm[0] var_list{'ts} popm `"]" ezone popm
 
-dform so_conts4 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_cont[v:v]{'t; xcons{df_context_var[v:v]; xnil}; xnil} =
+dform so_conts4 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] ::
+      df_context[v:v]{'t; xcons{df_context_var[v:v]; xnil}; xnil} =
    pushm[3] szone df_var[v:v] `"[[" pushm[0] slot{'t} popm `"]]" ezone popm
 
 dform conts_left_df : mode[src] :: mode[prl] :: df_bconts{'conts} =

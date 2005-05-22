@@ -555,6 +555,18 @@ else
 %.p4: %.ml $(CAMLP4O)
    $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.ml > $@
 
+if $(not $(defined MP_DEBUG))
+    MP_DEBUG = $(getenv MP_DEBUG, $(EMPTY))
+    export
+
+setenv(MP_DEBUG, $(MP_DEBUG))
+
+if $(mem spell, $(split :, $(MP_DEBUG)))
+    LIBWORDS = $(file lib/words)
+    %.ppo: $(LIBWORDS)
+    %.p4: $(LIBWORDS)
+    export
+
 #
 # Add the extra dependencies.  If sloppy dependencies
 # is set, squash the dependency chain by using an

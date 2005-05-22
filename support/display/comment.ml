@@ -1,5 +1,5 @@
 doc <:doc<
-   @spelling{typeset verbatim}
+   @spelling{typeset verbatim subparagraph}
    @begin[doc]
    @module[Comment]
 

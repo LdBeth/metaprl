@@ -30,9 +30,9 @@ open Lm_printf
  * that are correctly spelled.  The dictionary is saved
  * as a hashtable in /tmp/metaprl-spell.dat.
  *)
-let tmp_magic = 0x2557f3ed
+let dat_magic = 0x2557f3ed
 
-let tmp_filename = (Setup.lib ()) ^ "/english_dictionary.dat"
+let dat_filename = (Setup.lib ()) ^ "/english_dictionary.dat"
 let local_words = (Setup.lib ()) ^ "/words"
 
 let words_filenames = [
@@ -52,11 +52,11 @@ let dict = ref None
  *)
 let check_magic () =
    try
-      let inx = open_in_bin tmp_filename in
+      let inx = open_in_bin dat_filename in
          try
             let i = input_binary_int inx in
                close_in inx;
-               i = tmp_magic
+               i = dat_magic
          with
             _ ->
                close_in inx;
@@ -68,7 +68,7 @@ let check_magic () =
 
 let check_dict () =
    if check_magic () then
-      let tmp_stat = Unix.stat tmp_filename in
+      let tmp_stat = Unix.stat dat_filename in
       let check_magic' file =
          (try
              let file_stat = Unix.stat file in
@@ -106,16 +106,39 @@ let add_file table filename =
       _ ->
          ()
 
+(*
+ * Borrowing from the Filename library, using the "lib" directory instead of the tmp one
+ *)
+let prng = Random.State.make_self_init ()
+
+let temp_file_name prefix suffix =
+  let rnd = (Random.State.bits prng) land 0xFFFFFF in
+  Filename.concat (Setup.lib ()) (Printf.sprintf "%s%06x%s" prefix rnd suffix)
+
+let open_temp_file mode prefix suffix =
+  let rec try_name counter =
+    if counter >= 1000 then
+      invalid_arg "Filter_spell.open_temp_file: temp dir nonexistent or full";
+    let name = temp_file_name prefix suffix in
+    try
+      (name,
+       open_out_gen (Open_wronly::Open_creat::Open_excl::mode) 0o600 name)
+    with Sys_error _ ->
+      try_name (counter + 1)
+  in try_name 0
+
 let make_dict () =
-   eprintf "Building spelling dictionary %s...%t" tmp_filename flush;
+   eprintf "Building spelling dictionary %s...%t" dat_filename flush;
    let table = Hashtbl.create 1037 in
       List.iter (add_file table) words_filenames;
       dict := Some table;
+      let tmp, out = open_temp_file [Open_binary] "english_dictionary" ".dat" in
 
-      let out = Pervasives.open_out_bin tmp_filename in
-         Pervasives.output_binary_int out tmp_magic;
+      let out = Pervasives.open_out_bin tmp in
+         Pervasives.output_binary_int out dat_magic;
          Marshal.to_channel out table [];
          Pervasives.close_out out;
+         Unix.rename tmp dat_filename;
          eprintf "[done]%t" eflush
 
 (*
@@ -123,10 +146,10 @@ let make_dict () =
  *)
 let load_dict () =
    try
-      let inx = open_in_bin tmp_filename in
+      let inx = open_in_bin dat_filename in
          try
             let magic = input_binary_int inx in
-               if magic <> tmp_magic then
+               if magic <> dat_magic then
                   raise Not_found;
                let table = Marshal.from_channel inx in
                   close_in inx;

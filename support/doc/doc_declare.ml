@@ -1,4 +1,5 @@
 doc <:doc< -*- Mode: text -*-
+   @spelling{typeclass typesystem typeclasses}
 
    @begin[doc]
    @chapter[declare]{Declarations}
@@ -32,7 +33,7 @@ extends Summary
 doc <:doc<
 @begin[doc]
 
-In order for a term to be used in MetaPRL, it must be declared first.  MetaPRL uses a simple
+In order for a term to be used in @MetaPRL, it must be declared first.  @MetaPRL uses a simple
 typesystem to classify these terms, where there are three kinds of declarations: typeclasses, types,
 and normal terms.  Types are used to classify terms.  Typeclasses are like types, but they are
 simple (they have no parameters or subterms), and they allow subtyping.
@@ -41,7 +42,7 @@ Before describing the kinds of declarations, it is worth clarifying one point.  
 typeclasses) are denoted by terms.  @emph{Every} term has a type, even the terms that denote types
 and typeclasses.  The type of a term that represents a type need not be related.
 
-There are several builtin typeclasses, defined in the Perv theory.
+There are several builtin typeclasses, defined in the @hrefmodule[Perv] module.
 
 @begin[itemize]
 

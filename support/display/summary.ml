@@ -180,13 +180,10 @@ declare "rule"[name:s]{'params : Dform; 'stmt : Dform; 'proof : Dform; 'res : Df
 
 doc <:doc<
    @begin[doc]
-   XXX BUG (nogin) Text below is outdated.
-
-   Resources are declared with the @tt[resource]
-   term, which has three subterms corresponding to the three types in the resource definition.  The
-   @it{extract} is the type of values provided by the resource, @it{data} is the internal
-   type used to represent the resource data, and @it{improve} is the type of arguments that
-   are required to make additions to the resource.
+   Resources are defined with the @tt[resource] term, which has three subterms.  The
+   The @it[inp] is the type of arguments that are required to make additions to the resource,
+   @it[outp] is the type of values provided by the resource and @it[expr] is an ML expression
+   that provides the resource implementation.
 
    Resources are improved with the @tt[improve] term which has the name of a resource
    to improve and the expression to improve the resource with.
