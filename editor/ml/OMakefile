@@ -227,15 +227,11 @@ if $(BYTE_ENABLED)
    .test-metaprl-startup: $(MP).top $(MP).run
 
 section
-   EXT = $(if $(NATIVE_ENABLED), opt, top)
-   EXT = $(if $(equal $(OSTYPE), Win32), $(EXT).bat, $(EXT))
-   .test-metaprl-startup: $(MP)$(EXT) $(MP)config $(THEORIES_PATH) $(MLDEBUG_PATH)
-   	if $(equal $(OSTYPE), Win32)
-         echo | .\\$(MP)$(EXT) -batch
-         touch $@
-   	else
-         echo | ./$(MP)$(EXT) -batch
-         touch $@
+    EXT = $(if $(NATIVE_ENABLED), opt, top)
+    EXT = $(if $(equal $(OSTYPE), Win32), $(EXT).bat, $(EXT))
+    .test-metaprl-startup: $(MP)$(EXT) $(MP)config $(THEORIES_PATH) $(MLDEBUG_PATH)
+        echo | .$(DIRSEP)$(MP)$(EXT) -batch
+        touch $@
 
 #
 # Clean up
