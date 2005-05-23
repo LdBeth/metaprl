@@ -69,6 +69,7 @@ open Lm_printf
 open Opname
 open Term_sig
 open Term_base_sig
+open Term_op_sig
 open Term_man_sig
 open Term_subst_sig
 open Term_addr_sig
@@ -115,6 +116,7 @@ let debug_rules =
 module Refine (**)
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
+   (TermOp : TermOpSig with module OpTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
@@ -1821,8 +1823,17 @@ struct
    let check_def_redex _ redex =
        List.iter check_def_bterm (dest_term redex).term_terms
 
+   let check_definition_contractum redex contractum =
+      let sh = shape_of_term redex in
+      let check t =
+         if TermShape.eq (shape_of_term t) sh then
+            REF_RAISE(RefineError ("Definitional rewrite", StringTermError("not allowed to be recursive", t)));
+      in
+         TermOp.iter_down check contractum
+
    let check_definition name redex contractum =
       check_def_redex name redex;
+      check_definition_contractum redex contractum;
       check_rewrite name empty_args_spec [] [] redex contractum
 
    let definitional_rewrite build name redex contractum =
@@ -1831,6 +1842,7 @@ struct
             eprintf "Refiner.definitional_rewrite: %s%t" name eflush
       ENDIF;
          check_def_redex name redex;
+         check_definition_contractum redex contractum;
          justify_rewrite build name redex contractum PDefined
 
    (*

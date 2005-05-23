@@ -41,6 +41,7 @@
 
 open Term_sig
 open Term_base_sig
+open Term_op_sig
 open Term_man_sig
 open Term_subst_sig
 open Term_addr_sig
@@ -53,6 +54,7 @@ open Refine_sig
 module Refine (**)
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
+   (TermOp : TermOpSig with module OpTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)

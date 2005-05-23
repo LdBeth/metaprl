@@ -50,7 +50,7 @@ struct
    module TermTy = Term_ty_gen.TermTy (TermType) (Term) (TermMan) (TermSubst)
    module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (TermOp) (TermMan) (RefineError)
    module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermOp) (TermMan) (TermAddr) (TermSubst) (TermShape) (RefineError)
-   module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (Rewrite) (RefineError)
+   module Refine = Refine.Refine (TermType) (Term) (TermOp) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (Rewrite) (RefineError)
    module TermMod =
    struct
       module TermType = TermType
