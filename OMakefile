@@ -474,9 +474,6 @@ section
 
     .SUBDIRS: refiner
 
-    # Do not export
-    return 0
-
 OCAMLINCLUDES += $(dir mllib)
 
 .SUBDIRS: proxyedit
