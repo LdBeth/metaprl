@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.4.15)
+OMakeVersion(0.9.4.18)
 
 ########################################################################
 # Begin real makefile.
@@ -108,11 +108,6 @@ SLOPPY_DEPENDENCIES = $(Bool $(SLOPPY_DEPENDENCIES))
 #
 if $(equal $(OSTYPE), Win32)
    #
-   # Pathname separator
-   #
-   SLASH = \\
-
-   #
    # Compile C files with threads
    #
    CFLAGS += /MT
@@ -125,11 +120,6 @@ if $(equal $(OSTYPE), Win32)
    export
 
 else
-   #
-   # Pathname separator
-   #
-   SLASH = /
-
    #
    # Location of OCaml root
    #

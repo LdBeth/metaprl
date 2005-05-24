@@ -1819,12 +1819,23 @@ struct
           | e = ANTIQUOT -> ConExpr (expr_of_anti loc "" e)
           | "'"; v = ANTIQUOT "arg" -> ConVar (expr_of_arg loc v)
           | "'"; v = ANTIQUOT -> ConVar (expr_of_anti loc "" v)
-          | op = opname_list -> ConConstruct (mk_opname loc op [] [], [], [])
-          | op = opname_list; (params, bterms) = con_term_suffix ->
+          | ophead = word_or_string; rest = con_term_after_word -> rest ophead
+          | con = con_sequent -> con
+         ]];
+
+      con_opname_rest:
+         [[ l = LIST0 con_opname1_rest -> l ]];
+
+      con_opname1_rest:
+         [[ "!"; w = word_or_string -> w ]];
+
+      con_term_after_word:
+         [[ op = con_opname_rest ->
+               (fun rest -> ConConstruct (mk_opname loc (rest :: op) [] [], [], []))
+          | op = con_opname_rest; (params, bterms) = con_term_suffix ->
                let param_types = List.map snd params in
                let bterm_arities = List.map (fun (bvars, _) -> List.length bvars) bterms in
-                  ConConstruct (mk_opname loc op param_types bterm_arities, params, bterms)
-          | con = con_sequent -> con
+                  (fun rest -> ConConstruct (mk_opname loc (rest :: op) param_types bterm_arities, params, bterms))
          ]];
 
       con_term_suffix:
@@ -1865,8 +1876,8 @@ struct
          [[ l = LIST0 con_bterm SEP ";" -> l ]];
 
       con_bterm:
-         [[ v = LIDENT; b = con_bterm_suffix ->
-               let bv, bt = b in (ConBVarConst v :: bv), bt
+         [[ v = LIDENT; b = con_bterm_body_or_suffix ->
+               b v
           | e = ANTIQUOT "arg"; suff = OPT con_bterm_suffix ->
                let e = expr_of_arg loc e in
                   (match suff with
@@ -1886,8 +1897,18 @@ struct
           [ t = con_term -> [], t ]];
 
       con_bterm_suffix:
-         [[ ","; bt = con_bterm -> bt
+         [[ ","; bt = con_bterm -> bt;
           | "."; t = con_term -> [], t
+         ]];
+
+      con_bterm_body_or_suffix:
+         [[ ","; bt = con_bterm ->
+               let bv, bt = bt in
+                  (fun v -> ((ConBVarConst v :: bv), bt))
+          | "."; t = con_term ->
+               (fun v -> ([ConBVarConst v], t))
+          | rest = con_term_after_word ->
+               fun v -> [], rest v
           ]];
 
       con_hyps: [[ hyps = LIST0 con_hyp SEP ";"; sl_turnstile -> hyps ]];
