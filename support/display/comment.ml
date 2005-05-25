@@ -165,13 +165,13 @@ declare docon : Dform
 doc docoff
 
 dform docoff_df1 : mode[tex] :: docoff =
-   izone `"\\texoff" ezone
+   izone slot["raw", "%\n\\fi\\texfalse\\iftex%\n"] ezone
 
 dform docoff_df2 : except_mode[tex] :: docoff =
    bf["docoff"]
 
 dform docon_df1 : mode[tex] :: docon =
-   izone `"\\textrue" ezone
+   izone slot["raw", "%\n\\fi\\textrue\\bgmptab\\iftex%\n"] ezone
 
 dform docon_df1 : except_mode[tex] :: docon =
    bf["docoff"]
@@ -203,15 +203,15 @@ dform tex_comment_item_df4 : tex_comment_item{comment_term{'t}} =
    `""
 
 dform tex_comment_item_df4 : tex_comment_item{comment_term{docoff}} =
-   izone slot["raw", "%\n\\end{tabbing}\\fi\\texoff{}%\n\\iftex%\n\\begin{tabbing}%\n"] ezone
+   docoff
 
 dform tex_comment_item_df5 : tex_comment_item{comment_term{"doc"{'t}}} =
-   izone slot["raw", "%\n\\end{tabbing}\\fi\\textrue%\n"] ezone
+   izone slot["raw", "%\n\\fi\\enmptab\\textrue\\iftex%\n"] ezone
    't
-   izone slot["raw","\\iftex\\begin{tabbing}%\n"] ezone
+   izone slot["raw","%\n\\fi\\iftex\\bgmptab%\n"] ezone
 
 dform tex_comment_item_df6 : tex_comment_item{comment_term{docon}} =
-   tex_comment_item{comment_term{"doc"{xnil}}}
+   docon
 
 dform tex_comment_white_df1 : mode[tex] :: comment_white =
    izone slot["raw", " "] ezone
@@ -1340,6 +1340,7 @@ declare math_beta : Dform
 declare math_lambda : Dform
 declare math_epsilon : Dform
 declare math_Gamma : Dform
+declare math_Delta : Dform
 declare math_vdash : Dform
 declare math_int : Dform
 declare math_lbrace : Dform
@@ -1628,6 +1629,12 @@ dform math_Gamma_df1 : mode[tex] :: math_Gamma =
    izone `"\\Gamma " ezone
 
 dform math_Gamma_df2 : except_mode[tex] :: math_Gamma =
+   Nuprl_font!gamma
+
+dform math_Delta_df1 : mode[tex] :: math_Delta =
+   izone `"\\Delta " ezone
+
+dform math_Delta_df2 : except_mode[tex] :: math_Delta =
    Nuprl_font!gamma
 
 dform math_vdash_df1 : mode[tex] :: math_vdash =
@@ -2111,6 +2118,8 @@ declare special : Dform
 dform special_df : special =
    math_it{slot["special display"]}
 
+dform theory_sp : slot["decl"]{docon} = special
+dform theory_sp : slot["decl"]{docoff} = special
 dform theory_sp : slot["decl"]{"theory"{'t}} = special
 dform mod_sp    : slot["decl"]{"module"[name:s]} = special
 dform mod_sp    : slot["decl"]{"module"{'name}} = special

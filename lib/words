@@ -2,6 +2,7 @@ abelian
 Aczel
 Aleksey
 analogs
+arities
 arity
 Aydemir
 backend
@@ -10,6 +11,7 @@ Bickford
 bookmarking
 booleans
 browsed
+Bruijn
 bterm
 bterms
 coercions
@@ -22,6 +24,8 @@ conversionals
 coset
 cosets
 CZF
+de
+destructors
 doc
 Emre
 endpoints

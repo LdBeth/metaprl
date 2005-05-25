@@ -311,6 +311,7 @@ declare math_beta : Dform
 declare math_lambda : Dform
 declare math_epsilon : Dform
 declare math_Gamma : Dform
+declare math_Delta : Dform
 declare math_vdash : Dform
 declare math_int : Dform
 declare math_lbrace : Dform
