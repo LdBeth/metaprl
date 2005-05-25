@@ -236,6 +236,7 @@ struct
        | MetaImplies_weak (t11, t12), MetaImplies_weak (t21, t22) -> t11==t21 && t12==t22
        | MetaFunction_weak (t1, mt11, mt12), MetaFunction_weak (t2, mt21, mt22) -> t1==t2 && mt11==mt21 && mt12==mt22
        | MetaIff_weak (mt11, mt12), MetaIff_weak (mt21, mt22) -> mt11==mt21 && mt12==mt22
+       | MetaLabeled_weak (l1, mt1), MetaLabeled_weak (l2, mt2) -> l1=l2 && mt1==mt2
        | _ -> false
 
    let compare_msequent_header (hyps_a, goal_a) (hyps_b, goal_b) =
