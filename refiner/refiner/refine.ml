@@ -1850,13 +1850,25 @@ struct
     * and the rewrite.
     * XXX HACK!!! Rewrite sequents should not have hyps (or should not be sequents
     * at all) once the conditional rewrites are removed from Base_rewrite semantics.
-    * Once that is fixed, this code should probably go away (and, for that matter,
-    * shell_rule and shell_rewrite should probably be eventually merged).
+    * Once that is fixed, this code should probably go away.
     *)
-   let hack_arg = mk_simple_term (make_opname ["sequent_arg";"Base_rewrite"]) []
-   let hack_hyps = SeqHyp.of_list [Context(Lm_symbol.add "H",[],[])]
-   let mk_rewrite_hack term =
-      mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_concl = term }
+   let mk_rewrite_hack =
+      let cH = Lm_symbol.add "H" in
+      let hack_arg = mk_simple_term (make_opname ["sequent_arg";"Base_rewrite"]) [] in
+      let hack_hyps = SeqHyp.of_list [Context(cH,[],[])] in
+      let cmap conts = if List.mem cH conts then conts else cH :: conts in
+      let map t =
+         if is_so_var_term t then
+            let v, conts, ts = dest_so_var t in
+               mk_so_var_term v (cmap conts) ts
+         else if is_context_term t then
+            let v, t, conts, ts = dest_context t in
+               mk_context_term v t (cmap conts) ts
+         else
+            t
+      in
+      let map = TermOp.map_down map in
+         fun term -> mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_concl = map term }
 
    let delayed_rewrite build name redex contractum extf =
       IFDEF VERBOSE_EXN THEN
