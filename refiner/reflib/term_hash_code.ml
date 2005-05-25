@@ -150,7 +150,7 @@ and hash_normal_term venv code e =
    let { term_op = op; term_terms = bterms } = dest_term e in
 
    (*
-    * This isn't quite right, because Lm_num has multiple
+    * XXX: BUG: This isn't quite right, because Lm_num has multiple
     * representations for the same number.
     *)
    let code = hash_item code op in
