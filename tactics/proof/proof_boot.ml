@@ -817,27 +817,13 @@ struct
       with RefineError _ ->
          false
 
-   let strip t =
-      if is_so_var_term t then
-         let v, _, ts = dest_so_var t in
-            mk_so_var_term v [] ts
-         else
-            t
-   let strip = TermOp.map_down strip
-   let strip_match arg1 arg2 = TermSubst.alpha_equal (strip (msequent_goal arg1.ref_goal)) (strip (msequent_goal arg2.ref_goal))
-
    let find_leaf_guess leaf subgoals =
       match find_leaf tactic_arg_alpha_equal leaf subgoals with
          Goal _, _ ->
             begin match
-               begin match find_leaf strip_match leaf subgoals with
-                 Goal _, _ ->
-                  begin match find_leaf tactic_arg_match leaf subgoals with
-                     Goal _, _ -> find_leaf tactic_arg_alpha_equal_concl leaf subgoals
-                   | answer -> answer
-                  end
-               | answer -> answer
-               end
+               match find_leaf tactic_arg_match leaf subgoals with
+                  Goal _, _ -> find_leaf tactic_arg_alpha_equal_concl leaf subgoals
+                | answer -> answer
             with
                RuleBox _ as node , subgoals ->
                   replace_goal_ext (norm_goal leaf) node, subgoals
