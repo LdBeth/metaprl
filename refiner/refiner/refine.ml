@@ -655,16 +655,16 @@ struct
       let replace_subgoal addr t' =
          (* Compute the extra binding variables in the clause *)
          let addr1, addr2 = TermAddr.split_clause_address addr in
-         let tst = term_subterm tst addr1 in
+         let tt = term_subterm tst addr1 in
          let f bvars t =
             if SymbolSet.intersectp bvars (free_vars_set t') then
                REF_RAISE(RefineError ("Refine.replace_subgoals",
-                  StringWrapError("Invalid context for conditional rewrite application",AddressError(addr,mseq.mseq_goal))))
+                  StringWrapError("Invalid context for conditional rewrite application",AddressError(addr,tst))))
             else t
          in
-         ignore(TermAddr.apply_var_fun_at_addr f addr2 SymbolSet.empty tst);
+         ignore(TermAddr.apply_var_fun_at_addr f addr2 SymbolSet.empty tt);
          (* Now we can replace the goal without fear *)
-         { mseq with mseq_goal = replace_concl mseq.mseq_goal t' }
+         { mseq with mseq_goal = replace_concl tst t' }
       in
 
       (*
