@@ -5,9 +5,17 @@
 OMakeVersion(0.9.0)
 
 #
-# Include the standard configuration
+# Include the standard installed configuration files.
 #
-include $(STDROOT)
+include $(STDLIB)/build/Common
+include $(STDLIB)/build/C
+include $(STDLIB)/build/OCaml
+include $(STDLIB)/build/LaTeX
+
+#
+# Define the command line variables.
+#
+DefineCommandVars(.)
 
 #
 # Include the OMakefile
