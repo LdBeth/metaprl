@@ -1,8 +1,7 @@
 #
 # Make sure omake is up-to-date
-# XXX: HACK (nogin): I had to put it here because of http://bugzilla.metaprl.org/show_bug.cgi?id=287
 #
-OMakeVersion(0.9.0)
+OMakeVersion(0.9.4.19)
 
 #
 # Include the standard installed configuration files.
