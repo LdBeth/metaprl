@@ -376,6 +376,11 @@ declare math_rulebox{'tac; 'args; 'hyps; 'goal} : Dform
 declare sequent [dummy_arg] { Dform : Dform >- Dform } : Dform
 
 (*
+ * Additional forms.
+ *)
+declare includegraphics{'file : Dform} : Dform
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "compile"

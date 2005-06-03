@@ -2109,10 +2109,17 @@ dform latex_df2 : except_mode[tex] :: "LaTeX" =
    `"LaTeX"
 
 (*
+ * Additional forms.
+ *)
+declare includegraphics{'file : Dform } : Dform
+
+dform includegraphics_df : mode[tex] :: includegraphics{'file} =
+   izone `"\\includegraphics{" 'file `"}" ezone
+
+(*
  * Some terms would not display "inline" (as the display form for "declare"
  * would try to display them)
  *)
-
 declare special : Dform
 
 dform special_df : special =
