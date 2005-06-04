@@ -42,19 +42,6 @@ open Refiner.Refiner.Rewrite
  ************************************************************************)
 
 (*
- * The display database is functional, and display formas
- * are added for term templates.
- *)
-type dform_table
-
-(*
- * During formatting, the display form maintains a state.
- * Currently, this is just used to collect the terms
- * that are printed in slots during HTML formatting.
- *)
-type dform_state
-
-(*
  * Print to term tagged buffers.
  *)
 type buffer = Lm_rformat.buffer
@@ -69,12 +56,14 @@ type parens =
  | LTParens
  | LEParens
 
+type dform_base
+
 type dform_printer_info =
    { dform_term    : term;
      dform_items   : rewrite_item list;
      dform_printer : buffer -> parens -> term -> unit;
      dform_buffer  : buffer;
-     dform_state   : dform_state
+     dform_state   : dform_base
    }
 
 type dform_printer =
@@ -95,9 +84,11 @@ type dform_option =
  | DFormPrec of precedence
  | DFormParens
 
+type dform_mode = string
+
 type dform_modes =
-   Modes of string list       (* include these modes *)
- | ExceptModes of string list (* exclude these modes *)
+   Modes of dform_mode list       (* include these modes *)
+ | ExceptModes of dform_mode list (* exclude these modes *)
  | AllModes
  | PrimitiveModes
 
@@ -112,26 +103,20 @@ type dform_info =
      dform_name    : string
    }
 
-type dform_base = string * dform_table * dform_state
-
 (*
  * Display form installation.
  *)
-val null_table : dform_table
 val null_base  : dform_base
-val null_state : dform_state
 
 (*
- * The main dform table interface
+ * The main dform database uses the resources mechanism. The database is functional,
+ * and display formas are added for term templates.
+ *
+ * get_mode_base may raise Failure if bookmark does not exist.
  *)
-val find_dftable : Mp_resource.bookmark -> dform_table
 val add_dform : dform_info -> unit
-
-(*
- * XXX: Backwards compatibility with the old API.
- *)
-type dform_mode_base = Mp_resource.bookmark
-val get_mode_base : dform_mode_base -> string -> dform_base
+val get_mode_base : Mp_resource.bookmark -> dform_mode -> dform_base
+val change_mode : dform_base -> dform_mode -> dform_base
 
 (*
  * Save terms in slot position?

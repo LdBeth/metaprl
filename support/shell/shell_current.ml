@@ -207,7 +207,7 @@ let default_shell =
         shell_needs_refresh  = false;
         shell_df_method      =
            { df_mode  = "prl";
-             df_base  = default_mode_base;
+             df_base  = default_base;
              df_width = 80;
              df_type  = DisplayText;
            }

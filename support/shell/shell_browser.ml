@@ -1152,7 +1152,7 @@ struct
     * Paste the term.
     *)
    let paste server state session outx command term =
-      let db = Dform.get_mode_base (Top.get_dforms ()).df_base "src" in
+      let db = Dform.change_mode (Top.get_dforms ()).df_base "src" in
       let shortener = Top.get_shortener () in
       let s = Dform.string_of_short_term db shortener term in
       let command = Printf.sprintf "%s << %s >>" command s in

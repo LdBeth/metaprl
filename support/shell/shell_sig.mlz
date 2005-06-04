@@ -146,8 +146,8 @@ type display_type =
  *)
 type display_method =
    { df_type  : display_type;
-     df_base  : dform_mode_base;
-     df_mode  : string;
+     df_base  : dform_base;
+     df_mode  : dform_mode;
      df_width : int;
    }
 

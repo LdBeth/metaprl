@@ -83,17 +83,16 @@ let debug_rewrite = load_debug "rewrite"
  *)
 type buffer = Lm_rformat.buffer
 
-(*
- * We also define a dform state, used for collecting terms
- * as they are displayed.
- *)
-type dform_state =
-   { mutable dform_table : term StringTable.t option }
+type dform_mode = string
+
+type dform_modes =
+   Modes of dform_mode list       (* include these modes *)
+ | ExceptModes of dform_mode list (* exclude these modes *)
+ | AllModes
+ | PrimitiveModes
 
 (*
- * A display form printer knows about this term, and
- * a printer for subterms.  The subterm printer takes
- * an extra argument that specifies parenthesization.
+ * Subterm printers take an extra argument that specifies parenthesization.
  *)
 type parens =
    NOParens
@@ -105,9 +104,52 @@ type dform_printer_info =
      dform_items : rewrite_item list;
      dform_printer : buffer -> parens -> term -> unit;
      dform_buffer : buffer;
-     dform_state : dform_state
+     dform_state : dform_base
    }
 
+(*
+ * The display database is just a table matching terms
+ * with their precedence and printer.
+ *)
+and df_printer =
+   DFExpansion of rewrite_rule
+ | DFPrinter of (dform_printer_info -> unit)
+
+and dform_item =
+   { df_modes : dform_modes;
+     df_parens : bool;
+     df_precedence : precedence;
+     df_printer : df_printer;
+     df_name : string;
+   }
+
+and dform_table = dform_item term_table
+
+(*
+ * Dforms base contains the basic information of the display used and the current state ---
+ * such as terms collectes as they are displayed
+ *)
+
+and dform_base = {
+   df_mode : dform_mode;
+   mutable df_table : delayed_dform_table;
+   mutable df_terms : term StringTable.t option
+}
+
+and delayed_dform_table =
+   DfBk of Mp_resource.bookmark
+ | DfTable of dform_table
+
+(*
+ * Some functions define a "shortener:" a function to produce
+ * a string from a description of a term.
+ *)
+type shortener = opname -> param list -> bound_term list -> string
+
+(*
+ * A display form printer knows about this term, and
+ * a printer for subterms.
+ *)
 type dform_printer =
    DFormExpansion of term
  | DFormPrinter of (dform_printer_info -> unit)
@@ -120,12 +162,6 @@ type dform_option =
  | DFormPrec of precedence
  | DFormParens
 
-type dform_modes =
-   Modes of string list       (* include these modes *)
- | ExceptModes of string list (* exclude these modes *)
- | AllModes
- | PrimitiveModes
-
 (*
  * This is the info needed for each display form.
  *)
@@ -137,35 +173,11 @@ type dform_info =
      dform_name : string;
    }
 
-(*
- * The display database is just a table matching terms
- * with their precedence and printer.
- *)
-type df_printer =
-   DFExpansion of rewrite_rule
- | DFPrinter of (dform_printer_info -> unit)
-
-type dform_item =
-   { df_modes : dform_modes;
-     df_parens : bool;
-     df_precedence : precedence;
-     df_printer : df_printer;
-     df_name : string;
-   }
-
-type dform_table = dform_item term_table
-
-type dform_base = string * dform_table * dform_state
-
-(*
- * Some functions define a "shortener:" a function to produce
- * a string from a description of a term.
- *)
-type shortener = opname -> param list -> bound_term list -> string
-
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
+
+let change_mode base mode = { base with df_mode = mode }
 
 (*
  * We use a special precedence to specify that a form should
@@ -479,184 +491,6 @@ and format_term buf (shortener : shortener) printer term =
          format_ezone buf
 
 (************************************************************************
- * PRINTING                                                             *
- ************************************************************************)
-
-(*
- * Mode "src" is treated specially.  It is only allowed if explicitly mentioned.
- *
- * BUG JYH: we should have some generic way to specify special modes.
- * A special mode is defined as: the display form is included *only if*
- * the mode is mentioned explicitly in the display form.
- *)
-let special_modes = ["src"]
-
-let mode_selector mode df =
-   match df with
-      { df_modes = ExceptModes l } -> not (List.mem mode l) && not (List.mem mode special_modes)
-    | { df_modes = Modes l } -> List.mem mode l
-    | { df_modes = AllModes } -> not (List.mem mode special_modes)
-    | { df_modes = PrimitiveModes } -> true
-
-(*
- * Print a term to a buffer.
- *)
-let format_short_term (mode, table, state) (shortener : shortener) =
-   (* Print a single term, ignoring lookup errors *)
-   let rec print_term' pprec buf eq t =
-      (* Convert a variable into a display_var *)
-      let t =
-         if is_encoded_free_var t then
-            let v = decode_free_var t in
-               mk_term (mk_op dfvar_opname [make_param (Var v)]) []
-         else if is_var_term t then
-            let v = dest_var t in
-               mk_term (mk_op dvar_opname [make_param (Var v)]) []
-         else if is_so_var_term t then
-            let v, conts, terms = dest_so_var t in
-               mk_term (mk_op dsovar_opname [make_param (Var v)]) (**)
-                  [mk_simple_bterm (mk_xlist_term (List.map make_cont conts)); mk_simple_bterm (mk_xlist_term terms)]
-         else if is_context_term t then
-            let v, t, conts, terms = dest_context t in
-               mk_term (mk_op dcont_opname [make_param (Var v)]) (**)
-                  [mk_simple_bterm t;
-                   mk_simple_bterm (mk_xlist_term (List.map make_cont conts));
-                   mk_simple_bterm (mk_xlist_term terms)]
-         else
-            t
-      in
-
-      (* Check for a display form entry *)
-      let () =
-         if mode = "raw" then
-            raise Not_found
-      in
-
-      (* Get the display form *)
-      let items, df = lookup_rwi table (mode_selector mode) t in
-      let name = df.df_name in
-
-      (* Get precedence of this display form, and whether it should be parenthesized *)
-      let cprec = df.df_precedence in
-      let cprec, parenflag =
-         if cprec = inherit_prec then
-            begin
-               if !debug_dform then
-                  eprintf "Dform %s: inherit_prec%t" name eflush;
-               pprec, false
-            end
-         else if eq = NOParens then
-            begin
-               if !debug_dform then
-                  eprintf "Dform %s: NOParens%t" name eflush;
-               cprec, false
-            end
-         else if df.df_parens then
-            let parens =
-               match get_prec pprec df.df_precedence with
-                  NoRelation ->
-                     if !debug_dform then
-                        eprintf "Dform %s: NoRelation%t" name eflush;
-                     true
-                | LTRelation ->
-                     if !debug_dform then
-                        eprintf "Dform %s: LtRelation%t" name eflush;
-                     false
-                | EQRelation ->
-                     if !debug_dform then
-                        eprintf "Dform %s: EqRelation%t" name eflush;
-                     eq = LEParens
-                | GTRelation ->
-                     if !debug_dform then
-                        eprintf "Dform %s: GTRelation%t" name eflush;
-                     true
-            in
-               cprec, parens
-         else
-            cprec, false
-      in
-         if parenflag then
-            format_string buf "(";
-
-         begin
-            try
-               match df.df_printer with
-                  DFPrinter f ->
-                     let entry =
-                        { dform_term = t;
-                          dform_items = items;
-                          dform_printer = print_term cprec;
-                          dform_buffer = buf;
-                          dform_state = state
-                        }
-                     in
-                        if !debug_dform then
-                           eprintf "Dform fun %s: %s%t" name (short_string_of_term t) eflush;
-                        f entry
-                | DFExpansion r ->
-                     begin
-                        match apply_rewrite r empty_args t [] with
-                           [t] ->
-                              if !debug_dform then
-                                 eprintf "Dform %s%t" name eflush;
-                              print_entry cprec buf eq t
-                         | _ ->
-                              raise (Invalid_argument ("Dform.format_short_term"))
-                     end
-            with
-               exn when (match exn with Invalid_argument _ -> false | _ -> true) ->
-                  raise (Invalid_argument ("Dform " ^ name ^ " raised an exception when trying to print "
-                                           ^ short_string_of_term t ^ ": " ^ Printexc.to_string exn))
-         end;
-
-         if parenflag then
-            format_string buf ")"
-
-   (* If there is no template, use the standard printer *)
-   and print_term pprec buf eq t =
-      if !debug_dform then
-         eprintf "Dform: %s%t" (short_string_of_term t) eflush;
-      try print_term' pprec buf eq t with
-         Not_found ->
-            if !debug_dform then
-               eprintf "Default display form: %s%t" (short_string_of_term t) eflush;
-            format_term buf shortener (print_term max_prec buf NOParens) t
-
-   (* Print an entry in the list of terms being displayed *)
-   and print_entry pprec buf eq =
-      let rec aux t =
-         if is_xcons_term t then
-            let hd, tl = dest_xcons t in
-               if is_xstring_term hd then
-                  let s = dest_xstring hd in
-                     if !debug_dform then
-                        eprintf "Dform string: %s%t" s eflush;
-                     format_string buf s
-               else
-                  print_term pprec buf eq hd;
-               aux tl
-         else if not (is_xnil_term t) then
-            print_term pprec buf eq t
-      in
-         aux
-
-   (* Print a list of terms *)
-   and print_termlist pprec buf eq l =
-      List.iter (print_entry pprec buf eq) l
-
-   in
-   fun buf t ->
-      let save_debug = !debug_rewrite in
-         if save_debug then debug_rewrite := false;
-         try
-            print_term max_prec buf NOParens t;
-            if save_debug then debug_rewrite := true
-         with
-            exn ->
-               if save_debug then debug_rewrite := true;
-               raise exn
-
-(************************************************************************
  * BASE                                                                 *
  ************************************************************************)
 
@@ -667,11 +501,11 @@ let null_shortener opname _ _ =
 (*
  * Saving slot terms.
  *)
-let save_slot_terms (mode, base, _) =
-   mode, base, { dform_table = Some StringTable.empty }
+let save_slot_terms base =
+   { base with df_terms = Some StringTable.empty }
 
-let get_slot_terms (_, _, state) =
-   match state.dform_table with
+let get_slot_terms base =
+   match base.df_terms with
       Some table ->
          table
     | None ->
@@ -680,19 +514,19 @@ let get_slot_terms (_, _, state) =
 (*
  * Tag all terms printed in slots (if requested).
  *)
-let format_tag state buf t =
-   match state.dform_table with
+let format_tag base buf t =
+   match base.df_terms with
       Some table ->
          let index = StringTable.cardinal table in
          let id = sprintf "slot%d" index in
          let table = StringTable.add table id t in
             format_tzone buf id;
-            state.dform_table <- Some table
+            base.df_terms <- Some table
     | None ->
          ()
 
-let format_etag state buf =
-   match state.dform_table with
+let format_etag base buf =
+   match base.df_terms with
       Some _ ->
          format_ezone buf
     | None ->
@@ -875,11 +709,8 @@ let null_list =
 let null_table =
    List.fold_left add_dform empty_table null_list
 
-let null_state =
-   { dform_table = None }
-
 let null_base =
-   "src", null_table, null_state
+   { df_mode = "src"; df_table = DfTable null_table; df_terms = None }
 
 (*
  * The display form tables for different theories are managed as a resource.
@@ -912,15 +743,198 @@ let find_dftable bk =
 let add_dform df =
    Mp_resource.improve "dform" (Obj.repr (df : dform_info))
 
-(*
- * XXX: Backwards compatibility with the old API.
- *)
-type dform_mode_base = Mp_resource.bookmark
+let get_table base =
+   match base.df_table with
+      DfTable t -> t
+    | DfBk bk ->
+         let t =
+             try find_dftable bk with
+               Not_found ->
+                  raise (Failure("Dform.get_mode_base: can not find display forms for " ^ (String.capitalize (fst bk)) ^ "." ^ (snd bk)))
+         in
+            base.df_table <- DfTable t;
+            t
 
 let get_mode_base dfbase dfmode =
-   try dfmode, find_dftable dfbase, null_state with
-      Not_found ->
-         raise (Failure("Dform.get_mode_base: can not find display forms for " ^ (String.capitalize (fst dfbase)) ^ "." ^ (snd dfbase)))
+   { df_mode = dfmode; df_table = DfBk dfbase; df_terms = None }
+
+(************************************************************************
+ * PRINTING                                                             *
+ ************************************************************************)
+
+(*
+ * Mode "src" is treated specially.  It is only allowed if explicitly mentioned.
+ *
+ * BUG JYH: we should have some generic way to specify special modes.
+ * A special mode is defined as: the display form is included *only if*
+ * the mode is mentioned explicitly in the display form.
+ *)
+let special_modes = ["src"]
+
+let mode_selector mode df =
+   match df with
+      { df_modes = ExceptModes l } -> not (List.mem mode l) && not (List.mem mode special_modes)
+    | { df_modes = Modes l } -> List.mem mode l
+    | { df_modes = AllModes } -> not (List.mem mode special_modes)
+    | { df_modes = PrimitiveModes } -> true
+
+(*
+ * Print a term to a buffer.
+ *)
+let format_short_term base (shortener : shortener) =
+   (* Print a single term, ignoring lookup errors *)
+   let lookup =
+      if base.df_mode = "raw" then
+         fun _ -> raise Not_found
+      else
+         lookup_rwi (get_table base) (mode_selector base.df_mode)
+   in
+   let rec print_term' pprec buf eq t =
+      (* Convert a variable into a display_var *)
+      let t =
+         if is_encoded_free_var t then
+            let v = decode_free_var t in
+               mk_term (mk_op dfvar_opname [make_param (Var v)]) []
+         else if is_var_term t then
+            let v = dest_var t in
+               mk_term (mk_op dvar_opname [make_param (Var v)]) []
+         else if is_so_var_term t then
+            let v, conts, terms = dest_so_var t in
+               mk_term (mk_op dsovar_opname [make_param (Var v)]) (**)
+                  [mk_simple_bterm (mk_xlist_term (List.map make_cont conts)); mk_simple_bterm (mk_xlist_term terms)]
+         else if is_context_term t then
+            let v, t, conts, terms = dest_context t in
+               mk_term (mk_op dcont_opname [make_param (Var v)]) (**)
+                  [mk_simple_bterm t;
+                   mk_simple_bterm (mk_xlist_term (List.map make_cont conts));
+                   mk_simple_bterm (mk_xlist_term terms)]
+         else
+            t
+      in
+
+      (* Get the display form *)
+      let items, df = lookup t in
+      let name = df.df_name in
+
+      (* Get precedence of this display form, and whether it should be parenthesized *)
+      let cprec = df.df_precedence in
+      let cprec, parenflag =
+         if cprec = inherit_prec then
+            begin
+               if !debug_dform then
+                  eprintf "Dform %s: inherit_prec%t" name eflush;
+               pprec, false
+            end
+         else if eq = NOParens then
+            begin
+               if !debug_dform then
+                  eprintf "Dform %s: NOParens%t" name eflush;
+               cprec, false
+            end
+         else if df.df_parens then
+            let parens =
+               match get_prec pprec df.df_precedence with
+                  NoRelation ->
+                     if !debug_dform then
+                        eprintf "Dform %s: NoRelation%t" name eflush;
+                     true
+                | LTRelation ->
+                     if !debug_dform then
+                        eprintf "Dform %s: LtRelation%t" name eflush;
+                     false
+                | EQRelation ->
+                     if !debug_dform then
+                        eprintf "Dform %s: EqRelation%t" name eflush;
+                     eq = LEParens
+                | GTRelation ->
+                     if !debug_dform then
+                        eprintf "Dform %s: GTRelation%t" name eflush;
+                     true
+            in
+               cprec, parens
+         else
+            cprec, false
+      in
+         if parenflag then
+            format_string buf "(";
+
+         begin
+            try
+               match df.df_printer with
+                  DFPrinter f ->
+                     let entry =
+                        { dform_term = t;
+                          dform_items = items;
+                          dform_printer = print_term cprec;
+                          dform_buffer = buf;
+                          dform_state = base
+                        }
+                     in
+                        if !debug_dform then
+                           eprintf "Dform fun %s: %s%t" name (short_string_of_term t) eflush;
+                        f entry
+                | DFExpansion r ->
+                     begin
+                        match apply_rewrite r empty_args t [] with
+                           [t] ->
+                              if !debug_dform then
+                                 eprintf "Dform %s%t" name eflush;
+                              print_entry cprec buf eq t
+                         | _ ->
+                              raise (Invalid_argument ("Dform.format_short_term"))
+                     end
+            with
+               exn when (match exn with Invalid_argument _ -> false | _ -> true) ->
+                  raise (Invalid_argument ("Dform " ^ name ^ " raised an exception when trying to print "
+                                           ^ short_string_of_term t ^ ": " ^ Printexc.to_string exn))
+         end;
+
+         if parenflag then
+            format_string buf ")"
+
+   (* If there is no template, use the standard printer *)
+   and print_term pprec buf eq t =
+      if !debug_dform then
+         eprintf "Dform: %s%t" (short_string_of_term t) eflush;
+      try print_term' pprec buf eq t with
+         Not_found ->
+            if !debug_dform then
+               eprintf "Default display form: %s%t" (short_string_of_term t) eflush;
+            format_term buf shortener (print_term max_prec buf NOParens) t
+
+   (* Print an entry in the list of terms being displayed *)
+   and print_entry pprec buf eq =
+      let rec aux t =
+         if is_xcons_term t then
+            let hd, tl = dest_xcons t in
+               if is_xstring_term hd then
+                  let s = dest_xstring hd in
+                     if !debug_dform then
+                        eprintf "Dform string: %s%t" s eflush;
+                     format_string buf s
+               else
+                  print_term pprec buf eq hd;
+               aux tl
+         else if not (is_xnil_term t) then
+            print_term pprec buf eq t
+      in
+         aux
+
+   (* Print a list of terms *)
+   and print_termlist pprec buf eq l =
+      List.iter (print_entry pprec buf eq) l
+
+   in
+   fun buf t ->
+      let save_debug = !debug_rewrite in
+         if save_debug then debug_rewrite := false;
+         try
+            print_term max_prec buf NOParens t;
+            if save_debug then debug_rewrite := true
+         with
+            exn ->
+               if save_debug then debug_rewrite := true;
+               raise exn
 
 (************************************************************************
  * SIMPLIFIED PRINTERS                                                  *

@@ -98,6 +98,7 @@ let all_theories () =
       StringSet.to_list names
 
 let default_mode_base = Mp_resource.theory_bookmark "shell_theory"
+let default_base = get_mode_base default_mode_base "prl"
 
 (*
  * Get the current printing base.
@@ -117,17 +118,16 @@ let get_display_mode info () =
    info.shell_df_method
 
 let get_db info =
-   let dfbase = get_dfbase info in
-      get_mode_base dfbase info.shell_df_method.df_mode
+   info.shell_df_method.df_base
 
 let update_dfbase info =
-   let dfbase = get_dfbase info in
+   let dfbase = get_mode_base (get_dfbase info) info.shell_df_method.df_mode in
       info.shell_df_method <- { info.shell_df_method with df_base = dfbase };
-      Shell_state.set_dfbase (Some (get_mode_base dfbase info.shell_df_method.df_mode))
+      Shell_state.set_dfbase (Some dfbase)
 
 let set_dfmode info mode =
    info.shell_df_method <- { info.shell_df_method with df_mode = mode };
-   Shell_state.set_dfbase (Some (get_mode_base info.shell_df_method.df_base mode))
+   update_dfbase info
 
 let set_dftype info dft =
    info.shell_df_method <- { info.shell_df_method with df_type = dft }

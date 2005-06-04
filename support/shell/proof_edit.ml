@@ -230,7 +230,7 @@ let term_of_incomplete proof =
  *)
 let print_exn get_dfm f x =
    let dfm = get_dfm () in
-      Filter_exn.print_exn (get_mode_base dfm.df_base dfm.df_mode) None f x
+      Filter_exn.print_exn dfm.df_base None f x
 
 (************************************************************************
  * OPERATIONS                                                           *
@@ -490,23 +490,22 @@ let interpret window ped addr = function
  *)
 
 let display_term_aux newline dfm term =
-   let df = get_mode_base dfm.df_base dfm.df_mode in
    let buf = Lm_rformat.new_buffer () in
    match dfm.df_type with
       DisplayText ->
-         Dform.format_term df buf term;
+         Dform.format_term dfm.df_base buf term;
          if newline then Lm_rformat.format_newline buf;
          let width = Mp_term.term_width Pervasives.stdout dfm.df_width in
          Lm_rformat_text.print_text_channel (Mp_term.term_width Pervasives.stdout dfm.df_width) buf stdout;
          flush stdout
     | DisplayTex ->
          let out = Shell_tex.open_file () in
-            Dform.format_term df buf term;
+            Dform.format_term dfm.df_base buf term;
             if newline then Lm_rformat.format_newline buf;
             Lm_rformat_tex.print_tex_channel dfm.df_width buf out;
             Shell_tex.close_file out
     | DisplayBrowser ->
-         let df = save_slot_terms df in
+         let df = save_slot_terms dfm.df_base in
             Dform.format_term df buf term;
             if newline then Lm_rformat.format_newline buf;
             Session.set_main buf (get_slot_terms df)

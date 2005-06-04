@@ -223,13 +223,9 @@ struct
       format_hspace buf;
       format_extract db buf proof
 
-   (*
-    * BUG JYH: we should probably make the db type abstract,
-    * construct this triple in the Dform module.
-    *)
    let print_ext ext =
       let buf = Lm_rformat.new_buffer () in
-      let db = "prl", find_dftable Mp_resource.top_bookmark, null_state in
+      let db = get_mode_base Mp_resource.top_bookmark "prl" in
          format_extract db buf ext;
          format_newline buf;
          prerr_rbuffer buf;
@@ -628,7 +624,7 @@ struct
                leaves_ext ext
       in
          if !debug_proof then begin
-            let db = "prl", find_dftable Mp_resource.top_bookmark, null_state in
+            let db = get_mode_base Mp_resource.top_bookmark "prl" in
             let buf = Lm_rformat.new_buffer () in
                format_hzone buf;
                format_string buf "Leaves of";
