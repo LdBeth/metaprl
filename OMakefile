@@ -8,6 +8,7 @@ OMakeVersion(0.9.4.19)
 #
 LIB     = $(dir lib)
 BIN     = $(dir bin)
+ROOT    = $(dir .)
 
 #
 # Simplify the machine name

@@ -1,6 +1,11 @@
 OCAMLINCLUDES[] +=
     ../refbase
 
+#
+# BUG: dependencies on refine_error.mlh is not correct.
+#
+refine_error.mlh:
+
 OCamlLibraryInstall(all, $(LIB), refsig, $(REFSIG_FILES))
 
 #

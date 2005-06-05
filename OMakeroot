@@ -17,6 +17,27 @@ include $(STDLIB)/build/LaTeX
 DefineCommandVars(.)
 
 #
-# Include the OMakefile
+# Include the OMakefile.
+# If the version variable is set,
+# build the version in that directory.
 #
-.SUBDIRS: .
+if $(defined VERSION)
+    #
+    # Allow subdirectories to be created at will.
+    #
+    CREATE_SUBDIRS = true
+
+    #
+    # Add the current directory, so that we can build the project
+    # from this directory without complaints.
+    #
+    add-project-directories(.)
+
+    #
+    # Build the project in a subdirectory.
+    #
+    .SUBDIRS: $(VERSION)
+        vmount(l, .., .)
+        include OMakefile
+else
+    .SUBDIRS: .

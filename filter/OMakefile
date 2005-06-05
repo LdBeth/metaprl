@@ -85,10 +85,10 @@ CAMLP4O_FILES =\
 
 STANDARD_LIBS[] =
     $(CAMLP4LIB)/camlp4
-    $(file $(ROOT)/refiner/refiner)
-    $(file $(ROOT)/library/library)
-    $(file $(ROOT)/$(ENSEMBLE_DIR)/trefiner)
-    $(file $(ROOT)/tactics/proof/prooflib)
+    $(ROOT)/refiner/refiner
+    $(ROOT)/library/library
+    $(ROOT)/$(ENSEMBLE_DIR)/trefiner
+    $(ROOT)/tactics/proof/prooflib
     $(MAINLIB)
 
 CAMLP4_LIBS[] =
