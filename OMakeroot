@@ -36,8 +36,7 @@ if $(defined VERSION)
     #
     # Build the project in a subdirectory.
     #
+    vmount(-l, ., $(VERSION))
     .SUBDIRS: $(VERSION)
-        vmount(l, .., .)
-        include OMakefile
 else
     .SUBDIRS: .
