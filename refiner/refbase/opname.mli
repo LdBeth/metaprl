@@ -31,6 +31,13 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
+(*
+ * Kinds of operators.
+ *)
+type op_kind =
+   NormalKind
+ | TokenKind
+
 type atom
 type opname
 

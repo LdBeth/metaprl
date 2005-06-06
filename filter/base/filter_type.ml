@@ -347,13 +347,6 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
 (* %%MAGICEND%% *)
 
 (*
- * Kinds of operators.
- *)
-type op_kind =
-   NormalKind
- | TokenKind
-
-(*
  * These type define what info do we need during parsing to identify opnames and context bindings
  * The context_fun should return the Some list when the SO variable bindings are known from the proof context
  *)

@@ -117,6 +117,7 @@ open Refiner.Refiner.TermAddr
 open Refiner.Refiner.Rewrite
 open Mp_resource
 open Term_match_table
+open Dform
 
 open Tactic_type
 open Tactic_type.Sequent
@@ -255,7 +256,7 @@ let successT i s = funT (fun p ->
    if !i = 0 then
       eprintf " -> succeded on -------------\n%s%t" s eflush;
    incr i;
-   eprintf "-------- and got subgoal %i ---------\n%s\n----------------%t" (!i) (Dform.string_of_term (Dform.get_mode_base top_bookmark "prl") (Sequent.goal p)) eflush;
+   eprintf "-------- and got subgoal %i ---------\n%s\n----------------%t" (!i) (string_of_term (get_mode_base top_bookmark "prl" null_shortener) (Sequent.goal p)) eflush;
    idT)
 
 (*
@@ -264,7 +265,7 @@ let successT i s = funT (fun p ->
 let debugT auto_tac =
    { auto_tac with
      auto_tac = funT (fun p ->
-        let s = Dform.string_of_term (Dform.get_mode_base top_bookmark "prl") (Sequent.goal p) in
+        let s = string_of_term (get_mode_base top_bookmark "prl" null_shortener) (Sequent.goal p) in
         eprintf "Auto: trying %s%t" auto_tac.auto_name eflush;
         (progressT auto_tac.auto_tac) thenT successT (ref 0) s)
    }

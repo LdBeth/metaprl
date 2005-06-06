@@ -514,6 +514,7 @@ declare str_fix{'p : TyOCaml} : TyOCaml
  * Type declaration.
  *)
 declare tdl{'s : TyOCaml; 'sl : TyOCaml; 't : TyOCaml; 'tc : TyOCaml} : TyOCaml
+declare tdl[start:n, finish:n, name:s] : TyOCaml
 
 (*
  * Type constraint in type declaration

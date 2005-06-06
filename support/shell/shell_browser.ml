@@ -1153,8 +1153,7 @@ struct
     *)
    let paste server state session outx command term =
       let db = Dform.change_mode (Top.get_dforms ()).df_base "src" in
-      let shortener = Top.get_shortener () in
-      let s = Dform.string_of_short_term db shortener term in
+      let s = Dform.string_of_term db term in
       let command = Printf.sprintf "%s << %s >>" command s in
       let state =
          { state with state_table = BrowserTable.add_string state.state_table rulebox_sym (String.escaped command) }

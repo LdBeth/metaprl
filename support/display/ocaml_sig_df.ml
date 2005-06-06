@@ -121,16 +121,16 @@ dform sig_type_aux_df : sig_type_aux{onil} =
 dform sig_type_df2 : sig_type[start:n, finish:n]{'tdl} =
    sig_type{'tdl}
 
-dform tdl_df1 : tdl{.Ocaml!"string"[name:s]; onil; 't; onil} =
+dform tdl_df1 : tdl{tdl[start:n, finish:n, name:s]; onil; 't; onil} =
    slot[name:s] `" =" hspace slot{'t}
 
-dform tdl_df2 : tdl{.Ocaml!"string"[name:s]; 'sl; 't; onil} =
+dform tdl_df2 : tdl{tdl[start:n, finish:n, name:s]; 'sl; 't; onil} =
    "(" type_arg{'sl} ")" `" " slot[name:s] `" =" hspace slot{'t}
 
-dform tdl_df3 : tdl{.Ocaml!"string"[name:s]; onil; 't; 'tc} =
+dform tdl_df3 : tdl{tdl[start:n, finish:n, name:s]; onil; 't; 'tc} =
    slot[name:s] `" =" hspace slot{'t} hspace type_constraint{'tc}
 
-dform tdl_df4 : tdl{.Ocaml!"string"[name:s]; 'sl; 't; 'tc} =
+dform tdl_df4 : tdl{tdl[start:n, finish:n, name:s]; 'sl; 't; 'tc} =
    "(" type_arg{'sl} ")" `" " slot[name:s] `" =" hspace slot{'t} hspace type_constraint{'tc}
 
 dform tc_df1 : type_constraint{ocons{ tc{'t1;'t2}; onil}} =

@@ -99,6 +99,12 @@ type parens =
  | LTParens
  | LEParens
 
+(*
+ * Some functions define a "shortener:" a function to produce
+ * a string from a description of a term.
+ *)
+type shortener = opname -> op_kind -> param list -> bound_term list -> string
+
 type dform_printer_info =
    { dform_term : term;
      dform_items : rewrite_item list;
@@ -132,6 +138,7 @@ and dform_table = dform_item term_table
 
 and dform_base = {
    df_mode : dform_mode;
+   df_short : shortener;
    mutable df_table : delayed_dform_table;
    mutable df_terms : term StringTable.t option
 }
@@ -139,12 +146,6 @@ and dform_base = {
 and delayed_dform_table =
    DfBk of Mp_resource.bookmark
  | DfTable of dform_table
-
-(*
- * Some functions define a "shortener:" a function to produce
- * a string from a description of a term.
- *)
-type shortener = opname -> param list -> bound_term list -> string
 
 (*
  * A display form printer knows about this term, and
@@ -411,7 +412,7 @@ and format_bterms buf printer = function
 (*
  * A special format for sequents.
  *)
-and format_sequent buf format_term term =
+and format_sequent buf printer term =
    let rec format_hyp hyps i len =
       if i <> len then
          let _ =
@@ -434,11 +435,11 @@ and format_sequent buf format_term term =
                      format_string buf (dstring_of_var v);
                      format_string buf ": ";
                   end;
-                  format_term a
+                  printer a
              | Context (v, conts, values) ->
                   format_space buf;
                   format_string buf "<";
-                  format_term (mk_so_var_term v conts values);
+                  printer (mk_so_var_term v conts values);
                   format_string buf ">"
          in
             format_hyp hyps (succ i) len
@@ -453,14 +454,14 @@ and format_sequent buf format_term term =
       format_string buf "sequent";
       format_space buf;
       format_string buf "[";
-      format_term arg;
+      printer arg;
       format_string buf "]";
       format_space buf;
       format_string buf "{";
       format_hyp hyps 0 (SeqHyp.length hyps);
       format_string buf " >-";
       format_space buf;
-      format_term concl;
+      printer concl;
       format_popm buf;
       format_space buf;
       format_string buf "}";
@@ -470,7 +471,7 @@ and format_sequent buf format_term term =
  * This is the default top level print function.
  * Check for variables.
  *)
-and format_term buf (shortener : shortener) printer term =
+and default_format_term buf (shortener : shortener) printer term =
    if is_var_term term then
       format_string buf ("'" ^ dstring_of_var (dest_var term))
    else if is_so_var_term term || is_context_term term then
@@ -481,7 +482,7 @@ and format_term buf (shortener : shortener) printer term =
       (* Standard term *)
       let { term_op = op; term_terms = bterms } = dest_term term in
       let { op_name = name; op_params = params } = dest_op op in
-      let opname = shortener name params bterms in
+      let opname = shortener name NormalKind params bterms in
          format_szone buf;
          format_pushm buf 4;
          format_quoted_string buf opname;
@@ -495,7 +496,7 @@ and format_term buf (shortener : shortener) printer term =
  ************************************************************************)
 
 (* Terms *)
-let null_shortener opname _ _ =
+let null_shortener opname _ _ _ =
    Opname.string_of_opname opname
 
 (*
@@ -553,7 +554,7 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
                    printer buf LTParens body
               | "raw" ->
                    let rec format t =
-                      format_term buf null_shortener format t
+                      default_format_term buf null_shortener format t
                    in
                       format body
               | _ ->
@@ -591,8 +592,7 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
     | [RewriteToken (RewriteParam opname)] ->
          if !debug_dform then
             eprintf "Dform.slot: token: %s%t" (string_of_opname opname) eflush;
-         (* XXX: TODO (nogin) Should we use the shortener here? *)
-         format_string buf (string_of_opname opname)
+         format_string buf (state.df_short opname TokenKind [] [])
     | [RewriteShape (RewriteParam sh)] ->
          if !debug_dform then
              eprintf "Dform.slot: shape: %s%t" (string_of_shape sh) eflush;
@@ -623,7 +623,7 @@ let slot df =
                   line_format default_width (**)
                      (fun buf ->
                            let rec format t =
-                              format_term buf null_shortener format t
+                              default_format_term buf null_shortener format t
                            in
                               slot { df with dform_printer = (fun _ _ -> format); dform_buffer = buf })
                in
@@ -710,7 +710,7 @@ let null_table =
    List.fold_left add_dform empty_table null_list
 
 let null_base =
-   { df_mode = "src"; df_table = DfTable null_table; df_terms = None }
+   { df_mode = "src"; df_table = DfTable null_table; df_short = null_shortener; df_terms = None }
 
 (*
  * The display form tables for different theories are managed as a resource.
@@ -755,8 +755,8 @@ let get_table base =
             base.df_table <- DfTable t;
             t
 
-let get_mode_base dfbase dfmode =
-   { df_mode = dfmode; df_table = DfBk dfbase; df_terms = None }
+let get_mode_base dfbase dfmode dfshort =
+   { df_mode = dfmode; df_table = DfBk dfbase; df_short = dfshort; df_terms = None }
 
 (************************************************************************
  * PRINTING                                                             *
@@ -781,7 +781,7 @@ let mode_selector mode df =
 (*
  * Print a term to a buffer.
  *)
-let format_short_term base (shortener : shortener) =
+let format_term base =
    (* Print a single term, ignoring lookup errors *)
    let lookup =
       if base.df_mode = "raw" then
@@ -789,6 +789,7 @@ let format_short_term base (shortener : shortener) =
       else
          lookup_rwi (get_table base) (mode_selector base.df_mode)
    in
+   let shortener = if base.df_mode = "raw" then null_shortener else base.df_short in
    let rec print_term' pprec buf eq t =
       (* Convert a variable into a display_var *)
       let t =
@@ -881,7 +882,7 @@ let format_short_term base (shortener : shortener) =
                                  eprintf "Dform %s%t" name eflush;
                               print_entry cprec buf eq t
                          | _ ->
-                              raise (Invalid_argument ("Dform.format_short_term"))
+                              raise (Invalid_argument ("Dform.format_term"))
                      end
             with
                exn when (match exn with Invalid_argument _ -> false | _ -> true) ->
@@ -900,7 +901,7 @@ let format_short_term base (shortener : shortener) =
          Not_found ->
             if !debug_dform then
                eprintf "Default display form: %s%t" (short_string_of_term t) eflush;
-            format_term buf shortener (print_term max_prec buf NOParens) t
+            default_format_term buf shortener (print_term max_prec buf NOParens) t
 
    (* Print an entry in the list of terms being displayed *)
    and print_entry pprec buf eq =
@@ -942,20 +943,15 @@ let format_short_term base (shortener : shortener) =
 
 let format_quoted_term base buf t =
    let t = display_term_of_term t in
-      format_term buf null_shortener (fun t ->
-            format_short_term base null_shortener buf t) t
+      default_format_term buf null_shortener (fun t ->
+            format_term base buf t) t
 
 let format_term base buf t =
-   format_short_term base null_shortener buf (display_term_of_term t)
+   format_term base buf (display_term_of_term t)
 
 let print_term_fp base out term =
    let buf = new_buffer () in
       format_term base buf term;
-      output_rbuffer out buf
-
-let print_short_term_fp base shortener out term =
-   let buf = new_buffer () in
-      format_short_term base shortener buf term;
       output_rbuffer out buf
 
 let print_term base = print_term_fp base stdout
@@ -965,11 +961,6 @@ let prerr_term base = print_term_fp base stderr
 let string_of_term base term =
    let buf = new_buffer () in
       format_term base buf term;
-      print_text_string default_width buf
-
-let string_of_short_term base shortener term =
-   let buf = new_buffer () in
-      format_short_term base shortener buf (display_term_of_term term);
       print_text_string default_width buf
 
 (* Terms *)

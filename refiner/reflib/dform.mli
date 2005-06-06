@@ -104,9 +104,16 @@ type dform_info =
    }
 
 (*
+ * Shortener decides whether an opname needs to be printed in a fully-qualified
+ * or a shorter form.
+ *)
+type shortener = opname -> op_kind -> param list -> bound_term list -> string
+
+(*
  * Display form installation.
  *)
-val null_base  : dform_base
+val null_base : dform_base
+val null_shortener : shortener
 
 (*
  * The main dform database uses the resources mechanism. The database is functional,
@@ -115,7 +122,7 @@ val null_base  : dform_base
  * get_mode_base may raise Failure if bookmark does not exist.
  *)
 val add_dform : dform_info -> unit
-val get_mode_base : Mp_resource.bookmark -> dform_mode -> dform_base
+val get_mode_base : Mp_resource.bookmark -> dform_mode -> shortener -> dform_base
 val change_mode : dform_base -> dform_mode -> dform_base
 
 (*
@@ -127,12 +134,6 @@ val change_mode : dform_base -> dform_mode -> dform_base
 val save_slot_terms : dform_base -> dform_base
 val get_slot_terms  : dform_base -> term StringTable.t
 
-(*
- * Some functions define a "shortener:" a function to produce
- * a string from a description of a term.
- *)
-type shortener = opname -> param list -> bound_term list -> string
-
 (************************************************************************
  * PRINTERS                                                             *
  ************************************************************************)
@@ -143,10 +144,6 @@ val print_term_fp : dform_base -> Lm_printf.out_channel -> term -> unit
 val print_term : dform_base -> term -> unit
 val prerr_term : dform_base -> term -> unit
 val string_of_term : dform_base -> term -> string
-
-val format_short_term : dform_base -> shortener -> buffer -> term -> unit
-val print_short_term_fp : dform_base -> shortener -> Lm_printf.out_channel -> term -> unit
-val string_of_short_term : dform_base -> shortener -> term -> string
 
 val format_bterm : dform_base -> buffer -> bound_term -> unit
 val print_bterm_fp : dform_base -> Lm_printf.out_channel -> bound_term -> unit

@@ -225,7 +225,7 @@ struct
 
    let print_ext ext =
       let buf = Lm_rformat.new_buffer () in
-      let db = get_mode_base Mp_resource.top_bookmark "prl" in
+      let db = get_mode_base Mp_resource.top_bookmark "prl" null_shortener in
          format_extract db buf ext;
          format_newline buf;
          prerr_rbuffer buf;
@@ -624,7 +624,7 @@ struct
                leaves_ext ext
       in
          if !debug_proof then begin
-            let db = get_mode_base Mp_resource.top_bookmark "prl" in
+            let db = get_mode_base Mp_resource.top_bookmark "prl" null_shortener in
             let buf = Lm_rformat.new_buffer () in
                format_hzone buf;
                format_string buf "Leaves of";

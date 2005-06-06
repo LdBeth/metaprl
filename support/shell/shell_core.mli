@@ -48,7 +48,6 @@ val get_current_package : shell -> Package_info.package
 val get_db : shell -> dform_base
 val default_base : dform_base
 val get_display_mode : shell -> display_fun
-val get_shortener : shell -> Dform.shortener
 val set_dfmode : shell -> dform_mode -> unit
 val set_dftype : shell -> display_type -> unit
 val set_window_width : shell -> int -> unit

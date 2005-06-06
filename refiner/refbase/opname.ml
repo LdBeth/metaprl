@@ -35,6 +35,13 @@ open Lm_set_sig
 open Lm_debug
 
 (*
+ * Kinds of operators.
+ *)
+type op_kind =
+   NormalKind
+ | TokenKind
+
+(*
  * Show the file loading.
  *)
 let _ =

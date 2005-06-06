@@ -98,21 +98,7 @@ let all_theories () =
       StringSet.to_list names
 
 let default_mode_base = Mp_resource.theory_bookmark "shell_theory"
-let default_base = get_mode_base default_mode_base "prl"
-
-(*
- * Get the current printing base.
- *)
-let get_dfbase info =
-   match info.shell_package with
-      Some mod_info ->
-         if !debug_shell then
-            eprintf "Selecting display forms from %s%t" (Package_info.name mod_info) eflush;
-         Mp_resource.theory_bookmark (Package_info.name mod_info)
-    | None ->
-         if !debug_shell then
-            eprintf "Restoring default display forms%t" eflush;
-         default_mode_base
+let default_base = get_mode_base default_mode_base "prl" null_shortener
 
 let get_display_mode info () =
    info.shell_df_method
@@ -120,8 +106,39 @@ let get_display_mode info () =
 let get_db info =
    info.shell_df_method.df_base
 
+(*
+ * Get the current printing base.
+ *)
 let update_dfbase info =
-   let dfbase = get_mode_base (get_dfbase info) info.shell_df_method.df_mode in
+   let bookmark, shortener =
+      match info.shell_package with
+         Some pack ->
+            if !debug_shell then
+               eprintf "Selecting display forms from %s%t" (Package_info.name pack) eflush;
+            let mk_opname = Package_info.mk_opname_kind pack in
+            let shortener opname kind params bterms =
+               try
+                  match Opname.dest_opname opname with
+                     h :: _ ->
+                        let params = List.map param_type params in
+                        let arities = List.map (fun bterm -> List.length (dest_bterm bterm).bvars) bterms in
+                        let opname' = mk_opname kind [h] params arities in
+                           if Opname.eq opname' opname then
+                              h
+                           else
+                              Opname.string_of_opname opname
+                   | [] ->
+                        "$"
+                  with _ ->
+                     Opname.string_of_opname opname
+            in
+               Mp_resource.theory_bookmark (Package_info.name pack), shortener
+       | None ->
+            if !debug_shell then
+               eprintf "Restoring default display forms%t" eflush;
+            default_mode_base, null_shortener
+   in
+   let dfbase = get_mode_base bookmark info.shell_df_method.df_mode shortener in
       info.shell_df_method <- { info.shell_df_method with df_base = dfbase };
       Shell_state.set_dfbase (Some dfbase)
 
@@ -813,30 +830,6 @@ let set_view_options shell s =
 
 let clear_view_options shell s =
    Session.clear_view_options s
-
-let get_shortener shell =
-   match shell.shell_package with
-      Some pack ->
-         let mk_opname = Package_info.mk_opname_kind pack NormalKind in
-         let shortener opname params bterms =
-            match Opname.dest_opname opname with
-               h :: _ ->
-                  let params = List.map param_type params in
-                  let arities = List.map (fun bterm -> List.length (dest_bterm bterm).bvars) bterms in
-                  let opname' = mk_opname [h] params arities in
-                     if Opname.eq opname' opname then
-                        h
-                     else
-                        Opname.string_of_opname opname
-             | [] ->
-                  "$"
-         in
-            shortener
-    | None ->
-         let shortener opname _ _ =
-            Opname.string_of_opname opname
-         in
-            shortener
 
 (*
  * General purpose displayer.
