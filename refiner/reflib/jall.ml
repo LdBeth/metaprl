@@ -152,14 +152,14 @@ struct
     | AtNode of string * (string * string)
 
 (* Assume only constants for instantiations, not adapted to terms yet *)
-   type inf = rule * term  * term
+   type inf = string * rule * term  * term
 
 (* proof tree for pretty print and permutation *)
-   type 'inf ptree =
+   type ptree =
       PEmpty
-    | PNodeAx of 'inf
-    | PNodeA of 'inf * 'inf ptree
-    | PNodeB of 'inf * 'inf ptree * 'inf ptree
+    | PNodeAx of inf
+    | PNodeA of inf * ptree
+    | PNodeB of inf * ptree * ptree
 
    module OrderedAtom =
    struct
