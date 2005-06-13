@@ -127,10 +127,10 @@ struct
                 st : stype;
                 label : term}
 
-   type 'pos ftree =
+   type ftree =
       Empty
-    | NodeAt of 'pos
-    | NodeA of 'pos * ('pos ftree) array
+    | NodeAt of pos
+    | NodeA of pos * ftree array
 
    type atom  = {aname : string;
                  aaddress : int list;
