@@ -271,7 +271,7 @@ val ruletable : rule -> string
 
 module JProver(JLogic: JLogicSig) :
 sig
-  val test : term -> string -> string -> unit
+  val test : term -> calculus -> unit
 
   (* Procedure call: test conclusion logic calculus
 
@@ -280,25 +280,22 @@ sig
 
      The arguments for test are as follows:
 
-     logic = "C"|"J"
-     i.e. first-order classical logic or first-order intuitionistic logic
-
-     calculus = "LK"|"LJ"|"LJmc"
-     i.e. "LK" for classical logic "C", and either Gentzen's single conclusioned
-     calculus "LJ" or Fittings multiply-conclusioned calculus "LJmc" for
-     intuitionistic logic "J".
+     calculus =
+        Classical  (first-order classical logic - "C")
+      | Intuit SingleConcl  (Gentzen's single conclusioned first-order intuitionistic logic - "LJ")
+      | Intuit MultiConcl  (Fittings multiply-conclusioned calculus for first-order intuitionistic logic - "LJmc")
 
      term = first-order formula representing the proof goal.
   *)
 
 
 
-  val seqtest : term -> string -> string -> unit
+  val seqtest : term -> calculus -> unit
 
   (* seqtest procedure is for debugging purposes only *)
 
 
-  val gen_prover : int option -> string -> string -> term list -> term list -> JLogic.inference
+  val gen_prover : int option -> calculus -> term list -> term list -> JLogic.inference
 
   (* Procedure call: gen_prover mult_limit logic calculus hypothesis conclusion
 
@@ -319,7 +316,7 @@ sig
 
   val prover : int option -> term list -> term -> JLogic.inference
 
-  (* Procedure call: gen_prover mult_limit "J" "LJ" hyps [concl]
+  (* Procedure call: gen_prover mult_limit (Intuit SingleConcl) hyps [concl]
 
      prover provides the first-order refiner for NuPRL, using
      a single concluisoned succedent [concl] in the sequent.

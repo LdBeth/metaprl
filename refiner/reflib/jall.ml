@@ -116,8 +116,7 @@ struct
    type ptype = Alpha | Beta | Gamma | Delta | Phi | Psi | PNull
 
    type stype =
-      Alpha_1 | Alpha_2 | Beta_1 | Beta_2 | Gamma_0 | Delta_0
-    | Phi_0 | Psi_0 | PNull_0
+      Alpha_1 | Alpha_2 | Beta_1 | Beta_2 | Gamma_0 | Delta_0 | Phi_0 | Psi_0 | PNull_0
 
    type pos  = {name : string;
                 address : int list;
@@ -2327,16 +2326,12 @@ struct
        | And,O -> Andr,(inst_label),xnil_term
        | And,I -> Andl,(inst_label),xnil_term
        | Or,O ->
-            if calculus = "LJ" then
-               let or_rule =
-                  if orr_flag = 1 then
-                     Orr1
-                  else
-                     Orr2
-               in
-               or_rule,(inst_label),xnil_term
-            else
-               Orr,(inst_label),xnil_term
+            begin match calculus with
+               Intuit SingleConcl ->
+                  (if orr_flag = 1 then Orr1 else Orr2),(inst_label),xnil_term
+             | _ ->
+                  Orr,(inst_label),xnil_term
+            end
        | Or,I -> Orl,(inst_label),xnil_term
        | Neg,O -> Negr,(inst_label),xnil_term
        | Neg,I -> Negl,(inst_label),xnil_term
@@ -2765,7 +2760,7 @@ struct
                   else
                      check_wait_succ_LJ r (Array.get strees (f-1))
 
-   let blocked f po redord ftree connections slist logic calculus opt_bproof =
+   let blocked f po redord ftree connections slist calculus opt_bproof =
 (* print_endline ("Blocking check "^(f.name)); *)
       if (red_ord_block (f.name) redord) then
          begin
@@ -2773,67 +2768,68 @@ struct
             true,0
          end
       else
-         if logic = "C" then
-            false,0  (* ready, in C only redord counts *)
-         else
-            let pa_O = collect_solved_O_At [ftree] slist      (* solved atoms in ftree *)
-            and po_test = (delete pos_eq f po) in
-            if calculus = "LJmc" then (* we provide dynamic wait labels for both sequent calculi *)
-(*       print_endline "wait-2 check"; *)
-               if (f.st = Psi_0)  &  (f.pt <> PNull) &
-                  ((pa_O <> []) or (List.exists (fun x -> x.pol = O) po_test)) then
-                  begin
-(*          print_endline "wait-2 positive"; *)
-                     true,0 (* wait_2 label *)
-                  end
-               else
-                  begin
-(*            print_endline "wait-2 negative"; *)
-                     false,0
-                  end
-            else  (* calculus is supposed to be LJ *)
-               if calculus = "LJ" then
-                  if  ((f.st = Phi_0)  & ((f.op=Neg) or (f.op=Imp)) &
-                       ((pa_O <> []) or (List.exists (fun x -> x.pol = O) po_test))
-                      )
+         match calculus with
+            Classical ->
+               false,0  (* ready, in C only redord counts *)
+          | Intuit calc ->
+               let pa_O = collect_solved_O_At [ftree] slist in    (* solved atoms in ftree *)
+               let po_test = (delete pos_eq f po) in
+               (* we provide dynamic wait labels for both sequent calculi *)
+               begin match calc with
+                  MultiConcl ->
+(*                   print_endline "wait-2 check"; *)
+                     if (f.st = Psi_0)  &  (f.pt <> PNull) &
+                        ((pa_O <> []) or (List.exists (fun x -> x.pol = O) po_test)) then
+                        begin
+(*                         print_endline "wait-2 positive"; *)
+                           true,0 (* wait_2 label *)
+                        end
+                     else
+                        begin
+(*                         print_endline "wait-2 negative"; *)
+                           false,0
+                        end
+                | SingleConcl ->
+                     if  ((f.st = Phi_0)  & ((f.op=Neg) or (f.op=Imp)) &
+                          ((pa_O <> []) or (List.exists (fun x -> x.pol = O) po_test))
+                         )
          (* this would cause an impl or negl rule with an non-empty succedent *)
-                  then
-                     if (f.op=Neg) then
-                        true,0
-                     else  (* (f.op=Imp) *)
-              (* In case of an impl rule on A => B, the wait_label must NOT be set
-                 iff all succedent formulae depend exclusively on B. For this, we
-                 perform a split operation and determine, if in the A-subgoal
-                 all succedent formulae are pure, i.e.~have been deleted from treds.
-                 Otherwise, in case of A-dependent succedent formulae, the
-                 wait_label must be set.
-              *)
-                        let ((_,min_con1),_) = split_permutation f.name opt_bproof in
-                        let slist_fake = delete string_eq f.name slist in
-                        let  ((zw1ft,zw1red,_,zw1uslist),_) =
-                           betasplit f.address ftree redord connections slist_fake in
-                        let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
-(*                   print_endline "wait label purity_one_out"; *)
-                        let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in
-(*                 print_endline ("wait-root "^(ft1_root.name)); *)
-                        let po_fake = compute_open [ft1] uslist1 in
-                        let po_fake_test = delete pos_eq ft1_root po_fake
-                        and pa_O_fake = collect_solved_O_At [ft1] uslist1 in
-(*                  print_purelist (po_fake_test @ pa_O_fake); *)
-                        if ((pa_O_fake <> []) or (List.exists (fun x -> x.pol = O) po_fake_test)) then
+                     then
+                        if (f.op=Neg) then
                            true,0
+                        else  (* (f.op=Imp) *)
+                 (* In case of an impl rule on A => B, the wait_label must NOT be set
+                    iff all succedent formulae depend exclusively on B. For this, we
+                    perform a split operation and determine, if in the A-subgoal
+                    all succedent formulae are pure, i.e.~have been deleted from treds.
+                    Otherwise, in case of A-dependent succedent formulae, the
+                    wait_label must be set.
+                 *)
+                           let ((_,min_con1),_) = split_permutation f.name opt_bproof in
+                           let slist_fake = delete string_eq f.name slist in
+                           let  ((zw1ft,zw1red,_,zw1uslist),_) =
+                              betasplit f.address ftree redord connections slist_fake in
+                           let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
+(*                      print_endline "wait label purity_one_out"; *)
+                           let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in
+(*                    print_endline ("wait-root "^(ft1_root.name)); *)
+                           let po_fake = compute_open [ft1] uslist1 in
+                           let po_fake_test = delete pos_eq ft1_root po_fake
+                           and pa_O_fake = collect_solved_O_At [ft1] uslist1 in
+(*                     print_purelist (po_fake_test @ pa_O_fake); *)
+                           if ((pa_O_fake <> []) or (List.exists (fun x -> x.pol = O) po_fake_test)) then
+                              true,0
+                           else
+                              false,0
+                     else
+                        if ((f.pol=O) & ((f.st=Gamma_0) or (f.op=Or))) then
+                           let (bool,orr_flag) = check_wait_succ_LJ f.address ftree in
+                           (bool,orr_flag)
+              (* here is determined if orr1 or orr2 will be performed, provided bool=false) *)
+              (* orr_flag can be 1 or 2 *)
                         else
                            false,0
-                  else
-                     if ((f.pol=O) & ((f.st=Gamma_0) or (f.op=Or))) then
-                        let (bool,orr_flag) = check_wait_succ_LJ f.address ftree in
-                        (bool,orr_flag)
-        (* here is determined if orr1 or orr2 will be performed, provided bool=false) *)
-        (* orr_flag can be 1 or 2 *)
-                     else
-                        false,0
-               else
-                  raise (Invalid_argument "Jprover: calculus should be LJmc or LJ")
+               end
 
    let rec get_beta_preference list actual =
       match list with
@@ -2850,13 +2846,13 @@ struct
 
    exception Gamma_deadlock
 
-   let rec select_pos search_po po redord ftree connections slist logic calculus candidates
+   let rec select_pos search_po po redord ftree connections slist calculus candidates
          opt_bproof =
       match search_po with
          [] ->
             (match candidates with
                [] ->
-                  if calculus = "LJ" then
+                  if calculus = Intuit SingleConcl then
                      raise Gamma_deadlock  (* permutation may be necessary *)
                   else
                      raise (Invalid_argument "Jprover bug: overall deadlock") (* this case should not occur *)
@@ -2864,11 +2860,9 @@ struct
                   get_beta_preference (c::rest) c
             )
        | f::r ->  (* there exist an open position *)
-            let (bool,orr_flag) = (blocked f po redord ftree connections slist logic calculus
-                                      opt_bproof)
-            in
+            let bool,orr_flag = blocked f po redord ftree connections slist calculus opt_bproof in
             if bool then
-               select_pos r po redord  ftree connections slist logic calculus candidates opt_bproof
+               select_pos r po redord  ftree connections slist calculus candidates opt_bproof
             else
                if f.pt = Beta then
      (* search for non-splitting rules first *)
@@ -2882,7 +2876,7 @@ struct
    in
    !!!!!!! this strategy is not sure the best -- back to old !!!!!!!!!
 *)
-                  select_pos r po redord  ftree connections slist logic calculus
+                  select_pos r po redord  ftree connections slist calculus
                      ((f,orr_flag)::candidates) opt_bproof
                else
                   (f,orr_flag)
@@ -2906,7 +2900,7 @@ struct
 (* total corresponds to tot in the thesis,
    tot simulates the while-loop, solve is the rest *)
 
-   let rec total  ftree redord connections csigmaQ slist logic calculus opt_bproof =
+   let rec total ftree redord connections csigmaQ slist calculus opt_bproof =
       let rec tot  ftree redord connections po slist =
          let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
             let newslist = delete string_eq (p.name) slist in
@@ -2974,36 +2968,36 @@ struct
                      split (p.address) (p.name) ftree redord connections newslist opt_bproof in
                   let (sigmaQ1,sigmaQ2) = subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ in
 (*           print_endline "split_out"; *)
-                  let p1 = total  ft1 red1 conn1 sigmaQ1 uslist1 logic calculus opt_bproof1 in
+                  let p1 = total ft1 red1 conn1 sigmaQ1 uslist1 calculus opt_bproof1 in
 (*           print_endline "compute p1 out";              *)
-                  let p2 = total  ft2 red2 conn2 sigmaQ2 uslist2 logic calculus opt_bproof2 in
+                  let p2 = total  ft2 red2 conn2 sigmaQ2 uslist2 calculus opt_bproof2 in
 (*           print_endline "compute p2 out";              *)
                   rback @ [(("",p.name),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
          in
          begin try
-            let (p,orr_flag) = select_pos po po redord ftree connections slist logic
-                  calculus [] opt_bproof
-    (* last argument for guiding selection strategy *)
-            in
+            (* last argument for guiding selection strategy *)
+            let (p,orr_flag) = select_pos po po redord ftree connections slist calculus [] opt_bproof in
 (*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
-            let predsuccs = tpredsucc p ftree in
-            let pred = List.hd predsuccs
-            and succs = List.tl predsuccs in
-            let redpo = update (p.name) redord in   (* deletes the entry (p,psuccset) from the redord *)
-            let rednew =
-               if (p.pt = Delta) then                 (* keep the tree ordering for the successor position only *)
-                  let psucc = List.hd succs in
-                  let ppsuccs = tpredsucc psucc ftree in
-                  let pre = List.hd ppsuccs
-                  and sucs = List.tl ppsuccs in
-                  replace_ordering (psucc.name) sucs redpo (* union the succsets of psucc *)
-               else
-                  redpo
-            in
-(*      print_endline "update ok"; *)
-            solve ftree rednew connections p po slist (pred,succs) orr_flag
+            match tpredsucc p ftree with
+               pred :: succs ->
+                  let redpo = update (p.name) redord in   (* deletes the entry (p,psuccset) from the redord *)
+                  let rednew =
+                     if (p.pt = Delta) then                 (* keep the tree ordering for the successor position only *)
+                        let psucc = List.hd succs in
+                        match tpredsucc psucc ftree with
+                           pre :: sucs ->
+                              replace_ordering (psucc.name) sucs redpo (* union the succsets of psucc *)
+                         | [] ->
+                              raise jprover_bug
+                     else
+                        redpo
+                  in
+(*            print_endline "update ok"; *)
+                  solve ftree rednew connections p po slist (pred,succs) orr_flag
+             | [] ->
+                  raise jprover_bug
          with Gamma_deadlock ->
-            let ljmc_subproof =  total ftree redord connections csigmaQ slist "J" "LJmc" opt_bproof
+            let ljmc_subproof =  total ftree redord connections csigmaQ slist (Intuit MultiConcl) opt_bproof
             in
             eigen_counter := 1;
             permute_ljmc ftree po slist ljmc_subproof
@@ -3013,7 +3007,7 @@ struct
       let po  = compute_open [ftree] slist in
       tot ftree redord connections po slist
 
-   let reconstruct ftree redord sigmaQ ext_proof logic calculus =
+   let reconstruct ftree redord sigmaQ ext_proof calculus =
       let min_connections = remove_dups_connections ext_proof in
       let (opt_bproof,beta_exp,closures) = construct_opt_beta_proof ftree ext_proof in
 (* let connections = remove_dups_connections ext_proof in
@@ -3060,7 +3054,7 @@ struct
 *)
 (* it should hold: min_connections = init_connections *)
          total init_tree init_redord init_connections sigmaQ
-            init_unsolved_list logic calculus opt_bproof
+            init_unsolved_list calculus opt_bproof
       end
 
 (* ***************** REDUCTION ORDERING -- both types **************************** *)
@@ -3598,39 +3592,31 @@ let rec make_domain_equations fo_pairs (gamma_0_prefixes,delta_0_prefixes) n =
 (* type of one unifier: int * ((string * string list) list)  *)
 (* global failure: (0,[]) *)
 
-let stringunify ext_atom try_one eqlist fo_pairs logic orderingQ atom_rel qprefixes =
-   if logic = "C" then
-      ((0,[]),(0,[]),orderingQ)
-   else
-      let (qmax,equations) = eqlist
-      and us  = ext_atom.aprefix
-      and ut  = try_one.aprefix
-      and ns = ext_atom.aname
-      and nt = try_one.aname in
-      if qprefixes = ([],[]) then  (* prop case *)
-         begin
-(*     print_endline "This is the prop case"; *)
-            let (new_sigma,new_eqlist)  = Jtunify.do_stringunify us ut ns nt equations
-       (* prop unification only *)
-            in
-            (new_sigma,new_eqlist,[]) (* assume the empty reduction ordering during proof search *)
-         end
-      else
-         begin
-(*     print_endline "This is the FO case"; *)
-(* fo_eqlist encodes the domain condition on J quantifier substitutions *)
-(* Again, always computed for the whole substitution sigmaQ *)
-            let (fo_eqlist,new_max) = make_domain_equations fo_pairs qprefixes qmax in
-            begin
-(*    open_box 0;
-   print_string "domain equations in";
-   print_equations fo_eqlist;
-   print_string "domain equations out";
-   print_flush ();
-*)
-               do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel new_max
-            end
-         end
+let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ atom_rel qprefixes =
+   match calculus with
+      Classical -> ((0,[]),(0,[]),orderingQ)
+    | Intuit _ ->
+         let us  = ext_atom.aprefix in
+         let ut  = try_one.aprefix in
+         let ns = ext_atom.aname in
+         let nt = try_one.aname in
+            match qprefixes with
+               [], [] -> (* prop case *)
+                  (* prop unification only *)
+                  let (new_sigma,new_eqlist)  = Jtunify.do_stringunify us ut ns nt equations in
+                     (new_sigma,new_eqlist,[]) (* assume the empty reduction ordering during proof search *)
+             | _ -> (* "This is the FO case" *)
+                  (* fo_eqlist encodes the domain condition on J quantifier substitutions *)
+                  (* Again, always computed for the whole substitution sigmaQ *)
+                  let fo_eqlist, new_max = make_domain_equations fo_pairs qprefixes qmax in
+                     (*
+                     open_box 0;
+                     print_string "domain equations in";
+                     print_equations fo_eqlist;
+                     print_string "domain equations out";
+                     print_flush ();
+                     *)
+                     do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel new_max
 
 (**************************************** add multiplicity *********************************)
 
@@ -3720,12 +3706,12 @@ let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
 
 (* we construct for each pos a list orderings representing and correspondning to the array of succtrees *)
 
-let rec add_multiplicity ftree pos_n  mult logic =
+let rec add_multiplicity ftree pos_n mult calculus =
    let rec parse_subtrees tree_list s_pos_n =
       match tree_list with
          [] -> ([||],[],s_pos_n)
        | f::r ->
-            let (f_subtree,f_ordering,f_pos_n) = add_multiplicity f s_pos_n  mult logic in
+            let (f_subtree,f_ordering,f_pos_n) = add_multiplicity f s_pos_n  mult calculus in
             let (r_subtrees,r_ordering_list,r_pos_n) = parse_subtrees r f_pos_n in
             ((Array.append [|f_subtree|] r_subtrees),(f_ordering::r_ordering_list),r_pos_n)
 
@@ -3735,22 +3721,26 @@ let rec add_multiplicity ftree pos_n  mult logic =
     | NodeAt(pos) -> (ftree,[(pos.name,StringSet.empty)],pos_n)
     | NodeA(pos,suctrees) ->
          let (new_suctrees, new_ordering_list, new_pos_n) = parse_subtrees (Array.to_list suctrees) pos_n in
-         if (((pos.pt = Phi) & (((pos.op <> At) & (logic="J")) or ((pos.op = All) & (logic = "C"))))
-          (* no explicit atom-instances *)
-                or ((pos.pt = Gamma) & (pos.st <> Phi_0))) then   (* universal quantifiers are copied *)
-                                                                (* at their Phi positions *)
-            let replace_n = (List.length pos.address)  (* points to the following argument in the array_of_address *)
-            and last = (Array.length new_suctrees) - 1 in (* array first element has index 0 *)
-            let last_tree = new_suctrees.(last) in
-            let (add_tree,add_ordering,final_pos_n) =
-               copy_and_rename_tree last_tree replace_n new_pos_n mult [] in
-            let final_suctrees = Array.append new_suctrees [|add_tree|]
-            and add_orderings = List.append new_ordering_list [add_ordering] in
-            let final_ordering = combine_ordering_list add_orderings (pos.name) in
-            ((NodeA(pos,final_suctrees)),final_ordering,final_pos_n)
-         else
-            let final_ordering = combine_ordering_list new_ordering_list (pos.name) in
-            ((NodeA(pos,new_suctrees)),final_ordering,new_pos_n)
+            begin match calculus, pos with
+             (* no explicit atom-instances *)
+               Classical, { pt = Phi; op = All}
+             | Intuit _, { pt = Phi; op = And | Or | Neg | Imp | All | Ex | Null (* pos.op <> At *) }
+             (* universal quantifiers are copied at their Phi positions *)
+             | _, { pt = Gamma; st =
+                   Alpha_1 | Alpha_2 | Beta_1 | Beta_2 | Gamma_0 | Delta_0 | Psi_0 | PNull_0 (*pos.st <> Phi_0 *) } ->
+                  let replace_n = List.length pos.address in  (* points to the following argument in the array_of_address *)
+                  let last = (Array.length new_suctrees) - 1 in (* array first element has index 0 *)
+                  let last_tree = new_suctrees.(last) in
+                  let (add_tree,add_ordering,final_pos_n) =
+                     copy_and_rename_tree last_tree replace_n new_pos_n mult [] in
+                  let final_suctrees = Array.append new_suctrees [|add_tree|] in
+                  let add_orderings = List.append new_ordering_list [add_ordering] in
+                  let final_ordering = combine_ordering_list add_orderings (pos.name) in
+                     ((NodeA(pos,final_suctrees)),final_ordering,final_pos_n)
+             | _ ->
+                  let final_ordering = combine_ordering_list new_ordering_list (pos.name) in
+                     ((NodeA(pos,new_suctrees)),final_ordering,new_pos_n)
+            end
 
 (**************  Path checker   ****************************************************)
 
@@ -3824,7 +3814,7 @@ let rec ext_partners con path ext_atom reduction_partners extension_partners ato
 
 exception Failed_connections
 
-let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
+let path_checker consts atom_rel atom_sets qprefixes init_ordering calculus =
 
    let con = connections atom_rel [] in
 (*   print_endline "";
@@ -3854,7 +3844,7 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
 (* we make in incremental reflexivity test during the string unification *)
             let (new_sigmaJ,new_eqlist,new_red_ordering) =
 (* new_red_ordering = [] in propositional case *)
-               stringunify ext_atom try_one eqlist relate_pairs logic new_orderingQ atom_rel qprefixes
+               stringunify ext_atom try_one eqlist relate_pairs calculus new_orderingQ atom_rel qprefixes
             in
 (*           print_endline ("make reduction ordering "^((string_of_int (List.length new_ordering)))); *)
             let new_closed = AtomSet.add closed ext_atom in
@@ -4215,11 +4205,11 @@ let init_prover ftree =
    let atom_sets = make_atom_sets atom_relation in
    (atom_relation,atom_sets,qprefixes)
 
-let rec try_multiplicity consts mult_limit ftree ordering pos_n mult logic =
+let rec try_multiplicity consts mult_limit ftree ordering pos_n mult calculus =
    try
       let (atom_relation,atom_sets,qprefixes) = init_prover ftree in
       let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
-         path_checker consts atom_relation atom_sets qprefixes ordering logic in
+         path_checker consts atom_relation atom_sets qprefixes ordering calculus in
       (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
    with Failed ->
       match mult_limit with
@@ -4236,18 +4226,18 @@ let rec try_multiplicity consts mult_limit ftree ordering pos_n mult logic =
                print_flush ();
             end;
             let (new_ftree,new_ordering,new_pos_n) =
-               add_multiplicity ftree pos_n new_mult logic in
+               add_multiplicity ftree pos_n new_mult calculus in
             if ftree_eq new_ftree ftree then
                raise unprovable
             else
 (*             print_formula_info new_ftree new_ordering new_pos_n;   *)
-               try_multiplicity consts mult_limit new_ftree new_ordering new_pos_n new_mult logic
+               try_multiplicity consts mult_limit new_ftree new_ordering new_pos_n new_mult calculus
 
-let prove consts mult_limit termlist logic =
+let prove consts mult_limit termlist calculus =
    let (ftree,ordering,pos_n) = construct_ftree termlist [] [] 0 (mk_var_term "dummy") in
 (* pos_n = number of positions without new root "w" *)
 (*   print_formula_info ftree ordering pos_n;    *)
-   try_multiplicity consts mult_limit ftree ordering pos_n 1 logic
+   try_multiplicity consts mult_limit ftree ordering pos_n 1 calculus
 
 (********** first-order type theory interface *******************)
 
@@ -4344,17 +4334,17 @@ let rec make_test_interface consts rule_list input_map =
 
 (**************************************************************)
 
-let gen_prover mult_limit logic calculus hyps concls =
+let gen_prover mult_limit calculus hyps concls =
    let (input_map,renamed_termlist,consts) = renam_free_vars (hyps @ concls) in
-   let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove consts mult_limit renamed_termlist logic in
-   let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof logic calculus in
+   let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove consts mult_limit renamed_termlist calculus in
+   let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
          (* transform types and rename constants *)
      (* we can transform the eigenvariables AFTER proof reconstruction since *)
      (* new delta_0 constants may have been constructed during rule permutation *)
      (* from the LJmc to the LJ proof *)
    create_output consts sequent_proof input_map
 
-let prover mult_limit hyps concl = gen_prover mult_limit "J" "LJ" hyps [concl]
+let prover mult_limit hyps concl = gen_prover mult_limit (Intuit SingleConcl) hyps [concl]
 
 (************* test with propositional proof reconstruction ************)
 
@@ -4368,10 +4358,10 @@ let rec count_axioms seq_list =
          else
             count_axioms r
 
-let do_prove mult_limit termlist logic calculus =
+let do_prove mult_limit termlist calculus =
    try begin
       let (input_map,renamed_termlist,consts) = renam_free_vars termlist in
-      let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove consts mult_limit renamed_termlist logic in
+      let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove consts mult_limit renamed_termlist calculus in
       open_box 0;
       force_newline ();
       force_newline ();
@@ -4421,7 +4411,7 @@ let do_prove mult_limit termlist logic calculus =
       print_endline "";
       print_flush ();
       let _ = input_char stdin in
-      let reconstr_proof = reconstruct ftree red_ordering sigmaQ ext_proof logic calculus in
+      let reconstr_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
       let sequent_proof = make_test_interface consts reconstr_proof input_map in
       open_box 0;
       force_newline ();
@@ -4447,14 +4437,14 @@ let do_prove mult_limit termlist logic calculus =
       print_endline (Printexc.to_string exn)
    end
 
-let test concl logic calculus =  (* calculus should be LJmc or LJ for J, and LK for C *)
-   do_prove None [concl] logic calculus
+let test concl calculus =  (* calculus should be LJmc or LJ for J, and LK for C *)
+   do_prove None [concl] calculus
 
 (* for sequents *)
 
-let seqtest list_term logic calculus =
+let seqtest list_term calculus =
    let termlist = collect_subterms [] (dest_term list_term).term_terms in
-   do_prove None termlist logic calculus
+   do_prove None termlist calculus
 
 (*****************************************************************)
 

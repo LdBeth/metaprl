@@ -6,6 +6,14 @@ type rule =
    Ax | Andr | Andl | Orr | Orr1 | Orr2 | Orl | Impr | Impl | Negr | Negl
  | Allr | Alll| Exr | Exl | Fail
 
+type intuit_calc =
+   SingleConcl
+ | MultiConcl
+
+type calculus =
+   Classical
+ | Intuit of intuit_calc
+
 module type JLogicSig =
 sig
    (* understanding the input *)
