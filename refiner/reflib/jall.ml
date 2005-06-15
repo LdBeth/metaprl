@@ -129,7 +129,7 @@ struct
    type ftree =
       Empty
     | NodeAt of pos
-    | NodeA of pos * ftree array
+    | NodeA of pos * ftree list
 
    type atom  = {aname : string;
                  aaddress : int list;
@@ -184,7 +184,7 @@ struct
       match t1, t2 with
          Empty, Empty -> true
        | NodeAt p1, NodeAt p2 -> pos_eq p1 p2
-       | NodeA (p1, pa1), NodeA (p2, pa2) -> pos_eq p1 p2 && Lm_array_util.for_all2 ftree_eq pa1 pa2
+       | NodeA (p1, pa1), NodeA (p2, pa2) -> pos_eq p1 p2 && Lm_list_util.for_all2 ftree_eq pa1 pa2
        | _ -> false
 
    let rule_eq (a1, (b1 : rule), c1, d1) (a2, b2, c2, d2) =
@@ -415,7 +415,6 @@ struct
                   print_break new_tab 0
                end
           | NodeA(position,subtrees) ->
-               let tree_list = Array.to_list subtrees in
                begin
                   force_newline ();
                   print_break new_tab 0;
@@ -424,7 +423,7 @@ struct
                   print_position position new_tab;
                   force_newline ();
                   print_break 0 0;
-                  pp_ftree_list tree_list (new_tab-3)
+                  pp_ftree_list subtrees (new_tab-3)
                end
       in
       let new_tab = tab+5 in
@@ -1021,8 +1020,7 @@ struct
                      let rnode = compute_alpha_layer r in
                      (pos.name::rnode)
                   else
-                     let suclist = Array.to_list suctrees in
-                     compute_alpha_layer (suclist @ r)
+                     compute_alpha_layer (suctrees @ r)
             )
 
    let rec compute_beta_difference c1_context c2_context act_context =
@@ -1195,19 +1193,22 @@ struct
                   (atlist,[],[])
           | NodeA(pos,suctrees) ->
                if pos.pt = Beta then
-                  let s1,s2 = suctrees.(0),suctrees.(1) in
-                  let alayer1 = compute_alpha_layer [s1]
-                  and alayer2 = compute_alpha_layer [s2]
-                  and new_beta_context1 = beta_context @ [(pos.name,1)]
-                  and new_beta_context2 = beta_context @ [(pos.name,2)] in
-                  let atlist1,annotates1,blayer_list1 =
-                     annotate_atoms new_beta_context1 atlist [s1] in
-                  let atlist2,annotates2,blayer_list2 =
-                     annotate_atoms new_beta_context2 atlist1 [s2]
-                  in
-                  (atlist2,(annotates1 @ annotates2),((pos.name,(alayer1,alayer2))::(blayer_list1 @ blayer_list2)))
+                  begin match suctrees with
+                     [s1;s2] ->
+                        let alayer1 = compute_alpha_layer [s1] in
+                        let alayer2 = compute_alpha_layer [s2] in
+                        let new_beta_context1 = beta_context @ [(pos.name,1)] in
+                        let new_beta_context2 = beta_context @ [(pos.name,2)] in
+                        let atlist1,annotates1,blayer_list1 =
+                           annotate_atoms new_beta_context1 atlist [s1] in
+                        let atlist2,annotates2,blayer_list2 =
+                           annotate_atoms new_beta_context2 atlist1 [s2]
+                        in
+                        (atlist2,(annotates1 @ annotates2),((pos.name,(alayer1,alayer2))::(blayer_list1 @ blayer_list2)))
+                   | _ -> raise jprover_bug
+                  end
                else
-                  annotate_atoms beta_context atlist (Array.to_list suctrees)
+                  annotate_atoms beta_context atlist suctrees
       in
       match treelist with
          [] -> (atlist,[],[])
@@ -1921,18 +1922,18 @@ struct
              | NodeA(pos,suctrees) ->
                   if predflag = "pred" then
                      if pos.pt = Gamma then
-                        let succs = get_successor_pos (Array.to_list suctrees) in
+                        let succs = get_successor_pos suctrees in
                         if List.mem f succs then
                            NodeA(pos,suctrees),succs
                         else
-                           get_formula_tree ((Array.to_list suctrees) @ rest_trees) f predflag
+                           get_formula_tree (suctrees @ rest_trees) f predflag
                      else
-                        get_formula_tree ((Array.to_list suctrees) @ rest_trees) f predflag
+                        get_formula_tree (suctrees @ rest_trees) f predflag
                   else (* predflag = "" *)
                      if pos_eq pos f then
                         NodeA(pos,suctrees),[]
                      else
-                        get_formula_tree ((Array.to_list suctrees) @ rest_trees) f predflag
+                        get_formula_tree (suctrees @ rest_trees) f predflag
             )
 
    let rec get_formula_treelist ftree po =
@@ -1952,6 +1953,10 @@ struct
             stree::(get_formula_treelist ftree r)
        | _ ->
             raise (Invalid_argument "Jprover bug: non-admissible open position")
+
+   let rec number_list n = function
+      hd::tl -> (n,hd)::(number_list (succ n) tl)
+    | [] -> []
 
    let rec build_formula_rel dir_treelist slist predname =
 
@@ -1993,29 +1998,19 @@ struct
              | NodeA(pos,suctrees) ->
                   (match pos.pt with
                      Alpha | Beta ->
-                        let dtreelist =
-                           if (pos.pt = Alpha) & (pos.op = Neg) then
-                              [(1,suctrees.(0))]
-                           else
-                              let st1 = suctrees.(0)
-                              and st2 = suctrees.(1) in
-                              [(1,st1);(2,st2)]
-                        in
+                        let dtreelist = number_list 1 suctrees in
                         let (srel,sren) = build_formula_rel dtreelist slist pos.name in
                         ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
                    | Delta ->
-                        let st1 = suctrees.(0) in
-                        let (srel,sren) = build_formula_rel [(1,st1)] slist pos.name in
+                        let dtreelist = number_list 1 suctrees in
+                        let (srel,sren) = build_formula_rel dtreelist slist pos.name in
                         ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
                    | Psi| Phi ->
-                        let succlist = Array.to_list suctrees in
-                        let dtreelist = (List.map (fun x -> (d,x)) succlist) in
+                        let dtreelist = (List.map (fun x -> (d,x)) suctrees) in
                         let (srel,sren) = build_formula_rel dtreelist slist predname in
                         (srel @ rest_rel),(sren @ rest_renlist)
                    | Gamma ->
-                        let n = Array.length suctrees
-                        and succlist = (Array.to_list suctrees) in
-                        let dtreelist = (List.map (fun x -> (1,x)) succlist) in
+                        let dtreelist = (List.map (fun x -> (1,x)) suctrees) in
 (*                if (nonemptys suctrees 0 n) = 1  then
    let (srel,sren) = build_formula_rel dtreelist slist pos.name in
    ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
@@ -2125,7 +2120,7 @@ struct
              | NodeAt(pos) ->
                   (pos.name)::(init_unsolved r)
              | NodeA(pos,suctrees) ->
-                  let new_treelist = (Array.to_list suctrees) @ r in
+                  let new_treelist = suctrees @ r in
                   (pos.name)::(init_unsolved new_treelist)
             end
 
@@ -2136,7 +2131,7 @@ struct
          Empty | NodeAt _ ->
             raise jprover_bug
        | NodeA(pos,suctrees) ->
-            ((pos.name),init_unsolved (Array.to_list suctrees))
+            ((pos.name),init_unsolved suctrees)
 
 (*
    let rec collect_variables tree_list =
@@ -2210,9 +2205,9 @@ struct
             []
        | NodeA(pos,strees) ->
             match padd with
-               [] -> get_roots (Array.to_list strees)
-             | [f] -> pos::(comp_ps [] (Array.get strees (f-1)))
-             | f::r -> comp_ps r (Array.get strees (f-1))
+               [] -> get_roots strees
+             | [f] -> pos::(comp_ps [] (List.nth strees (f-1)))
+             | f::r -> comp_ps r (List.nth strees (f-1))
 
 (* computes a list: first element predecessor, next elements successoes of p *)
 
@@ -2221,11 +2216,11 @@ struct
 
 (* set an element in an array, without side effects *)
 
-   let myset array int element =
-      let length = Array.length array in
-      let firstpart = Array.sub array 0 (int) in
-      let secondpart = Array.sub array (int+1) (length-(int+1)) in
-      (Array.append firstpart (Array.append [|element|] secondpart))
+   let rec myset i element = function
+      hd::tl ->
+         if i = 0 then element::tl
+         else hd::(myset (pred i) element tl)
+    | [] -> []
 
    let rec compute_open treelist slist =
       match treelist with
@@ -2243,7 +2238,7 @@ struct
                      if (List.mem (pos.name) slist) then
                         [pos]
                      else
-                        compute_open (Array.to_list suctrees) slist
+                        compute_open suctrees slist
             in
             elements @ (compute_open rest slist)
 
@@ -2344,17 +2339,10 @@ struct
 
 (* %%%%%%%%%%%%%%%%%%%% Split begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% *)
 
-   let rec nonemptys treearray j n =
-      if j = n then
-         0
-      else
-         let count =
-            if (Array.get treearray j) <> Empty then
-               1
-            else
-               0
-         in
-         count + (nonemptys treearray (j+1) n)
+   let rec nonemptys sum = function
+      Empty::tl -> nonemptys sum tl
+    | _::tl -> nonemptys (succ sum) tl
+    | [] -> sum
 
    let rec collect_pure flist slist = function
       [] -> []
@@ -2366,7 +2354,7 @@ struct
          else
             pos :: collect_pure flist slist r
     | NodeA(pos,treearray) :: r ->
-         (collect_pure flist slist (Array.to_list treearray)) @ (collect_pure flist slist r)
+         (collect_pure flist slist treearray) @ (collect_pure flist slist r)
 
    let rec update_list testlist list =
       match testlist with
@@ -2410,7 +2398,7 @@ struct
              | NodeAt(pos) ->
                   (pos.name)::get_position_names rests
              | NodeA(pos,strees) ->
-                  (pos.name)::(get_position_names ((Array.to_list strees) @ rests))
+                  (pos.name)::(get_position_names (strees @ rests))
 
    let rec print_purelist pr =
       match pr with
@@ -2456,7 +2444,7 @@ struct
                      else
                         rest_delta,rest_gamma
              | NodeA(pos,suctrees) ->
-                  let (rest_delta,rest_gamma) = collect_qpos ((Array.to_list suctrees) @ rest) uslist in
+                  let (rest_delta,rest_gamma) = collect_qpos (suctrees @ rest) uslist in
                   if (pos.st = Gamma_0) & (List.mem pos.name uslist) then
                      rest_delta,(pos.name::rest_gamma)
                   else
@@ -2548,12 +2536,12 @@ struct
 (*       print_endline pos.name; *)
     (* the associated node occurs above f (or the empty address) and hence, is neither atom nor empty tree *)
 
-                  let nexttree = (Array.get strees (a-1)) in
-                  if (nonemptys strees 0 (Array.length strees)) < 2  then
+                  let nexttree = (List.nth strees (a-1)) in
+                  if (nonemptys 0 strees) < 2  then
                      begin
 (*          print_endline "strees 1 or non-empties < 2"; *)
                         let (ft,dt,an,bf) =  reduce_tree radd actual_node nexttree beta_flag in
-                        let nstrees = myset strees (a-1) ft in
+                        let nstrees = myset (a-1) ft strees in
 (*            print_endline ("way back "^pos.name); *)
                         (NodeA(pos,nstrees),dt,an,bf)
                      end
@@ -2568,11 +2556,11 @@ struct
                         in
                         let (ft,dt,an,bf) = reduce_tree radd new_act nexttree new_bf in
                         if an = pos.name then
-                           let nstrees = myset strees (a-1) Empty in
+                           let nstrees = myset (a-1) Empty strees in
 (*                 print_endline ("way back assocnode "^pos.name); *)
                            (NodeA(pos,nstrees),nexttree,an,bf)
                         else  (* has been replaced / will be replaced below / above pos *)
-                           let nstrees = myset strees (a-1) ft in
+                           let nstrees = myset (a-1) ft strees in
 (*                 print_endline ("way back "^pos.name); *)
                            (NodeA(pos,nstrees),dt,an,bf)
                      end
@@ -2632,19 +2620,21 @@ struct
        | NodeA(pos,strees) ->
             match addr with
                [] ->    (* we are at the beta node under consideration *)
-                  let st1tree = (Array.get strees 0)
-                  and st2tree = (Array.get strees 1) in
-                  let (zw1red,zw1conn,zw1uslist) = update_relations st2tree redord connections unsolved_list
-                  and (zw2red,zw2conn,zw2uslist) = update_relations st1tree redord connections unsolved_list in
-                  ((NodeA(pos,[|st1tree;Empty|])),zw1red,zw1conn,zw1uslist),
-                  ((NodeA(pos,[|Empty;st2tree|])),zw2red,zw2conn,zw2uslist)
+                  begin match strees with
+                     [st1tree;st2tree] ->
+                        let (zw1red,zw1conn,zw1uslist) = update_relations st2tree redord connections unsolved_list in
+                        let (zw2red,zw2conn,zw2uslist) = update_relations st1tree redord connections unsolved_list in
+                        ((NodeA(pos,[st1tree;Empty])),zw1red,zw1conn,zw1uslist),
+                        ((NodeA(pos,[Empty;st2tree])),zw2red,zw2conn,zw2uslist)
+                   | _ -> raise jprover_bug
+                  end
              | f::rest ->
-                  let nexttree  = Array.get strees (f-1) in
+                  let nexttree  = List.nth strees (f-1) in
                   let (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) =
                      betasplit rest nexttree redord connections unsolved_list in
 (*          let scopytrees = Array.copy strees in  *)
-                  let zw1trees = myset strees (f-1) zw1ft
-                  and zw2trees = myset strees (f-1) zw2ft in
+                  let zw1trees = myset (f-1) zw1ft strees in
+                  let zw2trees = myset (f-1) zw2ft strees in
                   (NodeA(pos,zw1trees),zw1red,zw1conn,zw1uslist),(NodeA(pos,zw2trees),zw2red,zw2conn,zw2uslist)
 
    let split addr pname ftree redord connections unsolved_list opt_bproof =
@@ -2725,7 +2715,7 @@ struct
     (* here, we have pos solved and pos.pol = O) *)
                      pos::(collect_solved_O_At r slist)
              | NodeA(pos,treearray) ->
-                  collect_solved_O_At ((Array.to_list treearray) @ r) slist
+                  collect_solved_O_At (treearray @ r) slist
 
    let rec red_ord_block pname redord =
       match redord with
@@ -2736,29 +2726,31 @@ struct
             else
                true   (* then, we have (StringSet.mem fset pname) *)
 
-   let rec check_wait_succ_LJ faddress ftree =
-      match ftree with
-         Empty -> raise jprover_bug
-       | NodeAt(pos) -> raise jprover_bug (* we have an gamma_0 position or an or-formula *)
-       | NodeA(pos,strees) ->
-            match faddress with
-               [] ->
-                  if pos.op = Or then
-                     match (strees.(0),strees.(1)) with
-                        (Empty,Empty) -> raise (Invalid_argument "Jprover: redundancies occur")
-                      | (Empty,_) -> (false,2)   (* determines the Orr2 rule *)
-                      | (_,Empty) -> (false,1)   (* determines the Orr1 ruke *)
-                      | (_,_)  -> (true,0)    (* wait-label is set *)
-                  else
-                     (false,0)
-             | f::r ->
-                  if r = [] then
-                     if (pos.pt = Gamma) & ((nonemptys strees 0 (Array.length strees)) > 1)  then
-                        (true,0)             (* we are at a gamma position (exr) with one than one successor -- wait label in LJ*)
-                     else
-                        check_wait_succ_LJ r (Array.get strees (f-1))
-                  else
-                     check_wait_succ_LJ r (Array.get strees (f-1))
+   let rec check_wait_succ_LJ faddress = function
+      NodeA(pos,strees) ->
+         begin match faddress with
+            [] ->
+               if pos.op = Or then
+                  match strees with
+                     [Empty;Empty] -> raise (Invalid_argument "Jprover: redundancies occur")
+                   | [Empty;_] -> (false,2)   (* determines the Orr2 rule *)
+                   | [_;Empty] -> (false,1)   (* determines the Orr1 ruke *)
+                   | [_;_]  -> (true,0)    (* wait-label is set *)
+                   | _ -> raise jprover_bug
+               else
+                  (false,0)
+          | [f] ->
+               if (pos.pt = Gamma) & ((nonemptys 0 strees) > 1)  then
+                  (true,0)
+                  (* we are at a gamma position (exr) with one than one successor *)
+                  (* -- wait label in LJ*)
+               else
+                  check_wait_succ_LJ [] (List.nth strees (f-1))
+          | f::r ->
+                  check_wait_succ_LJ r (List.nth strees (f-1))
+         end
+    | Empty -> raise jprover_bug
+    | NodeAt(pos) -> raise jprover_bug (* we have an gamma_0 position or an or-formula *)
 
    let blocked f po redord ftree connections slist calculus opt_bproof =
 (* print_endline ("Blocking check "^(f.name)); *)
@@ -3684,12 +3676,12 @@ let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
 
    let rec rename_subtrees tree_list nposition s_pos_n nsubst_list =
       match tree_list with
-         [] -> ([||],[],s_pos_n)
+         [] -> ([],[],s_pos_n)
        | f::r ->
             let (f_subtree,f_ordering,f_pos_n) =
                copy_and_rename_tree f replace_n s_pos_n  mult nsubst_list in
             let (r_subtrees,r_ordering_list,r_pos_n) = rename_subtrees r nposition f_pos_n nsubst_list in
-            ((Array.append [|f_subtree|] r_subtrees),(f_ordering::r_ordering_list),r_pos_n)
+            ((f_subtree::r_subtrees),(f_ordering::r_ordering_list),r_pos_n)
 
    in
    match last_tree with
@@ -3700,7 +3692,7 @@ let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
     | NodeA(position, suctrees) ->
          let (nposition,npos_n,nsubst_list) = update_position position (pos_n+1) replace_n subst_list mult in
          let (new_suctrees, new_ordering_list, new_pos_n) =
-            rename_subtrees (Array.to_list suctrees) nposition npos_n nsubst_list in
+            rename_subtrees suctrees nposition npos_n nsubst_list in
          let new_ordering = combine_ordering_list new_ordering_list (nposition.name) in
          ((NodeA(nposition,new_suctrees)),new_ordering,new_pos_n)
 
@@ -3709,18 +3701,18 @@ let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
 let rec add_multiplicity ftree pos_n mult calculus =
    let rec parse_subtrees tree_list s_pos_n =
       match tree_list with
-         [] -> ([||],[],s_pos_n)
+         [] -> ([],[],s_pos_n)
        | f::r ->
             let (f_subtree,f_ordering,f_pos_n) = add_multiplicity f s_pos_n  mult calculus in
             let (r_subtrees,r_ordering_list,r_pos_n) = parse_subtrees r f_pos_n in
-            ((Array.append [|f_subtree|] r_subtrees),(f_ordering::r_ordering_list),r_pos_n)
+            ((f_subtree::r_subtrees),(f_ordering::r_ordering_list),r_pos_n)
 
    in
    match ftree with
       Empty -> raise (Invalid_argument "Jprover: add mult")
     | NodeAt(pos) -> (ftree,[(pos.name,StringSet.empty)],pos_n)
     | NodeA(pos,suctrees) ->
-         let (new_suctrees, new_ordering_list, new_pos_n) = parse_subtrees (Array.to_list suctrees) pos_n in
+         let new_suctrees, new_ordering_list, new_pos_n = parse_subtrees suctrees pos_n in
             begin match calculus, pos with
              (* no explicit atom-instances *)
                Classical, { pt = Phi; op = All}
@@ -3729,12 +3721,11 @@ let rec add_multiplicity ftree pos_n mult calculus =
              | _, { pt = Gamma; st =
                    Alpha_1 | Alpha_2 | Beta_1 | Beta_2 | Gamma_0 | Delta_0 | Psi_0 | PNull_0 (*pos.st <> Phi_0 *) } ->
                   let replace_n = List.length pos.address in  (* points to the following argument in the array_of_address *)
-                  let last = (Array.length new_suctrees) - 1 in (* array first element has index 0 *)
-                  let last_tree = new_suctrees.(last) in
+                  let last_tree = Lm_list_util.last new_suctrees in
                   let (add_tree,add_ordering,final_pos_n) =
                      copy_and_rename_tree last_tree replace_n new_pos_n mult [] in
-                  let final_suctrees = Array.append new_suctrees [|add_tree|] in
-                  let add_orderings = List.append new_ordering_list [add_ordering] in
+                  let final_suctrees = new_suctrees @ [add_tree] in
+                  let add_orderings = new_ordering_list @ [add_ordering] in
                   let final_ordering = combine_ordering_list add_orderings (pos.name) in
                      ((NodeA(pos,final_suctrees)),final_ordering,final_pos_n)
              | _ ->
@@ -3925,7 +3916,7 @@ let rec predecessor address_1 address_2 = function
        | _,[] -> raise (Invalid_argument "Jprover: predecessors right")
        | (f1::r1),(f2::r2) ->
             if f1 = f2 then
-               predecessor r1 r2 (suctrees.(f1-1))
+               predecessor r1 r2 (List.nth suctrees (f1-1))
             else
                position.pt
 
@@ -3966,7 +3957,6 @@ let rec select_atoms_treelist treelist prefix =
        | NodeAt(position) ->
             [(atom_record position prefix)],[],[]
        | NodeA(position,suctrees) ->
-            let treelist = Array.to_list suctrees in
             let st = position.st in
             let new_prefix =
                match st with
@@ -3976,7 +3966,7 @@ let rec select_atoms_treelist treelist prefix =
                      prefix
             in
             let (rest_alist,rest_gamma_0_prefixes,rest_delta_0_prefixes) =
-               select_atoms_treelist treelist new_prefix
+               select_atoms_treelist suctrees new_prefix
             in
             (  rest_alist,
               (if st == Gamma_0 then rest_gamma_0_prefixes @ [position.name,prefix] else rest_gamma_0_prefixes),
@@ -4047,7 +4037,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
       let pos_succs =
          StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left
       in
-      (NodeA(position,[|subtree_left;subtree_right|]),
+      (NodeA(position,[subtree_left;subtree_right]),
        ((position.name,pos_succs)::(ordering_left @ ordering_right)),
        posn_right
       )
@@ -4068,7 +4058,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
          and (succ_right,whole_right) = List.hd ordering_right in
          let pos_succs =
             StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left in
-         (NodeA(position,[|subtree_left;subtree_right|]),
+         (NodeA(position,[subtree_left;subtree_right]),
           ((position.name),pos_succs) :: (ordering_left @ ordering_right),
           posn_right
          )
@@ -4093,7 +4083,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
             let pos_succs =
                StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left in
             let pos_ordering = (position.name,pos_succs) :: (ordering_left @ ordering_right) in
-            (NodeA(sposition,[|NodeA(position,[|subtree_left;subtree_right|])|]),
+            (NodeA(sposition,[NodeA(position,[subtree_left;subtree_right])]),
              ((sposition.name,(StringSet.add pos_succs position.name))::pos_ordering),
              posn_right
             )
@@ -4115,7 +4105,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
                let pos_succs =
                   StringSet.add whole_left succ_left in
                let pos_ordering = (position.name,pos_succs) :: ordering_left in
-               (NodeA(sposition,[|NodeA(position,[| subtree_left|])|]),
+               (NodeA(sposition,[NodeA(position,[subtree_left])]),
                 ((sposition.name,(StringSet.add pos_succs position.name))::pos_ordering),
                 posn_left
                )
@@ -4133,7 +4123,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
                   let (succ_left,whole_left) = List.hd ordering_left in
                   let pos_succs =
                      StringSet.add whole_left succ_left in
-                  (NodeA(position,[|subtree_left|]),
+                  (NodeA(position,[subtree_left]),
                    ((position.name,pos_succs) :: ordering_left),
                    posn_left
                   )
@@ -4156,7 +4146,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
                      let pos_succs =
                         StringSet.add whole_left succ_left in
                      let pos_ordering = (position.name,pos_succs) :: ordering_left in
-                     (NodeA(sposition,[|NodeA(position,[|subtree_left|])|]),
+                     (NodeA(sposition,[NodeA(position,[subtree_left])]),
                       ((sposition.name,(StringSet.add pos_succs position.name))::pos_ordering),
                       posn_left
                      )
@@ -4170,7 +4160,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
                      let pos2_name = make_position_name stype_0 (pos_n+1) in
                      let sposition = {name=pos_name; address=address; op=At; pol=pol; pt=ptype_0; st=stype; label=term}
                      and position = {name=pos2_name; address=address@[1]; op=At; pol=pol; pt=PNull; st=stype_0; label=term} in
-                     (NodeA(sposition,[|NodeAt(position)|]),
+                     (NodeA(sposition,[NodeAt(position)]),
                       [(sposition.name,(StringSet.singleton position.name));(position.name,StringSet.empty)],
                       pos_n+1
                      )
@@ -4178,12 +4168,11 @@ let rec build_ftree variable old_term pol stype address pos_n =
 let rec construct_ftree termlist treelist orderinglist pos_n goal =
    match termlist with
       [] ->
-         let new_root = {name="w"; address=[]; op=Null; pol=O; pt=Psi; st=PNull_0; label=goal}
-         and treearray = Array.of_list treelist in
-         NodeA(new_root,treearray),(("w",(union_orderings orderinglist))::orderinglist),pos_n
+         let new_root = {name="w"; address=[]; op=Null; pol=O; pt=Psi; st=PNull_0; label=goal} in
+         NodeA(new_root,treelist),(("w",(union_orderings orderinglist))::orderinglist),pos_n
     | ft::rest_terms ->
-         let next_address = [((List.length treelist)+1)]
-         and next_pol,next_goal =
+         let next_address = [((List.length treelist)+1)] in
+         let next_pol,next_goal =
             if rest_terms = []  then
                O,ft (* construct tree for the conclusion *)
             else
