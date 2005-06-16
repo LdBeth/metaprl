@@ -687,29 +687,6 @@ struct
             force_newline ()
          end
 
-   let last addr =
-      if addr = ""
-      then ""
-      else
-         String.make 1 (String.get addr (String.length addr-1))
-
-   let rest addr =
-      if addr = ""
-      then ""
-      else
-         String.sub addr 0 ((String.length addr) - 1)
-
-   let rec get_r_chain addr =
-      if addr = "" then
-         0
-      else
-         let l = last addr in
-         if l = "l" then
-            0
-         else (* l = "r" *)
-            let rs = rest addr in
-            1 + (get_r_chain rs)
-
    let rec tpp seqtree tab addr =
       match seqtree with
        | PEmpty -> raise jprover_bug
@@ -1349,14 +1326,13 @@ struct
       let opn = (dest_op op).op_name in
       let opnam = dest_opname opn in
       match opnam with
-         [] ->
-            raise jprover_bug
-       | ofirst::orest ->
-            let ofname = List.hd orest in
+         ofirst::ofname::_ ->
             let new_eigen_var = (ofname^"_r"^(string_of_int (!eigen_counter))) in
             eigen_counter := !eigen_counter + 1;
 (*        print_endline ("New Counter :"^(string_of_int (!eigen_counter))); *)
             mk_string_term jprover_op new_eigen_var
+       | [] | [_] ->
+            raise jprover_bug
 
    let replace_subterm term oldt rept  =
       let v_term = var_subst term oldt "dummy_var" in
@@ -1995,11 +1971,10 @@ struct
             compare_pair s sf restlist
 
    let rec compare_pairlist list1 list2 =
-      if list1 = [] then
-         list1
-      else
-         let (s1,sf1),restlist1  =  (List.hd list1),(List.tl list1) in
-         (compare_pair s1 sf1 list2) @ (compare_pairlist restlist1 list2)
+      match list1 with
+         [] -> []
+       | (s1,sf1) :: restlist1 ->
+            (compare_pair s1 sf1 list2) @ (compare_pairlist restlist1 list2)
 
    let rec trans_rec pairlist translist =
       let tlist = compare_pairlist pairlist translist in
