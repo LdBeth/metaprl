@@ -1008,20 +1008,13 @@ struct
       match ftree_list with
          [] ->
             []
-       | f::r ->
-            (match f with
-               Empty ->
-                  raise jprover_bug
-             | NodeAt(pos) ->
-                  let rnode = compute_alpha_layer r in
-                  (pos.name::rnode)
-             | NodeA(pos,suctrees) ->
-                  if pos.pt = Beta then
-                     let rnode = compute_alpha_layer r in
-                     (pos.name::rnode)
-                  else
-                     compute_alpha_layer (suctrees @ r)
-            )
+       | NodeAt {name = name} :: r
+       | NodeA({pt = Beta; name = name}, _) :: r ->
+            name :: (compute_alpha_layer r)
+       | NodeA(_, suctrees) :: r ->
+            compute_alpha_layer (suctrees @ r)
+       | Empty :: _ ->
+            raise jprover_bug
 
    let rec compute_beta_difference c1_context c2_context act_context =
       match c1_context,c2_context with
@@ -1036,28 +1029,22 @@ struct
             else
                (list_diff c2_context act_context)
 
-   let rec non_closed beta_proof_list =
-      match beta_proof_list with
-         [] ->
-            false
-       | bpf::rbpf ->
-            (match bpf with
-               RNode(_,_) -> raise (Invalid_argument "Jprover bug: invalid beta-proof")
-             | AtNode(_,_) -> raise (Invalid_argument "Jprover bug: invalid beta-proof")
-             | BEmpty -> true
-             | CNode(_) -> non_closed rbpf
-             | BNode(pos,(_,bp1),(_,bp2)) -> non_closed (bp1 :: bp2 :: rbpf)
-            )
+   let rec non_closed = function
+     [] -> false
+   | RNode(_,_) :: _
+   | AtNode(_,_) :: _ -> raise (Invalid_argument "Jprover bug: invalid beta-proof")
+   | BEmpty :: _ -> true
+   | CNode _ :: rbpf -> non_closed rbpf
+   | BNode(pos,(_,bp1),(_,bp2)) :: rbpf -> non_closed (bp1 :: bp2 :: rbpf)
 
-   let rec cut_context pos context =
-      match context with
-         [] ->
-            raise (Invalid_argument "Jprover bug: invalid context element")
-       | (f,num)::r ->
-            if pos = f then
-               context
-            else
-               cut_context pos r
+   let rec cut_context pos = function
+      ((f,num)::r) as context ->
+         if pos = f then
+            context
+         else
+            cut_context pos r
+    | [] ->
+         raise (Invalid_argument "Jprover bug: invalid context element")
 
    let compute_tree_difference beta_proof c1_context =
       match beta_proof with
@@ -1191,23 +1178,20 @@ struct
                   (new_atlist,[(pos.name,beta_context)],[])
                else
                   (atlist,[],[])
-          | NodeA(pos,suctrees) ->
-               if pos.pt = Beta then
-                  begin match suctrees with
-                     [s1;s2] ->
-                        let alayer1 = compute_alpha_layer [s1] in
-                        let alayer2 = compute_alpha_layer [s2] in
-                        let new_beta_context1 = beta_context @ [(pos.name,1)] in
-                        let new_beta_context2 = beta_context @ [(pos.name,2)] in
-                        let atlist1,annotates1,blayer_list1 =
-                           annotate_atoms new_beta_context1 atlist [s1] in
-                        let atlist2,annotates2,blayer_list2 =
-                           annotate_atoms new_beta_context2 atlist1 [s2]
-                        in
-                        (atlist2,(annotates1 @ annotates2),((pos.name,(alayer1,alayer2))::(blayer_list1 @ blayer_list2)))
-                   | _ -> raise jprover_bug
-                  end
-               else
+          | NodeA({pt = Beta; name = name}, [s1;s2]) ->
+               let alayer1 = compute_alpha_layer [s1] in
+               let alayer2 = compute_alpha_layer [s2] in
+               let new_beta_context1 = beta_context @ [(name,1)] in
+               let new_beta_context2 = beta_context @ [(name,2)] in
+               let atlist1,annotates1,blayer_list1 =
+                  annotate_atoms new_beta_context1 atlist [s1] in
+               let atlist2,annotates2,blayer_list2 =
+                  annotate_atoms new_beta_context2 atlist1 [s2]
+               in
+                  (atlist2,(annotates1 @ annotates2),((name,(alayer1,alayer2))::(blayer_list1 @ blayer_list2)))
+          | NodeA({pt = Beta}, _) ->
+                raise jprover_bug
+          | NodeA(_, suctrees) ->
                   annotate_atoms beta_context atlist suctrees
       in
       match treelist with
@@ -1526,35 +1510,33 @@ struct
                   search_pair left newdg act_r rule act_addr tsubrel
                else                   (* Impr, Allr, Notr only for test *)
                   search_pair left dglist act_r act_o act_addr tsubrel
-          | PNodeB(rule,left,right) ->
+          | PNodeB((_, (Andr | Impl), _, _) as rule,left,right) ->
 (*      print_endline "beta";  *)
-               begin match rule with
-                  (_, (Andr | Impl), _, _) ->
-                     let newdg,newrule =
-                        if (dgenerative rule dglist left tsubrel) then
-                           (rule::dglist),rule
-                        else
-                           dglist,act_o
-                     in
-                     if orl_free left then
-                        search_pair right newdg act_r newrule (act_addr^"r") tsubrel
-                     else  (* not orl_free *)
-                        let left_r,left_o,left_addr =
-                           search_pair left newdg act_r newrule (act_addr^"l") tsubrel in
-                        if left_o =  ("",Orr,dummyt,dummyt) then
-                           top_addmissible_pair right dglist act_r act_o (act_addr^"r") tsubrel dummyt
-                        else  left_r,left_o,left_addr
-                | _ ->  (* r = Orl *)
-                     if orl_free left then
-                        top_addmissible_pair right dglist rule act_o (act_addr^"r") tsubrel dummyt
-                     else
-                        let left_r,left_o,left_addr
-                              = search_pair left dglist rule act_o (act_addr^"l") tsubrel in
-                        if left_o =  ("",Orr,dummyt,dummyt) then
-                           top_addmissible_pair right dglist rule act_o (act_addr^"r") tsubrel dummyt
-                        else
-                           left_r,left_o,left_addr
-               end
+               let newdg,newrule =
+                  if (dgenerative rule dglist left tsubrel) then
+                     (rule::dglist),rule
+                  else
+                     dglist,act_o
+               in
+               if orl_free left then
+                  search_pair right newdg act_r newrule (act_addr^"r") tsubrel
+               else  (* not orl_free *)
+                  let left_r,left_o,left_addr =
+                     search_pair left newdg act_r newrule (act_addr^"l") tsubrel in
+                  if left_o =  ("",Orr,dummyt,dummyt) then
+                     top_addmissible_pair right dglist act_r act_o (act_addr^"r") tsubrel dummyt
+                  else  left_r,left_o,left_addr
+          | PNodeB(rule,left,right) -> (* r = Orl *)
+(*      print_endline "beta";  *)
+               if orl_free left then
+                  top_addmissible_pair right dglist rule act_o (act_addr^"r") tsubrel dummyt
+               else
+                  let left_r,left_o,left_addr
+                        = search_pair left dglist rule act_o (act_addr^"l") tsubrel in
+                  if left_o =  ("",Orr,dummyt,dummyt) then
+                     top_addmissible_pair right dglist rule act_o (act_addr^"r") tsubrel dummyt
+                  else
+                     left_r,left_o,left_addr
       in
 (*  print_endline "top_addmissible_pair in"; *)
       if orl_free ptree then                  (* there must be a orl BELOW an layer bound *)
@@ -1595,8 +1577,8 @@ struct
 (*   print_endline "pbranch in"; *)
          let la = last act_addr in  (* no ensure uniqueness at 2-over-x *)
          match ptree,la with
-            PNodeA(o,PNodeA(rule,left)),la ->   (* one-over-one *)
-(*       print_endline " one-over-one ";                  *)
+            PNodeA(o,PNodeA(rule,left)),_                       (* one-over-one *)
+          | PNodeB(o,PNodeA(rule,left),_ ),"l" ->               (* two-over-one, left *)
                let permute_result = permute o rule ptree la tsubrel in
                begin match permute_result with
                   PNodeA(r2,left2) ->
@@ -1631,15 +1613,6 @@ struct
                         )
                      else          (* rule is not relevant *)
                         PNodeA(o,left1)  (* optimized termination case (1) *)
-          | PNodeB(o,PNodeA(rule,left),right1),"l" ->               (* two-over-one, left *)
-(*       print_endline " two-over-one, left "; *)
-               let permute_result = permute o rule ptree la tsubrel in
-               (match permute_result with
-                  PNodeA(r2,left2) ->
-                     let pbleft = permute_branch r addr act_addr left2 dglist (subrel,tsubrel) in
-                     PNodeA(r2,pbleft)
-                | _ -> raise jprover_bug
-               )
           | PNodeB(o,left1,PNodeA(rule,left)),"r" ->                (* two-over-one, right *)
                                                 (* left of o is or_l free *)
 (*      print_endline " two-over-one, right"; *)
@@ -1857,12 +1830,11 @@ struct
 
 (* build the proof tree from a list of inference rules *)
 
-   let rec unclosed subtree =
-      match subtree with
-         PEmpty -> true
-       | PNodeAx(y) -> false
-       | PNodeA(y,left) -> (unclosed left)
-       | PNodeB(y,left,right) -> (or) (unclosed left) (unclosed right)
+   let rec unclosed = function
+      PEmpty -> true
+    | PNodeAx(y) -> false
+    | PNodeA(y,left) -> (unclosed left)
+    | PNodeB(y,left,right) -> (or) (unclosed left) (unclosed right)
 
    let rec extend prooftree element =
       match prooftree with
@@ -1900,59 +1872,48 @@ struct
    let bproof nodelist =
       bptree PEmpty nodelist 0
 
-   let rec get_successor_pos treelist =
-      match treelist with
-         [] -> []
-       | f::r ->
-            (
-             match f with
-                Empty -> get_successor_pos r
-              | NodeAt(_) -> raise jprover_bug
-              | NodeA(pos,_) ->
-                   pos::(get_successor_pos r)
-            )
+   let rec get_successor_pos = function
+      Empty :: r -> get_successor_pos r
+    | NodeA(pos,_) :: r ->
+         pos::(get_successor_pos r)
+    | [] -> []
+    | NodeAt _ :: _ -> raise jprover_bug
 
    let rec get_formula_tree ftreelist f predflag =
       match ftreelist with
-         [] -> raise jprover_bug
-       | ftree::rest_trees ->
-            (match ftree with
-               Empty -> get_formula_tree rest_trees f predflag
-             | NodeAt(_) -> get_formula_tree rest_trees f predflag
-             | NodeA(pos,suctrees) ->
-                  if predflag = "pred" then
-                     if pos.pt = Gamma then
-                        let succs = get_successor_pos suctrees in
-                        if List.mem f succs then
-                           NodeA(pos,suctrees),succs
-                        else
-                           get_formula_tree (suctrees @ rest_trees) f predflag
-                     else
-                        get_formula_tree (suctrees @ rest_trees) f predflag
-                  else (* predflag = "" *)
-                     if pos_eq pos f then
-                        NodeA(pos,suctrees),[]
-                     else
-                        get_formula_tree (suctrees @ rest_trees) f predflag
-            )
+         Empty :: rest_trees -> get_formula_tree rest_trees f predflag
+       | NodeAt _ :: rest_trees -> get_formula_tree rest_trees f predflag
+       | NodeA(pos,suctrees) :: rest_trees ->
+            if predflag then
+               if pos.pt = Gamma then
+                  let succs = get_successor_pos suctrees in
+                  if List.mem f succs then
+                     NodeA(pos,suctrees),succs
+                  else
+                     get_formula_tree (suctrees @ rest_trees) f predflag
+               else
+                  get_formula_tree (suctrees @ rest_trees) f predflag
+            else
+               if pos_eq pos f then
+                  NodeA(pos,suctrees),[]
+               else
+                  get_formula_tree (suctrees @ rest_trees) f predflag
+       | [] -> raise jprover_bug
 
-   let rec get_formula_treelist ftree po =
-      match po with
-         [] -> []
-(* a posistion in po has either stype Gamma_0,Psi_0,Phi_0 (non-atomic), or it has *)
+   let rec get_formula_treelist ftree = function
+      [] -> []
+(* a posistion has either stype Gamma_0,Psi_0,Phi_0 (non-atomic), or it has *)
 (* ptype Alpha (or on the right), since there was a deadlock for proof reconstruction in LJ*)
-       | ({st = (Phi_0 | Psi_0)} as f)::r ->
-            let (stree,_) = get_formula_tree [ftree] f "" in
-            stree::(get_formula_treelist ftree r)
-       | ({st = Gamma_0} as f)::r ->
-            let (predtree,succs) = get_formula_tree [ftree] f "pred" in
-            let new_po = list_diff r succs in
-            predtree::(get_formula_treelist ftree new_po)
-       | ({pt = Alpha} as f)::r ->
-            let (stree,_) = get_formula_tree [ftree] f "" in
-            stree::(get_formula_treelist ftree r)
-       | _ ->
-            raise (Invalid_argument "Jprover bug: non-admissible open position")
+    | ({st = Gamma_0} as f)::r ->
+         let (predtree,succs) = get_formula_tree [ftree] f true in
+         let new_po = list_diff r succs in
+         predtree::(get_formula_treelist ftree new_po)
+    | ({st = (Phi_0 | Psi_0)} as f)::r
+    | ({pt = Alpha} as f)::r ->
+         let (stree,_) = get_formula_tree [ftree] f false in
+         stree::(get_formula_treelist ftree r)
+    | _ ->
+         raise (Invalid_argument "Jprover bug: non-admissible open position")
 
    let rec number_list n = function
       hd::tl -> (n,hd)::(number_list (succ n) tl)
@@ -1995,32 +1956,25 @@ struct
                   rest_rel,rest_renlist
              | NodeAt(pos) ->
                   (((predname,pos.name),d)::rest_rel),rest_renlist
-             | NodeA(pos,suctrees) ->
-                  (match pos.pt with
-                     Alpha | Beta ->
-                        let dtreelist = number_list 1 suctrees in
-                        let (srel,sren) = build_formula_rel dtreelist slist pos.name in
-                        ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
-                   | Delta ->
-                        let dtreelist = number_list 1 suctrees in
-                        let (srel,sren) = build_formula_rel dtreelist slist pos.name in
-                        ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
-                   | Psi| Phi ->
-                        let dtreelist = (List.map (fun x -> (d,x)) suctrees) in
-                        let (srel,sren) = build_formula_rel dtreelist slist predname in
-                        (srel @ rest_rel),(sren @ rest_renlist)
-                   | Gamma ->
-                        let dtreelist = (List.map (fun x -> (1,x)) suctrees) in
+             | NodeA({ pt = Alpha | Beta | Delta } as pos, suctrees) ->
+                  let dtreelist = number_list 1 suctrees in
+                  let (srel,sren) = build_formula_rel dtreelist slist pos.name in
+                     ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
+             | NodeA({ pt = Psi| Phi }, suctrees) ->
+                  let dtreelist = (List.map (fun x -> (d,x)) suctrees) in
+                  let (srel,sren) = build_formula_rel dtreelist slist predname in
+                     (srel @ rest_rel), (sren @ rest_renlist)
+             | NodeA({ pt = Gamma } as pos, suctrees) ->
+                  let dtreelist = (List.map (fun x -> (1,x)) suctrees) in
 (*                if (nonemptys suctrees 0 n) = 1  then
    let (srel,sren) = build_formula_rel dtreelist slist pos.name in
    ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
    else (* we have more than one gamma instance, which means renaming *)
 *)
-                        let (srel,sren) = build_renamed_gamma_rel dtreelist predname pos.name d in
-                        (srel @ rest_rel),(sren @ rest_renlist)
-                   | PNull ->
-                        raise jprover_bug
-                  )
+                  let (srel,sren) = build_renamed_gamma_rel dtreelist predname pos.name d in
+                     (srel @ rest_rel), (sren @ rest_renlist)
+             | NodeA({ pt = PNull }, _) ->
+                  raise jprover_bug
 
    let rec rename_gamma ljmc_proof rename_list =
       match ljmc_proof with
@@ -2111,27 +2065,22 @@ struct
 
 (************** PROOF RECONSTRUCTION without redundancy deletion ******************************)
 
-   let rec init_unsolved treelist =
-      match treelist with
-         [] -> []
-       | f::r ->
-            begin match f with
-               Empty -> []
-             | NodeAt(pos) ->
-                  (pos.name)::(init_unsolved r)
-             | NodeA(pos,suctrees) ->
-                  let new_treelist = suctrees @ r in
-                  (pos.name)::(init_unsolved new_treelist)
-            end
+   let rec init_unsolved = function
+      [] -> []
+    | Empty :: _ -> []
+    | NodeAt pos :: r ->
+         (pos.name)::(init_unsolved r)
+    | NodeA(pos,suctrees) :: r ->
+         let new_treelist = suctrees @ r in
+            (pos.name)::(init_unsolved new_treelist)
 
 (* only the unsolved positions will be represented --> skip additional root position *)
 
-   let build_unsolved ftree =
-      match ftree with
-         Empty | NodeAt _ ->
-            raise jprover_bug
-       | NodeA(pos,suctrees) ->
-            ((pos.name),init_unsolved suctrees)
+   let build_unsolved = function
+      NodeA(pos,suctrees) ->
+         ((pos.name),init_unsolved suctrees)
+    | Empty | NodeAt _ ->
+         raise jprover_bug
 
 (*
    let rec collect_variables tree_list =
@@ -2389,27 +2338,23 @@ struct
                let new_fset  = StringSet.diff fset delset in  (* no successor of f from delset should remain in fset *)
                (f,new_fset)::(update_redord delset r)
 
-   let rec get_position_names treelist =
-      match treelist with
-         [] -> []
-       | deltree::rests ->
-            match deltree with
-               Empty -> get_position_names rests
-             | NodeAt(pos) ->
-                  (pos.name)::get_position_names rests
-             | NodeA(pos,strees) ->
-                  (pos.name)::(get_position_names (strees @ rests))
+   let rec get_position_names = function
+      [] -> []
+    | Empty :: rests -> get_position_names rests
+    | NodeAt(pos) :: rests ->
+         (pos.name)::get_position_names rests
+    | NodeA(pos,strees) :: rests ->
+         (pos.name)::(get_position_names (strees @ rests))
 
-   let rec print_purelist pr =
-      match pr with
-         [] ->
-            begin
-               print_string ".";
-               print_endline " ";
-            end
-       | f::r ->
-            print_string ((f.name)^", ");
-            print_purelist r
+   let rec print_purelist = function
+      [] ->
+         begin
+            print_string ".";
+            print_endline " ";
+         end
+    | f::r ->
+         print_string ((f.name)^", ");
+         print_purelist r
 
    let update_relations deltree redord connections unsolved_list =
       let pure_names = get_position_names [deltree] in
@@ -2430,28 +2375,26 @@ struct
    let rec collect_qpos ftreelist uslist =
       match ftreelist with
          [] -> [],[]
-       | ftree::rest ->
-            match ftree with
-               Empty ->
-                  collect_qpos rest uslist
-             | NodeAt(pos) ->
-                  let (rest_delta,rest_gamma) = collect_qpos rest uslist in
-                  if (pos.st = Gamma_0) & (List.mem pos.name uslist) then
-                     rest_delta,(pos.name::rest_gamma)
-                  else
-                     if (pos.st = Delta_0) & (List.mem pos.name uslist) then
-                        (pos.name::rest_delta),rest_gamma
-                     else
-                        rest_delta,rest_gamma
-             | NodeA(pos,suctrees) ->
-                  let (rest_delta,rest_gamma) = collect_qpos (suctrees @ rest) uslist in
-                  if (pos.st = Gamma_0) & (List.mem pos.name uslist) then
-                     rest_delta,(pos.name::rest_gamma)
-                  else
-                     if (pos.st = Delta_0) & (List.mem pos.name uslist) then
-                        (pos.name::rest_delta),rest_gamma
-                     else
-                        rest_delta,rest_gamma
+       | Empty :: rest ->
+            collect_qpos rest uslist
+       | NodeAt pos :: rest ->
+            let (rest_delta,rest_gamma) = collect_qpos rest uslist in
+            if (pos.st = Gamma_0) & (List.mem pos.name uslist) then
+               rest_delta,(pos.name::rest_gamma)
+            else
+               if (pos.st = Delta_0) & (List.mem pos.name uslist) then
+                  (pos.name::rest_delta),rest_gamma
+               else
+                  rest_delta,rest_gamma
+       | NodeA(pos,suctrees) :: rest ->
+            let (rest_delta,rest_gamma) = collect_qpos (suctrees @ rest) uslist in
+            if (pos.st = Gamma_0) & (List.mem pos.name uslist) then
+               rest_delta,(pos.name::rest_gamma)
+            else
+               if (pos.st = Delta_0) & (List.mem pos.name uslist) then
+                  (pos.name::rest_delta),rest_gamma
+               else
+                  rest_delta,rest_gamma
 
    let rec do_split gamma_diff sigmaQ =
       match sigmaQ with
@@ -2522,48 +2465,45 @@ struct
       (sigmaQ1,sigmaQ2)
 
    let rec reduce_tree addr actual_node ftree beta_flag =
-      match addr with
-         [] -> (ftree,Empty,actual_node,beta_flag)
-       | a::radd ->
-            match ftree with
-               Empty ->
-                  print_endline "Empty purity tree";
-                  raise jprover_bug
-             | NodeAt(_) ->
-                  print_endline "Atom purity tree";
-                  raise jprover_bug
-             | NodeA(pos,strees) ->
+      match addr, ftree with
+         [], _ -> (ftree,Empty,actual_node,beta_flag)
+       | a::radd, NodeA(pos,strees) ->
 (*       print_endline pos.name; *)
     (* the associated node occurs above f (or the empty address) and hence, is neither atom nor empty tree *)
-
-                  let nexttree = (List.nth strees (a-1)) in
-                  if (nonemptys 0 strees) < 2  then
-                     begin
+            let nexttree = (List.nth strees (a-1)) in
+            if (nonemptys 0 strees) < 2  then
+               begin
 (*          print_endline "strees 1 or non-empties < 2"; *)
-                        let (ft,dt,an,bf) =  reduce_tree radd actual_node nexttree beta_flag in
-                        let nstrees = myset (a-1) ft strees in
+                  let (ft,dt,an,bf) =  reduce_tree radd actual_node nexttree beta_flag in
+                  let nstrees = myset (a-1) ft strees in
 (*            print_endline ("way back "^pos.name); *)
-                        (NodeA(pos,nstrees),dt,an,bf)
-                     end
-                  else  (* nonemptys >= 2 *)
-                     begin
+                  (NodeA(pos,nstrees),dt,an,bf)
+               end
+            else  (* nonemptys >= 2 *)
+               begin
 (*             print_endline "nonempties  >= 2 "; *)
-                        let (new_act,new_bf) =
-                           if pos.pt = Beta then
-                              (actual_node,true)
-                           else
-                              ((pos.name),false)
-                        in
-                        let (ft,dt,an,bf) = reduce_tree radd new_act nexttree new_bf in
-                        if an = pos.name then
-                           let nstrees = myset (a-1) Empty strees in
+                  let (new_act,new_bf) =
+                     if pos.pt = Beta then
+                        (actual_node,true)
+                     else
+                        ((pos.name),false)
+                  in
+                  let (ft,dt,an,bf) = reduce_tree radd new_act nexttree new_bf in
+                  if an = pos.name then
+                     let nstrees = myset (a-1) Empty strees in
 (*                 print_endline ("way back assocnode "^pos.name); *)
-                           (NodeA(pos,nstrees),nexttree,an,bf)
-                        else  (* has been replaced / will be replaced below / above pos *)
-                           let nstrees = myset (a-1) ft strees in
+                     (NodeA(pos,nstrees),nexttree,an,bf)
+                  else  (* has been replaced / will be replaced below / above pos *)
+                     let nstrees = myset (a-1) ft strees in
 (*                 print_endline ("way back "^pos.name); *)
-                           (NodeA(pos,nstrees),dt,an,bf)
-                     end
+                     (NodeA(pos,nstrees),dt,an,bf)
+               end
+       | _, Empty ->
+            print_endline "Empty purity tree";
+            raise jprover_bug
+       | _, NodeAt(_) ->
+            print_endline "Atom purity tree";
+            raise jprover_bug
 
    let rec purity ftree redord connections unsolved_list =
 
@@ -2610,32 +2550,29 @@ struct
       purity_reduction pr ftree redord connections unsolved_list
 
    let rec betasplit addr ftree redord connections unsolved_list =
-      match ftree with
-         Empty  ->
+      match ftree, addr with
+         NodeA(pos, [st1tree;st2tree]), [] ->
+            (* we are at the beta node under consideration *)
+            let (zw1red,zw1conn,zw1uslist) = update_relations st2tree redord connections unsolved_list in
+            let (zw2red,zw2conn,zw2uslist) = update_relations st1tree redord connections unsolved_list in
+               ((NodeA(pos,[st1tree;Empty])),zw1red,zw1conn,zw1uslist),
+               ((NodeA(pos,[Empty;st2tree])),zw2red,zw2conn,zw2uslist)
+       | NodeA(pos, _), [] ->
+            raise jprover_bug
+       | NodeA(pos, strees), f::rest ->
+            let nexttree  = List.nth strees (f-1) in
+            let (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) =
+               betasplit rest nexttree redord connections unsolved_list in
+(*          let scopytrees = Array.copy strees in  *)
+            let zw1trees = myset (f-1) zw1ft strees in
+            let zw2trees = myset (f-1) zw2ft strees in
+               (NodeA(pos,zw1trees),zw1red,zw1conn,zw1uslist),(NodeA(pos,zw2trees),zw2red,zw2conn,zw2uslist)
+       | Empty, _  ->
             print_endline "bsplit Empty tree";
             raise jprover_bug
-       | NodeAt(_) ->
+       | NodeAt(_), _ ->
             print_endline "bsplit Atom tree";
             raise jprover_bug   (* the beta-node should actually occur! *)
-       | NodeA(pos,strees) ->
-            match addr with
-               [] ->    (* we are at the beta node under consideration *)
-                  begin match strees with
-                     [st1tree;st2tree] ->
-                        let (zw1red,zw1conn,zw1uslist) = update_relations st2tree redord connections unsolved_list in
-                        let (zw2red,zw2conn,zw2uslist) = update_relations st1tree redord connections unsolved_list in
-                        ((NodeA(pos,[st1tree;Empty])),zw1red,zw1conn,zw1uslist),
-                        ((NodeA(pos,[Empty;st2tree])),zw2red,zw2conn,zw2uslist)
-                   | _ -> raise jprover_bug
-                  end
-             | f::rest ->
-                  let nexttree  = List.nth strees (f-1) in
-                  let (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) =
-                     betasplit rest nexttree redord connections unsolved_list in
-(*          let scopytrees = Array.copy strees in  *)
-                  let zw1trees = myset (f-1) zw1ft strees in
-                  let zw2trees = myset (f-1) zw2ft strees in
-                  (NodeA(pos,zw1trees),zw1red,zw1conn,zw1uslist),(NodeA(pos,zw2trees),zw2red,zw2conn,zw2uslist)
 
    let split addr pname ftree redord connections unsolved_list opt_bproof =
       let (opt_bp1,min_con1),(opt_bp2,min_con2) = split_permutation pname opt_bproof in
@@ -2704,18 +2641,16 @@ struct
       match ftreelist with
          [] ->
             []
-       | f::r ->
-            match f with
-               Empty ->    (* may become possible after purity *)
-                  collect_solved_O_At r slist
-             | NodeAt(pos) ->
-                  if ((List.mem (pos.name) slist) or (pos.pol = I)) then  (* recall slist is the unsolved list *)
-                     collect_solved_O_At r slist
-                  else
+       | Empty :: r ->    (* may become possible after purity *)
+            collect_solved_O_At r slist
+       | NodeAt pos :: r ->
+            if ((List.mem (pos.name) slist) or (pos.pol = I)) then  (* recall slist is the unsolved list *)
+               collect_solved_O_At r slist
+            else
     (* here, we have pos solved and pos.pol = O) *)
-                     pos::(collect_solved_O_At r slist)
-             | NodeA(pos,treearray) ->
-                  collect_solved_O_At (treearray @ r) slist
+               pos::(collect_solved_O_At r slist)
+       | NodeA(pos,treearray) :: r ->
+            collect_solved_O_At (treearray @ r) slist
 
    let rec red_ord_block pname redord =
       match redord with
@@ -2726,31 +2661,28 @@ struct
             else
                true   (* then, we have (StringSet.mem fset pname) *)
 
-   let rec check_wait_succ_LJ faddress = function
-      NodeA(pos,strees) ->
-         begin match faddress with
-            [] ->
-               if pos.op = Or then
-                  match strees with
-                     [Empty;Empty] -> raise (Invalid_argument "Jprover: redundancies occur")
-                   | [Empty;_] -> (false,2)   (* determines the Orr2 rule *)
-                   | [_;Empty] -> (false,1)   (* determines the Orr1 ruke *)
-                   | [_;_]  -> (true,0)    (* wait-label is set *)
-                   | _ -> raise jprover_bug
-               else
-                  (false,0)
-          | [f] ->
-               if (pos.pt = Gamma) & ((nonemptys 0 strees) > 1)  then
-                  (true,0)
-                  (* we are at a gamma position (exr) with one than one successor *)
-                  (* -- wait label in LJ*)
-               else
-                  check_wait_succ_LJ [] (List.nth strees (f-1))
-          | f::r ->
+   let rec check_wait_succ_LJ faddress ft =
+      match ft, faddress with
+         NodeA({op = Or}, [Empty; Empty]), [] ->
+            raise (Invalid_argument "Jprover: redundancies occur")
+       | NodeA({op = Or}, [Empty; _]), [] ->
+            (false,2)   (* determines the Orr2 rule *)
+       | NodeA({op = Or}, [_; Empty]), [] ->
+            (false,1)   (* determines the Orr1 ruke *)
+       | NodeA({op = Or}, [_;_]), [] ->
+            (true,0)    (* wait-label is set *)
+       | NodeA({op = Or}, _), [] ->
+            raise jprover_bug
+       | NodeA _, [] ->
+            (false,0)
+       | NodeA({pt = Gamma},strees), [f] when (nonemptys 0 strees) > 1 ->
+            (true,0)
+            (* we are at a gamma position (exr) with one than one successor *)
+            (* -- wait label in LJ*)
+       | NodeA(_,strees), f::r ->
                   check_wait_succ_LJ r (List.nth strees (f-1))
-         end
-    | Empty -> raise jprover_bug
-    | NodeAt(pos) -> raise jprover_bug (* we have an gamma_0 position or an or-formula *)
+       | Empty, _
+       | NodeAt _, _ -> raise jprover_bug (* we have an gamma_0 position or an or-formula *)
 
    let blocked f po redord ftree connections slist calculus opt_bproof =
 (* print_endline ("Blocking check "^(f.name)); *)
