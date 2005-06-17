@@ -121,26 +121,26 @@ struct
    type direction =
       Left | Right
 
-   type pos  = {name : string;
-                address : int list;
-                op :  connective;
-                pol : polarity;
-                pt : ptype;
-                st : stype;
-                label : term}
+   type pos = {name : string;
+               address : int list;
+               op :  connective;
+               pol : polarity;
+               pt : ptype;
+               st : stype;
+               label : term}
 
    type ftree =
       Empty
     | NodeAt of pos
     | NodeA of pos * ftree list
 
-   type atom  = {aname : string;
-                 aaddress : int list;
-                 aprefix : string list;
-                 apredicate :  operator;
-                 apol : polarity;
-                 ast : stype;
-                 alabel : term}
+   type atom = {aname : string;
+                aaddress : int list;
+                aprefix : string list;
+                apredicate :  operator;
+                apol : polarity;
+                ast : stype;
+                alabel : term}
 
    type atom_relations = atom * atom list * atom list
 (* all atoms except atom occur in alpha_set and beta_set of atom*)
@@ -154,7 +154,7 @@ struct
     | AtNode of string * (string * string)
 
 (* Assume only constants for instantiations, not adapted to terms yet *)
-   type inf = string * rule * term  * term
+   type inf = string * rule * term * term
 
 (* proof tree for pretty print and permutation *)
    type ptree =
@@ -366,8 +366,8 @@ struct
          At   -> print_string "Atom"
        | Neg  -> print_string "Neg"
        | And  -> print_string "And"
-       | Or   -> print_string  "Or"
-       | Imp  -> print_string  "Imp"
+       | Or   -> print_string "Or"
+       | Imp  -> print_string "Imp"
        | Ex   -> print_string "Ex"
        | All  -> print_string "All"
        | Null -> print_string "Null"
@@ -450,7 +450,7 @@ struct
       match stringlist with
          [] -> "."
        | f::r ->
-            let  rest_s = stringlist_to_string r in
+            let rest_s = stringlist_to_string r in
             (f^"."^rest_s)
 
    let rec print_stringlist slist =
@@ -591,13 +591,13 @@ struct
        | f::r ->
             (f.aname)^" "^(print_set_list r)
 
-   let print_set  set =
+   let print_set set =
       let set_list = AtomSet.elements set in
       if set_list = [] then "empty"
       else
          print_set_list set_list
 
-   let print_string_set  set =
+   let print_string_set set =
       let set_list = StringSet.elements set in
       print_stringlist set_list
 
@@ -629,7 +629,7 @@ struct
                print_triplelist rest
             end
 
-   let print_pos_n  pos_n =
+   let print_pos_n pos_n =
       print_int pos_n
 
    let print_formula_info ftree ordering pos_n =
@@ -698,7 +698,7 @@ struct
             begin
                pp_rule (pos,r,p,pa) tab;
 (*      force_newline (); *)
-(*      let mult = get_r_chain addr in  *)
+(*      let mult = get_r_chain addr in *)
 (*        print_break 100 (tab - (3 * mult)) *)
             end
        | PNodeA(rule,left) ->
@@ -776,7 +776,7 @@ struct
          not (List.exists (fun x -> (List.mem x test_list)) alpha_layer)
       end
 
-   let rec apply_bproof_purity  bproof =
+   let rec apply_bproof_purity bproof =
       match bproof with
          BEmpty ->
             raise jprover_bug
@@ -786,7 +786,7 @@ struct
             bproof,[(c1,c2)],[]
        | RNode(alpha_layer,subproof) ->
             let (opt_subproof,min_connections,beta_expansions) =
-               apply_bproof_purity  subproof in
+               apply_bproof_purity subproof in
             (RNode(alpha_layer,opt_subproof),min_connections,beta_expansions)
        | BNode(pos,(alph1,subp1),(alph2,subp2)) ->
             let (opt_subp1,min_conn1,beta_exp1) = apply_bproof_purity subp1 in
@@ -881,7 +881,7 @@ struct
 
 (*********** END split permutation *****************)
 
-   let rec list_del list_el el_list  =
+   let rec list_del list_el el_list =
       match el_list with
          [] ->
             raise jprover_bug
@@ -1075,7 +1075,7 @@ struct
                if c2_exp <> 0 then (* at least one open branch was generated to isloate c2 *)
                   begin
 (*   print_endline "start with new beta-proof"; *)
-                     let new_bproof,new_exp,new_closures,new_rest_proof  =
+                     let new_bproof,new_exp,new_closures,new_rest_proof =
                         build_opt_beta_proof c2_bproof rest_ext_proof beta_atoms beta_layer_list (act_context @ new_act_context) in
                      (new_bproof,(new_exp+c2_exp),(new_closures+1),new_rest_proof)
                   end
@@ -1179,7 +1179,7 @@ struct
             let (next_atlist,f_annotates,f_beta_layers) = annotate_tree beta_context f atlist in
             let (rest_atlist,rest_annotates,rest_beta_layers) = (annotate_atoms beta_context next_atlist r)
             in
-            (rest_atlist, (f_annotates  @ rest_annotates),(f_beta_layers @ rest_beta_layers))
+            (rest_atlist, (f_annotates @ rest_annotates),(f_beta_layers @ rest_beta_layers))
 
    let construct_opt_beta_proof ftree ext_proof =
       let con1,con2 = List.split ext_proof in
@@ -1194,9 +1194,8 @@ struct
 
 (* REAL PERMUTATION STAFF *)
 
-   let subf1 n m  subrel = List.mem ((n,m),1) subrel
-   let subf2 n m  subrel = List.mem ((n,m),2) subrel
-   let tsubf n m  tsubrel = List.mem (n,m) tsubrel
+   let subf1 n m subrel = List.mem ((n,m),1) subrel
+   let subf2 n m subrel = List.mem ((n,m),2) subrel
 
 (* Transforms all normal form layers in an LJ proof *)
 
@@ -1240,7 +1239,7 @@ struct
                   else s,rpos
                else t,qpos                (* not subf -> not Orl-True *)
             else if inf = Impl then
-               if  (subf1 pos qpos subrel) then
+               if subf1 pos qpos subrel then
                   let s,rpos = modify right (subrel,tsubrel) in
                   PNodeB((pos,inf,form,term),t,s),"" (* empty string *)
                else t,qpos
@@ -1290,12 +1289,12 @@ struct
                else t,qpos
             else (* x = Impl since x= Orl cannot occur in the partial layer ptree *)
 
-               if  (subf1 pos qpos subrel) then
+               if subf1 pos qpos subrel then
                   let s,rpos = rec_modify right (subrel,tsubrel) in
                   PNodeB((pos,inf,form,term),t,s),"" (* empty string *)
                else t,qpos
 
-   let weak_modify rule ptree (subrel,tsubrel) =   (* recall rule = or_l  *)
+   let weak_modify rule ptree (subrel,tsubrel) =   (* recall rule = or_l *)
       let (pos,inf,formlua,term) = rule in
       if inf = Orl then
          ptree,true
@@ -1336,7 +1335,7 @@ struct
        | [] | [_] ->
             raise jprover_bug
 
-   let replace_subterm term oldt rept  =
+   let replace_subterm term oldt rept =
       let v_term = var_subst term oldt "dummy_var" in
       subst1 v_term "dummy_var" rept
 
@@ -1354,8 +1353,8 @@ struct
             PNodeA((pos,inf,new_form,new_term), ren_left)
        | PNodeB((pos,inf,form,term),left, right) ->
             let new_form = replace_subterm form old_parameter new_parameter in
-            let ren_left  = eigen_rename old_parameter new_parameter left  in
-            let ren_right  = eigen_rename old_parameter new_parameter right  in
+            let ren_left = eigen_rename old_parameter new_parameter left in
+            let ren_right = eigen_rename old_parameter new_parameter right in
             PNodeB((pos,inf,new_form,term), ren_left, ren_right)
 
    let rec update_ptree rule subtree direction tsubrel =
@@ -1401,43 +1400,33 @@ struct
 
 (* computes if an Andr is d-generatives *)
 
-   let layer_bound = function
-      (_, (Impr|Negr|Allr), _, _) -> true
-    | _ -> false
-
-   let rec orl_free ptree  =
+   let rec orl_free ptree =
       match ptree with
          PEmpty ->
             raise jprover_bug
-       | PNodeAx(rule) ->
+       | PNodeAx _
+       | PNodeA((_, (Impr|Negr|Allr), _, _),_) ->
             true
-       | PNodeA(rule,left) ->
-            if layer_bound rule then
-               true
-            else
-               orl_free left
-       | PNodeB(rule,left,right) ->
-            let (pos,inf,formula,term) =  rule in
-            if inf = Orl then
-               false
-            else
-               (&) (orl_free left) (orl_free right)
+       | PNodeA(_, left) ->
+            orl_free left
+       | PNodeB((_, Orl, _, _),_,_) ->
+            false
+       | PNodeB(_,left,right) ->
+            orl_free left && orl_free right
 
-   let rec dgenerative rule dglist ptree tsubrel =
+   let tsubf tsubrel m (n, _, _, _) = List.mem (n,m) tsubrel
+
+   let dgenerative rule dglist ptree tsubrel =
       match rule with
          (_,(Exr|Orr|Negl),_,_) -> true
        | (pos, Andr, _, _) ->
-            begin match dglist with
-               [] -> false
-             | (pos1,_,_,_) :: rest ->
-                  (tsubf pos1 pos tsubrel) || (dgenerative rule rest ptree tsubrel)
-            end
+            List.exists (tsubf tsubrel pos) dglist
        | (_, Impl, _, _) ->
             not (orl_free ptree)
        | _ ->
             false
 
-(* to compute a topmost addmissible pair r,o  with
+(* to compute a topmost addmissible pair r,o with
    the address addr of r in the proof tree
 *)
 
@@ -1449,7 +1438,7 @@ struct
           | PNodeA(rule, left) ->
 (*      print_endline "alpha"; *)
                if (dgenerative rule dglist left tsubrel) then  (* r = Exr,Orr,Negl *)
-                  let newdg = rule::dglist   in
+                  let newdg = rule::dglist in
                   search_pair left newdg act_r rule act_addr tsubrel
                else                   (* Impr, Allr, Notr only for test *)
                   search_pair left dglist act_r act_o act_addr tsubrel
@@ -1468,7 +1457,7 @@ struct
                      search_pair left newdg act_r newrule (Left :: act_addr) tsubrel in
                   if left_o =  ("",Orr,dummyt,dummyt) then
                      top_addmissible_pair right dglist act_r act_o (Right :: act_addr) tsubrel dummyt
-                  else  left_r,left_o,left_addr
+                  else left_r,left_o,left_addr
           | PNodeB(rule,left,right) -> (* r = Orl *)
 (*      print_endline "beta";  *)
                if orl_free left then
@@ -1572,7 +1561,7 @@ struct
                   begin match addr with
                      Left :: atl ->
                         let right_ul = update_ptree rule right1 Left tsubrel in
-                        let right_ur  = update_ptree rule right1 Right tsubrel in
+                        let right_ur = update_ptree rule right1 Right tsubrel in
                         let left2 = PNodeB(o,left,right_ul) in
                         let right2 = PNodeB(o,right,right_ur) in
                         let newadd = change_last act_addr Left in
@@ -1583,7 +1572,7 @@ struct
                         let left1,bool = weak_modify rule left (subrel,tsubrel) in
                         if bool then  (* rule is relevant *)
                            let right_ul = update_ptree rule right1 Left tsubrel in
-                           let right_ur  = update_ptree rule right1 Right tsubrel in
+                           let right_ur = update_ptree rule right1 Right tsubrel in
                            let right2 = PNodeB(o,right,right_ur) in
                            let newadd = change_last act_addr Right in
                            let pbright = permute_branch r atl newadd right2 dglist (subrel,tsubrel) in
@@ -1705,22 +1694,21 @@ struct
             PEmpty -> raise jprover_bug
           | PNodeAx(inf) ->
                ptree
-          | PNodeA((pos,rule,formula,term),left) ->
-               if List.mem  rule [Allr;Impr;Negr] then
-                  let tptree = trans_layer left (subrel,tsubrel) in
-                  PNodeA((pos,rule,formula,term),tptree)
-               else
-                  let tptree = isol_layer  left (subrel,tsubrel) in
-                  PNodeA((pos,rule,formula,term),tptree)
+          | PNodeA((_,(Allr|Impr|Negr),_,_) as rule,left) ->
+               let tptree = trans_layer left (subrel,tsubrel) in
+                  PNodeA(rule,tptree)
+          | PNodeA(rule,left) ->
+               let tptree = isol_layer left (subrel,tsubrel) in
+                  PNodeA(rule,tptree)
           | PNodeB(rule,left,right) ->
-               let tptree_l = isol_layer  left (subrel,tsubrel)
-               and tptree_r = isol_layer  right (subrel,tsubrel) in
+               let tptree_l = isol_layer left (subrel,tsubrel)
+               and tptree_r = isol_layer right (subrel,tsubrel) in
                PNodeB(rule,tptree_l,tptree_r)
       in
       begin
 (*   print_endline "trans_layer in"; *)
-         let top_tree = isol_layer  ptree (subrel,tsubrel) in
-         let back = permute_layer  top_tree [] (subrel,tsubrel) in
+         let top_tree = isol_layer ptree (subrel,tsubrel) in
+         let back = permute_layer top_tree [] (subrel,tsubrel) in
 (*     print_endline "translauer out"; *)
          back
       end
@@ -1738,16 +1726,13 @@ struct
    let rec extend prooftree element =
       match prooftree with
          PEmpty ->
-            let (pos,rule,formula,term) = element in
-            if rule = Ax then
-               PNodeAx(element)
-            else
-               if List.mem rule [Andr; Orl; Impl] then
-                  PNodeB(element,PEmpty,PEmpty)
-               else
-                  PNodeA(element,PEmpty)
+            begin match element with
+               _, Ax, _, _ -> PNodeAx(element)
+             | _, (Andr| Orl | Impl), _, _ -> PNodeB(element,PEmpty,PEmpty)
+             | _ -> PNodeA(element,PEmpty)
+            end
        | PNodeAx(y) ->
-            PEmpty           (* that's only for  exhaustive pattern matching *)
+            PEmpty           (* that's only for exhaustive pattern matching *)
        | PNodeA(y, left) ->
             PNodeA(y, (extend left element))
        | PNodeB(y, left, right) ->
@@ -1824,7 +1809,7 @@ struct
          match dtreelist with
             [] -> [],[]
           | (x,ft)::rdtlist ->
-               let rest_rel,rest_ren = build_renamed_gamma_rel rdtlist predname posname d  in
+               let rest_rel,rest_ren = build_renamed_gamma_rel rdtlist predname posname d in
                (
                 match ft with
                    Empty ->   (* may have empty successors due to purity in former reconstruction steps *)
@@ -1865,7 +1850,7 @@ struct
                      (srel @ rest_rel), (sren @ rest_renlist)
              | NodeA({ pt = Gamma } as pos, suctrees) ->
                   let dtreelist = (List.map (fun x -> (1,x)) suctrees) in
-(*                if (nonemptys suctrees 0 n) = 1  then
+(*                if (nonemptys suctrees 0 n) = 1 then
    let (srel,sren) = build_formula_rel dtreelist slist pos.name in
    ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
    else (* we have more than one gamma instance, which means renaming *)
@@ -1932,7 +1917,7 @@ struct
             and right_list =  make_node_list right in
             (("",pos),(inf,form,term))::(left_list @ right_list)
 
-   let  permute_ljmc ftree po slist ljmc_proof =
+   let permute_ljmc ftree po slist ljmc_proof =
  (* ftree/po are the formula tree / open positions of the sequent that caused deadlock and permutation *)
 (*  print_endline "!!!!!!!!!!!!!Permutation TO DO!!!!!!!!!"; *)
  (* the open positions in po are either phi_0, psi_0, or gamma_0 positions *)
@@ -2029,7 +2014,7 @@ struct
 
    let rec key_delete fname pos_list =   (* in key_delete, f is a pos name (key) but sucs is a list of positions *)
       match pos_list with
-         [] -> []               (* the position with name f  must not necessarily occur in pos_list *)
+         [] -> []               (* the position with name f must not necessarily occur in pos_list *)
        | f::r ->
             if fname = f.name then
                r
@@ -2143,7 +2128,7 @@ struct
 (*  rule construction *)
 
    let rec selectQ_rec spos_var csigmaQ =
-      match csigmaQ  with
+      match csigmaQ with
          [] ->  mk_var_term spos_var   (* dynamic completion of csigmaQ *)
        | (var,term)::r ->
             if spos_var=var then
@@ -2180,7 +2165,7 @@ struct
        | Imp,O -> Impr,(inst_label),xnil_term
        | Imp,I -> Impl,(inst_label),xnil_term
        | All,I -> Alll,(inst_label),(selectQ spos.name csigmaQ)  (* elements of csigmaQ is (string * term) *)
-       | Ex,O -> Exr,(inst_label), (selectQ  spos.name csigmaQ)
+       | Ex,O -> Exr,(inst_label), (selectQ spos.name csigmaQ)
        | All,O -> Allr,(inst_label),(mk_string_term jprover_op spos.name) (* must be a proper term *)
        | Ex,I -> Exl,(inst_label),(mk_string_term jprover_op spos.name) (* must be a proper term *)
 
@@ -2233,7 +2218,7 @@ struct
             if (StringSet.mem delset f) then
                update_redord delset r   (* delete all key elements f from redord which are in delset *)
             else
-               let new_fset  = StringSet.diff fset delset in  (* no successor of f from delset should remain in fset *)
+               let new_fset = StringSet.diff fset delset in  (* no successor of f from delset should remain in fset *)
                (f,new_fset)::(update_redord delset r)
 
    let rec get_position_names = function
@@ -2349,7 +2334,7 @@ struct
    let subst_split ft1 ft2 ftree uslist1 uslist2 uslist sigmaQ =
       let delta,gamma = collect_qpos [ftree] uslist
       and delta1,gamma1 = collect_qpos [ft1] uslist1
-      and  delta2,gamma2 = collect_qpos [ft2] uslist2 in
+      and delta2,gamma2 = collect_qpos [ft2] uslist2 in
       let delta_diff1 = list_diff delta delta1
       and delta_diff2 = list_diff delta delta2
       and gamma_diff1 = list_diff gamma gamma1
@@ -2369,7 +2354,7 @@ struct
 (*       print_endline pos.name; *)
     (* the associated node occurs above f (or the empty address) and hence, is neither atom nor empty tree *)
             let nexttree = (List.nth strees (a-1)) in
-            if (nonemptys 0 strees) < 2  then
+            if (nonemptys 0 strees) < 2 then
                begin
 (*          print_endline "strees 1 or non-empties < 2"; *)
                   let (ft,dt,an,bf) =  reduce_tree radd actual_node nexttree beta_flag in
@@ -2379,7 +2364,7 @@ struct
                end
             else  (* nonemptys >= 2 *)
                begin
-(*             print_endline "nonempties  >= 2 "; *)
+(*             print_endline "nonempties >= 2 "; *)
                   let (new_act,new_bf) =
                      if pos.pt = Beta then
                         (actual_node,true)
@@ -2458,10 +2443,10 @@ struct
        | NodeA(pos, _), [] ->
             raise jprover_bug
        | NodeA(pos, strees), f::rest ->
-            let nexttree  = List.nth strees (f-1) in
+            let nexttree = List.nth strees (f-1) in
             let (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) =
                betasplit rest nexttree redord connections unsolved_list in
-(*          let scopytrees = Array.copy strees in  *)
+(*          let scopytrees = Array.copy strees in *)
             let zw1trees = myset (f-1) zw1ft strees in
             let zw2trees = myset (f-1) zw2ft strees in
                (NodeA(pos,zw1trees),zw1red,zw1conn,zw1uslist),(NodeA(pos,zw2trees),zw2red,zw2conn,zw2uslist)
@@ -2498,7 +2483,7 @@ struct
    print_flush();
    print_endline "";
 *)
-         let  (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) =
+         let (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) =
             betasplit addr ftree redord connections unsolved_list in
 (* zw1conn and zw2conn are not longer needed when using beta proofs *)
 (*   print_endline "betasp_out"; *)
@@ -2612,7 +2597,7 @@ struct
                            false,0
                         end
                 | SingleConcl ->
-                     if  ((f.st = Phi_0)  & ((f.op=Neg) or (f.op=Imp)) &
+                     if ((f.st = Phi_0)  & ((f.op=Neg) or (f.op=Imp)) &
                           ((pa_O <> []) or (List.exists (fun x -> x.pol = O) po_test))
                          )
          (* this would cause an impl or negl rule with an non-empty succedent *)
@@ -2629,7 +2614,7 @@ struct
                  *)
                            let ((_,min_con1),_) = split_permutation f.name opt_bproof in
                            let slist_fake = delete string_eq f.name slist in
-                           let  ((zw1ft,zw1red,_,zw1uslist),_) =
+                           let ((zw1ft,zw1red,_,zw1uslist),_) =
                               betasplit f.address ftree redord connections slist_fake in
                            let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
 (*                      print_endline "wait label purity_one_out"; *)
@@ -2684,7 +2669,7 @@ struct
        | f::r ->  (* there exist an open position *)
             let bool,orr_flag = blocked f po redord ftree connections slist calculus opt_bproof in
             if bool then
-               select_pos r po redord  ftree connections slist calculus candidates opt_bproof
+               select_pos r po redord ftree connections slist calculus candidates opt_bproof
             else
                if f.pt = Beta then
      (* search for non-splitting rules first *)
@@ -2698,7 +2683,7 @@ struct
    in
    !!!!!!! this strategy is not sure the best -- back to old !!!!!!!!!
 *)
-                  select_pos r po redord  ftree connections slist calculus
+                  select_pos r po redord ftree connections slist calculus
                      ((f,orr_flag)::candidates) opt_bproof
                else
                   (f,orr_flag)
@@ -2723,8 +2708,8 @@ struct
    tot simulates the while-loop, solve is the rest *)
 
    let rec total ftree redord connections csigmaQ slist calculus opt_bproof =
-      let rec tot  ftree redord connections po slist =
-         let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
+      let rec tot ftree redord connections po slist =
+         let rec solve ftree redord connections p po slist (pred,succs) orr_flag =
             let newslist = delete string_eq (p.name) slist in
             let rback =
                if p.st = Gamma_0 then
@@ -2744,24 +2729,24 @@ struct
             in
             match p.pt with
                Gamma ->
-                  rback @ (tot  ftree redord connections pnew newslist)
-             | Psi   ->
+                  rback @ (tot ftree redord connections pnew newslist)
+             | Psi ->
                   if p.op = At then
                      let succ = List.hd succs in
                      rback @ (solve ftree redord connections succ pnew newslist (p,[]) orr_flag)  (* solve atoms immediately *)
                   else
-                     rback @ (tot  ftree redord connections pnew newslist)
-             | Phi   ->
+                     rback @ (tot ftree redord connections pnew newslist)
+             | Phi ->
                   if p.op = At then
                      let succ = List.hd succs in
                      rback @ (solve ftree redord connections succ pnew newslist (p,[]) orr_flag)  (* solve atoms immediately *)
                   else
-                     rback @ (tot  ftree redord connections pnew newslist)
+                     rback @ (tot ftree redord connections pnew newslist)
              | PNull ->
                   let new_redord = update p.name redord in
                   let (c1,c2) = select_connection (p.name) connections newslist in
                   if (c1= "none" & c2 ="none") then
-                     rback @ (tot  ftree new_redord connections pnew newslist)
+                     rback @ (tot ftree new_redord connections pnew newslist)
                   else
                      let (ass_pos,inst_pos) =
 (* need the pol=O position ass_pos of the connection for later permutation *)
@@ -2780,11 +2765,11 @@ struct
                      rback @ [(("",ass_pos),(build_rule p p csigmaQ orr_flag calculus))]
    (* one possibility of recursion end *)
              | Alpha ->
-                  rback @ ((("",p.name),(build_rule p p csigmaQ orr_flag calculus))::(tot  ftree redord connections pnew newslist))
+                  rback @ ((("",p.name),(build_rule p p csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
              | Delta ->
                   let sp = List.hd succs in
                   rback @ ((("",p.name),(build_rule p sp csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
-             | Beta  ->
+             | Beta ->
 (*             print_endline "split_in"; *)
                   let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) =
                      split (p.address) (p.name) ftree redord connections newslist opt_bproof in
@@ -2792,7 +2777,7 @@ struct
 (*           print_endline "split_out"; *)
                   let p1 = total ft1 red1 conn1 sigmaQ1 uslist1 calculus opt_bproof1 in
 (*           print_endline "compute p1 out";              *)
-                  let p2 = total  ft2 red2 conn2 sigmaQ2 uslist2 calculus opt_bproof2 in
+                  let p2 = total ft2 red2 conn2 sigmaQ2 uslist2 calculus opt_bproof2 in
 (*           print_endline "compute p2 out";              *)
                   rback @ [(("",p.name),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
          in
@@ -2826,7 +2811,7 @@ struct
            (* the permuaiton result will be appended to the lj proof constructed so far *)
          end
       in
-      let po  = compute_open [ftree] slist in
+      let po = compute_open [ftree] slist in
       tot ftree redord connections po slist
 
    let reconstruct ftree redord sigmaQ ext_proof calculus =
@@ -2858,7 +2843,7 @@ struct
    print_flush(); *)
             print_endline "";
          end;
-      let  (newroot_name,unsolved_list) =  build_unsolved ftree in
+      let (newroot_name,unsolved_list) =  build_unsolved ftree in
       let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
       let (init_tree,init_redord,init_connections,init_unsolved_list) =
          purity ftree redord2 min_connections unsolved_list in
@@ -2907,7 +2892,7 @@ struct
             search_set var r
 
    let add_sets var const ordering =
-      let addset =  search_set var ordering  in
+      let addset =  search_set var ordering in
       transitive_irreflexive_closure addset const ordering
 
 (* ************* J ordering ********************************************** *)
@@ -2981,7 +2966,7 @@ struct
                print_term_list r
             end
 
-   let rec add_sigmaQ new_elements ordering  =
+   let rec add_sigmaQ new_elements ordering =
       match new_elements with
          [] -> ([],ordering)
        | (v,termlist)::r ->
@@ -2997,7 +2982,7 @@ struct
    force_newline ();
    print_flush ();
 *)
-               let new_ordering = add_arrowsQ  v dterms ordering in
+               let new_ordering = add_arrowsQ v dterms ordering in
                let (rest_pairs,rest_ordering) = add_sigmaQ r new_ordering in
                ((v,dterms)::rest_pairs),rest_ordering
             end
@@ -3017,7 +3002,7 @@ struct
 
 (* For multiplication we assume always idempotent substitutions sigma, tau! *)
 
-   let rec collect_assoc inst_vars tauQ  =
+   let rec collect_assoc inst_vars tauQ =
       match inst_vars with
          [] -> []
        | f::r ->
@@ -3034,7 +3019,7 @@ struct
             let inst_vars = list_diff old_free new_free in
             let inst_terms = collect_assoc inst_vars tauQ in
             let (rest_sigma,rest_sigma_ordering) = rec_apply consts r tauQ tau_vars tau_terms in
-            if inst_terms  = [] then
+            if inst_terms = [] then
                ((v,app_term)::rest_sigma),rest_sigma_ordering
             else
                let ordering_v = String.sub v 0 (String.index v '_') in
@@ -3043,7 +3028,7 @@ struct
 (* let multiply sigmaQ tauQ =
    let tau_vars,tau_terms = List.split tauQ
    and sigma_vars,sigma_terms = List.split sigmaQ in
-   let apply_terms  = rec_apply sigma_terms tau_vars tau_terms in
+   let apply_terms = rec_apply sigma_terms tau_vars tau_terms in
    (List.combine sigma_vars apply_terms) @ tauQ
 *)
 
@@ -3052,7 +3037,7 @@ struct
       let (new_sigmaQ,sigma_ordering)  = rec_apply consts sigmaQ tauQ tau_vars tau_terms
       and tau_ordering_terms = (List.map (fun x -> [x]) tau_terms) (* for extending ordering_elements *)
       and tau_ordering_vars = (List.map (fun x -> String.sub x 0 (String.index x '_')) tau_vars) in
-      let tau_ordering  = (List.combine tau_ordering_vars tau_ordering_terms) in
+      let tau_ordering = (List.combine tau_ordering_vars tau_ordering_terms) in
       ((new_sigmaQ @ tauQ),
        (sigma_ordering @ tau_ordering)
       )
@@ -3183,7 +3168,7 @@ struct
    false
 *)
 
-   let rec  tunify_list eqlist init_sigma orderingQ atom_rel =
+   let rec tunify_list eqlist init_sigma orderingQ atom_rel =
 
       let rec tunify atomnames fs ft rt rest_eq sigma ordering =
 
@@ -3239,7 +3224,7 @@ struct
          in
          let apply_r8 fs ft rt rest_eq sigma =
 (* print_endline "r8"; *)
-            tunify atomnames  rt [(List.hd fs)] (List.tl fs) rest_eq sigma ordering
+            tunify atomnames rt [(List.hd fs)] (List.tl fs) rest_eq sigma ordering
 
          in
          let apply_r9 fs ft rt rest_eq (max,subst) =
@@ -3344,7 +3329,7 @@ let rec test_apply_eqsubst eqlist subst =
    match eqlist with
       [] -> []
     | (atomnames,(eqs,eqt))::r ->
-         let applied_element  = test_apply_eq atomnames eqs eqt subst in
+         let applied_element = test_apply_eq atomnames eqs eqt subst in
          (atomnames,applied_element)::(test_apply_eqsubst r subst)
 
 let ttest us ut ns nt eqlist orderingQ atom_rel =
@@ -3359,7 +3344,7 @@ let ttest us ut ns nt eqlist orderingQ atom_rel =
    in
    let (sigma,_) = tunify_list full_eqlist (1,[]) orderingQ atom_rel in
    let (n,subst) = sigma in
-   let test_apply  = test_apply_eqsubst full_eqlist subst in
+   let test_apply = test_apply_eqsubst full_eqlist subst in
    begin
       print_endline "";
       print_endline "Final equations:";
@@ -3394,7 +3379,7 @@ let rec one_equation gprefix dlist delta_0_prefixes n =
    match dlist with
       [] -> ([],n)
     | f::r ->
-         let fprefix = List.assoc f delta_0_prefixes  in
+         let fprefix = List.assoc f delta_0_prefixes in
          let (sf1,sg) = shorten fprefix gprefix
          and v_new = ("vnewq"^(string_of_int n)) in
          let fnew = sf1 @ [v_new] in
@@ -3418,8 +3403,8 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
    match calculus with
       Classical -> ((0,[]),(0,[]),orderingQ)
     | Intuit _ ->
-         let us  = ext_atom.aprefix in
-         let ut  = try_one.aprefix in
+         let us = ext_atom.aprefix in
+         let ut = try_one.aprefix in
          let ns = ext_atom.aname in
          let nt = try_one.aname in
             match qprefixes with
@@ -3446,7 +3431,7 @@ let rec subst_replace subst_list t =
    match subst_list with
       [] -> t
     | (old_t,new_t)::r ->
-         let inter_term = var_subst t  old_t "dummy"  in
+         let inter_term = var_subst t old_t "dummy"  in
          let new_term = subst1 inter_term "dummy" new_t in
          subst_replace r new_term
 
@@ -3499,7 +3484,7 @@ let rec select_orderings add_orderings =
 let combine_ordering_list add_orderings pos_name =
    let first_orderings = select_orderings add_orderings in
    let pos_succs = union_orderings first_orderings in
-   let rest_orderings  = append_orderings add_orderings in
+   let rest_orderings = append_orderings add_orderings in
    (pos_name,pos_succs)::rest_orderings
 
 let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
@@ -3509,7 +3494,7 @@ let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
          [] -> ([],[],s_pos_n)
        | f::r ->
             let (f_subtree,f_ordering,f_pos_n) =
-               copy_and_rename_tree f replace_n s_pos_n  mult nsubst_list in
+               copy_and_rename_tree f replace_n s_pos_n mult nsubst_list in
             let (r_subtrees,r_ordering_list,r_pos_n) = rename_subtrees r nposition f_pos_n nsubst_list in
             ((f_subtree::r_subtrees),(f_ordering::r_ordering_list),r_pos_n)
 
@@ -3533,7 +3518,7 @@ let rec add_multiplicity ftree pos_n mult calculus =
       match tree_list with
          [] -> ([],[],s_pos_n)
        | f::r ->
-            let (f_subtree,f_ordering,f_pos_n) = add_multiplicity f s_pos_n  mult calculus in
+            let (f_subtree,f_ordering,f_pos_n) = add_multiplicity f s_pos_n mult calculus in
             let (r_subtrees,r_ordering_list,r_pos_n) = parse_subtrees r f_pos_n in
             ((f_subtree::r_subtrees),(f_ordering::r_ordering_list),r_pos_n)
 
@@ -3602,7 +3587,7 @@ let rec check_ext_list ext_list fail_set atom_sets =  (* fail_set consists of on
       [] -> AtomSet.empty
     | f::r ->
          if (check_alpha_relation f fail_set atom_sets) then
-            AtomSet.add (check_ext_list r fail_set  atom_sets) f
+            AtomSet.add (check_ext_list r fail_set atom_sets) f
          else
             (check_ext_list r fail_set atom_sets)
 
