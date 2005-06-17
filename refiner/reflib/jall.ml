@@ -118,6 +118,9 @@ struct
    type stype =
       Alpha_1 | Alpha_2 | Beta_1 | Beta_2 | Gamma_0 | Delta_0 | Phi_0 | Psi_0 | PNull_0
 
+   type direction =
+      Left | Right
+
    type pos  = {name : string;
                 address : int list;
                 op :  connective;
@@ -711,14 +714,14 @@ struct
                pp_rule (pos,r,p,pa) tab;
 (*             force_newline (); *)
 (*             print_break 100 newtab; *)
-               (tpp left newtab (addr^"l"));
-               (tpp right newtab (addr^"r"))
+               (tpp left newtab (Left :: addr));
+               (tpp right newtab (Right :: addr))
             end
 
    let tt seqtree =
       begin
          open_box 0;
-         tpp seqtree 0 "";
+         tpp seqtree 0 [];
          force_newline ();
          close_box ();
          print_newline ()
@@ -1318,7 +1321,7 @@ struct
 
    let eigen_counter = ref 1
 
-(* append renamed paramater "r" to non-quantifier subformulae
+(* append renamed paramater Right to non-quantifier subformulae
    of renamed quantifier formulae *)
 
    let make_new_eigenvariable term =
@@ -1386,46 +1389,46 @@ struct
                end
        | PNodeB(r, left, right) ->
             if rule_eq r rule then
-               if direction = "l" then
+               if direction = Left then
                   left
                else
-                  right   (* direction = "r" *)
+                  right   (* direction = Right *)
             else
                let left_del = update_ptree rule left direction tsubrel in
                let right_del = update_ptree rule right direction tsubrel in
                PNodeB(r,left_del,right_del)
 
-   let permute r1 r2 ptree  la tsubrel =
+   let permute ptree la tsubrel =
 (*  print_endline "permute in"; *)
       match ptree,la with
-         PNodeA(r1, PNodeA(r2,left)),la ->
+         PNodeA(r1, PNodeA(r2,left)), _ ->
 (*        print_endline "1-o-1";   *)
             PNodeA(r2, PNodeA(r1,left))
                                      (* one-over-one *)
-       | PNodeA(r1, PNodeB(r2,left,right)),la ->
+       | PNodeA(r1, PNodeB(r2,left,right)), _ ->
 (*        print_endline "1-o-2";   *)
             PNodeB(r2, PNodeA(r1,left), PNodeA(r1,right))
                                      (* one-over-two *)
-       | PNodeB(r1, PNodeA(r2,left), right),"l" ->
+       | PNodeB(r1, PNodeA(r2,left), right),Left ->
 (*        print_endline "2-o-1 left";   *)
-            let right_u = update_ptree r2 right "l" tsubrel in
+            let right_u = update_ptree r2 right Left tsubrel in
             PNodeA(r2, PNodeB(r1, left, right_u))
                                      (* two-over-one left *)
-       | PNodeB(r1, left, PNodeA(r2,right)),"r" ->
+       | PNodeB(r1, left, PNodeA(r2,right)),Right ->
 (*        print_endline "2-o-1 right";   *)
-            let left_u = update_ptree r2 left "l" tsubrel in
+            let left_u = update_ptree r2 left Left tsubrel in
             PNodeA(r2, PNodeB(r1, left_u, right))
                                      (* two-over-one right *)
-       | PNodeB(r1, PNodeB(r2,left2,right2), right),"l" ->
+       | PNodeB(r1, PNodeB(r2,left2,right2), right),Left ->
 (*        print_endline "2-o-2 left"; *)
-            let right_ul = update_ptree r2 right "l" tsubrel in
-            let right_ur  = update_ptree  r2 right "r" tsubrel in
+            let right_ul = update_ptree r2 right Left tsubrel in
+            let right_ur  = update_ptree  r2 right Right tsubrel in
             PNodeB(r2,PNodeB(r1,left2,right_ul),PNodeB(r1,right2,right_ur))
                                      (* two-over-two left *)
-       | PNodeB(r1, left, PNodeB(r2,left2,right2)),"r" ->
+       | PNodeB(r1, left, PNodeB(r2,left2,right2)),Right ->
 (*        print_endline "2-o-2 right"; *)
-            let left_ul = update_ptree r2 left "l" tsubrel in
-            let left_ur  = update_ptree  r2 left "r"  tsubrel in
+            let left_ul = update_ptree r2 left Left tsubrel in
+            let left_ur  = update_ptree  r2 left Right  tsubrel in
             PNodeB(r2,PNodeB(r1,left_ul,left2),PNodeB(r1,left_ur, right2))
                                      (* two-over-two right *)
        | _ -> raise jprover_bug
@@ -1495,22 +1498,22 @@ struct
                      dglist,act_o
                in
                if orl_free left then
-                  search_pair right newdg act_r newrule (act_addr^"r") tsubrel
+                  search_pair right newdg act_r newrule (Right :: act_addr) tsubrel
                else  (* not orl_free *)
                   let left_r,left_o,left_addr =
-                     search_pair left newdg act_r newrule (act_addr^"l") tsubrel in
+                     search_pair left newdg act_r newrule (Left :: act_addr) tsubrel in
                   if left_o =  ("",Orr,dummyt,dummyt) then
-                     top_addmissible_pair right dglist act_r act_o (act_addr^"r") tsubrel dummyt
+                     top_addmissible_pair right dglist act_r act_o (Right :: act_addr) tsubrel dummyt
                   else  left_r,left_o,left_addr
           | PNodeB(rule,left,right) -> (* r = Orl *)
 (*      print_endline "beta";  *)
                if orl_free left then
-                  top_addmissible_pair right dglist rule act_o (act_addr^"r") tsubrel dummyt
+                  top_addmissible_pair right dglist rule act_o (Right :: act_addr) tsubrel dummyt
                else
                   let left_r,left_o,left_addr
-                        = search_pair left dglist rule act_o (act_addr^"l") tsubrel in
+                        = search_pair left dglist rule act_o (Left :: act_addr) tsubrel in
                   if left_o =  ("",Orr,dummyt,dummyt) then
-                     top_addmissible_pair right dglist rule act_o (act_addr^"r") tsubrel dummyt
+                     top_addmissible_pair right dglist rule act_o (Right :: act_addr) tsubrel dummyt
                   else
                      left_r,left_o,left_addr
       in
@@ -1527,74 +1530,61 @@ struct
          end
 
    let next_direction addr act_addr =
-      String.make 1 (String.get addr (String.length act_addr))
-        (* get starts with count 0*)
+      List.nth addr ((List.length addr) - (List.length act_addr) - 1)
 
    let change_last addr d =
-      let split = (String.length addr) - 1 in
-      let prec,last =
-         (String.sub addr 0 split),(String.sub addr split 1) in
-      prec^d^last
-
-   let last addr =
-      if addr = ""
-      then ""
-      else
-         String.make 1 (String.get addr (String.length addr-1))
-
-   let rest addr =
-      if addr = ""
-      then ""
-      else
-         String.sub addr 0 ((String.length addr) - 1)
+      match addr with
+         hd :: tl ->
+            hd :: d :: tl
+       | [] ->
+            raise jprover_bug
 
    let rec permute_layer ptree dglist (subrel,tsubrel) =
       let rec permute_branch r addr act_addr ptree dglist (subrel,tsubrel) =
 (*   print_endline "pbranch in"; *)
-         let la = last act_addr in  (* no ensure uniqueness at 2-over-x *)
-         match ptree,la with
+         match ptree,act_addr with
             PNodeA(o,PNodeA(rule,left)),_                       (* one-over-one *)
-          | PNodeB(o,PNodeA(rule,left),_ ),"l" ->               (* two-over-one, left *)
-               let permute_result = permute o rule ptree la tsubrel in
+          | PNodeB(o,PNodeA(rule,left),_ ),(Left::_) ->               (* two-over-one, left *)
+               let permute_result = permute ptree Left tsubrel in
                begin match permute_result with
                   PNodeA(r2,left2) ->
                      let pbleft = permute_branch r addr act_addr left2 dglist (subrel,tsubrel) in
                      PNodeA(r2,pbleft)
                 | _ -> raise jprover_bug
                end
-          | PNodeA(o,PNodeB(rule,left,right)),la ->                (* one-over-two *)
+          | PNodeA(o,PNodeB(rule,left,right)),_ ->                (* one-over-two *)
 (*     print_endline " one-over-two ";                  *)
                if rule_eq rule r then  (* left,right are or_l free *)
-                  permute o rule ptree  la tsubrel (* first termination case *)
+                  permute ptree Left tsubrel (* first termination case *)
                else
                   let d = next_direction addr act_addr in
-                  if d = "l" then
-                     let permute_result = permute o rule ptree la tsubrel in
+                  if d = Left then
+                     let permute_result = permute ptree Left tsubrel in
                      (match permute_result with
                         PNodeB(r2,left2,right2) ->
-                           let pbleft = permute_branch r addr (act_addr^d) left2 dglist (subrel,tsubrel) in
+                           let pbleft = permute_branch r addr (d :: act_addr) left2 dglist (subrel,tsubrel) in
                            let plright = permute_layer right2 dglist (subrel,tsubrel) in
                            PNodeB(r2,pbleft,plright)
                       | _ -> raise jprover_bug
                      )
-                  else  (* d = "r", that is left of rule is or_l free *)
+                  else  (* d = Right, that is left of rule is or_l free *)
                      let left1,bool = weak_modify rule left (subrel,tsubrel) in
                      if bool then  (* rule is relevant *)
-                        let permute_result = permute o rule (PNodeA(o,PNodeB(rule,left1,right))) la tsubrel in
+                        let permute_result = permute (PNodeA(o,PNodeB(rule,left1,right))) Left tsubrel in
                         (match permute_result with
                            PNodeB(r2,left2,right2) ->
-                              let pbright = permute_branch r addr (act_addr^d) right2 dglist (subrel,tsubrel) in
+                              let pbright = permute_branch r addr (d :: act_addr) right2 dglist (subrel,tsubrel) in
                               PNodeB(r2,left2,pbright)
                          | _ -> raise jprover_bug
                         )
                      else          (* rule is not relevant *)
                         PNodeA(o,left1)  (* optimized termination case (1) *)
-          | PNodeB(o,left1,PNodeA(rule,left)),"r" ->                (* two-over-one, right *)
+          | PNodeB(o,left1,PNodeA(rule,left)),(Right::_) ->                (* two-over-one, right *)
                                                 (* left of o is or_l free *)
 (*      print_endline " two-over-one, right"; *)
                let leftm,bool = weak_modify o left1 (subrel,tsubrel) in
                if bool then  (* rule is relevant *)
-                  let permute_result = permute o rule (PNodeB(o,leftm,PNodeA(rule,left))) la tsubrel in
+                  let permute_result = permute (PNodeB(o,leftm,PNodeA(rule,left))) Right tsubrel in
                   (match permute_result with
                      PNodeA(r2,left2) ->
                         let pbleft = permute_branch r addr act_addr left2 dglist (subrel,tsubrel) in
@@ -1603,10 +1593,10 @@ struct
                   )
                else          (* rule is not relevant *)
                   leftm  (* optimized termination case (2) *)
-          | PNodeB(o,PNodeB(rule,left,right),right1),"l" ->             (* two-over-two, left *)
+          | PNodeB(o,PNodeB(rule,left,right),right1),(Left::_) ->             (* two-over-two, left *)
 (*     print_endline " two-over-two, left"; *)
                if rule_eq rule r then   (* left,right are or_l free *)
-                  let permute_result = permute o rule ptree  la tsubrel in
+                  let permute_result = permute ptree Left tsubrel in
                   (match permute_result with
                      PNodeB(r2,PNodeB(r3,left3,right3),PNodeB(r4,left4,right4)) ->
 (*        print_endline "permute 2-o-2, left ok"; *)
@@ -1634,8 +1624,8 @@ struct
                else
                   let d = next_direction addr act_addr in
                   let newadd = change_last act_addr d in
-                  if d = "l" then
-                     let permute_result = permute o rule ptree la tsubrel in
+                  if d = Left then
+                     let permute_result = permute ptree Left tsubrel in
                      (match permute_result with
                         PNodeB(r2,left2,right2) ->
                            let pbleft = permute_branch r addr newadd left2 dglist (subrel,tsubrel) in
@@ -1643,11 +1633,11 @@ struct
                            PNodeB(r2,pbleft,plright)
                       | _ -> raise jprover_bug
                      )
-                  else  (* d = "r", that is left is or_l free *)
+                  else  (* d = Right, that is left is or_l free *)
                      let left1,bool = weak_modify rule left (subrel,tsubrel) in
                      if bool then  (* rule is relevant *)
                         let permute_result =
-                           permute o rule (PNodeB(o,PNodeB(rule,left1,right),right1)) la tsubrel in
+                           permute (PNodeB(o,PNodeB(rule,left1,right),right1)) Left tsubrel in
                         (match permute_result with
                            PNodeB(r2,PNodeB(r3,left3,right3),right2) ->
                               let pbright = permute_branch r addr newadd right2 dglist (subrel,tsubrel) in
@@ -1664,18 +1654,18 @@ struct
                      else          (* rule is not relevant *)
                         permute_layer (PNodeB(o,left1,right1)) dglist (subrel,tsubrel) (* further opt. possible *)
                                                            (* combine with orl_free *)
-          | PNodeB(o,left1,PNodeB(rule,left,right)),"r" ->             (* two-over-two, right *)
+          | PNodeB(o,left1,PNodeB(rule,left,right)),(Right::_) ->             (* two-over-two, right *)
 (*      print_endline " two-over-two, right"; *)
                let leftm1,bool = weak_modify o left1 (subrel,tsubrel) in  (* left1 is or_l free *)
                if bool then  (* o is relevant, even after permutations *)
                   if rule_eq rule r then  (* left, right or_l free *)
-                     permute o rule (PNodeB(o,leftm1,PNodeB(rule,left,right))) la tsubrel
+                     permute (PNodeB(o,leftm1,PNodeB(rule,left,right))) Right tsubrel
                   else
                      let d = next_direction addr act_addr in
                      let newadd = change_last act_addr d in
-                     if d = "l" then
+                     if d = Left then
                         let permute_result  =
-                           permute o rule (PNodeB(o,leftm1,PNodeB(rule,left,right))) la tsubrel in
+                           permute (PNodeB(o,leftm1,PNodeB(rule,left,right))) Right tsubrel in
                         (match permute_result with
                                  PNodeB(r2,left2,right2) ->
                               let pbleft = permute_branch r addr newadd left2 dglist (subrel,tsubrel) in
@@ -1683,11 +1673,11 @@ struct
                               PNodeB(r2,pbleft,plright)
                          | _ -> raise jprover_bug
                         )
-                     else  (* d = "r", that is left is or_l free *)
+                     else  (* d = Right, that is left is or_l free *)
                         let leftm,bool = weak_modify rule left (subrel,tsubrel) in
                         if bool then  (* rule is relevant *)
                            let permute_result =
-                              permute o rule (PNodeB(o,leftm1,PNodeB(rule,left,right))) la tsubrel in
+                              permute (PNodeB(o,leftm1,PNodeB(rule,left,right))) Right tsubrel in
                            (match permute_result with
                                 PNodeB(r2,left2,right2) ->
                                  let pbright = permute_branch r addr newadd right2 dglist (subrel,tsubrel) in
@@ -1725,30 +1715,31 @@ struct
           | PNodeB(rule,left,right) ->
                let d = next_direction addr act_addr in
                let bool = (dgenerative rule dglist left tsubrel) in
+               let act_addr' = d :: act_addr in
                if rule_eq rule o then
                   begin
 (*          print_endline "two-rule is o"; *)
-                     permute_branch r addr (act_addr^d) ptree dglist (subrel,tsubrel)
+                     permute_branch r addr act_addr' ptree dglist (subrel,tsubrel)
                   end
                else
                   begin
 (*         print_endline ("beta - but not o: address "^d); *)
                      let dbranch =
-                        if d = "l" then
+                        if d = Left then
                            left
-                        else   (* d = "r" *)
+                        else   (* d = Right *)
                            right
                      in
                      let tptree =
                         if bool then
                            let newdg = rule :: dglist in
-                           (trans_add_branch r o addr (act_addr^d) dbranch newdg (subrel,tsubrel))
+                           (trans_add_branch r o addr act_addr' dbranch newdg (subrel,tsubrel))
                         else
-                           (trans_add_branch r o addr (act_addr^d) dbranch dglist (subrel,tsubrel))
+                           (trans_add_branch r o addr act_addr' dbranch dglist (subrel,tsubrel))
                      in
-                     if d = "l" then
+                     if d = Left then
                         permute_layer (PNodeB(rule,tptree,right)) dglist (subrel,tsubrel)
-                     else  (* d = "r" *)
+                     else  (* d = Right *)
                         begin
 (*            print_endline "prob. a redundant call";  *)
                            let back  = permute_layer (PNodeB(rule,left,tptree)) dglist  (subrel,tsubrel) in
@@ -1760,7 +1751,7 @@ struct
 (*  print_endline "permute_layer in"; *)
       let dummyt = mk_var_term "dummy" in
       let r,o,addr =
-         top_addmissible_pair ptree dglist ("",Orl,dummyt,dummyt) ("",Orr,dummyt,dummyt) "" tsubrel dummyt in
+         top_addmissible_pair ptree dglist ("",Orl,dummyt,dummyt) ("",Orr,dummyt,dummyt) [] tsubrel dummyt in
       if rule_eq r ("",Orl,dummyt,dummyt) then
          ptree
       else if rule_eq o ("",Orr,dummyt,dummyt) then  (* Orr is a dummy for no d-gen. rule *)
@@ -1771,7 +1762,7 @@ struct
 (*   print_endline ("top or_l: "^x1);
    print_endline ("or_l address: "^addr);
    print_endline ("top dgen-rule: "^y1); *)
-         trans_add_branch r o addr "" ptree dglist (subrel,tsubrel)
+         trans_add_branch r o addr [] ptree dglist (subrel,tsubrel)
 
 (* Isolate layer and outer recursion structure *)
 (* uses weaker layer boundaries: ONLY critical inferences *)
