@@ -21,7 +21,11 @@ REFLIB_FILES[] =
     lib_term
     unify_mm
     jlogic_sig
+    jtypes
     jtunify
+    jordering
+    jtunify_prop
+    jtunify_q
     jall
     term_order
     arith
