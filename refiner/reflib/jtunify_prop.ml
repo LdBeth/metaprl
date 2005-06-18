@@ -1,15 +1,6 @@
 open Jtunify
 let jprover_bug = Invalid_argument "Jprover bug (Jall module)"
 
-let rec com_subst ov ovlist = function
-   [] -> []
- | f::r as l->
-      if f = ov then
-         (ovlist @ r)
-      else
-         let rest = com_subst ov ovlist r in
-            if rest == r then l else f :: rest
-
 let rec combine ov oslist = function
    [] -> []
  | ((v, slist) as f) :: r ->
@@ -35,43 +26,6 @@ let compose (n,subst) ((ov,oslist) as one_subst) =
 (* in order to avoid explicit atom instances!!! *)
       (n,(com @ [one_subst]))
 (* end *)
-
-let rec apply_element v slist fs ft =
-   match (fs,ft) with
-      ([],[]) ->
-         ([],[])
-    | ([],(ft_first::ft_rest)) ->
-         let new_ft_first =
-            if ft_first = v then
-               slist
-            else
-               [ft_first]
-         in
-         let (emptylist,new_ft_rest) = apply_element v slist [] ft_rest in
-         (emptylist,(new_ft_first @ new_ft_rest))
-    | ((fs_first::fs_rest),[]) ->
-         let new_fs_first =
-            if fs_first = v then
-               slist
-            else
-               [fs_first]
-         in
-         let (new_fs_rest,emptylist) = apply_element v slist fs_rest [] in
-         ((new_fs_first @ new_fs_rest),emptylist)
-    | ((fs_first::fs_rest),(ft_first::ft_rest)) ->
-         let new_fs_first =
-            if fs_first = v then
-               slist
-            else
-               [fs_first]
-         and new_ft_first =
-            if ft_first = v then
-               slist
-            else
-               [ft_first]
-         in
-         let (new_fs_rest,new_ft_rest) = apply_element v slist fs_rest ft_rest in
-         ((new_fs_first @ new_fs_rest),(new_ft_first @ new_ft_rest))
 
 let rec shorten us ut =
    match (us,ut) with
