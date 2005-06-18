@@ -145,11 +145,11 @@ else
 OCAMLLEX += -q
 
 if $(not $(defined CAMLP4R))
-   CAMLP4R = camlp4r
+   CAMLP4R = camlp4r$(EXE)
    export
 
 if $(not $(defined CAMLP4O))
-   CAMLP4O = camlp4o
+   CAMLP4O = camlp4o$(EXE)
    export
 
 #
