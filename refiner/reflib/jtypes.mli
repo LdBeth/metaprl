@@ -5,7 +5,8 @@ open Jlogic_sig
 val free_var_op : Opname.opname
 val jprover_op : Opname.opname
 
-module JTypes (JLogic : JLogicSig) :
+module type JTypesSig =
+functor (JLogic : JLogicSig) ->
 sig
    type polarity = I | O
 
@@ -63,3 +64,6 @@ sig
     | PNodeB of inf * ptree * ptree
 
 end
+
+module JTypes : JTypesSig
+

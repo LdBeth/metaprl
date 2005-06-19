@@ -15,8 +15,10 @@ open Opname
 open Refiner.Refiner.TermType
 
 open Jlogic_sig
-open Jtunify
 open Jtypes
+
+exception Not_unifiable
+exception Failed
 
 module JOrdering (JLogic : JLogicSig) =
 struct

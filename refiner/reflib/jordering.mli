@@ -5,6 +5,9 @@ open Refiner.Refiner.Term.TermTypes
 open Jlogic_sig
 open Jtypes
 
+exception Not_unifiable
+exception Failed
+
 module JOrdering (JLogic : JLogicSig) :
 sig
 

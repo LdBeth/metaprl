@@ -48,10 +48,9 @@ open Opname
 open Unify_mm
 
 open Jlogic_sig
-open Jtunify
 open Jtypes
 open Jordering
-open Jtunify_q
+open Jtunify
 
 let _ =
    show_loading "Loading Jall%t"
@@ -111,11 +110,14 @@ module JProver (JLogic : JLogicSig) =
 struct
    module JTypes = JTypes(JLogic)
    module JOrdering = JOrdering(JLogic)
-   module JTUnify_Q = JTUnify_Q(JLogic)
+   module JQuantifier = JQuantifier(JLogic)
+   module JTUnifyQ = JTUnifyQ(JLogic)
+   module JTUnifyProp = JTUnifyProp(JLogic)
 
    open JTypes
    open JOrdering
-   open JTUnify_Q
+   open JQuantifier
+   open JTUnifyQ
 
    module OrderedAtom =
    struct
@@ -2884,7 +2886,7 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
             match qprefixes with
                [], [] -> (* prop case *)
                   (* prop unification only *)
-                  let (new_sigma,new_eqlist)  = Jtunify_prop.do_stringunify us ut ns nt equations in
+                  let new_sigma,new_eqlist,_  = JTUnifyProp.do_stringunify us ut ns nt equations [] [] [] 1 in
                      (new_sigma,new_eqlist,[]) (* assume the empty reduction ordering during proof search *)
              | _ -> (* "This is the FO case" *)
                   (* fo_eqlist encodes the domain condition on J quantifier substitutions *)
