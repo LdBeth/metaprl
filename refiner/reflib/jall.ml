@@ -2971,21 +2971,26 @@ let rec append_orderings list_of_lists =
 let rec union_orderings first_orderings =
    match first_orderings with
       [] ->
-         StringSet.empty
+         Set.empty
     | (pos,fset)::r ->
-         StringSet.union (StringSet.add fset pos) (union_orderings r)
+         Set.union (Set.add fset pos) (union_orderings r)
 
-let rec select_orderings add_orderings =
+let rec select_orderings
+   (add_orderings : ((position * Set.t) list) list)
+   =
    match add_orderings with
       [] -> []
     | f::r ->
          (List.hd f)::select_orderings r
 
-let combine_ordering_list add_orderings pos_name =
+let combine_ordering_list
+   (add_orderings : ((position * Set.t) list) list)
+   (pos_name : position)
+   =
    let first_orderings = select_orderings add_orderings in
    let pos_succs = union_orderings first_orderings in
    let rest_orderings = append_orderings add_orderings in
-   (pos_name,pos_succs)::rest_orderings
+   (((pos_name,pos_succs)::rest_orderings) : (position * Set.t) list)
 
 let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
 
@@ -3003,13 +3008,13 @@ let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
       Empty -> raise (Invalid_argument "Jprover: copy tree")
     | NodeAt(position) ->   (* can never be a Gamma_0 position -> no replacements *)
          let (nposition,npos_n,_) = update_position position (pos_n+1) replace_n subst_list mult in
-         ((NodeAt(nposition)),[(nposition.name,StringSet.empty)],npos_n)
+         ((NodeAt(nposition)),[(nposition.pospos,Set.empty)],npos_n)
     | NodeA(position, suctrees) ->
          let (nposition,npos_n,nsubst_list) = update_position position (pos_n+1) replace_n subst_list mult in
          let (new_suctrees, new_ordering_list, new_pos_n) =
             rename_subtrees suctrees nposition npos_n nsubst_list in
          let new_ordering =
-            combine_ordering_list new_ordering_list nposition.name
+            combine_ordering_list new_ordering_list nposition.pospos
          in
          ((NodeA(nposition,new_suctrees)),new_ordering,new_pos_n)
 
@@ -3027,7 +3032,7 @@ let rec add_multiplicity ftree pos_n mult calculus =
    in
    match ftree with
       Empty -> raise (Invalid_argument "Jprover: add mult")
-    | NodeAt(pos) -> (ftree,[(pos.name,StringSet.empty)],pos_n)
+    | NodeAt(pos) -> (ftree,[(pos.pospos,Set.empty)],pos_n)
     | NodeA(pos,suctrees) ->
          let new_suctrees, new_ordering_list, new_pos_n = parse_subtrees suctrees pos_n in
             begin match calculus, pos with
@@ -3044,12 +3049,12 @@ let rec add_multiplicity ftree pos_n mult calculus =
                   let final_suctrees = new_suctrees @ [add_tree] in
                   let add_orderings = new_ordering_list @ [add_ordering] in
                   let final_ordering =
-                     combine_ordering_list add_orderings pos.name
+                     combine_ordering_list add_orderings pos.pospos
                   in
                      ((NodeA(pos,final_suctrees)),final_ordering,final_pos_n)
              | _ ->
                   let final_ordering =
-                     combine_ordering_list new_ordering_list pos.name
+                     combine_ordering_list new_ordering_list pos.pospos
                   in
                      ((NodeA(pos,new_suctrees)),final_ordering,new_pos_n)
             end
@@ -3383,10 +3388,10 @@ let rec build_ftree variable old_term pol stype address pos_n =
       let (succ_left,whole_left) = List.hd ordering_left
       and (succ_right,whole_right) = List.hd ordering_right in
       let pos_succs =
-         StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left
+         Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left
       in
       (NodeA(position,[subtree_left;subtree_right]),
-       ((position.name,pos_succs)::(ordering_left @ ordering_right)),
+       ((position.pospos,pos_succs)::(ordering_left @ ordering_right)),
        posn_right
       )
    else
@@ -3409,10 +3414,10 @@ let rec build_ftree variable old_term pol stype address pos_n =
          let (succ_left,whole_left) = List.hd ordering_left in
          let (succ_right,whole_right) = List.hd ordering_right in
          let pos_succs =
-            StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left
+            Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left
          in
          (NodeA(position,[subtree_left;subtree_right]),
-          ((position.name),pos_succs) :: (ordering_left @ ordering_right),
+          ((position.pospos),pos_succs) :: (ordering_left @ ordering_right),
           posn_right
          )
       else
@@ -3439,10 +3444,10 @@ let rec build_ftree variable old_term pol stype address pos_n =
             let (succ_left,whole_left) = List.hd ordering_left
             and (succ_right,whole_right) = List.hd ordering_right in
             let pos_succs =
-               StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left in
-            let pos_ordering = (position.name,pos_succs) :: (ordering_left @ ordering_right) in
+               Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left in
+            let pos_ordering = (position.pospos,pos_succs) :: (ordering_left @ ordering_right) in
             (NodeA(sposition,[NodeA(position,[subtree_left;subtree_right])]),
-             ((sposition.name,(StringSet.add pos_succs position.name))::pos_ordering),
+             ((sposition.pospos,(Set.add pos_succs position.pospos))::pos_ordering),
              posn_right
             )
          else
@@ -3467,10 +3472,10 @@ let rec build_ftree variable old_term pol stype address pos_n =
                      (pos_n+2) in
                let (succ_left,whole_left) = List.hd ordering_left in
                let pos_succs =
-                  StringSet.add whole_left succ_left in
-               let pos_ordering = (position.name,pos_succs) :: ordering_left in
+                  Set.add whole_left succ_left in
+               let pos_ordering = (position.pospos,pos_succs) :: ordering_left in
                (NodeA(sposition,[NodeA(position,[subtree_left])]),
-                ((sposition.name,(StringSet.add pos_succs position.name))::pos_ordering),
+                ((sposition.pospos,(Set.add pos_succs position.pospos))::pos_ordering),
                 posn_left
                )
             else
@@ -3489,9 +3494,9 @@ let rec build_ftree variable old_term pol stype address pos_n =
                   let subtree_left,ordering_left,posn_left = build_ftree v t pol stype_1 (address@[1]) (pos_n+1) in
                   let (succ_left,whole_left) = List.hd ordering_left in
                   let pos_succs =
-                     StringSet.add whole_left succ_left in
+                     Set.add whole_left succ_left in
                   (NodeA(position,[subtree_left]),
-                   ((position.name,pos_succs) :: ordering_left),
+                   ((position.pospos,pos_succs) :: ordering_left),
                    posn_left
                   )
                else
@@ -3517,10 +3522,12 @@ let rec build_ftree variable old_term pol stype address pos_n =
                            (pos_n+2) in
                      let (succ_left,whole_left) = List.hd ordering_left in
                      let pos_succs =
-                        StringSet.add whole_left succ_left in
-                     let pos_ordering = (position.name,pos_succs) :: ordering_left in
+                        Set.add whole_left succ_left in
+                     let pos_ordering =
+                        (position.pospos,pos_succs) :: ordering_left
+                     in
                      (NodeA(sposition,[NodeA(position,[subtree_left])]),
-                      ((sposition.name,(StringSet.add pos_succs position.name))::pos_ordering),
+                      ((sposition.pospos,(Set.add pos_succs position.pospos))::pos_ordering),
                       posn_left
                      )
                   else      (* finally, term is atomic *)
@@ -3539,19 +3546,26 @@ let rec build_ftree variable old_term pol stype address pos_n =
                         {name=pos2_name; address=address@[1]; pospos=pos2pos;
                         op=At; pol=pol; pt=PNull; st=stype_0; label=term}
                      in
-                     (NodeA(sposition,[NodeAt(position)]),
-                      [(sposition.name,(StringSet.singleton position.name));(position.name,StringSet.empty)],
-                      pos_n+1
-                     )
+                     NodeA(sposition,[NodeAt(position)]),
+                     [(sposition.pospos,(Set.singleton position.pospos));
+                      (position.pospos,Set.empty)],
+                     pos_n+1
 
-let rec construct_ftree termlist treelist orderinglist pos_n goal =
+let rec construct_ftree
+   termlist
+   treelist
+   (orderinglist : (position * Set.t) list)
+   pos_n
+   goal
+   =
    match termlist with
       [] ->
          let new_root =
             {name="w"; address=[]; pospos=(Root,0);
             op=Null; pol=O; pt=Psi; st=PNull_0; label=goal}
          in
-         NodeA(new_root,treelist),(("w",(union_orderings orderinglist))::orderinglist),pos_n
+         NodeA(new_root,treelist),
+         (((Root,0),(union_orderings orderinglist))::orderinglist),pos_n
     | ft::rest_terms ->
          let next_address = [((List.length treelist)+1)] in
          let next_pol,next_goal =
@@ -3612,9 +3626,6 @@ let rec try_multiplicity
             end;
             let (new_ftree,new_ordering,new_pos_n) =
                add_multiplicity ftree pos_n new_mult calculus in
-            let new_ordering = List.map
-               (fun (x,y) -> string_to_pos x, set_string_to_pos y) new_ordering
-            in
             if ftree_eq new_ftree ftree then
                raise unprovable
             else
@@ -3625,11 +3636,8 @@ let prove consts mult_limit termlist calculus =
    let (ftree,ordering,pos_n) = construct_ftree termlist [] [] 0 (mk_var_term "dummy") in
 (* pos_n = number of positions without new root "w" *)
 (*   print_formula_info ftree ordering pos_n;    *)
-   let pos_ordering = List.map
-      (fun (x,y) -> string_to_pos x, set_string_to_pos y) ordering
-   in
    let ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof =
-      try_multiplicity consts mult_limit ftree pos_ordering pos_n 1 calculus
+      try_multiplicity consts mult_limit ftree ordering pos_n 1 calculus
    in
    let string_red_ordering = List.map
       (fun (x,y) -> pos_to_string x, set_pos_to_string y) red_ordering
