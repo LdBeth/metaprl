@@ -32,7 +32,6 @@
  * Modified by: Yegor Bryukhov <ybryukhov@gc.cuny.edu>
  *)
 open Lm_printf
-open Lm_string_set
 
 open Refiner.Refiner.TermType
 
@@ -101,11 +100,15 @@ let print_tunify sigma =
 
  (*****************************************************)
 
-let is_const name  =
-  (String.get name 0) = 'c'
+let is_const (k,_)  =
+  match k with
+     Const -> true
+   | Atom | Dummy | Root | EigenVar | Var | NewVar | NewVarQ | GammaVar -> false
 
-let is_var name  =
-  (String.get name 0) = 'v'
+let is_var (k,_)  =
+  match k with
+     Var | NewVar | NewVarQ | GammaVar -> true
+   | Atom | Const | EigenVar | Dummy | Root -> false
 
 let r_1 s ft rt =
    (s = []) && (ft = []) && (rt = [])
@@ -190,14 +193,12 @@ let rec apply_element v slist fs ft =
 module type JQuantifierSig =
 sig
 
-   type atom
-
    val build_ordering :
-      string list ->
-      string list ->
-      (string * StringSet.t) list ->
-		(atom * 'a * 'b) list ->
-      (string * StringSet.t) list
+      position list ->
+      position list ->
+      (position * Set.t) list ->
+		(position * 'a * 'b) list ->
+      (position * Set.t) list
 
    val shorten : 'a list -> 'a list -> ('a list * 'a list)
 
@@ -212,8 +213,6 @@ struct
    module JTypes = JTypes(JLogic)
    module JOrdering = JOrdering(JLogic)
    open JOrdering
-
-   type atom = JTypes.atom
 
    let build_ordering = build_orderingJ
 
@@ -234,8 +233,6 @@ module JPropositionalQuantifier (JLogic : JLogicSig) =
 struct
 
    module JTypes = JTypes(JLogic)
-
-   type atom = JTypes.atom
 
 	let build_ordering _ _ _ _ = []
 
@@ -408,7 +405,7 @@ let rec tunify_list eqlist init_sigma ordering atom_rel =
       (* print_endline "r9"; *)
          let v = List.hd fs in
          let (max,subst) = sigma in
-         let v_new = ("vnew"^(string_of_int max)) in
+         let v_new = (NewVar,max) in
          let ft_vnew = ft @ [v_new] in
          let compose_vars,new_sigma = compose ((max+1),subst) (v,ft_vnew) in
          let new_rest_eq = apply_subst rest_eq v ft_vnew atomnames in
@@ -525,13 +522,13 @@ let ttest us ut ns nt eqlist ordering atom_rel =
    begin
       print_endline "";
       print_endline "Final equations:";
-      print_equations full_eqlist;
+      (*print_equations full_eqlist;*)
       print_endline "";
       print_endline "Final substitution:";
-      print_tunify sigma;
+      (*print_tunify sigma;*)
       print_endline "";
       print_endline "Applied equations:";
-      print_equations test_apply
+      (*print_equations test_apply*)
    end
 
 let do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel qmax =

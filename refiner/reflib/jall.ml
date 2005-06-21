@@ -2254,7 +2254,7 @@ struct
       match zw_sigma with
          [] -> []
        | (v,term)::r ->
-            let dterms = collect_delta_terms [term] in
+            let dterms = list_pos_to_string (collect_delta_terms [term]) in
             let (new_term,new_ass_delta_diff) = check_delta_terms (v,term) ass_delta_diff dterms in
             (v,new_term)::(localize_sigma r new_ass_delta_diff)
 
@@ -2799,20 +2799,31 @@ struct
             let f_term = List.assoc f tauQ in
             f_term::(collect_assoc r tauQ)
 
-   let rec rec_apply consts sigmaQ tauQ tau_vars tau_terms =
+let pos_subst t vars tl =
+   TermSubst.subst t (List.map (fun x -> Lm_symbol.add (pos_to_string x)) vars) tl
+
+   let rec rec_apply
+      (consts : SymbolSet.t)
+      (sigmaQ : (position * term) list)
+      (tauQ : (position * term) list)
+      (tau_vars : position list)
+      (tau_terms : term list)
+      =
       match sigmaQ with
          [] -> [],[]
        | (v,term)::r ->
-            let app_term = subst term tau_vars tau_terms in
+            let app_term = pos_subst term tau_vars tau_terms in
             let old_free = free_vars_list term consts in
             let new_free = free_vars_list app_term consts in
             let inst_vars = list_diff old_free new_free in
-            let inst_terms = collect_assoc inst_vars tauQ in
+            let inst_positions = list_string_to_pos inst_vars in
+            let inst_terms = collect_assoc inst_positions tauQ in
             let (rest_sigma,rest_sigma_ordering) = rec_apply consts r tauQ tau_vars tau_terms in
             if inst_terms = [] then
                ((v,app_term)::rest_sigma),rest_sigma_ordering
             else
-               let ordering_v = String.sub v 0 (String.index v '_') in
+               (*let ordering_v = String.sub v 0 (String.index v '_') in*)
+               let ordering_v = gamma_to_simple v in
                ((v,app_term)::rest_sigma),((ordering_v,inst_terms)::rest_sigma_ordering)
 
 (* let multiply sigmaQ tauQ =
@@ -2822,11 +2833,16 @@ struct
    (List.combine sigma_vars apply_terms) @ tauQ
 *)
 
-   let multiply consts sigmaQ (tauQ : (string * term) list) =
+   let multiply
+      (consts : SymbolSet.t)
+      (sigmaQ : (position * term) list)
+      (tauQ : (position * term) list) =
       let (tau_vars,tau_terms) = List.split tauQ in
       let (new_sigmaQ,sigma_ordering)  = rec_apply consts sigmaQ tauQ tau_vars tau_terms
-      and tau_ordering_terms = (List.map (fun x -> [x]) tau_terms) (* for extending ordering_elements *)
-      and tau_ordering_vars = (List.map (fun x -> String.sub x 0 (String.index x '_')) tau_vars) in
+      in
+      let tau_ordering_terms = (List.map (fun x -> [x]) tau_terms) (* for extending ordering_elements *)
+      in
+      let tau_ordering_vars = (List.map (fun x -> gamma_to_simple x) tau_vars) in
       let tau_ordering = (List.combine tau_ordering_vars tau_ordering_terms) in
       ((new_sigmaQ @ tauQ),
        (sigma_ordering @ tau_ordering)
@@ -2834,16 +2850,21 @@ struct
 
    let apply_2_sigmaQ term1 term2 sigmaQ =
       let sigma_vars,sigma_terms = List.split sigmaQ in
-      (subst term1 sigma_vars sigma_terms),(subst term2 sigma_vars sigma_terms)
+      (pos_subst term1 sigma_vars sigma_terms),(pos_subst term2 sigma_vars sigma_terms)
 
-   let jqunify consts term1 term2 sigmaQ =
+   let jqunify
+      (consts : SymbolSet.t)
+      (term1 : term)
+      (term2 : term)
+      (sigmaQ : (position * term) list) =
       let app_term1,app_term2 = apply_2_sigmaQ term1 term2 sigmaQ in
 (*  print_term stdout app_term1;
    print_term stdout app_term2;
 *)
       try
          let tauQ = unify app_term1 app_term2 consts in
-         let (mult,oel) = multiply consts sigmaQ tauQ in
+         let pos_tauQ = List.map (fun (v,t) -> string_to_pos v, t) tauQ in
+         let (mult,oel) = multiply consts sigmaQ pos_tauQ in
   (*   print_sigmaQ mult; *)
          (mult,oel)
       with
@@ -2856,8 +2877,9 @@ let rec one_equation gprefix dlist delta_0_prefixes n =
       [] -> ([],n)
     | f::r ->
          let fprefix = List.assoc f delta_0_prefixes in
-         let (sf1,sg) = shorten fprefix gprefix
-         and v_new = ("vnewq"^(string_of_int n)) in
+         let (sf1,sg) = shorten fprefix gprefix in
+         (*and v_new = ("vnewq"^(string_of_int n)) in*)
+         let v_new = NewVarQ, n in
          let fnew = sf1 @ [v_new] in
          let (rest_equations,new_n) = one_equation gprefix r delta_0_prefixes (n+1) in
          (([],(fnew,sg))::rest_equations),new_n
@@ -2879,14 +2901,16 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
    match calculus with
       Classical -> ((0,[]),(0,[]),orderingQ)
     | Intuit _ ->
-         let us = ext_atom.aprefix in
-         let ut = try_one.aprefix in
-         let ns = ext_atom.aname in
-         let nt = try_one.aname in
+         let us = list_string_to_pos ext_atom.aprefix in
+         let ut = list_string_to_pos try_one.aprefix in
+         let ns = string_to_pos ext_atom.aname in
+         let nt = string_to_pos try_one.aname in
             match qprefixes with
                [], [] -> (* prop case *)
                   (* prop unification only *)
-                  let new_sigma,new_eqlist,_  = JTUnifyProp.do_stringunify us ut ns nt equations [] [] [] 1 in
+                  let new_sigma,new_eqlist,_  =
+                     JTUnifyProp.do_stringunify us ut ns nt equations [] [] [] 1
+                  in
                      (new_sigma,new_eqlist,[]) (* assume the empty reduction ordering during proof search *)
              | _ -> (* "This is the FO case" *)
                   (* fo_eqlist encodes the domain condition on J quantifier substitutions *)
@@ -2984,7 +3008,9 @@ let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
          let (nposition,npos_n,nsubst_list) = update_position position (pos_n+1) replace_n subst_list mult in
          let (new_suctrees, new_ordering_list, new_pos_n) =
             rename_subtrees suctrees nposition npos_n nsubst_list in
-         let new_ordering = combine_ordering_list new_ordering_list (nposition.name) in
+         let new_ordering =
+            combine_ordering_list new_ordering_list nposition.name
+         in
          ((NodeA(nposition,new_suctrees)),new_ordering,new_pos_n)
 
 (* we construct for each pos a list orderings representing and correspondning to the array of succtrees *)
@@ -3017,10 +3043,14 @@ let rec add_multiplicity ftree pos_n mult calculus =
                      copy_and_rename_tree last_tree replace_n new_pos_n mult [] in
                   let final_suctrees = new_suctrees @ [add_tree] in
                   let add_orderings = new_ordering_list @ [add_ordering] in
-                  let final_ordering = combine_ordering_list add_orderings (pos.name) in
+                  let final_ordering =
+                     combine_ordering_list add_orderings pos.name
+                  in
                      ((NodeA(pos,final_suctrees)),final_ordering,final_pos_n)
              | _ ->
-                  let final_ordering = combine_ordering_list new_ordering_list (pos.name) in
+                  let final_ordering =
+                     combine_ordering_list new_ordering_list pos.name
+                  in
                      ((NodeA(pos,new_suctrees)),final_ordering,new_pos_n)
             end
 
@@ -3096,15 +3126,29 @@ let rec ext_partners con path ext_atom reduction_partners extension_partners ato
 
 exception Failed_connections
 
-let path_checker consts atom_rel atom_sets qprefixes init_ordering calculus =
+let path_checker
+   (consts: SymbolSet.t)
+   (atom_rel: (atom * atom list * atom list) list)
+   (atom_sets: (atom * AtomSet.t * 'a) list)
+   (qprefixes: ((position * position list) list) * ((position * position list) list))
+   (init_ordering: (position * Set.t) list)
+   calculus =
 
    let con = connections atom_rel [] in
+   let atom_rel =
+      List.map (fun ({aname=x},y,z) -> string_to_pos x, y, z) atom_rel
+   in
 (*   print_endline "";
    print_endline ("number of connections: "^(string_of_int (List.length con)));
 *)
 
-   let rec provable path closed (orderingQ,reduction_ordering) eqlist (sigmaQ,sigmaJ) =
-
+   let rec provable
+      path
+      closed
+      (orderingQ,reduction_ordering)
+      (eqlist : int * (position list * (position list * position list)) list)
+      (sigmaQ,sigmaJ)
+      =
       let rec check_connections reduction_partners extension_partners ext_atom =
          let try_one =
             if AtomSet.is_empty reduction_partners then
@@ -3122,7 +3166,7 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering calculus =
          (try
             let (new_sigmaQ,new_ordering_elements) = jqunify consts (ext_atom.alabel) (try_one.alabel) sigmaQ in
 (* build the orderingQ incrementally from the new added substitution tau of new_sigmaQ *)
-            let (relate_pairs,new_orderingQ) = build_orderingQ new_ordering_elements orderingQ in
+            let relate_pairs,new_orderingQ = build_orderingQ new_ordering_elements orderingQ in
 (* we make in incremental reflexivity test during the string unification *)
             let (new_sigmaJ,new_eqlist,new_red_ordering) =
 (* new_red_ordering = [] in propositional case *)
@@ -3183,10 +3227,11 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering calculus =
       begin
 (*      print_endline "!!!!!!!!!!! prop prover !!!!!!!!!!!!!!!!!!"; *)
 (* in the propositional case, the reduction ordering will be computed AFTER proof search *)
-         let (_,eqlist,(_,(n,substJ)),ext_proof) =
+         let (_,eqlist,(_,nsubstJ),ext_proof) =
             provable AtomSet.empty AtomSet.empty ([],[]) (1,[]) ([],(1,[])) in
+         let _,substJ = nsubstJ in
          let orderingJ = build_orderingJ_list substJ init_ordering atom_rel in
-         ((init_ordering,orderingJ),eqlist,([],(n,substJ)),ext_proof)
+         ((init_ordering,orderingJ),eqlist,([],nsubstJ),ext_proof)
       end
    else
       provable AtomSet.empty AtomSet.empty (init_ordering,[]) (1,[]) ([],(1,[]))
@@ -3485,9 +3530,23 @@ let init_prover ftree =
    let atom_sets = make_atom_sets atom_relation in
    (atom_relation,atom_sets,qprefixes)
 
-let rec try_multiplicity consts mult_limit ftree ordering pos_n mult calculus =
+let rec try_multiplicity
+   (consts: SymbolSet.t)
+   mult_limit
+   ftree
+   (ordering:(position * Set.t) list)
+   pos_n
+   mult
+   calculus
+   =
    try
       let (atom_relation,atom_sets,qprefixes) = init_prover ftree in
+      let q1,q2 = qprefixes in
+      let q1' =
+         List.map (fun (x,y) -> string_to_pos x, list_string_to_pos y) q1 in
+      let q2' =
+         List.map (fun (x,y) -> string_to_pos x, list_string_to_pos y) q2 in
+      let qprefixes = q1',q2' in
       let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
          path_checker consts atom_relation atom_sets qprefixes ordering calculus in
       (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
@@ -3507,6 +3566,9 @@ let rec try_multiplicity consts mult_limit ftree ordering pos_n mult calculus =
             end;
             let (new_ftree,new_ordering,new_pos_n) =
                add_multiplicity ftree pos_n new_mult calculus in
+            let new_ordering = List.map
+               (fun (x,y) -> string_to_pos x, set_string_to_pos y) new_ordering
+            in
             if ftree_eq new_ftree ftree then
                raise unprovable
             else
@@ -3517,7 +3579,20 @@ let prove consts mult_limit termlist calculus =
    let (ftree,ordering,pos_n) = construct_ftree termlist [] [] 0 (mk_var_term "dummy") in
 (* pos_n = number of positions without new root "w" *)
 (*   print_formula_info ftree ordering pos_n;    *)
-   try_multiplicity consts mult_limit ftree ordering pos_n 1 calculus
+   let pos_ordering = List.map
+      (fun (x,y) -> string_to_pos x, set_string_to_pos y) ordering
+   in
+   let ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof =
+      try_multiplicity consts mult_limit ftree pos_ordering pos_n 1 calculus
+   in
+   let string_red_ordering = List.map
+      (fun (x,y) -> pos_to_string x, set_pos_to_string y) red_ordering
+   in
+   let string_sigmaQ = List.map
+      (fun (x,y) -> pos_to_string x, y) sigmaQ
+   in
+   ftree, string_red_ordering, eqlist, (string_sigmaQ,sigmaJ), ext_proof
+
 
 (********** first-order type theory interface *******************)
 
@@ -3553,8 +3628,8 @@ let rec create_output consts rule_list input_map =
       [] -> JLogic.empty_inf
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms [term1]
-         and delta2_names = collect_delta_terms [term2] in
+         let delta1_names = list_pos_to_string (collect_delta_terms [term1]) in
+         let delta2_names = list_pos_to_string (collect_delta_terms [term2]) in
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
          let delta_terms =
             List.map (fun x -> (mk_string_term jprover_op x)) unique_deltas in
@@ -3580,8 +3655,8 @@ let rec make_test_interface consts rule_list input_map =
       [] -> []
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms [term1]
-         and delta2_names = collect_delta_terms [term2] in
+         let delta1_names = list_pos_to_string (collect_delta_terms [term1]) in
+         let delta2_names = list_pos_to_string (collect_delta_terms [term2]) in
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
          let delta_terms =
             List.map (fun x -> (mk_string_term jprover_op x)) unique_deltas in
@@ -3667,7 +3742,7 @@ let do_prove mult_limit termlist calculus =
       force_newline ();
 (* ----------------------------------------------- *)
       open_box 0;
-      print_tunify sigmaJ;
+      (*print_tunify sigmaJ;*)
       print_flush ();
       print_endline "";
       print_endline "";
@@ -3678,7 +3753,7 @@ let do_prove mult_limit termlist calculus =
       let (qmax,equations) = eqlist in
       print_endline ("number of quantifier domains :"^(string_of_int (qmax-1)));
       print_endline "";
-      print_equations equations;
+      (*print_equations equations;*)
       print_flush ();
       print_endline "";
       print_endline "";
