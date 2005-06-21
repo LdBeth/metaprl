@@ -2940,7 +2940,7 @@ let rename_pos x m =
    (Char.escaped pref)^(string_of_int m)
 
 let update_position position m replace_n subst_list mult =
-   let ({name=x; address=y; op=z; pol=p; pt=a; st=b; label=t}) = position in
+   let ({name=x; address=y; pospos=(k,_); op=z; pol=p; pt=a; st=b; label=t}) = position in
    let nx = rename_pos x m in
    let nsubst_list =
       if b=Gamma_0 then
@@ -2959,7 +2959,7 @@ let update_position position m replace_n subst_list mult =
    let add_array = Array.of_list y in
    let _ = (add_array.(replace_n) <- mult) in
    let new_add = Array.to_list add_array in
-   ({name=nx; address=new_add; op=z; pol=p; pt=a; st=b; label=nt},m,nsubst_list)
+   ({name=nx; address=new_add; pospos=(k,m); op=z; pol=p; pt=a; st=b; label=nt},m,nsubst_list)
 
 let rec append_orderings list_of_lists =
    match list_of_lists with
@@ -3279,30 +3279,33 @@ let rec compute_atomlist_relations worklist ftree alist =  (* last version of al
          let first_relations = compute_atom_relations first ftree alist in
          first_relations::(compute_atomlist_relations rest ftree alist)
 
-let atom_record position prefix =
-   let aname = position.name in
+let atom_record position prefix posprefix =
+   let {name=aname; pospos=pospos;
+        label=label; address=address; pol=pol; st=st} = position in
    let aprefix = prefix @ [aname] in (* atom position is last element in prefix *)
-   let aop = (dest_term position.label).term_op in
-   ({aname=aname; aaddress=(position.address); aprefix=aprefix; apredicate=aop;
-     apol=(position.pol); ast=(position.st); alabel=(position.label)})
+   let aop = (dest_term label).term_op in
+   ({aname=aname; aaddress=address; apos=pospos;
+     aprefix=aprefix; aposprefix=posprefix @ [pospos];
+     apredicate=aop;
+     apol=pol; ast=st; alabel=label})
 
-let rec select_atoms_treelist treelist prefix =
-   let rec select_atoms ftree prefix =
+let rec select_atoms_treelist treelist prefix posprefix =
+   let rec select_atoms ftree prefix posprefix =
       match ftree with
          Empty -> [],[],[]
        | NodeAt(position) ->
-            [(atom_record position prefix)],[],[]
+            [(atom_record position prefix posprefix)],[],[]
        | NodeA(position,suctrees) ->
             let st = position.st in
-            let new_prefix =
+            let new_prefix, new_posprefix =
                match st with
                   Psi_0 | Phi_0 ->
-                     prefix @ [position.name]
+                     prefix @ [position.name], posprefix @ [position.pospos]
                 | _ ->
-                     prefix
+                     prefix, posprefix
             in
             let (rest_alist,rest_gamma_0_prefixes,rest_delta_0_prefixes) =
-               select_atoms_treelist suctrees new_prefix
+               select_atoms_treelist suctrees new_prefix new_posprefix
             in
             (  rest_alist,
               (if st == Gamma_0 then rest_gamma_0_prefixes @ [position.name,prefix] else rest_gamma_0_prefixes),
@@ -3311,13 +3314,19 @@ let rec select_atoms_treelist treelist prefix =
    match treelist with
       [] -> [],[],[]
     | first::rest ->
-         let (first_alist,first_gprefixes,first_dprefixes) = select_atoms first prefix
-         and (rest_alist,rest_gprefixes,rest_dprefixes) = select_atoms_treelist rest prefix in
+         let first_alist,first_gprefixes,first_dprefixes =
+            select_atoms first prefix posprefix
+         in
+         let rest_alist,rest_gprefixes,rest_dprefixes =
+            select_atoms_treelist rest prefix posprefix
+         in
          ((first_alist @ rest_alist),(first_gprefixes @ rest_gprefixes),
           (first_dprefixes @ rest_dprefixes))
 
 let prepare_prover ftree =
-   let alist,gamma_0_prefixes,delta_0_prefixes = select_atoms_treelist [ftree] [] in
+   let alist,gamma_0_prefixes,delta_0_prefixes =
+      select_atoms_treelist [ftree] [] []
+   in
    let atom_rel = compute_atomlist_relations alist ftree alist in
    (atom_rel,(gamma_0_prefixes,delta_0_prefixes))
 
@@ -3329,13 +3338,13 @@ let make_position_name =
    let c = "c" in
    let a = "a" in
    fun stype pos_n ->
-      let prefix =
+      let prefix,kind =
          match stype with
-            Phi_0 | Gamma_0 -> v
-          | Psi_0 | Delta_0 -> c
-          | _ -> a
+            Phi_0 | Gamma_0 -> v, Var
+          | Psi_0 | Delta_0 -> c, Const
+          | _ -> a, Atom
       in
-         prefix^(string_of_int pos_n)
+         prefix^(string_of_int pos_n), (kind, pos_n)
 
 let dual_pol pol =
    if pol = O then I else O
@@ -3354,7 +3363,7 @@ let check_subst_term variable old_term pos_name stype =
     | _ -> old_term
 
 let rec build_ftree variable old_term pol stype address pos_n =
-   let pos_name = make_position_name stype pos_n in
+   let pos_name, pospos = make_position_name stype pos_n in
    let term = check_subst_term variable old_term pos_name stype in
    if JLogic.is_and_term term then
       let s,t = JLogic.dest_and term in
@@ -3364,7 +3373,10 @@ let rec build_ftree variable old_term pol stype address pos_n =
          else
             Alpha,Alpha_1,Alpha_2
       in
-      let position = {name=pos_name; address=address; op=And; pol=pol; pt=ptype; st=stype; label=term} in
+      let position =
+         {name=pos_name; address=address; pospos=pospos;
+         op=And; pol=pol; pt=ptype; st=stype; label=term}
+      in
       let subtree_left,ordering_left,posn_left = build_ftree "" s pol stype_1 (address@[1]) (pos_n+1) in
       let subtree_right,ordering_right,posn_right = build_ftree "" t pol stype_2 (address@[2])
             (posn_left+1) in
@@ -3386,14 +3398,19 @@ let rec build_ftree variable old_term pol stype address pos_n =
             else
                Beta,Beta_1,Beta_2
          in
-         let position = {name=pos_name; address=address; op=Or; pol=pol; pt=ptype; st=stype; label=term} in
+         let position =
+            {name=pos_name; address=address; pospos=pospos;
+            op=Or; pol=pol; pt=ptype; st=stype; label=term}
+         in
          let subtree_left,ordering_left,posn_left = build_ftree "" s pol stype_1 (address@[1]) (pos_n+1) in
          let subtree_right,ordering_right,posn_right = build_ftree "" t pol stype_2 (address@[2])
-               (posn_left+1) in
-         let (succ_left,whole_left) = List.hd ordering_left
-         and (succ_right,whole_right) = List.hd ordering_right in
+               (posn_left+1)
+         in
+         let (succ_left,whole_left) = List.hd ordering_left in
+         let (succ_right,whole_right) = List.hd ordering_right in
          let pos_succs =
-            StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left in
+            StringSet.add (StringSet.add (StringSet.union whole_left whole_right) succ_right) succ_left
+         in
          (NodeA(position,[subtree_left;subtree_right]),
           ((position.name),pos_succs) :: (ordering_left @ ordering_right),
           posn_right
@@ -3407,9 +3424,14 @@ let rec build_ftree variable old_term pol stype address pos_n =
                else
                   Phi,Phi_0,Beta,Beta_1,Beta_2
             in
-            let pos2_name = make_position_name stype_0 (pos_n+1) in
-            let sposition = {name=pos_name; address=address; op=Imp; pol=pol; pt=ptype_0; st=stype; label=term}
-            and position = {name=pos2_name; address=address@[1]; op=Imp; pol=pol; pt=ptype; st=stype_0; label=term} in
+            let pos2_name, pos2pos = make_position_name stype_0 (pos_n+1) in
+            let sposition =
+               {name=pos_name; address=address; pospos=pospos;
+               op=Imp; pol=pol; pt=ptype_0; st=stype; label=term}
+            in
+            let position = {name=pos2_name; address=address@[1]; pospos=pos2pos;
+               op=Imp; pol=pol; pt=ptype; st=stype_0; label=term}
+            in
             let subtree_left,ordering_left,posn_left = build_ftree "" s (dual_pol pol) stype_1 (address@[1;1])
                   (pos_n+2) in
             let subtree_right,ordering_right,posn_right = build_ftree "" t pol stype_2 (address@[1;2])
@@ -3432,9 +3454,15 @@ let rec build_ftree variable old_term pol stype address pos_n =
                   else
                      Phi,Phi_0,Alpha,Alpha_1
                in
-               let pos2_name = make_position_name stype_0 (pos_n+1) in
-               let sposition = {name=pos_name; address=address; op=Neg; pol=pol; pt=ptype_0; st=stype; label=term}
-               and position = {name=pos2_name; address=address@[1]; op=Neg; pol=pol; pt=ptype; st=stype_0; label=term} in
+               let pos2_name, pos2pos = make_position_name stype_0 (pos_n+1) in
+               let sposition =
+                  {name=pos_name; address=address; pospos=pospos;
+                  op=Neg; pol=pol; pt=ptype_0; st=stype; label=term}
+               in
+               let position =
+                  {name=pos2_name; address=address@[1]; pospos=pos2pos;
+                  op=Neg; pol=pol; pt=ptype; st=stype_0; label=term}
+               in
                let subtree_left,ordering_left,posn_left = build_ftree "" s (dual_pol pol) stype_1 (address@[1;1])
                      (pos_n+2) in
                let (succ_left,whole_left) = List.hd ordering_left in
@@ -3454,7 +3482,10 @@ let rec build_ftree variable old_term pol stype address pos_n =
                      else
                         Delta,Delta_0
                   in
-                  let position = {name=pos_name; address=address; op=Ex; pol=pol; pt=ptype; st=stype; label=term} in
+                  let position =
+                     {name=pos_name; address=address; pospos=pospos;
+                     op=Ex; pol=pol; pt=ptype; st=stype; label=term}
+                  in
                   let subtree_left,ordering_left,posn_left = build_ftree v t pol stype_1 (address@[1]) (pos_n+1) in
                   let (succ_left,whole_left) = List.hd ordering_left in
                   let pos_succs =
@@ -3473,9 +3504,15 @@ let rec build_ftree variable old_term pol stype address pos_n =
                         else
                            Phi,Phi_0,Gamma,Gamma_0
                      in
-                     let pos2_name = make_position_name stype_0 (pos_n+1) in
-                     let sposition = {name=pos_name; address=address; op=All; pol=pol; pt=ptype_0; st=stype; label=term}
-                     and position = {name=pos2_name; address=address@[1]; op=All; pol=pol; pt=ptype; st=stype_0; label=term} in
+                     let pos2_name, pos2pos = make_position_name stype_0 (pos_n+1) in
+                     let sposition =
+                        {name=pos_name; address=address; pospos=pospos;
+                        op=All; pol=pol; pt=ptype_0; st=stype; label=term}
+                     in
+                     let position =
+                        {name=pos2_name; address=address@[1]; pospos=pos2pos;
+                        op=All; pol=pol; pt=ptype; st=stype_0; label=term}
+                     in
                      let subtree_left,ordering_left,posn_left = build_ftree v t pol stype_1 (address@[1;1])
                            (pos_n+2) in
                      let (succ_left,whole_left) = List.hd ordering_left in
@@ -3493,9 +3530,15 @@ let rec build_ftree variable old_term pol stype address pos_n =
                         else
                            Phi,Phi_0
                      in
-                     let pos2_name = make_position_name stype_0 (pos_n+1) in
-                     let sposition = {name=pos_name; address=address; op=At; pol=pol; pt=ptype_0; st=stype; label=term}
-                     and position = {name=pos2_name; address=address@[1]; op=At; pol=pol; pt=PNull; st=stype_0; label=term} in
+                     let pos2_name, pos2pos = make_position_name stype_0 (pos_n+1) in
+                     let sposition =
+                        {name=pos_name; address=address; pospos=pospos;
+                        op=At; pol=pol; pt=ptype_0; st=stype; label=term}
+                     in
+                     let position =
+                        {name=pos2_name; address=address@[1]; pospos=pos2pos;
+                        op=At; pol=pol; pt=PNull; st=stype_0; label=term}
+                     in
                      (NodeA(sposition,[NodeAt(position)]),
                       [(sposition.name,(StringSet.singleton position.name));(position.name,StringSet.empty)],
                       pos_n+1
@@ -3504,7 +3547,10 @@ let rec build_ftree variable old_term pol stype address pos_n =
 let rec construct_ftree termlist treelist orderinglist pos_n goal =
    match termlist with
       [] ->
-         let new_root = {name="w"; address=[]; op=Null; pol=O; pt=Psi; st=PNull_0; label=goal} in
+         let new_root =
+            {name="w"; address=[]; pospos=(Root,0);
+            op=Null; pol=O; pt=Psi; st=PNull_0; label=goal}
+         in
          NodeA(new_root,treelist),(("w",(union_orderings orderinglist))::orderinglist),pos_n
     | ft::rest_terms ->
          let next_address = [((List.length treelist)+1)] in

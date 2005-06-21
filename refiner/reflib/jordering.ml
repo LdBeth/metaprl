@@ -20,9 +20,6 @@ open Jtypes
 exception Not_unifiable
 exception Failed
 
-type pos_kind = Dummy | Atom | Const | EigenVar | Var | NewVar | NewVarQ | GammaVar | Root
-type position = pos_kind * int
-
 let jsuffix = "_jprover"
 
 let rec pos_to_string (kind,i) =
