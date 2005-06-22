@@ -102,13 +102,14 @@ let print_tunify sigma =
 
 let is_const (k,_)  =
   match k with
-     Const -> true
-   | Atom | Dummy | Root | EigenVar | Var | NewVar | NewVarQ | GammaVar -> false
+     Const | GammaConst -> true
+   | Atom | EmptyVar | Root | EigenVar | GammaEigen
+   | Var | NewVar | NewVarQ | GammaVar -> false
 
 let is_var (k,_)  =
   match k with
      Var | NewVar | NewVarQ | GammaVar -> true
-   | Atom | Const | EigenVar | Dummy | Root -> false
+   | Atom | Const | GammaConst | EigenVar | GammaEigen | EmptyVar | Root -> false
 
 let r_1 s ft rt =
    (s = []) && (ft = []) && (rt = [])

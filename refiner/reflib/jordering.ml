@@ -20,8 +20,6 @@ open Jtypes
 exception Not_unifiable
 exception Failed
 
-let jsuffix = "_jprover"
-
 let rec pos_to_string (kind,i) =
    let s = string_of_int i in
    match kind with
@@ -33,16 +31,20 @@ let rec pos_to_string (kind,i) =
          "c"^s
     | EigenVar ->
          "Jprover_r"^s
+    | GammaEigen ->
+         "Jprover_rj"^s
     | NewVar ->
          "vnew"^s
     | Var ->
          "v"^s
-    | Dummy ->
+    | EmptyVar ->
          ""
     | NewVarQ ->
          "vnewq"^s
     | GammaVar ->
-         "v"^s^jsuffix
+         "vnewj"^s
+    | GammaConst ->
+         "cj"^s
 
 let rec string_to_pos s =
    let aux x =
@@ -55,29 +57,40 @@ let rec string_to_pos s =
       if String.rcontains_from s (pred last) '_' then
          raise (Invalid_argument ("Underscore occurs more than once: "^s))
       else
-         if String.sub s last (String.length s - last) = jsuffix then
-            let index = String.sub s 1 last in
-            GammaVar, aux index
+         if String.sub s 0 9 = "Jprover_r" then
+            match String.get s 9 with
+             | ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9') ->
+                  EigenVar, aux (String.sub s 9 (String.length s - 9))
+             | 'j' ->
+                  GammaEigen, aux (String.sub s 10 (String.length s - 10))
+             |  _  ->
+                  raise (Invalid_argument ("Unknown type of variable: "^s))
          else
-            if String.sub s 0 9 = "Jprover_r" then
-               EigenVar, aux (String.sub s 9 (String.length s - 9))
-            else
-               raise (Invalid_argument ("Unknown type of variable: "^s))
+            raise (Invalid_argument ("Unknown type of variable: "^s))
    else
       if s = "" then
          raise (Invalid_argument "Empty position string")
       else
          if (String.length s >= 4) && (String.sub s 0 4 = "vnew") then
-            if String.get s 4 = 'q' then
-               NewVarQ, aux (String.sub s 5 (String.length s - 5))
-            else
-               NewVar, aux (String.sub s 4 (String.length s - 4))
+            match String.get s 4 with
+               'q' ->
+                  NewVarQ, aux (String.sub s 5 (String.length s - 5))
+             | 'j' ->
+                  GammaVar, aux (String.sub s 5 (String.length s - 5))
+             | ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9') ->
+                  NewVar, aux (String.sub s 4 (String.length s - 4))
+             | _ ->
+                  raise (Invalid_argument ("Unknown type of variable: "^s))
          else
             let sub = String.sub s 1 (String.length s - 1) in
             match String.get s 0 with
                'a' -> Atom, aux sub
              | 'v' -> Var, aux sub
-             | 'c' -> Const, aux sub
+             | 'c' ->
+                   if String.get s 1 = 'j' then
+                      GammaConst, aux (String.sub sub 1 (String.length sub - 1))
+                   else
+                      Const, aux sub
              | 'w' -> Root, 0
              |  _  -> raise (Invalid_argument ("Unexpected code of position: "^s))
 
@@ -85,9 +98,24 @@ let gamma_to_simple p =
    match p with
       GammaVar, i ->
          Var, i
-    | (Dummy | Atom | Const | EigenVar | Var | NewVar | NewVarQ | Root), _ ->
+    | (EmptyVar|Atom|Const|GammaConst|EigenVar|GammaEigen|Var|NewVar|NewVarQ|Root), _ ->
          let s = pos_to_string p in
-         raise (Invalid_argument ("GammaVar is expected instead of: "^s))
+         raise (Invalid_argument ("GammaVar was expected instead of: "^s))
+
+let simple_to_gamma p =
+   match p with
+      Var, i ->
+         GammaVar, i
+    | Const, i ->
+         GammaConst, i
+    | EigenVar, i ->
+         GammaEigen, i
+    | (EmptyVar|Atom|GammaConst|GammaEigen|GammaVar|NewVar|NewVarQ|Root), _ ->
+         let s = pos_to_string p in
+         raise (Invalid_argument ("Var, Const or EigenVar were expected instead of: "^s))
+
+let string_to_gamma s =
+   pos_to_string (simple_to_gamma (string_to_pos s))
 
 module PosOrdering =
 struct
@@ -96,30 +124,39 @@ struct
 
    let rec compare (a,(i:int)) (b,j) =
       match a,b with
-       | Dummy,Dummy -> Pervasives.compare i j
-       | Dummy, _ -> -1
-       | Atom,Dummy -> 1
+       | EmptyVar,EmptyVar -> Pervasives.compare i j
+       | EmptyVar, _ -> -1
+       | Atom,EmptyVar -> 1
        | Atom,Atom -> Pervasives.compare i j
        | Atom,_ -> -1
-       | Const,(Dummy|Atom) -> 1
+       | Const,(EmptyVar|Atom) -> 1
        | Const,Const -> Pervasives.compare i j
        | Const,_ -> -1
-       | EigenVar,(Dummy|Atom|Const) -> 1
+       | GammaConst,(EmptyVar|Atom|Const) -> 1
+       | GammaConst, GammaConst -> Pervasives.compare i j
+       | GammaConst,_ -> -1
+       | EigenVar,(EmptyVar|Atom|Const|GammaConst) -> 1
        | EigenVar, EigenVar -> Pervasives.compare i j
        | EigenVar, _ -> -1
-       | Var,(Atom|Const|Dummy|EigenVar) -> 1
+       | GammaEigen,(EmptyVar|Atom|Const|GammaConst|EigenVar) -> 1
+       | GammaEigen,GammaEigen -> Pervasives.compare i j
+       | GammaEigen, _ -> -1
+       | Var,(Atom|Const|GammaConst|EmptyVar|EigenVar|GammaEigen) -> 1
        | Var,Var -> Pervasives.compare i j
        | Var,_ -> -1
-       | GammaVar,(Dummy|Atom|Const|EigenVar|Var) -> 1
-       | GammaVar, GammaVar -> Pervasives.compare i j
-       | GammaVar, _ -> -1
-       | NewVar,(Atom|Const|Dummy|EigenVar|Var|GammaVar) -> 1
+       | NewVar,(Atom|Const|GammaConst|EmptyVar|EigenVar|GammaEigen|Var) -> 1
        | NewVar,NewVar -> Pervasives.compare i j
        | NewVar,_ -> -1
-       | NewVarQ,(Atom|Const|Dummy|EigenVar|Var|GammaVar|NewVar) -> 1
+       | GammaVar,(EmptyVar|Atom|Const|GammaConst|EigenVar|GammaEigen|Var|NewVar) -> 1
+       | GammaVar, GammaVar -> Pervasives.compare i j
+       | GammaVar, _ -> -1
+       | NewVarQ,
+           (Atom|Const|GammaConst|EmptyVar|EigenVar|GammaEigen|Var|GammaVar|NewVar) -> 1
        | NewVarQ,NewVarQ -> Pervasives.compare i j
        | NewVarQ,_ -> -1
-       | Root, (Atom|Const|Dummy|EigenVar|NewVar|NewVarQ|Var|GammaVar) -> 1
+       | Root,
+          (Atom|Const|GammaConst|EmptyVar|EigenVar|GammaEigen
+          |NewVar|NewVarQ|Var|GammaVar) -> 1
        | Root,Root -> Pervasives.compare i j
 
 end

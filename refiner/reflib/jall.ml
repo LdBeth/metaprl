@@ -2078,7 +2078,7 @@ struct
                selectQ_rec spos_var r
 
    let selectQ spos_name csigmaQ =
-      let spos_var = spos_name^"_jprover" in
+      let spos_var = string_to_gamma spos_name in
       selectQ_rec spos_var csigmaQ
 
    let apply_sigmaQ term sigmaQ =
@@ -2224,7 +2224,9 @@ struct
       match sigmaQ with
          [] -> []
        | (v,term)::r ->
-            if (List.mem (String.sub v 0 (String.index v '_')) gamma_diff) then
+            (*let _ = print_endline ("do_split: "^v) in*)
+            let simple = pos_to_string (gamma_to_simple (string_to_pos v)) in
+            if (List.mem simple gamma_diff) then
                do_split gamma_diff r
             else
                (v,term)::(do_split gamma_diff r)
@@ -2662,8 +2664,11 @@ struct
                      rback @ (tot ftree redord connections pnew newslist)
              | Phi ->
                   if p.op = At then
-                     let succ = List.hd succs in
-                     rback @ (solve ftree redord connections succ pnew newslist (p,[]) orr_flag)  (* solve atoms immediately *)
+                     match succs with
+                        succ::_ ->
+                           rback @ (solve ftree redord connections succ pnew newslist (p,[]) orr_flag)  (* solve atoms immediately *)
+                      | [] ->
+                           raise (Invalid_argument "total: empty succs in Phi")
                   else
                      rback @ (tot ftree redord connections pnew newslist)
              | PNull ->
@@ -2691,8 +2696,12 @@ struct
              | Alpha ->
                   rback @ ((("",p.name),(build_rule p p csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
              | Delta ->
-                  let sp = List.hd succs in
-                  rback @ ((("",p.name),(build_rule p sp csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
+                  begin match succs with
+                     sp::_ ->
+                        rback @ ((("",p.name),(build_rule p sp csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
+                   | [] ->
+                        raise (Invalid_argument "total: empty succs in Delta")
+                  end
              | Beta ->
 (*             print_endline "split_in"; *)
                   let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) =
@@ -2944,8 +2953,8 @@ let update_position position m replace_n subst_list mult =
    let nx = rename_pos x m in
    let nsubst_list =
       if b=Gamma_0 then
-         let vx = mk_var_term (x^"_jprover")
-         and vnx = mk_var_term (nx^"_jprover") in
+         let vx = mk_var_term (string_to_gamma x) in
+         let vnx = mk_var_term (string_to_gamma nx) in
          (vx,vnx)::subst_list
       else
          if b=Delta_0 then
@@ -3358,7 +3367,7 @@ let check_subst_term variable old_term pos_name stype =
    match stype with
       Gamma_0 | Delta_0 ->
          let new_variable =
-            if stype = Gamma_0 then (mk_var_term (pos_name^"_jprover"))
+            if stype = Gamma_0 then (mk_var_term (string_to_gamma pos_name))
             else
                (mk_string_term jprover_op pos_name)
          in
@@ -3687,12 +3696,12 @@ let rec create_output consts rule_list input_map =
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
          let delta_terms =
             List.map (fun x -> (mk_string_term jprover_op x)) unique_deltas in
-         let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in
+         let delta_vars = List.map string_to_gamma unique_deltas in
          let delta_map = List.combine delta_vars delta_terms in
          let var_mapping = (input_map @ delta_map) in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
-         let unique_object = mk_var_term "v0_jprover" in
+         let unique_object = mk_var_term "vnewj0" in
          let unique_list1 = make_equal_list (List.length frees1) unique_object
          and unique_list2 = make_equal_list (List.length frees2) unique_object
          in
@@ -3714,12 +3723,12 @@ let rec make_test_interface consts rule_list input_map =
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
          let delta_terms =
             List.map (fun x -> (mk_string_term jprover_op x)) unique_deltas in
-         let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in
+         let delta_vars = List.map string_to_gamma unique_deltas in
          let delta_map = List.combine delta_vars delta_terms in
          let var_mapping = (input_map @ delta_map) in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
-         let unique_object = mk_var_term "v0_jprover" in
+         let unique_object = mk_var_term "vnewj0" in
          let unique_list1 = make_equal_list (List.length frees1) unique_object
          and unique_list2 = make_equal_list (List.length frees2) unique_object
          in

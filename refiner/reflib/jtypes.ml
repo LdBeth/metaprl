@@ -7,7 +7,7 @@ let free_var_op = make_opname ["free_variable";"Jprover"]
 let jprover_op = make_opname ["string";"Jprover"]
 
 type pos_kind =
-   Dummy
+   EmptyVar
  | Atom
  | Const
  | EigenVar
@@ -15,6 +15,8 @@ type pos_kind =
  | NewVar
  | NewVarQ
  | GammaVar
+ | GammaConst
+ | GammaEigen
  | Root
 
 type position = pos_kind * int
