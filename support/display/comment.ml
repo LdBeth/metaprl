@@ -878,7 +878,7 @@ declare iverbatim[text:s] : Dform
 doc docoff
 
 dform iverbatim_df1 : mode[tex] :: iverbatim[s:s] =
-   izone `"\n\n\\begin{quote}\\begin{minipage}{3in}\\begin{verbatim}\n"
+   izone `"\n\n\\begin{quote}\\renewcommand\\baselinestretch{1.0}\\begin{minipage}{3in}\\begin{verbatim}\n"
    slot["raw", s:s]
    `"\n\\end{verbatim}\\end{minipage}\\end{quote}\n\n" ezone
 
