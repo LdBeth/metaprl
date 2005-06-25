@@ -1072,9 +1072,9 @@ struct
     *)
    let handle_syscall server state outx command =
       State.write session_entry (fun session ->
+            Top.backup_all ();
             match command with
                SyscallRestart ->
-                  Top.backup_all ();
                   Shell_current.flush ();
                   save_browser server state;
                   (match outx with

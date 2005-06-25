@@ -44,6 +44,7 @@ type state =
  *)
 let handle_syscall command =
    let perform_command command =
+      Shell_command.backup_all ();
       eprintf "+ %s@." command;
       try
          match Unix.system command with
@@ -59,7 +60,6 @@ let handle_syscall command =
       match command with
          SyscallRestart ->
             Shell_current.flush ();
-            Shell_command.backup_all ();
             (try Unix.execv Sys.argv.(0) Sys.argv; -1 with
                 Unix.Unix_error (errno, funinfo, arginfo) ->
                    eprintf "Execv failed: %s %s(%s)@." (Unix.error_message errno) funinfo arginfo;
