@@ -39,6 +39,7 @@ open Opname
 open Term_sig
 open Term_shape_sig
 open Term_ty_sig
+open Term_meta_sig
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -1763,11 +1764,10 @@ struct
           ]];
 
       hyp:
-         [[ "<"; name = var; conts = OPT contslist; args=optbrtermlist; ">" ->
+         [[ "<"; hash = OPT "#"; name = var; conts = OPT contslist; args=optbrtermlist; ">" ->
              let conts = match conts with Some conts -> conts | None -> get_var_contexts loc name args in
-             Context(name, conts, args)
-          | "<"; name = var; sl_contexts_empty; args=optbrtermlist; ">" ->
-             Context(name, [], args)
+             let conts = match hash with Some _ -> hash_sym :: conts | None -> conts in
+               Context(name, conts, args)
           | v = LIDENT; ":"; t = aterm ->
              Hypothesis(Lm_symbol.add v, get_aterm loc t)
           | v = UIDENT; ":"; t = aterm ->
@@ -1778,7 +1778,10 @@ struct
              Hypothesis(empty_var, get_aterm loc t)
           ]];
 
-      contslist: [[ sl_contexts_left; vl = LIST0 var SEP ";" ; sl_contexts_right -> vl ]];
+      contslist:
+         [[ sl_contexts_left; vl = LIST0 var SEP ";" ; sl_contexts_right -> vl
+          | sl_contexts_empty -> []
+          ]];
 
       optbrtermlist:
          [[ tl = OPT brtermlist ->

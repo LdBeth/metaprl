@@ -38,6 +38,7 @@ open Term_base_sig
 open Term_op_sig
 open Term_man_sig
 open Term_subst_sig
+open Term_meta_sig
 open Opname
 
 open Lm_symbol
@@ -302,7 +303,6 @@ let () = ();;
    let vv = Lm_symbol.make "v" 0
    let bang = [Lm_symbol.make "!" 0]
    let df_context_op = make_opname ["df_context"; "Base_dform"]
-   let hash_sym = Lm_symbol.make "#" 0
 
    let encode_free_var v = mk_so_var_term v bang []
 

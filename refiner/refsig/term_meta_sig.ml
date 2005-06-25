@@ -32,6 +32,9 @@
  *)
 open Lm_symbol
 
+(* Encodes "this context does not introduce a binding" at parse-time *)
+let hash_sym = Lm_symbol.make "#" 0
+
 (************************************************************************
  * META-TERMS                                                           *
  ************************************************************************)
