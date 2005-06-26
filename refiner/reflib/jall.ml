@@ -751,6 +751,7 @@ struct
    let beta_pure alpha_layer connections beta_expansions =
       let (l1,l2) = List.split connections in
       let test_list = l1 @ l2 @ beta_expansions in
+      let alpha_layer = list_string_to_pos alpha_layer in
       begin
 (*       open_box 0;
          print_endline "";
@@ -770,9 +771,9 @@ struct
          BEmpty ->
             raise jprover_bug
        | CNode((c1,c2)) ->
-            bproof,[(c1,c2)],[]
+            bproof,[(string_to_pos c1,string_to_pos c2)],[]
        | AtNode(_,(c1,c2)) ->
-            bproof,[(c1,c2)],[]
+            bproof,[(string_to_pos c1,string_to_pos c2)],[]
        | RNode(alpha_layer,subproof) ->
             let (opt_subproof,min_connections,beta_expansions) =
                apply_bproof_purity subproof in
@@ -793,7 +794,9 @@ struct
                   end
                else
                   let min_conn = remove_dups_connections (min_conn1 @ min_conn2) in
-                  let beta_exp = remove_dups_list (pos :: beta_exp1 @ beta_exp2) in
+                  let beta_exp =
+                     remove_dups_list ((string_to_pos pos) :: beta_exp1 @ beta_exp2)
+                  in
                   (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2)),min_conn,beta_exp)
 
    let bproof_purity bproof =
@@ -2168,7 +2171,8 @@ struct
     | Empty :: r ->
          collect_pure flist slist r
     | NodeAt(pos) :: r ->
-         if ((List.mem (pos.name) flist) or (List.mem (pos.name) slist)) then
+         let {pospos=pospos} = pos in
+         if ((List.mem pospos flist) or (List.mem pospos slist)) then
             collect_pure flist slist r
          else
             pos :: collect_pure flist slist r
@@ -2384,9 +2388,15 @@ struct
             print_endline "Atom purity tree";
             raise jprover_bug
 
-   let rec purity ftree redord connections unsolved_list =
+   let rec purity ftree redord
+      (connections : (position*position) list)
+      unsolved_list
+      =
 
-      let rec purity_reduction pr ftree redord connections unsolved_list =
+      let rec purity_reduction pr ftree redord
+         (connections : (position*position) list)
+         unsolved_list
+         =
          begin
 (*        open_box 0;
    print_endline " ";
@@ -2404,7 +2414,15 @@ struct
                   if assocn = "" then
                      (Empty,[],[],[])  (* should not occur in the final version *)
                   else
+                     let connections =
+                        List.map
+                           (fun (x,y) -> pos_to_string x, pos_to_string y)
+                           connections
+                     in
                      let (rednew,connew,unsolnew) = update_relations deltree redord connections unsolved_list in
+                     let connew =
+                        List.map (fun (x,y) -> string_to_pos x, string_to_pos y) connew
+                     in
                      begin
 (*        open_box 0;
    print_endline " ";
@@ -2814,6 +2832,11 @@ struct
              | [] ->
                   raise jprover_bug
          with Gamma_deadlock ->
+            let connections =
+               List.map
+                  (fun (x,y) -> string_to_pos x, string_to_pos y)
+                  connections
+            in
             let ljmc_subproof =  total ftree redord connections csigmaQ slist (Intuit MultiConcl) opt_bproof
             in
             eigen_counter := 1;
@@ -2822,6 +2845,11 @@ struct
          end
       in
       let po = compute_open [ftree] slist in
+      let connections =
+         List.map
+            (fun (x,y) -> pos_to_string x, pos_to_string y)
+            connections
+      in
       tot ftree redord connections po slist
 
    let reconstruct ftree redord sigmaQ ext_proof calculus =
@@ -2855,6 +2883,11 @@ struct
          end;
       let (newroot_name,unsolved_list) =  build_unsolved ftree in
       let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
+      let min_connections =
+         List.map
+            (fun (x,y) -> string_to_pos x, string_to_pos y)
+            min_connections
+      in
       let (init_tree,init_redord,init_connections,init_unsolved_list) =
          purity ftree redord2 min_connections unsolved_list in
       begin
