@@ -2105,22 +2105,24 @@ struct
 
    let rec selectQ_rec spos_var csigmaQ =
       match csigmaQ with
-         [] ->  mk_pos_var (string_to_pos spos_var)   (* dynamic completion of csigmaQ *)
+         [] ->  Term.mk_var_term spos_var   (* dynamic completion of csigmaQ *)
        | (var,term)::r ->
-            if spos_var=var then
+            if Lm_symbol.eq spos_var var then
                term
             else
                selectQ_rec spos_var r
 
-   let selectQ spos_name csigmaQ =
-      let spos_var = string_to_gamma spos_name in
+   let selectQ spos_pos csigmaQ =
+      let spos_var = pos_to_symbol (simple_to_gamma spos_pos) in
       selectQ_rec spos_var csigmaQ
 
    let apply_sigmaQ term sigmaQ =
-      let sigma_vars,sigma_terms = List.split sigmaQ in
-      (subst term sigma_vars sigma_terms)
+      apply_subst sigmaQ term
 
-   let build_rule pos spos csigmaQ orr_flag calculus =
+   let build_rule pos spos
+      (csigmaQ : (symbol*term) list)
+      orr_flag calculus
+      =
       let inst_label = apply_sigmaQ (pos.label) csigmaQ in
       match pos.op,pos.pol with
          Null,_ -> raise (Invalid_argument "Jprover: no rule")
@@ -2140,8 +2142,8 @@ struct
        | Neg,I -> Negl,(inst_label),xnil_term
        | Imp,O -> Impr,(inst_label),xnil_term
        | Imp,I -> Impl,(inst_label),xnil_term
-       | All,I -> Alll,(inst_label),(selectQ spos.name csigmaQ)  (* elements of csigmaQ is (string * term) *)
-       | Ex,O -> Exr,(inst_label), (selectQ spos.name csigmaQ)
+       | All,I -> Alll,(inst_label),(selectQ spos.pospos csigmaQ)  (* elements of csigmaQ is (string * term) *)
+       | Ex,O -> Exr,(inst_label), (selectQ spos.pospos csigmaQ)
        | All,O -> Allr,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
        | Ex,I -> Exl,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
 
@@ -2293,9 +2295,13 @@ struct
        | (v,term)::r ->
             let dterms = list_pos_to_string (collect_delta_terms [term]) in
             let (new_term,new_ass_delta_diff) = check_delta_terms (v,term) ass_delta_diff dterms in
+            let v = pos_to_symbol (string_to_pos v) in
             (v,new_term)::(localize_sigma r new_ass_delta_diff)
 
    let subst_split ft1 ft2 ftree uslist1 uslist2 uslist sigmaQ =
+      let sigmaQ = List.map
+         (fun (v,t) -> pos_to_string (symbol_to_pos v), t) sigmaQ
+      in
       let delta,gamma = collect_qpos [ftree] uslist in
       let delta1,gamma1 = collect_qpos [ft1] uslist1 in
       let delta2,gamma2 = collect_qpos [ft2] uslist2 in
@@ -2668,7 +2674,11 @@ struct
 (* total corresponds to tot in the thesis,
    tot simulates the while-loop, solve is the rest *)
 
-   let rec total ftree redord connections csigmaQ slist calculus opt_bproof =
+   let rec total
+      ftree redord connections
+      (csigmaQ : (symbol*term) list)
+      slist calculus opt_bproof
+      =
       let rec tot ftree redord connections po slist =
          let rec solve ftree redord connections p po slist (pred,succs) orr_flag =
             let newslist = delete string_eq (p.name) slist in
@@ -3681,10 +3691,10 @@ let prove consts mult_limit termlist calculus =
    let string_red_ordering = List.map
       (fun (x,y) -> pos_to_string x, set_pos_to_string y) red_ordering
    in
-   let string_sigmaQ = List.map
-      (fun (x,y) -> pos_to_string x, y) sigmaQ
+   let sym_sigmaQ = List.map
+      (fun (p,t) -> pos_to_symbol p, t) sigmaQ
    in
-   ftree, string_red_ordering, eqlist, (string_sigmaQ,sigmaJ), ext_proof
+   ftree, string_red_ordering, eqlist, (sym_sigmaQ,sigmaJ), ext_proof
 
 
 (********** first-order type theory interface *******************)
@@ -3724,12 +3734,14 @@ let rec create_output consts rule_list
          let delta1_names = collect_delta_terms [term1] in
          let delta2_names = collect_delta_terms [term2] in
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
-         let delta_terms =
-            List.map (fun x -> (mk_pos_term jprover_op x)) unique_deltas in
-         let delta_vars =
-            List.map (fun p -> pos_to_symbol (simple_to_gamma p)) unique_deltas
+         let delta_map =
+            List.map
+               (fun p ->
+                  pos_to_symbol (simple_to_gamma p),
+                  (mk_pos_term jprover_op p)
+               )
+               unique_deltas
          in
-         let delta_map = List.combine delta_vars delta_terms in
          let var_mapping = (input_map @ delta_map) in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
@@ -3751,12 +3763,14 @@ let rec make_test_interface consts rule_list input_map =
          let delta1_names = collect_delta_terms [term1] in
          let delta2_names = collect_delta_terms [term2] in
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
-         let delta_terms =
-            List.map (fun x -> (mk_pos_term jprover_op x)) unique_deltas in
-         let delta_vars =
-            List.map (fun p -> pos_to_symbol (simple_to_gamma p)) unique_deltas
+         let delta_map =
+            List.map
+               (fun p ->
+                  pos_to_symbol (simple_to_gamma p),
+                  (mk_pos_term jprover_op p)
+               )
+               unique_deltas
          in
-         let delta_map = List.combine delta_vars delta_terms in
          let var_mapping = (input_map @ delta_map) in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
@@ -3839,7 +3853,7 @@ let do_prove mult_limit termlist calculus =
       print_flush ();
       print_endline "";
       print_endline "";
-      print_sigmaQ sigmaQ;
+(*      print_sigmaQ sigmaQ;*)
       print_endline "";
       print_endline "";
       open_box 0;
