@@ -2844,7 +2844,7 @@ struct
             f_term::(collect_assoc r tauQ)
 
 let pos_subst t vars tl =
-   TermSubst.subst t (List.map (fun x -> Lm_symbol.add (pos_to_string x)) vars) tl
+   TermSubst.subst t (List.map pos_to_symbol vars) tl
 
    let rec rec_apply
       (consts : SymbolSet.t)
@@ -2880,17 +2880,13 @@ let pos_subst t vars tl =
    let multiply
       (consts : SymbolSet.t)
       (sigmaQ : (position * term) list)
-      (tauQ : (position * term) list) =
-      let (tau_vars,tau_terms) = List.split tauQ in
-      let (new_sigmaQ,sigma_ordering)  = rec_apply consts sigmaQ tauQ tau_vars tau_terms
+      (tauQ : (position * term) list)
+      =
+      let tau_vars,tau_terms = List.split tauQ in
+      let new_sigmaQ,sigma_ordering = rec_apply consts sigmaQ tauQ tau_vars tau_terms
       in
-      let tau_ordering_terms = (List.map (fun x -> [x]) tau_terms) (* for extending ordering_elements *)
-      in
-      let tau_ordering_vars = (List.map (fun x -> gamma_to_simple x) tau_vars) in
-      let tau_ordering = (List.combine tau_ordering_vars tau_ordering_terms) in
-      ((new_sigmaQ @ tauQ),
-       (sigma_ordering @ tau_ordering)
-      )
+      let tau_ordering = List.map (fun (v,t) -> gamma_to_simple v, [t]) tauQ in
+      new_sigmaQ @ tauQ, sigma_ordering @ tau_ordering
 
    let apply_2_sigmaQ term1 term2 sigmaQ =
       let sigma_vars,sigma_terms = List.split sigmaQ in
@@ -3699,13 +3695,12 @@ let rec renam_free_vars termlist =
     | f::r ->
          let conts = all_contexts f in
          let var_names = free_vars_list f conts in
-         let string_terms =
+         let mapping =
             List.map
-               (fun s -> mk_symbol_term free_var_op s)
+               (fun s -> s, mk_symbol_term free_var_op s)
                var_names
          in
-         let mapping = List.combine var_names string_terms in
-         let new_f = TermSubst.subst f var_names string_terms in
+         let new_f = TermSubst.apply_subst mapping f in
          let rest_mapping,rest_renamed,rest_conts = renam_free_vars r in
          let unique_mapping = remove_subst_dups (mapping @ rest_mapping) in
          (unique_mapping,(new_f::rest_renamed),SymbolSet.union conts rest_conts)
@@ -3716,11 +3711,8 @@ let rec apply_var_subst term = function
       let next_term = TermSubst.var_subst term t v in
       apply_var_subst next_term r
 
-let rec make_equal_list n list_object =
-   if n = 0 then
-      []
-   else
-      list_object::(make_equal_list (n-1) list_object)
+let rec make_equal_list pattern list_object =
+   List.rev_map (fun _ -> list_object) pattern
 
 let rec create_output consts rule_list
    (input_map : (symbol * term) list)
@@ -3742,10 +3734,8 @@ let rec create_output consts rule_list
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
          let unique_object = mk_pos_var (GammaVar,0) in
-         let unique_list1 = make_equal_list (List.length frees1) unique_object
-         in
-         let unique_list2 = make_equal_list (List.length frees2) unique_object
-         in
+         let unique_list1 = make_equal_list frees1 unique_object in
+         let unique_list2 = make_equal_list frees2 unique_object in
          let next_term1 = TermSubst.subst term1 frees1 unique_list1 in
          let next_term2 = TermSubst.subst term2 frees2 unique_list2 in
          let new_term1 = apply_var_subst next_term1 var_mapping in
@@ -3771,10 +3761,8 @@ let rec make_test_interface consts rule_list input_map =
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
          let unique_object = mk_pos_var (GammaVar,0) in
-         let unique_list1 = make_equal_list (List.length frees1) unique_object
-         in
-         let unique_list2 = make_equal_list (List.length frees2) unique_object
-         in
+         let unique_list1 = make_equal_list frees1 unique_object in
+         let unique_list2 = make_equal_list frees2 unique_object in
          begin
 (*
    print_endline "";
