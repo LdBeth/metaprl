@@ -100,16 +100,18 @@ let print_tunify sigma =
 
  (*****************************************************)
 
-let is_const (k,_)  =
+let rec is_const (k,i)  =
   match k with
-     Const | GammaConst -> true
-   | Atom | EmptyVar | Root | EigenVar | GammaEigen
-   | Var | NewVar | NewVarQ | GammaVar | Dummy -> false
+     GammaPos k -> is_const (k,i)
+   | Const -> true
+   | Atom | EmptyVar | Root | EigenVar
+   | Var | NewVar | NewVarQ | Dummy -> false
 
-let is_var (k,_)  =
+let rec is_var (k,i)  =
   match k with
-     Var | NewVar | NewVarQ | GammaVar -> true
-   | Atom | Const | Dummy | GammaConst | EigenVar | GammaEigen | EmptyVar | Root -> false
+     GammaPos k -> is_var (k,i)
+   | Var | NewVar | NewVarQ -> true
+   | Atom | Const | Dummy | EigenVar | EmptyVar | Root -> false
 
 let rec com_subst ov ovlist = function
    [] -> []

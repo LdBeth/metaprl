@@ -25,7 +25,7 @@ let print_term = Term.print_term
 exception Not_unifiable
 exception Failed
 
-let kind_to_string = function
+let rec kind_to_string = function
  | Root ->
       "w"
  | Atom ->
@@ -33,25 +33,93 @@ let kind_to_string = function
  | Const ->
       "c"
  | Dummy ->
-      "dummy"
+      "d"
  | EigenVar ->
-      "Jprover_r"
+      "e"
  | NewVar ->
-      "vnew"
+      "n"
  | Var ->
       "v"
  | EmptyVar ->
-      raise
-      (Invalid_argument
-       "EmptyVar is not supposed to be converted to a variable")
+      ""
  | NewVarQ ->
-      "vnewq"
- | GammaVar ->
-      "vnewj"
- | GammaConst ->
-      "cj"
- | GammaEigen ->
-      "Jprover_rj"
+      "q"
+ | GammaPos k ->
+      (kind_to_string k)^"_jprover"
+
+let rec string_to_kind s =
+   let len = String.length s in
+   if len = 0 then EmptyVar
+   else
+      if len > 1 then
+         let sub = String.sub s 0 (len - 8) in
+         GammaPos (string_to_kind sub)
+      else
+         match String.get s 0 with
+            'a' -> Atom
+          | 'c' -> Const
+          | 'd' -> Dummy
+          | 'e' -> EigenVar
+          | 'n' -> NewVar
+          | 'q' -> NewVarQ
+          | 'v' -> Var
+          | 'w' -> Root
+          |  _  ->
+               raise (Invalid_argument ("Unknown kind of position: "^s))
+
+let safe_a2i x =
+   try int_of_string x with
+      e ->
+         raise (Invalid_argument ("Can't extract index from "^x))
+
+let rec extract_gamma k s =
+   let len = String.length s in
+   if len > 8 then
+      extract_gamma (GammaPos k) (String.sub s 8 (len - 8))
+   else
+      k, safe_a2i s
+
+let string_to_pos s =
+   let len = String.length s in
+   if len = 0 then EmptyVar,0
+   else
+      if len > 1 then
+         match String.get s 1 with
+            '0'..'9' ->
+               let n = safe_a2i (String.sub s 1 (len-1)) in
+               begin match String.get s 0 with
+                  'a' -> Atom,n
+                | 'c' -> Const,n
+                | 'd' -> Dummy,n
+                | 'e' -> EigenVar,n
+                | 'n' -> NewVar,n
+                | 'q' -> NewVarQ,n
+                | 'v' -> Var,n
+                |  _  ->
+                     raise (Invalid_argument ("Unknown kind of position: "^s))
+               end
+          | '_' ->
+               let sub = String.sub s 1 (len-1) in
+               let k =
+                  match String.get s 0 with
+                     'a' -> Atom
+                   | 'c' -> Const
+                   | 'd' -> Dummy
+                   | 'e' -> EigenVar
+                   | 'n' -> NewVar
+                   | 'q' -> NewVarQ
+                   | 'v' -> Var
+                   |  _  ->
+                     raise (Invalid_argument ("Unexpected kind of position: "^s))
+               in
+               extract_gamma k sub
+          |  _  ->
+               raise (Invalid_argument ("Unknown kind of position: "^s))
+      else
+         if s="w" then
+            Root, 0
+         else
+            raise (Invalid_argument ("Unknown kind of position: "^s))
 
 let pos_to_symbol (k,i) =
    Lm_symbol.make (kind_to_string k) i
@@ -59,118 +127,41 @@ let pos_to_symbol (k,i) =
 let symbol_to_pos sym =
    let i = to_int sym in
    let s = to_string sym in
-   match s with
-      "v" -> Var, i
-    | "vnew" -> NewVar, i
-    | "vnewq" -> NewVarQ, i
-    | "a" -> Atom, i
-    | "c" -> Const, i
-    | "dummy" -> Dummy, 0
-    | "Jprover_r" -> EigenVar, i
-    | "vnewj" -> GammaVar, i
-    | "w" -> Root, 0
-    | "cj" -> GammaConst, i
-    | "Jprover_rj" -> GammaEigen, i
-    | _ ->
-         raise (Invalid_argument ("Unexpected symbol format: "^s))
+   let k = string_to_kind s in
+   match k with
+      Atom | Const | Dummy | Var | NewVar | NewVarQ | EigenVar | GammaPos _ ->
+         k, to_int sym
+    | Root | EmptyVar ->
+         k, 0
 
 let rec pos_to_string (kind,i) =
-   let s = string_of_int i in
+   let si = string_of_int i in
+   let sk = kind_to_string kind in
    match kind with
-    | Root ->
-         "w"
-    | Atom ->
-         "a"^s
-    | Const ->
-         "c"^s
-    | Dummy ->
-         "dummy"
-    | EigenVar ->
-         "Jprover_r"^s
-    | GammaEigen ->
-         "Jprover_rj"^s
-    | NewVar ->
-         "vnew"^s
-    | Var ->
-         "v"^s
-    | EmptyVar ->
-         ""
-    | NewVarQ ->
-         "vnewq"^s
-    | GammaVar ->
-         "vnewj"^s
-    | GammaConst ->
-         "cj"^s
-
-let rec string_to_pos s =
-   let aux x =
-      try int_of_string x with
-         e ->
-            raise (Invalid_argument ("Can't extract index from "^x))
-   in
-   if String.contains s '_' then
-      let last = String.rindex s '_' in
-      if String.rcontains_from s (pred last) '_' then
-         raise (Invalid_argument ("Underscore occurs more than once: "^s))
-      else
-         if String.sub s 0 9 = "Jprover_r" then
-            match String.get s 9 with
-             | ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9') ->
-                  EigenVar, aux (String.sub s 9 (String.length s - 9))
-             | 'j' ->
-                  GammaEigen, aux (String.sub s 10 (String.length s - 10))
-             |  _  ->
-                  raise (Invalid_argument ("Unknown type of variable: "^s))
-         else
-            raise (Invalid_argument ("Unknown type of variable: "^s))
-   else
-      if s = "" then
-         raise (Invalid_argument "Empty position string")
-      else
-         if (String.length s >= 4) && (String.sub s 0 4 = "vnew") then
-            match String.get s 4 with
-               'q' ->
-                  NewVarQ, aux (String.sub s 5 (String.length s - 5))
-             | 'j' ->
-                  GammaVar, aux (String.sub s 5 (String.length s - 5))
-             | ('0'..'9') ->
-                  NewVar, aux (String.sub s 4 (String.length s - 4))
-             | _ ->
-                  raise (Invalid_argument ("Unknown type of variable: "^s))
-         else
-            let sub = String.sub s 1 (String.length s - 1) in
-            match String.get s 0 with
-               'a' -> Atom, aux sub
-             | 'v' -> Var, aux sub
-             | 'c' ->
-                   if String.get s 1 = 'j' then
-                      GammaConst, aux (String.sub sub 1 (String.length sub - 1))
-                   else
-                      Const, aux sub
-             | 'w' -> Root, 0
-             | 'd' when s="dummy" -> Dummy, 0
-             |  _  -> raise (Invalid_argument ("Unexpected code of position: "^s))
+      Atom
+    | Const
+    | Dummy
+    | EigenVar
+    | NewVar
+    | Var
+    | NewVarQ
+    | GammaPos _ ->
+         sk^si
+    | EmptyVar | Root ->
+         sk
 
 let gamma_to_simple p =
-   match p with
-      GammaVar, i ->
-         Var, i
-    | (EmptyVar|Atom|Const|Dummy|GammaConst|EigenVar|
-       GammaEigen|Var|NewVar|NewVarQ|Root), _ ->
+   let k, i = p in
+   match k with
+      GammaPos k ->
+         k, i
+    | EmptyVar|Atom|Const|Dummy|EigenVar|
+      Var|NewVar|NewVarQ|Root ->
          let s = pos_to_string p in
-         raise (Invalid_argument ("GammaVar was expected instead of: "^s))
+         raise (Invalid_argument ("GammaPos was expected instead of: "^s))
 
-let simple_to_gamma p =
-   match p with
-      Var, i ->
-         GammaVar, i
-    | Const, i ->
-         GammaConst, i
-    | EigenVar, i ->
-         GammaEigen, i
-    | (EmptyVar|Atom|Dummy|GammaConst|GammaEigen|GammaVar|NewVar|NewVarQ|Root), _ ->
-         let s = pos_to_string p in
-         raise (Invalid_argument ("Var, Const or EigenVar were expected instead of: "^s))
+let simple_to_gamma (k,i) =
+   GammaPos k, i
 
 let string_to_gamma s =
    pos_to_string (simple_to_gamma (string_to_pos s))
@@ -182,6 +173,12 @@ struct
 
    let rec compare (a,(i:int)) (b,j) =
       match a,b with
+       | GammaPos a, GammaPos b ->
+            compare (a,i) (b,j)
+       | GammaPos _, (EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root) ->
+            1
+       | (EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root), GammaPos _ ->
+            -1
        | EmptyVar,EmptyVar -> Pervasives.compare i j
        | EmptyVar, _ -> -1
        | Atom,EmptyVar -> 1
@@ -190,34 +187,25 @@ struct
        | Const,(EmptyVar|Atom) -> 1
        | Const,Const -> Pervasives.compare i j
        | Const,_ -> -1
-       | GammaConst,(EmptyVar|Atom|Const) -> 1
-       | GammaConst, GammaConst -> Pervasives.compare i j
-       | GammaConst,_ -> -1
-       | Dummy,(EmptyVar|Atom|Const|GammaConst) -> 1
+       | Dummy,(EmptyVar|Atom|Const) -> 1
        | Dummy, Dummy -> Pervasives.compare i j
        | Dummy, _ -> -1
-       | EigenVar,(EmptyVar|Atom|Const|GammaConst|Dummy) -> 1
+       | EigenVar,(EmptyVar|Atom|Const|Dummy) -> 1
        | EigenVar, EigenVar -> Pervasives.compare i j
        | EigenVar, _ -> -1
-       | GammaEigen,(EmptyVar|Atom|Const|GammaConst|Dummy|EigenVar) -> 1
-       | GammaEigen,GammaEigen -> Pervasives.compare i j
-       | GammaEigen, _ -> -1
-       | Var,(Atom|Const|GammaConst|Dummy|EmptyVar|EigenVar|GammaEigen) -> 1
+       | Var,(Atom|Const|Dummy|EmptyVar|EigenVar) -> 1
        | Var,Var -> Pervasives.compare i j
        | Var,_ -> -1
-       | NewVar,(Atom|Const|GammaConst|Dummy|EmptyVar|EigenVar|GammaEigen|Var) -> 1
+       | NewVar,(Atom|Const|Dummy|EmptyVar|EigenVar|Var) -> 1
        | NewVar,NewVar -> Pervasives.compare i j
        | NewVar,_ -> -1
-       | GammaVar,(EmptyVar|Atom|Const|GammaConst|Dummy|EigenVar|GammaEigen|Var|NewVar) -> 1
-       | GammaVar, GammaVar -> Pervasives.compare i j
-       | GammaVar, _ -> -1
        | NewVarQ,
-           (Atom|Const|GammaConst|Dummy|EmptyVar|EigenVar|GammaEigen|Var|GammaVar|NewVar) -> 1
+           (Atom|Const|Dummy|EmptyVar|EigenVar|Var|NewVar) -> 1
        | NewVarQ,NewVarQ -> Pervasives.compare i j
        | NewVarQ,_ -> -1
        | Root,
-          (Atom|Const|GammaConst|Dummy|EmptyVar|EigenVar|GammaEigen
-          |NewVar|NewVarQ|Var|GammaVar) -> 1
+          (Atom|Const|Dummy|EmptyVar|EigenVar
+          |NewVar|NewVarQ|Var) -> 1
        | Root,Root -> Pervasives.compare i j
 
 end

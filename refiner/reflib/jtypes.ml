@@ -15,12 +15,12 @@ type pos_kind =
  | Var
  | NewVar
  | NewVarQ
- | GammaVar
- | GammaConst
- | GammaEigen
+ | GammaPos of pos_kind
  | Root
 
 type position = pos_kind * int
+
+let empty_pos = EmptyVar, 0
 
 module JTypes (JLogic : JLogicSig) =
 struct

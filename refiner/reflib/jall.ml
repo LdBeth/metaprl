@@ -1796,7 +1796,12 @@ struct
                       if List.mem spos.name slist then
 (* the gamma_0 position is really unsolved *)
 (* this is only relevant for the gamma_0 positions in po *)
-                         let new_name = (posname^"_"^spos.name) (* make new unique gamma name *) in
+                         let k, _ = string_to_pos posname in
+                         let new_pos = k, Lm_symbol.new_number () in
+                         let new_name = pos_to_string new_pos in
+                         (* XXX Yegor: the old comment says: "make new unique gamma name"
+                         *  but currently I simply create a fresh variable of
+                         *  original kind and it seems to work alright *)
                          let new_srel_el = ((predname,new_name),d) in
                          let new_rename_el = (spos.name,new_name)  (* gamma_0 position as key first *) in
                          let (srel,sren) = build_formula_rel [(x,ft)] slist new_name in
@@ -3750,7 +3755,7 @@ let rec create_output consts rule_list
          let var_mapping = (input_map @ delta_map) in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
-         let unique_object = mk_pos_var (GammaVar,0) in
+         let unique_object = mk_pos_var ((GammaPos NewVar),0) in
          let unique_list1 = make_equal_list frees1 unique_object in
          let unique_list2 = make_equal_list frees2 unique_object in
          let next_term1 = TermSubst.subst term1 frees1 unique_list1 in
@@ -3779,7 +3784,7 @@ let rec make_test_interface consts rule_list input_map =
          let var_mapping = (input_map @ delta_map) in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
-         let unique_object = mk_pos_var (GammaVar,0) in
+         let unique_object = mk_pos_var (GammaPos NewVar,0) in
          let unique_list1 = make_equal_list frees1 unique_object in
          let unique_list2 = make_equal_list frees2 unique_object in
          begin
