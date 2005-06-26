@@ -81,10 +81,6 @@ let mk_var_term s =
 let free_vars_list t consts =
    SymbolSet.to_list (SymbolSet.diff (free_vars_set t) consts)
 
-let unify t1 t2 consts =
-   let subst = unify t1 t2 consts in
-      List.map (fun (v, t) -> string_of_symbol v, t) subst
-
 let mk_symbol_term opname s =
    let p = Term.make_param (Term_sig.Var s) in
    let op = Term.mk_op opname [p] in
@@ -104,13 +100,6 @@ let subst t vars tl =
 
 let mk_var_term s =
    Term.mk_var_term (pos_to_symbol (string_to_pos s))
-
-let free_vars_list t consts =
-   SymbolSet.to_list (SymbolSet.diff (TermSubst.free_vars_set t) consts)
-
-let unify t1 t2 consts =
-   let subst = unify t1 t2 consts in
-      List.map (fun (v, t) -> string_of_symbol v, t) subst
 
 let alpha_equal = TermSubst.alpha_equal
 
@@ -2917,7 +2906,7 @@ let pos_subst t vars tl =
 *)
       try
          let tauQ = unify app_term1 app_term2 consts in
-         let pos_tauQ = List.map (fun (v,t) -> string_to_pos v, t) tauQ in
+         let pos_tauQ = List.map (fun (v,t) -> symbol_to_pos v, t) tauQ in
          let (mult,oel) = multiply consts sigmaQ pos_tauQ in
   (*   print_sigmaQ mult; *)
          (mult,oel)
