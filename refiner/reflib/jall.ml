@@ -88,6 +88,9 @@ let mk_symbol_term opname s =
 
 let mk_pos_term opname p = mk_symbol_term opname (pos_to_symbol p)
 
+let mk_pos_var p =
+   Term.mk_var_term (pos_to_symbol p)
+
 (*
 let var_subst t1 t2 v =
    TermSubst.var_subst t1 t2 (pos_to_symbol (string_to_pos v))
@@ -2102,7 +2105,7 @@ struct
 
    let rec selectQ_rec spos_var csigmaQ =
       match csigmaQ with
-         [] ->  mk_var_term spos_var   (* dynamic completion of csigmaQ *)
+         [] ->  mk_pos_var (string_to_pos spos_var)   (* dynamic completion of csigmaQ *)
        | (var,term)::r ->
             if spos_var=var then
                term
@@ -2983,8 +2986,8 @@ let update_position position m replace_n subst_list mult =
    let nx = pos_to_string npospos in
    let nsubst_list =
       if b=Gamma_0 then
-         let vx = mk_var_term (string_to_gamma x) in
-         let vnx = mk_var_term (string_to_gamma nx) in
+         let vx = mk_pos_var (simple_to_gamma pospos) in
+         let vnx = mk_pos_var (simple_to_gamma npospos) in
          (vx,vnx)::subst_list
       else
          if b=Delta_0 then
@@ -3398,7 +3401,8 @@ let check_subst_term variable old_term pos_name stype =
    match stype with
       Gamma_0 | Delta_0 ->
          let new_variable =
-            if stype = Gamma_0 then (mk_var_term (string_to_gamma pos_name))
+            if stype = Gamma_0 then
+               (mk_pos_var (simple_to_gamma (string_to_pos pos_name)))
             else
                (mk_pos_term jprover_op (string_to_pos pos_name))
          in
