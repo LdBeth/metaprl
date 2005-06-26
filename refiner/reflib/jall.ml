@@ -2052,21 +2052,25 @@ struct
 
    let rec select_connection pname connections slist =
       match connections with
-         [] -> ("none","none")
+         [] -> None
        | f::r ->
+            let a,b = f in
             let partner =
-               if (fst f) = pname then
-                  (snd f)
+               if a = pname then
+                  Some b
                else
-                  if (snd f) = pname then
-                     (fst f)
+                  if b = pname then
+                     Some a
                   else
-                     "none"
+                     None
             in
-            if ((partner = "none") or (List.mem partner slist)) then
-               select_connection pname r slist
-            else
-               f
+            match partner with
+               None ->
+                  select_connection pname r slist
+             | Some p when List.mem p slist ->
+                  select_connection pname r slist
+             | _ ->
+                  Some f
 
    let rec replace_element element element_set redord =
       match redord with
@@ -2718,25 +2722,26 @@ struct
                      rback @ (tot ftree redord connections pnew newslist)
              | PNull ->
                   let new_redord = update p.name redord in
-                  let (c1,c2) = select_connection (p.name) connections newslist in
-                  if (c1= "none" & c2 ="none") then
-                     rback @ (tot ftree new_redord connections pnew newslist)
-                  else
-                     let (ass_pos,inst_pos) =
+                  begin match select_connection p.name connections newslist with
+                     None ->
+                        rback @ (tot ftree new_redord connections pnew newslist)
+                   | Some (c1,c2) ->
+                        let (ass_pos,inst_pos) =
 (* need the pol=O position ass_pos of the connection for later permutation *)
 (* need the pol=I position inst_pos for NuPRL instantiation *)
-                        if p.name = c1 then
-                           if p.pol = O then
-                              (c1,c2)
-                           else
-                              (c2,c1)
-                        else (* p.name = c2 *)
-                           if p.pol = O then
-                              (c2,c1)
-                           else
-                              (c1,c2)
-                     in
-                     rback @ [(("",ass_pos),(build_rule p p csigmaQ orr_flag calculus))]
+                           if p.name = c1 then
+                              if p.pol = O then
+                                 (c1,c2)
+                              else
+                                 (c2,c1)
+                           else (* p.name = c2 *)
+                              if p.pol = O then
+                                 (c2,c1)
+                              else
+                                 (c1,c2)
+                        in
+                        rback @ [(("",ass_pos),(build_rule p p csigmaQ orr_flag calculus))]
+                  end
    (* one possibility of recursion end *)
              | Alpha ->
                   rback @ ((("",p.name),(build_rule p p csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
