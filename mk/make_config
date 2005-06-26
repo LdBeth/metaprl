@@ -159,9 +159,4 @@ SLOPPY_DEPENDENCIES = $(SLOPPY_DEPENDENCIES)
     fp = $(fopen $(name), w)
     fprint($(fp), $(CONFIG))
     close($(fp))
-
-    # If it was just created, ask the user to edit it
-    if $(not $(exists))
-        eprintln(A new config file $(fullname) was created for you.)
-        eprintln(You should edit it before continuing.)
-        exit(1)
+    return($(fullname))

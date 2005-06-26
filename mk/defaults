@@ -38,8 +38,8 @@ OCAMLFLAGS = -warn-error Ae -w Ae
 #
 # Defaults for the mk/config variables
 #
-TERMS = undefined
-REFINER = undefined
+TERMS = ds
+REFINER = VERBOSE
 SEQ_SET = Lm_array
 ENSROOT = undefined
 OCAMLSRC = undefined
