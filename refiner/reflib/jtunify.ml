@@ -58,8 +58,8 @@ let rec print_eqlist eqlist =
          print_endline ""
     | (atnames,f)::r ->
          let (s,t) = f in
-         let ls = list_to_string s
-         and lt = list_to_string t in
+         let ls = list_to_string s in
+         let lt = list_to_string t in
          begin
             print_endline ("Atom names: "^(list_to_string atnames));
             print_endline (ls^" = "^lt);
@@ -150,20 +150,22 @@ let r_8 s ft rt =
   ft=[]
     && List.length s >= 2
     && List.length rt >= 1
-    && let v = List.hd s
-       and v1 = List.hd rt in
+    && let v = List.hd s in
+       let v1 = List.hd rt in
          (is_var v) & (is_var v1) & (v <> v1)
 
 let r_9 s ft rt =
    (List.length s >= 2) && (List.length ft >= 1) && (List.length rt >= 1)
-      && let v = (List.hd s)
-         and v1 = (List.hd rt) in
+      &&
+         let v = (List.hd s) in
+         let v1 = (List.hd rt) in
          (is_var v) & (is_var v1) & (v <> v1)
 
 let r_10 s rt =
    (List.length s >= 1) && (List.length rt >= 1)
-   && let v = List.hd s
-      and x = List.hd rt in
+   &&
+      let v = List.hd s in
+      let x = List.hd rt in
       (is_var v) && (v <> x)
       && (((List.tl s) =[]) or (is_const x) or ((List.tl rt) <> []))
 
@@ -357,8 +359,8 @@ let rec tunify_list eqlist init_sigma ordering atom_rel =
       in
       let apply_r3 fs ft rt rest_eq sigma =
       (* print_endline "r3"; *)
-         let rfs =  (List.tl fs)
-         and rft =  (List.tl rt) in
+         let rfs =  (List.tl fs) in
+         let rft =  (List.tl rt) in
          tunify atomnames rfs ft rft rest_eq sigma ordering
 
       in
