@@ -2922,7 +2922,6 @@ let rec one_equation gprefix dlist delta_0_prefixes n =
     | f::r ->
          let fprefix = List.assoc f delta_0_prefixes in
          let (sf1,sg) = shorten fprefix gprefix in
-         (*let v_new = ("vnewq"^(string_of_int n)) in*)
          let v_new = NewVarQ, n in
          let fnew = sf1 @ [v_new] in
          let (rest_equations,new_n) = one_equation gprefix r delta_0_prefixes (n+1) in
@@ -3742,7 +3741,7 @@ let rec create_output consts rule_list
          let var_mapping = (input_map @ delta_map) in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
-         let unique_object = mk_var_term "vnewj0" in
+         let unique_object = mk_pos_var (GammaVar,0) in
          let unique_list1 = make_equal_list (List.length frees1) unique_object
          in
          let unique_list2 = make_equal_list (List.length frees2) unique_object
@@ -3771,7 +3770,7 @@ let rec make_test_interface consts rule_list input_map =
          let var_mapping = (input_map @ delta_map) in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
-         let unique_object = mk_var_term "vnewj0" in
+         let unique_object = mk_pos_var (GammaVar,0) in
          let unique_list1 = make_equal_list (List.length frees1) unique_object
          in
          let unique_list2 = make_equal_list (List.length frees2) unique_object
