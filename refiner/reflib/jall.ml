@@ -2247,24 +2247,36 @@ struct
          [] -> [],[]
        | Empty :: rest ->
             collect_qpos rest uslist
-       | NodeAt {st=st; name=name; pospos=pospos} :: rest ->
+       | NodeAt {st=Gamma_0; name=name; pospos=pospos} :: rest ->
             let rest_delta, rest_gamma = collect_qpos rest uslist in
-            if (st = Gamma_0) & (List.mem name uslist) then
-               rest_delta,(pospos::rest_gamma)
+            if List.mem name uslist then
+               rest_delta, (pospos::rest_gamma)
             else
-               if (st = Delta_0) & (List.mem name uslist) then
-                  (pospos::rest_delta),rest_gamma
-               else
-                  rest_delta,rest_gamma
-       | NodeA({st=st; name=name; pospos=pospos},suctrees) :: rest ->
+               rest_delta, rest_gamma
+       | NodeAt {st=Delta_0; name=name; pospos=pospos} :: rest ->
+            let rest_delta, rest_gamma = collect_qpos rest uslist in
+            if List.mem name uslist then
+               (pospos::rest_delta), rest_gamma
+            else
+               rest_delta, rest_gamma
+       | NodeAt {st=_; name=name; pospos=pospos} :: rest ->
+            let rest_delta, rest_gamma = collect_qpos rest uslist in
+            rest_delta, rest_gamma
+       | NodeA({st=Gamma_0; name=name; pospos=pospos},suctrees) :: rest ->
             let rest_delta, rest_gamma = collect_qpos (suctrees @ rest) uslist in
-            if (st = Gamma_0) & (List.mem name uslist) then
-               rest_delta,(pospos::rest_gamma)
+            if List.mem name uslist then
+               rest_delta, (pospos::rest_gamma)
             else
-               if (st = Delta_0) & (List.mem name uslist) then
-                  (pospos::rest_delta),rest_gamma
-               else
-                  rest_delta,rest_gamma
+               rest_delta, rest_gamma
+       | NodeA({st=Delta_0; name=name; pospos=pospos},suctrees) :: rest ->
+            let rest_delta, rest_gamma = collect_qpos (suctrees @ rest) uslist in
+            if List.mem name uslist then
+               (pospos::rest_delta), rest_gamma
+            else
+               rest_delta, rest_gamma
+       | NodeA({st=_; name=name; pospos=pospos},suctrees) :: rest ->
+            let rest_delta, rest_gamma = collect_qpos (suctrees @ rest) uslist in
+            rest_delta, rest_gamma
 
    let rec do_split gamma_diff sigmaQ =
       match sigmaQ with
