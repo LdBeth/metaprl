@@ -2285,13 +2285,13 @@ struct
        | (var,dname)::r ->
             if List.mem dname dterms then
                let new_var =
-                  if var = "" then
+                  if var = empty_sym then
                      v
                   else
                      var
                in
-               let replace_term = mk_pos_term jprover_op (string_to_pos dname) in
-               let next_term = var_subst term replace_term new_var in
+               let replace_term = mk_symbol_term jprover_op dname in
+               let next_term = TermSubst.var_subst term replace_term new_var in
                let (new_term,next_diffs) = check_delta_terms (v,next_term) r dterms in
                (new_term,((new_var,dname)::next_diffs))
             else
@@ -2302,9 +2302,8 @@ struct
       match zw_sigma with
          [] -> []
        | (v,term)::r ->
-            let dterms = list_pos_to_string (collect_delta_terms [term]) in
-            let (new_term,new_ass_delta_diff) = check_delta_terms (v,term) ass_delta_diff dterms in
-            let v = pos_to_symbol (string_to_pos v) in
+            let dterms = collect_delta_terms [term] in
+            let new_term, new_ass_delta_diff = check_delta_terms (v,term) ass_delta_diff dterms in
             (v,new_term)::(localize_sigma r new_ass_delta_diff)
 
    let subst_split ft1 ft2 ftree uslist1 uslist2 uslist sigmaQ =
@@ -2320,8 +2319,14 @@ struct
       let gamma_diff2 = list_diff gamma gamma2 in
       let zw_sigma1 = do_split gamma_diff1 sigmaQ in
       let zw_sigma2 = do_split gamma_diff2 sigmaQ in
-      let ass_delta_diff1 = List.map (fun x -> ("",x)) delta_diff1 in
-      let ass_delta_diff2 = List.map (fun x -> ("",x)) delta_diff2 in
+      let zw_sigma1 =
+         List.map (fun (s,t) -> string_to_symbol s, t) zw_sigma1
+      in
+      let zw_sigma2 =
+         List.map (fun (s,t) -> string_to_symbol s, t) zw_sigma2
+      in
+      let ass_delta_diff1 = List.map (fun x -> (empty_sym,string_to_symbol x)) delta_diff1 in
+      let ass_delta_diff2 = List.map (fun x -> (empty_sym,string_to_symbol x)) delta_diff2 in
       let sigmaQ1 = localize_sigma zw_sigma1 ass_delta_diff1 in
       let sigmaQ2 = localize_sigma zw_sigma2 ass_delta_diff2 in
       (sigmaQ1,sigmaQ2)
@@ -3746,9 +3751,10 @@ let rec create_output consts rule_list
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
          let delta_map =
             List.map
-               (fun p ->
+               (fun s ->
+                  let p = symbol_to_pos s in
                   pos_to_symbol (simple_to_gamma p),
-                  (mk_pos_term jprover_op p)
+                  mk_symbol_term jprover_op s
                )
                unique_deltas
          in
@@ -3775,9 +3781,10 @@ let rec make_test_interface consts rule_list input_map =
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
          let delta_map =
             List.map
-               (fun p ->
+               (fun s ->
+                  let p =symbol_to_pos s in
                   pos_to_symbol (simple_to_gamma p),
-                  (mk_pos_term jprover_op p)
+                  mk_symbol_term jprover_op s
                )
                unique_deltas
          in

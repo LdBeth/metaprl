@@ -150,6 +150,8 @@ let rec pos_to_string (kind,i) =
     | EmptyVar | Root ->
          sk
 
+let string_to_symbol s = pos_to_symbol (string_to_pos s)
+
 let gamma_to_simple p =
    let k, i = p in
    match k with
@@ -165,6 +167,9 @@ let simple_to_gamma (k,i) =
 
 let string_to_gamma s =
    pos_to_string (simple_to_gamma (string_to_pos s))
+
+let empty_pos = (EmptyVar, 0)
+let empty_sym = pos_to_symbol empty_pos
 
 module PosOrdering =
 struct
@@ -242,8 +247,7 @@ struct
                      [hd] ->
                         begin match dest_param hd with
                            Term_sig.Var sym ->
-                              let pos = symbol_to_pos sym in
-                              pos::(collect_delta_terms r)
+                              sym::(collect_delta_terms r)
                          | _ ->
                               raise
                               (Invalid_argument
@@ -363,6 +367,7 @@ struct
          [] -> ([],ordering)
        | (v,termlist)::r ->
             let dterms = collect_delta_terms termlist in
+            let dterms = List.map symbol_to_pos dterms in
             begin
 (*        open_box 0;
    print_endline " ";
