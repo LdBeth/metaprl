@@ -2313,12 +2313,16 @@ struct
       let delta,gamma = collect_qpos [ftree] uslist in
       let delta1,gamma1 = collect_qpos [ft1] uslist1 in
       let delta2,gamma2 = collect_qpos [ft2] uslist2 in
+      let gamma = list_string_to_pos gamma in
+      let gamma1 = list_string_to_pos gamma1 in
+      let gamma2 = list_string_to_pos gamma2 in
+      let delta = list_string_to_pos delta in
+      let delta1 = list_string_to_pos delta1 in
+      let delta2 = list_string_to_pos delta2 in
       let delta_diff1 = list_diff delta delta1 in
       let delta_diff2 = list_diff delta delta2 in
       let gamma_diff1 = list_diff gamma gamma1 in
       let gamma_diff2 = list_diff gamma gamma2 in
-      let gamma_diff1 = list_string_to_pos gamma_diff1 in
-      let gamma_diff2 = list_string_to_pos gamma_diff2 in
       let zw_sigma1 = do_split gamma_diff1 sigmaQ in
       let zw_sigma2 = do_split gamma_diff2 sigmaQ in
       let zw_sigma1 =
@@ -2327,8 +2331,8 @@ struct
       let zw_sigma2 =
          List.map (fun (s,t) -> pos_to_symbol s, t) zw_sigma2
       in
-      let ass_delta_diff1 = List.map (fun x -> (empty_sym,string_to_symbol x)) delta_diff1 in
-      let ass_delta_diff2 = List.map (fun x -> (empty_sym,string_to_symbol x)) delta_diff2 in
+      let ass_delta_diff1 = List.map (fun x -> (empty_sym,pos_to_symbol x)) delta_diff1 in
+      let ass_delta_diff2 = List.map (fun x -> (empty_sym,pos_to_symbol x)) delta_diff2 in
       let sigmaQ1 = localize_sigma zw_sigma1 ass_delta_diff1 in
       let sigmaQ2 = localize_sigma zw_sigma2 ass_delta_diff2 in
       (sigmaQ1,sigmaQ2)
