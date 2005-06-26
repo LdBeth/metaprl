@@ -10,6 +10,7 @@ type pos_kind =
    EmptyVar
  | Atom
  | Const
+ | Dummy
  | EigenVar
  | Var
  | NewVar

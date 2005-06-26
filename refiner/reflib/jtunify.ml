@@ -104,12 +104,12 @@ let is_const (k,_)  =
   match k with
      Const | GammaConst -> true
    | Atom | EmptyVar | Root | EigenVar | GammaEigen
-   | Var | NewVar | NewVarQ | GammaVar -> false
+   | Var | NewVar | NewVarQ | GammaVar | Dummy -> false
 
 let is_var (k,_)  =
   match k with
      Var | NewVar | NewVarQ | GammaVar -> true
-   | Atom | Const | GammaConst | EigenVar | GammaEigen | EmptyVar | Root -> false
+   | Atom | Const | Dummy | GammaConst | EigenVar | GammaEigen | EmptyVar | Root -> false
 
 let r_1 s ft rt =
    (s = []) && (ft = []) && (rt = [])

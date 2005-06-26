@@ -65,6 +65,7 @@ let debug_jprover =
 (************************************************************************
  * Compatibility layer for abstract vars.
  *)
+
 let var_subst t1 t2 v =
    var_subst t1 t2 (Lm_symbol.add v)
 
@@ -78,12 +79,54 @@ let mk_var_term s =
    mk_var_term (Lm_symbol.add s)
 
 let free_vars_list t consts =
-   List.map string_of_symbol (SymbolSet.to_list (SymbolSet.diff (free_vars_set t) consts))
+   SymbolSet.to_list (SymbolSet.diff (free_vars_set t) consts)
 
 let unify t1 t2 consts =
    let subst = unify t1 t2 consts in
       List.map (fun (v, t) -> string_of_symbol v, t) subst
 
+let mk_symbol_term opname s =
+   let p = Term.make_param (Term_sig.Var s) in
+   let op = Term.mk_op opname [p] in
+   Term.mk_any_term op []
+
+let mk_pos_term opname p = mk_symbol_term opname (pos_to_symbol p)
+
+(*
+let var_subst t1 t2 v =
+   TermSubst.var_subst t1 t2 (pos_to_symbol (string_to_pos v))
+
+let subst1 t1 v t2 =
+   TermSubst.subst1 t1 (pos_to_symbol (string_to_pos v)) t2
+
+let subst t vars tl =
+   TermSubst.subst t (List.map (fun v -> pos_to_symbol (string_to_pos v)) vars) tl
+
+let mk_var_term s =
+   Term.mk_var_term (pos_to_symbol (string_to_pos s))
+
+let free_vars_list t consts =
+   SymbolSet.to_list (SymbolSet.diff (TermSubst.free_vars_set t) consts)
+
+let unify t1 t2 consts =
+   let subst = unify t1 t2 consts in
+      List.map (fun (v, t) -> string_of_symbol v, t) subst
+
+let alpha_equal = TermSubst.alpha_equal
+
+let xnil_term = TermMan.xnil_term
+let all_contexts = TermMan.all_contexts
+
+let mk_pos_var p =
+   Term.mk_var_term (pos_to_symbol p)
+
+let mk_string_term op s = mk_pos_term op (string_to_pos s)
+
+let print_term = Term.print_term
+let dest_term = Term.dest_term
+let dest_op = Term.dest_op
+let dest_opname = Opname.dest_opname
+*)
 (************************************************************************
  * Original JProver.
  *)
@@ -704,8 +747,8 @@ struct
          else
             f::(remove_dups_list r)
 
-   let subst_eq ((s1: string), t1) (s2, t2) =
-      s1 = s2 && alpha_equal t1 t2
+   let subst_eq (s1, t1) (s2, t2) =
+      (Lm_symbol.eq s1 s2) && alpha_equal t1 t2
 
    let rec remove_subst_dups = function
       [] -> []
@@ -1280,10 +1323,11 @@ struct
       let opnam = dest_opname opn in
       match opnam with
          ofirst::ofname::_ ->
-            let new_eigen_var = (ofname^"_r"^(string_of_int (!eigen_counter))) in
+            (*let new_eigen_var = (ofname^"_r"^(string_of_int (!eigen_counter))) in*)
+            let new_eigen_pos = EigenVar, !eigen_counter in
             eigen_counter := !eigen_counter + 1;
 (*        print_endline ("New Counter :"^(string_of_int (!eigen_counter))); *)
-            mk_string_term jprover_op new_eigen_var
+            mk_pos_term jprover_op new_eigen_pos
        | [] | [_] ->
             raise jprover_bug
 
@@ -2107,8 +2151,8 @@ struct
        | Imp,I -> Impl,(inst_label),xnil_term
        | All,I -> Alll,(inst_label),(selectQ spos.name csigmaQ)  (* elements of csigmaQ is (string * term) *)
        | Ex,O -> Exr,(inst_label), (selectQ spos.name csigmaQ)
-       | All,O -> Allr,(inst_label),(mk_string_term jprover_op spos.name) (* must be a proper term *)
-       | Ex,I -> Exl,(inst_label),(mk_string_term jprover_op spos.name) (* must be a proper term *)
+       | All,O -> Allr,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
+       | Ex,I -> Exl,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
 
 (* %%%%%%%%%%%%%%%%%%%% Split begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% *)
 
@@ -2244,7 +2288,7 @@ struct
                   else
                      var
                in
-               let replace_term = mk_string_term jprover_op dname in
+               let replace_term = mk_pos_term jprover_op (string_to_pos dname) in
                let next_term = var_subst term replace_term new_var in
                let (new_term,next_diffs) = check_delta_terms (v,next_term) r dterms in
                (new_term,((new_var,dname)::next_diffs))
@@ -2825,7 +2869,7 @@ let pos_subst t vars tl =
             let old_free = free_vars_list term consts in
             let new_free = free_vars_list app_term consts in
             let inst_vars = list_diff old_free new_free in
-            let inst_positions = list_string_to_pos inst_vars in
+            let inst_positions = List.map symbol_to_pos inst_vars in
             let inst_terms = collect_assoc inst_positions tauQ in
             let (rest_sigma,rest_sigma_ordering) = rec_apply consts r tauQ tau_vars tau_terms in
             if inst_terms = [] then
@@ -2949,7 +2993,8 @@ let rename_pos x m =
    (Char.escaped pref)^(string_of_int m)
 
 let update_position position m replace_n subst_list mult =
-   let ({name=x; address=y; pospos=(k,_); op=z; pol=p; pt=a; st=b; label=t}) = position in
+   let ({name=x; address=y; pospos=pospos; op=z; pol=p; pt=a; st=b; label=t}) = position in
+   let k, _ = pospos in
    let nx = rename_pos x m in
    let nsubst_list =
       if b=Gamma_0 then
@@ -2958,8 +3003,8 @@ let update_position position m replace_n subst_list mult =
          (vx,vnx)::subst_list
       else
          if b=Delta_0 then
-            let sx = mk_string_term jprover_op x
-            and snx = mk_string_term jprover_op nx in
+            let sx = mk_pos_term jprover_op pospos
+            and snx = mk_pos_term jprover_op (string_to_pos nx) in
             (sx,snx)::subst_list
          else
             subst_list
@@ -3369,7 +3414,7 @@ let check_subst_term variable old_term pos_name stype =
          let new_variable =
             if stype = Gamma_0 then (mk_var_term (string_to_gamma pos_name))
             else
-               (mk_string_term jprover_op pos_name)
+               (mk_pos_term jprover_op (string_to_pos pos_name))
          in
          (subst1 old_term variable new_variable) (* replace variable (non-empty) in t by pos_name *)
             (* pos_name is either a variable term or a constant, f.i. a string term *)
@@ -3666,18 +3711,20 @@ let rec renam_free_vars termlist =
          let conts = all_contexts f in
          let var_names = free_vars_list f conts in
          let string_terms =
-            List.map (mk_string_term free_var_op) var_names
+            List.map
+               (fun s -> mk_symbol_term free_var_op s)
+               var_names
          in
          let mapping = List.combine var_names string_terms
-         and new_f = subst f var_names string_terms in
-         let (rest_mapping,rest_renamed,rest_conts) = renam_free_vars r in
+         and new_f = TermSubst.subst f var_names string_terms in
+         let rest_mapping,rest_renamed,rest_conts = renam_free_vars r in
          let unique_mapping = remove_subst_dups (mapping @ rest_mapping) in
          (unique_mapping,(new_f::rest_renamed),SymbolSet.union conts rest_conts)
 
 let rec apply_var_subst term = function
    [] -> term
  | (v,t)::r ->
-      let next_term = var_subst term t v in
+      let next_term = TermSubst.var_subst term t v in
       apply_var_subst next_term r
 
 let rec make_equal_list n list_object =
@@ -3686,17 +3733,21 @@ let rec make_equal_list n list_object =
    else
       list_object::(make_equal_list (n-1) list_object)
 
-let rec create_output consts rule_list input_map =
+let rec create_output consts rule_list
+   (input_map : (symbol * term) list)
+   =
    match rule_list with
       [] -> JLogic.empty_inf
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = list_pos_to_string (collect_delta_terms [term1]) in
-         let delta2_names = list_pos_to_string (collect_delta_terms [term2]) in
+         let delta1_names = collect_delta_terms [term1] in
+         let delta2_names = collect_delta_terms [term2] in
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
          let delta_terms =
-            List.map (fun x -> (mk_string_term jprover_op x)) unique_deltas in
-         let delta_vars = List.map string_to_gamma unique_deltas in
+            List.map (fun x -> (mk_pos_term jprover_op x)) unique_deltas in
+         let delta_vars =
+            List.map (fun p -> pos_to_symbol (simple_to_gamma p)) unique_deltas
+         in
          let delta_map = List.combine delta_vars delta_terms in
          let var_mapping = (input_map @ delta_map) in
          let frees1 = free_vars_list term1 consts in
@@ -3705,8 +3756,8 @@ let rec create_output consts rule_list input_map =
          let unique_list1 = make_equal_list (List.length frees1) unique_object
          and unique_list2 = make_equal_list (List.length frees2) unique_object
          in
-         let next_term1 = subst term1 frees1 unique_list1
-         and next_term2 = subst term2 frees2 unique_list2 in
+         let next_term1 = TermSubst.subst term1 frees1 unique_list1
+         and next_term2 = TermSubst.subst term2 frees2 unique_list2 in
          let new_term1 = apply_var_subst next_term1 var_mapping
          and new_term2 = apply_var_subst next_term2 var_mapping
          in
@@ -3718,12 +3769,14 @@ let rec make_test_interface consts rule_list input_map =
       [] -> []
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = list_pos_to_string (collect_delta_terms [term1]) in
-         let delta2_names = list_pos_to_string (collect_delta_terms [term2]) in
+         let delta1_names = collect_delta_terms [term1] in
+         let delta2_names = collect_delta_terms [term2] in
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
          let delta_terms =
-            List.map (fun x -> (mk_string_term jprover_op x)) unique_deltas in
-         let delta_vars = List.map string_to_gamma unique_deltas in
+            List.map (fun x -> (mk_pos_term jprover_op x)) unique_deltas in
+         let delta_vars =
+            List.map (fun p -> pos_to_symbol (simple_to_gamma p)) unique_deltas
+         in
          let delta_map = List.combine delta_vars delta_terms in
          let var_mapping = (input_map @ delta_map) in
          let frees1 = free_vars_list term1 consts in
@@ -3742,8 +3795,8 @@ let rec make_test_interface consts rule_list input_map =
    print_endline "";
    print_endline "";
 *)
-            let next_term1 = subst term1 frees1 unique_list1
-            and next_term2 = subst term2 frees2 unique_list2 in
+            let next_term1 = TermSubst.subst term1 frees1 unique_list1
+            and next_term2 = TermSubst.subst term2 frees2 unique_list2 in
             let new_term1 = apply_var_subst next_term1 var_mapping
             and new_term2 = apply_var_subst next_term2 var_mapping
             in

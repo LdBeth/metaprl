@@ -5,20 +5,74 @@ open Lm_string_set
 
 open Term_sig
 open Refiner.Refiner
-open Term
+(*open Term*)
 open TermType
-open TermOp
-open TermSubst
-open TermMan
+(*open TermOp*)
+(*open TermSubst*)
+(*open TermMan*)
 open RefineError
-open Opname
-open Refiner.Refiner.TermType
+(*open Opname*)
 
 open Jlogic_sig
 open Jtypes
 
+let dest_bterm = Term.dest_bterm
+let dest_term = Term.dest_term
+let dest_op = Term.dest_op
+let dest_param = Term.dest_param
+let print_term = Term.print_term
+
 exception Not_unifiable
 exception Failed
+
+let kind_to_string = function
+ | Root ->
+      "w"
+ | Atom ->
+      "a"
+ | Const ->
+      "c"
+ | Dummy ->
+      "dummy"
+ | EigenVar ->
+      "Jprover_r"
+ | NewVar ->
+      "vnew"
+ | Var ->
+      "v"
+ | EmptyVar ->
+      raise
+      (Invalid_argument
+       "EmptyVar is not supposed to be converted to a variable")
+ | NewVarQ ->
+      "vnewq"
+ | GammaVar ->
+      "vnewj"
+ | GammaConst ->
+      "cj"
+ | GammaEigen ->
+      "Jprover_rj"
+
+let pos_to_symbol (k,i) =
+   Lm_symbol.make (kind_to_string k) i
+
+let symbol_to_pos sym =
+   let i = to_int sym in
+   let s = to_string sym in
+   match s with
+      "v" -> Var, i
+    | "vnew" -> NewVar, i
+    | "vnewq" -> NewVarQ, i
+    | "a" -> Atom, i
+    | "c" -> Const, i
+    | "dummy" -> Dummy, 0
+    | "Jprover_r" -> EigenVar, i
+    | "vnewj" -> GammaVar, i
+    | "w" -> Root, 0
+    | "cj" -> GammaConst, i
+    | "Jprover_rj" -> GammaEigen, i
+    | _ ->
+         raise (Invalid_argument ("Unexpected symbol format: "^s))
 
 let rec pos_to_string (kind,i) =
    let s = string_of_int i in
@@ -29,6 +83,8 @@ let rec pos_to_string (kind,i) =
          "a"^s
     | Const ->
          "c"^s
+    | Dummy ->
+         "dummy"
     | EigenVar ->
          "Jprover_r"^s
     | GammaEigen ->
@@ -92,13 +148,15 @@ let rec string_to_pos s =
                    else
                       Const, aux sub
              | 'w' -> Root, 0
+             | 'd' when s="dummy" -> Dummy, 0
              |  _  -> raise (Invalid_argument ("Unexpected code of position: "^s))
 
 let gamma_to_simple p =
    match p with
       GammaVar, i ->
          Var, i
-    | (EmptyVar|Atom|Const|GammaConst|EigenVar|GammaEigen|Var|NewVar|NewVarQ|Root), _ ->
+    | (EmptyVar|Atom|Const|Dummy|GammaConst|EigenVar|
+       GammaEigen|Var|NewVar|NewVarQ|Root), _ ->
          let s = pos_to_string p in
          raise (Invalid_argument ("GammaVar was expected instead of: "^s))
 
@@ -110,7 +168,7 @@ let simple_to_gamma p =
          GammaConst, i
     | EigenVar, i ->
          GammaEigen, i
-    | (EmptyVar|Atom|GammaConst|GammaEigen|GammaVar|NewVar|NewVarQ|Root), _ ->
+    | (EmptyVar|Atom|Dummy|GammaConst|GammaEigen|GammaVar|NewVar|NewVarQ|Root), _ ->
          let s = pos_to_string p in
          raise (Invalid_argument ("Var, Const or EigenVar were expected instead of: "^s))
 
@@ -135,27 +193,30 @@ struct
        | GammaConst,(EmptyVar|Atom|Const) -> 1
        | GammaConst, GammaConst -> Pervasives.compare i j
        | GammaConst,_ -> -1
-       | EigenVar,(EmptyVar|Atom|Const|GammaConst) -> 1
+       | Dummy,(EmptyVar|Atom|Const|GammaConst) -> 1
+       | Dummy, Dummy -> Pervasives.compare i j
+       | Dummy, _ -> -1
+       | EigenVar,(EmptyVar|Atom|Const|GammaConst|Dummy) -> 1
        | EigenVar, EigenVar -> Pervasives.compare i j
        | EigenVar, _ -> -1
-       | GammaEigen,(EmptyVar|Atom|Const|GammaConst|EigenVar) -> 1
+       | GammaEigen,(EmptyVar|Atom|Const|GammaConst|Dummy|EigenVar) -> 1
        | GammaEigen,GammaEigen -> Pervasives.compare i j
        | GammaEigen, _ -> -1
-       | Var,(Atom|Const|GammaConst|EmptyVar|EigenVar|GammaEigen) -> 1
+       | Var,(Atom|Const|GammaConst|Dummy|EmptyVar|EigenVar|GammaEigen) -> 1
        | Var,Var -> Pervasives.compare i j
        | Var,_ -> -1
-       | NewVar,(Atom|Const|GammaConst|EmptyVar|EigenVar|GammaEigen|Var) -> 1
+       | NewVar,(Atom|Const|GammaConst|Dummy|EmptyVar|EigenVar|GammaEigen|Var) -> 1
        | NewVar,NewVar -> Pervasives.compare i j
        | NewVar,_ -> -1
-       | GammaVar,(EmptyVar|Atom|Const|GammaConst|EigenVar|GammaEigen|Var|NewVar) -> 1
+       | GammaVar,(EmptyVar|Atom|Const|GammaConst|Dummy|EigenVar|GammaEigen|Var|NewVar) -> 1
        | GammaVar, GammaVar -> Pervasives.compare i j
        | GammaVar, _ -> -1
        | NewVarQ,
-           (Atom|Const|GammaConst|EmptyVar|EigenVar|GammaEigen|Var|GammaVar|NewVar) -> 1
+           (Atom|Const|GammaConst|Dummy|EmptyVar|EigenVar|GammaEigen|Var|GammaVar|NewVar) -> 1
        | NewVarQ,NewVarQ -> Pervasives.compare i j
        | NewVarQ,_ -> -1
        | Root,
-          (Atom|Const|GammaConst|EmptyVar|EigenVar|GammaEigen
+          (Atom|Const|GammaConst|Dummy|EmptyVar|EigenVar|GammaEigen
           |NewVar|NewVarQ|Var|GammaVar) -> 1
        | Root,Root -> Pervasives.compare i j
 
@@ -187,12 +248,25 @@ struct
       [] -> []
     | t::r ->
          let dt = dest_term t in
-            if Opname.eq (dest_op dt.term_op).op_name jprover_op then
-               let string_param = dest_string_param t in
-               let pos = string_to_pos string_param in
-               pos::(collect_delta_terms r)
-            else
-               collect_delta_terms (collect_subterms r dt.term_terms)
+            let {op_name=opname; op_params=params} = dest_op dt.term_op in
+               if Opname.eq opname jprover_op then
+                  match params with
+                     [hd] ->
+                        begin match dest_param hd with
+                           Term_sig.Var sym ->
+                              let pos = symbol_to_pos sym in
+                              pos::(collect_delta_terms r)
+                         | _ ->
+                              raise
+                              (Invalid_argument
+                               "Unexpected type of parameter of jprover_op")
+                        end
+                   | _ ->
+                        raise
+                        (Invalid_argument
+                         "Unexpected number of parameters of jprover_op")
+               else
+                  collect_delta_terms (collect_subterms r dt.term_terms)
 
 (* ***************** REDUCTION ORDERING -- both types **************************** *)
 
