@@ -2271,7 +2271,7 @@ struct
          [] -> []
        | (v,term)::r ->
             (*let _ = print_endline ("do_split: "^v) in*)
-            let simple = pos_to_string (gamma_to_simple (string_to_pos v)) in
+            let simple = gamma_to_simple v in
             if (List.mem simple gamma_diff) then
                do_split gamma_diff r
             else
@@ -2306,10 +2306,10 @@ struct
             let new_term, new_ass_delta_diff = check_delta_terms (v,term) ass_delta_diff dterms in
             (v,new_term)::(localize_sigma r new_ass_delta_diff)
 
-   let subst_split ft1 ft2 ftree uslist1 uslist2 uslist sigmaQ =
-      let sigmaQ = List.map
-         (fun (v,t) -> pos_to_string (symbol_to_pos v), t) sigmaQ
-      in
+   let subst_split ft1 ft2 ftree uslist1 uslist2 uslist
+      (sigmaQ : (symbol * term) list)
+      =
+      let sigmaQ = List.map (fun (s,t) -> symbol_to_pos s, t) sigmaQ in
       let delta,gamma = collect_qpos [ftree] uslist in
       let delta1,gamma1 = collect_qpos [ft1] uslist1 in
       let delta2,gamma2 = collect_qpos [ft2] uslist2 in
@@ -2317,13 +2317,15 @@ struct
       let delta_diff2 = list_diff delta delta2 in
       let gamma_diff1 = list_diff gamma gamma1 in
       let gamma_diff2 = list_diff gamma gamma2 in
+      let gamma_diff1 = list_string_to_pos gamma_diff1 in
+      let gamma_diff2 = list_string_to_pos gamma_diff2 in
       let zw_sigma1 = do_split gamma_diff1 sigmaQ in
       let zw_sigma2 = do_split gamma_diff2 sigmaQ in
       let zw_sigma1 =
-         List.map (fun (s,t) -> string_to_symbol s, t) zw_sigma1
+         List.map (fun (s,t) -> pos_to_symbol s, t) zw_sigma1
       in
       let zw_sigma2 =
-         List.map (fun (s,t) -> string_to_symbol s, t) zw_sigma2
+         List.map (fun (s,t) -> pos_to_symbol s, t) zw_sigma2
       in
       let ass_delta_diff1 = List.map (fun x -> (empty_sym,string_to_symbol x)) delta_diff1 in
       let ass_delta_diff2 = List.map (fun x -> (empty_sym,string_to_symbol x)) delta_diff2 in
