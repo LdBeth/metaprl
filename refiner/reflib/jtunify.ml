@@ -111,56 +111,6 @@ let is_var (k,_)  =
      Var | NewVar | NewVarQ | GammaVar -> true
    | Atom | Const | Dummy | GammaConst | EigenVar | GammaEigen | EmptyVar | Root -> false
 
-let r_1 s ft rt =
-   (s = []) && (ft = []) && (rt = [])
-
-let r_2 s ft rt =
-   (s = []) && (ft = []) && (List.length rt >= 1)
-
-let r_3 s ft rt =
-   ft=[] && (List.length s >= 1) && (List.length rt >= 1) && (List.hd s = List.hd rt)
-
-let r_4 s ft rt =
-   ft=[]
-      && (List.length s >= 1)
-      && (List.length rt >= 1)
-      && is_const (List.hd s)
-      && is_var (List.hd rt)
-
-let r_5 s rt =
-   rt=[]
-      && (List.length s >= 1)
-      && is_var (List.hd s)
-
-let r_6 s ft rt =
-   ft=[]
-      && (List.length s >= 1)
-      && (List.length rt >= 1)
-      && is_var (List.hd s)
-      && is_const (List.hd rt)
-
-let r_7 s rt =
-   List.length s >= 1
-      && (List.length rt >= 2)
-      && is_var (List.hd s)
-      && is_const (List.hd rt)
-      && is_const (List.hd (List.tl rt))
-
-let r_8 s ft rt =
-  ft=[]
-    && List.length s >= 2
-    && List.length rt >= 1
-    && let v = List.hd s in
-       let v1 = List.hd rt in
-         (is_var v) & (is_var v1) & (v <> v1)
-
-let r_9 s ft rt =
-   (List.length s >= 2) && (List.length ft >= 1) && (List.length rt >= 1)
-      &&
-         let v = (List.hd s) in
-         let v1 = (List.hd rt) in
-         (is_var v) & (is_var v1) & (v <> v1)
-
 let r_10 s rt =
    (List.length s >= 1) && (List.length rt >= 1)
    &&
@@ -345,6 +295,13 @@ let rec all_variable_check eqlist =
                false
 *)
 
+let r10 s rt =
+   match s,rt with
+      v::stl, x::rtl ->
+         is_var v && (v <> x) &&
+         ((stl =[]) or (is_const x) or (rtl <> []))
+    | _ -> false
+
 let rec tunify_list eqlist init_sigma ordering atom_rel =
    let rec tunify atomnames fs ft rt rest_eq sigma ordering =
       let apply_r1 rest_eq sigma =
@@ -422,60 +379,70 @@ let rec tunify_list eqlist init_sigma ordering atom_rel =
          tunify atomnames fs (ft @ [x]) (List.tl rt) rest_eq sigma ordering
 
       in
-      if r_1 fs ft rt then
-         apply_r1 rest_eq sigma
-      else if r_2 fs ft rt then
-         apply_r2 fs ft rt rest_eq sigma
-      else if r_3 fs ft rt then
-         apply_r3 fs ft rt rest_eq sigma
-      else if r_4 fs ft rt then
-         apply_r4 fs ft rt rest_eq sigma
-      else if r_5 fs rt then
-         apply_r5 fs ft rt rest_eq sigma
-      else if r_6 fs ft rt then
-         (try
-            apply_r6 fs ft rt rest_eq sigma
-         with Not_unifiable ->
-            if r_7 fs rt then (* r7 applicable if r6 was and tr6 = C2t' *)
-               (try
-                  apply_r7 fs ft rt rest_eq sigma
-               with Not_unifiable ->
-                  apply_r10 fs ft rt rest_eq sigma (* r10 always applicable if r6 was *)
-               )
-            else
+      match fs,ft,rt with
+         [], [], [] -> (* r1 *)
+            apply_r1 rest_eq sigma
+       | [], [], _::_ -> (* r2 *)
+            apply_r2 fs ft rt rest_eq sigma
+       | s1::_, [], r1::_ when s1=r1 -> (* r3 *)
+            apply_r3 fs ft rt rest_eq sigma
+       | s1::_, [], r1::_ when is_const s1 && is_var r1 -> (* r4 *)
+            apply_r4 fs ft rt rest_eq sigma
+       | s1::_, _, [] when is_var s1 -> (* r5 *)
+            apply_r5 fs ft rt rest_eq sigma
+       | s1::_, [], r1::rtl when is_var s1 && is_const r1 -> (* r6 *)
+            begin try apply_r6 fs ft rt rest_eq sigma with
+               Not_unifiable ->
+                  begin match rtl with
+                     r2::_ when is_const r2 ->
+                        (* r7 applicable if r6 was and tr6 = C2t' *)
+                        (try
+                           apply_r7 fs ft rt rest_eq sigma
+                        with Not_unifiable ->
+                           apply_r10 fs ft rt rest_eq sigma
+                           (* r10 always applicable if r6 was *)
+                        )
+                   | _ ->
       (* r10 could be represented only once if we would try it before r7.*)
       (* but looking at the transformation rules, r10 should be tried at last in any case *)
-               apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable r6 was *)
-         )
-      else if r_7 fs rt then  (* not r6 and r7 possible if z <> [] *)
-         (try
-            apply_r7 fs ft rt rest_eq sigma
-         with Not_unifiable ->
-            apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable if r7 was *)
-         )
-      else if r_8 fs ft rt then
-         (try
-            apply_r8 fs ft rt rest_eq sigma
-         with Not_unifiable ->
-            if r_10 fs rt then (* r10 applicable if r8 was and tr8 <> [] *)
-               apply_r10 fs ft rt rest_eq sigma
-            else
-               raise Not_unifiable (* simply back propagation *)
-         )
-      else if r_9 fs ft rt then
-         (try
-            apply_r9 fs ft rt rest_eq sigma
-         with Not_unifiable ->
-            if r_10 fs rt then (* r10 applicable if r9 was and tr9 <> [] *)
-               apply_r10 fs ft rt rest_eq sigma
-            else
-               raise Not_unifiable (* simply back propagation *)
-         )
-      else if r_10 fs rt then  (* not ri, i<10, and r10 possible if for instance *)
-                         (* (s=[] and x=v1) or (z<>[] and xt=C1V1t') *)
-         apply_r10 fs ft rt rest_eq sigma
-      else  (* NO rule applicable *)
-         raise Not_unifiable
+                        apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable r6 was *)
+                  end
+            end
+       | s1::_, _, r1::r2::_ (* r7 *)
+         when is_var s1 && is_const r1 && is_const r2 ->
+            (* r7, should be the same as in the catch part after apply_r6 *)
+            (try
+               apply_r7 fs ft rt rest_eq sigma
+            with Not_unifiable ->
+               apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable if r7 was *)
+            )
+       | v::_::_, [], v1::_ (* r8 *)
+         when is_var v && is_var v1 && (v <> v1) -> (* r8 *)
+            (try
+               apply_r8 fs ft rt rest_eq sigma
+            with Not_unifiable ->
+               if r_10 fs rt then (* r10 applicable if r8 was and tr8 <> [] *)
+                  apply_r10 fs ft rt rest_eq sigma
+               else
+                  raise Not_unifiable (* simply back propagation *)
+            )
+       | v::_::_, _::_, v1::_ (* r9 *)
+         when is_var v && is_var v1 && (v <> v1) -> (* r9 *)
+            (try
+               apply_r9 fs ft rt rest_eq sigma
+            with Not_unifiable ->
+               if r_10 fs rt then (* r10 applicable if r9 was and tr9 <> [] *)
+                  apply_r10 fs ft rt rest_eq sigma
+               else
+                  raise Not_unifiable (* simply back propagation *)
+            )
+       | v::stl, _, x::rtl (* r10 *)
+         when is_var v && (v <> x) &&
+         ((stl =[]) or (is_const x) or (rtl <> []))
+         -> (* r10 *)
+            apply_r10 fs ft rt rest_eq sigma
+       | _ -> (* NO rule applicable *)
+            raise Not_unifiable
    in
    match eqlist with
       [] ->
