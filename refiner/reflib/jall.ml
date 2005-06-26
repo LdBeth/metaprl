@@ -109,8 +109,6 @@ let all_contexts = TermMan.all_contexts
 let mk_pos_var p =
    Term.mk_var_term (pos_to_symbol p)
 
-let mk_string_term op s = mk_pos_term op (string_to_pos s)
-
 let print_term = Term.print_term
 let dest_term = Term.dest_term
 let dest_op = Term.dest_op
@@ -2978,14 +2976,11 @@ let rec subst_replace subst_list t =
          let new_term = subst1 inter_term "dummy" new_t in
          subst_replace r new_term
 
-let rename_pos x m =
-   let pref = String.get x 0 in
-   (Char.escaped pref)^(string_of_int m)
-
 let update_position position m replace_n subst_list mult =
    let ({name=x; address=y; pospos=pospos; op=z; pol=p; pt=a; st=b; label=t}) = position in
    let k, _ = pospos in
-   let nx = rename_pos x m in
+   let npospos = k, m in
+   let nx = pos_to_string npospos in
    let nsubst_list =
       if b=Gamma_0 then
          let vx = mk_var_term (string_to_gamma x) in
@@ -2994,7 +2989,7 @@ let update_position position m replace_n subst_list mult =
       else
          if b=Delta_0 then
             let sx = mk_pos_term jprover_op pospos in
-            let snx = mk_pos_term jprover_op (string_to_pos nx) in
+            let snx = mk_pos_term jprover_op npospos in
             (sx,snx)::subst_list
          else
             subst_list
@@ -3003,7 +2998,8 @@ let update_position position m replace_n subst_list mult =
    let add_array = Array.of_list y in
    let _ = (add_array.(replace_n) <- mult) in
    let new_add = Array.to_list add_array in
-   ({name=nx; address=new_add; pospos=(k,m); op=z; pol=p; pt=a; st=b; label=nt},m,nsubst_list)
+   {name=nx; address=new_add; pospos=npospos;
+    op=z; pol=p; pt=a; st=b; label=nt},m,nsubst_list
 
 let rec append_orderings list_of_lists =
    match list_of_lists with
