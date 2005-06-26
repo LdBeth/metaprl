@@ -2247,22 +2247,22 @@ struct
          [] -> [],[]
        | Empty :: rest ->
             collect_qpos rest uslist
-       | NodeAt pos :: rest ->
-            let (rest_delta,rest_gamma) = collect_qpos rest uslist in
-            if (pos.st = Gamma_0) & (List.mem pos.name uslist) then
-               rest_delta,(pos.name::rest_gamma)
+       | NodeAt {st=st; name=name; pospos=pospos} :: rest ->
+            let rest_delta, rest_gamma = collect_qpos rest uslist in
+            if (st = Gamma_0) & (List.mem name uslist) then
+               rest_delta,(pospos::rest_gamma)
             else
-               if (pos.st = Delta_0) & (List.mem pos.name uslist) then
-                  (pos.name::rest_delta),rest_gamma
+               if (st = Delta_0) & (List.mem name uslist) then
+                  (pospos::rest_delta),rest_gamma
                else
                   rest_delta,rest_gamma
-       | NodeA(pos,suctrees) :: rest ->
-            let (rest_delta,rest_gamma) = collect_qpos (suctrees @ rest) uslist in
-            if (pos.st = Gamma_0) & (List.mem pos.name uslist) then
-               rest_delta,(pos.name::rest_gamma)
+       | NodeA({st=st; name=name; pospos=pospos},suctrees) :: rest ->
+            let rest_delta, rest_gamma = collect_qpos (suctrees @ rest) uslist in
+            if (st = Gamma_0) & (List.mem name uslist) then
+               rest_delta,(pospos::rest_gamma)
             else
-               if (pos.st = Delta_0) & (List.mem pos.name uslist) then
-                  (pos.name::rest_delta),rest_gamma
+               if (st = Delta_0) & (List.mem name uslist) then
+                  (pospos::rest_delta),rest_gamma
                else
                   rest_delta,rest_gamma
 
@@ -2313,12 +2313,6 @@ struct
       let delta,gamma = collect_qpos [ftree] uslist in
       let delta1,gamma1 = collect_qpos [ft1] uslist1 in
       let delta2,gamma2 = collect_qpos [ft2] uslist2 in
-      let gamma = list_string_to_pos gamma in
-      let gamma1 = list_string_to_pos gamma1 in
-      let gamma2 = list_string_to_pos gamma2 in
-      let delta = list_string_to_pos delta in
-      let delta1 = list_string_to_pos delta1 in
-      let delta2 = list_string_to_pos delta2 in
       let delta_diff1 = list_diff delta delta1 in
       let delta_diff2 = list_diff delta delta2 in
       let gamma_diff1 = list_diff gamma gamma1 in
