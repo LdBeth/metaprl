@@ -1,15 +1,15 @@
 (*
  * JProver first-order automated prover. See the interface file
- * for more information and a list of references for JProver.
+ * for more information let a list of references for JProver.
  *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
- * environment for OCaml and other languages.
+ * environment for OCaml let other languages.
  *
  * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
+ * OCaml, let more information about this system.
  *
  * Copyright (C) 2000 Stephan Schmitt
  *
@@ -212,8 +212,8 @@ struct
             print_endline ""
        | (atnames,f)::r ->
             let (s,t) = f in
-            let ls = list_to_string s
-            and lt = list_to_string t in
+            let ls = list_to_string s in
+            let lt = list_to_string t in
             begin
                print_endline ("Atom names: "^(list_to_string atnames));
                print_endline (ls^" = "^lt);
@@ -254,7 +254,7 @@ struct
 
 (*****************************************************)
 
-(********* printing atoms and their relations ***********************)
+(********* printing atoms let their relations ***********************)
 
    let print_stype st =
       match st with
@@ -517,8 +517,8 @@ struct
                   pp_bproof_list [bproof] (new_tab-3)
                end
           | BNode(posname,(alph1,bproof1),(alph2,bproof2)) ->
-               let alpha_string1 = stringlist_to_string alph1
-               and alpha_string2 = stringlist_to_string alph2 in
+               let alpha_string1 = stringlist_to_string alph1 in
+               let alpha_string2 = stringlist_to_string alph2 in
                begin
                   open_box 0;
                   force_newline ();
@@ -728,7 +728,7 @@ struct
 
 (************ END printing functions  *********************************)
 
-(************ Beta proofs and redundancy deletion **********************)
+(************ Beta proofs let redundancy deletion **********************)
 
    let rec remove_dups_connections = function
       [] -> []
@@ -802,8 +802,8 @@ struct
                      (opt_subp2,min_conn2,beta_exp2)
                   end
                else
-                  let min_conn = remove_dups_connections (min_conn1 @ min_conn2)
-                  and beta_exp = remove_dups_list (pos :: beta_exp1 @ beta_exp2) in
+                  let min_conn = remove_dups_connections (min_conn1 @ min_conn2) in
+                  let beta_exp = remove_dups_list (pos :: beta_exp1 @ beta_exp2) in
                   (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2)),min_conn,beta_exp)
 
    let bproof_purity bproof =
@@ -843,9 +843,9 @@ struct
          RNode(alayer,BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2))) ->
             if pos = pname then
 (* if topmost beta expansion agrees with pname, then *)
-(* only split the beta proof and give back the two subproofs *)
-               let (osubp1,min_con1) = bproof_purity opt_subp1
-               and (osubp2,min_con2) = bproof_purity opt_subp2 in
+(* only split the beta proof let give back the two subproofs *)
+               let (osubp1,min_con1) = bproof_purity opt_subp1 in
+               let (osubp2,min_con2) = bproof_purity opt_subp2 in
 (* there will be no purity reductions in the beta subproofs. We use this *)
 (* predicate to collect the set of used leaf-connections in each subproof*)
                ((RNode((alayer @ alph1),osubp1),min_con1),
@@ -856,9 +856,10 @@ struct
             else
                let perm_bproof1,balph1 = apply_permutation
                      (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2))) pname Left []
-               and perm_bproof2,balph2 = apply_permutation
-                     (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2))) pname Right [] in
-
+               in
+               let perm_bproof2,balph2 = apply_permutation
+                     (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2))) pname Right []
+               in
                begin
 (*                print_endline " ";
                   print_beta_proof perm_bproof1;
@@ -866,8 +867,8 @@ struct
                   print_beta_proof perm_bproof2;
                   print_endline" ";
 *)
-                  let (osubp1,min_con1) = bproof_purity perm_bproof1
-                  and (osubp2,min_con2) = bproof_purity perm_bproof2 in
+                  let (osubp1,min_con1) = bproof_purity perm_bproof1 in
+                  let (osubp2,min_con2) = bproof_purity perm_bproof2 in
                   ((RNode((alayer @ balph1),osubp1),min_con1),
                    (RNode((alayer @ balph2),osubp2),min_con2)
                   )
@@ -910,7 +911,7 @@ struct
                   raise jprover_bug
              | NodeAt(pos) ->
                   let pn = pos.name
-                  and (rnode,ratom,borderings) = compute_alpha_layer r in
+                  let (rnode,ratom,borderings) = compute_alpha_layer r in
                   ((pn::rnode),(pn::ratom),borderings)
              | NodeA(pos,suctrees) ->
                   let pn = pos.name in
@@ -945,7 +946,7 @@ struct
          Empty | NodeAt(_) -> raise jprover_bug
        | NodeA(pos,suctrees) ->
             let b1tree = suctrees.(0)
-            and b2tree = suctrees.(1) in
+            let b2tree = suctrees.(1) in
             (pos.name,b1tree,b2tree)
 
    let rec build_beta_proof alpha_layer union_atoms beta_orderings connections =
@@ -958,7 +959,7 @@ struct
           | btree::r ->
                let (beta_pos,suctree1,suctree2) = get_beta_suctrees btree in
                let (alpha_layer1, atoms1, bordering1) = compute_alpha_layer [suctree1]
-               and (alpha_layer2, atoms2, bordering2) = compute_alpha_layer [suctree2] in
+               let (alpha_layer2, atoms2, bordering2) = compute_alpha_layer [suctree2] in
                let bproof1,beta1,closure1 =
                   build_beta_proof alpha_layer1 (atoms1 @ union_atoms)
                      (bordering1 @ r) connections
@@ -1132,10 +1133,10 @@ struct
             beta_proof,0,0,[]
        | (c1,c2)::rproof ->
 (*  print_endline ("actual connection: "^c1^" "^c2); *)
-            let c1_context = List.assoc c1 beta_atoms
-            and c2_context = List.assoc c2 beta_atoms in
-            let c2_diff_context = compute_beta_difference c1_context c2_context act_context
-            and c1_diff_context = compute_tree_difference beta_proof c1_context in (* wrt. actual beta-proof *)
+            let c1_context = List.assoc c1 beta_atoms in
+            let c2_context = List.assoc c2 beta_atoms in
+            let c2_diff_context = compute_beta_difference c1_context c2_context act_context in
+            let c1_diff_context = compute_tree_difference beta_proof c1_context in (* wrt. actual beta-proof *)
             let (next_beta_proof,next_exp,next_closures,next_ext_proof) =
                insert_connection beta_proof (c1,c2) rproof c1_diff_context c2_diff_context c1_diff_context in
             if non_closed [next_beta_proof] then  (* at least one branch was generated to isolate c1 *)
@@ -1305,9 +1306,9 @@ struct
 (* Permutation schemes *)
 
 (* corresponds to local permutation lemma -- Lemma 3 in the paper -- *)
-(* with eigenvariablen renaming and branch modification *)
+(* with eigenvariablen renaming let branch modification *)
 
-(* eigenvariablen renaming and branch modification over *)
+(* eigenvariablen renaming let branch modification over *)
 (* the whole proofs, i.e. over layer boundaries, too *)
 
 (* global variable vor eigenvariable renaming during permutations *)
@@ -1343,8 +1344,8 @@ struct
             let new_form = replace_subterm form old_parameter new_parameter in
             PNodeAx((pos,inf,new_form,term))
        | PNodeA((pos,inf,form,term), left) ->
-            let new_form = replace_subterm form old_parameter new_parameter
-            and new_term = replace_subterm term old_parameter new_parameter in
+            let new_form = replace_subterm form old_parameter new_parameter in
+            let new_term = replace_subterm term old_parameter new_parameter in
             let ren_left = eigen_rename old_parameter new_parameter left in
             PNodeA((pos,inf,new_form,new_term), ren_left)
        | PNodeB((pos,inf,form,term),left, right) ->
@@ -1664,13 +1665,13 @@ struct
          ptree
       else
 (*         let (x1,x2,x3,x4) = r
-         and (y1,y2,y3,y4) = o in
+         let (y1,y2,y3,y4) = o in
    print_endline ("top or_l: "^x1);
    print_endline ("or_l address: "^addr);
    print_endline ("top dgen-rule: "^y1); *)
          trans_add_branch r o (List.rev addr) Left ptree dglist (subrel,tsubrel)
 
-(* Isolate layer and outer recursion structure *)
+(* Isolate layer let outer recursion structure *)
 (* uses weaker layer boundaries: ONLY critical inferences *)
 
    let rec trans_layer ptree (subrel,tsubrel) =
@@ -1686,8 +1687,8 @@ struct
                let tptree = isol_layer left (subrel,tsubrel) in
                   PNodeA(rule,tptree)
           | PNodeB(rule,left,right) ->
-               let tptree_l = isol_layer left (subrel,tsubrel)
-               and tptree_r = isol_layer right (subrel,tsubrel) in
+               let tptree_l = isol_layer left (subrel,tsubrel) in
+               let tptree_r = isol_layer right (subrel,tsubrel) in
                PNodeB(rule,tptree_l,tptree_r)
       in
       begin
@@ -1806,8 +1807,8 @@ struct
 (* the gamma_0 position is really unsolved *)
 (* this is only relevant for the gamma_0 positions in po *)
                          let new_name = (posname^"_"^spos.name) (* make new unique gamma name *) in
-                         let new_srel_el = ((predname,new_name),d)
-                         and new_rename_el = (spos.name,new_name)  (* gamma_0 position as key first *) in
+                         let new_srel_el = ((predname,new_name),d) in
+                         let new_rename_el = (spos.name,new_name)  (* gamma_0 position as key first *) in
                          let (srel,sren) = build_formula_rel [(x,ft)] slist new_name in
                          ((new_srel_el::srel) @ rest_rel),((new_rename_el::sren) @ rest_ren)
                       else
@@ -1898,12 +1899,12 @@ struct
             let left_list =  make_node_list left in
             (("",pos),(inf,form,term))::left_list
        | PNodeB((pos,inf,form,term),left,right) ->
-            let left_list =  make_node_list left
-            and right_list =  make_node_list right in
+            let left_list =  make_node_list left in
+            let right_list =  make_node_list right in
             (("",pos),(inf,form,term))::(left_list @ right_list)
 
    let permute_ljmc ftree po slist ljmc_proof =
- (* ftree/po are the formula tree / open positions of the sequent that caused deadlock and permutation *)
+ (* ftree/po are the formula tree / open positions of the sequent that caused deadlock let permutation *)
 (*  print_endline "!!!!!!!!!!!!!Permutation TO DO!!!!!!!!!"; *)
  (* the open positions in po are either phi_0, psi_0, or gamma_0 positions *)
  (* since proof reconstruction was a deadlock in LJ *)
@@ -1978,7 +1979,7 @@ struct
             if List.exists (fun x -> (fst x = vf)) sigmaQ then
                extend_sigmaQ sigmaQ r
             else
-(* first and second component are var terms in MetaPRL *)
+(* first let second component are var terms in MetaPRL *)
                (vf,vf) :: (extend_sigmaQ sigmaQ r)
 
    let build_sigmaQ sigmaQ ftree =
@@ -2234,9 +2235,9 @@ struct
    force_newline ();
    print_flush ();
 *)
-         let rednew = update_redord (StringSet.of_list pure_names) redord
-         and connew = update_connections pure_names connections
-         and unsolnew = update_list pure_names unsolved_list in
+         let rednew = update_redord (StringSet.of_list pure_names) redord in
+         let connew = update_connections pure_names connections in
+         let unsolnew = update_list pure_names unsolved_list in
          (rednew,connew,unsolnew)
       end
 
@@ -2305,19 +2306,19 @@ struct
             (v,new_term)::(localize_sigma r new_ass_delta_diff)
 
    let subst_split ft1 ft2 ftree uslist1 uslist2 uslist sigmaQ =
-      let delta,gamma = collect_qpos [ftree] uslist
-      and delta1,gamma1 = collect_qpos [ft1] uslist1
-      and delta2,gamma2 = collect_qpos [ft2] uslist2 in
-      let delta_diff1 = list_diff delta delta1
-      and delta_diff2 = list_diff delta delta2
-      and gamma_diff1 = list_diff gamma gamma1
-      and gamma_diff2 = list_diff gamma gamma2 in
-      let zw_sigma1 = do_split gamma_diff1 sigmaQ
-      and zw_sigma2 = do_split gamma_diff2 sigmaQ in
-      let ass_delta_diff1 = List.map (fun x -> ("",x)) delta_diff1
-      and ass_delta_diff2 = List.map (fun x -> ("",x)) delta_diff2 in
-      let sigmaQ1 = localize_sigma zw_sigma1 ass_delta_diff1
-      and sigmaQ2 = localize_sigma zw_sigma2 ass_delta_diff2 in
+      let delta,gamma = collect_qpos [ftree] uslist in
+      let delta1,gamma1 = collect_qpos [ft1] uslist1 in
+      let delta2,gamma2 = collect_qpos [ft2] uslist2 in
+      let delta_diff1 = list_diff delta delta1 in
+      let delta_diff2 = list_diff delta delta2 in
+      let gamma_diff1 = list_diff gamma gamma1 in
+      let gamma_diff2 = list_diff gamma gamma2 in
+      let zw_sigma1 = do_split gamma_diff1 sigmaQ in
+      let zw_sigma2 = do_split gamma_diff2 sigmaQ in
+      let ass_delta_diff1 = List.map (fun x -> ("",x)) delta_diff1 in
+      let ass_delta_diff2 = List.map (fun x -> ("",x)) delta_diff2 in
+      let sigmaQ1 = localize_sigma zw_sigma1 ass_delta_diff1 in
+      let sigmaQ2 = localize_sigma zw_sigma2 ass_delta_diff2 in
       (sigmaQ1,sigmaQ2)
 
    let rec reduce_tree addr actual_node ftree beta_flag =
@@ -2325,7 +2326,7 @@ struct
          [], _ -> (ftree,Empty,actual_node,beta_flag)
        | a::radd, NodeA(pos,strees) ->
 (*       print_endline pos.name; *)
-    (* the associated node occurs above f (or the empty address) and hence, is neither atom nor empty tree *)
+    (* the associated node occurs above f (or the empty address) let hence, is neither atom nor empty tree *)
             let nexttree = (List.nth strees (a-1)) in
             if (nonemptys 0 strees) < 2 then
                begin
@@ -2458,13 +2459,13 @@ struct
 *)
          let (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) =
             betasplit addr ftree redord connections unsolved_list in
-(* zw1conn and zw2conn are not longer needed when using beta proofs *)
+(* zw1conn let zw2conn are not longer needed when using beta proofs *)
 (*   print_endline "betasp_out"; *)
          let ft1,red1,conn1,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
 (*   print_endline "purity_one_out"; *)
          let ft2,red2,conn2,uslist2 =  purity zw2ft zw2red min_con2 zw2uslist in
 (*        print_endline "purity_two_out"; *)
-(* again, min_con1 = conn1 and min_con2 = conn2 should hold *)
+(* again, min_con1 = conn1 let min_con2 = conn2 should hold *)
          begin
 (* print_endline "";
    print_endline "";
@@ -2503,7 +2504,7 @@ struct
             if ((List.mem (pos.name) slist) or (pos.pol = I)) then  (* recall slist is the unsolved list *)
                collect_solved_O_At r slist
             else
-    (* here, we have pos solved and pos.pol = O) *)
+    (* here, we have pos solved let pos.pol = O) *)
                pos::(collect_solved_O_At r slist)
        | NodeA(pos,treearray) :: r ->
             collect_solved_O_At (treearray @ r) slist
@@ -2580,7 +2581,7 @@ struct
                         else  (* (f.op=Imp) *)
                  (* In case of an impl rule on A => B, the wait_label must NOT be set
                     iff all succedent formulae depend exclusively on B. For this, we
-                    perform a split operation and determine, if in the A-subgoal
+                    perform a split operation let determine, if in the A-subgoal
                     all succedent formulae are pure, i.e.~have been deleted from treds.
                     Otherwise, in case of A-dependent succedent formulae, the
                     wait_label must be set.
@@ -2594,8 +2595,8 @@ struct
                            let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in
 (*                    print_endline ("wait-root "^(ft1_root.name)); *)
                            let po_fake = compute_open [ft1] uslist1 in
-                           let po_fake_test = delete pos_eq ft1_root po_fake
-                           and pa_O_fake = collect_solved_O_At [ft1] uslist1 in
+                           let po_fake_test = delete pos_eq ft1_root po_fake in
+                           let pa_O_fake = collect_solved_O_At [ft1] uslist1 in
 (*                     print_purelist (po_fake_test @ pa_O_fake); *)
                               ((pa_O_fake <> []) or (List.exists (fun x -> x.pol = O) po_fake_test)), 0
                      else
@@ -2801,7 +2802,7 @@ struct
       if !debug_jprover then
          begin
             print_endline "";
-            print_endline ("Beta proof with number of closures = "^(string_of_int closures)^" and number of beta expansions = "^(string_of_int beta_exp));
+            print_endline ("Beta proof with number of closures = "^(string_of_int closures)^" let number of beta expansions = "^(string_of_int beta_exp));
 (*   print_endline "";
    print_endline "";
    print_beta_proof bproof;
@@ -2881,7 +2882,7 @@ let pos_subst t vars tl =
 
 (* let multiply sigmaQ tauQ =
    let tau_vars,tau_terms = List.split tauQ
-   and sigma_vars,sigma_terms = List.split sigmaQ in
+   let sigma_vars,sigma_terms = List.split sigmaQ in
    let apply_terms = rec_apply sigma_terms tau_vars tau_terms in
    (List.combine sigma_vars apply_terms) @ tauQ
 *)
@@ -2931,7 +2932,7 @@ let rec one_equation gprefix dlist delta_0_prefixes n =
     | f::r ->
          let fprefix = List.assoc f delta_0_prefixes in
          let (sf1,sg) = shorten fprefix gprefix in
-         (*and v_new = ("vnewq"^(string_of_int n)) in*)
+         (*let v_new = ("vnewq"^(string_of_int n)) in*)
          let v_new = NewVarQ, n in
          let fnew = sf1 @ [v_new] in
          let (rest_equations,new_n) = one_equation gprefix r delta_0_prefixes (n+1) in
@@ -3003,8 +3004,8 @@ let update_position position m replace_n subst_list mult =
          (vx,vnx)::subst_list
       else
          if b=Delta_0 then
-            let sx = mk_pos_term jprover_op pospos
-            and snx = mk_pos_term jprover_op (string_to_pos nx) in
+            let sx = mk_pos_term jprover_op pospos in
+            let snx = mk_pos_term jprover_op (string_to_pos nx) in
             (sx,snx)::subst_list
          else
             subst_list
@@ -3072,7 +3073,7 @@ let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
          in
          ((NodeA(nposition,new_suctrees)),new_ordering,new_pos_n)
 
-(* we construct for each pos a list orderings representing and correspondning to the array of succtrees *)
+(* we construct for each pos a list orderings representing let correspondning to the array of succtrees *)
 
 let rec add_multiplicity ftree pos_n mult calculus =
    let rec parse_subtrees tree_list s_pos_n =
@@ -3157,8 +3158,8 @@ let rec check_ext_list ext_list fail_set atom_sets =  (* fail_set consists of on
             (check_ext_list r fail_set atom_sets)
 
 let fail_ext_set ext_atom ext_set atom_sets =
-   let ext_list = AtomSet.elements ext_set
-   and fail_set = AtomSet.singleton ext_atom in
+   let ext_list = AtomSet.elements ext_set in
+   let fail_set = AtomSet.singleton ext_atom in
    check_ext_list ext_list fail_set atom_sets
 
 let rec ext_partners con path ext_atom reduction_partners extension_partners atom_sets =
@@ -3238,8 +3239,8 @@ let path_checker
                   provable path new_closed (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ)
                      (* always use old first-order ordering for recursion *)
                else
-                  let new_path = AtomSet.add path ext_atom
-                  and extension = AtomSet.singleton try_one in
+                  let new_path = AtomSet.add path ext_atom in
+                  let extension = AtomSet.singleton try_one in
                   let ((norderingQ,nredordering),neqlist,(nsigmaQ,nsigmaJ),p1) =
                      provable new_path extension (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ) in
                   let ((nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),p2) =
@@ -3295,7 +3296,7 @@ let path_checker
    else
       provable AtomSet.empty AtomSet.empty (init_ordering,[]) (1,[]) ([],(1,[]))
 
-(*************************** prepare and init prover *******************************************************)
+(*************************** prepare let init prover *******************************************************)
 
 let rec make_atom_sets = function
    [] -> []
@@ -3389,8 +3390,8 @@ let prepare_prover ftree =
    let atom_rel = compute_atomlist_relations alist ftree alist in
    (atom_rel,(gamma_0_prefixes,delta_0_prefixes))
 
-(* ************************ Build intial formula tree  and relations *********************************** *)
-(* Building a formula tree and the tree ordering from the input formula, i.e. OCaml term *)
+(* ************************ Build intial formula tree  let relations *********************************** *)
+(* Building a formula tree let the tree ordering from the input formula, i.e. OCaml term *)
 
 let make_position_name =
    let v = "v" in
@@ -3439,8 +3440,8 @@ let rec build_ftree variable old_term pol stype address pos_n =
       let subtree_left,ordering_left,posn_left = build_ftree "" s pol stype_1 (address@[1]) (pos_n+1) in
       let subtree_right,ordering_right,posn_right = build_ftree "" t pol stype_2 (address@[2])
             (posn_left+1) in
-      let (succ_left,whole_left) = List.hd ordering_left
-      and (succ_right,whole_right) = List.hd ordering_right in
+      let (succ_left,whole_left) = List.hd ordering_left in
+      let (succ_right,whole_right) = List.hd ordering_right in
       let pos_succs =
          Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left
       in
@@ -3495,8 +3496,8 @@ let rec build_ftree variable old_term pol stype address pos_n =
                   (pos_n+2) in
             let subtree_right,ordering_right,posn_right = build_ftree "" t pol stype_2 (address@[1;2])
                   (posn_left+1) in
-            let (succ_left,whole_left) = List.hd ordering_left
-            and (succ_right,whole_right) = List.hd ordering_right in
+            let (succ_left,whole_left) = List.hd ordering_left in
+            let (succ_right,whole_right) = List.hd ordering_right in
             let pos_succs =
                Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left in
             let pos_ordering = (position.pospos,pos_succs) :: (ordering_left @ ordering_right) in
@@ -3534,7 +3535,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
                )
             else
                if JLogic.is_exists_term term then
-                  let v,s,t = JLogic.dest_exists term in  (* s is type of v and will be supressed here *)
+                  let v,s,t = JLogic.dest_exists term in  (* s is type of v let will be supressed here *)
                   let ptype,stype_1 =
                      if pol = O
                      then Gamma,Gamma_0
@@ -3556,7 +3557,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
                else
                   if JLogic.is_all_term term then
                      let v,s,t = JLogic.dest_all term in
-       (* s is type of v and will be supressed here *)
+       (* s is type of v let will be supressed here *)
                      let ptype_0,stype_0,ptype,stype_1=
                         if pol = O
                         then Psi,Psi_0,Delta,Delta_0
@@ -3715,8 +3716,8 @@ let rec renam_free_vars termlist =
                (fun s -> mk_symbol_term free_var_op s)
                var_names
          in
-         let mapping = List.combine var_names string_terms
-         and new_f = TermSubst.subst f var_names string_terms in
+         let mapping = List.combine var_names string_terms in
+         let new_f = TermSubst.subst f var_names string_terms in
          let rest_mapping,rest_renamed,rest_conts = renam_free_vars r in
          let unique_mapping = remove_subst_dups (mapping @ rest_mapping) in
          (unique_mapping,(new_f::rest_renamed),SymbolSet.union conts rest_conts)
@@ -3754,13 +3755,13 @@ let rec create_output consts rule_list
          let frees2 = free_vars_list term2 consts in
          let unique_object = mk_var_term "vnewj0" in
          let unique_list1 = make_equal_list (List.length frees1) unique_object
-         and unique_list2 = make_equal_list (List.length frees2) unique_object
          in
-         let next_term1 = TermSubst.subst term1 frees1 unique_list1
-         and next_term2 = TermSubst.subst term2 frees2 unique_list2 in
-         let new_term1 = apply_var_subst next_term1 var_mapping
-         and new_term2 = apply_var_subst next_term2 var_mapping
+         let unique_list2 = make_equal_list (List.length frees2) unique_object
          in
+         let next_term1 = TermSubst.subst term1 frees1 unique_list1 in
+         let next_term2 = TermSubst.subst term2 frees2 unique_list2 in
+         let new_term1 = apply_var_subst next_term1 var_mapping in
+         let new_term2 = apply_var_subst next_term2 var_mapping in
 (* kick away the first argument, the position *)
          (JLogic.append_inf (create_output consts r input_map) new_term1 new_term2 rule)
 
@@ -3783,7 +3784,8 @@ let rec make_test_interface consts rule_list input_map =
          let frees2 = free_vars_list term2 consts in
          let unique_object = mk_var_term "vnewj0" in
          let unique_list1 = make_equal_list (List.length frees1) unique_object
-         and unique_list2 = make_equal_list (List.length frees2) unique_object
+         in
+         let unique_list2 = make_equal_list (List.length frees2) unique_object
          in
          begin
 (*
@@ -3795,11 +3797,10 @@ let rec make_test_interface consts rule_list input_map =
    print_endline "";
    print_endline "";
 *)
-            let next_term1 = TermSubst.subst term1 frees1 unique_list1
-            and next_term2 = TermSubst.subst term2 frees2 unique_list2 in
-            let new_term1 = apply_var_subst next_term1 var_mapping
-            and new_term2 = apply_var_subst next_term2 var_mapping
-            in
+            let next_term1 = TermSubst.subst term1 frees1 unique_list1 in
+            let next_term2 = TermSubst.subst term2 frees2 unique_list2 in
+            let new_term1 = apply_var_subst next_term1 var_mapping in
+            let new_term2 = apply_var_subst next_term2 var_mapping in
             (pos,(rule,new_term1,new_term2))::(make_test_interface consts r input_map)
          end
 
@@ -3809,7 +3810,7 @@ let gen_prover mult_limit calculus hyps concls =
    let (input_map,renamed_termlist,consts) = renam_free_vars (hyps @ concls) in
    let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove consts mult_limit renamed_termlist calculus in
    let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
-         (* transform types and rename constants *)
+         (* transform types let rename constants *)
      (* we can transform the eigenvariables AFTER proof reconstruction since *)
      (* new delta_0 constants may have been constructed during rule permutation *)
      (* from the LJmc to the LJ proof *)
@@ -3908,7 +3909,7 @@ let do_prove mult_limit termlist calculus =
       print_endline (Printexc.to_string exn)
    end
 
-let test concl calculus =  (* calculus should be LJmc or LJ for J, and LK for C *)
+let test concl calculus =  (* calculus should be LJmc or LJ for J, let LK for C *)
    do_prove None [concl] calculus
 
 (* for sequents *)

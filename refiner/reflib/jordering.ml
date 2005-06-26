@@ -133,7 +133,7 @@ let rec string_to_pos s =
                   NewVarQ, aux (String.sub s 5 (String.length s - 5))
              | 'j' ->
                   GammaVar, aux (String.sub s 5 (String.length s - 5))
-             | ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9') ->
+             | ('0'..'9') ->
                   NewVar, aux (String.sub s 4 (String.length s - 4))
              | _ ->
                   raise (Invalid_argument ("Unknown type of variable: "^s))
