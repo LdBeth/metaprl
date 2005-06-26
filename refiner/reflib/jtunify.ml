@@ -111,14 +111,6 @@ let is_var (k,_)  =
      Var | NewVar | NewVarQ | GammaVar -> true
    | Atom | Const | Dummy | GammaConst | EigenVar | GammaEigen | EmptyVar | Root -> false
 
-let r_10 s rt =
-   (List.length s >= 1) && (List.length rt >= 1)
-   &&
-      let v = List.hd s in
-      let x = List.hd rt in
-      (is_var v) && (v <> x)
-      && (((List.tl s) =[]) or (is_const x) or ((List.tl rt) <> []))
-
 let rec com_subst ov ovlist = function
    [] -> []
  | f::r as l->
@@ -295,7 +287,7 @@ let rec all_variable_check eqlist =
                false
 *)
 
-let r10 s rt =
+let r_10 s rt =
    match s,rt with
       v::stl, x::rtl ->
          is_var v && (v <> x) &&
@@ -436,13 +428,13 @@ let rec tunify_list eqlist init_sigma ordering atom_rel =
                else
                   raise Not_unifiable (* simply back propagation *)
             )
-       | v::stl, _, x::rtl (* r10 *)
-         when is_var v && (v <> x) &&
-         ((stl =[]) or (is_const x) or (rtl <> []))
-         -> (* r10 *)
-            apply_r10 fs ft rt rest_eq sigma
-       | _ -> (* NO rule applicable *)
-            raise Not_unifiable
+       | _ ->
+            if r_10 fs rt then
+               (* r10 *)
+               apply_r10 fs ft rt rest_eq sigma
+            else
+               (*iNO rule applicable *)
+               raise Not_unifiable
    in
    match eqlist with
       [] ->
