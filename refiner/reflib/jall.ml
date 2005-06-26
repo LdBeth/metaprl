@@ -2247,34 +2247,34 @@ struct
          [] -> [],[]
        | Empty :: rest ->
             collect_qpos rest uslist
-       | NodeAt {st=Gamma_0; name=name; pospos=pospos} :: rest ->
+       | NodeAt {st=Gamma_0; pospos=pospos} :: rest ->
             let rest_delta, rest_gamma = collect_qpos rest uslist in
-            if List.mem name uslist then
+            if List.mem pospos uslist then
                rest_delta, (pospos::rest_gamma)
             else
                rest_delta, rest_gamma
-       | NodeAt {st=Delta_0; name=name; pospos=pospos} :: rest ->
+       | NodeAt {st=Delta_0; pospos=pospos} :: rest ->
             let rest_delta, rest_gamma = collect_qpos rest uslist in
-            if List.mem name uslist then
+            if List.mem pospos uslist then
                (pospos::rest_delta), rest_gamma
             else
                rest_delta, rest_gamma
-       | NodeAt {st=_; name=name; pospos=pospos} :: rest ->
+       | NodeAt _ :: rest ->
             let rest_delta, rest_gamma = collect_qpos rest uslist in
             rest_delta, rest_gamma
-       | NodeA({st=Gamma_0; name=name; pospos=pospos},suctrees) :: rest ->
+       | NodeA({st=Gamma_0; pospos=pospos},suctrees) :: rest ->
             let rest_delta, rest_gamma = collect_qpos (suctrees @ rest) uslist in
-            if List.mem name uslist then
+            if List.mem pospos uslist then
                rest_delta, (pospos::rest_gamma)
             else
                rest_delta, rest_gamma
-       | NodeA({st=Delta_0; name=name; pospos=pospos},suctrees) :: rest ->
+       | NodeA({st=Delta_0; pospos=pospos},suctrees) :: rest ->
             let rest_delta, rest_gamma = collect_qpos (suctrees @ rest) uslist in
-            if List.mem name uslist then
+            if List.mem pospos uslist then
                (pospos::rest_delta), rest_gamma
             else
                rest_delta, rest_gamma
-       | NodeA({st=_; name=name; pospos=pospos},suctrees) :: rest ->
+       | NodeA(_, suctrees) :: rest ->
             let rest_delta, rest_gamma = collect_qpos (suctrees @ rest) uslist in
             rest_delta, rest_gamma
 
@@ -2778,7 +2778,12 @@ struct
 (*             print_endline "split_in"; *)
                   let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) =
                      split (p.address) (p.name) ftree redord connections newslist opt_bproof in
-                  let (sigmaQ1,sigmaQ2) = subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ in
+                  let pos_uslist1 = list_string_to_pos uslist1 in
+                  let pos_uslist2 = list_string_to_pos uslist2 in
+                  let pos_newslist = list_string_to_pos newslist in
+                  let (sigmaQ1,sigmaQ2) =
+                     subst_split ft1 ft2 ftree pos_uslist1 pos_uslist2 pos_newslist csigmaQ
+                  in
 (*           print_endline "split_out"; *)
                   let p1 = total ft1 red1 conn1 sigmaQ1 uslist1 calculus opt_bproof1 in
 (*           print_endline "compute p1 out";              *)
