@@ -3038,8 +3038,8 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
    match calculus with
       Classical -> ((0,[]),(0,[]),orderingQ)
     | Intuit _ ->
-         let us = list_string_to_pos ext_atom.aprefix in
-         let ut = list_string_to_pos try_one.aprefix in
+         let us = ext_atom.aposprefix in
+         let ut = try_one.aposprefix in
          let ns = ext_atom.apos in
          let nt = try_one.apos in
             match qprefixes with
@@ -3449,8 +3449,8 @@ let rec select_atoms_treelist treelist prefix posprefix =
                select_atoms_treelist suctrees new_prefix new_posprefix
             in
             (  rest_alist,
-              (if st == Gamma_0 then rest_gamma_0_prefixes @ [position.name,prefix] else rest_gamma_0_prefixes),
-              (if st == Delta_0 then rest_delta_0_prefixes @ [position.name,prefix] else rest_delta_0_prefixes))
+              (if st == Gamma_0 then rest_gamma_0_prefixes @ [position.pospos,posprefix] else rest_gamma_0_prefixes),
+              (if st == Delta_0 then rest_delta_0_prefixes @ [position.pospos,posprefix] else rest_delta_0_prefixes))
    in
    match treelist with
       [] -> [],[],[]
@@ -3738,12 +3738,6 @@ let rec try_multiplicity
    =
    try
       let (atom_relation,atom_sets,qprefixes) = init_prover ftree in
-      let q1,q2 = qprefixes in
-      let q1' =
-         List.map (fun (x,y) -> string_to_pos x, list_string_to_pos y) q1 in
-      let q2' =
-         List.map (fun (x,y) -> string_to_pos x, list_string_to_pos y) q2 in
-      let qprefixes = q1',q2' in
       let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
          path_checker consts atom_relation atom_sets qprefixes ordering calculus in
       (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
