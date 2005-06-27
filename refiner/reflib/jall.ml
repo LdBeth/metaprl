@@ -1730,6 +1730,7 @@ struct
                else
                   0
             in
+            let pos = pos_to_string pos in
             bptree (extend prooftree (pos,rule,formula,term)) rest (nax+newax)
 
    let bproof nodelist =
@@ -1782,32 +1783,33 @@ struct
       hd::tl -> (n,hd)::(number_list (succ n) tl)
     | [] -> []
 
-   let rec build_formula_rel dir_treelist slist predname =
+   let rec build_formula_rel dir_treelist slist predpos =
 
-      let rec build_renamed_gamma_rel dtreelist predname posname d =
+      let rec build_renamed_gamma_rel dtreelist predpos pospos d =
          match dtreelist with
             [] -> [],[]
           | (x,ft)::rdtlist ->
-               let rest_rel,rest_ren = build_renamed_gamma_rel rdtlist predname posname d in
+               let rest_rel,rest_ren = build_renamed_gamma_rel rdtlist predpos pospos d in
                (
                 match ft with
                    Empty ->   (* may have empty successors due to purity in former reconstruction steps *)
                       rest_rel,rest_ren
                  | NodeAt(_) ->
                       raise jprover_bug (* gamma_0 position never is atomic *)
-                 | NodeA(spos,suctrees) ->
-                      if List.mem spos.name slist then
+                 | NodeA({pospos=spospos},suctrees) ->
+                      if List.mem spospos slist then
 (* the gamma_0 position is really unsolved *)
 (* this is only relevant for the gamma_0 positions in po *)
-                         let k, _ = string_to_pos posname in
+                         let k, _ = pospos in
                          let new_pos = k, Lm_symbol.new_number () in
-                         let new_name = pos_to_string new_pos in
                          (* XXX Yegor: the old comment says: "make new unique gamma name"
                          *  but currently I simply create a fresh variable of
                          *  original kind and it seems to work alright *)
-                         let new_srel_el = ((predname,new_name),d) in
-                         let new_rename_el = (spos.name,new_name)  (* gamma_0 position as key first *) in
-                         let (srel,sren) = build_formula_rel [(x,ft)] slist new_name in
+                         let new_srel_el = ((predpos,new_pos),d) in
+                         let new_rename_el = (spospos,new_pos)  (* gamma_0 position as key first *) in
+                         let (srel,sren) =
+                            build_formula_rel [(x,ft)] slist new_pos
+                         in
                          ((new_srel_el::srel) @ rest_rel),((new_rename_el::sren) @ rest_ren)
                       else
                          rest_rel,rest_ren
@@ -1817,29 +1819,29 @@ struct
       match dir_treelist with
          [] -> [],[]
        | (d,f)::dir_r ->
-            let (rest_rel,rest_renlist) = build_formula_rel dir_r slist predname in
+            let (rest_rel,rest_renlist) = build_formula_rel dir_r slist predpos in
             match f with
                Empty ->
                   if !debug_jprover then print_endline "Hello, an empty subtree!!!!!!";
                   rest_rel,rest_renlist
-             | NodeAt(pos) ->
-                  (((predname,pos.name),d)::rest_rel),rest_renlist
-             | NodeA({ pt = Alpha | Beta | Delta } as pos, suctrees) ->
+             | NodeAt({pospos=pospos}) ->
+                  (((predpos,pospos),d)::rest_rel),rest_renlist
+             | NodeA({ pt = Alpha | Beta | Delta; pospos=pospos }, suctrees) ->
                   let dtreelist = number_list 1 suctrees in
-                  let (srel,sren) = build_formula_rel dtreelist slist pos.name in
-                     ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
+                  let (srel,sren) = build_formula_rel dtreelist slist pospos in
+                     ((((predpos,pospos),d)::srel) @ rest_rel),(sren @ rest_renlist)
              | NodeA({ pt = Psi| Phi }, suctrees) ->
                   let dtreelist = (List.map (fun x -> (d,x)) suctrees) in
-                  let (srel,sren) = build_formula_rel dtreelist slist predname in
+                  let (srel,sren) = build_formula_rel dtreelist slist predpos in
                      (srel @ rest_rel), (sren @ rest_renlist)
-             | NodeA({ pt = Gamma } as pos, suctrees) ->
+             | NodeA({ pt = Gamma; pospos=pospos }, suctrees) ->
                   let dtreelist = (List.map (fun x -> (1,x)) suctrees) in
 (*                if (nonemptys suctrees 0 n) = 1 then
    let (srel,sren) = build_formula_rel dtreelist slist pos.name in
    ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
    else (* we have more than one gamma instance, which means renaming *)
 *)
-                  let (srel,sren) = build_renamed_gamma_rel dtreelist predname pos.name d in
+                  let (srel,sren) = build_renamed_gamma_rel dtreelist predpos pospos d in
                      (srel @ rest_rel), (sren @ rest_renlist)
              | NodeA({ pt = PNull }, _) ->
                   raise jprover_bug
@@ -1901,16 +1903,24 @@ struct
             let right_list =  make_node_list right in
             (("",pos),(inf,form,term))::(left_list @ right_list)
 
-   let permute_ljmc ftree po slist ljmc_proof =
+   let permute_ljmc ftree po
+      (slist : position list)
+      ljmc_proof
+      =
  (* ftree/po are the formula tree / open positions of the sequent that caused deadlock let permutation *)
 (*  print_endline "!!!!!!!!!!!!!Permutation TO DO!!!!!!!!!"; *)
  (* the open positions in po are either phi_0, psi_0, or gamma_0 positions *)
  (* since proof reconstruction was a deadlock in LJ *)
       let po_treelist = get_formula_treelist ftree po in
       let dir_treelist = List.map (fun x -> (1,x)) po_treelist in
-      let (formula_rel,rename_list) = build_formula_rel dir_treelist slist "dummy" in
+      let formula_rel, rename_list = build_formula_rel dir_treelist slist dummy_pos in
       let renamed_ljmc_proof = rename_gamma ljmc_proof rename_list in
       let (ptree,ax) =  bproof renamed_ljmc_proof in
+      let formula_rel =
+         List.map
+            (fun ((x,y),z) -> (pos_to_string x, pos_to_string y), z)
+            formula_rel
+      in
       let ljproof = pt ptree formula_rel in
            (* this is a direct formula relation, comprising left/right subformula *)
       begin
@@ -2718,9 +2728,12 @@ struct
    tot simulates the while-loop, solve is the rest *)
 
    let rec total
-      ftree redord connections
+      ftree
+      (redord : (position * Set.t) list)
+      (connections : (position * position) list)
       (csigmaQ : (symbol*term) list)
-      slist calculus opt_bproof
+      (slist : position list)
+      calculus opt_bproof
       =
       let rec tot ftree redord connections po slist =
          let rec solve ftree redord connections p po slist (pred,succs) orr_flag =
@@ -2844,12 +2857,6 @@ struct
             let ljmc_subproof =  total ftree redord connections csigmaQ slist (Intuit MultiConcl) opt_bproof
             in
             eigen_counter := 1;
-            let slist = list_pos_to_string slist in
-            let ljmc_subproof =
-               List.map
-                  (fun ((x,y),z) -> (pos_to_string x, pos_to_string y),z)
-                  ljmc_subproof
-            in
             let result = permute_ljmc ftree po slist ljmc_subproof in
             List.map
                (fun ((x,y),z) -> (string_to_pos x, string_to_pos y),z)
