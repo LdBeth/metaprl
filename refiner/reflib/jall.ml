@@ -155,6 +155,17 @@ struct
    module OrderedAtom =
    struct
       type t = atom
+      (*let compare a1 a2 =
+         let sc = Pervasives.compare a1.aname a2.aname in
+         let pc = PosOrdering.compare a1.apos a2.apos in
+         if sc * pc < 0 then
+            begin
+               print_endline ("Inconsistent ordering: "^a1.aname^" "^a2.aname);
+               sc
+            end
+         else
+            sc
+      *)
       let compare a1 a2 = Pervasives.compare a1.aname a2.aname
    end
 

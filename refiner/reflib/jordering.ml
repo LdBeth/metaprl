@@ -177,42 +177,57 @@ struct
 
    type t = position
 
-   let rec compare (a,(i:int)) (b,j) =
+   let rec compare_kinds a b =
       match a,b with
        | GammaPos a, GammaPos b ->
-            compare (a,i) (b,j)
-       | GammaPos _, (EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root) ->
-            1
-       | (EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root), GammaPos _ ->
-            -1
-       | EmptyVar,EmptyVar -> Pervasives.compare i j
+            compare_kinds a b
+       | GammaPos a, (EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root) ->
+            let c = compare_kinds a b in
+            if c = 0 then
+               -1
+            else
+               c
+       | (EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root), GammaPos b ->
+            let c = compare_kinds a b in
+            if c = 0 then
+               1
+            else
+               c
+       | EmptyVar,EmptyVar -> 0
        | EmptyVar, _ -> -1
        | Atom,EmptyVar -> 1
-       | Atom,Atom -> Pervasives.compare i j
+       | Atom,Atom -> 0
        | Atom,_ -> -1
        | Const,(EmptyVar|Atom) -> 1
-       | Const,Const -> Pervasives.compare i j
+       | Const,Const -> 0
        | Const,_ -> -1
        | Dummy,(EmptyVar|Atom|Const) -> 1
-       | Dummy, Dummy -> Pervasives.compare i j
+       | Dummy, Dummy -> 0
        | Dummy, _ -> -1
        | EigenVar,(EmptyVar|Atom|Const|Dummy) -> 1
-       | EigenVar, EigenVar -> Pervasives.compare i j
+       | EigenVar, EigenVar -> 0
        | EigenVar, _ -> -1
-       | Var,(Atom|Const|Dummy|EmptyVar|EigenVar) -> 1
-       | Var,Var -> Pervasives.compare i j
-       | Var,_ -> -1
-       | NewVar,(Atom|Const|Dummy|EmptyVar|EigenVar|Var) -> 1
-       | NewVar,NewVar -> Pervasives.compare i j
+       | NewVar,(Atom|Const|Dummy|EmptyVar|EigenVar) -> 1
+       | NewVar,NewVar -> 0
        | NewVar,_ -> -1
        | NewVarQ,
-           (Atom|Const|Dummy|EmptyVar|EigenVar|Var|NewVar) -> 1
-       | NewVarQ,NewVarQ -> Pervasives.compare i j
+           (Atom|Const|Dummy|EmptyVar|EigenVar|NewVar) -> 1
+       | NewVarQ,NewVarQ -> 0
        | NewVarQ,_ -> -1
-       | Root,
+       | Var,(Atom|Const|Dummy|EmptyVar|EigenVar|NewVar|NewVarQ) -> 1
+       | Var,Var -> 0
+       | Var,_ -> -1
+        | Root,
           (Atom|Const|Dummy|EmptyVar|EigenVar
           |NewVar|NewVarQ|Var) -> 1
-       | Root,Root -> Pervasives.compare i j
+       | Root,Root -> 0
+
+   let compare (a,(i:int)) (b,j) =
+      let c = compare_kinds a b in
+      if c = 0 then
+         Pervasives.compare i j
+      else
+         c
 
 end
 
