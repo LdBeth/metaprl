@@ -167,7 +167,7 @@ struct
       a1.aname = a2.aname
 
    let pos_eq p1 p2 =
-      p1.name = p2.name
+      p1.pospos = p2.pospos
 
    let string_eq (s1: string) s2 =
       s1 = s2
@@ -2006,14 +2006,14 @@ struct
          else
             first::(delete compare e rest)
 
-   let rec key_delete fname pos_list =   (* in key_delete, f is a pos name (key) but sucs is a list of positions *)
+   let rec key_delete fpos pos_list =   (* in key_delete, f is a pos name (key) but sucs is a list of positions *)
       match pos_list with
          [] -> []               (* the position with name f must not necessarily occur in pos_list *)
        | f::r ->
-            if fname = f.name then
+            if fpos = f.pospos then
                r
             else
-               f::(key_delete fname r)
+               f::(key_delete fpos r)
 
    let rec get_roots treelist =
       match treelist with
@@ -2101,27 +2101,27 @@ struct
 
    let rec collect_succ_sets sucs redord =
       match redord with
-         [] -> StringSet.empty
+         [] -> Set.empty
        | (f,fset)::r ->
             let new_sucs = key_delete f sucs in
             if (List.length sucs) = (List.length new_sucs) then   (* position with name f did not occur in sucs -- no deletion *)
                (collect_succ_sets sucs r)
             else
-               StringSet.union (StringSet.add fset f) (collect_succ_sets new_sucs r)
+               Set.union (Set.add fset f) (collect_succ_sets new_sucs r)
 
-   let replace_ordering psucc_name sucs redord =
+   let replace_ordering psucc_pos sucs redord =
       let new_psucc_set = collect_succ_sets sucs redord in
 (*   print_string_set new_psucc_set; *)
-      replace_element psucc_name new_psucc_set redord
+      replace_element psucc_pos new_psucc_set redord
 
-   let rec update pname redord =
+   let rec update pospos redord =
       match redord with
          [] -> []
        | (f,fset)::r ->
-            if pname=f then
+            if pospos=f then
                r
             else
-               (f,fset)::(update pname r)
+               (f,fset)::(update pospos r)
 
 (*  rule construction *)
 
@@ -2551,12 +2551,12 @@ struct
        | NodeA(pos,treearray) :: r ->
             collect_solved_O_At (treearray @ r) slist
 
-   let rec red_ord_block pname redord =
+   let rec red_ord_block pospos redord =
       match redord with
          [] -> false
        | (f,fset)::r ->
-            if ((f = pname) or (not (StringSet.mem fset pname))) then
-               red_ord_block pname r
+            if ((f = pospos) or (not (Set.mem fset pospos))) then
+               red_ord_block pospos r
             else
                true   (* then, we have (StringSet.mem fset pname) *)
 
@@ -2583,12 +2583,14 @@ struct
        | Empty, _
        | NodeAt _, _ -> raise jprover_bug (* we have an gamma_0 position or an or-formula *)
 
-   let blocked f po redord ftree connections
+   let blocked f po
+      (redord : (position * Set.t) list)
+      ftree connections
       (slist : position list)
       calculus opt_bproof
       =
 (* print_endline ("Blocking check "^(f.name)); *)
-      if (red_ord_block (f.name) redord) then
+      if red_ord_block f.pospos redord then
          begin
 (*     print_endline "wait-1 check positive"; *)
             true,0
@@ -2633,11 +2635,6 @@ struct
                  *)
                            let ((_,min_con1),_) = split_permutation f.name opt_bproof in
                            let slist_fake = delete (=) f.pospos slist in
-                           let redord =
-                              List.map
-                                 (fun (x,y) -> string_to_pos x, set_string_to_pos y)
-                                 redord
-                           in
                            let ((zw1ft,zw1red,_,zw1uslist),_) =
                               betasplit f.address ftree redord connections slist_fake in
                            let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
@@ -2824,34 +2821,24 @@ struct
                   rback @ [((empty_pos,pospos),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
          in
          begin try
-            let redord =
-               List.map
-                  (fun (x,y) -> pos_to_string x, set_pos_to_string y)
-                  redord
-            in
             (* last argument for guiding selection strategy *)
             let (p,orr_flag) = select_pos po po redord ftree connections slist calculus [] opt_bproof in
 (*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
             match tpredsucc p ftree with
                pred :: succs ->
-                  let redpo = update (p.name) redord in   (* deletes the entry (p,psuccset) from the redord *)
+                  let redpo = update p.pospos redord in   (* deletes the entry (p,psuccset) from the redord *)
                   let rednew =
                      if (p.pt = Delta) then                 (* keep the tree ordering for the successor position only *)
                         let psucc = List.hd succs in
                         match tpredsucc psucc ftree with
                            pre :: sucs ->
-                              replace_ordering (psucc.name) sucs redpo (* union the succsets of psucc *)
+                              replace_ordering psucc.pospos sucs redpo (* union the succsets of psucc *)
                          | [] ->
                               raise jprover_bug
                      else
                         redpo
                   in
 (*            print_endline "update ok"; *)
-                  let rednew =
-                     List.map
-                        (fun (x,y) -> string_to_pos x, set_string_to_pos y)
-                        rednew
-                  in
                   solve ftree rednew connections p po slist (pred,succs) orr_flag
              | [] ->
                   raise jprover_bug
