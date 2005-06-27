@@ -155,7 +155,7 @@ struct
    module OrderedAtom =
    struct
       type t = atom
-      let compare a1 a2 = String.compare a1.aname a2.aname
+      let compare a1 a2 = Pervasives.compare a1.aname a2.aname
    end
 
    module AtomSet = Lm_set.LmMake(OrderedAtom)
@@ -164,7 +164,7 @@ struct
 
    (* XXX: Nogin: as far as I understand, names are unique, but I am not sure *)
    let atom_eq a1 a2 =
-      a1.aname = a2.aname
+      a1.apos = a2.apos
 
    let pos_eq p1 p2 =
       p1.pospos = p2.pospos
@@ -3248,8 +3248,8 @@ let rec ext_partners con path ext_atom reduction_partners extension_partners ato
       [] ->
          (reduction_partners,extension_partners)
     | (a,b)::r ->
-         let a_partner = (ext_atom.aname = a.aname) in
-         if a_partner || (ext_atom.aname = b.aname) then
+         let a_partner = (ext_atom.apos = a.apos) in
+         if a_partner || (ext_atom.apos = b.apos) then
             let ext_partner = if a_partner then b else a in
 (* force reduction steps first *)
             if (AtomSet.mem path ext_partner) then
@@ -3277,7 +3277,7 @@ let path_checker
 
    let con = connections atom_rel [] in
    let atom_rel =
-      List.map (fun ({aname=x},y,z) -> string_to_pos x, y, z) atom_rel
+      List.map (fun ({apos=x},y,z) -> x, y, z) atom_rel
    in
 (*   print_endline "";
    print_endline ("number of connections: "^(string_of_int (List.length con)));
@@ -3400,7 +3400,7 @@ let rec predecessor address_1 address_2 = function
 let rec compute_sets element ftree = function
    [] -> [],[]
  | first::rest ->
-      if first.aname = element.aname then
+      if first.apos = element.apos then
          compute_sets element ftree rest    (* element is neithes alpha- nor beta-related to itself*)
       else
          let (alpha_rest,beta_rest) = compute_sets element ftree rest in
