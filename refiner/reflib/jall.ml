@@ -2390,10 +2390,10 @@ struct
                      if pos.pt = Beta then
                         (actual_node,true)
                      else
-                        ((pos.name),false)
+                        ((pos_to_string pos.pospos),false)
                   in
                   let (ft,dt,an,bf) = reduce_tree radd new_act nexttree new_bf in
-                  if an = pos.name then
+                  if an = pos_to_string pos.pospos then
                      let nstrees = myset (a-1) Empty strees in
 (*                 print_endline ("way back assocnode "^pos.name); *)
                      (NodeA(pos,nstrees),nexttree,an,bf)
@@ -2644,7 +2644,9 @@ struct
                     Otherwise, in case of A-dependent succedent formulae, the
                     wait_label must be set.
                  *)
-                           let ((_,min_con1),_) = split_permutation f.name opt_bproof in
+                           let ((_,min_con1),_) =
+                              split_permutation (pos_to_string f.pospos) opt_bproof
+                           in
                            let slist_fake = delete (=) f.pospos slist in
                            let ((zw1ft,zw1red,_,zw1uslist),_) =
                               betasplit f.address ftree redord connections slist_fake in
@@ -2820,7 +2822,7 @@ struct
              | Beta ->
 (*             print_endline "split_in"; *)
                   let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) =
-                     split (p.address) (p.name) ftree redord connections newslist opt_bproof in
+                     split (p.address) (pos_to_string p.pospos) ftree redord connections newslist opt_bproof in
                   let (sigmaQ1,sigmaQ2) =
                      subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ
                   in
@@ -3038,8 +3040,8 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
     | Intuit _ ->
          let us = list_string_to_pos ext_atom.aprefix in
          let ut = list_string_to_pos try_one.aprefix in
-         let ns = string_to_pos ext_atom.aname in
-         let nt = string_to_pos try_one.aname in
+         let ns = ext_atom.apos in
+         let nt = try_one.apos in
             match qprefixes with
                [], [] -> (* prop case *)
                   (* prop unification only *)
