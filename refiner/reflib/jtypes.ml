@@ -24,7 +24,7 @@ let empty_pos = EmptyVar, 0
 
 module JTypes (JLogic : JLogicSig) =
 struct
-   type polarity = I | O
+   type polarity = Zero | One
 
    type connective = And | Or | Neg | Imp | All | Ex | At | Null
 
@@ -52,7 +52,6 @@ struct
    type atom = {aname : string;
                 aaddress : int list;
                 apos : position;
-                aprefix : string list;
                 aposprefix : position list;
                 apredicate :  operator;
                 apol : polarity;

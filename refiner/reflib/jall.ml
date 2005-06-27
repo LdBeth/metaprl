@@ -270,10 +270,11 @@ struct
        | PNull_0 -> print_string "PNull_0"
 
    let print_pol pol =
-      if pol = O then
-         print_string "O"
-      else
-         print_string "I"
+      match pol with
+         Zero ->
+            print_string "Zero"
+       | One ->
+            print_string "One"
 
    let rec print_address int_list =
       match int_list with
@@ -295,15 +296,16 @@ struct
             end
 
    let print_atom at tab =
-      let ({aname=x; aaddress=y; aprefix=z; apredicate=p; apol=a; ast=b; alabel=label}) = at in
+      let ({aname=x; aaddress=y; apredicate=p; apol=a; ast=b; alabel=label}) = at in
       begin
          print_string ("{aname="^x^"; address=");
          print_address y;
          print_string "; ";
          force_newline ();
          print_break (tab+1) (tab+1);
-         print_string "prefix=";
+(*         print_string "prefix=";
          print_prefix z;
+*)
          print_string "; predicate=<abstr>; ";
          print_break (tab+1) (tab+1);
          print_break (tab+1) (tab+1);
@@ -2196,26 +2198,26 @@ struct
       let inst_label = apply_sigmaQ (pos.label) csigmaQ in
       match pos.op,pos.pol with
          Null,_ -> raise (Invalid_argument "Jprover: no rule")
-       | At,O -> Ax,(inst_label),xnil_term (* to give back a term *)
-       | At,I -> Ax,(inst_label),xnil_term
-       | And,O -> Andr,(inst_label),xnil_term
-       | And,I -> Andl,(inst_label),xnil_term
-       | Or,O ->
+       | At,Zero -> Ax,(inst_label),xnil_term (* to give back a term *)
+       | At,One -> Ax,(inst_label),xnil_term
+       | And,Zero -> Andr,(inst_label),xnil_term
+       | And,One -> Andl,(inst_label),xnil_term
+       | Or,Zero ->
             begin match calculus with
                Intuit SingleConcl ->
                   (if orr_flag = 1 then Orr1 else Orr2),(inst_label),xnil_term
              | _ ->
                   Orr,(inst_label),xnil_term
             end
-       | Or,I -> Orl,(inst_label),xnil_term
-       | Neg,O -> Negr,(inst_label),xnil_term
-       | Neg,I -> Negl,(inst_label),xnil_term
-       | Imp,O -> Impr,(inst_label),xnil_term
-       | Imp,I -> Impl,(inst_label),xnil_term
-       | All,I -> Alll,(inst_label),(selectQ spos.pospos csigmaQ)  (* elements of csigmaQ is (string * term) *)
-       | Ex,O -> Exr,(inst_label), (selectQ spos.pospos csigmaQ)
-       | All,O -> Allr,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
-       | Ex,I -> Exl,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
+       | Or,One -> Orl,(inst_label),xnil_term
+       | Neg,Zero -> Negr,(inst_label),xnil_term
+       | Neg,One -> Negl,(inst_label),xnil_term
+       | Imp,Zero -> Impr,(inst_label),xnil_term
+       | Imp,One -> Impl,(inst_label),xnil_term
+       | All,One -> Alll,(inst_label),(selectQ spos.pospos csigmaQ)  (* elements of csigmaQ is (string * term) *)
+       | Ex,Zero -> Exr,(inst_label), (selectQ spos.pospos csigmaQ)
+       | All,Zero -> Allr,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
+       | Ex,One -> Exl,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
 
 (* %%%%%%%%%%%%%%%%%%%% Split begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% *)
 
@@ -2582,22 +2584,22 @@ struct
 
 (* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Splitting end %%%%%%%%%%%%%%%%  *)
 
-(* for wait labels we collect all solved atoms with pol=0 *)
+(* for wait labels we collect all solved atoms with pol=Zero *)
 
-   let rec collect_solved_O_At ftreelist slist =
+   let rec collect_solved_Zero_At ftreelist slist =
       match ftreelist with
          [] ->
             []
        | Empty :: r ->    (* may become possible after purity *)
-            collect_solved_O_At r slist
+            collect_solved_Zero_At r slist
        | NodeAt ({pospos=pospos; pol=pospol} as pos) :: r ->
-            if ((List.mem pospos slist) or (pospol = I)) then  (* recall slist is the unsolved list *)
-               collect_solved_O_At r slist
+            if ((List.mem pospos slist) or (pospol = One)) then  (* recall slist is the unsolved list *)
+               collect_solved_Zero_At r slist
             else
-    (* here, we have pos solved let pos.pol = O) *)
-               pos::(collect_solved_O_At r slist)
+    (* here, we have pos solved let pos.pol = Zero) *)
+               pos::(collect_solved_Zero_At r slist)
        | NodeA(pos,treearray) :: r ->
-            collect_solved_O_At (treearray @ r) slist
+            collect_solved_Zero_At (treearray @ r) slist
 
    let rec red_ord_block pospos redord =
       match redord with
@@ -2648,14 +2650,14 @@ struct
             Classical ->
                false,0  (* ready, in C only redord counts *)
           | Intuit calc ->
-               let pa_O = collect_solved_O_At [ftree] slist in    (* solved atoms in ftree *)
+               let pa_Zero = collect_solved_Zero_At [ftree] slist in    (* solved atoms in ftree *)
                let po_test = (delete pos_eq f po) in
                (* we provide dynamic wait labels for both sequent calculi *)
                begin match calc with
                   MultiConcl ->
 (*                   print_endline "wait-2 check"; *)
                      if (f.st = Psi_0)  &  (f.pt <> PNull) &
-                        ((pa_O <> []) or (List.exists (fun x -> x.pol = O) po_test)) then
+                        ((pa_Zero <> []) or (List.exists (fun x -> x.pol = Zero) po_test)) then
                         begin
 (*                         print_endline "wait-2 positive"; *)
                            true,0 (* wait_2 label *)
@@ -2667,7 +2669,8 @@ struct
                         end
                 | SingleConcl ->
                      if ((f.st = Phi_0)  & ((f.op=Neg) or (f.op=Imp)) &
-                          ((pa_O <> []) or (List.exists (fun x -> x.pol = O) po_test))
+                          ((pa_Zero <> []) or
+                          (List.exists (fun x -> x.pol = Zero) po_test))
                          )
          (* this would cause an impl or negl rule with an non-empty succedent *)
                      then
@@ -2693,11 +2696,12 @@ struct
 (*                    print_endline ("wait-root "^(ft1_root.name)); *)
                            let po_fake = compute_open [ft1] uslist1 in
                            let po_fake_test = delete pos_eq ft1_root po_fake in
-                           let pa_O_fake = collect_solved_O_At [ft1] uslist1 in
+                           let pa_Zero_fake = collect_solved_Zero_At [ft1] uslist1 in
 (*                     print_purelist (po_fake_test @ pa_O_fake); *)
-                              ((pa_O_fake <> []) or (List.exists (fun x -> x.pol = O) po_fake_test)), 0
+                              ((pa_Zero_fake <> []) or
+                              (List.exists (fun x -> x.pol = Zero) po_fake_test)), 0
                      else
-                        if ((f.pol=O) & ((f.st=Gamma_0) or (f.op=Or))) then
+                        if ((f.pol=Zero) & ((f.st=Gamma_0) or (f.op=Or))) then
                            let (bool,orr_flag) = check_wait_succ_LJ f.address ftree in
                            (bool,orr_flag)
               (* here is determined if orr1 or orr2 will be performed, provided bool=false) *)
@@ -2834,15 +2838,17 @@ struct
 (* need the pol=O position ass_pos of the connection for later permutation *)
 (* need the pol=I position inst_pos for NuPRL instantiation *)
                            if pospos = c1 then
-                              if p.pol = O then
-                                 (c1,c2)
-                              else
-                                 (c2,c1)
+                              match p.pol with
+                                 Zero ->
+                                    (c1,c2)
+                               | One ->
+                                    (c2,c1)
                            else (* p.name = c2 *)
-                              if p.pol = O then
-                                 (c2,c1)
-                              else
-                                 (c1,c2)
+                              match p.pol with
+                                 Zero ->
+                                    (c2,c1)
+                               | One ->
+                                    (c1,c2)
                         in
                         rback @ [((empty_pos,ass_pos),(build_rule p p csigmaQ orr_flag calculus))]
                   end
@@ -3446,34 +3452,33 @@ let rec compute_atomlist_relations worklist ftree alist =  (* last version of al
          let first_relations = compute_atom_relations first ftree alist in
          first_relations::(compute_atomlist_relations rest ftree alist)
 
-let atom_record position prefix posprefix =
+let atom_record position posprefix =
    let {pospos=pospos;
         label=label; address=address; pol=pol; st=st} = position in
    let aname = pos_to_string pospos in
-   let aprefix = prefix @ [aname] in (* atom position is last element in prefix *)
    let aop = (dest_term label).term_op in
    {aname=aname; aaddress=address; apos=pospos;
-    aprefix=aprefix; aposprefix=posprefix @ [pospos];
+    aposprefix=posprefix @ [pospos];
     apredicate=aop;
     apol=pol; ast=st; alabel=label}
 
-let rec select_atoms_treelist treelist prefix posprefix =
-   let rec select_atoms ftree prefix posprefix =
+let rec select_atoms_treelist treelist posprefix =
+   let rec select_atoms ftree posprefix =
       match ftree with
          Empty -> [],[],[]
        | NodeAt(position) ->
-            [atom_record position prefix posprefix],[],[]
+            [atom_record position posprefix],[],[]
        | NodeA(position,suctrees) ->
             let st = position.st in
-            let new_prefix, new_posprefix =
+            let new_posprefix =
                match st with
                   Psi_0 | Phi_0 ->
-                     prefix @ [pos_to_string position.pospos], posprefix @ [position.pospos]
+                     posprefix @ [position.pospos]
                 | _ ->
-                     prefix, posprefix
+                     posprefix
             in
             let (rest_alist,rest_gamma_0_prefixes,rest_delta_0_prefixes) =
-               select_atoms_treelist suctrees new_prefix new_posprefix
+               select_atoms_treelist suctrees new_posprefix
             in
             (  rest_alist,
               (if st == Gamma_0 then rest_gamma_0_prefixes @ [position.pospos,posprefix] else rest_gamma_0_prefixes),
@@ -3483,17 +3488,17 @@ let rec select_atoms_treelist treelist prefix posprefix =
       [] -> [],[],[]
     | first::rest ->
          let first_alist,first_gprefixes,first_dprefixes =
-            select_atoms first prefix posprefix
+            select_atoms first posprefix
          in
          let rest_alist,rest_gprefixes,rest_dprefixes =
-            select_atoms_treelist rest prefix posprefix
+            select_atoms_treelist rest posprefix
          in
          ((first_alist @ rest_alist),(first_gprefixes @ rest_gprefixes),
           (first_dprefixes @ rest_dprefixes))
 
 let prepare_prover ftree =
    let alist,gamma_0_prefixes,delta_0_prefixes =
-      select_atoms_treelist [ftree] [] []
+      select_atoms_treelist [ftree] []
    in
    let atom_rel = compute_atomlist_relations alist ftree alist in
    (atom_rel,(gamma_0_prefixes,delta_0_prefixes))
@@ -3507,8 +3512,9 @@ let make_position_name stype pos_n =
     | Psi_0 | Delta_0 -> Const, pos_n
     | _ -> Atom, pos_n
 
-let dual_pol pol =
-   if pol = O then I else O
+let dual_pol = function
+   Zero -> One
+ | One -> Zero
 
 let check_subst_term variable old_term pospos stype =
    match stype with
@@ -3530,10 +3536,11 @@ let rec build_ftree variable old_term pol stype address pos_n =
    if JLogic.is_and_term term then
       let s,t = JLogic.dest_and term in
       let ptype,stype_1,stype_2 =
-         if pol = O
-         then Beta,Beta_1,Beta_2
-         else
-            Alpha,Alpha_1,Alpha_2
+         match pol with
+            Zero ->
+               Beta,Beta_1,Beta_2
+          | One ->
+               Alpha,Alpha_1,Alpha_2
       in
       let position =
          {address=address; pospos=pospos;
@@ -3555,10 +3562,11 @@ let rec build_ftree variable old_term pol stype address pos_n =
       if JLogic.is_or_term term then
          let s,t = JLogic.dest_or term in
          let ptype,stype_1,stype_2 =
-            if pol = O
-            then Alpha,Alpha_1,Alpha_2
-            else
-               Beta,Beta_1,Beta_2
+            match pol with
+               Zero ->
+                  Alpha,Alpha_1,Alpha_2
+             | One ->
+                  Beta,Beta_1,Beta_2
          in
          let position =
             {address=address; pospos=pospos;
@@ -3581,10 +3589,11 @@ let rec build_ftree variable old_term pol stype address pos_n =
          if JLogic.is_implies_term term then
             let s,t = JLogic.dest_implies term in
             let ptype_0,stype_0,ptype,stype_1,stype_2 =
-               if pol = O
-               then Psi,Psi_0,Alpha,Alpha_1,Alpha_2
-               else
-                  Phi,Phi_0,Beta,Beta_1,Beta_2
+               match pol with
+                  Zero ->
+                     Psi,Psi_0,Alpha,Alpha_1,Alpha_2
+                | One ->
+                     Phi,Phi_0,Beta,Beta_1,Beta_2
             in
             let pos2pos = make_position_name stype_0 (pos_n+1) in
             let sposition =
@@ -3611,10 +3620,11 @@ let rec build_ftree variable old_term pol stype address pos_n =
             if JLogic.is_not_term term then
                let s = JLogic.dest_not term in
                let ptype_0,stype_0,ptype,stype_1=
-                  if pol = O
-                  then Psi,Psi_0,Alpha,Alpha_1
-                  else
-                     Phi,Phi_0,Alpha,Alpha_1
+                  match pol with
+                     Zero ->
+                        Psi,Psi_0,Alpha,Alpha_1
+                   | One ->
+                        Phi,Phi_0,Alpha,Alpha_1
                in
                let pos2pos = make_position_name stype_0 (pos_n+1) in
                let sposition =
@@ -3639,10 +3649,11 @@ let rec build_ftree variable old_term pol stype address pos_n =
                if JLogic.is_exists_term term then
                   let v,s,t = JLogic.dest_exists term in  (* s is type of v let will be supressed here *)
                   let ptype,stype_1 =
-                     if pol = O
-                     then Gamma,Gamma_0
-                     else
-                        Delta,Delta_0
+                     match pol with
+                        Zero ->
+                           Gamma,Gamma_0
+                      | One ->
+                           Delta,Delta_0
                   in
                   let position =
                      {address=address; pospos=pospos;
@@ -3661,10 +3672,11 @@ let rec build_ftree variable old_term pol stype address pos_n =
                      let v,s,t = JLogic.dest_all term in
        (* s is type of v let will be supressed here *)
                      let ptype_0,stype_0,ptype,stype_1=
-                        if pol = O
-                        then Psi,Psi_0,Delta,Delta_0
-                        else
-                           Phi,Phi_0,Gamma,Gamma_0
+                        match pol with
+                           Zero ->
+                              Psi,Psi_0,Delta,Delta_0
+                         | One ->
+                              Phi,Phi_0,Gamma,Gamma_0
                      in
                      let pos2pos = make_position_name stype_0 (pos_n+1) in
                      let sposition =
@@ -3689,10 +3701,11 @@ let rec build_ftree variable old_term pol stype address pos_n =
                      )
                   else      (* finally, term is atomic *)
                      let ptype_0,stype_0 =
-                        if pol = O
-                        then Psi,Psi_0
-                        else
-                           Phi,Phi_0
+                        match pol with
+                           Zero ->
+                              Psi,Psi_0
+                         | One ->
+                              Phi,Phi_0
                      in
                      let pos2pos = make_position_name stype_0 (pos_n+1) in
                      let sposition =
@@ -3719,17 +3732,17 @@ let rec construct_ftree
       [] ->
          let new_root =
             {address=[]; pospos=root_pos;
-            op=Null; pol=O; pt=Psi; st=PNull_0; label=goal}
+            op=Null; pol=Zero; pt=Psi; st=PNull_0; label=goal}
          in
          NodeA(new_root,treelist),
-         (((Root,0),(union_orderings orderinglist))::orderinglist),pos_n
+         ((root_pos,(union_orderings orderinglist))::orderinglist),pos_n
     | ft::rest_terms ->
          let next_address = [((List.length treelist)+1)] in
          let next_pol,next_goal =
             if rest_terms = []  then
-               O,ft (* construct tree for the conclusion *)
+               Zero,ft (* construct tree for the conclusion *)
             else
-               I,goal
+               One,goal
          in
          let new_tree,new_ordering,new_pos_n =
             build_ftree empty_sym ft next_pol Alpha_1 next_address (pos_n+1) in
