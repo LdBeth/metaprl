@@ -2183,7 +2183,7 @@ struct
       match testlist with
          [] -> list
        | f::r ->
-            let newlist = delete string_eq f list in    (* f may not occur in list; then newlist=list *)
+            let newlist = delete (=) f list in    (* f may not occur in list; then newlist=list *)
             update_list r newlist
 
    let rec update_pairlist p pairlist =
@@ -2206,19 +2206,19 @@ struct
       match redord with
          [] -> []
        | (f,fset)::r ->
-            if (StringSet.mem delset f) then
+            if (Set.mem delset f) then
                update_redord delset r   (* delete all key elements f from redord which are in delset *)
             else
-               let new_fset = StringSet.diff fset delset in  (* no successor of f from delset should remain in fset *)
+               let new_fset = Set.diff fset delset in  (* no successor of f from delset should remain in fset *)
                (f,new_fset)::(update_redord delset r)
 
    let rec get_position_names = function
       [] -> []
     | Empty :: rests -> get_position_names rests
-    | NodeAt(pos) :: rests ->
-         (pos.name)::get_position_names rests
-    | NodeA(pos,strees) :: rests ->
-         (pos.name)::(get_position_names (strees @ rests))
+    | NodeAt{pospos=pospos} :: rests ->
+         pospos::get_position_names rests
+    | NodeA({pospos=pospos},strees) :: rests ->
+         pospos::(get_position_names (strees @ rests))
 
    let rec print_purelist = function
       [] ->
@@ -2240,7 +2240,7 @@ struct
    force_newline ();
    print_flush ();
 *)
-         let rednew = update_redord (StringSet.of_list pure_names) redord in
+         let rednew = update_redord (Set.of_list pure_names) redord in
          let connew = update_connections pure_names connections in
          let unsolnew = update_list pure_names unsolved_list in
          (rednew,connew,unsolnew)
@@ -2414,15 +2414,7 @@ struct
                   if assocn = "" then
                      (Empty,[],[],[])  (* should not occur in the final version *)
                   else
-                     let connections =
-                        List.map
-                           (fun (x,y) -> pos_to_string x, pos_to_string y)
-                           connections
-                     in
                      let (rednew,connew,unsolnew) = update_relations deltree redord connections unsolved_list in
-                     let connew =
-                        List.map (fun (x,y) -> string_to_pos x, string_to_pos y) connew
-                     in
                      begin
 (*        open_box 0;
    print_endline " ";
@@ -2628,9 +2620,16 @@ struct
                  *)
                            let ((_,min_con1),_) = split_permutation f.name opt_bproof in
                            let slist_fake = delete string_eq f.name slist in
+                           let redord =
+                              List.map
+                                 (fun (x,y) -> string_to_pos x, set_string_to_pos y)
+                                 redord
+                           in
+                           let slist_fake = list_string_to_pos slist_fake in
                            let ((zw1ft,zw1red,_,zw1uslist),_) =
                               betasplit f.address ftree redord connections slist_fake in
                            let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
+                           let uslist1 = list_pos_to_string uslist1 in
 (*                      print_endline "wait label purity_one_out"; *)
                            let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in
 (*                    print_endline ("wait-root "^(ft1_root.name)); *)
@@ -2725,12 +2724,13 @@ struct
       =
       let rec tot ftree redord connections po slist =
          let rec solve ftree redord connections p po slist (pred,succs) orr_flag =
-            let newslist = delete string_eq (p.name) slist in
+            let pospos = p.pospos in
+            let newslist = delete (=) pospos slist in
             let rback =
                if p.st = Gamma_0 then
                   begin
 (*          print_endline "that's the gamma rule";  *)
-                     [((p.name,pred.name),(build_rule pred p csigmaQ orr_flag calculus))]
+                     [((pospos,pred.pospos),(build_rule pred p csigmaQ orr_flag calculus))]
                   end
                else
                   []
@@ -2761,15 +2761,15 @@ struct
                   else
                      rback @ (tot ftree redord connections pnew newslist)
              | PNull ->
-                  let new_redord = update p.name redord in
-                  begin match select_connection p.name connections newslist with
+                  let new_redord = update pospos redord in
+                  begin match select_connection pospos connections newslist with
                      None ->
                         rback @ (tot ftree new_redord connections pnew newslist)
                    | Some (c1,c2) ->
                         let (ass_pos,inst_pos) =
 (* need the pol=O position ass_pos of the connection for later permutation *)
 (* need the pol=I position inst_pos for NuPRL instantiation *)
-                           if p.name = c1 then
+                           if pospos = c1 then
                               if p.pol = O then
                                  (c1,c2)
                               else
@@ -2780,15 +2780,15 @@ struct
                               else
                                  (c1,c2)
                         in
-                        rback @ [(("",ass_pos),(build_rule p p csigmaQ orr_flag calculus))]
+                        rback @ [((empty_pos,ass_pos),(build_rule p p csigmaQ orr_flag calculus))]
                   end
    (* one possibility of recursion end *)
              | Alpha ->
-                  rback @ ((("",p.name),(build_rule p p csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
+                  rback @ (((empty_pos,pospos),(build_rule p p csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
              | Delta ->
                   begin match succs with
                      sp::_ ->
-                        rback @ ((("",p.name),(build_rule p sp csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
+                        rback @ (((empty_pos,pospos),(build_rule p sp csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
                    | [] ->
                         raise (Invalid_argument "total: empty succs in Delta")
                   end
@@ -2796,20 +2796,23 @@ struct
 (*             print_endline "split_in"; *)
                   let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) =
                      split (p.address) (p.name) ftree redord connections newslist opt_bproof in
-                  let pos_uslist1 = list_string_to_pos uslist1 in
-                  let pos_uslist2 = list_string_to_pos uslist2 in
-                  let pos_newslist = list_string_to_pos newslist in
                   let (sigmaQ1,sigmaQ2) =
-                     subst_split ft1 ft2 ftree pos_uslist1 pos_uslist2 pos_newslist csigmaQ
+                     subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ
                   in
 (*           print_endline "split_out"; *)
                   let p1 = total ft1 red1 conn1 sigmaQ1 uslist1 calculus opt_bproof1 in
 (*           print_endline "compute p1 out";              *)
                   let p2 = total ft2 red2 conn2 sigmaQ2 uslist2 calculus opt_bproof2 in
 (*           print_endline "compute p2 out";              *)
-                  rback @ [(("",p.name),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
+                  rback @ [((empty_pos,pospos),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
          in
          begin try
+            let redord =
+               List.map
+                  (fun (x,y) -> pos_to_string x, set_pos_to_string y)
+                  redord
+            in
+            let slist = list_pos_to_string slist in
             (* last argument for guiding selection strategy *)
             let (p,orr_flag) = select_pos po po redord ftree connections slist calculus [] opt_bproof in
 (*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
@@ -2828,28 +2831,34 @@ struct
                         redpo
                   in
 (*            print_endline "update ok"; *)
+                  let rednew =
+                     List.map
+                        (fun (x,y) -> string_to_pos x, set_string_to_pos y)
+                        rednew
+                  in
+                  let slist = list_string_to_pos slist in
                   solve ftree rednew connections p po slist (pred,succs) orr_flag
              | [] ->
                   raise jprover_bug
          with Gamma_deadlock ->
-            let connections =
-               List.map
-                  (fun (x,y) -> string_to_pos x, string_to_pos y)
-                  connections
-            in
             let ljmc_subproof =  total ftree redord connections csigmaQ slist (Intuit MultiConcl) opt_bproof
             in
             eigen_counter := 1;
-            permute_ljmc ftree po slist ljmc_subproof
+            let slist = list_pos_to_string slist in
+            let ljmc_subproof =
+               List.map
+                  (fun ((x,y),z) -> (pos_to_string x, pos_to_string y),z)
+                  ljmc_subproof
+            in
+            let result = permute_ljmc ftree po slist ljmc_subproof in
+            List.map
+               (fun ((x,y),z) -> (string_to_pos x, string_to_pos y),z)
+               result
            (* the permuaiton result will be appended to the lj proof constructed so far *)
          end
       in
-      let po = compute_open [ftree] slist in
-      let connections =
-         List.map
-            (fun (x,y) -> pos_to_string x, pos_to_string y)
-            connections
-      in
+      let string_slist = list_pos_to_string slist in
+      let po = compute_open [ftree] string_slist in
       tot ftree redord connections po slist
 
    let reconstruct ftree redord sigmaQ ext_proof calculus =
@@ -2888,6 +2897,12 @@ struct
             (fun (x,y) -> string_to_pos x, string_to_pos y)
             min_connections
       in
+      let redord2 =
+         List.map
+            (fun (s,set) -> string_to_pos s, set_string_to_pos set)
+            redord2
+      in
+      let unsolved_list = list_string_to_pos unsolved_list in
       let (init_tree,init_redord,init_connections,init_unsolved_list) =
          purity ftree redord2 min_connections unsolved_list in
       begin
@@ -3949,15 +3964,17 @@ let do_prove mult_limit termlist calculus =
       force_newline ();
       force_newline ();
       print_flush ();
-      let (ptree,count_ax) = bproof sequent_proof in
+      (*let (ptree,count_ax) = bproof sequent_proof in*)
       open_box 0;
-      print_string ("Length of sequent proof: "^((string_of_int count_ax))^" Axioms");
+      (*print_string
+      * ("Length of sequent proof: "^((string_of_int count_ax))^" Axioms");
+      *)
       force_newline ();
       force_newline ();
       force_newline ();
       force_newline ();
       print_flush ();
-      tt ptree;
+      (*tt ptree;*)
       print_flush ();
       print_endline "";
       print_endline ""
