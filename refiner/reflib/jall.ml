@@ -3425,17 +3425,17 @@ let atom_record position prefix posprefix =
         label=label; address=address; pol=pol; st=st} = position in
    let aprefix = prefix @ [aname] in (* atom position is last element in prefix *)
    let aop = (dest_term label).term_op in
-   ({aname=aname; aaddress=address; apos=pospos;
-     aprefix=aprefix; aposprefix=posprefix @ [pospos];
-     apredicate=aop;
-     apol=pol; ast=st; alabel=label})
+   {aname=aname; aaddress=address; apos=pospos;
+    aprefix=aprefix; aposprefix=posprefix @ [pospos];
+    apredicate=aop;
+    apol=pol; ast=st; alabel=label}
 
 let rec select_atoms_treelist treelist prefix posprefix =
    let rec select_atoms ftree prefix posprefix =
       match ftree with
          Empty -> [],[],[]
        | NodeAt(position) ->
-            [(atom_record position prefix posprefix)],[],[]
+            [atom_record position prefix posprefix],[],[]
        | NodeA(position,suctrees) ->
             let st = position.st in
             let new_prefix, new_posprefix =
@@ -3490,14 +3490,14 @@ let make_position_name =
 let dual_pol pol =
    if pol = O then I else O
 
-let check_subst_term variable old_term pos_name stype =
+let check_subst_term variable old_term pospos stype =
    match stype with
       Gamma_0 | Delta_0 ->
          let new_variable =
             if stype = Gamma_0 then
-               (mk_pos_var (simple_to_gamma (string_to_pos pos_name)))
+               (mk_pos_var (simple_to_gamma pospos))
             else
-               (mk_pos_term jprover_op (string_to_pos pos_name))
+               (mk_pos_term jprover_op pospos)
          in
          (subst1 old_term variable new_variable) (* replace variable (non-empty) in t by pos_name *)
             (* pos_name is either a variable term or a constant, f.i. a string term *)
@@ -3506,7 +3506,7 @@ let check_subst_term variable old_term pos_name stype =
 
 let rec build_ftree variable old_term pol stype address pos_n =
    let pos_name, pospos = make_position_name stype pos_n in
-   let term = check_subst_term variable old_term pos_name stype in
+   let term = check_subst_term variable old_term pospos stype in
    if JLogic.is_and_term term then
       let s,t = JLogic.dest_and term in
       let ptype,stype_1,stype_2 =
