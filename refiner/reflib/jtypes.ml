@@ -36,8 +36,7 @@ struct
    type direction =
       Left | Right
 
-   type pos = {name : string;
-               address : int list;
+   type pos = {address : int list;
                pospos : position;
                op :  connective;
                pol : polarity;
