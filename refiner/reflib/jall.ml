@@ -1360,8 +1360,9 @@ struct
             raise jprover_bug
 
    let replace_subterm term oldt rept =
-      let v_term = var_subst term oldt "dummy_var" in
-      subst1 v_term "dummy_var" rept
+      let dummy = pos_to_symbol (dummy_pos ()) in
+      let v_term = TermSubst.var_subst term oldt dummy in
+      TermSubst.subst1 v_term dummy rept
 
    let rec eigen_rename old_parameter new_parameter ptree =
       match ptree with
@@ -3489,18 +3490,14 @@ let prepare_prover ftree =
 (* ************************ Build intial formula tree  let relations *********************************** *)
 (* Building a formula tree let the tree ordering from the input formula, i.e. OCaml term *)
 
-let make_position_name =
-   let v = "v" in
-   let c = "c" in
-   let a = "a" in
-   fun stype pos_n ->
-      let prefix,kind =
-         match stype with
-            Phi_0 | Gamma_0 -> v, Var
-          | Psi_0 | Delta_0 -> c, Const
-          | _ -> a, Atom
-      in
-         prefix^(string_of_int pos_n), (kind, pos_n)
+let make_position_name stype pos_n =
+   let pos =
+      match stype with
+         Phi_0 | Gamma_0 -> Var, pos_n
+       | Psi_0 | Delta_0 -> Const, pos_n
+       | _ -> Atom, pos_n
+   in
+   pos_to_string pos, pos
 
 let dual_pol pol =
    if pol = O then I else O
