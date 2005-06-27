@@ -980,9 +980,9 @@ struct
       match ftree_list with
          [] ->
             []
-       | NodeAt {name = name} :: r
-       | NodeA({pt = Beta; name = name}, _) :: r ->
-            name :: (compute_alpha_layer r)
+       | NodeAt {pospos = pospos} :: r
+       | NodeA({pt = Beta; pospos = pospos}, _) :: r ->
+            pospos :: (compute_alpha_layer r)
        | NodeA(_, suctrees) :: r ->
             compute_alpha_layer (suctrees @ r)
        | Empty :: _ ->
@@ -1026,7 +1026,7 @@ struct
        | BEmpty -> c1_context
        | BNode(pos,_,_) ->
 (*    print_endline ("actual root: "^pos); *)
-            cut_context pos c1_context
+            cut_context (string_to_pos pos) c1_context
 
    let print_context conn bcontext =
       begin
@@ -1038,24 +1038,34 @@ struct
          print_flush ()
       end
 
-   let rec build_opt_beta_proof beta_proof ext_proof beta_atoms beta_layer_list act_context =
+   let rec build_opt_beta_proof beta_proof
+      (ext_proof : (position * position) list)
+      (beta_atoms : (position * (position * int) list) list)
+      (beta_layer_list  : (position * (position list * position list)) list)
+      act_context
+      =
       let rec add_c2_tree (c1,c2) c2_diff_context =
          match c2_diff_context with
             [] ->
-               (CNode(c1,c2),0)
+               (CNode(pos_to_string c1, pos_to_string c2),0)
           | (f,num)::c2_diff_r ->
                let next_beta_proof,next_exp =
                   add_c2_tree (c1,c2) c2_diff_r in
                let (layer1,layer2) = List.assoc f beta_layer_list in
+               let layer1 = list_pos_to_string layer1 in
+               let layer2 = list_pos_to_string layer2 in
+               let fstr = pos_to_string f in
                let new_bproof =
                   if num = 1 then
-                     BNode(f,(layer1,next_beta_proof),(layer2,BEmpty))
+                     BNode(fstr,(layer1,next_beta_proof),(layer2,BEmpty))
                   else (* num = 2*)
-                     BNode(f,(layer1,BEmpty),(layer2,next_beta_proof))
+                     BNode(fstr,(layer1,BEmpty),(layer2,next_beta_proof))
                in
                (new_bproof,(next_exp+1))
       in
-      let rec add_beta_expansions (c1,c2) rest_ext_proof c1_diff_context c2_diff_context new_act_context =
+      let rec add_beta_expansions
+         ((c1,c2) : position * position)
+         rest_ext_proof c1_diff_context c2_diff_context new_act_context =
          match c1_diff_context with
             [] ->
                let (n_c1,n_c2) =
@@ -1079,18 +1089,26 @@ struct
                   end
           | (f,num)::c1_diff_r ->
                let (layer1,layer2) = List.assoc f beta_layer_list in
+               let layer1 = list_pos_to_string layer1 in
+               let layer2 = list_pos_to_string layer2 in
                let next_beta_proof,next_exp,next_closures,next_ext_proof =
                   add_beta_expansions (c1,c2) rest_ext_proof c1_diff_r c2_diff_context new_act_context in
+               let fstr = pos_to_string f in
                let new_bproof =
                   if num = 1 then
-                     BNode(f,(layer1,next_beta_proof),(layer2,BEmpty))
+                     BNode(fstr,(layer1,next_beta_proof),(layer2,BEmpty))
                   else (* num = 2*)
-                     BNode(f,(layer1,BEmpty),(layer2,next_beta_proof))
+                     BNode(fstr,(layer1,BEmpty),(layer2,next_beta_proof))
                in
                (new_bproof,(next_exp+1),next_closures,next_ext_proof)
 
       in
-      let rec insert_connection beta_proof (c1,c2) rest_ext_proof c1_diff_context c2_diff_context act_context =
+      let rec insert_connection
+         beta_proof
+         ((c1,c2) : position * position)
+         rest_ext_proof c1_diff_context c2_diff_context
+         (act_context : (position * int) list)
+         =
          begin
 (*   print_context c1 c1_diff_context;
    print_endline "";
@@ -1140,27 +1158,30 @@ struct
                next_beta_proof,next_exp,next_closures,next_ext_proof
 
    let rec annotate_atoms beta_context atlist treelist =
-      let rec annotate_tree beta_context tree atlist =
+      let rec annotate_tree
+         (beta_context : (position * int) list)
+         tree atlist
+         =
          match tree with
             Empty ->
                (atlist,[],[])
-          | NodeAt(pos) ->
-               if List.mem pos.name atlist then
-                  let new_atlist = list_del pos.name atlist in
-                  (new_atlist,[(pos.name,beta_context)],[])
+          | NodeAt({pospos=pospos}) ->
+               if List.mem pospos atlist then
+                  let new_atlist = list_del pospos atlist in
+                  (new_atlist,[(pospos,beta_context)],[])
                else
                   (atlist,[],[])
-          | NodeA({pt = Beta; name = name}, [s1;s2]) ->
+          | NodeA({pt = Beta; pospos = pospos}, [s1;s2]) ->
                let alayer1 = compute_alpha_layer [s1] in
                let alayer2 = compute_alpha_layer [s2] in
-               let new_beta_context1 = beta_context @ [(name,1)] in
-               let new_beta_context2 = beta_context @ [(name,2)] in
+               let new_beta_context1 = beta_context @ [(pospos,1)] in
+               let new_beta_context2 = beta_context @ [(pospos,2)] in
                let atlist1,annotates1,blayer_list1 =
                   annotate_atoms new_beta_context1 atlist [s1] in
                let atlist2,annotates2,blayer_list2 =
                   annotate_atoms new_beta_context2 atlist1 [s2]
                in
-                  (atlist2,(annotates1 @ annotates2),((name,(alayer1,alayer2))::(blayer_list1 @ blayer_list2)))
+                  (atlist2,(annotates1 @ annotates2),((pospos,(alayer1,alayer2))::(blayer_list1 @ blayer_list2)))
           | NodeA({pt = Beta}, _) ->
                 raise jprover_bug
           | NodeA(_, suctrees) ->
@@ -1174,11 +1195,13 @@ struct
             in
             (rest_atlist, (f_annotates @ rest_annotates),(f_beta_layers @ rest_beta_layers))
 
-   let construct_opt_beta_proof ftree ext_proof =
+   let construct_opt_beta_proof ftree
+      (ext_proof : (position * position) list)
+      =
       let con1,con2 = List.split ext_proof in
       let con_atoms = remove_dups_list (con1 @ con2) in
       let (empty_atoms,beta_atoms,beta_layer_list) = annotate_atoms [] con_atoms [ftree] in
-      let root_node = compute_alpha_layer [ftree] in
+      let root_node = list_pos_to_string (compute_alpha_layer [ftree]) in
       let (beta_proof,beta_exp,closures,_) =
          build_opt_beta_proof BEmpty ext_proof beta_atoms beta_layer_list [] in
       (RNode(root_node,beta_proof)),beta_exp,closures
@@ -2900,11 +2923,6 @@ struct
          end;
       let (newroot_name,unsolved_list) =  build_unsolved ftree in
       let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
-      let min_connections =
-         List.map
-            (fun (x,y) -> string_to_pos x, string_to_pos y)
-            min_connections
-      in
       let redord2 =
          List.map
             (fun (s,set) -> string_to_pos s, set_string_to_pos set)
@@ -3329,7 +3347,7 @@ let path_checker
                   ((nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),(p1 @ p2))
       (* first the extension subgoals = depth first; then other subgoals in same clause *)
             in
-            ((next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),(((ext_atom.aname),(try_one.aname))::subproof))
+            ((next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),(((ext_atom.apos),(try_one.apos))::subproof))
          with Failed ->
 (*          print_endline ("new connection for "^(ext_atom.aname)); *)
 (*            print_endline ("Failed"); *)
@@ -3920,7 +3938,7 @@ let do_prove mult_limit termlist calculus =
       force_newline ();
       print_endline "Extension proof:";
       open_box 0;
-      print_pairlist ext_proof;       (* print list of type (string * string) list *)
+      (*print_pairlist ext_proof;*) (* print list of type (string * string) list *)
       force_newline ();
       force_newline ();
       force_newline ();
