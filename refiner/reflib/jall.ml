@@ -1250,42 +1250,53 @@ struct
             raise jprover_bug
        | PNodeAx((pos,inf,form,term)) ->
             ptree,pos
-       | PNodeA((pos,inf,form,term),left)  ->
-            if List.mem inf [Impr;Negr;Allr] then
-               ptree,pos    (*layer bound, stop transforming! *)
+       | PNodeA((pos,(Impr | Negr | Allr),form,term),left)  ->
+            ptree,pos    (*layer bound, stop transforming! *)
+       | PNodeA((pos,((Andl | Alll | Exl) as inf),form,term),left)  ->
+            let t,qpos = rec_modify left subrel in
+            PNodeA((pos,inf,form,term),t),qpos   (*simply propagation*)
+       | PNodeA((pos,(Exr as inf),form,term),left)  ->
+            let t,qpos = rec_modify left subrel in
+            if (subf1 pos qpos subrel) then
+               PNodeA((pos,inf,form,term),t),pos
             else
-               let t,qpos = rec_modify left subrel in
-               if List.mem inf [Andl;Alll;Exl] then
-                  PNodeA((pos,inf,form,term),t),qpos   (*simply propagation*)
-               else if inf = Exr then
-                  if (subf1 pos qpos subrel) then
-                     PNodeA((pos,inf,form,term),t),pos
-                  else t,qpos
-               else if inf = Negl then
-                  if (subf1 pos qpos subrel) then
-                     PNodeA((pos,inf,form,term),t),""  (* empty string *)
-                  else t,qpos
-               else                     (* x = Orr *)
-                  if (subf1 pos qpos subrel) then
-                     PNodeA((pos,Orr1,form,term),t),pos    (* make Orr for LJ *)
-                  else if (subf2 pos qpos subrel) then
-                     PNodeA((pos,Orr2,form,term),t),pos     (* make Orr for LJ *)
-                  else t,qpos
+               t,qpos
+       | PNodeA((pos,(Negl as inf),form,term),left)  ->
+            let t,qpos = rec_modify left subrel in
+            if (subf1 pos qpos subrel) then
+               PNodeA((pos,inf,form,term),t),""  (* empty string *)
+            else
+               t,qpos
+       | PNodeA((pos,Orr,form,term),left)  ->
+            let t,qpos = rec_modify left subrel in
+            if (subf1 pos qpos subrel) then
+               PNodeA((pos,Orr1,form,term),t),pos    (* make Orr for LJ *)
+            else if (subf2 pos qpos subrel) then
+               PNodeA((pos,Orr2,form,term),t),pos     (* make Orr for LJ *)
+            else
+               t,qpos
+       | PNodeA((_, (Fail|Impl|Orl|Orr2|Orr1|Andr|Ax), _, _), _) ->
+            raise (Invalid_argument "Jall.rec_modify: unexpected inf in PNodeA")
        | PNodeB((pos,inf,form,term),left,right) ->
             let t,qpos = rec_modify left subrel in
-            if inf = Andr then
-               if (subf1 pos qpos subrel) then
-                  let s,rpos = rec_modify right subrel in
-                  if (subf2 pos rpos subrel) then
-                     PNodeB((pos,inf,form,term),t,s),pos
-                  else s,rpos
-               else t,qpos
-            else (* x = Impl since x= Orl cannot occur in the partial layer ptree *)
-
-               if subf1 pos qpos subrel then
-                  let s,rpos = rec_modify right subrel in
-                  PNodeB((pos,inf,form,term),t,s),"" (* empty string *)
-               else t,qpos
+            match inf with
+               Andr ->
+                  if (subf1 pos qpos subrel) then
+                     let s,rpos = rec_modify right subrel in
+                     if (subf2 pos rpos subrel) then
+                        PNodeB((pos,inf,form,term),t,s),pos
+                     else
+                        s,rpos
+                  else
+                     t,qpos
+             | Impl -> (* x = Impl since x= Orl cannot occur in the partial layer ptree *)
+                  if subf1 pos qpos subrel then
+                     let s,rpos = rec_modify right subrel in
+                     PNodeB((pos,inf,form,term),t,s),"" (* empty string *)
+                  else
+                     t,qpos
+             | (Fail|Exl|Exr|Alll|Allr|Negl|Negr|Impr|Orl|Orr2|Orr1|Orr|Andl|Ax) ->
+                  raise (Invalid_argument "Jall.rec_modify: unexpected inf in PNodeB")
 
    let weak_modify rule ptree subrel =   (* recall rule = or_l *)
       match rule with
