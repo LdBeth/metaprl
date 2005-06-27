@@ -2056,12 +2056,12 @@ struct
                match first with
                   Empty -> []
                 | NodeAt(pos) ->
-                     if (List.mem (pos.name) slist) then
+                     if (List.mem pos.pospos slist) then
                         [pos]
                      else
                         []
                 | NodeA(pos,suctrees) ->
-                     if (List.mem (pos.name) slist) then
+                     if (List.mem pos.pospos slist) then
                         [pos]
                      else
                         compute_open suctrees slist
@@ -2542,8 +2542,8 @@ struct
             []
        | Empty :: r ->    (* may become possible after purity *)
             collect_solved_O_At r slist
-       | NodeAt pos :: r ->
-            if ((List.mem (pos.name) slist) or (pos.pol = I)) then  (* recall slist is the unsolved list *)
+       | NodeAt ({pospos=pospos; pol=pospol} as pos) :: r ->
+            if ((List.mem pospos slist) or (pospol = I)) then  (* recall slist is the unsolved list *)
                collect_solved_O_At r slist
             else
     (* here, we have pos solved let pos.pol = O) *)
@@ -2583,7 +2583,10 @@ struct
        | Empty, _
        | NodeAt _, _ -> raise jprover_bug (* we have an gamma_0 position or an or-formula *)
 
-   let blocked f po redord ftree connections slist calculus opt_bproof =
+   let blocked f po redord ftree connections
+      (slist : position list)
+      calculus opt_bproof
+      =
 (* print_endline ("Blocking check "^(f.name)); *)
       if (red_ord_block (f.name) redord) then
          begin
@@ -2629,17 +2632,15 @@ struct
                     wait_label must be set.
                  *)
                            let ((_,min_con1),_) = split_permutation f.name opt_bproof in
-                           let slist_fake = delete string_eq f.name slist in
+                           let slist_fake = delete (=) f.pospos slist in
                            let redord =
                               List.map
                                  (fun (x,y) -> string_to_pos x, set_string_to_pos y)
                                  redord
                            in
-                           let slist_fake = list_string_to_pos slist_fake in
                            let ((zw1ft,zw1red,_,zw1uslist),_) =
                               betasplit f.address ftree redord connections slist_fake in
                            let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
-                           let uslist1 = list_pos_to_string uslist1 in
 (*                      print_endline "wait label purity_one_out"; *)
                            let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in
 (*                    print_endline ("wait-root "^(ft1_root.name)); *)
@@ -2673,8 +2674,11 @@ struct
 
    exception Gamma_deadlock
 
-   let rec select_pos search_po po redord ftree connections slist calculus candidates
-         opt_bproof =
+   let rec select_pos search_po po redord ftree connections
+      (slist : position list)
+      calculus candidates
+      opt_bproof
+      =
       match search_po with
          [] ->
             (match candidates with
@@ -2825,7 +2829,6 @@ struct
                   (fun (x,y) -> pos_to_string x, set_pos_to_string y)
                   redord
             in
-            let slist = list_pos_to_string slist in
             (* last argument for guiding selection strategy *)
             let (p,orr_flag) = select_pos po po redord ftree connections slist calculus [] opt_bproof in
 (*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
@@ -2849,7 +2852,6 @@ struct
                         (fun (x,y) -> string_to_pos x, set_string_to_pos y)
                         rednew
                   in
-                  let slist = list_string_to_pos slist in
                   solve ftree rednew connections p po slist (pred,succs) orr_flag
              | [] ->
                   raise jprover_bug
@@ -2864,8 +2866,7 @@ struct
            (* the permuaiton result will be appended to the lj proof constructed so far *)
          end
       in
-      let string_slist = list_pos_to_string slist in
-      let po = compute_open [ftree] string_slist in
+      let po = compute_open [ftree] slist in
       tot ftree redord connections po slist
 
    let reconstruct ftree redord sigmaQ ext_proof calculus =
