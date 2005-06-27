@@ -37,11 +37,11 @@ struct
    let is_all_term = nuprl_is_all_term
    let dest_all t =
       let v, t1, t2 = nuprl_dest_all t in
-         string_of_symbol v, t1, t2
+         v, t1, t2
    let is_exists_term = nuprl_is_exists_term
    let dest_exists t =
       let v, t1, t2 = nuprl_dest_exists t in
-         string_of_symbol v, t1, t2
+         v, t1, t2
    let is_and_term = nuprl_is_and_term
    let dest_and = nuprl_dest_and
    let is_or_term = nuprl_is_or_term

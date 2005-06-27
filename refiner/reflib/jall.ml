@@ -3499,7 +3499,7 @@ let check_subst_term variable old_term pospos stype =
             else
                (mk_pos_term jprover_op pospos)
          in
-         (subst1 old_term variable new_variable) (* replace variable (non-empty) in t by pos_name *)
+         (TermSubst.subst1 old_term variable new_variable) (* replace variable (non-empty) in t by pos_name *)
             (* pos_name is either a variable term or a constant, f.i. a string term *)
             (* !!! check unification module how handling eingenvariables as constants !!! *)
     | _ -> old_term
@@ -3519,8 +3519,8 @@ let rec build_ftree variable old_term pol stype address pos_n =
          {name=pos_name; address=address; pospos=pospos;
          op=And; pol=pol; pt=ptype; st=stype; label=term}
       in
-      let subtree_left,ordering_left,posn_left = build_ftree "" s pol stype_1 (address@[1]) (pos_n+1) in
-      let subtree_right,ordering_right,posn_right = build_ftree "" t pol stype_2 (address@[2])
+      let subtree_left,ordering_left,posn_left = build_ftree empty_sym s pol stype_1 (address@[1]) (pos_n+1) in
+      let subtree_right,ordering_right,posn_right = build_ftree empty_sym t pol stype_2 (address@[2])
             (posn_left+1) in
       let (succ_left,whole_left) = List.hd ordering_left in
       let (succ_right,whole_right) = List.hd ordering_right in
@@ -3544,8 +3544,8 @@ let rec build_ftree variable old_term pol stype address pos_n =
             {name=pos_name; address=address; pospos=pospos;
             op=Or; pol=pol; pt=ptype; st=stype; label=term}
          in
-         let subtree_left,ordering_left,posn_left = build_ftree "" s pol stype_1 (address@[1]) (pos_n+1) in
-         let subtree_right,ordering_right,posn_right = build_ftree "" t pol stype_2 (address@[2])
+         let subtree_left,ordering_left,posn_left = build_ftree empty_sym s pol stype_1 (address@[1]) (pos_n+1) in
+         let subtree_right,ordering_right,posn_right = build_ftree empty_sym t pol stype_2 (address@[2])
                (posn_left+1)
          in
          let (succ_left,whole_left) = List.hd ordering_left in
@@ -3574,9 +3574,9 @@ let rec build_ftree variable old_term pol stype address pos_n =
             let position = {name=pos2_name; address=address@[1]; pospos=pos2pos;
                op=Imp; pol=pol; pt=ptype; st=stype_0; label=term}
             in
-            let subtree_left,ordering_left,posn_left = build_ftree "" s (dual_pol pol) stype_1 (address@[1;1])
+            let subtree_left,ordering_left,posn_left = build_ftree empty_sym s (dual_pol pol) stype_1 (address@[1;1])
                   (pos_n+2) in
-            let subtree_right,ordering_right,posn_right = build_ftree "" t pol stype_2 (address@[1;2])
+            let subtree_right,ordering_right,posn_right = build_ftree empty_sym t pol stype_2 (address@[1;2])
                   (posn_left+1) in
             let (succ_left,whole_left) = List.hd ordering_left in
             let (succ_right,whole_right) = List.hd ordering_right in
@@ -3605,7 +3605,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
                   {name=pos2_name; address=address@[1]; pospos=pos2pos;
                   op=Neg; pol=pol; pt=ptype; st=stype_0; label=term}
                in
-               let subtree_left,ordering_left,posn_left = build_ftree "" s (dual_pol pol) stype_1 (address@[1;1])
+               let subtree_left,ordering_left,posn_left = build_ftree empty_sym s (dual_pol pol) stype_1 (address@[1;1])
                      (pos_n+2) in
                let (succ_left,whole_left) = List.hd ordering_left in
                let pos_succs =
@@ -3712,7 +3712,7 @@ let rec construct_ftree
                I,goal
          in
          let new_tree,new_ordering,new_pos_n =
-            build_ftree "" ft next_pol Alpha_1 next_address (pos_n+1) in
+            build_ftree empty_sym ft next_pol Alpha_1 next_address (pos_n+1) in
          construct_ftree rest_terms (treelist @ [new_tree])
             (orderinglist @ new_ordering) new_pos_n next_goal
 
