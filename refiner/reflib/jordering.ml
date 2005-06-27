@@ -170,7 +170,7 @@ let string_to_gamma s =
 
 let empty_pos = (EmptyVar, 0)
 let empty_sym = pos_to_symbol empty_pos
-let dummy_pos = (Dummy, 0)
+let dummy_pos _ = (Dummy, Lm_symbol.new_number ())
 
 module PosOrdering =
 struct

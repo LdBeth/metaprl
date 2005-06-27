@@ -1947,7 +1947,9 @@ struct
  (* since proof reconstruction was a deadlock in LJ *)
       let po_treelist = get_formula_treelist ftree po in
       let dir_treelist = List.map (fun x -> (1,x)) po_treelist in
-      let formula_rel, rename_list = build_formula_rel dir_treelist slist dummy_pos in
+      let formula_rel, rename_list =
+         build_formula_rel dir_treelist slist (dummy_pos ())
+      in
       let renamed_ljmc_proof = rename_gamma ljmc_proof rename_list in
       let (ptree,ax) =  bproof renamed_ljmc_proof in
       let formula_rel =
@@ -1980,16 +1982,16 @@ struct
       [] -> []
     | Empty :: _ -> []
     | NodeAt pos :: r ->
-         (pos.name)::(init_unsolved r)
+         (pos.pospos)::(init_unsolved r)
     | NodeA(pos,suctrees) :: r ->
          let new_treelist = suctrees @ r in
-            (pos.name)::(init_unsolved new_treelist)
+            (pos.pospos)::(init_unsolved new_treelist)
 
 (* only the unsolved positions will be represented --> skip additional root position *)
 
    let build_unsolved = function
       NodeA(pos,suctrees) ->
-         ((pos.name),init_unsolved suctrees)
+         ((pos.pospos),init_unsolved suctrees)
     | Empty | NodeAt _ ->
          raise jprover_bug
 
@@ -2923,12 +2925,6 @@ struct
          end;
       let (newroot_name,unsolved_list) =  build_unsolved ftree in
       let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
-      let redord2 =
-         List.map
-            (fun (s,set) -> string_to_pos s, set_string_to_pos set)
-            redord2
-      in
-      let unsolved_list = list_string_to_pos unsolved_list in
       let (init_tree,init_redord,init_connections,init_unsolved_list) =
          purity ftree redord2 min_connections unsolved_list in
       begin
@@ -3788,13 +3784,10 @@ let prove consts mult_limit termlist calculus =
    let ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof =
       try_multiplicity consts mult_limit ftree ordering pos_n 1 calculus
    in
-   let string_red_ordering = List.map
-      (fun (x,y) -> pos_to_string x, set_pos_to_string y) red_ordering
-   in
    let sym_sigmaQ = List.map
       (fun (p,t) -> pos_to_symbol p, t) sigmaQ
    in
-   ftree, string_red_ordering, eqlist, (sym_sigmaQ,sigmaJ), ext_proof
+   ftree, red_ordering, eqlist, (sym_sigmaQ,sigmaJ), ext_proof
 
 
 (********** first-order type theory interface *******************)
@@ -3945,7 +3938,7 @@ let do_prove mult_limit termlist calculus =
       print_flush ();
       print_flush ();
       open_box 0;
-      print_ordering red_ordering;
+      (*print_ordering red_ordering;*)
       print_flush ();
       open_box 0;
       force_newline ();
