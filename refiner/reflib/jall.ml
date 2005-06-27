@@ -1683,7 +1683,7 @@ struct
                   end
       in
 (*  print_endline "permute_layer in"; *)
-      let dummyt = mk_var_term "dummy" in
+      let dummyt = mk_pos_var (dummy_pos ()) in
       let r,o,addr =
          top_addmissible_pair ptree dglist ("",Orl,dummyt,dummyt) ("",Orr,dummyt,dummyt) [] tsubrel dummyt in
       if rule_eq r ("",Orl,dummyt,dummyt) then
@@ -3082,8 +3082,9 @@ let rec subst_replace subst_list t =
    match subst_list with
       [] -> t
     | (old_t,new_t)::r ->
-         let inter_term = var_subst t old_t "dummy"  in
-         let new_term = subst1 inter_term "dummy" new_t in
+         let dummy = pos_to_symbol (dummy_pos ()) in
+         let inter_term = TermSubst.var_subst t old_t dummy  in
+         let new_term = TermSubst.subst1 inter_term dummy new_t in
          subst_replace r new_term
 
 let update_position position m replace_n subst_list mult =
@@ -3778,7 +3779,9 @@ let rec try_multiplicity
                try_multiplicity consts mult_limit new_ftree new_ordering new_pos_n new_mult calculus
 
 let prove consts mult_limit termlist calculus =
-   let (ftree,ordering,pos_n) = construct_ftree termlist [] [] 0 (mk_var_term "dummy") in
+   let (ftree,ordering,pos_n) =
+      construct_ftree termlist [] [] 0 (mk_pos_var (dummy_pos ()))
+   in
 (* pos_n = number of positions without new root "w" *)
 (*   print_formula_info ftree ordering pos_n;    *)
    let ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof =
