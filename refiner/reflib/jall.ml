@@ -838,8 +838,8 @@ struct
                let (osubp2,min_con2) = bproof_purity opt_subp2 in
 (* there will be no purity reductions in the beta subproofs. We use this *)
 (* predicate to collect the set of used leaf-connections in each subproof*)
-               ((RNode((alayer @ alph1),osubp1),min_con1),
-                (RNode((alayer @ alph2),osubp2),min_con2)
+               ((RNode((List.rev_append alayer alph1),osubp1),min_con1),
+                (RNode((List.rev_append alayer alph2),osubp2),min_con2)
                )
 (* we combine the branch after topmost beta expansion at pos into one root alpha layer *)
 (* -- the beta expansion node pos will not be needed in this root layer *)
@@ -859,8 +859,8 @@ struct
 *)
                   let (osubp1,min_con1) = bproof_purity perm_bproof1 in
                   let (osubp2,min_con2) = bproof_purity perm_bproof2 in
-                  ((RNode((alayer @ balph1),osubp1),min_con1),
-                   (RNode((alayer @ balph2),osubp2),min_con2)
+                  ((RNode((List.rev_append alayer balph1),osubp1),min_con1),
+                   (RNode((List.rev_append alayer balph2),osubp2),min_con2)
                   )
                end
 (* we combine the branch after the NEW topmost beta expansion at bpos *)
