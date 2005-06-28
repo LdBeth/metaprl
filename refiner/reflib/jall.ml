@@ -785,7 +785,9 @@ struct
                      (opt_subp2,min_conn2,beta_exp2)
                   end
                else
-                  let min_conn = remove_dups_connections (min_conn1 @ min_conn2) in
+                  let min_conn =
+							remove_dups_connections (List.rev_append min_conn1 min_conn2)
+						in
                   let beta_exp =
                      remove_dups_list (pos :: beta_exp1 @ beta_exp2)
                   in
