@@ -20,8 +20,6 @@ type pos_kind =
 
 type position = pos_kind * int
 
-let empty_pos = EmptyVar, 0
-
 module JTypes (JLogic : JLogicSig) =
 struct
    type polarity = Zero | One
@@ -36,10 +34,7 @@ struct
    type direction =
       Left | Right
 
-   type dir =
-      Wrong | Nth of int
-
-   type pos = {address : dir list;
+   type pos = {address : int list;
                pospos : position;
                op :  connective;
                pol : polarity;
@@ -53,7 +48,7 @@ struct
     | NodeA of pos * ftree list
 
    type atom = {aname : string;
-                aaddress : dir list;
+                aaddress : int list;
                 apos : position;
                 aposprefix : position list;
                 apredicate :  operator;
