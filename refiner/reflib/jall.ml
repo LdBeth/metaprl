@@ -1811,14 +1811,14 @@ struct
                   if List.mem f succs then
                      NodeA(pos,suctrees),succs
                   else
-                     get_formula_tree (suctrees @ rest_trees) f predflag
+                     get_formula_tree (List.rev_append suctrees rest_trees) f predflag
                else
-                  get_formula_tree (suctrees @ rest_trees) f predflag
+                  get_formula_tree (List.rev_append suctrees rest_trees) f predflag
             else
                if pos_eq pos f then
                   NodeA(pos,suctrees),[]
                else
-                  get_formula_tree (suctrees @ rest_trees) f predflag
+                  get_formula_tree (List.rev_append suctrees rest_trees) f predflag
        | [] -> raise jprover_bug
 
    let rec get_formula_treelist ftree = function
