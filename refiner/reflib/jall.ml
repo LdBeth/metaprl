@@ -1867,7 +1867,8 @@ struct
                          let (srel,sren) =
                             build_formula_rel [(x,ft)] slist new_pos
                          in
-                         ((new_srel_el::srel) @ rest_rel),((new_rename_el::sren) @ rest_ren)
+                         (new_srel_el::(List.rev_append srel rest_rel)),
+								 (new_rename_el::(List.rev_append sren rest_ren))
                       else
                          rest_rel,rest_ren
                )
@@ -1886,11 +1887,13 @@ struct
              | NodeA({ pt = Alpha | Beta | Delta; pospos=pospos }, suctrees) ->
                   let dtreelist = number_list 1 suctrees in
                   let (srel,sren) = build_formula_rel dtreelist slist pospos in
-                     ((((predpos,pospos),d)::srel) @ rest_rel),(sren @ rest_renlist)
+                     (((predpos,pospos),d)::(List.rev_append srel rest_rel)),
+							(List.rev_append sren rest_renlist)
              | NodeA({ pt = Psi| Phi }, suctrees) ->
                   let dtreelist = (List.map (fun x -> (d,x)) suctrees) in
                   let (srel,sren) = build_formula_rel dtreelist slist predpos in
-                     (srel @ rest_rel), (sren @ rest_renlist)
+                     (List.rev_append srel rest_rel),
+							(List.rev_append sren rest_renlist)
              | NodeA({ pt = Gamma; pospos=pospos }, suctrees) ->
                   let dtreelist = (List.map (fun x -> (1,x)) suctrees) in
 (*                if (nonemptys suctrees 0 n) = 1 then
@@ -1899,7 +1902,7 @@ struct
    else (* we have more than one gamma instance, which means renaming *)
 *)
                   let (srel,sren) = build_renamed_gamma_rel dtreelist predpos pospos d in
-                     (srel @ rest_rel), (sren @ rest_renlist)
+                     (List.rev_append srel rest_rel), (List.rev_append sren rest_renlist)
              | NodeA({ pt = PNull }, _) ->
                   raise jprover_bug
 
