@@ -1963,6 +1963,7 @@ struct
             let left_list =  make_node_list left in
             let right_list =  make_node_list right in
             ((empty_pos,pos),(inf,form,term))::(left_list @ right_list)
+				(* rev_append here would break some proofs *)
 
    let permute_ljmc ftree po
       (slist : position list)
@@ -1973,7 +1974,7 @@ struct
  (* the open positions in po are either phi_0, psi_0, or gamma_0 positions *)
  (* since proof reconstruction was a deadlock in LJ *)
       let po_treelist = get_formula_treelist ftree po in
-      let dir_treelist = List.map (fun x -> (1,x)) po_treelist in
+      let dir_treelist = List.rev_map (fun x -> (1,x)) po_treelist in
       let formula_rel, rename_list =
          build_formula_rel dir_treelist slist (dummy_pos ())
       in
