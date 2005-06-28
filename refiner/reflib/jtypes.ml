@@ -69,7 +69,7 @@ struct
     | AtNode of position * (position * position)
 
 (* Assume only constants for instantiations, not adapted to terms yet *)
-   type inf = string * rule * term * term
+   type inf = position * rule * term * term
 
 (* proof tree for pretty print and permutation *)
    type ptree =

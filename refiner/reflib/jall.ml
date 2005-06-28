@@ -191,7 +191,7 @@ struct
        | _ -> false
 
    let rule_eq (a1, (b1 : rule), c1, d1) (a2, b2, c2, d2) =
-      string_eq a1 a2 && b1 = b2 && alpha_equal c1 c2 && alpha_equal d1 d2
+      a1 = a2 && b1 = b2 && alpha_equal c1 c2 && alpha_equal d1 d2
 
 (*****************************************************************)
 
@@ -654,6 +654,7 @@ struct
 (* print sequent proof tree *)
 
    let pp_rule (pos,r,formula,term) tab =
+      let pos = pos_to_string pos in
       let rep = ruletable r in
       if List.mem rep ["Alll";"Allr";"Exl";"Exr"] then
          begin
@@ -1220,7 +1221,7 @@ struct
    let subf1 n m subrel = List.mem ((n,m),1) subrel
    let subf2 n m subrel = List.mem ((n,m),2) subrel
 
-	type augmented_position = Pos of string | OrlTrue
+	type augmented_position = Pos of position | OrlTrue
 
 (* Transforms all normal form layers in an LJ proof *)
 
@@ -1246,7 +1247,7 @@ struct
 							t,qpos
              | Negl, Pos ppos ->
                   if subf1 pos ppos subrel then
-                     PNodeA((pos,inf,form,term),t), Pos "" (* empty string *)
+                     PNodeA((pos,inf,form,term),t), Pos empty_pos (* empty string *)
                   else
 							t,qpos
              | _, Pos ppos ->          					           (* x = Orr *)
@@ -1284,7 +1285,7 @@ struct
 				 		t,qpos 											(* not subf -> not Orl-True *)
 				 | Impl, Pos qppos when subf1 pos qppos subrel ->
                   let s,rpos = modify right subrel tsubrel in
-                  PNodeB((pos,inf,form,term),t,s), Pos "" (* empty string *)
+                  PNodeB((pos,inf,form,term),t,s), Pos empty_pos (* empty string *)
 				 | Impl, (Pos _ | OrlTrue) ->
 				 		t,qpos
 				 | _ ->												(* x= Orl *)
@@ -1316,7 +1317,7 @@ struct
        | PNodeA((pos,(Negl as inf),form,term),left)  ->
             let t,qpos = rec_modify left subrel in
             if (subf1 pos qpos subrel) then
-               PNodeA((pos,inf,form,term),t),""  (* empty string *)
+               PNodeA((pos,inf,form,term),t),empty_pos  (* empty string *)
             else
                t,qpos
        | PNodeA((pos,Orr,form,term),left)  ->
@@ -1344,7 +1345,7 @@ struct
              | Impl -> (* x = Impl since x= Orl cannot occur in the partial layer ptree *)
                   if subf1 pos qpos subrel then
                      let s,rpos = rec_modify right subrel in
-                     PNodeB((pos,inf,form,term),t,s),"" (* empty string *)
+                     PNodeB((pos,inf,form,term),t,s),empty_pos (* empty string *)
                   else
                      t,qpos
              | (Fail|Exl|Exr|Alll|Allr|Negl|Negr|Impr|Orl|Orr2|Orr1|Orr|Andl|Ax) ->
@@ -1509,7 +1510,7 @@ struct
                else  (* not orl_free *)
                   let left_r,left_o,left_addr =
                      search_pair left newdg act_r newrule (Left :: act_addr) tsubrel in
-                  if left_o =  ("",Orr,dummyt,dummyt) then
+                  if left_o =  (empty_pos,Orr,dummyt,dummyt) then
                      top_addmissible_pair right dglist act_r act_o (Right :: act_addr) tsubrel dummyt
                   else left_r,left_o,left_addr
           | PNodeB(rule,left,right) -> (* r = Orl *)
@@ -1519,7 +1520,7 @@ struct
                else
                   let left_r,left_o,left_addr
                         = search_pair left dglist rule act_o (Left :: act_addr) tsubrel in
-                  if left_o =  ("",Orr,dummyt,dummyt) then
+                  if left_o =  (empty_pos,Orr,dummyt,dummyt) then
                      top_addmissible_pair right dglist rule act_o (Right :: act_addr) tsubrel dummyt
                   else
                      left_r,left_o,left_addr
@@ -1715,10 +1716,15 @@ struct
 (*  print_endline "permute_layer in"; *)
       let dummyt = mk_pos_var (dummy_pos ()) in
       let r,o,addr =
-         top_addmissible_pair ptree dglist ("",Orl,dummyt,dummyt) ("",Orr,dummyt,dummyt) [] tsubrel dummyt in
-      if rule_eq r ("",Orl,dummyt,dummyt) then
+         top_addmissible_pair
+            ptree dglist
+            (empty_pos,Orl,dummyt,dummyt)
+            (empty_pos,Orr,dummyt,dummyt)
+            [] tsubrel dummyt
+      in
+      if rule_eq r (empty_pos,Orl,dummyt,dummyt) then
          ptree
-      else if rule_eq o ("",Orr,dummyt,dummyt) then  (* Orr is a dummy for no d-gen. rule *)
+      else if rule_eq o (empty_pos,Orr,dummyt,dummyt) then  (* Orr is a dummy for no d-gen. rule *)
          ptree
       else
 (*         let (x1,x2,x3,x4) = r
@@ -1794,7 +1800,6 @@ struct
                else
                   0
             in
-            let pos = pos_to_string pos in
             bptree (extend prooftree (pos,rule,formula,term)) rest (nax+newax)
 
    let bproof nodelist =
@@ -1958,14 +1963,14 @@ struct
          PEmpty ->
             raise jprover_bug
        | PNodeAx((pos,inf,form,term)) ->
-            [(("",pos),(inf,form,term))]
+            [((empty_pos,pos),(inf,form,term))]
        | PNodeA((pos,inf,form,term),left) ->
             let left_list =  make_node_list left in
-            (("",pos),(inf,form,term))::left_list
+            ((empty_pos,pos),(inf,form,term))::left_list
        | PNodeB((pos,inf,form,term),left,right) ->
             let left_list =  make_node_list left in
             let right_list =  make_node_list right in
-            (("",pos),(inf,form,term))::(left_list @ right_list)
+            ((empty_pos,pos),(inf,form,term))::(left_list @ right_list)
 
    let permute_ljmc ftree po
       (slist : position list)
@@ -1982,11 +1987,6 @@ struct
       in
       let renamed_ljmc_proof = rename_gamma ljmc_proof rename_list in
       let (ptree,ax) =  bproof renamed_ljmc_proof in
-      let formula_rel =
-         List.map
-            (fun ((x,y),z) -> (pos_to_string x, pos_to_string y), z)
-            formula_rel
-      in
       let ljproof = pt ptree formula_rel in
            (* this is a direct formula relation, comprising left/right subformula *)
       begin
@@ -2445,10 +2445,10 @@ struct
                      if pos.pt = Beta then
                         (actual_node,true)
                      else
-                        ((pos_to_string pos.pospos),false)
+                        (pos.pospos,false)
                   in
                   let (ft,dt,an,bf) = reduce_tree radd new_act nexttree new_bf in
-                  if an = pos_to_string pos.pospos then
+                  if an = pos.pospos then
                      let nstrees = myset a Empty strees in
 (*                 print_endline ("way back assocnode "^pos.name); *)
                      (NodeA(pos,nstrees),nexttree,an,bf)
@@ -2484,10 +2484,11 @@ struct
                [] -> (ftree,redord,connections,unsolved_list)
              | f::r ->
 (*   print_endline ("pure position "^(f.name)); *)
-                  let (ftnew,deltree,assocn,beta_flag) = reduce_tree f.address "" ftree false
+                  let (ftnew,deltree,assocn,beta_flag) =
+                     reduce_tree f.address empty_pos ftree false
                   in
 (*     print_endline ("assoc node "^assocn); *)
-                  if assocn = "" then
+                  if assocn = empty_pos then
                      (Empty,[],[],[])  (* should not occur in the final version *)
                   else
                      let (rednew,connew,unsolnew) = update_relations deltree redord connections unsolved_list in
@@ -2918,10 +2919,7 @@ struct
             let ljmc_subproof =  total ftree redord connections csigmaQ slist (Intuit MultiConcl) opt_bproof
             in
             eigen_counter := 1;
-            let result = permute_ljmc ftree po slist ljmc_subproof in
-            List.map
-               (fun ((x,y),z) -> (string_to_pos x, string_to_pos y),z)
-               result
+            permute_ljmc ftree po slist ljmc_subproof
            (* the permuaiton result will be appended to the lj proof constructed so far *)
          end
       in
