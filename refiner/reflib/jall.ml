@@ -1220,55 +1220,77 @@ struct
    let subf1 n m subrel = List.mem ((n,m),1) subrel
    let subf2 n m subrel = List.mem ((n,m),2) subrel
 
+	type augmented_position = Pos of string | OrlTrue
+
 (* Transforms all normal form layers in an LJ proof *)
 
-   let rec modify prooftree (subrel,tsubrel) =
+   let rec modify prooftree subrel tsubrel =
       match prooftree with
          PEmpty ->
             raise jprover_bug
        | PNodeAx((pos,inf,form,term)) ->
-            prooftree,pos
+            prooftree, Pos pos
        | PNodeA((pos,inf,form,term),left)  ->
-            let t,qpos = modify left (subrel,tsubrel) in
-            begin match inf with
-               Impr | Negr | Allr ->
-                  PNodeA((pos,inf,form,term),t),pos    (*layer bound *)
-             | _ when qpos = "Orl-True" ->
-                  PNodeA((pos,inf,form,term),t),qpos
-             | Andl | Alll | Exl ->
-                  PNodeA((pos,inf,form,term),t),qpos  (*simply propagation*)
-             | Exr ->
-                  if (subf1 pos qpos subrel) then
-                     PNodeA((pos,inf,form,term),t),pos
-                  else t,qpos
-             | Negl ->
-                  if (subf1 pos qpos subrel) then
-                     PNodeA((pos,inf,form,term),t),""  (* empty string *)
-                  else t,qpos
-             | _ ->                     (* x = Orr *)
-                  if (subf1 pos qpos subrel) then
-                     PNodeA((pos,Orr1,form,term),t),pos    (* make Orr for LJ *)
-                  else if (subf2 pos qpos subrel) then
-                     PNodeA((pos,Orr2,form,term),t),pos     (* make Orr for LJ *)
-                  else t,qpos
+            let t,qpos = modify left subrel tsubrel in
+            begin match inf, qpos with
+               Impr, _ | Negr, _ | Allr, _ ->
+                  PNodeA((pos,inf,form,term),t), Pos pos    (*layer bound *)
+             | _, OrlTrue ->
+                  PNodeA((pos,inf,form,term),t), qpos
+             | Andl, _ | Alll, _ | Exl, _ ->
+                  PNodeA((pos,inf,form,term),t), qpos  (*simply propagation*)
+             | Exr, Pos ppos ->
+                  if subf1 pos ppos subrel then
+                     PNodeA((pos,inf,form,term),t), Pos pos
+						else
+							t,qpos
+             | Negl, Pos ppos ->
+                  if subf1 pos ppos subrel then
+                     PNodeA((pos,inf,form,term),t), Pos "" (* empty string *)
+                  else
+							t,qpos
+             | _, Pos ppos ->          					           (* x = Orr *)
+                  if subf1 pos ppos subrel then
+                     PNodeA((pos,Orr1,form,term),t), Pos pos    (* make Orr for LJ *)
+                  else if (subf2 pos ppos subrel) then
+                     PNodeA((pos,Orr2,form,term),t), Pos pos     (* make Orr for LJ *)
+                  else
+							t,qpos
             end
        | PNodeB((pos,inf,form,term),left,right) ->
-            let t,qpos = modify left (subrel,tsubrel) in
-            if inf = Andr then
-               if (or) (qpos = "Orl-True") (subf1 pos qpos subrel) then
-                  let s,rpos = modify right (subrel,tsubrel) in  (* Orl-True -> subf *)
-                  if (or) (rpos = "Orl-True") (subf2 pos rpos subrel) then
-                     PNodeB((pos,inf,form,term),t,s),pos
-                  else s,rpos
-               else t,qpos                (* not subf -> not Orl-True *)
-            else if inf = Impl then
-               if subf1 pos qpos subrel then
-                  let s,rpos = modify right (subrel,tsubrel) in
-                  PNodeB((pos,inf,form,term),t,s),"" (* empty string *)
-               else t,qpos
-            else                           (* x= Orl *)
-               let s,rpos = modify right (subrel,tsubrel) in
-               PNodeB((pos,inf,form,term),t,s),"Orl-True"
+            let t,qpos = modify left subrel tsubrel in
+				begin match inf, qpos with
+					Andr, OrlTrue ->
+						let s,rpos = modify right subrel tsubrel in  (* Orl-True -> subf *)
+						begin match rpos with
+							OrlTrue ->
+								PNodeB((pos,inf,form,term),t,s), Pos pos
+						 | Pos rppos when subf2 pos rppos subrel ->
+						 		PNodeB((pos,inf,form,term),t,s), Pos pos
+						 | Pos _ ->
+						 		s,rpos
+						end
+				 | Andr, Pos qppos when subf1 pos qppos subrel ->
+                  let s,rpos = modify right subrel tsubrel in  (* Orl-True -> subf *)
+						begin match rpos with
+                     OrlTrue ->
+                        PNodeB((pos,inf,form,term),t,s), Pos pos
+                   | Pos rppos when subf2 pos rppos subrel ->
+                        PNodeB((pos,inf,form,term),t,s), Pos pos
+                   | Pos _ ->
+                        s,rpos
+                  end
+				 | Andr, Pos _ ->
+				 		t,qpos 											(* not subf -> not Orl-True *)
+				 | Impl, Pos qppos when subf1 pos qppos subrel ->
+                  let s,rpos = modify right subrel tsubrel in
+                  PNodeB((pos,inf,form,term),t,s), Pos "" (* empty string *)
+				 | Impl, (Pos _ | OrlTrue) ->
+				 		t,qpos
+				 | _ ->												(* x= Orl *)
+               	let s,rpos = modify right subrel tsubrel in
+	               PNodeB((pos,inf,form,term),t,s), OrlTrue
+				end
 
 (* transforms the subproof into an LJ proof between
    the beta-inference rule (excluded) and
@@ -1927,7 +1949,7 @@ struct
       let tsubrel = transitive_closure subrel in
       let transptree = trans_layer ptree (subrel,tsubrel) in
 (*      print_endline ""; *)
-      fst (modify transptree (subrel,tsubrel))
+      fst (modify transptree subrel tsubrel)
 (*     let mtree = fst (modify transptree (subrel,tsubrel)) in *)
 (*       pretty_print mtree ax *)
 
