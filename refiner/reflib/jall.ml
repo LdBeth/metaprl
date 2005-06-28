@@ -1474,45 +1474,6 @@ struct
 *)
 
    let rec top_addmissible_pair ptree dglist act_r act_o act_addr tsubrel dummyt =
-      let rec search_pair ptree dglist act_r act_o act_addr tsubrel =
-         match ptree with
-            PEmpty -> raise jprover_bug
-          | PNodeAx(_) -> raise jprover_bug
-          | PNodeA(rule, left) ->
-(*      print_endline "alpha"; *)
-               if (dgenerative rule dglist left tsubrel) then  (* r = Exr,Orr,Negl *)
-                  let newdg = rule::dglist in
-                  search_pair left newdg act_r rule act_addr tsubrel
-               else                   (* Impr, Allr, Notr only for test *)
-                  search_pair left dglist act_r act_o act_addr tsubrel
-          | PNodeB((_, (Andr | Impl), _, _) as rule,left,right) ->
-(*      print_endline "beta";  *)
-               let newdg,newrule =
-                  if (dgenerative rule dglist left tsubrel) then
-                     (rule::dglist),rule
-                  else
-                     dglist,act_o
-               in
-               if orl_free left then
-                  search_pair right newdg act_r newrule (Right :: act_addr) tsubrel
-               else  (* not orl_free *)
-                  let left_r,left_o,left_addr =
-                     search_pair left newdg act_r newrule (Left :: act_addr) tsubrel in
-                  if left_o =  (empty_pos,Orr,dummyt,dummyt) then
-                     top_addmissible_pair right dglist act_r act_o (Right :: act_addr) tsubrel dummyt
-                  else left_r,left_o,left_addr
-          | PNodeB(rule,left,right) -> (* r = Orl *)
-(*      print_endline "beta";  *)
-               if orl_free left then
-                  top_addmissible_pair right dglist rule act_o (Right :: act_addr) tsubrel dummyt
-               else
-                  let left_r,left_o,left_addr
-                        = search_pair left dglist rule act_o (Left :: act_addr) tsubrel in
-                  if left_o =  (empty_pos,Orr,dummyt,dummyt) then
-                     top_addmissible_pair right dglist rule act_o (Right :: act_addr) tsubrel dummyt
-                  else
-                     left_r,left_o,left_addr
-      in
 (*  print_endline "top_addmissible_pair in"; *)
       if orl_free ptree then                  (* there must be a orl BELOW an layer bound *)
          begin
@@ -1522,8 +1483,48 @@ struct
       else
          begin
 (*    print_endline "orl_full"; *)
-            search_pair ptree dglist act_r act_o act_addr tsubrel
+            search_pair ptree dglist act_r act_o act_addr tsubrel dummyt
          end
+
+   and search_pair ptree dglist act_r act_o act_addr tsubrel dummyt =
+      match ptree with
+         PEmpty -> raise jprover_bug
+       | PNodeAx(_) -> raise jprover_bug
+       | PNodeA(rule, left) ->
+(*      print_endline "alpha"; *)
+            if dgenerative rule dglist left tsubrel then  (* r = Exr,Orr,Negl *)
+               let newdg = rule::dglist in
+               search_pair left newdg act_r rule act_addr tsubrel dummyt
+            else                   (* Impr, Allr, Notr only for test *)
+               search_pair left dglist act_r act_o act_addr tsubrel dummyt
+       | PNodeB((_, (Andr | Impl), _, _) as rule,left,right) ->
+(*      print_endline "beta";  *)
+            let newdg,newrule =
+               if dgenerative rule dglist left tsubrel then
+                  (rule::dglist),rule
+               else
+                  dglist,act_o
+            in
+            if orl_free left then
+               search_pair right newdg act_r newrule (Right :: act_addr) tsubrel dummyt
+            else  (* not orl_free *)
+               let left_r,left_o,left_addr =
+                  search_pair left newdg act_r newrule (Left :: act_addr) tsubrel dummyt in
+               if left_o = (empty_pos, Orr, dummyt, dummyt) then
+                  top_addmissible_pair right dglist act_r act_o (Right :: act_addr) tsubrel dummyt
+               else left_r,left_o,left_addr
+       | PNodeB(rule,left,right) -> (* r = Orl *)
+(*      print_endline "beta";  *)
+            if orl_free left then
+               top_addmissible_pair right dglist rule act_o (Right :: act_addr) tsubrel dummyt
+            else
+               let left_r,left_o,left_addr =
+                  search_pair left dglist rule act_o (Left :: act_addr) tsubrel dummyt
+               in
+               if left_o = (empty_pos, Orr, dummyt, dummyt) then
+                  top_addmissible_pair right dglist rule act_o (Right :: act_addr) tsubrel dummyt
+               else
+                  left_r,left_o,left_addr
 
    let rec permute_branch r addr act_addr ptree dglist subrel tsubrel =
 (*   print_endline "pbranch in"; *)
