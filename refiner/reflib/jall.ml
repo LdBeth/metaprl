@@ -282,7 +282,10 @@ struct
             print_string ""
        | hd::rest ->
             begin
-               print_int hd;
+               match hd with
+                  Wrong -> ()
+                | Nth i ->
+                  print_int i;
                print_address rest
             end
 
@@ -2082,8 +2085,9 @@ struct
        | NodeA(pos,strees) ->
             match padd with
                [] -> get_roots strees
-             | [f] -> pos::(comp_ps [] (List.nth strees (f-1)))
-             | f::r -> comp_ps r (List.nth strees (f-1))
+             | [Nth f] -> pos::(comp_ps [] (List.nth strees f))
+             | (Nth f)::r -> comp_ps r (List.nth strees f)
+             | Wrong::_ -> raise jprover_bug
 
 (* computes a list: first element predecessor, next elements successoes of p *)
 
@@ -2410,15 +2414,15 @@ struct
    let rec reduce_tree addr actual_node ftree beta_flag =
       match addr, ftree with
          [], _ -> (ftree,Empty,actual_node,beta_flag)
-       | a::radd, NodeA(pos,strees) ->
+       | (Nth a)::radd, NodeA(pos,strees) ->
 (*       print_endline pos.name; *)
     (* the associated node occurs above f (or the empty address) let hence, is neither atom nor empty tree *)
-            let nexttree = (List.nth strees (a-1)) in
+            let nexttree = List.nth strees a in
             if (nonemptys 0 strees) < 2 then
                begin
 (*          print_endline "strees 1 or non-empties < 2"; *)
                   let (ft,dt,an,bf) =  reduce_tree radd actual_node nexttree beta_flag in
-                  let nstrees = myset (a-1) ft strees in
+                  let nstrees = myset a ft strees in
 (*            print_endline ("way back "^pos.name); *)
                   (NodeA(pos,nstrees),dt,an,bf)
                end
@@ -2433,14 +2437,16 @@ struct
                   in
                   let (ft,dt,an,bf) = reduce_tree radd new_act nexttree new_bf in
                   if an = pos_to_string pos.pospos then
-                     let nstrees = myset (a-1) Empty strees in
+                     let nstrees = myset a Empty strees in
 (*                 print_endline ("way back assocnode "^pos.name); *)
                      (NodeA(pos,nstrees),nexttree,an,bf)
                   else  (* has been replaced / will be replaced below / above pos *)
-                     let nstrees = myset (a-1) ft strees in
+                     let nstrees = myset a ft strees in
 (*                 print_endline ("way back "^pos.name); *)
                      (NodeA(pos,nstrees),dt,an,bf)
                end
+       | Wrong::radd, NodeA(pos,strees) ->
+            raise jprover_bug
        | _, Empty ->
             print_endline "Empty purity tree";
             raise jprover_bug
@@ -2508,14 +2514,16 @@ struct
                ((NodeA(pos,[Empty;st2tree])),zw2red,zw2conn,zw2uslist)
        | NodeA(pos, _), [] ->
             raise jprover_bug
-       | NodeA(pos, strees), f::rest ->
-            let nexttree = List.nth strees (f-1) in
+       | NodeA(pos, strees), (Nth f)::rest ->
+            let nexttree = List.nth strees f in
             let (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) =
                betasplit rest nexttree redord connections unsolved_list in
 (*          let scopytrees = Array.copy strees in *)
-            let zw1trees = myset (f-1) zw1ft strees in
-            let zw2trees = myset (f-1) zw2ft strees in
+            let zw1trees = myset f zw1ft strees in
+            let zw2trees = myset f zw2ft strees in
                (NodeA(pos,zw1trees),zw1red,zw1conn,zw1uslist),(NodeA(pos,zw2trees),zw2red,zw2conn,zw2uslist)
+       | NodeA(pos, strees), Wrong::rest ->
+            raise jprover_bug
        | Empty, _  ->
             print_endline "bsplit Empty tree";
             raise jprover_bug
@@ -2628,8 +2636,10 @@ struct
             (true,0)
             (* we are at a gamma position (exr) with one than one successor *)
             (* -- wait label in LJ*)
-       | NodeA(_,strees), f::r ->
-                  check_wait_succ_LJ r (List.nth strees (f-1))
+       | NodeA(_,strees), (Nth f)::r ->
+                  check_wait_succ_LJ r (List.nth strees f)
+       | NodeA(_,strees), Wrong::r ->
+             raise jprover_bug
        | Empty, _
        | NodeAt _, _ -> raise jprover_bug (* we have an gamma_0 position or an or-formula *)
 
@@ -3123,9 +3133,7 @@ let update_position position m replace_n subst_list mult =
             subst_list
    in
    let nt = subst_replace nsubst_list t in
-   let add_array = Array.of_list y in
-   let _ = (add_array.(replace_n) <- mult) in
-   let new_add = Array.to_list add_array in
+   let new_add = myset replace_n (Nth (pred mult)) y in
    {address=new_add; pospos=npospos;
     op=z; pol=p; pt=a; st=b; label=nt},m,nsubst_list
 
@@ -3188,7 +3196,10 @@ let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
 
 (* we construct for each pos a list orderings representing let correspondning to the array of succtrees *)
 
-let rec add_multiplicity ftree pos_n mult calculus =
+let rec add_multiplicity ftree pos_n
+   (mult : int)
+   calculus
+   =
    let rec parse_subtrees tree_list s_pos_n =
       match tree_list with
          [] -> ([],[],s_pos_n)
@@ -3423,11 +3434,14 @@ let rec predecessor address_1 address_2 = function
       match address_1,address_2 with
          [],_ -> raise (Invalid_argument "Jprover: predecessors left")
        | _,[] -> raise (Invalid_argument "Jprover: predecessors right")
-       | (f1::r1),(f2::r2) ->
+       | (Nth(f1)::r1),(Nth(f2)::r2) ->
             if f1 = f2 then
-               predecessor r1 r2 (List.nth suctrees (f1-1))
+               predecessor r1 r2 (List.nth suctrees f1)
             else
                position.pt
+       | Wrong::_, _
+       | _, Wrong::_ ->
+             raise jprover_bug
 
 let rec compute_sets element ftree = function
    [] -> [],[]
@@ -3546,9 +3560,12 @@ let rec build_ftree variable old_term pol stype address pos_n =
          {address=address; pospos=pospos;
          op=And; pol=pol; pt=ptype; st=stype; label=term}
       in
-      let subtree_left,ordering_left,posn_left = build_ftree empty_sym s pol stype_1 (address@[1]) (pos_n+1) in
-      let subtree_right,ordering_right,posn_right = build_ftree empty_sym t pol stype_2 (address@[2])
-            (posn_left+1) in
+      let subtree_left,ordering_left,posn_left =
+         build_ftree empty_sym s pol stype_1 (address@[Nth 0]) (pos_n+1)
+      in
+      let subtree_right,ordering_right,posn_right =
+         build_ftree empty_sym t pol stype_2 (address@[Nth 1]) (posn_left+1)
+      in
       let (succ_left,whole_left) = List.hd ordering_left in
       let (succ_right,whole_right) = List.hd ordering_right in
       let pos_succs =
@@ -3572,9 +3589,11 @@ let rec build_ftree variable old_term pol stype address pos_n =
             {address=address; pospos=pospos;
             op=Or; pol=pol; pt=ptype; st=stype; label=term}
          in
-         let subtree_left,ordering_left,posn_left = build_ftree empty_sym s pol stype_1 (address@[1]) (pos_n+1) in
-         let subtree_right,ordering_right,posn_right = build_ftree empty_sym t pol stype_2 (address@[2])
-               (posn_left+1)
+         let subtree_left,ordering_left,posn_left =
+            build_ftree empty_sym s pol stype_1 (address@[Nth 0]) (pos_n+1)
+         in
+         let subtree_right,ordering_right,posn_right =
+            build_ftree empty_sym t pol stype_2 (address@[Nth 1]) (posn_left+1)
          in
          let (succ_left,whole_left) = List.hd ordering_left in
          let (succ_right,whole_right) = List.hd ordering_right in
@@ -3600,12 +3619,15 @@ let rec build_ftree variable old_term pol stype address pos_n =
                {address=address; pospos=pospos;
                op=Imp; pol=pol; pt=ptype_0; st=stype; label=term}
             in
-            let position = {address=address@[1]; pospos=pos2pos;
+            let position = {address=address@[Nth 0]; pospos=pos2pos;
                op=Imp; pol=pol; pt=ptype; st=stype_0; label=term}
             in
-            let subtree_left,ordering_left,posn_left = build_ftree empty_sym s (dual_pol pol) stype_1 (address@[1;1])
-                  (pos_n+2) in
-            let subtree_right,ordering_right,posn_right = build_ftree empty_sym t pol stype_2 (address@[1;2])
+            let subtree_left,ordering_left,posn_left =
+               build_ftree empty_sym s (dual_pol pol) stype_1 (address@[Nth 0;Nth 0])
+                  (pos_n+2)
+            in
+            let subtree_right,ordering_right,posn_right =
+               build_ftree empty_sym t pol stype_2 (address@[Nth 0;Nth 1])
                   (posn_left+1) in
             let (succ_left,whole_left) = List.hd ordering_left in
             let (succ_right,whole_right) = List.hd ordering_right in
@@ -3632,11 +3654,13 @@ let rec build_ftree variable old_term pol stype address pos_n =
                   op=Neg; pol=pol; pt=ptype_0; st=stype; label=term}
                in
                let position =
-                  {address=address@[1]; pospos=pos2pos;
+                  {address=address@[Nth 0]; pospos=pos2pos;
                   op=Neg; pol=pol; pt=ptype; st=stype_0; label=term}
                in
-               let subtree_left,ordering_left,posn_left = build_ftree empty_sym s (dual_pol pol) stype_1 (address@[1;1])
-                     (pos_n+2) in
+               let subtree_left,ordering_left,posn_left =
+                  build_ftree empty_sym s (dual_pol pol) stype_1 (address@[Nth 0;Nth 0])
+                     (pos_n+2)
+               in
                let (succ_left,whole_left) = List.hd ordering_left in
                let pos_succs =
                   Set.add whole_left succ_left in
@@ -3659,7 +3683,9 @@ let rec build_ftree variable old_term pol stype address pos_n =
                      {address=address; pospos=pospos;
                      op=Ex; pol=pol; pt=ptype; st=stype; label=term}
                   in
-                  let subtree_left,ordering_left,posn_left = build_ftree v t pol stype_1 (address@[1]) (pos_n+1) in
+                  let subtree_left,ordering_left,posn_left =
+                     build_ftree v t pol stype_1 (address@[Nth 0]) (pos_n+1)
+                  in
                   let (succ_left,whole_left) = List.hd ordering_left in
                   let pos_succs =
                      Set.add whole_left succ_left in
@@ -3684,11 +3710,12 @@ let rec build_ftree variable old_term pol stype address pos_n =
                         op=All; pol=pol; pt=ptype_0; st=stype; label=term}
                      in
                      let position =
-                        {address=address@[1]; pospos=pos2pos;
+                        {address=address@[Nth 0]; pospos=pos2pos;
                         op=All; pol=pol; pt=ptype; st=stype_0; label=term}
                      in
-                     let subtree_left,ordering_left,posn_left = build_ftree v t pol stype_1 (address@[1;1])
-                           (pos_n+2) in
+                     let subtree_left,ordering_left,posn_left =
+                        build_ftree v t pol stype_1 (address@[Nth 0;Nth 0]) (pos_n+2)
+                     in
                      let (succ_left,whole_left) = List.hd ordering_left in
                      let pos_succs =
                         Set.add whole_left succ_left in
@@ -3713,7 +3740,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
                         op=At; pol=pol; pt=ptype_0; st=stype; label=term}
                      in
                      let position =
-                        {address=address@[1]; pospos=pos2pos;
+                        {address=address@[Nth 0]; pospos=pos2pos;
                         op=At; pol=pol; pt=PNull; st=stype_0; label=term}
                      in
                      NodeA(sposition,[NodeAt(position)]),
@@ -3737,7 +3764,7 @@ let rec construct_ftree
          NodeA(new_root,treelist),
          ((root_pos,(union_orderings orderinglist))::orderinglist),pos_n
     | ft::rest_terms ->
-         let next_address = [((List.length treelist)+1)] in
+         let next_address = [Nth (List.length treelist)] in
          let next_pol,next_goal =
             if rest_terms = []  then
                Zero,ft (* construct tree for the conclusion *)

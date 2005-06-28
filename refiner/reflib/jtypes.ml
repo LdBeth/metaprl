@@ -36,7 +36,10 @@ struct
    type direction =
       Left | Right
 
-   type pos = {address : int list;
+   type dir =
+      Wrong | Nth of int
+
+   type pos = {address : dir list;
                pospos : position;
                op :  connective;
                pol : polarity;
@@ -50,7 +53,7 @@ struct
     | NodeA of pos * ftree list
 
    type atom = {aname : string;
-                aaddress : int list;
+                aaddress : dir list;
                 apos : position;
                 aposprefix : position list;
                 apredicate :  operator;
