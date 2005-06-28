@@ -453,7 +453,7 @@ struct
          [] -> "."
        | f::r ->
             let rest_s = stringlist_to_string r in
-            (f^"."^rest_s)
+            ((pos_to_string f)^"."^rest_s)
 
    let rec print_stringlist slist =
       match slist with
@@ -477,7 +477,8 @@ struct
                   print_break (new_tab-10) 0;
                   open_box 0;
                   force_newline ();
-                  print_string (dummy^"CloseNode: connection = ("^c1^","^c2^")");
+                  print_string
+							(dummy^"CloseNode: connection = ("^(pos_to_string c1)^","^(pos_to_string c2)^")");
                   print_flush();
 (*      force_newline ();
    print_break 0 3;
@@ -493,7 +494,7 @@ struct
                   print_break (new_tab-10) 0;
                   open_box 0;
                   force_newline ();
-                  print_string (dummy^"AtNode: pos = "^posname^" conneciton = ("^c1^","^c2^")");
+                  print_string (dummy^"AtNode: pos = "^(pos_to_string posname)^" conneciton = ("^(pos_to_string c1)^","^(pos_to_string c2)^")");
                   print_flush();
 (*      force_newline ();
    print_break 0 3;
@@ -530,7 +531,7 @@ struct
                   force_newline ();
                   print_flush();
                   open_box 0;
-                  print_string (dummy^"BetaNode: pos = "^posname^" layer1 = "^alpha_string1^" layer2 = "^alpha_string2);
+                  print_string (dummy^"BetaNode: pos = "^(pos_to_string posname)^" layer1 = "^alpha_string1^" layer2 = "^alpha_string2);
                   print_flush();
                   open_box 0;
                   print_break 0 0;
@@ -764,7 +765,6 @@ struct
    let beta_pure alpha_layer connections beta_expansions =
       let (l1,l2) = List.split connections in
       let test_list = l1 @ l2 @ beta_expansions in
-      let alpha_layer = list_string_to_pos alpha_layer in
       begin
 (*       open_box 0;
          print_endline "";
@@ -784,9 +784,9 @@ struct
          BEmpty ->
             raise jprover_bug
        | CNode((c1,c2)) ->
-            bproof,[(string_to_pos c1,string_to_pos c2)],[]
+            bproof,[(c1,c2)],[]
        | AtNode(_,(c1,c2)) ->
-            bproof,[(string_to_pos c1,string_to_pos c2)],[]
+            bproof,[(c1,c2)],[]
        | RNode(alpha_layer,subproof) ->
             let (opt_subproof,min_connections,beta_expansions) =
                apply_bproof_purity subproof in
@@ -808,7 +808,7 @@ struct
                else
                   let min_conn = remove_dups_connections (min_conn1 @ min_conn2) in
                   let beta_exp =
-                     remove_dups_list ((string_to_pos pos) :: beta_exp1 @ beta_exp2)
+                     remove_dups_list (pos :: beta_exp1 @ beta_exp2)
                   in
                   (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2)),min_conn,beta_exp)
 
@@ -1039,7 +1039,7 @@ struct
        | BEmpty -> c1_context
        | BNode(pos,_,_) ->
 (*    print_endline ("actual root: "^pos); *)
-            cut_context (string_to_pos pos) c1_context
+            cut_context pos c1_context
 
    let print_context conn bcontext =
       begin
@@ -1060,19 +1060,16 @@ struct
       let rec add_c2_tree (c1,c2) c2_diff_context =
          match c2_diff_context with
             [] ->
-               (CNode(pos_to_string c1, pos_to_string c2),0)
+               (CNode(c1, c2),0)
           | (f,num)::c2_diff_r ->
                let next_beta_proof,next_exp =
                   add_c2_tree (c1,c2) c2_diff_r in
                let (layer1,layer2) = List.assoc f beta_layer_list in
-               let layer1 = list_pos_to_string layer1 in
-               let layer2 = list_pos_to_string layer2 in
-               let fstr = pos_to_string f in
                let new_bproof =
                   if num = 1 then
-                     BNode(fstr,(layer1,next_beta_proof),(layer2,BEmpty))
+                     BNode(f,(layer1,next_beta_proof),(layer2,BEmpty))
                   else (* num = 2*)
-                     BNode(fstr,(layer1,BEmpty),(layer2,next_beta_proof))
+                     BNode(f,(layer1,BEmpty),(layer2,next_beta_proof))
                in
                (new_bproof,(next_exp+1))
       in
@@ -1102,16 +1099,13 @@ struct
                   end
           | (f,num)::c1_diff_r ->
                let (layer1,layer2) = List.assoc f beta_layer_list in
-               let layer1 = list_pos_to_string layer1 in
-               let layer2 = list_pos_to_string layer2 in
                let next_beta_proof,next_exp,next_closures,next_ext_proof =
                   add_beta_expansions (c1,c2) rest_ext_proof c1_diff_r c2_diff_context new_act_context in
-               let fstr = pos_to_string f in
                let new_bproof =
                   if num = 1 then
-                     BNode(fstr,(layer1,next_beta_proof),(layer2,BEmpty))
+                     BNode(f,(layer1,next_beta_proof),(layer2,BEmpty))
                   else (* num = 2*)
-                     BNode(fstr,(layer1,BEmpty),(layer2,next_beta_proof))
+                     BNode(f,(layer1,BEmpty),(layer2,next_beta_proof))
                in
                (new_bproof,(next_exp+1),next_closures,next_ext_proof)
 
@@ -1214,7 +1208,7 @@ struct
       let con1,con2 = List.split ext_proof in
       let con_atoms = remove_dups_list (con1 @ con2) in
       let (empty_atoms,beta_atoms,beta_layer_list) = annotate_atoms [] con_atoms [ftree] in
-      let root_node = list_pos_to_string (compute_alpha_layer [ftree]) in
+      let root_node = compute_alpha_layer [ftree] in
       let (beta_proof,beta_exp,closures,_) =
          build_opt_beta_proof BEmpty ext_proof beta_atoms beta_layer_list [] in
       (RNode(root_node,beta_proof)),beta_exp,closures
@@ -2685,7 +2679,7 @@ struct
                     wait_label must be set.
                  *)
                            let ((_,min_con1),_) =
-                              split_permutation (pos_to_string f.pospos) opt_bproof
+                              split_permutation f.pospos opt_bproof
                            in
                            let slist_fake = delete (=) f.pospos slist in
                            let ((zw1ft,zw1red,_,zw1uslist),_) =
@@ -2865,7 +2859,7 @@ struct
              | Beta ->
 (*             print_endline "split_in"; *)
                   let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) =
-                     split (p.address) (pos_to_string p.pospos) ftree redord connections newslist opt_bproof in
+                     split p.address p.pospos ftree redord connections newslist opt_bproof in
                   let (sigmaQ1,sigmaQ2) =
                      subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ
                   in

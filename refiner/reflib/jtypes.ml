@@ -63,10 +63,10 @@ struct
 (* beta proofs *)
 
    type bproof = BEmpty
-    | RNode of string list * bproof
-    | CNode of (string * string)
-    | BNode of string * (string list * bproof) * (string list * bproof)
-    | AtNode of string * (string * string)
+    | RNode of position list * bproof
+    | CNode of (position * position)
+    | BNode of position * (position list * bproof) * (position list * bproof)
+    | AtNode of position * (position * position)
 
 (* Assume only constants for instantiations, not adapted to terms yet *)
    type inf = string * rule * term * term
