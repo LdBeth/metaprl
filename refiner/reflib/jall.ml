@@ -1172,7 +1172,8 @@ struct
                let atlist2,annotates2,blayer_list2 =
                   annotate_atoms new_beta_context2 atlist1 [s2]
                in
-                  (atlist2,(annotates1 @ annotates2),((pospos,(alayer1,alayer2))::(blayer_list1 @ blayer_list2)))
+                  (atlist2,(annotates1 @ annotates2),
+						((pospos,(alayer1,alayer2))::(List.rev_append blayer_list1 blayer_list2)))
           | NodeA({pt = Beta}, _) ->
                 raise jprover_bug
           | NodeA(_, suctrees) ->
@@ -1184,13 +1185,14 @@ struct
             let (next_atlist,f_annotates,f_beta_layers) = annotate_tree beta_context f atlist in
             let (rest_atlist,rest_annotates,rest_beta_layers) = (annotate_atoms beta_context next_atlist r)
             in
-            (rest_atlist, (f_annotates @ rest_annotates),(f_beta_layers @ rest_beta_layers))
+            (rest_atlist, (f_annotates @ rest_annotates),
+				(List.append f_beta_layers rest_beta_layers))
 
    let construct_opt_beta_proof ftree
       (ext_proof : (position * position) list)
       =
       let con1,con2 = List.split ext_proof in
-      let con_atoms = remove_dups_list (con1 @ con2) in
+      let con_atoms = remove_dups_list (List.rev_append con1 con2) in
       let (empty_atoms,beta_atoms,beta_layer_list) = annotate_atoms [] con_atoms [ftree] in
       let root_node = compute_alpha_layer [ftree] in
       let (beta_proof,beta_exp,closures,_) =
