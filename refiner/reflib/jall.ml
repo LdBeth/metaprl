@@ -155,6 +155,9 @@ struct
    let pos_eq p1 p2 =
       p1.pospos = p2.pospos
 
+   let position_eq (p1: position) p2 =
+      p1 = p2
+
    let string_eq (s1: string) s2 =
       s1 = s2
 
@@ -2234,7 +2237,7 @@ struct
       match testlist with
          [] -> list
        | f::r ->
-            let newlist = delete (=) f list in    (* f may not occur in list; then newlist=list *)
+            let newlist = delete position_eq f list in    (* f may not occur in list; then newlist=list *)
             update_list r newlist
 
    let rec update_pairlist p pairlist =
@@ -2679,7 +2682,7 @@ struct
                            let ((_,min_con1),_) =
                               split_permutation f.pospos opt_bproof
                            in
-                           let slist_fake = delete (=) f.pospos slist in
+                           let slist_fake = delete position_eq f.pospos slist in
                            let ((zw1ft,zw1red,_,zw1uslist),_) =
                               betasplit f.address ftree redord connections slist_fake in
                            let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
@@ -2785,7 +2788,7 @@ struct
       let rec tot ftree redord connections po slist =
          let rec solve ftree redord connections p po slist (pred,succs) orr_flag =
             let pospos = p.pospos in
-            let newslist = delete (=) pospos slist in
+            let newslist = delete position_eq pospos slist in
             let rback =
                if p.st = Gamma_0 then
                   begin
