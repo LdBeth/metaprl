@@ -976,7 +976,7 @@ struct
        | NodeA({pt = Beta; pospos = pospos}, _) :: r ->
             pospos :: (compute_alpha_layer r)
        | NodeA(_, suctrees) :: r ->
-            compute_alpha_layer (suctrees @ r)
+            compute_alpha_layer (List.rev_append suctrees r)
        | Empty :: _ ->
             raise jprover_bug
 
