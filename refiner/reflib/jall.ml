@@ -37,13 +37,19 @@ open Lm_string_set
 
 open Term_sig
 open Refiner.Refiner
+(*
 open Term
+*)
 open TermType
+(*
 open TermOp
 open TermSubst
 open TermMan
+*)
 open RefineError
+(*
 open Opname
+*)
 
 open Unify_mm
 
@@ -65,21 +71,8 @@ let debug_jprover =
 (************************************************************************
  * Compatibility layer for abstract vars.
  *)
-
-let var_subst t1 t2 v =
-   var_subst t1 t2 (Lm_symbol.add v)
-
-let subst1 t1 v t2 =
-   subst1 t1 (Lm_symbol.add v) t2
-
-let subst t vars tl =
-   subst t (List.map Lm_symbol.add vars) tl
-
-let mk_var_term s =
-   mk_var_term (Lm_symbol.add s)
-
 let free_vars_list t consts =
-   SymbolSet.to_list (SymbolSet.diff (free_vars_set t) consts)
+   SymbolSet.to_list (SymbolSet.diff (TermSubst.free_vars_set t) consts)
 
 let mk_symbol_term opname s =
    let p = Term.make_param (Term_sig.Var s) in
@@ -91,32 +84,14 @@ let mk_pos_term opname p = mk_symbol_term opname (pos_to_symbol p)
 let mk_pos_var p =
    Term.mk_var_term (pos_to_symbol p)
 
-(*
-let var_subst t1 t2 v =
-   TermSubst.var_subst t1 t2 (pos_to_symbol (string_to_pos v))
-
-let subst1 t1 v t2 =
-   TermSubst.subst1 t1 (pos_to_symbol (string_to_pos v)) t2
-
-let subst t vars tl =
-   TermSubst.subst t (List.map (fun v -> pos_to_symbol (string_to_pos v)) vars) tl
-
-let mk_var_term s =
-   Term.mk_var_term (pos_to_symbol (string_to_pos s))
-
-let alpha_equal = TermSubst.alpha_equal
-
-let xnil_term = TermMan.xnil_term
-let all_contexts = TermMan.all_contexts
-
-let mk_pos_var p =
-   Term.mk_var_term (pos_to_symbol p)
-
 let print_term = Term.print_term
 let dest_term = Term.dest_term
 let dest_op = Term.dest_op
 let dest_opname = Opname.dest_opname
-*)
+let alpha_equal = TermSubst.alpha_equal
+let apply_subst = TermSubst.apply_subst
+let xnil_term = TermMan.xnil_term
+let all_contexts = TermMan.all_contexts
 (************************************************************************
  * Original JProver.
  *)
@@ -2208,7 +2183,7 @@ struct
       apply_subst sigmaQ term
 
    let build_rule pos spos
-      (csigmaQ : (symbol*term) list)
+      csigmaQ
       orr_flag calculus
       =
       let inst_label = apply_sigmaQ (pos.label) csigmaQ in
@@ -2803,7 +2778,7 @@ struct
       ftree
       (redord : (position * Set.t) list)
       (connections : (position * position) list)
-      (csigmaQ : (symbol*term) list)
+      (csigmaQ : (symbol * term) list)
       (slist : position list)
       calculus opt_bproof
       =
@@ -3038,8 +3013,8 @@ let pos_subst t vars tl =
 
    let jqunify
       (consts : SymbolSet.t)
-      (term1 : term)
-      (term2 : term)
+      term1
+      term2
       (sigmaQ : (position * term) list) =
       let app_term1,app_term2 = apply_2_sigmaQ term1 term2 sigmaQ in
 (*  print_term stdout app_term1;
