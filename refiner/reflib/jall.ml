@@ -2007,7 +2007,7 @@ struct
     | NodeAt pos :: r ->
          (pos.pospos)::(init_unsolved r)
     | NodeA(pos,suctrees) :: r ->
-         let new_treelist = suctrees @ r in
+         let new_treelist = List.rev_append suctrees r in
             (pos.pospos)::(init_unsolved new_treelist)
 
 (* only the unsolved positions will be represented --> skip additional root position *)
@@ -2126,6 +2126,9 @@ struct
                         compute_open suctrees slist
             in
             elements @ (compute_open rest slist)
+				(* rev_append does not work here
+				 * it changes proofs and make the whole thing slower
+				 *)
 
    let rec select_connection pname connections slist =
       match connections with
