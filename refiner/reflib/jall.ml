@@ -741,9 +741,12 @@ struct
          else
             f::(remove_subst_dups r)
 
+	let rec append_from_pairs accumulator = function
+		[] -> accumulator
+	 | (a,b)::tl -> append_from_pairs (a::b::accumulator) tl
+
    let beta_pure alpha_layer connections beta_expansions =
-      let (l1,l2) = List.split connections in
-      let test_list = l1 @ l2 @ beta_expansions in
+      let test_list = append_from_pairs beta_expansions connections in
       begin
 (*       open_box 0;
          print_endline "";
