@@ -1172,7 +1172,7 @@ struct
                let atlist2,annotates2,blayer_list2 =
                   annotate_atoms new_beta_context2 atlist1 [s2]
                in
-                  (atlist2,(annotates1 @ annotates2),
+                  (atlist2,(List.rev_append annotates1 annotates2),
 						((pospos,(alayer1,alayer2))::(List.rev_append blayer_list1 blayer_list2)))
           | NodeA({pt = Beta}, _) ->
                 raise jprover_bug
@@ -1185,8 +1185,8 @@ struct
             let (next_atlist,f_annotates,f_beta_layers) = annotate_tree beta_context f atlist in
             let (rest_atlist,rest_annotates,rest_beta_layers) = (annotate_atoms beta_context next_atlist r)
             in
-            (rest_atlist, (f_annotates @ rest_annotates),
-				(List.append f_beta_layers rest_beta_layers))
+            (rest_atlist, (List.rev_append f_annotates rest_annotates),
+				(List.rev_append f_beta_layers rest_beta_layers))
 
    let construct_opt_beta_proof ftree
       (ext_proof : (position * position) list)
