@@ -1070,7 +1070,10 @@ struct
                   begin
 (*   print_endline "start with new beta-proof"; *)
                      let new_bproof,new_exp,new_closures,new_rest_proof =
-                        build_opt_beta_proof c2_bproof rest_ext_proof beta_atoms beta_layer_list (act_context @ new_act_context) in
+                        build_opt_beta_proof
+									c2_bproof rest_ext_proof beta_atoms beta_layer_list
+									(List.rev_append act_context new_act_context)
+							in
                      (new_bproof,(new_exp+c2_exp),(new_closures+1),new_rest_proof)
                   end
                else
