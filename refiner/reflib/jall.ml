@@ -2502,12 +2502,12 @@ struct
             raise jprover_bug
 
    let rec purity ftree redord
-      (connections : (position*position) list)
+      (connections : ConnSet.t)
       unsolved_list
       =
 
       let rec purity_reduction pr ftree redord
-         (connections : (position*position) list)
+         (connections : ConnSet.t)
          unsolved_list
          =
          begin
@@ -2526,9 +2526,11 @@ struct
                   in
 (*     print_endline ("assoc node "^assocn); *)
                   if assocn = empty_pos then
-                     (Empty,[],[],Set.empty)  (* should not occur in the final version *)
+                     (Empty,[],ConnSet.empty,Set.empty)  (* should not occur in the final version *)
                   else
+							let connections = ConnSet.to_list connections in
                      let (rednew,connew,unsolnew) = update_relations deltree redord connections unsolved_list in
+							let connew = ConnSet.of_list connew in
                      begin
 (*        open_box 0;
    print_endline " ";
@@ -2548,7 +2550,8 @@ struct
          end
 
       in
-      let flist,slist = List.split connections in
+		let conn_list = ConnSet.to_list connections in
+      let flist,slist = List.split conn_list in
       let pr = collect_pure flist slist [ftree] in
       purity_reduction pr ftree redord connections unsolved_list
 
@@ -2607,6 +2610,8 @@ struct
             betasplit addr ftree redord connections unsolved_list in
 (* zw1conn let zw2conn are not longer needed when using beta proofs *)
 (*   print_endline "betasp_out"; *)
+			let min_con1 = ConnSet.of_list min_con1 in
+			let min_con2 = ConnSet.of_list min_con2 in
          let ft1,red1,conn1,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
 (*   print_endline "purity_one_out"; *)
          let ft2,red2,conn2,uslist2 =  purity zw2ft zw2red min_con2 zw2uslist in
@@ -2744,7 +2749,8 @@ struct
                            let slist_fake = Set.remove slist f.pospos in
                            let ((zw1ft,zw1red,_,zw1uslist),_) =
                               betasplit f.address ftree redord connections slist_fake in
-                           let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
+									let min_con1 = ConnSet.of_list min_con1 in
+                           let ft1,_,_,uslist1 = purity zw1ft zw1red min_con1 zw1uslist in
 (*                      print_endline "wait label purity_one_out"; *)
                            let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in
 (*                    print_endline ("wait-root "^(ft1_root.name)); *)
@@ -2990,8 +2996,6 @@ struct
             let (sigmaQ1,sigmaQ2) =
                subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ
             in
-				let conn1 = ConnSet.of_list conn1 in
-				let conn2 = ConnSet.of_list conn2 in
 (*           print_endline "split_out"; *)
             let p1 = total ft1 red1 conn1 sigmaQ1 uslist1 calculus opt_bproof1 in
 (*           print_endline "compute p1 out";              *)
@@ -3000,7 +3004,7 @@ struct
             rback @ [((empty_pos,pospos),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
 
    let reconstruct ftree redord sigmaQ ext_proof calculus =
-      let min_connections = remove_dups_connections ext_proof in
+      let min_connections = ConnSet.of_list ext_proof in
       let (opt_bproof,beta_exp,closures) = construct_opt_beta_proof ftree ext_proof in
 (* let connections = remove_dups_connections ext_proof in
    let bproof,beta_exp,closures = construct_beta_proof ftree connections in
@@ -3045,7 +3049,6 @@ struct
    print_endline "";
 *)
 (* it should hold: min_connections = init_connections *)
-			let init_connections = ConnSet.of_list init_connections in
          total init_tree init_redord init_connections sigmaQ
             init_unsolved_list calculus opt_bproof
       end
