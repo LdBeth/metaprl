@@ -3301,7 +3301,7 @@ let rec connections atom_rel tabulist =
    match atom_rel with
       [] -> []
     | (a,alpha,_)::r ->
-         (get_connections a alpha tabulist) @ (connections r (a::tabulist))
+         List.rev_append (get_connections a alpha tabulist) (connections r (a::tabulist))
 
 let check_alpha_relation atom set atom_sets =
    AtomSet.subset set (get_alpha atom atom_sets)
