@@ -3261,7 +3261,9 @@ let rec add_multiplicity ftree pos_n
                   let replace_n = List.length pos.address in  (* points to the following argument in the array_of_address *)
                   let last_tree = Lm_list_util.last new_suctrees in
                   let (add_tree,add_ordering,final_pos_n) =
-                     copy_and_rename_tree last_tree replace_n new_pos_n mult [] in
+                     copy_and_rename_tree last_tree replace_n new_pos_n mult []
+						in
+						(* rev_append on the next line would break some proofs *)
                   let final_suctrees = new_suctrees @ [add_tree] in
                   let add_orderings = add_ordering::new_ordering_list in
                   let final_ordering =
