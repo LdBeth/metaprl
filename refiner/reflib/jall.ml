@@ -3037,7 +3037,8 @@ let pos_subst t vars tl =
       let new_sigmaQ,sigma_ordering = rec_apply consts sigmaQ tauQ tau_vars tau_terms
       in
       let tau_ordering = List.map (fun (v,t) -> gamma_to_simple v, [t]) tauQ in
-      new_sigmaQ @ tauQ, sigma_ordering @ tau_ordering
+      List.rev_append new_sigmaQ tauQ,
+      List.rev_append sigma_ordering tau_ordering
 
    let apply_2_sigmaQ term1 term2 sigmaQ =
       let sigma_vars,sigma_terms = List.split sigmaQ in
