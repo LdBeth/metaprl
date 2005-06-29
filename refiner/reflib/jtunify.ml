@@ -171,6 +171,7 @@ struct
 				usut
 
 	let add_fo_eqlist a b = a @ b
+   (* rev_append here changes proofs but does not break them *)
 
 	let result_qmax qmax = qmax
 
