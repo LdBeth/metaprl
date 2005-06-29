@@ -3520,8 +3520,9 @@ let rec select_atoms_treelist treelist posprefix =
          let rest_alist,rest_gprefixes,rest_dprefixes =
             select_atoms_treelist rest posprefix
          in
-         ((first_alist @ rest_alist),(first_gprefixes @ rest_gprefixes),
-          (first_dprefixes @ rest_dprefixes))
+         List.rev_append first_alist rest_alist,
+         List.rev_append first_gprefixes rest_gprefixes,
+         List.rev_append first_dprefixes rest_dprefixes
 
 and select_atoms ftree posprefix =
    match ftree with
