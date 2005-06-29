@@ -3269,7 +3269,7 @@ let rec add_multiplicity ftree pos_n
                   let (add_tree,add_ordering,final_pos_n) =
                      copy_and_rename_tree last_tree replace_n new_pos_n mult [] in
                   let final_suctrees = new_suctrees @ [add_tree] in
-                  let add_orderings = new_ordering_list @ [add_ordering] in
+                  let add_orderings = add_ordering::new_ordering_list in
                   let final_ordering =
                      combine_ordering_list add_orderings pos.pospos
                   in
