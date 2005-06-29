@@ -122,6 +122,9 @@ let rec com_subst ov ovlist = function
          let rest = com_subst ov ovlist r in
             if rest == r then l else f :: rest
 
+(*
+ * rev_appends here seem to bring expand_all into an infinite loop
+ *)
 let rec apply_element v slist fs ft =
    match (fs,ft) with
       [], [] ->
