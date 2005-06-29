@@ -3091,7 +3091,7 @@ let pos_subst t vars tl =
 *)
       try
          let tauQ = unify app_term1 app_term2 consts in
-         let pos_tauQ = List.map (fun (v,t) -> symbol_to_pos v, t) tauQ in
+         let pos_tauQ = List.rev_map (fun (v,t) -> symbol_to_pos v, t) tauQ in
          let (mult,oel) = multiply consts sigmaQ pos_tauQ in
   (*   print_sigmaQ mult; *)
          (mult,oel)
