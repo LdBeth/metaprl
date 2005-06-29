@@ -384,7 +384,7 @@ struct
          [] -> ([],ordering)
        | (v,termlist)::r ->
             let dterms = collect_delta_terms termlist in
-            let dterms = List.map symbol_to_pos dterms in
+            let dterms = List.rev_map symbol_to_pos dterms in
             begin
 (*        open_box 0;
    print_endline " ";
