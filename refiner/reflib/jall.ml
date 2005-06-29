@@ -2623,7 +2623,7 @@ struct
     (* here, we have pos solved let pos.pol = Zero) *)
                pos::(collect_solved_Zero_At r slist)
        | NodeA(pos,treearray) :: r ->
-            collect_solved_Zero_At (treearray @ r) slist
+            collect_solved_Zero_At (List.rev_append treearray r) slist
 
    let rec red_ord_block pospos redord =
       match redord with
