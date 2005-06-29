@@ -3180,13 +3180,6 @@ let update_position position m replace_n subst_list mult =
    {address=new_add; pospos=npospos;
     op=z; pol=p; pt=a; st=b; label=nt},m,nsubst_list
 
-let rec append_orderings list_of_lists =
-   match list_of_lists with
-      [] ->
-         []
-    | f::r ->
-         f @ (append_orderings r)
-
 let rec union_orderings first_orderings =
    match first_orderings with
       [] ->
@@ -3208,7 +3201,7 @@ let combine_ordering_list
    =
    let first_orderings = select_orderings add_orderings in
    let pos_succs = union_orderings first_orderings in
-   let rest_orderings = append_orderings add_orderings in
+   let rest_orderings = List.flatten add_orderings in
    (((pos_name,pos_succs)::rest_orderings) : (position * Set.t) list)
 
 let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
