@@ -2425,8 +2425,12 @@ struct
       let zw_sigma2 =
          List.rev_map (fun (s,t) -> pos_to_symbol s, t) zw_sigma2
       in
-      let ass_delta_diff1 = List.map (fun x -> (empty_sym,pos_to_symbol x)) delta_diff1 in
-      let ass_delta_diff2 = List.map (fun x -> (empty_sym,pos_to_symbol x)) delta_diff2 in
+      let ass_delta_diff1 =
+			List.rev_map (fun x -> (empty_sym,pos_to_symbol x)) delta_diff1
+		in
+      let ass_delta_diff2 =
+			List.rev_map (fun x -> (empty_sym,pos_to_symbol x)) delta_diff2
+		in
       let sigmaQ1 = localize_sigma zw_sigma1 ass_delta_diff1 in
       let sigmaQ2 = localize_sigma zw_sigma2 ass_delta_diff2 in
       (sigmaQ1,sigmaQ2)
