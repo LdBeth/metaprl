@@ -1876,8 +1876,10 @@ struct
       hd::tl -> (n,hd)::(number_list (succ n) tl)
     | [] -> []
 
-   let rec build_formula_rel dir_treelist slist predpos =
-
+   let rec build_formula_rel dir_treelist
+      (slist : Set.t)
+      predpos
+      =
       let rec build_renamed_gamma_rel dtreelist predpos pospos d =
          match dtreelist with
             [] -> [],[]
@@ -1890,7 +1892,7 @@ struct
                  | NodeAt(_) ->
                       raise jprover_bug (* gamma_0 position never is atomic *)
                  | NodeA({pospos=spospos},suctrees) ->
-                      if List.mem spospos slist then
+                      if Set.mem slist spospos then
 (* the gamma_0 position is really unsolved *)
 (* this is only relevant for the gamma_0 positions in po *)
                          let k, _ = pospos in
@@ -2001,7 +2003,7 @@ struct
 				(* rev_append here would break some proofs *)
 
    let permute_ljmc ftree po
-      (slist : position list)
+      (slist : Set.t)
       ljmc_proof
       =
  (* ftree/po are the formula tree / open positions of the sequent that caused deadlock let permutation *)
@@ -2036,20 +2038,20 @@ struct
 
 (************** PROOF RECONSTRUCTION without redundancy deletion ******************************)
 
-   let rec init_unsolved = function
-      [] -> []
-    | Empty :: _ -> []
+   let rec init_unsolved set = function
+      [] -> set
+    | Empty :: _ -> set
     | NodeAt pos :: r ->
-         (pos.pospos)::(init_unsolved r)
+         init_unsolved (Set.add set pos.pospos) r
     | NodeA(pos,suctrees) :: r ->
          let new_treelist = List.rev_append suctrees r in
-            (pos.pospos)::(init_unsolved new_treelist)
+            init_unsolved (Set.add set pos.pospos) new_treelist
 
 (* only the unsolved positions will be represented --> skip additional root position *)
 
    let build_unsolved = function
       NodeA(pos,suctrees) ->
-         ((pos.pospos),init_unsolved suctrees)
+         ((pos.pospos),init_unsolved Set.empty suctrees)
     | Empty | NodeAt _ ->
          raise jprover_bug
 
@@ -2150,12 +2152,12 @@ struct
                match first with
                   Empty -> []
                 | NodeAt(pos) ->
-                     if (List.mem pos.pospos slist) then
+                     if (Set.mem slist pos.pospos) then
                         [pos]
                      else
                         []
                 | NodeA(pos,suctrees) ->
-                     if (List.mem pos.pospos slist) then
+                     if (Set.mem slist pos.pospos) then
                         [pos]
                      else
                         compute_open suctrees slist
@@ -2182,7 +2184,7 @@ struct
             match partner with
                None ->
                   select_connection pname r slist
-             | Some p when List.mem p slist ->
+             | Some p when Set.mem slist p ->
                   select_connection pname r slist
              | _ ->
                   Some f
@@ -2290,7 +2292,7 @@ struct
       match testlist with
          [] -> list
        | f::r ->
-            let newlist = delete position_eq f list in    (* f may not occur in list; then newlist=list *)
+            let newlist = Set.remove list f in    (* f may not occur in list; then newlist=list *)
             update_list r newlist
 
    let rec update_pairlist p pairlist =
@@ -2360,13 +2362,13 @@ struct
             collect_qpos rest uslist
        | NodeAt {st=Gamma_0; pospos=pospos} :: rest ->
             let rest_delta, rest_gamma = collect_qpos rest uslist in
-            if List.mem pospos uslist then
+            if Set.mem uslist pospos then
                rest_delta, (pospos::rest_gamma)
             else
                rest_delta, rest_gamma
        | NodeAt {st=Delta_0; pospos=pospos} :: rest ->
             let rest_delta, rest_gamma = collect_qpos rest uslist in
-            if List.mem pospos uslist then
+            if Set.mem uslist pospos then
                (pospos::rest_delta), rest_gamma
             else
                rest_delta, rest_gamma
@@ -2375,13 +2377,13 @@ struct
             rest_delta, rest_gamma
        | NodeA({st=Gamma_0; pospos=pospos},suctrees) :: rest ->
             let rest_delta, rest_gamma = collect_qpos (List.rev_append suctrees rest) uslist in
-            if List.mem pospos uslist then
+            if Set.mem uslist pospos then
                rest_delta, (pospos::rest_gamma)
             else
                rest_delta, rest_gamma
        | NodeA({st=Delta_0; pospos=pospos},suctrees) :: rest ->
             let rest_delta, rest_gamma = collect_qpos (List.rev_append suctrees rest) uslist in
-            if List.mem pospos uslist then
+            if Set.mem uslist pospos then
                (pospos::rest_delta), rest_gamma
             else
                rest_delta, rest_gamma
@@ -2524,7 +2526,7 @@ struct
                   in
 (*     print_endline ("assoc node "^assocn); *)
                   if assocn = empty_pos then
-                     (Empty,[],[],[])  (* should not occur in the final version *)
+                     (Empty,[],[],Set.empty)  (* should not occur in the final version *)
                   else
                      let (rednew,connew,unsolnew) = update_relations deltree redord connections unsolved_list in
                      begin
@@ -2645,7 +2647,7 @@ struct
        | Empty :: r ->    (* may become possible after purity *)
             collect_solved_Zero_At r slist
        | NodeAt ({pospos=pospos; pol=pospol} as pos) :: r ->
-            if ((List.mem pospos slist) or (pospol = One)) then  (* recall slist is the unsolved list *)
+            if ((Set.mem slist pospos) or (pospol = One)) then  (* recall slist is the unsolved list *)
                collect_solved_Zero_At r slist
             else
     (* here, we have pos solved let pos.pol = Zero) *)
@@ -2688,7 +2690,7 @@ struct
    let blocked f po
       (redord : (position * Set.t) list)
       ftree connections
-      (slist : position list)
+      (slist : Set.t)
       calculus opt_bproof
       =
 (* print_endline ("Blocking check "^(f.name)); *)
@@ -2739,7 +2741,7 @@ struct
                            let ((_,min_con1),_) =
                               split_permutation f.pospos opt_bproof
                            in
-                           let slist_fake = delete position_eq f.pospos slist in
+                           let slist_fake = Set.remove slist f.pospos in
                            let ((zw1ft,zw1red,_,zw1uslist),_) =
                               betasplit f.address ftree redord connections slist_fake in
                            let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
@@ -2778,7 +2780,7 @@ struct
    exception Gamma_deadlock
 
    let rec select_pos search_po po redord ftree connections
-      (slist : position list)
+      (slist : Set.t)
       calculus candidates
       opt_bproof
       =
@@ -2842,7 +2844,7 @@ struct
       (redord : (position * Set.t) list)
       (connections : ConnSet.t)
       (csigmaQ : (symbol * term) list)
-      (slist : position list)
+      (slist : Set.t)
       calculus
       opt_bproof
       =
@@ -2887,7 +2889,7 @@ struct
 
    and solve ftree redord connections csigmaQ p po slist (pred,succs) orr_flag calculus opt_bproof =
       let {pospos=pospos; op=op; pt=pt; st=st } = p in
-      let newslist = delete position_eq pospos slist in
+      let newslist = Set.remove slist pospos in
       let rback =
          if st = Gamma_0 then
             begin
