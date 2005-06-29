@@ -117,7 +117,7 @@ let rec com_subst ov ovlist = function
    [] -> []
  | f::r as l->
       if f = ov then
-         (ovlist @ r)
+         (List.rev_append ovlist r)
       else
          let rest = com_subst ov ovlist r in
             if rest == r then l else f :: rest
