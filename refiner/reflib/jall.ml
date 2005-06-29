@@ -3114,7 +3114,7 @@ let rec make_domain_equations fo_pairs (gamma_0_prefixes,delta_0_prefixes) n =
          let (gequations,max) = one_equation gprefix dlist delta_0_prefixes n in
          let (rest_equations,new_max) =
             make_domain_equations r (gamma_0_prefixes,delta_0_prefixes) max in
-         (gequations @ rest_equations),new_max
+         List.rev_append gequations rest_equations, new_max
 
 (* type of one unifier: int * ((string * string list) list)  *)
 (* global failure: (0,[]) *)
