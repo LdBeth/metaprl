@@ -3359,7 +3359,7 @@ let path_checker
 
    let con = connections atom_rel [] in
    let atom_rel =
-      List.map (fun ({apos=x},y,z) -> x, y, z) atom_rel
+      List.rev_map (fun ({apos=x},y,z) -> x, y, z) atom_rel
    in
 (*   print_endline "";
    print_endline ("number of connections: "^(string_of_int (List.length con)));
