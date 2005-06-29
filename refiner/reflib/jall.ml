@@ -2301,7 +2301,7 @@ struct
     | NodeAt{pospos=pospos} :: rests ->
          pospos::get_position_names rests
     | NodeA({pospos=pospos},strees) :: rests ->
-         pospos::(get_position_names (strees @ rests))
+         pospos::(get_position_names (List.rev_append strees rests))
 
    let rec print_purelist = function
       [] ->
