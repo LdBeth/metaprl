@@ -3887,7 +3887,7 @@ let prove consts mult_limit termlist calculus =
    let ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof =
       try_multiplicity consts mult_limit ftree ordering pos_n 1 calculus
    in
-   let sym_sigmaQ = List.map
+   let sym_sigmaQ = List.rev_map
       (fun (p,t) -> pos_to_symbol p, t) sigmaQ
    in
    ftree, red_ordering, eqlist, (sym_sigmaQ,sigmaJ), ext_proof
