@@ -3922,9 +3922,11 @@ let rec create_output consts rule_list
          let (pos,(rule,term1,term2)) = f in
          let delta1_names = collect_delta_terms [term1] in
          let delta2_names = collect_delta_terms [term2] in
-         let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
+         let unique_deltas =
+            remove_dups_list (List.rev_append delta1_names delta2_names)
+         in
          let delta_map =
-            List.map
+            List.rev_map
                (fun s ->
                   let p = symbol_to_pos s in
                   pos_to_symbol (simple_to_gamma p),
@@ -3952,9 +3954,11 @@ let rec make_test_interface consts rule_list input_map =
          let (pos,(rule,term1,term2)) = f in
          let delta1_names = collect_delta_terms [term1] in
          let delta2_names = collect_delta_terms [term2] in
-         let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
+         let unique_deltas =
+            remove_dups_list (List.rev_append delta1_names delta2_names)
+         in
          let delta_map =
-            List.map
+            List.rev_map
                (fun s ->
                   let p =symbol_to_pos s in
                   pos_to_symbol (simple_to_gamma p),
@@ -3962,7 +3966,7 @@ let rec make_test_interface consts rule_list input_map =
                )
                unique_deltas
          in
-         let var_mapping = (input_map @ delta_map) in
+         let var_mapping = List.rev_append input_map delta_map in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
          let unique_object = mk_pos_var (GammaPos NewVar,0) in
