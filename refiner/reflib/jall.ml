@@ -3543,11 +3543,11 @@ and select_atoms ftree posprefix =
          let gamma_0_prefixes, delta_0_prefixes =
             match st with
                Gamma_0 ->
-                  rest_gamma_0_prefixes @ [position.pospos,posprefix],
+                  (position.pospos,posprefix)::rest_gamma_0_prefixes,
                   rest_delta_0_prefixes
              | Delta_0 ->
                   rest_gamma_0_prefixes,
-                  rest_delta_0_prefixes @ [position.pospos,posprefix]
+                  (position.pospos,posprefix)::rest_delta_0_prefixes
              | _ ->
                   rest_gamma_0_prefixes,
                   rest_delta_0_prefixes
