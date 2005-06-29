@@ -146,6 +146,29 @@ struct
 
    module AtomSet = Lm_set.LmMake(OrderedAtom)
 
+   module OrderedConnection =
+   struct
+      type t = position * position
+
+      let sort_pair p =
+         let a, b = p in
+         if PosOrdering.compare a b <= 0 then
+            p
+         else
+            b,a
+
+     let compare a1 a2 =
+        let a11,a12 = sort_pair a1 in
+        let a21,a22 = sort_pair a2 in
+        let c = PosOrdering.compare a11 a21 in
+        if c = 0 then
+           PosOrdering.compare a12 a22
+        else
+           c
+   end
+
+   module ConnSet = Lm_set.LmMake(OrderedConnection)
+
    let jprover_bug = Invalid_argument "Jprover bug (Jall module)"
 
    (* XXX: Nogin: as far as I understand, names are unique, but I am not sure *)
@@ -2817,7 +2840,7 @@ struct
    let rec total
       ftree
       (redord : (position * Set.t) list)
-      (connections : (position * position) list)
+      (connections : ConnSet.t)
       (csigmaQ : (symbol * term) list)
       (slist : position list)
       calculus
@@ -2829,8 +2852,9 @@ struct
    and tot ftree redord connections csigmaQ po slist calculus opt_bproof =
       try
          (* last argument for guiding selection strategy *)
+			let conn_list = ConnSet.to_list connections in
          let p, orr_flag =
-            select_pos po po redord ftree connections slist calculus [] opt_bproof
+            select_pos po po redord ftree conn_list slist calculus [] opt_bproof
          in
 (*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
          match tpredsucc p ftree with
@@ -2913,7 +2937,8 @@ struct
             end
        | PNull ->
             let new_redord = update pospos redord in
-            begin match select_connection pospos connections newslist with
+				let conn_list = ConnSet.to_list connections in
+            begin match select_connection pospos conn_list newslist with
                None ->
                   let rest =
                      tot ftree new_redord connections csigmaQ pnew newslist calculus opt_bproof
@@ -2956,12 +2981,15 @@ struct
             end
        | Beta ->
 (*             print_endline "split_in"; *)
+				let conn_list = ConnSet.to_list connections in
             let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) =
-               split p.address p.pospos ftree redord connections newslist opt_bproof
+               split p.address p.pospos ftree redord conn_list newslist opt_bproof
             in
             let (sigmaQ1,sigmaQ2) =
                subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ
             in
+				let conn1 = ConnSet.of_list conn1 in
+				let conn2 = ConnSet.of_list conn2 in
 (*           print_endline "split_out"; *)
             let p1 = total ft1 red1 conn1 sigmaQ1 uslist1 calculus opt_bproof1 in
 (*           print_endline "compute p1 out";              *)
@@ -3015,6 +3043,7 @@ struct
    print_endline "";
 *)
 (* it should hold: min_connections = init_connections *)
+			let init_connections = ConnSet.of_list init_connections in
          total init_tree init_redord init_connections sigmaQ
             init_unsolved_list calculus opt_bproof
       end
