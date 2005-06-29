@@ -3821,7 +3821,8 @@ let rec construct_ftree
          let new_tree,new_ordering,new_pos_n =
             build_ftree empty_sym ft next_pol Alpha_1 next_address (pos_n+1) in
          construct_ftree rest_terms (treelist @ [new_tree])
-            (orderinglist @ new_ordering) new_pos_n next_goal
+            (List.rev_append orderinglist new_ordering) new_pos_n next_goal
+			(* rev_append in treelist breaks some proofs *)
 
 (*************************** Main LOOP ************************************)
 
