@@ -3898,7 +3898,7 @@ let rec renam_free_vars termlist =
          in
          let new_f = TermSubst.apply_subst mapping f in
          let rest_mapping,rest_renamed,rest_conts = renam_free_vars r in
-         let unique_mapping = remove_subst_dups (mapping @ rest_mapping) in
+         let unique_mapping = remove_subst_dups (List.rev_append mapping rest_mapping) in
          (unique_mapping,(new_f::rest_renamed),SymbolSet.union conts rest_conts)
 
 let rec apply_var_subst term = function
@@ -3929,7 +3929,7 @@ let rec create_output consts rule_list
                )
                unique_deltas
          in
-         let var_mapping = (input_map @ delta_map) in
+         let var_mapping = List.rev_append input_map delta_map in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
          let unique_object = mk_pos_var ((GammaPos NewVar),0) in
