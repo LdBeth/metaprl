@@ -2806,132 +2806,163 @@ struct
 (* total corresponds to tot in the thesis,
    tot simulates the while-loop, solve is the rest *)
 
+(* @ in total, tot and solve can not be replaced with rev_append because they
+ * are actually constructing a proof (list of rules) which is not permutable
+ *)
    let rec total
       ftree
       (redord : (position * Set.t) list)
       (connections : (position * position) list)
       (csigmaQ : (symbol * term) list)
       (slist : position list)
-      calculus opt_bproof
+      calculus
+      opt_bproof
       =
-      let rec tot ftree redord connections po slist =
-         let rec solve ftree redord connections p po slist (pred,succs) orr_flag =
-            let pospos = p.pospos in
-            let newslist = delete position_eq pospos slist in
-            let rback =
-               if p.st = Gamma_0 then
-                  begin
-(*          print_endline "that's the gamma rule";  *)
-                     [((pospos,pred.pospos),(build_rule pred p csigmaQ orr_flag calculus))]
-                  end
-               else
-                  []
-            in
-(*        print_endline "gamma check finish";  *)
-            let pnew =
-               if p.pt <> Beta then
-                  succs @ (delete pos_eq p po)
-               else
-                  po
-            in
-            match p.pt with
-               Gamma ->
-                  rback @ (tot ftree redord connections pnew newslist)
-             | Psi ->
-                  if p.op = At then
-                     let succ = List.hd succs in
-                     rback @ (solve ftree redord connections succ pnew newslist (p,[]) orr_flag)  (* solve atoms immediately *)
-                  else
-                     rback @ (tot ftree redord connections pnew newslist)
-             | Phi ->
-                  if p.op = At then
-                     match succs with
-                        succ::_ ->
-                           rback @ (solve ftree redord connections succ pnew newslist (p,[]) orr_flag)  (* solve atoms immediately *)
+      let po = compute_open [ftree] slist in
+      tot ftree redord connections csigmaQ po slist calculus opt_bproof
+
+   and tot ftree redord connections csigmaQ po slist calculus opt_bproof =
+      try
+         (* last argument for guiding selection strategy *)
+         let p, orr_flag =
+            select_pos po po redord ftree connections slist calculus [] opt_bproof
+         in
+(*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
+         match tpredsucc p ftree with
+            pred :: succs ->
+               let redpo = update p.pospos redord in   (* deletes the entry (p,psuccset) from the redord *)
+               let rednew =
+                  if (p.pt = Delta) then                 (* keep the tree ordering for the successor position only *)
+                     let psucc = List.hd succs in
+                     match tpredsucc psucc ftree with
+                        pre :: sucs ->
+                           replace_ordering psucc.pospos sucs redpo (* union the succsets of psucc *)
                       | [] ->
-                           raise (Invalid_argument "total: empty succs in Phi")
+                           raise jprover_bug
                   else
-                     rback @ (tot ftree redord connections pnew newslist)
-             | PNull ->
-                  let new_redord = update pospos redord in
-                  begin match select_connection pospos connections newslist with
-                     None ->
-                        rback @ (tot ftree new_redord connections pnew newslist)
-                   | Some (c1,c2) ->
-                        let (ass_pos,inst_pos) =
+                     redpo
+               in
+(*            print_endline "update ok"; *)
+               solve
+                  ftree rednew connections csigmaQ p po slist
+                  (pred,succs) orr_flag calculus opt_bproof
+          | [] ->
+               raise jprover_bug
+      with Gamma_deadlock ->
+         let ljmc_subproof =
+            total ftree redord connections csigmaQ slist (Intuit MultiConcl) opt_bproof
+         in
+         eigen_counter := 1;
+         permute_ljmc ftree po slist ljmc_subproof
+           (* the permuaiton result will be appended to the lj proof constructed so far *)
+
+   and solve ftree redord connections csigmaQ p po slist (pred,succs) orr_flag calculus opt_bproof =
+      let {pospos=pospos; op=op; pt=pt; st=st } = p in
+      let newslist = delete position_eq pospos slist in
+      let rback =
+         if st = Gamma_0 then
+            begin
+(*          print_endline "that's the gamma rule";  *)
+               [((pospos,pred.pospos),(build_rule pred p csigmaQ orr_flag calculus))]
+            end
+         else
+            []
+      in
+(*        print_endline "gamma check finish";  *)
+      let pnew =
+         if pt <> Beta then
+            succs @ (delete pos_eq p po)
+         else
+            po
+      in
+      match pt with
+         Gamma ->
+            rback @ (tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof)
+       | Psi ->
+            begin match op, succs with
+               At, succ::_ ->
+                  let rest =
+                     solve
+                       ftree redord connections csigmaQ succ pnew newslist
+                       (p,[]) orr_flag calculus opt_bproof
+                  in
+                  rback @ rest  (* solve atoms immediately *)
+             | At, [] ->
+                  raise (Invalid_argument "solve: op=At but succs=[]")
+             | _ ->
+                  rback @ (tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof)
+            end
+       | Phi ->
+            begin match op, succs with
+               At, succ::_ ->
+                  let rest =
+                     solve
+                        ftree redord connections csigmaQ succ pnew newslist
+                        (p,[]) orr_flag calculus opt_bproof
+                  in
+                     rback @ rest  (* solve atoms immediately *)
+             | At, [] ->
+                  raise (Invalid_argument "total: empty succs in Phi")
+             | _ ->
+                  rback @ (tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof)
+            end
+       | PNull ->
+            let new_redord = update pospos redord in
+            begin match select_connection pospos connections newslist with
+               None ->
+                  let rest =
+                     tot ftree new_redord connections csigmaQ pnew newslist calculus opt_bproof
+                  in
+                  rback @ rest
+             | Some (c1,c2) ->
+                  let (ass_pos,inst_pos) =
 (* need the pol=O position ass_pos of the connection for later permutation *)
 (* need the pol=I position inst_pos for NuPRL instantiation *)
-                           if pospos = c1 then
-                              match p.pol with
-                                 Zero ->
-                                    (c1,c2)
-                               | One ->
-                                    (c2,c1)
-                           else (* p.name = c2 *)
-                              match p.pol with
-                                 Zero ->
-                                    (c2,c1)
-                               | One ->
-                                    (c1,c2)
-                        in
-                        rback @ [((empty_pos,ass_pos),(build_rule p p csigmaQ orr_flag calculus))]
-                  end
+                     if pospos = c1 then
+                        match p.pol with
+                           Zero ->
+                              (c1,c2)
+                         | One ->
+                              (c2,c1)
+                     else (* p.name = c2 *)
+                        match p.pol with
+                           Zero ->
+                              (c2,c1)
+                         | One ->
+                              (c1,c2)
+                  in
+                  rback @ [((empty_pos,ass_pos),(build_rule p p csigmaQ orr_flag calculus))]
+            end
    (* one possibility of recursion end *)
-             | Alpha ->
-                  rback @ (((empty_pos,pospos),(build_rule p p csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
-             | Delta ->
-                  begin match succs with
-                     sp::_ ->
-                        rback @ (((empty_pos,pospos),(build_rule p sp csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
-                   | [] ->
-                        raise (Invalid_argument "total: empty succs in Delta")
-                  end
-             | Beta ->
-(*             print_endline "split_in"; *)
-                  let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) =
-                     split p.address p.pospos ftree redord connections newslist opt_bproof in
-                  let (sigmaQ1,sigmaQ2) =
-                     subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ
+       | Alpha ->
+            let rule = build_rule p p csigmaQ orr_flag calculus in
+            let rest = tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof in
+            rback @ (((empty_pos,pospos),rule)::rest)
+       | Delta ->
+            begin match succs with
+               sp::_ ->
+                  let rule = build_rule p sp csigmaQ orr_flag calculus in
+                  let rest =
+                     tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof
                   in
-(*           print_endline "split_out"; *)
-                  let p1 = total ft1 red1 conn1 sigmaQ1 uslist1 calculus opt_bproof1 in
-(*           print_endline "compute p1 out";              *)
-                  let p2 = total ft2 red2 conn2 sigmaQ2 uslist2 calculus opt_bproof2 in
-(*           print_endline "compute p2 out";              *)
-                  rback @ [((empty_pos,pospos),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
-         in
-         begin try
-            (* last argument for guiding selection strategy *)
-            let (p,orr_flag) = select_pos po po redord ftree connections slist calculus [] opt_bproof in
-(*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
-            match tpredsucc p ftree with
-               pred :: succs ->
-                  let redpo = update p.pospos redord in   (* deletes the entry (p,psuccset) from the redord *)
-                  let rednew =
-                     if (p.pt = Delta) then                 (* keep the tree ordering for the successor position only *)
-                        let psucc = List.hd succs in
-                        match tpredsucc psucc ftree with
-                           pre :: sucs ->
-                              replace_ordering psucc.pospos sucs redpo (* union the succsets of psucc *)
-                         | [] ->
-                              raise jprover_bug
-                     else
-                        redpo
-                  in
-(*            print_endline "update ok"; *)
-                  solve ftree rednew connections p po slist (pred,succs) orr_flag
+                  rback @ (((empty_pos,pospos),rule)::rest)
              | [] ->
-                  raise jprover_bug
-         with Gamma_deadlock ->
-            let ljmc_subproof =  total ftree redord connections csigmaQ slist (Intuit MultiConcl) opt_bproof
+                  raise (Invalid_argument "total: empty succs in Delta")
+            end
+       | Beta ->
+(*             print_endline "split_in"; *)
+            let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) =
+               split p.address p.pospos ftree redord connections newslist opt_bproof
             in
-            eigen_counter := 1;
-            permute_ljmc ftree po slist ljmc_subproof
-           (* the permuaiton result will be appended to the lj proof constructed so far *)
-         end
-      in
-      let po = compute_open [ftree] slist in
-      tot ftree redord connections po slist
+            let (sigmaQ1,sigmaQ2) =
+               subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ
+            in
+(*           print_endline "split_out"; *)
+            let p1 = total ft1 red1 conn1 sigmaQ1 uslist1 calculus opt_bproof1 in
+(*           print_endline "compute p1 out";              *)
+            let p2 = total ft2 red2 conn2 sigmaQ2 uslist2 calculus opt_bproof2 in
+(*           print_endline "compute p2 out";              *)
+            rback @ [((empty_pos,pospos),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
 
    let reconstruct ftree redord sigmaQ ext_proof calculus =
       let min_connections = remove_dups_connections ext_proof in
