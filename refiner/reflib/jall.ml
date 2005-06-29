@@ -1168,6 +1168,7 @@ struct
           | NodeA({pt = Beta; pospos = pospos}, [s1;s2]) ->
                let alayer1 = compute_alpha_layer [s1] in
                let alayer2 = compute_alpha_layer [s2] in
+					(* rev_appends in the next two lines would break proofs *)
                let new_beta_context1 = beta_context @ [(pospos,1)] in
                let new_beta_context2 = beta_context @ [(pospos,2)] in
                let atlist1,annotates1,blayer_list1 =
