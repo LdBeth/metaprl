@@ -1903,12 +1903,12 @@ struct
                      (((predpos,pospos),d)::(List.rev_append srel rest_rel)),
 							(List.rev_append sren rest_renlist)
              | NodeA({ pt = Psi| Phi }, suctrees) ->
-                  let dtreelist = (List.map (fun x -> (d,x)) suctrees) in
+                  let dtreelist = (List.rev_map (fun x -> (d,x)) suctrees) in
                   let (srel,sren) = build_formula_rel dtreelist slist predpos in
                      (List.rev_append srel rest_rel),
 							(List.rev_append sren rest_renlist)
              | NodeA({ pt = Gamma; pospos=pospos }, suctrees) ->
-                  let dtreelist = (List.map (fun x -> (1,x)) suctrees) in
+                  let dtreelist = (List.rev_map (fun x -> (1,x)) suctrees) in
 (*                if (nonemptys suctrees 0 n) = 1 then
    let (srel,sren) = build_formula_rel dtreelist slist pos.name in
    ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
