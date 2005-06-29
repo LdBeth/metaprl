@@ -3995,8 +3995,11 @@ let rec make_test_interface consts rule_list input_map =
 (**************************************************************)
 
 let gen_prover mult_limit calculus hyps concls =
-   let (input_map,renamed_termlist,consts) = renam_free_vars (hyps @ concls) in
-   let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove consts mult_limit renamed_termlist calculus in
+	(* rev_append on the next line would break some proofs *)
+   let input_map, renamed_termlist, consts = renam_free_vars (hyps @ concls) in
+   let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
+		prove consts mult_limit renamed_termlist calculus
+	in
    let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
          (* transform types let rename constants *)
      (* we can transform the eigenvariables AFTER proof reconstruction since *)
