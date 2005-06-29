@@ -3618,7 +3618,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
          Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left
       in
       (NodeA(position,[subtree_left;subtree_right]),
-       ((position.pospos,pos_succs)::(ordering_left @ ordering_right)),
+       ((position.pospos,pos_succs)::(List.rev_append ordering_left ordering_right)),
        posn_right
       )
    else
