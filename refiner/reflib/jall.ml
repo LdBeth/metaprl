@@ -2289,27 +2289,12 @@ struct
          List.rev_append (collect_pure flist slist treearray) (collect_pure flist slist r)
 
    let rec update_list testlist list =
-      match testlist with
-         [] -> list
-       | f::r ->
-            let newlist = Set.remove list f in    (* f may not occur in list; then newlist=list *)
-            update_list r newlist
-
-   let rec update_pairlist p pairlist =
-      match pairlist with
-         [] -> []
-       | f::r ->
-            if ((fst f) = p) or ((snd f) = p) then
-               update_pairlist p r
-            else
-               f::(update_pairlist p r)
+      Set.subtract_list list testlist (* f may not occur in list; then newlist=list *)
 
    let rec update_connections slist connections =
-      match slist with
-         [] -> connections
-       | f::r ->
-            let connew = update_pairlist f connections in
-            update_connections r connew
+      List.filter
+         (fun (a,b) -> not (Set.mem slist a or Set.mem slist b))
+         connections
 
    let rec update_redord delset redord =   (* delset is the set of positions to be deleted *)
       match redord with
@@ -2321,13 +2306,13 @@ struct
                let new_fset = Set.diff fset delset in  (* no successor of f from delset should remain in fset *)
                (f,new_fset)::(update_redord delset r)
 
-   let rec get_position_names = function
-      [] -> []
-    | Empty :: rests -> get_position_names rests
+   let rec get_position_names set = function
+      [] -> set
+    | Empty :: rests -> get_position_names set rests
     | NodeAt{pospos=pospos} :: rests ->
-         pospos::get_position_names rests
+         get_position_names (Set.add set pospos) rests
     | NodeA({pospos=pospos},strees) :: rests ->
-         pospos::(get_position_names (List.rev_append strees rests))
+         get_position_names (Set.add set pospos) (List.rev_append strees rests)
 
    let rec print_purelist = function
       [] ->
@@ -2340,7 +2325,7 @@ struct
          print_purelist r
 
    let update_relations deltree redord connections unsolved_list =
-      let pure_names = get_position_names [deltree] in
+      let pure_names = get_position_names Set.empty [deltree] in
       begin
 (*        print_ftree deltree;
    open_box 0;
@@ -2349,9 +2334,9 @@ struct
    force_newline ();
    print_flush ();
 *)
-         let rednew = update_redord (Set.of_list pure_names) redord in
+         let rednew = update_redord pure_names redord in
          let connew = update_connections pure_names connections in
-         let unsolnew = update_list pure_names unsolved_list in
+         let unsolnew = update_list (Set.to_list pure_names) unsolved_list in
          (rednew,connew,unsolnew)
       end
 
