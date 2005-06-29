@@ -3406,6 +3406,7 @@ let path_checker
                   let ((nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),p2) =
                      provable path new_closed (norderingQ,nredordering) neqlist (nsigmaQ,nsigmaJ) in
                   ((nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),(p1 @ p2))
+                  (* changing to rev_append on the line above breaks some proofs *)
       (* first the extension subgoals = depth first; then other subgoals in same clause *)
             in
             ((next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),(((ext_atom.apos),(try_one.apos))::subproof))
@@ -3510,27 +3511,6 @@ let atom_record position posprefix =
     apol=pol; ast=st; alabel=label}
 
 let rec select_atoms_treelist treelist posprefix =
-   let rec select_atoms ftree posprefix =
-      match ftree with
-         Empty -> [],[],[]
-       | NodeAt(position) ->
-            [atom_record position posprefix],[],[]
-       | NodeA(position,suctrees) ->
-            let st = position.st in
-            let new_posprefix =
-               match st with
-                  Psi_0 | Phi_0 ->
-                     posprefix @ [position.pospos]
-                | _ ->
-                     posprefix
-            in
-            let (rest_alist,rest_gamma_0_prefixes,rest_delta_0_prefixes) =
-               select_atoms_treelist suctrees new_posprefix
-            in
-            (  rest_alist,
-              (if st == Gamma_0 then rest_gamma_0_prefixes @ [position.pospos,posprefix] else rest_gamma_0_prefixes),
-              (if st == Delta_0 then rest_delta_0_prefixes @ [position.pospos,posprefix] else rest_delta_0_prefixes))
-   in
    match treelist with
       [] -> [],[],[]
     | first::rest ->
@@ -3542,6 +3522,37 @@ let rec select_atoms_treelist treelist posprefix =
          in
          ((first_alist @ rest_alist),(first_gprefixes @ rest_gprefixes),
           (first_dprefixes @ rest_dprefixes))
+
+and select_atoms ftree posprefix =
+   match ftree with
+      Empty -> [],[],[]
+    | NodeAt(position) ->
+         [atom_record position posprefix],[],[]
+    | NodeA(position,suctrees) ->
+         let {pospos = pospos; st = st } = position in
+         let new_posprefix =
+            match st with
+               Psi_0 | Phi_0 ->
+                  posprefix @ [pospos]
+             | _ ->
+                  posprefix
+         in
+         let (rest_alist,rest_gamma_0_prefixes,rest_delta_0_prefixes) =
+            select_atoms_treelist suctrees new_posprefix
+         in
+         let gamma_0_prefixes, delta_0_prefixes =
+            match st with
+               Gamma_0 ->
+                  rest_gamma_0_prefixes @ [position.pospos,posprefix],
+                  rest_delta_0_prefixes
+             | Delta_0 ->
+                  rest_gamma_0_prefixes,
+                  rest_delta_0_prefixes @ [position.pospos,posprefix]
+             | _ ->
+                  rest_gamma_0_prefixes,
+                  rest_delta_0_prefixes
+         in
+            rest_alist, gamma_0_prefixes, delta_0_prefixes
 
 let prepare_prover ftree =
    let alist,gamma_0_prefixes,delta_0_prefixes =
