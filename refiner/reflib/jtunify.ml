@@ -230,7 +230,7 @@ let compose (n,subst) ((ov,oslist) as one_subst) =
    else
 (* ov may multiply as variable in subst with DIFFERENT values *)
 (* in order to avoid explicit atom instances!!! *)
-      (trans_vars,(n,(com @ [one_subst])))
+      (trans_vars,(n,(one_subst :: com)))
 (* end *)
 
 let rec apply_subst_list eq_rest v slist =
