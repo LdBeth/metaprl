@@ -2260,7 +2260,7 @@ struct
          else
             pos :: collect_pure flist slist r
     | NodeA(pos,treearray) :: r ->
-         (collect_pure flist slist treearray) @ (collect_pure flist slist r)
+         List.rev_append (collect_pure flist slist treearray) (collect_pure flist slist r)
 
    let rec update_list testlist list =
       match testlist with
@@ -2350,19 +2350,19 @@ struct
             let rest_delta, rest_gamma = collect_qpos rest uslist in
             rest_delta, rest_gamma
        | NodeA({st=Gamma_0; pospos=pospos},suctrees) :: rest ->
-            let rest_delta, rest_gamma = collect_qpos (suctrees @ rest) uslist in
+            let rest_delta, rest_gamma = collect_qpos (List.rev_append suctrees rest) uslist in
             if List.mem pospos uslist then
                rest_delta, (pospos::rest_gamma)
             else
                rest_delta, rest_gamma
        | NodeA({st=Delta_0; pospos=pospos},suctrees) :: rest ->
-            let rest_delta, rest_gamma = collect_qpos (suctrees @ rest) uslist in
+            let rest_delta, rest_gamma = collect_qpos (List.rev_append suctrees rest) uslist in
             if List.mem pospos uslist then
                (pospos::rest_delta), rest_gamma
             else
                rest_delta, rest_gamma
        | NodeA(_, suctrees) :: rest ->
-            let rest_delta, rest_gamma = collect_qpos (suctrees @ rest) uslist in
+            let rest_delta, rest_gamma = collect_qpos (List.rev_append suctrees rest) uslist in
             rest_delta, rest_gamma
 
    let rec do_split gamma_diff sigmaQ =
