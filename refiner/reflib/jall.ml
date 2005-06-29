@@ -3902,7 +3902,7 @@ let rec renam_free_vars termlist =
          let conts = all_contexts f in
          let var_names = free_vars_list f conts in
          let mapping =
-            List.map
+            List.rev_map
                (fun s -> s, mk_symbol_term free_var_op s)
                var_names
          in
