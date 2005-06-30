@@ -2171,27 +2171,22 @@ struct
 				 * it changes proofs and make the whole thing slower
 				 *)
 
-   let rec select_connection pname connections slist =
-      match connections with
-         [] -> None
-       | f::r ->
-            let a,b = f in
-            let partner =
-               if a = pname then
-                  Some b
-               else
-                  if b = pname then
-                     Some a
-                  else
-                     None
-            in
-            match partner with
-               None ->
-                  select_connection pname r slist
-             | Some p when Set.mem slist p ->
-                  select_connection pname r slist
-             | _ ->
-                  Some f
+   let select_connection pname connections slist =
+      let unsolved = ConnSet.filter
+         (fun (a,b) ->
+            if a=pname then
+               not (Set.mem slist b)
+            else if b=pname then
+               not (Set.mem slist a)
+            else
+               false
+         )
+         connections
+      in
+      if ConnSet.is_empty unsolved then
+         None
+      else
+         Some (ConnSet.choose unsolved)
 
    let rec replace_element element element_set redord =
       match redord with
@@ -2927,8 +2922,7 @@ struct
             end
        | PNull ->
             let new_redord = update pospos redord in
-				let conn_list = ConnSet.to_list connections in
-            begin match select_connection pospos conn_list newslist with
+            begin match select_connection pospos connections newslist with
                None ->
                   let rest =
                      tot ftree new_redord connections csigmaQ pnew newslist calculus opt_bproof
