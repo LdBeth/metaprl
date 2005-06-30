@@ -174,6 +174,20 @@ struct
 
    module ConnSet = Lm_set.LmMake(OrderedConnection)
 
+   module OrderedPositionPair =
+   struct
+      type t= position * position
+
+      let compare (a11,a12) (a21,a22) =
+         let c = PosOrdering.compare a11 a21 in
+         if c = 0 then
+            PosOrdering.compare a12 a22
+         else
+            c
+   end
+
+   module Rel = Lm_set.LmMake(OrderedPositionPair)
+
 	module OrderedPos =
 	struct
 		type t = pos
@@ -1485,7 +1499,7 @@ struct
        | PNodeB(_,left,right) ->
             orl_free left && orl_free right
 
-   let tsubf tsubrel m (n, _, _, _) = List.mem (n,m) tsubrel
+   let tsubf tsubrel m (n, _, _, _) = Rel.mem tsubrel (n,m)
 
    let dgenerative rule dglist ptree tsubrel =
       match rule with
@@ -1957,31 +1971,32 @@ struct
        | h :: r ->
             h :: (rename_gamma r rename_list)
 
-   let rec compare_pair s sf = function
-      [] ->
-         []
-    | (s_1,sf_1)::restlist ->
-         if sf = s_1 then
-            (s,sf_1)::(compare_pair s sf restlist)
-         else
-            compare_pair s sf restlist
+   let rec compare_pair s sf transrel =
+      Rel.fold
+         (fun acc (a,b) -> if sf = a then Rel.add acc (s,b) else acc)
+         Rel.empty
+         transrel
 
-   let rec compare_pairlist list1 list2 =
-      match list1 with
-         [] -> []
-       | (s1,sf1) :: restlist1 ->
-            List.rev_append (compare_pair s1 sf1 list2) (compare_pairlist restlist1 list2)
+   let rec compare_pairlist rel transrel =
+      Rel.fold
+         (fun acc (a,b) -> Rel.union (compare_pair a b transrel) acc)
+         Rel.empty
+         transrel
 
-   let rec trans_rec pairlist translist =
-      let tlist = compare_pairlist pairlist translist in
-      if tlist = [] then
-         translist
+   let rec trans_rec rel transrel =
+      let trel = compare_pairlist rel transrel in
+      if Rel.is_empty trel then
+         transrel
       else
-         List.rev_append (trans_rec pairlist tlist) translist
+         Rel.union (trans_rec rel trel) transrel
+
+   let rec extract_rel acc = function
+      [] -> acc
+    | (a,b)::tl -> extract_rel (Rel.add acc a) tl
 
    let transitive_closure subrel =
-      let pairlist,nlist = List.split subrel in
-      trans_rec pairlist pairlist
+      let rel = extract_rel Rel.empty subrel in
+      trans_rec rel rel
 
    let pt ptree subrel =
       let tsubrel = transitive_closure subrel in
