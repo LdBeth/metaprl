@@ -1177,8 +1177,8 @@ struct
             Empty ->
                (atlist,[],[])
           | NodeAt({pospos=pospos}) ->
-               if List.mem pospos atlist then
-                  let new_atlist = list_del pospos atlist in
+               if Set.mem atlist pospos then
+                  let new_atlist = Set.remove atlist pospos in
                   (new_atlist,[(pospos,beta_context)],[])
                else
                   (atlist,[],[])
@@ -1196,9 +1196,9 @@ struct
                   (atlist2,(List.rev_append annotates1 annotates2),
 						((pospos,(alayer1,alayer2))::(List.rev_append blayer_list1 blayer_list2)))
           | NodeA({pt = Beta}, _) ->
-                raise jprover_bug
+               raise jprover_bug
           | NodeA(_, suctrees) ->
-                  annotate_atoms beta_context atlist suctrees
+               annotate_atoms beta_context atlist suctrees
       in
       match treelist with
          [] -> (atlist,[],[])
@@ -1212,9 +1212,10 @@ struct
    let construct_opt_beta_proof ftree
       (ext_proof : (position * position) list)
       =
-      let con1,con2 = List.split ext_proof in
-      let con_atoms = remove_dups_list (List.rev_append con1 con2) in
-      let (empty_atoms,beta_atoms,beta_layer_list) = annotate_atoms [] con_atoms [ftree] in
+		let con_atoms =
+			List.fold_left (fun set (a,b) -> Set.add (Set.add set a) b) Set.empty ext_proof
+		in
+      let empty_atoms,beta_atoms,beta_layer_list = annotate_atoms [] con_atoms [ftree] in
       let root_node = compute_alpha_layer [ftree] in
       let (beta_proof,beta_exp,closures,_) =
          build_opt_beta_proof BEmpty ext_proof beta_atoms beta_layer_list [] in
