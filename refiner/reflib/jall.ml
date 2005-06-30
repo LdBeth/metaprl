@@ -174,6 +174,15 @@ struct
 
    module ConnSet = Lm_set.LmMake(OrderedConnection)
 
+	module OrderedPos =
+	struct
+		type t = pos
+
+		let compare a b = PosOrdering.compare a.pospos b.pospos
+	end
+
+	module PosSet = Lm_set.LmMake(OrderedPos)
+
    let jprover_bug = Invalid_argument "Jprover bug (Jall module)"
 
    (* XXX: Nogin: as far as I understand, names are unique, but I am not sure *)
@@ -1824,11 +1833,11 @@ struct
    let bproof nodelist =
       bptree PEmpty nodelist 0
 
-   let rec get_successor_pos = function
-      Empty :: r -> get_successor_pos r
+   let rec get_successor_pos set = function
+      Empty :: r -> get_successor_pos set r
     | NodeA(pos,_) :: r ->
-         pos::(get_successor_pos r)
-    | [] -> []
+         get_successor_pos (PosSet.add set pos) r
+    | [] -> set
     | NodeAt _ :: _ -> raise jprover_bug
 
    let rec get_formula_tree ftreelist f predflag =
@@ -1838,8 +1847,8 @@ struct
        | NodeA(pos,suctrees) :: rest_trees ->
             if predflag then
                if pos.pt = Gamma then
-                  let succs = get_successor_pos suctrees in
-                  if List.mem f succs then
+                  let succs = get_successor_pos PosSet.empty suctrees in
+                  if PosSet.mem succs f then
                      NodeA(pos,suctrees),succs
                   else
                      get_formula_tree (List.rev_append suctrees rest_trees) f predflag
@@ -1847,7 +1856,7 @@ struct
                   get_formula_tree (List.rev_append suctrees rest_trees) f predflag
             else
                if pos_eq pos f then
-                  NodeA(pos,suctrees),[]
+                  NodeA(pos,suctrees),PosSet.empty
                else
                   get_formula_tree (List.rev_append suctrees rest_trees) f predflag
        | [] -> raise jprover_bug
@@ -1857,12 +1866,12 @@ struct
 (* a posistion has either stype Gamma_0,Psi_0,Phi_0 (non-atomic), or it has *)
 (* ptype Alpha (or on the right), since there was a deadlock for proof reconstruction in LJ*)
     | ({st = Gamma_0} as f)::r ->
-         let (predtree,succs) = get_formula_tree [ftree] f true in
-         let new_po = list_diff r succs in
+         let predtree,succs = get_formula_tree [ftree] f true in
+         let new_po = List.filter (fun x -> not (PosSet.mem succs x)) r in
          predtree::(get_formula_treelist ftree new_po)
     | ({st = (Phi_0 | Psi_0)} as f)::r
     | ({pt = Alpha} as f)::r ->
-         let (stree,_) = get_formula_tree [ftree] f false in
+         let stree,_ = get_formula_tree [ftree] f false in
          stree::(get_formula_treelist ftree r)
     | _ ->
          raise (Invalid_argument "Jprover bug: non-admissible open position")
