@@ -146,6 +146,11 @@ struct
 
    module AtomSet = Lm_set.LmMake(OrderedAtom)
 
+   (*
+   * It seems that connection set should be either unordered with O(1) union
+   * operation or a sparse symmetrical(?) bit matrix (position * position) with
+   * fast search in a row and in a column
+    *)
    module OrderedConnection =
    struct
       type t = position * position
