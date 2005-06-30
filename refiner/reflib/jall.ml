@@ -2402,7 +2402,7 @@ struct
       match zw_sigma with
          [] -> []
        | (v,term)::r ->
-            let dterms = collect_delta_terms [term] in
+            let dterms = collect_delta_terms [] [term] in
             let new_term, new_ass_delta_diff = check_delta_terms (v,term) ass_delta_diff dterms in
             (v,new_term)::(localize_sigma r new_ass_delta_diff)
 
@@ -3934,8 +3934,8 @@ let rec create_output consts rule_list
       [] -> JLogic.empty_inf
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms [term1] in
-         let delta2_names = collect_delta_terms [term2] in
+         let delta1_names = collect_delta_terms [] [term1] in
+         let delta2_names = collect_delta_terms [] [term2] in
          let unique_deltas =
             remove_dups_list (List.rev_append delta1_names delta2_names)
          in
@@ -3966,8 +3966,8 @@ let rec make_test_interface consts rule_list input_map =
       [] -> []
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms [term1] in
-         let delta2_names = collect_delta_terms [term2] in
+         let delta1_names = collect_delta_terms [] [term1] in
+         let delta2_names = collect_delta_terms [] [term2] in
          let unique_deltas =
             remove_dups_list (List.rev_append delta1_names delta2_names)
          in

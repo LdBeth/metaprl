@@ -254,8 +254,8 @@ struct
     | bt::r ->
          ((dest_bterm bt).bterm)::(collect_subterms tail r)
 
-   let rec collect_delta_terms = function
-      [] -> []
+   let rec collect_delta_terms accumulator = function
+      [] -> accumulator
     | t::r ->
          let dt = dest_term t in
             let {op_name=opname; op_params=params} = dest_op dt.term_op in
@@ -264,7 +264,7 @@ struct
                      [hd] ->
                         begin match dest_param hd with
                            Term_sig.Var sym ->
-                              sym::(collect_delta_terms r)
+                              collect_delta_terms (sym::accumulator) r
                          | _ ->
                               raise
                               (Invalid_argument
@@ -275,7 +275,7 @@ struct
                         (Invalid_argument
                          "Unexpected number of parameters of jprover_op")
                else
-                  collect_delta_terms (collect_subterms r dt.term_terms)
+                  collect_delta_terms accumulator (collect_subterms r dt.term_terms)
 
 (* ***************** REDUCTION ORDERING -- both types **************************** *)
 
@@ -383,7 +383,7 @@ struct
       match new_elements with
          [] -> ([],ordering)
        | (v,termlist)::r ->
-            let dterms = collect_delta_terms termlist in
+            let dterms = collect_delta_terms [] termlist in
             let dterms = List.rev_map symbol_to_pos dterms in
             begin
 (*        open_box 0;
