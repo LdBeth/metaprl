@@ -783,7 +783,7 @@ struct
 *)
          not (List.exists
             (fun x ->
-               List.mem x beta_expansions or
+               Set.mem beta_expansions x or
                ConnSet.exists (fun (a,b) -> a=x or b=x) connections
             )
             alpha_layer
@@ -795,33 +795,31 @@ struct
          BEmpty ->
             raise jprover_bug
        | CNode((c1,c2)) ->
-            bproof,ConnSet.singleton (c1,c2),[]
+            bproof,ConnSet.singleton (c1,c2),Set.empty
        | AtNode(_,(c1,c2)) ->
-            bproof,ConnSet.singleton (c1,c2),[]
+            bproof,ConnSet.singleton (c1,c2),Set.empty
        | RNode(alpha_layer,subproof) ->
-            let (opt_subproof,min_connections,beta_expansions) =
+            let opt_subproof,min_connections,beta_expansions =
                apply_bproof_purity subproof in
-            (RNode(alpha_layer,opt_subproof),min_connections,beta_expansions)
+            RNode(alpha_layer,opt_subproof),min_connections,beta_expansions
        | BNode(pos,(alph1,subp1),(alph2,subp2)) ->
-            let (opt_subp1,min_conn1,beta_exp1) = apply_bproof_purity subp1 in
+            let opt_subp1,min_conn1,beta_exp1 = apply_bproof_purity subp1 in
             if beta_pure alph1 min_conn1 beta_exp1 then
                begin
 (*       print_endline ("Left layer of "^pos); *)
-                  (opt_subp1,min_conn1,beta_exp1)
+                  opt_subp1,min_conn1,beta_exp1
                end
             else
-               let (opt_subp2,min_conn2,beta_exp2) = apply_bproof_purity subp2 in
+               let opt_subp2,min_conn2,beta_exp2 = apply_bproof_purity subp2 in
                if beta_pure alph2 min_conn2 beta_exp2 then
                   begin
 (*       print_endline ("Right layer of "^pos); *)
-                     (opt_subp2,min_conn2,beta_exp2)
+                     opt_subp2,min_conn2,beta_exp2
                   end
                else
                   let min_conn = ConnSet.union min_conn1 min_conn2 in
-                  let beta_exp =
-                     remove_dups_list (pos :: (List.rev_append beta_exp1 beta_exp2))
-                  in
-                  (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2)),min_conn,beta_exp)
+						let beta_exp = Set.add (Set.union beta_exp1 beta_exp2) pos in
+                  BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2)),min_conn,beta_exp
 
    let bproof_purity bproof =
       let (opt_bproof,min_connections,_) = apply_bproof_purity bproof in
