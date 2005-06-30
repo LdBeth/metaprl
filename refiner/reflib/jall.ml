@@ -2297,7 +2297,7 @@ struct
       Set.subtract_list list testlist (* f may not occur in list; then newlist=list *)
 
    let rec update_connections slist connections =
-      List.filter
+      ConnSet.filter
          (fun (a,b) -> not (Set.mem slist a or Set.mem slist b))
          connections
 
@@ -2518,9 +2518,7 @@ struct
                   if assocn = empty_pos then
                      (Empty,[],ConnSet.empty,Set.empty)  (* should not occur in the final version *)
                   else
-							let connections = ConnSet.to_list connections in
                      let (rednew,connew,unsolnew) = update_relations deltree redord connections unsolved_list in
-							let connew = ConnSet.of_list connew in
                      begin
 (*        open_box 0;
    print_endline " ";
@@ -2849,9 +2847,8 @@ struct
    and tot ftree redord connections csigmaQ po slist calculus opt_bproof =
       try
          (* last argument for guiding selection strategy *)
-			let conn_list = ConnSet.to_list connections in
          let p, orr_flag =
-            select_pos po po redord ftree conn_list slist calculus [] opt_bproof
+            select_pos po po redord ftree connections slist calculus [] opt_bproof
          in
 (*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
          match tpredsucc p ftree with
@@ -2978,9 +2975,8 @@ struct
             end
        | Beta ->
 (*             print_endline "split_in"; *)
-				let conn_list = ConnSet.to_list connections in
             let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) =
-               split p.address p.pospos ftree redord conn_list newslist opt_bproof
+               split p.address p.pospos ftree redord connections newslist opt_bproof
             in
             let (sigmaQ1,sigmaQ2) =
                subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ
