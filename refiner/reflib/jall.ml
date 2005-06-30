@@ -769,12 +769,7 @@ struct
          else
             f::(remove_subst_dups r)
 
-	let rec append_from_pairs accumulator = function
-		[] -> accumulator
-	 | (a,b)::tl -> append_from_pairs (a::b::accumulator) tl
-
    let beta_pure alpha_layer connections beta_expansions =
-      let test_list = append_from_pairs beta_expansions connections in
       begin
 (*       open_box 0;
          print_endline "";
@@ -786,7 +781,13 @@ struct
          print_endline "";
          print_flush();
 *)
-         not (List.exists (fun x -> (List.mem x test_list)) alpha_layer)
+         not (List.exists
+            (fun x ->
+               List.mem x beta_expansions or
+               ConnSet.exists (fun (a,b) -> a=x or b=x) connections
+            )
+            alpha_layer
+         )
       end
 
    let rec apply_bproof_purity bproof =
@@ -794,9 +795,9 @@ struct
          BEmpty ->
             raise jprover_bug
        | CNode((c1,c2)) ->
-            bproof,[(c1,c2)],[]
+            bproof,ConnSet.singleton (c1,c2),[]
        | AtNode(_,(c1,c2)) ->
-            bproof,[(c1,c2)],[]
+            bproof,ConnSet.singleton (c1,c2),[]
        | RNode(alpha_layer,subproof) ->
             let (opt_subproof,min_connections,beta_expansions) =
                apply_bproof_purity subproof in
@@ -816,9 +817,7 @@ struct
                      (opt_subp2,min_conn2,beta_exp2)
                   end
                else
-                  let min_conn =
-							remove_dups_connections (List.rev_append min_conn1 min_conn2)
-						in
+                  let min_conn = ConnSet.union min_conn1 min_conn2 in
                   let beta_exp =
                      remove_dups_list (pos :: (List.rev_append beta_exp1 beta_exp2))
                   in
@@ -2597,8 +2596,6 @@ struct
             betasplit addr ftree redord connections unsolved_list in
 (* zw1conn let zw2conn are not longer needed when using beta proofs *)
 (*   print_endline "betasp_out"; *)
-			let min_con1 = ConnSet.of_list min_con1 in
-			let min_con2 = ConnSet.of_list min_con2 in
          let ft1,red1,conn1,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in
 (*   print_endline "purity_one_out"; *)
          let ft2,red2,conn2,uslist2 =  purity zw2ft zw2red min_con2 zw2uslist in
@@ -2736,7 +2733,6 @@ struct
                            let slist_fake = Set.remove slist f.pospos in
                            let ((zw1ft,zw1red,_,zw1uslist),_) =
                               betasplit f.address ftree redord connections slist_fake in
-									let min_con1 = ConnSet.of_list min_con1 in
                            let ft1,_,_,uslist1 = purity zw1ft zw1red min_con1 zw1uslist in
 (*                      print_endline "wait label purity_one_out"; *)
                            let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in
