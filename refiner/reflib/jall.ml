@@ -2287,9 +2287,6 @@ struct
     | NodeA(pos,treearray) :: r ->
          List.rev_append (collect_pure flist slist treearray) (collect_pure flist slist r)
 
-   let rec update_list testlist list =
-      Set.subtract_list list testlist (* f may not occur in list; then newlist=list *)
-
    let rec update_connections slist connections =
       ConnSet.filter
          (fun (a,b) -> not (Set.mem slist a or Set.mem slist b))
@@ -2335,7 +2332,7 @@ struct
 *)
          let rednew = update_redord pure_names redord in
          let connew = update_connections pure_names connections in
-         let unsolnew = update_list (Set.to_list pure_names) unsolved_list in
+         let unsolnew = Set.diff unsolved_list pure_names in
          (rednew,connew,unsolnew)
       end
 
