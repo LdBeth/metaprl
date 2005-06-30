@@ -2535,8 +2535,7 @@ struct
          end
 
       in
-		let conn_list = ConnSet.to_list connections in
-      let flist,slist = List.split conn_list in
+      let flist,slist = ConnSet.fold (fun (l1,l2) (a,b) -> a::l1, b::l2) ([],[]) connections in
       let pr = collect_pure flist slist [ftree] in
       purity_reduction pr ftree redord connections unsolved_list
 
