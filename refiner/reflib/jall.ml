@@ -3376,6 +3376,11 @@ let rec ext_partners con path ext_atom reduction_partners extension_partners ato
 
 exception Failed_connections
 
+(*
+ * Connections should be stored in lists for now.
+ * It is possible that what actually breka proofs is not the order of connections but
+ * the fact that ConnSet sorts elements inside each pair(connection)
+ *)
 let path_checker
    (consts: SymbolSet.t)
    (atom_rel: (atom * atom list * atom list) list)
