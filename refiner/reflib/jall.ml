@@ -1060,6 +1060,7 @@ struct
          print_flush ()
       end
 
+   (* ext_proof here has to be ordered, otherwise proofs break *)
    let rec build_opt_beta_proof beta_proof
       (ext_proof : (position * position) list)
       (beta_atoms : (position * (position * int) list) list)
@@ -2977,7 +2978,7 @@ struct
             rback @ [((empty_pos,pospos),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
 
    let reconstruct ftree redord sigmaQ ext_proof calculus =
-      let min_connections = ConnSet.of_list ext_proof in
+      (* construct_opt_beta_proof seems to need ordered ext_proof *)
       let (opt_bproof,beta_exp,closures) = construct_opt_beta_proof ftree ext_proof in
 (* let connections = remove_dups_connections ext_proof in
    let bproof,beta_exp,closures = construct_beta_proof ftree connections in
@@ -3007,8 +3008,10 @@ struct
          end;
       let (newroot_name,unsolved_list) =  build_unsolved ftree in
       let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
+      let min_connections = ConnSet.of_list ext_proof in
       let (init_tree,init_redord,init_connections,init_unsolved_list) =
-         purity ftree redord2 min_connections unsolved_list in
+         purity ftree redord2 min_connections unsolved_list
+      in
       begin
 (*   print_endline "";
    print_endline "";
@@ -4016,6 +4019,7 @@ let gen_prover mult_limit calculus hyps concls =
    let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
 		prove consts mult_limit renamed_termlist calculus
 	in
+   (* it's too early to convert ext_proof to a set *)
    let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
          (* transform types let rename constants *)
      (* we can transform the eigenvariables AFTER proof reconstruction since *)
