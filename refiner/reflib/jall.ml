@@ -741,15 +741,6 @@ struct
 
 (************ Beta proofs let redundancy deletion **********************)
 
-   let rec remove_dups_connections = function
-      [] -> []
-    | (c1,c2)::r ->
-         if (List.mem (c1,c2) r) or (List.mem (c2,c1) r) then
-  (* only one direction variant of a connection stays *)
-            remove_dups_connections r
-         else
-            (c1,c2)::(remove_dups_connections r)
-
    let rec remove_dups_list = function
       [] -> []
     | f::r ->
