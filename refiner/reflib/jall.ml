@@ -1972,8 +1972,9 @@ struct
             h :: (rename_gamma r rename_list)
 
    let rec compare_pair s sf transrel =
-      Rel.fold
-         (fun acc (a,b) -> if sf = a then Rel.add acc (s,b) else acc)
+      Rel.range_fold
+         (fun (a,_) -> PosOrdering.compare sf a)
+         (fun acc (a,b) -> Rel.add acc (s,b))
          Rel.empty
          transrel
 
