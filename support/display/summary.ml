@@ -1,9 +1,7 @@
 doc <:doc<
-   @begin[spelling]
-   ML prl tex
-   @end[spelling]
-
    @begin[doc]
+   @spelling{ML prl tex}
+
    @module[Summary]
 
    The @tt{Summary} module implements display forms for top level
@@ -34,7 +32,6 @@ doc <:doc<
    include their description in this document.
 
    @docoff
-   @end[doc]
 
    ----------------------------------------------------------------
 
@@ -67,6 +64,7 @@ doc <:doc<
    Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
 
    @end[license]
+   @end[doc]
 >>
 
 extends Perv
@@ -151,7 +149,7 @@ declare "term_def"[name:s]{'def : Dform; 'res : Dform} : Dform
 declare parent_kind[name:s] : Dform
 declare parent_kind[name:s]{'parent : Dform} : Dform
 
-doc <:doc< @docoff >>
+doc docoff
 declare "parent"[name:s] : Dform
 
 doc <:doc<
@@ -193,7 +191,7 @@ declare "resource"[name:s]{'expr : Dform} : Dform
 declare "resource_defs"[name:s]{'res : Dform} : Dform
 declare "resource"{'inp : Dform; 'outp : Dform; 'expr : Dform} : Dform
 declare "improve"[name:s]{'expr : Dform} : Dform
-doc <:doc< @docoff >>
+doc docoff
 declare "resource_defs"[start:n, finish:n, name:s]{'res : Dform} : Dform
 
 doc <:doc<
@@ -209,7 +207,7 @@ doc <:doc<
 declare "infix"[name:s] : Dform
 declare "suffix"[name:s] : Dform
 declare "summary_item"{'term : Dform} : Dform
-doc <:doc< @docoff >>
+doc docoff
 
 declare "magic_block"[name:s]{'items : Dform} : Dform
 declare "id"[n:n] : Dform
@@ -236,7 +234,7 @@ declare "prec_df"[name:s] : Dform
 declare "parens_df" : Dform
 declare "mode_df"[mode:s] : Dform
 declare "except_mode_df"[mode:s] : Dform
-doc <:doc< @docoff >>
+doc docoff
 
 declare "df_none" : Dform
 declare "df_term"{'t} : Dform
@@ -263,7 +261,7 @@ declare "meta_implies"{'A : MTerm; 'B : MTerm} : MTerm
 declare "meta_function"{'arg : Judgment; 'A : MTerm; 'B : MTerm} : MTerm
 declare "meta_iff"{'A : 'a; 'B : 'a} : MTerm
 declare "meta_labeled"[label:s]{'meta : MTerm} : MTerm
-doc <:doc< @docoff >>
+doc docoff
 
 declare "int_param"[name:v] : Dform
 declare "addr_param"[name:v] : Dform
@@ -306,7 +304,7 @@ doc <:doc<
 >>
 declare "goal"{'status : Dform; 'label : Dform; 'assums : Dform; 'goal : Dform} : Dform
 declare "status"{'sl : Dform} : Dform
-doc <:doc< @docoff >>
+doc docoff
 
 declare "goal_status"{'sl : Dform} : Dform
 declare "goal_label"[s:s] : Dform

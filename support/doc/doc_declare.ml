@@ -1,9 +1,11 @@
-doc <:doc< -*- Mode: text -*-
+(* -*- Mode: text -*- *)
+doc <:doc<
+   @begin[doc]
    @spelling{typeclass typesystem typeclasses}
 
-   @begin[doc]
    @chapter[declare]{Declarations}
-   @end[doc]
+
+   @docoff
 
    @begin[license]
    Copyright (C) 2005 Mojave Group, Caltech
@@ -25,7 +27,7 @@ doc <:doc< -*- Mode: text -*-
    Author: Jason Hickey
    @email{jyh@cs.caltech.edu}
    @end[license]
-   @docoff
+   @end[doc]
 >>
 extends Comment
 extends Summary

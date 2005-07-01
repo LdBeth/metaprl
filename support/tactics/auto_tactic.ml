@@ -54,7 +54,7 @@ doc <:doc<
    The tactic @tt[repeatWithRwsT] @i[convs] @i[tac] tries to apply some conversional from
    the @i[convs] list to the goal and in case of a progress applies the tactic @i[tac],
    then repeats it as far as possible.
-   @end[doc]
+   @docoff
 
    ----------------------------------------------------------------
 
@@ -86,6 +86,7 @@ doc <:doc<
    Author: Jason Hickey @email{jyh@cs.caltech.edu}
    Modified by: Aleksey Nogin @email{nogin@cs.cornell.edu}
    @end[license]
+   @end[doc]
 >>
 
 doc <:doc<
@@ -97,7 +98,7 @@ extends Mptop
 extends Top_tacticals
 extends Top_conversionals
 extends Browser_resource
-doc <:doc< @docoff >>
+doc docoff
 
 open Lm_debug
 open Lm_printf

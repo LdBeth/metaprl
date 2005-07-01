@@ -1,6 +1,6 @@
 doc <:doc<
-   @spelling{typeset verbatim subparagraph}
    @begin[doc]
+   @spelling{typeset verbatim subparagraph}
    @module[Comment]
 
    The @tt{Comment} module defines @emph{structured} comments.
@@ -50,7 +50,7 @@ doc <:doc<
 
    The @tt["<:doc< ... >>"] quotation can also contain the standard
    @tt["<< ... >>"] inside (which would imply math mode), and @emph{vice versa}.
-   @end[doc]
+   @docoff
 
    ----------------------------------------------------------------
 
@@ -73,6 +73,7 @@ doc <:doc<
 
    Author: Jason Hickey @email{jyh@cs.caltech.edu}
    @end[license]
+   @end[doc]
 >>
 
 doc <:doc<
@@ -216,20 +217,22 @@ dform tex_comment_white_df1 : mode[tex] :: comment_white =
 dform tex_comment_white_df2 : mode[tex] :: xcons{comment_white; xcons{comment_white; 't}} =
    izone slot["raw", "\n\n"] ezone 't
 
+dform tex_comment_white_df3 : mode[tex] :: xcons{comment_white; xcons{comment_white; xcons{comment_white; 't}}} =
+   xcons{comment_white; xcons{comment_white; 't}}
+
+dform tex_comment_white_df4 : mode[tex] :: xcons{comment_white; xcons{comment_white; xcons{comment_term{docoff}; 't}}} =
+   docoff 't
+
 (*
  * Plain version.
  *)
-dform normal_license_df2 : except_mode[tex] :: except_mode[prl] :: license{'t} =
-   `"@begin[license]" com_hbreak 't com_hbreak `"@end[license]"
+dform license_df : license{'t} = `""
 
 (*
  * Spelling.
  *)
-dform spelling_df1 : spelling{'t} =
-   `""
-
-dform misspelled_df1 : misspelled{'t} =
-   't
+dform spelling_df1 : spelling{'t} = `""
+dform misspelled_df1 : misspelled{'t} = 't
 
 (*
  * PRL comments.
@@ -248,8 +251,6 @@ dform normal_doc_df2 : mode[prl] :: "doc"{'t} =
 
 dform normal_doc_df4 : mode[html] :: mode[prl] :: "doc"{xcons{comment_white; 't}} =
    "doc"{'t}
-
-dform normal_license_df3 : mode[prl] :: license{'t} = `""
 
 dform prl_paragraph_df : mode[prl] :: xcons{comment_white; xcons{comment_white; 't}} =
    newline 't

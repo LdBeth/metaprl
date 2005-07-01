@@ -22,7 +22,6 @@ doc <:doc<
    the corresponding inference rule. @emph{Tacticals} allow creation of more complicated
    tactics by combining existing tactics together.
    @docoff
-   @end[doc]
 
    ----------------------------------------------------------------
 
@@ -55,6 +54,7 @@ doc <:doc<
    Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
 
    @end[license]
+   @end[doc]
 >>
 extends Perv
 
@@ -77,7 +77,7 @@ doc <:doc<
 >>
 extends Mptop
 
-doc <:doc< ************************************************************************
+doc <:doc<
    @begin[doc]
    @modsection{Primitive tactics}
 
@@ -165,7 +165,7 @@ doc <:doc<
 >>
 let nthAssumT = Tacticals.nthAssumT
 
-doc <:doc< ************************************************************************
+doc <:doc<
    @begin[doc]
    @modsection{Tacticals}
 
@@ -325,7 +325,7 @@ let whileProgressT = Tacticals.whileProgressT
 let untilFailT = Tacticals.untilFailT
 let repeatForT = Tacticals.repeatForT
 
-doc <:doc< ************************************************************************
+doc <:doc<
    @begin[doc]
    @modsection{Tactic arguments}
 
@@ -375,7 +375,7 @@ let altT = Tacticals.altT
 let thinningT = Tacticals.thinningT
 let doNotThinT = thinningT false
 
-doc <:doc< ************************************************************************
+doc <:doc<
    @begin[doc]
    @modsection{Clause selection}
 
@@ -442,7 +442,7 @@ let tryOnAllMClausesT = Tacticals.tryOnAllMClausesT
 let onSomeAssumT = Tacticals.onSomeAssumT
 let onSomeHypT = Tacticals.onSomeHypT
 
-doc <:doc< ************************************************************************
+doc <:doc<
    @begin[doc]
    @modsection{Labels}
 

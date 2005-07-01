@@ -18,7 +18,7 @@ doc <:doc<
    case ``similar'' means that the variable has the same name, but
    it may have a numerical suffix to make it distinct. @tt[maybe_] forms attempt to
    use the original name, if possible, and only append the suffix when necessary.
-   @end[doc]
+   @docoff
 
    ----------------------------------------------------------------
 
@@ -50,6 +50,7 @@ doc <:doc<
    Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
 
    @end[license]
+   @end[doc]
 >>
 
 doc <:doc<

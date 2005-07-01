@@ -118,7 +118,7 @@ doc <:doc<
    reasoning.  The @hreftactic[dT] tactic selects the most appropriate
    rule for a given goal and applies it.  The @tt{(dT 0)} tactic
    is added to the @hrefresource[auto] resource by default.
-   @end[doc]
+   @docoff
 
    ---------------------------------------------------------------
 
@@ -150,6 +150,7 @@ doc <:doc<
    Author: Jason Hickey @email{jyh@cs.caltech.edu}
    Modified by: Aleksey Nogin @email{nogin@cs.cornell.edu}
    @end[license]
+   @end[doc]
 >>
 
 doc <:doc<
@@ -160,7 +161,7 @@ doc <:doc<
 extends Top_tacticals
 extends Auto_tactic
 extends Browser_resource
-doc <:doc< @docoff >>
+doc docoff
 
 open Lm_debug
 open Lm_printf

@@ -1,6 +1,6 @@
 doc <:doc<
-   @spelling{th}
    @begin[doc]
+   @spelling{th}
    @module[Top_conversionals]
 
    @emph{Conversions} and @emph{conversionals} are analogs of tactics and tacticals
@@ -29,8 +29,7 @@ doc <:doc<
      <<sequent [dummy_arg] { <H> >- <:doc< 2 + 1 = 3 @in @int>> }>> }
    $$
 
-   @end[doc]
-
+   @docoff
    ----------------------------------------------------------------
 
    @begin[license]
@@ -62,6 +61,7 @@ doc <:doc<
    @email{jyh@cs.caltech.edu}
 
    @end[license]
+   @end[doc]
 >>
 
 doc <:doc<
@@ -71,7 +71,7 @@ doc <:doc<
 >>
 extends Perv
 extends Mptop
-doc <:doc< @docoff >>
+doc docoff
 
 open Lm_debug
 open Lm_printf

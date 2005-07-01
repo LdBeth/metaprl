@@ -1,7 +1,7 @@
 doc <:doc<
+   @begin[doc]
    @spelling{mptop toplevel}
 
-   @begin[doc]
    @module[Mptop]
 
    The @tt{Mptop} module defines a simplified OCaml top-loop
@@ -10,8 +10,8 @@ doc <:doc<
    strings, numbers, terms, and tactics), and it handles function
    application.  It does not implement more sophisticated OCaml
    expressions such as function definition and pattern matching.
-   @end[doc]
 
+   @docoff
    ----------------------------------------------------------------
 
    @begin[license]
@@ -43,6 +43,7 @@ doc <:doc<
    Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
 
    @end[license]
+   @end[doc]
 >>
 
 doc <:doc<
@@ -51,7 +52,7 @@ doc <:doc<
    @end[doc]
 >>
 extends Summary
-doc <:doc< @docoff >>
+doc docoff
 
 open MLast
 
