@@ -423,7 +423,6 @@ sig
    (* Quotation access *)
    val dest_quot       : string -> string * string
    val parse_quotation : MLast.loc -> string -> string -> string -> parsed_term
-   val mk_comment_term : term list -> term
    val convert_comment : MLast.loc -> term -> term
 
    (* Term conversion *)

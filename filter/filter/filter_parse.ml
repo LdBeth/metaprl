@@ -1769,7 +1769,7 @@ EXTEND
            in
               handle_exn f "comment" loc;
         | t = parsed_term ->
-           SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_comment_term [t])
+           SigFilter.declare_comment (SigFilter.get_proc loc) loc t
        ]];
 
    str_item:
@@ -2123,7 +2123,7 @@ EXTEND
            in
               handle_exn f "comment" loc
         | t = parsed_term ->
-           StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_comment_term [t])
+           StrFilter.declare_comment (StrFilter.get_proc loc) loc t
        ]];
 
    mod_ident:

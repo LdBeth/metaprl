@@ -187,9 +187,6 @@ dform tex_comment_df1 : tex_comment{xnil} =
 dform tex_comment_df2 : tex_comment{xcons{'h; 't}} =
    tex_comment_item{'h} tex_comment{'t}
 
-dform tex_comment_df2 : tex_comment{comment_term{'t}} =
-   tex_comment{'t}
-
 dform tex_comment_item_df1 : tex_comment_item{comment_white} =
    `""
 

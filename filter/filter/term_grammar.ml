@@ -759,17 +759,33 @@ struct
       in
          mk_simple_term comment_term_op [build_term spell space items]
 
-   let mk_comment_term tl =
-      let mk_comment t =
-         mk_simple_term comment_term_op [t]
-      in
-         mk_comment (mk_xlist_term (List.map mk_comment tl))
+   let rec strip_white_lst = function
+      (t :: tl) as l ->
+         if is_no_subterms_term comment_white_op t then
+            strip_white_lst tl
+         else
+            if List.for_all (is_no_subterms_term comment_white_op) tl then strip_white t
+         else
+            l
+    | [] ->
+         []
+
+   and strip_white t =
+         if is_xlist_term t then
+            strip_white_lst (dest_xlist t)
+         else if is_dep0_term comment_term_op t then
+            strip_white (one_subterm t)
+         else
+            [mk_simple_term comment_term_op [t]]
 
    let convert_comment loc t =
-      if is_string_term comment_string_op t then
-         parse_comment (q_shift_loc loc "doc") false SpellOn true (dest_string_term comment_string_op t)
-      else
-         t
+      let t =
+         if is_string_term comment_string_op t then
+            parse_comment (q_shift_loc loc "doc") false SpellOn true (dest_string_term comment_string_op t)
+         else
+            t
+      in
+         mk_xlist_term (strip_white t)
 
    (************************************************************************
     * Parsing.
