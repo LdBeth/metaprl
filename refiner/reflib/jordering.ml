@@ -236,10 +236,12 @@ module Set = Lm_set.LmMake(PosOrdering)
 
 let list_pos_to_string = List.map pos_to_string
 let list_string_to_pos = List.map string_to_pos
+(*
 let set_pos_to_string set =
    StringSet.of_list (List.map pos_to_string (Set.to_list set))
 let set_string_to_pos set =
    Set.of_list (List.map string_to_pos (StringSet.to_list set))
+*)
 
 module JOrdering (JLogic : JLogicSig) =
 struct

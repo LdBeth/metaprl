@@ -134,6 +134,13 @@ struct
 
    let to_list = elements
 
+   let of_sorted_list l =
+      let s1=Set1.of_sorted_list l and s2=Set2.of_sorted_list l in
+      if Set1.cardinal s1 = Set2.cardinal s2 then s1,s2 else begin
+         eprintf "of_sorted_list: cardinality is wrong\n";
+         error_sets s1 s2
+      end
+
    let of_list l =
       let s1=Set1.of_list l and s2=Set2.of_list l in
       if Set1.cardinal s1 = Set2.cardinal s2 then s1,s2 else begin

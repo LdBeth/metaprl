@@ -154,7 +154,7 @@ let string_of_ls_options options =
 let ls_default_list = [LsFormal; LsParent; LsRules; LsRewrites; LsDocumentation; LsFileModifiers]
 
 let ls_options_default =
-   LsOptionSet.of_list ls_default_list
+   LsOptionSet.of_sorted_list ls_default_list
 
 (*
  * Set some additional options.
