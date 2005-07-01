@@ -199,6 +199,20 @@ struct
 
 	module PMap = Lm_map.LmMake(PosOrdering)
 
+	module OrdSubtree =
+	struct
+		type t = (position * position) * int
+
+		let compare (p1,i1) (p2,i2) =
+			let c = Pervasives.compare (i1:int) i2 in
+			if c = 0 then
+				OrderedPositionPair.compare p1 p2
+			else
+				c
+	end
+
+	module SubrelSet = Lm_set.LmMake(OrdSubtree)
+
    let jprover_bug = Invalid_argument "Jprover bug (Jall module)"
 
    (* XXX: Nogin: as far as I understand, names are unique, but I am not sure *)
@@ -1250,8 +1264,8 @@ struct
 
 (* REAL PERMUTATION STAFF *)
 
-   let subf1 n m subrel = List.mem ((n,m),1) subrel
-   let subf2 n m subrel = List.mem ((n,m),2) subrel
+   let subf1 n m subrel = SubrelSet.mem subrel ((n,m),1)
+   let subf2 n m subrel = SubrelSet.mem subrel ((n,m),2)
 
 	type augmented_position = Pos of position | OrlTrue
 
@@ -1905,7 +1919,7 @@ struct
       =
       let rec build_renamed_gamma_rel dtreelist predpos pospos d =
          match dtreelist with
-            [] -> [],PMap.empty
+            [] -> SubrelSet.empty,PMap.empty
           | (x,ft)::rdtlist ->
                let rest_rel,rest_ren = build_renamed_gamma_rel rdtlist predpos pospos d in
                (
@@ -1924,11 +1938,11 @@ struct
                          *  but currently I simply create a fresh variable of
                          *  original kind and it seems to work alright *)
                          let new_srel_el = ((predpos,new_pos),d) in
-                         let (srel,sren) =
+                         let srel, sren =
                             build_formula_rel [(x,ft)] slist new_pos
                          in
-                         (new_srel_el::(List.rev_append srel rest_rel)),
-								 (PMap.add (PMap.union nodups sren rest_ren) spospos new_pos)
+                         SubrelSet.add (SubrelSet.union srel rest_rel) new_srel_el,
+								 PMap.add (PMap.union nodups sren rest_ren) spospos new_pos
 								 (* gamma_0 position as key first *)
                       else
                          rest_rel,rest_ren
@@ -1936,25 +1950,25 @@ struct
 
       in
       match dir_treelist with
-         [] -> [],PMap.empty
+         [] -> SubrelSet.empty,PMap.empty
        | (d,f)::dir_r ->
-            let (rest_rel,rest_renlist) = build_formula_rel dir_r slist predpos in
+            let rest_rel, rest_renlist = build_formula_rel dir_r slist predpos in
             match f with
                Empty ->
                   if !debug_jprover then print_endline "Hello, an empty subtree!!!!!!";
                   rest_rel,rest_renlist
              | NodeAt({pospos=pospos}) ->
-                  (((predpos,pospos),d)::rest_rel),rest_renlist
+                  SubrelSet.add rest_rel ((predpos,pospos),d), rest_renlist
              | NodeA({ pt = Alpha | Beta | Delta; pospos=pospos }, suctrees) ->
                   let dtreelist = number_list 1 suctrees in
-                  let (srel,sren) = build_formula_rel dtreelist slist pospos in
-                     (((predpos,pospos),d)::(List.rev_append srel rest_rel)),
-							(PMap.union nodups sren rest_renlist)
+                  let srel, sren = build_formula_rel dtreelist slist pospos in
+                     SubrelSet.add (SubrelSet.union srel rest_rel) ((predpos,pospos),d),
+							PMap.union nodups sren rest_renlist
              | NodeA({ pt = Psi| Phi }, suctrees) ->
                   let dtreelist = (List.rev_map (fun x -> (d,x)) suctrees) in
-                  let (srel,sren) = build_formula_rel dtreelist slist predpos in
-                     (List.rev_append srel rest_rel),
-							(PMap.union nodups sren rest_renlist)
+                  let srel, sren = build_formula_rel dtreelist slist predpos in
+                     SubrelSet.union srel rest_rel,
+							PMap.union nodups sren rest_renlist
              | NodeA({ pt = Gamma; pospos=pospos }, suctrees) ->
                   let dtreelist = (List.rev_map (fun x -> (1,x)) suctrees) in
 (*                if (nonemptys suctrees 0 n) = 1 then
@@ -1962,8 +1976,9 @@ struct
    ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
    else (* we have more than one gamma instance, which means renaming *)
 *)
-                  let (srel,sren) = build_renamed_gamma_rel dtreelist predpos pospos d in
-                     (List.rev_append srel rest_rel), (PMap.union nodups sren rest_renlist)
+                  let srel, sren = build_renamed_gamma_rel dtreelist predpos pospos d in
+                     SubrelSet.union srel rest_rel,
+							PMap.union nodups sren rest_renlist
              | NodeA({ pt = PNull }, _) ->
                   raise jprover_bug
 
@@ -1996,12 +2011,11 @@ struct
       else
          Rel.union (trans_rec rel trel) transrel
 
-   let rec extract_rel acc = function
-      [] -> acc
-    | (a,b)::tl -> extract_rel (Rel.add acc a) tl
+   let rec extract_rel subrel =
+		SubrelSet.fold (fun acc (p,i) -> Rel.add acc p) Rel.empty subrel
 
    let transitive_closure subrel =
-      let rel = extract_rel Rel.empty subrel in
+      let rel = extract_rel subrel in
       trans_rec rel rel
 
    let pt ptree subrel =
