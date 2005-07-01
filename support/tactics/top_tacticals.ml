@@ -1,5 +1,4 @@
 doc <:doc<
-   @begin[doc]
    @module[Top_tacticals]
 
    The @tt[Top_tacticals] module defines the primitive
@@ -54,7 +53,6 @@ doc <:doc<
    Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
 
    @end[license]
-   @end[doc]
 >>
 extends Perv
 
@@ -71,14 +69,11 @@ open Tactic_type
  * Dummy argument used for comments.
  *)
 doc <:doc<
-   @begin[doc]
    @parents
-   @end[doc]
 >>
 extends Mptop
 
 doc <:doc<
-   @begin[doc]
    @modsection{Primitive tactics}
 
    @begin[description]
@@ -93,12 +88,10 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let idT = Tacticals.idT
 
 doc <:doc<
-   @begin[doc]
    @begin[description]
    @item{@tactic[cutT];
    The @tt[cutT] tactic implements primitive lemma-instantiation on meta-level by
@@ -108,12 +101,10 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let cutT = Tacticals.cutT
 
 doc <:doc<
-   @begin[doc]
    @begin[description]
    @item{@tactic[failT], @tactic[failwithT];
    The @tt[failT] tactic always fails, and the @tt[failWithT] fails
@@ -121,13 +112,11 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let failT = Tacticals.failT
 let failWithT = Tacticals.failWithT
 
 doc <:doc<
-   @begin[doc]
    @begin[description]
    @item{@tactic[funT]; When @i[tac] is a function from @tt[tactic_arg] to @tt[tactic]
    (e.g. a function that takes a look at the current goal and chooses the tactic to apply
@@ -135,12 +124,10 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let funT = Tacticals.funT
 
 doc <:doc<
-   @begin[doc]
    @begin[description]
    @item{@tactic[nthAssumT];
    The @tt[nthAssumT] tactic proves a goal by @emph{assumption}.
@@ -161,12 +148,10 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let nthAssumT = Tacticals.nthAssumT
 
 doc <:doc<
-   @begin[doc]
    @modsection{Tacticals}
 
    @begin[description]
@@ -196,7 +181,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let prefix_orelseT = Tacticals.prefix_orelseT
 let prefix_andalsoT = Tacticals.prefix_andalsoT
@@ -216,7 +200,6 @@ infix thenFLT
 infix thenT
 
 doc <:doc<
-   @begin[doc]
    @begin[description]
    @item{@tactic[then_OnFirstT],
          @tactic[then_OnLastT],
@@ -233,7 +216,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let prefix_then_OnFirstT = Tacticals.prefix_then_OnFirstT
 let prefix_then_OnLastT = Tacticals.prefix_then_OnLastT
@@ -244,7 +226,6 @@ infix then_OnLastT
 infix then_OnSameConclT
 
 doc <:doc<
-   @begin[doc]
    @begin[description]
    @item{@tactic[timingT];
    The @tt[timingT] tactical applies its argument,
@@ -260,12 +241,10 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let timingT = Tacticals.timingT
 
 doc <:doc<
-   @begin[doc]
    @begin[description]
    @item{@tactic[tryT], @tactic[completeT];
    The @tt[tryT] tactical applies its argument, and performs
@@ -276,14 +255,12 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let tryT = Tacticals.tryT
 let completeT = Tacticals.completeT
 let forceT = Tacticals.forceT
 
 doc <:doc<
-   @begin[doc]
    @begin[description]
    @item{@tactic[progressT];
    The (@tt[progressT] $@i[tac]$) tactic applies its argument and fails
@@ -292,12 +269,10 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let progressT = Tacticals.progressT
 
 doc <:doc<
-   @begin[doc]
    @begin[description]
    @item{@tactic[whileProgressT], @tactic[untilFailT], @tactic[repeatT], @tactic[repeatForT];
    The (@tt[untilFailT] $@i[tac]$) tactic applies the argument $@i[tac]$
@@ -318,7 +293,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let repeatT = Tacticals.repeatT
 let whileProgressT = Tacticals.whileProgressT
@@ -326,7 +300,6 @@ let untilFailT = Tacticals.untilFailT
 let repeatForT = Tacticals.repeatForT
 
 doc <:doc<
-   @begin[doc]
    @modsection{Tactic arguments}
 
    Tactics and rules may require arguments of various types (such as numbers, strings,
@@ -361,7 +334,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let withTermT = Tacticals.withTermT
 let withTypeT = Tacticals.withTypeT
@@ -376,7 +348,6 @@ let thinningT = Tacticals.thinningT
 let doNotThinT = thinningT false
 
 doc <:doc<
-   @begin[doc]
    @modsection{Clause selection}
 
    The following tactics are intended for use in a single-conclusion sequent calculus.
@@ -415,7 +386,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let onClauseT = Tacticals.onClauseT
 let onHypT = Tacticals.onHypT
@@ -443,7 +413,6 @@ let onSomeAssumT = Tacticals.onSomeAssumT
 let onSomeHypT = Tacticals.onSomeHypT
 
 doc <:doc<
-   @begin[doc]
    @modsection{Labels}
 
    Each node in a proof tree has a @emph{label}.  The labels have no logical
@@ -484,7 +453,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let addHiddenLabelT = Tacticals.addHiddenLabelT
 let removeHiddenLabelT = Tacticals.removeHiddenLabelT

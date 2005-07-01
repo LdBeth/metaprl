@@ -92,7 +92,9 @@ let mk_comment_opname =
 let comment_white_op = mk_comment_opname "comment_white"
 let comment_string_op = mk_comment_opname "comment_string"
 let comment_block_op = mk_comment_opname "comment_block"
-let comment_term_op = mk_comment_opname "comment_term"
+let comment_docon_op = mk_comment_opname "docon"
+let comment_docoff_op = mk_comment_opname "docoff"
+let comment_doc_op = mk_comment_opname "doc"
 
 let misspelled = ref []
 let dict_inited = ref false
@@ -725,13 +727,12 @@ struct
             let params = List.map (fun s -> make_param (String s)) params in
             let args = List.map (fun t -> mk_simple_bterm (build_term spelling space t)) args in
             let op = mk_op opname params in
-            let t = mk_term op args in
-               mk_simple_term comment_term_op [t]
+               mk_term op args
        | Comment_parse.Block items ->
             mk_simple_term comment_block_op [build_term spelling space items]
        | Comment_parse.Quote ((l1, l2), tag, s) ->
             let t = parse_quotation (adjust_pos pos l1, adjust_pos pos l2) "doc" tag s in
-               mk_simple_term comment_term_op [term_of_parsed_term t]
+               term_of_parsed_term t
 
       (*
        * If spacing is ignored, ignore spaces.
@@ -757,7 +758,7 @@ struct
             Comment_parse.Parse_error (s, (l1, l2)) ->
                Stdpp.raise_with_loc (adjust_pos pos l1, adjust_pos pos l2) (ParseError s)
       in
-         mk_simple_term comment_term_op [build_term spell space items]
+         build_term spell space items
 
    let rec strip_white_lst = function
       (t :: tl) as l ->
@@ -773,10 +774,17 @@ struct
    and strip_white t =
          if is_xlist_term t then
             strip_white_lst (dest_xlist t)
-         else if is_dep0_term comment_term_op t then
-            strip_white (one_subterm t)
          else
-            [mk_simple_term comment_term_op [t]]
+            [t]
+
+   let rec is_docoff_lst = function
+      t :: _ -> is_docoff t
+    | [] -> false
+
+   and is_docoff t =
+      is_no_subterms_term comment_docoff_op t ||
+         is_no_subterms_term comment_docon_op t ||
+         ((is_xlist_term t) && (is_docoff_lst (dest_xlist t)))
 
    let convert_comment loc t =
       let t =
@@ -785,7 +793,11 @@ struct
          else
             t
       in
-         mk_xlist_term (strip_white t)
+      match strip_white t with
+         [t] when is_no_subterms_term comment_docoff_op t || is_no_subterms_term comment_docon_op t ->
+            t
+       | tl ->
+            mk_dep0_term comment_doc_op (mk_xlist_term tl)
 
    (************************************************************************
     * Parsing.

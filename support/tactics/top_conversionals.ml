@@ -1,5 +1,4 @@
 doc <:doc<
-   @begin[doc]
    @spelling{th}
    @module[Top_conversionals]
 
@@ -61,13 +60,10 @@ doc <:doc<
    @email{jyh@cs.caltech.edu}
 
    @end[license]
-   @end[doc]
 >>
 
 doc <:doc<
-   @begin[doc]
    @parents
-   @end[doc]
 >>
 extends Perv
 extends Mptop
@@ -107,7 +103,6 @@ let debug_reduce =
       }
 
 doc <:doc<
-   @begin[doc]
    @modsection{Conversion application}
 
    @begin[description]
@@ -137,7 +132,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let rw = Tactic_type.Conversionals.rw
 let rwc = Tactic_type.Conversionals.rwc
@@ -158,7 +152,6 @@ let rwcaAll = Tactic_type.Conversionals.rwcaAll
 let rwaAllAll = Tactic_type.Conversionals.rwaAllAll
 
 doc <:doc<
-   @begin[doc]
    @modsection{Primitive conversions}
 
    @begin[description]
@@ -168,7 +161,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let idC = Tactic_type.Conversionals.idC
 let failC = Tactic_type.Conversionals.failC
@@ -176,7 +168,6 @@ let failWithC = Tactic_type.Conversionals.failWithC
 let forceC = Tactic_type.Conversionals.forceC
 
 doc <:doc<
-   @begin[doc]
    @modsection{Conversionals}
 
    @begin[description]
@@ -216,7 +207,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let prefix_thenC = Tactic_type.Conversionals.prefix_thenC
 let prefix_orelseC = Tactic_type.Conversionals.prefix_orelseC
@@ -236,7 +226,6 @@ infix orelseC
 infix thenTC
 
 doc <:doc<
-   @begin[doc]
    @modsection{Addressing and search}
 
    Generally, the terms to be rewritten do not occur at the outermost
@@ -315,7 +304,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let someSubC = Tactic_type.Conversionals.someSubC
 let allSubC = Tactic_type.Conversionals.allSubC
@@ -327,7 +315,6 @@ let applyAllC = Tactic_type.Conversionals.applyAllC
 let findThenC = Tactic_type.Conversionals.findThenC
 
 doc <:doc<
-   @begin[doc]
    @modsection{Conversion reversal}
 
    Computational rewrites define a congruence, and all equivalence relations
@@ -360,7 +347,6 @@ doc <:doc<
    @end[description]
 
    @docoff
-   @end[doc]
 >>
 let addrC = Tactic_type.Conversionals.addrC
 let foldC = Tactic_type.Conversionals.foldC
@@ -372,7 +358,6 @@ let cutC = Tactic_type.Conversionals.cutC
  ************************************************************************)
 
 doc <:doc<
-   @begin[doc]
    @resources
 
    @bf{The @Comment!resource[reduce] resource}
@@ -413,7 +398,6 @@ doc <:doc<
    conversions for the reduction.
 
    @docoff
-   @end[doc]
 >>
 let extract_data tbl =
    let rw t =

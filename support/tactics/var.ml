@@ -1,5 +1,4 @@
 doc <:doc<
-   @begin[doc]
    @module[Var]
 
    The @tt[Var] module provides utilities to
@@ -50,13 +49,10 @@ doc <:doc<
    Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
 
    @end[license]
-   @end[doc]
 >>
 
 doc <:doc<
-   @begin[doc]
    @parents
-   @end[doc]
 >>
 extends Summary
 doc docoff

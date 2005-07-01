@@ -1,5 +1,4 @@
 (*
- * @begin[doc]
  * @module[Comment]
  *
  * Structured comments are comments with ! as the first character.
@@ -12,7 +11,6 @@
  *
  * where s1, ..., sn are strings, and where t1, ..., tn are comment text.
  * The parameters/subterms can be ommitted.
- * @end[doc]
  *
  * ----------------------------------------------------------------
  *
@@ -43,22 +41,16 @@
 extends Base_dform
 
 (*
- * @begin[doc]
  * @terms
  * Basic comment structure.
- * @end[doc]
  *)
 declare comment_white : Dform
 declare comment_string[s:s] : Dform
-declare comment_term{'t : Dform} : Dform
 declare comment_block{'t : Dform} : Dform
 
 (*
- * @begin[doc]
  * These are the valid comment blocks.
- * @end[doc]
  *)
-declare "doc"{'t : Dform} : Dform
 declare license{'t : Dform} : Dform
 declare spelling{'t : Dform} : Dform
 declare misspelled{'t : Dform} : Dform
@@ -71,20 +63,16 @@ declare tex_comment{'t : Dform} : Dform
 declare html_comment{'t : Dform} : Dform
 
 (*
- * @begin[doc]
  * @terms
  * The @theory{'t} term produces a chapter header for a collection of modules
  * and the @module[name:s] term produces a section header for the current module.
- * @end[doc]
  *)
 declare "theory"{'t : Dform} : Dform
 declare "module"[name:s] : Dform
 declare "module"{'name : Dform} : Dform
 
 (*
- * @begin[doc]
  * Bookmaking commands.
- * @end[doc]
  *)
 declare chapter[name:s]{'t : Dform} : Dform
 declare section[name:s]{'t : Dform} : Dform
@@ -92,16 +80,12 @@ declare subsection[name:s]{'t : Dform} : Dform
 declare subsubsection[name:s]{'t : Dform} : Dform
 
 (*
- * @begin[doc]
  * The @modsection{'t} term prduces a subsection header.
- * @end[doc]
  *)
 declare modsection{'t : Dform} : Dform
 
 (*
- * @begin[doc]
  * The @modsubsection{'t} term prduces a subsection header.
- * @end[doc]
  *)
 declare modsubsection{'t : Dform} : Dform
 
@@ -192,10 +176,8 @@ declare pagecolor[name:s] : Dform
 declare colorbox[name:s]{'t : Dform} : Dform
 
 (*
- * @begin[doc]
  * The @code{phantom} term produces white space, equivalent in width
  * to the term being typeset.
- * @end[doc]
  *)
 declare phantom{'t : Dform} : Dform
 

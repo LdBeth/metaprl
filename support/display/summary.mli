@@ -99,7 +99,6 @@ val dest_proof : term -> term * term * term * term * term
  * eventually, but we need to decide how to control the namespace.
  *)
 doc <:doc<
-   @begin[doc]
    Rules and axioms are described with @emph{meta}-terms.
    The meta-terms are defined inductively:
    a term (a @tt[meta_theorem]) is a meta-term,

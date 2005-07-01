@@ -1,5 +1,4 @@
 doc <:doc<
-   @begin[doc]
    @module[Auto_tactic]
 
    The @tt[Auto_tactic] module defines two of the most useful
@@ -86,13 +85,10 @@ doc <:doc<
    Author: Jason Hickey @email{jyh@cs.caltech.edu}
    Modified by: Aleksey Nogin @email{nogin@cs.cornell.edu}
    @end[license]
-   @end[doc]
 >>
 
 doc <:doc<
-   @begin[doc]
    @parents
-   @end[doc]
 >>
 extends Mptop
 extends Top_tacticals

@@ -1,5 +1,4 @@
 doc <:doc<
-   @begin[doc]
    @spelling{mptop toplevel}
 
    @module[Mptop]
@@ -43,13 +42,10 @@ doc <:doc<
    Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
 
    @end[license]
-   @end[doc]
 >>
 
 doc <:doc<
-   @begin[doc]
    @parents
-   @end[doc]
 >>
 extends Summary
 doc docoff
@@ -70,7 +66,6 @@ open Shell_sig
  ************************************************************************)
 
 doc <:doc<
-   @begin[doc]
    The valid expression types are given with the following type
    definition.
 
@@ -108,7 +103,6 @@ doc <:doc<
     | ConvListFunExpr of (conv list -> top_expr)
    @end[verbatim]
    @docoff
-   @end[doc]
 >>
 
 type item = string * string * top_expr * top_type
@@ -132,12 +126,10 @@ let add_list = List.fold_left add
 let mem = Table.mem
 
 doc <:doc<
-   @begin[doc]
    Toplevel values are added to the @Comment!resource[toploop_resource] resource.
    The argument has type @code{string * top_expr}, which includes
    the string name of the value, and its value.
    @docoff
-   @end[doc]
 >>
 let resource (item, item list -> top_table) toploop =
    Functional {

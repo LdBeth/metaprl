@@ -1,12 +1,10 @@
 (*
- * @begin[doc]
  * @module[Dform]
  *
  * The @hrefmodule[Dform] module implements basic display forms for
  * variables and sequents.
  *
  * @docoff
- * @end[doc]
  *
  * ----------------------------------------------------------------
  *
@@ -42,9 +40,7 @@
  *)
 
 (*
- * @begin[doc]
  * @parents
- * @end[doc]
  *)
 extends Perv
 extends Nuprl_font
@@ -80,7 +76,6 @@ declare df_context[var:v]{'t : Dform; 'conts : Dform; 'termlist : Dform} : Dform
 declare "sequent"{'arg; 'seq} : Dform
 
 (*
- * @begin[doc]
  * Variables are terms with the opname @tt[var], and a single @emph[var]
  * parameter.  @emph{Second-order} variables also have (unbound) subterms
  * that correspond to the free variables in the term being represented (in
@@ -92,7 +87,6 @@ declare "sequent"{'arg; 'seq} : Dform
  * The @tt[tex] mode display form for @tt[df_so_var] uses some heuristics to split
  * the variable name into the name and the subscript part and is omitted from the
  * documentation.
- * @end[doc]
  *)
 declare var_list{'t : Dform} : Dform
 declare df_bconts{'conts : Dform} : Dform

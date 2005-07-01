@@ -1,5 +1,4 @@
 (*
- * @begin[doc]
  * @module[Nuprl_font]
  *
  * The @hrefmodule[Nuprl_font] module defines display forms for the

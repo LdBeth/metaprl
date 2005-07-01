@@ -1,5 +1,4 @@
 (*
- * @begin[doc]
  * @module[Typeinf]
  *
  * This module implements a simple type inference algorithm based
@@ -8,7 +7,6 @@
  * type inference in various logics.
  *
  * @docoff
- * @end[doc]
  *
  * jyh: I don't know how this works, so I am at a loss to document it...
  *

@@ -1,5 +1,4 @@
 doc <:doc<
-   @begin[doc]
    @spelling{typeset verbatim subparagraph}
    @module[Comment]
 
@@ -8,9 +7,8 @@ doc <:doc<
    a quoted term expression. They are usually used to provide documentation,
    although special forms can be defined for other purposes.
 
-   The term following the @keyword[doc] keyword can be either the standard
-   @tt["<< ... >>"] with the usual syntax for terms inside the quotation
-   or a special @tt["<:doc< ... >>"] with a specialized syntax inside.
+   The term following the @keyword[doc] keyword can either utilize the usual syntax for terms
+   or a special @tt["<:doc< ... >>"] quotation with a specialized syntax inside.
    The text inside the @tt["<:doc< ... >>"] is parsed
    into a sequence of strings in a list.  The text can also
    contain terms, which begin with the @tt{@@} character.
@@ -27,18 +25,18 @@ doc <:doc<
    double-quotes.  The subterms are normal comment text.
 
    Terms can also be constructed using a @tt{begin/end} construction.  For example,
-   the @tt[doc] term encloses a comment that uses a @LaTeX formatting-style.
+   the @tt[it] term italicizes its contents.
 
    @begin[verbatim]
-   @doc{Hello world}
+   @it{Hello world}
    @end[verbatim]
 
    The following definition is equivalent.
 
    @begin[verbatim]
-   @begin[doc]
+   @begin[it]
    Hello world.
-   @end[doc]
+   @end[it]
    @end[verbatim]
 
    There is also a @emph{math} mode, which is entered for terms between
@@ -73,13 +71,10 @@ doc <:doc<
 
    Author: Jason Hickey @email{jyh@cs.caltech.edu}
    @end[license]
-   @end[doc]
 >>
 
 doc <:doc<
-   @begin[doc]
    @parents
-   @end[doc]
 >>
 extends Base_dform
 
@@ -88,39 +83,28 @@ extends Base_dform
  ************************************************************************)
 
 doc <:doc<
-   @begin[doc]
    @terms
 
    The @tt[comment_white] term represents white space.
    The @tt[comment_string] term is a literal string.
    The @tt[comment_block] term encloses a nested comment
-   block.  The @tt[comment_term] term contains an arbitrary term.
-   @end[doc]
+   block.
 >>
 declare comment_white : Dform
 declare comment_string[s:s] : Dform
 declare comment_block{'t : Dform} : Dform
-declare comment_term{'t : Dform} : Dform
+
+doc docoff
+
+declare "doc"{'t : Dform} : Dform
 
 doc <:doc<
-   @begin[doc]
-   The @tt[doc] term is used to enclose documentation blocks,
-   usually with the following type of definition.
-
-   @begin[verbatim]
-   @begin[doc]
-   text
-   @end[doc]
-   @end[verbatim]
-
    The @tt[license] term is used to enclose the license agreement
    text for a module.
 
    All the words in the @tt[spelling] term are added to the
    spelling dictionary as correctly-spelled words.
-   @end[doc]
 >>
-declare "doc"{'t : Dform} : Dform
 declare license{'t : Dform} : Dform
 declare spelling{'t : Dform} : Dform
 declare misspelled{'t : Dform} : Dform
@@ -151,15 +135,10 @@ dform comment_string_df1 : comment_string[s:s] =
 dform comment_block_df1 : comment_block{'t} =
    't
 
-dform comment_term_df1 : comment_term{'t} =
-   't
-
 doc <:doc<
-   @begin[doc]
-   The @code{@docoff} term disables display for text that
-   follows the structured comment.  The @code{@docon} and @code{@begin[doc]} commands
+   The @code{@docoff} term disables display for text that follows the structured comment.
+   The @code{@docon} term and any @code{doc} directive not starting with a @code{@docoff}
    re-enables display.
-   @end[doc]
 >>
 declare docoff : Dform
 declare docon : Dform
@@ -174,42 +153,22 @@ dform docoff_df2 : except_mode[tex] :: docoff =
 dform docon_df1 : mode[tex] :: docon =
    izone slot["raw", "%\n\\fi\\textrue\\bgmptab\\iftex%\n"] ezone
 
-dform docon_df1 : except_mode[tex] :: docon =
+dform docom_df2 : mode[tex] :: xcons{docon; 't} =
+   izone slot["raw", "%\n\\fi\\textrue\\iftex%\n"] ezone 't
+
+dform docon_df3 : except_mode[tex] :: docon =
    bf["docoff"]
 
 (*
  * TeX version.
  *)
-declare tex_comment_item{'t : Dform} : Dform
+dform tex_comment_df2 : tex_comment{'t} =
+   't
 
-dform tex_comment_df1 : tex_comment{xnil} =
-   `""
-
-dform tex_comment_df2 : tex_comment{xcons{'h; 't}} =
-   tex_comment_item{'h} tex_comment{'t}
-
-dform tex_comment_item_df1 : tex_comment_item{comment_white} =
-   `""
-
-dform tex_comment_item_df2 : tex_comment_item{comment_string[s:s]} =
-   `""
-
-dform tex_comment_item_df3 : tex_comment_item{comment_block{'t}} =
-   `""
-
-dform tex_comment_item_df4 : tex_comment_item{comment_term{'t}} =
-   `""
-
-dform tex_comment_item_df4 : tex_comment_item{comment_term{docoff}} =
-   docoff
-
-dform tex_comment_item_df5 : tex_comment_item{comment_term{"doc"{'t}}} =
+dform tex_comment_item_df5 : mode[tex] :: "doc"{'t} =
    izone slot["raw", "%\n\\fi\\enmptab\\textrue\\iftex%\n"] ezone
    't
    izone slot["raw","%\n\\fi\\iftex\\bgmptab%\n"] ezone
-
-dform tex_comment_item_df6 : tex_comment_item{comment_term{docon}} =
-   docon
 
 dform tex_comment_white_df1 : mode[tex] :: comment_white =
    izone slot["raw", " "] ezone
@@ -219,9 +178,6 @@ dform tex_comment_white_df2 : mode[tex] :: xcons{comment_white; xcons{comment_wh
 
 dform tex_comment_white_df3 : mode[tex] :: xcons{comment_white; xcons{comment_white; xcons{comment_white; 't}}} =
    xcons{comment_white; xcons{comment_white; 't}}
-
-dform tex_comment_white_df4 : mode[tex] :: xcons{comment_white; xcons{comment_white; xcons{comment_term{docoff}; 't}}} =
-   docoff 't
 
 (*
  * Plain version.
@@ -237,14 +193,8 @@ dform misspelled_df1 : misspelled{'t} = 't
 (*
  * PRL comments.
  *)
-dform prl_comment_df1 : mode[prl] :: prl_comment{'t} =
+dform prl_comment_df : mode[prl] :: prl_comment{'t} =
    newline 't newline
-
-dform prl_comment_df2 : mode[prl] :: prl_comment{xcons{comment_white;'t}} =
-   prl_comment{'t}
-
-dform prl_comment_df3 : mode[prl] :: prl_comment{comment_term{'t}} =
-   prl_comment{'t}
 
 dform normal_doc_df2 : mode[prl] :: "doc"{'t} =
    pushm[3] info["@begin[doc]"] newline szone 't ezone popm newline info["@end[doc]"]
@@ -261,7 +211,7 @@ dform prl_comment_white_df1 : mode[prl] :: comment_white =
 (*
  * HTML comments.
  *)
-dform html_comment_df1 : mode[html] :: html_comment{'t} =
+dform html_comment_df : mode[html] :: html_comment{'t} =
    izone `"<!-- " ezone 't izone `" -->" ezone
 
 dform normal_doc_df3 : mode[html] :: "doc"{'t} =
@@ -278,11 +228,9 @@ dform html_comment_white_df1 : mode[html] :: comment_white =
  ************************************************************************)
 
 doc <:doc<
-   @begin[doc]
    The @code{@theory} term produces a chapter header for a theory (e.g.
    a collection of modules) and the @code{@module[name:s]} produces a section
    header for the current module.
-   @end[doc]
 >>
 declare "theory"{'t : Dform} : Dform
 declare "module"[name:s] : Dform
@@ -317,9 +265,7 @@ dform module_df6 : except_mode[tex] :: except_mode[html] :: "module"{'name} =
    com_hbreak bf{'name} com_hbreak com_hbreak
 
 doc <:doc<
-   @begin[doc]
    Bookmarking commands.
-   @end[doc]
 >>
 declare chapter[name:s]{'t : Dform} : Dform
 declare section[name:s]{'t : Dform} : Dform
@@ -364,9 +310,7 @@ dform subsubsection_df3 : except_mode[tex] :: except_mode[html] :: "subsubsectio
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 doc <:doc<
-   @begin[doc]
    The @code{@modsection} term produces a subsection header.
-   @end[doc]
 >>
 declare modsection{'t : Dform} : Dform
 doc docoff
@@ -381,9 +325,7 @@ dform modsection_df3 : except_mode[tex] :: except_mode[html] :: modsection{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 doc <:doc<
-   @begin[doc]
    The @code{@modsubsection} term produces a sub-subsection header.
-   @end[doc]
 >>
 declare modsubsection{'t : Dform} : Dform
 doc docoff
@@ -398,9 +340,7 @@ dform modsubsection_df3 : except_mode[tex] :: except_mode[html] :: modsubsection
    com_hbreak bf{'t} com_hbreak
 
 doc <:doc<
-   @begin[doc]
    The @code{@paragraph} and @code{@subparagraph} terms produce paragraph and subparagraph headers.
-   @end[doc]
 >>
 declare paragraph{'t : Dform} : Dform
 declare subparagraph{'t : Dform} : Dform
@@ -426,9 +366,7 @@ dform subparagraph_df3 : except_mode[tex] :: except_mode[html] :: subparagraph{'
    com_hbreak it{'t}
 
 doc <:doc<
-   @begin[doc]
    Generic targets.
-   @end[doc]
 >>
 declare target[name:s]{'t : Dform} : Dform
 declare hreftarget[name:s] : Dform
@@ -447,10 +385,8 @@ dform hreftarget_df2 : except_mode[tex] :: "hreftarget"[name:s] =
    bf[name:s]
 
 doc <:doc<
-   @begin[doc]
    The following terms generate the @emph{standard} @code{@modsection}
    headings for the commonly-defined parts of a module.
-   @end[doc]
 >>
 declare parents : Dform
 declare rewrites : Dform
@@ -483,10 +419,8 @@ dform terms_df1 : terms =
    modsection{comment_string["Terms"]}
 
 doc <:doc<
-   @begin[doc]
    Structured comments are @emph{hypertext enabled}.  The following
    terms establish hypertext @emph{targets}.
-   @end[doc]
 >>
 declare "term"[name:s] : Dform
 declare "resource"[name:s] : Dform
@@ -530,9 +464,7 @@ dform rule_df2 : except_mode[tex] :: "rule"[name:s] =
    bf[name:s]
 
 doc <:doc<
-   @begin[doc]
    The hypertext links are specified with the following terms.
-   @end[doc]
 >>
 declare hrefmodule[name:s] : Dform
 declare hrefmodule_internal[name:s] : Dform
@@ -591,10 +523,8 @@ dform hrefrule_df2 : except_mode[tex] :: hrefrule[name:s] =
    bf[name:s]
 
 doc <:doc<
-   @begin[doc]
    The @emph{references} print section number of the target in
    a hypertext link.
-   @end[doc]
 >>
 declare refchapter[name:s] : Dform
 declare refsection[name:s] : Dform
@@ -702,10 +632,8 @@ dform end_df2 : except_mode[tex] :: "end"[name:s] =
    `""
 
 doc <:doc<
-   @begin[doc]
    The @code{@noindent} term specifies that the following paragraph
    should not include the usual indentation for the first line.
-   @end[doc]
 >>
 declare noindent : Dform
 doc docoff
@@ -717,10 +645,8 @@ dform noindent_df2 : except_mode[tex] :: noindent =
    `""
 
 doc <:doc<
-   @begin[doc]
    The @code{@cite} term represents a @emph{citation}.  The citation
    only has effect on @LaTeX display mode.
-   @end[doc]
 >>
 declare cite[s:s] : Dform
 doc docoff
@@ -732,10 +658,8 @@ dform cite_df2 : except_mode[tex] :: cite[text:s] =
    `"cite{" slot[text:s] `"}"
 
 doc <:doc<
-   @begin[doc]
    The @code{phantom} term produces white space, equivalent in width
    to the term being typeset.
-   @end[doc]
 >>
 declare phantom{'t : Dform} : Dform
 doc docoff
@@ -747,10 +671,8 @@ dform phantom_df2 : except_mode[tex] :: phantom{'t} =
    `" "
 
 doc <:doc<
-   @begin[doc]
    The following color commands use named colors.  You need to define
    these colors using @code{\definecolor} in your preamble.
-   @end[doc]
 >>
 declare color[name:s] : Dform
 declare pagecolor[name:s] : Dform
@@ -778,11 +700,9 @@ dform colorbox_df2 : except_mode[tex] :: colorbox[name:s]{'t} =
    't
 
 doc <:doc<
-   @begin[doc]
    @emph{Math mode} is entered with the @code{$text$} and @code{$$text$$}
    forms.  The @code{$text$} form produces a @tt{math} term, and the
    @code{$$text$$} form produces a @tt{centermath} term.
-   @end[doc]
 >>
 declare math[s:s] : Dform
 declare math{'t : Dform} : Dform
@@ -810,10 +730,8 @@ dform centermath_df4 : mode[html] :: centermath{'t} =
    izone `"<p class=\"centermath\">" ezone 't izone `"</p>" ezone
 
 doc <:doc<
-   @begin[doc]
    The @code{@code} form produces literal text.
    The literal text is enclosed in curly brackets.
-   @end[doc]
 >>
 declare code[text:s] : Dform
 doc docoff
@@ -828,10 +746,8 @@ dform code_df3 : except_mode[tex] :: except_mode[html] :: code[s:s] =
    tt[s:s]
 
 doc <:doc<
-   @begin[doc]
      The @tt[minipage] term encloses a block of text that should be
      treated like a page.
-   @end[doc]
 >>
 declare minipage[width:s]{'t : Dform} : Dform
 declare minipage[width:s,pos:s]{'t : Dform} : Dform
@@ -854,9 +770,7 @@ dform minipage_df4 : except_mode[tex] :: minipage[width:s,pos:s]{'t} =
    't
 
 doc <:doc<
-   @begin[doc]
    The @tt[verbatim] term encloses a block of verbatim text.
-   @end[doc]
 >>
 declare verbatim[text:s] : Dform
 doc docoff
@@ -868,9 +782,7 @@ dform verbatim_df2 : except_mode[tex] :: verbatim[s:s] =
    tt[s:s]
 
 doc <:doc<
-   @begin[doc]
    The @tt[iverbatim] term encloses a block of verbatim text, indented.
-   @end[doc]
 >>
 declare iverbatim[text:s] : Dform
 doc docoff
@@ -884,10 +796,8 @@ dform iverbatim_df2 : except_mode[tex] :: iverbatim[s:s] =
    tt[s:s]
 
 doc <:doc<
-   @begin[doc]
    The @code{@email} form is similar to the @code{@code} form,
    but it is normally used to represent an E-mail address.
-   @end[doc]
 >>
 declare email[text:s] : Dform
 doc docoff
@@ -899,7 +809,6 @@ dform email_df2 : except_mode[tex] :: email[s:s] =
    tt[s:s]
 
 doc <:doc<
-   @begin[doc]
    Text can be centered with the @code{@center} form.
    The usual usage is as a begin/end pair.
 
@@ -910,7 +819,6 @@ doc <:doc<
    @end[verbatim]
 
    Each line of the text in the @tt{center} block is centered.
-   @end[doc]
 >>
 declare center{'t : Dform} : Dform
 doc docoff
@@ -925,7 +833,6 @@ dform center_df3 : except_mode[tex] :: except_mode[html] :: center{'t} =
    hspace 't hspace
 
 doc <:doc<
-   @begin[doc]
    A block of text can be placed in a figure.
 
    @begin[verbatim]
@@ -933,7 +840,6 @@ doc <:doc<
    text
    @end[figure]
    @end[verbatim]
-   @end[doc]
 >>
 declare figure[label:s]{'t : Dform} : Dform
 declare figure[label:s,pos:s]{'t : Dform} : Dform
@@ -967,7 +873,6 @@ dform caption_df2 : except_mode[tex] :: caption{'caption} =
    `"caption: " 'caption
 
 doc <:doc<
-   @begin[doc]
    Add extra indentation with the @code{@quote} form.
    The usual usage is as a begin/end pair.
 
@@ -978,7 +883,6 @@ doc <:doc<
    @end[verbatim]
 
    Each line of the text in the @tt{indent} block is indented.
-   @end[doc]
 >>
 declare indent{'t : Dform} : Dform
 doc docoff
@@ -990,7 +894,6 @@ dform indent_df2 : except_mode[tex] :: indent{'t} =
    hspace 't hspace
 
 doc <:doc<
-   @begin[doc]
    Quotations can be centered with the @code{@quote} form.
    The usual usage is as a begin/end pair.
 
@@ -1001,7 +904,6 @@ doc <:doc<
    @end[verbatim]
 
    Each line of the text in the @tt{quote} block is centered.
-   @end[doc]
 >>
 declare quote{'t : Dform} : Dform
 declare quotation{'t : Dform} : Dform
@@ -1020,9 +922,7 @@ dform quotation_df2 : except_mode[tex] :: quotation{'t} =
    hspace 't hspace
 
 doc <:doc<
-   @begin[doc]
    Footnotes use the @code{@footnote} form.
-   @end[doc]
 >>
 declare footnote{'t : Dform} : Dform
 doc docoff
@@ -1034,7 +934,6 @@ dform footnote_df2 : except_mode[tex] :: footnote{'t} =
    hspace 't hspace
 
 doc <:doc<
-   @begin[doc]
    Lists can be declared in three forms.  The @tt{enumerate} form
    numbers the elements of the list; the @tt{itemize} form places a
    bullet before each item; and the @tt{description} form takes
@@ -1055,7 +954,6 @@ doc <:doc<
    For the @tt{description} lists, the @code{@item} term
    takes two arguments; the first is the @emph{label} of the
    entry, and the second is the @emph{body}.
-   @end[doc]
 >>
 declare item{'t : Dform} : Dform
 declare item{'label; 'body} : Dform
@@ -1087,11 +985,11 @@ dform normal_enumerate_df1 : normal_enumerate{'count; xnil} =
 dform normal_enumerate_df3 : normal_enumerate{'count; xcons{comment_white; 'tl}} =
    normal_enumerate{'count; 'tl}
 
-dform normal_enumerate_df4 : normal_enumerate{'count; xcons{comment_term{item{'t}}; 'tl}} =
+dform normal_enumerate_df4 : normal_enumerate{'count; xcons{item{'t}; 'tl}} =
    com_hbreak pushm[3] df_length{'count} `"." 't popm
    normal_enumerate{xcons{xnil; 'count}; 'tl}
 
-dform normal_enumerate_df5 : normal_enumerate{'count; xcons{comment_term{item{'t1; 't2}}; 'tl}} =
+dform normal_enumerate_df5 : normal_enumerate{'count; xcons{item{'t1; 't2}; 'tl}} =
    com_hbreak pushm[3] 't1 `"." 't2 popm
    normal_enumerate{xcons{xnil; 'count}; 'tl}
 
@@ -1118,7 +1016,7 @@ dform description_df1 : mode[tex] :: description{'t} =
 dform description_df2 : except_mode[tex] :: description{'t} =
    normal_enumerate{xcons{xnil; xnil}; 't}
 
-doc <:doc< @doc{Other macros} >>
+doc <:doc< Other macros >>
 declare lbrace : Dform
 declare rbrace : Dform
 declare comment[who:s]{'e : Dform} : Dform
@@ -1163,7 +1061,6 @@ dform math_slot_df1 : math_slot[tag:s]{'t} =
    slot[tag:s]{'t}
 
 doc <:doc<
-   @begin[doc]
    @modsubsection{Math mode}
 
    Terms are formatted in @emph{math mode} if they are
@@ -1185,7 +1082,6 @@ doc <:doc<
    @tt[i] and @tt[it] terms display their contents in an
    @i[italic] font; and the @tt[emph] term @emph{emphasizes} its
    contents.
-   @end[doc]
 >>
 declare math_mbox{'t : Dform} : Dform
 declare math_hbox{'t : Dform} : Dform
@@ -1297,7 +1193,7 @@ dform math_underline_df : math_underline{'t} = underline{'t}
 declare math_Type : Dform
 
 doc <:doc<
-   @doc{The following terms define some common math symbols.}
+   The following terms define some common math symbols.
 >>
 declare math_colon : Dform
 declare math_rightarrow : Dform
@@ -1678,12 +1574,10 @@ dform math_underbrace_df4 : except_mode[tex] :: math_underbrace{'e1; 'e2} =
    `"underbrace[" 'e1 `"," 'e2 `"]"
 
 doc <:doc<
-   @begin[doc]
    The `_' and `^' characters are @emph{significant} in math mode
    (they are plain text in normal mode).  The expression @code{s_t}
    produces the @tt{subscript} term, and the expression @code{s^t}
    produces the @tt{superscript} term.
-   @end[doc]
 >>
 declare math_subscript{'t1 : Dform; 't2 : Dform} : Dform
 declare math_superscript{'t1 : Dform; 't2 : Dform} : Dform
@@ -1710,7 +1604,6 @@ dform normal_math_superscript_df1 : except_mode[tex] :: math_superscript{'t1; 't
    't1 `"^" 't2
 
 doc <:doc<
-   @begin[doc]
    The @tt{array} and tabular forms produce formatted tables.
    All @emph{rows} in the table are labeled with the @tt{line}
    term, and all column elements are labeled with the @tt{item}
@@ -1753,7 +1646,6 @@ doc <:doc<
 
    However, the use of the @tt{line} and @tt{item} terms
    is encouraged.
-   @end[doc]
 >>
 declare tabular[placement,tags]{'t : Dform} : Dform
 declare tabular[tags]{'t : Dform} : Dform
@@ -1823,7 +1715,7 @@ dform tabular_place_df2 : mode[tex] :: tabular[placement:s,tags:s]{'t} =
 dform tex_strip_white_df1 : tex_strip_white{'l; xcons{comment_white; 'tl}; 't} =
    tex_strip_white{'l; 'tl; 't}
 
-dform tex_strip_white_df2 : tex_strip_white{'l; xcons{comment_term{'t1}; 'tl}; 't2} =
+dform tex_strip_white_df2 : tex_strip_white{'l; xcons{'t1; 'tl}; 't2} =
    tex_strip_white{xcons{'t1; 'l}; 'tl; 't2}
 
 dform tex_strip_white_df3 : tex_strip_white{'l; xcons{comment_string[text:s]; 'tl}; 't2} =
@@ -1987,7 +1879,6 @@ dform normal_math_hline_df1 : except_mode[tex] :: hline =
    `"===="
 
 doc <:doc<
-   @begin[doc]
    The following macros define higher-level macros.
    The @tt[defrule] term is used to format the output as a rule
    definition.  The @i[name] argument is the name of the rule; the
@@ -2007,7 +1898,6 @@ doc <:doc<
    @rulebox{tac; args; hyps; goal}
    $$
 
-   @end[doc]
 >>
 declare math_defrule[name]{'args; 'hyps; 'goal} : Dform
 declare math_rulebox{'tac; 'args; 'hyps; 'goal} : Dform
@@ -2053,10 +1943,8 @@ dform normal_math_rulebox_df1 : except_mode[tex] :: math_rulebox{'name; 'args; '
    ezone popm
 
 doc <:doc<
-   @begin[doc]
    The @tt{dummy_arg} sequent argument is usually used for sequents
    that occur in comments.
-   @end[doc]
 >>
 declare sequent [dummy_arg] { Dform : Dform >- Dform } : Dform
 doc docoff
@@ -2064,10 +1952,8 @@ doc docoff
 dform dummy_arg_df : dummy_arg = `""
 
 doc <:doc<
-   @begin[doc]
    The following terms display standard representations
    of the usual names.
-   @end[doc]
 >>
 declare "MetaPRL" : Dform
 declare "Nuprl" : Dform
@@ -2123,6 +2009,7 @@ declare special : Dform
 dform special_df : special =
    math_it{slot["special display"]}
 
+dform theory_sp : slot["decl"]{"doc"{'t}} = special
 dform theory_sp : slot["decl"]{docon} = special
 dform theory_sp : slot["decl"]{docoff} = special
 dform theory_sp : slot["decl"]{"theory"{'t}} = special

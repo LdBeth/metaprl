@@ -38,74 +38,54 @@ open Refiner.Refiner.TermTy
  *)
 
 (*
- * @begin[doc]
  * All normal terms should be in the @tt{Term} typeclass.
- * @end[doc]
  *)
 declare typeclass Term
 
 (*
- * @begin[doc]
  * The @tt{Ignore} typeclass should be used for terms that
  * should never be used anywhere.
- * @end[doc]
  *)
 declare typeclass Ignore <- "Term"
 
 (*
- * @begin[doc]
  * Quoted terms belong to the @tt{Quote} typeclass.
- * @end[doc]
  *)
 declare typeclass Quote -> Term
 
 (*
- * @begin[doc]
  * The @tt{Dform} typeclass should be used for terms that are used
  * in display forms, but not anywhere else.  Every term can be displayed.
- * @end[doc]
  *)
 declare typeclass Dform <- Term
 
 (*
- * @begin[doc]
  * Terms that describe types are in the @tt{Ty} typeclass.
- * @end[doc]
  *)
 declare typeclass Ty -> Dform
 
 (*
- * @begin[doc]
  * The @tt{Prop} typeclass is for terms that represent propositions.
- * @end[doc]
  *)
 declare typeclass Prop -> Term
 
 (*
- * @begin[doc]
  * The sentences in a rule should be in the typeclass @{Judgment}.
- * @end[doc]
  *)
 declare typeclass Judgment -> Dform
 
 (*
- * @begin[doc]
  * Tokens belong to the @tt{Token} typeclass.
- * @end[doc]
  *)
 declare typeclass Token
 
 (*
- * @begin[doc]
  * The type of lexers.
- * @end[doc]
  *)
 declare typeclass Lexer
 
 (*
- * @begin[doc]
  * Grammar terms.
- * @end[doc]
  *)
 declare typeclass Precedence
 declare typeclass Nonterminal -> Term
@@ -113,9 +93,7 @@ declare typeclass Terminal -> Nonterminal
 (* @docoff *)
 
 (*
- * @begin[doc]
  * Type constraint.
- * @end[doc]
  *)
 declare ty_constrain{'e : Term; 'a : Ty} : 'a
 
@@ -156,39 +134,31 @@ declare xquotation[name:s, quote:s] : 'a
  *)
 
 (*
- * @begin[doc]
  * @tt{xoncl} is the ``null'' conclusion.  It is the term used for the conclusion
  * of any sequent that is written without a conclusion.
- * @end[doc]
  *)
 declare xconcl : Term
 
 (*
- * @begin[doc]
  * @terms
  *
  * The @tt{nil} and @tt{cons} terms are used to represent abstract
  * lists.  The lists are used internally by the @MetaPRL compiler to
  * represent collections of syntax.  Externally, the elements of the
  * list must be display forms.
- * @end[doc]
  *)
 declare "xnil" : Dform
 declare "xcons"{'car : Dform; 'cdr : Dform} : Dform
 
 (*
- * @begin[doc]
  * The @tt{string} term is used internally by the @MetaPRL compiler
  * to represent strings.
- * @end[doc]
  *)
 declare "string"[s:s]
 
 (*
- * @begin[doc]
  * The @tt{bind} term is used internally by the @MetaPRL
  * to represent generic variable binding.
- * @end[doc]
  *)
 declare "bind"{a. 'z}
 declare "bind"{a, b. 'z}
@@ -199,30 +169,24 @@ declare "bind"{a, b, c, d, e, f. 'z}
 declare "bind"{a, b, c, d, e, f, g. 'z}
 
 (*
- * @begin[doc]
  * The @tt{xbinder} term is used to specify first-order variables in rules
  * and rewrites.
- * @end[doc]
  *)
 declare xbinder{'e : 'a}
 
 (*
- * @begin[doc]
  * The @tt{hyp} and @tt{concl} terms are used to represent
  * the parts of a sequent for the purposes of display.  Internally,
  * the @MetaPRL compiler uses an optimized representation of
  * sequents.
- * @end[doc]
  *)
 declare "hyp"{'A; x. 'B} : Dform
 declare "concl"{'A; 'B} : Dform
 
 (*
- * @begin[doc]
  * The @tt{rewrite} term is used to represent a computational equivalence.
  * The @MetaPRL{} refiner uses a proof of a judgment of the form
  * << "rewrite"{'redex; 'contractum} >> to establish computation equivalence.
- * @end[doc]
  *)
 declare "rewrite"{'redex; 'contractum} : Term
 

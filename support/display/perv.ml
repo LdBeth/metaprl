@@ -1,5 +1,4 @@
 (*
- * @begin[doc]
  * @module[Perv]
  *
  * The @hrefmodule[Perv] module defines some basic built-in terms used

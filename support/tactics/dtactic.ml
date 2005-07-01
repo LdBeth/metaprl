@@ -1,5 +1,4 @@
 doc <:doc<
-   @begin[doc]
    @module[Dtactic]
 
    The @tactic[dT] tactic is the cornerstone of reasoning in
@@ -150,13 +149,10 @@ doc <:doc<
    Author: Jason Hickey @email{jyh@cs.caltech.edu}
    Modified by: Aleksey Nogin @email{nogin@cs.cornell.edu}
    @end[license]
-   @end[doc]
 >>
 
 doc <:doc<
-   @begin[doc]
    @parents
-   @end[doc]
 >>
 extends Top_tacticals
 extends Auto_tactic

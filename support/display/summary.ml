@@ -1,5 +1,4 @@
 doc <:doc<
-   @begin[doc]
    @spelling{ML prl tex}
 
    @module[Summary]
@@ -64,7 +63,6 @@ doc <:doc<
    Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
 
    @end[license]
-   @end[doc]
 >>
 
 extends Perv
@@ -97,28 +95,23 @@ declare package_link[name:s] : Dform
  ************************************************************************)
 
 doc <:doc<
-   @begin[doc]
    @terms
 
    There are two outermost terms for modules: the interface is
    wrapped with @tt{interface} term, and the
    implementation is wrapped with @tt{implementation}.
-   @end[doc]
 >>
 declare "interface"{'intf} : Dform
 declare "implementation"{'impl} : Dform
 
 doc <:doc<
-   @begin[doc]
 
    The @tt{comment} term is used to enclose structured comments (term
    comments).
-   @end[doc]
 >>
 declare comment{'t : Dform} : Dform
 
 doc <:doc<
-   @begin[doc]
    Each of the components in an interface or implementation
    also has a term description.
    The @tt[parent] term describes an
@@ -134,7 +127,6 @@ doc <:doc<
    The @tt[definition] term describes a @bf{define} statement. The @it{term}
    is the term being declared, the @it{definition} is the term the definition
    expands to and @it[res] lists the resource annotations.
-   @end[doc]
 >>
 declare type ShapeClass -> Dform
 declare shape_normal : ShapeClass
@@ -153,31 +145,26 @@ doc docoff
 declare "parent"[name:s] : Dform
 
 doc <:doc<
-   @begin[doc]
    Rewrites are defined with the @tt[rewrite] and @tt[cond_rewrite]
    terms.  The @it{redex} and @it{contractum} define the rewrite; the @it{proof} is
    the proof of the rewrite (which is empty if the rewrite is primitive).  For the conditional
    rewrite the @it[params] are the conversion parameters and @it[args] are the terms
    that define the assumptions
    under which the rewrite is valid.  The @it{name} is the name of the rewrite.
-   @end[doc]
 >>
 declare "rewrite"[name:s]{'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
 declare cond_rewrite[name:s]{'params : Dform; 'args : Dform; 'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
 declare input_form[name:s]{'redex : Dform; 'contractum} : Dform
 
 doc <:doc<
-   @begin[doc]
    Rules are defined using the @tt[rule] term.
    The @it[stmt] is the statement of the rule, and @it{proof}
    is its proof.  The rule also includes a @it[param] list that defines the subgoals
    of the rule and the @it[res] list of resource annotations.
-   @end[doc]
 >>
 declare "rule"[name:s]{'params : Dform; 'stmt : Dform; 'proof : Dform; 'res : Dform} : Dform
 
 doc <:doc<
-   @begin[doc]
    Resources are defined with the @tt[resource] term, which has three subterms.  The
    The @it[inp] is the type of arguments that are required to make additions to the resource,
    @it[outp] is the type of values provided by the resource and @it[expr] is an ML expression
@@ -185,7 +172,6 @@ doc <:doc<
 
    Resources are improved with the @tt[improve] term which has the name of a resource
    to improve and the expression to improve the resource with.
-   @end[doc]
 >>
 declare "resource"[name:s]{'expr : Dform} : Dform
 declare "resource_defs"[name:s]{'res : Dform} : Dform
@@ -195,14 +181,12 @@ doc docoff
 declare "resource_defs"[start:n, finish:n, name:s]{'res : Dform} : Dform
 
 doc <:doc<
-   @begin[doc]
    Infix definitions (like the tacticals @tt[thenT] and @tt[orelseT]) are defined with
    the @tt{infix} declaration.
 
    OCaml definitions are also represented as terms using the
    @tt{summary_item} term, where the @it{term} is the
    term that represents the OCaml code.
-   @end[doc]
 >>
 declare "infix"[name:s] : Dform
 declare "suffix"[name:s] : Dform
@@ -217,14 +201,12 @@ declare "condition"{'term : Dform; 'cons : Dform; 'oexpr : Dform} : Dform
 declare "mlrewrite"[name:s]{'params : Dform; 'redex : Dform; 'body : Dform; 'resources : Dform} : Dform
 
 doc <:doc<
-   @begin[doc]
    Display forms are represented using the @tt[dform] term.
    The @it{modes} are the valid modes of the display form (for example,
    the normal display mode ``prl'', or the ``html'' or ``tex'' display modes),
    as well as parenthesization and precedence definitions.
    The @it{redex} is the term to be displayed, and the @it{@misspelled{def}} is
    the term describing the displayed definition.
-   @end[doc]
 >>
 declare "dform"[name:s]{'modes : Dform; 'redex : Dform; 'def : Dform} : Dform
 declare "prec"[name:s] : Dform
@@ -244,7 +226,6 @@ declare "none" : Dform
 declare "some"{'t} : Dform
 
 doc <:doc<
-   @begin[doc]
    Rules and axioms are described with @emph{meta}-terms.
    The meta-terms are defined inductively:
    a term (a @tt[meta_theorem]) is a meta-term,
@@ -253,7 +234,6 @@ doc <:doc<
    @tt[meta_iff], and the dependent meta-function @tt{meta_function}
    where @it[arg] is a variable quantified over $A$ and bound in $B$.  The
    @tt{meta_labeled} term is used to add a label to a meta-term.
-   @end[doc]
 >>
 declare typeclass MTerm -> Dform
 declare "meta_theorem"{'A : Judgment} : MTerm
@@ -290,7 +270,6 @@ declare "bool_arg"[s:Bool] : Dform
 declare "href"[command:s]{'t} : Dform
 
 doc <:doc<
-   @begin[doc]
    A proof has a goal defined with the @tt[goal] term,
    where the @it{status} is the status of the proof, the @tt{label} is the label
    of the outermost proof node, the @it[assums] are the assumptions (the subgoals)
@@ -300,7 +279,6 @@ doc <:doc<
    it can be shown that the proof is inconsistent; it is @it{partial}
    if it has unproven subgoals; it is @it{asserted} if it is primitive
    or if it has not been checked; and it is @it{complete} if it has been checked.
-   @end[doc]
 >>
 declare "goal"{'status : Dform; 'label : Dform; 'assums : Dform; 'goal : Dform} : Dform
 declare "status"{'sl : Dform} : Dform

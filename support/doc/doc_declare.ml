@@ -1,6 +1,5 @@
 (* -*- Mode: text -*- *)
 doc <:doc<
-   @begin[doc]
    @spelling{typeclass typesystem typeclasses}
 
    @chapter[declare]{Declarations}
@@ -27,13 +26,11 @@ doc <:doc<
    Author: Jason Hickey
    @email{jyh@cs.caltech.edu}
    @end[license]
-   @end[doc]
 >>
 extends Comment
 extends Summary
 
 doc <:doc<
-@begin[doc]
 
 In order for a term to be used in @MetaPRL, it must be declared first.  @MetaPRL uses a simple
 typesystem to classify these terms, where there are three kinds of declarations: typeclasses, types,
@@ -144,7 +141,6 @@ equivalent to the following declaration.
 declare type Fun{'a : Ty; 'b : Ty} : Ty
 @end[verbatim]
 
-@end[doc]
 >>
 
 (*!
