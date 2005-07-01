@@ -2305,18 +2305,18 @@ struct
     | _::tl -> nonemptys (succ sum) tl
     | [] -> sum
 
-   let rec collect_pure flist slist = function
+   let rec collect_pure set = function
       [] -> []
     | Empty :: r ->
-         collect_pure flist slist r
+         collect_pure set r
     | NodeAt(pos) :: r ->
          let {pospos=pospos} = pos in
-         if ((List.mem pospos flist) or (List.mem pospos slist)) then
-            collect_pure flist slist r
+         if Set.mem set pospos then
+            collect_pure set r
          else
-            pos :: collect_pure flist slist r
+            pos :: collect_pure set r
     | NodeA(pos,treearray) :: r ->
-         List.rev_append (collect_pure flist slist treearray) (collect_pure flist slist r)
+         List.rev_append (collect_pure set treearray) (collect_pure set r)
 
    let rec update_connections slist connections =
       ConnSet.filter
@@ -2560,8 +2560,13 @@ struct
          end
 
       in
-      let flist,slist = ConnSet.fold (fun (l1,l2) (a,b) -> a::l1, b::l2) ([],[]) connections in
-      let pr = collect_pure flist slist [ftree] in
+      let solvedset = (* I guess it's a solved set, if connections is a set of solved connections *)
+         ConnSet.fold
+            (fun set (a,b) -> Set.add (Set.add set a) b)
+            Set.empty
+            connections
+      in
+      let pr = collect_pure solvedset [ftree] in
       purity_reduction pr ftree redord connections unsolved_list
 
    let rec betasplit addr ftree redord connections unsolved_list =
