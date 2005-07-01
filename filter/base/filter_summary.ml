@@ -748,11 +748,18 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
 (*
  * Add a command to the info.
  *)
+let fix_loc ((itm, (bp, ep)) as item) =
+   let name = !Pcaml.input_file in
+      if name = "" || name = "-" || (bp.pos_fname <> "" && bp.pos_fname <> "-" && bp.pos_fname = ep.pos_fname) then
+         item
+      else
+         (itm, ({bp with pos_fname = name}, {ep with pos_fname = name}))
+
 let add_command { info_list = info } item =
-   { info_list = item::info }
+   { info_list = (fix_loc item)::info }
 
 let add_prefix_commands { info_list = info } items =
-   { info_list = info @ List.rev items }
+   { info_list = info @ List.rev_map fix_loc items }
 
 (************************************************************************
  * TERMS                                                                *
@@ -1842,8 +1849,8 @@ struct
    (*
     * Print an error and raise an exception.
     *)
-   let implem_error s =
-      raise (IterfImplemMismatch s)
+   let implem_error loc s =
+      Stdpp.raise_with_loc loc (IterfImplemMismatch s)
 
    (*
     * Check parameter lists.
@@ -1870,7 +1877,7 @@ struct
       let { rw_name = name; rw_redex = redex; rw_contractum = con } = info in
       let rec search = function
          [] ->
-            implem_error (sprintf "Rewrite %s: not implemented" name)
+            implem_error loc (sprintf "Rewrite %s: not implemented" name)
        | Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _ when name = name' ->
             redex', con'
        | DefineTerm (ShapeNormal, ty_term, { term_def_name = name'; term_def_value = con' }) :: _ when name = name' ->
@@ -1880,10 +1887,10 @@ struct
       in
       let redex', con' = search implem in
          if not (alpha_equal redex' redex) then
-            implem_error (sprintf "Rewrite %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
+            implem_error loc (sprintf "Rewrite %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
                              name (string_of_term redex') (string_of_term redex));
          if not (alpha_equal con' con) then
-            implem_error (sprintf "Rewrite %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
+            implem_error loc (sprintf "Rewrite %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
                              name (string_of_term con') (string_of_term con));
          items
 
@@ -1908,10 +1915,10 @@ struct
                   if alpha_equal con' con then
                      items
                   else
-                     implem_error (sprintf "InputForm %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
+                     implem_error loc (sprintf "InputForm %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
                                       name (string_of_term con') (string_of_term con))
                else
-                  implem_error (sprintf "InputForm %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
+                  implem_error loc (sprintf "InputForm %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
                                    name (string_of_term redex') (string_of_term redex))
           | None ->
                (InputForm info, loc) :: items
@@ -1932,7 +1939,7 @@ struct
       in
       let rec search = function
          [] ->
-            implem_error (sprintf "Cond_rewrite %s: not implemented" name)
+            implem_error loc (sprintf "Cond_rewrite %s: not implemented" name)
        | h::t ->
             match h with
                CondRewrite { crw_name = name';
@@ -1943,11 +1950,11 @@ struct
                } ->
                   if name = name' then
                      if not (check_params params' params) then
-                        implem_error (sprintf "Cond_rewrite %s: param list mismatch" name)
+                        implem_error loc (sprintf "Cond_rewrite %s: param list mismatch" name)
                      else if not (List.length args = List.length args' && List.for_all2 alpha_equal args' args) then
-                        implem_error (sprintf "Cond_rewrite %s: arg lists mismatch" name)
+                        implem_error loc (sprintf "Cond_rewrite %s: arg lists mismatch" name)
                      else if not (alpha_equal redex' redex & alpha_equal contractum contractum') then
-                        implem_error (sprintf "Cond_rewrite %s: specification mismatch" name)
+                        implem_error loc (sprintf "Cond_rewrite %s: specification mismatch" name)
                      else
                         ()
                   else
@@ -1968,16 +1975,16 @@ struct
       let { rule_name = name; rule_params = params; rule_stmt = stmt } = info in
       let rec search = function
          [] ->
-            implem_error (sprintf "Rule %s: not implemented" name)
+            implem_error loc (sprintf "Rule %s: not implemented" name)
        | Rule { rule_name = name'; rule_params = params'; rule_stmt = stmt' } :: t ->
             let stmt' = strip_mfunction stmt' in
                if name' = name then
                   if not (check_params params' params) then
-                     implem_error (sprintf "Rule %s: argument lists do not match" name)
+                     implem_error loc (sprintf "Rule %s: argument lists do not match" name)
                   else if not (meta_alpha_equal stmt' stmt) then
                      let s' = string_of_mterm stmt' in
                      let s = string_of_mterm stmt in
-                        implem_error (sprintf "Rule %s: specification mismatch:\n%s\nis not equal to\n%s\n" (**)
+                        implem_error loc (sprintf "Rule %s: specification mismatch:\n%s\nis not equal to\n%s\n" (**)
                                          name s' s)
                   else
                      ()
@@ -2014,7 +2021,7 @@ struct
                if Opname.eq type_opname type_opname' && parent_matches && shapeclass' = shapeclass then
                   items
                else
-                  implem_error (sprintf "declare kind '%s' mismatch" (string_of_opname opname))
+                  implem_error loc (sprintf "declare kind '%s' mismatch" (string_of_opname opname))
        | _ :: t ->
             search t
       in
@@ -2038,7 +2045,7 @@ struct
                   if ToTerm.TermTy.eq_ty ty_term' ty_term && Opname.eq ty_opname' ty_opname && shapeclass' = shapeclass then
                      items
                   else
-                     implem_error (sprintf "declare type '%s' mismatch" (string_of_opname (opname_of_term term)))
+                     implem_error loc (sprintf "declare type '%s' mismatch" (string_of_opname (opname_of_term term)))
                else
                   search t
        | _ :: t ->
@@ -2064,7 +2071,7 @@ struct
                   if ToTerm.TermTy.eq_ty ty_term' ty_term && shapeclass' = shapeclass then
                      items
                   else
-                     implem_error (sprintf "declare '%s' type annotations mismatch" (string_of_shape shape))
+                     implem_error loc (sprintf "declare '%s' type annotations mismatch" (string_of_shape shape))
                else
                   search t
        | _ :: t ->
@@ -2082,15 +2089,15 @@ struct
       let shape = shape_of_term term in
       let rec search = function
          [] ->
-            implem_error (sprintf "Definition %s: not implemented" (string_of_shape shape))
+            implem_error loc (sprintf "Definition %s: not implemented" (string_of_shape shape))
        | DefineTerm (shapeclass', ty_term', term_def') :: t ->
             let term' = term_of_ty ty_term' in
             let shape' = shape_of_term term' in
                if ToTerm.TermShape.eq shape' shape then begin
                   if not (ToTerm.TermTy.eq_ty ty_term' ty_term) || shapeclass' <> shapeclass then
-                     implem_error (sprintf "define '%s' mismatch" (string_of_shape shape));
+                     implem_error loc (sprintf "define '%s' mismatch" (string_of_shape shape));
                   if not (alpha_equal term_def'.term_def_value term_def.term_def_value) then
-                     implem_error (sprintf "define '%s' definition mismatch" (string_of_shape shape))
+                     implem_error loc (sprintf "define '%s' definition mismatch" (string_of_shape shape))
                end
                else
                   search t
@@ -2114,7 +2121,7 @@ struct
             if alpha_equal contractum contractum' then
                items
             else
-               implem_error (sprintf "declare type rewrite '%s' mismatch" (string_of_opname redex_opname))
+               implem_error loc (sprintf "declare type rewrite '%s' mismatch" (string_of_opname redex_opname))
        | _ :: t ->
             search t
       in
@@ -2142,10 +2149,10 @@ struct
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
-            implem_error (sprintf "MLRewrite %s: not implemented" name)
+            implem_error loc (sprintf "MLRewrite %s: not implemented" name)
        | MLRewrite { mlterm_name = name'; mlterm_term = term' } :: _ when name' = name ->
             if not (alpha_equal term' term) then
-               implem_error (sprintf "MLRewrite %s: definition does not match" name)
+               implem_error loc (sprintf "MLRewrite %s: definition does not match" name)
        | _ :: t ->
             search t
       in
@@ -2158,10 +2165,10 @@ struct
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
-            implem_error (sprintf "MLAxiom %s: not implemented" name)
+            implem_error loc (sprintf "MLAxiom %s: not implemented" name)
        | MLAxiom { mlterm_name = name'; mlterm_term = term' } :: _ when name' = name ->
             if not (alpha_equal term' term) then
-               implem_error (sprintf "MLAxiom %s: definition does not match" name)
+               implem_error loc (sprintf "MLAxiom %s: definition does not match" name)
        | _ :: t ->
             search t
       in
@@ -2177,7 +2184,7 @@ struct
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
-            implem_error (sprintf "Extends %s: not implemented" (string_of_path path))
+            implem_error loc (sprintf "Extends %s: not implemented" (string_of_path path))
        | Parent { parent_name = path' } :: _ when path = path' ->
             ()
        | _ :: t ->
@@ -2196,13 +2203,13 @@ struct
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
-            implem_error (sprintf "DForm %s: not implemented" (string_of_term term))
+            implem_error loc (sprintf "DForm %s: not implemented" (string_of_term term))
        | DForm { dform_options = tags'; dform_redex =  term' } :: _
          when alpha_equal term' term ->
             if tags' = tags then
                ()
             else
-               implem_error (sprintf "DForm %s: tag mismatch" (string_of_term term))
+               implem_error loc (sprintf "DForm %s: tag mismatch" (string_of_term term))
        | _ :: t ->
             search t
       in
@@ -2217,7 +2224,7 @@ struct
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
-            implem_error (sprintf "Prec %s: not implemented" name)
+            implem_error loc (sprintf "Prec %s: not implemented" name)
        | h::t ->
             match h with
                Prec name' ->
@@ -2235,7 +2242,7 @@ struct
    let rec check_resource loc name implem items =
       match implem with
          [] ->
-            implem_error (sprintf "Resource %s: not implemented" name)
+            implem_error loc (sprintf "Resource %s: not implemented" name)
        | Resource ( name', _ ) :: _  when name = name' ->
             items
        | _ :: t ->
@@ -2249,7 +2256,7 @@ struct
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
-            implem_error (match upd with
+            implem_error loc (match upd with
                              Infix name -> sprintf "Infix %s: not implemented" name
                            | Suffix name -> sprintf "Suffix %s: not implemented" name)
        | MLGramUpd upd' :: _ when upd = upd' ->
@@ -2270,7 +2277,7 @@ struct
             if id' = id then
                items
             else
-               implem_error (sprintf "Implementation is out of date (recompile)")
+               implem_error loc (sprintf "Implementation is out of date (recompile)")
        | _ :: t ->
             check_id loc id t items
 
@@ -2284,7 +2291,7 @@ struct
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
-            implem_error (sprintf "Module %s: not implemented" name)
+            implem_error loc (sprintf "Module %s: not implemented" name)
        | h::t ->
             match h with
                Module (name', info') ->
