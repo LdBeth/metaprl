@@ -194,10 +194,10 @@ dform misspelled_df1 : misspelled{'t} = 't
  * PRL comments.
  *)
 dform prl_comment_df : mode[prl] :: prl_comment{'t} =
-   newline 't newline
+   newline pushm[3] info["doc"] 't popm newline
 
 dform normal_doc_df2 : mode[prl] :: "doc"{'t} =
-   pushm[3] info["@begin[doc]"] newline szone 't ezone popm newline info["@end[doc]"]
+   newline szone 't ezone
 
 dform normal_doc_df4 : mode[html] :: mode[prl] :: "doc"{xcons{comment_white; 't}} =
    "doc"{'t}
