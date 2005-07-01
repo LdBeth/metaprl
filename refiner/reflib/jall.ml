@@ -3147,7 +3147,7 @@ let rec one_equation gprefix dlist delta_0_prefixes n =
    match dlist with
       [] -> ([],n)
     | f::r ->
-         let fprefix = List.assoc f delta_0_prefixes in
+         let fprefix = PMap.find delta_0_prefixes f in
          let (sf1,sg) = shorten fprefix gprefix in
          let v_new = NewVarQ, n in
          let fnew = sf1 @ [v_new] in
@@ -3175,25 +3175,26 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
          let ut = try_one.aposprefix in
          let ns = ext_atom.apos in
          let nt = try_one.apos in
-            match qprefixes with
-               gamma, [] when PMap.is_empty gamma -> (* prop case *)
-                  (* prop unification only *)
-                  let new_sigma,new_eqlist,_  =
-                     JTUnifyProp.do_stringunify us ut ns nt equations [] [] [] 1
-                  in
-                     (new_sigma,new_eqlist,[]) (* assume the empty reduction ordering during proof search *)
-             | gamma, delta -> (* "This is the FO case" *)
-                  (* fo_eqlist encodes the domain condition on J quantifier substitutions *)
-                  (* Again, always computed for the whole substitution sigmaQ *)
-                  let fo_eqlist, new_max = make_domain_equations fo_pairs gamma delta qmax in
-                     (*
-                     open_box 0;
-                     print_string "domain equations in";
-                     print_equations fo_eqlist;
-                     print_string "domain equations out";
-                     print_flush ();
-                     *)
-                     do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel new_max
+			let gamma, delta = qprefixes in
+         if PMap.is_empty gamma && PMap.is_empty delta then
+            (* prop case *)
+            (* prop unification only *)
+            let new_sigma,new_eqlist,_  =
+               JTUnifyProp.do_stringunify us ut ns nt equations [] [] [] 1
+            in
+               (new_sigma,new_eqlist,[]) (* assume the empty reduction ordering during proof search *)
+         else (* "This is the FO case" *)
+            (* fo_eqlist encodes the domain condition on J quantifier substitutions *)
+            (* Again, always computed for the whole substitution sigmaQ *)
+            let fo_eqlist, new_max = make_domain_equations fo_pairs gamma delta qmax in
+            (*
+            open_box 0;
+            print_string "domain equations in";
+            print_equations fo_eqlist;
+            print_string "domain equations out";
+            print_flush ();
+            *)
+            do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel new_max
 
 (**************************************** add multiplicity *********************************)
 
@@ -3405,7 +3406,7 @@ let path_checker
    (consts: SymbolSet.t)
    (atom_rel: (atom * atom list * atom list) list)
    (atom_sets: (atom * AtomSet.t * 'a) list)
-   (qprefixes: position list PMap.t * ((position * position list) list))
+   (qprefixes: position list PMap.t * position list PMap.t)
    (init_ordering: (position * Set.t) list)
    calculus =
 
@@ -3499,7 +3500,8 @@ let path_checker
       else
          check_extension extset
    in
-   if qprefixes = (PMap.empty,[]) then
+	let gamma, delta = qprefixes in
+   if PMap.is_empty gamma && PMap.is_empty delta then
       begin
 (*      print_endline "!!!!!!!!!!! prop prover !!!!!!!!!!!!!!!!!!"; *)
 (* in the propositional case, the reduction ordering will be computed AFTER proof search *)
@@ -3597,7 +3599,7 @@ and select_atoms ftree posprefix acc =
              | Delta_0 ->
 				 		atom_acc,
                   gamma_0_acc,
-                  (pospos,posprefix)::delta_0_acc
+                  PMap.add delta_0_acc pospos posprefix
              | _ ->
 				 		acc
          in
@@ -3605,7 +3607,7 @@ and select_atoms ftree posprefix acc =
 
 let prepare_prover ftree =
    let alist,gamma_0_prefixes,delta_0_prefixes =
-      select_atoms_treelist [ftree] [] ([],PMap.empty,[])
+      select_atoms_treelist [ftree] [] ([],PMap.empty,PMap.empty)
    in
    let atom_rel = compute_atomlist_relations alist ftree alist in
    (atom_rel,(gamma_0_prefixes,delta_0_prefixes))
