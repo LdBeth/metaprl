@@ -234,6 +234,11 @@ end
 
 module Set = Lm_set.LmMake(PosOrdering)
 
+module PMap = Lm_map.LmMake(PosOrdering)
+
+let nodups k a b =
+   if a = b then a else raise (Invalid_argument "no dupes allowed in map")
+
 let list_pos_to_string = List.map pos_to_string
 let list_string_to_pos = List.map string_to_pos
 (*
@@ -283,28 +288,23 @@ struct
 
    exception Reflexive
 
-   let rec transitive_irreflexive_closure addset const ordering =
-      match ordering with
-         [] ->
-            []
-       | ((pos,fset) as pos_fset)::r ->
-            if (pos = const) or (Set.mem fset const) then
+   let transitive_irreflexive_closure_aux addset const pos fset =
+      if (pos = const) or (Set.mem fset const) then
 (* check reflexsivity during transitive closure wrt. addset ONLY!!! *)
-               if Set.mem addset pos then
-                  raise Reflexive
-               else
-                  (pos,(Set.union fset addset))::(transitive_irreflexive_closure addset const r)
-            else
-               pos_fset::(transitive_irreflexive_closure addset const r)
-
-   let rec search_set var = function
-      [] ->
-         raise (Invalid_argument ("Jprover: element in ordering missing: "^(pos_to_string var)))
-    | (pos,fset)::r ->
-         if pos = var then
-            Set.add fset pos
+         if Set.mem addset pos then
+            raise Reflexive
          else
-            search_set var r
+            Set.union fset addset
+      else
+         fset
+
+
+   let rec transitive_irreflexive_closure addset const ordering =
+      PMap.mapi (transitive_irreflexive_closure_aux addset const) ordering
+
+   let rec search_set var ordering =
+      let fset = PMap.find ordering var in
+      Set.add fset var
 
    let add_sets var const ordering =
       let addset =  search_set var ordering in

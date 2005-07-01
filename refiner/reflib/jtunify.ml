@@ -146,9 +146,9 @@ sig
    val build_ordering :
       position list ->
       position list ->
-      (position * Set.t) list ->
+      Set.t PMap.t ->
 		Set.t ->
-      (position * Set.t) list
+      Set.t PMap.t
 
    val shorten : 'a list -> 'a list -> ('a list * 'a list)
 
@@ -185,7 +185,7 @@ struct
 
    module JTypes = JTypes(JLogic)
 
-	let build_ordering _ _ _ _ = []
+	let build_ordering _ _ _ _ = PMap.empty
 
 	let rec shorten us ut =
 		match (us,ut) with

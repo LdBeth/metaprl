@@ -15,9 +15,9 @@ sig
    val build_ordering :
       position list ->
       position list ->
-      (position * Set.t) list ->
+      Set.t PMap.t ->
       Set.t ->
-      (position * Set.t) list
+      Set.t PMap.t
 
    val shorten : 'a list -> 'a list -> ('a list * 'a list)
 
@@ -38,13 +38,13 @@ sig
 		position ->
 		(position list * (position list * position list)) list ->
 		(position list * (position list * position list)) list ->
-		(position * Set.t) list ->
+		Set.t PMap.t ->
 		Set.t ->
 		int ->
 		(int * (position * position list) list) * (* unifier *)
 		(int * (position list * (position list * position list)) list) *
       (* applied new eqlist *)
-		(position * Set.t) list
+		Set.t PMap.t
 
 end
 
@@ -58,12 +58,12 @@ sig
       position ->
       (position list * (position list * position list)) list ->
       (position list * (position list * position list)) list ->
-      (position * Set.t) list ->
+      Set.t PMap.t ->
       Set.t ->
       int ->
       (int * (position * position list) list) * (* unifier *)
       (int * (position list * (position list * position list)) list) *
       (* applied new eqlist *)
-      (position * Set.t) list
+      Set.t PMap.t
 
 end

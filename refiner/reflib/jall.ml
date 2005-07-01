@@ -197,10 +197,8 @@ struct
 
 	module PosSet = Lm_set.LmMake(OrderedPos)
 
-	module PMap = Lm_map.LmMake(PosOrdering)
-
 	module OrdSubtree =
-	struct
+   struct
 		type t = (position * position) * int
 
 		let compare (p1,i1) (p2,i2) =
@@ -1093,8 +1091,8 @@ struct
    (* ext_proof here has to be ordered, otherwise proofs break *)
    let rec build_opt_beta_proof beta_proof
       (ext_proof : (position * position) list)
-      (beta_atoms : (position * (position * int) list) list)
-      (beta_layer_list  : (position * (position list * position list)) list)
+      (beta_atoms : (position * int) list PMap.t)
+      (beta_layer_list  : (position list * position list) PMap.t)
       act_context
       =
       let rec add_c2_tree (c1,c2) c2_diff_context =
@@ -1104,7 +1102,7 @@ struct
           | (f,num)::c2_diff_r ->
                let next_beta_proof,next_exp =
                   add_c2_tree (c1,c2) c2_diff_r in
-               let (layer1,layer2) = List.assoc f beta_layer_list in
+               let (layer1,layer2) = PMap.find beta_layer_list f in
                let new_bproof =
                   if num = 1 then
                      BNode(f,(layer1,next_beta_proof),(layer2,BEmpty))
@@ -1141,7 +1139,7 @@ struct
                      (c2_bproof,c2_exp,1,rest_ext_proof)
                   end
           | (f,num)::c1_diff_r ->
-               let (layer1,layer2) = List.assoc f beta_layer_list in
+               let (layer1,layer2) = PMap.find beta_layer_list f in
                let next_beta_proof,next_exp,next_closures,next_ext_proof =
                   add_beta_expansions (c1,c2) rest_ext_proof c1_diff_r c2_diff_context new_act_context in
                let new_bproof =
@@ -1194,8 +1192,8 @@ struct
             beta_proof,0,0,[]
        | (c1,c2)::rproof ->
 (*  print_endline ("actual connection: "^c1^" "^c2); *)
-            let c1_context = List.assoc c1 beta_atoms in
-            let c2_context = List.assoc c2 beta_atoms in
+            let c1_context = PMap.find beta_atoms c1 in
+            let c2_context = PMap.find beta_atoms c2 in
             let c2_diff_context = compute_beta_difference c1_context c2_context act_context in
             let c1_diff_context = compute_tree_difference beta_proof c1_context in (* wrt. actual beta-proof *)
             let (next_beta_proof,next_exp,next_closures,next_ext_proof) =
@@ -1214,13 +1212,13 @@ struct
          =
          match tree with
             Empty ->
-               (atlist,[],[])
+               atlist, PMap.empty, PMap.empty
           | NodeAt({pospos=pospos}) ->
                if Set.mem atlist pospos then
                   let new_atlist = Set.remove atlist pospos in
-                  (new_atlist,[(pospos,beta_context)],[])
+                  new_atlist, PMap.add PMap.empty pospos beta_context, PMap.empty
                else
-                  (atlist,[],[])
+                  atlist, PMap.empty, PMap.empty
           | NodeA({pt = Beta; pospos = pospos}, [s1;s2]) ->
                let alayer1 = compute_alpha_layer [s1] in
                let alayer2 = compute_alpha_layer [s2] in
@@ -1232,21 +1230,22 @@ struct
                let atlist2,annotates2,blayer_list2 =
                   annotate_atoms new_beta_context2 atlist1 [s2]
                in
-                  (atlist2,(List.rev_append annotates1 annotates2),
-						((pospos,(alayer1,alayer2))::(List.rev_append blayer_list1 blayer_list2)))
+                  atlist2, PMap.union nodups annotates1 annotates2,
+						PMap.add (PMap.union nodups blayer_list1 blayer_list2) pospos (alayer1,alayer2)
           | NodeA({pt = Beta}, _) ->
                raise jprover_bug
           | NodeA(_, suctrees) ->
                annotate_atoms beta_context atlist suctrees
       in
       match treelist with
-         [] -> (atlist,[],[])
+         [] -> atlist, PMap.empty, PMap.empty
        | f::r ->
-            let (next_atlist,f_annotates,f_beta_layers) = annotate_tree beta_context f atlist in
-            let (rest_atlist,rest_annotates,rest_beta_layers) = (annotate_atoms beta_context next_atlist r)
+            let next_atlist, f_annotates, f_beta_layers = annotate_tree beta_context f atlist in
+            let rest_atlist, rest_annotates, rest_beta_layers =
+               annotate_atoms beta_context next_atlist r
             in
-            (rest_atlist, (List.rev_append f_annotates rest_annotates),
-				(List.rev_append f_beta_layers rest_beta_layers))
+            rest_atlist, PMap.union nodups f_annotates rest_annotates,
+				PMap.union nodups f_beta_layers rest_beta_layers
 
    let construct_opt_beta_proof ftree
       (ext_proof : (position * position) list)
@@ -1909,9 +1908,6 @@ struct
    let rec number_list n = function
       hd::tl -> (n,hd)::(number_list (succ n) tl)
     | [] -> []
-
-	let nodups k a b =
-		if a = b then a else raise (Invalid_argument "no dupes allowed in map")
 
    let rec build_formula_rel dir_treelist
       (slist : Set.t)
@@ -3180,9 +3176,9 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
             (* prop case *)
             (* prop unification only *)
             let new_sigma,new_eqlist,_  =
-               JTUnifyProp.do_stringunify us ut ns nt equations [] [] Set.empty 1
+               JTUnifyProp.do_stringunify us ut ns nt equations [] PMap.empty Set.empty 1
             in
-               (new_sigma,new_eqlist,[]) (* assume the empty reduction ordering during proof search *)
+               (new_sigma,new_eqlist,PMap.empty) (* assume the empty reduction ordering during proof search *)
          else (* "This is the FO case" *)
             (* fo_eqlist encodes the domain condition on J quantifier substitutions *)
             (* Again, always computed for the whole substitution sigmaQ *)
@@ -3414,7 +3410,7 @@ let path_checker
    (atom_rel: (atom * atom list * atom list) list)
    (atom_sets: (atom * AtomSet.t * 'a) list)
    (qprefixes: position list PMap.t * position list PMap.t)
-   (init_ordering: (position * Set.t) list)
+   (init_ordering: Set.t PMap.t)
    calculus =
 
    let con = connections atom_rel AtomSet.empty in
@@ -3511,13 +3507,13 @@ let path_checker
 (*      print_endline "!!!!!!!!!!! prop prover !!!!!!!!!!!!!!!!!!"; *)
 (* in the propositional case, the reduction ordering will be computed AFTER proof search *)
          let (_,eqlist,(_,nsubstJ),ext_proof) =
-            provable AtomSet.empty AtomSet.empty ([],[]) (1,[]) ([],(1,[])) in
+            provable AtomSet.empty AtomSet.empty (PMap.empty,PMap.empty) (1,[]) ([],(1,[])) in
          let _,substJ = nsubstJ in
          let orderingJ = build_orderingJ_list substJ init_ordering atom_set in
          ((init_ordering,orderingJ),eqlist,([],nsubstJ),ext_proof)
       end
    else
-      provable AtomSet.empty AtomSet.empty (init_ordering,[]) (1,[]) ([],(1,[]))
+      provable AtomSet.empty AtomSet.empty (init_ordering,PMap.empty) (1,[]) ([],(1,[]))
 
 (*************************** prepare let init prover *******************************************************)
 
@@ -3853,7 +3849,7 @@ let rec build_ftree variable old_term pol stype address pos_n =
 let rec construct_ftree
    termlist
    treelist
-   (orderinglist : (position * Set.t) list)
+   (orderinglist : Set.t PMap.t)
    pos_n
    goal
    =
@@ -3863,8 +3859,9 @@ let rec construct_ftree
             {address=[]; pospos=root_pos;
             op=Null; pol=Zero; pt=Psi; st=PNull_0; label=goal}
          in
+         let union = PMap.fold (fun set key s -> Set.union set s) Set.empty orderinglist in
          NodeA(new_root,treelist),
-         ((root_pos,(union_orderings orderinglist))::orderinglist),pos_n
+         (PMap.add orderinglist root_pos union),pos_n
     | ft::rest_terms ->
          let next_address = [List.length treelist] in
          let next_pol,next_goal =
@@ -3876,7 +3873,7 @@ let rec construct_ftree
          let new_tree,new_ordering,new_pos_n =
             build_ftree empty_sym ft next_pol Alpha_1 next_address (pos_n+1) in
          construct_ftree rest_terms (treelist @ [new_tree])
-            (List.rev_append orderinglist new_ordering) new_pos_n next_goal
+            (PMap.add_list orderinglist new_ordering) new_pos_n next_goal
 			(* rev_append in treelist breaks some proofs *)
 
 (*************************** Main LOOP ************************************)
@@ -3894,7 +3891,7 @@ let rec try_multiplicity
    (consts: SymbolSet.t)
    mult_limit
    ftree
-   (ordering:(position * Set.t) list)
+   (ordering: Set.t PMap.t)
    pos_n
    mult
    calculus
@@ -3923,12 +3920,15 @@ let rec try_multiplicity
             if ftree_eq new_ftree ftree then
                raise unprovable
             else
+               let new_ordering =
+                  List.fold_left (fun acc (p,s) -> PMap.add acc p s) PMap.empty new_ordering
+               in
 (*             print_formula_info new_ftree new_ordering new_pos_n;   *)
                try_multiplicity consts mult_limit new_ftree new_ordering new_pos_n new_mult calculus
 
 let prove consts mult_limit termlist calculus =
    let (ftree,ordering,pos_n) =
-      construct_ftree termlist [] [] 0 (mk_pos_var (dummy_pos ()))
+      construct_ftree termlist [] PMap.empty 0 (mk_pos_var (dummy_pos ()))
    in
 (* pos_n = number of positions without new root "w" *)
 (*   print_formula_info ftree ordering pos_n;    *)
@@ -4052,6 +4052,7 @@ let gen_prover mult_limit calculus hyps concls =
    let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
 		prove consts mult_limit renamed_termlist calculus
 	in
+   let red_ordering = PMap.fold (fun acc p s -> (p,s)::acc) [] red_ordering in
    (* it's too early to convert ext_proof to a set *)
    let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
          (* transform types let rename constants *)
@@ -4127,6 +4128,7 @@ let do_prove mult_limit termlist calculus =
       print_endline "";
       print_flush ();
       let _ = input_char stdin in
+      let red_ordering = PMap.fold (fun acc p s -> (p,s)::acc) [] red_ordering in
       let reconstr_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
       let sequent_proof = make_test_interface consts reconstr_proof input_map in
       open_box 0;
