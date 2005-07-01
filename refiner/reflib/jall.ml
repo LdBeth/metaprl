@@ -3332,11 +3332,16 @@ let rec get_alpha atom = function
  | (a, alpha, _) :: _ when atom_eq a atom -> alpha
  | _ :: r -> get_alpha atom r
 
-let rec get_connections a alpha tabulist =
+let rec get_connections a alpha
+   (tabulist : AtomSet.t)
+   =
    match alpha with
       [] -> []
     | f::r ->
-         if (a.apredicate = f.apredicate) & (a.apol <> f.apol) & (not (List.mem f tabulist)) then
+         if (a.apredicate = f.apredicate) &
+            (a.apol <> f.apol) &
+            (not (AtomSet.mem tabulist f))
+         then
             (a,f)::(get_connections a r tabulist)
          else
             (get_connections a r tabulist)
@@ -3345,7 +3350,9 @@ let rec connections atom_rel tabulist =
    match atom_rel with
       [] -> []
     | (a,alpha,_)::r ->
-         List.rev_append (get_connections a alpha tabulist) (connections r (a::tabulist))
+         List.rev_append
+            (get_connections a alpha tabulist)
+            (connections r (AtomSet.add tabulist a))
 
 let check_alpha_relation atom set atom_sets =
    AtomSet.subset set (get_alpha atom atom_sets)
@@ -3410,7 +3417,7 @@ let path_checker
    (init_ordering: (position * Set.t) list)
    calculus =
 
-   let con = connections atom_rel [] in
+   let con = connections atom_rel AtomSet.empty in
    let atom_rel =
       List.rev_map (fun ({apos=x},y,z) -> x, y, z) atom_rel
    in
