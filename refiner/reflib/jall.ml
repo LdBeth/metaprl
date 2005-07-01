@@ -1910,8 +1910,8 @@ struct
       hd::tl -> (n,hd)::(number_list (succ n) tl)
     | [] -> []
 
-	let nodups k (a:position) b =
-		if a = b then a else raise (Invalid_argument "no dupes allowed in renaming map")
+	let nodups k a b =
+		if a = b then a else raise (Invalid_argument "no dupes allowed in map")
 
    let rec build_formula_rel dir_treelist
       (slist : Set.t)
@@ -3154,14 +3154,14 @@ let rec one_equation gprefix dlist delta_0_prefixes n =
          let (rest_equations,new_n) = one_equation gprefix r delta_0_prefixes (n+1) in
          (([],(fnew,sg))::rest_equations),new_n
 
-let rec make_domain_equations fo_pairs (gamma_0_prefixes,delta_0_prefixes) n =
+let rec make_domain_equations fo_pairs gamma_0_prefixes delta_0_prefixes  n =
    match fo_pairs with
       [] -> ([],n)
     | (g,dlist)::r ->
-         let gprefix = List.assoc g gamma_0_prefixes in
+         let gprefix = PMap.find gamma_0_prefixes g in
          let (gequations,max) = one_equation gprefix dlist delta_0_prefixes n in
          let (rest_equations,new_max) =
-            make_domain_equations r (gamma_0_prefixes,delta_0_prefixes) max in
+            make_domain_equations r gamma_0_prefixes delta_0_prefixes max in
          List.rev_append gequations rest_equations, new_max
 
 (* type of one unifier: int * ((string * string list) list)  *)
@@ -3176,16 +3176,16 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
          let ns = ext_atom.apos in
          let nt = try_one.apos in
             match qprefixes with
-               [], [] -> (* prop case *)
+               gamma, [] when PMap.is_empty gamma -> (* prop case *)
                   (* prop unification only *)
                   let new_sigma,new_eqlist,_  =
                      JTUnifyProp.do_stringunify us ut ns nt equations [] [] [] 1
                   in
                      (new_sigma,new_eqlist,[]) (* assume the empty reduction ordering during proof search *)
-             | _ -> (* "This is the FO case" *)
+             | gamma, delta -> (* "This is the FO case" *)
                   (* fo_eqlist encodes the domain condition on J quantifier substitutions *)
                   (* Again, always computed for the whole substitution sigmaQ *)
-                  let fo_eqlist, new_max = make_domain_equations fo_pairs qprefixes qmax in
+                  let fo_eqlist, new_max = make_domain_equations fo_pairs gamma delta qmax in
                      (*
                      open_box 0;
                      print_string "domain equations in";
@@ -3405,7 +3405,7 @@ let path_checker
    (consts: SymbolSet.t)
    (atom_rel: (atom * atom list * atom list) list)
    (atom_sets: (atom * AtomSet.t * 'a) list)
-   (qprefixes: ((position * position list) list) * ((position * position list) list))
+   (qprefixes: position list PMap.t * ((position * position list) list))
    (init_ordering: (position * Set.t) list)
    calculus =
 
@@ -3499,7 +3499,7 @@ let path_checker
       else
          check_extension extset
    in
-   if qprefixes = ([],[]) then
+   if qprefixes = (PMap.empty,[]) then
       begin
 (*      print_endline "!!!!!!!!!!! prop prover !!!!!!!!!!!!!!!!!!"; *)
 (* in the propositional case, the reduction ordering will be computed AFTER proof search *)
@@ -3565,27 +3565,22 @@ let atom_record position posprefix =
     apredicate=aop;
     apol=pol; ast=st; alabel=label}
 
-let rec select_atoms_treelist treelist posprefix =
+let rec select_atoms_treelist treelist posprefix acc =
    match treelist with
-      [] -> [],[],[]
+      [] -> acc
     | first::rest ->
-         let first_alist,first_gprefixes,first_dprefixes =
-            select_atoms first posprefix
+         let acc =
+            select_atoms first posprefix acc
          in
-         let rest_alist,rest_gprefixes,rest_dprefixes =
-            select_atoms_treelist rest posprefix
-         in
-         List.rev_append first_alist rest_alist,
-         List.rev_append first_gprefixes rest_gprefixes,
-         List.rev_append first_dprefixes rest_dprefixes
+         select_atoms_treelist rest posprefix acc
 
-and select_atoms ftree posprefix =
+and select_atoms ftree posprefix acc =
+	let atom_acc,gamma_0_acc,delta_0_acc = acc in
    match ftree with
-      Empty -> [],[],[]
+      Empty -> acc
     | NodeAt(position) ->
-         [atom_record position posprefix],[],[]
-    | NodeA(position,suctrees) ->
-         let {pospos = pospos; st = st } = position in
+         (atom_record position posprefix)::atom_acc, gamma_0_acc, delta_0_acc
+    | NodeA({pospos = pospos; st = st }, suctrees) ->
          let new_posprefix =
             match st with
                Psi_0 | Phi_0 ->
@@ -3593,26 +3588,24 @@ and select_atoms ftree posprefix =
              | _ ->
                   posprefix
          in
-         let (rest_alist,rest_gamma_0_prefixes,rest_delta_0_prefixes) =
-            select_atoms_treelist suctrees new_posprefix
-         in
-         let gamma_0_prefixes, delta_0_prefixes =
+         let acc =
             match st with
                Gamma_0 ->
-                  (position.pospos,posprefix)::rest_gamma_0_prefixes,
-                  rest_delta_0_prefixes
+						atom_acc,
+                  PMap.add gamma_0_acc pospos posprefix,
+                  delta_0_acc
              | Delta_0 ->
-                  rest_gamma_0_prefixes,
-                  (position.pospos,posprefix)::rest_delta_0_prefixes
+				 		atom_acc,
+                  gamma_0_acc,
+                  (pospos,posprefix)::delta_0_acc
              | _ ->
-                  rest_gamma_0_prefixes,
-                  rest_delta_0_prefixes
+				 		acc
          in
-            rest_alist, gamma_0_prefixes, delta_0_prefixes
+            select_atoms_treelist suctrees new_posprefix acc
 
 let prepare_prover ftree =
    let alist,gamma_0_prefixes,delta_0_prefixes =
-      select_atoms_treelist [ftree] []
+      select_atoms_treelist [ftree] [] ([],PMap.empty,[])
    in
    let atom_rel = compute_atomlist_relations alist ftree alist in
    (atom_rel,(gamma_0_prefixes,delta_0_prefixes))
