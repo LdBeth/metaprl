@@ -197,6 +197,8 @@ struct
 
 	module PosSet = Lm_set.LmMake(OrderedPos)
 
+	module PMap = Lm_map.LmMake(PosOrdering)
+
    let jprover_bug = Invalid_argument "Jprover bug (Jall module)"
 
    (* XXX: Nogin: as far as I understand, names are unique, but I am not sure *)
@@ -1894,13 +1896,16 @@ struct
       hd::tl -> (n,hd)::(number_list (succ n) tl)
     | [] -> []
 
+	let nodups k (a:position) b =
+		if a = b then a else raise (Invalid_argument "no dupes allowed in renaming map")
+
    let rec build_formula_rel dir_treelist
       (slist : Set.t)
       predpos
       =
       let rec build_renamed_gamma_rel dtreelist predpos pospos d =
          match dtreelist with
-            [] -> [],[]
+            [] -> [],PMap.empty
           | (x,ft)::rdtlist ->
                let rest_rel,rest_ren = build_renamed_gamma_rel rdtlist predpos pospos d in
                (
@@ -1919,19 +1924,19 @@ struct
                          *  but currently I simply create a fresh variable of
                          *  original kind and it seems to work alright *)
                          let new_srel_el = ((predpos,new_pos),d) in
-                         let new_rename_el = (spospos,new_pos)  (* gamma_0 position as key first *) in
                          let (srel,sren) =
                             build_formula_rel [(x,ft)] slist new_pos
                          in
                          (new_srel_el::(List.rev_append srel rest_rel)),
-								 (new_rename_el::(List.rev_append sren rest_ren))
+								 (PMap.add (PMap.union nodups sren rest_ren) spospos new_pos)
+								 (* gamma_0 position as key first *)
                       else
                          rest_rel,rest_ren
                )
 
       in
       match dir_treelist with
-         [] -> [],[]
+         [] -> [],PMap.empty
        | (d,f)::dir_r ->
             let (rest_rel,rest_renlist) = build_formula_rel dir_r slist predpos in
             match f with
@@ -1944,12 +1949,12 @@ struct
                   let dtreelist = number_list 1 suctrees in
                   let (srel,sren) = build_formula_rel dtreelist slist pospos in
                      (((predpos,pospos),d)::(List.rev_append srel rest_rel)),
-							(List.rev_append sren rest_renlist)
+							(PMap.union nodups sren rest_renlist)
              | NodeA({ pt = Psi| Phi }, suctrees) ->
                   let dtreelist = (List.rev_map (fun x -> (d,x)) suctrees) in
                   let (srel,sren) = build_formula_rel dtreelist slist predpos in
                      (List.rev_append srel rest_rel),
-							(List.rev_append sren rest_renlist)
+							(PMap.union nodups sren rest_renlist)
              | NodeA({ pt = Gamma; pospos=pospos }, suctrees) ->
                   let dtreelist = (List.rev_map (fun x -> (1,x)) suctrees) in
 (*                if (nonemptys suctrees 0 n) = 1 then
@@ -1958,7 +1963,7 @@ struct
    else (* we have more than one gamma instance, which means renaming *)
 *)
                   let (srel,sren) = build_renamed_gamma_rel dtreelist predpos pospos d in
-                     (List.rev_append srel rest_rel), (List.rev_append sren rest_renlist)
+                     (List.rev_append srel rest_rel), (PMap.union nodups sren rest_renlist)
              | NodeA({ pt = PNull }, _) ->
                   raise jprover_bug
 
@@ -1966,7 +1971,7 @@ struct
       match ljmc_proof with
          [] -> []
        | ((inst,_),(((Alll | Exr),_,_) as h))::r ->
-            let new_gamma = List.assoc inst rename_list in
+            let new_gamma = PMap.find rename_list inst in
             ((inst,new_gamma),h)::(rename_gamma r rename_list)
        | h :: r ->
             h :: (rename_gamma r rename_list)
