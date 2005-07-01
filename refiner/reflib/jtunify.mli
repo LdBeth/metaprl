@@ -16,7 +16,7 @@ sig
       position list ->
       position list ->
       (position * Set.t) list ->
-      (position * 'a * 'b) list ->
+      Set.t ->
       (position * Set.t) list
 
    val shorten : 'a list -> 'a list -> ('a list * 'a list)
@@ -39,7 +39,7 @@ sig
 		(position list * (position list * position list)) list ->
 		(position list * (position list * position list)) list ->
 		(position * Set.t) list ->
-		(position * 'a * 'b) list ->
+		Set.t ->
 		int ->
 		(int * (position * position list) list) * (* unifier *)
 		(int * (position list * (position list * position list)) list) *
@@ -59,7 +59,7 @@ sig
       (position list * (position list * position list)) list ->
       (position list * (position list * position list)) list ->
       (position * Set.t) list ->
-      (position * 'a * 'b) list ->
+      Set.t ->
       int ->
       (int * (position * position list) list) * (* unifier *)
       (int * (position list * (position list * position list)) list) *

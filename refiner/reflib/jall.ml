@@ -3180,7 +3180,7 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
             (* prop case *)
             (* prop unification only *)
             let new_sigma,new_eqlist,_  =
-               JTUnifyProp.do_stringunify us ut ns nt equations [] [] [] 1
+               JTUnifyProp.do_stringunify us ut ns nt equations [] [] Set.empty 1
             in
                (new_sigma,new_eqlist,[]) (* assume the empty reduction ordering during proof search *)
          else (* "This is the FO case" *)
@@ -3418,9 +3418,7 @@ let path_checker
    calculus =
 
    let con = connections atom_rel AtomSet.empty in
-   let atom_rel =
-      List.rev_map (fun ({apos=x},y,z) -> x, y, z) atom_rel
-   in
+   let atom_set = List.fold_left (fun set ({apos=x},y,z) -> Set.add set x) Set.empty atom_rel in
 (*   print_endline "";
    print_endline ("number of connections: "^(string_of_int (List.length con)));
 *)
@@ -3453,7 +3451,7 @@ let path_checker
 (* we make in incremental reflexivity test during the string unification *)
             let (new_sigmaJ,new_eqlist,new_red_ordering) =
 (* new_red_ordering = [] in propositional case *)
-               stringunify ext_atom try_one eqlist relate_pairs calculus new_orderingQ atom_rel qprefixes
+               stringunify ext_atom try_one eqlist relate_pairs calculus new_orderingQ atom_set qprefixes
             in
 (*           print_endline ("make reduction ordering "^((string_of_int (List.length new_ordering)))); *)
             let new_closed = AtomSet.add closed ext_atom in
@@ -3515,7 +3513,7 @@ let path_checker
          let (_,eqlist,(_,nsubstJ),ext_proof) =
             provable AtomSet.empty AtomSet.empty ([],[]) (1,[]) ([],(1,[])) in
          let _,substJ = nsubstJ in
-         let orderingJ = build_orderingJ_list substJ init_ordering atom_rel in
+         let orderingJ = build_orderingJ_list substJ init_ordering atom_set in
          ((init_ordering,orderingJ),eqlist,([],nsubstJ),ext_proof)
       end
    else

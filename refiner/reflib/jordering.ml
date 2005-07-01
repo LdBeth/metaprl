@@ -320,30 +320,30 @@ struct
     | _::r ->
          add_arrowsJ v ordering r
 
-   let rec add_substJ replace_vars replace_string ordering atom_rel =
+   let rec add_substJ replace_vars replace_string ordering atom_set =
       match replace_vars with
          [] -> ordering
        | ((NewVar | NewVarQ),_)::r -> (* don't integrate new variables *)
-            add_substJ r replace_string ordering atom_rel
+            add_substJ r replace_string ordering atom_set
        | v::r (* no reduction ordering at atoms *)
-            when List.exists (fun (x,_,_) -> (x = v)) atom_rel ->
-               add_substJ r replace_string ordering atom_rel
+            when Set.mem atom_set v ->
+               add_substJ r replace_string ordering atom_set
        | v::r ->
             let next_ordering = add_arrowsJ v ordering replace_string in
-               add_substJ r replace_string next_ordering atom_rel
+               add_substJ r replace_string next_ordering atom_set
 
-   let build_orderingJ replace_vars replace_string ordering atom_rel =
+   let build_orderingJ replace_vars replace_string ordering atom_set =
       try
-         add_substJ replace_vars replace_string ordering atom_rel
+         add_substJ replace_vars replace_string ordering atom_set
       with Reflexive ->        (* only possible in the FO case *)
          raise Not_unifiable    (*search for alternative string unifiers *)
 
-   let rec build_orderingJ_list substJ ordering atom_rel =
+   let rec build_orderingJ_list substJ ordering atom_set =
       match substJ with
          [] -> ordering
        | (v,vlist)::r ->
-            let next_ordering = build_orderingJ [v] vlist ordering atom_rel in
-            build_orderingJ_list r next_ordering atom_rel
+            let next_ordering = build_orderingJ [v] vlist ordering atom_set in
+            build_orderingJ_list r next_ordering atom_set
 
 (* ************* J ordering  END ********************************************** *)
 

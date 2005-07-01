@@ -147,7 +147,7 @@ sig
       position list ->
       position list ->
       (position * Set.t) list ->
-		(position * 'a * 'b) list ->
+		Set.t ->
       (position * Set.t) list
 
    val shorten : 'a list -> 'a list -> ('a list * 'a list)
@@ -300,11 +300,11 @@ let r_10 s rt =
          ((stl =[]) or (is_const x) or (rtl <> []))
     | _ -> false
 
-let rec tunify_list eqlist init_sigma ordering atom_rel =
+let rec tunify_list eqlist init_sigma ordering atom_set =
    let rec tunify atomnames fs ft rt rest_eq sigma ordering =
       let apply_r1 rest_eq sigma =
 	  (* print_endline "r1"; *)
-         tunify_list rest_eq sigma ordering atom_rel
+         tunify_list rest_eq sigma ordering atom_set
 
       in
       let apply_r2 fs ft rt rest_eq sigma =
@@ -329,7 +329,7 @@ let rec tunify_list eqlist init_sigma ordering atom_rel =
          let v = (List.hd fs) in
          let compose_vars, new_sigma = compose sigma (v,ft) in
          let new_rest_eq = apply_subst rest_eq v ft atomnames in
-         let new_ordering = build_ordering (v::compose_vars) ft ordering atom_rel in
+         let new_ordering = build_ordering (v::compose_vars) ft ordering atom_set in
             tunify atomnames (List.tl fs) rt rt new_rest_eq new_sigma new_ordering
 
       in
@@ -350,7 +350,7 @@ let rec tunify_list eqlist init_sigma ordering atom_rel =
          let ft_c1 = ft @ [c1] in
          let compose_vars,new_sigma = compose sigma (v,ft_c1) in
          let new_rest_eq = apply_subst rest_eq v ft_c1 atomnames in
-         let new_ordering = build_ordering (v::compose_vars) ft_c1 ordering atom_rel in
+         let new_ordering = build_ordering (v::compose_vars) ft_c1 ordering atom_set in
             tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma new_ordering
 
       in
@@ -367,7 +367,7 @@ let rec tunify_list eqlist init_sigma ordering atom_rel =
          let ft_vnew = ft @ [v_new] in
          let compose_vars,new_sigma = compose ((max+1),subst) (v,ft_vnew) in
          let new_rest_eq = apply_subst rest_eq v ft_vnew atomnames in
-         let new_ordering = build_ordering (v::compose_vars) ft_vnew ordering atom_rel in
+         let new_ordering = build_ordering (v::compose_vars) ft_vnew ordering atom_set in
          tunify atomnames rt [v_new] (List.tl fs) new_rest_eq new_sigma new_ordering
 
       in
@@ -474,7 +474,7 @@ let rec test_apply_eqsubst eqlist subst =
          let applied_element = test_apply_eq atomnames eqs eqt subst in
          (atomnames,applied_element)::(test_apply_eqsubst r subst)
 
-let ttest us ut ns nt eqlist ordering atom_rel =
+let ttest us ut ns nt eqlist ordering atom_set =
    let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 *)
                                            (* to eliminate common beginning *)
    let new_element = ([ns;nt],(short_us,short_ut)) in
@@ -484,7 +484,7 @@ let ttest us ut ns nt eqlist ordering atom_rel =
       else
          new_element::eqlist
    in
-   let sigma, _ = tunify_list full_eqlist (1,[]) ordering atom_rel in
+   let sigma, _ = tunify_list full_eqlist (1,[]) ordering atom_set in
    let _, subst = sigma in
    let test_apply = test_apply_eqsubst full_eqlist subst in
    begin
@@ -499,7 +499,7 @@ let ttest us ut ns nt eqlist ordering atom_rel =
       (*print_equations test_apply*)
    end
 
-let do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel qmax =
+let do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_set qmax =
    let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 to eliminate common beginning *)
    let new_element = ([ns;nt],(short_us,short_ut)) in
    let full_eqlist =
@@ -511,7 +511,7 @@ let do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel qmax =
 (*  print_equations full_eqlist; *)
    try
 (* Q-case: max-1 new variables have been used for the domain equations *)
-      let new_sigma, new_ordering = tunify_list full_eqlist (1,[]) orderingQ atom_rel in
+      let new_sigma, new_ordering = tunify_list full_eqlist (1,[]) orderingQ atom_set in
 (* Q-case: sigmaQ will not be returned in eqlist *)
       new_sigma, (result_qmax qmax, full_eqlist), new_ordering
    with Not_unifiable ->
