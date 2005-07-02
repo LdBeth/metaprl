@@ -271,7 +271,7 @@ struct
                      [hd] ->
                         begin match dest_param hd with
                            Term_sig.Var sym ->
-                              collect_delta_terms (sym::accumulator) r
+                              collect_delta_terms (SymbolSet.add accumulator sym) r
                          | _ ->
                               raise
                               (Invalid_argument
@@ -350,11 +350,7 @@ struct
 (* ************* quantifier ordering ********************************************** *)
 
    let rec add_arrowsQ v clist ordering =
-      match clist with
-         [] -> ordering
-       | f::r ->
-            let new_ordering = add_sets v f ordering in
-            add_arrowsQ v r new_ordering
+      Set.fold (fun acc p -> add_sets v p acc) ordering clist
 
    let rec print_sigmaQ sigmaQ =
       match sigmaQ with
@@ -385,8 +381,13 @@ struct
       match new_elements with
          [] -> ([],ordering)
        | (v,termlist)::r ->
-            let dterms = collect_delta_terms [] termlist in
-            let dterms = List.rev_map symbol_to_pos dterms in
+            let dterms = collect_delta_terms SymbolSet.empty termlist in
+            let dterms =
+               SymbolSet.fold
+                  (fun set sym -> Set.add set (symbol_to_pos sym))
+                  Set.empty
+                  dterms
+            in
             begin
 (*        open_box 0;
    print_endline " ";

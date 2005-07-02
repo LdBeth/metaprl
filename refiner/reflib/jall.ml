@@ -2420,7 +2420,7 @@ struct
       match ass_delta_diff with
          [] -> term,[]
        | (var,dname)::r ->
-            if List.mem dname dterms then
+            if SymbolSet.mem dterms dname then
                let new_var =
                   if var = empty_sym then
                      v
@@ -2439,7 +2439,7 @@ struct
       match zw_sigma with
          [] -> []
        | (v,term)::r ->
-            let dterms = collect_delta_terms [] [term] in
+            let dterms = collect_delta_terms SymbolSet.empty [term] in
             let new_term, new_ass_delta_diff = check_delta_terms (v,term) ass_delta_diff dterms in
             (v,new_term)::(localize_sigma r new_ass_delta_diff)
 
@@ -3144,16 +3144,15 @@ let pos_subst t vars tl =
 (*    print_endline "fo-unification fail"; *)
             raise Failed   (* new connection, please *)
 
+let one_equation_aux gprefix delta_0_prefixes (rest_equations,n) f =
+   let fprefix = PMap.find delta_0_prefixes f in
+   let (sf1,sg) = shorten fprefix gprefix in
+   let v_new = NewVarQ, n in
+   let fnew = sf1 @ [v_new] in
+   (([],(fnew,sg))::rest_equations),(n+1)
+
 let rec one_equation gprefix dlist delta_0_prefixes n =
-   match dlist with
-      [] -> ([],n)
-    | f::r ->
-         let fprefix = PMap.find delta_0_prefixes f in
-         let (sf1,sg) = shorten fprefix gprefix in
-         let v_new = NewVarQ, n in
-         let fnew = sf1 @ [v_new] in
-         let (rest_equations,new_n) = one_equation gprefix r delta_0_prefixes (n+1) in
-         (([],(fnew,sg))::rest_equations),new_n
+   Set.fold (one_equation_aux gprefix delta_0_prefixes) ([],n) dlist
 
 let rec make_domain_equations fo_pairs gamma_0_prefixes delta_0_prefixes  n =
    match fo_pairs with
@@ -3980,21 +3979,22 @@ let rec create_output consts rule_list
       [] -> JLogic.empty_inf
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms [] [term1] in
-         let delta2_names = collect_delta_terms [] [term2] in
-         let unique_deltas =
-            remove_dups_list (List.rev_append delta1_names delta2_names)
-         in
-         let delta_map =
-            List.rev_map
-               (fun s ->
+         let delta1_names = collect_delta_terms SymbolSet.empty [term1] in
+         let delta2_names = collect_delta_terms SymbolSet.empty [term2] in
+         let unique_deltas = SymbolSet.union delta1_names delta2_names in
+         let var_mapping =
+            SymbolSet.fold
+               (fun acc s ->
                   let p = symbol_to_pos s in
-                  pos_to_symbol (simple_to_gamma p),
-                  mk_symbol_term jprover_op s
+                  let pair =
+                     pos_to_symbol (simple_to_gamma p),
+                     mk_symbol_term jprover_op s
+                  in
+                  pair::acc
                )
+               input_map
                unique_deltas
          in
-         let var_mapping = List.rev_append input_map delta_map in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
          let unique_object = mk_pos_var ((GammaPos NewVar),0) in
@@ -4012,21 +4012,22 @@ let rec make_test_interface consts rule_list input_map =
       [] -> []
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms [] [term1] in
-         let delta2_names = collect_delta_terms [] [term2] in
-         let unique_deltas =
-            remove_dups_list (List.rev_append delta1_names delta2_names)
-         in
-         let delta_map =
-            List.rev_map
-               (fun s ->
-                  let p =symbol_to_pos s in
-                  pos_to_symbol (simple_to_gamma p),
-                  mk_symbol_term jprover_op s
+         let delta1_names = collect_delta_terms SymbolSet.empty [term1] in
+         let delta2_names = collect_delta_terms SymbolSet.empty [term2] in
+         let unique_deltas = SymbolSet.union delta1_names delta2_names in
+         let var_mapping =
+            SymbolSet.fold
+               (fun acc s ->
+                  let p = symbol_to_pos s in
+                  let pair =
+                     pos_to_symbol (simple_to_gamma p),
+                     mk_symbol_term jprover_op s
+                  in
+                  pair::acc
                )
+               input_map
                unique_deltas
          in
-         let var_mapping = List.rev_append input_map delta_map in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
          let unique_object = mk_pos_var (GammaPos NewVar,0) in
