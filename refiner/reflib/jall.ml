@@ -2646,7 +2646,7 @@ struct
        | Empty :: r ->    (* may become possible after purity *)
             collect_solved_Zero_At r slist
        | NodeAt ({pospos=pospos; pol=pospol} as pos) :: r ->
-            if ((Set.mem slist pospos) or (pospol = One)) then  (* recall slist is the unsolved list *)
+            if (pospol = One) or (Set.mem slist pospos) then  (* recall slist is the unsolved list *)
                collect_solved_Zero_At r slist
             else
     (* here, we have pos solved let pos.pol = Zero) *)
