@@ -3071,7 +3071,7 @@ struct
       match inst_vars with
          [] -> []
        | f::r ->
-            let f_term = List.assoc f tauQ in
+            let f_term = PMap.find tauQ f in
             f_term::(collect_assoc r tauQ)
 
 let pos_subst t vars tl =
@@ -3080,14 +3080,14 @@ let pos_subst t vars tl =
    let rec rec_apply
       (consts : SymbolSet.t)
       (sigmaQ : (position * term) list)
-      (tauQ : (position * term) list)
-      (tau_vars : position list)
+      (tauQ : term PMap.t)
+      (tau_vars : symbol list)
       (tau_terms : term list)
       =
       match sigmaQ with
          [] -> [],[]
        | (v,term)::r ->
-            let app_term = pos_subst term tau_vars tau_terms in
+            let app_term = TermSubst.subst term tau_vars tau_terms in
             let old_free = free_vars_list term consts in
             let new_free = free_vars_list app_term consts in
             let inst_vars = list_diff old_free new_free in
@@ -3111,14 +3111,20 @@ let pos_subst t vars tl =
    let multiply
       (consts : SymbolSet.t)
       (sigmaQ : (position * term) list)
-      (tauQ : (position * term) list)
+      (tauQ : term PMap.t)
+      tau_vars
+      tau_terms
       =
-      let tau_vars,tau_terms = List.split tauQ in
       let new_sigmaQ,sigma_ordering = rec_apply consts sigmaQ tauQ tau_vars tau_terms
       in
-      let tau_ordering = List.rev_map (fun (v,t) -> gamma_to_simple v, [t]) tauQ in
-      List.rev_append new_sigmaQ tauQ,
-      List.rev_append sigma_ordering tau_ordering
+      let ordering =
+         PMap.fold
+            (fun acc v t -> (gamma_to_simple v, [t])::acc)
+            sigma_ordering
+            tauQ
+      in
+      new_sigmaQ,
+      ordering
 
    let apply_2_sigmaQ term1 term2 sigmaQ =
       let sigma_vars,sigma_terms = List.split sigmaQ in
@@ -3135,10 +3141,18 @@ let pos_subst t vars tl =
 *)
       try
          let tauQ = unify app_term1 app_term2 consts in
-         let pos_tauQ = List.rev_map (fun (v,t) -> symbol_to_pos v, t) tauQ in
-         let (mult,oel) = multiply consts sigmaQ pos_tauQ in
+         let pos_tauQ, tauQ_map =
+            List.fold_left
+               (fun (l,map) (v,t) ->
+                  let p = symbol_to_pos v in
+                  (p,t)::l, PMap.add map p t)
+               ([],PMap.empty)
+               tauQ
+         in
+         let tau_vars, tau_terms = List.split tauQ in
+         let mult, oel = multiply consts sigmaQ tauQ_map tau_vars tau_terms in
   (*   print_sigmaQ mult; *)
-         (mult,oel)
+         List.rev_append mult pos_tauQ, oel
       with
          RefineError _  ->  (* any unification failure *)
 (*    print_endline "fo-unification fail"; *)
