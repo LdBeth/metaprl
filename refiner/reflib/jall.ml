@@ -29,6 +29,7 @@
  *
  * Author: Stephan Schmitt <schmitts@spmail.slu.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
+ * Modified by: Yegor Bryukhov <ybryukhov@gc.cuny.edu>
  *)
 open Lm_debug
 open Lm_symbol
@@ -2255,20 +2256,23 @@ struct
 (*  rule construction *)
 
    let rec selectQ_rec spos_var csigmaQ =
-      match csigmaQ with
-         [] ->  Term.mk_var_term spos_var   (* dynamic completion of csigmaQ *)
-       | (var,term)::r ->
-            if Lm_symbol.eq spos_var var then
-               term
-            else
-               selectQ_rec spos_var r
+      try
+         PMap.find csigmaQ spos_var
+      with Not_found ->
+         mk_pos_var spos_var (* dynamic completion of csigmaQ *)
 
    let selectQ spos_pos csigmaQ =
-      let spos_var = pos_to_symbol (simple_to_gamma spos_pos) in
+      let spos_var = simple_to_gamma spos_pos in
       selectQ_rec spos_var csigmaQ
 
    let apply_sigmaQ term sigmaQ =
-      apply_subst sigmaQ term
+      let substQ =
+         PMap.fold
+            (fun l p t -> (pos_to_symbol p, t)::l)
+            []
+            sigmaQ
+      in
+      apply_subst substQ term
 
    let build_rule pos spos
       csigmaQ
@@ -2404,49 +2408,43 @@ struct
             rest_delta, rest_gamma
 
    let rec do_split gamma_diff sigmaQ =
-      match sigmaQ with
-         [] -> []
-       | (v,term)::r ->
-            (*let _ = print_endline ("do_split: "^v) in*)
-            let simple = gamma_to_simple v in
-            if Set.mem gamma_diff simple then
-               do_split gamma_diff r
-            else
-               (v,term)::(do_split gamma_diff r)
+      PMap.isect_mem
+         sigmaQ
+         (fun v -> not (Set.mem gamma_diff (gamma_to_simple v)))
 
 (* make a term list out of a bterm list *)
 
-   let rec check_delta_terms (v,term) ass_delta_diff dterms =
+   let rec check_delta_terms v p term ass_delta_diff dterms =
       match ass_delta_diff with
          [] -> term,[]
        | (var,dname)::r ->
             if Set.mem dterms dname then
-               let new_var =
-                  if var = empty_sym then
-                     v
+               let new_var, new_pos =
+                  if var = empty_pos then
+                     v,p
                   else
-                     var
+                     pos_to_symbol var, var
                in
                let replace_term = mk_symbol_term jprover_op (pos_to_symbol dname) in
                let next_term = TermSubst.var_subst term replace_term new_var in
-               let (new_term,next_diffs) = check_delta_terms (v,next_term) r dterms in
-               (new_term,((new_var,dname)::next_diffs))
+               let (new_term,next_diffs) = check_delta_terms v p next_term r dterms in
+               (new_term,((new_pos,dname)::next_diffs))
             else
-               let (new_term,next_diffs) = check_delta_terms (v,term) r dterms in
+               let (new_term,next_diffs) = check_delta_terms v p term r dterms in
                (new_term,((var,dname)::next_diffs))
 
+   let localize_sigma_aux ass_delta_diff p term =
+      let dterms = collect_delta_terms Set.empty [term] in
+      let v = pos_to_symbol p in
+      let new_term, new_ass_delta_diff = check_delta_terms v p term ass_delta_diff dterms in
+      new_term
+
    let rec localize_sigma zw_sigma ass_delta_diff =
-      match zw_sigma with
-         [] -> []
-       | (v,term)::r ->
-            let dterms = collect_delta_terms Set.empty [term] in
-            let new_term, new_ass_delta_diff = check_delta_terms (v,term) ass_delta_diff dterms in
-            (v,new_term)::(localize_sigma r new_ass_delta_diff)
+      PMap.mapi (localize_sigma_aux ass_delta_diff) zw_sigma
 
    let subst_split ft1 ft2 ftree uslist1 uslist2 uslist
-      (sigmaQ : (symbol * term) list)
+      (sigmaQ : term PMap.t)
       =
-      let sigmaQ = List.rev_map (fun (s,t) -> symbol_to_pos s, t) sigmaQ in
       let delta,gamma = collect_qpos [ftree] uslist in
       let delta1,gamma1 = collect_qpos [ft1] uslist1 in
       let delta2,gamma2 = collect_qpos [ft2] uslist2 in
@@ -2456,17 +2454,11 @@ struct
       let gamma_diff2 = Set.diff gamma gamma2 in
       let zw_sigma1 = do_split gamma_diff1 sigmaQ in
       let zw_sigma2 = do_split gamma_diff2 sigmaQ in
-      let zw_sigma1 =
-         List.rev_map (fun (s,t) -> pos_to_symbol s, t) zw_sigma1
-      in
-      let zw_sigma2 =
-         List.rev_map (fun (s,t) -> pos_to_symbol s, t) zw_sigma2
-      in
       let ass_delta_diff1 =
-			List.rev_map (fun x -> (empty_sym, x)) delta_diff1
+			List.rev_map (fun x -> (empty_pos, x)) delta_diff1
 		in
       let ass_delta_diff2 =
-			List.rev_map (fun x -> (empty_sym, x)) delta_diff2
+			List.rev_map (fun x -> (empty_pos, x)) delta_diff2
 		in
       let sigmaQ1 = localize_sigma zw_sigma1 ass_delta_diff1 in
       let sigmaQ2 = localize_sigma zw_sigma2 ass_delta_diff2 in
@@ -2860,7 +2852,7 @@ struct
       ftree
       (redord : (position * Set.t) list)
       (connections : ConnSet.t)
-      (csigmaQ : (symbol * term) list)
+      (csigmaQ : term PMap.t)
       (slist : Set.t)
       calculus
       opt_bproof
@@ -3074,8 +3066,8 @@ struct
             let f_term = PMap.find tauQ f in
             f_term::(collect_assoc r tauQ)
 
-let pos_subst t vars tl =
-   TermSubst.subst t (List.map pos_to_symbol vars) tl
+   let pos_subst t vars tl =
+      TermSubst.subst t (List.map pos_to_symbol vars) tl
 
    let rec rec_apply
       (consts : SymbolSet.t)
@@ -3085,7 +3077,7 @@ let pos_subst t vars tl =
       (tau_terms : term list)
       =
       match sigmaQ with
-         [] -> [],[]
+         [] -> PMap.empty, []
        | (v,term)::r ->
             let app_term = TermSubst.subst term tau_vars tau_terms in
             let old_free = free_vars_list term consts in
@@ -3095,11 +3087,11 @@ let pos_subst t vars tl =
             let inst_terms = collect_assoc inst_positions tauQ in
             let (rest_sigma,rest_sigma_ordering) = rec_apply consts r tauQ tau_vars tau_terms in
             if inst_terms = [] then
-               ((v,app_term)::rest_sigma),rest_sigma_ordering
+               PMap.add rest_sigma v app_term, rest_sigma_ordering
             else
                (*let ordering_v = String.sub v 0 (String.index v '_') in*)
                let ordering_v = gamma_to_simple v in
-               ((v,app_term)::rest_sigma),((ordering_v,inst_terms)::rest_sigma_ordering)
+               PMap.add rest_sigma v app_term, ((ordering_v,inst_terms)::rest_sigma_ordering)
 
 (* let multiply sigmaQ tauQ =
    let tau_vars,tau_terms = List.split tauQ
@@ -3134,25 +3126,24 @@ let pos_subst t vars tl =
       (consts : SymbolSet.t)
       term1
       term2
-      (sigmaQ : (position * term) list) =
+      (sigmaQ : term PMap.t) =
+      let sigmaQ = PMap.fold (fun l k d -> (k,d)::l) [] sigmaQ in
       let app_term1,app_term2 = apply_2_sigmaQ term1 term2 sigmaQ in
 (*  print_term stdout app_term1;
    print_term stdout app_term2;
 *)
       try
          let tauQ = unify app_term1 app_term2 consts in
-         let pos_tauQ, tauQ_map =
+         let tau_vars, tau_terms = List.split tauQ in
+         let tauQ =
             List.fold_left
-               (fun (l,map) (v,t) ->
-                  let p = symbol_to_pos v in
-                  (p,t)::l, PMap.add map p t)
-               ([],PMap.empty)
+               (fun map (v,t) -> PMap.add map (symbol_to_pos v) t)
+               PMap.empty
                tauQ
          in
-         let tau_vars, tau_terms = List.split tauQ in
-         let mult, oel = multiply consts sigmaQ tauQ_map tau_vars tau_terms in
+         let mult, oel = multiply consts sigmaQ tauQ tau_vars tau_terms in
   (*   print_sigmaQ mult; *)
-         List.rev_append mult pos_tauQ, oel
+         PMap.union nodups mult tauQ, oel
       with
          RefineError _  ->  (* any unification failure *)
 (*    print_endline "fo-unification fail"; *)
@@ -3520,18 +3511,19 @@ let path_checker
          check_extension extset
    in
 	let gamma, delta = qprefixes in
+   let pe = PMap.empty in
    if PMap.is_empty gamma && PMap.is_empty delta then
       begin
 (*      print_endline "!!!!!!!!!!! prop prover !!!!!!!!!!!!!!!!!!"; *)
 (* in the propositional case, the reduction ordering will be computed AFTER proof search *)
          let (_,eqlist,(_,nsubstJ),ext_proof) =
-            provable AtomSet.empty AtomSet.empty (PMap.empty,PMap.empty) (1,[]) ([],(1,[])) in
+            provable AtomSet.empty AtomSet.empty (pe,pe) (1,[]) (pe,(1,[])) in
          let _,substJ = nsubstJ in
          let orderingJ = build_orderingJ_list substJ init_ordering atom_set in
-         ((init_ordering,orderingJ),eqlist,([],nsubstJ),ext_proof)
+         (init_ordering,orderingJ),eqlist,(pe,nsubstJ),ext_proof
       end
    else
-      provable AtomSet.empty AtomSet.empty (init_ordering,PMap.empty) (1,[]) ([],(1,[]))
+      provable AtomSet.empty AtomSet.empty (init_ordering,pe) (1,[]) (pe,(1,[]))
 
 (*************************** prepare let init prover *******************************************************)
 
@@ -3953,10 +3945,7 @@ let prove consts mult_limit termlist calculus =
    let ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof =
       try_multiplicity consts mult_limit ftree ordering pos_n 1 calculus
    in
-   let sym_sigmaQ = List.rev_map
-      (fun (p,t) -> pos_to_symbol p, t) sigmaQ
-   in
-   ftree, red_ordering, eqlist, (sym_sigmaQ,sigmaJ), ext_proof
+   ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof
 
 
 (********** first-order type theory interface *******************)
