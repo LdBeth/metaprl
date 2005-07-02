@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.4.19)
+OMakeVersion(0.9.4.25)
 
 ########################################################################
 # Begin real makefile.
@@ -497,7 +497,8 @@ OCAMLINCLUDES += $(dir filter/base filter/filter)
 # Capture the current environment so that some files can use it
 # in some places.
 #
-STANDARD_BUILD_ENV = $(export rules)
+STANDARD_BUILD_ENV =
+    export rules
 
 ########################################################################
 # Theory building

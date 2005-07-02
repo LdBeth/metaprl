@@ -115,7 +115,7 @@ if $(NATIVE_PROFILING_ENABLED)
    export
 
 else
-   PROF_EXT=
+   PROF_EXT =
    export
 
 CMXADEPS[] =
