@@ -3069,29 +3069,28 @@ struct
    let pos_subst t vars tl =
       TermSubst.subst t (List.map pos_to_symbol vars) tl
 
-   let rec rec_apply
+   let rec_apply_aux consts tauQ tau_vars tau_terms sigma_ordering v term =
+      let app_term = TermSubst.subst term tau_vars tau_terms in
+      let old_free = free_vars_list term consts in
+      let new_free = free_vars_list app_term consts in
+      let inst_vars = list_diff old_free new_free in
+      let inst_positions = List.rev_map symbol_to_pos inst_vars in
+      let inst_terms = collect_assoc inst_positions tauQ in
+      if inst_terms = [] then
+         sigma_ordering, app_term
+      else
+         (*let ordering_v = String.sub v 0 (String.index v '_') in*)
+         let ordering_v = gamma_to_simple v in
+         ((ordering_v,inst_terms)::sigma_ordering), app_term
+
+   let rec_apply
       (consts : SymbolSet.t)
-      (sigmaQ : (position * term) list)
+      (sigmaQ : term PMap.t)
       (tauQ : term PMap.t)
       (tau_vars : symbol list)
       (tau_terms : term list)
       =
-      match sigmaQ with
-         [] -> PMap.empty, []
-       | (v,term)::r ->
-            let app_term = TermSubst.subst term tau_vars tau_terms in
-            let old_free = free_vars_list term consts in
-            let new_free = free_vars_list app_term consts in
-            let inst_vars = list_diff old_free new_free in
-            let inst_positions = List.rev_map symbol_to_pos inst_vars in
-            let inst_terms = collect_assoc inst_positions tauQ in
-            let (rest_sigma,rest_sigma_ordering) = rec_apply consts r tauQ tau_vars tau_terms in
-            if inst_terms = [] then
-               PMap.add rest_sigma v app_term, rest_sigma_ordering
-            else
-               (*let ordering_v = String.sub v 0 (String.index v '_') in*)
-               let ordering_v = gamma_to_simple v in
-               PMap.add rest_sigma v app_term, ((ordering_v,inst_terms)::rest_sigma_ordering)
+      PMap.fold_map (rec_apply_aux consts tauQ tau_vars tau_terms) [] sigmaQ
 
 (* let multiply sigmaQ tauQ =
    let tau_vars,tau_terms = List.split tauQ
@@ -3102,12 +3101,12 @@ struct
 
    let multiply
       (consts : SymbolSet.t)
-      (sigmaQ : (position * term) list)
+      (sigmaQ : term PMap.t)
       (tauQ : term PMap.t)
       tau_vars
       tau_terms
       =
-      let new_sigmaQ,sigma_ordering = rec_apply consts sigmaQ tauQ tau_vars tau_terms
+      let sigma_ordering, new_sigmaQ = rec_apply consts sigmaQ tauQ tau_vars tau_terms
       in
       let ordering =
          PMap.fold
@@ -3119,15 +3118,15 @@ struct
       ordering
 
    let apply_2_sigmaQ term1 term2 sigmaQ =
-      let sigma_vars,sigma_terms = List.split sigmaQ in
-      (pos_subst term1 sigma_vars sigma_terms),(pos_subst term2 sigma_vars sigma_terms)
+      let substQ = PMap.fold (fun l p term -> (pos_to_symbol p, term)::l) [] sigmaQ in
+      TermSubst.apply_subst substQ term1,
+      TermSubst.apply_subst substQ term2
 
    let jqunify
       (consts : SymbolSet.t)
       term1
       term2
       (sigmaQ : term PMap.t) =
-      let sigmaQ = PMap.fold (fun l k d -> (k,d)::l) [] sigmaQ in
       let app_term1,app_term2 = apply_2_sigmaQ term1 term2 sigmaQ in
 (*  print_term stdout app_term1;
    print_term stdout app_term2;
@@ -3156,7 +3155,7 @@ let one_equation_aux gprefix delta_0_prefixes (rest_equations,n) f =
    let fnew = sf1 @ [v_new] in
    (([],(fnew,sg))::rest_equations),(n+1)
 
-let rec one_equation gprefix dlist delta_0_prefixes n =
+let one_equation gprefix dlist delta_0_prefixes n =
    Set.fold (one_equation_aux gprefix delta_0_prefixes) ([],n) dlist
 
 let rec make_domain_equations fo_pairs gamma_0_prefixes delta_0_prefixes  n =
