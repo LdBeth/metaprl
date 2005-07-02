@@ -2642,7 +2642,7 @@ struct
    let rec collect_solved_Zero_At ftreelist slist =
       match ftreelist with
          [] ->
-            []
+            false
        | Empty :: r ->    (* may become possible after purity *)
             collect_solved_Zero_At r slist
        | NodeAt ({pospos=pospos; pol=pospol} as pos) :: r ->
@@ -2650,7 +2650,7 @@ struct
                collect_solved_Zero_At r slist
             else
     (* here, we have pos solved let pos.pol = Zero) *)
-               pos::(collect_solved_Zero_At r slist)
+               true
        | NodeA(pos,treearray) :: r ->
             collect_solved_Zero_At (List.rev_append treearray r) slist
 
@@ -2710,7 +2710,7 @@ struct
                   MultiConcl ->
 (*                   print_endline "wait-2 check"; *)
                      if (f.st = Psi_0)  &  (f.pt <> PNull) &
-                        ((pa_Zero <> []) or (List.exists (fun x -> x.pol = Zero) po_test)) then
+                        (pa_Zero or (List.exists (fun x -> x.pol = Zero) po_test)) then
                         begin
 (*                         print_endline "wait-2 positive"; *)
                            true,0 (* wait_2 label *)
@@ -2722,7 +2722,7 @@ struct
                         end
                 | SingleConcl ->
                      if ((f.st = Phi_0)  & ((f.op=Neg) or (f.op=Imp)) &
-                          ((pa_Zero <> []) or
+                          (pa_Zero or
                           (List.exists (fun x -> x.pol = Zero) po_test))
                          )
          (* this would cause an impl or negl rule with an non-empty succedent *)
@@ -2751,7 +2751,7 @@ struct
                            let po_fake_test = delete pos_eq ft1_root po_fake in
                            let pa_Zero_fake = collect_solved_Zero_At [ft1] uslist1 in
 (*                     print_purelist (po_fake_test @ pa_O_fake); *)
-                              ((pa_Zero_fake <> []) or
+                              (pa_Zero_fake or
                               (List.exists (fun x -> x.pol = Zero) po_fake_test)), 0
                      else
                         if ((f.pol=Zero) & ((f.st=Gamma_0) or (f.op=Or))) then
