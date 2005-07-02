@@ -925,16 +925,6 @@ struct
 
 (*********** END split permutation *****************)
 
-   let rec list_del list_el el_list =
-      match el_list with
-         [] ->
-            raise jprover_bug
-       | f::r ->
-            if list_el = f then
-               r
-            else
-               f::(list_del list_el r)
-
    let rec list_diff del_list check_list =
       match del_list with
          [] ->
