@@ -2369,13 +2369,13 @@ struct
 
    let rec collect_qpos ftreelist uslist =
       match ftreelist with
-         [] -> [],[]
+         [] -> [],Set.empty
        | Empty :: rest ->
             collect_qpos rest uslist
        | NodeAt {st=Gamma_0; pospos=pospos} :: rest ->
             let rest_delta, rest_gamma = collect_qpos rest uslist in
             if Set.mem uslist pospos then
-               rest_delta, (pospos::rest_gamma)
+               rest_delta, Set.add rest_gamma pospos
             else
                rest_delta, rest_gamma
        | NodeAt {st=Delta_0; pospos=pospos} :: rest ->
@@ -2390,7 +2390,7 @@ struct
        | NodeA({st=Gamma_0; pospos=pospos},suctrees) :: rest ->
             let rest_delta, rest_gamma = collect_qpos (List.rev_append suctrees rest) uslist in
             if Set.mem uslist pospos then
-               rest_delta, (pospos::rest_gamma)
+               rest_delta, Set.add rest_gamma pospos
             else
                rest_delta, rest_gamma
        | NodeA({st=Delta_0; pospos=pospos},suctrees) :: rest ->
@@ -2409,7 +2409,7 @@ struct
        | (v,term)::r ->
             (*let _ = print_endline ("do_split: "^v) in*)
             let simple = gamma_to_simple v in
-            if (List.mem simple gamma_diff) then
+            if Set.mem gamma_diff simple then
                do_split gamma_diff r
             else
                (v,term)::(do_split gamma_diff r)
@@ -2452,8 +2452,8 @@ struct
       let delta2,gamma2 = collect_qpos [ft2] uslist2 in
       let delta_diff1 = list_diff delta delta1 in
       let delta_diff2 = list_diff delta delta2 in
-      let gamma_diff1 = list_diff gamma gamma1 in
-      let gamma_diff2 = list_diff gamma gamma2 in
+      let gamma_diff1 = Set.diff gamma gamma1 in
+      let gamma_diff2 = Set.diff gamma gamma2 in
       let zw_sigma1 = do_split gamma_diff1 sigmaQ in
       let zw_sigma2 = do_split gamma_diff2 sigmaQ in
       let zw_sigma1 =
