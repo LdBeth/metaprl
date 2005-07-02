@@ -2420,14 +2420,14 @@ struct
       match ass_delta_diff with
          [] -> term,[]
        | (var,dname)::r ->
-            if SymbolSet.mem dterms dname then
+            if Set.mem dterms dname then
                let new_var =
                   if var = empty_sym then
                      v
                   else
                      var
                in
-               let replace_term = mk_symbol_term jprover_op dname in
+               let replace_term = mk_symbol_term jprover_op (pos_to_symbol dname) in
                let next_term = TermSubst.var_subst term replace_term new_var in
                let (new_term,next_diffs) = check_delta_terms (v,next_term) r dterms in
                (new_term,((new_var,dname)::next_diffs))
@@ -2439,7 +2439,7 @@ struct
       match zw_sigma with
          [] -> []
        | (v,term)::r ->
-            let dterms = collect_delta_terms SymbolSet.empty [term] in
+            let dterms = collect_delta_terms Set.empty [term] in
             let new_term, new_ass_delta_diff = check_delta_terms (v,term) ass_delta_diff dterms in
             (v,new_term)::(localize_sigma r new_ass_delta_diff)
 
@@ -2463,10 +2463,10 @@ struct
          List.rev_map (fun (s,t) -> pos_to_symbol s, t) zw_sigma2
       in
       let ass_delta_diff1 =
-			List.rev_map (fun x -> (empty_sym,pos_to_symbol x)) delta_diff1
+			List.rev_map (fun x -> (empty_sym, x)) delta_diff1
 		in
       let ass_delta_diff2 =
-			List.rev_map (fun x -> (empty_sym,pos_to_symbol x)) delta_diff2
+			List.rev_map (fun x -> (empty_sym, x)) delta_diff2
 		in
       let sigmaQ1 = localize_sigma zw_sigma1 ass_delta_diff1 in
       let sigmaQ2 = localize_sigma zw_sigma2 ass_delta_diff2 in
@@ -3979,16 +3979,14 @@ let rec create_output consts rule_list
       [] -> JLogic.empty_inf
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms SymbolSet.empty [term1] in
-         let delta2_names = collect_delta_terms SymbolSet.empty [term2] in
-         let unique_deltas = SymbolSet.union delta1_names delta2_names in
+         let delta1_names = collect_delta_terms Set.empty [term1] in
+         let unique_deltas = collect_delta_terms delta1_names [term2] in
          let var_mapping =
-            SymbolSet.fold
-               (fun acc s ->
-                  let p = symbol_to_pos s in
+            Set.fold
+               (fun acc p ->
                   let pair =
                      pos_to_symbol (simple_to_gamma p),
-                     mk_symbol_term jprover_op s
+                     mk_pos_term jprover_op p
                   in
                   pair::acc
                )
@@ -4012,16 +4010,14 @@ let rec make_test_interface consts rule_list input_map =
       [] -> []
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms SymbolSet.empty [term1] in
-         let delta2_names = collect_delta_terms SymbolSet.empty [term2] in
-         let unique_deltas = SymbolSet.union delta1_names delta2_names in
+         let delta1_names = collect_delta_terms Set.empty [term1] in
+         let unique_deltas = collect_delta_terms delta1_names [term2] in
          let var_mapping =
-            SymbolSet.fold
-               (fun acc s ->
-                  let p = symbol_to_pos s in
+            Set.fold
+               (fun acc p ->
                   let pair =
                      pos_to_symbol (simple_to_gamma p),
-                     mk_symbol_term jprover_op s
+                     mk_pos_term jprover_op p
                   in
                   pair::acc
                )

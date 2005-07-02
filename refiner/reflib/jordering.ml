@@ -271,7 +271,8 @@ struct
                      [hd] ->
                         begin match dest_param hd with
                            Term_sig.Var sym ->
-                              collect_delta_terms (SymbolSet.add accumulator sym) r
+										let p = symbol_to_pos sym in
+                              collect_delta_terms (Set.add accumulator p) r
                          | _ ->
                               raise
                               (Invalid_argument
@@ -381,13 +382,7 @@ struct
       match new_elements with
          [] -> ([],ordering)
        | (v,termlist)::r ->
-            let dterms = collect_delta_terms SymbolSet.empty termlist in
-            let dterms =
-               SymbolSet.fold
-                  (fun set sym -> Set.add set (symbol_to_pos sym))
-                  Set.empty
-                  dterms
-            in
+            let dterms = collect_delta_terms Set.empty termlist in
             begin
 (*        open_box 0;
    print_endline " ";
