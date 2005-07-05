@@ -16,6 +16,13 @@ open RefineError
 open Jlogic_sig
 open Jtypes
 
+let debug_s4prover =
+   create_debug (**)
+      { debug_name = "s4prover";
+        debug_description = "Display S4-Jprover operations";
+        debug_value = false
+      }
+
 let dest_bterm = Term.dest_bterm
 let dest_term = Term.dest_term
 let dest_op = Term.dest_op
@@ -248,6 +255,47 @@ let set_string_to_pos set =
    Set.of_list (List.map string_to_pos (StringSet.to_list set))
 *)
 
+let rec print_stringlist slist =
+   match slist with
+      [] ->
+         print_string ""
+    | f::r ->
+         begin
+            let f = pos_to_string f in
+            print_string (f^".");
+            print_stringlist r
+         end
+
+let print_ordering_item pos fset =
+   let pos = pos_to_string pos in
+   print_string (pos^": ");   (* first element = node which successors depend on *)
+   print_stringlist (Set.elements fset);
+   force_newline ()
+
+let rec print_list_sets list_of_sets =
+   match list_of_sets with
+      [] -> print_string ""
+    | (pos,fset)::r ->
+         begin
+            print_ordering_item pos fset;
+            print_list_sets r
+         end
+
+let print_ordering list_of_sets =
+   begin
+      open_box 0;
+      print_list_sets list_of_sets;
+      print_flush ()
+   end
+
+let print_ordering_map map =
+   if PMap.is_empty map then
+      print_endline "empty ordering map"
+   else
+      PMap.iter (fun p set -> print_ordering_item p set) map;
+   print_flush ()
+
+
 module JOrdering (JLogic : JLogicSig) =
 struct
 
@@ -321,30 +369,32 @@ struct
     | _::r ->
          add_arrowsJ v ordering r
 
-   let rec add_substJ replace_vars replace_string ordering atom_set =
-      match replace_vars with
-         [] -> ordering
-       | ((NewVar | NewVarQ),_)::r -> (* don't integrate new variables *)
-            add_substJ r replace_string ordering atom_set
-       | v::r (* no reduction ordering at atoms *)
+   let rec add_substJ calculus replace_vars replace_string ordering atom_set =
+      match replace_vars, calculus with
+         [],_ -> ordering
+       | ((NewVar | NewVarQ),_)::r, _ -> (* don't integrate new variables *)
+            add_substJ calculus r replace_string ordering atom_set
+       | v::r, Intuit _ (* no reduction ordering at atoms *)
             when Set.mem atom_set v ->
-               add_substJ r replace_string ordering atom_set
-       | v::r ->
+               if !debug_s4prover then
+                  print_endline ("no reduction ordering at atoms: "^(pos_to_string v));
+               add_substJ calculus r replace_string ordering atom_set
+       | v::r, _ ->
             let next_ordering = add_arrowsJ v ordering replace_string in
-               add_substJ r replace_string next_ordering atom_set
+               add_substJ calculus r replace_string next_ordering atom_set
 
-   let build_orderingJ replace_vars replace_string ordering atom_set =
+   let build_orderingJ calculus replace_vars replace_string ordering atom_set =
       try
-         add_substJ replace_vars replace_string ordering atom_set
+         add_substJ calculus replace_vars replace_string ordering atom_set
       with Reflexive ->        (* only possible in the FO case *)
          raise Not_unifiable    (*search for alternative string unifiers *)
 
-   let rec build_orderingJ_list substJ ordering atom_set =
+   let rec build_orderingJ_list calculus substJ ordering atom_set =
       match substJ with
          [] -> ordering
        | (v,vlist)::r ->
-            let next_ordering = build_orderingJ [v] vlist ordering atom_set in
-            build_orderingJ_list r next_ordering atom_set
+            let next_ordering = build_orderingJ calculus [v] vlist ordering atom_set in
+            build_orderingJ_list calculus r next_ordering atom_set
 
 (* ************* J ordering  END ********************************************** *)
 

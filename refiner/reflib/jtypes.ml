@@ -24,12 +24,13 @@ module JTypes (JLogic : JLogicSig) =
 struct
    type polarity = Zero | One
 
-   type connective = And | Or | Neg | Imp | All | Ex | At | Null
+   type connective = And | Or | Neg | Imp | All | Ex | At | Null | Box
 
-   type ptype = Alpha | Beta | Gamma | Delta | Phi | Psi | PNull
+   type ptype = Alpha | Beta | Gamma | Delta | Phi | Psi | PNull | Pi | Nu
 
    type stype =
-      Alpha_1 | Alpha_2 | Beta_1 | Beta_2 | Gamma_0 | Delta_0 | Phi_0 | Psi_0 | PNull_0
+      Alpha_1 | Alpha_2 | Beta_1 | Beta_2 | Gamma_0 | Delta_0 | Phi_0 | Psi_0 |
+      PNull_0 | Pi_0 | Nu_0
 
    type direction =
       Left | Right

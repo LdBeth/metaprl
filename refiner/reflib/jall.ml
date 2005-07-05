@@ -31,6 +31,12 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  * Modified by: Yegor Bryukhov <ybryukhov@gc.cuny.edu>
  *)
+
+ (*
+  * TODO:
+  * 1. add predecessor to pos type
+  * 2. optimize S4-computation in blocked
+  *)
 open Lm_debug
 open Lm_symbol
 open Lm_printf
@@ -114,6 +120,8 @@ let ruletable = function
  | Exr ->   "Exr"
  | Alll ->   "Alll"
  | Allr ->   "Allr"
+ | Boxl -> "Boxl"
+ | Boxr -> "Boxr"
 
 module JProver (JLogic : JLogicSig) =
 struct
@@ -312,6 +320,8 @@ struct
        | Phi_0   -> print_string "Phi_0"
        | Psi_0   -> print_string "Psi_0"
        | PNull_0 -> print_string "PNull_0"
+       | Pi_0    -> print_string "Pi_0"
+       | Nu_0    -> print_string "Nu_0"
 
    let print_pol pol =
       match pol with
@@ -406,6 +416,8 @@ struct
        | Phi   -> print_string "Phi"
        | Psi   -> print_string "Psi"
        | PNull -> print_string "PNull"
+       | Nu    -> print_string "Nu"
+       | Pi    -> print_string "Pi"
 
    let print_op op =
       match op with
@@ -417,6 +429,7 @@ struct
        | Ex   -> print_string "Ex"
        | All  -> print_string "All"
        | Null -> print_string "Null"
+       | Box  -> print_string "Box"
 
    let print_position position tab =
       let ({address=y; op=z; pol=a; pt=b; st=c; label=t}) = position in
@@ -499,15 +512,22 @@ struct
             let rest_s = stringlist_to_string r in
             ((pos_to_string f)^"."^rest_s)
 
-   let rec print_stringlist slist =
+   let rec print_poslist slist =
       match slist with
          [] ->
-            print_string ""
+            print_endline " ";
+            print_flush ()
        | f::r ->
             begin
+               let f = pos_to_string f.pospos in
                print_string (f^".");
-               print_stringlist r
+               print_poslist r
             end
+
+   let print_positionset set =
+      Set.iter (fun p -> print_string ((pos_to_string p)^".")) set;
+      print_endline ".";
+      print_flush ()
 
    let rec pp_bproof_list tree_list tab =
       let rec pp_bproof ftree new_tab =
@@ -645,26 +665,8 @@ struct
          print_set_list set_list
 
    let print_string_set set =
-      let set_list = StringSet.elements set in
+      let set_list = Set.elements set in
       print_stringlist set_list
-
-   let rec print_list_sets list_of_sets =
-      match list_of_sets with
-         [] -> print_string ""
-       | (pos,fset)::r ->
-            begin
-               print_string (pos^": ");   (* first element = node which successors depend on *)
-               print_stringlist (StringSet.elements fset);
-               force_newline ();
-               print_list_sets r
-            end
-
-   let print_ordering list_of_sets =
-      begin
-         open_box 0;
-         print_list_sets list_of_sets;
-         print_flush ()
-      end
 
    let rec print_triplelist triplelist =
       match triplelist with
@@ -1364,7 +1366,7 @@ struct
                PNodeA((pos,Orr2,form,term),t),pos     (* make Orr for LJ *)
             else
                t,qpos
-       | PNodeA((_, (Fail|Impl|Orl|Orr2|Orr1|Andr|Ax), _, _), _) ->
+       | PNodeA((_, (Fail|Impl|Orl|Orr2|Orr1|Andr|Ax|Boxl|Boxr), _, _), _) ->
             raise (Invalid_argument "Jall.rec_modify: unexpected inf in PNodeA")
        | PNodeB((pos,inf,form,term),left,right) ->
             let t,qpos = rec_modify left subrel in
@@ -1384,7 +1386,8 @@ struct
                      PNodeB((pos,inf,form,term),t,s),empty_pos (* empty string *)
                   else
                      t,qpos
-             | (Fail|Exl|Exr|Alll|Allr|Negl|Negr|Impr|Orl|Orr2|Orr1|Orr|Andl|Ax) ->
+             |
+             (Fail|Exl|Exr|Alll|Allr|Negl|Negr|Impr|Orl|Orr2|Orr1|Orr|Andl|Ax|Boxl|Boxr) ->
                   raise (Invalid_argument "Jall.rec_modify: unexpected inf in PNodeB")
 
    let weak_modify rule ptree subrel =   (* recall rule = or_l *)
@@ -1966,6 +1969,8 @@ struct
                   let srel, sren = build_renamed_gamma_rel dtreelist predpos pospos d in
                      SubrelSet.union srel rest_rel,
 							PMap.union nodups sren rest_renlist
+             | NodeA({ pt = Pi | Nu }, suctrees) ->
+                   raise (Invalid_argument "S4 nodes in build_formula_rel")
              | NodeA({ pt = PNull }, _) ->
                   raise jprover_bug
 
@@ -2291,6 +2296,8 @@ struct
        | Ex,Zero -> Exr,(inst_label), (selectQ spos.pospos csigmaQ)
        | All,Zero -> Allr,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
        | Ex,One -> Exl,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
+       | Box,One -> Boxl,inst_label,xnil_term
+       | Box,Zero -> Boxr,inst_label,xnil_term
 
 (* %%%%%%%%%%%%%%%%%%%% Split begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% *)
 
@@ -2639,10 +2646,31 @@ struct
 
 (* for wait labels we collect all solved atoms with pol=Zero *)
 
-   let rec collect_solved_Zero_At ftreelist slist =
+   let rec exists_solved_Zero_At ftreelist slist =
       match ftreelist with
          [] ->
             false
+       | Empty :: r ->    (* may become possible after purity *)
+            exists_solved_Zero_At r slist
+       | NodeAt ({pospos=pospos; pol=pospol} as pos) :: r ->
+            if ((Set.mem slist pospos) or (pospol = One)) then  (* recall slist is the unsolved list *)
+               exists_solved_Zero_At r slist
+            else
+    (* here, we have pos solved let pos.pol = Zero) *)
+               true
+       | NodeA({pospos=pospos},treearray) :: r ->
+            if Set.mem slist pospos then
+(* XXX Yegor: this is probably a too agressive optimization but AFAIU
+* unsolved positions can not have solved successors
+*)
+               exists_solved_Zero_At r slist
+            else
+               exists_solved_Zero_At (List.rev_append treearray r) slist
+
+   let rec collect_solved_Zero_At ftreelist slist =
+      match ftreelist with
+         [] ->
+            Set.empty
        | Empty :: r ->    (* may become possible after purity *)
             collect_solved_Zero_At r slist
        | NodeAt ({pospos=pospos; pol=pospol} as pos) :: r ->
@@ -2650,9 +2678,36 @@ struct
                collect_solved_Zero_At r slist
             else
     (* here, we have pos solved let pos.pol = Zero) *)
-               true
-       | NodeA(pos,treearray) :: r ->
-            collect_solved_Zero_At (List.rev_append treearray r) slist
+               Set.add (collect_solved_Zero_At r slist) pospos
+       | NodeA({pospos=pospos},treearray) :: r ->
+            if Set.mem slist pospos then
+(* XXX Yegor: this is probably a too agressive optimization but AFAIU
+* unsolved positions can not have solved successors
+*)
+               collect_solved_Zero_At r slist
+            else
+               collect_solved_Zero_At (List.rev_append treearray r) slist
+
+   let rec collect_solved_atoms ftreelist slist =
+      match ftreelist with
+         [] ->
+            Set.empty
+       | Empty :: r ->    (* may become possible after purity *)
+            collect_solved_atoms r slist
+       | NodeAt {pospos=pospos} :: r ->
+            if Set.mem slist pospos then  (* recall slist is the unsolved list *)
+               collect_solved_atoms r slist
+            else
+    (* here, we have pos solved *)
+               Set.add (collect_solved_atoms r slist) pospos
+       | NodeA({pospos=pospos},treearray) :: r ->
+            if Set.mem slist pospos then
+(* XXX Yegor: this is probably a too agressive optimization but AFAIU
+* unsolved positions can not have solved successors
+*)
+               collect_solved_atoms r slist
+            else
+               collect_solved_atoms (List.rev_append treearray r) slist
 
    let rec red_ord_block pospos redord =
       match redord with
@@ -2686,31 +2741,77 @@ struct
        | Empty, _
        | NodeAt _, _ -> raise jprover_bug (* we have an gamma_0 position or an or-formula *)
 
+   let unclosed_pred popen = function
+      None -> false
+    | Some {pospos=pospos; st=st} -> st <> Gamma_0 && Set.mem popen pospos
+
+   let unclosed_cond popen pred {st=st; pospos=pospos} =
+      st=Nu_0 &&
+      (Set.mem popen pospos || unclosed_pred popen pred)
+
+   let rec collect_unclosed popen ftree pred =
+      match ftree with
+         NodeA(f,suctrees) ->
+            if unclosed_cond popen pred f then
+               Set.singleton f.pospos
+            else
+               List.fold_left
+                  (fun acc ftree -> Set.union acc (collect_unclosed popen ftree (Some f)))
+                  Set.empty
+                  suctrees
+       | Empty ->
+            Set.empty
+       | NodeAt f ->
+            if unclosed_cond popen pred f then
+               Set.singleton f.pospos
+            else
+               Set.empty
+
    let blocked f po
       (redord : (position * Set.t) list)
       ftree connections
       (slist : Set.t)
+      solved_atoms
+      unclosed
       calculus opt_bproof
       =
-(* print_endline ("Blocking check "^(f.name)); *)
+      if !debug_s4prover then
+          print_endline ("Blocking check "^(pos_to_string f.pospos));
       if red_ord_block f.pospos redord then
          begin
-(*     print_endline "wait-1 check positive"; *)
+            if !debug_s4prover then
+               print_endline "wait-1 check positive";
             true,0
          end
       else
          match calculus with
             Classical ->
                false,0  (* ready, in C only redord counts *)
+          | S4 ->
+               let pu = Set.remove (Set.union solved_atoms po) f.pospos in
+               if !debug_s4prover then
+                  begin
+                     print_string "po:";
+                     print_positionset po;
+                     print_string "slist:";
+                     print_positionset slist;
+                     print_string "unclosed:";
+                     print_positionset unclosed
+                  end;
+               (f.pt = Pi) &
+               (*(not(List.exists
+                  (fun (p,s) -> p=f.pospos & not (Set.is_empty s)) redord)) &*)
+               (not (Set.is_empty (Set.diff pu unclosed))),
+               0
           | Intuit calc ->
-               let pa_Zero = collect_solved_Zero_At [ftree] slist in    (* solved atoms in ftree *)
-               let po_test = (delete pos_eq f po) in
+               let pa_Zero = solved_atoms in    (* solved atoms in ftree *)
+               let po_test = Set.remove po f.pospos in
                (* we provide dynamic wait labels for both sequent calculi *)
                begin match calc with
                   MultiConcl ->
 (*                   print_endline "wait-2 check"; *)
                      if (f.st = Psi_0)  &  (f.pt <> PNull) &
-                        (pa_Zero or (List.exists (fun x -> x.pol = Zero) po_test)) then
+                        (not (Set.is_empty pa_Zero) or not (Set.is_empty po_test)) then
                         begin
 (*                         print_endline "wait-2 positive"; *)
                            true,0 (* wait_2 label *)
@@ -2722,9 +2823,8 @@ struct
                         end
                 | SingleConcl ->
                      if ((f.st = Phi_0)  & ((f.op=Neg) or (f.op=Imp)) &
-                          (pa_Zero or
-                          (List.exists (fun x -> x.pol = Zero) po_test))
-                         )
+                          (not (Set.is_empty pa_Zero) or not (Set.is_empty po_test))
+                        )
          (* this would cause an impl or negl rule with an non-empty succedent *)
                      then
                         if (f.op=Neg) then
@@ -2749,7 +2849,7 @@ struct
 (*                    print_endline ("wait-root "^(ft1_root.name)); *)
                            let po_fake = compute_open [ft1] uslist1 in
                            let po_fake_test = delete pos_eq ft1_root po_fake in
-                           let pa_Zero_fake = collect_solved_Zero_At [ft1] uslist1 in
+                           let pa_Zero_fake = exists_solved_Zero_At [ft1] uslist1 in
 (*                     print_purelist (po_fake_test @ pa_O_fake); *)
                               (pa_Zero_fake or
                               (List.exists (fun x -> x.pol = Zero) po_fake_test)), 0
@@ -2780,7 +2880,10 @@ struct
 
    let rec select_pos search_po po redord ftree connections
       (slist : Set.t)
-      calculus candidates
+      solved_atoms
+      unclosed
+      calculus
+      candidates
       opt_bproof
       =
       match search_po with
@@ -2795,9 +2898,13 @@ struct
                   get_beta_preference (c::rest) c
             )
        | f::r ->  (* there exist an open position *)
-            let bool,orr_flag = blocked f po redord ftree connections slist calculus opt_bproof in
+            let bool,orr_flag =
+               blocked f po redord ftree connections slist solved_atoms unclosed calculus opt_bproof
+            in
             if bool then
-               select_pos r po redord ftree connections slist calculus candidates opt_bproof
+               select_pos
+                  r po redord ftree connections slist solved_atoms unclosed
+                  calculus candidates opt_bproof
             else
                if f.pt = Beta then
      (* search for non-splitting rules first *)
@@ -2811,7 +2918,8 @@ struct
    in
    !!!!!!! this strategy is not sure the best -- back to old !!!!!!!!!
 *)
-                  select_pos r po redord ftree connections slist calculus
+                  select_pos
+                     r po redord ftree connections slist solved_atoms unclosed calculus
                      ((f,orr_flag)::candidates) opt_bproof
                else
                   (f,orr_flag)
@@ -2852,24 +2960,50 @@ struct
 
    and tot ftree redord connections csigmaQ po slist calculus opt_bproof =
       try
+         (*print_poslist po;
+         print_endline "select_pos:";*)
          (* last argument for guiding selection strategy *)
-         let p, orr_flag =
-            select_pos po po redord ftree connections slist calculus [] opt_bproof
+         let po_set, solved_atoms, unclosed =
+            match calculus with
+               S4 ->
+                  let po =
+                     List.fold_left (fun set {pospos=pospos} -> Set.add set pospos) Set.empty po
+                  in
+                  po,
+                  collect_solved_atoms [ftree] slist,
+                  collect_unclosed po ftree None
+             | Classical | Intuit _ ->
+                 let po =
+                     List.fold_left
+                        (fun set {pospos=pospos; pol=pol} ->
+                           if pol=Zero then Set.add set pospos
+                           else set
+                        )
+                        Set.empty
+                        po
+                  in
+                  po, collect_solved_Zero_At [ftree] slist, Set.empty
          in
-(*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
+         let p, orr_flag =
+            select_pos
+               po po_set redord ftree connections slist solved_atoms unclosed calculus [] opt_bproof
+         in
+(*    print_endline ((pos_to_string p.pospos)^" "^(string_of_int orr_flag)); *)
          match tpredsucc p ftree with
             pred :: succs ->
                let redpo = update p.pospos redord in   (* deletes the entry (p,psuccset) from the redord *)
                let rednew =
-                  if (p.pt = Delta) then                 (* keep the tree ordering for the successor position only *)
-                     let psucc = List.hd succs in
-                     match tpredsucc psucc ftree with
-                        pre :: sucs ->
-                           replace_ordering psucc.pospos sucs redpo (* union the succsets of psucc *)
-                      | [] ->
-                           raise jprover_bug
-                  else
-                     redpo
+                  match p.pt with
+                     Delta | Pi ->      (* keep the tree ordering for the successor position only *)
+                        let psucc = List.hd succs in
+                        begin match tpredsucc psucc ftree with
+                           pre :: sucs ->
+                              replace_ordering psucc.pospos sucs redpo (* union the succsets of psucc *)
+                         | [] ->
+                              raise jprover_bug
+                        end
+                   | _ ->
+                        redpo
                in
 (*            print_endline "update ok"; *)
                solve
@@ -2889,13 +3023,14 @@ struct
       let {pospos=pospos; op=op; pt=pt; st=st } = p in
       let newslist = Set.remove slist pospos in
       let rback =
-         if st = Gamma_0 then
-            begin
-(*          print_endline "that's the gamma rule";  *)
-               [((pospos,pred.pospos),(build_rule pred p csigmaQ orr_flag calculus))]
-            end
-         else
-            []
+         match st with
+            Gamma_0 | Nu_0 ->
+               begin
+(*             print_endline "that's the gamma rule";  *)
+                  [((pospos,pred.pospos),(build_rule pred p csigmaQ orr_flag calculus))]
+               end
+          | _ ->
+               []
       in
 (*        print_endline "gamma check finish";  *)
       let pnew =
@@ -2905,7 +3040,14 @@ struct
             po
       in
       match pt with
-         Gamma ->
+         Pi ->
+            let rule = build_rule p p csigmaQ orr_flag calculus in
+            let rest =
+               tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof
+            in
+            rback @ (((empty_pos,pospos),rule)::rest)
+       | Nu
+       | Gamma ->
             rback @ (tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof)
        | Psi ->
             begin match op, succs with
@@ -3024,6 +3166,11 @@ struct
          end;
       let (newroot_name,unsolved_list) =  build_unsolved ftree in
       let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
+      if !debug_s4prover then
+         begin
+            print_endline "before purity:";
+            print_ordering redord2
+         end;
       let min_connections = ConnSet.of_list ext_proof in
       let (init_tree,init_redord,init_connections,init_unsolved_list) =
          purity ftree redord2 min_connections unsolved_list
@@ -3040,6 +3187,12 @@ struct
    print_endline "";
    print_endline "";
 *)
+      if !debug_s4prover then
+         begin
+            print_endline "before total:";
+            print_ordering init_redord;
+            print_endline "total:"
+         end;
 (* it should hold: min_connections = init_connections *)
          total init_tree init_redord init_connections sigmaQ
             init_unsolved_list calculus opt_bproof
@@ -3164,6 +3317,7 @@ let rec make_domain_equations fo_pairs gamma_0_prefixes delta_0_prefixes  n =
 let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ atom_rel qprefixes =
    match calculus with
       Classical -> ((0,[]),(0,[]),orderingQ)
+    | S4
     | Intuit _ ->
          let us = ext_atom.aposprefix in
          let ut = try_one.aposprefix in
@@ -3174,7 +3328,7 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
             (* prop case *)
             (* prop unification only *)
             let new_sigma,new_eqlist,_  =
-               JTUnifyProp.do_stringunify us ut ns nt equations [] PMap.empty Set.empty 1
+               JTUnifyProp.do_stringunify calculus us ut ns nt equations [] PMap.empty Set.empty 1
             in
                (new_sigma,new_eqlist,PMap.empty) (* assume the empty reduction ordering during proof search *)
          else (* "This is the FO case" *)
@@ -3188,7 +3342,7 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
             print_string "domain equations out";
             print_flush ();
             *)
-            do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel new_max
+            do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_rel new_max
 
 (**************************************** add multiplicity *********************************)
 
@@ -3296,6 +3450,8 @@ let rec add_multiplicity ftree pos_n
             begin match calculus, pos with
              (* no explicit atom-instances *)
                Classical, { pt = Phi; op = All}
+(* XXX Yegor: this is probably a bug - there is no Phi in Classical logic *)
+             | S4, { pt = Nu }
              | Intuit _, { pt = Phi; op = And | Or | Neg | Imp | All | Ex | Null (* pos.op <> At *) }
              (* universal quantifiers are copied at their Phi positions *)
              | _, { pt = Gamma; st =
@@ -3508,7 +3664,12 @@ let path_checker
          let (_,eqlist,(_,nsubstJ),ext_proof) =
             provable AtomSet.empty AtomSet.empty (pe,pe) (1,[]) (pe,(1,[])) in
          let _,substJ = nsubstJ in
-         let orderingJ = build_orderingJ_list substJ init_ordering atom_set in
+         let orderingJ = build_orderingJ_list calculus substJ init_ordering atom_set in
+         if !debug_s4prover then
+            begin
+               print_endline "build_orderingJ_list in path_checker:";
+               print_ordering_map orderingJ
+            end;
          (init_ordering,orderingJ),eqlist,(pe,nsubstJ),ext_proof
       end
    else
@@ -3562,8 +3723,15 @@ let atom_record position posprefix =
         label=label; address=address; pol=pol; st=st} = position in
    let aname = pos_to_string pospos in
    let aop = (dest_term label).term_op in
+   let aposprefix =
+      match st with
+         Psi_0 | Phi_0 | Pi_0 | Nu_0 ->
+            posprefix @ [pospos]
+       | _ ->
+            posprefix
+   in
    {aname=aname; aaddress=address; apos=pospos;
-    aposprefix=posprefix @ [pospos];
+    aposprefix=aposprefix;
     apredicate=aop;
     apol=pol; ast=st; alabel=label}
 
@@ -3585,7 +3753,7 @@ and select_atoms ftree posprefix acc =
     | NodeA({pospos = pospos; st = st }, suctrees) ->
          let new_posprefix =
             match st with
-               Psi_0 | Phi_0 ->
+               Psi_0 | Phi_0 | Pi_0 | Nu_0 ->
                   posprefix @ [pospos]
              | _ ->
                   posprefix
@@ -3617,8 +3785,8 @@ let prepare_prover ftree =
 
 let make_position_name stype pos_n =
    match stype with
-      Phi_0 | Gamma_0 -> Var, pos_n
-    | Psi_0 | Delta_0 -> Const, pos_n
+      Phi_0 | Gamma_0 | Nu_0 -> Var, pos_n
+    | Psi_0 | Delta_0 | Pi_0 -> Const, pos_n
     | _ -> Atom, pos_n
 
 let dual_pol = function
@@ -3639,7 +3807,7 @@ let check_subst_term variable old_term pospos stype =
             (* !!! check unification module how handling eingenvariables as constants !!! *)
     | _ -> old_term
 
-let rec build_ftree variable old_term pol stype address pos_n =
+let rec build_ftree calculus variable old_term pol stype address pos_n =
    let pospos = make_position_name stype pos_n in
    let term = check_subst_term variable old_term pospos stype in
    if JLogic.is_and_term term then
@@ -3656,10 +3824,10 @@ let rec build_ftree variable old_term pol stype address pos_n =
          op=And; pol=pol; pt=ptype; st=stype; label=term}
       in
       let subtree_left,ordering_left,posn_left =
-         build_ftree empty_sym s pol stype_1 (address@[0]) (pos_n+1)
+         build_ftree calculus empty_sym s pol stype_1 (address@[0]) (pos_n+1)
       in
       let subtree_right,ordering_right,posn_right =
-         build_ftree empty_sym t pol stype_2 (address@[1]) (posn_left+1)
+         build_ftree calculus empty_sym t pol stype_2 (address@[1]) (posn_left+1)
       in
       let (succ_left,whole_left) = List.hd ordering_left in
       let (succ_right,whole_right) = List.hd ordering_right in
@@ -3670,38 +3838,38 @@ let rec build_ftree variable old_term pol stype address pos_n =
        ((position.pospos,pos_succs)::(List.rev_append ordering_left ordering_right)),
        posn_right
       )
-   else
-      if JLogic.is_or_term term then
-         let s,t = JLogic.dest_or term in
-         let ptype,stype_1,stype_2 =
-            match pol with
-               Zero ->
-                  Alpha,Alpha_1,Alpha_2
-             | One ->
-                  Beta,Beta_1,Beta_2
-         in
-         let position =
-            {address=address; pospos=pospos;
-            op=Or; pol=pol; pt=ptype; st=stype; label=term}
-         in
-         let subtree_left,ordering_left,posn_left =
-            build_ftree empty_sym s pol stype_1 (address@[0]) (pos_n+1)
-         in
-         let subtree_right,ordering_right,posn_right =
-            build_ftree empty_sym t pol stype_2 (address@[1]) (posn_left+1)
-         in
-         let (succ_left,whole_left) = List.hd ordering_left in
-         let (succ_right,whole_right) = List.hd ordering_right in
-         let pos_succs =
-            Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left
-         in
-         (NodeA(position,[subtree_left;subtree_right]),
-          ((position.pospos),pos_succs)::(List.rev_append ordering_left ordering_right),
-          posn_right
-         )
-      else
-         if JLogic.is_implies_term term then
-            let s,t = JLogic.dest_implies term in
+   else if JLogic.is_or_term term then
+      let s,t = JLogic.dest_or term in
+      let ptype,stype_1,stype_2 =
+         match pol with
+            Zero ->
+               Alpha,Alpha_1,Alpha_2
+          | One ->
+               Beta,Beta_1,Beta_2
+      in
+      let position =
+         {address=address; pospos=pospos;
+         op=Or; pol=pol; pt=ptype; st=stype; label=term}
+      in
+      let subtree_left,ordering_left,posn_left =
+         build_ftree calculus empty_sym s pol stype_1 (address@[0]) (pos_n+1)
+      in
+      let subtree_right,ordering_right,posn_right =
+         build_ftree calculus empty_sym t pol stype_2 (address@[1]) (posn_left+1)
+      in
+      let (succ_left,whole_left) = List.hd ordering_left in
+      let (succ_right,whole_right) = List.hd ordering_right in
+      let pos_succs =
+         Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left
+      in
+      (NodeA(position,[subtree_left;subtree_right]),
+       ((position.pospos),pos_succs)::(List.rev_append ordering_left ordering_right),
+       posn_right
+      )
+   else if JLogic.is_implies_term term then
+      let s,t = JLogic.dest_implies term in
+      match calculus with
+         Intuit _ ->
             let ptype_0,stype_0,ptype,stype_1,stype_2 =
                match pol with
                   Zero ->
@@ -3718,162 +3886,275 @@ let rec build_ftree variable old_term pol stype address pos_n =
                op=Imp; pol=pol; pt=ptype; st=stype_0; label=term}
             in
             let subtree_left,ordering_left,posn_left =
-               build_ftree empty_sym s (dual_pol pol) stype_1 (address@[0;0])
-                  (pos_n+2)
+               build_ftree calculus empty_sym s (dual_pol pol) stype_1 (address@[0;0]) (pos_n+2)
             in
             let subtree_right,ordering_right,posn_right =
-               build_ftree empty_sym t pol stype_2 (address@[0;1])
+               build_ftree calculus empty_sym t pol stype_2 (address@[0;1]) (posn_left+1)
+            in
+            let (succ_left,whole_left) = List.hd ordering_left in
+            let (succ_right,whole_right) = List.hd ordering_right in
+            let pos_succs =
+               Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left
+            in
+            let pos_ordering =
+               (position.pospos,pos_succs) :: (List.rev_append ordering_left ordering_right)
+   	      in
+               NodeA(sposition,[NodeA(position,[subtree_left;subtree_right])]),
+               ((sposition.pospos,(Set.add pos_succs position.pospos))::pos_ordering),
+               posn_right
+       | Classical | S4 ->
+            let ptype,stype_1,stype_2 =
+               match pol with
+                  Zero ->
+                     Alpha,Alpha_1,Alpha_2
+                | One ->
+                     Beta,Beta_1,Beta_2
+            in
+            let position =
+               {address=address; pospos=pospos;
+               op=Imp; pol=pol; pt=ptype; st=stype; label=term}
+            in
+            let subtree_left,ordering_left,posn_left =
+               build_ftree calculus empty_sym s (dual_pol pol) stype_1 (address@[0])
+                  (pos_n+1)
+            in
+            let subtree_right,ordering_right,posn_right =
+               build_ftree calculus empty_sym t pol stype_2 (address@[1])
                   (posn_left+1) in
             let (succ_left,whole_left) = List.hd ordering_left in
             let (succ_right,whole_right) = List.hd ordering_right in
             let pos_succs =
-               Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left in
+               Set.add (Set.add (Set.union whole_left whole_right) succ_right) succ_left
+            in
             let pos_ordering =
-					(position.pospos,pos_succs) :: (List.rev_append ordering_left ordering_right)
-				in
-            (NodeA(sposition,[NodeA(position,[subtree_left;subtree_right])]),
-             ((sposition.pospos,(Set.add pos_succs position.pospos))::pos_ordering),
-             posn_right
-            )
-         else
-            if JLogic.is_not_term term then
-               let s = JLogic.dest_not term in
-               let ptype_0,stype_0,ptype,stype_1=
-                  match pol with
-                     Zero ->
-                        Psi,Psi_0,Alpha,Alpha_1
-                   | One ->
-                        Phi,Phi_0,Alpha,Alpha_1
+               (position.pospos,pos_succs) :: (List.rev_append ordering_left ordering_right)
+            in
+               NodeA(position,[subtree_left;subtree_right]),
+               pos_ordering,
+               posn_right
+   else if JLogic.is_not_term term then
+      let s = JLogic.dest_not term in
+      match calculus with
+         Intuit _ ->
+            let ptype_0,stype_0,ptype,stype_1=
+               match pol with
+                  Zero ->
+                     Psi,Psi_0,Alpha,Alpha_1
+                | One ->
+                     Phi,Phi_0,Alpha,Alpha_1
+            in
+            let pos2pos = make_position_name stype_0 (pos_n+1) in
+            let sposition =
+               {address=address; pospos=pospos;
+                op=Neg; pol=pol; pt=ptype_0; st=stype; label=term}
+            in
+            let position =
+               {address=address@[0]; pospos=pos2pos;
+                op=Neg; pol=pol; pt=ptype; st=stype_0; label=term}
+            in
+            let subtree_left,ordering_left,posn_left =
+               build_ftree calculus empty_sym s (dual_pol pol) stype_1 (address@[0;0])
+               (pos_n+2)
+            in
+            let (succ_left,whole_left) = List.hd ordering_left in
+            let pos_succs = Set.add whole_left succ_left in
+            let pos_ordering = (position.pospos,pos_succs) :: ordering_left in
+               NodeA(sposition,[NodeA(position,[subtree_left])]),
+               ((sposition.pospos,(Set.add pos_succs position.pospos))::pos_ordering),
+               posn_left
+       | Classical | S4 ->
+           let ptype,stype_1=
+               match pol with
+                  Zero ->
+                     Alpha,Alpha_1
+                | One ->
+                     Alpha,Alpha_1
+            in
+            let position =
+               {address=address; pospos=pospos;
+                op=Neg; pol=pol; pt=ptype; st=stype; label=term}
+            in
+            let subtree_left,ordering_left,posn_left =
+               build_ftree calculus empty_sym s (dual_pol pol) stype_1 (address@[0])
+               (pos_n+1)
+            in
+            let (succ_left,whole_left) = List.hd ordering_left in
+            let pos_succs = Set.add whole_left succ_left in
+            let pos_ordering = (position.pospos,pos_succs) :: ordering_left in
+               NodeA(position,[subtree_left]),
+               pos_ordering,
+               posn_left
+   else if JLogic.is_box_term term then
+      let s = JLogic.dest_box term in
+      let ptype,stype_1=
+         match pol with
+            Zero ->
+               Pi,Pi_0
+          | One ->
+               Nu,Nu_0
+      in
+      let position =
+         {address=address; pospos=pospos;
+          op=Box; pol=pol; pt=ptype; st=stype; label=term}
+      in
+      let subtree_left,ordering_left,posn_left =
+         build_ftree calculus empty_sym s pol stype_1 (address@[0]) (pos_n+1)
+      in
+      let (succ_left,whole_left) = List.hd ordering_left in
+      let pos_succs = Set.add whole_left succ_left in
+      let pos_ordering = (position.pospos,pos_succs) :: ordering_left in
+         NodeA(position,[subtree_left]),
+         pos_ordering,
+         posn_left
+   else if JLogic.is_exists_term term then
+      let v,s,t = JLogic.dest_exists term in  (* s is type of v let will be supressed here *)
+      match calculus with
+         Intuit _ ->
+            let ptype,stype_1 =
+               match pol with
+                  Zero ->
+                     Gamma,Gamma_0
+                | One ->
+                     Delta,Delta_0
+            in
+            let position =
+               {address=address; pospos=pospos;
+                op=Ex; pol=pol; pt=ptype; st=stype; label=term}
+            in
+            let subtree_left,ordering_left,posn_left =
+               build_ftree calculus v t pol stype_1 (address@[0]) (pos_n+1)
+            in
+            let (succ_left,whole_left) = List.hd ordering_left in
+            let pos_succs = Set.add whole_left succ_left in
+               NodeA(position,[subtree_left]),
+               ((position.pospos,pos_succs) :: ordering_left),
+               posn_left
+       | Classical | S4 ->
+            raise (Invalid_argument
+            "Syntax analysis of quantifiers are not implemented for Classical Logic and S4")
+   else if JLogic.is_all_term term then
+      let v,s,t = JLogic.dest_all term in
+      match calculus with
+         Intuit _ ->
+            (* s is type of v let will be supressed here *)
+            let ptype_0,stype_0,ptype,stype_1=
+               match pol with
+                  Zero ->
+                     Psi,Psi_0,Delta,Delta_0
+                | One ->
+                     Phi,Phi_0,Gamma,Gamma_0
+            in
+            let pos2pos = make_position_name stype_0 (pos_n+1) in
+            let sposition =
+               {address=address; pospos=pospos;
+                op=All; pol=pol; pt=ptype_0; st=stype; label=term}
+            in
+            let position =
+               {address=address@[0]; pospos=pos2pos;
+                op=All; pol=pol; pt=ptype; st=stype_0; label=term}
+            in
+            let subtree_left,ordering_left,posn_left =
+               build_ftree calculus v t pol stype_1 (address@[0;0]) (pos_n+2)
+            in
+            let (succ_left,whole_left) = List.hd ordering_left in
+            let pos_succs = Set.add whole_left succ_left in
+            let pos_ordering = (position.pospos,pos_succs) :: ordering_left in
+               NodeA(sposition,[NodeA(position,[subtree_left])]),
+               ((sposition.pospos,(Set.add pos_succs position.pospos))::pos_ordering),
+               posn_left
+       | Classical | S4 ->
+            raise (Invalid_argument
+            "Syntax analysis of quantifiers are not implemented for Classical Logic and S4")
+   else      (* finally, term is atomic *)
+      match calculus with
+         Intuit _ ->
+            let ptype_0,stype_0 =
+               match pol with
+                  Zero ->
+                     Psi,Psi_0
+                | One ->
+                     Phi,Phi_0
                in
-               let pos2pos = make_position_name stype_0 (pos_n+1) in
-               let sposition =
-                  {address=address; pospos=pospos;
-                  op=Neg; pol=pol; pt=ptype_0; st=stype; label=term}
-               in
-               let position =
-                  {address=address@[0]; pospos=pos2pos;
-                  op=Neg; pol=pol; pt=ptype; st=stype_0; label=term}
-               in
-               let subtree_left,ordering_left,posn_left =
-                  build_ftree empty_sym s (dual_pol pol) stype_1 (address@[0;0])
-                     (pos_n+2)
-               in
-               let (succ_left,whole_left) = List.hd ordering_left in
-               let pos_succs =
-                  Set.add whole_left succ_left in
-               let pos_ordering = (position.pospos,pos_succs) :: ordering_left in
-               (NodeA(sposition,[NodeA(position,[subtree_left])]),
-                ((sposition.pospos,(Set.add pos_succs position.pospos))::pos_ordering),
-                posn_left
-               )
-            else
-               if JLogic.is_exists_term term then
-                  let v,s,t = JLogic.dest_exists term in  (* s is type of v let will be supressed here *)
-                  let ptype,stype_1 =
-                     match pol with
-                        Zero ->
-                           Gamma,Gamma_0
-                      | One ->
-                           Delta,Delta_0
-                  in
-                  let position =
-                     {address=address; pospos=pospos;
-                     op=Ex; pol=pol; pt=ptype; st=stype; label=term}
-                  in
-                  let subtree_left,ordering_left,posn_left =
-                     build_ftree v t pol stype_1 (address@[0]) (pos_n+1)
-                  in
-                  let (succ_left,whole_left) = List.hd ordering_left in
-                  let pos_succs =
-                     Set.add whole_left succ_left in
-                  (NodeA(position,[subtree_left]),
-                   ((position.pospos,pos_succs) :: ordering_left),
-                   posn_left
-                  )
-               else
-                  if JLogic.is_all_term term then
-                     let v,s,t = JLogic.dest_all term in
-       (* s is type of v let will be supressed here *)
-                     let ptype_0,stype_0,ptype,stype_1=
-                        match pol with
-                           Zero ->
-                              Psi,Psi_0,Delta,Delta_0
-                         | One ->
-                              Phi,Phi_0,Gamma,Gamma_0
-                     in
-                     let pos2pos = make_position_name stype_0 (pos_n+1) in
-                     let sposition =
-                        {address=address; pospos=pospos;
-                        op=All; pol=pol; pt=ptype_0; st=stype; label=term}
-                     in
-                     let position =
-                        {address=address@[0]; pospos=pos2pos;
-                        op=All; pol=pol; pt=ptype; st=stype_0; label=term}
-                     in
-                     let subtree_left,ordering_left,posn_left =
-                        build_ftree v t pol stype_1 (address@[0;0]) (pos_n+2)
-                     in
-                     let (succ_left,whole_left) = List.hd ordering_left in
-                     let pos_succs =
-                        Set.add whole_left succ_left in
-                     let pos_ordering =
-                        (position.pospos,pos_succs) :: ordering_left
-                     in
-                     (NodeA(sposition,[NodeA(position,[subtree_left])]),
-                      ((sposition.pospos,(Set.add pos_succs position.pospos))::pos_ordering),
-                      posn_left
-                     )
-                  else      (* finally, term is atomic *)
-                     let ptype_0,stype_0 =
-                        match pol with
-                           Zero ->
-                              Psi,Psi_0
-                         | One ->
-                              Phi,Phi_0
-                     in
-                     let pos2pos = make_position_name stype_0 (pos_n+1) in
-                     let sposition =
-                        {address=address; pospos=pospos;
-                        op=At; pol=pol; pt=ptype_0; st=stype; label=term}
-                     in
-                     let position =
-                        {address=address@[0]; pospos=pos2pos;
-                        op=At; pol=pol; pt=PNull; st=stype_0; label=term}
-                     in
-                     NodeA(sposition,[NodeAt(position)]),
-                     [(sposition.pospos,(Set.singleton position.pospos));
-                      (position.pospos,Set.empty)],
-                     pos_n+1
+            let pos2pos = make_position_name stype_0 (pos_n+1) in
+            let sposition =
+               {address=address; pospos=pospos;
+                op=At; pol=pol; pt=ptype_0; st=stype; label=term}
+            in
+            let position =
+               {address=address@[0]; pospos=pos2pos;
+                op=At; pol=pol; pt=PNull; st=stype_0; label=term}
+            in
+               NodeA(sposition,[NodeAt(position)]),
+               [(sposition.pospos,(Set.singleton position.pospos));
+                  (position.pospos,Set.empty)
+               ],
+               pos_n+1
+       | Classical | S4 ->
+            let position =
+               {address=address; pospos=pospos;
+                op=At; pol=pol; pt=PNull; st=stype; label=term}
+            in
+               NodeAt(position),
+               [(position.pospos,Set.empty)],
+               pos_n
 
-let rec construct_ftree
+let rec construct_ftree_aux
+   calculus
    termlist
    treelist
    (orderinglist : Set.t PMap.t)
    pos_n
-   goal
+   pol
    =
    match termlist with
       [] ->
-         let new_root =
-            {address=[]; pospos=root_pos;
-            op=Null; pol=Zero; pt=Psi; st=PNull_0; label=goal}
-         in
-         let union = PMap.fold (fun set key s -> Set.union set s) Set.empty orderinglist in
-         NodeA(new_root,treelist),
-         (PMap.add orderinglist root_pos union),pos_n
+         treelist, orderinglist, pos_n
     | ft::rest_terms ->
          let next_address = [List.length treelist] in
-         let next_pol,next_goal =
-            if rest_terms = []  then
-               Zero,ft (* construct tree for the conclusion *)
-            else
-               One,goal
-         in
          let new_tree,new_ordering,new_pos_n =
-            build_ftree empty_sym ft next_pol Alpha_1 next_address (pos_n+1) in
-         construct_ftree rest_terms (treelist @ [new_tree])
-            (PMap.add_list orderinglist new_ordering) new_pos_n next_goal
+            build_ftree calculus empty_sym ft pol Alpha_1 next_address (pos_n+1)
+         in
+         construct_ftree_aux
+            calculus
+            rest_terms
+            (new_tree::treelist)
+            (PMap.add_list orderinglist new_ordering)
+            new_pos_n
+            pol
 			(* rev_append in treelist breaks some proofs *)
+
+let construct_ftree
+   calculus
+   hyplist
+   conclist
+   pos_n
+   goal
+   =
+   let hyptrees, orderinglist, pos_n =
+      construct_ftree_aux calculus hyplist [] PMap.empty pos_n One
+   in
+   let alltrees, orderinglist, pos_n =
+      construct_ftree_aux calculus conclist hyptrees orderinglist pos_n Zero
+   in
+   let alltrees = List.rev alltrees in
+   let pt =
+      match calculus with
+         Intuit _ ->
+            Psi
+       | Classical ->
+            Alpha
+       | S4 ->
+            Alpha
+   in
+   let new_root =
+      {address=[]; pospos=root_pos;
+       op=Null; pol=Zero; pt=pt; st=PNull_0; label=goal}
+   in
+   let union =
+      PMap.fold (fun set key s -> Set.add (Set.union set s) key) Set.empty orderinglist
+   in
+   NodeA(new_root,alltrees),
+   PMap.add orderinglist root_pos union, pos_n
 
 (*************************** Main LOOP ************************************)
 
@@ -3925,13 +4206,15 @@ let rec try_multiplicity
 (*             print_formula_info new_ftree new_ordering new_pos_n;   *)
                try_multiplicity consts mult_limit new_ftree new_ordering new_pos_n new_mult calculus
 
-let prove consts mult_limit termlist calculus =
-   let (ftree,ordering,pos_n) =
-      construct_ftree termlist [] PMap.empty 0 (mk_pos_var (dummy_pos ()))
+let prove calculus consts mult_limit hyplist conclist calculus =
+   let ftree, ordering, pos_n =
+      construct_ftree calculus hyplist conclist 0 (mk_pos_var (dummy_pos ()))
    in
+   if !debug_s4prover then
+      print_ordering_map ordering;
 (* pos_n = number of positions without new root "w" *)
 (*   print_formula_info ftree ordering pos_n;    *)
-   let ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof =
+   let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
       try_multiplicity consts mult_limit ftree ordering pos_n 1 calculus
    in
    ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof
@@ -3939,21 +4222,23 @@ let prove consts mult_limit termlist calculus =
 
 (********** first-order type theory interface *******************)
 
-let rec renam_free_vars termlist =
+let rec renam_free_vars map conts termlist =
    match termlist
-   with [] -> [],[],SymbolSet.empty
+   with [] -> map,[],conts
     | f::r ->
-         let conts = all_contexts f in
-         let var_names = free_vars_list f conts in
+         let new_conts = all_contexts f in
+         let var_names = free_vars_list f new_conts in
          let mapping =
             List.rev_map
                (fun s -> s, mk_symbol_term free_var_op s)
                var_names
          in
          let new_f = TermSubst.apply_subst mapping f in
-         let rest_mapping,rest_renamed,rest_conts = renam_free_vars r in
+         let rest_mapping,rest_renamed,rest_conts =
+            renam_free_vars map conts r
+         in
          let unique_mapping = remove_subst_dups (List.rev_append mapping rest_mapping) in
-         (unique_mapping,(new_f::rest_renamed),SymbolSet.union conts rest_conts)
+         (unique_mapping,(new_f::rest_renamed),SymbolSet.union new_conts rest_conts)
 
 let rec apply_var_subst term = function
    [] -> term
@@ -4042,9 +4327,12 @@ let rec make_test_interface consts rule_list input_map =
 
 let gen_prover mult_limit calculus hyps concls =
 	(* rev_append on the next line would break some proofs *)
-   let input_map, renamed_termlist, consts = renam_free_vars (hyps @ concls) in
+   let input_map, renamed_hyps, consts = renam_free_vars [] SymbolSet.empty hyps in
+   let input_map, renamed_concls, consts =
+      renam_free_vars input_map consts concls
+   in
    let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
-		prove consts mult_limit renamed_termlist calculus
+		prove calculus consts mult_limit renamed_hyps renamed_concls calculus
 	in
    let red_ordering = PMap.fold (fun acc p s -> (p,s)::acc) [] red_ordering in
    (* it's too early to convert ext_proof to a set *)
@@ -4069,10 +4357,15 @@ let rec count_axioms seq_list =
          else
             count_axioms r
 
-let do_prove mult_limit termlist calculus =
+let do_prove mult_limit hyps concls calculus =
    try begin
-      let (input_map,renamed_termlist,consts) = renam_free_vars termlist in
-      let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove consts mult_limit renamed_termlist calculus in
+      let input_map, renamed_hyps, consts = renam_free_vars [] SymbolSet.empty hyps in
+      let input_map, renamed_concls, consts =
+         renam_free_vars input_map consts concls
+      in
+      let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
+         prove calculus consts mult_limit renamed_hyps renamed_concls calculus
+      in
       open_box 0;
       force_newline ();
       force_newline ();
@@ -4152,13 +4445,13 @@ let do_prove mult_limit termlist calculus =
    end
 
 let test concl calculus =  (* calculus should be LJmc or LJ for J, let LK for C *)
-   do_prove None [concl] calculus
+   do_prove None [] [concl] calculus
 
 (* for sequents *)
 
 let seqtest list_term calculus =
    let termlist = collect_subterms [] (dest_term list_term).term_terms in
-   do_prove None termlist calculus
+   do_prove None termlist [] calculus
 
 (*****************************************************************)
 

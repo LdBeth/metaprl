@@ -4,7 +4,7 @@ open Refiner.Refiner.TermType
 
 type rule =
    Ax | Andr | Andl | Orr | Orr1 | Orr2 | Orl | Impr | Impl | Negr | Negl
- | Allr | Alll| Exr | Exl | Fail
+ | Allr | Alll| Exr | Exl | Fail | Boxl | Boxr
 
 type intuit_calc =
    SingleConcl
@@ -13,6 +13,7 @@ type intuit_calc =
 type calculus =
    Classical
  | Intuit of intuit_calc
+ | S4
 
 module type JLogicSig =
 sig
@@ -29,6 +30,8 @@ sig
 	val dest_implies : term -> term * term
 	val is_not_term : term -> bool
 	val dest_not : term -> term
+   val is_box_term : term -> bool
+   val dest_box : term -> term
 
    (* processing the output *)
    type inference

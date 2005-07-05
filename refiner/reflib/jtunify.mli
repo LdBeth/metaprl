@@ -5,23 +5,25 @@ open Jordering
 (* Debugging *)
 
 val print_equations :
-   (string list * (string list * string list)) list -> unit
+   (position list * (position list * position list)) list -> unit
 
-val print_tunify : int * (string * string list) list -> unit
+val print_tunify : int * (position * position list) list -> unit
+
+val shorten : position list -> position list -> (position list * position list)
 
 module type JQuantifierSig =
 sig
 
    val build_ordering :
+      calculus ->
       position list ->
       position list ->
       Set.t PMap.t ->
       Set.t ->
       Set.t PMap.t
 
-   val shorten : 'a list -> 'a list -> ('a list * 'a list)
-
-   val add_fo_eqlist : 'a list -> 'a list -> 'a list
+   type equation = position list * (position list * position list)
+   val add_fo_eqlist : equation list -> equation list -> equation list
 
    val result_qmax : int -> int
 end
@@ -32,6 +34,7 @@ module JTUnifyQ (JLogic : JLogicSig) :
 sig
 
 	val do_stringunify :
+      calculus ->
 		position list ->
 		position list ->
 		position ->
@@ -52,6 +55,7 @@ module JTUnifyProp (JLogic : JLogicSig) :
 sig
 
    val do_stringunify :
+      calculus ->
       position list ->
       position list ->
       position ->

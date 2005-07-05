@@ -51,6 +51,10 @@ struct
    let is_not_term = nuprl_is_not_term
    let dest_not = nuprl_dest_not
 
+   let is_box_term _ = false
+   let dest_box _ =
+      raise (Invalid_argument "Itt_logic: at this time there is no box-modlaity in ITT")
+
    type inference = (string * term * term) list
    let empty_inf = []
    let append_inf inf t1 t2 r =

@@ -50,7 +50,7 @@ let rec list_to_string s =
    match s with
       [] -> ""
     | f::r ->
-         f^"."^(list_to_string r)
+         (pos_to_string f)^"."^(list_to_string r)
 
 let rec print_eqlist eqlist =
    match eqlist with
@@ -83,7 +83,7 @@ let rec print_subst sigma =
          let (v,s) = f in
          let ls = list_to_string s in
          begin
-            print_endline (v^" = "^ls);
+            print_endline ((pos_to_string v)^" = "^ls);
             print_subst r
          end
 
@@ -140,19 +140,26 @@ let rec apply_element v slist fs ft =
          (if fs_first = v then slist @ fs else fs_first :: fs),
          (if ft_first = v then slist @ ft else ft_first :: ft)
 
+let rec shorten (us : position list) ut =
+   match us, ut with
+      (fs::rs), (ft::rt) when fs = ft ->
+         shorten rs rt
+    | usut ->
+         usut
+
 module type JQuantifierSig =
 sig
 
    val build_ordering :
+      calculus ->
       position list ->
       position list ->
       Set.t PMap.t ->
 		Set.t ->
       Set.t PMap.t
 
-   val shorten : 'a list -> 'a list -> ('a list * 'a list)
-
-   val add_fo_eqlist : 'a list -> 'a list -> 'a list
+   type equation = position list * (position list * position list)
+   val add_fo_eqlist : equation list -> equation list -> equation list
 
    val result_qmax : int -> int
 end
@@ -166,12 +173,7 @@ struct
 
    let build_ordering = build_orderingJ
 
-   let rec shorten us ut =
-      match (us,ut) with
-			(fs::rs), (ft::rt) when fs = ft ->
-				shorten rs rt
-		 | usut ->
-				usut
+   type equation = position list * (position list * position list)
 
 	let add_fo_eqlist a b = a @ b
    (* rev_append here changes proofs but does not break them *)
@@ -185,16 +187,9 @@ struct
 
    module JTypes = JTypes(JLogic)
 
-	let build_ordering _ _ _ _ = PMap.empty
+	let build_ordering _ _ _ _ _ = PMap.empty
 
-	let rec shorten us ut =
-		match (us,ut) with
-			([],_) | (_,[])  -> raise jprover_bug
-		 | ((fs::rs),(ft::rt)) ->
-				if fs = ft then
-					shorten rs rt
-				else
-					(us,ut)
+   type equation = position list * (position list * position list)
 
 	let add_fo_eqlist a b = a
 
@@ -300,11 +295,11 @@ let r_10 s rt =
          ((stl =[]) or (is_const x) or (rtl <> []))
     | _ -> false
 
-let rec tunify_list eqlist init_sigma ordering atom_set =
+let rec tunify_list calculus eqlist init_sigma ordering atom_set =
    let rec tunify atomnames fs ft rt rest_eq sigma ordering =
       let apply_r1 rest_eq sigma =
 	  (* print_endline "r1"; *)
-         tunify_list rest_eq sigma ordering atom_set
+         tunify_list calculus rest_eq sigma ordering atom_set
 
       in
       let apply_r2 fs ft rt rest_eq sigma =
@@ -329,7 +324,7 @@ let rec tunify_list eqlist init_sigma ordering atom_set =
          let v = (List.hd fs) in
          let compose_vars, new_sigma = compose sigma (v,ft) in
          let new_rest_eq = apply_subst rest_eq v ft atomnames in
-         let new_ordering = build_ordering (v::compose_vars) ft ordering atom_set in
+         let new_ordering = build_ordering calculus (v::compose_vars) ft ordering atom_set in
             tunify atomnames (List.tl fs) rt rt new_rest_eq new_sigma new_ordering
 
       in
@@ -350,7 +345,7 @@ let rec tunify_list eqlist init_sigma ordering atom_set =
          let ft_c1 = ft @ [c1] in
          let compose_vars,new_sigma = compose sigma (v,ft_c1) in
          let new_rest_eq = apply_subst rest_eq v ft_c1 atomnames in
-         let new_ordering = build_ordering (v::compose_vars) ft_c1 ordering atom_set in
+         let new_ordering = build_ordering calculus (v::compose_vars) ft_c1 ordering atom_set in
             tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma new_ordering
 
       in
@@ -367,7 +362,7 @@ let rec tunify_list eqlist init_sigma ordering atom_set =
          let ft_vnew = ft @ [v_new] in
          let compose_vars,new_sigma = compose ((max+1),subst) (v,ft_vnew) in
          let new_rest_eq = apply_subst rest_eq v ft_vnew atomnames in
-         let new_ordering = build_ordering (v::compose_vars) ft_vnew ordering atom_set in
+         let new_ordering = build_ordering calculus (v::compose_vars) ft_vnew ordering atom_set in
          tunify atomnames rt [v_new] (List.tl fs) new_rest_eq new_sigma new_ordering
 
       in
@@ -439,21 +434,21 @@ let rec tunify_list eqlist init_sigma ordering atom_set =
                (* r10 *)
                apply_r10 fs ft rt rest_eq sigma
             else
-               (*iNO rule applicable *)
+               (*NO rule applicable *)
                raise Not_unifiable
    in
    match eqlist with
       [] ->
          init_sigma,ordering
     | f::rest_eq ->
-         begin
-(*  open_box 0;
-   print_equations [f];
-   print_flush ();
-*)
-            let (atomnames,(fs,ft)) = f in
-            tunify atomnames fs [] ft rest_eq init_sigma ordering
-         end
+         if !debug_s4prover then
+            begin
+               open_box 0;
+               print_equations [f];
+               print_flush ()
+            end;
+         let (atomnames,(fs,ft)) = f in
+         tunify atomnames fs [] ft rest_eq init_sigma ordering
 
 let rec test_apply_eq atomnames eqs eqt subst =
    match subst with
@@ -474,7 +469,7 @@ let rec test_apply_eqsubst eqlist subst =
          let applied_element = test_apply_eq atomnames eqs eqt subst in
          (atomnames,applied_element)::(test_apply_eqsubst r subst)
 
-let ttest us ut ns nt eqlist ordering atom_set =
+let ttest calculus us ut ns nt eqlist ordering atom_set =
    let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 *)
                                            (* to eliminate common beginning *)
    let new_element = ([ns;nt],(short_us,short_ut)) in
@@ -484,7 +479,7 @@ let ttest us ut ns nt eqlist ordering atom_set =
       else
          new_element::eqlist
    in
-   let sigma, _ = tunify_list full_eqlist (1,[]) ordering atom_set in
+   let sigma, _ = tunify_list calculus full_eqlist (1,[]) ordering atom_set in
    let _, subst = sigma in
    let test_apply = test_apply_eqsubst full_eqlist subst in
    begin
@@ -499,7 +494,7 @@ let ttest us ut ns nt eqlist ordering atom_set =
       (*print_equations test_apply*)
    end
 
-let do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_set qmax =
+let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set qmax =
    let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 to eliminate common beginning *)
    let new_element = ([ns;nt],(short_us,short_ut)) in
    let full_eqlist =
@@ -511,8 +506,14 @@ let do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_set qmax =
 (*  print_equations full_eqlist; *)
    try
 (* Q-case: max-1 new variables have been used for the domain equations *)
-      let new_sigma, new_ordering = tunify_list full_eqlist (1,[]) orderingQ atom_set in
+      let new_sigma, new_ordering = tunify_list calculus full_eqlist (1,[]) orderingQ atom_set in
 (* Q-case: sigmaQ will not be returned in eqlist *)
+      if !debug_s4prover then
+         begin
+            print_endline "do_stringunify:";
+            print_tunify new_sigma;
+            print_ordering_map new_ordering
+         end;
       new_sigma, (result_qmax qmax, full_eqlist), new_ordering
    with Not_unifiable ->
       raise Failed            (* new connection please *)
