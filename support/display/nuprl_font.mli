@@ -173,6 +173,7 @@ declare tneg : Dform
 declare member : Dform
 declare plusminus : Dform
 declare oplus : Dform
+declare tensor : Dform
 declare infty : Dform
 declare partial : Dform
 declare cap : Dform
