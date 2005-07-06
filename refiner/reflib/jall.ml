@@ -139,18 +139,8 @@ struct
    module OrderedAtom =
    struct
       type t = atom
-      (*let compare a1 a2 =
-         let sc = Pervasives.compare a1.aname a2.aname in
-         let pc = PosOrdering.compare a1.apos a2.apos in
-         if sc * pc < 0 then
-            begin
-               print_endline ("Inconsistent ordering: "^a1.aname^" "^a2.aname);
-               sc
-            end
-         else
-            sc
-      *)
-      let compare a1 a2 = Pervasives.compare a1.aname a2.aname
+
+		let compare a1 a2 = PosOrdering.compare a1.apos a2.apos
    end
 
    module AtomSet = Lm_set.LmMake(OrderedAtom)
@@ -350,9 +340,9 @@ struct
             end
 
    let print_atom at tab =
-      let ({aname=x; aaddress=y; apredicate=p; apol=a; ast=b; alabel=label}) = at in
+      let ({apos=pos; aaddress=y; apredicate=p; apol=a; ast=b; alabel=label}) = at in
       begin
-         print_string ("{aname="^x^"; address=");
+         print_string ("{aname="^(pos_to_string pos)^"; address=");
          print_address y;
          print_string "; ";
          force_newline ();
@@ -656,7 +646,7 @@ struct
       match set_list with
          [] -> ""
        | f::r ->
-            (f.aname)^" "^(print_set_list r)
+            (pos_to_string f.apos)^" "^(print_set_list r)
 
    let print_set set =
       let set_list = AtomSet.elements set in
@@ -3721,7 +3711,6 @@ let rec compute_atomlist_relations worklist ftree alist =  (* last version of al
 let atom_record position posprefix =
    let {pospos=pospos;
         label=label; address=address; pol=pol; st=st} = position in
-   let aname = pos_to_string pospos in
    let aop = (dest_term label).term_op in
    let aposprefix =
       match st with
@@ -3730,7 +3719,7 @@ let atom_record position posprefix =
        | _ ->
             posprefix
    in
-   {aname=aname; aaddress=address; apos=pospos;
+   {aaddress=address; apos=pospos;
     aposprefix=aposprefix;
     apredicate=aop;
     apol=pol; ast=st; alabel=label}

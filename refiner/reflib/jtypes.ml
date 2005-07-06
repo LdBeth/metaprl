@@ -48,8 +48,7 @@ struct
     | NodeAt of pos
     | NodeA of pos * ftree list
 
-   type atom = {aname : string;
-                aaddress : int list;
+   type atom = {aaddress : int list;
                 apos : position;
                 aposprefix : position list;
                 apredicate :  operator;
