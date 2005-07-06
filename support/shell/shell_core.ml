@@ -78,12 +78,12 @@ let loaded_packages () =
    List.filter shell_package (Package_info.loaded_packages packages)
 
 let all_theories () =
-   let names = StringSet.empty in
+   let names = LexStringSet.empty in
    let names =
       List.fold_left (fun names pkg ->
             let name = Package_info.name pkg in
                if shell_package_name name then
-                  StringSet.add names name
+                  LexStringSet.add names name
                else
                   names) names (Package_info.modified_packages packages)
    in
@@ -91,11 +91,11 @@ let all_theories () =
       List.fold_left (fun names thy ->
             let name = thy.thy_name in
                if shell_package_name name then
-                  StringSet.add names name
+                  LexStringSet.add names name
                else
                   names) names (get_theories ())
    in
-      StringSet.to_list names
+      LexStringSet.to_list names
 
 let default_mode_base = Mp_resource.theory_bookmark "shell_theory"
 let default_base = get_mode_base default_mode_base "prl" null_shortener

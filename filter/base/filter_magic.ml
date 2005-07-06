@@ -73,10 +73,12 @@ open File_type_base
  * Rev 20: iforms no longer have proofs and resources
  * Rev 21: added "shape" parameters
  * Rev 22: added iform/normal classification to opname declarations
+ * Rev 23: changed the string comparison function, this affects how the string and
+ *         variable sets are represented in binary format.
  *)
-let raw_versions = List.map (pack_version 1 0) [22]
+let raw_versions = List.map (pack_version 1 0) [23]
 
-let term_versions = List.map (pack_version 1 0) [22;21]
+let term_versions = List.map (pack_version 1 0) [23]
 
 (*
  * ASCII IO format revision history:
