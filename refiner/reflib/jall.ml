@@ -3555,9 +3555,17 @@ let path_checker
    (atom_sets: (atom * AtomSet.t * 'a) list)
    (qprefixes: position list PMap.t * position list PMap.t)
    (init_ordering: Set.t PMap.t)
-   calculus =
+   calculus
+	concl_ordering (* use only to distinguish atoms from conclusion later *)
+	=
 
    let con = connections atom_rel AtomSet.empty in
+	let concl_con, hyp_only_con =
+		List.partition
+			(fun (a,b) -> PMap.mem concl_ordering a.apos || PMap.mem concl_ordering b.apos)
+			con
+	in
+	let con = List.rev_append concl_con hyp_only_con in
    let atom_set = List.fold_left (fun set ({apos=x},y,z) -> Set.add set x) Set.empty atom_rel in
 (*   print_endline "";
    print_endline ("number of connections: "^(string_of_int (List.length con)));
@@ -4119,11 +4127,11 @@ let construct_ftree
    pos_n
    goal
    =
-   let hyptrees, orderinglist, pos_n =
-      construct_ftree_aux calculus hyplist [] PMap.empty pos_n One
+   let concltrees, concl_ordering, pos_n =
+      construct_ftree_aux calculus conclist [] PMap.empty pos_n Zero
    in
-   let alltrees, orderinglist, pos_n =
-      construct_ftree_aux calculus conclist hyptrees orderinglist pos_n Zero
+   let alltrees, ordering, pos_n =
+      construct_ftree_aux calculus hyplist concltrees concl_ordering pos_n One
    in
    let alltrees = List.rev alltrees in
    let pt =
@@ -4140,10 +4148,11 @@ let construct_ftree
        op=Null; pol=Zero; pt=pt; st=PNull_0; label=goal}
    in
    let union =
-      PMap.fold (fun set key s -> Set.add (Set.union set s) key) Set.empty orderinglist
+      PMap.fold (fun set key s -> Set.add (Set.union set s) key) Set.empty ordering
    in
    NodeA(new_root,alltrees),
-   PMap.add orderinglist root_pos union, pos_n
+   PMap.add ordering root_pos union, pos_n,
+	concl_ordering (* use only to distinguish atoms from conclusion later *)
 
 (*************************** Main LOOP ************************************)
 
@@ -4164,11 +4173,13 @@ let rec try_multiplicity
    pos_n
    mult
    calculus
+	concl_ordering (* use only to distinguish atoms from conclusion later *)
    =
    try
       let (atom_relation,atom_sets,qprefixes) = init_prover ftree in
       let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
-         path_checker consts atom_relation atom_sets qprefixes ordering calculus in
+         path_checker consts atom_relation atom_sets qprefixes ordering calculus concl_ordering
+		in
       (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
    with Failed ->
       match mult_limit with
@@ -4193,10 +4204,10 @@ let rec try_multiplicity
                   List.fold_left (fun acc (p,s) -> PMap.add acc p s) PMap.empty new_ordering
                in
 (*             print_formula_info new_ftree new_ordering new_pos_n;   *)
-               try_multiplicity consts mult_limit new_ftree new_ordering new_pos_n new_mult calculus
+               try_multiplicity consts mult_limit new_ftree new_ordering new_pos_n new_mult calculus concl_ordering
 
 let prove calculus consts mult_limit hyplist conclist calculus =
-   let ftree, ordering, pos_n =
+   let ftree, ordering, pos_n, concl_ordering =
       construct_ftree calculus hyplist conclist 0 (mk_pos_var (dummy_pos ()))
    in
    if !debug_s4prover then
@@ -4204,7 +4215,7 @@ let prove calculus consts mult_limit hyplist conclist calculus =
 (* pos_n = number of positions without new root "w" *)
 (*   print_formula_info ftree ordering pos_n;    *)
    let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
-      try_multiplicity consts mult_limit ftree ordering pos_n 1 calculus
+      try_multiplicity consts mult_limit ftree ordering pos_n 1 calculus concl_ordering
    in
    ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof
 
