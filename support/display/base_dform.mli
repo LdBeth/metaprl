@@ -50,6 +50,11 @@ declare ";" : Dform
 declare "\\" : Dform
 
 (*
+ * Sequent separator
+ *)
+declare seq_sep{'a : ty_sequent{'x; 'y; 'z}} : Dform
+
+(*
  * List utilities.
  *)
 declare df_length{'l : Dform} : Dform                   (* Prints l's length *)

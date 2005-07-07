@@ -134,6 +134,7 @@ declare shape_iform : ShapeClass
 declare "parent"{'path : Dform; 'resources : Dform} : Dform
 declare declare_typeclass{'shape : ShapeClass; 'term : Dform; 'ty: Dform; 'parent : Dform} : Dform
 declare declare_type{'shape : ShapeClass; 'term : Dform; 'ty: Dform} : Dform
+declare declare_type_rewrite{'ty1 : Dform; 'ty2 : Dform} : Dform
 declare declare_term{'shape : ShapeClass; 'term : Dform} : Dform
 declare define_term{'shape : ShapeClass; 'term : Dform; 'def : Dform} : Dform
 declare "ty_term"{'term : Dform; 'opname : Dform; 'params : Dform; 'bterms : Dform; 'ty : Dform} : Dform
@@ -412,6 +413,12 @@ dform resource_defs_df1 : resource_defs[name:s]{xnil} =
 
 dform resource_defs_dfs : resource_defs[start:n, finish:n, name:s]{'args} =
    resource_defs[name:s]{'args}
+
+dform declare_type_rewrite_df : declare_type_rewrite{'t1; 't2} =
+   szone pushm[4]
+   info["declare rewrite"] " "
+   szone slot{'t1} ezone " " ensuremath{longleftrightarrow} hspace szone slot{'t2} ezone
+   popm ezone
 
 (*
  * Display a simple rewrite.

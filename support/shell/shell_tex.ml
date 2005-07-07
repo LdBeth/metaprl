@@ -27,7 +27,7 @@
  * TeX prologue.
  *)
 let tex_prologue = "% -*- Mode: fundamental -*-
-\\documentclass{book}
+\\documentclass{report}
 
 %
 % Ludica-Bright fonts
@@ -50,6 +50,7 @@ let tex_prologue = "% -*- Mode: fundamental -*-
 % Definitions.
 %
 \\input{metaprl}
+\\widepage
 \\makeindex
 
 \\begin{document}

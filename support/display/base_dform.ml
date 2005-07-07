@@ -350,6 +350,12 @@ let format_seq_src format_term buf =
 ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
    format_seq_src format_term buf
 
+dform seq_sep_df : mode[prl] :: mode[html] :: seq_sep{'a} =
+   bf{vdash} 'a `" "
+
+dform seq_sep_df : mode[tex] :: seq_sep{'a} =
+   vdash 'a izone `"\\," ezone
+
 declare inner_df_context{'t : Dform} : Dform
 
 ml_dform inner_df_context_df : inner_df_context{'t} format_term buf =
@@ -391,7 +397,7 @@ let format_seq_prl format_term buf =
             format_hyp hyps (succ i) len
    in
    let format term =
-      let { sequent_args = args;
+      let { sequent_args = arg;
             sequent_hyps = hyps;
             sequent_concl = concl
           } = explode_sequent term
@@ -403,9 +409,7 @@ let format_seq_prl format_term buf =
             format_hyp hyps 0 hlen;
             format_hbreak buf "" " ";
          end;
-         format_term buf NOParens <<bf{vdash}>>;
-         format_term buf NOParens args;
-         format_string buf " ";
+         format_term buf NOParens <:con<seq_sep{$arg$}>>;
          format_pushm buf 0;
          format_term buf NOParens concl;
          format_popm buf;
@@ -459,9 +463,7 @@ let format_seq_html format_term buf =
             format_hyp hyps 0 hlen;
             format_hspace buf
          end;
-         format_term buf NOParens <<Mpsymbols!vdash>>;
-         format_term buf NOParens (mk_tslot arg);
-         format_string buf " ";
+         format_term buf NOParens <:con<seq_sep{$arg$}>>;
          format_pushm buf 0;
          format_term buf NOParens (mk_tslot concl);
          format_popm buf;
@@ -513,11 +515,7 @@ let format_seq_tex format_term buf =
             format_hyp hyps 0 hlen;
             format_hspace buf;
          end;
-         format_term buf NOParens <<mathmacro["vdash"]>>;
-         format_term buf NOParens arg;
-         format_izone buf;
-         format_string buf "\\,";
-         format_ezone buf;
+         format_term buf NOParens <:con<seq_sep{$arg$}>>;
          format_pushm buf 0;
          format_space buf;
          format_term buf NOParens concl;
