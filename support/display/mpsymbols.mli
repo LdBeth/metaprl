@@ -126,6 +126,7 @@ declare perp : Dform
 declare leftarrow : Dform
 declare middlearrow : Dform
 declare rightarrow : Dform
+declare multimap : Dform
 declare vartriangleleft : Dform
 declare vartriangleright : Dform
 declare Gamma : Dform
