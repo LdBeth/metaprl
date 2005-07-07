@@ -8,8 +8,8 @@
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
+ * See the file doc/htmlman/default.html or visit http://metaprl.org/
+ * for more information.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
  *
@@ -38,7 +38,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 65d5134bb6380b6a845cf1ccc32dcf6d
+ * FILTER_MD5: 7547848de199ac911f2c5bfa8f6e47e2
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number

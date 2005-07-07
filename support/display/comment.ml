@@ -1265,121 +1265,121 @@ dform math_vee_df1 : mode[tex] :: math_vee =
    izone `"\\vee " ezone
 
 dform math_vee_df2 : except_mode[tex] :: math_vee =
-   Nuprl_font!vee
+   Mpsymbols!vee
 
 dform math_phi_df1 : mode[tex] :: math_phi =
    izone `"\\phi " ezone
 
 dform math_phi_df2 : except_mode[tex] :: math_phi =
-   Nuprl_font!phi
+   Mpsymbols!phi
 
 dform math_varphi_df1 : mode[tex] :: math_varphi =
    izone `"\\varphi " ezone
 
 dform math_varphi_df2 : except_mode[tex] :: math_varphi =
-   Nuprl_font!phi
+   Mpsymbols!phi
 
 dform math_wedge_df1 : mode[tex] :: math_wedge =
    izone `"\\wedge " ezone
 
 dform math_wedge_df2 : except_mode[tex] :: math_wedge =
-   Nuprl_font!wedge
+   Mpsymbols!wedge
 
 dform math_rightarrow_df1 : mode[tex] :: math_rightarrow =
    izone `"\\rightarrow " ezone
 
 dform math_rightarrow_df2 : except_mode[tex] :: math_rightarrow =
-   Nuprl_font!rightarrow
+   Mpsymbols!rightarrow
 
 dform math_Rightarrow_df1 : mode[tex] :: math_Rightarrow =
    izone `"\\Rightarrow " ezone
 
 dform math_Rightarrow_df2 : except_mode[tex] :: math_Rightarrow =
-   Nuprl_font!Rightarrow
+   Mpsymbols!Rightarrow
 
 dform math_leftarrow_df1 : mode[tex] :: math_leftarrow =
    izone `"\\leftarrow " ezone
 
 dform math_leftarrow_df2 : except_mode[tex] :: math_leftarrow =
-   Nuprl_font!leftarrow
+   Mpsymbols!leftarrow
 
 dform math_Leftarrow_df1 : mode[tex] :: math_Leftarrow =
    izone `"\\Leftarrow " ezone
 
 dform math_Leftarrow_df2 : except_mode[tex] :: math_Leftarrow =
-   Nuprl_font!Leftarrow
+   Mpsymbols!Leftarrow
 
 dform math_leftrightarrow_df1 : mode[tex] :: math_leftrightarrow =
    izone `"\\leftrightarrow " ezone
 
 dform math_leftrightarrow_df2 : except_mode[tex] :: math_leftrightarrow =
-   Nuprl_font!shortleftrightarrow
+   Mpsymbols!shortleftrightarrow
 
 dform math_Leftrightarrow_df1 : mode[tex] :: math_Leftrightarrow =
    izone `"\\Leftrightarrow " ezone
 
 dform math_Leftrightarrow_df2 : except_mode[tex] :: math_Leftrightarrow =
-   Nuprl_font!Leftrightarrow
+   Mpsymbols!Leftrightarrow
 
 dform math_longrightarrow_df1 : mode[tex] :: math_longrightarrow =
    izone `"\\longrightarrow " ezone
 
 dform math_longrightarrow_df2 : except_mode[tex] :: math_longrightarrow =
-   Nuprl_font!longrightarrow
+   Mpsymbols!longrightarrow
 
 dform math_longleftrightarrow_df1 : mode[tex] :: math_longleftrightarrow =
    izone `"\\longleftrightarrow " ezone
 
 dform math_longleftrightarrow_df2 : except_mode[tex] :: math_longleftrightarrow =
-   Nuprl_font!longleftrightarrow
+   Mpsymbols!longleftrightarrow
 
 dform math_cap_df1 : mode[tex] :: math_cap =
    izone `"\\cap " ezone
 
 dform math_cap_df2 : except_mode[tex] :: math_cap =
-   Nuprl_font!cap
+   Mpsymbols!cap
 
 dform math_cup_df1 : mode[tex] :: math_cup =
    izone `"\\cup " ezone
 
 dform math_cup_df2 : except_mode[tex] :: math_cup =
-   Nuprl_font!cup
+   Mpsymbols!cup
 
 dform math_bigcap_df1 : mode[tex] :: math_bigcap =
    izone `"\\bigcap " ezone
 
 dform math_bigcap_df2 : except_mode[tex] :: math_bigcap =
-   Nuprl_font!cap
+   Mpsymbols!cap
 
 dform math_bigcup_df1 : mode[tex] :: math_bigcup =
    izone `"\\bigcup " ezone
 
 dform math_bigcup_df2 : except_mode[tex] :: math_bigcup =
-   Nuprl_font!cup
+   Mpsymbols!cup
 
 dform math_in_df1 : mode[tex] :: math_in =
    izone `"\\in " ezone
 
 dform math_in_df2 : except_mode[tex] :: math_in =
-   Nuprl_font!member
+   Mpsymbols!member
 
 dform math_le_df1 : mode[tex] :: math_le =
    izone `"\\le " ezone
 
 dform math_in_df2 : except_mode[tex] :: math_le =
-   Nuprl_font!le
+   Mpsymbols!le
 
 dform math_ge_df1 : mode[tex] :: math_ge =
    izone `"\\ge " ezone
 
 dform math_in_df2 : except_mode[tex] :: math_ge =
-   Nuprl_font!ge
+   Mpsymbols!ge
 
 dform math_cdot_df1 : mode[tex] :: math_cdot =
    izone `"\\cdot " ezone
 
 dform math_cdot_df2 : except_mode[tex] :: math_cdot =
-   Nuprl_font!cdot
+   Mpsymbols!cdot
 
 dform math_cdots_df1 : mode[tex] :: math_cdots =
    izone `"\\cdots " ezone
@@ -1403,25 +1403,25 @@ dform math_subset_df1 : mode[tex] :: math_subset =
    izone `"\\subset " ezone
 
 dform math_subset_df2 : except_mode[tex] :: math_subset =
-   Nuprl_font!"subset"
+   Mpsymbols!"subset"
 
 dform math_subseteq_df1 : mode[tex] :: math_subseteq =
    izone `"\\subseteq " ezone
 
 dform math_subseteq_df2 : except_mode[tex] :: math_subseteq =
-   Nuprl_font!subseteq
+   Mpsymbols!subseteq
 
 dform math_times_df1 : mode[tex] :: math_times =
    izone `"\\times " ezone
 
 dform math_times_df2 : except_mode[tex] :: math_times =
-   Nuprl_font!times
+   Mpsymbols!times
 
 dform math_equiv_df1 : mode[tex] :: math_equiv =
    izone `"\\equiv " ezone
 
 dform math_equiv_df2 : except_mode[tex] :: math_equiv =
-   Nuprl_font!equiv
+   Mpsymbols!equiv
 
 dform math_space_df1 : mode[tex] :: math_space =
    izone `"\\ " ezone
@@ -1487,73 +1487,73 @@ dform math_neg_df1 : mode[tex] :: math_neg =
    izone `"\\neg " ezone
 
 dform math_neg_df2 : except_mode[tex] :: math_neg =
-   Nuprl_font!tneg
+   Mpsymbols!tneg
 
 dform math_neq_df1 : mode[tex] :: math_neq =
    izone `"\\neq " ezone
 
 dform math_neq_df2 : except_mode[tex] :: math_neq =
-   Nuprl_font!neq
+   Mpsymbols!neq
 
 dform math_forall_df1 : mode[tex] :: math_forall =
    izone `"\\forall " ezone
 
 dform math_forall_df2 : except_mode[tex] :: math_forall =
-   Nuprl_font!"forall"
+   Mpsymbols!"forall"
 
 dform math_exists_df1 : mode[tex] :: math_exists =
    izone `"\\exists " ezone
 
 dform math_exists_df2 : except_mode[tex] :: math_exists =
-   Nuprl_font!"exists"
+   Mpsymbols!"exists"
 
 dform math_alpha_df1 : mode[tex] :: math_alpha =
    izone `"\\alpha " ezone
 
 dform math_alpha_df2 : except_mode[tex] :: math_alpha =
-   Nuprl_font!alpha
+   Mpsymbols!alpha
 
 dform math_beta_df1 : mode[tex] :: math_beta =
    izone `"\\beta " ezone
 
 dform math_beta_df2 : except_mode[tex] :: math_beta =
-   Nuprl_font!beta
+   Mpsymbols!beta
 
 dform math_Gamma_df1 : mode[tex] :: math_Gamma =
    izone `"\\Gamma " ezone
 
 dform math_Gamma_df2 : except_mode[tex] :: math_Gamma =
-   Nuprl_font!gamma
+   Mpsymbols!gamma
 
 dform math_Delta_df1 : mode[tex] :: math_Delta =
    izone `"\\Delta " ezone
 
 dform math_Delta_df2 : except_mode[tex] :: math_Delta =
-   Nuprl_font!gamma
+   Mpsymbols!gamma
 
 dform math_vdash_df1 : mode[tex] :: math_vdash =
    izone `"\\vdash " ezone
 
 dform math_vdash_df2 : except_mode[tex] :: math_vdash =
-   Nuprl_font!vdash
+   Mpsymbols!vdash
 
 dform math_epsilon_df1 : mode[tex] :: math_epsilon =
    izone `"\\epsilon " ezone
 
 dform math_epsilon_df2 : except_mode[tex] :: math_epsilon =
-   Nuprl_font!epsilon
+   Mpsymbols!epsilon
 
 dform math_lambda_df1 : mode[tex] :: math_lambda =
    izone `"\\lambda " ezone
 
 dform math_lambda_df2 : except_mode[tex] :: math_lambda =
-   Nuprl_font!lambda
+   Mpsymbols!lambda
 
 dform math_int_df1 : mode[tex] :: math_int =
    izone `"{\\mathbb Z}" ezone
 
 dform math_int_df2 : except_mode[tex] :: math_int =
-   Nuprl_font!mathbbZ
+   Mpsymbols!mathbbZ
 
 dform math_vec_df1 : mode[tex] :: math_vec{'e} =
    izone `"\\vec{" ezone 'e izone `"}" ezone

@@ -9,8 +9,8 @@
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
+ * See the file doc/htmlman/default.html or visit http://metaprl.org/
+ * for more information.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
  *
@@ -134,7 +134,7 @@ let spec =
    ["-I", Arg.String add_include, "add an directory to the path for include files";
     "-raw", Arg.Unit set_raw, "produce a file in raw format";
     "-term", Arg.Unit set_raw, "produce a file in term format";
-    "-lib", Arg.Unit set_raw, "send the file to Nuprl4";
+    "-lib", Arg.Unit set_raw, "send the file to Nuprl FDL";
     "-ascii", Arg.Unit set_ascii, "produce a file in ASCII format";
     "-intf", Arg.String process_file, "compile an interface file";
     "-impl", Arg.String process_file, "compile an implementation file"]

@@ -6,7 +6,8 @@ MLZFILES[] =
 # Library files
 MPFILES[] =
     perv
-    nuprl_font
+    mpfont
+    mpsymbols
     base_dform
     comment
     ocaml

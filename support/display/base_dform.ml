@@ -14,8 +14,8 @@
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
+ * See the file doc/htmlman/default.html or visit http://metaprl.org/
+ * for more information.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
  *
@@ -43,7 +43,8 @@
  * @parents
  *)
 extends Perv
-extends Nuprl_font
+extends Mpfont
+extends Mpsymbols
 (* @docoff *)
 
 open Lm_debug
@@ -458,7 +459,7 @@ let format_seq_html format_term buf =
             format_hyp hyps 0 hlen;
             format_hspace buf
          end;
-         format_term buf NOParens <<Nuprl_font!vdash>>;
+         format_term buf NOParens <<Mpsymbols!vdash>>;
          format_term buf NOParens (mk_tslot arg);
          format_string buf " ";
          format_pushm buf 0;
