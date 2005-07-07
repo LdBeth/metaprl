@@ -52,7 +52,7 @@ declare "\\" : Dform
 (*
  * Sequent separator
  *)
-declare seq_sep{'a : ty_sequent{'x; 'y; 'z}} : Dform
+declare seq_sep{'a : Dform} : Dform
 
 (*
  * List utilities.

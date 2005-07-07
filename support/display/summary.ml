@@ -499,24 +499,25 @@ dform shape_iform_df : shape_iform = info["iform"] " "
 dform parent_kind_none : parent_kind["none"] = `""
 
 dform parend_kind_extends : parent_kind["extends"]{'ty} =
-   `" ->" hspace slot{'ty}
+   `" " ensuremath{"subset"} hspace slot{'ty}
 
 dform parend_kind_include : parent_kind["include"]{'ty} =
-   `" <-" hspace slot{'ty}
+   `" " ensuremath{supset} hspace slot{'ty}
 
 dform declare_typeclass_df : "declare_typeclass"{'shape; 'term; 'parent; 'ty} =
    pushm[4] szone
-   info["declare typeclass"] " " 'shape szone tt{slot["raw"]{'term}} hspace displayed_as{'term} 'ty ezone
+   info["declare typeclass"] " " 'shape
+   pushm[0] szone szone tt{slot["raw"]{'term}} hspace displayed_as{'term} ezone 'ty ezone popm
    ezone popm
 
 dform declare_type_df : "declare_type"{'shape; 'info; 'ty} =
    pushm[4] szone
-   info["declare type"] " " 'shape 'info `" ->" hspace slot{'ty}
+   info["declare type"] " " 'shape pushm[0] szone 'info `" " ensuremath{"subset"} hspace slot{'ty} ezone popm
    ezone popm
 
 dform declare_term_df : "declare_term"{'shape; 'info} =
    pushm[4] szone
-   info["declare"] " " 'shape 'info
+   info["declare"] " " 'shape szone 'info ezone
    ezone popm
 
 dform define_term_df : "define_term"{'shape; 'info; term_def[name:s]{'contractum; 'res}} =
@@ -547,7 +548,7 @@ dform class_term_df : "ty_term"{'term; 'opname; 'params; 'bterms; 'ty} =
 
 dform class_term_df : "ty_term"{'term; 'opname; 'params; 'bterms; ty_sequent{'ty_hyp; 'ty_concl; 'ty_seq}} =
    info["sequent"] " " pushm[4] szone
-   szone tt{slot["raw"]{'term}} ty_constraint{ty_sequent{'ty_hyp; 'ty_concl; 'ty_seq}} ezone hspace displayed_as{'term}
+   szone tt{slot["raw"]{'term}} ty_constraint{ty_sequent{'ty_hyp; 'ty_concl; 'ty_seq}} ezone hspace displayed_as{seq_sep{'term}}
    popm ezone
 
 dform mlterm_df : "mlterm"{'term; 'cons; 'oexpr} =
