@@ -8,8 +8,8 @@
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
+ * See the file doc/htmlman/default.html or visit http://metaprl.org/
+ * for more information.
  *
  * Copyright (C) 1999 Jason Hickey, Cornell University
  *
@@ -141,7 +141,7 @@ class NuprlBus
         }
 
         /**
-         * Get the next message.  For efficiency, we 
+         * Get the next message.  For efficiency, we
          * synchronize vector operations with the NuprlBus.
          */
         public NuprlBusMessage getMessage()
@@ -190,7 +190,7 @@ class NuprlBus
         {
             NuprlBus.this.Cast(host, port, dst_host, token);
         }
-    
+
         /**
          * Broadcast to all ports on all hosts.
          */
@@ -318,7 +318,7 @@ class NuprlBus
             head = head.next;
         }
     }
-    
+
     /**
      * Find the manager with this hostname.
      */
