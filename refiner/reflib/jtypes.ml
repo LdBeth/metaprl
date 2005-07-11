@@ -9,16 +9,14 @@ let jprover_op = make_opname ["string";"Jprover"]
 type pos_kind =
    EmptyVar
  | Atom
- | Const
+ | Const of int
  | Dummy
  | EigenVar
- | Var
- | NewVar
+ | Var of int
+ | NewVar of int
  | NewVarQ
  | GammaPos of pos_kind
  | Root
- | ModVar of int
- | ModConst of int
 
 type position = pos_kind * int
 

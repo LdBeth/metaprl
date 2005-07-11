@@ -37,15 +37,15 @@ let rec kind_to_string = function
       "w"
  | Atom ->
       "a"
- | Const ->
+ | Const 0 ->
       "c"
  | Dummy ->
       "d"
  | EigenVar ->
       "e"
- | NewVar ->
+ | NewVar 0 ->
       "n"
- | Var ->
+ | Var 0 ->
       "v"
  | EmptyVar ->
       ""
@@ -53,8 +53,9 @@ let rec kind_to_string = function
       "q"
  | GammaPos k ->
       (kind_to_string k)^"_jprover"
- | ModVar _ -> "nu"
- | ModConst _ -> "pi"
+ | Const _ | Var _ | NewVar _ ->
+ 		raise (Invalid_argument
+			"Modal positions are not supposed to be converted to symbols or strings")
 
 let rec string_to_kind s =
    let len = String.length s in
@@ -66,16 +67,17 @@ let rec string_to_kind s =
       else
          match String.get s 0 with
             'a' -> Atom
-          | 'c' -> Const
+          | 'c' -> Const 0
           | 'd' -> Dummy
           | 'e' -> EigenVar
-          | 'n' -> NewVar
+          | 'n' -> NewVar 0
           | 'q' -> NewVarQ
-          | 'v' -> Var
+          | 'v' -> Var 0
           | 'w' -> Root
           |  _  ->
                raise (Invalid_argument ("Unknown kind of position: "^s))
 
+(*
 let safe_a2i x =
    try int_of_string x with
       e ->
@@ -98,12 +100,12 @@ let string_to_pos s =
                let n = safe_a2i (String.sub s 1 (len-1)) in
                begin match String.get s 0 with
                   'a' -> Atom,n
-                | 'c' -> Const,n
+                | 'c' -> Const 0, n
                 | 'd' -> Dummy,n
                 | 'e' -> EigenVar,n
-                | 'n' -> NewVar,n
+                | 'n' -> NewVar 0, n
                 | 'q' -> NewVarQ,n
-                | 'v' -> Var,n
+                | 'v' -> Var 0, n
                 |  _  ->
                      raise (Invalid_argument ("Unknown kind of position: "^s))
                end
@@ -112,12 +114,12 @@ let string_to_pos s =
                let k =
                   match String.get s 0 with
                      'a' -> Atom
-                   | 'c' -> Const
+                   | 'c' -> Const 0
                    | 'd' -> Dummy
                    | 'e' -> EigenVar
-                   | 'n' -> NewVar
+                   | 'n' -> NewVar 0
                    | 'q' -> NewVarQ
-                   | 'v' -> Var
+                   | 'v' -> Var 0
                    |  _  ->
                      raise (Invalid_argument ("Unexpected kind of position: "^s))
                in
@@ -130,6 +132,13 @@ let string_to_pos s =
          else
             raise (Invalid_argument ("Unknown kind of position: "^s))
 
+let string_to_symbol s = pos_to_symbol (string_to_pos s)
+
+let string_to_gamma s =
+   pos_to_string (simple_to_gamma (string_to_pos s))
+
+*)
+
 let pos_to_symbol (k,i) =
    Lm_symbol.make (kind_to_string k) i
 
@@ -138,11 +147,11 @@ let symbol_to_pos sym =
    let s = to_string sym in
    let k = string_to_kind s in
    match k with
-      Atom | Const | Dummy | Var | NewVar | NewVarQ | EigenVar | GammaPos _ ->
+      Atom | Const 0 | Dummy | Var 0 | NewVar 0 | NewVarQ | EigenVar | GammaPos _ ->
          k, to_int sym
     | Root | EmptyVar ->
          k, 0
-	 | ModVar _ | ModConst _ ->
+	 | Var _ | Const _ | NewVar _ ->
 	 		raise (Invalid_argument
 				"Modal positions are not supposed to be converted to/from terms")
 
@@ -151,36 +160,29 @@ let rec pos_to_string (kind,i) =
    let sk = kind_to_string kind in
    match kind with
       Atom
-    | Const
+    | Const _
     | Dummy
     | EigenVar
-    | NewVar
-    | Var
+    | NewVar _
+    | Var _
     | NewVarQ
-	 | ModVar _
-	 | ModConst _
     | GammaPos _ ->
          sk^si
     | EmptyVar | Root ->
          sk
-
-let string_to_symbol s = pos_to_symbol (string_to_pos s)
 
 let gamma_to_simple p =
    let k, i = p in
    match k with
       GammaPos k ->
          k, i
-    | EmptyVar|Atom|Const|Dummy|EigenVar|
-      Var|NewVar|NewVarQ|Root|ModVar _|ModConst _ ->
+    | EmptyVar|Atom|Const _|Dummy|EigenVar|
+      Var _|NewVar _|NewVarQ|Root ->
          let s = pos_to_string p in
          raise (Invalid_argument ("GammaPos was expected instead of: "^s))
 
 let simple_to_gamma (k,i) =
    GammaPos k, i
-
-let string_to_gamma s =
-   pos_to_string (simple_to_gamma (string_to_pos s))
 
 let empty_pos = (EmptyVar, 0)
 let empty_sym = pos_to_symbol empty_pos
@@ -197,15 +199,13 @@ struct
        | GammaPos a, GammaPos b ->
             compare_kinds a b
        | GammaPos a,
-		 	(EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root
-			|ModVar _ | ModConst _) ->
+		 	(EmptyVar|Atom|Const _|Dummy|EigenVar|Var _|NewVar _|NewVarQ|Root) ->
             let c = compare_kinds a b in
             if c = 0 then
                -1
             else
                c
-       | (EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root|
-		 	ModVar _|ModConst _),
+       | (EmptyVar|Atom|Const _|Dummy|EigenVar|Var _|NewVar _|NewVarQ|Root),
 		 	GammaPos b ->
             let c = compare_kinds a b in
             if c = 0 then
@@ -217,41 +217,29 @@ struct
        | Atom,EmptyVar -> 1
        | Atom,Atom -> 0
        | Atom,_ -> -1
-       | Const,(EmptyVar|Atom) -> 1
-       | Const,Const -> 0
-       | Const,_ -> -1
-       | Dummy,(EmptyVar|Atom|Const) -> 1
+       | Const _,(EmptyVar|Atom) -> 1
+       | Const i, Const j -> Pervasives.compare i j
+       | Const _, _ -> -1
+       | Dummy,(EmptyVar|Atom|Const _) -> 1
        | Dummy, Dummy -> 0
        | Dummy, _ -> -1
-       | EigenVar,(EmptyVar|Atom|Const|Dummy) -> 1
+       | EigenVar,(EmptyVar|Atom|Const _|Dummy) -> 1
        | EigenVar, EigenVar -> 0
        | EigenVar, _ -> -1
-       | NewVar,(Atom|Const|Dummy|EmptyVar|EigenVar) -> 1
-       | NewVar,NewVar -> 0
-       | NewVar,_ -> -1
+       | NewVar _,(Atom|Const _|Dummy|EmptyVar|EigenVar) -> 1
+       | NewVar i, NewVar j -> Pervasives.compare i j
+       | NewVar _, _ -> -1
        | NewVarQ,
-           (Atom|Const|Dummy|EmptyVar|EigenVar|NewVar) -> 1
+           (Atom|Const _|Dummy|EmptyVar|EigenVar|NewVar _) -> 1
        | NewVarQ,NewVarQ -> 0
        | NewVarQ,_ -> -1
-       | Var,(Atom|Const|Dummy|EmptyVar|EigenVar|NewVar|NewVarQ) -> 1
-       | Var,Var -> 0
-       | Var,_ -> -1
-        | Root,
-          (Atom|Const|Dummy|EmptyVar|EigenVar
-          |NewVar|NewVarQ|Var) -> 1
+       | Var _,(Atom|Const _|Dummy|EmptyVar|EigenVar|NewVar _|NewVarQ) -> 1
+       | Var i, Var j -> Pervasives.compare i j
+       | Var _, _ -> -1
+       | Root,
+         (Atom|Const _|Dummy|EmptyVar|EigenVar
+         |NewVar _|NewVarQ|Var _) -> 1
        | Root,Root -> 0
-		 | Root,_ -> -1
-		 | ModVar _,
-		 	(Atom|Const|Dummy|EmptyVar|EigenVar
-			|NewVar|NewVarQ|Var|Root) -> 1
-		 | ModVar i, ModVar j ->
-		 		Pervasives.compare i j
-		 | ModVar _, _ -> -1
-		 | ModConst _,
-		 	(Atom|Const|Dummy|EmptyVar|EigenVar
-			|NewVar|NewVarQ|Var|Root|ModVar _) -> 1
-		 | ModConst i, ModConst j ->
-		 		Pervasives.compare i j
 
    let compare (a,(i:int)) (b,j) =
       let c = compare_kinds a b in
@@ -270,8 +258,9 @@ let nodups k a b =
    if a = b then a else raise (Invalid_argument "no dupes allowed in map")
 
 let list_pos_to_string = List.map pos_to_string
-let list_string_to_pos = List.map string_to_pos
 (*
+let list_string_to_pos = List.map string_to_pos
+
 let set_pos_to_string set =
    StringSet.of_list (List.map pos_to_string (Set.to_list set))
 let set_string_to_pos set =
@@ -386,7 +375,7 @@ struct
 
    let rec add_arrowsJ v ordering = function
       [] -> ordering
-    | ((Const,i) as f)::r ->
+    | ((Const _,i) as f)::r ->
          let new_ordering = add_sets v f ordering in
             add_arrowsJ v new_ordering r
     | _::r ->
@@ -395,7 +384,7 @@ struct
    let rec add_substJ calculus replace_vars replace_string ordering atom_set =
       match replace_vars, calculus with
          [],_ -> ordering
-       | ((NewVar | NewVarQ),_)::r, _ -> (* don't integrate new variables *)
+       | ((NewVar _| NewVarQ),_)::r, _ -> (* don't integrate new variables *)
             add_substJ calculus r replace_string ordering atom_set
        | v::r, Intuit _ (* no reduction ordering at atoms *)
             when Set.mem atom_set v ->

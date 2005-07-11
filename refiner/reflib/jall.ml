@@ -3788,10 +3788,10 @@ let prepare_prover ftree =
 
 let make_position_name stype pos_n =
    match stype with
-      Phi_0 | Gamma_0 -> Var, pos_n
-	 | Nu_0 i -> ModVar i, pos_n
-    | Psi_0 | Delta_0 -> Const, pos_n
-	 | Pi_0 i -> ModConst i, pos_n
+      Phi_0 | Gamma_0 -> Var 0, pos_n
+	 | Nu_0 i -> Var i, pos_n
+    | Psi_0 | Delta_0 -> Const 0, pos_n
+	 | Pi_0 i -> Const i, pos_n
     | _ -> Atom, pos_n
 
 let dual_pol = function
@@ -4280,7 +4280,7 @@ let rec create_output consts rule_list
          in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
-         let unique_object = mk_pos_var ((GammaPos NewVar),0) in
+         let unique_object = mk_pos_var ((GammaPos (NewVar 0)),0) in
          let unique_list1 = make_equal_list frees1 unique_object in
          let unique_list2 = make_equal_list frees2 unique_object in
          let next_term1 = TermSubst.subst term1 frees1 unique_list1 in
@@ -4311,7 +4311,7 @@ let rec make_test_interface consts rule_list input_map =
          in
          let frees1 = free_vars_list term1 consts in
          let frees2 = free_vars_list term2 consts in
-         let unique_object = mk_pos_var (GammaPos NewVar,0) in
+         let unique_object = mk_pos_var (GammaPos (NewVar 0),0) in
          let unique_list1 = make_equal_list frees1 unique_object in
          let unique_list2 = make_equal_list frees2 unique_object in
          begin

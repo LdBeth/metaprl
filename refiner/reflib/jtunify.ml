@@ -103,15 +103,29 @@ let print_tunify sigma =
 let rec is_const (k,i)  =
   match k with
      GammaPos k -> is_const (k,i)
-   | Const -> true
-   | Atom | EmptyVar | Root | EigenVar | ModConst _ | ModVar _
-   | Var | NewVar | NewVarQ | Dummy -> false
+   | Const _ -> true
+   | Atom | EmptyVar | Root | EigenVar
+   | Var _ | NewVar _ | NewVarQ | Dummy -> false
 
 let rec is_var (k,i)  =
   match k with
      GammaPos k -> is_var (k,i)
-   | Var | NewVar | NewVarQ -> true
-   | Atom | Const | Dummy | EigenVar | EmptyVar | Root | ModVar _ | ModConst _ -> false
+   | Var _ | NewVar _ | NewVarQ -> true
+   | Atom | Const _ | Dummy | EigenVar | EmptyVar | Root -> false
+
+let rec sort_of_aux k1 k2 =
+	match k1, k2 with
+		GammaPos k1, _ -> sort_of_aux k1 k2
+	 | _, GammaPos k2 -> sort_of_aux k1 k2
+	 | (Var 0 | NewVar 0), (NewVar j | Var j) -> j
+	 | (Var i | NewVar i), (Var 0 | NewVar 0) -> i
+	 | (Var i | NewVar i), (Var j | NewVar j) when i=j -> i
+	 | _ ->
+		 	print_endline ((kind_to_string k1)^" - "^(kind_to_string k2));
+		 	raise (Invalid_argument "Uncompatible sorts")
+
+let sort_of (k1,i1) (k2,i2) =
+	sort_of_aux k1 k2
 
 let rec com_subst ov ovlist = function
    [] -> []
@@ -354,11 +368,11 @@ let rec tunify_list calculus eqlist init_sigma ordering atom_set =
          tunify atomnames rt [(List.hd fs)] (List.tl fs) rest_eq sigma ordering
 
       in
-      let apply_r9 fs ft rt rest_eq sigma =
+      let apply_r9 sort fs ft rt rest_eq sigma =
       (* print_endline "r9"; *)
          let v = List.hd fs in
          let (max,subst) = sigma in
-         let v_new = (NewVar,max) in
+         let v_new = (NewVar sort,max) in
          let ft_vnew = ft @ [v_new] in
          let compose_vars,new_sigma = compose ((max+1),subst) (v,ft_vnew) in
          let new_rest_eq = apply_subst rest_eq v ft_vnew atomnames in
@@ -422,7 +436,7 @@ let rec tunify_list calculus eqlist init_sigma ordering atom_set =
        | v::_::_, _::_, v1::_ (* r9 *)
          when is_var v && is_var v1 && (v <> v1) -> (* r9 *)
             (try
-               apply_r9 fs ft rt rest_eq sigma
+               apply_r9 (sort_of v v1) fs ft rt rest_eq sigma
             with Not_unifiable ->
                if r_10 fs rt then (* r10 applicable if r9 was and tr9 <> [] *)
                   apply_r10 fs ft rt rest_eq sigma
