@@ -104,14 +104,14 @@ let rec is_const (k,i)  =
   match k with
      GammaPos k -> is_const (k,i)
    | Const -> true
-   | Atom | EmptyVar | Root | EigenVar
+   | Atom | EmptyVar | Root | EigenVar | ModConst _ | ModVar _
    | Var | NewVar | NewVarQ | Dummy -> false
 
 let rec is_var (k,i)  =
   match k with
      GammaPos k -> is_var (k,i)
    | Var | NewVar | NewVarQ -> true
-   | Atom | Const | Dummy | EigenVar | EmptyVar | Root -> false
+   | Atom | Const | Dummy | EigenVar | EmptyVar | Root | ModVar _ | ModConst _ -> false
 
 let rec com_subst ov ovlist = function
    [] -> []

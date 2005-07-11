@@ -310,8 +310,8 @@ struct
        | Phi_0   -> print_string "Phi_0"
        | Psi_0   -> print_string "Psi_0"
        | PNull_0 -> print_string "PNull_0"
-       | Pi_0    -> print_string "Pi_0"
-       | Nu_0    -> print_string "Nu_0"
+       | Pi_0 i  -> print_string ("Pi_0"^(string_of_int i))
+       | Nu_0 i  -> print_string ("Nu_0"^(string_of_int i))
 
    let print_pol pol =
       match pol with
@@ -406,8 +406,8 @@ struct
        | Phi   -> print_string "Phi"
        | Psi   -> print_string "Psi"
        | PNull -> print_string "PNull"
-       | Nu    -> print_string "Nu"
-       | Pi    -> print_string "Pi"
+       | Nu i  -> print_string ("Nu"^(string_of_int i))
+       | Pi i  -> print_string ("Pi"^(string_of_int i))
 
    let print_op op =
       match op with
@@ -419,7 +419,7 @@ struct
        | Ex   -> print_string "Ex"
        | All  -> print_string "All"
        | Null -> print_string "Null"
-       | Box  -> print_string "Box"
+       | Box i  -> print_string ("Box"^(string_of_int i))
 
    let print_position position tab =
       let ({address=y; op=z; pol=a; pt=b; st=c; label=t}) = position in
@@ -1959,7 +1959,7 @@ struct
                   let srel, sren = build_renamed_gamma_rel dtreelist predpos pospos d in
                      SubrelSet.union srel rest_rel,
 							PMap.union nodups sren rest_renlist
-             | NodeA({ pt = Pi | Nu }, suctrees) ->
+             | NodeA({ pt = Pi _ | Nu _ }, suctrees) ->
                    raise (Invalid_argument "S4 nodes in build_formula_rel")
              | NodeA({ pt = PNull }, _) ->
                   raise jprover_bug
@@ -2286,8 +2286,8 @@ struct
        | Ex,Zero -> Exr,(inst_label), (selectQ spos.pospos csigmaQ)
        | All,Zero -> Allr,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
        | Ex,One -> Exl,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
-       | Box,One -> Boxl,inst_label,xnil_term
-       | Box,Zero -> Boxr,inst_label,xnil_term
+       | Box _,One -> Boxl,inst_label,xnil_term
+       | Box _,Zero -> Boxr,inst_label,xnil_term
 
 (* %%%%%%%%%%%%%%%%%%%% Split begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% *)
 
@@ -2736,8 +2736,11 @@ struct
     | Some {pospos=pospos; st=st} -> st <> Gamma_0 && Set.mem popen pospos
 
    let unclosed_cond popen pred {st=st; pospos=pospos} =
-      st=Nu_0 &&
-      (Set.mem popen pospos || unclosed_pred popen pred)
+		match st with
+			Nu_0 _ ->
+      		(Set.mem popen pospos || unclosed_pred popen pred)
+		 | _ ->
+		 		false
 
    let rec collect_unclosed popen ftree pred =
       match ftree with
@@ -2788,11 +2791,14 @@ struct
                      print_string "unclosed:";
                      print_positionset unclosed
                   end;
-               (f.pt = Pi) &
-               (*(not(List.exists
-                  (fun (p,s) -> p=f.pospos & not (Set.is_empty s)) redord)) &*)
-               (not (Set.is_empty (Set.diff pu unclosed))),
-               0
+					begin match f.pt with
+               	Pi _ ->
+		               (*(not(List.exists
+      	            (fun (p,s) -> p=f.pospos & not (Set.is_empty s)) redord)) &*)
+         	   	   (not (Set.is_empty (Set.diff pu unclosed))), 0
+					 | _ ->
+					 		false, 0
+					end
           | Intuit calc ->
                let pa_Zero = solved_atoms in    (* solved atoms in ftree *)
                let po_test = Set.remove po f.pospos in
@@ -2984,7 +2990,7 @@ struct
                let redpo = update p.pospos redord in   (* deletes the entry (p,psuccset) from the redord *)
                let rednew =
                   match p.pt with
-                     Delta | Pi ->      (* keep the tree ordering for the successor position only *)
+                     Delta | Pi _ ->      (* keep the tree ordering for the successor position only *)
                         let psucc = List.hd succs in
                         begin match tpredsucc psucc ftree with
                            pre :: sucs ->
@@ -3014,7 +3020,7 @@ struct
       let newslist = Set.remove slist pospos in
       let rback =
          match st with
-            Gamma_0 | Nu_0 ->
+            Gamma_0 | Nu_0 _ ->
                begin
 (*             print_endline "that's the gamma rule";  *)
                   [((pospos,pred.pospos),(build_rule pred p csigmaQ orr_flag calculus))]
@@ -3030,13 +3036,13 @@ struct
             po
       in
       match pt with
-         Pi ->
+         Pi _ ->
             let rule = build_rule p p csigmaQ orr_flag calculus in
             let rest =
                tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof
             in
             rback @ (((empty_pos,pospos),rule)::rest)
-       | Nu
+       | Nu _
        | Gamma ->
             rback @ (tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof)
        | Psi ->
@@ -3441,7 +3447,7 @@ let rec add_multiplicity ftree pos_n
              (* no explicit atom-instances *)
                Classical, { pt = Phi; op = All}
 (* XXX Yegor: this is probably a bug - there is no Phi in Classical logic *)
-             | S4, { pt = Nu }
+             | S4, { pt = Nu _ }
              | Intuit _, { pt = Phi; op = And | Or | Neg | Imp | All | Ex | Null (* pos.op <> At *) }
              (* universal quantifiers are copied at their Phi positions *)
              | _, { pt = Gamma; st =
@@ -3722,7 +3728,7 @@ let atom_record position posprefix =
    let aop = (dest_term label).term_op in
    let aposprefix =
       match st with
-         Psi_0 | Phi_0 | Pi_0 | Nu_0 ->
+         Psi_0 | Phi_0 | Pi_0 _ | Nu_0 _ ->
             posprefix @ [pospos]
        | _ ->
             posprefix
@@ -3750,7 +3756,7 @@ and select_atoms ftree posprefix acc =
     | NodeA({pospos = pospos; st = st }, suctrees) ->
          let new_posprefix =
             match st with
-               Psi_0 | Phi_0 | Pi_0 | Nu_0 ->
+               Psi_0 | Phi_0 | Pi_0 _ | Nu_0 _ ->
                   posprefix @ [pospos]
              | _ ->
                   posprefix
@@ -3782,8 +3788,10 @@ let prepare_prover ftree =
 
 let make_position_name stype pos_n =
    match stype with
-      Phi_0 | Gamma_0 | Nu_0 -> Var, pos_n
-    | Psi_0 | Delta_0 | Pi_0 -> Const, pos_n
+      Phi_0 | Gamma_0 -> Var, pos_n
+	 | Nu_0 i -> ModVar i, pos_n
+    | Psi_0 | Delta_0 -> Const, pos_n
+	 | Pi_0 i -> ModConst i, pos_n
     | _ -> Atom, pos_n
 
 let dual_pol = function
@@ -3982,17 +3990,17 @@ let rec build_ftree calculus variable old_term pol stype address pos_n =
                pos_ordering,
                posn_left
    else if JLogic.is_box_term term then
-      let s = JLogic.dest_box term in
+      let i, s = JLogic.dest_box term in
       let ptype,stype_1=
          match pol with
             Zero ->
-               Pi,Pi_0
+               Pi i, Pi_0 i
           | One ->
-               Nu,Nu_0
+               Nu i, Nu_0 i
       in
       let position =
          {address=address; pospos=pospos;
-          op=Box; pol=pol; pt=ptype; st=stype; label=term}
+          op=Box i; pol=pol; pt=ptype; st=stype; label=term}
       in
       let subtree_left,ordering_left,posn_left =
          build_ftree calculus empty_sym s pol stype_1 (address@[0]) (pos_n+1)

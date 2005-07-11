@@ -17,6 +17,8 @@ type pos_kind =
  | NewVarQ
  | GammaPos of pos_kind
  | Root
+ | ModVar of int
+ | ModConst of int
 
 type position = pos_kind * int
 
@@ -24,13 +26,13 @@ module JTypes (JLogic : JLogicSig) =
 struct
    type polarity = Zero | One
 
-   type connective = And | Or | Neg | Imp | All | Ex | At | Null | Box
+   type connective = And | Or | Neg | Imp | All | Ex | At | Null | Box of int
 
-   type ptype = Alpha | Beta | Gamma | Delta | Phi | Psi | PNull | Pi | Nu
+   type ptype = Alpha | Beta | Gamma | Delta | Phi | Psi | PNull | Pi of int | Nu of int
 
    type stype =
       Alpha_1 | Alpha_2 | Beta_1 | Beta_2 | Gamma_0 | Delta_0 | Phi_0 | Psi_0 |
-      PNull_0 | Pi_0 | Nu_0
+      PNull_0 | Pi_0 of int | Nu_0 of int
 
    type direction =
       Left | Right

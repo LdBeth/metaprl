@@ -53,6 +53,8 @@ let rec kind_to_string = function
       "q"
  | GammaPos k ->
       (kind_to_string k)^"_jprover"
+ | ModVar _ -> "nu"
+ | ModConst _ -> "pi"
 
 let rec string_to_kind s =
    let len = String.length s in
@@ -140,6 +142,9 @@ let symbol_to_pos sym =
          k, to_int sym
     | Root | EmptyVar ->
          k, 0
+	 | ModVar _ | ModConst _ ->
+	 		raise (Invalid_argument
+				"Modal positions are not supposed to be converted to/from terms")
 
 let rec pos_to_string (kind,i) =
    let si = string_of_int i in
@@ -152,6 +157,8 @@ let rec pos_to_string (kind,i) =
     | NewVar
     | Var
     | NewVarQ
+	 | ModVar _
+	 | ModConst _
     | GammaPos _ ->
          sk^si
     | EmptyVar | Root ->
@@ -165,7 +172,7 @@ let gamma_to_simple p =
       GammaPos k ->
          k, i
     | EmptyVar|Atom|Const|Dummy|EigenVar|
-      Var|NewVar|NewVarQ|Root ->
+      Var|NewVar|NewVarQ|Root|ModVar _|ModConst _ ->
          let s = pos_to_string p in
          raise (Invalid_argument ("GammaPos was expected instead of: "^s))
 
@@ -189,13 +196,17 @@ struct
       match a,b with
        | GammaPos a, GammaPos b ->
             compare_kinds a b
-       | GammaPos a, (EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root) ->
+       | GammaPos a,
+		 	(EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root
+			|ModVar _ | ModConst _) ->
             let c = compare_kinds a b in
             if c = 0 then
                -1
             else
                c
-       | (EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root), GammaPos b ->
+       | (EmptyVar|Atom|Const|Dummy|EigenVar|Var|NewVar|NewVarQ|Root|
+		 	ModVar _|ModConst _),
+		 	GammaPos b ->
             let c = compare_kinds a b in
             if c = 0 then
                1
@@ -229,6 +240,18 @@ struct
           (Atom|Const|Dummy|EmptyVar|EigenVar
           |NewVar|NewVarQ|Var) -> 1
        | Root,Root -> 0
+		 | Root,_ -> -1
+		 | ModVar _,
+		 	(Atom|Const|Dummy|EmptyVar|EigenVar
+			|NewVar|NewVarQ|Var|Root) -> 1
+		 | ModVar i, ModVar j ->
+		 		Pervasives.compare i j
+		 | ModVar _, _ -> -1
+		 | ModConst _,
+		 	(Atom|Const|Dummy|EmptyVar|EigenVar
+			|NewVar|NewVarQ|Var|Root|ModVar _) -> 1
+		 | ModConst i, ModConst j ->
+		 		Pervasives.compare i j
 
    let compare (a,(i:int)) (b,j) =
       let c = compare_kinds a b in

@@ -31,7 +31,7 @@ sig
 	val is_not_term : term -> bool
 	val dest_not : term -> term
    val is_box_term : term -> bool
-   val dest_box : term -> term
+   val dest_box : term -> int * term
 
    (* processing the output *)
    type inference
