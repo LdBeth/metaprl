@@ -140,10 +140,13 @@ let rec wrong_sorts_aux k1 k2 =
    match k1, k2 with
       GammaPos k1, _ -> wrong_sorts_aux k1 k2
     | _, GammaPos k2 -> wrong_sorts_aux k1 k2
-    | (Var 0 | NewVar 0), Const _ -> false
-	 | NewVarQ, Const i -> i <> 0
-    | (Var i | NewVar i), Const j -> i <> j
-    | _ -> false
+    | (Var 0 | NewVar 0), (Var _ | NewVar _ | NewVarQ |Const _) -> false
+	 | NewVarQ, (Var i | NewVar i | Const i) -> i <> 0
+    | (Var i | NewVar i), (Var j | NewVar j | Const j) -> i <> j
+	 | (Var i | NewVar i), NewVarQ -> i <> 0
+	 | Const _, _ -> false
+    | _ -> raise (Invalid_argument
+         ("wrong_sorts: Unexpected position kinds: "^(kind_to_string k1)^" "^(kind_to_string k2)))
 
 let wrong_sorts (k1,i1) (k2,i2) = wrong_sorts_aux k1 k2
 
@@ -158,7 +161,7 @@ let rec sort_of_aux k1 k2 =
 	 | (Var i | NewVar i), (Var j | NewVar j) when i=j -> i
 	 | _ ->
 		 	print_endline ((kind_to_string k1)^" - "^(kind_to_string k2));
-		 	raise (Invalid_argument "Uncompatible sorts")
+		 	raise (Invalid_argument "sort_of: Incompatible sorts")
 
 let sort_of (k1,i1) (k2,i2) =
 	sort_of_aux k1 k2
@@ -172,7 +175,7 @@ let rec compatible_aux k1 k2 =
     | (Var i | NewVar i | Const i),
 	 	(Var j | NewVar j | Const j) -> i = j
 	 | _ -> raise (Invalid_argument
-	 		("Unexpected position kinds: "^(kind_to_string k1)^" "^(kind_to_string k2)))
+	 		("compatible: Unexpected position kinds: "^(kind_to_string k1)^" "^(kind_to_string k2)))
 
 let compatible (k1,i1) (k2,i2) =
 	compatible_aux k1 k2
@@ -454,23 +457,25 @@ let rec tunify_list calculus eqlist init_sigma ordering atom_set =
             apply_r4 fs ft rt rest_eq sigma
        | s1::_, _, [] when is_var s1 -> (* r5 *)
             apply_r5 fs ft rt rest_eq sigma
-       | s1::_, [], r1::rtl when is_var_const s1 r1 -> (* r6 *)
+       | s1::_, [], r1::rtl when is_var s1 & is_const r1 -> (* r6 *)
             begin try apply_r6 fs ft rt rest_eq sigma with
                Not_unifiable ->
-                  begin match rtl with
-                     r2::_ when is_const r2 ->
-                        (* r7 applicable if r6 was and tr6 = C2t' *)
-                        (try
-                           apply_r7 fs ft rt rest_eq sigma
-                        with Not_unifiable ->
-                           apply_r10 fs ft rt rest_eq sigma
-                           (* r10 always applicable if r6 was *)
-                        )
-                   | _ ->
+						if compatible s1 r1 then
+	                  match rtl with
+   	                  r2::_ when is_var_const s1 r1 & is_const r2 ->
+      	                  (* r7 applicable if r6 was and tr6 = C2t' *)
+         	               (try
+            	               apply_r7 fs ft rt rest_eq sigma
+               	         with Not_unifiable ->
+                  	         apply_r10 fs ft rt rest_eq sigma
+                     	      (* r10 always applicable if r6 was *)
+	                        )
+   	                | _ ->
       (* r10 could be represented only once if we would try it before r7.*)
       (* but looking at the transformation rules, r10 should be tried at last in any case *)
-                        apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable r6 was *)
-                  end
+	                        apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable r6 was *)
+						else
+							apply_r11 fs ft rt rest_eq sigma
             end
        | s1::_, _, r1::r2::_ (* r7 *)
          when is_var_const s1 r1 && is_const r2 ->
