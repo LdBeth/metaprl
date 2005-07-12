@@ -53,9 +53,16 @@ let rec kind_to_string = function
       "q"
  | GammaPos k ->
       (kind_to_string k)^"_jprover"
- | Const _ | Var _ | NewVar _ ->
+ | Const i ->
+ 		"c"^(string_of_int i)^"_"
+ | Var i ->
+ 		"v"^(string_of_int i)^"_"
+ | NewVar i ->
+ 		"n"^(string_of_int i)^"_"
+(*
  		raise (Invalid_argument
 			"Modal positions are not supposed to be converted to symbols or strings")
+*)
 
 let rec string_to_kind s =
    let len = String.length s in
@@ -147,13 +154,15 @@ let symbol_to_pos sym =
    let s = to_string sym in
    let k = string_to_kind s in
    match k with
-      Atom | Const 0 | Dummy | Var 0 | NewVar 0 | NewVarQ | EigenVar | GammaPos _ ->
+      Atom | Const _ | Dummy | Var _ | NewVar _ | NewVarQ | EigenVar | GammaPos _ ->
          k, to_int sym
     | Root | EmptyVar ->
          k, 0
+(*
 	 | Var _ | Const _ | NewVar _ ->
 	 		raise (Invalid_argument
 				"Modal positions are not supposed to be converted to/from terms")
+*)
 
 let rec pos_to_string (kind,i) =
    let si = string_of_int i in
