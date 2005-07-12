@@ -3285,6 +3285,8 @@ struct
       with
          RefineError _  ->  (* any unification failure *)
 (*    print_endline "fo-unification fail"; *)
+				if !debug_s4prover then
+					eprintf "FO-unification in S4 mode!!!@.";
             raise Failed   (* new connection, please *)
 
 let one_equation_aux gprefix delta_0_prefixes (rest_equations,n) f =

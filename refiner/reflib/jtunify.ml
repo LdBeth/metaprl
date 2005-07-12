@@ -73,6 +73,7 @@ let print_equations eqlist =
       print_endline "Equations:";
       print_eqlist eqlist;
       force_newline ();
+		print_flush ();
    end
 
 let rec print_subst sigma =
@@ -127,12 +128,22 @@ let is_var_var (k1,i1) (k2,i2) = is_var_var_aux k1 k2
 let rec is_var_const_aux k1 k2 =
    match k1, k2 with
       GammaPos k1, _ -> is_var_const_aux k1 k2
-    | _, GammaPos k2 -> is_var_var_aux k1 k2
+    | _, GammaPos k2 -> is_var_const_aux k1 k2
     | (Var 0 | NewVar 0), Const _ -> true
     | (Var i | NewVar i), Const j -> i=j
     | _ -> false
 
 let is_var_const (k1,i1) (k2,i2) = is_var_const_aux k1 k2
+
+let rec wrong_sorts_aux k1 k2 =
+   match k1, k2 with
+      GammaPos k1, _ -> wrong_sorts_aux k1 k2
+    | _, GammaPos k2 -> wrong_sorts_aux k1 k2
+    | (Var 0 | NewVar 0), Const _ -> false
+    | (Var i | NewVar i), Const j -> i <> j
+    | _ -> false
+
+let wrong_sorts (k1,i1) (k2,i2) = wrong_sorts_aux k1 k2
 
 let rec sort_of_aux k1 k2 =
 	match k1, k2 with
@@ -407,6 +418,13 @@ let rec tunify_list calculus eqlist init_sigma ordering atom_set =
          tunify atomnames fs (ft @ [x]) (List.tl rt) rest_eq sigma ordering
 
       in
+		let apply_r11 fs ft rt rest_eq sigma =
+         let v = List.hd fs in
+         let compose_vars,new_sigma = compose sigma (v,ft) in
+         let new_rest_eq = apply_subst rest_eq v ft atomnames in
+         let new_ordering = build_ordering calculus (v::compose_vars) ft ordering atom_set in
+            tunify atomnames (List.tl fs) [] rt new_rest_eq new_sigma new_ordering
+		in
       match fs,ft,rt with
          [], [], [] -> (* r1 *)
             apply_r1 rest_eq sigma
@@ -464,13 +482,14 @@ let rec tunify_list calculus eqlist init_sigma ordering atom_set =
                else
                   raise Not_unifiable (* simply back propagation *)
             )
+       | _ when r_10 fs rt ->
+            (* r10 *)
+         	apply_r10 fs ft rt rest_eq sigma
+		 | v::_, _, c::_ when wrong_sorts v c ->
+		 		apply_r11 fs ft rt rest_eq sigma
        | _ ->
-            if r_10 fs rt then
-               (* r10 *)
-               apply_r10 fs ft rt rest_eq sigma
-            else
-               (*NO rule applicable *)
-               raise Not_unifiable
+         	(*NO rule applicable *)
+            raise Not_unifiable
    in
    match eqlist with
       [] ->
@@ -530,7 +549,12 @@ let ttest calculus us ut ns nt eqlist ordering atom_set =
    end
 
 let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set qmax =
-   let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 to eliminate common beginning *)
+    if !debug_s4prover then
+		 begin
+	       print_endline "do_stringunify:";
+			 print_flush ()
+		 end;
+    let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 to eliminate common beginning *)
    let new_element = ([ns;nt],(short_us,short_ut)) in
    let full_eqlist =
       if List.mem new_element equations then
@@ -538,14 +562,14 @@ let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set q
       else
          add_fo_eqlist (new_element::equations) fo_eqlist
    in
-(*  print_equations full_eqlist; *)
+	if !debug_s4prover then
+		print_equations full_eqlist;
    try
 (* Q-case: max-1 new variables have been used for the domain equations *)
       let new_sigma, new_ordering = tunify_list calculus full_eqlist (1,[]) orderingQ atom_set in
 (* Q-case: sigmaQ will not be returned in eqlist *)
       if !debug_s4prover then
          begin
-            print_endline "do_stringunify:";
             print_tunify new_sigma;
             print_ordering_map new_ordering
          end;
