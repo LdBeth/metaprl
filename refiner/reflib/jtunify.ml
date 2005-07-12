@@ -118,7 +118,8 @@ let rec is_var_var_aux k1 k2 =
 	match k1, k2 with
       GammaPos k1, _ -> is_var_var_aux k1 k2
     | _, GammaPos k2 -> is_var_var_aux k1 k2
-    | (Var 0 | NewVar 0), (NewVar _ | Var _)
+    | (Var 0 | NewVar 0), (Var _ | NewVar _)
+	 | (Var 0 | NewVar 0 | NewVarQ), (Var 0 | NewVar 0 | NewVarQ)
     | (Var _ | NewVar _), (Var 0 | NewVar 0) -> true
     | (Var i | NewVar i), (Var j | NewVar j) -> i=j
     | _ -> false
@@ -129,7 +130,7 @@ let rec is_var_const_aux k1 k2 =
    match k1, k2 with
       GammaPos k1, _ -> is_var_const_aux k1 k2
     | _, GammaPos k2 -> is_var_const_aux k1 k2
-    | (Var 0 | NewVar 0), Const _ -> true
+    | (Var 0 | NewVar 0 | NewVarQ), Const _ -> true
     | (Var i | NewVar i), Const j -> i=j
     | _ -> false
 
@@ -140,6 +141,7 @@ let rec wrong_sorts_aux k1 k2 =
       GammaPos k1, _ -> wrong_sorts_aux k1 k2
     | _, GammaPos k2 -> wrong_sorts_aux k1 k2
     | (Var 0 | NewVar 0), Const _ -> false
+	 | NewVarQ, Const i -> i <> 0
     | (Var i | NewVar i), Const j -> i <> j
     | _ -> false
 
@@ -149,7 +151,9 @@ let rec sort_of_aux k1 k2 =
 	match k1, k2 with
 		GammaPos k1, _ -> sort_of_aux k1 k2
 	 | _, GammaPos k2 -> sort_of_aux k1 k2
-	 | (Var 0 | NewVar 0), (NewVar j | Var j) -> j
+	 | NewVarQ, (Var 0 | NewVar 0 | NewVarQ) -> 0
+	 | (Var 0 | NewVar 0), NewVarQ -> 0
+	 | (Var 0 | NewVar 0), (Var j | NewVar j) -> j
 	 | (Var i | NewVar i), (Var 0 | NewVar 0) -> i
 	 | (Var i | NewVar i), (Var j | NewVar j) when i=j -> i
 	 | _ ->
@@ -158,6 +162,20 @@ let rec sort_of_aux k1 k2 =
 
 let sort_of (k1,i1) (k2,i2) =
 	sort_of_aux k1 k2
+
+let rec compatible_aux k1 k2 =
+  	match k1, k2 with
+      GammaPos k1, _ -> compatible_aux k1 k2
+    | _, GammaPos k2 -> compatible_aux k1 k2
+    | (Var 0 | NewVar 0 | NewVarQ), _ -> true
+    | _, (Var 0 | NewVar 0 | NewVarQ) -> true
+    | (Var i | NewVar i | Const i),
+	 	(Var j | NewVar j | Const j) -> i = j
+	 | _ -> raise (Invalid_argument
+	 		("Unexpected position kinds: "^(kind_to_string k1)^" "^(kind_to_string k2)))
+
+let compatible (k1,i1) (k2,i2) =
+	compatible_aux k1 k2
 
 let rec com_subst ov ovlist = function
    [] -> []
@@ -301,13 +319,13 @@ let rec apply_subst_list eq_rest v slist =
                   let new_eq_rest = apply_subst_list r v slist in
                   (atomnames,(new_fs,[])) :: new_eq_rest
           | (ffs::_),(fft::_) ->
-               if (is_const ffs) & (is_const fft) then
-                  raise Not_unifiable
-     (* different first constants cause local fail *)
-               else
+               if compatible ffs fft then
      (* at least one of firsts is a variable *)
                   let new_eq_rest = apply_subst_list r v slist in
                   (atomnames,(new_fs,new_ft)) :: new_eq_rest
+					else
+                  raise Not_unifiable
+     (* different first constants cause local fail *)
 
 let apply_subst eq_rest v slist atomnames =
    if (List.mem v atomnames) then (* don't apply subst to atom variables !! *)
