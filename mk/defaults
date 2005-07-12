@@ -14,7 +14,7 @@ CAMLP4_VERSIONS = $(CAML_VERSIONS)
 # Theories to compile - default and all
 #
 THEORIES = base itt
-THEORIES_ALL = base ocaml_doc itt ocaml_sos fol czf sil tptp fir experimental/compile
+THEORIES_ALL = base ocaml_doc itt ocaml_sos fol czf sil tptp fir experimental/compile s4lp
 #
 # The following theories exisit but are not (yet?) inclused in THEORIES_ALL:
 # - Do not have too many proofs yet: mesa kat
