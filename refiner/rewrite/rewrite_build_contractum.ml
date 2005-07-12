@@ -228,7 +228,7 @@ struct
          begin
             match stack.(i) with
                StackBTerm(term, []) -> term
-             | _ -> raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
+             | _ -> raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: RWSOInstance: stack entry is not valid"))
          end
     | RWSOInstance(i, terms) ->
          begin
@@ -263,7 +263,7 @@ struct
                      ENDIF;
                      subst term vars
                 | _ ->
-                     raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
+                     raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: RWSOInstance: stack entry is not valid"))
          end
 
     | RWSOContextSubst(i, t, []) ->
@@ -272,7 +272,7 @@ struct
                StackContext(ivars, term, addr, []) ->
                   replace_subterm term addr (build_contractum_term names bnames stack bvars t)
              | _ ->
-                  raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
+                  raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: RWSOContextSubst[]: stack entry is not valid"))
          end
 
     | RWSOContextSubst(i, t, terms) ->
@@ -301,7 +301,7 @@ struct
                    (* XXX BUG: This subst is too late! *)
                    subst term ovars terms
               | _ ->
-                   raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
+                   raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: RWSOContextSubst: stack entry is not valid"))
          end
 
     | RWCheckVar i ->
@@ -328,12 +328,15 @@ struct
                   mk_var_term (Lm_symbol.add s)
              | StackVar v ->
                   mk_var_term v
-             | _ ->
-                  raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
+			    | StackNumber n ->
+				 		mk_var_term (Lm_symbol.add (Lm_num.to_string n))
+             | se ->
+				 	   eprintf "Attempting to turn a stack entry into a variable: %a@." print_stack_item se;
+                  raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: RWStackVar: attempting to turn an unusual stack entry into a variable: not implemented"))
          end
 
     | _ ->
-         raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
+         raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: invalid rwterm"))
 
    and build_con_exn = Invalid_argument("Rewrite_build_contractum.build_contractum_param: stack entry is not valid")
 
