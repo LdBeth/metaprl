@@ -1391,9 +1391,7 @@ struct
    of renamed quantifier formulae *)
 
    let make_new_eigenvariable term =
-      let op = (dest_term term).term_op in
-      let opn = (dest_op op).op_name in
-      let opnam = dest_opname opn in
+      let opnam = dest_opname (opname_of_term term) in
       match opnam with
          ofirst::ofname::_ ->
             (*let new_eigen_var = (ofname^"_r"^(string_of_int (!eigen_counter))) in*)
@@ -4446,7 +4444,7 @@ let test concl calculus =  (* calculus should be LJmc or LJ for J, let LK for C 
 (* for sequents *)
 
 let seqtest list_term calculus =
-   let termlist = collect_subterms [] (dest_term list_term).term_terms in
+   let termlist = subterms_of_term list_term in
    do_prove None termlist [] calculus
 
 (*****************************************************************)

@@ -5,13 +5,9 @@ open Lm_string_set
 
 open Term_sig
 open Refiner.Refiner
-(*open Term*)
+open Term
 open TermType
-(*open TermOp*)
-(*open TermSubst*)
-(*open TermMan*)
 open RefineError
-(*open Opname*)
 
 open Jlogic_sig
 open Jtypes
@@ -22,12 +18,6 @@ let debug_s4prover =
         debug_description = "Display S4-Jprover operations";
         debug_value = false
       }
-
-let dest_bterm = Term.dest_bterm
-let dest_term = Term.dest_term
-let dest_op = Term.dest_op
-let dest_param = Term.dest_param
-let print_term = Term.print_term
 
 exception Not_unifiable
 exception Failed
@@ -324,36 +314,15 @@ struct
    module JTy = JTypes(JLogic)
    open JTy
 
-(* make a term list out of a bterm list *)
-
-   let rec collect_subterms tail = function
-      [] -> tail
-    | bt::r ->
-         ((dest_bterm bt).bterm)::(collect_subterms tail r)
-
    let rec collect_delta_terms accumulator = function
       [] -> accumulator
     | t::r ->
-         let dt = dest_term t in
-            let {op_name=opname; op_params=params} = dest_op dt.term_op in
-               if Opname.eq opname jprover_op then
-                  match params with
-                     [hd] ->
-                        begin match dest_param hd with
-                           Term_sig.Var sym ->
-										let p = symbol_to_pos sym in
-                              collect_delta_terms (Set.add accumulator p) r
-                         | _ ->
-                              raise
-                              (Invalid_argument
-                               "Unexpected type of parameter of jprover_op")
-                        end
-                   | _ ->
-                        raise
-                        (Invalid_argument
-                         "Unexpected number of parameters of jprover_op")
-               else
-                  collect_delta_terms accumulator (collect_subterms r dt.term_terms)
+         if Opname.eq (opname_of_term t) jprover_op then
+            let sym = TermOp.dest_var_param_term jprover_op t in
+				let p = symbol_to_pos sym in
+               collect_delta_terms (Set.add accumulator p) r
+         else
+            collect_delta_terms accumulator ((subterms_of_term t) @ r)
 
 (* ***************** REDUCTION ORDERING -- both types **************************** *)
 
@@ -368,7 +337,6 @@ struct
             Set.union fset addset
       else
          fset
-
 
    let rec transitive_irreflexive_closure addset const ordering =
       PMap.mapi (transitive_irreflexive_closure_aux addset const) ordering
