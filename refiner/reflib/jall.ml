@@ -2128,12 +2128,21 @@ struct
    let rec comp_ps padd ftree =
       match ftree with
          Empty -> raise (Invalid_argument "Jprover bug: empty formula tree")
-       | NodeAt(pos) ->
-            []
+       | NodeAt _ ->
+            raise (Invalid_argument "Jprover bug: leaves have no successors")
        | NodeA(pos,strees) ->
             match padd with
-               [] -> get_roots strees
-             | [f] -> pos::(comp_ps [] (List.nth strees f))
+               [] ->
+						raise (Invalid_argument "Jprover: empty address")
+             | [f] ->
+				 		begin match List.nth strees f with
+							Empty ->
+								raise (Invalid_argument "Jprover bug: empty formula tree")
+						 |	NodeAt _ ->
+						 		pos, []
+						 |	NodeA(_, strees) ->
+								pos, get_roots strees
+						end
              | f::r -> comp_ps r (List.nth strees f)
 
 (* computes a list: first element predecessor, next elements successoes of p *)
@@ -2779,6 +2788,8 @@ struct
                	Pi _ ->
 		               (*(not(List.exists
       	            (fun (p,s) -> p=f.pospos & not (Set.is_empty s)) redord)) &*)
+							(*let u_nu0 y = Set.mem unclosed y || Set.subset () unclosed in
+							Set.exists (fun y -> not u_nu0 y) pu, 0*)
          	   	   (not (Set.is_empty (Set.diff pu unclosed))), 0
 					 | _ ->
 					 		false, 0
@@ -2825,7 +2836,7 @@ struct
                               betasplit f.address ftree redord connections slist_fake in
                            let ft1,_,_,uslist1 = purity zw1ft zw1red min_con1 zw1uslist in
 (*                      print_endline "wait label purity_one_out"; *)
-                           let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in
+                           let ft1_root = (List.hd (snd (tpredsucc f ft1))) in
 (*                    print_endline ("wait-root "^(ft1_root.name)); *)
                            let po_fake = compute_open [ft1] uslist1 in
                            let po_fake_test = delete pos_eq ft1_root po_fake in
@@ -2881,6 +2892,12 @@ struct
             let bool,orr_flag =
                blocked f po redord ftree connections slist solved_atoms unclosed calculus opt_bproof
             in
+		      if !debug_s4prover then
+					if bool then
+	      			print_endline ((pos_to_string f.pospos)^" blocked")
+					else
+						print_endline ((pos_to_string f.pospos)^" not blocked");
+				print_flush();
             if bool then
                select_pos
                   r po redord ftree connections slist solved_atoms unclosed
@@ -2969,28 +2986,21 @@ struct
                po po_set redord ftree connections slist solved_atoms unclosed calculus [] opt_bproof
          in
 (*    print_endline ((pos_to_string p.pospos)^" "^(string_of_int orr_flag)); *)
-         match tpredsucc p ftree with
-            pred :: succs ->
-               let redpo = update p.pospos redord in   (* deletes the entry (p,psuccset) from the redord *)
-               let rednew =
-                  match p.pt with
-                     Delta | Pi _ ->      (* keep the tree ordering for the successor position only *)
-                        let psucc = List.hd succs in
-                        begin match tpredsucc psucc ftree with
-                           pre :: sucs ->
-                              replace_ordering psucc.pospos sucs redpo (* union the succsets of psucc *)
-                         | [] ->
-                              raise jprover_bug
-                        end
-                   | _ ->
-                        redpo
-               in
+         let pred, succs = tpredsucc p ftree in
+            let redpo = update p.pospos redord in   (* deletes the entry (p,psuccset) from the redord *)
+            let rednew =
+               match p.pt with
+                  Delta | Pi _ ->      (* keep the tree ordering for the successor position only *)
+                     let psucc = List.hd succs in
+                     let pre, sucs = tpredsucc psucc ftree in
+                        replace_ordering psucc.pospos sucs redpo (* union the succsets of psucc *)
+                | _ ->
+                     redpo
+            in
 (*            print_endline "update ok"; *)
-               solve
-                  ftree rednew connections csigmaQ p po slist
-                  (pred,succs) orr_flag calculus opt_bproof
-          | [] ->
-               raise jprover_bug
+            solve
+               ftree rednew connections csigmaQ p po slist
+               (pred,succs) orr_flag calculus opt_bproof
       with Gamma_deadlock ->
          let ljmc_subproof =
             total ftree redord connections csigmaQ slist (Intuit MultiConcl) opt_bproof
