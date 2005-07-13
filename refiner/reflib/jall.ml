@@ -44,19 +44,13 @@ open Lm_string_set
 
 open Term_sig
 open Refiner.Refiner
-(*
 open Term
-*)
 open TermType
-(*
 open TermOp
 open TermSubst
 open TermMan
-*)
 open RefineError
-(*
 open Opname
-*)
 
 open Unify_mm
 
@@ -79,26 +73,18 @@ let debug_jprover =
  * Compatibility layer for abstract vars.
  *)
 let free_vars_list t consts =
-   SymbolSet.to_list (SymbolSet.diff (TermSubst.free_vars_set t) consts)
+   SymbolSet.to_list (SymbolSet.diff (free_vars_set t) consts)
 
 let mk_symbol_term opname s =
-   let p = Term.make_param (Term_sig.Var s) in
-   let op = Term.mk_op opname [p] in
-   Term.mk_any_term op []
+   let p = make_param (Term_sig.Var s) in
+   let op = mk_op opname [p] in
+      mk_any_term op []
 
 let mk_pos_term opname p = mk_symbol_term opname (pos_to_symbol p)
 
 let mk_pos_var p =
    Term.mk_var_term (pos_to_symbol p)
 
-let print_term = Term.print_term
-let dest_term = Term.dest_term
-let dest_op = Term.dest_op
-let dest_opname = Opname.dest_opname
-let alpha_equal = TermSubst.alpha_equal
-let apply_subst = TermSubst.apply_subst
-let xnil_term = TermMan.xnil_term
-let all_contexts = TermMan.all_contexts
 (************************************************************************
  * Original JProver.
  *)
@@ -3210,9 +3196,9 @@ struct
 
    let rec_apply_aux consts tauQ tau_vars tau_terms sigma_ordering v term =
       let app_term = TermSubst.subst term tau_vars tau_terms in
-      let old_free = free_vars_list term consts in
-      let new_free = free_vars_list app_term consts in
-      let inst_vars = list_diff old_free new_free in
+      let old_free = free_vars_set term in
+      let new_free = free_vars_set app_term in
+      let inst_vars = SymbolSet.to_list (SymbolSet.diff (SymbolSet.diff old_free new_free) consts) in
       let inst_positions = List.rev_map symbol_to_pos inst_vars in
       let inst_terms = collect_assoc inst_positions tauQ in
       if inst_terms = [] then
