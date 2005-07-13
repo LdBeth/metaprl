@@ -51,7 +51,7 @@ struct
    type atom = {aaddress : int list;
                 apos : position;
                 aposprefix : position list;
-                apredicate :  operator;
+                apredicate : opname;
                 apol : polarity;
                 ast : stype;
                 alabel : term}
