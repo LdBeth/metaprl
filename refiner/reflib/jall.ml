@@ -3292,7 +3292,7 @@ struct
 let one_equation_aux gprefix delta_0_prefixes (rest_equations,n) f =
    let fprefix = PMap.find delta_0_prefixes f in
    let (sf1,sg) = shorten fprefix gprefix in
-   let v_new = NewVarQ, n in
+   let v_new = NewVarQ 0, n in
    let fnew = sf1 @ [v_new] in
    (([],(fnew,sg))::rest_equations),(n+1)
 

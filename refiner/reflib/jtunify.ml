@@ -106,12 +106,12 @@ let rec is_const (k,i)  =
      GammaPos k -> is_const (k,i)
    | Const _ -> true
    | Atom | EmptyVar | Root | EigenVar
-   | Var _ | NewVar _ | NewVarQ | Dummy -> false
+   | Var _ | NewVar _ | NewVarQ _ | Dummy -> false
 
 let rec is_var (k,i)  =
   match k with
      GammaPos k -> is_var (k,i)
-   | Var _ | NewVar _ | NewVarQ -> true
+   | Var _ | NewVar _ | NewVarQ _ -> true
    | Atom | Const _ | Dummy | EigenVar | EmptyVar | Root -> false
 
 let rec is_var_var_aux k1 k2 =
@@ -119,7 +119,7 @@ let rec is_var_var_aux k1 k2 =
       GammaPos k1, _ -> is_var_var_aux k1 k2
     | _, GammaPos k2 -> is_var_var_aux k1 k2
     | (Var 0 | NewVar 0), (Var _ | NewVar _)
-	 | (Var 0 | NewVar 0 | NewVarQ), (Var 0 | NewVar 0 | NewVarQ)
+	 | (Var 0 | NewVar 0 | NewVarQ 0), (Var 0 | NewVar 0 | NewVarQ 0)
     | (Var _ | NewVar _), (Var 0 | NewVar 0) -> true
     | (Var i | NewVar i), (Var j | NewVar j) -> i=j
     | _ -> false
@@ -130,7 +130,7 @@ let rec is_var_const_aux k1 k2 =
    match k1, k2 with
       GammaPos k1, _ -> is_var_const_aux k1 k2
     | _, GammaPos k2 -> is_var_const_aux k1 k2
-    | (Var 0 | NewVar 0 | NewVarQ), Const _ -> true
+    | (Var 0 | NewVar 0 | NewVarQ 0), Const _ -> true
     | (Var i | NewVar i), Const j -> i=j
     | _ -> false
 
@@ -140,10 +140,8 @@ let rec wrong_sorts_aux k1 k2 =
    match k1, k2 with
       GammaPos k1, _ -> wrong_sorts_aux k1 k2
     | _, GammaPos k2 -> wrong_sorts_aux k1 k2
-    | (Var 0 | NewVar 0), (Var _ | NewVar _ | NewVarQ |Const _) -> false
-	 | NewVarQ, (Var i | NewVar i | Const i) -> i <> 0
-    | (Var i | NewVar i), (Var j | NewVar j | Const j) -> i <> j
-	 | (Var i | NewVar i), NewVarQ -> i <> 0
+    | (Var 0 | NewVar 0 | NewVarQ 0), (Var _ | NewVar _ | NewVarQ _ |Const _) -> false
+    | (Var i | NewVar i | NewVarQ i), (Var j | NewVar j | NewVarQ j | Const j) -> i <> j
 	 | Const _, _ -> false
     | _ -> raise (Invalid_argument
          ("wrong_sorts: Unexpected position kinds: "^(kind_to_string k1)^" "^(kind_to_string k2)))
@@ -154,11 +152,9 @@ let rec sort_of_aux k1 k2 =
 	match k1, k2 with
 		GammaPos k1, _ -> sort_of_aux k1 k2
 	 | _, GammaPos k2 -> sort_of_aux k1 k2
-	 | NewVarQ, (Var 0 | NewVar 0 | NewVarQ) -> 0
-	 | (Var 0 | NewVar 0), NewVarQ -> 0
-	 | (Var 0 | NewVar 0), (Var j | NewVar j) -> j
-	 | (Var i | NewVar i), (Var 0 | NewVar 0) -> i
-	 | (Var i | NewVar i), (Var j | NewVar j) when i=j -> i
+	 | (Var 0 | NewVar 0 | NewVarQ 0), (Var j | NewVar j | NewVarQ j) -> j
+	 | (Var i | NewVar i | NewVarQ i), (Var 0 | NewVar 0 | NewVarQ 0) -> i
+	 | (Var i | NewVar i | NewVarQ i), (Var j | NewVar j | NewVarQ j) when i=j -> i
 	 | _ ->
 		 	print_endline ((kind_to_string k1)^" - "^(kind_to_string k2));
 		 	raise (Invalid_argument "sort_of: Incompatible sorts")
@@ -170,10 +166,10 @@ let rec compatible_aux k1 k2 =
   	match k1, k2 with
       GammaPos k1, _ -> compatible_aux k1 k2
     | _, GammaPos k2 -> compatible_aux k1 k2
-    | (Var 0 | NewVar 0 | NewVarQ), _ -> true
-    | _, (Var 0 | NewVar 0 | NewVarQ) -> true
-    | (Var i | NewVar i | Const i),
-	 	(Var j | NewVar j | Const j) -> i = j
+    | (Var 0 | NewVar 0 | NewVarQ 0), _ -> true
+    | _, (Var 0 | NewVar 0 | NewVarQ 0) -> true
+    | (Var i | NewVar i | NewVarQ i | Const i),
+	 	(Var j | NewVar j | NewVarQ j | Const j) -> i = j
 	 | _ -> raise (Invalid_argument
 	 		("compatible: Unexpected position kinds: "^(kind_to_string k1)^" "^(kind_to_string k2)))
 

@@ -14,7 +14,7 @@ type pos_kind =
  | EigenVar
  | Var of int
  | NewVar of int
- | NewVarQ
+ | NewVarQ of int
  | GammaPos of pos_kind
  | Root
 

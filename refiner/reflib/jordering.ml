@@ -49,7 +49,7 @@ let rec kind_to_string = function
       "v"
  | EmptyVar ->
       ""
- | NewVarQ ->
+ | NewVarQ 0 ->
       "q"
  | GammaPos k ->
       (kind_to_string k)^"_jprover"
@@ -59,6 +59,8 @@ let rec kind_to_string = function
  		"v"^(string_of_int i)^"_"
  | NewVar i ->
  		"n"^(string_of_int i)^"_"
+ | NewVarQ i ->
+      "q"^(string_of_int i)^"_"
 (*
  		raise (Invalid_argument
 			"Modal positions are not supposed to be converted to symbols or strings")
@@ -78,7 +80,7 @@ let rec string_to_kind s =
           | 'd' -> Dummy
           | 'e' -> EigenVar
           | 'n' -> NewVar 0
-          | 'q' -> NewVarQ
+          | 'q' -> NewVarQ 0
           | 'v' -> Var 0
           | 'w' -> Root
           |  _  ->
@@ -154,7 +156,7 @@ let symbol_to_pos sym =
    let s = to_string sym in
    let k = string_to_kind s in
    match k with
-      Atom | Const _ | Dummy | Var _ | NewVar _ | NewVarQ | EigenVar | GammaPos _ ->
+      Atom | Const _ | Dummy | Var _ | NewVar _ | NewVarQ _ | EigenVar | GammaPos _ ->
          k, to_int sym
     | Root | EmptyVar ->
          k, 0
@@ -174,7 +176,7 @@ let rec pos_to_string (kind,i) =
     | EigenVar
     | NewVar _
     | Var _
-    | NewVarQ
+    | NewVarQ _
     | GammaPos _ ->
          sk^si
     | EmptyVar | Root ->
@@ -186,7 +188,7 @@ let gamma_to_simple p =
       GammaPos k ->
          k, i
     | EmptyVar|Atom|Const _|Dummy|EigenVar|
-      Var _|NewVar _|NewVarQ|Root ->
+      Var _|NewVar _|NewVarQ _|Root ->
          let s = pos_to_string p in
          raise (Invalid_argument ("GammaPos was expected instead of: "^s))
 
@@ -208,13 +210,13 @@ struct
        | GammaPos a, GammaPos b ->
             compare_kinds a b
        | GammaPos a,
-		 	(EmptyVar|Atom|Const _|Dummy|EigenVar|Var _|NewVar _|NewVarQ|Root) ->
+		 	(EmptyVar|Atom|Const _|Dummy|EigenVar|Var _|NewVar _|NewVarQ _|Root) ->
             let c = compare_kinds a b in
             if c = 0 then
                -1
             else
                c
-       | (EmptyVar|Atom|Const _|Dummy|EigenVar|Var _|NewVar _|NewVarQ|Root),
+       | (EmptyVar|Atom|Const _|Dummy|EigenVar|Var _|NewVar _|NewVarQ _|Root),
 		 	GammaPos b ->
             let c = compare_kinds a b in
             if c = 0 then
@@ -238,16 +240,15 @@ struct
        | NewVar _,(Atom|Const _|Dummy|EmptyVar|EigenVar) -> 1
        | NewVar i, NewVar j -> Pervasives.compare i j
        | NewVar _, _ -> -1
-       | NewVarQ,
-           (Atom|Const _|Dummy|EmptyVar|EigenVar|NewVar _) -> 1
-       | NewVarQ,NewVarQ -> 0
-       | NewVarQ,_ -> -1
-       | Var _,(Atom|Const _|Dummy|EmptyVar|EigenVar|NewVar _|NewVarQ) -> 1
+       | NewVarQ _, (Atom|Const _|Dummy|EmptyVar|EigenVar|NewVar _) -> 1
+       | NewVarQ i, NewVarQ j -> Pervasives.compare i j
+       | NewVarQ _, _ -> -1
+       | Var _,(Atom|Const _|Dummy|EmptyVar|EigenVar|NewVar _|NewVarQ _) -> 1
        | Var i, Var j -> Pervasives.compare i j
        | Var _, _ -> -1
        | Root,
          (Atom|Const _|Dummy|EmptyVar|EigenVar
-         |NewVar _|NewVarQ|Var _) -> 1
+         |NewVar _|NewVarQ _|Var _) -> 1
        | Root,Root -> 0
 
    let compare (a,(i:int)) (b,j) =
@@ -393,7 +394,7 @@ struct
    let rec add_substJ calculus replace_vars replace_string ordering atom_set =
       match replace_vars, calculus with
          [],_ -> ordering
-       | ((NewVar _| NewVarQ),_)::r, _ -> (* don't integrate new variables *)
+       | ((NewVar _| NewVarQ _),_)::r, _ -> (* don't integrate new variables *)
             add_substJ calculus r replace_string ordering atom_set
        | v::r, Intuit _ (* no reduction ordering at atoms *)
             when Set.mem atom_set v ->
