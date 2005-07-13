@@ -114,40 +114,6 @@ let rec is_var (k,i)  =
    | Var _ | NewVar _ | NewVarQ _ -> true
    | Atom | Const _ | Dummy | EigenVar | EmptyVar | Root -> false
 
-let rec is_var_var_aux k1 k2 =
-	match k1, k2 with
-      GammaPos k1, _ -> is_var_var_aux k1 k2
-    | _, GammaPos k2 -> is_var_var_aux k1 k2
-    | (Var 0 | NewVar 0), (Var _ | NewVar _)
-	 | (Var 0 | NewVar 0 | NewVarQ 0), (Var 0 | NewVar 0 | NewVarQ 0)
-    | (Var _ | NewVar _), (Var 0 | NewVar 0) -> true
-    | (Var i | NewVar i), (Var j | NewVar j) -> i=j
-    | _ -> false
-
-let is_var_var (k1,i1) (k2,i2) = is_var_var_aux k1 k2
-
-let rec is_var_const_aux k1 k2 =
-   match k1, k2 with
-      GammaPos k1, _ -> is_var_const_aux k1 k2
-    | _, GammaPos k2 -> is_var_const_aux k1 k2
-    | (Var 0 | NewVar 0 | NewVarQ 0), Const _ -> true
-    | (Var i | NewVar i), Const j -> i=j
-    | _ -> false
-
-let is_var_const (k1,i1) (k2,i2) = is_var_const_aux k1 k2
-
-let rec wrong_sorts_aux k1 k2 =
-   match k1, k2 with
-      GammaPos k1, _ -> wrong_sorts_aux k1 k2
-    | _, GammaPos k2 -> wrong_sorts_aux k1 k2
-    | (Var 0 | NewVar 0 | NewVarQ 0), (Var _ | NewVar _ | NewVarQ _ |Const _) -> false
-    | (Var i | NewVar i | NewVarQ i), (Var j | NewVar j | NewVarQ j | Const j) -> i <> j
-	 | Const _, _ -> false
-    | _ -> raise (Invalid_argument
-         ("wrong_sorts: Unexpected position kinds: "^(kind_to_string k1)^" "^(kind_to_string k2)))
-
-let wrong_sorts (k1,i1) (k2,i2) = wrong_sorts_aux k1 k2
-
 let rec sort_of_aux k1 k2 =
 	match k1, k2 with
 		GammaPos k1, _ -> sort_of_aux k1 k2
@@ -162,19 +128,34 @@ let rec sort_of_aux k1 k2 =
 let sort_of (k1,i1) (k2,i2) =
 	sort_of_aux k1 k2
 
-let rec compatible_aux k1 k2 =
+let rec var_le_aux k1 k2 =
   	match k1, k2 with
-      GammaPos k1, _ -> compatible_aux k1 k2
-    | _, GammaPos k2 -> compatible_aux k1 k2
+      GammaPos k1, _ -> var_le_aux k1 k2
+    | _, GammaPos k2 -> var_le_aux k1 k2
     | (Var 0 | NewVar 0 | NewVarQ 0), _ -> true
-    | _, (Var 0 | NewVar 0 | NewVarQ 0) -> true
-    | (Var i | NewVar i | NewVarQ i | Const i),
+    | (Var i | NewVar i | NewVarQ i),
 	 	(Var j | NewVar j | NewVarQ j | Const j) -> i = j
+	 | Const _, _ -> false
 	 | _ -> raise (Invalid_argument
-	 		("compatible: Unexpected position kinds: "^(kind_to_string k1)^" "^(kind_to_string k2)))
+	 		("var_le: Unexpected position kinds: "^(kind_to_string k1)^" "^(kind_to_string k2)))
 
-let compatible (k1,i1) (k2,i2) =
-	compatible_aux k1 k2
+let var_le (k1,i1) (k2,i2) =
+	var_le_aux k1 k2
+
+let rec compatible_vars_aux k1 k2 =
+   match k1, k2 with
+      GammaPos k1, _ -> compatible_vars_aux k1 k2
+    | _, GammaPos k2 -> compatible_vars_aux k1 k2
+    | (Var 0 | NewVar 0 | NewVarQ 0), (Var _ | NewVar _ | NewVarQ _)
+	 | (Var _ | NewVar _ | NewVarQ _), (Var 0 | NewVar 0 | NewVarQ 0) -> true
+    | (Var i | NewVar i | NewVarQ i), (Var j | NewVar j | NewVarQ j) -> i = j
+	 | Const _, _
+	 | _, Const _ -> false
+    | _ -> raise (Invalid_argument
+         ("compatible_vars: Unexpected position kinds: "^(kind_to_string k1)^" "^(kind_to_string k2)))
+
+let compatible_vars (k1,i1) (k2,i2) =
+   compatible_vars_aux k1 k2
 
 let rec com_subst ov ovlist = function
    [] -> []
@@ -318,7 +299,7 @@ let rec apply_subst_list eq_rest v slist =
                   let new_eq_rest = apply_subst_list r v slist in
                   (atomnames,(new_fs,[])) :: new_eq_rest
           | (ffs::_),(fft::_) ->
-               if compatible ffs fft then
+               if var_le ffs fft || var_le fft ffs  then
      (* at least one of firsts is a variable *)
                   let new_eq_rest = apply_subst_list r v slist in
                   (atomnames,(new_fs,new_ft)) :: new_eq_rest
@@ -354,8 +335,8 @@ let rec all_variable_check eqlist =
 let r_10 s rt =
    match s,rt with
       v::stl, x::rtl ->
-         is_var v && (v <> x) &&
-         ((stl =[]) or (is_var_const v x) or (rtl <> []))
+         var_le v x && (v <> x) &&
+         ((stl =[]) or (is_const x) or (rtl <> []))
     | _ -> false
 
 let rec tunify_list calculus eqlist init_sigma ordering atom_set =
@@ -449,16 +430,16 @@ let rec tunify_list calculus eqlist init_sigma ordering atom_set =
             apply_r2 fs ft rt rest_eq sigma
        | s1::_, [], r1::_ when s1=r1 -> (* r3 *)
             apply_r3 fs ft rt rest_eq sigma
-       | s1::_, [], r1::_ when is_var_const r1 s1 -> (* r4 *)
+       | s1::_, [], r1::_ when is_var r1 && is_const s1 -> (* r4 *)
             apply_r4 fs ft rt rest_eq sigma
        | s1::_, _, [] when is_var s1 -> (* r5 *)
             apply_r5 fs ft rt rest_eq sigma
        | s1::_, [], r1::rtl when is_var s1 & is_const r1 -> (* r6 *)
             begin try apply_r6 fs ft rt rest_eq sigma with
                Not_unifiable ->
-						if compatible s1 r1 then
+						if var_le s1 r1 then
 	                  match rtl with
-   	                  r2::_ when is_var_const s1 r1 & is_const r2 ->
+   	                  r2::_ when is_const r2 ->
       	                  (* r7 applicable if r6 was and tr6 = C2t' *)
          	               (try
             	               apply_r7 fs ft rt rest_eq sigma
@@ -474,7 +455,7 @@ let rec tunify_list calculus eqlist init_sigma ordering atom_set =
 							apply_r11 fs ft rt rest_eq sigma
             end
        | s1::_, _, r1::r2::_ (* r7 *)
-         when is_var_const s1 r1 && is_const r2 ->
+         when var_le s1 r1 && is_const r1 && is_const r2 ->
             (* r7, should be the same as in the catch part after apply_r6 *)
             (try
                apply_r7 fs ft rt rest_eq sigma
@@ -482,29 +463,35 @@ let rec tunify_list calculus eqlist init_sigma ordering atom_set =
                apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable if r7 was *)
             )
        | v::_::_, [], v1::_ (* r8 *)
-         when is_var_var v v1 && (v <> v1) -> (* r8 *)
+         when var_le v1 v && is_var v && (v <> v1) -> (* r8 *)
             (try
                apply_r8 fs ft rt rest_eq sigma
             with Not_unifiable ->
                if r_10 fs rt then (* r10 applicable if r8 was and tr8 <> [] *)
                   apply_r10 fs ft rt rest_eq sigma
                else
-                  raise Not_unifiable (* simply back propagation *)
+						if not (var_le v v1) then
+							apply_r11 fs ft rt rest_eq sigma
+						else
+	                  raise Not_unifiable (* simply back propagation *)
             )
        | v::_::_, _::_, v1::_ (* r9 *)
-         when is_var_var v v1 && (v <> v1) -> (* r9 *)
+         when compatible_vars v v1 && (v <> v1) -> (* r9 *)
             (try
                apply_r9 (sort_of v v1) fs ft rt rest_eq sigma
             with Not_unifiable ->
-               if r_10 fs rt then (* r10 applicable if r9 was and tr9 <> [] *)
-                  apply_r10 fs ft rt rest_eq sigma
-               else
-                  raise Not_unifiable (* simply back propagation *)
+	            if r_10 fs rt then (* r10 applicable if r9 was and tr9 <> [] *)
+   	            apply_r10 fs ft rt rest_eq sigma
+      	      else
+						if not (var_le v v1) then
+							apply_r11 fs ft rt rest_eq sigma
+						else
+							raise Not_unifiable (* simply back propagation *)
             )
        | _ when r_10 fs rt ->
             (* r10 *)
          	apply_r10 fs ft rt rest_eq sigma
-		 | v::_, _, c::_ when wrong_sorts v c ->
+		 | v::_, _, r1::_ when is_var v && not (var_le v r1) ->
 		 		apply_r11 fs ft rt rest_eq sigma
        | _ ->
          	(*NO rule applicable *)
