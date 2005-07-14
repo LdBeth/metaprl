@@ -374,6 +374,12 @@ if $(NCURSES_ENABLED)
     OCAML_LINK_FLAGS += -cclib -lncurses
     export
 
+if $(not $(defined MP_DEBUG))
+    MP_DEBUG = $(getenv MP_DEBUG, $(EMPTY))
+    export
+
+setenv(MP_DEBUG, $(MP_DEBUG))
+
 ########################################################################
 # .PHONY targets that depend on all the subdirectories.
 #
@@ -567,12 +573,6 @@ else
 
 %.p4: %.ml $(CAMLP4O)
    $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.ml > $@
-
-if $(not $(defined MP_DEBUG))
-    MP_DEBUG = $(getenv MP_DEBUG, $(EMPTY))
-    export
-
-setenv(MP_DEBUG, $(MP_DEBUG))
 
 if $(mem spell, $(split :, $(MP_DEBUG)))
     LIBWORDS = $(file lib/words)
