@@ -198,18 +198,14 @@ struct
 
    let jprover_bug = Invalid_argument "Jprover bug (Jall module)"
 
-   (* XXX: Nogin: as far as I understand, names are unique, but I am not sure *)
+   let position_eq (p1: position) p2 =
+      PosOrdering.compare p1 p2 = 0
+
    let atom_eq a1 a2 =
-      a1.apos = a2.apos
+      position_eq a1.apos a2.apos
 
    let pos_eq p1 p2 =
-      p1.pospos = p2.pospos
-
-   let position_eq (p1: position) p2 =
-      p1 = p2
-
-   let string_eq (s1: string) s2 =
-      s1 = s2
+      position_eq p1.pospos p2.pospos
 
    let rec ftree_eq t1 t2 =
       match t1, t2 with
