@@ -194,7 +194,7 @@ module PosOrdering =
 struct
 
    type t = position
-
+(*
    let rec compare_kinds a b =
       match a,b with
        | GammaPos a, GammaPos b ->
@@ -240,13 +240,9 @@ struct
          (Atom|Const _|Dummy|EmptyVar|EigenVar
          |NewVar _|NewVarQ _|Var _) -> 1
        | Root,Root -> 0
-
+*)
    let compare (a,(i:int)) (b,j) =
-      let c = compare_kinds a b in
-      if c = 0 then
-         Pervasives.compare i j
-      else
-         c
+		Pervasives.compare i j
 
 end
 
