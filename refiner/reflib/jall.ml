@@ -2198,7 +2198,7 @@ struct
       match redord with
          [] -> raise jprover_bug   (* element occurs in redord *)
        | (f,fset)::r ->
-            if f = element then
+            if position_eq f element then
                (f,element_set)::r
             else
                (f,fset)::(replace_element element element_set r)
@@ -2222,7 +2222,7 @@ struct
       match redord with
          [] -> []
        | (f,fset)::r ->
-            if pospos=f then
+            if position_eq pospos f then
                r
             else
                (f,fset)::(update pospos r)
