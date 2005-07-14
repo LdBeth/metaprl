@@ -57,6 +57,7 @@ let _ =
    if not !Shell_state.batch_flag then eprintf "MetaPRL exiting\n";
    flush stderr;
    flush stdout;
+   do_at_exit ();
    exit 0
 
 (*

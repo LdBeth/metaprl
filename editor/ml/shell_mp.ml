@@ -176,8 +176,6 @@ struct
    (*
     * Evaluate a directive.
     *)
-   external exit : int -> unit = "caml_exit"
-
    let rec use name =
       let inx = open_in name in
       let int_flag = Shell_state.is_interactive () in
