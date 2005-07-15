@@ -109,11 +109,8 @@ struct
        | _ ->
             make (Flist.append clist1 clist2)
 
-   let compose clist1 clist2 =
-      combine andthenrw candthenrw (fun l -> ComposeConv l) clist1 clist2
-
-   let choose clist1 clist2 =
-      combine orelserw corelserw (fun l -> ChooseConv l) clist1 clist2
+   let compose = combine andthenrw candthenrw (fun l -> ComposeConv l)
+   let choose = combine orelserw corelserw (fun l -> ChooseConv l)
 
    let prefix_thenC conv1 conv2 =
       if conv1 == idC then
