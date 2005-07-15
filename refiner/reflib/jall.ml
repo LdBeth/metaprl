@@ -203,8 +203,6 @@ struct
 
 	module SubrelSet = Lm_set.LmMake(OrdSubtree)
 
-   let jprover_bug = Invalid_argument "Jprover bug (Jall module)"
-
    let position_eq (p1: position) p2 =
       PosOrdering.compare p1 p2 = 0
 
@@ -721,7 +719,7 @@ struct
 
    let rec tpp seqtree tab addr =
       match seqtree with
-       | PEmpty -> raise jprover_bug
+       | PEmpty -> raise (Invalid_argument "jall.tpp: bug")
        | PNodeAx(rule) ->
             let (pos,r,p,pa) = rule in
             begin
@@ -803,7 +801,7 @@ struct
    let rec apply_bproof_purity bproof =
       match bproof with
          BEmpty ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.apply_bproof_purity: bug")
        | CNode((c1,c2)) ->
             bproof,ConnSet.singleton (c1,c2),Set.empty
        | AtNode(_,(c1,c2)) ->
@@ -840,7 +838,7 @@ struct
    let rec apply_permutation bproof rep_name direction act_blayer =
       match bproof with
          BEmpty | RNode(_,_) ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.apply_permutation: bug")
        | AtNode(cx,(c1,c2)) ->
             bproof,act_blayer
        | CNode((c1,c2)) ->
@@ -902,7 +900,7 @@ struct
 (* into one root alpha layer -- the beta expansion node bpos will not be *)
 (* needed in this root layer *)
        | _ ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.split_permutation: bug")
 
 (*********** END split permutation *****************)
 
@@ -1008,7 +1006,7 @@ struct
        | NodeA(_, suctrees) :: r ->
             compute_alpha_layer (List.rev_append suctrees r)
        | Empty :: _ ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.compute_alpha_layer: bug")
 
    let rec compute_beta_difference c1_context c2_context act_context =
       match c1_context,c2_context with
@@ -1205,7 +1203,7 @@ struct
                   atlist2, PMap.union nodups annotates1 annotates2,
 						PMap.add (PMap.union nodups blayer_list1 blayer_list2) pospos (alayer1,alayer2)
           | NodeA({pt = Beta}, _) ->
-               raise jprover_bug
+               raise (Invalid_argument "jall.annotate_atoms: bug")
           | NodeA(_, suctrees) ->
                annotate_atoms beta_context atlist suctrees
       in
@@ -1245,7 +1243,7 @@ struct
    let rec modify prooftree subrel tsubrel =
       match prooftree with
          PEmpty ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.modify: bug")
        | PNodeAx((pos,inf,form,term)) ->
             prooftree, Pos pos
        | PNodeA((pos,inf,form,term),left)  ->
@@ -1317,7 +1315,7 @@ struct
    let rec rec_modify ptree subrel =
       match ptree with
          PEmpty ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.rec_modify: bug")
        | PNodeAx((pos,inf,form,term)) ->
             ptree,pos
        | PNodeA((pos,(Impr | Negr | Allr),form,term),left)  ->
@@ -1403,7 +1401,7 @@ struct
 (*        print_endline ("New Counter :"^(string_of_int (!eigen_counter))); *)
             mk_pos_term jprover_op new_eigen_pos
        | [] | [_] ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.make_new_eigenvariable: bug")
 
    let replace_subterm term oldt rept =
       let dummy = pos_to_symbol (dummy_pos ()) in
@@ -1413,7 +1411,7 @@ struct
    let rec eigen_rename old_parameter new_parameter ptree =
       match ptree with
          PEmpty ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.eigen_rename: bug")
        | PNodeAx((pos,inf,form,term)) ->
             let new_form = replace_subterm form old_parameter new_parameter in
             PNodeAx((pos,inf,new_form,term))
@@ -1431,7 +1429,7 @@ struct
    let rec update_ptree rule subtree direction =
       match subtree with
          PEmpty ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.update_ptree: bug")
        | PNodeAx(r) ->
             subtree
        | PNodeA((_,_,_,term) as r, left) ->
@@ -1475,7 +1473,7 @@ struct
    let rec orl_free ptree =
       match ptree with
          PEmpty ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.orl_free: bug")
        | PNodeAx _
        | PNodeA((_, (Impr|Negr|Allr), _, _),_) ->
             true
@@ -1517,8 +1515,8 @@ struct
 
    and search_pair ptree dglist act_r act_o act_addr tsubrel dummyt =
       match ptree with
-         PEmpty -> raise jprover_bug
-       | PNodeAx(_) -> raise jprover_bug
+         PEmpty -> raise (Invalid_argument "jall.search_pair: bug")
+       | PNodeAx(_) -> raise (Invalid_argument "jall.search_pair: bug")
        | PNodeA(rule, left) ->
 (*      print_endline "alpha"; *)
             if dgenerative rule dglist left tsubrel then  (* r = Exr,Orr,Negl *)
@@ -1588,7 +1586,7 @@ struct
                            PNodeB(rule,left2,pbright)
                      else          (* rule is not relevant *)
                         left2  (* optimized termination case (1) *)
-                | [] -> raise jprover_bug
+                | [] -> raise (Invalid_argument "jall.permute_branch: bug")
                end
       | PNodeB(o,left,PNodeA(rule,right)),Right ->                (* two-over-one, right *)
                                              (* left of o is or_l free *)
@@ -1650,7 +1648,7 @@ struct
                     else          (* rule is not relevant *)
                        permute_layer (PNodeB(o,left1,right1)) dglist subrel tsubrel (* further opt. possible *)
                                                               (* combine with orl_free *)
-               | [] -> raise jprover_bug
+               | [] -> raise (Invalid_argument "jall.permute_branch: bug")
               end
     | PNodeB(o,left1,PNodeB(rule,left,right)),Right ->             (* two-over-two, right *)
 (*      print_endline " two-over-two, right"; *)
@@ -1683,15 +1681,15 @@ struct
                            PNodeB(rule,left2,pbright)  (* left2 or_l free *)
                      else (* rule is not relevant *)
                         PNodeB(o,leftm1,leftm)
-                | [] -> raise jprover_bug
+                | [] -> raise (Invalid_argument "jall.permute_branch: bug")
                end
          else
             leftm1
-    | _ -> raise jprover_bug
+    | _ -> raise (Invalid_argument "jall.permute_branch: bug")
 
    and trans_add_branch r o addr act_addr ptree dglist subrel tsubrel =
       match ptree with
-         (PEmpty| PNodeAx(_)) -> raise jprover_bug
+         (PEmpty| PNodeAx(_)) -> raise (Invalid_argument "jall.trans_add_branch: bug")
        | PNodeA(rule,left) ->
             if dgenerative rule dglist left tsubrel then
                let newdg = rule :: dglist in
@@ -1717,7 +1715,7 @@ struct
                      Left, atl, true
                 | Right :: atl ->
                      Right, atl, false
-                | [] -> raise jprover_bug
+                | [] -> raise (Invalid_argument "jall.trans_add_branch: bug")
             in
             if rule_eq rule o then
                begin
@@ -1770,7 +1768,7 @@ struct
 
    let rec isol_layer ptree subrel tsubrel =
       match ptree with
-         PEmpty -> raise jprover_bug
+         PEmpty -> raise (Invalid_argument "jall.isol_layer: bug")
        | PNodeAx(inf) ->
             ptree
        | PNodeA((_,(Allr|Impr|Negr),_,_) as rule,left) ->
@@ -1839,7 +1837,7 @@ struct
     | NodeA(pos,_) :: r ->
          get_successor_pos (PosSet.add set pos) r
     | [] -> set
-    | NodeAt _ :: _ -> raise jprover_bug
+    | NodeAt _ :: _ -> raise (Invalid_argument "jall.get_successor_pos: bug")
 
    let rec get_formula_tree ftreelist f predflag =
       match ftreelist with
@@ -1860,7 +1858,7 @@ struct
                   NodeA(pos,suctrees),PosSet.empty
                else
                   get_formula_tree (List.rev_append suctrees rest_trees) f predflag
-       | [] -> raise jprover_bug
+       | [] -> raise (Invalid_argument "jall.get_formula_tree: bug")
 
    let rec get_formula_treelist ftree = function
       [] -> []
@@ -1895,7 +1893,8 @@ struct
                    Empty ->   (* may have empty successors due to purity in former reconstruction steps *)
                       rest_rel,rest_ren
                  | NodeAt(_) ->
-                      raise jprover_bug (* gamma_0 position never is atomic *)
+                      raise (Invalid_argument "jall.build_formula_rel: bug")
+							 (* gamma_0 position never is atomic *)
                  | NodeA({pospos=spospos},suctrees) ->
                       if Set.mem slist spospos then
 (* the gamma_0 position is really unsolved *)
@@ -1950,7 +1949,7 @@ struct
              | NodeA({ pt = Pi _ | Nu _ }, suctrees) ->
                    raise (Invalid_argument "S4 nodes in build_formula_rel")
              | NodeA({ pt = PNull }, _) ->
-                  raise jprover_bug
+                  raise (Invalid_argument "jall.build_formula_rel: bug")
 
    let rec rename_gamma ljmc_proof rename_list =
       match ljmc_proof with
@@ -1999,7 +1998,7 @@ struct
    let rec make_node_list ljproof =
       match ljproof with
          PEmpty ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.make_node_list: bug")
        | PNodeAx((pos,inf,form,term)) ->
             [((empty_pos,pos),(inf,form,term))]
        | PNodeA((pos,inf,form,term),left) ->
@@ -2062,7 +2061,7 @@ struct
       NodeA(pos,suctrees) ->
          ((pos.pospos),init_unsolved Set.empty suctrees)
     | Empty | NodeAt _ ->
-         raise jprover_bug
+         raise (Invalid_argument "jall.build_unsolved: bug")
 
 (*
    let rec collect_variables tree_list =
@@ -2204,7 +2203,7 @@ struct
 
    let rec replace_element element element_set redord =
       match redord with
-         [] -> raise jprover_bug   (* element occurs in redord *)
+         [] -> raise (Invalid_argument "jall.replace_element: bug")   (* element occurs in redord *)
        | (f,fset)::r ->
             if position_eq f element then
                (f,element_set)::r
@@ -2485,10 +2484,10 @@ struct
                end
        | _, Empty ->
             print_endline "Empty purity tree";
-            raise jprover_bug
+            raise (Invalid_argument "jall.reduce_tree: bug")
        | _, NodeAt(_) ->
             print_endline "Atom purity tree";
-            raise jprover_bug
+            raise (Invalid_argument "jall.reduce_tree: bug")
 
    let rec purity ftree redord
       (connections : ConnSet.t)
@@ -2556,7 +2555,7 @@ struct
                ((NodeA(pos,[st1tree;Empty])),zw1red,zw1conn,zw1uslist),
                ((NodeA(pos,[Empty;st2tree])),zw2red,zw2conn,zw2uslist)
        | NodeA(pos, _), [] ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.betasplit: bug")
        | NodeA(pos, strees), f::rest ->
             let nexttree = List.nth strees f in
             let (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) =
@@ -2567,10 +2566,11 @@ struct
                (NodeA(pos,zw1trees),zw1red,zw1conn,zw1uslist),(NodeA(pos,zw2trees),zw2red,zw2conn,zw2uslist)
        | Empty, _  ->
             print_endline "bsplit Empty tree";
-            raise jprover_bug
+            raise (Invalid_argument "jall.betasplit: bug")
        | NodeAt(_), _ ->
             print_endline "bsplit Atom tree";
-            raise jprover_bug   (* the beta-node should actually occur! *)
+            raise (Invalid_argument "jall.betasplit: bug")
+				(* the beta-node should actually occur! *)
 
    let split addr pname ftree redord connections unsolved_list opt_bproof =
       let (opt_bp1,min_con1),(opt_bp2,min_con2) = split_permutation pname opt_bproof in
@@ -2718,7 +2718,7 @@ struct
        | NodeA({op = Or}, [_;_]), [] ->
             (true,0)    (* wait-label is set *)
        | NodeA({op = Or}, _), [] ->
-            raise jprover_bug
+            raise (Invalid_argument "jall.check_wait_succ_LJ: bug")
        | NodeA _, [] ->
             (false,0)
        | NodeA({pt = Gamma},strees), [f] when (nonemptys 0 strees) > 1 ->
@@ -2728,7 +2728,9 @@ struct
        | NodeA(_,strees), f::r ->
                   check_wait_succ_LJ r (List.nth strees f)
        | Empty, _
-       | NodeAt _, _ -> raise jprover_bug (* we have an gamma_0 position or an or-formula *)
+       | NodeAt _, _ ->
+		 		raise (Invalid_argument "jall.check_wait_succ_LJ: bug")
+				(* we have an gamma_0 position or an or-formula *)
 
    let unclosed_pred popen = function
       None -> false
