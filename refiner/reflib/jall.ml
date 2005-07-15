@@ -506,6 +506,11 @@ struct
       print_endline ".";
       print_flush ()
 
+   let print_pos_set set =
+      PosSet.iter (fun p -> print_string ((pos_to_string p.pospos)^".")) set;
+      print_endline ".";
+      print_flush ()
+
    let rec pp_bproof_list tree_list tab =
       let rec pp_bproof ftree new_tab =
          let dummy = String.make (new_tab-2) ' ' in
@@ -2659,7 +2664,7 @@ struct
    let rec collect_solved_Zero_At ftreelist slist =
       match ftreelist with
          [] ->
-            Set.empty
+            PosSet.empty
        | Empty :: r ->    (* may become possible after purity *)
             collect_solved_Zero_At r slist
        | NodeAt ({pospos=pospos; pol=pospol} as pos) :: r ->
@@ -2667,7 +2672,7 @@ struct
                collect_solved_Zero_At r slist
             else
     (* here, we have pos solved let pos.pol = Zero) *)
-               Set.add (collect_solved_Zero_At r slist) pospos
+               PosSet.add (collect_solved_Zero_At r slist) pos
        | NodeA({pospos=pospos},treearray) :: r ->
             if Set.mem slist pospos then
 (* XXX Yegor: this is probably a too agressive optimization but AFAIU
@@ -2680,15 +2685,15 @@ struct
    let rec collect_solved_atoms ftreelist slist =
       match ftreelist with
          [] ->
-            Set.empty
+            PosSet.empty
        | Empty :: r ->    (* may become possible after purity *)
             collect_solved_atoms r slist
-       | NodeAt {pospos=pospos} :: r ->
-            if Set.mem slist pospos then  (* recall slist is the unsolved list *)
+       | NodeAt pos :: r ->
+            if Set.mem slist pos.pospos then  (* recall slist is the unsolved list *)
                collect_solved_atoms r slist
             else
-    (* here, we have pos solved *)
-               Set.add (collect_solved_atoms r slist) pospos
+				   (* here, we have pos solved *)
+               PosSet.add (collect_solved_atoms r slist) pos
        | NodeA({pospos=pospos},treearray) :: r ->
             if Set.mem slist pospos then
 (* XXX Yegor: this is probably a too agressive optimization but AFAIU
@@ -2734,12 +2739,12 @@ struct
 
    let unclosed_pred popen = function
       None -> false
-    | Some {pospos=pospos; st=st} -> st <> Gamma_0 && Set.mem popen pospos
+    | Some pos -> pos.st <> Gamma_0 && PosSet.mem popen pos
 
-   let unclosed_cond popen pred {st=st; pospos=pospos} =
-		match st with
+   let unclosed_cond popen pred pos =
+		match pos.st with
 			Nu_0 _ ->
-      		(Set.mem popen pospos || unclosed_pred popen pred)
+      		(PosSet.mem popen pos || unclosed_pred popen pred)
 		 | _ ->
 		 		false
 
@@ -2747,19 +2752,19 @@ struct
       match ftree with
          NodeA(f,suctrees) ->
             if unclosed_cond popen pred f then
-               Set.singleton f.pospos
+               PosSet.singleton f
             else
                List.fold_left
-                  (fun acc ftree -> Set.union acc (collect_unclosed popen ftree (Some f)))
-                  Set.empty
+                  (fun acc ftree -> PosSet.union acc (collect_unclosed popen ftree (Some f)))
+                  PosSet.empty
                   suctrees
        | Empty ->
-            Set.empty
+            PosSet.empty
        | NodeAt f ->
             if unclosed_cond popen pred f then
-               Set.singleton f.pospos
+               PosSet.singleton f
             else
-               Set.empty
+               PosSet.empty
 
    let blocked f po
       (redord : (position * Set.t) list)
@@ -2782,35 +2787,43 @@ struct
             Classical ->
                false,0  (* ready, in C only redord counts *)
           | S4 ->
-               let pu = Set.remove (Set.union solved_atoms po) f.pospos in
+               let pu = PosSet.remove (PosSet.union solved_atoms po) f in
                if !debug_s4prover then
                   begin
                      print_string "po:";
-                     print_positionset po;
+                     print_pos_set po;
                      print_string "slist:";
                      print_positionset slist;
                      print_string "unclosed:";
-                     print_positionset unclosed
+                     print_pos_set unclosed
                   end;
 					begin match f.pt with
-               	Pi _ ->
+               	Pi sort ->
 		               (*(not(List.exists
       	            (fun (p,s) -> p=f.pospos & not (Set.is_empty s)) redord)) &*)
 							(*let u_nu0 y = Set.mem unclosed y || Set.subset () unclosed in
 							Set.exists (fun y -> not u_nu0 y) pu, 0*)
-         	   	   (not (Set.is_empty (Set.diff pu unclosed))), 0
+         	   	   (not (PosSet.is_empty (PosSet.diff pu unclosed))) ||
+							PosSet.exists
+								(fun {st=st} ->
+									match st with
+										Nu_0 sort' -> sort'<>0 && sort'<>sort
+									 | _ -> false
+								)
+								po,
+							0
 					 | _ ->
 					 		false, 0
 					end
           | Intuit calc ->
                let pa_Zero = solved_atoms in    (* solved atoms in ftree *)
-               let po_test = Set.remove po f.pospos in
+               let po_test = PosSet.remove po f in
                (* we provide dynamic wait labels for both sequent calculi *)
                begin match calc with
                   MultiConcl ->
 (*                   print_endline "wait-2 check"; *)
                      if (f.st = Psi_0)  &  (f.pt <> PNull) &
-                        (not (Set.is_empty pa_Zero) or not (Set.is_empty po_test)) then
+                        (not (PosSet.is_empty pa_Zero) or not (PosSet.is_empty po_test)) then
                         begin
 (*                         print_endline "wait-2 positive"; *)
                            true,0 (* wait_2 label *)
@@ -2822,7 +2835,7 @@ struct
                         end
                 | SingleConcl ->
                      if ((f.st = Phi_0)  & ((f.op=Neg) or (f.op=Imp)) &
-                          (not (Set.is_empty pa_Zero) or not (Set.is_empty po_test))
+                          (not (PosSet.is_empty pa_Zero) or not (PosSet.is_empty po_test))
                         )
          (* this would cause an impl or negl rule with an non-empty succedent *)
                      then
@@ -2971,23 +2984,24 @@ struct
          let po_set, solved_atoms, unclosed =
             match calculus with
                S4 ->
-                  let po =
-                     List.fold_left (fun set {pospos=pospos} -> Set.add set pospos) Set.empty po
-                  in
+                  let po = PosSet.of_list po in
                   po,
                   collect_solved_atoms [ftree] slist,
                   collect_unclosed po ftree None
              | Classical | Intuit _ ->
                  let po =
                      List.fold_left
-                        (fun set {pospos=pospos; pol=pol} ->
-                           if pol=Zero then Set.add set pospos
-                           else set
+                        (fun set pos ->
+                           match pos.pol with
+										Zero ->
+											PosSet.add set pos
+                            | One ->
+											set
                         )
-                        Set.empty
+                        PosSet.empty
                         po
                   in
-                  po, collect_solved_Zero_At [ftree] slist, Set.empty
+                  po, collect_solved_Zero_At [ftree] slist, PosSet.empty
          in
          let p, orr_flag =
             select_pos
