@@ -2692,7 +2692,7 @@ struct
       match redord with
          [] -> false
        | (f,fset)::r ->
-            if ((f = pospos) or (not (Set.mem fset pospos))) then
+            if ((position_eq f pospos) or (not (Set.mem fset pospos))) then
                red_ord_block pospos r
             else
                true   (* then, we have (StringSet.mem fset pname) *)
@@ -3075,7 +3075,7 @@ struct
                   let (ass_pos,inst_pos) =
 (* need the pol=O position ass_pos of the connection for later permutation *)
 (* need the pol=I position inst_pos for NuPRL instantiation *)
-                     if pospos = c1 then
+                     if position_eq pospos c1 then
                         match p.pol with
                            Zero ->
                               (c1,c2)
