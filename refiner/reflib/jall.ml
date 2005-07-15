@@ -846,7 +846,7 @@ struct
        | CNode((c1,c2)) ->
             bproof,act_blayer
        | BNode(pos,(alph1,subp1),(alph2,subp2)) ->
-            if rep_name = pos then
+            if position_eq rep_name pos then
                let new_blayer, replace_branch =
                   match direction with
                      Left -> alph1, subp1
@@ -866,7 +866,7 @@ struct
    let split_permutation pname opt_bproof =
       match opt_bproof with
          RNode(alayer,BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2))) ->
-            if pos = pname then
+            if position_eq pos pname then
 (* if topmost beta expansion agrees with pname, then *)
 (* only split the beta proof let give back the two subproofs *)
                let (osubp1,min_con1) = bproof_purity opt_subp1 in
@@ -1033,7 +1033,7 @@ struct
 
    let rec cut_context pos = function
       ((f,num)::r) as context ->
-         if pos = f then
+         if position_eq pos f then
             context
          else
             cut_context pos r
@@ -1458,10 +1458,11 @@ struct
                end
        | PNodeB(r, left, right) ->
             if rule_eq r rule then
-               if direction = Left then
-                  left
-               else
-                  right   (* direction = Right *)
+               match direction with
+						Left ->
+	                  left
+					 | Right ->
+                  	right
             else
                let left_del = update_ptree rule left direction in
                let right_del = update_ptree rule right direction in
@@ -2114,7 +2115,7 @@ struct
       match pos_list with
          [] -> []               (* the position with name f must not necessarily occur in pos_list *)
        | f::r ->
-            if fpos = f.pospos then
+            if position_eq fpos f.pospos then
                r
             else
                f::(key_delete fpos r)
@@ -2403,7 +2404,8 @@ struct
        | (var,dname)::r ->
             if Set.mem dterms dname then
                let new_var, new_pos =
-                  if var = empty_pos then
+	(* XXX Yegor: position_eq instead of = could be dangerous here - index 0 is not unique !!! *)
+                  if position_eq var empty_pos then
                      v,p
                   else
                      pos_to_symbol var, var
@@ -2472,7 +2474,7 @@ struct
                         (pos.pospos,false)
                   in
                   let (ft,dt,an,bf) = reduce_tree radd new_act nexttree new_bf in
-                  if an = pos.pospos then
+                  if position_eq an pos.pospos then
                      let nstrees = myset a Empty strees in
 (*                 print_endline ("way back assocnode "^pos.name); *)
                      (NodeA(pos,nstrees),nexttree,an,bf)
@@ -2511,7 +2513,8 @@ struct
                   let (ftnew,deltree,assocn,beta_flag) =
                      reduce_tree f.address empty_pos ftree false
                   in
-(*     print_endline ("assoc node "^assocn); *)
+						(*     print_endline ("assoc node "^assocn); *)
+(* XXX Yegor: don't replace = with position_eq here - index 0 is not unique *)
                   if assocn = empty_pos then
                      (Empty,[],ConnSet.empty,Set.empty)  (* should not occur in the final version *)
                   else
@@ -3530,8 +3533,8 @@ let rec ext_partners con path ext_atom reduction_partners extension_partners ato
       [] ->
          (reduction_partners,extension_partners)
     | (a,b)::r ->
-         let a_partner = (ext_atom.apos = a.apos) in
-         if a_partner || (ext_atom.apos = b.apos) then
+         let a_partner = position_eq ext_atom.apos a.apos in
+         if a_partner || position_eq ext_atom.apos b.apos then
             let ext_partner = if a_partner then b else a in
 (* force reduction steps first *)
             if (AtomSet.mem path ext_partner) then
@@ -3701,7 +3704,7 @@ let rec predecessor address_1 address_2 = function
 let rec compute_sets element ftree = function
    [] -> [],[]
  | first::rest ->
-      if first.apos = element.apos then
+      if position_eq first.apos element.apos then
          compute_sets element ftree rest    (* element is neithes alpha- nor beta-related to itself*)
       else
          let (alpha_rest,beta_rest) = compute_sets element ftree rest in
