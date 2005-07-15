@@ -150,7 +150,9 @@ struct
         ref_sentinal : sentinal
       }
 
-   and tactic = tactic_arg -> (tactic_arg, arglist, extract) ThreadRefiner.t
+   and tactic_value = (tactic_arg, arglist, extract) ThreadRefiner.t
+
+   and tactic = tactic_arg -> tactic_value
 
    and pre_tactic = (tactic_arg -> Refiner.Refiner.Refine.msequent list -> tactic_arg list) * prim_tactic
 

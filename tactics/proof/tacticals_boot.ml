@@ -43,6 +43,7 @@ open Refiner.Refiner.TermType
 
 open Tactic_boot
 open Sequent_boot
+open Tactic_boot_sig
 
 (*
  * Debug statement.
@@ -54,6 +55,13 @@ let debug_subgoals =
    create_debug (**)
       { debug_name = "subgoals";
         debug_description = "Report subgoals observed with may be some additional info";
+        debug_value = false
+      }
+
+let debug_profile_tactics =
+   create_debug (**)
+      { debug_name = "profile_tactics";
+        debug_description = "Collect and report profiling information for top-level tactics (not theads-safe)";
         debug_value = false
       }
 
@@ -735,7 +743,6 @@ struct
     * ARGUMENTS                                                            *
     ************************************************************************)
 
-   let wrapT         = TacticInternal.wrapT
    let forceT        = TacticInternal.forceT
 
    let withTermT     = TacticInternal.withTermT
@@ -780,6 +787,66 @@ struct
 
    let get_alt_arg arg =
       match Sequent.get_bool_arg arg "alt" with Some v -> v | None -> false
+
+   let table = Hashtbl.create 19
+
+   let profileWrapT args tac =
+      let arg =
+         match args with
+            NoneArgList s
+          | StringArgList (s, _)
+          | TermArgList (s, _)
+          | BoolArgList (s, _)
+          | IntArgList (s, _)
+          | IntIntArgList (s, _, _)
+          | TermTermArgList (s, _, _)
+          | TermBoolArgList (s, _, _)
+          | TermIntArgList (s, _, _)
+          | BoolTermArgList (s, _, _)
+          | BoolBoolArgList (s, _, _)
+          | BoolIntArgList (s, _, _)
+          | IntTermArgList (s, _, _)
+          | IntBoolArgList (s, _, _)
+          | IntStringArgList (s, _, _)
+          | BoolStringArgList (s, _, _)
+          | StringIntArgList (s, _, _)
+          | StringBoolArgList (s, _, _)
+          | StringStringArgList (s, _, _)
+          | StringTermArgList (s, _, _)
+          | TermStringArgList (s, _, _) ->
+               s
+          | GeneralArgList a ->
+               if Array.length a > 0 then
+                  match a.(0) with
+                     StringArg s -> s
+                   | _ -> "unknown"
+               else
+                  "unknown"
+      in
+         fun p ->
+            (* We use a table of bool refs to avoid counting time spent in recursive calls more that once *)
+            (* XXX: WARNING: This is not threads-safe! *)
+            let flag =
+               try Hashtbl.find table arg
+               with Not_found ->
+                  let flag = ref true in
+                     Hashtbl.add table arg flag;
+                     flag
+            in
+               if !flag then begin
+                  flag := false;
+                  try
+                     let res = timing_wrap arg (TacticInternal.wrapT args tac) p in
+                        flag := true;
+                        res
+                  with
+                     exn ->
+                        flag := true;
+                        raise exn
+               end else
+                  TacticInternal.wrapT args tac p
+
+   let wrapT = if !debug_profile_tactics then profileWrapT else TacticInternal.wrapT
 
 end
 

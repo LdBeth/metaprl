@@ -41,14 +41,30 @@ done
 TEMP=`mktemp /tmp/mkstatus.XXXXXX`
 umask 002
 cd $1
+shift
+RUN_OMAKE=yes
+MP_DEBUG=
 ((
-if [ "$2" = "update" ]; then
-   echo "*** cvs -n update ***"
-   ( cvs -n update 2>&1 ) | grep -v '^cvs server: New directory'
-   echo ""
-fi
-# cvs -q update 2>&1
-if [ "$3" != "nomake" ]; then
+while [ $# -gt 0 ]; do
+   if [ "$1" = "update" ]; then
+      echo "*** cvs -n update ***"
+      ( cvs -n update 2>&1 ) | grep -v '^cvs server: New directory'
+      # cvs -q update 2>&1
+      echo ""
+   elif [ "$1" = "nomake" ]; then
+      RUN_OMAKE=
+   elif [ "$1" = "MP_DEBUG" ]; then
+      shift
+      echo "MP_DEBUG environment variable is set to \`$1'"
+      export MP_DEBUG="$1"
+   else
+      echo WARNING:
+      echo "WARNING: Unknown command line option: $1"
+      echo WARNING:
+   fi
+   shift
+done
+if [ "$RUN_OMAKE" ]; then
    rm -f editor/ml/mp.opt
    unset OMAKEFLAGS
    omake VERBOSE=1 -S editor/ml/mp.opt

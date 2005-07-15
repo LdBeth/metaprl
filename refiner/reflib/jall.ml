@@ -69,6 +69,13 @@ let debug_jprover =
         debug_value = false
       }
 
+let debug_profile_tactics =
+   create_debug (**)
+      { debug_name = "profile_tactics";
+        debug_description = "Collect and report profiling information for top-level tactics (not theads-safe)";
+        debug_value = false
+      }
+
 (************************************************************************
  * Compatibility layer for abstract vars.
  *)
@@ -4343,6 +4350,13 @@ let gen_prover mult_limit calculus hyps concls =
      (* new delta_0 constants may have been constructed during rule permutation *)
      (* from the LJmc to the LJ proof *)
    create_output consts sequent_proof input_map
+
+let gen_prover =
+   if !debug_profile_tactics then
+      (fun mult_limit calculus hyps concls ->
+         timing_wrap "JProver (Jall.gen_prover)" (gen_prover mult_limit calculus hyps) concls)
+   else
+      gen_prover
 
 let prover mult_limit hyps concl = gen_prover mult_limit (Intuit SingleConcl) hyps [concl]
 

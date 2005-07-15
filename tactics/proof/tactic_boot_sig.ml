@@ -101,8 +101,9 @@ sig
    type sentinal
    and raw_attribute
    and raw_attributes = raw_attribute list
-   and tactic
+   and tactic = tactic_arg -> tactic_value
    and attribute_info
+   and tactic_value
 
    (*
     * A tactic argument includes the msequent goal,
