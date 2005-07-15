@@ -105,13 +105,6 @@ let debug_dform =
         debug_value = false
       }
 
-let debug_grammar =
-   create_debug (**)
-      { debug_name = "grammar";
-        debug_description = "display term parsing operations";
-        debug_value = false
-      }
-
 let rec print_terms out = function
    h::t ->
       eprintf "\t%s\n" (string_of_term h);

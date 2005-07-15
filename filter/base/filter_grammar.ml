@@ -58,7 +58,7 @@ let _ =
 let debug_grammar =
    create_debug (**)
       { debug_name = "grammar";
-        debug_description = "Debug the grammar";
+        debug_description = "Debug the term grammar and parsing operations";
         debug_value = false
       }
 

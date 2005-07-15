@@ -67,14 +67,14 @@ let _ =
 let debug_grammar =
    create_debug (**)
       { debug_name = "grammar";
-        debug_description = "display term parsing operations";
+        debug_description = "Debug the term grammar and parsing operations";
         debug_value = false
       }
 
 let debug_spell =
    create_debug (**)
       { debug_name = "spell";
-        debug_description = "check spelling";
+        debug_description = "Check spelling";
         debug_value = false
       }
 
