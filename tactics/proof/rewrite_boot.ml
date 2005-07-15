@@ -45,6 +45,7 @@ open Sequent_boot
 open Tacticals_boot.Tacticals
 
 let debug_rewrite = load_debug "rewrite"
+let debug_profile_tactics = load_debug "profile_tactics"
 
 module Rewrite =
 struct
@@ -370,8 +371,11 @@ struct
    (*
     * Apply the rewrite.
     *)
-   let rw conv assum addr =
-      apply assum addr conv
+   let rw =
+      if !debug_profile_tactics then
+         fun conv assum addr -> timing_wrap "rw" (apply assum addr conv)
+      else
+         fun conv assum addr -> apply assum addr conv
 
    (*
     * Create an input form.
@@ -380,12 +384,12 @@ struct
    let create_iform name strictp redex contractum =
       rewrite_of_pre_rewrite (create_input_form (null_refiner name) name strictp redex contractum) empty_rw_args []
 
+   let zero_addr = TermAddr.make_address []
+
    (*
     * Rewrite a term.
     * No justification.
     *)
-   let zero_addr = TermAddr.make_address []
-
    let apply_rewrite bookmark conv t =
       let arg = TacticInternal.debug_arg bookmark t in
       let tac = apply 0 zero_addr conv in
