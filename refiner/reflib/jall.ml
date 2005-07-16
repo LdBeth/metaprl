@@ -4203,7 +4203,7 @@ let rec try_multiplicity
 	concl_ordering (* use only to distinguish atoms from conclusion later *)
    =
    try
-		eprintf "trying multiplicity %i@." mult;
+		(*eprintf "trying multiplicity %i@." mult;*)
       let (atom_relation,atom_sets,qprefixes) = init_prover ftree consts in
       let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
          path_checker consts atom_relation atom_sets qprefixes ordering calculus concl_ordering
@@ -4362,7 +4362,7 @@ let gen_prover mult_limit calculus hyps concls =
    let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
 		prove calculus consts mult_limit renamed_hyps renamed_concls calculus
 	in
-	eprintf "matrix proof found@.";
+	(*eprintf "matrix proof found@.";*)
    let red_ordering = PMap.fold (fun acc p s -> (p,s)::acc) [] red_ordering in
    (* it's too early to convert ext_proof to a set *)
    let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
