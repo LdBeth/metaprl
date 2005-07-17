@@ -3532,19 +3532,12 @@ let rec extset atom_sets path closed =
 		AtomSet.empty
 		atom_sets
 
-let rec check_ext_list ext_list fail_set atom_sets =  (* fail_set consists of one atom only *)
-   match ext_list with
-      [] -> AtomSet.empty
-    | f::r ->
-         if (check_alpha_relation f fail_set atom_sets) then
-            AtomSet.add (check_ext_list r fail_set atom_sets) f
-         else
-            (check_ext_list r fail_set atom_sets)
+let rec check_ext_set ext_set fail_set atom_sets =  (* fail_set consists of one atom only *)
+	AtomSet.filter	(fun f -> check_alpha_relation f fail_set atom_sets) ext_set
 
 let fail_ext_set ext_atom ext_set atom_sets =
-   let ext_list = AtomSet.elements ext_set in
    let fail_set = AtomSet.singleton ext_atom in
-   check_ext_list ext_list fail_set atom_sets
+   check_ext_set ext_set fail_set atom_sets
 
 let rec ext_partners con path ext_atom reduction_partners extension_partners atom_sets =
    match con with
