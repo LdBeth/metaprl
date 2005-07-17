@@ -3512,13 +3512,19 @@ let get_connections a alpha
 		[]
 		alpha'
 
-let rec connections atom_rel tabulist =
-   match atom_rel with
-      [] -> []
-    | (a,alpha,_)::r ->
-         List.rev_append
-            (get_connections a alpha tabulist)
-            (connections r (AtomSet.add tabulist a))
+let connections atom_rel tabulist =
+	let acc, tabulist =
+		AtomMap.fold
+			(fun (acc, tabulist) a (alpha,_) ->
+   	      List.rev_append
+      	      (get_connections a alpha tabulist)
+         	   acc,
+				AtomSet.add tabulist a
+			)
+			([], tabulist)
+			atom_rel
+	in
+	acc
 
 let check_alpha_relation atom set atom_map =
    AtomSet.subset set (get_alpha atom atom_map)
@@ -3572,7 +3578,6 @@ exception Failed_connections
  *)
 let path_checker
    (consts: SymbolSet.t)
-   (atom_rel: (atom * AtomSet.t * AtomSet.t) list)
    (atom_map: (AtomSet.t * AtomSet.t) AtomMap.t)
    (qprefixes: position list PMap.t * position list PMap.t)
    (init_ordering: Set.t PMap.t)
@@ -3580,14 +3585,16 @@ let path_checker
 	concl_ordering (* use only to distinguish atoms from conclusion later *)
 	=
 
-   let con = connections atom_rel AtomSet.empty in
+   let con = connections atom_map AtomSet.empty in
 	let concl_con, hyp_only_con =
 		List.partition
 			(fun (a,b) -> PMap.mem concl_ordering a.apos || PMap.mem concl_ordering b.apos)
 			con
 	in
 	let con = List.rev_append concl_con hyp_only_con in
-   let atom_set = List.fold_left (fun set ({apos=x},y,z) -> Set.add set x) Set.empty atom_rel in
+   let atom_set =
+		AtomMap.fold (fun set {apos=x} _ -> Set.add set x) Set.empty atom_map
+	in
 (*   print_endline "";
    print_endline ("number of connections: "^(string_of_int (List.length con)));
 *)
@@ -3696,14 +3703,6 @@ let path_checker
 
 (*************************** prepare let init prover *******************************************************)
 
-let make_atom_map atom_rels =
-	List.fold_left
-		(fun acc (a,alpha,beta) ->
-			AtomMap.add acc a (alpha, beta)
-		)
-		AtomMap.empty
-		atom_rels
-
 let rec predecessor address_1 address_2 = function
    Empty -> PNull            (* should not occur since every pair of atoms have a common predecessor *)
  | NodeAt(position) -> PNull (* should not occur as above *)
@@ -3730,15 +3729,15 @@ let rec compute_sets element ftree = function
             AtomSet.add alpha_rest first, beta_rest
 
 let rec compute_atomlist_relations worklist ftree alist =  (* last version of alist for total comparison *)
-   let rec compute_atom_relations element ftree alist =
-      let alpha_set,beta_set = compute_sets element ftree alist in
-      (element,alpha_set,beta_set)
+   let compute_atom_relations element ftree alist =
+      let alpha_beta = compute_sets element ftree alist in
+      element, alpha_beta
    in
    match worklist with
-      [] -> []
+      [] -> AtomMap.empty
     | first::rest ->
-         let first_relations = compute_atom_relations first ftree alist in
-         first_relations::(compute_atomlist_relations rest ftree alist)
+         let atom, alpha_beta = compute_atom_relations first ftree alist in
+         AtomMap.add (compute_atomlist_relations rest ftree alist) atom alpha_beta
 
 let mk_xnil _ = xnil_term
 
@@ -4189,8 +4188,7 @@ let mult_limit_exn = RefineError ("Jprover", StringError "multiplicity limit rea
 let init_prover ftree =
    let atom_relation,qprefixes = prepare_prover ftree in
 (*      print_atom_info atom_relation;  *)
-   let atom_map = make_atom_map atom_relation in
-   (atom_relation,atom_map,qprefixes)
+   atom_relation, qprefixes
 
 let rec try_multiplicity
    (consts: SymbolSet.t)
@@ -4205,9 +4203,9 @@ let rec try_multiplicity
    try
 		if calculus = S4 then
 			eprintf "trying multiplicity %i@." mult;
-      let (atom_relation,atom_map,qprefixes) = init_prover ftree in
+      let atom_map, qprefixes = init_prover ftree in
       let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
-         path_checker consts atom_relation atom_map qprefixes ordering calculus concl_ordering
+         path_checker consts atom_map qprefixes ordering calculus concl_ordering
 		in
       (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
    with Failed ->
