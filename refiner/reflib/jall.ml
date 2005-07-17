@@ -3571,7 +3571,7 @@ exception Failed_connections
 let path_checker
    (consts: SymbolSet.t)
    (atom_rel: (atom * atom list * atom list) list)
-   (atom_sets: (AtomSet.t * AtomSet.t) AtomMap.t)
+   (atom_map: (AtomSet.t * AtomSet.t) AtomMap.t)
    (qprefixes: position list PMap.t * position list PMap.t)
    (init_ordering: Set.t PMap.t)
    calculus
@@ -3655,18 +3655,18 @@ let path_checker
 (*        print_endline ("extension literal "^(select_one.aname)); *)
 (*        print_endline ("extension path "^(print_set path));*)
             let (reduction_partners,extension_partners) =
-               ext_partners con path select_one AtomSet.empty AtomSet.empty atom_sets in
+               ext_partners con path select_one AtomSet.empty AtomSet.empty atom_map in
             (try
                check_connections reduction_partners extension_partners select_one
             with Failed_connections ->
 (*         print_endline ("no connections for subgoal "^(select_one.aname)); *)
 (*           print_endline ("Failed_connections"); *)
-               let fail_ext_set = fail_ext_set select_one extset atom_sets in
+               let fail_ext_set = fail_ext_set select_one extset atom_map in
                check_extension fail_ext_set
             )
 
       in
-      let extset = extset atom_sets path closed in
+      let extset = extset atom_map path closed in
       if AtomSet.is_empty extset then
          ((orderingQ,reduction_ordering),eqlist,(sigmaQ,sigmaJ),[])
       else
@@ -3694,10 +3694,13 @@ let path_checker
 
 (*************************** prepare let init prover *******************************************************)
 
-let rec make_atom_sets = function
-   [] -> AtomMap.empty
- | (a,alpha,beta)::r ->
-      AtomMap.add (make_atom_sets r) a ((AtomSet.of_list alpha),(AtomSet.of_list beta))
+let rec make_atom_sets l =
+	List.fold_left
+		(fun acc (a,alpha,beta) ->
+			AtomMap.add acc a ((AtomSet.of_list alpha),(AtomSet.of_list beta))
+		)
+		AtomMap.empty
+		l
 
 let rec predecessor address_1 address_2 = function
    Empty -> PNull            (* should not occur since every pair of atoms have a common predecessor *)
