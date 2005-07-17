@@ -3492,23 +3492,25 @@ let rec add_multiplicity ftree pos_n
 
 (**************  Path checker   ****************************************************)
 
-let rec get_alpha atom atom_map =
+let get_alpha atom atom_map =
 	let alpha, beta = AtomMap.find atom_map atom in
 	alpha
 
-let rec get_connections a alpha
+let get_connections a alpha
    (tabulist : AtomSet.t)
    =
-   match alpha with
-      [] -> []
-    | f::r ->
+	let alpha' = AtomSet.diff alpha tabulist in
+	AtomSet.fold
+		(fun acc f ->
          if (Opname.eq a.apredicate f.apredicate) &
-            (a.apol <> f.apol) &
-            (not (AtomSet.mem tabulist f))
+            (a.apol <> f.apol)
          then
-            (a,f)::(get_connections a r tabulist)
+            (a,f)::acc
          else
-            (get_connections a r tabulist)
+            acc
+		)
+		[]
+		alpha'
 
 let rec connections atom_rel tabulist =
    match atom_rel with
@@ -3518,10 +3520,10 @@ let rec connections atom_rel tabulist =
             (get_connections a alpha tabulist)
             (connections r (AtomSet.add tabulist a))
 
-let check_alpha_relation atom set atom_sets =
-   AtomSet.subset set (get_alpha atom atom_sets)
+let check_alpha_relation atom set atom_map =
+   AtomSet.subset set (get_alpha atom atom_map)
 
-let rec extset atom_sets path closed =
+let extset atom_map path closed =
 	AtomMap.fold
 		(fun acc at (alpha, beta) ->
          if (AtomSet.subset path alpha) & (AtomSet.subset closed beta) then
@@ -3530,16 +3532,16 @@ let rec extset atom_sets path closed =
             acc
 		)
 		AtomSet.empty
-		atom_sets
+		atom_map
 
-let rec check_ext_set ext_set fail_set atom_sets =  (* fail_set consists of one atom only *)
+let check_ext_set ext_set fail_set atom_sets =  (* fail_set consists of one atom only *)
 	AtomSet.filter	(fun f -> check_alpha_relation f fail_set atom_sets) ext_set
 
-let fail_ext_set ext_atom ext_set atom_sets =
+let fail_ext_set ext_atom ext_set atom_map =
    let fail_set = AtomSet.singleton ext_atom in
-   check_ext_set ext_set fail_set atom_sets
+   check_ext_set ext_set fail_set atom_map
 
-let rec ext_partners con path ext_atom reduction_partners extension_partners atom_sets =
+let rec ext_partners con path ext_atom reduction_partners extension_partners atom_map =
    match con with
       [] ->
          (reduction_partners,extension_partners)
@@ -3549,17 +3551,17 @@ let rec ext_partners con path ext_atom reduction_partners extension_partners ato
             let ext_partner = if a_partner then b else a in
 (* force reduction steps first *)
             if (AtomSet.mem path ext_partner) then
-               ext_partners r path ext_atom (AtomSet.add reduction_partners ext_partner) extension_partners atom_sets
+               ext_partners r path ext_atom (AtomSet.add reduction_partners ext_partner) extension_partners atom_map
             else
                let new_ext_partners =
-                  if (check_alpha_relation ext_partner path atom_sets) then
+                  if (check_alpha_relation ext_partner path atom_map) then
                      (AtomSet.add extension_partners ext_partner)
                   else
                      extension_partners
                in
-               ext_partners r path ext_atom reduction_partners new_ext_partners atom_sets
+               ext_partners r path ext_atom reduction_partners new_ext_partners atom_map
          else
-            ext_partners r path ext_atom reduction_partners extension_partners atom_sets
+            ext_partners r path ext_atom reduction_partners extension_partners atom_map
 
 exception Failed_connections
 
@@ -3570,7 +3572,7 @@ exception Failed_connections
  *)
 let path_checker
    (consts: SymbolSet.t)
-   (atom_rel: (atom * atom list * atom list) list)
+   (atom_rel: (atom * AtomSet.t * AtomSet.t) list)
    (atom_map: (AtomSet.t * AtomSet.t) AtomMap.t)
    (qprefixes: position list PMap.t * position list PMap.t)
    (init_ordering: Set.t PMap.t)
@@ -3694,13 +3696,13 @@ let path_checker
 
 (*************************** prepare let init prover *******************************************************)
 
-let rec make_atom_sets l =
+let make_atom_map atom_rels =
 	List.fold_left
 		(fun acc (a,alpha,beta) ->
-			AtomMap.add acc a ((AtomSet.of_list alpha),(AtomSet.of_list beta))
+			AtomMap.add acc a (alpha, beta)
 		)
 		AtomMap.empty
-		l
+		atom_rels
 
 let rec predecessor address_1 address_2 = function
    Empty -> PNull            (* should not occur since every pair of atoms have a common predecessor *)
@@ -3716,16 +3718,16 @@ let rec predecessor address_1 address_2 = function
                position.pt
 
 let rec compute_sets element ftree = function
-   [] -> [],[]
+   [] -> AtomSet.empty,AtomSet.empty
  | first::rest ->
       if position_eq first.apos element.apos then
          compute_sets element ftree rest    (* element is neithes alpha- nor beta-related to itself*)
       else
          let (alpha_rest,beta_rest) = compute_sets element ftree rest in
          if predecessor (element.aaddress) (first.aaddress) ftree = Beta then
-            (alpha_rest,(first::beta_rest))
+            alpha_rest, AtomSet.add beta_rest first
          else
-            ((first::alpha_rest),beta_rest)
+            AtomSet.add alpha_rest first, beta_rest
 
 let rec compute_atomlist_relations worklist ftree alist =  (* last version of alist for total comparison *)
    let rec compute_atom_relations element ftree alist =
@@ -4187,8 +4189,8 @@ let mult_limit_exn = RefineError ("Jprover", StringError "multiplicity limit rea
 let init_prover ftree =
    let atom_relation,qprefixes = prepare_prover ftree in
 (*      print_atom_info atom_relation;  *)
-   let atom_sets = make_atom_sets atom_relation in
-   (atom_relation,atom_sets,qprefixes)
+   let atom_map = make_atom_map atom_relation in
+   (atom_relation,atom_map,qprefixes)
 
 let rec try_multiplicity
    (consts: SymbolSet.t)
@@ -4203,9 +4205,9 @@ let rec try_multiplicity
    try
 		if calculus = S4 then
 			eprintf "trying multiplicity %i@." mult;
-      let (atom_relation,atom_sets,qprefixes) = init_prover ftree in
+      let (atom_relation,atom_map,qprefixes) = init_prover ftree in
       let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
-         path_checker consts atom_relation atom_sets qprefixes ordering calculus concl_ordering
+         path_checker consts atom_relation atom_map qprefixes ordering calculus concl_ordering
 		in
       (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
    with Failed ->
