@@ -3744,7 +3744,7 @@ let rec compute_atomlist_relations worklist ftree alist =  (* last version of al
 
 let mk_xnil _ = xnil_term
 
-let atom_record consts position posprefix =
+let atom_record position posprefix =
    let {pospos=pospos;
         label=label; address=address; pol=pol; st=st} = position in
    let aposprefix =
@@ -3759,21 +3759,21 @@ let atom_record consts position posprefix =
     apredicate=opname_of_term label;
     apol=pol; ast=st; alabel=label}
 
-let rec select_atoms_treelist consts treelist posprefix acc =
+let rec select_atoms_treelist treelist posprefix acc =
    match treelist with
       [] -> acc
     | first::rest ->
          let acc =
-            select_atoms consts first posprefix acc
+            select_atoms first posprefix acc
          in
-         select_atoms_treelist consts rest posprefix acc
+         select_atoms_treelist rest posprefix acc
 
-and select_atoms consts ftree posprefix acc =
+and select_atoms ftree posprefix acc =
 	let atom_acc,gamma_0_acc,delta_0_acc = acc in
    match ftree with
       Empty -> acc
     | NodeAt(position) ->
-         (atom_record consts position posprefix)::atom_acc, gamma_0_acc, delta_0_acc
+         (atom_record position posprefix)::atom_acc, gamma_0_acc, delta_0_acc
     | NodeA({pospos = pospos; st = st }, suctrees) ->
          let new_posprefix =
             match st with
@@ -3795,11 +3795,11 @@ and select_atoms consts ftree posprefix acc =
              | _ ->
 				 		acc
          in
-            select_atoms_treelist consts suctrees new_posprefix acc
+            select_atoms_treelist suctrees new_posprefix acc
 
-let prepare_prover ftree consts =
+let prepare_prover ftree =
    let alist,gamma_0_prefixes,delta_0_prefixes =
-      select_atoms_treelist consts [ftree] [] ([],PMap.empty,PMap.empty)
+      select_atoms_treelist [ftree] [] ([],PMap.empty,PMap.empty)
    in
    let atom_rel = compute_atomlist_relations alist ftree alist in
    (atom_rel,(gamma_0_prefixes,delta_0_prefixes))
@@ -4188,8 +4188,8 @@ let construct_ftree
 let unprovable = RefineError ("Jprover", StringError "formula is not provable")
 let mult_limit_exn = RefineError ("Jprover", StringError "multiplicity limit reached")
 
-let init_prover ftree consts =
-   let atom_relation,qprefixes = prepare_prover ftree consts in
+let init_prover ftree =
+   let atom_relation,qprefixes = prepare_prover ftree in
 (*      print_atom_info atom_relation;  *)
    let atom_sets = make_atom_sets atom_relation in
    (atom_relation,atom_sets,qprefixes)
@@ -4207,7 +4207,7 @@ let rec try_multiplicity
    try
 		if calculus = S4 then
 			eprintf "trying multiplicity %i@." mult;
-      let (atom_relation,atom_sets,qprefixes) = init_prover ftree consts in
+      let (atom_relation,atom_sets,qprefixes) = init_prover ftree in
       let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
          path_checker consts atom_relation atom_sets qprefixes ordering calculus concl_ordering
 		in
