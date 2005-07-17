@@ -137,6 +137,7 @@ struct
    end
 
    module AtomSet = Lm_set.LmMake(OrderedAtom)
+	module AtomMap = Lm_map.LmMake(OrderedAtom)
 
    (*
    * It seems that connection set should be either unordered with O(1) union
@@ -3491,10 +3492,9 @@ let rec add_multiplicity ftree pos_n
 
 (**************  Path checker   ****************************************************)
 
-let rec get_alpha atom = function
-   [] -> raise (Invalid_argument "Jprover bug: atom not found")
- | (a, alpha, _) :: _ when atom_eq a atom -> alpha
- | _ :: r -> get_alpha atom r
+let rec get_alpha atom atom_map =
+	let alpha, beta = AtomMap.find atom_map atom in
+	alpha
 
 let rec get_connections a alpha
    (tabulist : AtomSet.t)
@@ -3522,13 +3522,15 @@ let check_alpha_relation atom set atom_sets =
    AtomSet.subset set (get_alpha atom atom_sets)
 
 let rec extset atom_sets path closed =
-   match atom_sets with
-      [] -> AtomSet.empty
-    | (at,alpha,beta)::r ->
+	AtomMap.fold
+		(fun acc at (alpha, beta) ->
          if (AtomSet.subset path alpha) & (AtomSet.subset closed beta) then
-            AtomSet.add (extset r path closed) at
+            AtomSet.add acc at
          else
-            extset r path closed
+            acc
+		)
+		AtomSet.empty
+		atom_sets
 
 let rec check_ext_list ext_list fail_set atom_sets =  (* fail_set consists of one atom only *)
    match ext_list with
@@ -3576,7 +3578,7 @@ exception Failed_connections
 let path_checker
    (consts: SymbolSet.t)
    (atom_rel: (atom * atom list * atom list) list)
-   (atom_sets: (atom * AtomSet.t * 'a) list)
+   (atom_sets: (AtomSet.t * AtomSet.t) AtomMap.t)
    (qprefixes: position list PMap.t * position list PMap.t)
    (init_ordering: Set.t PMap.t)
    calculus
@@ -3700,9 +3702,9 @@ let path_checker
 (*************************** prepare let init prover *******************************************************)
 
 let rec make_atom_sets = function
-   [] -> []
+   [] -> AtomMap.empty
  | (a,alpha,beta)::r ->
-      (a,(AtomSet.of_list alpha),(AtomSet.of_list beta))::(make_atom_sets r)
+      AtomMap.add (make_atom_sets r) a ((AtomSet.of_list alpha),(AtomSet.of_list beta))
 
 let rec predecessor address_1 address_2 = function
    Empty -> PNull            (* should not occur since every pair of atoms have a common predecessor *)
