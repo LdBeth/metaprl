@@ -204,9 +204,6 @@ struct
 
 	module SubrelSet = Lm_set.LmMake(OrdSubtree)
 
-   let position_eq (p1: position) p2 =
-      PosOrdering.compare p1 p2 = 0
-
    let atom_eq a1 a2 =
       position_eq a1.apos a2.apos
 

@@ -250,6 +250,9 @@ module Set = Lm_set.LmMake(PosOrdering)
 
 module PMap = Lm_map.LmMake(PosOrdering)
 
+let position_eq (p1: position) p2 =
+   PosOrdering.compare p1 p2 = 0
+
 let nodups k a b =
    if a = b then a else raise (Invalid_argument "no dupes allowed in map")
 

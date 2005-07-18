@@ -160,7 +160,7 @@ let compatible_vars (k1,i1) (k2,i2) =
 let rec com_subst ov ovlist = function
    [] -> []
  | f::r as l->
-      if f = ov then
+      if position_eq f ov then
          (List.rev_append ovlist r)
       else
          let rest = com_subst ov ovlist r in
@@ -169,24 +169,22 @@ let rec com_subst ov ovlist = function
 (*
  * rev_appends here seem to bring expand_all into an infinite loop
  *)
+let rec apply_element_aux v slist acc = function
+	[] -> acc
+ | hd::tl ->
+		if hd = v then (* XXX Yegor : replacement of (=) with position_eq here breaks some proofs *)
+			apply_element_aux v slist (List.rev_append slist acc) tl
+		else
+			apply_element_aux v slist (hd::acc) tl
+
 let rec apply_element v slist fs ft =
-   match (fs,ft) with
-      [], [] ->
-         [], []
-    | [], (ft_first::ft_rest) ->
-         let _, ft = apply_element v slist [] ft_rest in
-         [], (if ft_first = v then slist @ ft else ft_first :: ft)
-    | ((fs_first::fs_rest),[]) ->
-         let fs, _ = apply_element v slist fs_rest [] in
-         (if fs_first = v then slist @ fs else fs_first :: fs), []
-    | ((fs_first::fs_rest),(ft_first::ft_rest)) ->
-         let fs, ft = apply_element v slist fs_rest ft_rest in
-         (if fs_first = v then slist @ fs else fs_first :: fs),
-         (if ft_first = v then slist @ ft else ft_first :: ft)
+	let new_fs = apply_element_aux v slist [] fs in
+	let new_ft = apply_element_aux v slist [] ft in
+	List.rev new_fs, List.rev new_ft
 
 let rec shorten (us : position list) ut =
    match us, ut with
-      (fs::rs), (ft::rt) when fs = ft ->
+      (fs::rs), (ft::rt) when position_eq fs ft ->
          shorten rs rt
     | usut ->
          usut
