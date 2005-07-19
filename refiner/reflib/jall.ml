@@ -1389,8 +1389,6 @@ struct
 
 (* global variable vor eigenvariable renaming during permutations *)
 
-   let eigen_counter = ref 1
-
 (* append renamed paramater Right to non-quantifier subformulae
    of renamed quantifier formulae *)
 
@@ -1399,8 +1397,7 @@ struct
       match opnam with
          ofirst::ofname::_ ->
             (*let new_eigen_var = (ofname^"_r"^(string_of_int (!eigen_counter))) in*)
-            let new_eigen_pos = EigenVar, !eigen_counter in
-            eigen_counter := !eigen_counter + 1;
+            let new_eigen_pos = EigenVar, Lm_symbol.new_number () in
 (*        print_endline ("New Counter :"^(string_of_int (!eigen_counter))); *)
             mk_pos_term jprover_op new_eigen_pos
        | [] | [_] ->
@@ -3025,7 +3022,6 @@ struct
          let ljmc_subproof =
             total ftree redord connections csigmaQ slist (Intuit MultiConcl) opt_bproof
          in
-         eigen_counter := 1;
          permute_ljmc ftree po slist ljmc_subproof
            (* the permuaiton result will be appended to the lj proof constructed so far *)
 
