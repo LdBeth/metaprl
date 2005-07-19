@@ -3,7 +3,6 @@ open Opname
 
 open Jlogic_sig
 
-let free_var_op = make_opname ["free_variable";"Jprover"]
 let jprover_op = make_opname ["string";"Jprover"]
 
 type pos_kind =

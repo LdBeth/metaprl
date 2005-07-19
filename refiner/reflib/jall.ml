@@ -4247,23 +4247,15 @@ let prove calculus consts mult_limit hyplist conclist calculus =
 
 (********** first-order type theory interface *******************)
 
-let rec renam_free_vars map conts termlist =
+let rec renam_free_vars vars termlist =
    match termlist
-   with [] -> map,[],conts
+   with [] -> vars
     | f::r ->
-         let new_conts = all_contexts f in
-         let var_names = free_vars_list f new_conts in
-         let mapping =
-            List.rev_map
-               (fun s -> s, mk_symbol_term free_var_op s)
-               var_names
+         let new_vars = free_vars_set f in
+         let rest_vars =
+            renam_free_vars vars r
          in
-         let new_f = TermSubst.apply_subst mapping f in
-         let rest_mapping,rest_renamed,rest_conts =
-            renam_free_vars map conts r
-         in
-         let unique_mapping = remove_subst_dups (List.rev_append mapping rest_mapping) in
-         (unique_mapping,(new_f::rest_renamed),SymbolSet.union new_conts rest_conts)
+         SymbolSet.union rest_vars new_vars
 
 let rec apply_var_subst term = function
    [] -> term
@@ -4275,7 +4267,6 @@ let rec make_equal_list pattern list_object =
    List.rev_map (fun _ -> list_object) pattern
 
 let rec create_output consts rule_list
-   (input_map : (symbol * term) list)
    =
    match rule_list with
       [] -> JLogic.empty_inf
@@ -4292,7 +4283,7 @@ let rec create_output consts rule_list
                   in
                   pair::acc
                )
-               input_map
+					[]
                unique_deltas
          in
          let frees1 = free_vars_list term1 consts in
@@ -4305,9 +4296,9 @@ let rec create_output consts rule_list
          let new_term1 = apply_var_subst next_term1 var_mapping in
          let new_term2 = apply_var_subst next_term2 var_mapping in
 (* kick away the first argument, the position *)
-         (JLogic.append_inf (create_output consts r input_map) new_term1 new_term2 rule)
+         (JLogic.append_inf (create_output consts r) new_term1 new_term2 rule)
 
-let rec make_test_interface consts rule_list input_map =
+let rec make_test_interface consts rule_list =
    match rule_list with
       [] -> []
     | f::r ->
@@ -4323,7 +4314,7 @@ let rec make_test_interface consts rule_list input_map =
                   in
                   pair::acc
                )
-               input_map
+               []
                unique_deltas
          in
          let frees1 = free_vars_list term1 consts in
@@ -4345,19 +4336,21 @@ let rec make_test_interface consts rule_list input_map =
             let next_term2 = TermSubst.subst term2 frees2 unique_list2 in
             let new_term1 = apply_var_subst next_term1 var_mapping in
             let new_term2 = apply_var_subst next_term2 var_mapping in
-            (pos,(rule,new_term1,new_term2))::(make_test_interface consts r input_map)
+            (pos,(rule,new_term1,new_term2))::(make_test_interface consts r)
          end
 
 (**************************************************************)
 
 let gen_prover mult_limit calculus hyps concls =
 	(* rev_append on the next line would break some proofs *)
-   let input_map, renamed_hyps, consts = renam_free_vars [] SymbolSet.empty hyps in
-   let input_map, renamed_concls, consts =
-      renam_free_vars input_map consts concls
+   let consts =
+		renam_free_vars SymbolSet.empty hyps
+	in
+   let consts =
+      renam_free_vars consts concls
    in
    let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
-		prove calculus consts mult_limit renamed_hyps renamed_concls calculus
+		prove calculus consts mult_limit hyps concls calculus
 	in
 	if calculus = S4 then
 		eprintf "matrix proof found@.";
@@ -4368,7 +4361,7 @@ let gen_prover mult_limit calculus hyps concls =
      (* we can transform the eigenvariables AFTER proof reconstruction since *)
      (* new delta_0 constants may have been constructed during rule permutation *)
      (* from the LJmc to the LJ proof *)
-   create_output consts sequent_proof input_map
+   create_output consts sequent_proof
 
 let gen_prover =
    if !debug_profile_tactics then
@@ -4393,12 +4386,12 @@ let rec count_axioms seq_list =
 
 let do_prove mult_limit hyps concls calculus =
    try begin
-      let input_map, renamed_hyps, consts = renam_free_vars [] SymbolSet.empty hyps in
-      let input_map, renamed_concls, consts =
-         renam_free_vars input_map consts concls
+      let consts = renam_free_vars SymbolSet.empty hyps in
+      let consts =
+         renam_free_vars consts concls
       in
       let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
-         prove calculus consts mult_limit renamed_hyps renamed_concls calculus
+         prove calculus consts mult_limit hyps concls calculus
       in
       open_box 0;
       force_newline ();
@@ -4451,7 +4444,7 @@ let do_prove mult_limit hyps concls calculus =
       let _ = input_char stdin in
       let red_ordering = PMap.fold (fun acc p s -> (p,s)::acc) [] red_ordering in
       let reconstr_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
-      let sequent_proof = make_test_interface consts reconstr_proof input_map in
+      let sequent_proof = make_test_interface consts reconstr_proof in
       open_box 0;
       force_newline ();
       force_newline ();
