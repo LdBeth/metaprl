@@ -558,13 +558,15 @@ let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set q
 	       print_endline "do_stringunify:";
 			 print_flush ()
 		 end;
-    let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 to eliminate common beginning *)
-   let new_element = ([ns;nt],(short_us,short_ut)) in
+    let short_us, short_ut = shorten us ut in (* apply intial rule R3 to eliminate common beginning *)
+	let atomnames = [ns;nt] in
+   let new_element = atomnames, (short_us,short_ut) in
+	let original_eqlist = add_fo_eqlist equations fo_eqlist in
    let full_eqlist =
       if List.mem new_element equations then
-         add_fo_eqlist equations fo_eqlist
+         original_eqlist
       else
-         add_fo_eqlist (new_element::equations) fo_eqlist
+         new_element::original_eqlist
    in
 	if !debug_s4prover then
 		print_equations full_eqlist;

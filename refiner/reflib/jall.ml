@@ -3213,37 +3213,37 @@ struct
 (* For multiplication we assume always idempotent substitutions sigma, tau! *)
 
    let rec collect_assoc inst_vars tauQ =
-      match inst_vars with
-         [] -> []
-       | f::r ->
-            let f_term = PMap.find tauQ f in
-            f_term::(collect_assoc r tauQ)
+		Set.fold
+			(fun acc f ->
+				try
+					(PMap.find tauQ f)::acc
+				with Not_found ->
+					acc
+			)
+			[]
+			inst_vars
 
-   let pos_subst t vars tl =
-      TermSubst.subst t (List.map pos_to_symbol vars) tl
-
-   let rec_apply_aux consts tauQ tau_vars tau_terms sigma_ordering v term =
-      let app_term = TermSubst.subst term tau_vars tau_terms in
-      let old_free = free_vars_set term in
-      let new_free = free_vars_set app_term in
-      let inst_vars = SymbolSet.to_list (SymbolSet.diff (SymbolSet.diff old_free new_free) consts) in
-      let inst_positions = List.rev_map symbol_to_pos inst_vars in
-      let inst_terms = collect_assoc inst_positions tauQ in
+   let rec_apply_aux consts tau_map sigma_ordering v term =
+      let old_free =
+         SymbolSet.fold
+            (fun acc s -> Set.add acc (symbol_to_pos s))
+            Set.empty
+            (SymbolSet.diff (free_vars_set term) consts)
+      in
+      let inst_terms = collect_assoc old_free tau_map in
       if inst_terms = [] then
-         sigma_ordering, app_term
+         sigma_ordering
       else
          (*let ordering_v = String.sub v 0 (String.index v '_') in*)
          let ordering_v = gamma_to_simple v in
-         ((ordering_v,inst_terms)::sigma_ordering), app_term
+         ((ordering_v,inst_terms)::sigma_ordering)
 
    let rec_apply
       (consts : SymbolSet.t)
       (sigmaQ : term PMap.t)
-      (tauQ : term PMap.t)
-      (tau_vars : symbol list)
-      (tau_terms : term list)
+      (tau_map : term PMap.t)
       =
-      PMap.fold_map (rec_apply_aux consts tauQ tau_vars tau_terms) [] sigmaQ
+      PMap.fold (rec_apply_aux consts tau_map) [] sigmaQ
 
 (* let multiply sigmaQ tauQ =
    let tau_vars,tau_terms = List.split tauQ
@@ -3255,47 +3255,45 @@ struct
    let multiply
       (consts : SymbolSet.t)
       (sigmaQ : term PMap.t)
-      (tauQ : term PMap.t)
-      tau_vars
-      tau_terms
+      (tau_map : term PMap.t)
       =
-      let sigma_ordering, new_sigmaQ = rec_apply consts sigmaQ tauQ tau_vars tau_terms
+      let sigma_ordering = rec_apply consts sigmaQ tau_map
       in
       let ordering =
          PMap.fold
-            (fun acc v t -> (gamma_to_simple v, [t])::acc)
+            (fun acc v t ->
+					if PMap.mem sigmaQ v then
+						acc
+					else
+						(gamma_to_simple v, [t])::acc
+				)
             sigma_ordering
-            tauQ
+            tau_map
       in
-      new_sigmaQ,
       ordering
-
-   let apply_2_sigmaQ term1 term2 sigmaQ =
-      let substQ = PMap.fold (fun l p term -> (pos_to_symbol p, term)::l) [] sigmaQ in
-      TermSubst.apply_subst substQ term1,
-      TermSubst.apply_subst substQ term2
 
    let jqunify
       (consts : SymbolSet.t)
       term1
       term2
-      (sigmaQ : term PMap.t) =
-      let app_term1,app_term2 = apply_2_sigmaQ term1 term2 sigmaQ in
+      (sigmaQ : term PMap.t)
+		=
+		let eqns = PMap.fold (fun acc p t -> (mk_pos_var p, t)::acc) [] sigmaQ in
+		let eqnl = eqnlist_append_eqns eqnlist_empty ((term1, term2)::eqns) in
 (*  print_term stdout app_term1;
    print_term stdout app_term2;
 *)
       try
-         let tauQ = unify app_term1 app_term2 consts in
-         let tau_vars, tau_terms = List.split tauQ in
-         let tauQ =
+         let tauQ = unify_eqnl eqnl consts in
+         let tau_map =
             List.fold_left
                (fun map (v,t) -> PMap.add map (symbol_to_pos v) t)
                PMap.empty
                tauQ
          in
-         let mult, oel = multiply consts sigmaQ tauQ tau_vars tau_terms in
+         let oel = multiply consts sigmaQ tau_map in
   (*   print_sigmaQ mult; *)
-         PMap.union nodups mult tauQ, oel
+         tau_map, oel
       with
          RefineError _  ->  (* any unification failure *)
 (*    print_endline "fo-unification fail"; *)
@@ -3618,7 +3616,9 @@ let path_checker
 (*       print_endline ("partner path "^(print_set path));
 *)
          (try
-            let (new_sigmaQ,new_ordering_elements) = jqunify consts (ext_atom.alabel) (try_one.alabel) sigmaQ in
+            let new_sigmaQ, new_ordering_elements =
+					jqunify consts (ext_atom.alabel) (try_one.alabel) sigmaQ
+				in
 (* build the orderingQ incrementally from the new added substitution tau of new_sigmaQ *)
             let relate_pairs,new_orderingQ = build_orderingQ new_ordering_elements orderingQ in
 (* we make in incremental reflexivity test during the string unification *)
@@ -3628,22 +3628,23 @@ let path_checker
             in
 (*           print_endline ("make reduction ordering "^((string_of_int (List.length new_ordering)))); *)
             let new_closed = AtomSet.add closed ext_atom in
-            let ((next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),subproof) =
+            let (next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),subproof =
                if AtomSet.mem path try_one then
                   provable path new_closed (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ)
                      (* always use old first-order ordering for recursion *)
                else
                   let new_path = AtomSet.add path ext_atom in
                   let extension = AtomSet.singleton try_one in
-                  let ((norderingQ,nredordering),neqlist,(nsigmaQ,nsigmaJ),p1) =
+                  let (norderingQ,nredordering),neqlist,(nsigmaQ,nsigmaJ),p1 =
                      provable new_path extension (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ) in
-                  let ((nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),p2) =
-                     provable path new_closed (norderingQ,nredordering) neqlist (nsigmaQ,nsigmaJ) in
-                  ((nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),(p1 @ p2))
+                  let (nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),p2 =
+                     provable path new_closed (norderingQ,nredordering) neqlist (nsigmaQ,nsigmaJ)
+						in
+                  (nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),(p1 @ p2)
                   (* changing to rev_append on the line above breaks some proofs *)
       (* first the extension subgoals = depth first; then other subgoals in same clause *)
             in
-            ((next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),(((ext_atom.apos),(try_one.apos))::subproof))
+            (next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),(((ext_atom.apos),(try_one.apos))::subproof)
          with Failed ->
 (*          print_endline ("new connection for "^(ext_atom.aname)); *)
 (*            print_endline ("Failed"); *)
@@ -3674,7 +3675,7 @@ let path_checker
       in
       let extset = extset atom_map path closed in
       if AtomSet.is_empty extset then
-         ((orderingQ,reduction_ordering),eqlist,(sigmaQ,sigmaJ),[])
+         (orderingQ,reduction_ordering),eqlist,(sigmaQ,sigmaJ),[]
       else
          check_extension extset
    in
@@ -3684,7 +3685,7 @@ let path_checker
       begin
 (*      print_endline "!!!!!!!!!!! prop prover !!!!!!!!!!!!!!!!!!"; *)
 (* in the propositional case, the reduction ordering will be computed AFTER proof search *)
-         let (_,eqlist,(_,nsubstJ),ext_proof) =
+         let _,eqlist,(_,nsubstJ),ext_proof =
             provable AtomSet.empty AtomSet.empty (pe,pe) (1,[]) (pe,(1,[])) in
          let _,substJ = nsubstJ in
          let orderingJ = build_orderingJ_list calculus substJ init_ordering atom_set in
@@ -4201,7 +4202,7 @@ let rec try_multiplicity
 		if calculus = S4 then
 			eprintf "trying multiplicity %i@." mult;
       let atom_map, qprefixes = init_prover ftree in
-      let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
+      let (orderingQ, red_ordering), eqlist, unifier, ext_proof =
          path_checker consts atom_map qprefixes ordering calculus concl_ordering
 		in
       (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
