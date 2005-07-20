@@ -80,7 +80,15 @@ let debug_profile_tactics =
  * Compatibility layer for abstract vars.
  *)
 let free_vars_list t consts =
-   SymbolSet.to_list (SymbolSet.diff (free_vars_set t) consts)
+   SymbolSet.fold
+		(fun acc v ->
+			if is_var (symbol_to_pos v) then
+				v::acc
+			else
+				acc
+		)
+		[]
+		(SymbolSet.diff (free_vars_set t) consts)
 
 let mk_symbol_term opname s =
    let p = make_param (Term_sig.Var s) in
@@ -1393,15 +1401,13 @@ struct
    of renamed quantifier formulae *)
 
    let make_new_eigenvariable term =
-      let opnam = dest_opname (opname_of_term term) in
-      match opnam with
-         ofirst::ofname::_ ->
-            (*let new_eigen_var = (ofname^"_r"^(string_of_int (!eigen_counter))) in*)
-            let new_eigen_pos = EigenVar, Lm_symbol.new_number () in
-(*        print_endline ("New Counter :"^(string_of_int (!eigen_counter))); *)
-            mk_pos_term jprover_op new_eigen_pos
-       | [] | [_] ->
-            raise (Invalid_argument "jall.make_new_eigenvariable: bug")
+		if is_var_term term && is_const (symbol_to_pos (dest_var term)) then
+       	(*let new_eigen_var = (ofname^"_r"^(string_of_int (!eigen_counter))) in*)
+		  	let new_eigen_pos = EigenVar, Lm_symbol.new_number () in
+		  	(*print_endline ("New Counter :"^(string_of_int (!eigen_counter))); *)
+		  	mk_pos_var new_eigen_pos
+		else
+			raise (Invalid_argument "jall.make_new_eigenvariable: bug")
 
    let replace_subterm term oldt rept =
       let dummy = pos_to_symbol (dummy_pos ()) in
@@ -2280,8 +2286,8 @@ struct
        | Imp,One -> Impl,(inst_label),xnil_term
        | All,One -> Alll,(inst_label),(selectQ spos.pospos csigmaQ)  (* elements of csigmaQ is (string * term) *)
        | Ex,Zero -> Exr,(inst_label), (selectQ spos.pospos csigmaQ)
-       | All,Zero -> Allr,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
-       | Ex,One -> Exl,(inst_label),(mk_pos_term jprover_op spos.pospos) (* must be a proper term *)
+       | All,Zero -> Allr,(inst_label),(mk_pos_var spos.pospos) (* must be a proper term *)
+       | Ex,One -> Exl,(inst_label),(mk_pos_var spos.pospos) (* must be a proper term *)
        | Box _,One -> Boxl,inst_label,xnil_term
        | Box _,Zero -> Boxr,inst_label,xnil_term
 
@@ -2409,24 +2415,24 @@ struct
                   else
                      pos_to_symbol var, var
                in
-               let replace_term = mk_symbol_term jprover_op (pos_to_symbol dname) in
-               let next_term = TermSubst.var_subst term replace_term new_var in
+               let replace_var = pos_to_symbol dname in
+               let next_term = TermSubst.subst1 term replace_var (mk_var_term new_var) in
                let (new_term,next_diffs) = check_delta_terms v p next_term r dterms in
                (new_term,((new_pos,dname)::next_diffs))
             else
                let (new_term,next_diffs) = check_delta_terms v p term r dterms in
                (new_term,((var,dname)::next_diffs))
 
-   let localize_sigma_aux ass_delta_diff p term =
-      let dterms = collect_delta_terms Set.empty [term] in
+   let localize_sigma_aux consts ass_delta_diff p term =
+      let dterms = collect_delta_terms consts Set.empty [term] in
       let v = pos_to_symbol p in
       let new_term, new_ass_delta_diff = check_delta_terms v p term ass_delta_diff dterms in
       new_term
 
-   let rec localize_sigma zw_sigma ass_delta_diff =
-      PMap.mapi (localize_sigma_aux ass_delta_diff) zw_sigma
+   let rec localize_sigma consts zw_sigma ass_delta_diff =
+      PMap.mapi (localize_sigma_aux consts ass_delta_diff) zw_sigma
 
-   let subst_split ft1 ft2 ftree uslist1 uslist2 uslist
+   let subst_split consts ft1 ft2 ftree uslist1 uslist2 uslist
       (sigmaQ : term PMap.t)
       =
       let delta,gamma = collect_qpos [ftree] uslist in
@@ -2444,8 +2450,8 @@ struct
       let ass_delta_diff2 =
 			List.rev_map (fun x -> (empty_pos, x)) delta_diff2
 		in
-      let sigmaQ1 = localize_sigma zw_sigma1 ass_delta_diff1 in
-      let sigmaQ2 = localize_sigma zw_sigma2 ass_delta_diff2 in
+      let sigmaQ1 = localize_sigma consts zw_sigma1 ass_delta_diff1 in
+      let sigmaQ2 = localize_sigma consts zw_sigma2 ass_delta_diff2 in
       (sigmaQ1,sigmaQ2)
 
    let rec reduce_tree addr actual_node ftree beta_flag =
@@ -2966,12 +2972,13 @@ struct
       (csigmaQ : term PMap.t)
       (slist : Set.t)
       calculus
+		consts
       opt_bproof
       =
       let po = compute_open [ftree] slist in
-      tot ftree redord connections csigmaQ po slist calculus opt_bproof
+      tot ftree redord connections csigmaQ po slist calculus consts opt_bproof
 
-   and tot ftree redord connections csigmaQ po slist calculus opt_bproof =
+   and tot ftree redord connections csigmaQ po slist calculus consts opt_bproof =
       try
          (*print_poslist po;
          print_endline "select_pos:";*)
@@ -3017,15 +3024,18 @@ struct
 (*            print_endline "update ok"; *)
             solve
                ftree rednew connections csigmaQ p po slist
-               (pred,succs) orr_flag calculus opt_bproof
+               (pred,succs) orr_flag calculus consts opt_bproof
       with Gamma_deadlock ->
          let ljmc_subproof =
-            total ftree redord connections csigmaQ slist (Intuit MultiConcl) opt_bproof
+            total ftree redord connections csigmaQ slist (Intuit MultiConcl) consts opt_bproof
          in
          permute_ljmc ftree po slist ljmc_subproof
            (* the permuaiton result will be appended to the lj proof constructed so far *)
 
-   and solve ftree redord connections csigmaQ p po slist (pred,succs) orr_flag calculus opt_bproof =
+   and solve
+		ftree redord connections csigmaQ p po slist (pred,succs)
+		orr_flag calculus consts opt_bproof
+		=
       let {pospos=pospos; op=op; pt=pt; st=st } = p in
       let newslist = Set.remove slist pospos in
       let rback =
@@ -3049,25 +3059,25 @@ struct
          Pi _ ->
             let rule = build_rule p p csigmaQ orr_flag calculus in
             let rest =
-               tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof
+               tot ftree redord connections csigmaQ pnew newslist calculus consts opt_bproof
             in
             rback @ (((empty_pos,pospos),rule)::rest)
        | Nu _
        | Gamma ->
-            rback @ (tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof)
+            rback @ (tot ftree redord connections csigmaQ pnew newslist calculus consts opt_bproof)
        | Psi ->
             begin match op, succs with
                At, succ::_ ->
                   let rest =
                      solve
                        ftree redord connections csigmaQ succ pnew newslist
-                       (p,[]) orr_flag calculus opt_bproof
+                       (p,[]) orr_flag calculus consts opt_bproof
                   in
                   rback @ rest  (* solve atoms immediately *)
              | At, [] ->
                   raise (Invalid_argument "solve: op=At but succs=[]")
              | _ ->
-                  rback @ (tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof)
+                  rback @ (tot ftree redord connections csigmaQ pnew newslist calculus consts opt_bproof)
             end
        | Phi ->
             begin match op, succs with
@@ -3075,20 +3085,20 @@ struct
                   let rest =
                      solve
                         ftree redord connections csigmaQ succ pnew newslist
-                        (p,[]) orr_flag calculus opt_bproof
+                        (p,[]) orr_flag calculus consts opt_bproof
                   in
                      rback @ rest  (* solve atoms immediately *)
              | At, [] ->
                   raise (Invalid_argument "total: empty succs in Phi")
              | _ ->
-                  rback @ (tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof)
+                  rback @ (tot ftree redord connections csigmaQ pnew newslist calculus consts opt_bproof)
             end
        | PNull ->
             let new_redord = update pospos redord in
             begin match select_connection pospos connections newslist with
                None ->
                   let rest =
-                     tot ftree new_redord connections csigmaQ pnew newslist calculus opt_bproof
+                     tot ftree new_redord connections csigmaQ pnew newslist calculus consts opt_bproof
                   in
                   rback @ rest
              | Some (c1,c2) ->
@@ -3113,14 +3123,14 @@ struct
    (* one possibility of recursion end *)
        | Alpha ->
             let rule = build_rule p p csigmaQ orr_flag calculus in
-            let rest = tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof in
+            let rest = tot ftree redord connections csigmaQ pnew newslist calculus consts opt_bproof in
             rback @ (((empty_pos,pospos),rule)::rest)
        | Delta ->
             begin match succs with
                sp::_ ->
                   let rule = build_rule p sp csigmaQ orr_flag calculus in
                   let rest =
-                     tot ftree redord connections csigmaQ pnew newslist calculus opt_bproof
+                     tot ftree redord connections csigmaQ pnew newslist calculus consts opt_bproof
                   in
                   rback @ (((empty_pos,pospos),rule)::rest)
              | [] ->
@@ -3132,16 +3142,16 @@ struct
                split p.address p.pospos ftree redord connections newslist opt_bproof
             in
             let (sigmaQ1,sigmaQ2) =
-               subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ
+               subst_split consts ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ
             in
 (*           print_endline "split_out"; *)
-            let p1 = total ft1 red1 conn1 sigmaQ1 uslist1 calculus opt_bproof1 in
+            let p1 = total ft1 red1 conn1 sigmaQ1 uslist1 calculus consts opt_bproof1 in
 (*           print_endline "compute p1 out";              *)
-            let p2 = total ft2 red2 conn2 sigmaQ2 uslist2 calculus opt_bproof2 in
+            let p2 = total ft2 red2 conn2 sigmaQ2 uslist2 calculus consts opt_bproof2 in
 (*           print_endline "compute p2 out";              *)
             rback @ [((empty_pos,pospos),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
 
-   let reconstruct ftree redord sigmaQ ext_proof calculus =
+   let reconstruct ftree redord sigmaQ ext_proof calculus consts =
       (* construct_opt_beta_proof seems to need ordered ext_proof *)
       let (opt_bproof,beta_exp,closures) = construct_opt_beta_proof ftree ext_proof in
 (* let connections = remove_dups_connections ext_proof in
@@ -3201,7 +3211,7 @@ struct
          end;
 (* it should hold: min_connections = init_connections *)
          total init_tree init_redord init_connections sigmaQ
-            init_unsolved_list calculus opt_bproof
+            init_unsolved_list calculus consts opt_bproof
       end
 
 (* ****** Quantifier unification ************** *)
@@ -3220,12 +3230,15 @@ struct
 			inst_vars
 
    let rec_apply_aux consts tau_map sigma_ordering v term =
-      let old_free =
-         SymbolSet.fold
-            (fun acc s -> Set.add acc (symbol_to_pos s))
-            Set.empty
-            (SymbolSet.diff (free_vars_set term) consts)
-      in
+		let jprover_vars =
+			SymbolSet.fold
+				(fun acc s -> Set.add acc (symbol_to_pos s))
+				Set.empty
+				(SymbolSet.diff (free_vars_set term) consts)
+		in
+		if Set.exists (fun p -> not (is_var p)) jprover_vars then
+			raise (Invalid_argument "Delta-vars found among jprover_vars");
+      let old_free = Set.filter is_var jprover_vars in
       let inst_terms = collect_assoc old_free tau_map in
       if inst_terms = [] then
          sigma_ordering
@@ -3240,13 +3253,6 @@ struct
       (tau_map : term PMap.t)
       =
       PMap.fold (rec_apply_aux consts tau_map) [] sigmaQ
-
-(* let multiply sigmaQ tauQ =
-   let tau_vars,tau_terms = List.split tauQ
-   let sigma_vars,sigma_terms = List.split sigmaQ in
-   let apply_terms = rec_apply sigma_terms tau_vars tau_terms in
-   (List.combine sigma_vars apply_terms) @ tauQ
-*)
 
    let multiply
       (consts : SymbolSet.t)
@@ -3276,9 +3282,6 @@ struct
 		=
 		let eqns = PMap.fold (fun acc p t -> (mk_pos_var p, t)::acc) [] sigmaQ in
 		let eqnl = eqnlist_append_eqns eqnlist_empty ((term1, term2)::eqns) in
-(*  print_term stdout app_term1;
-   print_term stdout app_term2;
-*)
       try
          let tauQ = unify_eqnl eqnl consts in
          let tau_map =
@@ -3288,11 +3291,9 @@ struct
                tauQ
          in
          let oel = multiply consts sigmaQ tau_map in
-  (*   print_sigmaQ mult; *)
          tau_map, oel
       with
          RefineError _  ->  (* any unification failure *)
-(*    print_endline "fo-unification fail"; *)
 				if !debug_s4prover then
 					eprintf "FO-unification in S4 mode!!!@.";
             raise Failed   (* new connection, please *)
@@ -3352,33 +3353,24 @@ let stringunify ext_atom try_one equations fo_pairs calculus orderingQ atom_rel 
 
 (**************************************** add multiplicity *********************************)
 
-let rec subst_replace subst_list t =
-   match subst_list with
-      [] -> t
-    | (old_t,new_t)::r ->
-         let dummy = pos_to_symbol (dummy_pos ()) in
-         let inter_term = TermSubst.var_subst t old_t dummy  in
-         let new_term = TermSubst.subst1 inter_term dummy new_t in
-         subst_replace r new_term
-
 let update_position position replace_n subst_list mult =
    let ({address=y; pospos=pospos; op=z; pol=p; pt=a; st=b; label=t}) = position in
    let k, _ = pospos in
    let npospos = k, Lm_symbol.new_number () in
    let nsubst_list =
       if b=Gamma_0 then
-         let vx = mk_pos_var (simple_to_gamma pospos) in
+         let vx = pos_to_symbol (simple_to_gamma pospos) in
          let vnx = mk_pos_var (simple_to_gamma npospos) in
          (vx,vnx)::subst_list
       else
          if b=Delta_0 then
-            let sx = mk_pos_term jprover_op pospos in
-            let snx = mk_pos_term jprover_op npospos in
+            let sx = pos_to_symbol pospos in
+            let snx = mk_pos_var npospos in
             (sx,snx)::subst_list
          else
             subst_list
    in
-   let nt = subst_replace nsubst_list t in
+   let nt = TermSubst.apply_subst nsubst_list t in
    let new_add = myset replace_n (pred mult) y in
    {address=new_add; pospos=npospos;
     op=z; pol=p; pt=a; st=b; label=nt},nsubst_list
@@ -3586,6 +3578,9 @@ let path_checker
    let atom_set =
 		AtomMap.fold (fun set {apos=x} _ -> Set.add set x) Set.empty atom_map
 	in
+   let delta_list = PMap.keys (snd qprefixes) in
+   let delta_syms = List.rev_map pos_to_symbol delta_list in
+   let all_consts = SymbolSet.add_list consts delta_syms in
 (*   print_endline "";
    print_endline ("number of connections: "^(string_of_int (List.length con)));
 *)
@@ -3613,10 +3608,10 @@ let path_checker
 *)
          (try
             let new_sigmaQ, new_ordering_elements =
-					jqunify consts (ext_atom.alabel) (try_one.alabel) sigmaQ
+					jqunify all_consts (ext_atom.alabel) (try_one.alabel) sigmaQ
 				in
 (* build the orderingQ incrementally from the new added substitution tau of new_sigmaQ *)
-            let relate_pairs,new_orderingQ = build_orderingQ new_ordering_elements orderingQ in
+            let relate_pairs,new_orderingQ = build_orderingQ consts new_ordering_elements orderingQ in
 (* we make in incremental reflexivity test during the string unification *)
             let (new_sigmaJ,new_eqlist,new_red_ordering) =
 (* new_red_ordering = [] in propositional case *)
@@ -3788,6 +3783,14 @@ and select_atoms ftree posprefix acc =
          in
             select_atoms_treelist suctrees new_posprefix acc
 
+let print_item p l =
+	eprintf "%s: " (pos_to_string p);
+	print_stringlist l;
+	eflush stderr
+
+let print_list_map map =
+	PMap.fold (fun _ p l -> print_item p l) () map
+
 let prepare_prover ftree =
    let alist,gamma_0_prefixes,delta_0_prefixes =
       select_atoms_treelist [ftree] [] ([],PMap.empty,PMap.empty)
@@ -3816,9 +3819,9 @@ let check_subst_term variable old_term pospos stype =
       Gamma_0 | Delta_0 ->
          let new_variable =
             if stype = Gamma_0 then
-               (mk_pos_var (simple_to_gamma pospos))
+               mk_pos_var (simple_to_gamma pospos)
             else
-               (mk_pos_term jprover_op pospos)
+               mk_pos_var pospos
          in
          (TermSubst.subst1 old_term variable new_variable) (* replace variable (non-empty) in t by pos_name *)
             (* pos_name is either a variable term or a constant, f.i. a string term *)
@@ -4210,7 +4213,7 @@ let rec try_multiplicity
 (*             print_formula_info new_ftree new_ordering new_pos_n;   *)
                try_multiplicity consts mult_limit new_ftree new_ordering new_mult calculus concl_ordering
 
-let prove calculus consts mult_limit hyplist conclist calculus =
+let prove consts mult_limit hyplist conclist calculus =
    let ftree, ordering, concl_ordering =
       construct_ftree calculus hyplist conclist (mk_pos_var (dummy_pos ()))
    in
@@ -4236,12 +4239,6 @@ let rec renam_free_vars vars termlist =
          in
          SymbolSet.union rest_vars new_vars
 
-let rec apply_var_subst term = function
-   [] -> term
- | (v,t)::r ->
-      let next_term = TermSubst.var_subst term t v in
-      apply_var_subst next_term r
-
 let rec make_equal_list pattern list_object =
    List.rev_map (fun _ -> list_object) pattern
 
@@ -4251,14 +4248,14 @@ let rec create_output consts rule_list
       [] -> JLogic.empty_inf
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms Set.empty [term1] in
-         let unique_deltas = collect_delta_terms delta1_names [term2] in
+         let delta1_names = collect_delta_terms consts Set.empty [term1] in
+         let unique_deltas = collect_delta_terms consts delta1_names [term2] in
          let var_mapping =
             Set.fold
                (fun acc p ->
                   let pair =
-                     pos_to_symbol (simple_to_gamma p),
-                     mk_pos_term jprover_op p
+							pos_to_symbol p,
+                     mk_pos_var (simple_to_gamma p)
                   in
                   pair::acc
                )
@@ -4272,9 +4269,8 @@ let rec create_output consts rule_list
          let unique_list2 = make_equal_list frees2 unique_object in
          let next_term1 = TermSubst.subst term1 frees1 unique_list1 in
          let next_term2 = TermSubst.subst term2 frees2 unique_list2 in
-         let new_term1 = apply_var_subst next_term1 var_mapping in
-         let new_term2 = apply_var_subst next_term2 var_mapping in
-(* kick away the first argument, the position *)
+         let new_term1 = TermSubst.apply_subst var_mapping next_term1 in
+         let new_term2 = TermSubst.apply_subst var_mapping next_term2 in
          (JLogic.append_inf (create_output consts r) new_term1 new_term2 rule)
 
 let rec make_test_interface consts rule_list =
@@ -4282,14 +4278,14 @@ let rec make_test_interface consts rule_list =
       [] -> []
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms Set.empty [term1] in
-         let unique_deltas = collect_delta_terms delta1_names [term2] in
+         let delta1_names = collect_delta_terms consts Set.empty [term1] in
+         let unique_deltas = collect_delta_terms consts delta1_names [term2] in
          let var_mapping =
             Set.fold
                (fun acc p ->
                   let pair =
-                     pos_to_symbol (simple_to_gamma p),
-                     mk_pos_term jprover_op p
+                     pos_to_symbol p,
+                     mk_pos_var (simple_to_gamma p)
                   in
                   pair::acc
                )
@@ -4313,8 +4309,8 @@ let rec make_test_interface consts rule_list =
 *)
             let next_term1 = TermSubst.subst term1 frees1 unique_list1 in
             let next_term2 = TermSubst.subst term2 frees2 unique_list2 in
-            let new_term1 = apply_var_subst next_term1 var_mapping in
-            let new_term2 = apply_var_subst next_term2 var_mapping in
+	         let new_term1 = TermSubst.apply_subst var_mapping next_term1 in
+   	      let new_term2 = TermSubst.apply_subst var_mapping next_term2 in
             (pos,(rule,new_term1,new_term2))::(make_test_interface consts r)
          end
 
@@ -4329,13 +4325,13 @@ let gen_prover mult_limit calculus hyps concls =
       renam_free_vars consts concls
    in
    let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
-		prove calculus consts mult_limit hyps concls calculus
+		prove consts mult_limit hyps concls calculus
 	in
 	if calculus = S4 then
 		eprintf "matrix proof found@.";
    let red_ordering = PMap.fold (fun acc p s -> (p,s)::acc) [] red_ordering in
    (* it's too early to convert ext_proof to a set *)
-   let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
+   let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus consts in
          (* transform types let rename constants *)
      (* we can transform the eigenvariables AFTER proof reconstruction since *)
      (* new delta_0 constants may have been constructed during rule permutation *)
@@ -4370,7 +4366,7 @@ let do_prove mult_limit hyps concls calculus =
          renam_free_vars consts concls
       in
       let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
-         prove calculus consts mult_limit hyps concls calculus
+         prove consts mult_limit hyps concls calculus
       in
       open_box 0;
       force_newline ();
@@ -4421,7 +4417,9 @@ let do_prove mult_limit hyps concls calculus =
       print_flush ();
       let _ = input_char stdin in
       let red_ordering = PMap.fold (fun acc p s -> (p,s)::acc) [] red_ordering in
-      let reconstr_proof = reconstruct ftree red_ordering sigmaQ ext_proof calculus in
+      let reconstr_proof =
+			reconstruct ftree red_ordering sigmaQ ext_proof calculus consts
+		in
       let sequent_proof = make_test_interface consts reconstr_proof in
       open_box 0;
       force_newline ();

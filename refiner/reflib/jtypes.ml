@@ -3,14 +3,12 @@ open Opname
 
 open Jlogic_sig
 
-let jprover_op = make_opname ["string";"Jprover"]
-
 type pos_kind =
    EmptyVar
  | Atom
  | Const of int
  | Dummy
- | EigenVar
+ | EigenVar (* Despite its name, this value behaves like a constant and probably redundant *)
  | Var of int
  | NewVar of int
  | NewVarQ of int

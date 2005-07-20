@@ -256,6 +256,19 @@ let position_eq (p1: position) p2 =
 let nodups k a b =
    if a = b then a else raise (Invalid_argument "no dupes allowed in map")
 
+let rec is_const (k,i)  =
+  match k with
+     GammaPos k -> is_const (k,i)
+   | Const _ | EigenVar -> true
+   | Atom | EmptyVar | Root
+   | Var _ | NewVar _ | NewVarQ _ | Dummy -> false
+
+let rec is_var (k,i)  =
+  match k with
+     GammaPos k -> is_var (k,i)
+   | Var _ | NewVar _ | NewVarQ _ -> true
+   | Atom | Const _ | Dummy | EigenVar | EmptyVar | Root -> false
+
 let list_pos_to_string = List.map pos_to_string
 (*
 let list_string_to_pos = List.map string_to_pos
@@ -313,15 +326,24 @@ struct
    module JTy = JTypes(JLogic)
    open JTy
 
-   let rec collect_delta_terms accumulator = function
-      [] -> accumulator
+   let rec collect_delta_terms consts accumulator = function
+      [] ->	accumulator
     | t::r ->
-         if Opname.eq (opname_of_term t) jprover_op then
-            let sym = TermOp.dest_var_param_term jprover_op t in
-				let p = symbol_to_pos sym in
-               collect_delta_terms (Set.add accumulator p) r
-         else
-            collect_delta_terms accumulator ((subterms_of_term t) @ r)
+	 		let all_vars = TermSubst.free_vars_set t in
+			let jprover_vars = SymbolSet.diff all_vars consts in
+			let delta_set =
+				SymbolSet.fold
+					(fun acc v ->
+						let p = symbol_to_pos v in
+						if is_const p then
+							Set.add acc p
+						else
+							acc
+					)
+					accumulator
+					jprover_vars
+			in
+         collect_delta_terms consts delta_set r
 
 (* ***************** REDUCTION ORDERING -- both types **************************** *)
 
@@ -417,11 +439,11 @@ struct
                print_term_list r
             end
 
-   let rec add_sigmaQ new_elements ordering =
+   let rec add_sigmaQ consts new_elements ordering =
       match new_elements with
          [] -> ([],ordering)
        | (v,termlist)::r ->
-            let dterms = collect_delta_terms Set.empty termlist in
+            let dterms = collect_delta_terms consts Set.empty termlist in
             begin
 (*        open_box 0;
    print_endline " ";
@@ -434,16 +456,16 @@ struct
    print_flush ();
 *)
                let new_ordering = add_arrowsQ v dterms ordering in
-               let (rest_pairs,rest_ordering) = add_sigmaQ r new_ordering in
+               let (rest_pairs,rest_ordering) = add_sigmaQ consts r new_ordering in
                ((v,dterms)::rest_pairs),rest_ordering
             end
 
-   let build_orderingQ new_elements ordering =
+   let build_orderingQ consts new_elements ordering =
 (* new_elements is of type (string * term list) list, since one variable can receive more than *)
 (* a single term due to substitution multiplication *)
       try
 (*   print_endline "build orderingQ in"; *)
-         add_sigmaQ new_elements ordering;
+         add_sigmaQ consts new_elements ordering;
       with Reflexive ->
          raise Failed                (* new connection, please *)
 

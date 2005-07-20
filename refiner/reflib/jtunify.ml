@@ -101,19 +101,6 @@ let print_tunify sigma =
 
  (*****************************************************)
 
-let rec is_const (k,i)  =
-  match k with
-     GammaPos k -> is_const (k,i)
-   | Const _ -> true
-   | Atom | EmptyVar | Root | EigenVar
-   | Var _ | NewVar _ | NewVarQ _ | Dummy -> false
-
-let rec is_var (k,i)  =
-  match k with
-     GammaPos k -> is_var (k,i)
-   | Var _ | NewVar _ | NewVarQ _ -> true
-   | Atom | Const _ | Dummy | EigenVar | EmptyVar | Root -> false
-
 let rec sort_of_aux k1 k2 =
 	match k1, k2 with
 		GammaPos k1, _ -> sort_of_aux k1 k2
