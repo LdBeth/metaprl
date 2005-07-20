@@ -784,8 +784,7 @@ struct
          not (List.exists
             (fun x ->
                Set.mem beta_expansions x or
-               ConnSet.exists (fun (a,b) -> a=x || b=x) connections
-					(* XXX Yegor: positon_eq breaks one proof *)
+               ConnSet.exists (fun (a,b) -> position_eq a x || position_eq b x) connections
             )
             alpha_layer
          )
@@ -2177,10 +2176,9 @@ struct
    let select_connection pname connections slist =
       let unsolved = ConnSet.filter
          (fun (a,b) ->
-				(* XXX Yegor: position_eq breaks one proof *)
-            if a = pname then
+            if position_eq a pname then
                not (Set.mem slist b)
-            else if b = pname then
+            else if position_eq b pname then
                not (Set.mem slist a)
             else
                false
