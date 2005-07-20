@@ -3305,18 +3305,16 @@ let one_equation_aux gprefix delta_0_prefixes rest_equations f =
    let fnew = sf1 @ [v_new] in
    (([],(fnew,sg))::rest_equations)
 
-let one_equation gprefix dlist delta_0_prefixes =
-   Set.fold (one_equation_aux gprefix delta_0_prefixes) [] dlist
+let one_equation acc gprefix dlist delta_0_prefixes =
+   Set.fold (one_equation_aux gprefix delta_0_prefixes) acc dlist
 
-let rec make_domain_equations fo_pairs gamma_0_prefixes delta_0_prefixes =
+let rec make_domain_equations acc fo_pairs gamma_0_prefixes delta_0_prefixes =
    match fo_pairs with
-      [] -> []
+      [] -> acc
     | (g,dlist)::r ->
          let gprefix = PMap.find gamma_0_prefixes g in
-         let gequations = one_equation gprefix dlist delta_0_prefixes in
-         let rest_equations =
-            make_domain_equations r gamma_0_prefixes delta_0_prefixes in
-         List.rev_append gequations rest_equations
+         let gequations = one_equation acc gprefix dlist delta_0_prefixes in
+         make_domain_equations gequations r gamma_0_prefixes delta_0_prefixes
 
 (* type of one unifier: int * ((string * string list) list)  *)
 (* global failure: (0,[]) *)
@@ -3341,7 +3339,7 @@ let stringunify ext_atom try_one equations fo_pairs calculus orderingQ atom_rel 
          else (* "This is the FO case" *)
             (* fo_eqlist encodes the domain condition on J quantifier substitutions *)
             (* Again, always computed for the whole substitution sigmaQ *)
-            let fo_eqlist = make_domain_equations fo_pairs gamma delta in
+            let fo_eqlist = make_domain_equations [] fo_pairs gamma delta in
             (*
             open_box 0;
             print_string "domain equations in";
