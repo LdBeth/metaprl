@@ -769,25 +769,6 @@ struct
 
 (************ Beta proofs let redundancy deletion **********************)
 
-   let rec remove_dups_list = function
-      [] -> []
-    | f::r ->
-         if List.mem f r then
-            remove_dups_list r
-         else
-            f::(remove_dups_list r)
-
-   let subst_eq (s1, t1) (s2, t2) =
-      (Lm_symbol.eq s1 s2) && alpha_equal t1 t2
-
-   let rec remove_subst_dups = function
-      [] -> []
-    | f::r ->
-         if List.exists (subst_eq f) r then
-            remove_subst_dups r
-         else
-            f::(remove_subst_dups r)
-
    let beta_pure alpha_layer connections beta_expansions =
       begin
 (*       open_box 0;
@@ -803,7 +784,8 @@ struct
          not (List.exists
             (fun x ->
                Set.mem beta_expansions x or
-               ConnSet.exists (fun (a,b) -> a=x or b=x) connections
+               ConnSet.exists (fun (a,b) -> a=x || b=x) connections
+					(* XXX Yegor: positon_eq breaks one proof *)
             )
             alpha_layer
          )
@@ -2116,14 +2098,16 @@ struct
          else
             first::(delete compare e rest)
 
-   let rec key_delete fpos pos_list =   (* in key_delete, f is a pos name (key) but sucs is a list of positions *)
+   let rec key_delete changed fpos pos_list =   (* in key_delete, f is a pos name (key) but sucs is a list of positions *)
       match pos_list with
-         [] -> []               (* the position with name f must not necessarily occur in pos_list *)
+         [] ->
+				changed, [] (* the position with name f must not necessarily occur in pos_list *)
        | f::r ->
             if position_eq fpos f.pospos then
-               r
+               true, r
             else
-               f::(key_delete fpos r)
+               let changed, rest = key_delete changed fpos r in
+					changed, f::rest
 
    let rec get_roots treelist =
       match treelist with
@@ -2193,9 +2177,10 @@ struct
    let select_connection pname connections slist =
       let unsolved = ConnSet.filter
          (fun (a,b) ->
-            if a=pname then
+				(* XXX Yegor: position_eq breaks one proof *)
+            if a = pname then
                not (Set.mem slist b)
-            else if b=pname then
+            else if b = pname then
                not (Set.mem slist a)
             else
                false
@@ -2220,11 +2205,11 @@ struct
       match redord with
          [] -> Set.empty
        | (f,fset)::r ->
-            let new_sucs = key_delete f sucs in
-            if (List.length sucs) = (List.length new_sucs) then   (* position with name f did not occur in sucs -- no deletion *)
-               (collect_succ_sets sucs r)
-            else
-               Set.union (Set.add fset f) (collect_succ_sets new_sucs r)
+            let changed, new_sucs = key_delete false f sucs in
+				if changed then
+					Set.union (Set.add fset f) (collect_succ_sets new_sucs r)
+				else (* position with name f did not occur in sucs -- no deletion *)
+               collect_succ_sets sucs r
 
    let replace_ordering psucc_pos sucs redord =
       let new_psucc_set = collect_succ_sets sucs redord in
@@ -3230,15 +3215,12 @@ struct
 			inst_vars
 
    let rec_apply_aux consts tau_map sigma_ordering v term =
-		let jprover_vars =
+		let old_free =
 			SymbolSet.fold
 				(fun acc s -> Set.add acc (symbol_to_pos s))
 				Set.empty
 				(SymbolSet.diff (free_vars_set term) consts)
 		in
-		if Set.exists (fun p -> not (is_var p)) jprover_vars then
-			raise (Invalid_argument "Delta-vars found among jprover_vars");
-      let old_free = Set.filter is_var jprover_vars in
       let inst_terms = collect_assoc old_free tau_map in
       if inst_terms = [] then
          sigma_ordering
@@ -4227,15 +4209,11 @@ let prove consts mult_limit hyplist conclist calculus =
 
 (********** first-order type theory interface *******************)
 
-let rec renam_free_vars vars termlist =
-   match termlist
-   with [] -> vars
-    | f::r ->
-         let new_vars = free_vars_set f in
-         let rest_vars =
-            renam_free_vars vars r
-         in
-         SymbolSet.union rest_vars new_vars
+let rec renam_free_vars vars = function
+   [] -> vars
+ | f::r ->
+      let new_vars = free_vars_set f in
+      renam_free_vars (SymbolSet.union vars new_vars) r
 
 let rec make_equal_list pattern list_object =
    List.rev_map (fun _ -> list_object) pattern
@@ -4246,8 +4224,7 @@ let rec create_output consts rule_list
       [] -> JLogic.empty_inf
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms consts Set.empty [term1] in
-         let unique_deltas = collect_delta_terms consts delta1_names [term2] in
+         let unique_deltas = collect_delta_terms consts Set.empty [term1; term2] in
          let var_mapping =
             Set.fold
                (fun acc p ->
@@ -4276,8 +4253,7 @@ let rec make_test_interface consts rule_list =
       [] -> []
     | f::r ->
          let (pos,(rule,term1,term2)) = f in
-         let delta1_names = collect_delta_terms consts Set.empty [term1] in
-         let unique_deltas = collect_delta_terms consts delta1_names [term2] in
+         let unique_deltas = collect_delta_terms consts Set.empty [term1; term2] in
          let var_mapping =
             Set.fold
                (fun acc p ->
