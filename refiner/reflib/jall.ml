@@ -3297,32 +3297,32 @@ struct
 					eprintf "FO-unification in S4 mode!!!@.";
             raise Failed   (* new connection, please *)
 
-let one_equation_aux gprefix delta_0_prefixes (rest_equations,n) f =
+let one_equation_aux gprefix delta_0_prefixes rest_equations f =
    let fprefix = PMap.find delta_0_prefixes f in
    let (sf1,sg) = shorten fprefix gprefix in
-   let v_new = NewVarQ 0, n in
+   let v_new = NewVarQ 0, Lm_symbol.new_number () in
    let fnew = sf1 @ [v_new] in
-   (([],(fnew,sg))::rest_equations),(n+1)
+   (([],(fnew,sg))::rest_equations)
 
-let one_equation gprefix dlist delta_0_prefixes n =
-   Set.fold (one_equation_aux gprefix delta_0_prefixes) ([],n) dlist
+let one_equation gprefix dlist delta_0_prefixes =
+   Set.fold (one_equation_aux gprefix delta_0_prefixes) [] dlist
 
-let rec make_domain_equations fo_pairs gamma_0_prefixes delta_0_prefixes  n =
+let rec make_domain_equations fo_pairs gamma_0_prefixes delta_0_prefixes =
    match fo_pairs with
-      [] -> ([],n)
+      [] -> []
     | (g,dlist)::r ->
          let gprefix = PMap.find gamma_0_prefixes g in
-         let (gequations,max) = one_equation gprefix dlist delta_0_prefixes n in
-         let (rest_equations,new_max) =
-            make_domain_equations r gamma_0_prefixes delta_0_prefixes max in
-         List.rev_append gequations rest_equations, new_max
+         let gequations = one_equation gprefix dlist delta_0_prefixes in
+         let rest_equations =
+            make_domain_equations r gamma_0_prefixes delta_0_prefixes in
+         List.rev_append gequations rest_equations
 
 (* type of one unifier: int * ((string * string list) list)  *)
 (* global failure: (0,[]) *)
 
-let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ atom_rel qprefixes =
+let stringunify ext_atom try_one equations fo_pairs calculus orderingQ atom_rel qprefixes	=
    match calculus with
-      Classical -> ((0,[]),(0,[]),orderingQ)
+      Classical -> ((0,[]),[],orderingQ)
     | S4
     | Intuit _ ->
          let us = ext_atom.aposprefix in
@@ -3334,13 +3334,13 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
             (* prop case *)
             (* prop unification only *)
             let new_sigma,new_eqlist,_  =
-               JTUnifyProp.do_stringunify calculus us ut ns nt equations [] PMap.empty Set.empty 1
+               JTUnifyProp.do_stringunify calculus us ut ns nt equations [] PMap.empty Set.empty
             in
                (new_sigma,new_eqlist,PMap.empty) (* assume the empty reduction ordering during proof search *)
          else (* "This is the FO case" *)
             (* fo_eqlist encodes the domain condition on J quantifier substitutions *)
             (* Again, always computed for the whole substitution sigmaQ *)
-            let fo_eqlist, new_max = make_domain_equations fo_pairs gamma delta qmax in
+            let fo_eqlist = make_domain_equations fo_pairs gamma delta in
             (*
             open_box 0;
             print_string "domain equations in";
@@ -3348,7 +3348,7 @@ let stringunify ext_atom try_one (qmax,equations) fo_pairs calculus orderingQ at
             print_string "domain equations out";
             print_flush ();
             *)
-            do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_rel new_max
+				do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_rel
 
 (**************************************** add multiplicity *********************************)
 
@@ -3594,7 +3594,7 @@ let path_checker
       path
       closed
       (orderingQ,reduction_ordering)
-      (eqlist : int * (position list * (position list * position list)) list)
+      (eqlist : equation list)
       (sigmaQ,sigmaJ)
       =
       let rec check_connections reduction_partners extension_partners ext_atom =
@@ -3682,7 +3682,7 @@ let path_checker
 (*      print_endline "!!!!!!!!!!! prop prover !!!!!!!!!!!!!!!!!!"; *)
 (* in the propositional case, the reduction ordering will be computed AFTER proof search *)
          let _,eqlist,(_,nsubstJ),ext_proof =
-            provable AtomSet.empty AtomSet.empty (pe,pe) (1,[]) (pe,(1,[])) in
+            provable AtomSet.empty AtomSet.empty (pe,pe) [] (pe,(1,[])) in
          let _,substJ = nsubstJ in
          let orderingJ = build_orderingJ_list calculus substJ init_ordering atom_set in
          if !debug_s4prover then
@@ -3693,7 +3693,7 @@ let path_checker
          (init_ordering,orderingJ),eqlist,(pe,nsubstJ),ext_proof
       end
    else
-      provable AtomSet.empty AtomSet.empty (init_ordering,pe) (1,[]) (pe,(1,[]))
+      provable AtomSet.empty AtomSet.empty (init_ordering,pe) [] (pe,(1,[]))
 
 (*************************** prepare let init prover *******************************************************)
 
@@ -4405,8 +4405,7 @@ let do_prove mult_limit hyps concls calculus =
       print_endline "";
       print_endline "";
       open_box 0;
-      let (qmax,equations) = eqlist in
-      print_endline ("number of quantifier domains :"^(string_of_int (qmax-1)));
+      let equations = eqlist in
       print_endline "";
       (*print_equations equations;*)
       print_flush ();

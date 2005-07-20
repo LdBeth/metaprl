@@ -189,6 +189,8 @@ let rec shorten (us : position list) ut =
     | usut ->
          usut
 
+type equation = position list * (position list * position list)
+
 module type JQuantifierSig =
 sig
 
@@ -200,10 +202,7 @@ sig
 		Set.t ->
       Set.t PMap.t
 
-   type equation = position list * (position list * position list)
    val add_fo_eqlist : equation list -> equation list -> equation list
-
-   val result_qmax : int -> int
 end
 
 module JQuantifier (JLogic : JLogicSig) =
@@ -215,13 +214,8 @@ struct
 
    let build_ordering = build_orderingJ
 
-   type equation = position list * (position list * position list)
-
 	let add_fo_eqlist a b = a @ b
    (* rev_append here changes proofs but does not break them *)
-
-	let result_qmax qmax = qmax
-
 end
 
 module JPropositionalQuantifier (JLogic : JLogicSig) =
@@ -231,12 +225,7 @@ struct
 
 	let build_ordering _ _ _ _ _ = PMap.empty
 
-   type equation = position list * (position list * position list)
-
 	let add_fo_eqlist a b = a
-
-   let result_qmax _ = 1
-
 end
 
 
@@ -552,7 +541,7 @@ let ttest calculus us ut ns nt eqlist ordering atom_set =
       (*print_equations test_apply*)
    end
 
-let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set qmax =
+let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set =
     if !debug_s4prover then
 		 begin
 	       print_endline "do_stringunify:";
@@ -579,7 +568,7 @@ let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set q
             print_tunify new_sigma;
             print_ordering_map new_ordering
          end;
-      new_sigma, (result_qmax qmax, full_eqlist), new_ordering
+      new_sigma, full_eqlist, new_ordering
    with Not_unifiable ->
       raise Failed            (* new connection please *)
 
