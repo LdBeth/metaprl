@@ -444,10 +444,7 @@ let rec tunify_list calculus eqlist init_sigma ordering atom_set =
                if r_10 fs rt then (* r10 applicable if r8 was and tr8 <> [] *)
                   apply_r10 fs ft rt rest_eq sigma
                else
-						if not (var_le v v1) then
-							apply_r11 fs ft rt rest_eq sigma
-						else
-	                  raise Not_unifiable (* simply back propagation *)
+                  raise Not_unifiable (* simply back propagation *)
             )
        | v::_::_, _::_, v1::_ (* r9 *)
          when compatible_vars v v1 && (v <> v1) -> (* r9 *)
