@@ -300,10 +300,6 @@ rule main = parse
         quotation lexbuf
    }
 
-   (* This is temporary *)
- | '\\'
-   { parse_error_buf "fix this backslash" lexbuf }
-
    (* Strings *)
  | '"'
    { TokQString (string lexbuf) }
