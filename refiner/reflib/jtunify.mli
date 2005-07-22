@@ -30,6 +30,14 @@ end
 
 module JQuantifier (JLogic : JLogicSig) : JQuantifierSig
 
+type trace_entry =
+	 ((position list * position list * position list * position list) *
+     (equation list * (int * (position * position list) list) * Set.t PMap.t) *
+     equation list * int list
+	 )
+
+type tracelist = trace_entry list list
+
 module JTUnifyQ (JLogic : JLogicSig) :
 sig
 
@@ -43,10 +51,12 @@ sig
 		equation list ->
 		Set.t PMap.t ->
 		Set.t ->
+		tracelist ->
 		(int * (position * position list) list) * (* unifier *)
 		(equation list) *
       (* applied new eqlist *)
-		Set.t PMap.t
+		Set.t PMap.t *
+		tracelist
 
 end
 
@@ -63,9 +73,11 @@ sig
       equation list ->
       Set.t PMap.t ->
       Set.t ->
+		tracelist ->
       (int * (position * position list) list) * (* unifier *)
       (equation list) *
       (* applied new eqlist *)
-      Set.t PMap.t
+      Set.t PMap.t *
+		tracelist
 
 end

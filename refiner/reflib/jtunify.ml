@@ -148,7 +148,7 @@ let rec com_subst ov ovlist = function
    [] -> []
  | f::r as l->
       if position_eq f ov then
-         (List.rev_append ovlist r)
+         ovlist @ r
       else
          let rest = com_subst ov ovlist r in
             if rest == r then l else f :: rest
@@ -215,6 +215,13 @@ struct
 	let add_fo_eqlist a b = a
 end
 
+type trace_entry =
+    ((position list * position list * position list * position list) *
+     (equation list * (int * (position * position list) list) * Set.t PMap.t) *
+     equation list * int list
+    )
+
+type tracelist = trace_entry list list
 
 module JTUnify (JLogic : JLogicSig)(JQuantifier: JQuantifierSig) =
 struct
@@ -306,226 +313,262 @@ let rec all_variable_check eqlist =
                false
 *)
 
-let r_10 s rt =
-   match s,rt with
-      v::stl, x::rtl ->
+let r1 eq =
+      match eq with
+         _, [], [], [] -> (* r1 *)
+            true
+       | _ ->
+            false
+
+let r2 eq =
+      match eq with
+       | _, [], [], _::_ -> (* r2 *)
+            true
+       | _ ->
+            false
+
+let r3 eq =
+      match eq with
+       | _, s1::_, [], r1::_ when s1=r1 -> (* r3 *)
+            true
+       | _ ->
+            false
+
+let r4 eq =
+      match eq with
+       | _, s1::_, [], r1::_ ->
+		 		is_var r1 && is_const s1 (* r4 *)
+       | _ ->
+            false
+
+let r5 eq =
+      match eq with
+       | _, s1::_, _, [] ->
+		 		is_var s1 (* r5 *)
+       | _ ->
+            false
+
+let r6 eq =
+      match eq with
+       | _, s1::_, [], r1::rtl ->
+		 		is_var s1 & is_const r1 (* r6 *)
+       | _ ->
+            false
+
+let r7 eq =
+      match eq with
+       | _, s1::_, _, r1::r2::_ -> (* r7 *)
+         	var_le s1 r1 && is_const r1 && is_const r2
+       | _ ->
+            false
+
+let r8 eq =
+      match eq with
+       | _, v::_::_, [], v1::_ -> (* r8 *)
+         	var_le v1 v && is_var v && (v <> v1) (* r8 *)
+       | _ ->
+            false
+
+let r9 eq =
+      match eq with
+       | _, v::_::_, _::_, v1::_ -> (* r9 *)
+         	compatible_vars v v1 && (v <> v1) (* r9 *)
+       | _ ->
+            false
+
+let r10 eq =
+   match eq with
+      _, v::stl, _, x::rtl ->
          var_le v x && (v <> x) &&
          ((stl =[]) or (is_const x) or (rtl <> []))
     | _ -> false
 
-let rec tunify_list calculus eqlist init_sigma ordering atom_set =
-   let rec tunify atomnames fs ft rt rest_eq sigma ordering =
-      let apply_r1 rest_eq sigma =
-	  (* print_endline "r1"; *)
-         tunify_list calculus rest_eq sigma ordering atom_set
-
-      in
-      let apply_r2 fs ft rt rest_eq sigma =
-      (* print_endline "r2"; *)
-         tunify atomnames rt fs ft rest_eq sigma ordering
-
-      in
-      let apply_r3 fs ft rt rest_eq sigma =
-      (* print_endline "r3"; *)
-         let rfs =  (List.tl fs) in
-         let rft =  (List.tl rt) in
-         tunify atomnames rfs ft rft rest_eq sigma ordering
-
-      in
-      let apply_r4 fs ft rt rest_eq sigma =
-      (* print_endline "r4"; *)
-         tunify atomnames rt ft fs rest_eq sigma ordering
-
-      in
-      let apply_r5 fs ft rt rest_eq sigma =
-      (* print_endline "r5"; *)
-         let v = (List.hd fs) in
-         let compose_vars, new_sigma = compose sigma (v,ft) in
-         let new_rest_eq = apply_subst rest_eq v ft atomnames in
-         let new_ordering = build_ordering calculus (v::compose_vars) ft ordering atom_set in
-            tunify atomnames (List.tl fs) rt rt new_rest_eq new_sigma new_ordering
-
-      in
-      let apply_r6 fs ft rt rest_eq sigma =
-      (* print_endline "r6"; *)
-         let v = (List.hd fs) in
-         let _, new_sigma = compose sigma (v,[]) in
-         let new_rest_eq = apply_subst rest_eq v [] atomnames in
-         (* Q-case: no relation update since [] has been replaced for v *)
-            tunify atomnames (List.tl fs) ft rt new_rest_eq new_sigma ordering
-
-      in
-      let apply_r7 fs ft rt rest_eq sigma =
-      (* print_endline "r7"; *)
-         let v = List.hd fs in
-         let c1 = List.hd rt in
-         let c2t =List.tl rt in
-         let ft_c1 = ft @ [c1] in
-         let compose_vars,new_sigma = compose sigma (v,ft_c1) in
-         let new_rest_eq = apply_subst rest_eq v ft_c1 atomnames in
-         let new_ordering = build_ordering calculus (v::compose_vars) ft_c1 ordering atom_set in
-            tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma new_ordering
-
-      in
-      let apply_r8 fs ft rt rest_eq sigma =
-      (* print_endline "r8"; *)
-         tunify atomnames rt [(List.hd fs)] (List.tl fs) rest_eq sigma ordering
-
-      in
-      let apply_r9 sort fs ft rt rest_eq sigma =
-      (* print_endline "r9"; *)
-         let v = List.hd fs in
-         let (max,subst) = sigma in
-         let v_new = (NewVar sort,max) in
-         let ft_vnew = ft @ [v_new] in
-         let compose_vars,new_sigma = compose ((max+1),subst) (v,ft_vnew) in
-         let new_rest_eq = apply_subst rest_eq v ft_vnew atomnames in
-         let new_ordering = build_ordering calculus (v::compose_vars) ft_vnew ordering atom_set in
-         tunify atomnames rt [v_new] (List.tl fs) new_rest_eq new_sigma new_ordering
-
-      in
-      let apply_r10 fs ft rt rest_eq sigma =
-      (* print_endline "r10"; *)
-         let x = List.hd rt in
-         tunify atomnames fs (ft @ [x]) (List.tl rt) rest_eq sigma ordering
-
-      in
-		let apply_r11 fs ft rt rest_eq sigma =
-         let v = List.hd fs in
-         let compose_vars,new_sigma = compose sigma (v,ft) in
-         let new_rest_eq = apply_subst rest_eq v ft atomnames in
-         let new_ordering = build_ordering calculus (v::compose_vars) ft ordering atom_set in
-            tunify atomnames (List.tl fs) [] rt new_rest_eq new_sigma new_ordering
-		in
-      match fs,ft,rt with
-         [], [], [] -> (* r1 *)
-            apply_r1 rest_eq sigma
-       | [], [], _::_ -> (* r2 *)
-            apply_r2 fs ft rt rest_eq sigma
-       | s1::_, [], r1::_ when s1=r1 -> (* r3 *)
-            apply_r3 fs ft rt rest_eq sigma
-       | s1::_, [], r1::_ when is_var r1 && is_const s1 -> (* r4 *)
-            apply_r4 fs ft rt rest_eq sigma
-       | s1::_, _, [] when is_var s1 -> (* r5 *)
-            apply_r5 fs ft rt rest_eq sigma
-       | s1::_, [], r1::rtl when is_var s1 & is_const r1 -> (* r6 *)
-            begin try apply_r6 fs ft rt rest_eq sigma with
-               Not_unifiable ->
-						if var_le s1 r1 then
-	                  match rtl with
-   	                  r2::_ when is_const r2 ->
-      	                  (* r7 applicable if r6 was and tr6 = C2t' *)
-         	               (try
-            	               apply_r7 fs ft rt rest_eq sigma
-               	         with Not_unifiable ->
-                  	         apply_r10 fs ft rt rest_eq sigma
-                     	      (* r10 always applicable if r6 was *)
-	                        )
-   	                | _ ->
-      (* r10 could be represented only once if we would try it before r7.*)
-      (* but looking at the transformation rules, r10 should be tried at last in any case *)
-	                        apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable r6 was *)
-						else
-							apply_r11 fs ft rt rest_eq sigma
-            end
-       | s1::_, _, r1::r2::_ (* r7 *)
-         when var_le s1 r1 && is_const r1 && is_const r2 ->
-            (* r7, should be the same as in the catch part after apply_r6 *)
-            (try
-               apply_r7 fs ft rt rest_eq sigma
-            with Not_unifiable ->
-               apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable if r7 was *)
-            )
-       | v::_::_, [], v1::_ (* r8 *)
-         when var_le v1 v && is_var v && (v <> v1) -> (* r8 *)
-            (try
-               apply_r8 fs ft rt rest_eq sigma
-            with Not_unifiable ->
-               if r_10 fs rt then (* r10 applicable if r8 was and tr8 <> [] *)
-                  apply_r10 fs ft rt rest_eq sigma
-               else
-                  raise Not_unifiable (* simply back propagation *)
-            )
-       | v::_::_, _::_, v1::_ (* r9 *)
-         when compatible_vars v v1 && (v <> v1) -> (* r9 *)
-            (try
-               apply_r9 (sort_of v v1) fs ft rt rest_eq sigma
-            with Not_unifiable ->
-	            if r_10 fs rt then (* r10 applicable if r9 was and tr9 <> [] *)
-   	            apply_r10 fs ft rt rest_eq sigma
-      	      else
-						if not (var_le v v1) then
-							apply_r11 fs ft rt rest_eq sigma
-						else
-							raise Not_unifiable (* simply back propagation *)
-            )
-       | _ when r_10 fs rt ->
-            (* r10 *)
-         	apply_r10 fs ft rt rest_eq sigma
-		 | v::_, _, r1::_ when is_var v && not (var_le v r1) ->
-		 		apply_r11 fs ft rt rest_eq sigma
+let r11 eq =
+      match eq with
+       | _, v::_, _, r1::_ ->
+		 		is_var v && not (var_le v r1)
        | _ ->
-         	(*NO rule applicable *)
-            raise Not_unifiable
-   in
-   match eqlist with
-      [] ->
-         init_sigma,ordering
-    | f::rest_eq ->
-         if !debug_s4prover then
-            begin
-               open_box 0;
-               print_equations [f];
-               print_flush ()
-            end;
-         let (atomnames,(fs,ft)) = f in
-         tunify atomnames fs [] ft rest_eq init_sigma ordering
+            false
 
-let rec test_apply_eq atomnames eqs eqt subst =
-   match subst with
-      [] -> (eqs,eqt)
-    | (f,flist)::r ->
-         let (first_appl_eqs,first_appl_eqt) =
-            if List.mem f atomnames then
-               eqs, eqt
-            else
-               apply_element f flist eqs eqt
-         in
-         test_apply_eq atomnames first_appl_eqs first_appl_eqt r
+let apply_r1 atom_set calculus eq state =
+  	(*print_endline "r1";*)
+	true, eq, state
 
-let rec test_apply_eqsubst eqlist subst =
-   match eqlist with
-      [] -> []
-    | (atomnames,(eqs,eqt))::r ->
-         let applied_element = test_apply_eq atomnames eqs eqt subst in
-         (atomnames,applied_element)::(test_apply_eqsubst r subst)
+let apply_r2 atom_set calculus (atomnames, fs, ft, rt) state =
+  	(*print_endline "r2";*)
+	false, (atomnames, rt, fs, ft), state
 
-let ttest calculus us ut ns nt eqlist ordering atom_set =
-   let (short_us,short_ut) = shorten us ut in (* apply intial rule R3 *)
-                                           (* to eliminate common beginning *)
-   let new_element = ([ns;nt],(short_us,short_ut)) in
-   let full_eqlist =
-      if List.mem new_element eqlist then
-         eqlist
+let apply_r3 atom_set calculus eq state =
+   (*print_endline "r3";*)
+	match eq with
+		atomnames, _::rfs, ft, _::rft ->
+			false, (atomnames, rfs, ft, rft), state
+	 | _ ->
+	 		raise (Invalid_argument "Jtunify.apply_r3 applied to an incorrect equation")
+
+let apply_r4 atom_set calculus (atomnames, fs, ft, rt) state =
+   (*print_endline "r4";*)
+	false, (atomnames, rt, ft, fs), state
+
+let apply_r5 atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering) =
+   (*print_endline "r5";*)
+	match fs with
+		v::nfs ->
+		   let compose_vars, new_sigma = compose sigma (v,ft) in
+		   let new_rest_eq = apply_subst rest_eq v ft atomnames in
+		   let new_ordering = build_ordering calculus (v::compose_vars) ft ordering atom_set in
+		   false, (atomnames, nfs, rt, rt), (new_rest_eq, new_sigma, new_ordering)
+	 | _ ->
+	 		raise (Invalid_argument "Jtunify.apply_r5 applied to an incorrect equation")
+
+let apply_r6 atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering) =
+   (*print_endline "r6";*)
+	match fs with
+		v::nfs ->
+		   let _, new_sigma = compose sigma (v,[]) in
+		   let new_rest_eq = apply_subst rest_eq v [] atomnames in
+		   (* Q-case: no relation update since [] has been replaced for v *)
+		   false, (atomnames, nfs, ft, rt), (new_rest_eq, new_sigma, ordering)
+	 | _ ->
+	 		raise (Invalid_argument "Jtunify.apply_r6 applied to an incorrect equation")
+
+let apply_r7 atom_set calculus eq (rest_eq, sigma, ordering) =
+   (*print_endline "r7";*)
+	match eq with
+		atomnames, v::nfs, ft, c1::c2t ->
+		   let ft_c1 = ft @ [c1] in
+		   let compose_vars,new_sigma = compose sigma (v,ft_c1) in
+		   let new_rest_eq = apply_subst rest_eq v ft_c1 atomnames in
+		   let new_ordering =
+				build_ordering calculus (v::compose_vars) ft_c1 ordering atom_set
+			in
+		   false, (atomnames, nfs, [], c2t), (new_rest_eq, new_sigma, new_ordering)
+	 | _ ->
+	 		raise (Invalid_argument "Jtunify.apply_r7 applied to an incorrect equation")
+
+let apply_r8 atom_set calculus (atomnames, fs, ft, rt) state =
+   (*print_endline "r8";*)
+	match fs with
+		nft::nrt ->
+		   false, (atomnames, rt, [nft], nrt), state
+	 | _ ->
+	 		raise (Invalid_argument "Jtunify.apply_r8 applied to an incorrect equation")
+
+let apply_r9 atom_set calculus eq (rest_eq, sigma, ordering) =
+   (*print_endline "r9";*)
+	match eq with
+		atomnames, v::nft, ft, (rt1::_ as rt) ->
+			let sort = sort_of v rt1 in
+		   let (max,subst) = sigma in
+		   let v_new = (NewVar sort,max) in
+		   let ft_vnew = ft @ [v_new] in
+		   let compose_vars,new_sigma = compose ((max+1),subst) (v,ft_vnew) in
+		   let new_rest_eq = apply_subst rest_eq v ft_vnew atomnames in
+		   let new_ordering =
+				build_ordering calculus (v::compose_vars) ft_vnew ordering atom_set
+			in
+		   false, (atomnames, rt, [v_new], nft), (new_rest_eq, new_sigma, new_ordering)
+	 | _ ->
+	 		raise (Invalid_argument "Jtunify.apply_r9 applied to an incorrect equation")
+
+let apply_r10 atom_set calculus eq state =
+   (*print_endline "r10";*)
+	match eq with
+		atomnames, fs, ft, x::nrt ->
+		   false, (atomnames, fs, (ft @ [x]), nrt), state
+	 | _ ->
+	 		raise (Invalid_argument "Jtunify.apply_r10 applied to an incorrect equation")
+
+let apply_r11 atom_set calculus eq (rest_eq, sigma, ordering) =
+	(*print_endline "r11";*)
+	match eq with
+		atomnames, v::nfs, ft, rt ->
+		   let compose_vars,new_sigma = compose sigma (v,ft) in
+		   let new_rest_eq = apply_subst rest_eq v ft atomnames in
+		   let new_ordering = build_ordering calculus (v::compose_vars) ft ordering atom_set in
+		   false, (atomnames, nfs, [], rt), (new_rest_eq, new_sigma, new_ordering)
+	 | _ ->
+	 		raise (Invalid_argument "Jtunify.apply_r11 applied to an incorrect equation")
+
+let t_rules = [|
+   (r1,apply_r1,[]);
+   (r2,apply_r2,[]);
+   (r3,apply_r3,[]);
+   (r4,apply_r4,[]);
+   (r5,apply_r5,[]);
+   (r6,apply_r6,[6;9]);
+   (r7,apply_r7,[9]);
+   (r8,apply_r8,[9]);
+   (r9,apply_r9,[9;10]);
+   (r10,apply_r10,[10]);
+   (r11,apply_r11,[])
+|]
+
+let all_rules = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10]
+
+let apply_subst_list atom_names (n,sigma) new_eql =
+	List.fold_left
+		(fun eql (v,l) ->	apply_subst eql v l atom_names)
+		new_eql
+		sigma
+
+let rec tunify atom_set calculus = function
+   (eq, state, new_eql, rule_index::rules_rest)::trace ->
+		let condition, action, preferred_rules = t_rules.(rule_index) in
+      if condition eq then
+         try
+				let (old_eql, sigma, ordering) = state in
+				let atomnames, _, _, _ = eq in
+				let full_eql =
+					List.rev_append (apply_subst_list atomnames sigma new_eql) old_eql
+				in
+				let updated_state = full_eql, sigma, ordering in
+            let stop, neq, nstate =
+               action atom_set calculus eq updated_state
+            in
+				let ntrace = (eq, updated_state, [], preferred_rules)::trace in
+               if stop then
+                  Some(nstate, ntrace)
+               else
+                  tunify atom_set calculus ((neq, nstate, [], all_rules)::ntrace)
+         with Not_unifiable ->
+            tunify atom_set calculus ((eq, state, new_eql, preferred_rules)::trace)
       else
-         new_element::eqlist
-   in
-   let sigma, _ = tunify_list calculus full_eqlist (1,[]) ordering atom_set in
-   let _, subst = sigma in
-   let test_apply = test_apply_eqsubst full_eqlist subst in
-   begin
-      print_endline "";
-      print_endline "Final equations:";
-      (*print_equations full_eqlist;*)
-      print_endline "";
-      print_endline "Final substitution:";
-      (*print_tunify sigma;*)
-      print_endline "";
-      print_endline "Applied equations:";
-      (*print_equations test_apply*)
-   end
+         tunify atom_set calculus ((eq, state, new_eql, rules_rest)::trace)
+ | (_,_,_,[])::trace ->
+      tunify atom_set calculus trace
+ | [] ->
+ 		None
 
-let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set =
+let rec tunify_list atom_set calculus = function
+	[] -> None
+ | trace::tracelist ->
+ 		let result = tunify atom_set calculus trace in
+		match result with
+			Some((f::rest_eq, sigma, ordering), trace) ->
+	         let (atomnames,(fs,ft)) = f in
+      	   tunify_list atom_set calculus
+         	   ((((atomnames, fs, [], ft), (rest_eq, sigma, ordering), [], all_rules)::trace
+					 )::tracelist
+					)
+		 | Some(([], nsigma, nordering), ntrace) ->
+		 		Some(nsigma, nordering, (ntrace::tracelist))
+		 | None ->
+		 		tunify_list atom_set calculus tracelist
+
+let rec add_new_equation_aux eql acc = function
+	(eq, state, neql, rules)::trace ->
+		add_new_equation_aux eql ((eq, state, List.rev_append eql neql, rules)::acc) trace
+ | [] ->
+ 		acc
+
+let rec add_new_equations eql acc = function
+	trace::tracelist ->
+		add_new_equations eql ((add_new_equation_aux eql [] trace)::acc) tracelist
+ | [] ->
+		acc
+
+let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set tracelist =
     if !debug_s4prover then
 		 begin
 	       print_endline "do_stringunify:";
@@ -538,18 +581,28 @@ let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set =
    let full_eqlist = new_element::original_eqlist in
 	if !debug_s4prover then
 		print_equations full_eqlist;
-   try
-(* Q-case: max-1 new variables have been used for the domain equations *)
-      let new_sigma, new_ordering = tunify_list calculus full_eqlist (1,[]) orderingQ atom_set in
-(* Q-case: sigmaQ will not be returned in eqlist *)
-      if !debug_s4prover then
-         begin
-            print_tunify new_sigma;
-            print_ordering_map new_ordering
-         end;
-      new_sigma, full_eqlist, new_ordering
-   with Not_unifiable ->
-      raise Failed            (* new connection please *)
+	let tracelist' = add_new_equations (new_element::fo_eqlist) [] tracelist in
+	match full_eqlist with
+		(atomnames, (fs, rt))::rest_eq ->
+	   	begin match
+				tunify_list atom_set calculus
+					([(atomnames, fs, [], rt), (rest_eq, (1,[]), orderingQ), [], all_rules]::tracelist'
+					)
+			with
+				(* Q-case: max-1 new variables have been used for the domain equations *)
+      		(* Q-case: sigmaQ will not be returned in eqlist *)
+				Some(new_sigma, new_ordering, new_tracelist) ->
+   	   		if !debug_s4prover then
+      	   		begin
+         	   		print_tunify new_sigma;
+		         	   print_ordering_map new_ordering
+		   	      end;
+   		   	new_sigma, full_eqlist, new_ordering, new_tracelist
+			 | None ->
+   		   	raise Failed (* new connection please *)
+			end
+	 | [] ->
+	 		raise (Invalid_argument "Jtunify.do_stringunify: Non-empty list expected")
 
 end
 

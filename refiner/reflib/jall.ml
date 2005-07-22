@@ -3299,9 +3299,9 @@ let rec make_domain_equations acc fo_pairs gamma_0_prefixes delta_0_prefixes =
 (* type of one unifier: int * ((string * string list) list)  *)
 (* global failure: (0,[]) *)
 
-let stringunify ext_atom try_one equations fo_pairs calculus orderingQ atom_rel qprefixes	=
+let stringunify ext_atom try_one equations fo_pairs calculus orderingQ atom_rel qprefixes	tl =
    match calculus with
-      Classical -> ((0,[]),[],orderingQ)
+      Classical -> ((0,[]),[],orderingQ,[])
     | S4
     | Intuit _ ->
          let us = ext_atom.aposprefix in
@@ -3312,10 +3312,11 @@ let stringunify ext_atom try_one equations fo_pairs calculus orderingQ atom_rel 
          if PMap.is_empty gamma && PMap.is_empty delta then
             (* prop case *)
             (* prop unification only *)
-            let new_sigma,new_eqlist,_  =
-               JTUnifyProp.do_stringunify calculus us ut ns nt equations [] PMap.empty Set.empty
+            let new_sigma,new_eqlist,_,new_tracelist  =
+               JTUnifyProp.do_stringunify calculus us ut ns nt equations [] PMap.empty Set.empty tl
             in
-               (new_sigma,new_eqlist,PMap.empty) (* assume the empty reduction ordering during proof search *)
+               (new_sigma,new_eqlist,PMap.empty,new_tracelist)
+					(* assume the empty reduction ordering during proof search *)
          else (* "This is the FO case" *)
             (* fo_eqlist encodes the domain condition on J quantifier substitutions *)
             (* Again, always computed for the whole substitution sigmaQ *)
@@ -3327,7 +3328,7 @@ let stringunify ext_atom try_one equations fo_pairs calculus orderingQ atom_rel 
             print_string "domain equations out";
             print_flush ();
             *)
-				do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_rel
+				do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_rel tl
 
 (**************************************** add multiplicity *********************************)
 
@@ -3569,6 +3570,7 @@ let path_checker
       (orderingQ,reduction_ordering)
       (eqlist : equation list)
       (sigmaQ,sigmaJ)
+		tracelist
       =
       let rec check_connections reduction_partners extension_partners ext_atom =
          let try_one =
@@ -3591,29 +3593,29 @@ let path_checker
 (* build the orderingQ incrementally from the new added substitution tau of new_sigmaQ *)
             let relate_pairs,new_orderingQ = build_orderingQ consts new_ordering_elements orderingQ in
 (* we make in incremental reflexivity test during the string unification *)
-            let (new_sigmaJ,new_eqlist,new_red_ordering) =
+            let (new_sigmaJ,new_eqlist,new_red_ordering,new_trace) =
 (* new_red_ordering = [] in propositional case *)
-               stringunify ext_atom try_one eqlist relate_pairs calculus new_orderingQ atom_set qprefixes
+               stringunify ext_atom try_one eqlist relate_pairs calculus new_orderingQ atom_set qprefixes tracelist
             in
 (*           print_endline ("make reduction ordering "^((string_of_int (List.length new_ordering)))); *)
             let new_closed = AtomSet.add closed ext_atom in
-            let (next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),subproof =
+            let (next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),subproof, next_trace =
                if AtomSet.mem path try_one then
-                  provable path new_closed (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ)
+                  provable path new_closed (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ) new_trace
                      (* always use old first-order ordering for recursion *)
                else
                   let new_path = AtomSet.add path ext_atom in
                   let extension = AtomSet.singleton try_one in
-                  let (norderingQ,nredordering),neqlist,(nsigmaQ,nsigmaJ),p1 =
-                     provable new_path extension (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ) in
-                  let (nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),p2 =
-                     provable path new_closed (norderingQ,nredordering) neqlist (nsigmaQ,nsigmaJ)
+                  let (norderingQ,nredordering),neqlist,(nsigmaQ,nsigmaJ),p1,ntrace =
+                     provable new_path extension (new_orderingQ,new_red_ordering) new_eqlist (new_sigmaQ,new_sigmaJ) new_trace in
+                  let (nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),p2,nntrace =
+                     provable path new_closed (norderingQ,nredordering) neqlist (nsigmaQ,nsigmaJ) ntrace
 						in
-                  (nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),(p1 @ p2)
+                  (nnorderingQ,nnredordering),nneqlist,(nnsigmaQ,nnsigmaJ),(p1 @ p2),nntrace
                   (* changing to rev_append on the line above breaks some proofs *)
       (* first the extension subgoals = depth first; then other subgoals in same clause *)
             in
-            (next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),(((ext_atom.apos),(try_one.apos))::subproof)
+            (next_orderingQ,next_red_ordering),next_eqlist,(next_sigmaQ,next_sigmaJ),(((ext_atom.apos),(try_one.apos))::subproof),next_trace
          with Failed ->
 (*          print_endline ("new connection for "^(ext_atom.aname)); *)
 (*            print_endline ("Failed"); *)
@@ -3644,7 +3646,7 @@ let path_checker
       in
       let extset = extset atom_map path closed in
       if AtomSet.is_empty extset then
-         (orderingQ,reduction_ordering),eqlist,(sigmaQ,sigmaJ),[]
+         (orderingQ,reduction_ordering),eqlist,(sigmaQ,sigmaJ),[],tracelist
       else
          check_extension extset
    in
@@ -3654,8 +3656,8 @@ let path_checker
       begin
 (*      print_endline "!!!!!!!!!!! prop prover !!!!!!!!!!!!!!!!!!"; *)
 (* in the propositional case, the reduction ordering will be computed AFTER proof search *)
-         let _,eqlist,(_,nsubstJ),ext_proof =
-            provable AtomSet.empty AtomSet.empty (pe,pe) [] (pe,(1,[])) in
+         let _,eqlist,(_,nsubstJ),ext_proof, tracelist =
+            provable AtomSet.empty AtomSet.empty (pe,pe) [] (pe,(1,[])) [] in
          let _,substJ = nsubstJ in
          let orderingJ = build_orderingJ_list calculus substJ init_ordering atom_set in
          if !debug_s4prover then
@@ -3663,10 +3665,10 @@ let path_checker
                print_endline "build_orderingJ_list in path_checker:";
                print_ordering_map orderingJ
             end;
-         (init_ordering,orderingJ),eqlist,(pe,nsubstJ),ext_proof
+         (init_ordering,orderingJ),eqlist,(pe,nsubstJ),ext_proof,tracelist
       end
    else
-      provable AtomSet.empty AtomSet.empty (init_ordering,pe) [] (pe,(1,[]))
+      provable AtomSet.empty AtomSet.empty (init_ordering,pe) [] (pe,(1,[])) []
 
 (*************************** prepare let init prover *******************************************************)
 
@@ -4162,10 +4164,10 @@ let rec try_multiplicity
 		if calculus = S4 then
 			eprintf "trying multiplicity %i@." mult;
       let atom_map, qprefixes = init_prover ftree in
-      let (orderingQ, red_ordering), eqlist, unifier, ext_proof =
+      let (orderingQ, red_ordering), eqlist, unifier, ext_proof, _ =
          path_checker consts atom_map qprefixes ordering calculus concl_ordering
 		in
-      (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
+      (ftree,red_ordering,unifier,ext_proof)   (* orderingQ is not needed as return value *)
    with Failed ->
       match mult_limit with
          Some m when m = mult ->
@@ -4199,10 +4201,10 @@ let prove consts mult_limit hyplist conclist calculus =
       print_ordering_map ordering;
 (* pos_n = number of positions without new root "w" *)
 (*   print_formula_info ftree ordering pos_n;    *)
-   let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
+   let ftree, red_ordering, (sigmaQ,sigmaJ), ext_proof =
       try_multiplicity consts mult_limit ftree ordering 1 calculus concl_ordering
    in
-   ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof
+   ftree, red_ordering, (sigmaQ,sigmaJ), ext_proof
 
 
 (********** first-order type theory interface *******************)
@@ -4296,7 +4298,7 @@ let gen_prover mult_limit calculus hyps concls =
    let consts =
       renam_free_vars consts concls
    in
-   let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
+   let ftree, red_ordering, (sigmaQ,sigmaJ), ext_proof =
 		prove consts mult_limit hyps concls calculus
 	in
 	if calculus = S4 then
@@ -4337,7 +4339,7 @@ let do_prove mult_limit hyps concls calculus =
       let consts =
          renam_free_vars consts concls
       in
-      let ftree, red_ordering, eqlist, (sigmaQ,sigmaJ), ext_proof =
+      let ftree, red_ordering, (sigmaQ,sigmaJ), ext_proof =
          prove consts mult_limit hyps concls calculus
       in
       open_box 0;
@@ -4370,16 +4372,6 @@ let do_prove mult_limit hyps concls calculus =
       print_endline "";
       print_endline "";
 (*      print_sigmaQ sigmaQ;*)
-      print_endline "";
-      print_endline "";
-      open_box 0;
-      let equations = eqlist in
-      print_endline "";
-      (*print_equations equations;*)
-      print_flush ();
-      print_endline "";
-      print_endline "";
-      print_endline ("Length of equations : "^((string_of_int (List.length equations))));
       print_endline "";
       print_endline "";
 (* --------------------------------------------------------- *)
