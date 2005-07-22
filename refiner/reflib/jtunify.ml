@@ -201,7 +201,7 @@ struct
 
    let build_ordering = build_orderingJ
 
-	let add_fo_eqlist a b = a @ b
+	let add_fo_eqlist a b = List.rev_append b a
    (* rev_append here changes proofs but does not break them *)
 end
 
@@ -535,12 +535,7 @@ let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set =
 	let atomnames = [ns;nt] in
    let new_element = atomnames, (short_us,short_ut) in
 	let original_eqlist = add_fo_eqlist equations fo_eqlist in
-   let full_eqlist =
-      if List.mem new_element equations then
-         original_eqlist
-      else
-         new_element::original_eqlist
-   in
+   let full_eqlist = new_element::original_eqlist in
 	if !debug_s4prover then
 		print_equations full_eqlist;
    try
