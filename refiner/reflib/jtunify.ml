@@ -159,7 +159,7 @@ let rec com_subst ov ovlist = function
 let rec apply_element_aux v slist acc = function
 	[] -> acc
  | hd::tl ->
-		if hd = v then (* XXX Yegor : replacement of (=) with position_eq here breaks some proofs *)
+		if position_eq hd v then
 			apply_element_aux v slist (List.rev_append slist acc) tl
 		else
 			apply_element_aux v slist (hd::acc) tl
