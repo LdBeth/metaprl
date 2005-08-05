@@ -17,7 +17,7 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), filterbase, $(BASE_FILES))
 ExtractMagicLines(file, files) =
    stdout = $(fopen $(file), wb)
 
-   protected.print = false
+   public.print = false
 
    awk($(files))
    case $'%%MAGICEND%%'
