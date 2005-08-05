@@ -14,14 +14,14 @@ include $(STDLIB)/build/LaTeX
 #
 # Define the command line variables.
 #
-DefineCommandVars(.)
+DefineCommandVars()
 
 #
 # Include the OMakefile.
 # If the version variable is set,
 # build the version in that directory.
 #
-if $(defined VERSION)
+if $(defined Options.VERSION)
     #
     # Allow subdirectories to be created at will.
     #
@@ -36,7 +36,7 @@ if $(defined VERSION)
     #
     # Build the project in a subdirectory.
     #
-    vmount(-l, ., $(VERSION))
-    .SUBDIRS: $(VERSION)
+    vmount(-l, ., $(Options.VERSION))
+    .SUBDIRS: $(Options.VERSION)
 else
     .SUBDIRS: .

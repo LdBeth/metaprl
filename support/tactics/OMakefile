@@ -25,7 +25,7 @@ MLFILES[] =
     basic_tactics
 
 section
-    export $(STANDARD_BUILD_ENV)
+    value $(STANDARD_BUILD_ENV)
     files = $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ), $(MLFILES))
     $(files):
 

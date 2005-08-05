@@ -94,11 +94,11 @@ LIBS     = $(LIBMOJAVE_CLIB)$(EXT_LIB)
 #
 # If MCC is enabled, add the libraries
 #
-if $(defined MCC)
-    LMARDEPS += $(MCC)/lib/firtype$(EXT_LIB)
-    LMXADEPS += $(MCC)/lib/firtype.cmxa
-    LMADEPS  += $(MCC)/lib/firtype.cma
-    TLMADEPS += $(MCC)/lib/firtype.cma
+if $(defined Options.MCC)
+    LMARDEPS += $(Options.MCC)/lib/firtype$(EXT_LIB)
+    LMXADEPS += $(Options.MCC)/lib/firtype.cmxa
+    LMADEPS  += $(Options.MCC)/lib/firtype.cma
+    TLMADEPS += $(Options.MCC)/lib/firtype.cma
     export
 
 #

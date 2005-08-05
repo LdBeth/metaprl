@@ -7,7 +7,7 @@
 # Function to generate the config file
 #
 MakeConfig(name) =
-    fullname = $(in $(ROOT), $(file $(name)))
+    protected.fullname = $(in $(ROOT), $(file $(name)))
     CONFIG1 = $"""
 # Main MetaPRL configuration file.
 

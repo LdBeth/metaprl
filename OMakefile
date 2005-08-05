@@ -60,7 +60,7 @@ if $(file-exists mk/config)
     include mk/config
     export
 else
-    fullname = $(MakeConfig mk/config)
+    protected.fullname = $(MakeConfig mk/config)
     eprintln($"!!!!! A new config file $(fullname) was created for you.
 !!!!! In that file, we filled in a number of default values for you.
 !!!!! In particular, by default only the following theories will be compiled in:
@@ -108,11 +108,6 @@ SLOPPY_DEPENDENCIES = $(Bool $(SLOPPY_DEPENDENCIES))
 #
 .INCLUDE: mk/config.local
     $(CP) $(file mk/config.local.empty) $(file mk/config.local)
-
-#
-# Other helper files
-#
-.INCLUDE: mk/prlcomp
 
 #
 # Win32-specific config.
@@ -530,6 +525,13 @@ CONVERT = $(file $(BIN)/convert$(EXE))
 CAMLP4NFLAGS = $`(PREFIXED_OCAMLINCLUDES)
 CAMLP4OFLAGS = $`(PREFIXED_OCAMLINCLUDES)
 MPTIME =
+
+#
+# Other helper files
+#
+declare THEORYDESCR THEORYNAME
+
+.INCLUDE: mk/prlcomp
 
 # Dependency analysis uses -prl flag by default
 OCAMLDEPFLAGS += -prl
