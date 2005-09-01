@@ -3,6 +3,14 @@ HTMLDOCFLAGS = --no-title --size letter --bodycolor white --toclevel 4
 GEN-PS = $`(HTMLDOC) -t ps2 $`(HTMLDOCFLAGS)
 GEN-PDF = $`(HTMLDOC) -t pdf $`(HTMLDOCFLAGS)
 
+static. =
+   print($'--- Testing for htmldoc... ')
+   HTMLDOC_ENABLED = $(Bool $(where htmldoc))
+   if $(HTMLDOC_ENABLED)
+      println($'(htmldoc found)')
+   else
+      println($'(FAILED - no htmldoc found)')
+
 WELCOME[] =
     mp
     mp-links
@@ -54,21 +62,23 @@ DEVELOPER-GUIDE[] =
     term_ds_safety
     profiling
 
-HtmlDoc(name, dir, files) =
-   doc: $(name).ps $(name).pdf
+if $(HTMLDOC_ENABLED)
 
-   FILES = $(addprefix $(dir)/, $(addsuffix .html, $(files)))
+   HtmlDoc(name, dir, files) =
+      doc: $(name).ps $(name).pdf
 
-   $(name).ps: $(FILES)
-      $(GEN-PS) $(FILES) -f $@
+      FILES = $(addprefix $(dir)/, $(addsuffix .html, $(files)))
 
-   $(name).pdf: $(FILES)
-      $(GEN-PDF) $(FILES) -f $@
+      $(name).ps: $(FILES)
+         $(GEN-PS) $(FILES) -f $@
 
-HtmlDoc(introduction, htmlman, $(WELCOME))
-HtmlDoc(user-guide, htmlman/user-guide, $(USER-GUIDE))
-HtmlDoc(system, htmlman/system, $(SYSTEM))
-HtmlDoc(developer-guide, htmlman/developer-guide, $(DEVELOPER-GUIDE))
+      $(name).pdf: $(FILES)
+         $(GEN-PDF) $(FILES) -f $@
+
+   HtmlDoc(introduction, htmlman, $(WELCOME))
+   HtmlDoc(user-guide, htmlman/user-guide, $(USER-GUIDE))
+   HtmlDoc(system, htmlman/system, $(SYSTEM))
+   HtmlDoc(developer-guide, htmlman/developer-guide, $(DEVELOPER-GUIDE))
 
 clean:
    $(CLEAN)
