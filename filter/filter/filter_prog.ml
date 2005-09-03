@@ -1318,6 +1318,8 @@ let rewrite_type_patt loc (kind, name) =
             <:patt< Rewrite_sig.RewriteNum $name$ >>
        | RewriteShapeType ->
             <:patt< Rewrite_sig.RewriteShape $name$ >>
+       | RewriteOperatorType ->
+            <:patt< Rewrite_sig.RewriteOperator $name$ >>
        | RewriteLevelType ->
             <:patt< Rewrite_sig.RewriteLevel $name$ >>
        | RewriteUnsupportedType ->

@@ -116,8 +116,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       type ty_param = term poly_ty_param
       type ty_bterm = term poly_ty_bterm
       type ty_term  = (term, term) poly_ty_term
-      type rewrite_item = (term, level_exp) poly_rewrite_item
-      type match_param = level_exp poly_match_param
+      type rewrite_item = (param, term, level_exp) poly_rewrite_item
+      type match_param = (param, level_exp) poly_match_param
 
       type match_term =
          MatchTerm of string list * match_param list * bound_term' list
@@ -245,7 +245,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let rec param2_of_param1 p =
       let p =
          match Term1.dest_param p with
-            (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | Quote) as p -> p
+            (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | MOperator _ | Quote) as p -> p
+          | Operator op -> Operator { op with opparam_params = List.map param2_of_param1 op.opparam_params }
           | MLevel l -> MLevel (levex2_of_levex1 l)
           | ObId pl -> ObId (List.map param2_of_param1 pl)
           | ParamList pl -> ParamList (List.map param2_of_param1 pl)
@@ -295,7 +296,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let rec param1_of_param2 p =
       let p =
          match Term2.dest_param p with
-            (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | Quote) as p -> p
+            (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | MOperator _ | Quote) as p -> p
+          | Operator op -> Operator { op with opparam_params = List.map param1_of_param2 op.opparam_params }
           | MLevel l -> MLevel (levex1_of_levex2 l)
           | ObId pl -> ObId (List.map param1_of_param2 pl)
           | ParamList pl -> ParamList (List.map param1_of_param2 pl)
@@ -370,7 +372,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let tp_of_tp1 = function
       TyToken t -> TyToken (term_of_term1 t)
-    | (TyNumber | TyString | TyShape | TyLevel | TyVar | TyQuote) as tp -> tp
+    | (TyNumber | TyString | TyShape | TyOperator | TyLevel | TyVar | TyQuote) as tp -> tp
 
    let rec re_of_re1 = function
     | Err1.GenericError  -> GenericError
@@ -518,8 +520,13 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          { le_const = c; le_vars = vs1 },
          { le_const = c; le_vars = vs2 }
 
+   let split_opparam op =
+      let pl1, pl2 = split op.opparam_params in
+         { op with opparam_params = pl1 }, { op with opparam_params = pl2 }
+
    let split_param' = function
-      (Number _ | String _ | Token _ | Var _ | Shape _ | MNumber _ | MString _ | MToken _ | MShape _ | Quote) as p -> p, p
+      (Number _ | String _ | Token _ | Var _ | Shape _ | MNumber _ | MString _ | MToken _ | MShape _ | MOperator _ | Quote) as p -> p, p
+    | Operator op -> let op1, op2 = split_opparam op in Operator op1, Operator op2
     | MLevel (l1, l2) -> MLevel l1, MLevel l2
     | ObId pl -> let pl1, pl2 = split pl in ObId pl1, ObId pl2
     | ParamList pl -> let pl1, pl2 = split pl in ParamList pl1, ParamList pl2
@@ -571,7 +578,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let split_ty_param = function
       TyToken (t1, t2) -> TyToken t1, TyToken t2
-    | (TyNumber | TyString | TyShape | TyLevel | TyVar | TyQuote) as tp -> tp, tp
+    | (TyNumber | TyString | TyShape | TyOperator | TyLevel | TyVar | TyQuote) as tp -> tp, tp
 
    let split_ty_params pl =
       split (List.map split_ty_param pl)
@@ -779,12 +786,24 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let merge_params = merge_list merge_param "param"
    let merge_address_arr = merge_array merge_address "address"
 
+   let merge_opname x op1 op2 =
+      if not (Opname.eq op1 op2) then
+         report_error x "opnames mismatch";
+      op1
+
+   let merge_opparam x op1 op2 =
+      { opparam_name = merge_opname x op1.opparam_name op2.opparam_name;
+        opparam_params = merge_params x op1.opparam_params op2.opparam_params;
+        opparam_arities = merge_ints x op1.opparam_arities op2.opparam_arities
+      }
+
    let merge_param' x p1 p2 =
       match p1, p2 with
-         (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | Quote as p1),
-         (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | Quote as p2)
+         (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | MOperator _ | Quote as p1),
+         (Number _ | String _ | Token _ | Shape _ | Var _ | MNumber _ | MString _ | MToken _ | MShape _ | MOperator _ | Quote as p2)
          when p1 = p2 ->
             p1
+       | Operator op1, Operator op2 -> Operator (merge_opparam x op1 op2)
        | MLevel l1, MLevel l2 -> MLevel (l1, l2)
        | ObId pl1, ObId pl2 -> ObId (merge_params x pl1 pl2)
        | ParamList pl1, ParamList pl2 -> ParamList (merge_params x pl1 pl2)
@@ -815,11 +834,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let merge_op x op1 op2 =
       (* XXX: TODO: need some consistency checks *)
       op1, op2
-
-   let merge_opname x op1 op2 =
-      if not (Opname.eq op1 op2) then
-         report_error x "opnames mismatch";
-      op1
 
    let merge_term x t1 t2 =
       if not (Opname.eq (Term1.opname_of_term t1) (Term2.opname_of_term t2)) then begin
@@ -2544,6 +2558,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p1_1, p1_2 = p1 in
          merge merge_bool "TermSubst.equal_params" (wrap2 TermSubst1.equal_params p0_1 p1_1) (wrap2 TermSubst2.equal_params p0_2 p1_2)
 
+      let opparam_eq (p0 : param op_param) (p1 : param op_param) =
+         let p0_1, p0_2 = split_opparam p0 in
+         let p1_1, p1_2 = split_opparam p1 in
+         merge merge_bool "TermSubst.opparam_eq" (wrap2 TermSubst1.opparam_eq p0_1 p1_1) (wrap2 TermSubst2.opparam_eq p0_2 p1_2)
+
       let equal_operators (p0 : operator) (p1 : operator) =
          let p0_1, p0_2 = p0 in
          let p1_1, p1_2 = p1 in
@@ -2668,6 +2687,22 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       let canonical_term_of_shape (p0 : shape) =
          merge merge_term "TermShape.canonical_term_of_shape" (wrap1 TermShape1.canonical_term_of_shape p0) (wrap1 TermShape2.canonical_term_of_shape p0)
+
+      let opparam_of_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge merge_opparam "TermShape.opparam_of_term" (wrap1 TermShape1.opparam_of_term p0_1) (wrap1 TermShape2.opparam_of_term p0_2)
+
+      let shape_of_opparam (p0 : param op_param) =
+         let p0_1, p0_2 = split_opparam p0 in
+         merge merge_shape "TermShape.shape_of_opparam" (wrap1 TermShape1.shape_of_opparam p0_1) (wrap1 TermShape2.shape_of_opparam p0_2)
+
+      let string_of_opparam (p0 : param op_param) =
+         let p0_1, p0_2 = split_opparam p0 in
+         merge merge_string "TermShape.string_of_opparam" (wrap1 TermShape1.string_of_opparam p0_1) (wrap1 TermShape2.string_of_opparam p0_2)
+
+      let canonical_term_of_opparam (p0 : param op_param) =
+         let p0_1, p0_2 = split_opparam p0 in
+         merge merge_term "TermShape.canonical_term_of_opparam" (wrap1 TermShape1.canonical_term_of_opparam p0_1) (wrap1 TermShape2.canonical_term_of_opparam p0_2)
 
    end
 

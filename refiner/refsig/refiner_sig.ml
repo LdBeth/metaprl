@@ -77,6 +77,7 @@ sig
                     with type RwTypes.level_exp = TermType.level_exp
                     with type RwTypes.operator = TermType.operator
                     with type RwTypes.address = TermAddr.address
+                    with type RwTypes.param = TermType.param
 
    module Refine : RefineSig
                    with type term = TermType.term

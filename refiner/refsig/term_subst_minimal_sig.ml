@@ -28,6 +28,7 @@
  *
  * Author: Alexey Nogin <nogin@cs.cornell.edu>
  *)
+open Term_sig
 
 module type TermSubstMinimalSig =
 sig
@@ -35,6 +36,7 @@ sig
    open SubstTypes
 
    val equal_params : param -> param -> bool
+   val opparam_eq : param op_param -> param op_param -> bool
 end
 
 (*

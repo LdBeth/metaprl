@@ -70,7 +70,7 @@ module MakeRewriteMatchRedex (**)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
-   (TermShape : TermShapeSig with type term = TermType.term)
+   (TermShape : TermShapeSig with type term = TermType.term and type param = TermType.param)
    (RefineError : RefineErrorSig with module Types = TermType)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
@@ -156,6 +156,7 @@ struct
        | StackVar _
        | StackString _
        | StackShape _
+       | StackOperator _
        | StackNumber _  -> raise (Invalid_argument "Rewrite_match_redex.restrict_context_vars: internal error")
 
    let restrict_vars stack var_set conts vars =
@@ -288,6 +289,7 @@ struct
            (* This require special equality *)
           | StackNumber i, StackNumber j -> Lm_num.eq_num i j
           | StackShape sh1, StackShape sh2 -> TermShape.eq sh1 sh2
+          | StackOperator op1, StackOperator op2 -> opparam_eq op1 op2
           | StackOpname t1, StackOpname t2 -> Opname.eq t1 t2
           | sp', _ -> sp = sp'
       in
@@ -315,6 +317,9 @@ struct
                REF_RAISE(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
        | RWShape sh', Shape sh ->
             if not (TermShape.eq sh' sh) then
+               REF_RAISE(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
+       | RWOperator op', Operator op ->
+            if not (opparam_eq op' op) then
                REF_RAISE(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
          (* Variable matches *)
        | RWQuote, Quote -> ()
@@ -346,6 +351,13 @@ struct
                      i (Array.length stack) (string_of_shape sh) eflush
             ENDIF;
             update_redex_param stack i (StackShape sh) PARAM_REASON
+       | RWMOperator i, Operator op ->
+            IFDEF VERBOSE_EXN THEN
+               if !debug_rewrite then
+                  eprintf "Rewrite.match_redex_params.RWMOperator: stack(%d)/%d <- %s%t" (**)
+                     i (Array.length stack) (string_of_opparam op) eflush
+            ENDIF;
+            update_redex_param stack i (StackOperator op) PARAM_REASON
        | RWMVar i, Var v ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
@@ -392,6 +404,13 @@ struct
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
                   eprintf "Rewrite.match_redex_params.RWMShape: stack(%d)/%d <- %a%t" (**)
+                     i (Array.length stack) output_symbol v eflush
+            ENDIF;
+            update_redex_param stack i (StackVar v) PARAM_REASON
+       | RWMOperator i, MOperator v ->
+            IFDEF VERBOSE_EXN THEN
+               if !debug_rewrite then
+                  eprintf "Rewrite.match_redex_params.RWMOperator: stack(%d)/%d <- %a%t" (**)
                      i (Array.length stack) output_symbol v eflush
             ENDIF;
             update_redex_param stack i (StackVar v) PARAM_REASON

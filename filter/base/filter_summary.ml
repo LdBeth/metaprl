@@ -123,6 +123,8 @@ let print_ty_param out = function
       fprintf out "<L>"
  | TyShape ->
       fprintf out "<Sh>"
+ | TyOperator ->
+      fprintf out "<Op>"
  | TyVar ->
       fprintf out "<V>"
  | TyQuote ->
@@ -582,6 +584,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
        | TyNumber
        | TyString
        | TyShape
+       | TyOperator
        | TyLevel
        | TyVar
        | TyQuote as param ->
@@ -1124,6 +1127,8 @@ struct
                TyString
           | "sh" ->
                TyShape
+          | "op" ->
+               TyOperator
           | "t" ->
                TyToken (convert.term_f (one_subterm t))
           | "l" ->
@@ -1700,6 +1705,8 @@ struct
             mk_string_param_term ty_param_op "s" []
        | TyShape ->
             mk_string_param_term ty_param_op "sh" []
+       | TyOperator ->
+            mk_string_param_term ty_param_op "op" []
        | TyToken t ->
             mk_string_param_term ty_param_op "t" [convert.term_f t]
        | TyLevel ->

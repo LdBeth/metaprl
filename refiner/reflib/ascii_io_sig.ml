@@ -72,12 +72,15 @@ P<comment> <name> Number <number>
 P<comment> <name> String <string>
 P<comment> <name> Token <opname_name>
 P<comment> <name> Var <string>
+P<comment> <name> Shape <term_name>
+P<command> <name> Operator <term_name>
 P<comment> <name> MNumber <string>
 P<comment> <name> MString <string>
 P<comment> <name> MToken <string>
+P<comment> <name> MShape <string>
+P<comment> <name> MOperator <string>
 P<comment> <name> MLevel <int> [<var_1_string> <off_1_int> ... <var_1_string> <off_1_int>]
 P<comment> <name> Quote
-P<comment> <name> Shape <term_name>
 
 Each name may be defined at most once. The "name" is typically several
 characters long, usually - a base short name and a serial number. If a string

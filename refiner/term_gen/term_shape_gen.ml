@@ -84,6 +84,7 @@ struct
        | String _ | MString _ -> ShapeString
        | Token _ | MToken _ -> ShapeToken
        | Shape _ | MShape _ -> ShapeShape
+       | Operator _ | MOperator _ -> ShapeOperator
        | Var _ -> ShapeVar
        | MLevel _ -> ShapeLevel
        | Quote -> ShapeQuote
@@ -103,6 +104,23 @@ struct
            shape_params = List.map param_type op.op_params;
            shape_arities = List.map bterm_type t.term_terms
          }
+
+   let opparam_of_term t =
+      if is_var_term t || is_so_var_term t || is_sequent_term t then
+         raise (Invalid_argument "Term_shape_gen.opparam_of_term: variables and sequents are not allowed")
+      else
+         let t = dest_term t in
+         let op = dest_op t.term_op in
+            { opparam_name = op.op_name;
+              opparam_params = op.op_params;
+              opparam_arities = List.map bterm_type t.term_terms
+            }
+
+   let shape_of_opparam op =
+      { shape_opname = op.opparam_name;
+        shape_params = List.map param_type op.opparam_params;
+        shape_arities = op.opparam_arities
+      }
 
    (*
     * Remove quotations.
@@ -138,13 +156,14 @@ struct
    let canonical_param ps =
       make_param (**)
          (match ps with
-            ShapeNumber -> MNumber (Lm_symbol.add "n")
-          | ShapeString -> MString (Lm_symbol.add "s")
-          | ShapeToken  -> MToken  (Lm_symbol.add "t")
-          | ShapeLevel  -> MLevel (mk_level 0 [mk_level_var (Lm_symbol.add "l") 0])
-          | ShapeShape  -> MShape (Lm_symbol.add "sh")
-          | ShapeVar    -> Var (Lm_symbol.add "v")
-          | ShapeQuote  -> Quote)
+            ShapeNumber   -> MNumber (Lm_symbol.add "n")
+          | ShapeString   -> MString (Lm_symbol.add "s")
+          | ShapeToken    -> MToken  (Lm_symbol.add "t")
+          | ShapeLevel    -> MLevel (mk_level 0 [mk_level_var (Lm_symbol.add "l") 0])
+          | ShapeShape    -> MShape (Lm_symbol.add "sh")
+          | ShapeOperator -> MOperator (Lm_symbol.add "op")
+          | ShapeVar      -> Var (Lm_symbol.add "v")
+          | ShapeQuote    -> Quote)
 
    let canonical_subterm =
       let x = Lm_symbol.add "x" in
@@ -160,54 +179,51 @@ struct
          (mk_op sh.shape_opname (List.map canonical_param sh.shape_params))
          (List.map canonical_subterm sh.shape_arities)
 
+   let canonical_term_of_opparam op =
+      mk_term (mk_op op.opparam_name op.opparam_params) (List.map canonical_subterm op.opparam_arities)
+
    let print_param buf param =
       let s =
          match param with
-            ShapeNumber -> "N"
-          | ShapeString -> "S"
-          | ShapeToken  -> "T"
-          | ShapeLevel  -> "L"
-          | ShapeVar    -> "V"
-          | ShapeQuote  -> "Q"
-          | ShapeShape  -> "Sh"
+            ShapeNumber   -> "N"
+          | ShapeString   -> "S"
+          | ShapeToken    -> "T"
+          | ShapeLevel    -> "L"
+          | ShapeVar      -> "V"
+          | ShapeQuote    -> "Q"
+          | ShapeShape    -> "Sh"
+          | ShapeOperator -> "Op"
       in
          Buffer.add_string buf s
 
+   let rec print_arity buf = function
+      [i] ->
+         Buffer.add_string buf (string_of_int i)
+    | i :: t ->
+         Buffer.add_string buf (string_of_int i);
+         Buffer.add_char buf ';';
+         print_arity buf t
+    | [] ->
+         ()
+
    let string_of_shape { shape_opname = name; shape_params = params; shape_arities = arities } =
       let buf = Buffer.create 32 in
-      let rec print_arity = function
-         [i] ->
-            Buffer.add_string buf (string_of_int i)
-       | i :: t ->
-            Buffer.add_string buf (string_of_int i);
-            Buffer.add_char buf ';';
-            print_arity t
-       | [] ->
-            ()
-      in
          Buffer.add_string buf (string_of_opname name);
          Buffer.add_char buf '[';
          List.iter (print_param buf) params;
          Buffer.add_string buf "]{";
-         print_arity arities;
+         print_arity buf arities;
          Buffer.add_string buf "}";
          Buffer.contents buf
+
+   let string_of_opparam op =
+      string_of_shape (shape_of_opparam op)
 
    (*
     * Try to be a bit more brief about the printout.
     *)
    let short_string_of_shape { shape_opname = name; shape_params = params; shape_arities = arities } =
       let buf = Buffer.create 32 in
-      let rec print_arity = function
-         [i] ->
-            Buffer.add_string buf (string_of_int i)
-       | i :: t ->
-            Buffer.add_string buf (string_of_int i);
-            Buffer.add_char buf ';';
-            print_arity t
-       | [] ->
-            ()
-      in
          Buffer.add_string buf (fst (dst_opname name));
          (match params with
              [] ->
@@ -221,7 +237,7 @@ struct
                 ()
            | _ ->
                 Buffer.add_string buf "{";
-                print_arity arities;
+                print_arity buf arities;
                 Buffer.add_string buf "}");
          Buffer.contents buf
 

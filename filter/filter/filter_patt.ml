@@ -120,6 +120,9 @@ let build_term_patt loc term =
              | MShape v ->
                   <:patt< Term_sig.MatchShape ($patt_of_var v$, _) >>
 
+             | MOperator v ->
+                  <:patt< Term_sig.MatchOperator ($patt_of_var v$, _) >>
+
              | Var v ->
                   <:patt< Term_sig.MatchVar $patt_of_var v$ >>
 
@@ -141,6 +144,8 @@ let build_term_patt loc term =
 
              | Shape _ ->
                   raise (Invalid_argument "term_patt: shape constants not supported")
+             | Operator _ ->
+                  raise (Invalid_argument "term_patt: opparam constants not supported")
              | Quote ->
                   raise (Invalid_argument "term_patt: quotes not supported")
              | ObId _ ->

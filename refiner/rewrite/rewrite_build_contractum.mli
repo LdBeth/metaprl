@@ -49,7 +49,7 @@ module MakeRewriteBuildContractum
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
-   (TermShape : TermShapeSig with type term = TermType.term)
+   (TermShape : TermShapeSig with type term = TermType.term and type param = TermType.param)
    (RefineError : RefineErrorSig with module Types = TermType)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term

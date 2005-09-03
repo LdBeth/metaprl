@@ -205,13 +205,29 @@ struct
       match p1, p2 with
          Number n1, Number n2 ->
             Lm_num.eq_num n1 n2
+       | ObId pl1, ObId pl2
        | ParamList pl1, ParamList pl2 ->
-            List.for_all2 equal_params pl1 pl2
+            Lm_list_util.for_all2 equal_params pl1 pl2
+       | Token op1, Token op2 ->
+            Opname.eq op1 op2
+       | Operator op1, Operator op2 ->
+            opparam_eq op1 op2
+       | MNumber v1, MNumber v2
+       | MString v1, MString v2
+       | MToken v1, MToken v2
+       | MOperator v1, MOperator v2
+       | Var v1, Var v2 ->
+            Lm_symbol.eq v1 v2
        | _ ->
             p1 = p2
 
+   and opparam_eq op1 op2 =
+      Opname.eq op1.opparam_name op2.opparam_name
+         && Lm_list_util.for_all2 equal_params op1.opparam_params op2.opparam_params
+         && op1.opparam_arities = op2.opparam_arities
+
    let equal_operators op1 op2 =
-      Opname.eq op1.op_name op2.op_name && List.for_all2 equal_params op1.op_params op2.op_params
+      Opname.eq op1.op_name op2.op_name && Lm_list_util.for_all2 equal_params op1.op_params op2.op_params
 
    let rec remove_var v = function
       [] ->

@@ -297,6 +297,8 @@ struct
                    TyToken Term_ty_infer.token_type
               | "sh" ->
                    TyShape
+              | "op" ->
+                   TyOperator
               | "v" ->
                    TyVar
               | "l" ->
@@ -309,11 +311,12 @@ struct
    (*
     * For new symbols.
     *)
-   let gensym = ref 0
 
-   let mk_gensym () =
-      incr gensym;
-      Lm_symbol.make "$" !gensym
+   let mk_gensym =
+      let gensym = ref 0 in
+         fun () ->
+            incr gensym;
+            Lm_symbol.make "$" !gensym
 
    (* Currying *)
    let mk_bterm' (vars, bterm) =
@@ -345,6 +348,9 @@ struct
        | Shape _
        | MShape _ ->
             TyShape
+       | Operator _
+       | MOperator _ ->
+            TyOperator
        | ObId _
        | ParamList _ ->
             raise (Invalid_argument "ty_param_of_param: unexpected Nuprl5 parameter")
@@ -426,11 +432,24 @@ struct
             make_param (MShape v)
        | Token t ->
             make_param (Shape {shape_opname = t; shape_params = []; shape_arities = []})
+       | Operator op -> make_param (Shape (shape_of_opparam op))
        | Shape _
        | MShape _ ->
             p
        | _ ->
             raise (BadParamCast (p, "sh"))
+
+   let cast_operator loc p =
+      match dest_param p with
+         MString v ->
+            make_param (MOperator v)
+       | Token t ->
+            make_param (Operator {opparam_name = t; opparam_params = []; opparam_arities = []})
+       | Operator _
+       | MOperator _ ->
+            p
+       | _ ->
+            raise (BadParamCast (p, "op"))
 
    (*
     * Parameter casting.
@@ -448,6 +467,8 @@ struct
          cast_token loc p, TyToken Term_ty_infer.token_type
     | "sh" ->
          cast_shape loc p, TyShape
+    | "op" ->
+         cast_operator loc p, TyOperator
     | opname ->
          (*
           * By default, everything else is a token, and the name
@@ -1554,8 +1575,8 @@ struct
              w
            | w = param_const; ":"; t = opname_param ->
              cast_param loc w t
-           | "("; t = term; ")" ->
-             make_param (Shape (shape_of_term t))
+           | "("; t = term; ")"; ":"; pt = opname_param ->
+             cast_param loc (make_param (Operator (opparam_of_term t))) pt
           ]];
 
       param_const:
@@ -1900,6 +1921,7 @@ struct
                 | "t" -> ShapeToken
                 | "v" -> ShapeVar
                 | "sh" -> ShapeShape
+                | "op" -> ShapeOperator
                 |  s  -> raise (BadParamCast (make_param (String ""), s))
           ]];
 

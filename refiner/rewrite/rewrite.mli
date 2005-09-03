@@ -50,13 +50,14 @@ module Rewrite (**)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
-   (TermShape : TermShapeSig with type term = TermType.term)
+   (TermShape : TermShapeSig with type term = TermType.term and type param = TermType.param)
    (RefineError : RefineErrorSig with module Types = TermType)
 : RewriteSig
   with type RwTypes.term = TermType.term
   with type RwTypes.level_exp = TermType.level_exp
   with type RwTypes.operator = TermType.operator
   with type RwTypes.address = TermAddr.address
+  with type RwTypes.param = TermType.param
 
 (*
  * -*-

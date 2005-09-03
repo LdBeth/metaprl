@@ -178,6 +178,8 @@ let hash_ty_param venv code p =
          hash_int code 0x0902bb25
     | TyShape ->
          hash_int code 0x211b22ae
+    | TyOperator ->
+         hash_int code 0x3276cb0c
     | TyQuote ->
          hash_int code 0x1c1b8520
 

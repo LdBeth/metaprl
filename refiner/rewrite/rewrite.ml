@@ -77,7 +77,7 @@ module Rewrite (**)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
-   (TermShape : TermShapeSig with type term = TermType.term)
+   (TermShape : TermShapeSig with type term = TermType.term and type param = TermType.param)
 
    (RefineError : RefineErrorSig with module Types = TermType) =
 struct
@@ -130,7 +130,7 @@ struct
    type rewrite_rule = RewriteTypes.rewrite_rule
    type rewrite_redex = RewriteTypes.rewrite_redex
 
-   type rewrite_item = (term, level_exp) poly_rewrite_item
+   type rewrite_item = (param, term, level_exp) poly_rewrite_item
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
@@ -225,6 +225,7 @@ struct
     | PVar (s, ShapeString) -> RewriteStringType, s
     | PVar (s, ShapeToken) -> RewriteTokenType, s
     | PVar (s, ShapeShape) -> RewriteShapeType, s
+    | PVar (s, ShapeOperator) -> RewriteOperatorType, s
     | PVar (s, ShapeLevel) -> RewriteLevelType, s
     | SOVarPattern (s , _, _)
     | SOVarInstance (s , _, _)
@@ -297,6 +298,13 @@ struct
          RewriteShape (**)
             (match gstack with
                StackShape sh -> RewriteParam sh
+             | StackVar v -> RewriteMetaParam v
+             | _ ->
+               REF_RAISE(extract_exn))
+    | PVar (_, ShapeOperator) ->
+         RewriteOperator (**)
+            (match gstack with
+               StackOperator op -> RewriteParam op
              | StackVar v -> RewriteMetaParam v
              | _ ->
                REF_RAISE(extract_exn))

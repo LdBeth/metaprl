@@ -107,13 +107,14 @@ let string_of_op_shape shape =
    let string_of_param param =
       let s =
          match param with
-            ShapeString -> "S"
-          | ShapeNumber -> "N"
-          | ShapeVar    -> "V"
-          | ShapeLevel  -> "L"
-          | ShapeToken  -> "T"
-          | ShapeShape  -> "Sh"
-          | ShapeQuote  -> "Q"
+            ShapeString   -> "S"
+          | ShapeNumber   -> "N"
+          | ShapeVar      -> "V"
+          | ShapeLevel    -> "L"
+          | ShapeToken    -> "T"
+          | ShapeShape    -> "Sh"
+          | ShapeOperator -> "Op"
+          | ShapeQuote    -> "Q"
       in
          Buffer.add_string buf s
    in

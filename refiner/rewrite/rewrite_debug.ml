@@ -53,7 +53,7 @@ module MakeRewriteDebug
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
-   (TermShape : TermShapeSig with type term = TermType.term)
+   (TermShape : TermShapeSig with type term = TermType.term and type param = TermType.param)
    (RefineError : RefineErrorSig with module Types = TermType)
    =
 struct
@@ -96,7 +96,9 @@ struct
     | StackOpname o ->
          fprintf out "Opname %s" (string_of_opname o)
     | StackShape sh ->
-         fprintf out "Opname %s" (string_of_shape sh)
+         fprintf out "Shape %s" (string_of_shape sh)
+    | StackOperator op ->
+         fprintf out "Operator %s" (string_of_opparam op)
     | StackVar v ->
          fprintf out "Var %a" output_symbol v
     | StackLevel _ ->
@@ -172,6 +174,8 @@ struct
          fprintf out "%s:t" (string_of_opname o)
     | RWShape sh ->
          fprintf out "%s:sh" (string_of_shape sh)
+    | RWOperator op ->
+         fprintf out "%s:op" (string_of_opparam op)
     | RWQuote ->
          fprintf out "q"
     | RWMNumber i ->
@@ -182,6 +186,8 @@ struct
          fprintf out "@@%d:t" i
     | RWMShape i ->
          fprintf out "@@%d:sh" i
+    | RWMOperator i ->
+         fprintf out "@@%d:op" i
     | RWMLevel1 i ->
          fprintf out "@@%d:l" i
     | RWMLevel2 { rw_le_const = c; rw_le_vars = vars } ->
@@ -207,7 +213,9 @@ struct
     | Token s ->
          fprintf out "%s:t" (string_of_opname s)
     | Shape sh ->
-         fprintf out "%s:t" (string_of_shape sh)
+         fprintf out "%s:sh" (string_of_shape sh)
+    | Operator op ->
+         fprintf out "%s:op" (string_of_opparam op)
     | Var s ->
          fprintf out "%s:v" (Lm_symbol.string_of_symbol s)
     | Quote ->

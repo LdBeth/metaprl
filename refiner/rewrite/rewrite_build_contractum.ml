@@ -64,7 +64,7 @@ module MakeRewriteBuildContractum
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
-   (TermShape : TermShapeSig with type term = TermType.term)
+   (TermShape : TermShapeSig with type term = TermType.term and type param = TermType.param)
    (RefineError : RefineErrorSig with module Types = TermType)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
@@ -366,6 +366,8 @@ struct
          Quote
     | RWShape sh ->
          Shape sh
+    | RWOperator op ->
+         Operator op
     | RWMNumber i ->
          begin
              match stack.(i) with
@@ -385,6 +387,7 @@ struct
               | StackVar v -> MString v
               | StackNumber j -> String (Lm_num.string_of_num j)
               | StackShape sh -> String (string_of_shape sh)
+              | StackOperator op -> String (string_of_opparam op)
               | _ -> raise(build_con_exn)
          end
     | RWMToken i ->
@@ -399,9 +402,19 @@ struct
          begin
              match stack.(i) with
                 StackShape s -> Shape s
-              | StackOpname o -> Shape {shape_opname = o; shape_params = []; shape_arities = [] }
+              | StackOperator op -> Shape (shape_of_opparam op)
+              | StackOpname o -> Shape { shape_opname = o; shape_params = []; shape_arities = [] }
               | StackString s -> MShape (Lm_symbol.add s)
               | StackVar v -> MShape v
+              | _ -> raise(build_con_exn)
+         end
+    | RWMOperator i ->
+         begin
+             match stack.(i) with
+                StackOperator op -> Operator op
+              | StackOpname o -> Operator { opparam_name = o; opparam_params = []; opparam_arities = [] }
+              | StackString s -> MOperator (Lm_symbol.add s)
+              | StackVar v -> MOperator v
               | _ -> raise(build_con_exn)
          end
     | RWMLevel1 i ->

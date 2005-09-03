@@ -848,12 +848,14 @@ struct
        | Token _
        | MLevel _
        | Shape _
+       | Operator _
        | Quote ->
             pvars
        | Var v
        | MNumber v
        | MString v
        | MShape v
+       | MOperator v
        | MToken v ->
             SymbolSet.add pvars v
        | ObId params
@@ -984,6 +986,8 @@ struct
             MatchToken (opname, Opname.dest_opname opname)
        | Shape s ->
             MatchShape s
+       | Operator op ->
+            MatchOperator op
        | Var v ->
             MatchVar v
        | MLevel l ->
@@ -993,6 +997,7 @@ struct
        | MString _
        | MToken _
        | MShape _
+       | MOperator _
        | ObId _
        | ParamList _ ->
             MatchUnsupported

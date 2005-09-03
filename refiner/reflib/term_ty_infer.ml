@@ -869,6 +869,7 @@ let standardize_ty_term ty_term =
              | TyNumber
              | TyString
              | TyShape
+             | TyOperator
              | TyLevel
              | TyVar
              | TyQuote ->
@@ -896,6 +897,7 @@ let standardize_ty_term ty_term =
                         TyToken (apply_subst subst t)
                    | TyNumber
                    | TyShape
+                   | TyOperator
                    | TyString
                    | TyLevel
                    | TyVar
@@ -1566,6 +1568,8 @@ and infer_params tenv venv info subst param ty_param =
     | MString _, TyString
     | Shape _, TyShape
     | MShape _, TyShape
+    | Operator _, TyOperator
+    | MOperator _, TyOperator
     | Var _, TyVar
     | Quote, TyQuote
     | MLevel _, TyLevel ->

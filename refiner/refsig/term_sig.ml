@@ -69,12 +69,19 @@ type shape_param =
  | ShapeLevel
  | ShapeVar
  | ShapeShape
+ | ShapeOperator
  | ShapeQuote
 
 type shape = {
    shape_opname  : opname;
    shape_params  : shape_param list;
    shape_arities : int list
+}
+
+type 'param op_param = {
+   opparam_name : opname;
+   opparam_params : 'param list;
+   opparam_arities : int list
 }
 
 (*
@@ -86,10 +93,12 @@ type ('level_exp, 'param) poly_param =
  | Token of opname
  | Var of var
  | Shape of shape
+ | Operator of 'param op_param
  | MNumber of var
  | MString of var
  | MToken of var
  | MShape of var
+ | MOperator of var
  | MLevel of 'level_exp
  | Quote
 
@@ -103,11 +112,12 @@ type ('level_exp, 'param) poly_param =
  * have an optional constant representation for small numbers,
  * and there are no Nuprl5 params.
  *)
-type 'level_exp poly_match_param =
+type ('param, 'level_exp) poly_match_param =
    MatchNumber of Lm_num.num * int option
  | MatchString of string
  | MatchToken of opname * string list
  | MatchShape of shape
+ | MatchOperator of 'param op_param
  | MatchVar of var
  | MatchLevel of 'level_exp
  | MatchUnsupported
@@ -201,7 +211,7 @@ sig
    (************************************************************************
     * DESTRUCTION
     *)
-   type match_param = level_exp poly_match_param
+   type match_param = (param, level_exp) poly_match_param
 
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list

@@ -569,7 +569,8 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
     | [RewriteString s]
     | [RewriteNum ((RewriteMetaParam _) as s)]
     | [RewriteToken ((RewriteMetaParam _) as s)]
-    | [RewriteShape ((RewriteMetaParam _) as s)] ->
+    | [RewriteShape ((RewriteMetaParam _) as s)]
+    | [RewriteOperator ((RewriteMetaParam _) as s)] ->
          let s = string_of_param s in
          if !debug_dform then
             eprintf "Dform.slot: str: %s%t" s eflush;
@@ -597,6 +598,10 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
          if !debug_dform then
              eprintf "Dform.slot: shape: %s%t" (string_of_shape sh) eflush;
          printer buf NOParens (canonical_term_of_shape sh)
+    | [RewriteOperator (RewriteParam op)] ->
+         if !debug_dform then
+             eprintf "Dform.slot: opparam: %s%t" (string_of_opparam op) eflush;
+         printer buf NOParens (canonical_term_of_opparam op)
     | [RewriteNum (RewriteParam n)] ->
          let s = Lm_num.string_of_num n in
             if !debug_dform then
@@ -671,6 +676,7 @@ let init_list =
     "slot",     [MString raw_sym; MString s_sym], slot;
     "slot",     [MString s_sym], slot;
     "slot",     [MShape s_sym], slot;
+    "slot",     [MOperator v_sym], slot;
     "slot",     [MLevel (mk_var_level_exp l_sym)], slot;
     "slot",     [MToken t_sym], slot;
     "slot",     [MNumber n_sym], slot;

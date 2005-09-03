@@ -173,6 +173,9 @@ struct
           | Shape s1     , Shape s2      -> shape_compare s1 s2
           | Shape _      , _             -> -1
           | _            , Shape _       -> 1
+          | Operator op1 , Operator op2  -> compare_opparams op1 op2
+          | Operator _   , _             -> -1
+          | _            , Operator _    -> 1
           | Quote        , _             -> -1
           | _            , Quote         -> 1
           | MNumber v1   , MNumber v2    -> Lm_symbol.compare v1 v2
@@ -187,6 +190,9 @@ struct
           | MShape v1    , MShape v2     -> Lm_symbol.compare v1 v2
           | MShape _     , _             -> -1
           | _            , MShape _      -> 1
+          | MOperator v1 , MOperator v2  -> Lm_symbol.compare v1 v2
+          | MOperator _  , _             -> -1
+          | _            , MOperator _   -> 1
           | MLevel l1    , MLevel l2     -> compare_levels l1 l2
           | MLevel _     , _             -> -1
           | _            , MLevel _      -> 1
@@ -194,6 +200,18 @@ struct
           | ObId _       , _             -> -1
           | _            , ObId _        -> 1
           | ParamList pl1, ParamList pl2 -> compare_plists pl1 pl2
+
+   and compare_opparams op1 op2 =
+      if op1 == op2 then
+         0
+      else
+         match Opname.compare op1.opparam_name op2.opparam_name with
+            0 ->
+               begin match compare_plists op1.opparam_params op2.opparam_params with
+                  0 -> Pervasives.compare op1.opparam_arities op2.opparam_arities
+                | i -> i
+               end
+          | i -> i
 
    and compare_levels l1 l2 =
       if l1==l2 then

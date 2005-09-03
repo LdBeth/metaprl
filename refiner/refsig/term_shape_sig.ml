@@ -64,6 +64,11 @@ sig
 
    val canonical_term_of_shape : shape -> term
 
+   val opparam_of_term : term -> param op_param
+   val shape_of_opparam : param op_param -> shape
+   val string_of_opparam : param op_param -> string
+   val canonical_term_of_opparam : param op_param -> term
+
    module ShapeSet : Lm_set_sig.LmSet with type elt = shape;;
    module ShapeTable : Lm_map_sig.LmMap with type key = shape;;
    module ShapeMTable : Lm_map_sig.LmMapList with type key = shape;;

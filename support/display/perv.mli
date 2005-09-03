@@ -219,6 +219,7 @@ declare slot[tok:t] : Dform
 declare slot[n:n] : Dform
 declare slot[v:v] : Dform
 declare slot[sh:sh] : Dform
+declare slot[sh:op] : Dform
 declare slot[eq]{'t : Dform} : Dform
 declare slot{'t : Dform} : Dform
 

@@ -177,6 +177,16 @@ struct
       in
          aux "" (dest_opname opname)
 
+    let rec format_list buf format = function
+         [h] ->
+            format buf h
+       | h::t ->
+            format buf h;
+            format_string buf "; ";
+            format_list buf format t
+       | [] ->
+            ()
+
    (* General parameter *)
    let rec format_param buf p =
       if !debug_simple_print then
@@ -186,31 +196,29 @@ struct
        | String s -> format_char buf '"'; format_string buf (String.escaped s); format_char buf '"'; format_string buf ":s"
        | Token t -> format_char buf '"'; format_string buf (String.escaped (string_of_opname t)); format_char buf '"'; format_string buf ":t"
        | Shape sh -> format_char buf '"'; format_string buf (String.escaped (string_of_shape sh)); format_char buf '"'; format_string buf ":sh"
+       | Operator op ->
+            format_char buf '(';
+            format_string buf (String.escaped (string_of_opname op.opparam_name));
+            format_paramlist buf op.opparam_params;
+            format_char buf '{';
+            format_list buf format_int op.opparam_arities;
+            format_string buf "}):op"
        | Quote -> format_string buf "@"
        | MNumber v -> format_var buf v; format_string buf ":n"
        | MString v -> format_var buf v; format_string buf ":s"
        | MToken v -> format_var buf v; format_string buf ":t"
-       | MShape v -> format_var buf v; format_string buf ":v"
+       | MShape v -> format_var buf v; format_string buf ":sh"
+       | MOperator v -> format_var buf v; format_string buf ":op"
        | MLevel l -> format_level_exp buf l; format_string buf ":l"
        | Var v -> format_var buf v; format_string buf ":v"
        | ObId a -> format_string buf "<object-id>"
        | ParamList l ->
-            let rec format = function
-               [h] ->
-                  format_param buf h
-             | h::t ->
-                  format_param buf h;
-                  format_string buf "; ";
-                  format t
-             | [] ->
-                  ()
-            in
                format_string buf "[";
-               format l;
+               format_list buf format_param l;
                format_string buf "]"
 
    (* List of params *)
-   let rec format_paramlist buf = function
+   and format_paramlist buf = function
       [] -> ()
     | h::[] ->
          format_param buf h

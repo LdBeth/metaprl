@@ -95,7 +95,7 @@ sig
    (*
     * Define types used in pattern matching.
     *)
-   type match_param = level_exp poly_match_param
+   type match_param = (param, level_exp) poly_match_param
    type match_term =
       MatchTerm of string list * match_param list * bound_term' list
     | MatchSequent of string list * match_term * hypothesis list * term

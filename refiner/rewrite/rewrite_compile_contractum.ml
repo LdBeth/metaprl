@@ -246,6 +246,16 @@ struct
                (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
 
+       | MOperator v ->
+            if array_rstack_p_mem ShapeOperator v stack then
+               (* New param *)
+               RWMShape (array_rstack_p_index ShapeOperator v stack)
+            else if strict = Relaxed && array_rstack_mem v stack then
+               RWMOperator (array_rstack_index v stack)
+            else
+               (* Free param *)
+               REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
+
        | MLevel l ->
             let { le_const = c; le_vars = vars } = dest_level l in
             let vars = List.map dest_level_var vars in
@@ -281,6 +291,7 @@ struct
        | String s -> RWString s
        | Token t -> RWToken t
        | Shape s -> RWShape s
+       | Operator o -> RWOperator o
        | Quote -> RWQuote
 
        | ObId id ->

@@ -10,7 +10,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,10 +26,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_symbol
+open Term_sig
 
 module type TermSubstSig =
 sig
@@ -73,6 +74,7 @@ sig
     *)
    val var_subst : term -> term -> var -> term
    val equal_params : param -> param -> bool
+   val opparam_eq : param op_param -> param op_param -> bool
    val equal_operators : operator -> operator -> bool
 
    (*

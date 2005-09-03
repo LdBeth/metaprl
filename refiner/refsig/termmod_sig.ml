@@ -51,7 +51,9 @@ sig
    end
    module TermShape : sig
       val shape_of_term : TermType.term -> shape
+      val opparam_of_term : TermType.term -> TermType.param op_param
       val canonical_term_of_shape : shape -> TermType.term
+      val canonical_term_of_opparam : TermType.param op_param -> TermType.term
    end
 
 
@@ -76,7 +78,9 @@ sig
    end
    module TermShape : sig
       val shape_of_term : TermType.term -> shape
+      val opparam_of_term : TermType.term -> TermType.param op_param
       val canonical_term_of_shape : shape -> TermType.term
+      val canonical_term_of_opparam : TermType.param op_param -> TermType.term
    end
 
    (*
