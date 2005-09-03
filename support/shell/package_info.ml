@@ -152,7 +152,7 @@ module Cache = MakeCaches (Convert)
  *)
 type info =
    { pack_cache    : Cache.StrFilterCache.t;
-     pack_groups   : (string, (string * StringSet.t)) Hashtbl.t;
+     pack_groups   : (string, (string * LexStringSet.t)) Hashtbl.t;
 
      (*
       * For GC purposes, we keep handles to modified packages.
@@ -212,12 +212,12 @@ let refresh pack_entry path =
             let dsc, theories =
                try Hashtbl.find pack.pack_groups thy.thy_group with
                   Not_found ->
-                     thy.thy_groupdesc, StringSet.empty
+                     thy.thy_groupdesc, LexStringSet.empty
             in
                if thy.thy_groupdesc <> dsc then
                   raise (Failure (sprintf "Description mismatch:\n %s described %s as %s,\nbut %s describes it as %s" (**)
-                                     (StringSet.choose theories) thy.thy_group dsc thy.thy_name thy.thy_groupdesc));
-               Hashtbl.replace pack.pack_groups thy.thy_group (dsc, StringSet.add theories thy.thy_name)
+                                     (LexStringSet.choose theories) thy.thy_group dsc thy.thy_name thy.thy_groupdesc));
+               Hashtbl.replace pack.pack_groups thy.thy_group (dsc, LexStringSet.add theories thy.thy_name)
          in
             List.iter add_theory (get_theories ()))
 
@@ -660,12 +660,12 @@ let group_exists pack group =
 let group_packages pack group =
    synchronize_pack pack (fun pack ->
       let desc, thys = (Hashtbl.find pack.pack_groups group) in
-         desc, StringSet.elements thys)
+         desc, LexStringSet.elements thys)
 
 let group_of_module pack name =
    let res = ref None in
       synchronize_pack pack (fun pack ->
-         Hashtbl.iter (fun gr (_, set) -> if StringSet.mem set name then res := Some gr) pack.pack_groups);
+         Hashtbl.iter (fun gr (_, set) -> if LexStringSet.mem set name then res := Some gr) pack.pack_groups);
       match !res with
          Some gr -> gr
        | None -> raise Not_found
