@@ -500,7 +500,7 @@ let t_rules = [|
    (r7,apply_r7,[9]);
    (r8,apply_r8,[9]);
    (r9,apply_r9,[9;10]);
-   (r10,apply_r10,[10]);
+   (r10,apply_r10,[]);
    (r11,apply_r11,[])
 |]
 
