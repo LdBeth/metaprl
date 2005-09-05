@@ -386,7 +386,7 @@ let r10 eq =
 let r11 eq =
       match eq with
        | _, v::_, _, r1::_ ->
-		 		is_var v && not (var_le v r1)
+		 		is_var v && is_var r1 && not (var_le v r1)
        | _ ->
             false
 
