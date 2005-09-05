@@ -499,7 +499,7 @@ let t_rules = [|
    (r6,apply_r6,[6;9]);
    (r7,apply_r7,[9]);
    (r8,apply_r8,[9]);
-   (r9,apply_r9,[9;10]);
+   (r9,apply_r9,[9]);
    (r10,apply_r10,[]);
    (r11,apply_r11,[])
 |]
