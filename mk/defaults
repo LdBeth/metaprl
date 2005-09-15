@@ -31,9 +31,16 @@ if $(equal $(OSTYPE), Win32)
 
 else
    CAMLLIB_DEFAULT = /usr/lib/ocaml
+   CFLAGS += -O2 -Wall -Wno-unused-variable
    export
 
 OCAMLFLAGS = -warn-error Ae -w Ae
+
+#
+# Configure
+#
+open configure/readline
+open configure/ncurses
 
 #
 # Defaults for the mk/config variables
@@ -44,13 +51,12 @@ SEQ_SET = Lm_array
 ENSROOT = undefined
 OCAMLSRC = undefined
 TESTS_ENABLED = false
-CCC = gcc -O2 -Wall -Wno-unused-variable
 NATIVE_ENABLED = true
 BYTE_ENABLED = false
 SSL_ENABLED = true
 THREADS_ENABLED = true
-READLINE_ENABLED = $(not $(equal $(OSTYPE), Win32))
-NCURSES_ENABLED = $(not $(equal $(OSTYPE), Win32))
+READLINE_ENABLED = $(READLINE_AVAILABLE)
+NCURSES_ENABLED = $(NCURSES_AVAILABLE)
 SLOPPY_DEPENDENCIES = false
 NATIVE_PROFILING_ENABLED = false
 LATEX = latex

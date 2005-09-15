@@ -85,19 +85,20 @@ THREADS_ENABLED = $(THREADS_ENABLED)
 # Requires "NCURSES_ENABLED" (below) in order to work.
 # Highly recommended for the command-line interface.
 #
-READLINE_ENABLED = $(READLINE_ENABLED)
+$(if $(READLINE_AVAILABLE), $"READLINE_ENABLED = $(READLINE_ENABLED)", $"# READLINE_ENABLED: readline not found on your system")
 
 #
 # The GNU ncurses package (available in Linux at least) (true/false)
 # Should be enabled for readline support (above) to be enabled.
 # Highly recommended for the command-line interface.
 #
-NCURSES_ENABLED = $(NCURSES_ENABLED)
+$(if $(NCURSES_AVAILABLE), $"NCURSES_ENABLED = $(NCURSES_ENABLED)", $"# NCURSES_ENABLED: ncurses not found on your system")
 
 #
 # C compiler
 #
-CCC = $(CCC)
+CC = $(CC)
+CFLAGS = $(CFLAGS)
 
 #
 # Whether to build MetaPRL native code with profiling enabled

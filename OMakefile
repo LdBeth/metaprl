@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.4.25)
+OMakeVersion(0.9.6.5)
 
 ########################################################################
 # Begin real makefile.
@@ -90,7 +90,7 @@ NATIVE_ENABLED = $(Bool $(NATIVE_ENABLED))
 BYTE_ENABLED = $(Bool $(BYTE_ENABLED))
 SSL_ENABLED = $(Bool $(SSL_ENABLED))
 THREADS_ENABLED = $(Bool $(THREADS_ENABLED))
-READLINE_ENABLED = $(Bool $(READLINE_ENABLED))
+READLINE_ENABLED = $(and $(READLINE_ENABLED), $(NCURSES_ENABLED))
 NCURSES_ENABLED = $(Bool $(NCURSES_ENABLED))
 NATIVE_PROFILING_ENABLED = $(Bool $(NATIVE_PROFILING_ENABLED))
 TESTS_ENABLED = $(Bool $(TESTS_ENABLED))
@@ -137,17 +137,7 @@ else
       CAMLP4LIB = $(dir $(getenv CAMLP4LIB, $(CAMLLIB)/camlp4))
       export
 
-   #
-   # Generic CC options
-   #
-   CC = $(CCC)
-   CFLAGS =
    export
-
-#
-# In ocaml >- 3.07, a -q option was added to ocamllex
-#
-OCAMLLEX += -q
 
 if $(not $(defined CAMLP4R))
    CAMLP4R = camlp4r$(EXE)
