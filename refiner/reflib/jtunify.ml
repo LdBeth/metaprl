@@ -195,9 +195,9 @@ end
 module JQuantifier (JLogic : JLogicSig) =
 struct
 
-   module JTypes = JTypes(JLogic)
-   module JOrdering = JOrdering(JLogic)
-   open JOrdering
+   module JTypes = MkJTypes(JLogic)
+   module JOrder = MkJOrdering(JLogic)
+   open JOrder
 
    let build_ordering = build_orderingJ
 
@@ -208,7 +208,7 @@ end
 module JPropositionalQuantifier (JLogic : JLogicSig) =
 struct
 
-   module JTypes = JTypes(JLogic)
+   module JTypes = MkJTypes(JLogic)
 
 	let build_ordering _ _ _ _ _ = PMap.empty
 
@@ -226,8 +226,8 @@ type tracelist = trace_entry list list
 module JTUnify (JLogic : JLogicSig)(JQuantifier: JQuantifierSig) =
 struct
 
-   module JOrdering = JOrdering(JLogic)
-   open JOrdering
+   module JOrder = MkJOrdering(JLogic)
+   open JOrder
    open JQuantifier
 
 let rec combine ov oslist = function

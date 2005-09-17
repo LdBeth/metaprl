@@ -126,14 +126,14 @@ let ruletable = function
 
 module JProver (JLogic : JLogicSig) =
 struct
-   module JTypes = JTypes(JLogic)
-   module JOrdering = JOrdering(JLogic)
+   module JTy = MkJTypes(JLogic)
+   module JOrder = MkJOrdering(JLogic)
    module JQuantifier = JQuantifier(JLogic)
    module JTUnifyQ = JTUnifyQ(JLogic)
    module JTUnifyProp = JTUnifyProp(JLogic)
 
-   open JTypes
-   open JOrdering
+   open JTy
+   open JOrder
    open JQuantifier
    open JTUnifyQ
 

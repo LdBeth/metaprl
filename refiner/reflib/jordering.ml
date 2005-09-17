@@ -320,10 +320,10 @@ let print_ordering_map map =
    print_flush ()
 
 
-module JOrdering (JLogic : JLogicSig) =
+module MkJOrdering (JLogic : JLogicSig) =
 struct
 
-   module JTy = JTypes(JLogic)
+   module JTy = MkJTypes(JLogic)
    open JTy
 
    let rec collect_delta_terms consts accumulator = function
