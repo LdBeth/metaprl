@@ -97,7 +97,7 @@
 %A8FFFFFFFD047DFD04FF527D52A8FD60FFA87DFD05FF527DA8A8FFFF7D7D
 %7D52FFFFFF527D7D7D52FFFFFF52FFA87DFD60FF7D52FD05FF7DFD05FF52
 %FFFF7DFD05FFA8A8FD04FF527D7DA8FDFCFFFD9BFFFF
-%%EndData%%EndComments
+%%EndData%%EndComments
 %%BeginProlog
 %%BeginResource: procset Adobe_level2_AI5 1.2 0
 %%Title: (Adobe Illustrator (R) Version 5.0 Level 2 Emulation)
@@ -2801,11 +2801,11 @@ Adobe_Illustrator_AI5 /initialize get exec
 TE
 %AI55J_Tsume: None
 %AI3_BeginEncoding: _Helvetica Helvetica
-[/_Helvetica/Helvetica 0 0 1 TZ%AI3_EndEncoding AdobeType%AI55J_Tsume: None
+[/_Helvetica/Helvetica 0 0 1 TZ%AI3_EndEncoding AdobeType%AI55J_Tsume: None
 %AI3_BeginEncoding: _LucidaBrightMathItalic LucidaBrightMathItalic
-[/_LucidaBrightMathItalic/LucidaBrightMathItalic 0 0 0 TZ%AI3_EndEncoding TrueType%AI55J_Tsume: None
+[/_LucidaBrightMathItalic/LucidaBrightMathItalic 0 0 0 TZ%AI3_EndEncoding TrueType%AI55J_Tsume: None
 %AI3_BeginEncoding: _LucidaBrightMathSymbol LucidaBrightMathSymbol
-[/_LucidaBrightMathSymbol/LucidaBrightMathSymbol 0 0 0 TZ%AI3_EndEncoding TrueType%AI5_BeginPalette
+[/_LucidaBrightMathSymbol/LucidaBrightMathSymbol 0 0 0 TZ%AI3_EndEncoding TrueType%AI5_BeginPalette
 0 0 Pb
 0.1 0 0 0 (Light Blue) 0 x
 (Light Blue) Pc
@@ -2834,10 +2834,10 @@ PB
 1 1 1 1 0 0 0 79 128 255 Lb
 (Background) Ln
 0 A
-uu0 R
+uu0 R
 0 0 0 XA
 800 Ar
-0 J 0 j 0 w 4 M []0 d%AI3_Note:0 D
+0 J 0 j 0 w 4 M []0 d%AI3_Note:0 D
 0 XR
 -156.0003 876.0001 m
 -156.0003 -107.9999 l
@@ -3088,7 +3088,7 @@ uu0 R
 827.9999 876.0001 m
 827.9999 -107.9999 l
 (S) *
-Uu827.9996 876.0003 m
+Uu827.9996 876.0003 m
 -156.0003 876.0003 l
 (S) *
 827.9994 863.9998 m
@@ -3337,14 +3337,14 @@ Uu827.9996 876.0003 m
 827.9996 -107.9999 m
 -156.0003 -107.9999 l
 (S) *
-UU0 To
+UU0 To
 1 0 0 1 217.7494 614.6251 0 Tp
 0 Tv
 TP
 0 Tr
 0 O
 0 0 0 1 k
-1 w%_ 0 50 XQ
+1 w%_ 0 50 XQ
 /_Helvetica 18 16.758 -4.0498 Tf
 0 Ts
 100 100 Tz
@@ -3355,7 +3355,7 @@ TP
 %_ 0 XL
 0 TY
 0 TV
-54 0 XbXB0 0 5 TC
+54 0 XbXB0 0 5 TC
 100 100 200 TW
 25 TG
 0 0 0 Ti
@@ -3413,7 +3413,7 @@ TO
 0 0 0 1 K
 368.5 606.75 m
 565.75 606.75 l
-SLB
+SLB
 %AI5_EndLayer--
 %%PageTrailer
 gsave annotatepage grestore showpage

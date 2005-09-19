@@ -1091,8 +1091,8 @@ struct
                      Lm_format.eprintf "System restart failed@."
              | SyscallOMake target ->
                   start_command session state (sprintf "omake %s" target)
-             | SyscallCVS (cwd, command) ->
-                  start_command session state (sprintf "cd %s && cvs %s" cwd command)
+             | SyscallSVN (cwd, command) ->
+                  start_command session state (sprintf "cd %s && svn %s" cwd command)
              | SyscallEdit (_, target) ->
                   start_edit_command session state target
              | SyscallShell s ->

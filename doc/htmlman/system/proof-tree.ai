@@ -2748,9 +2748,9 @@ Adobe_Illustrator_AI5 /initialize get exec
 /udieresis/yacute/thorn/ydieresis
 TE
 %AI3_BeginEncoding: _LucidaBrightMathItalic LucidaBrightMathItalic
-[/_LucidaBrightMathItalic/LucidaBrightMathItalic 0 0 0 TZ%AI3_EndEncoding TrueType%AI3_BeginEncoding: _LucidaBrightMathSymbol LucidaBrightMathSymbol
-[/_LucidaBrightMathSymbol/LucidaBrightMathSymbol 0 0 0 TZ%AI3_EndEncoding TrueType%AI3_BeginEncoding: _Times-Roman Times-Roman
-[/_Times-Roman/Times-Roman 0 0 1 TZ%AI3_EndEncoding AdobeType%AI5_BeginPalette
+[/_LucidaBrightMathItalic/LucidaBrightMathItalic 0 0 0 TZ%AI3_EndEncoding TrueType%AI3_BeginEncoding: _LucidaBrightMathSymbol LucidaBrightMathSymbol
+[/_LucidaBrightMathSymbol/LucidaBrightMathSymbol 0 0 0 TZ%AI3_EndEncoding TrueType%AI3_BeginEncoding: _Times-Roman Times-Roman
+[/_Times-Roman/Times-Roman 0 0 1 TZ%AI3_EndEncoding AdobeType%AI5_BeginPalette
 0 0 Pb
 0.1 0 0 0 (Light Blue) 0 x
 (Light Blue) Pc
@@ -2779,10 +2779,10 @@ PB
 1 1 1 1 0 0 0 79 128 255 Lb
 (Background) Ln
 0 A
-uu0 R
+uu0 R
 0 0 0 XA
 800 Ar
-0 J 0 j 0 w 4 M []0 d%AI3_Note:0 D
+0 J 0 j 0 w 4 M []0 d%AI3_Note:0 D
 0 XR
 -156.0003 876.0001 m
 -156.0003 -107.9999 l
@@ -3033,7 +3033,7 @@ uu0 R
 827.9999 876.0001 m
 827.9999 -107.9999 l
 (S) *
-Uu827.9996 876.0003 m
+Uu827.9996 876.0003 m
 -156.0003 876.0003 l
 (S) *
 827.9994 863.9998 m
@@ -3282,21 +3282,21 @@ Uu827.9996 876.0003 m
 827.9996 -107.9999 m
 -156.0003 -107.9999 l
 (S) *
-UUu0 To
+UUu0 To
 1 0 0 1 361.2498 567.5626 0 Tp
 TP
 -38.6755 0 Td
 0 Tr
 0 O
 0 0 0 1 k
-1 w%_ 0 50 XQ
+1 w%_ 0 50 XQ
 /_Times-Roman 12 Tf
 0 Ts
 100 Tz
 0 Tt
 1 TA
 %_ 0 XL
-36 0 XbXB0 0 5 TC
+36 0 XbXB0 0 5 TC
 100 100 200 TW
 0 0 0 Ti
 1 Ta
@@ -3397,23 +3397,23 @@ TP
 TO
 0 R
 0 0 0 1 K
-1 J354.9999 564.8125 m
+1 J354.9999 564.8125 m
 313.2498 543.5623 l
-S363.7499 564.3125 m
+S363.7499 564.3125 m
 390.2499 543.5623 l
-S345.2499 559.5625 m
+S345.2499 559.5625 m
 351.7499 555.5628 359.9999 554.5625 369.4999 559.8125 c
-S309.4999 530.0625 m
+S309.4999 530.0625 m
 290.2499 506.3125 l
-S314.7499 529.5625 m
+S314.7499 529.5625 m
 337.25 507.5628 l
-S303.9999 523.5625 m
+S303.9999 523.5625 m
 309.9999 519.5626 315.9999 521.8125 319.2499 525.0625 c
-S378.4999 530.3125 m
+S378.4999 530.3125 m
 363.7499 507.5628 l
-S388.4999 529.8125 m
+S388.4999 529.8125 m
 409.2498 505.8125 l
-SULB
+SULB
 %AI5_EndLayer--
 %%PageTrailer
 gsave annotatepage grestore showpage

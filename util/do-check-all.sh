@@ -9,9 +9,9 @@ fi
 cd $1
 rm -f editor/ml/mp.opt
 ((
-if [ "$2" = "update" ]; then
-   echo "*** cvs -n update ***"
-   ( cvs -n update 2>&1 ) | grep -v '^cvs server: New directory'
+if [ "$2" = "update" -or "$2" = "status" ]; then
+   echo "*** svn status ***"
+   svn status
    echo ""
 fi
 unset OMAKEFLAGS

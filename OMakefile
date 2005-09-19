@@ -409,7 +409,9 @@ if $(not $(defined FORCE_REALCLEAN))
 
 realclean: clean
     -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb) # XXX: This is a temporary HACK
-    cvs_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local
+    # cvs_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local
+    println(The realclean target is not yet reimplemented for subversion)
+    exit 1
 
 ########################################################################
 # Directories needing only the standard config

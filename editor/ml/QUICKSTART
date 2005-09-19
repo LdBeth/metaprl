@@ -52,7 +52,7 @@ newest among the .prla, .prlb and .cmoz
   save ();;  -- current module in .prlb file
                 (but only if it was modified; for local use),
   save_all ();; -- all modified modules,
-  export ();; -- in .prla file (for cvs, ...)
+  export ();; -- in .prla file (stable format for subversion, MetaPRL upgrades)
 ------------------------
   export() function:
   Note that it uses the old .prla file as a part of

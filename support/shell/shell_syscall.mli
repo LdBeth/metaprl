@@ -41,7 +41,7 @@ topval deref_rm      : unit -> string -> int
 topval deref_edit    : unit -> string -> int
 topval deref_omake   : unit -> int
 topval deref_restart : unit -> int
-topval deref_cvs     : unit -> string -> int
+topval deref_svn     : unit -> string -> int
 
 (*!
  * @docoff

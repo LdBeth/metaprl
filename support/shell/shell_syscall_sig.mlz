@@ -37,9 +37,9 @@ type syscall =
  | SyscallRestart
 
    (*
-    * CVS operations.
+    * Subversion operations.
     *)
- | SyscallCVS of string * string
+ | SyscallSVN of string * string
 
    (*
     * Edit a file (root, name)

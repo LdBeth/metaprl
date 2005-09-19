@@ -46,10 +46,9 @@ RUN_OMAKE=yes
 MP_DEBUG=
 ((
 while [ $# -gt 0 ]; do
-   if [ "$1" = "update" ]; then
-      echo "*** cvs -n update ***"
-      ( cvs -n update 2>&1 ) | grep -v '^cvs server: New directory'
-      # cvs -q update 2>&1
+   if [ "$1" = "update" -o "$1" = "status" ]; then
+      echo "*** svn status ***"
+      svn status
       echo ""
    elif [ "$1" = "nomake" ]; then
       RUN_OMAKE=

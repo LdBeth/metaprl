@@ -225,6 +225,7 @@ let default_patterns =
     "TAGS";
     ".make.state";
     ".nse_depinfo";
+    ".svn";
     "*~";
     "#*";
     ".#*";

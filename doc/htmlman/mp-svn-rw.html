@@ -1,0 +1,36 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Vi">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <TITLE>MetaPRL RW CVS Instructions</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
+<H2>MetaPRL Read-Write CVS Access</H2>
+
+<OL>
+   <LI>Make sure you have <A HREF="http://www.openssh.com/">OpenSSH</A> (or some other implementation of SSH version 2 protocol) installed on your computer.
+   <LI>If you do not have a Subversion account set up for you on svn.metaprl.org:
+   <OL>
+      <LI>Generate an SSH v.2 DSA key pair (see <a href="http://cvs.metaprl.org:12000/doc/source-howto.html#GenerateKey">our server HOWTO document</a> for detailed instructions).
+      <LI>Send your public key (<tt>~/.ssh/id_dsa.pub</tt>) and your desired
+      login to <A HREF="mailto:nogin@cs.caltech.edu">Aleksey Nogin
+      (nogin@cs.caltech.edu)</A> or <A HREF="mailto:jyh@cs.caltech.edu">Jason
+      Hickey (jyh@cs.caltech.edu)</A>.
+   </OL>
+
+   <LI>Put the following into your <TT>~/.ssh/config</TT> file (if you do not have <TT>~/.ssh/config</TT> file, then create one):
+
+<PRE>Host svn.metaprl.org
+   ForwardAgent no
+   ForwardX11 no
+   User svn</pre>
+
+   <LI>To create new working copy:
+   <PRE>svn co svn+ssh://svn.metaprl.org/svnroot/mojave/metaprl</PRE>
+
+</OL>
+</BODY>
+</HTML>
+
+

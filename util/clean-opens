@@ -5,7 +5,7 @@ NO=0
 export OMAKEFLAGS="-j6"
 (
 omake clean
-cvs update
+svn update
 IFS=::::::
 TMP=`mktemp /tmp/clop.XXXXXX`
 TMP2=`mktemp /tmp/clop2.XXXXXX`

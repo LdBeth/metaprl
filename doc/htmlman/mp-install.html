@@ -31,8 +31,8 @@ HREF="http://rpm.nogin.org/omake.html">http://rpm.nogin.org/omake.html</A> respe
 listing directly from <A
 HREF="http://rpmbin.nogin.org/MetaPRL/">http://rpmbin.nogin.org/MetaPRL/</a>.  If you are going to
 build OCaml yourself, you can get our patches at <A
-HREF="http://cvs.metaprl.org:12000/cvsweb/metaprl/patches/">http://cvs.metaprl.org:12000/cvsweb/metaprl/patches/</A>
-(see the <A HREF="http://cvs.metaprl.org:12000/cvsweb/~checkout~/metaprl/patches/README">README
+HREF="http://svn.metaprl.org/viewcvs/mojave/metaprl/patches/">http://svn.metaprl.org/viewcvs/mojave/metaprl/patches/</A>
+(see the <A HREF="http://svn.metaprl.org/viewcvs/*checkout*/mojave/metaprl/patches/README">README
 file</A> for the list of patches you need to apply).</P>
 
 <P>OCaml and OMake may also be obtained via the <a
@@ -45,7 +45,8 @@ Alternatively, you
 can use <a href="http://www.cygwin.org/">the Cygnus Systems GNU-Win32 distribution</a>, but the
 performance (especially the compilation time) is likely to be noticeably worse.
 
-<P>The OMake sources may also be downloaded via CVS (see <a href="#cvs">CVS instructions</a> below).
+<P>The OMake sources may also be downloaded via Subversion (see <a
+  href="#svn">Subversion instructions</a> below).
 
 <P>You can download Ensemble from <A HREF="ftp://ftp.cs.cornell.edu/pub/ensemble/">ftp://ftp.cs.cornell.edu/pub/ensemble/</A>.</P>
 
@@ -56,45 +57,46 @@ href="http://www.slproweb.com/products/Win32OpenSSL.html">http://www.slproweb.co
 
 <P>You should be able to download MetaPRL sources tarball from <A
 HREF="http://files.metaprl.org/">http://files.metaprl.org/</A>, but if you plan to participate in
-MetaPRL development, you should consider using <A HREF="#cvs">the CVS access</A> to MetaPRL
+MetaPRL development, you should consider using <A HREF="#svn">the Subversion access</A> to MetaPRL
 sources.</P>
 
-<H3><A NAME="cvs">CVS Access to MetaPRL Sources</A></H3>
+<H3><A NAME="svn">Subversion Access to MetaPRL Sources</A></H3>
 
-<p> You can <A TARGET="_top" HREF="http://cvs.metaprl.org:12000/cvsweb/metaprl/">browse the MetaPRL CVS repository</a>.
+<p> You can <A TARGET="_top"
+HREF="http://svn.metaprl.org/viewcvs/mojave/metaprl/">browse the MetaPRL
+sources repository</a>.
 
 <P>If you plan any development in MetaPRL or if you want to download the latest
 version of MetaPRL, you may consider
 using the public CVS repository. This will allow you to have access
 to the latest changes in the distribution. The normal
 service is read-only, but if you would like to become a contributor
-with write access, read the <A HREF="mp-cvs-rw.html">read-write CVS instructions</A>.
+with write access, read the <A HREF="mp-svn-rw.html">read-write CVS instructions</A>.
 
-<P>The CVS server is on the machine <TT>cvs.metaprl.org</TT>.
-First log into the server by running
-
-<BLOCKQUOTE>
-  <PRE>% cvs -d :pserver:anoncvs@cvs.metaprl.org:/cvsroot login</PRE>
-</BLOCKQUOTE>
-
-The password is empty. It will be stored on your computer,
-so you only have to run the login command once.
-
-<P>Now you can checkout the distribution by running:</P>
+<P>The CVS server is on the machine <TT>svn.metaprl.org</TT>.  You can checkout the distribution by running:</P>
 
 <BLOCKQUOTE>
-  <PRE>% cvs -d :pserver:anoncvs@cvs.metaprl.org:/cvsroot checkout metaprl</PRE>
+  <PRE>% svn co svn://svn.metaprl.org/metaprl </PRE>
 </BLOCKQUOTE>
 
 From the same server you can also checkout the OMake distribution by running:
 
 <BLOCKQUOTE>
-  <PRE>% cvs -d :pserver:anoncvs@cvs.metaprl.org:/cvsroot checkout omake</PRE>
+  <PRE>% svn co svn://svn.metaprl.org/omake </PRE>
 </BLOCKQUOTE>
 
-<P>You can find more information on CVS from
-the <A HREF="http://www.cvshome.org/docs/">CVS Documentation Pages</A>
-and from <A HREF="http://cvsbook.red-bean.com/">The CVS Book</A>.
+If for some reason (firewall, <EM>etc</EM>) you are having trouble using the
+<TT>svn://</TT> access method, you can use <TT>http://</TT> instead:
+
+<BLOCKQUOTE>
+   <PRE>% svn co http://svn.metaprl.org/svnroot/mojave/metaprl
+% svn co http://svn.metaprl.org/svnroot/mojave/omake</PRE>
+</BLOCKQUOTE>
+
+<P>You can find more information on Subversion from
+the <A HREF="http://subversion.tigris.org/">Subversion Home Page</A>, <A
+HREF="http://subversion.tigris.org/faq.html">Subversion FAQ</A>, 
+and from <A HREF="http://svnbook.red-bean.com/">The Subversion Book</A>.
 
 <H2>Installation and configuration</H2>
 
@@ -104,9 +106,9 @@ and from <A HREF="http://cvsbook.red-bean.com/">The CVS Book</A>.
 <A HREF="http://rpmbin.nogin.org/MetaPRL/">the provided RPMs</A>, then in order
 to install OCaml and CamlP4 download and
 unpack the distributions, than apply the <A
-HREF="http://cvs.metaprl.org:12000/cvsweb/metaprl/patches/">patches</A> (see
+HREF="http://svn.metaprl.org/viewcvs/metaprl/patches/">patches</A> (see
 the <A
-HREF="http://cvs.metaprl.org:12000/cvsweb/~checkout~/metaprl/patches/README">README
+HREF="http://svn.metaprl.org/viewcvs/*checkout*/mojave/metaprl/patches/README">README
 file</A> for the list of patches you need to apply). After that, proceed as described in the
 <TT>INSTALL</TT> files in the distributions. If your OS supports pthreads, run OCaml configure
 script with <TT>-with-pthread</TT> option in order to get pthreads support in OCaml.
