@@ -32,6 +32,7 @@
  * Modified by: Yegor Bryukhov <ybryukhov@gc.cuny.edu>
  *)
 open Lm_printf
+open Lm_debug
 
 open Refiner.Refiner.TermType
 
@@ -40,6 +41,13 @@ open Jtypes
 open Jordering
 
 let jprover_bug = Invalid_argument "Jprover bug (Jtunify module)"
+
+let debug_jtunify =
+   create_debug (**)
+      { debug_name = "jtunify";
+        debug_description = "Display J-Prover T-unification operations";
+        debug_value = false
+      }
 
 (* ************ T-STRING UNIFICATION *********************************)
 
@@ -51,6 +59,12 @@ let rec list_to_string s =
       [] -> ""
     | f::r ->
          (pos_to_string f)^"."^(list_to_string r)
+
+let print_eq (atomnames,fs,ft,rt) =
+	let fs = list_to_string fs in
+	let ft = list_to_string ft in
+	let rt = list_to_string rt in
+	print_endline (fs^" = "^ft^" | "^rt)
 
 let rec print_eqlist eqlist =
    match eqlist with
@@ -269,13 +283,17 @@ let rec apply_subst_list eq_rest v slist =
                (atomnames,([],[]))::new_eq_rest
           | [],(fft::_) ->
                if (is_const fft) then
-                  raise Not_unifiable
+						(if !debug_jtunify then
+							print_endline "failure";
+                  raise Not_unifiable)
                else
                   let new_eq_rest = apply_subst_list r v slist in
                   (atomnames,([],new_ft)) :: new_eq_rest
           | (ffs::_),[] ->
                if (is_const ffs) then
-                  raise Not_unifiable
+						(if !debug_jtunify then
+							print_endline "failure";
+                  raise Not_unifiable)
                else
                   let new_eq_rest = apply_subst_list r v slist in
                   (atomnames,(new_fs,[])) :: new_eq_rest
@@ -285,7 +303,9 @@ let rec apply_subst_list eq_rest v slist =
                   let new_eq_rest = apply_subst_list r v slist in
                   (atomnames,(new_fs,new_ft)) :: new_eq_rest
 					else
-                  raise Not_unifiable
+						(if !debug_jtunify then
+							print_endline "failure";
+                  raise Not_unifiable)
      (* different first constants cause local fail *)
 
 let apply_subst eq_rest v slist atomnames =
@@ -383,23 +403,55 @@ let r10 eq =
          ((stl =[]) or (is_const x) or (rtl <> []))
     | _ -> false
 
+(*
 let r11 eq =
       match eq with
        | _, v::_, _, r1::_ ->
 		 		is_var v && is_var r1 && not (var_le v r1)
        | _ ->
             false
+*)
+
+let r11 eq =
+      match eq with
+       | _, v::_, _::_, r1::_ ->
+            is_var v && (*is_var r1 &&*) not (var_le v r1)
+       | _, v::_, [], r1::_ ->
+            is_var v && is_var r1 && not (compatible_vars v r1)
+       | _ ->
+            false
+
+let r12 eq =
+   match eq with
+    | _, [v], [], r1::_ ->
+         is_var v && var_le r1 v && not (var_le v r1)
+    | _ ->
+         false
+
+let never _ = false
 
 let apply_r1 atom_set calculus eq state =
-  	(*print_endline "r1";*)
+	if !debug_jtunify then
+		begin
+			print_eq eq;
+			print_endline "r1";
+		end;
 	true, eq, state
 
 let apply_r2 atom_set calculus (atomnames, fs, ft, rt) state =
-  	(*print_endline "r2";*)
+	if !debug_jtunify then
+		begin
+			print_eq (atomnames, fs, ft, rt);
+			print_endline "r2";
+		end;
 	false, (atomnames, rt, fs, ft), state
 
 let apply_r3 atom_set calculus eq state =
-   (*print_endline "r3";*)
+	if !debug_jtunify then
+		begin
+			print_eq eq;
+			print_endline "r3";
+		end;
 	match eq with
 		atomnames, _::rfs, ft, _::rft ->
 			false, (atomnames, rfs, ft, rft), state
@@ -407,11 +459,19 @@ let apply_r3 atom_set calculus eq state =
 	 		raise (Invalid_argument "Jtunify.apply_r3 applied to an incorrect equation")
 
 let apply_r4 atom_set calculus (atomnames, fs, ft, rt) state =
-   (*print_endline "r4";*)
+	if !debug_jtunify then
+		begin
+			print_eq (atomnames, fs, ft, rt);
+			print_endline "r4";
+		end;
 	false, (atomnames, rt, ft, fs), state
 
 let apply_r5 atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering) =
-   (*print_endline "r5";*)
+	if !debug_jtunify then
+		begin
+			print_eq (atomnames, fs, ft, rt);
+			print_endline "r5";
+		end;
 	match fs with
 		v::nfs ->
 		   let compose_vars, new_sigma = compose sigma (v,ft) in
@@ -422,7 +482,11 @@ let apply_r5 atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering
 	 		raise (Invalid_argument "Jtunify.apply_r5 applied to an incorrect equation")
 
 let apply_r6 atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering) =
-   (*print_endline "r6";*)
+	if !debug_jtunify then
+		begin
+			print_eq (atomnames, fs, ft, rt);
+			print_endline "r6";
+		end;
 	match fs with
 		v::nfs ->
 		   let _, new_sigma = compose sigma (v,[]) in
@@ -433,7 +497,11 @@ let apply_r6 atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering
 	 		raise (Invalid_argument "Jtunify.apply_r6 applied to an incorrect equation")
 
 let apply_r7 atom_set calculus eq (rest_eq, sigma, ordering) =
-   (*print_endline "r7";*)
+	if !debug_jtunify then
+		begin
+			print_eq eq;
+			print_endline "r7";
+		end;
 	match eq with
 		atomnames, v::nfs, ft, c1::c2t ->
 		   let ft_c1 = ft @ [c1] in
@@ -447,7 +515,11 @@ let apply_r7 atom_set calculus eq (rest_eq, sigma, ordering) =
 	 		raise (Invalid_argument "Jtunify.apply_r7 applied to an incorrect equation")
 
 let apply_r8 atom_set calculus (atomnames, fs, ft, rt) state =
-   (*print_endline "r8";*)
+	if !debug_jtunify then
+		begin
+			print_eq (atomnames, fs, ft, rt);
+			print_endline "r8";
+		end;
 	match fs with
 		nft::nrt ->
 		   false, (atomnames, rt, [nft], nrt), state
@@ -455,7 +527,11 @@ let apply_r8 atom_set calculus (atomnames, fs, ft, rt) state =
 	 		raise (Invalid_argument "Jtunify.apply_r8 applied to an incorrect equation")
 
 let apply_r9 atom_set calculus eq (rest_eq, sigma, ordering) =
-   (*print_endline "r9";*)
+	if !debug_jtunify then
+		begin
+			print_eq eq;
+			print_endline "r9";
+		end;
 	match eq with
 		atomnames, v::nft, ft, (rt1::_ as rt) ->
 			let sort = sort_of v rt1 in
@@ -472,7 +548,11 @@ let apply_r9 atom_set calculus eq (rest_eq, sigma, ordering) =
 	 		raise (Invalid_argument "Jtunify.apply_r9 applied to an incorrect equation")
 
 let apply_r10 atom_set calculus eq state =
-   (*print_endline "r10";*)
+	if !debug_jtunify then
+		begin
+			print_eq eq;
+			print_endline "r10";
+		end;
 	match eq with
 		atomnames, fs, ft, x::nrt ->
 		   false, (atomnames, fs, (ft @ [x]), nrt), state
@@ -480,7 +560,11 @@ let apply_r10 atom_set calculus eq state =
 	 		raise (Invalid_argument "Jtunify.apply_r10 applied to an incorrect equation")
 
 let apply_r11 atom_set calculus eq (rest_eq, sigma, ordering) =
-	(*print_endline "r11";*)
+	if !debug_jtunify then
+		begin
+			print_eq eq;
+			print_endline "r11";
+		end;
 	match eq with
 		atomnames, v::nfs, ft, rt ->
 		   let compose_vars,new_sigma = compose sigma (v,ft) in
@@ -489,6 +573,42 @@ let apply_r11 atom_set calculus eq (rest_eq, sigma, ordering) =
 		   false, (atomnames, nfs, [], rt), (new_rest_eq, new_sigma, new_ordering)
 	 | _ ->
 	 		raise (Invalid_argument "Jtunify.apply_r11 applied to an incorrect equation")
+
+let apply_r12b atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering) =
+	if !debug_jtunify then
+		begin
+			print_eq (atomnames, fs, ft, rt);
+			print_endline "r12b";
+		end;
+	match fs with
+	 | [v] ->
+			let sort = sort_of v v in
+		   let (max,subst) = sigma in
+		   let v_new = (NewVar sort,max) in
+		   let ft_vnew = [v_new] in
+		   let compose_vars,new_sigma = compose ((max+1),subst) (v,ft_vnew) in
+		   let new_rest_eq = apply_subst rest_eq v ft_vnew atomnames in
+		   let new_ordering =
+				build_ordering calculus (v::compose_vars) ft_vnew ordering atom_set
+			in
+		   false, (atomnames, rt, ft_vnew, []), (new_rest_eq, new_sigma, new_ordering)
+	 | _ ->
+	 		raise (Invalid_argument "Jtunify.apply_r12b applied to an incorrect equation")
+
+let apply_r12 atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering) =
+	if !debug_jtunify then
+		begin
+			print_eq (atomnames, fs, ft, rt);
+			print_endline "r12";
+		end;
+	match rt with
+	 | v1::t ->
+		   let compose_vars,new_sigma = compose sigma (v1,[]) in
+		   let new_rest_eq = apply_subst rest_eq v1 [] atomnames in
+		   let new_ordering = build_ordering calculus (v1::compose_vars) [] ordering atom_set in
+		   false, (atomnames, fs, [], t), (new_rest_eq, new_sigma, new_ordering)
+	 | _ ->
+	 		raise (Invalid_argument "Jtunify.apply_r12 applied to an incorrect equation")
 
 let t_rules = [|
    (r1,apply_r1,[]);
@@ -501,10 +621,12 @@ let t_rules = [|
    (r8,apply_r8,[9]);
    (r9,apply_r9,[9]);
    (r10,apply_r10,[]);
-   (r11,apply_r11,[])
+   (r11,apply_r11,[]);
+	(r12,apply_r12,[12]);
+	(never,apply_r12b,[])
 |]
 
-let all_rules = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10]
+let all_rules = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12]
 
 let apply_subst_list atom_names (n,sigma) new_eql =
 	List.fold_left
@@ -532,10 +654,15 @@ let rec tunify atom_set calculus = function
                else
                   tunify atom_set calculus ((neq, nstate, [], all_rules)::ntrace)
          with Not_unifiable ->
+				(if !debug_jtunify then
+					print_endline "failure";
             tunify atom_set calculus ((eq, state, new_eql, preferred_rules)::trace)
+				)
       else
          tunify atom_set calculus ((eq, state, new_eql, rules_rest)::trace)
  | (_,_,_,[])::trace ->
+		if !debug_jtunify then
+			print_endline "failure";
       tunify atom_set calculus trace
  | [] ->
  		None
@@ -599,6 +726,8 @@ let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set t
 		   	      end;
    		   	new_sigma, full_eqlist, new_ordering, new_tracelist
 			 | None ->
+					if !debug_jtunify then
+						print_endline "failed";
    		   	raise Failed (* new connection please *)
 			end
 	 | [] ->
