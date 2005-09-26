@@ -249,7 +249,7 @@ struct
        | MOperator v ->
             if array_rstack_p_mem ShapeOperator v stack then
                (* New param *)
-               RWMShape (array_rstack_p_index ShapeOperator v stack)
+               RWMOperator (array_rstack_p_index ShapeOperator v stack)
             else if strict = Relaxed && array_rstack_mem v stack then
                RWMOperator (array_rstack_index v stack)
             else
