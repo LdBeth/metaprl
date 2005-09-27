@@ -307,12 +307,13 @@ value parse_include_file =
       try (List.find (dir_ok file) (include_dirs.val @ ["./"])) ^ file
       with [ Not_found -> file ]
     in
-    let st = Stream.of_channel (open_in file) in
+    let ch = open_in file in
+    let st = Stream.of_channel ch in
     let old_input = Pcaml.input_file.val in
     do {
       Pcaml.input_file.val := file;
       let items = Grammar.Entry.parse smlist st in
-      do { Pcaml.input_file.val := old_input; items } }
+      do { close_in ch; Pcaml.input_file.val := old_input; items } }
 ;
 
 value rec execute_macro = fun
