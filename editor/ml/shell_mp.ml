@@ -41,6 +41,7 @@ open Mptop
 open Refine_exn
 open Exn_boot
 open Shell_sig
+open Filter_util
 
 module ShellP4 =
 struct
