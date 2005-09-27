@@ -76,18 +76,30 @@ let shift_pos pos offset =
    {pos with pos_cnum = pos.pos_cnum + offset}
 
 let adjust_pos globpos local_pos =
-(*
- * XXX: TODO: Because of Camlp4 bugs (OCaml PR#2953 and PR#2954), we can only
- * trust pos_cnum for now.
- *
- *  {
- *     globpos with
- *     pos_lnum = if local_pos.pos_lnum > 0 then globpos.pos_lnum + local_pos.pos_lnum - 1 else globpos.pos_lnum;
- *     pos_bol = if local_pos.pos_lnum <= 1 then globpos.pos_bol else local_pos.pos_bol + globpos.pos_cnum;
- *     pos_cnum = globpos.pos_cnum + local_pos.pos_cnum;
- *  }
- *)
-   mk_pos (globpos.pos_cnum + local_pos.pos_cnum)
+   {
+      globpos with
+      pos_lnum = if local_pos.pos_lnum > 0 then globpos.pos_lnum + local_pos.pos_lnum - 1 else globpos.pos_lnum;
+      pos_bol = if local_pos.pos_lnum <= 1 then globpos.pos_bol else local_pos.pos_bol + globpos.pos_cnum;
+      pos_cnum = globpos.pos_cnum + local_pos.pos_cnum;
+   }
+
+let grammar_parse gram st =
+    let bol_ref, lnum_ref, name_ref = !Pcaml.position in
+    let old_bol, old_lnum, old_name = !bol_ref, !lnum_ref, !name_ref in
+    let restore () =
+       bol_ref := old_bol;
+       lnum_ref := old_lnum;
+       name_ref := old_name
+    in
+      bol_ref := 0;
+      lnum_ref := 1;
+      try
+         let items = Grammar.Entry.parse gram st in
+            restore ();
+            items
+      with exn -> 
+         restore ();
+         raise exn
 
 (*
  * Collect the arguments in a rewrite.

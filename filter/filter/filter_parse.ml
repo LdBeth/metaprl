@@ -1131,12 +1131,12 @@ open TermGrammar
 (* Parse a term *)
 let term_exp s =
    let cs = Stream.of_string s in
-   let t = Grammar.Entry.parse term_eoi cs in
+   let t = grammar_parse term_eoi cs in
       add_parsed_binding (BindTerm t)
 
 let term_patt s =
    let cs = Stream.of_string s in
-   let t = Grammar.Entry.parse term_eoi cs in
+   let t = grammar_parse term_eoi cs in
    let t = TermGrammar.parse_term dummy_loc t in
       Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
 
@@ -1276,7 +1276,7 @@ and expr_of_hyps_con loc hyps =
 
 let con_exp s =
    let cs = Stream.of_string s in
-   let con = Grammar.Entry.parse term_con_eoi cs in
+   let con = grammar_parse term_con_eoi cs in
       expr_of_term_con dummy_loc con
 
 let con_patt _ =

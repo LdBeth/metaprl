@@ -67,6 +67,9 @@ val mk_proper_loc : Lm_num.num -> Lm_num.num -> MLast.loc (* XXX: temporary OCam
 val shift_pos : Lexing.position -> int -> Lexing.position
 val adjust_pos : Lexing.position -> Lexing.position -> Lexing.position
 
+(* PR#2954 workaround: Calls Grammar.Entry.parse, restoring all the pos components *)
+val grammar_parse : 'a Grammar.Entry.e -> char Stream.t -> 'a
+
 (************************************************************************
  * OPNAMES								*
  ************************************************************************)

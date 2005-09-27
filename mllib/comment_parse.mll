@@ -260,6 +260,13 @@ exception Parse_error of string * loc
 let loc_of_lexbuf lexbuf =
    Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf
 
+let lexbuf_newline lexbuf =
+   lexbuf.Lexing.lex_curr_p <- {
+      lexbuf.Lexing.lex_curr_p with
+      Lexing.pos_lnum = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum + 1;
+      Lexing.pos_bol = lexbuf.Lexing.lex_curr_p.Lexing.pos_cnum;
+   }
+
 let loc_of_buf buf =
    loc_of_lexbuf buf.lexbuf
 
@@ -281,7 +288,7 @@ let varname = '\'' ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9']*
 rule main = parse
    (* White space *)
    newline
-   { TokWhite true }
+   { lexbuf_newline lexbuf; TokWhite true }
  | white
    { TokWhite false }
 
@@ -340,6 +347,8 @@ and comment = parse
    { comment lexbuf; comment lexbuf }
  | "*)"
    { () }
+ | newline
+   { lexbuf_newline lexbuf; comment lexbuf }
  | _
    { comment lexbuf }
  | eof
@@ -383,6 +392,11 @@ and quotation = parse
            quotation lexbuf
         end
    }
+ | newline
+   { add_string (Lexing.lexeme lexbuf);
+     lexbuf_newline lexbuf;
+     quotation lexbuf
+   }
  | _
    { add_string (Lexing.lexeme lexbuf);
      quotation lexbuf
@@ -399,6 +413,11 @@ and string = parse
       { flush_string () }
  | '\\'
       { escape lexbuf }
+ | newline
+      { add_string (Lexing.lexeme lexbuf);
+        lexbuf_newline lexbuf;
+        string lexbuf
+      }
  | _
       { add_string (Lexing.lexeme lexbuf);
         string lexbuf
@@ -408,7 +427,7 @@ and string = parse
 
 and escape = parse
     newline
-      { string lexbuf }
+      { lexbuf_newline lexbuf; string lexbuf }
   | _
       { add_string (Lexing.lexeme lexbuf);
         string lexbuf
@@ -421,7 +440,7 @@ and escape = parse
  *)
 and code_string_brace = parse
    newline
-      { CodeString "\n" }
+      { lexbuf_newline lexbuf; CodeString "\n" }
  | '}'
       { CodeEnd }
  | _
@@ -431,7 +450,7 @@ and code_string_brace = parse
 
 and code_string_end = parse
    newline
-      { CodeString "\n" }
+      { lexbuf_newline lexbuf; CodeString "\n" }
  | "@end[iverbatim]"
  | "@end[verbatim]"
  | "@end[literal]"

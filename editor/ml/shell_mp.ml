@@ -80,12 +80,12 @@ struct
    let parse_string s =
       Shell_state.synchronize (fun str ->
           let instream = Stream.of_string str in
-             Grammar.Entry.parse Pcaml.expr instream) s
+             grammar_parse Pcaml.expr instream) s
 
    let eval_expr s =
       Shell_state.synchronize (fun str ->
          let instream = Stream.of_string str in
-         let expr = Grammar.Entry.parse Pcaml.expr instream in
+         let expr = grammar_parse Pcaml.expr instream in
             ignore (evaluate_ocaml_expr (Shell_state.get_toploop ()) expr)) s
 
    (************************************************************************
@@ -162,7 +162,7 @@ struct
    let eval_top s =
       Shell_state.synchronize (function str ->
          let instream = Shell_state.stream_of_string str in
-            match Grammar.Entry.parse Pcaml.top_phrase instream with
+            match grammar_parse Pcaml.top_phrase instream with
                Some item ->
                   let expr = evaluate_ocaml_str_item (Shell_state.get_toploop ()) item in
                      print_expr stdout expr;
@@ -249,7 +249,7 @@ struct
             Shell_state.set_prompt "# ";
             Shell_state.reset_terms ();
             catch (fun () ->
-                  match Shell_state.synchronize (Grammar.Entry.parse Pcaml.top_phrase) instream with
+                  match Shell_state.synchronize (grammar_parse Pcaml.top_phrase) instream with
                      Some phrase ->
                         eval_str_item phrase
                    | None ->

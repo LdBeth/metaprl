@@ -444,7 +444,7 @@ let get_term i =
 let term_exp s =
    synchronize_state (fun state ->
          let cs = Stream.of_string s in
-         let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
+         let t = grammar_parse TermGrammar.term_eoi cs in
          let t = TermGrammar.parse_term_with_vars dummy_loc t in
             save_term state t)
 

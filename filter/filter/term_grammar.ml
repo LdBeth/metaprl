@@ -640,7 +640,7 @@ struct
       <:expr< argv.( $int: s$ ) >>
 
    let expr_of_anti (loc, _) name s =
-      try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
+      try grammar_parse Pcaml.expr_eoi (Stream.of_string s) with
          Stdpp.Exc_located ((l1, l2), exn) ->
             let offset = String.length "$" in
             let offset = if name = "" then offset else offset + 1 + (String.length name) in
@@ -658,7 +658,7 @@ struct
        | "" ->
             (try
                 let cs = Stream.of_string s in
-                   Grammar.Entry.parse TermGrammar.term_eoi cs
+                   grammar_parse TermGrammar.term_eoi cs
              with
                 Stdpp.Exc_located ((l1, l2), exn) ->
                    let pos = fst (q_shift_loc loc nm) in

@@ -157,19 +157,19 @@ struct
    let parse_string s =
       Shell_state.synchronize (fun str ->
           let instream = Stream.of_string str in
-             Grammar.Entry.parse Pcaml.expr instream) s
+             grammar_parse Pcaml.expr instream) s
 
    let eval_expr s =
       Shell_state.synchronize (fun str ->
             let instream = Stream.of_string str in
-            let expr = Grammar.Entry.parse Pcaml.expr instream in
+            let expr = grammar_parse Pcaml.expr instream in
             let loc = dummy_loc in
                eval_str_item loc <:str_item< $exp: expr$ >>) s
 
    let eval_top s =
       Shell_state.synchronize (fun str ->
             let instream = Stream.of_string str in
-            let expr = Grammar.Entry.parse Pcaml.expr instream in
+            let expr = grammar_parse Pcaml.expr instream in
             let loc = dummy_loc in
                eval_str_item loc <:str_item< $exp: expr$ >>) s
 
