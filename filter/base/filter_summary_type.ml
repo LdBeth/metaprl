@@ -218,8 +218,7 @@ sig
 
    (* Opname management *)
    val op_prefix            : info -> opname
-   val mk_opname            : info -> opname_fun
-   val mk_opname_kind       : info -> op_kind -> opname_fun
+   val mk_opname_kind       : info -> opname_kind_fun
    val declare_typeclass    : info -> shape_class -> opname -> opname -> typeclass_parent -> unit
    val declare_type         : info -> shape_class -> ty_term -> opname -> unit
    val declare_term         : info -> shape_class -> ty_term -> unit

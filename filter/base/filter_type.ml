@@ -350,7 +350,6 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  * These type define what info do we need during parsing to identify opnames and context bindings
  * The context_fun should return the Some list when the SO variable bindings are known from the proof context
  *)
-type opname_fun             = string list -> shape_param list -> int list -> Opname.opname
 type opname_kind_fun        = op_kind -> string list -> shape_param list -> int list -> Opname.opname
 type context_fun            = var -> int -> var list option
 type infer_term_fun         = term -> term

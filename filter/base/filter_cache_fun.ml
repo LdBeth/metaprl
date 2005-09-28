@@ -575,9 +575,6 @@ struct
                         raise (Failure ("opname " ^ SimplePrint.string_of_opname opname ^ " is not declared with shape name: " ^ string_of_op_shape shape))
                end
 
-   let mk_opname cache names params arities =
-      mk_opname_kind cache NormalKind names params arities
-
    let op_shape_of_term_kind name kind t =
       let params = List.map param_type (dest_op (dest_term t).term_op).op_params in
          if strip_quotations params != params then
