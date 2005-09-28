@@ -170,6 +170,7 @@ let judgment_opname,     judgment_type       = mk_typeclass "Judgment"
 let quote_opname,        quote_type          = mk_typeclass "Quote"
 let dform_opname,        dform_type          = mk_typeclass "Dform"
 let nonterminal_opname,  nonterminal_type    = mk_typeclass "Nonterminal"
+let ignore_opname,       ignore_type         = mk_typeclass "Ignore"
 
 let ty_type        = TypeTerm type_type
 let ty_term        = TypeTerm term_type
@@ -432,14 +433,26 @@ let venv_add_vars venv vars tyl =
          SymbolTable.add venv v (TypeTerm ty)) venv vars tyl
 
 let venv_find_var venv v =
-   try SymbolTable.find venv v with
-      Not_found ->
-         raise (RefineError ("Term_ty_infer.venv_find_var: unbound variable", RewriteFreeSOVar v))
+   match
+      try SymbolTable.find venv v with
+         Not_found ->
+            raise (RefineError ("Term_ty_infer.venv_find_var: unbound variable", RewriteFreeSOVar v))
+   with
+      TypeTerm ty when alpha_equal ty ignore_type ->
+         raise (RefineError ("Term_ty_infer.venv_find_var", StringVarError("free occurrence of an \"Ignore\" variable", v)))
+    | ty ->
+         ty
 
 let venv_find_var_opt venv v =
-   try Some (SymbolTable.find venv v) with
-      Not_found ->
-         None
+   match
+      try Some (SymbolTable.find venv v) with
+         Not_found ->
+            None
+   with
+      Some (TypeTerm ty) when alpha_equal ty ignore_type ->
+         raise (RefineError ("Term_ty_infer.venv_find_var_opt", StringVarError("free occurrence of an \"Ignore\" variable", v)))
+    | ty ->
+         ty
 
 (************************************************
  * Substitution environment.
