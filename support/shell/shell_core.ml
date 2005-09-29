@@ -115,7 +115,7 @@ let update_dfbase info =
          Some pack ->
             if !debug_shell then
                eprintf "Selecting display forms from %s%t" (Package_info.name pack) eflush;
-            let mk_opname = Package_info.mk_opname_kind pack in
+            let mk_opname = (Package_info.get_parsing_state pack).mk_opname_kind Filter_util.dummy_loc in
             let shortener opname kind params bterms =
                try
                   match Opname.dest_opname opname with
@@ -620,12 +620,8 @@ let mount_root parse_arg shell force_flag need_shell verbose =
       shell.shell_package <- None;
       update_dfbase shell;
       shell.shell_proof <- proof;
-      Shell_state.set_mk_opname None;
-      Shell_state.set_infer_term None;
-      Shell_state.set_grammar None;
       Shell_state.set_so_var_context None;
-      Shell_state.set_infixes None;
-      Shell_state.set_grammar None;
+      Shell_state.set_package None;
       Shell_state.set_module "shell_theory"
 
 (*
@@ -636,12 +632,8 @@ let mount_fs parse_arg shell force_flag need_shell verbose =
       shell.shell_package <- None;
       update_dfbase shell;
       shell.shell_proof <- proof;
-      Shell_state.set_mk_opname None;
-      Shell_state.set_infer_term None;
-      Shell_state.set_grammar None;
       Shell_state.set_so_var_context None;
-      Shell_state.set_infixes None;
-      Shell_state.set_grammar None;
+      Shell_state.set_package None;
       Shell_state.set_module "shell_theory"
 
 (*
@@ -670,21 +662,7 @@ let mount_current_module modname parse_arg shell force_flag need_shell verbose =
                   failwith ("Module " ^ modname ^ " does not contain shell commands");
                shell.shell_package <- Some pack;
                update_dfbase shell;
-               Shell_state.set_mk_opname (Some (Package_info.opname_prefix pack, Package_info.mk_opname_kind pack));
-               Shell_state.set_infer_term (Some (Package_info.infer_term pack,
-                                                 Package_info.check_rule pack,
-                                                 Package_info.check_rewrite pack,
-                                                 Package_info.check_type_rewrite pack,
-                                                 Package_info.check_iform pack,
-                                                 Package_info.check_dform pack,
-                                                 Package_info.check_production pack));
-               Shell_state.set_grammar (Some (Package_info.get_start pack,
-                                              Package_info.check_input_term pack,
-                                              Package_info.check_input_mterm pack,
-                                              Package_info.apply_iforms pack,
-                                              Package_info.apply_iforms_mterm pack,
-                                              Package_info.term_of_string pack));
-               Shell_state.set_infixes (Some (Package_info.get_infixes pack));
+               Shell_state.set_package (Some pack);
                Shell_state.set_module modname;
                if verbose then
                   printf "Module: /%s%t" modname eflush

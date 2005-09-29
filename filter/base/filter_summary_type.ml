@@ -217,20 +217,12 @@ sig
    val expand_path    : info -> module_path -> module_path
 
    (* Opname management *)
-   val op_prefix            : info -> opname
-   val mk_opname_kind       : info -> opname_kind_fun
    val declare_typeclass    : info -> shape_class -> opname -> opname -> typeclass_parent -> unit
    val declare_type         : info -> shape_class -> ty_term -> opname -> unit
    val declare_term         : info -> shape_class -> ty_term -> unit
    val declare_type_rewrite : info -> term -> term -> unit
-   val infer_term           : info -> term -> term   (* Returns the type of the term *)
-   val check_term           : info -> term -> term   (* This is the identity *)
-   val check_rule           : info -> meta_term -> term list -> unit
-   val check_rewrite        : info -> meta_term -> term list -> unit
-   val check_type_rewrite   : info -> term -> term -> unit
-   val check_dform          : info -> term -> term -> unit
-   val check_iform          : info -> check_iform_fun
-   val check_production     : info -> term list -> term -> unit
+
+   val get_parsing_state : info -> parsing_state
 
    (* Inherited access for module_info *)
    val find           : info -> string -> (str_elem * loc)
@@ -290,14 +282,6 @@ sig
    val get_start         : info -> shape StringTable.t
    val parse             : (string -> string -> term) -> info -> Lexing.position -> shape -> string -> term
    val compile_parser    : info -> unit
-
-   (* Grammar functions *)
-   val check_input_term   : info -> check_input_term_fun
-   val check_input_mterm  : info -> check_input_mterm_fun
-
-   val apply_iforms       : info -> apply_iforms_fun
-   val apply_iforms_mterm : info -> apply_iforms_mterm_fun
-   val term_of_string     : info -> term_of_string_fun
 end
 
 (*

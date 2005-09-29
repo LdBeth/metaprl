@@ -141,21 +141,7 @@ type input_buf =
  * This is the type of global state.
  *)
 type state =
-   { mutable state_opname_prefix      : opname;
-     mutable state_mk_opname_kind     : opname_kind_fun;
-     mutable state_mk_var_contexts    : context_fun;
-     mutable state_infer_term         : infer_term_fun;
-     mutable state_check_rule         : check_rule_fun;
-     mutable state_check_rewrite      : check_rewrite_fun;
-     mutable state_check_type_rewrite : check_type_rewrite_fun;
-     mutable state_check_iform        : check_iform_fun;
-     mutable state_check_dform        : check_dform_fun;
-     mutable state_check_production   : check_production_fun;
-     mutable state_check_input_term   : check_input_term_fun;
-     mutable state_check_input_mterm  : check_input_mterm_fun;
-     mutable state_apply_iforms       : apply_iforms_fun;
-     mutable state_apply_iforms_mterm : apply_iforms_mterm_fun;
-     mutable state_term_of_string     : term_of_string_fun;
+   { mutable state_parsing            : parsing_state option;
      mutable state_df_base            : dform_base;
      mutable state_inline_terms       : (int * term) list;
      mutable state_inline_var         : int;
@@ -172,54 +158,15 @@ type state =
 (*
  * Default values.
  *)
-let mk_opname_null _ _ =
-   raise (Failure "Shell_mp.mk_opname: no current package")
-
-let mk_var_contexts_null v i =
+let mk_var_contexts_null loc v i =
    if i = 0 then
       None
    else
-      raise (Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
-
-let infer_term_null t =
-   raise (Failure "Shell_mp.infer_term: no current package")
-
-let check_rule_null mt args =
-   raise (Failure "Shell_mp.check_rule: no current package")
-
-let check_rewrite_null mt args =
-   raise (Failure "Shell_mp.check_rewrite: no current package")
-
-let check_type_rewrite_null redex contractum =
-   raise (Failure "Shell_mp.check_type_rewrite: no current package")
-
-let check_iform_null mt =
-   raise (Failure "Shell_mp.check_iform: no current package")
-
-let check_dform_null redex contractum =
-   raise (Failure "Shell_mp.check_dform: no current package")
-
-let check_production_null redices contractum =
-   raise (Failure "Shell_mp.check_production: no current package")
+      Stdpp.raise_with_loc loc (Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
 
 let default_saved_tactic =
    let loc = dummy_loc in
       ("\"no saved tactic\"", <:expr< $str: "no saved tactic"$ >>)
-
-let check_input_term_null loc t =
-   raise (Failure "Shell_mp.check_input_term: no current package")
-
-let check_input_mterm_null loc mt =
-   raise (Failure "Shell_mp.check_input_mterm: no current package")
-
-let apply_iforms_null loc quote t =
-   raise (Failure "Shell_mp.apply_iforms: no current package")
-
-let apply_iforms_mterm_null loc quote mt args =
-   raise (Failure "Shell_mp.apply_iforms_mterm: no current package")
-
-let term_of_string_null loc quote name s =
-   raise (Failure "Shell_mp.term_of_string_null: no current package")
 
 (*
  * Global state is a private variable.
@@ -227,16 +174,7 @@ let term_of_string_null loc quote name s =
 let state_entry =
    Mp_resource.recompute_top ();
    let default =
-      { state_opname_prefix      = nil_opname;
-        state_mk_opname_kind     = mk_opname_null;
-        state_mk_var_contexts    = mk_var_contexts_null;
-        state_infer_term         = infer_term_null;
-        state_check_rule         = check_rule_null;
-        state_check_rewrite      = check_rewrite_null;
-        state_check_type_rewrite = check_type_rewrite_null;
-        state_check_iform        = check_iform_null;
-        state_check_dform        = check_dform_null;
-        state_check_production   = check_production_null;
+      { state_parsing            = None;
         state_active             = false;
         state_df_base            = Dform.null_base;
         state_inline_terms       = [];
@@ -248,15 +186,10 @@ let state_entry =
         state_infixes            = Infix.Set.empty;
         state_prompt1            = "# ";
         state_prompt2            = "  ";
-        state_check_input_term   = check_input_term_null;
-        state_check_input_mterm  = check_input_mterm_null;
-        state_apply_iforms       = apply_iforms_null;
-        state_apply_iforms_mterm = apply_iforms_mterm_null;
-        state_term_of_string     = term_of_string_null
       }
    in
    let fork state =
-      { state with state_mk_opname_kind = state.state_mk_opname_kind }
+      { state with state_tactic = state.state_tactic }
    in
       State.private_val "Shell_state.state" default fork
 
@@ -315,93 +248,11 @@ module TermGrammar = MakeTermGrammar
    (*
     * Use global mk_opname function.
     *)
-   let opname_prefix loc =
+   let parsing_state loc =
       synchronize_state (function state ->
-            state.state_opname_prefix)
-
-   let mk_opname_kind loc l =
-      synchronize_state (function state ->
-            try state.state_mk_opname_kind l with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let mk_var_contexts loc v i =
-      synchronize_state (function state ->
-            try state.state_mk_var_contexts v i with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let infer_term loc t =
-      synchronize_state (function state ->
-            try state.state_infer_term t with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let check_rule loc mt args =
-      synchronize_state (function state ->
-            try state.state_check_rule mt args with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let check_rewrite loc mt args =
-      synchronize_state (function state ->
-            try state.state_check_rewrite mt args with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let check_type_rewrite loc redex contractum =
-      synchronize_state (function state ->
-            try state.state_check_type_rewrite redex contractum with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let check_iform loc mt =
-      synchronize_state (function state ->
-            try state.state_check_iform mt with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let check_dform loc redex contractum =
-      synchronize_state (function state ->
-            try state.state_check_dform redex contractum with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let check_production loc redices contractum =
-      synchronize_state (function state ->
-            try state.state_check_production redices contractum with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let check_input_term loc t =
-      synchronize_state (function state ->
-            try state.state_check_input_term loc t with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let check_input_mterm loc mt =
-      synchronize_state (function state ->
-            try state.state_check_input_mterm loc mt with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let apply_iforms loc quote t =
-      synchronize_state (function state ->
-            try state.state_apply_iforms loc quote t with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let apply_iforms_mterm loc quote mt args =
-      synchronize_state (function state ->
-            try state.state_apply_iforms_mterm loc quote mt args with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
-
-   let term_of_string loc quote name s =
-      synchronize_state (function state ->
-            try state.state_term_of_string loc quote name s with
-               exn ->
-                  Stdpp.raise_with_loc loc exn)
+         match state.state_parsing with
+            Some st -> st
+          | None -> Stdpp.raise_with_loc loc (Failure "Shell_state: no current package, can not parse terms"))
 
    (*
     * Term grammar.
@@ -546,82 +397,49 @@ let get_tactic () =
 (*
  * Set the opname function.
  *)
-let set_mk_opname op =
+let set_package pack =
    synchronize_write (fun state ->
-         match op with
-            Some (op_prefix, f) ->
-               state.state_opname_prefix <- op_prefix;
-               state.state_mk_opname_kind <- f
-          | None ->
-               state.state_opname_prefix <- nil_opname;
-               state.state_mk_opname_kind <- mk_opname_null)
+         match pack with
+            Some pack ->
+               state.state_parsing <- Some (Package_info.get_parsing_state pack);
+               state.state_infixes <- Package_info.get_infixes pack;
+          | None -> 
+               state.state_infixes <- Infix.Set.empty;
+               state.state_parsing <- None)
 
-let set_infer_term infer =
-   synchronize_write (fun state ->
-         match infer with
-            Some (infer_term, check_rule, check_rewrite, check_type_rewrite, check_iform, check_dform, check_production) ->
-               state.state_infer_term         <- infer_term;
-               state.state_check_rule         <- check_rule;
-               state.state_check_rewrite      <- check_rewrite;
-               state.state_check_type_rewrite <- check_type_rewrite;
-               state.state_check_iform        <- check_iform;
-               state.state_check_dform        <- check_dform;
-               state.state_check_production   <- check_production
-          | None ->
-               state.state_infer_term         <- infer_term_null;
-               state.state_check_rule         <- check_rule_null;
-               state.state_check_rewrite      <- check_rewrite_null;
-               state.state_check_type_rewrite <- check_type_rewrite_null;
-               state.state_check_iform        <- check_iform_null;
-               state.state_check_dform        <- check_dform_null;
-               state.state_check_production   <- check_production_null)
-
-let set_infixes infixes =
-   synchronize_write (fun state ->
-         match infixes with
-            Some infs ->
-               state.state_infixes <- infs
-          | None ->
-               state.state_infixes <- Infix.Set.empty)
-
-let set_grammar grammar =
-   synchronize_write (fun state ->
-         match grammar with
-            Some (starts, check_input_term, check_input_mterm, apply_iforms, apply_iforms_mterm, term_of_string) ->
-               state.state_check_input_term <- check_input_term;
-               state.state_check_input_mterm <- check_input_mterm;
-               state.state_apply_iforms <- apply_iforms;
-               state.state_apply_iforms_mterm <- apply_iforms_mterm;
-               state.state_term_of_string <- term_of_string;
-               add_starts starts
-          | None ->
-               state.state_check_input_term <- check_input_term_null;
-               state.state_check_input_mterm <- check_input_mterm_null;
-               state.state_apply_iforms <- apply_iforms_null;
-               state.state_apply_iforms_mterm <- apply_iforms_mterm_null;
-               state.state_term_of_string <- term_of_string_null)
-
+let update_var_contexts_fun state f =
+   state.state_parsing <-
+      match state.state_parsing, f with
+         Some st, Some f -> Some { st with mk_var_contexts = f }
+       | Some st, None -> Some { st with mk_var_contexts = mk_var_contexts_null }
+       | None, None -> None
+       | None, Some _ ->
+            raise (Invalid_argument "Shell_state.set_so_var_context: internal error: attempting to use outside of a package")
+         
 let set_so_var_context context =
    synchronize_write (fun state ->
+      let f =
          match context with
             Some ts ->
-               let delayed_fun v i =
+               let delayed_fun loc v i =
                   let f = context_subst_of_terms ts in
-                  let f v i =
+                  let f loc v i =
                      match f v i with
                         Some _ as conts -> conts
                       | None ->
                            if i = 0 then
                               None
                            else
-                              raise (Failure "Unknown SO variable, please specify contexts explicitly")
+                              Stdpp.raise_with_loc loc (Failure "Unknown SO variable, please specify contexts explicitly")
                   in
-                     state.state_mk_var_contexts <- f;
-                     f v i
+                     update_var_contexts_fun state (Some f);
+                     f loc v i
                in
-                  state.state_mk_var_contexts <- delayed_fun
+                  Some delayed_fun
           | None ->
-               state.state_mk_var_contexts <- mk_var_contexts_null)
+               None
+      in
+         update_var_contexts_fun state f)         
 
 (*
  * Set the display base.

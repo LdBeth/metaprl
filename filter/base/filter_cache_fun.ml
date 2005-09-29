@@ -520,12 +520,6 @@ struct
     * OPERATOR NAME TABLE                                                  *
     ************************************************************************)
 
-   (*
-    * Get the prefix.
-    *)
-   let op_prefix cache =
-      cache.opprefix
-
    let rec strip_quotations = function
       ShapeQuote :: l ->
          strip_quotations l
@@ -880,9 +874,35 @@ struct
          cache.typereduce <- Term_match_table.add_item cache.typereduce redex rw;
          cache.typereductions <- Shape2Table.add cache.typereductions (redex_shape, contractum_shape) (redex, contractum)
 
-   (*
-    * Check that a term is well-formed.
+   (*************************************************************************
+    * Parsing accessors.
     *)
+    
+   (*
+    * Check that a term does not contain residual input forms.
+    *)
+   let check_input_term_error debug t1 t2 =
+      raise (RefineError ("check_term", StringErrorError (debug,
+                                        StringErrorError ("parsed term",
+                                        TermErrorError (t1,
+                                        StringErrorError ("illegal subterm",
+                                        TermError t2))))))
+
+   let check_input_term cache t_root =
+      let shapes = cache.shapes in
+         iter_down (fun t ->
+               if not (is_var_term t || is_so_var_term t || is_context_term t || is_sequent_term t) then
+                  let info =
+                     try snd (ShapeTable.find shapes (unquote_shape (shape_of_term t))) with
+                        Not_found ->
+                           check_input_term_error "undeclared term" t_root t
+                  in
+                     match info with
+                        ShapeNormal ->
+                           ()
+                      | ShapeIForm ->
+                           check_input_term_error "unexpected iform term" t_root t) t_root
+
    let tenv_of_cache cache =
       let { typeenv        = typeenv;
             termenv        = termenv;
@@ -897,30 +917,37 @@ struct
            tenv_termenv        = termenv
          }
 
-   let infer_term cache t =
-      Term_ty_infer.infer_term (tenv_of_cache cache) t
+   let wrap1 f loc arg = 
+      try f arg with exn -> Stdpp.raise_with_loc loc exn
 
-   let check_rule cache mt args =
-      Term_ty_infer.check_rule (tenv_of_cache cache) mt args
-
-   let check_rewrite cache mt args =
-      Term_ty_infer.check_rewrite (tenv_of_cache cache) mt args
-
-   let check_type_rewrite cache redex contractum =
-      Term_ty_infer.check_type_rewrite (tenv_of_cache cache) redex contractum
-
-   let check_dform cache t form =
-      Term_ty_infer.check_dform (tenv_of_cache cache) t form
-
-   let check_iform cache mt =
-      Term_ty_infer.check_iform (tenv_of_cache cache) mt
-
-   let check_production cache redices contractum =
-      Term_ty_infer.check_production (tenv_of_cache cache) redices contractum
-
-   let check_term cache t =
-      ignore (infer_term cache t);
-      t
+   let wrap2 f loc arg1 arg2 =
+      try f arg1 arg2 with exn -> Stdpp.raise_with_loc loc exn
+      
+   let wrap3 f loc arg1 arg2 arg3 =
+      try f arg1 arg2 arg3 with exn -> Stdpp.raise_with_loc loc exn
+      
+   let wrap4 f loc arg1 arg2 arg3 arg4 =
+      try f arg1 arg2 arg3 arg4 with exn -> Stdpp.raise_with_loc loc exn
+      
+   let get_parsing_state cache =
+      let delay_tenv f arg = f (tenv_of_cache cache) arg in
+      {
+         opname_prefix = (fun _ -> cache.opprefix);
+         mk_opname_kind = wrap4 (mk_opname_kind cache);
+         mk_var_contexts = (fun _ _ _ -> None);
+         infer_term = wrap1 (delay_tenv Term_ty_infer.infer_term);
+         check_rule = wrap2 (delay_tenv Term_ty_infer.check_rule);
+         check_rewrite = wrap2 (delay_tenv Term_ty_infer.check_rewrite);
+         check_type_rewrite = wrap2 (delay_tenv check_type_rewrite);
+         check_dform = wrap2 (delay_tenv Term_ty_infer.check_dform);
+         check_iform = wrap1 (delay_tenv Term_ty_infer.check_iform);
+         check_production = wrap2 (delay_tenv Term_ty_infer.check_production);
+         check_input_term = wrap1 (check_input_term cache);
+         check_input_mterm = wrap1 (iter_mterm (check_input_term cache));
+         apply_iforms = wrap2 (fun quote t -> Filter_grammar.apply_iforms quote cache.grammar t);
+         apply_iforms_mterm = wrap3 (fun quote mt args -> Filter_grammar.apply_iforms_mterm quote cache.grammar mt args);
+         term_of_string = (fun loc quote name s -> Filter_grammar.term_of_string quote cache.grammar name (fst loc) s)
+      }
 
    (************************************************************************
     * ACCESS                                                               *
@@ -1048,46 +1075,6 @@ struct
    let compile_parser cache =
       Filter_grammar.compile cache.grammar;
       eprintf "%a@." Filter_grammar.pp_print_grammar cache.grammar
-
-   (*
-    * Check that a term does not contain residual input forms.
-    *)
-   let check_input_term_error debug t1 t2 =
-      raise (RefineError ("check_term", StringErrorError (debug,
-                                        StringErrorError ("parsed term",
-                                        TermErrorError (t1,
-                                        StringErrorError ("illegal subterm",
-                                        TermError t2))))))
-
-   let check_input_term cache loc t_root =
-      let shapes = cache.shapes in
-         iter_down (fun t ->
-               if not (is_var_term t || is_so_var_term t || is_context_term t || is_sequent_term t) then
-                  let info =
-                     try snd (ShapeTable.find shapes (unquote_shape (shape_of_term t))) with
-                        Not_found ->
-                           check_input_term_error "undeclared term" t_root t
-                  in
-                     match info with
-                        ShapeNormal ->
-                           ()
-                      | ShapeIForm ->
-                           check_input_term_error "unexpected iform term" t_root t) t_root
-
-   let check_input_mterm cache loc mt =
-      iter_mterm (check_input_term cache loc) mt
-
-   (*
-    * Grammar.
-    *)
-   let apply_iforms cache loc quote t =
-      Filter_grammar.apply_iforms quote cache.grammar t
-
-   let apply_iforms_mterm cache loc quote mt args =
-      Filter_grammar.apply_iforms_mterm quote cache.grammar mt args
-
-   let term_of_string cache loc quote name s =
-      Filter_grammar.term_of_string quote cache.grammar name (fst loc) s
 
    (************************************************************************
     * Hashing.

@@ -170,115 +170,17 @@ let wrap_code loc v body =
  * TERM GRAMMAR                                                         *
  ************************************************************************)
 
-(*
- * XXX This is a HACK!
- * We have to get around the type system somehow.
- * The FilterCache modules have different type for
- * signatures and implementations, but their mk_opname
- * functions will have the same type.  However, at the
- * time that the TermGrammar is defined, we don't know if this
- * is a signature or implementation.  So instead we leave a
- * reference to the mk_opname.  The refence is set by the get_proc
- * method, below, which knows if this is an implementation or
- * interface.
- *)
-type cache_funs =
-   { opname_prefix      : opname;
-     mk_opname_kind     : opname_kind_fun;
-     mk_var_contexts    : context_fun;
-     infer_term         : infer_term_fun;
-     check_rule         : check_rule_fun;
-     check_rewrite      : check_rewrite_fun;
-     check_type_rewrite : check_type_rewrite_fun;
-     check_dform        : check_dform_fun;
-     check_iform        : check_iform_fun;
-     check_production   : check_production_fun;
-     check_input_term   : check_input_term_fun;
-     check_input_mterm  : check_input_mterm_fun;
-     apply_iforms       : apply_iforms_fun;
-     apply_iforms_mterm : apply_iforms_mterm_fun;
-     term_of_string     : term_of_string_fun
-   }
-
-let cache_funs_ref =
-   ref None
-
-let set_cache_funs funs =
-   cache_funs_ref := Some funs
-
-let with_cache_funs loc f =
-   match !cache_funs_ref with
-      Some funs ->
-         (try f funs with
-             exn ->
-                Stdpp.raise_with_loc loc exn)
-    | None ->
-         Stdpp.raise_with_loc loc (Failure "Filter_parse.cache_funs is uninitialized")
+let parsing_state = ref None
 
 (*
  * Base term grammar
  *)
 module TermGrammarBefore : TermGrammarSig =
 struct
-   let opname_prefix loc =
-      with_cache_funs loc (fun funs ->
-            funs.opname_prefix)
-
-   let mk_opname_kind loc kind names params bterms =
-      with_cache_funs loc (fun funs ->
-            funs.mk_opname_kind kind names params bterms)
-
-   let mk_var_contexts loc v i =
-      with_cache_funs loc (fun funs ->
-            funs.mk_var_contexts v i)
-
-   let infer_term loc t =
-      with_cache_funs loc (fun funs ->
-            funs.infer_term t)
-
-   let check_rule loc mt args =
-      with_cache_funs loc (fun funs ->
-            funs.check_rule mt args)
-
-   let check_rewrite loc mt args =
-      with_cache_funs loc (fun funs ->
-            funs.check_rewrite mt args)
-
-   let check_type_rewrite loc redex contractum =
-      with_cache_funs loc (fun funs ->
-            funs.check_type_rewrite redex contractum)
-
-   let check_dform loc redex contractum =
-      with_cache_funs loc (fun funs ->
-            funs.check_dform redex contractum)
-
-   let check_iform loc mt =
-      with_cache_funs loc (fun funs ->
-            funs.check_iform mt)
-
-   let check_production loc redices contractum =
-      with_cache_funs loc (fun funs ->
-            funs.check_production redices contractum)
-
-   let check_input_term loc t =
-      with_cache_funs loc (fun funs ->
-            funs.check_input_term loc t)
-
-   let check_input_mterm loc mt =
-      with_cache_funs loc (fun funs ->
-            funs.check_input_mterm loc mt)
-
-   let apply_iforms loc quote t =
-      with_cache_funs loc (fun funs ->
-            funs.apply_iforms loc quote t)
-
-   let apply_iforms_mterm loc quote mt args =
-      with_cache_funs loc (fun funs ->
-            funs.apply_iforms_mterm loc quote mt args)
-
-   let term_of_string loc quote name s =
-      with_cache_funs loc (fun funs ->
-            funs.term_of_string loc quote name s)
+   let parsing_state loc = 
+      match !parsing_state with
+         Some st -> st
+       | None -> Stdpp.raise_with_loc loc (Failure "Filter_parse.parsing_state is uninitialized")
 
    (*
     * Term grammar.
@@ -916,28 +818,10 @@ struct
                  infixes  = Infix.Set.empty;
                }
             in
-            let funs =
-               { opname_prefix      = FilterCache.op_prefix info;
-                 mk_opname_kind     = FilterCache.mk_opname_kind info;
-                 infer_term         = FilterCache.infer_term info;
-                 check_rule         = FilterCache.check_rule info;
-                 check_rewrite      = FilterCache.check_rewrite info;
-                 check_type_rewrite = FilterCache.check_type_rewrite info;
-                 mk_var_contexts    = (fun _ _ -> None);
-                 check_iform        = FilterCache.check_iform info;
-                 check_dform        = FilterCache.check_dform info;
-                 check_production   = FilterCache.check_production info;
-                 check_input_term   = FilterCache.check_input_term info;
-                 check_input_mterm  = FilterCache.check_input_mterm info;
-                 apply_iforms       = FilterCache.apply_iforms info;
-                 apply_iforms_mterm = FilterCache.apply_iforms_mterm info;
-                 term_of_string     = FilterCache.term_of_string info
-               }
-            in
                if select = ImplementationType then
                   FilterCache.load_sig_grammar info () InterfaceType;
                add_starts (FilterCache.get_start info);
-               set_cache_funs funs;
+               parsing_state := Some (FilterCache.get_parsing_state info);
                proc_ref := Some proc;
                proc
 
@@ -2179,7 +2063,7 @@ EXTEND
             mt, raw_input_term_of_parsed_term extract
        | mt = bmterm ->
             try
-               mt, mk_simple_term (TermGrammarBefore.mk_opname_kind loc NormalKind ["default_extract"] [] []) []
+               mt, mk_simple_term ((TermGrammarBefore.parsing_state loc).mk_opname_kind loc NormalKind ["default_extract"] [] []) []
             with
                Stdpp.Exc_located (_, Failure _) ->
                   Stdpp.raise_with_loc loc (Failure "No computational witness (\"extract\") specified for a prim rule and the default_extract{} opname is not declared")

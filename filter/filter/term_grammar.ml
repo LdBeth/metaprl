@@ -213,6 +213,25 @@ struct
    let is_unknown_type_term = is_no_subterms_term unknown_type_opname
 
    (************************************************************************
+    * STATEFUL FUNCTIONS                                                   *
+    ************************************************************************)
+   let opname_prefix loc = (parsing_state loc).opname_prefix loc
+   let mk_opname_kind loc = (parsing_state loc).mk_opname_kind loc
+   let mk_var_contexts loc = (parsing_state loc).mk_var_contexts loc
+   let infer_term loc = (parsing_state loc).infer_term loc
+   let check_rule loc = (parsing_state loc).check_rule loc
+   let check_rewrite loc = (parsing_state loc).check_rewrite loc
+   let check_type_rewrite loc = (parsing_state loc).check_type_rewrite loc
+   let check_dform loc = (parsing_state loc).check_dform loc
+   let check_iform loc = (parsing_state loc).check_iform loc
+   let check_production loc = (parsing_state loc).check_production loc
+   let check_input_term loc = (parsing_state loc).check_input_term loc
+   let check_input_mterm loc = (parsing_state loc).check_input_mterm loc
+   let apply_iforms loc = (parsing_state loc).apply_iforms loc
+   let apply_iforms_mterm loc = (parsing_state loc).apply_iforms_mterm loc
+   let term_of_string loc = (parsing_state loc).term_of_string loc
+
+   (************************************************************************
     * UTILITIES                                                            *
     ************************************************************************)
 

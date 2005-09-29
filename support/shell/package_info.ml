@@ -519,81 +519,13 @@ let set pack_info arg item =
 (*
  * Access to cache.
  *)
-let opname_prefix pack_info =
+let get_parsing_state pack_info =
    synchronize_node pack_info (fun pack_info ->
          match pack_info.pack_str with
             Some { pack_str_info = info } ->
-               Cache.StrFilterCache.op_prefix info
+               Cache.StrFilterCache.get_parsing_state info
           | None ->
                raise (NotLoaded pack_info.pack_name))
-
-let mk_opname_kind pack_info kind opname params bterms =
-   synchronize_node pack_info (fun pack_info ->
-         match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.mk_opname_kind info kind opname params bterms
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let infer_term pack_info term =
-   synchronize_node pack_info (fun pack_info ->
-         match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.infer_term info term
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let check_rule pack_info mt args =
-   synchronize_node pack_info (fun pack_info ->
-         match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.check_rule info mt args
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let check_rewrite pack_info mt args =
-   synchronize_node pack_info (fun pack_info ->
-         match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.check_rewrite info mt args
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let check_type_rewrite pack_info redex contractum =
-   synchronize_node pack_info (fun pack_info ->
-         match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.check_type_rewrite info redex contractum
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let check_iform pack_info mt =
-   synchronize_node pack_info (fun pack_info ->
-         match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.check_iform info mt
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let check_dform pack_info redex contractum =
-   synchronize_node pack_info (fun pack_info ->
-         match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.check_dform info redex contractum
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let check_production pack_info redices contractum =
-   synchronize_node pack_info (fun pack_info ->
-         match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.check_production info redices contractum
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let get_infixes = function
-   { pack_str = Some _; pack_infixes = infixes } -> infixes
- | _ -> invalid_arg "Package_info.get_infixes: package not loaded"
 
 (*
  * Grammar.
@@ -606,45 +538,9 @@ let get_start pack_info =
           | None ->
                raise (NotLoaded pack_info.pack_name))
 
-let check_input_term pack_info loc t =
-   synchronize_node pack_info (fun pack_info ->
-          match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.check_input_term info loc t
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let check_input_mterm pack_info loc t =
-   synchronize_node pack_info (fun pack_info ->
-          match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.check_input_mterm info loc t
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let apply_iforms pack_info loc quote t =
-   synchronize_node pack_info (fun pack_info ->
-          match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.apply_iforms info loc quote t
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let apply_iforms_mterm pack_info loc quote mt args =
-   synchronize_node pack_info (fun pack_info ->
-          match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.apply_iforms_mterm info loc quote mt args
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
-
-let term_of_string pack_info loc quote name s =
-   synchronize_node pack_info (fun pack_info ->
-          match pack_info.pack_str with
-            Some { pack_str_info = info } ->
-               Cache.StrFilterCache.term_of_string info loc quote name s
-          | None ->
-               raise (NotLoaded pack_info.pack_name))
+let get_infixes = function
+   { pack_str = Some _; pack_infixes = infixes } -> infixes
+ | _ -> invalid_arg "Package_info.get_infixes: package not loaded"
 
 (*
  * Get a loaded theory.

@@ -348,50 +348,35 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
 
 (*
  * These type define what info do we need during parsing to identify opnames and context bindings
- * The context_fun should return the Some list when the SO variable bindings are known from the proof context
+ * The mk_var_contexts function should return the Some list when the SO variable bindings are known
+ * from the proof context.
  *)
-type opname_kind_fun        = op_kind -> string list -> shape_param list -> int list -> Opname.opname
-type context_fun            = var -> int -> var list option
-type infer_term_fun         = term -> term
-type check_rule_fun         = meta_term -> term list -> unit
-type check_rewrite_fun      = meta_term -> term list -> unit
-type check_type_rewrite_fun = term -> term -> unit
-type check_dform_fun        = term -> term -> unit
-type check_iform_fun        = meta_term -> unit
-type check_production_fun   = term list -> term -> unit
-
 type quotation_expander     = Filter_grammar.quotation_expander
-type check_input_term_fun   = MLast.loc -> term -> unit
-type check_input_mterm_fun  = MLast.loc -> meta_term -> unit
 
-type apply_iforms_fun       = MLast.loc -> quotation_expander -> term -> term
-type apply_iforms_mterm_fun = MLast.loc -> quotation_expander -> meta_term -> term list -> meta_term * term list
-type term_of_string_fun     = MLast.loc -> quotation_expander -> string -> string -> term
+type parsing_state =
+   { opname_prefix      : MLast.loc -> opname;
+     mk_opname_kind     : MLast.loc -> op_kind -> string list -> shape_param list -> int list -> Opname.opname;
+     mk_var_contexts    : MLast.loc -> var -> int -> var list option;
+     infer_term         : MLast.loc -> term -> term;
+     check_rule         : MLast.loc -> meta_term -> term list -> unit;
+     check_rewrite      : MLast.loc -> meta_term -> term list -> unit;
+     check_type_rewrite : MLast.loc -> term -> term -> unit;
+     check_dform        : MLast.loc -> term -> term -> unit;
+     check_iform        : MLast.loc -> meta_term -> unit;
+     check_production   : MLast.loc -> term list -> term -> unit;
+     check_input_term   : MLast.loc -> term -> unit;
+     check_input_mterm  : MLast.loc -> meta_term -> unit;
+     apply_iforms       : MLast.loc -> quotation_expander -> term -> term;
+     apply_iforms_mterm : MLast.loc -> quotation_expander -> meta_term -> term list -> meta_term * term list;
+     term_of_string     : MLast.loc -> quotation_expander -> string -> string -> term
+   }
 
 (*
  * Grammars to extend.
  *)
 module type TermGrammarSig =
 sig
-   (* Provided by environments *)
-   val opname_prefix      : MLast.loc -> opname
-   val mk_opname_kind     : MLast.loc -> opname_kind_fun
-   val mk_var_contexts    : MLast.loc -> context_fun
-   val infer_term         : MLast.loc -> infer_term_fun
-   val check_rule         : MLast.loc -> check_rule_fun
-   val check_rewrite      : MLast.loc -> check_rewrite_fun
-   val check_type_rewrite : MLast.loc -> check_type_rewrite_fun
-   val check_dform        : MLast.loc -> check_dform_fun
-   val check_iform        : MLast.loc -> check_iform_fun
-   val check_production   : MLast.loc -> check_production_fun
-
-   (* Filter_grammar *)
-   val check_input_term   : check_input_term_fun
-   val check_input_mterm  : check_input_mterm_fun
-
-   val apply_iforms       : apply_iforms_fun
-   val apply_iforms_mterm : apply_iforms_mterm_fun
-   val term_of_string     : term_of_string_fun
+   val parsing_state     : MLast.loc -> parsing_state
 
    (* Grammar *)
    val opname            : opname Grammar.Entry.e

@@ -54,28 +54,7 @@ val get_term : int -> term
  * TOPLOOP FUNCTIONS
  *)
 
-(* This is the opname function used when terms are built. *)
-val set_mk_opname : (opname * opname_kind_fun) option -> unit
-
-(* This is the term checker to be used when terms are parsed. *)
-val set_infer_term : (infer_term_fun
-                      * check_rule_fun
-                      * check_rewrite_fun
-                      * check_type_rewrite_fun
-                      * check_iform_fun
-                      * check_dform_fun
-                      * check_production_fun) option -> unit
-
-(* This is the set of grammar infix/suffix mods needed in this state *)
-val set_infixes : Infix.Set.t option -> unit
-
-(* Set the quotation expander *)
-val set_grammar : (shape StringTable.t
-                   * check_input_term_fun
-                   * check_input_mterm_fun
-                   * apply_iforms_fun
-                   * apply_iforms_mterm_fun
-                   * term_of_string_fun) option -> unit
+val set_package : Package_info.package option -> unit
 
 (* Scan (lazily) terms for SO variable contexts and use that for SO var parsing *)
 val set_so_var_context : term list option -> unit

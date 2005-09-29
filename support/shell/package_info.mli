@@ -117,25 +117,12 @@ val touch : package -> unit
 (*
  * Access to the cache.
  *)
-val opname_prefix      : package -> opname
-val mk_opname_kind     : package -> opname_kind_fun
-val infer_term         : package -> infer_term_fun
-val check_rule         : package -> check_rule_fun
-val check_rewrite      : package -> check_rewrite_fun
-val check_type_rewrite : package -> check_type_rewrite_fun
-val check_iform        : package -> check_iform_fun
-val check_dform        : package -> check_dform_fun
-val check_production   : package -> check_production_fun
+val get_parsing_state : package -> parsing_state
 
 (*
  * Grammar.
  *)
 val get_start          : package -> shape StringTable.t
-val check_input_term   : package -> check_input_term_fun
-val check_input_mterm  : package -> check_input_mterm_fun
-val apply_iforms       : package -> apply_iforms_fun
-val apply_iforms_mterm : package -> apply_iforms_mterm_fun
-val term_of_string     : package -> term_of_string_fun
 
 (*
  * Infixes/suffixes declared in the package
