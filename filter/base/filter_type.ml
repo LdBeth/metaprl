@@ -395,7 +395,7 @@ sig
 
    (* Grammar *)
    val opname            : opname Grammar.Entry.e
-   val opname_name       : string Grammar.Entry.e
+   val opname_name       : opname Grammar.Entry.e
    val term_eoi          : term Grammar.Entry.e
    val term              : term Grammar.Entry.e
    val quote_term        : ty_term Grammar.Entry.e
@@ -440,7 +440,7 @@ sig
 
    (* Grammar *)
    val opname            : opname Grammar.Entry.e
-   val opname_name       : string Grammar.Entry.e
+   val opname_name       : opname Grammar.Entry.e
    val term_eoi          : parsed_term Grammar.Entry.e
    val term              : parsed_term Grammar.Entry.e
    val quote_term        : (parsed_term, parsed_term) poly_ty_term Grammar.Entry.e

@@ -1543,10 +1543,10 @@ struct
       termlist:
          [[ l = LIST0 term SEP ";" -> l ]];
 
-      (* Parameters and bterm lists *)
+      (* Local opname *)
       opname_name:
          [[ s = word_or_string ->
-             s
+             Opname.mk_opname s (opname_prefix loc)
           ]];
 
       opname_list:
@@ -1822,7 +1822,7 @@ struct
           | v = UIDENT; ":"; t = aterm ->
              Hypothesis(Lm_symbol.add v, get_aterm loc t)
           | v = STRING; ":"; t = aterm ->
-             Hypothesis(Lm_symbol.add v, get_aterm loc t)
+             Hypothesis(Lm_symbol.add (Token.eval_string loc v), get_aterm loc t)
           | t = aterm ->
              Hypothesis(empty_var, get_aterm loc t)
           ]];

@@ -562,10 +562,9 @@ struct
    (*
     * Declarations.
     *)
-   let declare_typeclass proc loc shapeclass kind_name typeclass_type typeclass_parent =
-      let kind_opname = Opname.mk_opname kind_name (FilterCache.op_prefix proc.cache) in
-         FilterCache.declare_typeclass proc.cache shapeclass kind_opname typeclass_type typeclass_parent;
-         add_command proc (DeclareTypeClass (shapeclass, kind_opname, typeclass_type, typeclass_parent), loc)
+   let declare_typeclass proc loc shapeclass kind_opname typeclass_type typeclass_parent =
+      FilterCache.declare_typeclass proc.cache shapeclass kind_opname typeclass_type typeclass_parent;
+      add_command proc (DeclareTypeClass (shapeclass, kind_opname, typeclass_type, typeclass_parent), loc)
 
    let declare_type proc loc shapeclass ty_term ty_parent =
       FilterCache.declare_type proc.cache shapeclass ty_term ty_parent;
@@ -1559,7 +1558,7 @@ EXTEND
           (************************************************************************
            * Opname classes.
            *)
-        | "declare"; "typeclass"; sc = shapeclass; name = id_or_string; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
+        | "declare"; "typeclass"; sc = shapeclass; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
              SigFilter.declare_typeclass (SigFilter.get_proc loc) loc sc name typeclass_type typeclass_parent
           in
@@ -1785,7 +1784,7 @@ EXTEND
           (************************************************************************
            * Opname classes.
            *)
-        | "declare"; "typeclass"; sc = shapeclass; name = id_or_string; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
+        | "declare"; "typeclass"; sc = shapeclass; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
              StrFilter.declare_typeclass (StrFilter.get_proc loc) loc sc name typeclass_type typeclass_parent
           in
@@ -2239,15 +2238,6 @@ EXTEND
           name
         | name = LIDENT ->
           name
-       ]];
-
-   id_or_string:
-      [[ name = UIDENT ->
-          name
-        | name = LIDENT ->
-          name
-        | name = STRING ->
-          Token.eval_string loc name
        ]];
 
    (*
