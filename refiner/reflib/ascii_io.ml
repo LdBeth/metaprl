@@ -340,7 +340,7 @@ struct
             ) in
             if r.io_old_format then begin
                eprintf "Warning: converting a term read from an old .prla file%t" eflush;
-               TM.TermMeta.term_of_parsed_term res (* XXX HACK: format version <= 1.0.7 support *)
+               TM.TermMeta.term_of_parsed_term (fun _ -> true) res (* XXX HACK: format version <= 1.0.7 support *)
             end else res
        | [] -> fail "get_term1"
       end with Not_found -> fail "get_term - empty file"
@@ -351,7 +351,7 @@ struct
       let res = retrieve (Hashtbl.find r.io_terms name) in
       if r.io_old_format then begin
          eprintf "Warning: converting a term read from an old .prla file%t" eflush;
-         TM.TermMeta.term_of_parsed_term res (* XXX HACK: format version <= 1.0.7 support *)
+         TM.TermMeta.term_of_parsed_term (fun _ -> true) res (* XXX HACK: format version <= 1.0.7 support *)
       end else res
 
    let read_table inx =

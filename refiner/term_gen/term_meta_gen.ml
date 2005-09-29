@@ -60,6 +60,8 @@ struct
 
    module MetaTypes = TermType
 
+   type allow_seq_bindings = term -> bool
+
    (************************************************************************
     * META-TERMS                                                           *
     ************************************************************************)
@@ -319,15 +321,19 @@ let () = ();;
    (*
     * Rename hypothesis bound variables --- use empty names for variables not actually used
     *)
-   let rec rename_hyp_bvars parsing bvars concl seqfvars count sub = function
+   let rec rename_hyp_bvars allow_bindings parsing bvars concl seqfvars count sub = function
       [] -> [], apply_subst sub concl
     | (Context(c, conts, terms) as hd :: tl) as hyps ->
-         let tl', concl = rename_hyp_bvars parsing (SymbolSet.add bvars c) concl seqfvars count sub tl in
+         let tl', concl = rename_hyp_bvars allow_bindings parsing (SymbolSet.add bvars c) concl seqfvars count sub tl in
          let hd' = if sub = [] || terms = [] then hd else Context(c, conts, Lm_list_util.smap (apply_subst sub) terms) in
          (if hd' == hd && tl' == tl then hyps else hd'::tl'), concl
     | (Hypothesis (v,t) as hd :: tl) as hyps ->
          let mem = SymbolSet.mem seqfvars v in
          let empt = (Lm_symbol.to_string v = "") in
+         let _ =
+            if not allow_bindings && not empt then
+               raise (Failure "Term_meta.rename_hyp_bvars: a sequent has a meta-type that does not allow bindings, but a binding is used in it")
+         in
          let v' =
             if mem && empt then Lm_symbol.new_name vv (SymbolSet.mem (SymbolSet.union bvars seqfvars))
             else if (not mem) && ((not (parsing || empt)) || SymbolSet.mem bvars v) then begin
@@ -337,15 +343,17 @@ let () = ();;
          in
          let t' = apply_subst sub t in
          let sub = if v == v' then sub else (v, mk_var_term v') :: sub in
-         let tl', concl = rename_hyp_bvars parsing (SymbolSet.add bvars v') concl seqfvars count sub tl in
+         let tl', concl = rename_hyp_bvars allow_bindings parsing (SymbolSet.add bvars v') concl seqfvars count sub tl in
          let hd' = if v==v' && t==t' then hd else Hypothesis (v',t') in
          (if hd' == hd && tl' == tl then hyps else hd'::tl'), concl
 
    (*
     * Go down the term, mapping the context bindings
     * f knows how to map contexts; f' knows what to do with free FO variables.
+    * The sequent_allow_bindings function knows which sequent args allow bindings.
+    *     sab only matters when the parsing flag it true.
     *)
-   let convert_contexts (f : var list -> var -> var list -> var list * var list) f' parsing =
+   let convert_contexts (f : bool -> var list -> var -> var list -> var list * var list) f' parsing sequent_allow_bindings =
       let rec convert_term bvars fvars bconts t =
          if is_var_term t then
             let v = dest_var t in if SymbolSet.mem fvars v then f' t v bconts else t
@@ -362,12 +370,12 @@ let () = ();;
                else
                   t
             else
-               let _, conts' = f bconts v conts in
+               let _, conts' = f true bconts v conts in
                let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
                if conts' == conts && terms == terms' then t else mk_so_var_term v conts' terms'
           else if is_context_term t then
             let v,ct,conts,terms = dest_context t in
-            let bconts', conts' = f bconts v conts in
+            let bconts', conts' = f true bconts v conts in
             let ct' = convert_term bvars fvars bconts' ct in
             let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
             if ct == ct' && conts' == conts && terms == terms' then t else mk_context_term v ct' conts' terms'
@@ -375,8 +383,9 @@ let () = ();;
             let eseq = explode_sequent t in
             let arg' = convert_term bvars fvars bconts eseq.sequent_args in
             let hyps = SeqHyp.to_list eseq.sequent_hyps in
-            let hyps', concl', seqfvars = convert_hyps bvars fvars bconts eseq.sequent_concl hyps in
-            let hyps', concl' = rename_hyp_bvars parsing (SymbolSet.add_list bvars bconts) concl' seqfvars (ref (-1)) [] hyps' in
+            let allow_bindings = not parsing || sequent_allow_bindings arg' in
+            let hyps', concl', seqfvars = convert_hyps allow_bindings bvars fvars bconts eseq.sequent_concl hyps in
+            let hyps', concl' = rename_hyp_bvars allow_bindings parsing (SymbolSet.add_list bvars bconts) concl' seqfvars (ref (-1)) [] hyps' in
             if arg' == eseq.sequent_args && hyps' == hyps && concl' == eseq.sequent_concl then t
             else mk_sequent_term {
                sequent_args = arg'; sequent_hyps = SeqHyp.of_list hyps'; sequent_concl = concl'
@@ -391,20 +400,20 @@ let () = ();;
          let t' = convert_term (SymbolSet.add_list bvars bt'.bvars)(SymbolSet.subtract_list fvars bt'.bvars) bconts bt'.bterm in
          if t' == bt'.bterm then bt else mk_bterm bt'.bvars t'
 
-      and convert_hyps bvars fvars bconts concl = function
+      and convert_hyps allow_bindings bvars fvars bconts concl = function
          [] ->
             let concl = convert_term bvars fvars bconts concl in
                [], concl, free_vars_set concl
        | ((Hypothesis (v, t)) as hd :: tl) as hyps ->
             let t' = convert_term bvars fvars bconts t in
-            let tl', concl', seqfvars = convert_hyps (SymbolSet.add bvars v) (SymbolSet.remove fvars v) bconts concl tl in
+            let tl', concl', seqfvars = convert_hyps allow_bindings (SymbolSet.add bvars v) (SymbolSet.remove fvars v) bconts concl tl in
             (if t'==t && tl' == tl then hyps else
             let hd' = if t' == t then hd else Hypothesis(v, t') in
                hd' :: tl'), concl', SymbolSet.union seqfvars (free_vars_set t')
       | (Context (c, conts, terms) as hd :: tl) as hyps ->
-            let bconts', conts' = f bconts c conts in
+            let bconts', conts' = f allow_bindings bconts c conts in
             let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
-            let tl', concl', seqfvars = convert_hyps bvars fvars bconts' concl tl in
+            let tl', concl', seqfvars = convert_hyps allow_bindings bvars fvars bconts' concl tl in
             let hd' =
                if conts' == conts && terms == terms' && parsing then
                   hd
@@ -441,14 +450,18 @@ let () = ();;
          let mt1' = convert_mterm f mt1 in if mt1' == mt1 then mt else MetaLabeled(l,mt1')
 
    (* Diring parsing and display, the default contexts are "encoded" as a singleton list containing just the variable itself *)
-   let context_of_parsed_contexts bconts v conts =
-      let bconts', conts =
-         match conts with
-            v :: rest when Lm_symbol.eq v hash_sym ->
+   let parse_contexts allow_bindings bconts v conts =
+      match conts with
+         v :: rest when Lm_symbol.eq v hash_sym ->
+            if allow_bindings then
                bconts, rest
-          | _ ->
-               v :: bconts, conts
-      in
+            else
+               raise (Failure "Term_meta_gen.parse_contexts: The < C<|#|> > construct should not be used when the sequent argument is already declared with a meta-type that does not allow bindings.")
+       | _ ->
+            (if allow_bindings then v :: bconts else bconts), conts
+   
+   let context_of_parsed_contexts allow_bindings bconts v conts =
+      let bconts', conts = parse_contexts allow_bindings bconts v conts in
       let conts =
          match conts with
             [v'] when Lm_symbol.eq v v' ->
@@ -458,7 +471,7 @@ let () = ();;
       in
          bconts', conts
 
-   let display_context_of_contexts bconts v conts =
+   let display_context_of_contexts _ bconts v conts =
       let conts =
          if bconts = conts then
             [v]
@@ -475,19 +488,13 @@ let () = ();;
       convert_contexts context_of_parsed_contexts (fun t _ _ -> t) true
 
    let display_term_of_term =
-      convert_contexts display_context_of_contexts (fun _ v _ -> encode_free_var v) false
+      convert_contexts display_context_of_contexts (fun _ v _ -> encode_free_var v) false (fun _ -> true)
 
    (* create a fresh term convertor with memoization *)
-   let create_term_parser () =
+   let create_term_parser allow_bindings_fun =
       let map = ref SymbolTable.empty in
-      let context_of_parsed_contexts bconts v conts =
-         let bconts', conts =
-            match conts with
-               v :: rest when Lm_symbol.eq v hash_sym ->
-                  bconts, rest
-             | _ ->
-                  v :: bconts, conts
-         in
+      let context_of_parsed_contexts allow_bindings bconts v conts =
+         let bconts', conts = parse_contexts allow_bindings bconts v conts in
          let conts =
             match conts with
                [v'] when Lm_symbol.eq v v' ->
@@ -514,20 +521,20 @@ let () = ();;
          in
             mk_so_var_term v conts []
       in
-         convert_contexts context_of_parsed_contexts deal_with_a_var true
+         convert_contexts context_of_parsed_contexts deal_with_a_var true allow_bindings_fun
 
-   let rewrite_of_parsed_rewrite redex contractum =
-      let f = create_term_parser () in
+   let rewrite_of_parsed_rewrite allow_bindings_fun redex contractum =
+      let f = create_term_parser allow_bindings_fun in
          f redex, f contractum
 
-   let mrewrite_of_parsed_mrewrite redices contractum =
-      let parse = create_term_parser () in
+   let mrewrite_of_parsed_mrewrite allow_bindings_fun redices contractum =
+      let parse = create_term_parser allow_bindings_fun in
       let redices = List.map parse redices in
       let contractum = parse contractum in
          redices, contractum
 
-   let mterms_of_parsed_mterms mt ts =
-      let parse = create_term_parser () in
+   let mterms_of_parsed_mterms allow_bindings_fun mt ts =
+      let parse = create_term_parser allow_bindings_fun in
       let mt = convert_mterm parse mt in (* The order is important here! *)
          mt, List.map parse ts, parse
 

@@ -232,6 +232,15 @@ struct
    let term_of_string loc = (parsing_state loc).term_of_string loc
 
    (************************************************************************
+    * Whether to allow sequent bindings - pass that information to the post-parser.
+    *)
+   let term_of_parsed_term loc = term_of_parsed_term ((parsing_state loc).allow_seq_bindings loc)
+   let term_of_parsed_term_with_vars loc = term_of_parsed_term_with_vars ((parsing_state loc).allow_seq_bindings loc)
+   let mterms_of_parsed_mterms loc = mterms_of_parsed_mterms ((parsing_state loc).allow_seq_bindings loc)
+   let rewrite_of_parsed_rewrite loc = rewrite_of_parsed_rewrite ((parsing_state loc).allow_seq_bindings loc)
+   let mrewrite_of_parsed_mrewrite loc = mrewrite_of_parsed_mrewrite ((parsing_state loc).allow_seq_bindings loc)
+   
+   (************************************************************************
     * UTILITIES                                                            *
     ************************************************************************)
 
@@ -772,7 +781,7 @@ struct
             mk_simple_term comment_block_op [build_term spelling space items]
        | Comment_parse.Quote ((l1, l2), tag, s) ->
             let t = parse_quotation (adjust_pos pos l1, adjust_pos pos l2) "doc" tag s in
-               term_of_parsed_term t
+               term_of_parsed_term loc t
 
       (*
        * If spacing is ignored, ignore spaces.
@@ -875,14 +884,14 @@ struct
     *)
    let parse_term loc t =
       let t = apply_iforms loc t in
-      let t = term_of_parsed_term t in
+      let t = term_of_parsed_term loc t in
       let _ = infer_term loc t in
          check_input_term loc t;
          t
 
    let parse_term_with_vars loc t =
       let t = apply_iforms loc t in
-      let t = term_of_parsed_term_with_vars t in
+      let t = term_of_parsed_term_with_vars loc t in
       let _ = infer_term loc t in
          check_input_term loc t;
          t
@@ -892,7 +901,7 @@ struct
 
    let parse_rule loc name mt args =
       let mt, args = apply_iforms_mterm loc mt args in
-      let mt, args, f = mterms_of_parsed_mterms mt args in
+      let mt, args, f = mterms_of_parsed_mterms loc mt args in
 
       (* Check with the refiner first for rewrite errors *)
       let cvars = context_vars mt in
@@ -907,7 +916,7 @@ struct
 
    let parse_rewrite loc name mt args =
       let mt, args = apply_iforms_mterm loc mt args in
-      let mt, args, f = mterms_of_parsed_mterms mt args in
+      let mt, args, f = mterms_of_parsed_mterms loc mt args in
 
       (* Check with the refiner first for rewrite errors *)
       let cvars = context_vars mt in
@@ -924,7 +933,7 @@ struct
    let parse_define loc name redex contractum =
       let redex = apply_iforms loc redex in
       let contractum = apply_iforms loc contractum in
-      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+      let redex, contractum = rewrite_of_parsed_rewrite loc redex contractum in
          check_input_term loc redex;
          check_input_term loc contractum;
 
@@ -937,7 +946,7 @@ struct
    let parse_type_rewrite loc redex contractum =
       let redex = apply_iforms loc redex in
       let contractum = apply_iforms loc contractum in
-      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+      let redex, contractum = rewrite_of_parsed_rewrite loc redex contractum in
          check_input_term loc redex;
          check_input_term loc contractum;
          Refine.check_rewrite "type" empty_args_spec [] [] redex contractum;
@@ -950,7 +959,7 @@ struct
     * code, constraints are legal.
     *)
    let parse_iform loc name mt =
-      let mt, _, f = mterms_of_parsed_mterms mt [] in
+      let mt, _, f = mterms_of_parsed_mterms loc mt [] in
 
       (* Check with the refiner for rewrite errors *)
       let _, redex, contractum = unzip_rewrite name mt in
@@ -962,7 +971,7 @@ struct
    let parse_dform loc redex contractum =
       let redex = apply_iforms loc redex in
       let contractum = apply_iforms loc contractum in
-      let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
+      let redex, contractum = rewrite_of_parsed_rewrite loc redex contractum in
       let () = check_dform loc redex contractum in
       let redex = erase_term redex in
       let contractum = erase_term contractum in
@@ -973,7 +982,7 @@ struct
    let parse_production loc redices contractum =
       let redices = List.map (apply_iforms loc) redices in
       let contractum = apply_iforms loc contractum in
-      let redices, contractum = mrewrite_of_parsed_mrewrite redices contractum in
+      let redices, contractum = mrewrite_of_parsed_mrewrite loc redices contractum in
       let () = check_production loc redices contractum in
       let redices = List.map erase_term redices in
       let contractum = erase_term contractum in
@@ -1005,13 +1014,13 @@ struct
       let _ = infer_term loc t in
          erase_term t
 
-   let unchecked_term_of_parsed_term t =
+   let unchecked_term_of_parsed_term loc t =
       let t = apply_iforms_raw t in
-      let t = term_of_parsed_term t in
+      let t = term_of_parsed_term loc t in
          erase_term t
 
-   let quoted_term_of_parsed_term _ t =
-      term_of_parsed_term t
+   let quoted_term_of_parsed_term loc t =
+      term_of_parsed_term loc t
 
    (*
     * Parameterize declares over default types.

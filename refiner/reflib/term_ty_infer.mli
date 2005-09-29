@@ -90,6 +90,12 @@ val erase_arg_term  : term -> term
 val erase_term      : term -> term
 val erase_meta_term : meta_term -> meta_term
 
+(*
+ * Helper function for parsing - tells whether its arg is a sequent type with
+ * Perv!Ignore in the binding position.
+ *)
+val is_seq_ignore_bindings_tp : ty_term -> bool
+
 (*!
  * @docoff
  *

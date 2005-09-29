@@ -1978,6 +1978,14 @@ let erase_term t =
 let erase_meta_term mt =
    map_mterm erase_term mt
 
+let is_seq_ignore_bindings_tp ty =
+   let ty = ty.ty_type in
+      is_ty_sequent_term ty &&
+      let ty, _, _ = dest_ty_sequent_term ty in
+         is_ty_hyp_term ty &&
+         let ty, _ = dest_ty_hyp_term ty in
+            alpha_equal ty ignore_type
+
 (*
  * -*-
  * Local Variables:

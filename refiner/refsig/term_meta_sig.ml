@@ -47,6 +47,9 @@ sig
    module MetaTypes : Term_sig.TermSig
    open MetaTypes
 
+   (* Whether to allow binding in a sequents, based on its args *)
+   type allow_seq_bindings = term -> bool
+
    (*
     * Some operations on meta_term.
     *)
@@ -71,12 +74,13 @@ sig
    (*
     * During parsing and display, the default contexts are "encoded"
     * as a singleton list containing just the variable itself
+    * 
     *)
-   val term_of_parsed_term : term -> term
-   val term_of_parsed_term_with_vars : term -> term
-   val mterms_of_parsed_mterms : meta_term -> term list -> meta_term * term list * (term -> term)
-   val rewrite_of_parsed_rewrite : term -> term -> term * term
-   val mrewrite_of_parsed_mrewrite : term list -> term -> term list * term
+   val term_of_parsed_term : allow_seq_bindings -> term -> term
+   val term_of_parsed_term_with_vars : allow_seq_bindings -> term -> term
+   val mterms_of_parsed_mterms : allow_seq_bindings -> meta_term -> term list -> meta_term * term list * (term -> term)
+   val rewrite_of_parsed_rewrite : allow_seq_bindings -> term -> term -> term * term
+   val mrewrite_of_parsed_mrewrite : allow_seq_bindings -> term list -> term -> term list * term
 
    (* Shortener *)
    val display_term_of_term : term -> term

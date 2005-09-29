@@ -360,7 +360,7 @@ struct
                TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation dummy_loc id name s)
             in
             let t = FilterCache.parse parse_quotation proc.cache pos shape s in
-            let t = TermGrammar.unchecked_term_of_parsed_term (TermGrammar.mk_parsed_term t) in
+            let t = TermGrammar.unchecked_term_of_parsed_term dummy_loc (TermGrammar.mk_parsed_term t) in
                Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
        | None ->
             raise (Invalid_argument "Input grammar is not initialized")
@@ -1034,7 +1034,7 @@ let add_quot name check =
    in
    let quot_patt s =
       let t = parse_quotation dummy_loc "term" name s in
-      let t = unchecked_term_of_parsed_term t in
+      let t = unchecked_term_of_parsed_term dummy_loc t in
          Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
    in
       ignore (Quotation.add name (Quotation.ExAst (quot_exp, quot_patt)))
@@ -1617,7 +1617,7 @@ EXTEND
 
         | "parser"; t = term; ":"; id = parsed_term ->
           let f () =
-             let t = unchecked_term_of_parsed_term t in
+             let t = unchecked_term_of_parsed_term loc t in
                 SigFilter.add_parser (SigFilter.get_proc loc) loc t (opname_of_term id);
           in
              handle_exn f "parser" loc;
@@ -1643,7 +1643,7 @@ EXTEND
                   "doc", com ->
                      SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_string_term comment_string_op com)
                 | (name, q) ->
-                     let q = unchecked_term_of_parsed_term (parse_quotation loc "doc" name q) in
+                     let q = unchecked_term_of_parsed_term loc (parse_quotation loc "doc" name q) in
                         SigFilter.declare_comment (SigFilter.get_proc loc) loc q
            in
               handle_exn f "comment" loc;
@@ -1922,7 +1922,7 @@ EXTEND
 
         | "parser"; t = term; ":"; id = parsed_term ->
           let f () =
-             let t = unchecked_term_of_parsed_term t in
+             let t = unchecked_term_of_parsed_term loc t in
                 StrFilter.add_parser (StrFilter.get_proc loc) loc t (opname_of_term id);
           in
              handle_exn f "parser" loc;
@@ -1997,7 +1997,7 @@ EXTEND
                   "doc", com ->
                      StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_string_term comment_string_op com)
                 | (name, q) ->
-                     let q = unchecked_term_of_parsed_term (parse_quotation loc "doc" name q) in
+                     let q = unchecked_term_of_parsed_term loc (parse_quotation loc "doc" name q) in
                         StrFilter.declare_comment (StrFilter.get_proc loc) loc q
            in
               handle_exn f "comment" loc

@@ -366,6 +366,7 @@ type parsing_state =
      check_production   : MLast.loc -> term list -> term -> unit;
      check_input_term   : MLast.loc -> term -> unit;
      check_input_mterm  : MLast.loc -> meta_term -> unit;
+     allow_seq_bindings : MLast.loc -> allow_seq_bindings;
      apply_iforms       : MLast.loc -> quotation_expander -> term -> term;
      apply_iforms_mterm : MLast.loc -> quotation_expander -> meta_term -> term list -> meta_term * term list;
      term_of_string     : MLast.loc -> quotation_expander -> string -> string -> term
@@ -455,7 +456,7 @@ sig
    val unparsed_term_of_parsed_term : MLast.loc -> parsed_term -> term
 
    (* Bypass the type checker, but do parsing *)
-   val unchecked_term_of_parsed_term : parsed_term -> term
+   val unchecked_term_of_parsed_term : MLast.loc -> parsed_term -> term
 
    (* Bypass the type checker, the iforms, but do parsing *)
    val quoted_term_of_parsed_term : MLast.loc -> parsed_term -> term

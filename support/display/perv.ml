@@ -84,30 +84,6 @@ dform sep_list_df2 : sep_list[sep:s]{xcons{'item1; xcons{'item2; 'rest}}} =
 (*
  * Typeclasses.
  *)
-dform term_df : except_mode["src"] :: "Term" =
-   `"Term"
-
-dform ty_df : except_mode["src"] :: "Ty" =
-   `"Ty"
-
-dform prop_df : except_mode["src"] :: "Prop" =
-   `"Prop"
-
-dform judgment_df : except_mode["src"] :: "Judgment" =
-   `"Judgment"
-
-dform token_df : except_mode["src"] :: "Token" =
-   `"Token"
-
-dform dform_df : except_mode["src"] :: "Dform" =
-   `"Dform"
-
-dform ignore_df : except_mode["src"] :: "Ignore" =
-   `"Ignore"
-
-dform sequent_arg_df : except_mode["src"] :: "ty_sequent_arg" =
-   `"ty_sequent_arg"
-
 dform sequent_type_df : except_mode["src"] :: "ty_sequent"{'ty_hyp; 'ty_concl; 'ty_seq} =
    pushm[3] szone
    `"SequentType" hspace pushm[3] `"{" 'ty_hyp `">-" 'ty_concl popm hspace `"}"

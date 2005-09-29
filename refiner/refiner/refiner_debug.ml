@@ -2739,6 +2739,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    module TermMeta = struct
       module MetaTypes = TermType
 
+      type allow_seq_bindings = term -> bool
+
       (*
        * To generate the code for this module, run the following:
        *   grep '^   [v ][a ][l ]' refiner/refsig/term_meta_sig.ml | util/gen_refiner_debug.pl TermMeta > /tmp/code
@@ -2820,38 +2822,43 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p1_1, p1_2 = split_meta_term p1 in
          merge merge_meta_term "TermMeta.map_mterm" (wrap2 TermMeta1.map_mterm p0_1 p1_1) (wrap2 TermMeta2.map_mterm p0_2 p1_2)
 
-      let term_of_parsed_term (p0 : term) =
-         let p0_1, p0_2 = p0 in
-         merge merge_term "TermMeta.term_of_parsed_term" (wrap1 TermMeta1.term_of_parsed_term p0_1) (wrap1 TermMeta2.term_of_parsed_term p0_2)
+      let term_of_parsed_term (p0 : allow_seq_bindings) (p1 : term) =
+         let p0_1, p0_2 = split_taf p0 in
+         let p1_1, p1_2 = p1 in
+         merge merge_term "TermMeta.term_of_parsed_term" (wrap2 TermMeta1.term_of_parsed_term p0_1 p1_1) (wrap2 TermMeta2.term_of_parsed_term p0_2 p1_2)
 
-      let term_of_parsed_term_with_vars (p0 : term) =
-         let p0_1, p0_2 = p0 in
-         merge merge_term "TermMeta.term_of_parsed_term_with_vars" (wrap1 TermMeta1.term_of_parsed_term_with_vars p0_1) (wrap1 TermMeta2.term_of_parsed_term_with_vars p0_2)
+      let term_of_parsed_term_with_vars (p0 : allow_seq_bindings) (p1 : term) =
+         let p0_1, p0_2 = split_taf p0 in
+         let p1_1, p1_2 = p1 in
+         merge merge_term "TermMeta.term_of_parsed_term_with_vars" (wrap2 TermMeta1.term_of_parsed_term_with_vars p0_1 p1_1) (wrap2 TermMeta2.term_of_parsed_term_with_vars p0_2 p1_2)
 
-      let mterms_of_parsed_mterms (p0 : meta_term) (p1 : term list) =
-         let p0_1, p0_2 = split_meta_term p0 in
-         let p1_1, p1_2 = split p1 in
-         let res1 = wrap2 TermMeta1.mterms_of_parsed_mterms p0_1 p1_1 in
-         let res2 = wrap2 TermMeta2.mterms_of_parsed_mterms p0_2 p1_2 in
+      let mterms_of_parsed_mterms (p0 : allow_seq_bindings) (p1 : meta_term) (p2 : term list) =
+         let p0_1, p0_2 = split_taf p0 in
+         let p1_1, p1_2 = split_meta_term p1 in
+         let p2_1, p2_2 = split p2 in
+         let res1 = wrap3 TermMeta1.mterms_of_parsed_mterms p0_1 p1_1 p2_1 in
+         let res2 = wrap3 TermMeta2.mterms_of_parsed_mterms p0_2 p1_2 p2_2 in
          let (res0_1, res1_1, res2_1), (res0_2, res1_2, res2_2) = merge merge_triv "TermMeta.mterms_of_parsed_mterms" res1 res2 in
          (merge_meta_term "TermMeta.mterms_of_parsed_mterms - 0" res0_1 res0_2),
          (merge_terms "TermMeta.mterms_of_parsed_mterms - 1" res1_1 res1_2),
          (merge_ttf "TermMeta.mterms_of_parsed_mterms - 2" res2_1 res2_2)
 
-      let rewrite_of_parsed_rewrite (p0 : term) (p1 : term) =
-         let p0_1, p0_2 = p0 in
+      let rewrite_of_parsed_rewrite (p0 : allow_seq_bindings) (p1 : term) (p2 : term) =
+         let p0_1, p0_2 = split_taf p0 in
          let p1_1, p1_2 = p1 in
-         let res1 = wrap2 TermMeta1.rewrite_of_parsed_rewrite p0_1 p1_1 in
-         let res2 = wrap2 TermMeta2.rewrite_of_parsed_rewrite p0_2 p1_2 in
+         let p2_1, p2_2 = p2 in
+         let res1 = wrap3 TermMeta1.rewrite_of_parsed_rewrite p0_1 p1_1 p2_1 in
+         let res2 = wrap3 TermMeta2.rewrite_of_parsed_rewrite p0_2 p1_2 p2_2 in
          let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermMeta.rewrite_of_parsed_rewrite" res1 res2 in
          (merge_term "TermMeta.rewrite_of_parsed_rewrite - 0" res0_1 res0_2),
          (merge_term "TermMeta.rewrite_of_parsed_rewrite - 1" res1_1 res1_2)
 
-      let mrewrite_of_parsed_mrewrite (p0 : term list) (p1 : term) =
-         let p0_1, p0_2 = split p0 in
-         let p1_1, p1_2 = p1 in
-         let res1 = wrap2 TermMeta1.mrewrite_of_parsed_mrewrite p0_1 p1_1 in
-         let res2 = wrap2 TermMeta2.mrewrite_of_parsed_mrewrite p0_2 p1_2 in
+      let mrewrite_of_parsed_mrewrite (p0 : allow_seq_bindings) (p1 : term list) (p2 : term) =
+         let p0_1, p0_2 = split_taf p0 in
+         let p1_1, p1_2 = split p1 in
+         let p2_1, p2_2 = p2 in
+         let res1 = wrap3 TermMeta1.mrewrite_of_parsed_mrewrite p0_1 p1_1 p2_1 in
+         let res2 = wrap3 TermMeta2.mrewrite_of_parsed_mrewrite p0_2 p1_2 p2_2 in
          let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermMeta.mrewrite_of_parsed_mrewrite" res1 res2 in
          (merge_terms "TermMeta.mrewrite_of_parsed_mrewrite - 0" res0_1 res0_2),
          (merge_term "TermMeta.mrewrite_of_parsed_mrewrite - 1" res1_1 res1_2)
@@ -2886,7 +2893,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let term_of_meta_term (p0 : meta_term) =
          let p0_1, p0_2 = split_meta_term p0 in
          merge merge_term "TermMeta.term_of_meta_term" (wrap1 TermMeta1.term_of_meta_term p0_1) (wrap1 TermMeta2.term_of_meta_term p0_2)
-   end
+
+end
 
    module RewriteExt = struct
       module RwTypes = TermType

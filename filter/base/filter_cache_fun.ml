@@ -917,6 +917,12 @@ struct
            tenv_termenv        = termenv
          }
 
+   let allow_seq_bindings tenv t =
+      try
+         not (Term_ty_infer.is_seq_ignore_bindings_tp (ShapeTable.find tenv.tenv_termenv (shape_of_term t)))
+      with Not_found ->
+         true
+
    let wrap1 f loc arg = 
       try f arg with exn -> Stdpp.raise_with_loc loc exn
 
@@ -944,6 +950,7 @@ struct
          check_production = wrap2 (delay_tenv Term_ty_infer.check_production);
          check_input_term = wrap1 (check_input_term cache);
          check_input_mterm = wrap1 (iter_mterm (check_input_term cache));
+         allow_seq_bindings = wrap1 (delay_tenv allow_seq_bindings);
          apply_iforms = wrap2 (fun quote t -> Filter_grammar.apply_iforms quote cache.grammar t);
          apply_iforms_mterm = wrap3 (fun quote mt args -> Filter_grammar.apply_iforms_mterm quote cache.grammar mt args);
          term_of_string = (fun loc quote name s -> Filter_grammar.term_of_string quote cache.grammar name (fst loc) s)
