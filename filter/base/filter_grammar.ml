@@ -747,17 +747,17 @@ let dest_xsovar_term t =
       v, cvars, args
 
 let is_xhypcontext_term t =
-   if is_dep0_dep0_term xhypcontext_opname t then
-      let cvars, args = dest_dep0_dep0_term xhypcontext_opname t in
+   if is_var_dep0_dep0_term xhypcontext_opname t then
+      let _, cvars, args = dest_var_dep0_dep0_term xhypcontext_opname t in
          is_xlist_term cvars && is_xlist_term args
    else
       false
 
 let dest_xhypcontext_term t =
-   let cvars, args = dest_dep0_dep0_term xhypcontext_opname t in
+   let v, cvars, args = dest_var_dep0_dep0_term xhypcontext_opname t in
    let cvars = List.map dest_var (dest_xlist cvars) in
    let args = dest_xlist args in
-      cvars, args
+      v, cvars, args
 
 (*
  * Also expand quotations.
@@ -841,7 +841,7 @@ let apply_sovar_iforms parse_quotation apply_iforms t =
                   match hyp with
                      Hypothesis (v, t) ->
                         if is_xhypcontext_term t then
-                           let cvars, args = dest_xhypcontext_term t in
+                           let v, cvars, args = dest_xhypcontext_term t in
                            let args = apply_so_var_iforms_term_list args in
                               Context (v, cvars, args)
                         else

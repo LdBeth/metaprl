@@ -500,6 +500,40 @@ struct
            term_terms = [mk_simple_bterm t]}}
 
    (*
+    * One string parameter, two subterms.
+    *)
+   let is_string_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String _] };
+             term_terms = [{bvars=[]};{bvars=[]}]
+           } when Opname.eq opname opname' -> true
+    | _ ->
+         false
+
+   let dest_string_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String s] };
+             term_terms = [bt1;bt2]
+           } when Opname.eq opname opname' ->
+         let destr = dest_simple_bterm in
+         s, destr bt1, destr bt2
+    | _ ->
+         REF_RAISE(RefineError ("dest_string_dep0_dep0_term", TermMatchError (t, "bad arity")))
+
+   let dest_string_dep0_dep0_any_term t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String s] };
+             term_terms = [bt1;bt2]
+           } ->
+         let destr = dest_simple_bterm in
+         s, destr bt1, destr bt2
+    | _ ->
+         REF_RAISE(RefineError ("dest_string_dep0_dep0_any_term", TermMatchError (t, "bad arity")))
+
+   let mk_string_dep0_dep0_term opname s t1 t2 =
+      { free_vars = VarsDelayed;
+        core = Term
+         { term_op = { op_name = opname; op_params = [String s] };
+           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]}}
+
+   (*
     * Two string parameters, two subterms.
     *)
    let is_string_string_dep0_dep0_term opname t = match get_core t with

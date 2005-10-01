@@ -332,7 +332,8 @@ let () = ();;
          let empt = (Lm_symbol.to_string v = "") in
          let _ =
             if not allow_bindings && not empt then
-               raise (Failure "Term_meta.rename_hyp_bvars: a sequent has a meta-type that does not allow bindings, but a binding is used in it")
+               raise (RefineError("Term_meta.rename_hyp_bvars",
+                  StringVarError("A sequent has a meta-type that does not allow bindings, but a binding is used in it",v)))
          in
          let v' =
             if mem && empt then Lm_symbol.new_name vv (SymbolSet.mem (SymbolSet.union bvars seqfvars))
@@ -452,11 +453,12 @@ let () = ();;
    (* Diring parsing and display, the default contexts are "encoded" as a singleton list containing just the variable itself *)
    let parse_contexts allow_bindings bconts v conts =
       match conts with
-         v :: rest when Lm_symbol.eq v hash_sym ->
+         v' :: rest when Lm_symbol.eq v' hash_sym ->
             if allow_bindings then
                bconts, rest
             else
-               raise (Failure "Term_meta_gen.parse_contexts: The < C<|#|> > construct should not be used when the sequent argument is already declared with a meta-type that does not allow bindings.")
+               raise(RefineError("Term_meta_gen.parse_contexts",
+                  StringVarError("The < C<|#|> > construct should not be used when the sequent argument is already declared with a meta-type that does not allow bindings.",v)))
        | _ ->
             (if allow_bindings then v :: bconts else bconts), conts
    

@@ -116,13 +116,13 @@ declare type ty_exists{'a : Ty; v : 'a. 'ty['v] : ty_hyp} : ty_hyp
  *     v<|v1, ..., vn|>[t1; ...; tn]
  *
  * A hyp of the form
- *    x: xhypcontext{[v1; ...; vn]; [t1; ...; tn]}
+ *    xhypcontext[C:v]{[v1; ...; vn]; [t1; ...; tn]}
  * is rewritten to
- *    <x<|v1, ..., vn|>[t1; ...; tn]>
+ *    <C<|v1, ..., vn|>[t1; ...; tn]>
  *)
 declare xsovar[v:v]{'contexts : Dform; 'args : Dform} : 'a
 declare xcontext[v:v]{'contexts : Dform; 'args : Dform} : 'a
-declare xhypcontext{'contexts : Dform; 'args : Dform} : 'a
+declare xhypcontext[v:v]{'contexts : Dform; 'args : Dform} : 'a
 
 (*
  * Quotations.

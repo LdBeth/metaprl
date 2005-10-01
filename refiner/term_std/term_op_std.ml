@@ -542,6 +542,39 @@ struct
          }
 
    (*
+    * One string parameter, two subterms.
+    *)
+   let is_string_dep0_dep0_term opname = function
+      { term_op = { op_name = opname'; op_params = [String _] };
+        term_terms = [{ bvars = [] }; { bvars = [] }]
+      } when Opname.eq opname opname' ->
+         true
+    | _ ->
+         false
+
+   let dest_string_dep0_dep0_term opname = function
+      { term_op = { op_name = opname'; op_params = [String s] };
+        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+      } when Opname.eq opname opname' ->
+         s, t1, t2
+    | t ->
+         REF_RAISE(RefineError ("dest_string_dep0_dep0_term", TermMatchError (t, "bad arity")))
+
+   let dest_string_dep0_dep0_any_term = function
+      { term_op = { op_name = opname'; op_params = [String s] };
+        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+      } ->
+         s, t1, t2
+    | t ->
+         REF_RAISE(RefineError ("dest_string_dep0_dep0_any_term", TermMatchError (t, "bad arity")))
+
+   let mk_string_dep0_dep0_term opname = fun
+      s t1 t2 ->
+         { term_op = { op_name = opname; op_params = [String s] };
+           term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+         }
+
+   (*
     * Two string parameters, two subterms.
     *)
    let is_string_string_dep0_dep0_term opname = function
