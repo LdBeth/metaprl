@@ -1,7 +1,7 @@
 #
 # The version of the MetaPRL program.
 #
-MP_VERSION = 0.9.6.3+
+MP_VERSION = 0.9.6.3.1+
 
 #
 # Versions of Ocaml/Camlp4 that are compatible with MetaPRL

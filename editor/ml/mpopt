@@ -1,5 +1,8 @@
 #!/bin/sh
 
+MP_CWD=`pwd`
+export MP_CWD
+
 cd `dirname "$0"`
 
 #
