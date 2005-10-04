@@ -62,7 +62,7 @@ declare typeclass Dform <- Term
 (*
  * Terms that describe types are in the @tt{Ty} typeclass.
  *)
-declare typeclass Ty -> Dform
+declare typeclass Ty -> Term
 
 (*
  * The @tt{Prop} typeclass is for terms that represent propositions.
