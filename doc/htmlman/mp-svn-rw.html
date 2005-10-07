@@ -26,6 +26,31 @@
    ForwardX11 no
    User svn</pre>
 
+   <LI>Edit your <TT>~/.subversion/config</TT> file.
+   <UL>
+      <LI>Make sure the <TT>[miscellany]</TT> section contains the following
+      line:<BR><PRE>enable-auto-props = yes</PRE>
+      <LI>Make sure the <TT>[auto-props]</TT> section contains the following
+      lines:<PRE>
+*.c = svn:eol-style=native
+*.h = svn:eol-style=native
+*.txt = svn:eol-style=native;mime-type=text/plain
+*.tex = svn:eol-style=native
+*.sty = svn:eol-style=native
+*.cls = svn:eol-style=native
+*.png = svn:mime-type=image/png
+*.jpg = svn:mime-type=image/jpeg
+*.gif = svn:mime-type=image/gif
+*.bib = svn:eol-style=native
+*.om = svn:eol-style=native
+OMakefile = svn:eol-style=native
+OMakeroot = svn:eol-style=native
+*.ml* = svn:eol-style=native
+*.html = svn:eol-style=native;svn:mime-type=text/html
+*.prla = svn:eol-style=native
+</PRE>
+   </UL>
+
    <LI>To create new working copy:
    <PRE>svn co svn+ssh://svn.metaprl.org/svnroot/mojave/metaprl</PRE>
 
