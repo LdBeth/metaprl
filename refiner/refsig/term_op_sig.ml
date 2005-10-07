@@ -157,6 +157,11 @@ sig
    val mk_var_param_term : opname -> var -> term
    val dest_var_param_term : opname -> term -> var
 
+   val is_var_dep0_term : opname -> term -> bool
+   val mk_var_dep0_term : opname -> var -> term -> term
+   val dest_var_dep0_term : opname -> term -> var * term
+   val dest_var_dep0_any_term : term -> var * term
+
    val is_var_dep0_dep0_term : opname -> term -> bool
    val mk_var_dep0_dep0_term : opname -> var -> term -> term -> term
    val dest_var_dep0_dep0_term : opname -> term -> var * term * term

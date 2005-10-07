@@ -1875,6 +1875,30 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p1_1, p1_2 = p1 in
          merge merge_var "TermOp.dest_var_param_term" (wrap2 TermOp1.dest_var_param_term p0 p1_1) (wrap2 TermOp2.dest_var_param_term p0 p1_2)
 
+      let is_var_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge merge_bool "TermOp.is_var_dep0_term" (wrap2 TermOp1.is_var_dep0_term p0 p1_1) (wrap2 TermOp2.is_var_dep0_term p0 p1_2)
+
+      let mk_var_dep0_term (p0 : opname) (p1 : var) (p2 : term) =
+         let p2_1, p2_2 = p2 in
+         merge merge_term "TermOp.mk_var_dep0_term" (wrap3 TermOp1.mk_var_dep0_term p0 p1 p2_1) (wrap3 TermOp2.mk_var_dep0_term p0 p1 p2_2)
+
+      let dest_var_dep0_term (p0 : opname) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         let res1 = wrap2 TermOp1.dest_var_dep0_term p0 p1_1 in
+         let res2 = wrap2 TermOp2.dest_var_dep0_term p0 p1_2 in
+         let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermOp.dest_var_dep0_term" res1 res2 in
+         (merge_var "TermOp.dest_var_dep0_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_var_dep0_term - 1" res1_1 res1_2)
+
+      let dest_var_dep0_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res1 = wrap1 TermOp1.dest_var_dep0_any_term p0_1 in
+         let res2 = wrap1 TermOp2.dest_var_dep0_any_term p0_2 in
+         let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermOp.dest_var_dep0_any_term" res1 res2 in
+         (merge_var "TermOp.dest_var_dep0_any_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_var_dep0_any_term - 1" res1_1 res1_2)
+
       let is_var_dep0_dep0_term (p0 : opname) (p1 : term) =
          let p1_1, p1_2 = p1 in
          merge merge_bool "TermOp.is_var_dep0_dep0_term" (wrap2 TermOp1.is_var_dep0_dep0_term p0 p1_1) (wrap2 TermOp2.is_var_dep0_dep0_term p0 p1_2)

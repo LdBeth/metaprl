@@ -73,6 +73,9 @@ declare df_context{'t : Dform} : Dform
 (* same as "szone 'e ezone" *)
 declare szone{'e : Dform} : Dform
 
+(* Prints its argument when the var is non-empty *)
+declare ifvar[var:v]{'t : Dform} : Dform
+
 (*
  * -*-
  * Local Variables:

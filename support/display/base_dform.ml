@@ -605,6 +605,12 @@ dform df_rev_concat_xnil2 : df_rev_concat{'sep; xnil} =
 dform bind_df : except_mode[src] :: bind{x. 'T} =
    tt["bind"] `"(" slot[x] `"." slot{'T} `")"
 
+(* * *)
+ml_dform ifvar_df : ifvar[v:v]{'t} format_term buf = fun term ->
+   let v, t = dest_var_dep0_any_term term in
+      if Lm_symbol.to_string v <> "" then
+         format_term buf NOParens t
+
 (************************************************************************
  * COMMANDS                                                             *
  ************************************************************************)

@@ -578,7 +578,12 @@ struct
       let t2 = make_term t2 in
       match make_aterm t1 with
          { aname = None; aterm = t } ->
-            wrap_term loc (mk_dep0_dep0_term (mk_dep0_dep0_opname loc name) t t2)
+            (* XXX HACK - this is to support ad-hoc I/O form for "fun" and alike *) 
+            begin try
+               wrap_term loc (mk_dep0_dep0_term (mk_dep0_dep0_opname loc name) t t2)
+            with Failure _ | Not_found | Stdpp.Exc_located (_, Not_found) | Stdpp.Exc_located (_, Failure _) ->
+               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc name) (Lm_symbol.add "") t t2)
+            end
        | { aname = Some name'; aterm = t } ->
             wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc name) (dest_var name') t t2)
 

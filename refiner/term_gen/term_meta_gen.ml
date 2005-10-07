@@ -302,7 +302,7 @@ let () = ();;
     * BOUND CONTEXTS "MAGIC"                                               *
     ************************************************************************)
 
-   let vv = Lm_symbol.make "v" 0
+   let vv = Lm_symbol.make "_v" 0
    let bang = [Lm_symbol.make "!" 0]
    let df_context_op = make_opname ["df_context"; "Base_dform"]
 
