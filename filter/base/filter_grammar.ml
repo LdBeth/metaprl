@@ -219,6 +219,15 @@ type iform =
    }
 
 (*
+ * The grammar name includes an unmarshalable value,
+ * to ensure that we only marshal parsers that are
+ * ready to be marshaled.
+ *)
+type name_option =
+   Name of string
+ | Unnamed of string * Lm_nocompare.t
+
+(*
  * The info includes a lexer and a parser.
  *
  * The name is mainly used to detect if the grammar has
@@ -233,7 +242,7 @@ type iform =
  *)
 type gram =
    { gram_magic               : int;
-     mutable gram_name        : string option;
+     mutable gram_name        : name_option;
      mutable gram_subnames    : StringSet.t;
      gram_lexers              : Lexer.t OpnameTable.t;
      gram_lexer_actions       : lexer_action ActionTable.t;
@@ -263,13 +272,16 @@ type t =
    { mutable gram_info : info }
 (* %%MAGICEND%% *)
 
+let unnamed name =
+   Unnamed (name, Lm_nocompare.nomarshal)
+
 let gram_magic = 0x2b5e73c6
 
 let empty_name = ".empty"
 
 let empty =
    { gram_magic          = gram_magic;
-     gram_name           = Some empty_name;
+     gram_name           = Name empty_name;
      gram_subnames       = StringSet.singleton empty_name;
      gram_starts         = StringTable.empty;
      gram_lexers         = OpnameTable.empty;
@@ -292,6 +304,25 @@ let is_empty gram =
       ActionTable.is_empty lexer_actions
       && ActionTable.is_empty parser_actions
       && ActionTable.is_empty iforms
+
+(*
+ * Name manipulation.
+ *)
+let unnamed_of_gram gram =
+   let name =
+      match gram.gram_name with
+         Name name
+       | Unnamed (name, _) ->
+            name
+   in
+      unnamed name
+
+let clear_name gram =
+   match gram.gram_name with
+      Name name ->
+         { gram with gram_name = unnamed name }
+    | Unnamed _ ->
+         gram
 
 (*
  * Hash code for the grammar.
@@ -349,13 +380,13 @@ let hash_grammar gram =
 (*
  * Printing.
  *)
-let pp_print_string_opt buf s =
+let pp_print_name buf s =
    let s =
       match s with
-         Some s ->
+         Name s ->
             s
-       | None ->
-            "<none>"
+       | Unnamed (s, _) ->
+            "unnamed:" ^ s
    in
       pp_print_string buf s
 
@@ -368,7 +399,7 @@ let pp_print_strings buf names =
  *)
 let union gram1 gram2 =
    if !debug_grammar then
-      eprintf "Grammar union: %a, %a@." pp_print_string_opt gram1.gram_name pp_print_string_opt gram2.gram_name;
+      eprintf "Grammar union: %a, %a@." pp_print_name gram1.gram_name pp_print_name gram2.gram_name;
    let { gram_subnames       = subnames1;
          gram_starts         = starts1;
          gram_lexers         = lexers1;
@@ -410,11 +441,11 @@ let union gram1 gram2 =
    let subnames = StringSet.union subnames1 subnames2 in
       if !debug_grammar then
          eprintf "@[<v 3>Grammar union: active: %a, %a; subnames:%a@]@." (**)
-            pp_print_string_opt gram1.gram_name
-            pp_print_string_opt gram2.gram_name
+            pp_print_name gram1.gram_name
+            pp_print_name gram2.gram_name
             pp_print_strings subnames;
       { gram_magic          = gram_magic;
-        gram_name           = None;
+        gram_name           = unnamed_of_gram gram1;
         gram_lexers         = lexers;
         gram_subnames       = subnames;
         gram_starts         = starts;
@@ -532,7 +563,7 @@ let add_token gram lexer_id id s contractum_opt =
       }
    in
    let clauses = ActionTable.add clauses id clause in
-      { gram with gram_name          = None;
+      { gram with gram_name          = unnamed_of_gram gram;
                   gram_lexers        = lexers;
                   gram_lexer_actions = actions;
                   gram_lexer_clauses = clauses
@@ -576,7 +607,7 @@ let add_token_pair gram lexer_id id s1 s2 contractum_opt =
       }
    in
    let clauses = ActionTable.add clauses id clause in
-      { gram with gram_name          = None;
+      { gram with gram_name          = unnamed_of_gram gram;
                   gram_lexers        = lexers;
                   gram_lexer_actions = actions;
                   gram_lexer_clauses = clauses
@@ -604,7 +635,7 @@ let add_production gram id args opt_prec contractum =
       }
    in
    let clauses = ActionTable.add clauses id clause in
-      { gram with gram_name           = None;
+      { gram with gram_name           = unnamed_of_gram gram;
                   gram_parser         = parse;
                   gram_parser_actions = actions;
                   gram_parser_clauses = clauses
@@ -633,29 +664,29 @@ let find_prec gram v =
 
 let create_prec_new gram assoc =
    let parse, pre = Parser.create_prec_gt gram.gram_parser prec_min assoc in
-   let gram = { gram with gram_name = None; gram_parser = parse } in
+   let gram = { gram with gram_name = unnamed_of_gram gram; gram_parser = parse } in
       gram, pre
 
 let create_prec_lt gram v assoc =
    let pre = find_prec gram v in
    let parse, pre = Parser.create_prec_lt gram.gram_parser pre assoc in
-   let gram = { gram with gram_name = None; gram_parser = parse } in
+   let gram = { gram with gram_name = unnamed_of_gram gram; gram_parser = parse } in
       gram, pre
 
 let create_prec_gt gram v assoc =
    let pre = find_prec gram v in
    let parse, pre = Parser.create_prec_gt gram.gram_parser pre assoc in
-   let gram = { gram with gram_name = None; gram_parser = parse } in
+   let gram = { gram with gram_name = unnamed_of_gram gram; gram_parser = parse } in
       gram, pre
 
 let add_prec gram pre v =
-   { gram with gram_name = None; gram_parser = Parser.add_prec gram.gram_parser pre v }
+   { gram with gram_name = unnamed_of_gram gram; gram_parser = Parser.add_prec gram.gram_parser pre v }
 
 (************************************************************************
  * Start symbols.
  *)
 let add_start gram s v lexer_id =
-   { gram with gram_name = None;
+   { gram with gram_name = unnamed_of_gram gram;
                gram_lexer_start = ShapeTable.add gram.gram_lexer_start v lexer_id;
                gram_parser = Parser.add_start gram.gram_parser v;
                gram_starts = StringTable.add gram.gram_starts s v
@@ -677,7 +708,7 @@ let add_iform gram id redex contractum =
         iform_contractum = contractum
       }
    in
-      { gram with gram_name = None;
+      { gram with gram_name = unnamed_of_gram gram;
                   gram_iforms = ActionTable.add gram.gram_iforms id iform;
                   gram_iform_table = None
       }
@@ -934,13 +965,13 @@ let prepare_to_marshal gram name =
        } = gram
    in
       match gram_name with
-         Some _ ->
+         Name _ ->
             (* If it is already named, don't rename it *)
             ()
-       | None ->
+       | Unnamed _ ->
             compile gram;
             gram.gram_iform_table <- None;
-            gram.gram_name <- Some name;
+            gram.gram_name <- Name name;
             gram.gram_subnames <- StringSet.add subnames name
 
 let unmarshal gram =
@@ -951,10 +982,22 @@ let unmarshal gram =
       empty
    end
    else
-      gram
+      match gram.gram_name with
+         Name _ ->
+            gram
+       | Unnamed (name, _) ->
+            eprintf "! A grammar that was loaded from a file does not have a name.\n";
+            eprintf "! It used to be named '%s'.\n" (String.escaped name);
+            eprintf "! This is an internal error and should be reported.\n";
+            eprintf "! Reseting to the empty grammar and continuing.@.";
+            empty
 
 let is_modified gram =
-   gram.gram_name = None && not (is_empty gram)
+   match gram.gram_name with
+      Name _ ->
+         false
+    | Unnamed _ ->
+         not (is_empty gram)
 
 let pp_print_grammar buf gram =
    let { gram_lexers = lexers;
@@ -1136,10 +1179,9 @@ let unflatten info =
     | GramInfo gram ->
          let name =
             match gram.gram_name with
-               Some name ->
+               Name name
+             | Unnamed (name, _) ->
                   name
-             | None ->
-                  raise (Invalid_argument "Filter_grammar.union: unnamed grammar")
          in
             StringTable.add StringTable.empty name gram
 

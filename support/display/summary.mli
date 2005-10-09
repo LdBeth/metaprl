@@ -110,7 +110,7 @@ doc <:doc<
    @end[doc]
 >>
 declare typeclass MTerm -> Dform
-declare "meta_theorem"{'A : Judgment} : MTerm
+declare "meta_theorem"{'A : 'a} : MTerm
 declare "meta_implies"{'A : MTerm; 'B : MTerm} : MTerm
 declare "meta_function"{'arg : Judgment; 'A : MTerm; 'B : MTerm} : MTerm
 declare "meta_iff"{'A : 'a; 'B : 'a} : MTerm
