@@ -339,6 +339,7 @@ struct
          raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: invalid rwterm"))
 
    and build_con_exn = Invalid_argument("Rewrite_build_contractum.build_contractum_param: stack entry is not valid")
+   and build_con_exn_term = Invalid_argument("Rewrite_build_contractum.build_contractum_param: stack entry is a term")
 
    and raise_param _ =
       raise(Invalid_argument("Rewrite_build_contractum.build_contractum_param: parameter mismatch"))
@@ -406,6 +407,7 @@ struct
               | StackOpname o -> Shape { shape_opname = o; shape_params = []; shape_arities = [] }
               | StackString s -> MShape (Lm_symbol.add s)
               | StackVar v -> MShape v
+              | StackBTerm (t, []) -> Shape (shape_of_term t)    (* Iforms *)
               | _ -> raise(build_con_exn)
          end
     | RWMOperator i ->
@@ -415,6 +417,7 @@ struct
               | StackOpname o -> Operator { opparam_name = o; opparam_params = []; opparam_arities = [] }
               | StackString s -> MOperator (Lm_symbol.add s)
               | StackVar v -> MOperator v
+              | StackBTerm (t, []) -> Operator (opparam_of_term t)   (* Iforms *)
               | _ -> raise(build_con_exn)
          end
     | RWMLevel1 i ->
@@ -508,7 +511,6 @@ struct
                end
          ENDIF;
       build_contractum_term names bnames stack [||] prog
-
 end
 
 (*
