@@ -125,6 +125,13 @@ declare xcontext[v:v]{'contexts : Dform; 'args : Dform} : 'a
 declare xhypcontext[v:v]{'contexts : Dform; 'args : Dform} : 'a
 
 (*
+ * For constructing terms.  We will eventually need to extend these
+ * with parameters.
+ *)
+declare xbterm{x : 'a. 'e : Dform} : Dform
+declare xterm[op:s]{'bterms : Dform} : 'a
+
+(*
  * Quotations.
  *)
 declare xquotation[name:s, quote:s] : 'a
