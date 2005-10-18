@@ -154,6 +154,13 @@ declare iform xterm{'op : Dform; 'params : Dform; 'bterms : Dform} : 'a
  *)
 declare xquotation[name:s, quote:s] : 'a
 
+(*
+ * Reflection.
+ * This may eventually move out of here into an ML iform.
+ *)
+declare xquote{'depth; 't}
+declare xunquote{'t}
+
 (************************************************************************
  * Normal terms.
  *)

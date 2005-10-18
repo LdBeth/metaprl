@@ -33,6 +33,7 @@ open Lm_string_set
 
 open Opname
 open Term_sig
+open Simple_print
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
@@ -858,6 +859,109 @@ let dest_xterm_term state t =
    let op = mk_op opname params in
       mk_term op bterms
 
+(************************************************
+ * Reflection quotations.
+ *
+ * !!!This is very bad!!!
+ *
+ * The ITT names for the reflection terms are hardcoded here.
+ * We should probably define ML iforms, so that this code can
+ * be exported to the reflection theory.
+ *
+ * In the meantime, this is experimental.
+ *)
+
+(*
+ * Functions to manage ITT terms.
+ *)
+
+(* From the HOAS theories *)
+let itt_hoas_base_opname = mk_opname "Itt_hoas_base" nil_opname
+let itt_bind_opname = mk_opname "bind" itt_hoas_base_opname
+
+let mk_itt_bind_term v t =
+   mk_dep1_term itt_bind_opname v t
+
+let itt_hoas_debruijn_opname = mk_opname "Itt_hoas_debruijn" nil_opname
+let itt_mk_bterm_opname = mk_opname "mk_bterm" itt_hoas_debruijn_opname
+
+let mk_itt_mk_bterm_term depth op bterms =
+   mk_simple_term itt_mk_bterm_opname [depth; op; bterms]
+
+let itt_hoas_operator_opname = mk_opname "Itt_hoas_operator" nil_opname
+let itt_operator_opname = mk_opname "operator" itt_hoas_operator_opname
+
+let mk_itt_operator_term op =
+   mk_term (mk_op itt_operator_opname [make_param (Operator op)]) []
+
+(* From the list theories *)
+let itt_list_opname = mk_opname "Itt_list" nil_opname
+let itt_nil_opname = mk_opname "nil" itt_list_opname
+let itt_cons_opname = mk_opname "cons" itt_list_opname
+let itt_nil_term = mk_simple_term itt_nil_opname []
+let mk_itt_cons_term h t =
+   mk_simple_term itt_cons_opname [h; t]
+
+let rec mk_itt_list_term l =
+   match l with
+      [] ->
+         itt_nil_term
+    | v :: l ->
+         mk_itt_cons_term v (mk_itt_list_term l)
+
+(* From the integer theories *)
+let itt_int_base_opname = mk_opname "Itt_int_base" nil_opname
+let itt_number_opname = mk_opname "number" itt_int_base_opname
+
+let mk_itt_subtract_term t i =
+   if i = 0 then
+      t
+   else
+      mk_term (mk_op itt_number_opname [make_param (Number (Lm_num.num_of_int i))]) []
+
+(*
+ * When a term is quoted, quote all its subparts.
+ *)
+let xquote_opname = mk_opname "xquote" perv_opname
+let xunquote_opname = mk_opname "xunquote" perv_opname
+
+let is_xunquote_term t =
+   is_dep0_term xunquote_opname t
+
+let dest_xunquote_term t =
+   dest_dep0_term xunquote_opname t
+
+let is_xquote_term t =
+   is_dep0_dep0_term xquote_opname t
+
+let dest_xquote_term t =
+   dest_dep0_dep0_term xquote_opname t
+
+let sweepdn_xquote_term outer_depth t =
+   let rec sweepdn depth t =
+      if is_fso_var_term t then
+         t
+      else if is_xunquote_term t then
+         dest_xunquote_term t
+      else
+         let () =
+            eprintf "Term: %s@." (SimplePrint.string_of_term t)
+         in
+         let p = mk_itt_operator_term (opparam_of_term t) in
+         let { term_terms = bterms } = dest_term t in
+         let bterms = List.map (wrap_bterm depth) bterms in
+         let bterms = mk_itt_list_term bterms in
+         let depth = mk_itt_subtract_term outer_depth depth in
+            mk_itt_mk_bterm_term depth p bterms
+
+   and wrap_bterm depth bterm =
+      let { bvars = vars; bterm = bterm } = dest_bterm bterm in
+      let depth = depth + List.length vars in
+      let bterm = sweepdn depth bterm in
+         List.fold_left (fun bterm v -> mk_itt_bind_term v bterm) bterm (List.rev vars)
+   in
+      sweepdn 0 t
+
 (*
  * Also expand quotations.
  * For an xquotation, the string parameter should
@@ -965,6 +1069,11 @@ let apply_sovar_iforms state apply_iforms t =
       else if is_xterm_term t then
          let t = dest_xterm_term state t in
             apply_so_var_iforms_term (apply_iforms t)
+      else if is_xquote_term t then
+         let depth, t = dest_xquote_term t in
+         let depth = apply_so_var_iforms_term (apply_iforms depth) in
+         let t = apply_so_var_iforms_term (apply_iforms t) in
+            sweepdn_xquote_term depth t
       else
          let { term_op = op; term_terms = bterms } = dest_term t in
          let bterms = apply_so_var_iforms_bterm_list bterms in
