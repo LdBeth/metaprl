@@ -407,6 +407,7 @@ sig
 
    (* Opnames *)
    val mk_opname_kind  : MLast.loc -> op_kind -> string list -> shape_param list -> int list -> Opname.opname
+   val dest_xparam : MLast.loc -> term -> Refiner.Refiner.TermType.param
 
    (* Quotation access *)
    val dest_quot       : string -> string * string

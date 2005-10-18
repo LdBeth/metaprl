@@ -331,7 +331,8 @@ struct
       { Filter_grammar.parse_quotation =
            (fun name s ->
                  TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation dummy_loc id name s));
-        Filter_grammar.parse_opname = TermGrammar.mk_opname_kind dummy_loc
+        Filter_grammar.parse_opname = TermGrammar.mk_opname_kind dummy_loc;
+        Filter_grammar.parse_param = TermGrammar.dest_xparam dummy_loc
       }
 
    let input_exp shape id s =

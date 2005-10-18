@@ -459,6 +459,9 @@ struct
    let body_of_sequent seq =
       fst (dest_sequent_outer_term seq)
 
+   let args seq =
+      snd (dest_sequent_outer_term seq)
+
    (*
     * Get the second term in the hyp.
     *)
@@ -637,6 +640,27 @@ struct
       in
          aux (pred i) (body_of_sequent t)
 
+   (*
+    * Get the hyps.  It is an error if any hyp is a context.
+    *)
+   let hyps_name = "Term_man_gen.hyps"
+   let hyps t =
+      let rec aux vars term =
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
+            if Opname.eq opname hyp_opname then
+               let t, _, term = match_hyp_all hyps_name t bterms in
+                  aux (t :: vars) term
+            else if Opname.eq opname concl_opname then
+               vars
+            else
+               REF_RAISE(RefineError (hyps_name, TermMatchError (t, "malformed sequent")))
+      in
+         aux [] (body_of_sequent t)
+
+   (*
+    * Get the conclusion.
+    *)
    let concl_name = "concl"
    let concl t =
       let rec aux term =

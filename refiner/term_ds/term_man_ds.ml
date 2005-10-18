@@ -27,7 +27,6 @@
  *
  * Authors: Alexey Nogin
  *)
-
 INCLUDE "refine_error.mlh"
 
 open Lm_debug
@@ -316,6 +315,20 @@ struct
             s
 
    (*
+    * Get the arguments.
+    *)
+   let args_name = "Term_man_ds.args"
+   let rec args t =
+      match t.core with
+         Sequent s ->
+            s.sequent_args
+       | Subst _ ->
+            let _ = get_core t in
+               args t
+       | _ ->
+            REF_RAISE(RefineError (args_name, TermMatchError (t, "not a sequent")))
+
+   (*
     * Count the hyps.
     *)
    let num_hyps_name = "Term_man_ds.num_hyps"
@@ -373,6 +386,31 @@ struct
        | _ ->
             REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
 
+   (*
+    * Get all the hyps.
+    * Contexts are not allowed.
+    *)
+   let hyps_name = "Term_man_ds.hyps"
+   let rec hyps_aux hyps i t =
+      if i < 0 then
+         []
+      else
+         let rem = hyps_aux hyps (pred i) t in
+            match SeqHyp.get hyps i with
+               Hypothesis (_, t) -> t :: rem
+             | Context _ -> REF_RAISE(RefineError (hyps_name, TermMatchError (t, "illegal context")))
+
+   let hyps t =
+      match get_core t with
+         Sequent s ->
+            let hyps = s.sequent_hyps in
+               hyps_aux hyps (SeqHyp.length s.sequent_hyps - 1) t
+       | _ ->
+            REF_RAISE(RefineError (hyps_name, TermMatchError (t, "not a sequent")))
+
+   (*
+    * Get the conclusion.
+    *)
    let concl_name = "Term_man_ds.concl"
    let concl t =
       match get_core t with
@@ -385,7 +423,9 @@ struct
     * Collect the vars.
     *)
    let rec declared_vars_aux hyps i =
-      if i < 0 then [] else
+      if i < 0 then
+         []
+      else
          let rem = declared_vars_aux hyps (pred i) in
             match SeqHyp.get hyps i with
                Hypothesis (v,_) -> v::rem

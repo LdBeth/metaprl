@@ -107,6 +107,8 @@ sig
    (* nth_hyp and nth_binding will raise RefineError when index refers to a context *)
    val nth_hyp : term -> int -> term
    val nth_binding : term -> int -> var
+   val args : term -> term
+   val hyps : term -> term list
    val concl : term -> term
    val num_hyps : term -> int
    val declared_vars : term -> var list

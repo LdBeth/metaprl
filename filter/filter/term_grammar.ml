@@ -146,6 +146,19 @@ let concl_of_opt_concl concl =
     | None -> xconcl_term
 
 (*
+ * Opnames needed for param parsing.
+ *)
+let perv_opname          = Opname.mk_opname "Perv" nil_opname
+let xparam_int_opname    = Opname.mk_opname "xparam_int" perv_opname
+let xparam_neg_opname    = Opname.mk_opname "xparam_neg" perv_opname
+let xparam_string_opname = Opname.mk_opname "xparam_string" perv_opname
+let xparam_id_opname     = Opname.mk_opname "xparam_id" perv_opname
+let xparam_succ_opname   = Opname.mk_opname "xparam_string" perv_opname
+let xparam_max_opname    = Opname.mk_opname "xparam_max" perv_opname
+let xparam_term_opname   = Opname.mk_opname "xparam_term" perv_opname
+let xparam_opname        = Opname.mk_opname "xparam" perv_opname
+
+(*
  * Build the grammar.
  *)
 module MakeTermGrammar (TermGrammar : TermGrammarSig) =
@@ -530,6 +543,61 @@ struct
             let p = cast_token loc p in
                p, TyToken (get_aterm loc' at)
 
+   (************************************************************************
+    * xparam term parsing.
+    *)
+   let dest_xparam_string loc t =
+      if is_string_term xparam_string_opname t then
+         SW_String (dest_string_term xparam_string_opname t)
+      else if is_string_term xparam_id_opname t then
+         SW_Word (dest_string_term xparam_id_opname t)
+      else
+         Stdpp.raise_with_loc loc (Invalid_argument "not a paramater")
+
+   let dest_xparam_type loc t =
+      List.map (dest_xparam_string loc) (hyps t)
+
+   let rec dest_xparam_exp loc t =
+      if is_number_term xparam_int_opname t then
+         let i = dest_number_term xparam_int_opname t in
+            make_param (Number i)
+      else if is_number_term xparam_neg_opname t then
+         let i = dest_number_term xparam_neg_opname t in
+            make_param (Number (Lm_num.mult_num i (Lm_num.num_of_int (-1))))
+      else if is_string_term xparam_string_opname t then
+         let s = dest_string_term xparam_string_opname t in
+            make_param (String s)
+      else if is_string_term xparam_id_opname t then
+         let s = dest_string_term xparam_id_opname t in
+            make_param (MString (Lm_symbol.add s))
+      else if is_dep0_term xparam_succ_opname t then
+         let t = dest_dep0_term xparam_succ_opname t in
+         let t = dest_xparam_exp loc t in
+            make_param (MLevel (incr_level_exp (cast_level t)))
+      else if is_dep0_dep0_term xparam_max_opname t then
+         let t1, t2 = dest_dep0_dep0_term xparam_max_opname t in
+         let p1 = dest_xparam_exp loc t1 in
+         let p2 = dest_xparam_exp loc t2 in
+            make_param (MLevel (max_level_exp (cast_level p1) (cast_level p2) 0))
+      else
+         Stdpp.raise_with_loc loc (Invalid_argument "not a parameter")
+
+   let dest_xparam loc t =
+      if is_dep0_dep0_term xparam_opname t then
+         let p, t = dest_dep0_dep0_term xparam_opname t in
+         let p = dest_xparam_exp loc p in
+         let t = dest_xparam_type loc t in
+            cast_param loc p t
+      else if is_dep0_term xparam_opname t then
+         let p = dest_dep0_term xparam_opname t in
+            dest_xparam_exp loc p
+      else if is_dep0_dep0_term xparam_term_opname t then
+         let t1, t2 = dest_dep0_dep0_term xparam_term_opname t in
+         let t2 = dest_xparam_type loc t2 in
+            cast_param loc (make_param (Operator (opparam_of_term t1))) t2
+      else
+         Stdpp.raise_with_loc loc (Invalid_argument "not a parameter")
+
    (*
     * Constructors.
     *)
@@ -813,7 +881,8 @@ struct
 
    and mk_parse_state loc name =
       { Filter_grammar.parse_quotation = parse_quotation loc name;
-        Filter_grammar.parse_opname = mk_opname_kind loc
+        Filter_grammar.parse_opname = mk_opname_kind loc;
+        Filter_grammar.parse_param = dest_xparam loc
       }
 
    let rec strip_white_lst = function

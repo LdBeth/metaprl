@@ -211,6 +211,8 @@ sig
    val is_xlist_term : term -> bool
    val dest_xlist : term -> term list
    val mk_xlist_term : term list -> term
+   val all_xlist_term : (term -> bool) -> term -> bool
+   val exists_xlist_term : (term -> bool) -> term -> bool
 
    (*
     * Simple terms have no paramaters and

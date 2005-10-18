@@ -125,11 +125,29 @@ declare xcontext[v:v]{'contexts : Dform; 'args : Dform} : 'a
 declare xhypcontext[v:v]{'contexts : Dform; 'args : Dform} : 'a
 
 (*
- * For constructing terms.  We will eventually need to extend these
- * with parameters.
+ * For constructing terms.
  *)
-declare xbterm{x : 'a. 'e : Dform} : Dform
-declare xterm[op:s]{'bterms : Dform} : 'a
+declare iform sequent [xlist_sequent] { Dform : Dform >- Dform } : Dform
+
+(* An opname is a xlist_sequent list of strings *)
+declare iform xopname[op:s] : Dform
+
+(* Parameter expressions *)
+declare iform xparam_int[i:n] : Dform
+declare iform xparam_neg[i:n] : Dform
+declare iform xparam_string[s:s] : Dform
+declare iform xparam_id[x:s] : Dform
+declare iform xparam_succ{'p : Dform} : Dform
+declare iform xparam_max{'p1 : Dform; 'p2 : Dform} : Dform
+declare iform xparam_term{'t : Dform; 'ty : Dform} : Dform
+declare iform xparam{'p : Dform} : Dform
+declare iform xparam{'p : Dform; 'ty : Dform} : Dform
+
+(* A bterm is a sequent of bindings and a term *)
+declare iform sequent [xbterm] { Dform : Dform >- Dform } : Dform
+
+(* The term has all three parts *)
+declare iform xterm{'op : Dform; 'params : Dform; 'bterms : Dform} : 'a
 
 (*
  * Quotations.

@@ -466,6 +466,30 @@ struct
        | _ ->
             REF_RAISE(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
 
+   let rec all_xlist_term f t =
+      match get_core t with
+         Term { term_op = { op_name = opname; op_params = [] };
+                term_terms = [{ bvars = []; bterm = a };
+                              { bvars = []; bterm = b }]
+              } when Opname.eq opname xcons_opname ->
+            f a && all_xlist_term f b
+       | Term { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
+            true
+       | _ ->
+            false
+
+   let rec exists_xlist_term f t =
+      match get_core t with
+         Term { term_op = { op_name = opname; op_params = [] };
+                term_terms = [{ bvars = []; bterm = a };
+                              { bvars = []; bterm = b }]
+              } when Opname.eq opname xcons_opname ->
+            f a || all_xlist_term f b
+       | Term { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
+            false
+       | _ ->
+            false
+
    let rec mk_xlist_term =
       let cons_op = { op_name = xcons_opname; op_params = [] } in function
          h::t ->

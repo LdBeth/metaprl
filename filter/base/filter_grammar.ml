@@ -52,7 +52,8 @@ exception PrecNotFound of shape
  *)
 type parse_state =
    { parse_quotation : string -> string -> term;
-     parse_opname : op_kind -> string list -> shape_param list -> int list -> Opname.opname
+     parse_opname : op_kind -> string list -> shape_param list -> int list -> Opname.opname;
+     parse_param : term -> param
    }
 
 (*
@@ -767,8 +768,6 @@ let () = Mp_resource.recompute_top ()
  * The primitive so-var terms.
  *)
 let perv_opname = mk_opname "Perv" nil_opname
-let xterm_opname = mk_opname "xterm" perv_opname
-let xbterm_opname = mk_opname "xbterm" perv_opname
 let xsovar_opname = mk_opname "xsovar" perv_opname
 let xhypcontext_opname = mk_opname "xhypcontext" perv_opname
 
@@ -801,30 +800,62 @@ let dest_xhypcontext_term t =
 (*
  * Terms.
  *)
+let xterm_opname         = mk_opname "xterm" perv_opname
+let xbterm_opname        = mk_opname "xbterm" perv_opname
+let xopname_opname       = mk_opname "xopname" perv_opname
+let xlist_sequent_opname = mk_opname "xlist_sequent" perv_opname
+let xparam_opname        = mk_opname "xparam" perv_opname
+let xparam_term_opname   = mk_opname "xparam_term" perv_opname
+
+let is_xlist_sequent_term t =
+   is_sequent_term t && is_no_subterms_term xlist_sequent_opname (args t)
+
+let is_xopname_term t =
+   is_string_term xopname_opname t
+
+let is_xparam_term t =
+   is_dep0_term xparam_opname t
+   || is_dep0_dep0_term xparam_opname t
+   || is_dep0_dep0_term xparam_term_opname t
+
+let all_xlist_sequent_term f t =
+   if is_xlist_sequent_term t then
+      SeqHyp.for_all (function
+         Hypothesis (_, t) -> f t
+       | Context _ -> false) (explode_sequent t).sequent_hyps
+   else
+      false
+
 let is_xterm_term t =
-   if is_string_dep0_term xterm_opname t then
-      let _, t = dest_string_dep0_term xterm_opname t in
-         is_xlist_term t
+   if is_dep0_dep0_dep0_term xterm_opname t then
+      let op, params, bterms = dest_dep0_dep0_dep0_term xterm_opname t in
+         all_xlist_sequent_term is_xopname_term op && all_xlist_sequent_term is_xparam_term params && is_xlist_sequent_term bterms
    else
       false
 
 let dest_xbterm_term t =
-   let rec dest_bterm vars t =
-      if is_dep1_term xbterm_opname t then
-         let v, t = dest_dep1_term xbterm_opname t in
-            dest_bterm (v :: vars) t
-      else
-         mk_bterm (List.rev vars) t
-   in
-      dest_bterm [] t
+   if is_xlist_sequent_term t then
+      let vars = declared_vars t in
+      let t = concl t in
+         mk_bterm vars t
+   else
+      mk_simple_bterm t
 
 let dest_xterm_term state t =
-   let op, bterms = dest_string_dep0_term xterm_opname t in
-   let bterms = dest_xlist bterms in
-   let bterms = List.map dest_xbterm_term bterms in
+   let op, params, bterms = dest_dep0_dep0_dep0_term xterm_opname t in
+
+   (* Raw term parts *)
+   let op = List.map (dest_string_term xopname_opname) (hyps op) in
+   let params = List.map state.parse_param (hyps params) in
+   let bterms = List.map dest_xbterm_term (hyps bterms) in
+
+   (* Compute the opname *)
+   let shape_params = List.map param_type params in
    let arities = List.map (fun bterm -> List.length (dest_bterm bterm).bvars) bterms in
-   let opname = state.parse_opname NormalKind [op] [] arities in
-   let op = mk_op opname [] in
+   let opname = state.parse_opname NormalKind op shape_params arities in
+
+   (* Build the term *)
+   let op = mk_op opname params in
       mk_term op bterms
 
 (*
@@ -932,7 +963,8 @@ let apply_sovar_iforms state apply_iforms t =
          let t = unfold_xquotation state t in
             apply_so_var_iforms_term (apply_iforms t)
       else if is_xterm_term t then
-         apply_so_var_iforms_term (dest_xterm_term state t)
+         let t = dest_xterm_term state t in
+            apply_so_var_iforms_term (apply_iforms t)
       else
          let { term_op = op; term_terms = bterms } = dest_term t in
          let bterms = apply_so_var_iforms_bterm_list bterms in

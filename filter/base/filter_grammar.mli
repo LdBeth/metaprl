@@ -67,7 +67,8 @@ type lexer_id = opname
  *)
 type parse_state =
    { parse_quotation : string -> string -> term;
-     parse_opname : op_kind -> string list -> shape_param list -> int list -> Opname.opname
+     parse_opname : op_kind -> string list -> shape_param list -> int list -> Opname.opname;
+     parse_param : term -> param
    }
 
 (*

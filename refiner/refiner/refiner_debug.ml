@@ -1129,6 +1129,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          ArrayElement a -> ArrayElement a
        | ArrayArray (t, i, j) -> ArrayArray (Array.of_list (to_list t), i, j)
       let collect ps = of_list (Array.to_list (Lm_array_util.collect (List.map map_part ps)))
+      let for_all f t = List.for_all f (to_list t)
+      let exists f t = List.exists f (to_list t)
    end
 
    (******************************************************************************************
@@ -2440,6 +2442,14 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let nth_hyp (p0 : term) (p1 : int) =
          let p0_1, p0_2 = p0 in
          merge merge_term "TermMan.nth_hyp" (wrap2 TermMan1.nth_hyp p0_1 p1) (wrap2 TermMan2.nth_hyp p0_2 p1)
+
+      let args (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge merge_term "TermMan.args" (wrap1 TermMan1.args p0_1) (wrap1 TermMan2.args p0_2)
+
+      let hyps (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge merge_terms "TermMan.hyps" (wrap1 TermMan1.hyps p0_1) (wrap1 TermMan2.hyps p0_2)
 
       let nth_binding (p0 : term) (p1 : int) =
          let p0_1, p0_2 = p0 in
