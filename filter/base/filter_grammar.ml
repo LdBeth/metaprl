@@ -884,9 +884,13 @@ let mk_itt_bind_term v t =
 
 let itt_hoas_debruijn_opname = mk_opname "Itt_hoas_debruijn" nil_opname
 let itt_mk_bterm_opname = mk_opname "mk_bterm" itt_hoas_debruijn_opname
+let itt_bdepth_opname = mk_opname "bdepth" itt_hoas_debruijn_opname
 
 let mk_itt_mk_bterm_term depth op bterms =
    mk_simple_term itt_mk_bterm_opname [depth; op; bterms]
+
+let mk_itt_bdepth_term depth =
+   mk_simple_term itt_bdepth_opname [depth]
 
 let itt_hoas_operator_opname = mk_opname "Itt_hoas_operator" nil_opname
 let itt_operator_opname = mk_opname "operator" itt_hoas_operator_opname
@@ -912,18 +916,35 @@ let rec mk_itt_list_term l =
 (* From the integer theories *)
 let itt_int_base_opname = mk_opname "Itt_int_base" nil_opname
 let itt_number_opname = mk_opname "number" itt_int_base_opname
+let itt_add_opname = mk_opname "add" itt_int_base_opname
+let itt_sub_opname = mk_opname "sub" itt_int_base_opname
+
+let mk_itt_add_term t i =
+   if i = 0 then
+      t
+   else
+      let i = mk_term (mk_op itt_number_opname [make_param (Number (Lm_num.num_of_int i))]) [] in
+         mk_simple_term itt_add_opname [t; i]
 
 let mk_itt_subtract_term t i =
    if i = 0 then
       t
    else
-      mk_term (mk_op itt_number_opname [make_param (Number (Lm_num.num_of_int i))]) []
+      let i = mk_term (mk_op itt_number_opname [make_param (Number (Lm_num.num_of_int i))]) [] in
+         mk_simple_term itt_sub_opname [t; i]
 
 (*
  * When a term is quoted, quote all its subparts.
  *)
 let xquote_opname = mk_opname "xquote" perv_opname
+let xmquote_opname = mk_opname "xmquote" perv_opname
 let xunquote_opname = mk_opname "xunquote" perv_opname
+
+let is_xmquote_term t =
+   is_dep0_term xmquote_opname t
+
+let dest_xmquote_term t =
+   dest_dep0_term xmquote_opname t
 
 let is_xunquote_term t =
    is_dep0_term xunquote_opname t
@@ -931,22 +952,85 @@ let is_xunquote_term t =
 let dest_xunquote_term t =
    dest_dep0_term xunquote_opname t
 
-let is_xquote_term t =
-   is_dep0_dep0_term xquote_opname t
+(*
+ * There should be a marker on one of the subterms.
+ *)
+let is_xquote1_term t =
+   is_dep0_term xquote_opname t && not (is_var_term (dest_dep0_term xquote_opname t))
 
-let dest_xquote_term t =
+let dest_xquote1_term t =
+   dest_dep0_term xquote_opname t
+
+let find_marker t =
+   let rec search t =
+      if is_fso_var_term t || is_xunquote_term t then
+         None
+      else if is_xmquote_term t then
+         Some (0, dest_xmquote_term t)
+      else
+         let { term_terms = bterms } = dest_term t in
+            search_bterms bterms
+
+   and search_bterms bterms =
+      match bterms with
+         bterm :: bterms ->
+            let { bvars = bvars; bterm = bterm } = dest_bterm bterm in
+               (match search bterm with
+                   Some (depth, t) ->
+                      Some (depth + List.length bvars, t)
+                 | None ->
+                      search_bterms bterms)
+       | [] ->
+            None
+   in
+      match search t with
+         Some (depth, t) ->
+            depth, t
+       | None ->
+            raise (Invalid_argument "quoted term does not contain a marker")
+
+let sweepdn_xquote1_term t =
+   let outer_depth, e = find_marker t in
+   let inner_depth = mk_itt_bdepth_term e in
+   let rec sweepdn depth t =
+      if is_fso_var_term t then
+         t
+      else if is_xunquote_term t then
+         dest_xunquote_term t
+      else if is_xmquote_term t then
+         dest_xmquote_term t
+      else
+         let p = mk_itt_operator_term (opparam_of_term t) in
+         let { term_terms = bterms } = dest_term t in
+         let bterms = List.map (wrap_bterm depth) bterms in
+         let bterms = mk_itt_list_term bterms in
+         let depth = mk_itt_add_term inner_depth depth in
+            mk_itt_mk_bterm_term depth p bterms
+
+   and wrap_bterm depth bterm =
+      let { bvars = vars; bterm = bterm } = dest_bterm bterm in
+      let depth = depth - List.length vars in
+      let bterm = sweepdn depth bterm in
+         List.fold_left (fun bterm v -> mk_itt_bind_term v bterm) bterm (List.rev vars)
+   in
+      sweepdn outer_depth t
+
+(*
+ * The depth is specified explicitly.
+ *)
+let is_xquote2_term t =
+   is_dep0_dep0_term xquote_opname t && not (is_var_term (snd (dest_dep0_dep0_term xquote_opname t)))
+
+let dest_xquote2_term t =
    dest_dep0_dep0_term xquote_opname t
 
-let sweepdn_xquote_term outer_depth t =
+let sweepdn_xquote2_term outer_depth t =
    let rec sweepdn depth t =
       if is_fso_var_term t then
          t
       else if is_xunquote_term t then
          dest_xunquote_term t
       else
-         let () =
-            eprintf "Term: %s@." (SimplePrint.string_of_term t)
-         in
          let p = mk_itt_operator_term (opparam_of_term t) in
          let { term_terms = bterms } = dest_term t in
          let bterms = List.map (wrap_bterm depth) bterms in
@@ -1066,14 +1150,26 @@ let apply_sovar_iforms state apply_iforms t =
       else if is_xquotation_term t then
          let t = unfold_xquotation state t in
             apply_so_var_iforms_term (apply_iforms t)
+
+      (*
+       * XXX: It is unlikely that these three rewrites need to
+       * be primitive.  We should move them out as soon as
+       * we figure out how.
+       *)
       else if is_xterm_term t then
          let t = dest_xterm_term state t in
             apply_so_var_iforms_term (apply_iforms t)
-      else if is_xquote_term t then
-         let depth, t = dest_xquote_term t in
+      else if is_xquote1_term t then
+         let t = dest_xquote1_term t in
+         let t = apply_so_var_iforms_term (apply_iforms t) in
+            sweepdn_xquote1_term t
+      else if is_xquote2_term t then
+         let depth, t = dest_xquote2_term t in
          let depth = apply_so_var_iforms_term (apply_iforms depth) in
          let t = apply_so_var_iforms_term (apply_iforms t) in
-            sweepdn_xquote_term depth t
+            sweepdn_xquote2_term depth t
+
+      (* Default case *)
       else
          let { term_op = op; term_terms = bterms } = dest_term t in
          let bterms = apply_so_var_iforms_bterm_list bterms in
