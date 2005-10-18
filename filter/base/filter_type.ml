@@ -347,11 +347,11 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
 (* %%MAGICEND%% *)
 
 (*
- * These type define what info do we need during parsing to identify opnames and context bindings
+ * These type define what info do we need during parsing to identify opnames and context bindings.
  * The mk_var_contexts function should return the Some list when the SO variable bindings are known
  * from the proof context.
  *)
-type quotation_expander     = Filter_grammar.quotation_expander
+type parse_state = Filter_grammar.parse_state
 
 type parsing_state =
    { opname_prefix      : MLast.loc -> opname;
@@ -367,9 +367,9 @@ type parsing_state =
      check_input_term   : MLast.loc -> term -> unit;
      check_input_mterm  : MLast.loc -> meta_term -> unit;
      allow_seq_bindings : MLast.loc -> allow_seq_bindings;
-     apply_iforms       : MLast.loc -> quotation_expander -> term -> term;
-     apply_iforms_mterm : MLast.loc -> quotation_expander -> meta_term -> term list -> meta_term * term list;
-     term_of_string     : MLast.loc -> quotation_expander -> string -> string -> term
+     apply_iforms       : MLast.loc -> parse_state -> term -> term;
+     apply_iforms_mterm : MLast.loc -> parse_state -> meta_term -> term list -> meta_term * term list;
+     term_of_string     : MLast.loc -> parse_state -> string -> string -> term
    }
 
 (*
@@ -405,6 +405,9 @@ sig
    type parsed_bound_term
    type parsed_meta_term = parsed_term poly_meta_term
 
+   (* Opnames *)
+   val mk_opname_kind  : MLast.loc -> op_kind -> string list -> shape_param list -> int list -> Opname.opname
+
    (* Quotation access *)
    val dest_quot       : string -> string * string
    val parse_quotation : MLast.loc -> string -> string -> string -> parsed_term
@@ -422,7 +425,7 @@ sig
    val parse_define         : MLast.loc -> string -> parsed_term -> parsed_term -> term * term
 
    (* For input terms from other parsers *)
-   val mk_parsed_term : term -> parsed_term
+   val mk_parsed_term    : term -> parsed_term
 
    (* Grammar *)
    val opname            : opname Grammar.Entry.e

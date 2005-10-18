@@ -215,6 +215,7 @@ struct
    (************************************************************************
     * STATEFUL FUNCTIONS                                                   *
     ************************************************************************)
+
    let opname_prefix loc = (parsing_state loc).opname_prefix loc
    let mk_opname_kind loc = (parsing_state loc).mk_opname_kind loc
    let mk_var_contexts loc = (parsing_state loc).mk_var_contexts loc
@@ -239,7 +240,7 @@ struct
    let mterms_of_parsed_mterms loc = mterms_of_parsed_mterms ((parsing_state loc).allow_seq_bindings loc)
    let rewrite_of_parsed_rewrite loc = rewrite_of_parsed_rewrite ((parsing_state loc).allow_seq_bindings loc)
    let mrewrite_of_parsed_mrewrite loc = mrewrite_of_parsed_mrewrite ((parsing_state loc).allow_seq_bindings loc)
-   
+
    (************************************************************************
     * UTILITIES                                                            *
     ************************************************************************)
@@ -578,7 +579,7 @@ struct
       let t2 = make_term t2 in
       match make_aterm t1 with
          { aname = None; aterm = t } ->
-            (* XXX HACK - this is to support ad-hoc I/O form for "fun" and alike *) 
+            (* XXX HACK - this is to support ad-hoc I/O form for "fun" and alike *)
             begin try
                wrap_term loc (mk_dep0_dep0_term (mk_dep0_dep0_opname loc name) t t2)
             with Failure _ | Not_found | Stdpp.Exc_located (_, Not_found) | Stdpp.Exc_located (_, Failure _) ->
@@ -704,12 +705,8 @@ struct
             parse_comment (q_shift_loc loc nm) false SpellOff false s
        | _ ->
             (* Otherwise, use the current grammar *)
-            let parse_quotation name s =
-               parse_quotation loc nm name s
-            in
-               try
-                  term_of_string (q_shift_loc loc nm) parse_quotation nm s
-               with
+            let state = mk_parse_state loc nm in
+               try term_of_string (q_shift_loc loc nm) state nm s with
                   Not_found ->
                      Stdpp.raise_with_loc loc (Failure ("parse_quotation: grammar is not defined: " ^ nm))
                 | exn ->
@@ -814,6 +811,11 @@ struct
       in
          build_term spell space items
 
+   and mk_parse_state loc name =
+      { Filter_grammar.parse_quotation = parse_quotation loc name;
+        Filter_grammar.parse_opname = mk_opname_kind loc
+      }
+
    let rec strip_white_lst = function
       (t :: tl) as l ->
          if is_no_subterms_term comment_white_op t then
@@ -858,25 +860,21 @@ struct
     *)
 
    let apply_iforms_raw t =
-      let parse_quotation name s =
-         parse_quotation dummy_loc "unknown" name s
-      in
-         apply_iforms dummy_loc parse_quotation t
+      let state = mk_parse_state dummy_loc "unknown" in
+         apply_iforms dummy_loc state t
 
    let apply_iforms loc t =
       if !debug_grammar then
          eprintf "Term_grammar.apply_iforms <- %a%t" debug_print t eflush;
-      let parse_quotation name s = parse_quotation loc "unknown" name s in
-      let t = apply_iforms loc parse_quotation t in
+      let state = mk_parse_state loc "unknown" in
+      let t = apply_iforms loc state t in
          if !debug_grammar then
             eprintf "Term_grammar.apply_iforms -> %a%t" debug_print t eflush;
          t
 
    let apply_iforms_mterm loc mt args =
-      let parse_quotation name s =
-         parse_quotation loc "unknown" name s
-      in
-         apply_iforms_mterm loc parse_quotation mt args
+      let state = mk_parse_state loc "unknown" in
+         apply_iforms_mterm loc state mt args
 
    let check_input_terms loc terms =
       List.iter (check_input_term loc) terms

@@ -65,7 +65,10 @@ type lexer_id = opname
 (*
  * For expanding quotations.
  *)
-type quotation_expander = string -> string -> term
+type parse_state =
+   { parse_quotation : string -> string -> term;
+     parse_opname : op_kind -> string list -> shape_param list -> int list -> Opname.opname
+   }
 
 (*
  * Add a lexer token.
@@ -145,20 +148,20 @@ val pp_print_grammar : Lm_printf.out_channel -> t -> unit
 (*
  * Parse a string.
  *)
-val parse           : quotation_expander -> t -> shape -> Lexing.position -> string -> term
+val parse              : parse_state -> t -> shape -> Lexing.position -> string -> term
 
 (*
  * Stateful versions.
  * The Filter_cache_fun should try and make sure these functions
  * are called each time the grammar is modified.
  *)
-val term_of_string  : quotation_expander -> t -> string -> Lexing.position -> string -> term
+val term_of_string     : parse_state -> t -> string -> Lexing.position -> string -> term
 
 (*
  * Iform expansion.
  *)
-val apply_iforms       : quotation_expander -> t -> term -> term
-val apply_iforms_mterm : quotation_expander -> t -> meta_term -> term list -> meta_term * term list
+val apply_iforms       : parse_state -> t -> term -> term
+val apply_iforms_mterm : parse_state -> t -> meta_term -> term list -> meta_term * term list
 
 (*!
  * @docoff

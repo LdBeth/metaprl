@@ -47,7 +47,13 @@ open Term_hash_code
 
 exception PrecNotFound of shape
 
-type quotation_expander = string -> string -> term
+(*
+ * For expanding quotations.
+ *)
+type parse_state =
+   { parse_quotation : string -> string -> term;
+     parse_opname : op_kind -> string list -> shape_param list -> int list -> Opname.opname
+   }
 
 (*
  * Show that the file is loading.
@@ -761,6 +767,8 @@ let () = Mp_resource.recompute_top ()
  * The primitive so-var terms.
  *)
 let perv_opname = mk_opname "Perv" nil_opname
+let xterm_opname = mk_opname "xterm" perv_opname
+let xbterm_opname = mk_opname "xbterm" perv_opname
 let xsovar_opname = mk_opname "xsovar" perv_opname
 let xhypcontext_opname = mk_opname "xhypcontext" perv_opname
 
@@ -789,6 +797,35 @@ let dest_xhypcontext_term t =
    let cvars = List.map dest_var (dest_xlist cvars) in
    let args = dest_xlist args in
       v, cvars, args
+
+(*
+ * Terms.
+ *)
+let is_xterm_term t =
+   if is_string_dep0_term xterm_opname t then
+      let _, t = dest_string_dep0_term xterm_opname t in
+         is_xlist_term t
+   else
+      false
+
+let dest_xbterm_term t =
+   let rec dest_bterm vars t =
+      if is_dep1_term xbterm_opname t then
+         let v, t = dest_dep1_term xbterm_opname t in
+            dest_bterm (v :: vars) t
+      else
+         mk_bterm (List.rev vars) t
+   in
+      dest_bterm [] t
+
+let dest_xterm_term state t =
+   let op, bterms = dest_string_dep0_term xterm_opname t in
+   let bterms = dest_xlist bterms in
+   let bterms = List.map dest_xbterm_term bterms in
+   let arities = List.map (fun bterm -> List.length (dest_bterm bterm).bvars) bterms in
+   let opname = state.parse_opname NormalKind [op] [] arities in
+   let op = mk_op opname [] in
+      mk_term op bterms
 
 (*
  * Also expand quotations.
@@ -834,22 +871,22 @@ let trim_quotation_name default name =
       else
          String.sub name left (right - left)
 
-let unfold_xquotation parse_quotation t =
+let unfold_xquotation state t =
    let name, quote = dest_xquotation t in
-      parse_quotation name quote
+      state.parse_quotation name quote
 
-let rec sweep_up_unfold_xquotation parse_quotation t =
+let rec sweep_up_unfold_xquotation state t =
    map_up (fun t ->
          if is_xquotation_term t then
-            let t = unfold_xquotation parse_quotation t in
-               sweep_up_unfold_xquotation parse_quotation t
+            let t = unfold_xquotation state t in
+               sweep_up_unfold_xquotation state t
          else
             t) t
 
 (*
  * The so-var iforms are primitive, because hyps are rewritten to contexts.
  *)
-let apply_sovar_iforms parse_quotation apply_iforms t =
+let apply_sovar_iforms state apply_iforms t =
    let rec apply_so_var_iforms_term t =
       if is_var_term t then
          t
@@ -892,8 +929,10 @@ let apply_sovar_iforms parse_quotation apply_iforms t =
          let args = apply_so_var_iforms_term_list args in
             mk_so_var_term v cvars args
       else if is_xquotation_term t then
-         let t = unfold_xquotation parse_quotation t in
+         let t = unfold_xquotation state t in
             apply_so_var_iforms_term (apply_iforms t)
+      else if is_xterm_term t then
+         apply_so_var_iforms_term (dest_xterm_term state t)
       else
          let { term_op = op; term_terms = bterms } = dest_term t in
          let bterms = apply_so_var_iforms_bterm_list bterms in
@@ -914,13 +953,13 @@ let apply_sovar_iforms parse_quotation apply_iforms t =
 (*
  * Now actually apply the input forms.
  *)
-let apply_iforms parse_quotation gram t =
+let apply_iforms state gram t =
    let conv = conv_of_iforms gram in
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
-      apply_sovar_iforms parse_quotation (Conversionals.apply_rewrite book conv) t
+      apply_sovar_iforms state (Conversionals.apply_rewrite book conv) t
 
-let apply_iforms_mterm parse_quotation gram mt args =
+let apply_iforms_mterm state gram mt args =
    let conv = conv_of_iforms gram in
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
@@ -928,7 +967,7 @@ let apply_iforms_mterm parse_quotation gram mt args =
       Conversionals.apply_rewrite book conv t
    in
    let apply_term t =
-      apply_sovar_iforms parse_quotation apply_iforms t
+      apply_sovar_iforms state apply_iforms t
    in
    let rec apply mt =
       match mt with
@@ -1017,7 +1056,7 @@ let pp_print_grammar buf gram =
 (*
  * Parse the input.
  *)
-let parse parse_quotation gram start loc s =
+let parse state gram start loc s =
    let { gram_lexers         = lexers;
          gram_lexer_actions  = lexer_actions;
          gram_lexer_start    = starts;
@@ -1054,7 +1093,7 @@ let parse parse_quotation gram start loc s =
           | _ ->
                raise (Invalid_argument "lexer_fun")
       in
-      let tok = sweep_up_unfold_xquotation parse_quotation tok in
+      let tok = sweep_up_unfold_xquotation state tok in
       let shape = shape_of_term tok in
          if !debug_grammar then
             eprintf "Token: %a@." pp_print_shape shape;

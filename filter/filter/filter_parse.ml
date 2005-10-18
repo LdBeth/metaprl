@@ -177,7 +177,7 @@ let parsing_state = ref None
  *)
 module TermGrammarBefore : TermGrammarSig =
 struct
-   let parsing_state loc = 
+   let parsing_state loc =
       match !parsing_state with
          Some st -> st
        | None -> Stdpp.raise_with_loc loc (Failure "Filter_parse.parsing_state is uninitialized")
@@ -327,6 +327,13 @@ struct
     * This comes before get_proc because
     * the get_proc function needs to set the start symbols.
     *)
+   let mk_parse_state loc id =
+      { Filter_grammar.parse_quotation =
+           (fun name s ->
+                 TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation dummy_loc id name s));
+        Filter_grammar.parse_opname = TermGrammar.mk_opname_kind dummy_loc
+      }
+
    let input_exp shape id s =
       match !proc_ref with
          Some proc ->
@@ -337,10 +344,8 @@ struct
                  Lexing.pos_cnum  = 0
                }
             in
-            let parse_quotation name s =
-               TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation dummy_loc id name s)
-            in
-            let t = FilterCache.parse parse_quotation proc.cache pos shape s in
+            let state = mk_parse_state dummy_loc id in
+            let t = FilterCache.parse state proc.cache pos shape s in
             let t = TermGrammar.mk_parsed_term t in
                add_parsed_binding (BindTerm t)
        | None ->
@@ -356,10 +361,8 @@ struct
                  Lexing.pos_cnum  = 0
                }
             in
-            let parse_quotation name s =
-               TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation dummy_loc id name s)
-            in
-            let t = FilterCache.parse parse_quotation proc.cache pos shape s in
+            let state = mk_parse_state dummy_loc id in
+            let t = FilterCache.parse state proc.cache pos shape s in
             let t = TermGrammar.unchecked_term_of_parsed_term dummy_loc (TermGrammar.mk_parsed_term t) in
                Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
        | None ->

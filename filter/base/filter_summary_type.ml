@@ -156,7 +156,7 @@ end
  * The sig_* types parameterize the signatures, and the str_* types
  * parameterize the module_info being constructed.
  *)
-type quotation_expander = Filter_grammar.quotation_expander
+type parse_state = Filter_grammar.parse_state
 
 type summary_mode =
    CompiledSummary
@@ -280,7 +280,7 @@ sig
    val add_input_prec    : info -> precedence -> term -> unit
    val add_start         : info -> string -> term -> opname -> unit
    val get_start         : info -> shape StringTable.t
-   val parse             : (string -> string -> term) -> info -> Lexing.position -> shape -> string -> term
+   val parse             : parse_state -> info -> Lexing.position -> shape -> string -> term
    val compile_parser    : info -> unit
 end
 
