@@ -762,6 +762,10 @@ let unfold_xterm_term state t =
  *
  * In the meantime, this is experimental.
  *)
+let opparam_of_term_safe t =
+   try opparam_of_term t with
+      Invalid_argument s ->
+         raise (RefineError ("Filter_grammar.opparam_of_term", StringError s))
 
 (*
  * Functions to manage ITT terms.
@@ -855,7 +859,7 @@ let dest_xquote1_term t =
 
 let find_marker t =
    let rec search t =
-      if is_fso_var_term t || is_xunquote_term t then
+      if is_var_term t || is_so_var_term t || is_xunquote_term t then
          None
       else if is_xmquote_term t then
          Some (0, dest_xmquote_term t)
@@ -885,14 +889,14 @@ let sweepdn_xquote1_term t =
    let outer_depth, e = find_marker t in
    let inner_depth = mk_itt_bdepth_term e in
    let rec sweepdn depth t =
-      if is_fso_var_term t then
+      if is_var_term t || is_so_var_term t then
          t
       else if is_xunquote_term t then
          dest_xunquote_term t
       else if is_xmquote_term t then
          dest_xmquote_term t
       else
-         let p = mk_itt_operator_term (opparam_of_term t) in
+         let p = mk_itt_operator_term (opparam_of_term_safe t) in
          let { term_terms = bterms } = dest_term t in
          let bterms = List.map (wrap_bterm depth) bterms in
          let bterms = mk_itt_list_term bterms in
@@ -911,19 +915,19 @@ let sweepdn_xquote1_term t =
  * The depth is specified explicitly.
  *)
 let is_xquote2_term t =
-   is_dep0_dep0_term xquote_opname t && not (is_var_term (snd (dest_dep0_dep0_term xquote_opname t)))
+   is_dep0_dep0_term xquote_opname t
 
 let dest_xquote2_term t =
    dest_dep0_dep0_term xquote_opname t
 
 let sweepdn_xquote2_term outer_depth t =
    let rec sweepdn depth t =
-      if is_fso_var_term t then
+      if is_var_term t || is_so_var_term t then
          t
       else if is_xunquote_term t then
          dest_xunquote_term t
       else
-         let p = mk_itt_operator_term (opparam_of_term t) in
+         let p = mk_itt_operator_term (opparam_of_term_safe t) in
          let { term_terms = bterms } = dest_term t in
          let bterms = List.map (wrap_bterm depth) bterms in
          let bterms = mk_itt_list_term bterms in
