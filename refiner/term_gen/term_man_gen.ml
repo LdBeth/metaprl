@@ -652,7 +652,7 @@ struct
                let t, _, term = match_hyp_all hyps_name t bterms in
                   aux (t :: vars) term
             else if Opname.eq opname concl_opname then
-               vars
+               List.rev vars
             else
                REF_RAISE(RefineError (hyps_name, TermMatchError (t, "malformed sequent")))
       in

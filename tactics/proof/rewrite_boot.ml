@@ -381,6 +381,9 @@ struct
    let create_iform name strictp redex contractum =
       rewrite_of_pre_rewrite (create_input_form (null_refiner name) name strictp redex contractum) empty_rw_args []
 
+   let create_ml_iform name f =
+      rewrite_of_pre_rewrite (create_ml_rewrite (null_refiner name) name f) empty_rw_args []
+
    let zero_addr = TermAddr.make_address []
 
    (*

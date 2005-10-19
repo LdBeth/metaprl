@@ -292,6 +292,7 @@ struct
     * Conversionals.
     *)
    let create_iform = Rewrite.create_iform
+   let create_ml_iform = Rewrite.create_ml_iform
    let apply_rewrite = Rewrite.apply_rewrite
    let rewrite_of_pre_rewrite = Rewrite.rewrite_of_pre_rewrite
    let redex_and_conv_of_rw_annotation = Rewrite.redex_and_conv_of_rw_annotation

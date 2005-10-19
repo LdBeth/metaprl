@@ -83,6 +83,8 @@ let lexer_arg_opname  = mk_opname "lexer_arg" lexer_opname
 let parser_opname     = mk_opname "Parser" nil_opname
 let parser_arg_opname = mk_opname "parser_arg" parser_opname
 
+let perv_opname       = mk_opname "Perv" nil_opname
+
 (************************************************************************
  * Lexer and parser modules.
  *)
@@ -704,99 +706,10 @@ let get_start gram =
    gram.gram_starts
 
 (************************************************************************
- * Input forms.
+ * ML iforms.
+ *
+ * These should be run before any other iforms.
  *)
-
-(*
- * Add a new iform.  Clear the cached table.
- *)
-let add_iform gram id redex contractum =
-   let iform =
-      { iform_redex = redex;
-        iform_contractum = contractum
-      }
-   in
-      { gram with gram_name = unnamed_of_gram gram;
-                  gram_iforms = ActionTable.add gram.gram_iforms id iform;
-                  gram_iform_table = None
-      }
-
-(*
- * For debugging.
- *)
-let iform_count gram =
-   ActionTable.cardinal gram.gram_iforms
-
-(*
- * Build the Term_match_table.
- *)
-let create_iform_table iforms =
-   ActionTable.fold (fun table _ iform ->
-         let { iform_redex = redex; iform_contractum = contractum } = iform in
-         let conv = Conversionals.create_iform "Filter_grammar" false redex contractum in
-            Term_match_table.add_item table redex conv) Term_match_table.empty_table iforms
-
-let table_of_iforms gram =
-   match gram.gram_iform_table with
-      Some table ->
-         table
-    | None ->
-         let table = create_iform_table gram.gram_iforms in
-            gram.gram_iform_table <- Some table;
-            table
-
-let compile_iforms gram =
-   ignore (table_of_iforms gram)
-
-(*
- * The actual rewrite.
- *)
-let conv_of_iforms gram =
-   let table = table_of_iforms gram in
-   let rw t =
-      try Term_match_table.lookup table Term_match_table.select_all t with
-         Not_found ->
-            raise (RefineError ("Conversionals.extract_data", StringTermError ("no reduction for", t)))
-   in
-      Conversionals.termC rw
-
-(*
- * Apply the iforms.
- *)
-let () = Mp_resource.recompute_top ()
-
-(*
- * The primitive so-var terms.
- *)
-let perv_opname = mk_opname "Perv" nil_opname
-let xsovar_opname = mk_opname "xsovar" perv_opname
-let xhypcontext_opname = mk_opname "xhypcontext" perv_opname
-
-let is_xsovar_term t =
-   if is_var_dep0_dep0_term xsovar_opname t then
-      let _, cvars, args = dest_var_dep0_dep0_term xsovar_opname t in
-         is_xlist_term cvars && is_xlist_term args
-   else
-      false
-
-let dest_xsovar_term t =
-   let v, cvars, args = dest_var_dep0_dep0_term xsovar_opname t in
-   let cvars = List.map dest_var (dest_xlist cvars) in
-   let args = dest_xlist args in
-      v, cvars, args
-
-let is_xhypcontext_term t =
-   if is_var_dep0_dep0_term xhypcontext_opname t then
-      let _, cvars, args = dest_var_dep0_dep0_term xhypcontext_opname t in
-         is_xlist_term cvars && is_xlist_term args
-   else
-      false
-
-let dest_xhypcontext_term t =
-   let v, cvars, args = dest_var_dep0_dep0_term xhypcontext_opname t in
-   let cvars = List.map dest_var (dest_xlist cvars) in
-   let args = dest_xlist args in
-      v, cvars, args
 
 (*
  * Terms.
@@ -804,45 +717,24 @@ let dest_xhypcontext_term t =
 let xterm_opname         = mk_opname "xterm" perv_opname
 let xbterm_opname        = mk_opname "xbterm" perv_opname
 let xopname_opname       = mk_opname "xopname" perv_opname
-let xlist_sequent_opname = mk_opname "xlist_sequent" perv_opname
 let xparam_opname        = mk_opname "xparam" perv_opname
 let xparam_term_opname   = mk_opname "xparam_term" perv_opname
 
-let is_xlist_sequent_term t =
-   is_sequent_term t && is_no_subterms_term xlist_sequent_opname (args t)
-
-let is_xopname_term t =
-   is_string_term xopname_opname t
-
-let is_xparam_term t =
-   is_dep0_term xparam_opname t
-   || is_dep0_dep0_term xparam_opname t
-   || is_dep0_dep0_term xparam_term_opname t
-
-let all_xlist_sequent_term f t =
-   if is_xlist_sequent_term t then
-      SeqHyp.for_all (function
-         Hypothesis (_, t) -> f t
-       | Context _ -> false) (explode_sequent t).sequent_hyps
-   else
-      false
-
 let is_xterm_term t =
-   if is_dep0_dep0_dep0_term xterm_opname t then
-      let op, params, bterms = dest_dep0_dep0_dep0_term xterm_opname t in
-         all_xlist_sequent_term is_xopname_term op && all_xlist_sequent_term is_xparam_term params && is_xlist_sequent_term bterms
-   else
-      false
+   is_dep0_dep0_dep0_term xterm_opname t
+
+let is_xbterm_term t =
+   is_sequent_term t && is_no_subterms_term xbterm_opname (args t)
 
 let dest_xbterm_term t =
-   if is_xlist_sequent_term t then
+   if is_xbterm_term t then
       let vars = declared_vars t in
       let t = concl t in
          mk_bterm vars t
    else
       mk_simple_bterm t
 
-let dest_xterm_term state t =
+let unfold_xterm_term state t =
    let op, params, bterms = dest_dep0_dep0_dep0_term xterm_opname t in
 
    (* Raw term parts *)
@@ -1046,6 +938,127 @@ let sweepdn_xquote2_term outer_depth t =
    in
       sweepdn 0 t
 
+(************************************************
+ * Create the conversions.
+ *)
+let refine_exn = RefineError ("Filter_grammar", GenericError)
+
+let apply_ml_pre_iforms state t =
+   if is_xterm_term t then
+      unfold_xterm_term state t
+   else
+      raise refine_exn
+
+let apply_ml_post_iforms t =
+   if is_xquote1_term t then
+      sweepdn_xquote1_term (dest_xquote1_term t)
+   else if is_xquote2_term t then
+      let depth, t = dest_xquote2_term t in
+         sweepdn_xquote2_term depth t
+   else
+      raise refine_exn
+
+let create_ml_iform_convs state =
+   let pre_rw    = Conversionals.create_ml_iform "Filter_grammar" (apply_ml_pre_iforms state) in
+   let pre_conv  = Conversionals.sweepDnC pre_rw in
+   let post_rw   = Conversionals.create_ml_iform "Filter_grammar" apply_ml_post_iforms in
+   let post_conv = Conversionals.sweepDnC post_rw in
+      pre_conv, post_conv
+
+(************************************************************************
+ * Input forms.
+ *)
+
+(*
+ * Add a new iform.  Clear the cached table.
+ *)
+let add_iform gram id redex contractum =
+   let iform =
+      { iform_redex = redex;
+        iform_contractum = contractum
+      }
+   in
+      { gram with gram_name = unnamed_of_gram gram;
+                  gram_iforms = ActionTable.add gram.gram_iforms id iform;
+                  gram_iform_table = None
+      }
+
+(*
+ * For debugging.
+ *)
+let iform_count gram =
+   ActionTable.cardinal gram.gram_iforms
+
+(*
+ * Build the Term_match_table.
+ *)
+let create_iform_table iforms =
+   ActionTable.fold (fun table _ iform ->
+         let { iform_redex = redex; iform_contractum = contractum } = iform in
+         let conv = Conversionals.create_iform "Filter_grammar" false redex contractum in
+            Term_match_table.add_item table redex conv) Term_match_table.empty_table iforms
+
+let table_of_iforms gram =
+   match gram.gram_iform_table with
+      Some table ->
+         table
+    | None ->
+         let table = create_iform_table gram.gram_iforms in
+            gram.gram_iform_table <- Some table;
+            table
+
+let compile_iforms gram =
+   ignore (table_of_iforms gram)
+
+(*
+ * The actual rewrite.
+ *)
+let conv_of_iforms gram =
+   let table = table_of_iforms gram in
+   let rw t =
+      try Term_match_table.lookup table Term_match_table.select_all t with
+         Not_found ->
+            raise (RefineError ("Conversionals.extract_data", StringTermError ("no reduction for", t)))
+   in
+      Conversionals.termC rw
+
+(*
+ * Apply the iforms.
+ *)
+let () = Mp_resource.recompute_top ()
+
+(*
+ * The primitive so-var terms.
+ *)
+let xsovar_opname = mk_opname "xsovar" perv_opname
+let xhypcontext_opname = mk_opname "xhypcontext" perv_opname
+
+let is_xsovar_term t =
+   if is_var_dep0_dep0_term xsovar_opname t then
+      let _, cvars, args = dest_var_dep0_dep0_term xsovar_opname t in
+         is_xlist_term cvars && is_xlist_term args
+   else
+      false
+
+let dest_xsovar_term t =
+   let v, cvars, args = dest_var_dep0_dep0_term xsovar_opname t in
+   let cvars = List.map dest_var (dest_xlist cvars) in
+   let args = dest_xlist args in
+      v, cvars, args
+
+let is_xhypcontext_term t =
+   if is_var_dep0_dep0_term xhypcontext_opname t then
+      let _, cvars, args = dest_var_dep0_dep0_term xhypcontext_opname t in
+         is_xlist_term cvars && is_xlist_term args
+   else
+      false
+
+let dest_xhypcontext_term t =
+   let v, cvars, args = dest_var_dep0_dep0_term xhypcontext_opname t in
+   let cvars = List.map dest_var (dest_xlist cvars) in
+   let args = dest_xlist args in
+      v, cvars, args
+
 (*
  * Also expand quotations.
  * For an xquotation, the string parameter should
@@ -1150,26 +1163,6 @@ let apply_sovar_iforms state apply_iforms t =
       else if is_xquotation_term t then
          let t = unfold_xquotation state t in
             apply_so_var_iforms_term (apply_iforms t)
-
-      (*
-       * XXX: It is unlikely that these three rewrites need to
-       * be primitive.  We should move them out as soon as
-       * we figure out how.
-       *)
-      else if is_xterm_term t then
-         let t = dest_xterm_term state t in
-            apply_so_var_iforms_term (apply_iforms t)
-      else if is_xquote1_term t then
-         let t = dest_xquote1_term t in
-         let t = apply_so_var_iforms_term (apply_iforms t) in
-            sweepdn_xquote1_term t
-      else if is_xquote2_term t then
-         let depth, t = dest_xquote2_term t in
-         let depth = apply_so_var_iforms_term (apply_iforms depth) in
-         let t = apply_so_var_iforms_term (apply_iforms t) in
-            sweepdn_xquote2_term depth t
-
-      (* Default case *)
       else
          let { term_op = op; term_terms = bterms } = dest_term t in
          let bterms = apply_so_var_iforms_bterm_list bterms in
@@ -1191,12 +1184,17 @@ let apply_sovar_iforms state apply_iforms t =
  * Now actually apply the input forms.
  *)
 let apply_iforms state gram t =
+   let pre_conv, post_conv = create_ml_iform_convs state in
    let conv = conv_of_iforms gram in
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
-      apply_sovar_iforms state (Conversionals.apply_rewrite book conv) t
+   let t = Conversionals.apply_rewrite book pre_conv t in
+   let t = apply_sovar_iforms state (Conversionals.apply_rewrite book conv) t in
+   let t = Conversionals.apply_rewrite book post_conv t in
+      t
 
 let apply_iforms_mterm state gram mt args =
+   let pre_conv, post_conv = create_ml_iform_convs state in
    let conv = conv_of_iforms gram in
    let conv = Conversionals.repeatC (Conversionals.higherC conv) in
    let book = Mp_resource.find Mp_resource.top_bookmark in
@@ -1204,7 +1202,10 @@ let apply_iforms_mterm state gram mt args =
       Conversionals.apply_rewrite book conv t
    in
    let apply_term t =
-      apply_sovar_iforms state apply_iforms t
+      let t = Conversionals.apply_rewrite book pre_conv t in
+      let t = apply_sovar_iforms state apply_iforms t in
+      let t = Conversionals.apply_rewrite book post_conv t in
+         t
    in
    let rec apply mt =
       match mt with

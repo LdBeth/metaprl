@@ -1008,6 +1008,7 @@ sig
     * no justification.
     *)
    val create_iform : string -> bool -> term -> term -> conv
+   val create_ml_iform : string -> ml_rewrite -> conv
 
    (*
     * Debugging.
@@ -1168,6 +1169,7 @@ sig
     * no justification.
     *)
    val create_iform : string -> bool -> term -> term -> conv
+   val create_ml_iform : string -> ml_rewrite -> conv
 
    (*
     * Debugging.

@@ -391,20 +391,22 @@ struct
     * Contexts are not allowed.
     *)
    let hyps_name = "Term_man_ds.hyps"
-   let rec hyps_aux hyps i t =
+   let rec hyps_aux l hyps i t =
       if i < 0 then
-         []
+         l
       else
-         let rem = hyps_aux hyps (pred i) t in
+         let s =
             match SeqHyp.get hyps i with
-               Hypothesis (_, t) -> t :: rem
+               Hypothesis (_, t) -> t
              | Context _ -> REF_RAISE(RefineError (hyps_name, TermMatchError (t, "illegal context")))
+         in
+            hyps_aux (s :: l) hyps (pred i) t
 
    let hyps t =
       match get_core t with
          Sequent s ->
             let hyps = s.sequent_hyps in
-               hyps_aux hyps (SeqHyp.length s.sequent_hyps - 1) t
+               hyps_aux [] hyps (SeqHyp.length s.sequent_hyps - 1) t
        | _ ->
             REF_RAISE(RefineError (hyps_name, TermMatchError (t, "not a sequent")))
 
