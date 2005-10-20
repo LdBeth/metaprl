@@ -830,7 +830,6 @@ let is_xquote_term t =
    is_dep0_dep0_term xquote_opname t && not (is_var_term (snd (dest_dep0_dep0_term xquote_opname t)))
 
 let dest_xquote_term state t =
-   eprintf "dest_xquote_term@.";
    let info = Reflect.create state in
    let depth, t = dest_dep0_dep0_term xquote_opname t in
    let rec sweepdn t =
