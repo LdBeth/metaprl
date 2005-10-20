@@ -156,12 +156,9 @@ declare xquotation[name:s, quote:s] : 'a
 
 (*
  * Reflection.
- * This may eventually move out of here into an ML iform.
  *)
-declare xquote{'t}
-declare xquote{'depth; 't}
-declare xmquote{'t}
-declare xunquote{'t}
+declare iform xquote{'depth; 't}
+declare iform xunquote{'t}
 
 (************************************************************************
  * Normal terms.

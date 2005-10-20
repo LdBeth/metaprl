@@ -752,95 +752,73 @@ let unfold_xterm_term state t =
       mk_term op bterms
 
 (************************************************
- * Reflection quotations.
- *
- * !!!This is very bad!!!
- *
- * The ITT names for the reflection terms are hardcoded here.
- * We should probably define ML iforms, so that this code can
- * be exported to the reflection theory.
- *
- * In the meantime, this is experimental.
+ * Reflection quotations.  We don't explicitly
+ * use ITT opnames here, but the environment must
+ * include the operators defined in the following
+ * module.
  *)
-let opparam_of_term_safe t =
-   try opparam_of_term t with
-      Invalid_argument s ->
-         raise (RefineError ("Filter_grammar.opparam_of_term", StringError s))
+module type ReflectSig =
+sig
+   type t
 
-(*
- * Functions to manage ITT terms.
- *)
+   val create           : parse_state -> t
+   val mk_bind_term     : t -> var -> term -> term
+   val mk_mk_bterm_term : t -> term -> term -> term -> term
+   val mk_operator_term : t -> param op_param -> term
+   val mk_nil_term      : t -> term
+   val mk_cons_term     : t -> term -> term -> term
+   val mk_list_term     : t -> term list -> term
+end;;
 
-(* From the HOAS theories *)
-let itt_hoas_base_opname = mk_opname "Itt_hoas_base" nil_opname
-let itt_bind_opname = mk_opname "bind" itt_hoas_base_opname
+module Reflect : ReflectSig =
+struct
+   type t =
+      { opname_bind      : opname;
+        opname_mk_bterm  : opname;
+        opname_operator  : opname;
+        term_nil         : term;
+        opname_cons      : opname
+      }
 
-let mk_itt_bind_term v t =
-   mk_dep1_term itt_bind_opname v t
+   let mk_state_opname state op params arities =
+      state.parse_opname NormalKind [op] params arities
 
-let itt_hoas_debruijn_opname = mk_opname "Itt_hoas_debruijn" nil_opname
-let itt_mk_bterm_opname = mk_opname "mk_bterm" itt_hoas_debruijn_opname
-let itt_bdepth_opname = mk_opname "bdepth" itt_hoas_debruijn_opname
+   let create state =
+      { opname_bind      = mk_state_opname state "bind" [] [1];
+        opname_mk_bterm  = mk_state_opname state "mk_bterm" [] [0; 0; 0];
+        opname_operator  = mk_state_opname state "operator" [ShapeOperator] [];
+        term_nil         = mk_simple_term (mk_state_opname state "nil" [] []) [];
+        opname_cons      = mk_state_opname state "cons"     [] [0; 0];
+      }
 
-let mk_itt_mk_bterm_term depth op bterms =
-   mk_simple_term itt_mk_bterm_opname [depth; op; bterms]
+   let mk_bind_term info v t =
+      mk_dep1_term info.opname_bind v t
 
-let mk_itt_bdepth_term depth =
-   mk_simple_term itt_bdepth_opname [depth]
+   let mk_mk_bterm_term info depth op subterms =
+      mk_simple_term info.opname_mk_bterm [depth; op; subterms]
 
-let itt_hoas_operator_opname = mk_opname "Itt_hoas_operator" nil_opname
-let itt_operator_opname = mk_opname "operator" itt_hoas_operator_opname
+   let mk_operator_term info op =
+      mk_term (mk_op info.opname_operator [make_param (Operator op)]) []
 
-let mk_itt_operator_term op =
-   mk_term (mk_op itt_operator_opname [make_param (Operator op)]) []
+   let mk_nil_term info =
+      info.term_nil
 
-(* From the list theories *)
-let itt_list_opname = mk_opname "Itt_list" nil_opname
-let itt_nil_opname = mk_opname "nil" itt_list_opname
-let itt_cons_opname = mk_opname "cons" itt_list_opname
-let itt_nil_term = mk_simple_term itt_nil_opname []
-let mk_itt_cons_term h t =
-   mk_simple_term itt_cons_opname [h; t]
+   let mk_cons_term info t1 t2 =
+      mk_simple_term info.opname_cons [t1; t2]
 
-let rec mk_itt_list_term l =
-   match l with
-      [] ->
-         itt_nil_term
-    | v :: l ->
-         mk_itt_cons_term v (mk_itt_list_term l)
-
-(* From the integer theories *)
-let itt_int_base_opname = mk_opname "Itt_int_base" nil_opname
-let itt_number_opname = mk_opname "number" itt_int_base_opname
-let itt_add_opname = mk_opname "add" itt_int_base_opname
-let itt_sub_opname = mk_opname "sub" itt_int_base_opname
-
-let mk_itt_add_term t i =
-   if i = 0 then
-      t
-   else
-      let i = mk_term (mk_op itt_number_opname [make_param (Number (Lm_num.num_of_int i))]) [] in
-         mk_simple_term itt_add_opname [t; i]
-
-let mk_itt_subtract_term t i =
-   if i = 0 then
-      t
-   else
-      let i = mk_term (mk_op itt_number_opname [make_param (Number (Lm_num.num_of_int i))]) [] in
-         mk_simple_term itt_sub_opname [t; i]
+   let rec mk_list_term info l =
+      match l with
+         [] ->
+            mk_nil_term info
+       | v :: l ->
+            mk_cons_term info v (mk_list_term info l)
+end;;
 
 (*
  * When a term is quoted, quote all its subparts.
  *)
 let xquote_opname = mk_opname "xquote" perv_opname
-let xmquote_opname = mk_opname "xmquote" perv_opname
 let xunquote_opname = mk_opname "xunquote" perv_opname
-
-let is_xmquote_term t =
-   is_dep0_term xmquote_opname t
-
-let dest_xmquote_term t =
-   dest_dep0_term xmquote_opname t
 
 let is_xunquote_term t =
    is_dep0_term xunquote_opname t
@@ -848,99 +826,29 @@ let is_xunquote_term t =
 let dest_xunquote_term t =
    dest_dep0_term xunquote_opname t
 
-(*
- * There should be a marker on one of the subterms.
- *)
-let is_xquote1_term t =
-   is_dep0_term xquote_opname t && not (is_var_term (dest_dep0_term xquote_opname t))
+let is_xquote_term t =
+   is_dep0_dep0_term xquote_opname t && not (is_var_term (snd (dest_dep0_dep0_term xquote_opname t)))
 
-let dest_xquote1_term t =
-   dest_dep0_term xquote_opname t
-
-let find_marker t =
-   let rec search t =
-      if is_var_term t || is_so_var_term t || is_xunquote_term t then
-         None
-      else if is_xmquote_term t then
-         Some (0, dest_xmquote_term t)
-      else
-         let { term_terms = bterms } = dest_term t in
-            search_bterms bterms
-
-   and search_bterms bterms =
-      match bterms with
-         bterm :: bterms ->
-            let { bvars = bvars; bterm = bterm } = dest_bterm bterm in
-               (match search bterm with
-                   Some (depth, t) ->
-                      Some (depth + List.length bvars, t)
-                 | None ->
-                      search_bterms bterms)
-       | [] ->
-            None
-   in
-      match search t with
-         Some (depth, t) ->
-            depth, t
-       | None ->
-            raise (Invalid_argument "quoted term does not contain a marker")
-
-let sweepdn_xquote1_term t =
-   let outer_depth, e = find_marker t in
-   let inner_depth = mk_itt_bdepth_term e in
-   let rec sweepdn depth t =
-      if is_var_term t || is_so_var_term t then
-         t
-      else if is_xunquote_term t then
-         dest_xunquote_term t
-      else if is_xmquote_term t then
-         dest_xmquote_term t
-      else
-         let p = mk_itt_operator_term (opparam_of_term_safe t) in
-         let { term_terms = bterms } = dest_term t in
-         let bterms = List.map (wrap_bterm depth) bterms in
-         let bterms = mk_itt_list_term bterms in
-         let depth = mk_itt_add_term inner_depth depth in
-            mk_itt_mk_bterm_term depth p bterms
-
-   and wrap_bterm depth bterm =
-      let { bvars = vars; bterm = bterm } = dest_bterm bterm in
-      let depth = depth - List.length vars in
-      let bterm = sweepdn depth bterm in
-         List.fold_left (fun bterm v -> mk_itt_bind_term v bterm) bterm (List.rev vars)
-   in
-      sweepdn outer_depth t
-
-(*
- * The depth is specified explicitly.
- *)
-let is_xquote2_term t =
-   is_dep0_dep0_term xquote_opname t
-
-let dest_xquote2_term t =
-   dest_dep0_dep0_term xquote_opname t
-
-let sweepdn_xquote2_term outer_depth t =
-   let rec sweepdn depth t =
+let dest_xquote_term state t =
+   eprintf "dest_xquote_term@.";
+   let info = Reflect.create state in
+   let depth, t = dest_dep0_dep0_term xquote_opname t in
+   let rec sweepdn t =
       if is_var_term t || is_so_var_term t then
          t
       else if is_xunquote_term t then
          dest_xunquote_term t
       else
-         let p = mk_itt_operator_term (opparam_of_term_safe t) in
-         let { term_terms = bterms } = dest_term t in
-         let bterms = List.map (wrap_bterm depth) bterms in
-         let bterms = mk_itt_list_term bterms in
-         let depth = mk_itt_subtract_term outer_depth depth in
-            mk_itt_mk_bterm_term depth p bterms
+         let param = Reflect.mk_operator_term info (opparam_of_term t) in
+         let bterms = List.map wrap_bterm (dest_term t).term_terms in
+         let bterms = Reflect.mk_list_term info bterms in
+            Reflect.mk_mk_bterm_term info depth param bterms
 
-   and wrap_bterm depth bterm =
+   and wrap_bterm bterm =
       let { bvars = vars; bterm = bterm } = dest_bterm bterm in
-      let depth = depth + List.length vars in
-      let bterm = sweepdn depth bterm in
-         List.fold_left (fun bterm v -> mk_itt_bind_term v bterm) bterm (List.rev vars)
+         List.fold_left (fun bterm v -> Reflect.mk_bind_term info v bterm) (sweepdn bterm) (List.rev vars)
    in
-      sweepdn 0 t
+      sweepdn t
 
 (************************************************
  * Create the conversions.
@@ -953,19 +861,16 @@ let apply_ml_pre_iforms state t =
    else
       raise refine_exn
 
-let apply_ml_post_iforms t =
-   if is_xquote1_term t then
-      sweepdn_xquote1_term (dest_xquote1_term t)
-   else if is_xquote2_term t then
-      let depth, t = dest_xquote2_term t in
-         sweepdn_xquote2_term depth t
+let apply_ml_post_iforms state t =
+   if is_xquote_term t then
+      dest_xquote_term state t
    else
       raise refine_exn
 
 let create_ml_iform_convs state =
    let pre_rw    = Conversionals.create_ml_iform "Filter_grammar" (apply_ml_pre_iforms state) in
    let pre_conv  = Conversionals.sweepDnC pre_rw in
-   let post_rw   = Conversionals.create_ml_iform "Filter_grammar" apply_ml_post_iforms in
+   let post_rw   = Conversionals.create_ml_iform "Filter_grammar" (apply_ml_post_iforms state) in
    let post_conv = Conversionals.sweepDnC post_rw in
       pre_conv, post_conv
 
