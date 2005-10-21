@@ -17,11 +17,18 @@ MakeConfig(name) =
 
 #
 # Do you want native and/or byte code?
-# By default, we make native code.  If you want
-# byte code, set it to true.
+# Set COMPILATION_MODE to one of the following vaues:
+#    byte - compile everything bytecode
+#    native - compile everything to native code
+#    both - compile both native and bytecode
+#    mixed - compile the MetaPRL preprocessor to native code,
+#            and compile the MetaPRL theories and the interactive
+#            proof editor to bytecode.
 #
-NATIVE_ENABLED = $(NATIVE_ENABLED)
-BYTE_ENABLED = $(BYTE_ENABLED)
+# The default value is "mixed" since it is the most efficient mode
+# for the theory development.
+#
+COMPILATION_MODE = $(COMPILATION_MODE)
 
 #
 # Term module to use: ds or std

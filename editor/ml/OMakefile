@@ -218,7 +218,8 @@ LocalOCamlGeneratedFiles(mp_version.ml)
 #
 # Defaults
 #
-.DEFAULT: .test-metaprl-startup
+.PHONY: done
+.DEFAULT: done
 
 if $(NATIVE_ENABLED)
    .test-metaprl-startup: $(MP).opt
@@ -232,6 +233,14 @@ section
     .test-metaprl-startup: $(MP)$(EXT) $(MP)config $(THEORIES_PATH) $(MLDEBUG_PATH)
         echo | ./$(MP)$(EXT) -batch
         touch $@
+
+    done: .test-metaprl-startup
+        println($"
+******
+****** MetaPRL ($(if $(NATIVE_ENABLED), $"native code"$(if $(BYTE_ENABLED), $" and "))$(if $(BYTE_ENABLED), bytecode)) compiled successfully!
+****** Run editor/ml/mp$(EXT) to start the interactive prover.
+******
+")
 
 #
 # Clean up

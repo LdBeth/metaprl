@@ -86,8 +86,6 @@ if $(equal $(OSTYPE), Win32)
 Bool(arg) =
     return $(not $(not $(arg)))
 
-NATIVE_ENABLED = $(Bool $(NATIVE_ENABLED))
-BYTE_ENABLED = $(Bool $(BYTE_ENABLED))
 SSL_ENABLED = $(Bool $(SSL_ENABLED))
 THREADS_ENABLED = $(Bool $(THREADS_ENABLED))
 READLINE_ENABLED = $(and $(READLINE_ENABLED), $(NCURSES_ENABLED))
@@ -95,6 +93,10 @@ NCURSES_ENABLED = $(Bool $(NCURSES_ENABLED))
 NATIVE_PROFILING_ENABLED = $(Bool $(NATIVE_PROFILING_ENABLED))
 TESTS_ENABLED = $(Bool $(TESTS_ENABLED))
 SLOPPY_DEPENDENCIES = $(Bool $(SLOPPY_DEPENDENCIES))
+
+if $(equal $(COMPILATION_MODE), bytecode)
+    COMPILATION_MODE = byte
+    export
 
 #
 # Create a fresh copy if it is out-of-date
@@ -172,8 +174,7 @@ if $(THREADS_ENABLED)
 # For native code profiling, we need both versions of the filter libraries.
 #
 if $(NATIVE_PROFILING_ENABLED)
-   NATIVE_ENABLED = true
-   BYTE_ENABLED = true
+   COMPILATION_MODE = both
    OCAMLOPTFLAGS += -p -inline 0
    CFLAGS += -p -DPROF
    if $(equal $(NATIVE_PROFILING_ENABLED), compact)
@@ -184,6 +185,13 @@ if $(NATIVE_PROFILING_ENABLED)
 #
 # Check the configuration
 #
+
+if $(not $(mem $(COMPILATION_MODE), native byte mixed both))
+    eprintln(ERROR: the COMPILATION_MODE variable is currently set to an invalid value "$(COMPILATION_MODE)"\, please fix it in the mk/config file)
+    exit(1)
+
+NATIVE_ENABLED = $(mem $(COMPILATION_MODE), native mixed both)
+BYTE_ENABLED = $(mem $(COMPILATION_MODE), byte mixed both)
 
 if $(file-exists $(CAMLLIB)/../compiler-lib/parsetree.cmi)
    OCAMLINCLUDES += $(dir $(CAMLLIB)/../compiler-lib)
@@ -500,6 +508,11 @@ STANDARD_BUILD_ENV =
 ########################################################################
 # Theory building
 #
+
+#
+# Unset NATIVE_ENABLED if we are in the mixed compilation mode.
+#
+NATIVE_ENABLED = $(mem $(COMPILATION_MODE), native both)
 
 #
 # When using native code profiling, no need to build theories to bytecode.
