@@ -87,10 +87,11 @@ resource (auto_info, tactic * tactic * tactic) auto
 val create_auto_prec : auto_prec list -> auto_prec list -> auto_prec
 
 (*
- * Trivial is used by autoT.
+ * trivialT, nthHypT and reduceT are used by autoT.
  *)
 val trivial_prec : auto_prec
 val nth_hyp_prec : auto_prec
+val reduce_prec : auto_prec
 
 (*
  * Trivial tactic.
