@@ -3,23 +3,23 @@
 # This duplicates the funcationality in filter/filter/prlcomp.ml
 #
 
+Shell. +=
+   prlcomp(argv) =
+      setenv (MP_ROOT, $(ROOT))
+      setenv (MPLIB, $(LIB))
+      setenv (MP_GROUP, $(THEORYNAME))
+      setenv (MP_DESCR, $(THEORYDESCR))
+      setenv (MP_INCLUDE, $(concat :, $(OCAMLINCLUDES)))
+      $(argv)
+
 #
 # Command without a preprocessor
 #
 WrapC(command) =
    #
-   # Default environment
-   #
-   ENV[] =
-      MP_ROOT=$(quote $(ROOT))
-      MPLIB=$(LIB)
-      MP_GROUP=$(quote $(THEORYNAME))
-      MP_DESCR=$(quote $(THEORYDESCR))
-
-   #
    # Put together the command
    #
-   COMMAND = $(ENV) $(command) -I $(LIB)
+   COMMAND = prlcomp $(command) -I $(LIB)
 
    return($(COMMAND))
 
@@ -28,20 +28,9 @@ WrapC(command) =
 #
 PrlC(command) =
    #
-   # Default environment
-   # JYH: do we still need MP_INCLUDE?
-   #
-   ENV[] =
-      MP_ROOT=$(quote $(ROOT))
-      MPLIB=$(LIB)
-      MP_GROUP=$(quote $(THEORYNAME))
-      MP_DESCR=$(quote $(THEORYDESCR))
-      MP_INCLUDE=$(quote $(concat :, $(OCAMLINCLUDES)))
-
-   #
    # Put together the command
    # JYH: not sure if this should be hardcoded as CAMLP4N.
    #
-   COMMAND[] = $(ENV) $(command) -I $(LIB) -pp $(quote-argv $(CAMLP4N) $(PREFIXED_OCAMLINCLUDES))
+   COMMAND[] = prlcomp $(command) -I $(LIB) -pp $(quote-argv $(CAMLP4N))
 
    return($(COMMAND))
