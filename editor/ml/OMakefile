@@ -1,12 +1,9 @@
 #
 # MetaPRL editor.
 #
-# XXX: JYH: the itt/core should not be hardcoded
-#
 OCAMLINCLUDES[] +=
    $(dir $(ROOT)/$(ENSEMBLE_DIR))
    $(MP_DIRS)
-   $(ROOT)/theories/itt/core
 
 # Name of main libraries
 MP = mp
