@@ -52,14 +52,14 @@ REFINER = $(REFINER)
 # This is the list of theory directories theory/*
 # that you want to compile.  You want to include at least
 #    THEORIES = base
-# Include itt if you want to use the Constructive Type Theory,
-# and add any additional theory directories after that.
+# Include itt/core if you want to use the Core of Constructive Type Theory, 
+# include itt if you want to use the complete Constructive Type Theory (core,
+# applications, extensions, etc). Add any additional theory directories after that.
 #
-# Alternatively, include THEORIES = all, or THEORIES = default,
-# to include the usual set of theories.  For example, you can
-# use THEORIES=all to get all theories.  To include your special
-# theory, you would use the following if you want the usual
-# directories and your own, use the following.
+# Alternatively, use THEORIES = all to get all the theories,
+# or THEORIES = default, to include the usual set of theories.
+# To include your special theory, you would use the following
+# if you want the usual # directories and your own, use the following.
 #    THEORIES = all mytheory
 # Or, if you just want your own, use the following.
 #    THEORIES = base mytheory
