@@ -218,7 +218,7 @@ LocalOCamlGeneratedFiles(mp_version.ml)
 #
 # Defaults
 #
-.PHONY: done
+.PHONY: done run run-cli
 .DEFAULT: done
 
 if $(NATIVE_ENABLED)
@@ -229,8 +229,17 @@ if $(BYTE_ENABLED)
 
 section
     EXT = $(if $(NATIVE_ENABLED), opt, top)
+    BIN = $(MP).$(EXT)
     EXT = $(if $(equal $(OSTYPE), Win32), $(EXT).bat, $(EXT))
-    .test-metaprl-startup: $(MP)$(EXT) $(MP)config $(THEORIES_PATH) $(MLDEBUG_PATH)
+    CONFIGS = $(MP)$(EXT) $(MP)config $(THEORIES_PATH) $(MLDEBUG_PATH)
+
+    run: $(BIN) $(CONFIGS)
+        ./mp$(EXT)
+
+    run-cli: $(BIN) $(CONFIGS)
+        ./mp$(EXT) -cli
+
+    .test-metaprl-startup: $(CONFIGS)
         echo | ./$(MP)$(EXT) -batch
         touch $@
 
