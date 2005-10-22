@@ -241,7 +241,7 @@ section
 
     .test-metaprl-startup: $(CONFIGS)
         echo | ./$(MP)$(EXT) -batch
-        touch $@
+        echo > $@
 
     done: .test-metaprl-startup
         println($"
