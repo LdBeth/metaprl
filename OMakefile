@@ -702,7 +702,12 @@ section
    .SUBDIRS: $(THEORY_DIRS)
 
 if $(NATIVE_ENABLED)
-   .PHONY: check-status
+   .PHONY: check-status core-incompletes
 
-   check-status: util/check-status util/check-status.sh editor/ml/mp.opt editor/ml/mpopt editor/ml/mpconfig $(THEORIES_PATH) $(MLDEBUG_PATH)
+   check-status core-incompletes: util/check-status util/check-status.sh editor/ml/mp.opt editor/ml/mpopt editor/ml/mpconfig $(THEORIES_PATH) $(MLDEBUG_PATH)
+
+   check-status:
       util/check-status nomake
+
+   core-incompletes:
+      util/check-status nomake core

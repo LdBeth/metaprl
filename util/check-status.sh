@@ -44,7 +44,8 @@ cd $1
 shift
 RUN_OMAKE=yes
 MP_DEBUG=
-((
+PROG=util/status-all.sh
+SUBJECT="proofs status update"
 while [ $# -gt 0 ]; do
    if [ "$1" = "update" -o "$1" = "status" ]; then
       echo "*** svn status ***"
@@ -56,44 +57,53 @@ while [ $# -gt 0 ]; do
       shift
       echo "MP_DEBUG environment variable is set to \`$1'"
       export MP_DEBUG="$1"
+   elif [ "$1" = "core" ]; then
+      PROG=util/core-incompletes.sh
+      SUBJECT="- incomplete proofs in core"
    else
       echo WARNING:
       echo "WARNING: Unknown command line option: $1"
       echo WARNING:
    fi
    shift
-done
-if [ "$RUN_OMAKE" ]; then
-   rm -f editor/ml/mp.opt
-   unset OMAKEFLAGS
-   omake VERBOSE=1 -S editor/ml/mp.opt
-   sleep 10
-fi
-if [ -f editor/ml/mp.opt ]; then
-util/status-all.sh > $TEMP
-if diff -q -I '^Expand time:' $TEMP $LOG > /dev/null; then
-   echo ""
-   echo NO PROOF STATUS CHANGES
-   echo ""
-   echo -n Was:
-   grep '^Expand time:' $LOG
-   echo -n Now:
-   grep '^Expand time:' $TEMP
-   echo ""
-else
-   echo ""
-   echo PROOF STATUS CHANGES:
-   echo ""
-   diff -u $LOG $TEMP
-fi
-echo ""
-echo "A complete log can be found in $TEMP on `hostname -s`"
-echo ""
-echo "Complete list off all rules with incomplete proofs:"
-gawk -F"[[:blank:]\`']+" '/incomplete/ { print $2}; {next}' < $TEMP
-else
-   echo ""
-   echo BUILD FAILED!
-fi
- ) 2>&1 ) | mail -s "MetaPRL proofs status update (`hostname -s`, `pwd`)" "$LOGNAME"
+done > $TEMP 2>&1
+((
+   cat $TEMP
+   if [ "$RUN_OMAKE" ]; then
+      rm -f editor/ml/mp.opt
+      unset OMAKEFLAGS
+      omake VERBOSE=1 -S editor/ml/mp.opt
+      sleep 10
+   fi
+   if [ -f editor/ml/mp.opt ]; then
+      $PROG > $TEMP
+      if [ "$PROG" = "util/status-all.sh" ]; then
+         if diff -q -I '^Expand time:' $TEMP $LOG > /dev/null; then
+            echo ""
+            echo NO PROOF STATUS CHANGES
+            echo ""
+            echo -n Was:
+            grep '^Expand time:' $LOG
+            echo -n Now:
+            grep '^Expand time:' $TEMP
+            echo ""
+         else
+            echo ""
+            echo PROOF STATUS CHANGES:
+            echo ""
+            diff -u $LOG $TEMP
+         fi
+         echo ""
+         echo "A complete log can be found in $TEMP on `hostname -s`"
+         echo ""
+         echo "Complete list off all rules with incomplete proofs:"
+         gawk -F"[[:blank:]\`']+" '/incomplete/ { print $2}; {next}' < $TEMP
+      else
+         cat $TEMP
+      fi
+   else
+      echo ""
+      echo BUILD FAILED!
+   fi
+) 2>&1 ) | mail -s "MetaPRL $SUBJECT (`hostname -s`, `pwd`)" "$LOGNAME"
 rm -rf $TMPDIR
