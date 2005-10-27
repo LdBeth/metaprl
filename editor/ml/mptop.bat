@@ -28,8 +28,8 @@ set LC_ALL=en_US.UTF-8
 rem
 rem Search path
 rem
-set /p INCLUDES <theories.dir
-set /p DEBUGINCLUDES <mldebug.dir
+set /p INCLUDES= <theories.dir
+set /p DEBUGINCLUDES= <mldebug.dir
 
 rem
 rem Start the executable.
