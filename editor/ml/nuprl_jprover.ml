@@ -107,7 +107,7 @@ let jprover_debug_hook t =
   print_newline();
   print_string "Result is:  ";
   Mbterm.print_term result;
-  let mbterm =
+  let _ =
        try Mbterm.mbterm_of_term result with
        e -> (print_string "mbterm failed";
 	     Mbterm.mbterm_of_term (mk_term ijprover_op [])) in
