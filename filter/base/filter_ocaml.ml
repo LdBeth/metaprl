@@ -1461,10 +1461,15 @@ struct
                   mk_simple_named_term type_olb_op loc s [mk_type t]
              | MLast.TyLab (_, s, t) ->
                   mk_simple_named_term type_lab_op loc s [mk_type t]
-             | MLast.TyPol (_, strs, t) ->
+             | MLast.TyPol (_, strs, t) when true ->
                   mk_simple_term type_pol_op loc [mk_olist_term (List.map (mk_string type_class_id_op) strs); mk_type t]
              | t ->
-                  (* XXX: TODO: Fill in the appropriate TyPrv entry, once OCaml 3.08 compatibility is no longer required *)
+                  (*
+                   * XXX: TODO: Once OCaml 3.08 compatibility is no longer required:
+                   *   - Fill in the appropriate TyPrv entry here
+                   *   - Remove the "when true" from the above case (it's there to shut up the "unused case"
+                   *     warning when compiling under 3.08
+                   *)
                   Stdpp.raise_with_loc (MLast. loc_of_ctyp t) (Invalid_argument "You are using a feature that was added in OCaml 3.09.
 MetaPRL does not support this yet in order to remain compatible with OCaml 3.08")
             
