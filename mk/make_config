@@ -134,6 +134,15 @@ SEQ_SET = $(SEQ_SET)
 NATIVE_PROFILING_ENABLED = $(NATIVE_PROFILING_ENABLED)
 
 #
+# Whether to build a version of MetaPRL with an OCaml toploop ("mp.run").
+# Since the OCaml toploop does not always "play nicely" with MetaPRL, this
+# can only be used for certain kinds of debugging.
+#
+# The value is ignored when COMPILATION_MODE=native.
+#
+MPRUN_ENABLED = $(MPRUN_ENABLED)
+
+#
 # If ENSROOT is defined, it should point
 # to the root of the Ensemble source tree
 # In this case Ensemble support would be compiled into MetaPRL

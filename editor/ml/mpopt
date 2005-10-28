@@ -5,6 +5,12 @@ export MP_CWD
 
 cd `dirname "$0"`
 
+if [ ! -x mp.opt ]; then
+   echo "The native code binary mp.opt does not exist or is not executable."
+   echo "Did you mean to run the bytecode binary `dirname "$0"`/mptop instead?"
+   exit 1
+fi
+
 #
 # Configuration
 #

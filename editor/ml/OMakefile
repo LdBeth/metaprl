@@ -189,10 +189,11 @@ if $(NATIVE_ENABLED)
     ALL_DEPS += $(OPT_DEPS)
     export
 
-$(MP).run: $(BYTE_DEPS) $(RCMOFILES) $(OCAMLMKTOP_VERSION)
-    $(RM) $@
-    $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom \
-        $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+if $(MPRUN_ENABLED)
+    $(MP).run: $(BYTE_DEPS) $(RCMOFILES) $(OCAMLMKTOP_VERSION)
+        $(RM) $@
+        $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom \
+            $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).top: $(TOP_DEPS) $(TCMOFILES)
     $(RM) $@
@@ -222,10 +223,13 @@ LocalOCamlGeneratedFiles(mp_version.ml)
 .DEFAULT: done
 
 if $(NATIVE_ENABLED)
-   .test-metaprl-startup: $(MP).opt
+    .test-metaprl-startup: $(MP).opt
 
 if $(BYTE_ENABLED)
-   .test-metaprl-startup: $(MP).top $(MP).run
+    .test-metaprl-startup: $(MP).top
+
+    if $(MPRUN_ENABLED)
+        .test-metaprl-startup: $(MP).run
 
 section
     EXT = $(if $(NATIVE_ENABLED), opt, top)
@@ -244,6 +248,12 @@ section
         echo > $@
 
     done: .test-metaprl-startup
+        if $(not $(NATIVE_ENABLED))
+            rm -f mp.opt
+        if $(not $(BYTE_ENABLED))
+            rm -f mp.run mp.top
+        elseif $(not $(MPRUN_ENABLED))
+            rm -f mp.run
         println($"
 ******
 ****** MetaPRL ($(if $(NATIVE_ENABLED), $"native code"$(if $(BYTE_ENABLED), $" and "))$(if $(BYTE_ENABLED), bytecode)) compiled successfully!
