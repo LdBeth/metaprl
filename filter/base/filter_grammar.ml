@@ -728,7 +728,7 @@ let is_xbterm_term t =
 
 let dest_xbterm_term t =
    if is_xbterm_term t then
-      let vars = declared_vars t in
+      let vars = List.rev (declared_vars t) in
       let t = concl t in
          mk_bterm vars t
    else

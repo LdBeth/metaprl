@@ -423,6 +423,8 @@ struct
 
    (*
     * Collect the vars.
+    * JYH: do we really want the reversed list of vars?
+    * This seems like a coding mistake to me.
     *)
    let rec declared_vars_aux hyps i =
       if i < 0 then
